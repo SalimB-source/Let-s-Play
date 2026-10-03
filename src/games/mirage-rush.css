@@ -919,6 +919,18 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 }
 .mirage-secondary-button:hover { transform: translateY(-1px); border-color: rgba(246, 205, 114, .5); color: #ffe6ac; background: rgba(36, 23, 46, .76); }
 .mirage-stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+/* Le lancement se fait en touchant une carte : il ne reste ici que l'attente du
+   moteur 3D et, sur ordinateur, le lancement direct en plein écran. */
+.mirage-stage-loading {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px;
+  border-radius: 999px; border: 1px solid rgba(255, 224, 166, .22); background: rgba(37, 28, 41, .6);
+  color: #d8c3b6; font: 800 8px var(--mono); letter-spacing: .13em;
+}
+.mirage-stage-loading::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ffcf74; animation: mirageStageLoadingPulse 1.15s ease-in-out infinite; }
+@keyframes mirageStageLoadingPulse {
+  0%, 100% { opacity: .32; transform: scale(.82); }
+  50% { opacity: 1; transform: scale(1); }
+}
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
 /* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
    l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
@@ -927,6 +939,8 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 6px; }
 .mirage-picker-label > span:last-child { color: #9e8e9d; text-align: right; }
+/* Sous les cartes : comment on lance désormais — un simple clic. */
+.mirage-picker-hint { margin: 9px 0 0; text-align: center; color: #e9c98d; font: 800 7px/1.5 var(--mono); letter-spacing: .12em; }
 /* Quatre modes (RUÉE · DUEL · COUPE · EN LIGNE) côte à côte : l'icône et le nom
    partagent la première ligne, l'accroche et le détail passent dessous — sinon
    les cartes horizontales seraient trop étroites pour leur texte. La tuile garde
@@ -1011,6 +1025,15 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-map-card.is-locked .mirage-map-check { background: rgba(18, 13, 26, .88); border: 1px solid rgba(255, 224, 166, .24); color: #ffdc85; font-size: 9px; }
 .mirage-map-card.is-locked .mirage-map-selected { color: #cbb6c4; letter-spacing: .05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mirage-map-lock { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; font-size: 17px; color: #ffdc85; text-shadow: 0 2px 10px rgba(0, 0, 0, .85); background: radial-gradient(circle, rgba(15, 11, 24, .58) 0%, rgba(15, 11, 24, .22) 70%); pointer-events: none; }
+/* Carte déjà finie en 1ʳᵉ place : le ✓ vert reste allumé, sélectionnée ou non.
+   Ces règles viennent après celles d'`aria-pressed` pour teinter la pastille. */
+.mirage-map-card.is-won { border-color: rgba(76, 226, 140, .44); }
+.mirage-map-card.is-won .mirage-map-check { border: 1px solid rgba(8, 34, 21, .38); background: linear-gradient(145deg, #74f3ac, #33c877); color: #08221a; box-shadow: 0 0 11px rgba(76, 226, 140, .48); font-weight: 900; }
+.mirage-map-card.is-won .mirage-map-selected { background: rgba(76, 226, 140, .12); color: #93f0b9; }
+.mirage-map-card.is-won[aria-pressed="true"] { border-color: #7cf3b2; box-shadow: 0 0 0 1px rgba(124, 243, 178, .3), 0 8px 22px rgba(0, 0, 0, .3), 0 0 26px rgba(76, 226, 140, .2); }
+/* Défi : la carte imposée est la seule jouable — elle se démarque de l'or. */
+.mirage-map-card.is-imposed { border-color: #f6cd72; box-shadow: 0 0 0 1px rgba(246, 205, 114, .24), 0 0 20px rgba(243, 198, 91, .16); }
+.mirage-map-card.is-imposed .mirage-map-selected { background: rgba(246, 205, 114, .08); color: #ffdb87; }
 .mirage-mode-picker button:focus-visible, .mirage-map-card:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
 @media (hover: hover) {
   .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #f6cd72; }
@@ -1048,6 +1071,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-mode-picker button, .mirage-map-card, .mirage-map-art { transition: none; }
   .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled),
   .mirage-map-card:hover:not(:disabled) .mirage-map-art { transform: none; }
+  .mirage-stage-loading::before { animation: none; opacity: .8; }
 }
 
 /* Top mode switcher tabs */
@@ -2835,6 +2859,12 @@ img.mirage-powerup-icon {
 .mirage-cup-card.is-locked .mirage-cup-reward { animation: none; border-color: rgba(255, 220, 114, .28); }
 .mirage-cup-card.is-locked .mirage-cup-card-action { color: rgba(255, 232, 196, .62); }
 .mirage-cup-card.is-locked .mirage-cup-card-action b { background: rgba(255, 255, 255, .1); color: #ffdc85; box-shadow: none; }
+/* Coupe déjà remportée : ✓ vert, même quand la carte n'est pas sélectionnée.
+   Après les règles d'`aria-pressed` pour teinter la pastille en vert. */
+.mirage-cup-card.is-completed { border-color: rgba(76, 226, 140, .5); border-bottom-color: rgba(76, 226, 140, .8); }
+.mirage-cup-card.is-completed .mirage-choice-dot { background: linear-gradient(145deg, #74f3ac, #33c877); border-color: rgba(8, 34, 21, .38); color: #08221a; box-shadow: 0 0 10px rgba(76, 226, 140, .48); font-weight: 900; }
+.mirage-cup-card.is-completed .mirage-cup-card-action { color: #93f0b9; }
+.mirage-cup-card.is-completed .mirage-cup-card-action b { background: linear-gradient(145deg, #74f3ac, #33c877); color: #08221a; box-shadow: 0 3px 0 #1c6a44; }
 .mirage-cup-card-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mirage-cup-card-title strong { font: 900 13px/1.2 var(--font-gaming); letter-spacing: .025em; }
 .mirage-cup-card-title span { color: #ead7c7; font-size: 9px; line-height: 1.25; }
@@ -3189,6 +3219,7 @@ img.mirage-powerup-icon {
 .mirage-game-shell.is-low-graphics .mirage-overlay,
 .mirage-game-popup-backdrop.is-low-graphics { backdrop-filter: none; }
 .mirage-game-shell.is-low-graphics .mirage-cup-reward { animation: none; }
+.mirage-game-shell.is-low-graphics .mirage-stage-loading::before { animation: none; opacity: .8; }
 .mirage-game-shell.is-low-graphics .mirage-overlay {
   background: linear-gradient(180deg, rgba(24, 13, 37, .34), rgba(21, 13, 33, .74) 60%, rgba(18, 12, 28, .84));
 }

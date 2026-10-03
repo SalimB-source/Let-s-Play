@@ -95,7 +95,8 @@ const buttonOf = (node) => node.querySelector('.mirage-game-controls-top .mirage
 const worldOf = (node) => node.querySelector('.mirage-world-stub');
 const choicesOf = (scope) => [...scope.querySelectorAll('.mirage-graphics-choice')];
 const choiceOf = (scope, name) => choicesOf(scope).find((button) => squash(button.textContent) === name);
-const startOf = (node) => node.querySelector('.mirage-stage-actions .mirage-start-button');
+// Le lancement se fait au clic sur une carte de map (plus de bouton « LANCER »).
+const launchMapOf = (node) => node.querySelector('.mirage-stage-picker .mirage-map-card:not(:disabled)');
 const pauseOf = (node) => node.querySelector('.mirage-pause-button');
 const backOf = (node) => node.querySelector('.mirage-back-game-button');
 
@@ -123,12 +124,11 @@ const waitForCountdown = (node) => until(() => node.querySelector('.mirage-count
 const waitForRace = (node) => until(() => node.querySelector('.mirage-hud'), 'le départ de la course');
 const waitForPause = (node) => until(() => node.querySelector('.mirage-pause-overlay'), 'la pause');
 
-/** Écran 01 → écran 02 du mode `index` (0 Rapide, 1 Duel, 2 Coupe, 3 En ligne), puis attend le moteur. */
+/** Écran 01 → écran 02 du mode `index` (0 Rapide, 1 Duel, 2 Coupe, 3 En ligne). */
 async function openStage(node, index) {
   const intro = await waitForIntroStep(node, 'mode');
   await click(intro.querySelectorAll('.mirage-mode-action')[index]);
   await waitForIntroStep(node, 'stage');
-  await until(() => { const button = startOf(node); return button && !button.disabled; }, 'le moteur est prêt (bouton de lancement actif)');
 }
 
 /** Remet le réglage de l'appareil à `value` (`null` : jamais choisi) avant d'ouvrir la page. */
@@ -189,7 +189,7 @@ export async function checkMirageGraphics(assertion) {
       await openStage(node, 0);
       const world = worldOf(node);
       assert.ok(world, 'le moteur 3D est monté');
-      await click(startOf(node));
+      await click(launchMapOf(node));
       await waitForCountdown(node);
       await waitForRace(node);
       assert.deepEqual(shown(node), NORMAL);

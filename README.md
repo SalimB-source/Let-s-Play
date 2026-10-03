@@ -160,13 +160,14 @@ téléphone.
 | Geste | Effet |
 |---|---|
 | Bouton **PLEIN ÉCRAN** de la barre du jeu | ouvre ou ferme, à tout moment (choix du mode, course, pause) |
-| **LANCER EN PLEIN ÉCRAN** (écran du terrain) | lance la course directement en plein écran — ordinateur seulement, ailleurs « LANCER » le fait déjà |
+| **LANCER EN PLEIN ÉCRAN** (écran du terrain) | lance la course directement en plein écran — ordinateur seulement, ailleurs le clic sur une carte le fait déjà |
 | Touche **F** | ouvre ou ferme (Ctrl/Cmd/Alt + F restent au navigateur ; un « f » tapé dans un champ de saisie ne fait rien) |
 | **Échap**, ou le geste « retour » d'Android | le navigateur referme le plein écran : la course se met **en pause** |
 
-- **Qui l'ouvre tout seul ?** Téléphone, tablette et application Android : « LANCER
-  LA PARTIE » ouvre le plein écran (un doigt joue mieux sur tout l'écran) et le
-  retour au choix du mode le referme. Ordinateur : jamais sans demande. Un plein
+- **Qui l'ouvre tout seul ?** Téléphone, tablette et application Android : le clic
+  sur une carte de map (ou de coupe) ouvre le plein écran (un doigt joue mieux sur
+  tout l'écran) et le retour au choix du mode le referme. Ordinateur : jamais sans
+  demande. Un plein
   écran demandé (bouton, F, « LANCER EN PLEIN ÉCRAN ») reste ouvert d'une course à
   l'autre ; le bouton, F ou, en plein écran natif, Échap le ferment (sur la seule
   couche fixe, Échap met simplement la course en pause).
@@ -211,6 +212,46 @@ doublure qui répond comme un navigateur (elle sait aussi refuser, attendre, ou
 fermer « de l'extérieur » comme Échap). Elle ne dit rien du rendu réel : pour
 cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`) et le passer en plein
 écran sur un grand écran.
+
+## Mirage Rush : une carte = une partie
+
+L'écran 02 (après le choix du mode) n'a **plus de bouton de lancement** : c'est la
+carte elle-même qui démarre la partie.
+
+| Carte touchée | Effet |
+|---|---|
+| Map (RUÉE ou DUEL) | la partie démarre aussitôt sur cette map (compte à rebours, puis la course) |
+| Map d'un défi (`?duel=…`) | la carte imposée est la seule jouable — les autres restent verrouillées |
+| Coupe | la coupe choisie démarre aussitôt sa première course |
+| Map en mode EN LIGNE | la map devient celle du salon, et le lobby s'ouvre |
+
+- **✓ vert des cartes finies.** Une map gagnée en 1ʳᵉ place (`wonStages`) porte un
+  ✓ vert dans son coin et le libellé « ✓ TERMINÉE · JOUER » : elle reste jouable
+  pour rejouer. Une coupe remportée (`completedCups`) porte le même ✓ vert et
+  « ✓ TERMINÉE · REJOUER ». Le ✓ est réservé aux cartes réellement finies : une
+  carte seulement sélectionnée montre un point (●), une carte libre un ▶, une
+  carte verrouillée son cadenas.
+- **L'attente du moteur 3D** s'affiche en pastille (« CHARGEMENT DU PARCOURS… ») à
+  la place de l'ancien bouton ; sur ordinateur, « LANCER EN PLEIN ÉCRAN » reste
+  proposé à côté pour démarrer directement en grand.
+
+### Où vit le code
+
+- `src/games/MirageCoursePicker.jsx` — `MirageStagePicker` / `MirageCupPicker` :
+  le clic appelle `onStart(…)`, et les classes `is-won` / `is-completed` /
+  `is-imposed` portent le ✓ vert et la carte imposée d'un défi ;
+- `src/games/MirageRushPage.jsx` — `startStageCard()` / `startCupCard()` lancent la
+  course ou la coupe demandée dans le même clic, sans état intermédiaire ;
+- `src/games/mirage-rush.css` — ✓ vert (`.is-won`, `.is-completed`), consigne
+  (`.mirage-picker-hint`) et pastille d'attente (`.mirage-stage-loading`).
+
+### Vérifications
+
+```bash
+npm run check:mirage-flow         # clic sur une carte = partie lancée, ✓ vert des maps et des coupes
+npm run check:mirage-cup          # coupe lancée au clic, relance d'une coupe terminée
+npm run check:mirage-fullscreen   # clic = plein écran sur téléphone, jamais sur ordinateur
+```
 
 ## Mirage Rush : les bruitages des techniques de Cloud
 
@@ -346,7 +387,9 @@ Le maximum théorique dépend du nombre de courses gagnées :
 
 Le meilleur total de points après la dernière course soulève le trophée. Dans
 l'aperçu, chaque coupe est un vrai bouton cliquable au relief 3D : son parcours
-n'est pas déroulé et le maximum d'OR est mis en évidence. Le podium distingue
+n'est pas déroulé et le maximum d'OR est mis en évidence. La toucher **démarre la
+coupe** (voir « Mirage Rush : une carte = une partie »), et une coupe remportée y
+porte un ✓ vert. Le podium distingue
 les OR réellement gagnés pendant les courses du maximum théorique de la coupe.
 
 ### Où vit le code

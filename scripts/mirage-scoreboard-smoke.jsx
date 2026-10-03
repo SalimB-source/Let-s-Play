@@ -216,11 +216,12 @@ export async function checkMirageScoreboard(assert) {
   // (points et classement général) — le tableau du duel ne doit pas s'y ajouter.
   const cup = await mountPage('/jeu?mode=cup');
   try {
-    const start = await waitUntil(() => {
-      const button = cup.node.querySelector('.mirage-intro-overlay .mirage-start-button');
+    // Le clic sur la carte de la 1ʳᵉ coupe démarre la coupe (plus de bouton « LANCER LA COUPE »).
+    const cupCard = await waitUntil(() => {
+      const button = cup.node.querySelector('.mirage-intro-overlay .mirage-cup-card.is-desert');
       return button && !button.disabled ? button : null;
-    }, 'le bouton de lancement de la coupe est actif');
-    await click(start);
+    }, 'la carte de la Coupe du Désert est jouable');
+    await click(cupCard);
     await act(async () => { worldProbe.props.onFinish({ ...DUEL_LOSS, stage: worldProbe.props.race.stage }); });
     assert.ok(cup.node.querySelector('.mirage-cup-results'), 'la course de coupe se termine sur l’écran de la coupe');
     assert.ok(!cup.node.querySelector('.mirage-scoreboard'), 'le tableau du duel ne s’ajoute pas à l’écran de la coupe');

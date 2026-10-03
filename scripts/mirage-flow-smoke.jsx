@@ -5,14 +5,16 @@
  *
  *   1. à l'arrivée, l'overlay affiche uniquement quatre vrais boutons de mode
  *      (RUÉE / DUEL / COUPE / EN LIGNE), sans maps ni bouton de lancement ;
- *   2. le clic sur RUÉE ou DUEL ouvre l'écran suivant, où les 10 maps et le
- *      bouton de lancement apparaissent ;
+ *   2. le clic sur RUÉE ou DUEL ouvre l'écran suivant, où les 10 maps
+ *      apparaissent : **un clic sur une carte lance la partie** (compte à
+ *      rebours immédiat, plus aucun bouton « LANCER LA PARTIE ») ;
  *   3. le clic sur COUPE ouvre ce même écran, mais le choix de la map y est
  *      remplacé par de vrais boutons 3D pour chaque coupe, sans révéler les
- *      terrains du parcours ; l'or maximum à gagner y est mis en avant, puis
- *      « LANCER LA COUPE » ; un lien ?mode=cup y arrive directement ;
+ *      terrains du parcours ; l'or maximum à gagner y est mis en avant, et le
+ *      clic sur une coupe la démarre aussitôt ; un lien ?mode=cup y arrive
+ *      directement ;
  *   4. un lien de défi ouvre directement l'écran des maps, verrouillé sur le
- *      terrain imposé ;
+ *      terrain imposé — sa carte reste jouable et lance le duel ;
  *   5. le panneau latéral est regroupé dans PARAMÈTRES avec quatre onglets :
  *      La communauté, Ton cavalier, Boutique, Informations (les règles de la
  *      COUPE y figurent ; Gyro coûte 200 OR et Cloud est offert temporairement
@@ -27,7 +29,10 @@
  *      seule touche de clavier, et plus aucune trace de la manette tactile
  *      (croix directionnelle, losange) ne subsiste dans la page : les boutons
  *      de la course sont ceux du PC (vérifiés pendant une vraie course par
- *      `npm run check:mirage-cup`).
+ *      `npm run check:mirage-cup`) ;
+ *   9. les cartes finies portent un ✓ vert : map gagnée en 1ʳᵉ place
+ *      (`wonStages`) et coupe remportée (`completedCups`) — la carte reste
+ *      jouable pour rejouer.
  *
  * Le déroulé complet d'une coupe (3 courses, points, trophée) est vérifié
  * par scripts/mirage-cup-smoke.jsx — `npm run check:mirage-cup`.
@@ -91,6 +96,26 @@ function mapCards(node) {
   return [...node.querySelectorAll('.mirage-map-card')];
 }
 
+/**
+ * Appuie sur une touche de la fenêtre — Échap annule le compte à rebours et
+ * ramène à l'écran des maps, ce qui permet d'enchaîner les cartes cliquées.
+ */
+async function press(key) {
+  await act(async () => {
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  });
+}
+
+/** Un clic sur une carte lance sa partie : le compte à rebours doit apparaître. */
+async function clickAndCancel(assert, node, card, label = 'la carte') {
+  await act(async () => { card.click(); });
+  assert.ok(node.querySelector('.mirage-countdown-overlay'), `${label} démarre la partie au clic (compte à rebours)`);
+  assert.equal(node.querySelectorAll('.mirage-start-button').length, 0,
+    'aucun bouton « LANCER » n’a été nécessaire');
+  await press('Escape');
+  assert.ok(node.querySelector('.mirage-intro-overlay.is-stage-step'), 'ÉCHAP ramène à l’écran des maps');
+}
+
 async function openMode(assert, node, label) {
   const button = modeButtons(node).find((candidate) => candidate.querySelector('strong')?.textContent === label);
   assert.ok(button, `le bouton ${label} est présent`);
@@ -143,6 +168,8 @@ function assertCupIntro(assert, node) {
   assert.equal(cards.length, 4, 'les quatre coupes ont chacune leur bouton de sélection');
   assert.ok(cards.every((card) => card.tagName === 'BUTTON' && card.type === 'button'),
     'chaque coupe est un vrai bouton HTML cliquable');
+  assert.ok(cards.every((card) => card.querySelector('.mirage-choice-dot').textContent !== '✓'),
+    'aucune coupe terminée : pas de ✓ vert au départ');
   assert.ok(cards.every((card) => !card.querySelector('.mirage-cup-route, .mirage-cup-stop, .mirage-cup-points')),
     'l’aperçu ne détaille ni les courses ni le barème à l’intérieur des coupes');
 
@@ -192,9 +219,10 @@ function assertCupIntro(assert, node) {
   assert.ok(raceNames.every((name) => !intro.textContent.includes(name)),
     'l’aperçu de coupe ne déroule pas les noms des courses');
   assert.ok(node.querySelector('.mirage-cup-name-field input'), 'le nom du trophée est modifiable');
-  const start = node.querySelector('.mirage-start-button');
-  assert.ok(start.textContent.includes('LANCER LA COUPE') || start.textContent.includes('CHARGEMENT'),
-    'le bouton propose « LANCER LA COUPE » (ou l’attente du rendu 3D)');
+  assert.equal(node.querySelectorAll('.mirage-start-button').length, 0,
+    'aucun bouton de lancement : le clic sur une coupe la démarre');
+  assert.match(node.querySelector('.mirage-picker-hint')?.textContent ?? '', /TOUCHE UNE COUPE/,
+    'la consigne annonce qu’un clic sur une coupe la lance');
   assert.ok(node.querySelector('.mirage-game-brand').textContent.includes('COUPE · PARCOURS IMPOSÉS'),
     'le bandeau de zone reste générique dans l’aperçu de coupe');
   const hint = node.querySelector('.mirage-overlay-hint').textContent;
@@ -278,26 +306,34 @@ export async function checkMirageFlow(assert) {
       'le titre annonce la ruée');
     let maps = assertTenMaps(assert, page.node);
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true', 'les Dunes de l’Écho sont sélectionnées par défaut');
-    assert.ok(page.node.querySelector('.mirage-start-button'), 'le bouton de lancement apparaît sur l’écran des maps');
-    assert.ok(page.node.querySelector('.mirage-start-button').textContent.includes('LANCER LA PARTIE') || page.node.querySelector('.mirage-start-button').textContent.includes('CHARGEMENT'),
-      'le bouton propose « LANCER LA PARTIE » (ou l’attente du rendu 3D)');
+    assert.equal(page.node.querySelectorAll('.mirage-start-button').length, 0,
+      'aucun bouton « LANCER LA PARTIE » : la carte est le bouton');
+    assert.ok(page.node.querySelector('.mirage-picker-hint'), 'la consigne de l’écran des maps est affichée');
 
     // Au départ, seules les 3 premières cartes sont débloquées ; les cartes 4 à 10 sont bloquées par un cadenas.
-    for (const card of maps.slice(0, 3)) {
+    // Chaque clic démarre puis est annulé (ÉCHAP) : l'écran des maps est
+    // remonté à chaque retour, on relit donc les cartes à chaque tour.
+    for (let index = 0; index < 3; index += 1) {
+      const card = mapCards(page.node)[index];
+      const name = card.querySelector('.mirage-map-copy strong').textContent;
       assert.equal(card.disabled, false, 'les 3 premières cartes sont débloquées au départ');
       assert.equal(card.classList.contains('is-locked'), false);
       assert.equal(card.querySelector('.mirage-map-lock'), null);
-      await act(async () => { card.click(); });
-      assert.equal(card.getAttribute('aria-pressed'), 'true', 'chaque carte débloquée est sélectionnable');
-      assert.equal(maps.filter((map) => map.getAttribute('aria-pressed') === 'true').length, 1,
+      assert.equal(card.querySelector('.mirage-map-selected').textContent.trim(), 'JOUER',
+        'la carte annonce ce que fait un clic : elle lance la partie');
+      await clickAndCancel(assert, page.node, card, name);
+      assert.equal(mapCards(page.node)[index].getAttribute('aria-pressed'), 'true', 'le terrain joué reste sélectionné');
+      assert.equal(mapCards(page.node).filter((map) => map.getAttribute('aria-pressed') === 'true').length, 1,
         'un seul terrain sélectionné à la fois');
     }
-    for (const lockedCard of maps.slice(3)) {
+    for (const lockedCard of mapCards(page.node).slice(3)) {
       assert.equal(lockedCard.disabled, true, 'les cartes 4 à 10 sont verrouillées au départ');
       assert.equal(lockedCard.classList.contains('is-locked'), true);
       assert.equal(lockedCard.querySelector('.mirage-map-lock')?.textContent, '🔒', 'un cadenas bloque la miniature');
       await act(async () => { lockedCard.click(); });
       assert.equal(lockedCard.getAttribute('aria-pressed'), 'false', 'cliquer une carte verrouillée ne la sélectionne pas');
+      assert.equal(page.node.querySelectorAll('.mirage-countdown-overlay').length, 0,
+        'une carte verrouillée ne lance aucune partie');
     }
 
     /* ---------------- 4. Retour puis clic DUEL : maps + consignes ------- */
@@ -311,8 +347,10 @@ export async function checkMirageFlow(assert) {
     assert.ok(stageIntro.classList.contains('is-stage-step'), 'cliquer DUEL ouvre lui aussi l’écran des maps');
     assert.ok(stageIntro.querySelector('h2').textContent.includes('À TOI DE'),
       'le titre annonce le duel');
-    assert.ok(page.node.querySelector('.mirage-start-button').textContent.includes('LANCER LE DUEL') || page.node.querySelector('.mirage-start-button').textContent.includes('CHARGEMENT'),
-      'le bouton propose « LANCER LE DUEL » après le choix DUEL');
+    assert.equal(page.node.querySelectorAll('.mirage-start-button').length, 0,
+      'le duel se lance au clic sur une carte, sans bouton « LANCER LE DUEL »');
+    assert.match(page.node.querySelector('.mirage-picker-hint').textContent, /LE DUEL DÉMARRE/,
+      'la consigne annonce un départ immédiat au clic');
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('LE PLUS RAPIDE GAGNE'),
       'les consignes du duel apparaissent sur l’écran des maps');
     const keyPowerIcons = [...page.node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
@@ -348,9 +386,17 @@ export async function checkMirageFlow(assert) {
       'le mode En ligne est rappelé sur l’écran des maps');
     assert.ok(onlineIntro.querySelector('h2').textContent.includes('CHOISIS'),
       'le titre invite à choisir la map du salon');
-    assertTenMaps(assert, page.node);
-    assert.ok(page.node.querySelector('.mirage-start-button').textContent.includes('OUVRIR LES SALONS'),
-      'le bouton En ligne ouvre le lobby après le choix de map');
+    const onlineMaps = assertTenMaps(assert, page.node);
+    assert.equal(page.node.querySelectorAll('.mirage-start-button').length, 0,
+      'plus de bouton « OUVRIR LES SALONS » : la map ouvre le lobby');
+    assert.equal(onlineMaps[0].querySelector('.mirage-map-selected').textContent.trim(), 'OUVRIR LE SALON',
+      'la carte En ligne annonce qu’elle ouvre le salon');
+    assert.match(page.node.querySelector('.mirage-picker-hint').textContent, /LE SALON S’OUVRE/,
+      'la consigne annonce l’ouverture du salon au clic');
+    const thirdMap = onlineMaps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Plaines d’Or');
+    await act(async () => { thirdMap.click(); });
+    assert.ok(page.node.querySelector('.mirage-heading.has-mode-tabs'),
+      'toucher une map En ligne ouvre le lobby, sans bouton intermédiaire');
   } finally {
     await page.unmount();
   }
@@ -390,8 +436,12 @@ export async function checkMirageFlow(assert) {
     assert.ok(intro.querySelector('.mirage-selected-mode-pill')?.textContent.includes('DUEL'),
       'le mode DUEL est rappelé sur le défi');
     const lockedMaps = assertTenMaps(assert, challenged.node);
-    assert.ok(lockedMaps.every((card) => card.disabled),
-      'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
+    const imposedCard = lockedMaps.find((card) => card.classList.contains('is-imposed'));
+    assert.ok(imposedCard, 'la carte imposée par le défi est mise en avant');
+    assert.equal(imposedCard.disabled, false,
+      'la carte imposée reste jouable : c’est elle qui lance le duel');
+    assert.ok(lockedMaps.filter((card) => card !== imposedCard).every((card) => card.disabled),
+      'les autres cartes restent verrouillées : le stage est imposé par le défi');
     await act(async () => { lockedMaps[0].click(); });
     assert.equal(lockedMaps.find((card) => card.getAttribute('aria-pressed') === 'true')
       ?.querySelector('.mirage-map-copy strong')?.textContent, 'Plaines d’Or',
@@ -400,12 +450,9 @@ export async function checkMirageFlow(assert) {
       'l’encart précise que le stage est imposé');
     assert.ok(intro.querySelector('h2').textContent.includes('À TOI DE'),
       'le titre est en mode duel');
-    const start = challenged.node.querySelector('.mirage-start-button');
-    assert.ok(start, 'le bouton de lancement du défi est disponible sur l’écran des maps');
-    assert.ok(start.textContent.includes('LANCER LE DUEL') || start.textContent.includes('CHARGEMENT'),
-      'le bouton propose « LANCER LE DUEL » (ou l’attente du rendu 3D)');
     assert.ok(challenged.node.querySelector('.mirage-overlay-hint').textContent.includes('LE PLUS RAPIDE GAGNE'),
       'les consignes du duel sont révélées dès l’arrivée sur le lien');
+    await clickAndCancel(assert, challenged.node, imposedCard, 'la carte imposée');
     assert.ok(challenged.node.querySelector('.mirage-game-brand').textContent.includes('PLAINES D’OR'),
       'le stage du défi (ZONE 03 · Plaines d’Or) est bien appliqué');
   } finally {
@@ -537,9 +584,20 @@ export async function checkMirageFlow(assert) {
     const mapsAfterThree = assertTenMaps(assert, stageFourPage.node);
     assert.equal(mapsAfterThree[3].disabled, false, 'finir les 3 premières cartes en 1ᵉʳ débloque la 4ᵉ (Costa Omertà)');
     assert.equal(mapsAfterThree[3].classList.contains('is-locked'), false);
+    // Les maps finies en 1ʳᵉ place portent un ✓ vert, jouables ou non.
+    for (const wonCard of mapsAfterThree.slice(0, 3)) {
+      assert.equal(wonCard.classList.contains('is-won'), true, 'une map finie est marquée is-won');
+      assert.equal(wonCard.querySelector('.mirage-map-check').textContent, '✓', 'une map finie porte un ✓');
+      assert.match(wonCard.querySelector('.mirage-map-selected').textContent, /✓ TERMINÉE · JOUER/,
+        'la carte finie annonce qu’on peut la rejouer');
+    }
+    assert.equal(mapsAfterThree[3].classList.contains('is-won'), false, 'une map jamais gagnée n’a pas de ✓');
+    assert.equal(mapsAfterThree[3].querySelector('.mirage-map-check').textContent, '▶',
+      'une map jouable mais jamais gagnée porte un ▶');
     for (const stillLocked of mapsAfterThree.slice(4)) {
       assert.equal(stillLocked.disabled, true, 'les cartes 5 à 10 restent verrouillées tant que la 4ᵉ n’est pas gagnée');
       assert.equal(stillLocked.classList.contains('is-locked'), true);
+      assert.equal(stillLocked.classList.contains('is-won'), false, 'une carte verrouillée ne porte pas de ✓');
     }
   } finally {
     await stageFourPage.unmount();
@@ -554,24 +612,75 @@ export async function checkMirageFlow(assert) {
   try {
     await openMode(assert, allMapsPage.node, 'RUÉE');
     const unlockedMaps = assertTenMaps(assert, allMapsPage.node);
-    for (const card of unlockedMaps) {
+    for (let index = 0; index < unlockedMaps.length; index += 1) {
+      const card = mapCards(allMapsPage.node)[index];
       assert.equal(card.disabled, false, 'toutes les cartes sont débloquées après avoir gagné les 9 premières');
       await act(async () => { card.click(); });
-      assert.equal(card.getAttribute('aria-pressed'), 'true', 'chaque miniature débloquée permet de sélectionner son terrain');
+      assert.ok(allMapsPage.node.querySelector('.mirage-countdown-overlay'),
+        'chaque miniature débloquée lance sa partie au clic');
+      await press('Escape');
+      assert.equal(mapCards(allMapsPage.node)[index].getAttribute('aria-pressed'), 'true', 'le terrain joué reste sélectionné');
     }
-    const algerCard = unlockedMaps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
+    const algerCard = mapCards(allMapsPage.node)
+      .find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
     await act(async () => { algerCard.click(); });
     assert.ok(allMapsPage.node.querySelector('.mirage-game-brand').textContent.includes('ALGER LA BLANCHE'),
       'choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA BLANCHE)');
-    const snakewayCard = unlockedMaps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Chemin du Serpent');
+    await press('Escape');
+    const snakewayCard = mapCards(allMapsPage.node)
+      .find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Chemin du Serpent');
     await act(async () => { snakewayCard.click(); });
     assert.ok(allMapsPage.node.querySelector('.mirage-game-brand').textContent.includes('CHEMIN DU SERPENT'),
       'choisir la 10ᵉ map débloquée met à jour le bandeau (ZONE 10 · CHEMIN DU SERPENT)');
-    assert.ok(allMapsPage.node.querySelector('.mirage-intro-overlay p').textContent.includes('Dragon Ball Z'),
+    await press('Escape');
+    assert.ok(allMapsPage.node.querySelector('.mirage-intro-overlay .mirage-stage-description').textContent.includes('Dragon Ball Z'),
       'la description de la map signale clairement son inspiration');
+    const tickedMaps = mapCards(allMapsPage.node);
+    assert.equal(tickedMaps.filter((card) => card.querySelector('.mirage-map-check').textContent === '✓').length, 9,
+      'les neuf maps gagnées portent leur ✓ vert');
+    assert.equal(tickedMaps.filter((card) => card.classList.contains('is-won')).length, 9,
+      'la carte jamais gagnée (Chemin du Serpent) reste sans ✓');
+    assert.equal(tickedMaps[9].querySelector('.mirage-map-check').textContent, '●',
+      'la carte sélectionnée mais jamais gagnée ne porte pas de ✓');
   } finally {
     await allMapsPage.unmount();
     if (savedBeforeMaps === null) window.localStorage.removeItem(PROGRESSION_KEY);
     else window.localStorage.setItem(PROGRESSION_KEY, savedBeforeMaps);
+  }
+
+  /* ------- 10. Coupes terminées : ✓ vert, et un clic les relance --------- */
+  const savedBeforeCups = window.localStorage.getItem(PROGRESSION_KEY);
+  window.localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+    xp: 0, runs: 6, coins: 60, skinId: 'desert', ownedSkins: [],
+    wonStages: ['desert', 'western', 'prairie'],
+    completedCups: ['desert', 'winds'],
+  }));
+  const cupsPage = await mountPage('/jeu?mode=cup');
+  try {
+    const desertCup = cupsPage.node.querySelector('.mirage-cup-card.is-desert');
+    const windsCup = cupsPage.node.querySelector('.mirage-cup-card.is-winds');
+    const tourCup = cupsPage.node.querySelector('.mirage-cup-card.is-worldtour');
+    for (const [name, card] of [['Coupe du Désert', desertCup], ['Coupe des Vents', windsCup]]) {
+      assert.equal(card.classList.contains('is-completed'), true, `${name} terminée est marquée is-completed`);
+      assert.equal(card.querySelector('.mirage-choice-dot').textContent, '✓', `${name} terminée porte un ✓`);
+      assert.match(card.querySelector('.mirage-cup-card-action').textContent, /✓ TERMINÉE · REJOUER/,
+        'la carte annonce qu’un clic rejoue la coupe');
+    }
+    assert.equal(tourCup.classList.contains('is-completed'), false, 'la coupe suivante n’est pas marquée finie');
+    assert.notEqual(tourCup.querySelector('.mirage-choice-dot').textContent, '✓',
+      'une coupe jamais finie ne porte pas de ✓');
+    assert.equal(tourCup.disabled, false, 'finir deux coupes débloque la troisième');
+    await act(async () => { desertCup.click(); });
+    assert.match(cupsPage.node.querySelector('.mirage-countdown-overlay .mirage-overlay-kicker').textContent,
+      /COUPE DU DÉSERT · COURSE 1 \/ 3/,
+    'le clic sur une coupe terminée la relance aussitôt');
+    await press('Escape');
+    assert.ok(cupsPage.node.querySelector('.mirage-intro-overlay.is-stage-step'), 'ÉCHAP revient au choix de la coupe');
+    assert.equal(cupsPage.node.querySelector('.mirage-cup-card.is-desert').getAttribute('aria-pressed'), 'true',
+      'la coupe relancée reste la coupe sélectionnée');
+  } finally {
+    await cupsPage.unmount();
+    if (savedBeforeCups === null) window.localStorage.removeItem(PROGRESSION_KEY);
+    else window.localStorage.setItem(PROGRESSION_KEY, savedBeforeCups);
   }
 }

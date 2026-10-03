@@ -129,12 +129,19 @@ const details = (scope) => [...scope.querySelectorAll('.mirage-cup-row .mirage-c
 const countdownKicker = (node) => text(node.querySelector('.mirage-countdown-overlay .mirage-overlay-kicker'));
 const nextButton = (node) => node.querySelector('.mirage-cup-results .mirage-start-button');
 
-async function startCupFromIntro(node) {
-  const start = await until(() => {
-    const button = node.querySelector('.mirage-intro-overlay .mirage-start-button');
+/**
+ * Lance une coupe depuis l'écran 02 : c'est le **clic sur sa carte** qui
+ * démarre la coupe (plus de bouton « LANCER LA COUPE »). Quand le test vient
+ * déjà de cliquer la carte, la coupe est en route et l'appel ne fait rien :
+ * on ne re-clique pas une carte dont l'écran a disparu.
+ */
+async function startCupFromIntro(node, cupId = 'desert') {
+  if (!node.querySelector('.mirage-intro-overlay')) return;
+  const card = await until(() => {
+    const button = node.querySelector(`.mirage-intro-overlay .mirage-cup-card.is-${cupId}`);
     return button && !button.disabled ? button : null;
-  }, 'le bouton LANCER LA COUPE est actif');
-  await click(start);
+  }, `la carte de la coupe ${cupId} est jouable`);
+  await click(card);
 }
 
 const waitForCountdown = (node) => until(() => node.querySelector('.mirage-countdown-overlay'), 'le compte à rebours');
@@ -427,8 +434,9 @@ export async function checkMirageCup(assert) {
     assert.equal(text(windsCard.querySelector('.mirage-cup-reward-copy > strong')), '+30 OR');
     const windsIcon = windsCard.querySelector('svg').innerHTML;
     await click(windsCard);
-    assert.equal(windsCard.getAttribute('aria-pressed'), 'true');
-    await startCupFromIntro(tour.node);
+    assert.match(countdownKicker(tour.node), /COUPE DES VENTS · COURSE 1 \/ 3/,
+      'le clic sur la carte démarre la Coupe des Vents (compte à rebours)');
+    await startCupFromIntro(tour.node); // déjà lancée : la carte n’est plus à l’écran
 
     const windStages = ['sardinia', 'alger', 'snakeway'];
     let windsResults;
@@ -475,8 +483,9 @@ export async function checkMirageCup(assert) {
     const tourIcon = tourCard.querySelector('svg').innerHTML;
     assert.match(text(tourCard.querySelector('.mirage-cup-card-title small')), /Globe des Horizons/);
     await click(tourCard);
-    assert.equal(tourCard.getAttribute('aria-pressed'), 'true');
-    await startCupFromIntro(tour.node);
+    assert.match(countdownKicker(tour.node), /COUPE GRAND TOUR · COURSE 1 \/ 4/,
+      'le clic sur la carte démarre le Grand Tour (compte à rebours)');
+    await startCupFromIntro(tour.node); // déjà lancé : la carte n’est plus à l’écran
     const stages = ['sardinia', 'alger', 'japan', 'airbase'];
     let results;
     for (let race = 0; race < stages.length; race++) {
