@@ -56,6 +56,12 @@ try {
 
   // ── 1. Porte nord du camp : réellement ouverte ────────────────────────
   const walls = models.makeWalls(17, 3.4, 1);
+  const masonryFace = walls.group.children.find((o) => o.isMesh && o.material?.map && o.material?.normalMap);
+  assert.ok(masonryFace, 'les murs du camp utilisent leur texture de pierre');
+  assert.equal(masonryFace.material.map.colorSpace, THREE.SRGBColorSpace,
+    'la texture de pierre est décodée en sRGB');
+  assert.equal(masonryFace.material.color.getHex(), 0xffffff,
+    'la couleur de la pierre vient de la texture, sans tint multiplicatif qui noircit le mur');
   assert.ok(!blocked(0, -17, walls.colliders), 'porte nord du camp libre');
   assert.ok(!blocked(1.6, -17, walls.colliders) && !blocked(-1.6, -17, walls.colliders), 'ouverture de 4 m');
   assert.ok(blocked(3.2, -17, walls.colliders) && blocked(-9, -17, walls.colliders), 'le reste du mur tient');
