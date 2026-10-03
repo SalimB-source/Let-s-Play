@@ -99,7 +99,11 @@ function makeWorld(mount, callbacks) {
   scene.environmentIntensity = 0.32;
 
   // ── Lumière : lune clé (ombres) + contre-jour froid + sources chaudes
-  const hemi = new THREE.HemisphereLight(0x303967, 0x0a0818, 0.62);
+  // Fill global de nuit : assez de lumière ambiante pour garder les pierres
+  // lisibles même sur les faces à l'opposé de la lune. Sans ce niveau commun,
+  // les matériaux en ombre tombent à zéro et ressemblent à des murs noirs.
+  const hemi = new THREE.HemisphereLight(0x6979a7, 0x363248, 1.05);
+  hemi.name = 'souls-shadow-fill';
   scene.add(hemi);
   const moonLight = new THREE.DirectionalLight(0x8a93ca, 0.92);
   moonLight.position.set(-16, 24, -13);

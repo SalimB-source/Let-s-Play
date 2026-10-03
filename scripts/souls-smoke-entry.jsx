@@ -214,7 +214,16 @@ try {
   const paving = scene.getObjectByName('forecourt-paving');
   const campWalls = scene.getObjectByName('camp-wall-ring');
   const campGate = campWalls?.getObjectByName('camp-gate-open-arch');
+  const masonryFace = campWalls?.children.find((o) => o.isMesh && o.material?.map && o.material?.normalMap);
+  const shadowFill = scene.getObjectByName('souls-shadow-fill');
   const luminance = (color) => color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
+  if (!masonryFace || masonryFace.material.color.getHex() !== 0xffffff
+    || masonryFace.material.map.colorSpace !== THREE.SRGBColorSpace) {
+    fail('MUR DE LA COUR TROP ASSOMBRI', masonryFace?.material.color.getHexString());
+  }
+  if (!shadowFill?.isHemisphereLight || shadowFill.intensity < 1.0) {
+    fail('ÉCLAIRAGE AMBIANT TROP FAIBLE', shadowFill?.intensity);
+  }
   const roadRibbon = road?.getObjectByName('flush-stone-road');
   if (!road || !roadRibbon || road.children.length !== 1
     || roadRibbon.geometry.type !== 'ShapeGeometry'
@@ -225,6 +234,8 @@ try {
   if (!forecourt || !paving) fail('PARVIS ABSENT');
   if (!campGate || campWalls.getObjectByName('camp-gate-lintel')
     || campWalls.getObjectByName('camp-gate-portcullis')
+    || campGate.material.map
+    || campGate.material.emissiveIntensity < 0.45
     || luminance(campGate.material.color) < 0.45) {
     fail('PORTAIL DE COUR EN PLAQUE', campGate?.name);
   }

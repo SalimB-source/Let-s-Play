@@ -478,9 +478,13 @@ export function makeWalls(half = 17, height = 3.4, thickness = 1) {
   const blockers = [];
   const colliders = [];
   const { map, normalMap } = masonryMaps(6);
+  // La texture masonry contient déjà les couleurs sRGB de la pierre. Un
+  // tint gris ici multipliait son albedo linéaire par ~0,33 : les murs de la
+  // cour retombaient presque au noir sous la lumière nocturne, surtout autour
+  // de la sortie. Laisser la texture porter seule la couleur.
   const wallMat = new THREE.MeshStandardMaterial({
     map, normalMap, normalScale: new THREE.Vector2(1.35, 1.35),
-    roughness: 0.92, color: 0x9d9aa8,
+    roughness: 0.92, color: 0xffffff,
   });
   const trimMat = mat(SOULS_PALETTE.stoneDark, { roughness: 0.88 });
   const stoneMat = mat(SOULS_PALETTE.stone, { roughness: 0.86 });
@@ -581,11 +585,15 @@ export function makeWalls(half = 17, height = 3.4, thickness = 1) {
   // ── Porte nord : arcade OUVERTE. La herse et le linteau cubique ont été
   // retirés : ils ne faisaient pas partie des colliders du passage et se
   // lisaient comme une plaque noire traversable au portail de la cour.
-  const gateMat = animeMaterial('stone', {
+  // L'arche est juste un cadre ouvert : ne pas lui coller la texture toon
+  // sombre de la pierre (qui multipliait le bleu clair par un albedo bas et
+  // rendait l'entrée noire). Une pierre claire, légèrement émissive, reste
+  // lisible même dans l'ombre de la cour.
+  const gateMat = new THREE.MeshStandardMaterial({
     color: 0xb9c5e4,
-    emissive: 0x10182a,
-    emissiveIntensity: 0.24,
-    tile: 1.8,
+    emissive: 0x5d6487,
+    emissiveIntensity: 0.5,
+    roughness: 0.88,
   });
   const archBig = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.22, 10, 26, Math.PI), gateMat);
   archBig.name = 'camp-gate-open-arch';
@@ -597,7 +605,6 @@ export function makeWalls(half = 17, height = 3.4, thickness = 1) {
     jamb.position.set(side * 2.12, 1.05, -half + 0.55);
     track(jamb);
   }
-
   // ── Tours d'angle : cylindres ronds + toits en cône + machicolations
   const towerPositions = [
     [-half, -half], [half, -half], [-half, half], [half, half],
