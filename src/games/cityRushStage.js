@@ -198,10 +198,10 @@ export function makeSkyline(city, theme, random) {
 }
 
 // ─── Route ─────────────────────────────────────────────────────────────────
-// Fenêtre de route rendue autour du joueur. Elle dépasse largement la portée
-// de la brume vers l'avant et garde quelques mètres derrière la caméra, ce qui
-// évite toute ouverture visible lorsque la piste dessine un léger S.
-const ROAD_VIEW_BEHIND = 72;
+// Fenêtre de route rendue autour du joueur. Les écarts de piste sont signés :
+// une valeur négative couvre bien l'arrière de la caméra. Elle dépasse ensuite
+// largement la portée de la brume vers l'avant, sans ouverture dans un S.
+const ROAD_VIEW_BEHIND = -72;
 const ROAD_VIEW_AHEAD = 390;
 const ROAD_CURVE_SEGMENTS = 112;
 
