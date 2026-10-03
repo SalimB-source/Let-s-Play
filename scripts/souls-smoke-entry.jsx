@@ -249,17 +249,37 @@ const assertAnimatedTwoHandGrip = (label) => {
     fail('PRISE À DEUX MAINS PERDUE EN ANIMATION', `${label} : droite = ${rightGap.toFixed(3)} m, gauche = ${leftGap.toFixed(3)} m`);
   }
 };
+const glaiveDiagonalPose = () => {
+  const p = world.debug.warrior.userData.parts;
+  return { x: p.weaponMount.position.x, y: p.weaponMount.position.y, roll: p.weapon.rotation.z };
+};
+const assertWideDiagonal = (windup, strike) => {
+  // Vue arrière par défaut : droite-haute → gauche-basse. Ce seuil protège
+  // un vrai trait en diagonale, pas un petit balancement de quelques degrés.
+  if (strike.x > windup.x - 0.22 || strike.y > windup.y - 0.30 || strike.roll < windup.roll + 1.15) {
+    fail('ATTAQUE DIAGONALE TROP COURTE', `charge = ${JSON.stringify(windup)}, frappe = ${JSON.stringify(strike)}`);
+  }
+};
 try {
   world.start();
   const home = { x: world.debug.state.x, z: world.debug.state.z };
   fire('keydown', 'KeyJ');              // attaque légère
-  for (let i = 0; i < 12; i++) stepFrame();
-  assertAnimatedTwoHandGrip('attaque légère');
-  for (let i = 12; i < 60; i++) stepFrame();
+  for (let i = 0; i < 8; i++) stepFrame();
+  const lightWindup = glaiveDiagonalPose();
+  assertAnimatedTwoHandGrip('charge légère');
+  for (let i = 8; i < 16; i++) stepFrame();
+  const lightStrike = glaiveDiagonalPose();
+  assertAnimatedTwoHandGrip('frappe légère');
+  assertWideDiagonal(lightWindup, lightStrike);
+  for (let i = 16; i < 60; i++) stepFrame();
   fire('keydown', 'KeyK');              // attaque lourde
-  for (let i = 0; i < 12; i++) stepFrame();
-  assertAnimatedTwoHandGrip('attaque lourde');
-  for (let i = 12; i < 35; i++) stepFrame();
+  for (let i = 0; i < 18; i++) stepFrame();
+  const heavyWindup = glaiveDiagonalPose();
+  assertAnimatedTwoHandGrip('charge lourde');
+  for (let i = 18; i < 36; i++) stepFrame();
+  const heavyStrike = glaiveDiagonalPose();
+  assertAnimatedTwoHandGrip('frappe lourde');
+  assertWideDiagonal(heavyWindup, heavyStrike);
   fire('keydown', 'Space');             // esquive en fin de récupération (annulation)
   for (let i = 0; i < 40; i++) stepFrame();
   fire('keydown', 'Tab');               // lock-on (hors portée ici : cible null)

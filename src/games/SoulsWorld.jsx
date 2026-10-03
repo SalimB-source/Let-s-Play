@@ -385,6 +385,11 @@ function makeWorld(mount, callbacks) {
   // ── Joueur : le Gardien Chitine, guerrier insecte anime ───────────
   const warrior = makeInsectWarrior();
   const parts = warrior.userData.parts;
+  // Référence immuable de la garde centrale. Les attaques déplacent le pivot
+  // autour de cette pose puis y reviennent sans réintroduire une arme latérale.
+  const glaiveMountRest = parts.weaponMount
+    ? { x: parts.weaponMount.position.x, y: parts.weaponMount.position.y, z: parts.weaponMount.position.z }
+    : null;
   const state = createRunState({ x: 0, z: 6.5 });
   warrior.position.set(state.x, 0, state.z);
   scene.add(warrior);
@@ -1327,6 +1332,12 @@ function makeWorld(mount, callbacks) {
     let tWeaponX = parts.weaponMount
       ? 0.06 + runFactor * 0.025 + (moving ? Math.abs(sL) * 0.014 * runFactor : 0)
       : 0.1 + runFactor * 0.08 + (moving ? Math.abs(sL) * 0.03 * runFactor : 0);
+    // Le pivot translate la garde pendant la frappe : c'est ce déplacement
+    // poitrine-haute → hanche-opposée qui rend le diagonal ample, au lieu
+    // d'une simple petite rotation sur place.
+    let tWeaponMountX = glaiveMountRest?.x ?? 0;
+    let tWeaponMountY = glaiveMountRest?.y ?? 0;
+    let tWeaponMountZ = glaiveMountRest?.z ?? 0;
 
     // ── Poses de combat M1 (réécrivent les cibles du cycle de foulée) ─
     const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -1389,23 +1400,43 @@ function makeWorld(mount, callbacks) {
       const uR = smooth(rawR);
       const uRArm = smooth(clamp01((t - spec.windup - spec.active - 0.03)
         / Math.max(0.05, spec.recover * 0.85)));
-      // La hampe reste sur son pivot de poitrine. On ne la rend jamais à
-      // l'ancien angle latéral : le coup est une petite fauchée de la garde
-      // levée, suivie par les deux mains via leurs repères de prise.
-      if (parts.weaponMount) {
-        const windupLean = over ? 0.42 : 0.28;
-        const strikeLean = over ? -0.48 : -0.34;
-        const windupPitch = over ? 0.19 : 0.12;
-        const strikePitch = over ? -0.15 : -0.09;
+      // Grand diagonal : la lame se charge haut à droite puis traverse
+      // franchement vers la hanche gauche. Le pivot suit lui aussi cette
+      // diagonale (pas une rotation décorative sur place), tandis que les deux
+      // repères de prise restent solidaires de la même hampe.
+      if (parts.weaponMount && glaiveMountRest) {
+        const windup = {
+          x: glaiveMountRest.x + (over ? 0.16 : 0.12),
+          y: glaiveMountRest.y + (over ? 0.23 : 0.20),
+          z: glaiveMountRest.z - (over ? 0.07 : 0.05),
+          roll: raisedWeaponZ - (over ? 0.90 : 0.72),
+          pitch: over ? 0.28 : 0.22,
+        };
+        const strike = {
+          x: glaiveMountRest.x - (over ? 0.17 : 0.14),
+          y: glaiveMountRest.y - (over ? 0.20 : 0.18),
+          z: glaiveMountRest.z - (over ? 0.06 : 0.04),
+          roll: raisedWeaponZ + (over ? 1.00 : 0.78),
+          pitch: over ? -0.22 : -0.15,
+        };
         if (t < spec.windup) {
-          tWeaponZ = mix(tWeaponZ, raisedWeaponZ + windupLean, uW);
-          tWeaponX = mix(tWeaponX, 0.06 + windupPitch, uW);
+          tWeaponMountX = mix(glaiveMountRest.x, windup.x, uW);
+          tWeaponMountY = mix(glaiveMountRest.y, windup.y, uW);
+          tWeaponMountZ = mix(glaiveMountRest.z, windup.z, uW);
+          tWeaponZ = mix(tWeaponZ, windup.roll, uW);
+          tWeaponX = mix(tWeaponX, windup.pitch, uW);
         } else if (t < spec.windup + spec.active) {
-          tWeaponZ = mix(raisedWeaponZ + windupLean, raisedWeaponZ + strikeLean, uArm);
-          tWeaponX = mix(0.06 + windupPitch, 0.06 + strikePitch, uArm);
+          tWeaponMountX = mix(windup.x, strike.x, uArm);
+          tWeaponMountY = mix(windup.y, strike.y, uArm);
+          tWeaponMountZ = mix(windup.z, strike.z, uArm);
+          tWeaponZ = mix(windup.roll, strike.roll, uArm);
+          tWeaponX = mix(windup.pitch, strike.pitch, uArm);
         } else {
-          tWeaponZ = mix(raisedWeaponZ + strikeLean, tWeaponZ, uR);
-          tWeaponX = mix(0.06 + strikePitch, tWeaponX, uR);
+          tWeaponMountX = mix(strike.x, glaiveMountRest.x, uR);
+          tWeaponMountY = mix(strike.y, glaiveMountRest.y, uR);
+          tWeaponMountZ = mix(strike.z, glaiveMountRest.z, uR);
+          tWeaponZ = mix(strike.roll, tWeaponZ, uR);
+          tWeaponX = mix(strike.pitch, tWeaponX, uR);
         }
       }
       if (t < spec.windup) {
@@ -1617,8 +1648,24 @@ function makeWorld(mount, callbacks) {
     aim(parts.head.rotation, 'x', tHeadPitch, poseRate(9));
     aim(parts.cape.rotation, 'x', tCape, 7);
     aim(parts.cape.rotation, 'z', tCapeZ, 6);
-    aim(parts.weapon.rotation, 'z', tWeaponZ, 9);
-    aim(parts.weapon.rotation, 'x', tWeaponX, 9);
+    if (parts.weaponMount && glaiveMountRest) {
+      if (atkPose) {
+        // Les keyframes sont déjà lissées par `smooth` : les appliquer
+        // directement préserve l'ampleur du trait à l'instant de l'impact.
+        parts.weaponMount.position.set(tWeaponMountX, tWeaponMountY, tWeaponMountZ);
+        parts.weapon.rotation.z = tWeaponZ;
+        parts.weapon.rotation.x = tWeaponX;
+      } else {
+        aim(parts.weaponMount.position, 'x', tWeaponMountX, poseRate(13));
+        aim(parts.weaponMount.position, 'y', tWeaponMountY, poseRate(13));
+        aim(parts.weaponMount.position, 'z', tWeaponMountZ, poseRate(13));
+        aim(parts.weapon.rotation, 'z', tWeaponZ, poseRate(13));
+        aim(parts.weapon.rotation, 'x', tWeaponX, poseRate(13));
+      }
+    } else {
+      aim(parts.weapon.rotation, 'z', tWeaponZ, 9);
+      aim(parts.weapon.rotation, 'x', tWeaponX, 9);
+    }
 
     // ── Chute du Gardien Chitine : il s'effondre en arrière, puis l'écran de
     // mort prend la main (le monde reste rendu derrière, figé).
