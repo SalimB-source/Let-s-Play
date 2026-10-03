@@ -173,16 +173,21 @@ try {
 }
 console.log('240 frames OK — ready =', readyFired, '| hud samples =', hudSamples.length);
 
-// Garde du glaive : les deux vraies paumes rejoignent deux points de la
-// même hampe. La garde doit être centrale, levée et devant le thorax : ce
+// Garde de l’épée : les deux vraies paumes rejoignent deux points de la
+// même poignée. La garde doit être centrale, levée et devant le thorax : ce
 // contrôle prévient le retour d'une arme latérale ou d'une fausse main.
 try {
   const p = world.debug.warrior.userData.parts;
   if (!p.weaponMount || !p.rightGrip || !p.offhandGrip) {
     fail('GARDE À DEUX MAINS ABSENTE — pivot central ou poignées manquants');
   }
+  if (p.weapon.name !== 'two-handed-chitin-sword'
+    || !p.weapon.getObjectByName('two-handed-sword-blade')
+    || !p.weapon.getObjectByName('two-handed-sword-long-hilt')) {
+    fail('ÉPÉE À DEUX MAINS ABSENTE — lame droite ou poignée longue manquante');
+  }
   if (p.weapon.parent !== p.weaponMount) {
-    fail('GLAIVE HORS DU PIVOT CENTRAL — l’arme ne doit pas être attachée à un coude');
+    fail('ÉPÉE HORS DU PIVOT CENTRAL — l’arme ne doit pas être attachée à un coude');
   }
   world.debug.warrior.updateMatrixWorld(true);
   const palmLocal = new THREE.Vector3(0, -0.3, 0);
@@ -202,7 +207,7 @@ try {
   p.weaponMount.getWorldPosition(mountWorld);
   const mountInTorso = p.torso.worldToLocal(mountWorld.clone());
   if (Math.abs(mountInTorso.x) > 0.09 || mountInTorso.z > -0.17 || mountInTorso.y < 0.22) {
-    fail('GLAIVE NON CENTRAL OU NON FRONTAL', `pivot thorax = ${mountInTorso.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+    fail('ÉPÉE NON CENTRALE OU NON FRONTALE', `pivot thorax = ${mountInTorso.toArray().map((v) => v.toFixed(3)).join(', ')}`);
   }
 
   const elbowL = p.torso.worldToLocal(p.elbowL.getWorldPosition(new THREE.Vector3()));
@@ -213,7 +218,7 @@ try {
     fail('COUDES HORS DE LA GARDE FRONTALE', `gauche = ${elbowL.toArray().map((v) => v.toFixed(3)).join(', ')}, droite = ${elbowR.toArray().map((v) => v.toFixed(3)).join(', ')}`);
   }
   if (leftPalm.x >= 0 || rightPalm.x <= 0) {
-    fail('BRAS CROISÉS DEVANT LE GLAIVE', `paume gauche x = ${leftPalm.x.toFixed(3)}, droite x = ${rightPalm.x.toFixed(3)}`);
+    fail('BRAS CROISÉS DEVANT L’ÉPÉE', `paume gauche x = ${leftPalm.x.toFixed(3)}, droite x = ${rightPalm.x.toFixed(3)}`);
   }
 
   const weaponBox = new THREE.Box3().setFromObject(p.weapon);
@@ -224,7 +229,7 @@ try {
   console.log('Garde à deux mains OK — paumes', `${rightGap.toFixed(3)} / ${leftGap.toFixed(3)} m`,
     '| coudes frontaux', `${elbowL.z.toFixed(3)} / ${elbowR.z.toFixed(3)}`, '| lame levée.');
 } catch (e) {
-  if (/GARDE À DEUX MAINS|GLAIVE|PRISE À DEUX MAINS|COUDES|BRAS CROISÉS|LAME NON LEVÉE/.test(e?.message || '')) throw e;
+  if (/GARDE À DEUX MAINS|ÉPÉE|PRISE À DEUX MAINS|COUDES|BRAS CROISÉS|LAME NON LEVÉE/.test(e?.message || '')) throw e;
   console.error('GARDE À DEUX MAINS FAILED:', e);
   process.exit(3);
 }
@@ -249,9 +254,18 @@ const assertAnimatedTwoHandGrip = (label) => {
     fail('PRISE À DEUX MAINS PERDUE EN ANIMATION', `${label} : droite = ${rightGap.toFixed(3)} m, gauche = ${leftGap.toFixed(3)} m`);
   }
 };
-const glaiveDiagonalPose = () => {
+const swordDiagonalPose = () => {
   const p = world.debug.warrior.userData.parts;
-  return { x: p.weaponMount.position.x, y: p.weaponMount.position.y, roll: p.weapon.rotation.z };
+  return {
+    x: p.weaponMount.position.x, y: p.weaponMount.position.y,
+    z: p.weaponMount.position.z, roll: p.weapon.rotation.z,
+  };
+};
+const assertForwardStart = (rest, windup, label) => {
+  // −Z est l'avant du Gardien : la charge doit projeter l'épée vers la cible.
+  if (windup.z > rest.z - 0.085) {
+    fail('DÉPART D’ÉPÉE PAS ASSEZ FRONTAL', `${label} : repos z = ${rest.z.toFixed(3)}, charge z = ${windup.z.toFixed(3)}`);
+  }
 };
 const assertWideDiagonal = (windup, strike) => {
   // Vue arrière par défaut : droite-haute → gauche-basse. Ce seuil protège
@@ -263,21 +277,24 @@ const assertWideDiagonal = (windup, strike) => {
 try {
   world.start();
   const home = { x: world.debug.state.x, z: world.debug.state.z };
+  const swordRest = swordDiagonalPose();
   fire('keydown', 'KeyJ');              // attaque légère
   for (let i = 0; i < 8; i++) stepFrame();
-  const lightWindup = glaiveDiagonalPose();
+  const lightWindup = swordDiagonalPose();
+  assertForwardStart(swordRest, lightWindup, 'attaque légère');
   assertAnimatedTwoHandGrip('charge légère');
   for (let i = 8; i < 16; i++) stepFrame();
-  const lightStrike = glaiveDiagonalPose();
+  const lightStrike = swordDiagonalPose();
   assertAnimatedTwoHandGrip('frappe légère');
   assertWideDiagonal(lightWindup, lightStrike);
   for (let i = 16; i < 60; i++) stepFrame();
   fire('keydown', 'KeyK');              // attaque lourde
-  for (let i = 0; i < 18; i++) stepFrame();
-  const heavyWindup = glaiveDiagonalPose();
+  for (let i = 0; i < 22; i++) stepFrame();
+  const heavyWindup = swordDiagonalPose();
+  assertForwardStart(swordRest, heavyWindup, 'attaque lourde');
   assertAnimatedTwoHandGrip('charge lourde');
-  for (let i = 18; i < 36; i++) stepFrame();
-  const heavyStrike = glaiveDiagonalPose();
+  for (let i = 22; i < 36; i++) stepFrame();
+  const heavyStrike = swordDiagonalPose();
   assertAnimatedTwoHandGrip('frappe lourde');
   assertWideDiagonal(heavyWindup, heavyStrike);
   fire('keydown', 'Space');             // esquive en fin de récupération (annulation)

@@ -387,7 +387,7 @@ function makeWorld(mount, callbacks) {
   const parts = warrior.userData.parts;
   // Référence immuable de la garde centrale. Les attaques déplacent le pivot
   // autour de cette pose puis y reviennent sans réintroduire une arme latérale.
-  const glaiveMountRest = parts.weaponMount
+  const swordMountRest = parts.weaponMount
     ? { x: parts.weaponMount.position.x, y: parts.weaponMount.position.y, z: parts.weaponMount.position.z }
     : null;
   const state = createRunState({ x: 0, z: 6.5 });
@@ -457,9 +457,9 @@ function makeWorld(mount, callbacks) {
   const healMotes = makeHealMotes();
   scene.add(healMotes.points);
 
-  // Garde à deux mains : le glaive du héros reste levé au centre du thorax.
+  // Garde à deux mains : l’épée du héros reste levée au centre du thorax.
   // Les ennemis gardent leur reparentage main droite ci-dessus, mais le joueur
-  // utilise son pivot central afin que les deux bras puissent serrer la hampe.
+  // utilise son pivot central afin que les deux bras puissent serrer la poignée.
   const weaponState = { drawn: false };
   const setWeaponDrawn = (drawn) => {
     if (weaponState.drawn === drawn) return;
@@ -483,10 +483,10 @@ function makeWorld(mount, callbacks) {
   };
 
   // ── Prise à deux mains, devant le thorax ───────────────────────────
-  // Les deux paumes sont résolues vers les deux repères de la même hampe.
+  // Les deux paumes sont résolues vers les deux repères de la même poignée.
   // Le coude part vers l'extérieur ET vers l'avant (−Z local), jamais derrière
-  // les ailes : le glaive levé est une garde frontale, pas une arme de dos.
-  const lockTwoHandedGlaive = (() => {
+  // les ailes : l’épée levée est une garde frontale, pas une arme de dos.
+  const lockTwoHandedSword = (() => {
     const shoulder = new THREE.Vector3();
     const grip = new THREE.Vector3();
     const axis = new THREE.Vector3();
@@ -556,7 +556,7 @@ function makeWorld(mount, callbacks) {
       if (!weaponMount || !rightGrip || !offhandGrip || weapon.parent !== weaponMount) return false;
       torso.updateWorldMatrix(true, true);
       torso.getWorldQuaternion(torsoQuaternion);
-      // Droite basse puis gauche haute : les deux mains encadrent la hampe.
+      // Droite basse puis gauche haute : les deux mains encadrent la poignée.
       const rightHeld = solveArm(armR, elbowR, rightGrip, 1);
       torso.updateWorldMatrix(true, true);
       torso.getWorldQuaternion(torsoQuaternion);
@@ -1319,7 +1319,7 @@ function makeWorld(mount, callbacks) {
         : Math.sin(time * 0.0021) * 0.035);
     const tCapeZ = moving ? Math.sin(gaitPhase + 1.3) * 0.06 * walkIn
       : Math.sin(time * 0.0017) * 0.025;
-    // Glaive central et levé : la lame demeure devant le torse, avec une
+    // Épée centrale et levée : la lame demeure devant le torse, avec une
     // respiration discrète qui ne casse pas l'alignement des deux poignées.
     const raisedWeaponZ = Math.PI + 0.04;
     let tWeaponZ = parts.weaponMount
@@ -1335,9 +1335,9 @@ function makeWorld(mount, callbacks) {
     // Le pivot translate la garde pendant la frappe : c'est ce déplacement
     // poitrine-haute → hanche-opposée qui rend le diagonal ample, au lieu
     // d'une simple petite rotation sur place.
-    let tWeaponMountX = glaiveMountRest?.x ?? 0;
-    let tWeaponMountY = glaiveMountRest?.y ?? 0;
-    let tWeaponMountZ = glaiveMountRest?.z ?? 0;
+    let tWeaponMountX = swordMountRest?.x ?? 0;
+    let tWeaponMountY = swordMountRest?.y ?? 0;
+    let tWeaponMountZ = swordMountRest?.z ?? 0;
 
     // ── Poses de combat M1 (réécrivent les cibles du cycle de foulée) ─
     const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -1403,26 +1403,28 @@ function makeWorld(mount, callbacks) {
       // Grand diagonal : la lame se charge haut à droite puis traverse
       // franchement vers la hanche gauche. Le pivot suit lui aussi cette
       // diagonale (pas une rotation décorative sur place), tandis que les deux
-      // repères de prise restent solidaires de la même hampe.
-      if (parts.weaponMount && glaiveMountRest) {
+      // repères de prise restent solidaires de la même poignée.
+      if (parts.weaponMount && swordMountRest) {
         const windup = {
-          x: glaiveMountRest.x + (over ? 0.16 : 0.12),
-          y: glaiveMountRest.y + (over ? 0.23 : 0.20),
-          z: glaiveMountRest.z - (over ? 0.07 : 0.05),
+          x: swordMountRest.x + (over ? 0.16 : 0.12),
+          y: swordMountRest.y + (over ? 0.23 : 0.20),
+          // La lame part d'abord vers la cible (−Z), au lieu de se charger
+          // près du buste ou derrière les épaules.
+          z: swordMountRest.z - (over ? 0.10 : 0.13),
           roll: raisedWeaponZ - (over ? 0.90 : 0.72),
-          pitch: over ? 0.28 : 0.22,
+          pitch: over ? -0.32 : -0.25,
         };
         const strike = {
-          x: glaiveMountRest.x - (over ? 0.17 : 0.14),
-          y: glaiveMountRest.y - (over ? 0.20 : 0.18),
-          z: glaiveMountRest.z - (over ? 0.06 : 0.04),
+          x: swordMountRest.x - (over ? 0.17 : 0.14),
+          y: swordMountRest.y - (over ? 0.20 : 0.18),
+          z: swordMountRest.z - (over ? 0.07 : 0.06),
           roll: raisedWeaponZ + (over ? 1.00 : 0.78),
-          pitch: over ? -0.22 : -0.15,
+          pitch: over ? -0.45 : -0.35,
         };
         if (t < spec.windup) {
-          tWeaponMountX = mix(glaiveMountRest.x, windup.x, uW);
-          tWeaponMountY = mix(glaiveMountRest.y, windup.y, uW);
-          tWeaponMountZ = mix(glaiveMountRest.z, windup.z, uW);
+          tWeaponMountX = mix(swordMountRest.x, windup.x, uW);
+          tWeaponMountY = mix(swordMountRest.y, windup.y, uW);
+          tWeaponMountZ = mix(swordMountRest.z, windup.z, uW);
           tWeaponZ = mix(tWeaponZ, windup.roll, uW);
           tWeaponX = mix(tWeaponX, windup.pitch, uW);
         } else if (t < spec.windup + spec.active) {
@@ -1432,9 +1434,9 @@ function makeWorld(mount, callbacks) {
           tWeaponZ = mix(windup.roll, strike.roll, uArm);
           tWeaponX = mix(windup.pitch, strike.pitch, uArm);
         } else {
-          tWeaponMountX = mix(strike.x, glaiveMountRest.x, uR);
-          tWeaponMountY = mix(strike.y, glaiveMountRest.y, uR);
-          tWeaponMountZ = mix(strike.z, glaiveMountRest.z, uR);
+          tWeaponMountX = mix(strike.x, swordMountRest.x, uR);
+          tWeaponMountY = mix(strike.y, swordMountRest.y, uR);
+          tWeaponMountZ = mix(strike.z, swordMountRest.z, uR);
           tWeaponZ = mix(strike.roll, tWeaponZ, uR);
           tWeaponX = mix(strike.pitch, tWeaponX, uR);
         }
@@ -1648,7 +1650,7 @@ function makeWorld(mount, callbacks) {
     aim(parts.head.rotation, 'x', tHeadPitch, poseRate(9));
     aim(parts.cape.rotation, 'x', tCape, 7);
     aim(parts.cape.rotation, 'z', tCapeZ, 6);
-    if (parts.weaponMount && glaiveMountRest) {
+    if (parts.weaponMount && swordMountRest) {
       if (atkPose) {
         // Les keyframes sont déjà lissées par `smooth` : les appliquer
         // directement préserve l'ampleur du trait à l'instant de l'impact.
@@ -1708,10 +1710,10 @@ function makeWorld(mount, callbacks) {
       aim(parts.wings[1].rotation, 'z', 0.08 + flutter, 7);
     }
     // Boire et rouler demandent de lâcher les deux poignées ; dans tous les
-    // autres états, les deux vraies paumes serrent la hampe frontale.
-    const holdingGlaiveWithBothHands = !dead && combat.action !== 'drink' && combat.action !== 'dodge'
-      && lockTwoHandedGlaive(parts);
-    if (!holdingGlaiveWithBothHands) {
+    // autres états, les deux vraies paumes serrent la poignée frontale.
+    const holdingSwordWithBothHands = !dead && combat.action !== 'drink' && combat.action !== 'dodge'
+      && lockTwoHandedSword(parts);
+    if (!holdingSwordWithBothHands) {
       // Le solveur écrit des quaternions complets. Hors prise, les deux bras
       // retrouvent leurs axes historiques pour la potion, le roulé et la mort.
       parts.armL.rotation.y = 0;

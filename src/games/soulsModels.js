@@ -1868,65 +1868,90 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   cape.add(wingL, wingR);
   torso.add(cape);
 
-  // ══ Glaive-lune — garde levée au centre du thorax ==================
-  // Le héros ne le porte plus sur un côté : l'arme repose dans un pivot central
-  // devant le buste, lame vers le ciel. Les deux poignées sont sur la hampe,
-  // une pour chaque paume — une vraie garde à deux mains, lisible de profil.
+  // ══ Épée longue à deux mains — garde levée au centre du thorax ======
+  // Une vraie lame droite remplace l'arme d'hast : long pommeau, poignée assez
+  // grande pour les deux paumes et garde ailée de chitine. La géométrie de la
+  // lame est construite vers −Y puis retournée pour que la pointe reste levée.
   const weaponMount = new THREE.Group();
-  weaponMount.name = 'raised-two-hand-glaive-mount';
+  weaponMount.name = 'raised-two-hand-sword-mount';
   weaponMount.position.set(0, W(1.28), -0.29);
   weaponMount.rotation.set(0.03, 0, 0.08);
   torso.add(weaponMount);
 
   const weapon = new THREE.Group();
-  weapon.name = 'crescent-glaive';
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.035, 1.52, 10), chitinDark);
-  shaft.position.y = -0.43;
-  const shaftBandA = ring(0.041, 0.008, gold);
-  shaftBandA.position.y = 0.16;
-  const shaftBandB = ring(0.041, 0.008, gold);
-  shaftBandB.position.y = -0.77;
-  const crescentCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.34, -1.08, 0),
-    new THREE.Vector3(-0.18, -1.28, -0.004),
-    new THREE.Vector3(0.08, -1.31, -0.006),
-    new THREE.Vector3(0.28, -1.12, 0),
-    new THREE.Vector3(0.18, -0.94, 0),
-    new THREE.Vector3(-0.05, -1.0, 0),
-  ]);
-  const crescent = new THREE.Mesh(new THREE.TubeGeometry(crescentCurve, 28, 0.045, 8, false), bladeMat);
-  const edgeCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.32, -1.065, -0.018),
-    new THREE.Vector3(-0.15, -1.24, -0.02),
-    new THREE.Vector3(0.08, -1.27, -0.02),
-    new THREE.Vector3(0.25, -1.105, -0.018),
-  ]);
-  const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 20, 0.012, 5, false), edgeMat);
-  // Deux poignées textiles sur la même hampe : main droite basse, main
-  // gauche haute. L'inversion de la lame place le pommeau sous les mains.
-  const lowerGrip = capsule(0.041, 0.19, cloth);
-  lowerGrip.position.y = -0.055;
-  const upperGrip = capsule(0.043, 0.25, cloth);
-  upperGrip.position.y = 0.34;
-  const upperGripBand = ring(0.051, 0.008, gold);
-  upperGripBand.position.y = 0.205;
-  const pommel = ellipsoid(0.072, gold, 1, 1, 0.8);
-  pommel.position.y = 0.45;
-  // Repères invisibles pour les centres des deux paumes. Ils restent sur la
-  // hampe et sont suivis par le solveur des deux bras dans SoulsWorld.
+  weapon.name = 'two-handed-chitin-sword';
+  const swordBladeShape = new THREE.Shape();
+  swordBladeShape.moveTo(-0.105, -0.27);
+  swordBladeShape.lineTo(-0.145, -1.25);
+  swordBladeShape.lineTo(0, -1.54);
+  swordBladeShape.lineTo(0.145, -1.25);
+  swordBladeShape.lineTo(0.105, -0.27);
+  swordBladeShape.lineTo(0, -0.19);
+  swordBladeShape.closePath();
+  const swordBlade = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(swordBladeShape, {
+      depth: 0.052, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.008, bevelThickness: 0.008,
+    }),
+    bladeMat,
+  );
+  swordBlade.name = 'two-handed-sword-blade';
+  swordBlade.position.z = -0.026;
+
+  // Un fuller lumineux encastré et une arête centrale donnent une lecture
+  // anime nette à la lame, même dans les zones sombres de La Cendre.
+  const fullerShape = new THREE.Shape();
+  fullerShape.moveTo(-0.026, -0.36);
+  fullerShape.lineTo(-0.04, -1.19);
+  fullerShape.lineTo(0, -1.39);
+  fullerShape.lineTo(0.04, -1.19);
+  fullerShape.lineTo(0.026, -0.36);
+  fullerShape.closePath();
+  const fuller = new THREE.Mesh(new THREE.ShapeGeometry(fullerShape), edgeMat);
+  fuller.position.z = -0.037;
+  const bladeRidge = capsule(0.011, 0.94, edgeMat);
+  bladeRidge.position.set(0, -0.86, -0.047);
+
+  const guard = capsule(0.046, 0.48, gold);
+  guard.name = 'two-handed-sword-crossguard';
+  guard.rotation.z = Math.PI / 2;
+  guard.position.y = -0.27;
+  const guardCore = ellipsoid(0.074, chitinLight, 1.25, 0.54, 0.72, 14);
+  guardCore.position.y = -0.27;
+  const guardTipL = ellipsoid(0.058, gold, 1.25, 0.58, 0.8, 12);
+  guardTipL.position.set(-0.31, -0.27, 0);
+  const guardTipR = guardTipL.clone();
+  guardTipR.position.x = 0.31;
+  const collar = ring(0.073, 0.011, gold);
+  collar.position.y = -0.16;
+
+  // Poignée longue, cerclée trois fois : les deux repères de main restent
+  // exactement au centre de cette même poignée, jamais sur un décor latéral.
+  const hilt = capsule(0.048, 0.72, cloth);
+  hilt.name = 'two-handed-sword-long-hilt';
+  hilt.position.y = 0.19;
+  const gripBands = [-0.02, 0.20, 0.43].map((y) => {
+    const band = ring(0.057, 0.009, gold);
+    band.position.y = y;
+    return band;
+  });
+  const pommel = ellipsoid(0.082, gold, 0.92, 1.18, 0.82);
+  pommel.position.y = 0.65;
+  const pommelGem = ellipsoid(0.034, chitinLight, 0.82, 1, 0.42, 10);
+  pommelGem.position.set(0, 0.65, -0.068);
+
+  // Repères invisibles pour les centres des deux vraies paumes. La rotation
+  // de π lève la pointe ; X est donc inversé pour conserver chaque main de
+  // son côté du corps dans la garde de repos.
   const rightGrip = new THREE.Object3D();
-  rightGrip.name = 'glaive-right-hand-grip';
-  // La hampe est retournée de π pour lever la lame : on inverse aussi X
-  // ici afin que la main droite reste à droite et la gauche à gauche dans
-  // l'espace monde, sans croiser les bras devant le masque.
+  rightGrip.name = 'sword-right-hand-grip';
   rightGrip.position.set(-0.042, 0.30, 0.012);
   const offhandGrip = new THREE.Object3D();
-  offhandGrip.name = 'glaive-left-hand-grip';
+  offhandGrip.name = 'sword-left-hand-grip';
   offhandGrip.position.set(0.042, -0.06, 0.012);
-  weapon.add(shaft, shaftBandA, shaftBandB, crescent, edge,
-    lowerGrip, upperGrip, upperGripBand, pommel, rightGrip, offhandGrip);
+  weapon.add(swordBlade, fuller, bladeRidge, guard, guardCore, guardTipL, guardTipR,
+    collar, hilt, ...gripBands, pommel, pommelGem, rightGrip, offhandGrip);
   weapon.scale.setScalar(0.85);
-  // π : le croissant anciennement sous la main devient la lame levée.
+  // π : la lame dessinée vers −Y devient une épée pointe vers le ciel.
   weapon.rotation.set(0.06, 0, Math.PI + 0.04);
   weapon.traverse((mesh) => { if (mesh.isMesh) mesh.userData.cameraBlocker = true; });
   weaponMount.add(weapon);
