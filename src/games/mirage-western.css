@@ -700,7 +700,16 @@ html body .mirage-page :is(
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-hud {
+  z-index: 3;
+}
+
+.mirage-powerup-bar {
   z-index: 5;
+}
+
+.mirage-overlay,
+.mirage-online-countdown {
+  z-index: 6;
 }
 
 .mirage-hud-card {
@@ -2146,6 +2155,78 @@ html body .mirage-page :is(
   .mirage-wanted-stamp span,
   .mirage-wanted-stamp i {
     font-size: 7px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   10. RÉACTIVITÉ DES BOUTONS (clic & tactile)
+   Empêche les enfants/pseudo-éléments de capturer ou perdre la cible entre
+   `pointerdown` et `pointerup`, neutralise les déplacements verticaux `:active`
+   opposés à `:hover` qui font glisser le bouton sous le pointeur, et désactive
+   les survols `:hover` sur écran tactile (qui forçaient parfois un double appui).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.mirage-page button,
+.mirage-online-modal button {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mirage-page button > *,
+.mirage-page button::before,
+.mirage-page button::after,
+.mirage-online-modal button > *,
+.mirage-online-modal button::before,
+.mirage-online-modal button::after {
+  pointer-events: none;
+}
+
+.mirage-powerup-btn.is-ready,
+.mirage-powerup-btn:hover:not(:disabled),
+.mirage-powerup-btn.is-ready:hover:not(:disabled),
+.mirage-powerup-btn:active:not(:disabled),
+.mirage-powerup-btn.is-ready:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.mirage-mode-picker button:active:not(:disabled),
+.mirage-map-card:active:not(:disabled),
+.mirage-cup-card:active:not(:disabled),
+.mirage-start-button:active:not(:disabled),
+.mirage-ghost-button:active:not(:disabled),
+.mirage-secondary-button:active:not(:disabled),
+.mirage-share-button:active:not(:disabled),
+.mirage-fullscreen-launch:active:not(:disabled) {
+  transform: translateY(0) scale(.99);
+  border-bottom-width: 1.5px;
+}
+
+.mirage-cup-card:active:not(:disabled) {
+  border-bottom-width: 3px;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .mirage-mode-picker button:hover,
+  .mirage-map-card:hover,
+  .mirage-cup-card:hover:not(:disabled),
+  .mirage-start-button:hover:not(:disabled),
+  .mirage-ghost-button:hover:not(:disabled),
+  .mirage-secondary-button:hover:not(:disabled),
+  .mirage-share-button:hover:not(:disabled),
+  .mirage-fullscreen-launch:hover:not(:disabled),
+  .mirage-powerup-slot.is-ready:hover,
+  .mirage-powerup-btn.is-ready:hover:not(:disabled),
+  .mirage-graphics-button:hover,
+  .mirage-sound-button:hover,
+  .mirage-pause-button:hover,
+  .mirage-fullscreen-button:hover,
+  .mirage-back-game-button:hover,
+  .mirage-mode-tab:hover,
+  .mirage-settings-tabs button:hover,
+  .mirage-preset-btn:hover {
+    transform: none;
   }
 }
 
