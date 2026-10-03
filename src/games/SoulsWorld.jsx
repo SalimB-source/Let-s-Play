@@ -468,6 +468,85 @@ function makeWorld(mount, callbacks) {
     }
   };
 
+  // ── Prise à deux mains ─────────────────────────────────────────────
+  // La hampe reste attachée à l'avant-bras droit : les courbes d'attaque
+  // existantes gardent ainsi leur poids et leur portée. Plutôt que d'ajouter
+  // une seconde main décorative, ce petit solveur à deux segments conduit la
+  // vraie paume gauche jusqu'au repère posé sur le glaive.
+  const lockOffhandToGlaive = (() => {
+    const shoulder = new THREE.Vector3();
+    const grip = new THREE.Vector3();
+    const axis = new THREE.Vector3();
+    const bend = new THREE.Vector3();
+    const elbowTarget = new THREE.Vector3();
+    const elbow = new THREE.Vector3();
+    const upperDirection = new THREE.Vector3();
+    const lowerDirection = new THREE.Vector3();
+    const forward = new THREE.Vector3();
+    const scale = new THREE.Vector3();
+    const parentQuaternion = new THREE.Quaternion();
+    const worldQuaternion = new THREE.Quaternion();
+    const localQuaternion = new THREE.Quaternion();
+    const torsoQuaternion = new THREE.Quaternion();
+    const down = new THREE.Vector3(0, -1, 0);
+
+    const pointJointAt = (joint, direction) => {
+      joint.parent.getWorldQuaternion(parentQuaternion);
+      worldQuaternion.setFromUnitVectors(down, direction);
+      localQuaternion.copy(parentQuaternion).invert().multiply(worldQuaternion);
+      joint.quaternion.copy(localQuaternion);
+    };
+
+    return (rig) => {
+      const { armL, elbowL, elbowR, torso, weapon, offhandGrip } = rig;
+      // L'arme ne doit être visée que lorsqu'elle a quitté le dos.
+      if (!offhandGrip || weapon.parent !== elbowR) return false;
+
+      torso.updateWorldMatrix(true, true);
+      armL.getWorldPosition(shoulder);
+      offhandGrip.getWorldPosition(grip);
+      axis.copy(grip).sub(shoulder);
+      const distance = axis.length();
+      if (distance < 1e-4) return false;
+      axis.multiplyScalar(1 / distance);
+
+      // Les deux pivots sont séparés de 31 cm puis 30 cm dans le rig. La
+      // longueur monde suit automatiquement la taille de chaque guerrier,
+      // sans étirer ses bras ni casser les poses du contrôleur.
+      armL.getWorldScale(scale);
+      const upperLength = 0.31 * scale.y;
+      const lowerLength = 0.3 * scale.y;
+      const reach = THREE.MathUtils.clamp(
+        distance,
+        Math.abs(upperLength - lowerLength) + 0.002,
+        upperLength + lowerLength - 0.003,
+      );
+      const along = (upperLength * upperLength - lowerLength * lowerLength + reach * reach) / (2 * reach);
+      const height = Math.sqrt(Math.max(0, upperLength * upperLength - along * along));
+
+      // Le coude plie vers l'avant du thorax, pas à travers les ailes ni le
+      // dos. On retire la composante parallèle à la cible pour former le plan
+      // stable du coude ; le repli évite les cas rares où il regarde pile face.
+      torso.getWorldQuaternion(torsoQuaternion);
+      forward.set(0, 0, -1).applyQuaternion(torsoQuaternion);
+      bend.copy(forward).addScaledVector(axis, -forward.dot(axis));
+      if (bend.lengthSq() < 1e-5) {
+        bend.set(1, 0, 0).applyQuaternion(torsoQuaternion);
+        bend.addScaledVector(axis, -bend.dot(axis));
+      }
+      bend.normalize();
+      elbowTarget.copy(shoulder).addScaledVector(axis, along).addScaledVector(bend, height);
+
+      upperDirection.copy(elbowTarget).sub(shoulder).normalize();
+      pointJointAt(armL, upperDirection);
+      armL.updateWorldMatrix(true, true);
+      elbowL.getWorldPosition(elbow);
+      lowerDirection.copy(grip).sub(elbow).normalize();
+      pointJointAt(elbowL, lowerDirection);
+      return true;
+    };
+  })();
+
   // ── État caméra / entrées ─────────────────────────────────────────
   let camYaw = 0;
   let groundY = 0; // hauteur lissée du sol sous le Gardien Chitine
@@ -1542,6 +1621,18 @@ function makeWorld(mount, callbacks) {
       aim(parts.wings[0].rotation, 'z', -0.08 - flutter, 7);
       aim(parts.wings[1].rotation, 'z', 0.08 + flutter, 7);
     }
+    // Boire et rouler demandent de lâcher le haut de la hampe ; dans tous les
+    // autres états, la paume gauche reste réellement calée sur son enroulement.
+    const holdingGlaiveWithBothHands = !dead && combat.action !== 'drink' && combat.action !== 'dodge'
+      && lockOffhandToGlaive(parts);
+    if (!holdingGlaiveWithBothHands) {
+      // Le solveur écrit un quaternion complet. Hors prise, le rig retrouve
+      // ses axes historiques afin que la potion, le roulé et la mort gardent
+      // leurs poses explicites sans torsion résiduelle du coude gauche.
+      parts.armL.rotation.y = 0;
+      parts.elbowL.rotation.y = 0;
+      parts.elbowL.rotation.z = 0;
+    }
 
     // ── Ennemi : bipède + télégraphes (windup lisible) ──────────────
     for (const F of foes) {
@@ -1960,6 +2051,7 @@ function makeWorld(mount, callbacks) {
       combat,
       progress,
       quest,
+      warrior,
       foes,
       colliders,
       scene,

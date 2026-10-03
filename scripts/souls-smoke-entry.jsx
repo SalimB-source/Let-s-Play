@@ -173,6 +173,25 @@ try {
 }
 console.log('240 frames OK — ready =', readyFired, '| hud samples =', hudSamples.length);
 
+// Prise du glaive : la vraie paume gauche atteint le repère de la hampe.
+// Cela protège la pose deux mains sans figer les attaques de la main droite.
+try {
+  const p = world.debug.warrior.userData.parts;
+  if (!p.offhandGrip) fail('PRISE À DEUX MAINS ABSENTE — repère de main gauche manquant');
+  world.debug.warrior.updateMatrixWorld(true);
+  const palm = new THREE.Vector3(0, -0.3, 0);
+  const grip = new THREE.Vector3();
+  p.elbowL.localToWorld(palm);
+  p.offhandGrip.getWorldPosition(grip);
+  const gripGap = palm.distanceTo(grip);
+  if (gripGap > 0.025) fail('PRISE À DEUX MAINS DÉCALÉE', `paume → hampe = ${gripGap.toFixed(3)} m`);
+  console.log('Prise à deux mains OK — paume gauche à', `${gripGap.toFixed(3)} m`, 'de la hampe');
+} catch (e) {
+  if (e?.message?.startsWith?.('PRISE À DEUX MAINS')) throw e;
+  console.error('PRISE À DEUX MAINS FAILED:', e);
+  process.exit(3);
+}
+
 // API + M1 : start → file d'actions clavier → stamina/HUD vérifiés.
 const fire = (type, code) => {
   const ev = { code, repeat: false, preventDefault() {}, button: 0, clientX: 0, clientY: 0 };

@@ -1870,7 +1870,7 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   cape.add(wingL, wingR);
   torso.add(cape);
 
-  // ══ Glaive-lune — au dos puis dans la main droite pendant le combat ===
+  // ══ Glaive-lune — au dos puis fermement tenu à deux mains =============
   const weapon = new THREE.Group();
   weapon.name = 'crescent-glaive';
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.035, 1.52, 10), chitinDark);
@@ -1895,11 +1895,25 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     new THREE.Vector3(0.25, -1.105, -0.018),
   ]);
   const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 20, 0.012, 5, false), edgeMat);
-  const grip = capsule(0.04, 0.23, cloth);
-  grip.position.y = 0.27;
+  // Deux enroulements séparés rendent lisible la prise : main droite près du
+  // talon de la hampe, main gauche plus haute, juste sous le pommeau.
+  const lowerGrip = capsule(0.041, 0.19, cloth);
+  lowerGrip.position.y = -0.055;
+  const upperGrip = capsule(0.043, 0.25, cloth);
+  upperGrip.position.y = 0.34;
+  const upperGripBand = ring(0.051, 0.008, gold);
+  upperGripBand.position.y = 0.205;
   const pommel = ellipsoid(0.072, gold, 1, 1, 0.8);
   pommel.position.y = 0.45;
-  weapon.add(shaft, shaftBandA, shaftBandB, crescent, edge, grip, pommel);
+  // Repère non rendu : SoulsWorld aligne précisément la paume gauche sur ce
+  // point, y compris pendant les attaques, sans dupliquer une main factice.
+  const offhandGrip = new THREE.Object3D();
+  offhandGrip.name = 'glaive-offhand-grip';
+  // Léger décalage latéral : le centre de la paume enveloppe le manche au
+  // lieu de traverser son axe géométrique.
+  offhandGrip.position.set(-0.055, 0.36, 0);
+  weapon.add(shaft, shaftBandA, shaftBandB, crescent, edge,
+    lowerGrip, upperGrip, upperGripBand, pommel, offhandGrip);
   weapon.scale.setScalar(0.85);
   weapon.rotation.z = -0.35;
   weapon.rotation.x = 0.1;
@@ -1925,7 +1939,7 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     armL: armL.arm, armR: armR.arm, elbowL: armL.elbow, elbowR: armR.elbow,
     legL: legL.leg, legR: legR.leg, kneeL: legL.knee, kneeR: legR.knee,
     footL: legL.foot, footR: legR.foot,
-    cape, wings: [wingL, wingR], visor, weapon, strands, potion,
+    cape, wings: [wingL, wingR], visor, weapon, offhandGrip, strands, potion,
   };
   return warrior;
 }
