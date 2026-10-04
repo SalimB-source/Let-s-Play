@@ -2415,6 +2415,17 @@
 .city-rush-guide-item.is-radio { --power-color: #ffd44f; }
 .city-rush-guide-item.is-boost { --power-color: #50e48a; }
 
+/* Carte « SOLO · CHRONO » du Sprint : mêmes cases que le guide des objets,
+   mais sans arme — les couleurs suivent l'accent du mode (rose/cyan). */
+.city-rush-guide-item.is-sprint { --power-color: #ff5db8; }
+.city-rush-guide-item.is-solo { --power-color: #43ead5; }
+
+/* Les entrées du Sprint n'ont pas d'icône SVG : le glyphe tient seul la case. */
+.city-rush-guide-item .city-rush-guide-glyph {
+  font-size: 18px;
+  line-height: 1;
+}
+
 .city-rush-leader-foot {
   display: flex;
   justify-content: space-between;
@@ -2488,6 +2499,24 @@
 .city-rush-no-collision-note.is-police em { font-style: normal; }
 .city-rush-no-collision-note.is-police em.is-red { color: #ff9aa8; }
 .city-rush-no-collision-note.is-police em.is-yellow { color: #ffd37a; }
+
+/* Sprint : la carte de l'escouade devient une carte solo — plus de rouge
+   sirène, l'accent rose du mode et un éclair à la place du gyrophare. */
+.city-rush-no-collision-note.is-solo {
+  background: rgba(255, 93, 184, 0.08);
+  border-color: rgba(255, 93, 184, 0.18);
+}
+
+.city-rush-no-collision-note.is-solo .city-rush-no-collision-icon {
+  background: rgba(255, 93, 184, 0.14);
+  color: #ff9ed4;
+}
+
+.city-rush-no-collision-note.is-solo b { color: #ff9ed4; }
+.city-rush-no-collision-note.is-solo em { font-style: normal; }
+
+/* Classement solo : la carte n'annonce plus une course à trois. */
+.city-rush-leaderboard.is-solo .city-rush-racer-rank { color: var(--mode-accent, #ff5db8); }
 
 /* Footer */
 .city-rush-page-footer {
@@ -3161,6 +3190,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 :root[data-theme='light'] .city-rush-no-collision-note.is-police .city-rush-no-collision-icon { color: #c22848; }
 :root[data-theme='light'] .city-rush-no-collision-note.is-police b { color: #c22848; }
+:root[data-theme='light'] .city-rush-no-collision-note.is-solo {
+  background: rgba(255, 93, 184, 0.07);
+  border-color: rgba(214, 40, 140, 0.24);
+}
+:root[data-theme='light'] .city-rush-no-collision-note.is-solo .city-rush-no-collision-icon { color: #b3126f; }
+:root[data-theme='light'] .city-rush-no-collision-note.is-solo b { color: #b3126f; }
 :root[data-theme='light'] .city-rush-page-footer { border-color: rgba(20, 18, 50, 0.12); }
 :root[data-theme='light'] .city-rush-page-footer a {
   background: rgba(20, 18, 50, 0.05);

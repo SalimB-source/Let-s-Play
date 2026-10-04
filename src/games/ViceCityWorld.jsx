@@ -2421,7 +2421,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function deployPolice(leader = refreshPackLeader()) {
-    if (policeDeployed) return;
+    // Sprint solo : l'escouade n'existe pas dans ce format, quel que soit le
+    // chemin qui appellerait le déploiement (dernier tour, poursuite, renfort).
+    if (sprint || policeDeployed) return;
     policeDeployed = true;
     policeCars.forEach((police, index) => activatePoliceUnit(police, leader, { unitNumber: index + 1 }));
     nextPoliceUnitNumber = CITY_RUSH_POLICE_COUNT + 1;
@@ -2458,7 +2460,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function updatePoliceReinforcements(dt) {
     // En Poursuite, les patrouilles peuvent être abattues avant le dernier tour.
     // Les remplaçantes n'entrent toutefois en piste qu'à l'ouverture de celui-ci.
-    if (!active || finished || playerWrecked || !policeDeployed || lap < effectiveLaps) return;
+    if (sprint || !active || finished || playerWrecked || !policeDeployed || lap < effectiveLaps) return;
     policeCars.forEach((police) => {
       if (police.everDeployed && !police.active && !police.reinforcementPending) queuePoliceReinforcement(police);
     });
@@ -2700,7 +2702,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // l'escouade (5 m derrière) tombait dans la fenêtre de contact et vidait la
   // barre de vie à coups de « chocs » invisibles.
   function checkPoliceCollisions() {
-    if (!active || finished) return;
+    if (sprint || !active || finished) return;
     const playerXNow = playerCar.position.x;
     const playerWidth = playerCollisionWidth();
     for (const police of activePursuers()) {
@@ -2755,6 +2757,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function updatePolice(dt, packLeaderEntry) {
+    // Sprint : aucune unité en piste, aucune annonce — la chasse ne tourne pas.
+    if (sprint) return;
     policeStealNoticeCooldown = Math.max(0, policeStealNoticeCooldown - dt);
     policeBlockNoticeCooldown = Math.max(0, policeBlockNoticeCooldown - dt);
     const pursuers = activePursuers();

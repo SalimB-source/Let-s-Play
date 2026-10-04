@@ -2337,6 +2337,8 @@ export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP
 
 // Construit l'état complet de la mini-carte : position des 3 pilotes sur le
 // circuit, avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
+// `solo` (Sprint) réduit la grille au seul pilote : la mini-carte et le
+// classement ne réinventent pas les deux rivaux d'une course à trois.
 export function buildCityRushMinimapState(
   racers = [],
   {
@@ -2350,9 +2352,14 @@ export function buildCityRushMinimapState(
     finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS,
     totalDistance = cityRushRaceDistance(laps, lapLength, finalLapLoops),
     pursuers = [],
+    solo = false,
   } = {},
 ) {
-  const defaultRoster = selectCityRushRacers({ cityId, carId, runId, playerDriverId });
+  const fullRoster = selectCityRushRacers({ cityId, carId, runId, playerDriverId });
+  const playerSlots = fullRoster.filter((slot) => slot.id === playerId);
+  // Garde-fou : une grille solo sans pilote n'aurait plus rien à projeter — on
+  // retombe alors sur la première place de la grille.
+  const defaultRoster = solo ? (playerSlots.length ? playerSlots : fullRoster.slice(0, 1)) : fullRoster;
   const incomingById = new Map((Array.isArray(racers) ? racers : []).map((racer) => [racer?.id, racer]));
 
   const merged = defaultRoster.map((slotProfile) => {
