@@ -17,5 +17,15 @@ android/app/build/
 android/local.properties
 android/.idea/
 
+# Unreal Engine generated files
+unreal/**/Binaries/
+unreal/**/Build/
+unreal/**/DerivedDataCache/
+unreal/**/Intermediate/
+unreal/**/Saved/
+unreal/**/.vs/
+unreal/**/*.sln
+unreal/**/*.VC.db
+
 # Harnais locaux jetables (rendus logiciels, vérifications headless)
 .cache/
