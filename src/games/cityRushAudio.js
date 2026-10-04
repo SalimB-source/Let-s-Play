@@ -25,12 +25,14 @@ const ENGINE_VOLUME = 0.32;
 const MASTER_VOLUME = 0.95;
 
 // Tempo par ville : Vice City roule à 122, Tokyo serre les dents à 132.
+// La campagne mexicaine adopte un tempo plus lent, façon balade ensoleillée.
 export const CITY_RUSH_MUSIC_BPM = Object.freeze({
   'vice-city': 122,
   'new-york': 126,
   tokyo: 132,
   paris: 118,
   london: 124,
+  'mexico-countryside': 104,
 });
 export const CITY_RUSH_DEFAULT_BPM = 122;
 export const CITY_RUSH_ROUTE_66_BPM = 108;

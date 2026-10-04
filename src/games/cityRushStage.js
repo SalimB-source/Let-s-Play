@@ -76,26 +76,32 @@ export function createStageMaterials(city, theme, random) {
     facades,
     shop,
     shopCount: shopAtlas.count,
-    roof: standard(tints.roof ?? (city.style === 'paris' ? 0x3a3542 : city.style === 'vice' ? 0x6d4a66 : 0x2c303c), { roughness: 0.9 }),
-    stone: standard(tints.stone ?? (city.style === 'paris' ? 0xcbb59a : city.style === 'london' ? 0xb9ab97 : 0x7d8696), { roughness: 0.86 }),
-    concrete: standard(tints.concrete ?? 0x5c6270, { roughness: 0.92 }),
+    roof: standard(tints.roof ?? (city.style === 'paris' ? 0x3a3542 : city.style === 'vice' ? 0x6d4a66 : city.style === 'mexico' ? 0xa04432 : 0x2c303c), { roughness: 0.9 }),
+    tile: standard(tints.tile ?? tints.terracotta ?? 0xc04a32, { roughness: 0.82 }),
+    terracotta: standard(tints.terracotta ?? tints.tile ?? 0xc04a32, { roughness: 0.82 }),
+    adobe: standard(tints.adobe ?? 0xd9a673, { roughness: 0.94 }),
+    stone: standard(tints.stone ?? (city.style === 'paris' ? 0xcbb59a : city.style === 'london' ? 0xb9ab97 : city.style === 'mexico' ? 0xb99064 : 0x7d8696), { roughness: 0.86 }),
+    concrete: standard(tints.concrete ?? (city.style === 'mexico' ? 0xa99478 : 0x5c6270), { roughness: 0.92 }),
     asphaltDark: standard(tints.asphaltDark ?? 0x1b1d27, { roughness: 0.95 }),
-    metal: standard(tints.metal ?? 0x3b4352, { metalness: 0.62, roughness: 0.38 }),
+    metal: standard(tints.metal ?? (city.style === 'mexico' ? 0x8a8070 : 0x3b4352), { metalness: 0.62, roughness: 0.38 }),
     darkMetal: standard(tints.darkMetal ?? 0x1c2029, { metalness: 0.5, roughness: 0.45 }),
     chrome: standard(tints.chrome ?? 0xb9c6d0, { metalness: 0.78, roughness: 0.26 }),
-    brick: standard(tints.brick ?? 0x8d4b3c, { roughness: 0.94 }),
+    brick: standard(tints.brick ?? (city.style === 'mexico' ? 0xa86848 : 0x8d4b3c), { roughness: 0.94 }),
     white: standard(tints.white ?? 0xf1ece2, { roughness: 0.8 }),
     cream: standard(tints.cream ?? 0xe6d7bd, { roughness: 0.86 }),
     red: standard(tints.red ?? 0xc8372f, { roughness: 0.7 }),
-    green: standard(tints.green ?? 0x2f6b4a, { roughness: 0.8 }),
+    green: standard(tints.green ?? (city.style === 'mexico' ? 0x4d8b3c : 0x2f6b4a), { roughness: 0.8 }),
     yellow: standard(tints.yellow ?? 0xf4c431, { roughness: 0.6 }),
     blue: standard(tints.blue ?? 0x2d4f9e, { roughness: 0.7 }),
     wood: standard(tints.wood ?? 0x7a5236, { roughness: 0.9 }),
     trunk: standard(tints.trunk ?? 0x6f4a33, { roughness: 0.95 }),
-    foliage: standard(tints.foliage ?? (city.style === 'vice' ? 0x2e9b7c : 0x2f7a4c), { roughness: 0.9 }),
-    foliageLight: standard(tints.foliageLight ?? (city.style === 'tokyo' ? 0xf4a3c7 : 0x4f9d63), { roughness: 0.9 }),
+    foliage: standard(tints.foliage ?? (city.style === 'vice' ? 0x2e9b7c : city.style === 'mexico' ? 0x5a7a3e : 0x2f7a4c), { roughness: 0.9 }),
+    foliageLight: standard(tints.foliageLight ?? (city.style === 'tokyo' ? 0xf4a3c7 : city.style === 'mexico' ? 0x81a558 : 0x4f9d63), { roughness: 0.9 }),
+    agaveBlue: standard(tints.agaveBlue ?? 0x5e8a76, { roughness: 0.88 }),
+    agaveGreen: standard(tints.agaveGreen ?? 0x6d8f4e, { roughness: 0.88 }),
     glassDark: standard(tints.glassDark ?? 0x18243a, { roughness: 0.3, metalness: 0.25 }),
-    // Sable du front de mer : présent seulement quand le thème le demande.
+    // Sable ou terre ocre du désert/de la campagne : sable pour Vice City
+    // (plage) et les routes désertiques (66, Mexique).
     sand: tints.sand ? standard(tints.sand, { roughness: 1 }) : null,
     lantern: standard(0xff6a4a, { emissive: 0xff6a4a, emissiveIntensity: 0.9 * glow, roughness: 0.6 }),
     neon: unlit(accent),
@@ -362,6 +368,18 @@ function addLamp(batch, m, theme, x, z, side) {
     batch.cone(m.lampCone, [x, 2.45, z], 1.6, 4.9, 10, null);
     return;
   }
+  if (theme.lamp === 'mexico') {
+    // Poteau électrique de campagne simple : bois clair, un bras, ampoule
+    // presque invisible en plein jour. Très espacé, comme sur les routes
+    // secondaires mexicaines.
+    const height = 6.0;
+    batch.cylinder(m.wood, [x, height / 2, z], 0.08, 0.12, height, 7);
+    batch.box(m.wood, [x, height - 0.2, z], [1.3, 0.08, 0.08]);
+    batch.box(m.darkMetal, [x + inward * 0.65, height - 0.15, z], [0.05, 0.05, 0.05]);
+    batch.sphere(m.lampGlow, [x + inward * 0.65, height - 0.4, z], 0.18, 6);
+    batch.cone(m.lampCone, [x + inward * 0.65, (height - 0.4) / 2, z], 1.2, height - 0.4, 8, null);
+    return;
+  }
   // Cobra (New York) et moderne (Tokyo) : un bras au-dessus de la chaussée.
   const height = theme.lamp === 'cobra' ? 6.4 : 5.9;
   batch.cylinder(m.metal, [x, height / 2, z], 0.06, 0.1, height, 6);
@@ -373,6 +391,47 @@ function addLamp(batch, m, theme, x, z, side) {
 
 function addTree(batch, m, theme, x, z, random) {
   const scale = 0.85 + random() * 0.3;
+  if (theme.tree === 'mexico') {
+    // Végétation de campagne mexicaine : agaves bleus en rosette, cactus
+    // saguaro, nopales (opuntia) et arbres broussailleux. Les silhouettes
+    // restent basses pour laisser lire les montagnes au loin.
+    const roll = random();
+    if (roll < 0.38) {
+      // Agave bleu : rosette de feuilles pointues.
+      const leafColor = m.agaveBlue || m.green;
+      for (let leaf = 0; leaf < 10; leaf += 1) {
+        const angle = (leaf / 10) * Math.PI * 2;
+        batch.cone(leafColor, [x + Math.cos(angle) * 0.22, 0.55 * scale, z + Math.sin(angle) * 0.22], 0.16, 1.05 * scale, 4, [0, angle, Math.PI / 6]);
+      }
+      batch.cone(m.agaveGreen || m.green, [x, 0.7 * scale, z], 0.12, 0.55 * scale, 5, [0, 0, 0]);
+    } else if (roll < 0.68) {
+      // Saguaro, plus haut que sur la Route 66.
+      const green = m.agaveGreen || m.green;
+      batch.cylinder(green, [x, 1.5 * scale, z], 0.2, 0.28, 3.0 * scale, 7);
+      if (random() < 0.8) {
+        batch.cylinder(green, [x - 0.5, 1.7 * scale, z], 0.14, 0.17, 1.1 * scale, 7, [0, 0, Math.PI / 2]);
+        batch.cylinder(green, [x - 0.5, 2.3 * scale, z], 0.14, 0.14, 0.5 * scale, 7);
+      }
+      if (random() < 0.5) {
+        batch.cylinder(green, [x + 0.5, 1.9 * scale, z], 0.14, 0.17, 0.95 * scale, 7, [0, 0, -Math.PI / 2]);
+        batch.cylinder(green, [x + 0.5, 2.4 * scale, z], 0.14, 0.14, 0.45 * scale, 7);
+      }
+      batch.sphere(green, [x, 3.1 * scale, z], 0.24, 7);
+    } else if (roll < 0.88) {
+      // Nopal (opuntia) : raquettes plates vertes.
+      const green = m.foliageLight;
+      batch.box(green, [x, 0.85 * scale, z], [0.35, 1.3 * scale, 0.18]);
+      batch.box(green, [x + 0.3, 1.05 * scale, z], [0.4, 0.55 * scale, 0.18]);
+      batch.box(green, [x - 0.3, 1.2 * scale, z], [0.36, 0.5 * scale, 0.18]);
+      batch.box(green, [x - 0.06, 1.75 * scale, z], [0.3, 0.55 * scale, 0.18]);
+    } else {
+      // Arbre broussailleux type mesquite.
+      batch.cylinder(m.trunk, [x, 1.1 * scale, z], 0.16, 0.22, 2.2 * scale, 6);
+      batch.sphere(m.foliage, [x, 2.5 * scale, z], 1.1 * scale, 7);
+      batch.sphere(m.foliageLight, [x + 0.6, 2.2 * scale, z + 0.3], 0.6 * scale, 6);
+    }
+    return;
+  }
   if (theme.tree === 'route66') {
     // Végétation rare de bord de route : yucca et cactus saguaro, plutôt
     // qu'une rangée d'arbres décoratifs. Les silhouettes restent basses pour
@@ -511,9 +570,104 @@ function addRoute66Prop(batch, m, theme, city, x, z, side, random, atlas) {
   }
 }
 
+// Panonceau kilométrique peint en vert et blanc à la mexicaine, avec
+// flèche directionnelle peinte à la main.
+function addMexicoRoadSign(batch, m, atlas, x, z, side, index) {
+  if (!atlas?.routeCount) return;
+  const zpos = toZ(z);
+  batch.cylinder(m.wood, [x, 1.4, zpos], 0.07, 0.09, 2.8, 6);
+  batch.box(m.white, [x, 2.6, zpos], [0.06, 0.7, 2.6]);
+  batch.box(m.green, [x + (-side * 0.04), 2.9, zpos], [0.04, 0.3, 2.2]);
+  batch.plane(m.signs, [x + (-side * 0.08), 2.05, zpos], 2.2, 0.85, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv: atlas.routeUv(index) });
+}
+
+// Clôture de ranch en piquets de bois, typique des routes du Bajío.
+function addMexicoFence(batch, m, x, z, side) {
+  for (let post = -3; post <= 3; post += 1) {
+    batch.box(m.wood, [x, 0.55, z + post * 0.85], [0.09, 1.1, 0.09]);
+    if (post < 3) {
+      batch.box(m.wood, [x, 0.5, z + post * 0.85 + 0.42], [0.07, 0.07, 0.85]);
+      batch.box(m.wood, [x, 0.88, z + post * 0.85 + 0.42], [0.07, 0.07, 0.85]);
+    }
+  }
+}
+
+// Un petit rancho isolé (adobe, toit de tuiles rouges) remplace les
+// immeubles continus en ville, à l'image de Route 66 mais dans la palette
+// du Mexique colonial.
+function addMexicoRancho(batch, m, city, theme, atlas, side, trackMeters, depthMeters, random, options = {}) {
+  const z = toZ(trackMeters);
+  const depth = depthMeters * SCALE;
+  const width = options.back ? 7 + random() * 4 : 6 + random() * 3;
+  const innerX = side * (options.back ? 20 + random() * 4 : 9 + random() * 1.5);
+  const height = (options.back ? 2.6 : 2.2) + random() * (options.back ? 1.2 : 1.0);
+  const colorHex = city.buildingColors[Math.floor(random() * city.buildingColors.length)];
+  const tint = hexToRgb(colorHex).map((channel) => Math.min(1, channel * (0.85 + random() * 0.25)));
+  const facade = m.facades[Math.floor(random() * m.facades.length)];
+  facadeBlock(batch, facade, side, innerX, 0, z, depth, height, width, tint, theme.facade.floor, random, { skipBack: true });
+  const inward = -side;
+  const centerX = innerX + side * (width / 2);
+  // Toit de tuiles rouges en pente douce : un prisme simple.
+  batch.box(m.tile || m.roof, [centerX, height + 0.22, z], [width + 0.5, 0.2, depth + 0.4]);
+  batch.box(m.tile || m.roof, [centerX + side * (width * 0.25), height + 0.65, z], [width * 0.55, 0.35, depth + 0.3]);
+  if (options.back) return;
+  // Petite devanture de tienda peinte en couleurs vives.
+  const panels = Math.max(1, Math.floor(depth / 4));
+  for (let panel = 0; panel < panels; panel += 1) {
+    const shopIndex = Math.floor(random() * Math.max(1, m.shopCount));
+    const pz = z - depth / 2 + 1.8 + panel * 3.6;
+    batch.plane(m.shop, [innerX + inward * 0.02, 1.0, pz], 3.2, 1.85, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], {
+      uv: [shopIndex / m.shopCount, 0, (shopIndex + 1) / m.shopCount, 1],
+    });
+  }
+  // Enseigne peinte à la main au-dessus de la porte.
+  const signWidth = Math.min(4.8, Math.max(2.4, depth - 1.2));
+  batch.box(m.darkMetal, [innerX + inward * 0.35, height + 0.95, z], [0.18, 0.4, signWidth]);
+  batch.plane(m.signs, [innerX + inward * 0.46, height + 0.95, z], signWidth * 0.95, 0.34, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv: atlas.signUv(Math.floor(random() * atlas.signCount)) });
+  // Auvent de tôle ondulée ou tissu coloré.
+  if (random() < 0.65) {
+    batch.box(m.cream, [innerX + inward * 0.5, 2.1, z], [0.3, 0.1, Math.min(depth + 0.8, 7)]);
+    batch.box(random() < 0.5 ? m.red : m.terracotta || m.red, [innerX + inward * 0.52, 2.03, z], [0.07, 0.08, Math.min(depth, 6.4)]);
+  }
+}
+
+function addMexicoProp(batch, m, theme, city, x, z, side, random, atlas) {
+  const inward = -side;
+  const roll = random();
+  if (roll < 0.22) {
+    // Pompes à essence d'une pequeña estación, plus rares que sur la 66.
+    for (const offset of [-0.4, 0.4]) {
+      batch.box(m.red, [x + inward * 0.5, 0.7, z + offset], [0.38, 1.4, 0.28]);
+      batch.box(m.yellow, [x + inward * 0.53, 0.95, z + offset], [0.04, 0.5, 0.2]);
+      batch.box(m.darkMetal, [x + inward * 0.5, 1.42, z + offset], [0.4, 0.08, 0.32]);
+    }
+  } else if (roll < 0.48) {
+    // Clôture de bois de rancho.
+    addMexicoFence(batch, m, x, z, side);
+  } else if (roll < 0.78) {
+    // Agaves ou cactus au bord du chemin, avec une boîte aux lettres rouge.
+    addTree(batch, m, theme, x, z, random);
+    batch.cylinder(m.metal, [x + inward * 0.85, 0.85, z], 0.04, 0.05, 1.7, 6);
+    batch.box(m.red, [x + inward * 0.85, 1.75, z], [0.45, 0.38, 0.28]);
+  } else {
+    // Poteau électrique et panonceau peint.
+    const height = 5.8 + random() * 0.8;
+    batch.cylinder(m.wood, [x + side * 0.6, height / 2, z], 0.07, 0.11, height, 7);
+    batch.box(m.wood, [x + side * 0.6, height - 0.4, z], [1.6, 0.1, 0.1]);
+    if (atlas && random() < 0.55) {
+      batch.box(m.accentStandard, [x + inward * 0.9, 2.4, z], [0.05, 0.85, 1.3]);
+      batch.plane(m.signs, [x + inward * 0.95, 2.4, z], 1.1, 0.7, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv: atlas.signUv(Math.floor(random() * atlas.signCount)) });
+    }
+  }
+}
+
 function addCityProp(batch, m, theme, city, x, z, side, random, atlas) {
   const inward = -side;
   const style = city.style;
+  if (style === 'mexico') {
+    addMexicoProp(batch, m, theme, city, x, z, side, random, atlas);
+    return;
+  }
   if (style === 'route66') {
     addRoute66Prop(batch, m, theme, city, x, z, side, random, atlas);
     return;
@@ -678,6 +832,10 @@ export function facadeBlock(batch, material, side, innerX, baseY, z, alongZ, hei
 
 function addBuilding(batch, m, city, theme, atlas, side, trackMeters, depthMeters, random, options = {}) {
   const style = city.style;
+  if (style === 'mexico') {
+    addMexicoRancho(batch, m, city, theme, atlas, side, trackMeters, depthMeters, random, options);
+    return;
+  }
   if (style === 'route66') {
     addRoute66Stop(batch, m, city, theme, atlas, side, trackMeters, depthMeters, random, options);
     return;
@@ -687,10 +845,10 @@ function addBuilding(batch, m, city, theme, atlas, side, trackMeters, depthMeter
   const widths = [6, 8, 10];
   const width = options.back ? 8 + Math.floor(random() * 3) * 2 : widths[Math.floor(random() * widths.length)];
   const floorHeight = theme.facade.floor;
-  const baseFloors = style === 'new-york' ? 9 : style === 'tokyo' ? 7 : style === 'paris' ? 5 : style === 'london' ? 4 : 5;
-  const extraFloors = style === 'new-york' ? 12 : style === 'tokyo' ? 7 : style === 'paris' ? 2 : style === 'london' ? 3 : 5;
+  const baseFloors = style === 'new-york' ? 9 : style === 'tokyo' ? 7 : style === 'paris' ? 5 : style === 'london' ? 4 : style === 'mexico' ? 1 : 5;
+  const extraFloors = style === 'new-york' ? 12 : style === 'tokyo' ? 7 : style === 'paris' ? 2 : style === 'london' ? 3 : style === 'mexico' ? 1 : 5;
   let floors = baseFloors + Math.floor(random() * (extraFloors + 1));
-  if (options.back) floors = Math.round(floors * (style === 'paris' || style === 'london' ? 1.35 : 1.6)) + 2;
+  if (options.back) floors = Math.round(floors * (style === 'paris' || style === 'london' ? 1.35 : style === 'mexico' ? 1.2 : 1.6)) + 2;
   const height = floors * floorHeight;
   const innerX = side * (options.back ? 20.5 + random() * 3 : SIDEWALK_OUTER + 0.05);
   const colorHex = city.buildingColors[Math.floor(random() * city.buildingColors.length)];
@@ -863,6 +1021,31 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
   const z = toZ(trackMeters);
   const style = theme.gate.style;
   const signUv = atlas.gateUv;
+  if (style === 'mexico-arch') {
+    // Portique d'entrée de pueblo : deux piliers d'adobe chaulés de blanc,
+    // arche de tuiles rouges et panneau peint à la main.
+    for (const side of [-1, 1]) {
+      batch.box(m.white, [side * 8.4, 3.7, z], [0.9, 7.4, 0.9]);
+      batch.box(m.tile || m.roof, [side * 8.4, 7.55, z], [1.1, 0.22, 1.1]);
+      // Pot de fleurs coloré en haut.
+      batch.box(m.red, [side * 8.4, 7.95, z], [0.5, 0.4, 0.5]);
+    }
+    // Arche cintrée : un prisme polygonal.
+    const segments = 9;
+    for (let s = 0; s < segments; s += 1) {
+      const t = s / (segments - 1);
+      const angle = Math.PI * t;
+      const x = Math.cos(angle) * 8.4;
+      const y = 7.4 + Math.sin(angle) * 2.6;
+      batch.box(m.tile || m.roof, [x, y, z], [1.1, 0.75, 1.1], [0, 0, angle - Math.PI / 2]);
+    }
+    batch.box(m.cream, [0, 7.1, z], [12.2, 1.7, 0.22]);
+    batch.plane(m.signs, [0, 7.15, z + 0.13], 11.3, 1.3, null, { uv: signUv });
+    batch.plane(m.signs, [0, 7.15, z - 0.13], 11.3, 1.3, [0, Math.PI, 0], { uv: signUv });
+    // Petites cloches de mission suspendues sous l'arche.
+    batch.cylinder(m.yellow, [0, 8.4, z + 0.2], 0.1, 0.14, 0.4, 7);
+    return;
+  }
   if (style === 'route66') {
     // Portique inspiré des panneaux d'entrée de ville et des vieux motels :
     // poteaux bois, bouclier US 66 et lettrage noir/blanc, sans arche de
@@ -1016,6 +1199,23 @@ function addLandmark(batch, m, city, trackMeters, side, atlas = null) {
   const z = toZ(trackMeters);
   const x = side * 27;
   const style = city.style;
+  if (style === 'mexico') {
+    // Chapelle blanche au bord de la route, campanile et croix peinte en
+    // rouge. Typique des petits villages coloniaux du Bajío.
+    batch.box(m.white, [x, 2.2, z], [4.2, 4.4, 6.0]);
+    batch.box(m.tile || m.roof, [x, 4.6, z], [4.6, 0.3, 6.4]);
+    batch.cylinder(m.tile || m.roof, [x, 5.0, z], 2.3, 3.0, 0.4, 8);
+    // Campanile à gauche.
+    batch.box(m.white, [x - side * 2.4, 3.5, z - 1.2], [1.1, 5.0, 1.1]);
+    batch.cylinder(m.tile || m.roof, [x - side * 2.4, 6.2, z - 1.2], 0.7, 0.9, 0.4, 6);
+    batch.cylinder(m.yellow, [x - side * 2.4, 5.0, z - 1.2], 0.2, 0.22, 0.45, 7);
+    // Croix rouge au sommet.
+    batch.box(m.red, [x, 5.7, z], [0.12, 0.9, 0.12]);
+    batch.box(m.red, [x, 5.4, z], [0.55, 0.12, 0.12]);
+    // Petite palme à côté.
+    addTree(batch, m, { tree: 'mexico' }, { ...m, green: m.agaveGreen || m.green, trunk: m.wood, foliage: m.foliage, foliageLight: m.foliageLight, agaveBlue: m.agaveBlue, agaveGreen: m.agaveGreen }, x + side * 4.2, 3.2, seededRandom(17));
+    return;
+  }
   if (style === 'route66') {
     // Repère de bord de route : château d'eau, enseigne US 66 et cinq formes
     // de Cadillac plantées dans le sable, clin d'œil au Cadillac Ranch près
@@ -1334,6 +1534,60 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
   m.verticalSigns = atlas.verticalMaterial;
   const dynamicProps = [];
   const landmarkSide = city.style === 'paris' || city.style === 'london' ? 1 : -1;
+
+  if (city.style === 'mexico') {
+    // Route de campagne au Mexique : ranchos très espacés (beaucoup plus
+    // que la Route 66), champs d'agaves, clôtures de piquets, poteaux
+    // électriques et petit bourg colonial au mi-parcours. Très peu
+    // d'accessoires pour garder l'impression d'une route déserte.
+    for (const side of [-1, 1]) {
+      let cursor = START_ZONE_HALF + 8;
+      let sinceProp = 0;
+      const end = LAP - START_ZONE_HALF - 6;
+      while (cursor < end - 8) {
+        const depthMeters = 8 + Math.floor(random() * 3) * 2.5;
+        if (cursor + depthMeters > end) break;
+        addBuilding(batch, m, city, theme, atlas, side, cursor + depthMeters / 2, depthMeters, random);
+        // Beaucoup d'espace entre les ranchos, comme en pleine campagne.
+        const gap = 14 + random() * 12;
+        const gapCenter = cursor + depthMeters + gap / 2;
+        sinceProp += 1;
+        if (gapCenter < end - 4) {
+          sinceProp = 0;
+          addCityProp(batch, m, theme, city, side * 9.0, toZ(gapCenter), side, random, atlas);
+        }
+        cursor += depthMeters + gap;
+      }
+      // Second plan : quelques ranchs bas et beaucoup de végétation sèche
+      // (agaves, cactus), jamais d'immeubles.
+      let backCursor = START_ZONE_HALF + 4;
+      while (backCursor < end) {
+        const depthMeters = 12 + Math.floor(random() * 3) * 4;
+        addMexicoRancho(batch, m, city, theme, atlas, side, backCursor + depthMeters / 2, depthMeters, random, { back: true });
+        for (let veg = 0; veg < 2; veg += 1) {
+          if (random() < 0.9) addTree(batch, m, theme, side * (18 + random() * 5), toZ(backCursor + depthMeters * (0.2 + veg * 0.35) + random() * 4), random);
+        }
+        backCursor += depthMeters + 16 + random() * 14;
+      }
+      // Poteaux électriques très espacés (pas tous les 28 m) et végétation
+      // rustique sur les bas-côtés.
+      for (let position = START_ZONE_HALF + 12; position < end; position += 40) {
+        addLamp(batch, m, theme, side * (8.2 + random() * 0.4), toZ(position + (side > 0 ? 12 : 0)), side);
+        if (random() < 0.85) {
+          const cluster = 1 + Math.floor(random() * 2);
+          for (let c = 0; c < cluster; c += 1) addTree(batch, m, theme, side * (11 + random() * 3.5), toZ(position + c * 3 - 2 + random() * 2), random);
+        }
+      }
+    }
+    addGate(batch, m, city, theme, atlas, GATE_TRACK_POSITION);
+    addLandmark(batch, m, city, LANDMARK_TRACK_POSITION, -1, atlas);
+    // Panneaux directionnels peints pour chaque secteur.
+    city.route?.sectors?.slice(1, -1).forEach((sector, index) => {
+      const sideSign = index % 2 ? 1 : -1;
+      addMexicoRoadSign(batch, m, atlas, sideSign * 9.5, sector.from * LAP + 5, sideSign, index);
+    });
+    return { dynamicProps, atlas, random };
+  }
 
   if (city.style === 'route66') {
     // Une boucle jouable condensée, mais avec le langage visuel de la vraie
