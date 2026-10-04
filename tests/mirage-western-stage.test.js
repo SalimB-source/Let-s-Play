@@ -132,6 +132,35 @@ test('horses are present on the sides (hitched, in stalls, corrals, drinking) wi
   assert.ok(horse.userData.head);
 });
 
+test('les chevaux attachés regardent la rue : la tête est toujours plus près de la piste que la queue', () => {
+  // L'avant du cheval est en −Z (queue en +Z) : mal orienté, il plantait son nez
+  // dans la façade du saloon (|x| = 7,4) et tendait sa queue vers la piste.
+  let turned = 0;
+  for (const side of [-1, 1]) {
+    for (let index = 0; index < 10; index++) {
+      const group = westernBuilding(index, side);
+      group.updateMatrixWorld(true);
+      for (const horse of group.userData.animals || []) {
+        const head = horse.userData.head.getWorldPosition(new THREE.Vector3());
+        const tail = horse.userData.tail.getWorldPosition(new THREE.Vector3());
+        // Les chevaux de l'abreuvoir et du corral gardent le cap de la rue :
+        // tête et queue à la même distance de la piste, on ne les juge pas ici.
+        if (Math.abs(Math.abs(head.x) - Math.abs(tail.x)) < 0.5) continue;
+        turned += 1;
+        assert.ok(
+          Math.abs(head.x) < Math.abs(tail.x),
+          `segment ${index} côté ${side} : la tête (|x| = ${Math.abs(head.x).toFixed(2)}) doit être plus près de la piste que la queue (|x| = ${Math.abs(tail.x).toFixed(2)})`,
+        );
+        assert.ok(
+          Math.abs(head.x) >= 4.5,
+          `segment ${index} côté ${side} : la tête (|x| = ${Math.abs(head.x).toFixed(2)}) ne doit pas déborder sur les voies`,
+        );
+      }
+    }
+  }
+  assert.ok(turned >= 12, `au moins les chevaux attachés et celui du box sont concernés (trouvés ${turned})`);
+});
+
 test('stables (écurie) and saloons are built with signature western architecture', () => {
   let saloonsFound = 0;
   let stablesFound = 0;

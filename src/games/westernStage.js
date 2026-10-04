@@ -262,6 +262,14 @@ const HORSE_COATS = [
   { coat: 0x784124, mane: 0x221a16, muzzle: 0x8a4f2f, pinto: true }, // 5: Pinto (Pie brun et blanc)
 ];
 
+/**
+ * Cheval Far West. **Son avant est en −Z** (encolure et tête en −Z, queue en +Z),
+ * comme le cheval de course de `mirageExplorer.js` : pour le tourner vers la piste
+ * il faut donc `+π/2` côté droit (x > 0) et `−π/2` côté gauche, à l'inverse des
+ * cow-boys (`makeCowboy`) qui regardent vers +Z. Un cheval attaché est orienté de
+ * trois-quarts (`±3π/4`) : la tête passe au-dessus de la barre, la queue reste
+ * devant la façade au lieu d'y entrer.
+ */
 export function makeWesternHorse({ variant = 0, pose = 'hitched', side = 1 } = {}) {
   const group = new THREE.Group();
   const spec = HORSE_COATS[variant % HORSE_COATS.length];
@@ -644,7 +652,7 @@ export function westernBuilding(index, side) {
     group.add(hitch);
     const horse = makeWesternHorse({ variant: 1, pose: 'hitched', side }); // Bay horse
     horse.position.set(side * 6.0, 0.14, 2.2);
-    horse.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse);
     animals.push(horse);
 
@@ -701,7 +709,7 @@ export function westernBuilding(index, side) {
     // Horse 1: inside stall looking out!
     const horse1 = makeWesternHorse({ variant: 0, pose: 'stall', side }); // Chestnut
     horse1.position.set(side * 7.5, 0.14, 2.5);
-    horse1.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse1.rotation.y = side === 1 ? Math.PI / 2 : -Math.PI / 2; // tête hors du box, nez vers la rue
     group.add(horse1);
     animals.push(horse1);
 
@@ -762,7 +770,7 @@ export function westernBuilding(index, side) {
     group.add(hitch);
     const horse = makeWesternHorse({ variant: 2, pose: 'hitched', side }); // Black horse
     horse.position.set(side * 6.0, 0.14, 1.2);
-    horse.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse);
     animals.push(horse);
 
@@ -811,7 +819,7 @@ export function westernBuilding(index, side) {
     group.add(hitch);
     const horse = makeWesternHorse({ variant: 5, pose: 'hitched', side }); // Pinto paint horse
     horse.position.set(side * 6.0, 0.14, 1.6);
-    horse.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse);
     animals.push(horse);
 
@@ -857,13 +865,13 @@ export function westernBuilding(index, side) {
     group.add(hitch);
     const horse1 = makeWesternHorse({ variant: 0, pose: 'hitched', side }); // Chestnut
     horse1.position.set(side * 6.0, 0.14, 0.8);
-    horse1.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse1.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse1);
     animals.push(horse1);
 
     const horse2 = makeWesternHorse({ variant: 4, pose: 'hitched', side }); // Dappled Grey
     horse2.position.set(side * 6.0, 0.14, 2.8);
-    horse2.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse2.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse2);
     animals.push(horse2);
 
@@ -954,7 +962,7 @@ export function westernBuilding(index, side) {
     group.add(hitch);
     const horse = makeWesternHorse({ variant: 1, pose: 'hitched', side }); // Bay
     horse.position.set(side * 6.0, 0.14, 2.4);
-    horse.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse);
     animals.push(horse);
 
@@ -1040,7 +1048,7 @@ export function westernBuilding(index, side) {
     group.add(hitch);
     const horse = makeWesternHorse({ variant: 0, pose: 'hitched', side }); // Chestnut
     horse.position.set(side * 6.0, 0.14, 2.2);
-    horse.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse);
     animals.push(horse);
 
@@ -1075,7 +1083,7 @@ export function westernBuilding(index, side) {
     group.add(hitch);
     const horse = makeWesternHorse({ variant: 4, pose: 'hitched', side }); // Grey/White
     horse.position.set(side * 6.0, 0.14, -2.2);
-    horse.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    horse.rotation.y = side === 1 ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4;
     group.add(horse);
     animals.push(horse);
 
