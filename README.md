@@ -920,6 +920,14 @@ et le dernier tour durait 21 s.
   (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —
   `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Le jaune est rare : il
   ne représente que **10 % des bonus** (vert 36 %, bleu 28 %, rouge 26 %).
+  Douze rangées — une ou deux pastilles chacune — tournent sur la piste et se
+  recyclent
+  **derrière le pilote** (`rowRecycleAnchor`) : la réserve ne couvre qu'environ
+  340 m de route, et un recyclage calé sur la voiture la plus lente du peloton
+  laissait la piste sans bonus devant un pilote qui comptait plus de 300 m
+  d'avance sur le traînard — ce qui arrive au fil de la course, donc surtout au
+  dernier tour. Le smoke refuse désormais la moindre image sans rangée devant
+  le pilote.
   Le tir bleu ne vise pas : il suit la voie du tireur, peut toucher au plus un
   adversaire déjà visible, puis fait déraper sa voiture et la ralentit à 85 %
   pendant **0,3 s**. Il atteint les berlines de police de trois façons :

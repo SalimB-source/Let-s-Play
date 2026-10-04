@@ -74,7 +74,7 @@ const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
-  CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
+  CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
@@ -168,6 +168,9 @@ for (const [index, city] of cities.entries()) {
     audioStub[name] = () => { audioCalls[name] = (audioCalls[name] || 0) + 1; };
   }
   const audioRef = { current: audioStub };
+  // L'épave du pilote (barre de vie à zéro) : chaque effet `player-wrecked`
+  // marque le début de la toupie, et la course se clôt sur `finish.destroyed`.
+  let wreckEffects = 0;
   const mount = {
     clientWidth: 1280, clientHeight: 720,
     getBoundingClientRect: () => ({ width: 1280, height: 720, top: 0, left: 0 }),
@@ -188,7 +191,11 @@ for (const [index, city] of cities.entries()) {
       hud: (h) => { callbacks.huds.push(h); },
       finish: (r) => { callbacks.finish = r; },
       pickup: (p) => { callbacks.pickups.push(p); },
-      effect: (e) => { callbacks.effects.push(e); },
+      effect: (e) => {
+        callbacks.effects.push(e);
+        // Compté à la source : les contrôles d'arrivée lisent `wreckEffects`.
+        if (e.type === 'player-wrecked') wreckEffects += 1;
+      },
       lap: (l) => { callbacks.laps.push(l); },
     }), car.id, audioRef, null, RACE_LAPS);
   } catch (e) {
@@ -251,6 +258,11 @@ for (const [index, city] of cities.entries()) {
   if (!smokeNode) fail('le pool de fumée est introuvable dans la scène');
   const visibleSmoke = () => smokeNode.children.filter((child) => child.visible).length;
   let burstFrames = 0;
+  // Rangées de bonus devant le pilote : la route ne doit jamais en manquer.
+  let rowAheadFrames = 0;
+  let rowStarvedFrames = 0;
+  let rowFrontGapMin = Infinity;
+  let rowFrontGapMax = 0;
   let respawnedPickups = 0;
   const slotWatch = new Map();
   const runFrames = (n, label) => {
@@ -390,7 +402,6 @@ for (const [index, city] of cities.entries()) {
   let healthHitsBySource = {};
   // Épave : barre à zéro. La voiture part en toupie dans sa fumée et la course
   // est perdue. On mesure la rotation cumulée, la fumée et la chute de vitesse.
-  let wreckEffects = 0;
   let wreckSpinTurns = 0;
   let wreckSpinLast = 0;
   let wreckSmokeFrames = 0;
@@ -487,6 +498,24 @@ for (const [index, city] of cities.entries()) {
       }
     }
     frames += 1;
+    // Les rangées de bonus doivent rester devant le pilote du début à la fin :
+    // leur recyclage s'ancre sur sa distance (voir `rowRecycleAnchor` dans le
+    // monde) et non sur la voiture la plus lente du peloton, qui laissait la
+    // route se vider de ses bonus devant un pilote détaché en tête — l'écart au
+    // traînard finit par dépasser la fenêtre des douze rangées (~340 m), ce qui
+    // arrive surtout au dernier tour.
+    {
+      const gaps = pickupSlots
+        .map((slot) => (3.1 - (slot.parent?.position.z ?? 3.1)) / CITY_RUSH_SCROLL_SCALE)
+        .filter((gap) => Number.isFinite(gap));
+      const frontGap = gaps.length ? Math.max(...gaps) : null;
+      if (frontGap !== null) {
+        if (frontGap <= 2) rowStarvedFrames += 1;
+        else rowAheadFrames += 1;
+        rowFrontGapMin = Math.min(rowFrontGapMin, frontGap);
+        rowFrontGapMax = Math.max(rowFrontGapMax, frontGap);
+      }
+    }
     if (burstNodes.some((node) => node.visible)) burstFrames += 1;
     for (const slot of pickupSlots) {
       const parentZ = slot.parent?.position.z ?? 0;
@@ -693,10 +722,12 @@ for (const [index, city] of cities.entries()) {
   if ((audioCalls.lap || 0) !== callbacks.laps.length) fail('un passage de ligne sur deux est muet', audioCalls);
   // Un missile encore en vol au moment du drapeau à damier est coupé net par
   // l'arrivée : au plus une frappe peut rester sans explosion (jamais
-  // l'inverse). Une berline de police détruite explose elle aussi : le compte
-  // attendu des explosions couvre missiles et berlines abattues.
+  // l'inverse). Une berline de police détruite explose elle aussi, et l'épave
+  // du pilote part dans une explosion : le compte attendu couvre missiles,
+  // berlines abattues et coque détruite.
   const destroyedPolice = callbacks.effects.filter((effect) => effect.type === 'police-destroyed').length;
-  const expectedExplosions = (audioCalls.missileLaunch || 0) + destroyedPolice;
+  const wreckExplosions = callbacks.effects.filter((effect) => effect.type === 'player-wrecked').length;
+  const expectedExplosions = (audioCalls.missileLaunch || 0) + destroyedPolice + wreckExplosions;
   if ((audioCalls.explosion || 0) > expectedExplosions || expectedExplosions - (audioCalls.explosion || 0) > 1) {
     fail('un missile ou une berline sans explosion (ou l’inverse)', audioCalls);
   }
@@ -714,7 +745,10 @@ for (const [index, city] of cities.entries()) {
     if (wreckEffects !== 1) fail('la course est perdue sans un unique effet d’épave', { wreckEffects, finish });
     if (finish.rank !== finish.racers.length) fail('une épave n’est pas classée dernière', { rank: finish.rank, racers: finish.racers.length });
     if (finish.racers.at(-1)?.id !== 'player') fail('le pilote détruit n’est pas en fin de tableau d’arrivée', finish.racers.map((r) => r.id));
-    if (!(maxDistance < RACE_DISTANCE - 1)) fail('une course perdue ne peut pas avoir couvert la distance totale', { maxDistance, RACE_DISTANCE });
+    // Le pilote n'a pas fini ; un rival, lui, peut franchir la ligne pendant
+    // les 3,2 s de l'épave (sa course continue, le pilote est classé dernier).
+    const playerDistance = finish.racers.find((racer) => racer.id === 'player')?.distance ?? maxDistance;
+    if (!(playerDistance < RACE_DISTANCE - 1)) fail('une course perdue ne peut pas avoir vu le pilote couvrir la distance totale', { playerDistance, RACE_DISTANCE });
     // La course ne peut plus se clore sur la ligne d'un rival pendant la toupie
     // (garde `!playerWrecked`) : une épave va au bout de ses 3,2 s.
     if (wreckSpinTurns < 60) fail(`l’épave n’a tourné que sur ${wreckSpinTurns} images`, wreckSpinTurns);
@@ -732,6 +766,8 @@ for (const [index, city] of cities.entries()) {
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
   if (callbacks.pickups.length && !respawnedPickups) fail('aucun bonus ramassé n’a réapparu après 0,1 s', callbacks.pickups.length);
+  // Les bonus restent sur la route devant le pilote, du premier au dernier tour.
+  if (rowStarvedFrames > 0) fail(`la route s’est vidée de ses bonus devant le pilote (${rowStarvedFrames} images sur ${rowAheadFrames + rowStarvedFrames})`, { rowStarvedFrames, rowAheadFrames, rowFrontGapMin });
   // Escouade de police du dernier tour : deux berlines, entrées derrière le
   // leader armées (bleu et rouge chargés, jaune vide), jamais classées,
   // sirène allumée puis éteinte.
@@ -887,7 +923,6 @@ for (const [index, city] of cities.entries()) {
   if (lastHud.playerHealthActive) fail('la barre de vie du pilote reste après l’arrivée', lastHud.playerHealth);
   let runningHealth = null;
   for (const effect of callbacks.effects) {
-    if (effect.type === 'player-wrecked') wreckEffects += 1;
     if (effect.type === 'player-health') {
       if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH) fail('la barre de vie du pilote n’a pas son maximum', effect);
       runningHealth = effect.health;
@@ -975,7 +1010,7 @@ for (const [index, city] of cities.entries()) {
   console.log(
     `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames` +
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
-    ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
+    ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · rangées devant le pilote chaque image (fenêtre ${Number.isFinite(rowFrontGapMin) ? rowFrontGapMin.toFixed(0) : '—'}–${rowFrontGapMax.toFixed(0)} m) · effets ${effectTypes.join('/')}` +
     ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage${policeStunFrames ? ` · ${policeStunFrames} f sonnée` : ''}` : 'jamais entrée'}` +
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +

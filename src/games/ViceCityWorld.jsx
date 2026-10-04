@@ -3382,7 +3382,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function updateRows(dt) {
-    const oldestRaceDistance = Math.min(distance, ...racers.map((racer) => racer.distance));
+    // Les rangées se recyclent derrière **le pilote**, pas derrière la voiture
+    // la plus lente du peloton. La réserve ne compte que douze rangées — environ
+    // 340 m de route : calée sur le traînard, elle laissait la piste sans aucun
+    // bonus devant un pilote qui comptait plus de 300 m d'avance sur lui, ce qui
+    // arrive au fil de la course, et donc surtout au dernier tour.
+    const rowRecycleAnchor = distance;
     const participants = [
       { id: 'player', distance, lane: playerLane, speed: currentSpeed },
       ...racers.map((racer) => ({ id: racer.id, distance: racer.distance, lane: racer.lane, speed: racer.stunLeft > 0 ? 0 : racer.baseSpeed, racer })),
@@ -3394,7 +3399,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     ].sort((a, b) => b.distance - a.distance);
 
     for (const row of rows) {
-      if (row.trackDistance < oldestRaceDistance - 11) {
+      if (row.trackDistance < rowRecycleAnchor - 11) {
         row.trackDistance = lastDistanceSlot + randomRange(24, 32);
         lastDistanceSlot = row.trackDistance;
         setupEncounter(row);
