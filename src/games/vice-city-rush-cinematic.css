@@ -1163,11 +1163,20 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
 }
 
+/* Fenêtre d'info des tours : opaque et nette (aucun flou), ancrée en bas à
+   gauche par la feuille de base ; le liseré rappelle la couleur de la ville. */
 .city-rush-page .city-rush-lap-banner {
   border: 1px solid #667181;
-  border-radius: 6px;
+  border-left: 3px solid var(--city-secondary, #43ead5);
+  border-radius: 5px;
   background: #10151d;
   box-shadow: 0 14px 38px rgba(0, 0, 0, .45);
+}
+
+.city-rush-page .city-rush-lap-banner.is-final {
+  border-color: #b79554;
+  border-left-color: #ffcf5c;
+  background: #1d1708;
 }
 
 .city-rush-page .city-rush-steering,

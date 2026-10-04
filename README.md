@@ -819,8 +819,12 @@ et le dernier tour durait 21 s.
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
-  · TOUR 2/4 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
-  rivaux annoncent leur dernier tour. Le dernier passage termine la course.
+  · TOUR 2/4 » — « LAP 2 », « LAP 3 » — (puis « DERNIER TOUR » en doré), la
+  carte TOUR du HUD avance, les rivaux annoncent leur dernier tour. Le dernier
+  passage termine la course. La bannière s'affiche **dans le coin inférieur
+  gauche** — au-dessus des flèches de direction sur ordinateur, au-dessus du
+  classement sur téléphone — et **sans flou** : fond opaque, texte net, entrée
+  et sortie par glissement (`crLapIn` ne touche plus à `filter`).
 - **Le grand dernier tour.** Il fait `CITY_RUSH_FINAL_LAP_LOOPS` = **2** boucles
   (1 200 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
   donc on le recroise **au milieu du dernier tour** : ce n'est qu'un **point de
