@@ -558,10 +558,11 @@ for (const [index, city] of cities.entries()) {
       if (squadCars.length && squadCars.some((car) => !(car.stunLeft > 0))) policeSquadFrames += 1;
       if (squadCars.length && squadCars.every((car) => car.stunLeft > 0)) policeStunFrames += 1;
       const hudLeader = Math.max(hud.distance || 0, ...(hud.racers || []).map((racer) => racer.distance || 0));
+      const assignedTargetDistance = (car) => car.targetId === 'player' ? (hud.distance || 0) : hudLeader;
       for (const car of hud.police) {
         const gap = (car.distance || 0) - (hud.distance || 0);
         if (gap > 0 && gap < 80) policeAheadFrames += 1;
-        policeClosestGap = Math.min(policeClosestGap, Math.abs((car.distance || 0) - hudLeader));
+        policeClosestGap = Math.min(policeClosestGap, Math.abs((car.distance || 0) - assignedTargetDistance(car)));
         if (car.mode) policeBeacons += 1;
         if (car.blocking || car.mode === 'blockade') policeBlockadeFrames += 1;
         if (car.rallied) {
@@ -604,7 +605,7 @@ for (const [index, city] of cities.entries()) {
         }
       }
       const squadGap = squadCars.length
-        ? Math.min(...squadCars.map((car) => Math.abs((car.distance || 0) - hudLeader)))
+        ? Math.min(...squadCars.map((car) => Math.abs((car.distance || 0) - assignedTargetDistance(car))))
         : Infinity;
       if (squadGap <= POLICE_ENGAGE_RANGE) policeEngagedFrames += 1;
       else if (squadCars.length && policeLooseSamples.length < 8) {
@@ -613,17 +614,19 @@ for (const [index, city] of cities.entries()) {
           gap: Math.round(squadGap),
           leader: Math.round(hudLeader),
           player: Math.round(hud.distance || 0),
-          squad: squadCars.map((car) => `${car.id}@${car.distance}/${car.mode || '?'}${car.stunLeft > 0 ? '/SONNÉE' : car.slowLeft > 0 ? '/ralentie' : ''}`).join(' '),
+          squad: squadCars.map((car) => `${car.id}->${car.targetId || 'leader'}@${car.distance}/${car.mode || '?'}${car.stunLeft > 0 ? '/SONNÉE' : car.slowLeft > 0 ? '/ralentie' : ''}`).join(' '),
         });
       }
-      const lag = squadCars.length ? hudLeader - Math.max(...squadCars.map((car) => car.distance || 0)) : 0;
+      const lag = squadCars.length
+        ? Math.max(0, ...squadCars.map((car) => assignedTargetDistance(car) - (car.distance || 0)))
+        : 0;
       if (lag > policeMaxLag) {
         policeMaxLag = lag;
         policeWorstLag = {
           frame: frames,
           hudLeader,
           player: hud.distance,
-          police: squadCars.map((car) => `${car.id}@${car.distance}${car.mode ? '/' + car.mode : ''}`).join(' '),
+          police: squadCars.map((car) => `${car.id}->${car.targetId || 'leader'}@${car.distance}${car.mode ? '/' + car.mode : ''}`).join(' '),
         };
       }
     }
@@ -762,7 +765,7 @@ for (const [index, city] of cities.entries()) {
   if (callbacks.pickups.length && !respawnedPickups) fail('aucun bonus ramassé n’a réapparu après 0,1 s', callbacks.pickups.length);
   // Les bonus restent sur la route devant le pilote, du premier au dernier tour.
   if (rowStarvedFrames > 0) fail(`la route s’est vidée de ses bonus devant le pilote (${rowStarvedFrames} images sur ${rowAheadFrames + rowStarvedFrames})`, { rowStarvedFrames, rowAheadFrames, rowFrontGapMin });
-  // Escouade du dernier tour : deux berlines sans charge rouge, jamais classées.
+  // Escouade du dernier tour : berline + SUV, sans charge rouge, jamais classée.
   const policeArrivals = callbacks.effects.filter((effect) => effect.type === 'police-arrival');
   if (policeArrivals.length !== 1) fail('l’escouade de police n’entre pas exactement une fois en piste', policeArrivals);
   if (!firstPoliceHud) fail('aucune berline de police dans le HUD pendant la course');
@@ -782,15 +785,35 @@ for (const [index, city] of cities.entries()) {
       .filter(Boolean);
     if (!seen.length) fail('une berline détruite n’est jamais apparue dans le HUD', effect);
     if (!(seen[0].health >= 1 && seen[0].health <= seen[0].maxHealth)) {
-      fail('une berline détruite n’avait pas de vie cohérente dans le HUD', seen[0]);
+      fail('une voiture détruite n’avait pas de vie cohérente dans le HUD', seen[0]);
+    }
+  }
+  const reinforcementEffects = callbacks.effects.filter((effect) => effect.type === 'police-reinforcement');
+  for (const effect of reinforcementEffects) {
+    if (effect.targetId !== 'player' || effect.target !== 'player') {
+      fail('un renfort policier ne prend pas le joueur pour cible', effect);
+    }
+    if (!['police', 'police-suv'].includes(effect.vehicleType)
+      || Boolean(effect.isSuv) !== (effect.vehicleType === 'police-suv')) {
+      fail('un renfort n’annonce pas correctement son modèle berline/SUV', effect);
+    }
+    const spawned = callbacks.huds
+      .map((hud) => (hud.police || []).find((car) => car.id === effect.id))
+      .find(Boolean);
+    if (!spawned || spawned.targetId !== 'player' || spawned.vehicleType !== effect.vehicleType) {
+      fail('le renfort annoncé n’apparaît pas dans le HUD en chasse contre le joueur', { effect, spawned });
     }
   }
   // Escouade du dernier tour (`police-*`) et police du trafic rappelée par un
   // contact (`rally-traffic-*`) partagent la même liste ; l'escouade reste
-  // limitée à deux berlines et n'entre jamais devant le leader.
+  // limitée à deux véhicules et n'entre jamais devant le leader.
   const squadCars = firstPoliceHud.police.filter((car) => String(car.id).startsWith('police-'));
   if (squadCars.length !== CITY_RUSH_POLICE_COUNT) {
-    fail(`${squadCars.length} berline(s) d’escouade en piste au lieu de ${CITY_RUSH_POLICE_COUNT}`, firstPoliceHud.police);
+    fail(`${squadCars.length} voiture(s) d’escouade en piste au lieu de ${CITY_RUSH_POLICE_COUNT}`, firstPoliceHud.police);
+  }
+  const initialVehicleTypes = squadCars.map((car) => car.vehicleType).sort();
+  if (initialVehicleTypes.join(',') !== 'police,police-suv') {
+    fail('l’escouade initiale doit contenir une berline et un SUV', squadCars);
   }
   if (firstPoliceHud.police.length > CITY_RUSH_POLICE_COUNT + 3) fail('trop de poursuivants en piste', firstPoliceHud.police);
   // Au départ, la mitrailleuse est vide ; l'hélicoptère est un appel de police

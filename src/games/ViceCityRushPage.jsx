@@ -92,7 +92,7 @@ const RACE_MODES = [
     id: 'circuit',
     name: 'CIRCUIT',
     label: '4 TOURS · CLASSIQUE',
-    desc: 'La formule originale, en plus long. 4 tours dont un dernier tour double, trafic, bonus, police uniquement au dernier tour.',
+    desc: 'La formule originale, en plus long. 4 tours dont un dernier tour double, trafic, bonus et police (berlines/SUV) uniquement au dernier tour, avec renforts après chaque destruction.',
     accent: '#43ead5',
     secondary: '#ff5db8',
     laps: 4,
@@ -116,7 +116,7 @@ const RACE_MODES = [
     id: 'pursuit',
     name: 'POURSUITE',
     label: '4 TOURS · POLICE TOTALE',
-    desc: 'Deux berlines d’interception dès le départ. Elles chargent leur mitrailleuse avec les bonus rouges et appellent gratuitement un hélicoptère une fois par course ; au dernier tour, les carambolages abîment la coque de ta voiture.',
+    desc: 'Une berline et un SUV d’interception dès le départ. Ils chargent leur mitrailleuse avec les bonus rouges et appellent gratuitement un hélicoptère une fois par course ; au dernier tour, des renforts remplacent chaque voiture détruite et les carambolages abîment la coque.',
     accent: '#ffd44f',
     secondary: '#ff526e',
     laps: 4,
@@ -575,7 +575,10 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-hit' && effect.source === 'pistol') {
       showToast(`AK-47 · ${effect.police} TOUCHÉE.`, 'pistol');
     }
-    else if (effect.type === 'police-destroyed') showToast(effect.byPlayer ? `💥 ${effect.police} DÉTRUITE · +200 PTS · ELLE QUITTE LA COURSE.` : `💥 ${effect.police} DÉTRUITE · ELLE QUITTE LA COURSE.`, 'radio');
+    else if (effect.type === 'police-destroyed') showToast(effect.byPlayer
+      ? `💥 ${effect.police} DÉTRUITE · +200 PTS${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`
+      : `💥 ${effect.police} DÉTRUITE${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`, 'radio');
+    else if (effect.type === 'police-reinforcement') showToast(`🚨 RENFORT · ${effect.police} TE PREND EN CHASSE.`, 'pistol');
     else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
       const wall = effect.walls > 1 ? 'PAROIS DES DEUX CÔTÉS' : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;
       showToast(`${effect.name} · ${effect.open} VOIES OUVERTES SUR 4 · ${wall}.`, 'neutral');
@@ -1237,7 +1240,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les berlines sont signalées dans la liste des positions. Chaque berline a une barre de vie : un tir d’AK-47, un tir d’hélicoptère ou trois carambolages la détruisent (explosion, retrait de la course et +200 pts). Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police a une barre de vie : un tir d’AK-47, un tir d’hélicoptère ou trois carambolages la détruisent (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
           </section>
         </aside>
       </main>

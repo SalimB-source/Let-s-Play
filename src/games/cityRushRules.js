@@ -1614,20 +1614,27 @@ export function selectCityRushRacers({
 }
 
 // ── L'escouade de police du dernier tour ────────────────────────────────────
-// Au passage du dernier tour, deux berlines d'interception entrent en piste
-// juste derrière le premier du classement. Elles ne sont **pas classées** :
+// Au passage du dernier tour, deux véhicules d'interception entrent en piste
+// juste derrière le premier du classement. L'escouade mélange berlines et SUV;
+// une unité détruite est remplacée par un renfort quelques secondes plus tard.
+// Elles ne sont **pas classées** :
 // `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
-// Leur seule mission est de nuire au leader : elles chargent la mitrailleuse
-// avec les bonus rouges et peuvent appeler une frappe d'hélicoptère une seule
-// fois par course, sans charger ce tir. Elles ne disposent d'aucune autre arme.
+// Leur mission est de harceler le leader à l'arrivée, puis celle des renforts
+// est de viser le joueur : ils chargent la mitrailleuse avec les bonus rouges
+// et l'escouade dispose d'une frappe d'hélicoptère gratuite une fois par course.
 //
-// Contrairement aux autres voitures de course, une berline est **solide** :
-// elle ne se traverse pas. Elle peut donc se rabattre devant le leader puis
+// Contrairement aux autres voitures de course, un véhicule de police est
+// **solide** : il ne se traverse pas. Il peut donc se rabattre devant le leader puis
 // lever le pied pour le retenir — un barrage roulant, exactement l'effet
 // d'une voiture lente percutée — avant de repartir et de revenir à la charge.
 export const CITY_RUSH_POLICE_COUNT = 2;
-// Une berline sur chacune des deux voies extérieures de la course : les
-// poursuivantes encadrent le leader sans démarrer dans la voie médiane, la plus
+// Les renforts reviennent par vagues plutôt qu'instantanément : assez de temps
+// pour profiter d'une destruction, sans laisser la poursuite retomber.
+export const CITY_RUSH_POLICE_REINFORCEMENT_DELAY = 3.6; // s
+// La deuxième voiture et les renforts de son slot utilisent le modèle SUV.
+export const CITY_RUSH_POLICE_VEHICLE_TYPES = Object.freeze(['police', 'police-suv']);
+// Un véhicule sur chacune des deux voies extérieures de la course : les
+// poursuivants encadrent le leader sans démarrer dans la voie médiane, la plus
 // exposée aux voitures qui viennent en face.
 export const CITY_RUSH_POLICE_LANES = Object.freeze([
   CITY_RUSH_FORWARD_LANES[0],

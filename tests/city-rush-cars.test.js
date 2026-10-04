@@ -13,7 +13,7 @@ globalThis.document = {
   createElement: (tag) => (tag === 'canvas' ? { width: 0, height: 0, getContext: () => mute, style: {} } : {}),
 };
 
-const { animateRacerCar, makeRacerCar, setRacerDriver } = await import('../src/games/cityRushCars.js');
+const { animateRacerCar, makeRacerCar, makeTrafficVehicle, setRacerDriver } = await import('../src/games/cityRushCars.js');
 const { CITY_RUSH_CARS, CITY_RUSH_DRIVERS, selectCityRushRacers } = await import('../src/games/cityRushRules.js');
 const ROSTER = selectCityRushRacers({ cityId: 'vice-city', carId: CITY_RUSH_CARS[0].id, runId: 0 });
 
@@ -58,6 +58,23 @@ test('les six voitures ont des coques fermées distinctes et des vitrages opaque
   });
 
   assert.equal(signatures.size, CITY_RUSH_CARS.length, 'les six miniatures ont six formes 3D différentes');
+});
+
+test('la flotte de police comprend une berline et un SUV haut perché', () => {
+  const sedan = makeTrafficVehicle('police');
+  const suv = makeTrafficVehicle('police-suv');
+  const sedanBounds = new THREE.Box3().setFromObject(sedan);
+  const suvBounds = new THREE.Box3().setFromObject(suv);
+
+  assert.equal(sedan.userData.trafficType, 'police');
+  assert.equal(sedan.userData.isPoliceSUV, false);
+  assert.equal(suv.userData.trafficType, 'police-suv');
+  assert.equal(suv.userData.isPoliceSUV, true);
+  assert.ok(suv.userData.width > sedan.userData.width, 'le SUV a une carrosserie plus large');
+  assert.ok(suv.userData.length > sedan.userData.length, 'le SUV a un empattement plus long');
+  assert.ok(suvBounds.max.y > sedanBounds.max.y + 0.2, 'le toit du SUV est visiblement plus haut que celui de la berline');
+  assert.equal(suv.userData.wheels.length, 4);
+  assert.equal(suv.userData.beacons.length, 2);
 });
 
 test('les coupés ne contiennent aucun personnage, même quand un pilote est assigné', () => {

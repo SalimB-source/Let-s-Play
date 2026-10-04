@@ -52,6 +52,8 @@ import {
   CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED,
   CITY_RUSH_POLICE_BLOCKADE_RANGE,
   CITY_RUSH_POLICE_BLOCK_RANGE,  CITY_RUSH_POLICE_COUNT,
+  CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
+  CITY_RUSH_POLICE_VEHICLE_TYPES,
   CITY_RUSH_POLICE_DAMAGE,
   CITY_RUSH_POLICE_HEALTH,
   CITY_RUSH_POLICE_START_CHARGES,
@@ -739,17 +741,18 @@ test('a collected item bursts into shards, then reappears 0.1 s later', () => {
   assert.ok(Math.max(...samples) > 1, 'léger rebond avant de se stabiliser');
 });
 
-test('au dernier tour, deux berlines de police chassent le premier — hors classement', () => {
+test('au dernier tour, une berline et un SUV de police chassent le premier — hors classement', () => {
   assert.equal(CITY_RUSH_POLICE_COUNT, 2);
+  assert.deepEqual([...CITY_RUSH_POLICE_VEHICLE_TYPES], ['police', 'police-suv']);
+  assert.ok(CITY_RUSH_POLICE_REINFORCEMENT_DELAY > 0 && CITY_RUSH_POLICE_REINFORCEMENT_DELAY <= 5);
   // La mitrailleuse rouge est le seul bonus de tir que la police convoite.
   assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol']);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
   // Aucune berline ne porte un identifiant de pilote classé : la grille garde
   // trois pilotes, et l'arrivée ne peut pas compter les voitures de police.
   assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno']);
-  // Les deux berlines partent sur les voies extérieures de la course ; leur
-  // barrage est encadré dans le temps : elles se rabattent, freinent, puis
-  // repartent.
+  // La berline et le SUV partent sur les voies extérieures ; leur barrage est
+  // encadré dans le temps : ils se rabattent, freinent, puis repartent.
   assert.equal(CITY_RUSH_POLICE_LANES.length, CITY_RUSH_POLICE_COUNT, 'une voie de départ par berline');
   assert.deepEqual([...CITY_RUSH_POLICE_LANES], [3, 5]);
   assert.ok(CITY_RUSH_POLICE_LANES.every((lane) => CITY_RUSH_FORWARD_LANES.includes(lane)));
