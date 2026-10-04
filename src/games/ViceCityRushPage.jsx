@@ -604,12 +604,22 @@ export default function ViceCityRushPage() {
     showToast(message, pickup.type);
   };
 
-  // Navigation intro en 3 écrans
-  const goNext = () => {
+  // Les vignettes sont les actions principales : mode → parcours → voiture.
+  // Le dernier choix lance directement le compte à rebours, sans bouton séparé.
+  const chooseMode = (nextModeId) => {
     setStoryMode(false);
-    if (introStep === 'mode') setIntroStep('city');
-    else if (introStep === 'city') setIntroStep('garage');
-    else startRace();
+    setModeId(nextModeId);
+    setIntroStep('city');
+  };
+  const chooseCity = (nextCityId) => {
+    setStoryMode(false);
+    setCityId(nextCityId);
+    setIntroStep('garage');
+  };
+  const chooseCarAndStart = (nextCarId) => {
+    setStoryMode(false);
+    setCarId(nextCarId);
+    startRace();
   };
   const goBack = () => {
     if (introStep === 'garage') setIntroStep('city');
@@ -869,30 +879,33 @@ export default function ViceCityRushPage() {
                       <p>La ville est à toi. Lance l’histoire de Nico Vega ou choisis ton défi : circuit, sprint ou poursuite à travers cinq villes et la route 66.</p>
                     </div>
 
-                    <div className="city-rush-story-banner" role="region" aria-label="Mode Histoire Nico Vega">
-                      <div className="city-rush-story-banner-visual" aria-hidden="true">
+                    <button
+                      type="button"
+                      className="city-rush-story-banner"
+                      onClick={beginStory}
+                      aria-label={`Lancer le mode histoire de Nico Vega${storyChapter >= STORY_CHAPTERS.length ? ', recommencer la campagne' : `, chapitre ${nextStoryIndex + 1} sur ${STORY_CHAPTERS.length}`}`}
+                    >
+                      <span className="city-rush-story-banner-visual" aria-hidden="true">
                         <img src={`${import.meta.env.BASE_URL || '/'}vice-city-story-vice-city.webp`} alt="" />
                         <span className="city-rush-story-banner-badge">
                           {storyChapter >= STORY_CHAPTERS.length
                             ? 'CAMPAGNE TERMINÉE'
                             : `CHAPITRE ${String(nextStoryIndex + 1).padStart(2, '0')} / ${String(STORY_CHAPTERS.length).padStart(2, '0')}`}
                         </span>
-                      </div>
-                      <div className="city-rush-story-banner-body">
-                        <div className="city-rush-story-banner-meta">
+                      </span>
+                      <span className="city-rush-story-banner-body">
+                        <span className="city-rush-story-banner-meta">
                           <span className="city-rush-mode-tag" style={{ '--tag-accent': '#ff5d7e' }}>CAMPAGNE SOLO</span>
                           <small>VEGA GT ’67 · {previewStoryCity.name.toUpperCase()} · {previewStoryChapter.title.toUpperCase()}</small>
-                        </div>
+                        </span>
                         <b>MODE HISTOIRE · NICO VEGA</b>
-                        <p>{previewStoryChapter.text}</p>
-                        <div className="city-rush-story-banner-actions">
-                          <button type="button" className="city-rush-start-button city-rush-story-start-btn" onClick={beginStory}>
-                            MODE HISTOIRE · NICO VEGA <span>▶</span>
-                          </button>
+                        <span className="city-rush-story-description">{previewStoryChapter.text}</span>
+                        <span className="city-rush-story-banner-actions">
+                          <span className="city-rush-story-launch-label">MODE HISTOIRE · NICO VEGA <i aria-hidden="true">↗</i></span>
                           <small>6 courses · cinématiques · progression sauvegardée</small>
-                        </div>
-                      </div>
-                    </div>
+                        </span>
+                      </span>
+                    </button>
 
                     <div className="city-rush-mode-picker" role="group" aria-label="Choisir un mode de course">
                       {RACE_MODES.map((m, index) => (
@@ -901,7 +914,7 @@ export default function ViceCityRushPage() {
                           type="button"
                           className={`city-rush-mode-card${modeId === m.id ? ' is-selected' : ''}`}
                           style={{ '--mode-accent': m.accent, '--mode-secondary': m.secondary }}
-                          onClick={() => { setStoryMode(false); setModeId(m.id); }}
+                          onClick={() => chooseMode(m.id)}
                           aria-pressed={modeId === m.id}
                         >
                           <span className="city-rush-mode-number">0{index + 1}</span>
@@ -909,15 +922,16 @@ export default function ViceCityRushPage() {
                           <span className="city-rush-mode-icon" aria-hidden="true">{m.icon}</span>
                           <b>{m.name}</b>
                           <small>{m.label}</small>
-                          <p>{m.desc}</p>
-                          <span className="city-rush-mode-laps"><i />{m.laps} TOUR{m.laps > 1 ? 'S' : ''} · {cityRushRaceDistance(m.laps)} M</span>
+                          <span className="city-rush-mode-description">{m.desc}</span>
+                          <span className="city-rush-mode-card-footer">
+                            <span className="city-rush-mode-laps"><i />{m.laps} TOUR{m.laps > 1 ? 'S' : ''} · {cityRushRaceDistance(m.laps)} M</span>
+                            <span className="city-rush-card-action">VILLE <i aria-hidden="true">↗</i></span>
+                          </span>
                         </button>
                       ))}
                     </div>
                     <div className="city-rush-intro-actions">
-                      <button type="button" className="city-rush-start-button" onClick={goNext} style={{ '--city-accent': mode.accent, '--city-secondary': mode.secondary }}>
-                        CHOISIR LA VILLE ({mode.name}) <span>→</span>
-                      </button>
+                      <span className="city-rush-selection-hint">Choisis une vignette de mode pour continuer <i aria-hidden="true">↗</i></span>
                       <div className="city-rush-best-note"><span>MODE LIBRE SÉLECTIONNÉ</span><b>{mode.name}</b></div>
                     </div>
                   </>
@@ -937,7 +951,7 @@ export default function ViceCityRushPage() {
                           type="button"
                           className={`city-rush-city-card${cityId === option.id ? ' is-selected' : ''}${option.id === 'route-66' ? ' is-route-66' : ''}`}
                           style={{ '--card-accent': option.accent, '--card-secondary': option.secondary }}
-                          onClick={() => setCityId(option.id)}
+                          onClick={() => chooseCity(option.id)}
                           aria-pressed={cityId === option.id}
                         >
                           <span className={`city-rush-city-thumb is-${option.id}`} aria-hidden="true">
@@ -956,8 +970,11 @@ export default function ViceCityRushPage() {
                               <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLimit} {option.route.speedUnit || 'km/h'}
                             </em>
                           )}
-                          <span className="city-rush-city-preview" aria-hidden="true">
-                            <i style={{ background: option.accent }} /><i style={{ background: option.secondary }} />
+                          <span className="city-rush-city-card-footer">
+                            <span className="city-rush-city-preview" aria-hidden="true">
+                              <i style={{ background: option.accent }} /><i style={{ background: option.secondary }} />
+                            </span>
+                            <span className="city-rush-card-action">GARAGE <i aria-hidden="true">↗</i></span>
                           </span>
                         </button>
                       ))}
@@ -965,7 +982,7 @@ export default function ViceCityRushPage() {
                     {worldError && <p className="city-rush-error" role="alert">Le moteur 3D n’a pas pu démarrer : {worldError}</p>}
                     <div className="city-rush-intro-actions">
                       <button type="button" className="city-rush-text-button" onClick={goBack}>← MODE</button>
-                      <button type="button" className="city-rush-start-button" onClick={goNext}>GARAGE <span>→</span></button>
+                      <span className="city-rush-selection-hint">Choisis une course pour ouvrir le garage <i aria-hidden="true">↗</i></span>
                       <div className="city-rush-best-note"><span>MEILLEUR CHRONO · {city.name}</span><b>{bestTime ? formatTime(bestTime) : '— : —'}</b></div>
                     </div>
                   </>
@@ -976,47 +993,12 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
                       <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>Choisis ta machine, son caractère et ton pilote. Six sportives aux silhouettes inspirées des grands coupés européens, sans logos ni noms de constructeurs réels.</p>
+                      <p>Choisis ton pilote si tu le souhaites, puis touche une sportive pour lancer la course. Six machines inspirées des grands coupés européens, sans logos ni noms de constructeurs réels.</p>
                     </div>
-
-                    <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
-                      <div className="city-rush-car-select-heading">
-                        <span id="city-rush-car-title">GARAGE · 6 SPORTIVES</span>
-                        <small>{selectedCar.name} · {selectedCar.className}</small>
-                      </div>
-                      <div className="city-rush-car-grid" role="group" aria-label="Choisir une voiture">
-                        {CITY_RUSH_CARS.map((car, index) => (
-                          <button key={car.id} type="button" className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}`} style={{ '--car-accent': car.accent }} onClick={() => setCarId(car.id)} aria-pressed={carId === car.id}>
-                            <span className="city-rush-car-card-top">
-                              <span className="city-rush-car-image" aria-hidden="true">
-                                <img
-                                  src={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[car.id] || CAR_THUMBNAILS['vice-roadster']}`}
-                                  alt=""
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                              </span>
-                              <span className="city-rush-car-number">0{index + 1}</span>
-                            </span>
-                            <b className="city-rush-car-name">{car.name}</b>
-                            <small className="city-rush-car-class">{car.className}</small>
-                            <span className="city-rush-car-stats">
-                              {CAR_STATS.map((stat) => (
-                                <span className="city-rush-car-stat" key={stat.key}>
-                                  <small>{stat.label}</small>
-                                  <i className="city-rush-car-stat-track" aria-hidden="true"><i style={{ width: `${car[stat.key]}%` }} /></i>
-                                  <b>{car[stat.key]}</b>
-                                </span>
-                              ))}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </section>
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-driver-title">CHOISIS TON PILOTE · {mode.name}</span>
+                        <span id="city-rush-driver-title">PILOTE · FACULTATIF · {mode.name}</span>
                       </div>
                       <div className="city-rush-driver-grid" role="group" aria-label="Choisir un pilote">
                         {roster.map((driver) => (
@@ -1039,11 +1021,54 @@ export default function ViceCityRushPage() {
                       </div>
                     </section>
 
+                    <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
+                      <div className="city-rush-car-select-heading">
+                        <span id="city-rush-car-title">GARAGE · 6 SPORTIVES</span>
+                        <small>{selectedCar.name} · TOUCHE POUR PARTIR</small>
+                      </div>
+                      <div className="city-rush-car-grid" role="group" aria-label="Lancer une course avec une voiture">
+                        {CITY_RUSH_CARS.map((car, index) => (
+                          <button
+                            key={car.id}
+                            type="button"
+                            className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}`}
+                            style={{ '--car-accent': car.accent }}
+                            onClick={() => chooseCarAndStart(car.id)}
+                            aria-label={`Lancer le mode ${mode.name} à ${city.name} avec ${car.name}`}
+                          >
+                            <span className="city-rush-car-card-top">
+                              <span className="city-rush-car-image" aria-hidden="true">
+                                <img
+                                  src={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[car.id] || CAR_THUMBNAILS['vice-roadster']}`}
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </span>
+                              <span className="city-rush-car-number">0{index + 1}</span>
+                            </span>
+                            <b className="city-rush-car-name">{car.name}</b>
+                            <small className="city-rush-car-class">{car.className}</small>
+                            <span className="city-rush-car-stats">
+                              {CAR_STATS.map((stat) => (
+                                <span className="city-rush-car-stat" key={stat.key}>
+                                  <small>{stat.label}</small>
+                                  <i className="city-rush-car-stat-track" aria-hidden="true"><i style={{ width: `${car[stat.key]}%` }} /></i>
+                                  <b>{car[stat.key]}</b>
+                                </span>
+                              ))}
+                            </span>
+                            <span className="city-rush-card-action is-launch">LANCER LA COURSE <i aria-hidden="true">↗</i></span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
                     {worldError && <p className="city-rush-error" role="alert">Le moteur 3D n’a pas pu démarrer : {worldError}</p>}
 
                     <div className="city-rush-intro-actions">
                       <button type="button" className="city-rush-text-button" onClick={goBack}>← VILLE</button>
-                      <button type="button" className="city-rush-start-button" onClick={startRace}>DÉMARRER · {mode.name} <span>↗</span></button>
+                      <span className="city-rush-selection-hint">Touche une voiture pour lancer · {mode.name}</span>
                       <div className="city-rush-best-note"><span>{city.name} · {mode.label}</span><b>{bestTime ? formatTime(bestTime) : '— : —'}</b></div>
                     </div>
                   </>
