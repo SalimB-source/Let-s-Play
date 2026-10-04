@@ -82,6 +82,10 @@ export default function MirageCharacterPortrait({ character = 0, colors = null, 
           <circle cx="78" cy="51" r="1.6" fill="#fff4d7" />
           <circle cx="78.4" cy="51" r="0.85" fill="#21182a" />
           <ellipse cx="82.4" cy="49.6" rx="1.4" ry="1.1" fill="#2d2334" opacity=".7" />
+          {/* Bride assortie au modèle 3D : frontale, montant de joue et muserolle. */}
+          <path d="M72 45.5 Q77 43.4 82.4 46.2" fill="none" stroke={mane} strokeWidth="2" strokeLinecap="round" opacity=".85" />
+          <path d="M75.4 47.4 Q76.6 52 79.4 55.4" fill="none" stroke={mane} strokeWidth="1.8" strokeLinecap="round" opacity=".85" />
+          <path d="M79.8 55.6 Q82.6 55.8 84.2 52.6" fill="none" stroke={mane} strokeWidth="2" strokeLinecap="round" opacity=".85" />
           <path d="M31 75 L30 88 M42 75 L42 90 M62 74 L63 87 M71 73 L73 85" fill="none" stroke={mane} strokeWidth="5" strokeLinecap="round" />
           {/* Sabots : un capuchon sombre au bout de chaque jambe. */}
           <path d="M30 86.6 L30 89 M42 88.4 L42 90.6 M63 85.4 L63 87.6 M73 83.4 L73 85.6" fill="none" stroke="#2d2334" strokeWidth="5" strokeLinecap="round" opacity=".92" />

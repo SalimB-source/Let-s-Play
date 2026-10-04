@@ -169,7 +169,20 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
     // Sacoches de voyage sur la croupe, avec leur rabat.
     block(cube, trim, horseBody, [side * 0.5, 1.12, 0.62], [0.22, 0.44, 0.44]);
     block(cube, maneShade, horseBody, [side * 0.5, 1.36, 0.62], [0.24, 0.09, 0.46]);
+    // Épaule et hanche en relief : le fût n'est plus un parallélépipède, la
+    // silhouette se creuse à la taille entre les deux masses musculaires.
+    block(cube, coat, horseBody, [side * 0.42, 1.04, -0.5], [0.1, 0.52, 0.6]);
+    block(cube, coatShade, horseBody, [side * 0.42, 1.02, 0.52], [0.1, 0.58, 0.56]);
   }
+  // Garrot : l'encolure se fond dans le dos au lieu de poser sur un angle.
+  block(cube, coat, horseBody, [0, 1.38, -0.44], [0.42, 0.26, 0.34]);
+  // Ventre arrondi qui descend un ton plus sombre sous le fût.
+  block(cube, coatShade, horseBody, [0, 0.6, 0.02], [0.72, 0.22, 1.1]);
+  // Sangle de selle sous le ventre et poitrail sanglé : le harnachement tient
+  // la selle en place, comme sur la jument de Link.
+  block(cube, maneShade, horseBody, [0, 0.95, 0.14], [0.87, 0.78, 0.13]);
+  block(cube, maneShade, horseBody, [0, 1.16, -0.85], [0.78, 0.16, 0.07]);
+  block(cube, trim, horseBody, [0, 1.16, -0.89], [0.11, 0.11, 0.04]);
   mergeStaticBlocks(horseBody);
 
   // ── La tête : encolure, chanfrein, naseaux, œil et crinière (elle hoche) ──
@@ -177,9 +190,9 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   horseHead.name = 'horse-head';
   horseHead.position.set(0, 1.35, -0.5);
   horseMount.add(horseHead);
-  const neck = block(cube, coat, horseHead, [0, 0.13, -0.14], [0.46, 1.02, 0.52]);
+  const neck = block(cube, coat, horseHead, [0, 0.13, -0.14], [0.5, 1.02, 0.56]);
   neck.rotation.x = -0.25;
-  block(cube, coat, horseHead, [0, 0.6, -0.42], [0.46, 0.46, 0.82]);
+  block(cube, coat, horseHead, [0, 0.6, -0.42], [0.48, 0.46, 0.84]);
   block(cube, coatLight, horseHead, [0, 0.53, -0.94], [0.42, 0.34, 0.24]); // museau
   for (const side of [-1, 1]) {
     // Naseau en relief sur le bout du museau (sinon il est noyé dans le bloc).
@@ -188,7 +201,19 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
     block(cube, eyeWhite, horseHead, [side * 0.235, 0.64, -0.65], [0.02, 0.19, 0.22]);
     block(cube, eyeDark, horseHead, [side * 0.245, 0.645, -0.65], [0.022, 0.14, 0.14]);
     block(cube, coat, horseHead, [side * 0.17, 0.91, -0.28], [0.13, 0.34, 0.16]); // oreille
+    // Joue en relief sous l'œil : de profil, la tête n'est plus une planche.
+    block(cube, coat, horseHead, [side * 0.2, 0.48, -0.4], [0.1, 0.26, 0.36]);
+    // Montant de bride le long de la joue, sous l'œil.
+    block(cube, maneShade, horseHead, [side * 0.252, 0.45, -0.72], [0.03, 0.2, 0.44]);
   }
+  // Ganache sombre sous la joue, lèvre claire sous le museau.
+  block(cube, coatShade, horseHead, [0, 0.34, -0.42], [0.34, 0.13, 0.5]);
+  block(cube, coatLight, horseHead, [0, 0.4, -1.0], [0.28, 0.1, 0.18]);
+  // Muserolle sur le nez et frontale au-dessus des yeux : le cheval est monté.
+  block(cube, maneShade, horseHead, [0, 0.6, -1.07], [0.44, 0.09, 0.05]);
+  block(cube, maneShade, horseHead, [0, 0.79, -0.83], [0.47, 0.07, 0.05]);
+  // Toupet qui retombe entre les deux oreilles.
+  block(cube, mane, horseHead, [0, 0.93, -0.44], [0.17, 0.24, 0.22]);
   // Liste (bande claire sur le chanfrein) — même couleur que la robe par défaut.
   block(cube, marks, horseHead, [0, 0.62, -0.836], [0.15, 0.36, 0.02]);
   block(cube, marks, horseHead, [0, 0.75, -0.6], [0.15, 0.02, 0.46]);
@@ -223,15 +248,17 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
     horseLegs.push(leg);
   }
 
-  // Queue en trois mèches : une seule brique ne donnait qu'un bâton.
+  // Queue en quatre mèches étagées, large à la naissance : une seule brique ne
+  // donnait qu'un bâton, trois donnaient un fouet — quatre donnent une queue.
   const horseTail = new THREE.Group();
   horseTail.name = 'horse-tail';
-  horseTail.position.set(0, 1.12, 0.8);
+  horseTail.position.set(0, 1.18, 0.82);
   horseTail.rotation.x = -0.35;
   horseMount.add(horseTail);
-  block(cube, mane, horseTail, [0, -0.18, 0.04], [0.24, 0.42, 0.26]);
-  block(cube, maneShade, horseTail, [0, -0.52, 0.12], [0.21, 0.36, 0.23]);
-  block(cube, maneShade, horseTail, [0, -0.82, 0.18], [0.16, 0.3, 0.19]);
+  block(cube, mane, horseTail, [0, -0.14, 0.05], [0.3, 0.46, 0.3]);
+  block(cube, mane, horseTail, [0, -0.46, 0.13], [0.26, 0.42, 0.26]);
+  block(cube, maneShade, horseTail, [0, -0.76, 0.2], [0.21, 0.38, 0.21]);
+  block(cube, maneShade, horseTail, [0, -1.02, 0.27], [0.15, 0.3, 0.15]);
   mergeStaticBlocks(horseTail);
 
   const rider = new THREE.Group();
@@ -245,6 +272,15 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   cape.name = 'rider-cape';
   block(cube, trim, riderBody, [0, 1.72, 0.42], [0.12, 0.57, 0.03]);
   block(cube, hood, riderBody, [0, 2.38, 0.02], [0.52, 0.46, 0.52]);
+  // Épaules débordantes et col : le buste n'est plus un simple pavé, la
+  // silhouette se cintre entre épaules larges et taille sanglée.
+  for (const side of [-1, 1]) {
+    block(cube, cloth, riderBody, [side * 0.34, 2.12, 0.04], [0.22, 0.26, 0.36]);
+  }
+  block(cube, cloth, riderBody, [0, 2.2, 0.02], [0.62, 0.16, 0.55]);
+  // Ceinture de cuir et boucle : la tunique s'arrête sur la taille.
+  block(cube, maneShade, riderBody, [0, 1.52, 0.05], [0.66, 0.14, 0.5]);
+  block(cube, trim, riderBody, [0, 1.52, -0.18], [0.1, 0.09, 0.04]);
 
   // Le pan de la cape bat la croupe au galop (voir `parts.capeFlap`).
   const capeFlap = new THREE.Group();
@@ -299,21 +335,29 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   riderBody.add(armGroup);
   const arms = [];
   for (const side of [-1, 1]) {
-    // Les cuisses descendent en biais depuis la selle, puis les bottes sortent
-    // franchement des flancs : la silhouette du cavalier reste lisible en course.
-    const thigh = block(cube, cloth, riderBody, [side * 0.43, 1.47, 0.05], [0.28, 0.54, 0.38]);
-    thigh.rotation.z = side * 0.52;
-    const bootX = side * 0.62;
-    block(cube, mane, riderBody, [bootX, 1.1, 0.05], [0.24, 0.55, 0.34]);
-    block(cube, cloth, riderBody, [bootX, 1.34, 0.05], [0.3, 0.2, 0.37]);
+    // Les cuisses descendent presque à la verticale depuis la selle et les
+    // bottes longent les flancs, dans l'alignement des étriers : vues de face
+    // ou de dos, les jambes ne dépassent plus sur les côtés de la monture.
+    const thigh = block(cube, cloth, riderBody, [side * 0.4, 1.47, 0.05], [0.26, 0.54, 0.38]);
+    thigh.rotation.z = side * 0.3;
+    const bootX = side * 0.48;
+    block(cube, mane, riderBody, [bootX, 1.1, 0.05], [0.2, 0.55, 0.34]);
+    block(cube, cloth, riderBody, [bootX, 1.34, 0.05], [0.26, 0.2, 0.37]);
     block(cube, trim, riderBody, [bootX, 1.02, 0.24], [0.12, 0.07, 0.09]);
     // Les bras restent à la largeur des épaules et tiennent toujours les rênes.
+    // L'épaule plie vers l'avant (et non vers l'arrière) : la main va aux
+    // rênes au lieu de flotter en planche au-dessus de l'encolure.
     const armX = side * 0.43;
-    const arm = block(cube, cloth, armGroup, [armX * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
-    arm.rotation.x = -0.8;
+    const arm = block(cube, cloth, armGroup, [armX * 0.8, 1.94, -0.3], [0.2, 0.52, 0.22]);
+    arm.rotation.x = 0.72;
     arms.push(arm);
     block(cube, mane, riderBody, [armX * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
+    // Main nue au bout du bras, posée sur la rêne.
+    block(cube, hood, armGroup, [side * 0.28, 1.76, -0.56], [0.13, 0.13, 0.17]);
   }
+  // Les deux mains partagent une matière : on les soude sans toucher aux bras,
+  // qui restent des nœuds à part (le monde les anime via `armGroup`).
+  mergeStaticBlocks(armGroup, new Set(arms));
   // `cape` et `hat` restent des nœuds à part : l'un bat au galop, l'autre tombe
   // pour Cloud. (Les groupes `cape-flap`, `rider-face` et `rider-arms` ont leur
   // propre collecte de blocs et ne sont donc pas touchés ici.)

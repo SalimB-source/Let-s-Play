@@ -544,7 +544,8 @@ bouge.
 |---|---|
 | Cheval (`mirageExplorer.js`) | yeux (blanc + pupille) et naseaux, museau plus clair, liste sur le chanfrein, oreilles, **crinière en trois mèches** ; poitrail éclairci et arrière-main assombri ; selle complète (tapis, selle, pommeau, **étriers suspendus**, **sacoches** à rabats) ; sabots sombres et balzanes |
 | Cavalier | **yeux, bandana remonté sur le nez et nœud dans la nuque** — c'est ce que voit la caméra de course —, quartier de pantalon, éperon au talon, cordon au chapeau |
-| Queue | trois mèches dégradées au lieu d'un bâton |
+| Queue | trois mèches dégradées au lieu d'un bâton, puis **quatre mèches étagées** larges à la naissance |
+| Seconde passe | joue et ganache, toupet entre les oreilles, **bride complète** (montants, muserolle, frontale), garrot, ventre arrondi, **sangle et poitrail sanglé** à l'anneau ; cavalier : épaules, col, ceinture à boucle et **mains posées sur les rênes**, bras pliés à l'épaule vers l'avant |
 | Jambes | deux segments sur **toutes** les montures (cheval, Épona, chocobo) : la cuisse part de la hanche, le genou se plie et le sabot se replie à chaque foulée — au saut, les antérieurs s'étendent et les postérieurs se replient sous le corps |
 | Mouvement | la **tête hoche**, les **bras tirent sur les rênes**, le **pan de cape bat** la croupe, la queue balance et les genoux se plient — joueur **et** rivaux, chacun à sa phase |
 | Boutique | les vignettes 3D animent la tête, les rênes, les genoux et le pan de cape ; les portraits 2D (`MirageCharacterPortrait`) reçoivent les yeux du cavalier, son bandana, le mors, la rêne et les sabots |
@@ -565,10 +566,10 @@ Un seul mesh par matière, donc :
 
 | Skin | Meshes (avant → après) | Triangles (avant → après) |
 |---|---|---|
-| Alezan (base) | 41 → **44** | 492 → **1008** |
-| Gyro | 55 → **58** | 1540 → **2056** |
-| Cloud | 95 → **100** | 1136 → **1676** |
-| Link | 142 → **149** | 1662 → **2226** |
+| Alezan (base) | 44 → **48** | 1008 → **1344** |
+| Gyro | 58 → **62** | 2056 → **2392** |
+| Cloud | 100 → **104** | 1676 → **2012** |
+| Link | 149 → **153** | 2226 → **2562** |
 
 Le double de triangles pour quelques appels de dessin de plus : c'est le prix du
 regard, de la sellerie et d'un vrai galop. Épona et le chocobo ont le même genou
