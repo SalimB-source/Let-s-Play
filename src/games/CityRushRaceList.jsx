@@ -30,7 +30,7 @@ export default function CityRushRaceList({ racers = [], pursuers = [], laps = 1 
       <div className="city-rush-race-list-head">
         <span className="city-rush-race-list-title"><i aria-hidden="true" /> POSITIONS</span>
         <span className="city-rush-race-list-badges">
-          {police.length > 0 && <b title={`${police.length} berline${police.length > 1 ? 's' : ''} de police en piste`}>🚨 ×{police.length}</b>}
+          {police.length > 0 && <b title={`${police.length} véhicule${police.length > 1 ? 's' : ''} de police en piste`}>🚨 ×{police.length}</b>}
           <em>T{Math.min(focus?.lap || 1, activeLaps)}/{activeLaps}</em>
         </span>
       </div>

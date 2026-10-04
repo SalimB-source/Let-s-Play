@@ -12,6 +12,9 @@ const lerp = (a, b, amount) => a + (b - a) * amount;
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
 let smokeTexture = null;
 let trafficDecals = null;
+// Profil réservé aux véhicules d'interception : les SUV policiers ne font pas
+// partie du trafic aléatoire, mais réutilisent le même constructeur 3D.
+const POLICE_SUV_PROFILE = Object.freeze({ id: 'police-suv', width: 2.02, length: 4.35 });
 
 function standard(color, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.78, metalness: 0.08, ...extra });
@@ -94,11 +97,13 @@ export function createSmokePool(count = 48) {
 
 // ─── Trafic ──────────────────────────────────────────────────────────────────
 export function makeTrafficVehicle(type) {
-  const spec = CITY_RUSH_TRAFFIC_TYPES.find((vehicle) => vehicle.id === type) || CITY_RUSH_TRAFFIC_TYPES[0];
+  const spec = CITY_RUSH_TRAFFIC_TYPES.find((vehicle) => vehicle.id === type)
+    || (type === POLICE_SUV_PROFILE.id ? POLICE_SUV_PROFILE : CITY_RUSH_TRAFFIC_TYPES[0]);
   if (!trafficDecals) trafficDecals = makeTrafficDecalAtlas();
   const isTruck = type === 'garbage-truck';
   const isSports = type === 'white-lambo';
-  const police = type === 'police';
+  const policeSUV = type === 'police-suv';
+  const police = type === 'police' || policeSUV;
   const ambulance = type === 'ambulance';
   const bodyColor = police ? 0xf2f3f0 : ambulance ? 0xf8f7f0 : isTruck ? 0x4d8f55 : 0xf7f7f4;
   const accentColor = police ? 0x142947 : ambulance ? 0xe64a50 : isTruck ? 0xe0b847 : 0x1a1f2b;
@@ -167,6 +172,32 @@ export function makeTrafficVehicle(type) {
     }
     box(m.dark, [0, 0.36, -1.9], [width * 0.98, 0.1, 0.1]);
     for (const x of [-0.4, -0.15, 0.15, 0.4]) b.cylinder(m.chrome, [x, 0.4, 1.9], 0.04, 0.04, 0.1, 8, [Math.PI / 2, 0, 0]);
+  } else if (policeSUV) {
+    // SUV d'interception : caisse plus haute et plus carrée qu'une berline,
+    // fenêtres latérales verticales, marchepieds et pare-chocs renforcés.
+    box(m.dark, [0, 0.34, 0], [width * 0.94, 0.17, length * 0.93]);
+    box(m.body, [0, 0.62, 0], [width, 0.5, length * 0.92]);
+    box(m.body, [0, 0.89, -length * 0.31], [width * 0.97, 0.13, 1.18]); // capot haut
+    box(m.body, [0, 1.19, 0.18], [width * 0.9, 0.72, 2.45]); // pavillon carré
+    box(m.glass, [0, 1.27, -0.83], [width * 0.8, 0.48, 0.06], [0.24, 0, 0]);
+    box(m.glass, [0, 1.27, 1.36], [width * 0.78, 0.47, 0.06], [-0.18, 0, 0]);
+    for (const side of [-1, 1]) {
+      box(m.glass, [side * width * 0.44, 1.27, 0.16], [0.05, 0.38, 1.32]);
+      box(m.glass, [side * width * 0.44, 1.27, 1.05], [0.05, 0.38, 0.46]);
+      box(m.accent, [side * (width * 0.5 + 0.015), 0.7, 0.16], [0.035, 0.18, 2.68]);
+      box(m.dark, [side * (width * 0.5 + 0.06), 0.48, 0.16], [0.12, 0.12, 2.45]); // marchepied
+      decal(0, [side * (width * 0.5 + 0.04), 0.76, 0.2], [1.45, 0.32], [0, side * Math.PI / 2, 0]);
+      box(m.chrome, [side * width * 0.53, 1.0, -0.62], [0.13, 0.1, 0.2]); // rétroviseur
+      box(m.warm, [side * width * 0.36, 0.68, -length * 0.46 - 0.03], [0.32, 0.13, 0.06]);
+      box(m.tail, [side * width * 0.36, 0.71, length * 0.46 + 0.03], [0.28, 0.22, 0.06]);
+    }
+    box(m.dark, [0, 1.57, 0.18], [width * 0.92, 0.09, 2.38]); // galerie de toit
+    box(m.dark, [0, 1.55, 0.18], [width * 0.77, 0.08, 0.3]); // socle des gyrophares
+    beacon('red', [-0.48, 1.66, 0.18], [0.38, 0.16, 0.32]);
+    beacon('blue', [0.48, 1.66, 0.18], [0.38, 0.16, 0.32]);
+    box(m.dark, [0, 0.48, -length * 0.48], [width * 1.02, 0.2, 0.15]); // pare-chocs avant
+    box(m.dark, [0, 0.48, length * 0.48], [width * 1.02, 0.2, 0.15]); // pare-chocs arrière
+    box(m.chrome, [0, 0.65, -length * 0.48 - 0.025], [width * 0.56, 0.12, 0.04]); // calandre
   } else {
     // Berlines d'intervention : police et ambulance.
     box(m.dark, [0, 0.32, 0], [width * 0.9, 0.14, length * 0.9]);
@@ -210,16 +241,16 @@ export function makeTrafficVehicle(type) {
 
   const wheels = [];
   const wheelAxles = isTruck ? [-1.48, 0.92, 1.48] : [-length * 0.29, length * 0.29];
-  const radius = isTruck ? 0.36 : 0.3;
+  const radius = isTruck ? 0.36 : policeSUV ? 0.34 : 0.3;
   for (const side of [-1, 1]) {
     for (const z of wheelAxles) {
-      const wheel = makeWheel({ radius, width: isTruck ? 0.26 : 0.22, side, material: m.wheel, racing: false });
+      const wheel = makeWheel({ radius, width: isTruck ? 0.26 : policeSUV ? 0.25 : 0.22, side, material: m.wheel, racing: false });
       wheel.position.set(side * width * 0.49, radius, z);
       group.add(wheel);
       wheels.push(wheel);
     }
   }
   group.traverse((object) => { if (object.isMesh) object.castShadow = !object.material.transparent; });
-  group.userData = { kind: 'traffic', trafficType: type, wheels, beacons, width, length };
+  group.userData = { kind: 'traffic', trafficType: type, isPoliceSUV: policeSUV, wheels, beacons, width, length };
   return group;
 }
