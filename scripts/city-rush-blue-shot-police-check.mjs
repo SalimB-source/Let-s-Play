@@ -1,9 +1,8 @@
 // ════════════════════════════════════════════════════════════════════
-// Vérif « Vice City Rush » : le tir droit bleu doit pouvoir toucher les
-// voitures de police. Le monde est construit pour de vrai (faux
-// WebGLRenderer), l'escouade entre en piste dès le départ et le pilote
-// d'essai ne tire qu'au tir droit : tout point de vie perdu par une
-// berline vient donc d'une balle bleue.
+// Vérif d'intégration des armes Vice City Rush : pickups rouges/boosts,
+// disparition des anciens tirs d'IA et hélicoptère policier gratuit une fois
+// par course, y compris après reset(). Le monde est construit pour de vrai
+// avec un faux WebGLRenderer.
 //   node scripts/city-rush-blue-shot-police-check.mjs            (vice-city)
 //   node scripts/city-rush-blue-shot-police-check.mjs --all      (5 villes)
 // ════════════════════════════════════════════════════════════════════

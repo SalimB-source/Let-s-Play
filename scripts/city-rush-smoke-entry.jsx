@@ -81,8 +81,8 @@ const {
 
 // Tours de la course jouée : 5 par défaut (la plus longue, 3 600 m) ;
 // `CITY_RUSH_SMOKE_LAPS=4` joue un Circuit (3 000 m). Au moins 3 : en dessous,
-// la course est trop courte pour que le pilote d'essai croise l'escouade du
-// dernier tour et ramasse un bonus de chaque couleur.
+// la course est trop courte pour exercer l'escouade du dernier tour et les
+// charges rouges de mitrailleuse.
 const RACE_LAPS = Math.max(3, Math.floor(Number(process.env.CITY_RUSH_SMOKE_LAPS) || CITY_RUSH_LAPS));
 // Le smoke joue du hasard (trafic, bonus, dérapages). Par défaut, chaque
 // course est différente ; `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke`
@@ -130,15 +130,10 @@ const countVisible = (scene) => {
 const cityArg = process.argv.find((a) => a.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_SMOKE_ALL === '1';
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
-// Total, sur toutes les villes, des tirs droits bleus de la police arrivés sur
-// le joueur (information seule : la berline tire quand elle veut).
-let policeBlueHitTotal = 0;
-
 // Bande-son : le monde ne connaît qu'une ref. On y glisse un compteur — pas
 // de Web Audio ici, mais la certitude qu'une course complète déclenche bien
-// moteur, feux, tours, tirs et arrivée, et que l'hélicoptère est toujours
-// éteint (un rotor qui tourne dans le vide s'entendrait jusqu'à la page
-// d'accueil).
+// moteur, feux, tours, tirs et arrivée, et que l'hélicoptère de police tourne
+// puis s'éteint correctement après son unique frappe.
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
@@ -458,9 +453,8 @@ for (const [index, city] of cities.entries()) {
       watchHeliPodLast = podNow;
     }
     if (hud && frames % 15 === 0) {
-      for (const type of [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]) {
-        if ((hud.inventory?.[type] || 0) >= (CITY_RUSH_POWER_RULES[type]?.chargeCost ?? 99)) world.action(type);
-      }
+      const type = CITY_RUSH_POWERS.PISTOL;
+      if ((hud.inventory?.[type] || 0) >= CITY_RUSH_POWER_RULES[type].chargeCost) world.action(type);
     }
     runFrames(1, `course f${frames}`);
     // Le cadrage se juge après l'image, caméra à jour. On laisse passer le
@@ -768,9 +762,7 @@ for (const [index, city] of cities.entries()) {
   if (callbacks.pickups.length && !respawnedPickups) fail('aucun bonus ramassé n’a réapparu après 0,1 s', callbacks.pickups.length);
   // Les bonus restent sur la route devant le pilote, du premier au dernier tour.
   if (rowStarvedFrames > 0) fail(`la route s’est vidée de ses bonus devant le pilote (${rowStarvedFrames} images sur ${rowAheadFrames + rowStarvedFrames})`, { rowStarvedFrames, rowAheadFrames, rowFrontGapMin });
-  // Escouade de police du dernier tour : deux berlines, entrées derrière le
-  // leader armées (bleu et rouge chargés, jaune vide), jamais classées,
-  // sirène allumée puis éteinte.
+  // Escouade du dernier tour : deux berlines sans charge rouge, jamais classées.
   const policeArrivals = callbacks.effects.filter((effect) => effect.type === 'police-arrival');
   if (policeArrivals.length !== 1) fail('l’escouade de police n’entre pas exactement une fois en piste', policeArrivals);
   if (!firstPoliceHud) fail('aucune berline de police dans le HUD pendant la course');
@@ -801,18 +793,30 @@ for (const [index, city] of cities.entries()) {
     fail(`${squadCars.length} berline(s) d’escouade en piste au lieu de ${CITY_RUSH_POLICE_COUNT}`, firstPoliceHud.police);
   }
   if (firstPoliceHud.police.length > CITY_RUSH_POLICE_COUNT + 3) fail('trop de poursuivants en piste', firstPoliceHud.police);
-  // Berlines armées : l'escouade entre en piste avec le tir bleu et la rafale
-  // rouge chargés, jamais l’hélicoptère (jaune), qu’il faut voler sur la route.
-  // Le contrôle se fait sur l'annonce d'arrivée, avant la première rafale.
+  // Au départ, la mitrailleuse est vide ; l'hélicoptère est un appel de police
+  // gratuit, partagé et utilisable une seule fois pendant cette course.
   const arrivalCars = policeArrivals[0]?.armed || [];
   if (arrivalCars.length !== CITY_RUSH_POLICE_COUNT) {
-    fail(`${arrivalCars.length} berline(s) annoncée(s) armée(s) au lieu de ${CITY_RUSH_POLICE_COUNT}`, policeArrivals[0]);
+    fail(`${arrivalCars.length} berline(s) annoncée(s) au lieu de ${CITY_RUSH_POLICE_COUNT}`, policeArrivals[0]);
   }
-  for (const car of arrivalCars) {
-    if (!car[CITY_RUSH_POWERS.BLUE_SHOT]) fail('une berline entre en piste sans tir bleu chargé', car);
-    if (!car[CITY_RUSH_POWERS.PISTOL]) fail('une berline entre en piste sans rafale rouge chargée', car);
-    if (car[CITY_RUSH_POWERS.RADIO]) fail('une berline entre en piste avec l’hélicoptère chargé', car);
+  if (arrivalCars.some((car) => car[CITY_RUSH_POWERS.PISTOL])) {
+    fail('une berline entre en piste avec la mitrailleuse déjà chargée', arrivalCars);
   }
+  const helicopterCalls = callbacks.effects.filter((effect) => effect.type === 'radio');
+  const isPoliceCaller = (effect) => /^(police-|rally-)/.test(String(effect.callerId || ''));
+  const nonPoliceHelicopterCalls = helicopterCalls.filter((effect) => !isPoliceCaller(effect));
+  if (nonPoliceHelicopterCalls.length) fail('un pilote autre que la police a appelé un hélicoptère', nonPoliceHelicopterCalls);
+  const policeHelicopterCalls = helicopterCalls.filter(isPoliceCaller);
+  if (policeHelicopterCalls.length !== 1 || helicopterCalls.length !== policeHelicopterCalls.length) {
+    fail('la police n’appelle pas son hélicoptère exactement une fois', helicopterCalls);
+  }
+  const arrivalEffectIndex = callbacks.effects.indexOf(policeArrivals[0]);
+  const policeCallsBeforeArrival = callbacks.effects.slice(0, arrivalEffectIndex)
+    .filter((effect) => effect.type === 'radio' && isPoliceCaller(effect));
+  if (Boolean(policeArrivals[0]?.helicopterAvailable) === Boolean(policeCallsBeforeArrival.length)) {
+    fail('la disponibilité de l’hélicoptère ne correspond pas aux frappes déjà utilisées', { arrival: policeArrivals[0], policeCallsBeforeArrival });
+  }
+  if (audioCalls.missileLaunch !== 1) fail('la police ne lance pas exactement un missile gratuit', audioCalls);
   const leaderDistance = Math.max(firstPoliceHud.distance || 0, ...(firstPoliceHud.racers || []).map((racer) => racer.distance || 0));
   for (const car of squadCars) {
     if (car.distance > leaderDistance + 2) fail('une berline entre en piste devant le leader', { leaderDistance, car });
@@ -852,9 +856,6 @@ for (const [index, city] of cities.entries()) {
   // Barrage roulant : au moins une berline freine devant le leader, et la page
   // le raconte. Les berlines sont solides : jamais dans un pilote.
   if (!policeBlockadeFrames) fail('aucune berline ne s’est mise en barrage devant le leader');
-  if (!callbacks.effects.some((effect) => effect.type === 'police-block')) {
-    fail('le barrage police n’a jamais été annoncé à la page', callbacks.effects.map((e) => e.type));
-  }
   if (!policePlayerOverlapFrames) fail('aucune berline n’est jamais passée à hauteur du pilote : la solidité n’a pas été éprouvée');
   if (!(policeWorstOverlap >= CITY_RUSH_CAR_GAP - 1.5)) {
     fail(`le pilote traverse une berline solide : écart ${policeWorstOverlap.toFixed(2)} m < ${CITY_RUSH_CAR_GAP} m`, worstPair);
@@ -939,8 +940,8 @@ for (const [index, city] of cities.entries()) {
       fail('un carambolage est compté avec une berline restée derrière le pilote', effect);
     }
     if (runningHealth === null) { healthBadDamage += 1; continue; }
-    // Le barème donne le coût brut (bleu 1 · rouge 2 · choc 1) ; la barre, elle,
-    // s'arrête à zéro : un rouge tiré sur le dernier carré n'en retire qu'un.
+    // Le barème donne le coût brut (rafale rouge 2 · choc 1) ; la barre,
+    // elle, s'arrête à zéro : un tir sur le dernier carré n'en retire qu'un.
     const cost = effect.source === 'pistol' ? 2 : 1;
     const expected = Math.min(cost, runningHealth);
     if (effect.damage !== expected) healthBadDamage += 1;
@@ -948,7 +949,7 @@ for (const [index, city] of cities.entries()) {
     if (runningHealth !== effect.health) healthBadDamage += 1;
     if (effect.health === 0) healthCubes += 1;
   }
-  if (healthBadDamage) fail('un dégât encaissé par le pilote ne suit pas le barème (bleu 1 · rouge 2 · choc 1)', healthBadDamage);
+  if (healthBadDamage) fail('un dégât encaissé par le pilote ne suit pas le barème (rouge 2 · choc 1)', healthBadDamage);
 
   if ((firstPoliceHud.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le classement du HUD');
   if ((finish.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le tableau d’arrivée');
@@ -961,17 +962,22 @@ for (const [index, city] of cities.entries()) {
     fail('un pad turbo ne s’est pas activé automatiquement au ramassage', groundBoosts);
   }
   if ((audioCalls.boost || 0) < groundBoosts.length) fail('un pad turbo ramassé n’a pas déclenché son boost sonore', { groundBoosts: groundBoosts.length, audioCalls });
-  const bluePickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.BLUE_SHOT);
-  if (!bluePickups.length || bluePickups.some((pickup) => pickup.chargeCost !== 1 || pickup.progress < 1)) {
-    fail('un unique bonus bleu ne charge pas un tir droit', bluePickups);
+  const redPickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.PISTOL);
+  if (!redPickups.length || redPickups.some((pickup) => pickup.chargeCost !== 1 || pickup.progress < 1)) {
+    fail('un unique bonus rouge ne charge pas la mitrailleuse', redPickups);
   }
+  const unsupportedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
+  if (unsupportedPickups.length) fail('un bonus bleu ou jaune est encore collecté sur la route', unsupportedPickups);
   if (callbacks.pickups.some((pickup) => pickup.autoActivated && pickup.type !== CITY_RUSH_PICKUPS.BOOST && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
     fail('un pouvoir manuel a été signalé comme activation automatique', callbacks.pickups.filter((pickup) => pickup.autoActivated));
   }
-  const blueShotEffects = new Set(['blue-shot-hit', 'blue-shot-hit-player', 'blue-shot-miss', 'rival-blue-shot']);
-  const blueShotsUsed = callbacks.effects.filter((effect) => blueShotEffects.has(effect.type)).length;
-  if (!blueShotsUsed) fail('aucun tir droit bleu n’a été testé', callbacks.effects);
-  if (!audioCalls.gunshot) fail('un tir droit bleu a été utilisé sans bruit de coup de feu', { blueShotsUsed, audioCalls });
+  const unsupportedShotEffects = new Set([
+    'blue-shot-hit', 'blue-shot-hit-player', 'blue-shot-miss', 'rival-blue-shot',
+    'rival-radio', 'radio-no-target', 'radio-busy',
+  ]);
+  const unsupportedShots = callbacks.effects.filter((effect) => unsupportedShotEffects.has(effect.type));
+  if (unsupportedShots.length) fail('un tir bleu ou une frappe radio non policière est encore déclenché', unsupportedShots);
+  if (!audioCalls.machineGun) fail('une mitrailleuse chargée n’a pas déclenché son tir sonore', { redPickups, audioCalls });
 
 
   // Fin de course : la caméra tourne, le départ fait la fête, pas d’exception.
@@ -1002,11 +1008,6 @@ for (const [index, city] of cities.entries()) {
   if (rafQueue.size) fail('rAF encore planifié après destroy()', rafQueue.size);
 
   const effectTypes = [...new Set(callbacks.effects.map((e) => e.type))];
-  // Tirs droits bleus partis d'une berline et arrivés sur le joueur : les
-  // berlines entrent en piste bleu chargé, l'information est reportée telle
-  // quelle — leur tir ne se commande pas, on ne peut pas l'exiger d'un circuit.
-  const policeBlueHits = callbacks.effects.filter((e) => e.type === 'blue-shot-hit-player' && /^POLICE/.test(String(e.attacker))).length;
-  policeBlueHitTotal += policeBlueHits;
   console.log(
     `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames` +
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
@@ -1015,7 +1016,7 @@ for (const [index, city] of cities.entries()) {
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
     ` · hélico d’observation ${watchHeliFinalLapFrames} f (${watchHeliReturns} rentrée(s) de tunnel · rotor ${watchHeliRotorTurns} tours · cadre y ${watchHeliNdcYMin.toFixed(2)}–${watchHeliNdcYMax.toFixed(2)}, moy ${(watchHeliNdcYSum / Math.max(1, watchHeliMeasured)).toFixed(2)} · x ≤ ${watchHeliNdcXMax.toFixed(2)} · ${(watchHeliFramedFrames / Math.max(1, watchHeliMeasured) * 100).toFixed(0)} % dans la bande)` +
-    ` · barre de vie du pilote ${healthHuds.length} HUD · ${healthHitEffects} touche(s) subie(s) (bleu ${healthHitsBySource['blue-shot'] || 0} · rouge ${healthHitsBySource.pistol || 0} · carambolage ${healthHitsBySource.collision || 0}) · ${healthCubes} passage(s) à zéro` +
+    ` · barre de vie du pilote ${healthHuds.length} HUD · ${healthHitEffects} touche(s) subie(s) (rouge ${healthHitsBySource.pistol || 0} · carambolage ${healthHitsBySource.collision || 0}) · ${healthCubes} passage(s) à zéro` +
     ` (${policePlayerOverlapFrames} f de recouvrement · rival ${Number.isFinite(policeAiOverlap) ? policeAiOverlap.toFixed(1) : '—'} m)` +
 
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
@@ -1023,5 +1024,5 @@ for (const [index, city] of cities.entries()) {
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,
   );
 }
-console.log(`SMOKE OK — ${cities.length} ville(s), ${RACE_LAPS} tours (${RACE_DISTANCE} m, dernier tour ${CITY_RUSH_FINAL_LAP_LENGTH} m) · tirs bleus de la police sur le joueur ${policeBlueHitTotal}`);
+console.log(`SMOKE OK — ${cities.length} ville(s), ${RACE_LAPS} tours (${RACE_DISTANCE} m, dernier tour ${CITY_RUSH_FINAL_LAP_LENGTH} m) · une frappe d’hélicoptère de police par course`);
 process.exit(0);

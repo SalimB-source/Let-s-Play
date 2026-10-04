@@ -98,6 +98,9 @@ import {
   cityRushTrackPitch,
   cityRushTrackYaw,
   consumeCityRushCharge,
+  isCityRushPowerCharged,
+  shouldHideCityRushPistolPickup,
+  canCollectCityRushPickup,
   createCityRushEncounter,
   createCityRushInventory,
   createCityRushPoliceInventory,
@@ -941,15 +944,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       stunTotal: 0,
       skidLeft: 0,
       skidDuration: 0.85,
-      // Deux minuteries séparées : une par arme, sinon une rafale rouge
-      // bloquait le tir droit bleu (et inversement).
+      // La police n'utilise qu'une mitrailleuse chargée par les bonus rouges.
       powerCooldown: 0,
-      bluePowerCooldown: 0,
-      // Bleu et rouge chargés dès l'entrée en piste, jaune vide.
       inventory: createCityRushPoliceInventory(),
       active: false,
-      // Trois tirs droits bleus, deux rafales rouges ou un tir d'hélico :
-      // la barre au-dessus du toit suit ce qui reste avant l'explosion.
+      // Deux rafales rouges, un tir d'hélicoptère ou trois collisions détruisent
+      // la berline.
       health: CITY_RUSH_POLICE_HEALTH,
       healthFlash: 0,
       // 'hunt' : elle chasse devant le leader ; 'attack' : elle se replie pour
@@ -971,6 +971,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   let policeDeployed = false;
+  let policeHelicopterUsed = false;
 
   // ── La barre de vie du pilote (dernier tour) ───────────────────────────
   // Elle naît au dernier tour du pilote — la course entière en Sprint, le
@@ -1302,16 +1303,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         // `rallied` : la berline vient du trafic et a été rappelée par un
         // contact (voir `rallyTrafficPolice`).
         rallied: Boolean(police.rallied),
-        // Barre de vie : trois tirs bleus, deux rafales rouges ou un hélico.
         health: police.health,
         maxHealth: CITY_RUSH_POLICE_HEALTH,
-        // Armement : la berline entre en piste bleu et rouge chargés, jaune
-        // vide — la page et les vérifs peuvent le lire image par image.
-        armed: {
-          [CITY_RUSH_POWERS.BLUE_SHOT]: (police.inventory?.[CITY_RUSH_POWERS.BLUE_SHOT] || 0) >= CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].chargeCost,
-          [CITY_RUSH_POWERS.PISTOL]: (police.inventory?.[CITY_RUSH_POWERS.PISTOL] || 0) >= CITY_RUSH_POWER_RULES.pistol.chargeCost,
-          [CITY_RUSH_POWERS.RADIO]: (police.inventory?.[CITY_RUSH_POWERS.RADIO] || 0) >= CITY_RUSH_POWER_RULES.radio.chargeCost,
-        },
+        armed: { [CITY_RUSH_POWERS.PISTOL]: isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL) },
+        helicopterUsed: policeHelicopterUsed,
         distance: Math.round(police.distance),
         // Distance non arrondie : les vérifications de collision la comparent
         // aux `rawDistance` des pilotes.
@@ -1496,6 +1491,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
     // L'escouade repart pour la prochaine course : plus personne en piste.
     policeDeployed = false;
+    policeHelicopterUsed = false;
     policeStealNoticeCooldown = 0;
     policeBlockNoticeCooldown = 0;
     policeCars.forEach((police) => {
@@ -1511,7 +1507,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.skidLeft = 0;
       police.skidDuration = 0.85;
       police.powerCooldown = 0;
-      police.bluePowerCooldown = 0;
       police.health = CITY_RUSH_POLICE_HEALTH;
       police.healthFlash = 0;
       police.mode = 'hunt';
@@ -2298,104 +2293,60 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     impact.visible = false;
     // Le rotor démarre avec l'approche : il monte en régime pendant 0,85 s.
     audioRef?.current?.helicopterStart();
-    getCallbacks().effect?.({ type: 'radio', target: target.name, targetId: target.id });
+    getCallbacks().effect?.({ type: 'radio', target: target.name, targetId: target.id, callerId });
     return true;
   }
 
   function usePower(type) {
-    if (!active || finished) return;
-    if (type === 'radio' && strike) {
-      getCallbacks().effect?.({ type: 'radio-busy', message: 'L’hélicoptère est déjà en route.' });
-      return;
-    }
-    // Seul l'hélicoptère exige une cible avant consommation : s'il n'y a
-    // personne devant, la jauge jaune reste pleine. Le tir bleu peut partir
-    // dans le vide, comme un vrai coup tiré tout droit.
-    const radioTarget = type === 'radio' ? getTargetForRadio('player') : null;
-    if (type === 'radio' && (!radioTarget || radioTarget.id === 'player')) {
-      getCallbacks().effect?.({ type: 'radio-no-target' });
-      return;
-    }
-    const consumed = consumeCityRushCharge(inventory, type);
+    if (!active || finished || type !== CITY_RUSH_POWERS.PISTOL) return;
+    const consumed = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL);
     if (!consumed.consumed) {
-      getCallbacks().effect?.({ type: 'empty', item: type });
+      getCallbacks().effect?.({ type: 'empty', item: CITY_RUSH_POWERS.PISTOL });
       return;
     }
     inventory = consumed.inventory;
-    spawnActionPulse('player', type);
+    spawnActionPulse('player', CITY_RUSH_POWERS.PISTOL);
 
-    if (type === CITY_RUSH_POWERS.BLUE_SHOT) {
-      const target = findStraightShotTarget('player');
-      fireStraightShot('player', target);
-      if (!target) getCallbacks().effect?.({ type: 'blue-shot-miss' });
-    } else if (type === 'pistol') {
-      const target = findPistolTarget();
-      if (target) {
-        fireMachineGun('player', target.id);
-      }
-      if (target?.racer && !target.isPolice) {
-        const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, target.racer.profile);
-        target.racer.slowLeft = Math.max(target.racer.slowLeft, duration);
-        target.racer.skidLeft = 0.85;
-        target.racer.skidDuration = 0.85;
-        target.racer.skidSide = Math.random() < 0.5 ? -1 : 1;
-        getCallbacks().effect?.({ type: 'pistol', target: target.name, targetId: target.id, duration });
-      }
-    } else if (type === 'radio') {
-      startStrike(radioTarget, 'player');
+    const target = findPistolTarget();
+    if (target) fireMachineGun('player', target.id);
+    if (target?.racer && !target.isPolice) {
+      const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, target.racer.profile);
+      target.racer.slowLeft = Math.max(target.racer.slowLeft, duration);
+      target.racer.skidLeft = 0.85;
+      target.racer.skidDuration = 0.85;
+      target.racer.skidSide = Math.random() < 0.5 ? -1 : 1;
+      getCallbacks().effect?.({ type: 'pistol', target: target.name, targetId: target.id, duration });
     }
     emitHud(true);
   }
 
   function useRacerPower(racer) {
-    if (racer.stunLeft > 0 || racer.powerCooldown > 0) return false;
-    for (const type of [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]) {
-      if ((racer.inventory?.[type] || 0) < CITY_RUSH_POWER_RULES[type].chargeCost) continue;
-      if (type === 'radio' && strike) continue;
-      const target = type === 'pistol'
-        ? findPistolTarget(racer.id)
-        : type === CITY_RUSH_POWERS.BLUE_SHOT
-          ? findStraightShotTarget(racer.id)
-          : type === 'radio' ? getTargetForRadio(racer.id) : null;
-      if ((type === 'pistol' || type === CITY_RUSH_POWERS.BLUE_SHOT || type === 'radio') && !target) continue;
+    const type = CITY_RUSH_POWERS.PISTOL;
+    if (racer.stunLeft > 0 || racer.powerCooldown > 0 || !isCityRushPowerCharged(racer.inventory, type)) return false;
+    const target = findPistolTarget(racer.id);
+    if (!target) return false;
 
-      const consumed = consumeCityRushCharge(racer.inventory, type);
-      if (!consumed.consumed) continue;
-      racer.inventory = consumed.inventory;
-      racer.powerCooldown = 1.1;
-      spawnActionPulse(racer.id, type);
-
-      if (type === CITY_RUSH_POWERS.BLUE_SHOT) {
-        fireStraightShot(racer.id, target);
-        // Riposte : le rival peut tirer vers l'arrière sur une berline déjà
-        // dépassée, comme le pilote.
-        getCallbacks().effect?.({
-          type: 'rival-blue-shot',
-          rival: racer.name,
-          backward: Number(target.distance) < Number(racer.distance),
-        });
-      } else if (type === 'pistol') {
-        fireMachineGun(racer.id, target.id);
-        if (target.id === 'player') {
-          const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, playerProfile);
-          playerSlowLeft = Math.max(playerSlowLeft, duration);
-          playerSkidLeft = 0.85;
-          playerSkidDuration = 0.85;
-          playerSkidSide = Math.random() < 0.5 ? -1 : 1;
-          getCallbacks().effect?.({ type: 'pistol-hit-player', attacker: racer.name, duration });
-        } else if (target.racer && !target.isPolice) {
-          const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, target.racer.profile);
-          target.racer.slowLeft = Math.max(target.racer.slowLeft, duration);
-          target.racer.skidLeft = 0.85;
-          target.racer.skidDuration = 0.85;
-          target.racer.skidSide = Math.random() < 0.5 ? -1 : 1;
-        }
-      } else if (type === 'radio') {
-        startStrike(target, racer.id);
-      }
-      return true;
+    const consumed = consumeCityRushCharge(racer.inventory, type);
+    if (!consumed.consumed) return false;
+    racer.inventory = consumed.inventory;
+    racer.powerCooldown = 1.1;
+    spawnActionPulse(racer.id, type);
+    fireMachineGun(racer.id, target.id);
+    if (target.id === 'player') {
+      const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, playerProfile);
+      playerSlowLeft = Math.max(playerSlowLeft, duration);
+      playerSkidLeft = 0.85;
+      playerSkidDuration = 0.85;
+      playerSkidSide = Math.random() < 0.5 ? -1 : 1;
+      getCallbacks().effect?.({ type: 'pistol-hit-player', attacker: racer.name, duration });
+    } else if (target.racer && !target.isPolice) {
+      const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, target.racer.profile);
+      target.racer.slowLeft = Math.max(target.racer.slowLeft, duration);
+      target.racer.skidLeft = 0.85;
+      target.racer.skidDuration = 0.85;
+      target.racer.skidSide = Math.random() < 0.5 ? -1 : 1;
     }
-    return false;
+    return true;
   }
 
   // ── L'escouade de police du dernier tour ─────────────────────────────
@@ -2445,9 +2396,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     policeDeployed = true;
     policeCars.forEach((police, index) => {
       police.active = true;
-      // Elles entrent armées : bleu et rouge chargés, jaune vide. Le leader
-      // n'a pas un tour pour se retourner — la première rafale part tout de
-      // suite, et le jaune reste à voler sur la piste.
+      // Aucune charge au déploiement : la mitrailleuse se remplit avec les
+      // bonus rouges, tandis qu'une frappe d'hélicoptère reste disponible une fois.
       police.inventory = createCityRushPoliceInventory();
       police.slowLeft = 0;
       police.blueShotSlowLeft = 0;
@@ -2458,7 +2408,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.skidLeft = 0;
       police.skidDuration = 0.85;
       police.powerCooldown = 0;
-      police.bluePowerCooldown = 0;
       police.health = CITY_RUSH_POLICE_HEALTH;
       police.healthFlash = 0;
       police.changeIn = 0.3 + index * 0.35;
@@ -2478,19 +2427,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mesh.rotation.set(trackPitch(police.distance), trackYaw(police.distance), 0);
     });
     audioRef?.current?.policeSiren?.({ level: 0.4 });
-    // Les berlines sont désormais solides : l'annonce prévient qu'elles
-    // peuvent se rabattre devant le leader pour le ralentir. `armed` dit avec
-    // quoi elles entrent : bleu et rouge chargés, jaune vide.
+    // La police arrive avec la mitrailleuse vide ; une unique frappe
+    // d'hélicoptère est disponible gratuitement pour toute la course.
     getCallbacks().effect?.({
       type: 'police-arrival',
       count: CITY_RUSH_POLICE_COUNT,
       armed: policeCars.map((police) => ({
         id: police.id,
         name: police.name,
-        [CITY_RUSH_POWERS.BLUE_SHOT]: (police.inventory?.[CITY_RUSH_POWERS.BLUE_SHOT] || 0) >= CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].chargeCost,
-        [CITY_RUSH_POWERS.PISTOL]: (police.inventory?.[CITY_RUSH_POWERS.PISTOL] || 0) >= CITY_RUSH_POWER_RULES.pistol.chargeCost,
-        [CITY_RUSH_POWERS.RADIO]: (police.inventory?.[CITY_RUSH_POWERS.RADIO] || 0) >= CITY_RUSH_POWER_RULES.radio.chargeCost,
+        [CITY_RUSH_POWERS.PISTOL]: isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL),
       })),
+      helicopterAvailable: !policeHelicopterUsed,
       target: leader.isPlayer ? 'player' : leader.name,
       targetId: leader.id,
       lap,
@@ -2534,7 +2481,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       stunTotal: 0,
       skidLeft: 0,
       powerCooldown: 0,
-      bluePowerCooldown: 0,
       // Comme l'escouade : elle passe à l'attaque bleu et rouge chargés.
       inventory: createCityRushPoliceInventory(),
       active: true,
@@ -2731,19 +2677,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
-  // Le tir droit de l'escouade : la même balle bleue que les rivaux, chargée
-  // dès l'entrée en piste. Elle suit la voie de la berline et fait déraper le
-  // pilote chassé (ralenti léger) quand elle le rattrape — les dégâts, eux,
-  // sont appliqués à l'impact dans `applyStraightShotHit`.
-  function fireAsPoliceBlue(police, target) {
-    const consumed = consumeCityRushCharge(police.inventory, CITY_RUSH_POWERS.BLUE_SHOT);
-    if (!consumed.consumed) return false;
-    police.inventory = consumed.inventory;
-    police.bluePowerCooldown = CITY_RUSH_POLICE_FIRE_COOLDOWN;
-    spawnActionPulse(police.id, CITY_RUSH_POWERS.BLUE_SHOT);
-    return fireStraightShot(police.id, target);
-  }
-
   // Une rafale de l'escouade : la même mitrailleuse que les rivaux, mais au
   // service du dernier tour — le leader devant la berline encaisse le tir.
   function fireAsPolice(police, target) {
@@ -2771,9 +2704,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return true;
   }
 
-  // Les bonus que l'escouade peut encore rafler, exactement comme ceux que
-  // visent les rivaux (mêmes revendications, mêmes réapparitions).
-  function visiblePickups() {
+  // La mitrailleuse rouge reste disponible tant qu'un pilote actif doit encore
+  // la charger. Les voitures déjà chargées ne la ciblent/collectent plus : le
+  // bonus reste réservé aux autres participants.
+  function redPickupsHiddenForRace() {
+    const opponentInventories = [
+      ...racers.map((racer) => racer.inventory),
+      ...activePursuers().map((police) => police.inventory),
+    ];
+    return shouldHideCityRushPistolPickup(inventory, opponentInventories);
+  }
+
+  // Les choix de voie des rivaux et de la police partagent ces bonus visibles,
+  // avec un filtre propre à l'inventaire de chaque voiture.
+  function visiblePickups(actorInventory = null) {
+    const hideRedForRace = redPickupsHiddenForRace();
     return rows.flatMap((row) => row.pickups
       .map((pickup, index) => ({
         ...pickup,
@@ -2781,7 +2726,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         claimed: isCityRushPickupHidden(row.pickupClaims, index, elapsed),
         visible: row.slots[index]?.visible,
       }))
-      .filter((pickup) => !pickup.claimed && pickup.visible));
+      .filter((pickup) => !pickup.claimed && pickup.visible)
+      .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, { redPickupsHidden: hideRedForRace })));
   }
 
   function updatePolice(dt, packLeaderEntry) {
@@ -2812,7 +2758,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.id,
       (police.targetId ? raceCars.find((entry) => entry.id === police.targetId) : null) || packLeaderEntry,
     ]));
-    const pickups = visiblePickups();
+    // Une seule frappe d'hélicoptère gratuite par course. Elle part sur la
+    // cible déjà assignée à la première berline active, sans charge de radio.
+    if (!policeHelicopterUsed && !strike) {
+      const caller = pursuers.find((police) => police.stunLeft <= 0 && targets.get(police.id));
+      if (caller && startStrike(targets.get(caller.id), caller.id)) policeHelicopterUsed = true;
+    }
     const priorDistances = new Map(pursuers.map((police) => [police.id, police.distance]));
     const priorXs = new Map(pursuers.map((police) => [police.id, police.currentX]));
     const requests = [];
@@ -2843,14 +2794,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.stunLeft = Math.max(0, police.stunLeft - dt);
       police.skidLeft = Math.max(0, police.skidLeft - dt);
       police.powerCooldown = Math.max(0, police.powerCooldown - dt);
-      police.bluePowerCooldown = Math.max(0, police.bluePowerCooldown - dt);
       police.blockLeft = Math.max(0, police.blockLeft - dt);
       police.collisionCooldownLeft = Math.max(0, (police.collisionCooldownLeft || 0) - dt);
-      // Deux armes, deux jauges : la mitrailleuse (rouge) et le tir droit
-      // (bleu), toutes deux chargées à l'entrée en piste.
-      const charged = (police.inventory?.[CITY_RUSH_POWERS.PISTOL] || 0) >= CITY_RUSH_POWER_RULES.pistol.chargeCost;
-      const blueCharged = (police.inventory?.[CITY_RUSH_POWERS.BLUE_SHOT] || 0) >= CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].chargeCost;
-      const armed = (charged && police.powerCooldown <= 0) || (blueCharged && police.bluePowerCooldown <= 0);
+      // La seule arme de la police est la mitrailleuse rouge, chargée par un bonus.
+      const charged = isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL);
+      const armed = charged && police.powerCooldown <= 0;
       const gap = police.distance - leader.distance;
 
       // Position de barrage : devant le leader, dans sa voie (ou à sa hauteur
@@ -2907,7 +2855,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             distance: police.distance,
             speed: police.currentSpeed || police.baseSpeed,
             availableLanes,
-            pickups,
+            pickups: visiblePickups(police.inventory),
             traffic: [...traffic, ...oncomingForLanes],
             racers: raceCars,
             targetLane: leader.lane,
@@ -3035,26 +2983,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       level: nearest === Infinity ? 0 : clamp(1 - (nearest - 14) / 96, 0, 1),
     });
 
-    // Une jauge pleine et son client devant la berline : elle tire. La
-    // mitrailleuse rouge d'abord (c'est l'arme lourde), le tir droit bleu
-    // ensuite — les deux sont chargés dès l'entrée en piste, et le bleu
-    // couvre le temps de recharge du rouge au lieu de rester inutile.
+    // La mitrailleuse rouge est le seul tir de berline à berline. Elle doit
+    // être chargée par un bonus, et ne vise que le pilote assigné lorsqu'il est
+    // devant la police.
     for (const police of pursuers) {
-      if (police.stunLeft > 0) continue;
+      if (police.stunLeft > 0 || police.powerCooldown > 0) continue;
       const target = targets.get(police.id) || packLeaderEntry;
-      if (police.powerCooldown <= 0
-        && (police.inventory?.[CITY_RUSH_POWERS.PISTOL] || 0) >= CITY_RUSH_POWER_RULES.pistol.chargeCost
-        && cityRushIsAhead(target.distance, police.distance)) {
-        fireAsPolice(police, target);
-        continue;
-      }
-      if (police.bluePowerCooldown > 0) continue;
-      if ((police.inventory?.[CITY_RUSH_POWERS.BLUE_SHOT] || 0) < CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].chargeCost) continue;
-      // Le tir droit ne vise qu'un pilote de sa voie : on ne gaspille pas la
-      // balle sur un rival de passage ni sur une berline de l'escouade.
-      const blueTarget = findStraightShotTarget(police.id);
-      if (!blueTarget || blueTarget.isPolice || blueTarget.id !== target.id) continue;
-      fireAsPoliceBlue(police, blueTarget);
+      if (!isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL)) continue;
+      if (cityRushIsAhead(target.distance, police.distance)) fireAsPolice(police, target);
     }
   }
 
@@ -3314,10 +3250,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       return;
     }
     const aliases = {
-      'use_blue-shot': CITY_RUSH_POWERS.BLUE_SHOT,
-      'blue-shot': CITY_RUSH_POWERS.BLUE_SHOT, shot: CITY_RUSH_POWERS.BLUE_SHOT,
-      use_pistol: CITY_RUSH_POWERS.PISTOL, pistol: CITY_RUSH_POWERS.PISTOL,
-      use_radio: CITY_RUSH_POWERS.RADIO, radio: CITY_RUSH_POWERS.RADIO, helicopter: CITY_RUSH_POWERS.RADIO,
+      use_pistol: CITY_RUSH_POWERS.PISTOL,
+      pistol: CITY_RUSH_POWERS.PISTOL,
     };
     const type = aliases[name];
     if (type && !CITY_RUSH_POWER_RULES[type]?.automatic) usePower(type);
@@ -3395,11 +3329,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // bonus devant un pilote qui comptait plus de 300 m d'avance sur lui, ce qui
     // arrive au fil de la course, et donc surtout au dernier tour.
     const rowRecycleAnchor = distance;
+    const hideRedForRace = redPickupsHiddenForRace();
     const participants = [
       { id: 'player', distance, lane: playerLane, speed: currentSpeed },
       ...racers.map((racer) => ({ id: racer.id, distance: racer.distance, lane: racer.lane, speed: racer.stunLeft > 0 ? 0 : racer.baseSpeed, racer })),
-      // La police ramasse les bonus comme les pilotes : un rouge ou un jaune
-      // raflé est un pouvoir que son client ne déclenchera pas.
+      // La police peut charger sa mitrailleuse avec les mêmes bonus rouges.
       ...activePursuers().map((police) => ({
         id: police.id, distance: police.distance, lane: police.lane, speed: police.currentSpeed, racer: police, police: true,
       })),
@@ -3420,7 +3354,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           slot.visible = false;
           return;
         }
-        if (isCityRushPickupHidden(row.pickupClaims, index, elapsed)) {
+        if (isCityRushPickupHidden(row.pickupClaims, index, elapsed)
+          || (pickup.type === CITY_RUSH_POWERS.PISTOL && hideRedForRace)) {
           slot.visible = false;
           return;
         }
@@ -3444,14 +3379,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       });
 
       // Un bonus ramassé disparaît 0,1 s puis réapparaît sur sa voie : la
-      // voiture suivante peut le prendre à son tour.
+      // voiture suivante peut le prendre. Un pilote déjà chargé ignore le rouge
+      // même si ce bonus reste visible pour un autre participant.
       for (const participant of participants) {
         if (row.crossedRacers.has(participant.id)) continue;
         const crossingWindow = Math.max(1.15, participant.speed * dt * 0.65);
         if (Math.abs(participant.distance - row.trackDistance) > crossingWindow) continue;
-        const pickupIndex = row.pickups.findIndex((item, index) => item.lane === participant.lane && !isCityRushPickupHidden(row.pickupClaims, index, elapsed));
-        if (pickupIndex < 0) continue;
         row.crossedRacers.add(participant.id);
+        const participantInventory = participant.id === 'player' ? inventory : participant.racer?.inventory;
+        const pickupIndex = row.pickups.findIndex((item, index) => (
+          item.lane === participant.lane
+          && !isCityRushPickupHidden(row.pickupClaims, index, elapsed)
+          && canCollectCityRushPickup(participantInventory, item.type, { redPickupsHidden: hideRedForRace })
+        ));
+        if (pickupIndex < 0) continue;
         markCityRushPickupTaken(row.pickupClaims, pickupIndex, elapsed, CITY_RUSH_PICKUP_RESPAWN_DELAY);
         const pickup = row.pickups[pickupIndex];
         const object = row.slots[pickupIndex];
@@ -3556,7 +3497,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const scratchPos = new THREE.Vector3();
         const callerDistance = strike.callerId === 'player'
           ? distance
-          : racers.find((item) => item.id === strike.callerId)?.distance ?? distance;
+          : (racers.find((item) => item.id === strike.callerId)?.distance
+            ?? activePursuerById(strike.callerId)?.distance
+            ?? distance);
         const participants = [
           { id: 'player', profile: playerProfile, isPlayer: true, distance },
           ...racers.map((racer) => ({ id: racer.id, profile: racer.profile, isPlayer: false, distance: racer.distance })),
@@ -3918,7 +3861,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
       const requestedRacerSpeeds = new Map();
       const priorRacerXs = new Map();
-      const aiPickups = visiblePickups();
+      const aiPickups = new Map(racers.map((racer) => [racer.id, visiblePickups(racer.inventory)]));
       const aiTraffic = [
         ...rollingTraffic().map((traffic) => ({ lane: traffic.lane, distance: traffic.distance, speed: traffic.currentSpeed })),
         // Les berlines de police du dernier tour sont solides : les rivaux les
@@ -3949,7 +3892,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             distance: racer.distance,
             speed: racer.currentSpeed || racer.baseSpeed,
             availableLanes,
-            pickups: aiPickups,
+            pickups: aiPickups.get(racer.id) || [],
             traffic: [...aiTraffic, ...otherRacers],
             lookAheadDistance: 145,
           });
@@ -4382,12 +4325,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const target = event.target?.tagName;
     if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
     const key = event.key.toLowerCase();
-    if (['arrowleft', 'arrowright', 'q', 'd', 'a', 'z', 'r'].includes(key)) event.preventDefault();
+    if (['arrowleft', 'arrowright', 'q', 'd', 'z'].includes(key)) event.preventDefault();
     if (key === 'arrowleft' || key === 'q') action('left');
     else if (key === 'arrowright' || key === 'd') action('right');
-    else if (key === 'a') action(CITY_RUSH_POWERS.BLUE_SHOT);
     else if (key === 'z') action(CITY_RUSH_POWERS.PISTOL);
-    else if (key === 'r') action(CITY_RUSH_POWERS.RADIO);
   }
   window.addEventListener('keydown', onKeyDown);
 

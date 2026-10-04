@@ -42,7 +42,7 @@ const BEST_KEY = 'letsplay_vice_city_rush_bests_v2';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const STORY_KEY = 'letsplay_vice_city_rush_story_v1';
 const STORY_ENDING_KEY = 'letsplay_vice_city_rush_ending_v1';
-const POWER_ORDER = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO];
+const POWER_ORDER = [CITY_RUSH_POWERS.PISTOL];
 const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
@@ -116,7 +116,7 @@ const RACE_MODES = [
     id: 'pursuit',
     name: 'POURSUITE',
     label: '4 TOURS · POLICE TOTALE',
-    desc: 'Deux berlines d’interception dès le départ, armées bleu et rouge. Elles volent tes bonus rouges/jaunes et tirent sans relâche ; au dernier tour, le carambolage abîme la coque de ta voiture.',
+    desc: 'Deux berlines d’interception dès le départ. Elles chargent leur mitrailleuse avec les bonus rouges et appellent gratuitement un hélicoptère une fois par course ; au dernier tour, les carambolages abîment la coque de ta voiture.',
     accent: '#ffd44f',
     secondary: '#ff526e',
     laps: 4,
@@ -201,21 +201,11 @@ function PowerIcon({ type, className = '' }) {
         <path d="M11 21v-8l5 4v-5l5 4v-5" />
         <path d="m17 7 4 4 4-4" />
       </>}
-      {type === CITY_RUSH_POWERS.BLUE_SHOT && <>
-        <path d="M4 10h12a4 4 0 0 1 4 4v2h7v3h-9l-2 2h-2l-2.5 7H7l2.3-7H5L4 17z" fill="currentColor" strokeWidth="1.4" />
-        <path d="M16.5 18.5v2h-2.7" stroke="rgba(255,255,255,.95)" strokeWidth="1.2" />
-      </>}
       {type === 'pistol' && <>
         <path d="M3 12h19" />
         <path d="M22 12v4a3 3 0 0 1-3 3h-3" />
         <path d="M16 19v-6" />
         <path d="M13 12l-3 7" />
-      </>}
-      {type === 'radio' && <>
-        <path d="m12 7 5-4M11 7l-2-3" />
-        <rect x="7" y="8" width="17" height="20" rx="3" />
-        <rect x="10" y="12" width="11" height="7" rx="1" />
-        <circle cx="12" cy="23" r="1" /><circle cx="16" cy="23" r="1" /><circle cx="20" cy="23" r="1" />
       </>}
     </svg>
   );
@@ -556,25 +546,24 @@ export default function ViceCityRushPage() {
 
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'blue-shot-hit') showToast(`TIR DROIT · ${effect.target} TOUCHÉ · RALENTI NET ${formatSeconds(effect.duration, 1.8)}.`, 'blue-shot');
-    else if (effect.type === 'blue-shot-hit-player') showToast(`TIR DROIT · ${effect.attacker} TE TOUCHE · RALENTI NET ${formatSeconds(effect.duration, 1.8)}.`, 'blue-shot');
-    else if (effect.type === 'pistol') showToast(`TATATATA ! ${effect.target} mitraillé · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    if (effect.type === 'pistol') showToast(`TATATATA ! ${effect.target} mitraillé · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'pistol-hit-player') showToast(`TATATATA ! ${effect.attacker} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
-    else if (effect.type === 'rival-blue-shot') showToast(`${effect.rival} TIRE DROIT ${effect.backward ? 'DERRIÈRE LUI' : 'DEVANT LUI'}.`, 'blue-shot');
-    else if (effect.type === 'radio') showToast(`HÉLICO EN APPROCHE · CIBLE : ${effect.target}.`, 'radio');
+    else if (effect.type === 'radio') showToast(
+      `${effect.callerId && effect.callerId !== 'player' ? 'POLICE · FRAPPE D’HÉLICOPTÈRE UNIQUE' : 'HÉLICO EN APPROCHE'} · CIBLE : ${effect.target}.`,
+      'radio',
+    );
     else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 2)}.`, 'radio');
     else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
     else if (effect.type === 'radio-no-target') showToast('AUCUN RIVAL DEVANT TOI · LA JAUGE RESTE CHARGÉE.', 'radio');
     else if (effect.type === 'traffic-impact') showToast(effect.oncoming ? 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.' : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`, 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
-    else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ ${effect.item === 'radio' ? 'L’HÉLICO (JAUNE)' : 'LA MITRAILLEUSE (ROUGE)'}${effect.ready ? ' · ELLE EST ARMÉE' : ''}.`, effect.item === 'radio' ? 'radio' : 'pistol');
+    else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ LA MITRAILLEUSE (ROUGE)${effect.ready ? ' · ELLE EST CHARGÉE' : ''}.`, 'pistol');
     else if (effect.type === 'police-rally') showToast(effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`, 'pistol');
-    else if (effect.type === 'police-hit' && effect.source !== 'collision') {
-      const weapon = effect.source === 'pistol' ? 'RAFALE ROUGE' : 'TIR BLEU';
+    else if (effect.type === 'police-hit' && effect.source === 'pistol') {
       const left = effect.remaining || 1;
-      showToast(`${weapon} · ${effect.police} TOUCHÉE · BARRE DE VIE ${effect.health}/${effect.maxHealth} · ENCORE ${left} ${effect.source === 'pistol' ? 'RAFALE' : 'TIR'}${left > 1 ? 'S' : ''} ${effect.source === 'pistol' ? 'ROUGE' : 'BLEU'}${left > 1 ? 'S' : ''}.`, effect.source === 'pistol' ? 'pistol' : 'blue-shot');
+      showToast(`RAFALE ROUGE · ${effect.police} TOUCHÉE · BARRE DE VIE ${effect.health}/${effect.maxHealth} · ENCORE ${left} RAFALE${left > 1 ? 'S' : ''} ROUGE${left > 1 ? 'S' : ''}.`, 'pistol');
     }
     else if (effect.type === 'police-destroyed') showToast(effect.byPlayer ? `💥 ${effect.police} DÉTRUITE · +200 PTS · ELLE QUITTE LA COURSE.` : `💥 ${effect.police} DÉTRUITE · ELLE QUITTE LA COURSE.`, 'radio');
     else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
@@ -820,26 +809,26 @@ export default function ViceCityRushPage() {
                     aria-label="Aller à droite"
                   >→</button>
                 </div>
-                <div className="city-rush-power-bar" aria-label="Objets spéciaux">
-                  {POWER_ORDER.map((type) => {
-                    const rule = CITY_RUSH_POWER_RULES[type];
-                    const progress = Math.min(rule.chargeCost, Math.max(0, Number(hud.inventory?.[type]) || 0));
-                    const ready = progress >= rule.chargeCost;
-                    const automatic = Boolean(rule.automatic);
-                    const progressPercent = Math.round((progress / rule.chargeCost) * 100);
-                    return (
-                      <button type="button" key={type} className={`city-rush-power-button is-${type}${automatic ? ' is-automatic' : ''}${ready ? ' is-ready' : ''}`} onClick={() => actionsRef.current?.(type)} disabled={automatic || !ready} title={`${rule.name} — ${rule.chargeCost} objets pour charger. ${rule.description}`} aria-label={automatic ? `${rule.name} : ${progress}/${rule.chargeCost} auto` : `${rule.name} : ${progress}/${rule.chargeCost}${ready ? ' prêt' : ''}`}>
-                        <span className="city-rush-power-icon"><PowerIcon type={type} /></span>
-                        <span className="city-rush-power-copy">
-                          <b>{rule.shortName}</b>
-                          <small><span>{automatic ? 'AUTO' : rule.key}</span> <i>·</i> {ready ? 'PRÊT' : `${progress}/${rule.chargeCost}`}</small>
-                          <span className="city-rush-power-progress" aria-hidden="true"><i style={{ width: `${progressPercent}%` }} /></span>
-                        </span>
-                        {ready && <i className="city-rush-power-pip" aria-hidden="true" />}
-                      </button>
-                    );
-                  })}
-                </div>
+                {(() => {
+                  const type = CITY_RUSH_POWERS.PISTOL;
+                  const rule = CITY_RUSH_POWER_RULES[type];
+                  const progress = Math.min(rule.chargeCost, Math.max(0, Number(hud.inventory?.[type]) || 0));
+                  const ready = progress >= rule.chargeCost;
+                  return (
+                    <button
+                      type="button"
+                      className={`city-rush-machine-gun-button${ready ? ' is-ready' : ''}`}
+                      onClick={() => actionsRef.current?.(type)}
+                      disabled={!ready}
+                      title={ready ? 'Mitrailleuse rouge chargée · appuie pour tirer' : 'Ramasse un bonus rouge pour charger la mitrailleuse'}
+                      aria-label={ready ? 'Tirer à la mitrailleuse rouge' : `Mitrailleuse rouge : ${progress}/${rule.chargeCost}, ramasse un bonus rouge`}
+                    >
+                      <span className="city-rush-machine-gun-label">MITRAILLEUSE</span>
+                      <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
+                      <span className="city-rush-machine-gun-status">{ready ? 'TIRER' : `${progress} / ${rule.chargeCost}`}</span>
+                    </button>
+                  );
+                })()}
               </div>
             </>}
 
@@ -1183,7 +1172,7 @@ export default function ViceCityRushPage() {
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · {currentDistance} M</span>
-            <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> A : TIR BLEU <b>·</b> Z : RAFALE <b>·</b> R : HÉLICO <b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
+            <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> Z : MITRAILLEUSE <b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
             <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE · OBJETS EN BAS</span>
           </div>
         </section>
@@ -1210,7 +1199,7 @@ export default function ViceCityRushPage() {
           </section>
 
           <section className="city-rush-side-card city-rush-item-guide">
-            <div className="city-rush-side-heading"><span>OBJETS</span><i>3 ARMES + TURBO</i></div>
+            <div className="city-rush-side-heading"><span>OBJETS</span><i>1 ARME + TURBO</i></div>
             <h3>Ramasse.<br /><em>Déclenche.</em></h3>
             <div className="city-rush-guide-list">
               {POWER_ORDER.map((type) => {
@@ -1225,7 +1214,7 @@ export default function ViceCityRushPage() {
               })}
               <div className="city-rush-guide-item is-boost">
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
-                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Les bonus bleus chargent le tir droit, un objet par tir.</small></div>
+                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Un bonus rouge suffit à charger la mitrailleuse.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
               </div>
             </div>
@@ -1238,7 +1227,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader pour l’empêcher de s’armer.'} Elles arrivent armées : tir bleu et rafale rouge chargés (jamais l’hélico, qu’il faut voler). Hors classement, signalées dans la liste des positions. Chaque berline a une barre de vie : 3 tirs droits bleus, 2 rafales rouges, 1 tir d’hélico — ou 3 carambolages — la détruisent (explosion, retrait de la course et +200 pts). Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir bleu en coûte un carré, une rafale rouge deux, un carambolage avec une berline un — le trafic et les rivaux, eux, ne touchent pas la coque. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines chargent leur mitrailleuse avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les berlines sont signalées dans la liste des positions. Chaque berline a une barre de vie : deux rafales rouges, un tir d’hélicoptère ou trois carambolages la détruisent (explosion, retrait de la course et +200 pts). Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Une rafale rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
           </section>
         </aside>
       </main>
