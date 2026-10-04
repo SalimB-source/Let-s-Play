@@ -603,9 +603,12 @@ export default function ViceCityRushPage() {
 
     const courseId = nextResult.city || (storyMode ? currentStoryRace?.city : cityId) || 'vice-city';
     const progressBeforeRace = careerProgressRef.current;
+    // Le gain dépend de la place : 1er → 50 billets, 2e → 30, 3e → 10
+    // (une épave est classée dernière par le moteur de course).
     const award = awardCityRushRace(progressBeforeRace, {
       courseId,
       completed: !nextResult.destroyed,
+      rank: nextResult.rank,
     });
     saveCareerProgress(award.progress);
     const courseIndex = CITY_RUSH_COURSES.findIndex((course) => course.id === courseId);
@@ -1000,7 +1003,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
                       <h2>VICE CITY<br /><em>RUSH.</em></h2>
-                      <p>La ville est à toi. Termine chaque parcours pour ouvrir le suivant, et gagne 50 billets verts à chaque course pour débloquer de nouvelles voitures. Vice City t’attend pour le départ.</p>
+                      <p>La ville est à toi. Termine chaque parcours pour ouvrir le suivant, et remplis ton portefeuille : le 1er gagne 50 billets verts, le 2e 30 et le 3e 10 — de quoi débloquer de nouvelles voitures. Vice City t’attend pour le départ.</p>
                     </div>
 
                     <button
@@ -1133,7 +1136,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
                       <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. Gagne 50 billets verts par course pour acheter les six autres modèles.</p>
+                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. 50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les six autres modèles.</p>
                     </div>
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
@@ -1296,7 +1299,7 @@ export default function ViceCityRushPage() {
                 {result.cashAwarded > 0 && (
                   <div className="city-rush-cash-reward" role="status" aria-live="polite">
                     <span className="city-rush-cash-reward-icon" aria-hidden="true">$</span>
-                    <span><b>+{formatCash(result.cashAwarded)} BILLETS VERTS</b><small>RÉCOMPENSE DE COURSE</small></span>
+                    <span><b>+{formatCash(result.cashAwarded)} BILLETS VERTS</b><small>{result.destroyed ? 'RÉCOMPENSE · ÉPAVE DERNIÈRE' : `RÉCOMPENSE · ${ordinal(result.rank).toUpperCase()} PLACE`}</small></span>
                     <small className="city-rush-cash-total">PORTEFEUILLE · {formatCash(result.cashBalance)}</small>
                   </div>
                 )}

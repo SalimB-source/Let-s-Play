@@ -5,10 +5,12 @@ import {
   CITY_RUSH_COURSES,
 } from '../src/games/cityRushRules.js';
 import {
+  CITY_RUSH_CASH_BY_PLACE,
   CITY_RUSH_CASH_PER_RACE,
   CITY_RUSH_PROGRESS_KEY,
   CITY_RUSH_STARTER_CAR_ID,
   awardCityRushRace,
+  cityRushCashForPlace,
   isCityRushCarOwned,
   isCityRushCourseUnlocked,
   normalizeCityRushProgress,
@@ -28,33 +30,53 @@ test('nouvelle carrière : la Mistral est offerte et seul Vice City est ouvert',
   for (const course of CITY_RUSH_COURSES.slice(1)) assert.equal(isCityRushCourseUnlocked(progress, course.id), false);
 });
 
-test('chaque course verse 50 billets, mais seul le parcours terminé ouvre le suivant', () => {
+test('la place fixe le gain : 50 billets au 1er, 30 au 2e, 10 au 3e', () => {
+  assert.deepEqual(CITY_RUSH_CASH_BY_PLACE, [50, 30, 10]);
+  assert.equal(CITY_RUSH_CASH_PER_RACE, 50);
+  assert.equal(cityRushCashForPlace(1), 50);
+  assert.equal(cityRushCashForPlace(2), 30);
+  assert.equal(cityRushCashForPlace(3), 10);
+  // Classé dernier ou au-delà du podium : le plancher reste à 10 billets.
+  assert.equal(cityRushCashForPlace(4), 10);
+  assert.equal(cityRushCashForPlace(0), 0);
+  assert.equal(cityRushCashForPlace(null), 0);
+});
+
+test('le versement dépend de la place, mais seul le parcours terminé ouvre le suivant', () => {
   const firstCourse = CITY_RUSH_COURSES[0];
   const secondCourse = CITY_RUSH_COURSES[1];
   const thirdCourse = CITY_RUSH_COURSES[2];
   const initial = normalizeCityRushProgress(null);
 
-  const wreck = awardCityRushRace(initial, { courseId: firstCourse.id, completed: false });
-  assert.equal(wreck.cashAwarded, CITY_RUSH_CASH_PER_RACE);
-  assert.equal(wreck.progress.cash, 50);
+  // Une épave est classée dernière (3e) et empoche quand même 10 billets.
+  const wreck = awardCityRushRace(initial, { courseId: firstCourse.id, completed: false, rank: 3 });
+  assert.equal(wreck.cashAwarded, 10);
+  assert.equal(wreck.progress.cash, 10);
   assert.deepEqual(wreck.progress.completedCourseIds, []);
   assert.equal(isCityRushCourseUnlocked(wreck.progress, secondCourse.id), false);
 
-  const finish = awardCityRushRace(wreck.progress, { courseId: firstCourse.id, completed: true });
+  // Sans place précisée, la course paie comme une victoire (rétro-compatibilité).
+  const anonymous = awardCityRushRace(wreck.progress, { courseId: firstCourse.id, completed: false });
+  assert.equal(anonymous.cashAwarded, CITY_RUSH_CASH_PER_RACE);
+  assert.equal(anonymous.progress.cash, 60);
+
+  const finish = awardCityRushRace(anonymous.progress, { courseId: firstCourse.id, completed: true, rank: 1 });
   assert.equal(finish.cashAwarded, 50);
-  assert.equal(finish.progress.cash, 100);
+  assert.equal(finish.progress.cash, 110);
   assert.deepEqual(finish.progress.completedCourseIds, [firstCourse.id]);
   assert.equal(isCityRushCourseUnlocked(finish.progress, secondCourse.id), true);
   assert.equal(isCityRushCourseUnlocked(finish.progress, thirdCourse.id), false);
 
-  const skipped = awardCityRushRace(finish.progress, { courseId: thirdCourse.id, completed: true });
+  const skipped = awardCityRushRace(finish.progress, { courseId: thirdCourse.id, completed: true, rank: 1 });
   assert.equal(skipped.cashAwarded, 0);
   assert.equal(skipped.reason, 'course-locked');
-  assert.equal(skipped.progress.cash, 100);
+  assert.equal(skipped.progress.cash, 110);
 
-  const nextFinish = awardCityRushRace(finish.progress, { courseId: secondCourse.id, completed: true });
-  assert.deepEqual(nextFinish.progress.completedCourseIds, [firstCourse.id, secondCourse.id]);
-  assert.equal(isCityRushCourseUnlocked(nextFinish.progress, thirdCourse.id), true);
+  const secondPlace = awardCityRushRace(finish.progress, { courseId: secondCourse.id, completed: true, rank: 2 });
+  assert.equal(secondPlace.cashAwarded, 30);
+  assert.equal(secondPlace.progress.cash, 140);
+  assert.deepEqual(secondPlace.progress.completedCourseIds, [firstCourse.id, secondCourse.id]);
+  assert.equal(isCityRushCourseUnlocked(secondPlace.progress, thirdCourse.id), true);
 });
 
 test('les voitures payantes s’achètent une fois avec le portefeuille gagné', () => {

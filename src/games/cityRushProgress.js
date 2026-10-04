@@ -1,11 +1,23 @@
 // Progression persistante de Vice City Rush : portefeuille, garage et ordre des parcours.
 // Les courses restent jouables à partir du premier circuit ; une arrivée normale
-// débloque le parcours suivant et chaque fin de course verse 50 billets.
+// débloque le parcours suivant et la place rapporte des billets :
+// 1er → 50, 2e → 30, 3e (ou épave, classée dernière) → 10.
 import { CITY_RUSH_CARS, CITY_RUSH_COURSES } from './cityRushRules.js';
 
 export const CITY_RUSH_PROGRESS_KEY = 'letsplay_vice_city_rush_progress_v1';
 export const CITY_RUSH_STARTER_CAR_ID = 'city-hatch';
-export const CITY_RUSH_CASH_PER_RACE = 50;
+
+/** Fiche de paie du podium : la place (1re, 2e, 3e) indexe le gain en billets. */
+export const CITY_RUSH_CASH_BY_PLACE = [50, 30, 10];
+// La victoire reste la référence historique du gain par course.
+export const CITY_RUSH_CASH_PER_RACE = CITY_RUSH_CASH_BY_PLACE[0];
+
+/** Billets versés selon la place d'arrivée : 1er → 50, 2e → 30, 3e et au-delà → 10. */
+export function cityRushCashForPlace(place) {
+  const rank = Number(place);
+  if (!Number.isFinite(rank) || rank < 1) return 0;
+  return CITY_RUSH_CASH_BY_PLACE[Math.min(Math.floor(rank), CITY_RUSH_CASH_BY_PLACE.length) - 1];
+}
 
 const validIdSet = (items) => new Set((Array.isArray(items) ? items : []).map((item) => item?.id).filter(Boolean));
 const safeMoney = (value) => Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
@@ -70,13 +82,18 @@ export function awardCityRushRace(progress, {
   courseId = CITY_RUSH_COURSES[0]?.id,
   completed = true,
   courses = CITY_RUSH_COURSES,
-  reward = CITY_RUSH_CASH_PER_RACE,
+  rank = null,
+  reward = null,
 } = {}) {
   const current = normalizeCityRushProgress(progress, { courses });
   if (!isCityRushCourseUnlocked(current, courseId, courses)) {
     return { progress: current, cashAwarded: 0, courseCompleted: false, reason: 'course-locked' };
   }
-  const cashAwarded = safeMoney(reward);
+  // Un gain explicite (`reward`) reste prioritaire ; sinon la place d'arrivée
+  // fixe le versement. Sans place connue, on paie comme une victoire.
+  const cashAwarded = reward !== null && reward !== undefined
+    ? safeMoney(reward)
+    : cityRushCashForPlace(rank ?? 1);
   const completedCourseIds = completed && !current.completedCourseIds.includes(courseId)
     ? [...current.completedCourseIds, courseId]
     : current.completedCourseIds;
