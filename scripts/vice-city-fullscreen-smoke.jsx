@@ -134,9 +134,10 @@ const LAYER_ONLY = { native: false, layer: true, locked: true, pressed: 'true' }
 const locked = () => document.body.classList.contains('game-immersive-lock');
 const shellOf = (node) => node.querySelector('.city-rush-shell');
 const toggleOf = (node) => node.querySelector('.city-rush-top-actions .city-rush-fullscreen-button');
-// Le bouton principal de l'écran d'intro en cours : « CHOISIR LA VILLE », puis
-// « GARAGE », puis « DÉMARRER » — c'est lui qui avance, et le dernier lance la course.
-const primaryOf = (node) => node.querySelector('.city-rush-intro-actions .city-rush-start-button');
+// Les vignettes font avancer le parcours de lancement : mode → course → voiture.
+const modeCardOf = (node, index = 0) => node.querySelectorAll('.city-rush-mode-card')[index];
+const cityCardOf = (node, index = 0) => node.querySelectorAll('.city-rush-city-card')[index];
+const carCardOf = (node, index = 0) => node.querySelectorAll('.city-rush-car-card')[index];
 const resumeOf = (node) => node.querySelector('.city-rush-pause-overlay .city-rush-start-button');
 
 /** Plein écran de la coque du jeu : natif, couche fixe, verrou, bouton de la barre. */
@@ -162,12 +163,12 @@ const waitForRace = (node) => until(() => node.querySelector('.city-rush-hud-top
 const waitForPause = (node) => until(() => node.querySelector('.city-rush-pause-overlay'), 'la pause');
 const waitForResult = (node) => until(() => node.querySelector('.city-rush-result-overlay'), 'l’écran d’arrivée');
 
-/** Écran MODE → VILLE → GARAGE : le bouton principal de chaque étape est le même. */
+/** Écran MODE → VILLE → GARAGE : chaque vignette ouvre l'étape suivante. */
 async function openGarage(node) {
   await waitForIntroStep(node, 'MODE');
-  await click(primaryOf(node));
+  await click(modeCardOf(node));
   await waitForIntroStep(node, 'VILLE');
-  await click(primaryOf(node));
+  await click(cityCardOf(node));
   await waitForIntroStep(node, 'GARAGE');
 }
 
@@ -220,6 +221,11 @@ export async function checkViceCityFullscreen(assert) {
       assert.deepEqual(shellState(node, api), OPEN, 'le premier geste ouvre le plein écran natif');
       assert.equal(api.requests, 1, 'une demande native au premier geste');
 
+      await click(node.querySelector('.city-rush-story-banner'));
+      assert.ok(node.querySelector('.city-rush-story-cinematic'), 'la bannière histoire entière est cliquable');
+      await click(node.querySelector('.city-rush-story-cinematic .city-rush-text-button'));
+      await waitForIntroStep(node, 'MODE');
+
       // Le bouton de la barre referme le plein écran.
       await click(toggleOf(node));
       assert.deepEqual(shellState(node, api), CLOSED, 'le bouton de la barre referme le plein écran');
@@ -239,15 +245,22 @@ export async function checkViceCityFullscreen(assert) {
       assert.equal(toggleOf(node).querySelector('svg path').getAttribute('d').startsWith('M6 2'), true, 'l’icône passe à « réduire »');
 
       await waitForIntroStep(node, 'MODE');
-      await click(primaryOf(node));
+      await click(modeCardOf(node, 1));
       await waitForIntroStep(node, 'VILLE');
-      assert.deepEqual(shellState(node, api), OPEN, 'plein écran gardé en changeant d’écran d’intro');
-      await click(node.querySelectorAll('.city-rush-city-card')[1]);
-      assert.deepEqual(shellState(node, api), OPEN, 'plein écran gardé en changeant de ville');
-      await click(primaryOf(node));
+      assert.deepEqual(shellState(node, api), OPEN, 'la vignette de mode ouvre directement les courses');
+      await click(cityCardOf(node, 1));
       await waitForIntroStep(node, 'GARAGE');
+      assert.deepEqual(shellState(node, api), OPEN, 'la vignette de course ouvre directement le garage');
+      const alternatePilot = node.querySelector('.city-rush-driver-pill:not(.is-player)');
+      assert.ok(alternatePilot, 'le choix du pilote reste accessible avant le lancement par voiture');
+      const chosenPilotName = alternatePilot.querySelector('.city-rush-driver-pill-copy b').firstChild.textContent;
+      await click(alternatePilot);
       before = mark(api);
-      await click(primaryOf(node));
+      await click(carCardOf(node, 1));
+      assert.equal(worldProbe.props.cityId, 'new-york', 'la course reprend le circuit touché');
+      assert.equal(worldProbe.props.carId, 'turbo-gt', 'la vignette de voiture lance avec le modèle touché');
+      assert.equal(worldProbe.props.raceLaps, 1, 'le mode choisi est appliqué à la course');
+      assert.equal(worldProbe.props.roster.find((racer) => racer.isPlayer)?.name, chosenPilotName, 'le pilote choisi avant la voiture est conservé');
       await waitForCountdown(node);
       assert.deepEqual(shellState(node, api), OPEN, 'toujours en plein écran pendant le compte à rebours');
       await waitForRace(node);
@@ -277,7 +290,7 @@ export async function checkViceCityFullscreen(assert) {
       await press('f');
       assert.deepEqual(shellState(node, api), OPEN, 'F rouvre le plein écran depuis l’intro');
       await openGarage(node);
-      await click(primaryOf(node));
+      await click(carCardOf(node));
       await waitForCountdown(node);
       await api.browserExit();
       await waitForPause(node);
@@ -398,8 +411,8 @@ export async function checkViceCityFullscreen(assert) {
         assert.deepEqual(shellState(node, api), CLOSED, `${label} : le bouton de la barre referme`);
         await openGarage(node);
         const before = mark(api);
-        await click(primaryOf(node));
-        assert.deepEqual(shellState(node, api), OPEN, `${label} : lancer une course rouvre le plein écran natif`);
+        await click(carCardOf(node));
+        assert.deepEqual(shellState(node, api), OPEN, `${label} : la vignette de voiture lance la course et rouvre le plein écran natif`);
         assert.equal(since(api, before).requests, 1, `${label} : la demande part dans le geste`);
         await finishRace(node);
         await settle();
