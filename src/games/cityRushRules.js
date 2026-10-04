@@ -1331,6 +1331,23 @@ export function chooseCityRushAiLane({
 // avatar et un prénom issus d'un pays différent autour du monde.
 export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno']);
 
+// Les avatars décrivent leurs couleurs en CSS (`#f3c8a6`) : le modèle three.js
+// du pilote dans son cabriolet attend, lui, un entier 0xRRGGBB. Ces deux
+// conversions sont la seule passerelle entre la fiche du pilote et la 3D —
+// peau (`avatar.skin`), cheveux (`avatar.hair`) et tenue (`avatar.outfit`).
+export function cityRushHexColor(value, fallback = 0x1e222d) {
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, Math.trunc(value)) & 0xffffff;
+  const match = typeof value === 'string' ? /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim()) : null;
+  if (!match) return fallback;
+  const digits = match[1];
+  return parseInt(digits.length === 3 ? digits.replace(/./g, (digit) => digit + digit) : digits, 16);
+}
+
+/** Couleur de peau du pilote, avec repli sur celle du modèle de voiture. */
+export function cityRushDriverColor(driver, fallback = 0x1e222d) {
+  return cityRushHexColor(driver?.avatar?.skin, fallback);
+}
+
 export const CITY_RUSH_DRIVERS = Object.freeze([
   Object.freeze({
     id: 'kenji', avatarId: 'avatar-kenji', name: 'KENJI', displayName: 'Kenji', country: 'Japon', countryCode: 'JP', flag: '🇯🇵', accent: '#42e6ff',

@@ -114,7 +114,7 @@ import { createBatch, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
-import { animateRacerCar, createSmokePool, makeRacerCar, makeTrafficVehicle } from './cityRushCars';
+import { animateRacerCar, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
 import { makePickupMaterial } from './cityRushTextures';
 
 const PLAYER_Z = 3.1;
@@ -719,16 +719,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 
   // ── Voitures ─────────────────────────────────────────────────────────
-  const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
-  const rivalProfiles = CITY_RUSH_CARS.filter((car) => car.id !== playerProfile.id);
-  const playerCar = makeRacerCar(playerProfile, { player: true, number: CITY_RUSH_CARS.indexOf(playerProfile) + 1, daylight });
-  playerCar.position.set(CITY_RUSH_LANE_X[PLAYER_START_LANE], 0, PLAYER_Z);
-  scene.add(playerCar);
-
+  // La liste des pilotes est connue avant les voitures : chaque cabriolet
+  // reçoit son pilote (`driver`), dont le modèle porte la peau, les cheveux,
+  // l'accessoire et la combinaison de son avatar, tête nue.
   let currentRoster = Array.isArray(initialRoster) && initialRoster.length === 3
     ? initialRoster
     : selectCityRushRacers({ cityId: city.id, carId: selectedCarId });
   let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
+
+  const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
+  const rivalProfiles = CITY_RUSH_CARS.filter((car) => car.id !== playerProfile.id);
+  const playerCar = makeRacerCar(playerProfile, {
+    player: true,
+    number: CITY_RUSH_CARS.indexOf(playerProfile) + 1,
+    daylight,
+    driver: playerDriver,
+  });
+  playerCar.position.set(CITY_RUSH_LANE_X[PLAYER_START_LANE], 0, PLAYER_Z);
+  scene.add(playerCar);
 
   const racerSpecs = [
     { id: 'nova', lane: CITY_RUSH_DEFAULT_LANES[1], phase: 0.6, changeIn: 1.4, skidSide: 1 },
@@ -752,7 +760,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       lap: 1,
       baseSpeed: PLAYER_SPEED * profile.powerMultiplier,
       currentSpeed: 0,
-      mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight }),
+      mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight, driver }),
       currentX: CITY_RUSH_LANE_X[spec.lane],
       slowLeft: 0,
       blueShotSlowLeft: 0,
@@ -775,6 +783,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!Array.isArray(nextRoster) || nextRoster.length < 3) return;
     currentRoster = nextRoster;
     playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
+    // Le pilote a changé au garage : la voiture du joueur change de tête et de
+    // combinaison, comme les rivaux.
+    setRacerDriver(playerCar, playerDriver);
     racers.forEach((racer, index) => {
       const driver = currentRoster.find((item) => item.id === racer.id) || currentRoster[index + 1];
       if (!driver) return;
@@ -786,6 +797,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.flag = driver.flag;
       racer.avatar = driver.avatar;
       racer.accent = driver.accent;
+      setRacerDriver(racer.mesh, driver);
     });
   }
 

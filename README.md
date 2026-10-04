@@ -955,11 +955,14 @@ et le dernier tour durait 21 s.
   progression du grand dernier tour). `cityRushMinimapTrackShape` et les
   `routeTicks` de `buildCityRushMinimapState` exposent en plus le vrai anneau et
   ses échangeurs aux interfaces qui veulent les dessiner.
-- **Les voitures.** Cabriolets et rivaux modélisés (pilote casqué, phares,
-  feux arrière, flammes de turbo, roues qui tournent et se braquent, roulis et
-  tangage selon la conduite, fumée au démarrage et dans les dérapages) ; le
-  trafic (police, ambulance, camion-poubelle, Lamborghini blanche) a ses
-  gyrophares et ses décalcomanies.
+- **Les voitures.** Cabriolets et rivaux modélisés (phares, feux arrière,
+  flammes de turbo, roues qui tournent et se braquent, roulis et tangage selon
+  la conduite, fumée au démarrage et dans les dérapages) ; le trafic (police,
+  ambulance, camion-poubelle, Lamborghini blanche) a ses gyrophares et ses
+  décalcomanies. Les cabriolets sont **décapotés et leurs pilotes ont le visage
+  à l'air** (voir « Les pilotes dans le cockpit » plus bas) : plus un seul
+  casque intégral dans la course, chaque tête est celle de l'avatar du pilote
+  choisi.
 - **La caméra.** Orbite autour de la grille pendant l'intro, travelling qui se
   recule pendant le compte à rebours, poursuite pendant la course (le champ
   s'élargit en turbo, l'image tremble sous un missile), tour d'honneur à
@@ -1006,7 +1009,8 @@ et le dernier tour durait 21 s.
   `theme.expressway` ;
 - `src/games/cityRushStartLine.js` — la zone de départ (statique) et ses parties
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
-- `src/games/cityRushCars.js` — voitures des pilotes, trafic, fumée ;
+- `src/games/cityRushCars.js` — voitures des pilotes (et leurs **pilotes à
+  visage découvert**, voir « Les pilotes dans le cockpit »), trafic, fumée ;
 - `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
   dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
@@ -1014,6 +1018,62 @@ et le dernier tour durait 21 s.
   `src/games/ViceCityRushPage.jsx` et `src/games/vice-city-rush.css` — la page,
   le HUD (carte TOUR, bannière de tour, plaque de signalisation de la route,
   liste des pilotes) ;
+
+### Les pilotes dans le cockpit
+
+Les cabriolets sont **décapotés** : le pilote s'y voit de la caméra de poursuite,
+et son visage y est plus intéressant qu'un casque. **Le casque intégral a donc
+disparu** — plus un seul `helmet` n'est construit par `makeRacerCar` (le smoke
+échoue même s'il en trouve un). À la place, chaque cabriolet reçoit **le pilote
+de sa fiche** : `makeRacerCar(profile, { driver })`, où `driver` est l'entrée du
+catalogue (`CITY_RUSH_DRIVERS`) déjà choisie pour la course (le joueur peut
+changer de pilote au garage ; les deux rivaux ont le leur). Le pilote de la
+piste est donc **exactement l'avatar de la fiche** : peau (`avatar.skin`),
+cheveux (`avatar.hair`), **la coiffure parmi les douze du catalogue** (`spiky`,
+`curly`, `bob`, `locs`, `braids`, `afro-curls`, `neon-bangs`, `swept`,
+`headband`, `cap-back`, `short-fade`, `wavy-long`) et **l'accessoire** (`cyber-visor`,
+`aviator-gold`, `retro-amber`, `cat-eye`, `mirror-shades`, `french-beret`,
+`gold-shield`, `neon-headset`, `glacier-glass`, `octagon-gold`, `sport-visor`,
+`palm-shades`), rendu en volume : visière d'un seul tenant teintée de la couleur
+du pilote, lunettes rondes ou dorées, pointe de chat, béret posé de travers,
+casque audio avec son micro. La **combinaison** reprend la tenue de l'avatar,
+assagie vers le bleu de course, avec harnais, ceinture, gants, et un **col
+sombre** qui sépare la tête du buste.
+
+- **Un vrai visage, pas une boîte.** Crâne, mâchoire, nez, oreilles, yeux
+  (blanc + pupille), sourcils et bouche sont sculptés dans le modèle de tête,
+  qui est **légèrement agrandi** (1,12) : c'est la taille d'arcade qui rend le
+  visage lisible à la distance de la caméra — c'était le rôle du casque, très
+  gros, avant.
+- **Peint par sommet, pas par matériau.** Les dix couleurs du pilote (peau,
+  cheveux, accent, combinaison, gants, visière, verre, blanc et noir des yeux,
+  bouche) sont des **couleurs par sommet** (`cityRushBuilder` les accepte comme
+  pour les roues) : trois meshes suffisent (buste, tête, chaque bras), et la
+  voiture garde **une trentaine de meshes** — moins que du temps du casque et de
+  ses matériaux séparés. Le smoke vérifie le budget (600 meshes visibles) sur
+  les cinq villes.
+- **La tête et les bras vivent.** La tête reste sur son pivot animé (elle
+  regarde dans le virage, tremble sous les chocs et les frappes, respire au
+  ralenti) et **les deux bras** — épaule, manche, gant — sont des pivots qui
+  vont chercher le volant : le coup de volant fait avancer une épaule et
+  reculer l'autre, un choc fait encaisser les deux. Le **volant** gagne un
+  **repère de sommet** aux couleurs de la voiture, pour que le coup de volant se
+  lise.
+- **L'habitacle n'est plus vide** : la banquette passager porte un sac de bord.
+- **Changer de pilote au garage change la tête dans le cockpit.**
+  `setRacerDriver(car, driver)` refait le buste, la tête et les bras aux
+  couleurs du nouvel avatar — le matériau peint par sommet est réutilisé et les
+  anciennes géométries libérées, donc rien ne s'accumule. `applyRoster` du monde
+  l'appelle pour les trois voitures dès que la liste des pilotes change en cours
+  de monde (`setRoster`, le bouton « CHANGER PILOTE » du garage), sans quoi la
+  voiture du joueur garderait le visage du premier pilote de la partie. Le smoke
+  le vérifie : en pleine intro, il change la liste et exige que les trois
+  cockpits aient suivi.
+- **Les couleurs viennent de la fiche** : `cityRushHexColor` /
+  `cityRushDriverColor` (`cityRushRules.js`) convertissent les `#rrggbb` de
+  l'avatar en entiers three.js (forme courte `#abc` comprise, repli sûr). Sans
+  pilote — un appelant qui n'en passe pas —, le modèle retombe sur
+  `profile.driverColor`.
 
 ### La bande-son
 
@@ -1060,6 +1120,7 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ```bash
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
+npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours (3 600 m, dernier tour de 1 200 m) sans exception, éclatements visibles
 npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
