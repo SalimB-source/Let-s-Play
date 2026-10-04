@@ -1,3 +1,5 @@
+import { CITY_RUSH_SHUTO_C1 } from './cityRushRules.js';
+
 // Habillage visuel de chaque ville de Vice City Rush : ciel, météo, éclairage,
 // enseignes, boutiques, sponsors des tribunes et porte de mi-parcours. Les
 // règles de jeu restent dans cityRushRules.js ; ici il n'y a que de la
@@ -80,28 +82,77 @@ export const CITY_RUSH_THEMES = Object.freeze({
     roadTint: 0x16181f, laneColor: '#ffe28a', edgeColor: '#ffc45c', sidewalkTint: 0x3a3d47,
     lamp: 'cobra', tree: 'street',
   }),
+  // ── Shuto Expressway Route 1 · la C1 都心環状線 ──────────────────────────
+  // Tokyo ne se joue plus dans une rue de Shibuya : c'est l'anneau intérieur
+  // de la Shuto Expressway, 14,8 km de viaduc au-dessus de la ville, avec ses
+  // tunnels sous le palais impérial, ses murs antibruit, ses portiques verts et
+  // ses panneaux de sortie numérotés. Tout ce qui est propre à la voie rapide
+  // vit dans `expressway` ; les secteurs réels (日本橋 km 0 → 神田橋 → 竹橋 →
+  // 北の丸 → 千代田 → 霞が関 → 谷町 → 飯倉 → 芝公園 et sa Tokyo Tower →
+  // 浜崎橋 → 汐留 → 銀座 → 京橋 → 宝町) viennent de `CITY_RUSH_SHUTO_C1`.
   tokyo: Object.freeze({
     sky: Object.freeze({
-      top: 0x0a0a24, mid: 0x2a1650, horizon: 0x7a2d7c, haze: 0xff6fc0,
-      sun: Object.freeze({ color: 0xfff6e0, glow: 0xf54eae, elevation: 0.24, radius: 0.05, stripes: 0 }),
-      stars: 0.55, moon: 1,
+      top: 0x070b1e, mid: 0x1d1a44, horizon: 0x6d3560, haze: 0xffa463,
+      sun: Object.freeze({ color: 0xfff6e0, glow: 0xf54eae, elevation: 0.2, radius: 0.048, stripes: 0 }),
+      stars: 0.32, moon: 0.9,
     }),
+    // Crachin de nuit sur le bitume drainant : la chaussée reste brillante.
     weather: 'drizzle',
-    fogNear: 55, fogFar: 230,
-    facade: Object.freeze({ style: 'dense', floor: 1.35, litRatio: 0.6, litColors: ['#9af4ff', '#ffffff', '#ff7dd1', '#ffe08a'] }),
-    shops: Object.freeze([
-      { text: 'ラーメン', color: '#ff5b9a', awning: '#d9302f' },
-      { text: 'パチンコ', color: '#42e6ff', awning: '#1b2750' },
-      { text: 'カラオケ', color: '#ffe066', awning: '#5a2d8a' },
-      { text: '居酒屋', color: '#ff9f43', awning: '#302030' },
-    ]),
-    verticalSigns: Object.freeze(['ネオン', '渋谷', 'TOKYO', '夜', 'カフェ', 'ゲーム']),
-    sponsors: Object.freeze(['LET’S PLAY', 'SHIBUYA FM', 'NEO TYRES', 'ミラージュ', 'TOKYO NIGHT RUN']),
-    gate: Object.freeze({ style: 'torii', text: '渋谷' }),
-    gantryText: 'SHIBUYA',
-    crowdColors: Object.freeze([0xff5b9a, 0x42e6ff, 0xffffff, 0xffe066, 0x8a6bff, 0x202a44]),
-    roadTint: 0x15172a, laneColor: '#e2f4ff', edgeColor: '#42e6ff', sidewalkTint: 0x2e2a40,
-    lamp: 'modern', tree: 'cherry',
+    // Du haut du viaduc on voit loin : la brume repousse l'horizon de la baie.
+    fogNear: 82, fogFar: 330,
+    // Façades des tours qui montent le long du tablier (Shiodome, Ginza,
+    // Toranomon) : denses, vitrées, très allumées la nuit.
+    facade: Object.freeze({ style: 'dense', floor: 1.32, litRatio: 0.66, litColors: ['#9af4ff', '#ffffff', '#ff7dd1', '#ffe08a'] }),
+    verticalSigns: Object.freeze(['ネオン', '銀座', '汐留', '夜', 'カラオケ', 'ラーメン', '首都高']),
+    sponsors: Object.freeze(['LET’S PLAY', 'SHUTŌ C1 内回り', 'MID NIGHT RADIO', '首都高速道路', 'WANGAN TYRES']),
+    // Porte de mi-parcours : le portique vert de 谷町JCT, à 300 m du tour.
+    gate: Object.freeze({ style: 'shuto-gantry', text: '谷町 JCT' }),
+    gantryText: 'C1 都心環状',
+    // La « foule » de la zone de départ devient l'équipe de piste : gilets
+    // haute visibilité, casques blancs et rouge de la Shuto.
+    crowdColors: Object.freeze([0xffb03a, 0xf2f4ee, 0x3ce08a, 0xff5b5b, 0x9fd8ff, 0x2a2f3d]),
+    roadTint: 0x14161d, laneColor: '#eef4ff', edgeColor: '#3ce08a', sidewalkTint: 0x2a2c38,
+    // Mâts d'éclairage de la voie rapide, aucun arbre sur le tablier.
+    lamp: 'mast', tree: 'none',
+    glow: 1, lampCone: 0.07, accentCone: 0.1,
+    skyline: Object.freeze({ base: [10, 14, 32] }),
+    expressway: Object.freeze({
+      route: CITY_RUSH_SHUTO_C1,
+      // Lignes annoncées sur le panneau du portique de départ (江戸橋JCT).
+      signExits: Object.freeze(['1号上野線', '6号向島線', 'B 湾岸線']),
+      // Coupe du tablier, en mètres : chaussée 13,4 + bandes d'arrêt d'urgence
+      // + trottoir de service, puis glissière, mur antibruit et parapet.
+      deckHalfWidth: 10.6,
+      shoulderWidth: 1.5,
+      barrierHeight: 1.05,
+      parapetHeight: 0.95,
+      wallHeight: 3.4,
+      // La ville est treize mètres plus bas ; les tours de Shiodome et de
+      // Ginza remontent bien au-dessus du tablier.
+      streetDepth: 13,
+      towerBaseX: 15.5,
+      // Vert officiel de la signalisation Shuto, blanc des caractères.
+      signGreen: '#0b6b3f',
+      signGreenDark: '#064a2c',
+      signWhite: '#f4f8f1',
+      materials: Object.freeze({
+        concrete: 0x6a7180, deckConcrete: 0x565c6a, parapet: 0x767d8b,
+        steel: 0x93a0ad, galvanized: 0xc0cad3, darkSteel: 0x2b303c,
+      }),
+      tunnel: Object.freeze({ wall: 0x2b2f3a, ceiling: 0x1d2029, portal: 0x3a4050, sodium: 0xffb46b, led: 0xf2f7ff }),
+      soundWall: Object.freeze({ panel: 0x2b4a3c, post: 0x9aa6b4, opacity: 0.55 }),
+      below: Object.freeze({ ground: 0x080a12, neonA: '#ff5b9a', neonB: '#42e6ff', palace: 0x0e2018 }),
+      // Panneaux publicitaires scellés sur les murs antibruit, comme sur la
+      // vraie C1 entre 汐留 et 銀座.
+      billboards: Object.freeze([
+        { text: 'ミッドナイト ラジオ', color: '#ff5b9a' },
+        { text: 'WANGAN TYRES', color: '#42e6ff' },
+        { text: '首都高 24H', color: '#3ce08a' },
+        { text: 'NEO TOKYO MOTORS', color: '#ffe066' },
+        { text: '銀座 NIGHT DRIVE', color: '#ff9f43' },
+        { text: 'MID NIGHT CLUB', color: '#ff4d6d' },
+      ]),
+    }),
   }),
   paris: Object.freeze({
     sky: Object.freeze({

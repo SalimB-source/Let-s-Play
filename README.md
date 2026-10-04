@@ -779,7 +779,10 @@ villes (Vice City, New York, Tokyo, Paris, Londres). La ville est une boucle de
 **600 m** qu'on reparcourt, et l'on repasse **sous le portique de départ à
 chaque tour**. Les courses sont longues, et **le dernier tour est le plus long
 de tous : 1 200 m, deux boucles d'une traite**, soit deux fois un tour ordinaire.
-C'est aussi celui où la police entre en piste.
+C'est aussi celui où la police entre en piste. **Tokyo se joue sur la Shuto
+Expressway Route 1** — la C1 首都高速都心環状線, l'anneau intérieur réel de
+14,8 km autour du palais impérial, dans le sens 内回り : chaque boucle de 600 m
+rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus bas).
 
 | Mode | Tours | Distance | À 29 m/s, sans incident |
 | --- | --- | --- | --- |
@@ -895,9 +898,11 @@ et le dernier tour durait 21 s.
   suivantes puissent le ramasser à leur tour.
 - **Le décor.** Chaque ville a sa boucle : façades texturées (fenêtres allumées,
   enseignes verticales, boutiques), porte monumentale à mi-tour (arche Art déco,
-  pont-viaduc, torii, arc de triomphe, Tower Bridge), monument, lampadaires,
-  guirlandes, feux tricolores, panneaux qui clignotent, ciel dégradé avec étoiles,
-  skyline au loin, pluie à Londres et bruine à New York.
+  **portique d'échangeur de la Shuto**, torii, arc de triomphe, Tower Bridge),
+  monument, lampadaires, guirlandes, feux tricolores, panneaux qui clignotent,
+  ciel dégradé avec étoiles, skyline au loin, pluie à Londres et bruine à New
+  York. Tokyo fait exception : **ni rue ni trottoir**, mais un tablier de viaduc
+  treize mètres au-dessus de la ville (`theme.expressway` → `shutoC1Stage.js`).
 - **Vice City en plein jour.** Le stage de Vice City se joue **de jour, ambiance
   plage** : ciel bleu de Floride, soleil haut (ni étoiles ni lune), brume marine
   claire, sable au sol, trottoirs crème, façades Art déco pastel et vitres qui
@@ -913,6 +918,43 @@ et le dernier tour durait 21 s.
   circuit choisi (« LE SOLEIL PREND LA ROUTE. » à Vice City, « LA NUIT… »
   ailleurs), et la vignette `public/vice-city-rush-thumb.svg` comme la carte de
   la page Jeux montrent désormais la plage en plein jour.
+- **Tokyo : la C1, anneau intérieur de la Shuto.** Le circuit de Tokyo suit la
+  **Route 1 都心環状線** telle qu'elle existe : 14,8 km, trois voies par sens,
+  limité à **50 km/h**, kilomètre zéro au **pont de 日本橋**, sens de la course
+  **内回り** (anti-horaire). `CITY_RUSH_SHUTO_C1` (`cityRushRules.js`) découpe
+  l'anneau en **quinze secteurs** portant chacun son point kilométrique officiel,
+  sa nature et son côté réel : 江戸橋JCT → 神田橋 → **竹橋JCT** (le grand
+  balayage) → **北の丸トンネル** (700 m) → **千代田トンネル** (1 900 m, le plus
+  long, 危険物通行禁止) → la **tranchée de 霞が関** avec le **谷町JCT** (km 8,0,
+  la porte de mi-tour du jeu) → 飯倉 → **芝公園** (la Tokyo Tower à gauche,
+  km 5,4) → **浜崎橋JCT** (le Rainbow Bridge et la baie à droite) → 汐留JCT →
+  **汐留トンネル** (700 m, LED) → **銀座** (panneaux à gauche) → **新富町** (les
+  piles de l'ancienne 築地川 montent entre les files, d'où les lignes jaunes et
+  l'interdiction de changer de voie) → 京橋JCT → **宝町** et son péage ETC. Le
+  décor (`shutoC1Stage.js`) construit le tablier et ses murets New Jersey, les
+  glissières galvanisées, les murs antibruit translucides, la **forêt de piles**
+  treize mètres plus bas, les **tours de Shiodome et de Ginza**, le **palais
+  impérial à gauche** (douves, murs de pierre, pins, toitures de Kitanomaru),
+  les rivières franchies (日本橋川, 神田川, 築地川), les **bretelles d'échangeur
+  qui enjambent l'anneau** avec leurs balises aviation, les **trois tunnels**
+  (parois carrelées, bandeaux sodium ou LED, niches de secours, portails avec
+  plaque de longueur), la **tranchée ouverte** avec ses ponts de surface, un
+  **portique vert par secteur** (sorties numérotées, badge C1, romaji), la
+  plaque du **道路元標** au kilomètre zéro, les postes kilométriques (qui
+  décroissent de 14 à 0 en 内回り), les téléphones de secours 非常電話, les
+  panneaux à message variable **道路情報板** qui redessinent l'état du trafic
+  toutes les trois secondes, et les deux repères de la légende : **Tokyo Tower**
+  et **Rainbow Bridge**. Le tablier et la ville d'en dessous sont des rubans
+  courbés chaque image sur la ligne centrale du circuit, et le décor fusionné
+  est tronçonné puis cintré une fois (`bendAware`, `bendLoopGeometry`) pour
+  suivre les mêmes S et le même relief que la chaussée. Sous les voûtes, le
+  monde s'adapte (`shutoC1CoverAt` dans `ViceCityWorld.jsx`) : la pluie
+  s'arrête, les phares montent, le brouillard se resserre à 96 m et l'exposition
+  baisse ; le HUD affiche la **plaque verte** du secteur, du point kilométrique
+  et de la prochaine jonction (`shutoC1Readout`, position sur la boucle et non
+  progression du grand dernier tour). `cityRushMinimapTrackShape` et les
+  `routeTicks` de `buildCityRushMinimapState` exposent en plus le vrai anneau et
+  ses échangeurs aux interfaces qui veulent les dessiner.
 - **Les voitures.** Cabriolets et rivaux modélisés (pilote casqué, phares,
   feux arrière, flammes de turbo, roues qui tournent et se braquent, roulis et
   tangage selon la conduite, fumée au démarrage et dans les dérapages) ; le
@@ -939,24 +981,39 @@ et le dernier tour durait 21 s.
   objets, IA (`cityRushLapForDistance`, `cityRushLapCrossings`,
   `cityRushLapProgress`, `cityRushRaceDistance`, `cityRushLineKind` pour le
   grand dernier tour, `cityRushTrackGap` pour replier la boucle devant la
-  caméra) ;
+  caméra, `cityRushTrackOffset`/`Elevation`/`Yaw`/`Pitch` pour la ligne centrale
+  courbée du rendu), **données de la Shuto C1** (`CITY_RUSH_SHUTO_C1`,
+  `shutoC1SectorAt`, `shutoC1KmAt`, `shutoC1CoverAt`, `shutoC1NextJunction`,
+  `shutoC1Readout`) et **silhouette officielle de l'anneau**
+  (`cityRushMinimapTrackShape`, `routeTicks`) ;
 - `src/games/cityRushThemes.js` — palette, ciel, météo, enseignes de chaque
   ville, plus l'éclairage (`theme.light` résolu par `cityRushLightRig`, repli
   nocturne `CITY_RUSH_NIGHT_LIGHT`) et les matières en plein jour
   (`theme.materials`, `theme.glow`, `theme.ground`, `theme.skyline`) ;
 - `src/games/cityRushBuilder.js` — fusion des géométries par matériau, textures
-  canvas, atlas d'enseignes ; `src/games/cityRushTextures.js` — façades, route,
-  trottoirs, panneaux, tableau de tour, plaques ;
+  canvas, atlas d'enseignes (dont `drawShutoSignCell`, la cellule verte des
+  panneaux Shuto) ; `src/games/cityRushTextures.js` — façades, route,
+  trottoirs, panneaux, tableau de tour, plaques, et les matières de la voie
+  rapide (tablier, ville en dessous, paroi de tunnel, mur antibruit, béton de
+  viaduc, skyline de la baie de Tokyo) ;
 - `src/games/cityRushStage.js` — la boucle d'une ville (façades, portes,
-  monuments, accessoires animés, route qui défile, ciel, skyline, pluie) ;
+  monuments, accessoires animés, rubans de chaussée courbés, ciel, skyline,
+  pluie) et le cintrage du décor fusionné (`bendLoopGeometry`) ;
+- `src/games/shutoC1Stage.js` — la boucle **voie rapide** de Tokyo : tablier de
+  viaduc, tunnels, tranchée, échangeurs, portiques verts, mobilier de la Shuto,
+  Tokyo Tower et Rainbow Bridge (`buildShutoExpressway`, `makeExpresswayRoad`,
+  `buildShutoSignAtlas`, `createExpresswayMaterials`), activée par
+  `theme.expressway` ;
 - `src/games/cityRushStartLine.js` — la zone de départ (statique) et ses parties
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes, trafic, fumée ;
 - `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
   dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
-  passages de ligne) ; `src/games/ViceCityRushPage.jsx` et
-  `src/games/vice-city-rush.css` — la page, le HUD (carte TOUR, bannière de tour).
+  passages de ligne, environnement de tunnel de la C1) ;
+  `src/games/ViceCityRushPage.jsx` et `src/games/vice-city-rush.css` — la page,
+  le HUD (carte TOUR, bannière de tour, plaque de signalisation de la route,
+  liste des pilotes) ;
 
 ### La bande-son
 

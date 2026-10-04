@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CITY_RUSH_CITIES } from '../src/games/cityRushRules.js';
+import { CITY_RUSH_CITIES, CITY_RUSH_ROAD_HALF_WIDTH } from '../src/games/cityRushRules.js';
 import {
   CITY_RUSH_NIGHT_LIGHT,
   CITY_RUSH_THEMES,
@@ -27,7 +27,14 @@ test('every city has a complete art direction theme', () => {
     assert.ok(theme.fogNear > 0 && theme.fogFar > theme.fogNear);
     assert.ok(theme.facade.style && theme.facade.floor > 0);
     assert.ok(theme.facade.litRatio >= 0 && theme.facade.litRatio <= 1);
-    assert.ok(theme.shops.length >= 3);
+    if (theme.expressway) {
+      // Une voie rapide surélevée n'a ni trottoir ni devanture : la publicité
+      // passe par les grands panneaux scellés sur les murs antibruit.
+      assert.equal(theme.shops, undefined, `${city.id} : aucune boutique sur une voie rapide`);
+      assert.ok(theme.expressway.billboards.length >= 3, `${city.id} : panneaux publicitaires`);
+    } else {
+      assert.ok(theme.shops.length >= 3);
+    }
     assert.ok(theme.sponsors.length >= 4);
     assert.ok(theme.gate.style && theme.gate.text);
     assert.ok(theme.gantryText);
@@ -107,4 +114,52 @@ test('the daylight theme keeps the Vice City beach identity readable in the UI',
   assert.ok(vice.buildingColors.every((color) => luminance(color) > 0.6), 'façades pastel de front de mer');
   assert.ok(theme.shops.some((shop) => /SURF/i.test(shop.text)), 'une devanture de surf');
   assert.ok(theme.verticalSigns.includes('BEACH'));
+});
+
+test('Tokyo runs on the Shuto Expressway Route 1 with an expressway art direction', () => {
+  const city = CITY_RUSH_CITIES.find((item) => item.id === 'tokyo');
+  const theme = cityRushTheme('tokyo');
+  const expressway = theme.expressway;
+  assert.ok(expressway, 'le thème de Tokyo décrit une voie rapide');
+  // L'anneau intérieur officiel : 14,8 km, 内回り, limité à 50 km/h.
+  assert.equal(expressway.route, city.route, 'le thème pointe sur la route de la ville');
+  assert.equal(expressway.route.id, 'shuto-c1');
+  assert.equal(expressway.route.marker, 'C1');
+  assert.equal(expressway.route.direction, '内回り');
+  assert.ok(Math.abs(expressway.route.lengthKm - 14.8) < 1e-6);
+  assert.equal(expressway.route.speedLimit, 50);
+  assert.ok(expressway.route.sectors.length >= 12, 'chaque échangeur et tunnel a son secteur');
+  // Coupe transversale : le tablier dépasse la chaussée (bandes d'arrêt,
+  // murets, parapets) et tout ce qui enjambe la piste reste au-dessus de la
+  // caméra de poursuite (6,7 m au plus haut).
+  assert.ok(expressway.deckHalfWidth > CITY_RUSH_ROAD_HALF_WIDTH + 2);
+  assert.ok(expressway.barrierHeight > 0.9 && expressway.barrierHeight < 1.4);
+  assert.ok(expressway.parapetHeight > 0.8);
+  assert.ok(expressway.streetDepth > 10, 'la ville passe sous le viaduc');
+  assert.ok(expressway.wallHeight > 2.5, 'des murs antibruit translucides');
+  // Signalisation verte officielle Shuto et vert sombre de contre-jour.
+  assert.equal(expressway.signGreen, '#0b6b3f');
+  assert.ok(expressway.signWhite.startsWith('#'));
+  // Matières : béton du tablier, acier galvanisé, parois de tunnel, panneaux
+  // antibruit translucides, néons de la ville en dessous.
+  for (const key of ['concrete', 'deckConcrete', 'parapet', 'steel', 'galvanized', 'darkSteel']) {
+    assert.ok(key in expressway.materials, `matière manquante : ${key}`);
+  }
+  for (const key of ['wall', 'ceiling', 'portal', 'sodium', 'led']) {
+    assert.ok(key in expressway.tunnel, `tunnel incomplet : ${key}`);
+  }
+  for (const key of ['panel', 'post']) assert.ok(key in expressway.soundWall, `mur antibruit incomplet : ${key}`);
+  assert.ok(expressway.soundWall.opacity > 0.3 && expressway.soundWall.opacity < 0.8, 'panneaux translucides');
+  for (const key of ['ground', 'neonA', 'neonB', 'palace']) assert.ok(key in expressway.below, `ville sous le viaduc : ${key}`);
+  // Pas de devantures, mais des panneaux publicitaires et une porte de mi-tour
+  // annoncée comme un JCT (谷町), pas comme une arche de rue.
+  assert.equal(theme.shops, undefined);
+  assert.ok(expressway.billboards.every((board) => board.text && board.color));
+  assert.equal(theme.gate.style, 'shuto-gantry');
+  assert.ok(/JCT/.test(theme.gate.text), 'la porte de mi-tour est un échangeur');
+  assert.ok(theme.gantryText, 'le portique de départ garde son texte');
+  // Ambiance nocturne de la baie de Tokyo, comme les autres villes de nuit.
+  assert.notEqual(theme.daylight, true);
+  assert.equal(theme.ground, undefined);
+  assert.equal(theme.materials, undefined);
 });

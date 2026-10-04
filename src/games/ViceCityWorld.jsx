@@ -105,10 +105,14 @@ import {
   resolveCityRushCarMovement,
   resolveCityRushPoliceMovement,
   selectCityRushRacers,
+  cityRushRouteFor,
+  shutoC1CoverAt,
+  shutoC1Readout,
 } from './cityRushRules';
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
 import { createBatch, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
+import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
 import { animateRacerCar, createSmokePool, makeRacerCar, makeTrafficVehicle } from './cityRushCars';
 import { makePickupMaterial } from './cityRushTextures';
@@ -649,7 +653,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const stageMaterials = createStageMaterials(city, theme, sceneryRandom);
   const startMaterials = createStartLineMaterials(city, theme);
   const loopBatch = createBatch();
-  const loop = buildCityLoop({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite });
+  // Un thème « voie rapide » (Tokyo = Shuto Expressway Route 1) construit un
+  // anneau de viaduc au lieu d'une rue bordée de boutiques.
+  const expressway = Boolean(theme.expressway);
+  const expresswayRoute = expressway ? cityRushRouteFor(city.id) : null;
+  const loop = expressway
+    ? buildShutoExpressway({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite })
+    : buildCityLoop({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite });
   buildStartComplex({ city, theme, materials: stageMaterials, startMaterials, batch: loopBatch, random: loop.random, lite });
   const [loopA, loopB] = finishLoopGeometry(loopBatch, scene);
   for (const copy of [loopA, loopB]) {
@@ -662,7 +672,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const sky = makeSkyDome(theme);
   scene.add(sky);
   scene.add(makeSkyline(city, theme, sceneryRandom));
-  const road = makeRoad(scene, theme, sceneryRandom, PLAYER_Z);
+  const road = expressway
+    ? makeExpresswayRoad(scene, theme, sceneryRandom, PLAYER_Z)
+    : makeRoad(scene, theme, sceneryRandom, PLAYER_Z);
   const rain = makeRain(theme, camera.position.z, lite);
   if (rain) scene.add(rain.object);
   const startLine = createStartLineDynamics({ city, theme, materials: stageMaterials, startMaterials, random: loop.random, lite });
@@ -1058,6 +1070,78 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     lastDistanceSlot = next;
   }
 
+  // ── Environnement de la voie rapide ────────────────────────────────────
+  // Sous les voûtes de 北の丸, 千代田 et 汐留, la pluie s'arrête, les phares
+  // montent, le brouillard se resserre et l'exposition baisse : on retrouve
+  // l'enfermement d'un tunnel de la Shuto sans toucher au rendu global. Dans
+  // la tranchée de 霞が関, l'effet est atténué (le ciel reste visible).
+  const tunnelCover = { amount: 0, reset: false };
+  const openFogNear = theme.fogNear;
+  const openFogFar = theme.fogFar;
+  const openFogColor = scene.fog.color.clone();
+  const tunnelFogColor = new THREE.Color(expressway ? theme.expressway.tunnel?.wall ?? 0x14161d : 0x14161d);
+  const openExposure = renderer.toneMappingExposure;
+  const openHemi = hemi.intensity;
+  const openKey = keyLight.intensity;
+  const openRim = cityRim.intensity;
+  const openHeadlamp = lightRig.headlamp;
+
+  // Position sur la boucle de 600 m (et non progression du tour) : au grand
+  // dernier tour, les secteurs de la C1 continuent de défiler une fois par
+  // boucle, comme les portiques du décor.
+  const shutoLoopProgress = () => (((distance % CITY_RUSH_LAP_LENGTH) + CITY_RUSH_LAP_LENGTH) % CITY_RUSH_LAP_LENGTH) / CITY_RUSH_LAP_LENGTH;
+
+  function updateExpresswayEnvironment(dt) {
+    if (!expresswayRoute) return;
+    const cover = shutoC1CoverAt(shutoLoopProgress(), expresswayRoute);
+    const target = cover.kind === 'tunnel' ? 1 : cover.kind === 'cut' ? 0.4 : 0;
+    tunnelCover.amount += (target - tunnelCover.amount) * Math.min(1, Math.max(0, dt) * 2.6);
+    const amount = tunnelCover.amount;
+    if (amount < 0.002 && target === 0) {
+      if (tunnelCover.reset) {
+        scene.fog.near = openFogNear;
+        scene.fog.far = openFogFar;
+        scene.fog.color.copy(openFogColor);
+        renderer.toneMappingExposure = openExposure;
+        hemi.intensity = openHemi;
+        keyLight.intensity = openKey;
+        cityRim.intensity = openRim;
+        headlamp.intensity = openHeadlamp;
+        headlamp.visible = !lite && openHeadlamp > 0;
+        if (rain) rain.object.visible = true;
+        tunnelCover.reset = false;
+      }
+      return;
+    }
+    tunnelCover.reset = true;
+    scene.fog.near = lerp(openFogNear, 5, amount);
+    scene.fog.far = lerp(openFogFar, 96, amount);
+    scene.fog.color.copy(openFogColor).lerp(tunnelFogColor, amount * 0.85);
+    renderer.toneMappingExposure = lerp(openExposure, openExposure * 0.74, amount);
+    hemi.intensity = lerp(openHemi, openHemi * 0.4, amount);
+    keyLight.intensity = lerp(openKey, openKey * 0.35, amount);
+    cityRim.intensity = lerp(openRim, openRim * 0.5, amount);
+    headlamp.visible = !lite && (openHeadlamp > 0 || amount > 0.06);
+    headlamp.intensity = lerp(openHeadlamp, openHeadlamp * 1.35 + 2.4, amount);
+    if (rain) rain.object.visible = amount < 0.55;
+  }
+
+  /** Lecture de la route officielle (C1) pour le HUD : secteur, km, jonction. */
+  function shutoRouteHud() {
+    const readout = shutoC1Readout(shutoLoopProgress(), expresswayRoute);
+    if (!readout.sector) return null;
+    return {
+      marker: readout.marker,
+      direction: readout.direction,
+      directionRomaji: readout.directionRomaji,
+      speedLimit: readout.speedLimit,
+      km: readout.km,
+      sector: readout.sector,
+      cover: readout.cover,
+      next: readout.next,
+    };
+  }
+
   function emitHud(force = false) {
     const now = performance.now();
     if (!force && now - lastHudAt < 100) return;
@@ -1081,6 +1165,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       lapLength: currentLapLength,
       lapProgress,
       lapDistance: Math.max(0, Math.round(lapProgress * currentLapLength)),
+      // Route officielle quand la ville en a une (Shuto C1 de Tokyo) : le
+      // secteur courant, le point kilométrique, la couverture (tunnel ou
+      // tranchée) et la prochaine jonction annoncée par les portiques.
+      route: expresswayRoute ? shutoRouteHud() : null,
       elapsed,
       speed: Math.max(0, Math.round(currentSpeed * 3.6)),
       rank: standings.rank,
@@ -3907,6 +3995,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Décor : boucle repliée, portique animé, route, pluie, ciel, fumée.
     const lineGap = placeTrack();
     road.scroll(worldTravel, distance);
+    updateExpresswayEnvironment(dt);
     for (const prop of loop.dynamicProps) {
       if (prop.group.visible) prop.update(dt, clockTime);
     }

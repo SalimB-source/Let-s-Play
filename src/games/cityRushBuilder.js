@@ -302,3 +302,167 @@ export function drawBannerCell(ctx, width, height, entry) {
   ctx.fillStyle = entry.textColor || '#ffffff';
   ctx.fillText(entry.text, width / 2, height / 2 + 2);
 }
+
+// ─── Panneaux de la Shuto Expressway ────────────────────────────────────────
+// Signalisation officielle de la C1 : fond vert profond, double liseré blanc,
+// texte japonais blanc avec sa transcription, pastille de route « C1 » et son
+// sens de circulation, numéro de sortie et flèches de rabattement. Les
+// variantes dessinent les autres panneaux du viaduc : limite de vitesse,
+// plaque de tunnel, poste kilométrique.
+const JP_FONT = '"Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", "Meiryo", sans-serif';
+const SHUTO_GREEN = '#0b6b3f';
+const SHUTO_GREEN_DARK = '#064a2c';
+const SHUTO_WHITE = '#f4f8f1';
+
+function roundedPanel(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, width, height, radius);
+  else ctx.rect(x, y, width, height);
+  ctx.closePath();
+}
+
+/** Pastille de route : anneau fléché (sens de circulation) + numéro de ligne. */
+function drawRouteBadge(ctx, centerX, centerY, radius, marker, color = SHUTO_WHITE, ring = SHUTO_WHITE) {
+  ctx.save();
+  ctx.lineWidth = Math.max(2, radius * 0.18);
+  ctx.strokeStyle = ring;
+  ctx.beginPath();
+  // Anneau presque fermé : le trou porte la flèche du sens (内回り = antihoraire).
+  ctx.arc(centerX, centerY, radius, Math.PI * 0.35, Math.PI * 2.05);
+  ctx.stroke();
+  const headAngle = Math.PI * 0.35;
+  const headX = centerX + Math.cos(headAngle) * radius;
+  const headY = centerY + Math.sin(headAngle) * radius;
+  ctx.fillStyle = ring;
+  ctx.beginPath();
+  ctx.moveTo(headX + radius * 0.42, headY - radius * 0.1);
+  ctx.lineTo(headX - radius * 0.18, headY - radius * 0.5);
+  ctx.lineTo(headX - radius * 0.1, headY + radius * 0.42);
+  ctx.closePath();
+  ctx.fill();
+  ctx.font = `900 ${Math.round(radius * 0.92)}px "Orbitron", ${JP_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.fillText(marker, centerX, centerY + radius * 0.04);
+  ctx.restore();
+}
+
+export function drawShutoSignCell(ctx, width, height, entry) {
+  const variant = entry.variant || 'gantry';
+  if (variant === 'limit') {
+    // Limite de vitesse : disque blanc, cerclage rouge, chiffres noirs.
+    ctx.clearRect(0, 0, width, height);
+    const radius = Math.min(width, height) * 0.44;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    ctx.fillStyle = '#f7f7f2';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = radius * 0.22;
+    ctx.strokeStyle = '#d32f2a';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 0.89, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#15161c';
+    ctx.font = `900 ${Math.round(radius * 1.02)}px "Orbitron", ${JP_FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(entry.text || '50', centerX, centerY + radius * 0.05);
+    return;
+  }
+  if (variant === 'plate') {
+    // Plaque blanche : nom de tunnel, poste kilométrique, interdiction.
+    ctx.fillStyle = entry.background || '#eef1e9';
+    roundedPanel(ctx, 0, 0, width, height, Math.min(18, height * 0.16));
+    ctx.fill();
+    ctx.strokeStyle = entry.borderColor || '#1b1f2a';
+    ctx.lineWidth = 4;
+    roundedPanel(ctx, 5, 5, width - 10, height - 10, Math.min(14, height * 0.13));
+    ctx.stroke();
+    ctx.fillStyle = entry.textColor || '#141821';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `800 ${Math.round(height * 0.42)}px ${JP_FONT}`;
+    ctx.fillText(entry.text || '', width / 2, height * 0.42);
+    if (entry.sub) {
+      ctx.font = `700 ${Math.round(height * 0.22)}px "Orbitron", ${JP_FONT}`;
+      ctx.fillStyle = entry.subColor || '#4a5162';
+      ctx.fillText(entry.sub, width / 2, height * 0.74);
+    }
+    return;
+  }
+
+  // ── Panneau de portique (vert) ────────────────────────────────────────────
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, entry.background || SHUTO_GREEN);
+  gradient.addColorStop(1, SHUTO_GREEN_DARK);
+  ctx.fillStyle = gradient;
+  roundedPanel(ctx, 0, 0, width, height, Math.min(16, height * 0.12));
+  ctx.fill();
+  ctx.strokeStyle = entry.borderColor || SHUTO_WHITE;
+  ctx.lineWidth = 6;
+  roundedPanel(ctx, 7, 7, width - 14, height - 14, Math.min(12, height * 0.1));
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  roundedPanel(ctx, 18, 18, width - 36, height - 36, Math.min(9, height * 0.08));
+  ctx.stroke();
+
+  const exits = Array.isArray(entry.exits) ? entry.exits.filter(Boolean) : [];
+  const exitsWidth = exits.length ? Math.min(width * 0.44, 60 + exits.reduce((max, line) => Math.max(max, line.length), 0) * height * 0.16) : 0;
+  const mainWidth = width - exitsWidth - (exitsWidth ? 34 : 0);
+
+  // Bloc principal : pastille de route, nom japonais, transcription.
+  let cursorX = 34;
+  if (entry.badge) {
+    const radius = Math.min(height * 0.26, mainWidth * 0.12);
+    drawRouteBadge(ctx, cursorX + radius, height * 0.4, radius, entry.badge, entry.badgeColor || SHUTO_WHITE);
+    cursorX += radius * 2 + 26;
+  }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const main = entry.text || '';
+  const mainSize = Math.min(height * 0.44, (mainWidth - (cursorX - 34)) * 1.5 / Math.max(2, main.length));
+  ctx.font = `800 ${Math.round(mainSize)}px ${JP_FONT}`;
+  ctx.fillStyle = entry.textColor || SHUTO_WHITE;
+  ctx.fillText(main, cursorX, entry.sub ? height * 0.38 : height * 0.48);
+  if (entry.sub) {
+    ctx.font = `700 ${Math.round(Math.min(height * 0.2, mainSize * 0.5))}px "Orbitron", ${JP_FONT}`;
+    ctx.fillStyle = entry.subColor || 'rgba(244, 248, 241, .78)';
+    ctx.fillText(entry.sub, cursorX, height * 0.7);
+  }
+  if (entry.arrow) {
+    ctx.font = `900 ${Math.round(height * 0.44)}px ${JP_FONT}`;
+    ctx.fillStyle = entry.textColor || SHUTO_WHITE;
+    ctx.textAlign = 'right';
+    ctx.fillText(entry.arrow, 34 + mainWidth - 14, height * 0.48);
+  }
+
+  // Bloc des sorties, séparé par un filet blanc comme sur les portiques réels.
+  if (!exitsWidth) return;
+  const dividerX = 34 + mainWidth + 17;
+  ctx.strokeStyle = 'rgba(244, 248, 241, .55)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(dividerX, height * 0.16);
+  ctx.lineTo(dividerX, height * 0.84);
+  ctx.stroke();
+  ctx.textAlign = 'left';
+  const lineHeight = (height * 0.62) / exits.length;
+  exits.forEach((line, index) => {
+    const y = height * 0.19 + lineHeight * (index + 0.5);
+    const arrow = line.match(/^(↖|↗|↑|←|→|↓)\s*/);
+    const label = arrow ? line.slice(arrow[0].length) : line;
+    let x = dividerX + 18;
+    if (arrow) {
+      ctx.font = `900 ${Math.round(lineHeight * 0.72)}px ${JP_FONT}`;
+      ctx.fillStyle = entry.textColor || SHUTO_WHITE;
+      ctx.fillText(arrow[1], x, y);
+      x += lineHeight * 0.66;
+    }
+    ctx.font = `700 ${Math.round(Math.min(lineHeight * 0.66, exitsWidth * 1.4 / Math.max(3, label.length)))}px ${JP_FONT}`;
+    ctx.fillStyle = entry.hazard && index === 0 ? '#ffd66b' : entry.textColor || SHUTO_WHITE;
+    ctx.fillText(label, x, y);
+  });
+}
