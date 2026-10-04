@@ -220,6 +220,9 @@ export function cityRushHitDuration(baseDuration, carProfile) {
 // retombe en douceur sur un nombre entier de tours — la voiture se fige donc
 // face à la route, sans à-coup, exactement quand le stun expire.
 export const CITY_RUSH_STUN_SPIN_TURNS = 2; // tours complets pendant l'immobilisation
+// Toupie du tir rouge : la voiture adverse continue d'avancer, mais plus
+// lentement, pendant qu'elle tourne sur elle-même.
+export const CITY_RUSH_PISTOL_SPIN_TURNS = 2;
 
 export function cityRushStunSpin(stunLeft, stunTotal, turns = CITY_RUSH_STUN_SPIN_TURNS) {
   const left = Math.max(0, Number(stunLeft) || 0);
@@ -265,13 +268,13 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
   }),
   [CITY_RUSH_POWERS.PISTOL]: Object.freeze({
     id: CITY_RUSH_POWERS.PISTOL,
-    name: 'Mitrailleuse',
-    shortName: 'Mitrailleuse',
+    name: 'AK-47',
+    shortName: 'AK-47',
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.PISTOL],
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Un seul bonus rouge charge la mitrailleuse. Tire une courte rafale sur le rival devant toi ; au dernier tour, si personne n’est devant, tu peux viser la berline de police la plus proche.',
+    description: 'Un seul bonus rouge charge l’AK-47. Le tir part tout droit, sans viser : il touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Un seul tir détruit une berline de police.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -1645,15 +1648,15 @@ export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessin�
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
 // Les berlines de l'escouade ont une barre de vie : **trois tirs droits bleus**
-// (2 points chacun), OU **deux rafales rouges** (3 points chacune), OU **un
+// (2 points chacun), OU **un tir rouge d'AK-47** (6 points), OU **un
 // seul missile d'hélicoptère** (6 points) les détruisent — et **une collision
 // avec la voiture du pilote** leur coûte 2 points, comme un tir bleu. Le barème
-// est en points plutôt qu'en coups — un tir bleu ne compte pas comme une rafale
+// est en points plutôt qu'en coups — un tir bleu ne compte pas comme un tir
 // rouge — et reste pur, donc testable hors de three.js.
 export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // trois tirs droits bleus (2 · 3 = 6)
-  [CITY_RUSH_POWERS.PISTOL]: 3, // deux rafales rouges (3 · 2 = 6)
+  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH, // un tir rouge d'AK-47 suffit
   [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
   collision: 2, // trois carambolages avec le pilote (2 · 3 = 6)
 });
@@ -2050,7 +2053,7 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
 export const CITY_RUSH_PLAYER_HEALTH = 8; // carrés de la barre, pleine au dernier tour
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // un tir droit bleu
-  [CITY_RUSH_POWERS.PISTOL]: 2, // la rafale rouge de la mitrailleuse
+  [CITY_RUSH_POWERS.PISTOL]: 2, // le tir droit rouge de l'AK-47
   collision: 1, // une touche avec une berline de police
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser

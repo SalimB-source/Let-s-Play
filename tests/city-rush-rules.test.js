@@ -467,6 +467,11 @@ test('the active loadout has one red machine-gun charge plus automatic ground bo
   assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 1);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /un seul bonus rouge/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.name, /AK-47/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /tout droit/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /premier ennemi/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /toupie/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /un seul tir détruit/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
   });
@@ -1065,12 +1070,12 @@ test('au dernier tour, la riposte rouge peut viser la berline la plus proche', (
   ], 1200).id, 'police-2');
 });
 
-test('barre de vie des berlines : trois tirs bleus, OU deux rafales rouges, OU un hélico', () => {
+test('barre de vie des berlines : trois tirs bleus, OU un tir rouge, OU un hélico', () => {
   // Le barème de dégât est pur : la berline encaisse 6 points de vie, un tir
-  // bleu en retire 2 et une rafale rouge 3.
+  // bleu en retire 2 et un tir rouge d'AK-47 la vide d'un coup.
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6, 'une berline part avec six points de vie');
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2, 'un tir droit bleu retire deux points');
-  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 3, 'une rafale rouge retire trois points');
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_POLICE_HEALTH, 'un tir rouge détruit la berline');
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.RADIO], CITY_RUSH_POLICE_HEALTH, 'le tir d’hélico détruit d’un coup');
   // Trois tirs bleus successifs abattent la berline ; les deux premiers la
   // laissent debout.
@@ -1079,10 +1084,7 @@ test('barre de vie des berlines : trois tirs bleus, OU deux rafales rouges, OU u
   assert.equal(afterFirstBlue, 4, 'le premier tir bleu laisse la berline debout');
   assert.equal(afterSecondBlue, 2, 'le deuxième tir bleu aussi');
   assert.equal(cityRushPoliceDamage(afterSecondBlue, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'le troisième tir bleu la détruit');
-  // Deux rafales rouges : la première entame la barre, la seconde détruit.
-  const afterFirstBurst = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL);
-  assert.equal(afterFirstBurst, 3, 'la première rafale rouge laisse la berline debout');
-  assert.equal(cityRushPoliceDamage(afterFirstBurst, CITY_RUSH_POWERS.PISTOL), 0, 'la seconde rafale rouge la détruit');
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 0, 'un seul tir rouge la détruit');
   // Un hélico détruit dès le premier coup.
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 0);
   // La vie ne descend jamais sous zéro, même sous le feu nourri.
@@ -1099,8 +1101,8 @@ test('le bandeau « berline touchée » compte les tirs restants, pas les points
   assert.equal(cityRushPoliceShotsLeft(4, CITY_RUSH_POWERS.BLUE_SHOT), 2, 'deux tirs bleus après le premier');
   assert.equal(cityRushPoliceShotsLeft(2, CITY_RUSH_POWERS.BLUE_SHOT), 1, 'un tir bleu après le deuxième');
   assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'épave : plus rien à tirer');
-  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 2, 'deux rafales rouges au départ');
-  assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 1, 'une rafale rouge après la première');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 1, 'un seul tir rouge au départ');
+  assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.PISTOL), 0, 'épave : plus de tir rouge');
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 1, 'un seul missile');
   // Arme non létale ou inconnue : aucun tir ne compte.
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_PICKUPS.BOOST), 0);
