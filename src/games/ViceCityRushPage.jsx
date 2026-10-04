@@ -50,7 +50,7 @@ const CAR_STATS = [
 ];
 const CITY_THUMBNAILS = {
   'vice-city': 'vice-city-thumb.jpg',
-  'route-66': 'route-66-thumb.svg',
+  'route-66': 'route-66-thumb.jpg',
   'new-york': 'new-york-thumb.jpg',
   tokyo: 'vice-city-story-tokyo.webp',
   paris: 'paris-thumb.jpg',
@@ -965,11 +965,20 @@ export default function ViceCityRushPage() {
                           <span className="city-rush-city-number">0{index + 1}</span>
                           <b>{option.name}</b>
                           <small>{option.district} · {option.label}</small>
-                          {option.route && (
-                            <em className="city-rush-city-route">
-                              <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLimit} {option.route.speedUnit || 'km/h'}
-                            </em>
-                          )}
+                          {/* Plaque de route : un emplacement est réservé même
+                              sans route officielle (fantôme invisible) pour que
+                              toutes les cartes aient exactement la même taille. */}
+                          <em className={`city-rush-city-route${option.route ? '' : ' is-ghost'}`} aria-hidden={option.route ? undefined : 'true'}>
+                            {option.route ? (
+                              <>
+                                <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLimit} {option.route.speedUnit || 'km/h'}
+                              </>
+                            ) : (
+                              <>
+                                <i>·</i> —
+                              </>
+                            )}
+                          </em>
                           <span className="city-rush-city-card-footer">
                             <span className="city-rush-city-preview" aria-hidden="true">
                               <i style={{ background: option.accent }} /><i style={{ background: option.secondary }} />
