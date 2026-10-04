@@ -130,9 +130,9 @@ const countVisible = (scene) => {
 const cityArg = process.argv.find((a) => a.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_SMOKE_ALL === '1';
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
-// Garde l'échantillon de voitures de course existant ; la nouvelle citadine
-// volontairement peu puissante est vérifiée à part dans le test de sa coque.
-const smokeCarIds = ['vice-roadster', 'turbo-gt', 'muscle-86', 'night-comet', 'vega-gt-67'];
+// Échantillon de voitures pour les cinq villes, avec la nouvelle compacte
+// intermédiaire pour vérifier aussi sa présence dans le monde 3D réel.
+const smokeCarIds = ['nova-18-gt', 'vice-roadster', 'turbo-gt', 'muscle-86', 'night-comet'];
 // Bande-son : le monde ne connaît qu'une ref. On y glisse un compteur — pas
 // de Web Audio ici, mais la certitude qu'une course complète déclenche bien
 // moteur, feux, tours, tirs et arrivée, et que l'hélicoptère de police tourne

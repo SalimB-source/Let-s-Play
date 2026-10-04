@@ -111,7 +111,7 @@ export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
 export const CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED = 300; // m/s : projectile droit, sans guidage
 export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la place de tirer devant le capot
 
-// Sept voitures aux silhouettes et compromis de conduite distincts. La compacte
+// Huit voitures aux silhouettes et compromis de conduite distincts. La compacte
 // de départ est une citadine 5 portes inspirée des petites françaises des
 // années 90 : aucun emblème ni logo de constructeur n'est modélisé.
 export const CITY_RUSH_CARS = Object.freeze([
@@ -120,6 +120,12 @@ export const CITY_RUSH_CARS = Object.freeze([
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
     power: 36, powerMultiplier: 0.78, acceleration: 42, accelerationRate: 6.8, recovery: 44, hitRecoveryMultiplier: 1.12,
     widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
+  }),
+  Object.freeze({
+    id: 'nova-18-gt', archetype: 'nova-hatch', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
+    bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
+    power: 51, powerMultiplier: 0.84, acceleration: 56, accelerationRate: 7.7, recovery: 62, hitRecoveryMultiplier: 1.04,
+    widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
   }),
   Object.freeze({
     id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',

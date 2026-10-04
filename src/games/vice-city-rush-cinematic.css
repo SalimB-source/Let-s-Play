@@ -1104,7 +1104,7 @@
 .city-rush-page .city-rush-car-select-heading > small { color: #909aa8; font-size: 9px; }
 
 .city-rush-page .city-rush-car-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -1450,9 +1450,9 @@
   .city-rush-page .city-rush-mode-card { padding: 10px 12px 9px; }
   .city-rush-page .city-rush-intro-actions { padding-top: 8px; }
 
-  /* L'étape GARAGE aligne six voitures : on rogne les aperçus et les
-     respirations des fiches plutôt que de laisser la dernière rangée sous la
-     ligne de flottaison. */
+  /* L'étape GARAGE aligne huit voitures sur deux rangées compactes : on
+     rogne les aperçus et les respirations plutôt que de laisser la dernière
+     rangée sous la ligne de flottaison. */
   .city-rush-page .city-rush-car-card { min-height: 190px; padding: 8px; gap: 7px; }
   .city-rush-page .city-rush-car-card-top { aspect-ratio: 16 / 6.5; }
   .city-rush-page .city-rush-car-name { font-size: 10px; }

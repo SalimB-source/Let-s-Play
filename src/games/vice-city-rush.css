@@ -2994,7 +2994,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 
-/* Garage auto : quatre cartes par rangée gardent les sept modèles lisibles. */
+/* Garage auto : quatre cartes par rangée gardent les huit modèles lisibles. */
 .city-rush-car-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .city-rush-car-card {
   min-height: 194px;
