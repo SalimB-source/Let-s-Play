@@ -167,16 +167,22 @@ test('the five city routes have a distinct identity and complete palettes', () =
 });
 
 test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
-  assert.equal(CITY_RUSH_CARS.length, 6);
+  assert.equal(CITY_RUSH_CARS.length, 7);
+  const starter = CITY_RUSH_CARS[0];
+  assert.equal(starter.id, 'city-hatch');
+  assert.equal(starter.price, 0);
+  assert.ok(starter.power <= 40 && starter.acceleration <= 45 && starter.recovery <= 50, 'la citadine de départ a des statistiques modestes');
+  assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0), 'les six autres voitures sont payantes');
   assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
   assert.deepEqual(
     new Set(CITY_RUSH_CARS.map((car) => car.archetype)),
-    new Set(['ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini']),
+    new Set(['city-hatch', 'ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini']),
   );
   const forbiddenBrandNames = /\b(ferrari|porsche|lamborghini|lambo|bmw|audi|volkswagen)\b/i;
   for (const car of CITY_RUSH_CARS) {
     assert.ok(car.name && car.className && car.accent.startsWith('#'));
+    assert.ok(Number.isInteger(car.price) && car.price >= 0, `${car.name} a un prix entier valide`);
     assert.ok(!forbiddenBrandNames.test(car.name), `nom de marque réel interdit dans car.name : ${car.name}`);
     assert.ok(!forbiddenBrandNames.test(car.className), `nom de marque réel interdit dans car.className : ${car.className}`);
     for (const stat of ['power', 'acceleration', 'recovery']) assert.ok(car[stat] >= 0 && car[stat] <= 100);
@@ -448,11 +454,12 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
   assert.ok(cityRushHitDuration(2, comet) < cityRushHitDuration(2, turbo));
   assert.equal(cityRushHitDuration(3, comet), 3 * comet.hitRecoveryMultiplier);
 
-  const speedMultipliers = CITY_RUSH_CARS.map((car) => car.powerMultiplier);
+  const performanceCars = CITY_RUSH_CARS.slice(1);
+  const speedMultipliers = performanceCars.map((car) => car.powerMultiplier);
   assert.ok(Math.min(...speedMultipliers) >= 0.98);
   assert.ok(Math.max(...speedMultipliers) <= 1.04);
-  assert.ok(Math.max(...speedMultipliers) - Math.min(...speedMultipliers) <= 0.060001, 'les vitesses de pointe restent proches');
-  const orderedIds = (stat, direction = 1) => [...CITY_RUSH_CARS]
+  assert.ok(Math.max(...speedMultipliers) - Math.min(...speedMultipliers) <= 0.060001, 'les vitesses de pointe des voitures achetables restent proches');
+  const orderedIds = (stat, direction = 1) => [...performanceCars]
     .sort((a, b) => (a[stat] - b[stat]) * direction)
     .map((car) => car.id);
   assert.deepEqual(orderedIds('power'), orderedIds('powerMultiplier'));

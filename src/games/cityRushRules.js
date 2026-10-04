@@ -98,42 +98,49 @@ export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
 export const CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED = 300; // m/s : projectile droit, sans guidage
 export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la place de tirer devant le capot
 
-// Les voitures ont des silhouettes et des compromis de conduite réellement
-// différents. Les barres sont aussi reliées aux multiplicateurs ci-dessous.
+// Sept voitures aux silhouettes et compromis de conduite distincts. La compacte
+// de départ est une citadine 5 portes inspirée des petites françaises des
+// années 90 : aucun emblème ni logo de constructeur n'est modélisé.
 export const CITY_RUSH_CARS = Object.freeze([
   Object.freeze({
+    id: 'city-hatch', archetype: 'city-hatch', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
+    bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
+    power: 36, powerMultiplier: 0.78, acceleration: 42, accelerationRate: 6.8, recovery: 44, hitRecoveryMultiplier: 1.12,
+    widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
+  }),
+  Object.freeze({
+    id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
+    bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
+    power: 78, powerMultiplier: 0.98, acceleration: 87, accelerationRate: 9.5, recovery: 94, hitRecoveryMultiplier: 0.88,
+    widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
+  }),
+  Object.freeze({
     id: 'vice-roadster', archetype: 'ferrari', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
-    bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c',
+    bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c', price: 400,
     power: 82, powerMultiplier: 1, acceleration: 83, accelerationRate: 9.1, recovery: 82, hitRecoveryMultiplier: 0.96,
     widthScale: 1, heightScale: 1, lengthScale: 1,
   }),
   Object.freeze({
     id: 'turbo-gt', archetype: 'porsche', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
-    bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8',
+    bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8', price: 550,
     power: 94, powerMultiplier: 1.04, acceleration: 72, accelerationRate: 8.6, recovery: 74, hitRecoveryMultiplier: 1.06,
     widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'muscle-86', archetype: 'audi', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
-    bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa',
+    bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa', price: 650,
     power: 88, powerMultiplier: 1.02, acceleration: 95, accelerationRate: 9.8, recovery: 70, hitRecoveryMultiplier: 1.08,
     widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
-    bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8',
-    power: 78, powerMultiplier: 0.98, acceleration: 87, accelerationRate: 9.5, recovery: 94, hitRecoveryMultiplier: 0.88,
-    widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
-  }),
-  Object.freeze({
     id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
-    bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455',
+    bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455', price: 800,
     power: 91, powerMultiplier: 1.03, acceleration: 85, accelerationRate: 9.3, recovery: 76, hitRecoveryMultiplier: 1.0,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
   }),
   Object.freeze({
     id: 'toro-v12', archetype: 'lamborghini', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
-    bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703',
+    bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703', price: 1000,
     power: 93, powerMultiplier: 1.035, acceleration: 90, accelerationRate: 9.6, recovery: 72, hitRecoveryMultiplier: 1.07,
     widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),

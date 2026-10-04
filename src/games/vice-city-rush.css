@@ -269,6 +269,39 @@
   flex-shrink: 0;
 }
 
+.city-rush-wallet {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 82px;
+  padding: 5px 9px;
+  border: 1px solid rgba(84, 231, 144, .28);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(38, 151, 86, .18), rgba(10, 30, 21, .62));
+  color: #a2ffc1;
+  font: 800 10px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.city-rush-wallet-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.city-rush-wallet > span {
+  display: grid;
+  gap: 3px;
+}
+
+.city-rush-wallet b { color: #c7ffd7; font-size: 11px; }
+.city-rush-wallet small { color: #77d99a; font: 700 6px/1 var(--mono, monospace); letter-spacing: .12em; }
+
 .city-rush-live-pill {
   display: inline-flex;
   align-items: center;
@@ -1041,6 +1074,7 @@
 }
 
 .city-rush-toast.is-neutral { border-color: rgba(255, 255, 255, 0.32); }
+.city-rush-toast.is-locked { border-color: rgba(255, 202, 112, .82); color: #ffe5b7; background: linear-gradient(rgba(255, 190, 88, .17), rgba(255, 190, 88, .17)), rgba(14, 9, 3, .96); }
 .city-rush-toast.is-boost { border-color: rgba(74, 242, 160, 0.8); color: #c8ffe6; background: linear-gradient(rgba(74, 242, 160, 0.2), rgba(74, 242, 160, 0.2)), rgba(4, 12, 9, 0.94); }
 .city-rush-toast.is-pistol { border-color: rgba(255, 82, 110, 0.8); color: #ffd3da; background: linear-gradient(rgba(255, 82, 110, 0.2), rgba(255, 82, 110, 0.2)), rgba(15, 5, 9, 0.94); }
 .city-rush-toast.is-radio { border-color: rgba(255, 211, 107, 0.8); color: #ffedc4; background: linear-gradient(rgba(255, 211, 107, 0.18), rgba(255, 211, 107, 0.18)), rgba(13, 10, 3, 0.94); }
@@ -1606,6 +1640,20 @@
   text-transform: uppercase;
 }
 
+.city-rush-city-card .city-rush-course-status {
+  max-width: 100%;
+  margin-top: 1px;
+  color: #8bf0a9;
+  font: 800 7px/1.35 var(--mono, monospace);
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.city-rush-city-card .city-rush-course-status.is-locked { color: #f0bd72; }
+.city-rush-city-card.is-locked { cursor: not-allowed; opacity: .68; }
+.city-rush-city-card.is-locked:hover { transform: none; background: rgba(255,255,255,.035); border-color: var(--cr-border); }
+.city-rush-city-card:disabled { cursor: not-allowed; }
+
 /* Villes adossées à une route officielle (Shuto C1) : petite plaque verte
    rappelant la ligne, sa longueur réelle et sa limite de vitesse. */
 .city-rush-city-card.is-route-66 .city-rush-city-route {
@@ -1652,7 +1700,7 @@
 
 .city-rush-car-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1684,6 +1732,12 @@
   border-color: var(--car-accent);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--car-accent) 16%, transparent), inset 0 1px rgba(255,255,255,0.08);
 }
+
+.city-rush-car-card.is-locked { border-color: rgba(137, 170, 157, .18); }
+.city-rush-car-card.is-locked .city-rush-car-image img { filter: grayscale(.68) brightness(.72); }
+.city-rush-car-card.is-locked:not(:disabled):hover { border-color: rgba(91, 232, 151, .7); }
+.city-rush-car-card.is-unaffordable { cursor: not-allowed; opacity: .72; }
+.city-rush-car-card.is-unaffordable:hover { transform: none; }
 
 .city-rush-car-number {
   color: var(--cr-faint);
@@ -2042,6 +2096,56 @@
   font-size: 10px;
   margin-left: 2px;
 }
+
+.city-rush-cash-reward {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(560px, 100%);
+  margin: 0 0 10px;
+  padding: 10px 13px;
+  border: 1px solid rgba(84, 231, 144, .3);
+  border-radius: 10px;
+  background: linear-gradient(105deg, rgba(33, 153, 83, .17), rgba(15, 35, 25, .65));
+  color: #c8ffd8;
+  text-align: left;
+}
+
+.city-rush-cash-reward-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(124, 255, 166, .5);
+  border-radius: 8px;
+  background: rgba(45, 175, 96, .26);
+  color: #aaffc1;
+  font: 900 18px/1 var(--mono, monospace);
+}
+
+.city-rush-cash-reward > span:nth-child(2) { display: grid; gap: 3px; }
+.city-rush-cash-reward b { color: #b9ffcc; font: 900 11px/1.2 var(--mono, monospace); letter-spacing: .06em; }
+.city-rush-cash-reward small { color: #85c99a; font: 700 7px/1.2 var(--mono, monospace); letter-spacing: .09em; }
+.city-rush-cash-reward .city-rush-cash-total { margin-left: auto; text-align: right; white-space: nowrap; }
+
+.city-rush-course-unlocked-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: min(560px, 100%);
+  margin: 0 0 6px;
+  padding: 8px 12px;
+  border: 1px solid rgba(91, 232, 151, .25);
+  border-radius: 8px;
+  background: rgba(40, 146, 91, .12);
+  color: #adffc4;
+  font: 800 8px/1.35 var(--mono, monospace);
+  letter-spacing: .07em;
+  text-align: left;
+}
+.city-rush-course-unlocked-notice span { color: #f1fff4; }
 
 .city-rush-result-overlay > p {
   max-width: 480px;
@@ -2890,8 +2994,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 
-/* Garage sport auto : cartes compactes et finition satinée. */
-.city-rush-car-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+/* Garage auto : quatre cartes par rangée gardent les sept modèles lisibles. */
+.city-rush-car-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .city-rush-car-card {
   min-height: 194px;
   padding: 15px 14px 13px;

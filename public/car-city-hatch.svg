@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Citadine compacte vert d’eau sans logo">
+  <defs>
+    <linearGradient id="night" x2="0" y2="1">
+      <stop stop-color="#131a2a"/>
+      <stop offset=".58" stop-color="#101521"/>
+      <stop offset="1" stop-color="#080b12"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="52%" cy="56%" r="66%">
+      <stop stop-color="#287e79" stop-opacity=".44"/>
+      <stop offset=".55" stop-color="#202b46" stop-opacity=".23"/>
+      <stop offset="1" stop-color="#111520" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paint" x1=".1" x2=".9" y1="0" y2="1">
+      <stop stop-color="#8ff5d5"/>
+      <stop offset=".2" stop-color="#42d9b1"/>
+      <stop offset=".58" stop-color="#159f83"/>
+      <stop offset="1" stop-color="#096457"/>
+    </linearGradient>
+    <linearGradient id="hood" x1="0" x2="0" y1="0" y2="1">
+      <stop stop-color="#a8ffe2"/>
+      <stop offset=".45" stop-color="#43d8b1"/>
+      <stop offset="1" stop-color="#128c76"/>
+    </linearGradient>
+    <linearGradient id="glass" x2="0" y2="1">
+      <stop stop-color="#b8e9ec" stop-opacity=".92"/>
+      <stop offset=".18" stop-color="#4d7c91" stop-opacity=".96"/>
+      <stop offset="1" stop-color="#101b2b"/>
+    </linearGradient>
+    <linearGradient id="road" x2="0" y2="1">
+      <stop stop-color="#17202a" stop-opacity="0"/>
+      <stop offset="1" stop-color="#06080d" stop-opacity=".9"/>
+    </linearGradient>
+    <filter id="blur" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+  <rect width="960" height="540" fill="url(#night)"/>
+  <rect width="960" height="540" fill="url(#glow)"/>
+  <path d="M0 356 190 290 375 336 580 268 960 328V420H0Z" fill="#172132" opacity=".52"/>
+  <g opacity=".65" filter="url(#blur)">
+    <path d="M0 140h285v16H0z" fill="#ff438f"/>
+    <path d="M693 107h267v18H693z" fill="#4ae8c6"/>
+    <path d="M52 195h210v9H52z" fill="#53adff"/>
+  </g>
+  <path d="M0 379 960 350v190H0Z" fill="url(#road)"/>
+  <ellipse cx="492" cy="412" rx="345" ry="51" fill="#000" opacity=".64" filter="url(#soft)"/>
+  <ellipse cx="500" cy="424" rx="288" ry="23" fill="#48edc2" opacity=".18" filter="url(#soft)"/>
+
+  <!-- Silhouette de citadine 5 portes compacte, face avant trois-quarts ; aucune marque ni emblème. -->
+  <g stroke-linejoin="round">
+    <!-- roues arrière et avant -->
+    <g>
+      <ellipse cx="282" cy="378" rx="57" ry="72" fill="#080b11" stroke="#394451" stroke-width="6"/>
+      <ellipse cx="282" cy="378" rx="34" ry="48" fill="#27313c" stroke="#a9bac5" stroke-width="5"/>
+      <ellipse cx="282" cy="378" rx="23" ry="35" fill="#101720" stroke="#687783" stroke-width="4"/>
+      <path d="M282 344v68m-23-57 46 46m0-46-46 46m-10-23h66" stroke="#d4e1e2" stroke-width="4" opacity=".84"/>
+      <circle cx="282" cy="378" r="7" fill="#86a1a8"/>
+    </g>
+    <g>
+      <ellipse cx="655" cy="382" rx="66" ry="80" fill="#070a10" stroke="#394451" stroke-width="6"/>
+      <ellipse cx="655" cy="382" rx="39" ry="54" fill="#27313c" stroke="#a9bac5" stroke-width="5"/>
+      <ellipse cx="655" cy="382" rx="27" ry="40" fill="#101720" stroke="#687783" stroke-width="4"/>
+      <path d="M655 342v80m-28-66 56 54m0-54-56 54m-12-28h80" stroke="#d4e1e2" stroke-width="4" opacity=".84"/>
+      <circle cx="655" cy="382" r="8" fill="#86a1a8"/>
+    </g>
+
+    <!-- caisse courte et haute, passages de roues arrondis -->
+    <path d="M167 348 190 313 257 290 323 263 380 207 444 181 564 180 618 200 678 255 756 278 802 311 818 350 792 374 726 381 711 351Q697 315 658 315T601 352L339 350Q325 314 283 315T223 352L177 362Z" fill="url(#paint)" stroke="#9effdf" stroke-width="5"/>
+    <!-- capot arrondi et aile avant -->
+    <path d="m170 349 19-36 75-24 90 8 41 38-16 29-98-13-53 17-51 1Z" fill="url(#hood)"/>
+    <path d="m179 315 83-27 88 8" fill="none" stroke="#c1ffe9" stroke-width="5" opacity=".75"/>
+    <path d="M168 350q13-17 32-17h12v31l-35 3Z" fill="#d7fff2" stroke="#f6ffed" stroke-width="3"/>
+    <path d="M173 353h36v8h-36Z" fill="#ffdf9b"/>
+    <path d="M163 370h97l-12 20-75 5-18-10Z" fill="#151e25" stroke="#6ff0ce" stroke-width="3"/>
+    <path d="M184 383h55m-44 7h23" stroke="#81969b" stroke-width="4"/>
+
+    <!-- pavillon haut et vitres en trois parties -->
+    <path d="m291 293 83-91q14-15 34-15h134q23 1 41 20l65 63-24 28-296 2Z" fill="#0c1420" stroke="#c2ffea" stroke-width="5"/>
+    <path d="m315 282 73-80q8-8 21-8h48v90Z" fill="url(#glass)" stroke="#a8d8da" stroke-width="3"/>
+    <path d="M467 194h73q15 1 27 14l54 58-154 16Z" fill="url(#glass)" stroke="#a8d8da" stroke-width="3"/>
+    <path d="m608 273 21-7-48-53q-11-12-27-16l-13 74Z" fill="#1b2d3d" stroke="#8dbfc3" stroke-width="3"/>
+    <path d="m385 201-71 78m151-84v82m70-80 5 77" stroke="#d7fff4" stroke-width="5" opacity=".74"/>
+    <path d="M361 205h194" stroke="#effff9" stroke-width="3" opacity=".7"/>
+    <path d="m327 283 286-2" stroke="#123f3a" stroke-width="4"/>
+
+    <!-- portes, baguettes et rétroviseur : surfaces volontairement vierges -->
+    <path d="M400 291 383 351m120-63 8 62m93-73 30 75" fill="none" stroke="#096b5e" stroke-width="4"/>
+    <path d="m410 315 66-2m27 0 54-2" stroke="#c6ffeb" stroke-width="3" opacity=".8"/>
+    <path d="m385 298-32 3 18 14 34-3Z" fill="#d2fff2" stroke="#154c48" stroke-width="3"/>
+    <path d="m355 304-7 10 35-2" fill="none" stroke="#eefef5" stroke-width="2"/>
+    <path d="M219 353q64-18 110 0m260-5q62-22 102 7" fill="none" stroke="#b4ffe7" stroke-width="4" opacity=".64"/>
+    <path d="M291 367h76m152-3h90" stroke="#e5fff7" stroke-width="4" opacity=".52"/>
+    <path d="m743 300 47 15 13 29-24 4q-4-29-27-48Z" fill="#148c75"/>
+    <path d="m775 326 26 9 4 21-28 5Z" fill="#f45c68" stroke="#ffc0b1" stroke-width="3"/>
+    <path d="m769 363 44-2-17 24-35 5Z" fill="#121820" stroke="#54e7c3" stroke-width="3"/>
+  </g>
+
+  <path d="M190 444q286 42 584-2" fill="none" stroke="#5ee5c1" stroke-width="3" opacity=".27"/>
+  <path d="M0 487h960" stroke="#8c9bad" stroke-opacity=".1"/>
+</svg>

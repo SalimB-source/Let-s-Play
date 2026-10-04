@@ -254,17 +254,21 @@ export async function checkViceCityFullscreen(assert) {
       await click(modeCardOf(node, 1));
       await waitForIntroStep(node, 'VILLE');
       assert.deepEqual(shellState(node, api), OPEN, 'la vignette de mode ouvre directement les courses');
-      await click(cityCardOf(node, 1));
+      assert.equal(cityCardOf(node, 0).disabled, false, 'Vice City est ouvert au départ');
+      assert.equal(cityCardOf(node, 1).disabled, true, 'New York reste verrouillé avant la première arrivée');
+      await click(cityCardOf(node, 0));
       await waitForIntroStep(node, 'GARAGE');
       assert.deepEqual(shellState(node, api), OPEN, 'la vignette de course ouvre directement le garage');
+      assert.equal(carCardOf(node, 0).disabled, false, 'la citadine offerte est disponible');
+      assert.equal(carCardOf(node, 1).disabled, true, 'les voitures payantes restent verrouillées sans billets');
       const alternatePilot = node.querySelector('.city-rush-driver-pill:not(.is-player)');
       assert.ok(alternatePilot, 'le choix du pilote reste accessible avant le lancement par voiture');
       const chosenPilotName = alternatePilot.querySelector('.city-rush-driver-pill-copy b').firstChild.textContent;
       await click(alternatePilot);
       before = mark(api);
-      await click(carCardOf(node, 1));
-      assert.equal(worldProbe.props.cityId, 'new-york', 'la course reprend le circuit touché');
-      assert.equal(worldProbe.props.carId, 'turbo-gt', 'la vignette de voiture lance avec le modèle touché');
+      await click(carCardOf(node, 0));
+      assert.equal(worldProbe.props.cityId, 'vice-city', 'la course de départ est bien Vice City');
+      assert.equal(worldProbe.props.carId, 'city-hatch', 'la citadine offerte est la voiture de départ');
       assert.equal(worldProbe.props.raceLaps, 1, 'le mode choisi est appliqué à la course');
       assert.equal(worldProbe.props.roster.find((racer) => racer.isPlayer)?.name, chosenPilotName, 'le pilote choisi avant la voiture est conservé');
       assert.equal(viewportOf(node).classList.contains('is-intro'), false, 'la fenêtre reprend sa hauteur de course au lancement');
@@ -276,6 +280,8 @@ export async function checkViceCityFullscreen(assert) {
 
       await finishRace(node);
       assert.deepEqual(shellState(node, api), OPEN, 'un plein écran demandé reste à l’arrivée (le jeu ne le referme pas de lui-même)');
+      assert.match(squash(node.querySelector('.city-rush-cash-reward').textContent), /\+50 BILLETS VERTS/, 'une arrivée crédite 50 billets verts');
+      assert.match(squash(node.querySelector('.city-rush-course-unlocked-notice').textContent), /NEW YORK/, 'la prochaine course est débloquée à l’arrivée');
       assert.equal(since(api, before).exits, 0);
 
       // 2. Échap du navigateur en pleine course : la course passe en pause.

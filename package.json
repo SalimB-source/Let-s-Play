@@ -28,7 +28,7 @@
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
     "check:mirage-engine": "node --test tests/mirage-engine.test.js",
-    "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-themes.test.js tests/city-rush-hud.test.js",
+    "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-themes.test.js tests/city-rush-hud.test.js tests/city-rush-progression.test.js",
     "check:city-rush-audio": "node --test tests/city-rush-audio.test.js",
     "check:city-rush-cars": "node --test tests/city-rush-cars.test.js",
     "check:city-rush-smoke": "node scripts/city-rush-smoke.mjs --all",
