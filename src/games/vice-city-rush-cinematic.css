@@ -895,6 +895,32 @@
   box-shadow: none;
 }
 
+.city-rush-page .city-rush-start-button.is-gold,
+.city-rush-page .city-rush-next-race-button {
+  background: linear-gradient(135deg, #ffd700 0%, #ffc107 50%, #e6a100 100%);
+  border: 1px solid rgba(255, 235, 120, 0.75);
+  color: #000000;
+  box-shadow: 0 4px 16px rgba(255, 193, 7, 0.35);
+}
+
+.city-rush-page .city-rush-start-button.is-gold:hover,
+.city-rush-page .city-rush-next-race-button:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ffe033 0%, #ffd026 50%, #f0aa00 100%);
+  color: #000000;
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5);
+}
+
+.city-rush-page .city-rush-start-button.is-gold:active,
+.city-rush-page .city-rush-next-race-button:active {
+  color: #000000;
+}
+
+.city-rush-page .city-rush-start-button.is-gold span,
+.city-rush-page .city-rush-next-race-button span {
+  color: #000000;
+}
+
 .city-rush-page .city-rush-start-button:disabled {
   cursor: not-allowed;
   opacity: .55;

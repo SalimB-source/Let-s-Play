@@ -373,6 +373,7 @@ export default function ViceCityRushPage() {
   const playerHealthColor = cityRushPlayerHealthColor(playerHealthValue ?? playerHealthMax, playerHealthMax);
   const playerHealthCritical = playerHealthValue !== null && playerHealthValue <= CITY_RUSH_PLAYER_HEALTH_CRITICAL;
   const bestTime = bests[cityId] || null;
+  const isRaceWon = Boolean(!storyMode && result && result.rank === 1 && !result.destroyed && !result.timedOut);
   const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && !result?.destroyed && storyChapter >= STORY_CHAPTERS.length);
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
   const previewStoryChapter = STORY_CHAPTERS[nextStoryIndex];
@@ -539,11 +540,11 @@ export default function ViceCityRushPage() {
     setLapBanner({ ...info, nonce: Date.now() });
     lapTimerRef.current = window.setTimeout(() => setLapBanner(null), info.final ? 2300 : 1800);
   }
-  function startRace({ carId: requestedCarId = null } = {}) {
+  function startRace({ carId: requestedCarId = null, cityId: requestedCityId = null } = {}) {
     const savedProgress = careerProgressRef.current;
-    const courseId = storyMode ? (currentStoryRace?.city || cityId) : cityId;
+    const targetCityId = requestedCityId || (storyMode ? (currentStoryRace?.city || cityId) : cityId);
     const selectedCarId = requestedCarId || carId;
-    if (!isCityRushCourseUnlocked(savedProgress, courseId)) {
+    if (!isCityRushCourseUnlocked(savedProgress, targetCityId)) {
       setStoryMode(false);
       setIntroStep('city');
       setPhase('intro');
@@ -557,6 +558,9 @@ export default function ViceCityRushPage() {
       showToast('VOITURE VERROUILLÉE · ACHÈTE-LA AVEC TES BILLETS VERTS.', 'locked');
       return;
     }
+    if (requestedCityId && requestedCityId !== cityId) {
+      setCityId(requestedCityId);
+    }
     activeRaceSessionRef.current += 1;
     setWorldError('');
     setResult(null);
@@ -565,7 +569,7 @@ export default function ViceCityRushPage() {
     window.clearTimeout(lapTimerRef.current);
     setCountdown(3);
     setRunId((value) => value + 1);
-    // Clic sur « LANCER » (« REJOUER », « CHAPITRE SUIVANT ») ou touche Entrée :
+    // Clic sur « LANCER » (« REJOUER », « COURSE SUIVANTE », « CHAPITRE SUIVANT ») ou touche Entrée :
     // sur téléphone et dans l'application, la course s'ouvre en plein écran
     // natif, demandé ici — synchronement dans le geste, sinon le navigateur le
     // refuse. Sur ordinateur, un lancement ordinaire laisse l'écran comme il
@@ -576,6 +580,17 @@ export default function ViceCityRushPage() {
     setPhase('countdown');
   }
   startRaceRef.current = startRace;
+
+  function startNextRace() {
+    const currentCourseId = result?.city || cityId;
+    const courseIndex = CITY_RUSH_COURSES.findIndex((course) => course.id === currentCourseId);
+    const nextCourse = courseIndex >= 0
+      ? CITY_RUSH_COURSES[(courseIndex + 1) % CITY_RUSH_COURSES.length]
+      : CITY_RUSH_COURSES[0];
+    if (nextCourse) {
+      startRace({ cityId: nextCourse.id });
+    }
+  }
 
   function beginStory() {
     if (storyChapter >= STORY_CHAPTERS.length) {
@@ -1403,7 +1418,14 @@ export default function ViceCityRushPage() {
                   ) : finalStoryVictory && storyEnding ? (
                     <button type="button" className="city-rush-start-button" onClick={restartStory}>REJOUER L’HISTOIRE <span>↻</span></button>
                   ) : finalStoryVictory ? null : (
-                    <button type="button" className="city-rush-start-button" onClick={startRace}>REJOUER <span>↻</span></button>
+                    <>
+                      {isRaceWon && (
+                        <button type="button" className="city-rush-start-button is-gold city-rush-next-race-button" onClick={startNextRace}>
+                          COURSE SUIVANTE <span>↗</span>
+                        </button>
+                      )}
+                      <button type="button" className="city-rush-start-button" onClick={() => startRace()}>REJOUER <span>↻</span></button>
+                    </>
                   )}
                   <button type="button" className="city-rush-text-button" onClick={() => { setResult(null); setStoryMode(false); setPhase('intro'); setIntroStep('mode'); }}>
                     {storyMode ? 'MODE LIBRE / VILLE' : 'CHANGER DE MODE'}

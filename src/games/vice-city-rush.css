@@ -1941,6 +1941,34 @@
 
 .city-rush-start-button span { font-size: 16px; }
 
+.city-rush-start-button.is-gold,
+.city-rush-next-race-button {
+  background: linear-gradient(135deg, #ffd700 0%, #ffc107 50%, #e6a100 100%);
+  border: 1px solid rgba(255, 235, 120, 0.75);
+  color: #000000;
+  box-shadow: 0 8px 24px rgba(255, 193, 7, 0.4), inset 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.city-rush-start-button.is-gold:hover,
+.city-rush-next-race-button:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #ffe033 0%, #ffd026 50%, #f0aa00 100%);
+  color: #000000;
+  box-shadow: 0 12px 32px rgba(255, 193, 7, 0.55), inset 0 1px rgba(255, 255, 255, 0.8);
+  filter: brightness(1.06);
+}
+
+.city-rush-start-button.is-gold:active,
+.city-rush-next-race-button:active {
+  transform: translateY(0) scale(0.98);
+  color: #000000;
+}
+
+.city-rush-start-button.is-gold span,
+.city-rush-next-race-button span {
+  color: #000000;
+}
+
 .city-rush-best-note {
   display: grid;
   gap: 2px;
