@@ -73,7 +73,7 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
-  CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
+  CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
@@ -129,8 +129,11 @@ const countVisible = (scene) => {
 
 const cityArg = process.argv.find((a) => a.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_SMOKE_ALL === '1';
-const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
-// Échantillon de voitures pour les cinq villes, avec la nouvelle compacte
+// Tous les parcours jouables, routes comprises : sans elles, un décor propre
+// à une route (ranchos mexicains, chapelle, station de la 66) n'était jamais
+// construit et un plantage passait entre les mailles du filet.
+const courses = all ? CITY_RUSH_COURSES : [CITY_RUSH_COURSES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_COURSES[0]];
+// Échantillon de voitures pour les parcours, avec la nouvelle compacte
 // intermédiaire pour vérifier aussi sa présence dans le monde 3D réel.
 const smokeCarIds = ['nova-18-gt', 'vice-roadster', 'turbo-gt', 'muscle-86', 'night-comet'];
 // Bande-son : le monde ne connaît qu'une ref. On y glisse un compteur — pas
@@ -143,8 +146,8 @@ const AUDIO_METHODS = [
   'policeSiren', 'policeSirenOff',
 ];
 
-// L'escouade du dernier tour doit coller au leader sur les cinq circuits. Seuils
-// calibrés sur ce même pilote (5 villes, hasard non fixé) : avec le dégagement
+// L'escouade du dernier tour doit coller au leader sur tous les parcours. Seuils
+// calibrés sur ce même pilote (5 villes + 2 routes, hasard non fixé) : avec le dégagement
 // du trafic, au pire 104 m de retard et 73 % du tour dans les 60 m sur le
 // dernier tour de 600 m ; engluée derrière un camion, elle allait jusqu'à
 // 314 m de retard et ne passait que 17 % du tour dans les 60 m. Le dernier tour
@@ -155,7 +158,7 @@ const POLICE_ENGAGE_RANGE = 60; // m
 const POLICE_MIN_ENGAGED_SHARE = 0.5;
 const POLICE_MAX_LAG = 200; // m
 
-for (const [index, city] of cities.entries()) {
+for (const [index, city] of courses.entries()) {
   const carId = smokeCarIds[index % smokeCarIds.length];
   const car = CITY_RUSH_CARS.find((profile) => profile.id === carId) || CITY_RUSH_CARS[0];
   const callbacks = {
@@ -1051,5 +1054,5 @@ for (const [index, city] of cities.entries()) {
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,
   );
 }
-console.log(`SMOKE OK — ${cities.length} ville(s), ${RACE_LAPS} tours (${RACE_DISTANCE} m, dernier tour ${CITY_RUSH_FINAL_LAP_LENGTH} m) · une frappe d’hélicoptère de police par course`);
+console.log(`SMOKE OK — ${courses.length} parcours, ${RACE_LAPS} tours (${RACE_DISTANCE} m, dernier tour ${CITY_RUSH_FINAL_LAP_LENGTH} m) · une frappe d’hélicoptère de police par course`);
 process.exit(0);

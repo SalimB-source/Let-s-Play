@@ -1223,7 +1223,8 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
-npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours (3 600 m, dernier tour de 1 200 m) sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les sept parcours (cinq villes + Route 66 + campagne mexicaine) : construction du monde, course complète de 5 tours (3 600 m, dernier tour de 1 200 m) sans exception, éclatements visibles
+npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
 npm run check:city-rush-wreck   # l'épave : un pilote qui casse sa coque doit partir en toupie, fumer, s'arrêter, finir dernier et perdre la course (cinq villes × trois courses)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
@@ -1243,7 +1244,7 @@ aussi l'**escouade de police** : une seule entrée en piste, deux berlines
 arrivées derrière le leader (jamais devant, jamais à plus de 140 m) **et armées
 bleu et rouge — jamais jaune**, qui
 rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
-circuit (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
+parcours (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
 plus de 200 m de retard — seuils calibrés sur plus de 700 courses de 1 200 m de
 dernier tour, avec une large marge),
 ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
@@ -1262,7 +1263,7 @@ Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les
 quatre feux, chaque passage de ligne (point de passage compris) et la fanfare,
 et **éteindre chaque hélicoptère démarré** (un rotor oublié s'entendrait jusqu'à
-la page d'accueil). Les compteurs sont imprimés à la fin de chaque ville.
+la page d'accueil). Les compteurs sont imprimés à la fin de chaque parcours.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 
