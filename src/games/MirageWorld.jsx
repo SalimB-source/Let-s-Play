@@ -30,6 +30,7 @@ import {
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 // Rythme de la course : un peu plus lent sur la piste du téléphone (3 voies).
 import { paceForTrack } from './mirageLanes';
+import { mirageRouteOffset, mirageRouteOrientation } from './mirageRoute.js';
 import { renderPixelRatio } from './miragePixelBudget';
 // Option « Graphismes baissés » : le profil (résolution, effets) que le moteur applique en direct.
 import { gemBurstShardCount, graphicsProfile, shouldSkipRender } from './mirageGraphics';
@@ -80,6 +81,47 @@ function cameraFovForAspect(baseFov, aspect) {
 }
 
 const materialKey = (m) => [m.type, m.color?.getHex(), m.emissive?.getHex(), m.roughness, m.metalness, m.flatShading, m.side, m.transparent, m.opacity, m.depthWrite, m.map?.uuid].join('|');
+
+/** Déforme un maillage du décor dans l'espace de rendu, sans toucher aux coordonnées de course. */
+function routeWarpsFor(root) {
+  const geometryUses = new Map();
+  root.traverse((object) => {
+    if (!object.isMesh || !object.geometry?.attributes?.position) return;
+    geometryUses.set(object.geometry, (geometryUses.get(object.geometry) || 0) + 1);
+  });
+  root.updateMatrixWorld(true);
+  const inverseRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const warps = [];
+  root.traverse((mesh) => {
+    if (!mesh.isMesh || !mesh.geometry?.attributes?.position) return;
+    if ((geometryUses.get(mesh.geometry) || 0) > 1) mesh.geometry = mesh.geometry.clone();
+    const geometry = mesh.geometry;
+    const attribute = geometry.attributes.position;
+    const original = new Float32Array(attribute.array);
+    const localToRoot = new THREE.Matrix4().multiplyMatrices(inverseRoot, mesh.matrixWorld);
+    const rootToLocal = localToRoot.clone().invert();
+    const point = new THREE.Vector3();
+    const offset = { x: 0, y: 0 };
+    attribute.setUsage(THREE.DynamicDrawUsage);
+    if (geometry.attributes.normal) geometry.attributes.normal.setUsage(THREE.DynamicDrawUsage);
+    warps.push((progress) => {
+      for (let vertex = 0; vertex < attribute.count; vertex += 1) {
+        point.fromArray(original, vertex * 3).applyMatrix4(localToRoot);
+        mirageRouteOffset(progress, point.z + root.position.z, offset);
+        point.x += offset.x;
+        point.y += offset.y;
+        point.applyMatrix4(rootToLocal);
+        attribute.setXYZ(vertex, point.x, point.y, point.z);
+      }
+      attribute.needsUpdate = true;
+      // Les normales accompagnent les pentes; la sphère actualisée garde les coudes visibles.
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+    });
+  });
+  return warps;
+}
+
 function bakeStaticScenery(group) {
   const keep = new Set();
   group.traverse((o) => { if (o.userData.bob !== undefined || o.userData.glow) o.traverse(c => keep.add(c)); });
@@ -614,6 +656,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const camera = new THREE.PerspectiveCamera(CAMERA_BASE_FOV, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
+  let cameraFollowX = 0;
+  let cameraBaseY = 7.3;
+  let cameraBaseZ = 9.4;
   // Flash plein écran des pouvoirs de Cloud : un quad collé à la caméra, rendu
   // par-dessus la scène (utile aussi dans la course en ligne, qui n'a pas les
   // effets CSS de la page principale).
@@ -687,6 +732,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   }
 
   const cube = new THREE.BoxGeometry(1, 1, 1);
+  const routeGroundMeshes = [];
+  const routeGround = (material, parent, position, size) => {
+    // La face du terrain suit la même ligne douce que les dalles, avec des
+    // sommets assez rapprochés pour éviter que les collines ne fassent des angles.
+    const depthSegments = Math.max(32, Math.ceil(size[2] / 1.5));
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2], 1, 1, depthSegments), material);
+    mesh.position.set(...position);
+    parent.add(mesh);
+    routeGroundMeshes.push(mesh);
+    return mesh;
+  };
   const skyVector = (rgb) => new THREE.Vector3(...rgb);
   const sunset = infinity ? makeInfinitySky(camera, atmosphere.rays ?? 0) : new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
     depthWrite: false,
@@ -821,17 +877,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     rimLight.intensity = state.rimIntensity;
     if (western) renderer.toneMappingExposure = 1.08 - state.progress * 0.12;
   };
-  if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
-  if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+  if (prairie) routeGround(new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
+  if (western) routeGround(new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
   if (japan) {
-    block(cube, new THREE.MeshStandardMaterial({ color: 0x141e26, roughness: 1 }), scene, [0, -0.45, -35], [180, 0.6, 180]);
+    routeGround(new THREE.MeshStandardMaterial({ color: 0x141e26, roughness: 1 }), scene, [0, -0.45, -35], [180, 0.6, 180]);
     scene.add(makeMountFuji());
   }
   if (alger) {
     // Le boulevard chaulé d'Alger la Blanche longe la baie sur sa droite :
     // la mer s'étend au pied de la corniche et ferme aussi l'horizon sous
     // le soleil couchant, comme au bout de la rue.
-    block(cube, new THREE.MeshStandardMaterial({ color: 0xd6d0c0, roughness: 1 }), scene, [-14.7, -0.64, -35], [50.6, 0.6, 160]);
+    routeGround(new THREE.MeshStandardMaterial({ color: 0xd6d0c0, roughness: 1 }), scene, [-14.7, -0.64, -35], [50.6, 0.6, 160]);
     const bay = new THREE.Mesh(new THREE.PlaneGeometry(150, 170), new THREE.MeshStandardMaterial({ color: 0x2278a6, roughness: 0.35, metalness: 0.1, flatShading: true }));
     bay.rotation.x = -Math.PI / 2;
     bay.position.set(85.6, -0.92, -35);
@@ -844,7 +900,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     shallow.renderOrder = -1;
   }
   if (sardinia) {
-    block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [-17.35, -0.64, -35], [45.3, 0.6, 160]);
+    routeGround(new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [-17.35, -0.64, -35], [45.3, 0.6, 160]);
     const bay = new THREE.Mesh(new THREE.PlaneGeometry(130, 170), new THREE.MeshStandardMaterial({ color: 0x2f8da3, roughness: 0.35, metalness: 0.1, flatShading: true }));
     bay.rotation.x = -Math.PI / 2;
     bay.position.set(70.3, -0.92, -35);
@@ -857,7 +913,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   if (ramparts) {
     // Terre battue autour du Mid, et au loin les toits crénelés de la ville
     // noyés dans la brume de chaleur.
-    block(cube, new THREE.MeshStandardMaterial({ color: 0xc7a06c, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
+    routeGround(new THREE.MeshStandardMaterial({ color: 0xc7a06c, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
     const skyline = makeRampartsSkyline();
     bakeStaticScenery(skyline);
     scene.add(skyline);
@@ -865,7 +921,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   if (airbase) {
     // Herbe verte autour du taxiway, comme les abords du stage de Guile ;
     // au loin, les hangars, la tour et un F-16 en vol dans la brume légère.
-    block(cube, new THREE.MeshStandardMaterial({ color: 0x63a34e, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
+    routeGround(new THREE.MeshStandardMaterial({ color: 0x63a34e, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
     const skyline = makeAirbaseSkyline();
     bakeStaticScenery(skyline);
     scene.add(skyline);
@@ -874,7 +930,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   if (infinity) {
     // Abîme sombre sous le grand pont de bois laqué, et à l'horizon les
     // tours de shōji et les pagodes renversées du Château de l’Infini.
-    block(cube, new THREE.MeshStandardMaterial({ color: 0x160a10, roughness: 1 }), scene, [0, -6.5, -35], [180, 0.6, 180]);
+    routeGround(new THREE.MeshStandardMaterial({ color: 0x160a10, roughness: 1 }), scene, [0, -6.5, -35], [180, 0.6, 180]);
     const horizon = makeInfinityHorizon();
     bakeStaticScenery(horizon);
     scene.add(horizon);
@@ -928,6 +984,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   let floorOffset = 0;
   const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
   placeFloor();
+  const routeFloorWarps = routeWarpsFor(floorGroup);
+  const routeGroundWarps = routeGroundMeshes.flatMap((mesh) => routeWarpsFor(mesh));
 
   // Lumière peinte : deux dégradés radiaux partagés par tout le monde 3D — le halo
   // des cristaux et l'ombre des cavaliers (voir mirageGlow.js). Créés ici, une fois
@@ -940,7 +998,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   let skinColors = getSkin?.() ?? null;
   const player = makeExplorer(false, skinColors);
   player.position.x = LANES[1];
-  scene.add(player);
+  const playerRouteFrame = new THREE.Group();
+  playerRouteFrame.name = 'player-route-frame';
+  playerRouteFrame.add(player);
+  scene.add(playerRouteFrame);
   const playerShieldBubble = makeShieldBubble();
   playerShieldBubble.position.set(0, 1.2, 0);
   player.add(playerShieldBubble);
@@ -951,7 +1012,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     const mesh = makeExplorer(spec.paletteIndex, CHARACTER_PALETTES[spec.paletteIndex]);
     mesh.position.set(LANES[spec.startLane], 0, -5);
     mesh.visible = false;
-    scene.add(mesh);
+    const routeFrame = new THREE.Group();
+    routeFrame.name = `rider-route-frame-${spec.id}`;
+    routeFrame.add(mesh);
+    scene.add(routeFrame);
     const shieldBubble = makeShieldBubble();
     shieldBubble.position.set(0, 1.2, 0);
     mesh.add(shieldBubble);
@@ -959,10 +1023,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     mesh.add(boostStreaks);
     // L'ombre au sol reste dans la scène (elle ne saute pas avec le cavalier).
     const shadow = makeGroundShadow(shadowTexture, { opacity: 0.4 });
-    scene.add(shadow);
+    routeFrame.add(shadow);
     return {
       ...spec,
       mesh,
+      routeFrame,
       shieldBubble,
       boostStreaks,
       shadow,
@@ -994,14 +1059,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const onlineRiders = [0,1,2,3].map(slot => {
     const rider = makeExplorer(slot);
     rider.visible = false;
-    scene.add(rider);
+    const routeFrame = new THREE.Group();
+    routeFrame.name = `online-rider-route-frame-${slot}`;
+    routeFrame.add(rider);
+    scene.add(routeFrame);
+    rider.userData.routeFrame = routeFrame;
     const sb = makeShieldBubble();
     sb.position.set(0, 1.2, 0);
     rider.add(sb);
     rider.userData.shieldBubble = sb;
     rider.userData.slowEffect = 0;
     const shadow = makeGroundShadow(shadowTexture, { opacity: 0.3 });
-    scene.add(shadow);
+    routeFrame.add(shadow);
     rider.userData.groundShadow = shadow;
     return rider;
   });
@@ -1037,9 +1106,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const playerShadow = makeGroundShadow(shadowTexture);
   playerShadow.position.y = 0.012;
   playerShadow.visible = true;
-  scene.add(playerShadow);
+  playerRouteFrame.add(playerShadow);
   const playerReadyAura = makeReadyAura();
-  scene.add(playerReadyAura);
+  playerRouteFrame.add(playerReadyAura);
   const playerIndicator = makePlayerArrow();
   scene.add(playerIndicator);
 
@@ -1657,6 +1726,81 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     scene.add(desertScenery.group);
   }
   scenery.forEach(bakeStaticScenery);
+  const sceneryRouteBases = new Map(scenery.map((item) => [item, {
+    x: item.position.x,
+    y: item.position.y,
+  }]));
+  let lastWarpedProgress = Number.NaN;
+  let lastWarpedFloorZ = Number.NaN;
+  const routeOffsetScratch = { x: 0, y: 0 };
+  const updateVisualRoute = (force = false) => {
+    const progress = floorOffset;
+    const floorZ = floorGroup.position.z;
+    if (force || progress !== lastWarpedProgress || floorZ !== lastWarpedFloorZ) {
+      routeFloorWarps.forEach((warp) => warp(progress));
+      routeGroundWarps.forEach((warp) => warp(progress));
+      lastWarpedProgress = progress;
+      lastWarpedFloorZ = floorZ;
+    }
+
+    // Décor, rangées, cavaliers et lignes suivent le chemin visuel ; leurs
+    // coordonnées logiques (voies, distance, sauts) restent intactes.
+    scenery.forEach((item) => {
+      const base = sceneryRouteBases.get(item);
+      mirageRouteOffset(progress, item.position.z, routeOffsetScratch);
+      item.position.x = base.x + routeOffsetScratch.x;
+      item.position.y = base.y + routeOffsetScratch.y;
+    });
+    rows.forEach((row) => {
+      mirageRouteOffset(progress, row.group.position.z, routeOffsetScratch);
+      row.group.position.x = routeOffsetScratch.x;
+      row.group.position.y = routeOffsetScratch.y;
+      const orientation = mirageRouteOrientation(progress - row.group.position.z);
+      row.group.rotation.set(orientation.pitch, orientation.yaw, 0);
+    });
+
+    const playerOrientation = mirageRouteOrientation(progress);
+    playerRouteFrame.position.set(0, 0, 0);
+    playerRouteFrame.rotation.set(playerOrientation.pitch, playerOrientation.yaw, 0);
+    playerShadow.position.set(player.position.x, 0.012, player.position.z);
+    playerReadyAura.position.set(player.position.x, 0.02, player.position.z);
+
+    duelRivals.forEach((rival) => {
+      const z = rival.mesh.position.z;
+      mirageRouteOffset(progress, z, routeOffsetScratch);
+      rival.routeFrame.position.set(routeOffsetScratch.x, routeOffsetScratch.y, 0);
+      const orientation = mirageRouteOrientation(progress - z);
+      rival.mesh.rotation.x = orientation.pitch;
+      rival.mesh.rotation.y = orientation.yaw;
+      rival.shadow.position.set(rival.mesh.position.x, 0.012, z);
+      rival.shadow.rotation.set(-Math.PI / 2 + orientation.pitch, orientation.yaw, 0);
+    });
+
+    onlineRiders.forEach((rider) => {
+      const z = rider.position.z;
+      mirageRouteOffset(progress, z, routeOffsetScratch);
+      rider.userData.routeFrame.position.set(routeOffsetScratch.x, routeOffsetScratch.y, 0);
+      const orientation = mirageRouteOrientation(progress - z);
+      rider.rotation.x = orientation.pitch;
+      rider.rotation.y = orientation.yaw;
+      const shadow = rider.userData.groundShadow;
+      if (shadow) {
+        shadow.position.set(rider.position.x, 0.012, z);
+        shadow.rotation.set(-Math.PI / 2 + orientation.pitch, orientation.yaw, 0);
+      }
+    });
+
+    const positionLine = (line, baseY) => {
+      mirageRouteOffset(progress, line.position.z, routeOffsetScratch);
+      line.position.x = routeOffsetScratch.x;
+      line.position.y = baseY + routeOffsetScratch.y;
+      const orientation = mirageRouteOrientation(progress - line.position.z);
+      line.rotation.set(orientation.pitch, orientation.yaw, 0);
+    };
+    positionLine(startLine, 0.025);
+    positionLine(finishLine, 0.03);
+  };
+
   // Graphismes baissés : les blocs de décor trop lointains ne sont pas dessinés (`Infinity` =
   // tous). La portée suit celle du brouillard du terrain, qui les noie déjà à cette distance.
   let sceneryRange = Infinity;
@@ -2561,6 +2705,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     resetPowerUps();
     clearGemBursts();
     applyDynamicSunset(0);
+    updateVisualRoute(true);
     emitHud(true);
   };
 
@@ -3297,6 +3442,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         r.shadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - rivalMesh.position.y * 0.12));
       }
     });
+    updateVisualRoute();
     if (running) {
       updateCloudShockwaves(dt);
       updateLinkPowers(dt);
@@ -3331,9 +3477,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     // Le ciel partagé n'a qu'une horloge : celle de ses faisceaux (le ciel du
     // Château est figé — « pas de scintillement » — et le désert a la sienne).
     if (!infinity) sunset.material.uniforms.uTime.value = time * 0.001;
-    camera.position.y += ((turboActive ? 6.85 : 7.3) - camera.position.y) * Math.min(1, dt * 6);
-    camera.position.z += ((turboActive ? 10.05 : 9.4) - camera.position.z) * Math.min(1, dt * 6);
-    camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
+    cameraBaseY += ((turboActive ? 6.85 : 7.3) - cameraBaseY) * Math.min(1, dt * 6);
+    cameraBaseZ += ((turboActive ? 10.05 : 9.4) - cameraBaseZ) * Math.min(1, dt * 6);
+    cameraFollowX += (player.position.x * 0.13 - cameraFollowX) * dt * 2;
+    const cameraRoute = mirageRouteOffset(floorOffset, cameraBaseZ);
+    camera.position.set(cameraFollowX + cameraRoute.x, cameraBaseY + cameraRoute.y, cameraBaseZ);
+    const lookAheadZ = -10;
+    const lookAheadRoute = mirageRouteOffset(floorOffset, lookAheadZ);
+    camera.lookAt(lookAheadRoute.x, 0.6 + lookAheadRoute.y, lookAheadZ);
     // Les pouvoirs de Cloud ébranlent la caméra : l'impact se ressent.
     if (strikeShake > 0) {
       strikeShake = Math.max(0, strikeShake - dt * 3.6);
@@ -3356,6 +3507,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     desertScenery?.update({
       time,
       offset: floorOffset,
+      routeProgress: floorOffset,
       progress: race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS,
       camera,
       renderer,

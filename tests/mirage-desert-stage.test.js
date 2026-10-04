@@ -159,6 +159,23 @@ test('desert: obstacle rows are culled inside the haze, and the palette cannot b
   assert.ok(Object.isFrozen(DESERT_PALETTE));
 });
 
+test('desert: sand and props follow the visual route without rebuilding their meshes', () => {
+  const scenery = makeDesertScenery();
+  const terrain = parts(scenery).terrain;
+  const props = propMeshes(scenery);
+  assert.equal(terrain.material.uniforms.uRouteProgress.value, 0);
+  scenery.update({ time: 0, offset: 18, routeProgress: 42.5, progress: 0.2, camera, renderer });
+  assert.equal(terrain.material.uniforms.uRouteProgress.value, 42.5);
+
+  const shader = { uniforms: {}, vertexShader: '#include <common>\nvoid main() {\n#include <begin_vertex>\n}', fragmentShader: '' };
+  props[0].material.onBeforeCompile(shader);
+  assert.equal(shader.uniforms.uRouteProgress.value, 42.5);
+  assert.match(shader.vertexShader, /mirageRouteX/);
+  assert.match(shader.vertexShader, /mirageRouteY/);
+  assert.equal(chunksOf(scenery).length, 3, 'la route se déforme dans le shader, sans reconstruire les dunes');
+  scenery.dispose();
+});
+
 // ── Graphismes baissés : la version allégée du décor ───────────────────────
 
 const byOrder = (scenery, order) => scenery.group.children.find((child) => child.renderOrder === order);

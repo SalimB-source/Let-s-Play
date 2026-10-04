@@ -40,6 +40,7 @@
     "check:souls-touch": "node --test tests/souls-touch.test.js tests/souls-landscape.test.js",
     "check:souls-mobile": "node scripts/souls-mobile-check.mjs",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
+    "check:mirage-route": "node --test tests/mirage-route.test.js",
     "check:mirage-cup": "node scripts/mirage-cup-check.mjs",
     "check:mirage-link": "node --test tests/mirage-link-epona.test.js tests/mirage-link-powers.test.js && node scripts/mirage-link-icons-check.mjs",
     "check:mirage-fullscreen": "node scripts/mirage-fullscreen-check.mjs",

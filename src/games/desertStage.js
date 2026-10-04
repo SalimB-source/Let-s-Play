@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MIRAGE_ROUTE_GLSL } from './mirageRoute.js';
 import { DESERT_PERIOD, clamp01 } from './desertShared.js';
 import { buildTerrainGeometry, makeDesertSky, makeTerrainMaterial } from './desertTerrain.js';
 import { buildProps } from './desertProps.js';
@@ -60,8 +61,28 @@ export function makeDesertScenery({ reduceMotion = false, lite = false } = {}) {
   const terrainMaterial = makeTerrainMaterial();
   const terrainGeometry = buildTerrainGeometry();
   const props = buildProps();
-  const solidMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 });
-  const glowMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
+  const routeProgressUniform = { value: 0 };
+  const routeWarpMaterial = (material) => {
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.uRouteProgress = routeProgressUniform;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>\nuniform float uRouteProgress;\n${MIRAGE_ROUTE_GLSL}`,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        float routeWorldZ = (modelMatrix * vec4(transformed, 1.0)).z;
+        float routeStation = uRouteProgress - routeWorldZ;
+        transformed.x += mirageRouteX(routeStation) - mirageRouteX(uRouteProgress);
+        transformed.y += mirageRouteY(routeStation) - mirageRouteY(uRouteProgress);`,
+      );
+    };
+    material.customProgramCacheKey = () => 'mirage-route-v1';
+    return material;
+  };
+  const solidMaterial = routeWarpMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 }));
+  const glowMaterial = routeWarpMaterial(new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
   const chunks = [];
   for (let k = 0; k < CHUNKS; k += 1) {
     const chunk = new THREE.Group();
@@ -112,9 +133,12 @@ export function makeDesertScenery({ reduceMotion = false, lite = false } = {}) {
     scroll,
     setLite,
     get lite() { return isLite; },
-    update({ time = 0, offset = 0, progress = 0, camera, renderer } = {}) {
+    update({ time = 0, offset = 0, progress = 0, routeProgress = offset, camera, renderer } = {}) {
       const t = time * 0.001;
       const p = clamp01(progress);
+      const routeDistance = Number.isFinite(routeProgress) ? routeProgress : 0;
+      routeProgressUniform.value = routeDistance;
+      terrainMaterial.uniforms.uRouteProgress.value = routeDistance;
       scroll(offset);
       sky.material.uniforms.uTime.value = t;
       terrainMaterial.uniforms.uTime.value = t;
