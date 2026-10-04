@@ -1452,7 +1452,7 @@
 
 .city-rush-city-picker {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
   width: min(840px, 100%);
 }
@@ -1524,6 +1524,12 @@
 
 /* Villes adossées à une route officielle (Shuto C1) : petite plaque verte
    rappelant la ligne, sa longueur réelle et sa limite de vitesse. */
+.city-rush-city-card.is-route-66 .city-rush-city-route {
+  background: linear-gradient(135deg, rgba(124, 76, 41, .7), rgba(224, 170, 80, .2));
+  border-color: rgba(231, 190, 104, .62);
+  color: #fff0c5;
+}
+
 .city-rush-city-route {
   display: inline-flex;
   align-items: center;

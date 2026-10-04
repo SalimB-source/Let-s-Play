@@ -373,6 +373,25 @@ function addLamp(batch, m, theme, x, z, side) {
 
 function addTree(batch, m, theme, x, z, random) {
   const scale = 0.85 + random() * 0.3;
+  if (theme.tree === 'route66') {
+    // Végétation rare de bord de route : yucca et cactus saguaro, plutôt
+    // qu'une rangée d'arbres décoratifs. Les silhouettes restent basses pour
+    // laisser lire les mesas et les enseignes de motel.
+    const cactus = random() < 0.62;
+    if (cactus) {
+      batch.cylinder(m.green, [x, 1.25 * scale, z], 0.18, 0.24, 2.5 * scale, 7);
+      if (random() < 0.72) {
+        batch.cylinder(m.green, [x - 0.42, 1.45 * scale, z], 0.13, 0.16, 1.0 * scale, 7, [0, 0, Math.PI / 2]);
+        batch.cylinder(m.green, [x + 0.42, 1.8 * scale, z], 0.13, 0.16, 0.85 * scale, 7, [0, 0, Math.PI / 2]);
+      }
+      batch.sphere(m.green, [x, 2.6 * scale, z], 0.2, 7);
+    } else {
+      batch.cylinder(m.trunk, [x, 0.95 * scale, z], 0.18, 0.24, 1.9 * scale, 6);
+      batch.sphere(m.foliage, [x, 2.2 * scale, z], 0.95 * scale, 7);
+      batch.sphere(m.foliageLight, [x + 0.55, 2.0 * scale, z + 0.2], 0.55 * scale, 6);
+    }
+    return;
+  }
   if (theme.tree === 'palm') {
     const lean = (random() - 0.5) * 0.24;
     for (let segment = 0; segment < 5; segment += 1) {
@@ -405,9 +424,100 @@ function addTree(batch, m, theme, x, z, random) {
   batch.sphere(m.foliageLight, [x - 0.5, 3.7 * scale, z + 0.4], 0.8 * scale, 6);
 }
 
+function addRoute66UtilityPole(batch, m, x, z, side, random) {
+  const height = 6.5 + random() * 1.1;
+  batch.cylinder(m.wood, [x, height / 2, z], 0.09, 0.14, height, 7);
+  batch.box(m.wood, [x, height - 0.45, z], [2.1, 0.12, 0.12]);
+  batch.box(m.darkMetal, [x, height - 0.08, z], [0.06, 0.06, 0.06]);
+  // Deux fils parallèles suggèrent la ligne téléphonique historique sans
+  // devenir une clôture qui traverserait l'axe de la chaussée.
+  batch.box(m.darkMetal, [x + side * 0.72, height - 0.28, z], [0.035, 0.035, 18]);
+  batch.box(m.darkMetal, [x - side * 0.72, height - 0.58, z], [0.035, 0.035, 18]);
+}
+
+function addRoute66SectorMarker(batch, m, atlas, sector, trackMeters, side, index) {
+  if (!atlas?.routeCount) return;
+  const z = toZ(trackMeters);
+  const x = side * 8.9;
+  batch.cylinder(m.wood, [x, 1.75, z], 0.07, 0.09, 3.5, 6);
+  batch.box(m.cream, [x, 3.4, z], [0.24, 2.1, 5.2]);
+  batch.box(m.red, [x + (-side * 0.14), 3.4, z], [0.08, 1.85, 4.95]);
+  batch.plane(m.signs, [x + (-side * 0.2), 3.45, z], 4.55, 1.45, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv: atlas.routeUv(index) });
+  batch.box(m.darkMetal, [x + (-side * 0.22), 2.25, z], [0.12, 0.12, 1.1]);
+}
+
+function addRoute66Stop(batch, m, city, theme, atlas, side, trackMeters, depthMeters, random, options = {}) {
+  const z = toZ(trackMeters);
+  const depth = depthMeters * SCALE;
+  const width = options.back ? 8 + random() * 3 : 7 + random() * 3;
+  const innerX = side * (options.back ? 18 + random() * 4 : 8.25 + random() * 1.2);
+  const height = (options.back ? 3.4 : 2.7) + random() * (options.back ? 1.8 : 1.2);
+  const colorHex = city.buildingColors[Math.floor(random() * city.buildingColors.length)];
+  const tint = hexToRgb(colorHex).map((channel) => Math.min(1, channel * (0.88 + random() * 0.2)));
+  const facade = m.facades[Math.floor(random() * m.facades.length)];
+  facadeBlock(batch, facade, side, innerX, 0, z, depth, height, width, tint, theme.facade.floor, random, { skipBack: true });
+  const inward = -side;
+  const buildingCenterX = innerX + side * (width / 2);
+  batch.box(m.roof, [buildingCenterX, height + 0.14, z], [width + 0.25, 0.28, depth + 0.24]);
+  batch.box(m.roof, [buildingCenterX, height + 0.36, z], [Math.max(2, width - 0.7), 0.35, Math.max(2, depth - 0.7)]);
+  if (options.back) return;
+
+  // Le rez-de-chaussée alterne diner, motel et station-service comme sur les
+  // tronçons conservés de l'U.S. 66, plutôt que des immeubles continus.
+  const panels = Math.max(1, Math.floor(depth / 4));
+  for (let panel = 0; panel < panels; panel += 1) {
+    const shopIndex = Math.floor(random() * Math.max(1, m.shopCount));
+    const pz = z - depth / 2 + 2 + panel * 4;
+    batch.plane(m.shop, [innerX + inward * 0.02, 1.0, pz], 4, 1.95, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], {
+      uv: [shopIndex / m.shopCount, 0, (shopIndex + 1) / m.shopCount, 1],
+    });
+  }
+  const signWidth = Math.min(5.7, Math.max(2.8, depth - 0.8));
+  batch.box(m.darkMetal, [innerX + inward * 0.42, height + 0.62, z], [0.25, 1.15, signWidth]);
+  batch.plane(m.signs, [innerX + inward * 0.57, height + 0.64, z], signWidth, 0.92, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv: atlas.signUv(Math.floor(random() * atlas.signCount)) });
+  if (random() < 0.55) {
+    // Auvent plat de station ou de diner, bordé d'une bande rouge/blanche.
+    batch.box(m.cream, [innerX + inward * 0.55, 2.35, z], [0.34, 0.14, Math.min(depth + 1, 8)]);
+    batch.box(random() < 0.5 ? m.red : m.blue, [innerX + inward * 0.58, 2.28, z], [0.08, 0.1, Math.min(depth, 7.5)]);
+  }
+}
+
+function addRoute66Prop(batch, m, theme, city, x, z, side, random, atlas) {
+  const inward = -side;
+  const roll = random();
+  if (roll < 0.28) {
+    // Pompes à essence vintage devant une station.
+    for (const offset of [-0.5, 0.5]) {
+      batch.box(m.red, [x + inward * 0.55, 0.75, z + offset], [0.42, 1.5, 0.3]);
+      batch.box(m.cream, [x + inward * 0.58, 1.02, z + offset], [0.04, 0.55, 0.22]);
+      batch.box(m.darkMetal, [x + inward * 0.55, 1.55, z + offset], [0.48, 0.08, 0.34]);
+    }
+  } else if (roll < 0.53) {
+    // Clôture en bois, détail omniprésent des longs tronçons ruraux.
+    for (let post = -2; post <= 2; post += 1) {
+      batch.box(m.wood, [x, 0.65, z + post * 0.9], [0.1, 1.3, 0.1]);
+      if (post < 2) batch.box(m.wood, [x, 0.62, z + post * 0.9 + 0.45], [0.08, 0.08, 0.9]);
+    }
+  } else if (roll < 0.76) {
+    // Cactus isolé, boîte aux lettres et panneau kilométrique.
+    addTree(batch, m, theme, x, z, random);
+    batch.cylinder(m.metal, [x + inward * 0.8, 0.9, z], 0.05, 0.05, 1.8, 6);
+    batch.box(m.blue, [x + inward * 0.8, 1.8, z], [0.55, 0.42, 0.3]);
+  } else {
+    addRoute66UtilityPole(batch, m, x + side * 0.8, z, side, random);
+    if (atlas && random() < 0.5) {
+      batch.plane(m.signs, [x + inward * 0.95, 2.7, z], 1.6, 1.1, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv: atlas.signUv(0) });
+    }
+  }
+}
+
 function addCityProp(batch, m, theme, city, x, z, side, random, atlas) {
   const inward = -side;
   const style = city.style;
+  if (style === 'route66') {
+    addRoute66Prop(batch, m, theme, city, x, z, side, random, atlas);
+    return;
+  }
   if (style === 'vice') {
     const roll = random();
     if (theme.beach) {
@@ -568,6 +678,10 @@ export function facadeBlock(batch, material, side, innerX, baseY, z, alongZ, hei
 
 function addBuilding(batch, m, city, theme, atlas, side, trackMeters, depthMeters, random, options = {}) {
   const style = city.style;
+  if (style === 'route66') {
+    addRoute66Stop(batch, m, city, theme, atlas, side, trackMeters, depthMeters, random, options);
+    return;
+  }
   const z = toZ(trackMeters);
   const depth = depthMeters * SCALE;
   const widths = [6, 8, 10];
@@ -749,6 +863,27 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
   const z = toZ(trackMeters);
   const style = theme.gate.style;
   const signUv = atlas.gateUv;
+  if (style === 'route66') {
+    // Portique inspiré des panneaux d'entrée de ville et des vieux motels :
+    // poteaux bois, bouclier US 66 et lettrage noir/blanc, sans arche de
+    // circuit moderne au milieu d'un paysage désertique.
+    for (const side of [-1, 1]) {
+      batch.box(m.wood, [side * 8.5, 3.9, z], [0.48, 7.8, 0.48]);
+      batch.box(m.cream, [side * 8.5, 7.55, z], [0.72, 0.18, 0.72]);
+      batch.box(m.red, [side * 8.5, 8.1, z], [0.22, 0.42, 0.22]);
+    }
+    batch.box(m.wood, [0, 7.35, z], [17.5, 0.42, 0.52]);
+    batch.box(m.cream, [0, 7.45, z + 0.02], [12.8, 2.05, 0.18]);
+    batch.plane(m.signs, [0, 7.48, z + 0.13], 11.9, 1.55, null, { uv: signUv });
+    batch.plane(m.signs, [0, 7.48, z - 0.13], 11.9, 1.55, [0, Math.PI, 0], { uv: signUv });
+    // Deux petits boucliers de route sur les côtés rappellent les bornes
+    // historiques, sans réutiliser un logo de marque contemporain.
+    for (const side of [-1, 1]) {
+      batch.box(m.red, [side * 6.2, 4.5, z + 0.18], [1.35, 1.4, 0.12]);
+      batch.plane(m.signs, [side * 6.2, 4.5, z + 0.26], 1.1, 1.05, null, { uv: atlas.signUv(0) });
+    }
+    return;
+  }
   if (style === 'deco-arch') {
     for (const side of [-1, 1]) {
       for (let step = 0; step < 4; step += 1) {
@@ -877,10 +1012,32 @@ function addGate(batch, m, city, theme, atlas, trackMeters) {
 }
 
 // ─── Monument ──────────────────────────────────────────────────────────────
-function addLandmark(batch, m, city, trackMeters, side) {
+function addLandmark(batch, m, city, trackMeters, side, atlas = null) {
   const z = toZ(trackMeters);
   const x = side * 27;
   const style = city.style;
+  if (style === 'route66') {
+    // Repère de bord de route : château d'eau, enseigne US 66 et cinq formes
+    // de Cadillac plantées dans le sable, clin d'œil au Cadillac Ranch près
+    // d'Amarillo. L'installation est volontairement compacte pour rester lisible
+    // depuis la caméra de course.
+    batch.cylinder(m.metal, [x, 5.2, z], 0.11, 0.15, 10.4, 8);
+    batch.cylinder(m.metal, [x, 10.6, z], 1.9, 2.2, 2.1, 12);
+    batch.cone(m.roof, [x, 12.2, z], 2.4, 1.0, 12);
+    batch.box(m.darkMetal, [x, 4.3, z], [5.6, 0.13, 0.13]);
+    batch.box(m.darkMetal, [x - 2.6, 2.2, z], [0.12, 4.2, 0.12]);
+    batch.box(m.darkMetal, [x + 2.6, 2.2, z], [0.12, 4.2, 0.12]);
+    batch.box(m.red, [x - side * 2.5, 8.7, z + 0.2], [0.18, 4.7, 0.18]);
+    batch.plane(m.signs, [x - side * 2.7, 8.7, z + 0.25], 2.6, 4.0, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv: atlas.signUv(0) });
+    const cadillacColors = [m.red, m.blue, m.yellow, m.green, m.cream];
+    for (let car = 0; car < 5; car += 1) {
+      const carZ = z - 4 + car * 2;
+      const carX = x - side * (3.2 + (car % 2) * 0.6);
+      batch.box(cadillacColors[car], [carX, 1.15, carZ], [0.72, 1.15, 3.5], [0, 0, (car % 2 ? -1 : 1) * 0.16]);
+      batch.box(m.darkMetal, [carX, 1.95, carZ - 0.15], [0.55, 0.42, 1.9], [0, 0, (car % 2 ? -1 : 1) * 0.16]);
+    }
+    return;
+  }
   if (style === 'paris') {
     const metal = m.darkMetal;
     for (const [lx, lz] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) {
@@ -953,8 +1110,10 @@ function addLandmark(batch, m, city, trackMeters, side) {
 // ─── Enseignes partagées de la ville ───────────────────────────────────────
 function buildSignAtlases(city, theme) {
   const signAtlas = new SignAtlas({ cellWidth: 256, cellHeight: 128, columns: 4 });
-  const signTexts = [...city.signs, theme.gantryText, 'LET’S PLAY'];
+  const routeTexts = city.route?.sectors?.map((sector) => `${sector.name} · ${sector.state}`) || [];
+  const signTexts = [...city.signs, ...routeTexts, theme.gantryText, 'LET’S PLAY'];
   const signIndexes = signTexts.map((text, index) => signAtlas.add({ text, color: index % 2 ? city.secondary : city.accent, draw: drawNeonSignCell }));
+  const routeStart = city.signs.length;
   const gateIndex = signAtlas.add({ text: theme.gate.text, color: city.accent, textColor: '#fff6e8', draw: drawNeonSignCell });
   const posterIndex = signAtlas.add({ text: 'BAL 1986', color: city.secondary, background: '#2a1f33', draw: drawNeonSignCell });
   const verticalAtlas = new SignAtlas({ cellWidth: 96, cellHeight: 384, columns: 6 });
@@ -971,6 +1130,8 @@ function buildSignAtlases(city, theme) {
     verticalMaterial: new THREE.MeshBasicMaterial({ map: verticalTexture, toneMapped: false }),
     signUv: (index) => signAtlas.uvFor(signIndexes[index % signIndexes.length]),
     signCount: signIndexes.length,
+    routeUv: (index) => routeTexts.length ? signAtlas.uvFor(signIndexes[routeStart + (index % routeTexts.length)]) : signAtlas.uvFor(signIndexes[0]),
+    routeCount: routeTexts.length,
     verticalUv: (index) => verticalAtlas.uvFor(verticalIndexes[index % verticalIndexes.length]),
     verticalCount: verticalIndexes.length,
     gateUv: signAtlas.uvFor(gateIndex),
@@ -1173,6 +1334,56 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
   m.verticalSigns = atlas.verticalMaterial;
   const dynamicProps = [];
   const landmarkSide = city.style === 'paris' || city.style === 'london' ? 1 : -1;
+
+  if (city.style === 'route66') {
+    // Une boucle jouable condensée, mais avec le langage visuel de la vraie
+    // Route 66 : bâtiments bas espacés, clôtures, poteaux téléphoniques,
+    // cactus et stations emblématiques au lieu d'un canyon urbain continu.
+    for (const side of [-1, 1]) {
+      let cursor = START_ZONE_HALF + 5;
+      let sinceProp = 0;
+      const end = LAP - START_ZONE_HALF - 4;
+      while (cursor < end - 7) {
+        const depthMeters = 10 + Math.floor(random() * 4) * 2.5;
+        if (cursor + depthMeters > end) break;
+        addBuilding(batch, m, city, theme, atlas, side, cursor + depthMeters / 2, depthMeters, random);
+        const gap = 5 + random() * 5;
+        const gapCenter = cursor + depthMeters + gap / 2;
+        sinceProp += 1;
+        if (sinceProp >= 1 && gapCenter < end - 3) {
+          sinceProp = 0;
+          addCityProp(batch, m, theme, city, side * 8.8, toZ(gapCenter), side, random, atlas);
+        }
+        cursor += depthMeters + gap;
+      }
+      // Un second plan très bas : silos, hangars et végétation, jamais une
+      // rangée de gratte-ciel qui trahirait le paysage des Grandes Plaines.
+      let backCursor = START_ZONE_HALF + 2;
+      while (backCursor < end) {
+        const depthMeters = 16 + Math.floor(random() * 3) * 5;
+        addRoute66Stop(batch, m, city, theme, atlas, side, backCursor + depthMeters / 2, depthMeters, random, { back: true });
+        if (random() < 0.8) addTree(batch, m, theme, side * (17 + random() * 2), toZ(backCursor + depthMeters * 0.35), random);
+        backCursor += depthMeters + 9 + random() * 10;
+      }
+      for (let position = START_ZONE_HALF + 7; position < end; position += 28) {
+        addRoute66UtilityPole(batch, m, side * (11.2 + random() * 0.5), toZ(position + (side > 0 ? 8 : 0)), side, random);
+        if (random() < 0.72) addTree(batch, m, theme, side * (13.5 + random() * 2), toZ(position), random);
+      }
+    }
+    addGate(batch, m, city, theme, atlas, GATE_TRACK_POSITION);
+    addLandmark(batch, m, city, LANDMARK_TRACK_POSITION, -1, atlas);
+    // Les neuf secteurs historiques sont matérialisés par des panneaux de
+    // distance : Chicago, St. Louis, Tulsa, Amarillo, Santa Fe, Flagstaff,
+    // Kingman et Santa Monica défilent dans l'ordre vers l'ouest.
+    city.route?.sectors?.slice(1, -1).forEach((sector, index) => {
+      addRoute66SectorMarker(batch, m, atlas, sector, sector.from * LAP + 3, index % 2 ? 1 : -1, index);
+    });
+    const routeSignPositions = [LAP * 0.16, LAP * 0.43, LAP * 0.69, LAP * 0.87];
+    routeSignPositions.forEach((position, index) => {
+      dynamicProps.push(makeFlickerSign(position, index % 2 ? 1 : -1, atlas.signUv(index), atlas.signsMaterial, random));
+    });
+    return { dynamicProps, atlas, random };
+  }
 
   for (const side of [-1, 1]) {
     let cursor = START_ZONE_HALF + 2;

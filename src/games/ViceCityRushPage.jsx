@@ -10,7 +10,7 @@ import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch 
 import useGameFullscreen from './useGameFullscreen';
 import {
   CITY_RUSH_CARS,
-  CITY_RUSH_CITIES,
+  CITY_RUSH_COURSES,
   CITY_RUSH_DISTANCE,
   CITY_RUSH_DRIVERS,
   CITY_RUSH_FINAL_LAP_LOOPS,
@@ -50,6 +50,7 @@ const CAR_STATS = [
 ];
 const CITY_THUMBNAILS = {
   'vice-city': 'vice-city-thumb.jpg',
+  'route-66': 'route-66-thumb.svg',
   'new-york': 'new-york-thumb.jpg',
   tokyo: 'vice-city-story-tokyo.webp',
   paris: 'paris-thumb.jpg',
@@ -274,7 +275,7 @@ export default function ViceCityRushPage() {
   phaseRef.current = phase;
   soundOnRef.current = soundOn;
 
-  const city = useMemo(() => CITY_RUSH_CITIES.find((item) => item.id === cityId) || CITY_RUSH_CITIES[0], [cityId]);
+  const city = useMemo(() => CITY_RUSH_COURSES.find((item) => item.id === cityId) || CITY_RUSH_COURSES[0], [cityId]);
   const mode = useMemo(() => RACE_MODES.find((m) => m.id === modeId) || RACE_MODES[0], [modeId]);
   const currentStoryRace = storyMode ? STORY_CHAPTERS[storyRaceChapter] : null;
   const currentLaps = storyMode ? (currentStoryRace?.laps ?? STORY_LAPS) : mode.laps;
@@ -316,7 +317,7 @@ export default function ViceCityRushPage() {
   const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && !result?.destroyed && storyChapter >= STORY_CHAPTERS.length);
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
   const previewStoryChapter = STORY_CHAPTERS[nextStoryIndex];
-  const previewStoryCity = CITY_RUSH_CITIES.find((item) => item.id === previewStoryChapter.city) || CITY_RUSH_CITIES[0];
+  const previewStoryCity = CITY_RUSH_COURSES.find((item) => item.id === previewStoryChapter.city) || CITY_RUSH_COURSES[0];
 
   // ── Plein écran ────────────────────────────────────────────────────────
   // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
@@ -619,12 +620,12 @@ export default function ViceCityRushPage() {
     <div className={`city-rush-page${immersive ? ' is-immersive' : ''}`} style={{ '--city-accent': city.accent, '--city-secondary': city.secondary, '--mode-accent': mode.accent, '--mode-secondary': mode.secondary }}>
       <header className="city-rush-heading wrap">
         <div>
-          <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <span style={{ opacity: 0.4, margin: '0 6px' }}>/</span> UNE VILLE. AUCUNE LIMITE.</p>
+          <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <span style={{ opacity: 0.4, margin: '0 6px' }}>/</span> UNE VILLE. UNE ROUTE. AUCUNE LIMITE.</p>
           <h1><span>VICE CITY</span><em>RUSH</em></h1>
           <p className="city-rush-lede">
-            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur cinq circuits.
+            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur six parcours, dont la mythique Route 66.
           </p>
-          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES</span><span>3 MODES DE COURSE</span></div>
+          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES · 1 ROUTE</span><span>3 MODES DE COURSE</span></div>
           <div className="city-rush-hero-actions">
             <a className="city-rush-hero-cta" href="#vice-city-rush-console">
               LANCER LE JEU <span aria-hidden="true">▶</span>
@@ -865,7 +866,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
                       <h2>VICE CITY<br /><em>RUSH.</em></h2>
-                      <p>La ville est à toi. Lance l’histoire de Nico Vega ou choisis ton défi : circuit, sprint ou poursuite à travers cinq villes.</p>
+                      <p>La ville est à toi. Lance l’histoire de Nico Vega ou choisis ton défi : circuit, sprint ou poursuite à travers cinq villes et la route 66.</p>
                     </div>
 
                     <div className="city-rush-story-banner" role="region" aria-label="Mode Histoire Nico Vega">
@@ -927,14 +928,14 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})` : ''}, {currentLaps} tour{currentLaps > 1 ? 's' : ''} dont un dernier tour double = {currentDistance} m. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {currentLaps} tour{currentLaps > 1 ? 's' : ''} dont un dernier tour double = {currentDistance} m. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
-                      {CITY_RUSH_CITIES.map((option, index) => (
+                      {CITY_RUSH_COURSES.map((option, index) => (
                         <button
                           key={option.id}
                           type="button"
-                          className={`city-rush-city-card${cityId === option.id ? ' is-selected' : ''}`}
+                          className={`city-rush-city-card${cityId === option.id ? ' is-selected' : ''}${option.id === 'route-66' ? ' is-route-66' : ''}`}
                           style={{ '--card-accent': option.accent, '--card-secondary': option.secondary }}
                           onClick={() => setCityId(option.id)}
                           aria-pressed={cityId === option.id}
@@ -952,7 +953,7 @@ export default function ViceCityRushPage() {
                           <small>{option.district} · {option.label}</small>
                           {option.route && (
                             <em className="city-rush-city-route">
-                              <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLimit} km/h
+                              <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLimit} {option.route.speedUnit || 'km/h'}
                             </em>
                           )}
                           <span className="city-rush-city-preview" aria-hidden="true">

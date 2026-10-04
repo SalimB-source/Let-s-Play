@@ -699,10 +699,48 @@ function shutoOutline() {
 }
 
 /**
- * Forme de mini-carte propre à une ville : la C1 dessine son vrai anneau,
- * les autres villes gardent la boucle générique de `cityRushMinimapPoint`.
+ * Forme de mini-carte propre à une ville : la C1 dessine son vrai anneau et
+ * la Route 66 dessine son axe Chicago → Santa Monica en grand ruban ouest.
+ * Les autres villes gardent la boucle générique de `cityRushMinimapPoint`.
  */
 export function cityRushMinimapTrackShape(cityId) {
+  if (cityId === 'route-66') {
+    // Tracé éditorial simplifié, mais géographiquement lisible : Midwest en
+    // haut, détour par le Nouveau-Mexique, puis descente vers l'Arizona et la
+    // Californie. La courte remontée ferme la boucle jouable sans changer la
+    // direction ouest affichée aux joueurs.
+    const points = [
+      [86, 22], [76, 28], [68, 37], [57, 45], [47, 47],
+      [39, 43], [31, 49], [22, 58], [12, 69], [16, 78],
+      [31, 84], [50, 82], [69, 71], [82, 55], [88, 39],
+    ];
+    const cumulative = [0];
+    for (let index = 1; index <= points.length; index += 1) {
+      const previous = points[index - 1];
+      const next = points[index % points.length];
+      cumulative.push(cumulative[index - 1] + Math.hypot(next[0] - previous[0], next[1] - previous[1]));
+    }
+    const total = cumulative[points.length];
+    return {
+      id: 'route-66',
+      total,
+      at(progress) {
+        const wrapped = ((Number(progress) || 0) % 1 + 1) % 1;
+        const target = wrapped * total;
+        let low = 0;
+        while (low + 1 < cumulative.length && cumulative[low + 1] <= target) low += 1;
+        const span = cumulative[low + 1] - cumulative[low] || 1;
+        const t = (target - cumulative[low]) / span;
+        const a = points[low % points.length];
+        const b = points[(low + 1) % points.length];
+        const norm = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        return { centerX: a[0] + (b[0] - a[0]) * t, centerY: a[1] + (b[1] - a[1]) * t, tangentX: (b[0] - a[0]) / norm, tangentY: (b[1] - a[1]) / norm };
+      },
+      path() {
+        return `${points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point[0]} ${point[1]}`).join(' ')} Z`;
+      },
+    };
+  }
   if (!cityRushRouteFor(cityId)) return null;
   const outline = shutoOutline();
   const { points, cumulative, total } = outline;
@@ -792,6 +830,61 @@ export const CITY_RUSH_CITIES = Object.freeze([
     signs: Object.freeze(['SOHO', 'LONDON', 'NIGHTLINE', 'PICCADILLY']),
   }),
 ]);
+
+// La Route 66 reste une course distincte des cinq destinations urbaines :
+// une traversée condensée de son axe historique, du départ de Chicago à la
+// jetée de Santa Monica. Les secteurs servent aux panneaux, au décor et à la
+// mini-carte éditoriale, tandis que la boucle jouable reste volontairement
+// courte pour garder le rythme arcade.
+const ROUTE_66_DETAILS = Object.freeze({
+  id: 'route-66',
+  name: 'HISTORIC U.S. 66',
+  marker: 'US 66',
+  lengthKm: 3940,
+  direction: 'OUEST',
+  directionRomaji: 'CHICAGO → SANTA MONICA',
+  speedLimit: 55,
+  speedUnit: 'mph',
+  endpoints: Object.freeze(['CHICAGO', 'SANTA MONICA']),
+  sectors: Object.freeze([
+    Object.freeze({ id: 'chicago', from: 0, to: 0.1, name: 'Chicago', state: 'ILLINOIS', kind: 'city', note: 'Départ historique sur Adams Street.' }),
+    Object.freeze({ id: 'st-louis', from: 0.1, to: 0.2, name: 'St. Louis', state: 'MISSOURI', kind: 'bridge', note: 'Le Mississippi et le Gateway Arch.' }),
+    Object.freeze({ id: 'tulsa', from: 0.2, to: 0.32, name: 'Tulsa', state: 'OKLAHOMA', kind: 'neon', note: 'Diners, motels et enseignes de la Mother Road.' }),
+    Object.freeze({ id: 'oklahoma', from: 0.32, to: 0.44, name: 'Oklahoma City', state: 'OKLAHOMA', kind: 'prairie', note: 'La route traverse la prairie et ses stations-service.' }),
+    Object.freeze({ id: 'amarillo', from: 0.44, to: 0.56, name: 'Amarillo', state: 'TEXAS', kind: 'landmark', note: 'Cadillac Ranch et U-Drop Inn.' }),
+    Object.freeze({ id: 'santa-fe', from: 0.56, to: 0.67, name: 'Santa Fe', state: 'NEW MEXICO', kind: 'adobe', note: 'Adobes, mesas et désert peint.' }),
+    Object.freeze({ id: 'flagstaff', from: 0.67, to: 0.8, name: 'Flagstaff', state: 'ARIZONA', kind: 'desert', note: 'Petrified Forest, cratère et hauts plateaux.' }),
+    Object.freeze({ id: 'kingman', from: 0.8, to: 0.91, name: 'Kingman', state: 'ARIZONA', kind: 'desert', note: 'Seligman, Hackberry et le dernier grand ruban de désert.' }),
+    Object.freeze({ id: 'santa-monica', from: 0.91, to: 1, name: 'Santa Monica', state: 'CALIFORNIE', kind: 'finish', note: 'Arrivée symbolique au bout de la jetée.' }),
+  ]),
+});
+
+// C'est un parcours libre (et non une ville) : ses métadonnées de route sont
+// conservées sous `route` pour que l'interface puisse afficher la traversée
+// Chicago → Santa Monica sans perdre les attributs de décor du moteur.
+export const CITY_RUSH_ROUTE_66 = Object.freeze({
+  ...ROUTE_66_DETAILS,
+  label: 'ÉTATS-UNIS · ILLINOIS → CALIFORNIE',
+  district: 'HISTORIC U.S. 66 · MOTHER ROAD',
+  tagline: 'La Main Street of America, de Chicago à Santa Monica.',
+  accent: '#e5b85c',
+  secondary: '#3e91b5',
+  background: 0x86b8d0,
+  fog: 0xe7c48f,
+  asphalt: 0x6f6b61,
+  sidewalk: 0xa9906d,
+  buildingColors: Object.freeze([0xc8a271, 0xe1c18b, 0xa66f51, 0xd6c09a, 0x92755e]),
+  windowColor: 0x536d72,
+  skyTop: 0x2d6da9,
+  skyGlow: 0xffbd68,
+  style: 'route66',
+  signs: Object.freeze(['HISTORIC 66', 'MOTHER ROAD', 'BLUE SWALLOW', 'WESTBOUND', 'SANTA MONICA']),
+  route: ROUTE_66_DETAILS,
+});
+
+// Les écrans libres mélangent villes et routes légendaires sans modifier les
+// constantes historiques attendues par les succès qui comptent les villes.
+export const CITY_RUSH_COURSES = Object.freeze([...CITY_RUSH_CITIES, CITY_RUSH_ROUTE_66]);
 
 export function clampCityRushLane(lane, laneCount = CITY_RUSH_LANE_X.length) {
   const parsed = Number.isFinite(Number(lane)) ? Math.trunc(Number(lane)) : 0;
@@ -1443,7 +1536,7 @@ export function selectCityRushRacers({
   playerDriverId = null,
 } = {}) {
   const total = CITY_RUSH_DRIVERS.length;
-  const cityIndex = Math.max(0, CITY_RUSH_CITIES.findIndex((item) => item.id === cityId));
+  const cityIndex = Math.max(0, CITY_RUSH_COURSES.findIndex((item) => item.id === cityId));
   const carIndex = Math.max(0, CITY_RUSH_CARS.findIndex((item) => item.id === carId));
   const safeRun = Math.max(0, Math.trunc(Number(runId) || 0));
   const explicitPlayerIndex = playerDriverId

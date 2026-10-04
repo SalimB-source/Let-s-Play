@@ -33,8 +33,10 @@ export const CITY_RUSH_MUSIC_BPM = Object.freeze({
   london: 124,
 });
 export const CITY_RUSH_DEFAULT_BPM = 122;
+export const CITY_RUSH_ROUTE_66_BPM = 108;
 
 export function cityRushMusicBpm(cityId) {
+  if (cityId === 'route-66') return CITY_RUSH_ROUTE_66_BPM;
   return CITY_RUSH_MUSIC_BPM[cityId] || CITY_RUSH_DEFAULT_BPM;
 }
 
