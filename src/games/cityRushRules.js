@@ -17,13 +17,14 @@
 export const CITY_RUSH_LAPS = 5; // nombre de tours par défaut (les modes de jeu fixent le leur)
 export const CITY_RUSH_LAP_LENGTH = 600;
 export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la boucle
-// Mode Sprint : course à checkpoints, sans police, bonus ni armes. Dix
-// checkpoints tous les 300 m (une demi-boucle) : le dixième est l'arrivée,
-// pile sous le portique. Chaque checkpoint rend 15 s au chrono ; à zéro, la
-// course est perdue.
+// Mode Sprint : course solo à checkpoints, sans police ni arme. Dix checkpoints
+// tous les 300 m (une demi-boucle) : le dixième est l'arrivée, pile sous le
+// portique. Chaque checkpoint recharge le chrono à 15 s ; des pads turbo verts
+// sont espacés sur la piste pour aider le pilote à les atteindre.
 export const CITY_RUSH_SPRINT_CHECKPOINTS = 10;
 export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
+export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 6;
 export const CITY_RUSH_SPRINT_DISTANCE = CITY_RUSH_SPRINT_CHECKPOINTS * CITY_RUSH_SPRINT_CHECKPOINT_SPACING;
 // Nombre de checkpoints franchis pour une distance parcourue (0 … 10).
 export function cityRushSprintCheckpointsPassed(distance, spacing = CITY_RUSH_SPRINT_CHECKPOINT_SPACING, count = CITY_RUSH_SPRINT_CHECKPOINTS) {
@@ -1442,6 +1443,18 @@ export function createCityRushEncounter(random = Math.random) {
   }
 
   return { pickups };
+}
+
+/**
+ * Sprint : un pad turbo posé au sol, placé uniquement sur une voie du sens de
+ * course. La cadence est réglée par `CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL` dans
+ * le monde 3D ; aucune arme ni autre bonus ne peut apparaître dans ce mode.
+ */
+export function createCityRushBoostEncounter(random = Math.random) {
+  const lanes = CITY_RUSH_FORWARD_LANES;
+  const sample = Number(random());
+  const index = Math.max(0, Math.min(lanes.length - 1, Math.floor((Number.isFinite(sample) ? sample : 0) * lanes.length)));
+  return { pickups: [{ lane: lanes[index], type: CITY_RUSH_PICKUPS.BOOST }] };
 }
 
 export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE_X.length) {

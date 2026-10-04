@@ -70,9 +70,17 @@ globalThis.requestAnimationFrame = (cb) => { const id = rafId++; rafQueue.set(id
 globalThis.cancelAnimationFrame = (id) => { rafQueue.delete(id); };
 Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNow }, configurable: true });
 
-// Sprint : 10 checkpoints, 15 s entre chacun, ni police, ni bonus, ni arme.
+// Sprint : 10 portes visibles, 15 s entre checkpoints, boosts verts au sol,
+// mais ni police, ni rival, ni arme.
+const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
-const { CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_SPRINT_DISTANCE } = await import('../src/games/cityRushRules.js');
+const {
+  CITY_RUSH_CITIES,
+  CITY_RUSH_CARS,
+  CITY_RUSH_PICKUPS,
+  CITY_RUSH_SPRINT_CHECKPOINTS,
+  CITY_RUSH_SPRINT_DISTANCE,
+} = await import('../src/games/cityRushRules.js');
 const fail = (msg, extra) => { console.error('SPRINT SMOKE FAILED:', msg, extra ?? ''); process.exit(1); };
 
 function play(city) {
@@ -82,32 +90,72 @@ function play(city) {
     hud: (h) => cb.huds.push(h), finish: (r) => { cb.finish = r; }, pickup: (p) => cb.pickups.push(p),
     effect: (e) => cb.effects.push(e), lap: (l) => cb.laps.push(l),
   }), CITY_RUSH_CARS[0].id, null, null, 1, false, 'sprint');
+  const checkpointGate = world.scene.getObjectByName('sprint-checkpoint-gate');
+  const boostPads = [];
+  world.scene.traverse((object) => {
+    if (object.userData?.type === CITY_RUSH_PICKUPS.BOOST) boostPads.push(object);
+  });
+  const checkpointSnapshots = [];
+  let screenVisible = false;
   const step = () => { virtualNow += 1000 / 30; const q = rafQueue; rafQueue = new Map(); q.forEach((f) => f(virtualNow)); };
   world.reset(); world.setPhase('playing'); world.start();
   let frames = 0;
+  let lastCheckpoint = 0;
   while (!cb.finish && frames < 30 * 240) {
     step(); frames += 1;
+    if (frames === 1 && checkpointGate?.userData?.sign) {
+      world.scene.updateMatrixWorld(true);
+      world.camera.updateMatrixWorld(true);
+      const projected = checkpointGate.userData.sign.getWorldPosition(new THREE.Vector3()).project(world.camera);
+      screenVisible = checkpointGate.visible
+        && projected.z >= -1 && projected.z <= 1
+        && Math.abs(projected.x) <= 1 && Math.abs(projected.y) <= 1;
+    }
+    if (cb.laps.length > lastCheckpoint) {
+      checkpointSnapshots.push({ checkpoint: checkpointGate?.userData?.checkpoint, visible: checkpointGate?.visible });
+      lastCheckpoint = cb.laps.length;
+    }
     if (frames % 45 === 0) world.action('pistol'); // l'arme ne doit rien faire en Sprint
   }
   world.destroy();
-  return { cb, frames };
+  return { cb, frames, checkpointGate, boostPads, checkpointSnapshots, screenVisible };
 }
 
 for (const city of CITY_RUSH_CITIES) {
-  const { cb, frames } = play(city);
+  const { cb, frames, checkpointGate, boostPads, checkpointSnapshots, screenVisible } = play(city);
   if (!cb.finish) fail(`[${city.id}] pas d'arrivée`);
   const r = cb.finish;
   if (!r.sprint) fail('résultat non sprint', r);
-  if (cb.pickups.length) fail('bonus ramassé en Sprint', cb.pickups.length);
+  if (!checkpointGate) fail('aucun portique de checkpoint 3D en Sprint');
+  if (checkpointGate?.userData?.kind !== 'sprint-checkpoint-gate' || !checkpointGate.userData.sign) {
+    fail('portique de checkpoint incomplet', checkpointGate?.userData);
+  }
+  if (checkpointSnapshots[0]?.checkpoint !== 2 || checkpointSnapshots[0]?.visible) {
+    fail('après le checkpoint 1, le portique cède la place au gantry du checkpoint 2', checkpointSnapshots[0]);
+  }
+  if (!checkpointSnapshots.some((snapshot) => snapshot.checkpoint === 3 && snapshot.visible)) {
+    fail('le portique 3D n’avance pas vers le checkpoint impair suivant', checkpointSnapshots);
+  }
+  if (!screenVisible) fail('le panneau du prochain checkpoint est hors champ caméra au départ');
+  if (boostPads.length < 2 || boostPads.some((pad) => !pad.userData.pad.visible)) {
+    fail('les pads turbo ne sont pas visibles au sol en Sprint', boostPads.map((pad) => ({ type: pad.userData.type, visible: pad.userData.pad?.visible })));
+  }
+  if (!cb.pickups.length) fail('aucun pad turbo ramassé en Sprint');
+  const nonBoostPickups = cb.pickups.filter((pickup) => pickup.type !== CITY_RUSH_PICKUPS.BOOST);
+  if (nonBoostPickups.length) fail('un bonus autre que turbo est ramassable en Sprint', nonBoostPickups);
+  if (cb.pickups.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
+    fail('un pad turbo du Sprint ne s’active pas automatiquement', cb.pickups);
+  }
   const bad = cb.effects.filter((e) => /police|pistol|radio|missile|player-health|rival-boost/.test(e.type));
-  if (bad.length) fail('effet police/arme/bonus en Sprint', bad.map((e) => e.type));
+  if (bad.length) fail('effet police/arme/rival en Sprint', bad.map((e) => e.type));
   if (cb.huds.some((h) => h.police.length)) fail('police dans le HUD');
   if (r.racers.length !== 1 || !r.racers[0].isPlayer) fail('Sprint pas en solo', r.racers.map((x) => x.id));
   if (cb.huds.some((h) => h.racers.length !== 1)) fail('rival dans le HUD');
   if (r.timedOut) fail('chrono écoulé alors que le pilote roule plein gaz', r);
   {
     const cps = cb.laps.filter((l) => l.sprint).map((l) => l.checkpoint);
-    if (cps.join(',') !== '1,2,3,4,5,6,7,8,9') fail('checkpoints annoncés', cps);
+    const expectedCheckpoints = Array.from({ length: CITY_RUSH_SPRINT_CHECKPOINTS - 1 }, (_, index) => index + 1);
+    if (cps.join(',') !== expectedCheckpoints.join(',')) fail('checkpoints annoncés', cps);
     if (r.distance < CITY_RUSH_SPRINT_DISTANCE - 1) fail('arrivée trop tôt', r);
   }
   const maxLeft = Math.max(...cb.huds.map((h) => h.sprint.timeLeft));
