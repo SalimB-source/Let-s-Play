@@ -68,6 +68,7 @@ const CITY_THUMBNAILS = {
   tokyo: 'vice-city-story-tokyo.webp',
   paris: 'paris-thumb.jpg',
   london: 'london-thumb.jpg',
+  'mexico-countryside': 'mexico-countryside-thumb.jpg',
 };
 const CAR_THUMBNAILS = {
   'city-hatch': 'car-mistral-14.jpg',
@@ -762,9 +763,9 @@ export default function ViceCityRushPage() {
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <span style={{ opacity: 0.4, margin: '0 6px' }}>/</span> UNE VILLE. UNE ROUTE. AUCUNE LIMITE.</p>
           <h1><span>VICE CITY</span><em>RUSH</em></h1>
           <p className="city-rush-lede">
-            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur six parcours, dont la mythique Route 66.
+            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur sept parcours : cinq villes, la mythique Route 66 et une route de campagne ensoleillée au Mexique.
           </p>
-          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES · 1 ROUTE</span><span>3 MODES DE COURSE</span></div>
+          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES · 2 ROUTES</span><span>3 MODES DE COURSE</span></div>
           <div className="city-rush-hero-actions">
             <a className="city-rush-hero-cta" href="#vice-city-rush-console">
               LANCER LE JEU <span aria-hidden="true">▶</span>

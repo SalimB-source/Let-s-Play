@@ -1003,12 +1003,13 @@ export const ACHIEVEMENTS = [
     rarity: 'gold',
     xp: 150,
     metric: 'viceCityCitiesDriven',
-    // Cinq villes au catalogue (`CITY_RUSH_CITIES`).
-    target: 5,
+    // Sept parcours au catalogue : cinq villes + la Route 66 + la route de
+    // campagne mexicaine.
+    target: 7,
     labels: {
-      en: { name: 'World tour', desc: 'Race in all five cities: Vice City, New York, Tokyo, Paris and London.' },
-      fr: { name: 'Tour du monde', desc: 'Cours dans les cinq villes : Vice City, New York, Tokyo, Paris et Londres.' },
-      ar: { name: 'جولة عالمية', desc: 'تسابق في المدن الخمس: فايس سيتي ونيويورك وطوكيو وباريس ولندن.' },
+      en: { name: 'World tour', desc: 'Race on every course: Vice City, New York, Tokyo, Paris, London, Route 66 and the Mexican countryside.' },
+      fr: { name: 'Tour du monde', desc: 'Cours sur les sept parcours : Vice City, New York, Tokyo, Paris, Londres, la Route 66 et la route de campagne mexicaine.' },
+      ar: { name: 'جولة عالمية', desc: 'تسابق في جميع المسارات السبعة.' },
     },
   },
   {
@@ -1047,11 +1048,11 @@ export const ACHIEVEMENTS = [
     rarity: 'platinum',
     xp: 500,
     metric: 'viceCityCitiesWon',
-    target: 5,
+    target: 7,
     labels: {
-      en: { name: 'Grand slam', desc: 'Win a race in each of the five cities.' },
-      fr: { name: 'Grand chelem', desc: 'Remporte une course dans chacune des cinq villes.' },
-      ar: { name: 'الغراند سلام', desc: 'افز بسباق في كل مدينة من المدن الخمس.' },
+      en: { name: 'Grand slam', desc: 'Win a race on each of the seven courses.' },
+      fr: { name: 'Grand chelem', desc: 'Remporte une course sur chacun des sept parcours.' },
+      ar: { name: 'الغراند سلام', desc: 'افز بسباق في كل مسار من المسارات السبعة.' },
     },
   },
 ];

@@ -866,9 +866,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
-  // Pas une seule voiture de police dans le trafic du Sprint.
+  // Pas une seule voiture de police dans le trafic du Sprint. Certains
+  // parcours (routes de campagne peu fréquentées comme la Mexique) réduisent
+  // fortement le nombre de véhicules grâce à `trafficCount`/`oncomingCount`.
   const trafficTypes = sprint ? CITY_RUSH_TRAFFIC_TYPES.filter((spec) => spec.id !== 'police') : CITY_RUSH_TRAFFIC_TYPES;
-  const trafficCars = Array.from({ length: CITY_RUSH_TRAFFIC_COUNT }, (_, index) => {
+  const cityTrafficCount = Math.max(0, Math.min(CITY_RUSH_TRAFFIC_COUNT, Number(city.trafficCount)));
+  const effectiveTrafficCount = Number.isFinite(cityTrafficCount) && cityTrafficCount > 0 ? cityTrafficCount : CITY_RUSH_TRAFFIC_COUNT;
+  const cityOncomingCount = Math.max(0, Math.min(CITY_RUSH_ONCOMING_COUNT, Number(city.oncomingCount)));
+  const effectiveOncomingCount = Number.isFinite(cityOncomingCount) && cityOncomingCount >= 0 ? cityOncomingCount : CITY_RUSH_ONCOMING_COUNT;
+  const trafficCars = Array.from({ length: effectiveTrafficCount }, (_, index) => {
     const spec = trafficTypes[index % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
     scene.add(mesh);
@@ -880,7 +886,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       id: `traffic-${index}`,
       mesh,
       distance: 0,
-      lane: 0,
+      // Répartit les quelques véhicules du trafic sur les trois voies sans
+      // s'appuyer sur CITY_RUSH_TRAFFIC_LANES (dimensionné pour 8 voitures).
+      lane: CITY_RUSH_FORWARD_LANES[index % CITY_RUSH_FORWARD_LANES.length],
       currentX: 0,
       baseSpeed: spec.speed * randomRange(0.94, 1.06),
       currentSpeed: spec.speed,
@@ -900,7 +908,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Les trois voies de gauche sont en sens inverse : ces véhicules arrivent
   // face à la course, puis reparaissent au loin une fois passés derrière les
   // pilotes. Un véhicule percuté dévie vers le bord sans quitter la chaussée.
-  const oncomingCars = Array.from({ length: CITY_RUSH_ONCOMING_COUNT }, (_, index) => {
+  const oncomingCars = Array.from({ length: effectiveOncomingCount }, (_, index) => {
     const spec = trafficTypes[(index + 2) % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
     scene.add(mesh);
@@ -1495,8 +1503,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // la course précédente reprend sa place dans le flot du trafic.
       traffic.rallied = false;
       traffic.destroyed = false;
-      traffic.distance = 82 + index * 68 + randomRange(-7, 7);
-      traffic.lane = CITY_RUSH_TRAFFIC_LANES[index];
+      traffic.distance = 82 + index * (trafficCars.length > 3 ? 68 : 180) + randomRange(-7, 7);
+      traffic.lane = CITY_RUSH_FORWARD_LANES[index % CITY_RUSH_FORWARD_LANES.length];
       traffic.currentX = CITY_RUSH_LANE_X[traffic.lane];
       traffic.currentSpeed = traffic.baseSpeed;
       traffic.impactLeft = 0;
@@ -1510,10 +1518,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
       traffic.mesh.userData.beacons.forEach((beacon) => { beacon.material.opacity = 1; });
     });
-    lastTrafficDistanceSlot = trafficCars[trafficCars.length - 1].distance + randomRange(60, 78);
+    lastTrafficDistanceSlot = trafficCars[trafficCars.length - 1].distance + randomRange(trafficCars.length <= 3 ? 180 : 60, trafficCars.length <= 3 ? 260 : 78);
     // Le trafic venant en face reprend sa place, réparti loin devant la grille.
     oncomingCars.forEach((oncoming, index) => {
-      oncoming.distance = 60 + index * 46 + randomRange(-9, 9);
+      const lightOncoming = oncomingCars.length <= 1;
+      oncoming.distance = 60 + index * (lightOncoming ? 280 : 46) + randomRange(-9, 9);
       oncoming.lane = CITY_RUSH_ONCOMING_LANES[index % CITY_RUSH_ONCOMING_LANES.length];
       oncoming.currentX = CITY_RUSH_LANE_X[oncoming.lane];
       oncoming.currentSpeed = oncoming.baseSpeed;
@@ -3228,7 +3237,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Réapparaît loin devant, sur l'une des trois voies de gauche, sans se
     // coller à un autre véhicule venant en face dans la même voie.
     const lane = CITY_RUSH_ONCOMING_LANES[Math.floor(Math.random() * CITY_RUSH_ONCOMING_LANES.length)];
-    let nextDistance = distance + randomRange(150, 235);
+    // Sur route très peu fréquentée, les véhicules venant en face sont
+    // encore plus rares et mieux espacés.
+    const lightOncoming = oncomingCars.length <= 1;
+    let nextDistance = distance + randomRange(lightOncoming ? 320 : 150, lightOncoming ? 480 : 235);
     for (const other of oncomingCars) {
       if (other === oncoming || other.lane !== lane) continue;
       if (Math.abs(other.distance - nextDistance) < 26) nextDistance = Math.max(nextDistance, other.distance + 26);
@@ -4148,10 +4160,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const roomForAnotherEncounter = trafficLeadDistance < effectiveDistance - 230;
         if (clearedByEveryone && roomForAnotherEncounter) {
           traffic.spawnCount += 1;
-          const nextSlot = lastTrafficDistanceSlot + randomRange(58, 78);
-          const nextAhead = trafficLeadDistance + randomRange(132, 160);
+          // Sur route à très faible trafic (campagne), les voitures sont
+          // bien plus espacées : on augmente les écarts de respawn.
+          const lightTraffic = trafficCars.length <= 3;
+          const nextSlot = lastTrafficDistanceSlot + randomRange(lightTraffic ? 180 : 58, lightTraffic ? 260 : 78);
+          const nextAhead = trafficLeadDistance + randomRange(lightTraffic ? 230 : 132, lightTraffic ? 320 : 160);
           traffic.distance = Math.max(nextSlot, nextAhead);
-          traffic.lane = CITY_RUSH_TRAFFIC_LANES[(index + traffic.spawnCount * 5) % CITY_RUSH_TRAFFIC_LANES.length];
+          traffic.lane = CITY_RUSH_FORWARD_LANES[(index + traffic.spawnCount * 5) % CITY_RUSH_FORWARD_LANES.length];
           traffic.currentX = CITY_RUSH_LANE_X[traffic.lane];
           traffic.impactLeft = 0;
           traffic.impactCooldownLeft = 0;

@@ -26,7 +26,7 @@ export function makeFacadeTextures(facade, random, variant = 0) {
   const floors = FACADE_TILE.floors;
   const floorPx = height / floors;
   const style = facade.style;
-  const columns = style === 'dense' ? 6 : style === 'haussmann' ? 4 : style === 'deco' ? (variant === 1 ? 3 : 4) : 4;
+  const columns = style === 'dense' ? 6 : style === 'haussmann' ? 4 : style === 'deco' ? (variant === 1 ? 3 : 4) : style === 'adobe' ? 3 : 4;
   const columnPx = width / columns;
   const litRatio = facade.litRatio;
   const litColors = facade.litColors;
@@ -54,6 +54,7 @@ export function makeFacadeTextures(facade, random, variant = 0) {
     if (style === 'dense') return [x + columnPx * 0.18, y + floorPx * 0.22, columnPx * 0.64, floorPx * 0.5];
     if (style === 'georgian') return [x + columnPx * 0.26, y + floorPx * 0.16, columnPx * 0.48, floorPx * 0.62];
     if (style === 'deco') return [x + columnPx * 0.2, y + floorPx * 0.2, columnPx * 0.6, floorPx * 0.5];
+    if (style === 'adobe') return [x + columnPx * 0.3, y + floorPx * 0.2, columnPx * 0.4, floorPx * 0.55];
     return [x + columnPx * 0.22, y + floorPx * 0.18, columnPx * 0.56, floorPx * 0.56];
   };
 
@@ -89,9 +90,23 @@ export function makeFacadeTextures(facade, random, variant = 0) {
     } else if (style === 'dense') {
       ctx.fillStyle = 'rgba(40, 40, 60, .12)';
       for (let x = 0; x < width; x += 14) ctx.fillRect(x, 0, 2, height);
+    } else if (style === 'adobe') {
+      // Enduit d'adobe bosselé : quelques taches ocres plus sombres et un
+      // chaulage irrégulier suggèrent les murs en torchis des ranchos.
+      ctx.fillStyle = 'rgba(120, 80, 50, .14)';
+      for (let y = 0; y < height; y += 22) {
+        ctx.beginPath();
+        ctx.moveTo(0, y + 0.5);
+        for (let x = 0; x <= width; x += 32) ctx.lineTo(x, y + Math.sin(x * 0.05 + y * 0.1) * 3);
+        ctx.strokeStyle = 'rgba(120, 80, 50, .12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(255, 240, 210, .08)';
+      for (let i = 0; i < 40; i += 1) ctx.fillRect(random() * width, random() * height, 8 + random() * 20, 4 + random() * 8);
     }
     // Bandeaux d'étage.
-    ctx.fillStyle = style === 'haussmann' ? 'rgba(60, 50, 45, .4)' : 'rgba(40, 40, 55, .35)';
+    ctx.fillStyle = style === 'haussmann' ? 'rgba(60, 50, 45, .4)' : style === 'adobe' ? 'rgba(120, 75, 45, .3)' : 'rgba(40, 40, 55, .35)';
     for (let row = 0; row <= floors; row += 1) ctx.fillRect(0, row * floorPx - 2, width, style === 'haussmann' ? 5 : 3);
 
     for (const cell of cells) {
@@ -243,9 +258,11 @@ export function makeRoadTexture(theme, random) {
       .map((laneCenter, index) => (CITY_RUSH_LANE_X[index] + laneCenter) / 2)
       .filter((separator) => Math.abs(separator) > 1e-9);
     // La simulation conserve ses voies de dépassement, mais l'habillage de la
-    // Mother Road ne dessine que la ligne centrale : une Route 66 historique
-    // ne ressemble pas à une autoroute urbaine à six couloirs.
-    if (!theme.route66) {
+    // Mother Road (Route 66) et des routes de campagne mexicaines ne dessine
+    // que la ligne centrale : une route rurale ne ressemble pas à une
+    // autoroute urbaine à six couloirs.
+    const ruralRoad = Boolean(theme.route66 || theme.countryside);
+    if (!ruralRoad) {
       for (const separator of separators) {
         const px = laneToPixel(separator);
         for (let y = 0; y < height; y += dashLength) ctx.fillRect(px - 2, y + dashLength * 0.12, 4, dashLength * 0.4);
@@ -572,6 +589,69 @@ export function makeSkylineTexture(city, theme, random) {
         ctx.lineTo(cactusX + 14, horizon - 36);
         ctx.lineTo(cactusX + 14, horizon - 17);
         ctx.stroke();
+      }
+    } else if (style === 'mexico') {
+      // Horizon mexicain : montagnes ocres du Bajío, silhouette d'église
+      // coloniale avec son campanile, champs d'agaves lointains.
+      ctx.fillStyle = 'rgba(128, 92, 58, .55)';
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let x = 0; x <= width; x += 28) {
+        const peak = horizon - 38 - Math.abs(Math.sin(x * 0.0055 + 1.3)) * 78 - random() * 10;
+        ctx.lineTo(x, peak);
+      }
+      ctx.lineTo(width, horizon);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(104, 71, 48, .78)';
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let x = 0; x <= width; x += 46) {
+        ctx.lineTo(x, horizon - 12 - Math.abs(Math.sin(x * 0.011 + 0.7)) * 56 - random() * 14);
+      }
+      ctx.lineTo(width, horizon);
+      ctx.closePath();
+      ctx.fill();
+      // Silhouette de pueblo et son église.
+      const churchX = 1080;
+      ctx.fillStyle = 'rgba(220, 195, 156, .88)';
+      ctx.fillRect(churchX - 38, horizon - 80, 76, 80);
+      ctx.beginPath();
+      ctx.moveTo(churchX - 44, horizon - 80);
+      ctx.lineTo(churchX, horizon - 115);
+      ctx.lineTo(churchX + 44, horizon - 80);
+      ctx.closePath();
+      ctx.fill();
+      // Campanile.
+      ctx.fillRect(churchX + 46, horizon - 100, 22, 100);
+      ctx.beginPath();
+      ctx.moveTo(churchX + 46, horizon - 100);
+      ctx.lineTo(churchX + 57, horizon - 120);
+      ctx.lineTo(churchX + 68, horizon - 100);
+      ctx.closePath();
+      ctx.fill();
+      // Petits toits de pueblo autour.
+      for (const hx of [700, 820, 1280, 1420, 1560]) {
+        const h = 28 + Math.floor(random() * 24);
+        ctx.fillRect(hx, horizon - h, 40 + random() * 30, h);
+        ctx.beginPath();
+        ctx.moveTo(hx - 4, horizon - h);
+        ctx.lineTo(hx + 20, horizon - h - 16);
+        ctx.lineTo(hx + 46, horizon - h);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Agaves lointains.
+      ctx.strokeStyle = 'rgba(74, 94, 66, .7)';
+      ctx.lineWidth = 3;
+      for (const ax of [180, 340, 610, 1750, 1900]) {
+        for (let leaf = 0; leaf < 6; leaf += 1) {
+          const a = (leaf / 6) * Math.PI;
+          ctx.beginPath();
+          ctx.moveTo(ax, horizon);
+          ctx.lineTo(ax + Math.cos(a) * 14, horizon - 18 - Math.abs(Math.sin(a)) * 14);
+          ctx.stroke();
+        }
       }
     } else if (style === 'paris') {
       // Tour Eiffel, dôme du Sacré-Cœur et tour Montparnasse.
