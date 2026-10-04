@@ -1,4 +1,4 @@
-// Modèles 3D des six voitures de Vice City Rush. Chaque carrosserie possède
+// Modèles 3D des huit voitures de Vice City Rush. Chaque carrosserie possède
 // son propre profil de caisse, sa verrière, ses phares et ses détails latéraux ;
 // l'habitacle reste sombre et vide pour ne pas afficher de personnage.
 import * as THREE from 'three';
@@ -45,6 +45,32 @@ const CAR_MODELS = {
       [[0.85, 1.03, -0.76], [0.62, 1.40, -0.45], [0.63, 1.42, -0.06], [0.86, 1.04, 0.00]],
       [[0.86, 1.04, 0.08], [0.64, 1.42, 0.02], [0.65, 1.39, 0.72], [0.85, 1.07, 0.84]],
       [[0.84, 1.07, 0.92], [0.66, 1.38, 0.78], [0.67, 1.25, 1.19], [0.80, 1.05, 1.38]],
+    ],
+  },
+  'nova-hatch': {
+    // Compacte 5 portes du début des années 2000 : capot court, toit haut,
+    // hayon incliné, montants arrière épais et vitrage en trois parties.
+    // Sa silhouette et ses feux ronds dans des optiques rectangulaires suivent
+    // la nouvelle miniature de garage, sans badge ni logo de constructeur.
+    wheelX: 0.92, wheelZ: [-1.18, 1.17], wheelRadius: 0.325, wheelWidth: 0.25, wheelStyle: 'classic-five',
+    doorSeams: [-0.08, 0.77], grilleWidth: 0.78,
+    stations: [
+      [-2.00, 0.28, 0.37, 0.49, 0.56, 0.13], [-1.84, 0.63, 0.38, 0.66, 0.74, 0.41],
+      [-1.57, 0.84, 0.39, 0.77, 0.85, 0.62], [-1.28, 0.91, 0.40, 0.83, 0.93, 0.71],
+      [-1.03, 0.93, 0.40, 0.85, 1.01, 0.74], [-0.80, 0.92, 0.41, 0.86, 1.13, 0.73],
+      [-0.58, 0.91, 0.41, 0.86, 1.37, 0.72], [-0.34, 0.90, 0.41, 0.86, 1.43, 0.70],
+      [0.02, 0.91, 0.41, 0.86, 1.45, 0.72], [0.43, 0.92, 0.41, 0.85, 1.45, 0.74],
+      [0.78, 0.93, 0.40, 0.84, 1.41, 0.75], [1.08, 0.92, 0.40, 0.83, 1.35, 0.73],
+      [1.32, 0.89, 0.40, 0.80, 1.20, 0.68], [1.52, 0.84, 0.39, 0.76, 1.04, 0.63],
+      [1.72, 0.78, 0.38, 0.69, 0.90, 0.61], [1.90, 0.70, 0.37, 0.66, 0.79, 0.55],
+      [2.00, 0.48, 0.36, 0.54, 0.65, 0.36],
+    ],
+    windshield: [[-0.75, 1.02, -1.15], [0.75, 1.02, -1.15], [0.64, 1.39, -0.50], [-0.64, 1.39, -0.50]],
+    rearGlass: [[-0.67, 1.34, 1.06], [0.67, 1.34, 1.06], [0.74, 0.84, 1.82], [-0.74, 0.84, 1.82]],
+    sideWindows: [
+      [[0.89, 0.96, -0.79], [0.66, 1.38, -0.46], [0.67, 1.39, -0.06], [0.90, 0.96, -0.05]],
+      [[0.90, 0.96, 0.08], [0.68, 1.39, 0.08], [0.69, 1.37, 0.73], [0.90, 0.94, 0.78]],
+      [[0.90, 0.94, 0.84], [0.69, 1.35, 0.78], [0.67, 1.25, 1.20], [0.82, 1.03, 1.43]],
     ],
   },
   ferrari: {
@@ -358,6 +384,27 @@ function makeSteeringLights(profile, spec, batch, materials) {
     return;
   }
 
+  if (profile.archetype === 'nova-hatch') {
+    // Doubles optiques rondes dans de grands blocs rectangulaires, petite
+    // calandre horizontale et antibrouillards bas : la face reste celle d'une
+    // compacte de série, pas d'une sportive extrême.
+    for (const side of [-1, 1]) {
+      const x = side * 0.60;
+      batch.box(black, [x, 0.755, -1.835], [0.49, 0.22, 0.065]);
+      batch.box(lightWhite, [x, 0.755, -1.875], [0.40, 0.15, 0.035]);
+      batch.sphere(lightWhite, [x - side * 0.075, 0.755, -1.905], 0.054, 12);
+      batch.sphere(lightWhite, [x + side * 0.075, 0.755, -1.905], 0.054, 12);
+      batch.box(lightAmber, [side * 0.83, 0.72, -1.84], [0.10, 0.10, 0.04]);
+      batch.box(black, [side * 0.67, 0.46, -1.91], [0.18, 0.09, 0.04]);
+    }
+    batch.box(black, [0, 0.635, -1.89], [0.57, 0.12, 0.045]);
+    for (const y of [0.61, 0.65]) batch.box(carbon, [0, y, -1.92], [0.48, 0.012, 0.015]);
+    batch.box(black, [0, 0.475, -1.94], [1.45, 0.11, 0.055]);
+    batch.box(carbon, [0, 0.385, -1.945], [0.94, 0.075, 0.045]);
+    for (const side of [-1, 1]) batch.sphere(lightWhite, [side * 0.62, 0.40, -1.97], 0.052, 10);
+    return;
+  }
+
   if (profile.archetype === 'bmw') {
     for (const side of [-1, 1]) {
       const x = side * 0.61;
@@ -424,7 +471,15 @@ function addRearDetails(profile, spec, batch, materials) {
   batch.box(black, [0, 0.335, 1.94], [1.78, 0.08, 0.15]);
   for (const x of [-0.58, -0.22, 0.22, 0.58]) batch.box(black, [x, 0.335, 1.94], [0.045, 0.10, 0.18]);
 
-  if (profile.archetype === 'city-hatch') {
+  if (profile.archetype === 'nova-hatch') {
+    // Feux arrière verticaux aux coins du hayon compact et poignée discrète.
+    for (const side of [-1, 1]) {
+      batch.box(tailLight, [side * 0.68, 0.74, 1.89], [0.14, 0.34, 0.06]);
+      batch.box(lightWhite, [side * 0.68, 0.56, 1.91], [0.08, 0.09, 0.045]);
+      batch.box(body, [side * 0.68, 0.93, 1.85], [0.12, 0.06, 0.055]);
+    }
+    batch.box(carbon, [0, 0.99, 1.84], [1.12, 0.028, 0.045]);
+  } else if (profile.archetype === 'city-hatch') {
     // Feux verticaux aux coins du hayon et ligne de vitre arrière, sans badge.
     for (const side of [-1, 1]) {
       batch.box(tailLight, [side * 0.76, 0.87, 1.88], [0.13, 0.42, 0.055]);
@@ -484,6 +539,21 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
   const { archetype } = profile;
   const { black, carbon, chrome, body, trim, livery, lightWhite, lightAmber, tailLight } = materials;
   const sideLineX = spec.wheelX - 0.015;
+
+  if (archetype === 'nova-hatch') {
+    // Baguettes de protection de série, deux portes et petites répétitions
+    // orange : les détails suivent les bandes noires de la miniature studio.
+    for (const side of [-1, 1]) {
+      batch.box(carbon, [side * 0.918, 0.625, -0.28], [0.038, 0.062, 0.66]);
+      batch.box(carbon, [side * 0.918, 0.625, 0.57], [0.038, 0.062, 0.78]);
+      batch.box(carbon, [side * 0.902, 0.435, 0.10], [0.05, 0.075, 2.94]);
+      batch.box(lightAmber, [side * 0.93, 0.80, -0.96], [0.025, 0.055, 0.11]);
+      batch.box(black, [side * 0.94, 0.765, -0.36], [0.03, 0.042, 0.16]);
+      batch.box(black, [side * 0.94, 0.765, 0.53], [0.03, 0.042, 0.16]);
+    }
+    for (const side of [-1, 1]) batch.box(black, [side * 0.60, 0.925, -1.27], [0.016, 0.012, 0.42]);
+    batch.box(body, [0, 1.045, 1.54], [1.24, 0.035, 0.11], [-0.03, 0, 0]);
+  }
 
   if (archetype === 'city-hatch') {
     // Grosses baguettes noires, deux portes bien découpées et bas de caisse
@@ -653,7 +723,7 @@ export function makeRacerCar(profile, options = {}) {
   }
   for (const side of [-1, 1]) {
     for (const z of spec.doorSeams.length > 1 ? [-0.45, 0.40] : [0.38]) {
-      const handleMaterial = profile.archetype === 'city-hatch' ? materials.black : materials.chrome;
+      const handleMaterial = ['city-hatch', 'nova-hatch'].includes(profile.archetype) ? materials.black : materials.chrome;
       box(handleMaterial, [side * (spec.wheelX + 0.005), 0.745, z], [0.03, 0.032, 0.15]);
     }
   }

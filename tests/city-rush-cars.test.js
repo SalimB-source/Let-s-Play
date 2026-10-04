@@ -33,9 +33,9 @@ function geometrySignature(geometry) {
   return Array.from(geometry.attributes.position.array, (value) => Math.round(value * 1000)).join(',');
 }
 
-test('les sept voitures ont des coques fermées distinctes et des vitrages opaques', () => {
+test('les huit voitures ont des coques fermées distinctes et des vitrages opaques', () => {
   const signatures = new Set();
-  const expectedWheels = ['eight-hole', 'eight-hole', 'split-five', 'classic-five', 'split-five', 'wire', 'turbofan'];
+  const expectedWheels = ['eight-hole', 'classic-five', 'eight-hole', 'split-five', 'classic-five', 'split-five', 'wire', 'turbofan'];
 
   CITY_RUSH_CARS.forEach((profile, index) => {
     const car = makeRacerCar(profile, { player: index === 0, number: index + 1, driver: ROSTER[0] });
@@ -57,7 +57,7 @@ test('les sept voitures ont des coques fermées distinctes et des vitrages opaqu
     assert.equal(car.userData.driverId, ROSTER[0].driverId, 'le pilote reste disponible pour le classement');
   });
 
-  assert.equal(signatures.size, CITY_RUSH_CARS.length, 'les sept miniatures ont sept formes 3D différentes');
+  assert.equal(signatures.size, CITY_RUSH_CARS.length, 'chaque miniature correspond à une forme 3D différente');
 });
 
 test('la flotte de police comprend une berline et un SUV haut perché', () => {

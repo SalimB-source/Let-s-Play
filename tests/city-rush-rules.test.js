@@ -167,17 +167,25 @@ test('the five city routes have a distinct identity and complete palettes', () =
 });
 
 test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
-  assert.equal(CITY_RUSH_CARS.length, 7);
+  assert.equal(CITY_RUSH_CARS.length, 8);
   const starter = CITY_RUSH_CARS[0];
   assert.equal(starter.id, 'city-hatch');
   assert.equal(starter.price, 0);
   assert.ok(starter.power <= 40 && starter.acceleration <= 45 && starter.recovery <= 50, 'la citadine de départ a des statistiques modestes');
-  assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0), 'les six autres voitures sont payantes');
+  const nova = CITY_RUSH_CARS.find((car) => car.id === 'nova-18-gt');
+  const wolfsburg = CITY_RUSH_CARS.find((car) => car.id === 'night-comet');
+  assert.ok(nova.price > starter.price && nova.price < wolfsburg.price, 'la compacte intermédiaire se débloque avant la Wolfsburg');
+  for (const stat of ['power', 'powerMultiplier', 'acceleration', 'accelerationRate', 'recovery']) {
+    assert.ok(nova[stat] > starter[stat] && nova[stat] < wolfsburg[stat], `${stat} place la Nova entre la Mistral et la Wolfsburg`);
+  }
+  assert.ok(nova.hitRecoveryMultiplier < starter.hitRecoveryMultiplier && nova.hitRecoveryMultiplier > wolfsburg.hitRecoveryMultiplier,
+    'la reprise après un choc est intermédiaire aussi');
+  assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0), 'les sept autres voitures sont payantes');
   assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
   assert.deepEqual(
     new Set(CITY_RUSH_CARS.map((car) => car.archetype)),
-    new Set(['city-hatch', 'ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini']),
+    new Set(['city-hatch', 'nova-hatch', 'ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini']),
   );
   const forbiddenBrandNames = /\b(ferrari|porsche|lamborghini|lambo|bmw|audi|volkswagen)\b/i;
   for (const car of CITY_RUSH_CARS) {
@@ -454,7 +462,7 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
   assert.ok(cityRushHitDuration(2, comet) < cityRushHitDuration(2, turbo));
   assert.equal(cityRushHitDuration(3, comet), 3 * comet.hitRecoveryMultiplier);
 
-  const performanceCars = CITY_RUSH_CARS.slice(1);
+  const performanceCars = CITY_RUSH_CARS.slice(2);
   const speedMultipliers = performanceCars.map((car) => car.powerMultiplier);
   assert.ok(Math.min(...speedMultipliers) >= 0.98);
   assert.ok(Math.max(...speedMultipliers) <= 1.04);

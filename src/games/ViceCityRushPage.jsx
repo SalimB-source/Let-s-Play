@@ -71,6 +71,7 @@ const CITY_THUMBNAILS = {
 };
 const CAR_THUMBNAILS = {
   'city-hatch': 'car-mistral-14.jpg',
+  'nova-18-gt': 'car-nova-18-gt.jpg',
   'vice-roadster': 'car-cavallo-f8-gtb.jpg',
   'turbo-gt': 'car-kronos-930-turbo.jpg',
   'muscle-86': 'car-vortex-rs-10.jpg',
@@ -1172,7 +1173,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
                       <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. 50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les six autres modèles.</p>
+                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. 50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les sept autres modèles.</p>
                     </div>
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
