@@ -748,7 +748,7 @@ for (const [index, city] of cities.entries()) {
     // Le pilote n'a pas fini ; un rival, lui, peut franchir la ligne pendant
     // les 3,2 s de l'épave (sa course continue, le pilote est classé dernier).
     const playerDistance = finish.racers.find((racer) => racer.id === 'player')?.distance ?? maxDistance;
-    if (!(playerDistance < RACE_DISTANCE - 1)) fail('une course perdue ne peut pas avoir vu le pilote couvrir la distance totale', { playerDistance, RACE_DISTANCE });
+    if (!(playerDistance < RACE_DISTANCE)) fail('une course perdue ne peut pas avoir vu le pilote franchir la ligne', { playerDistance, RACE_DISTANCE });
     // La course ne peut plus se clore sur la ligne d'un rival pendant la toupie
     // (garde `!playerWrecked`) : une épave va au bout de ses 3,2 s.
     if (wreckSpinTurns < 60) fail(`l’épave n’a tourné que sur ${wreckSpinTurns} images`, wreckSpinTurns);
