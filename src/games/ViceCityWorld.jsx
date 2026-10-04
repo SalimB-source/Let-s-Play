@@ -38,6 +38,7 @@ import {
   CITY_RUSH_PICKUP_BURST_DURATION,
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
+  CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL,
   CITY_RUSH_PLAYER_DAMAGE,
   CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
@@ -111,6 +112,7 @@ import {
   shouldHideCityRushPistolPickup,
   canCollectCityRushPickup,
   createCityRushEncounter,
+  createCityRushBoostEncounter,
   createCityRushInventory,
   createCityRushPoliceInventory,
   chooseCityRushTrafficEscapeLane,
@@ -137,7 +139,7 @@ import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometr
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
 import { animateRacerCar, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
-import { makePickupMaterial } from './cityRushTextures';
+import { makeLapBoard, makePickupMaterial } from './cityRushTextures';
 
 const PLAYER_Z = 3.1;
 const PLAYER_START_LANE = CITY_RUSH_DEFAULT_LANES[0];
@@ -257,6 +259,58 @@ function makePickupObject(shared) {
   pad.userData = { plate, arrows, phase: Math.random() * Math.PI * 2 };
   group.add(pad);
   group.userData = { icon, ring, beam, halo, pad, phase: Math.random() * Math.PI * 2, type: CITY_RUSH_POWERS.BLUE_SHOT };
+  return group;
+}
+
+function makeSprintCheckpointGate(city) {
+  const group = new THREE.Group();
+  group.name = 'sprint-checkpoint-gate';
+
+  const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x101b2b, roughness: 0.35, metalness: 0.68 });
+  const accentMaterial = new THREE.MeshBasicMaterial({ color: city.accent, toneMapped: false, fog: false });
+  const secondaryMaterial = new THREE.MeshBasicMaterial({ color: city.secondary, toneMapped: false, fog: false });
+  const roadMarkMaterial = new THREE.MeshBasicMaterial({ color: city.accent, transparent: true, opacity: 0.76, toneMapped: false, fog: false, depthWrite: false });
+  const board = makeLapBoard(city);
+  const boardMaterial = new THREE.MeshBasicMaterial({ map: board.texture, toneMapped: false, fog: false, side: THREE.DoubleSide });
+
+  const addBox = (name, material, size, position) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    mesh.name = name;
+    mesh.position.set(...position);
+    group.add(mesh);
+    return mesh;
+  };
+
+  // Portique néon sur les accotements, assez haut pour laisser passer tout le
+  // trafic ; ses deux couleurs alternées restent lisibles de jour comme de nuit.
+  const postX = 7.25;
+  for (const side of [-1, 1]) {
+    addBox('checkpoint-pylon', frameMaterial, [0.56, 7.5, 0.62], [side * postX, 3.75, 0]);
+    addBox('checkpoint-pylon-light', side < 0 ? accentMaterial : secondaryMaterial, [0.14, 6.9, 0.66], [side * postX, 3.8, 0.34]);
+    addBox('checkpoint-foot', frameMaterial, [1.1, 0.28, 1.0], [side * postX, 0.14, 0]);
+  }
+  addBox('checkpoint-crossbeam', frameMaterial, [15.15, 0.56, 0.68], [0, 7.48, 0]);
+  addBox('checkpoint-crossbeam-light', accentMaterial, [14.9, 0.12, 0.72], [0, 7.2, 0.04]);
+  addBox('checkpoint-sign-frame', frameMaterial, [6.25, 1.8, 0.5], [0, 6.15, 0.34]);
+
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(6.02, 1.58), boardMaterial);
+  sign.name = 'sprint-checkpoint-sign';
+  sign.position.set(0, 6.15, 0.62);
+  group.add(sign);
+
+  // Deux bandes au ras du bitume matérialisent aussi la ligne de passage, sans
+  // masquer les voies ni gêner le ramassage des pads turbo.
+  addBox('checkpoint-road-mark', roadMarkMaterial, [13.25, 0.045, 0.24], [0, 0.055, -0.38]);
+  addBox('checkpoint-road-mark', secondaryMaterial, [13.25, 0.045, 0.16], [0, 0.058, 0.38]);
+
+  group.userData = {
+    kind: 'sprint-checkpoint-gate',
+    board,
+    sign,
+    checkpoint: 0,
+    targetDistance: 0,
+  };
+  group.visible = false;
   return group;
 }
 
@@ -635,7 +689,8 @@ function disposeScene(scene, renderer) {
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
 export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps') {
-  // Sprint : course à checkpoints contre la montre, sans police, bonus ni armes.
+  // Sprint : course solo à checkpoints, sans police ni arme ; seuls les pads
+  // turbo restent disponibles comme bonus.
   const sprint = raceFormat === 'sprint';
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
   // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
@@ -733,6 +788,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   if (rain) scene.add(rain.object);
   const startLine = createStartLineDynamics({ city, theme, materials: stageMaterials, startMaterials, random: loop.random, lite });
   scene.add(startLine.group);
+  const sprintCheckpointGate = sprint ? makeSprintCheckpointGate(city) : null;
+  if (sprintCheckpointGate) scene.add(sprintCheckpointGate);
   loop.dynamicProps.forEach((prop) => scene.add(prop.group));
   const smoke = createSmokePool(lite ? 28 : 56);
   scene.add(smoke.group);
@@ -1047,7 +1104,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const slots = [makePickupObject(shared), makePickupObject(shared)];
     slots.forEach((slot) => group.add(slot));
     scene.add(group);
-    rows.push({ group, slots, trackDistance: 0, pickups: [], pickupClaims: new Map(), crossedRacers: new Set() });
+    rows.push({ index, group, slots, trackDistance: 0, pickups: [], pickupClaims: new Map(), crossedRacers: new Set() });
   }
 
   const actionPulses = [];
@@ -1087,6 +1144,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let lastLineCrossed = 0;
   // Sprint : checkpoints franchis et secondes restantes au chrono.
   let sprintCheckpoints = 0;
+  let sprintDisplayedCheckpoint = 0;
   let sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
   let playerLane = PLAYER_START_LANE;
   let playerX = CITY_RUSH_LANE_X[playerLane];
@@ -1167,7 +1225,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   ];
 
   function setupEncounter(row) {
-    const encounter = sprint ? { pickups: [] } : createCityRushEncounter(randomSeed);
+    const encounter = sprint
+      ? (row.index % CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL === 0
+        ? createCityRushBoostEncounter(randomSeed)
+        : { pickups: [] })
+      : createCityRushEncounter(randomSeed);
     row.pickups = encounter.pickups;
     row.pickupClaims.clear();
     row.crossedRacers.clear();
@@ -1374,6 +1436,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return `${city.name.toUpperCase()} · ${theme.gantryText}`;
   }
 
+  function syncSprintCheckpointDisplay() {
+    if (!sprintCheckpointGate) return;
+    const checkpoint = Math.min(sprintCheckpoints + 1, CITY_RUSH_SPRINT_CHECKPOINTS);
+    if (checkpoint === sprintDisplayedCheckpoint) return;
+    sprintDisplayedCheckpoint = checkpoint;
+    const checkpointLabel = `CP ${String(checkpoint).padStart(2, '0')}/${String(CITY_RUSH_SPRINT_CHECKPOINTS).padStart(2, '0')}`;
+    const finishLabel = checkpoint === CITY_RUSH_SPRINT_CHECKPOINTS;
+    sprintCheckpointGate.userData.checkpoint = checkpoint;
+    sprintCheckpointGate.userData.targetDistance = checkpoint * CITY_RUSH_SPRINT_CHECKPOINT_SPACING;
+    sprintCheckpointGate.userData.board.draw(
+      checkpointLabel,
+      finishLabel ? 'ARRIVÉE · DERNIÈRE PORTE' : `CHECKPOINT · +${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`,
+      finishLabel ? '#ffffff' : city.accent,
+    );
+    if (checkpoint % 2 === 0) {
+      // Les portes paires coïncident avec le grand portique de course déjà
+      // présent tous les 600 m : son tableau annonce le checkpoint à venir.
+      startLine.setBoard(checkpointLabel, finishLabel ? 'ARRIVÉE · SPRINT' : `CHECKPOINT · +${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`, finishLabel ? '#ffffff' : city.accent);
+    } else {
+      startLine.setBoard('SPRINT', `CP ${String(checkpoint).padStart(2, '0')} · +${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S · ${checkpoint * CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M`, city.accent);
+    }
+  }
+
   function placeTrack() {
     // Les deux copies de la boucle (tour courant + tour suivant/précédent)
     // sont replacées sur la ligne la plus proche : on repasse ainsi sous le
@@ -1389,6 +1474,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     loopB.visible = lineZ + START_ZONE_HALF * SCALE < camera.position.z + 4;
     startLine.group.position.set(-playerCurve, -playerElevation, lineZ);
     startLine.group.rotation.set(trackPitch(0), trackYaw(0), 0);
+    if (sprintCheckpointGate) {
+      const targetDistance = sprintCheckpointGate.userData.targetDistance;
+      const checkpointGap = targetDistance - distance;
+      sprintCheckpointGate.position.set(
+        trackRelativeX(targetDistance),
+        trackRelativeY(targetDistance),
+        PLAYER_Z - checkpointGap * SCALE,
+      );
+      sprintCheckpointGate.rotation.set(trackPitch(targetDistance), trackYaw(targetDistance), 0);
+      sprintCheckpointGate.visible = sprintCheckpointGate.userData.checkpoint % 2 === 1
+        && checkpointGap > -40
+        && checkpointGap * SCALE < theme.fogFar + 20;
+    }
     for (const prop of loop.dynamicProps) {
       const gap = cityRushTrackGap(prop.trackPos, distance) + CITY_RUSH_START_LINE_LEAD;
       prop.group.visible = gap > -40 && gap * SCALE < theme.fogFar + 20;
@@ -1421,6 +1519,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     lap = 1;
     lastLineCrossed = 0;
     sprintCheckpoints = 0;
+    sprintDisplayedCheckpoint = 0;
     sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
     playerLane = PLAYER_START_LANE;
     playerX = CITY_RUSH_LANE_X[playerLane];
@@ -1584,6 +1683,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     startLine.setLights(0);
     startLine.setFinalLap(false);
     startLine.setBoard(`TOUR 1/${effectiveLaps}`, lapBoardSubtitle(1));
+    syncSprintCheckpointDisplay();
     placeTrack();
     emitHud(true);
   }
@@ -3765,6 +3865,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const passed = cityRushSprintCheckpointsPassed(distance);
     while (sprintCheckpoints < passed) {
       sprintCheckpoints += 1;
+      syncSprintCheckpointDisplay();
       if (sprintCheckpoints >= CITY_RUSH_SPRINT_CHECKPOINTS) {
         startLine.onCross({ final: true });
         return;
@@ -3774,7 +3875,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Les checkpoints pairs tombent sous le portique (tous les 600 m).
       if (sprintCheckpoints % 2 === 0) {
         startLine.onCross({ final: false });
-        startLine.setBoard(`CHECKPOINT ${sprintCheckpoints}/${CITY_RUSH_SPRINT_CHECKPOINTS}`, `+${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`, remaining === 1 ? '#ffffff' : undefined);
+        const crossedLabel = `CP ${String(sprintCheckpoints).padStart(2, '0')}/${String(CITY_RUSH_SPRINT_CHECKPOINTS).padStart(2, '0')}`;
+        startLine.setBoard(crossedLabel, `+${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`, remaining === 1 ? '#ffffff' : undefined);
       }
       cameraKick = Math.max(cameraKick, 0.3);
       audioRef?.current?.lap(remaining === 1);

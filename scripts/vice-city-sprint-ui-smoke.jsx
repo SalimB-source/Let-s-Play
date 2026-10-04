@@ -3,9 +3,10 @@
  * `npm run check:city-rush-sprint-ui`.
  *
  * Le moteur de course est déjà vérifié seul (`npm run check:city-rush-sprint` :
- * ni police, ni rival, ni bonus en piste). Ce smoke regarde l'autre moitié du
- * problème : **ce que la page affiche autour de la course** quand le mode
- * SPRINT est choisi. Un sprint solo ne doit rien montrer qui évoque une
+ * portes visibles et boosts au sol, mais ni police, ni rival, ni arme). Ce
+ * smoke regarde l'autre moitié du problème : **ce que la page affiche autour
+ * de la course** quand le mode SPRINT est choisi. Un sprint solo ne doit rien
+ * montrer qui évoque une
  * course à plusieurs ou une poursuite — ni classement de rivaux, ni carte
  * « escouade de police », ni guide des armes — avant le départ, pendant le
  * compte à rebours et en course.
@@ -113,9 +114,17 @@ export async function checkViceCitySprintUi(assert) {
     !has(node, '.city-rush-item-guide:not(.is-sprint)') && !/MITRAILLEUSE|AK-47|MISSILE/i.test(sidebarText),
   );
   check(
-    'la colonne latérale annonce le chrono solo',
+    'la colonne latérale annonce le chrono solo et les checkpoints',
     /CHECKPOINT/i.test(sidebarText),
     `"${sidebarText.slice(0, 160)}…"`,
+  );
+  check(
+    'le guide SPRINT affiche les pads turbo au sol',
+    /TURBO AU SOL|PAD TURBO/i.test(sidebarText) && has(node, '.city-rush-guide-item.is-boost'),
+  );
+  check(
+    'le guide précise que le turbo est le seul bonus du Sprint',
+    /SEUL BONUS/i.test(sidebarText),
   );
 
   // ── 2. Compte à rebours et course : rien sur les rivaux ni la police ─────

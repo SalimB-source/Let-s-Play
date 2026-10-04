@@ -19,6 +19,7 @@ import {
   CITY_RUSH_TRACK_BOOST_SPEED_FACTOR,
   CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR,
   CITY_RUSH_TRACK_BOOST_COLOR,
+  CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL,
   CITY_RUSH_ONCOMING_MAX_WIDTH,
   CITY_RUSH_ONCOMING_EDGE_MARGIN,
   CITY_RUSH_ONCOMING_SAFE_OUTER_X,
@@ -146,6 +147,7 @@ import {
   isCityRushPowerCharged,
   shouldHideCityRushPistolPickup,
   createCityRushEncounter,
+  createCityRushBoostEncounter,
   createCityRushInventory,
   createCityRushPoliceInventory,
   detectCityRushTrafficImpacts,
@@ -1364,6 +1366,16 @@ test('pickup encounters contain only red machine-gun bonuses and ground boosts',
   assert.equal(sawEmptyRow, true);
   assert.equal(sawTwoPickups, true);
   assert.ok(totalPickups > 12000 && totalPickups < 12800, 'les rangées plus souvent doubles augmentent le nombre de bonus au sol');
+});
+
+test('Sprint encounters place a single ground boost on a forward-facing lane', () => {
+  assert.equal(CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL, 6, 'le Sprint espace les rangées de turbo pour éviter un boost permanent');
+  for (const sample of [0, 0.12, 0.34, 0.68, 0.99]) {
+    const encounter = createCityRushBoostEncounter(() => sample);
+    assert.equal(encounter.pickups.length, 1);
+    assert.equal(encounter.pickups[0].type, CITY_RUSH_PICKUPS.BOOST);
+    assert.ok(CITY_RUSH_FORWARD_LANES.includes(encounter.pickups[0].lane), 'un pad ne doit pas se trouver sur la voie inverse');
+  }
 });
 
 test('the helicopter only locks onto rivals ahead of its pilot', () => {

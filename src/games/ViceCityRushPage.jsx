@@ -139,7 +139,7 @@ const RACE_MODES = [
     id: 'sprint',
     name: 'SPRINT',
     label: 'SOLO · 10 CHECKPOINTS',
-    desc: 'En solo contre la montre, sans adversaire : ni police, ni bonus, ni arme. Tu as 15 secondes pour atteindre chaque checkpoint — chrono à zéro, course perdue. Mode défi : aucun billet vert.',
+    desc: 'En solo contre la montre, sans adversaire ni police. Franchis 10 portes visibles espacées de 300 m : chaque checkpoint recharge le chrono à 15 s. Ramasse les pads turbo verts au sol pour accélérer ; aucune arme. Chrono à zéro, course perdue. Mode défi : aucun billet vert.',
     accent: '#ff5db8',
     secondary: '#ffd44f',
     laps: 1,
@@ -1007,8 +1007,8 @@ export default function ViceCityRushPage() {
                     aria-label="Aller à droite"
                   >→</button>
                 </div>
-                {/* Le Sprint n'a ni bonus au sol ni arme : le bouton AK-47 ne
-                    s'affiche pas, il resterait désespérément vide. */}
+                {/* Le Sprint n'a pas d'arme : seuls les boosts au sol sont
+                    disponibles, le bouton AK-47 n'a donc pas sa place ici. */}
                 {!sprintMode && (() => {
                   const type = CITY_RUSH_POWERS.PISTOL;
                   const rule = CITY_RUSH_POWER_RULES[type];
@@ -1443,22 +1443,26 @@ export default function ViceCityRushPage() {
             <div className="city-rush-leader-foot"><span>OBJECTIF · {activeModeName}</span><b>{sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOURS`} · {currentDistance} M</b></div>
           </section>
 
-          {/* Le Sprint n'a ni objet ni arme : la carte « OBJETS » devient une
-              carte de chrono solo, sinon la colonne annonce un équipement qui
-              n'existe pas dans ce mode. */}
+          {/* Le Sprint possède ses checkpoints et ses pads turbo, mais aucune
+              arme : la carte solo remplace le guide d'équipement classique. */}
           {sprintMode ? (
           <section className="city-rush-side-card city-rush-item-guide is-sprint">
             <div className="city-rush-side-heading"><span>SOLO · CHRONO</span><i>{CITY_RUSH_SPRINT_CHECKPOINTS} PORTES</i></div>
             <h3>Tenir<br /><em>les 15 secondes.</em></h3>
             <div className="city-rush-guide-list">
               <div className="city-rush-guide-item is-sprint">
-                <span className="city-rush-guide-glyph" aria-hidden="true">⛳</span>
-                <div><b>CHECKPOINT · {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M</b><small>{CITY_RUSH_SPRINT_CHECKPOINTS} portes espacées de {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m : chacune rend {CITY_RUSH_SPRINT_CHECKPOINT_TIME} secondes au chrono. Chrono à zéro, la course est perdue.</small></div>
+                <span className="city-rush-guide-glyph" aria-hidden="true">⛩</span>
+                <div><b>CHECKPOINT · {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M</b><small>{CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles espacées de {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m : chacune recharge le chrono à {CITY_RUSH_SPRINT_CHECKPOINT_TIME} secondes.</small></div>
                 <kbd>{CITY_RUSH_SPRINT_CHECKPOINT_TIME} s</kbd>
+              </div>
+              <div className="city-rush-guide-item is-boost">
+                <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
+                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad vert lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. C'est le seul bonus du Sprint.</small></div>
+                <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
               </div>
               <div className="city-rush-guide-item is-solo">
                 <span className="city-rush-guide-glyph" aria-hidden="true">◎</span>
-                <div><b>PAS D’OBJET EN PISTE</b><small>Aucun bonus au sol, aucune arme, aucun turbo : la piste est vide de tout équipement, seul le chrono compte.</small></div>
+                <div><b>SOLO · AUCUNE ARME</b><small>Pas de rival, de police ou de bonus d'arme : repère les portes et garde le turbo pour tenir le chrono.</small></div>
                 <kbd>SOLO</kbd>
               </div>
             </div>
@@ -1496,7 +1500,7 @@ export default function ViceCityRushPage() {
               couleur rouge compris. Elle est remplacée par la carte solo. */}
           <section className={`city-rush-no-collision-note${sprintMode ? ' is-solo' : ' is-police'}`}>
             <span className="city-rush-no-collision-icon" aria-hidden="true">{sprintMode ? '⚡' : '🚨'}</span>
-            <div><b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b><p>{sprintMode ? <>Rien à fuir dans ce mode : ni escouade au dernier tour, ni berline dans le trafic, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono et les {CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</> : <>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police a une barre de vie : un tir rouge d’AK-47 ou un carambolage lui en enlève la moitié. Deux tirs rouges, deux carambolages ou un tir rouge et un carambolage la détruisent ; un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</>}</p></div>
+            <div><b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b><p>{sprintMode ? <>Rien à fuir dans ce mode : ni escouade au dernier tour, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts posés sur la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</> : <>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police a une barre de vie : un tir rouge d’AK-47 ou un carambolage lui en enlève la moitié. Deux tirs rouges, deux carambolages ou un tir rouge et un carambolage la détruisent ; un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</>}</p></div>
           </section>
         </aside>
       </main>
