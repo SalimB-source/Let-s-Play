@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MIRAGE_ROUTE_GLSL } from './mirageRoute.js';
 
 /*
  * ZONE 10 · CHEMIN DU SERPENT — hommage à Dragon Ball pour Mirage Rush.
@@ -226,6 +227,104 @@ function cloudEddy() {
   sparkle.position.set(0.1, 0.2, -0.24);
   group.add(sparkle);
   return group;
+}
+
+/**
+ * Mer de cumulus prête à dessiner. `snakewayCloudBank` pose une boule par
+ * mesh (environ 1 470 pour la boucle) : une fois fusionnées, ça fait 120
+ * appels de dessin et un demi-million de sommets non indexés. Ici les mêmes
+ * boules, aux mêmes endroits, tiennent dans une poignée de maillages
+ * instanciés. Les bancs sont vidés et restent les ancres qui défilent.
+ * `sync()` recopie leur matrice après chaque déplacement.
+ */
+export function makeSnakewayCloudSea(banks) {
+  const group = new THREE.Group();
+  group.name = 'snakeway-cloud-sea';
+  const batches = new Map();
+  let sharedGeometry = null;
+  for (const bank of banks) {
+    bank.updateMatrixWorld(true);
+    const inverseBank = new THREE.Matrix4().copy(bank.matrixWorld).invert();
+    const meshes = [];
+    bank.traverse((object) => { if (object.isMesh) meshes.push(object); });
+    for (const mesh of meshes) {
+      if (!sharedGeometry) {
+        const widthSegments = mesh.geometry.parameters?.widthSegments ?? 10;
+        const heightSegments = mesh.geometry.parameters?.heightSegments ?? 7;
+        sharedGeometry = new THREE.SphereGeometry(1, widthSegments, heightSegments);
+      }
+      const key = [
+        mesh.material?.color?.getHex?.(),
+        mesh.material?.roughness,
+        mesh.material?.flatShading,
+      ].join('|');
+      if (!batches.has(key)) batches.set(key, { material: mesh.material, locals: [], anchors: [] });
+      const batch = batches.get(key);
+      mesh.updateMatrixWorld(true);
+      batch.locals.push(new THREE.Matrix4().multiplyMatrices(inverseBank, mesh.matrixWorld));
+      batch.anchors.push(bank);
+      if (batch.material !== mesh.material) mesh.material.dispose();
+      mesh.geometry.dispose();
+      mesh.removeFromParent();
+    }
+  }
+  const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+  const scratch = new THREE.Matrix4();
+  const instances = [];
+  for (const batch of batches.values()) {
+    const mesh = new THREE.InstancedMesh(sharedGeometry, batch.material, batch.locals.length);
+    mesh.frustumCulled = false;
+    mesh.count = batch.locals.length;
+    group.add(mesh);
+    instances.push({ mesh, locals: batch.locals, anchors: batch.anchors });
+  }
+  const sync = () => {
+    for (const bank of banks) bank.updateWorldMatrix(true, false);
+    for (const batch of instances) {
+      for (let i = 0; i < batch.locals.length; i += 1) {
+        const bank = batch.anchors[i];
+        if (bank.visible) scratch.multiplyMatrices(bank.matrixWorld, batch.locals[i]);
+        else scratch.copy(hidden);
+        batch.mesh.setMatrixAt(i, scratch);
+      }
+      batch.mesh.instanceMatrix.needsUpdate = true;
+    }
+  };
+  sync();
+  return { group, sync };
+}
+
+/**
+ * Déformation de la route dans le vertex shader — la même que les dunes.
+ * Les écailles de la bordure, une fois fusionnées au sol, font environ
+ * 55 000 sommets : les réécrire sur le CPU à chaque image coûte ~20 ms.
+ * Le shader lit `uniform.value` (distance parcourue) et la matrice du
+ * groupe, donc le sol peut défiler sans que le CPU touche la géométrie.
+ * Le maillage doit être dans l'espace du groupe (pas d'échelle locale),
+ * comme après `bakeStaticScenery`.
+ */
+export function attachSnakewayRouteWarp(material, uniform) {
+  if (!material || material.userData.snakewayRouteWarp) return material;
+  material.userData.snakewayRouteWarp = true;
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uRouteProgress = uniform;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      `#include <common>
+uniform float uRouteProgress;
+${MIRAGE_ROUTE_GLSL}`,
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+      float routeWorldZ = (modelMatrix * vec4(transformed, 1.0)).z;
+      float routeStation = uRouteProgress - routeWorldZ;
+      transformed.x += mirageRouteX(routeStation) - mirageRouteX(uRouteProgress);
+      transformed.y += mirageRouteY(routeStation) - mirageRouteY(uRouteProgress);`,
+    );
+  };
+  material.customProgramCacheKey = () => 'mirage-route-v1';
+  return material;
 }
 
 /** Stage-specific obstacle builder; collision timing still belongs to mirageRules. */

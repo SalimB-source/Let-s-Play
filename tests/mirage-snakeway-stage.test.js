@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
   SNAKEWAY_ATMOSPHERE,
   SNAKEWAY_CULL_Z,
@@ -8,6 +10,8 @@ import {
   SNAKEWAY_SEGMENT_COUNT,
   SNAKEWAY_SEGMENT_LENGTH,
   SNAKEWAY_TRACK_EDGE,
+  attachSnakewayRouteWarp,
+  makeSnakewayCloudSea,
   makeSnakewayHorizon,
   snakewayArch,
   snakewayCloudBank,
@@ -15,6 +19,7 @@ import {
   snakewayTrackTrim,
 } from '../src/games/snakewayStage.js';
 import { LANES } from '../src/games/mirageRules.js';
+import { mirageRouteOffset } from '../src/games/mirageRoute.js';
 
 const sizeOf = (object) => new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
 
@@ -172,4 +177,138 @@ test('the grey dragon-scale border caps the outer track edges and scrolls with t
       assert.ok(Math.abs(rr - gg) < 0.05 && Math.abs(gg - bb) < 0.09, `écaille non grise détectée : ${hex}`);
     }
   }
+});
+
+test('the cloud sea keeps every puff but draws them in a handful of instanced meshes', () => {
+  const banks = [];
+  const before = [];
+  for (let index = 0; index < SNAKEWAY_SEGMENT_COUNT; index += 1) {
+    for (const side of [-1, 1]) {
+      const bank = snakewayCloudBank(index, side);
+      bank.updateMatrixWorld(true);
+      bank.traverse((object) => {
+        if (object.isMesh) before.push(object.getWorldPosition(new THREE.Vector3()));
+      });
+      banks.push(bank);
+    }
+  }
+  const sea = makeSnakewayCloudSea(banks);
+  const after = [];
+  const matrix = new THREE.Matrix4();
+  const position = new THREE.Vector3();
+  let drawCalls = 0;
+  sea.group.traverse((object) => {
+    if (!object.isInstancedMesh) return;
+    drawCalls += 1;
+    for (let i = 0; i < object.count; i += 1) {
+      object.getMatrixAt(i, matrix);
+      position.setFromMatrixPosition(matrix);
+      after.push(position.clone());
+    }
+  });
+  assert.equal(after.length, before.length);
+  assert.ok(before.length >= 60 * banks.length, 'la densité de cumulus ne change pas');
+  assert.ok(drawCalls <= 8 && drawCalls >= 3, `la mer tient en ${drawCalls} appels de dessin`);
+  for (const point of before) {
+    assert.ok(after.some((other) => other.distanceTo(point) < 1e-3), `boule perdue en ${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.z.toFixed(2)}`);
+  }
+  for (const bank of banks) {
+    let meshes = 0;
+    bank.traverse((object) => { if (object.isMesh) meshes += 1; });
+    assert.equal(meshes, 0, 'le banc ne garde que son ancre, plus les boules');
+  }
+  const anchor = banks[0];
+  anchor.position.x += 2.4;
+  anchor.position.z -= 3;
+  banks[3].visible = false;
+  sea.sync();
+  let shifted = 0;
+  let hidden = 0;
+  sea.group.traverse((object) => {
+    if (!object.isInstancedMesh) return;
+    for (let i = 0; i < object.count; i += 1) {
+      object.getMatrixAt(i, matrix);
+      if (matrix.getMaxScaleOnAxis() < 1e-4) {
+        hidden += 1;
+        continue;
+      }
+      const moved = new THREE.Vector3().setFromMatrixPosition(matrix);
+      const back = moved.clone();
+      back.x -= 2.4;
+      back.z += 3;
+      if (before.some((point) => point.distanceTo(back) < 1e-3)) shifted += 1;
+    }
+  });
+  assert.ok(shifted > 20, `le banc déplacé entraîne ses boules (${shifted})`);
+  assert.ok(hidden > 20, `un banc hors champ n’est plus dessiné (${hidden})`);
+});
+
+test('the snakeway floor warp in the shader matches the CPU route offset once scales are baked into the group', () => {
+  const root = new THREE.Group();
+  root.add(snakewayTrackTrim([-1.05, 1.05], 4, -8));
+  root.updateMatrixWorld(true);
+  const inverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const buckets = new Map();
+  root.traverse((object) => {
+    if (!object.isMesh) return;
+    const key = object.material.uuid;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(object);
+  });
+  for (const meshes of buckets.values()) {
+    if (meshes.length < 2) continue;
+    const parts = meshes.map((mesh) => {
+      const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+      return geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, mesh.matrixWorld));
+    });
+    const merged = mergeGeometries(parts, false);
+    meshes.forEach((mesh) => mesh.parent.remove(mesh));
+    root.add(new THREE.Mesh(merged, meshes[0].material));
+  }
+  root.position.z = -4.5;
+  root.updateMatrixWorld(true);
+  const progress = 37.25;
+  const offset = { x: 0, y: 0 };
+  root.traverse((mesh) => {
+    if (!mesh.isMesh) return;
+    assert.ok(mesh.scale.x === 1 && mesh.scale.y === 1 && mesh.scale.z === 1, 'après fusion, plus d’échelle locale');
+    const position = mesh.geometry.attributes.position;
+    for (let i = 0; i < position.count; i += 12) {
+      const local = new THREE.Vector3().fromBufferAttribute(position, i);
+      const world = local.clone().applyMatrix4(mesh.matrixWorld);
+      mirageRouteOffset(progress, world.z, offset);
+      const shaderLocal = local.clone();
+      shaderLocal.x += offset.x;
+      shaderLocal.y += offset.y;
+      const shaderWorld = shaderLocal.applyMatrix4(mesh.matrixWorld);
+      const cpuWorld = world.clone();
+      cpuWorld.x += offset.x;
+      cpuWorld.y += offset.y;
+      assert.ok(shaderWorld.distanceTo(cpuWorld) < 1e-4, 'le shader doit poser le même décalage que l’ancien calcul CPU');
+    }
+  });
+});
+
+test('the snakeway route warp is injected once and Mirage Rush no longer rewrites those vertices on the CPU', () => {
+  const material = new THREE.MeshStandardMaterial({ flatShading: true });
+  const uniform = { value: 12.5 };
+  attachSnakewayRouteWarp(material, uniform);
+  attachSnakewayRouteWarp(material, uniform);
+  const shader = {
+    uniforms: {},
+    vertexShader: '#include <common>\nvoid main() {\n#include <begin_vertex>\n}\n',
+  };
+  material.onBeforeCompile(shader);
+  assert.equal(shader.uniforms.uRouteProgress, uniform);
+  assert.equal((shader.vertexShader.match(/uniform float uRouteProgress/g) || []).length, 1);
+  assert.match(shader.vertexShader, /float mirageRouteX\(float s\)/);
+  assert.match(shader.vertexShader, /transformed\.x \+= mirageRouteX\(routeStation\) - mirageRouteX\(uRouteProgress\)/);
+  assert.match(shader.vertexShader, /transformed\.y \+= mirageRouteY\(routeStation\) - mirageRouteY\(uRouteProgress\)/);
+  assert.equal(material.customProgramCacheKey(), 'mirage-route-v1');
+
+  const world = readFileSync(new URL('../src/games/MirageWorld.jsx', import.meta.url), 'utf8');
+  assert.match(world, /attachSnakewayRouteWarp\(object\.material, snakewayRouteProgress\)/);
+  assert.match(world, /const routeFloorWarps = snakeway \? \[\] : routeWarpsFor\(floorGroup\)/);
+  assert.match(world, /makeSnakewayCloudSea\(cloudBanks\)/);
+  assert.match(world, /snakewayRouteProgress\.value = progress/);
 });
