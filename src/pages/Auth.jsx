@@ -594,6 +594,21 @@ export default function Auth({ initialMode = '' }) {
     signOut,
   } = useAuth();
   const { lang } = useLanguage();
+  const [profileVerified, setProfileVerified] = useState(false);
+  useEffect(() => {
+    if (!user?.id || isDemo || !supabase) {
+      setProfileVerified(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setProfileVerified(false);
+    supabase.from('profiles').select('is_verified').eq('id', user.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (!cancelled) setProfileVerified(!error && data?.is_verified === true);
+      })
+      .catch(() => { if (!cancelled) setProfileVerified(false); });
+    return () => { cancelled = true; };
+  }, [user?.id, isDemo]);
   const navigate = useNavigate();
   const location = useLocation();
   const { summary, state: achievementState } = useAchievements();
@@ -1043,9 +1058,9 @@ export default function Auth({ initialMode = '' }) {
       badgesUnlocked: 0,
     };
 
-    // "Verified" is a curated tag: simulated demo personas carry it, real
-    // accounts only if explicitly flagged in their metadata.
-    const isVerified = isDemo || meta.verified === true;
+    // Verified is an admin-managed profile flag for real accounts; demo
+    // personas keep their preview badge without touching database state.
+    const isVerified = isDemo || profileVerified;
 
     // Les badges de la persona n'existent que dans l'aperçu de démonstration :
     // les succès réels d'un compte connecté sont ceux suivis par le site
