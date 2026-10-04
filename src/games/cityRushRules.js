@@ -274,7 +274,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Un seul bonus rouge charge l’AK-47. Le tir part tout droit, sans viser : il touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Un seul tir détruit une berline de police.',
+    description: 'Un seul bonus rouge charge l’AK-47. Le tir part tout droit, sans viser : il touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Contre une voiture de police, un tir rouge ou un carambolage enlève la moitié de sa vie : deux impacts la détruisent.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -1655,17 +1655,17 @@ export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessin�
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
 // Les berlines de l'escouade ont une barre de vie : **trois tirs droits bleus**
-// (2 points chacun), OU **un tir rouge d'AK-47** (6 points), OU **un
-// seul missile d'hélicoptère** (6 points) les détruisent — et **une collision
-// avec la voiture du pilote** leur coûte 2 points, comme un tir bleu. Le barème
-// est en points plutôt qu'en coups — un tir bleu ne compte pas comme un tir
-// rouge — et reste pur, donc testable hors de three.js.
+// (2 points chacun), OU **deux tirs rouges d'AK-47** (3 points chacun), OU
+// **un tir rouge et une collision** (3 points chacun), OU **deux collisions**
+// (3 points chacune), OU **un seul missile d'hélicoptère** (6 points) les
+// détruisent. Le barème est en points plutôt qu'en coups — un tir bleu ne
+// compte pas comme un tir rouge — et reste pur, donc testable hors de three.js.
 export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // trois tirs droits bleus (2 · 3 = 6)
-  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH, // un tir rouge d'AK-47 suffit
+  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH / 2, // un tir rouge retire la moitié de la vie
   [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
-  collision: 2, // trois carambolages avec le pilote (2 · 3 = 6)
+  collision: CITY_RUSH_POLICE_HEALTH / 2, // un carambolage retire la moitié de la vie
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {

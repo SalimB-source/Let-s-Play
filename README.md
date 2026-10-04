@@ -877,11 +877,11 @@ et le dernier tour durait 21 s.
   `CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
   destructibles.** Chacune porte une barre de vie au-dessus du toit (reprise
   sur les pastilles de la mini-carte) : **trois tirs droits bleus (2 points
-  chacun), OU deux rafales rouges (3 points chacune), OU un tir d'hélicoptère,
-  OU trois carambolages avec la voiture du pilote (2 points chacun)** la
-  détruisent
+  chacun), OU deux rafales rouges (3 points chacune), OU un tir rouge et un
+  carambolage (3 points chacun), OU deux carambolages (3 points chacun), OU
+  un tir d'hélicoptère** la détruisent
   (`CITY_RUSH_POLICE_HEALTH = 6`, barème pur `cityRushPoliceDamage`, et
-  `cityRushPoliceShotsLeft` pour le bandeau « encore deux tirs bleus »). À la
+  `cityRushPoliceShotsLeft` pour le nombre de tirs ou chocs restants). À la
   destruction : explosion complète, retrait immédiat de la course et de la
   mini-carte, **+200 pts** pour le pilote qui l'abat
   (`CITY_RUSH_POLICE_DESTROY_SCORE`), et la sirène s'éteint quand la dernière

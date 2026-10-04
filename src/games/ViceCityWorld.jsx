@@ -959,8 +959,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       active: false,
       everDeployed: false,
       reinforcementPending: false,
-      // Un tir rouge, un tir d'hélicoptère ou trois collisions détruisent
-      // la berline.
+      // Deux tirs rouges, un tir rouge et une collision, deux collisions ou
+      // un tir d'hélicoptère détruisent la berline.
       health: CITY_RUSH_POLICE_HEALTH,
       healthFlash: 0,
       // 'hunt' : elle chasse devant le leader ; 'attack' : elle se replie pour
@@ -1933,7 +1933,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       getCallbacks().effect?.({ type: 'pistol-hit-player', attacker: attacker?.name || 'RIVAL', duration });
       damagePlayer(CITY_RUSH_POWERS.PISTOL, attackerId);
     } else if (target.isPolice) {
-      // Un seul tir rouge détruit la berline.
+      // Contre la police, un tir rouge enlève la moitié de la barre.
       damagePolice(target.racer, CITY_RUSH_POWERS.PISTOL, attackerId);
     } else if (target.racer) {
       target.racer.slowLeft = Math.max(target.racer.slowLeft || 0, duration);
@@ -1980,9 +1980,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   // ── Destruction des berlines de police ──────────────────────────────
-  // Trois tirs droits bleus, un tir rouge d'AK-47 ou un tir d'hélico : la barre
-  // au-dessus du toit descend à chaque dégât, puis la berline explose et
-  // disparaît de la course comme de la mini-carte.
+  // Trois tirs droits bleus, deux tirs rouges, deux collisions, un tir rouge
+  // et une collision, ou un tir d'hélico : la barre au-dessus du toit descend
+  // à chaque dégât, puis la berline explose et disparaît de la course comme de
+  // la mini-carte.
   const policeExplosions = [];
 
   function poseExplosion(mesh, worldPosition, age = 0) {
@@ -2082,8 +2083,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.skidDuration = 0.4;
     police.skidSide = Math.random() < 0.5 ? -1 : 1;
     // Une berline touchée mais encore debout se raconte au pilote qui l'a
-    // atteinte : un tir rouge la détruit d'un coup, un tir bleu isolé
-    // passerait sinon inaperçu.
+    // atteinte : le tir rouge et le choc lui retirent chacun la moitié de sa
+    // barre ; un tir bleu isolé passerait sinon inaperçu.
     if (attackerId === 'player') {
       getCallbacks().effect?.({
         type: 'police-hit',
@@ -2645,8 +2646,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     finishRace({ destroyed: true });
   }
 
-  // Percuter une berline solide : le pilote perd un carré, la berline deux
-  // points de barre (trois carambolages la détruisent, comme trois tirs bleus).
+  // Percuter une berline solide : le pilote perd un carré, la berline la moitié
+  // de sa barre (deux carambolages la détruisent, comme deux tirs rouges).
   // L'animation reste celle d'un choc net — étincelles, cri de pneus, secousse
   // de caméra, flash rouge du pare-brise — **sans** l'état « choc » du trafic :
   // la voiture ne se met ni à fumer ni à ramper, sinon une berline qui s'amuse
