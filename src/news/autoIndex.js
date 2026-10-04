@@ -31,6 +31,8 @@ export const autoStories = {
     "sentiment": "positive",
     "thumbnail": "news-auto/tournez-manette-the-witcher-3-remastered-sur-switch-2-faut-i-official.jpg",
     "officialThumbnailUrl": "https://cdn.gamekult.com/optim/images/news/30/3050872306/the-witcher-3-remastered-sur-switch-2-faut-il-repondre-a-l-appel-de-la-nouvelle-partie-090bf66b__1920_1080__0-394-1920-1014.jpg",
+    "video": "IGk17XQ7IrQ",
+    "videoTitle": "The Witcher 3: Wild Hunt – Remastered — trailer d’annonce officiel",
     "auto": true,
     "sourceName": "Gamekult"
   },
@@ -95,6 +97,8 @@ export const autoStories = {
     "sentiment": "positive",
     "thumbnail": "news-auto/rayman-legends-retold-ubisoft-devoile-l-edition-de-lancement-official.png",
     "officialThumbnailUrl": "https://cdn.gamekult.com/optim/images/news/30/3050872235/rayman-legends-retold-ubisoft-devoile-l-edition-de-lancement-et-tacle-gta-6-au-passage-8952ca2a__1920_1080__0-339-1920-959.png",
+    "video": "i1hLarMpQSQ",
+    "videoTitle": "Rayman Legends Retold — Official Game Overview Trailer",
     "auto": true,
     "sourceName": "Gamekult"
   },
