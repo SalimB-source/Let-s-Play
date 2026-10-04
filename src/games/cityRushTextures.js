@@ -242,9 +242,14 @@ export function makeRoadTexture(theme, random) {
     const separators = CITY_RUSH_LANE_X.slice(1)
       .map((laneCenter, index) => (CITY_RUSH_LANE_X[index] + laneCenter) / 2)
       .filter((separator) => Math.abs(separator) > 1e-9);
-    for (const separator of separators) {
-      const px = laneToPixel(separator);
-      for (let y = 0; y < height; y += dashLength) ctx.fillRect(px - 2, y + dashLength * 0.12, 4, dashLength * 0.4);
+    // La simulation conserve ses voies de dépassement, mais l'habillage de la
+    // Mother Road ne dessine que la ligne centrale : une Route 66 historique
+    // ne ressemble pas à une autoroute urbaine à six couloirs.
+    if (!theme.route66) {
+      for (const separator of separators) {
+        const px = laneToPixel(separator);
+        for (let y = 0; y < height; y += dashLength) ctx.fillRect(px - 2, y + dashLength * 0.12, 4, dashLength * 0.4);
+      }
     }
     ctx.fillStyle = theme.centerLineColor || '#f5b81e';
     ctx.fillRect(width / 2 - 4, 0, 8, height);
@@ -511,6 +516,63 @@ export function makeSkylineTexture(city, theme, random) {
       // Les douves : un liseré d'eau sombre au pied des arbres.
       ctx.fillStyle = 'rgba(20, 34, 52, .8)';
       ctx.fillRect(60, horizon - 12, 290, 12);
+    } else if (style === 'route66') {
+      // Horizon de la Mother Road : silos, château d'eau, mesas et
+      // montagnes lointaines remplacent la skyline de gratte-ciel.
+      ctx.fillStyle = 'rgba(108, 78, 61, .46)';
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let x = 0; x <= width; x += 34) {
+        const peak = horizon - 18 - Math.abs(Math.sin(x * 0.008)) * 48 - random() * 13;
+        ctx.lineTo(x, peak);
+      }
+      ctx.lineTo(width, horizon);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(76, 73, 56, .7)';
+      for (const siloX of [230, 1580]) {
+        ctx.fillRect(siloX, horizon - 120, 22, 120);
+        ctx.beginPath();
+        ctx.arc(siloX + 11, horizon - 120, 11, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(siloX - 18, horizon - 10, 58, 10);
+      }
+      ctx.strokeStyle = 'rgba(75, 61, 44, .75)';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(1130, horizon - 170);
+      ctx.lineTo(1130, horizon - 12);
+      ctx.moveTo(1080, horizon - 105);
+      ctx.lineTo(1180, horizon - 105);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(121, 76, 52, .7)';
+      ctx.beginPath();
+      ctx.moveTo(360, horizon);
+      ctx.lineTo(450, horizon - 115);
+      ctx.lineTo(550, horizon);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(1430, horizon);
+      ctx.lineTo(1530, horizon - 88);
+      ctx.lineTo(1650, horizon);
+      ctx.closePath();
+      ctx.fill();
+      // Petites silhouettes de cactus sur la ligne d'horizon.
+      ctx.strokeStyle = 'rgba(70, 82, 49, .78)';
+      ctx.lineWidth = 5;
+      for (const cactusX of [90, 740, 1880]) {
+        ctx.beginPath();
+        ctx.moveTo(cactusX, horizon);
+        ctx.lineTo(cactusX, horizon - 48);
+        ctx.moveTo(cactusX, horizon - 28);
+        ctx.lineTo(cactusX - 15, horizon - 28);
+        ctx.lineTo(cactusX - 15, horizon - 8);
+        ctx.moveTo(cactusX, horizon - 36);
+        ctx.lineTo(cactusX + 14, horizon - 36);
+        ctx.lineTo(cactusX + 14, horizon - 17);
+        ctx.stroke();
+      }
     } else if (style === 'paris') {
       // Tour Eiffel, dôme du Sacré-Cœur et tour Montparnasse.
       const ex = 900;

@@ -59,6 +59,60 @@ export const CITY_RUSH_THEMES = Object.freeze({
       exposure: 1.02,
     }),
   }),
+  // ── Historic U.S. 66 · Chicago → Santa Monica ───────────────────────
+  // Route 66 n'est pas une ville néon : c'est une longue route à deux voies,
+  // des motels de bord de route, des stations-service, des poteaux téléphoniques
+  // et des paysages qui passent des plaines de l'Illinois aux mesas rouges.
+  'route-66': Object.freeze({
+    daylight: true,
+    route66: true,
+    sky: Object.freeze({
+      top: 0x2d6da9, mid: 0x86c4e8, horizon: 0xf2c27f, haze: 0xf6dfb2,
+      sun: Object.freeze({ color: 0xfff8db, glow: 0xffbd68, elevation: 0.42, radius: 0.075, stripes: 1 }),
+      stars: 0, moon: 0,
+    }),
+    weather: 'clear',
+    fogNear: 125, fogFar: 390,
+    facade: Object.freeze({
+      style: 'route66', floor: 1.5, litRatio: 0.015, litColors: ['#fff0bd', '#ffe0a1'],
+      wall: '#c7a57a', glass: '#536d72', sheen: 'rgba(255, 232, 184, .18)', frame: '#ead8b8',
+    }),
+    shops: Object.freeze([
+      { text: 'ROUTE 66 DINER', color: '#e34b35', awning: '#f0d28b' },
+      { text: 'MOTEL 66', color: '#2e8eb5', awning: '#e9e0c8' },
+      { text: 'GASOLINE', color: '#e0a82e', awning: '#c63d36' },
+      { text: 'TRADING POST', color: '#9d563c', awning: '#d7b474' },
+    ]),
+    shopWall: '#b98d62', shopTrim: '#704d3c', shopDoor: '#273945',
+    verticalSigns: Object.freeze(['MOTEL', 'GAS', 'DINER', '66', 'WEST']),
+    sponsors: Object.freeze(['HISTORIC U.S. 66', 'MOTHER ROAD', 'BLUE SWALLOW MOTEL', 'WIGWAM MOTEL', 'SANTA MONICA']),
+    gate: Object.freeze({ style: 'route66', text: 'HISTORIC U.S. 66 · WEST' }),
+    gantryText: 'CHICAGO → SANTA MONICA',
+    crowdColors: Object.freeze([0xf0d28b, 0xe34b35, 0x2e8eb5, 0xf4eee0, 0x6f4737, 0x6b8b72]),
+    roadTint: 0x6f6b61, laneColor: '#e8e0c9', centerLineColor: '#e8b43f', edgeColor: '#f4d07a', sidewalkTint: 0xa9906d,
+    lamp: 'route66', tree: 'route66',
+    ground: 0xc8a271,
+    glow: 0.26,
+    lampCone: 0.018,
+    accentCone: 0.05,
+    skyline: Object.freeze({ base: [146, 142, 112], window: 'rgba(255, 238, 188, .22)' }),
+    materials: Object.freeze({
+      roof: 0x755144, stone: 0xb89168, concrete: 0x9f896e, asphaltDark: 0x83796a,
+      metal: 0x86796a, darkMetal: 0x443c36, chrome: 0xd2c6af, brick: 0x9b5742,
+      white: 0xf1e6cf, cream: 0xe6d2ab, red: 0xc84936, green: 0x55724b,
+      yellow: 0xe4b438, blue: 0x3b7790, wood: 0x76523b, trunk: 0x76523b,
+      foliage: 0x65744b, foliageLight: 0x85935d, glassDark: 0x32484d, sand: 0xc9a676,
+      canopy: 0xe7d7b1,
+    }),
+    light: Object.freeze({
+      key: Object.freeze({ color: 0xfff1cf, intensity: 2.6, position: [-16, 28, 8] }),
+      hemi: Object.freeze({ sky: 0xcfe8f3, ground: 0xb28e65, intensity: 1.35 }),
+      rim: Object.freeze({ color: 0xffb36b, intensity: 0.5, position: [12, 10, -28] }),
+      fill: Object.freeze({ color: 0xd58e55, intensity: 3.2, distance: 72, position: [0, 7, -30] }),
+      headlamp: 0,
+      exposure: 1.05,
+    }),
+  }),
   'new-york': Object.freeze({
     sky: Object.freeze({
       top: 0x060a1e, mid: 0x152447, horizon: 0x5b4a6e, haze: 0xffb871,

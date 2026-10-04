@@ -32,7 +32,7 @@ import {
   CITY_RUSH_ONCOMING_LANES,
   CITY_RUSH_SCROLL_SCALE,
   CITY_RUSH_CARS,
-  CITY_RUSH_CITIES,
+  CITY_RUSH_COURSES,
   CITY_RUSH_PICKUP_BURST_DURATION,
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
@@ -632,7 +632,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const lite = detectLiteQuality();
   const reduceMotion = detectReducedMotion();
   const daylight = Boolean(theme.daylight);
-  const cityIndex = Math.max(0, CITY_RUSH_CITIES.findIndex((item) => item.id === city.id));
+  const cityIndex = Math.max(0, CITY_RUSH_COURSES.findIndex((item) => item.id === city.id));
   const sceneryRandom = seededRandom(cityIndex * 131 + 7);
 
   const scene = new THREE.Scene();
@@ -4475,7 +4475,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
-    const city = CITY_RUSH_CITIES.find((item) => item.id === cityId) || CITY_RUSH_CITIES[0];
+    const city = CITY_RUSH_COURSES.find((item) => item.id === cityId) || CITY_RUSH_COURSES[0];
     let world;
     try {
       world = createCityRushWorld(mountRef.current, city, () => ({
