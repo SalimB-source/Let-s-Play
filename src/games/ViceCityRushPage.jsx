@@ -128,6 +128,7 @@ const RACE_MODES = [
     secondary: '#ff5db8',
     laps: 4,
     policeFromStart: false,
+    cashRewards: true,
     icon: '◍',
     tag: 'RECOMMANDÉ',
   },
@@ -135,13 +136,14 @@ const RACE_MODES = [
     id: 'sprint',
     name: 'SPRINT',
     label: 'SOLO · 10 CHECKPOINTS',
-    desc: 'En solo contre la montre, sans adversaire : ni police, ni bonus, ni arme. Tu as 15 secondes pour atteindre chaque checkpoint — chrono à zéro, course perdue.',
+    desc: 'En solo contre la montre, sans adversaire : ni police, ni bonus, ni arme. Tu as 15 secondes pour atteindre chaque checkpoint — chrono à zéro, course perdue. Mode défi : aucun billet vert.',
     accent: '#ff5db8',
     secondary: '#ffd44f',
     laps: 1,
     format: 'sprint',
     checkpoints: CITY_RUSH_SPRINT_CHECKPOINTS,
     policeFromStart: false,
+    cashRewards: false,
     icon: '⚡',
     tag: 'RAPIDE',
   },
@@ -149,11 +151,12 @@ const RACE_MODES = [
     id: 'pursuit',
     name: 'POURSUITE',
     label: '4 TOURS · POLICE TOTALE',
-    desc: 'Une berline et un SUV d’interception dès le départ. Ils chargent leur mitrailleuse avec les bonus rouges et appellent gratuitement un hélicoptère une fois par course ; au dernier tour, des renforts remplacent chaque voiture détruite. Un tir rouge ou un carambolage retire la moitié de la vie d’une voiture de police, et les chocs abîment aussi ta coque.',
+    desc: 'Une berline et un SUV d’interception dès le départ. Ils chargent leur mitrailleuse avec les bonus rouges et appellent gratuitement un hélicoptère une fois par course ; au dernier tour, des renforts remplacent chaque voiture détruite. Un tir rouge ou un carambolage retire la moitié de la vie d’une voiture de police, et les chocs abîment aussi ta coque. Mode défi : aucun billet vert.',
     accent: '#ffd44f',
     secondary: '#ff526e',
     laps: 4,
     policeFromStart: true,
+    cashRewards: false,
     icon: '🚨',
     tag: 'HARDCORE',
   },
@@ -224,6 +227,11 @@ function formatSeconds(seconds, fallback = 0) {
 }
 function ordinal(place) {
   return place === 1 ? '1er' : `${place}e`;
+}
+function cashRewardReason(result) {
+  if (result?.sprint) return 'MODE DÉFI · SANS BILLETS';
+  if (result?.destroyed) return 'RÉCOMPENSE · ÉPAVE DERNIÈRE';
+  return `RÉCOMPENSE · ${ordinal(result?.rank).toUpperCase()} PLACE`;
 }
 function PowerIcon({ type, className = '' }) {
   if (type === 'pistol') {
@@ -324,6 +332,7 @@ export default function ViceCityRushPage() {
   const RACE_KM = `${(currentDistance / 1000).toFixed(1).replace('.', ',')} KM`;
   const activeModeName = storyMode ? 'HISTOIRE' : mode.name;
   const activeModeLabel = storyMode ? `CHAPITRE ${String(storyRaceChapter + 1).padStart(2, '0')} / ${STORY_CHAPTERS.length}` : mode.label;
+  const cashRewardsEnabled = storyMode || mode.cashRewards !== false;
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === carId) || CITY_RUSH_CARS[0], [carId]);
   const roster = useMemo(() => {
@@ -611,12 +620,17 @@ export default function ViceCityRushPage() {
 
     const courseId = nextResult.city || (storyMode ? currentStoryRace?.city : cityId) || 'vice-city';
     const progressBeforeRace = careerProgressRef.current;
-    // Le gain dépend de la place : 1er → 50 billets, 2e → 30, 3e → 10
-    // (une épave est classée dernière par le moteur de course).
+    // Le gain dépend du mode : Circuit et Histoire paient au podium
+    // (1er → 50 billets, 2e → 30, 3e → 10). Sprint et Poursuite valident
+    // le parcours, mais ne rapportent pas de billets verts.
     const award = awardCityRushRace(progressBeforeRace, {
       courseId,
-      completed: !nextResult.destroyed,
+      completed: !nextResult.destroyed && !nextResult.timedOut,
       rank: nextResult.rank,
+      modeId: storyMode ? VICE_CITY_STORY_MODE : modeId,
+      sprint: Boolean(nextResult.sprint),
+      destroyed: Boolean(nextResult.destroyed),
+      timedOut: Boolean(nextResult.timedOut),
     });
     saveCareerProgress(award.progress);
     const courseIndex = CITY_RUSH_COURSES.findIndex((course) => course.id === courseId);
@@ -1039,7 +1053,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
                       <h2>VICE CITY<br /><em>RUSH.</em></h2>
-                      <p>La ville est à toi. Termine chaque parcours pour ouvrir le suivant, et remplis ton portefeuille : le 1er gagne 50 billets verts, le 2e 30 et le 3e 10 — de quoi débloquer de nouvelles voitures. Vice City t’attend pour le départ.</p>
+                      <p>La ville est à toi. Termine chaque parcours pour ouvrir le suivant. Le Circuit et l’Histoire remplissent ton portefeuille : le 1er gagne 50 billets verts, le 2e 30 et le 3e 10 — de quoi débloquer de nouvelles voitures. Sprint et Poursuite sont des modes défi sans gain d’argent. Vice City t’attend pour le départ.</p>
                     </div>
 
                     <button
@@ -1172,7 +1186,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
                       <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. 50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les six autres modèles.</p>
+                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. {cashRewardsEnabled ? '50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les six autres modèles.' : `${mode.name} est un mode défi : il ne rapporte aucun billet vert, même à l’arrivée.`}</p>
                     </div>
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
@@ -1337,7 +1351,7 @@ export default function ViceCityRushPage() {
                 {result.cashAwarded > 0 && (
                   <div className="city-rush-cash-reward" role="status" aria-live="polite">
                     <span className="city-rush-cash-reward-icon" aria-hidden="true">$</span>
-                    <span><b>+{formatCash(result.cashAwarded)} BILLETS VERTS</b><small>{result.destroyed ? 'RÉCOMPENSE · ÉPAVE DERNIÈRE' : `RÉCOMPENSE · ${ordinal(result.rank).toUpperCase()} PLACE`}</small></span>
+                    <span><b>+{formatCash(result.cashAwarded)} BILLETS VERTS</b><small>{cashRewardReason(result)}</small></span>
                     <small className="city-rush-cash-total">PORTEFEUILLE · {formatCash(result.cashBalance)}</small>
                   </div>
                 )}

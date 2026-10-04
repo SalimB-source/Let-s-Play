@@ -1,6 +1,6 @@
 // Progression persistante de Vice City Rush : portefeuille, garage et ordre des parcours.
 // Les courses restent jouables à partir du premier circuit ; une arrivée normale
-// débloque le parcours suivant et la place rapporte des billets :
+// débloque le parcours suivant. Seuls les modes rémunérés versent des billets :
 // 1er → 50, 2e → 30, 3e (ou épave, classée dernière) → 10.
 import { CITY_RUSH_CARS, CITY_RUSH_COURSES } from './cityRushRules.js';
 
@@ -17,6 +17,25 @@ export function cityRushCashForPlace(place) {
   const rank = Number(place);
   if (!Number.isFinite(rank) || rank < 1) return 0;
   return CITY_RUSH_CASH_BY_PLACE[Math.min(Math.floor(rank), CITY_RUSH_CASH_BY_PLACE.length) - 1];
+}
+
+export function cityRushModePaysCash(modeId) {
+  const mode = String(modeId || 'circuit').toLowerCase();
+  return mode !== 'sprint' && mode !== 'pursuit';
+}
+
+/**
+ * Récompense robuste d'une fin de course Vice City Rush.
+ *
+ * Circuit et Histoire paient au podium. Sprint et Poursuite sont des modes défi :
+ * ils peuvent valider le parcours, mais ne versent jamais de billets verts.
+ */
+export function cityRushCashForRaceResult({ rank = null, modeId = 'circuit', sprint = false, destroyed = false, timedOut = false } = {}) {
+  if (timedOut) return 0;
+  const normalizedMode = sprint ? 'sprint' : modeId;
+  if (!cityRushModePaysCash(normalizedMode)) return 0;
+  const normalizedRank = rank ?? (destroyed ? CITY_RUSH_CASH_BY_PLACE.length : 1);
+  return cityRushCashForPlace(normalizedRank);
 }
 
 const validIdSet = (items) => new Set((Array.isArray(items) ? items : []).map((item) => item?.id).filter(Boolean));
@@ -84,16 +103,24 @@ export function awardCityRushRace(progress, {
   courses = CITY_RUSH_COURSES,
   rank = null,
   reward = null,
+  modeId = 'circuit',
+  sprint = false,
+  destroyed = false,
+  timedOut = false,
 } = {}) {
   const current = normalizeCityRushProgress(progress, { courses });
   if (!isCityRushCourseUnlocked(current, courseId, courses)) {
     return { progress: current, cashAwarded: 0, courseCompleted: false, reason: 'course-locked' };
   }
-  // Un gain explicite (`reward`) reste prioritaire ; sinon la place d'arrivée
-  // fixe le versement. Sans place connue, on paie comme une victoire.
-  const cashAwarded = reward !== null && reward !== undefined
-    ? safeMoney(reward)
-    : cityRushCashForPlace(rank ?? 1);
+  // Sprint et Poursuite ne paient jamais, même si un ancien appel fournit un
+  // gain explicite. Pour les modes rémunérés, `reward` reste prioritaire ; à
+  // défaut, le podium fixe le versement.
+  const paysCash = cityRushModePaysCash(sprint ? 'sprint' : modeId);
+  const cashAwarded = paysCash
+    ? (reward !== null && reward !== undefined
+      ? safeMoney(reward)
+      : cityRushCashForRaceResult({ rank, modeId, sprint, destroyed, timedOut }))
+    : 0;
   const completedCourseIds = completed && !current.completedCourseIds.includes(courseId)
     ? [...current.completedCourseIds, courseId]
     : current.completedCourseIds;
