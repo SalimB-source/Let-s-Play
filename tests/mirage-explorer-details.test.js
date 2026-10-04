@@ -48,7 +48,7 @@ test('la monture a un visage : yeux, naseaux, museau et liste sur le chanfrein',
     assert.equal(head.name, 'horse-head');
     const colors = colorsOf(head);
     assert.ok(colors.has(EYE_WHITE) && colors.has(EYE_DARK), 'un œil et un naseau de chaque côté');
-    assert.equal(meshCount(head), 6, 'six matières fusionnées : robe, robe claire, crins, liste, œil, pupille');
+    assert.equal(meshCount(head), 8, 'huit matières fusionnées : robe, nuances, crins, liste, bride, œil, pupille');
     assert.ok(triangleCount(head) >= 180, 'museau, oreilles et crinière en trois mèches');
   } finally {
     disposeExplorer(model);
@@ -113,14 +113,14 @@ test('le détail est fusionné : un cavalier tient sous cinquante appels de dess
     // Un mesh par matière dans le corps et la tête : les blocs fixes sont soudés.
     assert.equal(meshCount(parts.horseBody), colorsOf(parts.horseBody).size);
     assert.equal(meshCount(parts.horseHead), colorsOf(parts.horseHead).size);
-    assert.equal(meshCount(model), 44, 'les jambes, la queue, la cape, les bras et le chapeau restent à part');
+    assert.equal(meshCount(model), 48, 'les jambes, la queue, la cape, les bras et le chapeau restent à part');
     assert.ok(triangleCount(model) >= 1000, '…sans avoir perdu le détail');
   } finally {
     disposeExplorer(model);
   }
 });
 
-test('les bottes du cavalier dépassent visiblement des deux côtés de la monture', () => {
+test('les jambes descendent le long des flancs : plus rien ne dépasse sur les côtés', () => {
   const model = makeExplorer(false, CHARACTER_PALETTES[0]);
   try {
     const parts = model.userData.parts;
@@ -130,7 +130,8 @@ test('les bottes du cavalier dépassent visiblement des deux côtés de la montu
     ));
     assert.ok(trouserMesh, 'les jambes sont fusionnées avec les pièces en tissu pour préserver le budget de rendu');
     const bounds = new THREE.Box3().setFromObject(trouserMesh);
-    assert.ok(bounds.max.x > 0.7 && bounds.min.x < -0.7, 'le pantalon et les manchettes sortent des flancs');
+    assert.ok(bounds.max.x < 0.66 && bounds.min.x > -0.66, 'bottes et manchettes restent dans la silhouette de la monture');
+    assert.ok(bounds.max.x > 0.5, 'la jambe reste posée sur le flanc, lisible de profil');
   } finally {
     disposeExplorer(model);
   }
@@ -230,7 +231,7 @@ test('les pièces animées ne sont jamais soudées : queue, pan de cape, bras et
 });
 
 test('les skins de la boutique restent sous le plafond de coût (jusqu’à huit cavaliers à l’écran)', () => {
-  const ceilings = [[0, 46], [4, 62], [5, 104], [6, 152]];
+  const ceilings = [[0, 50], [4, 66], [5, 108], [6, 156]];
   for (const [index, ceiling] of ceilings) {
     const model = makeExplorer(false, CHARACTER_PALETTES[index]);
     try {
