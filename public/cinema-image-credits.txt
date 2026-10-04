@@ -82,7 +82,9 @@ https://www.youtube.com/watch?v=nTOf1FIsBcs
 
 Visuels des actus gaming du week-end (page /news/gaming) :
 
-RuneScape 4 — le teaser d'annonce a été diffusé au RuneFest 2026, mais Jagex n'en a pas encore publié de copie sur sa propre chaîne : la page utilise donc la carte éditoriale du gabarit Let's Play (public/runescape-4-news.svg), comme pour les actus sans visuel officiel.
+RuneScape 4 — capture du teaser d'annonce diffusé au RuneFest 2026 (Jagex), publiée par PC Gamer ; les deux autres captures de la galerie sont extraites du même teaser et documentées par le wiki communautaire RuneScape :
+https://www.pcgamer.com/games/mmo/runescape-4-announced-at-runefest-full-mmo-sequel-started-as-expansion-to-survival-game-dragonwilds/
+https://dragonwilds.runescape.wiki/w/RuneScape_4
 
 Castlevania 40th Anniversary — visuel de l'annonce officielle Konami, reproduit par Gamekult (les concerts sont détaillés sur le site officiel castlevanialive.com) :
 https://www.gamekult.com/actualite/pour-les-40-ans-de-castlevania-et-la-sortie-de-belmont-s-curse-des-concerts-symphoniques-vont-avoir-lieu-3050872268.html
@@ -100,3 +102,4 @@ https://www.01net.com/actualites/pirates-nord-coreens-cachent-ordres-ethereum-ha
 
 Tesla — Gigafactory de Berlin, photo officielle Tesla, publiée par Frandroid :
 https://www.frandroid.com/marques/3271565_tesla-a-vendu-plus-de-voitures-electriques-quespere-pourquoi-ca-ne-suffit-pas-a-rattraper-byd
+
