@@ -17,6 +17,19 @@
 export const CITY_RUSH_LAPS = 5; // nombre de tours par défaut (les modes de jeu fixent le leur)
 export const CITY_RUSH_LAP_LENGTH = 600;
 export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la boucle
+// Mode Sprint : course à checkpoints, sans police, bonus ni armes. Dix
+// checkpoints tous les 300 m (une demi-boucle) : le dixième est l'arrivée,
+// pile sous le portique. Chaque checkpoint rend 15 s au chrono ; à zéro, la
+// course est perdue.
+export const CITY_RUSH_SPRINT_CHECKPOINTS = 10;
+export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
+export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
+export const CITY_RUSH_SPRINT_DISTANCE = CITY_RUSH_SPRINT_CHECKPOINTS * CITY_RUSH_SPRINT_CHECKPOINT_SPACING;
+// Nombre de checkpoints franchis pour une distance parcourue (0 … 10).
+export function cityRushSprintCheckpointsPassed(distance, spacing = CITY_RUSH_SPRINT_CHECKPOINT_SPACING, count = CITY_RUSH_SPRINT_CHECKPOINTS) {
+  const safeSpacing = Math.max(1, Number(spacing) || CITY_RUSH_SPRINT_CHECKPOINT_SPACING);
+  return Math.max(0, Math.min(count, Math.floor((Number(distance) || 0) / safeSpacing)));
+}
 export const CITY_RUSH_FINAL_LAP_LENGTH = CITY_RUSH_LAP_LENGTH * CITY_RUSH_FINAL_LAP_LOOPS;
 // Distance de la course par défaut (`CITY_RUSH_LAPS` tours, dernier tour long).
 export const CITY_RUSH_DISTANCE = cityRushRaceDistance();

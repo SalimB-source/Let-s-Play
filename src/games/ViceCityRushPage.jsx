@@ -26,6 +26,9 @@ import {
   CITY_RUSH_FINAL_LAP_LOOPS,
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
+  CITY_RUSH_SPRINT_CHECKPOINTS,
+  CITY_RUSH_SPRINT_CHECKPOINT_TIME,
+  CITY_RUSH_SPRINT_DISTANCE,
   CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_PLAYER_HEALTH,
@@ -131,11 +134,13 @@ const RACE_MODES = [
   {
     id: 'sprint',
     name: 'SPRINT',
-    label: '1 TOUR · TIME ATTACK',
-    desc: 'Un seul grand tour, deux boucles d’une traite. Parfait pour battre ton chrono et apprendre le circuit.',
+    label: 'SOLO · 10 CHECKPOINTS',
+    desc: 'En solo contre la montre, sans adversaire : ni police, ni bonus, ni arme. Tu as 15 secondes pour atteindre chaque checkpoint — chrono à zéro, course perdue.',
     accent: '#ff5db8',
     secondary: '#ffd44f',
     laps: 1,
+    format: 'sprint',
+    checkpoints: CITY_RUSH_SPRINT_CHECKPOINTS,
     policeFromStart: false,
     icon: '⚡',
     tag: 'RAPIDE',
@@ -314,7 +319,8 @@ export default function ViceCityRushPage() {
   const currentStoryRace = storyMode ? STORY_CHAPTERS[storyRaceChapter] : null;
   const currentLaps = storyMode ? (currentStoryRace?.laps ?? STORY_LAPS) : mode.laps;
   // Le dernier tour enchaîne deux boucles : 4 tours = 3 × 600 m + 1 200 m.
-  const currentDistance = cityRushRaceDistance(currentLaps);
+  const sprintMode = !storyMode && mode.format === 'sprint';
+  const currentDistance = sprintMode ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(currentLaps);
   const RACE_KM = `${(currentDistance / 1000).toFixed(1).replace('.', ',')} KM`;
   const activeModeName = storyMode ? 'HISTOIRE' : mode.name;
   const activeModeLabel = storyMode ? `CHAPITRE ${String(storyRaceChapter + 1).padStart(2, '0')} / ${STORY_CHAPTERS.length}` : mode.label;
@@ -597,7 +603,9 @@ export default function ViceCityRushPage() {
     setIntroStep('mode');
   }
 
-  function finishRace(nextResult) {
+  function finishRace(rawResult) {
+    // Sprint solo : chrono à zéro = course perdue, jamais une « 1re place ».
+    const nextResult = rawResult?.timedOut ? { ...rawResult, rank: null } : rawResult;
     if (finishedRaceSessionRef.current === activeRaceSessionRef.current) return;
     finishedRaceSessionRef.current = activeRaceSessionRef.current;
 
@@ -675,11 +683,12 @@ export default function ViceCityRushPage() {
       const wall = effect.walls > 1 ? 'PAROIS DES DEUX CÔTÉS' : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;
       showToast(`${effect.name} · ${effect.open} VOIES OUVERTES SUR 4 · ${wall}.`, 'neutral');
     }
+    else if (effect.type === 'sprint-timeout') showToast(`TEMPS ÉCOULÉ · ${effect.checkpoints} / ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS.`, 'slow');
     else if (effect.type === 'tunnel-scrape') showToast('PAROI RACLÉE · LA VOIE EST MURÉE SOUS LE TUNNEL · RALENTI.', 'slow');
   }
 
   const onLap = (info) => {
-    if (!info || info.lap > info.laps) return;
+    if (!info || (!info.sprint && info.lap > info.laps)) return;
     showLapBanner(info);
   };
   const onPowerPickup = (pickup) => {
@@ -822,16 +831,36 @@ export default function ViceCityRushPage() {
           </div>
 
           <div className={`city-rush-viewport${phase === 'intro' ? ' is-intro' : ''}${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}`}>
-            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? false : mode.policeFromStart} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onPickup={onPowerPickup} onEffect={effectMessage} onLap={onLap} audioRef={audioRef} />
+            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? false : mode.policeFromStart} raceFormat={sprintMode ? 'sprint' : 'laps'} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onPickup={onPowerPickup} onEffect={effectMessage} onLap={onLap} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
 
             {phase === 'playing' && <>
               <div className="city-rush-hud-top">
+                {sprintMode ? (
+                <div className="city-rush-hud-card city-rush-position-card">
+                  <span className="city-rush-hud-label">SOLO</span>
+                  <strong>{formatTime(hud.elapsed)}</strong>
+                </div>
+                ) : (
                 <div className="city-rush-hud-card city-rush-position-card">
                   <span className="city-rush-hud-label">POSITION</span>
                   <strong>{ordinal(hud.rank)}<small> / 3</small></strong>
                   <div className="city-rush-mini-lights"><i className={hud.rank === 1 ? 'is-lit' : ''} /><i className={hud.rank === 2 ? 'is-lit' : ''} /><i className={hud.rank === 3 ? 'is-lit' : ''} /></div>
                 </div>
+                )}
+                {sprintMode && hud.sprint ? (
+                <div className={`city-rush-hud-card city-rush-distance-card city-rush-lap-card${hud.sprint.timeLeft <= 5 ? ' is-final' : ''}`}>
+                  <span className="city-rush-hud-label">CHECKPOINT · {activeModeName}</span>
+                  <strong>{Math.min(hud.sprint.checkpoints + 1, hud.sprint.total)}<small> / {hud.sprint.total}</small><em>{hud.sprint.timeLeft.toFixed(1)} s · {hud.sprint.nextIn} m</em></strong>
+                  <div className="city-rush-lap-track" aria-label={`Checkpoint ${hud.sprint.checkpoints} sur ${hud.sprint.total}, ${Math.ceil(hud.sprint.timeLeft)} secondes restantes`}>
+                    {Array.from({ length: hud.sprint.total }, (_, i) => i + 1).map((slot) => (
+                      <span key={slot} className={slot <= hud.sprint.checkpoints ? 'is-done' : slot === hud.sprint.checkpoints + 1 ? 'is-current' : ''}>
+                        <i style={{ width: slot <= hud.sprint.checkpoints ? '100%' : slot === hud.sprint.checkpoints + 1 ? `${Math.max(0, Math.min(100, (hud.sprint.timeLeft / CITY_RUSH_SPRINT_CHECKPOINT_TIME) * 100))}%` : '0%' }} />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                ) : (
                 <div className={`city-rush-hud-card city-rush-distance-card city-rush-lap-card${hud.lap >= hud.laps ? ' is-final' : ''}`}>
                   <span className="city-rush-hud-label">{hud.lap >= hud.laps ? 'DERNIER TOUR' : 'TOUR'} · {activeModeName}</span>
                   <strong>{Math.min(hud.lap || 1, hud.laps || currentLaps)}<small> / {hud.laps || currentLaps}</small><em>{hud.lapDistance} / {hud.lapLength || CITY_RUSH_LAP_LENGTH} m</em></strong>
@@ -844,6 +873,7 @@ export default function ViceCityRushPage() {
                     ))}
                   </div>
                 </div>
+                )}
                 <div className="city-rush-hud-card city-rush-speed-card">
                   <span className="city-rush-hud-label">VITESSE</span>
                   <strong>{hud.speed}<small> km/h</small></strong>
@@ -911,9 +941,9 @@ export default function ViceCityRushPage() {
                 )}
               </div>
 
-              <div className="city-rush-radar">
+              {!sprintMode && <div className="city-rush-radar">
                 <CityRushRaceList racers={standings} pursuers={hud.police} laps={currentLaps} />
-              </div>
+              </div>}
 
               {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0) && (
                 <div className={`city-rush-status-pill${hud.stunLeft > 0 ? ' is-stunned' : hud.trafficImpactLeft > 0 ? ' is-impact' : hud.boostLeft > 0 ? ' is-boost' : ' is-slow'}`}>
@@ -923,9 +953,15 @@ export default function ViceCityRushPage() {
               {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
               {lapBanner && (
                 <div className={`city-rush-lap-banner${lapBanner.final ? ' is-final' : ''}`} key={lapBanner.nonce} role="status" aria-live="polite">
+                  {lapBanner.sprint ? <>
+                  <span>{`CHECKPOINT ${lapBanner.checkpoint} / ${lapBanner.checkpoints}`}</span>
+                  <strong>+{lapBanner.timeBonus} S</strong>
+                  <small>{lapBanner.remaining > 1 ? `Encore ${lapBanner.remaining} checkpoints · ${formatTime(lapBanner.elapsed)}` : 'Prochain checkpoint : l’arrivée !'}</small>
+                  </> : <>
                   <span>{lapBanner.checkpoint ? checkpointKicker(lapBanner.remaining) : lapBanner.final ? 'LIGNE FRANCHIE · DERNIER TOUR' : `LIGNE FRANCHIE · TOUR ${lapBanner.lap} / ${lapBanner.laps}`}</span>
                   <strong>{lapBanner.checkpoint ? `PLUS QUE ${lapBanner.remaining} M` : lapBanner.final ? 'FINAL LAP' : `LAP ${lapBanner.lap}`}</strong>
                   <small>{lapBanner.checkpoint ? 'Ce n’est pas encore l’arrivée · tout donner.' : lapBanner.final ? `Plus que ${lapBanner.remaining} m · tout donner.` : `${(lapBanner.laps - lapBanner.lap + 1)} tours restants · ${formatTime(lapBanner.elapsed)}`}</small>
+                  </>}
                 </div>
               )}
               <div className="city-rush-controls-bottom">
@@ -1048,7 +1084,7 @@ export default function ViceCityRushPage() {
                           <small>{m.label}</small>
                           <span className="city-rush-mode-description">{m.desc}</span>
                           <span className="city-rush-mode-card-footer">
-                            <span className="city-rush-mode-laps"><i />{m.laps} TOUR{m.laps > 1 ? 'S' : ''} · {cityRushRaceDistance(m.laps)} M</span>
+                            <span className="city-rush-mode-laps"><i />{m.format === 'sprint' ? `${m.checkpoints} CHECKPOINTS · ${CITY_RUSH_SPRINT_DISTANCE} M` : `${m.laps} TOUR${m.laps > 1 ? 'S' : ''} · ${cityRushRaceDistance(m.laps)} M`}</span>
                             <span className="city-rush-card-action">VILLE <i aria-hidden="true">↗</i></span>
                           </span>
                         </button>
@@ -1066,7 +1102,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {currentLaps} tour{currentLaps > 1 ? 's' : ''} dont un dernier tour double = {currentDistance} m. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, 15 s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
                       {CITY_RUSH_COURSES.map((option, index) => (
@@ -1285,10 +1321,12 @@ export default function ViceCityRushPage() {
 
             {phase === 'finished' && result && (
               <div className={`city-rush-overlay city-rush-result-overlay${result.destroyed ? ' is-destroyed' : ''}`}>
-                <span className="city-rush-overlay-kicker">{result.destroyed ? `COQUE DÉTRUITE · COURSE PERDUE` : result.rank === 1 ? `VICTOIRE · ${activeModeName}` : `ARRIVÉE · ${activeModeName}`} · {result.laps || currentLaps} TOURS</span>
-                <h2>{result.destroyed ? <>TON ÉPAVE<br /><em>FUME ENCORE.</em></> : finalStoryVictory ? storyEnding ? <>{STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
+                <span className="city-rush-overlay-kicker">{result.timedOut ? `TEMPS ÉCOULÉ · COURSE PERDUE` : result.destroyed ? `COQUE DÉTRUITE · COURSE PERDUE` : result.sprint ? `SPRINT RÉUSSI · ${formatTime(result.duration)}` : result.rank === 1 ? `VICTOIRE · ${activeModeName}` : `ARRIVÉE · ${activeModeName}`} · {result.sprint ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${result.laps || currentLaps} TOURS`}</span>
+                <h2>{result.timedOut ? <>CHRONO<br /><em>À ZÉRO.</em></> : result.destroyed ? <>TON ÉPAVE<br /><em>FUME ENCORE.</em></> : finalStoryVictory ? storyEnding ? <>{STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
                 <div className="city-rush-result-grid">
-                  <div><small>PLACE</small><b>{result.destroyed ? 'DERNIER' : ordinal(result.rank)}<i> / 3</i></b></div>
+                  {result.sprint
+                    ? <div><small>CHECKPOINTS</small><b>{result.checkpoints ?? 0}<i> / {CITY_RUSH_SPRINT_CHECKPOINTS}</i></b></div>
+                    : <div><small>PLACE</small><b>{result.destroyed ? 'DERNIER' : ordinal(result.rank)}<i> / 3</i></b></div>}
                   <div><small>CHRONO</small><b>{formatTime(result.duration)}</b></div>
                   <div><small>TOUR MOYEN</small><b>{formatTime((result.duration || 0) / (result.laps || currentLaps || CITY_RUSH_LAPS))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
@@ -1307,16 +1345,18 @@ export default function ViceCityRushPage() {
                   </div>
                 )}
                 <p>
-                  {result.destroyed
+                  {result.timedOut
+                    ? `Les 15 secondes se sont écoulées avant le checkpoint ${(result.checkpoints || 0) + 1} sur ${CITY_RUSH_SPRINT_CHECKPOINTS}. La revanche t’attend.`
+                    : result.destroyed
                     ? `Ta coque est tombée à zéro : la voiture a tourné sur elle-même dans sa fumée avant de s’arrêter, hors course. ${result.winner} l’emporte ; la revanche t’attend.`
                     : finalStoryVictory && storyEnding
                     ? STORY_ENDINGS[storyEnding].text
                     : finalStoryVictory
                       ? 'Dante est vaincu. Nico tient enfin les preuves : à lui de choisir ce qu’il fera de sa revanche.'
                       : result.rank === 1
-                        ? (storyMode ? `Tu remportes les ${result.laps || currentLaps} tours du circuit de ${city.name}.` : `Tu remportes le ${mode.name} sur ${city.name}.`)
-                        : `${result.winner} franchit la ligne en tête après ${result.laps || currentLaps} tours. La revanche t’attend.`}{' '}
-                  {!finalStoryVictory && `${result.pickups} objet${result.pickups > 1 ? 's' : ''} ramassé${result.pickups > 1 ? 's' : ''}.`}
+                        ? (result.sprint ? `Les ${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints de ${city.name} franchis en ${formatTime(result.duration)}.` : storyMode ? `Tu remportes les ${result.laps || currentLaps} tours du circuit de ${city.name}.` : `Tu remportes le ${mode.name} sur ${city.name}.`)
+                        : (result.sprint ? `${result.winner} franchit la ligne en tête du sprint. La revanche t’attend.` : `${result.winner} franchit la ligne en tête après ${result.laps || currentLaps} tours. La revanche t’attend.`)}{' '}
+                  {!finalStoryVictory && !result.sprint && `${result.pickups} objet${result.pickups > 1 ? 's' : ''} ramassé${result.pickups > 1 ? 's' : ''}.`}
                 </p>
                 {finalStoryVictory && !storyEnding && (
                   <div className="city-rush-ending-choices" role="group" aria-label="Choisir la fin de l’histoire">
@@ -1397,7 +1437,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police a une barre de vie : un tir rouge d’AK-47 ou un carambolage lui en enlève la moitié. Deux tirs rouges, deux carambolages ou un tir rouge et un carambolage la détruisent ; un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{sprintMode ? 'Sprint en solo, sans adversaire ni police : ni escouade, ni berline dans le trafic, ni hélicoptère. Pas de bonus ni d’arme non plus — seulement toi, le chrono et les 10 checkpoints.' : <>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police a une barre de vie : un tir rouge d’AK-47 ou un carambolage lui en enlève la moitié. Deux tirs rouges, deux carambolages ou un tir rouge et un carambolage la détruisent ; un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</>}</p></div>
           </section>
         </aside>
       </main>
