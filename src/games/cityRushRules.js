@@ -25,7 +25,7 @@ export const CITY_RUSH_DISTANCE = cityRushRaceDistance();
 export const CITY_RUSH_START_LINE_LEAD = 3;
 // Portée de décor conservée derrière le joueur quand on replie la boucle.
 export const CITY_RUSH_TRACK_BEHIND = 60;
-export const CITY_RUSH_PLAYER_SPEED = 29;
+export const CITY_RUSH_PLAYER_SPEED = 35; // m/s : rythme de course relevé à environ 126 km/h
 export const CITY_RUSH_LANE_WIDTH = 2.1;
 export const CITY_RUSH_ROAD_WIDTH = 13.4;
 export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
@@ -64,6 +64,8 @@ export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 5
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé au sol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.55; // part des bonus qui sont des pads turbo au sol
+export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
 export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';
 export const CITY_RUSH_ONCOMING_MAX_WIDTH = 2.12;
 export const CITY_RUSH_ONCOMING_EDGE_MARGIN = 0.3;
@@ -1322,19 +1324,19 @@ export function chooseCityRushTrafficEscapeLane({
  */
 export function createCityRushEncounter(random = Math.random) {
   const available = Array.from({ length: CITY_RUSH_LANE_X.length }, (_, lane) => lane);
-  // Les bonus sont fréquents et les rangées vides sont rares; les duos
-  // restent limités pour garder les voies lisibles.
-  const pickupCount = random() < 0.1 ? 0 : Math.min(available.length, random() < 0.85 ? 1 : 2);
+  // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
+  // des rangées pleines : davantage d'objets, sans encombrer chaque voie.
+  const pickupCount = random() < 0.05 ? 0 : Math.min(available.length, random() < 0.7 ? 1 : 2);
   const pickups = [];
 
   for (let index = 0; index < pickupCount; index += 1) {
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // Le boost au sol remplace l'ancien pouvoir vert (36 %) ; l'hélico jaune
-    // reste rare (10 %) et les deux armes se partagent le reste.
-    const type = roll < 0.36 ? CITY_RUSH_PICKUPS.BOOST
-      : roll < 0.64 ? CITY_RUSH_POWERS.BLUE_SHOT
+    // Plus d'un objet sur deux est un pad turbo (55 %) ; le tir bleu pèse
+    // 18 %, la mitrailleuse 17 % et l'hélico jaune reste rare à 10 %.
+    const type = roll < CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE ? CITY_RUSH_PICKUPS.BOOST
+      : roll < 0.73 ? CITY_RUSH_POWERS.BLUE_SHOT
         : roll < 0.90 ? CITY_RUSH_POWERS.PISTOL
           : CITY_RUSH_POWERS.RADIO;
     pickups.push({ lane, type });
@@ -1389,11 +1391,12 @@ export function chooseCityRushAiLane({
       const laneAffinity = Math.max(0, 1 - Math.abs(pickupLane - candidate) * 0.34);
       if (laneAffinity === 0) continue;
       const urgency = 1 - gap / lookAhead;
-      // Ramasser passe avant le confort de conduite : à voie disponible, le
-      // rival vise le bonus même si un autre pilote le gêne. La disponibilité
-      // des voies garde toutefois la sécurité du trafic lent.
-      // Même avec une jauge pleine, il continue de viser les bonus à portée.
-      pickupPriority += (22 + urgency * 8) * laneAffinity;
+      // Ramasser passe avant le confort de conduite : le pad turbo pèse trois
+      // bonus d'inventaire, même s'il est un peu plus loin. Les voies bloquées
+      // et le trafic venant en face restent toutefois des limites de sécurité.
+      // Même avec une jauge pleine, le rival continue de viser les objets à portée.
+      const weight = pickup.type === CITY_RUSH_PICKUPS.BOOST ? CITY_RUSH_AI_TRACK_BOOST_WEIGHT : 1;
+      pickupPriority += weight * (22 + urgency * 8) * laneAffinity;
     }
     for (const vehicle of traffic) {
       const gap = Number(vehicle.distance) - Number(distance);
