@@ -51,7 +51,8 @@
     "check:nav": "node scripts/nav-check.mjs",
     "check:nav-ghost": "node scripts/nav-ghost-check.mjs",
     "check:calls": "node scripts/calls-check.mjs && node scripts/calls-e2e-check.mjs",
-    "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write"
+    "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write",
+    "check:city-rush-wreck": "node scripts/city-rush-wreck-check.mjs --all"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",

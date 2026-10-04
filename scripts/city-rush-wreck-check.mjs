@@ -1,12 +1,16 @@
+// Lanceur de la vérif « épave de la coque » : charge le vrai monde three.js
+// avec un WebGLRenderer factice et laisse le pilote d'essai se faire démolir.
+//   node scripts/city-rush-wreck-check.mjs            (une ville)
+//   node scripts/city-rush-wreck-check.mjs --all      (les cinq villes)
+//   node scripts/city-rush-wreck-check.mjs --runs=5   (cinq courses par ville)
 // ════════════════════════════════════════════════════════════════════
-// Smoke « Vice City Rush » : construit le monde pour de vrai (décor de la
-// boucle, zone de départ, voitures, trafic) avec un WebGLRenderer factice,
-// joue une course complète (5 tours, dont un grand dernier tour de 1 200 m)
-// en pompant la boucle animate, et échoue si une frame lève une exception, si
-// les passages de ligne ne sont pas détectés ou si l'arrivée n'est jamais
-// atteinte.
-//   node scripts/city-rush-smoke.mjs            (ville par défaut : vice-city)
-//   node scripts/city-rush-smoke.mjs --all      (les cinq villes)
+// Vérif « Vice City Rush » : le tir droit bleu doit pouvoir toucher les
+// voitures de police. Le monde est construit pour de vrai (faux
+// WebGLRenderer), l'escouade entre en piste dès le départ et le pilote
+// d'essai ne tire qu'au tir droit : tout point de vie perdu par une
+// berline vient donc d'une balle bleue.
+//   node scripts/city-rush-blue-shot-police-check.mjs            (vice-city)
+//   node scripts/city-rush-blue-shot-police-check.mjs --all      (5 villes)
 // ════════════════════════════════════════════════════════════════════
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -58,14 +62,10 @@ class FakeWebGLRenderer {
   clear() {}
   render(scene, camera) {
     // Pas de GPU : on met tout de même à jour les matrices monde comme le
-    // ferait un vrai rendu, pour que localToWorld() des voitures soit juste.
+    // ferait un vrai rendu, pour que getWorldPosition() des bonus soit juste.
     this.renderCalls += 1;
     scene.updateMatrixWorld();
     camera.updateMatrixWorld();
-    // La caméra réelle est exposée au harnais : il peut projeter un nœud à
-    // l'écran et vérifier qu'un élément est bien *visible* (dans le cadre), pas
-    // seulement `visible === true`.
-    globalThis.__smokeCamera = camera;
   }
   compile() {}
   dispose() {}
@@ -95,14 +95,11 @@ const server = await createServer({
   ],
 });
 
-const smokeSeed = process.env.CITY_RUSH_SMOKE_SEED;
-if (smokeSeed) console.log(`graine fixée : ${smokeSeed} (même tirage à chaque passage)`);
-
 let code = 0;
 try {
-  await server.ssrLoadModule('/scripts/city-rush-smoke-entry.jsx');
+  await server.ssrLoadModule('/scripts/city-rush-wreck-entry.jsx');
 } catch (e) {
-  console.error('SMOKE FAILED (chargement) :');
+  console.error('VÉRIF ÉPAVE ÉCHOUÉE (chargement) :');
   console.error(e);
   code = 1;
 } finally {
