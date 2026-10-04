@@ -25,42 +25,6 @@ import { LanguageProvider } from './i18n/LanguageContext';
 import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
-import News from './pages/News';
-import GamingNews from './pages/GamingNews';
-import CinemaNews from './pages/CinemaNews';
-import TechNews from './pages/TechNews';
-import Calendar from './pages/Calendar';
-import Physint from './pages/Physint';
-import MetroidRavenous from './pages/MetroidRavenous';
-import WarDogs from './pages/WarDogs';
-import ZeldaOcarina from './pages/ZeldaOcarina';
-import Onimusha from './pages/Onimusha';
-import OnimushaMillion from './pages/OnimushaMillion';
-import Gta6DualSense from './pages/Gta6DualSense';
-import Zelda40th from './pages/Zelda40th';
-import MonsterHunterWilds from './pages/MonsterHunterWilds';
-import BlizzardNews from './pages/BlizzardNews';
-import CurrentNews from './pages/CurrentNews';
-import Reviews from './pages/Reviews';
-import TestArticle from './pages/TestArticle';
-import Dossiers from './pages/Dossiers';
-import DossierSouls from './pages/DossierSouls';
-import DossierGoya from './pages/DossierGoya';
-import DossierComicCon from './pages/DossierComicCon';
-import DossierAwards from './pages/DossierAwards';
-import DossierPlayStation1 from './pages/DossierPlayStation1';
-import DossierGenerations from './pages/DossierGenerations';
-import DossierXbox360 from './pages/DossierXbox360';
-import DossierPlayStation2 from './pages/DossierPlayStation2';
-import Search from './pages/Search';
-import QuizzesPage from './quizzes/QuizzesPage';
-import QuizPage from './quizzes/QuizPage';
-import NotFound from './pages/NotFound';
-import Games from './pages/Games';
-import Auth from './pages/Auth';
-import Profile from './pages/Profile';
-import MessagesPage from './messages/MessagesPage';
-import CommunityPage from './community/CommunityPage';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
@@ -74,9 +38,63 @@ import { initSinglePlayback } from './lib/videoPlayback';
 import { normalizePhoneViewport } from './lib/phoneLayout';
 import { applyLaneCountForDevice } from './games/mirageLanes';
 
+/**
+ * Pages à la demande — le shell (barre, thème, contexte de compte) se charge
+ * seul, chaque page arrive quand on l'ouvre.
+ *
+ * Pourquoi : le bundle d'entrée doit rester léger pour tout le monde. Sans ce
+ * découpage, ce sont les articles (`CurrentNews`), les quizz, les dossiers et
+ * l'arcade qui partaient dans le même fichier que la page d'accueil — soit
+ * plusieurs centaines de kilo-octets téléchargés par un visiteur qui ne lit
+ * qu'une brève. `Home` reste importée en dur : c'est la porte d'entrée du
+ * site, elle ne doit pas attendre un aller-retour réseau de plus.
+ *
+ * Le repli est celui des jeux (`RouteLoading`), pour que l'attente ait la même
+ * allure partout.
+ */
+const News = lazy(() => import('./pages/News'));
+const GamingNews = lazy(() => import('./pages/GamingNews'));
+const CinemaNews = lazy(() => import('./pages/CinemaNews'));
+const TechNews = lazy(() => import('./pages/TechNews'));
+const Calendar = lazy(() => import('./pages/Calendar'));
+const Physint = lazy(() => import('./pages/Physint'));
+const MetroidRavenous = lazy(() => import('./pages/MetroidRavenous'));
+const WarDogs = lazy(() => import('./pages/WarDogs'));
+const ZeldaOcarina = lazy(() => import('./pages/ZeldaOcarina'));
+const Onimusha = lazy(() => import('./pages/Onimusha'));
+const OnimushaMillion = lazy(() => import('./pages/OnimushaMillion'));
+const Gta6DualSense = lazy(() => import('./pages/Gta6DualSense'));
+const Zelda40th = lazy(() => import('./pages/Zelda40th'));
+const MonsterHunterWilds = lazy(() => import('./pages/MonsterHunterWilds'));
+const BlizzardNews = lazy(() => import('./pages/BlizzardNews'));
+const CurrentNews = lazy(() => import('./pages/CurrentNews'));
+const Reviews = lazy(() => import('./pages/Reviews'));
+const TestArticle = lazy(() => import('./pages/TestArticle'));
+const Dossiers = lazy(() => import('./pages/Dossiers'));
+const DossierSouls = lazy(() => import('./pages/DossierSouls'));
+const DossierGoya = lazy(() => import('./pages/DossierGoya'));
+const DossierComicCon = lazy(() => import('./pages/DossierComicCon'));
+const DossierAwards = lazy(() => import('./pages/DossierAwards'));
+const DossierPlayStation1 = lazy(() => import('./pages/DossierPlayStation1'));
+const DossierGenerations = lazy(() => import('./pages/DossierGenerations'));
+const DossierXbox360 = lazy(() => import('./pages/DossierXbox360'));
+const DossierPlayStation2 = lazy(() => import('./pages/DossierPlayStation2'));
+const Search = lazy(() => import('./pages/Search'));
+const QuizzesPage = lazy(() => import('./quizzes/QuizzesPage'));
+const QuizPage = lazy(() => import('./quizzes/QuizPage'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const Games = lazy(() => import('./pages/Games'));
+const Auth = lazy(() => import('./pages/Auth'));
+const Profile = lazy(() => import('./pages/Profile'));
+const MessagesPage = lazy(() => import('./messages/MessagesPage'));
+const CommunityPage = lazy(() => import('./community/CommunityPage'));
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 const ViceCityRushPage = lazy(() => import('./games/ViceCityRushPage'));
-const SoulsPage = lazy(() => import('./games/SoulsPage'));
+
+/** Écran d'attente d'une page à la demande — mêmes marges que les replis des jeux. */
+function RouteLoading({ label = 'Chargement…' }) {
+  return <div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>{label}</div>;
+}
 
 function App() {
   return (
@@ -103,6 +121,11 @@ function App() {
           <AchievementProvider>
             <Layout>
               <AchievementTracker />
+              {/* Une seule frontière pour toutes les pages à la demande : la
+                  barre, le fond et les surcouches (appels, succès, messagerie)
+                  restent en place pendant que la page arrive. Les jeux gardent
+                  leur repli nommé, plus bas. */}
+              <Suspense fallback={<RouteLoading />}>
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
@@ -183,9 +206,8 @@ function App() {
                 Rush n'est qu'une des cartes), chaque jeu a sa propre route. */}
             <Route path="/jeu" element={<Games />} />
             <Route path="/jeux" element={<Games />} />
-            <Route path="/jeu/mirage-rush" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Mirage Rush…</div>}><MirageRushPage /></Suspense>} />
-            <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Vice City Rush…</div>}><ViceCityRushPage /></Suspense>} />
-            <Route path="/jeu/la-cendre" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de La Cendre…</div>}><SoulsPage /></Suspense>} />
+            <Route path="/jeu/mirage-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Mirage Rush…" />}><MirageRushPage /></Suspense>} />
+            <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Vice City Rush…" />}><ViceCityRushPage /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />
@@ -202,6 +224,7 @@ function App() {
             <Route path="/messagerie/:peerId" element={<MessagesPage />} />
             <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </Layout>
             <AchievementPopup />
             <SocialDock />

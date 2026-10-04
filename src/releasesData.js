@@ -101,7 +101,7 @@ export const gameReleases = [
   { slug: 'ananta', year: 2027, month: 1, day: 15, title: 'Ananta', platforms: 'PC · PS5', alt: 'Ananta — action RPG open world de NetEase' },
   { slug: 'stranger-than-heaven', year: 2027, month: 1, day: 15, title: 'Stranger Than Heaven', platforms: 'PC · PS5 · XBOX SERIES', alt: 'Stranger Than Heaven — action-aventure du RGG Studio' },
   { slug: 'tankrat', year: 2027, month: 1, day: 15, title: 'TankRat', platforms: 'PC · PS5', alt: 'TankRat — action-aventure de Kepler Interactive' },
-  { slug: 'metroid-ravenous', year: 2027, month: 1, day: 28, title: 'Metroid Ravenous', platforms: 'SWITCH 2', image: 'metroid-ravenous-news.png', to: '/news/metroid-ravenous', alt: 'Metroid Ravenous — Samus dans une grotte organique, visuel Nintendo', awaitedRank: 13 },
+  { slug: 'metroid-ravenous', year: 2027, month: 1, day: 28, title: 'Metroid Ravenous', platforms: 'SWITCH 2', image: 'metroid-ravenous-news.webp', to: '/news/metroid-ravenous', alt: 'Metroid Ravenous — Samus dans une grotte organique, visuel Nintendo', awaitedRank: 13 },
   { slug: 'until-dawn-2', year: 2027, month: 1, day: 28, title: 'Until Dawn 2', platforms: 'PS5', alt: 'Until Dawn 2 — survival horror cinématique de Firesprite' },
   { slug: 'fate-extra-record', year: 2027, month: 1, day: 28, title: 'Fate/Extra Record', platforms: 'PC · PS4 · PS5 · SWITCH 2 · SWITCH', alt: 'Fate/Extra Record — remake du RPG de Type-Moon' },
   { slug: 'tropico-7', year: 2027, month: 1, day: 28, title: 'Tropico 7', platforms: 'PC · PS5 · XBOX SERIES', alt: 'Tropico 7 — simulation gouvernementale de Kalypso Media' },
