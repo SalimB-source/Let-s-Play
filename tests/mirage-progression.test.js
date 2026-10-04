@@ -5,7 +5,7 @@ import {
   MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, STAGE_IDS, WIN_COINS,
   applyRun, awardCoins, buySkin, coinsForRun, completeCup, defaultProgress, equipSkin,
   isFirstPlaceRun, isShopSkin, isSkinUnlocked, isStageUnlocked, levelCost, levelForXp,
-  levelProgress, loadProgress, sanitizeProgress, saveProgress, skinFor, stageRequirement,
+  levelProgress, loadAccountProgress, loadProgress, progressionStorageKey, sanitizeProgress, saveProgress, skinFor, stageRequirement,
   unlockedStages, xpForRun, xpToReachLevel,
 } from '../src/games/mirageProgression.js';
 import { isCupUnlocked, unlockedCups } from '../src/games/mirageCup.js';
@@ -116,6 +116,34 @@ test('progression round-trips through storage and survives corrupted JSON', () =
   assert.deepEqual(loadProgress(fake), saved);
   assert.deepEqual(loadProgress({ getItem: () => '{oops' }), defaultProgress());
   assert.deepEqual(loadProgress(null), defaultProgress());
+});
+
+test('local progression storage keys are isolated by signed-in user', () => {
+  const store = new Map();
+  const fake = { getItem: key => store.get(key) ?? null, setItem: (key, value) => store.set(key, value) };
+  const salimKey = progressionStorageKey('user-salim');
+  const otherKey = progressionStorageKey('another-user');
+  assert.notEqual(salimKey, otherKey);
+
+  saveProgress({ coins: 5000 }, fake, salimKey);
+  assert.equal(loadProgress(fake, salimKey).coins, 5000);
+  assert.equal(loadProgress(fake, otherKey).coins, 0);
+  assert.equal(loadProgress(fake, PROGRESSION_KEY).coins, 0, 'guest progress remains separate');
+});
+
+test('the old shared guest cache migrates to the first account only once', () => {
+  const store = new Map([[PROGRESSION_KEY, JSON.stringify({ coins: 75, wonStages: ['desert'] })]]);
+  const fake = {
+    getItem: key => store.get(key) ?? null,
+    setItem: (key, value) => store.set(key, value),
+    removeItem: key => store.delete(key),
+  };
+
+  const firstAccount = loadAccountProgress('first-user', fake);
+  assert.equal(firstAccount.coins, 75);
+  assert.deepEqual(firstAccount.wonStages, ['desert']);
+  assert.equal(store.has(PROGRESSION_KEY), false, 'the legacy value is removed after migration');
+  assert.equal(loadAccountProgress('second-user', fake).coins, 0, 'a later account does not inherit the first account data');
 });
 
 test('a victory awards 10 gold and a rush awards none', () => {

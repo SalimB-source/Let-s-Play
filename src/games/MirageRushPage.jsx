@@ -17,7 +17,7 @@ import MirageDesertAtmosphere from './MirageDesertAtmosphere';
 import MirageGraphicsButton, { MirageGraphicsSwitch } from './MirageGraphicsToggle';
 import useMirageGraphics from './useMirageGraphics';
 import { DesertGroove } from './arcadeAudio';
-import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
+import { fetchMirageLeaderboard, fetchMirageProgress, mirageApiEnabled, saveMirageProgress, submitMirageScore } from './mirageApi';
 import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import {
@@ -25,7 +25,7 @@ import {
   cupGoldMaximum, getCup, isCupComplete, isCupUnlocked, cupWinner, placeLabel, recordCupRace,
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
-import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, LINK_EPONA_FREE_DAYS, LINK_EPONA_ID, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, formatFreeWindow, isFirstPlaceRun, isShopSkin, isSkinTemporarilyFree, isSkinUnlocked, isStageUnlocked, levelProgress, loadProgress, saveProgress, skinFor, temporaryFreeUntil } from './mirageProgression';
+import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, LINK_EPONA_FREE_DAYS, LINK_EPONA_ID, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, formatFreeWindow, isFirstPlaceRun, isShopSkin, isSkinTemporarilyFree, isSkinUnlocked, isStageUnlocked, levelProgress, loadAccountProgress, loadProgress, progressionStorageKey, saveProgress, sanitizeProgress, skinFor, temporaryFreeUntil } from './mirageProgression';
 import { LINK_BOMB_AOE_TILES, LINK_BOMB_FUSE_DURATION, LINK_BOOMERANG_THROWS } from './mirageLinkPowers';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
 import useGameFullscreen from './useGameFullscreen';
@@ -131,7 +131,10 @@ export default function MirageRushPage() {
   const challenge = useMemo(() => decodeChallenge(challengeCode), [challengeCode]);
   const initialStageParam = searchParams.get('stage');
   const validStages = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'];
-  const [progression, setProgression] = useState(() => loadProgress());
+  const [progression, setProgression] = useState(() => (
+    user?.id && !isDemo ? loadAccountProgress(user.id) : loadProgress()
+  ));
+  const [loadedProgressUserId, setLoadedProgressUserId] = useState(null);
   const completedCups = progression.completedCups || [];
   const wonStages = progression.wonStages || [];
   // Le terrain se choisit dans l’overlay d’intro (« 02 / ton terrain ») ;
@@ -237,6 +240,7 @@ export default function MirageRushPage() {
   // du pouce sur téléphone, touches du clavier sur ordinateur.
   const [isTouch, setIsTouch] = useState(false);
   const progressRef = useRef(progression);
+  const progressSaveQueueRef = useRef(Promise.resolve());
   const cupRunRef = useRef(null);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
@@ -265,7 +269,77 @@ export default function MirageRushPage() {
   musicOnRef.current = musicOn;
   settingsOpenRef.current = settingsOpen;
   const connected = Boolean(user?.id) && !isDemo;
+  const progressionOwnerId = connected ? user.id : null;
+  // While an account is being switched, keep race launches gated until its
+  // server snapshot (or account-scoped local fallback) has been loaded.
+  const progressionReady = loadedProgressUserId === progressionOwnerId;
+  const progressionKey = progressionStorageKey(progressionOwnerId);
   const backendEnabled = mirageApiEnabled();
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!connected) {
+      const guestProgress = loadProgress();
+      progressRef.current = guestProgress;
+      setProgression(guestProgress);
+      setLoadedProgressUserId(null);
+      return () => { cancelled = true; };
+    }
+
+    const ownerId = user.id;
+    const storageKey = progressionStorageKey(ownerId);
+    const localProgress = loadAccountProgress(ownerId);
+    progressRef.current = localProgress;
+    setProgression(localProgress);
+    setLoadedProgressUserId(null);
+
+    (async () => {
+      let remoteProgress = null;
+      let loadError = null;
+      try {
+        ({ progress: remoteProgress, error: loadError } = await fetchMirageProgress(ownerId));
+      } catch (error) {
+        loadError = error;
+      }
+      if (cancelled) return;
+
+      const hasRemoteSnapshot = !loadError
+        && remoteProgress
+        && typeof remoteProgress === 'object'
+        && !Array.isArray(remoteProgress)
+        && Object.keys(remoteProgress).length > 0;
+      const nextProgress = hasRemoteSnapshot ? sanitizeProgress(remoteProgress) : localProgress;
+      progressRef.current = nextProgress;
+      setProgression(nextProgress);
+      saveProgress(nextProgress, undefined, storageKey);
+
+      if (!cancelled) setLoadedProgressUserId(ownerId);
+
+      // First login on this device: keep the existing local cache and seed the
+      // account row once. Queue it before future runs so an early save cannot
+      // be overwritten by this initial snapshot. Failed reads never write.
+      if (!loadError && !hasRemoteSnapshot) {
+        progressSaveQueueRef.current = progressSaveQueueRef.current
+          .catch(() => false)
+          .then(() => saveMirageProgress(ownerId, nextProgress))
+          .catch(() => false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [connected, user?.id]);
+
+  const persistProgress = useCallback((nextProgress) => {
+    const clean = saveProgress(nextProgress, undefined, progressionKey);
+    if (connected && progressionReady) {
+      const ownerId = user.id;
+      progressSaveQueueRef.current = progressSaveQueueRef.current
+        .catch(() => false)
+        .then(() => saveMirageProgress(ownerId, clean))
+        .catch(() => false);
+    }
+    return clean;
+  }, [connected, progressionKey, progressionReady, user?.id]);
 
   // Détection d'écran tactile (pointer: coarse) : téléphone et application
   // lisent les consignes de glissement, l'ordinateur ses raccourcis clavier.
@@ -354,6 +428,7 @@ export default function MirageRushPage() {
   // Lance une course (compte à rebours, puis le moteur démarre) : commun à la
   // ruée, au duel et à chaque course d’une coupe.
   const beginRace = useCallback((nextRace, { fullscreen = false } = {}) => {
+    if (connected && !progressionReady) return;
     // Clic sur une carte, sur « REJOUER » ou Entrée : on demande le plein
     // écran ici, synchronement dans le geste, sinon le navigateur le refuse.
     // « LANCER EN PLEIN ÉCRAN » le demande à coup sûr ; sur téléphone et
@@ -375,7 +450,7 @@ export default function MirageRushPage() {
     setCountdown(3);
     setPhase('countdown');
     if (musicOnRef.current) audioRef.current?.start();
-  }, [enterImmersive]);
+  }, [enterImmersive, connected, progressionReady]);
 
   // ── Coupe ──────────────────────────────────────────────────────────────
   // Une course de coupe est un duel ordinaire, marqué `cup` pour l’interface :
@@ -399,6 +474,7 @@ export default function MirageRushPage() {
   // premier argument peut y être un évènement, seul `{ fullscreen: true }`
   // compte (« LANCER EN PLEIN ÉCRAN »).
   const startCupWithId = useCallback((nextCupId, options) => {
+    if (connected && !progressionReady) return;
     const cup = getCup(nextCupId);
     if (!cup || !isCupUnlocked(cup.id, progressRef.current.completedCups)) return;
     const run = createCupRun(cup.id, {
@@ -414,7 +490,7 @@ export default function MirageRushPage() {
     setCupRun(run);
     setCupRaceCoins(0);
     beginRace(cupRace(run), { fullscreen: options?.fullscreen === true });
-  }, [effectiveRiderName, trackRivals, beginRace, cupRace]);
+  }, [effectiveRiderName, trackRivals, beginRace, cupRace, connected, progressionReady]);
 
   const startCup = useCallback((options) => {
     startCupWithId(activeCup.id, options);
@@ -603,6 +679,7 @@ export default function MirageRushPage() {
   // Plus de bouton « LANCER » : la carte de map (ou celle du défi) démarre la
   // course avec **son** terrain, sans attendre un rendu intermédiaire.
   const startStageCard = useCallback((nextStageId) => {
+    if (connected && !progressionReady) return;
     if (selectedMode === 'online') {
       // En ligne, la carte choisit la map par défaut du salon puis l’ouvre.
       chooseStage(nextStageId);
@@ -615,7 +692,7 @@ export default function MirageRushPage() {
     if (!isChallenge && !isStageUnlocked(nextStage, progressRef.current.wonStages)) return;
     setSelectedStage(nextStage);
     beginRace({ mode: selectedMode, stage: nextStage, challenge: isChallenge ? challenge : null });
-  }, [selectedMode, challenge, beginRace, chooseStage, openOnlineLobby]);
+  }, [selectedMode, challenge, beginRace, chooseStage, openOnlineLobby, connected, progressionReady]);
 
   // Idem pour les cartes de coupe : elles lancent la coupe choisie.
   const startCupCard = useCallback((nextCupId) => {
@@ -624,11 +701,11 @@ export default function MirageRushPage() {
 
   const recordProgress = useCallback((result) => {
     const outcome = applyRun(progressRef.current, result);
-    progressRef.current = outcome.progress;
-    setProgression(outcome.progress);
-    saveProgress(outcome.progress);
-    return outcome;
-  }, []);
+    const savedProgress = persistProgress(outcome.progress);
+    progressRef.current = savedProgress;
+    setProgression(savedProgress);
+    return { ...outcome, progress: savedProgress };
+  }, [persistProgress]);
 
   const onFinish = useCallback(async (result) => {
     setHud((current) => ({ ...current, score: result.score, gems: result.gems, remaining: Math.max(0, 60 - result.duration) }));
@@ -827,21 +904,22 @@ export default function MirageRushPage() {
     [justFinished, currentUserName, skinColors],
   );
   const chooseSkin = (skinId) => {
-    const next = equipSkin(progressRef.current, skinId);
+    if (!progressionReady) return;
+    const next = persistProgress(equipSkin(progressRef.current, skinId));
     progressRef.current = next;
     setProgression(next);
-    saveProgress(next);
   };
 
   const purchaseSkin = (skinId) => {
+    if (!progressionReady) return;
     const result = buySkin(progressRef.current, skinId);
     if (!result.ok) {
       setShopNotice(result.reason || 'broke');
       return;
     }
-    progressRef.current = result.progress;
-    setProgression(result.progress);
-    saveProgress(result.progress);
+    const savedProgress = persistProgress(result.progress);
+    progressRef.current = savedProgress;
+    setProgression(savedProgress);
     setShopNotice('bought');
   };
 
@@ -1448,6 +1526,7 @@ export default function MirageRushPage() {
                   <div className="mirage-overlay-hint">ÉCRAN 01 · CHOISIS RUÉE, DUEL, COUPE OU EN LIGNE</div>
                 </> : <>
                   <div className="mirage-overlay-kicker"><span>✦</span> {introKicker} <span>✦</span></div>
+                  {connected && !progressionReady && <p className="mirage-stage-loading" role="status">SYNCHRONISATION DE TA PROGRESSION…</p>}
                   <div className="mirage-intro-toolbar">
                     <span className="mirage-selected-mode-pill"><i aria-hidden="true">{selectedModeChoice.icon}</i> MODE {selectedModeChoice.name}</span>
                     <div className="mirage-intro-toolbar-actions">

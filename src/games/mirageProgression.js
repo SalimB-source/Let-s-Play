@@ -5,6 +5,13 @@ import { CHARACTER_PALETTES, CHARACTER_PRICES, CLOUD_CHOCOBO_INDEX, GYRO_ZEPPELI
 import { CUPS, isCupUnlocked } from './mirageCup.js';
 
 export const PROGRESSION_KEY = 'letsplay_mirage_progression_v1';
+
+/** Keep a signed-in player's local cache separate from guest/other accounts. */
+export function progressionStorageKey(userId) {
+  const id = typeof userId === 'string' ? userId.trim() : '';
+  return id ? `${PROGRESSION_KEY}:user:${id}` : PROGRESSION_KEY;
+}
+
 export const MAX_LEVEL = 20;
 /** Gold awarded for finishing 1st (duel, cup race or online). */
 export const WIN_COINS = 10;
@@ -404,18 +411,38 @@ function defaultStorage() {
   catch { return null; }
 }
 
-export function loadProgress(storage) {
+export function loadProgress(storage, key = PROGRESSION_KEY) {
   const store = storage !== undefined ? storage : defaultStorage();
   if (!store) return defaultProgress();
-  try { return sanitizeProgress(JSON.parse(store.getItem(PROGRESSION_KEY))); }
+  try { return sanitizeProgress(JSON.parse(store.getItem(key))); }
   catch { return defaultProgress(); }
 }
 
-export function saveProgress(progress, storage) {
+/** Move the old shared browser cache to the first signed-in account, once. */
+export function loadAccountProgress(userId, storage) {
+  const store = storage !== undefined ? storage : defaultStorage();
+  if (!store || typeof userId !== 'string' || !userId.trim()) return defaultProgress();
+  const accountKey = progressionStorageKey(userId);
+  try {
+    const accountValue = store.getItem(accountKey);
+    if (accountValue !== null) return sanitizeProgress(JSON.parse(accountValue));
+
+    const legacyValue = store.getItem(PROGRESSION_KEY);
+    if (legacyValue === null) return defaultProgress();
+    const migrated = sanitizeProgress(JSON.parse(legacyValue));
+    store.setItem(accountKey, JSON.stringify(migrated));
+    store.removeItem(PROGRESSION_KEY);
+    return migrated;
+  } catch {
+    return loadProgress(store, accountKey);
+  }
+}
+
+export function saveProgress(progress, storage, key = PROGRESSION_KEY) {
   const store = storage !== undefined ? storage : defaultStorage();
   const clean = sanitizeProgress(progress);
   if (store) {
-    try { store.setItem(PROGRESSION_KEY, JSON.stringify(clean)); } catch { /* private mode */ }
+    try { store.setItem(key, JSON.stringify(clean)); } catch { /* private mode */ }
   }
   return clean;
 }

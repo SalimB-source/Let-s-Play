@@ -28,9 +28,58 @@ create table if not exists public.profiles (
   username text unique,
   display_name text,
   avatar_url text,
+  is_verified boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Ajout rétrocompatible sur les projets dont `profiles` existe déjà.
+do $$
+begin
+  if to_regclass('public.profiles') is not null then
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'profiles' and column_name = 'is_verified') then
+      execute 'alter table public.profiles add column is_verified boolean not null default false';
+    end if;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : colonne profiles.is_verified non ajoutée (%).', sqlerrm;
+end $$;
+
+-- Le badge est une décision de modération, jamais une préférence utilisateur.
+-- Les comptes connectés ne peuvent pas s'auto-vérifier à l'insertion ni modifier
+-- le drapeau ensuite ; une action d'administration (SQL Editor) peut le faire.
+create or replace function public.protect_profile_verification_badge()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if auth.uid() is not null then
+    if tg_op = 'INSERT' then
+      new.is_verified := false;
+    else
+      new.is_verified := old.is_verified;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'profiles' and column_name = 'is_verified') then
+    drop trigger if exists profiles_protect_verification_badge on public.profiles;
+    create trigger profiles_protect_verification_badge
+    before insert or update of is_verified on public.profiles
+    for each row execute function public.protect_profile_verification_badge();
+  else
+    raise warning 'Let''s Play : trigger de protection du badge ignoré (profiles.is_verified manquant).';
+  end if;
+exception when others then
+  raise warning 'Let''s Play : trigger de protection du badge non créé (%).', sqlerrm;
+end $$;
 
 -- RLS + politiques sur les profils. Tout ou rien : si un des droits manque
 -- (table créée par un autre rôle), le bloc entier est annulé et signalé, sans
@@ -56,6 +105,25 @@ exception
   when others then
     raise warning 'Let''s Play : politiques RLS de public.profiles non appliquées (%). Vérifiez que la table appartient bien au rôle du SQL Editor, puis relancez ce fichier.', sqlerrm;
 end $$;
+
+-- Progression Mirage Rush privée par compte (elle ne doit pas être lisible via
+-- l'API publique des profils). Le cache local permet toujours de jouer hors
+-- ligne ; le snapshot de cette table synchronise les comptes authentifiés.
+create table if not exists public.mirage_rush_progress (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  progress jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.mirage_rush_progress enable row level security;
+drop policy if exists "Players read their own Mirage Rush progress" on public.mirage_rush_progress;
+create policy "Players read their own Mirage Rush progress"
+  on public.mirage_rush_progress for select using (auth.uid() = user_id);
+drop policy if exists "Players insert their own Mirage Rush progress" on public.mirage_rush_progress;
+create policy "Players insert their own Mirage Rush progress"
+  on public.mirage_rush_progress for insert with check (auth.uid() = user_id);
+drop policy if exists "Players update their own Mirage Rush progress" on public.mirage_rush_progress;
+create policy "Players update their own Mirage Rush progress"
+  on public.mirage_rush_progress for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 
 -- ----------------------------------------------------------------------------
@@ -1352,6 +1420,8 @@ begin
   grant usage on schema public to anon, authenticated;
   grant select on public.profiles to anon, authenticated;
   grant insert, update on public.profiles to authenticated;
+  revoke all on public.mirage_rush_progress from public, anon;
+  grant select, insert, update on public.mirage_rush_progress to authenticated;
   grant select on public.comments to anon, authenticated;
   grant insert, delete, update on public.comments to authenticated;
   -- Groupes et fils communautaires : lecture publique, écriture réservée aux comptes (RLS).
@@ -1932,5 +2002,23 @@ from (
       case when exists (select 1 from pg_trigger t
                         where t.tgrelid = to_regclass('public.community_comments')
                           and t.tgname = 'on_community_comment_insert') then 'OK' else 'MANQUANT' end)
+ , (44, 'badge vérifié protégé sur profiles',
+      case when exists (select 1 from information_schema.columns
+                        where table_schema = 'public' and table_name = 'profiles' and column_name = 'is_verified')
+            and exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.profiles')
+                          and t.tgname = 'profiles_protect_verification_badge')
+           then 'OK' else 'MANQUANT' end)
+ , (45, 'progression Mirage Rush privée par compte',
+      case when to_regclass('public.mirage_rush_progress') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.mirage_rush_progress'))
+            and (select count(*) from pg_policies p where p.schemaname = 'public'
+                 and p.tablename = 'mirage_rush_progress'
+                 and p.policyname in ('Players read their own Mirage Rush progress',
+                                      'Players insert their own Mirage Rush progress',
+                                      'Players update their own Mirage Rush progress')) = 3
+            and to_regrole('anon') is not null
+            and not has_table_privilege('anon', 'public.mirage_rush_progress', 'select')
+           then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

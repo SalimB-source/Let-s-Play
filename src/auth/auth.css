@@ -644,6 +644,15 @@
   padding: 3px 8px;
 }
 
+.player-badge-verified-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #72efd0;
+  background: rgba(16, 185, 129, .1);
+  border-color: rgba(16, 185, 129, .38);
+}
+
 .player-gamertag {
   font-family: var(--display);
   font-size: clamp(26px, 5vw, 42px);

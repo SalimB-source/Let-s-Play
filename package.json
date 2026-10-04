@@ -43,6 +43,7 @@
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
     "check:mirage-route": "node --test tests/mirage-route.test.js",
     "check:mirage-cup": "node scripts/mirage-cup-check.mjs",
+    "check:mirage-account-grants": "node --test tests/mirage-profile-grants.test.js",
     "check:mirage-link": "node --test tests/mirage-link-epona.test.js tests/mirage-link-powers.test.js && node scripts/mirage-link-icons-check.mjs",
     "check:mirage-fullscreen": "node scripts/mirage-fullscreen-check.mjs",
     "check:vice-city-fullscreen": "node scripts/vice-city-fullscreen-check.mjs",

@@ -645,6 +645,28 @@ Ajouter une coupe : une entrée dans `CUPS` avec ses terrains, son maximum
 (`nombre de courses × 10 OR`) et son design (`mirageTrophy.js`) ; le sélecteur,
 l'enchaînement des courses et l'écran du trophée suivent tout seuls.
 
+### Progression de compte et grants administratifs
+
+La progression de Mirage Rush reste disponible hors connexion dans un cache
+local distinct par compte. Quand un joueur est connecté, son instantané est aussi
+chargé/sauvegardé dans la table privée `mirage_rush_progress`, ce qui permet de
+retrouver ses cartes, coupes et OR sur un autre appareil. Les déploiements
+existants reçoivent la table et la colonne `profiles.is_verified` en relançant
+`supabase/schema.sql`.
+
+Pour un déblocage administrateur ponctuel, appliquez ensuite
+`supabase/mirage-account-grants.sql` dans l’éditeur SQL Supabase, puis appelez :
+
+```sql
+select public.admin_grant_mirage_rush_access('adresse-du-compte', 'Salim');
+```
+
+Le grant ouvre les dix cartes et les quatre coupes, ajoute **5 000 OR** au
+solde existant et pose le badge de profil vérifié. La fonction est réservée à
+l’administration, protège le badge contre l’auto-attribution et n’ajoute l’or
+qu’une seule fois par compte. L’e-mail doit correspondre à un compte déjà
+présent dans `auth.users`.
+
 ### Vérifications
 
 ```bash

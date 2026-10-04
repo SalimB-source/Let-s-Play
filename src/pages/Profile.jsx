@@ -198,7 +198,7 @@ function PublicBadges({ badges }) {
 export default function Profile() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { user: me } = useAuth();
+  const { user: me, isDemo } = useAuth();
   const { summary } = useAchievements();
   const { lang } = useLanguage();
   const friends = useFriends();
@@ -208,11 +208,27 @@ export default function Profile() {
   // pas de compte, une fiche scriptée.
   const demoPlayer = !demoProfile ? findDemoPlayer(userId) : null;
   const [remoteProfile, setRemoteProfile] = useState(null);
+  const [profileVerified, setProfileVerified] = useState(false);
   const [commentCount, setCommentCount] = useState(null);
   // Les fiches scriptées (personas, communauté démo) sont connues tout de
   // suite : pas de squelette de chargement pour elles.
   const [loading, setLoading] = useState(() => !(demoProfile || demoPlayer));
   const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!isOwn || isDemo || !supabase) {
+      setProfileVerified(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setProfileVerified(false);
+    supabase.from('profiles').select('is_verified').eq('id', me.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (!cancelled) setProfileVerified(!error && data?.is_verified === true);
+      })
+      .catch(() => { if (!cancelled) setProfileVerified(false); });
+    return () => { cancelled = true; };
+  }, [isOwn, isDemo, me?.id]);
 
   useEffect(() => {
     if (!userId) return;
@@ -238,8 +254,9 @@ export default function Profile() {
         // 3b2 du schéma) n'existent que si la migration a été appliquée :
         // on essaie les colonnes par paliers, du plus riche au plus basique.
         const SELECT_TIERS = [
-          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at, platforms, tested_games',
-          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at',
+          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at, platforms, tested_games, is_verified',
+          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at, is_verified',
+          'id, username, display_name, avatar_url, created_at, updated_at, is_verified',
           'id, username, display_name, avatar_url, created_at, updated_at',
         ];
         let data = null;
@@ -248,7 +265,7 @@ export default function Profile() {
           ({ data, error } = await supabase.from('profiles').select(select).eq('id', userId).maybeSingle());
           const message = String(error && error.message || '');
           const missingOptionalColumn = Boolean(error)
-            && (message.includes('last_seen_at') || message.includes('platforms') || message.includes('tested_games'));
+            && (message.includes('last_seen_at') || message.includes('platforms') || message.includes('tested_games') || message.includes('is_verified'));
           if (!error || !missingOptionalColumn) break;
         }
         if (cancelled) return;
@@ -314,6 +331,7 @@ export default function Profile() {
               <div className="player-identity">
                 <div className="player-tags-row">
                   <span className="player-badge-tier">{tier}</span>
+                  {profileVerified && <span className="player-badge-verified player-badge-verified-check" aria-label="Profil vérifié" title="Profil vérifié">✓ PROFIL VÉRIFIÉ</span>}
                   <span className="player-badge-verified">NIV. {lvl} · {xp} XP</span>
                 </div>
                 <h1 className="player-gamertag">{gamertag}</h1>
@@ -600,6 +618,7 @@ export default function Profile() {
             <div className="player-identity">
               <div className="player-tags-row">
                 <span className="player-badge-tier">JOUEUR · COMMUNAUTÉ</span>
+                {remoteProfile.is_verified === true && <span className="player-badge-verified player-badge-verified-check" aria-label="Profil vérifié" title="Profil vérifié">✓ PROFIL VÉRIFIÉ</span>}
                 <span className="player-badge-verified">NIV. {lvl} {xp != null ? `· ${xp} XP` : ''}</span>
               </div>
               <h1 className="player-gamertag">{handle}</h1>
