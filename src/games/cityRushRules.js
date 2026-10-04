@@ -241,11 +241,13 @@ export const CITY_RUSH_POWERS = Object.freeze({
 // Le turbo n'est plus un pouvoir à charger : c'est un pad lumineux au sol.
 export const CITY_RUSH_PICKUPS = Object.freeze({ BOOST: 'boost' });
 
-// Chaque bonus charge une jauge dédiée : un seul bleu, trois rouges, quatre jaunes.
+// La mitrailleuse rouge se charge avec un seul bonus. Les anciens coûts bleu
+// et jaune restent définis pour les règles héritées, mais ces bonus ne sont
+// plus générés ni proposés dans Vice City Rush.
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
-  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // bleu · un bonus pour un tir droit
-  [CITY_RUSH_POWERS.PISTOL]: 3, // rouge · pistolet
-  [CITY_RUSH_POWERS.RADIO]: 4, // jaune · talkie-walkie
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
+  [CITY_RUSH_POWERS.PISTOL]: 1, // rouge · une rafale
+  [CITY_RUSH_POWERS.RADIO]: 4,
 });
 
 export const CITY_RUSH_POWER_RULES = Object.freeze({
@@ -269,7 +271,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche — deux rafales la détruisent.',
+    description: 'Un seul bonus rouge charge la mitrailleuse. Tire une courte rafale sur le rival devant toi ; au dernier tour, si personne n’est devant, tu peux viser la berline de police la plus proche.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -1062,6 +1064,30 @@ export function consumeCityRushCharge(inventory, type) {
   return { inventory: normalized, consumed: true };
 }
 
+export function isCityRushPowerCharged(inventory, type) {
+  const cost = CITY_RUSH_POWER_CHARGE_COST[type];
+  if (!Number.isFinite(cost) || cost <= 0) return false;
+  return Math.max(0, Math.trunc(Number(inventory?.[type]) || 0)) >= cost;
+}
+
+/**
+ * Les bonus rouges restent sur la route pour ceux qui doivent encore charger.
+ * Ils ne disparaissent globalement qu'une fois le joueur et tous les
+ * adversaires actifs chargés ; le filtrage individuel empêche un pilote déjà
+ * prêt de reprendre le bonus réservé aux autres.
+ */
+export function shouldHideCityRushPistolPickup(playerInventory, opponentInventories = []) {
+  if (!isCityRushPowerCharged(playerInventory, CITY_RUSH_POWERS.PISTOL)) return false;
+  const opponents = Array.isArray(opponentInventories) ? opponentInventories : [];
+  return opponents.every((inventory) => isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL));
+}
+
+export function canCollectCityRushPickup(inventory, type, { redPickupsHidden = false } = {}) {
+  if (type === CITY_RUSH_PICKUPS.BOOST) return true;
+  if (type !== CITY_RUSH_POWERS.PISTOL || redPickupsHidden) return false;
+  return !isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL);
+}
+
 export function rankCityRushRacers(racers, playerId = 'player') {
   const ordered = [...racers].sort((a, b) => (Number(b.distance) || 0) - (Number(a.distance) || 0));
   return {
@@ -1333,12 +1359,10 @@ export function createCityRushEncounter(random = Math.random) {
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // Plus d'un objet sur deux est un pad turbo (55 %) ; le tir bleu pèse
-    // 18 %, la mitrailleuse 17 % et l'hélico jaune reste rare à 10 %.
-    const type = roll < CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE ? CITY_RUSH_PICKUPS.BOOST
-      : roll < 0.73 ? CITY_RUSH_POWERS.BLUE_SHOT
-        : roll < 0.90 ? CITY_RUSH_POWERS.PISTOL
-          : CITY_RUSH_POWERS.RADIO;
+    // Seuls les pads turbo et les bonus rouges de mitrailleuse apparaissent.
+    const type = roll < CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE
+      ? CITY_RUSH_PICKUPS.BOOST
+      : CITY_RUSH_POWERS.PISTOL;
     pickups.push({ lane, type });
   }
 
@@ -1590,12 +1614,9 @@ export function selectCityRushRacers({
 // Au passage du dernier tour, deux berlines d'interception entrent en piste
 // juste derrière le premier du classement. Elles ne sont **pas classées** :
 // `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
-// Leur seule mission est de nuire au leader — elles raflent **en priorité les
-// bonus rouges (mitrailleuse) et jaunes (hélicoptère)** pour l'empêcher de
-// s'armer, puis ouvrent le feu sur lui. Elles **entrent en piste armées** :
-// jauges bleue et rouge chargées, jaune vide (voir
-// `CITY_RUSH_POLICE_START_CHARGES`) — la première rafale part donc tout de
-// suite, sans attendre un bonus volé.
+// Leur seule mission est de nuire au leader : elles chargent la mitrailleuse
+// avec les bonus rouges et peuvent appeler une frappe d'hélicoptère une seule
+// fois par course, sans charger ce tir. Elles ne disposent d'aucune autre arme.
 //
 // Contrairement aux autres voitures de course, une berline est **solide** :
 // elle ne se traverse pas. Elle peut donc se rabattre devant le leader puis
@@ -1609,9 +1630,9 @@ export const CITY_RUSH_POLICE_LANES = Object.freeze([
   CITY_RUSH_FORWARD_LANES[0],
   CITY_RUSH_FORWARD_LANES[CITY_RUSH_FORWARD_LANES.length - 1],
 ]);
-// Les deux bonus de tir, ceux que la police convoite avant tous les autres.
-export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]);
-export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge/jaune vaut cinq bonus ordinaires
+// La police ne convoite que les bonus rouges de mitrailleuse.
+export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL]);
+export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge vaut cinq bonus ordinaires
 export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.06;
 export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant le leader
 export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle du leader
@@ -1656,13 +1677,9 @@ export function cityRushPoliceShotsLeft(health = CITY_RUSH_POLICE_HEALTH, source
 // Prime de destruction : le pilote qui fait exploser une berline la touche.
 export const CITY_RUSH_POLICE_DESTROY_SCORE = 200;
 
-// ── Berlines armées dès l'entrée en piste ───────────────────────────────────
-// L'escouade ne démarre pas les mains vides : le tir droit (bleu) et la
-// mitrailleuse (rouge) sont chargés dès le départ de la chasse, l'hélicoptère
-// (jaune) reste à zéro — il faut le voler sur la piste. À elles deux, les deux
-// armes de départ couvrent tout le dernier tour sans dépendre du hasard des
-// bonus, et le jaune reste la récompense d'un vol réussi.
-export const CITY_RUSH_POLICE_START_CHARGES = Object.freeze([CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL]);
+// Les berlines entrent sans charge de mitrailleuse. Leur frappe d'hélicoptère
+// est un tir de police gratuit, géré une seule fois à l'échelle de la course.
+export const CITY_RUSH_POLICE_START_CHARGES = Object.freeze([]);
 
 export function createCityRushPoliceInventory() {
   const inventory = createCityRushInventory();

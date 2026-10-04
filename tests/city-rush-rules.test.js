@@ -140,6 +140,9 @@ import {
   addCityRushCharge,
   cityRushLaneAfterAction,
   consumeCityRushCharge,
+  canCollectCityRushPickup,
+  isCityRushPowerCharged,
+  shouldHideCityRushPistolPickup,
   createCityRushEncounter,
   createCityRushInventory,
   createCityRushPoliceInventory,
@@ -353,10 +356,10 @@ test('rivals prefer a more distant ground boost to a nearby inventory bonus', ()
     availableLanes: [0, 1, 2],
     pickups: [
       { lane: 0, distance: 1115, type: CITY_RUSH_PICKUPS.BOOST },
-      { lane: 2, distance: 1005, type: CITY_RUSH_POWERS.BLUE_SHOT },
+      { lane: 2, distance: 1005, type: CITY_RUSH_POWERS.PISTOL },
     ],
   });
-  assert.equal(nextLane, 0, 'le rival s’écarte pour le pad turbo avant de prendre le bonus bleu plus proche');
+  assert.equal(nextLane, 0, 'le rival s’écarte pour le pad turbo avant de prendre le bonus rouge plus proche');
 });
 
 test('oncoming traffic on the left lanes is dodged like a wall, never rammed', () => {
@@ -398,30 +401,39 @@ test('oncoming traffic on the left lanes is dodged like a wall, never rammed', (
   }), 3, 'sans bonus vers la gauche, on quitte le sens inverse');
 });
 
-test('rivals pursue visible bonus pickups above hazards, even when a matching bar is full', () => {
-  const route = (currentLane) => chooseCityRushAiLane({
-    currentLane,
-    distance: 10,
-    speed: 24,
-    availableLanes: [0, 1, 2, 3],
-    pickups: [{ lane: 3, distance: 50, type: CITY_RUSH_PICKUPS.BOOST }],
-  });
-  assert.deepEqual([route(0), route(1), route(2)], [1, 2, 3], 'le rival prend la voie du bonus par étapes');
-
-  const contestedBonusLane = chooseCityRushAiLane({
+test('rivals only chase red machine-gun bonuses while uncharged; boosts stay available', () => {
+  const redPickup = { lane: 2, distance: 40, type: CITY_RUSH_POWERS.PISTOL };
+  const emptyInventory = { pistol: 0 };
+  const loadedInventory = { pistol: 1 };
+  const unchargedPickups = [redPickup].filter((pickup) => canCollectCityRushPickup(emptyInventory, pickup.type));
+  assert.equal(chooseCityRushAiLane({
     currentLane: 1,
     distance: 10,
     speed: 24,
     availableLanes: [0, 1, 2],
-    pickups: [{ lane: 2, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }],
-    traffic: [
-      { lane: 2, distance: 40, speed: 6 },
-      { lane: 2, distance: 42, speed: 6 },
-      { lane: 2, distance: 45, speed: 6 },
-    ],
-    inventory: { [CITY_RUSH_POWERS.BLUE_SHOT]: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT] },
-  });
-  assert.equal(contestedBonusLane, 2, 'le bonus reste prioritaire sur les risques et une jauge déjà pleine');
+    pickups: unchargedPickups,
+  }), 2, 'le rival prend le bonus rouge pour charger sa mitrailleuse');
+
+  const loadedPickups = [redPickup].filter((pickup) => canCollectCityRushPickup(loadedInventory, pickup.type));
+  assert.deepEqual(loadedPickups, [], 'une voiture déjà chargée ne suit plus le bonus rouge');
+  assert.equal(chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 10,
+    availableLanes: [0, 1, 2],
+    pickups: loadedPickups,
+  }), 1, 'sans pickup rouge admissible, le rival reste dans sa voie');
+
+  const boost = { lane: 2, distance: 40, type: CITY_RUSH_PICKUPS.BOOST };
+  const loadedRacerPickups = [redPickup, boost]
+    .filter((pickup) => canCollectCityRushPickup(loadedInventory, pickup.type));
+  assert.deepEqual(loadedRacerPickups, [boost], 'un boost reste disponible même avec la mitrailleuse chargée');
+  assert.equal(chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 10,
+    speed: 24,
+    availableLanes: [0, 1, 2],
+    pickups: loadedRacerPickups,
+  }), 2, 'le rival chargé continue à chercher les boosts');
 });
 
 test('car profiles change top speed, acceleration, and recovery after a hit', () => {
@@ -446,12 +458,15 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
   assert.deepEqual(orderedIds('recovery'), orderedIds('hitRecoveryMultiplier', -1));
 });
 
-test('three stored powers, a one-pickup blue shot, and ground boosts match the race rules', () => {
+test('the active loadout has one red machine-gun charge plus automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 3600); // 5 tours : 4 boucles + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
   assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.55);
   assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
-  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 3, radio: 4 });
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 1, radio: 4 });
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 1);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /un seul bonus rouge/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
   });
@@ -611,28 +626,45 @@ test('le tir droit bleu riposte sur la berline la plus proche de sa voie, même 
   }).id, 'police-3');
 });
 
-test('one blue pickup charges the blue shot, while the three stored powers keep independent bars', () => {
+test('one red pickup charges the machine gun while inventory tracks remain independent', () => {
   let inventory = createCityRushInventory();
   assert.deepEqual(Object.keys(inventory), ['blue-shot', 'pistol', 'radio']);
   inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
-  inventory = addCityRushCharge(inventory, 'pistol', 2);
+  inventory = addCityRushCharge(inventory, 'pistol', 1);
   assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1);
-  assert.equal(inventory.pistol, 2);
-  // Un seul bonus bleu suffit ; la mitrailleuse reste incomplète.
-  const usedShot = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT);
+  assert.equal(inventory.pistol, 1);
+  assert.equal(isCityRushPowerCharged(inventory, 'pistol'), true, 'un seul bonus rouge charge la mitrailleuse');
+
+  const usedShot = consumeCityRushCharge(inventory, 'pistol');
   assert.equal(usedShot.consumed, true);
-  assert.equal(usedShot.inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0);
+  assert.equal(usedShot.inventory.pistol, 0);
+  assert.equal(usedShot.inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1, 'la charge historique reste indépendante');
   assert.equal(consumeCityRushCharge(usedShot.inventory, 'pistol').consumed, false);
 
-  inventory = addCityRushCharge(usedShot.inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
-  inventory = addCityRushCharge(inventory, 'pistol', 1);
-  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT]);
+  inventory = addCityRushCharge(usedShot.inventory, 'pistol', 1);
   assert.equal(inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
-  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0);
   assert.equal(consumeCityRushCharge(inventory, 'unknown').consumed, false);
 
   const overfilled = addCityRushCharge(createCityRushInventory(), 'radio', 99);
   assert.equal(overfilled.radio, CITY_RUSH_POWER_CHARGE_COST.radio);
+});
+
+test('red pickups remain available until every active racer is charged, and never charge a ready racer twice', () => {
+  const charged = { pistol: 1 };
+  const empty = { pistol: 0 };
+  assert.equal(shouldHideCityRushPistolPickup(empty, [empty, empty]), false, 'le joueur doit d’abord charger');
+  assert.equal(shouldHideCityRushPistolPickup(charged, [empty, charged]), false, 'un rival non chargé garde les bonus visibles');
+  assert.equal(shouldHideCityRushPistolPickup(charged, [charged, charged]), true, 'toutes les voitures sont prêtes');
+  const afterPlayerShot = { pistol: 0 };
+  assert.equal(shouldHideCityRushPistolPickup(afterPlayerShot, [charged, charged]), false, 'le bonus rouge réapparaît après le tir du joueur');
+  assert.equal(canCollectCityRushPickup(afterPlayerShot, 'pistol'), true, 'le joueur peut de nouveau recharger après avoir tiré');
+  assert.equal(shouldHideCityRushPistolPickup(charged, []), true, 'sans adversaire actif, le joueur seul suffit');
+  assert.equal(isCityRushPowerCharged({ pistol: 9 }, 'pistol'), true, 'les inventaires saturés sont traités comme chargés');
+  assert.equal(canCollectCityRushPickup(empty, 'pistol'), true, 'un pilote non chargé peut prendre le rouge');
+  assert.equal(canCollectCityRushPickup(charged, 'pistol'), false, 'un pilote prêt laisse le bonus rouge aux autres');
+  assert.equal(canCollectCityRushPickup(empty, 'pistol', { redPickupsHidden: true }), false, 'quand tout le monde est prêt, le rouge est caché');
+  assert.equal(canCollectCityRushPickup(charged, CITY_RUSH_PICKUPS.BOOST), true, 'la règle ne masque jamais les boosts');
+  assert.equal(canCollectCityRushPickup(empty, 'radio'), false, 'les bonus retirés ne peuvent plus être collectés');
 });
 
 test('a collected item bursts into shards, then reappears 0.1 s later', () => {
@@ -704,11 +736,9 @@ test('a collected item bursts into shards, then reappears 0.1 s later', () => {
 
 test('au dernier tour, deux berlines de police chassent le premier — hors classement', () => {
   assert.equal(CITY_RUSH_POLICE_COUNT, 2);
-  // Rouge (mitrailleuse) et jaune (hélicoptère) : exactement les deux pouvoirs
-  // de tir, ceux qui privent le leader de ses armes.
-  assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol', 'radio']);
+  // La mitrailleuse rouge est le seul bonus de tir que la police convoite.
+  assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol']);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
-  assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
   // Aucune berline ne porte un identifiant de pilote classé : la grille garde
   // trois pilotes, et l'arrivée ne peut pas compter les voitures de police.
   assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno']);
@@ -858,7 +888,7 @@ test('une berline sprinte quand elle est distancée et lève le pied quand elle 
   assert.ok(attack > 0 && Number.isFinite(attack));
 });
 
-test('l’escouade traverse la route pour rafler un bonus rouge ou jaune', () => {
+test('l’escouade traverse la route pour rafler un bonus rouge de mitrailleuse', () => {
   const common = {
     currentLane: 1,
     distance: 1000,
@@ -866,11 +896,11 @@ test('l’escouade traverse la route pour rafler un bonus rouge ou jaune', () =>
     availableLanes: [0, 1, 2, 3],
     lookAheadDistance: 200,
   };
-  // Un jaune plus loin l'emporte sur une boisson toute proche : la berline
-  // s'écarte de sa voie et se rabat vers le talkie-walkie (voie 3).
+  // Le bonus rouge plus loin l'emporte sur un turbo tout proche : la berline
+  // s'écarte de sa voie et se rabat vers la mitrailleuse (voie 3).
   const pickups = [
     { lane: 0, type: CITY_RUSH_PICKUPS.BOOST, distance: 1040 },
-    { lane: 3, type: 'radio', distance: 1180 },
+    { lane: 3, type: 'pistol', distance: 1180 },
   ];
   assert.equal(chooseCityRushPoliceLane({ ...common, pickups }), 2);
   // Le rival ordinaire vise le pad turbo proche avant le bonus de tir lointain.
@@ -919,7 +949,7 @@ test('une berline engluée derrière un véhicule lent change de voie, même pou
   const pickups = [{ lane: 1, type: 'pistol', distance: 1060 }];
   const truck = { lane: 1, distance: 1030, speed: 4.4 };
   assert.notEqual(chooseCityRushPoliceLane({ ...common, pickups, traffic: [truck] }), 1);
-  assert.notEqual(chooseCityRushPoliceLane({ ...common, pickups: [{ ...pickups[0], type: 'radio' }], traffic: [truck] }), 1, 'le jaune non plus');
+  assert.notEqual(chooseCityRushPoliceLane({ ...common, pickups: [{ ...pickups[0], type: CITY_RUSH_PICKUPS.BOOST }], traffic: [truck] }), 1, 'même un bonus ordinaire ne la pousse pas dans le camion');
   // Même collée au camion, déjà engluée à 5 m/s : elle s'en extrait.
   assert.notEqual(chooseCityRushPoliceLane({ ...common, speed: 5, pickups, traffic: [{ ...truck, distance: 1006 }] }), 1);
   // Sans camion, ou avec un camion déjà dépassé ou encore hors de portée, le
@@ -941,13 +971,13 @@ test('une voie voisine bouchée n’attire pas la berline, et tout bouché ne ca
     lookAheadDistance: 200,
   };
   const slow = (lane, distance = 1030) => ({ lane, distance, speed: 4.4 });
-  // Le talkie-walkie jaune est dans la voie 2, mais un camion le garde : elle
+  // Le bonus rouge est dans la voie 2, mais un camion le garde : elle
   // reste dans sa voie libre plutôt que de s'engluer.
-  const radio = [{ lane: 2, type: 'radio', distance: 1060 }];
-  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: radio, traffic: [] }), 2, 'voie libre : elle fonce le chercher');
-  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: radio, traffic: [slow(2)] }), 1);
+  const red = [{ lane: 2, type: 'pistol', distance: 1060 }];
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: red, traffic: [] }), 2, 'voie libre : elle fonce charger sa mitrailleuse');
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: red, traffic: [slow(2)] }), 1);
   // Bouchée et sa voisine aussi : elle prend la seule voie dégagée, même loin du bonus.
-  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: radio, traffic: [slow(1), slow(2)] }), 0);
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: red, traffic: [slow(1), slow(2)] }), 0);
   // Toutes les voies accessibles bouchées : le choix d'origine tient (elle
   // touchera le véhicule et le monde le fera se rabattre) — sans exception.
   const wall = [0, 1, 2, 3].map((lane) => slow(lane, 1020));
@@ -1008,7 +1038,7 @@ test('les berlines sont solides : ni le trafic, ni les pilotes ne les traversent
   assert.equal(swerving(CITY_RUSH_LANE_X[1] - 1).blockedBy, 'truck-1', 'encore à cheval sur la voie de la berline');
   assert.equal(swerving(CITY_RUSH_LANE_X[0]).blockedBy, null, 'rabattu : la voie est libre');
 });
-test('au dernier tour, la riposte rouge et jaune peut viser la berline la plus proche', () => {
+test('au dernier tour, la riposte rouge peut viser la berline la plus proche', () => {
   // Sans escouade déployée, pas de cible : la jauge reste chargée.
   assert.equal(cityRushPoliceTarget([], 1200), null);
   assert.equal(cityRushPoliceTarget(undefined, 1200), null);
@@ -1077,20 +1107,17 @@ test('le bandeau « berline touchée » compte les tirs restants, pas les points
   assert.equal(cityRushPoliceShotsLeft(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
 });
 
-test('les berlines entrent en piste armées : bleu et rouge chargés, jaune vide', () => {
-  assert.deepEqual([...CITY_RUSH_POLICE_START_CHARGES], [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL]);
-  assert.ok(!CITY_RUSH_POLICE_START_CHARGES.includes(CITY_RUSH_POWERS.RADIO), 'l’hélico reste à voler');
+test('les berlines entrent sans charge et conservent seulement leur hélicoptère de police gratuit', () => {
+  assert.deepEqual([...CITY_RUSH_POLICE_START_CHARGES], []);
+  assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], [CITY_RUSH_POWERS.PISTOL]);
   const inventory = createCityRushPoliceInventory();
-  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT], 'jauge bleue pleine');
-  assert.equal(inventory[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.PISTOL], 'jauge rouge pleine');
-  assert.equal(inventory[CITY_RUSH_POWERS.RADIO], 0, 'jaune vide');
+  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0, 'aucun tir bleu');
+  assert.equal(inventory[CITY_RUSH_POWERS.PISTOL], 0, 'la mitrailleuse doit être chargée par un bonus rouge');
+  assert.equal(inventory[CITY_RUSH_POWERS.RADIO], 0, 'l’hélicoptère n’est pas stocké dans la jauge');
   assert.equal(Object.hasOwn(inventory, CITY_RUSH_PICKUPS.BOOST), false, 'le pad turbo ne se stocke pas');
-  // Les deux armes de départ sont immédiatement utilisables : la consommation
-  // passe sans attendre un bonus.
-  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL).consumed, true);
-  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, true);
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL).consumed, false);
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, false);
   assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.RADIO).consumed, false);
-  // Une course vierge, elle, démarre bien les mains vides.
   assert.equal(createCityRushInventory()[CITY_RUSH_POWERS.PISTOL], 0);
 });
 
@@ -1191,10 +1218,10 @@ test('devant le leader, la berline se rabat dans sa voie pour lui couper la rout
     ...common, currentLane: 2, pickups, interceptLane: 3, interceptGap: 14,
   });
   assert.equal(cutIn, 3, 'elle coupe la route au leader');
-  // Un rouge ou un jaune reste prioritaire sur le barrage.
+  // Le bonus rouge reste prioritaire sur le barrage.
   assert.equal(chooseCityRushPoliceLane({
-    ...common, currentLane: 2, pickups: [{ lane: 1, type: 'radio', distance: 1030 }], interceptLane: 3, interceptGap: 14,
-  }), 1, 'un jaune vaut plus qu’un barrage');
+    ...common, currentLane: 2, pickups: [{ lane: 1, type: 'pistol', distance: 1030 }], interceptLane: 3, interceptGap: 14,
+  }), 1, 'la mitrailleuse vaut plus qu’un barrage');
   // Derrière le leader (interceptGap négatif), la berline ne coupe pas : elle
   // prend le bonus ordinaire.
   assert.equal(chooseCityRushPoliceLane({
@@ -1209,12 +1236,12 @@ test('devant le leader, la berline se rabat dans sa voie pour lui couper la rout
   assert.equal(chooseCityRushPoliceLane({
     ...common, currentLane: 0, pickups: [], interceptLane: 3, interceptGap: 20,
   }), 1, 'elle met le cap sur la voie du leader, une voie à la fois');
-  // Un rouge/jaune lointain ne détourne pas le barrage : seule une prise à
+  // Un bonus rouge lointain ne détourne pas le barrage : seule une prise à
   // portée de capot (CITY_RUSH_POLICE_HUNT_RANGE) passe avant.
   assert.equal(chooseCityRushPoliceLane({
-    ...common, currentLane: 2, pickups: [{ lane: 1, type: 'radio', distance: 1000 + CITY_RUSH_POLICE_HUNT_RANGE + 90 }],
+    ...common, currentLane: 2, pickups: [{ lane: 1, type: 'pistol', distance: 1000 + CITY_RUSH_POLICE_HUNT_RANGE + 90 }],
     interceptLane: 3, interceptGap: 14,
-  }), 3, 'un jaune hors de portée ne détourne pas le barrage');
+  }), 3, 'un bonus hors de portée ne détourne pas le barrage');
   // Engluée derrière un pilote (« stuck »), la berline s'extrait de la voie
   // même si un bonus ordinaire l'y appelait.
   assert.equal(chooseCityRushPoliceLane({
@@ -1273,13 +1300,13 @@ test('cars changing lanes still block one another while their body widths overla
   assert.equal(byId['clear-lane'], 30);
 });
 
-test('pickup encounters use ground boosts and stored powers without oil slicks', () => {
+test('pickup encounters contain only red machine-gun bonuses and ground boosts', () => {
   let seed = 112;
   const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
   let sawEmptyRow = false;
   let sawTwoPickups = false;
   let totalPickups = 0;
-  const pickupCounts = { [CITY_RUSH_PICKUPS.BOOST]: 0, 'blue-shot': 0, pistol: 0, radio: 0 };
+  const pickupCounts = { [CITY_RUSH_PICKUPS.BOOST]: 0, [CITY_RUSH_POWERS.PISTOL]: 0 };
   for (let index = 0; index < 10000; index += 1) {
     const encounter = createCityRushEncounter(random);
     assert.equal(Object.hasOwn(encounter, 'slowLane'), false);
@@ -1290,19 +1317,18 @@ test('pickup encounters use ground boosts and stored powers without oil slicks',
     const pickupLanes = new Set();
     for (const pickup of encounter.pickups) {
       assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
-      assert.ok([CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO].includes(pickup.type));
+      assert.ok([CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
       assert.ok(!pickupLanes.has(pickup.lane));
       pickupLanes.add(pickup.lane);
     }
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
-  const yellowRate = pickupCounts.radio / totalPickups;
+  const redRate = pickupCounts[CITY_RUSH_POWERS.PISTOL] / totalPickups;
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
-  assert.ok(yellowRate >= 0.08 && yellowRate <= 0.12, `le bonus jaune reste rare (${(yellowRate * 100).toFixed(1)} %)`);
-  assert.ok(boostRate >= 0.53 && boostRate <= 0.57, `le turbo au sol apparaît bien plus souvent (${(boostRate * 100).toFixed(1)} %)`);
-  assert.ok(pickupCounts.radio < pickupCounts[CITY_RUSH_PICKUPS.BOOST]
-    && pickupCounts.radio < pickupCounts[CITY_RUSH_POWERS.BLUE_SHOT]
-    && pickupCounts.radio < pickupCounts[CITY_RUSH_POWERS.PISTOL]);
+  assert.ok(redRate >= 0.43 && redRate <= 0.47, `le bonus rouge charge la mitrailleuse (${(redRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.53 && boostRate <= 0.57, `le turbo au sol apparaît bien (${(boostRate * 100).toFixed(1)} %)`);
+  assert.equal(pickupCounts['blue-shot'], undefined);
+  assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
   assert.equal(sawTwoPickups, true);
   assert.ok(totalPickups > 12000 && totalPickups < 12800, 'les rangées plus souvent doubles augmentent le nombre de bonus au sol');

@@ -1168,6 +1168,84 @@
   line-height: 1.3;
 }
 
+/* Unique machine-gun control: large, round, red, thumb-friendly on phones. */
+.city-rush-machine-gun-button {
+  position: relative;
+  display: grid;
+  grid-template-rows: 12px 1fr 12px;
+  justify-items: center;
+  align-items: center;
+  gap: 2px;
+  width: 102px;
+  height: 102px;
+  padding: 10px;
+  border: 2px solid rgba(255, 82, 110, 0.86);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 34%, rgba(255, 82, 110, 0.21), rgba(37, 8, 18, 0.96) 72%);
+  box-shadow: inset 0 0 0 4px rgba(255, 82, 110, 0.09), 0 8px 24px rgba(0, 0, 0, 0.42), 0 0 18px rgba(255, 40, 75, 0.2);
+  color: #ff9baa;
+  font: 900 8px/1 var(--mono, monospace);
+  letter-spacing: 0.1em;
+  text-align: center;
+  opacity: 1;
+  cursor: not-allowed;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.14s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.city-rush-machine-gun-button.is-ready {
+  border-color: #ffe2e6;
+  background: radial-gradient(circle at 42% 28%, #ff7185, #df203c 52%, #7c1024 100%);
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.12), 0 0 26px rgba(255, 45, 75, 0.62), 0 8px 24px rgba(0, 0, 0, 0.48);
+  color: #fff;
+  cursor: pointer;
+}
+
+.city-rush-machine-gun-button.is-ready::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid rgba(255, 95, 120, 0.76);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: crMachineGunReadyPulse 1.35s ease-out infinite;
+}
+
+@keyframes crMachineGunReadyPulse {
+  0% { transform: scale(0.94); opacity: 0.75; }
+  100% { transform: scale(1.16); opacity: 0; }
+}
+
+.city-rush-machine-gun-button:hover:not(:disabled) { transform: translateY(-2px); }
+.city-rush-machine-gun-button:active:not(:disabled) { transform: scale(0.94); }
+.city-rush-machine-gun-button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+
+.city-rush-machine-gun-label,
+.city-rush-machine-gun-status {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.city-rush-machine-gun-label { font-size: 7px; }
+.city-rush-machine-gun-status { font-size: 10px; letter-spacing: 0.08em; }
+
+.city-rush-machine-gun-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #ff6279;
+}
+
+.city-rush-machine-gun-icon svg { width: 34px; height: 34px; }
+.city-rush-machine-gun-button.is-ready .city-rush-machine-gun-icon { color: #fff; filter: drop-shadow(0 1px 4px rgba(72, 0, 12, 0.7)); }
+
 /* Power bar — modern dock */
 .city-rush-power-bar {
   display: flex;
@@ -2473,9 +2551,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-radar .city-rush-race-list-rank { font-size: 8px; }
   .city-rush-radar .city-rush-race-list-badges b { display: none; }
 
-  /* Barre de vie du pilote : sous les cartes du haut, à gauche, à l'écart du
-     radar (en bas à gauche) et des commandes (à droite). */
-  .city-rush-health { left: 10px; right: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); transform: none; width: 156px; padding: 6px 8px 7px; border-radius: 10px; }
+  /* Le radar et les commandes occupent les deux coins inférieurs. La barre
+     reste centrée au-dessus d'eux : ancrée en bas à gauche, elle était cachée
+     derrière le classement, qui a un z-index supérieur. */
+  .city-rush-health {
+    z-index: 6;
+    left: 50%;
+    right: auto;
+    bottom: calc(230px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    width: min(156px, 44%);
+    padding: 6px 8px 7px;
+    border-radius: 10px;
+  }
   .city-rush-health-head { margin-bottom: 4px; }
   .city-rush-health-head b { font-size: 8px; }
   .city-rush-health-head small { font-size: 7px; }
@@ -2511,6 +2599,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-steering > span { display: none; }
   .city-rush-steering button { width: 58px; height: 58px; border-radius: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.24); font-size: 22px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; transition: transform 0.1s ease, background 0.1s ease; }
   .city-rush-steering button:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.22); border-color: var(--city-secondary); }
+  .city-rush-machine-gun-button { width: 94px; height: 94px; }
   .city-rush-power-bar {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2558,6 +2647,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-toast,
   .city-rush-lap-banner,
   .city-rush-power-pip,
+  .city-rush-machine-gun-button.is-ready::after,
   .city-rush-gta-wanted i.is-on,
   .city-rush-viewport.is-boosting::after,
   .city-rush-viewport.is-stunned::after {
