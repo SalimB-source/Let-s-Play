@@ -24,25 +24,27 @@ HEADLIGHT_CONE.translate(0, 0, -4.5);
 // voiture son capot, son pavillon et son arrière propres.
 const CAR_MODELS = {
   'city-hatch': {
-    // Citadine 5 portes inspirée d'une compacte française : pavillon haut,
-    // hayon court, épaules arrondies et roues modestes. Aucun badge n'est ajouté.
-    wheelX: 0.88, wheelZ: [-1.23, 1.12], wheelRadius: 0.31, wheelWidth: 0.24, wheelStyle: 'eight-hole',
-    doorSeams: [-0.16, 0.72], grilleWidth: 0.82,
+    // Petite citadine française cinq portes, calée sur la miniature Mistral :
+    // capot presque horizontal, pare-brise redressé, pavillon haut et hayon
+    // très court. La silhouette reste volontairement sans badge constructeur.
+    wheelX: 0.88, wheelZ: [-1.20, 1.13], wheelRadius: 0.305, wheelWidth: 0.23, wheelStyle: 'eight-hole',
+    doorSeams: [-0.12, 0.78], grilleWidth: 0.76,
     stations: [
-      [-2.00, 0.27, 0.38, 0.50, 0.57, 0.12], [-1.84, 0.58, 0.38, 0.66, 0.79, 0.39],
-      [-1.60, 0.79, 0.39, 0.77, 0.96, 0.59], [-1.34, 0.88, 0.40, 0.83, 1.12, 0.68],
-      [-1.06, 0.91, 0.40, 0.85, 1.29, 0.72], [-0.76, 0.91, 0.41, 0.86, 1.48, 0.73],
-      [-0.43, 0.91, 0.41, 0.86, 1.54, 0.73], [-0.02, 0.90, 0.41, 0.85, 1.54, 0.72],
-      [0.40, 0.91, 0.41, 0.84, 1.49, 0.73], [0.76, 0.91, 0.40, 0.83, 1.36, 0.73],
-      [1.06, 0.89, 0.40, 0.81, 1.09, 0.68], [1.37, 0.82, 0.39, 0.75, 0.90, 0.63],
-      [1.68, 0.64, 0.38, 0.63, 0.77, 0.50], [1.94, 0.28, 0.37, 0.50, 0.56, 0.14],
+      [-2.00, 0.25, 0.37, 0.48, 0.55, 0.11], [-1.84, 0.58, 0.38, 0.65, 0.75, 0.38],
+      [-1.61, 0.78, 0.39, 0.76, 0.82, 0.59], [-1.34, 0.87, 0.40, 0.82, 0.86, 0.69],
+      [-1.04, 0.90, 0.40, 0.84, 0.90, 0.71], [-0.82, 0.90, 0.41, 0.85, 1.00, 0.70],
+      [-0.53, 0.90, 0.41, 0.86, 1.40, 0.66], [-0.27, 0.89, 0.41, 0.85, 1.49, 0.69],
+      [0.16, 0.89, 0.41, 0.85, 1.51, 0.70], [0.57, 0.90, 0.41, 0.84, 1.48, 0.71],
+      [0.91, 0.90, 0.40, 0.83, 1.40, 0.70], [1.18, 0.88, 0.40, 0.81, 1.25, 0.67],
+      [1.45, 0.83, 0.39, 0.76, 1.04, 0.62], [1.69, 0.68, 0.38, 0.65, 0.83, 0.51],
+      [1.90, 0.42, 0.37, 0.54, 0.65, 0.28], [2.00, 0.24, 0.36, 0.47, 0.53, 0.11],
     ],
-    windshield: [[-0.69, 1.02, -0.91], [0.69, 1.02, -0.91], [0.57, 1.36, -0.42], [-0.57, 1.36, -0.42]],
-    rearGlass: [[-0.56, 1.37, 0.48], [0.56, 1.37, 0.48], [0.67, 1.08, 1.76], [-0.67, 1.08, 1.76]],
+    windshield: [[-0.72, 0.98, -0.84], [0.72, 0.98, -0.84], [0.59, 1.39, -0.49], [-0.59, 1.39, -0.49]],
+    rearGlass: [[-0.58, 1.39, 0.68], [0.58, 1.39, 0.68], [0.69, 1.04, 1.48], [-0.69, 1.04, 1.48]],
     sideWindows: [
-      [[0.84, 1.08, -0.83], [0.62, 1.38, -0.39], [0.62, 1.38, 0.02], [0.85, 1.08, 0.05]],
-      [[0.85, 1.08, 0.12], [0.63, 1.37, 0.10], [0.63, 1.36, 0.76], [0.84, 1.12, 0.90]],
-      [[0.83, 1.11, 0.96], [0.64, 1.34, 0.80], [0.65, 1.19, 1.43], [0.79, 1.09, 1.45]],
+      [[0.85, 1.03, -0.76], [0.62, 1.40, -0.45], [0.63, 1.42, -0.06], [0.86, 1.04, 0.00]],
+      [[0.86, 1.04, 0.08], [0.64, 1.42, 0.02], [0.65, 1.39, 0.72], [0.85, 1.07, 0.84]],
+      [[0.84, 1.07, 0.92], [0.66, 1.38, 0.78], [0.67, 1.25, 1.19], [0.80, 1.05, 1.38]],
     ],
   },
   ferrari: {
@@ -340,16 +342,18 @@ function makeSteeringLights(profile, spec, batch, materials) {
   batch.box(black, [0, 0.325, -1.94], [1.88, 0.045, 0.17]);
 
   if (profile.archetype === 'city-hatch') {
-    // Face avant simple de petite citadine : phares rectangulaires, calandre
-    // sobre et antibrouillards. Le centre reste vierge, sans losange ni badge.
-    batch.box(black, [0, 0.555, -1.91], [0.86, 0.17, 0.065]);
-    batch.box(carbon, [0, 0.39, -1.93], [1.72, 0.12, 0.14]);
+    // Bouclier noir en trois niveaux et optiques rectangulaires légèrement
+    // enveloppantes, comme sur la citadine turquoise de la miniature.
+    batch.box(black, [0, 0.625, -1.885], [0.72, 0.075, 0.07]); // fente de calandre
+    batch.box(carbon, [0, 0.515, -1.925], [1.76, 0.105, 0.13]); // baguette de pare-chocs
+    batch.box(black, [0, 0.405, -1.955], [1.08, 0.105, 0.10]); // entrée d'air basse
     for (const side of [-1, 1]) {
-      const x = side * 0.61;
-      batch.box(black, [x, 0.735, -1.84], [0.38, 0.17, 0.05]);
-      batch.box(lightWhite, [x, 0.735, -1.875], [0.31, 0.10, 0.035]);
-      batch.box(lightAmber, [side * 0.82, 0.595, -1.86], [0.10, 0.07, 0.035]);
-      batch.sphere(lightWhite, [side * 0.68, 0.47, -1.91], 0.07, 8);
+      const x = side * 0.60;
+      batch.box(black, [x, 0.745, -1.845], [0.43, 0.19, 0.055]);
+      batch.box(lightWhite, [x, 0.755, -1.88], [0.34, 0.115, 0.035]);
+      batch.box(lightAmber, [side * 0.80, 0.735, -1.885], [0.07, 0.11, 0.035]);
+      batch.box(black, [side * 0.68, 0.405, -1.96], [0.20, 0.12, 0.035]);
+      batch.sphere(lightWhite, [side * 0.68, 0.415, -1.985], 0.065, 10);
     }
     return;
   }
@@ -482,12 +486,22 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
   const sideLineX = spec.wheelX - 0.015;
 
   if (archetype === 'city-hatch') {
-    // Jupes discrètes et baguette de protection d'une citadine de série, sans
-    // lettrage, emblème ou élément de carrosserie de marque.
+    // Grosses baguettes noires, deux portes bien découpées et bas de caisse
+    // sobres : ce sont les signes les plus lisibles de la miniature de profil.
     for (const side of [-1, 1]) {
-      batch.box(trim, [side * sideLineX, 0.61, 0.10], [0.022, 0.028, 2.1]);
-      batch.box(carbon, [side * 0.88, 0.405, 0.12], [0.055, 0.085, 2.95]);
+      batch.box(carbon, [side * 0.895, 0.655, -0.36], [0.045, 0.075, 0.70]);
+      batch.box(carbon, [side * 0.895, 0.655, 0.54], [0.045, 0.075, 0.82]);
+      batch.box(carbon, [side * 0.88, 0.405, 0.10], [0.055, 0.085, 2.92]);
+      // Petit répétiteur orange sur l'aile avant et poignées noires de série.
+      batch.box(lightAmber, [side * 0.902, 0.80, -0.93], [0.025, 0.055, 0.10]);
+      batch.box(black, [side * 0.915, 0.765, -0.37], [0.03, 0.045, 0.17]);
+      batch.box(black, [side * 0.915, 0.765, 0.53], [0.03, 0.045, 0.17]);
     }
+    // Deux lignes fines donnent au capot plat ses joints sans ajouter de logo.
+    for (const side of [-1, 1]) batch.box(black, [side * 0.62, 0.895, -1.27], [0.018, 0.014, 0.55]);
+    batch.box(black, [0, 0.925, -0.91], [1.22, 0.014, 0.018]);
+    // Lèvre peinte au-dessus du hayon, très courte comme sur la photo studio.
+    batch.box(body, [0, 1.19, 1.49], [1.34, 0.055, 0.16], [-0.08, 0, 0]);
   }
 
   if (archetype === 'ferrari') {
@@ -639,7 +653,8 @@ export function makeRacerCar(profile, options = {}) {
   }
   for (const side of [-1, 1]) {
     for (const z of spec.doorSeams.length > 1 ? [-0.45, 0.40] : [0.38]) {
-      box(materials.chrome, [side * (spec.wheelX + 0.005), 0.745, z], [0.03, 0.032, 0.15]);
+      const handleMaterial = profile.archetype === 'city-hatch' ? materials.black : materials.chrome;
+      box(handleMaterial, [side * (spec.wheelX + 0.005), 0.745, z], [0.03, 0.032, 0.15]);
     }
   }
 
