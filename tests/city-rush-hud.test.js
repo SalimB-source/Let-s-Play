@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const css = readFileSync(new URL('../src/games/vice-city-rush.css', import.meta.url), 'utf8');
 const page = readFileSync(new URL('../src/games/ViceCityRushPage.jsx', import.meta.url), 'utf8');
+const world = readFileSync(new URL('../src/games/ViceCityWorld.jsx', import.meta.url), 'utf8');
 const healthRules = [...css.matchAll(/\.city-rush-health\s*\{([^}]*)\}/g)].map((match) => match[1]);
 const mobileHealthRule = healthRules.at(-1) || '';
 const mobileHealthDeclarations = Object.fromEntries(
@@ -14,7 +15,11 @@ const mobileHealthDeclarations = Object.fromEntries(
 test('the race exposes one large, round red machine-gun button and no legacy shot buttons', () => {
   assert.match(page, /const POWER_ORDER = \[CITY_RUSH_POWERS\.PISTOL\]/);
   assert.match(page, /city-rush-machine-gun-button/);
-  assert.match(page, /Tirer à la mitrailleuse rouge/);
+  assert.match(page, /Tirer à l’AK-47/);
+  assert.match(page, /chargeur recourbé/);
+  assert.match(world, /unguided: isPistol/);
+  assert.match(world, /fireStraightShot\('player', null, CITY_RUSH_POWERS.PISTOL\)/);
+  assert.match(world, /CITY_RUSH_PISTOL_SPIN_TURNS/);
   assert.doesNotMatch(page, /city-rush-power-button/);
   assert.doesNotMatch(page, /A : TIR BLEU|R : HÉLICO/);
 

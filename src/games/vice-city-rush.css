@@ -1243,7 +1243,7 @@
   color: #ff6279;
 }
 
-.city-rush-machine-gun-icon svg { width: 34px; height: 34px; }
+.city-rush-machine-gun-icon svg { width: 40px; height: 40px; }
 .city-rush-machine-gun-button.is-ready .city-rush-machine-gun-icon { color: #fff; filter: drop-shadow(0 1px 4px rgba(72, 0, 12, 0.7)); }
 
 /* Power bar — modern dock */

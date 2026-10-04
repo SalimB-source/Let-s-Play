@@ -193,6 +193,23 @@ function ordinal(place) {
   return place === 1 ? '1er' : `${place}e`;
 }
 function PowerIcon({ type, className = '' }) {
+  if (type === 'pistol') {
+    return (
+      <svg className={className} viewBox="0 0 32 32" aria-hidden="true" fill="currentColor">
+        {/* AK-47 de profil : crosse, boîtier, chargeur recourbé, canon et mires. */}
+        <path d="M2.2 13.1 8.6 14.4v4.6L2.3 20.8z" />
+        <path d="M8.4 13.1h9.6v5.4H8.4z" />
+        <path d="M17.8 13.6h5.4v4.4h-5.4z" />
+        <path d="M23 14.7h7.2v2.1H23z" />
+        <path d="M17.9 11.9h9.2v1.4h-9.2z" />
+        <path d="M11.1 18.3 9.2 26.6h3.2l1.8-8.3z" />
+        <path d="M15.4 18.4c1.7 3.2 2.6 6.4.7 8.3-1.5.5-2.8-.4-3.4-2.1-.3-2.3 1.1-4.7 2.7-6.2z" />
+        <rect x="27.1" y="10.1" width="1.5" height="5.2" rx="0.4" />
+        <rect x="16.4" y="11.1" width="1.4" height="2.4" rx="0.3" />
+        <rect x="29.6" y="14.2" width="1.6" height="3.1" rx="0.35" />
+      </svg>
+    );
+  }
   const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' };
   return (
     <svg className={className} viewBox="0 0 32 32" aria-hidden="true" {...common}>
@@ -200,12 +217,6 @@ function PowerIcon({ type, className = '' }) {
         <rect x="3" y="4" width="26" height="24" rx="3" />
         <path d="M11 21v-8l5 4v-5l5 4v-5" />
         <path d="m17 7 4 4 4-4" />
-      </>}
-      {type === 'pistol' && <>
-        <path d="M3 12h19" />
-        <path d="M22 12v4a3 3 0 0 1-3 3h-3" />
-        <path d="M16 19v-6" />
-        <path d="M13 12l-3 7" />
       </>}
     </svg>
   );
@@ -546,8 +557,8 @@ export default function ViceCityRushPage() {
 
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'pistol') showToast(`TATATATA ! ${effect.target} mitraillé · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
-    else if (effect.type === 'pistol-hit-player') showToast(`TATATATA ! ${effect.attacker} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · TOUPIE ET RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    else if (effect.type === 'pistol-hit-player') showToast(`AK-47 · ${effect.attacker} TE TOUCHE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
     else if (effect.type === 'radio') showToast(
       `${effect.callerId && effect.callerId !== 'player' ? 'POLICE · FRAPPE D’HÉLICOPTÈRE UNIQUE' : 'HÉLICO EN APPROCHE'} · CIBLE : ${effect.target}.`,
@@ -559,11 +570,10 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'traffic-impact') showToast(effect.oncoming ? 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.' : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`, 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
-    else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ LA MITRAILLEUSE (ROUGE)${effect.ready ? ' · ELLE EST CHARGÉE' : ''}.`, 'pistol');
+    else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ L’AK-47 (ROUGE)${effect.ready ? ' · IL EST CHARGÉ' : ''}.`, 'pistol');
     else if (effect.type === 'police-rally') showToast(effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-hit' && effect.source === 'pistol') {
-      const left = effect.remaining || 1;
-      showToast(`RAFALE ROUGE · ${effect.police} TOUCHÉE · BARRE DE VIE ${effect.health}/${effect.maxHealth} · ENCORE ${left} RAFALE${left > 1 ? 'S' : ''} ROUGE${left > 1 ? 'S' : ''}.`, 'pistol');
+      showToast(`AK-47 · ${effect.police} TOUCHÉE.`, 'pistol');
     }
     else if (effect.type === 'police-destroyed') showToast(effect.byPlayer ? `💥 ${effect.police} DÉTRUITE · +200 PTS · ELLE QUITTE LA COURSE.` : `💥 ${effect.police} DÉTRUITE · ELLE QUITTE LA COURSE.`, 'radio');
     else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
@@ -820,10 +830,10 @@ export default function ViceCityRushPage() {
                       className={`city-rush-machine-gun-button${ready ? ' is-ready' : ''}`}
                       onClick={() => actionsRef.current?.(type)}
                       disabled={!ready}
-                      title={ready ? 'Mitrailleuse rouge chargée · appuie pour tirer' : 'Ramasse un bonus rouge pour charger la mitrailleuse'}
-                      aria-label={ready ? 'Tirer à la mitrailleuse rouge' : `Mitrailleuse rouge : ${progress}/${rule.chargeCost}, ramasse un bonus rouge`}
+                      title={ready ? 'AK-47 chargé · appuie pour tirer tout droit' : 'Ramasse un bonus rouge pour charger l’AK-47'}
+                      aria-label={ready ? 'Tirer à l’AK-47' : `AK-47 : ${progress}/${rule.chargeCost}, ramasse un bonus rouge`}
                     >
-                      <span className="city-rush-machine-gun-label">MITRAILLEUSE</span>
+                      <span className="city-rush-machine-gun-label">AK-47</span>
                       <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
                       <span className="city-rush-machine-gun-status">{ready ? 'TIRER' : `${progress} / ${rule.chargeCost}`}</span>
                     </button>
@@ -1214,7 +1224,7 @@ export default function ViceCityRushPage() {
               })}
               <div className="city-rush-guide-item is-boost">
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
-                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Un bonus rouge suffit à charger la mitrailleuse.</small></div>
+                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Un bonus rouge suffit à charger l’AK-47.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
               </div>
             </div>
@@ -1227,7 +1237,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines chargent leur mitrailleuse avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les berlines sont signalées dans la liste des positions. Chaque berline a une barre de vie : deux rafales rouges, un tir d’hélicoptère ou trois carambolages la détruisent (explosion, retrait de la course et +200 pts). Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Une rafale rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les berlines sont signalées dans la liste des positions. Chaque berline a une barre de vie : un tir d’AK-47, un tir d’hélicoptère ou trois carambolages la détruisent (explosion, retrait de la course et +200 pts). Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
           </section>
         </aside>
       </main>

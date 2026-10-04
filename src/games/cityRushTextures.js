@@ -863,21 +863,59 @@ export function makePickupMaterial(type, color) {
       ctx.fill();
       ctx.shadowBlur = 0;
     } else if (type === 'pistol') {
+      // AK-47 de profil : crosse, garde-main, chargeur recourbé, canon et mire.
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(-0.18);
+      ctx.translate(-centerX, -centerY);
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 16;
       ctx.beginPath();
-      ctx.moveTo(49, 70);
-      ctx.lineTo(183, 70);
-      ctx.lineTo(205, 88);
-      ctx.lineTo(175, 105);
-      ctx.lineTo(132, 105);
-      ctx.lineTo(124, 148);
-      ctx.lineTo(93, 148);
-      ctx.lineTo(96, 105);
-      ctx.lineTo(54, 105);
+      // Crosse
+      ctx.moveTo(38, 108);
+      ctx.lineTo(86, 118);
+      ctx.lineTo(86, 148);
+      ctx.lineTo(40, 162);
+      ctx.closePath();
+      // Boîtier
+      ctx.moveTo(84, 114);
+      ctx.lineTo(148, 114);
+      ctx.lineTo(148, 150);
+      ctx.lineTo(84, 150);
+      ctx.closePath();
+      // Garde-main
+      ctx.moveTo(146, 118);
+      ctx.lineTo(186, 118);
+      ctx.lineTo(186, 146);
+      ctx.lineTo(146, 146);
+      ctx.closePath();
+      // Canon
+      ctx.moveTo(184, 124);
+      ctx.lineTo(236, 124);
+      ctx.lineTo(236, 136);
+      ctx.lineTo(184, 136);
+      ctx.closePath();
+      // Poignée pistolet
+      ctx.moveTo(104, 148);
+      ctx.lineTo(92, 204);
+      ctx.lineTo(118, 204);
+      ctx.lineTo(128, 148);
+      ctx.closePath();
+      // Chargeur recourbé
+      ctx.moveTo(132, 148);
+      ctx.quadraticCurveTo(168, 176, 154, 214);
+      ctx.quadraticCurveTo(132, 222, 122, 198);
+      ctx.quadraticCurveTo(128, 168, 132, 148);
       ctx.closePath();
       ctx.fill();
-      ctx.clearRect(151, 74, 37, 12);
-      ctx.fillStyle = color;
-      ctx.fillRect(162, 75, 44, 8);
+      ctx.shadowBlur = 0;
+      // Tube de gaz
+      ctx.fillRect(148, 104, 72, 12);
+      // Mire avant
+      ctx.fillRect(214, 86, 10, 40);
+      // Cache-flamme
+      ctx.fillRect(234, 120, 16, 20);
+      ctx.restore();
     } else {
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 8;
