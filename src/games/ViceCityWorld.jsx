@@ -1002,8 +1002,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return ralliedCars.length ? [...squad, ...ralliedCars] : squad;
   };
   // Le trafic qui roule encore sa ronde : une berline passée à l'attaque est
-  // pilotée par la chasse, plus par le flot lent.
-  const rollingTraffic = () => trafficCars.filter((traffic) => !traffic.rallied);
+  // pilotée par la chasse, plus par le flot lent ; une berline détruite reste
+  // hors course, invisible et sans collision.
+  const rollingTraffic = () => trafficCars.filter((traffic) => !traffic.rallied && !traffic.destroyed);
   const activePursuerById = (id) => activePursuers().find((police) => police.id === id) || null;
 
   const rows = [];
@@ -2024,12 +2025,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.active = false;
     const ralliedIndex = ralliedCars.indexOf(police);
     if (ralliedIndex >= 0) ralliedCars.splice(ralliedIndex, 1);
+    let associatedTraffic = null;
     if (police.rallied) {
       // L'épave ne reprendra jamais sa ronde cette course : le halo et la
       // barre de vie disparaissent avec elle (le trafic repart au complet à
       // la course suivante).
       detachPoliceGlow(police.mesh);
       detachPoliceHealthBar(police.mesh);
+      associatedTraffic = trafficCars.find((car) => `rally-${car.id}` === police.id);
+      if (associatedTraffic) {
+        associatedTraffic.rallied = false;
+        associatedTraffic.destroyed = true;
+      }
     }
     police.mesh.visible = false;
     spawnPoliceExplosion(worldPosition, pan);
@@ -2498,7 +2505,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // rentre dans le rang au drapeau à damier et retrouve sa ronde au départ
   // suivant.
   function rallyTrafficPolice(traffic, targetId = 'player') {
-    if (!traffic || traffic.rallied || traffic.type !== 'police') return null;
+    if (!traffic || traffic.rallied || traffic.destroyed || traffic.type !== 'police') return null;
     traffic.rallied = true;
     const police = {
       id: `rally-${traffic.id}`,
@@ -4114,6 +4121,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       for (const [index, traffic] of trafficCars.entries()) {
         // Berline rappelée : elle est pilotée par la chasse, plus par le flot.
         if (traffic.rallied) continue;
+        // Berline détruite : reste invisible hors de la course jusqu'au prochain départ, plus aucun mouvement/collision.
+        if (traffic.destroyed) {
+          traffic.mesh.visible = false;
+          continue;
+        }
         const priorTrafficDistance = priorTrafficDistances.get(traffic.id);
         const priorTrafficX = traffic.currentX;
         traffic.impactLeft = Math.max(0, traffic.impactLeft - dt);
@@ -4308,6 +4320,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // de rendu pendant l'intro et le compte à rebours).
       for (const traffic of trafficCars) {
         if (traffic.rallied) continue;
+        if (traffic.destroyed) {
+          traffic.mesh.visible = false;
+          continue;
+        }
         const gap = traffic.distance - distance;
         traffic.mesh.visible = gap > -18 && gap < 150;
         if (phase === 'finished') {
