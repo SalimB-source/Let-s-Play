@@ -38,6 +38,15 @@ export function block(geometry, material, parent, position, scale = null) {
   return mesh;
 }
 
+// Orientation réservée aux modèles instanciés dans la course. On la place sur
+// la racine du cavalier pour qu'aucune pose d'animation ne la remette à zéro.
+export const RACE_EXPLORER_YAW = Math.PI;
+export function orientExplorerForRace(model) {
+  if (!model?.rotation) return model;
+  model.rotation.y = RACE_EXPLORER_YAW;
+  return model;
+}
+
 /** Expand a 5/6/7-slot palette into the full 7 slots used by the model. */
 export function normalizePalette(palette) {
   const source = Array.isArray(palette) && palette.length >= 5 ? palette : CHARACTER_PALETTES[0];
@@ -281,16 +290,21 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   armGroup.name = 'rider-arms';
   riderBody.add(armGroup);
   const arms = [];
-  for (const x of [-0.43, 0.43]) {
-    // Bottes du cavalier, avec le quartier de pantalon par-dessus et l'éperon au
-    // talon — c'est le talon que la caméra voit.
-    block(cube, mane, riderBody, [x, 1.16, 0.05], [0.22, 0.57, 0.32]);
-    block(cube, cloth, riderBody, [x, 1.34, 0.05], [0.26, 0.2, 0.36]);
-    block(cube, trim, riderBody, [x, 1.02, 0.24], [0.12, 0.07, 0.09]);
-    const arm = block(cube, cloth, armGroup, [x * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
+  for (const side of [-1, 1]) {
+    // Les cuisses descendent en biais depuis la selle, puis les bottes sortent
+    // franchement des flancs : la silhouette du cavalier reste lisible en course.
+    const thigh = block(cube, cloth, riderBody, [side * 0.43, 1.47, 0.05], [0.28, 0.54, 0.38]);
+    thigh.rotation.z = side * 0.52;
+    const bootX = side * 0.62;
+    block(cube, mane, riderBody, [bootX, 1.1, 0.05], [0.24, 0.55, 0.34]);
+    block(cube, cloth, riderBody, [bootX, 1.34, 0.05], [0.3, 0.2, 0.37]);
+    block(cube, trim, riderBody, [bootX, 1.02, 0.24], [0.12, 0.07, 0.09]);
+    // Les bras restent à la largeur des épaules et tiennent toujours les rênes.
+    const armX = side * 0.43;
+    const arm = block(cube, cloth, armGroup, [armX * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
     arm.rotation.x = -0.8;
     arms.push(arm);
-    block(cube, mane, riderBody, [x * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
+    block(cube, mane, riderBody, [armX * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
   }
   // `cape` et `hat` restent des nœuds à part : l'un bat au galop, l'autre tombe
   // pour Cloud. (Les groupes `cape-flap`, `rider-face` et `rider-arms` ont leur

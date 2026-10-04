@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { CHARACTER_NAMES, CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX, LINK_EPONA_INDEX } from '../src/games/mirageCharacters.js';
-import { disposeExplorer, makeExplorer, paintModel } from '../src/games/mirageExplorer.js';
+import { disposeExplorer, makeExplorer, orientExplorerForRace, paintModel, RACE_EXPLORER_YAW } from '../src/games/mirageExplorer.js';
 
 /**
  * Les détails du cavalier et de sa monture : visage, crinière, harnachement.
@@ -115,6 +115,34 @@ test('le détail est fusionné : un cavalier tient sous cinquante appels de dess
     assert.equal(meshCount(parts.horseHead), colorsOf(parts.horseHead).size);
     assert.equal(meshCount(model), 44, 'les jambes, la queue, la cape, les bras et le chapeau restent à part');
     assert.ok(triangleCount(model) >= 1000, '…sans avoir perdu le détail');
+  } finally {
+    disposeExplorer(model);
+  }
+});
+
+test('les bottes du cavalier dépassent visiblement des deux côtés de la monture', () => {
+  const model = makeExplorer(false, CHARACTER_PALETTES[0]);
+  try {
+    const parts = model.userData.parts;
+    model.updateMatrixWorld(true);
+    const trouserMesh = parts.riderBody.children.find((child) => (
+      child.isMesh && child.material === model.userData.materials[2] && child !== parts.cape
+    ));
+    assert.ok(trouserMesh, 'les jambes sont fusionnées avec les pièces en tissu pour préserver le budget de rendu');
+    const bounds = new THREE.Box3().setFromObject(trouserMesh);
+    assert.ok(bounds.max.x > 0.7 && bounds.min.x < -0.7, 'le pantalon et les manchettes sortent des flancs');
+  } finally {
+    disposeExplorer(model);
+  }
+});
+
+test('les modèles du joueur, des rivaux et des joueurs en ligne reçoivent le yaw de course', () => {
+  const model = makeExplorer(false, CHARACTER_PALETTES[0]);
+  try {
+    assert.equal(model.rotation.y, 0, 'les aperçus 3D gardent leur orientation propre');
+    assert.equal(orientExplorerForRace(model), model, 'le helper garde la même instance');
+    assert.equal(model.rotation.y, RACE_EXPLORER_YAW);
+    assert.equal((world.match(/orientExplorerForRace\(makeExplorer/g) || []).length, 3, 'les trois types de cavaliers sont orientés en piste');
   } finally {
     disposeExplorer(model);
   }

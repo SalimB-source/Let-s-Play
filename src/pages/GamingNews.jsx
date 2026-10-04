@@ -26,7 +26,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 29.09.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
+    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 04.10.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
   },
   fr: {
     cards: [
@@ -34,7 +34,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 29.09.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
+    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 04.10.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
   },
   ar: {
     cards: [
@@ -42,7 +42,7 @@ const FEATURED_COPY = {
       ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 29.09.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
+    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 04.10.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
   }
 };
 
@@ -55,12 +55,15 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  // Les actus du 28-29.09.2026 (rédigées à la main au gabarit du robot)
-  // ouvrent la liste : Physint × Xbox (aussi la une de l'accueil), God of War
-  // Laufey et le Minecraft World Hotel, suivis du Sift, de The Witcher 3
-  // Remastered, de Nadella et de l'actu Halo × Activision ; les actus du robot
-  // arrivent ensuite, puis les articles manuels de la rédaction dans l'ordre.
+  // Les actus du week-end des 03-04.10.2026 (rédigées à la main au gabarit du
+  // robot) ouvrent la liste : RuneScape 4 annoncé au RuneFest, les concerts des
+  // 40 ans de Castlevania et la fronde contre le code généré par IA dans
+  // l'émulation ; suivent les actus du 28-29.09.2026, puis celles du robot et
+  // les articles manuels de la rédaction dans l'ordre.
   const articles = useMemo(() => [
+    { to: '/news/runescape-4-runefest-annonce', image: 'runescape-4-news.svg', fallbackImage: 'runescape-4-news.svg', alt: 'RuneScape 4 — carte éditoriale Let’s Play (teaser d’annonce dévoilé au RuneFest 2026, Jagex)', badge: 'JAGEX · MMORPG', kicker: '03.10.2026 · ACTUGAMING', title: 'RUNESCAPE 4 ÉCRIT SON SIXIÈME ÂGE.', excerpt: 'Jagex a refermé son RuneFest par l’annonce d’un quatrième MMORPG, provisoirement baptisé RuneScape 4, développé sous Unreal Engine. L’aventure se déroulera au Sixième Âge et débutera à Ashenfall, sans date de sortie. Toute la franchise repart en parallèle : Reignited le 2 décembre, Blood Crystal Saga en 2027 et un raid inédit pour Old School RuneScape.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+    { to: '/news/castlevania-40-ans-concerts-symphoniques', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872268/pour-les-40-ans-de-castlevania-et-la-sortie-de-belmont-s-curse-des-concerts-symphoniques-vont-avoir-lieu-65c89bda__930_300__0-112-1887-720.png', fallbackImage: 'castlevania-40-ans-news.svg', alt: 'Castlevania 40th Anniversary — An Orchestral Concert, visuel de l’annonce officielle Konami', badge: 'KONAMI · CONCERTS', kicker: '04.10.2026 · GAMEKULT', title: 'CASTLEVANIA FÊTE SES 40 ANS SUR SCÈNE.', excerpt: 'Trois concerts symphoniques à Tokyo (13 mars), Londres (14 mars) et Los Angeles (26 mars), avec un orchestre de vingt-cinq musiciens et des arrangements signés Adam Hoskins. Les musiques de Belmont’s Curse, attendu le 15 octobre sur PC et consoles, y seront jouées en live pour la première fois.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+    { to: '/news/vibe-coding-emulation-decompilation', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872249/du-code-bacle-par-ia-ralentit-des-projets-d-emulation-et-de-decompilation-les-developpeurs-poussent-un-coup-de-gueule-7c5509e8__930_300__0-41-739-279.jpg', fallbackImage: 'vibe-coding-emulation-news.svg', alt: 'Émulation et décompilation — illustration de l’article Gamekult consacré au code généré par IA', badge: 'PRÉSERVATION · IA', kicker: '03.10.2026 · GAMEKULT', title: 'LE VIBE CODING POLLUE LA PRÉSERVATION.', excerpt: 'Les mainteneurs de RPCS3 menacent de bannir les contributions générées en masse par IA sans relecture. Le portage PC de Mario Kart Wii a été critiqué pour la même raison, quand les projets Donkey Kong 64 et Super Mario Galaxy revendiquent un travail « 100 % humain ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
     { to: '/news/physint-budget-400-millions-xbox', image: 'kojima_mindplayer.png', alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', badge: 'PHYSINT · XBOX', kicker: '29.09.2026 · KOJIMA PRODUCTIONS', title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.', excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft a signé pour un montant « nettement inférieur ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
     { to: '/news/god-of-war-laufey-precommandes-arc-serpent', image: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/5bd30eac480284e480a9ba68e9f06472584219f4.jpg?resize=1088%2C612&crop_strategy=smart', fallbackImage: 'god-of-war-laufey-arc-serpent-news.svg', alt: 'God of War Laufey — artwork officiel de Faye face à Begtse, le cube Phranque à ses côtés (Santa Monica Studio)', badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES', kicker: '29.09.2026 · SANTA MONICA STUDIO', title: 'FAYE DÉGAINE L’ARC-SERPENT.', excerpt: 'À l’ouverture des précommandes, Santa Monica Studio détaille la deuxième arme de Faye et la grille des éditions : 79,99 € en Standard, 89,99 € en numérique Deluxe, une mise à niveau à 10 € et aucun collector. Sortie le 16 février 2027 sur PS5.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/minecraft-world-hotel-chessington-2027', image: 'screenshots/minecraft-world-hotel/01.jpg', fallbackImage: 'minecraft-world-hotel-chessington-news.svg', alt: 'Minecraft World Hotel — la chambre familiale aux lits superposés, concept art officiel Merlin Entertainments / Mojang Studios', badge: 'MINECRAFT WORLD · CHESSINGTON', kicker: '29.09.2026 · MERLIN ENTERTAINMENTS', title: 'MINECRAFT DORT À CHESSINGTON EN 2027.', excerpt: 'Le Minecraft Live du 26 septembre a livré la deuxième annonce du parc : le premier hôtel officiel Minecraft au monde, près de 70 chambres sur quatre étages, ouvrira en 2027 au land Minecraft World — en même temps que le rollercoaster Escape the Nether.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
