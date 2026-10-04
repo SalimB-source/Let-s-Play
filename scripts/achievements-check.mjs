@@ -222,6 +222,32 @@ check('fusion : recherches conservées', metricValue(merged, 'searchesPerformed'
 check('fusion : commentaires conservés', metricValue(merged, 'commentsPosted'), 1);
 check('fusion : c’est idempotent', metricValue(mergeStates(merged, merged), 'searchesPerformed'), 1);
 
+// Jeux d'arcade : une course terminée nourrit records, ensembles et victoires —
+// et un record plus faible (autre appareil) n'écrase jamais le meilleur.
+let mirageGame = createState();
+mirageGame = reduce(mirageGame, { type: 'mirage_run', stage: 'desert', mode: 'rush', score: 900, gems: 8 }).state;
+mirageGame = reduce(mirageGame, { type: 'mirage_run', stage: 'desert', mode: 'duel', score: 1500, gems: 6, won: true }).state;
+check('Mirage Rush : le record de score ne retombe pas', metricValue(mirageGame, 'mirageBestScore'), 1500);
+check('Mirage Rush : un terrain rejoué ne compte qu’une fois', metricValue(mirageGame, 'mirageStagesCleared'), 1);
+check('Mirage Rush : deux courses terminées', metricValue(mirageGame, 'mirageRuns'), 2);
+check('Mirage Rush : une seule victoire comptée', metricValue(mirageGame, 'mirageWins'), 1);
+check('Mirage Rush : deux modes essayés', metricValue(mirageGame, 'mirageModesPlayed'), 2);
+check('Mirage Rush : meilleur total de cristaux', metricValue(mirageGame, 'mirageBestGems'), 8);
+let viceGame = createState();
+viceGame = reduce(viceGame, { type: 'vice_city_run', city: 'tokyo', mode: 'story', rank: 1, score: 100, storyChapter: 0 }).state;
+check('Vice City Rush : le mode Histoire ne valide pas un mode de course', metricValue(viceGame, 'viceCityModesPlayed'), 0);
+check('Vice City Rush : … mais crédite son chapitre', metricValue(viceGame, 'viceCityStoryChapters'), 1);
+check('Vice City Rush : … et la victoire par ville', metricValue(viceGame, 'viceCityCitiesWon'), 1);
+viceGame = reduce(viceGame, { type: 'vice_city_run', city: 'tokyo', mode: 'story', rank: 1, score: 100, storyChapter: 0 }).state;
+check('Vice City Rush : un chapitre rejoué ne compte pas deux fois', metricValue(viceGame, 'viceCityStoryChapters'), 1);
+viceGame = reduce(viceGame, { type: 'vice_city_run', city: 'paris', mode: 'pursuit', rank: 2, score: 2400 }).state;
+// Deux victoires avant cette course : la 2 place n'en ajoute pas une troisième.
+check('Vice City Rush : une 2e place ne compte pas de victoire', metricValue(viceGame, 'viceCityWins'), 2);
+check('Vice City Rush : … mais garde le butin record', metricValue(viceGame, 'viceCityBestScore'), 2400);
+const mergedGames = mergeStates(mirageGame, viceGame);
+check('fusion : les records de jeu survivent', metricValue(mergedGames, 'mirageBestScore'), 1500);
+check('fusion : … des deux jeux', metricValue(mergedGames, 'viceCityBestScore'), 2400);
+
 // Courbe de niveau : jamais de niveau 0, XP restant cohérent.
 check('0 XP = niveau 1', levelFromXp(0).level, 1);
 check('niveau 2 à 150 XP', levelFromXp(150).level, 2);
@@ -470,6 +496,47 @@ allQuizSlugs.forEach((id, index) => {
 // Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).
 record(play('quiz_challenge'));
 
+// Jeux d'arcade du site : les trophées de Mirage Rush et de Vice City Rush se
+// gagnent en jouant — le scénario rejoue une saison complète (les dix terrains,
+// les quatre coupes, les cinq villes, les trois modes et les six chapitres de
+// l'histoire) pour ouvrir leurs dix-huit trophées.
+const MIRAGE_STAGES = [
+  'desert', 'western', 'prairie', 'sardinia', 'alger',
+  'japan', 'ramparts', 'infinity', 'airbase', 'snakeway',
+];
+check('le seuil Carte complète couvre tous les terrains', ACHIEVEMENTS.find(({ id }) => id === 'mirage-all-tracks').target, MIRAGE_STAGES.length);
+MIRAGE_STAGES.forEach((stage, index) => {
+  record(play('mirage_run', {
+    stage,
+    mode: index % 2 === 0 ? 'rush' : 'duel',
+    score: 1200 + index * 250,
+    gems: 16,
+    won: index < 5,
+  }));
+});
+const MIRAGE_CUPS = ['desert', 'winds', 'worldtour', 'legends'];
+check('le seuil Vitrine complète couvre toutes les coupes', ACHIEVEMENTS.find(({ id }) => id === 'mirage-cup-collection').target, MIRAGE_CUPS.length);
+MIRAGE_CUPS.forEach((cupId) => record(play('mirage_cup_won', { cupId })));
+
+const VICE_CITIES = ['vice-city', 'new-york', 'tokyo', 'paris', 'london'];
+check('le seuil Tour du monde couvre toutes les villes', ACHIEVEMENTS.find(({ id }) => id === 'vice-city-tour').target, VICE_CITIES.length);
+VICE_CITIES.forEach((city, index) => {
+  record(play('vice_city_run', { city, mode: ['circuit', 'sprint', 'pursuit'][index % 3], rank: 1, score: 2000 + index * 600 }));
+});
+// Mode Histoire : les six chapitres remportés, un par un (le chapitre rejoué
+// ne compte pas deux fois — l'ensemble dédoublonne par numéro).
+const STORY_CHAPTER_COUNT = 6;
+check('le seuil Fin de l’histoire couvre tous les chapitres', ACHIEVEMENTS.find(({ id }) => id === 'vice-story-hero').target, STORY_CHAPTER_COUNT);
+for (let chapter = 0; chapter < STORY_CHAPTER_COUNT; chapter += 1) {
+  record(play('vice_city_run', {
+    city: VICE_CITIES[chapter % VICE_CITIES.length],
+    mode: 'story',
+    rank: 1,
+    score: 1600,
+    storyChapter: chapter,
+  }));
+}
+
 const finalSummary = summarize(scenario);
 const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((item) => item.id === entry.id)?.unlocked).map((entry) => entry.id);
 check('tous les succès sont débloquables', unreachable.join(', ') || 'aucun', 'aucun');
@@ -510,8 +577,9 @@ const shownLevel = (html) => Number(/player-xp-level-tag">(?:<!--[^>]*-->|[^0-9]
 
 for (const lang of LANGS) {
   const { html } = profileAchievements(lang, null, { demo: true });
-  const heading = { en: 'YOUR SITE ACHIEVEMENTS', fr: 'TES SUCCÈS SUR LE SITE', ar: 'إنجازاتك على الموقع' }[lang];
-  ok(`[${lang}] le profil expose la section des succès`, html.includes('achievements-panel compact') && html.includes(heading));
+  const heading = { en: 'YOUR TROPHIES BY CATEGORY', fr: 'TES TROPHÉES PAR CATÉGORIE', ar: 'كؤوسك حسب الفئة' }[lang];
+  ok(`[${lang}] le profil expose la vitrine à trophées par catégorie`, html.includes('trophy-shelf') && html.includes(heading));
+  ok(`[${lang}] la vitrine range les trophées des deux jeux`, html.includes('data-group="mirage"') && html.includes('data-group="vicecity"'));
   ok(`[${lang}] le profil affiche le niveau dans la carte du joueur`, shownLevel(html) >= 1);
   // La section « succès » ne répète plus le niveau ni la barre d'XP du hub :
   // un seul bloc de progression par page.
@@ -570,7 +638,7 @@ const countersState = normalizeState({
   sets: { articles_read: ['a', 'b'], videos_watched: ['v1'], sections_visited: ['home'] },
 });
 const counters = profileAchievements('fr', countersState, { demo: true });
-ok('le profil reflète la progression enregistrée', counters.html.includes('achievements-panel') && (counters.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length >= 1);
+ok('le profil reflète la progression enregistrée', counters.html.includes('trophy-shelf') && (counters.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length >= 1);
 
 // React insère des commentaires entre les nœuds de texte : on les retire avant
 // de chercher une phrase (ou un nombre) dans le rendu.
@@ -588,10 +656,10 @@ function barFill(html, className) {
 }
 
 const hub = authHub('fr', saved, { demo: true });
-ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SUR LE SITE'));
+ok('le hub joueur montre les succès du site', hub.html.includes('TES TROPHÉES PAR CATÉGORIE'));
 ok('le hub joueur affiche le niveau dans la carte du joueur', shownLevel(hub.html) >= 1);
 ok('le hub joueur ne duplique plus la progression dans la section succès', !hub.html.includes('achievement-level'));
-ok('le hub joueur conserve les succès dans le profil', hub.html.includes('TES SUCCÈS SUR LE SITE') && !hub.html.includes('VOIR TOUS LES SUCCÈS'));
+ok('le hub joueur conserve les succès dans le profil', hub.html.includes('TES TROPHÉES PAR CATÉGORIE') && !hub.html.includes('VOIR TOUS LES SUCCÈS'));
 const vortex = DEMO_PROFILE_FIXTURES.vortex.user_metadata;
 check(
   'l’aperçu démo garde ses chiffres scriptés',
@@ -667,6 +735,9 @@ const sources = [
   ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
   ['src/quizzes/QuizPlayer.jsx', "track('quiz_completed'"],
   ['src/quizzes/QuizChallenge.jsx', "track('quiz_challenge')"],
+  // Les deux jeux d'arcade annoncent leurs courses au moteur des succès.
+  ['src/games/MirageRushPage.jsx', "trackAchievement('mirage_run'"],
+  ['src/games/ViceCityRushPage.jsx', "trackAchievement('vice_city_run'"],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
   ['src/achievements/AchievementPopup.jsx', 'dismissNotification(entry.id)'],
   ['src/main.jsx', '<AchievementPopup />'],

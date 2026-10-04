@@ -42,10 +42,13 @@
   color: #94a3b8;
 }
 
-.mirage-profile-trophy-list {
+.mirage-profile-trophy-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
   gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .mirage-profile-trophy-card {
@@ -73,7 +76,7 @@
     0 14px 28px -12px rgba(0, 112, 209, .58);
 }
 
-.mirage-profile-trophy-icon {
+.mirage-profile-trophy-emblem {
   width: 42px;
   height: 42px;
   border-radius: 11px;
@@ -92,7 +95,7 @@
     linear-gradient(145deg, rgba(10, 34, 46, .92), rgba(6, 18, 28, .96));
 }
 
-.mirage-profile-trophy-card.is-winds .mirage-profile-trophy-icon {
+.mirage-profile-trophy-card.is-winds .mirage-profile-trophy-emblem {
   background: radial-gradient(circle at 50% 32%, rgba(45, 212, 191, .32), rgba(6, 22, 30, .86));
   border-color: rgba(94, 234, 212, .42);
 }
@@ -104,7 +107,7 @@
     linear-gradient(145deg, rgba(14, 28, 64, .92), rgba(7, 15, 36, .96));
 }
 
-.mirage-profile-trophy-card.is-worldtour .mirage-profile-trophy-icon {
+.mirage-profile-trophy-card.is-worldtour .mirage-profile-trophy-emblem {
   background: radial-gradient(circle at 50% 32%, rgba(96, 165, 250, .34), rgba(8, 18, 42, .86));
   border-color: rgba(147, 197, 253, .45);
 }
@@ -116,7 +119,7 @@
     linear-gradient(145deg, rgba(44, 14, 34, .92), rgba(22, 8, 20, .96));
 }
 
-.mirage-profile-trophy-card.is-legends .mirage-profile-trophy-icon {
+.mirage-profile-trophy-card.is-legends .mirage-profile-trophy-emblem {
   background: radial-gradient(circle at 50% 32%, rgba(251, 113, 133, .32), rgba(32, 8, 22, .86));
   border-color: rgba(253, 164, 175, .44);
 }
@@ -145,4 +148,37 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Pastille « ACQUIS » : absente du style d'origine, la carte la rendait nue. */
+.mirage-profile-trophy-owned {
+  justify-self: end;
+  align-self: start;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  color: #7dd3fc;
+  border: 1px solid rgba(125, 211, 252, .4);
+  background: rgba(125, 211, 252, .1);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+/* La carte est une grille à trois zones : emblème, texte, pastille. */
+.mirage-profile-trophy-card {
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  list-style: none;
+}
+
+/* Version rangée dans la catégorie Mirage Rush de la vitrine à trophées. */
+.mirage-profile-trophies.is-inline {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(96, 165, 250, .24);
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(0, 112, 209, .18), transparent 62%),
+    linear-gradient(160deg, rgba(11, 20, 44, .6), rgba(6, 11, 26, .7));
 }

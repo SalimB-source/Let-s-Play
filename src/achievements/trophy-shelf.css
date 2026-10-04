@@ -1,0 +1,224 @@
+/* ------------------------------------------------------------------
+   Vitrine à trophées du profil — trophées rangés par catégorie.
+   Chaque catégorie est une « étagère » : en-tête (icône, nom, accroche,
+   compte), barre de progression, puis la grille des cartes de succès.
+   Les deux catégories de jeu portent les couleurs de leur jeu : sable
+   crépusculaire pour Mirage Rush, néons rose et cyan pour Vice City Rush.
+   ------------------------------------------------------------------ */
+
+.trophy-shelf {
+  position: relative;
+  padding: clamp(20px, 3.5vw, 32px);
+  overflow: visible; /* les bulles d'information dépassent des cartes */
+}
+
+.trophy-shelf-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.trophy-shelf-count {
+  font: 700 12px var(--mono);
+  letter-spacing: .08em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.trophy-shelf-count strong {
+  font-size: 15px;
+  color: var(--yellow);
+}
+
+.trophy-shelf-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .08);
+  overflow: hidden;
+}
+
+.trophy-shelf-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--yellow), #ff9d3c);
+  box-shadow: 0 0 12px rgba(255, 214, 25, .45);
+  transition: width .4s ease;
+}
+
+.trophy-shelf-percent {
+  font: 700 12px var(--mono);
+  color: var(--yellow);
+}
+
+.trophy-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.trophy-filter-btn {
+  font: 700 11px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.trophy-filter-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+
+.trophy-filter-btn.active {
+  color: #0a0b1a;
+  background: var(--yellow);
+  border-color: var(--yellow);
+}
+
+/* ------------------------------- Catégories ------------------------------ */
+
+.trophy-category {
+  margin-top: 18px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, .03);
+  overflow: visible;
+}
+
+.trophy-category-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trophy-category-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background:
+    radial-gradient(90% 90% at 30% 20%, rgba(255, 255, 255, .12), transparent 70%),
+    rgba(255, 255, 255, .05);
+}
+
+.trophy-category-copy { flex: 1; min-width: 0; }
+
+.trophy-category-copy h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.trophy-category-copy p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.trophy-category-count {
+  flex: none;
+  font: 700 11px var(--mono);
+  letter-spacing: .08em;
+  color: var(--yellow);
+  border: 1px solid rgba(255, 214, 25, .35);
+  background: rgba(255, 214, 25, .08);
+  border-radius: 999px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+.trophy-category.is-complete .trophy-category-count {
+  color: #8ef7c0;
+  border-color: rgba(142, 247, 192, .4);
+  background: rgba(142, 247, 192, .08);
+}
+
+.trophy-category-bar {
+  margin: 12px 0 2px;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .07);
+  overflow: hidden;
+}
+
+.trophy-category-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .45), var(--yellow));
+  transition: width .4s ease;
+}
+
+.trophy-category-grid { padding-top: 12px; }
+
+.trophy-shelf-empty {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ------------------------ Accents des deux jeux -------------------------- */
+/* Mirage Rush : sable doré sur ciel crépusculaire. */
+.trophy-category[data-group="mirage"] {
+  border-color: rgba(255, 180, 84, .3);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(255, 150, 60, .14), transparent 60%),
+    linear-gradient(150deg, rgba(64, 30, 66, .5), rgba(10, 8, 30, .55));
+}
+
+.trophy-category[data-group="mirage"] .trophy-category-icon {
+  border-color: rgba(255, 180, 84, .4);
+  background:
+    radial-gradient(90% 90% at 30% 20%, rgba(255, 200, 120, .3), transparent 72%),
+    rgba(70, 32, 20, .5);
+}
+
+.trophy-category[data-group="mirage"] .trophy-category-bar span {
+  background: linear-gradient(90deg, rgba(255, 224, 178, .6), #ffb454);
+}
+
+/* Vice City Rush : néons rose et cyan de 1986. */
+.trophy-category[data-group="vicecity"] {
+  border-color: rgba(255, 93, 184, .32);
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(67, 234, 213, .12), transparent 62%),
+    linear-gradient(150deg, rgba(74, 14, 82, .5), rgba(10, 10, 34, .55));
+}
+
+.trophy-category[data-group="vicecity"] .trophy-category-icon {
+  border-color: rgba(255, 93, 184, .42);
+  background:
+    radial-gradient(90% 90% at 30% 20%, rgba(255, 130, 205, .3), transparent 72%),
+    rgba(52, 12, 58, .5);
+}
+
+.trophy-category[data-group="vicecity"] .trophy-category-bar span {
+  background: linear-gradient(90deg, #ff5db8, #43ead5);
+}
+
+/* Catégorie complète : le cadre passe au vert menthe. */
+.trophy-category.is-complete { border-color: rgba(142, 247, 192, .35); }
+
+/* Petits écrans : l'en-tête de catégorie passe en colonne. La condition
+   téléphone complète suit la convention du dépôt (src/lib/phoneLayout.js). */
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .trophy-category-head { flex-wrap: wrap; }
+  .trophy-category-count { order: 3; }
+  .trophy-category-copy { flex-basis: calc(100% - 60px); }
+}

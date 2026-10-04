@@ -1246,10 +1246,13 @@ site »).
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
-- Succès du joueur dans le profil (`/auth`) : 42 succès débloqués par les
-  actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
-  argent, or, platine — avec niveau, XP, grades visibles et notifications de
-  déblocage (voir « Succès débloqués par les actions du site »)
+- Succès et trophées du joueur dans le profil (`/auth`) et sur la page de
+  profil (`/profile`) : **60 trophées** débloqués par les actions réalisées sur
+  le site **et par les parties jouées** (Mirage Rush, Vice City Rush), rangés
+  **par catégorie** dans la vitrine du joueur (neuf familles, dont une par
+  jeu), classés en quatre grades de difficulté — bronze, argent, or, platine —
+  avec niveau, XP, grades visibles et notifications de déblocage (voir
+  « Succès débloqués par les actions du site »)
 - Quizz gaming, cinéma & pop culture et quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
   vingt-cinq quizz rédigés par la rédaction (culture gaming, consoles, PC,
   e-sport, tech, adaptations, films cultes, super-héros et séries), **tous
@@ -2109,9 +2112,12 @@ Si rien ne se passe, dans l'ordre :
 Le site récompense ce que le joueur fait réellement : lire un article, lancer
 un épisode, commenter, chercher, explorer une nouvelle section, revenir
 plusieurs jours de suite, créer un compte ou associer un fournisseur de
-connexion. **42 succès** sont livrés, répartis en sept familles (premiers pas,
-lecture, vidéo, communauté, fidélité, compte, quizz) et quatre **grades** de difficulté ;
-chacun donne de l'XP, qui construit le niveau et le rang du joueur.
+connexion — **et ce qu'il gagne en jouant** : chaque course terminée sur
+**Mirage Rush** ou **Vice City Rush** nourrit ses propres trophées (records,
+terrains, villes, modes, coupes, chapitres d'histoire). **60 trophées** sont
+livrés, répartis en neuf catégories (premiers pas, lecture, vidéo, communauté,
+fidélité, compte, quizz, Mirage Rush, Vice City Rush) et quatre **grades** de
+difficulté ; chacun donne de l'XP, qui construit le niveau et le rang du joueur.
 
 ### Grades : bronze, argent, or, platine
 
@@ -2119,15 +2125,20 @@ Le grade (`rarity` dans le catalogue) résume la difficulté d'obtention, du plu
 accessible au plus convoité. L'XP croît avec le grade (aucun succès bronze ne
 rapporte plus qu'un succès argent, etc.), ce qui rend l'échelle lisible :
 
-| Grade | Succès | XP | Exemples |
+| Grade | Trophées | XP | Exemples |
 | --- | --- | --- | --- |
-| 🥉 Bronze | 9 | 25–40 | premiers pas, première lecture, premier commentaire |
-| 🥈 Argent | 11 | 60–90 | créer un compte, 5 articles, 3 jours de suite |
-| 🥇 Or | 10 | 100–250 | 12 articles, semaine parfaite, trilingue, oiseau de nuit |
-| 🏅 Platine | 7 | 400–800 | 30 articles, 14 jours d'affilée, 30 jours de visite, 15 commentaires, les 8 sections, 3 nuits de lecture après minuit |
+| 🥉 Bronze | 15 | 25–40 | premiers pas, première lecture, premier commentaire, premier galop (Mirage Rush), premier départ (Vice City Rush) |
+| 🥈 Argent | 18 | 60–90 | créer un compte, 5 articles, 3 jours de suite, première coupe, 1 000 points sur une course |
+| 🥇 Or | 17 | 100–250 | 12 articles, semaine parfaite, les dix terrains de Mirage Rush, les cinq villes de Vice City Rush, fin de l'histoire |
+| 🏅 Platine | 10 | 400–800 | 30 articles, 14 jours d'affilée, vitrine complète (4 coupes), grand chelem (une victoire par ville) |
 
-Dans le profil `/auth`, la section « succès » compacte montre les succès
-obtenus et les prochains objectifs. Elle ne répète ni le niveau, ni le rang, ni
+Dans le profil `/auth` comme sur la page `/profile`, la **vitrine à trophées**
+(`src/achievements/TrophyShelf.jsx`) range tous les trophées **par catégorie** :
+une étagère par famille, avec son icône, son accroche, le nombre de trophées
+gagnés et sa barre de progression — et un filtre « Tous / Gagnés / À gagner ».
+Les cartes sont celles du panneau des succès (bulle d'information au survol,
+cadre du grade) ; la catégorie Mirage Rush embarque en plus la collection des
+coupes remportées. La vitrine ne répète ni le niveau, ni le rang, ni
 la barre d'XP : tout cela vit dans la carte du joueur, juste au-dessus (un seul
 bloc de progression par page). La **bulle d'information** d'une carte — la
 description, la progression et l'XP — reste elle aussi toujours dans l'écran :
@@ -2144,7 +2155,8 @@ Où ça se voit :
 
 | Endroit | Ce qui s'y trouve |
 | --- | --- |
-| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où la barre de progression est affichée) et la section « succès » intégrée : succès obtenus et prochains objectifs |
+| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où la barre de progression est affichée) et la vitrine à trophées par catégorie : trophées obtenus et restant à gagner |
+| `/profile` (page de profil) | la même **vitrine à trophées par catégorie**, coupes Mirage Rush comprises, sous le classement global des quizz |
 | Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
 | Navigation (mobile) | dans le menu plein écran, le lien **Profil** est une entrée à part entière juste sous **Quizz** : photo (ou initiales) et niveau. Le desktop garde la pastille de compte |
 
@@ -2201,6 +2213,9 @@ Trois étages, un seul chemin :
 | `account_created` / `signed_in` | `accountsCreated`, `sessions` |
 | `provider_linked` | `providersLinked` |
 | `profile_updated` | `profileUpdates` |
+| `mirage_cup_won` (une coupe remportée) | `mirageCupsWon` |
+| `mirage_run` (course Mirage Rush terminée : terrain, mode, score, cristaux, victoire) | `mirageRuns`, `mirageWins`, `mirageBestScore`, `mirageBestGems`, `mirageStagesCleared`, `mirageModesPlayed` |
+| `vice_city_run` (course Vice City Rush terminée : ville, mode, place, butin, chapitre d'histoire) | `viceCityRuns`, `viceCityWins`, `viceCityBestScore`, `viceCityCitiesDriven`, `viceCityCitiesWon`, `viceCityModesPlayed`, `viceCityStoryChapters` |
 
 ### Ajouter un succès (ou une action)
 
@@ -2225,6 +2240,36 @@ métrique dans `METRICS` (`engine.js`), puis autant de succès que voulu.
 Un succès ajouté plus tard profite aux joueurs existants : le catalogue est
 réévalué au chargement (`evaluate()`), donc les actions déjà enregistrées
 débloquent le nouvel objectif sans être rejouées.
+
+### Trophées des jeux d'arcade : Mirage Rush et Vice City Rush
+
+Dix-huit trophées (neuf par jeu) se gagnent **manette en main**, sur le site :
+
+| Jeu | Ce qui se gagne | Trophées |
+| --- | --- | --- |
+| Mirage Rush (`/jeu/mirage-rush`) | première course, trois puis dix terrains, 15 cristaux sur une course, 1 000 puis 3 000 points, cinq victoires, première coupe, les quatre coupes | premier galop, trois horizons, mains de cristal, mille éclats, premier trophée, cinq victoires, tempête d'or, carte complète, vitrine complète |
+| Vice City Rush (`/jeu/vice-city-rush`) | première course, premier puis sixième chapitre d'histoire, première victoire, les trois modes, 1 500 puis 4 000 points de butin, les cinq villes, une victoire par ville | premier départ, chapitre un, première place, trois styles, butin de rue, tour du monde, coffre plein, fin de l'histoire, grand chelem |
+
+Chaque course terminée envoie une action au moteur — `mirage_run` (terrain,
+mode, score, cristaux, première place) depuis `MirageRushPage.jsx`,
+`vice_city_run` (ville, mode, place, butin, chapitre d'histoire gagné) depuis
+`ViceCityRushPage.jsx`. Le moteur ne garde que ce qui doit durer : les
+**records** (score, cristaux) au maximum — une fusion entre appareils prend le
+meilleur —, les choses **distinctes** en ensembles (un terrain rejoué, une
+ville recorourue ou un chapitre revécu ne comptent pas deux fois), et un
+compteur par victoire. Le mode Histoire de Vice City Rush n'est pas un « mode
+de course » : il alimente ses trophées de chapitres sans valider « trois
+styles ». Les cibles suivent le contenu réel des jeux (dix terrains, quatre
+coupes, cinq villes, six chapitres) et `npm run check:achievements` rejoue une
+saison complète pour vérifier que chaque trophée reste atteignable.
+
+Les icônes de ces trophées ne viennent pas de 3dicons.co : ce sont des
+**médaillons dessinés** (`.svg`), générés par `node scripts/trophy-icons.mjs`
+(sans aucune dépendance) — palette du jeu (désert crépusculaire / néons 1986),
+métal du grade (bronze, argent, or, platine) et emblème propre à chaque
+trophée (fer à cheval, cristaux, coupe, volant, drapeau à damier, skyline…).
+Le générateur lit le catalogue : un trophée de jeu sans emblème le fait
+échouer, aucune icône ne peut manquer.
 
 ### Où vit la progression
 
