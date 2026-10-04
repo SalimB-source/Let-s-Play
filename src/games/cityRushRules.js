@@ -111,7 +111,7 @@ export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
 export const CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED = 300; // m/s : projectile droit, sans guidage
 export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la place de tirer devant le capot
 
-// Sept voitures aux silhouettes et compromis de conduite distincts. La compacte
+// Huit voitures aux silhouettes et compromis de conduite distincts. La compacte
 // de départ est une citadine 5 portes inspirée des petites françaises des
 // années 90 : aucun emblème ni logo de constructeur n'est modélisé.
 export const CITY_RUSH_CARS = Object.freeze([
@@ -120,6 +120,12 @@ export const CITY_RUSH_CARS = Object.freeze([
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
     power: 36, powerMultiplier: 0.78, acceleration: 42, accelerationRate: 6.8, recovery: 44, hitRecoveryMultiplier: 1.12,
     widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
+  }),
+  Object.freeze({
+    id: 'nova-18-gt', archetype: 'nova-hatch', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
+    bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
+    power: 51, powerMultiplier: 0.84, acceleration: 56, accelerationRate: 7.7, recovery: 62, hitRecoveryMultiplier: 1.04,
+    widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
   }),
   Object.freeze({
     id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
@@ -909,9 +915,55 @@ export const CITY_RUSH_ROUTE_66 = Object.freeze({
   route: ROUTE_66_DETAILS,
 });
 
+// Route de campagne au Mexique (Carretera Federal) : paysage d'agaves,
+// ranchos colorés et ciel d'azur au soleil haut. Très peu de trafic, comme
+// sur une route secondaire de l'intérieur du pays entre deux villages.
+const MEXICO_DETAILS = Object.freeze({
+  id: 'mexico-countryside',
+  name: 'CARRETERA DEL SOL',
+  marker: 'MEX 45',
+  lengthKm: 248,
+  direction: 'SUR',
+  directionRomaji: 'ZACATECAS → SAN LUIS POTOSÍ',
+  speedLimit: 90,
+  speedUnit: 'km/h',
+  endpoints: Object.freeze(['ZACATECAS', 'SAN LUIS POTOSÍ']),
+  sectors: Object.freeze([
+    Object.freeze({ id: 'zacatecas', from: 0, to: 0.14, name: 'Zacatecas', state: 'ZACATECAS', kind: 'colonial', note: 'Adobes rose pâle et clocher colonial au départ.' }),
+    Object.freeze({ id: 'mesa', from: 0.14, to: 0.3, name: 'Mesa del Agave', state: 'ZACATECAS', kind: 'agave', note: 'Champs d\'agaves bleus et nopales en terrasse.' }),
+    Object.freeze({ id: 'rancho', from: 0.3, to: 0.48, name: 'Rancho Nuevo', state: 'ZACATECAS', kind: 'rancho', note: 'Petits ranchos aux murs ocre et toits de tuile rouge.' }),
+    Object.freeze({ id: 'arroyo', from: 0.48, to: 0.64, name: 'Arroyo Hondo', state: 'SAN LUIS POTOSÍ', kind: 'arroyo', note: 'Un pont de pierre au-dessus d\'un arroyo asséché.' }),
+    Object.freeze({ id: 'chapel', from: 0.64, to: 0.8, name: 'Capilla Blanca', state: 'SAN LUIS POTOSÍ', kind: 'chapel', note: 'Chapelle blanche au bord de la route, croix de bois peinte.' }),
+    Object.freeze({ id: 'potosi', from: 0.8, to: 1, name: 'San Luis Potosí', state: 'SAN LUIS POTOSÍ', kind: 'finish', note: 'Arrivée aux portes de la ville coloniale.' }),
+  ]),
+  // Très peu de trafic sur cette route de campagne secondaire.
+  trafficCount: 2,
+  oncomingCount: 1,
+});
+
+export const CITY_RUSH_MEXICO_COUNTRYSIDE = Object.freeze({
+  ...MEXICO_DETAILS,
+  label: 'MEXIQUE · ZACATECAS → SAN LUIS POTOSÍ',
+  district: 'CARRETERA FEDERAL 45 · CAMINO DEL SOL',
+  tagline: 'Une route de campagne au soleil du Mexique, entre agaves et ranchos.',
+  accent: '#e85d38',
+  secondary: '#f2c14e',
+  background: 0x6fb5d9,
+  fog: 0xe8c98a,
+  asphalt: 0x5c554a,
+  sidewalk: 0xb08a5e,
+  buildingColors: Object.freeze([0xe8a87c, 0xc8624a, 0xf2d4a8, 0xd9915c, 0xf2c879, 0xb65b3d, 0xe8d3a5]),
+  windowColor: 0x3d5a6b,
+  skyTop: 0x2877c4,
+  skyGlow: 0xffd887,
+  style: 'mexico',
+  signs: Object.freeze(['CARRETERA 45', 'BIENVENIDOS', 'PUEBLO VIEJO', 'AGAVE AZUL', 'TORTILLERÍA', 'TAQUERÍA']),
+  route: MEXICO_DETAILS,
+});
+
 // Les écrans libres mélangent villes et routes légendaires sans modifier les
 // constantes historiques attendues par les succès qui comptent les villes.
-export const CITY_RUSH_COURSES = Object.freeze([...CITY_RUSH_CITIES, CITY_RUSH_ROUTE_66]);
+export const CITY_RUSH_COURSES = Object.freeze([...CITY_RUSH_CITIES, CITY_RUSH_ROUTE_66, CITY_RUSH_MEXICO_COUNTRYSIDE]);
 
 export function clampCityRushLane(lane, laneCount = CITY_RUSH_LANE_X.length) {
   const parsed = Number.isFinite(Number(lane)) ? Math.trunc(Number(lane)) : 0;

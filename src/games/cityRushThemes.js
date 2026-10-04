@@ -254,6 +254,63 @@ export const CITY_RUSH_THEMES = Object.freeze({
     roadTint: 0x171a22, laneColor: '#e9efe9', edgeColor: '#e8bd64', sidewalkTint: 0x3f434b,
     lamp: 'victorian', tree: 'street',
   }),
+  // ── Route de campagne au Mexique · Zacatecas → San Luis Potosí ────────
+  // Plein jour écrasant d'azur : champs d'agaves, petits ranchos de
+  // stuc coloré, clôtures de piquets, cactus et panneaux peints à la main.
+  // Très peu de trafic : les voitures rencontrées sont rares, typiques des
+  // routes secondaires du Bajío.
+  'mexico-countryside': Object.freeze({
+    daylight: true,
+    mexico: true,
+    countryside: true,
+    sky: Object.freeze({
+      top: 0x216fbf, mid: 0x7ec0e6, horizon: 0xf4d090, haze: 0xffe0a8,
+      sun: Object.freeze({ color: 0xfff8e0, glow: 0xffcc5c, elevation: 0.82, radius: 0.06, stripes: 0 }),
+      stars: 0, moon: 0,
+    }),
+    weather: 'clear',
+    fogNear: 160, fogFar: 480,
+    facade: Object.freeze({
+      style: 'adobe', floor: 1.45, litRatio: 0.01, litColors: ['#fff1c2'],
+      wall: '#d9a673', glass: '#4a6273', sheen: 'rgba(255, 238, 200, .18)', frame: '#f4e6c9',
+    }),
+    shops: Object.freeze([
+      { text: 'TAQUERÍA EL SOL', color: '#e85d38', awning: '#f2c14e' },
+      { text: 'TORTILLERÍA', color: '#2f8f6b', awning: '#e8d3a5' },
+      { text: 'ABARROTES LUPITA', color: '#c8463a', awning: '#f2d4a8' },
+      { text: 'MECÁNICO CHOLO', color: '#3b6d8f', awning: '#d9915c' },
+    ]),
+    shopWall: '#c8885a', shopTrim: '#7a4a30', shopDoor: '#2d3c48',
+    verticalSigns: Object.freeze(['PULQUERÍA', 'MÉXICO', 'TAQUERÍA', 'NORTE', 'SUR']),
+    sponsors: Object.freeze(['CARRETERA 45', 'CAMINO DEL SOL', 'AGAVE AZUL', 'RANCHO NUEVO', 'PUEBLO VIEJO']),
+    gate: Object.freeze({ style: 'mexico-arch', text: 'CARRETERA DEL SOL · SUR' }),
+    gantryText: 'CARRETERA 45',
+    crowdColors: Object.freeze([0xe85d38, 0xf2c14e, 0x2f8f6b, 0xf4e6c9, 0x7a4a30, 0x3b6d8f]),
+    roadTint: 0x5c554a, laneColor: '#f4e6c9', centerLineColor: '#e8b43f', edgeColor: '#e85d38', sidewalkTint: 0xb08a5e,
+    lamp: 'mexico', tree: 'mexico',
+    ground: 0xd6b079,
+    glow: 0.12,
+    lampCone: 0.01,
+    accentCone: 0.03,
+    skyline: Object.freeze({ base: [158, 134, 94], window: 'rgba(255, 236, 180, .18)' }),
+    materials: Object.freeze({
+      roof: 0xa04432, tile: 0xc8583d, stone: 0xb99064, concrete: 0xa99478, asphaltDark: 0x6d6154,
+      metal: 0x8a8070, darkMetal: 0x443c36, chrome: 0xd2c6af, brick: 0xa86848,
+      white: 0xf4ecd8, cream: 0xeacfa3, red: 0xc8422a, green: 0x4d8b3c,
+      yellow: 0xe4b438, blue: 0x3b7790, wood: 0x7a4f35, trunk: 0x7a4f35,
+      foliage: 0x5a7a3e, foliageLight: 0x81a558, agaveBlue: 0x5e8a76, agaveGreen: 0x6d8f4e,
+      glassDark: 0x3d5a6b, sand: 0xd6b079, adobe: 0xd9a673,
+      canopy: 0xeacfa3, terracotta: 0xc8583d,
+    }),
+    light: Object.freeze({
+      key: Object.freeze({ color: 0xfff4d0, intensity: 3.4, position: [-14, 36, 4] }),
+      hemi: Object.freeze({ sky: 0xd3edf7, ground: 0xc09968, intensity: 1.6 }),
+      rim: Object.freeze({ color: 0xffc36b, intensity: 0.55, position: [14, 10, -30] }),
+      fill: Object.freeze({ color: 0xd98642, intensity: 4, distance: 80, position: [0, 8, -30] }),
+      headlamp: 0,
+      exposure: 1.0,
+    }),
+  }),
 });
 
 export function cityRushTheme(cityId) {

@@ -68,9 +68,11 @@ const CITY_THUMBNAILS = {
   tokyo: 'vice-city-story-tokyo.webp',
   paris: 'paris-thumb.jpg',
   london: 'london-thumb.jpg',
+  'mexico-countryside': 'mexico-countryside-thumb.jpg',
 };
 const CAR_THUMBNAILS = {
   'city-hatch': 'car-mistral-14.jpg',
+  'nova-18-gt': 'car-nova-18-gt.jpg',
   'vice-roadster': 'car-cavallo-f8-gtb.jpg',
   'turbo-gt': 'car-kronos-930-turbo.jpg',
   'muscle-86': 'car-vortex-rs-10.jpg',
@@ -775,9 +777,9 @@ export default function ViceCityRushPage() {
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <span style={{ opacity: 0.4, margin: '0 6px' }}>/</span> UNE VILLE. UNE ROUTE. AUCUNE LIMITE.</p>
           <h1><span>VICE CITY</span><em>RUSH</em></h1>
           <p className="city-rush-lede">
-            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur six parcours, dont la mythique Route 66.
+            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur sept parcours : cinq villes, la mythique Route 66 et une route de campagne ensoleillée au Mexique.
           </p>
-          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES · 1 ROUTE</span><span>3 MODES DE COURSE</span></div>
+          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES · 2 ROUTES</span><span>3 MODES DE COURSE</span></div>
           <div className="city-rush-hero-actions">
             <a className="city-rush-hero-cta" href="#vice-city-rush-console">
               LANCER LE JEU <span aria-hidden="true">▶</span>
@@ -1186,7 +1188,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
                       <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. {cashRewardsEnabled ? '50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les six autres modèles.' : `${mode.name} est un mode défi : il ne rapporte aucun billet vert, même à l’arrivée.`}</p>
+                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. {cashRewardsEnabled ? '50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les sept autres modèles.' : `${mode.name} est un mode défi : il ne rapporte aucun billet vert, même à l’arrivée.`}</p>
                     </div>
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
