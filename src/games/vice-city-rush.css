@@ -595,6 +595,143 @@
 .city-rush-gta-bars { display: none; }
 .city-rush-gta-cash { display: none; }
 
+/* ── Plaque de signalisation de la route officielle (Shuto C1) ──
+   Vert autoroutier japonais, bordure blanche, badge de ligne et annonce de la
+   prochaine jonction : le HUD reprend la lecture d'un portique de la C1. */
+.city-rush-route-sign {
+  position: absolute;
+  z-index: 4;
+  top: 112px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: min(330px, 42vw);
+  padding: 8px 12px 8px 8px;
+  border-radius: 10px;
+  background: linear-gradient(158deg, #0d7446 0%, #0a5c37 55%, #053d24 100%);
+  border: 2px solid rgba(244, 248, 241, 0.86);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.46), inset 0 1px rgba(255, 255, 255, 0.16);
+  color: #f4f8f1;
+  pointer-events: none;
+}
+
+.city-rush-route-sign.is-tunnel {
+  background: linear-gradient(158deg, #14313f 0%, #0d2331 60%, #081823 100%);
+  border-color: rgba(255, 157, 77, 0.85);
+}
+
+.city-rush-route-sign.is-cut {
+  border-color: rgba(255, 210, 79, 0.8);
+}
+
+.city-rush-route-badge {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #f4f8f1;
+  color: #0b6b3f;
+  font: 900 13px/1 "Orbitron", var(--mono, monospace);
+  letter-spacing: 0.02em;
+}
+
+.city-rush-route-sign.is-tunnel .city-rush-route-badge { color: #0d2331; }
+
+.city-rush-route-sector {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.city-rush-route-sector b {
+  font: 800 14px/1.15 "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", "Meiryo", sans-serif;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-rush-route-sector small {
+  font: 700 8px/1.2 var(--mono, monospace);
+  letter-spacing: 0.08em;
+  color: rgba(244, 248, 241, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-rush-route-cover {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: var(--cr-radius-pill);
+  background: rgba(255, 157, 77, 0.22);
+  border: 1px solid rgba(255, 157, 77, 0.62);
+  color: #ffd9b0;
+  font: 700 7px/1 var(--mono, monospace);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.city-rush-route-cover.is-cut {
+  background: rgba(255, 210, 79, 0.18);
+  border-color: rgba(255, 210, 79, 0.6);
+  color: #ffe9a8;
+}
+
+.city-rush-route-next {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 9px;
+  border-left: 1px solid rgba(244, 248, 241, 0.34);
+}
+
+.city-rush-route-next i {
+  font: 400 15px/1 "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+  color: #d7ffe9;
+}
+
+.city-rush-route-next span {
+  display: grid;
+  gap: 2px;
+}
+
+.city-rush-route-next b {
+  font: 800 10px/1.1 "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", "Meiryo", sans-serif;
+  white-space: nowrap;
+}
+
+.city-rush-route-next small {
+  font: 700 8px/1 var(--mono, monospace);
+  letter-spacing: 0.06em;
+  color: rgba(244, 248, 241, 0.82);
+}
+
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-route-sign {
+    top: auto;
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+    max-width: 60vw;
+    padding: 6px 9px 6px 6px;
+    border-width: 1.5px;
+    border-radius: 9px;
+  }
+  .city-rush-route-badge { width: 20px; height: 20px; border-radius: 6px; font-size: 10px; }
+  .city-rush-route-sector b { font-size: 11px; }
+  .city-rush-route-sector small { font-size: 7px; letter-spacing: 0.05em; }
+  .city-rush-route-cover { display: none; }
+  .city-rush-route-next { padding-left: 6px; gap: 4px; }
+  .city-rush-route-next i { font-size: 12px; }
+  .city-rush-route-next b { font-size: 9px; }
+  .city-rush-route-next small { font-size: 7px; }
+}
+
 @keyframes crWantedPulse {
   50% { opacity: 0.72; }
 }
@@ -812,6 +949,68 @@
   stroke: #0c1020;
   stroke-width: 0.9;
   stroke-dasharray: 1.3 1.3;
+}
+
+/* Route officielle (Shuto Expressway Route 1) : badge d'en-tête et repères de
+   secteurs posés sur le vrai anneau de la C1. */
+.city-rush-minimap-route {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 3px 8px;
+  border-radius: var(--cr-radius-pill);
+  background: linear-gradient(135deg, rgba(11, 107, 63, 0.55), rgba(60, 224, 138, 0.22));
+  border: 1px solid rgba(60, 224, 138, 0.4);
+  color: #d7ffe9;
+  font: 700 8px var(--mono, monospace);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.city-rush-minimap-tick line {
+  stroke: rgba(230, 238, 255, 0.4);
+  stroke-width: 0.5;
+}
+
+.city-rush-minimap-tick circle {
+  fill: rgba(230, 238, 255, 0.5);
+  stroke: rgba(9, 12, 22, 0.85);
+  stroke-width: 0.3;
+}
+
+.city-rush-minimap-tick.is-junction line { stroke: rgba(60, 224, 138, 0.85); }
+.city-rush-minimap-tick.is-junction circle { fill: #3ce08a; }
+
+.city-rush-minimap-tick.is-tunnel line { stroke: rgba(255, 157, 77, 0.85); }
+.city-rush-minimap-tick.is-tunnel circle { fill: #ff9d4d; }
+
+.city-rush-minimap-tick.is-cut line { stroke: rgba(255, 210, 79, 0.85); }
+.city-rush-minimap-tick.is-cut circle { fill: #ffd24f; }
+
+.city-rush-minimap-tick.is-landmark line { stroke: rgba(255, 93, 184, 0.85); }
+.city-rush-minimap-tick.is-landmark circle { fill: #ff5db8; }
+
+.city-rush-minimap-tick.is-neon line { stroke: rgba(67, 234, 213, 0.85); }
+.city-rush-minimap-tick.is-neon circle { fill: #43ead5; }
+
+.city-rush-minimap-tick.is-pillars line { stroke: rgba(159, 180, 255, 0.8); }
+.city-rush-minimap-tick.is-pillars circle { fill: #9fb4ff; }
+
+.city-rush-minimap-tick.is-origin line { stroke: rgba(255, 255, 255, 0.9); }
+.city-rush-minimap-tick.is-origin circle { fill: #ffffff; }
+
+/* Secteur en cours : le repère s'élargit et pulse comme une balise. */
+.city-rush-minimap-tick.is-current line {
+  stroke: #ffffff;
+  stroke-width: 0.9;
+}
+
+.city-rush-minimap-tick.is-current circle {
+  fill: #ffffff;
+  stroke: var(--city-accent, #3ce08a);
+  stroke-width: 0.7;
+  animation: crLivePulse 1.5s infinite;
 }
 
 .city-rush-minimap-focus-ring {
@@ -2671,7 +2870,37 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.city-rush-city-card .city-rush-city-preview {
+.city-rush-city-card /* Villes adossées à une route officielle (Shuto C1) : petite plaque verte
+   rappelant la ligne, sa longueur réelle et sa limite de vitesse. */
+.city-rush-city-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border-radius: var(--cr-radius-pill);
+  background: linear-gradient(135deg, rgba(11, 107, 63, 0.6), rgba(60, 224, 138, 0.18));
+  border: 1px solid color-mix(in srgb, var(--card-accent, #3ce08a) 46%, transparent);
+  color: #e8fff3;
+  font: 700 8px/1 var(--mono, monospace);
+  letter-spacing: 0.07em;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.city-rush-city-route i {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: #f4f8f1;
+  color: #0b6b3f;
+  font: 900 9px/1 "Orbitron", var(--mono, monospace);
+  font-style: normal;
+}
+
+.city-rush-city-preview {
   display: flex;
   gap: 4px;
   margin-top: 8px;

@@ -339,6 +339,368 @@ export function cityRushPickupPopScale(progress) {
   return 1 + (overshoot + 1) * p ** 3 + overshoot * p ** 2;
 }
 
+// ── Shuto Expressway Route 1 · la C1 都心環状線 ──────────────────────────────
+// La course de Tokyo n'est plus une avenue de Shibuya : c'est l'anneau
+// intérieur réel de la Shuto Expressway — 14,8 km de viaduc et de tunnels qui
+// ceignent le palais impérial, sans un seul feu rouge, limite à 50 km/h et
+// changements de voie interdits sur la plus grande partie du tour.
+//
+// Départ et arrivée au-dessus de 日本橋 (Nihonbashi), le kilomètre zéro du
+// réseau routier japonais, comme sur la vraie route : c'est aussi le point où
+// l'Asian Highway 1 commence.
+//
+// Le sens retenu est 内回り (uchi-mawari, l'anneau intérieur, antihoraire) :
+// le palais impérial reste donc toujours à GAUCHE, la ville, la baie et la
+// Tokyo Tower à DROITE ou à gauche selon le secteur — les `side` ci-dessous
+// suivent la géographie réelle. La boucle de 600 m du jeu est une réduction
+// fidèle du tour : `km` est le point kilométrique officiel compté depuis
+// Nihonbashi (il décroît en 内回り) et `from`/`to` donnent la position sur le
+// tour du jeu (0 → 1), calculée par `shutoC1At` pour que panneaux, tunnels,
+// échangeurs et monuments tombent exactement au bon endroit à chaque tour.
+export const SHUTO_C1_LENGTH_KM = 14.8;
+
+/** Position sur le tour (0 → 1) d'un point kilométrique officiel, en 内回り. */
+export function shutoC1At(km, lengthKm = SHUTO_C1_LENGTH_KM) {
+  const safeLength = Number.isFinite(Number(lengthKm)) && Number(lengthKm) > 0 ? Number(lengthKm) : SHUTO_C1_LENGTH_KM;
+  const safeKm = Number.isFinite(Number(km)) ? Number(km) : 0;
+  return (((safeLength - safeKm) % safeLength) + safeLength) % safeLength / safeLength;
+}
+
+/** Point kilométrique officiel (depuis 日本橋) d'une position sur le tour. */
+export function shutoC1KmAt(lapProgress, lengthKm = SHUTO_C1_LENGTH_KM) {
+  const safeLength = Number.isFinite(Number(lengthKm)) && Number(lengthKm) > 0 ? Number(lengthKm) : SHUTO_C1_LENGTH_KM;
+  const progress = clamp01(Number(lapProgress) || 0);
+  const km = safeLength * (1 - progress);
+  return km >= safeLength ? 0 : Number(km.toFixed(1));
+}
+
+const shutoSector = (id, fromKm, toKm, data) => Object.freeze({
+  id,
+  km: fromKm,
+  kmEnd: toKm,
+  // En 内回り le kilométrage officiel décroît : `fromKm` est donc le début du
+  // secteur sur le tour et `toKm` sa fin (0 pour le dernier, qui se referme
+  // sur la ligne de 日本橋).
+  from: shutoC1At(fromKm),
+  to: shutoC1At(toKm),
+  ...data,
+});
+
+export const CITY_RUSH_SHUTO_C1 = Object.freeze({
+  id: 'shuto-c1',
+  marker: 'C1',
+  name: 'SHUTO EXPRESSWAY ROUTE 1',
+  japanese: '首都高速 都心環状線',
+  romaji: 'SHUTO KOSOKU TOSHIN KANJO-SEN',
+  direction: '内回り',
+  directionRomaji: 'UCHI-MAWARI',
+  lengthKm: SHUTO_C1_LENGTH_KM,
+  speedLimit: 50,
+  opened: 1967,
+  lanes: 3,
+  origin: Object.freeze({ name: '日本橋', romaji: 'NIHONBASHI', note: 'km 0 · 道路元標 · AH1' }),
+  // Secteurs contigus, dans l'ordre de la course (内回り) : leur union couvre
+  // exactement un tour, ce qui permet au décor comme au HUD de savoir où l'on
+  // se trouve sans ambiguïté. `side` est le côté réel du repère (+1 à droite,
+  // -1 à gauche) pour un pilote qui roule en 内回り.
+  sectors: Object.freeze([
+    shutoSector('edobashi', 14.8, 14.1, {
+      kind: 'origin', name: '日本橋', romaji: 'NIHONBASHI · EDOBASHI JCT',
+      note: 'km 0 · 道路元標 · origine de l’AH1',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['都心環状 内回り', '江戸橋JCT']), exits: Object.freeze(['1号上野線', '6号向島線', 'B 湾岸線']) }),
+      river: '日本橋川',
+    }),
+    shutoSector('kandabashi', 14.1, 13.2, {
+      kind: 'junction', name: '神田橋', romaji: 'KANDABASHI JCT',
+      note: '八重洲線 · sortie 29 · pont sur la Kanda',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['神田橋JCT', '八重洲線']), exits: Object.freeze(['八重洲線', '29 神田橋']) }),
+      river: '神田川', side: 1,
+    }),
+    shutoSector('takebashi', 13.2, 12.0, {
+      kind: 'junction', name: '竹橋JCT', romaji: 'TAKEBASHI JCT',
+      note: '5号池袋線 · la grande courbe de la Kanda',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['竹橋JCT', '5号池袋線']), exits: Object.freeze(['5号池袋線 北池袋', '26 北の丸出口']), arrow: '↖' }),
+      curve: 'sweeper', river: '神田川', wall: true,
+    }),
+    shutoSector('kitanomaru', 12.0, 11.0, {
+      kind: 'tunnel', name: '北の丸トンネル', romaji: 'KITANOMARU TUNNEL',
+      note: '700 m sous le parc de Kitanomaru · sortie 26',
+      tunnel: Object.freeze({ name: '北の丸トンネル', romaji: 'KITANOMARU TUNNEL', lengthM: 700, lights: 'sodium' }),
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['北の丸トンネル', '700 m']), exits: Object.freeze(['26 北の丸出口']), hazard: true }),
+      // Le palais impérial reste à l'intérieur de l'anneau : en 内回り il
+      // borde donc la gauche de la piste.
+      palace: true, side: -1,
+    }),
+    shutoSector('chiyoda', 11.0, 9.1, {
+      kind: 'tunnel', name: '千代田トンネル', romaji: 'CHIYODA TUNNEL',
+      note: '1 900 m : le plus long du tour, sous les jardins du palais',
+      tunnel: Object.freeze({ name: '千代田トンネル', romaji: 'CHIYODA TUNNEL', lengthM: 1900, lights: 'sodium', junction: '三宅坂JCT · 4号新宿線' }),
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['千代田トンネル', '1900 m']), exits: Object.freeze(['三宅坂JCT', '4号新宿線 新宿']), hazard: true }),
+      palace: true, side: -1, longest: true,
+    }),
+    shutoSector('kasumigaseki', 9.1, 7.2, {
+      kind: 'cut', name: '霞が関', romaji: 'KASUMIGASEKI',
+      note: 'tranchée ouverte · sortie 23/24 · 谷町JCT 3号渋谷線',
+      cut: Object.freeze({ name: '霞が関 掘割', depthM: 6 }),
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['谷町JCT', '3号渋谷線 東名']), exits: Object.freeze(['24 霞が関出口', '日比谷 · 六本木']), arrow: '↗' }),
+      palace: true, side: -1, gate: true,
+    }),
+    shutoSector('iikura', 7.2, 6.6, {
+      kind: 'viaduct', name: '飯倉', romaji: 'IIKURA',
+      note: 'sortie 21 ETC · 一ノ橋JCT 2号目黒線 · murs antibruit d’Azabu',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['一ノ橋JCT', '2号目黒線']), exits: Object.freeze(['21 飯倉', '六本木 · 麻布十番']) }),
+      wall: true,
+    }),
+    shutoSector('shibakoen', 6.6, 5.0, {
+      kind: 'landmark', name: '芝公園', romaji: 'SHIBA-KŌEN',
+      note: 'la Tokyo Tower passe au ras du viaduc, à gauche',
+      // km 5,4 officiel (sorties 19/20 芝公園) : la tour se dresse à gauche,
+      // au ras du viaduc, exactement comme sur l'内回り réel.
+      landmark: Object.freeze({ id: 'tokyo-tower', name: '東京タワー', romaji: 'TOKYO TOWER', side: -1, km: 5.4, at: 0.635 }),
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['芝公園', '東京タワー']), exits: Object.freeze(['19/20 芝公園', '増上寺 · 東京タワー']) }),
+    }),
+    shutoSector('hamazakibashi', 5.0, 3.6, {
+      kind: 'junction', name: '浜崎橋JCT', romaji: 'HAMAZAKIBASHI JCT',
+      note: '1号羽田線 · le Rainbow Bridge et la Wangan à droite',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['浜崎橋JCT', '1号羽田線 羽田']), exits: Object.freeze(['B 湾岸線 千葉', '11 台場 レインボーブリッジ']), arrow: '↗' }),
+      // km 4,3 officiel : le pont suspendu s'ouvre à droite, vers la baie et
+      // la Wangan, au moment où la 11号台場線 quitte l'anneau.
+      landmark: Object.freeze({ id: 'rainbow-bridge', name: 'レインボーブリッジ', romaji: 'RAINBOW BRIDGE', side: 1, km: 4.3, at: 0.709 }),
+      bay: true,
+    }),
+    shutoSector('shiodome-jct', 3.6, 3.2, {
+      kind: 'junction', name: '汐留JCT', romaji: 'SHIODOME JCT',
+      note: '八重洲線 · Tokyo Station',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['汐留JCT', '八重洲線']), exits: Object.freeze(['18 汐留', '東京駅 · 新橋']) }),
+    }),
+    shutoSector('shiodome-tunnel', 3.2, 2.5, {
+      kind: 'tunnel', name: '汐留トンネル', romaji: 'SHIODOME TUNNEL',
+      note: '700 m entre 汐留 et 銀座, juste sous les tours',
+      tunnel: Object.freeze({ name: '汐留トンネル', romaji: 'SHIODOME TUNNEL', lengthM: 700, lights: 'led' }),
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['汐留トンネル', '700 m']), hazard: true }),
+    }),
+    shutoSector('ginza', 2.5, 1.9, {
+      kind: 'neon', name: '銀座', romaji: 'GINZA',
+      note: 'néons de Ginza à gauche, sortie 15/16',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['銀座', 'GINZA']), exits: Object.freeze(['15/16 銀座', '銀座通り · 数寄屋橋']) }),
+      neon: Object.freeze({ side: -1 }),
+    }),
+    shutoSector('shintomicho', 1.9, 1.3, {
+      kind: 'pillars', name: '新富町 · 築地川', romaji: 'SHINTOMICHŌ',
+      note: 'l’ancienne rivière Tsukiji : les piles passent entre les voies',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['京橋JCT', '東京高速道路']), exits: Object.freeze(['13/14 新富町', '車線変更禁止']), hazard: true }),
+      pillars: true, wall: true,
+    }),
+    shutoSector('kyobashi', 1.3, 0.6, {
+      kind: 'junction', name: '京橋JCT', romaji: 'KYŌBASHI JCT',
+      note: 'Tokyo Expressway (KK線) · Marunouchi à gauche',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['京橋JCT', '東京高速道路 KK線']), exits: Object.freeze(['12 京橋', '東銀座']) }),
+      wall: true,
+    }),
+    shutoSector('takaracho', 0.6, 0.0, {
+      kind: 'viaduct', name: '宝町', romaji: 'TAKARACHŌ',
+      note: 'sortie 11 · retour sur 日本橋, km 0',
+      sign: Object.freeze({ route: 'C1', lines: Object.freeze(['日本橋', '江戸橋JCT']), exits: Object.freeze(['11 宝町', 'Yaesu-dōri']) }),
+      toll: Object.freeze({ name: '料金所', romaji: 'TOLL GATE', booths: 3, side: 1 }),
+    }),
+  ]),
+});
+
+/** La route réelle d'une ville : seule la C1 (Tokyo) en a une pour l'instant. */
+export function cityRushRouteFor(cityId) {
+  return cityId === 'tokyo' ? CITY_RUSH_SHUTO_C1 : null;
+}
+
+/** Secteur de la C1 couvrant une position sur le tour (0 → 1). */
+export function shutoC1SectorAt(lapProgress, route = CITY_RUSH_SHUTO_C1) {
+  const progress = clamp01(Number(lapProgress) || 0);
+  const sectors = route?.sectors || [];
+  // Le dernier secteur se referme sur 1 : on le traite à part pour que la
+  // ligne d'arrivée appartienne bien à 日本橋.
+  return sectors.find((sector) => progress >= sector.from && (progress < sector.to || sector.to <= sector.from))
+    || sectors[sectors.length - 1]
+    || null;
+}
+
+/**
+ * État « couvert » d'une position sur le tour : tunnel, tranchée ou air libre.
+ * Le monde s'en sert pour couper la pluie, allumer les phares et resserrer la
+ * brume sous le palais impérial.
+ */
+export function shutoC1CoverAt(lapProgress, route = CITY_RUSH_SHUTO_C1) {
+  const sector = shutoC1SectorAt(lapProgress, route);
+  if (!sector) return { covered: false, kind: null, name: null, romaji: null };
+  if (sector.kind === 'tunnel') {
+    return { covered: true, kind: 'tunnel', name: sector.tunnel?.name || sector.name, romaji: sector.tunnel?.romaji || sector.romaji };
+  }
+  if (sector.kind === 'cut') {
+    return { covered: false, kind: 'cut', name: sector.cut?.name || sector.name, romaji: sector.romaji };
+  }
+  return { covered: false, kind: null, name: null, romaji: null };
+}
+
+/**
+ * Le prochain échangeur/sortie annoncé et sa distance réelle, comme sur les
+ * panneaux d'approche de la Shuto (800 m / 400 m / 200 m avant la bifurcation).
+ */
+export function shutoC1NextJunction(lapProgress, route = CITY_RUSH_SHUTO_C1) {
+  const progress = clamp01(Number(lapProgress) || 0);
+  const sectors = route?.sectors || [];
+  let best = null;
+  for (const sector of sectors) {
+    // Les simples tronçons de viaduc ne font pas l'objet d'un panneau
+    // d'approche ; tout le reste (échangeur, tunnel, sortie, repère) oui.
+    if (sector.kind === 'viaduct' || !sector.sign) continue;
+    const ahead = sector.from >= progress ? sector.from - progress : sector.from + 1 - progress;
+    if (ahead < 1e-6) continue;
+    if (!best || ahead < best.ahead) best = { sector, ahead };
+  }
+  if (!best) return null;
+  return {
+    id: best.sector.id,
+    name: best.sector.name,
+    romaji: best.sector.romaji,
+    kind: best.sector.kind,
+    km: best.sector.km,
+    ahead: best.ahead,
+    aheadM: Math.round(best.ahead * (route.lengthKm || SHUTO_C1_LENGTH_KM) * 1000),
+    sign: best.sector.sign,
+  };
+}
+
+/**
+ * Lecture complète du tableau de bord « Shuto » pour une position sur le
+ * tour : secteur, kilomètre officiel depuis 日本橋, couverture (tunnel /
+ * tranchée) et prochaine bifurcation. Utilisé par le HUD et les tests.
+ */
+export function shutoC1Readout(lapProgress, route = CITY_RUSH_SHUTO_C1) {
+  const sector = shutoC1SectorAt(lapProgress, route);
+  const cover = shutoC1CoverAt(lapProgress, route);
+  return {
+    km: shutoC1KmAt(lapProgress, route.lengthKm),
+    marker: route.marker,
+    direction: route.direction,
+    directionRomaji: route.directionRomaji,
+    speedLimit: route.speedLimit,
+    sector: sector ? { id: sector.id, name: sector.name, romaji: sector.romaji, kind: sector.kind, note: sector.note || '' } : null,
+    cover,
+    next: shutoC1NextJunction(lapProgress, route),
+  };
+}
+
+// Tracé réel de l'anneau, en kilomètres relatifs au centre de la boucle
+// (x vers l'est, y vers le sud, comme à l'écran) : les seize points suivent
+// l'ordre de la course en 内回り et reproduisent l'œuf dissymétrique de la C1 —
+// flanc est droit (日本橋 → 銀座), pincement au sud-ouest (谷町 → 一ノ橋) et
+// grand axe nord-sud de 竹橋 à 浜崎橋.
+const SHUTO_C1_OUTLINE_KM = Object.freeze([
+  [1.67, -1.39], // 日本橋 · 江戸橋JCT (km 0)
+  [0.81, -2.66], // 神田橋
+  [-0.27, -2.28], // 竹橋JCT
+  [-1.36, -2.00], // 北の丸 · 代官町
+  [-1.67, -1.00], // 三宅坂JCT
+  [-1.63, -0.22], // 霞が関
+  [-1.81, 0.67], // 谷町JCT
+  [-1.18, 1.22], // 飯倉
+  [-1.36, 2.00], // 一ノ橋JCT
+  [-0.91, 2.22], // 芝公園 · 東京タワー
+  [0.18, 2.44], // 浜崎橋JCT
+  [0.36, 1.11], // 汐留JCT
+  [0.72, 0.22], // 銀座
+  [1.45, -0.22], // 新富町 · 築地川
+  [1.45, -0.78], // 京橋JCT
+  [1.27, -1.00], // 宝町
+]);
+const SHUTO_C1_OUTLINE_SCALE = 9.6; // unités de mini-carte par kilomètre
+const SHUTO_C1_OUTLINE_SAMPLES = 320;
+
+let shutoOutlineCache = null;
+
+// Spline de Catmull-Rom fermée, rééchantillonnée puis paramétrée par longueur
+// d'arc : la progression du pilote (en mètres) reste proportionnelle à la
+// distance réellement parcourue sur l'anneau.
+function buildShutoOutline() {
+  const control = SHUTO_C1_OUTLINE_KM.map(([x, y]) => [50 + x * SHUTO_C1_OUTLINE_SCALE, 50 + y * SHUTO_C1_OUTLINE_SCALE]);
+  const count = control.length;
+  const catmull = (index, t) => {
+    const p0 = control[(index - 1 + count) % count];
+    const p1 = control[index % count];
+    const p2 = control[(index + 1) % count];
+    const p3 = control[(index + 2) % count];
+    const t2 = t * t;
+    const t3 = t2 * t;
+    return [0, 1].map((axis) => 0.5 * (
+      (2 * p1[axis])
+      + (-p0[axis] + p2[axis]) * t
+      + (2 * p0[axis] - 5 * p1[axis] + 4 * p2[axis] - p3[axis]) * t2
+      + (-p0[axis] + 3 * p1[axis] - 3 * p2[axis] + p3[axis]) * t3
+    ));
+  };
+  const points = [];
+  const stepsPerSegment = Math.ceil(SHUTO_C1_OUTLINE_SAMPLES / count);
+  for (let index = 0; index < count; index += 1) {
+    for (let step = 0; step < stepsPerSegment; step += 1) {
+      points.push(catmull(index, step / stepsPerSegment));
+    }
+  }
+  const cumulative = [0];
+  for (let index = 1; index <= points.length; index += 1) {
+    const previous = points[index - 1];
+    const next = points[index % points.length];
+    cumulative.push(cumulative[index - 1] + Math.hypot(next[0] - previous[0], next[1] - previous[1]));
+  }
+  const total = cumulative[points.length];
+  return { points, cumulative, total };
+}
+
+function shutoOutline() {
+  if (!shutoOutlineCache) shutoOutlineCache = buildShutoOutline();
+  return shutoOutlineCache;
+}
+
+/**
+ * Forme de mini-carte propre à une ville : la C1 dessine son vrai anneau,
+ * les autres villes gardent la boucle générique de `cityRushMinimapPoint`.
+ */
+export function cityRushMinimapTrackShape(cityId) {
+  if (!cityRushRouteFor(cityId)) return null;
+  const outline = shutoOutline();
+  const { points, cumulative, total } = outline;
+  return {
+    id: 'shuto-c1',
+    total,
+    at(progress) {
+      const wrapped = ((Number(progress) || 0) % 1 + 1) % 1;
+      const target = wrapped * total;
+      let low = 0;
+      let high = cumulative.length - 1;
+      while (low + 1 < high) {
+        const middle = (low + high) >> 1;
+        if (cumulative[middle] <= target) low = middle;
+        else high = middle;
+      }
+      const span = cumulative[low + 1] - cumulative[low] || 1;
+      const t = (target - cumulative[low]) / span;
+      const a = points[low % points.length];
+      const b = points[(low + 1) % points.length];
+      const x = a[0] + (b[0] - a[0]) * t;
+      const y = a[1] + (b[1] - a[1]) * t;
+      const norm = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return { centerX: x, centerY: y, tangentX: (b[0] - a[0]) / norm, tangentY: (b[1] - a[1]) / norm };
+    },
+    path(steps = 120) {
+      const count = Math.max(24, Math.trunc(Number(steps) || 120));
+      const commands = [];
+      for (let index = 0; index < count; index += 1) {
+        const point = points[Math.floor((index / count) * points.length) % points.length];
+        commands.push(`${index === 0 ? 'M' : 'L'} ${point[0].toFixed(2)} ${point[1].toFixed(2)}`);
+      }
+      commands.push('Z');
+      return commands.join(' ');
+    },
+  };
+}
+
 // Chaque ville reçoit une palette propre au décor Three.js et à ses cartes UI.
 export const CITY_RUSH_CITIES = Object.freeze([
   Object.freeze({
@@ -360,12 +722,18 @@ export const CITY_RUSH_CITIES = Object.freeze([
     signs: Object.freeze(['BROADWAY', 'DOWNTOWN', '42ND ST', 'NIGHT SHIFT']),
   }),
   Object.freeze({
-    id: 'tokyo', name: 'TOKYO', label: 'TOKYO · JAPON', district: 'SHIBUYA',
-    tagline: 'Un éclair rose dans le rétro.', accent: '#ff5b9a', secondary: '#42e6ff',
-    background: 0x10152c, fog: 0x292744, asphalt: 0x121626, sidewalk: 0x30253d,
-    buildingColors: Object.freeze([0x343955, 0x4c456a, 0x263b56, 0x51405d, 0x343349]),
-    windowColor: 0x80edff, skyTop: 0x0c1330, skyGlow: 0xf54eae, style: 'tokyo',
-    signs: Object.freeze(['SHIBUYA', 'TOKYO', 'NIGHT RUN', 'ネオン街']),
+    // Tokyo se joue désormais sur la Shuto Expressway Route 1 : la C1
+    // 都心環状線, l'anneau intérieur de 14,8 km autour du palais impérial
+    // (`CITY_RUSH_SHUTO_C1`). Ni rue ni trottoir : viaduc, murs antibruit,
+    // tunnels, portiques verts et sorties numérotées. Le style `shuto` aiguille
+    // le décor vers `shutoC1Stage.js` et la skyline vers la baie de Tokyo.
+    id: 'tokyo', name: 'SHUTŌ C1', label: 'TOKYO · SHUTO EXPRESSWAY ROUTE 1', district: 'C1 内回り · 都心環状線',
+    tagline: '14,8 km de viaduc, trois tunnels, zéro feu rouge.', accent: '#3ce08a', secondary: '#ff9d4d',
+    background: 0x0a0f22, fog: 0x1d2140, asphalt: 0x14171f, sidewalk: 0x2a2740,
+    buildingColors: Object.freeze([0x2b3150, 0x3a3557, 0x1f3348, 0x453a52, 0x2a2c40]),
+    windowColor: 0x8fe9ff, skyTop: 0x090d22, skyGlow: 0x2fd07d, style: 'shuto',
+    signs: Object.freeze(['C1 都心環状', '内回り', '銀座', '芝公園', '谷町JCT', '汐留トンネル']),
+    route: CITY_RUSH_SHUTO_C1,
   }),
   Object.freeze({
     id: 'paris', name: 'PARIS', label: 'PARIS · FRANCE', district: 'RIVE GAUCHE',
@@ -1403,20 +1771,35 @@ export function cityRushMinimapPoint(
     lapLength = CITY_RUSH_LAP_LENGTH,
     laneCount = CITY_RUSH_LANE_X.length,
     laneSpacing = 1.45,
+    cityId = null,
   } = {},
 ) {
   const safeDistance = Math.max(0, Number(distance) || 0);
   const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
   const loopProgress = (((safeDistance % safeLap) + safeLap) % safeLap) / safeLap;
-  const theta = Math.PI + loopProgress * Math.PI * 2;
+  // Une ville dotée d'une route réelle (la C1 de Tokyo) dessine son vrai tracé
+  // sur la mini-carte ; les autres gardent l'anneau générique.
+  const shape = cityId ? cityRushMinimapTrackShape(cityId) : null;
 
-  const rx = 32;
-  const ry = 20;
-  const centerX = 50 + rx * Math.cos(theta) - 1.8 * Math.cos(3 * theta);
-  const centerY = 50 + ry * Math.sin(theta) + 1.4 * Math.sin(2 * theta);
-
-  const dxdt = -rx * Math.sin(theta) + 5.4 * Math.sin(3 * theta);
-  const dydt = ry * Math.cos(theta) + 2.8 * Math.cos(2 * theta);
+  let centerX;
+  let centerY;
+  let dxdt;
+  let dydt;
+  if (shape) {
+    const point = shape.at(loopProgress);
+    centerX = point.centerX;
+    centerY = point.centerY;
+    dxdt = point.tangentX;
+    dydt = point.tangentY;
+  } else {
+    const theta = Math.PI + loopProgress * Math.PI * 2;
+    const rx = 32;
+    const ry = 20;
+    centerX = 50 + rx * Math.cos(theta) - 1.8 * Math.cos(3 * theta);
+    centerY = 50 + ry * Math.sin(theta) + 1.4 * Math.sin(2 * theta);
+    dxdt = -rx * Math.sin(theta) + 5.4 * Math.sin(3 * theta);
+    dydt = ry * Math.cos(theta) + 2.8 * Math.cos(2 * theta);
+  }
   const norm = Math.hypot(dxdt, dydt) || 1;
   const tangentX = dxdt / norm;
   const tangentY = dydt / norm;
@@ -1447,12 +1830,16 @@ export function cityRushMinimapPoint(
   };
 }
 
-export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP_LENGTH } = {}) {
+export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP_LENGTH, cityId = null } = {}) {
+  // La C1 se dessine d'après son anneau réel (spline déjà refermée) ; les
+  // autres villes gardent la boucle générique échantillonnée par distance.
+  const shape = cityId ? cityRushMinimapTrackShape(cityId) : null;
+  if (shape) return shape.path(steps);
   const count = Math.max(12, Math.trunc(Number(steps) || 72));
   const commands = [];
   for (let index = 0; index < count; index += 1) {
     const distance = (index / count) * lapLength;
-    const point = cityRushMinimapPoint(distance, 1.5, { lapLength, laneSpacing: 0 });
+    const point = cityRushMinimapPoint(distance, 1.5, { lapLength, laneSpacing: 0, cityId });
     commands.push(`${index === 0 ? 'M' : 'L'} ${point.centerX.toFixed(2)} ${point.centerY.toFixed(2)}`);
   }
   commands.push('Z');
@@ -1516,10 +1903,10 @@ export function buildCityRushMinimapState(
   );
 
   const playerEntry = ranked.ordered.find((racer) => racer.id === playerId) || ranked.ordered[0];
-  const playerPoint = cityRushMinimapPoint(playerEntry.rawDistance, playerEntry.lane, { lapLength });
+  const playerPoint = cityRushMinimapPoint(playerEntry.rawDistance, playerEntry.lane, { lapLength, cityId });
 
   const enriched = ranked.ordered.map((racer, index) => {
-    const point = cityRushMinimapPoint(racer.rawDistance, racer.lane, { lapLength });
+    const point = cityRushMinimapPoint(racer.rawDistance, racer.lane, { lapLength, cityId });
     const isPlayer = racer.id === playerId;
     const relativeDistance = Math.round(racer.rawDistance - playerEntry.rawDistance);
     const loopGap = Math.round(cityRushTrackGap(racer.rawDistance, playerEntry.rawDistance, lapLength));
@@ -1566,7 +1953,7 @@ export function buildCityRushMinimapState(
     .map((police, index) => {
       const distance = Math.max(0, Math.min(totalDistance, Number(police.distance) || 0));
       const lane = clampCityRushLane(police.lane);
-      const point = cityRushMinimapPoint(distance, lane, { lapLength });
+      const point = cityRushMinimapPoint(distance, lane, { lapLength, cityId });
       return {
         id: police.id || `police-${index}`,
         name: police.name || 'POLICE',
@@ -1629,8 +2016,23 @@ export function buildCityRushMinimapState(
     racers: enriched,
     markers,
     pursuers: pursued,
-    startLine: cityRushMinimapPoint(0, 1.5, { lapLength, laneSpacing: 0 }),
-    midGate: cityRushMinimapPoint(lapLength / 2, 1.5, { lapLength, laneSpacing: 0 }),
+    startLine: cityRushMinimapPoint(0, 1.5, { lapLength, laneSpacing: 0, cityId }),
+    midGate: cityRushMinimapPoint(lapLength / 2, 1.5, { lapLength, laneSpacing: 0, cityId }),
+    // Route réelle (C1 de Tokyo) : repères kilométriques et panneaux posés sur
+    // le tracé de la mini-carte, plus la lecture du secteur en cours.
+    route: cityRushRouteFor(cityId),
+    routeTicks: cityRushRouteFor(cityId)
+      ? cityRushRouteFor(cityId).sectors
+        .filter((sector) => sector.sign)
+        .map((sector) => ({
+          id: sector.id,
+          name: sector.name,
+          romaji: sector.romaji,
+          km: sector.km,
+          kind: sector.kind,
+          ...cityRushMinimapPoint(shutoC1At(sector.km, cityRushRouteFor(cityId).lengthKm) * lapLength, 1.5, { lapLength, laneSpacing: 0, cityId }),
+        }))
+      : [],
   };
 }
 

@@ -64,6 +64,15 @@ import {
   selectCityRushRacers,
   cityRushMinimapPoint,
   cityRushMinimapTrackPath,
+  cityRushMinimapTrackShape,
+  cityRushRouteFor,
+  CITY_RUSH_SHUTO_C1,
+  shutoC1At,
+  shutoC1KmAt,
+  shutoC1SectorAt,
+  shutoC1CoverAt,
+  shutoC1NextJunction,
+  shutoC1Readout,
   buildCityRushMinimapState,
   approachCityRushSpeed,
   cityRushTrafficRecoveryRate,
@@ -1377,4 +1386,149 @@ test('la toupie du stun héliporté boucle des tours entiers face à la route', 
   assert.equal(cityRushStunSpin(Number.NaN, total), 0);
   assert.equal(cityRushStunSpin(total, Number.NaN), 0);
   assert.equal(cityRushStunSpin(total, total, 0), 0);
+});
+
+test('la course de Tokyo suit la Shuto Expressway Route 1, anneau intérieur officiel', () => {
+  const city = CITY_RUSH_CITIES.find((entry) => entry.id === 'tokyo');
+  const route = city.route;
+  assert.equal(route, CITY_RUSH_SHUTO_C1, 'la ville pointe sur la route officielle');
+  assert.equal(cityRushRouteFor('tokyo'), CITY_RUSH_SHUTO_C1);
+  assert.equal(cityRushRouteFor('paris'), null, 'les autres villes gardent la boucle générique');
+  assert.equal(route.id, 'shuto-c1');
+  assert.equal(route.marker, 'C1');
+  assert.equal(route.japanese, '首都高速 都心環状線');
+  assert.equal(route.direction, '内回り');
+  assert.equal(route.directionRomaji, 'UCHI-MAWARI');
+  assert.equal(route.lengthKm, 14.8);
+  assert.equal(route.speedLimit, 50, 'la C1 est limitée à 50 km/h');
+  assert.equal(route.origin.name, '日本橋', 'le kilomètre zéro est au pont de Nihonbashi');
+
+  // Les quinze secteurs se suivent sans trou et se referment sur le km 0.
+  assert.equal(route.sectors.length, 15);
+  assert.equal(route.sectors[0].from, 0);
+  assert.equal(route.sectors[route.sectors.length - 1].to, 0);
+  route.sectors.forEach((sector, index) => {
+    if (index > 0) assert.ok(Math.abs(sector.from - route.sectors[index - 1].to) < 1e-9, `${sector.id} enchaîne sur le secteur précédent`);
+    assert.ok(sector.id && sector.name && sector.romaji && sector.kind, `${sector.id} est documenté`);
+    assert.ok(sector.from >= 0 && sector.from < 1 && sector.to >= 0 && sector.to <= 1);
+    // En 内回り le point kilométrique officiel décroît le long du tour.
+    if (index > 0) assert.ok(sector.km < route.sectors[index - 1].km, `${sector.id} : km ${sector.km} après ${route.sectors[index - 1].km}`);
+    assert.ok(Math.abs(shutoC1At(sector.km) - sector.from) < 1e-9, `${sector.id} : km officiel → position sur le tour`);
+  });
+
+  // Trois tunnels (北の丸, 千代田, 汐留) et une tranchée ouverte (霞が関).
+  const tunnels = route.sectors.filter((sector) => sector.kind === 'tunnel');
+  assert.deepEqual(tunnels.map((sector) => sector.id), ['kitanomaru', 'chiyoda', 'shiodome-tunnel']);
+  for (const tunnel of tunnels) {
+    assert.ok(tunnel.tunnel.lengthM > 0, `${tunnel.id} a une longueur`);
+    const middle = (tunnel.from + tunnel.to) / 2;
+    const cover = shutoC1CoverAt(middle);
+    assert.equal(cover.covered, true, `${tunnel.id} est couvert`);
+    assert.equal(cover.kind, 'tunnel');
+  }
+  // Le tunnel de 千代田 interdit les matières dangereuses, comme dans la vraie C1.
+  const chiyoda = shutoC1SectorAt((route.sectors.find((s) => s.id === 'chiyoda').from + 0.32) / 1);
+  assert.equal(shutoC1SectorAt(0.32).id, 'chiyoda');
+  assert.equal(shutoC1SectorAt(0.32).sign.hazard, true, '危険物通行禁止 dans le tunnel de 千代田');
+  assert.ok(chiyoda);
+  // 新富町 : les piles de l'ancienne 築地川 montent entre les files, d'où les
+  // lignes jaunes continues et l'interdiction de changer de voie.
+  const shintomicho = route.sectors.find((sector) => sector.id === 'shintomicho');
+  assert.equal(shintomicho.kind, 'pillars');
+  assert.equal(shintomicho.pillars, true);
+  assert.equal(shintomicho.sign.hazard, true);
+
+  // Repères : la Tokyo Tower à gauche de 芝公園, le Rainbow Bridge à droite de
+  // 浜崎橋, le palais impérial toujours à l'intérieur de l'anneau (à gauche).
+  const shibakoen = route.sectors.find((sector) => sector.id === 'shibakoen');
+  assert.equal(shibakoen.landmark.id, 'tokyo-tower');
+  assert.equal(shibakoen.landmark.side, -1);
+  assert.ok(shibakoen.from < shibakoen.landmark.at && shibakoen.landmark.at < shibakoen.to);
+  const hamazakibashi = route.sectors.find((sector) => sector.id === 'hamazakibashi');
+  assert.equal(hamazakibashi.landmark.id, 'rainbow-bridge');
+  assert.equal(hamazakibashi.landmark.side, 1);
+  assert.equal(hamazakibashi.bay, true);
+  const palace = route.sectors.filter((sector) => sector.palace).map((sector) => sector.id);
+  assert.deepEqual(palace, ['kitanomaru', 'chiyoda', 'kasumigaseki'], 'le palais borde l’ouest de l’anneau');
+  for (const sector of route.sectors.filter((item) => item.palace)) assert.equal(sector.side, -1);
+
+  // La porte de mi-tour du jeu tombe dans la tranchée de 霞が関, juste après le
+  // JCT de 谷町 (km 8,0 officiel) : c'est là que se place le portique géant.
+  const gateSector = route.sectors.find((sector) => sector.gate);
+  assert.equal(gateSector.id, 'kasumigaseki');
+  assert.equal(gateSector.kind, 'cut');
+  assert.ok(gateSector.from < 0.466 && 0.466 < gateSector.to, '谷町JCT est dans le secteur');
+  assert.equal(shutoC1SectorAt(0.5).id, 'kasumigaseki');
+  assert.equal(shutoC1CoverAt(0.5).kind, 'cut');
+  assert.equal(shutoC1CoverAt(0.5).covered, false, 'la tranchée reste à ciel ouvert');
+
+  // Conversions kilométriques et lecture du tableau de bord.
+  assert.equal(shutoC1At(0), 0);
+  assert.ok(Math.abs(shutoC1At(7.4) - 0.5) < 1e-9, 'km 7,4 = mi-tour (porte du jeu)');
+  assert.ok(Math.abs(shutoC1At(14.8)) < 1e-9);
+  assert.equal(shutoC1KmAt(0), 0, 'le km 0 se referme sur 日本橋');
+  assert.equal(shutoC1KmAt(0.5), 7.4);
+  const readout = shutoC1Readout(0.635);
+  assert.equal(readout.sector.id, 'shibakoen');
+  assert.equal(readout.km, 5.4, 'km officiel de 芝公園');
+  assert.equal(readout.marker, 'C1');
+  assert.equal(readout.direction, '内回り');
+  assert.equal(readout.cover.covered, false);
+  // La prochaine jonction annoncée est toujours la plus proche devant.
+  const firstNext = shutoC1NextJunction(0);
+  assert.equal(firstNext.id, 'kandabashi');
+  assert.equal(firstNext.aheadM, 700);
+  assert.ok(firstNext.sign.lines.length >= 2);
+  // Depuis la porte de mi-tour (km 7,4), le prochain panneau annonce 芝公園 à
+  // 800 m ; une fois engagé dans 芝公園, c'est 浜崎橋JCT qui vient.
+  const beforeTower = shutoC1NextJunction(0.5);
+  assert.equal(beforeTower.id, 'shibakoen');
+  assert.equal(beforeTower.aheadM, 800);
+  const afterTower = shutoC1NextJunction(0.6);
+  assert.equal(afterTower.id, 'hamazakibashi');
+  assert.ok(afterTower.aheadM > 0 && afterTower.aheadM < 1000);
+});
+
+test('la mini-carte de Tokyo dessine le vrai anneau de la C1 et ses échangeurs', () => {
+  const shape = cityRushMinimapTrackShape('tokyo');
+  assert.ok(shape, 'la C1 a sa propre silhouette');
+  assert.equal(shape.id, 'shuto-c1');
+  // 14,8 km à 9,6 unité/km : le périmètre fait environ 141 unités.
+  assert.ok(Math.abs(shape.total - 14.8 * 9.6) < 6, `périmètre ${shape.total.toFixed(1)}`);
+  assert.equal(cityRushMinimapTrackShape('paris'), null, 'les autres villes gardent l’anneau générique');
+
+  const start = cityRushMinimapPoint(0, 0, { cityId: 'tokyo' });
+  assert.ok(Number.isFinite(start.x) && Number.isFinite(start.y));
+  assert.ok(start.x >= 0 && start.x <= 100 && start.y >= 0 && start.y <= 100, 'dans le viewBox 100×100');
+  const fullLap = cityRushMinimapPoint(CITY_RUSH_LAP_LENGTH, 0, { cityId: 'tokyo' });
+  assert.ok(Math.abs(fullLap.x - start.x) < 1e-6 && Math.abs(fullLap.y - start.y) < 1e-6, 'le tour se referme');
+  const gate = cityRushMinimapPoint(CITY_RUSH_LAP_LENGTH / 2, 0, { cityId: 'tokyo' });
+  assert.ok(Math.hypot(gate.x - start.x, gate.y - start.y) > 10, 'la porte de mi-tour est de l’autre côté de l’anneau');
+  // La silhouette diffère de la boucle générique : ce n’est pas un cercle.
+  const generic = cityRushMinimapTrackPath(24);
+  const shuto = cityRushMinimapTrackPath(24, { cityId: 'tokyo' });
+  assert.notEqual(shuto, generic);
+  assert.ok(shuto.startsWith('M ') && shuto.endsWith(' Z'));
+
+  const minimap = buildCityRushMinimapState([], { cityId: 'tokyo' });
+  assert.equal(minimap.route.id, 'shuto-c1');
+  assert.equal(minimap.route.marker, 'C1');
+  assert.equal(minimap.route.direction, '内回り');
+  assert.equal(minimap.routeTicks.length, CITY_RUSH_SHUTO_C1.sectors.length);
+  let previousProgress = -1;
+  for (const tick of minimap.routeTicks) {
+    assert.ok(Number.isFinite(tick.x) && Number.isFinite(tick.y), `${tick.id} est placé`);
+    assert.ok(tick.x >= 0 && tick.x <= 100 && tick.y >= 0 && tick.y <= 100);
+    assert.ok(tick.loopProgress > previousProgress, `${tick.id} dans l’ordre du tour`);
+    previousProgress = tick.loopProgress;
+    assert.ok(tick.name && tick.kind);
+    assert.ok(Number.isFinite(tick.tangentX) && Number.isFinite(tick.tangentY));
+  }
+  assert.equal(minimap.routeTicks[0].id, 'edobashi');
+  assert.equal(minimap.routeTicks[0].km, 14.8);
+  assert.ok(minimap.routeTicks.some((tick) => tick.id === 'shibakoen' && tick.kind === 'landmark'));
+  // Une ville sans route officielle n’envoie ni route ni repères.
+  const plain = buildCityRushMinimapState([], { cityId: 'paris' });
+  assert.equal(plain.route, null);
+  assert.deepEqual(plain.routeTicks, []);
 });

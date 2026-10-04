@@ -7,7 +7,9 @@ import {
   cityRushMinimapTrackPath,
 } from './cityRushRules';
 
-const TRACK_PATH = cityRushMinimapTrackPath(72);
+// Tracé générique (anneau de 600 m) : les villes sans route officielle s'en
+// contentent. Tokyo dessine à la place le vrai anneau de la Shuto C1.
+const GENERIC_TRACK_PATH = cityRushMinimapTrackPath(72);
 
 function ordinal(place) {
   return place === 1 ? '1er' : `${place}e`;
@@ -41,7 +43,19 @@ export default function CityRushMinimap({
     () => buildCityRushMinimapState(racers, { cityId, carId, runId, playerDriverId, pursuers }),
     [racers, cityId, carId, runId, playerDriverId, pursuers],
   );
-  const { focus, markers, startLine, midGate } = minimap;
+  const { focus, markers, startLine, midGate, route, routeTicks } = minimap;
+  // Le tracé dépend de la ville : la C1 remplace l'anneau générique par son
+  // profil officiel (recalculé seulement quand on change de ville).
+  const trackPath = useMemo(
+    () => (route ? cityRushMinimapTrackPath(120, { cityId }) : GENERIC_TRACK_PATH),
+    [route, cityId],
+  );
+  const ticks = routeTicks || [];
+  // Secteur courant : le dernier repère dépassé par le focus.
+  const focusProgress = Number(focus.point?.loopProgress ?? focus.lapProgress) || 0;
+  const currentTick = ticks.length
+    ? ticks.reduce((best, tick) => (tick.loopProgress <= focusProgress ? tick : best), ticks[0])
+    : null;
   const racerCount = minimap.racers.length || 3;
   const police = minimap.pursuers || [];
   const blockers = police.filter((car) => car.blocking).length;
@@ -59,6 +73,14 @@ export default function CityRushMinimap({
         <span className="city-rush-minimap-title">
           <i aria-hidden="true" /> MINI-CARTE · FOCUS JOUEUR
         </span>
+        {route && (
+          <span
+            className="city-rush-minimap-route"
+            title={`${route.name} · ${route.japanese} · ${route.lengthKm} km · ${route.direction} (${route.directionRomaji}) · limité à ${route.speedLimit} km/h${currentTick ? ` · secteur ${currentTick.name}` : ''}`}
+          >
+            {route.marker} {route.direction} · {route.lengthKm} km{currentTick ? ` · ${currentTick.name}` : ''}
+          </span>
+        )}
         <span className="city-rush-minimap-badges">
           {police.length > 0 && (
             <span className="city-rush-minimap-police" title={`Poursuivants hors classement, solides : ils se rabattent devant leur pilote pour le bloquer. Elles sont armées (tir bleu et rafale rouge) en entrant en piste ; l’hélicoptère, elles doivent le voler. Trois tirs bleus, deux rafales rouges ou un missile les détruisent.${rallied > 0 ? ' La police routière a été percutée : elle chasse celui qui l’a touchée.' : ''}`}>
@@ -107,10 +129,24 @@ export default function CityRushMinimap({
             <line x1={focus.x} y1="2" x2={focus.x} y2="98" />
           </g>
 
-          {/* Tracé de la boucle de 600 m, bordure et bitume */}
-          <path className="city-rush-minimap-road-edge" d={TRACK_PATH} />
-          <path className="city-rush-minimap-road-asphalt" d={TRACK_PATH} />
-          <path className="city-rush-minimap-road-lanes" d={TRACK_PATH} />
+          {/* Tracé de la boucle (anneau de 600 m, ou C1 à Tokyo), bordure et bitume */}
+          <path className="city-rush-minimap-road-edge" d={trackPath} />
+          <path className="city-rush-minimap-road-asphalt" d={trackPath} />
+          <path className="city-rush-minimap-road-lanes" d={trackPath} />
+
+          {/* Repères de la route officielle : échangeurs, tunnels, sorties et
+              points remarquables, avec le secteur courant mis en avant. */}
+          {ticks.map((tick) => (
+            <g
+              key={tick.id}
+              className={`city-rush-minimap-tick is-${tick.kind}${currentTick?.id === tick.id ? ' is-current' : ''}`}
+              transform={`translate(${tick.centerX.toFixed(2)}, ${tick.centerY.toFixed(2)}) rotate(${tick.deg.toFixed(1)})`}
+            >
+              <title>{`${tick.name} · km ${tick.km} · ${tick.romaji}`}</title>
+              <line x1="0" y1="-4.4" x2="0" y2="4.4" />
+              <circle r={currentTick?.id === tick.id ? 2.1 : 1.3} />
+            </g>
+          ))}
 
           {/* Arche de mi-parcours (300 m) & ligne de départ/arrivée */}
           <g

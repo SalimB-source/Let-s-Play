@@ -59,15 +59,17 @@ export function createStageMaterials(city, theme, random) {
       flatShading: true,
     });
   });
-  const shopAtlas = makeShopAtlas(theme);
-  const shop = new THREE.MeshStandardMaterial({
+  // La C1 de Tokyo est une voie rapide sur viaduc : aucune devanture, donc
+  // aucun atlas de boutiques (les panneaux publicitaires ont le leur).
+  const shopAtlas = theme.shops?.length ? makeShopAtlas(theme) : { texture: null, count: 0 };
+  const shop = shopAtlas.texture ? new THREE.MeshStandardMaterial({
     map: shopAtlas.texture,
     emissiveMap: shopAtlas.texture,
     emissive: 0xffffff,
     emissiveIntensity: 0.62 * glow,
     roughness: 0.92,
     flatShading: true,
-  });
+  }) : null;
   return {
     facades,
     shop,
@@ -449,7 +451,7 @@ function addCityProp(batch, m, theme, city, x, z, side, random, atlas) {
 // `acrossX` la profondeur vers l'extérieur. Un plan tourné de ±90° autour de
 // y regarde la chaussée ; les pignons regardent ±z (visibles dans les
 // ruelles) et la face arrière n'est dessinée que pour la rangée avant.
-function facadeBlock(batch, material, side, innerX, baseY, z, alongZ, height, acrossX, tint, floorHeight, random, options = {}) {
+export function facadeBlock(batch, material, side, innerX, baseY, z, alongZ, height, acrossX, tint, floorHeight, random, options = {}) {
   const outerX = innerX + side * acrossX;
   const centerX = innerX + side * (acrossX / 2);
   const tileHeight = floorHeight * FACADE_TILE.floors;

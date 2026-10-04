@@ -48,7 +48,7 @@ function readStoryEnding() {
 const STORY_CHAPTERS = [
   { city: 'vice-city', title: 'Le retour', speaker: 'Nico', race: { name: 'Ocean Drive — Sunset Run', type: 'Course côtière', route: 'Ocean Drive · South Beach · Collins Avenue' }, text: 'Trois ans après le sabotage, Nico Vega revient à Ocean Drive. Dante Cross a laissé une invitation au départ : gagne cette course et le prochain nom tombera.' },
   { city: 'new-york', title: 'La piste froide', speaker: 'Nico', kind: 'action', race: { name: 'Midtown — Heat Run', type: 'Échappée urbaine', route: 'Times Square · Broadway · Midtown Tunnel' }, text: 'L’escorte de Dante repère Nico dans Midtown. Sirènes derrière eux, Luna lâche un dernier indice à la radio : le prochain contact se cache à Tokyo.' },
-  { city: 'tokyo', title: 'Le hangar de Shibuya', speaker: 'Nico', kind: 'action', race: { name: 'Shibuya — Freight Run', type: 'Sprint nocturne', route: 'Shibuya Crossing · Docklands · Bayshore Route' }, text: 'Le mécanicien de Dante a les preuves. L’échange tourne mal dans un hangar du port : Nico saute au volant, dossier en main, et doit semer les hommes de Dante à travers Shibuya.' },
+  { city: 'tokyo', title: 'L’anneau de minuit', speaker: 'Nico', kind: 'action', race: { name: 'Shutō C1 — Midnight Loop', type: 'Sprint sur voie rapide', route: '日本橋 · 霞が関 掘割 · 芝公園 · 浜崎橋JCT · 汐留トンネル' }, text: 'Le mécanicien de Dante a les preuves, et l’échange tourne mal au pied du péage de 宝町. Nico saute au volant, dossier en main, et s’engage sur la C1 内回り : quatorze kilomètres huit cents de viaduc au-dessus de la ville, trois tunnels sous le palais impérial, aucun feu rouge — juste les portiques verts qui défilent et les hommes de Dante dans les rétros.' },
   { city: 'paris', title: 'Marché de dupes', speaker: 'Nico', kind: 'action', race: { name: 'Rive Gauche — Redline', type: 'Drift urbain', route: 'Saint-Germain · Quai de Conti · Boulevard Saint-Michel' }, text: 'Le promoteur tente de s’enfuir avec les preuves. Nico le prend en chasse dans les rues de Paris ; la vérité est dans la voiture rouge.' },
   { city: 'london', title: 'La soirée des ombres', speaker: 'Nico', kind: 'action', race: { name: 'Soho — After Hours', type: 'Course-poursuite', route: 'Piccadilly Circus · Soho · Tower Bridge' }, text: 'En costume, Nico s’invite à la réception privée du promoteur. Il surprend Dante qui ordonne de brûler les preuves — les gardes le repèrent, et la fuite se joue au volant dans les rues de Soho.' },
   { city: 'vice-city', title: 'Le dernier tour', speaker: 'Nico', kind: 'action', race: { name: 'Vice City — Last Lap', type: 'Finale du circuit', route: 'Ocean Drive · Starfish Island · Vice City Docks' }, text: 'Dante pousse sa voiture rouge à fond sur Ocean Drive. Nico colle à son pare-chocs : une dernière course décidera de leur sort.' },
@@ -671,6 +671,37 @@ export default function ViceCityRushPage() {
                 </div>
               </div>
 
+              {/* Plaque de signalisation de la route officielle : sur la Shuto
+                  C1 de Tokyo elle donne le secteur, le point kilométrique, la
+                  couverture (tunnel ou tranchée) et la prochaine jonction. */}
+              {hud.route?.sector && (
+                <div
+                  className={`city-rush-route-sign${hud.route.cover?.covered ? ' is-tunnel' : ''}${hud.route.cover?.kind === 'cut' ? ' is-cut' : ''}`}
+                  aria-label={`Signalisation ${hud.route.marker} ${hud.route.direction} : secteur ${hud.route.sector.name}, point kilométrique ${hud.route.km}${hud.route.next ? `, prochaine jonction ${hud.route.next.name} dans ${hud.route.next.aheadM} mètres` : ''}`}
+                >
+                  <span className="city-rush-route-badge">{hud.route.marker}</span>
+                  <span className="city-rush-route-sector">
+                    <b>{hud.route.sector.name}</b>
+                    <small>{hud.route.sector.romaji} · km {hud.route.km} · {hud.route.direction}</small>
+                  </span>
+                  {hud.route.cover?.covered && (
+                    <span className="city-rush-route-cover">TUNNEL · {hud.route.cover.name}</span>
+                  )}
+                  {hud.route.cover?.kind === 'cut' && (
+                    <span className="city-rush-route-cover is-cut">TRANCHÉE · {hud.route.cover.name}</span>
+                  )}
+                  {hud.route.next && (
+                    <span className="city-rush-route-next">
+                      <i aria-hidden="true">{hud.route.next.sign?.arrow || '↑'}</i>
+                      <span>
+                        <b>{hud.route.next.name}</b>
+                        <small>{hud.route.next.aheadM} m</small>
+                      </span>
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div className="city-rush-gta-cash" aria-label={`Butin : ${hud.score || 0} points`}>
                 <b>{(hud.score || 0).toLocaleString('fr-FR')} PTS</b>
                 <small>{formatTime(hud.elapsed)}</small>
@@ -836,7 +867,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle, {currentLaps} tour{currentLaps > 1 ? 's' : ''} = {currentDistance} m. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? ` — chaque tour rejoue les ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})` : ''}, {currentLaps} tour{currentLaps > 1 ? 's' : ''} = {currentDistance} m. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
                       {CITY_RUSH_CITIES.map((option, index) => (
@@ -851,6 +882,11 @@ export default function ViceCityRushPage() {
                           <span className="city-rush-city-number">0{index + 1}</span>
                           <b>{option.name}</b>
                           <small>{option.district} · {option.label}</small>
+                          {option.route && (
+                            <em className="city-rush-city-route">
+                              <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLimit} km/h
+                            </em>
+                          )}
                           <span className="city-rush-city-preview" aria-hidden="true">
                             <i style={{ background: option.accent }} /><i style={{ background: option.secondary }} />
                           </span>

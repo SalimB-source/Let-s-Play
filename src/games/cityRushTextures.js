@@ -356,14 +356,14 @@ export function makeSkylineTexture(city, theme, random) {
 
     // Rangée de fond, plus basse et plus sombre.
     for (let x = -20; x < width; x += 30 + random() * 40) {
-      const h = (style === 'new-york' ? 150 : style === 'tokyo' ? 120 : style === 'paris' ? 55 : 80) + random() * (style === 'paris' || style === 'london' ? 45 : 140);
+      const h = (style === 'new-york' ? 150 : style === 'shuto' ? 132 : style === 'paris' ? 55 : 80) + random() * (style === 'paris' || style === 'london' ? 45 : 140);
       tower(x, 24 + random() * 48, h, 4, { density: dayWindow ? 0.1 : 0.16, windowColor: dayWindow || 'rgba(255, 215, 160, .3)' });
     }
     // Rangée avant avec les monuments.
     const accent = city.accent;
     const secondary = city.secondary;
     for (let x = -10; x < width; x += 46 + random() * 70) {
-      const h = (style === 'new-york' ? 190 : style === 'tokyo' ? 150 : style === 'paris' ? 70 : style === 'london' ? 90 : 120) + random() * (style === 'paris' ? 40 : style === 'london' ? 70 : 170);
+      const h = (style === 'new-york' ? 190 : style === 'shuto' ? 168 : style === 'paris' ? 70 : style === 'london' ? 90 : 120) + random() * (style === 'paris' ? 40 : style === 'london' ? 70 : 170);
       const w = 30 + random() * 60;
       const topGlow = random() < 0.35 ? (random() < 0.5 ? accent : secondary) : null;
       tower(x, w, h, 12, { density: dayWindow ? 0.18 : 0.32, crown: topGlow, spire: style === 'new-york' && random() < 0.3 ? 40 + random() * 50 : 0 });
@@ -398,27 +398,119 @@ export function makeSkylineTexture(city, theme, random) {
       tower(905, 20, 410, 24, { density: 0 });
       tower(1420, 56, 300, 20, { density: 0.42, spire: 70, crown: secondary });
       for (const x of [300, 1700]) tower(x, 90, 250, 16, { density: 0.4 });
-    } else if (style === 'tokyo') {
-      // Tokyo Tower rouge et Skytree.
+    } else if (style === 'shuto') {
+      // Depuis le viaduc de la C1 : la Tokyo Tower au-dessus de Shiba, la
+      // Skytree de l'autre côté de la Sumida, le Rainbow Bridge vers la baie
+      // et la Wangan, les tours de Shiodome et de Shinjuku, et la masse sombre
+      // du palais impérial qui reste au centre de l'anneau.
+      const towerX = 1080;
       ctx.fillStyle = '#d9412f';
       ctx.beginPath();
-      ctx.moveTo(1060, horizon);
-      ctx.lineTo(1100, horizon - 330);
-      ctx.lineTo(1110, horizon - 330);
-      ctx.lineTo(1150, horizon);
+      ctx.moveTo(towerX - 46, horizon);
+      ctx.lineTo(towerX - 8, horizon - 330);
+      ctx.lineTo(towerX + 8, horizon - 330);
+      ctx.lineTo(towerX + 46, horizon);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = '#f4f0ea';
-      for (const y of [80, 170]) ctx.fillRect(1082 + (y - 80) * 0.05, horizon - y - 60, 48 - (y - 80) * 0.1, 10);
+      for (const y of [86, 178]) ctx.fillRect(towerX - 26 + (y - 86) * 0.06, horizon - y - 62, 52 - (y - 86) * 0.12, 11);
       ctx.fillStyle = '#d9412f';
-      ctx.fillRect(1102, horizon - 400, 6, 70);
-      tower(380, 36, 420, 22, { density: 0.08, crown: secondary });
-      tower(372, 52, 180, 20, { density: 0.1 });
+      ctx.fillRect(towerX - 3, horizon - 404, 6, 74);
+      ctx.fillStyle = 'rgba(255, 190, 120, .85)';
+      ctx.shadowColor = '#ffb46b';
+      ctx.shadowBlur = 18;
+      for (let y = 24; y < 320; y += 26) {
+        const halfWidth = 6 + (320 - y) * 0.13;
+        ctx.fillRect(towerX - halfWidth, horizon - y, 3, 3);
+        ctx.fillRect(towerX + halfWidth - 3, horizon - y, 3, 3);
+      }
+      ctx.shadowBlur = 0;
+
+      // Skytree : fût blanc et deux observatoires, balise rouge au sommet.
+      const skytreeX = 372;
+      ctx.fillStyle = '#cfd8e6';
+      ctx.beginPath();
+      ctx.moveTo(skytreeX - 26, horizon);
+      ctx.lineTo(skytreeX - 6, horizon - 430);
+      ctx.lineTo(skytreeX + 6, horizon - 430);
+      ctx.lineTo(skytreeX + 26, horizon);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(20, 26, 44, .85)';
+      ctx.fillRect(skytreeX - 20, horizon - 150, 40, 8);
+      ctx.fillRect(skytreeX - 14, horizon - 290, 28, 7);
       ctx.fillStyle = secondary;
       ctx.shadowColor = secondary;
-      ctx.shadowBlur = 20;
-      ctx.fillRect(390, horizon - 330, 16, 6);
+      ctx.shadowBlur = 22;
+      ctx.fillRect(skytreeX - 12, horizon - 176, 24, 24);
+      ctx.fillRect(skytreeX - 8, horizon - 312, 16, 20);
       ctx.shadowBlur = 0;
+      ctx.fillStyle = '#ff4a4a';
+      ctx.fillRect(skytreeX - 2, horizon - 452, 4, 22);
+      tower(skytreeX - 60, 44, 190, 20, { density: 0.1 });
+
+      // Rainbow Bridge : deux pylônes, la travée suspendue et les câbles.
+      const bridgeX = 1620;
+      ctx.strokeStyle = 'rgba(226, 236, 246, .78)';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(bridgeX - 210, horizon - 26);
+      ctx.quadraticCurveTo(bridgeX, horizon - 96, bridgeX + 210, horizon - 26);
+      ctx.stroke();
+      for (const pylonX of [bridgeX - 108, bridgeX + 108]) {
+        ctx.fillStyle = '#e6ecf4';
+        ctx.fillRect(pylonX - 9, horizon - 196, 18, 172);
+        ctx.fillRect(pylonX - 24, horizon - 150, 48, 12);
+        ctx.strokeStyle = 'rgba(255, 214, 140, .55)';
+        ctx.lineWidth = 2;
+        for (const [sx, sy] of [[-210, -26], [0, -96], [210, -26]]) {
+          ctx.beginPath();
+          ctx.moveTo(pylonX, horizon - 190);
+          ctx.lineTo(bridgeX + sx, horizon + sy);
+          ctx.stroke();
+        }
+        for (let hanger = -90; hanger <= 90; hanger += 22) {
+          ctx.beginPath();
+          ctx.moveTo(pylonX + hanger, horizon - 176);
+          ctx.lineTo(pylonX + hanger, horizon - 44);
+          ctx.stroke();
+        }
+      }
+      // L'eau de la baie sous le pont.
+      const bay = ctx.createLinearGradient(0, horizon - 30, 0, height);
+      bay.addColorStop(0, 'rgba(12, 26, 48, .9)');
+      bay.addColorStop(1, 'rgba(6, 12, 24, 0)');
+      ctx.fillStyle = bay;
+      ctx.fillRect(bridgeX - 240, horizon - 30, 480, 60);
+      ctx.fillStyle = 'rgba(255, 206, 140, .3)';
+      for (let sparkle = 0; sparkle < 90; sparkle += 1) ctx.fillRect(bridgeX - 230 + random() * 460, horizon - 24 + random() * 34, 3 + random() * 8, 2);
+
+      // Shiodome / Shinjuku : dalles de verre et tours jumelles du Tocho.
+      tower(700, 62, 300, 20, { density: 0.36, crown: secondary });
+      tower(760, 44, 250, 18, { density: 0.3 });
+      tower(1320, 54, 320, 20, { density: 0.34, crown: accent });
+      tower(1378, 40, 240, 18, { density: 0.3 });
+      // Roppongi Hills et sa balise aviation.
+      tower(1900, 52, 380, 22, { density: 0.3, crown: '#ff5b5b' });
+      ctx.fillStyle = '#ff4a4a';
+      ctx.fillRect(1924, horizon - 396, 4, 16);
+
+      // Le palais impérial : une masse basse et sombre au cœur de l'anneau.
+      ctx.fillStyle = 'rgba(8, 18, 14, .96)';
+      ctx.beginPath();
+      ctx.moveTo(60, horizon);
+      ctx.quadraticCurveTo(200, horizon - 74, 340, horizon);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(14, 32, 24, .95)';
+      for (let treeX = 70; treeX < 330; treeX += 16 + random() * 14) {
+        ctx.beginPath();
+        ctx.arc(treeX, horizon - 20 - random() * 34, 9 + random() * 9, Math.PI, 0);
+        ctx.fill();
+      }
+      // Les douves : un liseré d'eau sombre au pied des arbres.
+      ctx.fillStyle = 'rgba(20, 34, 52, .8)';
+      ctx.fillRect(60, horizon - 12, 290, 12);
     } else if (style === 'paris') {
       // Tour Eiffel, dôme du Sacré-Cœur et tour Montparnasse.
       const ex = 900;
@@ -508,6 +600,59 @@ export function makeCheckerTexture(columns = 24, rows = 4) {
 }
 
 export function makeGantrySignTexture(city, theme) {
+  // Le départ de la C1 se prend au-dessus de 日本橋, kilomètre zéro du réseau
+  // routier japonais : le portique porte un panneau vert de la Shuto, avec la
+  // pastille C1, le sens de circulation et les lignes qui s'en détachent.
+  if (theme.expressway) {
+    const route = theme.expressway.route || {};
+    return makeCanvasTexture((ctx, width, height) => {
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#0c7446');
+      gradient.addColorStop(1, '#064a2c');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#f4f8f1';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(14, 14, width - 28, height - 28);
+      ctx.lineWidth = 3;
+      ctx.strokeRect(30, 30, width - 60, height - 60);
+      // Damier d'arrivée réduit à un liseré : la ligne reste une ligne de course.
+      const cell = 22;
+      for (let column = 0; column < width / cell; column += 1) {
+        ctx.fillStyle = column % 2 ? '#f3f3ef' : '#0a0d1c';
+        ctx.fillRect(column * cell, 0, cell, cell);
+        ctx.fillRect(column * cell, height - cell, cell, cell);
+      }
+      // Pastille de route C1 et sens 内回り.
+      const badgeR = 62;
+      const badgeX = 150;
+      const badgeY = height * 0.52;
+      ctx.strokeStyle = '#f4f8f1';
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, badgeR, Math.PI * 0.35, Math.PI * 2.05);
+      ctx.stroke();
+      ctx.fillStyle = '#f4f8f1';
+      ctx.beginPath();
+      ctx.moveTo(badgeX + badgeR * 0.9, badgeY - 20);
+      ctx.lineTo(badgeX + badgeR * 0.1, badgeY - 46);
+      ctx.lineTo(badgeX + badgeR * 0.2, badgeY + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = '900 56px "Orbitron", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(route.marker || 'C1', badgeX, badgeY + 4);
+      ctx.textAlign = 'left';
+      const textX = badgeX + badgeR + 54;
+      neonText(ctx, 'DÉPART · ARRIVÉE', textX + 250, height * 0.36, '900 76px "Orbitron", Arial, sans-serif', '#f7fbf5', 0, 'center');
+      neonText(ctx, `${route.origin?.name || city.name} ${route.origin?.romaji || ''} · km 0 · ${route.direction || ''}`, textX + 250, height * 0.56, '800 40px "Orbitron", Arial, sans-serif', '#ffe6a8', 0, 'center');
+      neonText(ctx, `${city.name} · ${theme.gantryText}`, textX + 250, height * 0.75, '700 34px "Orbitron", Arial, sans-serif', '#bdf3d2', 0, 'center');
+      // Bandeau de lignes connectées, à droite du panneau.
+      ctx.textAlign = 'right';
+      neonText(ctx, (route.signExits || []).join('  ·  '), width - 70, height * 0.5, '800 34px "Orbitron", Arial, sans-serif', '#f4f8f1', 0, 'right');
+    }, 1536, 320, { smooth: true });
+  }
   return makeCanvasTexture((ctx, width, height) => {
     ctx.fillStyle = '#0a0d1c';
     ctx.fillRect(0, 0, width, height);
@@ -706,4 +851,307 @@ export function makeSmokeTexture() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
   }, 64, 64, { smooth: true });
+}
+
+// ─── Shuto Expressway Route 1 · textures de la C1 ───────────────────────────
+// Tout ce que la voie rapide japonaise a de spécifique : le tablier (chaussée,
+// bandes d'arrêt d'urgence, marquages interdits), la rue treize mètres plus bas,
+// les parois de tunnel, les murs antibruit et le béton du viaduc.
+
+/** Tablier de la C1 : chaussée, bandes d'arrêt d'urgence et trottoir de service. */
+export function makeExpresswayDeckTexture(theme, random, { halfWidth = 10.6 } = {}) {
+  const width = 1024;
+  const height = 1024;
+  const base = new THREE.Color(theme.roadTint);
+  const shoulder = new THREE.Color(theme.roadTint).multiplyScalar(0.86);
+  const service = new THREE.Color(theme.sidewalkTint);
+  const carriagewayHalf = CITY_RUSH_ROAD_WIDTH / 2;
+  const toPixel = (x) => width / 2 + (x / halfWidth) * (width / 2);
+  const metersToPx = (meters) => (meters / halfWidth) * (width / 2);
+  const rgb = (color, alpha = 1) => `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${alpha})`;
+  return makeCanvasTexture((ctx) => {
+    // Bande de service (béton) puis chaussée et bandes d'arrêt d'urgence.
+    ctx.fillStyle = rgb(service);
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = rgb(shoulder);
+    ctx.fillRect(toPixel(-halfWidth + 1.2), 0, metersToPx(halfWidth - 1.2 - carriagewayHalf - 0.2), height);
+    ctx.fillRect(toPixel(carriagewayHalf + 0.2), 0, metersToPx(halfWidth - 1.2 - carriagewayHalf - 0.2), height);
+    ctx.fillStyle = rgb(base);
+    ctx.fillRect(toPixel(-carriagewayHalf), 0, metersToPx(carriagewayHalf * 2), height);
+    ctx.fillRect(toPixel(-carriagewayHalf - 0.2), 0, metersToPx(0.2), height);
+    ctx.fillRect(toPixel(carriagewayHalf), 0, metersToPx(0.2), height);
+
+    // Enrobé drainant : grain fin et taches d'hydrocarbures le long des voies.
+    for (let index = 0; index < 5200; index += 1) {
+      const shade = 0.5 + random() * 1.05;
+      ctx.fillStyle = `rgba(${Math.round(base.r * 255 * shade + 14)}, ${Math.round(base.g * 255 * shade + 15)}, ${Math.round(base.b * 255 * shade + 18)}, ${0.14 + random() * 0.24})`;
+      const x = toPixel(-carriagewayHalf) + random() * metersToPx(carriagewayHalf * 2);
+      ctx.fillRect(x, random() * height, 1 + random() * 4, 1 + random() * 4);
+    }
+    ctx.fillStyle = 'rgba(0, 0, 0, .16)';
+    for (const laneCenter of CITY_RUSH_LANE_X) {
+      const px = toPixel(laneCenter);
+      ctx.fillRect(px - metersToPx(0.42), 0, metersToPx(0.3), height);
+      ctx.fillRect(px + metersToPx(0.12), 0, metersToPx(0.3), height);
+    }
+    // Traces de pluie et de pneus plus sombres sous les joints de tablier.
+    for (let index = 0; index < 26; index += 1) {
+      const x = toPixel(-carriagewayHalf) + random() * metersToPx(carriagewayHalf * 2);
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.05 + random() * 0.07})`;
+      ctx.fillRect(x, random() * height, metersToPx(0.6 + random() * 1.2), 40 + random() * 220);
+    }
+
+    // Lignes blanches continues en bordure de chaussée (0,15 m).
+    ctx.fillStyle = theme.laneColor || '#eef4ff';
+    for (const side of [-1, 1]) {
+      ctx.fillRect(toPixel(side * (carriagewayHalf - 0.18)) - metersToPx(0.075), 0, metersToPx(0.15), height);
+    }
+    // Hachures des bandes d'arrêt d'urgence : interdites au roulage.
+    ctx.strokeStyle = 'rgba(238, 244, 255, .34)';
+    ctx.lineWidth = Math.max(2, metersToPx(0.09));
+    for (let index = -12; index < 26; index += 1) {
+      for (const side of [-1, 1]) {
+        const inner = side * (carriagewayHalf + 0.22);
+        const outer = side * (halfWidth - 1.3);
+        ctx.beginPath();
+        ctx.moveTo(toPixel(inner), index * (height / 12));
+        ctx.lineTo(toPixel(outer), index * (height / 12) + (outer - inner) * metersToPx(1) * 1.6);
+        ctx.stroke();
+      }
+    }
+
+    // Séparations de voies : pointillés blancs dans chaque sens, et ligne
+    // jaune continue là où le changement de voie est interdit (très fréquent
+    // sur la C1, avant chaque sortie).
+    const dash = height / 6;
+    for (const separator of [-4.2, -2.1, 2.1, 4.2]) {
+      const px = toPixel(separator);
+      const prohibited = Math.abs(separator) > 3;
+      if (prohibited) {
+        // Zone interdite sur la seconde moitié du carreau : la ligne blanche
+        // se change en jaune continu, comme avant une sortie de la C1.
+        ctx.fillStyle = theme.laneColor || '#eef4ff';
+        for (let y = 0; y < height / 2; y += dash) ctx.fillRect(px - metersToPx(0.06), y + dash * 0.14, metersToPx(0.12), dash * 0.42);
+        ctx.fillStyle = theme.centerLineColor || '#f5b81e';
+        ctx.fillRect(px - metersToPx(0.075), height / 2, metersToPx(0.15), height / 2);
+      } else {
+        ctx.fillStyle = theme.laneColor || '#eef4ff';
+        for (let y = 0; y < height; y += dash) ctx.fillRect(px - metersToPx(0.06), y + dash * 0.14, metersToPx(0.12), dash * 0.42);
+      }
+    }
+    // Double ligne jaune au milieu : les deux sens sont séparés, dépassement
+    // et changement de voie interdits (aucun terre-plein franchissable).
+    ctx.fillStyle = theme.centerLineColor || '#f5b81e';
+    ctx.fillRect(toPixel(-0.13), 0, metersToPx(0.12), height);
+    ctx.fillRect(toPixel(0.01), 0, metersToPx(0.12), height);
+
+    // Flèches de voie japonaises : longues et fines, une par carreau. Les
+    // voies de gauche viennent en face (sens inverse de l'anneau).
+    ctx.fillStyle = 'rgba(238, 244, 255, .22)';
+    for (const laneCenter of CITY_RUSH_LANE_X) {
+      const px = toPixel(laneCenter);
+      const oncoming = laneCenter < 0;
+      const tip = oncoming ? height * 0.2 : height * 0.8;
+      const tail = oncoming ? height * 0.72 : height * 0.28;
+      const head = oncoming ? height * 0.32 : height * 0.68;
+      ctx.beginPath();
+      ctx.moveTo(px, tip);
+      ctx.lineTo(px + metersToPx(0.34), head);
+      ctx.lineTo(px + metersToPx(0.1), head);
+      ctx.lineTo(px + metersToPx(0.1), tail);
+      ctx.lineTo(px - metersToPx(0.1), tail);
+      ctx.lineTo(px - metersToPx(0.1), head);
+      ctx.lineTo(px - metersToPx(0.34), head);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // Joints de dilatation du tablier, en haut et en bas du carreau.
+    ctx.fillStyle = 'rgba(0, 0, 0, .5)';
+    ctx.fillRect(0, 0, width, 5);
+    ctx.fillRect(0, height - 5, width, 5);
+    ctx.fillStyle = 'rgba(190, 200, 214, .18)';
+    ctx.fillRect(0, 5, width, 3);
+    ctx.fillRect(0, height - 8, width, 3);
+  }, width, height, { smooth: true, repeat: true, anisotropy: 8 });
+}
+
+/** Rue treize mètres sous le viaduc : îlots, feux, rivières et passages piétons. */
+export function makeCityBelowTexture(theme, random, { river = true } = {}) {
+  const width = 1024;
+  const height = 1024;
+  const below = theme.expressway?.below || {};
+  const ground = new THREE.Color(below.ground ?? 0x0a0c16);
+  return makeCanvasTexture((ctx) => {
+    ctx.fillStyle = `rgb(${Math.round(ground.r * 255)}, ${Math.round(ground.g * 255)}, ${Math.round(ground.b * 255)})`;
+    ctx.fillRect(0, 0, width, height);
+    // Îlots sombres, alignés sur une trame de rues.
+    const block = 128;
+    for (let row = 0; row < width / block; row += 1) {
+      for (let column = 0; column < height / block; column += 1) {
+        const inset = 10 + random() * 8;
+        const shade = 0.55 + random() * 0.5;
+        ctx.fillStyle = `rgba(${Math.round(ground.r * 255 * shade + 22)}, ${Math.round(ground.g * 255 * shade + 24)}, ${Math.round(ground.b * 255 * shade + 30)}, .92)`;
+        ctx.fillRect(row * block + inset, column * block + inset, block - inset * 2, block - inset * 2);
+        // Toits : unités de climatisation et cages d'escalier.
+        for (let roof = 0; roof < 3; roof += 1) {
+          ctx.fillStyle = 'rgba(180, 194, 214, .07)';
+          ctx.fillRect(row * block + inset + random() * (block - inset * 3), column * block + inset + random() * (block - inset * 3), 8 + random() * 16, 8 + random() * 16);
+        }
+      }
+    }
+    // Rues : chaussée, marquage axial et feux de croisement.
+    ctx.strokeStyle = 'rgba(120, 132, 158, .18)';
+    ctx.lineWidth = 22;
+    for (let line = 0; line <= width; line += block) {
+      ctx.beginPath();
+      ctx.moveTo(line, 0);
+      ctx.lineTo(line, height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, line);
+      ctx.lineTo(width, line);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(240, 226, 170, .16)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([12, 16]);
+    for (let line = 0; line <= width; line += block) {
+      ctx.beginPath();
+      ctx.moveTo(line, 0);
+      ctx.lineTo(line, height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, line);
+      ctx.lineTo(width, line);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // Phares et feux arrière du trafic de surface : minuscules points chauds.
+    for (let index = 0; index < 420; index += 1) {
+      const onVertical = random() < 0.5;
+      const lane = Math.round(random() * (width / block)) * block + (random() < 0.5 ? -6 : 6);
+      const along = random() * height;
+      const warm = random() < 0.62;
+      ctx.fillStyle = warm ? `rgba(255, 226, 170, ${0.24 + random() * 0.4})` : `rgba(255, 96, 92, ${0.2 + random() * 0.34})`;
+      if (onVertical) ctx.fillRect(lane, along, 3, 7);
+      else ctx.fillRect(along, lane, 7, 3);
+    }
+    // Néons de rez-de-chaussée vus d'en haut.
+    for (let index = 0; index < 150; index += 1) {
+      const neon = random() < 0.5 ? below.neonA ?? '#ff5b9a' : below.neonB ?? '#42e6ff';
+      ctx.fillStyle = neon;
+      ctx.globalAlpha = 0.12 + random() * 0.22;
+      ctx.fillRect(random() * width, random() * height, 3 + random() * 10, 3 + random() * 10);
+      ctx.globalAlpha = 1;
+    }
+    if (river) {
+      // La Kanda et le pont de Nihonbashi passent sous l'anneau : une bande
+      // d'eau noire avec le reflet des quais.
+      const riverX = width * (0.18 + random() * 0.08);
+      ctx.fillStyle = 'rgba(6, 12, 24, .96)';
+      ctx.fillRect(riverX, 0, 74, height);
+      ctx.fillStyle = 'rgba(120, 190, 220, .1)';
+      for (let y = 0; y < height; y += 26) ctx.fillRect(riverX + 6 + random() * 58, y, 4 + random() * 12, 3);
+      ctx.strokeStyle = 'rgba(150, 168, 190, .22)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(riverX - 3, 0, 80, height);
+    }
+  }, width, height, { smooth: true, repeat: true, anisotropy: 4 });
+}
+
+/** Paroi de tunnel : carreaux clairs, câbles, niche de secours et reflet humide. */
+export function makeTunnelWallTexture(theme, random, { tiles = 6 } = {}) {
+  const width = 1024;
+  const height = 512;
+  return makeCanvasTexture((ctx) => {
+    const wall = new THREE.Color(theme.expressway?.tunnel?.wall ?? 0x2a2d36);
+    ctx.fillStyle = `rgb(${Math.round(wall.r * 255)}, ${Math.round(wall.g * 255)}, ${Math.round(wall.b * 255)})`;
+    ctx.fillRect(0, 0, width, height);
+    // Carreaux de faïence : la bande claire réfléchit les phares.
+    const tileWidth = width / tiles;
+    for (let column = 0; column < tiles; column += 1) {
+      const shade = 0.86 + random() * 0.28;
+      ctx.fillStyle = `rgba(${Math.round(wall.r * 255 * shade + 42)}, ${Math.round(wall.g * 255 * shade + 44)}, ${Math.round(wall.b * 255 * shade + 46)}, 1)`;
+      ctx.fillRect(column * tileWidth + 3, height * 0.34, tileWidth - 6, height * 0.34);
+      ctx.fillStyle = 'rgba(0, 0, 0, .3)';
+      ctx.fillRect(column * tileWidth, 0, 3, height);
+    }
+    // Chemin de câbles en haut, caniveau en bas.
+    ctx.fillStyle = 'rgba(16, 18, 26, .92)';
+    ctx.fillRect(0, height * 0.1, width, height * 0.1);
+    ctx.fillStyle = 'rgba(120, 132, 152, .3)';
+    for (let cable = 0; cable < 5; cable += 1) ctx.fillRect(0, height * 0.115 + cable * 12, width, 3);
+    ctx.fillStyle = 'rgba(10, 12, 18, .95)';
+    ctx.fillRect(0, height * 0.82, width, height * 0.18);
+    // Niches de sécurité et extincteurs, tous les deux carreaux.
+    for (let column = 0; column < tiles; column += 2) {
+      ctx.fillStyle = 'rgba(18, 22, 30, .95)';
+      ctx.fillRect(column * tileWidth + tileWidth * 0.3, height * 0.42, tileWidth * 0.4, height * 0.2);
+      ctx.fillStyle = '#e0453c';
+      ctx.fillRect(column * tileWidth + tileWidth * 0.34, height * 0.46, tileWidth * 0.08, height * 0.1);
+      ctx.fillStyle = 'rgba(240, 244, 236, .82)';
+      ctx.fillRect(column * tileWidth + tileWidth * 0.46, height * 0.47, tileWidth * 0.2, height * 0.045);
+    }
+    // Traces d'humidité et de suie.
+    for (let index = 0; index < 260; index += 1) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.03 + random() * 0.09})`;
+      ctx.fillRect(random() * width, random() * height, 3 + random() * 26, 6 + random() * 60);
+    }
+  }, width, height, { smooth: true, repeat: true, anisotropy: 4 });
+}
+
+/** Mur antibruit : panneaux translucides verts et montants d'acier. */
+export function makeSoundWallTexture(theme, random) {
+  const width = 512;
+  const height = 512;
+  return makeCanvasTexture((ctx) => {
+    const glass = new THREE.Color(theme.expressway?.soundWall?.panel ?? 0x2c4a3c);
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = `rgba(${Math.round(glass.r * 255)}, ${Math.round(glass.g * 255)}, ${Math.round(glass.b * 255)}, .82)`;
+    ctx.fillRect(0, 0, width, height);
+    // Montants en H tous les deux mètres, traverses et joint de silicone.
+    ctx.fillStyle = 'rgba(150, 162, 176, .55)';
+    for (let post = 0; post <= width; post += 128) ctx.fillRect(post - 7, 0, 14, height);
+    ctx.fillStyle = 'rgba(120, 132, 146, .3)';
+    ctx.fillRect(0, height * 0.5 - 5, width, 10);
+    ctx.fillStyle = 'rgba(255, 255, 255, .1)';
+    for (let panel = 0; panel < width; panel += 128) ctx.fillRect(panel + 12, 14, 26, height - 28);
+    // Reflets de néons et poussière.
+    for (let index = 0; index < 120; index += 1) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + random() * 0.06})`;
+      ctx.fillRect(random() * width, random() * height, 2 + random() * 12, 4 + random() * 60);
+    }
+    ctx.fillStyle = 'rgba(10, 12, 18, .35)';
+    ctx.fillRect(0, height - 26, width, 26);
+  }, width, height, { smooth: true, repeat: true, anisotropy: 4 });
+}
+
+/** Béton du viaduc : voussoirs, coulures et socle des glissières. */
+export function makeViaductTexture(theme, random) {
+  const width = 512;
+  const height = 512;
+  const concrete = new THREE.Color(theme.expressway?.materials?.concrete ?? 0x5c6270);
+  return makeCanvasTexture((ctx) => {
+    ctx.fillStyle = `rgb(${Math.round(concrete.r * 255)}, ${Math.round(concrete.g * 255)}, ${Math.round(concrete.b * 255)})`;
+    ctx.fillRect(0, 0, width, height);
+    // Voussoirs préfabriqués : joints verticaux tous les 4 m.
+    ctx.fillStyle = 'rgba(0, 0, 0, .26)';
+    for (let joint = 0; joint <= width; joint += 128) ctx.fillRect(joint - 2, 0, 4, height);
+    ctx.fillStyle = 'rgba(255, 255, 255, .06)';
+    for (let joint = 0; joint <= width; joint += 128) ctx.fillRect(joint + 3, 0, 3, height);
+    // Coulures de rouille et traces de pluie sous le garde-corps.
+    for (let index = 0; index < 90; index += 1) {
+      const x = random() * width;
+      const length = 30 + random() * 220;
+      ctx.fillStyle = `rgba(${random() < 0.4 ? '120, 78, 48' : '18, 20, 28'}, ${0.05 + random() * 0.16})`;
+      ctx.fillRect(x, random() * (height - length), 2 + random() * 7, length);
+    }
+    // Granulat et reprises de coffrage.
+    for (let index = 0; index < 900; index += 1) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + random() * 0.05})`;
+      ctx.fillRect(random() * width, random() * height, 1 + random() * 3, 1 + random() * 3);
+    }
+    ctx.fillStyle = 'rgba(0, 0, 0, .3)';
+    ctx.fillRect(0, height - 18, width, 18);
+  }, width, height, { smooth: true, repeat: true, anisotropy: 4 });
 }
