@@ -800,7 +800,7 @@ rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus b
 | Mode | Tours | Distance | À 29 m/s, sans incident |
 | --- | --- | --- | --- |
 | Circuit, Poursuite | 4 | 3 000 m (3 × 600 m, puis 1 200 m) | ≈ 1 min 43 |
-| Sprint | 1 | 1 200 m (le grand tour seul) | ≈ 41 s |
+| Sprint (solo) | 10 checkpoints | 3 000 m (10 portes × 300 m) | ≈ 1 min 43 |
 | Histoire, chapitres 1 à 5 | 4 | 3 000 m | ≈ 1 min 43 |
 | Histoire, chapitre 6 « Le dernier tour » | 5 | 3 600 m (4 × 600 m, puis 1 200 m) | ≈ 2 min 04 |
 
@@ -847,6 +847,36 @@ et le dernier tour durait 21 s.
   portique et les tests en dépendent. Les chronos sont rangés sous
   `letsplay_vice_city_rush_bests_v2` : les records des anciennes courses, plus
   courtes, n'auraient jamais pu être battus.
+- **Le Sprint, solo contre la montre.** Le mode `SPRINT` de `RACE_MODES`
+  (`format: 'sprint'`) ne se court **contre personne** : `raceFormat='sprint'`
+  descend jusqu'à `createCityRushWorld`, qui ne crée **aucun rival**
+  (`racerSpecs = []`), **aucune police** (escouade jamais déployée, berline
+  retirée du trafic — `CITY_RUSH_TRAFFIC_TYPES` filtré sur `id !== 'police'` —,
+  hélicoptère d'observation laissé au sol), **aucun bonus ni pad turbo**
+  (`setupEncounter` renvoie une rangée vide) et **aucune arme** (l'AK-47 est
+  ignoré, la barre de coque ne s'arme pas). À la place : **10 checkpoints**
+  espacés de `CITY_RUSH_SPRINT_CHECKPOINT_SPACING` = **300 m**
+  (`CITY_RUSH_SPRINT_DISTANCE` = 3 000 m), chacun rendant
+  `CITY_RUSH_SPRINT_CHECKPOINT_TIME` = **15 s** au chrono — le compteur repart
+  de 15 et ne cumule pas l'avance. Chrono à zéro : effet `sprint-timeout`,
+  course perdue, ni record ni victoire enregistrés.
+  **L'interface suit le solo.** Carte HUD « SOLO » et jauge des checkpoints à
+  la place de la position et du tour, radar et bouton AK-47 absents,
+  compte à rebours et pied de coque en « 10 CHECKPOINTS » plutôt qu'en
+  « 1 TOURS ». La colonne latérale remplace le classement à trois par un
+  chrono solo — `buildCityRushMinimapState({ solo: true })` ne garde que le
+  pilote, sinon la grille de départ à trois revenait dans le panneau
+  « POSITIONS » tant que le monde n'avait pas envoyé son premier HUD —, la
+  carte « OBJETS · 1 ARME + TURBO » par « SOLO · CHRONO », et la carte rouge
+  « 🚨 ESCOUADE DE POLICE » par une carte solo sans sirène. Le choix du pilote
+  au garage garde ses trois visages (ce sont des identités, pas des
+  adversaires) et l'annonce : « SPRINT SOLO · AUCUN ADVERSAIRE EN PISTE ».
+  Deux vérifications tiennent l'ensemble : `npm run check:city-rush-sprint`
+  (une course complète dans les cinq villes, jouée image par image : solo,
+  aucune police, aucun bonus, 10 checkpoints) et
+  `npm run check:city-rush-sprint-ui` (la vraie page dans jsdom : rien n'y
+  évoque la poursuite ou les rivaux en Sprint, et les modes Circuit et
+  Poursuite gardent les leurs).
 - **L'escouade de police du dernier tour.** Dès que le **premier du classement**
   attaque le dernier tour — **1 200 m sous la sirène**, soit deux fois plus qu'à
   l'origine —, **deux berlines d'interception entrent en piste juste derrière
@@ -862,7 +892,8 @@ et le dernier tour durait 21 s.
   bleu couvre le temps de recharge du rouge. Elles **ne sont pas classées** : `rankCityRushRacers`
   ne les voit jamais, la grille reste à quatre, et le HUD les affiche à part
   (`hud.police`, marqueurs rouge et bleu de la mini-carte). La même escouade
-  opère sur les cinq circuits. Elle choisit les voies dégagées
+  opère sur les cinq circuits — mais jamais en Sprint, qui ne déploie aucune
+  police (voir « Le Sprint, solo contre la montre »). Elle choisit les voies dégagées
   et évite le trafic lent (`isCityRushPoliceLaneJammed`) ; si elle est malgré
   tout bloquée, elle heurte le véhicule lent comme un rival : **0,6 s de
   ralentissement et un dérapage**, puis le trafic se rabat (`blockedBy`,

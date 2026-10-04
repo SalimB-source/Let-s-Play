@@ -27,6 +27,7 @@ import {
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_SPRINT_CHECKPOINTS,
+  CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
   CITY_RUSH_SPRINT_CHECKPOINT_TIME,
   CITY_RUSH_SPRINT_DISTANCE,
   CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
@@ -351,10 +352,17 @@ export default function ViceCityRushPage() {
       playerDriverId,
       laps: currentLaps,
       totalDistance: currentDistance,
+      // Sprint : un seul pilote en piste. Sans ça, le classement latéral
+      // reprend la grille de départ à trois tant que le monde n'a pas envoyé
+      // son premier HUD — les « adversaires » restent affichés en solo.
+      solo: sprintMode,
     }),
-    [hud.racers, roster, cityId, selectedCar.id, runId, playerDriverId, currentLaps, currentDistance],
+    [hud.racers, roster, cityId, selectedCar.id, runId, playerDriverId, currentLaps, currentDistance, sprintMode],
   );
   const standings = minimapState.racers;
+  // Checkpoint visé (1 → 10) : en Sprint il remplace la place au classement,
+  // puisqu'il n'y a personne d'autre en piste.
+  const sprintCheckpoint = Math.min((Number(hud.sprint?.checkpoints) || 0) + 1, CITY_RUSH_SPRINT_CHECKPOINTS);
   const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
   // Barre de vie de la voiture du pilote : huit carrés, dessinés comme une
   // seule barre — la page n'affiche jamais les carrés, seulement la couleur
@@ -845,7 +853,7 @@ export default function ViceCityRushPage() {
                 <span className="city-rush-live-pill is-paused"><i /> PAUSE</span>
                 <button type="button" className="city-rush-top-button is-resume" onClick={resumeRace}>▶ REPRENDRE</button>
               </>}
-              <span className="city-rush-top-flag"><i /> {currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · 4 VOIES</span>
+              <span className="city-rush-top-flag"><i /> {sprintMode ? `SOLO · ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : <>{currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · 4 VOIES</>}</span>
             </div>
           </div>
 
@@ -903,7 +911,7 @@ export default function ViceCityRushPage() {
               {/* La barre de coque ne se dessine que sur le dernier tour : le
                   monde l'active là, et cette garde le garantit même si un HUD
                   en retard arrivait d'une course précédente. */}
-              {playerHealthValue !== null && hud.lap >= hud.laps && (
+              {playerHealthValue !== null && !sprintMode && hud.lap >= hud.laps && (
                 <div
                   className={`city-rush-health${playerHealthCritical ? ' is-critical' : ''}${hud.playerHealthFlash > 0 ? ' is-hit' : ''}`}
                   role="status"
@@ -999,7 +1007,9 @@ export default function ViceCityRushPage() {
                     aria-label="Aller à droite"
                   >→</button>
                 </div>
-                {(() => {
+                {/* Le Sprint n'a ni bonus au sol ni arme : le bouton AK-47 ne
+                    s'affiche pas, il resterait désespérément vide. */}
+                {!sprintMode && (() => {
                   const type = CITY_RUSH_POWERS.PISTOL;
                   const rule = CITY_RUSH_POWER_RULES[type];
                   const progress = Math.min(rule.chargeCost, Math.max(0, Number(hud.inventory?.[type]) || 0));
@@ -1194,6 +1204,10 @@ export default function ViceCityRushPage() {
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
                       <div className="city-rush-car-select-heading">
                         <span id="city-rush-driver-title">PILOTE · FACULTATIF · {mode.name}</span>
+                        {/* En Sprint, les trois visages sont des identités au
+                            choix, pas une grille de départ : on le dit, sinon
+                            ils ressemblent à des adversaires. */}
+                        {sprintMode && <small>SPRINT SOLO · AUCUN ADVERSAIRE EN PISTE</small>}
                       </div>
                       <div className="city-rush-driver-grid" role="group" aria-label="Choisir un pilote">
                         {roster.map((driver) => (
@@ -1322,7 +1336,7 @@ export default function ViceCityRushPage() {
               <div className="city-rush-overlay city-rush-countdown" aria-live="assertive">
                 <span>{storyMode ? 'PRÊT·E, PILOTE ?' : `${mode.name} · ${city.district} · PRÊT ?`}</span>
                 <strong key={countdown}>{countdown > 0 ? countdown : 'GO!'}</strong>
-                <small>{currentStoryRace?.race?.name || city.district} · {currentLaps} TOURS · {RACE_KM}</small>
+                <small>{currentStoryRace?.race?.name || city.district} · {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS · SOLO` : `${currentLaps} TOURS`} · {RACE_KM}</small>
               </div>
             )}
 
@@ -1347,7 +1361,7 @@ export default function ViceCityRushPage() {
                     ? <div><small>CHECKPOINTS</small><b>{result.checkpoints ?? 0}<i> / {CITY_RUSH_SPRINT_CHECKPOINTS}</i></b></div>
                     : <div><small>PLACE</small><b>{result.destroyed ? 'DERNIER' : ordinal(result.rank)}<i> / 3</i></b></div>}
                   <div><small>CHRONO</small><b>{formatTime(result.duration)}</b></div>
-                  <div><small>TOUR MOYEN</small><b>{formatTime((result.duration || 0) / (result.laps || currentLaps || CITY_RUSH_LAPS))}</b></div>
+                  <div><small>{result.sprint ? 'CHECKPOINT MOYEN' : 'TOUR MOYEN'}</small><b>{formatTime((result.duration || 0) / (result.sprint ? CITY_RUSH_SPRINT_CHECKPOINTS : (result.laps || currentLaps || CITY_RUSH_LAPS)))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
                 </div>
                 {result.cashAwarded > 0 && (
@@ -1400,33 +1414,56 @@ export default function ViceCityRushPage() {
           </div>
 
           <div className="city-rush-shell-footer">
-            <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · {currentDistance} M</span>
-            <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> Z : MITRAILLEUSE <b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
-            <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE · OBJETS EN BAS</span>
+            <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOUR${currentLaps > 1 ? 'S' : ''}`} · {currentDistance} M</span>
+            <span className="city-rush-desktop-hint">← → / Q D : VOIES {sprintMode ? '' : <><b>·</b> Z : MITRAILLEUSE </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
+            <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE{sprintMode ? ' · SOLO CONTRE LA MONTRE' : ' · OBJETS EN BAS'}</span>
           </div>
         </section>
 
         <aside className="city-rush-sidebar">
-          <section className="city-rush-side-card city-rush-leaderboard">
-            <div className="city-rush-side-heading"><span>POSITIONS · {activeModeName}</span><i>LIVE</i></div>
-            <h3>Qui mène<br /><em>la course ?</em></h3>
+          <section className={`city-rush-side-card city-rush-leaderboard${sprintMode ? ' is-solo' : ''}`}>
+            <div className="city-rush-side-heading"><span>{sprintMode ? 'CHRONO · SPRINT SOLO' : `POSITIONS · ${activeModeName}`}</span><i>{sprintMode ? 'SOLO' : 'LIVE'}</i></div>
+            <h3>{sprintMode ? <>Seul contre<br /><em>la montre.</em></> : <>Qui mène<br /><em>la course ?</em></>}</h3>
             <div className="city-rush-racer-list">
               {standings.slice().sort((a, b) => a.rank - b.rank).map((racer) => (
                 <div className={`city-rush-racer-card${racer.id === 'player' ? ' is-player' : ''}`} key={racer.id}>
-                  <span className="city-rush-racer-rank">{String(racer.rank).padStart(2, '0')}</span>
+                  <span className="city-rush-racer-rank">{String(sprintMode ? sprintCheckpoint : racer.rank).padStart(2, '0')}</span>
                   <span className="city-rush-racer-avatar"><CityRushDriverAvatar driver={racer} /></span>
                   <div className="city-rush-racer-info">
                     <span className="city-rush-racer-name-row"><b>{racer.name}</b>{racer.id === 'player' && <em className="city-rush-you-badge">TOI</em>}</span>
                     <span className="city-rush-racer-country">{racer.flag} {racer.country}</span>
-                    <small>TOUR {Math.min(racer.lap || 1, racer.laps || currentLaps)} <i>·</i> {Math.round(racer.distance || 0)} M</small>
+                    <small>{sprintMode
+                      ? <>CHECKPOINT {sprintCheckpoint}<i> / </i>{CITY_RUSH_SPRINT_CHECKPOINTS} <i>·</i> {Math.round(racer.distance || 0)} M</>
+                      : <>TOUR {Math.min(racer.lap || 1, racer.laps || currentLaps)} <i>·</i> {Math.round(racer.distance || 0)} M</>}</small>
                   </div>
                   <div className="city-rush-racer-meter"><i style={{ width: `${rankProgress(racer)}%` }} /></div>
                 </div>
               ))}
             </div>
-            <div className="city-rush-leader-foot"><span>OBJECTIF · {activeModeName}</span><b>{currentLaps} TOURS · {currentDistance} M</b></div>
+            <div className="city-rush-leader-foot"><span>OBJECTIF · {activeModeName}</span><b>{sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOURS`} · {currentDistance} M</b></div>
           </section>
 
+          {/* Le Sprint n'a ni objet ni arme : la carte « OBJETS » devient une
+              carte de chrono solo, sinon la colonne annonce un équipement qui
+              n'existe pas dans ce mode. */}
+          {sprintMode ? (
+          <section className="city-rush-side-card city-rush-item-guide is-sprint">
+            <div className="city-rush-side-heading"><span>SOLO · CHRONO</span><i>{CITY_RUSH_SPRINT_CHECKPOINTS} PORTES</i></div>
+            <h3>Tenir<br /><em>les 15 secondes.</em></h3>
+            <div className="city-rush-guide-list">
+              <div className="city-rush-guide-item is-sprint">
+                <span className="city-rush-guide-glyph" aria-hidden="true">⛳</span>
+                <div><b>CHECKPOINT · {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M</b><small>{CITY_RUSH_SPRINT_CHECKPOINTS} portes espacées de {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m : chacune rend {CITY_RUSH_SPRINT_CHECKPOINT_TIME} secondes au chrono. Chrono à zéro, la course est perdue.</small></div>
+                <kbd>{CITY_RUSH_SPRINT_CHECKPOINT_TIME} s</kbd>
+              </div>
+              <div className="city-rush-guide-item is-solo">
+                <span className="city-rush-guide-glyph" aria-hidden="true">◎</span>
+                <div><b>PAS D’OBJET EN PISTE</b><small>Aucun bonus au sol, aucune arme, aucun turbo : la piste est vide de tout équipement, seul le chrono compte.</small></div>
+                <kbd>SOLO</kbd>
+              </div>
+            </div>
+          </section>
+          ) : (
           <section className="city-rush-side-card city-rush-item-guide">
             <div className="city-rush-side-heading"><span>OBJETS</span><i>1 ARME + TURBO</i></div>
             <h3>Ramasse.<br /><em>Déclenche.</em></h3>
@@ -1448,15 +1485,18 @@ export default function ViceCityRushPage() {
               </div>
             </div>
           </section>
+          )}
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
             <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts. Conduite propre : chaque changement de voie ralentit légèrement (−{Math.round((1 - CITY_RUSH_LANE_CHANGE_SLOW_FACTOR) * 100)} % un instant) ; tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse).</p></div>
           </section>
 
-          <section className="city-rush-no-collision-note is-police">
-            <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{sprintMode ? 'Sprint en solo, sans adversaire ni police : ni escouade, ni berline dans le trafic, ni hélicoptère. Pas de bonus ni d’arme non plus — seulement toi, le chrono et les 10 checkpoints.' : <>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT/SPRINT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police a une barre de vie : un tir rouge d’AK-47 ou un carambolage lui en enlève la moitié. Deux tirs rouges, deux carambolages ou un tir rouge et un carambolage la détruisent ; un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</>}</p></div>
+          {/* En Sprint, la carte de l'escouade disparaît : titre, sirène et
+              couleur rouge compris. Elle est remplacée par la carte solo. */}
+          <section className={`city-rush-no-collision-note${sprintMode ? ' is-solo' : ' is-police'}`}>
+            <span className="city-rush-no-collision-icon" aria-hidden="true">{sprintMode ? '⚡' : '🚨'}</span>
+            <div><b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b><p>{sprintMode ? <>Rien à fuir dans ce mode : ni escouade au dernier tour, ni berline dans le trafic, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono et les {CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</> : <>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.' : 'Au dernier tour en CIRCUIT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police a une barre de vie : un tir rouge d’AK-47 ou un carambolage lui en enlève la moitié. Deux tirs rouges, deux carambolages ou un tir rouge et un carambolage la détruisent ; un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</>}</p></div>
           </section>
         </aside>
       </main>
