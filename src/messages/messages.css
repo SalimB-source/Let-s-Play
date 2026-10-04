@@ -1108,3 +1108,8 @@
 @media (prefers-reduced-motion: reduce) {
   .message-btn, .messages-send { transition: none; }
 }
+
+/* When there are no unread messages, user name is medium weight (not bold) */
+html body .messages-row:not(.has-unread) .messages-row-name {
+  font-weight: 500 !important;
+}
