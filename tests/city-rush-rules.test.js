@@ -10,6 +10,8 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_TRACK_BEHIND,
   CITY_RUSH_PLAYER_SPEED,
+  CITY_RUSH_AI_TRACK_BOOST_WEIGHT,
+  CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE,
   CITY_RUSH_BLUE_SHOT_DURATION,
   CITY_RUSH_BLUE_SHOT_MAX_RANGE,
   CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
@@ -343,6 +345,20 @@ test('rivals plan lane changes to collect bonuses and avoid traffic safely', () 
   }), 1, 'le rival ne tente pas de changer vers une voie bloquée');
 });
 
+test('rivals prefer a more distant ground boost to a nearby inventory bonus', () => {
+  const nextLane = chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 1000,
+    speed: CITY_RUSH_PLAYER_SPEED,
+    availableLanes: [0, 1, 2],
+    pickups: [
+      { lane: 0, distance: 1115, type: CITY_RUSH_PICKUPS.BOOST },
+      { lane: 2, distance: 1005, type: CITY_RUSH_POWERS.BLUE_SHOT },
+    ],
+  });
+  assert.equal(nextLane, 0, 'le rival s’écarte pour le pad turbo avant de prendre le bonus bleu plus proche');
+});
+
 test('oncoming traffic on the left lanes is dodged like a wall, never rammed', () => {
   // Un véhicule marqué `oncoming` (vitesse négative) arrive face au pilote :
   // même un bonus ne justifie pas de se jeter sous son capot.
@@ -432,7 +448,9 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
 
 test('three stored powers, a one-pickup blue shot, and ground boosts match the race rules', () => {
   assert.equal(CITY_RUSH_DISTANCE, 3600); // 5 tours : 4 boucles + un dernier tour de 2 boucles
-  assert.equal(CITY_RUSH_PLAYER_SPEED, 29);
+  assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
+  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.55);
+  assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 3, radio: 4 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
@@ -855,7 +873,7 @@ test('l’escouade traverse la route pour rafler un bonus rouge ou jaune', () =>
     { lane: 3, type: 'radio', distance: 1180 },
   ];
   assert.equal(chooseCityRushPoliceLane({ ...common, pickups }), 2);
-  // Une IA ordinaire, elle, prend les bonus les plus proches.
+  // Le rival ordinaire vise le pad turbo proche avant le bonus de tir lointain.
   assert.equal(chooseCityRushAiLane({ ...common, pickups }), 0);
   // Le trafic reste évité : un camion pile dans la voie voisine.
   const trafficLane = chooseCityRushPoliceLane({
@@ -1279,13 +1297,15 @@ test('pickup encounters use ground boosts and stored powers without oil slicks',
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
   const yellowRate = pickupCounts.radio / totalPickups;
+  const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
   assert.ok(yellowRate >= 0.08 && yellowRate <= 0.12, `le bonus jaune reste rare (${(yellowRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.53 && boostRate <= 0.57, `le turbo au sol apparaît bien plus souvent (${(boostRate * 100).toFixed(1)} %)`);
   assert.ok(pickupCounts.radio < pickupCounts[CITY_RUSH_PICKUPS.BOOST]
     && pickupCounts.radio < pickupCounts[CITY_RUSH_POWERS.BLUE_SHOT]
     && pickupCounts.radio < pickupCounts[CITY_RUSH_POWERS.PISTOL]);
   assert.equal(sawEmptyRow, true);
   assert.equal(sawTwoPickups, true);
-  assert.ok(totalPickups > 10000 && totalPickups < 11000, 'les rangées contiennent souvent un bonus et parfois un duo');
+  assert.ok(totalPickups > 12000 && totalPickups < 12800, 'les rangées plus souvent doubles augmentent le nombre de bonus au sol');
 });
 
 test('the helicopter only locks onto rivals ahead of its pilot', () => {
