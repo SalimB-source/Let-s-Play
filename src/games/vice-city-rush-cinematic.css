@@ -1008,12 +1008,18 @@
   font-size: 10px;
 }
 
+/* Deux lignes réservées partout : chaque carte de course garde exactement la
+   même hauteur, quel que soit son libellé (ville courte ou traversée 66). */
 .city-rush-page .city-rush-city-card small {
-  display: block;
+  display: -webkit-box;
   margin: 4px 10px 0;
+  overflow: hidden;
   color: #a5aeba;
   font-size: 8px;
   line-height: 1.4;
+  min-height: 2.8em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .city-rush-page .city-rush-city-route {
@@ -1031,6 +1037,9 @@
 }
 
 .city-rush-page .city-rush-city-route i { flex: 0 0 auto; border-radius: 2px; }
+/* Emplacement de plaque réservé sans route officielle : invisible, mais il
+   aligne la hauteur de toutes les cartes du sélecteur. */
+.city-rush-page .city-rush-city-route.is-ghost { visibility: hidden; }
 .city-rush-page .city-rush-city-card-footer {
   display: flex;
   align-items: center;
@@ -1533,8 +1542,10 @@
   .city-rush-page .city-rush-city-picker.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .city-rush-page .city-rush-city-card { min-height: 158px; padding: 0; }
   .city-rush-page .city-rush-city-thumb { flex-basis: 74px; height: 74px; }
+  /* Toutes les cartes à la même taille : plus de carte pleine largeur, la
+     Route 66 (6ᵉ) se pose en demi-colonne comme les cinq autres. */
   .city-rush-page .city-rush-city-card:nth-child(5) { grid-column: auto; }
-  .city-rush-page .city-rush-city-card:nth-child(6) { grid-column: 1 / -1; }
+  .city-rush-page .city-rush-city-card:nth-child(6) { grid-column: auto; }
   .city-rush-page .city-rush-city-route { font-size: 6px; }
   .city-rush-page .city-rush-city-card.is-route-66 .city-rush-city-route { background: rgba(169, 104, 56, .45); border-color: rgba(240, 190, 105, .6); color: #fff0c5; }
   .city-rush-page .city-rush-car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
