@@ -15,7 +15,7 @@ export const PLAYER_RADIUS = 0.4;
 // ── Caméra 3e personne ──────────────────────────────────────────────
 export const CAMERA = Object.freeze({
   distance: 4.7,          // m — recul derrière l'épaule
-  headHeight: 1.55,       // m — hauteur des yeux du chevalier
+  headHeight: 1.55,       // m — hauteur des yeux du Gardien Chitine
   sensitivity: 0.0023,    // rad par pixel de souris
   pitchMin: -0.58,        // regard vers le bas (caméra haute)
   pitchMax: 0.66,         // regard vers le haut (caméra basse)

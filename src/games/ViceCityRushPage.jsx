@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushStoryScene from './CityRushStoryScene';
-import CityRushMinimap from './CityRushMinimap';
+import CityRushRaceList from './CityRushRaceList';
 import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
@@ -13,13 +13,17 @@ import {
   CITY_RUSH_CITIES,
   CITY_RUSH_DISTANCE,
   CITY_RUSH_DRIVERS,
+  CITY_RUSH_FINAL_LAP_LOOPS,
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
+  CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
+  CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   CITY_RUSH_PICKUPS,
   CITY_RUSH_TRACK_BOOST_DURATION,
   buildCityRushMinimapState,
+  cityRushRaceDistance,
   createCityRushInventory,
   selectCityRushRacers,
 } from './cityRushRules';
@@ -27,7 +31,9 @@ import { cityRushTheme } from './cityRushThemes';
 import './vice-city-rush.css';
 import './vice-city-rush-cinematic.css';
 
-const BEST_KEY = 'letsplay_vice_city_rush_bests_v1';
+// v2 : les courses ont été allongées (dernier tour doublé, un tour de plus) —
+// un chrono de l'ancienne durée ne pourrait plus jamais être battu.
+const BEST_KEY = 'letsplay_vice_city_rush_bests_v2';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const STORY_KEY = 'letsplay_vice_city_rush_story_v1';
 const STORY_ENDING_KEY = 'letsplay_vice_city_rush_ending_v1';
@@ -45,13 +51,16 @@ const STORY_ENDINGS = {
 function readStoryEnding() {
   try { return window.localStorage.getItem(STORY_ENDING_KEY) || ''; } catch { return ''; }
 }
+// Tours d'un chapitre de l'histoire ; le finale, « Le dernier tour », en compte un de plus.
+const STORY_LAPS = 4;
+const STORY_FINALE_LAPS = STORY_LAPS + 1;
 const STORY_CHAPTERS = [
   { city: 'vice-city', title: 'Le retour', speaker: 'Nico', race: { name: 'Ocean Drive — Sunset Run', type: 'Course côtière', route: 'Ocean Drive · South Beach · Collins Avenue' }, text: 'Trois ans après le sabotage, Nico Vega revient à Ocean Drive. Dante Cross a laissé une invitation au départ : gagne cette course et le prochain nom tombera.' },
   { city: 'new-york', title: 'La piste froide', speaker: 'Nico', kind: 'action', race: { name: 'Midtown — Heat Run', type: 'Échappée urbaine', route: 'Times Square · Broadway · Midtown Tunnel' }, text: 'L’escorte de Dante repère Nico dans Midtown. Sirènes derrière eux, Luna lâche un dernier indice à la radio : le prochain contact se cache à Tokyo.' },
   { city: 'tokyo', title: 'L’anneau de minuit', speaker: 'Nico', kind: 'action', race: { name: 'Shutō C1 — Midnight Loop', type: 'Sprint sur voie rapide', route: '日本橋 · 霞が関 掘割 · 芝公園 · 浜崎橋JCT · 汐留トンネル' }, text: 'Le mécanicien de Dante a les preuves, et l’échange tourne mal au pied du péage de 宝町. Nico saute au volant, dossier en main, et s’engage sur la C1 内回り : quatorze kilomètres huit cents de viaduc au-dessus de la ville, trois tunnels sous le palais impérial, aucun feu rouge — juste les portiques verts qui défilent et les hommes de Dante dans les rétros.' },
   { city: 'paris', title: 'Marché de dupes', speaker: 'Nico', kind: 'action', race: { name: 'Rive Gauche — Redline', type: 'Drift urbain', route: 'Saint-Germain · Quai de Conti · Boulevard Saint-Michel' }, text: 'Le promoteur tente de s’enfuir avec les preuves. Nico le prend en chasse dans les rues de Paris ; la vérité est dans la voiture rouge.' },
   { city: 'london', title: 'La soirée des ombres', speaker: 'Nico', kind: 'action', race: { name: 'Soho — After Hours', type: 'Course-poursuite', route: 'Piccadilly Circus · Soho · Tower Bridge' }, text: 'En costume, Nico s’invite à la réception privée du promoteur. Il surprend Dante qui ordonne de brûler les preuves — les gardes le repèrent, et la fuite se joue au volant dans les rues de Soho.' },
-  { city: 'vice-city', title: 'Le dernier tour', speaker: 'Nico', kind: 'action', race: { name: 'Vice City — Last Lap', type: 'Finale du circuit', route: 'Ocean Drive · Starfish Island · Vice City Docks' }, text: 'Dante pousse sa voiture rouge à fond sur Ocean Drive. Nico colle à son pare-chocs : une dernière course décidera de leur sort.' },
+  { city: 'vice-city', title: 'Le dernier tour', speaker: 'Nico', kind: 'action', laps: STORY_FINALE_LAPS, race: { name: 'Vice City — Last Lap', type: 'Finale du circuit', route: 'Ocean Drive · Starfish Island · Vice City Docks' }, text: 'Dante pousse sa voiture rouge à fond sur Ocean Drive. Nico colle à son pare-chocs : une dernière course décidera de leur sort.' },
 ];
 function readStoryChapter() {
   try { return Math.max(0, Math.min(STORY_CHAPTERS.length, Number(window.localStorage.getItem(STORY_KEY)) || 0)); } catch { return 0; }
@@ -61,11 +70,11 @@ const RACE_MODES = [
   {
     id: 'circuit',
     name: 'CIRCUIT',
-    label: '3 TOURS · CLASSIQUE',
-    desc: 'La formule originale. 3 tours complets, trafic, bonus, police uniquement au dernier tour.',
+    label: '4 TOURS · CLASSIQUE',
+    desc: 'La formule originale, en plus long. 4 tours dont un dernier tour double, trafic, bonus, police uniquement au dernier tour.',
     accent: '#43ead5',
     secondary: '#ff5db8',
-    laps: 3,
+    laps: 4,
     policeFromStart: false,
     icon: '◍',
     tag: 'RECOMMANDÉ',
@@ -74,7 +83,7 @@ const RACE_MODES = [
     id: 'sprint',
     name: 'SPRINT',
     label: '1 TOUR · TIME ATTACK',
-    desc: 'Un seul tour explosif. Parfait pour battre ton chrono et apprendre le circuit.',
+    desc: 'Un seul grand tour, deux boucles d’une traite. Parfait pour battre ton chrono et apprendre le circuit.',
     accent: '#ff5db8',
     secondary: '#ffd44f',
     laps: 1,
@@ -85,18 +94,17 @@ const RACE_MODES = [
   {
     id: 'pursuit',
     name: 'POURSUITE',
-    label: '3 TOURS · POLICE TOTALE',
+    label: '4 TOURS · POLICE TOTALE',
     desc: 'Trois berlines d’interception dès le départ, armées bleu et rouge. Elles volent tes bonus rouges/jaunes et tirent sans relâche.',
     accent: '#ffd44f',
     secondary: '#ff526e',
-    laps: 3,
+    laps: 4,
     policeFromStart: true,
     icon: '🚨',
     tag: 'HARDCORE',
   },
 ];
 
-const STORY_LAPS = 3;
 const EMPTY_HUD = {
   distance: 0,
   totalDistance: CITY_RUSH_DISTANCE,
@@ -119,6 +127,13 @@ const EMPTY_HUD = {
   stunLeft: 0,
   police: [],
 };
+
+// Bannière du point de passage du dernier tour : on recroise le portique, mais
+// la course n'est pas finie — on dit combien de boucles il reste.
+function checkpointKicker(remaining) {
+  const loops = Math.max(1, Math.round((Number(remaining) || 0) / CITY_RUSH_LAP_LENGTH));
+  return loops > 1 ? `DERNIER TOUR · ENCORE ${loops} BOUCLES` : 'DERNIER TOUR · DERNIÈRE BOUCLE';
+}
 
 function readBests() {
   try {
@@ -234,8 +249,9 @@ export default function ViceCityRushPage() {
   const city = useMemo(() => CITY_RUSH_CITIES.find((item) => item.id === cityId) || CITY_RUSH_CITIES[0], [cityId]);
   const mode = useMemo(() => RACE_MODES.find((m) => m.id === modeId) || RACE_MODES[0], [modeId]);
   const currentStoryRace = storyMode ? STORY_CHAPTERS[storyRaceChapter] : null;
-  const currentLaps = storyMode ? STORY_LAPS : mode.laps;
-  const currentDistance = currentLaps * CITY_RUSH_LAP_LENGTH;
+  const currentLaps = storyMode ? (currentStoryRace?.laps ?? STORY_LAPS) : mode.laps;
+  // Le dernier tour enchaîne deux boucles : 4 tours = 3 × 600 m + 1 200 m.
+  const currentDistance = cityRushRaceDistance(currentLaps);
   const RACE_KM = `${(currentDistance / 1000).toFixed(1).replace('.', ',')} KM`;
   const activeModeName = storyMode ? 'HISTOIRE' : mode.name;
   const activeModeLabel = storyMode ? `CHAPITRE ${String(storyRaceChapter + 1).padStart(2, '0')} / ${STORY_CHAPTERS.length}` : mode.label;
@@ -260,8 +276,6 @@ export default function ViceCityRushPage() {
   );
   const standings = minimapState.racers;
   const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
-  const tourBarPct = Math.round(Math.max(0, Math.min(1, hud.lapProgress || 0)) * 100);
-  const turboBarPct = Math.round(Math.max(0, Math.min(1, (hud.boostLeft || 0) / CITY_RUSH_TRACK_BOOST_DURATION)) * 100);
   const bestTime = bests[cityId] || null;
   const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && storyChapter >= STORY_CHAPTERS.length);
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
@@ -658,7 +672,8 @@ export default function ViceCityRushPage() {
                   <strong>{Math.min(hud.lap || 1, hud.laps || currentLaps)}<small> / {hud.laps || currentLaps}</small><em>{hud.lapDistance} / {hud.lapLength || CITY_RUSH_LAP_LENGTH} m</em></strong>
                   <div className="city-rush-lap-track" aria-label={`Tour ${hud.lap} sur ${hud.laps}`}>
                     {Array.from({ length: hud.laps || currentLaps }, (_, i) => i + 1).map((slot) => (
-                      <span key={slot} className={slot < hud.lap ? 'is-done' : slot === hud.lap ? 'is-current' : ''}>
+                      // Le segment du dernier tour est aussi large que ses boucles : la jauge montre qu'il est plus long.
+                      <span key={slot} className={slot < hud.lap ? 'is-done' : slot === hud.lap ? 'is-current' : ''} style={{ flexGrow: slot >= (hud.laps || currentLaps) ? CITY_RUSH_FINAL_LAP_LOOPS : 1 }}>
                         <i style={{ width: slot < hud.lap ? '100%' : slot === hud.lap ? `${Math.max(0, Math.min(100, (hud.lapProgress || 0) * 100))}%` : '0%' }} />
                       </span>
                     ))}
@@ -713,11 +728,7 @@ export default function ViceCityRushPage() {
               </div>
 
               <div className="city-rush-radar">
-                <CityRushMinimap racers={standings} pursuers={hud.police} cityId={cityId} carId={selectedCar.id} runId={runId} playerDriverId={playerDriverId} />
-                <div className="city-rush-gta-bars" aria-hidden="true">
-                  <span className="city-rush-gta-bar is-tour"><i style={{ width: `${tourBarPct}%` }} /></span>
-                  <span className="city-rush-gta-bar is-turbo"><i style={{ width: `${turboBarPct}%` }} /></span>
-                </div>
+                <CityRushRaceList racers={standings} pursuers={hud.police} laps={currentLaps} />
               </div>
 
               {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0) && (
@@ -728,9 +739,9 @@ export default function ViceCityRushPage() {
               {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
               {lapBanner && (
                 <div className={`city-rush-lap-banner${lapBanner.final ? ' is-final' : ''}`} key={lapBanner.nonce} role="status" aria-live="polite">
-                  <span>{lapBanner.final ? 'LIGNE FRANCHIE · DERNIER TOUR' : `LIGNE FRANCHIE · TOUR ${lapBanner.lap} / ${lapBanner.laps}`}</span>
-                  <strong>{lapBanner.final ? 'FINAL LAP' : `LAP ${lapBanner.lap}`}</strong>
-                  <small>{lapBanner.final ? 'Plus que 600 m · tout donner.' : `${(lapBanner.laps - lapBanner.lap + 1)} tours restants · ${formatTime(lapBanner.elapsed)}`}</small>
+                  <span>{lapBanner.checkpoint ? checkpointKicker(lapBanner.remaining) : lapBanner.final ? 'LIGNE FRANCHIE · DERNIER TOUR' : `LIGNE FRANCHIE · TOUR ${lapBanner.lap} / ${lapBanner.laps}`}</span>
+                  <strong>{lapBanner.checkpoint ? `PLUS QUE ${lapBanner.remaining} M` : lapBanner.final ? 'FINAL LAP' : `LAP ${lapBanner.lap}`}</strong>
+                  <small>{lapBanner.checkpoint ? 'Ce n’est pas encore l’arrivée · tout donner.' : lapBanner.final ? `Plus que ${lapBanner.remaining} m · tout donner.` : `${(lapBanner.laps - lapBanner.lap + 1)} tours restants · ${formatTime(lapBanner.elapsed)}`}</small>
                 </div>
               )}
               <div className="city-rush-controls-bottom">
@@ -849,7 +860,7 @@ export default function ViceCityRushPage() {
                           <b>{m.name}</b>
                           <small>{m.label}</small>
                           <p>{m.desc}</p>
-                          <span className="city-rush-mode-laps"><i />{m.laps} TOUR{m.laps > 1 ? 'S' : ''} · {m.laps * CITY_RUSH_LAP_LENGTH} M</span>
+                          <span className="city-rush-mode-laps"><i />{m.laps} TOUR{m.laps > 1 ? 'S' : ''} · {cityRushRaceDistance(m.laps)} M</span>
                         </button>
                       ))}
                     </div>
@@ -867,7 +878,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? ` — chaque tour rejoue les ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})` : ''}, {currentLaps} tour{currentLaps > 1 ? 's' : ''} = {currentDistance} m. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})` : ''}, {currentLaps} tour{currentLaps > 1 ? 's' : ''} dont un dernier tour double = {currentDistance} m. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
                       {CITY_RUSH_CITIES.map((option, index) => (
@@ -1069,7 +1080,7 @@ export default function ViceCityRushPage() {
           </div>
 
           <div className="city-rush-shell-footer">
-            <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {currentLaps} × {CITY_RUSH_LAP_LENGTH} M</span>
+            <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · {currentDistance} M</span>
             <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> A : TIR BLEU <b>·</b> Z : RAFALE <b>·</b> R : HÉLICO <b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
             <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE · OBJETS EN BAS</span>
           </div>
@@ -1120,12 +1131,12 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts.</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts. Conduite propre : chaque changement de voie ralentit légèrement (−{Math.round((1 - CITY_RUSH_LANE_CHANGE_SLOW_FACTOR) * 100)} % un instant) ; tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse).</p></div>
           </section>
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : trois berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, trois berlines entrent derrière le leader pour l’empêcher de s’armer.'} Elles arrivent armées : tir bleu et rafale rouge chargés (jamais l’hélico, qu’il faut voler). Hors classement, visibles sur mini-carte. Chaque berline a une barre de vie : 3 tirs droits bleus, 2 rafales rouges ou 1 tir d’hélico la détruisent — explosion, retrait de la course et +200 pts.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : trois berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, trois berlines entrent derrière le leader pour l’empêcher de s’armer.'} Elles arrivent armées : tir bleu et rafale rouge chargés (jamais l’hélico, qu’il faut voler). Hors classement, signalées dans la liste des positions. Chaque berline a une barre de vie : 3 tirs droits bleus, 2 rafales rouges ou 1 tir d’hélico la détruisent — explosion, retrait de la course et +200 pts.</p></div>
           </section>
         </aside>
       </main>

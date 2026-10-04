@@ -219,7 +219,9 @@ for (const [index, city] of cities.entries()) {
   let shotsFired = 0;
   let readySince = null;
   const shotLog = [];
-  const maxFrames = 30 * 200;
+  // Trois tours = 2 400 m (dernier tour de 1 200 m) : 85 à 140 s virtuelles,
+  // 5 minutes de budget pour qu'une course lente n'échoue pas à tort.
+  const maxFrames = 30 * 300;
   const cityStats = {
     lockedShots: 0, lockedHits: 0, behindShots: 0, behindHits: 0,
     blindShots: 0, blindHits: 0, healthLost: 0, destroyed: 0,

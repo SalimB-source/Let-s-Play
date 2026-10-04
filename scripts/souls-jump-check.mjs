@@ -18,6 +18,14 @@ const step = (e, p, n = 1) => {
 // ── Le boss est bien équipé du bond ─────────────────────────────────
 assert.ok(BOSS.windup2 > 0 && BOSS.leapDur > 0 && BOSS.jumpArcCos < 0,
   'BOSS exposes the jump attack');
+assert.ok(ENEMY.maxHp > 130 && ENEMY.damage > 17 && ENEMY.walkSpeed > 2.35,
+  'les gardes sont plus résistants, rapides et dangereux');
+assert.ok(ENEMY.windup < 0.62 && ENEMY.recover < 0.85 && ENEMY.cooldown < 0.55,
+  'les gardes enchaînent plus vite et laissent moins de répit');
+assert.ok(BOSS.maxHp > 420 && BOSS.damage > 26 && BOSS.walkSpeed > 2.7,
+  'le Roi est plus résistant, rapide et féroce');
+assert.ok(BOSS.windup < 0.7 && BOSS.recover < 0.95 && BOSS.cooldown < 0.5,
+  'les attaques du Roi arrivent plus vite');
 for (const p of ['windup2', 'leap', 'strike2']) {
   assert.ok(ENEMY_PHASES.includes(p), `phase ${p} in FSM`);
 }
@@ -110,7 +118,9 @@ const r = damageEnemy(p2, 1);              // franchit les 50 %
 assert.equal(p2.phase2, true);
 assert.ok(p2.spec.windup2 < BOSS.windup2, 'élan plus court en phase 2');
 assert.ok(p2.spec.leapDur < BOSS.leapDur, 'vol plus rapide en phase 2');
-assert.equal(p2.spec.jumpCdMax, 3);
+assert.ok(p2.spec.windup < BOSS.windup && p2.spec.recover < BOSS.recover, 'frappes et récupérations accélérées en phase 2');
+assert.ok(p2.spec.cooldown < BOSS.cooldown && p2.spec.damage > BOSS.damage, 'frappe plus souvent et plus fort en phase 2');
+assert.ok(p2.spec.jumpCdMax < BOSS.jumpCdMax, 'bonds plus fréquents en phase 2');
 assert.ok(r === 'armor' || r === 'hit' || r === 'riposte');
 
 // ──10. reset : le boss repart propre ────────────────────────────────

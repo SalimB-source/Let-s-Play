@@ -15,7 +15,7 @@ import { PAD_ACTIONS, attachStick, moveFromStick } from './soulsTouch';
  * transmet au monde via `actionsRef`.
  */
 
-/** Stick au repos — le chevalier s'arrête. */
+/** Stick au repos — le Gardien Chitine s'arrête. */
 const IDLE = Object.freeze({ x: 0, y: 0, magnitude: 0, run: false });
 
 export default function SoulsTouchControls({ onMove, onAction }) {
@@ -28,7 +28,7 @@ export default function SoulsTouchControls({ onMove, onAction }) {
   actionRef.current = onAction;
 
   // Le stick suit le doigt et rend sa poussée au monde ; au démontage (pause,
-  // mort), le chevalier s'arrête — sinon un doigt levé hors du stick le
+  // mort), le Gardien Chitine s'arrête — sinon un doigt levé hors du stick le
   // laisserait courir tout seul.
   useEffect(() => {
     const stick = stickRef.current;
@@ -75,7 +75,7 @@ export default function SoulsTouchControls({ onMove, onAction }) {
         className="souls-touch-stick"
         ref={stickRef}
         role="application"
-        aria-label="Stick de déplacement — poussé à fond, le chevalier court"
+        aria-label="Stick de déplacement — poussé à fond, le Gardien Chitine court"
       >
         <span className="souls-touch-stick-ring" aria-hidden="true" />
         <span className="souls-touch-stick-knob" ref={knobRef} aria-hidden="true" />

@@ -115,7 +115,7 @@ for (const [key, model] of Object.entries(assets)) {
 }
 
 const { makeWorld } = await import('../src/games/SoulsWorld.jsx');
-const { DRINK, BOSS, moveSpeedMult } = await import('../src/games/soulsCombat.js');
+const { DRINK, BOSS, ENEMY, moveSpeedMult } = await import('../src/games/soulsCombat.js');
 const { PROGRESS } = await import('../src/games/soulsProgress.js');
 const { STAGE, stageHeight } = await import('../src/games/soulsStage.js');
 const { HALL_FLOOR_T } = await import('../src/games/soulsCastle.js');
@@ -173,19 +173,236 @@ try {
 }
 console.log('240 frames OK — ready =', readyFired, '| hud samples =', hudSamples.length);
 
+// Décor : la passe d’allègement conserve les repères de niveau, mais limite
+// les surcouches qui masquaient le chemin. Les brumes et fleurs doivent être
+// réellement posées au sol ; les bordures du chemin ne peuvent plus traverser
+// les dalles principales (source de scintillement en mouvement).
+try {
+  const scene = world.debug.scene;
+  const mist = scene.getObjectByName('ground-mist-patches');
+  const grass = scene.getObjectByName('camp-grass-clumps');
+  const flowers = scene.getObjectByName('grounded-night-flowers');
+  const forestFloor = scene.getObjectByName('sparse-forest-floor');
+  const campEmbers = scene.getObjectByName('camp-embers');
+  const levelEmbers = scene.getObjectByName('level-embers');
+  const road = scene.getObjectByName('main-road-path');
+  if (!mist || mist.children.length !== 6 || mist.children.some((o) => Math.abs(o.position.y - 0.28) > 1e-6)) {
+    fail('BRUME DE CARTE MAL POSÉE', mist?.children.map((o) => o.position.y));
+  }
+  if (!grass || grass.count > 280 || !flowers || flowers.count > 14) {
+    fail('VÉGÉTATION DE CARTE TROP DENSE', `${grass?.count ?? 'absent'} herbes / ${flowers?.count ?? 'absent'} fleurs`);
+  }
+  const instancedPosition = new THREE.Vector3();
+  const matrix = new THREE.Matrix4();
+  flowers.geometry.computeBoundingBox();
+  if (flowers.geometry.boundingBox.min.y < -1e-6) fail('FLEURS SOUS LE SOL');
+  for (let i = 0; i < flowers.count; i++) {
+    flowers.getMatrixAt(i, matrix);
+    instancedPosition.setFromMatrixPosition(matrix);
+    if (instancedPosition.y < 0 || instancedPosition.y > 0.012) {
+      fail('FLEUR FLOTTANTE', instancedPosition.y.toFixed(3));
+    }
+  }
+  if (!forestFloor || forestFloor.children.length > 48) {
+    fail('SOUS-BOIS TROP DENSE', forestFloor?.children.length);
+  }
+  if (campEmbers?.geometry?.attributes?.position?.count !== 52
+    || levelEmbers?.geometry?.attributes?.position?.count !== 54) {
+    fail('BRAISES DE CARTE TROP DENSES');
+  }
+  const forecourt = scene.getObjectByName('flush-forecourt');
+  const paving = scene.getObjectByName('forecourt-paving');
+  const campWalls = scene.getObjectByName('camp-wall-ring');
+  const campGate = campWalls?.getObjectByName('camp-gate-open-arch');
+  const masonryFace = campWalls?.children.find((o) => o.isMesh && o.material?.map && o.material?.normalMap);
+  const shadowFill = scene.getObjectByName('souls-shadow-fill');
+  const luminance = (color) => color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
+  if (!masonryFace || masonryFace.material.color.getHex() !== 0xffffff
+    || masonryFace.material.map.colorSpace !== THREE.SRGBColorSpace) {
+    fail('MUR DE LA COUR TROP ASSOMBRI', masonryFace?.material.color.getHexString());
+  }
+  if (!shadowFill?.isHemisphereLight || shadowFill.intensity < 1.0) {
+    fail('ÉCLAIRAGE AMBIANT TROP FAIBLE', shadowFill?.intensity);
+  }
+  const roadRibbon = road?.getObjectByName('flush-stone-road');
+  if (!road || !roadRibbon || road.children.length !== 1
+    || roadRibbon.geometry.type !== 'ShapeGeometry'
+    || roadRibbon.position.y > 0.006
+    || luminance(roadRibbon.material.color) < 0.45) {
+    fail('CHEMIN EN PLAQUES', road?.children.length);
+  }
+  if (!forecourt || !paving) fail('PARVIS ABSENT');
+  if (!campGate || campWalls.getObjectByName('camp-gate-lintel')
+    || campWalls.getObjectByName('camp-gate-portcullis')
+    || campGate.material.map
+    || campGate.material.emissiveIntensity < 0.45
+    || luminance(campGate.material.color) < 0.45) {
+    fail('PORTAIL DE COUR EN PLAQUE', campGate?.name);
+  }
+  paving.geometry.computeBoundingBox();
+  const pavingTop = paving.position.y + paving.geometry.boundingBox.max.y;
+  if (pavingTop > 0.002 || luminance(paving.material.color) < 0.45) {
+    fail('PARVIS SURÉLEVÉ OU NOIR', pavingTop.toFixed(3));
+  }
+  console.log(`Décor allégé OK — ${mist.children.length} brumes, ${grass.count} herbes, ${flowers.count} fleurs, ${forestFloor.children.length} sous-bois ; chemin affleurant.`);
+} catch (e) {
+  if (/BRUME DE CARTE|VÉGÉTATION DE CARTE|FLEURS SOUS LE SOL|FLEUR FLOTTANTE|SOUS-BOIS TROP DENSE|BRAISES DE CARTE|CHEMIN EN PLAQUES|PARVIS ABSENT|PORTAIL DE COUR EN PLAQUE|PARVIS SURÉLEVÉ OU NOIR/.test(e?.message || '')) throw e;
+  console.error('DÉCOR ALLÉGÉ FAILED:', e);
+  process.exit(3);
+}
+
+// Garde de l’épée : les deux vraies paumes rejoignent deux points de la
+// même poignée. La garde doit être centrale, levée et devant le thorax : ce
+// contrôle prévient le retour d'une arme latérale ou d'une fausse main.
+try {
+  const p = world.debug.warrior.userData.parts;
+  if (!p.weaponMount || !p.rightGrip || !p.offhandGrip) {
+    fail('GARDE À DEUX MAINS ABSENTE — pivot central ou poignées manquants');
+  }
+  if (p.weapon.name !== 'two-handed-chitin-sword'
+    || !p.weapon.getObjectByName('two-handed-sword-blade')
+    || !p.weapon.getObjectByName('two-handed-sword-long-hilt')) {
+    fail('ÉPÉE À DEUX MAINS ABSENTE — lame droite ou poignée longue manquante');
+  }
+  if (!p.weapon.getObjectByName('sword-rune-channel')
+    || !p.weapon.getObjectByName('sword-guard-filigree')
+    || !p.torso.getObjectByName('guardian-cuirass')
+    || !p.torso.getObjectByName('dorsal-chitin-carapace')
+    || !p.runeGlow?.userData?.baseEmissiveIntensity) {
+    fail('HABILLAGE ANIME INCOMPLET — rune, garde ou cuirasse manquante');
+  }
+  if (p.weapon.parent !== p.weaponMount) {
+    fail('ÉPÉE HORS DU PIVOT CENTRAL — l’arme ne doit pas être attachée à un coude');
+  }
+  world.debug.warrior.updateMatrixWorld(true);
+  const palmLocal = new THREE.Vector3(0, -0.3, 0);
+  const rightPalm = p.elbowR.localToWorld(palmLocal.clone());
+  const leftPalm = p.elbowL.localToWorld(palmLocal.clone());
+  const rightGrip = new THREE.Vector3();
+  const leftGrip = new THREE.Vector3();
+  p.rightGrip.getWorldPosition(rightGrip);
+  p.offhandGrip.getWorldPosition(leftGrip);
+  const rightGap = rightPalm.distanceTo(rightGrip);
+  const leftGap = leftPalm.distanceTo(leftGrip);
+  if (rightGap > 0.026 || leftGap > 0.026) {
+    fail('PRISE À DEUX MAINS DÉCALÉE', `droite = ${rightGap.toFixed(3)} m, gauche = ${leftGap.toFixed(3)} m`);
+  }
+
+  const mountWorld = new THREE.Vector3();
+  p.weaponMount.getWorldPosition(mountWorld);
+  const mountInTorso = p.torso.worldToLocal(mountWorld.clone());
+  if (Math.abs(mountInTorso.x) > 0.09 || mountInTorso.z > -0.17 || mountInTorso.y < 0.22) {
+    fail('ÉPÉE NON CENTRALE OU NON FRONTALE', `pivot thorax = ${mountInTorso.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+  }
+
+  const elbowL = p.torso.worldToLocal(p.elbowL.getWorldPosition(new THREE.Vector3()));
+  const elbowR = p.torso.worldToLocal(p.elbowR.getWorldPosition(new THREE.Vector3()));
+  // −Z est la face du personnage. Les coudes doivent sortir à l'avant et sur
+  // les côtés, afin qu'aucun bras ne reparte derrière le dos ou les ailes.
+  if (elbowL.z >= -0.025 || elbowR.z >= -0.025 || elbowL.x > -0.12 || elbowR.x < 0.12) {
+    fail('COUDES HORS DE LA GARDE FRONTALE', `gauche = ${elbowL.toArray().map((v) => v.toFixed(3)).join(', ')}, droite = ${elbowR.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+  }
+  if (leftPalm.x >= 0 || rightPalm.x <= 0) {
+    fail('BRAS CROISÉS DEVANT L’ÉPÉE', `paume gauche x = ${leftPalm.x.toFixed(3)}, droite x = ${rightPalm.x.toFixed(3)}`);
+  }
+
+  const weaponBox = new THREE.Box3().setFromObject(p.weapon);
+  const highestPalm = Math.max(leftPalm.y, rightPalm.y);
+  if (weaponBox.max.y < highestPalm + 0.34) {
+    fail('LAME NON LEVÉE', `sommet lame = ${weaponBox.max.y.toFixed(3)}, paume haute = ${highestPalm.toFixed(3)}`);
+  }
+  console.log('Garde à deux mains OK — paumes', `${rightGap.toFixed(3)} / ${leftGap.toFixed(3)} m`,
+    '| coudes frontaux', `${elbowL.z.toFixed(3)} / ${elbowR.z.toFixed(3)}`, '| lame levée.');
+} catch (e) {
+  if (/GARDE À DEUX MAINS|ÉPÉE|HABILLAGE|PRISE À DEUX MAINS|COUDES|BRAS CROISÉS|LAME NON LEVÉE/.test(e?.message || '')) throw e;
+  console.error('GARDE À DEUX MAINS FAILED:', e);
+  process.exit(3);
+}
+
 // API + M1 : start → file d'actions clavier → stamina/HUD vérifiés.
 const fire = (type, code) => {
   const ev = { code, repeat: false, preventDefault() {}, button: 0, clientX: 0, clientY: 0 };
   for (const fn of listeners.window[type] || []) fn(ev);
   for (const fn of listeners.document[type] || []) fn(ev);
 };
+const assertAnimatedTwoHandGrip = (label) => {
+  const p = world.debug.warrior.userData.parts;
+  world.debug.warrior.updateMatrixWorld(true);
+  const palmCenter = new THREE.Vector3(0, -0.3, 0);
+  const rightPalm = p.elbowR.localToWorld(palmCenter.clone());
+  const leftPalm = p.elbowL.localToWorld(palmCenter.clone());
+  const rightGrip = p.rightGrip.getWorldPosition(new THREE.Vector3());
+  const leftGrip = p.offhandGrip.getWorldPosition(new THREE.Vector3());
+  const rightGap = rightPalm.distanceTo(rightGrip);
+  const leftGap = leftPalm.distanceTo(leftGrip);
+  if (p.weapon.parent !== p.weaponMount || rightGap > 0.028 || leftGap > 0.028) {
+    fail('PRISE À DEUX MAINS PERDUE EN ANIMATION', `${label} : droite = ${rightGap.toFixed(3)} m, gauche = ${leftGap.toFixed(3)} m`);
+  }
+};
+const swordDiagonalPose = () => {
+  const p = world.debug.warrior.userData.parts;
+  world.debug.warrior.updateMatrixWorld(true);
+  const blade = p.weapon.getObjectByName('two-handed-sword-blade');
+  const bladeBox = new THREE.Box3().setFromObject(blade);
+  let frontZ = Infinity;
+  for (const x of [bladeBox.min.x, bladeBox.max.x]) {
+    for (const y of [bladeBox.min.y, bladeBox.max.y]) {
+      for (const z of [bladeBox.min.z, bladeBox.max.z]) {
+        frontZ = Math.min(frontZ, p.torso.worldToLocal(new THREE.Vector3(x, y, z)).z);
+      }
+    }
+  }
+  return {
+    x: p.weaponMount.position.x, y: p.weaponMount.position.y,
+    z: p.weaponMount.position.z, roll: p.weapon.rotation.z, pitch: p.weapon.rotation.x,
+    tipZ: frontZ,
+  };
+};
+const assertForwardStart = (rest, windup, label) => {
+  // −Z est l'avant du Gardien : la charge doit projeter l'épée vers la cible.
+  if (windup.z > rest.z - 0.085) {
+    fail('DÉPART D’ÉPÉE PAS ASSEZ FRONTAL', `${label} : repos z = ${rest.z.toFixed(3)}, charge z = ${windup.z.toFixed(3)}`);
+  }
+};
+const assertForwardThrust = (rest, strike, label) => {
+  // À l'impact, le pivot et la pointe doivent partir vers l'ennemi plutôt que
+  // simplement retomber en diagonale près du torse.
+  if (strike.z > rest.z - 0.16 || strike.pitch > -0.68 || strike.tipZ > rest.tipZ - 0.32) {
+    fail('ESTOC PAS ASSEZ FRONTALE', `${label} : pivot ${rest.z.toFixed(3)} → ${strike.z.toFixed(3)}, pointe ${rest.tipZ.toFixed(3)} → ${strike.tipZ.toFixed(3)}, inclinaison = ${strike.pitch.toFixed(3)}`);
+  }
+};
+const assertWideDiagonal = (windup, strike) => {
+  // Vue arrière par défaut : droite-haute → gauche-basse. Ce seuil protège
+  // un vrai trait en diagonale, pas un petit balancement de quelques degrés.
+  if (strike.x > windup.x - 0.22 || strike.y > windup.y - 0.30 || strike.roll < windup.roll + 1.15) {
+    fail('ATTAQUE DIAGONALE TROP COURTE', `charge = ${JSON.stringify(windup)}, frappe = ${JSON.stringify(strike)}`);
+  }
+};
 try {
   world.start();
   const home = { x: world.debug.state.x, z: world.debug.state.z };
+  const swordRest = swordDiagonalPose();
   fire('keydown', 'KeyJ');              // attaque légère
-  for (let i = 0; i < 60; i++) stepFrame();
+  for (let i = 0; i < 8; i++) stepFrame();
+  const lightWindup = swordDiagonalPose();
+  assertForwardStart(swordRest, lightWindup, 'attaque légère');
+  assertAnimatedTwoHandGrip('charge légère');
+  for (let i = 8; i < 16; i++) stepFrame();
+  const lightStrike = swordDiagonalPose();
+  assertAnimatedTwoHandGrip('frappe légère');
+  assertForwardThrust(swordRest, lightStrike, 'attaque légère');
+  assertWideDiagonal(lightWindup, lightStrike);
+  for (let i = 16; i < 60; i++) stepFrame();
   fire('keydown', 'KeyK');              // attaque lourde
-  for (let i = 0; i < 35; i++) stepFrame();
+  for (let i = 0; i < 22; i++) stepFrame();
+  const heavyWindup = swordDiagonalPose();
+  assertForwardStart(swordRest, heavyWindup, 'attaque lourde');
+  assertAnimatedTwoHandGrip('charge lourde');
+  for (let i = 22; i < 36; i++) stepFrame();
+  const heavyStrike = swordDiagonalPose();
+  assertAnimatedTwoHandGrip('frappe lourde');
+  assertForwardThrust(swordRest, heavyStrike, 'attaque lourde');
+  assertWideDiagonal(heavyWindup, heavyStrike);
   fire('keydown', 'Space');             // esquive en fin de récupération (annulation)
   for (let i = 0; i < 40; i++) stepFrame();
   fire('keydown', 'Tab');               // lock-on (hors portée ici : cible null)
@@ -207,7 +424,7 @@ try {
     process.exit(3);
   }
   const last = withVitals[withVitals.length - 1];
-  if (last.maxHp !== 100 || last.maxStamina !== 100 || last.targetMaxHp !== 130) {
+  if (last.maxHp !== 100 || last.maxStamina !== 100 || last.targetMaxHp !== ENEMY.maxHp) {
     console.error('HUD VALEURS INATTENDUES —', last);
     process.exit(3);
   }

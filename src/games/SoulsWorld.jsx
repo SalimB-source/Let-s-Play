@@ -15,11 +15,11 @@ import {
 import {
   TORSO_Y,
   seatDrop,
-  makeKnight, makeBonfire, makeBrazier, makeWalls, makePillar,
+  makeInsectWarrior, makeBonfire, makeBrazier, makeWalls, makePillar,
   makeBarrel, makeRubble, makeFloor, makeMoon, makeAshField,
   makeSkyDome, makeStars, makeMoonGlow, makeMistPatches, makeLightShaft,
   makeGrassField, makeFlowerField, makeTree, makeBush,
-  makeHitSparks, makeHealMotes, disposePixelMaps,
+  makeHitSparks, makeHealMotes, disposeAnimeMaps,
   buildNightEnvironment,
   makeStonePath, SEAT_POSE,
 } from './soulsModels';
@@ -56,7 +56,7 @@ import {
 const BASE_FOV = 55;
 const SEAT = SEAT_POSE; // pose assise du Roi (soulsModels : contrat de rig)
 const GAME_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab']);
-/** Stick au repos — le chevalier s'arrête. */
+/** Stick au repos — le Gardien Chitine s'arrête. */
 const TOUCH_IDLE = Object.freeze({ x: 0, y: 0, magnitude: 0, run: false });
 
 // Specs du boss (bond inclus) : BOSS, module pur soulsCombat.js.
@@ -68,8 +68,10 @@ function makeWorld(mount, callbacks) {
   const touchDevice = isTouchPointer();
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a16);
-  scene.fog = new THREE.Fog(0x131228, 17, 62);
+  scene.background = new THREE.Color(0x050610);
+  // Nuit plus dense : les feux, les yeux composés et les runes découpent les
+  // silhouettes au lieu d'éclairer toute la cour comme un crépuscule.
+  scene.fog = new THREE.Fog(0x0d1023, 14, 56);
 
   const camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.1, 400);
 
@@ -77,7 +79,7 @@ function makeWorld(mount, callbacks) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.16;
+  renderer.toneMappingExposure = 0.96;
   // Ombres dynamiques douces (lune) — le remaster tient à ça.
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -94,12 +96,16 @@ function makeWorld(mount, callbacks) {
   // lueurs ambrées des braseros → les reflets sur l'acier, la peau et
   // la pierre racontent la scène (pas une pièce générique).
   scene.environment = buildNightEnvironment(renderer);
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = 0.32;
 
   // ── Lumière : lune clé (ombres) + contre-jour froid + sources chaudes
-  const hemi = new THREE.HemisphereLight(0x515a86, 0x181522, 0.95);
+  // Fill global de nuit : assez de lumière ambiante pour garder les pierres
+  // lisibles même sur les faces à l'opposé de la lune. Sans ce niveau commun,
+  // les matériaux en ombre tombent à zéro et ressemblent à des murs noirs.
+  const hemi = new THREE.HemisphereLight(0x6979a7, 0x363248, 1.05);
+  hemi.name = 'souls-shadow-fill';
   scene.add(hemi);
-  const moonLight = new THREE.DirectionalLight(0xbcc8ff, 1.35);
+  const moonLight = new THREE.DirectionalLight(0x8a93ca, 0.92);
   moonLight.position.set(-16, 24, -13);
   moonLight.castShadow = true;
   moonLight.shadow.mapSize.set(2048, 2048);
@@ -113,11 +119,11 @@ function makeWorld(mount, callbacks) {
   moonLight.shadow.normalBias = 0.028;
   scene.add(moonLight);
   scene.add(moonLight.target); // la lune suit le joueur (carte longue de 130 m)
-  const fill = new THREE.DirectionalLight(0xff9a5c, 0.16);
+  const fill = new THREE.DirectionalLight(0x8d2a60, 0.13);
   fill.position.set(6, 8, 10);
   scene.add(fill);
   // Contour bleuté derrière l'épaule — silhouettage « remaster ».
-  const rim = new THREE.DirectionalLight(0x8fa4ff, 0.5);
+  const rim = new THREE.DirectionalLight(0x3ea8b5, 0.42);
   rim.position.set(10, 6, -14);
   scene.add(rim);
 
@@ -149,13 +155,15 @@ function makeWorld(mount, callbacks) {
   // ── Le Chemin du Roi : route, chapelle + coffre, forêt, château, nef ──
   const trees = forestTrees();
   const levelGroup = new THREE.Group();
-  const roadPath = makeStonePath(STAGE.road, { width: 3.4, step: 0.7 });
-  const spurPath = makeStonePath(STAGE.spur, { width: 2.6, step: 0.7 });
+  const roadPath = makeStonePath(STAGE.road, { width: 3.4 });
+  roadPath.group.name = 'main-road-path';
+  const spurPath = makeStonePath(STAGE.spur, { width: 2.6 });
+  spurPath.group.name = 'chapel-spur-path';
   const forecourt = makeForecourt();
   const chapel = makeChapel();
   const chest = makeChest();
   const forest = makeForest(trees);
-  const forestFloor = makeForestFloor(trees);
+  const forestFloor = makeForestFloor(trees, { detailCount: 46 });
   const castle = makeCastle();
   const hall = makeThroneHall();
   levelGroup.add(makeOuterGround(), roadPath.group, spurPath.group, forecourt.group,
@@ -170,10 +178,10 @@ function makeWorld(mount, callbacks) {
   // Lumières de zone (les flammes de décor n'en portent pas : 5 sources
   // mutualisées au lieu d'une par brasero).
   const zoneLights = [
-    [0xff8c3a, 34, 17, [-20.5, 3.0, -31]],      // chapelle
-    [0xff8c3a, 42, 21, [0, 3.6, -85.4]],         // parvis du portail
-    [0xff7a3a, 72, 36, [0, 7.0, -103]],          // nef
-    [0xff6a38, 62, 28, [0, 4.6, -118]],          // estrade du trône
+    [0xc44976, 20, 14, [-20.5, 3.0, -31]],      // chapelle — braise rouge
+    [0xbc3b6d, 27, 18, [0, 3.6, -85.4]],         // parvis du portail
+    [0x9f356d, 43, 29, [0, 7.0, -103]],          // nef
+    [0x7f295b, 36, 23, [0, 4.6, -118]],          // estrade du Roi Chitine
   ];
   zoneLights.forEach(([color, intensity, distance, pos], i) => {
     const light = new THREE.PointLight(color, intensity, distance, 2);
@@ -272,34 +280,32 @@ function makeWorld(mount, callbacks) {
   }
 
   // Braises flottantes autour des sources de feu.
-  const ashField = makeAshField([[0, 0], [-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]]);
+  const ashField = makeAshField([[0, 0], [-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]], 52);
+  ashField.points.name = 'camp-embers';
   scene.add(ashField.points);
   // Braises des feux éloignés : chapelle, parvis, nef, second feu de camp.
   const levelAsh = makeAshField([
     [-26, -28.1], [-26, -33.9], [-6.4, -86], [6.4, -86], [seuilSpec.x, seuilSpec.z],
     ...STAGE.hall.braziers,
-  ]);
+  ], 54);
+  levelAsh.points.name = 'level-embers';
   scene.add(levelAsh.points);
 
   // ── Ambiance remaster : ciel, étoiles, halo lunaire, brumes ──────
   // Le ciel suit le joueur : la carte fait 130 m, pas question de sortir du dôme.
   const skyRig = new THREE.Group();
-  skyRig.add(makeSkyDome(140), makeStars(460, 132), makeMoonGlow(-46, 34, -70, 36), makeMoon());
+  skyRig.add(makeSkyDome(140), makeStars(300, 132), makeMoonGlow(-46, 34, -70, 36), makeMoon());
   scene.add(skyRig);
   const mist = makeMistPatches([
-    [-8, -12, 13, 4.5, 0.12], [9, 11, 12, 4, 0.1],
-    [-12, 6, 10, 3.6, 0.09], [11, -7, 11, 3.8, 0.1],
-    [0, -15, 14, 4.2, 0.08],
-    // Forêt : brumes basses le long de la route
-    [3, -38, 14, 3.6, 0.1], [12, -52, 16, 4, 0.11], [-8, -58, 15, 4, 0.1],
-    [16, -70, 14, 3.6, 0.1], [-14, -74, 14, 3.8, 0.1], [0, -80, 16, 3.6, 0.09],
-    [28, -44, 14, 3.6, 0.1], [-22, -44, 14, 3.6, 0.1], [-4, -45, 12, 3.2, 0.09],
+    [-8, -12, 13, 4.5, 0.08], [9, 11, 12, 4, 0.07], [0, -15, 14, 4.2, 0.07],
+    // Repères espacés le long de la route, à hauteur du sol.
+    [3, -38, 14, 3.6, 0.08], [12, -52, 16, 4, 0.08], [0, -80, 16, 3.6, 0.07],
   ]);
   scene.add(mist);
 
   // Faisceaux de lumière au-dessus des flammes (pilotés par le flicker).
   const shafts = [];
-  for (const [x, z] of [[-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]]) {
+  for (const [x, z] of [[-5.4, -3.8], [5.4, -3.8]]) {
     const shaft = makeLightShaft(x, 1.2, z, { height: 4.6, rTop: 0.85, opacity: 0.12 });
     shafts.push(shaft);
     scene.add(shaft);
@@ -375,25 +381,30 @@ function makeWorld(mount, callbacks) {
   for (const [x, z, s] of [[-15.2, -4.5, 1.1], [15.4, 10.5, 1], [-6.8, 14.8, 0.9], [5.5, 15.2, 1.05]]) {
     scene.add(makeBush(x, z, s));
   }
-  const grass = makeGrassField(colliders, 900);
+  const grass = makeGrassField(colliders, 280);
   scene.add(grass);
-  const flowers = makeFlowerField(colliders, 40);
+  const flowers = makeFlowerField(colliders, 14);
   scene.add(flowers);
 
-  // ── Joueur ────────────────────────────────────────────────────────
-  const knight = makeKnight();
-  const parts = knight.userData.parts;
+  // ── Joueur : le Gardien Chitine, guerrier insecte anime ───────────
+  const warrior = makeInsectWarrior();
+  const parts = warrior.userData.parts;
+  // Référence immuable de la garde centrale. Les attaques déplacent le pivot
+  // autour de cette pose puis y reviennent sans réintroduire une arme latérale.
+  const swordMountRest = parts.weaponMount
+    ? { x: parts.weaponMount.position.x, y: parts.weaponMount.position.y, z: parts.weaponMount.position.z }
+    : null;
   const state = createRunState({ x: 0, z: 6.5 });
-  knight.position.set(state.x, 0, state.z);
-  scene.add(knight);
-  flagShadow(knight, true);
+  warrior.position.set(state.x, 0, state.z);
+  scene.add(warrior);
+  flagShadow(warrior, true);
 
-  // ── Escouade : gardes du camp, de la chapelle, de la route + le Roi sur son trône
+  // ── Essaim hostile : sentinelles insectes + Roi Chitine sur son trône
   const makeFoe = (spawn, opts = {}) => {
     const e = createEnemyState(spawn.x, spawn.z);
     e.spec = { ...ENEMY, ...(opts.spec || {}) };
     e.hp = e.spec.maxHp; // PV pleins dès le premier combat (le boss n'a pas ceux d'un garde)
-    e.name = spawn.name || 'CHEVALIER DÉCHU';
+    e.name = spawn.name || (opts.boss ? 'ROI CHITINE DE CENDRE' : 'GUERRIER INSECTE DÉCHU');
     if (spawn.yaw !== undefined) e.yaw = spawn.yaw;
     if (opts.boss) {
       e.isBoss = true;
@@ -403,7 +414,9 @@ function makeWorld(mount, callbacks) {
         e.seatYaw = spawn.yaw ?? 0;
       }
     }
-    const K = makeKnight({ fallen: true });
+    // Même silhouette insecte que le héros, mais chitiné de rouge cendre et
+    // yeux carmin : les ennemis sont une caste corrompue, pas des humains.
+    const K = makeInsectWarrior({ corrupted: true, boss: Boolean(opts.boss) });
     K.scale.setScalar(opts.scale ?? 1.05);
     K.position.set(spawn.x, stageHeight(spawn.x, spawn.z), spawn.z);
     K.rotation.y = e.yaw;
@@ -448,11 +461,20 @@ function makeWorld(mount, callbacks) {
   const healMotes = makeHealMotes();
   scene.add(healMotes.points);
 
-  // Repose d'épée : dos (initiale) → main de l'avant-bras droit.
+  // Garde à deux mains : l’épée du héros reste levée au centre du thorax.
+  // Les ennemis gardent leur reparentage main droite ci-dessus, mais le joueur
+  // utilise son pivot central afin que les deux bras puissent serrer la poignée.
   const weaponState = { drawn: false };
   const setWeaponDrawn = (drawn) => {
     if (weaponState.drawn === drawn) return;
     weaponState.drawn = drawn;
+    if (parts.weaponMount) {
+      parts.weapon.visible = drawn;
+      parts.weapon.position.set(0, 0, 0);
+      parts.weapon.rotation.set(0.06, 0, Math.PI + 0.04);
+      parts.weaponMount.add(parts.weapon);
+      return;
+    }
     if (drawn) {
       parts.weapon.position.set(0.01, -0.24, -0.03);
       parts.weapon.rotation.set(0.18, 0, 0.06);
@@ -464,9 +486,92 @@ function makeWorld(mount, callbacks) {
     }
   };
 
+  // ── Prise à deux mains, devant le thorax ───────────────────────────
+  // Les deux paumes sont résolues vers les deux repères de la même poignée.
+  // Le coude part vers l'extérieur ET vers l'avant (−Z local), jamais derrière
+  // les ailes : l’épée levée est une garde frontale, pas une arme de dos.
+  const lockTwoHandedSword = (() => {
+    const shoulder = new THREE.Vector3();
+    const grip = new THREE.Vector3();
+    const axis = new THREE.Vector3();
+    const bend = new THREE.Vector3();
+    const elbowTarget = new THREE.Vector3();
+    const elbow = new THREE.Vector3();
+    const upperDirection = new THREE.Vector3();
+    const lowerDirection = new THREE.Vector3();
+    const frontOut = new THREE.Vector3();
+    const scale = new THREE.Vector3();
+    const parentQuaternion = new THREE.Quaternion();
+    const worldQuaternion = new THREE.Quaternion();
+    const localQuaternion = new THREE.Quaternion();
+    const torsoQuaternion = new THREE.Quaternion();
+    const down = new THREE.Vector3(0, -1, 0);
+
+    const pointJointAt = (joint, direction) => {
+      joint.parent.getWorldQuaternion(parentQuaternion);
+      worldQuaternion.setFromUnitVectors(down, direction);
+      localQuaternion.copy(parentQuaternion).invert().multiply(worldQuaternion);
+      joint.quaternion.copy(localQuaternion);
+    };
+
+    const solveArm = (arm, elbowJoint, gripAnchor, side) => {
+      arm.getWorldPosition(shoulder);
+      gripAnchor.getWorldPosition(grip);
+      axis.copy(grip).sub(shoulder);
+      const distance = axis.length();
+      if (distance < 1e-4) return false;
+      axis.multiplyScalar(1 / distance);
+
+      arm.getWorldScale(scale);
+      const upperLength = 0.31 * scale.y;
+      const lowerLength = 0.3 * scale.y;
+      const reach = THREE.MathUtils.clamp(
+        distance,
+        Math.abs(upperLength - lowerLength) + 0.002,
+        upperLength + lowerLength - 0.003,
+      );
+      const along = (upperLength * upperLength - lowerLength * lowerLength + reach * reach) / (2 * reach);
+      const height = Math.sqrt(Math.max(0, upperLength * upperLength - along * along));
+
+      // `side` garde les coudes séparés ; −Z les place clairement devant le
+      // buste, entre les épaules et la garde, au lieu de les cacher derrière.
+      frontOut.set(side * 0.9, 0, -0.78).normalize().applyQuaternion(torsoQuaternion);
+      bend.copy(frontOut).addScaledVector(axis, -frontOut.dot(axis));
+      if (bend.lengthSq() < 1e-5) {
+        frontOut.set(side, 0, 0).applyQuaternion(torsoQuaternion);
+        bend.copy(frontOut).addScaledVector(axis, -frontOut.dot(axis));
+      }
+      bend.normalize();
+      elbowTarget.copy(shoulder).addScaledVector(axis, along).addScaledVector(bend, height);
+
+      upperDirection.copy(elbowTarget).sub(shoulder).normalize();
+      pointJointAt(arm, upperDirection);
+      arm.updateWorldMatrix(true, true);
+      elbowJoint.getWorldPosition(elbow);
+      lowerDirection.copy(grip).sub(elbow).normalize();
+      pointJointAt(elbowJoint, lowerDirection);
+      return true;
+    };
+
+    return (rig) => {
+      const {
+        armL, armR, elbowL, elbowR, torso, weapon, weaponMount, rightGrip, offhandGrip,
+      } = rig;
+      if (!weaponMount || !rightGrip || !offhandGrip || weapon.parent !== weaponMount) return false;
+      torso.updateWorldMatrix(true, true);
+      torso.getWorldQuaternion(torsoQuaternion);
+      // Droite basse puis gauche haute : les deux mains encadrent la poignée.
+      const rightHeld = solveArm(armR, elbowR, rightGrip, 1);
+      torso.updateWorldMatrix(true, true);
+      torso.getWorldQuaternion(torsoQuaternion);
+      const leftHeld = solveArm(armL, elbowL, offhandGrip, -1);
+      return rightHeld && leftHeld;
+    };
+  })();
+
   // ── État caméra / entrées ─────────────────────────────────────────
   let camYaw = 0;
-  let groundY = 0; // hauteur lissée du sol sous le chevalier
+  let groundY = 0; // hauteur lissée du sol sous le Gardien Chitine
   let camPitch = -0.05;
   let active = false;
   let locked = false;
@@ -752,7 +857,7 @@ function makeWorld(mount, callbacks) {
   };
 
   // ── Mort & résurrection ───────────────────────────────────────────
-  /** Le chevalier tombe : le monde se fige, l'écran de mort s'affiche. */
+  /** Le Gardien Chitine tombe : le monde se fige, l'écran de mort s'affiche. */
   const onDeath = () => {
     dead = true;
     deathT = 0;
@@ -790,8 +895,8 @@ function makeWorld(mount, callbacks) {
     combat.stamina = combat.staminaMax;
     Object.assign(state, createRunState(respawnFire.respawn)); // au pied du dernier feu
     groundY = stageHeight(state.x, state.z);
-    knight.position.set(state.x, groundY, state.z);
-    knight.rotation.set(0, state.yaw, 0);
+    warrior.position.set(state.x, groundY, state.z);
+    warrior.rotation.set(0, state.yaw, 0);
     parts.body.rotation.set(0, 0, 0);
     parts.body.position.set(0, 0, 0);
     parts.legL.rotation.x = 0;
@@ -1138,7 +1243,7 @@ function makeWorld(mount, callbacks) {
     const walkIn = Math.min(1, currentSpeed / 1.3);
     const moving = currentSpeed > 0.15;
     groundY += (stageHeight(state.x, state.z) - groundY) * Math.min(1, 11 * dt);
-    knight.position.set(state.x, groundY, state.z);
+    warrior.position.set(state.x, groundY, state.z);
     // ── Gros coup : vrille complète du personnage (smooth ease-in-out),
     // se pose face à la cible pile à l'instant de l'impact (55 %).
     let spinTheta = 0;
@@ -1148,7 +1253,7 @@ function makeWorld(mount, callbacks) {
       const su = Math.min(1, Math.max(0, combat.actionT / Math.max(0.01, s1)));
       spinTheta = (su * su * (3 - 2 * su)) * Math.PI * 2;
     }
-    knight.rotation.y = state.yaw + spinTheta;
+    warrior.rotation.y = state.yaw + spinTheta;
     if (moving) gaitPhase += dt * Math.PI * 2 * (0.85 + 0.22 * currentSpeed);
 
     const sL = Math.sin(gaitPhase);   // +1 : jambe gauche en avant
@@ -1218,12 +1323,25 @@ function makeWorld(mount, callbacks) {
         : Math.sin(time * 0.0021) * 0.035);
     const tCapeZ = moving ? Math.sin(gaitPhase + 1.3) * 0.06 * walkIn
       : Math.sin(time * 0.0017) * 0.025;
-    // Lame au dos : se redresse légèrement en course + tressaille.
-    const tWeaponZ = -0.35 + (moving
-      ? Math.sin(gaitPhase + 1.6) * 0.035 * walkIn
-      : Math.sin(time * 0.0013) * 0.01);
-    const tWeaponX = 0.1 + runFactor * 0.08
-      + (moving ? Math.abs(sL) * 0.03 * runFactor : 0);
+    // Épée centrale et levée : la lame demeure devant le torse, avec une
+    // respiration discrète qui ne casse pas l'alignement des deux poignées.
+    const raisedWeaponZ = Math.PI + 0.04;
+    let tWeaponZ = parts.weaponMount
+      ? raisedWeaponZ + (moving
+        ? Math.sin(gaitPhase + 1.6) * 0.024 * walkIn
+        : Math.sin(time * 0.0013) * 0.008)
+      : -0.35 + (moving
+        ? Math.sin(gaitPhase + 1.6) * 0.035 * walkIn
+        : Math.sin(time * 0.0013) * 0.01);
+    let tWeaponX = parts.weaponMount
+      ? 0.06 + runFactor * 0.025 + (moving ? Math.abs(sL) * 0.014 * runFactor : 0)
+      : 0.1 + runFactor * 0.08 + (moving ? Math.abs(sL) * 0.03 * runFactor : 0);
+    // Le pivot translate la garde pendant la frappe : c'est ce déplacement
+    // poitrine-haute → hanche-opposée qui rend le diagonal ample, au lieu
+    // d'une simple petite rotation sur place.
+    let tWeaponMountX = swordMountRest?.x ?? 0;
+    let tWeaponMountY = swordMountRest?.y ?? 0;
+    let tWeaponMountZ = swordMountRest?.z ?? 0;
 
     // ── Poses de combat M1 (réécrivent les cibles du cycle de foulée) ─
     const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -1286,6 +1404,49 @@ function makeWorld(mount, callbacks) {
       const uR = smooth(rawR);
       const uRArm = smooth(clamp01((t - spec.windup - spec.active - 0.03)
         / Math.max(0.05, spec.recover * 0.85)));
+      // Grand diagonal qui finit en estoc : la lame se charge haut à droite,
+      // traverse vers la hanche gauche puis se projette franchement vers la
+      // cible. Le pivot et la pointe avancent ensemble en −Z, tandis que les
+      // deux repères de prise restent solidaires de la même poignée.
+      if (parts.weaponMount && swordMountRest) {
+        const windup = {
+          x: swordMountRest.x + (over ? 0.16 : 0.12),
+          y: swordMountRest.y + (over ? 0.23 : 0.20),
+          // La lame part d'abord vers la cible (−Z), au lieu de se charger
+          // près du buste ou derrière les épaules.
+          z: swordMountRest.z - (over ? 0.10 : 0.13),
+          roll: raisedWeaponZ - (over ? 0.90 : 0.72),
+          pitch: over ? -0.32 : -0.25,
+        };
+        const strike = {
+          x: swordMountRest.x - (over ? 0.17 : 0.14),
+          y: swordMountRest.y - (over ? 0.20 : 0.18),
+          // L'impact devient une vraie estoc : le centre de l'épée avance
+          // d'environ 22 cm et la pointe bascule nettement vers −Z.
+          z: swordMountRest.z - (over ? 0.23 : 0.21),
+          roll: raisedWeaponZ + (over ? 1.00 : 0.78),
+          pitch: over ? -1.08 : -0.96,
+        };
+        if (t < spec.windup) {
+          tWeaponMountX = mix(swordMountRest.x, windup.x, uW);
+          tWeaponMountY = mix(swordMountRest.y, windup.y, uW);
+          tWeaponMountZ = mix(swordMountRest.z, windup.z, uW);
+          tWeaponZ = mix(tWeaponZ, windup.roll, uW);
+          tWeaponX = mix(tWeaponX, windup.pitch, uW);
+        } else if (t < spec.windup + spec.active) {
+          tWeaponMountX = mix(windup.x, strike.x, uArm);
+          tWeaponMountY = mix(windup.y, strike.y, uArm);
+          tWeaponMountZ = mix(windup.z, strike.z, uArm);
+          tWeaponZ = mix(windup.roll, strike.roll, uArm);
+          tWeaponX = mix(windup.pitch, strike.pitch, uArm);
+        } else {
+          tWeaponMountX = mix(strike.x, swordMountRest.x, uR);
+          tWeaponMountY = mix(strike.y, swordMountRest.y, uR);
+          tWeaponMountZ = mix(strike.z, swordMountRest.z, uR);
+          tWeaponZ = mix(strike.roll, tWeaponZ, uR);
+          tWeaponX = mix(strike.pitch, tWeaponX, uR);
+        }
+      }
       if (t < spec.windup) {
         if (over) {
           // Lame au-dessus de la tête, poids en arrière (élan sagittal).
@@ -1495,10 +1656,26 @@ function makeWorld(mount, callbacks) {
     aim(parts.head.rotation, 'x', tHeadPitch, poseRate(9));
     aim(parts.cape.rotation, 'x', tCape, 7);
     aim(parts.cape.rotation, 'z', tCapeZ, 6);
-    aim(parts.weapon.rotation, 'z', tWeaponZ, 9);
-    aim(parts.weapon.rotation, 'x', tWeaponX, 9);
+    if (parts.weaponMount && swordMountRest) {
+      if (atkPose) {
+        // Les keyframes sont déjà lissées par `smooth` : les appliquer
+        // directement préserve l'ampleur du trait à l'instant de l'impact.
+        parts.weaponMount.position.set(tWeaponMountX, tWeaponMountY, tWeaponMountZ);
+        parts.weapon.rotation.z = tWeaponZ;
+        parts.weapon.rotation.x = tWeaponX;
+      } else {
+        aim(parts.weaponMount.position, 'x', tWeaponMountX, poseRate(13));
+        aim(parts.weaponMount.position, 'y', tWeaponMountY, poseRate(13));
+        aim(parts.weaponMount.position, 'z', tWeaponMountZ, poseRate(13));
+        aim(parts.weapon.rotation, 'z', tWeaponZ, poseRate(13));
+        aim(parts.weapon.rotation, 'x', tWeaponX, poseRate(13));
+      }
+    } else {
+      aim(parts.weapon.rotation, 'z', tWeaponZ, 9);
+      aim(parts.weapon.rotation, 'x', tWeaponX, 9);
+    }
 
-    // ── Chute du chevalier : il s'effondre en arrière, puis l'écran de
+    // ── Chute du Gardien Chitine : il s'effondre en arrière, puis l'écran de
     // mort prend la main (le monde reste rendu derrière, figé).
     if (dead) {
       deathT += dt;
@@ -1531,6 +1708,37 @@ function makeWorld(mount, callbacks) {
         aim(parts.strands[i].rotation, 'x', 0.12 - runFactor * 0.18 + sway, 8);
       }
     }
+    // Ailes irisées : petite respiration au repos, battement plus franc à la course.
+    if (parts.wings) {
+      const beat = moving ? 0.09 + runFactor * 0.13 : 0.026;
+      const flutter = Math.sin(time * (moving ? 0.015 : 0.0032)) * beat;
+      aim(parts.wings[0].rotation, 'z', -0.08 - flutter, 7);
+      aim(parts.wings[1].rotation, 'z', 0.08 + flutter, 7);
+    }
+    // Les gravures de la cuirasse et de l'épée respirent au repos, puis
+    // s'embrasent brièvement pendant la frappe : un signal anime lisible sans
+    // halo en surimpression ni géométrie factice.
+    if (parts.runeGlow) {
+      const base = parts.runeGlow.userData.baseEmissiveIntensity ?? parts.runeGlow.emissiveIntensity;
+      const idlePulse = 0.84 + 0.16 * Math.sin(time * 0.0042);
+      const strikeFlash = atkPose ? 0.42 + 0.18 * Math.sin(combat.actionT * 34) : 0;
+      parts.runeGlow.emissiveIntensity = base * (dead ? 0.38 : idlePulse + strikeFlash);
+    }
+    // Boire et rouler demandent de lâcher les deux poignées ; dans tous les
+    // autres états, les deux vraies paumes serrent la poignée frontale.
+    const holdingSwordWithBothHands = !dead && combat.action !== 'drink' && combat.action !== 'dodge'
+      && lockTwoHandedSword(parts);
+    if (!holdingSwordWithBothHands) {
+      // Le solveur écrit des quaternions complets. Hors prise, les deux bras
+      // retrouvent leurs axes historiques pour la potion, le roulé et la mort.
+      parts.armL.rotation.y = 0;
+      parts.armR.rotation.y = 0;
+      parts.elbowL.rotation.y = 0;
+      parts.elbowL.rotation.z = 0;
+      parts.elbowR.rotation.y = 0;
+      parts.elbowR.rotation.z = 0;
+    }
+
     // ── Ennemi : bipède + télégraphes (windup lisible) ──────────────
     for (const F of foes) {
       const enemy = F.e;
@@ -1540,7 +1748,7 @@ function makeWorld(mount, callbacks) {
       let eFrom = F.from;
     const leapY = enemy.phase === 'leap' ? (enemy.leapY || 0) : 0;
     // Le sol est suivi en douceur (comme le joueur) : descendre de
-    // l'estrade ne « clipse » plus le chevalier dans la marche.
+    // l'estrade ne « clipse » plus le guerrier insecte dans la marche.
     const floorY = stageHeight(enemy.x, enemy.z);
     F.groundY = F.groundY === undefined
       ? floorY
@@ -1553,8 +1761,10 @@ function makeWorld(mount, callbacks) {
     if (!enemy.dead) {
       const homing = enemy.phase === 'idle' && Math.hypot(enemy.vx, enemy.vz) > 0.4;
       const chase = enemy.phase === 'chase' || homing;
-      if (chase) enemy.gaitPhase = (enemy.gaitPhase || 0) + dt * Math.PI * 2 * 1.35;
-      else enemy.gaitPhase = 0;
+      if (chase) {
+        const gaitRate = 1.35 * (enemy.spec.walkSpeed / ENEMY.walkSpeed);
+        enemy.gaitPhase = (enemy.gaitPhase || 0) + dt * Math.PI * 2 * gaitRate;
+      } else enemy.gaitPhase = 0;
       const sE = Math.sin(enemy.gaitPhase || 0);
       const kE = 1 - Math.exp(-14 * dt);
       const eLerp = (joint, prop, target) => {
@@ -1738,9 +1948,21 @@ function makeWorld(mount, callbacks) {
         enemyParts.kneeL.rotation.x += (kneeT - enemyParts.kneeL.rotation.x) * kE;
         enemyParts.kneeR.rotation.x += (kneeT - enemyParts.kneeR.rotation.x) * kE;
       }
-      // Regard qui balaye au repos — le chevalier n'est pas une statue.
+      // Regard qui balaye au repos — le guerrier insecte n'est pas une statue.
       eLerp(enemyParts.head.rotation, 'y',
         enemy.phase === 'idle' ? 0.12 * Math.sin(time * 0.55) : 0);
+      // Le petit essaim vit même à l'arrêt : antennes et ailes signalent
+      // immédiatement la nature insecte des ennemis dans l'obscurité.
+      if (enemyParts.strands) {
+        enemyParts.strands.forEach((antenna, index) => {
+          eLerp(antenna.rotation, 'x', 0.08 + Math.sin(time * 0.002 + index) * 0.04, 7);
+        });
+      }
+      if (enemyParts.wings) {
+        const flutter = (chase ? 0.13 : 0.035) * Math.sin(time * (chase ? 0.017 : 0.003) + (enemy.gaitPhase || 0));
+        eLerp(enemyParts.wings[0].rotation, 'z', -0.08 - flutter, 7);
+        eLerp(enemyParts.wings[1].rotation, 'z', 0.08 + flutter, 7);
+      }
       if (enemy.phase === 'seated' || enemy.phase === 'rise') {
         // TRÔNE — assis : cuisses à l'horizontale, genoux pliés, buste droit,
         // tête penchée, épée plantée devant lui. Debout : il pousse sur les
@@ -1790,7 +2012,7 @@ function makeWorld(mount, callbacks) {
       enemyK.rotation.x = 0;   // annule la chute
       enemyK.rotation.z = 0;
     } else if (enemyK.visible) {
-      // Chute : le chevalier bascule sur le dos (pivot aux pieds),
+      // Chute : le guerrier insecte bascule sur le dos (pivot aux pieds),
       // reste allongé au sol — le respawn le relèvera.
       const dT = enemy.deathT;
       const u = Math.min(1, dT / 0.75);
@@ -1907,7 +2129,7 @@ function makeWorld(mount, callbacks) {
     lookVec.set(headVec.x, headVec.y + 0.06, headVec.z);
     camera.lookAt(lookVec);
 
-    // Focal DOF : netteté sur le chevalier, flou sur le décor lointain.
+    // Focal DOF : netteté sur le Gardien Chitine, flou sur le décor lointain.
     post.setFocus(camera.position.distanceTo(lookVec));
     post.render(dt);
     emitHud();
@@ -1936,6 +2158,7 @@ function makeWorld(mount, callbacks) {
       combat,
       progress,
       quest,
+      warrior,
       foes,
       colliders,
       scene,
@@ -1943,7 +2166,7 @@ function makeWorld(mount, callbacks) {
       teleport(x, z) {
         Object.assign(state, createRunState({ x, z }));
         groundY = stageHeight(x, z);
-        knight.position.set(x, groundY, z);
+        warrior.position.set(x, groundY, z);
         const head = { x, y: CAMERA.headHeight + groundY, z };
         const p = cameraPosition(head, camYaw, camPitch, CAMERA.distance);
         camera.position.set(p.x, p.y, p.z);
@@ -1978,7 +2201,7 @@ function makeWorld(mount, callbacks) {
      *     (`TOUCH_QUEUE` → `queue`), la suite est l'affaire de la boucle ;
      *   - `('level', 'vit' | 'end' | 'str')` : montée de niveau depuis l'écran
      *     de pause (le feu de camp seul l'autorise, la boucle le dit au joueur) ;
-     *   - `('touchReset')` : stick relâché (le chevalier s'arrête).
+     *   - `('touchReset')` : stick relâché (le Gardien Chitine s'arrête).
      */
     action(name, payload) {
       if (name === 'launch') {
@@ -2047,7 +2270,7 @@ function makeWorld(mount, callbacks) {
         }
       });
       scene.environment?.dispose?.();
-      disposePixelMaps();
+      disposeAnimeMaps();
       renderer.dispose();
       renderer.domElement.remove();
     },

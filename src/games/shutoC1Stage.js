@@ -28,7 +28,16 @@ import {
   makeTunnelWallTexture,
   makeViaductTexture,
 } from './cityRushTextures.js';
-import { GATE_TRACK_POSITION, ROAD_TILE_LENGTH, START_ZONE_HALF, facadeBlock } from './cityRushStage.js';
+import {
+  GATE_TRACK_POSITION,
+  ROAD_TILE_LENGTH,
+  ROAD_VIEW_AHEAD,
+  ROAD_VIEW_BEHIND,
+  START_ZONE_HALF,
+  facadeBlock,
+  makeCurvedStripGeometry,
+  updateCurvedStrip,
+} from './cityRushStage.js';
 
 const SCALE = CITY_RUSH_SCROLL_SCALE;
 const LAP = CITY_RUSH_LAP_LENGTH;
@@ -37,13 +46,67 @@ const ROAD_HALF = CITY_RUSH_ROAD_HALF_WIDTH;
 // équipe de piste) reste à `cityRushStartLine`, on ne la recouvre pas.
 const LOOP_START = START_ZONE_HALF + 2;
 const LOOP_END = LAP - START_ZONE_HALF - 2;
-// La route visible devant la caméra : 340 unités de monde, comme `makeRoad`.
-const ROAD_LENGTH = 340;
 // Dégagement caméra : la poursuite culmine à 6,7 m, tout ce qui enjambe la
 // chaussée reste au-dessus de 7,4 m.
 const CAMERA_CLEARANCE = 7.4;
 
 const toZ = (trackMeters) => -trackMeters * SCALE;
+
+// Le décor fusionné est déformé une fois par `bendLoopGeometry` (courbes et
+// relief de la ligne centrale) : une primitive dont les sommets s'étalent sur
+// beaucoup de piste ne suivrait la courbe qu'à ses deux extrémités. On découpe
+// donc à la volée les boîtes et parois trop longues en tronçons de douze
+// unités monde — la sagette résiduelle devient invisible (moins d'un cm).
+const BEND_SEGMENT = 12;
+
+function bendAware(batch) {
+  const yawOnly = (rotation) => !rotation || ((!rotation[0] || 0) === 0 && (!rotation[2] || 0) === 0);
+  return {
+    ...batch,
+    box(material, position, size, rotation = null, options = {}) {
+      const yaw = rotation?.[1] || 0;
+      const along = Math.abs(size[2] * Math.cos(yaw));
+      if (options.uv || !yawOnly(rotation) || along <= BEND_SEGMENT) {
+        batch.box(material, position, size, rotation, options);
+        return;
+      }
+      const count = Math.ceil(along / BEND_SEGMENT);
+      const segment = size[2] / count;
+      for (let index = 0; index < count; index += 1) {
+        const local = -size[2] / 2 + segment * (index + 0.5);
+        batch.box(
+          material,
+          [position[0] + local * Math.sin(yaw), position[1], position[2] + local * Math.cos(yaw)],
+          [size[0], size[1], segment + 0.02],
+          rotation,
+          options,
+        );
+      }
+    },
+    plane(material, position, width, height, rotation = null, options = {}) {
+      const yaw = rotation?.[1] || 0;
+      const vertical = yawOnly(rotation) && Math.abs(Math.abs(yaw) - Math.PI / 2) < 1e-6;
+      if (options.uv || !vertical || width <= BEND_SEGMENT) {
+        batch.plane(material, position, width, height, rotation, options);
+        return;
+      }
+      const count = Math.ceil(width / BEND_SEGMENT);
+      const segment = width / count;
+      const [repeatU, repeatV] = options.repeat || [1, 1];
+      for (let index = 0; index < count; index += 1) {
+        const local = -width / 2 + segment * (index + 0.5);
+        batch.plane(
+          material,
+          [position[0] + local * Math.cos(yaw), position[1], position[2] - local * Math.sin(yaw)],
+          segment + 0.02,
+          height,
+          rotation,
+          { ...options, repeat: [Math.max(1, Math.round((repeatU * segment) / width)), repeatV] },
+        );
+      }
+    },
+  };
+}
 
 /** Coupe transversale du tablier, dérivée de la direction artistique. */
 function crossSection(cfg) {
@@ -1441,38 +1504,45 @@ export function makeExpresswayRoad(scene, theme, random, playerZ) {
   const cfg = theme.expressway;
   const deckHalf = cfg.deckHalfWidth;
   const wet = theme.weather === 'rain';
+  const viewLength = ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND;
+  // Le tablier suit la ligne centrale courbée du circuit : un ruban de sommets
+  // mis à jour chaque image autour du joueur, exactement comme `makeRoad`.
   const deckTexture = makeExpresswayDeckTexture(theme, random, { halfWidth: deckHalf });
-  deckTexture.repeat.set(1, ROAD_LENGTH / ROAD_TILE_LENGTH);
+  deckTexture.repeat.set(1, (viewLength * SCALE) / ROAD_TILE_LENGTH);
   const deckMaterial = new THREE.MeshStandardMaterial({
     map: deckTexture,
     roughness: wet ? 0.4 : 0.86,
     metalness: wet ? 0.34 : 0.05,
     flatShading: true,
   });
-  const deck = new THREE.Mesh(new THREE.PlaneGeometry(deckHalf * 2, ROAD_LENGTH), deckMaterial);
-  deck.rotation.x = -Math.PI / 2;
-  deck.position.set(0, 0.02, playerZ - ROAD_LENGTH / 2 + 40);
+  const deck = new THREE.Mesh(makeCurvedStripGeometry(-deckHalf, deckHalf, 0.02), deckMaterial);
   deck.receiveShadow = true;
+  deck.frustumCulled = false;
   scene.add(deck);
 
-  // La ville sous le viaduc : un grand plan sombre, treize mètres plus bas,
-  // dont les rues et les îlots défilent deux fois moins vite que le tablier.
+  // La ville sous le viaduc : un grand ruban sombre, treize mètres plus bas,
+  // qui épouse le relief pour que les îlots restent posés dessus.
   const belowTexture = makeCityBelowTexture(theme, random);
-  belowTexture.repeat.set(2, 2);
+  belowTexture.repeat.set(2, (viewLength * SCALE) / 230);
   const belowMaterial = new THREE.MeshStandardMaterial({ map: belowTexture, roughness: 1, metalness: 0.02, flatShading: true });
-  const below = new THREE.Mesh(new THREE.PlaneGeometry(460, 460), belowMaterial);
-  below.rotation.x = -Math.PI / 2;
-  below.position.set(0, -cfg.streetDepth - 0.06, playerZ - 120);
+  const below = new THREE.Mesh(makeCurvedStripGeometry(-230, 230, -cfg.streetDepth - 0.06), belowMaterial);
   below.receiveShadow = true;
+  below.frustumCulled = false;
   scene.add(below);
 
   const belowTile = 230;
+  const updateCurve = (distance = 0) => {
+    updateCurvedStrip(deck, -deckHalf, deckHalf, distance, playerZ);
+    updateCurvedStrip(below, -230, 230, distance, playerZ);
+  };
+  updateCurve(0);
   return {
-    scroll(worldTravel) {
+    scroll(worldTravel, distance = 0) {
       deckTexture.offset.y += worldTravel / ROAD_TILE_LENGTH;
       belowTexture.offset.y += worldTravel / belowTile;
       if (deckTexture.offset.y > 1000) deckTexture.offset.y -= 1000;
       if (belowTexture.offset.y > 1000) belowTexture.offset.y -= 1000;
+      updateCurve(distance);
     },
   };
 }
@@ -1494,6 +1564,9 @@ export function buildShutoExpressway({ city, theme, materials: m, batch, cityInd
   const random = seededRandom(41077 + cityIndex * 7919);
   const sectors = route.sectors;
   const dynamicProps = [];
+  // Tronçonne les primitives trop longues pour que la courbe de rendu suive
+  // le tablier (voir `bendAware`).
+  batch = bendAware(batch);
 
   Object.assign(m, createExpresswayMaterials(city, theme, random));
   const atlas = buildShutoSignAtlas(city, theme, route);

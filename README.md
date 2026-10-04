@@ -772,32 +772,71 @@ moteur, la pause et la sortie de page, puis vérifie qu'un ordinateur ne voit
 rien de tout ça. Elle ne dit rien du rendu réel : pour cela, ouvrir le jeu dans
 un vrai navigateur (`npm run dev`), ou l'APK sur un téléphone, et le coucher.
 
-## Vice City Rush : 5 tours, ligne de départ et décor
+## Vice City Rush : les tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
-villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **5 tours
-de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
-**sous le portique de départ à chaque tour**. **Tokyo se joue sur la
-Shuto Expressway Route 1** — la C1 首都高速都心環状線, l'anneau intérieur réel de
-14,8 km autour du palais impérial, dans le sens 内回り : chaque tour de 600 m
+villes (Vice City, New York, Tokyo, Paris, Londres). La ville est une boucle de
+**600 m** qu'on reparcourt, et l'on repasse **sous le portique de départ à
+chaque tour**. Les courses sont longues, et **le dernier tour est le plus long
+de tous : 1 200 m, deux boucles d'une traite**, soit deux fois un tour ordinaire.
+C'est aussi celui où la police entre en piste. **Tokyo se joue sur la Shuto
+Expressway Route 1** — la C1 首都高速都心環状線, l'anneau intérieur réel de
+14,8 km autour du palais impérial, dans le sens 内回り : chaque boucle de 600 m
 rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus bas).
+
+| Mode | Tours | Distance | À 29 m/s, sans incident |
+| --- | --- | --- | --- |
+| Circuit, Poursuite | 4 | 3 000 m (3 × 600 m, puis 1 200 m) | ≈ 1 min 43 |
+| Sprint | 1 | 1 200 m (le grand tour seul) | ≈ 41 s |
+| Histoire, chapitres 1 à 5 | 4 | 3 000 m | ≈ 1 min 43 |
+| Histoire, chapitre 6 « Le dernier tour » | 5 | 3 600 m (4 × 600 m, puis 1 200 m) | ≈ 2 min 04 |
+
+Le trafic, les tirs et la police ralentissent les courses réelles (le pilote
+d'essai du smoke met 10 à 15 % de plus que ces temps), tandis que le bonus de
+« ligne propre » (jusqu'à +12 % en tenant sa voie) les raccourcit. Avant ce
+réglage, une course ne comptait que 1 à 3 tours de 600 m (1 min 02 en Circuit)
+et le dernier tour durait 21 s.
 
 - **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
   ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
   s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
   **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
-  (« TOUR 1/5 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
+  (« TOUR 1/4 », puis « TOUR 4/4 · DERNIER TOUR », puis « PLUS QUE 600 M » au
+  passage du milieu du dernier tour) et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
-  · TOUR 2/5 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
+  · TOUR 2/4 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
+- **Le grand dernier tour.** Il fait `CITY_RUSH_FINAL_LAP_LOOPS` = **2** boucles
+  (1 200 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
+  donc on le recroise **au milieu du dernier tour** : ce n'est qu'un **point de
+  passage** — bannière « PLUS QUE 600 M · ce n'est pas encore l'arrivée »,
+  tableau « PLUS QUE 600 M », cloche — sans confettis, sans nouveau tour et sans
+  arrivée. La jauge du dernier tour court sur ses 1 200 m (elle ne retombe pas à
+  zéro au portique), le suivi de tour du HUD donne au dernier segment deux fois
+  la largeur des autres, et la liste des positions (`CityRushRaceList`, prop
+  `laps`) affiche « T3/4 » sur la course en cours.
+  `cityRushLineKind(ligne, tours)` dit ce que vaut chaque ligne (`'lap'`,
+  `'checkpoint'`, `'finish'`), `cityRushRaceDistance(tours)` donne la distance
+  totale et `cityRushLapLength(tour, tours)` la longueur d'un tour. Une ligne
+  n'est annoncée qu'une fois : un choc frontal qui recale le joueur derrière le
+  portique ne fait pas sonner la cloche une seconde fois quand il le repasse.
+  **Pour régler la longueur** : le nombre de tours est `laps` dans
+  `RACE_MODES` (Circuit, Sprint, Poursuite), `STORY_LAPS` et `STORY_FINALE_LAPS`
+  (Histoire) dans `ViceCityRushPage.jsx` ; la longueur du dernier tour est
+  `CITY_RUSH_FINAL_LAP_LOOPS` dans `cityRushRules.js` (`1` redonne un dernier
+  tour ordinaire). La boucle de 600 m elle-même ne bouge pas : le décor, le
+  portique et les tests en dépendent. Les chronos sont rangés sous
+  `letsplay_vice_city_rush_bests_v2` : les records des anciennes courses, plus
+  courtes, n'auraient jamais pu être battus.
 - **L'escouade de police du dernier tour.** Dès que le **premier du classement**
-  attaque le cinquième et dernier tour, **trois berlines d'interception entrent
-  en piste juste derrière lui** (30 m, 38 m et 46 m, sirène allumée) et roulent
-  pour lui nuire : elles changent de voie pour **rafler en priorité les bonus
-  rouges (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir vaut cinq
-  bonus ordinaires dans leur choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
+  attaque le dernier tour — **1 200 m sous la sirène**, soit deux fois plus qu'à
+  l'origine —, **trois berlines d'interception entrent en piste juste derrière
+  lui** (30 m, 38 m et 46 m, sirène allumée) et roulent pour lui nuire : elles
+  changent de voie pour **rafler en priorité les bonus rouges (mitrailleuse) et
+  jaunes (hélicoptère)** — un bonus de tir vaut cinq bonus ordinaires dans leur
+  choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
   `chooseCityRushPoliceLane`) — et **ouvrent le feu sur le leader**. Elles
   **entrent armées** : le tir droit (bleu) et la mitrailleuse (rouge) sont
   chargés dès l'entrée en piste, seul l'hélicoptère (jaune) reste à voler
@@ -905,12 +944,17 @@ rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus b
   décroissent de 14 à 0 en 内回り), les téléphones de secours 非常電話, les
   panneaux à message variable **道路情報板** qui redessinent l'état du trafic
   toutes les trois secondes, et les deux repères de la légende : **Tokyo Tower**
-  et **Rainbow Bridge**. Sous les voûtes, le monde s'adapte à chaque image
-  (`shutoC1CoverAt` dans `ViceCityWorld.jsx`) : la pluie s'arrête, les phares
-  montent, le brouillard se resserre à 96 m et l'exposition baisse ; le HUD
-  affiche la plaque verte du secteur, du km et de la prochaine jonction
-  (`shutoC1Readout`), et la mini-carte dessine **le vrai anneau** avec un cran
-  par échangeur (`cityRushMinimapTrackShape`, `routeTicks`).
+  et **Rainbow Bridge**. Le tablier et la ville d'en dessous sont des rubans
+  courbés chaque image sur la ligne centrale du circuit, et le décor fusionné
+  est tronçonné puis cintré une fois (`bendAware`, `bendLoopGeometry`) pour
+  suivre les mêmes S et le même relief que la chaussée. Sous les voûtes, le
+  monde s'adapte (`shutoC1CoverAt` dans `ViceCityWorld.jsx`) : la pluie
+  s'arrête, les phares montent, le brouillard se resserre à 96 m et l'exposition
+  baisse ; le HUD affiche la **plaque verte** du secteur, du point kilométrique
+  et de la prochaine jonction (`shutoC1Readout`, position sur la boucle et non
+  progression du grand dernier tour). `cityRushMinimapTrackShape` et les
+  `routeTicks` de `buildCityRushMinimapState` exposent en plus le vrai anneau et
+  ses échangeurs aux interfaces qui veulent les dessiner.
 - **Les voitures.** Cabriolets et rivaux modélisés (pilote casqué, phares,
   feux arrière, flammes de turbo, roues qui tournent et se braquent, roulis et
   tangage selon la conduite, fumée au démarrage et dans les dérapages) ; le
@@ -935,10 +979,13 @@ rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus b
 
 - `src/games/cityRushRules.js` — règles pures : tours, longueur, classement,
   objets, IA (`cityRushLapForDistance`, `cityRushLapCrossings`,
-  `cityRushTrackGap` pour replier la boucle devant la caméra), **données de la
-  Shuto C1** (`CITY_RUSH_SHUTO_C1`, `shutoC1SectorAt`, `shutoC1KmAt`,
-  `shutoC1CoverAt`, `shutoC1NextJunction`, `shutoC1Readout`) et **silhouette de
-  mini-carte par ville** (`cityRushMinimapTrackShape`, `routeTicks`) ;
+  `cityRushLapProgress`, `cityRushRaceDistance`, `cityRushLineKind` pour le
+  grand dernier tour, `cityRushTrackGap` pour replier la boucle devant la
+  caméra, `cityRushTrackOffset`/`Elevation`/`Yaw`/`Pitch` pour la ligne centrale
+  courbée du rendu), **données de la Shuto C1** (`CITY_RUSH_SHUTO_C1`,
+  `shutoC1SectorAt`, `shutoC1KmAt`, `shutoC1CoverAt`, `shutoC1NextJunction`,
+  `shutoC1Readout`) et **silhouette officielle de l'anneau**
+  (`cityRushMinimapTrackShape`, `routeTicks`) ;
 - `src/games/cityRushThemes.js` — palette, ciel, météo, enseignes de chaque
   ville, plus l'éclairage (`theme.light` résolu par `cityRushLightRig`, repli
   nocturne `CITY_RUSH_NIGHT_LIGHT`) et les matières en plein jour
@@ -950,7 +997,8 @@ rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus b
   rapide (tablier, ville en dessous, paroi de tunnel, mur antibruit, béton de
   viaduc, skyline de la baie de Tokyo) ;
 - `src/games/cityRushStage.js` — la boucle d'une ville (façades, portes,
-  monuments, accessoires animés, route qui défile, ciel, skyline, pluie) ;
+  monuments, accessoires animés, rubans de chaussée courbés, ciel, skyline,
+  pluie) et le cintrage du décor fusionné (`bendLoopGeometry`) ;
 - `src/games/shutoC1Stage.js` — la boucle **voie rapide** de Tokyo : tablier de
   viaduc, tunnels, tranchée, échangeurs, portiques verts, mobilier de la Shuto,
   Tokyo Tower et Rainbow Bridge (`buildShutoExpressway`, `makeExpresswayRoad`,
@@ -962,10 +1010,10 @@ rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus b
 - `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
   dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
-  passages de ligne, environnement de tunnel) ; `src/games/ViceCityRushPage.jsx`
-  et `src/games/vice-city-rush.css` — la page, le HUD (carte TOUR, bannière de
-  tour, plaque de signalisation de la route) ; `src/games/CityRushMinimap.jsx` —
-  la mini-carte (tracé par ville, repères de secteurs, escouade de police).
+  passages de ligne, environnement de tunnel de la C1) ;
+  `src/games/ViceCityRushPage.jsx` et `src/games/vice-city-rush.css` — la page,
+  le HUD (carte TOUR, bannière de tour, plaque de signalisation de la route,
+  liste des pilotes) ;
 
 ### La bande-son
 
@@ -1012,21 +1060,26 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ```bash
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
-npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours (3 600 m, dernier tour de 1 200 m) sans exception, éclatements visibles
 npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
-à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
-tour), l’arrivée après 5 tours, le HUD, le nombre de meshes affichés, la
+à 30 Hz avec un pilote naïf (5 tours par défaut, la course la plus longue ;
+`CITY_RUSH_SMOKE_LAPS=4 npm run check:city-rush-smoke` joue un Circuit de
+3 000 m) : il vérifie les passages de ligne (début des tours
+2 à 5, puis le point de passage du grand dernier tour, une seule fois), le
+compteur du dernier tour (il court sur 1 200 m sans retomber à zéro au
+portique), l’arrivée après 3 600 m, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
 aussi l'**escouade de police** : une seule entrée en piste, trois berlines
 arrivées derrière le leader (jamais devant, jamais à plus de 140 m) **et armées
 bleu et rouge — jamais jaune**, qui
 rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
 circuit (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
-plus de 175 m de retard — seuils calibrés sur 200 courses, avec une large marge),
+plus de 200 m de retard — seuils calibrés sur plus de 700 courses de 1 200 m de
+dernier tour, avec une large marge),
 ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
 disparaissent à la ligne et font sonner puis éteindre leur sirène. Il ne dit rien
 du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
@@ -1034,9 +1087,9 @@ l'image.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les
-quatre feux, les deux passages de ligne et la fanfare, et **éteindre chaque
-hélicoptère démarré** (un rotor oublié s'entendrait jusqu'à la page d'accueil).
-Les compteurs sont imprimés à la fin de chaque ville.
+quatre feux, chaque passage de ligne (point de passage compris) et la fanfare,
+et **éteindre chaque hélicoptère démarré** (un rotor oublié s'entendrait jusqu'à
+la page d'accueil). Les compteurs sont imprimés à la fin de chaque ville.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 
