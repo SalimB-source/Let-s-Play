@@ -11,6 +11,7 @@ import {
   CITY_RUSH_STARTER_CAR_ID,
   awardCityRushRace,
   cityRushCashForPlace,
+  cityRushCashForRaceResult,
   isCityRushCarOwned,
   isCityRushCourseUnlocked,
   normalizeCityRushProgress,
@@ -42,6 +43,25 @@ test('la place fixe le gain : 50 billets au 1er, 30 au 2e, 10 au 3e', () => {
   assert.equal(cityRushCashForPlace(null), 0);
 });
 
+test('Sprint et Poursuite sont des modes défi sans billets verts', () => {
+  // Sprint : pas de podium affiché et aucun billet, même si les 10 checkpoints sont franchis.
+  assert.equal(cityRushCashForRaceResult({ sprint: true, rank: null }), 0);
+  assert.equal(cityRushCashForRaceResult({ modeId: 'sprint', rank: 1 }), 0);
+  assert.equal(cityRushCashForRaceResult({ sprint: true, timedOut: true, rank: null }), 0);
+  assert.equal(cityRushCashForRaceResult({ sprint: true, destroyed: true, rank: 1 }), 0);
+
+  // Poursuite : le classement existe, mais il sert au résultat, pas au portefeuille.
+  assert.equal(cityRushCashForRaceResult({ modeId: 'pursuit', rank: 1 }), 0);
+  assert.equal(cityRushCashForRaceResult({ modeId: 'pursuit', rank: 2 }), 0);
+  assert.equal(cityRushCashForRaceResult({ modeId: 'pursuit', rank: 3 }), 0);
+
+  // Circuit et Histoire restent rémunérés au podium.
+  assert.equal(cityRushCashForRaceResult({ modeId: 'circuit', rank: 1 }), 50);
+  assert.equal(cityRushCashForRaceResult({ modeId: 'circuit', rank: 2 }), 30);
+  assert.equal(cityRushCashForRaceResult({ modeId: 'story', rank: 3 }), 10);
+  assert.equal(cityRushCashForRaceResult({ destroyed: true, rank: null }), 10);
+});
+
 test('le versement dépend de la place, mais seul le parcours terminé ouvre le suivant', () => {
   const firstCourse = CITY_RUSH_COURSES[0];
   const secondCourse = CITY_RUSH_COURSES[1];
@@ -66,6 +86,22 @@ test('le versement dépend de la place, mais seul le parcours terminé ouvre le 
   assert.deepEqual(finish.progress.completedCourseIds, [firstCourse.id]);
   assert.equal(isCityRushCourseUnlocked(finish.progress, secondCourse.id), true);
   assert.equal(isCityRushCourseUnlocked(finish.progress, thirdCourse.id), false);
+
+  const sprintFinish = awardCityRushRace(finish.progress, { courseId: firstCourse.id, completed: true, modeId: 'sprint', sprint: true, rank: null });
+  assert.equal(sprintFinish.cashAwarded, 0);
+  assert.equal(sprintFinish.progress.cash, 110);
+
+  const pursuitWin = awardCityRushRace(sprintFinish.progress, { courseId: firstCourse.id, completed: true, modeId: 'pursuit', rank: 1 });
+  assert.equal(pursuitWin.cashAwarded, 0);
+  assert.equal(pursuitWin.progress.cash, 110);
+
+  const forcedPursuitReward = awardCityRushRace(pursuitWin.progress, { courseId: firstCourse.id, completed: true, modeId: 'pursuit', rank: 1, reward: 999 });
+  assert.equal(forcedPursuitReward.cashAwarded, 0);
+  assert.equal(forcedPursuitReward.progress.cash, 110);
+
+  const sprintTimeout = awardCityRushRace(forcedPursuitReward.progress, { courseId: firstCourse.id, completed: false, modeId: 'sprint', sprint: true, timedOut: true, rank: null });
+  assert.equal(sprintTimeout.cashAwarded, 0);
+  assert.equal(sprintTimeout.progress.cash, 110);
 
   const skipped = awardCityRushRace(finish.progress, { courseId: thirdCourse.id, completed: true, rank: 1 });
   assert.equal(skipped.cashAwarded, 0);

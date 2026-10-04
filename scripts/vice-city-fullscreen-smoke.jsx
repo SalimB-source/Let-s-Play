@@ -280,7 +280,7 @@ export async function checkViceCityFullscreen(assert) {
 
       await finishRace(node);
       assert.deepEqual(shellState(node, api), OPEN, 'un plein écran demandé reste à l’arrivée (le jeu ne le referme pas de lui-même)');
-      assert.match(squash(node.querySelector('.city-rush-cash-reward').textContent), /\+50 BILLETS VERTS/, 'une arrivée crédite 50 billets verts');
+      assert.equal(node.querySelector('.city-rush-cash-reward'), null, 'une arrivée en Sprint ne crédite aucun billet vert');
       assert.match(squash(node.querySelector('.city-rush-course-unlocked-notice').textContent), /NEW YORK/, 'la prochaine course est débloquée à l’arrivée');
       assert.equal(since(api, before).exits, 0);
 
