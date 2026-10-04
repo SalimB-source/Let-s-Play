@@ -1914,3 +1914,15 @@ test('la mini-carte de Tokyo dessine le vrai anneau de la C1 et ses échangeurs'
   assert.equal(plain.route, null);
   assert.deepEqual(plain.routeTicks, []);
 });
+
+test('Sprint : 10 checkpoints, 15 s entre chaque, arrivée au dixième', async () => {
+  const rules = await import('../src/games/cityRushRules.js');
+  assert.equal(rules.CITY_RUSH_SPRINT_CHECKPOINTS, 10);
+  assert.equal(rules.CITY_RUSH_SPRINT_CHECKPOINT_TIME, 15);
+  assert.equal(rules.CITY_RUSH_SPRINT_DISTANCE, 10 * rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING);
+  assert.equal(rules.cityRushSprintCheckpointsPassed(0), 0);
+  assert.equal(rules.cityRushSprintCheckpointsPassed(rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING), 1);
+  assert.equal(rules.cityRushSprintCheckpointsPassed(99999), 10);
+  // À la vitesse de base, 15 s suffisent largement pour un checkpoint.
+  assert.ok(rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING / rules.CITY_RUSH_PLAYER_SPEED < 15);
+});

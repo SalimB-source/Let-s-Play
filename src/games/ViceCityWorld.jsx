@@ -65,6 +65,11 @@ import {
   CITY_RUSH_POLICE_VIEW_BEHIND,
   CITY_RUSH_POWERS,
   CITY_RUSH_PICKUPS,
+  CITY_RUSH_SPRINT_CHECKPOINTS,
+  CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
+  CITY_RUSH_SPRINT_CHECKPOINT_TIME,
+  CITY_RUSH_SPRINT_DISTANCE,
+  cityRushSprintCheckpointsPassed,
   cityRushOncomingImpactX,
   addCityRushCharge,
   approachCityRushSpeed,
@@ -628,12 +633,14 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false) {
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps') {
+  // Sprint : course à checkpoints contre la montre, sans police, bonus ni armes.
+  const sprint = raceFormat === 'sprint';
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
   // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
   // `laps` × la boucle. Le décor, lui, reste une boucle de 600 m qui se répète.
-  const effectiveDistance = cityRushRaceDistance(effectiveLaps);
-  const effectivePoliceFromStart = Boolean(policeFromStart);
+  const effectiveDistance = sprint ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(effectiveLaps);
+  const effectivePoliceFromStart = !sprint && Boolean(policeFromStart);
   const theme = cityRushTheme(city.id);
   const lightRig = cityRushLightRig(theme, city);
   const lite = detectLiteQuality();
@@ -793,7 +800,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   playerCar.position.set(CITY_RUSH_LANE_X[PLAYER_START_LANE], 0, PLAYER_Z);
   scene.add(playerCar);
 
-  const racerSpecs = [
+  // Le Sprint se court en solo, contre le chrono : aucun rival en piste.
+  const racerSpecs = sprint ? [] : [
     { id: 'nova', lane: CITY_RUSH_DEFAULT_LANES[1], phase: 0.6, changeIn: 1.4, skidSide: 1 },
     { id: 'juno', lane: CITY_RUSH_DEFAULT_LANES[2], phase: 2.4, changeIn: 2.1, skidSide: -1 },
   ];
@@ -858,8 +866,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
+  // Pas une seule voiture de police dans le trafic du Sprint.
+  const trafficTypes = sprint ? CITY_RUSH_TRAFFIC_TYPES.filter((spec) => spec.id !== 'police') : CITY_RUSH_TRAFFIC_TYPES;
   const trafficCars = Array.from({ length: CITY_RUSH_TRAFFIC_COUNT }, (_, index) => {
-    const spec = CITY_RUSH_TRAFFIC_TYPES[index % CITY_RUSH_TRAFFIC_TYPES.length];
+    const spec = trafficTypes[index % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
     scene.add(mesh);
     return {
@@ -891,7 +901,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // face à la course, puis reparaissent au loin une fois passés derrière les
   // pilotes. Un véhicule percuté dévie vers le bord sans quitter la chaussée.
   const oncomingCars = Array.from({ length: CITY_RUSH_ONCOMING_COUNT }, (_, index) => {
-    const spec = CITY_RUSH_TRAFFIC_TYPES[(index + 2) % CITY_RUSH_TRAFFIC_TYPES.length];
+    const spec = trafficTypes[(index + 2) % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
     scene.add(mesh);
     return {
@@ -1066,6 +1076,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // le joueur derrière une ligne qu'il vient de franchir ; en la repassant il ne
   // doit pas déclencher une seconde fois bannière, cloche et tableau.
   let lastLineCrossed = 0;
+  // Sprint : checkpoints franchis et secondes restantes au chrono.
+  let sprintCheckpoints = 0;
+  let sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
   let playerLane = PLAYER_START_LANE;
   let playerX = CITY_RUSH_LANE_X[playerLane];
   let playerSlowLeft = 0;
@@ -1145,7 +1158,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   ];
 
   function setupEncounter(row) {
-    const encounter = createCityRushEncounter(randomSeed);
+    const encounter = sprint ? { pickups: [] } : createCityRushEncounter(randomSeed);
     row.pickups = encounter.pickups;
     row.pickupClaims.clear();
     row.crossedRacers.clear();
@@ -1260,6 +1273,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     getCallbacks().hud?.({
       distance: Math.max(0, Math.round(distance)),
       totalDistance: effectiveDistance,
+      sprint: sprint ? {
+        checkpoints: sprintCheckpoints,
+        total: CITY_RUSH_SPRINT_CHECKPOINTS,
+        timeLeft: Math.max(0, sprintTimeLeft),
+        nextIn: Math.max(0, Math.round((sprintCheckpoints + 1) * CITY_RUSH_SPRINT_CHECKPOINT_SPACING - distance)),
+      } : null,
       progress: clamp(distance / effectiveDistance, 0, 1),
       lap,
       laps: effectiveLaps,
@@ -1392,6 +1411,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     distance = 0;
     lap = 1;
     lastLineCrossed = 0;
+    sprintCheckpoints = 0;
+    sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
     playerLane = PLAYER_START_LANE;
     playerX = CITY_RUSH_LANE_X[playerLane];
     playerSlowLeft = 0;
@@ -2261,7 +2282,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function usePower(type) {
-    if (!active || finished || type !== CITY_RUSH_POWERS.PISTOL) return;
+    if (sprint || !active || finished || type !== CITY_RUSH_POWERS.PISTOL) return;
     const consumed = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL);
     if (!consumed.consumed) {
       getCallbacks().effect?.({ type: 'empty', item: CITY_RUSH_POWERS.PISTOL });
@@ -2275,6 +2296,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function useRacerPower(racer) {
+    if (sprint) return false;
     const type = CITY_RUSH_POWERS.PISTOL;
     if (racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 || racer.powerCooldown > 0 || !isCityRushPowerCharged(racer.inventory, type)) return false;
     // L'IA ne gaspille pas sa charge dans le vide : quelqu'un doit déjà occuper
@@ -2540,7 +2562,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // mouvement les cale exactement à `CITY_RUSH_CAR_GAP` quand l'un pousse
   // l'autre. C'est ce contact qui la rappelle.
   function checkPoliceRally() {
-    if (!active || finished) return;
+    if (sprint || !active || finished) return;
     const playerXNow = playerCar.position.x;
     const playerWidth = playerCollisionWidth();
     for (const traffic of trafficCars) {
@@ -2568,7 +2590,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // contrôles (smoke). C'est aussi le tour où l'escouade entre en piste, mais
   // la barre suit le pilote, pas le leader : jamais avant son tour.
   function activatePlayerHealth() {
-    if (playerHealthActive) return;
+    if (sprint || playerHealthActive) return;
     playerHealthActive = true;
     playerHealth = CITY_RUSH_PLAYER_HEALTH;
     playerHealthFlash = 0;
@@ -3551,7 +3573,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const WATCH_HELI_TUNNEL_HIDE = 0.6; // part de couverture au-delà de laquelle il s'efface
 
   function updateWatchHelicopter(dt) {
-    const watching = phase === 'playing' && !finished && lap >= effectiveLaps;
+    const watching = !sprint && phase === 'playing' && !finished && lap >= effectiveLaps;
     if (watching && tunnelCover.amount > WATCH_HELI_TUNNEL_HIDE) {
       // Il repart par où il est venu : à la sortie du tunnel, la rentrée se
       // rejoue (il retraverse le ciel et se recale).
@@ -3629,7 +3651,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // épave, barre de vie à zéro. Le pilote est classé dernier et la page le dit.
   function finishRace(options = {}) {
     if (finished) return;
-    const destroyed = Boolean(options.destroyed) || playerWrecked;
+    const timedOut = Boolean(options.timedOut);
+    const destroyed = Boolean(options.destroyed) || playerWrecked || timedOut;
     finished = true;
     active = false;
     phase = 'finished';
@@ -3675,6 +3698,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       duration: elapsed,
       distance: Math.round(distance),
       laps: effectiveLaps,
+      sprint,
+      checkpoints: sprint ? sprintCheckpoints : null,
+      timedOut,
       destroyed,
       rank: destroyed ? ordered.length : standings.rank,
       winner: standings.leader?.name || '—',
@@ -3712,6 +3738,38 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       scratch.set(offset[0], offset[1], offset[2]);
       car.localToWorld(scratch);
       smoke.emit(scratch, options);
+    }
+  }
+
+  // ── Sprint : checkpoints contre la montre ───────────────────────────
+  // Un checkpoint tous les 300 m ; chacun recharge le chrono à 15 s. Le
+  // dixième est l'arrivée. Chrono à zéro avant le prochain : course perdue.
+  function updateSprintCheckpoints(dt) {
+    const passed = cityRushSprintCheckpointsPassed(distance);
+    while (sprintCheckpoints < passed) {
+      sprintCheckpoints += 1;
+      if (sprintCheckpoints >= CITY_RUSH_SPRINT_CHECKPOINTS) {
+        startLine.onCross({ final: true });
+        return;
+      }
+      sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
+      const remaining = CITY_RUSH_SPRINT_CHECKPOINTS - sprintCheckpoints;
+      // Les checkpoints pairs tombent sous le portique (tous les 600 m).
+      if (sprintCheckpoints % 2 === 0) {
+        startLine.onCross({ final: false });
+        startLine.setBoard(`CHECKPOINT ${sprintCheckpoints}/${CITY_RUSH_SPRINT_CHECKPOINTS}`, `+${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`, remaining === 1 ? '#ffffff' : undefined);
+      }
+      cameraKick = Math.max(cameraKick, 0.3);
+      audioRef?.current?.lap(remaining === 1);
+      getCallbacks().lap?.({ sprint: true, checkpoint: sprintCheckpoints, checkpoints: CITY_RUSH_SPRINT_CHECKPOINTS, remaining, timeBonus: CITY_RUSH_SPRINT_CHECKPOINT_TIME, elapsed, final: remaining === 1 });
+      emitHud(true);
+    }
+    if (finished || playerWrecked) return;
+    sprintTimeLeft -= dt;
+    if (sprintTimeLeft <= 0) {
+      sprintTimeLeft = 0;
+      getCallbacks().effect?.({ type: 'sprint-timeout', checkpoints: sprintCheckpoints });
+      finishRace({ timedOut: true });
     }
   }
 
@@ -4194,7 +4252,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // L'escouade entre en piste dès que le premier du classement attaque son
       // dernier tour, puis chasse devant lui à hauteur de ses bonus.
       const leader = refreshPackLeader();
-      if (!policeDeployed) {
+      if (!policeDeployed && !sprint) {
       if (effectivePoliceFromStart && leader.distance > 8) deployPolice(leader);
       else if (cityRushLapForDistance(leader.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps) deployPolice(leader);
       }
@@ -4202,7 +4260,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Le carambolage avec une berline se juge après le déplacement des
       // berlines : le contact est alors décrit à la position du jour.
       checkPoliceCollisions();
-      handleLapCrossings(priorDistance);
+      if (sprint) updateSprintCheckpoints(dt);
+      else handleLapCrossings(priorDistance);
       // Dernier tour du pilote : la barre de vie entre en scène, pleine.
       if (!playerHealthActive && lap >= effectiveLaps) activatePlayerHealth();
       updatePoliceReinforcements(dt);
@@ -4425,7 +4484,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
@@ -4442,7 +4501,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
-      }), carId, audioRef, roster, raceLaps, racePoliceFromStart);
+      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -4455,7 +4514,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       worldRef.current = null;
       if (actionsRef) actionsRef.current = null;
     };
-  }, [cityId, carId, raceLaps, racePoliceFromStart, actionsRef, audioRef]);
+  }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, actionsRef, audioRef]);
 
   useEffect(() => {
     if (roster) worldRef.current?.setRoster?.(roster);
