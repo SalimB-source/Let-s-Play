@@ -67,7 +67,7 @@ const CITY_THUMBNAILS = {
   london: 'london-thumb.jpg',
 };
 const CAR_THUMBNAILS = {
-  'city-hatch': 'car-city-hatch.svg',
+  'city-hatch': 'car-mistral-14.jpg',
   'vice-roadster': 'car-cavallo-f8-gtb.jpg',
   'turbo-gt': 'car-kronos-930-turbo.jpg',
   'muscle-86': 'car-vortex-rs-10.jpg',
