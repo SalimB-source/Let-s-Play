@@ -562,6 +562,107 @@ export const articleGalleries = {
     credit: 'Captures : Diablo IV (Blizzard Entertainment).',
   },
 
+  // ---- Actus du week-end des 03-04.10.2026 ---------------------------------
+  // Sept galeries « Captures » pour la fournée du week-end : de vrais visuels
+  // officiels à la place des cartes éditoriales du gabarit — captures du teaser
+  // RuneScape 4 (Jagex), visuels de la tournée Castlevania (Konami), photos de
+  // presse de Verity (Amazon MGM Studios), de Dexter: Resurrection (Paramount+)
+  // et de Beware Boiúna (Lionsgate), puis visuels Tesla et BYD pour le match
+  // des livraisons. Les deux actus restées sans galerie — la fronde contre le
+  // code généré par IA dans l'émulation et la cyberattaque contre la Région
+  // Hauts-de-France — n'ont aucun visuel officiel exploitable : elles gardent
+  // leur carte éditoriale, sans remplissage.
+  'runescape-4-runefest-annonce': {
+    label: 'RUNESCAPE 4', meta: 'JAGEX · TEASER DU RUNEFEST',
+    items: [
+      { src: 'screenshots/runescape-4-runefest/01.jpg', alt: 'RuneScape 4 — vue plongeante sur Gielinor, îles flottantes au-dessus d’une chaîne de montagnes, capture du teaser d’annonce', caption: '01 / Gielinor vu du ciel' },
+      { src: 'screenshots/runescape-4-runefest/02.jpg', alt: 'RuneScape 4 — un magicien à la barbe blanche se protège les yeux de la lumière, capture du teaser d’annonce', caption: '02 / Le mage du teaser, publié par PC Gamer' },
+      { src: 'screenshots/runescape-4-runefest/03.jpg', alt: 'RuneScape 4 — un magicien au chapeau bleu dialogue dans un village médiéval animé, capture du teaser d’annonce', caption: '03 / Le village, ses étals et ses bannières' },
+    ],
+    credit: 'Captures du teaser d’annonce de RuneScape 4 (Jagex), dévoilé au RuneFest 2026 : 02 publiée par PC Gamer, 01 et 03 extraites du même teaser et documentées par le wiki communautaire RuneScape.',
+    creditSources: [
+      { label: 'article PC Gamer sur l’annonce', href: 'https://www.pcgamer.com/games/mmo/runescape-4-announced-at-runefest-full-mmo-sequel-started-as-expansion-to-survival-game-dragonwilds/' },
+      { label: 'captures du teaser documentées (wiki RuneScape)', href: 'https://dragonwilds.runescape.wiki/w/RuneScape_4' },
+    ],
+  },
+  'castlevania-40-ans-concerts-symphoniques': {
+    label: 'CASTLEVANIA 40', meta: 'KONAMI · TOURNÉE SYMPHONIQUE',
+    items: [
+      { src: 'screenshots/castlevania-40-ans/01.jpg', alt: 'Castlevania 40th Anniversary — le château de Dracula découpé sur une lune rouge, visuel de la tournée symphonique', caption: '01 / Le château sous la lune rouge' },
+      { src: 'screenshots/castlevania-40-ans/02.jpg', alt: 'Castlevania 40th Anniversary — affiche officielle du concert orchestral, gravures dorées et Belmont fouet en main', caption: '02 / L’affiche officielle du concert' },
+      { src: 'screenshots/castlevania-40-ans/03.jpg', alt: 'Castlevania Belmont’s Curse — le héros au fouet affronte une créature dans les grands escaliers du château', caption: '03 / Belmont’s Curse, le jeu du 15 octobre' },
+    ],
+    credit: 'Visuels de la tournée « Castlevania 40th Anniversary – An Orchestral Concert » et capture de Castlevania: Belmont’s Curse — © Konami Digital Entertainment / Evil Empire.',
+    creditSources: [
+      { label: 'site officiel de la tournée', href: 'https://www.castlevanialive.com/english' },
+      { label: 'affiche de la date londonienne (Eventim Apollo)', href: 'https://www.eventimapollo.com/events/castlevania' },
+      { label: 'prise en main de Belmont’s Curse à la PAX West (Shacknews)', href: 'https://www.shacknews.com/article/150637/castlevania-belmonts-curse-pax-west-2026-preview' },
+    ],
+  },
+  'cinema/box-office-verity-digger': {
+    label: 'VERITY', meta: 'AMAZON MGM STUDIOS · PHOTOS DE PRESSE',
+    items: [
+      { src: 'screenshots/cinema-verity/01.jpg', alt: 'Verity — Dakota Johnson, en Lowen Ashleigh, lit le manuscrit de Verity Crawford sous une lampe, photo de presse officielle', caption: '01 / Lowen ouvre le manuscrit' },
+      { src: 'screenshots/cinema-verity/02.jpg', alt: 'Verity — Dakota Johnson, en Lowen Ashleigh, assise dans son lit à lire les pages du manuscrit', caption: '02 / Les pages qu’il fallait pas lire' },
+    ],
+    credit: 'Photos de presse de Verity (Amazon MGM Studios) : 01 publiée par Amazon News, 02 par The Hollywood Reporter.',
+    creditSources: [
+      { label: 'visuels officiels Amazon MGM Studios', href: 'https://www.aboutamazon.com/news/entertainment/verity-colleen-hoover-amazon-mgm-studios' },
+      { label: 'critique de The Hollywood Reporter', href: 'https://www.hollywoodreporter.com/movies/movie-reviews/verity-review-anne-hathaway-dakota-johnson-josh-hartnett-1236714142/' },
+    ],
+  },
+  'cinema/dexter-resurrection-saison-2-bande-annonce': {
+    label: 'DEXTER: RESURRECTION', meta: 'PARAMOUNT+ · SAISON 2',
+    items: [
+      { src: 'screenshots/dexter-resurrection-s2/01.jpg', alt: 'Dexter: Resurrection saison 2 — affiche clé officielle, Michael C. Hall essuie ses lunettes tachées de sang', caption: '01 / L’affiche clé de la saison 2' },
+      { src: 'screenshots/dexter-resurrection-s2/02.jpg', alt: 'Dexter: Resurrection saison 2 — Michael C. Hall en Dexter Morgan, regard fixe face caméra', caption: '02 / Dexter, plus lent et plus sec' },
+      { src: 'screenshots/dexter-resurrection-s2/03.jpg', alt: 'Dexter: Resurrection saison 2 — Dexter Morgan, badge de visiteur autour du cou, dans un poste de police', caption: '03 / Le visiteur de la criminelle' },
+    ],
+    credit: 'Affiche clé et photos de presse de Dexter: Resurrection saison 2 (Paramount+ / Showtime).',
+    creditSources: [
+      { label: 'dossier Paramount+ sur la saison 2', href: 'https://www.paramountplus.com/sneak-peak/dexter-resurrection-season-2-everything-you-need-to-know/' },
+      { label: 'article Variety sur la bande-annonce', href: 'https://variety.com/2026/tv/news/dexter-resurrection-season-2-trailer-1236894146/' },
+    ],
+  },
+  'cinema/beware-boiuna-premiers-avis': {
+    label: 'BEWARE BOIÚNA', meta: 'LIONSGATE · HORREUR',
+    items: [
+      { src: 'screenshots/beware-boiuna/01.jpg', alt: 'Beware Boiúna — Kiana Madeira, couverte de boue, rampe devant la masse du serpent géant', caption: '01 / Face au Boiúna, dans la boue' },
+      { src: 'screenshots/beware-boiuna/02.jpg', alt: 'Beware Boiúna — une rescapée avance dans la vase sous le ventre du serpent', caption: '02 / L’horreur frontale du film' },
+    ],
+    credit: 'Images de presse de Beware Boiúna (Lionsgate) : 01 publiée par Fangoria, 02 par Nerdist.',
+    creditSources: [
+      { label: 'entretien Fangoria avec l’équipe du film', href: 'https://www.fangoria.com/interview-beware-boiuna-fores-of-horror/' },
+      { label: 'article Nerdist sur la bande-annonce', href: 'https://nerdist.com/article/beware-boiuna-trailer-giant-snake-horror-movie/' },
+    ],
+  },
+  'tech/coree-du-nord-ethereum-hashhiding': {
+    label: 'HASHHIDING', meta: 'CYBERSÉCURITÉ · ETHEREUM',
+    items: [
+      { src: 'screenshots/hashhiding-ethereum/01.jpg', alt: 'Ethereum — une main tient une pièce ETH devant des graphiques de cours', caption: '01 / Ethereum, la blockchain détournée' },
+      { src: 'screenshots/hashhiding-ethereum/02.jpg', alt: 'Pirate encapuchonné les bras levés devant un bitcoin, illustration des vols de cryptomonnaies attribués à des hackers nord-coréens', caption: '02 / Des vols attribués à la Corée du Nord' },
+    ],
+    credit: 'Visuels d’illustration — la technique HashHiding n’a aucun visuel officiel : photo Ethereum (Unsplash) et illustration des vols de cryptomonnaies attribués à des hackers nord-coréens (The Hacker News).',
+    creditSources: [
+      { label: 'photo Ethereum (Unsplash)', href: 'https://unsplash.com/photos/hand-holding-ethereum-with-crypto-graphs-in-background-2RGVk_SnFlE' },
+      { label: 'enquête de The Hacker News sur les hackers liés à la Corée du Nord', href: 'https://thehackernews.com/2025/12/north-korea-linked-hackers-steal-202.html' },
+    ],
+  },
+  'tech/tesla-t3-2026-livraisons-byd': {
+    label: 'TESLA × BYD', meta: 'LIVRAISONS T3 2026',
+    items: [
+      { src: 'screenshots/tesla-byd-livraisons/01.jpg', alt: 'Tesla Model Y — le SUV électrique roule sans conducteur devant l’usine, capture de la vidéo de livraison autonome', caption: '01 / Le Model Y, 98 % des livraisons' },
+      { src: 'screenshots/tesla-byd-livraisons/02.jpg', alt: 'BYD — visiteurs penchés sur un ATTO 3 électrique présenté sur un salon automobile', caption: '02 / BYD à l’export, au salon de Gaikindo' },
+      { src: 'screenshots/tesla-byd-livraisons/03.jpg', alt: 'BYD — ATTO 3 et Dolphin présentés côte à côte sur un stand', caption: '03 / La gamme d’entrée de BYD' },
+    ],
+    credit: 'Visuels : 01 capture de la vidéo Tesla de la première livraison autonome d’un Model Y (Tesla Oracle) ; 02 photo du salon de Gaikindo (EPA, via South China Morning Post) ; 03 visuels BYD publiés par Electrek.',
+    creditSources: [
+      { label: 'article Tesla Oracle sur la livraison autonome', href: 'https://teslaoracle.com/2025/06/28/tesla-shares-video-of-the-first-fully-autonomous-model-y-delivery-to-the-customer-using-robotaxi-fsd' },
+      { label: 'sujet BYD du South China Morning Post (photo EPA)', href: 'https://scmp.com/topics/byd' },
+      { label: 'article Electrek sur les ventes de BYD', href: 'https://electrek.co/2025/01/27/byd-first-china-car-sales-revenue-even-with-prices-under-17k/' },
+    ],
+  },
+
   // ---- Dossiers -----------------------------------------------------------
   // Trois photogrammes de l’épisode YouTube, extraits automatiquement par
   // YouTube (autour de 25 %, 50 % et 75 % de la vidéo) : ce sont de vraies
