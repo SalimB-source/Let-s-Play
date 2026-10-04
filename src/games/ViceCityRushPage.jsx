@@ -45,6 +45,21 @@ const CAR_STATS = [
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
   { key: 'recovery', label: 'REPRISE' },
 ];
+const CITY_THUMBNAILS = {
+  'vice-city': 'vice-city-thumb.jpg',
+  'new-york': 'new-york-thumb.jpg',
+  tokyo: 'vice-city-story-tokyo.webp',
+  paris: 'paris-thumb.jpg',
+  london: 'london-thumb.jpg',
+};
+const CAR_THUMBNAILS = {
+  'vice-roadster': 'car-cavallo-f8-gtb.jpg',
+  'turbo-gt': 'car-kronos-930-turbo.jpg',
+  'muscle-86': 'car-vortex-rs-10.jpg',
+  'night-comet': 'car-wolfsburg-gtr.jpg',
+  'vega-gt-67': 'car-bavaria-mcs.jpg',
+  'toro-v12': 'car-tempesta-lp780.jpg',
+};
 
 const STORY_ENDINGS = {
   revenge: { title: 'La revanche', text: 'Nico remet Dante aux autorités et restaure son nom. Sa vengeance s’arrête là — mais le promoteur qui a commandité le sabotage reste à retrouver.' },
@@ -286,12 +301,6 @@ export default function ViceCityRushPage() {
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
   const previewStoryChapter = STORY_CHAPTERS[nextStoryIndex];
   const previewStoryCity = CITY_RUSH_CITIES.find((item) => item.id === previewStoryChapter.city) || CITY_RUSH_CITIES[0];
-
-  const cyclePlayerDriver = () => {
-    const currentIndex = CITY_RUSH_DRIVERS.findIndex((driver) => driver.id === playerDriverId);
-    const nextDriver = CITY_RUSH_DRIVERS[(currentIndex + 1) % CITY_RUSH_DRIVERS.length];
-    setPlayerDriverId(nextDriver.id);
-  };
 
   // ── Plein écran ────────────────────────────────────────────────────────
   // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
@@ -604,7 +613,7 @@ export default function ViceCityRushPage() {
           <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES</span><span>3 MODES DE COURSE</span></div>
           <div className="city-rush-hero-actions">
             <a className="city-rush-hero-cta" href="#vice-city-rush-console">
-              CHOISIR UNE COURSE <span aria-hidden="true">↓</span>
+              LANCER LE JEU <span aria-hidden="true">▶</span>
             </a>
           </div>
         </div>
@@ -617,23 +626,15 @@ export default function ViceCityRushPage() {
             <div className="city-rush-location">
               <span className="city-rush-location-mark" aria-hidden="true">{storyMode ? '★' : introStep === 'mode' ? mode.icon : '⌖'}</span>
               <span>
-                <b>
-                  {storyMode
-                    ? (currentStoryRace?.race?.name || city.district)
-                    : introStep === 'mode'
-                      ? mode.name
-                      : introStep === 'city'
-                        ? city.district
-                        : `${city.district} · ${selectedCar.name}`}
-                </b>
+                <b>VICE CITY <em>RUSH</em></b>
                 <small>
                   {storyMode
-                    ? <>{currentStoryRace?.race?.type || city.label} <i>·</i> {city.district} · {currentLaps} TOURS</>
+                    ? <>{currentStoryRace?.race?.name || city.district} <i>·</i> {currentStoryRace?.race?.type || city.label} · {currentLaps} TOURS</>
                     : introStep === 'mode'
-                      ? mode.label
+                      ? `${city.name} · ${mode.label}`
                       : introStep === 'city'
-                        ? `${city.label} · ${city.tagline}`
-                        : `${city.label} · ${mode.label}`}
+                        ? `${city.district} · ${city.tagline}`
+                        : `${city.district} · ${mode.name} · ${selectedCar.name}`}
                 </small>
               </span>
             </div>
@@ -829,9 +830,9 @@ export default function ViceCityRushPage() {
                 {introStep === 'mode' && (
                   <>
                     <div className="city-rush-intro-copy">
-                      <span className="city-rush-overlay-kicker"><i /> 01 / MODE DE COURSE</span>
-                      <h2>CHOISIS TON<br /><em>MODE.</em></h2>
-                      <p>Lance la campagne scénarisée de Nico Vega à travers cinq villes ou choisis un mode de course libre : circuit classique, sprint chrono ou poursuite infernale avec police dès le départ.</p>
+                      <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
+                      <h2>VICE CITY<br /><em>RUSH.</em></h2>
+                      <p>La ville est à toi. Lance l’histoire de Nico Vega ou choisis ton défi : circuit, sprint ou poursuite à travers cinq villes.</p>
                     </div>
 
                     <div className="city-rush-story-banner" role="region" aria-label="Mode Histoire Nico Vega">
@@ -905,6 +906,14 @@ export default function ViceCityRushPage() {
                           onClick={() => setCityId(option.id)}
                           aria-pressed={cityId === option.id}
                         >
+                          <span className={`city-rush-city-thumb is-${option.id}`} aria-hidden="true">
+                            <img
+                              src={`${import.meta.env.BASE_URL || '/'}${CITY_THUMBNAILS[option.id] || CITY_THUMBNAILS['vice-city']}`}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </span>
                           <span className="city-rush-city-number">0{index + 1}</span>
                           <b>{option.name}</b>
                           <small>{option.district} · {option.label}</small>
@@ -945,12 +954,13 @@ export default function ViceCityRushPage() {
                         {CITY_RUSH_CARS.map((car, index) => (
                           <button key={car.id} type="button" className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}`} style={{ '--car-accent': car.accent }} onClick={() => setCarId(car.id)} aria-pressed={carId === car.id}>
                             <span className="city-rush-car-card-top">
-                              <span className={`city-rush-car-silhouette is-${car.id}`} aria-hidden="true">
-                                <svg viewBox="0 0 72 32" aria-hidden="true">
-                                  <path d={car.archetype === 'volkswagen' ? 'M4 19 8 17 13 11 24 10 30 5 47 5 55 12 66 15 69 20 66 25 6 25Z' : car.archetype === 'porsche' ? 'M4 20 9 17 15 12 26 10 33 5 48 5 56 11 65 14 69 19 67 25 5 25Z' : car.archetype === 'lamborghini' || car.archetype === 'audi' ? 'M3 21 8 18 14 15 22 13 33 6 50 7 59 13 68 16 70 22 66 25 5 25Z' : car.archetype === 'bmw' ? 'M4 20 9 17 15 11 26 10 33 6 49 6 57 12 66 15 69 20 66 25 5 25Z' : 'M3 21 9 18 15 12 27 10 34 5 49 6 58 13 67 16 70 21 67 25 5 25Z'} />
-                                  <path d="M18 12 27 11 34 6 46 7 53 13Z" />
-                                  <circle cx="18" cy="24" r="4" /><circle cx="56" cy="24" r="4" />
-                                </svg>
+                              <span className="city-rush-car-image" aria-hidden="true">
+                                <img
+                                  src={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[car.id] || CAR_THUMBNAILS['vice-roadster']}`}
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                />
                               </span>
                               <span className="city-rush-car-number">0{index + 1}</span>
                             </span>
@@ -972,18 +982,25 @@ export default function ViceCityRushPage() {
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-driver-title">GRILLE · 3 PILOTES · {mode.name}</span>
-                        <button type="button" className="city-rush-driver-cycle" onClick={cyclePlayerDriver}>CHANGER PILOTE ({roster[0].flag} {roster[0].displayName}) ↻</button>
+                        <span id="city-rush-driver-title">CHOISIS TON PILOTE · {mode.name}</span>
                       </div>
-                      <div className="city-rush-driver-grid" role="list" aria-label="Les 3 pilotes">
+                      <div className="city-rush-driver-grid" role="group" aria-label="Choisir un pilote">
                         {roster.map((driver) => (
-                          <div role="listitem" key={driver.id} className={`city-rush-driver-pill${driver.isPlayer ? ' is-player' : ''}`} style={{ '--driver-accent': driver.isPlayer ? '#43ead5' : driver.accent }} onClick={driver.isPlayer ? cyclePlayerDriver : undefined}>
-                            <span className="city-rush-driver-pill-avatar"><CityRushDriverAvatar driver={driver} /></span>
+                          <button
+                            type="button"
+                            key={driver.id}
+                            className={`city-rush-driver-pill${driver.isPlayer ? ' is-player' : ''}`}
+                            style={{ '--driver-accent': driver.isPlayer ? '#43ead5' : driver.accent }}
+                            onClick={() => setPlayerDriverId(driver.driverId)}
+                            aria-pressed={driver.isPlayer}
+                            aria-label={`Choisir ${driver.displayName}, ${driver.country}`}
+                          >
+                            <span className="city-rush-driver-pill-avatar"><CityRushDriverAvatar driver={driver} decorative /></span>
                             <span className="city-rush-driver-pill-copy">
                               <b>{driver.name}{driver.isPlayer && <em className="city-rush-you-badge">TOI</em>}</b>
                               <small>{driver.flag} {driver.country}</small>
                             </span>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </section>

@@ -613,7 +613,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   renderer.shadowMap.enabled = !lite;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.className = 'city-rush-canvas';
-  renderer.domElement.setAttribute('aria-label', `Course de cabriolets 3D à trois pilotes dans ${city.name} : ${effectiveLaps} tours de circuit, change de voie, ramasse des bonus et des boosts au sol, évite le trafic et la police.`);
+  renderer.domElement.setAttribute('aria-label', `Course de voitures 3D dans ${city.name} : ${effectiveLaps} tours de circuit, change de voie, ramasse des bonus et des boosts au sol, évite le trafic et la police.`);
   mount.appendChild(renderer.domElement);
 
   // ── Lumières ─────────────────────────────────────────────────────────
@@ -719,9 +719,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 
   // ── Voitures ─────────────────────────────────────────────────────────
-  // La liste des pilotes est connue avant les voitures : chaque cabriolet
-  // reçoit son pilote (`driver`), dont le modèle porte la peau, les cheveux,
-  // l'accessoire et la combinaison de son avatar, tête nue.
+  // Le roster reste attaché aux voitures pour les noms, drapeaux et avatars du
+  // classement ; les coupés de course sont fermés et sans personnage visible.
   let currentRoster = Array.isArray(initialRoster) && initialRoster.length === 3
     ? initialRoster
     : selectCityRushRacers({ cityId: city.id, carId: selectedCarId });
@@ -783,8 +782,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!Array.isArray(nextRoster) || nextRoster.length < 3) return;
     currentRoster = nextRoster;
     playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
-    // Le pilote a changé au garage : la voiture du joueur change de tête et de
-    // combinaison, comme les rivaux.
+    // Le roster actualise l'identité affichée par le HUD ; les voitures restent
+    // volontairement vides, conformément aux modèles fermés du garage.
     setRacerDriver(playerCar, playerDriver);
     racers.forEach((racer, index) => {
       const driver = currentRoster.find((item) => item.id === racer.id) || currentRoster[index + 1];
@@ -1286,7 +1285,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     car.userData.anim.lastSpeed = 0;
     car.userData.body.rotation.set(0, 0, 0);
     car.userData.body.position.set(0, 0, 0);
-    car.userData.headPivot.rotation.set(0, 0, 0);
     car.userData.boostFlames.forEach((flame) => { flame.group.visible = false; });
   }
 
@@ -3533,8 +3531,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const speedRatio = clamp(currentSpeed / (PLAYER_SPEED * playerProfile.powerMultiplier * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR), 0, 1);
       const shake = (playerStunLeft > 0 ? 0.14 : playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 ? 0.05 : 0) + cameraKick * 0.22;
       // La caméra regarde quelques mètres plus loin sur l'axe courbe et se
-      // place elle-même sur le morceau de route derrière le cabriolet. Le
-      // résultat reste très doux : la route tourne, pas la tête du joueur.
+      // place elle-même sur le morceau de route derrière la voiture. Le résultat
+      // reste très doux : la route tourne, pas la tête du joueur.
       const behindMeters = -(CHASE_POSITION.z - PLAYER_Z) / SCALE;
       const aheadMeters = (PLAYER_Z - CHASE_LOOK.z) / SCALE;
       const curveBehind = trackRelativeX(distance + behindMeters);

@@ -125,7 +125,7 @@ export const CITY_RUSH_CARS = Object.freeze([
   }),
   Object.freeze({
     id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
-    bodyColor: 0x11131a, trimColor: 0x38bdf8, driverColor: 0x181c26, accent: '#e04455',
+    bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455',
     power: 91, powerMultiplier: 1.03, acceleration: 85, accelerationRate: 9.3, recovery: 76, hitRecoveryMultiplier: 1.0,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
   }),
@@ -159,7 +159,7 @@ export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
 
 // Un choc avec le trafic ne retire pas de vie : il crée un court moment de
 // contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
-// durée est volontairement indépendante du modèle de cabriolet choisi : le
+// durée est volontairement indépendante du modèle de voiture choisi : le
 // joueur humain et les IA encaissent exactement la même durée (0,6 s).
 export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 0.6;
 export const CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN = 1.2;
@@ -1331,10 +1331,9 @@ export function chooseCityRushAiLane({
 // avatar et un prénom issus d'un pays différent autour du monde.
 export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno']);
 
-// Les avatars décrivent leurs couleurs en CSS (`#f3c8a6`) : le modèle three.js
-// du pilote dans son cabriolet attend, lui, un entier 0xRRGGBB. Ces deux
-// conversions sont la seule passerelle entre la fiche du pilote et la 3D —
-// peau (`avatar.skin`), cheveux (`avatar.hair`) et tenue (`avatar.outfit`).
+// Les avatars décrivent leurs couleurs en CSS (`#f3c8a6`) ; ces fonctions
+// utilitaires convertissent les teintes en entiers 0xRRGGBB pour les éléments
+// Three.js qui en auraient besoin (les voitures, elles, restent sans pilote visible).
 export function cityRushHexColor(value, fallback = 0x1e222d) {
   if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, Math.trunc(value)) & 0xffffff;
   const match = typeof value === 'string' ? /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim()) : null;
@@ -1343,7 +1342,7 @@ export function cityRushHexColor(value, fallback = 0x1e222d) {
   return parseInt(digits.length === 3 ? digits.replace(/./g, (digit) => digit + digit) : digits, 16);
 }
 
-/** Couleur de peau du pilote, avec repli sur celle du modèle de voiture. */
+/** Couleur de peau d’un avatar, au format entier attendu par Three.js. */
 export function cityRushDriverColor(driver, fallback = 0x1e222d) {
   return cityRushHexColor(driver?.avatar?.skin, fallback);
 }

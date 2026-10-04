@@ -1472,24 +1472,6 @@
   box-shadow: 0 8px 24px color-mix(in srgb, var(--car-accent) 16%, transparent), inset 0 1px rgba(255,255,255,0.08);
 }
 
-.city-rush-car-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.city-rush-car-silhouette {
-  display: inline-flex;
-  width: 48px;
-  height: 22px;
-  color: var(--car-accent);
-}
-
-.city-rush-car-silhouette svg { width: 100%; height: 100%; overflow: visible; }
-.city-rush-car-silhouette svg path:first-child { fill: var(--car-accent); }
-.city-rush-car-silhouette svg path:nth-child(2) { fill: rgba(255,255,255,0.5); }
-.city-rush-car-silhouette svg circle { fill: #0a0e1e; stroke: rgba(255,255,255,0.7); stroke-width: 1.4; }
-
 .city-rush-car-number {
   color: var(--cr-faint);
   font: 700 9px var(--mono, monospace);
@@ -1564,24 +1546,6 @@
   display: grid;
   gap: 10px;
   width: min(840px, 100%);
-}
-
-.city-rush-driver-cycle {
-  padding: 6px 12px;
-  border-radius: var(--cr-radius-pill);
-  background: rgba(67, 234, 213, 0.1);
-  border: 1px solid rgba(67, 234, 213, 0.24);
-  color: #7af2e0;
-  font: 700 9px var(--mono, monospace);
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: all 0.18s var(--cr-ease);
-}
-
-.city-rush-driver-cycle:hover {
-  background: rgba(67, 234, 213, 0.16);
-  border-color: rgba(67, 234, 213, 0.36);
-  color: var(--cr-text);
 }
 
 .city-rush-driver-grid {
@@ -2685,7 +2649,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 
-/* Garage sport auto : silhouettes basses, grille plus aérée, finition satinée. */
+/* Garage sport auto : cartes compactes et finition satinée. */
 .city-rush-car-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .city-rush-car-card {
   min-height: 194px;
@@ -2693,11 +2657,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: linear-gradient(155deg, rgba(255,255,255,.065), rgba(255,255,255,.018) 60%), rgba(9,12,24,.7);
   border-color: rgba(218,229,244,.11);
 }
-.city-rush-car-card-top { min-height: 43px; }
-.city-rush-car-silhouette { width: 88px; height: 38px; filter: drop-shadow(0 5px 8px rgba(0,0,0,.35)); }
-.city-rush-car-silhouette svg path:first-child { fill: var(--car-accent); }
-.city-rush-car-silhouette svg path:nth-child(2) { fill: rgba(194,224,242,.72); }
-.city-rush-car-silhouette svg circle { fill: #10151e; stroke: rgba(230,238,247,.76); stroke-width: 1.3; }
 .city-rush-car-name { font-size: 12px; letter-spacing: .035em; }
 .city-rush-car-class { white-space: normal; min-height: 22px; line-height: 1.35; }
 .city-rush-car-card.is-selected { box-shadow: 0 12px 32px color-mix(in srgb, var(--car-accent) 18%, transparent), inset 0 1px rgba(255,255,255,.12); }
@@ -2707,7 +2666,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .city-rush-car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .city-rush-car-card { min-height: 180px; }
-  .city-rush-car-silhouette { width: 72px; height: 32px; }
 }
 
 /* ── BLUE_SHOT & IMPACT — repris du main, adaptés au design moderne ── */
