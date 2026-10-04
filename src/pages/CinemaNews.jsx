@@ -26,7 +26,7 @@ export default function CinemaNews() {
   const copy = {
     en: {
       section: 'CINEMA & SERIES NEWS',
-      updated: 'Updated 29.09.2026',
+      updated: 'Updated 04.10.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -39,7 +39,7 @@ export default function CinemaNews() {
     },
     fr: {
       section: 'ACTUS CINÉMA & SÉRIES',
-      updated: 'Mis à jour le 29.09.2026',
+      updated: 'Mis à jour le 04.10.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -52,7 +52,7 @@ export default function CinemaNews() {
     },
     ar: {
       section: 'أخبار السينما والمسلسلات',
-      updated: 'آخر تحديث 29.09.2026',
+      updated: 'آخر تحديث 04.10.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -65,7 +65,7 @@ export default function CinemaNews() {
     },
   }[lang] || {
     section: 'ACTUS CINÉMA & SÉRIES',
-    updated: 'Mis à jour le 29.09.2026',
+    updated: 'Mis à jour le 04.10.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -80,10 +80,14 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
-  // Actus cinéma du 29.09.2026 : les plus récentes ouvrent la page —
-  // box-office mondial d’Endgame, sortie numérique de Coyote vs. Acme et fin
-  // de la trilogie Mononoke sur Netflix.
+  // Actus cinéma du week-end des 03-04.10.2026 : les plus récentes ouvrent la
+  // page — le démarrage de Verity devant Digger au box-office, la bande-annonce
+  // de la saison 2 de Dexter: Resurrection et les premiers avis de Beware
+  // Boiúna. Suivent les actus du 26-29.09.2026.
   const articles = useMemo(() => [
+    { to: '/news/cinema/box-office-verity-digger', image: 'cinema-verity.jpg', fallbackImage: 'box-office-verity-digger-news.svg', imageCredit: 'PHOTO DE PRESSE · AMAZON MGM STUDIOS', alt: 'Verity — Dakota Johnson dans le thriller d’Amazon MGM Studios adapté du roman de Colleen Hoover', badge: 'CINÉMA · BOX-OFFICE', kicker: '04.10.2026 · VARIETY', title: 'VERITY S’IMPOSE, DIGGER SOMBRE.', excerpt: 'L’adaptation du roman de Colleen Hoover vise 33,6 M$ pour son premier week-end dans 3 510 salles. Digger, porté par Tom Cruise et Iñárritu, s’effondre autour de 7,5 M$ pour un budget de 160 à 180 M$. En France, Kraken signe le meilleur démarrage d’un film d’horreur français depuis plus de 25 ans.', read: copy.read, sentiment: 'mixed' },
+    { to: '/news/cinema/dexter-resurrection-saison-2-bande-annonce', image: youTubeThumbUrl('nTOf1FIsBcs'), fallbackImage: 'dexter-resurrection-saison-2-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · PARAMOUNT+', alt: 'Dexter: Resurrection saison 2 — bande-annonce officielle Paramount+', badge: 'PARAMOUNT+ · SÉRIE', kicker: '03.10.2026 · ÉCRAN LARGE', title: 'DEXTER REVIENT EN CRISE EXISTENTIELLE.', excerpt: 'La saison 2 de Dexter: Resurrection arrive le 30 octobre, avec Dan Stevens en Five Borough Killer et Brian Cox en New York Ripper. Michael C. Hall traverse une crise de la cinquantaine, Uma Thurman gagne du terrain et Quinn revient — comme un certain fantôme de la saison 1.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/beware-boiuna-premiers-avis', image: 'https://www.ecranlarge.com/content/uploads/2026/10/0cd9b8ac42be3e75907c77e111310c4d-1260x840.webp', fallbackImage: 'beware-boiuna-news.svg', imageCredit: 'IMAGE DE PRESSE · LIONSGATE', alt: 'Kiana Madeira et Jessica Rothe dans Beware Boiúna — image de presse Lionsgate', badge: 'HORREUR · LIONSGATE', kicker: '04.10.2026 · ÉCRAN LARGE', title: 'BEWARE BOIÚNA DIVISE LA PRESSE.', excerpt: 'Le film de Mike P. Nelson, sorti le 2 octobre aux États-Unis, partage la critique : The Wrap y voit un cauchemar brutal quand The AV Club évoque un montage décousu. Metacritic affiche 49 sur 100, à peine mieux que l’Anaconda de 2025. La France attend encore une date.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/cinema/endgame-encore-record-avatar', image: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-avatar-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · MARVEL STUDIOS', alt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '29.09.2026 · ONE MANN’S MOVIES', title: 'ENDGAME FRÔLE LE TRÔNE D’AVATAR.', excerpt: 'Le week-end mondial de la ressortie atteint 86 M$ (26 M$ en Amérique du Nord, 60 M$ à l’international) et porte le total à environ 2,885 milliard. À 39 millions du record d’Avatar, avec un démarrage record au Royaume-Uni (4,12 M£).', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/coyote-vs-acme-numerique', image: youTubeThumbUrl('Bpg3tJ4f3v0'), fallbackImage: 'coyote-vs-acme-numerique-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · KETCHUP ENTERTAINMENT', alt: 'Wile E. Coyote et l’avocat Kevin Avery dans la bande-annonce officielle de Coyote vs. Acme', badge: 'LOONEY TUNES · KETCHUP', kicker: '29.09.2026 · KETCHUP ENTERTAINMENT', title: 'COYOTE VS. ACME PASSE EN LIGNE.', excerpt: 'Le film sauvé de la déduction fiscale de Warner Bros. est disponible dès aujourd’hui en numérique (24,99 $) sur Prime Video, Apple TV et Fandango at Home. 96 % de la critique, plus de 100 M$ au box-office mondial.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/mononoke-chapter-3-netflix', image: youTubeThumbUrl('R6PUcxSZ7YM'), fallbackImage: 'mononoke-chapter-3-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · NETFLIX ANIME', alt: 'Le Marchand de médicaments devant l’Ōoku dans la bande-annonce officielle de Mononoke The Movie: Chapter III', badge: 'MONONOKE · NETFLIX', kicker: '29.09.2026 · NETFLIX', title: 'MONONOKE CLÔTURE SA TRILOGIE.', excerpt: 'Chapter III – The Curse of the Serpent arrive ce soir sur Netflix dans le monde entier. Le Marchand de médicaments affronte une malédiction née dans les rangs supérieurs de l’Ōoku, pour le dernier film de la trilogie.', read: copy.read, sentiment: 'positive' },

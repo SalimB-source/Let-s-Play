@@ -217,6 +217,35 @@ export const articleTrailers = {
     credit: 'Vidéos officielles : Netflix, sur YouTube — animation Fortiche pour Riot Games.',
   },
 
+  // ---- Fournée du 03-04.10.2026 -------------------------------------------
+  // Le distributeur, et lui seul, est cité : Amazon MGM Studios pour « Verity »,
+  // Paramount+ pour la saison 2 de « Dexter: Resurrection » et Lionsgate Movies
+  // pour « Beware Boiúna ». Identifiants contrôlés sur YouTube (oEmbed) le
+  // 04.10.2026, avec leur chaîne d'origine.
+  // « Beware Boiúna » n'a pas encore de date française : l'entrée reste celle de
+  // la campagne américaine de Lionsgate.
+  'cinema/box-office-verity-digger': {
+    label: 'VERITY', meta: 'AMAZON MGM STUDIOS · COLLEEN HOOVER',
+    items: [
+      { id: 'xdPMKhjMSFs', kind: 'trailer', title: 'Verity | Official Trailer', channel: 'Amazon MGM Studios', verified: '04.10.2026' },
+    ],
+    credit: 'Vidéo officielle : Amazon MGM Studios, sur YouTube.',
+  },
+  'cinema/dexter-resurrection-saison-2-bande-annonce': {
+    label: 'DEXTER: RESURRECTION', meta: 'PARAMOUNT+ · SAISON 2',
+    items: [
+      { id: 'nTOf1FIsBcs', kind: 'trailer', title: 'Dexter: Resurrection | Season 2 Official Trailer | Paramount+', channel: 'Paramount Plus', verified: '04.10.2026' },
+    ],
+    credit: 'Vidéo officielle : Paramount+, sur YouTube.',
+  },
+  'cinema/beware-boiuna-premiers-avis': {
+    label: 'BEWARE BOIÚNA', meta: 'LIONSGATE · MIKE P. NELSON',
+    items: [
+      { id: 'MQKqgFVU4dQ', kind: 'trailer', title: 'Beware Boiúna (2026) Final Trailer - Kiana Madeira, Jessica Rothe, Logan Marshall-Green', channel: 'Lionsgate Movies', verified: '04.10.2026' },
+    ],
+    credit: 'Vidéo officielle : Lionsgate Movies, sur YouTube.',
+  },
+
   // ---- Annonces sans images animées ----------------------------------------
   // Carte du hub cinéma servie par le gabarit Blizzard (`/news/diablo-netflix`) :
   // l'annonce d'ouverture de la BlizzCon 2026 n'a été accompagnée d'aucun visuel

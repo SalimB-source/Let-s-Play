@@ -25,7 +25,7 @@ export default function TechNews() {
   const copy = {
     en: {
       section: 'TECH NEWS',
-      updated: 'Updated 29.09.2026',
+      updated: 'Updated 04.10.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -38,7 +38,7 @@ export default function TechNews() {
     },
     fr: {
       section: 'ACTUS TECH',
-      updated: 'Mis à jour le 29.09.2026',
+      updated: 'Mis à jour le 04.10.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -51,7 +51,7 @@ export default function TechNews() {
     },
     ar: {
       section: 'أخبار التقنية',
-      updated: 'آخر تحديث 29.09.2026',
+      updated: 'آخر تحديث 04.10.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -64,7 +64,7 @@ export default function TechNews() {
     },
   }[lang] || {
     section: 'ACTUS TECH',
-    updated: 'Mis à jour le 29.09.2026',
+    updated: 'Mis à jour le 04.10.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -76,14 +76,22 @@ export default function TechNews() {
     back: 'Retour au hub',
   };
 
-  // Actus tech du jour (29.09.2026) : bilan du vol 14 de Starship (première
-  // mise en orbite), plateforme de sécurité des agents de NVIDIA (OpenShell +
-  // Sentry) et déjeuner IA à la Maison-Blanche. Les plus récentes ouvrent la
+  // Actus tech du week-end (03-04.10.2026) en tête : cyberattaque de la Région
+  // Hauts-de-France, technique HashHiding de la Corée du Nord et livraisons de
+  // Tesla au troisième trimestre ; suivent le vol 14 de Starship (première mise
+  // en orbite), la plateforme de sécurité des agents de NVIDIA (OpenShell +
+  // Sentry) et le déjeuner IA à la Maison-Blanche. Les plus récentes ouvrent la
   // page ; chaque carte affiche le visuel officiel publié par la marque ou par
   // l’article source (page de lancement SpaceX, communiqué NVIDIA, photo de
   // presse Reuters / Semafor), avec la carte éditoriale du gabarit du robot
   // (`fallbackImage`, public/*.svg) en repli.
   const articles = useMemo(() => [
+    // Actus tech du week-end des 03-04.10.2026 : la cyberattaque de la Région
+    // Hauts-de-France, les livraisons trimestrielles de Tesla et la technique
+    // HashHiding des pirates nord-coréens. Les plus récentes ouvrent la page.
+    { to: '/news/tech/cyberattaque-hauts-de-france-rib', image: 'https://www.01net.com/app/uploads/2025/06/fuite-donnees-france.jpg', fallbackImage: 'cyberattaque-hauts-de-france-news.svg', alt: 'Illustration d’une fuite de données publiée par 01net (Unsplash)', badge: 'CYBERSÉCURITÉ · FRANCE', kicker: '03.10.2026 · 01NET', title: 'LES HAUTS-DE-FRANCE VICTIMES D’UNE CYBERATTAQUE.', excerpt: 'La Région a confirmé samedi 3 octobre un accès non autorisé à des données personnelles via deux prestataires, Atexo et Docaposte. Un pirate revendique les informations de plus de 700 000 personnes, dont des RIB. Une plainte a été déposée et les usagers commencent à être informés.', read: copy.read, sentiment: 'negative' },
+    { to: '/news/tech/coree-du-nord-ethereum-hashhiding', image: 'https://www.01net.com/app/uploads/2024/01/ethereum.jpg', fallbackImage: 'coree-du-nord-ethereum-news.svg', alt: 'Illustration Ethereum publiée par 01net (Unsplash)', badge: 'CYBERSÉCURITÉ · BLOCKCHAIN', kicker: '04.10.2026 · 01NET', title: 'LA CORÉE DU NORD DÉTOURNE ETHEREUM.', excerpt: 'Des chercheurs ont identifié HashHiding : la campagne XCTDH cache l’adresse de ses serveurs de commande dans des transferts Ethereum, vers des adresses dont personne ne détient la clé. Plus de 2 600 transferts ont été recensés en trois mois, et bloquer un serveur ne suffit plus.', read: copy.read, sentiment: 'negative' },
+    { to: '/news/tech/tesla-t3-2026-livraisons-byd', image: 'https://img.frandroid.com/images.frandroid.com/wp-content/uploads/2026/04/tesla-gigafactory-berlin-usine-00017.jpg?resize=1200,675&key=c61b8cfd', fallbackImage: 'tesla-livraisons-t3-news.svg', alt: 'Gigafactory Tesla de Berlin — photo officielle Tesla', badge: 'TESLA · INDUSTRIE', kicker: '04.10.2026 · FRANDROID', title: 'TESLA REDRESSE, BYD S’ENVOLE.', excerpt: 'Tesla a livré 486 532 voitures au troisième trimestre 2026, environ 5 % de mieux que les prévisions, essentiellement en piochant dans ses stocks. BYD en a vendu 762 478 et porte son avance à près de 276 000 unités, tirée par un export en hausse de 154 % en septembre.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/tech/starship-vol-14-orbite-atteinte', image: 'https://sxcontent9668.azureedge.us/cms-assets/assets/Flight_14_Website_Desktop_4_734a6bbf25.jpg', fallbackImage: 'starship-vol-14-orbite-news.svg', alt: 'Starship — visuel officiel du quatorzième vol d’essai sur la page de lancement de SpaceX', badge: 'SPACEX · ESPACE', kicker: '29.09.2026 · SPACEX', title: 'STARSHIP EST ENFIN EN ORBITE.', excerpt: 'Première mise en orbite de l’histoire de la fusée lundi, avec 26 satellites Starlink V3 déployés — une première. Une panne de moteur en montée a ramené le vaisseau après 3 h 09, et il a explosé en basculant après son amerrissage.', read: copy.read, sentiment: 'positive' },
     { to: '/news/tech/nvidia-open-agent-safety-platform', image: 'https://iprsoftwaremedia.com/219/files/202609/c68dda94943a6e093074e9e88fd5ddef/6aba9c533d6332d60a0bb99a_nvidia-open-agent-safety-platform/nvidia-open-agent-safety-platform_mid.png?v=f9cea0c6-00ad-4b7f-b0a0-6bc06b39af63', fallbackImage: 'nvidia-agent-safety-news.svg', alt: 'Visuel officiel du communiqué NVIDIA Open Agent Safety Platform', badge: 'NVIDIA · SÉCURITÉ IA', kicker: '29.09.2026 · NVIDIA', title: 'NVIDIA MET LES AGENTS EN CAGE.', excerpt: 'OpenShell, un bac à sable open source, et Sentry, une surveillance dans le silicium des DPU BlueField-4 : la nouvelle plateforme de NVIDIA contient les agents autonomes qui sortent de leur cadre. Plus de 100 partenaires, OpenAI absent.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/tech/midi-ia-maison-blanche', image: 'https://img.semafor.com/4edcc71f032e922ad0fa3f238b2206d9949f984f-2048x1294.jpg?w=740&q=75&auto=format&h=467', fallbackImage: 'ia-maison-blanche-news.svg', alt: 'Sam Altman (OpenAI) et Mark Zuckerberg (Meta) à un dîner d’État à la Maison-Blanche — photo de presse Evelyn Hockstein / Reuters', badge: 'MAISON-BLANCHE · IA', kicker: '29.09.2026 · REUTERS', title: 'TRUMP REÇOIT LES 6 BOSS DE L’IA.', excerpt: 'Zuckerberg, Amodei, Brockman, Pichai, Karp et Huang déjeunent à la Maison-Blanche pour arbitrer la régulation de l’IA. Le même jour, Hinton, Bengio et des chercheurs des grands laboratoires alertent sur une « explosion d’intelligence ».', read: copy.read, sentiment: 'mixed' },

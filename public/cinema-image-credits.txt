@@ -66,3 +66,37 @@ https://finalboss.io/the-witcher-3-remastered-path-tracing-combat-and-skill-tree
 xbox-nadella/ — 01 : portrait officiel de Satya Nadella (Brian Smale & Microsoft, CC BY-SA 4.0), recadré en 16:9 ; 02 : photo publiée sur les comptes X officiels de Hideo Kojima et Asha Sharma (déjà présente dans public/news-sources/) ; 03 : capture de Halo Infinite déjà présente dans screenshots/halo-activision/01.jpg.
 https://news.microsoft.com/microsoft-news-center-photos
 https://news.instant-gaming.com/en/articles/21882-asha-sharma-poses-with-hideo-kojima-to-prepare-for-the-future
+
+Fournée du 03-04.10.2026 :
+
+Box-office (Verity / Digger) — photo de presse de Verity, Dakota Johnson dans l'adaptation du roman de Colleen Hoover (Amazon MGM Studios), publiée par Just Jared :
+https://www.justjared.com/2026/10/01/verity-movie-streaming-how-to-watch/
+
+Beware Boiúna (premiers avis) — image de presse du film (Lionsgate), publiée par Écran Large :
+https://www.ecranlarge.com/films/news/beware-boiuna-premiers-avis-horreur-anaconda
+
+Séries du week-end :
+
+Dexter: Resurrection saison 2 — miniature issue de la bande-annonce officielle Paramount+ :
+https://www.youtube.com/watch?v=nTOf1FIsBcs
+
+Visuels des actus gaming du week-end (page /news/gaming) :
+
+RuneScape 4 — le teaser d'annonce a été diffusé au RuneFest 2026, mais Jagex n'en a pas encore publié de copie sur sa propre chaîne : la page utilise donc la carte éditoriale du gabarit Let's Play (public/runescape-4-news.svg), comme pour les actus sans visuel officiel.
+
+Castlevania 40th Anniversary — visuel de l'annonce officielle Konami, reproduit par Gamekult (les concerts sont détaillés sur le site officiel castlevanialive.com) :
+https://www.gamekult.com/actualite/pour-les-40-ans-de-castlevania-et-la-sortie-de-belmont-s-curse-des-concerts-symphoniques-vont-avoir-lieu-3050872268.html
+
+Vibe coding / émulation — illustration de l'article Gamekult sur le code généré par IA dans la décompilation :
+https://www.gamekult.com/actualite/du-code-bacle-par-ia-ralentit-des-projets-d-emulation-et-de-decompilation-les-developpeurs-poussent-un-coup-de-gueule-3050872249.html
+
+Visuels des actus tech du week-end (page /news/tech) :
+
+Hauts-de-France — illustration de fuite de données publiée par 01net (Unsplash) :
+https://www.01net.com/actualites/cyberattaque-region-hauts-de-france-donnees-personnelles-rib.html
+
+HashHiding — illustration Ethereum publiée par 01net (Unsplash) :
+https://www.01net.com/actualites/pirates-nord-coreens-cachent-ordres-ethereum-hashhiding.html
+
+Tesla — Gigafactory de Berlin, photo officielle Tesla, publiée par Frandroid :
+https://www.frandroid.com/marques/3271565_tesla-a-vendu-plus-de-voitures-electriques-quespere-pourquoi-ca-ne-suffit-pas-a-rattraper-byd

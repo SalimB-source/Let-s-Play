@@ -84,6 +84,16 @@ const OFFICIAL_CHANNELS = new Set([
   // Bros. en mars 2025) — chaîne vérifiée sur YouTube (oEmbed) le 29.09.2026
   // sur la vidéo « Coyote vs. ACME | Final Trailer » (Bpg3tJ4f3v0).
   'Ketchup Entertainment',
+  // Chaînes vérifiées sur YouTube (oEmbed) le 04.10.2026 pour la fournée du
+  // week-end : « Verity | Official Trailer » (xdPMKhjMSFs) pour Amazon MGM
+  // Studios, « Dexter: Resurrection | Season 2 Official Trailer | Paramount+ »
+  // (nTOf1FIsBcs) pour Paramount Plus et « Beware Boiúna (2026) Final Trailer »
+  // (MQKqgFVU4dQ) pour Lionsgate Movies. Les copies d'agrégateurs (KinoCheck,
+  // JoBlo, ONE Media…) qui reprennent les mêmes bandes-annonces restent
+  // écartées, comme les re-uploads des chaînes régionales.
+  'Amazon MGM Studios',
+  'Paramount Plus',
+  'Lionsgate Movies',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
