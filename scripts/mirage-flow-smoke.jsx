@@ -187,7 +187,7 @@ function assertCupIntro(assert, node) {
     'le terrain est imposé par la coupe : plus de sélecteur de terrain');
 
   const cards = [...node.querySelectorAll('.mirage-cup-card')];
-  assert.equal(cards.length, 4, 'les quatre coupes ont chacune leur bouton de sélection');
+  assert.equal(cards.length, 5, 'les cinq coupes ont chacune leur bouton de sélection');
   assert.ok(cards.every((card) => card.tagName === 'BUTTON' && card.type === 'button'),
     'chaque coupe est un vrai bouton HTML cliquable');
   assert.ok(cards.every((card) => card.querySelector('.mirage-choice-dot').textContent !== '✓'),
@@ -199,13 +199,14 @@ function assertCupIntro(assert, node) {
   const windsCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe des Vents');
   const worldtourCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe Grand Tour');
   const legendsCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe des Légendes');
-  assert.ok(desertCard && windsCard && worldtourCard && legendsCard, 'Désert, Vents, Grand Tour et Légendes sont proposés');
+  const sbrCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Steel Ball Run');
+  assert.ok(desertCard && windsCard && worldtourCard && legendsCard && sbrCard, 'Désert, Vents, Grand Tour, Légendes et Steel Ball Run sont proposés');
   assert.equal(cards[0].getAttribute('aria-pressed'), 'true', 'la première coupe est sélectionnée par défaut');
   assert.deepEqual(
-    [desertCard, windsCard, worldtourCard, legendsCard].map((card) => card.querySelector('.mirage-cup-reward-copy > strong')?.textContent.replace(/\s+/g, ' ').trim()),
-    ['+30 OR', '+30 OR', '+40 OR', '+50 OR'],
+    [desertCard, windsCard, worldtourCard, legendsCard, sbrCard].map((card) => card.querySelector('.mirage-cup-reward-copy > strong')?.textContent.replace(/\s+/g, ' ').trim()),
+    ['+30 OR', '+30 OR', '+40 OR', '+50 OR', '+190 OR'],
     'chaque bouton met en avant le maximum d’or correspondant à la coupe');
-  assert.ok([desertCard, windsCard, worldtourCard, legendsCard].every((card) =>
+  assert.ok([desertCard, windsCard, worldtourCard, legendsCard, sbrCard].every((card) =>
     card.querySelector('.mirage-cup-reward-copy > small')?.textContent.includes('OR À GAGNER')),
   'le gain en or est explicitement signalé dans chaque coupe');
   assert.ok(desertCard.querySelector('.mirage-cup-reward-copy > em')?.textContent.includes('+10 OR PAR VICTOIRE'),
@@ -218,19 +219,32 @@ function assertCupIntro(assert, node) {
   const windsIcon = windsCard.querySelector('.mirage-cup-emblem svg');
   const worldtourIcon = worldtourCard.querySelector('.mirage-cup-emblem svg');
   const legendsIcon = legendsCard.querySelector('.mirage-cup-emblem svg');
+  const sbrIcon = sbrCard.querySelector('.mirage-cup-emblem svg');
   assert.equal(desertIcon.dataset.trophy, 'desert');
   assert.equal(windsIcon.dataset.trophy, 'winds');
   assert.equal(worldtourIcon.dataset.trophy, 'worldtour');
   assert.equal(legendsIcon.dataset.trophy, 'legends');
+  assert.equal(sbrIcon.dataset.trophy, 'sbr');
   assert.notEqual(desertIcon.innerHTML, windsIcon.innerHTML, 'la Rose des Vents a sa propre silhouette');
   assert.notEqual(desertIcon.innerHTML, worldtourIcon.innerHTML, 'chaque coupe garde son propre trophée');
   assert.notEqual(legendsIcon.innerHTML, worldtourIcon.innerHTML, 'le blason des Légendes est distinct du globe');
+  assert.notEqual(sbrIcon.innerHTML, legendsIcon.innerHTML, 'la boule d’acier de la Steel Ball Run est distincte du blason');
+
+  // La Steel Ball Run est la seule coupe à annoncer une prime de champion : le
+  // vainqueur du classement général empoche 90 OR en plus des victoires de course.
+  assert.ok(sbrCard.querySelector('.mirage-cup-champion-bonus')?.textContent.includes('+90 OR POUR LE VAINQUEUR DU GÉNÉRAL'),
+    'la Steel Ball Run annonce la prime de champion de 90 OR');
+  assert.ok([desertCard, windsCard, worldtourCard, legendsCard].every((card) => !card.querySelector('.mirage-cup-champion-bonus')),
+    'les autres coupes n’annoncent aucune prime de champion');
 
   // Par défaut, seule la 1ʳᵉ coupe (`desert`) est débloquée ; les suivantes portent un cadenas.
   assert.equal(desertCard.disabled, false, 'la 1ʳᵉ coupe est débloquée par défaut');
   assert.equal(desertCard.classList.contains('is-locked'), false);
   assert.equal(desertCard.querySelector('.mirage-cup-lock'), null);
-  for (const lockedCard of [windsCard, worldtourCard, legendsCard]) {
+  assert.equal(sbrCard.disabled, true, 'la Steel Ball Run reste verrouillée au départ');
+  assert.match(sbrCard.querySelector('.mirage-cup-card-action').textContent, /FINIR COUPE DES LÉGENDES/,
+    'la Steel Ball Run annonce qu’elle s’ouvre après la Coupe des Légendes');
+  for (const lockedCard of [windsCard, worldtourCard, legendsCard, sbrCard]) {
     assert.equal(lockedCard.disabled, true, 'les coupes suivantes sont bloquées par un cadenas');
     assert.equal(lockedCard.classList.contains('is-locked'), true);
     assert.equal(lockedCard.querySelector('.mirage-cup-lock')?.textContent, '🔒');
@@ -785,5 +799,37 @@ export async function checkMirageFlow(assert) {
     await cupsPage.unmount();
     if (savedBeforeCups === null) window.localStorage.removeItem(PROGRESSION_KEY);
     else window.localStorage.setItem(PROGRESSION_KEY, savedBeforeCups);
+  }
+
+  /* ------- 11. Steel Ball Run : les dix cartes, 90 OR pour le champion ---- */
+  const savedBeforeSbr = window.localStorage.getItem(PROGRESSION_KEY);
+  window.localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+    xp: 0, runs: 10, coins: 100, skinId: 'desert', ownedSkins: [],
+    wonStages: ['desert', 'western', 'prairie', 'sardinia', 'alger'],
+    completedCups: ['desert', 'winds', 'worldtour', 'legends'],
+  }));
+  const sbrPage = await mountPage('/jeu?mode=cup');
+  const clean = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : null);
+  try {
+    const sbrCard = sbrPage.node.querySelector('.mirage-cup-card.is-sbr');
+    assert.ok(sbrCard, 'la Steel Ball Run est proposée dans le sélecteur de coupes');
+    assert.equal(sbrCard.disabled, false, 'les quatre coupes remportées ouvrent la Steel Ball Run');
+    assert.equal(sbrCard.classList.contains('is-locked'), false);
+    assert.equal(clean(sbrCard.querySelector('.mirage-cup-reward-copy > strong')), '+190 OR',
+      'elle annonce son maximum : 10 victoires de course + la prime de champion');
+    assert.ok(clean(sbrCard.querySelector('.mirage-cup-champion-bonus')).includes('+90 OR POUR LE VAINQUEUR DU GÉNÉRAL'));
+    assert.equal(clean(sbrCard.querySelector('.mirage-cup-card-title small')), 'TROPHÉE · Boule d’Acier');
+    await act(async () => { sbrCard.click(); });
+    assert.match(clean(sbrPage.node.querySelector('.mirage-countdown-overlay .mirage-overlay-kicker')),
+      /STEEL BALL RUN · COURSE 1 \/ 10 · DUNES DE L’ÉCHO/,
+      'le clic sur la carte démarre les dix courses, Dunes de l’Écho en tête');
+    await press('Escape');
+    assert.ok(sbrPage.node.querySelector('.mirage-intro-overlay.is-stage-step'), 'ÉCHAP revient au choix de la coupe');
+    assert.equal(clean(sbrPage.node.querySelector('.mirage-cup-card.is-sbr .mirage-cup-card-action')), 'LANCER CETTE COUPE ↗',
+      'la coupe jamais terminée propose de la lancer');
+  } finally {
+    await sbrPage.unmount();
+    if (savedBeforeSbr === null) window.localStorage.removeItem(PROGRESSION_KEY);
+    else window.localStorage.setItem(PROGRESSION_KEY, savedBeforeSbr);
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import MirageCupStandings, { formatRaceLine } from './MirageCupStandings';
 import MirageTrophyIcon from './MirageTrophyIcon';
-import { cupStandings, getCup, placeLabel } from './mirageCup';
+import { cupChampionBonus, cupStandings, cupWinner, getCup, placeLabel } from './mirageCup';
 import { stageName } from './MirageCoursePicker';
 
 // Titre de l’overlay selon ta place dans la course (1ᵉʳ → 4ᵉ).
@@ -26,6 +26,12 @@ export default function MirageCupResults({ cup, run, award, onNext, onQuit }) {
   const mine = last.placements.find((line) => line.riderId === run.riders.find((rider) => rider.isPlayer)?.id);
   const [headline, accent] = HEADLINES[Math.min(3, Math.max(0, (mine?.place ?? 4) - 1))];
   const nextStage = finished ? null : stageName(run.stages[played]);
+  // Prime de champion : annoncée sur l’arrivée de la dernière course, quand le
+  // classement général est acquis — rien à dire si la coupe n’en offre pas.
+  const championBonus = finished && cupWinner(run)?.isPlayer ? cupChampionBonus(cup) : 0;
+  // La récompense de la course, prime exclue : elle a sa propre ligne, donc les
+  // dix OR d’une victoire ne se confondent jamais avec les 90 OR du titre.
+  const raceCoinsGained = Math.max(0, (award?.coinsGained ?? 0) - championBonus);
 
   return (
     <div className="mirage-overlay mirage-result-overlay mirage-cup-results">
@@ -43,11 +49,18 @@ export default function MirageCupResults({ cup, run, award, onNext, onQuit }) {
           <strong>+{mine?.points ?? 0} POINTS</strong>
           <span>{placeLabel(mine?.place ?? 4)} · {stageName(last.stage)} · {formatRaceLine(mine)}</span>
         </p>
+        {championBonus > 0 && (
+          <p className="mirage-cup-champion-bonus" role="status">
+            <span aria-hidden="true">♛</span> PRIME DE CHAMPION ·{' '}
+            <b className="mirage-coin-gain">+{championBonus} OR</b>{' '}
+            <small>CLASSEMENT GÉNÉRAL REMPORTÉ</small>
+          </p>
+        )}
         <MirageCupStandings standings={standings} run={run} mode="race" />
         {award && (
           <p className="mirage-xp-award" role="status">
             <strong>+{award.xpGained} XP</strong>
-            {award.coinsGained > 0 && <b className="mirage-coin-gain">+{award.coinsGained} OR</b>}
+            {raceCoinsGained > 0 && <b className="mirage-coin-gain">+{raceCoinsGained} OR</b>}
             {award.leveledUp && <span>NIVEAU {award.level} !</span>}
             {award.unlocked?.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map((skin) => skin.name).join(' · ')}</em>}
             {award.newlyUnlockedStages?.length > 0 && <em>CARTE DÉBLOQUÉE : {award.newlyUnlockedStages.map((id) => stageName(id)).join(' · ')}</em>}

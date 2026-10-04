@@ -9,8 +9,10 @@
 // Chaque arrivée rapporte des points selon la place — plus on finit haut, plus
 // on en gagne —, les points s’additionnent d’une course à l’autre, et le
 // meilleur total soulève le trophée après la dernière course. Chaque victoire
-// de course rapporte 10 OR ; le maximum de chaque coupe correspond donc à
-// toutes ses courses remportées (voir `cupGoldMaximum()`).
+// de course rapporte 10 OR, et une coupe peut en plus offrir une prime de
+// champion (`championCoins`, 0 par défaut) versée au vainqueur du classement
+// général — le maximum d’une coupe vaut donc ses courses remportées plus sa
+// prime (voir `cupGoldMaximum()` et `cupChampionBonus()`).
 //
 // Le moteur 3D ne connaît pas la coupe : chaque course est un duel ordinaire
 // (mêmes pouvoirs, mêmes rivaux) et la page n’a qu’à nourrir `recordCupRace`
@@ -30,10 +32,11 @@ export const DEFAULT_RIDER_NAME = 'Cavalier';
  * Catalogue des coupes. Pour en ajouter une : un nouvel objet ici, avec des
  * identifiants de terrain déjà connus de `MirageCoursePicker` (`desert`,
  * `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`,
- * `infinity`, `airbase`, `snakeway`) et son maximum d’or (`maxCoins`). Le
- * sélecteur de coupe, l’enchaînement des courses et l’écran du trophée suivent
- * tout seuls. Ajouter aussi le design propre à son identifiant dans
- * `mirageTrophy.js` (forme 3D et icône SVG partagées).
+ * `infinity`, `airbase`, `snakeway`), son maximum d’or (`maxCoins` — courses
+ * gagnées × 10 OR + `championCoins`) et, si elle paie le titre, sa prime de
+ * champion. Le sélecteur de coupe, l’enchaînement des courses et l’écran du
+ * trophée suivent tout seuls. Ajouter aussi le design propre à son identifiant
+ * dans `mirageTrophy.js` (forme 3D et icône SVG partagées).
  */
 export const CUPS = Object.freeze([
   Object.freeze({
@@ -43,6 +46,7 @@ export const CUPS = Object.freeze([
     tagline: 'Trois courses, un seul trophée',
     // Maximum de pièces en remportant les trois courses.
     maxCoins: 30,
+    championCoins: 0,
     // Dunes de l’Écho → Dust Creek → Plaines d’Or
     stages: Object.freeze(['desert', 'western', 'prairie']),
   }),
@@ -52,6 +56,7 @@ export const CUPS = Object.freeze([
     trophyDesign: 'winds',
     tagline: 'De la baie aux nuages',
     maxCoins: 30,
+    championCoins: 0,
     // Costa Omertà → Alger la Blanche → Chemin du Serpent
     stages: Object.freeze(['sardinia', 'alger', 'snakeway']),
   }),
@@ -61,6 +66,7 @@ export const CUPS = Object.freeze([
     trophyDesign: 'worldtour',
     tagline: 'Quatre cartes, un seul trophée',
     maxCoins: 40,
+    championCoins: 0,
     // Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase
     stages: Object.freeze(['sardinia', 'alger', 'japan', 'airbase']),
   }),
@@ -70,9 +76,27 @@ export const CUPS = Object.freeze([
     trophyDesign: 'legends',
     tagline: 'Cinq courses, un seul trophée',
     maxCoins: 50,
+    championCoins: 0,
     // Remparts d’Ocre (Counter-Strike) → Château de l’Infini (Demon Slayer) → Thunder Airbase (Street Fighter)
     // → Costa Omertà → Plaines de Yōtei (Ghost of Yōtei)
     stages: Object.freeze(['ramparts', 'infinity', 'airbase', 'sardinia', 'japan']),
+  }),
+  Object.freeze({
+    id: 'sbr',
+    name: 'Steel Ball Run',
+    trophyDesign: 'sbr',
+    tagline: 'Les dix cartes, un seul trophée',
+    // 10 victoires de course (10 OR chacune) + 90 OR de prime de champion.
+    maxCoins: 190,
+    championCoins: 90,
+    // Les dix terrains du jeu, dans l’ordre de `MAPS` (`MirageCoursePicker`) :
+    // Dunes de l’Écho → Dust Creek → Plaines d’Or → Costa Omertà → Alger la
+    // Blanche → Plaines de Yōtei → Remparts d’Ocre → Château de l’Infini →
+    // Thunder Airbase → Chemin du Serpent.
+    stages: Object.freeze([
+      'desert', 'western', 'prairie', 'sardinia', 'alger',
+      'japan', 'ramparts', 'infinity', 'airbase', 'snakeway',
+    ]),
   }),
 ]);
 export const DEFAULT_CUP_ID = CUPS[0].id;
@@ -113,12 +137,24 @@ export function unlockedCups(completedCups = []) {
 
 /**
  * Maximum d’or disponible sur l’ensemble d’une coupe (identifiant ou entrée
- * de `CUPS`). Il est gagné au fil des victoires de course : 10 OR par victoire,
- * sans prime supplémentaire au podium. Zéro pour une coupe inconnue.
+ * de `CUPS`) : 10 OR par course remportée, plus la prime de champion de la
+ * coupe (voir `cupChampionBonus()`). C’est le montant annoncé dans le
+ * sélecteur ; le podium, lui, sépare l’or des courses de la prime. Zéro pour
+ * une coupe inconnue.
  */
 export function cupGoldMaximum(cup) {
   const entry = typeof cup === 'string' ? getCup(cup) : cup;
   return Math.max(0, Math.floor(Number(entry?.maxCoins) || 0));
+}
+
+/**
+ * Prime versée UNE fois au vainqueur du classement général d’une coupe, en plus
+ * des 10 OR par victoire de course. Zéro pour une coupe qui n’en offre pas
+ * (`championCoins` absent) ou pour un identifiant inconnu.
+ */
+export function cupChampionBonus(cup) {
+  const entry = typeof cup === 'string' ? getCup(cup) : cup;
+  return Math.max(0, Math.floor(Number(entry?.championCoins) || 0));
 }
 
 /** Points d’une place (1 = vainqueur de la course). Hors barème : 0. */

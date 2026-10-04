@@ -14,6 +14,7 @@ import {
   cupRaceIndex,
   cupStandings,
   cupWinner,
+  cupChampionBonus,
   cupGoldMaximum,
   cupRequirement,
   getCup,
@@ -139,15 +140,52 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
   }
 });
 
-test('cup gold maxima match 10 OR per win across all races — including two 30 OR cups', () => {
-  assert.deepEqual(CUPS.map(cupGoldMaximum), [30, 30, 40, 50]);
+test('cup gold maxima match 10 OR per win across all races, champion bonus included', () => {
+  assert.deepEqual(CUPS.map(cupGoldMaximum), [30, 30, 40, 50, 190]);
   for (const cup of CUPS) {
-    assert.equal(cupGoldMaximum(cup), cup.stages.length * WIN_COINS, `${cup.id}: every race victory contributes 10 OR`);
+    assert.equal(
+      cupGoldMaximum(cup),
+      cup.stages.length * WIN_COINS + cupChampionBonus(cup),
+      `${cup.id}: every race victory contributes 10 OR, plus the champion bonus`,
+    );
+    assert.equal(cupGoldMaximum(cup), cup.maxCoins, `${cup.id}: the catalogue announces the real maximum`);
   }
   assert.equal(cupGoldMaximum('inconnue'), 0, 'an unknown cup has no gold maximum');
   assert.equal(cupGoldMaximum(null), 0);
   assert.equal(cupGoldMaximum({ maxCoins: -10 }), 0, 'a negative value is clamped to zero');
   assert.equal(cupGoldMaximum({ maxCoins: '40' }), 40);
+});
+
+test('only the Steel Ball Run pays a champion bonus, and it pays 90 OR', () => {
+  const steelBallRun = getCup('sbr');
+  assert.equal(steelBallRun.name, 'Steel Ball Run');
+  assert.equal(steelBallRun.championCoins, 90, 'the champion of the general standings wins 90 OR');
+  assert.equal(steelBallRun.maxCoins, 190, 'ten race wins (100 OR) plus the 90 OR champion bonus');
+  assert.equal(cupChampionBonus(steelBallRun), 90);
+  assert.equal(cupChampionBonus('sbr'), 90, 'the id is enough to read the bonus');
+  for (const cup of CUPS.filter((entry) => entry.id !== 'sbr')) {
+    assert.equal(cupChampionBonus(cup), 0, `${cup.id} pays no champion bonus`);
+  }
+  assert.equal(cupChampionBonus('inconnue'), 0, 'an unknown cup pays nothing');
+  assert.equal(cupChampionBonus(null), 0);
+  assert.equal(cupChampionBonus({ championCoins: -90 }), 0, 'a negative bonus is clamped to zero');
+  assert.equal(cupChampionBonus({ championCoins: '90' }), 90);
+});
+
+test('the Steel Ball Run chains the ten tracks of the game, from Dunes de l’Écho to Chemin du Serpent', () => {
+  const cup = getCup('sbr');
+  assert.equal(cup.trophyDesign, 'sbr');
+  assert.deepEqual(
+    [...cup.stages],
+    ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'],
+  );
+  assert.equal(new Set(cup.stages).size, cup.stages.length, 'no track is raced twice');
+  assert.equal(cup.stages.length, 10, 'all ten tracks of the game');
+  const shorterCups = CUPS.filter((entry) => entry.id !== 'sbr');
+  for (const stage of cup.stages) {
+    assert.ok(shorterCups.some((entry) => entry.stages.includes(stage)), `${stage} is a track the game already knows`);
+  }
+  assert.ok(CUPS.indexOf(cup) === CUPS.length - 1, 'it is the last cup of the catalogue');
 });
 
 test('Coupe des Vents has three distinct maps and can pay 30 OR for three wins', () => {
@@ -472,6 +510,7 @@ test('cups unlock sequentially: only the 1st cup is open initially, and each fin
   assert.equal(cupRequirement('winds')?.id, 'desert');
   assert.equal(cupRequirement('worldtour')?.id, 'winds');
   assert.equal(cupRequirement('legends')?.id, 'worldtour');
+  assert.equal(cupRequirement('sbr')?.id, 'legends', 'the Steel Ball Run opens after the four cups');
   assert.equal(cupRequirement('unknown'), undefined);
 
   // Au départ, seule la 1ʳᵉ coupe (`desert`) est débloquée.
@@ -479,6 +518,7 @@ test('cups unlock sequentially: only the 1st cup is open initially, and each fin
   assert.equal(isCupUnlocked('winds', []), false);
   assert.equal(isCupUnlocked('worldtour', []), false);
   assert.equal(isCupUnlocked('legends', []), false);
+  assert.equal(isCupUnlocked('sbr', []), false, 'the Steel Ball Run opens only after the four cups');
   assert.equal(isCupUnlocked('unknown', []), false);
   assert.deepEqual(unlockedCups([]).map((c) => c.id), ['desert']);
 
@@ -494,11 +534,19 @@ test('cups unlock sequentially: only the 1st cup is open initially, and each fin
   assert.equal(isCupUnlocked('legends', ['desert', 'winds']), false);
   assert.deepEqual(unlockedCups(['desert', 'winds']).map((c) => c.id), ['desert', 'winds', 'worldtour']);
 
-  // Finir la 3ᵉ coupe débloque la 4ᵉ (`legends`).
+  // Finir la 3ᵉ coupe débloque la 4ᵉ (`legends`), mais pas la Steel Ball Run.
   assert.equal(isCupUnlocked('legends', ['desert', 'winds', 'worldtour']), true);
+  assert.equal(isCupUnlocked('sbr', ['desert', 'winds', 'worldtour']), false);
   assert.deepEqual(
     unlockedCups(['desert', 'winds', 'worldtour']).map((c) => c.id),
     ['desert', 'winds', 'worldtour', 'legends'],
+  );
+
+  // Seule la 4ᵉ coupe terminée ouvre la Steel Ball Run.
+  assert.equal(isCupUnlocked('sbr', ['desert', 'winds', 'worldtour', 'legends']), true);
+  assert.deepEqual(
+    unlockedCups(['desert', 'winds', 'worldtour', 'legends']).map((c) => c.id),
+    ['desert', 'winds', 'worldtour', 'legends', 'sbr'],
   );
 });
 

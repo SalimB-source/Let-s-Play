@@ -55,6 +55,9 @@ function makeMaterials() {
     ruby: material('ruby', { emissive: 0x4a0612, emissiveIntensity: 0.6, roughness: 0.3, metalness: 0.35 }),
     rubyDark: material('rubyDark', { emissive: 0x2a0309, emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.3 }),
     rubyLight: material('rubyLight', { emissive: 0x5a1220, emissiveIntensity: 0.5, roughness: 0.25, metalness: 0.3 }),
+    steel: material('steel', { metalness: 0.95, roughness: 0.18 }),
+    steelDark: material('steelDark', { metalness: 0.9, roughness: 0.3 }),
+    steelLight: material('steelLight', { metalness: 0.95, roughness: 0.14 }),
   };
 }
 
@@ -232,6 +235,7 @@ const SCENE_THEMES = Object.freeze({
   winds: { hemiSky: 0xd9fbff, hemiGround: 0x13384b, key: 0xe6ffff, rim: 0x45e4ff, floor: 0x102d49 },
   worldtour: { hemiSky: 0xd9fbff, hemiGround: 0x102744, key: 0xe6ffff, rim: 0x66e9f2, floor: 0x133455 },
   legends: { hemiSky: 0xffdfe3, hemiGround: 0x3a1230, key: 0xfff0e2, rim: 0xff8fa0, floor: 0x3a1229 },
+  sbr: { hemiSky: 0xdfe9f5, hemiGround: 0x1a2432, key: 0xffffff, rim: 0x9fd8ff, floor: 0x1c2836 },
 });
 
 function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColors = null, slot = null, reducedMotion = false }) {

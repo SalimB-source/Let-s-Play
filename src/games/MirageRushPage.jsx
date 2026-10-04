@@ -21,8 +21,8 @@ import { fetchMirageLeaderboard, fetchMirageProgress, mirageApiEnabled, saveMira
 import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import {
-  CUPS, CUP_POINTS, DEFAULT_CUP_ID, cleanRiderName, createCupRun, cupCurrentStage, cupStandings,
-  cupGoldMaximum, getCup, isCupComplete, isCupUnlocked, cupWinner, placeLabel, recordCupRace,
+  CUPS, CUP_POINTS, DEFAULT_CUP_ID, cleanRiderName, createCupRun, cupChampionBonus, cupCurrentStage,
+  cupGoldMaximum, cupStandings, getCup, isCupComplete, isCupUnlocked, cupWinner, placeLabel, recordCupRace,
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
 import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, LINK_EPONA_FREE_DAYS, LINK_EPONA_ID, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, formatFreeWindow, isFirstPlaceRun, isShopSkin, isSkinTemporarilyFree, isSkinUnlocked, isStageUnlocked, levelProgress, loadAccountProgress, loadProgress, progressionStorageKey, saveProgress, sanitizeProgress, skinFor, temporaryFreeUntil } from './mirageProgression';
@@ -157,8 +157,8 @@ export default function MirageRushPage() {
   const [riderName, setRiderName] = useState(readRiderName);
   const [cupRun, setCupRun] = useState(null);
   // Total d’OR déjà crédité pour les victoires de course de la coupe en cours.
-  // Chaque arrivée gagnée verse directement WIN_COINS ; aucun bonus de coupe
-  // ne s’ajoute au maximum annoncé.
+  // Chaque arrivée gagnée verse directement WIN_COINS ; la prime de champion
+  // d’une coupe (voir `cupChampionBonus`) n’arrive, elle, qu’avec le titre.
   const [cupRaceCoins, setCupRaceCoins] = useState(0);
   const isCup = selectedMode === 'cup';
   // Vrai quand un lancement (clic sur une carte) ouvre déjà le plein écran
@@ -721,7 +721,13 @@ export default function MirageRushPage() {
         completedCupId = nextCupRun.cupId;
       }
     }
-    const runAward = recordProgress(completedCupId ? { ...result, completedCupId } : result);
+    // Le joueur remporte-t-il le classement général ? C’est ce qui déclenche la
+    // prime de champion d’une coupe (`cupChampionBonus`), créditée avec le
+    // résultat de la dernière course et comptée à part des OR de course.
+    const championWon = Boolean(completedCupId && cupWinner(nextCupRun)?.isPlayer);
+    const runAward = recordProgress(
+      completedCupId ? { ...result, completedCupId, cupWon: championWon } : result,
+    );
     setAward(runAward);
     // Trophées de jeu : chaque course terminée nourrit les succès Mirage Rush
     // du joueur (terrain, mode, record de score et de cristaux, victoire).
@@ -739,11 +745,16 @@ export default function MirageRushPage() {
       const currentRun = cupRunRef.current;
       cupRunRef.current = nextCupRun;
       setCupRun(nextCupRun);
-      if (nextCupRun !== currentRun) setCupRaceCoins((total) => total + runAward.coinsGained);
+      // Le total « OR GAGNÉS EN COURSE » ne compte que les victoires de course :
+      // la prime de champion a sa propre ligne sur le podium.
+      if (nextCupRun !== currentRun) {
+        const raceCoinsGained = isFirstPlaceRun(result) ? WIN_COINS : 0;
+        setCupRaceCoins((total) => total + raceCoinsGained);
+      }
       // Seul le vainqueur du classement général remporte le trophée — gagner
       // une course isolée ne suffit pas. L'ensemble de succès déduplique par
       // identifiant de coupe et le synchronise aussi avec le compte connecté.
-      if (completedCupId && cupWinner(nextCupRun)?.isPlayer) {
+      if (championWon) {
         trackAchievement('mirage_cup_won', { cupId: nextCupRun.cupId });
       }
       return;
@@ -877,7 +888,10 @@ export default function MirageRushPage() {
     () => (cupRun ? cupStandings(cupRun).find((row) => row.isPlayer)?.points ?? 0 : 0),
     [cupRun],
   );
-  const cupGoldReward = activeCup.stages.length * WIN_COINS;
+  // Gain maximal de la coupe choisie : ses courses gagnées, prime de champion
+  // comprise (0 pour les coupes qui n’en offrent pas).
+  const cupChampionReward = cupChampionBonus(activeCup);
+  const cupGoldReward = activeCup.stages.length * WIN_COINS + cupChampionReward;
   // Les skins 3D de « TON CAVALIER » se figent pendant une course : le GPU reste au jeu.
   const racing = phase === 'playing' || phase === 'countdown';
   useEffect(() => {
@@ -939,7 +953,7 @@ export default function MirageRushPage() {
     : isCup ? ['VISE LE', 'TROPHÉE.']
     : selectedMode === 'duel' ? ['À TOI DE', 'GALOPER.'] : ['LE SABLE', 'SE RÉVEILLE.'];
   const stageDescription = isCup
-    ? `Enchaîne ${activeCup.stages.length} duels contre ${rivalNameList}, avec les mêmes pouvoirs qu’en duel. Chaque victoire rapporte +${WIN_COINS} OR — jusqu’à +${cupGoldReward} OR si tu gagnes toutes les courses. Les points s’additionnent : le meilleur total soulève le trophée !`
+    ? `Enchaîne ${activeCup.stages.length} duels contre ${rivalNameList}, avec les mêmes pouvoirs qu’en duel. Chaque victoire rapporte +${WIN_COINS} OR — jusqu’à +${cupGoldReward} OR au total${cupChampionReward > 0 ? `, prime de champion de +${cupChampionReward} OR comprise` : ''} si tu gagnes toutes les courses. Les points s’additionnent : le meilleur total soulève le trophée !`
     : selectedMode === 'duel'
     ? `Affronte ${challenge ? `${challenge.name} (course fantôme) ainsi que ${chaseRivalNames}` : `${rivalCount} cavaliers rivaux IA (${rivalNameList})`} sur les ${trackLanes} voies. Les cristaux accélèrent ton cheval et chargent tes pouvoirs. Premier à ${DUEL_DISTANCE} m !`
     : stage === 'snakeway' ? 'Galope sur le Chemin du Serpent, une route dorée qui traverse les nuages orange jusqu’à la planète de Kaio. Passe sous le halo céleste, évite les météores et ramasse les fragments d’étoile dans ce voyage inspiré de Dragon Ball Z !'
@@ -958,7 +972,7 @@ export default function MirageRushPage() {
   const stageHint = selectedMode === 'online'
     ? 'ÉCRAN 02 · TOUCHE UNE MAP POUR OUVRIR LE SALON · 2 À 4 CAVALIERS EN LIGNE'
     : isCup
-      ? `${activeCup.stages.length} COURSES · +${WIN_COINS} OR / VICTOIRE · JUSQU’À +${cupGoldReward} OR`
+      ? `${activeCup.stages.length} COURSES · +${WIN_COINS} OR / VICTOIRE${cupChampionReward > 0 ? ` · +${cupChampionReward} OR AU VAINQUEUR DU GÉNÉRAL` : ''} · JUSQU’À +${cupGoldReward} OR`
       : selectedMode === 'duel'
         ? `${riderCount} CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE`
         : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE';
@@ -1921,7 +1935,10 @@ function MirageSettingsPanel({
                     <span className="mirage-rule-icon is-gold">♛</span>
                     <div>
                       <strong>{cup.name}</strong>
-                      <small>{cup.stages.map((id, index) => `${index + 1}. ${stageName(id)}`).join(' · ')} : {cup.stages.length} duels d’affilée contre {rivalNameList}, avec les mêmes pouvoirs qu’en duel.</small>
+                      <small>
+                        {cup.stages.map((id, index) => `${index + 1}. ${stageName(id)}`).join(' · ')} : {cup.stages.length} duels d’affilée contre {rivalNameList}, avec les mêmes pouvoirs qu’en duel.
+                        {cupChampionBonus(cup) > 0 && <> Le vainqueur du classement général empoche en plus une prime de champion de <strong>{cupChampionBonus(cup)} OR</strong> (maximum {cupGoldMaximum(cup)} OR).</>}
+                      </small>
                     </div>
                   </div>
                 ))}
@@ -1964,7 +1981,7 @@ function MirageSettingsPanel({
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger, les lanternes de pierre, les Xbox des Remparts d’Ocre, les piliers Andon du Château de l’Infini ou les fûts de kérosène de Thunder Airbase : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">●</span><div><strong>Pièces d’or</strong><small>Chaque victoire (1ᵉʳ d’un duel, d’une course de coupe ou d’un salon) rapporte {WIN_COINS} OR. En coupe, le maximum — si tu remportes toutes les courses — est : {CUPS.map((cup) => `${cupGoldMaximum(cup)} OR pour la ${cup.name}`).join(' · ')}. Dépense-les dans la boutique : Gyro Zeppeli coûte 200 OR ; Cloud et son chocobo sont offerts temporairement (280 OR habituellement) ; Link &amp; Épona — épée de légende, bouclier hylien et jument baie — sont offerts 3 jours, puis 320 OR.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">●</span><div><strong>Pièces d’or</strong><small>Chaque victoire (1ᵉʳ d’un duel, d’une course de coupe ou d’un salon) rapporte {WIN_COINS} OR. En coupe, le maximum — si tu remportes toutes les courses, prime de champion comprise — est : {CUPS.map((cup) => `${cupGoldMaximum(cup)} OR pour la ${cup.name}`).join(' · ')}. Dépense-les dans la boutique : Gyro Zeppeli coûte 200 OR ; Cloud et son chocobo sont offerts temporairement (280 OR habituellement) ; Link &amp; Épona — épée de légende, bouclier hylien et jument baie — sont offerts 3 jours, puis 320 OR.</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà), les balustrades blanches (Alger), les barrières de bambou (Yōtei), les murets du Mid (Remparts d’Ocre), les paravents shōji (Château de l’Infini) et les barrières de piste (Thunder Airbase) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies {trackLanes > 3 ? 'Si des obstacles ferment les deux autres voies' : 'Si un obstacle ferme la dernière voie'}, le saut est obligatoire.</div>
               </section>
 

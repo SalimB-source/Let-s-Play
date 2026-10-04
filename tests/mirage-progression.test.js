@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, GYRO_ZEPPELI_ID, INITIAL_UNLOCKED_STAGES,
   MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, STAGE_IDS, WIN_COINS,
-  applyRun, awardCoins, buySkin, coinsForRun, completeCup, defaultProgress, equipSkin,
+  applyRun, awardCoins, buySkin, championBonusForRun, coinsForRun, completeCup, defaultProgress, equipSkin,
   isFirstPlaceRun, isShopSkin, isSkinUnlocked, isStageUnlocked, levelCost, levelForXp,
   levelProgress, loadAccountProgress, loadProgress, progressionStorageKey, sanitizeProgress, saveProgress, skinFor, stageRequirement,
   unlockedStages, xpForRun, xpToReachLevel,
@@ -159,6 +159,40 @@ test('a victory awards 10 gold and a rush awards none', () => {
   const loss = applyRun(win.progress, { mode: 'duel', score: 1000, gems: 4, won: false, rank: 3 });
   assert.equal(loss.coinsGained, 0);
   assert.equal(loss.progress.coins, WIN_COINS);
+});
+
+test('winning the Steel Ball Run general standings pays the 90 OR champion bonus on top of the race win', () => {
+  assert.equal(championBonusForRun({}), 0, 'an ordinary result pays no bonus');
+  assert.equal(championBonusForRun({ cupWon: true }), 0, 'a victory without a cup pays no bonus');
+  assert.equal(championBonusForRun({ completedCupId: 'sbr' }), 0, 'a cup id alone is not a title');
+  assert.equal(championBonusForRun({ cupWon: true, completedCupId: 'desert' }), 0, 'the desert cup has no champion bonus');
+  assert.equal(championBonusForRun({ cupWon: true, completedCupId: 'sbr' }), 90);
+  assert.equal(coinsForRun({ cupWon: true, completedCupId: 'sbr' }), 90, 'the title alone pays the champion bonus');
+  assert.equal(coinsForRun({ mode: 'duel', won: true, cupWon: true, completedCupId: 'sbr' }), WIN_COINS + 90, 'a race won on the way to the title pays both');
+  assert.equal(coinsForRun({ mode: 'duel', won: true, cupWon: true, completedCupId: 'sbr' }), 100);
+
+  // Le dernier résultat d’une Steel Ball Run remportée : victoire de course et
+  // titre du général, donc 100 OR d’un coup, sans doubler quoi que ce soit.
+  let progress = { ...defaultProgress(), completedCups: ['desert', 'winds', 'worldtour', 'legends'] };
+  const wonCup = applyRun(progress, {
+    mode: 'duel', stage: 'snakeway', won: true, rank: 1,
+    completedCupId: 'sbr', cupWon: true,
+  });
+  assert.equal(wonCup.coinsGained, 100);
+  assert.equal(wonCup.progress.coins, 100);
+  assert.deepEqual(wonCup.progress.completedCups, ['desert', 'winds', 'worldtour', 'legends', 'sbr']);
+  assert.deepEqual(wonCup.newlyUnlockedCups, [], 'the Steel Ball Run is the last cup of the catalogue');
+
+  // Une course de la même coupe perdue, puis une deuxième coupe : aucun rappel
+  // de la prime — seuls la victoire de course et le titre la déclenchent.
+  const lostRace = applyRun(wonCup.progress, { mode: 'duel', stage: 'desert', won: false, rank: 2 });
+  assert.equal(lostRace.coinsGained, 0);
+  assert.equal(lostRace.progress.coins, 100);
+  const replayWin = applyRun(lostRace.progress, {
+    mode: 'duel', stage: 'snakeway', won: true, rank: 1, cupWon: true, completedCupId: 'sbr',
+  });
+  assert.equal(replayWin.coinsGained, 100, 'a replay pays the announced amounts again, never more');
+  assert.equal(replayWin.progress.coins, 200);
 });
 
 test('awardCoins safely adds an external adjustment without draining the wallet', () => {

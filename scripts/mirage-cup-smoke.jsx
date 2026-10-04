@@ -27,6 +27,12 @@
  *      rejouer garde le globe et revenir au Désert retrouve son calice.
  *   6. Coupe des Vents : 3 cartes différentes, 3 victoires à +10 OR, soit
  *      +30 OR au total ; la Rose des Vents accompagne le HUD et le podium.
+ *   7. Steel Ball Run, la dernière coupe (ouverte par les quatre autres) :
+ *      les dix cartes du jeu dans l'ordre, dix victoires de course à 10 OR,
+ *      puis la prime de champion de 90 OR versée une seule fois avec le titre
+ *      du classement général — 190 OR maximum. La boule d'acier suit le
+ *      sélecteur, le HUD, la collection et le podium ; la prime n'est jamais
+ *      créditée avant le titre ni re-créditée en restant sur le podium.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -173,19 +179,26 @@ export async function checkMirageCup(assert) {
     assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 0);
 
     // ── 1. Le joueur remporte la Coupe du Désert ───────────────────────────
-    assert.equal(node.querySelectorAll('.mirage-cup-card').length, 4, 'chaque coupe est présentée comme une option distincte');
+    assert.equal(node.querySelectorAll('.mirage-cup-card').length, 5, 'chaque coupe est présentée comme une option distincte');
     assert.ok([...node.querySelectorAll('.mirage-cup-card')].every((button) => button.tagName === 'BUTTON' && button.type === 'button'),
       'les coupes sont de vrais boutons HTML');
     assert.equal(text(node.querySelector('.mirage-cup-card.is-desert .mirage-cup-reward-copy > strong')), '+30 OR', 'la Coupe du Désert met en avant son gain maximal');
     assert.equal(text(node.querySelector('.mirage-cup-card.is-winds .mirage-cup-reward-copy > strong')), '+30 OR', 'la Coupe des Vents annonce son gain maximal');
     assert.equal(text(node.querySelector('.mirage-cup-card.is-worldtour .mirage-cup-reward-copy > strong')), '+40 OR', 'le Grand Tour annonce son gain maximal');
     assert.equal(text(node.querySelector('.mirage-cup-card.is-legends .mirage-cup-reward-copy > strong')), '+50 OR', 'la Coupe des Légendes annonce son gain maximal');
+    assert.equal(text(node.querySelector('.mirage-cup-card.is-sbr .mirage-cup-reward-copy > strong')), '+190 OR', 'la Steel Ball Run annonce 10 victoires de course + la prime de champion');
+    assert.equal(text(node.querySelector('.mirage-cup-card.is-sbr .mirage-cup-champion-bonus')), '+90 OR POUR LE VAINQUEUR DU GÉNÉRAL',
+      'la Steel Ball Run annonce sa prime de champion de 90 OR');
+    assert.ok([...node.querySelectorAll('.mirage-cup-card:not(.is-sbr)')].every((card) => !card.querySelector('.mirage-cup-champion-bonus')),
+      'aucune autre coupe n’annonce de prime de champion');
     assert.equal(node.querySelector('.mirage-cup-card.is-desert .mirage-cup-route'), null, 'les terrains restent cachés dans l’aperçu');
     assert.equal(node.querySelector('.mirage-cup-card.is-desert svg').dataset.trophy, 'desert');
     assert.equal(node.querySelector('.mirage-cup-card.is-winds svg').dataset.trophy, 'winds');
     assert.equal(node.querySelector('.mirage-cup-card.is-worldtour svg').dataset.trophy, 'worldtour');
+    assert.equal(node.querySelector('.mirage-cup-card.is-sbr svg').dataset.trophy, 'sbr');
     assert.notEqual(node.querySelector('.mirage-cup-card.is-desert svg').innerHTML, node.querySelector('.mirage-cup-card.is-winds svg').innerHTML, 'la Rose des Vents a sa silhouette propre');
     assert.notEqual(node.querySelector('.mirage-cup-card.is-desert svg').innerHTML, node.querySelector('.mirage-cup-card.is-worldtour svg').innerHTML, 'chaque coupe annonce une silhouette différente');
+    assert.notEqual(node.querySelector('.mirage-cup-card.is-sbr svg').innerHTML, node.querySelector('.mirage-cup-card.is-legends svg').innerHTML, 'la boule d’acier de la Steel Ball Run a sa propre silhouette');
     assert.ok([...node.querySelectorAll('.mirage-cup-card')].every((card) =>
       card.querySelector('.mirage-cup-reward-copy > em')?.textContent.includes('+10 OR PAR VICTOIRE')),
     'chaque coupe affiche les 10 OR gagnés par victoire');
@@ -197,10 +210,13 @@ export async function checkMirageCup(assert) {
     const initialWindsCard = node.querySelector('.mirage-cup-card.is-winds');
     const initialTourCard = node.querySelector('.mirage-cup-card.is-worldtour');
     const initialLegendsCard = node.querySelector('.mirage-cup-card.is-legends');
+    const initialSbrCard = node.querySelector('.mirage-cup-card.is-sbr');
     assert.equal(initialDesertCard.disabled, false, 'la 1ʳᵉ coupe est ouverte dès le départ');
     assert.equal(initialDesertCard.classList.contains('is-locked'), false);
     assert.equal(initialDesertCard.querySelector('.mirage-cup-lock'), null);
-    for (const lockedCard of [initialWindsCard, initialTourCard, initialLegendsCard]) {
+    assert.match(text(initialSbrCard.querySelector('.mirage-cup-card-action')), /FINIR COUPE DES LÉGENDES/,
+      'la Steel Ball Run s’annonce comme la dernière, après la Coupe des Légendes');
+    for (const lockedCard of [initialWindsCard, initialTourCard, initialLegendsCard, initialSbrCard]) {
       assert.equal(lockedCard.disabled, true, 'toutes les coupes suivantes sont verrouillées au départ');
       assert.equal(lockedCard.classList.contains('is-locked'), true);
       assert.equal(text(lockedCard.querySelector('.mirage-cup-lock')), '🔒', 'chaque coupe verrouillée porte un cadenas');
@@ -564,4 +580,95 @@ export async function checkMirageCup(assert) {
     await tour.unmount();
   }
 
+  // ── 7. Steel Ball Run : les dix cartes, 90 OR pour le champion ─────────
+  // Les quatre coupes sont mises au tableau de chasse dans la progression
+  // sauvegardée (les rejouer prendrait vingt courses) : la dernière coupe du
+  // catalogue s’ouvre alors, et le titre du classement général doit verser
+  // exactement une fois la prime de champion de 90 OR, en plus des dix
+  // victoires de course à 10 OR.
+  const sbrStartCoins = 100;
+  window.localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+    xp: 0, runs: 10, coins: sbrStartCoins, skinId: 'desert', ownedSkins: [],
+    wonStages: ['desert', 'western', 'prairie', 'sardinia', 'alger'],
+    completedCups: ['desert', 'winds', 'worldtour', 'legends'],
+  }));
+  const sbrTimers = patchTimers();
+  const sbr = await mountPage('/jeu?mode=cup');
+  try {
+    const sbrCard = sbr.node.querySelector('.mirage-cup-card.is-sbr');
+    assert.equal(sbrCard.disabled, false, 'les quatre coupes remportées ouvrent la Steel Ball Run');
+    assert.equal(text(sbrCard.querySelector('.mirage-cup-reward-copy > strong')), '+190 OR');
+    assert.equal(text(sbrCard.querySelector('.mirage-cup-card-title small')), 'TROPHÉE · Boule d’Acier');
+    await click(sbrCard);
+    assert.match(countdownKicker(sbr.node), /STEEL BALL RUN · COURSE 1 \/ 10 · DUNES DE L’ÉCHO/,
+      'le clic sur la carte démarre les dix courses de la Steel Ball Run');
+    await startCupFromIntro(sbr.node); // déjà lancée : la carte n’est plus à l’écran
+
+    const sbrStages = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'];
+    let sbrResults;
+    for (let race = 0; race < sbrStages.length; race += 1) {
+      if (race > 0) {
+        await click(nextButton(sbr.node));
+        await waitForCountdown(sbr.node);
+        assert.match(countdownKicker(sbr.node), new RegExp(`COURSE ${race + 1} / 10`));
+      }
+      await waitForRace(sbr.node);
+      assert.equal(worldProbe.props.stage, sbrStages[race], 'les dix courses suivent les dix cartes du jeu');
+      assert.deepEqual(worldProbe.props.race.cup, { id: 'sbr', index: race, total: 10 });
+      assert.equal(sbr.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'sbr', 'le HUD porte la boule d’acier');
+      assert.equal(text(sbr.node.querySelector('.mirage-chip.is-cup')), `COURSE ${race + 1}/10 · ${race * 10} PTS`);
+      await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+      sbrResults = await waitForResults(sbr.node);
+      // Les OR de la course sont ceux du bloc de récompense : la prime de
+      // champion, elle, a sa propre ligne — absente tant que le titre n’est
+      // pas acquis, et elle ne doit jamais doubler les 10 OR de la victoire.
+      assert.equal(text(sbrResults.querySelector('.mirage-xp-award .mirage-coin-gain')), '+10 OR',
+        'chaque victoire de course crédite ses 10 OR');
+      const coins = JSON.parse(window.localStorage.getItem(PROGRESSION_KEY)).coins;
+      if (race < sbrStages.length - 1) {
+        assert.equal(coins, sbrStartCoins + (race + 1) * 10, 'la prime de champion ne tombe pas course par course');
+        assert.equal(sbrResults.querySelector('.mirage-cup-champion-bonus'), null, 'pas de prime tant que le titre n’est pas acquis');
+      }
+    }
+
+    // Le titre du général : la prime de champion apparaît sur l’arrivée de la
+    // dernière course, exactement une fois.
+    assert.equal(text(sbrResults.querySelector('.mirage-cup-champion-bonus')), '♛ PRIME DE CHAMPION · +90 OR CLASSEMENT GÉNÉRAL REMPORTÉ');
+    assert.deepEqual(standings(sbrResults), ['Salim 100', `${ombre} 70`, `${sauge} 40`, `${amethyste} 20`]);
+    assert.equal(JSON.parse(window.localStorage.getItem(PROGRESSION_KEY)).coins, sbrStartCoins + 100 + 90,
+      'dix victoires de course (100 OR) plus la prime de champion (90 OR), une seule fois');
+    // Le profil garde un trophée par coupe remportée : les trois des sections
+    // précédentes, plus la boule d’acier — ajoutée une seule fois.
+    assert.equal(sbr.node.querySelectorAll('.mirage-profile-trophy-card[data-cup-id="sbr"]').length, 1,
+      'la victoire ajoute la boule d’acier au profil, une seule fois');
+    const collectedSbr = sbr.node.querySelector('.mirage-profile-trophy-card[data-cup-id="sbr"] svg');
+    assert.equal(collectedSbr.dataset.trophy, 'sbr');
+    assert.equal(collectedSbr.innerHTML, sbrCard.querySelector('svg').innerHTML, 'la collection partage le trophée du sélecteur');
+    const savedSbrAchievements = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
+    const savedCupTrophies = savedSbrAchievements.sets[MIRAGE_CUP_TROPHIES_KEY];
+    assert.deepEqual([...savedCupTrophies].sort(), ['desert', 'sbr', 'winds', 'worldtour'],
+      'un trophée par coupe remportée, sans doublon');
+    assert.equal(savedCupTrophies.filter((id) => id === 'sbr').length, 1,
+      'le trophée de la Steel Ball Run est persisté une seule fois');
+
+    assert.match(text(nextButton(sbr.node)), /VOIR LE PODIUM/);
+    await click(nextButton(sbr.node));
+    const sbrTrophy = await until(() => sbr.node.querySelector('.mirage-trophy-screen'), 'le podium de la Steel Ball Run');
+    await until(() => sbrTrophy.querySelector('.mirage-trophy-fallback'), 'la boule d’acier sans WebGL');
+    assert.equal(sbrTrophy.dataset.trophy, 'sbr');
+    assert.equal(text(sbrTrophy.querySelector('.mirage-trophy-design')), 'Boule d’Acier');
+    assert.equal(sbrTrophy.querySelector('.mirage-trophy-fallback svg').dataset.trophy, 'sbr');
+    assert.match(text(sbrTrophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Steel Ball Run avec 100 points/);
+    assert.deepEqual(standings(sbrTrophy), ['Salim 100', `${ombre} 70`, `${sauge} 40`, `${amethyste} 20`]);
+    assert.equal(text(sbrTrophy.querySelector('.mirage-trophy-purse')), '● OR GAGNÉS EN COURSE · +100 OR MAX. 190 OR SI TOUTES LES COURSES SONT GAGNÉES',
+      'le podium sépare les OR de course du maximum, prime comprise');
+    const sbrBonus = sbrTrophy.querySelector('.mirage-trophy-champion-bonus');
+    assert.ok(sbrBonus.classList.contains('is-won'), 'la prime de champion gagnée est mise en avant');
+    assert.equal(text(sbrBonus), '♛ PRIME DE CHAMPION · +90 OR AU TITRE DU CLASSEMENT GÉNÉRAL');
+    assert.equal(JSON.parse(window.localStorage.getItem(PROGRESSION_KEY)).coins, sbrStartCoins + 190,
+      'rester sur le podium ne re-crédite jamais la prime');
+  } finally {
+    sbrTimers.restore();
+    await sbr.unmount();
+  }
 }
