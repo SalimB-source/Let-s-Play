@@ -129,7 +129,7 @@ const pageMeta = {
   '/news/physint-budget-400-millions-xbox': {
     title: 'Physint : un budget de 400 millions de dollars ? Xbox aurait signé pour beaucoup moins — Let’s Play',
     description: 'Un chiffre de 400 millions de dollars a circulé autour de Physint, le jeu d’action-espionnage de Hideo Kojima repêché par Xbox. Christopher Dring évoque un simple bruit de couloir et Jason Schreier assure que Microsoft a signé pour un montant nettement inférieur.',
-    image: 'kojima_mindplayer.png', type: 'article', published: '2026-09-29', section: 'Actualités gaming',
+    image: 'kojima_mindplayer.webp', type: 'article', published: '2026-09-29', section: 'Actualités gaming',
   },
   '/news/god-of-war-laufey-precommandes-arc-serpent': {
     title: 'God of War Laufey : l’arc-serpent de Faye et les éditions, à l’ouverture des précommandes — Let’s Play',

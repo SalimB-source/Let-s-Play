@@ -23,7 +23,7 @@
  * `src/quizzes/useQuizProgress.js` en fait le hook React consommé par le
  * lecteur et la grille des quizz.
  */
-import { QUIZ_LEVELS } from '../quizzesData.js';
+import { QUIZ_LEVELS } from './levels.js';
 import { supabase } from '../lib/supabase.js';
 
 /** Clé du stockage local : niveaux terminés, par quizz. */

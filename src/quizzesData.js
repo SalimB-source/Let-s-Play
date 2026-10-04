@@ -36,6 +36,8 @@
  */
 import { baseUrl as base } from './data';
 
+import { QUIZ_LEVELS } from './quizzes/levels.js';
+
 export const baseUrl = base;
 
 /**
@@ -112,11 +114,12 @@ export function isQuizCategory(category) {
 
 /**
  * Les trois niveaux d'un quizz, dans l'ordre de progression : Facile est
- * toujours ouvert, chaque niveau terminé débloque le suivant. Utilisé par le
- * lecteur (sélecteur de niveaux), la page de garde (progression) et les
- * succès (une complétion par niveau).
+ * toujours ouvert, chaque niveau terminé débloque le suivant. Le tableau lui-même
+ * vit dans `src/quizzes/levels.js` — la barre de navigation lit la progression
+ * (`quizzes/quizProgress.js`) sur toutes les pages, et ce module ne doit pas
+ * entraîner le catalogue avec lui.
  */
-export const QUIZ_LEVELS = ['easy', 'medium', 'hard'];
+export { QUIZ_LEVELS };
 
 /**
  * Alias historique des paliers (`QUIZ_DIFFICULTIES` était le nom employé quand

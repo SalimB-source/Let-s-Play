@@ -24,7 +24,7 @@ const stories = {
     take: 'RÉSUMÉ', takeText: 'Blizzard ne ressuscite pas StarCraft à l’identique : le studio teste une nouvelle porte d’entrée, avec un risque créatif aussi grand que l’attente autour du nom.'
   },
   'diablo-v': {
-    date: '12.09.2026', category: 'BLIZZARD · ACTION-RPG', image: 'diablo-v-news.png', imageAlt: 'Logo Diablo V et annonce du printemps 2029', cover: 'DIABLO V', video: 'GxCN_AKYtts', videoTitle: 'Diablo V — teaser officiel',
+    date: '12.09.2026', category: 'BLIZZARD · ACTION-RPG', image: 'diablo-v-news.webp', imageAlt: 'Logo Diablo V et annonce du printemps 2029', cover: 'DIABLO V', video: 'GxCN_AKYtts', videoTitle: 'Diablo V — teaser officiel',
     title: 'DIABLO V', accent: 'SE PRÉPARE.', dek: 'Le prochain chapitre de la saga arrivera au printemps 2029. Blizzard promet un Sanctuaire en ruines, où les héros ont disparu.',
     lead: 'La BlizzCon 2026 a confirmé le retour de Diablo. Après plusieurs années d’attente, Blizzard a officialisé le cinquième épisode de sa série d’action-RPG.',
     intro: 'L’annonce reste volontairement mystérieuse. Le studio n’a partagé ni séquence de gameplay ni détail sur les classes jouables, préférant poser une atmosphère : celle d’un Sanctuaire tombé et privé de ses figures héroïques.',

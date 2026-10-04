@@ -13,7 +13,10 @@ import {
   todaysReleases,
 } from '../releasesData';
 
-export function Arrow(){ return <span aria-hidden="true">↗</span>; }
+// La flèche des liens d'action vit maintenant dans son propre fichier (elle
+// n'a besoin ni des données de sorties ni de ce composant) ; on la ré-exporte
+// ici pour les pages qui l'ont toujours prise dans ce module.
+export { Arrow } from './Arrow';
 
 /** Remplit un gabarit de traduction : fill('Sortie le {date}', { date }) */
 export function fill(template, vars){

@@ -8,8 +8,8 @@ import '../games/games.css';
  * Page « Jeu » — la vitrine arcade de Let's Play.
  *
  * Ce n'est PAS la page d'un jeu : c'est la liste des jeux disponibles.
- * Mirage Rush, La Cendre et Vice City Rush sont jouables ; les cartes
- * « bientôt » réservent la place des prochains jeux.
+ * Mirage Rush et Vice City Rush sont jouables ; les cartes « bientôt »
+ * réservent la place des prochains jeux.
  *
  * Pour ajouter un jeu : une entrée dans `GAMES` ci-dessous, et la route
  * correspondante dans src/main.jsx.
@@ -18,9 +18,8 @@ import '../games/games.css';
 // Miniature de Mirage Rush : key art façon western (JoJo's Steel Ball Run),
 // posée dans /public/mirage-rush-thumb.jpg.
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
-// Miniatures des autres jeux jouables.
+// Miniature de Vice City Rush.
 const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-keyart.jpg`;
-const CENDRE_THUMB = `${import.meta.env.BASE_URL}la-cendre-anime-thumb.jpg`;
 
 const GAMES = [
   {
@@ -35,19 +34,6 @@ const GAMES = [
     tone: 'desert',
     featured: true,
     tags: ['ARCADE', 'SOLO', 'DUEL', 'COUPE', 'EN LIGNE'],
-  },
-  {
-    id: 'la-cendre',
-    title: 'LA CENDRE',
-    subtitle: 'SOULSLIKE · ANIME DARK FANTASY',
-    description: 'Le feu de cendres s’est éteint. Incarne le Gardien Chitine, un guerrier insecte aux ailes irisées, dans une Cour du Seuil peinte façon anime : caméra d’épaule, combats exigeants, épée longue à deux mains et lumière violette.',
-    thumb: CENDRE_THUMB,
-    alt: 'La Cendre — guerrier insecte aux yeux dorés, ailes irisées et épée longue à deux mains dans une cour de château, illustration anime dark fantasy',
-    route: '/jeu/la-cendre',
-    badge: 'JOUABLE',
-    tone: 'ember',
-    featured: false,
-    tags: ['SOULSLIKE', 'ANIME', 'GUERRIER INSECTE', '3D'],
   },
   {
     id: 'vice-city-rush',
@@ -82,7 +68,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'LES JEUX',
     h2b: 'DE LA MAISON.',
-    intro: 'Trois jeux jouables dans la page : le western nerveux de Mirage Rush, le soulslike La Cendre et les courses néon de Vice City Rush.',
+    intro: 'Deux jeux jouables dans la page : le western nerveux de Mirage Rush et les courses néon de Vice City Rush.',
     play: 'JOUER',
     soon: 'BIENTÔT',
   },
@@ -90,7 +76,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'THE GAMES',
     h2b: 'WE BUILD.',
-    intro: 'Three games playable right on the page: Mirage Rush, the dark-fantasy soulslike La Cendre, and Vice City Rush’s neon city races.',
+    intro: 'Two games playable right on the page: Mirage Rush and Vice City Rush’s neon city races.',
     play: 'PLAY',
     soon: 'SOON',
   },
@@ -98,7 +84,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'ألعاب',
     h2b: 'المنصة.',
-    intro: 'ثلاث ألعاب داخل الصفحة: أجواء الغرب في Mirage Rush، وفانتازيا La Cendre المظلمة، وسباقات Vice City Rush الليلية بين المدن.',
+    intro: 'لعبتان داخل الصفحة: أجواء الغرب في Mirage Rush، وسباقات Vice City Rush الليلية بين المدن.',
     play: 'العب',
     soon: 'قريباً',
   },

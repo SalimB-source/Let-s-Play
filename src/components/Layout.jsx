@@ -4,7 +4,15 @@ import { useLanguage } from '../i18n/LanguageContext';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
-import { searchContent } from '../search/searchIndex';
+// L'index de recherche (actus, tests, dossiers, sorties, quizz) pèse à lui
+// seul plus lourd que la barre : il n'est chargé qu'au premier geste de
+// recherche — focus du champ, ouverture de la palette (⌘K, « / »), page
+// /search. Voir `ensureSearchIndex` plus bas.
+let searchIndexPromise = null;
+function loadSearchIndex() {
+  searchIndexPromise ||= import('../search/searchIndex').then((module) => module.searchContent);
+  return searchIndexPromise;
+}
 import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
 import { levelTitle } from '../achievements/catalog';
 import { avatarFor, displayNameFor } from '../lib/comments';
@@ -268,8 +276,22 @@ export default function Layout({ children }) {
   const isHome = location.pathname === '/';
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
   const [searchOpen, setSearchOpen] = useState(false);
-  const liveSearchResults = useMemo(() => searchContent(searchValue).slice(0, 6), [searchValue]);
-  const paletteResults = useMemo(() => searchContent(paletteQuery).slice(0, 8), [paletteQuery]);
+  // `searchContent` est nul tant que l'index n'est pas arrivé : les résultats
+  // se remplissent d'eux-mêmes quand il se pose (une frappe dans le champ
+  // pendant le chargement ne perd rien).
+  const [searchContent, setSearchContent] = useState(null);
+  const ensureSearchIndex = () => {
+    if (searchContent || searchIndexPromise) return;
+    loadSearchIndex().then(setSearchContent).catch(() => {});
+  };
+  const liveSearchResults = useMemo(
+    () => (searchContent ? searchContent(searchValue).slice(0, 6) : []),
+    [searchContent, searchValue],
+  );
+  const paletteResults = useMemo(
+    () => (searchContent ? searchContent(paletteQuery).slice(0, 8) : []),
+    [searchContent, paletteQuery],
+  );
   const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release', quiz: 'Quiz' };
   const searchInputRef = useRef(null);
 
@@ -301,10 +323,12 @@ export default function Layout({ children }) {
       const slash = e.key === '/';
       if ((e.metaKey || e.ctrlKey) && k) {
         e.preventDefault();
+        ensureSearchIndex();
         setPaletteQuery(searchValue);
         setPaletteOpen(true);
       } else if (slash && !e.metaKey && !e.ctrlKey && !paletteOpen && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
         e.preventDefault();
+        ensureSearchIndex();
         setPaletteQuery('');
         setPaletteOpen(true);
       }
@@ -574,7 +598,7 @@ export default function Layout({ children }) {
             </div>
 
             <div className="nav-actions">
-              <form className="nav-search" ref={searchRef} onSubmit={submitSearch} onFocus={() => setSearchOpen(true)} role="search" aria-label="Recherche">
+              <form className="nav-search" ref={searchRef} onSubmit={submitSearch} onFocus={() => { ensureSearchIndex(); setSearchOpen(true); }} role="search" aria-label="Recherche">
                 <label className="sr-only" htmlFor="nav-search-input">{t.nav.search.placeholder}</label>
                 <span className="nav-search-icon" aria-hidden="true">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -582,13 +606,13 @@ export default function Layout({ children }) {
                     <path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 </span>
-                <input ref={searchInputRef} id="nav-search-input" value={searchValue} onChange={(event) => { setSearchValue(event.target.value); setSearchOpen(true); }} onFocus={() => setSearchOpen(true)} placeholder={t.nav.search.placeholder} autoComplete="off" />
+                <input ref={searchInputRef} id="nav-search-input" value={searchValue} onChange={(event) => { ensureSearchIndex(); setSearchValue(event.target.value); setSearchOpen(true); }} onFocus={() => { ensureSearchIndex(); setSearchOpen(true); }} placeholder={t.nav.search.placeholder} autoComplete="off" />
                 {searchValue ? (
                   <button type="button" className="nav-search-clear" aria-label="Effacer" onClick={() => { setSearchValue(''); setSearchOpen(false); searchInputRef.current?.focus(); }}>
                     <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
                   </button>
                 ) : (
-                  <span className="nav-search-kbd" aria-hidden="true" onClick={() => { setPaletteQuery(''); setPaletteOpen(true); }} style={{cursor:'pointer'}}><span>⌘</span><span>K</span></span>
+                  <span className="nav-search-kbd" aria-hidden="true" onClick={() => { ensureSearchIndex(); setPaletteQuery(''); setPaletteOpen(true); }} style={{cursor:'pointer'}}><span>⌘</span><span>K</span></span>
                 )}
                 <button type="submit" aria-label={t.nav.search.submit} className="nav-search-submit">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -747,7 +771,7 @@ export default function Layout({ children }) {
               <input
                 ref={paletteInputRef}
                 value={paletteQuery}
-                onChange={(e) => setPaletteQuery(e.target.value)}
+                onChange={(e) => { ensureSearchIndex(); setPaletteQuery(e.target.value); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') submitPalette(); }}
                 placeholder={t.nav.search.placeholder || 'Rechercher…'}
                 aria-label={t.nav.search.placeholder}

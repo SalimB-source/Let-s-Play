@@ -424,7 +424,7 @@ function triforceAssetUrl() {
   const base = typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
     ? import.meta.env.BASE_URL
     : '/';
-  return `${base}icons/mirage-rush/link-triforce.png`;
+  return `${base}icons/mirage-rush/link-triforce.webp`;
 }
 
 /** La Triforce : trois triangles d'or vers le haut, plus l'image sacrée. */

@@ -366,12 +366,12 @@ const stories = {
   // Actus gaming du 28 et 29.09.2026 — rédigées à la main au gabarit du robot
   // (le déclenchement manuel du workflow n'étant pas possible depuis cette
   // session). Visuels officiels hotlinkés + carte SVG de repli locale, sauf
-  // l'actu Physint × Xbox (miniature locale kojima_mindplayer.png) et l'actu
+  // l'actu Physint × Xbox (miniature locale kojima_mindplayer.webp) et l'actu
   // Minecraft World Hotel, dont les concept arts officiels sont
   // déposés dans public/screenshots/minecraft-world-hotel/ (la carte SVG
   // reste le visuel de repli).
   'physint-budget-400-millions-xbox': {
-    date: '29.09.2026', category: 'XBOX · KOJIMA PRODUCTIONS', image: 'kojima_mindplayer.png', thumbnail: 'kojima_mindplayer.png', imageAlt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', cover: 'PHYSINT',
+    date: '29.09.2026', category: 'XBOX · KOJIMA PRODUCTIONS', image: 'kojima_mindplayer.webp', thumbnail: 'kojima_mindplayer.webp', imageAlt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', cover: 'PHYSINT',
     title: 'PHYSINT À 400 M$ ?', accent: 'XBOX A SIGNÉ POUR MOINS.', dek: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima, fraîchement repêché par Xbox après le retrait de PlayStation. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft s’est engagé sur un montant « nettement inférieur ».',
     lead: 'En récupérant Physint après la rupture entre Hideo Kojima et PlayStation, Xbox s’est offert un joli coup de prestige. Mais à quel prix ? Tout le week-end, la rumeur d’un budget de 400 millions de dollars a affolé les compteurs — avant d’être sérieusement refroidie.',
     intro: 'Alors que Bloomberg expliquait récemment le retrait de Sony par des retards accumulés, un budget déjà dépassé et la rentabilité décevante des dernières productions du studio, la question de l’addition payée par Microsoft devenait centrale pour savoir si Physint pourra un jour être rentable. Deux voix bien informées de l’industrie viennent de remettre les pendules à l’heure.',
@@ -384,7 +384,7 @@ const stories = {
     p4: 'Reste à savoir si ce contrat revu à la baisse suffira à faire de Physint une opération rentable là où Sony a préféré jeter l’éponge. Entre les ambitions cinématographiques de Hideo Kojima et la nouvelle discipline budgétaire de Xbox, l’équilibre sera scruté de près jusqu’à la sortie. Et vous : pensez-vous que Xbox a fait une bonne affaire en récupérant Physint, ou que le projet reste trop risqué financièrement ?',
     take: 'À RETENIR', takeText: 'Le chiffre de 400 millions de dollars évoqué pour Physint n’était qu’un bruit de couloir, a précisé Christopher Dring. Selon une source directe de Jason Schreier chez Xbox, Microsoft a signé avec Kojima Productions pour un budget « nettement inférieur ».',
     source: 'D’après ActuGaming (28.09.2026), citant les déclarations de Christopher Dring (The Game Business) et de Jason Schreier (Bloomberg) sur ResetEra.', sourceUrl: 'https://www.actugaming.net/physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de-kojima-xbox-aurait-signe-pour-beaucoup-moins-que-cela-827065/', sourceDetail: 'Lire l’article d’ActuGaming',
-    credit: 'Visuel : illustration éditoriale Let’s Play (kojima_mindplayer.png).',
+    credit: 'Visuel : illustration éditoriale Let’s Play (kojima_mindplayer.webp).',
     sentiment: 'mixed'
   },
   'god-of-war-laufey-precommandes-arc-serpent': {
@@ -474,7 +474,7 @@ const stories = {
   },
   // Actu à la une du 26.09.2026 (une de l'accueil jusqu'au 28.09.2026).
   'halo-activision': {
-    date: '26.09.2026', category: 'XBOX · ACTIVISION', image: 'masterchief-activision.png', imageAlt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', cover: 'ACTIVISION',
+    date: '26.09.2026', category: 'XBOX · ACTIVISION', image: 'masterchief-activision.webp', imageAlt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', cover: 'ACTIVISION',
     title: 'HALO PASSE CHEZ', accent: 'ACTIVISION.', dek: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision, avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
     lead: 'La note interne « Continuing Our Reset », envoyée par Matt Booty aux équipes Xbox et publiée sur Xbox Wire, a mis fin aux rumeurs : c’est Activision qui développera le prochain jeu Halo. Une équipe dédiée, distincte des studios Call of Duty, sera montée pour l’occasion — tandis qu’Halo Studios est frappé par 268 licenciements.',
     intro: 'Depuis la fin de l’été, les rumeurs s’enchaînaient : Sledgehammer Games aurait présenté un projet de Halo multijoueur à Microsoft, et Xbox explorait ouvertement une proposition pour qu’Activision prête main-forte à la franchise. La restructuration du 22 septembre 2026 transforme la rumeur en feuille de route.',

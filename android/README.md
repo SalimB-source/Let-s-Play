@@ -45,16 +45,9 @@ accéder à la messagerie, il faut se connecter dans l'application.
   arrivent plusieurs secondes après le clic « Répondre » — avec le réglage par
   défaut de la WebView, la lecture était refusée et l'écran restait noir
   pendant que le son passait (corrigé en 1.0.2).
-- **Un jeu peut coucher l'écran** (APK 1.0.4) : quand une page de jeu le
-  demande, le site appelle `LetsPlayAndroid.setGameOrientation('landscape')` et
-  l'activité passe en `SCREEN_ORIENTATION_SENSOR_LANDSCAPE` — le jeu se lance
-  donc à l'horizontale, quel que soit le sens dans lequel le téléphone est tenu.
-  En quittant la page, le pont est rappelé avec `'auto'` (ou
-  `screenOrientation` est rendu au système) : l'activité reprend l'orientation
-  du téléphone et le reste du site continue de suivre la position de l'appareil.
-  Le manifeste n'est **pas** épinglé en paysage, sinon tout le site resterait
-  couché. Comme `configChanges` couvre déjà `orientation|screenSize`, la rotation
-  ne recharge pas la page — la partie en cours survit.
+- **Orientation** : le manifeste n'est **pas** épinglé, et l'activité suit le
+  téléphone (comme le site) : `configChanges` couvre `orientation|screenSize`,
+  donc une rotation ne recharge pas la page — la partie en cours survit.
 
 ## Dépannage
 
