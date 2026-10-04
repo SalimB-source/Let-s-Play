@@ -25,7 +25,7 @@ import {
   cupGoldMaximum, getCup, isCupComplete, isCupUnlocked, cupWinner, placeLabel, recordCupRace,
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
-import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, LINK_EPONA_FREE_DAYS, LINK_EPONA_ID, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, formatFreeWindow, isShopSkin, isSkinTemporarilyFree, isSkinUnlocked, isStageUnlocked, levelProgress, loadProgress, saveProgress, skinFor, temporaryFreeUntil } from './mirageProgression';
+import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, LINK_EPONA_FREE_DAYS, LINK_EPONA_ID, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, formatFreeWindow, isFirstPlaceRun, isShopSkin, isSkinTemporarilyFree, isSkinUnlocked, isStageUnlocked, levelProgress, loadProgress, saveProgress, skinFor, temporaryFreeUntil } from './mirageProgression';
 import { LINK_BOMB_AOE_TILES, LINK_BOMB_FUSE_DURATION, LINK_BOOMERANG_THROWS } from './mirageLinkPowers';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
 import useGameFullscreen from './useGameFullscreen';
@@ -646,6 +646,18 @@ export default function MirageRushPage() {
     }
     const runAward = recordProgress(completedCupId ? { ...result, completedCupId } : result);
     setAward(runAward);
+    // Trophées de jeu : chaque course terminée nourrit les succès Mirage Rush
+    // du joueur (terrain, mode, record de score et de cristaux, victoire).
+    // L'action est envoyée avant la branche « coupe » pour que les courses de
+    // coupe comptent elles aussi — le trophée de coupe reste, lui, annoncé par
+    // `mirage_cup_won` plus bas.
+    trackAchievement('mirage_run', {
+      stage: result.stage,
+      mode: result.mode,
+      score: result.score,
+      gems: result.gems,
+      won: isFirstPlaceRun(result),
+    });
     if (nextCupRun) {
       const currentRun = cupRunRef.current;
       cupRunRef.current = nextCupRun;

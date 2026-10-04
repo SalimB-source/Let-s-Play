@@ -8,9 +8,11 @@
  *
  *   { id, icon, group, rarity, xp, metric, target, labels: { en, fr, ar } }
  *
- * `icon` pointe vers une icône 3D de 3dicons.co (licence CC0, aucune
- * attribution requise), rendue dans public/icons/achievements/ d'après
- * l'identifiant du succès.
+ * `icon` pointe vers une icône rangée dans public/icons/achievements/ d'après
+ * l'identifiant du succès : un rendu 3D `.webp` de 3dicons.co (licence CC0,
+ * aucune attribution requise) pour les succès du site, un médaillon `.svg`
+ * dessiné pour les trophées de jeu (voir `scripts/trophy-icons.mjs`, qui les
+ * régénère tous — palette du jeu + métal du grade).
  *
  * Grades
  * ------
@@ -27,10 +29,17 @@
  *    videosWatched, liveWatched, commentsPosted, searchesPerformed,
  *    distinctSearches, languagesUsed, providersLinked, profileUpdates,
  *    accountsCreated, sessions, visitDays, bestStreak, nightReading,
- *    earlyReading, nightReadingDays.
+ *    earlyReading, nightReadingDays, quizzesCompleted, distinctQuizzes,
+ *    perfectQuizzes, dailyQuizDays, dailyQuizStreak, challengesSent — et,
+ *    pour les jeux d'arcade du site, mirageRuns, mirageWins, mirageBestScore,
+ *    mirageBestGems, mirageStagesCleared, mirageModesPlayed, mirageCupsWon,
+ *    viceCityRuns, viceCityWins, viceCityBestScore, viceCityCitiesDriven,
+ *    viceCityCitiesWon, viceCityModesPlayed, viceCityStoryChapters.
  * 2. `target` est le seuil à atteindre (1 = une fois).
  * 3. `labels` porte le nom et la description dans les trois langues du site
  *    (l'anglais sert de repli).
+ * 4. `group` range le succès dans une catégorie (`GROUPS`) : c'est le rayon
+ *    dans lequel la vitrine à trophées du profil l'affiche.
  *
  * Une nouvelle action sur le site (nouveau bouton, nouveau geste) s'ajoute
  * en deux temps : un cas dans `reduce()` (engine.js) + une métrique, puis
@@ -55,15 +64,95 @@ export function tierRank(tier) {
   return index === -1 ? 0 : index;
 }
 
-/** Familles de succès, utilisées pour filtrer dans le hub joueur. */
+/**
+ * Familles (catégories) de succès : ce sont les rayons de la vitrine à
+ * trophées du profil joueur. Chaque famille porte son nom dans les trois
+ * langues et une courte phrase d'accroche (`taglines`) affichée sous le titre
+ * de la catégorie — les deux dernières familles sont les jeux d'arcade du
+ * site, dont les trophées se gagnent manette en main.
+ */
 export const GROUPS = [
-  { id: 'start', icon: '🚀', labels: { en: 'Getting started', fr: 'Premiers pas', ar: 'البدايات' } },
-  { id: 'reading', icon: '📚', labels: { en: 'Reading', fr: 'Lecture', ar: 'القراءة' } },
-  { id: 'video', icon: '▶️', labels: { en: 'Video', fr: 'Vidéo', ar: 'الفيديو' } },
-  { id: 'community', icon: '💬', labels: { en: 'Community', fr: 'Communauté', ar: 'المجتمع' } },
-  { id: 'loyalty', icon: '🔥', labels: { en: 'Loyalty', fr: 'Fidélité', ar: 'الوفاء' } },
-  { id: 'profile', icon: '🎮', labels: { en: 'Account', fr: 'Compte', ar: 'الحساب' } },
-  { id: 'quiz', icon: '🧠', labels: { en: 'Quizzes', fr: 'Quizz', ar: 'اختبارات' } },
+  {
+    id: 'start', icon: '🚀',
+    labels: { en: 'Getting started', fr: 'Premiers pas', ar: 'البدايات' },
+    taglines: {
+      en: 'Your first steps across the site.',
+      fr: 'Tes premiers pas sur le site.',
+      ar: 'خطواتك الأولى على الموقع.',
+    },
+  },
+  {
+    id: 'reading', icon: '📚',
+    labels: { en: 'Reading', fr: 'Lecture', ar: 'القراءة' },
+    taglines: {
+      en: 'News, reviews and dossiers you have read.',
+      fr: 'Actus, tests et dossiers que tu as lus.',
+      ar: 'الأخبار والمراجعات والملفات التي قرأتها.',
+    },
+  },
+  {
+    id: 'video', icon: '▶️',
+    labels: { en: 'Video', fr: 'Vidéo', ar: 'الفيديو' },
+    taglines: {
+      en: 'Trailers, reels and the live stream.',
+      fr: 'Bandes-annonces, reels et direct de la chaîne.',
+      ar: 'المقاطع الإعلانية والريلز والبث المباشر.',
+    },
+  },
+  {
+    id: 'community', icon: '💬',
+    labels: { en: 'Community', fr: 'Communauté', ar: 'المجتمع' },
+    taglines: {
+      en: 'Comments, groups and searches.',
+      fr: 'Commentaires, groupes et recherches.',
+      ar: 'التعليقات والمجموعات وعمليات البحث.',
+    },
+  },
+  {
+    id: 'loyalty', icon: '🔥',
+    labels: { en: 'Loyalty', fr: 'Fidélité', ar: 'الوفاء' },
+    taglines: {
+      en: 'Days, streaks and long-term habits.',
+      fr: 'Jours de visite, séries et habitudes de longue date.',
+      ar: 'أيام الزيارة والسلسلات والعادات الطويلة.',
+    },
+  },
+  {
+    id: 'profile', icon: '🎮',
+    labels: { en: 'Account', fr: 'Compte', ar: 'الحساب' },
+    taglines: {
+      en: 'Your player account and its settings.',
+      fr: 'Ton compte joueur et ses réglages.',
+      ar: 'حساب اللاعب الخاص بك وإعداداته.',
+    },
+  },
+  {
+    id: 'quiz', icon: '🧠',
+    labels: { en: 'Quizzes', fr: 'Quizz', ar: 'اختبارات' },
+    taglines: {
+      en: 'Quizzes, perfect scores and challenges.',
+      fr: 'Quizz, sans-faute et défis entre amis.',
+      ar: 'الاختبارات والعلامات الكاملة والتحديات.',
+    },
+  },
+  {
+    id: 'mirage', icon: '🐎',
+    labels: { en: 'Mirage Rush', fr: 'Mirage Rush', ar: 'ميراج راش' },
+    taglines: {
+      en: 'Trophies won on the Mirage Rush tracks: races, crystals and cups.',
+      fr: 'Les trophées gagnés sur les pistes de Mirage Rush : courses, cristaux et coupes.',
+      ar: 'الكؤوس التي تفوز بها على حلبات Mirage Rush: السباقات والبلورات والكؤوس.',
+    },
+  },
+  {
+    id: 'vicecity', icon: '🏎️',
+    labels: { en: 'Vice City Rush', fr: 'Vice City Rush', ar: 'فايس سيتي راش' },
+    taglines: {
+      en: 'Trophies won behind the wheel: cities, modes, loot and the story.',
+      fr: 'Les trophées gagnés au volant : villes, modes, butin et mode Histoire.',
+      ar: 'الكؤوس التي تفوز بها خلف المقود: المدن والأطوار والغنائم والقصة.',
+    },
+  },
 ];
 
 /** Titres de rang déduits du niveau (le dernier palier atteint gagne). */
@@ -693,6 +782,277 @@ export const ACHIEVEMENTS = [
       ar: { name: 'وجدت منافسًا', desc: 'أرسل أول تحدّي اختبار إلى صديق.' },
     },
   },
+
+  /* ------------------------------- Mirage Rush ----------------------------- */
+  // Trophées du jeu Mirage Rush (`/jeu/mirage-rush`) : ils se gagnent en
+  // jouant vraiment — chaque course terminée envoie l'action `mirage_run`
+  // (terrain, mode, score, cristaux, victoire) au moteur, et chaque coupe
+  // remportée l'action `mirage_cup_won`. Les cibles suivent le contenu réel
+  // du jeu : dix terrains (`STAGE_IDS` de mirageProgression.js) et quatre
+  // coupes (`CUPS` de mirageCup.js) — à mettre à jour si le jeu s'agrandit.
+  {
+    id: 'mirage-first-gallop',
+    icon: 'icons/achievements/mirage-first-gallop.svg',
+    group: 'mirage',
+    rarity: 'bronze',
+    xp: 25,
+    metric: 'mirageRuns',
+    target: 1,
+    labels: {
+      en: { name: 'First gallop', desc: 'Finish your first Mirage Rush race.' },
+      fr: { name: 'Premier galop', desc: 'Termine ta première course sur Mirage Rush.' },
+      ar: { name: 'أول انطلاقة', desc: 'أنهِ أول سباق لك في Mirage Rush.' },
+    },
+  },
+  {
+    id: 'mirage-track-tour',
+    icon: 'icons/achievements/mirage-track-tour.svg',
+    group: 'mirage',
+    rarity: 'bronze',
+    xp: 40,
+    metric: 'mirageStagesCleared',
+    target: 3,
+    labels: {
+      en: { name: 'Three horizons', desc: 'Finish a race on three different Mirage Rush tracks.' },
+      fr: { name: 'Trois horizons', desc: 'Termine une course sur trois terrains différents de Mirage Rush.' },
+      ar: { name: 'ثلاثة آفاق', desc: 'أنهِ سباقًا على ثلاث حلبات مختلفة في Mirage Rush.' },
+    },
+  },
+  {
+    id: 'mirage-crystal-hands',
+    icon: 'icons/achievements/mirage-crystal-hands.svg',
+    group: 'mirage',
+    rarity: 'silver',
+    xp: 60,
+    metric: 'mirageBestGems',
+    target: 15,
+    labels: {
+      en: { name: 'Crystal hands', desc: 'Collect 15 solar crystals in a single race.' },
+      fr: { name: 'Mains de cristal', desc: 'Ramasse 15 cristaux solaires dans une seule course.' },
+      ar: { name: 'يدان من بلور', desc: 'اجمع 15 بلورة شمسية في سباق واحد.' },
+    },
+  },
+  {
+    id: 'mirage-score-1000',
+    icon: 'icons/achievements/mirage-score-1000.svg',
+    group: 'mirage',
+    rarity: 'silver',
+    xp: 80,
+    metric: 'mirageBestScore',
+    target: 1000,
+    labels: {
+      en: { name: 'A thousand sparks', desc: 'Reach 1,000 points in a single Mirage Rush race.' },
+      fr: { name: 'Mille éclats', desc: 'Atteins 1 000 points sur une seule course de Mirage Rush.' },
+      ar: { name: 'ألف شرارة', desc: 'سجّل 1000 نقطة في سباق واحد من Mirage Rush.' },
+    },
+  },
+  {
+    id: 'mirage-cup-first',
+    icon: 'icons/achievements/mirage-cup-first.svg',
+    group: 'mirage',
+    rarity: 'silver',
+    xp: 90,
+    metric: 'mirageCupsWon',
+    target: 1,
+    labels: {
+      en: { name: 'First trophy', desc: 'Win your first Mirage Rush cup.' },
+      fr: { name: 'Premier trophée', desc: 'Remporte ta première coupe de Mirage Rush.' },
+      ar: { name: 'أول كأس', desc: 'افز بأول كأس في Mirage Rush.' },
+    },
+  },
+  {
+    id: 'mirage-duel-wins',
+    icon: 'icons/achievements/mirage-duel-wins.svg',
+    group: 'mirage',
+    rarity: 'gold',
+    xp: 150,
+    metric: 'mirageWins',
+    target: 5,
+    labels: {
+      en: { name: 'Five victories', desc: 'Finish first in 5 Mirage Rush races.' },
+      fr: { name: 'Cinq victoires', desc: 'Franchis la ligne en tête sur 5 courses de Mirage Rush.' },
+      ar: { name: 'خمسة انتصارات', desc: 'اعبر خط النهاية أولًا في 5 سباقات من Mirage Rush.' },
+    },
+  },
+  {
+    id: 'mirage-score-3000',
+    icon: 'icons/achievements/mirage-score-3000.svg',
+    group: 'mirage',
+    rarity: 'gold',
+    xp: 200,
+    metric: 'mirageBestScore',
+    target: 3000,
+    labels: {
+      en: { name: 'Golden storm', desc: 'Reach 3,000 points in a single Mirage Rush race.' },
+      fr: { name: 'Tempête d’or', desc: 'Atteins 3 000 points sur une seule course de Mirage Rush.' },
+      ar: { name: 'عاصفة ذهبية', desc: 'سجّل 3000 نقطة في سباق واحد من Mirage Rush.' },
+    },
+  },
+  {
+    id: 'mirage-all-tracks',
+    icon: 'icons/achievements/mirage-all-tracks.svg',
+    group: 'mirage',
+    rarity: 'gold',
+    xp: 250,
+    metric: 'mirageStagesCleared',
+    // Le jeu compte dix terrains (`STAGE_IDS`) : à ajuster si une carte s'ajoute.
+    target: 10,
+    labels: {
+      en: { name: 'Full map', desc: 'Finish a race on all ten Mirage Rush tracks.' },
+      fr: { name: 'Carte complète', desc: 'Termine une course sur les dix terrains de Mirage Rush.' },
+      ar: { name: 'الخريطة الكاملة', desc: 'أنهِ سباقًا على الحلبات العشر كلها في Mirage Rush.' },
+    },
+  },
+  {
+    id: 'mirage-cup-collection',
+    icon: 'icons/achievements/mirage-cup-collection.svg',
+    group: 'mirage',
+    rarity: 'platinum',
+    xp: 500,
+    metric: 'mirageCupsWon',
+    // Quatre coupes au catalogue (`CUPS`) : Désert, Vents, Grand Tour, Légendes.
+    target: 4,
+    labels: {
+      en: { name: 'Full cabinet', desc: 'Win all four Mirage Rush cups.' },
+      fr: { name: 'Vitrine complète', desc: 'Remporte les quatre coupes de Mirage Rush.' },
+      ar: { name: 'خزانة الكؤوس', desc: 'افز بالكؤوس الأربعة كلها في Mirage Rush.' },
+    },
+  },
+
+  /* ----------------------------- Vice City Rush ---------------------------- */
+  // Trophées du jeu Vice City Rush (`/jeu/vice-city-rush`) : chaque course
+  // terminée envoie l'action `vice_city_run` (ville, mode, place, butin,
+  // chapitre d'histoire). Cibles calées sur le contenu réel du jeu : cinq
+  // villes (`CITY_RUSH_CITIES`), trois modes de course et six chapitres
+  // d'histoire (`STORY_CHAPTERS`).
+  {
+    id: 'vice-first-race',
+    icon: 'icons/achievements/vice-first-race.svg',
+    group: 'vicecity',
+    rarity: 'bronze',
+    xp: 25,
+    metric: 'viceCityRuns',
+    target: 1,
+    labels: {
+      en: { name: 'First start', desc: 'Finish your first Vice City Rush race.' },
+      fr: { name: 'Premier départ', desc: 'Termine ta première course sur Vice City Rush.' },
+      ar: { name: 'أول انطلاق', desc: 'أنهِ أول سباق لك في Vice City Rush.' },
+    },
+  },
+  {
+    id: 'vice-story-chapter',
+    icon: 'icons/achievements/vice-story-chapter.svg',
+    group: 'vicecity',
+    rarity: 'bronze',
+    xp: 35,
+    metric: 'viceCityStoryChapters',
+    target: 1,
+    labels: {
+      en: { name: 'Chapter one', desc: 'Win the first chapter of the Vice City Rush story.' },
+      fr: { name: 'Chapitre un', desc: 'Remporte le premier chapitre du mode Histoire de Vice City Rush.' },
+      ar: { name: 'الفصل الأول', desc: 'افز بالفصل الأول من طور القصة في Vice City Rush.' },
+    },
+  },
+  {
+    id: 'vice-podium',
+    icon: 'icons/achievements/vice-podium.svg',
+    group: 'vicecity',
+    rarity: 'silver',
+    xp: 60,
+    metric: 'viceCityWins',
+    target: 1,
+    labels: {
+      en: { name: 'First place', desc: 'Win a Vice City Rush race.' },
+      fr: { name: 'Première place', desc: 'Remporte une course de Vice City Rush.' },
+      ar: { name: 'المركز الأول', desc: 'افز بسباق في Vice City Rush.' },
+    },
+  },
+  {
+    id: 'vice-modes',
+    icon: 'icons/achievements/vice-modes.svg',
+    group: 'vicecity',
+    rarity: 'silver',
+    xp: 80,
+    metric: 'viceCityModesPlayed',
+    target: 3,
+    labels: {
+      en: { name: 'Three styles', desc: 'Finish a race in all three modes: Circuit, Sprint and Pursuit.' },
+      fr: { name: 'Trois styles', desc: 'Termine une course dans les trois modes : Circuit, Sprint et Poursuite.' },
+      ar: { name: 'ثلاثة أساليب', desc: 'أنهِ سباقًا في الأطوار الثلاثة: الحلبة والسبرنت والمطاردة.' },
+    },
+  },
+  {
+    id: 'vice-score-1500',
+    icon: 'icons/achievements/vice-score-1500.svg',
+    group: 'vicecity',
+    rarity: 'silver',
+    xp: 90,
+    metric: 'viceCityBestScore',
+    target: 1500,
+    labels: {
+      en: { name: 'Street loot', desc: 'Bank 1,500 points of loot in a single race.' },
+      fr: { name: 'Butin de rue', desc: 'Récolte 1 500 points de butin sur une seule course.' },
+      ar: { name: 'غنيمة الشارع', desc: 'اجمع 1500 نقطة من الغنائم في سباق واحد.' },
+    },
+  },
+  {
+    id: 'vice-city-tour',
+    icon: 'icons/achievements/vice-city-tour.svg',
+    group: 'vicecity',
+    rarity: 'gold',
+    xp: 150,
+    metric: 'viceCityCitiesDriven',
+    // Cinq villes au catalogue (`CITY_RUSH_CITIES`).
+    target: 5,
+    labels: {
+      en: { name: 'World tour', desc: 'Race in all five cities: Vice City, New York, Tokyo, Paris and London.' },
+      fr: { name: 'Tour du monde', desc: 'Cours dans les cinq villes : Vice City, New York, Tokyo, Paris et Londres.' },
+      ar: { name: 'جولة عالمية', desc: 'تسابق في المدن الخمس: فايس سيتي ونيويورك وطوكيو وباريس ولندن.' },
+    },
+  },
+  {
+    id: 'vice-score-4000',
+    icon: 'icons/achievements/vice-score-4000.svg',
+    group: 'vicecity',
+    rarity: 'gold',
+    xp: 200,
+    metric: 'viceCityBestScore',
+    target: 4000,
+    labels: {
+      en: { name: 'Full vault', desc: 'Bank 4,000 points of loot in a single race.' },
+      fr: { name: 'Coffre plein', desc: 'Récolte 4 000 points de butin sur une seule course.' },
+      ar: { name: 'خزنة ممتلئة', desc: 'اجمع 4000 نقطة من الغنائم في سباق واحد.' },
+    },
+  },
+  {
+    id: 'vice-story-hero',
+    icon: 'icons/achievements/vice-story-hero.svg',
+    group: 'vicecity',
+    rarity: 'gold',
+    xp: 250,
+    metric: 'viceCityStoryChapters',
+    // Six chapitres (`STORY_CHAPTERS` de ViceCityRushPage.jsx), finale compris.
+    target: 6,
+    labels: {
+      en: { name: 'End of the story', desc: 'Win all six chapters of the Vice City Rush story.' },
+      fr: { name: 'Fin de l’histoire', desc: 'Remporte les six chapitres du mode Histoire de Vice City Rush.' },
+      ar: { name: 'نهاية القصة', desc: 'افز بفصول طور القصة الستة كلها في Vice City Rush.' },
+    },
+  },
+  {
+    id: 'vice-grand-slam',
+    icon: 'icons/achievements/vice-grand-slam.svg',
+    group: 'vicecity',
+    rarity: 'platinum',
+    xp: 500,
+    metric: 'viceCityCitiesWon',
+    target: 5,
+    labels: {
+      en: { name: 'Grand slam', desc: 'Win a race in each of the five cities.' },
+      fr: { name: 'Grand chelem', desc: 'Remporte une course dans chacune des cinq villes.' },
+      ar: { name: 'الغراند سلام', desc: 'افز بسباق في كل مدينة من المدن الخمس.' },
+    },
+  },
 ];
 
 /** Libellé traduit d'un succès (repli sur l'anglais). */
@@ -709,6 +1069,17 @@ export function rarityLabel(rarity, lang = 'en') {
 export function groupLabel(group, lang = 'en') {
   const found = GROUPS.find((entry) => entry.id === group);
   return found?.labels?.[lang] || found?.labels?.en || group;
+}
+
+/** Phrase d'accroche traduite d'une famille (chaîne vide si aucune). */
+export function groupTagline(group, lang = 'en') {
+  const found = GROUPS.find((entry) => entry.id === group);
+  return found?.taglines?.[lang] || found?.taglines?.en || '';
+}
+
+/** Icône (emoji) d'une famille. */
+export function groupIcon(group) {
+  return GROUPS.find((entry) => entry.id === group)?.icon || '🏆';
 }
 
 /** Titre de rang pour un niveau donné. */

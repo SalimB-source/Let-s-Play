@@ -8,7 +8,7 @@ import { describeAuthError } from '../lib/authErrors';
 import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
 import { metricValue } from '../achievements/engine';
 import { levelTitle } from '../achievements/catalog';
-import AchievementsPanel from '../achievements/AchievementsPanel';
+import TrophyShelf from '../achievements/TrophyShelf';
 import DeleteAccount from '../components/DeleteAccount';
 import {
   CONSOLE_OPTIONS,
@@ -22,7 +22,6 @@ import TopGamePill from '../components/TopGamePill';
 import SignupProtection from '../components/SignupProtection';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import QuizGlobalRank from '../quizzes/QuizGlobalRank';
-import MirageCupTrophyCollection from '../games/MirageCupTrophyCollection';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
 
 /* ------------------------------------------------------------------ */
@@ -1220,14 +1219,12 @@ export default function Auth({ initialMode = '' }) {
               la fenêtre sociale (en bas à droite) et sur /messages. */}
           <FriendsHubSection />
 
-          {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
-              commentaires, recherche, fidélité, compte) */}
+          {/* TROPHÉES PAR CATÉGORIE — succès du site et trophées des jeux
+              (Mirage Rush, Vice City Rush), coupes comprises, rangés par
+              famille dans la vitrine du joueur. */}
           <div className="player-section achievements-section">
-            <AchievementsPanel variant="compact" limit={5} />
+            <TrophyShelf />
           </div>
-
-          {/* TROPHÉES DE COUPE — une victoire par coupe, synchronisée avec la progression du joueur. */}
-          <MirageCupTrophyCollection />
 
           {/* CONSOLES POSSÉDÉES + JEUX TESTÉS — multi-sélection persistée
               dans les métadonnées du compte (ou de la persona démo) et poussée

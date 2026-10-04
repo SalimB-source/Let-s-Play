@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Trophée mirage-cup-first">
+  <defs>
+    <linearGradient id="mirage-cup-first-metal" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.45" stop-color="#c3ccd8"/>
+      <stop offset="1" stop-color="#79838f"/>
+    </linearGradient>
+    <linearGradient id="mirage-cup-first-face" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#6b3418"/>
+      <stop offset="0.55" stop-color="#2a1246"/>
+      <stop offset="1" stop-color="#120a26"/>
+    </linearGradient>
+    <radialGradient id="mirage-cup-first-glow" cx="0.5" cy="0.62" r="0.55">
+      <stop offset="0" stop-color="#ffb454" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffb454" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mirage-cup-first-gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="mirage-cup-first-clip"><circle cx="128" cy="128" r="102"/></clipPath>
+  </defs>
+
+  <!-- Anneau de métal : c'est lui qui porte le grade du trophée. -->
+  <circle cx="128" cy="128" r="122" fill="url(#mirage-cup-first-metal)"/>
+  <circle cx="128" cy="128" r="122" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="3"/>
+  <circle cx="128" cy="128" r="113" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+  <circle cx="128" cy="128" r="112" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="6" stroke-dasharray="2 9" stroke-linecap="round"/>
+
+  <!-- Cadran aux couleurs du jeu, halo derrière l'emblème. -->
+  <circle cx="128" cy="128" r="102" fill="url(#mirage-cup-first-face)"/>
+  <circle cx="128" cy="128" r="102" fill="url(#mirage-cup-first-glow)"/>
+  <circle cx="128" cy="128" r="102" fill="none" stroke="#ffe0b0" stroke-width="3" opacity=".55"/>
+
+  <g clip-path="url(#mirage-cup-first-clip)">
+    <!-- Emblème du trophée (boîte 64 × 64 agrandie et centrée). -->
+    <g transform="translate(128 128) scale(2.05) translate(-32 -32)" color="#fff4e0">
+      <g transform="translate(1.6 2.4)" opacity=".35" color="#000000">
+  <path d="M19 12h26v11a13 13 0 0 1-26 0z" fill="currentColor"/>
+  <path d="M19 15h-6a7 7 0 0 0 7 11M45 15h6a7 7 0 0 1-7 11" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <path d="M29 35h6v9h-6z" fill="currentColor"/>
+  <rect x="19" y="44" width="26" height="7" rx="3.5" fill="currentColor"/>
+  <rect x="15" y="52" width="34" height="5" rx="2.5" fill="currentColor" opacity=".75"/></g>
+      <g>
+  <path d="M19 12h26v11a13 13 0 0 1-26 0z" fill="currentColor"/>
+  <path d="M19 15h-6a7 7 0 0 0 7 11M45 15h6a7 7 0 0 1-7 11" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <path d="M29 35h6v9h-6z" fill="currentColor"/>
+  <rect x="19" y="44" width="26" height="7" rx="3.5" fill="currentColor"/>
+  <rect x="15" y="52" width="34" height="5" rx="2.5" fill="currentColor" opacity=".75"/></g>
+    </g>
+    <!-- Verre : reflet en haut, ombre portée en bas. -->
+    <ellipse cx="128" cy="66" rx="96" ry="58" fill="url(#mirage-cup-first-gloss)"/>
+    <ellipse cx="128" cy="216" rx="104" ry="52" fill="#000000" opacity=".22"/>
+  </g>
+</svg>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Trophée vice-modes">
+  <defs>
+    <linearGradient id="vice-modes-metal" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.45" stop-color="#c3ccd8"/>
+      <stop offset="1" stop-color="#79838f"/>
+    </linearGradient>
+    <linearGradient id="vice-modes-face" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#5c1152"/>
+      <stop offset="0.55" stop-color="#2a1152"/>
+      <stop offset="1" stop-color="#0b0f2c"/>
+    </linearGradient>
+    <radialGradient id="vice-modes-glow" cx="0.5" cy="0.62" r="0.55">
+      <stop offset="0" stop-color="#ff5db8" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff5db8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="vice-modes-gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="vice-modes-clip"><circle cx="128" cy="128" r="102"/></clipPath>
+  </defs>
+
+  <!-- Anneau de métal : c'est lui qui porte le grade du trophée. -->
+  <circle cx="128" cy="128" r="122" fill="url(#vice-modes-metal)"/>
+  <circle cx="128" cy="128" r="122" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="3"/>
+  <circle cx="128" cy="128" r="113" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+  <circle cx="128" cy="128" r="112" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="6" stroke-dasharray="2 9" stroke-linecap="round"/>
+
+  <!-- Cadran aux couleurs du jeu, halo derrière l'emblème. -->
+  <circle cx="128" cy="128" r="102" fill="url(#vice-modes-face)"/>
+  <circle cx="128" cy="128" r="102" fill="url(#vice-modes-glow)"/>
+  <circle cx="128" cy="128" r="102" fill="none" stroke="#8ef7e6" stroke-width="3" opacity=".55"/>
+
+  <g clip-path="url(#vice-modes-clip)">
+    <!-- Emblème du trophée (boîte 64 × 64 agrandie et centrée). -->
+    <g transform="translate(128 128) scale(2.05) translate(-32 -32)" color="#fff1fb">
+      <g transform="translate(1.6 2.4)" opacity=".35" color="#000000">
+    <path d="M14 58L26 8h12l12 50z" fill="currentColor" opacity=".28"/>
+    <path d="M14 58L26 8M50 58L38 8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <path d="M28 56l3-12M33 36l3-12" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+    <path d="M36 56l-3-12M31 36l-3-12" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".9"/></g>
+      <g>
+    <path d="M14 58L26 8h12l12 50z" fill="currentColor" opacity=".28"/>
+    <path d="M14 58L26 8M50 58L38 8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <path d="M28 56l3-12M33 36l3-12" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+    <path d="M36 56l-3-12M31 36l-3-12" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".9"/></g>
+    </g>
+    <!-- Verre : reflet en haut, ombre portée en bas. -->
+    <ellipse cx="128" cy="66" rx="96" ry="58" fill="url(#vice-modes-gloss)"/>
+    <ellipse cx="128" cy="216" rx="104" ry="52" fill="#000000" opacity=".22"/>
+  </g>
+</svg>

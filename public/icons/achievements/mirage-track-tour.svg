@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Trophée mirage-track-tour">
+  <defs>
+    <linearGradient id="mirage-track-tour-metal" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#f6c79a"/>
+      <stop offset="0.45" stop-color="#cd8a52"/>
+      <stop offset="1" stop-color="#7d4520"/>
+    </linearGradient>
+    <linearGradient id="mirage-track-tour-face" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#6b3418"/>
+      <stop offset="0.55" stop-color="#2a1246"/>
+      <stop offset="1" stop-color="#120a26"/>
+    </linearGradient>
+    <radialGradient id="mirage-track-tour-glow" cx="0.5" cy="0.62" r="0.55">
+      <stop offset="0" stop-color="#ffb454" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffb454" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mirage-track-tour-gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="mirage-track-tour-clip"><circle cx="128" cy="128" r="102"/></clipPath>
+  </defs>
+
+  <!-- Anneau de métal : c'est lui qui porte le grade du trophée. -->
+  <circle cx="128" cy="128" r="122" fill="url(#mirage-track-tour-metal)"/>
+  <circle cx="128" cy="128" r="122" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="3"/>
+  <circle cx="128" cy="128" r="113" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+  <circle cx="128" cy="128" r="112" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="6" stroke-dasharray="2 9" stroke-linecap="round"/>
+
+  <!-- Cadran aux couleurs du jeu, halo derrière l'emblème. -->
+  <circle cx="128" cy="128" r="102" fill="url(#mirage-track-tour-face)"/>
+  <circle cx="128" cy="128" r="102" fill="url(#mirage-track-tour-glow)"/>
+  <circle cx="128" cy="128" r="102" fill="none" stroke="#ffe0b0" stroke-width="3" opacity=".55"/>
+
+  <g clip-path="url(#mirage-track-tour-clip)">
+    <!-- Emblème du trophée (boîte 64 × 64 agrandie et centrée). -->
+    <g transform="translate(128 128) scale(2.05) translate(-32 -32)" color="#fff4e0">
+      <g transform="translate(1.6 2.4)" opacity=".35" color="#000000">
+    <circle cx="32" cy="18" r="9" fill="currentColor"/>
+    <path d="M5 47c7-11 13-15 19-8 4 5 8 5 12-1 6-9 13-8 23 3" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+    <path d="M9 56h46" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".65"/></g>
+      <g>
+    <circle cx="32" cy="18" r="9" fill="currentColor"/>
+    <path d="M5 47c7-11 13-15 19-8 4 5 8 5 12-1 6-9 13-8 23 3" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+    <path d="M9 56h46" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".65"/></g>
+    </g>
+    <!-- Verre : reflet en haut, ombre portée en bas. -->
+    <ellipse cx="128" cy="66" rx="96" ry="58" fill="url(#mirage-track-tour-gloss)"/>
+    <ellipse cx="128" cy="216" rx="104" ry="52" fill="#000000" opacity=".22"/>
+  </g>
+</svg>

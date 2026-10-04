@@ -26,6 +26,32 @@ export const STATE_VERSION = 2;
 // succès pour profiter de la même persistance locale / synchronisation compte.
 export const MIRAGE_CUP_TROPHIES_KEY = 'mirage_cup_trophies';
 
+/* ------------------------------------------------------------------ */
+/* Jeux d'arcade du site : clés de progression                         */
+/* ------------------------------------------------------------------ */
+/* Les trophées de Mirage Rush et de Vice City Rush se gagnent en jouant
+   réellement (une course terminée = une action envoyée par la page du jeu).
+   Les ensembles ci-dessous mémorisent les choses DISTINCTES (terrain, ville,
+   mode, chapitre) pour qu'une même course rejouée ne compte pas deux fois,
+   tandis que les compteurs `*_best_*` gardent le record absolu du joueur —
+   la fusion appareil ↔ compte (`mergeStates`) en prend le maximum. */
+
+/** Terrains de Mirage Rush terminés (une entrée par carte). */
+export const MIRAGE_STAGES_KEY = 'mirage_stages';
+/** Modes de Mirage Rush joués : `rush`, `duel`, `online`. */
+export const MIRAGE_MODES_KEY = 'mirage_modes';
+/** Villes de Vice City Rush traversées (une entrée par ville). */
+export const VICE_CITY_CITIES_KEY = 'vice_city_cities';
+/** Villes de Vice City Rush où le joueur a gagné une course. */
+export const VICE_CITY_WON_CITIES_KEY = 'vice_city_won_cities';
+/** Modes de course de Vice City Rush terminés : `circuit`, `sprint`, `pursuit`. */
+export const VICE_CITY_MODES_KEY = 'vice_city_modes';
+/** Chapitres du mode Histoire de Vice City Rush remportés. */
+export const VICE_CITY_STORY_KEY = 'vice_city_story_chapters';
+/** Le mode Histoire de Vice City Rush n'est pas un « mode de course » : il
+    a ses propres trophées de chapitres et ne doit pas valider « trois styles ». */
+export const VICE_CITY_STORY_MODE = 'story';
+
 // Invalidation indépendante de la version globale : la remise à zéro des
 // quizz doit supprimer les anciennes parties sur les copies locales et dans
 // le cache d'un compte, sans effacer les succès de lecture, vidéo ou communauté.
@@ -182,6 +208,18 @@ const addToSet = (state, key, value) => {
 };
 
 /**
+ * Compteur de RECORD : ne garde que le meilleur résultat jamais atteint
+ * (score d'une course, cristaux ramassés…). Une valeur illisible ou négative
+ * vaut 0, et un record plus faible que le précédent ne change rien — c'est ce
+ * qui rend la fusion entre appareils sûre (`mergeStates` prend le maximum).
+ */
+const raise = (state, key, value) => {
+  const candidate = Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : 0;
+  if (candidate <= (state.counters[key] || 0)) return state;
+  return { ...state, counters: { ...state.counters, [key]: candidate } };
+};
+
+/**
  * Applique une action à l'état et renvoie `{ state, unlocked }` : `unlocked`
  * liste les succès débloqués *par cette action*, dans l'ordre du catalogue
  * (c'est ce que l'interface annonce au joueur).
@@ -310,6 +348,41 @@ export function reduce(state, action = {}) {
     case 'mirage_cup_won':
       next = addToSet(current, MIRAGE_CUP_TROPHIES_KEY, action.cupId);
       break;
+
+    /* ------------------------- Jeux d'arcade du site ------------------------ */
+    // Une course de Mirage Rush terminée (ruée, duel, coupe ou en ligne) :
+    // `{ stage, mode, score, gems, won }`. Le terrain et le mode sont gardés
+    // une fois chacun, le score et les cristaux ne montent qu'au record, et
+    // chaque première place compte une victoire.
+    case 'mirage_run': {
+      next = counter(current, 'mirage_runs');
+      next = addToSet(next, MIRAGE_STAGES_KEY, action.stage);
+      next = addToSet(next, MIRAGE_MODES_KEY, action.mode);
+      if (action.won === true) next = counter(next, 'mirage_wins');
+      next = raise(next, 'mirage_best_score', action.score);
+      next = raise(next, 'mirage_best_gems', action.gems);
+      break;
+    }
+
+    // Une course de Vice City Rush terminée : `{ city, mode, rank, score,
+    // storyChapter }`. `mode` vaut `circuit`, `sprint`, `pursuit` — ou `story`
+    // pour le mode Histoire, qui ne compte pas dans « trois styles » mais
+    // alimente ses propres trophées de chapitres (`storyChapter`, 0 = premier).
+    case 'vice_city_run': {
+      next = counter(current, 'vice_city_runs');
+      next = addToSet(next, VICE_CITY_CITIES_KEY, action.city);
+      if (action.mode !== VICE_CITY_STORY_MODE) next = addToSet(next, VICE_CITY_MODES_KEY, action.mode);
+      next = raise(next, 'vice_city_best_score', action.score);
+      if (Number(action.rank) === 1) {
+        next = counter(next, 'vice_city_wins');
+        // Une victoire par ville : c'est le « grand chelem » des cinq circuits.
+        next = addToSet(next, VICE_CITY_WON_CITIES_KEY, action.city);
+      }
+      if (action.storyChapter !== null && action.storyChapter !== undefined && Number.isFinite(Number(action.storyChapter))) {
+        next = addToSet(next, VICE_CITY_STORY_KEY, String(Number(action.storyChapter)));
+      }
+      break;
+    }
 
     default:
       break;
@@ -441,6 +514,38 @@ export const METRICS = {
   dailyQuizStreak: (state) => bestDayRun(state.sets.quiz_days || []),
   /** Défis envoyés à des amis depuis les écrans de résultat. */
   challengesSent: (state) => counterValue(state, 'challenges_sent'),
+
+  /* --------------------------- Mirage Rush (jeu) -------------------------- */
+  /** Courses de Mirage Rush terminées, tous modes confondus. */
+  mirageRuns: (state) => counterValue(state, 'mirage_runs'),
+  /** Premières places (duel, coupe) : chaque victoire compte. */
+  mirageWins: (state) => counterValue(state, 'mirage_wins'),
+  /** Meilleur score d'UNE course (record absolu du joueur). */
+  mirageBestScore: (state) => counterValue(state, 'mirage_best_score'),
+  /** Meilleur nombre de cristaux ramassés sur UNE course. */
+  mirageBestGems: (state) => counterValue(state, 'mirage_best_gems'),
+  /** Terrains différents sur lesquels une course a été terminée. */
+  mirageStagesCleared: (state) => setSize(state, MIRAGE_STAGES_KEY),
+  /** Modes de Mirage Rush essayés (ruée, duel, en ligne). */
+  mirageModesPlayed: (state) => setSize(state, MIRAGE_MODES_KEY),
+  /** Coupes remportées — les trophées de la vitrine Mirage Rush. */
+  mirageCupsWon: (state) => setSize(state, MIRAGE_CUP_TROPHIES_KEY),
+
+  /* ------------------------- Vice City Rush (jeu) ------------------------- */
+  /** Courses de Vice City Rush terminées, tous modes confondus. */
+  viceCityRuns: (state) => counterValue(state, 'vice_city_runs'),
+  /** Courses remportées (1ʳᵉ place). */
+  viceCityWins: (state) => counterValue(state, 'vice_city_wins'),
+  /** Meilleur butin d'UNE course (record absolu du joueur). */
+  viceCityBestScore: (state) => counterValue(state, 'vice_city_best_score'),
+  /** Villes différentes traversées en course. */
+  viceCityCitiesDriven: (state) => setSize(state, VICE_CITY_CITIES_KEY),
+  /** Villes où le joueur a gagné au moins une course. */
+  viceCityCitiesWon: (state) => setSize(state, VICE_CITY_WON_CITIES_KEY),
+  /** Modes de course terminés (circuit, sprint, poursuite). */
+  viceCityModesPlayed: (state) => setSize(state, VICE_CITY_MODES_KEY),
+  /** Chapitres du mode Histoire remportés. */
+  viceCityStoryChapters: (state) => setSize(state, VICE_CITY_STORY_KEY),
 };
 
 /** Valeur d'une métrique (0 si la métrique n'existe pas — jamais d'exception). */

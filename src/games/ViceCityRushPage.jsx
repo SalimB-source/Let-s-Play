@@ -28,6 +28,8 @@ import {
   selectCityRushRacers,
 } from './cityRushRules';
 import { cityRushTheme } from './cityRushThemes';
+import { useAchievementAction } from '../achievements/AchievementContext';
+import { VICE_CITY_STORY_MODE } from '../achievements/engine';
 import './vice-city-rush.css';
 import './vice-city-rush-cinematic.css';
 
@@ -243,6 +245,9 @@ export default function ViceCityRushPage() {
     toggle: toggleImmersive,
     isPinned: immersivePinned,
   } = useGameFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
+  // Trophées de jeu : les courses terminées nourrissent les succès Vice City
+  // Rush du joueur (ville, mode, place, butin, chapitre d'histoire).
+  const trackAchievement = useAchievementAction();
   phaseRef.current = phase;
   soundOnRef.current = soundOn;
 
@@ -497,6 +502,16 @@ export default function ViceCityRushPage() {
 
   function finishRace(nextResult) {
     setResult(nextResult);
+    // Trophées de jeu : chaque course terminée nourrit les succès Vice City
+    // Rush (ville, mode, place, butin). En mode Histoire, une victoire crédite
+    // aussi le chapitre joué — `storyRaceChapter` (0 = premier chapitre).
+    trackAchievement('vice_city_run', {
+      city: nextResult.city,
+      mode: storyMode ? VICE_CITY_STORY_MODE : modeId,
+      rank: nextResult.rank,
+      score: nextResult.score,
+      storyChapter: storyMode && nextResult.rank === 1 ? storyRaceChapter : null,
+    });
     if (storyMode && nextResult.rank === 1) {
       const nextChapter = Math.min(STORY_CHAPTERS.length, storyChapter + 1);
       setStoryChapter(nextChapter);

@@ -16,7 +16,7 @@ import { normalizePlatforms, gamePlatforms } from '../lib/gameLibrary';
 import ConsoleLogo from '../components/ConsoleLogo';
 import TopGamePill from '../components/TopGamePill';
 import QuizGlobalRank from '../quizzes/QuizGlobalRank';
-import MirageCupTrophyCollection from '../games/MirageCupTrophyCollection';
+import TrophyShelf from '../achievements/TrophyShelf';
 import { MAX_TESTED_GAMES } from '../lib/gameLibrary';
 
 function formatJoined(iso) {
@@ -338,7 +338,12 @@ export default function Profile() {
               backend, on affiche un rang scripté pour éviter une section vide. */}
           <QuizGlobalRank userId={me.id} self scriptedFallback={{ level: lvl, xp }} />
 
-          <MirageCupTrophyCollection />
+          {/* TROPHÉES PAR CATÉGORIE — succès du site et trophées gagnés en
+              jouant (Mirage Rush, Vice City Rush), coupes comprises : chaque
+              famille a son étagère dans la vitrine du joueur. */}
+          <div className="player-section achievements-section">
+            <TrophyShelf />
+          </div>
 
           {/* CONSOLES POSSÉDÉES — sélection faite dans le hub joueur */}
           <div className="player-section">
