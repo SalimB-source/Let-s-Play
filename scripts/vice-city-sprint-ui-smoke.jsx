@@ -165,6 +165,15 @@ export async function checkViceCitySprintUi(assert) {
   // ── 3. Les autres modes gardent leur police et leurs rivaux ─────────────
   await act(async () => { worldProbe.props?.onFinish?.({ rank: 1, laps: 4, distance: 3600, duration: 90, score: 0, pickups: 0, racers: [], winner: 'NOVA' }); });
   await settle(40);
+  const nextRaceBtn = node.querySelector('.city-rush-next-race-button');
+  check(
+    'le bouton COURSE SUIVANTE est affiché en cas de victoire en mode course',
+    Boolean(nextRaceBtn && /COURSE SUIVANTE/i.test(squash(nextRaceBtn.textContent))),
+  );
+  check(
+    'le bouton COURSE SUIVANTE porte la classe is-gold',
+    Boolean(nextRaceBtn?.classList.contains('is-gold')),
+  );
   // L'écran d'arrivée ne montre pas les vignettes : « CHANGER DE MODE » ramène
   // au choix des modes, où l'on reprend le CIRCUIT.
   const backToModes = [...node.querySelectorAll('.city-rush-text-button')]

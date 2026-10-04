@@ -45,3 +45,18 @@ test('the mobile player health bar stays clear of the bottom-corner HUD', () => 
   assert.ok(bottomOffset, 'le décalage tient compte de la zone de sécurité de l’écran');
   assert.ok(Number(bottomOffset[1]) >= 220, 'la barre est au-dessus du classement et des commandes tactiles');
 });
+
+test('victoire en mode course : le bouton COURSE SUIVANTE doré à texte noir est présent', () => {
+  assert.match(page, /isRaceWon/);
+  assert.match(page, /city-rush-next-race-button|COURSE SUIVANTE/);
+  assert.match(page, /startNextRace/);
+});
+
+test('le bouton COURSE SUIVANTE est doré avec un texte noir dans le CSS', () => {
+  const cinematicCss = readFileSync(new URL('../src/games/vice-city-rush-cinematic.css', import.meta.url), 'utf8');
+  assert.match(css, /\.city-rush-start-button\.is-gold|\.city-rush-next-race-button/);
+  assert.match(css, /color:\s*#000000/);
+  assert.match(cinematicCss, /\.city-rush-next-race-button|\.city-rush-start-button\.is-gold/);
+  assert.match(cinematicCss, /color:\s*#000000/);
+});
+

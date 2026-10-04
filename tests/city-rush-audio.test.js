@@ -106,7 +106,7 @@ test('chaque ville a son tempo, Vice City à 122', () => {
   assert.equal(cityRushMusicBpm('tokyo'), 132);
   assert.equal(cityRushMusicBpm('paris'), 118);
   assert.ok(cityRushMusicBpm('atlantide') === CITY_RUSH_DEFAULT_BPM, 'une ville inconnue retombe sur le tempo par défaut');
-  assert.deepEqual(Object.keys(CITY_RUSH_MUSIC_BPM).sort(), ['london', 'new-york', 'paris', 'tokyo', 'vice-city']);
+  assert.deepEqual(Object.keys(CITY_RUSH_MUSIC_BPM).sort(), ['london', 'mexico-countryside', 'new-york', 'paris', 'tokyo', 'vice-city']);
 });
 
 test('start() ouvre le contexte et branche musique, bruitages, moteur et hélico', async () => {
