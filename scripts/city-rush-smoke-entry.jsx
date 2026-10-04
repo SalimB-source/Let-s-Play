@@ -75,7 +75,7 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
-  CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance,
+  CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
 
 // Tours de la course jouée : 5 par défaut (la plus longue, 3 600 m) ;
@@ -196,14 +196,26 @@ for (const [index, city] of cities.entries()) {
   // Berlines de police du trafic : le pilote d'essai les vise pour provoquer le
   // scénario « on percute un agent » (voir la boucle de course).
   const policeTrafficNodes = [];
+  // Pilotes à visage découvert : chaque cabriolet porte sa tête de pilote, et le
+  // lot « helmet » du casque d'avant ne doit plus exister nulle part.
+  const driverHeads = [];
+  const racerCars = [];
+  let helmetNodes = 0;
   scene?.traverse((object) => {
     if (object.name === 'pickup-burst') burstNodes.push(object);
     if (object.name === 'traffic-police') policeTrafficNodes.push(object);
     if (object.userData?.type === 'slow-zone') slowZoneNodes += 1;
+    if (object.name?.endsWith('-driver-head')) driverHeads.push(object);
+    if (object.userData?.kind === 'racer') racerCars.push(object);
+    if (object.name === 'helmet') helmetNodes += 1;
     if (object.userData?.icon && object.userData?.ring && object.userData?.beam && object.userData?.halo && object.userData?.pad) {
       pickupSlots.push(object);
     }
   });
+  if (helmetNodes) fail('un casque de pilote est encore construit', helmetNodes);
+  if (driverHeads.length < 3) fail('les trois cabriolets n’ont pas chacun un pilote à visage découvert', driverHeads.length);
+  if (racerCars.length < 3) fail('les trois cabriolets ne portent pas leur pilote', racerCars.length);
+  if (racerCars.some((car) => !car.userData.driverId)) fail('un cabriolet est sans pilote', racerCars.map((car) => car.userData.driverId));
   let burstFrames = 0;
   let respawnedPickups = 0;
   const slotWatch = new Map();
@@ -225,6 +237,23 @@ for (const [index, city] of cities.entries()) {
   if (slowZoneNodes) fail('une zone d’huile ou de ralentissement est encore rendue', slowZoneNodes);
   if (!pickupSlots.some((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST)) fail('aucun pad turbo vert n’est placé sur la piste');
   const introStats = scene ? countVisible(scene) : null;
+
+  // Changement de pilote au garage : la liste des pilotes change en cours de
+  // monde (le joueur a choisi un autre pilote), les trois cockpits suivent.
+  const driverBefore = racerCars.map((car) => car.userData.driverId);
+  // Le joueur choisit Camila : sa voiture doit changer de tête, et chaque
+  // cockpit doit correspondre à sa fiche — un rival peut garder la sienne.
+  const nextRoster = selectCityRushRacers({ cityId: city.id, carId: car.id, runId: 7, playerDriverId: 'camila' });
+  world.setRoster(nextRoster);
+  const driverAfter = racerCars.map((car) => car.userData.driverId);
+  if (driverAfter[0] === driverBefore[0]) {
+    fail('la voiture du joueur n’a pas suivi le changement de pilote', { driverBefore, driverAfter, roster: nextRoster.map((r) => `${r.id}:${r.driverId}`) });
+  }
+  nextRoster.forEach((entry, index) => {
+    if (driverAfter[index] !== entry.driverId) {
+      fail(`le cockpit ${index} ne porte pas le pilote de sa fiche`, { attendu: entry.driverId, trouve: driverAfter[index] });
+    }
+  });
 
   // Compte à rebours : 3 → 2 → 1 → GO.
   world.reset();

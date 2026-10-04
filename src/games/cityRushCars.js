@@ -1,13 +1,17 @@
 // Voitures de Vice City Rush : cabriolets de course aux silhouettes
-// distinctes, pilotes casqués, roues à rayons, feux, flammes de boost,
-// fumée de pneus, et véhicules de trafic (police, ambulance, benne, supercar).
+// distinctes, pilotes **à visage découvert** (plus de casque : la tête est
+// celle de l'avatar du pilote, voir « Les pilotes dans le cockpit »), roues à
+// rayons, feux, flammes de boost, fumée de pneus, et véhicules de trafic
+// (police, ambulance, benne, supercar).
 //
-// Les pièces fixes de chaque carrosserie sont fusionnées par matériau (un
-// seul mesh par matériau) ; seules les pièces animées restent indépendantes
-// (roues, volant, tête du pilote, flammes, lueurs). Une voiture de course
-// coûte ainsi une trentaine d'appels de rendu au lieu de plus d'une centaine.
+// Les pièces fixes de chaque carrosserie sont fusionnées par matériau (un seul
+// mesh par matériau) ; le pilote, peint en couleurs par sommet, tient en trois
+// meshes (buste, tête, bras) ; seules les pièces animées restent indépendantes
+// (roues, volant, tête et bras du pilote, flammes, lueurs). Une voiture de
+// course coûte ainsi une trentaine d'appels de rendu au lieu de plus d'une
+// centaine.
 import * as THREE from 'three';
-import { CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
+import { CITY_RUSH_TRAFFIC_TYPES, cityRushDriverColor, cityRushHexColor } from './cityRushRules.js';
 import { createBatch } from './cityRushBuilder.js';
 import { makeCarPlateTexture, makeTrafficDecalAtlas, makeSmokeTexture } from './cityRushTextures.js';
 
@@ -143,14 +147,404 @@ function makeWheel({ radius, width, side, material, accent = 0xffffff, racing = 
   return wheelMesh;
 }
 
+// ─── Pilote du cabriolet : tête nue ─────────────────────────────────────────
+// Plus de casque intégral : c'est le visage du pilote qui se voit. Chaque
+// pilote reçoit l'identité de son avatar du catalogue (`CITY_RUSH_DRIVERS`) —
+// peau, cheveux, coiffure, accessoire (visière, lunettes, béret, casque audio),
+// tenue — si bien que le Kenji de la piste est celui de la fiche du pilote, et
+// que le joueur retrouve son pilote choisi dans le cockpit.
+//
+// Tout le pilote est peint en **couleurs par sommet** (comme les roues) : un
+// seul mesh par nœud fusionné — buste, tête, chaque bras — au lieu d'un mesh
+// par couleur. Le budget de rendu du monde y gagne, et l'on peut se permettre
+// un vrai visage : crâne, mâchoire, nez, oreilles, yeux, sourcils, bouche,
+// douze coiffures et douze accessoires, sans coûter un appel de rendu de plus
+// par détail. Le buste est fusionné avec la caisse ; seules la tête et les deux
+// bras restent animés (le pilote regarde dans le virage, ses bras encaissent
+// les chocs — voir `animateRacerCar`).
+const DRIVER_X = -0.43; // siège gauche : le volant est devant
+const DRIVER_Z = 0.32;
+const DRIVER_HEAD_Y = 1.535;
+const DRIVER_SHOULDER_Y = 1.31;
+
+function mixHex(from, to, amount) {
+  return new THREE.Color(from).lerp(new THREE.Color(to), amount).getHex();
+}
+
+// Palette du pilote, convertie en teintes de sommets (linéaires) : la fiche de
+// l'avatar est écrite en CSS, le modèle attend des triplets de couleur.
+function driverPaintColors(driver, { skinFallback = 0x1e222d, trimColor = 0xffffff } = {}) {
+  const avatar = driver?.avatar || null;
+  const skin = cityRushDriverColor(driver, skinFallback);
+  const hair = cityRushHexColor(avatar?.hair, 0x1b1720);
+  const accent = cityRushHexColor(avatar?.accessoryColor || driver?.accent, trimColor);
+  const outfit = cityRushHexColor(avatar?.outfit, 0x1f2235);
+  return {
+    skin: rgb(skin),
+    hair: rgb(hair),
+    // Combinaison : la tenue du pilote, assagie vers le bleu de course pour
+    // rester lisible dans un cabriolet sombre.
+    suit: rgb(mixHex(outfit, 0x14182a, 0.56)),
+    accent: rgb(accent),
+    // Grandes surfaces : le même accent, rentré dans la combinaison, pour ne pas
+    // faire une tache fluo sur la poitrine (le liseré garde l'accent vif).
+    plate: rgb(mixHex(accent, outfit, 0.42)),
+    glove: rgb(0x22263a),
+    gear: rgb(0xdfe4ee),
+    lens: rgb(0x121a26),
+    // Visière d'un seul tenant : verre teinté de la couleur du pilote, comme
+    // sur sa fiche, plutôt qu'un rectangle noir anonyme.
+    visor: rgb(mixHex(accent, 0x0a1220, 0.5)),
+    eyeWhite: rgb(0xf5f1ea),
+    eyeDark: rgb(0x15111a),
+    mouth: rgb(0x6b3038),
+  };
+}
+
+// Coiffure : une calotte arrière (qui descend jusqu'à la nuque) et une calotte
+// avant (la ligne de cheveux, posée au-dessus des sourcils) forment le crâne
+// chevelu ; chaque style ajoute ensuite ses mèches. Aucune ne recouvre le
+// visage, qui doit rester lisible depuis la caméra de poursuite.
+function addDriverHair(batch, material, colors, style) {
+  const hair = { tint: colors.hair };
+  const accent = { tint: colors.accent };
+  const back = new THREE.SphereGeometry(1, 18, 12, 0, Math.PI, 0, Math.PI * 0.62);
+  batch.custom(material, back, [0, 0.012, 0.006], null, [0.157, 0.166, 0.157], hair);
+  back.dispose();
+  const front = new THREE.SphereGeometry(1, 18, 8, Math.PI, Math.PI, 0, Math.PI * 0.34);
+  batch.custom(material, front, [0, 0.012, 0.006], null, [0.157, 0.166, 0.157], hair);
+  front.dispose();
+  switch (style) {
+    case 'spiky': {
+      const spikes = [[-0.098, 0.115, -0.02], [-0.048, 0.138, -0.07], [0.03, 0.142, -0.06], [0.098, 0.115, -0.01], [0, 0.15, 0.03], [-0.062, 0.122, 0.09], [0.066, 0.118, 0.09]];
+      spikes.forEach(([x, y, z]) => batch.cone(material, [x, y, z], 0.04, 0.095, 5, [z * 2.2, 0, -x * 2.2], hair));
+      break;
+    }
+    case 'curly': {
+      for (let index = 0; index < 12; index += 1) {
+        const angle = (index / 12) * Math.PI * 2;
+        batch.sphere(material, [Math.sin(angle) * 0.125, 0.1 + Math.cos(angle * 3) * 0.022, Math.cos(angle) * 0.11 + 0.03], 0.052, 8, null, hair);
+      }
+      batch.sphere(material, [0, 0.14, 0.02], 0.072, 10, null, hair);
+      break;
+    }
+    case 'short-fade': {
+      for (const side of [-1, 1]) batch.box(material, [side * 0.138, 0.015, 0.02], [0.03, 0.11, 0.17], null, hair);
+      batch.box(material, [0, 0.05, -0.126], [0.2, 0.032, 0.055], null, hair); // ligne de cheveux nette
+      break;
+    }
+    case 'wavy-long': {
+      batch.box(material, [0, -0.045, 0.1], [0.25, 0.27, 0.1], null, hair);
+      batch.box(material, [0, -0.165, 0.11], [0.21, 0.14, 0.08], null, hair); // pointes sur la nuque
+      for (const side of [-1, 1]) batch.box(material, [side * 0.126, -0.05, 0.035], [0.06, 0.23, 0.16], null, hair);
+      break;
+    }
+    case 'headband': {
+      for (const side of [-1, 1]) batch.box(material, [side * 0.13, 0.02, 0.02], [0.035, 0.08, 0.16], null, hair);
+      for (const side of [-1, 1]) batch.box(material, [side * 0.149, 0.048, 0.02], [0.022, 0.06, 0.19], null, accent);
+      batch.box(material, [0, 0.052, -0.118], [0.3, 0.052, 0.06], null, accent);
+      break;
+    }
+    case 'bob': {
+      batch.box(material, [0, -0.02, 0.1], [0.26, 0.25, 0.1], null, hair);
+      for (const side of [-1, 1]) batch.box(material, [side * 0.132, -0.045, 0.015], [0.062, 0.21, 0.21], null, hair);
+      batch.box(material, [0, 0.058, -0.12], [0.27, 0.062, 0.06], null, hair); // frange droite
+      break;
+    }
+    case 'locs': {
+      const locs = [[-0.128, 0.03], [-0.095, 0.09], [-0.035, 0.12], [0.035, 0.12], [0.095, 0.09], [0.128, 0.03], [0.137, -0.05]];
+      locs.forEach(([x, z]) => batch.box(material, [x, -0.1, z], [0.046, 0.3, 0.055], null, hair));
+      for (const side of [-1, 1]) batch.box(material, [side * 0.128, -0.238, 0.03], [0.05, 0.026, 0.06], null, accent); // attaches dorées
+      break;
+    }
+    case 'neon-bangs': {
+      batch.box(material, [0, 0.062, -0.116], [0.27, 0.078, 0.062], null, hair); // frange
+      batch.box(material, [0.078, 0.052, -0.128], [0.055, 0.092, 0.05], null, accent); // mèche fluo
+      batch.box(material, [-0.088, 0.058, -0.124], [0.03, 0.082, 0.048], null, accent);
+      break;
+    }
+    case 'swept': {
+      // Raie de côté : la mèche du dessus balaie le front et vient mourir sur la
+      // tempe, le reste est plaqué en pointe sur la nuque.
+      batch.box(material, [-0.015, 0.072, -0.088], [0.23, 0.075, 0.135], [0, 0, -0.2], hair);
+      batch.box(material, [0, -0.055, 0.105], [0.2, 0.2, 0.085], null, hair);
+      for (const side of [-1, 1]) batch.box(material, [side * 0.128, -0.008, 0.03], [0.045, 0.105, 0.14], null, hair); // pattes
+      break;
+    }
+    case 'braids': {
+      for (const side of [-1, 1]) {
+        batch.box(material, [side * 0.128, -0.1, 0.035], [0.052, 0.3, 0.072], null, hair);
+        batch.box(material, [side * 0.128, -0.248, 0.035], [0.056, 0.03, 0.078], null, accent); // perles
+      }
+      batch.box(material, [0, 0.05, 0.088], [0.24, 0.21, 0.12], null, hair);
+      break;
+    }
+    case 'cap-back': {
+      const dome = new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5);
+      batch.custom(material, dome, [0, 0.02, 0.01], null, [0.169, 0.16, 0.169], accent);
+      dome.dispose();
+      batch.box(material, [0, 0.028, 0.192], [0.2, 0.03, 0.15], null, accent); // visière à l'envers
+      batch.box(material, [0, 0.032, -0.118], [0.24, 0.085, 0.07], null, hair); // cheveux front
+      break;
+    }
+    case 'afro-curls': {
+      const puffBack = new THREE.SphereGeometry(1, 18, 12, 0, Math.PI, 0, Math.PI * 0.7);
+      batch.custom(material, puffBack, [0, 0.028, 0.022], null, [0.186, 0.176, 0.186], hair);
+      puffBack.dispose();
+      const puffFront = new THREE.SphereGeometry(1, 18, 6, Math.PI, Math.PI, 0, Math.PI * 0.38);
+      batch.custom(material, puffFront, [0, 0.028, 0.022], null, [0.186, 0.176, 0.186], hair);
+      puffFront.dispose();
+      [[-0.125, 0.145, 0.02], [0.125, 0.145, 0.02], [0, 0.175, 0.06], [-0.105, 0.06, 0.12], [0.105, 0.06, 0.12]]
+        .forEach(([x, y, z]) => batch.sphere(material, [x, y, z], 0.06, 9, null, hair));
+      break;
+    }
+    default: {
+      for (const side of [-1, 1]) batch.box(material, [side * 0.138, 0.015, 0.02], [0.03, 0.11, 0.17], null, hair);
+      break;
+    }
+  }
+}
+
+// Lunettes et visières du catalogue : chaque accessoire devient une monture
+// reconnaissable (bouclier d'un seul tenant, deux verres rectangulaires,
+// ronds, pointe de chat, cerclage doré) ou un couvre-chef (béret, casque
+// audio), coloré comme sur la fiche du pilote.
+const DRIVER_GLASS_SHAPES = {
+  'cyber-visor': 'shield', 'sport-visor': 'shield', 'mirror-shades': 'shield', 'gold-shield': 'shield',
+  'aviator-gold': 'gold', 'octagon-gold': 'round', 'glacier-glass': 'round',
+  'retro-amber': 'rect', 'palm-shades': 'rect', 'cat-eye': 'cateye',
+};
+
+function addDriverAccessory(batch, material, colors, accessory) {
+  const lens = { tint: colors.lens };
+  const accent = { tint: colors.accent };
+  const gear = { tint: colors.gear };
+  const hair = { tint: colors.hair };
+  const shape = DRIVER_GLASS_SHAPES[accessory] || 'rect';
+  const temple = (side) => batch.box(material, [side * 0.146, 0.022, -0.015], [0.02, 0.022, 0.2], null, gear);
+  if (accessory === 'french-beret') {
+    // Un vrai béret : une galette fine, posée de travers sur le côté droit, d'où
+    // la chevelure dépasse largement — sinon la tête disparaît dessous.
+    const cap = new THREE.SphereGeometry(1, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    batch.custom(material, cap, [0.052, 0.088, 0.012], [0, 0, -0.46], [0.158, 0.062, 0.158], accent);
+    cap.dispose();
+    batch.box(material, [0.098, 0.075, 0.012], [0.07, 0.03, 0.12], [0, 0, -0.46], accent); // bord retroussé
+    batch.sphere(material, [0.108, 0.108, 0.012], 0.016, 6, null, accent); // fougère
+    batch.box(material, [-0.06, 0.045, -0.02], [0.09, 0.09, 0.17], null, hair); // cheveux qui dépassent
+    return;
+  }
+  if (accessory === 'neon-headset') {
+    batch.box(material, [0, 0.152, 0.016], [0.24, 0.024, 0.055], null, gear); // arceau sur la couronne
+    batch.box(material, [0, 0.164, 0.016], [0.1, 0.012, 0.036], null, accent); // bandeau lumineux
+    for (const side of [-1, 1]) {
+      batch.cylinder(material, [side * 0.148, 0.006, 0.012], 0.045, 0.045, 0.026, 10, [0, 0, Math.PI / 2], gear);
+      batch.cylinder(material, [side * 0.162, 0.006, 0.012], 0.022, 0.022, 0.012, 8, [0, 0, Math.PI / 2], accent);
+    }
+    batch.box(material, [0.13, -0.06, -0.09], [0.02, 0.02, 0.17], [0.35, 0, 0], gear); // perche du micro
+    batch.sphere(material, [0.115, -0.098, -0.16], 0.02, 7, null, accent);
+    return;
+  }
+  if (shape === 'shield') {
+    batch.box(material, [0, 0.016, -0.128], [0.256, 0.056, 0.062], null, { tint: colors.visor });
+    batch.box(material, [0, -0.016, -0.132], [0.25, 0.012, 0.048], null, accent); // liseré bas
+    for (const side of [-1, 1]) temple(side);
+    return;
+  }
+  if (shape === 'gold') {
+    for (const side of [-1, 1]) {
+      batch.box(material, [side * 0.057, 0.008, -0.126], [0.1, 0.07, 0.03], null, accent); // monture dorée
+      batch.box(material, [side * 0.057, 0.004, -0.134], [0.082, 0.054, 0.036], null, lens);
+      temple(side);
+    }
+    batch.box(material, [0, 0.026, -0.126], [0.04, 0.016, 0.025], null, accent); // pont
+    return;
+  }
+  if (shape === 'round') {
+    for (const side of [-1, 1]) {
+      batch.cylinder(material, [side * 0.058, 0.012, -0.122], 0.05, 0.05, 0.022, 12, [Math.PI / 2, 0, 0], accent);
+      batch.cylinder(material, [side * 0.058, 0.012, -0.136], 0.041, 0.041, 0.02, 12, [Math.PI / 2, 0, 0], lens);
+      temple(side);
+    }
+    batch.box(material, [0, 0.03, -0.124], [0.03, 0.014, 0.022], null, accent);
+    return;
+  }
+  if (shape === 'cateye') {
+    for (const side of [-1, 1]) {
+      batch.box(material, [side * 0.062, 0.014, -0.132], [0.095, 0.05, 0.036], [0, 0, side * 0.24], lens);
+      batch.box(material, [side * 0.062, 0.038, -0.126], [0.098, 0.012, 0.03], [0, 0, side * 0.24], accent);
+      temple(side);
+    }
+    batch.box(material, [0, 0.022, -0.126], [0.035, 0.012, 0.022], null, accent);
+    return;
+  }
+  for (const side of [-1, 1]) {
+    batch.box(material, [side * 0.057, 0.012, -0.134], [0.086, 0.05, 0.036], null, lens);
+    batch.box(material, [side * 0.057, 0.038, -0.128], [0.09, 0.014, 0.03], null, accent); // monture haute
+    temple(side);
+  }
+  batch.box(material, [0, 0.026, -0.126], [0.036, 0.014, 0.022], null, accent);
+}
+
+/**
+ * Pilote assis dans son baquet, tête nue : buste de course, tête animée
+ * (visage, coiffure, accessoire de l'avatar) et deux bras tendus vers le
+ * volant. `driver` est une fiche `CITY_RUSH_DRIVERS` ou une entrée du roster
+ * du monde (elle porte alors `driverId` et `avatar`) ; sans lui, le pilote
+ * garde la peau du modèle de voiture. `paint` permet de réutiliser le matériau
+ * peint par sommet d'un pilote précédent (voir `setRacerDriver`).
+ */
+function makeCockpitDriver({ driver, profile, trimColor, paint: reusePaint = null }) {
+  const id = profile.id;
+  const avatar = driver?.avatar || null;
+  const skinFallback = profile.driverColor ?? 0x1e222d;
+  const colors = driverPaintColors(driver, { skinFallback, trimColor });
+  // Un seul matériau, peint par sommet : les dix couleurs du pilote tiennent
+  // dans les trois meshes du modèle (buste, tête, chaque bras).
+  const paint = reusePaint || new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.66, metalness: 0.06 });
+
+  // Buste : combinaison, harnais aux couleurs du pilote, ceinture. Il vit dans
+  // la carrosserie (il suit donc roulis et tangage) et reste un mesh à part,
+  // rebâti avec le reste du pilote quand le joueur en change au garage. Les
+  // épaules restent sous le menton pour que la tête ne paraisse pas posée sur
+  // une planche.
+  const suit = { tint: colors.suit };
+  const accent = { tint: colors.accent };
+  const plating = { tint: colors.plate };
+  const glove = { tint: colors.glove };
+  const gear = { tint: colors.gear };
+  const t = createBatch();
+  t.box(paint, [DRIVER_X, 1.14, DRIVER_Z - 0.02], [0.46, 0.38, 0.36], null, suit); // torse
+  t.box(paint, [DRIVER_X, 1.16, DRIVER_Z - 0.19], [0.26, 0.2, 0.035], null, plating); // plastron
+  for (const sign of [-1, 1]) {
+    t.box(paint, [DRIVER_X + sign * 0.155, 1.16, DRIVER_Z - 0.19], [0.042, 0.3, 0.032], null, accent); // bretelles
+    t.box(paint, [DRIVER_X + sign * 0.155, 1.025, DRIVER_Z - 0.19], [0.06, 0.06, 0.04], null, glove); // attaches
+  }
+  t.box(paint, [DRIVER_X, 1.29, DRIVER_Z - 0.02], [0.58, 0.11, 0.32], null, suit); // épaules
+  t.box(paint, [DRIVER_X, 1.345, DRIVER_Z - 0.02], [0.5, 0.022, 0.3], null, accent);
+  t.box(paint, [DRIVER_X, 0.98, DRIVER_Z - 0.02], [0.5, 0.13, 0.39], null, glove); // ceinture
+  t.box(paint, [DRIVER_X, 0.98, DRIVER_Z - 0.2], [0.1, 0.08, 0.04], null, gear); // boucle
+  t.cylinder(paint, [DRIVER_X, 1.4, DRIVER_Z + 0.015], 0.075, 0.088, 0.13, 10, null, { tint: colors.skin }); // cou
+  t.box(paint, [DRIVER_X, 1.325, DRIVER_Z - 0.01], [0.245, 0.09, 0.245], null, suit); // col de la combinaison
+  const torso = t.build(`${id}-driver-torso`);
+
+  // ── Tête animée ──────────────────────────────────────────────────────────
+  const headPivot = new THREE.Group();
+  headPivot.name = `${id}-driver-head`;
+  headPivot.position.set(DRIVER_X, DRIVER_HEAD_Y, DRIVER_Z + 0.01);
+  const h = createBatch();
+  const skin = { tint: colors.skin };
+  const skull = new THREE.SphereGeometry(1, 22, 16);
+  h.custom(paint, skull, [0, 0.004, 0.004], null, [0.147, 0.159, 0.147], skin);
+  skull.dispose();
+  h.box(paint, [0, -0.082, -0.03], [0.168, 0.09, 0.15], null, skin); // mâchoire
+  h.box(paint, [0, -0.012, -0.146], [0.04, 0.058, 0.042], null, skin); // nez
+  for (const sign of [-1, 1]) {
+    h.box(paint, [sign * 0.142, -0.008, 0.012], [0.028, 0.064, 0.046], null, skin); // oreille
+    h.box(paint, [sign * 0.055, 0.012, -0.118], [0.076, 0.044, 0.036], null, { tint: colors.eyeWhite });
+    h.box(paint, [sign * 0.05, 0.01, -0.132], [0.036, 0.032, 0.032], null, { tint: colors.eyeDark }); // pupille
+    h.box(paint, [sign * 0.056, 0.052, -0.122], [0.08, 0.018, 0.032], [0, 0, sign * 0.12], { tint: colors.hair }); // sourcil
+  }
+  h.box(paint, [0, -0.074, -0.125], [0.06, 0.016, 0.032], null, { tint: colors.mouth }); // bouche
+  addDriverHair(h, paint, colors, avatar?.hairStyle);
+  addDriverAccessory(h, paint, colors, avatar?.accessory);
+  const head = h.build(`${id}-driver-face`);
+  // La taille d'arcade : la tête est légèrement plus grande que nature, sinon
+  // le visage disparaît à la distance de la caméra de poursuite (c'était le
+  // rôle du casque, très gros, avant). Le buste, lui, garde ses proportions.
+  head.scale.setScalar(1.12);
+  head.traverse((object) => { if (object.isMesh) object.castShadow = false; });
+  headPivot.add(head);
+
+  // ── Bras : épaule → volant ───────────────────────────────────────────────
+  // Le pivot d'épaule porte tout le bras, tendu vers l'avant ; ses rotations
+  // sont animées (coup de volant, chocs) et `userData.rest` garde la pose.
+  const arms = [];
+  for (const sign of [-1, 1]) {
+    const arm = new THREE.Group();
+    arm.name = `${id}-driver-arm-${sign < 0 ? 'left' : 'right'}`;
+    arm.position.set(DRIVER_X + sign * 0.255, DRIVER_SHOULDER_Y, DRIVER_Z - 0.1);
+    arm.rotation.x = 1.1;
+    arm.rotation.z = -sign * 0.13;
+    arm.userData.rest = { x: 1.1, z: -sign * 0.13 };
+    const a = createBatch();
+    a.sphere(paint, [0, 0.015, 0], 0.088, 10, null, suit); // épaule
+    a.box(paint, [0, -0.2, 0], [0.125, 0.38, 0.135], null, suit); // manche
+    a.box(paint, [0, -0.38, 0], [0.13, 0.04, 0.14], null, accent); // poignet
+    a.box(paint, [0, -0.55, -0.012], [0.108, 0.2, 0.115], null, glove); // gant
+    a.box(paint, [0, -0.62, -0.02], [0.09, 0.05, 0.12], null, { tint: colors.gear }); // phalanges
+    arm.add(a.build(`${id}-driver-forearm`));
+    arms.push(arm);
+  }
+
+  // L'identité du pilote : les entrées du roster nomment l'emplacement
+  // (`player`, `nova`, `juno`) et le conducteur (`driverId`) ; une fiche
+  // `CITY_RUSH_DRIVERS` passée directement porte son `id`. On veut le pilote,
+  // pas l'emplacement : c'est lui qui décide si le cockpit doit être refait.
+  const driverId = driver?.driverId ?? driver?.id ?? null;
+  return { torso, headPivot, arms, paint, colors, driverId, skinFallback, trimColor };
+}
+
+/**
+ * Change le pilote installé dans un cabriolet (le joueur peut changer de pilote
+ * au garage sans que la course soit rebâtie) : la tête, les bras et le buste
+ * sont refaits aux couleurs du nouvel avatar, les anciens libérés. Le matériau
+ * peint par sommet, lui, est réutilisé — c'est le même pour toutes les têtes.
+ * Renvoie `true` si le cockpit a changé.
+ */
+export function setRacerDriver(car, driver) {
+  const data = car?.userData;
+  const parts = data?.driverParts;
+  if (!data || data.kind !== 'racer' || !parts) return false;
+  if ((driver?.driverId ?? driver?.id ?? null) === data.driverId) return false;
+  const next = makeCockpitDriver({
+    driver,
+    profile: { id: data.profileId, driverColor: parts.skinFallback },
+    trimColor: parts.trimColor,
+    paint: parts.paint,
+  });
+  for (const old of [parts.torso, parts.headPivot, ...parts.arms]) {
+    old.removeFromParent();
+    old.traverse((object) => { if (object.isMesh) object.geometry.dispose(); });
+  }
+  data.body.add(next.torso);
+  data.body.add(next.headPivot);
+  next.arms.forEach((arm) => data.body.add(arm));
+  next.torso.traverse((object) => { if (object.isMesh) object.castShadow = true; });
+  data.driverParts = next;
+  data.headPivot = next.headPivot;
+  data.driverArms = next.arms;
+  data.driverColors = next.colors;
+  data.driverId = next.driverId;
+  return true;
+}
+
+/**
+ * Volant : jante, moyeu, trois branches et repère de sommet coloré — le repère
+ * rend le coup de volant lisible, comme sur une vraie monoplace.
+ */
+function makeSteeringWheel(materials, markerMaterial) {
+  const wheel = new THREE.Group();
+  wheel.name = 'steering-wheel';
+  wheel.position.set(DRIVER_X, 1.02, -0.46);
+  wheel.rotation.x = -1.15;
+  wheel.add(new THREE.Mesh(STEERING, materials.black));
+  mesh(wheel, UNIT_BOX, materials.carbon, [0, 0, 0], [0.3, 0.05, 0.02]);
+  mesh(wheel, UNIT_BOX, materials.carbon, [0.1, 0, 0], [0.16, 0.035, 0.02], [0, 0, Math.PI / 2]);
+  mesh(wheel, UNIT_BOX, materials.carbon, [-0.1, 0, 0], [0.16, 0.035, 0.02], [0, 0, Math.PI / 2]);
+  mesh(wheel, UNIT_BOX, markerMaterial, [0, 0.17, 0.006], [0.1, 0.022, 0.028]);
+  return wheel;
+}
+
 /**
  * Cabriolet de course. `profile` vient de CITY_RUSH_CARS ; `options.player`
  * ajoute les phares volumétriques et une finition plus lumineuse.
  * `options.daylight` (Vice City en plein jour) coupe les faisceaux de phares et
- * descend les halos additifs, invisibles sous le soleil.
+ * descend les halos additifs, invisibles sous le soleil. `options.driver` (une
+ * entrée du catalogue des pilotes) habille le pilote assis dans le baquet :
+ * peau, cheveux, accessoire et combinaison de son avatar.
  */
 export function makeRacerCar(profile, options = {}) {
-  const { player = false, number = 1, daylight = false } = options;
+  const { player = false, number = 1, daylight = false, driver = null } = options;
   const group = new THREE.Group();
   group.name = `racer-${profile.id}`;
   const body = new THREE.Group();
@@ -167,10 +561,6 @@ export function makeRacerCar(profile, options = {}) {
     chrome: standard(0xd9e2ea, { roughness: 0.22, metalness: 0.7 }),
     glass: new THREE.MeshStandardMaterial({ color: 0x9fe8f0, transparent: true, opacity: 0.4, roughness: 0.08, metalness: 0.15, side: THREE.DoubleSide, depthWrite: false }),
     seat: standard(player ? 0x3a2340 : 0x2a2436, { roughness: 0.82 }),
-    skin: standard(profile.driverColor, { roughness: 0.85 }),
-    suit: standard(0x1f2235, { roughness: 0.8 }),
-    helmet: paint(trimColor, { roughness: 0.22, emissiveIntensity: 0.08 }),
-    visor: standard(0x1a2436, { roughness: 0.12, metalness: 0.5 }),
     lightWhite: new THREE.MeshBasicMaterial({ color: 0xfff6dc, toneMapped: false }),
     lightAmber: new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false }),
     tailLight: new THREE.MeshBasicMaterial({ color: 0xff3450, toneMapped: false }),
@@ -336,58 +726,28 @@ export function makeRacerCar(profile, options = {}) {
     box(m.seat, [x, 1.08, 0.62], [0.58, 0.6, 0.14], [-0.14, 0, 0]);
     box(m.trim, [x, 1.24, 0.6], [0.3, 0.1, 0.16]);
   }
-  // Pilote (corps fixe, tête animée).
-  const driverX = -0.43;
-  const driverZ = 0.32;
-  box(m.suit, [driverX, 1.12, driverZ], [0.46, 0.5, 0.34]);
-  box(m.trim, [driverX, 1.14, driverZ - 0.17], [0.3, 0.3, 0.02]);
-  box(m.suit, [driverX, 1.36, driverZ + 0.02], [0.52, 0.12, 0.3]); // épaules
-  for (const side of [-1, 1]) {
-    box(m.suit, [driverX + side * 0.25, 1.14, driverZ - 0.2], [0.11, 0.11, 0.42], [-0.5, 0, 0]);
-    box(m.skin, [driverX + side * 0.2, 1.06, driverZ - 0.42], [0.1, 0.1, 0.1]);
-  }
-  box(m.carbon, [driverX, 0.96, -0.5], [0.04, 0.04, 0.26], [0.4, 0, 0]); // colonne de direction
+  // Pilote : le visage du pilote choisi, tête nue, à la place du casque intégral
+  // d'avant. Son buste est un mesh à part (comme la tête et les bras) pour
+  // qu'un changement de pilote au garage puisse le repeindre — voir
+  // `setRacerDriver`.
+  const cockpitDriver = makeCockpitDriver({ driver, profile, trimColor });
+  box(m.carbon, [DRIVER_X, 0.96, -0.5], [0.04, 0.04, 0.26], [0.4, 0, 0]); // colonne de direction
+  // Sac de bord posé sur le baquet du passager : l'habitacle n'est pas vide.
+  box(m.seat, [0.44, 0.95, 0.3], [0.42, 0.14, 0.38]);
+  box(m.trim, [0.44, 1.03, 0.3], [0.34, 0.06, 0.3]);
+  box(m.carbon, [0.44, 1.02, 0.12], [0.1, 0.06, 0.05]); // sangle
 
   const merged = b.build('car-body');
   body.add(merged);
 
-  const headPivot = new THREE.Group();
-  headPivot.position.set(driverX, 1.44, driverZ);
+  body.add(cockpitDriver.torso);
+  const headPivot = cockpitDriver.headPivot;
   body.add(headPivot);
-  if (player) {
-    // Nico Vega, héros du mode histoire : visage visible dans le cabriolet,
-    // cheveux noirs et blouson bordeaux. Le modèle est volontairement simple
-    // et lisible à l'échelle de la course (pas un casque générique).
-    const face = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 12), m.skin);
-    face.position.set(0, 0.17, -0.015);
-    headPivot.add(face);
-    const hairMaterial = standard(0x17131c, { roughness: 0.72 });
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMaterial);
-    hair.position.set(0, 0.22, 0.015);
-    headPivot.add(hair);
-    const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x17131c });
-    for (const side of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.016, 8, 6), eyeMaterial);
-      eye.position.set(side * 0.052, 0.18, -0.158);
-      headPivot.add(eye);
-    }
-    const collar = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.12, 0.24), standard(0x8c2946, { roughness: 0.8 }));
-    collar.position.set(0, -0.02, 0.015);
-    headPivot.add(collar);
-  } else {
-    const head = createBatch();
-    head.cylinder(m.skin, [0, 0.06, 0], 0.09, 0.09, 0.08, 8);
-    head.sphere(m.helmet, [0, 0.22, 0], 0.2, 14);
-    head.box(m.visor, [0, 0.22, -0.13], [0.26, 0.11, 0.12]);
-    head.box(m.trim, [0, 0.36, 0.02], [0.08, 0.04, 0.3]);
-    headPivot.add(head.build('helmet'));
-  }
+  const driverArms = cockpitDriver.arms;
+  driverArms.forEach((arm) => body.add(arm));
 
-  const steeringWheel = new THREE.Mesh(STEERING, m.black);
-  steeringWheel.position.set(driverX, 1.02, -0.46);
-  steeringWheel.rotation.x = -1.15;
+  const steeringWheel = makeSteeringWheel(m, m.trim);
   body.add(steeringWheel);
-  mesh(steeringWheel, UNIT_BOX, m.carbon, [0, 0, 0], [0.3, 0.05, 0.02]);
 
   // ── Roues ────────────────────────────────────────────────────────────
   const wheels = [];
@@ -431,11 +791,15 @@ export function makeRacerCar(profile, options = {}) {
     kind: 'racer',
     profileId: profile.id,
     player,
+    driverId: cockpitDriver.driverId,
     body,
     wheels,
     frontWheels,
     steeringWheel,
     headPivot,
+    driverArms,
+    driverColors: cockpitDriver.colors,
+    driverParts: cockpitDriver,
     underglow,
     headlightCones,
     boostFlames,
@@ -494,6 +858,20 @@ export function animateRacerCar(car, state, dt, elapsed) {
   data.headPivot.rotation.z = impacting
     ? Math.sin(elapsed * 29) * 0.22
     : stunned ? Math.sin(elapsed * 17) * 0.35 : lerp(data.headPivot.rotation.z, lateral * 0.05, Math.min(1, dt * 6));
+  data.headPivot.position.y = DRIVER_HEAD_Y + (idle ? Math.sin(elapsed * 2.2) * 0.008 : 0);
+
+  // Bras : les mains restent sur la jante. Le coup de volant fait avancer une
+  // épaule et reculer l'autre, un choc (ou une frappe) fait encaisser les deux.
+  const armAbsorb = impacting ? 0.16 + Math.sin(elapsed * 22) * 0.07
+    : stunned ? 0.24 + Math.sin(elapsed * 17) * 0.09
+      : braking ? 0.09
+        : lerp(0, 0.02, Math.min(1, speed / 12));
+  data.driverArms.forEach((arm, index) => {
+    const rest = arm.userData.rest;
+    const sign = index === 0 ? -1 : 1;
+    arm.rotation.x = rest.x + armAbsorb;
+    arm.rotation.z = rest.z + steer * 0.1 * sign;
+  });
 
   // Feux stop et lueurs.
   const brake = braking || slowed || stunned;
