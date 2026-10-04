@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MIRAGE_ROUTE_GLSL } from './mirageRoute.js';
 import {
   DESERT_PALETTE,
   DESERT_PERIOD,
@@ -85,6 +86,8 @@ export function buildTerrainGeometry() {
 const TERRAIN_VERTEX = /* glsl */ `
   attribute float aTint;
   attribute float aOcc;
+  uniform float uRouteProgress;
+  ${MIRAGE_ROUTE_GLSL}
   varying vec3 vNormalW;
   varying vec3 vLocal;
   varying vec3 vWorld;
@@ -92,9 +95,14 @@ const TERRAIN_VERTEX = /* glsl */ `
   varying float vOcc;
   #include <fog_pars_vertex>
   void main() {
-    vNormalW = normal;
-    vLocal = position;
     vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    float routeStation = uRouteProgress - worldPos.z;
+    float routeX = mirageRouteX(routeStation) - mirageRouteX(uRouteProgress);
+    float routeY = mirageRouteY(routeStation) - mirageRouteY(uRouteProgress);
+    worldPos.x += routeX;
+    worldPos.y += routeY;
+    vNormalW = normalize(normal + vec3(0.0, 0.0, mirageRouteDY(routeStation)));
+    vLocal = vec3(position.x + routeX, position.y + routeY, position.z);
     vWorld = worldPos.xyz;
     vTint = aTint;
     vOcc = aOcc;
@@ -177,6 +185,7 @@ export function makeTerrainMaterial() {
       uSunDir: { value: new THREE.Vector3(0, 0.16, -0.987).normalize() },
       uTime: { value: 0 },
       uLite: { value: 0 },
+      uRouteProgress: { value: 0 },
       uDeep: { value: srgbVector(DESERT_PALETTE.sandDeep) },
       uShade: { value: srgbVector(DESERT_PALETTE.sandShade) },
       uMid: { value: srgbVector(DESERT_PALETTE.sandMid) },
