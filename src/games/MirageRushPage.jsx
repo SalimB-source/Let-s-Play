@@ -216,6 +216,11 @@ export default function MirageRushPage() {
   const [countdown, setCountdown] = useState(3);
   const [runToken, setRunToken] = useState(0);
   const [ready, setReady] = useState(false);
+  // Panne du moteur 3D à la construction du monde : sans ce message, le joueur
+  // ne verrait qu'une piste noire, la course ne partirait jamais et rien
+  // n'expliquerait pourquoi (c'est le cas de la fenêtre EN LIGNE, et désormais
+  // de la page solo). Le message est effacé au lancement suivant.
+  const [worldError, setWorldError] = useState('');
   const [hud, setHud] = useState(EMPTY_HUD);
   const [best, setBest] = useState(readBest);
   const [newRecord, setNewRecord] = useState(false);
@@ -449,6 +454,7 @@ export default function MirageRushPage() {
     setFx('');
     setCountdown(3);
     setPhase('countdown');
+    setWorldError('');
     if (musicOnRef.current) audioRef.current?.start();
   }, [enterImmersive, connected, progressionReady]);
 
@@ -1098,7 +1104,8 @@ export default function MirageRushPage() {
               stage={stage}
               skin={skinColors}
               prepareSignal={runToken}
-              onReady={() => setReady(true)}
+              onReady={() => { setReady(true); setWorldError(''); }}
+              onError={(message) => setWorldError(message || 'Le moteur 3D n’a pas pu démarrer.')}
               onHud={(next) => {
                 onHud(next);
               }}
@@ -1262,6 +1269,16 @@ export default function MirageRushPage() {
             {phase === 'playing' && hud.powerBoostActive && (
               <div className="mirage-turbo-lines" aria-hidden="true">
                 <i /><i /><i /><i /><i /><i /><i /><i />
+              </div>
+            )}
+            {/* Panne du moteur 3D : mieux vaut le dire que laisser une piste
+                noire où la course ne part jamais (même message que la fenêtre
+                de course EN LIGNE). */}
+            {worldError && (
+              <div className="mirage-world-error" role="alert">
+                <strong>Impossible d’afficher la piste</strong>
+                <span>{worldError}</span>
+                <button type="button" onClick={() => window.location.reload()}>RECHARGER LE JEU</button>
               </div>
             )}
             {powerToast && (

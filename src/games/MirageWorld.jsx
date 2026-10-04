@@ -984,6 +984,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   // course. Même déformation que les dunes, dans le vertex shader : le CPU
   // ne touche plus la géométrie, seul un uniforme de distance change.
   const snakewayRouteProgress = { value: 0 };
+  // Mer de cumulus du Chemin du Serpent : `sync` recale les boules instanciées
+  // sur leurs bancs qui défilent (voir `makeSnakewayCloudSea`). `updateVisualRoute`
+  // l'appelle à chaque image et à chaque `reset()`, sur tous les terrains : les
+  // autres maps gardent la fonction vide. Sans cette déclaration, l'appel levait
+  // un `ReferenceError` en mode strict (module ES) et **aucune** course ne
+  // démarrait, quel que soit le terrain.
+  let syncSnakewayClouds = () => {};
   if (snakeway) {
     bakeStaticScenery(floorGroup);
     floorGroup.traverse((object) => {
@@ -2280,8 +2287,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const useBoost = () => {
     if (!powerUpsEnabled(race.mode)) return;
     const res = consumePowerUp(powerState, POWER_UPS.BOOST);
-    if (!res.used) return;
-    powerStwerUp(powerState, POWER_UPS.BOOST);
     if (!res.used) return;
     powerState = res.state;
     powerBoostTimer = POWER_BOOST_DURATION;
@@ -3647,6 +3652,10 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
         linkStrike: (info) => callbackRefs.current.onLinkStrike?.(info),
       }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current, graphicsRef.current);
     } catch (error) {
+      // Toujours visible en console : une erreur de construction du monde
+      // laissait sinon une piste noire sans la moindre explication quand la
+      // page n'écoute pas `onError`.
+      console.error('[mirage] construction du monde impossible :', error);
       callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
     }

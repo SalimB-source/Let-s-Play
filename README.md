@@ -256,6 +256,49 @@ npm run check:mirage-cup          # coupe lancée au clic, relance d'une coupe t
 npm run check:mirage-fullscreen   # plein écran de base au lancement, natif au premier geste, commandes F / bouton / « LANCER EN PLEIN ÉCRAN »
 ```
 
+## Mirage Rush : quand aucune partie ne se lance
+
+Symptôme : la page s'ouvre, l'écran 02 et ses cartes s'affichent, mais **aucune
+course ne démarre** — ni en RUÉE, ni en DUEL, ni en coupe, ni dans la fenêtre EN
+LIGNE. On reste sur une piste noire, sans le moindre message.
+
+La cause était un identifiant utilisé sans être déclaré dans
+`src/games/MirageWorld.jsx`. Le commit « Fix Snake Way stutter » (le Chemin du
+Serpent) appelait `syncSnakewayClouds()` depuis `updateVisualRoute()` — appelée à
+chaque image et à chaque `reset()`, **sur tous les terrains** — sans jamais
+déclarer la variable. Un module ES est en mode strict : le `ReferenceError`
+faisait échouer `makeWorld()`, la page ne recevait jamais le `onReady()` du
+moteur, et le compte à rebours ne menait donc nulle part. Le même commit
+laissait `powerStwerUp(...)`, une faute de frappe, dans le chemin du Turbo.
+
+Ce qui a changé :
+
+- `let syncSnakewayClouds = () => {};` est déclaré avec les autres réglages du
+  monde : les autres maps gardent une fonction vide, le Chemin du Serpent y
+  branche le `sync` de `makeSnakewayCloudSea()` ;
+- le Turbo reprend son code d'origine — une seule charge consommée, puis
+  `powerState = res.state` ;
+- une panne du moteur ne se tait plus : `MirageWorld` l'écrit en console
+  (`[mirage] construction du monde impossible : …`) et la page affiche
+  `.mirage-world-error` (« Impossible d'afficher la piste », bouton RECHARGER LE
+  JEU), comme le faisait déjà la fenêtre de course EN LIGNE.
+
+### Où vit le code
+
+- `src/games/MirageWorld.jsx` — `let syncSnakewayClouds` (réglages du monde),
+  `useBoost()`, et le `catch` de `makeWorld` (console + `onError`) ;
+- `src/games/MirageRushPage.jsx` — état `worldError`, `onError` du moteur et
+  overlay `.mirage-world-error` ; styles dans `src/games/mirage-rush.css` ;
+- `scripts/mirage-engine-scan.mjs` — l'analyse qui relève les identifiants
+  utilisés sans déclaration (affectations et appels) dans le moteur 3D.
+
+### Vérifications
+
+```bash
+npm run check:mirage-engine    # aucun identifiant utilisé sans déclaration dans le moteur 3D
+npm run check:mirage-flow      # le clic sur une carte lance bien la partie
+```
+
 ## Mirage Rush : les bruitages des techniques de Cloud
 
 Le chocobo doré ne se bat pas comme les autres cavaliers : ses deux pouvoirs —
