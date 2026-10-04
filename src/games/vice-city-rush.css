@@ -2835,61 +2835,124 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .city-rush-guide-item.is-blue-shot { --power-color: #48b9ff; }
 
 
-/* Light theme adaptation — keeps dark game but light chrome if site is light */
+/* ── Thème clair ──────────────────────────────────────────────────────────
+   Règle 2 de theme.css — « les médias restent sombres » : la console edition
+   est un écran. Le panneau titre et la coque de jeu (barre supérieure,
+   viewport 3D, HUD, intro, compte à rebours, pause, arrivée, histoire)
+   restent sombres dans les deux thèmes ; la sidebar, le fond de page et le
+   pied de page, eux, sont des surfaces d'interface et suivent le thème clair.
+
+   L'ancienne conversion passait la coque et ses écrans à moitié au clair :
+   la barre supérieure et les cartes de HUD devenaient blanches alors que la
+   console edition y posait encore une encre claire (titre de la barre et
+   classement illisibles), et les écrans sombres (intro sur key art, compte à
+   rebours, pause, arrivée) recevaient l'encre sombre des jetons clairs
+   (titres et stepper invisibles). On :
+   - réancre l'encre sombre sur la coque : les jetons de la console edition
+     sont redéfinis sur `.city-rush-shell`, qui contient tous les écrans ;
+   - convertit la sidebar (hors coque) en surfaces claires à accents
+     assombris (règle 1 de theme.css) ;
+   - garde le fond de page et le pied de page clairs. */
 :root[data-theme='light'] .city-rush-page {
   --cr-bg: #f6f7fb;
-  --cr-panel: rgba(255, 255, 255, 0.86);
-  --cr-panel-2: rgba(255, 255, 255, 0.96);
-  --cr-border: rgba(20, 18, 50, 0.08);
-  --cr-border-strong: rgba(20, 18, 50, 0.14);
+  --cr-bg-2: #eef0f8;
+  --cr-panel: rgba(255, 255, 255, 0.92);
+  --cr-panel-2: rgba(255, 255, 255, 0.98);
+  --cr-panel-solid: #ffffff;
+  --cr-border: rgba(20, 18, 50, 0.1);
+  --cr-border-strong: rgba(20, 18, 50, 0.18);
   --cr-text: #141232;
-  --cr-muted: rgba(20, 18, 50, 0.66);
-  --cr-faint: rgba(20, 18, 50, 0.42);
-  --cr-dim: rgba(20, 18, 50, 0.1);
+  --cr-muted: rgba(20, 18, 50, 0.68);
+  --cr-faint: rgba(20, 18, 50, 0.46);
+  --cr-dim: rgba(20, 18, 50, 0.12);
   background:
     radial-gradient(900px 500px at 18% 8%, color-mix(in srgb, var(--city-accent) 10%, transparent), transparent 70%),
     radial-gradient(700px 400px at 92% 18%, color-mix(in srgb, var(--city-secondary) 8%, transparent), transparent 68%),
     #f6f7fb;
 }
 
+/* La coque est l'écran du jeu : on y réancre les jetons sombres de la
+   console edition. La barre supérieure, le viewport, le HUD et tous les
+   overlays (intro, compte à rebours, pause, arrivée, cinématiques d'histoire)
+   vivent dedans et retrouvent leur encre claire d'origine, posée sur leurs
+   surfaces sombres — la coque entière y reste donc lisible, y compris en
+   plein écran (`is-immersive`). */
 :root[data-theme='light'] .city-rush-shell {
-  background: linear-gradient(165deg, rgba(255,255,255,0.96), rgba(248, 249, 255, 0.98));
-  box-shadow: 0 24px 64px rgba(20, 18, 50, 0.12), 0 0 0 1px rgba(20, 18, 50, 0.06) inset;
+  --cr-panel: #11151d;
+  --cr-panel-2: #171c25;
+  --cr-panel-solid: #11151d;
+  --cr-border: #2a303a;
+  --cr-border-strong: #424a57;
+  --cr-text: #f5f7fb;
+  --cr-muted: #aeb6c3;
+  --cr-faint: #77808e;
+  --cr-dim: #4f5866;
+  --cr-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.28);
+  --cr-shadow-hard: 0 20px 56px rgba(0, 0, 0, 0.42);
+  color-scheme: dark;
 }
 
-:root[data-theme='light'] .city-rush-topbar,
-:root[data-theme='light'] .city-rush-shell-footer {
-  background: rgba(255, 255, 255, 0.84);
-}
-
-:root[data-theme='light'] .city-rush-viewport {
-  background: #0c1022;
-}
-
-:root[data-theme='light'] .city-rush-overlay {
-  background:
-    radial-gradient(800px 500px at 20% 10%, color-mix(in srgb, var(--city-accent) 10%, transparent), transparent 60%),
-    linear-gradient(180deg, rgba(246, 247, 251, 0.92), rgba(246, 247, 251, 0.96));
-}
-
-:root[data-theme='light'] .city-rush-hud-card,
-:root[data-theme='light'] .city-rush-race-list,
-:root[data-theme='light'] .city-rush-health,
-:root[data-theme='light'] .city-rush-status-pill,
-:root[data-theme='light'] .city-rush-toast,
-:root[data-theme='light'] .city-rush-steering,
-:root[data-theme='light'] .city-rush-power-bar,
-:root[data-theme='light'] .city-rush-lap-banner {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(20, 18, 50, 0.08);
-  color: #141232;
-}
-
-:root[data-theme='light'] .city-rush-side-card,
-:root[data-theme='light'] .city-rush-no-collision-note {
+/* Sidebar (hors coque) : surfaces claires, accents assombris. */
+:root[data-theme='light'] .city-rush-side-card {
   background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(20, 18, 50, 0.1);
+}
+:root[data-theme='light'] .city-rush-side-heading { color: rgba(20, 18, 50, 0.55); }
+:root[data-theme='light'] .city-rush-side-heading i {
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.28);
+  color: #15803d;
+}
+:root[data-theme='light'] .city-rush-side-card h3 { color: #141232; }
+:root[data-theme='light'] .city-rush-side-card h3 em {
+  color: color-mix(in srgb, var(--city-accent) 45%, #141232);
+}
+:root[data-theme='light'] .city-rush-racer-card { background: rgba(20, 18, 50, 0.04); }
+:root[data-theme='light'] .city-rush-racer-card.is-player {
+  background: rgba(67, 234, 213, 0.1);
+  border-color: rgba(13, 148, 136, 0.35);
+}
+:root[data-theme='light'] .city-rush-racer-rank { background: rgba(20, 18, 50, 0.06); }
+:root[data-theme='light'] .city-rush-racer-card.is-player .city-rush-racer-rank {
+  background: rgba(13, 148, 136, 0.12);
+  border-color: rgba(13, 148, 136, 0.3);
+  color: #0f766e;
+}
+:root[data-theme='light'] .city-rush-racer-meter { background: rgba(20, 18, 50, 0.1); }
+:root[data-theme='light'] .city-rush-racer-info small i,
+:root[data-theme='light'] .city-rush-leader-foot b i {
+  color: color-mix(in srgb, var(--city-accent) 45%, #141232);
+}
+:root[data-theme='light'] .city-rush-guide-item {
+  background: transparent;
   border-color: rgba(20, 18, 50, 0.08);
 }
+:root[data-theme='light'] .city-rush-guide-item > span {
+  color: color-mix(in srgb, var(--power-color) 45%, #141232);
+}
+:root[data-theme='light'] .city-rush-guide-item kbd {
+  background: rgba(20, 18, 50, 0.05);
+  border-color: rgba(20, 18, 50, 0.12);
+}
+:root[data-theme='light'] .city-rush-leader-foot b { color: #8a5a00; }
+:root[data-theme='light'] .city-rush-no-collision-note {
+  background: rgba(72, 185, 255, 0.08);
+  border-color: rgba(72, 185, 255, 0.28);
+}
+:root[data-theme='light'] .city-rush-no-collision-icon { color: #125e8f; }
+:root[data-theme='light'] .city-rush-no-collision-note b { color: #125e8f; }
+:root[data-theme='light'] .city-rush-no-collision-note.is-police {
+  background: rgba(255, 82, 110, 0.07);
+  border-color: rgba(255, 82, 110, 0.24);
+}
+:root[data-theme='light'] .city-rush-no-collision-note.is-police .city-rush-no-collision-icon { color: #c22848; }
+:root[data-theme='light'] .city-rush-no-collision-note.is-police b { color: #c22848; }
+:root[data-theme='light'] .city-rush-page-footer { border-color: rgba(20, 18, 50, 0.12); }
+:root[data-theme='light'] .city-rush-page-footer a {
+  background: rgba(20, 18, 50, 0.05);
+  border-color: rgba(20, 18, 50, 0.12);
+}
+:root[data-theme='light'] .city-rush-page-footer a:hover { background: rgba(20, 18, 50, 0.09); }
 
 /* ── Mode Histoire · Nico Vega — intégration interface ── */
 .city-rush-stepper-item.is-story {
