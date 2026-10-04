@@ -833,8 +833,8 @@ et le dernier tour durait 21 s.
   courtes, n'auraient jamais pu être battus.
 - **L'escouade de police du dernier tour.** Dès que le **premier du classement**
   attaque le dernier tour — **1 200 m sous la sirène**, soit deux fois plus qu'à
-  l'origine —, **trois berlines d'interception entrent en piste juste derrière
-  lui** (30 m, 38 m et 46 m, sirène allumée) et roulent pour lui nuire : elles
+  l'origine —, **deux berlines d'interception entrent en piste juste derrière
+  lui** (30 m et 38 m, sirène allumée) et roulent pour lui nuire : elles
   changent de voie pour **rafler en priorité les bonus rouges (mitrailleuse) et
   jaunes (hélicoptère)** — un bonus de tir vaut cinq bonus ordinaires dans leur
   choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
@@ -861,8 +861,9 @@ et le dernier tour durait 21 s.
   `CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
   destructibles.** Chacune porte une barre de vie au-dessus du toit (reprise
   sur les pastilles de la mini-carte) : **trois tirs droits bleus (2 points
-  chacun), OU deux rafales rouges (3 points chacune), OU un tir d'hélicoptère**
-  la détruisent
+  chacun), OU deux rafales rouges (3 points chacune), OU un tir d'hélicoptère,
+  OU trois carambolages avec la voiture du pilote (2 points chacun)** la
+  détruisent
   (`CITY_RUSH_POLICE_HEALTH = 6`, barème pur `cityRushPoliceDamage`, et
   `cityRushPoliceShotsLeft` pour le bandeau « encore deux tirs bleus »). À la
   destruction : explosion complète, retrait immédiat de la course et de la
@@ -871,6 +872,49 @@ et le dernier tour durait 21 s.
   berline explose. La berline du trafic rappelée par un contact est
   destructible comme l'escouade ; à la course suivante, le trafic repart au
   complet.
+- **Le dernier tour sous surveillance.** Deux choses accompagnent l'escouade.
+  D'abord un **hélicoptère d'observation** se poste dans le ciel pendant le
+  dernier tour : 18 m devant la voiture du pilote, 8 m au-dessus de la
+  chaussée, décalé vers la droite, il suit la course **jusqu'à l'arrivée sans
+  jamais ouvrir le feu** — pas de missile à bord, seulement le rotor qui tourne
+  et le pod caméra qui balaie (`cityRushWatchHelicopterPose`,
+  `CITY_RUSH_WATCH_HELI_*`, nœud `watch-helicopter` dans
+  `ViceCityWorld.jsx`) — puis s'éloigne en montant une fois la ligne franchie.
+  Sa hauteur et son avance sont réglées sur le cadre réel de la caméra de
+  poursuite (6,6 m, visée vers le bas) : plus haut, il passait au bord de
+  l'écran sous les cartes du HUD ; le smoke projette sa position avec la vraie
+  caméra et refuse qu'il quitte la bande de ciel visible. Sous une **voûte**
+  (les tunnels de la Shuto de Tokyo), il n'y a plus de ciel : l'appareil
+  s'efface (`WATCH_HELI_TUNNEL_HIDE`) plutôt que de voler dans les panneaux
+  suspendus, et il reparaît à la sortie — le smoke compte ces rentrées.
+  Ensuite la **barre de vie du pilote** s'allume dans le HUD :
+  **huit carrés** logiques, mais **dessinés d'un seul trait, sans segments
+  visibles**, qui partent du vert et glissent vers l'orange puis le rouge en se
+  vidant (`CITY_RUSH_PLAYER_HEALTH`, `cityRushPlayerHealthColor`,
+  `CITY_RUSH_PLAYER_BAR_COLORS`). Le barème est en carrés : un **tir droit
+  bleu** en coûte **un**, une **rafale rouge** **deux**, un **carambolage avec
+  une berline** **un** — la berline, elle, perd deux points de sa propre barre
+  au passage (un carambolage vaut un tir bleu) ; le trafic et les rivaux ne
+  touchent jamais la coque, ils ne font que ralentir. Un carambolage, c'est le
+  pilote qui **arrive sur** une berline **devant lui**
+  (`cityRushPoliceCollisionHit`, vitesse d'approche comprise) : la berline qui
+  se replie **derrière** lui pour ouvrir le feu — sa position de tir est à
+  quelques mètres de son pare-chocs arrière — ne le percute pas, et une fois le
+  pilote calé derrière un barrage roulant, il n'y a plus de choc. Le choc
+  s'anime comme un vrai carambolage (étincelles, cri de pneus, secousse de
+  caméra, flash rouge) **sans** l'état « choc » du trafic : la voiture ne fume
+  pas et ne se met pas à ramper — sinon une berline collée au pare-chocs faisait
+  perdre la course. À deux carrés ou moins la
+  barre passe en « CRITIQUE » (pulsation rouge), et **à zéro la course est
+  perdue** : le pilote part en toupie sur lui-même (`cityRushStunSpin`, deux
+  tours) dans une **fumée noire** continue, pétarade de pneus et explosion,
+  s'immobilise, puis la course se clôt sur une **épave** — le pilote est classé
+  **dernier** et la page affiche `COQUE DÉTRUITE · COURSE PERDUE`
+  (`CITY_RUSH_WRECK_SECONDS`, `CITY_RUSH_WRECK_SPIN_TURNS`). Une fois l'épave
+  en toupie, la ligne d'arrivée d'un rival ne clôt plus la course : la scène va
+  au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
+  (`CITY_RUSH_PLAYER_DAMAGE`, `CITY_RUSH_PLAYER_HEALTH_CRITICAL`,
+  `CITY_RUSH_POLICE_COLLISION_COOLDOWN`).
 - **Les bonus.** Quatre types de ramassages colorés remplissent quatre jauges :
   **bleu 2** (pistolet à tir droit), **rouge 3** (mitrailleuse), **vert 2**
   (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —
@@ -1015,7 +1059,9 @@ et le dernier tour durait 21 s.
 - `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
   dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
-  passages de ligne, environnement de tunnel de la C1) ;
+  passages de ligne, environnement de tunnel de la C1, **hélicoptère
+  d'observation** et **barre de vie du pilote** — `activatePlayerHealth`,
+  `damagePlayer`, `checkPoliceCollisions`) ;
   `src/games/ViceCityRushPage.jsx` et `src/games/vice-city-rush.css` — la page,
   le HUD (carte TOUR, bannière de tour, plaque de signalisation de la route,
   liste des pilotes) ;
@@ -1119,23 +1165,26 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ### Vérifications
 
 ```bash
-npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours (3 600 m, dernier tour de 1 200 m) sans exception, éclatements visibles
 npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
+npm run check:city-rush-wreck   # l'épave : un pilote qui casse sa coque doit partir en toupie, fumer, s'arrêter, finir dernier et perdre la course (cinq villes × trois courses)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
 à 30 Hz avec un pilote naïf (5 tours par défaut, la course la plus longue ;
 `CITY_RUSH_SMOKE_LAPS=4 npm run check:city-rush-smoke` joue un Circuit de
-3 000 m) : il vérifie les passages de ligne (début des tours
+3 000 m, et `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke` fige le
+hasard pour rejouer exactement le même scénario — un échec du smoke est
+intermittent par nature, la graine le rend reproductible) : il vérifie les passages de ligne (début des tours
 2 à 5, puis le point de passage du grand dernier tour, une seule fois), le
 compteur du dernier tour (il court sur 1 200 m sans retomber à zéro au
 portique), l’arrivée après 3 600 m, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
-aussi l'**escouade de police** : une seule entrée en piste, trois berlines
+aussi l'**escouade de police** : une seule entrée en piste, deux berlines
 arrivées derrière le leader (jamais devant, jamais à plus de 140 m) **et armées
 bleu et rouge — jamais jaune**, qui
 rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
@@ -1143,7 +1192,14 @@ circuit (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
 plus de 200 m de retard — seuils calibrés sur plus de 700 courses de 1 200 m de
 dernier tour, avec une large marge),
 ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
-disparaissent à la ligne et font sonner puis éteindre leur sirène. Il ne dit rien
+disparaissent à la ligne et font sonner puis éteindre leur sirène. Il suit
+l'**hélicoptère d'observation** (nœud `watch-helicopter` : absent hors du
+dernier tour, rotor et pod animés pendant le suivi, **cadrage vérifié à
+l'écran** — projeté par la vraie caméra, il doit rester dans la bande de ciel
+entre la route et les cartes du HUD au moins 85 % du dernier tour —, éloigné à
+l'arrivée, effacé par `reset()`) et la **barre de vie du pilote** (jamais avant son dernier tour,
+pleine à l'apparition, bornée, jamais croissante, chaque `player-hit` conforme
+au barème). Il ne dit rien
 du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
 l'image.
 

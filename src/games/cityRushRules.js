@@ -1491,7 +1491,7 @@ export function selectCityRushRacers({
 }
 
 // ── L'escouade de police du dernier tour ────────────────────────────────────
-// Au passage du dernier tour, trois berlines d'interception entrent en piste
+// Au passage du dernier tour, deux berlines d'interception entrent en piste
 // juste derrière le premier du classement. Elles ne sont **pas classées** :
 // `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
 // Leur seule mission est de nuire au leader — elles raflent **en priorité les
@@ -1505,13 +1505,13 @@ export function selectCityRushRacers({
 // elle ne se traverse pas. Elle peut donc se rabattre devant le leader puis
 // lever le pied pour le retenir — un barrage roulant, exactement l'effet
 // d'une voiture lente percutée — avant de repartir et de revenir à la charge.
-export const CITY_RUSH_POLICE_COUNT = 3;
-// Une berline dans chacune des trois voies de course : les poursuivantes
-// encadrent le leader sans démarrer au milieu du trafic venant en face.
+export const CITY_RUSH_POLICE_COUNT = 2;
+// Une berline sur chacune des deux voies extérieures de la course : les
+// poursuivantes encadrent le leader sans démarrer dans la voie médiane, la plus
+// exposée aux voitures qui viennent en face.
 export const CITY_RUSH_POLICE_LANES = Object.freeze([
   CITY_RUSH_FORWARD_LANES[0],
   CITY_RUSH_FORWARD_LANES[CITY_RUSH_FORWARD_LANES.length - 1],
-  CITY_RUSH_FORWARD_LANES[Math.floor(CITY_RUSH_FORWARD_LANES.length / 2)],
 ]);
 // Les deux bonus de tir, ceux que la police convoite avant tous les autres.
 export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]);
@@ -1529,14 +1529,16 @@ export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est con
 
 // Les berlines de l'escouade ont une barre de vie : **trois tirs droits bleus**
 // (2 points chacun), OU **deux rafales rouges** (3 points chacune), OU **un
-// seul missile d'hélicoptère** (6 points) les détruisent. Le barème est en
-// points plutôt qu'en coups — un tir bleu ne compte pas comme une rafale
+// seul missile d'hélicoptère** (6 points) les détruisent — et **une collision
+// avec la voiture du pilote** leur coûte 2 points, comme un tir bleu. Le barème
+// est en points plutôt qu'en coups — un tir bleu ne compte pas comme une rafale
 // rouge — et reste pur, donc testable hors de three.js.
 export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // trois tirs droits bleus (2 · 3 = 6)
   [CITY_RUSH_POWERS.PISTOL]: 3, // deux rafales rouges (3 · 2 = 6)
   [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
+  collision: 2, // trois carambolages avec le pilote (2 · 3 = 6)
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
@@ -1919,6 +1921,138 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
     }
     return { ...car, previousDistance, nextDistance, blockedBy };
   });
+}
+
+// ── La barre de vie du pilote (dernier tour) ────────────────────────────────
+// Au dernier tour du pilote — le seul tour du Sprint, le quatrième du Circuit
+// et de la Poursuite (où l'escouade, elle, est en piste depuis le départ : la
+// barre suit le pilote, pas le leader) — la voiture du joueur reçoit une barre
+// de vie de **huit carrés**. La page la dessine **sans jamais montrer les carrés** : une
+// barre continue qui part du vert et glisse vers l'orange puis le rouge en se
+// vidant (`cityRushPlayerHealthColor`). Le barème reste en carrés : un tir
+// droit bleu en coûte un, une rafale rouge deux, et une collision avec une
+// berline de police un — la berline encaisse le choc elle aussi
+// (`CITY_RUSH_POLICE_DAMAGE.collision`). Le trafic et les autres voitures de
+// course ne touchent pas la barre : eux ne font que ralentir.
+export const CITY_RUSH_PLAYER_HEALTH = 8; // carrés de la barre, pleine au dernier tour
+export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // un tir droit bleu
+  [CITY_RUSH_POWERS.PISTOL]: 2, // la rafale rouge de la mitrailleuse
+  collision: 1, // une touche avec une berline de police
+});
+export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
+// Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
+// course est perdue. Le temps de l'épave est celui de la toupie (deux tours
+// complets, `cityRushStunSpin`) — la page laisse ensuite la place au bilan.
+export const CITY_RUSH_WRECK_SECONDS = 3.2;
+export const CITY_RUSH_WRECK_SPIN_TURNS = 2;
+// Deux carrés ou moins : la page passe la barre en alerte (pulsation rouge).
+export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 2;
+
+export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
+  const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));
+  const damage = Number(CITY_RUSH_PLAYER_DAMAGE[source]);
+  if (!Number.isFinite(damage) || damage <= 0) return safeHealth;
+  return Math.max(0, safeHealth - damage);
+}
+
+// Vert → orange → rouge, interpolés entre trois arrêts : la barre se réchauffe
+// progressivement au lieu de changer de couleur par paliers.
+export const CITY_RUSH_PLAYER_BAR_COLORS = Object.freeze({ full: '#2be06a', mid: '#ffa53d', low: '#ff3b4d' });
+const BAR_FULL_RGB = Object.freeze([0x2b, 0xe0, 0x6a]);
+const BAR_MID_RGB = Object.freeze([0xff, 0xa5, 0x3d]);
+const BAR_LOW_RGB = Object.freeze([0xff, 0x3b, 0x4d]);
+const mixChannel = (from, to, amount) => Math.round(from + (to - from) * amount);
+const rgbToHex = ([r, g, b]) => `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+
+export function cityRushPlayerHealthColor(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
+  const ceiling = Math.max(1, Number(max) || CITY_RUSH_PLAYER_HEALTH);
+  const ratio = Math.max(0, Math.min(1, (Number(health) || 0) / ceiling));
+  const [from, to, amount] = ratio >= 0.5
+    ? [BAR_MID_RGB, BAR_FULL_RGB, (ratio - 0.5) / 0.5]
+    : [BAR_LOW_RGB, BAR_MID_RGB, ratio / 0.5];
+  return rgbToHex([
+    mixChannel(from[0], to[0], amount),
+    mixChannel(from[1], to[1], amount),
+    mixChannel(from[2], to[2], amount),
+  ]);
+}
+
+// Cooldown d'un carambolage : une berline collée au pare-chocs du pilote ne
+// retire pas un carré par image — il faut se reprendre, puis re-toucher.
+export const CITY_RUSH_POLICE_COLLISION_COOLDOWN = 1.6; // s
+export const CITY_RUSH_POLICE_COLLISION_TOLERANCE = 0.35; // m : au-delà de la distance de sécurité
+// Vitesse d'approche (m/s) en dessous de laquelle il n'y a plus de choc : deux
+// voitures calées l'une derrière l'autre roulent à la même vitesse.
+export const CITY_RUSH_POLICE_COLLISION_CLOSING = 0.8;
+
+// Un carambolage, ce n'est pas « être à côté » : c'est le pilote qui **arrive
+// sur** une berline **devant lui**. Deux exclusions, tirées de la façon dont
+// l'escouade se bat :
+//   · la berline qui se replie **derrière** le pilote pour ouvrir le feu — sa
+//     position de tir est justement à quelques mètres de son pare-chocs arrière
+//     (`CITY_RUSH_POLICE_ATTACK_LEAD`) : elle ne le percute pas, elle le suit ;
+//   · une fois le pilote calé derrière elle (barrage roulant), les deux voitures
+//     roulent à la même vitesse : c'est un blocage, pas un choc — sinon un
+//     barrage immobile retirerait un carré à chaque cooldown.
+export function cityRushPoliceCollisionHit({
+  gap = 0,
+  closing = 0,
+  x,
+  targetX,
+  width = 1.94,
+  targetWidth = 1.9,
+  tolerance = CITY_RUSH_POLICE_COLLISION_TOLERANCE,
+  closingMargin = CITY_RUSH_POLICE_COLLISION_CLOSING,
+} = {}) {
+  const safeGap = Number(gap);
+  if (!(safeGap > 0)) return false;
+  const safeClosing = Number(closing);
+  const margin = Math.max(0, Number(closingMargin) || 0);
+  if (!Number.isFinite(safeClosing) || safeClosing <= margin) return false;
+  return cityRushPoliceContact({ gap: safeGap, x, targetX, width, targetWidth, tolerance });
+}
+
+// ── L'hélicoptère d'observation du dernier tour ─────────────────────────────
+// Au dernier tour, un second appareil se poste dans le ciel et suit la voiture
+// du pilote **jusqu'à l'arrivée** : il n'ouvre jamais le feu, ne porte pas de
+// missile et ne fait que filmer — rotor et pod caméra animent la scène, et il
+// s'éloigne une fois la ligne franchie. Sa pose est calculée ici, pure : un
+// point de vol devant la voiture, un décalage latéral vers la droite et une
+// dérive lente pour qu'il ne paraisse pas vissé au sol.
+//
+// Le cadrage est réglé au plus juste, parce qu'un appareil trop haut sort du
+// champ : la caméra de poursuite est à **6,6 m** et vise vers le bas, ce qui
+// place l'horizon vers 46 % du haut de l'écran et les cartes du HUD sur la
+// bande des 30 % supérieurs. À 32 m devant et 11,2 m de haut, l'appareil
+// frôlait le bord supérieur (0,80 en coordonnée écran, où 1 est le haut) et
+// passait sous les cartes. À **18 m devant et 8 m de haut**, il vole dans la
+// bande de ciel visible (mesuré entre 0,44 et 0,65 selon la ville, moyenne
+// 0,57) et grossit d'environ 20 % : il reste au-dessus des 7,1 m qui protègent
+// la caméra, sans sortir du cadre. Le smoke projette sa position avec la vraie
+// caméra et le vérifie image par image.
+export const CITY_RUSH_WATCH_HELI_AHEAD = 18; // m : devant la voiture suivie
+export const CITY_RUSH_WATCH_HELI_HEIGHT = 8; // m : altitude au-dessus de la chaussée
+export const CITY_RUSH_WATCH_HELI_LATERAL = 4.2; // m : décalage vers la droite du pilote
+
+export function cityRushWatchHelicopterPose({ playerX = 0, clock = 0, leaving = 0 } = {}) {
+  const seconds = Number.isFinite(Number(clock)) ? Number(clock) : 0;
+  const away = Math.max(0, Math.min(1, Number(leaving) || 0));
+  const sway = Math.sin(seconds * 0.42) * 1.6;
+  const bob = Math.sin(seconds * 0.93 + 1.1) * 0.35;
+  const drift = Math.sin(seconds * 0.23 + 0.7) * 2.1;
+  return {
+    // `playerX / 2` : il suit la voie du pilote sans coller à ses changements.
+    lateral: (Number(playerX) || 0) * 0.5 + CITY_RUSH_WATCH_HELI_LATERAL + sway + away * 18,
+    ahead: CITY_RUSH_WATCH_HELI_AHEAD + drift + away * 46,
+    height: CITY_RUSH_WATCH_HELI_HEIGHT + bob + away * 24,
+    // L'appareil se penche quand il dérive, et s'incline franchement quand il
+    // s'éloigne à l'arrivée.
+    bank: -sway * 0.09 + away * 0.22,
+    yaw: Math.sin(seconds * 0.19) * 0.15 + away * 0.6,
+    pod: Math.sin(seconds * 0.8) * 0.42,
+    leaving: away,
+  };
 }
 
 // ── Mini-carte du circuit & focus joueur ────────────────────────────────────

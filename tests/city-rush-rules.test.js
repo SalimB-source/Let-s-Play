@@ -58,7 +58,20 @@ import {
   CITY_RUSH_POLICE_HUNT_TYPES,
   CITY_RUSH_POLICE_LEAD,
   CITY_RUSH_POLICE_LANES,
+  CITY_RUSH_POLICE_COLLISION_COOLDOWN,
+  CITY_RUSH_POLICE_COLLISION_TOLERANCE,
+  CITY_RUSH_PLAYER_BAR_COLORS,
+  CITY_RUSH_PLAYER_DAMAGE,
+  CITY_RUSH_PLAYER_HEALTH,
+  CITY_RUSH_PLAYER_HEALTH_CRITICAL,
+  CITY_RUSH_WATCH_HELI_AHEAD,
+  CITY_RUSH_WATCH_HELI_HEIGHT,
+  CITY_RUSH_WATCH_HELI_LATERAL,
   CITY_RUSH_RACER_SLOTS,
+  cityRushPlayerDamage,
+  cityRushPlayerHealthColor,
+  cityRushPoliceCollisionHit,
+  cityRushWatchHelicopterPose,
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_LANES,
   CITY_RUSH_TRAFFIC_TYPES,
@@ -671,8 +684,8 @@ test('a collected item bursts into shards, then reappears 0.1 s later', () => {
   assert.ok(Math.max(...samples) > 1, 'léger rebond avant de se stabiliser');
 });
 
-test('au dernier tour, trois berlines de police chassent le premier — hors classement', () => {
-  assert.equal(CITY_RUSH_POLICE_COUNT, 3);
+test('au dernier tour, deux berlines de police chassent le premier — hors classement', () => {
+  assert.equal(CITY_RUSH_POLICE_COUNT, 2);
   // Rouge (mitrailleuse) et jaune (hélicoptère) : exactement les deux pouvoirs
   // de tir, ceux qui privent le leader de ses armes.
   assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol', 'radio']);
@@ -681,13 +694,123 @@ test('au dernier tour, trois berlines de police chassent le premier — hors cla
   // Aucune berline ne porte un identifiant de pilote classé : la grille garde
   // trois pilotes, et l'arrivée ne peut pas compter les voitures de police.
   assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno']);
-  // L'escouade occupe les trois voies dans le sens de la course ; son barrage
-  // est encadré dans le temps : elle se rabat, freine, puis repart.
+  // Les deux berlines partent sur les voies extérieures de la course ; leur
+  // barrage est encadré dans le temps : elles se rabattent, freinent, puis
+  // repartent.
   assert.equal(CITY_RUSH_POLICE_LANES.length, CITY_RUSH_POLICE_COUNT, 'une voie de départ par berline');
-  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [3, 5, 4]);
+  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [3, 5]);
   assert.ok(CITY_RUSH_POLICE_LANES.every((lane) => CITY_RUSH_FORWARD_LANES.includes(lane)));
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_RANGE > CITY_RUSH_CAR_GAP);
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
+});
+
+test('la barre de vie du pilote se compte en carrés : tir bleu 1, rafale rouge 2, carambolage 1', () => {
+  // Huit carrés, pleins à l'entrée de l'escouade en piste.
+  assert.equal(CITY_RUSH_PLAYER_HEALTH, 8);
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE['blue-shot'], 1);
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE.pistol, 2);
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 1);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'blue-shot'), 7);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'pistol'), 6);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), 7);
+  // La barre ne descend jamais sous zéro, et une source inconnue ne l'entame
+  // pas (le trafic et les rivaux hors tir ne comptent pas).
+  assert.equal(cityRushPlayerDamage(1, 'pistol'), 0);
+  assert.equal(cityRushPlayerDamage(0, 'blue-shot'), 0);
+  assert.equal(cityRushPlayerDamage(5, 'boost'), 5);
+  // Sans source précisée, c'est le tir bleu qui s'applique (défaut du barème).
+  assert.equal(cityRushPlayerDamage(5, undefined), 4);
+  assert.equal(cityRushPlayerDamage(-3, 'collision'), 0);
+  assert.ok(CITY_RUSH_PLAYER_HEALTH_CRITICAL < CITY_RUSH_PLAYER_HEALTH);
+  // Trois carambolages ou trois tirs bleus détruisent une berline (2 points
+  // chacun sur sa propre barre de 6).
+  assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 2);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision'), CITY_RUSH_POLICE_HEALTH - 2);
+  // Une berline collée au pare-chocs ne vide pas la barre : un délai sépare
+  // deux carambolages comptés.
+  assert.ok(CITY_RUSH_POLICE_COLLISION_COOLDOWN > 0.5);
+  assert.ok(CITY_RUSH_POLICE_COLLISION_TOLERANCE > 0);
+});
+
+test('la barre de vie du pilote part du vert, passe à l’orange puis au rouge — sans jamais montrer les carrés', () => {
+  assert.equal(cityRushPlayerHealthColor(CITY_RUSH_PLAYER_HEALTH), CITY_RUSH_PLAYER_BAR_COLORS.full);
+  assert.equal(cityRushPlayerHealthColor(CITY_RUSH_PLAYER_HEALTH / 2), CITY_RUSH_PLAYER_BAR_COLORS.mid);
+  assert.equal(cityRushPlayerHealthColor(0), CITY_RUSH_PLAYER_BAR_COLORS.low);
+  const channel = (color, index) => Number.parseInt(color.slice(1 + index * 2, 3 + index * 2), 16);
+  const green = channel(cityRushPlayerHealthColor(8), 1);
+  const orange = channel(cityRushPlayerHealthColor(4), 1);
+  const red = channel(cityRushPlayerHealthColor(2), 1);
+  // Le vert s'efface progressivement : la barre « chauffe » au lieu de sauter
+  // d'une couleur à l'autre.
+  assert.ok(green > orange && orange > red);
+  assert.ok(channel(cityRushPlayerHealthColor(8), 1) > channel(cityRushPlayerHealthColor(8), 0), 'pleine : le vert domine');
+  assert.ok(channel(cityRushPlayerHealthColor(0), 0) > channel(cityRushPlayerHealthColor(0), 1), 'vide : le rouge domine');
+  // Bornes : au-delà de la vie pleine ou sous zéro, la couleur reste valide.
+  assert.equal(cityRushPlayerHealthColor(12), CITY_RUSH_PLAYER_BAR_COLORS.full);
+  assert.equal(cityRushPlayerHealthColor(-4), CITY_RUSH_PLAYER_BAR_COLORS.low);
+  assert.match(cityRushPlayerHealthColor(7, 8), /^#[0-9a-f]{6}$/);
+});
+
+test('l’hélico d’observation du dernier tour vole devant le pilote et s’éloigne à l’arrivée', () => {
+  const pose = cityRushWatchHelicopterPose({ playerX: 0, clock: 0 });
+  // Il se poste devant la voiture, plus haut que la caméra de poursuite (qui
+  // est à 6,6 m) et sous la bande des cartes du HUD : c'est ce qui le rend
+  // visible dans le ciel. Les bornes viennent de la mesure à l'écran (le smoke
+  // projette l'appareil avec la vraie caméra) : plus haut, il passait derrière
+  // les cartes ; plus loin, il était trop petit pour se voir.
+  assert.ok(pose.ahead >= CITY_RUSH_WATCH_HELI_AHEAD - 3);
+  assert.ok(pose.height > 6.6);
+  assert.ok(pose.height <= CITY_RUSH_WATCH_HELI_HEIGHT + 1);
+  // Garde-fou de cadrage : l'appareil reste bas et proche (mesuré à 0,44–0,65
+  // en coordonnée écran, moyenne 0,57, contre 0,80 avant réglage).
+  assert.ok(CITY_RUSH_WATCH_HELI_HEIGHT <= 9, 'l’hélico doit rester dans la bande de ciel visible');
+  assert.ok(CITY_RUSH_WATCH_HELI_AHEAD <= 24, 'l’hélico doit rester assez près pour se voir');
+  assert.ok(Number.isFinite(pose.lateral) && Math.abs(pose.lateral) < 12);
+  assert.equal(pose.leaving, 0);
+  // Il suit la voie du pilote, sans coller à ses changements (moitié du
+  // décalage seulement).
+  const left = cityRushWatchHelicopterPose({ playerX: -3, clock: 0 });
+  const right = cityRushWatchHelicopterPose({ playerX: 3, clock: 0 });
+  assert.ok(right.lateral > left.lateral);
+  assert.ok(Math.abs((right.lateral - left.lateral) - 3) < 1e-6);
+  // Il dérive lentement : deux instants différents ne donnent pas la même pose.
+  const later = cityRushWatchHelicopterPose({ clock: 4 });
+  assert.notEqual(later.lateral, pose.lateral);
+  assert.ok(Math.abs(later.height - CITY_RUSH_WATCH_HELI_HEIGHT) <= 1);
+  // À l'arrivée, il prend de l'altitude et de l'avance : il quitte la scène.
+  const leaving = cityRushWatchHelicopterPose({ clock: 0, leaving: 1 });
+  assert.ok(leaving.height > CITY_RUSH_WATCH_HELI_HEIGHT + 20);
+  assert.ok(leaving.ahead > pose.ahead + 30);
+  assert.equal(leaving.leaving, 1);
+  assert.ok(leaving.bank > pose.bank);
+  // Les entrées aberrantes ne cassent pas la pose.
+  assert.ok(Number.isFinite(cityRushWatchHelicopterPose({ clock: 'x', playerX: null, leaving: 9 }).height));
+});
+
+test('un carambolage demande une berline devant, et un pilote qui arrive sur elle', () => {
+  const base = { x: 0, targetX: 0, width: 1.94, targetWidth: 1.9 };
+  // Le cas normal : le pilote arrive sur une berline devant lui.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: 4.2, closing: 12 }), true);
+  // La position de tir de l'escouade : repliée à 5 m derrière le pilote, elle
+  // ne le percute pas — elle le suit. C'était le défaut : ce « choc » coûtait
+  // un carré toutes les 1,6 s, avec fumée et ralenti.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: -5, closing: -12 }), false);
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: -1, closing: -3 }), false);
+  // Roue contre roue, personne n'arrive sur personne : pas de choc.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: 4.6, closing: 0 }), false);
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: 4.6, closing: 0.4 }), false);
+  // Une fois calé derrière elle (barrage), le pilote ne perd plus rien.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: 4.8, closing: 0.8 }), false);
+  // Devant, mais hors de portée du pare-chocs.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: 9, closing: 14 }), false);
+  // Devant, à portée, mais dans une autre voie.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, x: -4.7, targetX: 0, gap: 4.2, closing: 12 }), false);
+  // Devant, à portée, mais trop lentement : un frôlement ne compte pas.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: 4.2, closing: 0.2 }), false);
+  // Entrées aberrantes : jamais de choc, jamais d'exception.
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: NaN, closing: 12 }), false);
+  assert.equal(cityRushPoliceCollisionHit({ ...base, gap: 4, closing: NaN }), false);
+  assert.equal(cityRushPoliceCollisionHit(), false);
 });
 
 test('l’escouade ne prend en chasse que le premier du classement', () => {

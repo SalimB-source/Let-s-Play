@@ -18,11 +18,14 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
+  CITY_RUSH_PLAYER_HEALTH,
+  CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   CITY_RUSH_PICKUPS,
   CITY_RUSH_TRACK_BOOST_DURATION,
   buildCityRushMinimapState,
+  cityRushPlayerHealthColor,
   cityRushRaceDistance,
   createCityRushInventory,
   selectCityRushRacers,
@@ -112,7 +115,7 @@ const RACE_MODES = [
     id: 'pursuit',
     name: 'POURSUITE',
     label: '4 TOURS · POLICE TOTALE',
-    desc: 'Trois berlines d’interception dès le départ, armées bleu et rouge. Elles volent tes bonus rouges/jaunes et tirent sans relâche.',
+    desc: 'Deux berlines d’interception dès le départ, armées bleu et rouge. Elles volent tes bonus rouges/jaunes et tirent sans relâche ; au dernier tour, le carambolage abîme la coque de ta voiture.',
     accent: '#ffd44f',
     secondary: '#ff526e',
     laps: 4,
@@ -142,6 +145,11 @@ const EMPTY_HUD = {
   trafficImpactLeft: 0,
   boostLeft: 0,
   stunLeft: 0,
+  // Barre de vie du pilote : nulle tant que le dernier tour n'a pas commencé.
+  playerHealth: null,
+  playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+  playerHealthActive: false,
+  playerHealthFlash: 0,
   police: [],
 };
 
@@ -296,8 +304,16 @@ export default function ViceCityRushPage() {
   );
   const standings = minimapState.racers;
   const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
+  // Barre de vie de la voiture du pilote : huit carrés, dessinés comme une
+  // seule barre — la page n'affiche jamais les carrés, seulement la couleur
+  // (vert → orange → rouge) et la longueur.
+  const playerHealthValue = Number.isFinite(Number(hud.playerHealth)) ? Math.max(0, Number(hud.playerHealth)) : null;
+  const playerHealthMax = Number(hud.playerHealthMax) || CITY_RUSH_PLAYER_HEALTH;
+  const playerHealthPercent = playerHealthValue === null ? 0 : Math.max(0, Math.min(100, (playerHealthValue / playerHealthMax) * 100));
+  const playerHealthColor = cityRushPlayerHealthColor(playerHealthValue ?? playerHealthMax, playerHealthMax);
+  const playerHealthCritical = playerHealthValue !== null && playerHealthValue <= CITY_RUSH_PLAYER_HEALTH_CRITICAL;
   const bestTime = bests[cityId] || null;
-  const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && storyChapter >= STORY_CHAPTERS.length);
+  const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && !result?.destroyed && storyChapter >= STORY_CHAPTERS.length);
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
   const previewStoryChapter = STORY_CHAPTERS[nextStoryIndex];
   const previewStoryCity = CITY_RUSH_CITIES.find((item) => item.id === previewStoryChapter.city) || CITY_RUSH_CITIES[0];
@@ -552,11 +568,9 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'traffic-impact') showToast(effect.oncoming ? 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.' : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`, 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
-    else if (effect.type === 'police-arrival') showToast(effect.target === 'player' ? `🚨 POLICE · ${effect.count || 3} BERLINES SE JOIGNENT À LA COURSE JUSTE DERRIÈRE TOI · ELLES SONT ARMÉES (BLEU ET ROUGE) ET VISENT TES BONUS ROUGES ET JAUNES.` : `🚨 POLICE · L’ESCOUADE PREND ${effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ ${effect.item === 'radio' ? 'L’HÉLICO (JAUNE)' : 'LA MITRAILLEUSE (ROUGE)'}${effect.ready ? ' · ELLE EST ARMÉE' : ''}.`, effect.item === 'radio' ? 'radio' : 'pistol');
-    else if (effect.type === 'police-fire') showToast(`TATATATA ! ${effect.police} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'police-rally') showToast(effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`, 'pistol');
-    else if (effect.type === 'police-hit') {
+    else if (effect.type === 'police-hit' && effect.source !== 'collision') {
       const weapon = effect.source === 'pistol' ? 'RAFALE ROUGE' : 'TIR BLEU';
       const left = effect.remaining || 1;
       showToast(`${weapon} · ${effect.police} TOUCHÉE · BARRE DE VIE ${effect.health}/${effect.maxHealth} · ENCORE ${left} ${effect.source === 'pistol' ? 'RAFALE' : 'TIR'}${left > 1 ? 'S' : ''} ${effect.source === 'pistol' ? 'ROUGE' : 'BLEU'}${left > 1 ? 'S' : ''}.`, effect.source === 'pistol' ? 'pistol' : 'blue-shot');
@@ -672,7 +686,7 @@ export default function ViceCityRushPage() {
             </div>
           </div>
 
-          <div className={`city-rush-viewport${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}`}>
+          <div className={`city-rush-viewport${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}`}>
             <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? false : mode.policeFromStart} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onPickup={onPowerPickup} onEffect={effectMessage} onLap={onLap} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
 
@@ -701,6 +715,25 @@ export default function ViceCityRushPage() {
                   <span className="city-rush-time">{formatTime(hud.elapsed)}</span>
                 </div>
               </div>
+
+              {/* La barre de coque ne se dessine que sur le dernier tour : le
+                  monde l'active là, et cette garde le garantit même si un HUD
+                  en retard arrivait d'une course précédente. */}
+              {playerHealthValue !== null && hud.lap >= hud.laps && (
+                <div
+                  className={`city-rush-health${playerHealthCritical ? ' is-critical' : ''}${hud.playerHealthFlash > 0 ? ' is-hit' : ''}`}
+                  role="status"
+                  aria-label={`Résistance de ta voiture : ${playerHealthValue} carrés sur ${playerHealthMax}`}
+                >
+                  <span className="city-rush-health-head">
+                    <b>COQUE</b>
+                    <small>{playerHealthCritical ? 'CRITIQUE' : 'SOUS LE FEU'}</small>
+                  </span>
+                  <span className="city-rush-health-track" aria-hidden="true">
+                    <i style={{ width: `${playerHealthPercent}%`, background: playerHealthColor, boxShadow: `0 0 14px ${playerHealthColor}` }} />
+                  </span>
+                </div>
+              )}
 
               {/* Plaque de signalisation de la route officielle : sur la Shuto
                   C1 de Tokyo elle donne le secteur, le point kilométrique, la
@@ -1070,17 +1103,19 @@ export default function ViceCityRushPage() {
             )}
 
             {phase === 'finished' && result && (
-              <div className="city-rush-overlay city-rush-result-overlay">
-                <span className="city-rush-overlay-kicker">{result.rank === 1 ? `VICTOIRE · ${activeModeName}` : `ARRIVÉE · ${activeModeName}`} · {result.laps || currentLaps} TOURS</span>
-                <h2>{finalStoryVictory ? storyEnding ? <>{STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
+              <div className={`city-rush-overlay city-rush-result-overlay${result.destroyed ? ' is-destroyed' : ''}`}>
+                <span className="city-rush-overlay-kicker">{result.destroyed ? `COQUE DÉTRUITE · COURSE PERDUE` : result.rank === 1 ? `VICTOIRE · ${activeModeName}` : `ARRIVÉE · ${activeModeName}`} · {result.laps || currentLaps} TOURS</span>
+                <h2>{result.destroyed ? <>TON ÉPAVE<br /><em>FUME ENCORE.</em></> : finalStoryVictory ? storyEnding ? <>{STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
                 <div className="city-rush-result-grid">
-                  <div><small>PLACE</small><b>{ordinal(result.rank)}<i> / 3</i></b></div>
+                  <div><small>PLACE</small><b>{result.destroyed ? 'DERNIER' : ordinal(result.rank)}<i> / 3</i></b></div>
                   <div><small>CHRONO</small><b>{formatTime(result.duration)}</b></div>
                   <div><small>TOUR MOYEN</small><b>{formatTime((result.duration || 0) / (result.laps || currentLaps || CITY_RUSH_LAPS))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
                 </div>
                 <p>
-                  {finalStoryVictory && storyEnding
+                  {result.destroyed
+                    ? `Ta coque est tombée à zéro : la voiture a tourné sur elle-même dans sa fumée avant de s’arrêter, hors course. ${result.winner} l’emporte ; la revanche t’attend.`
+                    : finalStoryVictory && storyEnding
                     ? STORY_ENDINGS[storyEnding].text
                     : finalStoryVictory
                       ? 'Dante est vaincu. Nico tient enfin les preuves : à lui de choisir ce qu’il fera de sa revanche.'
@@ -1168,7 +1203,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : trois berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, trois berlines entrent derrière le leader pour l’empêcher de s’armer.'} Elles arrivent armées : tir bleu et rafale rouge chargés (jamais l’hélico, qu’il faut voler). Hors classement, signalées dans la liste des positions. Chaque berline a une barre de vie : 3 tirs droits bleus, 2 rafales rouges ou 1 tir d’hélico la détruisent — explosion, retrait de la course et +200 pts.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader pour l’empêcher de s’armer.'} Elles arrivent armées : tir bleu et rafale rouge chargés (jamais l’hélico, qu’il faut voler). Hors classement, signalées dans la liste des positions. Chaque berline a une barre de vie : 3 tirs droits bleus, 2 rafales rouges, 1 tir d’hélico — ou 3 carambolages — la détruisent (explosion, retrait de la course et +200 pts). Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir bleu en coûte un carré, une rafale rouge deux, un carambolage avec une berline un — le trafic et les rivaux, eux, ne touchent pas la coque. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</p></div>
           </section>
         </aside>
       </main>

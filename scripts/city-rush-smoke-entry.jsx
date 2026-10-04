@@ -75,6 +75,7 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
+  CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
 
@@ -83,7 +84,22 @@ const {
 // la course est trop courte pour que le pilote d'essai croise l'escouade du
 // dernier tour et ramasse un bonus de chaque couleur.
 const RACE_LAPS = Math.max(3, Math.floor(Number(process.env.CITY_RUSH_SMOKE_LAPS) || CITY_RUSH_LAPS));
+// Le smoke joue du hasard (trafic, bonus, dérapages). Par défaut, chaque
+// course est différente ; `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke`
+// fige le tirage et rend un échec reproductible — c'est ainsi qu'on tranche
+// entre une régression et un scénario malchanceux.
+if (typeof process !== 'undefined' && process.env && process.env.CITY_RUSH_SMOKE_SEED) {
+  let smokeSeed = (Number(process.env.CITY_RUSH_SMOKE_SEED) >>> 0) || 1;
+  Math.random = () => {
+    smokeSeed = (smokeSeed * 1664525 + 1013904223) >>> 0;
+    return smokeSeed / 4294967296;
+  };
+}
+
 const RACE_DISTANCE = cityRushRaceDistance(RACE_LAPS);
+// La ligne où commence le grand dernier tour : avant elle, l'hélico
+// d'observation n'a rien à faire dans le ciel.
+const FINAL_LAP_START = (RACE_LAPS - 1) * CITY_RUSH_LAP_LENGTH;
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
 const FRAME_MS = 1000 / 30;
@@ -200,7 +216,11 @@ for (const [index, city] of cities.entries()) {
   // le pilote reste uniquement dans les métadonnées utilisées par le classement.
   const visibleDriverMeshes = [];
   const racerCars = [];
+  // L'hélico d'observation du dernier tour (celui qui suit le pilote sans
+  // jamais tirer) : un seul appareil, avec son pod caméra.
+  const watchHeliNodes = [];
   scene?.traverse((object) => {
+    if (object.name === 'watch-helicopter') watchHeliNodes.push(object);
     if (object.name === 'pickup-burst') burstNodes.push(object);
     if (object.name === 'traffic-police') policeTrafficNodes.push(object);
     if (object.userData?.type === 'slow-zone') slowZoneNodes += 1;
@@ -210,10 +230,26 @@ for (const [index, city] of cities.entries()) {
       pickupSlots.push(object);
     }
   });
+  // Les voitures de course sont fermées (aucun personnage visible) et portent
+  // leur modèle 3D dédié : c'est l'état voulu par les modèles modernisés.
   if (visibleDriverMeshes.length) fail('un personnage est encore visible dans une voiture', visibleDriverMeshes);
   if (racerCars.length < 3) fail('les trois voitures de course ne sont pas construites', racerCars.length);
   if (racerCars.some((car) => !car.userData.driverId)) fail('l’identité pilote manque aux métadonnées du HUD', racerCars.map((car) => car.userData.driverId));
   if (racerCars.some((car) => !car.userData.archetype)) fail('une voiture n’a pas de modèle 3D dédié', racerCars.map((car) => car.userData.profileId));
+  // L'hélico d'observation du dernier tour, construit une seule fois.
+  if (watchHeliNodes.length !== 1) fail('l’hélico d’observation n’est pas construit une seule fois', watchHeliNodes.length);
+  const watchHeli = watchHeliNodes[0];
+  for (const part of ['rotor', 'tailRotor', 'beacon', 'pod']) {
+    if (!watchHeli.userData?.[part]) fail(`l’hélico d’observation n’a pas de ${part}`, Object.keys(watchHeli.userData || {}));
+  }
+  if (watchHeli.visible) fail('l’hélico d’observation est visible avant la course');
+  // La voiture du pilote et le pool de fumée : l'épave (barre à zéro) doit
+  // tourner sur elle-même *dans sa fumée* avant de s'arrêter.
+  const playerNode = racerCars.find((car) => car.userData.player) || null;
+  if (!playerNode) fail('la voiture du pilote est introuvable dans la scène');
+  const smokeNode = scene?.getObjectByName('smoke') || null;
+  if (!smokeNode) fail('le pool de fumée est introuvable dans la scène');
+  const visibleSmoke = () => smokeNode.children.filter((child) => child.visible).length;
   let burstFrames = 0;
   let respawnedPickups = 0;
   const slotWatch = new Map();
@@ -317,6 +353,53 @@ for (const [index, city] of cities.entries()) {
   let ralliedAheadFrames = 0;
   let ralliedBlockadeFrames = 0;
   let worstPair = null;
+  // Hélico d'observation : frames visibles au dernier tour, avant (interdit),
+  // et rotation du rotor entre deux images (il doit vivre, pas planer figé).
+  let watchHeliFinalLapFrames = 0;
+  let watchHeliEarlyFrames = 0;
+  let watchHeliRotorTurns = 0;
+  let watchHeliRotorLast = watchHeli.userData.rotor.rotation.y;
+  let watchHeliPodSwing = 0;
+  let watchHeliPodLast = watchHeli.userData.pod.rotation.y;
+  // Cadrage : la position de l'appareil projetée à l'écran par la vraie caméra
+  // de poursuite. `visible === true` ne suffit pas — un hélico hors champ ou
+  // caché sous les cartes du HUD est invisible pour le joueur.
+  const watchHeliNdc = new THREE.Vector3();
+  let watchHeliSettleFrames = 0;
+  let watchHeliFramedFrames = 0;
+  let watchHeliNdcYSum = 0;
+  let watchHeliNdcYMin = Infinity;
+  let watchHeliNdcYMax = -Infinity;
+  let watchHeliNdcXMax = 0;
+  let watchHeliCruiseYSum = 0;
+  let watchHeliCruiseSamples = 0;
+  // Rentrées après un tunnel : l'appareil s'efface sous les voûtes de la Shuto
+  // et revient à la sortie. Tokyo doit en compter au moins une.
+  let watchHeliReturns = 0;
+  let watchHeliWasVisible = false;
+  let watchHeliVisibleAge = 0;
+  let watchHeliMeasuredFrames = 0;
+  // La bande de ciel visible : sous les cartes du HUD (0,72 en coordonnée
+  // écran) et au-dessus de la route (0,30), à l'intérieur du cadre en largeur.
+  const WATCH_HELI_BAND_Y_MIN = 0.3;
+  const WATCH_HELI_BAND_Y_MAX = 0.72;
+  const WATCH_HELI_BAND_X_MAX = 0.85;
+  // Barre de vie du pilote : carrés consommés par les effets, cohérence des
+  // dégâts annoncés, et santé active seulement une fois l'escouade en piste.
+  let healthHitEffects = 0;
+  let healthHitsBySource = {};
+  // Épave : barre à zéro. La voiture part en toupie dans sa fumée et la course
+  // est perdue. On mesure la rotation cumulée, la fumée et la chute de vitesse.
+  let wreckEffects = 0;
+  let wreckSpinTurns = 0;
+  let wreckSpinLast = 0;
+  let wreckSmokeFrames = 0;
+  let wreckMaxSpeed = null;
+  let wreckLastSpeed = null;
+  let wreckFrames = 0;
+  let healthCubes = 0;
+  const finishNotes = [];
+  let healthBadDamage = 0;
 
   while (!callbacks.finish && frames < maxFrames) {
     const hud = callbacks.huds[callbacks.huds.length - 1];
@@ -348,12 +431,61 @@ for (const [index, city] of cities.entries()) {
       });
       if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
     }
+    // Hélico d'observation : visible seulement au dernier tour, et il tourne.
+    // Le HUD est étranglé (une émission toutes les 100 ms) : on juge la
+    // visibilité sur la distance du monde, exacte à l'image.
+    if (watchHeliFinalLapFrames > 0 && watchHeli.visible && !watchHeliWasVisible) watchHeliReturns += 1;
+    watchHeliWasVisible = watchHeli.visible;
+    if (watchHeli.visible) {
+      if (world.distance >= FINAL_LAP_START - 1) watchHeliFinalLapFrames += 1;
+      else watchHeliEarlyFrames += 1;
+      const rotorNow = watchHeli.userData.rotor.rotation.y;
+      if (rotorNow > watchHeliRotorLast) watchHeliRotorTurns += 1;
+      watchHeliRotorLast = rotorNow;
+      const podNow = watchHeli.userData.pod.rotation.y;
+      if (Math.abs(podNow - watchHeliPodLast) > 1e-6) watchHeliPodSwing += 1;
+      watchHeliPodLast = podNow;
+    }
     if (hud && frames % 15 === 0) {
       for (const type of [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]) {
         if ((hud.inventory?.[type] || 0) >= (CITY_RUSH_POWER_RULES[type]?.chargeCost ?? 99)) world.action(type);
       }
     }
     runFrames(1, `course f${frames}`);
+    // Le cadrage se juge après l'image, caméra à jour. On laisse passer le
+    // temps de rapprochement (1,5 s) *de chaque apparition* : l'appareil revient
+    // de haut après un tunnel, ces images-là ne disent rien du vol de croisière.
+    watchHeliVisibleAge = watchHeli.visible ? watchHeliVisibleAge + 1 : 0;
+    if (watchHeli.visible && world.distance >= FINAL_LAP_START - 1 && globalThis.__smokeCamera) {
+      watchHeliSettleFrames += 1;
+      if (watchHeliVisibleAge > 48) {
+        watchHeliMeasuredFrames += 1;
+        watchHeliNdc.copy(watchHeli.position).project(globalThis.__smokeCamera);
+        const ndcY = watchHeliNdc.y;
+        watchHeliNdcYSum += ndcY;
+        watchHeliNdcYMin = Math.min(watchHeliNdcYMin, ndcY);
+        watchHeliNdcYMax = Math.max(watchHeliNdcYMax, ndcY);
+        watchHeliNdcXMax = Math.max(watchHeliNdcXMax, Math.abs(watchHeliNdc.x));
+        watchHeliCruiseYSum += watchHeli.position.y;
+        watchHeliCruiseSamples += 1;
+        if (ndcY >= WATCH_HELI_BAND_Y_MIN && ndcY <= WATCH_HELI_BAND_Y_MAX && Math.abs(watchHeliNdc.x) <= WATCH_HELI_BAND_X_MAX) {
+          watchHeliFramedFrames += 1;
+        }
+      }
+    }
+    // Épave en cours : la toupie, la fumée et la chute de vitesse.
+    if (wreckEffects > 0 && !callbacks.finish) {
+      wreckFrames += 1;
+      const spinNow = playerNode.rotation.y;
+      if (spinNow > wreckSpinLast) wreckSpinTurns += 1;
+      wreckSpinLast = spinNow;
+      if (visibleSmoke() >= 3) wreckSmokeFrames += 1;
+      const speedNow = world.speed;
+      if (Number.isFinite(speedNow)) {
+        wreckMaxSpeed = wreckMaxSpeed === null ? speedNow : Math.max(wreckMaxSpeed, speedNow);
+        wreckLastSpeed = speedNow;
+      }
+    }
     frames += 1;
     if (burstNodes.some((node) => node.visible)) burstFrames += 1;
     for (const slot of pickupSlots) {
@@ -481,6 +613,7 @@ for (const [index, city] of cities.entries()) {
   const raceSeconds = (frames * FRAME_MS) / 1000;
   if (!callbacks.finish) fail(`arrivée jamais atteinte après ${raceSeconds.toFixed(0)} s virtuelles`, callbacks.huds.at(-1));
   if (callbacks.huds.length <= hudBefore) fail('aucun HUD émis pendant la course');
+  if (typeof console !== 'undefined' && process.env.CITY_RUSH_SMOKE_VERBOSE) console.log('épave mesurée :', { wreckFrames, wreckSpinTurns, wreckSmokeFrames, wreckLastSpeed });
   if (callbacks.errors.length) fail('erreurs remontées', callbacks.errors);
 
   const finish = callbacks.finish;
@@ -575,12 +708,31 @@ for (const [index, city] of cities.entries()) {
   if (!audioCalls.pickup) fail('aucun bip de ramassage alors que des bonus ont été pris', audioCalls);
 
   const maxDistance = Math.max(...finish.racers.map((r) => r.distance ?? 0));
-  if (maxDistance < RACE_DISTANCE - 1) fail('le vainqueur n’a pas parcouru toute la distance', finish.racers);
+  if (finish.destroyed) {
+    // Course perdue sur une épave : le pilote n'a pas fini, il est dernier, et
+    // la voiture s'est arrêtée après avoir tourné dans sa fumée.
+    if (wreckEffects !== 1) fail('la course est perdue sans un unique effet d’épave', { wreckEffects, finish });
+    if (finish.rank !== finish.racers.length) fail('une épave n’est pas classée dernière', { rank: finish.rank, racers: finish.racers.length });
+    if (finish.racers.at(-1)?.id !== 'player') fail('le pilote détruit n’est pas en fin de tableau d’arrivée', finish.racers.map((r) => r.id));
+    if (!(maxDistance < RACE_DISTANCE - 1)) fail('une course perdue ne peut pas avoir couvert la distance totale', { maxDistance, RACE_DISTANCE });
+    // La course ne peut plus se clore sur la ligne d'un rival pendant la toupie
+    // (garde `!playerWrecked`) : une épave va au bout de ses 3,2 s.
+    if (wreckSpinTurns < 60) fail(`l’épave n’a tourné que sur ${wreckSpinTurns} images`, wreckSpinTurns);
+    if (wreckSmokeFrames < 30) fail(`l’épave ne fume pas (${wreckSmokeFrames} images avec de la fumée)`, wreckSmokeFrames);
+    if (wreckFrames < 60) fail(`l’épave ne dure que ${wreckFrames} images`, wreckFrames);
+    if (!(wreckLastSpeed !== null && wreckLastSpeed < 1)) fail(`l’épave ne s’arrête pas (${wreckLastSpeed} m/s)`, {
+      maxSpeed: wreckMaxSpeed, lastSpeed: wreckLastSpeed, frames: wreckFrames,
+    });
+    finishNotes.push('course perdue sur une épave (barre de vie à zéro)');
+  } else {
+    if (wreckEffects) fail('une épave a été comptée sur une course gagnée/terminée', wreckEffects);
+    if (maxDistance < RACE_DISTANCE - 1) fail('le vainqueur n’a pas parcouru toute la distance', finish.racers);
+  }
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
   if (callbacks.pickups.length && !respawnedPickups) fail('aucun bonus ramassé n’a réapparu après 0,1 s', callbacks.pickups.length);
-  // Escouade de police du dernier tour : trois berlines, entrées derrière le
+  // Escouade de police du dernier tour : deux berlines, entrées derrière le
   // leader armées (bleu et rouge chargés, jaune vide), jamais classées,
   // sirène allumée puis éteinte.
   const policeArrivals = callbacks.effects.filter((effect) => effect.type === 'police-arrival');
@@ -607,7 +759,7 @@ for (const [index, city] of cities.entries()) {
   }
   // Escouade du dernier tour (`police-*`) et police du trafic rappelée par un
   // contact (`rally-traffic-*`) partagent la même liste ; l'escouade reste
-  // limitée à trois berlines et n'entre jamais devant le leader.
+  // limitée à deux berlines et n'entre jamais devant le leader.
   const squadCars = firstPoliceHud.police.filter((car) => String(car.id).startsWith('police-'));
   if (squadCars.length !== CITY_RUSH_POLICE_COUNT) {
     fail(`${squadCars.length} berline(s) d’escouade en piste au lieu de ${CITY_RUSH_POLICE_COUNT}`, firstPoliceHud.police);
@@ -672,6 +824,96 @@ for (const [index, city] of cities.entries()) {
     fail(`le pilote traverse une berline solide : écart ${policeWorstOverlap.toFixed(2)} m < ${CITY_RUSH_CAR_GAP} m`, worstPair);
   }
   if (!rallies.length) fail('aucune berline de police du trafic n’a été rappelée par un contact');
+  // L'hélico d'observation : absent avant le dernier tour, présent pendant
+  // (rotors et pod animés), et il s'efface après l'arrivée.
+  if (watchHeliEarlyFrames) fail(`l’hélico d’observation est visible sur ${watchHeliEarlyFrames} images avant le dernier tour`);
+  if (watchHeliFinalLapFrames < 60) fail(`l’hélico d’observation ne suit le pilote que ${watchHeliFinalLapFrames} images du dernier tour`);
+  if (watchHeliRotorTurns < 60) fail('le rotor de l’hélico d’observation ne tourne pas', watchHeliRotorTurns);
+  if (watchHeliPodSwing < 30) fail('le pod caméra de l’hélico d’observation ne balaie pas', watchHeliPodSwing);
+  // L'appareil doit être visible *dans le cadre* : ni hors champ, ni écrasé
+  // contre le bord supérieur, ni caché sous les cartes du HUD.
+  const watchHeliMeasured = watchHeliMeasuredFrames;
+  if (watchHeliMeasured < 60) {
+    fail(`le cadrage de l’hélico d’observation n’est mesurable que sur ${watchHeliMeasured} images`, watchHeliSettleFrames);
+  }
+  const watchHeliFramedShare = watchHeliFramedFrames / Math.max(1, watchHeliMeasured);
+  if (watchHeliFramedShare < 0.85) {
+    fail(`l’hélico d’observation sort de la bande de ciel visible sur ${((1 - watchHeliFramedShare) * 100).toFixed(0)} % du dernier tour`, {
+      yMin: watchHeliNdcYMin, yMax: watchHeliNdcYMax, xMax: watchHeliNdcXMax, band: [WATCH_HELI_BAND_Y_MIN, WATCH_HELI_BAND_Y_MAX, WATCH_HELI_BAND_X_MAX],
+    });
+  }
+  if (watchHeliNdcYMax > 0.8) {
+    fail(`l’hélico d’observation frôle le haut du cadre (${watchHeliNdcYMax.toFixed(2)}) — il passe sous les cartes du HUD`, { yMin: watchHeliNdcYMin, yMax: watchHeliNdcYMax });
+  }
+  if (watchHeliNdcYMin < 0.15) {
+    fail(`l’hélico d’observation descend dans la circulation (${watchHeliNdcYMin.toFixed(2)})`, { yMin: watchHeliNdcYMin, yMax: watchHeliNdcYMax });
+  }
+  // Sous les voûtes de la Shuto, il n'y a pas de ciel : l'appareil s'efface et
+  // doit revenir une fois ressorti (sinon il volerait dans le tunnel).
+  if (city.id === 'tokyo' && watchHeliReturns < 1) {
+    fail('l’hélico d’observation ne rentre jamais après un tunnel', { watchHeliReturns, finalLapFrames: watchHeliFinalLapFrames });
+  }
+  if (watchHeliEarlyFrames && watchHeliFinalLapFrames < 60) {
+    fail('l’hélico d’observation suit le pilote hors du dernier tour', { watchHeliEarlyFrames, watchHeliFinalLapFrames });
+  }
+  // La barre de vie du pilote : pleine à l'apparition (escouade en piste),
+  // jamais au-dessus du maximum, jamais croissante, et chaque tir encaissé
+  // retire exactement ce que le barème annonce.
+  // Toutes les émissions du HUD sont gardées : la barre de vie du pilote doit
+  // apparaître (dernier tour), pleine, bornée, et ne jamais remonter.
+  const healthHuds = callbacks.huds.filter((entry) => entry.playerHealthActive);
+  if (!healthHuds.length) fail('la barre de vie du pilote n’apparaît jamais');
+  if (Number(healthHuds[0].playerHealth) !== Number(healthHuds[0].playerHealthMax)) {
+    fail('la barre de vie du pilote n’est pas pleine à l’apparition', healthHuds[0]);
+  }
+  let healthBadBounds = 0;
+  let healthRiseFrames = 0;
+  let healthPrevious = null;
+  for (const entry of healthHuds) {
+    const value = Number(entry.playerHealth);
+    const max = Number(entry.playerHealthMax);
+    if (!Number.isFinite(value) || !Number.isFinite(max) || value < 0 || value > max) healthBadBounds += 1;
+    if (healthPrevious !== null && value > healthPrevious) healthRiseFrames += 1;
+    healthPrevious = value;
+  }
+  if (healthBadBounds) fail(`la barre de vie du pilote sort de ses bornes sur ${healthBadBounds} images`);
+  if (healthRiseFrames) fail(`la barre de vie du pilote remonte sur ${healthRiseFrames} images`);
+  // Elle n'apparaît qu'au dernier tour du pilote — jamais avant, et jamais
+  // après l'arrivée (les tours du HUD sont ceux du pilote).
+  const healthOutsideFinalLap = healthHuds.filter((entry) => (entry.lap || 1) < (entry.laps || 1));
+  if (healthOutsideFinalLap.length) {
+    fail('la barre de vie du pilote apparaît avant son dernier tour', healthOutsideFinalLap[0]);
+  }
+  if (lastHud.playerHealthActive) fail('la barre de vie du pilote reste après l’arrivée', lastHud.playerHealth);
+  let runningHealth = null;
+  for (const effect of callbacks.effects) {
+    if (effect.type === 'player-wrecked') wreckEffects += 1;
+    if (effect.type === 'player-health') {
+      if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH) fail('la barre de vie du pilote n’a pas son maximum', effect);
+      runningHealth = effect.health;
+      if (runningHealth !== CITY_RUSH_PLAYER_HEALTH) fail('la barre de vie du pilote ne part pas pleine', effect);
+      continue;
+    }
+    if (effect.type !== 'player-hit') continue;
+    healthHitEffects += 1;
+    healthHitsBySource[effect.source] = (healthHitsBySource[effect.source] || 0) + 1;
+    // Un carambolage ne se compte que si la berline est DEVANT le pilote : une
+    // berline repliée derrière lui pour tirer ne fait que le suivre.
+    if (effect.source === 'collision' && !(Number(effect.gap) > 0)) {
+      healthBadDamage += 1;
+      fail('un carambolage est compté avec une berline restée derrière le pilote', effect);
+    }
+    if (runningHealth === null) { healthBadDamage += 1; continue; }
+    // Le barème donne le coût brut (bleu 1 · rouge 2 · choc 1) ; la barre, elle,
+    // s'arrête à zéro : un rouge tiré sur le dernier carré n'en retire qu'un.
+    const cost = effect.source === 'pistol' ? 2 : 1;
+    const expected = Math.min(cost, runningHealth);
+    if (effect.damage !== expected) healthBadDamage += 1;
+    runningHealth = Math.max(0, runningHealth - effect.damage);
+    if (runningHealth !== effect.health) healthBadDamage += 1;
+    if (effect.health === 0) healthCubes += 1;
+  }
+  if (healthBadDamage) fail('un dégât encaissé par le pilote ne suit pas le barème (bleu 1 · rouge 2 · choc 1)', healthBadDamage);
 
   if ((firstPoliceHud.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le classement du HUD');
   if ((finish.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le tableau d’arrivée');
@@ -700,6 +942,15 @@ for (const [index, city] of cities.entries()) {
   // Fin de course : la caméra tourne, le départ fait la fête, pas d’exception.
   world.setPhase('finished');
   runFrames(60, 'finished');
+  // L'hélico d'observation quitte la scène : il monte, puis s'efface. La
+  // comparaison porte sur son altitude de croisière — la route monte et descend
+  // d'une ville à l'autre, une hauteur absolue ne veut rien dire.
+  const watchHeliCruiseY = watchHeliCruiseSamples ? watchHeliCruiseYSum / watchHeliCruiseSamples : 0;
+  if (watchHeli.visible && watchHeli.position.y < watchHeliCruiseY + 6) {
+    fail('l’hélico d’observation ne s’éloigne pas après l’arrivée', { y: watchHeli.position.y, cruiseY: watchHeliCruiseY });
+  }
+  runFrames(90, 'finished');
+  if (watchHeli.visible) fail('l’hélico d’observation reste en scène après l’arrivée', watchHeli.position.toArray());
   // Rejouer : reset + nouveau départ sans fuite d’état.
   world.reset();
   world.setPhase('countdown');
@@ -707,6 +958,10 @@ for (const [index, city] of cities.entries()) {
   runFrames(10, 'replay countdown');
   const hudAfterReset = callbacks.huds.at(-1);
   if (hudAfterReset.lap !== 1 || hudAfterReset.distance > 1) fail('reset() ne remet pas la course au tour 1', hudAfterReset);
+  if (watchHeli.visible) fail('l’hélico d’observation reste dans le ciel après reset()');
+  if (hudAfterReset.playerHealthActive || hudAfterReset.playerHealth !== null) {
+    fail('la barre de vie du pilote survit à reset()', hudAfterReset.playerHealth);
+  }
 
   try { world.destroy(); } catch (e) { console.error('destroy() a levé :', e); process.exit(1); }
   if (rafQueue.size) fail('rAF encore planifié après destroy()', rafQueue.size);
@@ -724,6 +979,8 @@ for (const [index, city] of cities.entries()) {
     ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage${policeStunFrames ? ` · ${policeStunFrames} f sonnée` : ''}` : 'jamais entrée'}` +
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
+    ` · hélico d’observation ${watchHeliFinalLapFrames} f (${watchHeliReturns} rentrée(s) de tunnel · rotor ${watchHeliRotorTurns} tours · cadre y ${watchHeliNdcYMin.toFixed(2)}–${watchHeliNdcYMax.toFixed(2)}, moy ${(watchHeliNdcYSum / Math.max(1, watchHeliMeasured)).toFixed(2)} · x ≤ ${watchHeliNdcXMax.toFixed(2)} · ${(watchHeliFramedFrames / Math.max(1, watchHeliMeasured) * 100).toFixed(0)} % dans la bande)` +
+    ` · barre de vie du pilote ${healthHuds.length} HUD · ${healthHitEffects} touche(s) subie(s) (bleu ${healthHitsBySource['blue-shot'] || 0} · rouge ${healthHitsBySource.pistol || 0} · carambolage ${healthHitsBySource.collision || 0}) · ${healthCubes} passage(s) à zéro` +
     ` (${policePlayerOverlapFrames} f de recouvrement · rival ${Number.isFinite(policeAiOverlap) ? policeAiOverlap.toFixed(1) : '—'} m)` +
 
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +

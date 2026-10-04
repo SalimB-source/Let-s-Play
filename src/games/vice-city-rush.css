@@ -452,6 +452,20 @@
 @keyframes crBoostFlash { to { opacity: 0.5; } }
 @keyframes crHitFlash { to { opacity: 0.6; } }
 
+/* Un tir ou un carambolage retiré de la barre de vie du pilote : la coque
+   s'allume une fraction de seconde, depuis le pare-chocs. */
+.city-rush-viewport.is-hurt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 92%, rgba(255, 44, 78, 0.34), transparent 62%);
+  animation: crHurtFlash 0.34s ease-out;
+}
+
+@keyframes crHurtFlash { from { opacity: 1; } to { opacity: 0; } }
+
 /* ── HUD ── */
 .city-rush-hud-top {
   position: absolute;
@@ -478,7 +492,9 @@
 .city-rush-hud-label {
   display: block;
   margin-bottom: 6px;
-  color: var(--cr-faint);
+  /* Les libellés des cartes (« POSITION », « TOUR », « VITESSE ») passaient en
+     gris très pâle sur le ciel : un cran plus contrastés, ils se lisent. */
+  color: var(--cr-muted);
   font: 700 9px var(--mono, monospace);
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -878,22 +894,110 @@
 
 .city-rush-race-list-row.is-player .city-rush-race-list-gap { color: #9ffcf0; }
 
+/* ── Barre de vie de la voiture du pilote ──
+   Elle naît au dernier tour du pilote (l'unique tour du Sprint, le quatrième
+   du Circuit et de la Poursuite) et meurt à l'arrivée. Huit carrés de vie, mais **aucun carré
+   dessiné** : un seul trait continu, vert à pleine vie, qui glisse vers
+   l'orange puis le rouge en se vidant — la couleur est calculée par la page
+   (`cityRushPlayerHealthColor`), la largeur suit la vie restante. */
+.city-rush-health {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(262px, 44%);
+  padding: 7px 10px 8px;
+  border-radius: 12px;
+  background: rgba(6, 10, 20, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+  pointer-events: none;
+  animation: crHealthIn 0.4s var(--cr-ease);
+}
+
+.city-rush-health-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.city-rush-health-head b {
+  color: var(--cr-text);
+  font: 800 9px var(--mono, monospace);
+  letter-spacing: 0.18em;
+}
+
+.city-rush-health-head small {
+  color: var(--cr-faint);
+  font: 700 8px var(--mono, monospace);
+  letter-spacing: 0.12em;
+}
+
+.city-rush-health-track {
+  display: block;
+  position: relative;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.city-rush-health-track > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.22s var(--cr-ease), background 0.35s linear;
+}
+
+/* Deux carrés ou moins : la barre bat au rouge. */
+.city-rush-health.is-critical {
+  border-color: rgba(255, 82, 110, 0.5);
+  animation: crHealthCritical 0.72s ease-in-out infinite alternate;
+}
+
+.city-rush-health.is-critical .city-rush-health-head small { color: #ff8b9c; }
+
+/* La coque vient d'encaisser : la barre clignote une fois. */
+.city-rush-health.is-hit { animation: crHealthHit 0.34s ease-out; }
+
+@keyframes crHealthIn { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes crHealthHit {
+  from { filter: brightness(1.6) saturate(1.3); }
+  to { filter: brightness(1); }
+}
+
+@keyframes crHealthCritical {
+  from { border-color: rgba(255, 82, 110, 0.3); }
+  to { border-color: rgba(255, 82, 110, 0.92); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34), 0 0 22px rgba(255, 60, 90, 0.5); }
+}
+
 /* ── Status / Toast / Lap banner ── */
 .city-rush-status-pill {
   position: absolute;
   z-index: 4;
-  top: 100px;
+  /* Juste sous les cartes du HUD (elles s'arrêtent vers 110 px) : la pastille
+     se posait sur la carte TOUR et devenait illisible. */
+  top: 120px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 8px 14px;
+  padding: 9px 16px;
   border-radius: var(--cr-radius-pill);
-  background: rgba(8, 13, 26, 0.84);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: var(--cr-text);
-  font: 800 9px var(--mono, monospace);
+  /* Fond opaque : ces textes s'affichent par-dessus le ciel clair, un fond
+     translucide les rendait illisibles. La couleur d'état passe par le liseré. */
+  background: rgba(5, 8, 16, 0.93);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: #f4f7ff;
+  font: 800 10px var(--mono, monospace);
   letter-spacing: 0.12em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), inset 0 1px rgba(255, 255, 255, 0.08);
   animation: crSlideDown 0.3s var(--cr-ease);
 }
 
@@ -902,27 +1006,32 @@
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-.city-rush-status-pill.is-boost { border-color: rgba(74, 242, 160, 0.4); color: #7af2b0; background: rgba(74, 242, 160, 0.12); }
-.city-rush-status-pill.is-slow { border-color: rgba(255, 211, 107, 0.36); color: #ffd37a; background: rgba(255, 211, 107, 0.12); }
-.city-rush-status-pill.is-stunned { border-color: rgba(255, 82, 110, 0.44); color: #ff9aa8; background: rgba(255, 82, 110, 0.12); }
+.city-rush-status-pill.is-boost { border-color: rgba(74, 242, 160, 0.85); color: #c8ffe6; background: linear-gradient(rgba(74, 242, 160, 0.26), rgba(74, 242, 160, 0.26)), rgba(4, 12, 9, 0.93); }
+.city-rush-status-pill.is-slow { border-color: rgba(255, 211, 107, 0.85); color: #ffedc4; background: linear-gradient(rgba(255, 211, 107, 0.24), rgba(255, 211, 107, 0.24)), rgba(13, 10, 3, 0.93); }
+.city-rush-status-pill.is-stunned { border-color: rgba(255, 82, 110, 0.85); color: #ffcfd7; background: linear-gradient(rgba(255, 82, 110, 0.26), rgba(255, 82, 110, 0.26)), rgba(15, 5, 9, 0.93); }
+.city-rush-status-pill.is-impact { border-color: rgba(255, 176, 86, 0.85); color: #ffe3bb; background: linear-gradient(rgba(255, 176, 86, 0.24), rgba(255, 176, 86, 0.24)), rgba(14, 9, 3, 0.93); }
 
 .city-rush-toast {
   position: absolute;
   z-index: 5;
-  top: 148px;
+  top: 162px;
   left: 50%;
   transform: translateX(-50%);
-  max-width: min(520px, calc(100% - 32px));
-  padding: 10px 16px;
-  border-radius: 10px;
-  background: rgba(8, 12, 25, 0.88);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: var(--cr-text);
-  font: 700 10px var(--mono, monospace);
-  letter-spacing: 0.06em;
+  max-width: min(560px, calc(100% - 32px));
+  padding: 12px 18px;
+  border-radius: 12px;
+  /* Les messages passent au-dessus du ciel : fond opaque, texte clair et
+     contour d'accent — ils restaient trop pâles en fond translucide. */
+  background: rgba(5, 8, 16, 0.94);
+  border: 1.5px solid rgba(255, 255, 255, 0.26);
+  color: #f4f7ff;
+  font: 800 12px var(--mono, monospace);
+  letter-spacing: 0.05em;
+  line-height: 1.45;
   text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(16px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.32);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), inset 0 1px rgba(255, 255, 255, 0.08);
   animation: crToastIn 0.28s var(--cr-ease);
 }
 
@@ -931,10 +1040,11 @@
   to { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
-.city-rush-toast.is-boost { border-color: rgba(74, 242, 160, 0.42); background: rgba(74, 242, 160, 0.14); color: #7af2b0; }
-.city-rush-toast.is-pistol { border-color: rgba(255, 82, 110, 0.36); background: rgba(255, 82, 110, 0.12); color: #ff9aa8; }
-.city-rush-toast.is-radio { border-color: rgba(255, 211, 107, 0.36); background: rgba(255, 211, 107, 0.12); color: #ffd37a; }
-.city-rush-toast.is-slow { border-color: rgba(255, 187, 105, 0.36); background: rgba(255, 187, 105, 0.12); color: #ffcc8a; }
+.city-rush-toast.is-neutral { border-color: rgba(255, 255, 255, 0.32); }
+.city-rush-toast.is-boost { border-color: rgba(74, 242, 160, 0.8); color: #c8ffe6; background: linear-gradient(rgba(74, 242, 160, 0.2), rgba(74, 242, 160, 0.2)), rgba(4, 12, 9, 0.94); }
+.city-rush-toast.is-pistol { border-color: rgba(255, 82, 110, 0.8); color: #ffd3da; background: linear-gradient(rgba(255, 82, 110, 0.2), rgba(255, 82, 110, 0.2)), rgba(15, 5, 9, 0.94); }
+.city-rush-toast.is-radio { border-color: rgba(255, 211, 107, 0.8); color: #ffedc4; background: linear-gradient(rgba(255, 211, 107, 0.18), rgba(255, 211, 107, 0.18)), rgba(13, 10, 3, 0.94); }
+.city-rush-toast.is-slow { border-color: rgba(255, 187, 105, 0.8); color: #ffe3bb; background: linear-gradient(rgba(255, 187, 105, 0.18), rgba(255, 187, 105, 0.18)), rgba(14, 9, 3, 0.94); }
 
 .city-rush-lap-banner {
   position: absolute;
@@ -1278,6 +1388,19 @@
 .city-rush-result-overlay h2 em {
   font-style: normal;
   background: linear-gradient(100deg, var(--city-accent), var(--city-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Bilan de défaite : la coque est tombée à zéro ──
+   La voiture a tourné sur elle-même dans sa fumée et n'a pas fini la course :
+   le bilan passe au rouge, sans confettis. */
+.city-rush-result-overlay.is-destroyed .city-rush-overlay-kicker { color: #ff8b9c; }
+
+.city-rush-result-overlay.is-destroyed h2,
+.city-rush-result-overlay.is-destroyed h2 em {
+  background: linear-gradient(180deg, #ffd7dd, #ff526e);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -2338,8 +2461,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-radar .city-rush-race-list-rank { font-size: 8px; }
   .city-rush-radar .city-rush-race-list-badges b { display: none; }
 
-  .city-rush-status-pill { top: 78px; font-size: 8px; padding: 6px 10px; max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .city-rush-toast { top: 110px; font-size: 9px; padding: 8px 12px; }
+  /* Barre de vie du pilote : sous les cartes du haut, à gauche, à l'écart du
+     radar (en bas à gauche) et des commandes (à droite). */
+  .city-rush-health { left: 10px; right: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); transform: none; width: 156px; padding: 6px 8px 7px; border-radius: 10px; }
+  .city-rush-health-head { margin-bottom: 4px; }
+  .city-rush-health-head b { font-size: 8px; }
+  .city-rush-health-head small { font-size: 7px; }
+  .city-rush-health-track { height: 8px; }
+
+  .city-rush-status-pill { top: 84px; font-size: 9.5px; padding: 7px 12px; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .city-rush-toast { top: 118px; font-size: 11px; padding: 10px 14px; max-width: min(420px, calc(100% - 20px)); }
 
   .city-rush-lap-banner { padding: 12px 18px; border-radius: 12px; }
   .city-rush-lap-banner > strong { font-size: clamp(22px, 7vw, 32px); }
@@ -2690,14 +2821,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @keyframes crImpactPill { to { transform: translate(-50%, -1px); } }
 
 .city-rush-toast.is-blue-shot {
-  border-color: rgba(72, 185, 255, 0.48);
-  background: rgba(72, 185, 255, 0.12);
-  color: #a5deff;
+  border-color: rgba(72, 185, 255, 0.82);
+  background: linear-gradient(rgba(72, 185, 255, 0.2), rgba(72, 185, 255, 0.2)), rgba(4, 9, 16, 0.94);
+  color: #d8efff;
 }
 .city-rush-toast.is-impact {
-  border-color: rgba(255, 176, 86, 0.58);
-  background: rgba(255, 176, 86, 0.12);
-  color: #ffe0a2;
+  border-color: rgba(255, 176, 86, 0.82);
+  background: linear-gradient(rgba(255, 176, 86, 0.2), rgba(255, 176, 86, 0.2)), rgba(14, 9, 3, 0.94);
+  color: #ffe6c6;
 }
 
 .city-rush-power-button.is-blue-shot { --power-color: #48b9ff; }
@@ -2743,6 +2874,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 :root[data-theme='light'] .city-rush-hud-card,
 :root[data-theme='light'] .city-rush-race-list,
+:root[data-theme='light'] .city-rush-health,
 :root[data-theme='light'] .city-rush-status-pill,
 :root[data-theme='light'] .city-rush-toast,
 :root[data-theme='light'] .city-rush-steering,

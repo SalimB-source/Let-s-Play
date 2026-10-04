@@ -36,7 +36,14 @@ import {
   CITY_RUSH_PICKUP_BURST_DURATION,
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
+  CITY_RUSH_PLAYER_DAMAGE,
+  CITY_RUSH_PLAYER_HEALTH,
+  CITY_RUSH_PLAYER_HEALTH_CRITICAL,
+  CITY_RUSH_PLAYER_HEALTH_FLASH,
+  CITY_RUSH_WRECK_SECONDS,
+  CITY_RUSH_WRECK_SPIN_TURNS,
   CITY_RUSH_POLICE_ATTACK_LEAD,
+  CITY_RUSH_POLICE_COLLISION_COOLDOWN,
   CITY_RUSH_POLICE_HEALTH,
   CITY_RUSH_POLICE_DESTROY_SCORE,
   CITY_RUSH_POLICE_BASE_SPEED,
@@ -75,6 +82,9 @@ import {
   cityRushPickupFlashState,
   cityRushPickupPopScale,
   cityRushPickupShardState,
+  cityRushPlayerDamage,
+  cityRushPoliceCollisionHit,
+  cityRushWatchHelicopterPose,
   cityRushPoliceBlocksLeader,
   cityRushPoliceContact,
   cityRushPoliceDamage,
@@ -295,52 +305,81 @@ function makePickupBurst() {
   return group;
 }
 
-function makeHelicopter(shared) {
+// `parts` porte les matériaux de l'appareil : l'hélico de frappe (sombre, à
+// bandes dorées) et l'hélico d'observation du dernier tour (clair, à bande
+// bleue) partagent la même silhouette, pas la même livrée.
+function makeHelicopter(parts) {
   const group = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.72, 1.78), shared.heliBody);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.72, 1.78), parts.heliBody);
   group.add(body);
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.5, 0.62), shared.heliGlass);
+  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.5, 0.62), parts.heliGlass);
   nose.position.set(0, 0.05, -1.08);
   group.add(nose);
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 2.65), shared.heliBody);
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 2.65), parts.heliBody);
   tail.position.set(0, 0.08, 2.05);
   group.add(tail);
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.72, 0.5), shared.heliBody);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.72, 0.5), parts.heliBody);
   fin.position.set(0, 0.38, 3.18);
   group.add(fin);
   for (const x of [-0.5, 0.5]) {
-    const skid = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 2.2), shared.heliTrim);
+    const skid = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 2.2), parts.heliTrim);
     skid.position.set(x, -0.63, 0.22);
     group.add(skid);
-    const strut = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.36, 0.09), shared.heliTrim);
+    const strut = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.36, 0.09), parts.heliTrim);
     strut.position.set(x, -0.43, 0.18);
     group.add(strut);
   }
-  const mast = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), shared.heliTrim);
+  const mast = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), parts.heliTrim);
   mast.position.y = 0.67;
   group.add(mast);
   const rotor = new THREE.Group();
-  const bladeA = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.06, 0.22), shared.heliTrim);
+  const bladeA = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.06, 0.22), parts.heliTrim);
   const bladeB = bladeA.clone();
   bladeB.rotation.y = Math.PI / 2;
   rotor.add(bladeA, bladeB);
   rotor.position.y = 1.05;
   group.add(rotor);
   const tailRotor = new THREE.Group();
-  const tailBladeA = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, 0.13), shared.heliTrim);
+  const tailBladeA = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, 0.13), parts.heliTrim);
   const tailBladeB = tailBladeA.clone();
   tailBladeB.rotation.z = Math.PI / 2;
   tailRotor.add(tailBladeA, tailBladeB);
   tailRotor.position.set(0, 0.38, 2.92);
   group.add(tailRotor);
-  const searchlight = new THREE.Mesh(new THREE.ConeGeometry(1.4, 7, 10, 1, true), shared.searchlight);
+  const searchlight = new THREE.Mesh(new THREE.ConeGeometry(1.4, 7, 10, 1, true), parts.searchlight);
   searchlight.position.set(0, -4.1, -0.4);
   group.add(searchlight);
-  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 5), shared.heliBeacon);
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 5), parts.heliBeacon);
   beacon.position.set(0, 0.45, 3.1);
   group.add(beacon);
   group.userData = { rotor, tailRotor, beacon };
   group.visible = false;
+  return group;
+}
+
+// L'appareil d'observation du dernier tour : un hélico clair, sans missile, avec
+// un pod caméra sous le nez qui balaie lentement la piste. Il suit la voiture du
+// pilote jusqu'à l'arrivée sans jamais ouvrir le feu — c'est ce qui le distingue
+// de l'hélico de frappe, sur le même ruban d'asphalte.
+function makeWatchHelicopter(shared) {
+  const group = makeHelicopter({
+    heliBody: shared.watchHeliBody,
+    heliGlass: shared.watchHeliGlass,
+    heliTrim: shared.watchHeliTrim,
+    heliBeacon: shared.watchHeliBeacon,
+    searchlight: shared.watchHeliLight,
+  });
+  group.name = 'watch-helicopter';
+  // Pod caméra : une rotule sous le nez, avec son objectif braqué vers l'avant.
+  const pod = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), shared.watchHeliPod);
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.18, 10), shared.watchHeliLens);
+  lens.rotation.x = Math.PI / 2;
+  lens.position.z = -0.28;
+  pod.add(ball, lens);
+  pod.position.set(0, -0.52, -0.95);
+  group.add(pod);
+  group.userData.pod = pod;
   return group;
 }
 
@@ -713,6 +752,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     heliTrim: standard(0xf0ce65, { metalness: 0.58, roughness: 0.34 }),
     heliBeacon: new THREE.MeshBasicMaterial({ color: 0xff3b4d, toneMapped: false }),
     searchlight: new THREE.MeshBasicMaterial({ color: 0xfff4cf, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+    // L'hélico d'observation du dernier tour : carrosserie claire, bande bleue,
+    // pod caméra et feu de veille discret — rien à voir avec l'appareil de
+    // frappe, ni dans la livrée ni dans l'armement (il n'en a aucun).
+    watchHeliBody: standard(0xe7edf6, { metalness: 0.3, roughness: 0.46 }),
+    watchHeliGlass: standard(0x9fdcff, { emissive: 0x1c4f6b, emissiveIntensity: 0.3, metalness: 0.2, roughness: 0.2 }),
+    watchHeliTrim: standard(0x1f5fb8, { metalness: 0.5, roughness: 0.36 }),
+    watchHeliBeacon: new THREE.MeshBasicMaterial({ color: 0x59e0ff, toneMapped: false }),
+    watchHeliPod: standard(0x2b3342, { metalness: 0.52, roughness: 0.38 }),
+    watchHeliLens: standard(0x0d2431, { emissive: 0x1d6d8f, emissiveIntensity: 0.5, metalness: 0.6, roughness: 0.2 }),
+    watchHeliLight: new THREE.MeshBasicMaterial({ color: 0xdff2ff, transparent: true, opacity: 0.05, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
     missileBody: standard(0xffd260, { metalness: 0.56, roughness: 0.25, emissive: 0x9a310f, emissiveIntensity: 0.4 }),
     missileNose: standard(0xff5b76, { emissive: 0xaa2149, emissiveIntensity: 0.4 }),
     missileTrail: new THREE.MeshBasicMaterial({ color: 0xffa454, transparent: true, opacity: 0.8, toneMapped: false }),
@@ -911,6 +960,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // collée devant le leader).
       blockLeft: 0,
       blockArmed: true,
+      // Carambolage avec le pilote : un délai entre deux chocs comptés, sinon
+      // une berline collée au pare-chocs retirerait un carré par image.
+      collisionCooldownLeft: 0,
       // Voie de repli préférée : sa voie de départ pour l'escouade, aucune
       // pour la police du trafic (elle vient de sa propre voie).
       homeLane: lane,
@@ -919,6 +971,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   let policeDeployed = false;
+
+  // ── La barre de vie du pilote (dernier tour) ───────────────────────────
+  // Elle naît au dernier tour du pilote — la course entière en Sprint, le
+  // quatrième tour en Circuit et en Poursuite, où l'escouade roule pourtant
+  // depuis le départ — et part pleine : huit carrés. Les tirs bleus en
+  // retirent un, les rafales rouges deux, et chaque collision avec une berline
+  // un. Le reste du trafic ne touche pas la barre.
+  let playerHealth = CITY_RUSH_PLAYER_HEALTH;
+  let playerHealthActive = false;
+  let playerHealthFlash = 0;
+  // Épave : barre à zéro. La voiture tourne sur elle-même dans sa fumée, perd
+  // toute vitesse, puis la course est déclarée perdue (`finishRace`).
+  let playerWrecked = false;
+  let playerWreckLeft = 0;
+  let playerWreckSpinTurns = CITY_RUSH_WRECK_SPIN_TURNS;
+  // L'hélico d'observation du dernier tour : il se pose dans le ciel, suit le
+  // pilote, puis s'éloigne en montant une fois la ligne franchie.
+  let watchHeliLeaving = 0;
+  let watchHeliAge = 0;
+  const watchHeliScratch = new THREE.Vector3();
 
   // ── Les poursuivants, tous formats ─────────────────────────────────────
   // L'escouade du dernier tour et la police du trafic « passée à l'attaque »
@@ -951,7 +1023,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const impact = makeImpact(shared);
   const trafficImpacts = Array.from({ length: 6 }, () => makeTrafficImpactEffect());
   trafficImpacts.forEach((effect) => scene.add(effect));
-  scene.add(helicopter, missile, impact);
+  // L'appareil qui filme le dernier tour : il suit le pilote à distance, sans
+  // jamais tirer ni gêner la course.
+  const watchHelicopter = makeWatchHelicopter(shared);
+  scene.add(helicopter, missile, impact, watchHelicopter);
   let trafficImpactCursor = 0;
   let strike = null;
   let lastDistanceSlot = 0;
@@ -1209,6 +1284,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       trafficImpactLeft: playerTrafficImpactLeft,
       boostLeft: playerBoostLeft,
       stunLeft: playerStunLeft,
+      // Barre de vie du pilote : `null` tant que le pilote n'attaque pas son
+      // dernier tour — la page ne dessine rien avant.
+      playerHealth: playerHealthActive ? playerHealth : null,
+      playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+      playerHealthActive,
+      playerHealthFlash,
       score,
       pickups: pickedUp,
       leader: standings.leader?.name || '—',
@@ -1328,6 +1409,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     helicopter.visible = false;
     missile.visible = false;
     impact.visible = false;
+    // L'appareil d'observation repart du sol, et la barre de vie du pilote est
+    // rendue intacte pour la prochaine escouade.
+    watchHelicopter.visible = false;
+    watchHeliLeaving = 0;
+    watchHeliAge = 0;
+    playerHealth = CITY_RUSH_PLAYER_HEALTH;
+    playerHealthActive = false;
+    playerHealthFlash = 0;
+    playerWrecked = false;
+    playerWreckLeft = 0;
     // Un reset en pleine frappe ne laisse pas le rotor tourner dans le vide.
     audioRef?.current?.helicopterStop();
     smoke.clear();
@@ -1425,6 +1516,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mode = 'hunt';
       police.blockLeft = 0;
       police.blockArmed = true;
+      police.collisionCooldownLeft = 0;
       police.changeIn = 0.25 + police.index * 0.4;
       police.lastPassGap = undefined;
       police.lane = CITY_RUSH_POLICE_LANES[police.index % CITY_RUSH_POLICE_LANES.length];
@@ -1667,16 +1759,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
-  // Le flot lent comme le trafic venant en face peuvent produire des étincelles.
-  function getTrafficMesh(vehicleId) {
+  // Le flot lent, le trafic venant en face **et** les berlines de police :
+  // tout véhicule avec lequel une voiture de course peut faire des étincelles.
+  function getImpactMesh(vehicleId) {
     return trafficCars.find((item) => item.id === vehicleId)?.mesh
       || oncomingCars.find((item) => item.id === vehicleId)?.mesh
+      || activePursuerById(vehicleId)?.mesh
       || null;
   }
 
   function spawnTrafficImpact(racerId, trafficId) {
     const racer = getVehicleMesh(racerId);
-    const traffic = getTrafficMesh(trafficId);
+    const traffic = getImpactMesh(trafficId);
     if (!racer || !traffic || !trafficImpacts.length) return;
     const effect = trafficImpacts.find((candidate) => !candidate.userData.active)
       || trafficImpacts[(trafficImpactCursor += 1) % trafficImpacts.length];
@@ -1705,7 +1799,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     data.age += dt;
     const progress = clamp(data.age / CITY_RUSH_TRAFFIC_IMPACT_DURATION, 0, 1);
     const racer = getVehicleMesh(data.racerId);
-    const traffic = getTrafficMesh(data.trafficId);
+    const traffic = getImpactMesh(data.trafficId);
     if (racer && traffic) effect.position.lerpVectors(racer.position, traffic.position, 0.5);
     effect.position.y = 0;
 
@@ -1785,6 +1879,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Une berline visée par la rafale rouge : le tir la détruit quand la
     // première balle la touche (pas à la consommation du bonus).
     const policeTarget = activePursuerById(targetId);
+    // Une rafale rouge encaissée par le pilote coûte deux carrés d'un coup,
+    // qu'elle vienne d'une berline ou d'un rival (voir `damagePlayer`).
+    if (targetId === 'player') damagePlayer(CITY_RUSH_POWERS.PISTOL, attackerId);
     for (let index = 0; index < MACHINE_GUN_SHOTS; index += 1) {
       const mesh = makeBulletTracer();
       scene.add(mesh);
@@ -1854,6 +1951,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerSkidSide = Math.random() < 0.5 ? -1 : 1;
       cameraKick = Math.max(cameraKick, 0.1);
       getCallbacks().effect?.({ type: 'blue-shot-hit-player', attacker: attacker?.name || 'RIVAL', duration });
+      // Un carré de moins dans la barre de vie (voir `damagePlayer`).
+      damagePlayer(CITY_RUSH_POWERS.BLUE_SHOT, attackerId);
     } else if (target.isPolice) {
       // Une berline encaisse le tir droit : il en faut trois pour la faire
       // exploser (ou deux rafales rouges, ou un tir d'hélico).
@@ -2359,6 +2458,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mode = 'hunt';
       police.blockLeft = 0;
       police.blockArmed = true;
+      police.collisionCooldownLeft = 0;
       police.lane = CITY_RUSH_POLICE_LANES[index % CITY_RUSH_POLICE_LANES.length];
       police.homeLane = police.lane;
       police.currentX = CITY_RUSH_LANE_X[police.lane];
@@ -2436,6 +2536,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       mode: 'hunt',
       blockLeft: 0,
       blockArmed: true,
+      collisionCooldownLeft: 0,
       homeLane: null,
       width: Number(traffic.width) || 1.94,
       lastPassGap: undefined,
@@ -2491,6 +2592,135 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         targetWidth: playerWidth,
       })) continue;
       rallyTrafficPolice(traffic, 'player');
+    }
+  }
+
+  // ── La barre de vie du pilote ──────────────────────────────────────────
+  // Huit carrés, pleins au dernier tour du pilote. Un tir droit bleu en
+  // coûte un, une rafale rouge deux, une collision avec une berline un ; ni le
+  // trafic, ni les autres voitures de course ne touchent la barre — eux ne font
+  // que ralentir. À zéro, la voiture continue : la course ne s'arrête pas sur la
+  // réserve, la page se contente de faire clignoter la barre.
+
+  // Le pilote attaque son dernier tour : la barre naît pleine, sans bandeau —
+  // la barre du HUD parle d'elle-même, l'effet `player-health` ne sert qu'aux
+  // contrôles (smoke). C'est aussi le tour où l'escouade entre en piste, mais
+  // la barre suit le pilote, pas le leader : jamais avant son tour.
+  function activatePlayerHealth() {
+    if (playerHealthActive) return;
+    playerHealthActive = true;
+    playerHealth = CITY_RUSH_PLAYER_HEALTH;
+    playerHealthFlash = 0;
+    getCallbacks().effect?.({
+      type: 'player-health',
+      health: playerHealth,
+      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      lap,
+    });
+    emitHud(true);
+  }
+
+  // `context` (facultatif) voyage avec l'effet `player-hit` : le carambolage y
+  // joint la distance berline/pilote au moment du choc, pour que le smoke
+  // vérifie qu'aucune berline restée derrière ne compte comme un choc.
+  function damagePlayer(source, attackerId = null, context = null) {
+    if (!playerHealthActive || finished) return 0;
+    const before = playerHealth;
+    playerHealth = cityRushPlayerDamage(playerHealth, source);
+    const lost = before - playerHealth;
+    if (lost <= 0) return 0;
+    playerHealthFlash = CITY_RUSH_PLAYER_HEALTH_FLASH;
+    // Le choc se sent aussi à la caméra : d'autant plus que le carré coûte cher.
+    cameraKick = Math.max(cameraKick, 0.2 + lost * 0.06);
+    const hit = {
+      type: 'player-hit',
+      source,
+      damage: lost,
+      health: playerHealth,
+      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      attacker: attackerId ? getRaceVehicleState(attackerId)?.name || null : null,
+      critical: playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL,
+      lap,
+    };
+    if (context) Object.assign(hit, context);
+    getCallbacks().effect?.(hit);
+    emitHud(true);
+    // Barre à zéro : plus de voiture. La toupie commence ici, la course se
+    // termine à la fin de l'épave (`updateWreck`).
+    if (playerHealth <= 0 && !playerWrecked) wreckPlayer();
+    return lost;
+  }
+
+  // La coque a cédé : la voiture part en toupie sur place (deux tours, le même
+  // lacet que la frappe héliportée), sa vitesse tombe à zéro, elle fume noir et
+  // crache des étincelles. `playerWreckLeft` compte la fin de l'épave ; à zéro,
+  // la course est perdue.
+  function wreckPlayer() {
+    playerWrecked = true;
+    playerWreckLeft = CITY_RUSH_WRECK_SECONDS;
+    // La toupie réutilise l'immobilisation : `cityRushStunSpin` rend un lacet
+    // qui boucle un nombre entier de tours et se pose face à la route.
+    playerStunLeft = CITY_RUSH_WRECK_SECONDS;
+    playerStunTotal = CITY_RUSH_WRECK_SECONDS;
+    playerWreckSpinTurns = CITY_RUSH_WRECK_SPIN_TURNS;
+    playerBoostLeft = 0;
+    cameraKick = Math.max(cameraKick, 1.2);
+    audioRef?.current?.explosion({ pan: vehiclePan('player') });
+    audioRef?.current?.skid({ pan: vehiclePan('player'), intensity: 1.35, duration: 1.4 });
+    // Le capot lâche : bouffée noire, braises et poussière, au niveau du sol.
+    smoke.emit(playerCar.position, { color: 0x24242c, opacity: 0.7, scale: 1.1, grow: 2.8, life: 1.5, velocity: [0, 2.6, 0.4] });
+    for (let spark = 0; spark < 6; spark += 1) {
+      smoke.emit(playerCar.position, { color: 0xff7a2a, opacity: 0.85, scale: 0.34, grow: 2.1, life: 0.55, velocity: [(Math.random() - 0.5) * 5, 2.4 + Math.random() * 2.6, (Math.random() - 0.5) * 5] });
+    }
+    // Aucun bandeau : la page apprend la nouvelle par l'effet (contrôles) et par
+    // le bilan de fin de course, pas par un message qui doublerait l'overlay.
+    getCallbacks().effect?.({ type: 'player-wrecked', health: 0, lap });
+  }
+
+  function updateWreck(dt) {
+    if (!playerWrecked || finished) return;
+    playerWreckLeft = Math.max(0, playerWreckLeft - dt);
+    if (playerWreckLeft > 0) return;
+    // L'épave est immobile depuis la fin de la toupie : la course est perdue.
+    finishRace({ destroyed: true });
+  }
+
+  // Percuter une berline solide : le pilote perd un carré, la berline deux
+  // points de barre (trois carambolages la détruisent, comme trois tirs bleus).
+  // L'animation reste celle d'un choc net — étincelles, cri de pneus, secousse
+  // de caméra, flash rouge du pare-brise — **sans** l'état « choc » du trafic :
+  // la voiture ne se met ni à fumer ni à ramper, sinon une berline qui s'amuse
+  // à coller le pilote finissait par lui faire perdre la course.
+  function applyPoliceCollision(police) {
+    police.collisionCooldownLeft = CITY_RUSH_POLICE_COLLISION_COOLDOWN;
+    spawnTrafficImpact('player', police.id);
+    audioRef?.current?.skid({ pan: vehiclePan('player'), intensity: 1.1, duration: 0.82 });
+    cameraKick = Math.max(cameraKick, 0.52);
+    damagePlayer('collision', police.id, { gap: police.distance - distance });
+    damagePolice(police, 'collision', 'player');
+  }
+
+  // Un carambolage se juge sur la règle pure `cityRushPoliceCollisionHit` : la
+  // berline doit être **devant** le pilote et celui-ci doit **arriver sur elle**
+  // (vitesse d'approche). Suivre le pilote à sa hauteur ou se replier derrière
+  // lui pour tirer ne compte pas — c'était le défaut : la position de tir de
+  // l'escouade (5 m derrière) tombait dans la fenêtre de contact et vidait la
+  // barre de vie à coups de « chocs » invisibles.
+  function checkPoliceCollisions() {
+    if (!active || finished) return;
+    const playerXNow = playerCar.position.x;
+    const playerWidth = playerCollisionWidth();
+    for (const police of activePursuers()) {
+      if (police.health <= 0 || police.collisionCooldownLeft > 0) continue;
+      if (!cityRushPoliceCollisionHit({
+        gap: police.distance - distance,
+        closing: currentSpeed - (Number(police.currentSpeed) || 0),
+        x: police.currentX,
+        targetX: playerXNow,
+        width: police.width,
+        targetWidth: playerWidth,
+      })) continue;
+      applyPoliceCollision(police);
     }
   }
 
@@ -2608,6 +2838,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.powerCooldown = Math.max(0, police.powerCooldown - dt);
       police.bluePowerCooldown = Math.max(0, police.bluePowerCooldown - dt);
       police.blockLeft = Math.max(0, police.blockLeft - dt);
+      police.collisionCooldownLeft = Math.max(0, (police.collisionCooldownLeft || 0) - dt);
       // Deux armes, deux jauges : la mitrailleuse (rouge) et le tir droit
       // (bleu), toutes deux chargées à l'entrée en piste.
       const charged = (police.inventory?.[CITY_RUSH_POWERS.PISTOL] || 0) >= CITY_RUSH_POWER_RULES.pistol.chargeCost;
@@ -3363,6 +3594,75 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
+  // ── L'hélico d'observation du dernier tour ─────────────────────────────
+  // Au dernier tour, l'appareil se cale dans le ciel devant le pilote et le suit
+  // jusqu'à l'arrivée. Il n'ouvre jamais le feu : ses hélices tournent, son
+  // gyrophare clignote et son pod caméra balaie la piste. Après la ligne, il
+  // s'éloigne en prenant de l'altitude et disparaît.
+  const WATCH_HELI_FLY_IN = 1.5; // s : temps de rapprochement à l'apparition
+  // Sous une voûte (la Shuto de Tokyo), il n'y a plus de ciel : l'appareil
+  // s'efface — sinon il volerait à l'intérieur du tunnel, dans les panneaux
+  // suspendus — et reparaît à la sortie.
+  const WATCH_HELI_TUNNEL_HIDE = 0.6; // part de couverture au-delà de laquelle il s'efface
+
+  function updateWatchHelicopter(dt) {
+    const watching = phase === 'playing' && !finished && lap >= effectiveLaps;
+    if (watching && tunnelCover.amount > WATCH_HELI_TUNNEL_HIDE) {
+      // Il repart par où il est venu : à la sortie du tunnel, la rentrée se
+      // rejoue (il retraverse le ciel et se recale).
+      watchHelicopter.visible = false;
+      watchHeliAge = 0;
+      watchHeliLeaving = 0;
+      return;
+    }
+    if (watching) {
+      if (!watchHelicopter.visible) {
+        // Il arrive de loin, par la droite : le temps qu'il se cale au-dessus de
+        // la course, on le voit traverser le ciel.
+        watchHelicopter.visible = true;
+        watchHeliAge = 0;
+        watchHeliLeaving = 0;
+        watchHelicopter.position.set(playerCar.position.x + 30, 26, PLAYER_Z + 30);
+      }
+      watchHeliAge = Math.min(WATCH_HELI_FLY_IN, watchHeliAge + dt);
+      const pose = cityRushWatchHelicopterPose({ playerX: playerCar.position.x, clock: clockTime, leaving: 0 });
+      const flightDistance = distance + pose.ahead;
+      watchHeliScratch.set(
+        trackRelativeX(flightDistance) + pose.lateral,
+        trackRelativeY(flightDistance) + pose.height,
+        PLAYER_Z - pose.ahead * SCALE,
+      );
+      // Rapprochement progressif : véloce à l'apparition, posé ensuite.
+      watchHelicopter.position.lerp(watchHeliScratch, Math.min(1, dt * (1.1 + (1 - watchHeliAge / WATCH_HELI_FLY_IN) * 2.2)));
+      watchHelicopter.rotation.set(0, trackYaw(flightDistance) + pose.yaw, pose.bank * 0.4);
+    } else if (watchHelicopter.visible) {
+      // La ligne est franchie (ou la course remise à zéro) : il s'éloigne.
+      watchHeliLeaving = Math.min(1, watchHeliLeaving + dt / 2.8);
+      const pose = cityRushWatchHelicopterPose({ playerX: playerCar.position.x, clock: clockTime, leaving: watchHeliLeaving });
+      const flightDistance = distance + pose.ahead;
+      watchHeliScratch.set(
+        trackRelativeX(flightDistance) + pose.lateral,
+        trackRelativeY(flightDistance) + pose.height,
+        PLAYER_Z - pose.ahead * SCALE,
+      );
+      watchHelicopter.position.lerp(watchHeliScratch, Math.min(1, dt * 1.2));
+      watchHelicopter.rotation.set(pose.bank * -0.2, trackYaw(flightDistance) + pose.yaw, pose.bank);
+      if (watchHeliLeaving >= 1) {
+        watchHelicopter.visible = false;
+        watchHeliLeaving = 0;
+      }
+    } else {
+      return;
+    }
+    // Rotors, gyrophare et pod : l'appareil vit même quand il ne fait rien.
+    watchHelicopter.userData.rotor.rotation.y += dt * 24;
+    watchHelicopter.userData.tailRotor.rotation.z += dt * 27;
+    const beacon = watchHelicopter.userData.beacon;
+    beacon.material.color.setHex(Math.floor(clockTime * 3.4) % 2 === 0 ? 0x59e0ff : 0x123b4d);
+    const pod = watchHelicopter.userData.pod;
+    pod.rotation.set(0.42, cityRushWatchHelicopterPose({ clock: clockTime }).pod, 0);
+  }
+
   const aspectFov = (baseFov) => THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(baseFov) / 2) / Math.min(1, camera.aspect)));
 
   const resize = () => {
@@ -3380,8 +3680,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   resize();
   const resizeFrame = requestAnimationFrame(resize);
 
-  function finishRace() {
+  // `destroyed` : la course ne se termine pas au drapeau à damier mais sur une
+  // épave, barre de vie à zéro. Le pilote est classé dernier et la page le dit.
+  function finishRace(options = {}) {
     if (finished) return;
+    const destroyed = Boolean(options.destroyed) || playerWrecked;
     finished = true;
     active = false;
     phase = 'finished';
@@ -3396,28 +3699,38 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     helicopter.visible = false;
     missile.visible = false;
     impact.visible = false;
+    // La barre de vie du pilote s'éteint avec la course ; l'hélico
+    // d'observation, lui, s'éloigne en montant (voir `updateWatchHelicopter`).
+    playerHealthActive = false;
     // L'escouade quitte la piste avec le drapeau à damier : elle n'est pas
     // classée et n'apparaît nulle part dans le tableau d'arrivée. La police du
     // trafic rappelée rentre dans le rang et reprend sa ronde.
     policeCars.forEach((police) => { police.active = false; police.mesh.visible = false; });
     releaseRalliedPolice();
     audioRef?.current?.policeSirenOff?.();
-    startLine.celebrate();
+    // Une épave ne fait pas la fête : pas de confettis ni de drapeau à damier.
+    if (!destroyed) startLine.celebrate();
     const standings = rankCityRushRacers(makeRacerRows());
     // Fanfare d'arrivée : accord majeur pour la victoire, plus sobre sinon.
     audioRef?.current?.finish(standings.rank);
     emitHud(true);
+    // Une épave est bonne dernière : le pilote passe en fin de tableau, quel
+    // que soit l'écart de distance au moment du choc.
+    const ordered = destroyed
+      ? [...standings.ordered.filter((racer) => racer.id !== 'player'), ...standings.ordered.filter((racer) => racer.id === 'player')]
+      : standings.ordered;
     getCallbacks().finish?.({
       city: city.id,
       duration: elapsed,
       distance: Math.round(distance),
       laps: effectiveLaps,
-      rank: standings.rank,
+      destroyed,
+      rank: destroyed ? ordered.length : standings.rank,
       winner: standings.leader?.name || '—',
       winnerId: standings.leader?.id || null,
       score,
       pickups: pickedUp,
-      racers: standings.ordered.map((racer, index) => ({
+      racers: ordered.map((racer, index) => ({
         id: racer.id,
         isPlayer: racer.id === 'player',
         driverId: racer.driverId,
@@ -3711,7 +4024,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const playerLateral = dt > 0 ? (playerX - priorPlayerX) / dt : 0;
       playerCar.position.set(playerX + playerSkid, playerStunLeft > 0 ? 0.03 : 0, PLAYER_Z);
       playerCar.rotation.x = trackPitch(distance);
-      const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal);
+      const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal, playerWrecked ? playerWreckSpinTurns : undefined);
       playerCar.rotation.y = trackYaw(distance) + playerSpin + clamp((CITY_RUSH_LANE_X[playerLane] - playerX) * -0.06, -0.12, 0.12) + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
       const playerSteer = clamp((CITY_RUSH_LANE_X[playerLane] - playerX) * 0.28, -0.34, 0.34);
       animateRacerCar(playerCar, {
@@ -3721,8 +4034,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lateral: playerLateral,
         boosting: playerBoostLeft > 0,
         slowed: playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerTrafficImpactLeft > 0,
-        impacting: playerTrafficImpactLeft > 0,
-        stunned: playerStunLeft > 0,
+        impacting: playerTrafficImpactLeft > 0 || playerWrecked,
+        stunned: playerStunLeft > 0 && !playerWrecked,
         skidding: playerSkidLeft > 0,
         braking: currentSpeed < priorSpeed - 2 * dt && currentSpeed > 1,
       }, dt, clockTime);
@@ -3889,9 +4202,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
 
-      // Fumée du joueur : burn-out au départ, dérapages, boost.
+      // Fumée du joueur : burn-out au départ, dérapages, boost — et l'épave,
+      // qui fume noir tant qu'elle tourne, puis continue de fumer au ralenti.
       playerSmokeTimer -= dt;
-      if (playerSmokeTimer <= 0) {
+      if (playerSmokeTimer <= 0 && playerWrecked) {
+        const wreckPuff = { color: 0x30303a, opacity: 0.62, scale: 0.55 + Math.random() * 0.3, grow: 2.6, life: 1.1, velocity: [(Math.random() - 0.5) * 1.2, 1.7 + Math.random() * 0.9, (Math.random() - 0.5) * 1.2] };
+        emitWheelSmoke(playerCar, wreckPuff);
+        smoke.emit(playerCar.position, { ...wreckPuff, scale: 0.7, velocity: [0, 2.1, 0.2] });
+        if (playerWreckLeft > CITY_RUSH_WRECK_SECONDS * 0.55 && Math.random() < 0.6) {
+          smoke.emit(playerCar.position, { color: 0xff8a3a, opacity: 0.8, scale: 0.3, grow: 2.1, life: 0.45, velocity: [(Math.random() - 0.5) * 4.2, 2.6 + Math.random() * 2, (Math.random() - 0.5) * 4.2] });
+        }
+        playerSmokeTimer = 0.05;
+      } else if (playerSmokeTimer <= 0) {
         if (launchSmokeLeft > 0 && currentSpeed < 20) {
           emitWheelSmoke(playerCar, { color: 0xe4e4ea, opacity: 0.5, scale: 0.5, grow: 2.4, life: 0.9, velocity: [0, 0.5, 2.6] });
           playerSmokeTimer = 0.05;
@@ -3917,7 +4239,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       else if (cityRushLapForDistance(leader.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps) deployPolice(leader);
       }
       updatePolice(dt, leader);
+      // Le carambolage avec une berline se juge après le déplacement des
+      // berlines : le contact est alors décrit à la position du jour.
+      checkPoliceCollisions();
       handleLapCrossings(priorDistance);
+      // Dernier tour du pilote : la barre de vie entre en scène, pleine.
+      if (!playerHealthActive && lap >= effectiveLaps) activatePlayerHealth();
+      updateWreck(dt);
       updateRows(dt);
       racers.forEach((racer) => useRacerPower(racer));
       updateStrike(dt);
@@ -3925,7 +4253,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       updateTrafficImpacts(dt);
 
       const allRacers = makeRacerRows();
-      if (allRacers.some((racer) => racer.distance >= effectiveDistance)) finishRace();
+      // Une épave en pleine toupie ne se clôt pas sur la ligne d'un rival : la
+      // course est déjà perdue (barre à zéro), la toupie va à son terme et
+      // `updateWreck` signe la défaite. Sans cette garde, un rival franchissant
+      // l'arrivée pendant les 3,2 s coupait la scène de l'épave en plein vol.
+      if (!playerWrecked && allRacers.some((racer) => racer.distance >= effectiveDistance)) finishRace();
       emitHud();
     } else {
       currentSpeed = 0;
@@ -4019,6 +4351,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       headlamp.position.set(playerCar.position.x, 0.8, PLAYER_Z - 1.6);
       headlamp.target.position.set(playerCar.position.x + trackRelativeX(distance + 22), trackRelativeY(distance + 22), PLAYER_Z - 16);
     }
+    updateWatchHelicopter(dt);
     updateCamera(dt);
     renderer.render(scene, camera);
   }
@@ -4107,6 +4440,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     get scene() { return scene; },
     get camera() { return camera; },
     get distance() { return distance; },
+    // Vitesse réelle du pilote (m/s) à l'image : les vérifications d'épave
+    // mesurent la chute jusqu'à l'arrêt complet. La page, elle, lit le HUD.
+    get speed() { return currentSpeed; },
     destroy() {
       clearVisualEffects();
       // Plus de frame : le moteur doit se taire avec la scène.
