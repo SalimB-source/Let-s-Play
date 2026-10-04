@@ -9,6 +9,16 @@ import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
 import useGameFullscreen from './useGameFullscreen';
 import {
+  CITY_RUSH_STARTER_CAR_ID,
+  awardCityRushRace,
+  isCityRushCarOwned,
+  isCityRushCourseUnlocked,
+  normalizeCityRushProgress,
+  purchaseCityRushCar,
+  readCityRushProgress,
+  writeCityRushProgress,
+} from './cityRushProgress';
+import {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
   CITY_RUSH_DISTANCE,
@@ -57,6 +67,7 @@ const CITY_THUMBNAILS = {
   london: 'london-thumb.jpg',
 };
 const CAR_THUMBNAILS = {
+  'city-hatch': 'car-city-hatch.svg',
   'vice-roadster': 'car-cavallo-f8-gtb.jpg',
   'turbo-gt': 'car-kronos-930-turbo.jpg',
   'muscle-86': 'car-vortex-rs-10.jpg',
@@ -85,6 +96,23 @@ const STORY_CHAPTERS = [
 ];
 function readStoryChapter() {
   try { return Math.max(0, Math.min(STORY_CHAPTERS.length, Number(window.localStorage.getItem(STORY_KEY)) || 0)); } catch { return 0; }
+}
+
+function readCareerProgress() {
+  const saved = readCityRushProgress();
+  // Migration douce : une ancienne sauvegarde Histoire conserve les parcours
+  // déjà validés avant l'ajout de la carrière, sans ouvrir Route 66 par erreur.
+  const legacyCompletions = CITY_RUSH_COURSES
+    .slice(0, Math.min(readStoryChapter(), Math.max(0, CITY_RUSH_COURSES.length - 1)))
+    .map((course) => course.id);
+  return normalizeCityRushProgress({
+    ...saved,
+    completedCourseIds: [...saved.completedCourseIds, ...legacyCompletions],
+  });
+}
+
+function formatCash(value = 0) {
+  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('fr-FR');
 }
 
 const RACE_MODES = [
@@ -228,7 +256,7 @@ function rankProgress(racer) {
 
 export default function ViceCityRushPage() {
   const [cityId, setCityId] = useState('vice-city');
-  const [carId, setCarId] = useState('vice-roadster');
+  const [carId, setCarId] = useState(CITY_RUSH_STARTER_CAR_ID);
   const [storyMode, setStoryMode] = useState(false);
   const [storyChapter, setStoryChapter] = useState(readStoryChapter);
   const [storyRaceChapter, setStoryRaceChapter] = useState(readStoryChapter);
@@ -242,12 +270,17 @@ export default function ViceCityRushPage() {
   const [hud, setHud] = useState(EMPTY_HUD);
   const [result, setResult] = useState(null);
   const [bests, setBests] = useState(readBests);
+  const [careerProgress, setCareerProgress] = useState(readCareerProgress);
   const [toast, setToast] = useState(null);
   const [lapBanner, setLapBanner] = useState(null);
   const [worldError, setWorldError] = useState('');
   const [soundOn, setSoundOn] = useState(readSoundPref);
   const audioRef = useRef(null);
   const soundOnRef = useRef(soundOn);
+  const careerProgressRef = useRef(careerProgress);
+  careerProgressRef.current = careerProgress;
+  const activeRaceSessionRef = useRef(0);
+  const finishedRaceSessionRef = useRef(-1);
   const actionsRef = useRef(null);
   const shellRef = useRef(null);
   const phaseRef = useRef(phase);
@@ -470,12 +503,36 @@ export default function ViceCityRushPage() {
     setToast({ message, tone, nonce: Date.now() });
     toastTimerRef.current = window.setTimeout(() => setToast(null), 2300);
   }
+  function saveCareerProgress(nextProgress) {
+    const safeProgress = normalizeCityRushProgress(nextProgress);
+    careerProgressRef.current = safeProgress;
+    setCareerProgress(safeProgress);
+    writeCityRushProgress(safeProgress);
+  }
   function showLapBanner(info) {
     window.clearTimeout(lapTimerRef.current);
     setLapBanner({ ...info, nonce: Date.now() });
     lapTimerRef.current = window.setTimeout(() => setLapBanner(null), info.final ? 2300 : 1800);
   }
-  function startRace() {
+  function startRace({ carId: requestedCarId = null } = {}) {
+    const savedProgress = careerProgressRef.current;
+    const courseId = storyMode ? (currentStoryRace?.city || cityId) : cityId;
+    const selectedCarId = requestedCarId || carId;
+    if (!isCityRushCourseUnlocked(savedProgress, courseId)) {
+      setStoryMode(false);
+      setIntroStep('city');
+      setPhase('intro');
+      showToast('COURSE VERROUILLÉE · TERMINE D’ABORD LE PARCOURS PRÉCÉDENT.', 'locked');
+      return;
+    }
+    if (!isCityRushCarOwned(savedProgress, selectedCarId)) {
+      setStoryMode(false);
+      setIntroStep('garage');
+      setPhase('intro');
+      showToast('VOITURE VERROUILLÉE · ACHÈTE-LA AVEC TES BILLETS VERTS.', 'locked');
+      return;
+    }
+    activeRaceSessionRef.current += 1;
     setWorldError('');
     setResult(null);
     setHud(EMPTY_HUD);
@@ -502,10 +559,23 @@ export default function ViceCityRushPage() {
       try { window.localStorage.setItem(STORY_KEY, '0'); window.localStorage.removeItem(STORY_ENDING_KEY); } catch {}
     }
     const chapterIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
+    const chapter = STORY_CHAPTERS[chapterIndex];
+    const savedProgress = careerProgressRef.current;
+    if (!isCityRushCourseUnlocked(savedProgress, chapter.city)) {
+      setStoryMode(false);
+      setPhase('intro');
+      setIntroStep('city');
+      setCityId('vice-city');
+      showToast('CHAPITRE VERROUILLÉ · TERMINE D’ABORD LE PARCOURS PRÉCÉDENT.', 'locked');
+      return;
+    }
+    const storyCarId = isCityRushCarOwned(savedProgress, carId)
+      ? carId
+      : (savedProgress.ownedCarIds[0] || CITY_RUSH_STARTER_CAR_ID);
     setStoryMode(true);
     setStoryRaceChapter(chapterIndex);
-    setCarId('vega-gt-67');
-    setCityId(STORY_CHAPTERS[chapterIndex].city);
+    setCarId(storyCarId);
+    setCityId(chapter.city);
     setResult(null);
     setPhase('cinematic');
   }
@@ -528,7 +598,29 @@ export default function ViceCityRushPage() {
   }
 
   function finishRace(nextResult) {
-    setResult(nextResult);
+    if (finishedRaceSessionRef.current === activeRaceSessionRef.current) return;
+    finishedRaceSessionRef.current = activeRaceSessionRef.current;
+
+    const courseId = nextResult.city || (storyMode ? currentStoryRace?.city : cityId) || 'vice-city';
+    const progressBeforeRace = careerProgressRef.current;
+    const award = awardCityRushRace(progressBeforeRace, {
+      courseId,
+      completed: !nextResult.destroyed,
+    });
+    saveCareerProgress(award.progress);
+    const courseIndex = CITY_RUSH_COURSES.findIndex((course) => course.id === courseId);
+    const followingCourse = courseIndex >= 0 ? CITY_RUSH_COURSES[courseIndex + 1] : null;
+    const newlyUnlockedCourse = followingCourse
+      && !isCityRushCourseUnlocked(progressBeforeRace, followingCourse.id)
+      && isCityRushCourseUnlocked(award.progress, followingCourse.id)
+      ? followingCourse.id
+      : null;
+    setResult({
+      ...nextResult,
+      cashAwarded: award.cashAwarded,
+      cashBalance: award.progress.cash,
+      newlyUnlockedCourse,
+    });
     // Trophées de jeu : chaque course terminée nourrit les succès Vice City
     // Rush (ville, mode, place, butin). En mode Histoire, une victoire crédite
     // aussi le chapitre joué — `storyRaceChapter` (0 = premier chapitre).
@@ -614,14 +706,36 @@ export default function ViceCityRushPage() {
     setIntroStep('city');
   };
   const chooseCity = (nextCityId) => {
+    if (!isCityRushCourseUnlocked(careerProgressRef.current, nextCityId)) {
+      const index = CITY_RUSH_COURSES.findIndex((course) => course.id === nextCityId);
+      const previous = index > 0 ? CITY_RUSH_COURSES[index - 1] : null;
+      showToast(`COURSE VERROUILLÉE · TERMINE ${previous?.name || 'LE PARCOURS PRÉCÉDENT'}.`, 'locked');
+      return;
+    }
     setStoryMode(false);
     setCityId(nextCityId);
     setIntroStep('garage');
   };
   const chooseCarAndStart = (nextCarId) => {
+    const car = CITY_RUSH_CARS.find((item) => item.id === nextCarId);
+    if (!car) return;
+    const savedProgress = careerProgressRef.current;
+    if (!isCityRushCarOwned(savedProgress, nextCarId)) {
+      const purchase = purchaseCityRushCar(savedProgress, nextCarId);
+      if (!purchase.purchased) {
+        if (purchase.reason === 'insufficient-funds') {
+          showToast(`IL TE MANQUE ${formatCash(car.price - savedProgress.cash)} BILLETS VERTS.`, 'locked');
+        }
+        return;
+      }
+      saveCareerProgress(purchase.progress);
+      setCarId(nextCarId);
+      showToast(`${car.name} DÉBLOQUÉE · ${formatCash(car.price)} BILLETS DÉPENSÉS · TOUCHE-LA POUR PARTIR.`, 'boost');
+      return;
+    }
     setStoryMode(false);
     setCarId(nextCarId);
-    startRace();
+    startRace({ carId: nextCarId });
   };
   const goBack = () => {
     if (introStep === 'garage') setIntroStep('city');
@@ -666,6 +780,14 @@ export default function ViceCityRushPage() {
               </span>
             </div>
             <div className="city-rush-top-actions">
+              <div className="city-rush-wallet" aria-label={`Portefeuille : ${formatCash(careerProgress.cash)} billets verts`} aria-live="polite">
+                <svg className="city-rush-wallet-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+                  <path d="M3 8.5h18M15.5 12h6M6 5l1.5-2h9L18 5" />
+                  <circle cx="15.5" cy="13.2" r="1.25" />
+                </svg>
+                <span><b>{formatCash(careerProgress.cash)}</b><small>BILLETS</small></span>
+              </div>
               <button type="button" className={`city-rush-top-button city-rush-sound-button${soundOn ? ' is-on' : ''}`} onClick={toggleSound} aria-pressed={soundOn} title={soundOn ? 'Couper son (M)' : 'Activer son (M)'} aria-label={soundOn ? 'Couper le son' : 'Activer le son'}>
                 <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span>
               </button>
@@ -878,7 +1000,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
                       <h2>VICE CITY<br /><em>RUSH.</em></h2>
-                      <p>La ville est à toi. Lance l’histoire de Nico Vega ou choisis ton défi : circuit, sprint ou poursuite à travers cinq villes et la route 66.</p>
+                      <p>La ville est à toi. Termine chaque parcours pour ouvrir le suivant, et gagne 50 billets verts à chaque course pour débloquer de nouvelles voitures. Vice City t’attend pour le départ.</p>
                     </div>
 
                     <button
@@ -898,7 +1020,7 @@ export default function ViceCityRushPage() {
                       <span className="city-rush-story-banner-body">
                         <span className="city-rush-story-banner-meta">
                           <span className="city-rush-mode-tag" style={{ '--tag-accent': '#ff5d7e' }}>CAMPAGNE SOLO</span>
-                          <small>VEGA GT ’67 · {previewStoryCity.name.toUpperCase()} · {previewStoryChapter.title.toUpperCase()}</small>
+                          <small>{selectedCar.name} · {previewStoryCity.name.toUpperCase()} · {previewStoryChapter.title.toUpperCase()}</small>
                         </span>
                         <b>MODE HISTOIRE · NICO VEGA</b>
                         <span className="city-rush-story-description">{previewStoryChapter.text}</span>
@@ -951,9 +1073,11 @@ export default function ViceCityRushPage() {
                         <button
                           key={option.id}
                           type="button"
-                          className={`city-rush-city-card${cityId === option.id ? ' is-selected' : ''}${option.id === 'route-66' ? ' is-route-66' : ''}`}
+                          className={`city-rush-city-card${cityId === option.id ? ' is-selected' : ''}${option.id === 'route-66' ? ' is-route-66' : ''}${isCityRushCourseUnlocked(careerProgress, option.id) ? '' : ' is-locked'}`}
                           style={{ '--card-accent': option.accent, '--card-secondary': option.secondary }}
                           onClick={() => chooseCity(option.id)}
+                          disabled={!isCityRushCourseUnlocked(careerProgress, option.id)}
+                          aria-label={`${option.name} · ${isCityRushCourseUnlocked(careerProgress, option.id) ? 'parcours débloqué' : `verrouillé, termine ${CITY_RUSH_COURSES[index - 1]?.name || 'le précédent'}`}`}
                           aria-pressed={cityId === option.id}
                         >
                           <span className={`city-rush-city-thumb is-${option.id}`} aria-hidden="true">
@@ -967,6 +1091,11 @@ export default function ViceCityRushPage() {
                           <span className="city-rush-city-number">0{index + 1}</span>
                           <b>{option.name}</b>
                           <small>{option.district} · {option.label}</small>
+                          <span className={`city-rush-course-status${isCityRushCourseUnlocked(careerProgress, option.id) ? ' is-open' : ' is-locked'}`}>
+                            {isCityRushCourseUnlocked(careerProgress, option.id)
+                              ? careerProgress.completedCourseIds.includes(option.id) ? '✓ PARCOURS TERMINÉ' : '● PARCOURS DÉBLOQUÉ'
+                              : `🔒 APRÈS ${CITY_RUSH_COURSES[index - 1]?.name || 'LE PRÉCÉDENT'}`}
+                          </span>
                           {/* Plaque de route : un emplacement est réservé même
                               sans route officielle (fantôme invisible) pour que
                               toutes les cartes aient exactement la même taille. */}
@@ -985,7 +1114,7 @@ export default function ViceCityRushPage() {
                             <span className="city-rush-city-preview" aria-hidden="true">
                               <i style={{ background: option.accent }} /><i style={{ background: option.secondary }} />
                             </span>
-                            <span className="city-rush-card-action">GARAGE <i aria-hidden="true">↗</i></span>
+                            <span className="city-rush-card-action">{isCityRushCourseUnlocked(careerProgress, option.id) ? <>GARAGE <i aria-hidden="true">↗</i></> : 'VERROUILLÉE'}</span>
                           </span>
                         </button>
                       ))}
@@ -1004,7 +1133,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
                       <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>Choisis ton pilote si tu le souhaites, puis touche une sportive pour lancer la course. Six machines inspirées des grands coupés européens, sans logos ni noms de constructeurs réels.</p>
+                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. Gagne 50 billets verts par course pour acheter les six autres modèles.</p>
                     </div>
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
@@ -1034,44 +1163,59 @@ export default function ViceCityRushPage() {
 
                     <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-car-title">GARAGE · 6 SPORTIVES</span>
-                        <small>{selectedCar.name} · TOUCHE POUR PARTIR</small>
+                        <span id="city-rush-car-title">GARAGE · {CITY_RUSH_CARS.length} VOITURES</span>
+                        <small>{formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name} · TOUCHE POUR PARTIR</small>
                       </div>
                       <div className="city-rush-car-grid" role="group" aria-label="Lancer une course avec une voiture">
-                        {CITY_RUSH_CARS.map((car, index) => (
-                          <button
-                            key={car.id}
-                            type="button"
-                            className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}`}
-                            style={{ '--car-accent': car.accent }}
-                            onClick={() => chooseCarAndStart(car.id)}
-                            aria-label={`Lancer le mode ${mode.name} à ${city.name} avec ${car.name}`}
-                          >
-                            <span className="city-rush-car-card-top">
-                              <span className="city-rush-car-image" aria-hidden="true">
-                                <img
-                                  src={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[car.id] || CAR_THUMBNAILS['vice-roadster']}`}
-                                  alt=""
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                              </span>
-                              <span className="city-rush-car-number">0{index + 1}</span>
-                            </span>
-                            <b className="city-rush-car-name">{car.name}</b>
-                            <small className="city-rush-car-class">{car.className}</small>
-                            <span className="city-rush-car-stats">
-                              {CAR_STATS.map((stat) => (
-                                <span className="city-rush-car-stat" key={stat.key}>
-                                  <small>{stat.label}</small>
-                                  <i className="city-rush-car-stat-track" aria-hidden="true"><i style={{ width: `${car[stat.key]}%` }} /></i>
-                                  <b>{car[stat.key]}</b>
+                        {CITY_RUSH_CARS.map((car, index) => {
+                          const owned = isCityRushCarOwned(careerProgress, car.id);
+                          const canAfford = careerProgress.cash >= (Number(car.price) || 0);
+                          const shortfall = Math.max(0, (Number(car.price) || 0) - careerProgress.cash);
+                          return (
+                            <button
+                              key={car.id}
+                              type="button"
+                              className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}${owned ? '' : ' is-locked'}${!owned && !canAfford ? ' is-unaffordable' : ''}`}
+                              style={{ '--car-accent': car.accent }}
+                              onClick={() => chooseCarAndStart(car.id)}
+                              disabled={!owned && !canAfford}
+                              aria-label={owned
+                                ? `Lancer le mode ${mode.name} à ${city.name} avec ${car.name}`
+                                : canAfford
+                                  ? `Acheter ${car.name} pour ${formatCash(car.price)} billets verts`
+                                  : `${car.name} verrouillée, il manque ${formatCash(shortfall)} billets verts`}
+                            >
+                              <span className="city-rush-car-card-top">
+                                <span className="city-rush-car-image" aria-hidden="true">
+                                  <img
+                                    src={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[car.id] || CAR_THUMBNAILS['vice-roadster']}`}
+                                    alt=""
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
                                 </span>
-                              ))}
-                            </span>
-                            <span className="city-rush-card-action is-launch">LANCER LA COURSE <i aria-hidden="true">↗</i></span>
-                          </button>
-                        ))}
+                                <span className="city-rush-car-number">0{index + 1}</span>
+                                <span className={`city-rush-car-lock-badge${owned ? ' is-owned' : ''}`}>
+                                  {owned ? car.id === CITY_RUSH_STARTER_CAR_ID ? 'DÉPART' : 'ACHETÉE' : `🔒 ${formatCash(car.price)} $`}
+                                </span>
+                              </span>
+                              <b className="city-rush-car-name">{car.name}</b>
+                              <small className="city-rush-car-class">{car.className}</small>
+                              <span className="city-rush-car-stats">
+                                {CAR_STATS.map((stat) => (
+                                  <span className="city-rush-car-stat" key={stat.key}>
+                                    <small>{stat.label}</small>
+                                    <i className="city-rush-car-stat-track" aria-hidden="true"><i style={{ width: `${car[stat.key]}%` }} /></i>
+                                    <b>{car[stat.key]}</b>
+                                  </span>
+                                ))}
+                              </span>
+                              <span className={`city-rush-card-action${owned ? ' is-launch' : ' is-purchase'}`}>
+                                {owned ? <>LANCER LA COURSE <i aria-hidden="true">↗</i></> : canAfford ? `ACHETER · ${formatCash(car.price)} BILLETS` : `MANQUE ${formatCash(shortfall)} · COÛT ${formatCash(car.price)}`}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </section>
 
@@ -1110,7 +1254,7 @@ export default function ViceCityRushPage() {
                     <b>{STORY_CHAPTERS[storyChapter].race.name}</b>
                     <p>{STORY_CHAPTERS[storyChapter].race.route}</p>
                   </div>
-                  <p>NICO VEGA · VEGA GT ’67 — muscle car noire à bandes rouges</p>
+                  <p>NICO VEGA · {selectedCar.name} — {selectedCar.className.toLowerCase()}</p>
                 </div>
                 <div className="city-rush-intro-actions" style={{ justifyContent: 'center' }}>
                   <button type="button" className="city-rush-start-button" onClick={startRace}>{`LANCER ${STORY_CHAPTERS[storyChapter].race.name.toUpperCase()}`} <span>↗</span></button>
@@ -1149,6 +1293,19 @@ export default function ViceCityRushPage() {
                   <div><small>TOUR MOYEN</small><b>{formatTime((result.duration || 0) / (result.laps || currentLaps || CITY_RUSH_LAPS))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
                 </div>
+                {result.cashAwarded > 0 && (
+                  <div className="city-rush-cash-reward" role="status" aria-live="polite">
+                    <span className="city-rush-cash-reward-icon" aria-hidden="true">$</span>
+                    <span><b>+{formatCash(result.cashAwarded)} BILLETS VERTS</b><small>RÉCOMPENSE DE COURSE</small></span>
+                    <small className="city-rush-cash-total">PORTEFEUILLE · {formatCash(result.cashBalance)}</small>
+                  </div>
+                )}
+                {result.newlyUnlockedCourse && (
+                  <div className="city-rush-course-unlocked-notice" role="status">
+                    <b>✦ NOUVEAU PARCOURS DÉBLOQUÉ</b>
+                    <span>{CITY_RUSH_COURSES.find((course) => course.id === result.newlyUnlockedCourse)?.name}</span>
+                  </div>
+                )}
                 <p>
                   {result.destroyed
                     ? `Ta coque est tombée à zéro : la voiture a tourné sur elle-même dans sa fumée avant de s’arrêter, hors course. ${result.winner} l’emporte ; la revanche t’attend.`

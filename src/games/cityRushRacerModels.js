@@ -23,6 +23,28 @@ HEADLIGHT_CONE.translate(0, 0, -4.5);
 // sommet de la carrosserie, demi-largeur du toit]. Le profil donne à chaque
 // voiture son capot, son pavillon et son arrière propres.
 const CAR_MODELS = {
+  'city-hatch': {
+    // Citadine 5 portes inspirée d'une compacte française : pavillon haut,
+    // hayon court, épaules arrondies et roues modestes. Aucun badge n'est ajouté.
+    wheelX: 0.88, wheelZ: [-1.23, 1.12], wheelRadius: 0.31, wheelWidth: 0.24, wheelStyle: 'eight-hole',
+    doorSeams: [-0.16, 0.72], grilleWidth: 0.82,
+    stations: [
+      [-2.00, 0.27, 0.38, 0.50, 0.57, 0.12], [-1.84, 0.58, 0.38, 0.66, 0.79, 0.39],
+      [-1.60, 0.79, 0.39, 0.77, 0.96, 0.59], [-1.34, 0.88, 0.40, 0.83, 1.12, 0.68],
+      [-1.06, 0.91, 0.40, 0.85, 1.29, 0.72], [-0.76, 0.91, 0.41, 0.86, 1.48, 0.73],
+      [-0.43, 0.91, 0.41, 0.86, 1.54, 0.73], [-0.02, 0.90, 0.41, 0.85, 1.54, 0.72],
+      [0.40, 0.91, 0.41, 0.84, 1.49, 0.73], [0.76, 0.91, 0.40, 0.83, 1.36, 0.73],
+      [1.06, 0.89, 0.40, 0.81, 1.09, 0.68], [1.37, 0.82, 0.39, 0.75, 0.90, 0.63],
+      [1.68, 0.64, 0.38, 0.63, 0.77, 0.50], [1.94, 0.28, 0.37, 0.50, 0.56, 0.14],
+    ],
+    windshield: [[-0.69, 1.02, -0.91], [0.69, 1.02, -0.91], [0.57, 1.36, -0.42], [-0.57, 1.36, -0.42]],
+    rearGlass: [[-0.56, 1.37, 0.48], [0.56, 1.37, 0.48], [0.67, 1.08, 1.76], [-0.67, 1.08, 1.76]],
+    sideWindows: [
+      [[0.84, 1.08, -0.83], [0.62, 1.38, -0.39], [0.62, 1.38, 0.02], [0.85, 1.08, 0.05]],
+      [[0.85, 1.08, 0.12], [0.63, 1.37, 0.10], [0.63, 1.36, 0.76], [0.84, 1.12, 0.90]],
+      [[0.83, 1.11, 0.96], [0.64, 1.34, 0.80], [0.65, 1.19, 1.43], [0.79, 1.09, 1.45]],
+    ],
+  },
   ferrari: {
     wheelX: 0.93, wheelZ: [-1.16, 1.15], wheelRadius: 0.35, wheelWidth: 0.27, wheelStyle: 'split-five',
     doorSeams: [-0.18], grilleWidth: 1.08,
@@ -317,6 +339,21 @@ function makeSteeringLights(profile, spec, batch, materials) {
   batch.box(carbon, [0, 0.405, -1.92], [1.82, 0.105, 0.16]);
   batch.box(black, [0, 0.325, -1.94], [1.88, 0.045, 0.17]);
 
+  if (profile.archetype === 'city-hatch') {
+    // Face avant simple de petite citadine : phares rectangulaires, calandre
+    // sobre et antibrouillards. Le centre reste vierge, sans losange ni badge.
+    batch.box(black, [0, 0.555, -1.91], [0.86, 0.17, 0.065]);
+    batch.box(carbon, [0, 0.39, -1.93], [1.72, 0.12, 0.14]);
+    for (const side of [-1, 1]) {
+      const x = side * 0.61;
+      batch.box(black, [x, 0.735, -1.84], [0.38, 0.17, 0.05]);
+      batch.box(lightWhite, [x, 0.735, -1.875], [0.31, 0.10, 0.035]);
+      batch.box(lightAmber, [side * 0.82, 0.595, -1.86], [0.10, 0.07, 0.035]);
+      batch.sphere(lightWhite, [side * 0.68, 0.47, -1.91], 0.07, 8);
+    }
+    return;
+  }
+
   if (profile.archetype === 'bmw') {
     for (const side of [-1, 1]) {
       const x = side * 0.61;
@@ -383,7 +420,14 @@ function addRearDetails(profile, spec, batch, materials) {
   batch.box(black, [0, 0.335, 1.94], [1.78, 0.08, 0.15]);
   for (const x of [-0.58, -0.22, 0.22, 0.58]) batch.box(black, [x, 0.335, 1.94], [0.045, 0.10, 0.18]);
 
-  if (profile.archetype === 'bmw') {
+  if (profile.archetype === 'city-hatch') {
+    // Feux verticaux aux coins du hayon et ligne de vitre arrière, sans badge.
+    for (const side of [-1, 1]) {
+      batch.box(tailLight, [side * 0.76, 0.87, 1.88], [0.13, 0.42, 0.055]);
+      batch.box(lightWhite, [side * 0.76, 0.55, 1.89], [0.07, 0.10, 0.045]);
+    }
+    batch.box(carbon, [0, 1.00, 1.89], [1.17, 0.025, 0.035]);
+  } else if (profile.archetype === 'bmw') {
     for (const side of [-1, 1]) {
       batch.box(tailLight, [side * 0.70, 0.69, 1.91], [0.20, 0.13, 0.045]);
       batch.box(chrome, [side * 0.49, 0.40, 1.95], [0.19, 0.075, 0.10]);
@@ -436,6 +480,15 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
   const { archetype } = profile;
   const { black, carbon, chrome, body, trim, livery, lightWhite, lightAmber, tailLight } = materials;
   const sideLineX = spec.wheelX - 0.015;
+
+  if (archetype === 'city-hatch') {
+    // Jupes discrètes et baguette de protection d'une citadine de série, sans
+    // lettrage, emblème ou élément de carrosserie de marque.
+    for (const side of [-1, 1]) {
+      batch.box(trim, [side * sideLineX, 0.61, 0.10], [0.022, 0.028, 2.1]);
+      batch.box(carbon, [side * 0.88, 0.405, 0.12], [0.055, 0.085, 2.95]);
+    }
+  }
 
   if (archetype === 'ferrari') {
     // Berlinette italienne contemporaine : doubles prises d'air arrière et filet doré.
