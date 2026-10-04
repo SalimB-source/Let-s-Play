@@ -388,6 +388,43 @@
   scrollbar-color: #3b4657 #11151d;
 }
 
+/* Le hub de préparation ne défile plus dans la fenêtre de jeu. Le panneau
+   était posé en surimpression dans une fenêtre de hauteur fixe : sur un
+   portable, la dernière vignette de mode et le rang de commandes passaient
+   sous la ligne de flottaison et le hub s'ouvrait comme une fenêtre
+   défilante. Pendant la préparation (`is-intro`, posée par
+   ViceCityRushPage), la fenêtre prend la hauteur de son contenu et le hub
+   revient dans le flux : les trois modes, la bannière histoire et les
+   commandes sont visibles d'un seul tenant. Si l'écran est vraiment court,
+   c'est la page qui défile, jamais la fenêtre du jeu. */
+.city-rush-page .city-rush-viewport.is-intro {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: min(560px, 76vh);
+}
+
+.city-rush-page .city-rush-viewport.is-intro > .city-rush-intro:not(.city-rush-story-cinematic) {
+  position: relative;
+  inset: auto;
+  flex: 1 1 auto;
+  overflow: visible;
+}
+
+/* En plein écran, il n'y a pas de page derrière : le hub reste une
+   surimpression plein écran et garde son défilement de secours. */
+.city-rush-shell.is-immersive .city-rush-viewport.is-intro {
+  height: auto;
+  min-height: 0;
+}
+
+.city-rush-shell.is-immersive .city-rush-viewport.is-intro > .city-rush-intro:not(.city-rush-story-cinematic) {
+  position: absolute;
+  inset: 0;
+  flex: 0 1 auto;
+  overflow-y: auto;
+}
+
 .city-rush-page .city-rush-stepper {
   display: flex;
   flex-wrap: wrap;
@@ -1385,6 +1422,55 @@
 
 #vice-city-rush-console { scroll-margin-top: 24px; }
 
+/* ── Écrans peu hauts (portables 720–840 px) ──────────────────────────────
+   Dans le plein écran de lancement, le hub occupe tout l'écran : il doit donc
+   tenir d'un seul tenant dans la hauteur disponible (barre du jeu déduite),
+   sinon les vignettes de mode repassent sous la ligne de flottaison et le hub
+   redevient la fenêtre défilante que ce correctif supprime. On resserre
+   titres, respirations, bannière et vignettes — jamais les textes des modes,
+   qui restent lisibles — pour que le titre, la bannière histoire, les trois
+   modes et les commandes tiennent ensemble dès 720 px de haut. Les téléphones
+   gardent leur mise en page : la requête ne vise que les appareils larges. */
+@media (max-height: 840px) and (hover: hover), (max-height: 840px) and (min-device-width: 601px) {
+  .city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+    gap: 9px;
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+
+  .city-rush-page .city-rush-stepper { padding-bottom: 6px; }
+  .city-rush-page .city-rush-stepper-item { min-height: 28px; }
+  .city-rush-page .city-rush-intro h2 { margin: 5px 0 6px; font-size: clamp(34px, min(5.4vw, 7.4vh), 72px); }
+  .city-rush-page .city-rush-intro-copy > p { font-size: 12px; line-height: 1.45; }
+
+  .city-rush-page .city-rush-story-banner { padding: 10px; }
+  .city-rush-page .city-rush-story-banner-body { gap: 4px; }
+  .city-rush-page .city-rush-story-banner-actions { margin-top: 2px; }
+
+  .city-rush-page .city-rush-mode-card { padding: 10px 12px 9px; }
+  .city-rush-page .city-rush-intro-actions { padding-top: 8px; }
+
+  /* L'étape GARAGE aligne six voitures : on rogne les aperçus et les
+     respirations des fiches plutôt que de laisser la dernière rangée sous la
+     ligne de flottaison. */
+  .city-rush-page .city-rush-car-card { min-height: 190px; padding: 8px; gap: 7px; }
+  .city-rush-page .city-rush-car-card-top { aspect-ratio: 16 / 6.5; }
+  .city-rush-page .city-rush-car-name { font-size: 10px; }
+  .city-rush-page .city-rush-car-class { min-height: 0; font-size: 6.5px; }
+  .city-rush-page .city-rush-car-stats { gap: 5px; }
+  .city-rush-page .city-rush-car-stat > small { font-size: 5.5px; }
+  .city-rush-page .city-rush-car-stat-track { height: 3px; }
+  .city-rush-page .city-rush-driver-pill { min-height: 40px; padding: 6px 10px; }
+  .city-rush-page .city-rush-driver-pill-avatar { width: 28px; height: 28px; }
+}
+
+/* Encore plus court (portables 16:9, 720 px) : on gagne les dernières
+   dizaines de pixels sur les respirations et le titre, pas sur les textes. */
+@media (max-height: 760px) and (hover: hover), (max-height: 760px) and (min-device-width: 601px) {
+  .city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) { gap: 7px; }
+  .city-rush-page .city-rush-intro h2 { font-size: clamp(32px, min(5.4vw, 7vh), 64px); }
+}
+
 /* ── Tablettes ─────────────────────────────────────────────────────────── */
 @media (max-width: 1120px) {
   .city-rush-layout { grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
@@ -1621,6 +1707,62 @@
   .city-rush-page .city-rush-stepper-item b { font-size: 6px; }
   .city-rush-page .city-rush-story-banner-meta small { font-size: 7px; }
   .city-rush-page .city-rush-best-note span { max-width: 150px; font-size: 6px; }
+}
+
+/* Portrait téléphone à hauteur réduite (ex. 390 × 667) : le hub doit rester
+   lisible sans que les éléments flex se chevauchent ou que la coque masque la
+   moitié inférieure des modes. On compacte les contenus et leurs respirations;
+   la seule rangée défilante reste le carrousel horizontal des modes. */
+@media (max-height: 720px) and (max-width: 700px), (max-height: 720px) and (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+    gap: 5px;
+    padding: 5px 12px 4px;
+  }
+
+  .city-rush-page .city-rush-stepper,
+  .city-rush-page .city-rush-intro-copy,
+  .city-rush-page .city-rush-story-banner,
+  .city-rush-page .city-rush-mode-picker,
+  .city-rush-page .city-rush-intro-actions,
+  .city-rush-page .city-rush-intro-foot { flex-shrink: 0; }
+
+  .city-rush-page .city-rush-stepper { padding-bottom: 3px; }
+  .city-rush-page .city-rush-stepper-item { min-height: 32px; padding: 3px 4px; }
+  .city-rush-page .city-rush-stepper-item.is-story { min-height: 28px; }
+  .city-rush-page .city-rush-intro h2 { margin: 2px 0 3px; font-size: clamp(32px, 8.3vw, 36px); }
+  .city-rush-page .city-rush-intro-copy > p { font-size: 9px; line-height: 1.25; }
+
+  .city-rush-page .city-rush-story-banner {
+    grid-template-columns: 84px minmax(0, 1fr);
+    min-height: 94px;
+  }
+  .city-rush-page .city-rush-story-banner-visual { min-height: 94px; }
+  .city-rush-page .city-rush-story-banner-body { gap: 3px; padding: 6px; }
+  .city-rush-page .city-rush-story-banner-meta { gap: 3px; }
+  .city-rush-page .city-rush-story-banner-meta small { font-size: 5px; line-height: 1.2; }
+  .city-rush-page .city-rush-story-banner-body > b { font-size: 9px; }
+  .city-rush-page .city-rush-story-description { font-size: 7px; line-height: 1.2; -webkit-line-clamp: 2; }
+  .city-rush-page .city-rush-story-banner-actions { gap: 3px; margin-top: 0; }
+  .city-rush-page .city-rush-story-launch-label { min-height: 22px; padding-inline: 5px; font-size: 5px; }
+  .city-rush-page .city-rush-story-banner-badge { left: 4px; bottom: 4px; padding: 4px 5px; font-size: 6px; }
+
+  .city-rush-page .city-rush-mode-picker { gap: 5px; padding-bottom: 2px; }
+  .city-rush-page .city-rush-mode-card { min-height: 128px; gap: 3px; padding: 8px; }
+  .city-rush-page .city-rush-mode-tag { padding: 3px 5px; font-size: 6px; }
+  .city-rush-page .city-rush-mode-icon { width: 22px; height: 22px; font-size: 12px; }
+  .city-rush-page .city-rush-mode-card b { font-size: 10px; }
+  .city-rush-page .city-rush-mode-card small { font-size: 6px; }
+  .city-rush-page .city-rush-mode-description { font-size: 7px; line-height: 1.2; -webkit-line-clamp: 1; }
+  .city-rush-page .city-rush-mode-laps { gap: 4px; padding-top: 2px; font-size: 5px; }
+  .city-rush-page .city-rush-card-action { min-height: 20px; padding: 3px 4px; font-size: 6px; }
+
+  .city-rush-page .city-rush-intro-actions { gap: 4px; padding-top: 4px; }
+  .city-rush-page .city-rush-selection-hint { min-height: 20px; font-size: 6px; }
+  .city-rush-page .city-rush-best-note { gap: 2px; padding-left: 5px; }
+  .city-rush-page .city-rush-best-note span { font-size: 5px; }
+  .city-rush-page .city-rush-best-note b { font-size: 7px; }
+  .city-rush-page .city-rush-intro-foot { gap: 2px 6px; padding-top: 3px; }
+  .city-rush-page .city-rush-intro-foot span { font-size: 5px; line-height: 1.2; }
 }
 
 @media (prefers-reduced-motion: reduce) {

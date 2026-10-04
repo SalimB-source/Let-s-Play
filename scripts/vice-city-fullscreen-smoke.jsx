@@ -139,6 +139,10 @@ const modeCardOf = (node, index = 0) => node.querySelectorAll('.city-rush-mode-c
 const cityCardOf = (node, index = 0) => node.querySelectorAll('.city-rush-city-card')[index];
 const carCardOf = (node, index = 0) => node.querySelectorAll('.city-rush-car-card')[index];
 const resumeOf = (node) => node.querySelector('.city-rush-pause-overlay .city-rush-start-button');
+// Écran de préparation : la fenêtre porte `is-intro` et prend la hauteur du hub
+// (les vignettes de mode ne sont pas enfermées dans une zone défilante).
+const viewportOf = (node) => node.querySelector('.city-rush-viewport');
+const introHubOf = (node) => node.querySelector('.city-rush-intro:not(.city-rush-story-cinematic)');
 
 /** Plein écran de la coque du jeu : natif, couche fixe, verrou, bouton de la barre. */
 const shellState = (node, api) => ({
@@ -212,6 +216,8 @@ export async function checkViceCityFullscreen(assert) {
       assert.ok(toggle.querySelector('svg.game-fullscreen-icon'), 'icône dessinée en SVG (pas de glyphe absent des polices)');
       assert.match(toggle.title, /\(F\)/, 'l’infobulle annonce la touche F');
       assert.match(squash(node.querySelector('.city-rush-intro-foot').textContent), /F · PLEIN ÉCRAN/, 'le rappel « F · PLEIN ÉCRAN » figure dans les commandes');
+      assert.equal(viewportOf(node).classList.contains('is-intro'), true, 'la fenêtre porte « is-intro » pendant la préparation (le hub prend sa hauteur)');
+      assert.ok(introHubOf(node), 'le hub de préparation est dans la fenêtre');
 
       // Le premier geste du joueur demande le plein écran natif.
       await act(async () => {
@@ -261,6 +267,7 @@ export async function checkViceCityFullscreen(assert) {
       assert.equal(worldProbe.props.carId, 'turbo-gt', 'la vignette de voiture lance avec le modèle touché');
       assert.equal(worldProbe.props.raceLaps, 1, 'le mode choisi est appliqué à la course');
       assert.equal(worldProbe.props.roster.find((racer) => racer.isPlayer)?.name, chosenPilotName, 'le pilote choisi avant la voiture est conservé');
+      assert.equal(viewportOf(node).classList.contains('is-intro'), false, 'la fenêtre reprend sa hauteur de course au lancement');
       await waitForCountdown(node);
       assert.deepEqual(shellState(node, api), OPEN, 'toujours en plein écran pendant le compte à rebours');
       await waitForRace(node);
