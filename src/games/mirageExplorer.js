@@ -40,7 +40,15 @@ export function block(geometry, material, parent, position, scale = null) {
 
 // Orientation réservée aux modèles instanciés dans la course. On la place sur
 // la racine du cavalier pour qu'aucune pose d'animation ne la remette à zéro.
-export const RACE_EXPLORER_YAW = Math.PI;
+//
+// Le modèle est construit avec la face du cavalier et la tête du cheval vers
+// -z : c'est aussi la direction que la piste parcourt sous la caméra (la
+// caméra du jeu est à +z=9.4, le joueur va vers -z). Aucun demi-tour n'est
+// donc nécessaire : `RACE_EXPLORER_YAW` reste à 0, et l'on a la croupe face
+// au joueur, comme dans une vue à la troisième personne. (Un Math.PI
+// retournait le cavalier face à la caméra, ce qui faisait « face au
+// joueur » au lieu de « face à la route ».)
+export const RACE_EXPLORER_YAW = 0;
 export function orientExplorerForRace(model) {
   if (!model?.rotation) return model;
   model.rotation.y = RACE_EXPLORER_YAW;
