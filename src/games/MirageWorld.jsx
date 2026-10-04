@@ -11,7 +11,7 @@ import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeR
 import { INFINITY_CULL_Z, INFINITY_DECK_PERIOD, infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityDeck, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
 import { INFINITY_ATMOSPHERE, makeInfinitySky } from './infinityAtmosphere';
 import { airbaseGate, airbaseObstacle, airbaseOps, airbaseStands, makeAirbaseSkyline, updateAirbaseBeacon } from './airbaseStage';
-import { SNAKEWAY_ATMOSPHERE, SNAKEWAY_CULL_Z, SNAKEWAY_DECK_PERIOD, SNAKEWAY_GATE_INDEX, SNAKEWAY_SEGMENT_COUNT, SNAKEWAY_SEGMENT_LENGTH, makeSnakewayHorizon, snakewayArch, snakewayCloudBank, snakewayObstacle, snakewayTrackTrim } from './snakewayStage';
+import { SNAKEWAY_ATMOSPHERE, SNAKEWAY_CULL_Z, SNAKEWAY_DECK_PERIOD, SNAKEWAY_GATE_INDEX, SNAKEWAY_SEGMENT_COUNT, SNAKEWAY_SEGMENT_LENGTH, attachSnakewayRouteWarp, makeSnakewayCloudSea, makeSnakewayHorizon, snakewayArch, snakewayCloudBank, snakewayObstacle, snakewayTrackTrim } from './snakewayStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
   LANES, laneCount, lanePosition, trackWidth, CRYSTALS, createCourse, jumpHeight, JUMP_DURATION, DUEL_DISTANCE, DUEL_BASE_SPEED,
@@ -979,12 +979,24 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     parts.forEach(part => part.dispose());
   });
   floorGeometry?.dispose();
-  if (snakeway) bakeStaticScenery(floorGroup);
+  // Chemin du Serpent : les écailles fusionnées au sol font ~55 000 sommets.
+  // Les réécrire à chaque image (routeWarpsFor) coûte ~20 ms et saccade la
+  // course. Même déformation que les dunes, dans le vertex shader : le CPU
+  // ne touche plus la géométrie, seul un uniforme de distance change.
+  const snakewayRouteProgress = { value: 0 };
+  if (snakeway) {
+    bakeStaticScenery(floorGroup);
+    floorGroup.traverse((object) => {
+      if (!object.isMesh || !object.material || Array.isArray(object.material)) return;
+      attachSnakewayRouteWarp(object.material, snakewayRouteProgress);
+      object.frustumCulled = false;
+    });
+  }
   scene.add(floorGroup);
   let floorOffset = 0;
   const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
   placeFloor();
-  const routeFloorWarps = routeWarpsFor(floorGroup);
+  const routeFloorWarps = snakeway ? [] : routeWarpsFor(floorGroup);
   const routeGroundWarps = routeGroundMeshes.flatMap((mesh) => routeWarpsFor(mesh));
 
   // Lumière peinte : deux dégradés radiaux partagés par tout le monde 3D — le halo
@@ -1709,13 +1721,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   } else if (snakeway) {
     // Les nuages jaunes déroulent une mer de cumulus de 110 m sous la route,
     // comme dans Dragon Ball Z ; le halo céleste marque le milieu sans
-    // ajouter de structure latérale.
+    // ajouter de structure latérale. Les bancs restent les ancres qui
+    // défilent ; les boules, elles, sont instanciées (6 appels de dessin
+    // au lieu de 120, sommets indexés partagés).
+    const cloudBanks = [];
     for (let i = 0; i < SNAKEWAY_SEGMENT_COUNT; i += 1) {
       const leftBank = snakewayCloudBank(i, -1);
       const rightBank = snakewayCloudBank(i, 1);
       scene.add(leftBank, rightBank);
       scenery.push(leftBank, rightBank);
+      cloudBanks.push(leftBank, rightBank);
     }
+    const cloudSea = makeSnakewayCloudSea(cloudBanks);
+    scene.add(cloudSea.group);
+    syncSnakewayClouds = cloudSea.sync;
     const arch = snakewayArch();
     arch.position.z = 6 - SNAKEWAY_GATE_INDEX * SNAKEWAY_SEGMENT_LENGTH;
     scene.add(arch);
@@ -1799,6 +1818,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     };
     positionLine(startLine, 0.025);
     positionLine(finishLine, 0.03);
+    if (snakeway) snakewayRouteProgress.value = progress;
+    syncSnakewayClouds();
   };
 
   // Graphismes baissés : les blocs de décor trop lointains ne sont pas dessinés (`Infinity` =
@@ -2259,6 +2280,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const useBoost = () => {
     if (!powerUpsEnabled(race.mode)) return;
     const res = consumePowerUp(powerState, POWER_UPS.BOOST);
+    if (!res.used) return;
+    powerStwerUp(powerState, POWER_UPS.BOOST);
     if (!res.used) return;
     powerState = res.state;
     powerBoostTimer = POWER_BOOST_DURATION;
