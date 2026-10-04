@@ -37,7 +37,7 @@ import { gemBurstShardCount, graphicsProfile, shouldSkipRender } from './mirageG
 import { makeGlowTexture, makeGroundShadow, makeHalo, makeShadowTexture } from './mirageGlow';
 import useMirageGraphics from './useMirageGraphics';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
-import { accessoriesForPalette, block, makeExplorer, paintModel } from './mirageExplorer';
+import { accessoriesForPalette, block, makeExplorer, orientExplorerForRace, paintModel } from './mirageExplorer';
 // Effets des deux pouvoirs de Cloud : onde d'épée dorée et éclair.
 import {
   disposeCloudPower, makeCloudLightningBolt, makeCloudSwordWave,
@@ -938,7 +938,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   let glowHalos = graphics.glowHalos !== false;
 
   let skinColors = getSkin?.() ?? null;
-  const player = makeExplorer(false, skinColors);
+  const player = orientExplorerForRace(makeExplorer(false, skinColors));
   player.position.x = LANES[1];
   scene.add(player);
   const playerShieldBubble = makeShieldBubble();
@@ -948,7 +948,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   player.add(playerBoostStreaks);
 
   const duelRivals = duelRivalsForTrack().map((spec) => {
-    const mesh = makeExplorer(spec.paletteIndex, CHARACTER_PALETTES[spec.paletteIndex]);
+    const mesh = orientExplorerForRace(makeExplorer(spec.paletteIndex, CHARACTER_PALETTES[spec.paletteIndex]));
     mesh.position.set(LANES[spec.startLane], 0, -5);
     mesh.visible = false;
     scene.add(mesh);
@@ -992,7 +992,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     };
   });
   const onlineRiders = [0,1,2,3].map(slot => {
-    const rider = makeExplorer(slot);
+    const rider = orientExplorerForRace(makeExplorer(slot));
     rider.visible = false;
     scene.add(rider);
     const sb = makeShieldBubble();
