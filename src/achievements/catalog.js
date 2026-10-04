@@ -788,7 +788,7 @@ export const ACHIEVEMENTS = [
   // jouant vraiment — chaque course terminée envoie l'action `mirage_run`
   // (terrain, mode, score, cristaux, victoire) au moteur, et chaque coupe
   // remportée l'action `mirage_cup_won`. Les cibles suivent le contenu réel
-  // du jeu : dix terrains (`STAGE_IDS` de mirageProgression.js) et quatre
+  // du jeu : dix terrains (`STAGE_IDS` de mirageProgression.js) et cinq
   // coupes (`CUPS` de mirageCup.js) — à mettre à jour si le jeu s'agrandit.
   {
     id: 'mirage-first-gallop',
@@ -910,12 +910,13 @@ export const ACHIEVEMENTS = [
     rarity: 'platinum',
     xp: 500,
     metric: 'mirageCupsWon',
-    // Quatre coupes au catalogue (`CUPS`) : Désert, Vents, Grand Tour, Légendes.
-    target: 4,
+    // Cinq coupes au catalogue (`CUPS`) : Désert, Vents, Grand Tour, Légendes,
+    // Steel Ball Run (les dix cartes).
+    target: 5,
     labels: {
-      en: { name: 'Full cabinet', desc: 'Win all four Mirage Rush cups.' },
-      fr: { name: 'Vitrine complète', desc: 'Remporte les quatre coupes de Mirage Rush.' },
-      ar: { name: 'خزانة الكؤوس', desc: 'افز بالكؤوس الأربعة كلها في Mirage Rush.' },
+      en: { name: 'Full cabinet', desc: 'Win all five Mirage Rush cups.' },
+      fr: { name: 'Vitrine complète', desc: 'Remporte les cinq coupes de Mirage Rush.' },
+      ar: { name: 'خزانة الكؤوس', desc: 'افز بالكؤوس الخمسة كلها في Mirage Rush.' },
     },
   },
 

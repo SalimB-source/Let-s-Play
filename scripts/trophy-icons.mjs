@@ -134,7 +134,7 @@ const EMBLEMS = {
     <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width="4" opacity=".7"/>
     <polygon points="32,8 38,26 56,32 38,38 32,56 26,38 8,32 26,26" fill="currentColor"/>
     <circle cx="32" cy="32" r="4" fill="#2a1246"/>`,
-  // Vitrine complète : les quatre coupes sur leur étagère.
+  // Vitrine complète : les coupes du jeu alignées sur leur étagère.
   'mirage-cup-collection': `
     ${CUP_SMALL(6, 16)}
     ${CUP_SMALL(22, 10)}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
-import { CUPS, MAX_RIDER_NAME, cupGoldMaximum, cupRequirement, isCupUnlocked } from './mirageCup';
+import { CUPS, MAX_RIDER_NAME, cupChampionBonus, cupGoldMaximum, cupRequirement, isCupUnlocked } from './mirageCup';
 import { INITIAL_UNLOCKED_STAGES, WIN_COINS, isStageUnlocked } from './mirageProgression';
 import MirageTrophyIcon from './MirageTrophyIcon';
 import { getTrophyDesign } from './mirageTrophy';
@@ -156,6 +156,7 @@ export function MirageCupPicker({ cupId, setCupId, onStart, riderName, setRiderN
         const requiredCup = cupRequirement(cup.id);
         const selected = unlocked && cupId === cup.id;
         const maxGold = cupGoldMaximum(cup);
+        const championBonus = cupChampionBonus(cup);
         return <button
           type="button"
           key={cup.id}
@@ -188,6 +189,9 @@ export function MirageCupPicker({ cupId, setCupId, onStart, riderName, setRiderN
               <small>OR À GAGNER · MAXIMUM</small>
               <strong>+{maxGold} <i>OR</i></strong>
               <em>+{WIN_COINS} OR PAR VICTOIRE</em>
+              {/* Prime de champion : versée une seule fois, au vainqueur du
+                  classement général — les coupes sans prime n'affichent rien. */}
+              {championBonus > 0 && <em className="mirage-cup-champion-bonus">+{championBonus} OR POUR LE VAINQUEUR DU GÉNÉRAL</em>}
             </span>
           </span>
           <span className="mirage-cup-card-action">

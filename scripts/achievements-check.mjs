@@ -498,7 +498,7 @@ record(play('quiz_challenge'));
 
 // Jeux d'arcade du site : les trophées de Mirage Rush et de Vice City Rush se
 // gagnent en jouant — le scénario rejoue une saison complète (les dix terrains,
-// les quatre coupes, les cinq villes, les trois modes et les six chapitres de
+// les cinq coupes, les cinq villes, les trois modes et les six chapitres de
 // l'histoire) pour ouvrir leurs dix-huit trophées.
 const MIRAGE_STAGES = [
   'desert', 'western', 'prairie', 'sardinia', 'alger',
@@ -514,7 +514,7 @@ MIRAGE_STAGES.forEach((stage, index) => {
     won: index < 5,
   }));
 });
-const MIRAGE_CUPS = ['desert', 'winds', 'worldtour', 'legends'];
+const MIRAGE_CUPS = ['desert', 'winds', 'worldtour', 'legends', 'sbr'];
 check('le seuil Vitrine complète couvre toutes les coupes', ACHIEVEMENTS.find(({ id }) => id === 'mirage-cup-collection').target, MIRAGE_CUPS.length);
 MIRAGE_CUPS.forEach((cupId) => record(play('mirage_cup_won', { cupId })));
 

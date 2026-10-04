@@ -141,8 +141,9 @@ begin
     end;
   end if;
 
-  -- Mirage Rush currently has ten maps and four cups. Winning every map/cup
-  -- records them as completed, which opens all cards in the existing rules.
+  -- Mirage Rush currently has ten maps and five cups (the Steel Ball Run, which
+  -- races all ten maps, closes the catalogue). Winning every map/cup records
+  -- them as completed, which opens all cards in the existing rules.
   -- Keep XP, runs, selected rider and purchased skins already in the progression.
   state := state || jsonb_build_object(
     'coins', current_coins + 5000,
@@ -150,7 +151,7 @@ begin
       'desert', 'western', 'prairie', 'sardinia', 'alger',
       'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'
     ),
-    'completedCups', jsonb_build_array('desert', 'winds', 'worldtour', 'legends')
+    'completedCups', jsonb_build_array('desert', 'winds', 'worldtour', 'legends', 'sbr')
   );
 
   insert into public.mirage_rush_progress (user_id, progress, updated_at)
@@ -165,7 +166,7 @@ begin
     'already_granted', false,
     'gold_added', 5000,
     'maps_unlocked', 10,
-    'cups_unlocked', 4
+    'cups_unlocked', 5
   );
 end;
 $$;

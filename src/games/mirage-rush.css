@@ -2948,6 +2948,7 @@ img.mirage-powerup-icon {
 .mirage-cup-card.is-winds { --cup-trophy-accent: #45e4ff; --cup-trophy-glow: 69, 228, 255; }
 .mirage-cup-card.is-worldtour { --cup-trophy-accent: #85efd0; --cup-trophy-glow: 133, 239, 208; }
 .mirage-cup-card.is-legends { --cup-trophy-accent: #ff7b8c; --cup-trophy-glow: 255, 123, 140; }
+.mirage-cup-card.is-sbr { --cup-trophy-accent: #cfe2f5; --cup-trophy-glow: 159, 216, 255; }
 .mirage-cup-reward {
   display: flex; align-items: center; gap: 8px; box-sizing: border-box; width: 100%; padding: 8px 9px;
   border: 1px solid rgba(255, 220, 114, .68); border-radius: 11px;
@@ -2961,6 +2962,8 @@ img.mirage-powerup-icon {
 .mirage-cup-reward-copy > strong { color: #fff2ba; font: 900 22px/.98 var(--font-gaming); letter-spacing: -.02em; text-shadow: 0 2px 12px rgba(255, 190, 54, .48); }
 .mirage-cup-reward-copy > strong i { color: #ffdc72; font-size: 11px; font-style: normal; letter-spacing: .08em; }
 .mirage-cup-reward-copy > em { margin-top: 3px; color: rgba(255, 239, 192, .82); font: 800 6.5px/1.2 var(--mono); font-style: normal; letter-spacing: .055em; }
+/* Prime de champion : la ligne qui distingue une coupe qui paie le titre. */
+.mirage-cup-reward-copy > em.mirage-cup-champion-bonus { color: #ffd76b; letter-spacing: .07em; }
 @keyframes mirageCupRewardGlow {
   0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 246, 203, .17), 0 0 12px rgba(255, 194, 66, .08); }
   50% { box-shadow: inset 0 1px 0 rgba(255, 246, 203, .22), 0 0 23px rgba(255, 194, 66, .2); }
@@ -3073,6 +3076,11 @@ img.mirage-powerup-icon {
   --trophy-accent: #ff7b8c; --trophy-pale: #fff0e2; --trophy-sheen: #ffc2a0; --trophy-glow: 255, 123, 140;
   background: radial-gradient(75% 70% at 50% 54%, #7a2347 0%, #3b1432 56%, #1a0a1f 100%);
 }
+/* Acier, or et ciel clair pour la Steel Ball Run. */
+.mirage-trophy-screen[data-trophy="sbr"] {
+  --trophy-accent: #cfe2f5; --trophy-pale: #f4faff; --trophy-sheen: #9fd8ff; --trophy-glow: 159, 216, 255;
+  background: radial-gradient(75% 70% at 50% 54%, #4d6a86 0%, #22384f 56%, #0d1725 100%);
+}
 /* Rayons aux couleurs de la coupe qui tournent doucement derrière le trophée. */
 .mirage-trophy-rays {
   position: absolute; left: 50%; top: 54%; width: 230%; aspect-ratio: 1; transform: translate(-50%, -50%);
@@ -3126,6 +3134,14 @@ img.mirage-powerup-icon {
 .mirage-trophy-purse b { color: #ffd36a; }
 .mirage-trophy-purse small { display: block; margin-top: 2px; color: rgba(255, 241, 218, .7); font: 700 7px/1.4 var(--mono); letter-spacing: .06em; }
 .mirage-trophy-purse.is-won { border-style: solid; border-color: rgba(255, 211, 106, .5); background: rgba(255, 197, 74, .12); color: #ffe6ad; }
+/* Prime de champion, sur le podium comme à l’arrivée de la dernière course. */
+.mirage-trophy-champion-bonus, .mirage-cup-champion-bonus {
+  margin: 0 0 12px; padding: 6px 12px; border-radius: 999px; border: 1px dashed rgba(255, 211, 106, .34);
+  background: rgba(255, 197, 74, .06); color: rgba(255, 241, 218, .8); font: 800 9px/1.5 var(--mono); letter-spacing: .1em;
+}
+.mirage-trophy-champion-bonus > span, .mirage-cup-champion-bonus > span { margin-right: 5px; color: #ffd36a; }
+.mirage-trophy-champion-bonus small, .mirage-cup-champion-bonus small { display: block; margin-top: 2px; color: rgba(255, 241, 218, .7); font: 700 7px/1.4 var(--mono); letter-spacing: .06em; }
+.mirage-trophy-champion-bonus.is-won, .mirage-cup-champion-bonus.is-won { border-style: solid; border-color: rgba(255, 211, 106, .5); background: rgba(255, 197, 74, .12); color: #ffe6ad; }
 .mirage-trophy-panel .mirage-cup-standings { width: 100%; margin-bottom: 14px; }
 .mirage-trophy-panel .mirage-cup-row { padding: 5px 10px 5px 6px; }
 .mirage-trophy-panel .mirage-overlay-hint { margin-top: 10px; }

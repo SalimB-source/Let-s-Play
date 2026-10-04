@@ -2,7 +2,7 @@
 // unlocked along the way, gold coins on victories and a shop for paid skins.
 // Pure logic + localStorage, no React, so node --test can exercise it directly.
 import { CHARACTER_PALETTES, CHARACTER_PRICES, CLOUD_CHOCOBO_INDEX, GYRO_ZEPPELI_INDEX, LINK_EPONA_INDEX } from './mirageCharacters.js';
-import { CUPS, isCupUnlocked } from './mirageCup.js';
+import { CUPS, cupChampionBonus, isCupUnlocked } from './mirageCup.js';
 
 export const PROGRESSION_KEY = 'letsplay_mirage_progression_v1';
 
@@ -215,9 +215,21 @@ export function xpForRun(result = {}) {
 
 /** Gold awarded for a finished run: 10 OR on a victory (1st place). */
 export function coinsForRun(result = {}) {
-  if (result?.won === true) return WIN_COINS;
-  if (result?.mode && result.mode !== 'rush' && Number(result.rank) === 1) return WIN_COINS;
-  return 0;
+  const victory = result?.won === true
+    || (result?.mode && result.mode !== 'rush' && Number(result.rank) === 1);
+  return (victory ? WIN_COINS : 0) + championBonusForRun(result);
+}
+
+/**
+ * Prime de champion d’une coupe : versée une seule fois, au moment où le joueur
+ * remporte le classement général. La page du jeu marque ce résultat d’un
+ * `cupWon: true` (et de l’identifiant de la coupe, `completedCupId`) ; le
+ * montant, lui, vient du catalogue (`mirageCup.js`), donc une coupe sans prime
+ * ne peut pas en verser. Zéro si la victoire n’est pas celle d’une coupe.
+ */
+export function championBonusForRun(result = {}) {
+  if (result?.cupWon !== true) return 0;
+  return cupChampionBonus(result.completedCupId);
 }
 
 /**

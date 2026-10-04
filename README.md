@@ -610,40 +610,55 @@ sous son plafond. La silhouette, elle, se juge à l'œil, en jeu.
 
 ## Mirage Rush : les coupes et les gains d'or
 
-Quatre coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur
+Cinq coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur
 des terrains imposés, à quatre cavaliers (trois sur une piste de téléphone à
-trois voies). Chaque victoire crédite **10 OR**, sans prime distincte de coupe.
-Le maximum théorique dépend du nombre de courses gagnées :
+trois voies). Chaque victoire de course crédite **10 OR** et une coupe peut en
+plus offrir une **prime de champion** au vainqueur du classement général — c'est
+le cas de la Steel Ball Run, qui paie **90 OR** pour son titre. Le maximum
+théorique additionne donc les courses gagnées et la prime :
 
-| Coupe | Courses | OR maximum |
-|---|---:|---:|
-| Coupe du Désert | 3 | **30 OR** |
-| Coupe des Vents | 3 parcours différents | **30 OR** |
-| Coupe Grand Tour | 4 | **40 OR** |
-| Coupe des Légendes | 5 | **50 OR** |
+| Coupe | Courses | Prime de champion | OR maximum |
+|---|---:|---:|---:|
+| Coupe du Désert | 3 | — | **30 OR** |
+| Coupe des Vents | 3 parcours différents | — | **30 OR** |
+| Coupe Grand Tour | 4 | — | **40 OR** |
+| Coupe des Légendes | 5 | — | **50 OR** |
+| **Steel Ball Run** | **10** (les dix cartes du jeu) | **90 OR** | **190 OR** |
 
 Le meilleur total de points après la dernière course soulève le trophée. Dans
 l'aperçu, chaque coupe est un vrai bouton cliquable au relief 3D : son parcours
-n'est pas déroulé et le maximum d'OR est mis en évidence. La toucher **démarre la
+n'est pas déroulé et le maximum d'OR est mis en évidence — la carte de la Steel
+Ball Run affiche en plus sa prime de champion. La toucher **démarre la
 coupe** (voir « Mirage Rush : une carte = une partie »), et une coupe remportée y
 porte un ✓ vert. Le podium distingue
-les OR réellement gagnés pendant les courses du maximum théorique de la coupe.
+les OR réellement gagnés pendant les courses du maximum théorique de la coupe,
+et affiche la prime de champion sur sa propre ligne : elle n'est créditée
+qu'une fois le titre acquis, jamais pour une victoire de course isolée (la
+rejouer remporte à nouveau la coupe, donc reverse la prime). La Steel
+Ball Run est la cinquième et dernière coupe du catalogue : elle ne s'ouvre
+qu'une fois les quatre autres remportées, et son trophée est la **Boule
+d'Acier** — sphère polie serrée dans une cage dorée de trois anneaux.
 
 ### Où vit le code
 
-- `src/games/mirageCup.js` — catalogue `CUPS`, les maximums `maxCoins` et
-  `cupGoldMaximum()` ;
-- `src/games/mirageProgression.js` — `WIN_COINS` (10 OR par victoire) et
-  `coinsForRun()` ;
-- `src/games/MirageRushPage.jsx` — cumul des OR gagnés course par course et
-  transmission du total au podium ;
-- `src/games/MirageCupTrophy.jsx` — OR réellement gagnés et maximum théorique ;
+- `src/games/mirageCup.js` — catalogue `CUPS`, les maximums `maxCoins`, les
+  primes `championCoins`, `cupGoldMaximum()` et `cupChampionBonus()` ;
+- `src/games/mirageProgression.js` — `WIN_COINS` (10 OR par victoire),
+  `coinsForRun()` et `championBonusForRun()` (la prime, une seule fois, quand
+  le résultat porte `cupWon`) ;
+- `src/games/MirageRushPage.jsx` — cumul des OR gagnés course par course,
+  marquage du titre (`cupWon`) et transmission du total au podium ;
+- `src/games/MirageCupTrophy.jsx` — OR réellement gagnés, prime de champion et
+  maximum théorique ;
+- `src/games/mirageTrophy.js` et `src/games/mirageTrophyScene.js` — la boule
+  d'acier en voxels, son icône SVG et son éclairage de podium ;
 - `src/games/MirageCoursePicker.jsx` et `src/games/mirage-rush.css` — boutons
   3D des coupes et mise en valeur des gains.
 
 Ajouter une coupe : une entrée dans `CUPS` avec ses terrains, son maximum
-(`nombre de courses × 10 OR`) et son design (`mirageTrophy.js`) ; le sélecteur,
-l'enchaînement des courses et l'écran du trophée suivent tout seuls.
+(`nombre de courses × 10 OR + championCoins`) et son design (`mirageTrophy.js`) ;
+le sélecteur, l'enchaînement des courses et l'écran du trophée suivent tout
+seuls.
 
 ### Progression de compte et grants administratifs
 
@@ -661,7 +676,7 @@ Pour un déblocage administrateur ponctuel, appliquez ensuite
 select public.admin_grant_mirage_rush_access('adresse-du-compte', 'Salim');
 ```
 
-Le grant ouvre les dix cartes et les quatre coupes, ajoute **5 000 OR** au
+Le grant ouvre les dix cartes et les cinq coupes, ajoute **5 000 OR** au
 solde existant et pose le badge de profil vérifié. La fonction est réservée à
 l’administration, protège le badge contre l’auto-attribution et n’ajoute l’or
 qu’une seule fois par compte. L’e-mail doit correspondre à un compte déjà
@@ -2278,7 +2293,7 @@ rapporte plus qu'un succès argent, etc.), ce qui rend l'échelle lisible :
 | 🥉 Bronze | 15 | 25–40 | premiers pas, première lecture, premier commentaire, premier galop (Mirage Rush), premier départ (Vice City Rush) |
 | 🥈 Argent | 18 | 60–90 | créer un compte, 5 articles, 3 jours de suite, première coupe, 1 000 points sur une course |
 | 🥇 Or | 17 | 100–250 | 12 articles, semaine parfaite, les dix terrains de Mirage Rush, les cinq villes de Vice City Rush, fin de l'histoire |
-| 🏅 Platine | 10 | 400–800 | 30 articles, 14 jours d'affilée, vitrine complète (4 coupes), grand chelem (une victoire par ville) |
+| 🏅 Platine | 10 | 400–800 | 30 articles, 14 jours d'affilée, vitrine complète (5 coupes), grand chelem (une victoire par ville) |
 
 Dans le profil `/auth` comme sur la page `/profile`, la **vitrine à trophées**
 (`src/achievements/TrophyShelf.jsx`) range tous les trophées **par catégorie** :
@@ -2395,7 +2410,7 @@ Dix-huit trophées (neuf par jeu) se gagnent **manette en main**, sur le site :
 
 | Jeu | Ce qui se gagne | Trophées |
 | --- | --- | --- |
-| Mirage Rush (`/jeu/mirage-rush`) | première course, trois puis dix terrains, 15 cristaux sur une course, 1 000 puis 3 000 points, cinq victoires, première coupe, les quatre coupes | premier galop, trois horizons, mains de cristal, mille éclats, premier trophée, cinq victoires, tempête d'or, carte complète, vitrine complète |
+| Mirage Rush (`/jeu/mirage-rush`) | première course, trois puis dix terrains, 15 cristaux sur une course, 1 000 puis 3 000 points, cinq victoires, première coupe, les cinq coupes | premier galop, trois horizons, mains de cristal, mille éclats, premier trophée, cinq victoires, tempête d'or, carte complète, vitrine complète |
 | Vice City Rush (`/jeu/vice-city-rush`) | première course, premier puis sixième chapitre d'histoire, première victoire, les trois modes, 1 500 puis 4 000 points de butin, les cinq villes, une victoire par ville | premier départ, chapitre un, première place, trois styles, butin de rue, tour du monde, coffre plein, fin de l'histoire, grand chelem |
 
 Chaque course terminée envoie une action au moteur — `mirage_run` (terrain,

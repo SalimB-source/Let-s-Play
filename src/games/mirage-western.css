@@ -1414,6 +1414,13 @@ html body .mirage-page :is(
   border-color: rgba(251, 113, 133, .45);
 }
 
+.mirage-cup-card.is-sbr {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(148, 197, 245, .26), transparent 62%),
+    linear-gradient(165deg, rgba(44, 52, 62, .92) 0%, rgba(22, 27, 34, .97) 100%);
+  border-color: rgba(159, 216, 255, .48);
+}
+
 .mirage-cup-card.is-locked {
   background: linear-gradient(165deg, rgba(42, 33, 18, .88), rgba(25, 20, 10, .94));
   border-color: rgba(180, 170, 152, .22);

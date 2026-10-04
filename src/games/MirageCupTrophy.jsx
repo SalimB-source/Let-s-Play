@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import MirageCupStandings from './MirageCupStandings';
 import MirageCupTrophyEmblem from './MirageCupTrophyEmblem';
-import { cupGoldMaximum, cupStandings, placeLabel } from './mirageCup';
+import { cupChampionBonus, cupGoldMaximum, cupStandings, placeLabel } from './mirageCup';
 import { makeTrophyScene } from './mirageTrophyScene';
 import { getTrophyDesign } from './mirageTrophy';
 
@@ -24,6 +24,9 @@ export default function MirageCupTrophy({ cup, run, raceCoins = 0, onReplay, onQ
   // Or réellement crédité pour les victoires de course, et maximum annoncé
   // dans le sélecteur si le joueur remportait toutes les courses.
   const goldMaximum = cupGoldMaximum(cup);
+  // Prime de champion : certains classements généraux paient le titre.
+  const championBonus = cupChampionBonus(cup);
+  const championBonusWon = playerWon && championBonus > 0;
   const mountRef = useRef(null);
   const slotRef = useRef(null);
   const [webgl, setWebgl] = useState(true);
@@ -77,11 +80,22 @@ export default function MirageCupTrophy({ cup, run, raceCoins = 0, onReplay, onQ
               ? <>Tu remportes la {cup.name} avec <b>{winner.points} points</b>. Bravo, cavalier !</>
               : <>{winner.name} remporte la {cup.name} avec <b>{winner.points} points</b>. Tu termines {placeLabel(me.rank)} avec {me.points} points : la revanche t’attend !</>}
           </p>
-          <p className={`mirage-trophy-purse${raceCoins > 0 ? ' is-won' : ''}`}>
+          <p className={`mirage-trophy-purse${raceCoins + (championBonusWon ? championBonus : 0) > 0 ? ' is-won' : ''}`}>
             <span aria-hidden="true">●</span> OR GAGNÉS EN COURSE ·{' '}
             <b className={raceCoins > 0 ? 'mirage-coin-gain' : undefined}>+{raceCoins} OR</b>{' '}
             <small>MAX. {goldMaximum} OR SI TOUTES LES COURSES SONT GAGNÉES</small>
           </p>
+          {championBonus > 0 && (
+            <p className={`mirage-trophy-champion-bonus${championBonusWon ? ' is-won' : ''}`} role="status">
+              <span aria-hidden="true">♛</span> PRIME DE CHAMPION ·{' '}
+              <b className={championBonusWon ? 'mirage-coin-gain' : undefined}>+{championBonus} OR</b>{' '}
+              <small>
+                {championBonusWon
+                  ? 'AU TITRE DU CLASSEMENT GÉNÉRAL'
+                  : `SI TU REMPORTES LE CLASSEMENT GÉNÉRAL DE LA ${cup.name.toUpperCase()}`}
+              </small>
+            </p>
+          )}
           <MirageCupStandings standings={standings} run={run} mode="final" />
           <div className="mirage-result-actions">
             <button type="button" className="mirage-start-button" onClick={onReplay}>REJOUER LA COUPE <span aria-hidden="true">↗</span></button>

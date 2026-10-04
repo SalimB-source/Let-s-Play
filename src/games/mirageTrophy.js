@@ -25,6 +25,9 @@ export const TROPHY_MATERIAL_COLORS = Object.freeze({
   ruby: 0xd9354a,
   rubyDark: 0x8f1d33,
   rubyLight: 0xff7b8c,
+  steel: 0x9fb3c8,
+  steelDark: 0x4f6072,
+  steelLight: 0xe2ecf6,
 });
 export const TROPHY_MATERIALS = Object.freeze(Object.keys(TROPHY_MATERIAL_COLORS));
 
@@ -94,6 +97,13 @@ export const TROPHY_DESIGNS = Object.freeze({
     description: 'Écu d’or à double face, écartelé de rubis, frappé d’une étoile.',
     height: LEGENDS_HEIGHT,
     accent: 0xff7b8c,
+  }),
+  sbr: Object.freeze({
+    id: 'sbr',
+    name: 'Boule d’Acier',
+    description: 'Boule d’acier poli, cage dorée de trois anneaux et socle d’acier.',
+    height: (GLOBE_CENTER_Y + 7.5) * VOXEL,
+    accent: 0x9fd8ff,
   }),
 });
 
@@ -313,12 +323,83 @@ function windsTrophyBoxes() {
   return boxes;
 }
 
+// Boule d’acier de la « Steel Ball Run » : une sphère polie serrée dans une
+// cage dorée de trois anneaux — un méridien, un équateur et un anneau de spin
+// incliné —, posée dans un berceau d’acier.
+const SPIN_RADIUS = 6.6; // rayon de l’anneau incliné, en voxels
+const SPIN_TILT = Math.PI / 3; // inclinaison de l’anneau de spin (± 60°)
+
+// Un anneau de voxels incliné autour de la boule : chaque point du cercle est
+// arrondi sur la grille, puis les voxets contigus d’une même ligne sont
+// fusionnés en une barre — moins de meshes, comme les méridiens du globe.
+function spinRingBoxes(part, material, tilt = SPIN_TILT) {
+  const cells = new Map();
+  const steps = 96;
+  for (let step = 0; step < steps; step += 1) {
+    const angle = (step / steps) * Math.PI * 2;
+    const u = Math.cos(angle) * SPIN_RADIUS;
+    const cellX = Math.round(u * Math.cos(tilt));
+    const cellY = Math.round(Math.sin(angle) * SPIN_RADIUS);
+    const cellZ = Math.round(u * Math.sin(tilt));
+    cells.set(`${cellX}|${cellY}|${cellZ}`, { x: cellX, y: cellY, z: cellZ });
+  }
+  const rows = new Map();
+  for (const { x, y, z } of cells.values()) {
+    const key = `${y}|${z}`;
+    if (!rows.has(key)) rows.set(key, []);
+    rows.get(key).push(x);
+  }
+  const boxes = [];
+  let index = 0;
+  for (const [key, columns] of rows) {
+    const [y, z] = key.split('|').map(Number);
+    columns.sort((a, b) => a - b);
+    let start = columns[0];
+    for (let column = 1; column <= columns.length; column += 1) {
+      if (column < columns.length && columns[column] === columns[column - 1] + 1) continue;
+      const width = columns[column - 1] - start + 1;
+      boxes.push(cell(`${part}-${index}`, material, [start + (width - 1) / 2, GLOBE_CENTER_Y + y, z], [width, 1, 1]));
+      index += 1;
+      if (column < columns.length) start = columns[column];
+    }
+  }
+  return boxes;
+}
+
+function steelBallTrophyBoxes() {
+  const boxes = [
+    slab('foot', 'steelDark', 0, 12, 2),
+    slab('foot-step', 'steel', 2, 9),
+    slab('stem-base', 'steelLight', 3, 4),
+    slab('stem', 'steel', 4, 2, 3),
+    cell('cradle', 'steelLight', [0, 8, 0], [4, 2, 4]),
+    ...globeRingBoxes('spin-meridian', 'gold'),
+    ...globeRingBoxes('spin-equator', 'goldLight', true),
+    ...spinRingBoxes('spin-ring', 'steelLight'),
+  ];
+
+  // Sphère d’acier en voxels, en bandes selon la profondeur : la boule reste
+  // ronde pendant toute sa rotation, et pas seulement de face.
+  for (let row = 0; row < 12; row += 1) {
+    const y = row - 5.5;
+    for (let column = 0; column < 12; column += 1) {
+      const z = column - 5.5;
+      const square = GLOBE_RADIUS ** 2 - y ** 2 - z ** 2;
+      if (square <= 0) continue;
+      const width = 2 * Math.floor(Math.sqrt(square) + 0.5);
+      if (width > 0) boxes.push(cell(`ball-${row}-${column}`, 'steel', [0, GLOBE_CENTER_Y + y, z], [width, 1, 1]));
+    }
+  }
+  return boxes;
+}
+
 /** La forme (pas seulement la couleur) dépend de la coupe choisie. */
 export function trophyBoxes(cupId = 'desert') {
   const id = getTrophyDesign(cupId).id;
   if (id === 'worldtour') return worldTourTrophyBoxes();
   if (id === 'legends') return legendsTrophyBoxes();
   if (id === 'winds') return windsTrophyBoxes();
+  if (id === 'sbr') return steelBallTrophyBoxes();
   return desertTrophyBoxes();
 }
 
@@ -359,6 +440,7 @@ const PODIUM_METALS = Object.freeze({
   worldtour: Object.freeze(['silverDark', 'silverLight']),
   legends: Object.freeze(['rubyDark', 'goldLight']),
   winds: Object.freeze(['silverDark', 'gem']),
+  sbr: Object.freeze(['steelDark', 'goldLight']),
 });
 
 /**
