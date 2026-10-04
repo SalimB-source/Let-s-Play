@@ -1046,47 +1046,53 @@
 .city-rush-toast.is-radio { border-color: rgba(255, 211, 107, 0.8); color: #ffedc4; background: linear-gradient(rgba(255, 211, 107, 0.18), rgba(255, 211, 107, 0.18)), rgba(13, 10, 3, 0.94); }
 .city-rush-toast.is-slow { border-color: rgba(255, 187, 105, 0.8); color: #ffe3bb; background: linear-gradient(rgba(255, 187, 105, 0.18), rgba(255, 187, 105, 0.18)), rgba(14, 9, 3, 0.94); }
 
+/* ── Fenêtre d'info des tours ──
+   Franchir la ligne annonce le tour suivant (« LAP 2 », « LAP 3 »…) dans le
+   coin inférieur gauche, au-dessus des commandes : sur ordinateur au-dessus
+   des flèches de direction, sur téléphone au-dessus du classement (les deux
+   décalages vivent dans les requêtes média plus bas). Fond opaque et texte
+   net : ni flou d'arrière-plan, ni flou d'animation. */
 .city-rush-lap-banner {
   position: absolute;
   z-index: 5;
-  top: 42%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  left: 16px;
+  bottom: 88px;
   display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 16px 28px;
-  border-radius: 16px;
-  background: rgba(8, 12, 25, 0.9);
-  border: 1px solid rgba(255,255,255,0.14);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px color-mix(in srgb, var(--city-accent) 18%, transparent);
-  text-align: center;
+  justify-items: start;
+  gap: 4px;
+  padding: 11px 16px 11px 13px;
+  border-radius: 12px;
+  background: #0b1020;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-left: 3px solid var(--city-secondary, #43ead5);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px color-mix(in srgb, var(--city-accent) 14%, transparent);
+  text-align: left;
   pointer-events: none;
   animation: crLapIn 1.9s var(--cr-ease) both;
 }
 
 .city-rush-lap-banner > span {
   color: var(--city-secondary);
-  font: 800 9px var(--mono, monospace);
-  letter-spacing: 0.18em;
+  font: 800 8px var(--mono, monospace);
+  letter-spacing: 0.16em;
 }
 
 .city-rush-lap-banner > strong {
   color: var(--cr-text);
-  font: 900 clamp(28px, 5vw, 48px)/0.9 var(--display, system-ui, sans-serif);
-  letter-spacing: -0.04em;
+  font: 900 clamp(22px, 3.2vw, 32px)/0.95 var(--display, system-ui, sans-serif);
+  letter-spacing: -0.03em;
 }
 
 .city-rush-lap-banner > small {
   color: var(--cr-muted);
-  font: 600 10px var(--mono, monospace);
-  letter-spacing: 0.06em;
+  font: 600 9px var(--mono, monospace);
+  letter-spacing: 0.05em;
 }
 
 .city-rush-lap-banner.is-final {
   border-color: rgba(255, 211, 107, 0.4);
-  background: linear-gradient(135deg, rgba(255, 211, 107, 0.16), rgba(8, 12, 25, 0.9));
+  border-left-color: #ffcf5c;
+  background: #1a1408;
 }
 
 .city-rush-lap-banner.is-final > span { color: #ffd37a; }
@@ -1098,10 +1104,10 @@
 }
 
 @keyframes crLapIn {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); filter: blur(8px); }
-  14% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
-  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -56%) scale(0.96); filter: blur(4px); }
+  0% { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.96); }
+  14% { opacity: 1; transform: none; }
+  82% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translate3d(0, -8px, 0) scale(0.98); }
 }
 
 /* ── Controls bottom ── */
@@ -2478,8 +2484,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-status-pill { top: 84px; font-size: 9.5px; padding: 7px 12px; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .city-rush-toast { top: 118px; font-size: 11px; padding: 10px 14px; max-width: min(420px, calc(100% - 20px)); }
 
-  .city-rush-lap-banner { padding: 12px 18px; border-radius: 12px; }
-  .city-rush-lap-banner > strong { font-size: clamp(22px, 7vw, 32px); }
+  /* Fenêtre d'info des tours : même coin que le classement, juste au-dessus. */
+  .city-rush-lap-banner {
+    left: calc(10px + env(safe-area-inset-left, 0px));
+    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+    padding: 9px 13px 9px 11px;
+    border-radius: 10px;
+  }
+  .city-rush-lap-banner > span { font-size: 7px; letter-spacing: 0.12em; }
+  .city-rush-lap-banner > strong { font-size: clamp(19px, 6vw, 26px); }
+  .city-rush-lap-banner > small { font-size: 8px; }
 
   .city-rush-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
