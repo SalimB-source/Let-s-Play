@@ -20,8 +20,6 @@ import {
   CITY_RUSH_LANE_X,
   CITY_RUSH_DEFAULT_LANES,
   CITY_RUSH_FORWARD_LANES,
-  CITY_RUSH_LANE_CHANGE_SLOW_DURATION,
-  CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
@@ -1178,9 +1176,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerSkidLeft = 0;
   let playerSkidDuration = 0.85;
   let playerSkidSide = 1;
-  // Conduite en ligne : un changement de voie déclenche un léger
-  // ralentissement, et tenir sa voie sans bouger charge un bonus de vitesse.
-  let playerLaneChangeSlowLeft = 0;
+  // Conduite en ligne : changer de voie ne ralentit pas, mais cela remet à
+  // zéro le bonus de vitesse « ligne propre » chargé en tenant sa voie.
   let playerCleanLineTime = 0;
   let score = 0;
   let pickedUp = 0;
@@ -1554,7 +1551,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerSkidLeft = 0;
     playerSkidDuration = 0.85;
     playerSkidSide = 1;
-    playerLaneChangeSlowLeft = 0;
     playerCleanLineTime = 0;
     score = 0;
     pickedUp = 0;
@@ -3391,10 +3387,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const nextLane = cityRushLaneAfterAction(playerLane, name);
       if (nextLane !== playerLane && canEnterLane('player', nextLane)) {
         playerLane = nextLane;
-        // Changer de voie fait glisser la voiture : un léger ralentissement
-        // s'applique, et le bonus de « ligne propre » pour voie tenue
-        // retombe à zéro.
-        playerLaneChangeSlowLeft = CITY_RUSH_LANE_CHANGE_SLOW_DURATION;
+        // Changer de voie ne ralentit pas : la voiture glisse à pleine
+        // allure. Seul le bonus de « ligne propre » retombe à zéro, à charge
+        // pour le pilote de le recharger en tenant sa nouvelle voie.
         playerCleanLineTime = 0;
       }
       return;
@@ -4040,14 +4035,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerBoostLeft = Math.max(0, playerBoostLeft - dt);
       playerStunLeft = Math.max(0, playerStunLeft - dt);
       playerSkidLeft = Math.max(0, playerSkidLeft - dt);
-      playerLaneChangeSlowLeft = Math.max(0, playerLaneChangeSlowLeft - dt);
       // Voie tenue sans bouger : le bonus de ligne propre monte doucement.
       playerCleanLineTime += dt;
       const speedScale = (playerSlowLeft > 0 || playerTrafficImpactLeft > 0 ? 0.63 : 1) * (playerBlueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1);
       const boostScale = playerBoostLeft > 0 ? CITY_RUSH_TRACK_BOOST_SPEED_FACTOR : 1;
-      const laneChangeScale = playerLaneChangeSlowLeft > 0 ? CITY_RUSH_LANE_CHANGE_SLOW_FACTOR : 1;
+      // Un changement de voie ne figure plus dans cette équation : seule la
+      // voie tenue agit sur la vitesse, et uniquement à la hausse.
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : PLAYER_SPEED * playerProfile.powerMultiplier * speedScale * boostScale * laneChangeScale * cleanLineScale;
+      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : PLAYER_SPEED * playerProfile.powerMultiplier * speedScale * boostScale * cleanLineScale;
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt);
       const priorPlayerX = playerX;
       playerX = lerp(playerX, CITY_RUSH_LANE_X[playerLane], Math.min(1, dt * 12));

@@ -105,8 +105,6 @@ import {
   approachCityRushSpeed,
   cityRushTrafficRecoveryRate,
   CITY_RUSH_TRAFFIC_RECOVERY_BOOST,
-  CITY_RUSH_LANE_CHANGE_SLOW_DURATION,
-  CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
   CITY_RUSH_CLEAN_LINE_RAMP_DURATION,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   cityRushCleanLineFactor,
@@ -1814,10 +1812,12 @@ test('a car recovers its speed faster after being held behind traffic', () => {
   assert.ok(recovering > normal + 10);
 });
 
-test('changer de voie ralentit légèrement, tenir sa voie fait accélérer', () => {
-  // Le freinage d'un écart reste bref et léger, sans être négligeable.
-  assert.ok(CITY_RUSH_LANE_CHANGE_SLOW_DURATION > 0.3 && CITY_RUSH_LANE_CHANGE_SLOW_DURATION < 2);
-  assert.ok(CITY_RUSH_LANE_CHANGE_SLOW_FACTOR < 1 && CITY_RUSH_LANE_CHANGE_SLOW_FACTOR > 0.75);
+test('changer de voie ne ralentit plus, tenir sa voie fait accélérer', async () => {
+  const rules = await import('../src/games/cityRushRules.js');
+  // Le malus d'écart a disparu des règles : plus aucun changement de voie ne
+  // touche la vitesse (ni facteur, ni durée).
+  assert.equal(rules.CITY_RUSH_LANE_CHANGE_SLOW_FACTOR, undefined);
+  assert.equal(rules.CITY_RUSH_LANE_CHANGE_SLOW_DURATION, undefined);
   // Ligne propre : aucun bonus au départ, puis la vitesse monte avec le
   // temps de voie tenue, sans bouger du guidon.
   assert.equal(cityRushCleanLineFactor(0), 1);
@@ -1832,12 +1832,17 @@ test('changer de voie ralentit légèrement, tenir sa voie fait accélérer', ()
   assert.equal(cityRushCleanLineFactor(-4), 1);
   assert.equal(cityRushCleanLineFactor('abc'), 1);
   assert.equal(cityRushCleanLineFactor(undefined), 1);
-  // Combiné : après un écart, la voiture roule sous sa vitesse de base ;
-  // après une longue voie tenue, elle la dépasse.
+  // Le seul levier « voie » ne freine jamais : entre la seconde d'un écart et
+  // la voie tenue, le facteur reste toujours au moins égal à 1.
+  for (let step = 0; step <= 20; step += 1) {
+    assert.ok(cityRushCleanLineFactor(step * 0.5) >= 1, 'la voie tenue ne doit jamais être une punition');
+  }
+  // Combiné : l'instant d'un écart, la voiture roule à sa vitesse de base —
+  // plus jamais en dessous — et une longue voie tenue la fait dépasser.
   const baseTarget = CITY_RUSH_PLAYER_SPEED;
-  const afterChange = baseTarget * CITY_RUSH_LANE_CHANGE_SLOW_FACTOR * cityRushCleanLineFactor(0);
+  const justAfterChange = baseTarget * cityRushCleanLineFactor(0);
   const afterCleanHold = baseTarget * cityRushCleanLineFactor(CITY_RUSH_CLEAN_LINE_RAMP_DURATION * 3);
-  assert.ok(afterChange < baseTarget);
+  assert.equal(justAfterChange, baseTarget, 'un changement de voie ne retire plus rien à la vitesse');
   assert.ok(afterCleanHold > baseTarget);
 });
 
