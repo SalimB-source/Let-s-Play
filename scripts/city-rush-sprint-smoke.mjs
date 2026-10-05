@@ -89,6 +89,21 @@ const server = await createServer({
             map: null,
           };
         }
+        // Sprint de 4 800 m, trafic dense, pilote d'essai qui ne se dérobe pas :
+        // le carré perdu au carambolage est neutralisé comme dans le smoke de
+        // course, sinon la coque tombe à zéro avant le dernier checkpoint et la
+        // vérif des portiques n'atteint jamais sa fin. Le barème est vérifié par
+        // les tests purs et par `check:city-rush-wreck`.
+        if (id.includes('cityRushRules')) {
+          const anchor = '  collision: 1, // choc contre une voiture : un carré pour le pilote';
+          if (!code.includes(anchor)) {
+            throw new Error('ancre du carambolage introuvable dans cityRushRules — mettre à jour le lanceur du smoke sprint');
+          }
+          return {
+            code: code.replace(anchor, '  collision: 0, // harnais : carré du carambolage neutralisé'),
+            map: null,
+          };
+        }
         return undefined;
       },
     },

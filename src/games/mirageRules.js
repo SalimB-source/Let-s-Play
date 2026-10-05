@@ -112,6 +112,13 @@ export function advanceJump(jumpLeft, buffer, dt) {
   return { jumpLeft: left, buffer: pending };
 }
 
+/**
+ * Le cheval est-il en l'air ? Tant que le saut n'est pas retombé
+ * (`jumpLeft > 0`), **les commandes de mouvement sont bloquées** : plus de
+ * changement de voie en plein saut, donc plus de saut en diagonale.
+ */
+export const isAirborne = (jumpLeft = 0) => Number(jumpLeft) > 0;
+
 // ── Mud puddles (flaques de boue) ──────────────────────────────────────
 // Appearing occasionally on open lanes, mud puddles slow down the mount
 // when stepped in on the ground (jumping clears them).
@@ -834,15 +841,16 @@ export function advanceCowboyStreak(current, collected, crashed = false) {
  * Voie du joueur après une action (gauche / droite ; toute autre action laisse
  * la voie en place).
  *
- * Le saut ne verrouille plus les voies : sur téléphone, le pouce enchaîne
- * « sauter » puis « glisser sur le côté » — et l'inverse — sans qu'aucun des
- * deux gestes ne soit avalé par celui qui vient de partir (l'ancien verrou
- * `jumpRemaining > 0`, qui rendait le cheval sourd aux côtés pendant 0,82 s,
- * est décrit par `tests/mirage-rules.test.js`). Seules les bornes de la piste
- * arrêtent le cavalier ; `laneCount()` suit l'appareil (3 sur téléphone,
- * 4 sur ordinateur et tablette).
+ * `jumpLeft` est le temps de saut restant (voir `JUMP_DURATION` / `isAirborne`) :
+ * **en l'air, les commandes de mouvement sont bloquées**. Le cheval retombe dans
+ * la voie où il a décollé, ce qui supprime le saut en diagonale — un geste
+ * latéral fait pendant le saut est simplement ignoré (ni mis en attente, ni
+ * rejoué à l'atterrissage) : au sol, le pouce glisse de nouveau et la voie part
+ * tout de suite. Seules les bornes de la piste arrêtent le cavalier ;
+ * `laneCount()` suit l'appareil (3 sur téléphone, 4 sur ordinateur et tablette).
  */
-export function playerLaneAfterAction(lane, action) {
+export function playerLaneAfterAction(lane, action, jumpLeft = 0) {
+  if (isAirborne(jumpLeft)) return lane;
   if (action === 'left') return Math.max(0, lane - 1);
   if (action === 'right') return Math.min(laneCount() - 1, lane + 1);
   return lane;
@@ -857,8 +865,11 @@ export const LATERAL_LANE_SPEED = 22;
 
 /**
  * Position latérale du cavalier : il glisse vers la voie visée, doigt posé
- * comme doigt relâché, et **en plein saut aussi** — la glissade n'attend plus
- * l'atterrissage (elle était gelée tant que `jumpRemaining > 0`).
+ * comme doigt relâché. La glissade continue en l'air — une voie demandée juste
+ * avant le décollage est rejointe, le cheval ne reste pas coincé entre deux
+ * voies pendant son saut — mais **aucune nouvelle voie ne peut être choisie
+ * pendant le saut** (voir `playerLaneAfterAction`) : la cible ne change donc
+ * plus tant qu'il est en l'air.
  */
 export function playerLateralPosition(x, targetX, dt) {
   return x + (targetX - x) * Math.min(1, dt * LATERAL_LANE_SPEED);

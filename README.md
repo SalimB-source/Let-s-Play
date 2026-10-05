@@ -443,22 +443,30 @@ Sur un écran de densité 1 dont la vue tient déjà dans 0,92 M pixels (la fen�
 sur ordinateur), la résolution ne bouge pas : seuls les autres leviers jouent ; le gain de
 résolution apparaît en plein écran et sur les écrans denses (téléphones, portables Retina).
 
-### Un glissement = une seule voie
+### Un glissement = une seule action
 
-Sur téléphone et dans l'application Android, **un geste ne change qu'une voie** : qu'on
+Sur téléphone et dans l'application Android, **un geste ne fait qu'une chose** : qu'on
 glisse lentement, qu'on claque le doigt d'un bord à l'autre de l'écran ou qu'on traverse
-toute la piste, le cheval se décale d'une voie (ce qui compte sur les trois voies d'un
-téléphone : un balayage depuis le bord ne le jette plus de l'autre côté).
+toute la piste, le cheval se décale d'**une** voie (ce qui compte sur les trois voies d'un
+téléphone : un balayage depuis le bord ne le jette plus de l'autre côté) — ou saute.
 
 - La voie part **dès que le doigt a parcouru 22 px**, sans attendre qu'il se lève : aucun
   délai ajouté. Pas de temps mort entre deux gestes — on enchaîne deux glissements à 30 ms
   d'écart, chacun fait sa voie.
-- Une diagonale vers le haut donne une voie **et** un saut, jamais deux voies. Revenir en
-  arrière dans le même geste ne fait rien de plus : pour repartir, on relève le doigt.
+- **Le saut en diagonale a disparu.** Un geste ne donne plus une voie **et** un saut : sur
+  une diagonale, l'axe le plus engagé au-delà de son seuil l'emporte (à égalité, la voie),
+  et un geste qui a déjà parlé ne déclenche plus rien. Revenir en arrière dans le même
+  geste ne fait rien de plus non plus : pour repartir, on relève le doigt.
+- **Pendant le saut, les commandes de mouvement sont bloquées** : le cheval retombe dans la
+  voie où il a décollé. La glissade engagée avant le décollage va jusqu'au bout, mais aucune
+  nouvelle voie n'est prise en l'air — le geste latéral fait pendant le saut est ignoré, pas
+  mis en attente : au sol, il repart immédiatement. Le saut, lui, garde son buffer d'entrée
+  (0,22 s) : une tape juste avant de retomber repart à l'atterrissage.
 - Un seul doigt pilote le cheval : un second posé par accident (paume, autre main) est
   ignoré jusqu'au relâchement du premier. Un geste interrompu (appel entrant, geste
   système) ne bloque pas les suivants.
-- Le clavier n'est pas concerné (la touche maintenue est déjà ignorée).
+- Le clavier suit les mêmes règles : ← → et ↑ restent des actions séparées (la touche
+  maintenue était déjà ignorée) et ← → ne répondent pas tant que le cheval est en l'air.
 
 ### Où vit le code
 
@@ -935,11 +943,12 @@ et le dernier tour durait 21 s.
   la berline qui la précédait, et le joueur ne perdait jamais un carré. Chaque
   rafale qui touche le joueur lui retire **une cellule** ; la barre à zéro le
   met en épave.
-  **Percuter la police en accélérant l'abîme sans abîmer le joueur.** Le contact
+  **Percuter la police en accélérant abîme les deux coques.** Le contact
   ne compte que si la berline est devant et que le joueur arrive dessus plus
   vite (`cityRushPoliceCollisionHit`). Il retire **un point de vie** à la
-  police, mais **aucun** à la voiture du joueur ; les chocs ne diminuent donc
-  pas sa coque. Une berline a six points de vie : deux tirs rouges d'AK-47
+  police **et un carré de vie** à la voiture du joueur, comme n'importe quel
+  carambolage (`CITY_RUSH_PLAYER_DAMAGE.collision`), le tout espacé par le
+  répit de choc. Une berline a six points de vie : deux tirs rouges d'AK-47
   (3 points chacun), trois tirs bleus (2 points chacun), six carambolages
   (1 point chacun), ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
@@ -971,11 +980,18 @@ et le dernier tour durait 21 s.
   `CITY_RUSH_PLAYER_BAR_COLORS`). Chaque tir rouge reçu retire **une cellule**
   sans dérapage ni ralentissement ; le tir bleu en retire aussi une. Les tirs
   reçus par les voitures de police suivent leur coque distincte : rouge −3,
-  bleu −2, collision −1. **Percuter une voiture de police ne retire aucune vie
-  au joueur** : seule la police perd un point (`CITY_RUSH_POLICE_DAMAGE.collision`).
-  Le trafic et les rivaux ne touchent pas non plus la coque, ils ne font que
-  ralentir. Le contact policier compte seulement quand le pilote **arrive sur**
-  une berline **devant lui**, à une vitesse supérieure
+  bleu −2, collision −1. **Percuter une voiture retire un carré au pilote**,
+  quel que soit le véhicule — trafic lent, voiture venant en face ou berline de
+  police (`CITY_RUSH_PLAYER_DAMAGE.collision`). Un carambolage de police abîme
+  donc **les deux coques** : la berline perd un point
+  (`CITY_RUSH_POLICE_DAMAGE.collision`) **et** le pilote un carré. Un même
+  carambolage ne coûte jamais plus d'un carré : le choc arme un **répit
+  partagé** de 1,5 s (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`), le temps de
+  reprendre, pour qu'un embouteillage ou deux carrosseries restées collées ne
+  vident pas la barre d'un coup. Le trafic et les rivaux ne se heurtent entre
+  eux qu'en ralentissant, sans toucher la coque du pilote. Le contact policier
+  compte seulement quand le pilote **arrive sur** une berline **devant lui**, à
+  une vitesse supérieure
   (`cityRushPoliceCollisionHit`) ; la berline repliée derrière lui pour tirer
   ne déclenche pas de choc. À trois cellules ou moins, la barre passe en
   « CRITIQUE » (pulsation rouge), et **à zéro la course est perdue** : le pilote
@@ -1365,8 +1381,8 @@ npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les tr
 npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring)
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
-npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, aucune vie perdue au contact, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
-npm run check:city-rush-wreck   # carambolages : la police perd 1 point, le joueur n'en perd aucun ; l'épave est vérifiée si des tirs vident la coque
+npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
+npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
@@ -1395,10 +1411,15 @@ pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par
 vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
 du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
 `reset()`) et les **barres de vie des pilotes** (15 cellules pleines dès le
-départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème,
-et un contact policier ne produit aucun `player-hit`). Il ne dit rien
-du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
-l'image.
+départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème).
+Le **carré du carambolage est neutralisé dans ce harnais** : le lanceur patche
+l'ancre `collision: 1` de `cityRushRules.js` en `collision: 0`, sinon le pilote
+d'essai — qui ne se dérobe jamais — finirait en épave avant l'arrivée. Le
+barème réel (un carré par carambolage, police comprise) est vérifié par les
+tests purs, `check:city-rush-weapons` et `check:city-rush-wreck`, qui démarre la
+coque à trois carrés et exige un carré par choc, espacé par le répit. Il ne dit
+rien du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour
+juger l'image.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les
@@ -1492,6 +1513,25 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   dans la cassure du Karussell.
 - **Le tempo** est posé (116 BPM), plus proche du rythme d'un tour de huit
   minutes que d'une course de rue.
+- **La vitesse de course** est plus posée elle aussi : le parcours porte
+  `pace: CITY_RUSH_RACEWAY_PACE` (**0,85**), et **tout ce qui roule** passe par
+  ce facteur — pilote, rivaux, trafic, contresens, police, projectiles, et
+  jusqu'aux accélérations et aux freinages (plancher de freinage compris).
+  73 virages sur 9,20 m de bitume ne se lisent pas au rythme d'une artère
+  urbaine : à puissance égale, le Ring se joue à **~107 km/h au lieu de 126**.
+  Le smoke le montre directement — `rythme 0.85 · pointe 81 km/h` sur le Ring
+  contre `rythme 1 · pointe 96 km/h` à Vice City pour la même voiture. Rien ne
+  devient plus facile pour autant : les écarts entre voitures, les distances de
+  streaming (déjà exprimées en secondes de trajet à la vitesse de pointe
+  réelle) et la difficulté relative sont inchangés, seul le défilement
+  ralentit. La contrepartie est mécanique : à distance égale, la course dure
+  `1 / 0,85`, soit ~18 % de plus. Le chrono du Sprint suit la même règle (la
+  marge entre deux portes s'élargit, et le garage annonce la marge réellement
+  accordée sur ce parcours), et le compteur du HUD affiche la vitesse vraie du
+  parcours. Aucun autre parcours ne porte `pace` : les cinq villes, la Route 66
+  et la campagne mexicaine gardent le rythme historique — vérifié image par
+  image, un smoke de Tokyo joué à graine fixée étant strictement identique
+  avant et après.
 
 Le parcours se débloque **après la campagne mexicaine**, comme les autres : il
 s'ajoute à la fin de `CITY_RUSH_COURSES`, donc sans toucher aux sauvegardes
@@ -1506,8 +1546,10 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
   `nordschleifeCornerCurve`, `nordschleifeTrackOffset/Tangent/Yaw/Elevation/
   Grade/Pitch`, `cityRushTrackProfile`), configuration des voies
   (`cityRushLaneConfig`) et marquage de leurs séparateurs
-  (`CITY_RUSH_LANE_PAINT_WIDTH`, `cityRushLaneSeparators`) et silhouette de
-  mini-carte (`cityRushMinimapTrackShape`) ;
+  (`CITY_RUSH_LANE_PAINT_WIDTH`, `cityRushLaneSeparators`), silhouette de
+  mini-carte (`cityRushMinimapTrackShape`) et rythme du parcours
+  (`CITY_RUSH_RACEWAY_PACE`, `CITY_RUSH_COURSE_PACE_MIN`, `cityRushCoursePace`,
+  `cityRushPacedSpeed`, facteur `pace` de `approachCityRushSpeed`) ;
 - `src/games/nordschleifeStage.js` — le décor du Ring (piste et son marquage de
   voies, herbe, glissières, vibreurs, graviers, panneaux allemands, ponts,
   village, karussell, tour, tribunes) ;
@@ -1516,7 +1558,10 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
 - `src/games/cityRushStartLine.js` — gabarit de la zone de départ (portique,
   tribunes, dalles) à l'échelle de la piste, texte au sol `START` ;
 - `src/games/ViceCityWorld.jsx` — aiguillage décor/route, voies du parcours,
-  trafic propre au parcours, HUD de route (`nordschleifeRouteHud`) ;
+  trafic propre au parcours, HUD de route (`nordschleifeRouteHud`) et le
+  facteur `paced()`, qui applique `cityRushCoursePace(city)` à chaque vitesse
+  du monde (pilote, rivaux, trafic, contresens, police, projectiles,
+  accélérations, roue libre du tour d'honneur) ;
 - `src/games/ViceCityRushPage.jsx` + `src/games/cityRushTextures.js` — vignette,
   plaque de route `NS · 20 832 km · SENS HORAIRE · V-MAX 300 km/h`, panneau du
   portique `START · ZIEL` ;
@@ -1544,6 +1589,22 @@ appuis, avec des cassures qui se resserrent`) : il mesure le cap rendu tour par
 tour, compte les portions au-dessus de 10° et 14°, vérifie que la cloche lisse
 est symétrique alors que le virage qui se resserre appuie une fois et demie plus
 fort en sortie, et que le profil se referme sans marche sous le portique.
+
+`check:city-rush` porte aussi le test du rythme (`the Nürburgring plays at a
+slower pace, every other course keeps the historic speed`) : le Ring est le
+seul parcours à porter `pace`, les sept autres gardent `1`, un facteur muet ou
+hors bornes est ramené dans [`CITY_RUSH_COURSE_PACE_MIN`, 1], la pointe annoncée
+tombe bien sous les 115 km/h, la marge du Sprint s'élargit au lieu de se
+resserrer et — surtout — l'accélération comme le freinage suivent le facteur :
+la durée pour atteindre la pointe du parcours reste exactement la même,
+plancher de freinage compris.
+
+Le smoke relit aussi le rythme dans le monde : `world.topSpeed` doit valoir
+`CITY_RUSH_PLAYER_SPEED × powerMultiplier × cityRushCoursePace(course)` (donc
+strictement moins que la pointe historique sur un parcours ralenti), et le
+compteur du HUD ne doit jamais dépasser cette pointe multipliée par tous les
+bonus de vitesse empilables. Un `paced()` oublié dans la boucle de rendu se lit
+là, pas à l'œil.
 
 Le smoke vérifie en plus, sur un parcours sans trafic en face, qu'**aucun choc
 frontal** ne s'est produit (et qu'un parcours qui a du trafic en face, lui, en

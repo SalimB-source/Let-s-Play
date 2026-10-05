@@ -82,6 +82,8 @@ const {
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
   CITY_RUSH_ONCOMING_BONUS_MAX,
+  CITY_RUSH_PLAYER_SPEED, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, CITY_RUSH_CLEAN_LINE_MAX_BONUS,
+  cityRushCoursePace,
 } = await import('../src/games/cityRushRules.js');
 
 // Tours de la course jouée : 6 par défaut (8 400 m) ;
@@ -184,8 +186,9 @@ for (const [index, city] of courses.entries()) {
     ready: 0, errors: [], huds: [], laps: [], effects: [], pickups: [], finish: null,
   };
   // Les contacts de police sont légitimes : le pilote inflige 1 dégât à la
-  // berline, sans perdre de vie. On retient leur frame pour ne pas signaler
-  // l'intervalle de collision comme un passage à travers une voiture solide.
+  // berline, et en encaisse un carré. On retient leur frame pour ne pas
+  // signaler l'intervalle de collision comme un passage à travers une voiture
+  // solide.
   const policeCollisionFrames = new Map();
   const audioCalls = {};
   const audioStub = {};
@@ -236,6 +239,29 @@ for (const [index, city] of courses.entries()) {
   for (const key of ['start', 'pause', 'reset', 'action', 'setPhase', 'setCountdown', 'destroy']) {
     if (typeof world[key] !== 'function') fail(`API manquante : ${key}`, api);
   }
+
+  // Rythme du parcours : le monde applique `pace` (voir `cityRushCoursePace`) à
+  // la pointe du pilote comme à tout ce qui roule — le Ring est le seul
+  // parcours ralenti, les villes et les routes gardent la pointe du garage. Un
+  // `paced()` oublié dans la boucle se lit ici, pas à l'œil nu.
+  const coursePace = cityRushCoursePace(city);
+  const historicTopSpeed = CITY_RUSH_PLAYER_SPEED * car.powerMultiplier;
+  if (Math.abs(world.topSpeed - historicTopSpeed * coursePace) > 1e-9) {
+    fail('la pointe du monde ne suit pas le rythme du parcours', {
+      parcours: city.id, rythme: coursePace, pointeMonde: world.topSpeed, attendue: historicTopSpeed * coursePace,
+    });
+  }
+  if (coursePace < 1 && world.topSpeed >= historicTopSpeed) {
+    fail(`un parcours à rythme ${coursePace} doit défiler plus lentement qu'au rythme historique`, {
+      parcours: city.id, pointeMonde: world.topSpeed, pointeHistorique: historicTopSpeed,
+    });
+  }
+  // Plafond du compteur : la pointe du parcours, multipliée par tous les bonus
+  // de vitesse empilables (pad turbo, ligne propre, contresens). Au-delà, une
+  // vitesse du monde échappe au rythme du parcours.
+  const hudSpeedCeiling = world.topSpeed * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR
+    * CITY_RUSH_CLEAN_LINE_MAX_BONUS * CITY_RUSH_ONCOMING_BONUS_MAX * 3.6 + 1;
+  let maxHudSpeed = 0;
 
   const scene = world.scene || null;
   // Éclatement et réapparition des bonus : le pool d'effets vit dans la scène,
@@ -484,7 +510,10 @@ for (const [index, city] of courses.entries()) {
         if (!rallyTarget || node.position.z > rallyTarget.position.z) rallyTarget = node;
       }
     }
-    if (hud && hud.speed < 70) slowFrames += 1; else slowFrames = 0;
+    if (hud) maxHudSpeed = Math.max(maxHudSpeed, hud.speed);
+    // Le seuil de « on traîne » suit le rythme du parcours : sur le Ring, la
+    // même voiture roule plus lentement sans être en difficulté.
+    if (hud && hud.speed < 70 * coursePace) slowFrames += 1; else slowFrames = 0;
     if (slowFrames > 12 && !rallyTarget && frames > 110) {
       world.action(steer);
       steer = steer === 'left' ? 'right' : 'left';
@@ -798,6 +827,11 @@ for (const [index, city] of courses.entries()) {
   }
   const raceSeconds = (frames * FRAME_MS) / 1000;
   if (!callbacks.finish) fail(`arrivée jamais atteinte après ${raceSeconds.toFixed(0)} s virtuelles`, callbacks.huds.at(-1));
+  if (maxHudSpeed > hudSpeedCeiling) {
+    fail(`le compteur dépasse le plafond du parcours (${Math.round(hudSpeedCeiling)} km/h)`, {
+      parcours: city.id, rythme: coursePace, maxHudSpeed, plafond: hudSpeedCeiling,
+    });
+  }
   if (callbacks.huds.length <= hudBefore) fail('aucun HUD émis pendant la course');
   if (typeof console !== 'undefined' && process.env.CITY_RUSH_SMOKE_VERBOSE) console.log('épave mesurée :', { wreckFrames, wreckSpinTurns, wreckSmokeFrames, wreckLastSpeed });
   if (callbacks.errors.length) fail('erreurs remontées', callbacks.errors);
@@ -1181,7 +1215,8 @@ for (const [index, city] of courses.entries()) {
   }
   }
   // La barre de quinze carrés est pleine dès le départ, visible pendant toute
-  // la course, bornée et non-croissante ; chaque tir et collision retire un.
+  // la course, bornée et non-croissante ; chaque tir encaissé en retire un (le
+  // carré du carambolage est neutralisé par le lanceur, voir plus bas).
   const racerHuds = callbacks.huds.flatMap((entry) => entry.racers || []);
   for (const racer of racerHuds) {
     if (racer.maxHealth !== CITY_RUSH_PLAYER_HEALTH || !Number.isFinite(racer.health)
@@ -1221,9 +1256,14 @@ for (const [index, city] of courses.entries()) {
     if (effect.type !== 'player-hit') continue;
     healthHitEffects += 1;
     healthHitsBySource[effect.source] = (healthHitsBySource[effect.source] || 0) + 1;
-    if (effect.source === 'collision' && !(Number(effect.gap) > 0)) {
+    // Un carambolage ne se compte que sur une voiture **devant** le pilote : le
+    // trafic rattrapé et la berline percutée en accélérant arrivent avec un
+    // écart positif. Le face-à-face, lui, croise les carrosseries au mètre
+    // près : la distance annoncée y est une magnitude (≥ 0).
+    if (effect.source === 'collision'
+      && !(Number.isFinite(Number(effect.gap)) && Number(effect.gap) >= 0)) {
       healthBadDamage += 1;
-      fail('un carambolage est compté avec une berline restée derrière le pilote', effect);
+      fail('un carambolage est compté sur une voiture sans écart avec le pilote', effect);
     }
     if (runningHealth === null) { healthBadDamage += 1; continue; }
     const expected = Math.min(1, runningHealth);
@@ -1233,8 +1273,16 @@ for (const [index, city] of courses.entries()) {
     if (effect.health === 0) healthCubes += 1;
   }
   if (healthBadDamage) fail('un dégât encaissé par le pilote ne retire pas exactement une cellule', healthBadDamage);
+  // Le pilote d'essai percute le trafic et la police **exprès** (riposte
+  // policière, face-à-face, barrages) : le carré du carambolage est neutralisé
+  // par le lanceur (`city-rush-smoke.mjs`) pour qu'il aille au bout des six
+  // tours. La règle est vérifiée par les tests purs et par la vérif
+  // coque/police, qui joue le vrai barème sur une barre de trois cellules
+  // (un carré par carambolage, espacé par le répit).
   const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
-  if (playerRamDamage.length) fail('un contact avec une voiture de police a retiré de la vie au joueur', playerRamDamage);
+  if (playerRamDamage.length) {
+    fail('un carambolage a retiré de la vie au joueur alors que le lanceur neutralise ce coût', playerRamDamage);
+  }
   const policeRamDamage = callbacks.effects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
   if (policeRamDamage.some((effect) => effect.damage !== 1)) {
     fail('un carambolage en accélérant n’a pas retiré exactement un point de vie à la police', policeRamDamage);
@@ -1305,7 +1353,7 @@ for (const [index, city] of courses.entries()) {
 
   const effectTypes = [...new Set(callbacks.effects.map((e) => e.type))];
   console.log(
-    `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames` +
+    `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames · rythme ${coursePace} · pointe ${Math.round(world.topSpeed * 3.6)} km/h (compteur max ${maxHudSpeed}, plafond ${Math.round(hudSpeedCeiling)})` +
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · rangées devant le pilote chaque image (fenêtre ${Number.isFinite(rowFrontGapMin) ? rowFrontGapMin.toFixed(0) : '—'}–${rowFrontGapMax.toFixed(0)} m) · effets ${effectTypes.join('/')}` +
     ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (joueur ${Math.round(firstPoliceHud.distance || 0)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max de la plus proche ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage${policeStunFrames ? ` · ${policeStunFrames} f sonnée` : ''}` : 'jamais entrée'}` +

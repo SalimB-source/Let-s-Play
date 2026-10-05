@@ -43,6 +43,19 @@ export const CITY_RUSH_START_LINE_LEAD = 3;
 // Portée de décor conservée derrière le joueur quand on replie la boucle.
 export const CITY_RUSH_TRACK_BEHIND = 60;
 export const CITY_RUSH_PLAYER_SPEED = 35; // m/s : rythme de course relevé à environ 126 km/h
+// ── Rythme d'un parcours ────────────────────────────────────────────────────
+// `CITY_RUSH_PLAYER_SPEED` est le rythme des rues et des routes ouvertes. Un
+// circuit permanent se joue plus posé : la Nordschleife enchaîne 73 virages sur
+// 9,20 m de bitume, et le défilement urbain à 126 km/h y rend la piste
+// illisible — on n'y double pas au réflexe, on y suit une trajectoire. Le
+// facteur s'applique à **tout ce qui roule** (pilote, rivaux, trafic,
+// contresens, police et projectiles) : la vitesse du défilement baisse, la
+// difficulté relative ne bouge pas. Les distances, elles, restent inchangées —
+// streaming et bonus sont déjà exprimés en secondes de trajet à la vitesse de
+// pointe réelle, donc ils suivent la voiture sans rien à recalculer.
+export const CITY_RUSH_RACEWAY_PACE = 0.85; // le Ring à ~107 km/h au lieu de 126
+// Garde-fou du facteur : un parcours peut ralentir la course, jamais la figer.
+export const CITY_RUSH_COURSE_PACE_MIN = 0.5;
 export const CITY_RUSH_LANE_WIDTH = 2.1;
 export const CITY_RUSH_ROAD_WIDTH = 13.4;
 export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
@@ -380,8 +393,10 @@ export function isCityRushPoliceTrafficType(type) {
   return CITY_RUSH_POLICE_TRAFFIC_TYPES.includes(String(type || ''));
 }
 
-// Un choc avec le trafic ne retire pas de vie : il crée un court moment de
-// contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
+// Le choc lui-même n'ajoute rien au barème : il crée un court moment de contact
+// lisible, puis le véhicule lent se rabat pour libérer la voie — le carré du
+// carambolage est facturé une fois par le monde 3D
+// (`CITY_RUSH_PLAYER_DAMAGE.collision`, espacé par le répit ci-dessous). La
 // durée est volontairement indépendante du modèle de voiture choisi : le
 // joueur humain et les IA encaissent exactement la même durée (0,6 s).
 export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 0.6;
@@ -402,14 +417,20 @@ export function cityRushBrakingRate(accelerationRate) {
   return Math.max(CITY_RUSH_BRAKE_RATE_FLOOR, acceleration * CITY_RUSH_BRAKE_RATE_FACTOR);
 }
 
-export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRate, deltaTime) {
+export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRate, deltaTime, pace = 1) {
   const current = Math.max(0, Number(currentSpeed) || 0);
   const target = Math.max(0, Number(targetSpeed) || 0);
   const elapsed = Math.max(0, Number(deltaTime) || 0);
-  const acceleration = Math.max(0, Number(accelerationRate) || 0);
+  const rate = Math.max(0, Number(accelerationRate) || 0);
+  // Le rythme d'un parcours (voir `cityRushCoursePace`) ralentit toute la
+  // course : l'accélération **et** le freinage — plancher compris — suivent le
+  // même facteur, sinon une voiture montée plus doucement freinerait
+  // relativement plus fort et la montée en vitesse perdrait sa durée.
+  const paceFactor = Number.isFinite(Number(pace)) && Number(pace) > 0 ? Number(pace) : 1;
+  const acceleration = rate * paceFactor;
   if (target <= 0) return 0;
   if (target >= current) return Math.min(target, current + acceleration * elapsed);
-  const braking = cityRushBrakingRate(acceleration);
+  const braking = cityRushBrakingRate(rate) * paceFactor;
   return Math.max(target, current - braking * elapsed);
 }
 
@@ -549,7 +570,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote, il retire un carré de vie sans dérapage ni ralentissement ; contre une voiture de police à six points de vie, il inflige 3 dégâts. Un carambolage en accélérant retire un point à la police, jamais au joueur.`,
+    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote, il retire un carré de vie sans dérapage ni ralentissement ; contre une voiture de police à six points de vie, il inflige 3 dégâts. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -1771,6 +1792,11 @@ export const CITY_RUSH_NORDSCHLEIFE_COURSE = Object.freeze({
   // tour ne peut plus revenir sur le leader.
   trafficCount: 2,
   raceway: true,
+  // Rythme plus posé qu'en ville : 73 virages sur une piste étroite se lisent
+  // mieux à ~107 km/h qu'à 126. Tout le plateau est ralenti dans la même
+  // proportion (`cityRushCoursePace`), donc rien ne devient plus facile — la
+  // course dure simplement un peu plus longtemps à distance égale.
+  pace: CITY_RUSH_RACEWAY_PACE,
   signs: Object.freeze(['NORDSCHLEIFE', 'EINFAHRT', 'DÖTTINGER HÖHE', 'GRÜNE HÖLLE', 'NÜRBURGRING']),
   route: CITY_RUSH_NORDSCHLEIFE,
 });
@@ -1802,6 +1828,34 @@ export function cityRushDriveSide(course = null) {
     ? CITY_RUSH_COURSES.find((entry) => entry.id === course) || null
     : course;
   return resolved?.driveSide === 'left' ? 'left' : 'right';
+}
+
+// ── Rythme du parcours ──────────────────────────────────────────────────────
+// Un parcours peut porter `pace` : le multiplicateur appliqué à tout ce qui
+// roule sur lui. Seule la Nordschleife l'utilise aujourd'hui
+// (`CITY_RUSH_RACEWAY_PACE`) ; les villes et les routes ouvertes n'ont pas le
+// champ et gardent le rythme historique.
+
+/**
+ * Multiplicateur de vitesse d'un parcours, accepté sous forme d'objet (une
+ * entrée de `CITY_RUSH_COURSES`) ou d'identifiant (`'nordschleife'`,
+ * `'vice-city'`…) : `1` par défaut, borné à [`CITY_RUSH_COURSE_PACE_MIN`, 1] —
+ * un parcours ralentit la course, il ne l'accélère jamais.
+ */
+export function cityRushCoursePace(course = null) {
+  const resolved = typeof course === 'string'
+    ? CITY_RUSH_COURSES.find((entry) => entry.id === course) || null
+    : course;
+  const pace = Number(resolved?.pace);
+  if (!Number.isFinite(pace) || pace <= 0) return 1;
+  return Math.min(1, Math.max(CITY_RUSH_COURSE_PACE_MIN, pace));
+}
+
+/** Vitesse (m/s) une fois le rythme du parcours appliqué. */
+export function cityRushPacedSpeed(speed = 0, course = null) {
+  const value = Number(speed);
+  if (!Number.isFinite(value)) return 0;
+  return value * cityRushCoursePace(course);
 }
 
 // ── Voies du parcours ───────────────────────────────────────────────────────
@@ -3136,14 +3190,17 @@ export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est con
 
 // Six points de vie pour chaque berline : trois tirs bleus (2 points chacun),
 // deux tirs rouges d’AK-47 (3 points chacun), ou six carambolages en accélérant
-// (1 point chacun) la détruisent. Le joueur ne perd aucune vie au contact.
+// (1 point chacun) la détruisent. La coque du pilote paie elle aussi le contact
+// d’un carré (`CITY_RUSH_PLAYER_DAMAGE.collision`), avec un répit partagé
+// (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) : six carambolages coûtent donc six
+// carrés au joueur.
 // Le barème reste pur, donc testable hors de three.js.
 export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2,
   [CITY_RUSH_POWERS.PISTOL]: 3,
   [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
-  collision: 1, // contact en accélérant : dégâts à la police, aucune vie au joueur
+  collision: 1, // contact en accélérant : la police perd un point, le pilote un carré
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
@@ -3555,8 +3612,9 @@ export function chooseCityRushPoliceLane({
 
 // Les berlines de police sont des obstacles solides : elles ne traversent ni le
 // trafic lent, ni les voitures de course (`racers`), ni leur coéquipière — et
-// elles **bloquent** donc la voie comme n'importe quelle voiture, sans dégâts ni
-// pénalité pour qui les percute.
+// elles **bloquent** donc la voie comme n'importe quelle voiture : qui les
+// percute en paie un carré (`CITY_RUSH_PLAYER_DAMAGE.collision`) et leur inflige
+// un point de vie.
 //
 // `blockedBy` désigne le véhicule de **trafic** qui a freiné la berline cette
 // image (son `id`), ou `null` : le monde 3D s'en sert pour le heurter — sinon
@@ -3606,13 +3664,18 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
 // départ effectif. Elles se vident par groupes de cinq : bleu, vert, puis
 // jaune ; les trois dernières cellules jaunes passent au rouge. Les tirs
 // retirent une cellule et le tir rouge ne fait ni déraper ni ralentir sa cible.
-// Le choc contre une voiture de police abîme la police, jamais le joueur.
+// Percuter une voiture — le trafic lent, un véhicule venant en face ou une
+// berline de police — retire aussi une cellule : le choc contre une berline de
+// police abîme désormais les deux coques, le pilote y laissant un carré et la
+// police un point de vie.
 export const CITY_RUSH_PLAYER_HEALTH = 15;
 export const CITY_RUSH_RACER_HEALTH = CITY_RUSH_PLAYER_HEALTH;
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
   [CITY_RUSH_POWERS.PISTOL]: 1,
-  collision: 0,
+  // Ancre de patch des harnais de course longue ; la ligne du dessous est
+  // remplacée par le lanceur du smoke de course (voir `city-rush-smoke.mjs`).
+  collision: 1, // choc contre une voiture : un carré pour le pilote
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
 // Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
@@ -3623,6 +3686,14 @@ export const CITY_RUSH_WRECK_SPIN_TURNS = 2;
 // Les trois derniers carrés jaunes sont le seuil d'alerte rouge.
 export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 3;
 export const CITY_RUSH_HEALTH_GROUP_SIZE = 5;
+
+// Un carambolage ne retire qu'un carré, quel que soit le nombre de contacts
+// qu'il produit : le choc arme un répit partagé par toutes les voitures
+// (trafic, contresens, berline de police). Sans lui, un embouteillage — ou
+// deux carrosseries restées collées après le choc — facturerait un carré par
+// image. Même esprit que `CITY_RUSH_POLICE_COLLISION_COOLDOWN`, qui protège la
+// berline des contacts à répétition.
+export const CITY_RUSH_PLAYER_COLLISION_COOLDOWN = 1.5; // s
 
 export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
   const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));

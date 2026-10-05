@@ -88,6 +88,7 @@ import {
   CITY_RUSH_PLAYER_BAR_COLORS,
   CITY_RUSH_PLAYER_DAMAGE,
   CITY_RUSH_PLAYER_HEALTH,
+  CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
   CITY_RUSH_RACER_HEALTH,
   CITY_RUSH_HEALTH_GROUP_SIZE,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
@@ -140,6 +141,11 @@ import {
   CITY_RUSH_ONCOMING_BONUS_MAX,
   advanceCityRushOncomingBonus,
   cityRushDriveSide,
+  CITY_RUSH_COURSES,
+  CITY_RUSH_RACEWAY_PACE,
+  CITY_RUSH_COURSE_PACE_MIN,
+  cityRushCoursePace,
+  cityRushPacedSpeed,
   cityRushOncomingBonusFactor,
   cityRushBrakingRate,
   CITY_RUSH_BRAKE_RATE_FLOOR,
@@ -729,7 +735,7 @@ test('the active loadout has seven red machine-gun bullets plus automatic ground
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /retire un carré de vie/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /sans dérapage ni ralentissement/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /voiture de police à six points de vie.*inflige 3 dégâts/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, jamais au joueur/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, et un carré au pilote/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
   });
@@ -1037,16 +1043,19 @@ test('trois voitures de police poursuivent le joueur et un renfort est réservé
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
 });
 
-test('le joueur et les rivaux ont quinze cellules ; les tirs les touchent sans que le choc policier coûte une vie', () => {
+test('le joueur et les rivaux ont quinze cellules ; tirs et carambolages coûtent une cellule', () => {
   assert.equal(CITY_RUSH_PLAYER_HEALTH, 15);
   assert.equal(CITY_RUSH_RACER_HEALTH, CITY_RUSH_PLAYER_HEALTH);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE['blue-shot'], 1);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE.pistol, 1);
-  assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 0);
+  // Percuter une voiture — civile ou berline de police — retire un carré.
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 1);
+  assert.ok(CITY_RUSH_PLAYER_COLLISION_COOLDOWN > 0.5 && CITY_RUSH_PLAYER_COLLISION_COOLDOWN <= 3,
+    'le répit protège la barre des contacts à répétition sans immuniser le pilote');
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'blue-shot'), 14);
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'pistol'), 14);
-  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), CITY_RUSH_PLAYER_HEALTH);
-  assert.equal(cityRushPlayerDamage(5, 'collision'), 5);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), CITY_RUSH_PLAYER_HEALTH - 1);
+  assert.equal(cityRushPlayerDamage(5, 'collision'), 4);
   assert.equal(cityRushPlayerDamage(1, 'pistol'), 0);
   assert.equal(cityRushPlayerDamage(0, 'blue-shot'), 0);
   assert.equal(cityRushPlayerDamage(5, 'boost'), 5);
@@ -1056,7 +1065,8 @@ test('le joueur et les rivaux ont quinze cellules ; les tirs les touchent sans q
   assert.equal(CITY_RUSH_HEALTH_GROUP_SIZE, 5);
 
   // La police garde une coque distincte : deux rouges, trois bleus ou six
-  // carambolages la détruisent, sans entamer la barre du joueur.
+  // carambolages la détruisent. Chaque carambolage coûte aussi un carré au
+  // pilote, avec le répit partagé qui borne les contacts à répétition.
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
   assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, 3);
   assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
@@ -1420,7 +1430,7 @@ test('au dernier tour, la riposte rouge peut viser la berline la plus proche', (
   ], 1200).id, 'police-2');
 });
 
-test('barre de vie des berlines : six points, tir rouge puissant et carambolage sans dégât au joueur', () => {
+test('barre de vie des berlines : six points, tir rouge puissant, un point par carambolage', () => {
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 3);
@@ -1481,7 +1491,8 @@ test('les berlines entrent sans charge et ne disposent d’aucune attaque d’h�
 
 test('un pilote ne traverse plus une berline de police du dernier tour', () => {
   // L'escouade est engagée dans le peloton : sa berline solide bloque la voie
-  // exactement comme le trafic lent, sans dégât ni pénalité.
+  // exactement comme le trafic lent. Ce module ne facture rien lui-même : seul
+  // le contact réel, joué par le monde 3D, retire un carré au pilote.
   const behind = resolveCityRushCarMovement([
     { id: 'player', collisionGroup: 'racer', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.9, previousDistance: 1000, nextDistance: 1030 },
     { id: 'police-1', collisionGroup: 'police', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, previousDistance: 1008, nextDistance: 1012 },
@@ -1674,6 +1685,74 @@ test('London and the Shutō C1 drive on the left, the other courses on the right
   const ring = cityRushLaneConfig(CITY_RUSH_NORDSCHLEIFE_COURSE);
   assert.equal(ring.oncomingLanes.length, 0);
   assert.equal(ring.raceway, true);
+});
+
+test('the Nürburgring plays at a slower pace, every other course keeps the historic speed', () => {
+  // Le Ring est le seul parcours à porter `pace` : 73 virages sur 9,20 m de
+  // bitume se lisent mieux à ~107 km/h qu'à 126. Le facteur ralentit **tout**
+  // ce qui roule — pilote, rivaux, trafic, police — donc la difficulté
+  // relative ne bouge pas, seul le défilement baisse.
+  assert.equal(CITY_RUSH_NORDSCHLEIFE_COURSE.pace, CITY_RUSH_RACEWAY_PACE);
+  assert.ok(CITY_RUSH_RACEWAY_PACE < 1, 'le Ring est plus posé que la ville');
+  assert.ok(CITY_RUSH_RACEWAY_PACE >= CITY_RUSH_COURSE_PACE_MIN, 'et il reste au-dessus du garde-fou');
+  assert.equal(cityRushCoursePace('nordschleife'), CITY_RUSH_RACEWAY_PACE);
+  assert.equal(cityRushCoursePace(CITY_RUSH_NORDSCHLEIFE_COURSE), CITY_RUSH_RACEWAY_PACE);
+
+  for (const course of CITY_RUSH_COURSES.filter((entry) => entry.id !== 'nordschleife')) {
+    assert.equal(course.pace, undefined, `${course.id} garde le rythme historique`);
+    assert.equal(cityRushCoursePace(course), 1);
+    assert.equal(cityRushCoursePace(course.id), 1);
+  }
+
+  // Garde-fous : un parcours inconnu, muet ou mal renseigné roule à 1, un
+  // facteur hors bornes est ramené dans [`CITY_RUSH_COURSE_PACE_MIN`, 1] —
+  // personne n'accélère la course, personne ne la fige.
+  assert.equal(cityRushCoursePace(null), 1);
+  assert.equal(cityRushCoursePace('inconnu'), 1);
+  assert.equal(cityRushCoursePace({ pace: 'vite' }), 1);
+  assert.equal(cityRushCoursePace({ pace: 0 }), 1);
+  assert.equal(cityRushCoursePace({ pace: -2 }), 1);
+  assert.equal(cityRushCoursePace({ pace: 4 }), 1);
+  assert.equal(cityRushCoursePace({ pace: 0.01 }), CITY_RUSH_COURSE_PACE_MIN);
+
+  // Vitesse annoncée : 35 m/s × 0,85 ≈ 107 km/h au lieu de 126.
+  const ringTop = cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED, 'nordschleife');
+  assert.ok(Math.abs(ringTop - CITY_RUSH_PLAYER_SPEED * CITY_RUSH_RACEWAY_PACE) < 1e-9);
+  const ringKmh = ringTop * 3.6;
+  assert.ok(ringKmh > 100 && ringKmh < 115, `le Ring se joue à ${ringKmh.toFixed(0)} km/h`);
+  assert.ok(ringKmh < CITY_RUSH_PLAYER_SPEED * 3.6, 'et plus lentement qu’en ville');
+  assert.equal(cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED, 'vice-city'), CITY_RUSH_PLAYER_SPEED);
+  assert.equal(cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED), CITY_RUSH_PLAYER_SPEED);
+  assert.equal(cityRushPacedSpeed('abc', 'nordschleife'), 0);
+
+  // Le streaming et le chrono du Sprint suivent la voiture du parcours : à
+  // vitesse plus basse, la marge du Sprint s'élargit au lieu de se resserrer.
+  assert.ok(cityRushSprintCheckpointTime(ringTop) > cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED));
+  assert.ok(cityRushSprintCheckpointTime(ringTop) <= CITY_RUSH_SPRINT_CHECKPOINT_TIME_MAX);
+
+  // Accélération **et** freinage suivent le même facteur, plancher de freinage
+  // compris : la montée en régime garde exactement sa durée, à une pointe plus
+  // basse, et une voiture ralentit moins vite en valeur absolue.
+  assert.equal(approachCityRushSpeed(0, 30, 10, 1), 10);
+  assert.ok(Math.abs(approachCityRushSpeed(0, 30, 10, 1, CITY_RUSH_RACEWAY_PACE) - 10 * CITY_RUSH_RACEWAY_PACE) < 1e-9);
+  let flat = 0;
+  let paced = 0;
+  for (let second = 0; second < 6; second += 1) {
+    flat = approachCityRushSpeed(flat, CITY_RUSH_PLAYER_SPEED, 10, 1);
+    paced = approachCityRushSpeed(paced, ringTop, 10, 1, CITY_RUSH_RACEWAY_PACE);
+  }
+  assert.ok(Math.abs(flat - CITY_RUSH_PLAYER_SPEED) < 1e-9);
+  assert.ok(Math.abs(paced - ringTop) < 1e-9, 'même durée pour atteindre la pointe du parcours');
+  // Le plancher de freinage (12 m/s²) est celui d'une citadine : sans le
+  // facteur, elle freinerait relativement plus fort sur le Ring qu'en ville.
+  assert.ok(Math.abs(cityRushBrakingRate(6) - CITY_RUSH_BRAKE_RATE_FLOOR) < 1e-9, 'le plancher s’applique à 6 m/s²');
+  const brakingFlat = approachCityRushSpeed(30, 10, 6, 1);
+  const brakingPaced = approachCityRushSpeed(30, 10, 6, 1, CITY_RUSH_RACEWAY_PACE);
+  assert.ok(brakingPaced > brakingFlat, 'la décélération suit le rythme du parcours');
+  assert.ok(Math.abs((30 - brakingPaced) - (30 - brakingFlat) * CITY_RUSH_RACEWAY_PACE) < 1e-9);
+  // Sans le facteur, l'appel historique ne change pas d'un poil.
+  assert.equal(approachCityRushSpeed(30, 10, 6, 1, 1), brakingFlat);
+  assert.equal(approachCityRushSpeed(30, 10, 6, 1, 0), brakingFlat, 'un facteur invalide retombe sur 1');
 });
 
 test('the oncoming bonus ramps up in the wrong-way lanes and drains on the way back', () => {

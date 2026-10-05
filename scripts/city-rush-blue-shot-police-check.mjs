@@ -1,8 +1,13 @@
 // ════════════════════════════════════════════════════════════════════
 // Vérif d'intégration de Vice City Rush : bonus rouges rares/pads turbo,
-// aucun tir bleu ni attaque d'hélicoptère, dégâts de contact à la police sans
-// dégâts au joueur, y compris après reset(). Le monde est construit pour de vrai
-// avec un faux WebGLRenderer.
+// aucun tir bleu ni attaque d'hélicoptère, dégâts de contact à la police,
+// y compris après reset(). Le monde est construit pour de vrai avec un faux
+// WebGLRenderer.
+// Comme le smoke de course, ce harnais de six tours neutralise le carré que le
+// pilote perd au carambolage (ancre `collision: 1` dans `cityRushRules.js`) :
+// son pilote d'essai chasse les bonus et percute le trafic pour les autres
+// vérifications. Le barème du carambolage joueur est vérifié par les tests purs
+// et par `check:city-rush-wreck`, qui roule avec une barre d'une cellule.
 //   node scripts/city-rush-blue-shot-police-check.mjs            (vice-city)
 //   node scripts/city-rush-blue-shot-police-check.mjs --all      (5 villes)
 // ════════════════════════════════════════════════════════════════════
@@ -80,6 +85,19 @@ const server = await createServer({
         if (id.includes('ViceCityWorld')) {
           return {
             code: code.replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)('),
+            map: null,
+          };
+        }
+        // Le pilote d'essai percute le trafic et la police pendant six tours :
+        // le carré du carambolage est neutralisé pour qu'il aille au bout de la
+        // course (voir l'en-tête du lanceur).
+        if (id.includes('cityRushRules')) {
+          const anchor = '  collision: 1, // choc contre une voiture : un carré pour le pilote';
+          if (!code.includes(anchor)) {
+            throw new Error('ancre du carambolage introuvable dans cityRushRules — mettre à jour le lanceur de la vérif armes');
+          }
+          return {
+            code: code.replace(anchor, '  collision: 0, // harnais : carré du carambolage neutralisé'),
             map: null,
           };
         }

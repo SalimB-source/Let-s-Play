@@ -104,16 +104,26 @@ test('a single very fast flick changes exactly one lane, however far it goes', (
   }
 });
 
-test('a diagonal up-and-side swipe steers first, then jumps', () => {
-  const diagonal = tracker();
-  diagonal.begin(ORIGIN.x, ORIGIN.y);
-  // L'ordre compte : pendant le saut les voies sont verrouillées, donc le
-  // changement de voie doit passer avant.
-  assert.deepEqual(diagonal.end(ORIGIN.x + SWIPE_MIN_DISTANCE + 4, ORIGIN.y - SWIPE_JUMP_DISTANCE - 40), ['right', 'jump']);
+test('a diagonal swipe does one thing only: the dominant axis wins', () => {
+  // Diagonale franchement vers le haut : le saut part, la voie ne bouge pas.
+  const mostlyUp = tracker();
+  mostlyUp.begin(ORIGIN.x, ORIGIN.y);
+  assert.deepEqual(mostlyUp.end(ORIGIN.x + SWIPE_MIN_DISTANCE + 4, ORIGIN.y - 160), ['jump']);
 
-  const otherDiagonal = tracker();
-  otherDiagonal.begin(ORIGIN.x, ORIGIN.y);
-  assert.deepEqual(otherDiagonal.end(ORIGIN.x - SWIPE_MIN_DISTANCE - 4, ORIGIN.y - SWIPE_JUMP_DISTANCE - 40), ['left', 'jump']);
+  // Diagonale franchement sur le côté : la voie change, aucun saut ne suit.
+  const mostlySide = tracker();
+  mostlySide.begin(ORIGIN.x, ORIGIN.y);
+  assert.deepEqual(mostlySide.end(ORIGIN.x + 160, ORIGIN.y - SWIPE_JUMP_DISTANCE - 4), ['right']);
+
+  const otherSide = tracker();
+  otherSide.begin(ORIGIN.x, ORIGIN.y);
+  assert.deepEqual(otherSide.end(ORIGIN.x - 160, ORIGIN.y - SWIPE_JUMP_DISTANCE - 4), ['left']);
+
+  // Les deux seuils franchis exactement autant (une diagonale à 45°) : la voie
+  // l'emporte, jamais les deux à la fois.
+  const tie = tracker();
+  tie.begin(ORIGIN.x, ORIGIN.y);
+  assert.deepEqual(tie.end(ORIGIN.x + SWIPE_MIN_DISTANCE * 2, ORIGIN.y - SWIPE_JUMP_DISTANCE * 2), ['right']);
 });
 
 test('once a lane has changed, going back or on in the same gesture never steers again', () => {
@@ -128,14 +138,23 @@ test('once a lane has changed, going back or on in the same gesture never steers
   assert.deepEqual(wiggle.end(ORIGIN.x - 300, ORIGIN.y), []);
 });
 
-test('the jump of a diagonal still follows a steering that already left', () => {
+test('a gesture that already steered never jumps afterwards: the diagonal is gone', () => {
   const diagonal = tracker();
   diagonal.begin(ORIGIN.x, ORIGIN.y);
   assert.deepEqual(diagonal.sample(ORIGIN.x + SWIPE_MIN_DISTANCE + 3, ORIGIN.y - 4), ['right']);
-  // Le doigt continue vers le haut puis vers le côté : le saut part, pas de seconde voie.
-  assert.deepEqual(diagonal.sample(ORIGIN.x + 90, ORIGIN.y - SWIPE_JUMP_DISTANCE - 2), ['jump']);
+  // Le doigt continue vers le haut puis vers le côté : plus rien ne part.
+  assert.deepEqual(diagonal.sample(ORIGIN.x + 90, ORIGIN.y - SWIPE_JUMP_DISTANCE - 2), []);
   assert.deepEqual(diagonal.sample(ORIGIN.x + 180, ORIGIN.y - 150), []);
   assert.deepEqual(diagonal.end(ORIGIN.x + 260, ORIGIN.y - 220), []);
+});
+
+test('a gesture that already jumped never steers afterwards either', () => {
+  const up = tracker();
+  up.begin(ORIGIN.x, ORIGIN.y);
+  assert.deepEqual(up.sample(ORIGIN.x + 2, ORIGIN.y - SWIPE_JUMP_DISTANCE - 2), ['jump']);
+  // Le doigt dérive franchement sur le côté en retombant : aucune voie.
+  assert.deepEqual(up.sample(ORIGIN.x + 200, ORIGIN.y - 200), []);
+  assert.deepEqual(up.end(ORIGIN.x + 320, ORIGIN.y - 260), []);
 });
 
 test('the next swipe is read at once: no cooldown, nothing swallowed between two gestures', () => {
@@ -291,13 +310,14 @@ test('the canvas binding turns a real swipe into a game action, one finger at a 
   element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x + 90, ORIGIN.y, 2));
   assert.deepEqual(actions, []);
 
-  // Le premier doigt garde la main jusqu'au relâchement, mais sa voie est déjà
-  // partie : continuer à glisser ne change plus rien, seul le saut peut suivre.
+  // Le premier doigt garde la main jusqu'au relâchement, mais son action est
+  // déjà partie : continuer à glisser — même franchement vers le haut — ne
+  // déclenche plus rien (une seule action par geste, plus de diagonale).
   element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x - 44 - 36, ORIGIN.y, 1));
   element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x - 300, ORIGIN.y, 1));
   assert.deepEqual(actions, [], 'une seule voie par geste');
   element.dispatch('pointerup', pointerEvent('pointerup', ORIGIN.x - 300, ORIGIN.y - 70, 1));
-  assert.deepEqual(actions, ['seen:jump', 'jump']);
+  assert.deepEqual(actions, [], 'le geste qui a changé de voie ne saute plus');
   assert.deepEqual(element.captured, ['capture:1', 'release:1']);
 
   // Une fois détaché, plus aucun geste n'atteint le jeu.
@@ -320,7 +340,7 @@ test('without PointerEvent support the binding falls back to touch events', () =
   element.dispatch('touchmove', touchEvent('touchmove', ORIGIN.x + 40, ORIGIN.y - 2));
   element.dispatch('touchmove', touchEvent('touchmove', ORIGIN.x + 44, ORIGIN.y - SWIPE_JUMP_DISTANCE - 6));
   element.dispatch('touchend', touchEvent('touchend', ORIGIN.x + 44, ORIGIN.y - SWIPE_JUMP_DISTANCE - 6));
-  assert.deepEqual(actions, ['right', 'jump']);
+  assert.deepEqual(actions, ['right'], 'un geste = une action : la diagonale ne saute plus');
 
   actions.length = 0;
   element.dispatch('touchstart', touchEvent('touchstart', ORIGIN.x, ORIGIN.y));
@@ -458,7 +478,7 @@ function withDom(html, run) {
   }
 }
 
-test('swiping on the real canvas steers and jumps, and stops once detached', () => withDom('<div id="mount"><canvas id="track"></canvas></div>', (dom) => {
+test('swiping on the real canvas steers without jumping, and stops once detached', () => withDom('<div id="mount"><canvas id="track"></canvas></div>', (dom) => {
   const canvas = dom.window.document.getElementById('track');
   const actions = [];
   const detach = attachSwipeControls(canvas, (name) => actions.push(name));
@@ -466,12 +486,22 @@ test('swiping on the real canvas steers and jumps, and stops once detached', () 
     new dom.window.PointerEvent(type, { clientX: x, clientY: y, pointerId: 4, bubbles: true, cancelable: true }),
   );
 
+  // Diagonale vers le haut et la gauche : la voie part (axe dominant), le saut
+  // ne suit plus — le cheval reste sur sa trajectoire jusqu'à l'atterrissage.
   send('pointerdown', 180, 400);
   send('pointermove', 160, 396);
   send('pointermove', 140, 394);
   send('pointermove', 136, 354);
   send('pointerup', 136, 354);
-  assert.deepEqual(actions, ['left', 'jump']);
+  assert.deepEqual(actions, ['left']);
+
+  // Le geste suivant, franchement vers le haut, saute : rien n'est perdu entre
+  // les deux, la diagonale en moins.
+  actions.length = 0;
+  send('pointerdown', 200, 400);
+  send('pointermove', 198, 340);
+  send('pointerup', 198, 340);
+  assert.deepEqual(actions, ['jump']);
 
   // Un geste détaché ne pilote plus rien (changement de page, monde détruit).
   actions.length = 0;

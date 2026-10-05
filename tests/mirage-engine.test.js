@@ -90,6 +90,20 @@ test('le Chemin du Serpent recale sa mer de nuages sur toutes les maps', () => {
   assert.match(engine, /if \(snakeway\) snakewayRouteProgress\.value = progress;\s*\n\s*syncSnakewayClouds\(\);/);
 });
 
+test('les commandes de mouvement sont bloquées pendant le saut (fin du saut en diagonale)', () => {
+  const start = engine.indexOf('const action = (name) => {');
+  assert.ok(start > 0, 'action() est déclaré dans le moteur');
+  const body = engine.slice(start, engine.indexOf('\n  };', start));
+  // La voie est recalculée **avec l'état du saut** : en l'air, `isAirborne` la
+  // verrouille et le cheval retombe dans la voie où il a décollé.
+  assert.match(body, /playerLaneAfterAction\(laneIndex, name, jumpLeft\)/);
+  assert.doesNotMatch(body, /playerLaneAfterAction\(laneIndex, name\)/,
+    'aucun changement de voie qui ignorerait le saut en cours');
+  // Seul le mouvement est verrouillé : le saut garde son buffer d'entrée, une
+  // tape juste avant de retomber repart à l'atterrissage.
+  assert.match(body, /if \(jumpLeft <= 0\) jumpLeft = JUMP_DURATION;\s*\n\s*else jumpBuffer = JUMP_BUFFER;/);
+});
+
 test('la page montre la panne du moteur au lieu d’une piste noire', () => {
   // Le moteur remonte l'erreur, et la page l'affiche.
   assert.match(engine, /console\.error\('\[mirage\] construction du monde impossible/);
