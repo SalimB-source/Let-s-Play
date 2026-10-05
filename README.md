@@ -891,8 +891,8 @@ et le dernier tour durait 21 s.
   contre 95 % de pads turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de
   tir vaut cinq bonus ordinaires dans leur choix de voie
   (`CITY_RUSH_POLICE_HUNT_TYPES`, `chooseCityRushPoliceLane`). Elles arrivent
-  sans charge d'arme, chargent leur mitrailleuse sur ces rares bonus rouges,
-  puis tirent sur leur client. **L'attaque d'hélicoptère a été retirée** :
+  sans charge d'arme, rechargent sept balles de mitrailleuse avec un bonus
+  rouge, puis tirent sur leur client. **L'attaque d'hélicoptère a été retirée** :
   aucun missile ni frappe aérienne ne peut toucher le joueur.
 
   La même escouade opère dans les cinq villes et sur les routes de carrière —
@@ -972,9 +972,11 @@ et le dernier tour durait 21 s.
 - **Les bonus.** En course, seuls deux objets apparaissent sur la route :
   le **pad turbo vert** et le bonus **rouge d'AK-47**. Le rouge est **très
   rare** : seulement **5 % des objets** générés sont rouges, contre 95 % de pads
-  turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.95`). Un seul bonus rouge
-  charge une rafale ; le pad vert s'active automatiquement et accélère pendant
-  `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Les anciens pouvoirs bleu et jaune
+  turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.95`,
+  `CITY_RUSH_RED_PICKUP_CHANCE = 0.05`). Chaque bonus rouge rare recharge les
+  **sept balles** du chargeur ; chaque pression en tire une, et maintenir `Z`
+  tire à cadence régulière. Le pad vert s'active automatiquement et accélère
+  pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Les anciens pouvoirs bleu et jaune
   restent dans les règles internes mais ne sont ni générés ni proposés au
   joueur : **aucune attaque d'hélicoptère** n'est disponible. L'appareil visible
   au dernier tour est un hélicoptère d'observation sans armement.

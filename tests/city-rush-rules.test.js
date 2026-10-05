@@ -14,6 +14,8 @@ import {
   CITY_RUSH_TRACK_BEHIND,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_AI_TRACK_BOOST_WEIGHT,
+  CITY_RUSH_RED_PICKUP_CHANCE,
+  CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE,
   CITY_RUSH_BLUE_SHOT_DURATION,
   CITY_RUSH_BLUE_SHOT_MAX_RANGE,
@@ -593,16 +595,19 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
   assert.ok(chase > CITY_RUSH_POLICE_BASE_SPEED * 1.34 - 1e-9);
 });
 
-test('the active loadout has one red machine-gun charge plus automatic ground boosts', () => {
+test('the active loadout has seven red machine-gun bullets plus automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 4200); // 6 tours : 5 boucles + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
-  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.95, 'le bonus rouge n’apparaît que dans 5 % des objets');
+  assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.05, 'le bonus rouge n’apparaît que dans 5 % des objets');
+  assert.equal(CITY_RUSH_PISTOL_AMMO_PER_PICKUP, 7);
+  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.95);
   assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
-  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 1, radio: 4 });
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, radio: 4 });
   assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
-  assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 1);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /bonus rouge est très rare/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /un seul suffit/i);
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 7);
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.ammoPerPickup, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /bonus rouge.*très rares/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /7 balles/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.name, /AK-47/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /tout droit/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /premier ennemi/i);
@@ -769,31 +774,37 @@ test('le tir droit bleu riposte sur la berline la plus proche de sa voie, même 
   }).id, 'police-3');
 });
 
-test('one red pickup charges the machine gun while inventory tracks remain independent', () => {
+test('one red pickup grants seven bullets while inventory tracks remain independent', () => {
   let inventory = createCityRushInventory();
   assert.deepEqual(Object.keys(inventory), ['blue-shot', 'pistol', 'radio']);
   inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
-  inventory = addCityRushCharge(inventory, 'pistol', 1);
+  inventory = addCityRushCharge(inventory, 'pistol');
   assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1);
-  assert.equal(inventory.pistol, 1);
-  assert.equal(isCityRushPowerCharged(inventory, 'pistol'), true, 'un seul bonus rouge charge la mitrailleuse');
+  assert.equal(inventory.pistol, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
+  assert.equal(isCityRushPowerCharged(inventory, 'pistol'), true, 'un bonus rouge charge sept balles');
 
   const usedShot = consumeCityRushCharge(inventory, 'pistol');
   assert.equal(usedShot.consumed, true);
-  assert.equal(usedShot.inventory.pistol, 0);
+  assert.equal(usedShot.inventory.pistol, 6);
   assert.equal(usedShot.inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1, 'la charge historique reste indépendante');
-  assert.equal(consumeCityRushCharge(usedShot.inventory, 'pistol').consumed, false);
+  assert.equal(consumeCityRushCharge(usedShot.inventory, 'pistol').inventory.pistol, 5);
 
-  inventory = addCityRushCharge(usedShot.inventory, 'pistol', 1);
-  assert.equal(inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
+  inventory = addCityRushCharge(usedShot.inventory, 'pistol');
+  assert.equal(inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol, 'un nouveau chargeur ne dépasse pas sept balles');
+  let emptied = inventory;
+  for (let shot = 0; shot < CITY_RUSH_PISTOL_AMMO_PER_PICKUP; shot += 1) {
+    emptied = consumeCityRushCharge(emptied, 'pistol').inventory;
+  }
+  assert.equal(emptied.pistol, 0);
+  assert.equal(consumeCityRushCharge(emptied, 'pistol').consumed, false);
   assert.equal(consumeCityRushCharge(inventory, 'unknown').consumed, false);
 
   const overfilled = addCityRushCharge(createCityRushInventory(), 'radio', 99);
   assert.equal(overfilled.radio, CITY_RUSH_POWER_CHARGE_COST.radio);
 });
 
-test('red pickups remain available until every active racer is charged, and never charge a ready racer twice', () => {
-  const charged = { pistol: 1 };
+test('red pickups remain available until every active racer has ammunition, and never reload a ready racer twice', () => {
+  const charged = { pistol: CITY_RUSH_PISTOL_AMMO_PER_PICKUP };
   const empty = { pistol: 0 };
   assert.equal(shouldHideCityRushPistolPickup(empty, [empty, empty]), false, 'le joueur doit d’abord charger');
   assert.equal(shouldHideCityRushPistolPickup(charged, [empty, charged]), false, 'un rival non chargé garde les bonus visibles');
@@ -912,7 +923,8 @@ test('la barre de vie du pilote ne baisse qu’au tir : un carambolage policier 
   assert.equal(cityRushPlayerDamage(-3, 'collision'), 0);
   assert.ok(CITY_RUSH_PLAYER_HEALTH_CRITICAL < CITY_RUSH_PLAYER_HEALTH);
 
-  // Un contact pendant l'accélération inflige seulement 1 point à la police.
+  // Un contact pendant l'accélération inflige seulement 1 point à la police
+  // et aucun dégât au joueur. Le délai empêche de recompter le même choc.
   assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision'), CITY_RUSH_POLICE_HEALTH - 1);
   assert.ok(CITY_RUSH_POLICE_COLLISION_COOLDOWN > 0.5);
@@ -1203,7 +1215,7 @@ test('au dernier tour, la riposte rouge peut viser la berline la plus proche', (
   ], 1200).id, 'police-2');
 });
 
-test('barre de vie des berlines : le tir rouge frappe fort, le contact en accélérant fait un petit dégât', () => {
+test('barre de vie des berlines : six points, tir rouge puissant et carambolage sans dégât au joueur', () => {
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 3);
@@ -1235,8 +1247,7 @@ test('barre de vie des berlines : le tir rouge frappe fort, le contact en accél
 });
 test('le bandeau « berline touchée » compte les tirs restants, pas les points de vie', () => {
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT), 3, 'trois tirs bleus au départ');
-  assert.equal(cityRushPoliceShotsLeft(4, CITY_RUSH_POWERS.BLUE_SHOT), 2, 'deux tirs bleus après le premier');
-  assert.equal(cityRushPoliceShotsLeft(2, CITY_RUSH_POWERS.BLUE_SHOT), 1, 'un tir bleu après le deuxième');
+  assert.equal(cityRushPoliceShotsLeft(2, CITY_RUSH_POWERS.BLUE_SHOT), 1, 'un tir bleu après le premier');
   assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'épave : plus rien à tirer');
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 2, 'deux tirs rouges au départ');
   assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 1, 'un tir rouge après le premier');

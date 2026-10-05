@@ -76,7 +76,7 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
-  CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN,
+  CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN, CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
 
@@ -469,7 +469,7 @@ for (const [index, city] of courses.entries()) {
     }
     if (hud && frames % 15 === 0) {
       const type = CITY_RUSH_POWERS.PISTOL;
-      if ((hud.inventory?.[type] || 0) >= CITY_RUSH_POWER_RULES[type].chargeCost) world.action(type);
+      if ((hud.inventory?.[type] || 0) > 0) world.action(type);
     }
     runFrames(1, `course f${frames}`);
     // Le cadrage se juge après l'image, caméra à jour. On laisse passer le
@@ -1005,9 +1005,11 @@ for (const [index, city] of courses.entries()) {
   const redPickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.PISTOL);
   // Le bonus rouge n'apparaît que 5 % du temps : une longue course peut très
   // bien se terminer sans que le pilote en croise un. S'il en ramasse un, il
-  // doit toujours charger une rafale d'un seul coup.
-  if (redPickups.some((pickup) => pickup.chargeCost !== 1 || pickup.progress < 1)) {
-    fail('un bonus rouge ramassé ne charge pas la mitrailleuse en une fois', redPickups);
+  // doit recharger le chargeur complet de sept balles.
+  if (redPickups.some((pickup) => pickup.chargeCost !== CITY_RUSH_PISTOL_AMMO_PER_PICKUP
+    || pickup.progress !== CITY_RUSH_PISTOL_AMMO_PER_PICKUP
+    || pickup.ammo !== CITY_RUSH_PISTOL_AMMO_PER_PICKUP)) {
+    fail('un bonus rouge ramassé ne recharge pas les sept balles de l’AK-47', redPickups);
   }
   const unsupportedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
   if (unsupportedPickups.length) fail('un bonus bleu ou jaune est encore collecté sur la route', unsupportedPickups);
