@@ -77,6 +77,7 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN,
+  CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
 } = await import('../src/games/cityRushRules.js');
@@ -288,6 +289,9 @@ for (const [index, city] of courses.entries()) {
   runFrames(45, 'intro');
   // ready() est émis par le wrapper React, pas par le monde : on vérifie le HUD initial.
   if (!callbacks.huds.length) fail('aucun HUD émis après la construction (reset initial)');
+  if (callbacks.huds[0]?.wantedLevel !== 0) {
+    fail('une course normale ne démarre pas à zéro étoile', callbacks.huds[0]);
+  }
   if (slowZoneNodes) fail('une zone d’huile ou de ralentissement est encore rendue', slowZoneNodes);
   if (!pickupSlots.some((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST)) fail('aucun pad turbo vert n’est placé sur la piste');
   const introStats = scene ? countVisible(scene) : null;
@@ -311,6 +315,9 @@ for (const [index, city] of courses.entries()) {
 
   // Compte à rebours : 3 → 2 → 1 → GO.
   world.reset();
+  if (callbacks.huds.at(-1)?.wantedLevel !== 0) {
+    fail('reset() ne remet pas les étoiles à zéro pour la course suivante', callbacks.huds.at(-1));
+  }
   world.setPhase('countdown');
   for (const n of [3, 2, 1]) { world.setCountdown(n); runFrames(24, `countdown ${n}`); }
   world.setCountdown(0);
@@ -574,8 +581,11 @@ for (const [index, city] of courses.entries()) {
       // L'escouade du dernier tour, distincte de la police du trafic rappelée
       // par un contact (`rallied`), un renfort différé ou une représaille :
       // le suivi d'engagement ne juge que les unités initiales.
-      const squadCars = hud.police.filter((car) => car.squad && !car.rallied && !car.reinforcement);
-      if (!firstPoliceHud && squadCars.length) firstPoliceHud = hud;
+      const squadCars = hud.police.filter((car) => car.squad && !car.rallied);
+      // Une poursuite par étoiles peut présenter une unité avant le dernier
+      // tour ; le point de référence reste l'arrivée complète de l'escouade
+      // scénarisée, nécessaire pour vérifier son quota de trois voitures.
+      if (!firstPoliceHud && squadCars.length === CITY_RUSH_POLICE_COUNT) firstPoliceHud = hud;
       policeHudFrames += 1;
       // Une berline sonnée par un tir du joueur est hors course quelques
       // secondes : la juger « décrochée » fausserait la mesure du harnais.
@@ -687,9 +697,21 @@ for (const [index, city] of courses.entries()) {
   // trafic en face, et son absence — pas seulement sa rareté — là où il n'y en a
   // pas : une voiture à contresens sur un circuit serait un vrai bogue.
   const oncomingLanes = cityRushLaneConfig(city).oncomingLanes.length;
-  const oncomingImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.oncoming && effect.pushedAside && effect.pushDirection === 'left');
+  const turnaroundEffects = callbacks.effects.filter((effect) => (
+    effect.type === 'police-oncoming-turnaround' || effect.type === 'police-turnaround-complete'
+  ));
+  if (turnaroundEffects.some((effect) => effect.duration !== CITY_RUSH_POLICE_TURNAROUND_DURATION)) {
+    fail('le demi-tour d’une patrouille ne dure pas 1,5 seconde', turnaroundEffects);
+  }
+  const oncomingImpacts = callbacks.effects.filter((effect) => (
+    effect.type === 'traffic-impact'
+    && effect.oncoming
+    && (effect.policeContact || (effect.pushedAside && effect.pushDirection === 'left'))
+  ));
   const trafficImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact');
-  if (oncomingLanes > 0 && !oncomingImpacts.length) fail('aucune collision frontale n’a poussé la voiture touchée vers la gauche', trafficImpacts);
+  if (oncomingLanes > 0 && !oncomingImpacts.length) {
+    fail('aucune collision frontale n’a dévié le trafic civil ou déclenché le demi-tour de la police', trafficImpacts);
+  }
   if (oncomingLanes === 0) {
     const headOn = trafficImpacts.filter((effect) => effect.oncoming);
     if (headOn.length) fail('un parcours sans trafic en face a subi une collision frontale', headOn);
@@ -701,13 +723,18 @@ for (const [index, city] of courses.entries()) {
     fail('le HUD ne contient pas exactement trois pilotes', callbacks.huds.at(-1));
   }
   const lastHud = callbacks.huds.at(-1);
-  for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers']) {
+  for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers', 'wantedLevel']) {
     if (!(field in lastHud)) fail(`champ HUD manquant : ${field}`, Object.keys(lastHud));
   }
   // Au dernier tour, la « longueur du tour » du HUD est celle du grand tour.
   const expectedLapLength = lastHud.lap >= RACE_LAPS ? CITY_RUSH_FINAL_LAP_LENGTH : CITY_RUSH_LAP_LENGTH;
   if (lastHud.laps !== RACE_LAPS || lastHud.lapLength !== expectedLapLength) fail('HUD laps/lapLength incohérents', lastHud);
   if (lastHud.totalDistance !== RACE_DISTANCE) fail('HUD totalDistance ≠ distance de la course', lastHud);
+  const wantedEffects = callbacks.effects.filter((effect) => effect.type === 'wanted-level');
+  if (!wantedEffects.some((effect) => effect.stars >= 3)) {
+    fail('un contact avec la police ne fait pas monter la recherche à trois étoiles', wantedEffects);
+  }
+  if (lastHud.wantedLevel < 3) fail('le HUD ne conserve pas les étoiles de recherche gagnées pendant la course', lastHud);
   if (finalLapBadGauge) fail(`le compteur du dernier tour est faux sur ${finalLapBadGauge} images (il doit courir sur 1 200 m)`, { finalLapHudFrames, samples: finalLapGaugeSamples });
   if (finalLapBadLength) fail('longueur de tour incohérente au dernier tour (attendu 1 200 m, compteur ≤ longueur)', { finalLapBadLength, finalLapHudFrames });
   if ([...lapSeen].some((lap) => lap < 1 || lap > RACE_LAPS)) fail('le HUD a affiché un tour hors course', [...lapSeen]);
@@ -892,8 +919,17 @@ for (const [index, city] of courses.entries()) {
   if (arrivalCars.length !== CITY_RUSH_POLICE_COUNT) {
     fail(`${arrivalCars.length} berline(s) annoncée(s) au lieu de ${CITY_RUSH_POLICE_COUNT}`, policeArrivals[0]);
   }
-  if (arrivalCars.some((car) => car[CITY_RUSH_POWERS.PISTOL])) {
-    fail('une berline entre en piste avec la mitrailleuse déjà chargée', arrivalCars);
+  if (arrivalCars.some((car) => typeof car[CITY_RUSH_POWERS.PISTOL] !== 'boolean')) {
+    fail('l’arrivée ne décrit pas l’état de charge de chaque berline', arrivalCars);
+  }
+  // Une poursuite déclenchée par les étoiles peut commencer avant le dernier
+  // tour : ces unités ont alors le droit de rafler un bonus rouge et de garder
+  // leurs munitions quand l’escouade scénarisée complète rejoint la course.
+  const arrivalEffectIndex = callbacks.effects.indexOf(policeArrivals[0]);
+  const priorWantedDispatch = callbacks.effects.slice(0, arrivalEffectIndex)
+    .some((effect) => effect.type === 'police-wanted-dispatch' || effect.type === 'police-steal');
+  if (arrivalCars.some((car) => car[CITY_RUSH_POWERS.PISTOL]) && !priorWantedDispatch) {
+    fail('une berline arrive armée sans avoir été déployée par la recherche ou raflé de bonus', arrivalCars);
   }
   const helicopterCalls = callbacks.effects.filter((effect) => effect.type === 'radio' || effect.type === 'missile-hit');
   if (helicopterCalls.length) fail('une attaque d’hélicoptère a été déclenchée', helicopterCalls);
@@ -903,29 +939,34 @@ for (const [index, city] of courses.entries()) {
   if (audioCalls.missileLaunch || audioCalls.helicopterStart || audioCalls.helicopterStop) {
     fail('un bruitage d’attaque aérienne a été joué', audioCalls);
   }
-  const playerDistanceAtArrival = firstPoliceHud.distance || 0;
-  if ((Number(firstPoliceHud.lap) || 1) < RACE_LAPS) {
-    fail('l’escouade de base entre avant le dernier tour du joueur', {
-      playerLap: firstPoliceHud.lap, raceLaps: RACE_LAPS, playerDistanceAtArrival,
+  if (policeArrivals[0]?.lap !== RACE_LAPS) {
+    fail('l’arrivée scénarisée de l’escouade n’a pas lieu au dernier tour', {
+      policeLap: policeArrivals[0]?.lap, raceLaps: RACE_LAPS,
     });
   }
-  for (const car of squadCars) {
-    if (car.distance > playerDistanceAtArrival + 2) fail('une voiture de base entre devant le joueur', { playerDistanceAtArrival, car });
-    if (car.distance < playerDistanceAtArrival - 140) fail('une voiture de base entre trop loin derrière le joueur', { playerDistanceAtArrival, car });
+  if (squadCars.some((car) => car.targetId !== 'player')) {
+    fail('une voiture de l’escouade ne poursuit pas le joueur', squadCars);
   }
+  // Une ou deux berlines peuvent avoir été activées dès les étoiles 2–3 et
+  // rouler depuis plusieurs minutes quand le dernier tour débute : on ne leur
+  // impose plus la position de spawn réservée au seul déploiement final.
   // La police du trafic : un contact l'a rappelée, elle chasse son pilote, et
   // elle rentre dans le rang au drapeau à damier.
   const rallies = callbacks.effects.filter((effect) => effect.type === 'police-rally');
+  const completedOncomingPolice = callbacks.effects.filter((effect) => effect.type === 'police-turnaround-complete');
   const ralliedInHud = new Set();
   for (const hud of callbacks.huds) {
     for (const car of hud.police || []) if (car.rallied) ralliedInHud.add(car.id);
   }
-  if (!ralliedInHud.size && rallies.length) fail('une berline rappelée n’apparaît jamais dans le HUD', rallies);
-  if (ralliedInHud.size !== rallies.length) {
-    fail(`${rallies.length} contact(s) pour ${ralliedInHud.size} berline(s) rappelée(s) en piste`, [...ralliedInHud]);
+  const rallyEvents = [...rallies, ...completedOncomingPolice];
+  if (!ralliedInHud.size && rallyEvents.length) fail('une berline rappelée n’apparaît jamais dans le HUD', rallyEvents);
+  if (ralliedInHud.size !== rallyEvents.length) {
+    fail(`${rallyEvents.length} contact(s)/demi-tour(s) pour ${ralliedInHud.size} berline(s) rappelée(s) en piste`, [...ralliedInHud]);
   }
   for (const car of rallies) {
-    if (car.police !== 'POLICE ROUTIÈRE') fail('une berline rappelée n’est pas identifiée comme police routière', car);
+    if (!['POLICE ROUTIÈRE', 'POLICE EN CIVIL'].includes(car.police)) {
+      fail('une berline rappelée n’est pas identifiée comme police routière ou banalisée', car);
+    }
   }
   const ralliedIds = [...ralliedInHud];
   // Le joueur peut descendre la berline rappelée au tir rouge : la poursuite

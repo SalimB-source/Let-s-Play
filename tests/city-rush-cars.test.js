@@ -77,6 +77,18 @@ test('la flotte de police comprend une berline et un SUV haut perché', () => {
   assert.equal(suv.userData.beacons.length, 2);
 });
 
+test('la berline de police banalisée ne montre ni gyrophare ni marquage', () => {
+  const unmarked = makeTrafficVehicle('undercover-police');
+  assert.equal(unmarked.userData.trafficType, 'undercover-police');
+  assert.equal(unmarked.userData.isPolice, true, 'la simulation la reconnaît comme police');
+  assert.equal(unmarked.userData.isUndercoverPolice, true);
+  assert.equal(unmarked.userData.beacons.length, 0, 'aucun gyrophare n’est visible');
+  const visibleNames = [];
+  unmarked.traverse((object) => { if (object.isMesh) visibleNames.push(object.name); });
+  assert.ok(!visibleNames.some((name) => /decal|beacon|lightbar|police-mark/i.test(name)),
+    'aucun élément de marquage policier n’est dans le modèle');
+});
+
 test('les coupés ne contiennent aucun personnage, même quand un pilote est assigné', () => {
   for (const profile of CITY_RUSH_CARS) {
     const driver = CITY_RUSH_DRIVERS[0];
