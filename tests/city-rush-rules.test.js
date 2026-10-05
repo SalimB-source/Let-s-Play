@@ -2488,9 +2488,8 @@ test('le Ring enchaîne de longs appuis, avec des cassures qui se resserrent', (
   }
   if (run) runs.push(run);
   const lengths = runs.map((item) => item.to - item.from);
-  // Les tout petits virages ont été ouverts en courbes douces (30–120 m →
-  // 300–450 m) : la densité d'appui du tour ne bouge pas, seul le zébru a
-  // disparu.
+  // Les petits zigzags du relevé ont été retirés de la table : la densité
+  // d'appui du tour ne bouge pas — seuls les zébrus ont disparu.
   assert.ok(turned / samples >= 0.28, `le tour tourne sur ${((turned / samples) * 100).toFixed(0)} % de sa longueur`);
   assert.ok(runs.length >= 8, `${runs.length} appuis au-dessus de 14°`);
   const longest = Math.max(...lengths);
@@ -2550,21 +2549,23 @@ test('le Ring enchaîne de longs appuis, avec des cassures qui se resserrent', (
     assert.ok(['smooth', 'sustained', 'tightening', 'snap'].includes(shape), `forme ${shape}`);
   }
 
-  // 6. Plus de tout petit virage : chaque appui du tracé dure au moins 150 m
-  //    réels (les micro-zébrus de 30–120 m ont été ouverts en courbes douces
-  //    pour la fluidité, chicane de Hohenrain comprise), et la cassure nette
-  //    ne survient que deux fois par tour — l'épingle d'Adenauer Forst et la
-  //    virole du Karussell, les deux cassures assumées.
+  // 6. La table ne garde que les grands virages : chaque appui du tracé dure au
+  //    moins 150 m réels (les micro-zébrus de 8 à 26 m de piste — la ligne de
+  //    départ, Quiddelbacher Höhe, Kottenborn, la Spiegelkurve, Breidscheid et
+  //    l'ouverture de la Döttinger Höhe — ont été retirés du tracé), et la
+  //    cassure nette ne survient que deux fois par tour — l'épingle d'Adenauer
+  //    Forst et la virole du Karussell, les deux cassures assumées.
   for (const [km, angle, spanKm, shape = 'smooth'] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
     assert.ok(spanKm >= 0.15, `virage à ${km} km : étendue ${spanKm} km, trop court pour la fluidité`);
+    assert.ok(Math.abs(angle) >= 16, `virage à ${km} km : ${angle}°, un petit zigzag s'est invité`);
     if (shape === 'snap') {
       assert.ok([7.2, 13.5].some((snapKm) => Math.abs(km - snapKm) < 0.01), `cassure « snap » inattendue à ${km} km`);
     }
   }
   // Sur le profil rendu, hors ces deux cassures, le rayon du ruban ne descend
   // jamais sous la largeur de la piste (9,20 m) : plus aucun pli qui casse le
-  // défilement — les courbes douces qui remplacent les anciens petits virages
-  // tiennent au moins trois largeurs. Le rayon est mesuré comme au moteur :
+  // défilement — les grands virages qui restent tiennent au moins trois
+  // largeurs. Le rayon est mesuré comme au moteur :
   // x = déport, z = −0,72·s (différences centrées).
   const scrollScale = 0.72;
   const roadWidth = 9.2;
@@ -2590,6 +2591,56 @@ test('le Ring enchaîne de longs appuis, avec des cassures qui se resserrent', (
     if (nearSnap(distance)) continue;
     const radius = ringRadius(distance);
     assert.ok(radius >= roadWidth, `rayon ${radius.toFixed(1)} à ${(distance / lap * 20.832).toFixed(2)} km : un tout petit virage s'est invité`);
+  }
+
+  // 7. Plus un seul petit zigzag : sur le cap rendu (celui que le pilote voit
+  //    tourner), chaque inversion de braquage est soit un balancement entre
+  //    deux grands virages nommés (au moins 10°), soit une oscillation
+  //    invisible (sous le degré, simple plat du profil). Aucun zébru de 1 à 8°
+  //    ne subsiste — c'était exactement la signature des virages retirés.
+  const headingSamples = 4000;
+  const headingStep = lap / headingSamples;
+  const headingDegree = [];
+  for (let index = 0; index <= headingSamples; index += 1) {
+    headingDegree.push((profile.yaw(index * headingStep) * 180) / Math.PI);
+  }
+  const smoothed = headingDegree.map((_, index) => {
+    let total = 0;
+    for (let offset = -2; offset <= 2; offset += 1) {
+      total += headingDegree[(index + offset + headingDegree.length) % headingDegree.length];
+    }
+    return total / 5;
+  });
+  const reversals = [];
+  for (let index = 1; index < headingSamples; index += 1) {
+    const before = smoothed[index] - smoothed[index - 1];
+    const after = smoothed[index + 1] - smoothed[index];
+    if (before * after <= 0 && Math.abs(before) > 1e-5) reversals.push(index);
+  }
+  const swings = [];
+  for (let index = 1; index < reversals.length; index += 1) {
+    const from = reversals[index - 1];
+    const to = reversals[index];
+    swings.push({
+      amplitude: Math.abs(smoothed[to] - smoothed[from]),
+      kmFrom: (from / headingSamples) * 20.832,
+      kmTo: (to / headingSamples) * 20.832,
+    });
+  }
+  const zigzags = swings.filter((swing) => swing.amplitude >= 1 && swing.amplitude < 8);
+  assert.equal(
+    zigzags.length,
+    0,
+    `petits zigzags restants : ${zigzags.map((swing) => `${swing.amplitude.toFixed(1)}° de ${swing.kmFrom.toFixed(2)} à ${swing.kmTo.toFixed(2)} km`).join(', ')}`,
+  );
+  // Et les deux longues lignes droites du tour en sont vraiment : plus un
+  // virage entre le portique et Hatzenbach (km 0 → 1,95), plus un virage de la
+  // Döttinger Höhe à l'arrivée (km 19,4 → 20,832).
+  for (const [km, angle] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
+    assert.ok(km >= 1.95, `un virage de ${angle}° traîne encore sur la ligne de départ (${km} km)`);
+  }
+  for (const [km, angle] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
+    assert.ok(km <= 19.4, `un virage de ${angle}° traîne encore sur la Döttinger Höhe (${km} km)`);
   }
 });
 

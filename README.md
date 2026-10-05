@@ -1464,13 +1464,14 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   qui ne se relâche pas), `'tightening'` met 45 % de l'angle dans une longue
   entrée douce puis 55 % dans une cassure étroite en sortie (le virage qui se
   resserre quand on croit l'avoir pris), `'snap'` concentre tout l'angle sur
-  une cassure (chicane, Karussell) et `'smooth'` reste la cloche rapide. Aire de
-  chaque forme normalisée à 1 : l'angle annoncé est exactement l'angle dont le
-  cap tourne. Résultat mesuré sur le profil rendu : **le tour tourne sur un
-  tiers de sa longueur** (≥ 10°), **onze appuis dépassent 14°**, le plus long
-  tient **71 m de piste, soit deux secondes de volant braqué**, et le cap monte
-  à **31°** dans la virole. Le profil précédent plafonnait à 14° avec des appuis
-  de 30 m — aucun virage ne durait une seconde.
+  une cassure (l'épingle d'Adenauer Forst, la virole du Karussell) et `'smooth'`
+  reste la cloche rapide. Aire de chaque forme normalisée à 1 : l'angle annoncé
+  est exactement l'angle dont le cap tourne. Résultat mesuré sur le profil
+  rendu : **le tour tourne sur un tiers de sa longueur** (≥ 10°), **neuf appuis
+  dépassent 14°**, le plus long tient **67 m de piste, soit près de deux
+  secondes de volant braqué**, et le cap monte à **29°** dans la virole. Le
+  profil précédent plafonnait à 14° avec des appuis de 30 m — aucun virage ne
+  durait une seconde.
 - **La mini-carte** dessine la silhouette du circuit, relevée dans
   OpenStreetMap (© les contributeurs d'OpenStreetMap, ODbL) : descente sud vers
   Breidscheid puis épingle est du Karussell.
@@ -1501,6 +1502,18 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   jamais de camion-poubelle. Deux véhicules seulement, un par voie : sur une
   piste étroite, un troisième condamne une voie et l'escouade du dernier tour
   ne peut plus revenir sur le leader.
+- **Les petits zigzags sont retirés.** Le relevé réel compte 73 virages, dont
+  beaucoup d'oscillations qui ne font plus, une fois ramenées au 1:17, que 9 à
+  35 m de piste : les trois respirations de la ligne de départ (Antoniusbuche,
+  Tiergarten, Sabine-Schmitz), la T13 et la chicane de Hohenrain, la bosse de
+  Quiddelbacher Höhe, le gauche de Kottenborn, le gauche du « Miss-Hit-Miss » à
+  la Spiegelkurve, la cuvette de Breidscheid et l'ouverture de la Döttinger
+  Höhe. Elles ne faisaient qu'un zébru de volant entre deux grands virages :
+  elles ont été **retirées du tracé, pas adoucies**. Il ne reste que les **31
+  virages nommés**, tous d'au moins **16°**, et la ligne de départ comme la
+  Döttinger Höhe se prennent désormais parfaitement droites — le test
+  `check:city-rush` vérifie qu'aucun balancement de cap de 1 à 8° ne subsiste
+  sur le profil rendu.
 - **Les virages serrés** sont élargis par rapport au réel (200 m au Karussell
   deviennent 450 m de relevé) pour que leur rayon reste jouable au 1:17, et une
   cassure ne peut pas tourner plus vite que le ruban ne sait se plier : sa
@@ -1588,7 +1601,10 @@ et rien de ce qui est peint ensuite ne recouvre une ligne. Une piste nue échoue
 appuis, avec des cassures qui se resserrent`) : il mesure le cap rendu tour par
 tour, compte les portions au-dessus de 10° et 14°, vérifie que la cloche lisse
 est symétrique alors que le virage qui se resserre appuie une fois et demie plus
-fort en sortie, et que le profil se referme sans marche sous le portique.
+fort en sortie, que le profil se referme sans marche sous le portique, qu'aucun
+virage de moins de 16° ne subsiste dans la table et qu'aucun balancement de cap
+de 1 à 8° ne traîne sur le tracé — les petits zigzags sont bel et bien partis,
+et les deux longues lignes droites du tour en sont vraiment.
 
 `check:city-rush` porte aussi le test du rythme (`the Nürburgring plays at a
 slower pace, every other course keeps the historic speed`) : le Ring est le
