@@ -1,5 +1,6 @@
 import React from 'react';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
+import CityRushHealthBar from './CityRushHealthBar';
 
 function formatGap(racer) {
   if (racer.isPlayer) return 'TOI';
@@ -42,6 +43,13 @@ export default function CityRushRaceList({ racers = [], pursuers = [], laps = 1 
             <span className="city-rush-race-list-copy">
               <b>{racer.name}{racer.isPlayer && <em>TOI</em>}</b>
               <small>{racer.flag} {racer.country}</small>
+              <CityRushHealthBar
+                health={racer.health}
+                maxHealth={racer.maxHealth}
+                compact
+                flash={racer.healthFlash > 0}
+                label={`Vie de ${racer.displayName || racer.name || 'ce pilote'}`}
+              />
             </span>
             <span className="city-rush-race-list-gap">{formatGap(racer)}</span>
           </div>

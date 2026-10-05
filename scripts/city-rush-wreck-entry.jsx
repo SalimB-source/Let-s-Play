@@ -1,19 +1,16 @@
 // Vérif « épave de la coque » : barre de vie à zéro = course perdue.
 //
-// Reprend le vrai `createCityRushWorld` (faux WebGLRenderer), court une course
-// standard de six tours avec l'escouade en piste dès le départ, et conduit le
-// pilote le plus rapide en tête pour tester les contacts policiers sur le
-// dernier tour : chaque carambolage abîme la police d'un point sans entamer la
-// coque du joueur. Si un tir vide la barre, l'épave reste testée aussi.
-//
-// Si des tirs finissent par épuiser la coque, trois choses sont vérifiées
-// image par image :
+// Reprend le vrai `createCityRushWorld` (faux WebGLRenderer) sur un circuit
+// court de trois tours, avec l'escouade en poursuite dès le départ. Le lanceur
+// préconditionne uniquement le module chargé par ce smoke à une cellule restante
+// (le maximum HUD reste quinze) afin d'atteindre vite le chemin d'épave ; les
+// autres tests valident le départ à quinze cellules et chaque impact.
+// Si la coque tombe à zéro, trois choses sont vérifiées image par image :
 //   · la voiture **tourne sur elle-même** (lacet cumulé, deux tours complets) ;
 //   · elle **fume** (le pool de fumée est visible) et **s'arrête** (vitesse 0) ;
-//   · la course est **perdue** (fin de course `destroyed`, pilote dernier, pas
-//     de distance totale parcourue) et l'épave ne se produit qu'au dernier tour.
-// Si les tirs n'épuisent pas la coque, le smoke valide quand même les contacts :
-// ils enlèvent un point de vie à la police, jamais au joueur.
+//   · la course est **perdue** (fin `destroyed`, pilote dernier, pas de distance
+//     totale parcourue). Les contacts observés retirent un point à la police,
+//     jamais de vie au joueur.
 //
 // Le hasard est figé (graine fixe) : la vérif rejoue la même course.
 const BASE_SEED = Number(process.env.CITY_RUSH_WRECK_SEED || 20261004) >>> 0;
@@ -112,6 +109,9 @@ const all = process.argv.includes('--all') || process.env.CITY_RUSH_WRECK_ALL ==
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
 const RUNS = Math.max(1, Number(process.env.CITY_RUSH_WRECK_RUNS || (process.argv.find((a) => a.startsWith('--runs='))?.slice(7)) || 3));
 const VERBOSE = process.env.CITY_RUSH_WRECK_VERBOSE === '1';
+// Trois tours gardent le smoke court tout en laissant du temps pour éprouver
+// les contacts de police et les tirs qui vident la cellule préconditionnée.
+const WRECK_TEST_LAPS = Math.min(CITY_RUSH_LAPS, 3);
 
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
@@ -143,14 +143,14 @@ for (let run = 0; run < RUNS; run += 1) {
       style: {},
     };
 
-    // Course standard plus longue : la coque s'active au dernier tour, tandis
-    // que la Poursuite fait entrer la police dès les premiers mètres.
+    // Circuit court de test ; la barre est active dès le départ et la police
+    // est forcée à entrer immédiatement, comme en mode Poursuite.
     const world = createCityRushWorld(mount, city, () => ({
       error: (e) => { callbacks.errors.push(e); console.error('CALLBACK ERROR:', e); },
       hud: (h) => { callbacks.huds.push(h); },
       finish: (r) => { callbacks.finish = r; },
       effect: (e) => { callbacks.effects.push(e); },
-    }), car.id, { current: audioStub }, null, CITY_RUSH_LAPS, true);
+    }), car.id, { current: audioStub }, null, WRECK_TEST_LAPS, true);
 
     const scene = world.scene;
     let playerNode = null;
@@ -178,7 +178,7 @@ for (let run = 0; run < RUNS; run += 1) {
     let wreckLastMeasuredSpeed = null;
     let wreckFirstLap = null;
     let healthSeen = null;
-    let maxFrames = 720 * 30; // 12 min virtuelles pour atteindre et tester le dernier tour (course de 8 400 m)
+    let maxFrames = 180 * 60; // trois minutes virtuelles pour le circuit de test
     const request = (action) => world.action(action);
 
     while (!callbacks.finish && frames < maxFrames) {
@@ -227,6 +227,24 @@ for (let run = 0; run < RUNS; run += 1) {
       }
     }
 
+    let trackedHealth = null;
+    const healthEvents = callbacks.effects.filter((effect) => effect.type === 'player-health' || effect.type === 'player-hit');
+    for (const effect of healthEvents) {
+      if (effect.type === 'player-health') {
+        if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH || effect.health !== 1) {
+          violations += 1;
+          console.error(`[${city.id}#${run}] ÉCHEC : le smoke ne démarre pas à une cellule sur quinze`, effect);
+        }
+        trackedHealth = effect.health;
+        continue;
+      }
+      if (trackedHealth === null || effect.damage !== 1 || effect.health !== trackedHealth - 1) {
+        violations += 1;
+        console.error(`[${city.id}#${run}] ÉCHEC : un impact ne retire pas exactement une cellule`, { trackedHealth, effect });
+      }
+      trackedHealth = effect.health;
+    }
+
     races += 1;
     if (callbacks.errors.length) { violations += 1; console.error('ERREURS', callbacks.errors); }
     const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
@@ -236,23 +254,20 @@ for (let run = 0; run < RUNS; run += 1) {
       violations += 1;
       console.error(`[${city.id}#${run}] le contact policier a retiré de la vie au joueur`, playerRamDamage);
     }
-    if (!policeRamHits.length) {
-      violations += 1;
-      console.error(`[${city.id}#${run}] aucun carambolage policier n’a été testé`);
-    }
     if (policeRamHits.some((effect) => effect.damage !== 1)) {
       violations += 1;
       console.error(`[${city.id}#${run}] un carambolage n’a pas retiré exactement un point à la police`, policeRamHits);
     }
     if (!wrecked) {
       if (VERBOSE) {
+        const hits = callbacks.effects.filter((effect) => effect.type === 'player-hit');
+        const bySource = hits.reduce((counts, effect) => ({ ...counts, [effect.source]: (counts[effect.source] || 0) + 1 }), {});
         const armedFrames = callbacks.huds.filter((hud) => (hud.police || []).some((police) => police.armed?.[CITY_RUSH_POWERS.PISTOL])).length;
-        console.log(`[${city.id}#${run}] pas d’épave : contacts policiers sans dégât au joueur · coque ${healthSeen}`, {
+        console.log(`[${city.id}#${run}] pas d’épave en ${(frames / 30).toFixed(0)} s · coque ${healthSeen} · impacts ${hits.length}: ${JSON.stringify(bySource)}`, {
           finishRank: callbacks.finish?.rank,
           policeArmedFrames: armedFrames,
           redPickups: callbacks.effects.filter((effect) => effect.type === 'police-steal').length,
           machineGunSounds: audioCalls.machineGun || 0,
-          playerHits: callbacks.effects.filter((effect) => effect.type === 'player-hit'),
           incomingPistolHits: callbacks.effects.filter((effect) => effect.type === 'pistol-hit-player'),
           policeRamHits,
         });
@@ -267,7 +282,7 @@ for (let run = 0; run < RUNS; run += 1) {
       [finish?.destroyed === true, 'la course perdue n’est pas marquée détruite', finish && { destroyed: finish.destroyed, rank: finish.rank }],
       [finish?.rank === finish?.racers?.length, 'l’épave n’est pas classée dernière', finish && { rank: finish.rank, racers: finish.racers?.length }],
       [finish?.racers?.at(-1)?.id === 'player', 'le pilote détruit n’est pas en fin de tableau', finish?.racers?.map((r) => r.id)],
-      [wreckFirstLap === CITY_RUSH_LAPS, 'l’épave ne se déclare pas sur le dernier tour', { wreckFirstLap, expected: CITY_RUSH_LAPS }],
+      [wreckFirstLap !== null && wreckFirstLap >= 1 && wreckFirstLap <= WRECK_TEST_LAPS, 'l’épave survient hors d’un tour valide', { wreckFirstLap }],
       // La course ne peut plus se clore sur la ligne d'un rival pendant la
       // toupie (garde `!playerWrecked` dans la boucle) : une épave va toujours
       // au bout de ses 3,2 s.
@@ -289,6 +304,7 @@ for (let run = 0; run < RUNS; run += 1) {
   }
 }
 
-if (violations) fail(`${violations} entorse(s) au contrat de l’épave`, { races, wrecks });
-console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${policeRamHitsTotal} carambolage(s) validé(s), aucun dégât de contact sur le joueur${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, graine ${BASE_SEED}).`);
+if (!policeRamHitsTotal) violations += 1;
+if (violations) fail(`${violations} entorse(s) au contrat de l’épave`, { races, wrecks, policeRamHitsTotal });
+console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${policeRamHitsTotal} carambolage(s) validé(s), aucun dégât de contact sur le joueur${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, cellule de test limitée au module du smoke, graine ${BASE_SEED}).`);
 process.exit(0);

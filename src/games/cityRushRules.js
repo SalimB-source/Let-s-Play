@@ -463,7 +463,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser, et touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Contre une voiture de police à six points de vie, un tir rouge inflige 3 dégâts ; un carambolage en accélérant n’en inflige qu’un et ne retire aucune vie au joueur.`,
+    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote, il retire un carré de vie sans dérapage ni ralentissement ; contre une voiture de police à six points de vie, il inflige 3 dégâts. Un carambolage en accélérant retire un point à la police, jamais au joueur.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -1940,45 +1940,35 @@ export function selectCityRushRacers({
 }
 
 // ── L'escouade de police du dernier tour ────────────────────────────────────
-// Au passage du dernier tour, deux véhicules d'interception entrent en piste
-// juste derrière le premier du classement. L'escouade mélange berlines et SUV;
-// une unité détruite est remplacée par un renfort quelques secondes plus tard.
-// Elles ne sont **pas classées** :
-// `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
-// Leur mission est de harceler le leader à l'arrivée, puis celle des renforts
-// est de viser le joueur : ils chargent la mitrailleuse avec les rares bonus
-// rouges. L'attaque d'hélicoptère a été retirée.
-//
-// Contrairement aux autres voitures de course, un véhicule de police est
-// **solide** : il ne se traverse pas. Il peut donc se rabattre devant le leader puis
-// lever le pied pour le retenir — un barrage roulant, exactement l'effet
-// d'une voiture lente percutée — avant de repartir et de revenir à la charge.
-export const CITY_RUSH_POLICE_COUNT = 2;
+// Au dernier tour, trois véhicules d'interception prennent le joueur pour
+// cible. En mode Poursuite, ils entrent dès le départ. Un rival qui tire sur
+// une voiture de police reçoit son propre poursuivant, sans détourner l'escouade
+// du joueur. Les renforts de l'escouade reviennent quelques secondes après une
+// destruction. Les unités restent hors classement et hors écran d'arrivée ;
+// les attaques d'hélicoptère sont supprimées, mais l'appareil d'observation
+// continue de suivre le joueur au dernier tour.
+export const CITY_RUSH_POLICE_COUNT = 3;
+export const CITY_RUSH_POLICE_EXTRA_PER_ATTACKER = 1;
 // Les renforts reviennent par vagues plutôt qu'instantanément : assez de temps
 // pour profiter d'une destruction, sans laisser la poursuite retomber.
 export const CITY_RUSH_POLICE_REINFORCEMENT_DELAY = 3.6; // s
-// La deuxième voiture et les renforts de son slot utilisent le modèle SUV.
-export const CITY_RUSH_POLICE_VEHICLE_TYPES = Object.freeze(['police', 'police-suv']);
-// Un véhicule sur chacune des deux voies extérieures de la course : les
-// poursuivants encadrent le leader sans démarrer dans la voie médiane, la plus
-// exposée aux voitures qui viennent en face.
-export const CITY_RUSH_POLICE_LANES = Object.freeze([
-  CITY_RUSH_FORWARD_LANES[0],
-  CITY_RUSH_FORWARD_LANES[CITY_RUSH_FORWARD_LANES.length - 1],
-]);
+// Trois unités : deux berlines et un SUV.
+export const CITY_RUSH_POLICE_VEHICLE_TYPES = Object.freeze(['police', 'police-suv', 'police']);
+// Une voiture dans chacune des voies de course pour encadrer la poursuite.
+export const CITY_RUSH_POLICE_LANES = Object.freeze([...CITY_RUSH_FORWARD_LANES]);
 // La police ne convoite que les bonus rouges de mitrailleuse.
 export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL]);
 export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge vaut cinq bonus ordinaires
 export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.06;
 // Une berline lancée à la poursuite dépasse toujours la voiture qu'elle chasse :
-// sa vitesse de sprint ne dépend pas d'une pointe fixe, mais de celle du leader.
+// sa vitesse de sprint suit celle de sa cible, plutôt qu'une pointe fixe.
 // Sans ce plancher, une supercar à 179 km/h distancerait définitivement les
 // poursuivants (base × 1,34 ≈ 178 km/h) et le dernier tour n'aurait plus d'enjeu.
-export const CITY_RUSH_POLICE_CHASE_SPEED_FACTOR = 1.18; // × la vitesse du leader, minimum en sprint
-export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant le leader
-export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle du leader
-export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière le leader pour ouvrir le feu
-export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en piste, derrière le leader
+export const CITY_RUSH_POLICE_CHASE_SPEED_FACTOR = 1.18; // × la vitesse de la cible, minimum en sprint
+export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant la cible
+export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle de la cible
+export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière la cible pour ouvrir le feu
+export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en piste, derrière la cible
 export const CITY_RUSH_POLICE_LOOKAHEAD = 200; // m : portée de convoitise des bonus
 export const CITY_RUSH_POLICE_STEAL_NOTICE = 150; // m : au-delà, la page ne commente plus un vol de bonus
 export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafales de la même berline
@@ -2076,10 +2066,11 @@ export function cityRushPoliceContact({
   return Math.abs(lateral - otherLateral) < Math.max(1.2, halfWidths);
 }
 
-// L'escouade ne prend en chasse que le premier du classement. `entries` ne
-// contient que les pilotes classés (notre joueur et les trois rivaux) : à
-// égalité, le premier de la liste — notre joueur — est déclaré leader, comme
-// dans `rankCityRushRacers`.
+// Sélectionne le pilote le plus avancé pour les décisions de barrage et les
+// calculs de peloton ; le monde déclenche l'arrivée de la police au dernier tour
+// du joueur et assigne explicitement sa cible, quel que soit son rang. `entries`
+// ne contient que les pilotes classés ; en cas d'égalité, le premier de la liste
+// devient leader, comme dans `rankCityRushRacers`.
 export function cityRushPackLeader(entries = []) {
   let leader = null;
   for (const entry of Array.isArray(entries) ? entries : []) {
@@ -2379,22 +2370,18 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
   });
 }
 
-// ── La barre de vie du pilote (dernier tour) ────────────────────────────────
-// Au dernier tour du pilote — le seul tour du Sprint, le sixième du Circuit
-// et de la Poursuite (où l'escouade, elle, est en piste depuis le départ : la
-// barre suit le pilote, pas le leader) — la voiture du joueur reçoit une barre
-// de vie de **huit carrés**. La page la dessine **sans jamais montrer les carrés** : une
-// barre continue qui part du vert et glisse vers l'orange puis le rouge en se
-// vidant (`cityRushPlayerHealthColor`). Le barème reste en carrés : un tir
-// droit bleu en coûte un, une rafale rouge deux. Un contact avec une berline de
-// police n'entame pas la coque du pilote ; c'est la police qui encaisse un petit
-// dégât (`CITY_RUSH_POLICE_DAMAGE.collision`). Le trafic et les autres voitures
-// de course ne touchent pas la barre non plus.
-export const CITY_RUSH_PLAYER_HEALTH = 8; // carrés de la barre, pleine au dernier tour
+// ── Barres de vie des voitures de course ────────────────────────────────────
+// Le joueur et ses deux rivaux ont quinze cellules de vie, visibles dès le
+// départ effectif. Elles se vident par groupes de cinq : bleu, vert, puis
+// jaune ; les trois dernières cellules jaunes passent au rouge. Les tirs
+// retirent une cellule et le tir rouge ne fait ni déraper ni ralentir sa cible.
+// Le choc contre une voiture de police abîme la police, jamais le joueur.
+export const CITY_RUSH_PLAYER_HEALTH = 15;
+export const CITY_RUSH_RACER_HEALTH = CITY_RUSH_PLAYER_HEALTH;
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
-  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // un tir droit bleu
-  [CITY_RUSH_POWERS.PISTOL]: 2, // le tir droit rouge de l'AK-47
-  collision: 0, // percuter une voiture de police ne retire aucune vie au joueur
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
+  [CITY_RUSH_POWERS.PISTOL]: 1,
+  collision: 0,
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
 // Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
@@ -2402,8 +2389,9 @@ export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui
 // complets, `cityRushStunSpin`) — la page laisse ensuite la place au bilan.
 export const CITY_RUSH_WRECK_SECONDS = 3.2;
 export const CITY_RUSH_WRECK_SPIN_TURNS = 2;
-// Deux carrés ou moins : la page passe la barre en alerte (pulsation rouge).
-export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 2;
+// Les trois derniers carrés jaunes sont le seuil d'alerte rouge.
+export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 3;
+export const CITY_RUSH_HEALTH_GROUP_SIZE = 5;
 
 export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
   const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));
@@ -2412,26 +2400,35 @@ export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = 
   return Math.max(0, safeHealth - damage);
 }
 
-// Vert → orange → rouge, interpolés entre trois arrêts : la barre se réchauffe
-// progressivement au lieu de changer de couleur par paliers.
-export const CITY_RUSH_PLAYER_BAR_COLORS = Object.freeze({ full: '#2be06a', mid: '#ffa53d', low: '#ff3b4d' });
-const BAR_FULL_RGB = Object.freeze([0x2b, 0xe0, 0x6a]);
-const BAR_MID_RGB = Object.freeze([0xff, 0xa5, 0x3d]);
-const BAR_LOW_RGB = Object.freeze([0xff, 0x3b, 0x4d]);
-const mixChannel = (from, to, amount) => Math.round(from + (to - from) * amount);
-const rgbToHex = ([r, g, b]) => `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+export const CITY_RUSH_PLAYER_BAR_COLORS = Object.freeze({
+  blue: '#48b9ff',
+  green: '#50e48a',
+  yellow: '#ffd44f',
+  critical: '#ff526e',
+});
 
-export function cityRushPlayerHealthColor(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
-  const ceiling = Math.max(1, Number(max) || CITY_RUSH_PLAYER_HEALTH);
-  const ratio = Math.max(0, Math.min(1, (Number(health) || 0) / ceiling));
-  const [from, to, amount] = ratio >= 0.5
-    ? [BAR_MID_RGB, BAR_FULL_RGB, (ratio - 0.5) / 0.5]
-    : [BAR_LOW_RGB, BAR_MID_RGB, ratio / 0.5];
-  return rgbToHex([
-    mixChannel(from[0], to[0], amount),
-    mixChannel(from[1], to[1], amount),
-    mixChannel(from[2], to[2], amount),
-  ]);
+/**
+ * Découpe la vie en 15 cellules colorées en trois groupes de cinq.
+ * La santé se vide de gauche à droite (bleu, vert, jaune) ; quand il ne reste
+ * que trois cellules jaunes, elles deviennent rouges.
+ */
+export function cityRushHealthSegments(health = CITY_RUSH_PLAYER_HEALTH) {
+  const safeHealth = Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Math.trunc(Number(health) || 0)));
+  const firstFilled = CITY_RUSH_PLAYER_HEALTH - safeHealth;
+  const groups = ['blue', 'green', 'yellow'];
+  return Array.from({ length: CITY_RUSH_PLAYER_HEALTH }, (_, index) => {
+    const groupIndex = Math.floor(index / CITY_RUSH_HEALTH_GROUP_SIZE);
+    const active = index >= firstFilled;
+    const critical = active && safeHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && groupIndex === 2;
+    const tone = critical ? 'critical' : groups[groupIndex];
+    return { index, groupIndex, group: groups[groupIndex], active, critical, tone, color: CITY_RUSH_PLAYER_BAR_COLORS[tone] };
+  });
+}
+
+// Compatibilité avec les petits widgets qui n'affichent qu'une seule teinte :
+// renvoie la couleur de la première cellule encore allumée.
+export function cityRushPlayerHealthColor(health = CITY_RUSH_PLAYER_HEALTH) {
+  return cityRushHealthSegments(health).find((segment) => segment.active)?.color || CITY_RUSH_PLAYER_BAR_COLORS.critical;
 }
 
 // Cooldown d'un carambolage : une berline collée au pare-chocs du pilote ne

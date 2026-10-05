@@ -154,7 +154,9 @@ for (const city of CITY_RUSH_CITIES) {
   if (cb.pickups.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
     fail('un pad turbo du Sprint ne s’active pas automatiquement', cb.pickups);
   }
-  const bad = cb.effects.filter((e) => /police|pistol|radio|missile|player-health|rival-boost/.test(e.type));
+  // L'annonce de la barre du joueur est attendue en solo ; seul un effet
+  // d'arme, de rival ou de police doit invalider le Sprint.
+  const bad = cb.effects.filter((e) => /police|pistol|radio|missile|rival-boost/.test(e.type));
   if (bad.length) fail('effet police/arme/rival en Sprint', bad.map((e) => e.type));
   if (cb.huds.some((h) => h.police.length)) fail('police dans le HUD');
   if (r.racers.length !== 1 || !r.racers[0].isPlayer) fail('Sprint pas en solo', r.racers.map((x) => x.id));

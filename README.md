@@ -795,7 +795,8 @@ de **1 200 m** qu'on reparcourt — la boucle a été doublée (600 m → 1 200 
 pour rendre les stages plus longs : deux fois plus de décor avant de repasser
 sous le portique. Les courses standard comptent **six tours**, avec un dernier
 tour double de **2 400 m** : **8 400 m au total**. Le Sprint s'allonge lui
-aussi à seize checkpoints. C'est au dernier tour que la police entre en piste.
+aussi à seize checkpoints. En Circuit, la police entre au dernier tour du
+joueur ; le mode Poursuite la déploie dès le départ.
 **Tokyo se joue sur la Shuto Expressway Route 1** —
 la C1 首都高速都心環状線, l'anneau intérieur réel de 14,8 km autour du palais
 impérial, dans le sens 内回り : chaque boucle de 1 200 m rejoue la boucle
@@ -882,24 +883,30 @@ et le dernier tour durait 21 s.
   `npm run check:city-rush-sprint-ui` (la vraie page dans jsdom : rien n'y
   évoque la poursuite ou les rivaux en Sprint, et les modes Circuit et
   Poursuite gardent les leurs).
-- **L'escouade de police.** En Circuit, deux véhicules d'interception entrent
-  derrière le leader à l'ouverture du **sixième et dernier tour** — un dernier
-  tour de 2 400 m sous la sirène. En Poursuite, la même escouade est présente
-  dès le départ. Une berline et un SUV roulent pour gêner le pilote : barrage,
-  changement de voie, chasse, et renfort après une destruction au dernier tour.
-  Elles **ne sont pas classées** : `rankCityRushRacers` ne les voit jamais, la
-  grille garde trois pilotes, et le HUD les affiche à part (`hud.police`,
-  marqueurs rouge et bleu de la mini-carte). Elles convoitent les bonus rouges
-  d'AK-47 ; un bonus rouge ne représente que **5 % des objets** sur la route,
-  contre 95 % de pads turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de
-  tir vaut cinq bonus ordinaires dans leur choix de voie
-  (`CITY_RUSH_POLICE_HUNT_TYPES`, `chooseCityRushPoliceLane`). Elles arrivent
-  sans charge d'arme, rechargent sept balles de mitrailleuse avec un bonus
-  rouge, puis tirent sur leur client. **L'attaque d'hélicoptère a été retirée** :
-  aucun missile ni frappe aérienne ne peut toucher le joueur.
+- **L'escouade de police.** En Circuit, trois voitures d'interception entrent
+  au début du **sixième et dernier tour du joueur** — le dernier tour de
+  2 400 m. En Poursuite, les trois le ciblent dès le départ, même si un rival
+  mène. Une unité détruite par le joueur est remplacée par un renfort différé
+  pendant le dernier tour. Les voitures restent **hors classement** :
+  `rankCityRushRacers` ne les voit jamais, la grille garde trois pilotes, et le
+  HUD les affiche à part (`hud.police`, marqueurs rouge et bleu de la mini-carte).
+  Elles convoitent les bonus rouges d'AK-47 ; un bonus rouge ne représente que
+  **5 % des objets** sur la route, contre 95 % de pads turbo
+  (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de tir vaut cinq bonus
+  ordinaires dans leur choix de voie (`CITY_RUSH_POLICE_HUNT_TYPES`,
+  `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
+  sept balles avec chaque bonus rouge.
 
-  La même escouade opère dans les cinq villes et sur les routes de carrière —
-  jamais en Sprint. Elle choisit les voies dégagées et évite le trafic lent
+  **Les rivaux qui touchent la police reçoivent leur propre poursuivant.** Deux
+  voitures supplémentaires sont gardées en réserve, une par rival ; dès qu'un
+  rival réussit un tir sur une voiture de police — escouade ou police du trafic
+  — son unité réservée le chasse exclusivement, sans détourner les trois voitures
+  du joueur. Les voitures de police du trafic sont également vulnérables aux
+  tirs rouges. **L'attaque d'hélicoptère a été retirée** : aucun missile ni
+  frappe aérienne ne peut toucher qui que ce soit.
+
+  L'escouade opère dans les cinq villes et sur les routes de carrière — jamais
+  en Sprint. Elle choisit les voies dégagées et évite le trafic lent
   (`isCityRushPoliceLaneJammed`) ; si elle est malgré tout bloquée, elle heurte
   le véhicule lent comme un rival : **0,6 s de ralentissement et un dérapage**,
   puis le trafic se rabat (`blockedBy`, `resolveCityRushPoliceMovement`,
@@ -910,14 +917,15 @@ et le dernier tour durait 21 s.
   ne compte que si la berline est devant et que le joueur arrive dessus plus
   vite (`cityRushPoliceCollisionHit`). Il retire **un point de vie** à la
   police, mais **aucun** à la voiture du joueur ; les chocs ne diminuent donc
-  pas la barre de coque. Une berline a six points de vie : deux tirs rouges
-  d'AK-47 (3 points chacun), six carambolages (1 point chacun), ou une
-  combinaison équivalente la détruisent (`CITY_RUSH_POLICE_HEALTH`,
-  `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`). À la destruction :
-  explosion, retrait immédiat de la course et de la mini-carte, **+200 pts**
-  pour le pilote qui l'abat (`CITY_RUSH_POLICE_DESTROY_SCORE`). La berline du
-  trafic rappelée par un contact est destructible comme l'escouade ; à la
-  course suivante, le trafic repart au complet.
+  pas sa coque. Une berline a six points de vie : deux tirs rouges d'AK-47
+  (3 points chacun), trois tirs bleus (2 points chacun), six carambolages
+  (1 point chacun), ou une combinaison équivalente la détruisent
+  (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`).
+  À la destruction : explosion, retrait immédiat de la course et de la
+  mini-carte, **+200 pts** pour le pilote qui l'abat
+  (`CITY_RUSH_POLICE_DESTROY_SCORE`). La berline du trafic rappelée par un
+  contact est destructible comme l'escouade ; à la course suivante, le trafic
+  repart au complet.
 - **Le dernier tour sous surveillance.** Deux choses accompagnent l'escouade.
   D'abord un **hélicoptère d'observation** se poste dans le ciel pendant le
   dernier tour : 18 m devant la voiture du pilote, 8 m au-dessus de la
@@ -933,19 +941,20 @@ et le dernier tour durait 21 s.
   (les tunnels de la Shuto de Tokyo), il n'y a plus de ciel : l'appareil
   s'efface (`WATCH_HELI_TUNNEL_HIDE`) plutôt que de voler dans les panneaux
   suspendus, et il reparaît à la sortie — le smoke compte ces rentrées.
-  Ensuite la **barre de vie du pilote** s'allume dans le HUD :
-  **huit carrés** logiques, mais **dessinés d'un seul trait, sans segments
-  visibles**, qui partent du vert et glissent vers l'orange puis le rouge en se
-  vidant (`CITY_RUSH_PLAYER_HEALTH`, `cityRushPlayerHealthColor`,
-  `CITY_RUSH_PLAYER_BAR_COLORS`). Un **tir rouge reçu** en coûte deux ; un tir
-  bleu (règle héritée, aucun bonus bleu n'est généré) en coûte un. **Percuter
-  une voiture de police ne retire aucune vie au joueur** : c'est la voiture de
-  police qui perd un point de sa barre (`CITY_RUSH_POLICE_DAMAGE.collision`).
+  La **barre de vie du joueur et des rivaux** est active dès le départ :
+  **quinze cellules** en trois groupes de cinq — bleu, vert, jaune — dont les
+  trois dernières virent au rouge à l'état critique
+  (`CITY_RUSH_PLAYER_HEALTH`, `cityRushHealthSegments`,
+  `CITY_RUSH_PLAYER_BAR_COLORS`). Chaque tir rouge reçu retire **une cellule**
+  sans dérapage ni ralentissement ; le tir bleu en retire aussi une. Les tirs
+  reçus par les voitures de police suivent leur coque distincte : rouge −3,
+  bleu −2, collision −1. **Percuter une voiture de police ne retire aucune vie
+  au joueur** : seule la police perd un point (`CITY_RUSH_POLICE_DAMAGE.collision`).
   Le trafic et les rivaux ne touchent pas non plus la coque, ils ne font que
   ralentir. Le contact policier compte seulement quand le pilote **arrive sur**
   une berline **devant lui**, à une vitesse supérieure
   (`cityRushPoliceCollisionHit`) ; la berline repliée derrière lui pour tirer
-  ne déclenche pas de choc. À deux carrés ou moins, la barre passe en
+  ne déclenche pas de choc. À trois cellules ou moins, la barre passe en
   « CRITIQUE » (pulsation rouge), et **à zéro la course est perdue** : le pilote
   part en toupie (`cityRushStunSpin`, deux tours) dans une **fumée noire**,
   pétarade de pneus et explosion, s'immobilise, puis la course se clôt sur une
@@ -1292,22 +1301,21 @@ intermittent par nature, la graine le rend reproductible) : il vérifie les pass
 compteur du dernier tour (il court sur 2 400 m sans retomber à zéro au
 portique), l’arrivée après 8 400 m, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
-aussi l'**escouade de police** : une seule entrée en piste, deux berlines
-arrivées derrière le leader (jamais devant, jamais à plus de 140 m), sans
-attaque d'hélicoptère ni missile, qui
-rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
-parcours (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
-plus de 200 m de retard — seuils calibrés sur plus de 700 courses, avec une
-large marge),
-ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
-disparaissent à la ligne et font sonner puis éteindre leur sirène. Il suit
-l'**hélicoptère d'observation** (nœud `watch-helicopter` : absent hors du
-dernier tour, rotor et pod animés pendant le suivi, **cadrage vérifié à
-l'écran** — projeté par la vraie caméra, il doit rester dans la bande de ciel
-entre la route et les cartes du HUD au moins 85 % du dernier tour —, éloigné à
-l'arrivée, effacé par `reset()`) et la **barre de vie du pilote** (jamais avant son dernier tour,
-pleine à l'apparition, bornée, jamais croissante ; un contact policier ne
-produit aucun `player-hit`, et chaque tir encaissé respecte le barème). Il ne dit rien
+aussi l'**escouade de police** : une seule entrée en piste au dernier tour du
+joueur, trois voitures (deux berlines et un SUV) qui apparaissent derrière lui,
+le prennent pour cible même s'il n'est pas leader, le rejoignent à moins de 30 m
+et restent dans son sillage (au moins 40 % du dernier tour à moins de 80 m,
+jamais plus de 200 m de retard). Elles sont absentes du classement, disparaissent
+à l'arrivée et font sonner puis éteindre leur sirène. Le smoke valide aussi
+chaque événement de représailles émis : le rival touchant une voiture de police
+reçoit une unité dédiée qui le cible exclusivement. Il suit l'**hélicoptère
+d'observation** (nœud `watch-helicopter` : absent hors du dernier tour, rotor et
+pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par la
+vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
+du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
+`reset()`) et les **barres de vie des pilotes** (15 cellules pleines dès le
+départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème,
+et un contact policier ne produit aucun `player-hit`). Il ne dit rien
 du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
 l'image.
 

@@ -57,7 +57,9 @@ import {
   CITY_RUSH_POLICE_BLOCKADE_HOLD,
   CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED,
   CITY_RUSH_POLICE_BLOCKADE_RANGE,
-  CITY_RUSH_POLICE_BLOCK_RANGE,  CITY_RUSH_POLICE_COUNT,
+  CITY_RUSH_POLICE_BLOCK_RANGE,
+  CITY_RUSH_POLICE_COUNT,
+  CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
   CITY_RUSH_POLICE_DAMAGE,
@@ -73,12 +75,15 @@ import {
   CITY_RUSH_PLAYER_BAR_COLORS,
   CITY_RUSH_PLAYER_DAMAGE,
   CITY_RUSH_PLAYER_HEALTH,
+  CITY_RUSH_RACER_HEALTH,
+  CITY_RUSH_HEALTH_GROUP_SIZE,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   CITY_RUSH_WATCH_HELI_AHEAD,
   CITY_RUSH_WATCH_HELI_HEIGHT,
   CITY_RUSH_WATCH_HELI_LATERAL,
   CITY_RUSH_RACER_SLOTS,
   cityRushPlayerDamage,
+  cityRushHealthSegments,
   cityRushPlayerHealthColor,
   cityRushPoliceCollisionHit,
   cityRushWatchHelicopterPose,
@@ -622,11 +627,11 @@ test('the active loadout has seven red machine-gun bullets plus automatic ground
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /7 balles/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.name, /AK-47/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /tout droit/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /premier ennemi/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /toupie/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /tir rouge inflige 3 dégâts/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant n’en inflige qu’un/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /ne retire aucune vie au joueur/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /premier adversaire ou la première voiture de police/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /retire un carré de vie/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /sans dérapage ni ralentissement/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /voiture de police à six points de vie.*inflige 3 dégâts/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, jamais au joueur/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
   });
@@ -900,9 +905,10 @@ test('a collected item bursts into shards, then reappears 0.1 s later', () => {
   assert.ok(Math.max(...samples) > 1, 'léger rebond avant de se stabiliser');
 });
 
-test('au dernier tour, une berline et un SUV de police chassent le premier — hors classement', () => {
-  assert.equal(CITY_RUSH_POLICE_COUNT, 2);
-  assert.deepEqual([...CITY_RUSH_POLICE_VEHICLE_TYPES], ['police', 'police-suv']);
+test('trois voitures de police poursuivent le joueur et un renfort est réservé par rival — hors classement', () => {
+  assert.equal(CITY_RUSH_POLICE_COUNT, 3);
+  assert.equal(CITY_RUSH_POLICE_EXTRA_PER_ATTACKER, 1);
+  assert.deepEqual([...CITY_RUSH_POLICE_VEHICLE_TYPES], ['police', 'police-suv', 'police']);
   assert.ok(CITY_RUSH_POLICE_REINFORCEMENT_DELAY > 0 && CITY_RUSH_POLICE_REINFORCEMENT_DELAY <= 5);
   // La mitrailleuse rouge est le seul bonus de tir que la police convoite.
   assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol']);
@@ -910,22 +916,21 @@ test('au dernier tour, une berline et un SUV de police chassent le premier — h
   // Aucune berline ne porte un identifiant de pilote classé : la grille garde
   // trois pilotes, et l'arrivée ne peut pas compter les voitures de police.
   assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno']);
-  // La berline et le SUV partent sur les voies extérieures ; leur barrage est
-  // encadré dans le temps : ils se rabattent, freinent, puis repartent.
-  assert.equal(CITY_RUSH_POLICE_LANES.length, CITY_RUSH_POLICE_COUNT, 'une voie de départ par berline');
-  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [3, 5]);
+  assert.equal(CITY_RUSH_POLICE_LANES.length, CITY_RUSH_POLICE_COUNT, 'une voie de départ par voiture de police');
+  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [3, 4, 5]);
   assert.ok(CITY_RUSH_POLICE_LANES.every((lane) => CITY_RUSH_FORWARD_LANES.includes(lane)));
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_RANGE > CITY_RUSH_CAR_GAP);
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
 });
 
-test('la barre de vie du pilote ne baisse qu’au tir : un carambolage policier ne coûte aucune vie', () => {
-  assert.equal(CITY_RUSH_PLAYER_HEALTH, 8);
+test('le joueur et les rivaux ont quinze cellules ; les tirs les touchent sans que le choc policier coûte une vie', () => {
+  assert.equal(CITY_RUSH_PLAYER_HEALTH, 15);
+  assert.equal(CITY_RUSH_RACER_HEALTH, CITY_RUSH_PLAYER_HEALTH);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE['blue-shot'], 1);
-  assert.equal(CITY_RUSH_PLAYER_DAMAGE.pistol, 2);
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE.pistol, 1);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 0);
-  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'blue-shot'), 7);
-  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'pistol'), 6);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'blue-shot'), 14);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'pistol'), 14);
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), CITY_RUSH_PLAYER_HEALTH);
   assert.equal(cityRushPlayerDamage(5, 'collision'), 5);
   assert.equal(cityRushPlayerDamage(1, 'pistol'), 0);
@@ -933,32 +938,41 @@ test('la barre de vie du pilote ne baisse qu’au tir : un carambolage policier 
   assert.equal(cityRushPlayerDamage(5, 'boost'), 5);
   assert.equal(cityRushPlayerDamage(5, undefined), 4);
   assert.equal(cityRushPlayerDamage(-3, 'collision'), 0);
-  assert.ok(CITY_RUSH_PLAYER_HEALTH_CRITICAL < CITY_RUSH_PLAYER_HEALTH);
+  assert.equal(CITY_RUSH_PLAYER_HEALTH_CRITICAL, 3);
+  assert.equal(CITY_RUSH_HEALTH_GROUP_SIZE, 5);
 
-  // Un contact pendant l'accélération inflige seulement 1 point à la police
-  // et aucun dégât au joueur. Le délai empêche de recompter le même choc.
+  // La police garde une coque distincte : deux rouges, trois bleus ou six
+  // carambolages la détruisent, sans entamer la barre du joueur.
+  assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, 3);
   assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision'), CITY_RUSH_POLICE_HEALTH - 1);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'pistol'), 3);
   assert.ok(CITY_RUSH_POLICE_COLLISION_COOLDOWN > 0.5);
   assert.ok(CITY_RUSH_POLICE_COLLISION_TOLERANCE > 0);
 });
-test('la barre de vie du pilote part du vert, passe à l’orange puis au rouge — sans jamais montrer les carrés', () => {
-  assert.equal(cityRushPlayerHealthColor(CITY_RUSH_PLAYER_HEALTH), CITY_RUSH_PLAYER_BAR_COLORS.full);
-  assert.equal(cityRushPlayerHealthColor(CITY_RUSH_PLAYER_HEALTH / 2), CITY_RUSH_PLAYER_BAR_COLORS.mid);
-  assert.equal(cityRushPlayerHealthColor(0), CITY_RUSH_PLAYER_BAR_COLORS.low);
-  const channel = (color, index) => Number.parseInt(color.slice(1 + index * 2, 3 + index * 2), 16);
-  const green = channel(cityRushPlayerHealthColor(8), 1);
-  const orange = channel(cityRushPlayerHealthColor(4), 1);
-  const red = channel(cityRushPlayerHealthColor(2), 1);
-  // Le vert s'efface progressivement : la barre « chauffe » au lieu de sauter
-  // d'une couleur à l'autre.
-  assert.ok(green > orange && orange > red);
-  assert.ok(channel(cityRushPlayerHealthColor(8), 1) > channel(cityRushPlayerHealthColor(8), 0), 'pleine : le vert domine');
-  assert.ok(channel(cityRushPlayerHealthColor(0), 0) > channel(cityRushPlayerHealthColor(0), 1), 'vide : le rouge domine');
-  // Bornes : au-delà de la vie pleine ou sous zéro, la couleur reste valide.
-  assert.equal(cityRushPlayerHealthColor(12), CITY_RUSH_PLAYER_BAR_COLORS.full);
-  assert.equal(cityRushPlayerHealthColor(-4), CITY_RUSH_PLAYER_BAR_COLORS.low);
-  assert.match(cityRushPlayerHealthColor(7, 8), /^#[0-9a-f]{6}$/);
+
+test('les quinze cellules se groupent bleu / vert / jaune et les trois dernières jaunes virent au rouge', () => {
+  const full = cityRushHealthSegments(15);
+  assert.equal(full.length, 15);
+  assert.deepEqual(full.map((segment) => segment.group), [
+    ...Array(5).fill('blue'), ...Array(5).fill('green'), ...Array(5).fill('yellow'),
+  ]);
+  assert.ok(full.every((segment) => segment.active));
+  assert.deepEqual(cityRushHealthSegments(10).slice(0, 5).map((segment) => segment.active), Array(5).fill(false));
+  assert.ok(cityRushHealthSegments(10).slice(5).every((segment) => segment.active));
+  assert.ok(cityRushHealthSegments(4).slice(10).every((segment) => segment.tone === 'yellow'));
+  assert.deepEqual(cityRushHealthSegments(3).slice(10).map((segment) => segment.tone), ['yellow', 'yellow', 'critical', 'critical', 'critical']);
+  assert.ok(cityRushHealthSegments(3).slice(12).every((segment) => segment.active && segment.critical));
+  assert.equal(cityRushHealthSegments(2).filter((segment) => segment.active && segment.critical).length, 2);
+  assert.equal(cityRushHealthSegments(0).filter((segment) => segment.active).length, 0);
+  assert.equal(cityRushHealthSegments(30).filter((segment) => segment.active).length, 15);
+  assert.equal(cityRushHealthSegments(-3).filter((segment) => segment.active).length, 0);
+  assert.equal(cityRushPlayerHealthColor(15), CITY_RUSH_PLAYER_BAR_COLORS.blue);
+  assert.equal(cityRushPlayerHealthColor(10), CITY_RUSH_PLAYER_BAR_COLORS.green);
+  assert.equal(cityRushPlayerHealthColor(5), CITY_RUSH_PLAYER_BAR_COLORS.yellow);
+  assert.equal(cityRushPlayerHealthColor(3), CITY_RUSH_PLAYER_BAR_COLORS.critical);
+  assert.equal(cityRushPlayerHealthColor(0), CITY_RUSH_PLAYER_BAR_COLORS.critical);
 });
 
 test('l’hélico d’observation du dernier tour vole devant le pilote et s’éloigne à l’arrivée', () => {
@@ -1023,7 +1037,7 @@ test('un carambolage demande une berline devant, et un pilote qui arrive sur ell
   assert.equal(cityRushPoliceCollisionHit(), false);
 });
 
-test('l’escouade ne prend en chasse que le premier du classement', () => {
+test('le pilote le plus avancé est sélectionné pour les décisions de peloton', () => {
   assert.equal(cityRushPackLeader([
     { id: 'player', distance: 1204 },
     { id: 'nova', distance: 1230 },
@@ -2163,4 +2177,3 @@ test('une voiture qui saute passe au-dessus du trafic et des autres voitures san
   const jumpingById = Object.fromEntries(jumpingMoved.map((c) => [c.id, c.nextDistance]));
   assert.equal(jumpingById.player, 25, 'en saut, la voiture poursuit sa trajectoire par-dessus');
 });
-
