@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════
 // Smoke « Vice City Rush » : construit le monde pour de vrai (décor de la
 // boucle, zone de départ, voitures, trafic) avec un WebGLRenderer factice,
-// joue un Sprint complet de 14 checkpoints sur 4 200 m
+// joue un Sprint complet de 16 checkpoints sur 4 800 m
 // en pompant la boucle animate, et échoue si une frame lève une exception, si
 // les passages de ligne ne sont pas détectés ou si l'arrivée n'est jamais
 // atteinte.

@@ -92,8 +92,8 @@ export async function checkViceCitySprintUi(assert) {
   // ── 1. Écran des modes : SPRINT est annoncé solo, sans police ────────────
   const sprintCard = await pickSprint(node);
   check(
-    'la vignette Sprint annonce les 14 checkpoints du parcours allongé',
-    /14 CHECKPOINTS/i.test(squash(sprintCard.textContent)),
+    'la vignette Sprint annonce les 16 checkpoints du parcours allongé',
+    /16 CHECKPOINTS/i.test(squash(sprintCard.textContent)),
     squash(sprintCard.textContent),
   );
   check(

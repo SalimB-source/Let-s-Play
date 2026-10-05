@@ -178,7 +178,7 @@ for (let run = 0; run < RUNS; run += 1) {
     let wreckLastMeasuredSpeed = null;
     let wreckFirstLap = null;
     let healthSeen = null;
-    let maxFrames = 300 * 30; // 5 min virtuelles pour atteindre et tester le dernier tour
+    let maxFrames = 720 * 30; // 12 min virtuelles pour atteindre et tester le dernier tour (course de 8 400 m)
     const request = (action) => world.action(action);
 
     while (!callbacks.finish && frames < maxFrames) {

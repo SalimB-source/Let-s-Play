@@ -791,34 +791,36 @@ grand écran.
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
 villes (Vice City, New York, Tokyo, Paris, Londres). Chaque ville est une boucle
-de **600 m** qu'on reparcourt ; les courses standard passent maintenant à
-**six tours**, avec un dernier tour double de **1 200 m** : **4 200 m au total**.
-Le Sprint s'allonge lui aussi à quatorze checkpoints. C'est au dernier tour que
-la police entre en piste. **Tokyo se joue sur la Shuto Expressway Route 1** —
+de **1 200 m** qu'on reparcourt — la boucle a été doublée (600 m → 1 200 m)
+pour rendre les stages plus longs : deux fois plus de décor avant de repasser
+sous le portique. Les courses standard comptent **six tours**, avec un dernier
+tour double de **2 400 m** : **8 400 m au total**. Le Sprint s'allonge lui
+aussi à seize checkpoints. C'est au dernier tour que la police entre en piste.
+**Tokyo se joue sur la Shuto Expressway Route 1** —
 la C1 首都高速都心環状線, l'anneau intérieur réel de 14,8 km autour du palais
-impérial, dans le sens 内回り : chaque boucle de 600 m rejoue la boucle
+impérial, dans le sens 内回り : chaque boucle de 1 200 m rejoue la boucle
 officielle secteur par secteur (voir « Tokyo : la C1 » plus bas).
 
 | Mode | Tours / checkpoints | Distance | À 29 m/s, sans incident |
 | --- | --- | --- | --- |
-| Circuit, Poursuite | 6 tours | 4 200 m (5 × 600 m, puis 1 200 m) | ≈ 2 min 25 |
-| Sprint (solo) | 14 checkpoints | 4 200 m (14 portes × 300 m) | ≈ 2 min 25 |
-| Histoire, chapitres 1 à 5 | 6 tours | 4 200 m | ≈ 2 min 25 |
-| Histoire, chapitre 6 « Le dernier tour » | 7 tours | 4 800 m (6 × 600 m, puis 1 200 m) | ≈ 2 min 46 |
+| Circuit, Poursuite | 6 tours | 8 400 m (5 × 1 200 m, puis 2 400 m) | ≈ 4 min 50 |
+| Sprint (solo) | 16 checkpoints | 4 800 m (16 portes × 300 m) | ≈ 2 min 46 |
+| Histoire, chapitres 1 à 5 | 6 tours | 8 400 m | ≈ 4 min 50 |
+| Histoire, chapitre 6 « Le dernier tour » | 7 tours | 9 600 m (6 × 1 200 m, puis 2 400 m) | ≈ 5 min 31 |
 
 Le trafic, les tirs et la police ralentissent les courses réelles (le pilote
 d'essai du smoke met 10 à 15 % de plus que ces temps), tandis que le bonus de
 « ligne propre » (jusqu'à +12 % en tenant sa voie) les raccourcit. Changer de
 voie ne compte ni dans l'un ni dans l'autre : le malus d'écart a été supprimé
-(voir « Changer de voie ne ralentit plus »). Avant ce réglage, une course ne
-comptait que 1 à 3 tours de 600 m (1 min 02 en Circuit)
+(voir « Changer de voie ne ralentit plus »). Avant ces réglages, une course ne
+comptait que 1 à 3 tours d'une boucle de 600 m (1 min 02 en Circuit)
 et le dernier tour durait 21 s.
 
 - **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
   ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
   s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
   **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
-  (« TOUR 1/6 », puis « TOUR 6/6 · DERNIER TOUR », puis « PLUS QUE 600 M » au
+  (« TOUR 1/6 », puis « TOUR 6/6 · DERNIER TOUR », puis « PLUS QUE 1200 M » au
   passage du milieu du dernier tour) et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
@@ -830,11 +832,11 @@ et le dernier tour durait 21 s.
   classement sur téléphone — et **sans flou** : fond opaque, texte net, entrée
   et sortie par glissement (`crLapIn` ne touche plus à `filter`).
 - **Le grand dernier tour.** Il fait `CITY_RUSH_FINAL_LAP_LOOPS` = **2** boucles
-  (1 200 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
+  (2 400 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
   donc on le recroise **au milieu du dernier tour** : ce n'est qu'un **point de
-  passage** — bannière « PLUS QUE 600 M · ce n'est pas encore l'arrivée »,
-  tableau « PLUS QUE 600 M », cloche — sans confettis, sans nouveau tour et sans
-  arrivée. La jauge du dernier tour court sur ses 1 200 m (elle ne retombe pas à
+  passage** — bannière « PLUS QUE 1200 M · ce n'est pas encore l'arrivée »,
+  tableau « PLUS QUE 1200 M », cloche — sans confettis, sans nouveau tour et sans
+  arrivée. La jauge du dernier tour court sur ses 2 400 m (elle ne retombe pas à
   zéro au portique), le suivi de tour du HUD donne au dernier segment deux fois
   la largeur des autres, et la liste des positions (`CityRushRaceList`, prop
   `laps`) affiche par exemple « T5/6 » en début de dernier tour.
@@ -847,10 +849,10 @@ et le dernier tour durait 21 s.
   `RACE_MODES` (Circuit, Sprint, Poursuite), `STORY_LAPS` et `STORY_FINALE_LAPS`
   (Histoire) dans `ViceCityRushPage.jsx` ; la longueur du dernier tour est
   `CITY_RUSH_FINAL_LAP_LOOPS` dans `cityRushRules.js` (`1` redonne un dernier
-  tour ordinaire). La boucle de 600 m elle-même ne bouge pas : le décor, le
-  portique et les tests en dépendent. Les chronos sont rangés sous
-  `letsplay_vice_city_rush_bests_v3` : les records des anciennes courses, plus
-  courtes, n'auraient jamais pu être battus.
+  tour ordinaire) ; la longueur de la boucle du stage elle-même est
+  `CITY_RUSH_LAP_LENGTH` (1 200 m — le décor, le portique et les tests suivent).
+  Les chronos sont rangés sous `letsplay_vice_city_rush_bests_v4` : les records
+  des anciennes boucles de 600 m, plus courtes, n'auraient jamais pu être battus.
 - **Le Sprint, solo contre la montre.** Le mode `SPRINT` de `RACE_MODES`
   (`format: 'sprint'`) ne se court **contre personne** : `raceFormat='sprint'`
   descend jusqu'à `createCityRushWorld`, qui ne crée **aucun rival**
@@ -860,28 +862,29 @@ et le dernier tour durait 21 s.
   ignoré, la barre de coque ne s'arme pas). Seuls les pads turbo verts sont
   placés périodiquement sur la chaussée (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL`) ;
   aucun bonus rouge ni pouvoir d'hélicoptère n'apparaît. À la place :
-  **14 checkpoints**
+  **16 checkpoints**
   espacés de `CITY_RUSH_SPRINT_CHECKPOINT_SPACING` = **300 m**
-  (`CITY_RUSH_SPRINT_DISTANCE` = **4 200 m**), chacun rendant
+  (`CITY_RUSH_SPRINT_DISTANCE` = **4 800 m**), chacun rendant
   `CITY_RUSH_SPRINT_CHECKPOINT_TIME` = **15 s** au chrono — le compteur repart
-  de 15 et ne cumule pas l'avance. Chrono à zéro : effet `sprint-timeout`,
-  course perdue, ni record ni victoire enregistrés.
+  de 15 et ne cumule pas l'avance. Seize portes de 300 m font quatre boucles
+  exactes : la dernière tombe pile sous le portique. Chrono à zéro : effet
+  `sprint-timeout`, course perdue, ni record ni victoire enregistrés.
   **L'interface suit le solo.** Carte HUD « SOLO » et jauge des checkpoints à
   la place de la position et du tour, radar et bouton AK-47 absents,
-  compte à rebours et pied de coque en « 14 CHECKPOINTS » plutôt qu'en
+  compte à rebours et pied de coque en « 16 CHECKPOINTS » plutôt qu'en
   « 1 TOURS ». La colonne latérale remplace le classement à trois par un
   chrono solo — `buildCityRushMinimapState({ solo: true })` ne garde que le
   pilote —, la carte « OBJETS · 1 ARME + TURBO » par « SOLO · CHRONO », et la
   carte rouge « 🚨 ESCOUADE DE POLICE » par une carte solo sans sirène. Deux
   vérifications tiennent l'ensemble : `npm run check:city-rush-sprint`
   (une course complète dans les cinq villes, jouée image par image : solo,
-  aucune police, aucun bonus d'arme, 14 checkpoints) et
+  aucune police, aucun bonus d'arme, 16 checkpoints) et
   `npm run check:city-rush-sprint-ui` (la vraie page dans jsdom : rien n'y
   évoque la poursuite ou les rivaux en Sprint, et les modes Circuit et
   Poursuite gardent les leurs).
 - **L'escouade de police.** En Circuit, deux véhicules d'interception entrent
   derrière le leader à l'ouverture du **sixième et dernier tour** — un dernier
-  tour de 1 200 m sous la sirène. En Poursuite, la même escouade est présente
+  tour de 2 400 m sous la sirène. En Poursuite, la même escouade est présente
   dès le départ. Une berline et un SUV roulent pour gêner le pilote : barrage,
   changement de voie, chasse, et renfort après une destruction au dernier tour.
   Elles **ne sont pas classées** : `rankCityRushRacers` ne les voit jamais, la
@@ -1271,7 +1274,7 @@ npm run check:city-rush          # règles pures (tours, repli, classement, obje
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
-npm run check:city-rush-smoke    # les sept parcours (cinq villes + Route 66 + campagne mexicaine) : course complète de 6 tours (4 200 m, dernier tour de 1 200 m), sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les sept parcours (cinq villes + Route 66 + campagne mexicaine) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, aucune vie perdue au contact, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point, le joueur n'en perd aucun ; l'épave est vérifiée si des tirs vident la coque
@@ -1280,14 +1283,14 @@ npm run check:vice-city-account-grants # progression de compte : cache isolé pa
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
-à 30 Hz avec un pilote naïf (6 tours par défaut, 4 200 m ;
+à 30 Hz avec un pilote naïf (6 tours par défaut, 8 400 m ;
 `CITY_RUSH_SMOKE_LAPS=4 npm run check:city-rush-smoke` joue une course de
-3 000 m, et `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke` fige le
+6 000 m, et `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke` fige le
 hasard pour rejouer exactement le même scénario — un échec du smoke est
 intermittent par nature, la graine le rend reproductible) : il vérifie les passages de ligne (début des tours
 2 à 6, puis le point de passage du grand dernier tour, une seule fois), le
-compteur du dernier tour (il court sur 1 200 m sans retomber à zéro au
-portique), l’arrivée après 4 200 m, le HUD, le nombre de meshes affichés, la
+compteur du dernier tour (il court sur 2 400 m sans retomber à zéro au
+portique), l’arrivée après 8 400 m, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
 aussi l'**escouade de police** : une seule entrée en piste, deux berlines
 arrivées derrière le leader (jamais devant, jamais à plus de 140 m), sans

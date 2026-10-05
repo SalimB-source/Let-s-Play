@@ -685,7 +685,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const sprint = raceFormat === 'sprint';
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
   // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
-  // `laps` × la boucle. Le décor, lui, reste une boucle de 600 m qui se répète.
+  // `laps` × la boucle. Le décor, lui, reste une boucle de 1 200 m qui se répète.
   const effectiveDistance = sprint ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(effectiveLaps);
   const effectivePoliceFromStart = !sprint && Boolean(policeFromStart);
   const theme = cityRushTheme(city.id);
@@ -749,7 +749,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   headlamp.visible = !lite && lightRig.headlamp > 0;
   scene.add(headlamp, headlamp.target);
 
-  // ── Décor : ciel, skyline, route, boucle de 600 m + zone de départ ───
+  // ── Décor : ciel, skyline, route, boucle de 1 200 m + zone de départ ─
   const stageMaterials = createStageMaterials(city, theme, sceneryRandom);
   const startMaterials = createStartLineMaterials(city, theme);
   const loopBatch = createBatch();
@@ -1274,7 +1274,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const openRim = cityRim.intensity;
   const openHeadlamp = lightRig.headlamp;
 
-  // Position sur la boucle de 600 m (et non progression du tour) : au grand
+  // Position sur la boucle de 1 200 m (et non progression du tour) : au grand
   // dernier tour, les secteurs de la C1 continuent de défiler une fois par
   // boucle, comme les portiques du décor.
   const shutoLoopProgress = () => (((distance % CITY_RUSH_LAP_LENGTH) + CITY_RUSH_LAP_LENGTH) % CITY_RUSH_LAP_LENGTH) / CITY_RUSH_LAP_LENGTH;
@@ -1453,9 +1453,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       finishLabel ? 'ARRIVÉE · DERNIÈRE PORTE' : `CHECKPOINT · +${sprintTimeBonus} S`,
       finishLabel ? '#ffffff' : city.accent,
     );
-    if (checkpoint % 2 === 0) {
-      // Les portes paires coïncident avec le grand portique de course déjà
-      // présent tous les 600 m : son tableau annonce le checkpoint à venir.
+    if (checkpoint % 4 === 0) {
+      // Les portes multiples de quatre coïncident avec le grand portique de
+      // course déjà présent tous les 1 200 m : son tableau annonce le
+      // checkpoint à venir.
       startLine.setBoard(checkpointLabel, finishLabel ? 'ARRIVÉE · SPRINT' : `CHECKPOINT · +${sprintTimeBonus} S`, finishLabel ? '#ffffff' : city.accent);
     } else {
       startLine.setBoard('SPRINT', `CP ${String(checkpoint).padStart(2, '0')} · +${sprintTimeBonus} S · ${checkpoint * CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M`, city.accent);
@@ -1486,7 +1487,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         PLAYER_Z - checkpointGap * SCALE,
       );
       sprintCheckpointGate.rotation.set(trackPitch(targetDistance), trackYaw(targetDistance), 0);
-      sprintCheckpointGate.visible = sprintCheckpointGate.userData.checkpoint % 2 === 1
+      sprintCheckpointGate.visible = sprintCheckpointGate.userData.checkpoint % 4 !== 0
         && checkpointGap > -40
         && checkpointGap * SCALE < theme.fogFar + 20;
     }
@@ -3677,7 +3678,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   // ── Sprint : checkpoints contre la montre ───────────────────────────
   // Un checkpoint tous les 300 m ; chacun recharge le chrono à 15 s. Le
-  // dixième est l'arrivée. Chrono à zéro avant le prochain : course perdue.
+  // seizième est l'arrivée, pile sous le portique (4 800 m = 4 boucles).
+  // Chrono à zéro avant le prochain : course perdue.
   function updateSprintCheckpoints(dt) {
     const passed = cityRushSprintCheckpointsPassed(distance);
     while (sprintCheckpoints < passed) {
@@ -3689,8 +3691,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       sprintTimeLeft = sprintTimeBonus;
       const remaining = CITY_RUSH_SPRINT_CHECKPOINTS - sprintCheckpoints;
-      // Les checkpoints pairs tombent sous le portique (tous les 600 m).
-      if (sprintCheckpoints % 2 === 0) {
+      // Les checkpoints multiples de quatre tombent sous le portique
+      // (tous les 1 200 m).
+      if (sprintCheckpoints % 4 === 0) {
         startLine.onCross({ final: false });
         const crossedLabel = `CP ${String(sprintCheckpoints).padStart(2, '0')}/${String(CITY_RUSH_SPRINT_CHECKPOINTS).padStart(2, '0')}`;
         startLine.setBoard(crossedLabel, `+${sprintTimeBonus} S`, remaining === 1 ? '#ffffff' : undefined);

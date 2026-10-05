@@ -58,13 +58,13 @@ import { VICE_CITY_STORY_MODE } from '../achievements/engine';
 import './vice-city-rush.css';
 import './vice-city-rush-cinematic.css';
 
-// v3 : les courses passent à six tours (sept pour la finale Histoire) et le
-// Sprint à quatorze checkpoints ; les chronos des formats plus courts ne sont
-// donc plus comparables.
+// v4 : la boucle du stage double (600 m → 1 200 m), donc les courses à six
+// tours passent à 8 400 m et le Sprint à seize checkpoints / 4 800 m ; les
+// chronos des boucles plus courtes ne sont donc plus comparables.
 // Les meilleurs temps et la préférence de son restent ceux de l'appareil : la
 // progression sauvegardée (portefeuille, garage, parcours, Histoire), elle,
 // suit le compte connecté via sa ligne privée (voir cityRushProgress.js).
-const BEST_KEY = 'letsplay_vice_city_rush_bests_v3';
+const BEST_KEY = 'letsplay_vice_city_rush_bests_v4';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const POWER_ORDER = [CITY_RUSH_POWERS.PISTOL];
 const CAR_STATS = [
@@ -468,7 +468,7 @@ export default function ViceCityRushPage() {
   const mode = useMemo(() => RACE_MODES.find((m) => m.id === modeId) || RACE_MODES[0], [modeId]);
   const currentStoryRace = storyMode ? STORY_CHAPTERS[storyRaceChapter] : null;
   const currentLaps = storyMode ? (currentStoryRace?.laps ?? STORY_LAPS) : mode.laps;
-  // Le dernier tour enchaîne deux boucles : 6 tours = 5 × 600 m + 1 200 m.
+  // Le dernier tour enchaîne deux boucles : 6 tours = 5 × 1 200 m + 2 400 m.
   const sprintMode = !storyMode && mode.format === 'sprint';
   const currentDistance = sprintMode ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(currentLaps);
   const RACE_KM = `${(currentDistance / 1000).toFixed(1).replace('.', ',')} KM`;

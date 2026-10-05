@@ -1,8 +1,8 @@
 // Smoke « Vice City Rush » : exécute createCityRushWorld (vrai code) avec un
 // faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue une course
-// complète pour chaque ville demandée : 6 tours, soit cinq boucles de 600 m
-// puis un grand dernier tour de 1 200 m (deux boucles, le portique est recroisé
-// à mi-parcours) — 4 200 m en tout.
+// complète pour chaque ville demandée : 6 tours, soit cinq boucles de 1 200 m
+// puis un grand dernier tour de 2 400 m (deux boucles, le portique est recroisé
+// à mi-parcours) — 8 400 m en tout.
 const ctx2d = () => {
   const g = { addColorStop() {} };
   return {
@@ -80,8 +80,8 @@ const {
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
 
-// Tours de la course jouée : 6 par défaut (4 200 m) ;
-// `CITY_RUSH_SMOKE_LAPS=4` joue une course de 3 000 m. Au moins 3 : en dessous,
+// Tours de la course jouée : 6 par défaut (8 400 m) ;
+// `CITY_RUSH_SMOKE_LAPS=4` joue une course de 6 000 m. Au moins 3 : en dessous,
 // la course est trop courte pour exercer l'escouade du dernier tour et les
 // charges rouges de mitrailleuse.
 const RACE_LAPS = Math.max(3, Math.floor(Number(process.env.CITY_RUSH_SMOKE_LAPS) || CITY_RUSH_LAPS));
@@ -150,11 +150,11 @@ const AUDIO_METHODS = [
 // L'escouade du dernier tour doit coller au leader sur tous les parcours. Seuils
 // calibrés sur ce même pilote (5 villes + 2 routes, hasard non fixé) : avec le dégagement
 // du trafic, au pire 104 m de retard et 73 % du tour dans les 60 m sur le
-// dernier tour de 600 m ; engluée derrière un camion, elle allait jusqu'à
+// dernier tour d'une boucle ; engluée derrière un camion, elle allait jusqu'à
 // 314 m de retard et ne passait que 17 % du tour dans les 60 m. Le dernier tour
-// compte maintenant 1 200 m (l'escouade y reste deux fois plus longtemps, ~42 s
-// au lieu de ~21 s) : sur plus de 700 courses, au pire 164 m de retard et 61 %
-// du tour dans les 60 m, d'où un retard toléré porté de 175 à 200 m.
+// compte maintenant 2 400 m (deux boucles de 1 200 m) : les écarts se mesurent
+// toujours en mètres et la dynamique de rattrapage ne dépend pas de la longueur
+// de la boucle, d'où des seuils conservés.
 const POLICE_ENGAGE_RANGE = 60; // m
 const POLICE_MIN_ENGAGED_SHARE = 0.5;
 const POLICE_MAX_LAG = 200; // m
@@ -335,9 +335,9 @@ for (const [index, city] of courses.entries()) {
   let frames = 0;
   let maxVisible = 0;
   let maxTriangles = 0;
-  // 5 minutes virtuelles, large : la course standard de 4 200 m garde une marge.
-  // essais (police sur tout le dernier tour de 1 200 m) a duré 185 s.
-  const maxFrames = 30 * 300;
+  // 12 minutes virtuelles, large : la course standard de 8 400 m garde une
+  // marge (les essais sur la boucle doublée tournent autour de 6 à 7 minutes).
+  const maxFrames = 30 * 720;
   let steer = 'left';
   let slowFrames = 0;
   // Escouade de police : première image où elle apparaît dans le HUD, temps
