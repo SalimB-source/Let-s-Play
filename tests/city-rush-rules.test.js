@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {
   CITY_RUSH_CITIES,
   CITY_RUSH_CARS,
+  CITY_RUSH_CARS_BY_POWER,
+  CITY_RUSH_FREE_CAR_COUNT,
+  CITY_RUSH_FREE_CAR_IDS,
   CITY_RUSH_DISTANCE,
   CITY_RUSH_FINAL_LAP_LENGTH,
   CITY_RUSH_FINAL_LAP_LOOPS,
@@ -151,6 +154,7 @@ import {
   cityRushPoliceShotsLeft,
   cityRushPoliceTarget,  cityRushTrackGap,
   chooseCityRushPoliceLane,
+  isCityRushFreeCar,
   isCityRushPoliceLaneJammed,
   resolveCityRushPoliceMovement,
   addCityRushCharge,
@@ -195,7 +199,10 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   }
   assert.ok(nova.hitRecoveryMultiplier < starter.hitRecoveryMultiplier && nova.hitRecoveryMultiplier > wolfsburg.hitRecoveryMultiplier,
     'la reprise après un choc est intermédiaire aussi');
-  assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0), 'les sept autres voitures sont payantes');
+  // Les prix restent dans le catalogue : c'est le garage (la progression) qui
+  // offre le trio le moins puissant, pas la fiche de la voiture.
+  assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0),
+    'les sept autres voitures gardent un prix catalogue (le trio le moins puissant est offert sans achat)');
   assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
   assert.deepEqual(
@@ -220,6 +227,27 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.widthScale)).size > 1);
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.powerMultiplier)).size > 1);
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.hitRecoveryMultiplier)).size > 1);
+});
+
+test('les trois voitures les moins puissantes sont débloquées pour tout le monde', () => {
+  assert.equal(CITY_RUSH_FREE_CAR_COUNT, 3);
+  assert.deepEqual([...CITY_RUSH_FREE_CAR_IDS], ['city-hatch', 'nova-18-gt', 'night-comet']);
+  // Le classement suit la vitesse de pointe réelle (`powerMultiplier`), pas la
+  // barre « PUISSANCE » du garage.
+  const ranked = CITY_RUSH_CARS_BY_POWER.map((car) => car.powerMultiplier);
+  assert.deepEqual(ranked, [...ranked].sort((a, b) => a - b), 'le catalogue trié va du plus lent au plus rapide');
+  assert.deepEqual(
+    CITY_RUSH_CARS_BY_POWER.slice(0, CITY_RUSH_FREE_CAR_COUNT).map((car) => car.id),
+    [...CITY_RUSH_FREE_CAR_IDS],
+  );
+  for (const car of CITY_RUSH_CARS) {
+    assert.equal(isCityRushFreeCar(car.id), CITY_RUSH_FREE_CAR_IDS.includes(car.id), `${car.name} : offre cohérente`);
+  }
+  assert.equal(isCityRushFreeCar('ghost-car'), false);
+  assert.ok(
+    CITY_RUSH_CARS.filter((car) => !isCityRushFreeCar(car.id)).every((car) => car.price > 0),
+    'les cinq voitures au-delà du trio offert restent payantes',
+  );
 });
 
 test('Vice City Rush has six playable lanes with three lanes in each direction', () => {

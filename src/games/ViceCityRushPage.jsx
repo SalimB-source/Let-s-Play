@@ -13,6 +13,7 @@ import {
   CITY_RUSH_STARTER_CAR_ID,
   awardCityRushRace,
   cityRushStorageKey,
+  isCityRushCarFree,
   isCityRushCarOwned,
   isCityRushCourseUnlocked,
   loadCityRushAccountSave,
@@ -29,6 +30,7 @@ import {
   CITY_RUSH_DISTANCE,
   CITY_RUSH_DRIVERS,
   CITY_RUSH_FINAL_LAP_LOOPS,
+  CITY_RUSH_FREE_CAR_COUNT,
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_SPRINT_CHECKPOINTS,
@@ -123,6 +125,20 @@ function careerFromSave(save) {
 
 function formatCash(value = 0) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('fr-FR');
+}
+
+/**
+ * Pastille du garage.
+ *
+ * Les trois voitures les moins puissantes du catalogue sont offertes à tous
+ * (`cityRushFreeCarIds`) : elles ne montrent donc jamais de prix, pas même
+ * quand la sauvegarde vient d'un ancien achat. La citadine de départ garde sa
+ * pastille « DÉPART », les autres achats disent « ACHETÉE ».
+ */
+function carGarageBadge(car, owned) {
+  if (!owned) return `🔒 ${formatCash(car?.price)} $`;
+  if (car?.id === CITY_RUSH_STARTER_CAR_ID) return 'DÉPART';
+  return isCityRushCarFree(car?.id) ? 'OFFERTE' : 'ACHETÉE';
 }
 
 const RACE_MODES = [
@@ -1379,11 +1395,14 @@ export default function ViceCityRushPage() {
                     <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
                       <div className="city-rush-car-select-heading">
                         <span id="city-rush-car-title">GARAGE · {CITY_RUSH_CARS.length} VOITURES</span>
-                        <small>{formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name} · TOUCHE POUR PARTIR</small>
+                        <small>{CITY_RUSH_FREE_CAR_COUNT} VOITURES OFFERTES · {formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name} · TOUCHE POUR PARTIR</small>
                       </div>
                       <div className="city-rush-car-grid" role="group" aria-label="Lancer une course avec une voiture">
                         {CITY_RUSH_CARS.map((car, index) => {
                           const owned = isCityRushCarOwned(careerProgress, car.id);
+                          // Une voiture offerte n'est jamais à acheter : ni prix, ni
+                          // cadenas, ni bouton désactivé, quel que soit le portefeuille.
+                          const offered = owned && isCityRushCarFree(car.id);
                           const canAfford = careerProgress.cash >= (Number(car.price) || 0);
                           const shortfall = Math.max(0, (Number(car.price) || 0) - careerProgress.cash);
                           return (
@@ -1395,7 +1414,7 @@ export default function ViceCityRushPage() {
                               onClick={() => chooseCarAndStart(car.id)}
                               disabled={!owned && !canAfford}
                               aria-label={owned
-                                ? `Lancer le mode ${mode.name} à ${city.name} avec ${car.name}`
+                                ? `Lancer le mode ${mode.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
                                 : canAfford
                                   ? `Acheter ${car.name} pour ${formatCash(car.price)} billets verts`
                                   : `${car.name} verrouillée, il manque ${formatCash(shortfall)} billets verts`}
@@ -1410,8 +1429,8 @@ export default function ViceCityRushPage() {
                                   />
                                 </span>
                                 <span className="city-rush-car-number">0{index + 1}</span>
-                                <span className={`city-rush-car-lock-badge${owned ? ' is-owned' : ''}`}>
-                                  {owned ? car.id === CITY_RUSH_STARTER_CAR_ID ? 'DÉPART' : 'ACHETÉE' : `🔒 ${formatCash(car.price)} $`}
+                                <span className={`city-rush-car-lock-badge${owned ? ' is-owned' : ''}${offered ? ' is-offered' : ''}`}>
+                                  {carGarageBadge(car, owned)}
                                 </span>
                               </span>
                               <b className="city-rush-car-name">{car.name}</b>

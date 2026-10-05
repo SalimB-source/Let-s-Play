@@ -1858,6 +1858,13 @@
   background: rgba(9, 30, 18, .92);
   color: #a9ffc0;
 }
+/* Les trois voitures les moins puissantes sont offertes à tous : la pastille
+   le dit sans prix, dans le cyan des bonus de la course. */
+.city-rush-page .city-rush-car-lock-badge.is-offered {
+  border-color: rgba(67, 234, 213, .52);
+  background: rgba(6, 30, 30, .92);
+  color: #9ff5ea;
+}
 .city-rush-page .city-rush-car-card .city-rush-card-action.is-purchase {
   border-color: #375e48;
   background: #14241b;

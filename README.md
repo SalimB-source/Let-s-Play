@@ -1159,6 +1159,23 @@ migrées puis retirées — avant de l'isoler sous la clé du compte. Les meille
 temps et la préférence de son restent, eux, propres à l'appareil. Les
 déploiements existants reçoivent la table en relançant `supabase/schema.sql`.
 
+**Le garage de départ est offert à tout le monde.** Les trois voitures les
+moins puissantes du catalogue — **MISTRAL 1.4** (0,66), **NOVA 1.8 GT** (0,76)
+et **WOLFSBURG GT-R** (0,92) — appartiennent à chaque joueur, sans billet vert
+à dépenser. `cityRushFreeCarIds` (`cityRushRules.js`) les désigne par
+`powerMultiplier`, la vitesse de pointe réelle — pas la barre « PUISSANCE » du
+garage — et `normalizeCityRushProgress` les ajoute au garage de **toute**
+sauvegarde : visiteur, compte connecté, instantané serveur, sauvegarde écrite
+avant l'offre ou ligne accordée par l'administration. Aucune migration n'est
+donc nécessaire, et `purchaseCityRushCar` ne débite jamais leur prix catalogue
+(motif `'free-car'`). Les prix restent dans la fiche de chaque voiture — c'est
+le garage qui affiche la pastille **« OFFERTE »** (cyan) à la place du cadenas,
+et l'en-tête annonce « 3 VOITURES OFFERTES ». La progression du garage commence
+donc à la quatrième voiture, **CAVALLO F8 GTB** (400 billets) ; les cinq
+suivantes gardent leur prix. Un joueur qui avait déjà acheté la Nova ou la
+Wolfsburg garde sa sauvegarde telle quelle : les billets dépensés ne sont pas
+rendus.
+
 Pour un déblocage administrateur ponctuel, appliquez ensuite
 `supabase/vice-city-account-grants.sql` dans l’éditeur SQL Supabase, puis
 appelez :
@@ -1279,6 +1296,7 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
+npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
 npm run check:city-rush-smoke    # les sept parcours (cinq villes + Route 66 + campagne mexicaine) : construction du monde, course complète de 5 tours (3 600 m, dernier tour de 1 200 m) sans exception, éclatements visibles
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage

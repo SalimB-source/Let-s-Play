@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CITY_RUSH_CARS,
+  CITY_RUSH_CARS_BY_POWER,
   CITY_RUSH_COURSES,
+  CITY_RUSH_FREE_CAR_COUNT,
+  CITY_RUSH_FREE_CAR_IDS,
+  cityRushFreeCarIds,
 } from '../src/games/cityRushRules.js';
 import {
   CITY_RUSH_CASH_BY_PLACE,
@@ -12,6 +16,7 @@ import {
   awardCityRushRace,
   cityRushCashForPlace,
   cityRushCashForRaceResult,
+  isCityRushCarFree,
   isCityRushCarOwned,
   isCityRushCourseUnlocked,
   normalizeCityRushProgress,
@@ -20,15 +25,54 @@ import {
   writeCityRushProgress,
 } from '../src/games/cityRushProgress.js';
 
-test('nouvelle carrière : la Mistral est offerte et seul Vice City est ouvert', () => {
+test('nouvelle carrière : les trois voitures les moins puissantes sont offertes et seul Vice City est ouvert', () => {
   const progress = normalizeCityRushProgress(null);
   assert.equal(progress.cash, 0);
-  assert.deepEqual(progress.ownedCarIds, [CITY_RUSH_STARTER_CAR_ID]);
+  // Ordre du catalogue : la Mistral (départ), la Nova et la Wolfsburg.
+  assert.deepEqual(progress.ownedCarIds, CITY_RUSH_FREE_CAR_IDS);
   assert.deepEqual(progress.completedCourseIds, []);
   assert.equal(isCityRushCarOwned(progress, CITY_RUSH_STARTER_CAR_ID), true);
-  for (const car of CITY_RUSH_CARS.slice(1)) assert.equal(isCityRushCarOwned(progress, car.id), false);
+  for (const car of CITY_RUSH_CARS) {
+    assert.equal(isCityRushCarOwned(progress, car.id), CITY_RUSH_FREE_CAR_IDS.includes(car.id),
+      `${car.name} : offerte si elle fait partie des trois moins puissantes`);
+  }
   assert.equal(isCityRushCourseUnlocked(progress, 'vice-city'), true);
   for (const course of CITY_RUSH_COURSES.slice(1)) assert.equal(isCityRushCourseUnlocked(progress, course.id), false);
+});
+
+test('le trio offert suit la puissance réelle (vitesse de pointe) du catalogue', () => {
+  assert.equal(CITY_RUSH_FREE_CAR_COUNT, 3);
+  assert.deepEqual(CITY_RUSH_CARS_BY_POWER.slice(0, CITY_RUSH_FREE_CAR_COUNT).map((car) => car.id), CITY_RUSH_FREE_CAR_IDS);
+  assert.deepEqual([...CITY_RUSH_FREE_CAR_IDS], ['city-hatch', 'nova-18-gt', 'night-comet']);
+  // Les voitures payantes restent toutes plus rapides que le trio offert.
+  const slowestPaid = CITY_RUSH_CARS_BY_POWER.find((car) => !CITY_RUSH_FREE_CAR_IDS.includes(car.id));
+  for (const freeId of CITY_RUSH_FREE_CAR_IDS) {
+    const free = CITY_RUSH_CARS.find((car) => car.id === freeId);
+    assert.ok(free.powerMultiplier < slowestPaid.powerMultiplier,
+      `${free.name} (${free.powerMultiplier}) est moins puissante que ${slowestPaid.name} (${slowestPaid.powerMultiplier})`);
+  }
+  // Un catalogue réduit n'offre jamais plus de voitures qu'il n'en contient.
+  assert.deepEqual(cityRushFreeCarIds(CITY_RUSH_CARS.slice(0, 2)), ['city-hatch', 'nova-18-gt']);
+});
+
+test('les voitures offertes rejoignent toute sauvegarde, y compris les anciennes et les instantanés serveur', () => {
+  // Sauvegarde d'avant l'offre : aucune des trois n'y figure.
+  const legacy = normalizeCityRushProgress({ cash: 300, ownedCarIds: ['toro-v12'], completedCourseIds: ['vice-city'] });
+  for (const freeId of CITY_RUSH_FREE_CAR_IDS) assert.equal(isCityRushCarOwned(legacy, freeId), true);
+  assert.ok(legacy.ownedCarIds.includes('toro-v12'));
+  assert.equal(legacy.cash, 300, 'aucune offre ne touche au portefeuille');
+
+  // Instantané serveur minimal (ligne jamais synchronisée avant l'offre).
+  const remote = normalizeCityRushProgress({ ownedCarIds: [] });
+  assert.deepEqual(remote.ownedCarIds, CITY_RUSH_FREE_CAR_IDS);
+
+  // L'achat d'une voiture offerte ne débite jamais, même forcé.
+  const attempt = purchaseCityRushCar(normalizeCityRushProgress({ cash: 900 }), 'night-comet');
+  assert.equal(attempt.purchased, false);
+  assert.equal(attempt.reason, 'free-car');
+  assert.equal(attempt.progress.cash, 900);
+  assert.equal(isCityRushCarFree('night-comet'), true);
+  assert.equal(isCityRushCarFree('toro-v12'), false);
 });
 
 test('la place fixe le gain : 50 billets au 1er, 30 au 2e, 10 au 3e', () => {
@@ -117,8 +161,11 @@ test('le versement dépend de la place, mais seul le parcours terminé ouvre le 
 
 test('les voitures payantes s’achètent une fois avec le portefeuille gagné', () => {
   const starter = normalizeCityRushProgress(null);
-  const firstPayingCar = CITY_RUSH_CARS.find((car) => car.price > 0);
+  // Le trio le moins puissant est offert : la première voiture à payer est la
+  // quatrième du catalogue (CAVALLO F8 GTB).
+  const firstPayingCar = CITY_RUSH_CARS.find((car) => car.price > 0 && !CITY_RUSH_FREE_CAR_IDS.includes(car.id));
   assert.ok(firstPayingCar);
+  assert.equal(isCityRushCarOwned(starter, firstPayingCar.id), false);
 
   const poorPurchase = purchaseCityRushCar(starter, firstPayingCar.id);
   assert.equal(poorPurchase.purchased, false);
@@ -145,6 +192,7 @@ test('les sauvegardes ignorent les identifiants inconnus et ne sautent pas un pa
   assert.equal(progress.cash, 42);
   assert.ok(progress.ownedCarIds.includes(CITY_RUSH_STARTER_CAR_ID));
   assert.ok(progress.ownedCarIds.includes('turbo-gt'));
+  assert.deepEqual(progress.ownedCarIds, [...CITY_RUSH_FREE_CAR_IDS, 'turbo-gt']);
   assert.deepEqual(progress.completedCourseIds, ['vice-city']);
   assert.equal(isCityRushCourseUnlocked(progress, 'new-york'), true);
   assert.equal(isCityRushCourseUnlocked(progress, 'tokyo'), false);
