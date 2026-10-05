@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════
-// Vérif d'intégration des armes Vice City Rush : pickups rouges/boosts,
-// disparition des anciens tirs d'IA et hélicoptère policier gratuit une fois
-// par course, y compris après reset(). Le monde est construit pour de vrai
+// Vérif d'intégration de Vice City Rush : bonus rouges rares/pads turbo,
+// aucun tir bleu ni attaque d'hélicoptère, dégâts de contact à la police sans
+// dégâts au joueur, y compris après reset(). Le monde est construit pour de vrai
 // avec un faux WebGLRenderer.
 //   node scripts/city-rush-blue-shot-police-check.mjs            (vice-city)
 //   node scripts/city-rush-blue-shot-police-check.mjs --all      (5 villes)

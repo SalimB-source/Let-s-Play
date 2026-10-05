@@ -58,12 +58,13 @@ import { VICE_CITY_STORY_MODE } from '../achievements/engine';
 import './vice-city-rush.css';
 import './vice-city-rush-cinematic.css';
 
-// v2 : les courses ont été allongées (dernier tour doublé, un tour de plus) —
-// un chrono de l'ancienne durée ne pourrait plus jamais être battu.
+// v3 : les courses passent à six tours (sept pour la finale Histoire) et le
+// Sprint à quatorze checkpoints ; les chronos des formats plus courts ne sont
+// donc plus comparables.
 // Les meilleurs temps et la préférence de son restent ceux de l'appareil : la
 // progression sauvegardée (portefeuille, garage, parcours, Histoire), elle,
 // suit le compte connecté via sa ligne privée (voir cityRushProgress.js).
-const BEST_KEY = 'letsplay_vice_city_rush_bests_v2';
+const BEST_KEY = 'letsplay_vice_city_rush_bests_v3';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const POWER_ORDER = [CITY_RUSH_POWERS.PISTOL];
 const CAR_STATS = [
@@ -95,8 +96,9 @@ const STORY_ENDINGS = {
   revenge: { title: 'La revanche', text: 'Nico remet Dante aux autorités et restaure son nom. Sa vengeance s’arrête là — mais le promoteur qui a commandité le sabotage reste à retrouver.' },
   truth: { title: 'La vérité', text: 'Nico rend publiques toutes les preuves. Dante devra répondre de sa trahison, et le réseau du promoteur est exposé au grand jour.' },
 };
-// Tours d'un chapitre de l'histoire ; le finale, « Le dernier tour », en compte un de plus.
-const STORY_LAPS = 4;
+// Les chapitres d'histoire suivent la nouvelle longueur du Circuit ; le finale
+// « Le dernier tour » en compte un de plus.
+const STORY_LAPS = CITY_RUSH_LAPS;
 const STORY_FINALE_LAPS = STORY_LAPS + 1;
 const STORY_CHAPTERS = [
   { city: 'vice-city', title: 'Le retour', speaker: 'Nico', race: { name: 'Ocean Drive — Sunset Run', type: 'Course côtière', route: 'Ocean Drive · South Beach · Collins Avenue' }, text: 'Trois ans après le sabotage, Nico Vega revient à Ocean Drive. Dante Cross a laissé une invitation au départ : gagne cette course et le prochain nom tombera.' },
@@ -146,11 +148,11 @@ const RACE_MODES = [
   {
     id: 'circuit',
     name: 'CIRCUIT',
-    label: '4 TOURS · CLASSIQUE',
-    desc: 'La formule originale, en plus long. 4 tours dont un dernier tour double, trafic, bonus et police (berlines/SUV) uniquement au dernier tour, avec renforts après chaque destruction.',
+    label: `${CITY_RUSH_LAPS} TOURS · CLASSIQUE`,
+    desc: `${CITY_RUSH_LAPS} tours dont un dernier tour double, trafic, bonus et police (berlines/SUV) uniquement au dernier tour, avec renforts après chaque destruction.`,
     accent: '#43ead5',
     secondary: '#ff5db8',
-    laps: 4,
+    laps: CITY_RUSH_LAPS,
     policeFromStart: false,
     cashRewards: true,
     icon: '◍',
@@ -159,8 +161,8 @@ const RACE_MODES = [
   {
     id: 'sprint',
     name: 'SPRINT',
-    label: 'SOLO · 10 CHECKPOINTS',
-    desc: 'En solo contre la montre, sans adversaire ni police. Franchis 10 portes visibles espacées de 300 m : chaque checkpoint recharge le chrono à 15 s. Ramasse les pads turbo verts au sol pour accélérer ; aucune arme. Chrono à zéro, course perdue. Mode défi : aucun billet vert.',
+    label: `SOLO · ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS`,
+    desc: `En solo contre la montre, sans adversaire ni police. Franchis ${CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles espacées de 300 m : chaque checkpoint recharge le chrono à 15 s. Ramasse les pads turbo verts au sol pour accélérer ; aucune arme. Chrono à zéro, course perdue. Mode défi : aucun billet vert.`,
     accent: '#ff5db8',
     secondary: '#ffd44f',
     laps: 1,
@@ -169,16 +171,16 @@ const RACE_MODES = [
     policeFromStart: false,
     cashRewards: false,
     icon: '⚡',
-    tag: 'RAPIDE',
+    tag: 'SOLO',
   },
   {
     id: 'pursuit',
     name: 'POURSUITE',
-    label: '4 TOURS · POLICE TOTALE',
-    desc: 'Une berline et un SUV d’interception dès le départ. Ils chargent leur mitrailleuse avec les rares bonus rouges et appellent gratuitement un hélicoptère une fois par course ; au dernier tour, des renforts remplacent chaque voiture détruite. Chaque voiture de police a 4 carrés de vie : un tir rouge détruit 1 carré, tandis qu’un carambolage en détruit 2. Mode défi : aucun billet vert.',
+    label: `${CITY_RUSH_LAPS} TOURS · POLICE TOTALE`,
+    desc: `Une berline et un SUV d’interception dès le départ. Les bonus rouges sont très rares et chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. L’attaque d’hélicoptère est retirée ; au dernier tour, des renforts remplacent chaque voiture détruite. Chaque berline a six points de vie : un tir rouge inflige 3 dégâts, un carambolage en accélérant en inflige 1 sans retirer de vie au joueur. Mode défi : aucun billet vert.`,
     accent: '#ffd44f',
     secondary: '#ff526e',
-    laps: 4,
+    laps: CITY_RUSH_LAPS,
     policeFromStart: true,
     cashRewards: false,
     icon: '🚨',
@@ -466,7 +468,7 @@ export default function ViceCityRushPage() {
   const mode = useMemo(() => RACE_MODES.find((m) => m.id === modeId) || RACE_MODES[0], [modeId]);
   const currentStoryRace = storyMode ? STORY_CHAPTERS[storyRaceChapter] : null;
   const currentLaps = storyMode ? (currentStoryRace?.laps ?? STORY_LAPS) : mode.laps;
-  // Le dernier tour enchaîne deux boucles : 4 tours = 3 × 600 m + 1 200 m.
+  // Le dernier tour enchaîne deux boucles : 6 tours = 5 × 600 m + 1 200 m.
   const sprintMode = !storyMode && mode.format === 'sprint';
   const currentDistance = sprintMode ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(currentLaps);
   const RACE_KM = `${(currentDistance / 1000).toFixed(1).replace('.', ',')} KM`;
@@ -504,7 +506,7 @@ export default function ViceCityRushPage() {
     [hud.racers, roster, cityId, selectedCar.id, runId, playerDriverId, currentLaps, currentDistance, sprintMode],
   );
   const standings = minimapState.racers;
-  // Checkpoint visé (1 → 10) : en Sprint il remplace la place au classement,
+  // Checkpoint visé : en Sprint il remplace la place au classement,
   // puisqu'il n'y a personne d'autre en piste.
   const sprintCheckpoint = Math.min((Number(hud.sprint?.checkpoints) || 0) + 1, CITY_RUSH_SPRINT_CHECKPOINTS);
   const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
@@ -850,13 +852,6 @@ export default function ViceCityRushPage() {
     if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · TOUPIE ET RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'pistol-hit-player') showToast(`AK-47 · ${effect.attacker} TE TOUCHE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
-    else if (effect.type === 'radio') showToast(
-      `${effect.callerId && effect.callerId !== 'player' ? 'POLICE · FRAPPE D’HÉLICOPTÈRE UNIQUE' : 'HÉLICO EN APPROCHE'} · CIBLE : ${effect.target}.`,
-      'radio',
-    );
-    else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 2)}.`, 'radio');
-    else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
-    else if (effect.type === 'radio-no-target') showToast('AUCUN RIVAL DEVANT TOI · LA JAUGE RESTE CHARGÉE.', 'radio');
     else if (effect.type === 'traffic-impact') showToast(effect.oncoming ? 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.' : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`, 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
@@ -864,6 +859,9 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-rally') showToast(effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-hit' && effect.source === 'pistol') {
       showToast(`AK-47 · ${effect.police} TOUCHÉE · ${effect.health}/${effect.maxHealth} CARRÉS.`, 'pistol');
+    }
+    else if (effect.type === 'police-hit' && effect.source === 'collision') {
+      showToast(`IMPACT À L’ACCÉLÉRATION · ${effect.police} PERD 1 POINT DE VIE · TA COQUE RESTE INTACTE.`, 'pistol');
     }
     else if (effect.type === 'police-destroyed') showToast(effect.byPlayer
       ? `💥 ${effect.police} DÉTRUITE · +200 PTS${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`
@@ -1143,7 +1141,7 @@ export default function ViceCityRushPage() {
 
               {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0) && (
                 <div className={`city-rush-status-pill${hud.stunLeft > 0 ? ' is-stunned' : hud.trafficImpactLeft > 0 ? ' is-impact' : hud.boostLeft > 0 ? ' is-boost' : ' is-slow'}`}>
-                  {hud.stunLeft > 0 ? `MISSILE · ${hud.stunLeft.toFixed(1)} s` : hud.trafficImpactLeft > 0 ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s` : hud.boostLeft > 0 ? `TURBO · ${hud.boostLeft.toFixed(1)} s` : `RALENTI · ${hud.slowLeft.toFixed(1)} s`}
+                  {hud.stunLeft > 0 ? `ÉPAVE · ${hud.stunLeft.toFixed(1)} s` : hud.trafficImpactLeft > 0 ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s` : hud.boostLeft > 0 ? `TURBO · ${hud.boostLeft.toFixed(1)} s` : `RALENTI · ${hud.slowLeft.toFixed(1)} s`}
                 </div>
               )}
               {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
@@ -1689,7 +1687,21 @@ export default function ViceCityRushPage() {
               couleur rouge compris. Elle est remplacée par la carte solo. */}
           <section className={`city-rush-no-collision-note${sprintMode ? ' is-solo' : ' is-police'}`}>
             <span className="city-rush-no-collision-icon" aria-hidden="true">{sprintMode ? '⚡' : '🚨'}</span>
-            <div><b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b><p>{sprintMode ? <>Rien à fuir dans ce mode : ni escouade au dernier tour, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts posés sur la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</> : <>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les rares bonus rouges.' : 'Au dernier tour en CIRCUIT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police affiche 4 carrés de vie : chaque tir rouge d’AK-47 en détruit 1, un carambolage en détruit 2 et un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</>}</p></div>
+            <div>
+              <b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b>
+              <p>
+                {sprintMode ? (
+                  <>Rien à fuir dans ce mode : ni escouade au dernier tour, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts posés sur la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</>
+                ) : (
+                  <>
+                    {!storyMode && mode.policeFromStart
+                      ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les bonus rouges.'
+                      : 'Au dernier tour, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'}
+                    {' '}Elles commencent sans charge rouge : les bonus rouges sont très rares et chacun recharge {CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. L’attaque de l’hélicoptère est retirée. Hors classement, les véhicules de police apparaissent à part dans les positions. Chaque voiture de police a 6 points de vie : un tir rouge inflige 3 dégâts ; un carambolage en accélérant lui en inflige 1 sans retirer de vie au joueur. Deux tirs rouges, six carambolages ou une combinaison les détruisent ; la voiture explose, quitte la course et rapporte +200 pts. Au dernier tour, une berline détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Ta voiture reçoit aussi une barre de vie de 8 carrés : un tir rouge reçu en coûte deux, mais un contact avec la police ne t’en retire aucun. L’hélicoptère d’observation suit toujours ta voiture jusqu’à l’arrivée, sans jamais attaquer.
+                  </>
+                )}
+              </p>
+            </div>
           </section>
         </aside>
       </main>
