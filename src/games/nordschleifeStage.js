@@ -12,10 +12,13 @@
 import * as THREE from 'three';
 import {
   CITY_RUSH_LAP_LENGTH,
+  CITY_RUSH_LANE_PAINT_WIDTH,
   CITY_RUSH_LANE_WIDTH,
   CITY_RUSH_SCROLL_SCALE,
   CITY_RUSH_NORDSCHLEIFE,
+  CITY_RUSH_NORDSCHLEIFE_COURSE,
   CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE,
+  cityRushLaneSeparators,
 } from './cityRushRules.js';
 import {
   ROAD_TILE_LENGTH,
@@ -318,14 +321,25 @@ export function buildNordschleifeSignAtlas(city, theme, route = CITY_RUSH_NORDSC
 }
 
 // ─── Piste ──────────────────────────────────────────────────────────────────
-// Bitume du Ring : deux voies, traces de gomme dans les trajectoires, plaques
-// de réparation, pas de ligne axiale — une piste, pas une route. Les vibreurs
-// rouge et blanc sont posés par le décor, pas par la texture.
-function makeRacewayTexture(theme, random) {
+// Bitume du Ring : quatre voies, traces de gomme dans les trajectoires, plaques
+// de réparation et marquage au sol — les deux lignes de rive continues qui
+// délimitent les 8,40 m utiles, et une ligne blanche discontinue au milieu de
+// chaque paire de voies. Les quatre voies du circuit sont ainsi lisibles comme
+// celles d'une route, sans ligne jaune d'axe : ici, personne ne vient en face.
+// Les vibreurs rouge et blanc sont posés par le décor, pas par la texture.
+export function makeRacewayTexture(theme, random) {
   const width = 256;
   const height = 512;
+  const roadHalf = theme.roadHalf ?? NORDSCHLEIFE_ROAD_HALF;
   const base = new THREE.Color(theme.roadTint ?? theme.asphalt ?? 0x4a4a4c);
   const shade = (amount) => `rgb(${Math.round(base.r * 255 + amount)}, ${Math.round(base.g * 255 + amount)}, ${Math.round(base.b * 255 + amount)})`;
+  // Peinture des lignes : la teinte de voie du thème (blanc cassé de l'Eifel),
+  // convertie une fois pour toutes en rgba.
+  const line = new THREE.Color(theme.laneColor || '#f4f1e8');
+  const lineCss = (alpha) => `rgba(${Math.round(line.r * 255)}, ${Math.round(line.g * 255)}, ${Math.round(line.b * 255)}, ${alpha})`;
+  // Le carreau couvre toute la largeur de la piste : les abscisses de la
+  // simulation se posent dessus sans conversion particulière.
+  const toPixel = (laneX) => width / 2 + (laneX / (roadHalf * 2)) * width;
   return makeCanvasTexture((ctx) => {
     ctx.fillStyle = shade(0);
     ctx.fillRect(0, 0, width, height);
@@ -348,8 +362,19 @@ function makeRacewayTexture(theme, random) {
         ctx.fillRect(laneCenter * width - 13 + drift, random() * height, 26, 14 + random() * 26);
       }
     }
+    // Lignes de voie : un trait discontinu au milieu de chaque paire de voies
+    // voisines, à la largeur d'une vraie ligne (16 cm). Le carreau se répète en
+    // longueur : quatre traits par carreau tombent juste, sans couture au
+    // raccord, et une voiture change de voie au milieu exact de son décalage.
+    const paintWidth = Math.max(2, (CITY_RUSH_LANE_PAINT_WIDTH / (roadHalf * 2)) * width);
+    const dash = height / 4;
+    ctx.fillStyle = lineCss(0.86);
+    for (const separator of cityRushLaneSeparators(CITY_RUSH_NORDSCHLEIFE_COURSE)) {
+      const px = toPixel(separator);
+      for (let y = 0; y < height; y += dash) ctx.fillRect(px - paintWidth / 2, y, paintWidth, dash * 0.4);
+    }
     // Lignes de rive blanches, continues sur toute la longueur.
-    ctx.fillStyle = 'rgba(244,241,232,.9)';
+    ctx.fillStyle = lineCss(0.9);
     ctx.fillRect(width * 0.045, 0, width * 0.035, height);
     ctx.fillRect(width * 0.92, 0, width * 0.035, height);
     // Quelques traces de pluie et de poussière sur les bords.

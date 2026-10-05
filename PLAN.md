@@ -24,7 +24,8 @@ rejoué à l'échelle 1:17 (20,832 km → 1 200 m), comme la C1 de Tokyo rejoue 
   jeu, pentes jusqu'à ~30 % visuels (18 % réels × compression 35×).
 - **Voies réduites** : piste étroite à sens unique — 9,20 m de bitume (les
   8,40 m réels + la marge peinte) répartis en 4 voies de 2,10 m, au lieu de six
-  voies à double sens sur 13,40 m.
+  voies à double sens sur 13,40 m. Les voies sont marquées au sol (voir « Suite
+  — les lignes des voies »).
 - **Plus de trafic en face** : `oncomingCount: 0` — un circuit permanent ne
   croise personne. Le trafic restant est celui d'une journée de tourisme
   (ambulance, berline de police, GT de passage), sur une seule voiture par voie :
@@ -131,3 +132,36 @@ replier la piste sur elle-même à l'image.
   (Kesselchen, Hatzenbach), rayon du cap.
 - `npm run check:city-rush`, `check:city-rush-smoke -- --all`,
   `check:city-rush-nordschleife`, `npx vite build`.
+
+## Suite — les lignes des voies
+
+Demande : « dans la course Nürburgring, ajoute les lignes des voies ». La piste
+du Ring se partage en quatre voies de 2,10 m mais roulait sans marquage — le
+code assumait même « pas de ligne axiale : une piste, pas une route ». Les
+quatre voies ne se lisaient donc qu'à la grille de départ.
+
+### Ce qui change
+
+- **Le marquage se déduit des voies.** `CITY_RUSH_LANE_PAINT_WIDTH = 0,16 m` et
+  `cityRushLaneSeparators(parcours)` (dans `cityRushRules.js`) donnent l'abscisse
+  des lignes peintes, au milieu de chaque paire de voies : les six voies
+  urbaines gardent leurs séparateurs historiques (∓2,10 m, ∓4,20 m et l'axe) et
+  le Ring tombe sur −2,10 m, 0 et +2,10 m.
+- **La texture de piste les peint** (`makeRacewayTexture`, désormais exportée
+  pour le contrôle) : traits de 3,72 m pour 9,30 m de motif — le quart du
+  carreau de 37,2 m, donc quatre traits par carreau et aucune couture au
+  raccord — à 16 cm de large. Les rives continues passent à la teinte de voie du
+  thème (`laneColor`). L'axe reste blanc : sur un circuit, personne ne vient en
+  face, une ligne jaune n'aurait aucun sens.
+
+### Vérifications
+
+- `npm run check:city-rush-nordschleife-lanes` (nouveau) — dessine la vraie
+  texture dans un canevas qui enregistre chaque trait, puis relit le dessin en
+  mètres : position des trois lignes, largeur peinte, longueur des traits,
+  raccord du carreau, rives, et rien qui recouvre le marquage. Une piste nue
+  échoue.
+- `tests/city-rush-rules.test.js` — « les lignes peintes séparent exactement les
+  voies de chaque parcours » (villes et Ring).
+- `npm run check:city-rush`, `check:city-rush-nordschleife`,
+  `check:city-rush-smoke -- --all`, `npx vite build`.

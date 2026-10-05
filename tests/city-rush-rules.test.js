@@ -34,9 +34,15 @@ import {
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
   CITY_RUSH_LANE_WIDTH,
+  CITY_RUSH_LANE_PAINT_WIDTH,
   CITY_RUSH_LANES_PER_DIRECTION,
   CITY_RUSH_ROAD_WIDTH,
   CITY_RUSH_ROAD_HALF_WIDTH,
+  CITY_RUSH_RACEWAY_ROAD_HALF,
+  CITY_RUSH_NORDSCHLEIFE_COURSE,
+  cityRushLaneCount,
+  cityRushLaneConfig,
+  cityRushLaneSeparators,
   CITY_RUSH_TURN_AMPLITUDE,
   CITY_RUSH_HILL_AMPLITUDE,
   CITY_RUSH_FORWARD_LANES,
@@ -293,6 +299,34 @@ test('Vice City Rush has six playable lanes with three lanes in each direction',
   assert.ok(Math.max(...CITY_RUSH_LANE_X.map(Math.abs)) + 1.9 / 2 < CITY_RUSH_ROAD_HALF_WIDTH,
     'les voitures tiennent sur la chaussée, même dans les voies extérieures');
   assert.deepEqual(selectCityRushRacers({ cityId: 'vice-city' }).map((racer) => racer.lane), [4, 5, 3]);
+});
+
+test('les lignes peintes séparent exactement les voies de chaque parcours', () => {
+  // Le marquage au sol n'est pas décoratif : chaque ligne tombe au milieu de la
+  // paire de voies qu'elle sépare. Les six voies urbaines gardent ainsi leurs
+  // séparateurs historiques, et la piste du Ring se coupe en quatre parts
+  // égales de 2,10 m.
+  assert.equal(CITY_RUSH_LANE_PAINT_WIDTH, 0.16);
+  const citySeparators = cityRushLaneSeparators(CITY_RUSH_CITIES[0]);
+  assert.deepEqual(citySeparators.map((x) => Number(x.toFixed(6))), [-4.2, -2.1, 0, 2.1, 4.2],
+    'les six voies urbaines gardent leurs cinq séparateurs');
+  assert.ok(citySeparators.every((x) => Math.abs(x) + CITY_RUSH_LANE_PAINT_WIDTH / 2 < CITY_RUSH_ROAD_HALF_WIDTH),
+    'aucune ligne urbaine ne mord le trottoir');
+
+  const ring = CITY_RUSH_NORDSCHLEIFE_COURSE;
+  assert.equal(cityRushLaneCount(ring), 4);
+  const lanes = cityRushLaneConfig(ring);
+  assert.equal(lanes.raceway, true);
+  const separators = cityRushLaneSeparators(ring);
+  assert.deepEqual(separators.map((x) => Number(x.toFixed(6))), [-2.1, 0, 2.1],
+    'la piste se partage en quatre voies de 2,10 m');
+  separators.forEach((bridge, lane) => {
+    assert.ok(Math.abs((lanes.laneX(lane) + lanes.laneX(lane + 1)) / 2 - bridge) < 1e-9,
+      `la ligne ${lane + 1} tombe au milieu des voies ${lane} et ${lane + 1}`);
+    assert.ok(Math.abs(lanes.laneX(lane + 1) - lanes.laneX(lane) - CITY_RUSH_LANE_WIDTH) < 1e-9);
+  });
+  assert.ok(separators.every((x) => Math.abs(x) + CITY_RUSH_LANE_PAINT_WIDTH / 2 < CITY_RUSH_RACEWAY_ROAD_HALF),
+    'les lignes du Ring restent sur les 9,20 m de bitume');
 });
 
 test('the rendered circuit has gentle, seamless turns while race lanes stay logical', () => {

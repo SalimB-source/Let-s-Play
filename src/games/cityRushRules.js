@@ -1771,6 +1771,28 @@ export function cityRushLaneConfig(course) {
   };
 }
 
+// ── Marquage au sol des voies ───────────────────────────────────────────────
+// Les voies ne sont pas qu'une grille de simulation : elles sont peintes sur le
+// bitume. Une ligne blanche discontinue sépare deux voies voisines, exactement
+// à mi-chemin de leurs abscisses — les six voies urbaines gardent ainsi leurs
+// séparateurs historiques (∓2,10 m et ∓4,20 m, plus l'axe central) et la piste
+// du Ring se découpe en ses quatre voies de 2,10 m (−2,10 m, 0 et +2,10 m).
+export const CITY_RUSH_LANE_PAINT_WIDTH = 0.16; // m : largeur peinte d'une ligne de voie
+
+/**
+ * Abscisses (en mètres) des lignes qui séparent deux voies voisines, de gauche
+ * à droite. Une ligne tombe toujours au milieu de la paire : une voiture qui
+ * change de voie la franchit donc à la moitié exacte de son décalage.
+ */
+export function cityRushLaneSeparators(course) {
+  const laneCount = cityRushLaneCount(course);
+  const laneX = (lane) => cityRushLaneX(lane, laneCount);
+  return Object.freeze(Array.from(
+    { length: Math.max(0, laneCount - 1) },
+    (_, lane) => (laneX(lane) + laneX(lane + 1)) / 2,
+  ));
+}
+
 // Nombre de tours d'une course : un entier d'au moins 1.
 function safeLapCount(laps) {
   const count = Math.floor(Number(laps));
