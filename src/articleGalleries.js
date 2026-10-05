@@ -17,6 +17,33 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // ---- Actus du lundi 05.10.2026 ------------------------------------------
+  'gears-of-war-e-day-sortie-mondiale': { label: 'GEARS OF WAR: E-DAY', meta: 'THE COALITION · XBOX', items: [
+    { src: youTubeFrameUrl('TOEuNKz3XW8', 1), alt: 'Gears of War: E-Day — photogramme du trailer de lancement officiel', caption: '01 / Marcus et Dom au premier jour de l’Emergence' },
+    { src: youTubeFrameUrl('TOEuNKz3XW8', 2), alt: 'Gears of War: E-Day — plan de Kalona dans le trailer de lancement', caption: '02 / Kalona, sous le feu de la Horde Locuste' },
+    { src: youTubeFrameUrl('TOEuNKz3XW8', 3), alt: 'Gears of War: E-Day — dernière partie du trailer de lancement officiel', caption: '03 / Le préquel arrive sur Xbox Series X|S et PC' },
+  ], credit: 'Photogrammes extraits du trailer de lancement officiel de la chaîne Gears of War.', creditSources: [{ label: 'le trailer « Official Launch Trailer » sur YouTube', href: 'https://www.youtube.com/watch?v=TOEuNKz3XW8' }] },
+  'cinema/les-miserables-cavaye-14-octobre': { label: 'LES MISÉRABLES', meta: 'PATHÉ · FRED CAVAYÉ', items: [
+    { src: youTubeFrameUrl('ZZRo2fIbomE', 1), alt: 'Les Misérables de Fred Cavayé — photogramme de la bande-annonce française', caption: '01 / Vincent Lindon en Jean Valjean' },
+    { src: youTubeFrameUrl('ZZRo2fIbomE', 2), alt: 'Les Misérables — plan de la bande-annonce française de Pathé Cinémas', caption: '02 / Le face-à-face avec l’inspecteur Javert' },
+    { src: youTubeFrameUrl('ZZRo2fIbomE', 3), alt: 'Les Misérables — dernier plan de la bande-annonce française', caption: '03 / Le rendez-vous du 14 octobre en salles' },
+  ], credit: 'Photogrammes extraits de la bande-annonce française publiée par Pathé Cinémas.', creditSources: [{ label: 'la bande-annonce sur YouTube', href: 'https://www.youtube.com/watch?v=ZZRo2fIbomE' }] },
+  'aion-2-ouverture-occidentale': { label: 'AION 2', meta: 'NCSOFT · MMORPG', items: [
+    { src: youTubeFrameUrl('YYelxy0eEsA', 1), alt: 'Aion 2 — photogramme du trailer de lancement officiel « Heirs of the Broken Sky »', caption: '01 / L’ouverture de la campagne occidentale' },
+    { src: youTubeFrameUrl('YYelxy0eEsA', 2), alt: 'Aion 2 — plan du monde ouvert sous Unreal Engine 5 dans le trailer de lancement', caption: '02 / Le monde de la version globale' },
+    { src: youTubeFrameUrl('YYelxy0eEsA', 3), alt: 'Aion 2 — dernière partie du trailer de lancement officiel NCSOFT', caption: '03 / Le free-to-play ouvre ses serveurs' },
+  ], credit: 'Photogrammes extraits du trailer de lancement officiel NCSOFT.', creditSources: [{ label: 'le trailer « Heirs of the Broken Sky » sur YouTube', href: 'https://www.youtube.com/watch?v=YYelxy0eEsA' }] },
+  'cinema/marshals-saison-2-paramount-france': { label: 'MARSHALS', meta: 'PARAMOUNT+ · SAISON 2', items: [
+    { src: youTubeFrameUrl('mtk4ZZutvLc', 1), alt: 'Marshals: A Yellowstone Story saison 2 — photogramme du trailer officiel CBS', caption: '01 / Kayce Dutton reprend le badge' },
+    { src: youTubeFrameUrl('mtk4ZZutvLc', 2), alt: 'Marshals saison 2 — l’unité des U.S. Marshals en intervention dans le trailer officiel', caption: '02 / Les interventions de l’unité fédérale' },
+    { src: youTubeFrameUrl('mtk4ZZutvLc', 3), alt: 'Marshals saison 2 — plan du Montana dans le trailer officiel CBS', caption: '03 / Le Montana, entre patrouilles et héritage' },
+  ], credit: 'Photogrammes extraits de la bande-annonce officielle CBS.', creditSources: [{ label: 'le trailer de la saison 2 sur YouTube', href: 'https://www.youtube.com/watch?v=mtk4ZZutvLc' }] },
+  'tech/super-intelligence-force-spacexsi': { label: 'SUPER INTELLIGENCE', meta: 'MAISON-BLANCHE · IA', items: [
+    { src: youTubeFrameUrl('6UBA8iL3x54', 1), alt: 'La Maison-Blanche — photogramme de la réunion consacrée à la « super intelligence »', caption: '01 / La rencontre avec les dirigeants de l’IA' },
+    { src: youTubeFrameUrl('6UBA8iL3x54', 2), alt: 'La Maison-Blanche — photogramme du déjeuner sur la « super intelligence »', caption: '02 / Le déjeuner du 29 septembre' },
+    { src: youTubeFrameUrl('6UBA8iL3x54', 3), alt: 'La Maison-Blanche — dernier plan de la vidéo officielle sur la « super intelligence »', caption: '03 / La séquence qui précède la « Super Intelligence Force »' },
+  ], credit: 'Photogrammes extraits de la vidéo officielle de la Maison-Blanche (réunion et déjeuner sur la « super intelligence », 29.09.2026).', creditSources: [{ label: 'la vidéo de la Maison-Blanche sur YouTube', href: 'https://www.youtube.com/watch?v=6UBA8iL3x54' }] },
+
   'ghost-yotei-complete-edition-1er-octobre': { label: 'GHOST OF YŌTEI', meta: 'PLAYSTATION · SUCKER PUNCH', items: [
     { src: youTubeFrameUrl('2bQrrWCRkMY', 1), alt: 'Ghost of Yōtei Complete Edition — photogramme du trailer officiel', caption: '01 / Echoes of Sekigahara, nouvelle région' },
     { src: youTubeFrameUrl('2bQrrWCRkMY', 2), alt: 'Ghost of Yōtei Complete Edition — combat dans le trailer officiel', caption: '02 / Le retour du combat au katana' },

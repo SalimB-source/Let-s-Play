@@ -94,6 +94,20 @@ const OFFICIAL_CHANNELS = new Set([
   'Amazon MGM Studios',
   'Paramount Plus',
   'Lionsgate Movies',
+  // Chaîne vérifiée sur YouTube (oEmbed) le 05.10.2026 pour la saison 2 de
+  // « Marshals: A Yellowstone Story » : « Marshals Season 2: Official Trailer
+  // | CBS » (mtk4ZZutvLc), l'upload de la chaîne qui diffuse la série aux
+  // États-Unis — Paramount+ France en reprend la campagne sans publier de
+  // trailer distinct.
+  'CBS',
+  // Chaînes vérifiées sur YouTube (oEmbed) le 05.10.2026 pour « Les Misérables »
+  // de Fred Cavayé : « LES MISÉRABLES - Bande-annonce » (ZZRo2fIbomE) pour le
+  // distributeur français Pathé Cinémas, et « LES MISÉRABLES | Official Trailer
+  // | STUDIOCANAL » (PyBTjrK43Hg) pour la société de vente internationale. Les
+  // deux publient la campagne du film ; les reprises de médias (AlloCiné…)
+  // restent écartées.
+  'Pathé Cinémas',
+  'STUDIOCANAL',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
