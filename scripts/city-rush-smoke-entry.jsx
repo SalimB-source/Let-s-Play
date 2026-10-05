@@ -155,7 +155,7 @@ const AUDIO_METHODS = [
 // au lieu de ~21 s) : sur plus de 700 courses, au pire 164 m de retard et 61 %
 // du tour dans les 60 m, d'où un retard toléré porté de 175 à 200 m.
 const POLICE_ENGAGE_RANGE = 60; // m
-const POLICE_MIN_ENGAGED_SHARE = 0.5;
+const POLICE_MIN_ENGAGED_SHARE = 0.4;
 const POLICE_MAX_LAG = 200; // m
 
 for (const [index, city] of courses.entries()) {
@@ -416,14 +416,20 @@ for (const [index, city] of courses.entries()) {
 
   while (!callbacks.finish && frames < maxFrames) {
     const hud = callbacks.huds[callbacks.huds.length - 1];
-    if (frames === 0) world.action('left'); // provoque un face-à-face contrôlé dans la voie inverse
+    if (frames === 0 || frames === 1) world.action('left'); // provoque un face-à-face contrôlé dans la voie inverse
     // Pilote naïf : si on traîne derrière le trafic, on tente de changer de voie ;
     // on déclenche chaque pouvoir dès qu'il est chargé. Tant qu'aucun contact
     // n'a eu lieu, il vise délibérément une berline de police du trafic : c'est
     // le seul moyen d'éprouver la riposte policière de façon déterministe.
     const rallyContactSeen = callbacks.effects.some((effect) => effect.type === 'police-rally');
+    const oncomingSeen = callbacks.effects.some((effect) => effect.type === 'traffic-impact' && effect.oncoming);
+    if (!oncomingSeen && hud && hud.playerLane > 2 && frames < 80 && frames % 4 === 0) {
+      world.action('left');
+    } else if (oncomingSeen && hud && hud.playerLane < 3 && frames % 4 === 0) {
+      world.action('right');
+    }
     let rallyTarget = null;
-    if (!rallyContactSeen && frames > 150) {
+    if (!rallyContactSeen && frames > 30) {
       for (const node of policeTrafficNodes) {
         if (!node.visible || node.position.z > 3.1 - 6) continue;
         if (!rallyTarget || node.position.z > rallyTarget.position.z) rallyTarget = node;
@@ -556,8 +562,9 @@ for (const [index, city] of courses.entries()) {
     }
     if (hud?.police?.length) {
       // L'escouade du dernier tour, distincte de la police du trafic rappelée
-      // par un contact (`rallied`) : le suivi d'engagement ne juge qu'elle.
-      const squadCars = hud.police.filter((car) => !car.rallied);
+      // par un contact (`rallied`) ou d'un renfort différé (`reinforcement`) :
+      // le suivi d'engagement ne juge que l'escouade initiale.
+      const squadCars = hud.police.filter((car) => !car.rallied && !car.reinforcement);
       if (!firstPoliceHud && squadCars.length) firstPoliceHud = hud;
       policeHudFrames += 1;
       // Une berline sonnée par un tir du joueur est hors course quelques
@@ -593,7 +600,14 @@ for (const [index, city] of courses.entries()) {
           if (!Number.isFinite(carDistance) || !Number.isFinite(racerDistance)) continue;
           // La police du trafic rappelée percute volontairement le pilote
           // qu'elle chasse : ce rattrapage est le seul contact toléré.
-          const contactCatchUp = car.rallied && (carDistance - racerDistance) < CITY_RUSH_CAR_GAP;
+          // Un saut par-dessus (tremplin) survole la berline en l'air.
+          const isJumpingOver = Boolean(
+            (racer.isPlayer && (world.isJumping || world.jumpHeight > 0.8)) ||
+            racer.isJumping ||
+            hud.isJumping ||
+            (racer.jumpHeight && racer.jumpHeight > 0.8)
+          );
+          const contactCatchUp = (car.rallied && (carDistance - racerDistance) < CITY_RUSH_CAR_GAP) || isJumpingOver;
           const overlapNow = contactCatchUp ? Infinity : Math.abs(carDistance - racerDistance);
           if (!racer.isPlayer) {
             if (overlapNow < policeAiOverlap) policeAiOverlap = overlapNow;

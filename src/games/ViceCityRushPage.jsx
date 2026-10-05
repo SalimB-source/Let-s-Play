@@ -875,6 +875,8 @@ export default function ViceCityRushPage() {
     }
     else if (effect.type === 'sprint-timeout') showToast(`TEMPS ÉCOULÉ · ${effect.checkpoints} / ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS.`, 'slow');
     else if (effect.type === 'tunnel-scrape') showToast('PAROI RACLÉE · LA VOIE EST MURÉE SOUS LE TUNNEL · RALENTI.', 'slow');
+    else if (effect.type === 'ramp-jump') showToast(`TREMPLIN · SAUT ${Math.round(effect.distance)} M !`, 'boost');
+    else if (effect.type === 'jump-overpass') showToast('SAUT PAR-DESSUS LE TRAFIC !', 'boost');
   }
 
   const onLap = (info) => {
@@ -1637,6 +1639,11 @@ export default function ViceCityRushPage() {
                 <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad vert lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. C'est le seul bonus du Sprint.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
               </div>
+              <div className="city-rush-guide-item is-ramp">
+                <span className="city-rush-guide-glyph" aria-hidden="true">▲</span>
+                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour sauter par-dessus le trafic civil selon ta vitesse d’élan.</small></div>
+                <kbd>SAUT</kbd>
+              </div>
               <div className="city-rush-guide-item is-solo">
                 <span className="city-rush-guide-glyph" aria-hidden="true">◎</span>
                 <div><b>SOLO · AUCUNE ARME</b><small>Pas de rival, de police ou de bonus d'arme : repère les portes et garde le turbo pour tenir le chrono.</small></div>
@@ -1663,6 +1670,11 @@ export default function ViceCityRushPage() {
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
                 <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Les bonus rouges sont rares : chacun recharge {CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles d’AK-47.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
+              </div>
+              <div className="city-rush-guide-item is-ramp">
+                <span className="city-rush-guide-glyph" aria-hidden="true">▲</span>
+                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour bondir sur plusieurs dizaines de mètres selon ta vitesse et survoler le trafic et les barrages sans collision.</small></div>
+                <kbd>SAUT</kbd>
               </div>
             </div>
           </section>

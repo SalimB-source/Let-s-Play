@@ -174,6 +174,15 @@ import {
   markCityRushPickupTaken,
   rankCityRushRacers,
   resolveCityRushCarMovement,
+  CITY_RUSH_RAMP_WIDTH,
+  CITY_RUSH_RAMP_LENGTH,
+  CITY_RUSH_RAMP_HEIGHT,
+  CITY_RUSH_RAMP_CONTACT_WINDOW,
+  computeCityRushJumpDistance,
+  computeCityRushJumpHeight,
+  computeCityRushJumpElevation,
+  computeCityRushJumpPitch,
+  detectCityRushRampContact,
 } from '../src/games/cityRushRules.js';
 
 test('the five city routes have a distinct identity and complete palettes', () => {
@@ -2080,3 +2089,77 @@ test('Sprint : 10 checkpoints, 15 s entre chaque, arrivée au dixième', async (
   // À la vitesse de base, 15 s suffisent largement pour un checkpoint.
   assert.ok(rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING / rules.CITY_RUSH_PLAYER_SPEED < 15);
 });
+
+test('les tremplins et sauts font bondir la voiture sur une portée et hauteur proportionnelles à la vitesse', () => {
+  assert.ok(CITY_RUSH_RAMP_WIDTH >= 2.0 && CITY_RUSH_RAMP_WIDTH <= 2.6);
+  assert.ok(CITY_RUSH_RAMP_LENGTH >= 4.0 && CITY_RUSH_RAMP_LENGTH <= 6.0);
+  assert.ok(CITY_RUSH_RAMP_HEIGHT >= 0.7 && CITY_RUSH_RAMP_HEIGHT <= 1.2);
+
+  const slowDist = computeCityRushJumpDistance(15);
+  const medDist = computeCityRushJumpDistance(30);
+  const fastDist = computeCityRushJumpDistance(50);
+  const boostDist = computeCityRushJumpDistance(70);
+
+  assert.ok(slowDist < medDist, 'la portée grandit avec la vitesse');
+  assert.ok(medDist < fastDist);
+  assert.ok(fastDist < boostDist);
+  assert.ok(slowDist >= 16 && slowDist <= 25, 'portée courte à basse allure');
+  assert.ok(fastDist >= 50 && fastDist <= 75, 'longue portée à haute vitesse');
+
+  const slowHeight = computeCityRushJumpHeight(15);
+  const fastHeight = computeCityRushJumpHeight(60);
+  assert.ok(fastHeight > slowHeight, 'la hauteur maximale augmente avec la vitesse');
+  assert.ok(slowHeight >= 2.2, 'hauteur suffisante pour passer au-dessus du trafic');
+  assert.ok(fastHeight <= 6.0, 'hauteur contenue sous les portiques');
+
+  // Trajectoire en cloche (élévation et pitch)
+  const y0 = computeCityRushJumpElevation(0, medDist, 3.5);
+  const yMid = computeCityRushJumpElevation(medDist * 0.5, medDist, 3.5);
+  const yEnd = computeCityRushJumpElevation(medDist, medDist, 3.5);
+  assert.equal(y0, 0, 'au décollage y = 0');
+  assert.ok(Math.abs(yMid - 3.5) < 1e-4, 'au sommet y = hauteur max');
+  assert.equal(yEnd, 0, 'à l’atterrissage y = 0');
+
+  const pitchLaunch = computeCityRushJumpPitch(0.05);
+  const pitchPeak = computeCityRushJumpPitch(0.5);
+  const pitchLanding = computeCityRushJumpPitch(0.95);
+  assert.ok(pitchLaunch > 0, 'nez cabré au décollage');
+  assert.equal(pitchPeak, 0, 'assiette plate au sommet du saut');
+  assert.ok(pitchLanding < 0, 'léger piqué avant le contact avec la route');
+
+  // Détection de contact tremplin
+  assert.equal(detectCityRushRampContact(100, 4, 101, 4), true);
+  assert.equal(detectCityRushRampContact(100, 3, 101, 4), false, 'voie différente = pas de saut');
+  assert.equal(detectCityRushRampContact(100, 4, 115, 4), false, 'trop loin = pas de saut');
+});
+
+test('une voiture qui saute passe au-dessus du trafic et des autres voitures sans collision ni blocage', () => {
+  // 1. Détection des chocs avec le trafic : la voiture en saut ignore les impacts
+  const groundImpacts = detectCityRushTrafficImpacts([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: false },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  assert.equal(groundImpacts.length, 1, 'au sol, la voiture percute le camion');
+
+  const jumpingImpacts = detectCityRushTrafficImpacts([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: true },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  assert.equal(jumpingImpacts.length, 0, 'en vol, la voiture survole le camion sans impact');
+
+  // 2. Résolution du mouvement : la voiture en vol n’est pas ralentie par le véhicule au sol
+  const groundMoved = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: false },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  const groundById = Object.fromEntries(groundMoved.map((c) => [c.id, c.nextDistance]));
+  assert.ok(groundById.player < 22, 'au sol, le joueur est retenu derrière le camion');
+
+  const jumpingMoved = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: true },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  const jumpingById = Object.fromEntries(jumpingMoved.map((c) => [c.id, c.nextDistance]));
+  assert.equal(jumpingById.player, 25, 'en saut, la voiture poursuit sa trajectoire par-dessus');
+});
+

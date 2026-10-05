@@ -1489,6 +1489,7 @@ export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, exclu
 
 // Le trafic conserve une distance de sécurité; les voitures de course ne
 // se bloquent plus entre elles lorsqu'elles sont marquées `collisionGroup`.
+// Un véhicule en l'air (saut sur tremplin) passe au-dessus du sol sans blocage.
 export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR_GAP) {
   const resolved = cars.map((car) => {
     const previousDistance = Number.isFinite(Number(car.previousDistance)) ? Number(car.previousDistance) : 0;
@@ -1499,8 +1500,10 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
   const safeGap = Math.max(0, Number(minimumGap) || 0);
   for (let index = 0; index < ordered.length; index += 1) {
     const following = ordered[index];
+    if (following.jumping || following.isJumping) continue;
     for (let frontIndex = 0; frontIndex < index; frontIndex += 1) {
       const front = ordered[frontIndex];
+      if (front.jumping || front.isJumping) continue;
       if (front.collisionGroup === 'racer' && following.collisionGroup === 'racer') continue;
       const sameLane = front.lane === following.lane;
       const frontWidth = Number.isFinite(Number(front.width)) ? Number(front.width) : 1.9;
@@ -1530,6 +1533,7 @@ const finiteNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? N
  * couples `racer` → `traffic` sont retournés. `x` permet aussi de détecter un
  * changement de voie en cours, quand les deux voitures n'ont pas encore le
  * même numéro de voie mais que leurs carrosseries se recouvrent.
+ * Une voiture en train de sauter franchit le trafic par les airs sans impact.
  */
 export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_TRAFFIC_IMPACT_GAP) {
   const safeGap = Math.max(0, finiteNumber(minimumGap, CITY_RUSH_TRAFFIC_IMPACT_GAP));
@@ -1538,6 +1542,7 @@ export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_T
   const impacts = [];
 
   for (const racer of racers) {
+    if (racer.jumping || racer.isJumping) continue;
     const racerPrevious = finiteNumber(racer.previousDistance);
     const racerNext = Math.max(racerPrevious, finiteNumber(racer.nextDistance, racerPrevious));
     const racerWidth = Math.max(0, finiteNumber(racer.width, 1.9));
@@ -1710,7 +1715,66 @@ export function chooseCityRushAiLane({
   return bestLane;
 }
 
-// ── Pilotes internationaux & avatars distincts ──────────────────────────────
+// ── Tremplins et sauts ───────────────────────────────────────────────────────
+// Des rampes disposées le long de la piste font décoller la voiture sur une
+// trajectoire parabolique dont la portée et la hauteur dépendent de la vitesse.
+// En vol, le véhicule passe au-dessus du trafic et des barrages sans collision.
+export const CITY_RUSH_RAMP_WIDTH = 2.4;
+export const CITY_RUSH_RAMP_LENGTH = 4.8;
+export const CITY_RUSH_RAMP_HEIGHT = 0.85;
+export const CITY_RUSH_RAMP_CONTACT_WINDOW = 2.6;
+export const CITY_RUSH_RAMP_SPACING_MIN = 85;
+export const CITY_RUSH_RAMP_SPACING_MAX = 125;
+
+/**
+ * Calcule la distance de saut (en mètres) franchie par la voiture selon la vitesse
+ * à laquelle le tremplin est abordé.
+ */
+export function computeCityRushJumpDistance(speed) {
+  const s = Math.max(0, Number(speed) || 0);
+  return Math.max(16, s * 1.15 + 4);
+}
+
+/**
+ * Calcule la hauteur maximale du saut (en mètres) selon la vitesse d'élan.
+ */
+export function computeCityRushJumpHeight(speed) {
+  const s = Math.max(0, Number(speed) || 0);
+  return Math.min(5.6, Math.max(2.2, 1.8 + s * 0.062));
+}
+
+/**
+ * Calcule l'élévation Y au cours du saut selon la distance franchie.
+ */
+export function computeCityRushJumpElevation(jumpDistanceTraveled, totalJumpDistance, peakHeight = 3.5) {
+  const total = Math.max(0.1, Number(totalJumpDistance) || 1);
+  const traveled = Math.max(0, Number(jumpDistanceTraveled) || 0);
+  const progress = Math.max(0, Math.min(1, traveled / total));
+  if (progress >= 1) return 0;
+  const height = Math.max(0, Number(peakHeight) || 3.5);
+  return height * Math.sin(Math.PI * progress);
+}
+
+/**
+ * Calcule l'inclinaison longitudinale (pitch) de la caisse en vol :
+ * cabré à l'impulsion, stabilisé au sommet, léger piqué avant le contact.
+ */
+export function computeCityRushJumpPitch(progress) {
+  const p = Math.max(0, Math.min(1, Number(progress) || 0));
+  if (p < 0.25) return 0.16 * (1 - p / 0.25);
+  if (p > 0.75) return -0.09 * ((p - 0.75) / 0.25);
+  return 0;
+}
+
+/**
+ * Détecte si un véhicule entre en contact avec un tremplin sur sa voie.
+ */
+export function detectCityRushRampContact(carDistance, carLane, rampDistance, rampLane, contactWindow = CITY_RUSH_RAMP_CONTACT_WINDOW) {
+  if (Number(carLane) !== Number(rampLane)) return false;
+  const gap = Math.abs((Number(carDistance) || 0) - (Number(rampDistance) || 0));
+  return gap <= (Number(contactWindow) || CITY_RUSH_RAMP_CONTACT_WINDOW);
+}
+
 // Chaque course réunit 3 pilotes : notre joueur et 2 rivaux, chacun avec un
 // avatar et un prénom issus d'un pays différent autour du monde.
 export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno']);
