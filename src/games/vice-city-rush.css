@@ -641,10 +641,17 @@
   font: 600 10px var(--mono, monospace);
 }
 
-/* ── HUD façon console de jeu : radar + compteurs (mobile) ── */
-/* Desktop : le wrapper radar est transparent et les compteurs dédiés au mobile restent cachés */
+/* ── HUD façon console de jeu : radar + compteurs ── */
+/* Desktop : le wrapper radar est transparent et les compteurs de score restent cachés.
+   Les étoiles se détachent toutefois en haut à droite dès que la police recherche le joueur. */
 .city-rush-radar { display: contents; }
 .city-rush-gta-cash { display: none; }
+.city-rush-gta-cash.is-wanted { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; position: absolute; z-index: 8; top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px; pointer-events: none; text-align: right; }
+.city-rush-gta-cash.is-wanted > b,
+.city-rush-gta-cash.is-wanted > small { display: none; }
+.city-rush-gta-wanted { display: inline-flex; gap: 4px; margin-top: 3px; }
+.city-rush-gta-wanted i { font-style: normal; font-size: 21px; line-height: 1; color: rgba(255, 255, 255, 0.28); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.city-rush-gta-wanted i.is-on { color: #fff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.9), 0 0 18px rgba(255, 196, 84, 0.55); animation: crWantedPulse 1.5s ease-in-out infinite; }
 
 /* ── Plaque de signalisation de la route officielle (Shuto C1) ──
    Vert autoroutier japonais, bordure blanche, badge de ligne et annonce de la
@@ -2715,6 +2722,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
   /* Compteur de butin + étoiles de recherche, en haut à droite */
   .city-rush-gta-cash { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; position: absolute; z-index: 4; top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; pointer-events: none; text-align: right; }
+  .city-rush-gta-cash.is-wanted > b,
+  .city-rush-gta-cash.is-wanted > small { display: block; }
   .city-rush-gta-cash b { font: 900 16px/1.1 var(--mono, monospace); letter-spacing: 0.05em; color: #8ce99a; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 14px rgba(104, 222, 124, 0.4); }
   .city-rush-gta-cash small { font: 700 9px var(--mono, monospace); letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.78); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85); }
   .city-rush-gta-wanted { display: inline-flex; gap: 3px; margin-top: 3px; }

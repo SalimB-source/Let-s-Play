@@ -61,7 +61,14 @@ import {
   CITY_RUSH_POLICE_COUNT,
   CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
+  CITY_RUSH_POLICE_TURNAROUND_DURATION,
+  CITY_RUSH_WANTED_MAX_STARS,
+  CITY_RUSH_POLICE_TRAFFIC_TYPES,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
+  isCityRushPoliceTrafficType,
+  cityRushWantedLevelAfterHit,
+  cityRushPoliceCountForWantedLevel,
+  cityRushPoliceTurnaroundProgress,
   CITY_RUSH_POLICE_DAMAGE,
   CITY_RUSH_POLICE_HEALTH,
   CITY_RUSH_POLICE_START_CHARGES,
@@ -315,7 +322,8 @@ test('the rendered circuit rises and falls with a gentle seamless road profile',
 
 test('eight slow traffic cars span three forward lanes and safely block racers (trafic allégé)', () => {
   assert.equal(CITY_RUSH_TRAFFIC_COUNT, 8);
-  assert.equal(CITY_RUSH_TRAFFIC_COUNT % CITY_RUSH_TRAFFIC_TYPES.length, 0);
+  assert.ok(CITY_RUSH_TRAFFIC_COUNT >= CITY_RUSH_TRAFFIC_TYPES.length,
+    'la flotte contient au moins une voiture de chaque type de trafic');
   assert.equal(CITY_RUSH_TRAFFIC_LANES.length, CITY_RUSH_TRAFFIC_COUNT);
   assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 0 && lane < CITY_RUSH_LANE_X.length));
   // La route est à double sens : le trafic lent occupe les trois voies de
@@ -329,8 +337,12 @@ test('eight slow traffic cars span three forward lanes and safely block racers (
     'une seule voiture venant en face par voie de gauche');
   assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1, 2]);
   assert.deepEqual(CITY_RUSH_TRAFFIC_TYPES.map((vehicle) => vehicle.id), [
-    'police', 'ambulance', 'garbage-truck', 'white-lambo',
+    'police', 'undercover-police', 'ambulance', 'garbage-truck', 'white-lambo',
   ]);
+  assert.deepEqual([...CITY_RUSH_POLICE_TRAFFIC_TYPES], ['police', 'undercover-police']);
+  assert.equal(isCityRushPoliceTrafficType('police'), true);
+  assert.equal(isCityRushPoliceTrafficType('undercover-police'), true);
+  assert.equal(isCityRushPoliceTrafficType('ambulance'), false);
   for (const vehicle of CITY_RUSH_TRAFFIC_TYPES) {
     assert.ok(vehicle.speed > 0 && vehicle.speed <= 8, `${vehicle.name} roule lentement`);
     assert.ok(vehicle.width > 0 && vehicle.length > 0);
@@ -903,6 +915,22 @@ test('a collected item bursts into shards, then reappears 0.1 s later', () => {
   const samples = [0.2, 0.4, 0.6, 0.8].map((progress) => cityRushPickupPopScale(progress));
   assert.ok(samples.every((scale) => scale > 0));
   assert.ok(Math.max(...samples) > 1, 'léger rebond avant de se stabiliser');
+});
+
+test('cinq étoiles de recherche déclenchent la poursuite et les patrouilles font demi-tour en 1,5 s', () => {
+  assert.equal(CITY_RUSH_WANTED_MAX_STARS, 5);
+  assert.equal(CITY_RUSH_POLICE_TURNAROUND_DURATION, 1.5);
+  assert.equal(cityRushWantedLevelAfterHit(0), 1, 'une voiture civile touchée donne une étoile');
+  assert.equal(cityRushWantedLevelAfterHit(1), 2, 'la deuxième touche atteint deux étoiles');
+  assert.equal(cityRushWantedLevelAfterHit(1, { police: true }), 3, 'toucher la police monte directement à trois étoiles');
+  assert.equal(cityRushWantedLevelAfterHit(4), 5, 'le niveau est plafonné à cinq étoiles');
+  assert.equal(cityRushWantedLevelAfterHit(5), 5, 'aucun dépassement au-delà de cinq étoiles');
+  assert.equal(cityRushWantedLevelAfterHit(2, { hit: false }), 2, 'un tir raté ne change pas le niveau');
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map(cityRushPoliceCountForWantedLevel), [0, 0, 1, 2, 2, 3]);
+  assert.equal(cityRushPoliceTurnaroundProgress(-1), 0);
+  assert.equal(cityRushPoliceTurnaroundProgress(0.75), 0.5);
+  assert.equal(cityRushPoliceTurnaroundProgress(1.5), 1);
+  assert.equal(cityRushPoliceTurnaroundProgress(3), 1);
 });
 
 test('trois voitures de police poursuivent le joueur et un renfort est réservé par rival — hors classement', () => {

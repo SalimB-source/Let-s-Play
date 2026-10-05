@@ -42,6 +42,7 @@ import {
   NORDSCHLEIFE_RELIEF_M,
   CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
+  CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
@@ -216,6 +217,9 @@ const EMPTY_HUD = {
   playerHealthActive: false,
   playerHealthFlash: 0,
   police: [],
+  wantedLevel: 0,
+  wantedMaxStars: CITY_RUSH_WANTED_MAX_STARS,
+  oncomingPoliceTurnarounds: [],
 };
 
 // Bannière du point de passage du dernier tour : on recroise le portique, mais
@@ -511,7 +515,12 @@ export default function ViceCityRushPage() {
   // Checkpoint visé : en Sprint il remplace la place au classement,
   // puisqu'il n'y a personne d'autre en piste.
   const sprintCheckpoint = Math.min((Number(hud.sprint?.checkpoints) || 0) + 1, CITY_RUSH_SPRINT_CHECKPOINTS);
-  const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
+  const wantedStars = Math.max(0, Math.min(
+    Number(hud.wantedMaxStars) || CITY_RUSH_WANTED_MAX_STARS,
+    Number.isFinite(Number(hud.wantedLevel))
+      ? Number(hud.wantedLevel)
+      : (Array.isArray(hud.police) ? hud.police.length : 0),
+  ));
   // Quinze cellules pour le pilote comme pour les rivaux : les cellules
   // s'allument par groupes bleu, vert et jaune, puis les trois dernières
   // deviennent rouges.
@@ -851,10 +860,25 @@ export default function ViceCityRushPage() {
 
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · ${effect.health}/${effect.maxHealth} CASES DE VIE.`, 'pistol');
+    if (effect.type === 'wanted-level') {
+      const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Number(effect.stars) || 0));
+      showToast(`🚨 NIVEAU DE RECHERCHE · ${stars} ÉTOILE${stars > 1 ? 'S' : ''} SUR ${CITY_RUSH_WANTED_MAX_STARS}`, 'pistol');
+    }
+    else if (effect.type === 'police-oncoming-turnaround') {
+      const count = Math.max(1, Number(effect.count) || 1);
+      showToast(`🚨 ${count} PATROUILLE${count > 1 ? 'S' : ''} EN FACE · DEMI-TOUR EN COURS (${Number(effect.duration).toFixed(1)} S).`, 'pistol');
+    }
+    else if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · ${effect.health}/${effect.maxHealth} CASES DE VIE.`, 'pistol');
     else if (effect.type === 'pistol-hit-player') showToast(`AK-47 · ${effect.attacker} TE TOUCHE · ${effect.health}/${effect.maxHealth} CASES.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
-    else if (effect.type === 'traffic-impact') showToast(effect.oncoming ? 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.' : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`, 'slow');
+    else if (effect.type === 'traffic-impact') showToast(
+      effect.oncoming
+        ? effect.policeContact
+          ? 'CONTACT POLICIER · LA PATROUILLE EN FACE FAIT DEMI-TOUR.'
+          : 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.'
+        : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`,
+      effect.policeContact ? 'pistol' : 'slow',
+    );
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ L’AK-47 (ROUGE)${effect.ready ? ' · IL EST CHARGÉ' : ''}.`, 'pistol');
@@ -1131,12 +1155,13 @@ export default function ViceCityRushPage() {
                 </div>
               )}
 
-              <div className="city-rush-gta-cash" aria-label={`Butin : ${hud.score || 0} points`}>
+              <div className={`city-rush-gta-cash${wantedStars > 0 ? ' is-wanted' : ''}`} aria-label={`Butin : ${hud.score || 0} points`}>
                 <b>{(hud.score || 0).toLocaleString('fr-FR')} PTS</b>
                 <small>{formatTime(hud.elapsed)}</small>
                 {wantedStars > 0 && (
-                  <span className="city-rush-gta-wanted" role="status" aria-label={`Police en chasse · niveau ${wantedStars} sur 5`}>
-                    {[1, 2, 3, 4, 5].map((star) => <i key={star} className={star <= wantedStars ? 'is-on' : ''} aria-hidden="true">★</i>)}
+                  <span className="city-rush-gta-wanted" role="status" aria-label={`Police en chasse · niveau ${wantedStars} sur ${CITY_RUSH_WANTED_MAX_STARS}`}>
+                    {Array.from({ length: CITY_RUSH_WANTED_MAX_STARS }, (_, index) => index + 1)
+                      .map((star) => <i key={star} className={star <= wantedStars ? 'is-on' : ''} aria-hidden="true">★</i>)}
                   </span>
                 )}
               </div>

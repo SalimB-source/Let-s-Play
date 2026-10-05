@@ -103,10 +103,11 @@ export function makeTrafficVehicle(type) {
   const isTruck = type === 'garbage-truck';
   const isSports = type === 'white-lambo';
   const policeSUV = type === 'police-suv';
+  const undercoverPolice = type === 'undercover-police';
   const police = type === 'police' || policeSUV;
   const ambulance = type === 'ambulance';
-  const bodyColor = police ? 0xf2f3f0 : ambulance ? 0xf8f7f0 : isTruck ? 0x4d8f55 : 0xf7f7f4;
-  const accentColor = police ? 0x142947 : ambulance ? 0xe64a50 : isTruck ? 0xe0b847 : 0x1a1f2b;
+  const bodyColor = police ? 0xf2f3f0 : undercoverPolice ? 0x242a32 : ambulance ? 0xf8f7f0 : isTruck ? 0x4d8f55 : 0xf7f7f4;
+  const accentColor = police ? 0x142947 : undercoverPolice ? 0x171c23 : ambulance ? 0xe64a50 : isTruck ? 0xe0b847 : 0x1a1f2b;
   const m = {
     body: isSports ? paint(bodyColor, { clearcoat: 0.9, roughness: 0.22, emissiveIntensity: 0.02 }) : standard(bodyColor, { roughness: 0.55, metalness: 0.15 }),
     accent: standard(accentColor, { roughness: 0.6 }),
@@ -220,15 +221,19 @@ export function makeTrafficVehicle(type) {
       box(m.glass, [0, 1.0, 1.02], [width * 0.8, 0.4, 0.05], [-0.3, 0, 0]);
       for (const side of [-1, 1]) {
         box(m.glass, [side * width * 0.43, 1.02, 0.1], [0.04, 0.34, 1.5]);
-        box(m.accent, [side * (width * 0.5 + 0.01), 0.52, 0.1], [0.03, 0.26, 2.4]);
-        decal(0, [side * (width * 0.5 + 0.03), 0.62, 0.1], [1.4, 0.3], [0, side * Math.PI / 2, 0]);
+        if (police) {
+          box(m.accent, [side * (width * 0.5 + 0.01), 0.52, 0.1], [0.03, 0.26, 2.4]);
+          decal(0, [side * (width * 0.5 + 0.03), 0.62, 0.1], [1.4, 0.3], [0, side * Math.PI / 2, 0]);
+        }
         box(m.chrome, [side * (width * 0.5 + 0.08), 0.9, -0.5], [0.12, 0.08, 0.16]);
       }
-      box(m.accent, [0, 1.0, 0.1], [width * 0.86, 0.5, 0.5]); // montant central
-      box(m.dark, [0, 1.26, 0.1], [1.3, 0.08, 0.34]); // rampe
-      beacon('red', [-0.42, 1.34, 0.1], [0.4, 0.14, 0.3]);
-      beacon('blue', [0.42, 1.34, 0.1], [0.4, 0.14, 0.3]);
-      box(m.warm, [0, 1.3, 0.1], [0.3, 0.1, 0.28]);
+      if (police) {
+        box(m.accent, [0, 1.0, 0.1], [width * 0.86, 0.5, 0.5]); // montant central
+        box(m.dark, [0, 1.26, 0.1], [1.3, 0.08, 0.34]); // rampe
+        beacon('red', [-0.42, 1.34, 0.1], [0.4, 0.14, 0.3]);
+        beacon('blue', [0.42, 1.34, 0.1], [0.4, 0.14, 0.3]);
+        box(m.warm, [0, 1.3, 0.1], [0.3, 0.1, 0.28]);
+      }
     }
     for (const side of [-1, 1]) {
       box(m.warm, [side * width * 0.36, 0.62, -length * 0.46 - 0.02], [0.3, 0.12, 0.05]);
@@ -251,6 +256,16 @@ export function makeTrafficVehicle(type) {
     }
   }
   group.traverse((object) => { if (object.isMesh) object.castShadow = !object.material.transparent; });
-  group.userData = { kind: 'traffic', trafficType: type, isPoliceSUV: policeSUV, wheels, beacons, width, length };
+  group.userData = {
+    kind: 'traffic',
+    trafficType: type,
+    isPoliceSUV: policeSUV,
+    isUndercoverPolice: undercoverPolice,
+    isPolice: police || undercoverPolice,
+    wheels,
+    beacons,
+    width,
+    length,
+  };
   return group;
 }

@@ -333,10 +333,18 @@ export const CITY_RUSH_TRAFFIC_LANES = Object.freeze(
 export const CITY_RUSH_ONCOMING_COUNT = 3;
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
+  // Garder la patrouille banalisée juste après la voiture marquée garantit
+  // sa présence même sur les parcours qui limitent le nombre de voitures.
+  Object.freeze({ id: 'undercover-police', name: 'Berline banalisée', speed: 6.8, width: 1.94, length: 3.8 }),
   Object.freeze({ id: 'ambulance', name: 'Ambulance', speed: 5.3, width: 1.98, length: 4.0 }),
   Object.freeze({ id: 'garbage-truck', name: 'Camion-poubelle', speed: 4.4, width: CITY_RUSH_ONCOMING_MAX_WIDTH, length: 4.6 }),
   Object.freeze({ id: 'white-lambo', name: 'Tempesta V12 blanche', speed: 7.2, width: 1.92, length: 3.8 }),
 ]);
+
+export const CITY_RUSH_POLICE_TRAFFIC_TYPES = Object.freeze(['police', 'undercover-police']);
+export function isCityRushPoliceTrafficType(type) {
+  return CITY_RUSH_POLICE_TRAFFIC_TYPES.includes(String(type || ''));
+}
 
 // Un choc avec le trafic ne retire pas de vie : il crée un court moment de
 // contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
@@ -2836,6 +2844,32 @@ export function selectCityRushRacers({
 // les attaques d'hélicoptère sont supprimées, mais l'appareil d'observation
 // continue de suivre le joueur au dernier tour.
 export const CITY_RUSH_POLICE_COUNT = 3;
+export const CITY_RUSH_WANTED_MAX_STARS = 5;
+export const CITY_RUSH_POLICE_TURNAROUND_DURATION = 1.5; // s : demi-tour des patrouilles venant en face
+
+/** Étoile gagnée sur un véhicule touché ; une police touchée fait passer à 3. */
+export function cityRushWantedLevelAfterHit(currentLevel = 0, { hit = true, police = false } = {}) {
+  const current = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(currentLevel) || 0)));
+  if (!hit) return current;
+  if (police) return Math.max(current, 3);
+  return Math.min(CITY_RUSH_WANTED_MAX_STARS, current + 1);
+}
+
+/** Nombre de poursuivants de l'escouade selon le niveau de recherche. */
+export function cityRushPoliceCountForWantedLevel(level = 0) {
+  const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(level) || 0)));
+  if (stars < 2) return 0;
+  if (stars === 2) return 1;
+  if (stars < CITY_RUSH_WANTED_MAX_STARS) return 2;
+  return CITY_RUSH_POLICE_COUNT;
+}
+
+/** Progression bornée de l'animation de demi-tour (0 → 1 en 1,5 seconde). */
+export function cityRushPoliceTurnaroundProgress(elapsed = 0, duration = CITY_RUSH_POLICE_TURNAROUND_DURATION) {
+  const safeDuration = Math.max(0.001, Number(duration) || CITY_RUSH_POLICE_TURNAROUND_DURATION);
+  return Math.max(0, Math.min(1, (Number(elapsed) || 0) / safeDuration));
+}
+
 export const CITY_RUSH_POLICE_EXTRA_PER_ATTACKER = 1;
 // Les renforts reviennent par vagues plutôt qu'instantanément : assez de temps
 // pour profiter d'une destruction, sans laisser la poursuite retomber.

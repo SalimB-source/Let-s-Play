@@ -67,14 +67,31 @@ test('the mobile fifteen-cell player health bar is compact and sits above the co
   assert.match(raceList, /health=\{racer\.health\}/, 'le classement montre aussi les barres de chaque adversaire');
 });
 
+test('le niveau de recherche à cinq étoiles est explicite, visible et réinitialisé entre deux courses', () => {
+  assert.match(page, /const wantedStars = Math\.max\(0, Math\.min\(/);
+  assert.match(page, /Number\(hud\.wantedLevel\)/, 'les étoiles ne sont plus déduites du nombre de voitures actives');
+  assert.match(page, /star <= wantedStars \? 'is-on' : ''/);
+  assert.match(page, /Police en chasse · niveau \$\{wantedStars\} sur \$\{CITY_RUSH_WANTED_MAX_STARS\}/);
+  assert.match(page, /wantedLevel: 0/);
+  assert.match(world, /wantedLevel,\s*wantedMaxStars: CITY_RUSH_WANTED_MAX_STARS/);
+  assert.match(world, /wantedLevel = effectivePoliceFromStart \? CITY_RUSH_WANTED_MAX_STARS : 0/,
+    'un nouveau départ revient à zéro, sauf le mode Poursuite');
+  assert.match(world, /CITY_RUSH_POLICE_TURNAROUND_DURATION/);
+  assert.match(world, /oncoming\.mesh\.rotation\.y = trackYaw\(oncoming\.distance\)[\s\S]*?Math\.PI \* \(1 - turnEase\)/,
+    'le véhicule effectue un demi-tour animé, pas un changement d’orientation instantané');
+  assert.match(world, /oncoming\.turnaroundElapsed = Math\.min\(/,
+    'l’animation de demi-tour progresse avec le temps réel');
+});
+
 test('les berlines de police du trafic sont ciblables par un tir rouge', () => {
   const candidates = world.match(/function laneShotCandidates\([\s\S]*?\n  function firstEnemyOnLane/)?.[0] || '';
   const vehicleState = world.match(/function getRaceVehicleState\([\s\S]*?\n  function isVisibleInPlayerCamera/)?.[0] || '';
   const pistolHit = world.match(/function applyPistolHit\([\s\S]*?\n  function applyStraightShotHit/)?.[0] || '';
   const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
-  assert.match(candidates, /trafficCars[\s\S]*?traffic\.type === 'police'/, 'les véhicules de police civils entrent dans la liste des cibles');
-  assert.match(vehicleState, /trafficPolice\?\.type === 'police'/, 'un véhicule du trafic reçoit un état de police avec sa santé');
+  assert.match(candidates, /trafficCars[\s\S]*?isCityRushPoliceTrafficType\(traffic\.type\)/, 'les véhicules de police civils et banalisés entrent dans les cibles IA');
+  assert.match(vehicleState, /const isPolice = isCityRushPoliceTrafficType\(trafficVehicle\.type\)/, 'un véhicule policier du trafic reçoit un état avec sa santé');
   assert.match(pistolHit, /damagePolice\(target\.racer, CITY_RUSH_POWERS\.PISTOL, attackerId\)/);
+  assert.match(pistolHit, /raiseWantedLevel\(\{ reason: 'vehicle-hit' \}\)/, 'un véhicule touché par le joueur augmente sa recherche');
   assert.match(policeDamage, /const healthBeforeHit = hasHealth \? Number\(police\.health\) : CITY_RUSH_POLICE_HEALTH/,
     'les berlines civiles reçoivent leur santé complète au premier impact');
   assert.match(policeDamage, /cityRushPoliceDamage\(healthBeforeHit, source\)/);
