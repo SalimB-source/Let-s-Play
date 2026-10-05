@@ -37,6 +37,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
+import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
@@ -58,9 +59,11 @@ async function mountPage(entry) {
   document.body.append(node);
   const root = createRoot(node);
   await act(async () => root.render(
-    <MemoryRouter initialEntries={[entry]}>
-      <ViceCityRushPage />
-    </MemoryRouter>,
+    <AuthProvider>
+      <MemoryRouter initialEntries={[entry]}>
+        <ViceCityRushPage />
+      </MemoryRouter>
+    </AuthProvider>,
   ));
   await act(async () => { await sleep(30); });
   return { node, unmount: async () => { await act(async () => root.unmount()); node.remove(); } };

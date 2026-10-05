@@ -16,6 +16,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
+import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
@@ -58,9 +59,11 @@ export async function checkViceCityMexicoUi(assert) {
   try {
     seedProgress();
     await act(async () => root.render(
-      <MemoryRouter initialEntries={['/jeu/vice-city-rush']}>
-        <ViceCityRushPage />
-      </MemoryRouter>,
+      <AuthProvider>
+        <MemoryRouter initialEntries={['/jeu/vice-city-rush']}>
+          <ViceCityRushPage />
+        </MemoryRouter>
+      </AuthProvider>,
     ));
     await settle(30);
 
