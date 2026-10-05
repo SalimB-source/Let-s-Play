@@ -88,6 +88,7 @@ import {
   CITY_RUSH_PLAYER_BAR_COLORS,
   CITY_RUSH_PLAYER_DAMAGE,
   CITY_RUSH_PLAYER_HEALTH,
+  CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
   CITY_RUSH_RACER_HEALTH,
   CITY_RUSH_HEALTH_GROUP_SIZE,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
@@ -723,7 +724,7 @@ test('the active loadout has seven red machine-gun bullets plus automatic ground
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /retire un carré de vie/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /sans dérapage ni ralentissement/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /voiture de police à six points de vie.*inflige 3 dégâts/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, jamais au joueur/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, et un carré au pilote/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
   });
@@ -1031,16 +1032,19 @@ test('trois voitures de police poursuivent le joueur et un renfort est réservé
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
 });
 
-test('le joueur et les rivaux ont quinze cellules ; les tirs les touchent sans que le choc policier coûte une vie', () => {
+test('le joueur et les rivaux ont quinze cellules ; tirs et carambolages coûtent une cellule', () => {
   assert.equal(CITY_RUSH_PLAYER_HEALTH, 15);
   assert.equal(CITY_RUSH_RACER_HEALTH, CITY_RUSH_PLAYER_HEALTH);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE['blue-shot'], 1);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE.pistol, 1);
-  assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 0);
+  // Percuter une voiture — civile ou berline de police — retire un carré.
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 1);
+  assert.ok(CITY_RUSH_PLAYER_COLLISION_COOLDOWN > 0.5 && CITY_RUSH_PLAYER_COLLISION_COOLDOWN <= 3,
+    'le répit protège la barre des contacts à répétition sans immuniser le pilote');
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'blue-shot'), 14);
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'pistol'), 14);
-  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), CITY_RUSH_PLAYER_HEALTH);
-  assert.equal(cityRushPlayerDamage(5, 'collision'), 5);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), CITY_RUSH_PLAYER_HEALTH - 1);
+  assert.equal(cityRushPlayerDamage(5, 'collision'), 4);
   assert.equal(cityRushPlayerDamage(1, 'pistol'), 0);
   assert.equal(cityRushPlayerDamage(0, 'blue-shot'), 0);
   assert.equal(cityRushPlayerDamage(5, 'boost'), 5);
@@ -1050,7 +1054,8 @@ test('le joueur et les rivaux ont quinze cellules ; les tirs les touchent sans q
   assert.equal(CITY_RUSH_HEALTH_GROUP_SIZE, 5);
 
   // La police garde une coque distincte : deux rouges, trois bleus ou six
-  // carambolages la détruisent, sans entamer la barre du joueur.
+  // carambolages la détruisent. Chaque carambolage coûte aussi un carré au
+  // pilote, avec le répit partagé qui borne les contacts à répétition.
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
   assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, 3);
   assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
@@ -1349,7 +1354,7 @@ test('au dernier tour, la riposte rouge peut viser la berline la plus proche', (
   ], 1200).id, 'police-2');
 });
 
-test('barre de vie des berlines : six points, tir rouge puissant et carambolage sans dégât au joueur', () => {
+test('barre de vie des berlines : six points, tir rouge puissant, un point par carambolage', () => {
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 3);
@@ -1410,7 +1415,8 @@ test('les berlines entrent sans charge et ne disposent d’aucune attaque d’h�
 
 test('un pilote ne traverse plus une berline de police du dernier tour', () => {
   // L'escouade est engagée dans le peloton : sa berline solide bloque la voie
-  // exactement comme le trafic lent, sans dégât ni pénalité.
+  // exactement comme le trafic lent. Ce module ne facture rien lui-même : seul
+  // le contact réel, joué par le monde 3D, retire un carré au pilote.
   const behind = resolveCityRushCarMovement([
     { id: 'player', collisionGroup: 'racer', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.9, previousDistance: 1000, nextDistance: 1030 },
     { id: 'police-1', collisionGroup: 'police', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, previousDistance: 1008, nextDistance: 1012 },

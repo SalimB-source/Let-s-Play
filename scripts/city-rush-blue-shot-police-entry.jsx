@@ -259,8 +259,13 @@ for (let run = 0; run < RUNS; run += 1) {
     if (audioCalls.missileLaunch || audioCalls.helicopterStart || audioCalls.helicopterStop) {
       fail(`[${city.id}] une attaque aérienne n'est pas totalement désactivée`, audioCalls);
     }
+    // Le carré du carambolage est neutralisé par le lanceur (voir son en-tête) :
+    // aucun `player-hit` de collision ne doit donc apparaître, et la barre reste
+    // intacte pendant les six tours du pilote d'essai.
     const accidentalPlayerCollisionHits = firstRaceEffects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
-    if (accidentalPlayerCollisionHits.length) fail(`[${city.id}] un contact policier a retiré de la vie au joueur`, accidentalPlayerCollisionHits);
+    if (accidentalPlayerCollisionHits.length) {
+      fail(`[${city.id}] un carambolage a retiré de la vie au joueur malgré la neutralisation du lanceur`, accidentalPlayerCollisionHits);
+    }
     const ramHits = firstRaceEffects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
     if (ramHits.some((effect) => effect.damage !== 1)) {
       fail(`[${city.id}] un carambolage n'a pas retiré exactement un point à la police`, ramHits);

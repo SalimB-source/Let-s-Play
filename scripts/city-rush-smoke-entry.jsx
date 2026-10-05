@@ -169,8 +169,9 @@ for (const [index, city] of courses.entries()) {
     ready: 0, errors: [], huds: [], laps: [], effects: [], pickups: [], finish: null,
   };
   // Les contacts de police sont légitimes : le pilote inflige 1 dégât à la
-  // berline, sans perdre de vie. On retient leur frame pour ne pas signaler
-  // l'intervalle de collision comme un passage à travers une voiture solide.
+  // berline, et en encaisse un carré. On retient leur frame pour ne pas
+  // signaler l'intervalle de collision comme un passage à travers une voiture
+  // solide.
   const policeCollisionFrames = new Map();
   const audioCalls = {};
   const audioStub = {};
@@ -1062,7 +1063,8 @@ for (const [index, city] of courses.entries()) {
     fail('l’hélico d’observation suit le pilote hors du dernier tour', { watchHeliEarlyFrames, watchHeliFinalLapFrames });
   }
   // La barre de quinze carrés est pleine dès le départ, visible pendant toute
-  // la course, bornée et non-croissante ; chaque tir et collision retire un.
+  // la course, bornée et non-croissante ; chaque tir encaissé en retire un (le
+  // carré du carambolage est neutralisé par le lanceur, voir plus bas).
   const racerHuds = callbacks.huds.flatMap((entry) => entry.racers || []);
   for (const racer of racerHuds) {
     if (racer.maxHealth !== CITY_RUSH_PLAYER_HEALTH || !Number.isFinite(racer.health)
@@ -1102,9 +1104,14 @@ for (const [index, city] of courses.entries()) {
     if (effect.type !== 'player-hit') continue;
     healthHitEffects += 1;
     healthHitsBySource[effect.source] = (healthHitsBySource[effect.source] || 0) + 1;
-    if (effect.source === 'collision' && !(Number(effect.gap) > 0)) {
+    // Un carambolage ne se compte que sur une voiture **devant** le pilote : le
+    // trafic rattrapé et la berline percutée en accélérant arrivent avec un
+    // écart positif. Le face-à-face, lui, croise les carrosseries au mètre
+    // près : la distance annoncée y est une magnitude (≥ 0).
+    if (effect.source === 'collision'
+      && !(Number.isFinite(Number(effect.gap)) && Number(effect.gap) >= 0)) {
       healthBadDamage += 1;
-      fail('un carambolage est compté avec une berline restée derrière le pilote', effect);
+      fail('un carambolage est compté sur une voiture sans écart avec le pilote', effect);
     }
     if (runningHealth === null) { healthBadDamage += 1; continue; }
     const expected = Math.min(1, runningHealth);
@@ -1114,8 +1121,16 @@ for (const [index, city] of courses.entries()) {
     if (effect.health === 0) healthCubes += 1;
   }
   if (healthBadDamage) fail('un dégât encaissé par le pilote ne retire pas exactement une cellule', healthBadDamage);
+  // Le pilote d'essai percute le trafic et la police **exprès** (riposte
+  // policière, face-à-face, barrages) : le carré du carambolage est neutralisé
+  // par le lanceur (`city-rush-smoke.mjs`) pour qu'il aille au bout des six
+  // tours. La règle est vérifiée par les tests purs et par la vérif
+  // coque/police, qui joue le vrai barème sur une barre de trois cellules
+  // (un carré par carambolage, espacé par le répit).
   const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
-  if (playerRamDamage.length) fail('un contact avec une voiture de police a retiré de la vie au joueur', playerRamDamage);
+  if (playerRamDamage.length) {
+    fail('un carambolage a retiré de la vie au joueur alors que le lanceur neutralise ce coût', playerRamDamage);
+  }
   const policeRamDamage = callbacks.effects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
   if (policeRamDamage.some((effect) => effect.damage !== 1)) {
     fail('un carambolage en accélérant n’a pas retiré exactement un point de vie à la police', policeRamDamage);

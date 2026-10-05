@@ -380,8 +380,10 @@ export function isCityRushPoliceTrafficType(type) {
   return CITY_RUSH_POLICE_TRAFFIC_TYPES.includes(String(type || ''));
 }
 
-// Un choc avec le trafic ne retire pas de vie : il crée un court moment de
-// contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
+// Le choc lui-même n'ajoute rien au barème : il crée un court moment de contact
+// lisible, puis le véhicule lent se rabat pour libérer la voie — le carré du
+// carambolage est facturé une fois par le monde 3D
+// (`CITY_RUSH_PLAYER_DAMAGE.collision`, espacé par le répit ci-dessous). La
 // durée est volontairement indépendante du modèle de voiture choisi : le
 // joueur humain et les IA encaissent exactement la même durée (0,6 s).
 export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 0.6;
@@ -549,7 +551,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote, il retire un carré de vie sans dérapage ni ralentissement ; contre une voiture de police à six points de vie, il inflige 3 dégâts. Un carambolage en accélérant retire un point à la police, jamais au joueur.`,
+    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote, il retire un carré de vie sans dérapage ni ralentissement ; contre une voiture de police à six points de vie, il inflige 3 dégâts. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -3127,14 +3129,17 @@ export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est con
 
 // Six points de vie pour chaque berline : trois tirs bleus (2 points chacun),
 // deux tirs rouges d’AK-47 (3 points chacun), ou six carambolages en accélérant
-// (1 point chacun) la détruisent. Le joueur ne perd aucune vie au contact.
+// (1 point chacun) la détruisent. La coque du pilote paie elle aussi le contact
+// d’un carré (`CITY_RUSH_PLAYER_DAMAGE.collision`), avec un répit partagé
+// (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) : six carambolages coûtent donc six
+// carrés au joueur.
 // Le barème reste pur, donc testable hors de three.js.
 export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2,
   [CITY_RUSH_POWERS.PISTOL]: 3,
   [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
-  collision: 1, // contact en accélérant : dégâts à la police, aucune vie au joueur
+  collision: 1, // contact en accélérant : la police perd un point, le pilote un carré
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
@@ -3474,8 +3479,9 @@ export function chooseCityRushPoliceLane({
 
 // Les berlines de police sont des obstacles solides : elles ne traversent ni le
 // trafic lent, ni les voitures de course (`racers`), ni leur coéquipière — et
-// elles **bloquent** donc la voie comme n'importe quelle voiture, sans dégâts ni
-// pénalité pour qui les percute.
+// elles **bloquent** donc la voie comme n'importe quelle voiture : qui les
+// percute en paie un carré (`CITY_RUSH_PLAYER_DAMAGE.collision`) et leur inflige
+// un point de vie.
 //
 // `blockedBy` désigne le véhicule de **trafic** qui a freiné la berline cette
 // image (son `id`), ou `null` : le monde 3D s'en sert pour le heurter — sinon
@@ -3525,13 +3531,18 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
 // départ effectif. Elles se vident par groupes de cinq : bleu, vert, puis
 // jaune ; les trois dernières cellules jaunes passent au rouge. Les tirs
 // retirent une cellule et le tir rouge ne fait ni déraper ni ralentir sa cible.
-// Le choc contre une voiture de police abîme la police, jamais le joueur.
+// Percuter une voiture — le trafic lent, un véhicule venant en face ou une
+// berline de police — retire aussi une cellule : le choc contre une berline de
+// police abîme désormais les deux coques, le pilote y laissant un carré et la
+// police un point de vie.
 export const CITY_RUSH_PLAYER_HEALTH = 15;
 export const CITY_RUSH_RACER_HEALTH = CITY_RUSH_PLAYER_HEALTH;
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
   [CITY_RUSH_POWERS.PISTOL]: 1,
-  collision: 0,
+  // Ancre de patch des harnais de course longue ; la ligne du dessous est
+  // remplacée par le lanceur du smoke de course (voir `city-rush-smoke.mjs`).
+  collision: 1, // choc contre une voiture : un carré pour le pilote
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
 // Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
@@ -3542,6 +3553,14 @@ export const CITY_RUSH_WRECK_SPIN_TURNS = 2;
 // Les trois derniers carrés jaunes sont le seuil d'alerte rouge.
 export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 3;
 export const CITY_RUSH_HEALTH_GROUP_SIZE = 5;
+
+// Un carambolage ne retire qu'un carré, quel que soit le nombre de contacts
+// qu'il produit : le choc arme un répit partagé par toutes les voitures
+// (trafic, contresens, berline de police). Sans lui, un embouteillage — ou
+// deux carrosseries restées collées après le choc — facturerait un carré par
+// image. Même esprit que `CITY_RUSH_POLICE_COLLISION_COOLDOWN`, qui protège la
+// berline des contacts à répétition.
+export const CITY_RUSH_PLAYER_COLLISION_COOLDOWN = 1.5; // s
 
 export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
   const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));

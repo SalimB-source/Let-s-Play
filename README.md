@@ -916,11 +916,12 @@ et le dernier tour durait 21 s.
   `applyTrafficImpact`). Le changement de voie est calculé à la position de la
   berline, pas à celle du joueur.
 
-  **Percuter la police en accélérant l'abîme sans abîmer le joueur.** Le contact
+  **Percuter la police en accélérant abîme les deux coques.** Le contact
   ne compte que si la berline est devant et que le joueur arrive dessus plus
   vite (`cityRushPoliceCollisionHit`). Il retire **un point de vie** à la
-  police, mais **aucun** à la voiture du joueur ; les chocs ne diminuent donc
-  pas sa coque. Une berline a six points de vie : deux tirs rouges d'AK-47
+  police **et un carré de vie** à la voiture du joueur, comme n'importe quel
+  carambolage (`CITY_RUSH_PLAYER_DAMAGE.collision`), le tout espacé par le
+  répit de choc. Une berline a six points de vie : deux tirs rouges d'AK-47
   (3 points chacun), trois tirs bleus (2 points chacun), six carambolages
   (1 point chacun), ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`).
@@ -951,11 +952,18 @@ et le dernier tour durait 21 s.
   `CITY_RUSH_PLAYER_BAR_COLORS`). Chaque tir rouge reçu retire **une cellule**
   sans dérapage ni ralentissement ; le tir bleu en retire aussi une. Les tirs
   reçus par les voitures de police suivent leur coque distincte : rouge −3,
-  bleu −2, collision −1. **Percuter une voiture de police ne retire aucune vie
-  au joueur** : seule la police perd un point (`CITY_RUSH_POLICE_DAMAGE.collision`).
-  Le trafic et les rivaux ne touchent pas non plus la coque, ils ne font que
-  ralentir. Le contact policier compte seulement quand le pilote **arrive sur**
-  une berline **devant lui**, à une vitesse supérieure
+  bleu −2, collision −1. **Percuter une voiture retire un carré au pilote**,
+  quel que soit le véhicule — trafic lent, voiture venant en face ou berline de
+  police (`CITY_RUSH_PLAYER_DAMAGE.collision`). Un carambolage de police abîme
+  donc **les deux coques** : la berline perd un point
+  (`CITY_RUSH_POLICE_DAMAGE.collision`) **et** le pilote un carré. Un même
+  carambolage ne coûte jamais plus d'un carré : le choc arme un **répit
+  partagé** de 1,5 s (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`), le temps de
+  reprendre, pour qu'un embouteillage ou deux carrosseries restées collées ne
+  vident pas la barre d'un coup. Le trafic et les rivaux ne se heurtent entre
+  eux qu'en ralentissant, sans toucher la coque du pilote. Le contact policier
+  compte seulement quand le pilote **arrive sur** une berline **devant lui**, à
+  une vitesse supérieure
   (`cityRushPoliceCollisionHit`) ; la berline repliée derrière lui pour tirer
   ne déclenche pas de choc. À trois cellules ou moins, la barre passe en
   « CRITIQUE » (pulsation rouge), et **à zéro la course est perdue** : le pilote
@@ -1345,8 +1353,8 @@ npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les tr
 npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring)
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
-npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, aucune vie perdue au contact, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
-npm run check:city-rush-wreck   # carambolages : la police perd 1 point, le joueur n'en perd aucun ; l'épave est vérifiée si des tirs vident la coque
+npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
+npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```
@@ -1374,10 +1382,15 @@ pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par
 vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
 du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
 `reset()`) et les **barres de vie des pilotes** (15 cellules pleines dès le
-départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème,
-et un contact policier ne produit aucun `player-hit`). Il ne dit rien
-du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
-l'image.
+départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème).
+Le **carré du carambolage est neutralisé dans ce harnais** : le lanceur patche
+l'ancre `collision: 1` de `cityRushRules.js` en `collision: 0`, sinon le pilote
+d'essai — qui ne se dérobe jamais — finirait en épave avant l'arrivée. Le
+barème réel (un carré par carambolage, police comprise) est vérifié par les
+tests purs, `check:city-rush-weapons` et `check:city-rush-wreck`, qui démarre la
+coque à trois carrés et exige un carré par choc, espacé par le répit. Il ne dit
+rien du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour
+juger l'image.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les
