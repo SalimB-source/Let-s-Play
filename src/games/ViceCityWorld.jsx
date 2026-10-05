@@ -69,7 +69,6 @@ import {
   CITY_RUSH_PICKUPS,
   CITY_RUSH_SPRINT_CHECKPOINTS,
   CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
-  CITY_RUSH_SPRINT_CHECKPOINT_TIME,
   CITY_RUSH_SPRINT_DISTANCE,
   cityRushSprintCheckpointsPassed,
   cityRushOncomingImpactX,
@@ -77,6 +76,12 @@ import {
   approachCityRushSpeed,
   cityRushCleanLineFactor,
   cityRushTrafficRecoveryRate,
+  cityRushPickupRowCount,
+  cityRushSprintCheckpointTime,
+  cityRushTrafficViewAhead,
+  CITY_RUSH_PICKUP_ROW_SPACING_MIN,
+  CITY_RUSH_PICKUP_ROW_SPACING_MAX,
+  CITY_RUSH_TRAFFIC_VIEW_BEHIND,
   CITY_RUSH_TRAFFIC_RECOVERY_DURATION,
   cityRushHitDuration,
   chooseCityRushAiLane,
@@ -848,6 +853,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
 
   const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
+  // Vitesse de pointe de la voiture engagée : elle règle le streaming (trafic,
+  // contresens, rangées de bonus) et le chrono du Sprint. Les trois systèmes
+  // étaient calibrés sur une seule vitesse ; ils suivent désormais le modèle.
+  const playerTopSpeed = PLAYER_SPEED * playerProfile.powerMultiplier;
+  const trafficViewAhead = cityRushTrafficViewAhead(playerTopSpeed);
+  const oncomingViewAhead = cityRushTrafficViewAhead(
+    playerTopSpeed + Math.max(...CITY_RUSH_TRAFFIC_TYPES.map((spec) => spec.speed)),
+  );
+  // Le chrono du Sprint suit la voiture : à la vitesse de référence il vaut
+  // toujours les 15 s historiques, mais la citadine (83 km/h) a besoin de plus
+  // de temps et la supercar de moins pour garder la même pression.
+  const sprintTimeBonus = cityRushSprintCheckpointTime(playerTopSpeed);
   const rivalProfiles = CITY_RUSH_CARS.filter((car) => car.id !== playerProfile.id);
   const playerCar = makeRacerCar(playerProfile, {
     player: true,
@@ -1099,7 +1116,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const activePursuerById = (id) => activePursuers().find((police) => police.id === id) || null;
 
   const rows = [];
-  for (let index = 0; index < 12; index += 1) {
+  // Le nombre de rangées semées devant le pilote suit la voiture : à 180 km/h,
+  // douze rangées (≈ 340 m) ne laissent plus que six secondes d'anticipation.
+  const pickupRowCount = cityRushPickupRowCount(playerTopSpeed);
+  for (let index = 0; index < pickupRowCount; index += 1) {
     const group = new THREE.Group();
     const slots = [makePickupObject(shared), makePickupObject(shared)];
     slots.forEach((slot) => group.add(slot));
@@ -1145,7 +1165,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Sprint : checkpoints franchis et secondes restantes au chrono.
   let sprintCheckpoints = 0;
   let sprintDisplayedCheckpoint = 0;
-  let sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
+  let sprintTimeLeft = sprintTimeBonus;
   let playerLane = PLAYER_START_LANE;
   let playerX = CITY_RUSH_LANE_X[playerLane];
   let playerSlowLeft = 0;
@@ -1250,7 +1270,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       setupEncounter(row);
       row.group.position.set(trackRelativeX(row.trackDistance), trackRelativeY(row.trackDistance), PLAYER_Z - (row.trackDistance - distance) * SCALE);
       row.group.rotation.x = trackPitch(row.trackDistance);
-      next += randomRange(24, 32);
+      next += randomRange(CITY_RUSH_PICKUP_ROW_SPACING_MIN, CITY_RUSH_PICKUP_ROW_SPACING_MAX);
     }
     lastDistanceSlot = next;
   }
@@ -1348,6 +1368,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         checkpoints: sprintCheckpoints,
         total: CITY_RUSH_SPRINT_CHECKPOINTS,
         timeLeft: Math.max(0, sprintTimeLeft),
+        timeTotal: sprintTimeBonus,
         nextIn: Math.max(0, Math.round((sprintCheckpoints + 1) * CITY_RUSH_SPRINT_CHECKPOINT_SPACING - distance)),
       } : null,
       progress: clamp(distance / effectiveDistance, 0, 1),
@@ -1447,15 +1468,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     sprintCheckpointGate.userData.targetDistance = checkpoint * CITY_RUSH_SPRINT_CHECKPOINT_SPACING;
     sprintCheckpointGate.userData.board.draw(
       checkpointLabel,
-      finishLabel ? 'ARRIVÉE · DERNIÈRE PORTE' : `CHECKPOINT · +${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`,
+      finishLabel ? 'ARRIVÉE · DERNIÈRE PORTE' : `CHECKPOINT · +${sprintTimeBonus} S`,
       finishLabel ? '#ffffff' : city.accent,
     );
     if (checkpoint % 2 === 0) {
       // Les portes paires coïncident avec le grand portique de course déjà
       // présent tous les 600 m : son tableau annonce le checkpoint à venir.
-      startLine.setBoard(checkpointLabel, finishLabel ? 'ARRIVÉE · SPRINT' : `CHECKPOINT · +${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`, finishLabel ? '#ffffff' : city.accent);
+      startLine.setBoard(checkpointLabel, finishLabel ? 'ARRIVÉE · SPRINT' : `CHECKPOINT · +${sprintTimeBonus} S`, finishLabel ? '#ffffff' : city.accent);
     } else {
-      startLine.setBoard('SPRINT', `CP ${String(checkpoint).padStart(2, '0')} · +${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S · ${checkpoint * CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M`, city.accent);
+      startLine.setBoard('SPRINT', `CP ${String(checkpoint).padStart(2, '0')} · +${sprintTimeBonus} S · ${checkpoint * CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M`, city.accent);
     }
   }
 
@@ -1520,7 +1541,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     lastLineCrossed = 0;
     sprintCheckpoints = 0;
     sprintDisplayedCheckpoint = 0;
-    sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
+    sprintTimeLeft = sprintTimeBonus;
     playerLane = PLAYER_START_LANE;
     playerX = CITY_RUSH_LANE_X[playerLane];
     playerSlowLeft = 0;
@@ -3470,7 +3491,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     for (const row of rows) {
       if (row.trackDistance < rowRecycleAnchor - 11) {
-        row.trackDistance = lastDistanceSlot + randomRange(24, 32);
+        row.trackDistance = lastDistanceSlot + randomRange(CITY_RUSH_PICKUP_ROW_SPACING_MIN, CITY_RUSH_PICKUP_ROW_SPACING_MAX);
         lastDistanceSlot = row.trackDistance;
         setupEncounter(row);
       }
@@ -3870,17 +3891,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         startLine.onCross({ final: true });
         return;
       }
-      sprintTimeLeft = CITY_RUSH_SPRINT_CHECKPOINT_TIME;
+      sprintTimeLeft = sprintTimeBonus;
       const remaining = CITY_RUSH_SPRINT_CHECKPOINTS - sprintCheckpoints;
       // Les checkpoints pairs tombent sous le portique (tous les 600 m).
       if (sprintCheckpoints % 2 === 0) {
         startLine.onCross({ final: false });
         const crossedLabel = `CP ${String(sprintCheckpoints).padStart(2, '0')}/${String(CITY_RUSH_SPRINT_CHECKPOINTS).padStart(2, '0')}`;
-        startLine.setBoard(crossedLabel, `+${CITY_RUSH_SPRINT_CHECKPOINT_TIME} S`, remaining === 1 ? '#ffffff' : undefined);
+        startLine.setBoard(crossedLabel, `+${sprintTimeBonus} S`, remaining === 1 ? '#ffffff' : undefined);
       }
       cameraKick = Math.max(cameraKick, 0.3);
       audioRef?.current?.lap(remaining === 1);
-      getCallbacks().lap?.({ sprint: true, checkpoint: sprintCheckpoints, checkpoints: CITY_RUSH_SPRINT_CHECKPOINTS, remaining, timeBonus: CITY_RUSH_SPRINT_CHECKPOINT_TIME, elapsed, final: remaining === 1 });
+      getCallbacks().lap?.({ sprint: true, checkpoint: sprintCheckpoints, checkpoints: CITY_RUSH_SPRINT_CHECKPOINTS, remaining, timeBonus: sprintTimeBonus, elapsed, final: remaining === 1 });
       emitHud(true);
     }
     if (finished || playerWrecked) return;
@@ -4286,7 +4307,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           traffic.currentSpeed = dt > 0 ? Math.max(0, (traffic.distance - priorTrafficDistance) / dt) : requestedTrafficSpeeds.get(traffic.id);
         }
         const gap = traffic.distance - distance;
-        traffic.mesh.visible = gap > -18 && gap < 150;
+        traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
         traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
         traffic.mesh.rotation.x = trackPitch(traffic.distance);
         traffic.mesh.rotation.y = lerp(traffic.mesh.rotation.y, trackYaw(traffic.distance) + clamp((traffic.currentX - priorTrafficX) * -2.8, -0.26, 0.26), Math.min(1, dt * 12));
@@ -4329,7 +4350,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           audioRef?.current?.passby({ pan: clamp(oncoming.currentX / 6.3, -1, 1) * 0.5, speed: 1 });
         }
         checkOncomingImpacts(oncoming, priorOncomingDistance, priorActorDistancesForOncoming);
-        oncoming.mesh.visible = gap > -30 && gap < 155;
+        oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
         oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
         oncoming.mesh.rotation.x = -trackPitch(oncoming.distance);
         oncoming.mesh.rotation.y = trackYaw(oncoming.distance) + Math.PI + clamp((oncoming.currentX - priorOncomingX) * 2.8, -0.26, 0.26);
@@ -4433,7 +4454,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racers.forEach((racer) => {
         if (phase === 'finished') {
           const gap = racer.distance - distance;
-          racer.mesh.visible = gap > -8 && gap < 120;
+          racer.mesh.visible = gap > -8 && gap < CITY_RUSH_RACER_VIEW_DISTANCE;
           racer.mesh.position.x = racer.currentX + trackRelativeX(racer.distance);
           racer.mesh.position.y = trackRelativeY(racer.distance);
           racer.mesh.position.z = PLAYER_Z - gap * SCALE;
@@ -4450,7 +4471,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           continue;
         }
         const gap = traffic.distance - distance;
-        traffic.mesh.visible = gap > -18 && gap < 150;
+        traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
         if (phase === 'finished') {
           traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
           traffic.mesh.rotation.set(trackPitch(traffic.distance), trackYaw(traffic.distance), 0);
@@ -4464,7 +4485,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           if (oncoming.distance < distance - 30) respawnOncomingAhead(oncoming);
         }
         const gap = oncoming.distance - distance;
-        oncoming.mesh.visible = gap > -30 && gap < 155;
+        oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
         if (phase === 'finished') {
           oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
           oncoming.mesh.rotation.set(-trackPitch(oncoming.distance), trackYaw(oncoming.distance) + Math.PI, 0);

@@ -28,8 +28,8 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_SPRINT_CHECKPOINTS,
   CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
-  CITY_RUSH_SPRINT_CHECKPOINT_TIME,
   CITY_RUSH_SPRINT_DISTANCE,
+  CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_PLAYER_HEALTH,
@@ -41,6 +41,7 @@ import {
   buildCityRushMinimapState,
   cityRushPlayerHealthColor,
   cityRushRaceDistance,
+  cityRushSprintCheckpointTime,
   createCityRushInventory,
   selectCityRushRacers,
 } from './cityRushRules';
@@ -224,6 +225,12 @@ function formatTime(seconds = 0) {
   const centiseconds = Math.floor((safe - Math.floor(safe)) * 100);
   return `${String(minutes).padStart(2, '0')}:${String(wholeSeconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
 }
+// Le bonus de checkpoint du Sprint tombe sur une demi-seconde : on l'écrit en
+// français (« 12 » ou « 17,5 »), sans décimale inutile.
+function formatSprintSeconds(seconds = 0) {
+  const value = Math.max(0, Number(seconds) || 0);
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace('.', ',');
+}
 function formatSeconds(seconds, fallback = 0) {
   const value = Number.isFinite(Number(seconds)) ? Math.max(0, Number(seconds)) : fallback;
   return `${value.toFixed(1).replace('.', ',')} s`;
@@ -338,6 +345,13 @@ export default function ViceCityRushPage() {
   const cashRewardsEnabled = storyMode || mode.cashRewards !== false;
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === carId) || CITY_RUSH_CARS[0], [carId]);
+  // Chrono du Sprint : la valeur publiée par le monde pendant la course, et
+  // sinon celle calculée pour la voiture sélectionnée dans le garage.
+  const sprintCheckpointBonus = useMemo(
+    () => cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED * selectedCar.powerMultiplier),
+    [selectedCar],
+  );
+  const sprintCheckpointSeconds = Math.max(0, Number(hud.sprint?.timeTotal) || sprintCheckpointBonus);
   const roster = useMemo(() => {
     const racers = selectCityRushRacers({ cityId, carId: selectedCar.id, runId, playerDriverId });
     return storyMode
@@ -897,7 +911,7 @@ export default function ViceCityRushPage() {
                   <div className="city-rush-lap-track" aria-label={`Checkpoint ${hud.sprint.checkpoints} sur ${hud.sprint.total}, ${Math.ceil(hud.sprint.timeLeft)} secondes restantes`}>
                     {Array.from({ length: hud.sprint.total }, (_, i) => i + 1).map((slot) => (
                       <span key={slot} className={slot <= hud.sprint.checkpoints ? 'is-done' : slot === hud.sprint.checkpoints + 1 ? 'is-current' : ''}>
-                        <i style={{ width: slot <= hud.sprint.checkpoints ? '100%' : slot === hud.sprint.checkpoints + 1 ? `${Math.max(0, Math.min(100, (hud.sprint.timeLeft / CITY_RUSH_SPRINT_CHECKPOINT_TIME) * 100))}%` : '0%' }} />
+                        <i style={{ width: slot <= hud.sprint.checkpoints ? '100%' : slot === hud.sprint.checkpoints + 1 ? `${Math.max(0, Math.min(100, (hud.sprint.timeLeft / sprintCheckpointSeconds) * 100))}%` : '0%' }} />
                       </span>
                     ))}
                   </div>
@@ -1146,7 +1160,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, 15 s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, ${formatSprintSeconds(sprintCheckpointBonus)} s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
                       {CITY_RUSH_COURSES.map((option, index) => (
@@ -1394,7 +1408,7 @@ export default function ViceCityRushPage() {
                 )}
                 <p>
                   {result.timedOut
-                    ? `Les 15 secondes se sont écoulées avant le checkpoint ${(result.checkpoints || 0) + 1} sur ${CITY_RUSH_SPRINT_CHECKPOINTS}. La revanche t’attend.`
+                    ? `Les ${formatSprintSeconds(sprintCheckpointBonus)} secondes se sont écoulées avant le checkpoint ${(result.checkpoints || 0) + 1} sur ${CITY_RUSH_SPRINT_CHECKPOINTS}. La revanche t’attend.`
                     : result.destroyed
                     ? `Ta coque est tombée à zéro : la voiture a tourné sur elle-même dans sa fumée avant de s’arrêter, hors course. ${result.winner} l’emporte ; la revanche t’attend.`
                     : finalStoryVictory && storyEnding
@@ -1470,12 +1484,12 @@ export default function ViceCityRushPage() {
           {sprintMode ? (
           <section className="city-rush-side-card city-rush-item-guide is-sprint">
             <div className="city-rush-side-heading"><span>SOLO · CHRONO</span><i>{CITY_RUSH_SPRINT_CHECKPOINTS} PORTES</i></div>
-            <h3>Tenir<br /><em>les 15 secondes.</em></h3>
+            <h3>Tenir<br /><em>{formatSprintSeconds(sprintCheckpointBonus)} secondes.</em></h3>
             <div className="city-rush-guide-list">
               <div className="city-rush-guide-item is-sprint">
                 <span className="city-rush-guide-glyph" aria-hidden="true">⛩</span>
-                <div><b>CHECKPOINT · {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M</b><small>{CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles espacées de {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m : chacune recharge le chrono à {CITY_RUSH_SPRINT_CHECKPOINT_TIME} secondes.</small></div>
-                <kbd>{CITY_RUSH_SPRINT_CHECKPOINT_TIME} s</kbd>
+                <div><b>CHECKPOINT · {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} M</b><small>{CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles espacées de {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m : chacune recharge le chrono à {formatSprintSeconds(sprintCheckpointBonus)} secondes. Le bonus suit la voiture choisie — plus elle va vite, moins la marge est large.</small></div>
+                <kbd>{formatSprintSeconds(sprintCheckpointBonus)} s</kbd>
               </div>
               <div className="city-rush-guide-item is-boost">
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>

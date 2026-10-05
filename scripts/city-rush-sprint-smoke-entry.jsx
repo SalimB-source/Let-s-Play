@@ -80,6 +80,8 @@ const {
   CITY_RUSH_PICKUPS,
   CITY_RUSH_SPRINT_CHECKPOINTS,
   CITY_RUSH_SPRINT_DISTANCE,
+  CITY_RUSH_PLAYER_SPEED,
+  cityRushSprintCheckpointTime,
 } = await import('../src/games/cityRushRules.js');
 const fail = (msg, extra) => { console.error('SPRINT SMOKE FAILED:', msg, extra ?? ''); process.exit(1); };
 
@@ -158,8 +160,13 @@ for (const city of CITY_RUSH_CITIES) {
     if (cps.join(',') !== expectedCheckpoints.join(',')) fail('checkpoints annoncés', cps);
     if (r.distance < CITY_RUSH_SPRINT_DISTANCE - 1) fail('arrivée trop tôt', r);
   }
+  // Le chrono du Sprint suit la voiture engagée : on vérifie qu'il vaut bien le
+  // bonus calculé pour elle (15 s à la vitesse de référence, 19 s pour la
+  // citadine de départ), et qu'il n'est jamais dépassé.
+  const expectedBonus = cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED * CITY_RUSH_CARS[0].powerMultiplier);
   const maxLeft = Math.max(...cb.huds.map((h) => h.sprint.timeLeft));
-  if (maxLeft > 15.001) fail('chrono > 15 s', maxLeft);
+  if (maxLeft > expectedBonus + 0.001) fail(`chrono > ${expectedBonus} s`, maxLeft);
+  if (Math.abs(maxLeft - expectedBonus) > 0.05) fail(`chrono du Sprint inattendu (attendu ${expectedBonus} s)`, maxLeft);
   console.log(`[${city.id}] OK — ${(frames / 30).toFixed(1)} s · solo · rang ${r.rank} · ${r.checkpoints} checkpoints · ${r.timedOut ? 'TEMPS ÉCOULÉ' : 'arrivée'} · ${r.distance} m`);
 }
 console.log('SPRINT SMOKE OK');
