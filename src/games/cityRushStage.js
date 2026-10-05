@@ -1212,8 +1212,9 @@ function addLandmark(batch, m, city, trackMeters, side, atlas = null) {
     // Croix rouge au sommet.
     batch.box(m.red, [x, 5.7, z], [0.12, 0.9, 0.12]);
     batch.box(m.red, [x, 5.4, z], [0.55, 0.12, 0.12]);
-    // Petite palme à côté.
-    addTree(batch, m, { tree: 'mexico' }, { ...m, green: m.agaveGreen || m.green, trunk: m.wood, foliage: m.foliage, foliageLight: m.foliageLight, agaveBlue: m.agaveBlue, agaveGreen: m.agaveGreen }, x + side * 4.2, 3.2, seededRandom(17));
+    // Petite végétation de campagne à côté (agave, saguaro ou nopal) : les
+    // matériaux du thème portent déjà agaveBlue/agaveGreen/wood/foliage.
+    addTree(batch, m, { tree: 'mexico' }, x + side * 4.2, 3.2, seededRandom(17));
     return;
   }
   if (style === 'route66') {
