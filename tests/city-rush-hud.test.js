@@ -75,7 +75,9 @@ test('les berlines de police du trafic sont ciblables par un tir rouge', () => {
   assert.match(candidates, /trafficCars[\s\S]*?traffic\.type === 'police'/, 'les véhicules de police civils entrent dans la liste des cibles');
   assert.match(vehicleState, /trafficPolice\?\.type === 'police'/, 'un véhicule du trafic reçoit un état de police avec sa santé');
   assert.match(pistolHit, /damagePolice\(target\.racer, CITY_RUSH_POWERS\.PISTOL, attackerId\)/);
-  assert.match(policeDamage, /cityRushPoliceDamage\(police\.health, source\)/);
+  assert.match(policeDamage, /const healthBeforeHit = hasHealth \? Number\(police\.health\) : CITY_RUSH_POLICE_HEALTH/,
+    'les berlines civiles reçoivent leur santé complète au premier impact');
+  assert.match(policeDamage, /cityRushPoliceDamage\(healthBeforeHit, source\)/);
   assert.match(policeDamage, /if \(source !== CITY_RUSH_POWERS\.PISTOL\)/, 'un tir rouge ne fait pas déraper la voiture de police');
 });
 
@@ -88,6 +90,25 @@ test('un tir rouge retire de la vie sans ralentir ni faire déraper sa cible', (
   assert.match(world, /start\(\)\s*\{[\s\S]*?activatePlayerHealth\(\)/, 'la santé est activée au départ, pas au dernier tour');
   assert.match(world, /police\.targetId = targetId/);
   assert.match(world, /targetId: attackerId/);
+});
+
+test('la police arrive au dernier tour du joueur et réserve une unité par rival tireur', () => {
+  const deployment = world.match(/const playerLap = cityRushLapForDistance\(distance, CITY_RUSH_LAP_LENGTH, effectiveLaps\);[\s\S]*?updatePolice\(dt, leader\);/)?.[0] || '';
+  assert.ok(deployment, 'le seuil de déploiement de l’escouade est explicite');
+  assert.match(deployment, /else if \(playerLap >= effectiveLaps\) deployPolice\(\)/);
+  assert.doesNotMatch(deployment, /cityRushLapForDistance\(leader\.distance/,
+    'un rival en tête ne fait pas entrer la police avant le dernier tour du joueur');
+
+  const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
+  const retaliation = world.match(/function registerPoliceRetaliation\([\s\S]*?\n  function activatePoliceUnit/)?.[0] || '';
+  assert.match(policeDamage, /if \(attackerId && attackerId !== 'player'\) registerPoliceRetaliation\(attackerId, source\)/,
+    'un tir réussi par un rival déclenche la représaille');
+  assert.match(retaliation, /policeCars\.find\(\(police\) => police\.reserveForId === attackerId\)/,
+    'chaque rival reçoit son unité pré-réservée');
+  assert.match(retaliation, /targetId: attackerId/);
+  assert.match(retaliation, /type: 'police-retaliation'/);
+  assert.match(retaliation, /policeRetaliationByAttacker\.set\(attackerId, reserve\)/,
+    'une seule unité est attribuée par rival');
 });
 
 test('victoire en mode course : le bouton COURSE SUIVANTE doré à texte noir est présent', () => {

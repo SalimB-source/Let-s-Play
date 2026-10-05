@@ -179,6 +179,18 @@ import {
   markCityRushPickupTaken,
   rankCityRushRacers,
   resolveCityRushCarMovement,
+  CITY_RUSH_RAMP_COUNT,
+  CITY_RUSH_RAMP_WIDTH,
+  CITY_RUSH_RAMP_LENGTH,
+  CITY_RUSH_RAMP_HEIGHT,
+  CITY_RUSH_RAMP_CONTACT_WINDOW,
+  CITY_RUSH_RAMP_SPACING_MIN,
+  CITY_RUSH_RAMP_SPACING_MAX,
+  computeCityRushJumpDistance,
+  computeCityRushJumpHeight,
+  computeCityRushJumpElevation,
+  computeCityRushJumpPitch,
+  detectCityRushRampContact,
 } from '../src/games/cityRushRules.js';
 
 test('the five city routes have a distinct identity and complete palettes', () => {
@@ -601,22 +613,25 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
 });
 
 test('the active loadout has seven red machine-gun bullets plus automatic ground boosts', () => {
-  assert.equal(CITY_RUSH_DISTANCE, 3600); // 5 tours : 4 boucles + un dernier tour de 2 boucles
+  assert.equal(CITY_RUSH_DISTANCE, 8400); // 6 tours : 5 boucles de 1 200 m + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
-  assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.2);
+  assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.05, 'le bonus rouge n’apparaît que dans 5 % des objets');
   assert.equal(CITY_RUSH_PISTOL_AMMO_PER_PICKUP, 7);
-  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.8);
+  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.95);
   assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, radio: 4 });
   assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 7);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.ammoPerPickup, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /bonus rouge.*7 balles/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /bonus rouge.*très rares/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /7 balles/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.name, /AK-47/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /tout droit/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /premier adversaire ou la voiture de police/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /premier adversaire ou la première voiture de police/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /retire un carré de vie/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /sans faire déraper ni ralentir/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /sans dérapage ni ralentissement/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /voiture de police à six points de vie.*inflige 3 dégâts/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, jamais au joueur/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
   });
@@ -908,15 +923,16 @@ test('trois voitures de police poursuivent le joueur et un renfort est réservé
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
 });
 
-test('le joueur et les rivaux commencent avec quinze carrés ; un tir rouge en retire un', () => {
+test('le joueur et les rivaux ont quinze cellules ; les tirs les touchent sans que le choc policier coûte une vie', () => {
   assert.equal(CITY_RUSH_PLAYER_HEALTH, 15);
   assert.equal(CITY_RUSH_RACER_HEALTH, CITY_RUSH_PLAYER_HEALTH);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE['blue-shot'], 1);
   assert.equal(CITY_RUSH_PLAYER_DAMAGE.pistol, 1);
-  assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 1);
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 0);
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'blue-shot'), 14);
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'pistol'), 14);
-  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), 14);
+  assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'collision'), CITY_RUSH_PLAYER_HEALTH);
+  assert.equal(cityRushPlayerDamage(5, 'collision'), 5);
   assert.equal(cityRushPlayerDamage(1, 'pistol'), 0);
   assert.equal(cityRushPlayerDamage(0, 'blue-shot'), 0);
   assert.equal(cityRushPlayerDamage(5, 'boost'), 5);
@@ -924,10 +940,14 @@ test('le joueur et les rivaux commencent avec quinze carrés ; un tir rouge en r
   assert.equal(cityRushPlayerDamage(-3, 'collision'), 0);
   assert.equal(CITY_RUSH_PLAYER_HEALTH_CRITICAL, 3);
   assert.equal(CITY_RUSH_HEALTH_GROUP_SIZE, 5);
-  // La police conserve sa propre barre de quatre carrés.
-  assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, 1);
-  assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 2);
-  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision'), CITY_RUSH_POLICE_HEALTH / 2);
+
+  // La police garde une coque distincte : deux rouges, trois bleus ou six
+  // carambolages la détruisent, sans entamer la barre du joueur.
+  assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, 3);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision'), CITY_RUSH_POLICE_HEALTH - 1);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'pistol'), 3);
   assert.ok(CITY_RUSH_POLICE_COLLISION_COOLDOWN > 0.5);
   assert.ok(CITY_RUSH_POLICE_COLLISION_TOLERANCE > 0);
 });
@@ -1017,7 +1037,7 @@ test('un carambolage demande une berline devant, et un pilote qui arrive sur ell
   assert.equal(cityRushPoliceCollisionHit(), false);
 });
 
-test('le leader du classement est sélectionné pour déclencher l’escouade au dernier tour', () => {
+test('le pilote le plus avancé est sélectionné pour les décisions de peloton', () => {
   assert.equal(cityRushPackLeader([
     { id: 'player', distance: 1204 },
     { id: 'nova', distance: 1230 },
@@ -1221,58 +1241,52 @@ test('au dernier tour, la riposte rouge peut viser la berline la plus proche', (
   ], 1200).id, 'police-2');
 });
 
-test('barre de vie des berlines : quatre carrés, un carré par tir rouge', () => {
-  // Le barème de dégât est pur : la berline encaisse quatre carrés. Un tir
-  // rouge en détruit exactement un ; le tir bleu et la collision gardent leurs
-  // dégâts de deux carrés.
-  assert.equal(CITY_RUSH_POLICE_HEALTH, 4, 'une berline part avec quatre carrés de vie');
-  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2, 'un tir droit bleu retire deux carrés');
-  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 1, 'un tir rouge retire un carré');
-  assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 2, 'une collision retire deux carrés');
-  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.RADIO], CITY_RUSH_POLICE_HEALTH, 'le tir d’hélico détruit d’un coup');
-  // Deux tirs bleus successifs abattent la berline ; le premier la laisse
-  // debout.
+test('barre de vie des berlines : six points, tir rouge puissant et carambolage sans dégât au joueur', () => {
+  assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 3);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.RADIO], 0,
+    'l’attaque d’hélicoptère n’inflige plus de dégâts');
+
   const afterFirstBlue = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT);
-  assert.equal(afterFirstBlue, 2, 'le premier tir bleu laisse deux carrés');
-  assert.equal(cityRushPoliceDamage(afterFirstBlue, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'le deuxième tir bleu la détruit');
-  // Quatre balles rouges sont nécessaires et chacune retire un carré.
-  let afterRed = CITY_RUSH_POLICE_HEALTH;
-  for (let shot = 1; shot <= 4; shot += 1) {
-    afterRed = cityRushPoliceDamage(afterRed, CITY_RUSH_POWERS.PISTOL);
-    assert.equal(afterRed, CITY_RUSH_POLICE_HEALTH - shot, `le tir rouge ${shot} retire un seul carré`);
-  }
-  assert.equal(cityRushPoliceDamage(2, 'collision'), 0, 'un choc détruit les deux derniers carrés');
-  const afterFirstCollision = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision');
-  assert.equal(afterFirstCollision, 2, 'la première collision retire deux carrés');
-  assert.equal(cityRushPoliceDamage(afterFirstCollision, CITY_RUSH_POWERS.PISTOL), 1, 'un tir rouge retire ensuite un carré');
-  assert.equal(cityRushPoliceDamage(afterFirstCollision, 'collision'), 0, 'deux collisions détruisent la berline');
-  // Un hélico détruit dès le premier coup.
-  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 0);
-  // La vie ne descend jamais sous zéro, même sous le feu nourri.
-  assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'une épave ne prend plus de dégâts');
-  assert.equal(cityRushPoliceDamage(1, CITY_RUSH_POWERS.PISTOL), 0);
-  // Source inconnue ou invalide : aucun dégât.
+  const afterSecondBlue = cityRushPoliceDamage(afterFirstBlue, CITY_RUSH_POWERS.BLUE_SHOT);
+  assert.equal(afterFirstBlue, 4);
+  assert.equal(afterSecondBlue, 2);
+  assert.equal(cityRushPoliceDamage(afterSecondBlue, CITY_RUSH_POWERS.BLUE_SHOT), 0);
+
+  const afterFirstRed = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL);
+  assert.equal(afterFirstRed, 3);
+  assert.equal(cityRushPoliceDamage(afterFirstRed, CITY_RUSH_POWERS.PISTOL), 0);
+  assert.equal(cityRushPoliceDamage(afterFirstRed, 'collision'), 2,
+    'un carambolage en accélérant retire un seul point après le tir rouge');
+  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(afterFirstRed, 'collision'), 'collision'), 1);
+  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(cityRushPoliceDamage(afterFirstRed, 'collision'), 'collision'), 'collision'), 0,
+    'trois carambolages supplémentaires achèvent une berline déjà touchée par un tir rouge');
+  assert.equal(cityRushPoliceDamage(1, 'collision'), 0);
+  assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.BLUE_SHOT), 0);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), CITY_RUSH_POLICE_HEALTH,
+    'une attaque d’hélicoptère est désactivée');
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_PICKUPS.BOOST), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, null), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
 });
-
 test('le bandeau « berline touchée » compte les tirs restants, pas les points de vie', () => {
-  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT), 2, 'deux tirs bleus au départ');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT), 3, 'trois tirs bleus au départ');
   assert.equal(cityRushPoliceShotsLeft(2, CITY_RUSH_POWERS.BLUE_SHOT), 1, 'un tir bleu après le premier');
   assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'épave : plus rien à tirer');
-  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 4, 'quatre tirs rouges au départ');
-  assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 3, 'trois tirs rouges après le premier');
-  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, 'collision'), 2, 'deux collisions au départ');
-  assert.equal(cityRushPoliceShotsLeft(2, 'collision'), 1, 'une collision après le premier choc');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 2, 'deux tirs rouges au départ');
+  assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 1, 'un tir rouge après le premier');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, 'collision'), 6, 'six petits carambolages au départ');
+  assert.equal(cityRushPoliceShotsLeft(3, 'collision'), 3, 'trois carambolages après un tir rouge');
   assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.PISTOL), 0, 'épave : plus de tir rouge');
-  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 1, 'un seul missile');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 0, 'aucun missile, attaque supprimée');
   // Arme non létale ou inconnue : aucun tir ne compte.
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_PICKUPS.BOOST), 0);
   assert.equal(cityRushPoliceShotsLeft(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
 });
 
-test('les berlines entrent sans charge et conservent seulement leur hélicoptère de police gratuit', () => {
+test('les berlines entrent sans charge et ne disposent d’aucune attaque d’hélicoptère', () => {
   assert.deepEqual([...CITY_RUSH_POLICE_START_CHARGES], []);
   assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], [CITY_RUSH_POWERS.PISTOL]);
   const inventory = createCityRushPoliceInventory();
@@ -1490,8 +1504,8 @@ test('pickup encounters contain only red machine-gun bonuses and ground boosts',
   }
   const redRate = pickupCounts[CITY_RUSH_POWERS.PISTOL] / totalPickups;
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
-  assert.ok(redRate >= 0.18 && redRate <= 0.22, `le bonus rouge reste rare (${(redRate * 100).toFixed(1)} %)`);
-  assert.ok(boostRate >= 0.78 && boostRate <= 0.82, `le turbo au sol apparaît bien (${(boostRate * 100).toFixed(1)} %)`);
+  assert.ok(redRate >= 0.03 && redRate <= 0.07, `le bonus rouge reste très rare (${(redRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.93 && boostRate <= 0.97, `les pads turbo sont très majoritaires (${(boostRate * 100).toFixed(1)} %)`);
   assert.equal(pickupCounts['blue-shot'], undefined);
   assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
@@ -1509,7 +1523,7 @@ test('Sprint encounters place a single ground boost on a forward-facing lane', (
   }
 });
 
-test('the helicopter only locks onto rivals ahead of its pilot', () => {
+test('the retired helicopter target helper remains pure and only selects rivals ahead', () => {
   const playerLeads = [
     { id: 'player', distance: 120 },
     { id: 'rival-a', distance: 104 },
@@ -1563,64 +1577,64 @@ test('race standings identify the leader and player position, including ties', (
   assert.deepEqual(board.ordered.map((racer) => racer.id), ['rival-a', 'player', 'rival-c', 'rival-b']);
 });
 
-test('a race is N laps of the same 600 m loop, the last lap running the loop twice', () => {
-  assert.equal(CITY_RUSH_LAPS, 5);
-  assert.equal(CITY_RUSH_LAP_LENGTH, 600);
+test('a race is N laps of the same 1 200 m loop, the last lap running the loop twice', () => {
+  assert.equal(CITY_RUSH_LAPS, 6);
+  assert.equal(CITY_RUSH_LAP_LENGTH, 1200);
   assert.equal(CITY_RUSH_FINAL_LAP_LOOPS, 2);
-  assert.equal(CITY_RUSH_FINAL_LAP_LENGTH, 1200);
-  // Cinq tours : quatre boucles, puis un grand dernier tour de deux boucles.
-  assert.equal(CITY_RUSH_DISTANCE, 4 * CITY_RUSH_LAP_LENGTH + CITY_RUSH_FINAL_LAP_LENGTH);
+  assert.equal(CITY_RUSH_FINAL_LAP_LENGTH, 2400);
+  // Six tours : cinq boucles, puis un grand dernier tour de deux boucles.
+  assert.equal(CITY_RUSH_DISTANCE, 5 * CITY_RUSH_LAP_LENGTH + CITY_RUSH_FINAL_LAP_LENGTH);
   assert.equal(CITY_RUSH_DISTANCE, cityRushRaceDistance(CITY_RUSH_LAPS));
+  assert.equal(CITY_RUSH_DISTANCE, 8400);
 
   assert.equal(cityRushLapForDistance(0), 1);
-  assert.equal(cityRushLapForDistance(599.9), 1);
-  assert.equal(cityRushLapForDistance(600), 2);
-  assert.equal(cityRushLapForDistance(1250), 3);
-  assert.equal(cityRushLapForDistance(1800), 4);
-  assert.equal(cityRushLapForDistance(2399), 4);
-  // Le dernier tour court jusqu'à l'arrivée : le compteur y reste plafonné,
-  // y compris quand on recroise le portique à mi-parcours (3 000 m).
-  assert.equal(cityRushLapForDistance(2400), 5);
-  assert.equal(cityRushLapForDistance(3000), 5);
-  assert.equal(cityRushLapForDistance(3599), 5);
-  assert.equal(cityRushLapForDistance(4000), 5);
+  assert.equal(cityRushLapForDistance(1199.9), 1);
+  assert.equal(cityRushLapForDistance(1200), 2);
+  assert.equal(cityRushLapForDistance(2500), 3);
+  assert.equal(cityRushLapForDistance(3600), 4);
+  assert.equal(cityRushLapForDistance(4799), 4);
+  assert.equal(cityRushLapForDistance(4800), 5);
+  assert.equal(cityRushLapForDistance(5999), 5);
+  assert.equal(cityRushLapForDistance(6000), 6);
+  assert.equal(cityRushLapForDistance(8399), 6);
+  assert.equal(cityRushLapForDistance(8400), 6);
   assert.equal(cityRushLapForDistance(-20), 1);
   assert.equal(cityRushLapForDistance(Number.NaN), 1);
 
   assert.equal(cityRushLapProgress(0), 0);
-  assert.equal(cityRushLapProgress(150), 0.25);
-  assert.equal(cityRushLapProgress(600), 0);
-  assert.equal(cityRushLapProgress(1500), 0.5);
-  assert.equal(cityRushLapProgress(1800), 0);
-  assert.equal(cityRushLapProgress(2400), 0, 'le dernier tour repart de zéro');
-  // La jauge du dernier tour court sur ses 1 200 m : elle ne retombe pas à zéro
-  // quand on recroise le portique.
+  assert.equal(cityRushLapProgress(300), 0.25);
+  assert.equal(cityRushLapProgress(1200), 0);
   assert.equal(cityRushLapProgress(3000), 0.5);
-  assert.equal(cityRushLapProgress(3300), 0.75);
-  assert.equal(cityRushLapProgress(3600), 1);
-  assert.equal(cityRushLapProgress(4200), 1);
-  // Le même calcul, pour une course de trois tours (600 + 600 + 1 200 = 2 400 m).
-  assert.equal(cityRushLapProgress(1200, CITY_RUSH_LAP_LENGTH, 3), 0);
-  assert.equal(cityRushLapProgress(1800, CITY_RUSH_LAP_LENGTH, 3), 0.5);
-  assert.equal(cityRushLapProgress(2400, CITY_RUSH_LAP_LENGTH, 3), 1);
+  assert.equal(cityRushLapProgress(3600), 0);
+  assert.equal(cityRushLapProgress(4800), 0, 'le cinquième tour repart de zéro');
+  assert.equal(cityRushLapProgress(6000), 0, 'le dernier tour commence après cinq boucles');
+  // La jauge du dernier tour court sur ses 2 400 m : elle ne retombe pas à zéro
+  // quand on recroise le portique à 7 200 m.
+  assert.equal(cityRushLapProgress(7200), 0.5);
+  assert.equal(cityRushLapProgress(7800), 0.75);
+  assert.equal(cityRushLapProgress(8400), 1);
+  assert.equal(cityRushLapProgress(9600), 1);
+  // Le même calcul, pour une course de trois tours (1 200 + 1 200 + 2 400 = 4 800 m).
+  assert.equal(cityRushLapProgress(2400, CITY_RUSH_LAP_LENGTH, 3), 0);
+  assert.equal(cityRushLapProgress(3600, CITY_RUSH_LAP_LENGTH, 3), 0.5);
+  assert.equal(cityRushLapProgress(4800, CITY_RUSH_LAP_LENGTH, 3), 1);
   // Un dernier tour d'une seule boucle redonne l'ancien comportement.
-  assert.equal(cityRushLapProgress(3000, CITY_RUSH_LAP_LENGTH, 5, 1), 1);
-  assert.equal(cityRushLapProgress(2700, CITY_RUSH_LAP_LENGTH, 5, 1), 0.5);
+  assert.equal(cityRushLapProgress(6000, CITY_RUSH_LAP_LENGTH, 5, 1), 1);
+  assert.equal(cityRushLapProgress(5400, CITY_RUSH_LAP_LENGTH, 5, 1), 0.5);
 });
-
 test('the last lap is longer than the others, and so is the whole race', () => {
   // Tous les tours font une boucle, sauf le dernier qui en enchaîne deux.
-  assert.equal(cityRushLapLength(1, 4), 600);
-  assert.equal(cityRushLapLength(3, 4), 600);
-  assert.equal(cityRushLapLength(4, 4), 1200);
-  assert.equal(cityRushLapLength(1, 1), 1200, 'le tour unique du sprint est le dernier tour');
-  assert.equal(cityRushLapLength(4, 4, CITY_RUSH_LAP_LENGTH, 1), 600);
+  assert.equal(cityRushLapLength(1, 4), 1200);
+  assert.equal(cityRushLapLength(3, 4), 1200);
+  assert.equal(cityRushLapLength(4, 4), 2400);
+  assert.equal(cityRushLapLength(1, 1), 2400, 'le tour unique du sprint est le dernier tour');
+  assert.equal(cityRushLapLength(4, 4, CITY_RUSH_LAP_LENGTH, 1), 1200);
   assert.equal(cityRushLapLength(4, 4, 100, 3), 300);
 
-  assert.equal(cityRushRaceDistance(1), 1200);
-  assert.equal(cityRushRaceDistance(3), 2400);
-  assert.equal(cityRushRaceDistance(4), 3000);
-  assert.equal(cityRushRaceDistance(5), 3600);
+  assert.equal(cityRushRaceDistance(1), 2400);
+  assert.equal(cityRushRaceDistance(3), 4800);
+  assert.equal(cityRushRaceDistance(4), 6000);
+  assert.equal(cityRushRaceDistance(5), 7200);
   assert.equal(cityRushRaceDistance(), CITY_RUSH_DISTANCE);
   // La distance est la somme des longueurs de tour.
   for (const laps of [1, 2, 3, 4, 5, 6]) {
@@ -1632,42 +1646,43 @@ test('the last lap is longer than the others, and so is the whole race', () => {
     assert.equal(cityRushRaceDistance(laps) % CITY_RUSH_LAP_LENGTH, 0);
     assert.equal(cityRushTrackGap(0, cityRushRaceDistance(laps)), 0);
     assert.ok(cityRushLapLength(laps, laps) > cityRushLapLength(1, laps) || laps === 1);
-    // Chaque course est plus longue qu'avant (laps × 600 m) : de la boucle en plus.
+    // Chaque course est plus longue qu'avant (laps × l'ancienne boucle) : de la boucle en plus.
     assert.equal(cityRushRaceDistance(laps), laps * CITY_RUSH_LAP_LENGTH + (CITY_RUSH_FINAL_LAP_LOOPS - 1) * CITY_RUSH_LAP_LENGTH);
   }
   assert.equal(cityRushRaceDistance(3, 100, 3), 500, 'boucle de 100 m, dernier tour de trois boucles : 100 + 100 + 300');
-  assert.equal(cityRushRaceDistance(3, CITY_RUSH_LAP_LENGTH, 1), 1800, 'un dernier tour d’une boucle : l’ancienne durée');
+  assert.equal(cityRushRaceDistance(3, CITY_RUSH_LAP_LENGTH, 1), 3600, 'un dernier tour d’une boucle');
   // Entrées invalides : on retombe sur la course par défaut.
   assert.equal(cityRushRaceDistance(Number.NaN), CITY_RUSH_DISTANCE);
   assert.equal(cityRushRaceDistance(0), CITY_RUSH_DISTANCE);
-  assert.equal(cityRushRaceDistance(3, Number.NaN), 2400);
-  assert.equal(cityRushRaceDistance(3, CITY_RUSH_LAP_LENGTH, 0), 3 * 600 - 600 + 1200);
+  assert.equal(cityRushRaceDistance(3, Number.NaN), 4800);
+  assert.equal(cityRushRaceDistance(3, CITY_RUSH_LAP_LENGTH, 0), 3 * 1200 - 1200 + 2400);
 });
 
 test('crossing the start line is detected once per pass: lap starts, a checkpoint, then the finish', () => {
   assert.deepEqual(cityRushLapCrossings(0, 20), []);
-  assert.deepEqual(cityRushLapCrossings(590, 605), [1]);
-  assert.deepEqual(cityRushLapCrossings(600, 600), []);
-  assert.deepEqual(cityRushLapCrossings(599, 600), [1]);
-  assert.deepEqual(cityRushLapCrossings(1190, 1210), [2]);
-  assert.deepEqual(cityRushLapCrossings(1799, 1830), [3]);
-  // Cinq tours : les lignes 1 à 4 lancent les tours 2 à 5, la ligne 5 est le
-  // point de passage du dernier tour et la ligne 6 l'arrivée.
-  assert.deepEqual(cityRushLapCrossings(2390, 2410), [4]);
-  assert.deepEqual(cityRushLapCrossings(2990, 3010), [5]);
-  assert.deepEqual(cityRushLapCrossings(3590, 3610), [6]);
+  assert.deepEqual(cityRushLapCrossings(1190, 1210), [1]);
+  assert.deepEqual(cityRushLapCrossings(1200, 1200), []);
+  assert.deepEqual(cityRushLapCrossings(1199, 1200), [1]);
+  assert.deepEqual(cityRushLapCrossings(2390, 2410), [2]);
+  assert.deepEqual(cityRushLapCrossings(3599, 3630), [3]);
+  // Six tours : les lignes 1 à 5 lancent les tours suivants, la ligne 6 est
+  // le point de passage au milieu du dernier tour et la ligne 7 l'arrivée.
+  assert.deepEqual(cityRushLapCrossings(4790, 4810), [4]);
+  assert.deepEqual(cityRushLapCrossings(5990, 6010), [5]);
+  assert.deepEqual(cityRushLapCrossings(7190, 7210), [6]);
+  assert.deepEqual(cityRushLapCrossings(8390, 8410), [7]);
   // Un très grand pas de simulation ne saute aucune ligne, et rien au-delà de l'arrivée.
-  assert.deepEqual(cityRushLapCrossings(10, 3700), [1, 2, 3, 4, 5, 6]);
-  assert.deepEqual(cityRushLapCrossings(3600, 4200), []);
+  assert.deepEqual(cityRushLapCrossings(10, 8800), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(cityRushLapCrossings(8400, 9600), []);
   // Reculer (ou rester immobile) ne compte jamais de passage.
-  assert.deepEqual(cityRushLapCrossings(620, 580), []);
+  assert.deepEqual(cityRushLapCrossings(1240, 1160), []);
   // Une boucle personnalisée suit les mêmes règles.
   assert.deepEqual(cityRushLapCrossings(95, 205, 100, 5), [1, 2]);
-  // Une course de trois tours s'arrête à la ligne 4 (600 + 600 + 1 200 m).
+  // Une course de trois tours s'arrête à la ligne 4 (1 200 + 1 200 + 2 400 m).
   assert.deepEqual(cityRushLapCrossings(0, 9999, CITY_RUSH_LAP_LENGTH, 3), [1, 2, 3, 4]);
   // Dernier tour d'une seule boucle : la dernière ligne est directement l'arrivée.
-  assert.deepEqual(cityRushLapCrossings(10, 3100, CITY_RUSH_LAP_LENGTH, 5, 1), [1, 2, 3, 4, 5]);
-  assert.deepEqual(cityRushLapCrossings(3000, 3600, CITY_RUSH_LAP_LENGTH, 5, 1), []);
+  assert.deepEqual(cityRushLapCrossings(10, 6100, CITY_RUSH_LAP_LENGTH, 5, 1), [1, 2, 3, 4, 5]);
+  assert.deepEqual(cityRushLapCrossings(6000, 6600, CITY_RUSH_LAP_LENGTH, 5, 1), []);
 });
 
 test('a line is a lap start, a checkpoint in the long last lap, or the finish', () => {
@@ -1704,20 +1719,20 @@ test('track elements fold onto the loop so the start line comes back ahead every
   // Au bout de la zone « derrière », l'élément réapparaît au loin devant.
   assert.equal(cityRushTrackGap(0, behind), CITY_RUSH_LAP_LENGTH - behind);
   assert.equal(cityRushTrackGap(0, behind + 1), CITY_RUSH_LAP_LENGTH - behind - 1);
-  assert.equal(cityRushTrackGap(0, 600), 0);
-  assert.equal(cityRushTrackGap(0, 1799), 1);
-  assert.equal(cityRushTrackGap(162, 1700), 262);
+  assert.equal(cityRushTrackGap(0, 1200), 0);
+  assert.equal(cityRushTrackGap(0, 1199), 1);
+  assert.equal(cityRushTrackGap(162, 1100), 262);
   assert.equal(cityRushTrackGap(162, 1300), 62);
-  for (let distance = 0; distance <= 3000; distance += 7) {
+  for (let distance = 0; distance <= 6000; distance += 7) {
     for (const position of [0, 36, 162, 300, 564]) {
       const gap = cityRushTrackGap(position, distance);
       assert.ok(gap > -behind - 1e-9 && gap <= CITY_RUSH_LAP_LENGTH - behind + 1e-9, `gap ${gap} out of range`);
     }
   }
   // Deux copies de la boucle espacées d'un tour couvrent toujours la vue avant.
-  const first = cityRushTrackGap(0, 450);
+  const first = cityRushTrackGap(0, 1050);
   assert.equal(first, 150);
-  assert.equal(first - CITY_RUSH_LAP_LENGTH, -450);
+  assert.equal(first - CITY_RUSH_LAP_LENGTH, -1050);
 });
 
 test('the three racers have distinct avatars and international names from around the world', () => {
@@ -1756,7 +1771,7 @@ test('the race mini-map locates all three racers on the circuit loop and focuses
   const startLeft = cityRushMinimapPoint(0, 0);
   const startRight = cityRushMinimapPoint(0, CITY_RUSH_LANE_X.length - 1);
   assert.ok(Math.hypot(startLeft.x - startRight.x) + Math.hypot(startLeft.y - startRight.y) > 1);
-  // Après un tour complet (600 m), le point revient exactement sur la ligne de départ.
+  // Après un tour complet (1 200 m), le point revient exactement sur la ligne de départ.
   const fullLap = cityRushMinimapPoint(CITY_RUSH_LAP_LENGTH, 0);
   assert.ok(Math.abs(fullLap.x - startLeft.x) < 1e-6);
   assert.ok(Math.abs(fullLap.y - startLeft.y) < 1e-6);
@@ -1821,9 +1836,9 @@ test('la mini-carte dessine l’escouade de police à part des trois pilotes', (
 test('la mini-carte suit la course réelle : tours, progression et dernier tour long', () => {
   const player = (distance) => ({ id: 'player', distance });
   const playerOf = (state) => state.racers.find((racer) => racer.isPlayer);
-  // Trois tours = 600 + 600 + 1 200 m : la distance totale se déduit des tours.
+  // Trois tours = 1 200 + 1 200 + 2 400 m : la distance totale se déduit des tours.
   assert.equal(playerOf(buildCityRushMinimapState([player(0)], { laps: 3 })).progress, 0);
-  const mid = buildCityRushMinimapState([player(1800)], { laps: 3 });
+  const mid = buildCityRushMinimapState([player(3600)], { laps: 3 });
   assert.equal(playerOf(mid).lap, 3);
   // On vient de recroiser le portique au milieu du dernier tour : la jauge de
   // tour est à 50 % (elle ne retombe pas à zéro) et la course aux trois quarts.
@@ -1839,10 +1854,10 @@ test('la mini-carte suit la course réelle : tours, progression et dernier tour 
   assert.equal(playerOf(buildCityRushMinimapState([player(1000)], { laps: 3, totalDistance: 4000 })).progress, 0.25);
   // Sans rien préciser : la course par défaut (CITY_RUSH_LAPS tours).
   assert.equal(playerOf(buildCityRushMinimapState([player(CITY_RUSH_DISTANCE)])).progress, 1);
-  // Le point sur la mini-carte suit la boucle de 600 m, y compris au dernier
-  // tour : après 600 m de dernier tour, le pilote est revenu sur la ligne.
-  const finalLapStart = cityRushMinimapPoint(1200, 0);
-  const finalLapMid = cityRushMinimapPoint(1800, 0);
+  // Le point sur la mini-carte suit la boucle de 1 200 m, y compris au dernier
+  // tour : après 1 200 m de dernier tour, le pilote est revenu sur la ligne.
+  const finalLapStart = cityRushMinimapPoint(2400, 0);
+  const finalLapMid = cityRushMinimapPoint(3600, 0);
   assert.ok(Math.abs(finalLapStart.x - finalLapMid.x) < 1e-6 && Math.abs(finalLapStart.y - finalLapMid.y) < 1e-6);
 });
 
@@ -1889,7 +1904,7 @@ test('changer de voie ne ralentit plus, tenir sa voie fait accélérer', async (
   assert.ok(afterCleanHold > baseTarget);
 });
 
-test('la toupie du stun héliporté boucle des tours entiers face à la route', () => {
+test('la toupie d’immobilisation boucle des tours entiers face à la route', () => {
   const total = CITY_RUSH_POWER_RULES.radio.duration;
   const fullSpin = CITY_RUSH_STUN_SPIN_TURNS * Math.PI * 2;
   // Départ de la frappe : pas encore de rotation.
@@ -2073,14 +2088,92 @@ test('la mini-carte de Tokyo dessine le vrai anneau de la C1 et ses échangeurs'
   assert.deepEqual(plain.routeTicks, []);
 });
 
-test('Sprint : 10 checkpoints, 15 s entre chaque, arrivée au dixième', async () => {
+test('Sprint : 16 checkpoints, 15 s entre chaque, arrivée au dernier', async () => {
   const rules = await import('../src/games/cityRushRules.js');
-  assert.equal(rules.CITY_RUSH_SPRINT_CHECKPOINTS, 10);
+  assert.equal(rules.CITY_RUSH_SPRINT_CHECKPOINTS, 16);
   assert.equal(rules.CITY_RUSH_SPRINT_CHECKPOINT_TIME, 15);
-  assert.equal(rules.CITY_RUSH_SPRINT_DISTANCE, 10 * rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING);
+  assert.equal(rules.CITY_RUSH_SPRINT_DISTANCE, 16 * rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING);
+  // 16 portes × 300 m = 4 800 m = quatre boucles exactes : l'arrivée retombe
+  // pile sous le portique.
+  assert.equal(rules.CITY_RUSH_SPRINT_DISTANCE % rules.CITY_RUSH_LAP_LENGTH, 0);
   assert.equal(rules.cityRushSprintCheckpointsPassed(0), 0);
   assert.equal(rules.cityRushSprintCheckpointsPassed(rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING), 1);
-  assert.equal(rules.cityRushSprintCheckpointsPassed(99999), 10);
-  // À la vitesse de base, 15 s suffisent largement pour un checkpoint.
+  assert.equal(rules.cityRushSprintCheckpointsPassed(99999), 16);
   assert.ok(rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING / rules.CITY_RUSH_PLAYER_SPEED < 15);
+});
+
+test('les tremplins sont rares et les sauts moins hauts, avec une portée liée à la vitesse', () => {
+  assert.equal(CITY_RUSH_RAMP_COUNT, 3, 'seules trois rampes sont conservées dans le circuit');
+  assert.ok(CITY_RUSH_RAMP_SPACING_MIN >= 250, 'les rampes sont beaucoup plus espacées');
+  assert.ok(CITY_RUSH_RAMP_SPACING_MAX >= 300);
+  assert.ok(CITY_RUSH_RAMP_WIDTH >= 2.0 && CITY_RUSH_RAMP_WIDTH <= 2.6);
+  assert.ok(CITY_RUSH_RAMP_LENGTH >= 4.0 && CITY_RUSH_RAMP_LENGTH <= 6.0);
+  assert.ok(CITY_RUSH_RAMP_HEIGHT >= 0.7 && CITY_RUSH_RAMP_HEIGHT <= 1.2);
+
+  const slowDist = computeCityRushJumpDistance(15);
+  const medDist = computeCityRushJumpDistance(30);
+  const fastDist = computeCityRushJumpDistance(50);
+  const boostDist = computeCityRushJumpDistance(70);
+
+  assert.ok(slowDist < medDist, 'la portée grandit avec la vitesse');
+  assert.ok(medDist < fastDist);
+  assert.ok(fastDist < boostDist);
+  assert.ok(slowDist >= 16 && slowDist <= 25, 'portée courte à basse allure');
+  assert.ok(fastDist >= 50 && fastDist <= 75, 'longue portée à haute vitesse');
+
+  const slowHeight = computeCityRushJumpHeight(15);
+  const fastHeight = computeCityRushJumpHeight(60);
+  assert.ok(fastHeight > slowHeight, 'la hauteur maximale augmente avec la vitesse');
+  assert.ok(slowHeight >= 1.4 && slowHeight < 2.0, 'même le saut lent reste modéré et franchit le trafic');
+  assert.ok(fastHeight <= 2.8, 'la hauteur est plafonnée à moins de trois mètres');
+
+  // Trajectoire en cloche (élévation et pitch)
+  const y0 = computeCityRushJumpElevation(0, medDist, 3.5);
+  const yMid = computeCityRushJumpElevation(medDist * 0.5, medDist, 3.5);
+  const yEnd = computeCityRushJumpElevation(medDist, medDist, 3.5);
+  assert.equal(y0, 0, 'au décollage y = 0');
+  assert.ok(Math.abs(yMid - 3.5) < 1e-4, 'au sommet y = hauteur max');
+  assert.equal(yEnd, 0, 'à l’atterrissage y = 0');
+
+  const pitchLaunch = computeCityRushJumpPitch(0.05);
+  const pitchPeak = computeCityRushJumpPitch(0.5);
+  const pitchLanding = computeCityRushJumpPitch(0.95);
+  assert.ok(pitchLaunch > 0, 'nez cabré au décollage');
+  assert.equal(pitchPeak, 0, 'assiette plate au sommet du saut');
+  assert.ok(pitchLanding < 0, 'léger piqué avant le contact avec la route');
+
+  // Détection de contact tremplin
+  assert.equal(detectCityRushRampContact(100, 4, 101, 4), true);
+  assert.equal(detectCityRushRampContact(100, 3, 101, 4), false, 'voie différente = pas de saut');
+  assert.equal(detectCityRushRampContact(100, 4, 115, 4), false, 'trop loin = pas de saut');
+});
+
+test('une voiture qui saute passe au-dessus du trafic et des autres voitures sans collision ni blocage', () => {
+  // 1. Détection des chocs avec le trafic : la voiture en saut ignore les impacts
+  const groundImpacts = detectCityRushTrafficImpacts([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: false },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  assert.equal(groundImpacts.length, 1, 'au sol, la voiture percute le camion');
+
+  const jumpingImpacts = detectCityRushTrafficImpacts([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: true },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  assert.equal(jumpingImpacts.length, 0, 'en vol, la voiture survole le camion sans impact');
+
+  // 2. Résolution du mouvement : la voiture en vol n’est pas ralentie par le véhicule au sol
+  const groundMoved = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: false },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  const groundById = Object.fromEntries(groundMoved.map((c) => [c.id, c.nextDistance]));
+  assert.ok(groundById.player < 22, 'au sol, le joueur est retenu derrière le camion');
+
+  const jumpingMoved = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 4, x: 0.8, previousDistance: 10, nextDistance: 25, width: 1.9, jumping: true },
+    { id: 'truck', collisionGroup: 'traffic', lane: 4, x: 0.8, previousDistance: 20, nextDistance: 22, width: 2.1 },
+  ]);
+  const jumpingById = Object.fromEntries(jumpingMoved.map((c) => [c.id, c.nextDistance]));
+  assert.equal(jumpingById.player, 25, 'en saut, la voiture poursuit sa trajectoire par-dessus');
 });

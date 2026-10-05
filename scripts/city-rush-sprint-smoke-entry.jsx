@@ -1,8 +1,7 @@
-// Smoke « Vice City Rush » : exécute createCityRushWorld (vrai code) avec un
-// faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue une course
-// complète pour chaque ville demandée : 5 tours, soit quatre boucles de 600 m
-// puis un grand dernier tour de 1 200 m (deux boucles, le portique est recroisé
-// à mi-parcours) — 3 600 m en tout.
+// Smoke Sprint « Vice City Rush » : exécute createCityRushWorld (vrai code)
+// avec un faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue le défi
+// solo complet pour chaque ville : 16 checkpoints de 300 m, soit 4 800 m
+// (quatre boucles exactes : l'arrivée retombe sous le portique).
 const ctx2d = () => {
   const g = { addColorStop() {} };
   return {
@@ -70,7 +69,7 @@ globalThis.requestAnimationFrame = (cb) => { const id = rafId++; rafQueue.set(id
 globalThis.cancelAnimationFrame = (id) => { rafQueue.delete(id); };
 Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNow }, configurable: true });
 
-// Sprint : 10 portes visibles, 15 s entre checkpoints, boosts verts au sol,
+// Sprint : 16 portes, 15 s entre checkpoints, boosts verts au sol,
 // mais ni police, ni rival, ni arme.
 const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
@@ -103,7 +102,7 @@ function play(city) {
   world.reset(); world.setPhase('playing'); world.start();
   let frames = 0;
   let lastCheckpoint = 0;
-  while (!cb.finish && frames < 30 * 240) {
+  while (!cb.finish && frames < 30 * 360) {
     step(); frames += 1;
     if (frames === 1 && checkpointGate?.userData?.sign) {
       world.scene.updateMatrixWorld(true);
@@ -132,11 +131,18 @@ for (const city of CITY_RUSH_CITIES) {
   if (checkpointGate?.userData?.kind !== 'sprint-checkpoint-gate' || !checkpointGate.userData.sign) {
     fail('portique de checkpoint incomplet', checkpointGate?.userData);
   }
-  if (checkpointSnapshots[0]?.checkpoint !== 2 || checkpointSnapshots[0]?.visible) {
-    fail('après le checkpoint 1, le portique cède la place au gantry du checkpoint 2', checkpointSnapshots[0]);
+  if (checkpointSnapshots[0]?.checkpoint !== 2 || !checkpointSnapshots[0]?.visible) {
+    fail('après le checkpoint 1, le portique 3D doit annoncer le checkpoint 2 (hors portique de départ)', checkpointSnapshots[0]);
   }
   if (!checkpointSnapshots.some((snapshot) => snapshot.checkpoint === 3 && snapshot.visible)) {
-    fail('le portique 3D n’avance pas vers le checkpoint impair suivant', checkpointSnapshots);
+    fail('le portique 3D n’avance pas vers le checkpoint suivant hors gantry', checkpointSnapshots);
+  }
+  // Les checkpoints 4, 8 et 12 tombent pile sous le grand portique (tous les
+  // 1 200 m) : le portique 3D dédié s'efface alors devant lui.
+  for (const underGantry of [4, 8, 12]) {
+    if (!checkpointSnapshots.some((snapshot) => snapshot.checkpoint === underGantry && !snapshot.visible)) {
+      fail(`le checkpoint ${underGantry} devrait coïncider avec le grand portique (sans portique 3D dédié)`, checkpointSnapshots);
+    }
   }
   if (!screenVisible) fail('le panneau du prochain checkpoint est hors champ caméra au départ');
   if (boostPads.length < 2 || boostPads.some((pad) => !pad.userData.pad.visible)) {
@@ -148,7 +154,9 @@ for (const city of CITY_RUSH_CITIES) {
   if (cb.pickups.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
     fail('un pad turbo du Sprint ne s’active pas automatiquement', cb.pickups);
   }
-  const bad = cb.effects.filter((e) => /police|pistol|radio|missile|player-health|rival-boost/.test(e.type));
+  // L'annonce de la barre du joueur est attendue en solo ; seul un effet
+  // d'arme, de rival ou de police doit invalider le Sprint.
+  const bad = cb.effects.filter((e) => /police|pistol|radio|missile|rival-boost/.test(e.type));
   if (bad.length) fail('effet police/arme/rival en Sprint', bad.map((e) => e.type));
   if (cb.huds.some((h) => h.police.length)) fail('police dans le HUD');
   if (r.racers.length !== 1 || !r.racers[0].isPlayer) fail('Sprint pas en solo', r.racers.map((x) => x.id));

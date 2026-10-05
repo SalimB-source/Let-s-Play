@@ -230,7 +230,7 @@ test('tir, dérapage et explosion programment du son, et se taisent quand le son
   } finally { shutdown(audio); }
 });
 
-test('l’hélicoptère démarre avec la frappe, s’éteint après l’explosion', async () => {
+test('les primitives audio héritées de l’hélicoptère libèrent leurs nœuds à l’arrêt', async () => {
   const audio = await boot();
   try {
     audio.helicopterStart();
@@ -240,8 +240,6 @@ test('l’hélicoptère démarre avec la frappe, s’éteint après l’explosio
     // par le bus hélicoptère seul (un gain à 0,0001 rendait le rotor muet).
     assert.equal(nodes.out.gain.value, 1);
     assert.ok(audio.heliBus.gain.value > 0.1, 'le rotor monte en régime');
-    audio.missileLaunch();
-    audio.explosion();
     audio.helicopterStop();
     assert.ok(audio.heliStopTimer !== null, 'l’arrêt est différé : le rotor s’éloigne');
     audio.disposeHelicopter();
@@ -315,11 +313,12 @@ test('le monde déclenche les bruitages au bon endroit', async () => {
   // Tir rouge d'AK-47 au départ, dérapage de la cible à l'impact.
   assert.match(world, /audioRef\?\.current\?\.machineGun\(\{ pan: vehiclePan\(attackerId\) \}\)/);
   assert.match(world, /audioRef\?\.current\?\.skid\(\{\s*pan: vehiclePan\(target\.id\),/);
-  // Hélicoptère : rotor à l’approche, missile au départ, explosion à l’impact.
-  assert.match(world, /audioRef\?\.current\?\.helicopterStart\(\)/);
-  assert.match(world, /audioRef\?\.current\?\.missileLaunch\(/);
+  // L'attaque d'hélicoptère est retirée du monde ; les explosions restent
+  // utilisées pour les voitures de police détruites et l'épave du pilote.
+  assert.doesNotMatch(world, /audioRef\?\.current\?\.helicopterStart\(\)/);
+  assert.doesNotMatch(world, /audioRef\?\.current\?\.missileLaunch\(/);
+  assert.doesNotMatch(world, /audioRef\?\.current\?\.helicopterStop\(\)/);
   assert.match(world, /audioRef\?\.current\?\.explosion\(/);
-  assert.match(world, /audioRef\?\.current\?\.helicopterStop\(\)/);
   // Tir bleu droit, rafale rouge, zones lentes, ramassages, tours et arrivée.
   assert.match(world, /audioRef\?\.current\?\.gunshot\(\{ pan: vehiclePan\(attackerId\) \}\)/);
   assert.match(world, /audioRef\?\.current\?\.pickup\(type, \{ ready/);

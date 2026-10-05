@@ -1,7 +1,7 @@
 // Vérif d'intégration des armes Vice City Rush : seuls les bonus rouges et les
 // boosts sont collectables, les voitures non policières n'utilisent pas d'autre
-// tir, et la police appelle gratuitement son hélicoptère une fois par course.
-// Le scénario rejoue aussi une course pour vérifier que reset() réarme ce tir.
+// tir ; l'attaque d'hélicoptère est absente. Le scénario rejoue aussi une course
+// pour vérifier que reset() ne réactive pas cette frappe supprimée.
 
 const ctx2d = () => {
   const g = { addColorStop() {} };
@@ -109,7 +109,6 @@ const forbiddenShotEffects = new Set([
   'blue-shot-hit', 'blue-shot-hit-player', 'blue-shot-miss', 'rival-blue-shot',
   'rival-radio', 'radio-no-target', 'radio-busy',
 ]);
-let totalPoliceHelicopterCalls = 0;
 
 for (let run = 0; run < RUNS; run += 1) {
   for (const [cityIndex, city] of cities.entries()) {
@@ -136,7 +135,7 @@ for (let run = 0; run < RUNS; run += 1) {
     const roster = selectCityRushRacers({ cityId: city.id, carId: car.id, runId: run, playerDriverId: 'camila' });
     let world;
     try {
-      // policeFromStart : vérifier le tir gratuit dès l'entrée en piste.
+      // policeFromStart : vérifier l'absence de frappe d'hélicoptère dès le départ.
       world = createCityRushWorld(mount, city, () => ({
         error: (error) => { callbacks.errors.push(error); console.error('CALLBACK ERROR:', error); },
         hud: (hud) => { callbacks.huds.push(hud); },
@@ -179,7 +178,6 @@ for (let run = 0; run < RUNS; run += 1) {
     runFrames(12, 'intro');
     startRace();
     const firstRaceStart = callbacks.effects.length;
-    const helicopterStopBaseline = audioCalls.helicopterStop || 0;
     const redType = CITY_RUSH_POWERS.PISTOL;
     let actionsDisabledChecked = false;
     let steeringCooldown = 0;
@@ -195,7 +193,8 @@ for (let run = 0; run < RUNS; run += 1) {
     };
 
     let frames = 0;
-    const maxFrames = 30 * 300;
+    // 12 minutes virtuelles : la course standard fait maintenant 8 400 m.
+    const maxFrames = 30 * 720;
     while (!callbacks.finish && frames < maxFrames) {
       const hud = callbacks.huds.at(-1);
       if (hud && !actionsDisabledChecked) {
@@ -239,14 +238,13 @@ for (let run = 0; run < RUNS; run += 1) {
     if (arrivalCars.length !== CITY_RUSH_POLICE_COUNT || arrivalCars.some((police) => police[redType])) {
       fail(`[${city.id}] une berline arrive avec sa mitrailleuse déjà chargée`, arrivalCars);
     }
-    if (!arrivals[0].helicopterAvailable) fail(`[${city.id}] aucun hélicoptère gratuit à l'arrivée`, arrivals[0]);
+    if (arrivals[0].helicopterAvailable !== false) fail(`[${city.id}] l'attaque d'hélicoptère doit être désactivée`, arrivals[0]);
 
-    const helicopterCalls = firstRaceEffects.filter((effect) => effect.type === 'radio');
-    const policeCalls = helicopterCalls.filter((effect) => /^police-/.test(String(effect.callerId || '')));
-    if (helicopterCalls.length !== 1 || policeCalls.length !== 1) {
-      fail(`[${city.id}] seule la police doit utiliser son unique frappe d'hélicoptère`, helicopterCalls);
+    const helicopterCalls = firstRaceEffects.filter((effect) => effect.type === 'radio' || effect.type === 'missile-hit');
+    if (helicopterCalls.length) fail(`[${city.id}] une attaque d'hélicoptère a encore été déclenchée`, helicopterCalls);
+    if (audioCalls.missileLaunch || audioCalls.helicopterStart || audioCalls.helicopterStop) {
+      fail(`[${city.id}] un son d'attaque d'hélicoptère a encore été joué`, audioCalls);
     }
-    if (audioCalls.missileLaunch !== 1) fail(`[${city.id}] le missile policier ne part pas exactement une fois`, audioCalls);
     const forbidden = firstRaceEffects.filter((effect) => forbiddenShotEffects.has(effect.type));
     if (forbidden.length) fail(`[${city.id}] un tir bleu ou un hélicoptère d'IA non policier a été déclenché`, forbidden);
     const unexpectedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, redType].includes(pickup.type));
@@ -258,41 +256,37 @@ for (let run = 0; run < RUNS; run += 1) {
     if (!actionsDisabledChecked) fail(`[${city.id}] les actions interdites du pilote n'ont pas été vérifiées`);
     if (audioCalls.gunshot) fail(`[${city.id}] un tir bleu a encore joué le son de pistolet`, audioCalls);
     if (!audioCalls.machineGun) fail(`[${city.id}] la course n'a déclenché aucune rafale rouge`, audioCalls);
-    if (audioCalls.helicopterStart !== 1 || (audioCalls.helicopterStop || 0) <= helicopterStopBaseline) {
-      fail(`[${city.id}] le son de l'hélicoptère policier ne s'est pas arrêté après sa frappe`, { audioCalls, helicopterStopBaseline });
+    if (audioCalls.missileLaunch || audioCalls.helicopterStart || audioCalls.helicopterStop) {
+      fail(`[${city.id}] une attaque aérienne n'est pas totalement désactivée`, audioCalls);
     }
-    totalPoliceHelicopterCalls += policeCalls.length;
+    const accidentalPlayerCollisionHits = firstRaceEffects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
+    if (accidentalPlayerCollisionHits.length) fail(`[${city.id}] un contact policier a retiré de la vie au joueur`, accidentalPlayerCollisionHits);
+    const ramHits = firstRaceEffects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
+    if (ramHits.some((effect) => effect.damage !== 1)) {
+      fail(`[${city.id}] un carambolage n'a pas retiré exactement un point à la police`, ramHits);
+    }
 
-    // reset doit réarmer la frappe gratuite : la seconde course ne fait qu'un
-    // court démarrage, suffisant pour compter l'appel de police.
+    // reset() ne doit ni rappeler un hélicoptère, ni réactiver un ancien missile.
     const beforeReplay = callbacks.effects.length;
-    const launchesBeforeReplay = audioCalls.missileLaunch || 0;
     startRace();
-    for (let frame = 0; frame < 240; frame += 1) {
-      runFrames(1, `reset f${frame}`);
-      const replayCalls = callbacks.effects.slice(beforeReplay)
-        .filter((effect) => effect.type === 'radio' && /^police-/.test(String(effect.callerId || '')));
-      if (replayCalls.length && (audioCalls.missileLaunch || 0) >= launchesBeforeReplay + 1) break;
-    }
+    runFrames(240, 'reset sans attaque aérienne');
     const replayEffects = callbacks.effects.slice(beforeReplay);
     const replayArrivals = replayEffects.filter((effect) => effect.type === 'police-arrival');
-    const replayHelicopterCalls = replayEffects.filter((effect) => effect.type === 'radio');
-    const replayCalls = replayHelicopterCalls
-      .filter((effect) => /^police-/.test(String(effect.callerId || '')));
-    if (replayArrivals.length !== 1 || replayHelicopterCalls.length !== 1 || replayCalls.length !== 1) {
-      fail(`[${city.id}] reset() n'a pas réinitialisé l'unique frappe policière`, { replayArrivals, replayHelicopterCalls });
+    const replayHelicopterCalls = replayEffects.filter((effect) => effect.type === 'radio' || effect.type === 'missile-hit');
+    if (replayArrivals.length !== 1 || replayHelicopterCalls.length) {
+      fail(`[${city.id}] reset() a réactivé une attaque aérienne`, { replayArrivals, replayHelicopterCalls });
     }
-    if ((audioCalls.missileLaunch || 0) !== launchesBeforeReplay + 1) {
-      fail(`[${city.id}] le redémarrage n'a pas relancé exactement un missile`, audioCalls);
+    if (audioCalls.missileLaunch || audioCalls.helicopterStart || audioCalls.helicopterStop) {
+      fail(`[${city.id}] le rejeu a réactivé les sons d'attaque aérienne`, audioCalls);
     }
     const replayForbidden = replayEffects.filter((effect) => forbiddenShotEffects.has(effect.type));
     if (replayForbidden.length) fail(`[${city.id}] le replay a réactivé un tir supprimé`, replayForbidden);
 
-    console.log(`[${city.id}#${run + 1}] OK · ${frames} frames · ${redPickups.length} bonus rouges · hélico police ${policeCalls.length} fois · reset validé`);
+    console.log(`[${city.id}#${run + 1}] OK · ${frames} frames · ${redPickups.length} bonus rouges rares · attaque d'hélicoptère désactivée · reset validé`);
     if (VERBOSE) console.log(`[${city.id}] effets course :`, [...new Set(firstRaceEffects.map((effect) => effect.type))]);
     world.destroy();
   }
 }
 
-console.log(`VÉRIF ARMES VICE CITY RUSH OK — ${cities.length} ville(s) × ${RUNS} courses · ${RACE_LAPS} tours · ${totalPoliceHelicopterCalls} frappe(s) policière(s) vérifiée(s) avant reset`);
+console.log(`VÉRIF ARMES VICE CITY RUSH OK — ${cities.length} ville(s) × ${RUNS} courses · ${RACE_LAPS} tours · aucune attaque d'hélicoptère`);
 process.exit(0);

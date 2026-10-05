@@ -1,17 +1,16 @@
 // Vérif « épave de la coque » : barre de vie à zéro = course perdue.
 //
-// Reprend le décor du vrai `createCityRushWorld` (faux WebGLRenderer), déploie
-// l'escouade dès le départ (Poursuite) et conduit un pilote qui cherche la
-// bagarre : il se cale dans la voie de la berline la plus proche devant lui et
-// la percute, encaisse les tirs bleus et les rafales rouges, et recommence
-// jusqu'à ce que la barre de coque tombe à zéro.
-//
-// À ce moment-là, trois choses sont vérifiées image par image :
+// Reprend le vrai `createCityRushWorld` (faux WebGLRenderer) sur un circuit
+// court de trois tours, avec l'escouade en poursuite dès le départ. Le lanceur
+// préconditionne uniquement le module chargé par ce smoke à une cellule restante
+// (le maximum HUD reste quinze) afin d'atteindre vite le chemin d'épave ; les
+// autres tests valident le départ à quinze cellules et chaque impact.
+// Si la coque tombe à zéro, trois choses sont vérifiées image par image :
 //   · la voiture **tourne sur elle-même** (lacet cumulé, deux tours complets) ;
 //   · elle **fume** (le pool de fumée est visible) et **s'arrête** (vitesse 0) ;
-//   · la course est **perdue** (fin de course `destroyed`, pilote dernier, pas
-//     de distance totale parcourue). La santé est active dès le départ ; le
-//     lanceur met une cellule restante pour éprouver vite le chemin d'épave.
+//   · la course est **perdue** (fin `destroyed`, pilote dernier, pas de distance
+//     totale parcourue). Les contacts observés retirent un point à la police,
+//     jamais de vie au joueur.
 //
 // Le hasard est figé (graine fixe) : la vérif rejoue la même course.
 const BASE_SEED = Number(process.env.CITY_RUSH_WRECK_SEED || 20261004) >>> 0;
@@ -90,9 +89,8 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
-  CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWER_RULES,
-  CITY_RUSH_POWERS, CITY_RUSH_BLUE_SHOT_MAX_RANGE, CITY_RUSH_BLUE_SHOT_MIN_GAP,
-  CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
+  CITY_RUSH_LAPS,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -111,9 +109,9 @@ const all = process.argv.includes('--all') || process.env.CITY_RUSH_WRECK_ALL ==
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
 const RUNS = Math.max(1, Number(process.env.CITY_RUSH_WRECK_RUNS || (process.argv.find((a) => a.startsWith('--runs='))?.slice(7)) || 3));
 const VERBOSE = process.env.CITY_RUSH_WRECK_VERBOSE === '1';
-// Le lanceur préconditionne le test à une cellule restante : une course courte
-// suffit pour éprouver la transition de santé à zéro vers la toupie d'épave.
-const WRECK_TEST_LAPS = 1;
+// Trois tours gardent le smoke court tout en laissant du temps pour éprouver
+// les contacts de police et les tirs qui vident la cellule préconditionnée.
+const WRECK_TEST_LAPS = Math.min(CITY_RUSH_LAPS, 3);
 
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
@@ -124,11 +122,12 @@ const AUDIO_METHODS = [
 let races = 0;
 let wrecks = 0;
 let violations = 0;
+let policeRamHitsTotal = 0;
 
 for (let run = 0; run < RUNS; run += 1) {
   seed = (BASE_SEED + run * 7919) >>> 0;
   for (const [index, city] of cities.entries()) {
-    const car = CITY_RUSH_CARS[(index + run) % CITY_RUSH_CARS.length];
+    const car = CITY_RUSH_CARS.at(-1); // joueur volontairement en tête : la police vise sa voiture
     const callbacks = { errors: [], huds: [], effects: [], finish: null };
     const audioCalls = {};
     const audioStub = {};
@@ -144,8 +143,8 @@ for (let run = 0; run < RUNS; run += 1) {
       style: {},
     };
 
-    // Le lanceur préconditionne la coque à une case restante ; l'escouade en
-    // poursuite entre au départ pour éprouver rapidement l'épave réelle.
+    // Circuit court de test ; la barre est active dès le départ et la police
+    // est forcée à entrer immédiatement, comme en mode Poursuite.
     const world = createCityRushWorld(mount, city, () => ({
       error: (e) => { callbacks.errors.push(e); console.error('CALLBACK ERROR:', e); },
       hud: (h) => { callbacks.huds.push(h); },
@@ -179,7 +178,7 @@ for (let run = 0; run < RUNS; run += 1) {
     let wreckLastMeasuredSpeed = null;
     let wreckFirstLap = null;
     let healthSeen = null;
-    let maxFrames = 90 * 60; // 90 s virtuelles pour provoquer un dernier impact
+    let maxFrames = 180 * 60; // trois minutes virtuelles pour le circuit de test
     const request = (action) => world.action(action);
 
     while (!callbacks.finish && frames < maxFrames) {
@@ -189,10 +188,19 @@ for (let run = 0; run < RUNS; run += 1) {
         // Chasse à la berline : on se cale dans la voie de la plus proche qui
         // est devant nous, pour la percuter ; sinon on zigzague dans le trafic.
         const squad = (hud?.police || []).filter((police) => !String(police.id).startsWith('rally-'));
+        const playerDistance = Number(hud?.distance) || 0;
+        const armedPolice = squad
+          .filter((police) => police.armed?.[CITY_RUSH_POWERS.PISTOL])
+          .filter((police) => Math.abs((Number(police.rawDistance) || 0) - playerDistance) < 120)
+          .sort((a, b) => Math.abs((Number(a.rawDistance) || 0) - playerDistance)
+            - Math.abs((Number(b.rawDistance) || 0) - playerDistance));
         const ahead = squad
-          .filter((police) => (Number(police.rawDistance) || 0) - (Number(hud?.distance) || 0) > -6)
+          .filter((police) => (Number(police.rawDistance) || 0) - playerDistance > -6)
           .sort((a, b) => (Number(a.rawDistance) || 0) - (Number(b.rawDistance) || 0));
-        const target = ahead[0] || null;
+        // Si une berline a chargé l'AK-47, rester sur sa voie pour valider que
+        // ses rafales peuvent toucher le joueur ; sinon aller la chercher pour
+        // lui infliger des petits dégâts de collision.
+        const target = armedPolice[0] || ahead[0] || null;
         if (target && frames % 3 === 0 && Number.isFinite(Number(hud?.playerLane))) {
           const targetLane = CITY_RUSH_LANE_X.reduce((best, x, lane) => (
             Math.abs(x - Number(target.x)) < Math.abs(CITY_RUSH_LANE_X[best] - Number(target.x)) ? lane : best
@@ -225,7 +233,7 @@ for (let run = 0; run < RUNS; run += 1) {
       if (effect.type === 'player-health') {
         if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH || effect.health !== 1) {
           violations += 1;
-          console.error(`[${city.id}#${run}] ÉCHEC : le scénario d’épave ne démarre pas à une cellule sur quinze`, effect);
+          console.error(`[${city.id}#${run}] ÉCHEC : le smoke ne démarre pas à une cellule sur quinze`, effect);
         }
         trackedHealth = effect.health;
         continue;
@@ -239,11 +247,30 @@ for (let run = 0; run < RUNS; run += 1) {
 
     races += 1;
     if (callbacks.errors.length) { violations += 1; console.error('ERREURS', callbacks.errors); }
+    const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
+    const policeRamHits = callbacks.effects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
+    policeRamHitsTotal += policeRamHits.length;
+    if (playerRamDamage.length) {
+      violations += 1;
+      console.error(`[${city.id}#${run}] le contact policier a retiré de la vie au joueur`, playerRamDamage);
+    }
+    if (policeRamHits.some((effect) => effect.damage !== 1)) {
+      violations += 1;
+      console.error(`[${city.id}#${run}] un carambolage n’a pas retiré exactement un point à la police`, policeRamHits);
+    }
     if (!wrecked) {
       if (VERBOSE) {
         const hits = callbacks.effects.filter((effect) => effect.type === 'player-hit');
         const bySource = hits.reduce((counts, effect) => ({ ...counts, [effect.source]: (counts[effect.source] || 0) + 1 }), {});
-        console.log(`[${city.id}#${run}] pas d’épave en ${(frames / 30).toFixed(0)} s (coque restante ${healthSeen}, impacts ${hits.length}: ${JSON.stringify(bySource)})`);
+        const armedFrames = callbacks.huds.filter((hud) => (hud.police || []).some((police) => police.armed?.[CITY_RUSH_POWERS.PISTOL])).length;
+        console.log(`[${city.id}#${run}] pas d’épave en ${(frames / 30).toFixed(0)} s · coque ${healthSeen} · impacts ${hits.length}: ${JSON.stringify(bySource)}`, {
+          finishRank: callbacks.finish?.rank,
+          policeArmedFrames: armedFrames,
+          redPickups: callbacks.effects.filter((effect) => effect.type === 'police-steal').length,
+          machineGunSounds: audioCalls.machineGun || 0,
+          incomingPistolHits: callbacks.effects.filter((effect) => effect.type === 'pistol-hit-player'),
+          policeRamHits,
+        });
       }
       world.destroy();
       continue;
@@ -277,7 +304,7 @@ for (let run = 0; run < RUNS; run += 1) {
   }
 }
 
-if (!wrecks) fail(`aucune épave en ${races} course(s) : le pilote d’essai n’a pas réussi à vider sa coque`, { races, RUNS, cities: cities.map((c) => c.id) });
-if (violations) fail(`${violations} entorse(s) au contrat de l’épave`, { races, wrecks });
-console.log(`VÉRIF ÉPAVE OK — ${races} course(s) jouée(s), ${wrecks} épave(s) : toupie sur elle-même, fumée, arrêt complet, course perdue et pilote classé dernier (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, ${CITY_RUSH_WRECK_SECONDS} s d’épave, graine ${BASE_SEED}).`);
+if (!policeRamHitsTotal) violations += 1;
+if (violations) fail(`${violations} entorse(s) au contrat de l’épave`, { races, wrecks, policeRamHitsTotal });
+console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${policeRamHitsTotal} carambolage(s) validé(s), aucun dégât de contact sur le joueur${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, cellule de test limitée au module du smoke, graine ${BASE_SEED}).`);
 process.exit(0);

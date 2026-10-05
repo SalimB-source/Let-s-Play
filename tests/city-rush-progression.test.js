@@ -88,7 +88,7 @@ test('la place fixe le gain : 50 billets au 1er, 30 au 2e, 10 au 3e', () => {
 });
 
 test('Sprint et Poursuite sont des modes défi sans billets verts', () => {
-  // Sprint : pas de podium affiché et aucun billet, même si les 10 checkpoints sont franchis.
+  // Sprint : pas de podium affiché et aucun billet, même si les 16 checkpoints sont franchis.
   assert.equal(cityRushCashForRaceResult({ sprint: true, rank: null }), 0);
   assert.equal(cityRushCashForRaceResult({ modeId: 'sprint', rank: 1 }), 0);
   assert.equal(cityRushCashForRaceResult({ sprint: true, timedOut: true, rank: null }), 0);

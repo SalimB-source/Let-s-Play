@@ -90,7 +90,12 @@ export async function checkViceCitySprintUi(assert) {
   };
 
   // ── 1. Écran des modes : SPRINT est annoncé solo, sans police ────────────
-  await pickSprint(node);
+  const sprintCard = await pickSprint(node);
+  check(
+    'la vignette Sprint annonce les 16 checkpoints du parcours allongé',
+    /16 CHECKPOINTS/i.test(squash(sprintCard.textContent)),
+    squash(sprintCard.textContent),
+  );
   check(
     'la page demande un Sprint au moteur 3D',
     worldProbe.props?.raceFormat === 'sprint' && worldProbe.props?.racePoliceFromStart === false,
@@ -185,6 +190,11 @@ export async function checkViceCitySprintUi(assert) {
   const circuitCard = [...node.querySelectorAll('.city-rush-mode-card')]
     .find((card) => /CIRCUIT/.test(squash(card.textContent)));
   if (!circuitCard) throw new Error('vignette CIRCUIT introuvable après l’arrivée');
+  check(
+    'la vignette Circuit annonce six tours',
+    /6 TOURS/i.test(squash(circuitCard.textContent)),
+    squash(circuitCard.textContent),
+  );
   await click(circuitCard);
   await settle();
   const circuitSidebar = textOf(node, '.city-rush-sidebar');
