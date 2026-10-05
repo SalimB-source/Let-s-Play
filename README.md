@@ -723,7 +723,9 @@ Le grant ouvre les dix cartes et les cinq coupes, ajoute **5 000 OR** au
 solde existant et pose le badge de profil vérifié. La fonction est réservée à
 l’administration, protège le badge contre l’auto-attribution et n’ajoute l’or
 qu’une seule fois par compte. L’e-mail doit correspondre à un compte déjà
-présent dans `auth.users`.
+présent dans `auth.users`. Vice City Rush a son propre grant, sur le même
+modèle : `supabase/vice-city-account-grants.sql` (voir « Progression de compte
+et grants administratifs » dans le chapitre Vice City Rush).
 
 ### Vérifications
 
@@ -1140,6 +1142,41 @@ et le dernier tour durait 21 s.
   le HUD (carte TOUR, bannière de tour, plaque de signalisation de la route,
   liste des pilotes) ;
 
+### Progression de compte et grants administratifs
+
+La progression de Vice City Rush — **portefeuille** (billets verts), **garage**,
+**parcours validés** et **campagne Histoire** — reste disponible hors connexion
+dans un cache local distinct par appareil et par compte
+(`letsplay_vice_city_rush_progress_v1`, suffixé par l'identifiant du compte
+connecté). Quand un joueur est connecté, son instantané est aussi chargé et
+sauvegardé dans la table privée `vice_city_rush_progress` : la progression suit
+le joueur d'un appareil à l'autre, et l'instantané du compte fait référence au
+chargement (une course ne part pas tant qu'il n'est pas arrivé). La première
+connexion sur un appareil reprend une seule fois la sauvegarde de l'appareil —
+et l'ancienne campagne Histoire, dont les clés
+`letsplay_vice_city_rush_story_v1` / `letsplay_vice_city_rush_ending_v1` sont
+migrées puis retirées — avant de l'isoler sous la clé du compte. Les meilleurs
+temps et la préférence de son restent, eux, propres à l'appareil. Les
+déploiements existants reçoivent la table en relançant `supabase/schema.sql`.
+
+Pour un déblocage administrateur ponctuel, appliquez ensuite
+`supabase/vice-city-account-grants.sql` dans l’éditeur SQL Supabase, puis
+appelez :
+
+```sql
+select public.admin_grant_vice_city_rush_access('adresse-du-compte', 'Salim');
+```
+
+Le grant ouvre le garage complet (les huit voitures), valide les sept parcours,
+termine les six chapitres de l’Histoire et ajoute **5 000 billets verts** au
+solde existant. La fonction est réservée à l’administration, protège le badge
+de profil contre l’auto-attribution et ne verse la prime qu’une seule fois par
+compte (reçu `vice-city-rush-full-unlock-v1`), même si la requête est rejouée ;
+les déblocages, eux, sont réappliqués à chaque appel, pour qu’une progression
+repartie de zéro puisse être regrantée. La fin de l’histoire, elle, reste le
+choix du joueur. L’e-mail doit correspondre à un compte déjà présent dans
+`auth.users`.
+
 ### Les pilotes dans le cockpit
 
 Les cabriolets sont **décapotés** : le pilote s'y voit de la caméra de poursuite,
@@ -1247,6 +1284,7 @@ npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom
 npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
 npm run check:city-rush-wreck   # l'épave : un pilote qui casse sa coque doit partir en toupie, fumer, s'arrêter, finir dernier et perdre la course (cinq villes × trois courses)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
+npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation

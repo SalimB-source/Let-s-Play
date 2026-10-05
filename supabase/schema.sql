@@ -125,6 +125,26 @@ drop policy if exists "Players update their own Mirage Rush progress" on public.
 create policy "Players update their own Mirage Rush progress"
   on public.mirage_rush_progress for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- Progression Vice City Rush privée par compte : portefeuille (billets verts),
+-- garage, parcours validés et campagne Histoire. Même contrat que Mirage Rush :
+-- le cache local fait jouer hors ligne, le snapshot de cette table suit le
+-- joueur d'un appareil à l'autre, et personne ne lit la ligne d'un autre.
+create table if not exists public.vice_city_rush_progress (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  progress jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.vice_city_rush_progress enable row level security;
+drop policy if exists "Players read their own Vice City Rush progress" on public.vice_city_rush_progress;
+create policy "Players read their own Vice City Rush progress"
+  on public.vice_city_rush_progress for select using (auth.uid() = user_id);
+drop policy if exists "Players insert their own Vice City Rush progress" on public.vice_city_rush_progress;
+create policy "Players insert their own Vice City Rush progress"
+  on public.vice_city_rush_progress for insert with check (auth.uid() = user_id);
+drop policy if exists "Players update their own Vice City Rush progress" on public.vice_city_rush_progress;
+create policy "Players update their own Vice City Rush progress"
+  on public.vice_city_rush_progress for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 
 -- ----------------------------------------------------------------------------
 -- 2. Création du profil à l'inscription (trigger sur auth.users)
@@ -1422,6 +1442,8 @@ begin
   grant insert, update on public.profiles to authenticated;
   revoke all on public.mirage_rush_progress from public, anon;
   grant select, insert, update on public.mirage_rush_progress to authenticated;
+  revoke all on public.vice_city_rush_progress from public, anon;
+  grant select, insert, update on public.vice_city_rush_progress to authenticated;
   grant select on public.comments to anon, authenticated;
   grant insert, delete, update on public.comments to authenticated;
   -- Groupes et fils communautaires : lecture publique, écriture réservée aux comptes (RLS).
@@ -2019,6 +2041,17 @@ from (
                                       'Players update their own Mirage Rush progress')) = 3
             and to_regrole('anon') is not null
             and not has_table_privilege('anon', 'public.mirage_rush_progress', 'select')
+           then 'OK' else 'MANQUANT' end)
+ , (46, 'progression Vice City Rush privée par compte',
+      case when to_regclass('public.vice_city_rush_progress') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.vice_city_rush_progress'))
+            and (select count(*) from pg_policies p where p.schemaname = 'public'
+                 and p.tablename = 'vice_city_rush_progress'
+                 and p.policyname in ('Players read their own Vice City Rush progress',
+                                      'Players insert their own Vice City Rush progress',
+                                      'Players update their own Vice City Rush progress')) = 3
+            and to_regrole('anon') is not null
+            and not has_table_privilege('anon', 'public.vice_city_rush_progress', 'select')
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

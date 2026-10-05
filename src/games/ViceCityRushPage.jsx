@@ -8,16 +8,21 @@ import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
 import useGameFullscreen from './useGameFullscreen';
+import { useAuth } from '../auth/AuthContext';
 import {
   CITY_RUSH_STARTER_CAR_ID,
   awardCityRushRace,
+  cityRushStorageKey,
   isCityRushCarOwned,
   isCityRushCourseUnlocked,
+  loadCityRushAccountSave,
+  migrateCityRushLegacyStory,
   normalizeCityRushProgress,
+  normalizeCityRushSave,
   purchaseCityRushCar,
-  readCityRushProgress,
-  writeCityRushProgress,
+  writeCityRushSave,
 } from './cityRushProgress';
+import { fetchViceCityProgress, saveViceCityProgress, viceCityApiEnabled } from './viceCityApi';
 import {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
@@ -52,10 +57,11 @@ import './vice-city-rush-cinematic.css';
 
 // v2 : les courses ont été allongées (dernier tour doublé, un tour de plus) —
 // un chrono de l'ancienne durée ne pourrait plus jamais être battu.
+// Les meilleurs temps et la préférence de son restent ceux de l'appareil : la
+// progression sauvegardée (portefeuille, garage, parcours, Histoire), elle,
+// suit le compte connecté via sa ligne privée (voir cityRushProgress.js).
 const BEST_KEY = 'letsplay_vice_city_rush_bests_v2';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
-const STORY_KEY = 'letsplay_vice_city_rush_story_v1';
-const STORY_ENDING_KEY = 'letsplay_vice_city_rush_ending_v1';
 const POWER_ORDER = [CITY_RUSH_POWERS.PISTOL];
 const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
@@ -86,9 +92,6 @@ const STORY_ENDINGS = {
   revenge: { title: 'La revanche', text: 'Nico remet Dante aux autorités et restaure son nom. Sa vengeance s’arrête là — mais le promoteur qui a commandité le sabotage reste à retrouver.' },
   truth: { title: 'La vérité', text: 'Nico rend publiques toutes les preuves. Dante devra répondre de sa trahison, et le réseau du promoteur est exposé au grand jour.' },
 };
-function readStoryEnding() {
-  try { return window.localStorage.getItem(STORY_ENDING_KEY) || ''; } catch { return ''; }
-}
 // Tours d'un chapitre de l'histoire ; le finale, « Le dernier tour », en compte un de plus.
 const STORY_LAPS = 4;
 const STORY_FINALE_LAPS = STORY_LAPS + 1;
@@ -100,16 +103,17 @@ const STORY_CHAPTERS = [
   { city: 'london', title: 'La soirée des ombres', speaker: 'Nico', kind: 'action', race: { name: 'Soho — After Hours', type: 'Course-poursuite', route: 'Piccadilly Circus · Soho · Tower Bridge' }, text: 'En costume, Nico s’invite à la réception privée du promoteur. Il surprend Dante qui ordonne de brûler les preuves — les gardes le repèrent, et la fuite se joue au volant dans les rues de Soho.' },
   { city: 'vice-city', title: 'Le dernier tour', speaker: 'Nico', kind: 'action', laps: STORY_FINALE_LAPS, race: { name: 'Vice City — Last Lap', type: 'Finale du circuit', route: 'Ocean Drive · Starfish Island · Vice City Docks' }, text: 'Dante pousse sa voiture rouge à fond sur Ocean Drive. Nico colle à son pare-chocs : une dernière course décidera de leur sort.' },
 ];
-function readStoryChapter() {
-  try { return Math.max(0, Math.min(STORY_CHAPTERS.length, Number(window.localStorage.getItem(STORY_KEY)) || 0)); } catch { return 0; }
-}
-
-function readCareerProgress() {
-  const saved = readCityRushProgress();
-  // Migration douce : une ancienne sauvegarde Histoire conserve les parcours
-  // déjà validés avant l'ajout de la carrière, sans ouvrir Route 66 par erreur.
+/**
+ * Carrière d'une sauvegarde (portefeuille, garage, parcours validés).
+ *
+ * Migration douce : une ancienne campagne Histoire — jouée avant que les
+ * parcours ne s'enchaînent — conserve les circuits déjà courus, sans ouvrir
+ * Route 66 par erreur (le dernier parcours reste à décrocher sur la route).
+ */
+function careerFromSave(save) {
+  const saved = normalizeCityRushProgress(save);
   const legacyCompletions = CITY_RUSH_COURSES
-    .slice(0, Math.min(readStoryChapter(), Math.max(0, CITY_RUSH_COURSES.length - 1)))
+    .slice(0, Math.min(Number(save?.storyChapter) || 0, Math.max(0, CITY_RUSH_COURSES.length - 1)))
     .map((course) => course.id);
   return normalizeCityRushProgress({
     ...saved,
@@ -277,12 +281,16 @@ function rankProgress(racer) {
 }
 
 export default function ViceCityRushPage() {
+  // Sauvegarde de l'appareil au premier rendu (cache du visiteur, ancienne
+  // campagne Histoire reprise) : le compte connecté la remplace dès que son
+  // instantané est chargé — voir l'effet de progression plus bas.
+  const [initialSave] = useState(() => migrateCityRushLegacyStory());
   const [cityId, setCityId] = useState('vice-city');
   const [carId, setCarId] = useState(CITY_RUSH_STARTER_CAR_ID);
   const [storyMode, setStoryMode] = useState(false);
-  const [storyChapter, setStoryChapter] = useState(readStoryChapter);
-  const [storyRaceChapter, setStoryRaceChapter] = useState(readStoryChapter);
-  const [storyEnding, setStoryEnding] = useState(readStoryEnding);
+  const [storyChapter, setStoryChapter] = useState(initialSave.storyChapter);
+  const [storyRaceChapter, setStoryRaceChapter] = useState(initialSave.storyChapter);
+  const [storyEnding, setStoryEnding] = useState(initialSave.storyEnding);
   const [playerDriverId, setPlayerDriverId] = useState(CITY_RUSH_DRIVERS[0].id);
   const [modeId, setModeId] = useState(RACE_MODES[0].id);
   const [introStep, setIntroStep] = useState('mode'); // mode -> city -> garage
@@ -292,15 +300,24 @@ export default function ViceCityRushPage() {
   const [hud, setHud] = useState(EMPTY_HUD);
   const [result, setResult] = useState(null);
   const [bests, setBests] = useState(readBests);
-  const [careerProgress, setCareerProgress] = useState(readCareerProgress);
+  const [careerProgress, setCareerProgress] = useState(() => careerFromSave(initialSave));
+  // Identifiant du propriétaire de la progression actuellement chargée : null
+  // tant que l'instantané du compte (ou du visiteur) n'a pas été appliqué.
+  const [loadedProgressUserId, setLoadedProgressUserId] = useState(null);
   const [toast, setToast] = useState(null);
   const [lapBanner, setLapBanner] = useState(null);
   const [worldError, setWorldError] = useState('');
   const [soundOn, setSoundOn] = useState(readSoundPref);
   const audioRef = useRef(null);
   const soundOnRef = useRef(soundOn);
+  // Sauvegarde complète en mémoire (carrière + Histoire) : chaque écriture part
+  // de cette copie, pour ne jamais perdre l'autre moitié du document.
+  const saveRef = useRef(initialSave);
   const careerProgressRef = useRef(careerProgress);
   careerProgressRef.current = careerProgress;
+  // File des écritures serveur : une course jouée juste après la connexion ne
+  // peut pas être écrasée par l'instantané initial (même file que Mirage Rush).
+  const progressSaveQueueRef = useRef(Promise.resolve());
   const activeRaceSessionRef = useRef(0);
   const finishedRaceSessionRef = useRef(-1);
   const actionsRef = useRef(null);
@@ -328,8 +345,105 @@ export default function ViceCityRushPage() {
   // Trophées de jeu : les courses terminées nourrissent les succès Vice City
   // Rush du joueur (ville, mode, place, butin, chapitre d'histoire).
   const trackAchievement = useAchievementAction();
+  // Progression liée au compte — visiteur : cache de l'appareil ; compte
+  // connecté : instantané de sa ligne privée `vice_city_rush_progress`, plus
+  // un cache local propre au compte. Les courses restent bloquées tant que la
+  // progression du compte courant n'est pas chargée (voir startRace/beginStory),
+  // et une écriture locale ne part jamais vers la ligne d'un autre compte.
+  const { user, isDemo } = useAuth();
+  const connected = Boolean(user?.id) && !isDemo;
+  const progressionOwnerId = connected ? user.id : null;
+  const progressionReady = loadedProgressUserId === progressionOwnerId;
+  const progressionKey = cityRushStorageKey(progressionOwnerId);
   phaseRef.current = phase;
   soundOnRef.current = soundOn;
+
+  /** Applique une sauvegarde au jeu : carrière et campagne Histoire d'un coup. */
+  const applySave = useCallback((rawSave) => {
+    const next = normalizeCityRushSave(rawSave);
+    const career = careerFromSave(next);
+    const save = { ...next, ...career };
+    saveRef.current = save;
+    careerProgressRef.current = career;
+    setCareerProgress(career);
+    setStoryChapter(save.storyChapter);
+    setStoryRaceChapter(save.storyChapter);
+    setStoryEnding(save.storyEnding);
+    return save;
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!connected) {
+      applySave(migrateCityRushLegacyStory());
+      setLoadedProgressUserId(null);
+      return () => { cancelled = true; };
+    }
+
+    const ownerId = user.id;
+    const storageKey = cityRushStorageKey(ownerId);
+    const localSave = loadCityRushAccountSave(ownerId);
+    applySave(localSave);
+    setLoadedProgressUserId(null);
+
+    if (!viceCityApiEnabled()) {
+      writeCityRushSave(localSave, undefined, storageKey);
+      setLoadedProgressUserId(ownerId);
+      return () => { cancelled = true; };
+    }
+
+    (async () => {
+      let remoteSave = null;
+      let loadError = null;
+      try {
+        ({ progress: remoteSave, error: loadError } = await fetchViceCityProgress(ownerId));
+      } catch (error) {
+        loadError = error;
+      }
+      if (cancelled) return;
+
+      const hasRemoteSnapshot = !loadError
+        && remoteSave
+        && typeof remoteSave === 'object'
+        && !Array.isArray(remoteSave)
+        && Object.keys(remoteSave).length > 0;
+      // L'instantané du compte est la référence — il porte aussi les
+      // déblocages accordés côté serveur ; sans lui, le cache local du compte
+      // (première connexion sur cet appareil) prend le relais.
+      const nextSave = hasRemoteSnapshot ? applySave(remoteSave) : localSave;
+      writeCityRushSave(nextSave, undefined, storageKey);
+      setLoadedProgressUserId(ownerId);
+
+      // Première connexion : publier la copie locale comme ligne du compte,
+      // une seule fois, avant les écritures des courses suivantes. Un
+      // chargement en échec (hors ligne) n'écrit jamais.
+      if (!loadError && !hasRemoteSnapshot) {
+        progressSaveQueueRef.current = progressSaveQueueRef.current
+          .catch(() => false)
+          .then(() => saveViceCityProgress(ownerId, nextSave))
+          .catch(() => false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [applySave, connected, user?.id]);
+
+  /**
+   * Écrit la sauvegarde : cache local d'abord (l'appareil ou le compte), copie
+   * serveur ensuite quand un compte est connecté et sa progression chargée.
+   */
+  const persistSave = useCallback((patch) => {
+    const next = writeCityRushSave({ ...saveRef.current, ...patch }, undefined, progressionKey);
+    saveRef.current = next;
+    if (connected && progressionReady) {
+      const ownerId = user.id;
+      progressSaveQueueRef.current = progressSaveQueueRef.current
+        .catch(() => false)
+        .then(() => saveViceCityProgress(ownerId, next))
+        .catch(() => false);
+    }
+    return next;
+  }, [connected, progressionKey, progressionReady, user?.id]);
 
   const city = useMemo(() => CITY_RUSH_COURSES.find((item) => item.id === cityId) || CITY_RUSH_COURSES[0], [cityId]);
   const mode = useMemo(() => RACE_MODES.find((m) => m.id === modeId) || RACE_MODES[0], [modeId]);
@@ -543,10 +657,10 @@ export default function ViceCityRushPage() {
     toastTimerRef.current = window.setTimeout(() => setToast(null), 2300);
   }
   function saveCareerProgress(nextProgress) {
-    const safeProgress = normalizeCityRushProgress(nextProgress);
-    careerProgressRef.current = safeProgress;
-    setCareerProgress(safeProgress);
-    writeCityRushProgress(safeProgress);
+    const saved = persistSave(normalizeCityRushProgress(nextProgress));
+    const career = careerFromSave(saved);
+    careerProgressRef.current = career;
+    setCareerProgress(career);
   }
   function showLapBanner(info) {
     window.clearTimeout(lapTimerRef.current);
@@ -554,6 +668,9 @@ export default function ViceCityRushPage() {
     lapTimerRef.current = window.setTimeout(() => setLapBanner(null), info.final ? 2300 : 1800);
   }
   function startRace({ carId: requestedCarId = null, cityId: requestedCityId = null } = {}) {
+    // Compte en cours de chargement : la course partirait sur la progression
+    // précédente (celle de l'appareil ou d'un autre compte).
+    if (connected && !progressionReady) return;
     const savedProgress = careerProgressRef.current;
     const targetCityId = requestedCityId || (storyMode ? (currentStoryRace?.city || cityId) : cityId);
     const selectedCarId = requestedCarId || carId;
@@ -606,10 +723,11 @@ export default function ViceCityRushPage() {
   }
 
   function beginStory() {
+    if (connected && !progressionReady) return;
     if (storyChapter >= STORY_CHAPTERS.length) {
       setStoryChapter(0);
       setStoryEnding('');
-      try { window.localStorage.setItem(STORY_KEY, '0'); window.localStorage.removeItem(STORY_ENDING_KEY); } catch {}
+      persistSave({ storyChapter: 0, storyEnding: '' });
     }
     const chapterIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
     const chapter = STORY_CHAPTERS[chapterIndex];
@@ -636,7 +754,7 @@ export default function ViceCityRushPage() {
   function chooseStoryEnding(ending) {
     if (!STORY_ENDINGS[ending]) return;
     setStoryEnding(ending);
-    try { window.localStorage.setItem(STORY_ENDING_KEY, ending); } catch {}
+    persistSave({ storyEnding: ending });
   }
 
   function restartStory() {
@@ -645,7 +763,7 @@ export default function ViceCityRushPage() {
     setStoryRaceChapter(0);
     setStoryEnding('');
     setResult(null);
-    try { window.localStorage.setItem(STORY_KEY, '0'); window.localStorage.removeItem(STORY_ENDING_KEY); } catch {}
+    persistSave({ storyChapter: 0, storyEnding: '' });
     setPhase('intro');
     setIntroStep('mode');
   }
@@ -697,7 +815,7 @@ export default function ViceCityRushPage() {
     if (storyMode && nextResult.rank === 1) {
       const nextChapter = Math.min(STORY_CHAPTERS.length, storyChapter + 1);
       setStoryChapter(nextChapter);
-      try { window.localStorage.setItem(STORY_KEY, String(nextChapter)); } catch {}
+      persistSave({ storyChapter: nextChapter });
     }
     setPhase('finished');
     if (nextResult.rank === 1) {

@@ -1,11 +1,27 @@
-// Progression persistante de Vice City Rush : portefeuille, garage et ordre des parcours.
+// Progression persistante de Vice City Rush : portefeuille, garage, ordre des
+// parcours et campagne Histoire.
 // Les courses restent jouables à partir du premier circuit ; une arrivée normale
 // débloque le parcours suivant. Seuls les modes rémunérés versent des billets :
 // 1er → 50, 2e → 30, 3e (ou épave, classée dernière) → 10.
+//
+// La sauvegarde est une donnée pure (aucun accès DOM en dehors des fonctions de
+// stockage) : le jeu la lit et l'écrit dans un cache local par appareil/compte,
+// et la copie serveur (`public.vice_city_rush_progress`, voir `viceCityApi.js`)
+// suit le joueur d'un appareil à l'autre — même principe que Mirage Rush.
 import { CITY_RUSH_CARS, CITY_RUSH_COURSES } from './cityRushRules.js';
 
 export const CITY_RUSH_PROGRESS_KEY = 'letsplay_vice_city_rush_progress_v1';
 export const CITY_RUSH_STARTER_CAR_ID = 'city-hatch';
+
+/** Chapitres du mode Histoire (`STORY_CHAPTERS`, dans ViceCityRushPage). */
+export const CITY_RUSH_STORY_CHAPTERS = 6;
+/**
+ * Anciennes clés locales du mode Histoire (chapitre + fin choisie), avant que
+ * la campagne n'entre dans la sauvegarde : reprises une seule fois par
+ * `migrateCityRushLegacyStory`, puis supprimées.
+ */
+export const CITY_RUSH_LEGACY_STORY_KEY = 'letsplay_vice_city_rush_story_v1';
+export const CITY_RUSH_LEGACY_STORY_ENDING_KEY = 'letsplay_vice_city_rush_ending_v1';
 
 /** Fiche de paie du podium : la place (1re, 2e, 3e) indexe le gain en billets. */
 export const CITY_RUSH_CASH_BY_PLACE = [50, 30, 10];
@@ -140,21 +156,120 @@ function browserStorage() {
   try { return globalThis.window?.localStorage || globalThis.localStorage || null; } catch { return null; }
 }
 
-export function readCityRushProgress(storage = browserStorage()) {
+/**
+ * Clé du cache local : celle d'un visiteur pour l'appareil, suffixée par
+ * l'identifiant du compte quand un joueur est connecté — la progression d'un
+ * compte n'écrase donc jamais celle d'un autre (ni celle de l'appareil).
+ */
+export function cityRushStorageKey(userId) {
+  const id = typeof userId === 'string' ? userId.trim() : '';
+  return id ? `${CITY_RUSH_PROGRESS_KEY}:user:${id}` : CITY_RUSH_PROGRESS_KEY;
+}
+
+/** Campagne Histoire : chapitre courant (0 = premier) et fin choisie. */
+export function normalizeCityRushStory(value = null, chapters = CITY_RUSH_STORY_CHAPTERS) {
+  const total = Math.max(0, Math.floor(Number(chapters) || 0));
+  const rawChapter = Number(value?.storyChapter);
+  const storyChapter = Number.isFinite(rawChapter)
+    ? Math.max(0, Math.min(total, Math.floor(rawChapter)))
+    : 0;
+  const rawEnding = typeof value?.storyEnding === 'string' ? value.storyEnding.trim() : '';
+  const storyEnding = /^[a-z][a-z0-9-]{0,31}$/.test(rawEnding) ? rawEnding : '';
+  return { storyChapter, storyEnding };
+}
+
+/** Sauvegarde complète : carrière (portefeuille, garage, parcours) + Histoire. */
+export function normalizeCityRushSave(value, { cars = CITY_RUSH_CARS, courses = CITY_RUSH_COURSES } = {}) {
+  return {
+    ...normalizeCityRushProgress(value, { cars, courses }),
+    ...normalizeCityRushStory(value),
+  };
+}
+
+export function readCityRushSave(storage = browserStorage(), key = CITY_RUSH_PROGRESS_KEY) {
   try {
-    const raw = storage?.getItem(CITY_RUSH_PROGRESS_KEY);
-    return normalizeCityRushProgress(raw ? JSON.parse(raw) : null);
+    const raw = storage?.getItem(key);
+    return normalizeCityRushSave(raw ? JSON.parse(raw) : null);
   } catch {
-    return normalizeCityRushProgress(null);
+    return normalizeCityRushSave(null);
   }
 }
 
-export function writeCityRushProgress(progress, storage = browserStorage()) {
+/**
+ * Écrit la sauvegarde complète et renvoie la copie sûre (celle à garder en
+ * mémoire : un stockage refusé — navigation privée — ne casse pas la partie).
+ */
+export function writeCityRushSave(save, storage = browserStorage(), key = CITY_RUSH_PROGRESS_KEY) {
+  const clean = normalizeCityRushSave(save);
   try {
-    if (!storage) return false;
-    storage.setItem(CITY_RUSH_PROGRESS_KEY, JSON.stringify(normalizeCityRushProgress(progress)));
-    return true;
+    if (!storage) return clean;
+    storage.setItem(key, JSON.stringify(clean));
+  } catch { /* stockage indisponible : la copie en mémoire fait foi */ }
+  return clean;
+}
+
+/** Reprend une seule fois l'ancienne campagne Histoire (clés séparées). */
+export function migrateCityRushLegacyStory(storage = browserStorage(), key = CITY_RUSH_PROGRESS_KEY) {
+  const saved = readCityRushSave(storage, key);
+  if (saved.storyChapter > 0 || saved.storyEnding) return saved;
+  let legacy = null;
+  try {
+    const rawChapter = storage?.getItem(CITY_RUSH_LEGACY_STORY_KEY);
+    if (rawChapter !== null && rawChapter !== undefined) {
+      legacy = {
+        storyChapter: Number(rawChapter),
+        storyEnding: storage.getItem(CITY_RUSH_LEGACY_STORY_ENDING_KEY) || '',
+      };
+    }
+  } catch { legacy = null; }
+  if (!legacy) return saved;
+  const next = writeCityRushSave({ ...saved, ...legacy }, storage, key);
+  try {
+    storage?.removeItem?.(CITY_RUSH_LEGACY_STORY_KEY);
+    storage?.removeItem?.(CITY_RUSH_LEGACY_STORY_ENDING_KEY);
+  } catch { /* anciennes clés déjà inaccessibles */ }
+  return next;
+}
+
+/**
+ * Cache local du compte connecté.
+ *
+ * À la première connexion sur l'appareil, la sauvegarde partagée (et l'ancienne
+ * campagne Histoire) est reprise une seule fois par le compte, puis retirée —
+ * un invité qui se connecte ne perd rien, et les comptes suivants ne partagent
+ * jamais la progression du précédent.
+ */
+export function loadCityRushAccountSave(userId, storage) {
+  const store = storage !== undefined ? storage : browserStorage();
+  const id = typeof userId === 'string' ? userId.trim() : '';
+  if (!store || !id) return migrateCityRushLegacyStory(store);
+  const accountKey = cityRushStorageKey(id);
+  try {
+    if (store.getItem(accountKey) !== null) return migrateCityRushLegacyStory(store, accountKey);
+    const shared = migrateCityRushLegacyStory(store);
+    if (store.getItem(CITY_RUSH_PROGRESS_KEY) === null) return shared;
+    const migrated = writeCityRushSave(shared, store, accountKey);
+    store.removeItem?.(CITY_RUSH_PROGRESS_KEY);
+    return migrated;
   } catch {
-    return false;
+    return readCityRushSave(store, accountKey);
   }
+}
+
+/** Vue « carrière » de la sauvegarde : portefeuille, garage et parcours. */
+export function readCityRushProgress(storage = browserStorage(), key = CITY_RUSH_PROGRESS_KEY) {
+  return normalizeCityRushProgress(readCityRushSave(storage, key));
+}
+
+/**
+ * Écrit la carrière en conservant la campagne Histoire déjà enregistrée sous
+ * la même clé (la sauvegarde complète garde une seule ligne par appareil ou
+ * par compte).
+ */
+export function writeCityRushProgress(progress, storage = browserStorage(), key = CITY_RUSH_PROGRESS_KEY) {
+  const store = storage === undefined ? browserStorage() : storage;
+  if (!store) return false;
+  const saved = readCityRushSave(store, key);
+  writeCityRushSave({ ...saved, ...normalizeCityRushProgress(progress) }, store, key);
+  return true;
 }
