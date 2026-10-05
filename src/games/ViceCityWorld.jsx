@@ -159,6 +159,9 @@ const EXPLOSION_RADIUS = 3.4;
 // Le tir rouge d'AK-47 reprend le projectile droit du tir bleu : chaque
 // pression lance une balle, sans guidage, qui s'arrête sur le premier ennemi
 // de la voie. Un chargeur ramassé en contient sept.
+// Maintien de Z : une balle part à intervalle régulier jusqu'à la relâche ou
+// l'épuisement du chargeur, indépendamment de la répétition native du clavier.
+const PISTOL_HOLD_FIRE_INTERVAL = 0.12;
 // Caméra de poursuite plus basse que l'ancienne vue plongeante (8,8 m) :
 // on voit l'horizon, la skyline, les portes et le portique de départ. Tout
 // élément qui enjambe la route doit rester au-dessus de 7,1 m.
@@ -1190,6 +1193,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let score = 0;
   let pickedUp = 0;
   let inventory = createCityRushInventory();
+  let pistolKeyHeld = false;
+  let pistolHoldCooldown = 0;
   let finished = false;
   let lastHudAt = 0;
   let lastFrame = performance.now();
@@ -1205,6 +1210,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let finishTime = 0;
   let cameraKick = 0;
   let fovOffset = 0;
+  const releasePistolKey = () => {
+    pistolKeyHeld = false;
+    pistolHoldCooldown = 0;
+  };
   const cameraTarget = new THREE.Vector3().copy(CHASE_POSITION);
   const lookTarget = new THREE.Vector3().copy(CHASE_LOOK);
   const lookCurrent = new THREE.Vector3().copy(CHASE_LOOK);
@@ -1535,6 +1544,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function reset() {
     active = false;
+    releasePistolKey();
     // Si un missile a déjà quitté l'hélico au moment d'un reset, on termine
     // son bruit d'impact avant de nettoyer la scène : aucun SFX ne reste sans
     // conclusion et le prochain départ repart silencieux.
@@ -2416,17 +2426,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function usePower(type) {
-    if (sprint || !active || finished || type !== CITY_RUSH_POWERS.PISTOL) return;
+    if (sprint || !active || finished || type !== CITY_RUSH_POWERS.PISTOL) return false;
     const consumed = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL);
     if (!consumed.consumed) {
       getCallbacks().effect?.({ type: 'empty', item: CITY_RUSH_POWERS.PISTOL });
-      return;
+      return false;
     }
     inventory = consumed.inventory;
     spawnActionPulse('player', CITY_RUSH_POWERS.PISTOL);
     // Tout droit, sans viser : le projectile part même si la voie est vide.
     fireStraightShot('player', null, CITY_RUSH_POWERS.PISTOL);
     emitHud(true);
+    return true;
   }
 
   function useRacerPower(racer) {
@@ -3411,7 +3422,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       pistol: CITY_RUSH_POWERS.PISTOL,
     };
     const type = aliases[name];
-    if (type && !CITY_RUSH_POWER_RULES[type]?.automatic) usePower(type);
+    if (type && !CITY_RUSH_POWER_RULES[type]?.automatic) return usePower(type);
+    return false;
   }
 
   function collectPickup(type, lane) {
@@ -4049,6 +4061,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     clockTime += dt;
     let worldTravel = 0;
     if (active && !finished) {
+      pistolHoldCooldown = Math.max(0, pistolHoldCooldown - dt);
+      if (pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL)) {
+        if (usePower(CITY_RUSH_POWERS.PISTOL)) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
+      }
       elapsed += dt;
       const priorDistance = distance;
       const priorRacerDistances = new Map(racers.map((racer) => [racer.id, racer.distance]));
@@ -4543,16 +4559,31 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function onKeyDown(event) {
-    if (!active || finished || event.repeat) return;
     const target = event.target?.tagName;
     if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
     const key = event.key.toLowerCase();
     if (['arrowleft', 'arrowright', 'q', 'd', 'z'].includes(key)) event.preventDefault();
+    if (!active || finished || event.repeat) return;
     if (key === 'arrowleft' || key === 'q') action('left');
     else if (key === 'arrowright' || key === 'd') action('right');
-    else if (key === 'z') action(CITY_RUSH_POWERS.PISTOL);
+    else if (key === 'z') {
+      pistolKeyHeld = true;
+      pistolHoldCooldown = 0;
+      action(CITY_RUSH_POWERS.PISTOL);
+      // Le premier tir part immédiatement ; les suivants sont cadencés dans
+      // la boucle de rendu tant que la touche reste enfoncée.
+      pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
+    }
   }
+  function onKeyUp(event) {
+    if (event.key.toLowerCase() !== 'z') return;
+    event.preventDefault();
+    releasePistolKey();
+  }
+  const onWindowBlur = () => releasePistolKey();
   window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('blur', onWindowBlur);
 
   let pointerStart = null;
   const onPointerDown = (event) => {
@@ -4609,6 +4640,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     start() { if (!finished) { active = true; lastFrame = performance.now(); } },
     pause() {
       active = false;
+      releasePistolKey();
       currentSpeed = 0;
       audioRef?.current?.engine({ speed: 0, throttle: 0, idle: true });
     },
@@ -4636,6 +4668,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       observer?.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onWindowBlur);
+      releasePistolKey();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.domElement.removeEventListener('pointercancel', onPointerCancel);
