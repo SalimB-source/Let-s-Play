@@ -1358,6 +1358,19 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   virage, angle et point kilométrique réels), refermée pour repasser exactement
   sous le portique à chaque tour. Le Karussell (48°) devient le virage le plus
   serré du jeu.
+- **De longs virages qui tournent presque sec.** Chaque virage porte, en plus de
+  son angle et de son étendue, la *forme* de son appui : `'sustained'` garde la
+  courbure à son maximum sur la moitié centrale du virage (c'est le long appui
+  qui ne se relâche pas), `'tightening'` met 45 % de l'angle dans une longue
+  entrée douce puis 55 % dans une cassure étroite en sortie (le virage qui se
+  resserre quand on croit l'avoir pris), `'snap'` concentre tout l'angle sur
+  une cassure (chicane, Karussell) et `'smooth'` reste la cloche rapide. Aire de
+  chaque forme normalisée à 1 : l'angle annoncé est exactement l'angle dont le
+  cap tourne. Résultat mesuré sur le profil rendu : **le tour tourne sur un
+  tiers de sa longueur** (≥ 10°), **onze appuis dépassent 14°**, le plus long
+  tient **71 m de piste, soit deux secondes de volant braqué**, et le cap monte
+  à **31°** dans la virole. Le profil précédent plafonnait à 14° avec des appuis
+  de 30 m — aucun virage ne durait une seconde.
 - **La mini-carte** dessine la silhouette du circuit, relevée dans
   OpenStreetMap (© les contributeurs d'OpenStreetMap, ODbL) : descente sud vers
   Breidscheid puis épingle est du Karussell.
@@ -1384,7 +1397,15 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   piste étroite, un troisième condamne une voie et l'escouade du dernier tour
   ne peut plus revenir sur le leader.
 - **Les virages serrés** sont élargis par rapport au réel (200 m au Karussell
-  deviennent 320 m) pour que leur rayon reste jouable au 1:17.
+  deviennent 450 m de relevé) pour que leur rayon reste jouable au 1:17, et une
+  cassure ne peut pas tourner plus vite que le ruban ne sait se plier : sa
+  courbure s'arrête à un rayon minimal d'environ 5 unités monde (7 m), au-delà
+  duquel la piste se replierait sur elle-même. La virole reste donc la cassure
+  la plus dure du jeu, sans pli visible à l'image.
+- **Le ruban de piste** a été affiné (176 rangées sur 462 m au lieu de 112, une
+  rangée tous les 2,63 m) : les longs appuis du Ring sont découpés assez fin
+  pour rester des courbes, là où 4,1 m par rangée tournaient de 31° d'un coup
+  dans la cassure du Karussell.
 - **Le tempo** est posé (116 BPM), plus proche du rythme d'un tour de huit
   minutes que d'une course de rue.
 
@@ -1398,9 +1419,10 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
 - `src/games/cityRushRules.js` — données du circuit (`CITY_RUSH_NORDSCHLEIFE`,
   ses 36 `ringSector`, `NORDSCHLEIFE_ALTITUDE_KM`, `nordschleifeReadout`),
   profil de piste (`CITY_RUSH_NORDSCHLEIFE_TURNS`,
-  `nordschleifeTrackOffset/Tangent/Yaw/Elevation/Grade/Pitch`,
-  `cityRushTrackProfile`), configuration des voies (`cityRushLaneConfig`)
-  et silhouette de mini-carte (`cityRushMinimapTrackShape`) ;
+  `nordschleifeCornerCurve`, `nordschleifeTrackOffset/Tangent/Yaw/Elevation/
+  Grade/Pitch`, `cityRushTrackProfile`), configuration des voies
+  (`cityRushLaneConfig`) et silhouette de mini-carte
+  (`cityRushMinimapTrackShape`) ;
 - `src/games/nordschleifeStage.js` — le décor du Ring (piste, herbe,
   glissières, vibreurs, graviers, panneaux allemands, ponts, village,
   karussell, tour, tribunes) ;
@@ -1421,6 +1443,12 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
 npm run check:city-rush-smoke -- --city=nordschleife   # course complète sur le Ring
 npm run check:city-rush                                # règles et thèmes, Ring compris
 ```
+
+`check:city-rush` porte aussi le test du tracé (`le Ring enchaîne de longs
+appuis, avec des cassures qui se resserrent`) : il mesure le cap rendu tour par
+tour, compte les portions au-dessus de 10° et 14°, vérifie que la cloche lisse
+est symétrique alors que le virage qui se resserre appuie une fois et demie plus
+fort en sortie, et que le profil se referme sans marche sous le portique.
 
 Le smoke vérifie en plus, sur un parcours sans trafic en face, qu'**aucun choc
 frontal** ne s'est produit (et qu'un parcours qui a du trafic en face, lui, en

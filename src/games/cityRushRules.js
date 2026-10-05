@@ -1920,15 +1920,31 @@ export function cityRushTrackPitch(distance, lapLength = CITY_RUSH_LAP_LENGTH, a
 
 // ── Profil de piste du Nordschleife (rendu) ────────────────────────────────
 // Les villes se contentent de deux grands S très doux ; le Ring, lui, est une
-// succession de 73 virages. On intègre donc la courbure réelle du tracé : chaque
-// virage est décrit par son point kilométrique, son angle total (positif à
-// droite) et son étendue — une cloche de courbure nulle à ses extrémités, si
-// bien que deux virages voisins se raccordent sans cassure. La première
-// intégration donne le cap, la seconde le déport latéral de la piste. Le profil
-// est ensuite refermé — cap, déport, altitude et pente valent zéro à 0 m comme
-// au bout du tour — pour que la boucle suivante repasse sous le portique sans
-// saut,
+// succession de virages que le pilote sent vraiment. On intègre donc la
+// courbure réelle du tracé : chaque virage est décrit par son point
+// kilométrique, son angle total (positif à droite), son étendue et la *forme*
+// de son appui — une cloche de courbure nulle à ses extrémités, si bien que
+// deux virages voisins se raccordent sans cassure. La première intégration
+// donne le cap, la seconde le déport latéral de la piste. Le profil est ensuite
+// refermé — cap, déport, altitude et pente valent zéro à 0 m comme au bout du
+// tour — pour que la boucle suivante repasse sous le portique sans saut,
 // exactement comme un tour de circuit qui repasse sur la ligne.
+//
+// Quatre formes d'appui, choisies par le quatrième élément de chaque entrée
+// (`nordschleifeCornerCurve`) :
+//   • `'smooth'` (défaut) — la cloche lisse d'origine : l'appui monte, culmine
+//     et redescend ; c'est la courbe rapide qu'on effleure.
+//   • `'sustained'` — l'appui tenu : la courbure reste à son maximum sur la
+//     moitié centrale du virage. C'est le **long virage qui tourne presque
+//     sec** : le volant reste braqué du début à la fin, comme un long appui au
+//     limiteur d'adhérence, au lieu de s'ouvrir puis de se refermer.
+//   • `'tightening'` — la longue entrée douce qui se resserre : 45 % de l'angle
+//     dans une cloche large, 55 % dans une cassure étroite placée vers la
+//     sortie. Le tracé s'ouvre en courbe douce, puis se referme d'un coup —
+//     le « presque sec » d'un virage qui se durcit quand on croit l'avoir pris.
+//   • `'snap'` — la cassure seule, très concentrée : chicane, épingle, virole
+//     du Karussell, là où le volant fait l'essentiel de l'angle sur quelques
+//     mètres.
 //
 // Échelle : 1:17 sur la longueur (20,832 km → 1 200 m), comme la C1 de Tokyo.
 // Courbure et relief sont volontairement amplifiés pour rester lisibles à cette
@@ -1938,55 +1954,104 @@ export function cityRushTrackPitch(distance, lapLength = CITY_RUSH_LAP_LENGTH, a
 // trafic. Les deux échelles sont calculées, pas devinées : elles découlent du
 // déport maximal et de la pente maximale déclarés ci-dessous.
 export const CITY_RUSH_NORDSCHLEIFE_PROFILE_STEPS = 2400;
-export const CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET = 15; // unités monde : déport latéral maximal
+// 18 unités monde : les longs appuis du Ring ont besoin de toute la largeur du
+// ruban (l'ancien profil se contentait de 15 unités et plafonnait à 14° de cap).
+export const CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET = 18;
 export const CITY_RUSH_NORDSCHLEIFE_MAX_GRADE = 0.1; // 10 % de pente visible (18 % réels)
-// km réel, angle du virage (°, + à droite), étendue (km). L'étendue des virages
-// lents est élargie par rapport au réel (le Karussell passe de 200 m à 320 m)
-// pour que leur rayon reste jouable à l'échelle 1:17 : c'est l'adaptation
-// annoncée, pas un oubli.
+
+/**
+ * Forme de la cloche de courbure d'un virage, échantillonnée sur `offset`
+ * (-1 → entrée, 0 → sommet, +1 → sortie). La valeur est nulle (et de pente
+ * nulle) aux deux extrémités : deux virages voisins se raccordent donc sans
+ * cassure de cap. Chaque forme est normalisée à une aire de 1 : l'angle annoncé
+ * dans `CITY_RUSH_NORDSCHLEIFE_TURNS` est donc exactement l'angle dont le
+ * virage fait tourner le cap, quelle que soit la forme choisie. Voir la
+ * description des quatre formes ci-dessus.
+ */
+export function nordschleifeCornerCurve(offset, shape = 'smooth') {
+  const u = Number(offset) || 0;
+  if (u <= -1 || u >= 1) return 0;
+  if (shape === 'sustained') {
+    // Appui tenu : rampe en cosinus jusqu'au maximum, plateau sur la moitié
+    // centrale, rampe symétrique en sortie.
+    const raw = u <= -0.5
+      ? 0.5 * (1 - Math.cos(2 * Math.PI * (u + 1)))
+      : u >= 0.5 ? 0.5 * (1 - Math.cos(2 * Math.PI * (1 - u))) : 1;
+    return raw / 1.5;
+  }
+  if (shape === 'tightening') {
+    // Entrée douce (45 % de l'angle) puis cassure étroite vers la sortie
+    // (55 %), centrée à 18 % de l'étendue : le virage se resserre.
+    const wide = 0.45 * 0.5 * (1 + Math.cos(Math.PI * u));
+    const narrow = (u - 0.18) / 0.34;
+    const sharp = narrow <= -1 || narrow >= 1 ? 0 : 0.55 * 0.5 * (1 + Math.cos(Math.PI * narrow));
+    return (wide + sharp) / 0.637;
+  }
+  if (shape === 'snap') {
+    // Cassure seule : tout l'angle sur 35 % de l'étendue, au sommet.
+    const narrow = u / 0.35;
+    return (narrow <= -1 || narrow >= 1 ? 0 : 0.5 * (1 + Math.cos(Math.PI * narrow))) / 0.35;
+  }
+  return 0.5 * (1 + Math.cos(Math.PI * u));
+}
+
+// km réel, angle du virage (°, + à droite), étendue (km), forme de l'appui.
+// Les virages du Ring ne sont plus des cloches timides : les longues courbes
+// (Hatzenbach, Hocheichen, Schwedenkreuz, Fuchsröhre, Kesselchen, Pflanzgarten,
+// Stefan-Bellof-S…) prennent la forme `'sustained'` — le cap y reste à 12-20°
+// pendant 60 à 120 m de piste, soit près d'une à deux secondes de volant
+// braqué —, les virages qui se resserrent (Aremberg, Metzgesfeld, Wehrseifen,
+// Bergwerk, Mutkurve, Brünnchen, Schwalbenschwanz…) la forme `'tightening'`, et
+// les chicanes ou la virole du Karussell la forme `'snap'`. L'étendue des
+// virages lents est élargie par rapport au réel (le Karussell passe de 200 m à
+// 450 m de relevé) pour que leur rayon reste jouable à l'échelle 1:17, et la
+// courbure d'une cassure est de toute façon bornée par le rayon minimal que le
+// ruban peut épouser sans se replier : c'est l'adaptation annoncée, pas un
+// oubli.
 export const CITY_RUSH_NORDSCHLEIFE_TURNS = Object.freeze([
+  // ── La ligne droite de départ : on n'y touche pas ─────────────────────────
   Object.freeze([0.20, 3, 0.030]), // Antoniusbuche : léger appui à droite sur le pont
   Object.freeze([0.60, 6, 0.040]), // Tiergarten : la piste se dérobe vers la Start-Ziel
   Object.freeze([1.05, -8, 0.053]), // Sabine-Schmitz : gauche rapide avant la T13
-  Object.freeze([1.60, -16, 0.107]), // T13 : gauche appuyée sur la ligne d'arrivée
-  Object.freeze([2.00, 18, 0.120]), // Hohenrain : droite de la chicane
-  Object.freeze([2.40, -14, 0.093]), // Hatzenbach 1 : gauche
-  Object.freeze([2.65, 12, 0.080]), // Hatzenbach 2 : droite
-  Object.freeze([2.90, -10, 0.067]), // Hatzenbach 3 : gauche
-  Object.freeze([3.10, -8, 0.053]), // Hocheichen : gauche sous les chênes
-  Object.freeze([3.40, -12, 0.080]), // Quiddelbacher Höhe : gauche de la crête
-  Object.freeze([3.85, 4, 0.030]), // Flugplatz 1 : la piste plonge
-  Object.freeze([4.15, 14, 0.093]), // Flugplatz 2 : double apex droite, le saut
-  Object.freeze([4.60, -13, 0.087]), // Kottenborn : gauche du plateau
-  Object.freeze([5.10, -20, 0.133]), // Schwedenkreuz : gauche rapide en descente
-  Object.freeze([5.70, 42, 0.280]), // Aremberg : freinage, droite serrée
-  Object.freeze([6.25, -18, 0.120]), // Fuchsröhre : gauche rapide à −11 %
-  Object.freeze([6.80, -12, 0.080]), // Adenauer Forst 1 : gauche
-  Object.freeze([7.00, 22, 0.147]), // Adenauer Forst 2 : droite du S
-  Object.freeze([7.35, -13, 0.087]), // Metzgesfeld : gauche aveugle
-  Object.freeze([7.85, 21, 0.140]), // Kallenhard : droite en descente
-  Object.freeze([8.30, -13, 0.087]), // Spiegelkurve : gauche
-  Object.freeze([8.65, 26, 0.173]), // Dreifach-Rechts : droite, droite, droite
-  Object.freeze([9.15, -30, 0.200]), // Wehrseifen : épingle en descente
-  Object.freeze([9.65, 12, 0.080]), // Ex-Mühle : droite sur la rampe raide
-  Object.freeze([10.50, -12, 0.080]), // Lauda-Links : gauche rapide
-  Object.freeze([10.95, 26, 0.173]), // Bergwerk : la droite se referme
-  Object.freeze([11.65, -22, 0.147]), // Kesselchen : longue montée à gauche
-  Object.freeze([12.25, -16, 0.107]), // Mutkurve : gauche de la montée
-  Object.freeze([12.65, 18, 0.120]), // Steilstrecke : droite de la rampe
-  Object.freeze([13.35, -48, 0.320]), // Karussell : la virole de béton
-  Object.freeze([13.85, 16, 0.107]), // Hohe Acht : droite du sommet
-  Object.freeze([14.20, 14, 0.093]), // Hedwigshöhe : droite
-  Object.freeze([14.55, 16, 0.107]), // Wippermann : droite bosselée
-  Object.freeze([14.90, -14, 0.093]), // Eschbach : gauche
-  Object.freeze([15.45, 30, 0.200]), // Brünnchen : double droite en descente
-  Object.freeze([15.95, -18, 0.120]), // Eiskurve : gauche sous les sapins
-  Object.freeze([16.45, 24, 0.160]), // Pflanzgarten : droite, saut
-  Object.freeze([16.95, -20, 0.133]), // Stefan-Bellof-S : gauche
-  Object.freeze([17.35, -34, 0.227]), // Schwalbenschwanz : gauche serrée
-  Object.freeze([17.80, -14, 0.093]), // Galgenkopf : gauche sous la colline
-  Object.freeze([18.35, 20, 0.133]), // Galgenkopf 2 : droite rapide
-  Object.freeze([19.20, -6, 0.600]), // Döttinger Höhe : la ligne droite s'ouvre
+  Object.freeze([1.55, -12, 0.100, 'snap']), // T13 puis Hohenrain : la chicane
+  Object.freeze([1.85, 16, 0.100, 'snap']), // Hohenrain : la droite qui renvoie vers Hatzenbach
+  // ── Hatzenbach : le long enchaînement qui donne le tour ───────────────────
+  Object.freeze([2.15, -24, 0.50, 'sustained']), // Hatzenbach 1 : long gauche tenu
+  Object.freeze([2.62, 26, 0.50, 'sustained']), // Hatzenbach 2 : long droit tenu
+  Object.freeze([3.06, -22, 0.36, 'sustained']), // Hatzenbach 3 : long gauche tenu
+  Object.freeze([3.40, -16, 0.30, 'sustained']), // Hocheichen : gauche à fond sous les chênes
+  Object.freeze([3.75, 6, 0.060]), // Quiddelbacher Höhe : le pont, la crête
+  Object.freeze([4.30, 22, 0.60, 'tightening']), // Flugplatz : s'ouvre après le saut, puis casse
+  Object.freeze([4.80, -14, 0.180]), // Kottenborn : gauche du plateau
+  Object.freeze([5.25, -22, 0.40, 'sustained']), // Schwedenkreuz : long gauche rapide en descente
+  Object.freeze([5.85, 40, 0.50, 'tightening']), // Aremberg : longue entrée, cassure à 90°
+  Object.freeze([6.40, -28, 0.55, 'sustained']), // Fuchsröhre : le long gauche à −11 %
+  Object.freeze([6.90, 28, 0.30, 'sustained']), // Adenauer Forst 1 : le droit tenu
+  Object.freeze([7.20, -24, 0.30, 'snap']), // Adenauer Forst 2 : l'épingle du piège
+  Object.freeze([7.60, -18, 0.35, 'tightening']), // Metzgesfeld : gauche aveugle qui se resserre
+  Object.freeze([8.05, 24, 0.40, 'sustained']), // Kallenhard : long droit en descente
+  Object.freeze([8.45, -12, 0.120]), // Spiegelkurve : le gauche du Miss-Hit-Miss
+  Object.freeze([8.70, 28, 0.35, 'sustained']), // Dreifach-Rechts : les trois droites tenues
+  Object.freeze([9.05, -34, 0.40, 'tightening']), // Wehrseifen : l'épingle la plus lente
+  Object.freeze([9.60, 8, 0.150]), // Breidscheid : le point bas du circuit
+  Object.freeze([10.05, 18, 0.25, 'sustained']), // Ex-Mühle : le droit de la rampe
+  Object.freeze([10.45, -22, 0.30, 'tightening']), // Lauda-Links : le gauche de 1976
+  Object.freeze([10.95, 26, 0.45, 'tightening']), // Bergwerk : le droit qui se referme
+  Object.freeze([11.80, -26, 0.90, 'sustained']), // Kesselchen : la grande montée à gauche
+  Object.freeze([12.40, -26, 0.40, 'tightening']), // Mutkurve : le virage du courage
+  Object.freeze([12.80, 18, 0.30, 'sustained']), // Klostertal : le droit du vallon
+  Object.freeze([13.50, -48, 0.45, 'snap']), // Karussell : la virole de béton
+  Object.freeze([14.30, 18, 0.35, 'tightening']), // Hohe Acht : le droit du sommet (620 m)
+  Object.freeze([14.70, 16, 0.22, 'sustained']), // Hedwigshöhe : le droit tenu
+  Object.freeze([15.15, 18, 0.24, 'sustained']), // Wippermann : le droit bosselé
+  Object.freeze([15.55, -18, 0.30, 'tightening']), // Eschbach : le gauche du pont
+  Object.freeze([16.15, 24, 0.60, 'tightening']), // Brünnchen : le long droit qui se resserre
+  Object.freeze([16.75, -18, 0.25, 'sustained']), // Eiskurve : le gauche sous les sapins
+  Object.freeze([17.25, 22, 0.45, 'sustained']), // Pflanzgarten : le droit des sauts
+  Object.freeze([17.85, -22, 0.35, 'sustained']), // Stefan-Bellof-S : le gauche du record
+  Object.freeze([18.50, -34, 0.50, 'tightening']), // Schwalbenschwanz : la queue d'aronde
+  Object.freeze([19.00, 22, 0.35, 'sustained']), // Galgenkopf : le droit de la potence
+  Object.freeze([19.75, -5, 0.600]), // Döttinger Höhe : la ligne droite s'ouvre
 ]);
 const nordschleifeProfile = (() => {
   const steps = CITY_RUSH_NORDSCHLEIFE_PROFILE_STEPS;
@@ -2001,14 +2066,17 @@ const nordschleifeProfile = (() => {
   // Courbure (radians par unité de piste) d'une échelle donnée.
   const curvature = (scale) => {
     const table = new Float64Array(steps);
-    for (const [km, angleDeg, spanKm] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
+    for (const [km, angleDeg, spanKm, shape = 'smooth'] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
       const centre = km * unitsPerKm;
       const half = (spanKm * unitsPerKm) / 2;
+      // `peak` est la hauteur de la cloche de référence : quelle que soit la
+      // forme, l'aire sous la courbe vaut l'angle du virage, si bien que la
+      // somme des angles du tour ne change pas avec la forme choisie.
       const peak = (scale * ((angleDeg * Math.PI) / 180)) / (half * 2);
       for (let index = 0; index < steps; index += 1) {
         const delta = wrapDelta(index * ds - centre);
         if (Math.abs(delta) >= half) continue;
-        table[index] += peak * 0.5 * (1 + Math.cos((Math.PI * delta) / half));
+        table[index] += peak * nordschleifeCornerCurve(delta / half, shape);
       }
     }
     return table;
@@ -2027,8 +2095,16 @@ const nordschleifeProfile = (() => {
       heading[index] = h;
       offset[index] = x;
     }
-    const headingDrift = h / CITY_RUSH_LAP_LENGTH;
-    const offsetDrift = (x - (headingDrift * CITY_RUSH_LAP_LENGTH * CITY_RUSH_LAP_LENGTH) / 2) / CITY_RUSH_LAP_LENGTH;
+    // La somme discrète s'arrête au dernier pas (m = longueur − ds) : on
+    // prolonge d'un pas pour refermer le tour sur sa valeur exacte. Sans ce
+    // pas, la correction laissait une marche de `cap final × ds` à la ligne
+    // d'arrivée — invisible avec les 5° de la première table, bien visible
+    // avec les longs appuis du Ring (0,28 unité, soit un décrochement du
+    // ruban de 3 % de sa largeur, juste sous le portique).
+    const headingEnd = h;
+    const offsetEnd = x + h * ds;
+    const headingDrift = headingEnd / CITY_RUSH_LAP_LENGTH;
+    const offsetDrift = (offsetEnd - (headingDrift * CITY_RUSH_LAP_LENGTH * CITY_RUSH_LAP_LENGTH) / 2) / CITY_RUSH_LAP_LENGTH;
     for (let index = 0; index < steps; index += 1) {
       const metre = index * ds;
       heading[index] -= headingDrift * metre;

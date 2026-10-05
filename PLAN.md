@@ -73,3 +73,61 @@ rejoué à l'échelle 1:17 (20,832 km → 1 200 m), comme la C1 de Tokyo rejoue 
 - `npm run check:city-rush-mexico` et `check:vice-city-nordschleife-ui`
   (vignette, sélection, garage, HUD en jsdom).
 - `npx vite build` : build de production propre.
+
+## Suite — de longs virages qui tournent presque sec
+
+Demande : « sur la course Nürburgring, rajoute des longs virages qui tournent
+presque sec ». Le profil précédent plafonnait à **14° de cap** avec des appuis
+de **30 m** (moins d'une seconde) : aucun virage ne se sentait tenir. Le choix
+retenu avec le joueur est un **mélange** : des enchaînements longs, où le tracé
+s'ouvre en courbe douce puis se resserre sur une cassure franche.
+
+### Ce qui change
+
+- **Une forme d'appui par virage** (`nordschleifeCornerCurve`, quatrième
+  élément de chaque entrée de `CITY_RUSH_NORDSCHLEIFE_TURNS`) :
+  - `'sustained'` — appui tenu : la courbure reste à son maximum sur la moitié
+    centrale du virage. C'est le long virage qui tourne presque sec (Hatzenbach,
+    Hocheichen, Schwedenkreuz, Fuchsröhre, Kesselchen, Pflanzgarten…).
+  - `'tightening'` — 45 % de l'angle en entrée douce, 55 % dans une cassure
+    étroite placée vers la sortie (Aremberg, Metzgesfeld, Wehrbüsch,
+    Brünnchen, Schwalbenschwanz…).
+  - `'snap'` — cassure seule, concentrée (chicane de Hohenrain, épingle
+    d'Adenauer Forst, virole du Karussell).
+  - `'smooth'` — la cloche rapide d'origine (ligne droite, crêtes, Fuchsröhre
+    d'entrée).
+  Chaque forme est **normalisée à une aire de 1** : l'angle annoncé reste
+  exactement l'angle dont le virage fait tourner le cap.
+- **Étendues recalibrées** : les virages deviennent des courbes de 250 à 900 m
+  de relevé (Karussell 200 → 450 m), bornes des secteurs du HUD conservées.
+- **Déport maximal 15 → 18 unités** : les longs appuis ont besoin de toute la
+  largeur du ruban.
+- **Ruban affiné** (112 → 176 rangées, une tous les 2,63 m) : une cassure de
+  31° entre deux rangées pliait la piste au Karussell.
+- **Fermeture du profil corrigée** : la suite discrète s'arrête un pas avant la
+  ligne ; sans le pas de fermeture, le déport laissait une marche de 0,28 unité
+  au portique (invisible avec les 5° de la première table, visible avec les
+  longs appuis).
+
+### Mesures (profil rendu, `nordschleifeTrackYaw`)
+
+| | avant | après |
+| --- | --- | --- |
+| cap maximal | 13,9° | **31,0°** |
+| part du tour ≥ 10° | 7 % | **33 %** |
+| appuis ≥ 14° | 0 | **11** |
+| appui le plus long (≥ 10°) | 29 m (0,8 s) | **71 m (2,0 s)** |
+| rayon minimal du tracé | 12,6 unités | 5,5 unités |
+
+Le rayon minimal de 5,5 unités (7 m) est la limite de pliabilité du ruban : les
+virages réels plus serrés que cela sont rendus à cette limite, sans jamais
+replier la piste sur elle-même à l'image.
+
+### Vérifications
+
+- `tests/city-rush-rules.test.js` — « le Ring enchaîne de longs appuis, avec des
+  cassures qui se resserrent » : aires des quatre formes, longueur des appuis,
+  asymétrie du virage qui se resserre, fermeture du profil, appuis nommés
+  (Kesselchen, Hatzenbach), rayon du cap.
+- `npm run check:city-rush`, `check:city-rush-smoke -- --all`,
+  `check:city-rush-nordschleife`, `npx vite build`.

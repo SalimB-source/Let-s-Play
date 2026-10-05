@@ -213,7 +213,11 @@ export function makeSkyline(city, theme, random) {
 // largement la portée de la brume vers l'avant, sans ouverture dans un S.
 export const ROAD_VIEW_BEHIND = -72;
 export const ROAD_VIEW_AHEAD = 390;
-const ROAD_CURVE_SEGMENTS = 112;
+// 176 rangées sur 462 m de piste, soit une rangée tous les 2,63 m : les longs
+// virages du Nordschleife, dont l'appui tient 70 m, sont découpés assez fin
+// pour rester des courbes. À 112 rangées (4,1 m), la cassure du Karussell
+// tournait de 31° d'une rangée à l'autre et le ruban dessinait un coude.
+const ROAD_CURVE_SEGMENTS = 176;
 
 export function makeCurvedStripGeometry(innerX, outerX, y = 0, segments = ROAD_CURVE_SEGMENTS) {
   const rows = segments + 1;
