@@ -1390,7 +1390,12 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   peinte) au lieu des 13,40 m d'une artère urbaine, et se partage en **quatre
   voies dans le même sens** : un circuit permanent ne croise personne, donc
   **aucun véhicule en face** (les voies de contresens sont vides, la police, les
-  bonus et les rivaux ne se placent que sur les voies de course).
+  bonus et les rivaux ne se placent que sur les voies de course). Le marquage
+  est peint sur le bitume comme sur les routes des villes : deux **lignes de
+  rive continues** ferment les 8,40 m utiles, et une **ligne blanche
+  discontinue** sépare chaque paire de voies — à −2,10 m, 0 et +2,10 m, la
+  largeur peinte d'une vraie ligne (16 cm). Les quatre voies se lisent ainsi à
+  l'écran, sans ligne jaune d'axe : ici, personne ne vient en face.
 - **Le trafic** est celui d'une journée de tourisme : une voiture médicale, une
   berline de police (les Touristenfahrten en voient) et une GT de passage —
   jamais de camion-poubelle. Deux véhicules seulement, un par voie : sur une
@@ -1421,11 +1426,12 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
   profil de piste (`CITY_RUSH_NORDSCHLEIFE_TURNS`,
   `nordschleifeCornerCurve`, `nordschleifeTrackOffset/Tangent/Yaw/Elevation/
   Grade/Pitch`, `cityRushTrackProfile`), configuration des voies
-  (`cityRushLaneConfig`) et silhouette de mini-carte
-  (`cityRushMinimapTrackShape`) ;
-- `src/games/nordschleifeStage.js` — le décor du Ring (piste, herbe,
-  glissières, vibreurs, graviers, panneaux allemands, ponts, village,
-  karussell, tour, tribunes) ;
+  (`cityRushLaneConfig`) et marquage de leurs séparateurs
+  (`CITY_RUSH_LANE_PAINT_WIDTH`, `cityRushLaneSeparators`) et silhouette de
+  mini-carte (`cityRushMinimapTrackShape`) ;
+- `src/games/nordschleifeStage.js` — le décor du Ring (piste et son marquage de
+  voies, herbe, glissières, vibreurs, graviers, panneaux allemands, ponts,
+  village, karussell, tour, tribunes) ;
 - `src/games/cityRushStage.js` — ruban de piste et décor fusionné pilotés par le
   profil du parcours (`updateCurvedStrip`, `makeRoad`, `finishLoopGeometry`) ;
 - `src/games/cityRushStartLine.js` — gabarit de la zone de départ (portique,
@@ -1440,9 +1446,19 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
 ### Vérifications
 
 ```bash
-npm run check:city-rush-smoke -- --city=nordschleife   # course complète sur le Ring
-npm run check:city-rush                                # règles et thèmes, Ring compris
+npm run check:city-rush-smoke -- --city=nordschleife        # course complète sur le Ring
+npm run check:city-rush                                     # règles et thèmes, Ring compris
+npm run check:city-rush-nordschleife                        # l'interface de la carte au départ
+npm run check:city-rush-nordschleife-lanes                  # le marquage des quatre voies
 ```
+
+`check:city-rush-nordschleife-lanes` dessine la vraie texture de piste dans un
+canevas qui enregistre chaque trait, puis relit le dessin en mètres : les trois
+lignes discontinues tombent au milieu des paires de voies (−2,10 m, 0 et
++2,10 m), à 16 cm de large, quatre traits par carreau pour ne pas laisser de
+couture au raccord, les deux rives continues tiennent dans les 9,20 m de bitume,
+et rien de ce qui est peint ensuite ne recouvre une ligne. Une piste nue échoue
+— c'est ce qui garantit que les quatre voies restent lisibles à l'écran.
 
 `check:city-rush` porte aussi le test du tracé (`le Ring enchaîne de longs
 appuis, avec des cassures qui se resserrent`) : il mesure le cap rendu tour par
