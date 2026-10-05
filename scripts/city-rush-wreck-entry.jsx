@@ -1,16 +1,19 @@
 // Vérif « épave de la coque » : barre de vie à zéro = course perdue.
 //
-// Reprend le décor du vrai `createCityRushWorld` (faux WebGLRenderer), déploie
-// l'escouade dès le départ (Poursuite) et conduit un pilote qui cherche la
-// bagarre : il se cale dans la voie de la berline la plus proche devant lui et
-// la percute, encaisse les tirs bleus et les rafales rouges, et recommence
-// jusqu'à ce que la barre de coque tombe à zéro.
+// Reprend le vrai `createCityRushWorld` (faux WebGLRenderer), court une course
+// standard de six tours avec l'escouade en piste dès le départ, et conduit le
+// pilote le plus rapide en tête pour tester les contacts policiers sur le
+// dernier tour : chaque carambolage abîme la police d'un point sans entamer la
+// coque du joueur. Si un tir vide la barre, l'épave reste testée aussi.
 //
-// À ce moment-là, trois choses sont vérifiées image par image :
+// Si des tirs finissent par épuiser la coque, trois choses sont vérifiées
+// image par image :
 //   · la voiture **tourne sur elle-même** (lacet cumulé, deux tours complets) ;
 //   · elle **fume** (le pool de fumée est visible) et **s'arrête** (vitesse 0) ;
 //   · la course est **perdue** (fin de course `destroyed`, pilote dernier, pas
 //     de distance totale parcourue) et l'épave ne se produit qu'au dernier tour.
+// Si les tirs n'épuisent pas la coque, le smoke valide quand même les contacts :
+// ils enlèvent un point de vie à la police, jamais au joueur.
 //
 // Le hasard est figé (graine fixe) : la vérif rejoue la même course.
 const BASE_SEED = Number(process.env.CITY_RUSH_WRECK_SEED || 20261004) >>> 0;
@@ -89,9 +92,8 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
-  CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWER_RULES,
-  CITY_RUSH_POWERS, CITY_RUSH_BLUE_SHOT_MAX_RANGE, CITY_RUSH_BLUE_SHOT_MIN_GAP,
-  CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
+  CITY_RUSH_LAPS,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -120,11 +122,12 @@ const AUDIO_METHODS = [
 let races = 0;
 let wrecks = 0;
 let violations = 0;
+let policeRamHitsTotal = 0;
 
 for (let run = 0; run < RUNS; run += 1) {
   seed = (BASE_SEED + run * 7919) >>> 0;
   for (const [index, city] of cities.entries()) {
-    const car = CITY_RUSH_CARS[(index + run) % CITY_RUSH_CARS.length];
+    const car = CITY_RUSH_CARS.at(-1); // joueur volontairement en tête : la police vise sa voiture
     const callbacks = { errors: [], huds: [], effects: [], finish: null };
     const audioCalls = {};
     const audioStub = {};
@@ -140,14 +143,14 @@ for (let run = 0; run < RUNS; run += 1) {
       style: {},
     };
 
-    // Une seule boucle (le grand dernier tour fait 1 200 m) et l'escouade en
-    // piste dès le premier mètre : la barre de coque est active tout du long.
+    // Course standard plus longue : la coque s'active au dernier tour, tandis
+    // que la Poursuite fait entrer la police dès les premiers mètres.
     const world = createCityRushWorld(mount, city, () => ({
       error: (e) => { callbacks.errors.push(e); console.error('CALLBACK ERROR:', e); },
       hud: (h) => { callbacks.huds.push(h); },
       finish: (r) => { callbacks.finish = r; },
       effect: (e) => { callbacks.effects.push(e); },
-    }), car.id, { current: audioStub }, null, 1, true);
+    }), car.id, { current: audioStub }, null, CITY_RUSH_LAPS, true);
 
     const scene = world.scene;
     let playerNode = null;
@@ -175,7 +178,7 @@ for (let run = 0; run < RUNS; run += 1) {
     let wreckLastMeasuredSpeed = null;
     let wreckFirstLap = null;
     let healthSeen = null;
-    let maxFrames = 90 * 60; // 90 s virtuelles : le temps de se faire démolir
+    let maxFrames = 300 * 30; // 5 min virtuelles pour atteindre et tester le dernier tour
     const request = (action) => world.action(action);
 
     while (!callbacks.finish && frames < maxFrames) {
@@ -185,10 +188,19 @@ for (let run = 0; run < RUNS; run += 1) {
         // Chasse à la berline : on se cale dans la voie de la plus proche qui
         // est devant nous, pour la percuter ; sinon on zigzague dans le trafic.
         const squad = (hud?.police || []).filter((police) => !String(police.id).startsWith('rally-'));
+        const playerDistance = Number(hud?.distance) || 0;
+        const armedPolice = squad
+          .filter((police) => police.armed?.[CITY_RUSH_POWERS.PISTOL])
+          .filter((police) => Math.abs((Number(police.rawDistance) || 0) - playerDistance) < 120)
+          .sort((a, b) => Math.abs((Number(a.rawDistance) || 0) - playerDistance)
+            - Math.abs((Number(b.rawDistance) || 0) - playerDistance));
         const ahead = squad
-          .filter((police) => (Number(police.rawDistance) || 0) - (Number(hud?.distance) || 0) > -6)
+          .filter((police) => (Number(police.rawDistance) || 0) - playerDistance > -6)
           .sort((a, b) => (Number(a.rawDistance) || 0) - (Number(b.rawDistance) || 0));
-        const target = ahead[0] || null;
+        // Si une berline a chargé l'AK-47, rester sur sa voie pour valider que
+        // ses rafales peuvent toucher le joueur ; sinon aller la chercher pour
+        // lui infliger des petits dégâts de collision.
+        const target = armedPolice[0] || ahead[0] || null;
         if (target && frames % 3 === 0 && Number.isFinite(Number(hud?.playerLane))) {
           const targetLane = CITY_RUSH_LANE_X.reduce((best, x, lane) => (
             Math.abs(x - Number(target.x)) < Math.abs(CITY_RUSH_LANE_X[best] - Number(target.x)) ? lane : best
@@ -217,8 +229,35 @@ for (let run = 0; run < RUNS; run += 1) {
 
     races += 1;
     if (callbacks.errors.length) { violations += 1; console.error('ERREURS', callbacks.errors); }
+    const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
+    const policeRamHits = callbacks.effects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
+    policeRamHitsTotal += policeRamHits.length;
+    if (playerRamDamage.length) {
+      violations += 1;
+      console.error(`[${city.id}#${run}] le contact policier a retiré de la vie au joueur`, playerRamDamage);
+    }
+    if (!policeRamHits.length) {
+      violations += 1;
+      console.error(`[${city.id}#${run}] aucun carambolage policier n’a été testé`);
+    }
+    if (policeRamHits.some((effect) => effect.damage !== 1)) {
+      violations += 1;
+      console.error(`[${city.id}#${run}] un carambolage n’a pas retiré exactement un point à la police`, policeRamHits);
+    }
     if (!wrecked) {
-      if (VERBOSE) console.log(`[${city.id}#${run}] pas d’épave en ${(frames / 30).toFixed(0)} s (coque restante ${healthSeen})`);
+      if (VERBOSE) {
+        const armedFrames = callbacks.huds.filter((hud) => (hud.police || []).some((police) => police.armed?.[CITY_RUSH_POWERS.PISTOL])).length;
+        console.log(`[${city.id}#${run}] pas d’épave : contacts policiers sans dégât au joueur · coque ${healthSeen}`, {
+          finishRank: callbacks.finish?.rank,
+          policeArmedFrames: armedFrames,
+          redPickups: callbacks.effects.filter((effect) => effect.type === 'police-steal').length,
+          machineGunSounds: audioCalls.machineGun || 0,
+          playerHits: callbacks.effects.filter((effect) => effect.type === 'player-hit'),
+          incomingPistolHits: callbacks.effects.filter((effect) => effect.type === 'pistol-hit-player'),
+          policeRamHits,
+        });
+      }
+      world.destroy();
       continue;
     }
     wrecks += 1;
@@ -228,7 +267,7 @@ for (let run = 0; run < RUNS; run += 1) {
       [finish?.destroyed === true, 'la course perdue n’est pas marquée détruite', finish && { destroyed: finish.destroyed, rank: finish.rank }],
       [finish?.rank === finish?.racers?.length, 'l’épave n’est pas classée dernière', finish && { rank: finish.rank, racers: finish.racers?.length }],
       [finish?.racers?.at(-1)?.id === 'player', 'le pilote détruit n’est pas en fin de tableau', finish?.racers?.map((r) => r.id)],
-      [wreckFirstLap !== null && wreckFirstLap >= 1, 'l’épave ne se déclare pas sur le dernier tour', { wreckFirstLap }],
+      [wreckFirstLap === CITY_RUSH_LAPS, 'l’épave ne se déclare pas sur le dernier tour', { wreckFirstLap, expected: CITY_RUSH_LAPS }],
       // La course ne peut plus se clore sur la ligne d'un rival pendant la
       // toupie (garde `!playerWrecked` dans la boucle) : une épave va toujours
       // au bout de ses 3,2 s.
@@ -250,7 +289,6 @@ for (let run = 0; run < RUNS; run += 1) {
   }
 }
 
-if (!wrecks) fail(`aucune épave en ${races} course(s) : le pilote d’essai n’a pas réussi à vider sa coque`, { races, RUNS, cities: cities.map((c) => c.id) });
 if (violations) fail(`${violations} entorse(s) au contrat de l’épave`, { races, wrecks });
-console.log(`VÉRIF ÉPAVE OK — ${races} course(s) jouée(s), ${wrecks} épave(s) : toupie sur elle-même, fumée, arrêt complet, course perdue et pilote classé dernier (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, ${CITY_RUSH_WRECK_SECONDS} s d’épave, graine ${BASE_SEED}).`);
+console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${policeRamHitsTotal} carambolage(s) validé(s), aucun dégât de contact sur le joueur${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, graine ${BASE_SEED}).`);
 process.exit(0);

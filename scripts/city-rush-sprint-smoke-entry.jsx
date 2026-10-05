@@ -1,8 +1,6 @@
-// Smoke « Vice City Rush » : exécute createCityRushWorld (vrai code) avec un
-// faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue une course
-// complète pour chaque ville demandée : 5 tours, soit quatre boucles de 600 m
-// puis un grand dernier tour de 1 200 m (deux boucles, le portique est recroisé
-// à mi-parcours) — 3 600 m en tout.
+// Smoke Sprint « Vice City Rush » : exécute createCityRushWorld (vrai code)
+// avec un faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue le défi
+// solo complet pour chaque ville : 14 checkpoints de 300 m, soit 4 200 m.
 const ctx2d = () => {
   const g = { addColorStop() {} };
   return {
@@ -70,7 +68,7 @@ globalThis.requestAnimationFrame = (cb) => { const id = rafId++; rafQueue.set(id
 globalThis.cancelAnimationFrame = (id) => { rafQueue.delete(id); };
 Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNow }, configurable: true });
 
-// Sprint : 10 portes visibles, 15 s entre checkpoints, boosts verts au sol,
+// Sprint : 14 portes visibles, 15 s entre checkpoints, boosts verts au sol,
 // mais ni police, ni rival, ni arme.
 const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');

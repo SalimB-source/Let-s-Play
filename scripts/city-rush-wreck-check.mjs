@@ -1,5 +1,6 @@
-// Lanceur de la vérif « épave de la coque » : charge le vrai monde three.js
-// avec un WebGLRenderer factice et laisse le pilote d'essai se faire démolir.
+// Lanceur du smoke coque/police : charge le vrai monde three.js avec un
+// WebGLRenderer factice, valide les contacts policiers sans dégât joueur et
+// vérifie aussi l'animation d'épave si les tirs vident la coque.
 //   node scripts/city-rush-wreck-check.mjs            (une ville)
 //   node scripts/city-rush-wreck-check.mjs --all      (les cinq villes)
 //   node scripts/city-rush-wreck-check.mjs --runs=5   (cinq courses par ville)
