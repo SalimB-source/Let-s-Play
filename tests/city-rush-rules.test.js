@@ -464,17 +464,43 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
   assert.ok(cityRushHitDuration(2, comet) < cityRushHitDuration(2, turbo));
   assert.equal(cityRushHitDuration(3, comet), 3 * comet.hitRecoveryMultiplier);
 
+  // Les écarts de puissance sont volontairement francs : la voiture la plus
+  // chère doit dominer la plus lente bien au-delà des anciens 6 %. On vérifie
+  // le classement strict ET l'amplitude, pas des bornes serrées.
   const performanceCars = CITY_RUSH_CARS.slice(2);
   const speedMultipliers = performanceCars.map((car) => car.powerMultiplier);
-  assert.ok(Math.min(...speedMultipliers) >= 0.98);
-  assert.ok(Math.max(...speedMultipliers) <= 1.04);
-  assert.ok(Math.max(...speedMultipliers) - Math.min(...speedMultipliers) <= 0.060001, 'les vitesses de pointe des voitures achetables restent proches');
+  assert.ok(Math.min(...speedMultipliers) >= 0.9);
+  assert.ok(Math.max(...speedMultipliers) - Math.min(...speedMultipliers) >= 0.35,
+    'les voitures du haut du garage affichent une vraie différence de vitesse de pointe');
   const orderedIds = (stat, direction = 1) => [...performanceCars]
     .sort((a, b) => (a[stat] - b[stat]) * direction)
     .map((car) => car.id);
   assert.deepEqual(orderedIds('power'), orderedIds('powerMultiplier'));
   assert.deepEqual(orderedIds('acceleration'), orderedIds('accelerationRate'));
   assert.deepEqual(orderedIds('recovery'), orderedIds('hitRecoveryMultiplier', -1));
+});
+
+test('l’écart de puissance entre la citadine de départ et la supercar est franc et lisible', () => {
+  const starter = CITY_RUSH_CARS[0];
+  const top = CITY_RUSH_CARS[CITY_RUSH_CARS.length - 1];
+  // La vitesse de pointe réelle vaut `CITY_RUSH_PLAYER_SPEED × powerMultiplier`
+  // (voir `ViceCityWorld.jsx`) : c'est bien le multiplicateur qui fait la course.
+  const topSpeed = (car) => CITY_RUSH_PLAYER_SPEED * car.powerMultiplier;
+  assert.ok(top.powerMultiplier / starter.powerMultiplier >= 1.6,
+    'la supercar la plus chère va au moins 60 % plus vite que la citadine offerte');
+  assert.ok(top.powerMultiplier / starter.powerMultiplier <= 2.2,
+    'l’écart reste sous ×2,2 pour ne pas sortir du champ de vision des rivaux');
+  assert.ok(topSpeed(top) - topSpeed(starter) >= 20,
+    'au moins 20 m/s d’écart de pointe entre l’entrée et le haut du garage');
+  // Les barres du garage doivent refléter le classement réel, prix compris.
+  const idsSortedBy = (stat) => [...CITY_RUSH_CARS].sort((a, b) => a[stat] - b[stat]).map((car) => car.id);
+  assert.deepEqual(idsSortedBy('power'), idsSortedBy('powerMultiplier'));
+  assert.deepEqual(idsSortedBy('price'), idsSortedBy('powerMultiplier'));
+  // Les deux rivaux reçoivent les profils les plus lents hors voiture du joueur
+  // (`rivalProfiles` dans `ViceCityWorld.jsx`) : l'écart en piste est donc réel
+  // dans les deux sens, du départ difficile à la course dominée.
+  const slowestRivals = CITY_RUSH_CARS.slice(0, 2);
+  assert.ok(top.powerMultiplier / slowestRivals[1].powerMultiplier >= 1.6);
 });
 
 test('the active loadout has one red machine-gun charge plus automatic ground boosts', () => {
