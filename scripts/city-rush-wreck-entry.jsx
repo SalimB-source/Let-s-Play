@@ -2,15 +2,20 @@
 //
 // Reprend le vrai `createCityRushWorld` (faux WebGLRenderer) sur un circuit
 // court de trois tours, avec l'escouade en poursuite dès le départ. Le lanceur
-// préconditionne uniquement le module chargé par ce smoke à une cellule restante
-// (le maximum HUD reste quinze) afin d'atteindre vite le chemin d'épave ; les
-// autres tests valident le départ à quinze cellules et chaque impact.
+// préconditionne uniquement le module chargé par ce smoke à trois cellules
+// restantes (le maximum HUD reste quinze) : de quoi enchaîner des carambolages
+// espacés par le répit, puis l'épave ; les autres tests valident le départ à
+// quinze cellules et chaque impact.
+// C'est aussi la vérif qui joue le **vrai barème du carambolage** — les
+// harnais de course longue neutralisent ce coût pour leurs pilotes d'essai :
+// percuter une voiture, civile ou policière, retire un carré au pilote, et le
+// répit partagé (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) espace deux carrés.
 // Si la coque tombe à zéro, trois choses sont vérifiées image par image :
 //   · la voiture **tourne sur elle-même** (lacet cumulé, deux tours complets) ;
 //   · elle **fume** (le pool de fumée est visible) et **s'arrête** (vitesse 0) ;
 //   · la course est **perdue** (fin `destroyed`, pilote dernier, pas de distance
-//     totale parcourue). Les contacts observés retirent un point à la police,
-//     jamais de vie au joueur.
+//     totale parcourue). Chaque carambolage observé retire un carré au pilote
+//     **et** un point à la berline percutée.
 //
 // Le hasard est figé (graine fixe) : la vérif rejoue la même course.
 const BASE_SEED = Number(process.env.CITY_RUSH_WRECK_SEED || 20261004) >>> 0;
@@ -82,6 +87,7 @@ globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} 
 let rafQueue = new Map();
 let rafId = 1;
 let virtualNow = 0;
+let virtualFrame = 0;
 globalThis.requestAnimationFrame = (cb) => { const id = rafId++; rafQueue.set(id, cb); return id; };
 globalThis.cancelAnimationFrame = (id) => { rafQueue.delete(id); };
 Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNow }, configurable: true });
@@ -98,11 +104,18 @@ const FRAME_MS = 1000 / 30;
 const stepFrame = () => {
   const q = [...rafQueue.values()];
   rafQueue.clear();
+  virtualFrame += 1;
   virtualNow += FRAME_MS;
   for (const cb of q) cb(virtualNow);
 };
 
-const { CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_HEALTH } = await import('../src/games/cityRushRules.js');
+const {
+  CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
+} = await import('../src/games/cityRushRules.js');
+// Deux carambolages ne peuvent pas retirer un carré à moins du répit partagé :
+// le monde le décrémente d'une image (`dt`) avant de tester le contact, donc le
+// plus court écart réel est le plafond du répit en images.
+const COLLISION_RUSH_FRAMES = Math.ceil(CITY_RUSH_PLAYER_COLLISION_COOLDOWN / FRAME_MS * 1000);
 
 const cityArg = process.argv.find((a) => a.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_WRECK_ALL === '1';
@@ -110,8 +123,11 @@ const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (
 const RUNS = Math.max(1, Number(process.env.CITY_RUSH_WRECK_RUNS || (process.argv.find((a) => a.startsWith('--runs='))?.slice(7)) || 3));
 const VERBOSE = process.env.CITY_RUSH_WRECK_VERBOSE === '1';
 // Trois tours gardent le smoke court tout en laissant du temps pour éprouver
-// les contacts de police et les tirs qui vident la cellule préconditionnée.
+// les contacts de police et les tirs qui vident la réserve préconditionnée.
 const WRECK_TEST_LAPS = Math.min(CITY_RUSH_LAPS, 3);
+// Réserve de cellules imposée par le lanceur (voir `city-rush-wreck-check.mjs`) :
+// trois carrés, assez pour deux carambolages espacés par le répit avant l'épave.
+const WRECK_TEST_HEALTH = 3;
 
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
@@ -123,6 +139,13 @@ let races = 0;
 let wrecks = 0;
 let violations = 0;
 let policeRamHitsTotal = 0;
+// Barème du carambolage joueur : victimes rencontrées et écart entre deux
+// carrés retirés, pour prouver que le répit tient sur la vraie course.
+const ramVictimsSeen = new Set();
+let playerRamHitsTotal = 0;
+// Plus grand nombre de carambolages joueur sur une même course : il en faut au
+// moins deux pour que la vérification du répit ne passe pas à vide.
+let maxRamsPerRace = 0;
 
 for (let run = 0; run < RUNS; run += 1) {
   seed = (BASE_SEED + run * 7919) >>> 0;
@@ -149,7 +172,10 @@ for (let run = 0; run < RUNS; run += 1) {
       error: (e) => { callbacks.errors.push(e); console.error('CALLBACK ERROR:', e); },
       hud: (h) => { callbacks.huds.push(h); },
       finish: (r) => { callbacks.finish = r; },
-      effect: (e) => { callbacks.effects.push(e); },
+      effect: (e) => {
+        callbacks.effects.push(e);
+        if (e.type === 'player-hit' && e.source === 'collision') collisionHitFrames.push(virtualFrame);
+      },
     }), car.id, { current: audioStub }, null, WRECK_TEST_LAPS, true);
 
     const scene = world.scene;
@@ -178,6 +204,7 @@ for (let run = 0; run < RUNS; run += 1) {
     let wreckLastMeasuredSpeed = null;
     let wreckFirstLap = null;
     let healthSeen = null;
+    const collisionHitFrames = [];
     let maxFrames = 180 * 60; // trois minutes virtuelles pour le circuit de test
     const request = (action) => world.action(action);
 
@@ -231,9 +258,9 @@ for (let run = 0; run < RUNS; run += 1) {
     const healthEvents = callbacks.effects.filter((effect) => effect.type === 'player-health' || effect.type === 'player-hit');
     for (const effect of healthEvents) {
       if (effect.type === 'player-health') {
-        if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH || effect.health !== 1) {
+        if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH || effect.health !== WRECK_TEST_HEALTH) {
           violations += 1;
-          console.error(`[${city.id}#${run}] ÉCHEC : le smoke ne démarre pas à une cellule sur quinze`, effect);
+          console.error(`[${city.id}#${run}] ÉCHEC : le smoke ne démarre pas à la réserve de cellules préconditionnée`, effect);
         }
         trackedHealth = effect.health;
         continue;
@@ -250,9 +277,25 @@ for (let run = 0; run < RUNS; run += 1) {
     const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
     const policeRamHits = callbacks.effects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
     policeRamHitsTotal += policeRamHits.length;
-    if (playerRamDamage.length) {
+    playerRamHitsTotal += playerRamDamage.length;
+    maxRamsPerRace = Math.max(maxRamsPerRace, playerRamDamage.length);
+    for (const effect of playerRamDamage) ramVictimsSeen.add(effect.victim || '?');
+    // Un carambolage coûte exactement un carré : le répit partagé ne peut pas
+    // être contourné en percutant deux voitures coup sur coup.
+    if (playerRamDamage.some((effect) => effect.damage !== 1 || effect.victim === undefined)) {
       violations += 1;
-      console.error(`[${city.id}#${run}] le contact policier a retiré de la vie au joueur`, playerRamDamage);
+      console.error(`[${city.id}#${run}] un carambolage ne retire pas exactement un carré au pilote`, playerRamDamage);
+    }
+    for (let hit = 1; hit < collisionHitFrames.length; hit += 1) {
+      const delta = collisionHitFrames[hit] - collisionHitFrames[hit - 1];
+      if (delta < COLLISION_RUSH_FRAMES) {
+        violations += 1;
+        console.error(`[${city.id}#${run}] deux carambolages ont retiré un carré à ${delta} image(s) d’écart (répit ${COLLISION_RUSH_FRAMES})`, collisionHitFrames);
+      }
+    }
+    if (playerRamDamage.some((effect) => !(Number(effect.gap) >= 0))) {
+      violations += 1;
+      console.error(`[${city.id}#${run}] un carambolage est compté sans écart entre la voiture et le pilote`, playerRamDamage);
     }
     if (policeRamHits.some((effect) => effect.damage !== 1)) {
       violations += 1;
@@ -305,6 +348,17 @@ for (let run = 0; run < RUNS; run += 1) {
 }
 
 if (!policeRamHitsTotal) violations += 1;
-if (violations) fail(`${violations} entorse(s) au contrat de l’épave`, { races, wrecks, policeRamHitsTotal });
-console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${policeRamHitsTotal} carambolage(s) validé(s), aucun dégât de contact sur le joueur${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, cellule de test limitée au module du smoke, graine ${BASE_SEED}).`);
+// Le barème du carambolage joueur doit être éprouvé sur les deux familles :
+// une voiture de police (le carambolage qui abîme la berline) et une voiture
+// civile (le trafic rattrapé ou le face-à-face).
+if (!playerRamHitsTotal) violations += 1;
+if (maxRamsPerRace < 2) violations += 1;
+if (!ramVictimsSeen.has('police')) violations += 1;
+if (!ramVictimsSeen.has('traffic') && !ramVictimsSeen.has('oncoming')) violations += 1;
+if (violations) {
+  fail(`${violations} entorse(s) au contrat de l’épave`, {
+    races, wrecks, policeRamHitsTotal, playerRamHitsTotal, maxRamsPerRace, ramVictimsSeen: [...ramVictimsSeen],
+  });
+}
+console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${playerRamHitsTotal} carambolage(s) joueur validé(s) (${[...ramVictimsSeen].sort().join('/')}, un carré chacun, jusqu'à ${maxRamsPerRace} par course), ${policeRamHitsTotal} carambolage(s) validé(s) côté police${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, cellule de test limitée au module du smoke, graine ${BASE_SEED}).`);
 process.exit(0);

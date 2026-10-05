@@ -886,23 +886,43 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · ${effect.health}/${effect.maxHealth} CASES DE VIE.`, 'pistol');
     else if (effect.type === 'pistol-hit-player') showToast(`AK-47 · ${effect.attacker} TE TOUCHE · ${effect.health}/${effect.maxHealth} CASES.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
-    else if (effect.type === 'traffic-impact') showToast(
-      effect.oncoming
-        ? effect.policeContact
-          ? 'CONTACT POLICIER · LA PATROUILLE EN FACE FAIT DEMI-TOUR.'
-          : `CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À ${effect.pushDirection === 'right' ? 'DROITE' : 'GAUCHE'} · BONUS DE CONTRESENS PERDU.`
-        : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`,
-      effect.policeContact ? 'pistol' : 'slow',
-    );
+    else if (effect.type === 'traffic-impact') {
+      // Chaque choc contre une voiture coûte un carré de vie ; le répit de choc
+      // (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) fait qu'un carambolage en chaîne
+      // n'est facturé qu'une fois, et le bandeau le dit alors franchement.
+      const cost = effect.isPlayer
+        ? (effect.healthLost > 0
+          ? ` · −1 CARRÉ (${effect.health}/${effect.maxHealth})`
+          : ' · RÉPIT DE CHOC · PAS DE CARRÉ')
+        : '';
+      showToast(
+        effect.oncoming
+          ? effect.policeContact
+            ? `CONTACT POLICIER · LA PATROUILLE EN FACE FAIT DEMI-TOUR${cost}.`
+            : `CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À ${effect.pushDirection === 'right' ? 'DROITE' : 'GAUCHE'} · BONUS DE CONTRESENS PERDU${cost}.`
+          : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI${cost}.`,
+        effect.policeContact ? 'pistol' : 'slow',
+      );
+    }
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ L’AK-47 (ROUGE)${effect.ready ? ' · IL EST CHARGÉ' : ''}.`, 'pistol');
-    else if (effect.type === 'police-rally') showToast(effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`, 'pistol');
+    else if (effect.type === 'police-rally') showToast(
+      `${effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`}${effect.healthLost > 0 ? ` CHOC · −1 CARRÉ (${effect.health}/${effect.maxHealth}).` : ''}`,
+      'pistol',
+    );
     else if (effect.type === 'police-hit' && effect.source === 'pistol') {
       showToast(`AK-47 · ${effect.police} TOUCHÉE · ${effect.health}/${effect.maxHealth} CARRÉS.`, 'pistol');
     }
     else if (effect.type === 'police-hit' && effect.source === 'collision') {
-      showToast(`IMPACT À L’ACCÉLÉRATION · ${effect.police} PERD 1 POINT DE VIE · TA COQUE RESTE INTACTE.`, 'pistol');
+      // Le carambolage abîme les deux coques : la berline perd un point, le
+      // pilote un carré — sauf si le répit de choc court encore.
+      showToast(
+        effect.playerHealthLost > 0
+          ? `IMPACT À L’ACCÉLÉRATION · ${effect.police} PERD 1 POINT · TA COQUE PERD 1 CARRÉ (${effect.playerHealth}/${effect.playerHealthMax}).`
+          : `IMPACT · ${effect.police} PERD 1 POINT · RÉPIT DE CHOC · TA COQUE EST INTACTE.`,
+        'pistol',
+      );
     }
     else if (effect.type === 'police-destroyed') showToast(effect.byPlayer
       ? `💥 ${effect.police} DÉTRUITE · +200 PTS${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`
@@ -1744,7 +1764,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, jamais plus d’un par carambolage (le temps de reprendre). Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
           </section>
 
           {/* En Sprint, la carte de l'escouade disparaît : titre, sirène et
@@ -1755,13 +1775,13 @@ export default function ViceCityRushPage() {
               <b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b>
               <p>
                 {sprintMode ? (
-                  <>Rien à fuir dans ce mode : ni escouade, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts posés sur la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</>
+                  <>Rien à fuir dans ce mode : ni escouade, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts posés sur la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, et chaque choc te coûte un carré de vie.</>
                 ) : (
                   <>
                     {!storyMode && mode.policeFromStart
                       ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
                       : 'En Circuit, trois voitures de police entrent au dernier tour et te prennent pour cible, même si tu n’es pas en tête.'}
-                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline de police a six points de vie : un tir rouge lui inflige 3 dégâts et un carambolage à pleine allure lui en inflige un, sans retirer de vie au joueur. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline de police a six points de vie : un tir rouge lui inflige 3 dégâts et un carambolage à pleine allure lui en inflige un, en te coûtant à toi aussi un carré. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
 
                   </>
                 )}

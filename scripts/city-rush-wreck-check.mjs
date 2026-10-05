@@ -1,12 +1,14 @@
 // Lanceur du smoke coque/police : charge le vrai monde three.js avec un
-// WebGLRenderer factice, valide les contacts policiers sans dégât joueur et
-// vérifie aussi l'animation d'épave si les tirs vident la coque.
+// WebGLRenderer factice, joue le **vrai barème du carambolage** (un carré pour
+// le pilote, un point pour la berline percutée, répit partagé entre deux
+// carrés) et vérifie l'animation d'épave quand la coque tombe à zéro.
 //   node scripts/city-rush-wreck-check.mjs            (une ville)
 //   node scripts/city-rush-wreck-check.mjs --all      (les cinq villes)
 //   node scripts/city-rush-wreck-check.mjs --runs=5   (cinq courses par ville)
-// Le pilote d'essai démarre avec une cellule restante (maxHealth reste 15),
-// uniquement pour atteindre rapidement le chemin d'épave. Les tests de règles
-// et de smoke couvrent séparément la barre pleine et les dégâts à une cellule.
+// Le pilote d'essai démarre avec trois cellules (maxHealth reste 15) : assez
+// pour enchaîner deux carambolages espacés par le répit avant l'épave, assez
+// peu pour l'atteindre en une trentaine de secondes. La barre pleine est
+// couverte par les tests de règles et le smoke de course.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -80,12 +82,14 @@ const server = await createServer({
       transform(code, id) {
         if (id.includes('ViceCityWorld')) {
           return {
-            // Précondition de test : une seule cellule restante pour vérifier
-            // l'épave rapidement. Le plafond affiché reste quinze et les autres
-            // tests valident le démarrage plein et le retrait d'une cellule.
+            // Précondition de test : trois cellules restantes pour vérifier le
+            // barème du carambolage (deux carrés espacés par le répit au moins)
+            // puis l'épave rapidement. Le plafond affiché reste quinze, et les
+            // autres tests valident le démarrage plein et le retrait d'une
+            // cellule par tir.
             code: code
               .replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)(')
-              .replaceAll('playerHealth = CITY_RUSH_PLAYER_HEALTH;', 'playerHealth = 1;'),
+              .replaceAll('playerHealth = CITY_RUSH_PLAYER_HEALTH;', 'playerHealth = 3;'),
             map: null,
           };
         }

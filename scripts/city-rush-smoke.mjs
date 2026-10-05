@@ -94,6 +94,24 @@ const server = await createServer({
             map: null,
           };
         }
+        // Précondition de course longue : le pilote d'essai percute le trafic et
+        // la police exprès (riposte policière, face-à-face contrôlé, barrages)
+        // et empile donc les carambolages. Le carré perdu au contact est
+        // neutralisé ici — le maximum HUD reste quinze, la barre reste pleine —
+        // pour que la course aille au bout de ses six tours et que tous les
+        // autres systèmes restent mesurés. Le barème du carambolage est vérifié
+        // par les tests purs et par `check:city-rush-wreck`, qui joue le vrai
+        // coût sur une barre d'une cellule.
+        if (id.includes('cityRushRules')) {
+          const anchor = '  collision: 1, // choc contre une voiture : un carré pour le pilote';
+          if (!code.includes(anchor)) {
+            throw new Error('ancre du carambolage introuvable dans cityRushRules — mettre à jour le lanceur du smoke');
+          }
+          return {
+            code: code.replace(anchor, '  collision: 0, // harnais : carré du carambolage neutralisé'),
+            map: null,
+          };
+        }
         return undefined;
       },
     },
