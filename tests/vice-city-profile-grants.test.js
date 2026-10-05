@@ -12,7 +12,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CITY_RUSH_CARS, CITY_RUSH_COURSES } from '../src/games/cityRushRules.js';
+import { CITY_RUSH_CARS, CITY_RUSH_COURSES, CITY_RUSH_FREE_CAR_IDS } from '../src/games/cityRushRules.js';
 import {
   CITY_RUSH_LEGACY_STORY_ENDING_KEY,
   CITY_RUSH_LEGACY_STORY_KEY,
@@ -82,9 +82,10 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
     storyEnding: '',
   }, storage);
   assert.equal(storage.values.has(CITY_RUSH_PROGRESS_KEY), true);
+  // Le trio le moins puissant est offert à tous : il rejoint la ligne écrite.
   assert.deepEqual(storedJson(storage), {
     cash: 700,
-    ownedCarIds: ['city-hatch', 'toro-v12'],
+    ownedCarIds: [...CITY_RUSH_FREE_CAR_IDS, 'toro-v12'],
     completedCourseIds: ['vice-city', 'new-york'],
     storyChapter: 3,
     storyEnding: '',
@@ -93,7 +94,7 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
   // Données hostiles : chapitre hors bornes, identifiants inconnus, fin inconnue.
   assert.deepEqual(normalizeCityRushSave({ storyChapter: 99, storyEnding: 'x'.repeat(80) }), {
     cash: 0,
-    ownedCarIds: ['city-hatch'],
+    ownedCarIds: [...CITY_RUSH_FREE_CAR_IDS],
     completedCourseIds: [],
     storyChapter: CITY_RUSH_STORY_CHAPTERS,
     storyEnding: '',

@@ -31,6 +31,7 @@
     "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-themes.test.js tests/city-rush-hud.test.js tests/city-rush-progression.test.js",
     "check:city-rush-audio": "node --test tests/city-rush-audio.test.js",
     "check:city-rush-cars": "node --test tests/city-rush-cars.test.js",
+    "check:city-rush-garage": "node scripts/vice-city-garage-check.mjs",
     "check:city-rush-smoke": "node scripts/city-rush-smoke.mjs --all",
     "check:city-rush-sprint": "node scripts/city-rush-sprint-smoke.mjs",
     "check:city-rush-sprint-ui": "node scripts/vice-city-sprint-ui-check.mjs",
