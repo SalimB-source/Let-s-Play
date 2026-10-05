@@ -178,6 +178,12 @@ import {
   cityRushPackLeader,
   cityRushPickupShardState,
   cityRushPolicePace,
+  cityRushPoliceAimAligned,
+  cityRushPoliceAimHold,
+  cityRushPoliceAimReady,
+  CITY_RUSH_POLICE_AIM_TIME,
+  CITY_RUSH_POLICE_AIM_TOLERANCE,
+  CITY_RUSH_POLICE_FIRE_LINE_RANGE,
   cityRushPoliceBlocksLeader,
   cityRushPoliceContact,
   cityRushPoliceDamage,
@@ -1170,6 +1176,71 @@ test('une berline sprinte quand elle est distancée et lève le pied quand elle 
   assert.ok(CITY_RUSH_POLICE_ATTACK_LEAD < 0);
   const attack = cityRushPolicePace({ gap: CITY_RUSH_POLICE_ATTACK_LEAD, baseSpeed: base, leaderSpeed: base, lead: CITY_RUSH_POLICE_ATTACK_LEAD });
   assert.ok(attack > 0 && Number.isFinite(attack));
+});
+
+test('la berline armée se range dans le dos du pilote pour ouvrir le feu', () => {
+  const common = {
+    currentLane: 1,
+    distance: 1000,
+    speed: 26,
+    availableLanes: [0, 1, 2, 3],
+    lookAheadDistance: 200,
+  };
+  // Armée et derrière son client (voie 3) : elle se rabat une voie à la fois.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, pickups: [], fireLane: 3, fireGap: -6,
+  }), 2, 'derrière le pilote : elle glisse vers sa voie');
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, currentLane: 2, pickups: [], fireLane: 3, fireGap: -9,
+  }), 3, 'deux voies plus loin : encore un cran');
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, currentLane: 3, pickups: [], fireLane: 0, fireGap: -5,
+  }), 2, 'elle vise la voie du pilote, pas la sienne');
+  // Déjà dans la voie : rien à changer.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, pickups: [], fireLane: 1, fireGap: -4,
+  }), 1);
+  // Devant le pilote, la ligne de tir n'a plus de sens : le barrage prend le
+  // relais, et une berline devant garde la voie que dictent bonus et trafic.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, pickups: [], fireLane: 3, fireGap: 12,
+  }), 1, 'devant : aucune raison de se ranger dans sa voie');
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, pickups: [], fireLane: 3, fireGap: -CITY_RUSH_POLICE_FIRE_LINE_RANGE - 20,
+  }), 1, 'trop loin derrière : la portée de la rafale ne porte pas jusque-là');
+  // Une voie voisine bouchée ne l'englue pas : elle garde sa voie libre.
+  const truck = { lane: 2, distance: 1004, speed: 4.4 };
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, pickups: [], traffic: [truck], fireLane: 3, fireGap: -6,
+  }), 1, 'voie intermédiaire bouchée : elle ne s’y jette pas');
+  // Un rouge à portée de capot reste la mission première.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, pickups: [{ lane: 1, type: 'pistol', distance: 1030 }], fireLane: 3, fireGap: -6,
+  }), 1);
+});
+
+test('la mire est annoncée avant la rafale et se casse au moindre écart', () => {
+  assert.ok(CITY_RUSH_POLICE_AIM_TIME > 0.5, 'la mire laisse le temps de se décaler');
+  assert.ok(CITY_RUSH_POLICE_AIM_TOLERANCE > 0 && CITY_RUSH_POLICE_AIM_TOLERANCE < 2);
+  // Alignement : la cible doit rester sur l'axe de la voie.
+  assert.equal(cityRushPoliceAimAligned({ x: 0, laneX: 0 }), true);
+  assert.equal(cityRushPoliceAimAligned({ x: CITY_RUSH_POLICE_AIM_TOLERANCE, laneX: 0 }), true);
+  assert.equal(cityRushPoliceAimAligned({ x: CITY_RUSH_POLICE_AIM_TOLERANCE + 0.01, laneX: 0 }), false);
+  assert.equal(cityRushPoliceAimAligned({ x: -3, laneX: 0 }), false);
+  assert.equal(cityRushPoliceAimAligned({ x: Number.NaN, laneX: 0 }), false);
+  // Le temps de mire se cumule image par image, et retombe à zéro dès que la
+  // cible sort de la ligne : c'est l'esquive du pilote.
+  let aim = 0;
+  for (let frame = 0; frame < 40; frame += 1) {
+    aim = cityRushPoliceAimHold({ aim, aligned: true, dt: CITY_RUSH_POLICE_AIM_TIME / 20 });
+  }
+  assert.equal(aim, CITY_RUSH_POLICE_AIM_TIME, 'la mire se plafonne au temps d’alignement');
+  assert.equal(cityRushPoliceAimReady(aim), true, 'mire complète : la rafale peut partir');
+  assert.equal(cityRushPoliceAimReady(aim - 0.02), false, 'mire incomplète : pas de rafale');
+  assert.equal(cityRushPoliceAimHold({ aim, aligned: false, dt: 1 }), 0, 'un écart casse la mire');
+  assert.equal(cityRushPoliceAimReady(0), false, 'viseur froid');
+  assert.equal(cityRushPoliceAimHold({ aim: 10, aligned: false }), 0);
+  assert.equal(cityRushPoliceAimHold({ aim: Number.NaN, aligned: true, dt: 0.5 }), 0.5);
 });
 
 test('l’escouade traverse la route pour rafler un bonus rouge de mitrailleuse', () => {
