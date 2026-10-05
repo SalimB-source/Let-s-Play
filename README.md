@@ -1471,6 +1471,25 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   dans la cassure du Karussell.
 - **Le tempo** est posé (116 BPM), plus proche du rythme d'un tour de huit
   minutes que d'une course de rue.
+- **La vitesse de course** est plus posée elle aussi : le parcours porte
+  `pace: CITY_RUSH_RACEWAY_PACE` (**0,85**), et **tout ce qui roule** passe par
+  ce facteur — pilote, rivaux, trafic, contresens, police, projectiles, et
+  jusqu'aux accélérations et aux freinages (plancher de freinage compris).
+  73 virages sur 9,20 m de bitume ne se lisent pas au rythme d'une artère
+  urbaine : à puissance égale, le Ring se joue à **~107 km/h au lieu de 126**.
+  Le smoke le montre directement — `rythme 0.85 · pointe 81 km/h` sur le Ring
+  contre `rythme 1 · pointe 96 km/h` à Vice City pour la même voiture. Rien ne
+  devient plus facile pour autant : les écarts entre voitures, les distances de
+  streaming (déjà exprimées en secondes de trajet à la vitesse de pointe
+  réelle) et la difficulté relative sont inchangés, seul le défilement
+  ralentit. La contrepartie est mécanique : à distance égale, la course dure
+  `1 / 0,85`, soit ~18 % de plus. Le chrono du Sprint suit la même règle (la
+  marge entre deux portes s'élargit, et le garage annonce la marge réellement
+  accordée sur ce parcours), et le compteur du HUD affiche la vitesse vraie du
+  parcours. Aucun autre parcours ne porte `pace` : les cinq villes, la Route 66
+  et la campagne mexicaine gardent le rythme historique — vérifié image par
+  image, un smoke de Tokyo joué à graine fixée étant strictement identique
+  avant et après.
 
 Le parcours se débloque **après la campagne mexicaine**, comme les autres : il
 s'ajoute à la fin de `CITY_RUSH_COURSES`, donc sans toucher aux sauvegardes
@@ -1485,8 +1504,10 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
   `nordschleifeCornerCurve`, `nordschleifeTrackOffset/Tangent/Yaw/Elevation/
   Grade/Pitch`, `cityRushTrackProfile`), configuration des voies
   (`cityRushLaneConfig`) et marquage de leurs séparateurs
-  (`CITY_RUSH_LANE_PAINT_WIDTH`, `cityRushLaneSeparators`) et silhouette de
-  mini-carte (`cityRushMinimapTrackShape`) ;
+  (`CITY_RUSH_LANE_PAINT_WIDTH`, `cityRushLaneSeparators`), silhouette de
+  mini-carte (`cityRushMinimapTrackShape`) et rythme du parcours
+  (`CITY_RUSH_RACEWAY_PACE`, `CITY_RUSH_COURSE_PACE_MIN`, `cityRushCoursePace`,
+  `cityRushPacedSpeed`, facteur `pace` de `approachCityRushSpeed`) ;
 - `src/games/nordschleifeStage.js` — le décor du Ring (piste et son marquage de
   voies, herbe, glissières, vibreurs, graviers, panneaux allemands, ponts,
   village, karussell, tour, tribunes) ;
@@ -1495,7 +1516,10 @@ existantes. Il porte les deux succès de collection (`vice-city-tour`,
 - `src/games/cityRushStartLine.js` — gabarit de la zone de départ (portique,
   tribunes, dalles) à l'échelle de la piste, texte au sol `START` ;
 - `src/games/ViceCityWorld.jsx` — aiguillage décor/route, voies du parcours,
-  trafic propre au parcours, HUD de route (`nordschleifeRouteHud`) ;
+  trafic propre au parcours, HUD de route (`nordschleifeRouteHud`) et le
+  facteur `paced()`, qui applique `cityRushCoursePace(city)` à chaque vitesse
+  du monde (pilote, rivaux, trafic, contresens, police, projectiles,
+  accélérations, roue libre du tour d'honneur) ;
 - `src/games/ViceCityRushPage.jsx` + `src/games/cityRushTextures.js` — vignette,
   plaque de route `NS · 20 832 km · SENS HORAIRE · V-MAX 300 km/h`, panneau du
   portique `START · ZIEL` ;
@@ -1523,6 +1547,22 @@ appuis, avec des cassures qui se resserrent`) : il mesure le cap rendu tour par
 tour, compte les portions au-dessus de 10° et 14°, vérifie que la cloche lisse
 est symétrique alors que le virage qui se resserre appuie une fois et demie plus
 fort en sortie, et que le profil se referme sans marche sous le portique.
+
+`check:city-rush` porte aussi le test du rythme (`the Nürburgring plays at a
+slower pace, every other course keeps the historic speed`) : le Ring est le
+seul parcours à porter `pace`, les sept autres gardent `1`, un facteur muet ou
+hors bornes est ramené dans [`CITY_RUSH_COURSE_PACE_MIN`, 1], la pointe annoncée
+tombe bien sous les 115 km/h, la marge du Sprint s'élargit au lieu de se
+resserrer et — surtout — l'accélération comme le freinage suivent le facteur :
+la durée pour atteindre la pointe du parcours reste exactement la même,
+plancher de freinage compris.
+
+Le smoke relit aussi le rythme dans le monde : `world.topSpeed` doit valoir
+`CITY_RUSH_PLAYER_SPEED × powerMultiplier × cityRushCoursePace(course)` (donc
+strictement moins que la pointe historique sur un parcours ralenti), et le
+compteur du HUD ne doit jamais dépasser cette pointe multipliée par tous les
+bonus de vitesse empilables. Un `paced()` oublié dans la boucle de rendu se lit
+là, pas à l'œil.
 
 Le smoke vérifie en plus, sur un parcours sans trafic en face, qu'**aucun choc
 frontal** ne s'est produit (et qu'un parcours qui a du trafic en face, lui, en

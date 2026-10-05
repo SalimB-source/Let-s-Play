@@ -18,6 +18,7 @@ import {
   CITY_RUSH_TRACK_BOOST_COLOR,
   CITY_RUSH_RACER_VIEW_DISTANCE,
   cityRushLaneConfig,
+  cityRushCoursePace,
   nordschleifeReadout,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
@@ -806,6 +807,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Le tracé de rendu du parcours : deux S très doux pour les villes et les
   // routes, la suite réelle des 73 virages du Ring pour le Nordschleife.
   const trackProfile = cityRushTrackProfile(city);
+  // Rythme du parcours : 1 partout, `CITY_RUSH_RACEWAY_PACE` sur le Ring, où le
+  // défilement à 126 km/h rend la piste illisible. **Tout** ce qui roule passe
+  // par `paced()` — pilote, rivaux, trafic, contresens, police, projectiles et
+  // même les accélérations — si bien que la course entière ralentit d'un bloc :
+  // les écarts relatifs, les distances de streaming (déjà exprimées en secondes
+  // de trajet) et la difficulté ne changent pas, seul le rythme baisse.
+  const coursePace = cityRushCoursePace(city);
+  const paced = (speed) => speed * coursePace;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(city.background);
@@ -977,13 +986,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
 
   const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
-  // Vitesse de pointe de la voiture engagée : elle règle le streaming (trafic,
-  // contresens, rangées de bonus) et le chrono du Sprint. Les trois systèmes
-  // étaient calibrés sur une seule vitesse ; ils suivent désormais le modèle.
-  const playerTopSpeed = PLAYER_SPEED * playerProfile.powerMultiplier;
+  // Vitesse de pointe de la voiture engagée, rythme du parcours compris : elle
+  // règle le streaming (trafic, contresens, rangées de bonus) et le chrono du
+  // Sprint. Les trois systèmes étaient calibrés sur une seule vitesse ; ils
+  // suivent désormais le modèle — et le parcours.
+  const playerTopSpeed = paced(PLAYER_SPEED * playerProfile.powerMultiplier);
   const trafficViewAhead = cityRushTrafficViewAhead(playerTopSpeed);
   const oncomingViewAhead = cityRushTrafficViewAhead(
-    playerTopSpeed + Math.max(...CITY_RUSH_TRAFFIC_TYPES.map((spec) => spec.speed)),
+    playerTopSpeed + paced(Math.max(...CITY_RUSH_TRAFFIC_TYPES.map((spec) => spec.speed))),
   );
   // Le chrono du Sprint suit la voiture : à la vitesse de référence il vaut
   // toujours les 15 s historiques, mais la citadine (83 km/h) a besoin de plus
@@ -1023,7 +1033,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       health: CITY_RUSH_RACER_HEALTH,
       healthFlash: 0,
       wrecked: false,
-      baseSpeed: PLAYER_SPEED * profile.powerMultiplier,
+      baseSpeed: paced(PLAYER_SPEED * profile.powerMultiplier),
       currentSpeed: 0,
       mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight, driver }),
       currentX: laneX(spec.lane),
@@ -1102,8 +1112,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // s'appuyer sur CITY_RUSH_TRAFFIC_LANES (dimensionné pour 8 voitures).
       lane: forwardLanes[index % forwardLanes.length],
       currentX: 0,
-      baseSpeed: spec.speed * randomRange(0.94, 1.06),
-      currentSpeed: spec.speed,
+      baseSpeed: paced(spec.speed * randomRange(0.94, 1.06)),
+      currentSpeed: paced(spec.speed),
       impactLeft: 0,
       impactCooldownLeft: 0,
       impactChanging: false,
@@ -1141,8 +1151,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       distance: 0,
       lane: oncomingLanes[index % oncomingLanes.length],
       currentX: 0,
-      baseSpeed: spec.speed * randomRange(0.94, 1.1),
-      currentSpeed: spec.speed,
+      baseSpeed: paced(spec.speed * randomRange(0.94, 1.1)),
+      currentSpeed: paced(spec.speed),
       impactCooldownLeft: 0,
       pushedAside: false,
       pushAsideElapsed: 0,
@@ -1187,7 +1197,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       currentX: laneX(lane),
       distance: 0,
       currentSpeed: 0,
-      baseSpeed: CITY_RUSH_POLICE_BASE_SPEED * (index % CITY_RUSH_POLICE_COUNT === 0 ? 1 : 0.97),
+      baseSpeed: paced(CITY_RUSH_POLICE_BASE_SPEED * (index % CITY_RUSH_POLICE_COUNT === 0 ? 1 : 0.97)),
       phase: index * 1.7,
       changeIn: 0.25 + index * 0.4,
       slowLeft: 0,
@@ -2777,11 +2787,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         shot.trackDistance = direction > 0
           ? Math.min(
             shot.maxTrackDistance,
-            shot.startTrackDistance + CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED * shot.age,
+            shot.startTrackDistance + paced(CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED) * shot.age,
           )
           : Math.max(
             shot.maxTrackDistance,
-            shot.startTrackDistance - CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED * shot.age,
+            shot.startTrackDistance - paced(CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED) * shot.age,
           );
         const target = shot.targetId ? getRaceVehicleState(shot.targetId) : null;
         // La cible est croisée quand elle passe de « devant la balle » à
@@ -3078,7 +3088,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.homeLane = police.lane;
     police.currentX = laneX(police.lane);
     police.distance = spawnDistance;
-    police.currentSpeed = (spawnTarget.speed || PLAYER_SPEED) * 0.68;
+    police.currentSpeed = (spawnTarget.speed || paced(PLAYER_SPEED)) * 0.68;
     police.lastPassGap = undefined;
     police.phase = police.index * 1.7 + number * 0.37;
     police.mesh.visible = true;
@@ -3215,8 +3225,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       lane,
       currentX: vehicle.currentX,
       distance: vehicle.distance,
-      currentSpeed: Math.max(vehicle.currentSpeed, CITY_RUSH_POLICE_RALLY_BASE_SPEED * 0.62),
-      baseSpeed: CITY_RUSH_POLICE_RALLY_BASE_SPEED * randomRange(0.95, 1.05),
+      currentSpeed: Math.max(vehicle.currentSpeed, paced(CITY_RUSH_POLICE_RALLY_BASE_SPEED * 0.62)),
+      baseSpeed: paced(CITY_RUSH_POLICE_RALLY_BASE_SPEED * randomRange(0.95, 1.05)),
       phase: vehicle.phase,
       changeIn: 0.12,
       slowLeft: 0,
@@ -3654,7 +3664,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // elle relance tout de suite son choix de voie au lieu d'attendre la fin
       // de son délai.
       if (police.currentSpeed < targetSpeed * 0.55) police.changeIn = Math.min(police.changeIn, 0.1);
-      police.currentSpeed = approachCityRushSpeed(police.currentSpeed, Math.max(0, targetSpeed), 13.5, dt);
+      police.currentSpeed = approachCityRushSpeed(police.currentSpeed, Math.max(0, targetSpeed), 13.5, dt, coursePace);
       police.currentX = lerp(police.currentX, laneX(police.lane), Math.min(1, dt * 5.6));
       const before = priorDistances.get(police.id);
       requests.push({
@@ -3897,8 +3907,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Blocage solide : empêche de traverser la voiture en sens inverse.
       if (distance > oncoming.distance - solidGap) {
         distance = Math.max(0, oncoming.distance - solidGap);
-        playerCurrentSpeed = Math.min(playerCurrentSpeed, 6);
-        currentSpeed = Math.min(currentSpeed, 6);
+        playerCurrentSpeed = Math.min(playerCurrentSpeed, paced(6));
+        currentSpeed = Math.min(currentSpeed, paced(6));
       }
     } else {
       const racer = racers.find((item) => item.id === actorId);
@@ -4492,7 +4502,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       targetFovOffset = -3 * rise;
       followRate = 2.4;
     } else {
-      const speedRatio = clamp(currentSpeed / (PLAYER_SPEED * playerProfile.powerMultiplier * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR), 0, 1);
+      const speedRatio = clamp(currentSpeed / (playerTopSpeed * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR), 0, 1);
       const shake = (playerStunLeft > 0 ? 0.14 : playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 ? 0.05 : 0) + cameraKick * 0.22;
       // La caméra regarde quelques mètres plus loin sur l'axe courbe et se
       // place elle-même sur le morceau de route derrière la voiture. Le résultat
@@ -4585,8 +4595,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // dangereuses de la chaussée.
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
       const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : PLAYER_SPEED * playerProfile.powerMultiplier * speedScale * boostScale * cleanLineScale * oncomingScale;
-      const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt);
+      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * boostScale * cleanLineScale * oncomingScale;
+      // L'accélération comme le freinage suivent le rythme du parcours : la
+      // pointe est plus basse, la montée en régime garde sa durée.
+      const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
       const priorPlayerX = playerX;
       playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
       const playerSkid = skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide);
@@ -4646,8 +4658,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer.skidLeft = Math.max(0, racer.skidLeft - dt);
         racer.powerCooldown = Math.max(0, racer.powerCooldown - dt);
         const racerSlowed = racer.slowLeft > 0 || racer.trafficImpactLeft > 0;
-        const speedTarget = racer.wrecked || racer.stunLeft > 0 ? 0 : racer.baseSpeed * (racerSlowed ? 0.56 : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + Math.sin(elapsed * 0.82 + racer.phase) * 0.38;
-        const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt);
+        const speedTarget = racer.wrecked || racer.stunLeft > 0 ? 0 : racer.baseSpeed * (racerSlowed ? 0.56 : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38);
+        const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt, coursePace);
         requestedRacerSpeeds.set(racer.id, requestedSpeed);
         priorRacerXs.set(racer.id, racer.currentX);
         racer.currentX = lerp(racer.currentX, laneX(racer.lane), Math.min(1, dt * 5.3));
@@ -4656,7 +4668,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const priorTrafficDistances = new Map(trafficCars.map((traffic) => [traffic.id, traffic.distance]));
       const requestedTrafficSpeeds = new Map(trafficCars.map((traffic) => [
         traffic.id,
-        Math.max(3.8, traffic.baseSpeed + Math.sin(elapsed * 0.5 + traffic.phase) * 0.18),
+        Math.max(paced(3.8), traffic.baseSpeed + paced(Math.sin(elapsed * 0.5 + traffic.phase) * 0.18)),
       ]));
 
       // Détection de tremplin pour le joueur
@@ -4860,7 +4872,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const playerSteer = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
       animateRacerCar(playerCar, {
         speed: currentSpeed,
-        maxSpeed: PLAYER_SPEED * playerProfile.powerMultiplier,
+        maxSpeed: playerTopSpeed,
         steer: playerSteer,
         lateral: playerLateral,
         boosting: playerBoostLeft > 0,
@@ -4868,7 +4880,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         impacting: playerTrafficImpactLeft > 0 || playerWrecked,
         stunned: playerStunLeft > 0 && !playerWrecked,
         skidding: playerSkidLeft > 0,
-        braking: currentSpeed < priorSpeed - 2 * dt && currentSpeed > 1,
+        braking: currentSpeed < priorSpeed - paced(2) * dt && currentSpeed > 1,
       }, dt, clockTime);
 
       // Bande-son : le régime moteur suit la vitesse et l'effort demandé
@@ -4876,7 +4888,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Le monde seul connaît ces deux valeurs à la frame près — le HUD de la
       // page est émis au mieux toutes les 120 ms.
       audioRef?.current?.engine({
-        speed: clamp(currentSpeed / (PLAYER_SPEED * playerProfile.powerMultiplier * 1.46), 0, 1),
+        speed: clamp(currentSpeed / (playerTopSpeed * 1.46), 0, 1),
         throttle: clamp((requestedPlayerSpeed - currentSpeed) / 8, 0, 1),
         boost: playerBoostLeft > 0,
       });
@@ -4924,7 +4936,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             impacting: racer.trafficImpactLeft > 0,
             stunned: racer.stunLeft > 0 || (racer.spinLeft || 0) > 0,
             skidding: racer.skidLeft > 0,
-            braking: racer.currentSpeed < priorRacerSpeed - 2 * dt && racer.currentSpeed > 1,
+            braking: racer.currentSpeed < priorRacerSpeed - paced(2) * dt && racer.currentSpeed > 1,
           }, dt, clockTime);
           racer.smokeTimer -= dt;
           if (racer.smokeTimer <= 0) {
@@ -5030,8 +5042,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const shoveSpeedScale = oncoming.pushedAside ? 0.62 : 1;
         const turnSpeedScale = turning ? lerp(1, 0.5, turnEase) : 1;
         const requestedOncomingSpeed = Math.max(
-          oncoming.pushedAside ? 2.6 : 3.8,
-          oncoming.baseSpeed * shoveSpeedScale * turnSpeedScale + Math.sin(elapsed * 0.5 + oncoming.phase) * 0.18,
+          paced(oncoming.pushedAside ? 2.6 : 3.8),
+          oncoming.baseSpeed * shoveSpeedScale * turnSpeedScale + paced(Math.sin(elapsed * 0.5 + oncoming.phase) * 0.18),
         );
         oncoming.distance -= requestedOncomingSpeed * dt;
         oncoming.currentSpeed = requestedOncomingSpeed;
@@ -5143,7 +5155,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       currentSpeed = 0;
       if (phase === 'finished') {
         // Tour d'honneur : les voitures roulent en roue libre sous les confettis.
-        coastSpeed = lerp(coastSpeed, 7, Math.min(1, dt * 0.9));
+        coastSpeed = lerp(coastSpeed, paced(7), Math.min(1, dt * 0.9));
         const step = coastSpeed * dt;
         distance += step;
         racers.forEach((racer) => { racer.distance += step; });
@@ -5164,7 +5176,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Bande-son hors course : ralenti sur la grille et en pause, roue libre
       // pendant le tour d'honneur (la vitesse de `coastSpeed` reste audible).
       audioRef?.current?.engine({
-        speed: phase === 'finished' ? clamp(coastSpeed / (PLAYER_SPEED * playerProfile.powerMultiplier * 1.46), 0, 1) : 0,
+        speed: phase === 'finished' ? clamp(coastSpeed / (playerTopSpeed * 1.46), 0, 1) : 0,
         throttle: 0,
         idle: true,
       });
@@ -5172,7 +5184,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const idleState = (car, maxSpeed) => animateRacerCar(car, { speed: currentSpeed, maxSpeed, idle: phase !== 'finished', steer: 0, lateral: 0 }, dt, clockTime);
       playerCar.position.x = lerp(playerCar.position.x, laneX(playerLane), Math.min(1, dt * 4));
       playerCar.rotation.x = trackPitch(distance);
-      idleState(playerCar, PLAYER_SPEED * playerProfile.powerMultiplier);
+      idleState(playerCar, playerTopSpeed);
       racers.forEach((racer) => {
         if (phase === 'finished') {
           const gap = racer.distance - distance;
@@ -5356,6 +5368,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Vitesse réelle du pilote (m/s) à l'image : les vérifications d'épave
     // mesurent la chute jusqu'à l'arrêt complet. La page, elle, lit le HUD.
     get speed() { return currentSpeed; },
+    // Vitesse de pointe du pilote sur ce parcours (m/s), rythme du parcours
+    // compris (`cityRushCoursePace`) : le smoke y lit que le Ring défile bien
+    // plus lentement qu'en ville, à voiture égale.
+    get topSpeed() { return playerTopSpeed; },
     get isJumping() { return Boolean(playerJumpState.active); },
     get jumpHeight() { return playerCar.position.y || 0; },
     destroy() {

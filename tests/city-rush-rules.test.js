@@ -140,6 +140,11 @@ import {
   CITY_RUSH_ONCOMING_BONUS_MAX,
   advanceCityRushOncomingBonus,
   cityRushDriveSide,
+  CITY_RUSH_COURSES,
+  CITY_RUSH_RACEWAY_PACE,
+  CITY_RUSH_COURSE_PACE_MIN,
+  cityRushCoursePace,
+  cityRushPacedSpeed,
   cityRushOncomingBonusFactor,
   cityRushBrakingRate,
   CITY_RUSH_BRAKE_RATE_FLOOR,
@@ -1603,6 +1608,74 @@ test('London and the Shutō C1 drive on the left, the other courses on the right
   const ring = cityRushLaneConfig(CITY_RUSH_NORDSCHLEIFE_COURSE);
   assert.equal(ring.oncomingLanes.length, 0);
   assert.equal(ring.raceway, true);
+});
+
+test('the Nürburgring plays at a slower pace, every other course keeps the historic speed', () => {
+  // Le Ring est le seul parcours à porter `pace` : 73 virages sur 9,20 m de
+  // bitume se lisent mieux à ~107 km/h qu'à 126. Le facteur ralentit **tout**
+  // ce qui roule — pilote, rivaux, trafic, police — donc la difficulté
+  // relative ne bouge pas, seul le défilement baisse.
+  assert.equal(CITY_RUSH_NORDSCHLEIFE_COURSE.pace, CITY_RUSH_RACEWAY_PACE);
+  assert.ok(CITY_RUSH_RACEWAY_PACE < 1, 'le Ring est plus posé que la ville');
+  assert.ok(CITY_RUSH_RACEWAY_PACE >= CITY_RUSH_COURSE_PACE_MIN, 'et il reste au-dessus du garde-fou');
+  assert.equal(cityRushCoursePace('nordschleife'), CITY_RUSH_RACEWAY_PACE);
+  assert.equal(cityRushCoursePace(CITY_RUSH_NORDSCHLEIFE_COURSE), CITY_RUSH_RACEWAY_PACE);
+
+  for (const course of CITY_RUSH_COURSES.filter((entry) => entry.id !== 'nordschleife')) {
+    assert.equal(course.pace, undefined, `${course.id} garde le rythme historique`);
+    assert.equal(cityRushCoursePace(course), 1);
+    assert.equal(cityRushCoursePace(course.id), 1);
+  }
+
+  // Garde-fous : un parcours inconnu, muet ou mal renseigné roule à 1, un
+  // facteur hors bornes est ramené dans [`CITY_RUSH_COURSE_PACE_MIN`, 1] —
+  // personne n'accélère la course, personne ne la fige.
+  assert.equal(cityRushCoursePace(null), 1);
+  assert.equal(cityRushCoursePace('inconnu'), 1);
+  assert.equal(cityRushCoursePace({ pace: 'vite' }), 1);
+  assert.equal(cityRushCoursePace({ pace: 0 }), 1);
+  assert.equal(cityRushCoursePace({ pace: -2 }), 1);
+  assert.equal(cityRushCoursePace({ pace: 4 }), 1);
+  assert.equal(cityRushCoursePace({ pace: 0.01 }), CITY_RUSH_COURSE_PACE_MIN);
+
+  // Vitesse annoncée : 35 m/s × 0,85 ≈ 107 km/h au lieu de 126.
+  const ringTop = cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED, 'nordschleife');
+  assert.ok(Math.abs(ringTop - CITY_RUSH_PLAYER_SPEED * CITY_RUSH_RACEWAY_PACE) < 1e-9);
+  const ringKmh = ringTop * 3.6;
+  assert.ok(ringKmh > 100 && ringKmh < 115, `le Ring se joue à ${ringKmh.toFixed(0)} km/h`);
+  assert.ok(ringKmh < CITY_RUSH_PLAYER_SPEED * 3.6, 'et plus lentement qu’en ville');
+  assert.equal(cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED, 'vice-city'), CITY_RUSH_PLAYER_SPEED);
+  assert.equal(cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED), CITY_RUSH_PLAYER_SPEED);
+  assert.equal(cityRushPacedSpeed('abc', 'nordschleife'), 0);
+
+  // Le streaming et le chrono du Sprint suivent la voiture du parcours : à
+  // vitesse plus basse, la marge du Sprint s'élargit au lieu de se resserrer.
+  assert.ok(cityRushSprintCheckpointTime(ringTop) > cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED));
+  assert.ok(cityRushSprintCheckpointTime(ringTop) <= CITY_RUSH_SPRINT_CHECKPOINT_TIME_MAX);
+
+  // Accélération **et** freinage suivent le même facteur, plancher de freinage
+  // compris : la montée en régime garde exactement sa durée, à une pointe plus
+  // basse, et une voiture ralentit moins vite en valeur absolue.
+  assert.equal(approachCityRushSpeed(0, 30, 10, 1), 10);
+  assert.ok(Math.abs(approachCityRushSpeed(0, 30, 10, 1, CITY_RUSH_RACEWAY_PACE) - 10 * CITY_RUSH_RACEWAY_PACE) < 1e-9);
+  let flat = 0;
+  let paced = 0;
+  for (let second = 0; second < 6; second += 1) {
+    flat = approachCityRushSpeed(flat, CITY_RUSH_PLAYER_SPEED, 10, 1);
+    paced = approachCityRushSpeed(paced, ringTop, 10, 1, CITY_RUSH_RACEWAY_PACE);
+  }
+  assert.ok(Math.abs(flat - CITY_RUSH_PLAYER_SPEED) < 1e-9);
+  assert.ok(Math.abs(paced - ringTop) < 1e-9, 'même durée pour atteindre la pointe du parcours');
+  // Le plancher de freinage (12 m/s²) est celui d'une citadine : sans le
+  // facteur, elle freinerait relativement plus fort sur le Ring qu'en ville.
+  assert.ok(Math.abs(cityRushBrakingRate(6) - CITY_RUSH_BRAKE_RATE_FLOOR) < 1e-9, 'le plancher s’applique à 6 m/s²');
+  const brakingFlat = approachCityRushSpeed(30, 10, 6, 1);
+  const brakingPaced = approachCityRushSpeed(30, 10, 6, 1, CITY_RUSH_RACEWAY_PACE);
+  assert.ok(brakingPaced > brakingFlat, 'la décélération suit le rythme du parcours');
+  assert.ok(Math.abs((30 - brakingPaced) - (30 - brakingFlat) * CITY_RUSH_RACEWAY_PACE) < 1e-9);
+  // Sans le facteur, l'appel historique ne change pas d'un poil.
+  assert.equal(approachCityRushSpeed(30, 10, 6, 1, 1), brakingFlat);
+  assert.equal(approachCityRushSpeed(30, 10, 6, 1, 0), brakingFlat, 'un facteur invalide retombe sur 1');
 });
 
 test('the oncoming bonus ramps up in the wrong-way lanes and drains on the way back', () => {

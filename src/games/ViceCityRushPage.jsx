@@ -50,6 +50,7 @@ import {
   CITY_RUSH_PICKUPS,
   CITY_RUSH_TRACK_BOOST_DURATION,
   buildCityRushMinimapState,
+  cityRushPacedSpeed,
   cityRushRaceDistance,
   cityRushSprintCheckpointTime,
   createCityRushInventory,
@@ -485,10 +486,12 @@ export default function ViceCityRushPage() {
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === carId) || CITY_RUSH_CARS[0], [carId]);
   // Chrono du Sprint : la valeur publiée par le monde pendant la course, et
-  // sinon celle calculée pour la voiture sélectionnée dans le garage.
+  // sinon celle calculée pour la voiture sélectionnée dans le garage — au
+  // rythme du parcours, exactement comme le monde : sur le Ring, plus posé, la
+  // marge annoncée est la marge réellement accordée.
   const sprintCheckpointBonus = useMemo(
-    () => cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED * selectedCar.powerMultiplier),
-    [selectedCar],
+    () => cityRushSprintCheckpointTime(cityRushPacedSpeed(CITY_RUSH_PLAYER_SPEED * selectedCar.powerMultiplier, city)),
+    [selectedCar, city],
   );
   const sprintCheckpointSeconds = Math.max(0, Number(hud.sprint?.timeTotal) || sprintCheckpointBonus);
   const roster = useMemo(() => {
