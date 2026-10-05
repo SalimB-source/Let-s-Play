@@ -66,6 +66,7 @@ globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} 
 let rafQueue = new Map();
 let rafId = 1;
 let virtualNow = 0;
+let virtualFrame = 0;
 globalThis.requestAnimationFrame = (cb) => { const id = rafId++; rafQueue.set(id, cb); return id; };
 globalThis.cancelAnimationFrame = (id) => { rafQueue.delete(id); };
 Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNow }, configurable: true });
@@ -75,7 +76,7 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
-  CITY_RUSH_PLAYER_HEALTH,
+  CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
 
@@ -106,6 +107,7 @@ const FRAME_MS = 1000 / 30;
 const stepFrame = () => {
   const q = [...rafQueue.values()];
   rafQueue.clear();
+  virtualFrame += 1;
   virtualNow += FRAME_MS;
   for (const cb of q) cb(virtualNow);
 };
@@ -163,6 +165,10 @@ for (const [index, city] of courses.entries()) {
   const callbacks = {
     ready: 0, errors: [], huds: [], laps: [], effects: [], pickups: [], finish: null,
   };
+  // Les contacts de police sont légitimes : le pilote inflige 1 dégât à la
+  // berline, sans perdre de vie. On retient leur frame pour ne pas signaler
+  // l'intervalle de collision comme un passage à travers une voiture solide.
+  const policeCollisionFrames = new Map();
   const audioCalls = {};
   const audioStub = {};
   for (const name of AUDIO_METHODS) {
@@ -194,6 +200,9 @@ for (const [index, city] of courses.entries()) {
       pickup: (p) => { callbacks.pickups.push(p); },
       effect: (e) => {
         callbacks.effects.push(e);
+        if (e.type === 'police-hit' && e.source === 'collision') {
+          policeCollisionFrames.set(e.police, virtualFrame);
+        }
         // Compté à la source : les contrôles d'arrivée lisent `wreckEffects`.
         if (e.type === 'player-wrecked') wreckEffects += 1;
       },
@@ -591,9 +600,17 @@ for (const [index, city] of courses.entries()) {
           const racerDistance = Number.isFinite(Number(racer.rawDistance)) ? Number(racer.rawDistance) : Number(racer.distance);
           if (!Number.isFinite(carDistance) || !Number.isFinite(racerDistance)) continue;
           // La police du trafic rappelée percute volontairement le pilote
-          // qu'elle chasse : ce rattrapage est le seul contact toléré.
+          // qu'elle chasse : ce rattrapage est toléré. Un carambolage provoqué
+          // en accélérant est aussi un contact légitime : la police perd un
+          // point et le joueur aucun ; on exclut la durée du cooldown (plus une
+          // émission HUD) plutôt que de le confondre avec un traversé sans choc.
           const contactCatchUp = car.rallied && (carDistance - racerDistance) < CITY_RUSH_CAR_GAP;
-          const overlapNow = contactCatchUp ? Infinity : Math.abs(carDistance - racerDistance);
+          const lastCollisionFrame = policeCollisionFrames.get(car.name);
+          const collisionGraceFrames = Math.ceil(CITY_RUSH_POLICE_COLLISION_COOLDOWN / (FRAME_MS / 1000)) + 4;
+          const inCollisionWindow = racer.isPlayer
+            && Number.isFinite(lastCollisionFrame)
+            && virtualFrame - lastCollisionFrame <= collisionGraceFrames;
+          const overlapNow = contactCatchUp || inCollisionWindow ? Infinity : Math.abs(carDistance - racerDistance);
           if (!racer.isPlayer) {
             if (overlapNow < policeAiOverlap) policeAiOverlap = overlapNow;
             continue;

@@ -3,12 +3,15 @@
 // Les courses restent jouables à partir du premier circuit ; une arrivée normale
 // débloque le parcours suivant. Seuls les modes rémunérés versent des billets :
 // 1er → 50, 2e → 30, 3e (ou épave, classée dernière) → 10.
+// Le garage de départ est offert à tous : la citadine `CITY_RUSH_STARTER_CAR_ID`
+// plus les trois voitures les moins puissantes du catalogue
+// (`cityRushFreeCarIds`). Les cinq autres se paient en billets verts.
 //
 // La sauvegarde est une donnée pure (aucun accès DOM en dehors des fonctions de
 // stockage) : le jeu la lit et l'écrit dans un cache local par appareil/compte,
 // et la copie serveur (`public.vice_city_rush_progress`, voir `viceCityApi.js`)
 // suit le joueur d'un appareil à l'autre — même principe que Mirage Rush.
-import { CITY_RUSH_CARS, CITY_RUSH_COURSES } from './cityRushRules.js';
+import { CITY_RUSH_CARS, CITY_RUSH_COURSES, cityRushFreeCarIds } from './cityRushRules.js';
 
 export const CITY_RUSH_PROGRESS_KEY = 'letsplay_vice_city_rush_progress_v1';
 export const CITY_RUSH_STARTER_CAR_ID = 'city-hatch';
@@ -62,6 +65,12 @@ export function normalizeCityRushProgress(value, { cars = CITY_RUSH_CARS, course
   const carIds = validIdSet(cars);
   const courseIds = validIdSet(courses);
   const rawCars = new Set(Array.isArray(value?.ownedCarIds) ? value.ownedCarIds.filter((id) => carIds.has(id)) : []);
+  // Le garage de départ : la citadine offerte, plus les trois voitures les
+  // moins puissantes du catalogue (`cityRushFreeCarIds`), que tout le monde
+  // possède — une sauvegarde plus ancienne, un instantané serveur ou une ligne
+  // accordée par l'administration les retrouvent donc à la lecture, sans
+  // migration ni achat.
+  for (const freeCarId of cityRushFreeCarIds(cars)) rawCars.add(freeCarId);
   if (carIds.has(CITY_RUSH_STARTER_CAR_ID)) rawCars.add(CITY_RUSH_STARTER_CAR_ID);
 
   const rawCompleted = new Set(Array.isArray(value?.completedCourseIds) ? value.completedCourseIds.filter((id) => courseIds.has(id)) : []);
@@ -85,6 +94,11 @@ export function isCityRushCarOwned(progress, carId, cars = CITY_RUSH_CARS) {
   return carIds.has(carId) && normalizeCityRushProgress(progress, { cars }).ownedCarIds.includes(carId);
 }
 
+/** Les trois voitures les moins puissantes sont offertes : jamais un achat. */
+export function isCityRushCarFree(carId, cars = CITY_RUSH_CARS) {
+  return cityRushFreeCarIds(cars).includes(carId);
+}
+
 export function isCityRushCourseUnlocked(progress, courseId, courses = CITY_RUSH_COURSES) {
   const index = (Array.isArray(courses) ? courses : []).findIndex((course) => course?.id === courseId);
   if (index < 0) return false;
@@ -98,6 +112,9 @@ export function purchaseCityRushCar(progress, carId, cars = CITY_RUSH_CARS) {
   const current = normalizeCityRushProgress(progress, { cars });
   const car = (Array.isArray(cars) ? cars : []).find((item) => item?.id === carId);
   if (!car) return { progress: current, purchased: false, reason: 'unknown-car' };
+  // Une voiture offerte appartient déjà à tout le monde : son prix catalogue
+  // n'est jamais débité, même si un ancien appel force le passage par ici.
+  if (isCityRushCarFree(carId, cars)) return { progress: current, purchased: false, reason: 'free-car' };
   if (current.ownedCarIds.includes(carId)) return { progress: current, purchased: false, reason: 'already-owned' };
   const price = safeMoney(car.price);
   if (current.cash < price) return { progress: current, purchased: false, reason: 'insufficient-funds' };

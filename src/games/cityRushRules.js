@@ -259,6 +259,51 @@ export const CITY_RUSH_CARS = Object.freeze([
   }),
 ]);
 
+// ── Garage : les trois voitures les moins puissantes sont offertes ─────────
+// Tout le monde démarre avec les trois voitures les moins puissantes du
+// catalogue, sans billet vert à dépenser : la progression du garage commence
+// donc à la quatrième voiture. Le classement suit `powerMultiplier`, **le**
+// levier de course décrit plus haut (vitesse de pointe réelle), et non la
+// barre « PUISSANCE » du garage : MISTRAL 1.4 (0,66), NOVA 1.8 GT (0,76) et
+// WOLFSBURG GT-R (0,92). Les deux tableaux sont tenus alignés, mais en cas de
+// désaccord c'est la vitesse de pointe qui tranche.
+//
+// La liste est calculée depuis `CITY_RUSH_CARS` : ajouter une voiture plus
+// lente que le trio la fait entrer d'elle-même dans l'offre, et les prix du
+// catalogue restent la référence pour les cinq autres voitures. Le garage les
+// marque « OFFERTE » (voir `ViceCityRushPage.jsx`) et `cityRushProgress.js`
+// les ajoute au garage de chaque sauvegarde — visiteur, compte connecté et
+// instantané serveur compris.
+export const CITY_RUSH_FREE_CAR_COUNT = 3;
+
+/** Puissance croissante : la vitesse de pointe d'abord, la barre du garage en départage. */
+function cityRushPowerRank(a, b) {
+  const topSpeed = (Number(a?.powerMultiplier) || 0) - (Number(b?.powerMultiplier) || 0);
+  return topSpeed || (Number(a?.power) || 0) - (Number(b?.power) || 0);
+}
+
+/** Catalogue trié du plus lent au plus rapide (ordre du garage « par puissance »). */
+export const CITY_RUSH_CARS_BY_POWER = Object.freeze(
+  [...CITY_RUSH_CARS].sort(cityRushPowerRank),
+);
+
+/** Identifiants offerts à tous : les `CITY_RUSH_FREE_CAR_COUNT` voitures les moins puissantes. */
+export function cityRushFreeCarIds(cars = CITY_RUSH_CARS) {
+  const count = Math.max(0, CITY_RUSH_FREE_CAR_COUNT);
+  return [...(Array.isArray(cars) ? cars : [])]
+    .filter((car) => car?.id)
+    .sort(cityRushPowerRank)
+    .slice(0, count)
+    .map((car) => car.id);
+}
+
+export const CITY_RUSH_FREE_CAR_IDS = Object.freeze(cityRushFreeCarIds());
+
+/** Une voiture offerte appartient à chaque joueur, dès sa première course. */
+export function isCityRushFreeCar(carId, cars = CITY_RUSH_CARS) {
+  return cityRushFreeCarIds(cars).includes(carId);
+}
+
 // Le trafic d'obstacle roule nettement moins vite que les voitures de course.
 // La route est à double sens : les trois voies de droite vont dans le sens de
 // la course, les trois voies de gauche accueillent le trafic venant en face.

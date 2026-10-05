@@ -282,7 +282,13 @@ export default function Layout({ children }) {
   const [searchContent, setSearchContent] = useState(null);
   const ensureSearchIndex = () => {
     if (searchContent || searchIndexPromise) return;
-    loadSearchIndex().then(setSearchContent).catch(() => {});
+    // `setState(fn)` est interprété par React comme une updater function
+    // (appelée avec l'état précédent) dès que `fn` est une fonction — passer
+    // `searchContent` tel quel exécutait donc `searchContent(previousState)`
+    // au lieu de stocker la fonction, et l'état devenait son résultat (un
+    // tableau), faisant planter tout appel suivant (`searchContent is not a
+    // function`). L'enrober dans `() => fn` force React à la stocker telle quelle.
+    loadSearchIndex().then((fn) => setSearchContent(() => fn)).catch(() => {});
   };
   const liveSearchResults = useMemo(
     () => (searchContent ? searchContent(searchValue).slice(0, 6) : []),

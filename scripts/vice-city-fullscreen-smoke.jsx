@@ -39,6 +39,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
+import { CITY_RUSH_FREE_CAR_COUNT } from '../src/games/cityRushRules.js';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -263,7 +264,10 @@ export async function checkViceCityFullscreen(assert) {
       await waitForIntroStep(node, 'GARAGE');
       assert.deepEqual(shellState(node, api), OPEN, 'la vignette de course ouvre directement le garage');
       assert.equal(carCardOf(node, 0).disabled, false, 'la citadine offerte est disponible');
-      assert.equal(carCardOf(node, 1).disabled, true, 'les voitures payantes restent verrouillées sans billets');
+      // Les trois voitures les moins puissantes sont offertes à tous : la
+      // première carte payante est donc la quatrième du garage.
+      assert.equal(carCardOf(node, CITY_RUSH_FREE_CAR_COUNT).disabled, true,
+        'les voitures au-delà du trio offert restent verrouillées sans billets');
       const alternatePilot = node.querySelector('.city-rush-driver-pill:not(.is-player)');
       assert.ok(alternatePilot, 'le choix du pilote reste accessible avant le lancement par voiture');
       const chosenPilotName = alternatePilot.querySelector('.city-rush-driver-pill-copy b').firstChild.textContent;
