@@ -790,21 +790,21 @@ grand écran.
 ## Vice City Rush : les tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
-villes (Vice City, New York, Tokyo, Paris, Londres). La ville est une boucle de
-**600 m** qu'on reparcourt, et l'on repasse **sous le portique de départ à
-chaque tour**. Les courses sont longues, et **le dernier tour est le plus long
-de tous : 1 200 m, deux boucles d'une traite**, soit deux fois un tour ordinaire.
-C'est aussi celui où la police entre en piste. **Tokyo se joue sur la Shuto
-Expressway Route 1** — la C1 首都高速都心環状線, l'anneau intérieur réel de
-14,8 km autour du palais impérial, dans le sens 内回り : chaque boucle de 600 m
-rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus bas).
+villes (Vice City, New York, Tokyo, Paris, Londres). Chaque ville est une boucle
+de **600 m** qu'on reparcourt ; les courses standard passent maintenant à
+**six tours**, avec un dernier tour double de **1 200 m** : **4 200 m au total**.
+Le Sprint s'allonge lui aussi à quatorze checkpoints. C'est au dernier tour que
+la police entre en piste. **Tokyo se joue sur la Shuto Expressway Route 1** —
+la C1 首都高速都心環状線, l'anneau intérieur réel de 14,8 km autour du palais
+impérial, dans le sens 内回り : chaque boucle de 600 m rejoue la boucle
+officielle secteur par secteur (voir « Tokyo : la C1 » plus bas).
 
-| Mode | Tours | Distance | À 29 m/s, sans incident |
+| Mode | Tours / checkpoints | Distance | À 29 m/s, sans incident |
 | --- | --- | --- | --- |
-| Circuit, Poursuite | 4 | 3 000 m (3 × 600 m, puis 1 200 m) | ≈ 1 min 43 |
-| Sprint (solo) | 10 checkpoints | 3 000 m (10 portes × 300 m) | ≈ 1 min 43 |
-| Histoire, chapitres 1 à 5 | 4 | 3 000 m | ≈ 1 min 43 |
-| Histoire, chapitre 6 « Le dernier tour » | 5 | 3 600 m (4 × 600 m, puis 1 200 m) | ≈ 2 min 04 |
+| Circuit, Poursuite | 6 tours | 4 200 m (5 × 600 m, puis 1 200 m) | ≈ 2 min 25 |
+| Sprint (solo) | 14 checkpoints | 4 200 m (14 portes × 300 m) | ≈ 2 min 25 |
+| Histoire, chapitres 1 à 5 | 6 tours | 4 200 m | ≈ 2 min 25 |
+| Histoire, chapitre 6 « Le dernier tour » | 7 tours | 4 800 m (6 × 600 m, puis 1 200 m) | ≈ 2 min 46 |
 
 Le trafic, les tirs et la police ralentissent les courses réelles (le pilote
 d'essai du smoke met 10 à 15 % de plus que ces temps), tandis que le bonus de
@@ -818,12 +818,12 @@ et le dernier tour durait 21 s.
   ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
   s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
   **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
-  (« TOUR 1/4 », puis « TOUR 4/4 · DERNIER TOUR », puis « PLUS QUE 600 M » au
+  (« TOUR 1/6 », puis « TOUR 6/6 · DERNIER TOUR », puis « PLUS QUE 600 M » au
   passage du milieu du dernier tour) et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
-  · TOUR 2/4 » — « LAP 2 », « LAP 3 » — (puis « DERNIER TOUR » en doré), la
+  · TOUR 2/6 » — « LAP 2 », « LAP 3 » — (puis « DERNIER TOUR » en doré), la
   carte TOUR du HUD avance, les rivaux annoncent leur dernier tour. Le dernier
   passage termine la course. La bannière s'affiche **dans le coin inférieur
   gauche** — au-dessus des flèches de direction sur ordinateur, au-dessus du
@@ -837,7 +837,7 @@ et le dernier tour durait 21 s.
   arrivée. La jauge du dernier tour court sur ses 1 200 m (elle ne retombe pas à
   zéro au portique), le suivi de tour du HUD donne au dernier segment deux fois
   la largeur des autres, et la liste des positions (`CityRushRaceList`, prop
-  `laps`) affiche « T3/4 » sur la course en cours.
+  `laps`) affiche par exemple « T5/6 » en début de dernier tour.
   `cityRushLineKind(ligne, tours)` dit ce que vaut chaque ligne (`'lap'`,
   `'checkpoint'`, `'finish'`), `cityRushRaceDistance(tours)` donne la distance
   totale et `cityRushLapLength(tour, tours)` la longueur d'un tour. Une ligne
@@ -849,80 +849,72 @@ et le dernier tour durait 21 s.
   `CITY_RUSH_FINAL_LAP_LOOPS` dans `cityRushRules.js` (`1` redonne un dernier
   tour ordinaire). La boucle de 600 m elle-même ne bouge pas : le décor, le
   portique et les tests en dépendent. Les chronos sont rangés sous
-  `letsplay_vice_city_rush_bests_v2` : les records des anciennes courses, plus
+  `letsplay_vice_city_rush_bests_v3` : les records des anciennes courses, plus
   courtes, n'auraient jamais pu être battus.
 - **Le Sprint, solo contre la montre.** Le mode `SPRINT` de `RACE_MODES`
   (`format: 'sprint'`) ne se court **contre personne** : `raceFormat='sprint'`
   descend jusqu'à `createCityRushWorld`, qui ne crée **aucun rival**
   (`racerSpecs = []`), **aucune police** (escouade jamais déployée, berline
   retirée du trafic — `CITY_RUSH_TRAFFIC_TYPES` filtré sur `id !== 'police'` —,
-  hélicoptère d'observation laissé au sol), **aucun bonus ni pad turbo**
-  (`setupEncounter` renvoie une rangée vide) et **aucune arme** (l'AK-47 est
-  ignoré, la barre de coque ne s'arme pas). À la place : **10 checkpoints**
+  hélicoptère d'observation laissé au sol), **aucune arme** (l'AK-47 est
+  ignoré, la barre de coque ne s'arme pas). Seuls les pads turbo verts sont
+  placés périodiquement sur la chaussée (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL`) ;
+  aucun bonus rouge ni pouvoir d'hélicoptère n'apparaît. À la place :
+  **14 checkpoints**
   espacés de `CITY_RUSH_SPRINT_CHECKPOINT_SPACING` = **300 m**
-  (`CITY_RUSH_SPRINT_DISTANCE` = 3 000 m), chacun rendant
+  (`CITY_RUSH_SPRINT_DISTANCE` = **4 200 m**), chacun rendant
   `CITY_RUSH_SPRINT_CHECKPOINT_TIME` = **15 s** au chrono — le compteur repart
   de 15 et ne cumule pas l'avance. Chrono à zéro : effet `sprint-timeout`,
   course perdue, ni record ni victoire enregistrés.
   **L'interface suit le solo.** Carte HUD « SOLO » et jauge des checkpoints à
   la place de la position et du tour, radar et bouton AK-47 absents,
-  compte à rebours et pied de coque en « 10 CHECKPOINTS » plutôt qu'en
+  compte à rebours et pied de coque en « 14 CHECKPOINTS » plutôt qu'en
   « 1 TOURS ». La colonne latérale remplace le classement à trois par un
   chrono solo — `buildCityRushMinimapState({ solo: true })` ne garde que le
-  pilote, sinon la grille de départ à trois revenait dans le panneau
-  « POSITIONS » tant que le monde n'avait pas envoyé son premier HUD —, la
-  carte « OBJETS · 1 ARME + TURBO » par « SOLO · CHRONO », et la carte rouge
-  « 🚨 ESCOUADE DE POLICE » par une carte solo sans sirène. Le choix du pilote
-  au garage garde ses trois visages (ce sont des identités, pas des
-  adversaires) et l'annonce : « SPRINT SOLO · AUCUN ADVERSAIRE EN PISTE ».
-  Deux vérifications tiennent l'ensemble : `npm run check:city-rush-sprint`
+  pilote —, la carte « OBJETS · 1 ARME + TURBO » par « SOLO · CHRONO », et la
+  carte rouge « 🚨 ESCOUADE DE POLICE » par une carte solo sans sirène. Deux
+  vérifications tiennent l'ensemble : `npm run check:city-rush-sprint`
   (une course complète dans les cinq villes, jouée image par image : solo,
-  aucune police, aucun bonus, 10 checkpoints) et
+  aucune police, aucun bonus d'arme, 14 checkpoints) et
   `npm run check:city-rush-sprint-ui` (la vraie page dans jsdom : rien n'y
   évoque la poursuite ou les rivaux en Sprint, et les modes Circuit et
   Poursuite gardent les leurs).
-- **L'escouade de police du dernier tour.** Dès que le **premier du classement**
-  attaque le dernier tour — **1 200 m sous la sirène**, soit deux fois plus qu'à
-  l'origine —, **deux berlines d'interception entrent en piste juste derrière
-  lui** (30 m et 38 m, sirène allumée) et roulent pour lui nuire : elles
-  changent de voie pour **rafler en priorité les bonus rouges (mitrailleuse) et
-  jaunes (hélicoptère)** — un bonus de tir vaut cinq bonus ordinaires dans leur
-  choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
-  `chooseCityRushPoliceLane`) — et **ouvrent le feu sur le leader**. Elles
-  **entrent armées** : le tir droit (bleu) et la mitrailleuse (rouge) sont
-  chargés dès l'entrée en piste, seul l'hélicoptère (jaune) reste à voler
-  (`CITY_RUSH_POLICE_START_CHARGES`, `createCityRushPoliceInventory`) ; la
-  berline tire la rafale rouge dès que son client est devant elle, et le tir
-  bleu couvre le temps de recharge du rouge. Elles **ne sont pas classées** : `rankCityRushRacers`
-  ne les voit jamais, la grille reste à quatre, et le HUD les affiche à part
-  (`hud.police`, marqueurs rouge et bleu de la mini-carte). La même escouade
-  opère sur les cinq circuits — mais jamais en Sprint, qui ne déploie aucune
-  police (voir « Le Sprint, solo contre la montre »). Elle choisit les voies dégagées
-  et évite le trafic lent (`isCityRushPoliceLaneJammed`) ; si elle est malgré
-  tout bloquée, elle heurte le véhicule lent comme un rival : **0,6 s de
-  ralentissement et un dérapage**, puis le trafic se rabat (`blockedBy`,
-  `resolveCityRushPoliceMovement`, `applyTrafficImpact`), sans bandeau « choc ».
-  Le changement de voie est calculé à la position de la berline, pas à celle du
-  joueur. En dernier tour, une rafale rouge ou un missile jaune peut riposter
-  contre la berline la plus proche quand aucun rival n'est devant ; le tir bleu
-  fait pareil : voie libre devant, il part vers l'arrière contre la berline la
-  plus proche de sa voie (`cityRushStraightShotRetaliation`), et en vol il
-  balaie le segment de voie parcouru, donc une berline qui se rabat devant la
-  balle l'encaisse même sans verrou (`cityRushStraightShotSweptHit`,
-  `CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
-  destructibles.** Chacune porte une barre de vie au-dessus du toit (reprise
-  sur les pastilles de la mini-carte) : **trois tirs droits bleus (2 points
-  chacun), OU deux rafales rouges (3 points chacune), OU un tir rouge et un
-  carambolage (3 points chacun), OU deux carambolages (3 points chacun), OU
-  un tir d'hélicoptère** la détruisent
-  (`CITY_RUSH_POLICE_HEALTH = 6`, barème pur `cityRushPoliceDamage`, et
-  `cityRushPoliceShotsLeft` pour le nombre de tirs ou chocs restants). À la
-  destruction : explosion complète, retrait immédiat de la course et de la
-  mini-carte, **+200 pts** pour le pilote qui l'abat
-  (`CITY_RUSH_POLICE_DESTROY_SCORE`), et la sirène s'éteint quand la dernière
-  berline explose. La berline du trafic rappelée par un contact est
-  destructible comme l'escouade ; à la course suivante, le trafic repart au
-  complet.
+- **L'escouade de police.** En Circuit, deux véhicules d'interception entrent
+  derrière le leader à l'ouverture du **sixième et dernier tour** — un dernier
+  tour de 1 200 m sous la sirène. En Poursuite, la même escouade est présente
+  dès le départ. Une berline et un SUV roulent pour gêner le pilote : barrage,
+  changement de voie, chasse, et renfort après une destruction au dernier tour.
+  Elles **ne sont pas classées** : `rankCityRushRacers` ne les voit jamais, la
+  grille garde trois pilotes, et le HUD les affiche à part (`hud.police`,
+  marqueurs rouge et bleu de la mini-carte). Elles convoitent les bonus rouges
+  d'AK-47 ; un bonus rouge ne représente que **5 % des objets** sur la route,
+  contre 95 % de pads turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de
+  tir vaut cinq bonus ordinaires dans leur choix de voie
+  (`CITY_RUSH_POLICE_HUNT_TYPES`, `chooseCityRushPoliceLane`). Elles arrivent
+  sans charge d'arme, chargent leur mitrailleuse sur ces rares bonus rouges,
+  puis tirent sur leur client. **L'attaque d'hélicoptère a été retirée** :
+  aucun missile ni frappe aérienne ne peut toucher le joueur.
+
+  La même escouade opère dans les cinq villes et sur les routes de carrière —
+  jamais en Sprint. Elle choisit les voies dégagées et évite le trafic lent
+  (`isCityRushPoliceLaneJammed`) ; si elle est malgré tout bloquée, elle heurte
+  le véhicule lent comme un rival : **0,6 s de ralentissement et un dérapage**,
+  puis le trafic se rabat (`blockedBy`, `resolveCityRushPoliceMovement`,
+  `applyTrafficImpact`). Le changement de voie est calculé à la position de la
+  berline, pas à celle du joueur.
+
+  **Percuter la police en accélérant l'abîme sans abîmer le joueur.** Le contact
+  ne compte que si la berline est devant et que le joueur arrive dessus plus
+  vite (`cityRushPoliceCollisionHit`). Il retire **un point de vie** à la
+  police, mais **aucun** à la voiture du joueur ; les chocs ne diminuent donc
+  pas la barre de coque. Une berline a six points de vie : deux tirs rouges
+  d'AK-47 (3 points chacun), six carambolages (1 point chacun), ou une
+  combinaison équivalente la détruisent (`CITY_RUSH_POLICE_HEALTH`,
+  `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`). À la destruction :
+  explosion, retrait immédiat de la course et de la mini-carte, **+200 pts**
+  pour le pilote qui l'abat (`CITY_RUSH_POLICE_DESTROY_SCORE`). La berline du
+  trafic rappelée par un contact est destructible comme l'escouade ; à la
+  course suivante, le trafic repart au complet.
 - **Le dernier tour sous surveillance.** Deux choses accompagnent l'escouade.
   D'abord un **hélicoptère d'observation** se poste dans le ciel pendant le
   dernier tour : 18 m devant la voiture du pilote, 8 m au-dessus de la
@@ -942,25 +934,19 @@ et le dernier tour durait 21 s.
   **huit carrés** logiques, mais **dessinés d'un seul trait, sans segments
   visibles**, qui partent du vert et glissent vers l'orange puis le rouge en se
   vidant (`CITY_RUSH_PLAYER_HEALTH`, `cityRushPlayerHealthColor`,
-  `CITY_RUSH_PLAYER_BAR_COLORS`). Le barème est en carrés : un **tir droit
-  bleu** en coûte **un**, une **rafale rouge** **deux**, un **carambolage avec
-  une berline** **un** — la berline, elle, perd deux points de sa propre barre
-  au passage (un carambolage vaut un tir bleu) ; le trafic et les rivaux ne
-  touchent jamais la coque, ils ne font que ralentir. Un carambolage, c'est le
-  pilote qui **arrive sur** une berline **devant lui**
-  (`cityRushPoliceCollisionHit`, vitesse d'approche comprise) : la berline qui
-  se replie **derrière** lui pour ouvrir le feu — sa position de tir est à
-  quelques mètres de son pare-chocs arrière — ne le percute pas, et une fois le
-  pilote calé derrière un barrage roulant, il n'y a plus de choc. Le choc
-  s'anime comme un vrai carambolage (étincelles, cri de pneus, secousse de
-  caméra, flash rouge) **sans** l'état « choc » du trafic : la voiture ne fume
-  pas et ne se met pas à ramper — sinon une berline collée au pare-chocs faisait
-  perdre la course. À deux carrés ou moins la
-  barre passe en « CRITIQUE » (pulsation rouge), et **à zéro la course est
-  perdue** : le pilote part en toupie sur lui-même (`cityRushStunSpin`, deux
-  tours) dans une **fumée noire** continue, pétarade de pneus et explosion,
-  s'immobilise, puis la course se clôt sur une **épave** — le pilote est classé
-  **dernier** et la page affiche `COQUE DÉTRUITE · COURSE PERDUE`
+  `CITY_RUSH_PLAYER_BAR_COLORS`). Un **tir rouge reçu** en coûte deux ; un tir
+  bleu (règle héritée, aucun bonus bleu n'est généré) en coûte un. **Percuter
+  une voiture de police ne retire aucune vie au joueur** : c'est la voiture de
+  police qui perd un point de sa barre (`CITY_RUSH_POLICE_DAMAGE.collision`).
+  Le trafic et les rivaux ne touchent pas non plus la coque, ils ne font que
+  ralentir. Le contact policier compte seulement quand le pilote **arrive sur**
+  une berline **devant lui**, à une vitesse supérieure
+  (`cityRushPoliceCollisionHit`) ; la berline repliée derrière lui pour tirer
+  ne déclenche pas de choc. À deux carrés ou moins, la barre passe en
+  « CRITIQUE » (pulsation rouge), et **à zéro la course est perdue** : le pilote
+  part en toupie (`cityRushStunSpin`, deux tours) dans une **fumée noire**,
+  pétarade de pneus et explosion, s'immobilise, puis la course se clôt sur une
+  **épave** — dernier du classement, `COQUE DÉTRUITE · COURSE PERDUE`
   (`CITY_RUSH_WRECK_SECONDS`, `CITY_RUSH_WRECK_SPIN_TURNS`). Une fois l'épave
   en toupie, la ligne d'arrivée d'un rival ne clôt plus la course : la scène va
   au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
@@ -983,40 +969,28 @@ et le dernier tour durait 21 s.
   ralentissement, et le seul levier « voie » reste ≥ 1) et
   `tests/city-rush-hud.test.js` (le malus ne doit réapparaître ni dans le monde
   ni dans la page).
-- **Les bonus.** Quatre types de ramassages colorés remplissent quatre jauges :
-  **bleu 2** (pistolet à tir droit), **rouge 3** (mitrailleuse), **vert 2**
-  (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —
-  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Le jaune est rare : il
-  ne représente que **10 % des bonus** (vert 36 %, bleu 28 %, rouge 26 %).
-  Douze rangées — une ou deux pastilles chacune — tournent sur la piste et se
-  recyclent
-  **derrière le pilote** (`rowRecycleAnchor`) : la réserve ne couvre qu'environ
-  340 m de route, et un recyclage calé sur la voiture la plus lente du peloton
-  laissait la piste sans bonus devant un pilote qui comptait plus de 300 m
-  d'avance sur le traînard — ce qui arrive au fil de la course, donc surtout au
-  dernier tour. Le smoke refuse désormais la moindre image sans rangée devant
-  le pilote.
-  Le tir bleu ne vise pas : il suit la voie du tireur, peut toucher au plus un
-  adversaire déjà visible, puis fait déraper sa voiture et la ralentit à 85 %
-  pendant **0,3 s**. Il atteint les berlines de police de trois façons :
-  verrouillé sur celle qui roule devant dans sa voie, **en riposte vers
-  l'arrière** sur la plus proche déjà dépassée quand la voie est libre devant,
-  et **par balayage** sur toute berline qui se rabat devant le projectile en
-  vol. La mitrailleuse rouge prend le rival le plus proche devant
-  le pare-chocs ; l'hélicoptère verrouille le rival le mieux placé devant son
-  pilote (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`, un mètre de
-  tolérance pour une voiture roue contre roue). En dernier tour, si aucun rival
-  n'est devant, les jauges rouge et jaune peuvent viser la berline de police la
-  plus proche, y compris derrière le pilote. Sans rival ni police-cible, la
-  jauge jaune reste chargée et le HUD l'indique. Un bonus ramassé
-  **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la
-  gravité (`cityRushPickupBurstShards` / `cityRushPickupShardState` /
-  `cityRushPickupFlashState`, rendus par un pool de six objets dans
-  `ViceCityWorld.jsx`, sans éclats si `prefers-reduced-motion`), puis
-  **réapparaît 0,1 s** plus tard sur sa voie en gonflant depuis son socle
-  (`CITY_RUSH_PICKUP_RESPAWN_DELAY`, `markCityRushPickupTaken` /
-  `isCityRushPickupHidden`, `cityRushPickupPopScale`), afin que les voitures
-  suivantes puissent le ramasser à leur tour.
+- **Les bonus.** En course, seuls deux objets apparaissent sur la route :
+  le **pad turbo vert** et le bonus **rouge d'AK-47**. Le rouge est **très
+  rare** : seulement **5 % des objets** générés sont rouges, contre 95 % de pads
+  turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.95`). Un seul bonus rouge
+  charge une rafale ; le pad vert s'active automatiquement et accélère pendant
+  `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Les anciens pouvoirs bleu et jaune
+  restent dans les règles internes mais ne sont ni générés ni proposés au
+  joueur : **aucune attaque d'hélicoptère** n'est disponible. L'appareil visible
+  au dernier tour est un hélicoptère d'observation sans armement.
+
+  Les rangées — une ou deux pastilles chacune — tournent sur la piste et se
+  recyclent **derrière le pilote** (`rowRecycleAnchor`) : le nombre de rangées
+  semées suit la vitesse de la voiture, pour qu'il reste toujours des objets
+  visibles devant elle, même en fin de course. La police et les rivaux
+  convoitent eux aussi les bonus rouges, mais n'en trouvent que rarement.
+  Un bonus ramassé **éclate** : flash, anneau qui s'ouvre et éclats de sa
+  couleur repris par la gravité (`cityRushPickupBurstShards` /
+  `cityRushPickupShardState` / `cityRushPickupFlashState`, pool de six objets
+  dans `ViceCityWorld.jsx`, sans éclats si `prefers-reduced-motion`), puis
+  **réapparaît 0,1 s** plus tard sur sa voie (`CITY_RUSH_PICKUP_RESPAWN_DELAY`,
+  `markCityRushPickupTaken` / `isCityRushPickupHidden` /
+  `cityRushPickupPopScale`).
 - **Le décor.** Chaque ville a sa boucle : façades texturées (fenêtres allumées,
   enseignes verticales, boutiques), porte monumentale à mi-tour (arche Art déco,
   **portique d'échangeur de la Shuto**, torii, arc de triomphe, Tower Bridge),
@@ -1086,13 +1060,14 @@ et le dernier tour durait 21 s.
   choisi.
 - **La caméra.** Orbite autour de la grille pendant l'intro, travelling qui se
   recule pendant le compte à rebours, poursuite pendant la course (le champ
-  s'élargit en turbo, l'image tremble sous un missile), tour d'honneur à
+  s'élargit en turbo, l'image tremble sous un impact), tour d'honneur à
   l'arrivée. La caméra passe à 6,6 m : tout élément qui enjambe la route doit
   rester au-dessus de 7,1 m (voir `cityRushStage.js` et `cityRushStartLine.js`).
 - **Le son.** Musique **disco** de synthé (une boucle de huit mesures, un tempo
   par ville) et bruitages écrits en Web Audio, sans aucun fichier : moteur à
   cinq rapports qui suit la vitesse, coup de feu, dérapage des pneus quand une
-  voiture encaisse un tir, rotor d'hélicoptère, missile et explosion. Bouton
+  voiture encaisse un tir, impacts et explosions de berlines détruites.
+  L'hélicoptère d'observation reste silencieux et l'attaque aérienne est retirée. Bouton
   SON (touche M) pour tout couper ; voir « La bande-son » plus bas.
 - **Téléphone / APK.** Mode allégé automatique (pointeur grossier ou
   `window.LetsPlayAndroid`) : pas d'ombres, moins de spectateurs et de pluie,
@@ -1255,11 +1230,8 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   d'automations à chaque frame.
 - **Les bruitages.** Coup de feu (claquement, corps, écho entre les façades),
   **dérapage** quand une voiture encaisse un tir — pneus dans un filtre très
-  sélectif et sifflement qui tremble, joué à l'impact —, son de dérapage plus
-  doux pour le tir bleu et les zones de ralentissement, **hélicoptère** (pales
-  hachées par un LFO + turbine qui monte en régime, démarrage sur l'approche,
-  extinction après l'explosion),
-  missile qui part, **explosion** (descente dans le grave, souffle, débris,
+  sélectif et sifflement qui tremble, joué à l'impact —, son plus doux pour les
+  zones de ralentissement, **explosion** (descente dans le grave, souffle, débris,
   écho), **sirène de l'escouade de police** (deux tons qui alternent, tenus par
   un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une
   deuxième voix désaccordée qui fait battre la sirène ; le niveau suit la
@@ -1279,31 +1251,31 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
-npm run check:city-rush-smoke    # les sept parcours (cinq villes + Route 66 + campagne mexicaine) : construction du monde, course complète de 5 tours (3 600 m, dernier tour de 1 200 m) sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les sept parcours (cinq villes + Route 66 + campagne mexicaine) : course complète de 6 tours (4 200 m, dernier tour de 1 200 m), sans exception, éclatements visibles
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
-npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
-npm run check:city-rush-wreck   # l'épave : un pilote qui casse sa coque doit partir en toupie, fumer, s'arrêter, finir dernier et perdre la course (cinq villes × trois courses)
+npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, aucune vie perdue au contact, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
+npm run check:city-rush-wreck   # carambolages : la police perd 1 point, le joueur n'en perd aucun ; l'épave est vérifiée si des tirs vident la coque
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
-à 30 Hz avec un pilote naïf (5 tours par défaut, la course la plus longue ;
-`CITY_RUSH_SMOKE_LAPS=4 npm run check:city-rush-smoke` joue un Circuit de
+à 30 Hz avec un pilote naïf (6 tours par défaut, 4 200 m ;
+`CITY_RUSH_SMOKE_LAPS=4 npm run check:city-rush-smoke` joue une course de
 3 000 m, et `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke` fige le
 hasard pour rejouer exactement le même scénario — un échec du smoke est
 intermittent par nature, la graine le rend reproductible) : il vérifie les passages de ligne (début des tours
-2 à 5, puis le point de passage du grand dernier tour, une seule fois), le
+2 à 6, puis le point de passage du grand dernier tour, une seule fois), le
 compteur du dernier tour (il court sur 1 200 m sans retomber à zéro au
-portique), l’arrivée après 3 600 m, le HUD, le nombre de meshes affichés, la
+portique), l’arrivée après 4 200 m, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
 aussi l'**escouade de police** : une seule entrée en piste, deux berlines
-arrivées derrière le leader (jamais devant, jamais à plus de 140 m) **et armées
-bleu et rouge — jamais jaune**, qui
+arrivées derrière le leader (jamais devant, jamais à plus de 140 m), sans
+attaque d'hélicoptère ni missile, qui
 rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
 parcours (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
-plus de 200 m de retard — seuils calibrés sur plus de 700 courses de 1 200 m de
-dernier tour, avec une large marge),
+plus de 200 m de retard — seuils calibrés sur plus de 700 courses, avec une
+large marge),
 ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
 disparaissent à la ligne et font sonner puis éteindre leur sirène. Il suit
 l'**hélicoptère d'observation** (nœud `watch-helicopter` : absent hors du
@@ -1311,16 +1283,17 @@ dernier tour, rotor et pod animés pendant le suivi, **cadrage vérifié à
 l'écran** — projeté par la vraie caméra, il doit rester dans la bande de ciel
 entre la route et les cartes du HUD au moins 85 % du dernier tour —, éloigné à
 l'arrivée, effacé par `reset()`) et la **barre de vie du pilote** (jamais avant son dernier tour,
-pleine à l'apparition, bornée, jamais croissante, chaque `player-hit` conforme
-au barème). Il ne dit rien
+pleine à l'apparition, bornée, jamais croissante ; un contact policier ne
+produit aucun `player-hit`, et chaque tir encaissé respecte le barème). Il ne dit rien
 du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
 l'image.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les
-quatre feux, chaque passage de ligne (point de passage compris) et la fanfare,
-et **éteindre chaque hélicoptère démarré** (un rotor oublié s'entendrait jusqu'à
-la page d'accueil). Les compteurs sont imprimés à la fin de chaque parcours.
+quatre feux, chaque passage de ligne (point de passage compris) et la fanfare.
+Aucun son de missile, de frappe ou de rotor d'attaque ne doit se déclencher ;
+l'hélicoptère d'observation reste silencieux. Les compteurs sont imprimés à la
+fin de chaque parcours.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 

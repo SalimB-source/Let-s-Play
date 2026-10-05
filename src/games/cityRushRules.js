@@ -1,7 +1,7 @@
 // Règles pures de Vice City Rush : séparées du rendu Three.js pour garder
 // les durées, les voies et la génération de rue faciles à vérifier.
 //
-// La course se joue en circuit : plusieurs tours d'une boucle de 600 m. Le
+// La course se joue en circuit : six tours par défaut d'une boucle de 600 m. Le
 // décor est généré une fois pour la boucle et se répète, si bien que l'on
 // repasse sous le portique de départ (tribunes, feux, ligne à damier) à chaque
 // tour.
@@ -14,19 +14,19 @@
 // et seule la ligne qui clôt la dernière boucle est l'arrivée. Rien d'autre ne
 // change : le décor reste une boucle de 600 m, seule la distance à parcourir
 // s'allonge.
-export const CITY_RUSH_LAPS = 5; // nombre de tours par défaut (les modes de jeu fixent le leur)
+export const CITY_RUSH_LAPS = 6; // nombre de tours par défaut (les modes de jeu fixent le leur)
 export const CITY_RUSH_LAP_LENGTH = 600;
 export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la boucle
-// Mode Sprint : course solo à checkpoints, sans police ni arme. Dix checkpoints
-// tous les 300 m (une demi-boucle) : le dixième est l'arrivée, pile sous le
+// Mode Sprint : course solo à checkpoints, sans police ni arme. Quatorze checkpoints
+// tous les 300 m (une demi-boucle) : le dernier est l'arrivée, pile sous le
 // portique. Chaque checkpoint recharge le chrono à 15 s ; des pads turbo verts
 // sont espacés sur la piste pour aider le pilote à les atteindre.
-export const CITY_RUSH_SPRINT_CHECKPOINTS = 10;
+export const CITY_RUSH_SPRINT_CHECKPOINTS = 14;
 export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
 export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 6;
 export const CITY_RUSH_SPRINT_DISTANCE = CITY_RUSH_SPRINT_CHECKPOINTS * CITY_RUSH_SPRINT_CHECKPOINT_SPACING;
-// Nombre de checkpoints franchis pour une distance parcourue (0 … 10).
+// Nombre de checkpoints franchis pour une distance parcourue (0 … 14).
 export function cityRushSprintCheckpointsPassed(distance, spacing = CITY_RUSH_SPRINT_CHECKPOINT_SPACING, count = CITY_RUSH_SPRINT_CHECKPOINTS) {
   const safeSpacing = Math.max(1, Number(spacing) || CITY_RUSH_SPRINT_CHECKPOINT_SPACING);
   return Math.max(0, Math.min(count, Math.floor((Number(distance) || 0) / safeSpacing)));
@@ -78,7 +78,7 @@ export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 5
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé au sol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
-export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.55; // part des bonus qui sont des pads turbo au sol
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.95; // 95 % de pads turbo ; le bonus rouge n'apparaît que 5 % du temps
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
 export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';
 export const CITY_RUSH_ONCOMING_MAX_WIDTH = 2.12;
@@ -347,7 +347,7 @@ export function cityRushHitDuration(baseDuration, carProfile) {
   return duration * (Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1);
 }
 
-// ── Toupie de la frappe héliportée (pouvoir jaune) ──────────────────────────
+// ── Toupie d'immobilisation ─────────────────────────────────────────────────
 // Pendant l'immobilisation, la voiture touchée tourne sur elle-même et ne peut
 // plus changer de voie. `cityRushStunSpin` renvoie le lacet (radians) à
 // appliquer à la carrosserie : départ brutal après l'impact, puis l'élan
@@ -408,7 +408,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Un seul bonus rouge charge l’AK-47. Le tir part tout droit, sans viser : il touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Contre une voiture de police, un tir rouge ou un carambolage enlève la moitié de sa vie : deux impacts la détruisent.',
+    description: 'Le bonus rouge est très rare sur la route : un seul suffit à charger l’AK-47. Le tir part tout droit, sans viser, et touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Contre la police, le tir rouge inflige 3 dégâts ; un carambolage en accélérant n’en inflige qu’un et ne retire aucune vie au joueur.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -419,7 +419,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque — un seul missile la détruit. Les voitures touchées partent en toupie sur place, incapables de changer de voie ; la reprise de chaque cible règle la durée (2 s de base).',
+    description: 'Attaque d’hélicoptère retirée de Vice City Rush : ce pouvoir n’est plus disponible. L’hélicoptère d’observation du dernier tour reste purement décoratif.',
     duration: 2,
   }),
 });
@@ -1358,8 +1358,8 @@ export function cityRushStraightShotSweptHit({
 
 // Riposte du tir droit bleu : quand aucune voiture n'occupe la voie du tireur
 // devant lui, le projectile peut partir vers l'arrière contre la berline de
-// police la plus proche de cette voie — exactement comme la rafale rouge et
-// l'hélicoptère le font déjà en dernier tour (`cityRushPoliceTarget`). Sans
+// police la plus proche de cette voie — comme la rafale rouge le fait en dernier
+// tour (`cityRushPoliceTarget`). Sans
 // cette riposte, le tir bleu ne pouvait jamais atteindre l'escouade : les
 // berlines attaquent dans le pare-chocs du pilote (`CITY_RUSH_POLICE_ATTACK_LEAD`
 // est négatif) et un projectile qui ne part que vers l'avant ne les croise
@@ -1373,7 +1373,7 @@ export function cityRushStraightShotRetaliation({
   maxDistance = CITY_RUSH_BLUE_SHOT_MAX_RANGE,
 } = {}) {
   const reference = Number(attackerDistance);
-  // `attackerLane` absent : aucune voie imposée (les rivaux IA ripostent sur
+  // `attackerLane` absent : aucune voie imposée (une riposte IA choisit alors
   // la berline la plus proche, quelle que soit sa voie).
   const lane = attackerLane === null || attackerLane === undefined ? Number.NaN : Number(attackerLane);
   const range = Math.max(0, Number(maxDistance) || CITY_RUSH_BLUE_SHOT_MAX_RANGE);
@@ -1388,11 +1388,9 @@ export function cityRushStraightShotRetaliation({
   return cityRushPoliceTarget(inLane, reference, excludeId);
 }
 
-// Le talkie ne verrouille que les rivaux devant son pilote : parmi eux, c'est
-// toujours le mieux placé qui est visé. Un pilote en tête n'a donc aucune cible
-// (l'hélico ne se retourne jamais contre lui) et garde sa jauge chargée. Si
-// l'appelant est absent de la liste (appel défensif), on retombe sur l'ancien
-// comportement : le mieux placé des rivaux.
+// Ancien sélecteur pur de cible du talkie, conservé pour lire les anciennes
+// sauvegardes/règles ; il n'est plus relié au monde de course et aucune attaque
+// d'hélicoptère n'est disponible dans Vice City Rush.
 export function cityRushHelicopterTarget(racers = [], playerId = 'player') {
   const caller = racers.find((racer) => racer?.id === playerId) || null;
   const reference = Number(caller?.distance);
@@ -1402,13 +1400,12 @@ export function cityRushHelicopterTarget(racers = [], playerId = 'player') {
     .sort((a, b) => (Number(b.distance) || 0) - (Number(a.distance) || 0))[0] || null;
 }
 
-// Exception du dernier tour pour les pouvoirs rouge (mitrailleuse) et jaune
-// (hélico) : quand l'appelant n'a plus personne devant lui — il mène la
-// course et l'escouade s'est repliée sur son pare-chocs pour ouvrir le feu —,
-// la riposte peut se retourner contre la berline « active » la plus proche,
-// qu'elle soit devant, roue contre roue ou déjà dépassée. Un hélicoptère
-// frappe où il veut et une rafale de riposte part vers l'arrière ; l'exception
-// ne vaut que pour ces poursuivants non classés, jamais pour un rival classé.
+// Exception du dernier tour pour la mitrailleuse rouge : quand l'appelant
+// mène et n'a plus personne devant lui — l'escouade s'est repliée sur son
+// pare-chocs pour ouvrir le feu —, la riposte peut se retourner contre la
+// berline « active » la plus proche, devant, roue contre roue ou déjà dépassée.
+// La rafale part alors vers l'arrière ; cette exception ne vaut que pour les
+// poursuivants non classés, jamais pour un rival classé.
 // `excludeId` permet au tireur de ne jamais se viser lui-même.
 export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, excludeId = null) {
   const reference = Number(referenceDistance);
@@ -1534,7 +1531,8 @@ export function chooseCityRushTrafficEscapeLane({
 export function createCityRushEncounter(random = Math.random) {
   const available = Array.from({ length: CITY_RUSH_LANE_X.length }, (_, lane) => lane);
   // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
-  // des rangées pleines : davantage d'objets, sans encombrer chaque voie.
+  // des rangées pleines. Parmi les objets, 95 % sont des pads turbo et seulement
+  // 5 % des bonus rouges d'AK-47 : le tir rouge reste rare même sur une longue course.
   const pickupCount = random() < 0.05 ? 0 : Math.min(available.length, random() < 0.7 ? 1 : 2);
   const pickups = [];
 
@@ -1812,8 +1810,8 @@ export function selectCityRushRacers({
 // Elles ne sont **pas classées** :
 // `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
 // Leur mission est de harceler le leader à l'arrivée, puis celle des renforts
-// est de viser le joueur : ils chargent la mitrailleuse avec les bonus rouges
-// et l'escouade dispose d'une frappe d'hélicoptère gratuite une fois par course.
+// est de viser le joueur : ils chargent la mitrailleuse avec les rares bonus
+// rouges. L'attaque d'hélicoptère a été retirée.
 //
 // Contrairement aux autres voitures de course, un véhicule de police est
 // **solide** : il ne se traverse pas. Il peut donc se rabattre devant le leader puis
@@ -1853,16 +1851,15 @@ export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est con
 
 // Les berlines de l'escouade ont une barre de vie : **trois tirs droits bleus**
 // (2 points chacun), OU **deux tirs rouges d'AK-47** (3 points chacun), OU
-// **un tir rouge et une collision** (3 points chacun), OU **deux collisions**
-// (3 points chacune), OU **un seul missile d'hélicoptère** (6 points) les
-// détruisent. Le barème est en points plutôt qu'en coups — un tir bleu ne
+// six carambolages en accélérant (1 point chacun) les détruisent. Le pilote
+// n'y perd aucune vie. Le barème est en points plutôt qu'en coups — un tir bleu ne
 // compte pas comme un tir rouge — et reste pur, donc testable hors de three.js.
 export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // trois tirs droits bleus (2 · 3 = 6)
   [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH / 2, // un tir rouge retire la moitié de la vie
-  [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
-  collision: CITY_RUSH_POLICE_HEALTH / 2, // un carambolage retire la moitié de la vie
+  [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
+  collision: 1, // un carambolage en accélérant inflige un petit dégât ; le joueur reste indemne
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
@@ -1884,8 +1881,7 @@ export function cityRushPoliceShotsLeft(health = CITY_RUSH_POLICE_HEALTH, source
 // Prime de destruction : le pilote qui fait exploser une berline la touche.
 export const CITY_RUSH_POLICE_DESTROY_SCORE = 200;
 
-// Les berlines entrent sans charge de mitrailleuse. Leur frappe d'hélicoptère
-// est un tir de police gratuit, géré une seule fois à l'échelle de la course.
+// Les berlines entrent sans charge de mitrailleuse ni attaque d'hélicoptère.
 export const CITY_RUSH_POLICE_START_CHARGES = Object.freeze([]);
 
 export function createCityRushPoliceInventory() {
@@ -2249,21 +2245,21 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
 }
 
 // ── La barre de vie du pilote (dernier tour) ────────────────────────────────
-// Au dernier tour du pilote — le seul tour du Sprint, le quatrième du Circuit
+// Au dernier tour du pilote — le seul tour du Sprint, le sixième du Circuit
 // et de la Poursuite (où l'escouade, elle, est en piste depuis le départ : la
 // barre suit le pilote, pas le leader) — la voiture du joueur reçoit une barre
 // de vie de **huit carrés**. La page la dessine **sans jamais montrer les carrés** : une
 // barre continue qui part du vert et glisse vers l'orange puis le rouge en se
 // vidant (`cityRushPlayerHealthColor`). Le barème reste en carrés : un tir
-// droit bleu en coûte un, une rafale rouge deux, et une collision avec une
-// berline de police un — la berline encaisse le choc elle aussi
-// (`CITY_RUSH_POLICE_DAMAGE.collision`). Le trafic et les autres voitures de
-// course ne touchent pas la barre : eux ne font que ralentir.
+// droit bleu en coûte un, une rafale rouge deux. Un contact avec une berline de
+// police n'entame pas la coque du pilote ; c'est la police qui encaisse un petit
+// dégât (`CITY_RUSH_POLICE_DAMAGE.collision`). Le trafic et les autres voitures
+// de course ne touchent pas la barre non plus.
 export const CITY_RUSH_PLAYER_HEALTH = 8; // carrés de la barre, pleine au dernier tour
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // un tir droit bleu
   [CITY_RUSH_POWERS.PISTOL]: 2, // le tir droit rouge de l'AK-47
-  collision: 1, // une touche avec une berline de police
+  collision: 0, // percuter une voiture de police ne retire aucune vie au joueur
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
 // Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
