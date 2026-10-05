@@ -2338,6 +2338,9 @@ test('le Ring enchaîne de longs appuis, avec des cassures qui se resserrent', (
   }
   if (run) runs.push(run);
   const lengths = runs.map((item) => item.to - item.from);
+  // Les tout petits virages ont été ouverts en courbes douces (30–120 m →
+  // 300–450 m) : la densité d'appui du tour ne bouge pas, seul le zébru a
+  // disparu.
   assert.ok(turned / samples >= 0.28, `le tour tourne sur ${((turned / samples) * 100).toFixed(0)} % de sa longueur`);
   assert.ok(runs.length >= 8, `${runs.length} appuis au-dessus de 14°`);
   const longest = Math.max(...lengths);
@@ -2395,6 +2398,48 @@ test('le Ring enchaîne de longs appuis, avec des cassures qui se resserrent', (
     assert.ok(spanKm > 0, `étendue ${spanKm}`);
     assert.ok(Math.abs(angle) <= 48, `angle ${angle}`);
     assert.ok(['smooth', 'sustained', 'tightening', 'snap'].includes(shape), `forme ${shape}`);
+  }
+
+  // 6. Plus de tout petit virage : chaque appui du tracé dure au moins 150 m
+  //    réels (les micro-zébrus de 30–120 m ont été ouverts en courbes douces
+  //    pour la fluidité, chicane de Hohenrain comprise), et la cassure nette
+  //    ne survient que deux fois par tour — l'épingle d'Adenauer Forst et la
+  //    virole du Karussell, les deux cassures assumées.
+  for (const [km, angle, spanKm, shape = 'smooth'] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
+    assert.ok(spanKm >= 0.15, `virage à ${km} km : étendue ${spanKm} km, trop court pour la fluidité`);
+    if (shape === 'snap') {
+      assert.ok([7.2, 13.5].some((snapKm) => Math.abs(km - snapKm) < 0.01), `cassure « snap » inattendue à ${km} km`);
+    }
+  }
+  // Sur le profil rendu, hors ces deux cassures, le rayon du ruban ne descend
+  // jamais sous la largeur de la piste (9,20 m) : plus aucun pli qui casse le
+  // défilement — les courbes douces qui remplacent les anciens petits virages
+  // tiennent au moins trois largeurs. Le rayon est mesuré comme au moteur :
+  // x = déport, z = −0,72·s (différences centrées).
+  const scrollScale = 0.72;
+  const roadWidth = 9.2;
+  const ringRadius = (distance) => {
+    const h = 0.5;
+    const o1 = nordschleifeTrackOffset(distance - h);
+    const o2 = nordschleifeTrackOffset(distance);
+    const o3 = nordschleifeTrackOffset(distance + h);
+    const d1 = (o2 - o1) / h;
+    const d2 = (o3 - o2) / h;
+    const dd = (d2 - d1) / h;
+    const kappa = Math.abs(dd * scrollScale) / Math.pow(d1 * d1 + scrollScale * scrollScale, 1.5);
+    return kappa > 1e-9 ? 1 / kappa : Infinity;
+  };
+  const nearSnap = (distance) => [7.2, 13.5].some((snapKm) => {
+    const centre = (snapKm / 20.832) * lap;
+    let delta = ((distance - centre) % lap + lap) % lap;
+    if (delta > lap / 2) delta -= lap;
+    return Math.abs(delta) < 0.35 * (lap / 20.832);
+  });
+  for (let index = 0; index < samples; index += 1) {
+    const distance = index * step;
+    if (nearSnap(distance)) continue;
+    const radius = ringRadius(distance);
+    assert.ok(radius >= roadWidth, `rayon ${radius.toFixed(1)} à ${(distance / lap * 20.832).toFixed(2)} km : un tout petit virage s'est invité`);
   }
 });
 

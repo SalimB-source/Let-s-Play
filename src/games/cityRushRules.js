@@ -1097,10 +1097,9 @@ export const CITY_RUSH_NORDSCHLEIFE = Object.freeze({
       startArea: true,
     }),
     ringSector('hohenrain', 1.4, 1.95, {
-      kind: 'corner', name: 'Hohenrain', romaji: 'CHICANE · 90 KM/H', side: 1,
-      note: 'La chicane qui ramène les voitures sur la boucle : deux appuis violents avant Hatzenbach.',
-      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Hohenrain', 'Chicane']), hazard: true }),
-      corner: Object.freeze({ direction: 'chicane', number: 4 }),
+      kind: 'straight', name: 'Hohenrain', romaji: 'PLEINE LIGNE · 200 KM/H', side: 1,
+      note: 'L\'ancienne chicane a été ouverte : la ligne qui ramène les voitures sur la boucle file désormais sans casse vers Hatzenbach.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Hohenrain', 'Geradeaus']) }),
     }),
     ringSector('hatzenbach', 1.95, 3.0, {
       kind: 'corner', name: 'Hatzenbach', romaji: 'KURVEN 5–9 · LE RYTHME', side: -1,
@@ -1175,9 +1174,9 @@ export const CITY_RUSH_NORDSCHLEIFE = Object.freeze({
     }),
     ringSector('spiegelkurve', 8.35, 8.75, {
       kind: 'corner', name: 'Spiegelkurve', romaji: 'DREIFACH-RECHTS', side: 1,
-      note: 'Gauche puis trois droites qui se referment : le « Miss-Hit-Miss » des pilotes britanniques.',
+      note: 'Trois droites qui se referment l\'une sur l\'autre : le gauche du « Miss-Hit-Miss » a été ouvert pour laisser filer l\'enchaînement.',
       sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Spiegelkurve', 'Dreifach-Rechts']) }),
-      corner: Object.freeze({ direction: 'left-rights', number: 20 }),
+      corner: Object.freeze({ direction: 'rights', number: 20 }),
     }),
     ringSector('wehrseifen', 8.75, 9.35, {
       kind: 'corner', name: 'Wehrseifen', romaji: 'KURVE 21 · ÉPINGLE', side: -1,
@@ -2151,19 +2150,31 @@ export function nordschleifeCornerCurve(offset, shape = 'smooth') {
 // courbure d'une cassure est de toute façon bornée par le rayon minimal que le
 // ruban peut épouser sans se replier : c'est l'adaptation annoncée, pas un
 // oubli.
+//
+// Les *tout petits virages* ont été ouverts pour la fluidité : les appuis de
+// 30 à 120 m (Antoniusbuche, Tiergarten, Sabine-Schmitz, Quiddelbacher Höhe,
+// Spiegelkurve et la chicane T13-Hohenrain) pliaient le ruban sur un rayon
+// plus étroit que la piste n'est large — un zébru de volant qui ne durait pas
+// une seconde et cassait le rythme. Leurs angles sont conservés mais posés
+// sur 300 à 450 m de courbe douce : le pilote ne les sent plus comme des
+// virages, juste comme une respiration du tracé. Ce faisant, l'équilibre du
+// déport latéral du tour est inchangé — chaque grand virage garde exactement
+// le même cap rendu qu'avant l'ouverture. La chicane de Hohenrain n'est plus
+// qu'un ess tout doux vers Hatzenbach, et la ligne de départ respire jusqu'à
+// l'enchaînement sans un seul zébru.
 export const CITY_RUSH_NORDSCHLEIFE_TURNS = Object.freeze([
-  // ── La ligne droite de départ : on n'y touche pas ─────────────────────────
-  Object.freeze([0.20, 3, 0.030]), // Antoniusbuche : léger appui à droite sur le pont
-  Object.freeze([0.60, 6, 0.040]), // Tiergarten : la piste se dérobe vers la Start-Ziel
-  Object.freeze([1.05, -8, 0.053]), // Sabine-Schmitz : gauche rapide avant la T13
-  Object.freeze([1.55, -12, 0.100, 'snap']), // T13 puis Hohenrain : la chicane
-  Object.freeze([1.85, 16, 0.100, 'snap']), // Hohenrain : la droite qui renvoie vers Hatzenbach
+  // ── La ligne droite de départ : trois courtes respirations, plus de zébru ─
+  Object.freeze([0.20, 3, 0.300]), // Antoniusbuche : le pont s'annonce en douceur
+  Object.freeze([0.60, 6, 0.300]), // Tiergarten : la piste dérive vers la Start-Ziel
+  Object.freeze([1.05, -8, 0.400]), // Sabine-Schmitz : gauche ample avant la T13
+  Object.freeze([1.55, -12, 0.450]), // T13 : l'ancienne chicane, ouverte en courbe
+  Object.freeze([1.85, 16, 0.450]), // Hohenrain : l'ess tout doux vers Hatzenbach
   // ── Hatzenbach : le long enchaînement qui donne le tour ───────────────────
   Object.freeze([2.15, -24, 0.50, 'sustained']), // Hatzenbach 1 : long gauche tenu
   Object.freeze([2.62, 26, 0.50, 'sustained']), // Hatzenbach 2 : long droit tenu
   Object.freeze([3.06, -22, 0.36, 'sustained']), // Hatzenbach 3 : long gauche tenu
   Object.freeze([3.40, -16, 0.30, 'sustained']), // Hocheichen : gauche à fond sous les chênes
-  Object.freeze([3.75, 6, 0.060]), // Quiddelbacher Höhe : le pont, la crête
+  Object.freeze([3.75, 6, 0.350]), // Quiddelbacher Höhe : le pont, la crête
   Object.freeze([4.30, 22, 0.60, 'tightening']), // Flugplatz : s'ouvre après le saut, puis casse
   Object.freeze([4.80, -14, 0.180]), // Kottenborn : gauche du plateau
   Object.freeze([5.25, -22, 0.40, 'sustained']), // Schwedenkreuz : long gauche rapide en descente
@@ -2173,7 +2184,7 @@ export const CITY_RUSH_NORDSCHLEIFE_TURNS = Object.freeze([
   Object.freeze([7.20, -24, 0.30, 'snap']), // Adenauer Forst 2 : l'épingle du piège
   Object.freeze([7.60, -18, 0.35, 'tightening']), // Metzgesfeld : gauche aveugle qui se resserre
   Object.freeze([8.05, 24, 0.40, 'sustained']), // Kallenhard : long droit en descente
-  Object.freeze([8.45, -12, 0.120]), // Spiegelkurve : le gauche du Miss-Hit-Miss
+  Object.freeze([8.45, -12, 0.450]), // Spiegelkurve : l'ancien gauche du Miss-Hit-Miss, ouvert
   Object.freeze([8.70, 28, 0.35, 'sustained']), // Dreifach-Rechts : les trois droites tenues
   Object.freeze([9.05, -34, 0.40, 'tightening']), // Wehrseifen : l'épingle la plus lente
   Object.freeze([9.60, 8, 0.150]), // Breidscheid : le point bas du circuit
