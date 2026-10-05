@@ -930,7 +930,7 @@ export default function ViceCityRushPage() {
                 <div
                   className={`city-rush-health${playerHealthCritical ? ' is-critical' : ''}${hud.playerHealthFlash > 0 ? ' is-hit' : ''}`}
                   role="status"
-                  aria-label={`Résistance de ta voiture : ${playerHealthValue} carrés sur ${playerHealthMax}`}
+                  aria-label={`Résistance de ta voiture : ${playerHealthValue} carrés sur ${playerHealthMax}${playerHealthCritical ? ' — critique' : ''}`}
                 >
                   <span className="city-rush-health-head">
                     <b>COQUE</b>

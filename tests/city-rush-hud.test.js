@@ -33,17 +33,25 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   assert.equal(declarations['border-radius'], '50%');
 });
 
-test('the mobile player health bar stays clear of the bottom-corner HUD', () => {
+test('the mobile player health bar is compact and sits lower without covering the corner HUD', () => {
   assert.ok(mobileHealthRule, 'la règle mobile de la barre de coque existe');
-  assert.equal(mobileHealthDeclarations.left, '50%', 'la barre est centrée, pas superposée au classement');
+  assert.equal(mobileHealthDeclarations.left, '50%', 'la barre reste centrée entre le classement et les commandes');
   assert.equal(mobileHealthDeclarations.transform, 'translateX(-50%)');
   assert.equal(mobileHealthDeclarations['z-index'], '6', 'la barre reste au-dessus des éléments du HUD');
+  assert.equal(mobileHealthDeclarations.display, 'flex', 'la barre mobile tient sur une ligne compacte');
+  assert.equal(mobileHealthDeclarations.gap, '6px');
+  assert.equal(mobileHealthDeclarations.padding, '5px 8px');
 
   const bottomOffset = mobileHealthDeclarations.bottom?.match(
     /^calc\((\d+)px\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\)$/,
   );
   assert.ok(bottomOffset, 'le décalage tient compte de la zone de sécurité de l’écran');
-  assert.ok(Number(bottomOffset[1]) >= 220, 'la barre est au-dessus du classement et des commandes tactiles');
+  assert.equal(Number(bottomOffset[1]), 218, 'la barre est abaissée tout en restant au-dessus des commandes tactiles');
+
+  const mobileTrackRule = [...css.matchAll(/\.city-rush-health-track\s*\{([^}]*)\}/g)].at(-1)?.[1] || '';
+  assert.match(mobileTrackRule, /height:\s*6px/);
+  assert.match(mobileTrackRule, /flex:\s*1/);
+  assert.match(page, /playerHealthCritical \? ' — critique' : ''/, 'la criticité reste annoncée même sans libellé visuel mobile');
 });
 
 test('victoire en mode course : le bouton COURSE SUIVANTE doré à texte noir est présent', () => {
