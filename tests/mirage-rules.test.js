@@ -204,23 +204,37 @@ test('hit animation visibility blinks in rush and duel but online local duplicat
   assert.equal(isPlayerVisible('online', 0, 0), false);
 });
 
-test('the rider changes lane mid-air too: the jump never blocks a slide', async () => {
-  const { playerLaneAfterAction } = await import('../src/games/mirageRules.js');
-  // Le geste « sauter puis glisser » (ou l'inverse) doit passer : la voie
-  // change quel que soit le moment du saut, exactement comme au sol.
+test('the jump locks the lanes: no steering mid-air, the rider lands where it took off', async () => {
+  const { playerLaneAfterAction, isAirborne, JUMP_DURATION } = await import('../src/games/mirageRules.js');
+  // Au sol : la voie change dans les deux sens, bornes de la piste comprises.
   assert.equal(playerLaneAfterAction(1, 'left'), 0);
   assert.equal(playerLaneAfterAction(1, 'right'), 2);
   assert.equal(playerLaneAfterAction(0, 'left'), 0);
   assert.equal(playerLaneAfterAction(2, 'right'), 3);
   assert.equal(playerLaneAfterAction(3, 'right'), 3);
   assert.equal(playerLaneAfterAction(3, 'left'), 2);
-  assert.equal(playerLaneAfterAction(1, 'jump'), 1);
+  assert.equal(playerLaneAfterAction(1, 'jump'), 1, 'le saut ne déplace jamais la voie');
+  // En l'air, les commandes de mouvement sont bloquées : plus de diagonale.
+  assert.equal(isAirborne(JUMP_DURATION), true);
+  assert.equal(isAirborne(0.03), true);
+  assert.equal(isAirborne(0), false, 'sabots au sol : les voies répondent de nouveau');
+  assert.equal(isAirborne(), false);
+  for (const left of [JUMP_DURATION, JUMP_DURATION / 2, 0.03]) {
+    assert.equal(playerLaneAfterAction(1, 'left', left), 1, `voies verrouillées à ${left.toFixed(2)} s de saut`);
+    assert.equal(playerLaneAfterAction(1, 'right', left), 1);
+    assert.equal(playerLaneAfterAction(0, 'right', left), 0, 'le cheval retombe dans la voie du décollage');
+  }
+  // Seul le mouvement est verrouillé : le saut reste lisible en l'air
+  // (c'est le buffer d'entrée de `advanceJump` qui le rejoue à l'atterrissage).
+  assert.equal(playerLaneAfterAction(2, 'jump', 0.4), 2);
 });
 
-test('the lateral slide is quick, and it keeps working while airborne', async () => {
+test('the lateral slide is quick and finishes the lane asked for before takeoff', async () => {
   const { playerLateralPosition, LATERAL_LANE_SPEED } = await import('../src/games/mirageRules.js');
   // Vitesse de traversée : la glissade part vite (l'ancien `dt * 12` gelait en
-  // plus la position tant que le cheval était en l'air).
+  // plus la position tant que le cheval était en l'air). Elle termine donc une
+  // voie demandée au sol avant le décollage ; en l'air la cible ne change plus
+  // (voir le test précédent), le cheval ne reste jamais coincé entre deux voies.
   assert.ok(LATERAL_LANE_SPEED >= 20, 'la glissade doit être nerveuse');
   assert.ok(playerLateralPosition(0.6, 2.1, 1 / 60) > 0.9, 'la voie doit se sentir au premier geste');
   assert.equal(playerLateralPosition(0.6, 2.1, 0), 0.6, 'une frame nulle ne bouge pas');

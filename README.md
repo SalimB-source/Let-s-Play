@@ -443,22 +443,30 @@ Sur un écran de densité 1 dont la vue tient déjà dans 0,92 M pixels (la fen�
 sur ordinateur), la résolution ne bouge pas : seuls les autres leviers jouent ; le gain de
 résolution apparaît en plein écran et sur les écrans denses (téléphones, portables Retina).
 
-### Un glissement = une seule voie
+### Un glissement = une seule action
 
-Sur téléphone et dans l'application Android, **un geste ne change qu'une voie** : qu'on
+Sur téléphone et dans l'application Android, **un geste ne fait qu'une chose** : qu'on
 glisse lentement, qu'on claque le doigt d'un bord à l'autre de l'écran ou qu'on traverse
-toute la piste, le cheval se décale d'une voie (ce qui compte sur les trois voies d'un
-téléphone : un balayage depuis le bord ne le jette plus de l'autre côté).
+toute la piste, le cheval se décale d'**une** voie (ce qui compte sur les trois voies d'un
+téléphone : un balayage depuis le bord ne le jette plus de l'autre côté) — ou saute.
 
 - La voie part **dès que le doigt a parcouru 22 px**, sans attendre qu'il se lève : aucun
   délai ajouté. Pas de temps mort entre deux gestes — on enchaîne deux glissements à 30 ms
   d'écart, chacun fait sa voie.
-- Une diagonale vers le haut donne une voie **et** un saut, jamais deux voies. Revenir en
-  arrière dans le même geste ne fait rien de plus : pour repartir, on relève le doigt.
+- **Le saut en diagonale a disparu.** Un geste ne donne plus une voie **et** un saut : sur
+  une diagonale, l'axe le plus engagé au-delà de son seuil l'emporte (à égalité, la voie),
+  et un geste qui a déjà parlé ne déclenche plus rien. Revenir en arrière dans le même
+  geste ne fait rien de plus non plus : pour repartir, on relève le doigt.
+- **Pendant le saut, les commandes de mouvement sont bloquées** : le cheval retombe dans la
+  voie où il a décollé. La glissade engagée avant le décollage va jusqu'au bout, mais aucune
+  nouvelle voie n'est prise en l'air — le geste latéral fait pendant le saut est ignoré, pas
+  mis en attente : au sol, il repart immédiatement. Le saut, lui, garde son buffer d'entrée
+  (0,22 s) : une tape juste avant de retomber repart à l'atterrissage.
 - Un seul doigt pilote le cheval : un second posé par accident (paume, autre main) est
   ignoré jusqu'au relâchement du premier. Un geste interrompu (appel entrant, geste
   système) ne bloque pas les suivants.
-- Le clavier n'est pas concerné (la touche maintenue est déjà ignorée).
+- Le clavier suit les mêmes règles : ← → et ↑ restent des actions séparées (la touche
+  maintenue était déjà ignorée) et ← → ne répondent pas tant que le cheval est en l'air.
 
 ### Où vit le code
 

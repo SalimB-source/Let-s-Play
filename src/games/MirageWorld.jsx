@@ -2745,8 +2745,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     else if (name === 'use_boost' || name === 'boost') useBoost();
     else {
       if (playerStun > 0) return;
-      // La voie change même en plein saut : le doigt n'est jamais ignoré.
-      laneIndex = playerLaneAfterAction(laneIndex, name);
+      // Commandes de mouvement bloquées pendant le saut (`isAirborne`) : en
+      // l'air la voie ne change plus, le cheval retombe exactement où il a
+      // décollé — c'est la fin du saut en diagonale. Le geste latéral fait
+      // pendant le saut est ignoré (pas mis en attente) : une fois au sol, le
+      // pouce glisse de nouveau et la voie part tout de suite.
+      laneIndex = playerLaneAfterAction(laneIndex, name, jumpLeft);
       if (name === 'jump') {
         // Saut demandé en l'air : il part à l'atterrissage (fenêtre courte),
         // au lieu d'être perdu — c'est ce qui donnait l'impression que le
@@ -3246,8 +3250,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     updateTracers(dt);
 
     const targetX = LANES[laneIndex];
-    // Glissade latérale : plus jamais gelée pendant le saut, et plus nerveuse
-    // (LATERAL_LANE_SPEED) pour que le doigt voie la voie changer tout de suite.
+    // Glissade latérale nerveuse (LATERAL_LANE_SPEED) : elle termine la voie
+    // demandée avant le décollage, mais la cible ne change plus en l'air — les
+    // commandes de mouvement sont bloquées pendant le saut (voir `action()`).
     player.position.x = playerLateralPosition(player.position.x, targetX, dt);
     const crashProgress = crashAnimation > 0 ? 1 - crashAnimation / 0.42 : 0;
     const crashBounce = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.18 : 0;

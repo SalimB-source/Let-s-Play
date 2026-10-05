@@ -16,9 +16,13 @@
  *     aucun délai à attendre, le geste suivant est lu tout de suite. Sur la
  *     piste à trois voies du téléphone, un seul coup de doigt ne peut donc
  *     plus traverser d'un bord à l'autre ;
- *   - une diagonale haut + côté fait les deux (le changement de voie part
- *     avant le saut, pour que le cheval soit déjà sur la bonne voie en
- *     retombant).
+ *   - **le saut en diagonale a disparu** : un geste ne produit qu'UNE action,
+ *     soit une voie, soit un saut — jamais les deux. Sur une diagonale, c'est
+ *     l'axe dominant (le plus loin au-delà de son seuil) qui gagne ; un geste
+ *     qui a déjà changé de voie ne fait plus sauter, et inversement. Le moteur
+ *     suit la même règle : les commandes de mouvement sont bloquées pendant le
+ *     saut (`playerLaneAfterAction` de mirageRules), le cheval retombe donc
+ *     toujours dans la voie où il a décollé.
  *
  * Le module est volontairement coupé en trois :
  *
@@ -60,12 +64,13 @@ function clockAt(at) {
  * au relâchement (le dernier échantillon compte : un geste très bref peut ne
  * livrer qu'un seul `move`, voire aucun).
  *
- * Un geste produit au plus **une** action de voie (`left` ou `right`) et au
- * plus un `jump`, quel que soit le nombre d'échantillons reçus ou la distance
- * parcourue : c'est ce qui empêche un coup de doigt de traverser deux voies
- * d'un coup. La voie part dès le premier échantillon qui franchit le seuil
- * (aucune attente du relâchement, aucun délai de recharge) ; la suivante part
- * avec le geste suivant, lu immédiatement lui aussi.
+ * Un geste produit au plus **une** action — `left`, `right` **ou** `jump` —
+ * quel que soit le nombre d'échantillons reçus ou la distance parcourue : c'est
+ * ce qui empêche un coup de doigt de traverser deux voies d'un coup, et ce qui
+ * supprime le saut en diagonale (voie + saut dans le même geste). L'action part
+ * dès le premier échantillon qui franchit un seuil (aucune attente du
+ * relâchement, aucun délai de recharge) ; la suivante part avec le geste
+ * suivant, lu immédiatement lui aussi.
  */
 export function createSwipeTracker(options = {}) {
   const minDistance = options.minDistance ?? SWIPE_MIN_DISTANCE;
@@ -78,8 +83,8 @@ export function createSwipeTracker(options = {}) {
   let startX = 0;
   let startY = 0;
   let startedAt = 0;
-  let laneFired = false;
-  let jumpFired = false;
+  // Une action est déjà partie dans ce geste : plus rien d'autre ne suivra
+  // (ni seconde voie, ni saut en diagonale). Sert aussi à refuser la tape.
   let firedAny = false;
 
   const begin = (x, y, at) => {
@@ -87,35 +92,32 @@ export function createSwipeTracker(options = {}) {
     startX = x;
     startY = y;
     startedAt = clockAt(at);
-    laneFired = false;
-    jumpFired = false;
     firedAny = false;
     return [];
   };
 
   const sample = (x, y) => {
     if (!tracking || !Number.isFinite(x) || !Number.isFinite(y)) return [];
-    const actions = [];
-    // Une seule voie par geste : le premier franchissement du seuil la change,
-    // ensuite le doigt peut aller aussi loin qu'il veut (ou revenir en arrière,
-    // le rebond du relâchement compris) sans rien changer de plus. Le seuil se
-    // mesure depuis le point de départ du geste.
-    if (!laneFired) {
-      const travelled = x - startX;
-      if (Math.abs(travelled) >= minDistance) {
-        actions.push(travelled > 0 ? 'right' : 'left');
-        laneFired = true;
-      }
-    }
-    // Le saut ne part qu'une fois par geste ; à l'atterrissage, le moteur
-    // garde la fenêtre courte de `jumpBuffer` (MirageWorld) pour ne pas perdre
-    // une tape faite juste avant de toucher le sol.
-    if (!jumpFired && startY - y >= jumpDistance) {
-      actions.push('jump');
-      jumpFired = true;
-    }
-    if (actions.length > 0) firedAny = true;
-    return actions;
+    // Un geste = une action : dès qu'une voie ou un saut est parti, le doigt
+    // peut aller aussi loin qu'il veut (ou revenir en arrière, rebond du
+    // relâchement compris) sans rien déclencher de plus.
+    if (firedAny) return [];
+    const travelled = x - startX;
+    const climbed = startY - y;
+    // Les seuils se mesurent depuis le point de départ du geste.
+    const laneReady = Math.abs(travelled) >= minDistance;
+    const jumpReady = climbed >= jumpDistance;
+    if (!laneReady && !jumpReady) return [];
+    // Diagonale (ou geste très rapide lu en un seul échantillon) : les deux
+    // seuils sont franchis à la fois — l'axe le plus engagé l'emporte, jamais
+    // les deux. À égalité, la voie gagne : c'est le geste le plus fréquent.
+    const wantsJump = jumpReady
+      && (!laneReady || climbed / jumpDistance > Math.abs(travelled) / minDistance);
+    firedAny = true;
+    // Un seul saut par geste ; à l'atterrissage, le moteur garde la fenêtre
+    // courte de `jumpBuffer` (MirageWorld) pour ne pas perdre une tape faite
+    // juste avant de toucher le sol.
+    return [wantsJump ? 'jump' : (travelled > 0 ? 'right' : 'left')];
   };
 
   /** `allowTap` laisse l'appelant refuser la tape (souris, par exemple). */
