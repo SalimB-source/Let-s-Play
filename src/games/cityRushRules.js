@@ -1,27 +1,30 @@
 // Règles pures de Vice City Rush : séparées du rendu Three.js pour garder
 // les durées, les voies et la génération de rue faciles à vérifier.
 //
-// La course se joue en circuit : six tours par défaut d'une boucle de 600 m. Le
-// décor est généré une fois pour la boucle et se répète, si bien que l'on
+// La course se joue en circuit : six tours par défaut d'une boucle de 1 200 m.
+// Le décor est généré une fois pour la boucle et se répète, si bien que l'on
 // repasse sous le portique de départ (tribunes, feux, ligne à damier) à chaque
-// tour.
+// tour. La boucle a été doublée (600 m → 1 200 m) pour rendre les stages plus
+// longs : deux fois plus de décor, de façades et de repères avant de revoir le
+// portique.
 //
 // **Le dernier tour est plus long que les autres** : il enchaîne
-// `CITY_RUSH_FINAL_LAP_LOOPS` boucles (deux, soit 1 200 m) au lieu d'une. Le
+// `CITY_RUSH_FINAL_LAP_LOOPS` boucles (deux, soit 2 400 m) au lieu d'une. Le
 // portique est fixe dans le décor : on le recroise donc en cours de dernier
 // tour (à mi-parcours avec deux boucles). Ce passage n'est qu'un point de
 // passage (`'checkpoint'`, voir `cityRushLineKind`) — il ne lance aucun tour —
-// et seule la ligne qui clôt la dernière boucle est l'arrivée. Rien d'autre ne
-// change : le décor reste une boucle de 600 m, seule la distance à parcourir
-// s'allonge.
+// et seule la ligne qui clôt la dernière boucle est l'arrivée. Le décor suit :
+// c'est toute la boucle de 1 200 m qui s'allonge, pas seulement la distance à
+// parcourir.
 export const CITY_RUSH_LAPS = 6; // nombre de tours par défaut (les modes de jeu fixent le leur)
-export const CITY_RUSH_LAP_LENGTH = 600;
+export const CITY_RUSH_LAP_LENGTH = 1200; // m : longueur d'une boucle du stage (doublée pour des stages plus longs)
 export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la boucle
-// Mode Sprint : course solo à checkpoints, sans police ni arme. Quatorze checkpoints
-// tous les 300 m (une demi-boucle) : le dernier est l'arrivée, pile sous le
-// portique. Chaque checkpoint recharge le chrono à 15 s ; des pads turbo verts
-// sont espacés sur la piste pour aider le pilote à les atteindre.
-export const CITY_RUSH_SPRINT_CHECKPOINTS = 14;
+// Mode Sprint : course solo à checkpoints, sans police ni arme. Seize checkpoints
+// tous les 300 m (un quart de boucle) : le dernier est l'arrivée, pile sous le
+// portique (16 × 300 m = 4 800 m = 4 boucles exactes). Chaque checkpoint
+// recharge le chrono à 15 s ; des pads turbo verts sont espacés sur la piste
+// pour aider le pilote à les atteindre.
+export const CITY_RUSH_SPRINT_CHECKPOINTS = 16;
 export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
 export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 6;
@@ -585,7 +588,7 @@ export function cityRushPickupPopScale(progress) {
 // Le sens retenu est 内回り (uchi-mawari, l'anneau intérieur, antihoraire) :
 // le palais impérial reste donc toujours à GAUCHE, la ville, la baie et la
 // Tokyo Tower à DROITE ou à gauche selon le secteur — les `side` ci-dessous
-// suivent la géographie réelle. La boucle de 600 m du jeu est une réduction
+// suivent la géographie réelle. La boucle de 1 200 m du jeu est une réduction
 // fidèle du tour : `km` est le point kilométrique officiel compté depuis
 // Nihonbashi (il décroît en 内回り) et `from`/`to` donnent la position sur le
 // tour du jeu (0 → 1), calculée par `shutoC1At` pour que panneaux, tunnels,
@@ -1145,7 +1148,7 @@ function safeFinalLapLoops(finalLapLoops) {
 
 // Distance d'une course de `laps` tours : chaque tour fait une boucle, sauf le
 // dernier qui en enchaîne `finalLapLoops`. Trois tours donnent ainsi
-// 600 + 600 + 1 200 = 2 400 m.
+// 1 200 + 1 200 + 2 400 = 4 800 m.
 export function cityRushRaceDistance(laps = CITY_RUSH_LAPS, lapLength = CITY_RUSH_LAP_LENGTH, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
   const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
   return (safeLapCount(laps) - 1 + safeFinalLapLoops(finalLapLoops)) * safeLap;
@@ -1168,7 +1171,7 @@ export function cityRushLapForDistance(distance, lapLength = CITY_RUSH_LAP_LENGT
 
 // Progression (0 → 1) à l'intérieur du tour courant ; vaut 1 une fois la
 // course bouclée pour que la jauge reste pleine sur l'écran d'arrivée. Au
-// dernier tour la jauge court sur toute sa longueur (1 200 m), pas sur une
+// dernier tour la jauge court sur toute sa longueur (2 400 m), pas sur une
 // seule boucle : elle ne retombe pas à 0 quand on recroise le portique.
 export function cityRushLapProgress(distance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
   const safeDistance = Math.max(0, Number(distance) || 0);
@@ -2508,7 +2511,7 @@ export function cityRushWatchHelicopterPose({ playerX = 0, clock = 0, leaving = 
 }
 
 // ── Mini-carte du circuit & focus joueur ────────────────────────────────────
-// Projette une distance (en mètres sur la boucle de 600 m) et une voie
+// Projette une distance (en mètres sur la boucle de 1 200 m) et une voie
 // (0..CITY_RUSH_LANE_X.length - 1) sur la mini-carte 2D (repère 100 × 100).
 export function cityRushMinimapPoint(
   distance = 0,
