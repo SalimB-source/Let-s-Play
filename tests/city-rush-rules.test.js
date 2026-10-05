@@ -191,6 +191,14 @@ import {
   computeCityRushJumpElevation,
   computeCityRushJumpPitch,
   detectCityRushRampContact,
+  CITY_RUSH_NORDSCHLEIFE_TURNS,
+  CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET,
+  CITY_RUSH_NORDSCHLEIFE_PROFILE_STEPS,
+  CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE,
+  nordschleifeCornerCurve,
+  nordschleifeTrackOffset,
+  nordschleifeTrackTangent,
+  nordschleifeTrackYaw,
 } from '../src/games/cityRushRules.js';
 
 test('the five city routes have a distinct identity and complete palettes', () => {
@@ -2086,6 +2094,113 @@ test('la mini-carte de Tokyo dessine le vrai anneau de la C1 et ses échangeurs'
   const plain = buildCityRushMinimapState([], { cityId: 'paris' });
   assert.equal(plain.route, null);
   assert.deepEqual(plain.routeTicks, []);
+});
+
+test('le Ring enchaîne de longs appuis, avec des cassures qui se resserrent', () => {
+  // Le profil du Nordschleife n'est plus une suite de cloches timides : les
+  // longues courbes gardent leur appui (le volant reste braqué), les virages
+  // pièges se resserrent en sortie, et les chicanes cassent net. Ces trois
+  // comportements sont mesurés sur le cap rendu, pas sur la table.
+  const profile = CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE;
+  const lap = CITY_RUSH_LAP_LENGTH;
+  const samples = 6000;
+  const step = lap / samples;
+  const heading = (distance) => Math.abs((profile.yaw(distance) * 180) / Math.PI);
+
+  // 1. Les quatre formes d'appui ont une aire de 1 : l'angle annoncé dans la
+  //    table est donc exactement l'angle dont le virage fait tourner le cap.
+  for (const shape of ['smooth', 'sustained', 'tightening', 'snap']) {
+    let area = 0;
+    for (let index = 0; index < 20000; index += 1) {
+      const u = -1 + ((index + 0.5) * 2) / 20000;
+      area += nordschleifeCornerCurve(u, shape) * (2 / 20000);
+    }
+    assert.ok(Math.abs(area - 1) < 1e-6, `${shape} : aire ${area}`);
+    assert.equal(nordschleifeCornerCurve(-1, shape), 0);
+    assert.equal(nordschleifeCornerCurve(1, shape), 0);
+  }
+
+  // 2. Des appuis longs et tenus : le tour passe plus du quart de sa longueur
+  //    au-dessus de 10° de cap, huit portions au moins restent au-dessus de
+  //    14°, et la plus longue tient près de deux secondes. L'ancien profil
+  //    plafonnait à 14° avec des appuis de 30 m : autrement dit, il n'y avait
+  //    aucun long virage.
+  const runs = [];
+  let run = null;
+  let turned = 0;
+  for (let index = 0; index < samples; index += 1) {
+    const distance = index * step;
+    const value = heading(distance);
+    if (value >= 10) turned += 1;
+    if (value >= 14) {
+      if (!run) run = { from: distance, to: distance, peak: value };
+      run.to = distance;
+      run.peak = Math.max(run.peak, value);
+    } else if (run) {
+      runs.push(run);
+      run = null;
+    }
+  }
+  if (run) runs.push(run);
+  const lengths = runs.map((item) => item.to - item.from);
+  assert.ok(turned / samples >= 0.28, `le tour tourne sur ${((turned / samples) * 100).toFixed(0)} % de sa longueur`);
+  assert.ok(runs.length >= 8, `${runs.length} appuis au-dessus de 14°`);
+  const longest = Math.max(...lengths);
+  assert.ok(longest >= 55, `appui le plus long : ${longest.toFixed(0)} m de piste (${(longest / 35).toFixed(1)} s)`);
+  assert.ok(lengths.filter((item) => item >= 25).length >= 3, `appuis tenus : ${lengths.map((item) => item.toFixed(0)).join(', ')} m`);
+  // Les cassures restent franches : la virole du Karussell (48° réels) est le
+  // virage le plus serré du jeu, et le cap y dépasse 28°.
+  assert.ok(Math.max(...runs.map((item) => item.peak)) >= 28, 'la virole reste la cassure la plus dure');
+
+  // 3. Les noms du Ring restent ceux des virages qui tournent : Kesselchen
+  //    tient son appui sur la montée, Hatzenbach son enchaînement, et le
+  //    Karussell tourne plus fort que tout le reste.
+  const held = (km, threshold) => {
+    const centre = (km / 20.832) * lap;
+    let metres = 0;
+    for (let distance = centre - 60; distance <= centre + 60; distance += 0.25) {
+      if (heading(distance) >= threshold) metres += 0.25;
+    }
+    return metres;
+  };
+  assert.ok(held(11.8, 12) >= 45, `Kesselchen tient 12° sur ${held(11.8, 12).toFixed(0)} m`);
+  assert.ok(held(2.62, 12) >= 8, `Hatzenbach tient 12° sur ${held(2.62, 12).toFixed(0)} m`);
+  assert.ok(Math.max(...[11.8, 12.4, 16.15, 17.25, 18.5].map((km) => held(km, 14))) >= 30, 'un long virage nommé tient 14° sur 30 m');
+
+  // 4. Les virages « qui se resserrent » tournent plus fort après leur milieu
+  //    que le virage lisse équivalent : c'est le presque-sec de sortie.
+  const sampleCurve = (shape, from, to) => {
+    let sum = 0;
+    for (let index = 0; index < 400; index += 1) {
+      sum += nordschleifeCornerCurve(from + ((to - from) * (index + 0.5)) / 400, shape);
+    }
+    return sum / 400;
+  };
+  const lisse = { first: sampleCurve('smooth', -0.9, -0.2), second: sampleCurve('smooth', 0.2, 0.9) };
+  const resserre = { first: sampleCurve('tightening', -0.9, -0.2), second: sampleCurve('tightening', 0.2, 0.9) };
+  assert.ok(Math.abs(lisse.first - lisse.second) < 1e-3, 'la cloche lisse est symétrique');
+  assert.ok(resserre.second > resserre.first * 1.5, `le virage qui se resserre appuie ${(resserre.second / resserre.first).toFixed(1)} fois plus en sortie`);
+
+  // 5. Le profil reste refermé, et le déport tient dans la largeur déclarée.
+  assert.equal(nordschleifeTrackOffset(0), 0);
+  assert.equal(nordschleifeTrackTangent(0), 0);
+  assert.ok(Math.abs(nordschleifeTrackYaw(0)) < 1e-9);
+  let maxOffset = 0;
+  let maxName = 0;
+  for (let index = 0; index < samples; index += 1) {
+    maxOffset = Math.max(maxOffset, Math.abs(nordschleifeTrackOffset(index * step)));
+    maxName = Math.max(maxName, Math.abs(nordschleifeTrackYaw(index * step) * 180 / Math.PI));
+  }
+  assert.ok(Math.abs(maxOffset - CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET) < 0.05, `déport max ${maxOffset.toFixed(2)}`);
+  assert.ok(maxName < 45, `cap max ${maxName.toFixed(1)}° : le ruban reste lisible`);
+  assert.equal(CITY_RUSH_NORDSCHLEIFE_PROFILE_STEPS, 2400);
+  // La table garde un cap par virage : aucune entrée sans forme ni étendue.
+  for (const [km, angle, spanKm, shape = 'smooth'] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
+    assert.ok(km >= 0 && km < 20.832, `km ${km}`);
+    assert.ok(spanKm > 0, `étendue ${spanKm}`);
+    assert.ok(Math.abs(angle) <= 48, `angle ${angle}`);
+    assert.ok(['smooth', 'sustained', 'tightening', 'snap'].includes(shape), `forme ${shape}`);
+  }
 });
 
 test('Sprint : 16 checkpoints, 15 s entre chaque, arrivée au dernier', async () => {
