@@ -806,8 +806,10 @@ rejoue la boucle officielle secteur par secteur (voir « Tokyo : la C1 » plus b
 
 Le trafic, les tirs et la police ralentissent les courses réelles (le pilote
 d'essai du smoke met 10 à 15 % de plus que ces temps), tandis que le bonus de
-« ligne propre » (jusqu'à +12 % en tenant sa voie) les raccourcit. Avant ce
-réglage, une course ne comptait que 1 à 3 tours de 600 m (1 min 02 en Circuit)
+« ligne propre » (jusqu'à +12 % en tenant sa voie) les raccourcit. Changer de
+voie ne compte ni dans l'un ni dans l'autre : le malus d'écart a été supprimé
+(voir « Changer de voie ne ralentit plus »). Avant ce réglage, une course ne
+comptait que 1 à 3 tours de 600 m (1 min 02 en Circuit)
 et le dernier tour durait 21 s.
 
 - **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
@@ -962,6 +964,23 @@ et le dernier tour durait 21 s.
   au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
   (`CITY_RUSH_PLAYER_DAMAGE`, `CITY_RUSH_PLAYER_HEALTH_CRITICAL`,
   `CITY_RUSH_POLICE_COLLISION_COOLDOWN`).
+- **Changer de voie ne ralentit plus.** Doubler, se rabattre ou esquiver le
+  trafic est **gratuit en vitesse** : la voiture glisse latéralement vers
+  `CITY_RUSH_LANE_X` à pleine allure, sans coup de frein. L'ancien malus —
+  `CITY_RUSH_LANE_CHANGE_SLOW_FACTOR` = **0,9 ×** pendant
+  `CITY_RUSH_LANE_CHANGE_SLOW_DURATION` = **0,8 s** après chaque écart — n'existe
+  plus : les deux constantes ont quitté `cityRushRules.js`, `targetPlayerSpeed`
+  dans `ViceCityWorld.jsx` ne multiplie plus aucun facteur d'écart, et le
+  bandeau de mode de `ViceCityRushPage.jsx` ne l'annonce plus. Seule la
+  récompense subsiste : tenir sa voie charge le bonus **« ligne propre »**
+  (`cityRushCleanLineFactor`, jusqu'à `CITY_RUSH_CLEAN_LINE_MAX_BONUS` =
+  **1,12 ×** au bout de `CITY_RUSH_CLEAN_LINE_RAMP_DURATION` = **3,5 s**), et un
+  changement de voie le remet à zéro — zigzaguer reste donc payant à terme,
+  jamais punitif sur l'instant. Deux tests tiennent la règle :
+  `tests/city-rush-rules.test.js` (le module ne doit plus exposer de facteur de
+  ralentissement, et le seul levier « voie » reste ≥ 1) et
+  `tests/city-rush-hud.test.js` (le malus ne doit réapparaître ni dans le monde
+  ni dans la page).
 - **Les bonus.** Quatre types de ramassages colorés remplissent quatre jauges :
   **bleu 2** (pistolet à tir droit), **rouge 3** (mitrailleuse), **vert 2**
   (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —

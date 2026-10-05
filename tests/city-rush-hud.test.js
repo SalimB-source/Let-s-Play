@@ -68,3 +68,22 @@ test('le bouton COURSE SUIVANTE est doré avec un texte noir dans le CSS', () =>
   assert.match(cinematicCss, /color:\s*#000000/);
 });
 
+test('changer de voie ne ralentit plus : ni malus dans le monde, ni promesse dans la page', () => {
+  // Le monde ne doit plus jamais moduler la vitesse visée du joueur à cause
+  // d'un écart : le malus a été retiré de l'équation, pas seulement réduit.
+  assert.doesNotMatch(world, /CITY_RUSH_LANE_CHANGE_SLOW/, 'plus aucune règle de ralentissement au changement de voie importée');
+  assert.doesNotMatch(world, /laneChangeScale/, 'aucun facteur de changement de voie dans le calcul de vitesse');
+  assert.doesNotMatch(world, /playerLaneChangeSlowLeft/, 'aucun compte à rebours de ralentissement après un écart');
+  // La cible de vitesse du joueur ne dépend que des malus (trafic, tirs), du
+  // pad turbo et de la voie tenue (bonus), jamais de l'écart lui-même.
+  const targetLine = world.match(/const targetPlayerSpeed = [^\n]+/)?.[0] || '';
+  assert.ok(targetLine, 'la vitesse visée du joueur est toujours calculée sur une ligne');
+  assert.match(targetLine, /cleanLineScale/);
+  assert.doesNotMatch(targetLine, /[Ll]aneChange/);
+  // Un écart ne fait que remettre à zéro le bonus de ligne propre.
+  assert.match(world, /playerCleanLineTime = 0;/);
+  // La page ne promet plus de coup de frein au joueur.
+  assert.doesNotMatch(page, /changement de voie ralentit/, 'le bandeau ne doit plus annoncer de ralentissement');
+  assert.match(page, /changer de voie ne ralentit plus/i);
+});
+

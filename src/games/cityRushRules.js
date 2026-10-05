@@ -323,13 +323,14 @@ export function cityRushTrafficRecoveryRate(accelerationRate, recoveryLeft) {
   return Number(recoveryLeft) > 0 ? rate * CITY_RUSH_TRAFFIC_RECOVERY_BOOST : rate;
 }
 
-// ── Stabilité de voie : écart coûteux, ligne propre récompensée ─────────────
-// Changer de voie fait glisser la voiture latéralement : elle ralentit
-// légèrement pendant un court instant. À l'inverse, tenir sa voie sans bouger
-// charge progressivement un bonus de vitesse « ligne propre », perdu dès le
-// prochain changement de voie.
-export const CITY_RUSH_LANE_CHANGE_SLOW_DURATION = 0.8; // s : léger coup de frein après un changement de voie
-export const CITY_RUSH_LANE_CHANGE_SLOW_FACTOR = 0.9; // la voiture ne garde que 90 % de sa vitesse
+// ── Stabilité de voie : la ligne propre est récompensée, rien n'est puni ───
+// Changer de voie ne coûte plus aucune vitesse : la voiture glisse
+// latéralement à pleine allure, sans coup de frein (l'ancien malus de 0,9 ×
+// pendant 0,8 s a été supprimé — zigzaguer pour doubler ou éviter le trafic
+// doit être gratuit). Seule la récompense subsiste : tenir sa voie sans
+// bouger charge progressivement un bonus de vitesse « ligne propre », qui
+// retombe à zéro au prochain écart. Un changement de voie reste donc payant à
+// terme — il faut recharger le bonus — mais il ne ralentit jamais.
 export const CITY_RUSH_CLEAN_LINE_RAMP_DURATION = 3.5; // s de voie tenue pour charger le bonus au maximum
 export const CITY_RUSH_CLEAN_LINE_MAX_BONUS = 1.12; // × vitesse au bout d'une voie tenue longtemps
 
