@@ -26,7 +26,7 @@ export default function CinemaNews() {
   const copy = {
     en: {
       section: 'CINEMA & SERIES NEWS',
-      updated: 'Updated 04.10.2026',
+      updated: 'Updated 05.10.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -39,7 +39,7 @@ export default function CinemaNews() {
     },
     fr: {
       section: 'ACTUS CINÉMA & SÉRIES',
-      updated: 'Mis à jour le 04.10.2026',
+      updated: 'Mis à jour le 05.10.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -52,7 +52,7 @@ export default function CinemaNews() {
     },
     ar: {
       section: 'أخبار السينما والمسلسلات',
-      updated: 'آخر تحديث 04.10.2026',
+      updated: 'آخر تحديث 05.10.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -65,7 +65,7 @@ export default function CinemaNews() {
     },
   }[lang] || {
     section: 'ACTUS CINÉMA & SÉRIES',
-    updated: 'Mis à jour le 04.10.2026',
+    updated: 'Mis à jour le 05.10.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -80,12 +80,16 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
-  // Actus cinéma du week-end des 03-04.10.2026 : les plus récentes ouvrent la
-  // page — le démarrage de Verity devant Digger au box-office, la bande-annonce
-  // de la saison 2 de Dexter: Resurrection et les premiers avis de Beware
-  // Boiúna. Suivent les actus du 26-29.09.2026.
+  // Actus cinéma du lundi 05.10.2026 : la sortie des Misérables de Fred Cavayé
+  // et l'arrivée de la saison 2 de Marshals sur Paramount+ France ouvrent la
+  // page ; suivent les actus du week-end des 03-04.10.2026 — le démarrage de
+  // Verity devant Digger au box-office, la bande-annonce de la saison 2 de
+  // Dexter: Resurrection et les premiers avis de Beware Boiúna —, puis celles
+  // du 26-29.09.2026.
   const articles = useMemo(() => [
-    { to: '/news/cinema/box-office-verity-digger', image: 'cinema-verity.jpg', fallbackImage: 'box-office-verity-digger-news.svg', imageCredit: 'PHOTO DE PRESSE · AMAZON MGM STUDIOS', alt: 'Verity — Dakota Johnson dans le thriller d’Amazon MGM Studios adapté du roman de Colleen Hoover', badge: 'CINÉMA · BOX-OFFICE', kicker: '04.10.2026 · VARIETY', title: 'VERITY S’IMPOSE, DIGGER SOMBRE.', excerpt: 'L’adaptation du roman de Colleen Hoover vise 33,6 M$ pour son premier week-end dans 3 510 salles. Digger, porté par Tom Cruise et Iñárritu, s’effondre autour de 7,5 M$ pour un budget de 160 à 180 M$. En France, Kraken signe le meilleur démarrage d’un film d’horreur français depuis plus de 25 ans.', read: copy.read, sentiment: 'mixed' },
+    { to: '/news/cinema/les-miserables-cavaye-14-octobre', image: youTubeThumbUrl('ZZRo2fIbomE'), fallbackImage: 'les-miserables-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · PATHÉ CINÉMAS', alt: 'Les Misérables de Fred Cavayé — Vincent Lindon en Jean Valjean dans la bande-annonce française de Pathé Cinémas', badge: 'CINÉMA · FRED CAVAYÉ', kicker: '05.10.2026 · PATHÉ', title: 'VALJEAN ET JAVERT SORTENT.', excerpt: 'Vincent Lindon et Tahar Rahim s’affrontent dans l’adaptation de Victor Hugo signée Fred Cavayé, avec Noémie Merlant, Camille Cottin et Benjamin Lavernhe. La bande-annonce est en ligne, le film sort le 14 octobre dans les salles françaises.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/marshals-saison-2-paramount-france', image: youTubeThumbUrl('mtk4ZZutvLc'), fallbackImage: 'marshals-saison-2-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · CBS', alt: 'Marshals: A Yellowstone Story saison 2 — Luke Grimes en Kayce Dutton, image du trailer officiel CBS', badge: 'PARAMOUNT+ · SÉRIE', kicker: '05.10.2026 · PARAMOUNT+', title: 'LES MARSHALS REVIENNENT.', excerpt: 'Luke Grimes reprend Kayce Dutton pour la saison 2 de Marshals: A Yellowstone Story, disponible ce lundi en France sur Paramount+, un jour après la diffusion américaine sur CBS. Au moins dix-huit épisodes hebdomadaires, et l’enlèvement de Tate en fil rouge.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/box-office-verity-digger', image: 'cinema-verity.jpg', fallbackImage: 'box-office-verity-digger-news.svg', imageCredit: 'PHOTO DE PRESSE · AMAZON MGM STUDIOS', alt: 'Verity — Dakota Johnson dans le thriller d’Amazon MGM Studios adapté du roman de Colleen Hoover', badge: 'CINÉMA · BOX-OFFICE', kicker: '04.10.2026 · VARIETY', title: 'VERITY DEVANT DIGGER.', excerpt: 'L’adaptation du roman de Colleen Hoover vise 33,6 M$ pour son premier week-end dans 3 510 salles. Digger, porté par Tom Cruise et Iñárritu, s’effondre autour de 7,5 M$ pour un budget de 160 à 180 M$. En France, Kraken signe le meilleur démarrage d’un film d’horreur français depuis plus de 25 ans.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/cinema/dexter-resurrection-saison-2-bande-annonce', image: youTubeThumbUrl('nTOf1FIsBcs'), fallbackImage: 'dexter-resurrection-saison-2-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · PARAMOUNT+', alt: 'Dexter: Resurrection saison 2 — bande-annonce officielle Paramount+', badge: 'PARAMOUNT+ · SÉRIE', kicker: '03.10.2026 · ÉCRAN LARGE', title: 'DEXTER REVIENT EN CRISE EXISTENTIELLE.', excerpt: 'La saison 2 de Dexter: Resurrection arrive le 30 octobre, avec Dan Stevens en Five Borough Killer et Brian Cox en New York Ripper. Michael C. Hall traverse une crise de la cinquantaine, Uma Thurman gagne du terrain et Quinn revient — comme un certain fantôme de la saison 1.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/beware-boiuna-premiers-avis', image: 'https://www.ecranlarge.com/content/uploads/2026/10/0cd9b8ac42be3e75907c77e111310c4d-1260x840.webp', fallbackImage: 'beware-boiuna-news.svg', imageCredit: 'IMAGE DE PRESSE · LIONSGATE', alt: 'Kiana Madeira et Jessica Rothe dans Beware Boiúna — image de presse Lionsgate', badge: 'HORREUR · LIONSGATE', kicker: '04.10.2026 · ÉCRAN LARGE', title: 'BEWARE BOIÚNA DIVISE LA PRESSE.', excerpt: 'Le film de Mike P. Nelson, sorti le 2 octobre aux États-Unis, partage la critique : The Wrap y voit un cauchemar brutal quand The AV Club évoque un montage décousu. Metacritic affiche 49 sur 100, à peine mieux que l’Anaconda de 2025. La France attend encore une date.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/cinema/endgame-encore-record-avatar', image: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-avatar-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · MARVEL STUDIOS', alt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '29.09.2026 · ONE MANN’S MOVIES', title: 'ENDGAME FRÔLE LE TRÔNE D’AVATAR.', excerpt: 'Le week-end mondial de la ressortie atteint 86 M$ (26 M$ en Amérique du Nord, 60 M$ à l’international) et porte le total à environ 2,885 milliard. À 39 millions du record d’Avatar, avec un démarrage record au Royaume-Uni (4,12 M£).', read: copy.read, sentiment: 'positive' },

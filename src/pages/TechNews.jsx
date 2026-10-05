@@ -25,7 +25,7 @@ export default function TechNews() {
   const copy = {
     en: {
       section: 'TECH NEWS',
-      updated: 'Updated 04.10.2026',
+      updated: 'Updated 05.10.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -38,7 +38,7 @@ export default function TechNews() {
     },
     fr: {
       section: 'ACTUS TECH',
-      updated: 'Mis à jour le 04.10.2026',
+      updated: 'Mis à jour le 05.10.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -51,7 +51,7 @@ export default function TechNews() {
     },
     ar: {
       section: 'أخبار التقنية',
-      updated: 'آخر تحديث 04.10.2026',
+      updated: 'آخر تحديث 05.10.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -64,7 +64,7 @@ export default function TechNews() {
     },
   }[lang] || {
     section: 'ACTUS TECH',
-    updated: 'Mis à jour le 04.10.2026',
+    updated: 'Mis à jour le 05.10.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -86,10 +86,13 @@ export default function TechNews() {
   // presse Reuters / Semafor), avec la carte éditoriale du gabarit du robot
   // (`fallbackImage`, public/*.svg) en repli.
   const articles = useMemo(() => [
+    // Actu tech du lundi 05.10.2026 : la « Super Intelligence Force » de Trump
+    // et le futur SpaceXSI d'Elon Musk ouvrent la page.
+    { to: '/news/tech/super-intelligence-force-spacexsi', image: youTubeThumbUrl('6UBA8iL3x54'), fallbackImage: 'super-intelligence-force-news.svg', alt: 'La Maison-Blanche pendant la réunion consacrée à la « super intelligence » — image de la vidéo officielle publiée par The White House', badge: 'IA · WASHINGTON', kicker: '05.10.2026 · DATACONOMY', title: 'L’IA S’APPELLE DÉSORMAIS « SI ».', excerpt: 'Trump a annoncé dimanche la création d’une « Super Intelligence Force », présidée par Jay Clayton, avec un rapport attendu sous 120 jours. Le décret du 29 septembre impose déjà le sigle aux agences fédérales, et Elon Musk a confirmé vouloir renommer SpaceXAI en SpaceXSI.', read: copy.read, sentiment: 'mixed' },
     // Actus tech du week-end des 03-04.10.2026 : la cyberattaque de la Région
     // Hauts-de-France, les livraisons trimestrielles de Tesla et la technique
     // HashHiding des pirates nord-coréens. Les plus récentes ouvrent la page.
-    { to: '/news/tech/cyberattaque-hauts-de-france-rib', image: 'https://www.01net.com/app/uploads/2025/06/fuite-donnees-france.jpg', fallbackImage: 'cyberattaque-hauts-de-france-news.svg', alt: 'Illustration d’une fuite de données publiée par 01net (Unsplash)', badge: 'CYBERSÉCURITÉ · FRANCE', kicker: '03.10.2026 · 01NET', title: 'LES HAUTS-DE-FRANCE VICTIMES D’UNE CYBERATTAQUE.', excerpt: 'La Région a confirmé samedi 3 octobre un accès non autorisé à des données personnelles via deux prestataires, Atexo et Docaposte. Un pirate revendique les informations de plus de 700 000 personnes, dont des RIB. Une plainte a été déposée et les usagers commencent à être informés.', read: copy.read, sentiment: 'negative' },
+    { to: '/news/tech/cyberattaque-hauts-de-france-rib', image: 'https://www.01net.com/app/uploads/2025/06/fuite-donnees-france.jpg', fallbackImage: 'cyberattaque-hauts-de-france-news.svg', alt: 'Illustration d’une fuite de données publiée par 01net (Unsplash)', badge: 'CYBERSÉCURITÉ · FRANCE', kicker: '03.10.2026 · 01NET', title: 'CYBERATTAQUE EN HAUTS-DE-FRANCE.', excerpt: 'La Région a confirmé samedi 3 octobre un accès non autorisé à des données personnelles via deux prestataires, Atexo et Docaposte. Un pirate revendique les informations de plus de 700 000 personnes, dont des RIB. Une plainte a été déposée et les usagers commencent à être informés.', read: copy.read, sentiment: 'negative' },
     { to: '/news/tech/coree-du-nord-ethereum-hashhiding', image: 'https://www.01net.com/app/uploads/2024/01/ethereum.jpg', fallbackImage: 'coree-du-nord-ethereum-news.svg', alt: 'Illustration Ethereum publiée par 01net (Unsplash)', badge: 'CYBERSÉCURITÉ · BLOCKCHAIN', kicker: '04.10.2026 · 01NET', title: 'LA CORÉE DU NORD DÉTOURNE ETHEREUM.', excerpt: 'Des chercheurs ont identifié HashHiding : la campagne XCTDH cache l’adresse de ses serveurs de commande dans des transferts Ethereum, vers des adresses dont personne ne détient la clé. Plus de 2 600 transferts ont été recensés en trois mois, et bloquer un serveur ne suffit plus.', read: copy.read, sentiment: 'negative' },
     { to: '/news/tech/tesla-t3-2026-livraisons-byd', image: 'https://img.frandroid.com/images.frandroid.com/wp-content/uploads/2026/04/tesla-gigafactory-berlin-usine-00017.jpg?resize=1200,675&key=c61b8cfd', fallbackImage: 'tesla-livraisons-t3-news.svg', alt: 'Gigafactory Tesla de Berlin — photo officielle Tesla', badge: 'TESLA · INDUSTRIE', kicker: '04.10.2026 · FRANDROID', title: 'TESLA REDRESSE, BYD S’ENVOLE.', excerpt: 'Tesla a livré 486 532 voitures au troisième trimestre 2026, environ 5 % de mieux que les prévisions, essentiellement en piochant dans ses stocks. BYD en a vendu 762 478 et porte son avance à près de 276 000 unités, tirée par un export en hausse de 154 % en septembre.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/tech/starship-vol-14-orbite-atteinte', image: 'https://sxcontent9668.azureedge.us/cms-assets/assets/Flight_14_Website_Desktop_4_734a6bbf25.jpg', fallbackImage: 'starship-vol-14-orbite-news.svg', alt: 'Starship — visuel officiel du quatorzième vol d’essai sur la page de lancement de SpaceX', badge: 'SPACEX · ESPACE', kicker: '29.09.2026 · SPACEX', title: 'STARSHIP EST ENFIN EN ORBITE.', excerpt: 'Première mise en orbite de l’histoire de la fusée lundi, avec 26 satellites Starlink V3 déployés — une première. Une panne de moteur en montée a ramené le vaisseau après 3 h 09, et il a explosé en basculant après son amerrissage.', read: copy.read, sentiment: 'positive' },

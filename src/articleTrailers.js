@@ -66,6 +66,19 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // ---- Fournée du 05.10.2026 ------------------------------------------------
+  // « Les Misérables » de Fred Cavayé : bande-annonce française publiée par le
+  // distributeur Pathé Cinémas (ZZRo2fIbomE), complétée par la version
+  // originale sous-titrée de STUDIOCANAL (PyBTjrK43Hg) — les deux chaînes ont
+  // été vérifiées sur YouTube (oEmbed) le 05.10.2026.
+  'cinema/les-miserables-cavaye-14-octobre': {
+    label: 'LES MISÉRABLES', meta: 'PATHÉ · FRED CAVAYÉ',
+    items: [
+      { id: 'ZZRo2fIbomE', kind: 'trailer', title: 'LES MISÉRABLES - Bande-annonce', channel: 'Pathé Cinémas', verified: '05.10.2026' },
+      { id: 'PyBTjrK43Hg', kind: 'trailer', title: 'LES MISÉRABLES | Official Trailer | STUDIOCANAL', channel: 'STUDIOCANAL', verified: '05.10.2026', note: 'À titre d’illustration : la version originale sous-titrée publiée par STUDIOCANAL, en complément de la bande-annonce française de Pathé Cinémas.' },
+    ],
+    credit: 'Vidéos officielles : Pathé Cinémas et STUDIOCANAL, sur YouTube.',
+  },
   'cinema/matthew-perry-documentaire-netflix': { label: 'MATTHEW PERRY', meta: 'NETFLIX · DOCUMENTAIRE', items: [{ id: '_iM1AOFxoDI', kind: 'trailer', title: 'The One About Matthew Perry | Official Trailer | Netflix', channel: 'Netflix', verified: '01.10.2026' }], credit: 'Vidéo officielle : Netflix, sur YouTube.' },
   'cinema/a-l-est-d-eden-netflix': { label: 'À L’EST D’ÉDEN', meta: 'NETFLIX · ZOE KAZAN', items: [{ id: 'M9NWvGZViCg', kind: 'trailer', title: 'East of Eden | Official Trailer | Netflix', channel: 'Netflix', verified: '01.10.2026' }], credit: 'Vidéo officielle : Netflix, sur YouTube.' },
   // ---- Fournée du 29.09.2026 ------------------------------------------------
@@ -244,6 +257,20 @@ export const articleTrailers = {
       { id: 'MQKqgFVU4dQ', kind: 'trailer', title: 'Beware Boiúna (2026) Final Trailer - Kiana Madeira, Jessica Rothe, Logan Marshall-Green', channel: 'Lionsgate Movies', verified: '04.10.2026' },
     ],
     credit: 'Vidéo officielle : Lionsgate Movies, sur YouTube.',
+  },
+
+  // Marshals: A Yellowstone Story — saison 2 française sur Paramount+ le
+  // 05.10.2026, au lendemain de la diffusion américaine sur CBS. Le trailer
+  // utilisé est celui de la chaîne CBS (upload principal), vérifié sur YouTube
+  // (oEmbed) le 05.10.2026 : « Marshals Season 2: Official Trailer | CBS »
+  // (mtk4ZZutvLc). La version française de Paramount+ France reprend la même
+  // campagne et reste écartée, comme les copies d'agrégateurs.
+  'cinema/marshals-saison-2-paramount-france': {
+    label: 'MARSHALS', meta: 'PARAMOUNT+ · SAISON 2',
+    items: [
+      { id: 'mtk4ZZutvLc', kind: 'trailer', title: 'Marshals Season 2: Official Trailer | CBS', channel: 'CBS', verified: '05.10.2026' },
+    ],
+    credit: 'Vidéo officielle : CBS, sur YouTube.',
   },
 
   // ---- Annonces sans images animées ----------------------------------------
