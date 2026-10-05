@@ -4,6 +4,7 @@ import ViceCityWorld from './ViceCityWorld';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushStoryScene from './CityRushStoryScene';
 import CityRushRaceList from './CityRushRaceList';
+import CityRushHealthBar from './CityRushHealthBar';
 import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
@@ -46,7 +47,6 @@ import {
   CITY_RUSH_PICKUPS,
   CITY_RUSH_TRACK_BOOST_DURATION,
   buildCityRushMinimapState,
-  cityRushPlayerHealthColor,
   cityRushRaceDistance,
   cityRushSprintCheckpointTime,
   createCityRushInventory,
@@ -147,7 +147,7 @@ const RACE_MODES = [
     id: 'circuit',
     name: 'CIRCUIT',
     label: '4 TOURS · CLASSIQUE',
-    desc: 'La formule originale, en plus long. 4 tours dont un dernier tour double, trafic, bonus et police (berlines/SUV) uniquement au dernier tour, avec renforts après chaque destruction.',
+    desc: '4 tours, dont un dernier tour double. 3 voitures de police poursuivent le joueur au dernier tour ; chaque rival qui touche une voiture de police reçoit son propre poursuivant. Les voitures de police du trafic sont vulnérables aux tirs rouges.',
     accent: '#43ead5',
     secondary: '#ff5db8',
     laps: 4,
@@ -175,7 +175,7 @@ const RACE_MODES = [
     id: 'pursuit',
     name: 'POURSUITE',
     label: '4 TOURS · POLICE TOTALE',
-    desc: 'Une berline et un SUV d’interception dès le départ. Ils chargent leur mitrailleuse avec les rares bonus rouges et appellent gratuitement un hélicoptère une fois par course ; au dernier tour, des renforts remplacent chaque voiture détruite. Chaque voiture de police a 4 carrés de vie : un tir rouge détruit 1 carré, tandis qu’un carambolage en détruit 2. Mode défi : aucun billet vert.',
+    desc: '3 voitures de police poursuivent le joueur dès le départ. Chaque rival qui tire et touche une voiture de police reçoit son propre poursuivant ; les voitures de police du trafic peuvent aussi être détruites par les tirs rouges. Le joueur et ses adversaires ont 15 carrés de vie. Mode défi : aucun billet vert.',
     accent: '#ffd44f',
     secondary: '#ff526e',
     laps: 4,
@@ -508,13 +508,13 @@ export default function ViceCityRushPage() {
   // puisqu'il n'y a personne d'autre en piste.
   const sprintCheckpoint = Math.min((Number(hud.sprint?.checkpoints) || 0) + 1, CITY_RUSH_SPRINT_CHECKPOINTS);
   const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
-  // Barre de vie de la voiture du pilote : huit carrés, dessinés comme une
-  // seule barre — la page n'affiche jamais les carrés, seulement la couleur
-  // (vert → orange → rouge) et la longueur.
-  const playerHealthValue = Number.isFinite(Number(hud.playerHealth)) ? Math.max(0, Number(hud.playerHealth)) : null;
+  // Quinze cellules pour le pilote comme pour les rivaux : les cellules
+  // s'allument par groupes bleu, vert et jaune, puis les trois dernières
+  // deviennent rouges.
+  const playerHealthValue = hud.playerHealth === null || hud.playerHealth === undefined
+    ? null
+    : Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Number(hud.playerHealth) || 0));
   const playerHealthMax = Number(hud.playerHealthMax) || CITY_RUSH_PLAYER_HEALTH;
-  const playerHealthPercent = playerHealthValue === null ? 0 : Math.max(0, Math.min(100, (playerHealthValue / playerHealthMax) * 100));
-  const playerHealthColor = cityRushPlayerHealthColor(playerHealthValue ?? playerHealthMax, playerHealthMax);
   const playerHealthCritical = playerHealthValue !== null && playerHealthValue <= CITY_RUSH_PLAYER_HEALTH_CRITICAL;
   const bestTime = bests[cityId] || null;
   const isRaceWon = Boolean(!storyMode && result && result.rank === 1 && !result.destroyed && !result.timedOut);
@@ -847,8 +847,8 @@ export default function ViceCityRushPage() {
 
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · TOUPIE ET RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
-    else if (effect.type === 'pistol-hit-player') showToast(`AK-47 · ${effect.attacker} TE TOUCHE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · ${effect.health}/${effect.maxHealth} CASES DE VIE.`, 'pistol');
+    else if (effect.type === 'pistol-hit-player') showToast(`AK-47 · ${effect.attacker} TE TOUCHE · ${effect.health}/${effect.maxHealth} CASES.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
     else if (effect.type === 'radio') showToast(
       `${effect.callerId && effect.callerId !== 'player' ? 'POLICE · FRAPPE D’HÉLICOPTÈRE UNIQUE' : 'HÉLICO EN APPROCHE'} · CIBLE : ${effect.target}.`,
@@ -868,6 +868,8 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-destroyed') showToast(effect.byPlayer
       ? `💥 ${effect.police} DÉTRUITE · +200 PTS${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`
       : `💥 ${effect.police} DÉTRUITE${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`, 'radio');
+    else if (effect.type === 'police-retaliation') showToast(`🚨 RENFORT · ${effect.police} PREND ${effect.target} EN CHASSE.`, 'pistol');
+    else if (effect.type === 'racer-wrecked') showToast(`💥 ${effect.target} EST HORS COURSE.`, 'radio');
     else if (effect.type === 'police-reinforcement') showToast(`🚨 RENFORT · ${effect.police} TE PREND EN CHASSE.`, 'pistol');
     else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
       const wall = effect.walls > 1 ? 'PAROIS DES DEUX CÔTÉS' : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;
@@ -1075,22 +1077,17 @@ export default function ViceCityRushPage() {
                 </div>
               </div>
 
-              {/* La barre de coque ne se dessine que sur le dernier tour : le
-                  monde l'active là, et cette garde le garantit même si un HUD
-                  en retard arrivait d'une course précédente. */}
-              {playerHealthValue !== null && !sprintMode && hud.lap >= hud.laps && (
+              {playerHealthValue !== null && phase === 'playing' && (
                 <div
                   className={`city-rush-health${playerHealthCritical ? ' is-critical' : ''}${hud.playerHealthFlash > 0 ? ' is-hit' : ''}`}
                   role="status"
-                  aria-label={`Résistance de ta voiture : ${playerHealthValue} carrés sur ${playerHealthMax}${playerHealthCritical ? ' — critique' : ''}`}
+                  aria-label={`Vie de ta voiture : ${playerHealthValue} carrés sur ${playerHealthMax}${playerHealthCritical ? ' — critique' : ''}`}
                 >
                   <span className="city-rush-health-head">
-                    <b>COQUE</b>
-                    <small>{playerHealthCritical ? 'CRITIQUE' : 'SOUS LE FEU'}</small>
+                    <b>VIE</b>
+                    <small>{playerHealthCritical ? 'CRITIQUE' : `${playerHealthValue}/${playerHealthMax}`}</small>
                   </span>
-                  <span className="city-rush-health-track" aria-hidden="true">
-                    <i style={{ width: `${playerHealthPercent}%`, background: playerHealthColor, boxShadow: `0 0 14px ${playerHealthColor}` }} />
-                  </span>
+                  <CityRushHealthBar health={playerHealthValue} maxHealth={playerHealthMax} label="Vie du joueur" flash={hud.playerHealthFlash > 0} />
                 </div>
               )}
 
@@ -1677,7 +1674,21 @@ export default function ViceCityRushPage() {
               couleur rouge compris. Elle est remplacée par la carte solo. */}
           <section className={`city-rush-no-collision-note${sprintMode ? ' is-solo' : ' is-police'}`}>
             <span className="city-rush-no-collision-icon" aria-hidden="true">{sprintMode ? '⚡' : '🚨'}</span>
-            <div><b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b><p>{sprintMode ? <>Rien à fuir dans ce mode : ni escouade au dernier tour, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts posés sur la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</> : <>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : une berline et un SUV chargent leur AK-47 avec les rares bonus rouges.' : 'Au dernier tour en CIRCUIT, une berline et un SUV entrent derrière le leader et chassent les bonus rouges.'} Elles commencent sans charge rouge, mais la police appelle gratuitement un hélicoptère une seule fois par course. Hors classement, les véhicules de police sont signalés dans la liste des positions. Chaque voiture de police affiche 4 carrés de vie : chaque tir rouge d’AK-47 en détruit 1, un carambolage en détruit 2 et un missile d’hélicoptère suffit d’un coup (explosion, retrait de la course et +200 pts). Au dernier tour, chaque unité d’escouade détruite est remplacée par un renfort qui revient derrière toi pour reprendre la chasse. Au dernier tour, ta voiture reçoit elle aussi une barre de vie de 8 carrés, dessinée d’un seul trait : verte, elle glisse à l’orange puis au rouge en se vidant. Un tir rouge en coûte deux, un carambolage avec une berline un. Au dernier tour, un hélicoptère d’observation suit ta voiture jusqu’à l’arrivée : rotor et pod caméra tournent, mais il n’ouvre jamais le feu.</>}</p></div>
+            <div>
+              <b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : 'ESCOUADE DE POLICE'}</b>
+              <p>
+                {sprintMode ? (
+                  <>Rien à fuir dans ce mode : ni escouade, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, sans dégâts.</>
+                ) : (
+                  <>
+                    {!storyMode && mode.policeFromStart
+                      ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
+                      : 'En Circuit, trois voitures de police entrent au dernier tour de la course et te prennent pour cible, même si tu n’es pas en tête.'}
+                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les berlines de police du trafic sont aussi vulnérables aux tirs rouges. Les barres du joueur et des adversaires ont 15 carrés : cinq bleus, cinq verts, puis cinq jaunes ; les trois derniers passent au rouge. Chaque tir rouge enlève une case sans dérapage ni ralentissement. La police conserve sa barre de 4 carrés ; un tir rouge en retire un, un missile d’hélicoptère la détruit. Les renforts de l’escouade reviennent après destruction. L’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                  </>
+                )}
+              </p>
+            </div>
           </section>
         </aside>
       </main>

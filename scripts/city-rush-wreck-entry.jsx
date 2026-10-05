@@ -10,7 +10,8 @@
 //   · la voiture **tourne sur elle-même** (lacet cumulé, deux tours complets) ;
 //   · elle **fume** (le pool de fumée est visible) et **s'arrête** (vitesse 0) ;
 //   · la course est **perdue** (fin de course `destroyed`, pilote dernier, pas
-//     de distance totale parcourue) et l'épave ne se produit qu'au dernier tour.
+//     de distance totale parcourue). La santé est active dès le départ ; le
+//     lanceur met une cellule restante pour éprouver vite le chemin d'épave.
 //
 // Le hasard est figé (graine fixe) : la vérif rejoue la même course.
 const BASE_SEED = Number(process.env.CITY_RUSH_WRECK_SEED || 20261004) >>> 0;
@@ -110,6 +111,9 @@ const all = process.argv.includes('--all') || process.env.CITY_RUSH_WRECK_ALL ==
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
 const RUNS = Math.max(1, Number(process.env.CITY_RUSH_WRECK_RUNS || (process.argv.find((a) => a.startsWith('--runs='))?.slice(7)) || 3));
 const VERBOSE = process.env.CITY_RUSH_WRECK_VERBOSE === '1';
+// Le lanceur préconditionne le test à une cellule restante : une course courte
+// suffit pour éprouver la transition de santé à zéro vers la toupie d'épave.
+const WRECK_TEST_LAPS = 1;
 
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
@@ -140,14 +144,14 @@ for (let run = 0; run < RUNS; run += 1) {
       style: {},
     };
 
-    // Une seule boucle (le grand dernier tour fait 1 200 m) et l'escouade en
-    // piste dès le premier mètre : la barre de coque est active tout du long.
+    // Le lanceur préconditionne la coque à une case restante ; l'escouade en
+    // poursuite entre au départ pour éprouver rapidement l'épave réelle.
     const world = createCityRushWorld(mount, city, () => ({
       error: (e) => { callbacks.errors.push(e); console.error('CALLBACK ERROR:', e); },
       hud: (h) => { callbacks.huds.push(h); },
       finish: (r) => { callbacks.finish = r; },
       effect: (e) => { callbacks.effects.push(e); },
-    }), car.id, { current: audioStub }, null, 1, true);
+    }), car.id, { current: audioStub }, null, WRECK_TEST_LAPS, true);
 
     const scene = world.scene;
     let playerNode = null;
@@ -175,7 +179,7 @@ for (let run = 0; run < RUNS; run += 1) {
     let wreckLastMeasuredSpeed = null;
     let wreckFirstLap = null;
     let healthSeen = null;
-    let maxFrames = 90 * 60; // 90 s virtuelles : le temps de se faire démolir
+    let maxFrames = 90 * 60; // 90 s virtuelles pour provoquer un dernier impact
     const request = (action) => world.action(action);
 
     while (!callbacks.finish && frames < maxFrames) {
@@ -215,10 +219,33 @@ for (let run = 0; run < RUNS; run += 1) {
       }
     }
 
+    let trackedHealth = null;
+    const healthEvents = callbacks.effects.filter((effect) => effect.type === 'player-health' || effect.type === 'player-hit');
+    for (const effect of healthEvents) {
+      if (effect.type === 'player-health') {
+        if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH || effect.health !== 1) {
+          violations += 1;
+          console.error(`[${city.id}#${run}] ÉCHEC : le scénario d’épave ne démarre pas à une cellule sur quinze`, effect);
+        }
+        trackedHealth = effect.health;
+        continue;
+      }
+      if (trackedHealth === null || effect.damage !== 1 || effect.health !== trackedHealth - 1) {
+        violations += 1;
+        console.error(`[${city.id}#${run}] ÉCHEC : un impact ne retire pas exactement une cellule`, { trackedHealth, effect });
+      }
+      trackedHealth = effect.health;
+    }
+
     races += 1;
     if (callbacks.errors.length) { violations += 1; console.error('ERREURS', callbacks.errors); }
     if (!wrecked) {
-      if (VERBOSE) console.log(`[${city.id}#${run}] pas d’épave en ${(frames / 30).toFixed(0)} s (coque restante ${healthSeen})`);
+      if (VERBOSE) {
+        const hits = callbacks.effects.filter((effect) => effect.type === 'player-hit');
+        const bySource = hits.reduce((counts, effect) => ({ ...counts, [effect.source]: (counts[effect.source] || 0) + 1 }), {});
+        console.log(`[${city.id}#${run}] pas d’épave en ${(frames / 30).toFixed(0)} s (coque restante ${healthSeen}, impacts ${hits.length}: ${JSON.stringify(bySource)})`);
+      }
+      world.destroy();
       continue;
     }
     wrecks += 1;
@@ -228,7 +255,7 @@ for (let run = 0; run < RUNS; run += 1) {
       [finish?.destroyed === true, 'la course perdue n’est pas marquée détruite', finish && { destroyed: finish.destroyed, rank: finish.rank }],
       [finish?.rank === finish?.racers?.length, 'l’épave n’est pas classée dernière', finish && { rank: finish.rank, racers: finish.racers?.length }],
       [finish?.racers?.at(-1)?.id === 'player', 'le pilote détruit n’est pas en fin de tableau', finish?.racers?.map((r) => r.id)],
-      [wreckFirstLap !== null && wreckFirstLap >= 1, 'l’épave ne se déclare pas sur le dernier tour', { wreckFirstLap }],
+      [wreckFirstLap !== null && wreckFirstLap >= 1 && wreckFirstLap <= WRECK_TEST_LAPS, 'l’épave survient hors d’un tour valide', { wreckFirstLap }],
       // La course ne peut plus se clore sur la ligne d'un rival pendant la
       // toupie (garde `!playerWrecked` dans la boucle) : une épave va toujours
       // au bout de ses 3,2 s.
