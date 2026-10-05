@@ -927,12 +927,9 @@
 
 .city-rush-race-list-row.is-player .city-rush-race-list-gap { color: #9ffcf0; }
 
-/* ── Barre de vie de la voiture du pilote ──
-   Elle naît au dernier tour du pilote (l'unique tour du Sprint, le quatrième
-   du Circuit et de la Poursuite) et meurt à l'arrivée. Huit carrés de vie, mais **aucun carré
-   dessiné** : un seul trait continu, vert à pleine vie, qui glisse vers
-   l'orange puis le rouge en se vidant — la couleur est calculée par la page
-   (`cityRushPlayerHealthColor`), la largeur suit la vie restante. */
+/* ── Barres de vie à quinze cellules ──
+   Le joueur et les rivaux ont trois groupes de cinq : bleu, vert, jaune. Les
+   trois derniers carrés jaunes virent au rouge quand ils restent seuls. */
 .city-rush-health {
   position: absolute;
   z-index: 4;
@@ -942,7 +939,7 @@
   width: min(262px, 44%);
   padding: 7px 10px 8px;
   border-radius: 12px;
-  background: rgba(6, 10, 20, 0.78);
+  background: rgba(6, 10, 20, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.14);
   backdrop-filter: blur(12px);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
@@ -970,32 +967,55 @@
   letter-spacing: 0.12em;
 }
 
-.city-rush-health-track {
-  display: block;
-  position: relative;
-  height: 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+.city-rush-health-cells {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
 }
 
-.city-rush-health-track > i {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.22s var(--cr-ease), background 0.35s linear;
+.city-rush-health-group {
+  display: flex;
+  flex: 1 1 0;
+  gap: 2px;
+  min-width: 0;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
 }
 
-/* Deux carrés ou moins : la barre bat au rouge. */
+.city-rush-health-cell {
+  display: block;
+  flex: 1 1 0;
+  min-width: 2px;
+  height: 8px;
+  border-radius: 1.5px;
+  opacity: 0.14;
+  transition: opacity 0.16s ease, filter 0.16s ease;
+}
+
+.city-rush-health-cell.is-blue { color: #48b9ff; background: #48b9ff; }
+.city-rush-health-cell.is-green { color: #50e48a; background: #50e48a; }
+.city-rush-health-cell.is-yellow { color: #ffd44f; background: #ffd44f; }
+.city-rush-health-cell.is-critical { color: #ff526e; background: #ff526e; }
+.city-rush-health-cell.is-filled { opacity: 1; box-shadow: 0 0 8px currentColor; filter: saturate(1.2); }
+.city-rush-health-cell.is-empty { filter: saturate(0.35); }
+
+.city-rush-health-cells.is-compact { gap: 2px; }
+.city-rush-health-cells.is-compact .city-rush-health-group { gap: 1px; padding: 1px; border-radius: 2px; }
+.city-rush-health-cells.is-compact .city-rush-health-cell { min-width: 1px; height: 4px; border-radius: 1px; }
+.city-rush-health-cells.is-hit { animation: crHealthHit 0.34s ease-out; }
+
+/* Trois carrés restants : alerte rouge. */
 .city-rush-health.is-critical {
   border-color: rgba(255, 82, 110, 0.5);
   animation: crHealthCritical 0.72s ease-in-out infinite alternate;
 }
-
 .city-rush-health.is-critical .city-rush-health-head small { color: #ff8b9c; }
 
-/* La coque vient d'encaisser : la barre clignote une fois. */
+/* La coque vient d'encaisser : les cellules clignotent brièvement. */
 .city-rush-health.is-hit { animation: crHealthHit 0.34s ease-out; }
 
 @keyframes crHealthIn { from { opacity: 0; } to { opacity: 1; } }
@@ -2442,6 +2462,7 @@
 .city-rush-guide-item.is-pistol { --power-color: #ff526e; }
 .city-rush-guide-item.is-radio { --power-color: #ffd44f; }
 .city-rush-guide-item.is-boost { --power-color: #50e48a; }
+.city-rush-guide-item.is-ramp { --power-color: #ffaa00; }
 
 /* Carte « SOLO · CHRONO » du Sprint : mêmes cases que le guide des objets,
    mais sans arme — les couleurs suivent l'accent du mode (rose/cyan). */
@@ -2705,7 +2726,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-radar .city-rush-race-list { position: static; width: auto; border-radius: 12px; background: rgba(4, 7, 14, 0.72); border: 1px solid rgba(238, 240, 244, 0.5); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); backdrop-filter: blur(6px); }
   .city-rush-radar .city-rush-race-list-head { padding: 7px 8px; }
   .city-rush-radar .city-rush-race-list-rows { gap: 0; padding: 3px; }
-  .city-rush-radar .city-rush-race-list-row { grid-template-columns: 14px 20px minmax(0, 1fr); gap: 5px; min-height: 29px; padding: 4px; }
+  .city-rush-radar .city-rush-race-list-row { grid-template-columns: 14px 20px minmax(0, 1fr); gap: 5px; min-height: 37px; padding: 4px; }
   .city-rush-radar .city-rush-race-list-avatar { width: 20px; height: 20px; }
   .city-rush-radar .city-rush-race-list-copy small,
   .city-rush-radar .city-rush-race-list-gap { display: none; }
@@ -2714,8 +2735,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-radar .city-rush-race-list-badges b { display: none; }
 
   /* Le radar et les commandes occupent les deux coins inférieurs. La barre
-     reste centrée dans l'espace libre, mais passe sur une ligne compacte et
-     descend près du bas du jeu pour laisser davantage de route visible. */
+     reste centrée dans l'espace libre, avec les quinze cellules visibles. */
   .city-rush-health {
     z-index: 6;
     left: 50%;
@@ -2732,7 +2752,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-health-head { flex: 0 0 auto; margin-bottom: 0; }
   .city-rush-health-head b { font-size: 7px; }
   .city-rush-health-head small { display: none; }
-  .city-rush-health-track { flex: 1; min-width: 0; height: 6px; }
+  .city-rush-health-cells { flex: 1; gap: 2px; }
+  .city-rush-health-group { gap: 1px; padding: 1px; }
+  .city-rush-health-cell { min-width: 1px; height: 5px; }
 
   .city-rush-status-pill { top: 84px; font-size: 9.5px; padding: 7px 12px; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .city-rush-toast { top: 118px; font-size: 11px; padding: 10px 14px; max-width: min(420px, calc(100% - 20px)); }
@@ -2812,6 +2834,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-toast,
   .city-rush-lap-banner,
   .city-rush-power-pip,
+  .city-rush-health.is-critical,
   .city-rush-machine-gun-button.is-ready::after,
   .city-rush-gta-wanted i.is-on,
   .city-rush-viewport.is-boosting::after,

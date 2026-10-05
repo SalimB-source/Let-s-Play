@@ -4,15 +4,9 @@
 //   node scripts/city-rush-wreck-check.mjs            (une ville)
 //   node scripts/city-rush-wreck-check.mjs --all      (les cinq villes)
 //   node scripts/city-rush-wreck-check.mjs --runs=5   (cinq courses par ville)
-// ════════════════════════════════════════════════════════════════════
-// Vérif « Vice City Rush » : le tir droit bleu doit pouvoir toucher les
-// voitures de police. Le monde est construit pour de vrai (faux
-// WebGLRenderer), l'escouade entre en piste dès le départ et le pilote
-// d'essai ne tire qu'au tir droit : tout point de vie perdu par une
-// berline vient donc d'une balle bleue.
-//   node scripts/city-rush-blue-shot-police-check.mjs            (vice-city)
-//   node scripts/city-rush-blue-shot-police-check.mjs --all      (5 villes)
-// ════════════════════════════════════════════════════════════════════
+// Le pilote d'essai démarre avec une cellule restante (maxHealth reste 15),
+// uniquement pour atteindre rapidement le chemin d'épave. Les tests de règles
+// et de smoke couvrent séparément la barre pleine et les dégâts à une cellule.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -86,7 +80,12 @@ const server = await createServer({
       transform(code, id) {
         if (id.includes('ViceCityWorld')) {
           return {
-            code: code.replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)('),
+            // Précondition de test : une seule cellule restante pour vérifier
+            // l'épave rapidement. Le plafond affiché reste quinze et les autres
+            // tests valident le démarrage plein et le retrait d'une cellule.
+            code: code
+              .replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)(')
+              .replaceAll('playerHealth = CITY_RUSH_PLAYER_HEALTH;', 'playerHealth = 1;'),
             map: null,
           };
         }

@@ -9,8 +9,8 @@ virages, noms des sections, kilométrage officiel, point bas de Breidscheid
 d'Antoniusbuche, ligne droite de la Döttinger Höhe (2 135 m), sens horaire,
 20,832 km, 73 virages (33 à gauche, 40 à droite).
 
-La boucle jouable du moteur reste une boucle de 600 m : le tour réel y est
-rejoué à l'échelle 1:35 (20,832 km → 600 m), comme la C1 de Tokyo rejoue ses
+La boucle jouable du moteur est une boucle de 1 200 m : le tour réel y est
+rejoué à l'échelle 1:17 (20,832 km → 1 200 m), comme la C1 de Tokyo rejoue ses
 14,8 km. Le HUD affiche le kilomètre officiel et le secteur réellement traversé.
 
 ## Adaptations assumées (le joueur les a explicitement autorisées)

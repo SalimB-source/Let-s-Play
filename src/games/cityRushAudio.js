@@ -976,6 +976,56 @@ export class CityRushAudio {
     this.tone(180, time, 0.4, 'sawtooth', 0.09, { filter: 1400, filterTo: 3600 });
   }
 
+  /** Tremplin : décollage et appel d'air ascendant. */
+  rampJump({ pan = 0, speed = 1 } = {}) {
+    if (!this.ready()) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    const out = this.panned(pan);
+    const speedRatio = clamp(((Number(speed) || 20) - 15) / 45, 0, 1);
+    this.noise(time, 0.52 + speedRatio * 0.22, 0.2, {
+      type: 'bandpass',
+      frequency: 650,
+      frequencyTo: 2600 + speedRatio * 1100,
+      q: 1.1,
+      destination: out,
+    });
+    const baseFreq = 220 + speedRatio * 80;
+    this.tone(baseFreq, time, 0.4, 'sawtooth', 0.11, {
+      filter: 1200,
+      filterTo: 3600,
+      destination: out,
+    });
+    this.tone(baseFreq * 1.5, time + 0.04, 0.35, 'square', 0.08, {
+      filter: 1800,
+      filterTo: 4400,
+      destination: out,
+    });
+    this.tone(baseFreq * 2.0, time + 0.09, 0.3, 'triangle', 0.12, {
+      destination: out,
+    });
+  }
+
+  /** Atterrissage : claquement de suspension et reprise d'adhérence des pneus. */
+  rampLand({ pan = 0, speed = 1 } = {}) {
+    if (!this.ready()) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    const out = this.panned(pan);
+    this.tone(110, time, 0.18, 'sine', 0.25, {
+      filter: 450,
+      filterTo: 60,
+      destination: out,
+    });
+    this.noise(time, 0.15, 0.2, {
+      type: 'bandpass',
+      frequency: 1800,
+      frequencyTo: 800,
+      q: 2.2,
+      destination: out,
+    });
+  }
+
   /** Feux de départ : un bip par seconde, un accord sur le GO. */
   countdownBeep(step) {
     if (!this.ready()) return;

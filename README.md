@@ -789,38 +789,41 @@ grand écran.
 
 ## Vice City Rush : les tours, ligne de départ et décor
 
-Le jeu (`/jeu/vice-city-rush`) est une course d'arcade dans cinq villes (Vice
-City, New York, Tokyo, Paris, Londres), complétées par **trois parcours**
-(Route 66, campagne mexicaine, Nürburgring Nordschleife — voir « Le
+Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
+villes (Vice City, New York, Tokyo, Paris, Londres), complétées par **trois
+parcours** (Route 66, campagne mexicaine, Nürburgring Nordschleife — voir « Le
 Nordschleife » plus bas). Chaque parcours est une boucle
-de **600 m** qu'on reparcourt ; les courses standard passent maintenant à
-**six tours**, avec un dernier tour double de **1 200 m** : **4 200 m au total**.
-Le Sprint s'allonge lui aussi à quatorze checkpoints. C'est au dernier tour que
-la police entre en piste. **Tokyo se joue sur la Shuto Expressway Route 1** —
+de **1 200 m** qu'on reparcourt — la boucle a été doublée (600 m → 1 200 m)
+pour rendre les stages plus longs : deux fois plus de décor avant de repasser
+sous le portique. Les courses standard comptent **six tours**, avec un dernier
+tour double de **2 400 m** : **8 400 m au total**. Le Sprint s'allonge lui
+aussi à seize checkpoints. En Circuit, la police entre au dernier tour du
+joueur ; le mode Poursuite la déploie dès le départ.
+**Tokyo se joue sur la Shuto Expressway Route 1** —
 la C1 首都高速都心環状線, l'anneau intérieur réel de 14,8 km autour du palais
-impérial, dans le sens 内回り : chaque boucle de 600 m rejoue la boucle
+impérial, dans le sens 内回り : chaque boucle de 1 200 m rejoue la boucle
 officielle secteur par secteur (voir « Tokyo : la C1 » plus bas).
 
 | Mode | Tours / checkpoints | Distance | À 29 m/s, sans incident |
 | --- | --- | --- | --- |
-| Circuit, Poursuite | 6 tours | 4 200 m (5 × 600 m, puis 1 200 m) | ≈ 2 min 25 |
-| Sprint (solo) | 14 checkpoints | 4 200 m (14 portes × 300 m) | ≈ 2 min 25 |
-| Histoire, chapitres 1 à 5 | 6 tours | 4 200 m | ≈ 2 min 25 |
-| Histoire, chapitre 6 « Le dernier tour » | 7 tours | 4 800 m (6 × 600 m, puis 1 200 m) | ≈ 2 min 46 |
+| Circuit, Poursuite | 6 tours | 8 400 m (5 × 1 200 m, puis 2 400 m) | ≈ 4 min 50 |
+| Sprint (solo) | 16 checkpoints | 4 800 m (16 portes × 300 m) | ≈ 2 min 46 |
+| Histoire, chapitres 1 à 5 | 6 tours | 8 400 m | ≈ 4 min 50 |
+| Histoire, chapitre 6 « Le dernier tour » | 7 tours | 9 600 m (6 × 1 200 m, puis 2 400 m) | ≈ 5 min 31 |
 
 Le trafic, les tirs et la police ralentissent les courses réelles (le pilote
 d'essai du smoke met 10 à 15 % de plus que ces temps), tandis que le bonus de
 « ligne propre » (jusqu'à +12 % en tenant sa voie) les raccourcit. Changer de
 voie ne compte ni dans l'un ni dans l'autre : le malus d'écart a été supprimé
-(voir « Changer de voie ne ralentit plus »). Avant ce réglage, une course ne
-comptait que 1 à 3 tours de 600 m (1 min 02 en Circuit)
+(voir « Changer de voie ne ralentit plus »). Avant ces réglages, une course ne
+comptait que 1 à 3 tours d'une boucle de 600 m (1 min 02 en Circuit)
 et le dernier tour durait 21 s.
 
 - **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
   ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
   s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
   **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
-  (« TOUR 1/6 », puis « TOUR 6/6 · DERNIER TOUR », puis « PLUS QUE 600 M » au
+  (« TOUR 1/6 », puis « TOUR 6/6 · DERNIER TOUR », puis « PLUS QUE 1200 M » au
   passage du milieu du dernier tour) et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
@@ -832,11 +835,11 @@ et le dernier tour durait 21 s.
   classement sur téléphone — et **sans flou** : fond opaque, texte net, entrée
   et sortie par glissement (`crLapIn` ne touche plus à `filter`).
 - **Le grand dernier tour.** Il fait `CITY_RUSH_FINAL_LAP_LOOPS` = **2** boucles
-  (1 200 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
+  (2 400 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
   donc on le recroise **au milieu du dernier tour** : ce n'est qu'un **point de
-  passage** — bannière « PLUS QUE 600 M · ce n'est pas encore l'arrivée »,
-  tableau « PLUS QUE 600 M », cloche — sans confettis, sans nouveau tour et sans
-  arrivée. La jauge du dernier tour court sur ses 1 200 m (elle ne retombe pas à
+  passage** — bannière « PLUS QUE 1200 M · ce n'est pas encore l'arrivée »,
+  tableau « PLUS QUE 1200 M », cloche — sans confettis, sans nouveau tour et sans
+  arrivée. La jauge du dernier tour court sur ses 2 400 m (elle ne retombe pas à
   zéro au portique), le suivi de tour du HUD donne au dernier segment deux fois
   la largeur des autres, et la liste des positions (`CityRushRaceList`, prop
   `laps`) affiche par exemple « T5/6 » en début de dernier tour.
@@ -849,10 +852,10 @@ et le dernier tour durait 21 s.
   `RACE_MODES` (Circuit, Sprint, Poursuite), `STORY_LAPS` et `STORY_FINALE_LAPS`
   (Histoire) dans `ViceCityRushPage.jsx` ; la longueur du dernier tour est
   `CITY_RUSH_FINAL_LAP_LOOPS` dans `cityRushRules.js` (`1` redonne un dernier
-  tour ordinaire). La boucle de 600 m elle-même ne bouge pas : le décor, le
-  portique et les tests en dépendent. Les chronos sont rangés sous
-  `letsplay_vice_city_rush_bests_v3` : les records des anciennes courses, plus
-  courtes, n'auraient jamais pu être battus.
+  tour ordinaire) ; la longueur de la boucle du stage elle-même est
+  `CITY_RUSH_LAP_LENGTH` (1 200 m — le décor, le portique et les tests suivent).
+  Les chronos sont rangés sous `letsplay_vice_city_rush_bests_v4` : les records
+  des anciennes boucles de 600 m, plus courtes, n'auraient jamais pu être battus.
 - **Le Sprint, solo contre la montre.** Le mode `SPRINT` de `RACE_MODES`
   (`format: 'sprint'`) ne se court **contre personne** : `raceFormat='sprint'`
   descend jusqu'à `createCityRushWorld`, qui ne crée **aucun rival**
@@ -862,43 +865,50 @@ et le dernier tour durait 21 s.
   ignoré, la barre de coque ne s'arme pas). Seuls les pads turbo verts sont
   placés périodiquement sur la chaussée (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL`) ;
   aucun bonus rouge ni pouvoir d'hélicoptère n'apparaît. À la place :
-  **14 checkpoints**
+  **16 checkpoints**
   espacés de `CITY_RUSH_SPRINT_CHECKPOINT_SPACING` = **300 m**
-  (`CITY_RUSH_SPRINT_DISTANCE` = **4 200 m**), chacun rendant
+  (`CITY_RUSH_SPRINT_DISTANCE` = **4 800 m**), chacun rendant
   `CITY_RUSH_SPRINT_CHECKPOINT_TIME` = **15 s** au chrono — le compteur repart
-  de 15 et ne cumule pas l'avance. Chrono à zéro : effet `sprint-timeout`,
-  course perdue, ni record ni victoire enregistrés.
+  de 15 et ne cumule pas l'avance. Seize portes de 300 m font quatre boucles
+  exactes : la dernière tombe pile sous le portique. Chrono à zéro : effet
+  `sprint-timeout`, course perdue, ni record ni victoire enregistrés.
   **L'interface suit le solo.** Carte HUD « SOLO » et jauge des checkpoints à
   la place de la position et du tour, radar et bouton AK-47 absents,
-  compte à rebours et pied de coque en « 14 CHECKPOINTS » plutôt qu'en
+  compte à rebours et pied de coque en « 16 CHECKPOINTS » plutôt qu'en
   « 1 TOURS ». La colonne latérale remplace le classement à trois par un
   chrono solo — `buildCityRushMinimapState({ solo: true })` ne garde que le
   pilote —, la carte « OBJETS · 1 ARME + TURBO » par « SOLO · CHRONO », et la
   carte rouge « 🚨 ESCOUADE DE POLICE » par une carte solo sans sirène. Deux
   vérifications tiennent l'ensemble : `npm run check:city-rush-sprint`
   (une course complète dans les cinq villes, jouée image par image : solo,
-  aucune police, aucun bonus d'arme, 14 checkpoints) et
+  aucune police, aucun bonus d'arme, 16 checkpoints) et
   `npm run check:city-rush-sprint-ui` (la vraie page dans jsdom : rien n'y
   évoque la poursuite ou les rivaux en Sprint, et les modes Circuit et
   Poursuite gardent les leurs).
-- **L'escouade de police.** En Circuit, deux véhicules d'interception entrent
-  derrière le leader à l'ouverture du **sixième et dernier tour** — un dernier
-  tour de 1 200 m sous la sirène. En Poursuite, la même escouade est présente
-  dès le départ. Une berline et un SUV roulent pour gêner le pilote : barrage,
-  changement de voie, chasse, et renfort après une destruction au dernier tour.
-  Elles **ne sont pas classées** : `rankCityRushRacers` ne les voit jamais, la
-  grille garde trois pilotes, et le HUD les affiche à part (`hud.police`,
-  marqueurs rouge et bleu de la mini-carte). Elles convoitent les bonus rouges
-  d'AK-47 ; un bonus rouge ne représente que **5 % des objets** sur la route,
-  contre 95 % de pads turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de
-  tir vaut cinq bonus ordinaires dans leur choix de voie
-  (`CITY_RUSH_POLICE_HUNT_TYPES`, `chooseCityRushPoliceLane`). Elles arrivent
-  sans charge d'arme, rechargent sept balles de mitrailleuse avec un bonus
-  rouge, puis tirent sur leur client. **L'attaque d'hélicoptère a été retirée** :
-  aucun missile ni frappe aérienne ne peut toucher le joueur.
+- **L'escouade de police.** En Circuit, trois voitures d'interception entrent
+  au début du **sixième et dernier tour du joueur** — le dernier tour de
+  2 400 m. En Poursuite, les trois le ciblent dès le départ, même si un rival
+  mène. Une unité détruite par le joueur est remplacée par un renfort différé
+  pendant le dernier tour. Les voitures restent **hors classement** :
+  `rankCityRushRacers` ne les voit jamais, la grille garde trois pilotes, et le
+  HUD les affiche à part (`hud.police`, marqueurs rouge et bleu de la mini-carte).
+  Elles convoitent les bonus rouges d'AK-47 ; un bonus rouge ne représente que
+  **5 % des objets** sur la route, contre 95 % de pads turbo
+  (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de tir vaut cinq bonus
+  ordinaires dans leur choix de voie (`CITY_RUSH_POLICE_HUNT_TYPES`,
+  `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
+  sept balles avec chaque bonus rouge.
 
-  La même escouade opère dans les cinq villes et sur les routes de carrière —
-  jamais en Sprint. Elle choisit les voies dégagées et évite le trafic lent
+  **Les rivaux qui touchent la police reçoivent leur propre poursuivant.** Deux
+  voitures supplémentaires sont gardées en réserve, une par rival ; dès qu'un
+  rival réussit un tir sur une voiture de police — escouade ou police du trafic
+  — son unité réservée le chasse exclusivement, sans détourner les trois voitures
+  du joueur. Les voitures de police du trafic sont également vulnérables aux
+  tirs rouges. **L'attaque d'hélicoptère a été retirée** : aucun missile ni
+  frappe aérienne ne peut toucher qui que ce soit.
+
+  L'escouade opère dans les cinq villes et sur les routes de carrière — jamais
+  en Sprint. Elle choisit les voies dégagées et évite le trafic lent
   (`isCityRushPoliceLaneJammed`) ; si elle est malgré tout bloquée, elle heurte
   le véhicule lent comme un rival : **0,6 s de ralentissement et un dérapage**,
   puis le trafic se rabat (`blockedBy`, `resolveCityRushPoliceMovement`,
@@ -909,14 +919,15 @@ et le dernier tour durait 21 s.
   ne compte que si la berline est devant et que le joueur arrive dessus plus
   vite (`cityRushPoliceCollisionHit`). Il retire **un point de vie** à la
   police, mais **aucun** à la voiture du joueur ; les chocs ne diminuent donc
-  pas la barre de coque. Une berline a six points de vie : deux tirs rouges
-  d'AK-47 (3 points chacun), six carambolages (1 point chacun), ou une
-  combinaison équivalente la détruisent (`CITY_RUSH_POLICE_HEALTH`,
-  `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`). À la destruction :
-  explosion, retrait immédiat de la course et de la mini-carte, **+200 pts**
-  pour le pilote qui l'abat (`CITY_RUSH_POLICE_DESTROY_SCORE`). La berline du
-  trafic rappelée par un contact est destructible comme l'escouade ; à la
-  course suivante, le trafic repart au complet.
+  pas sa coque. Une berline a six points de vie : deux tirs rouges d'AK-47
+  (3 points chacun), trois tirs bleus (2 points chacun), six carambolages
+  (1 point chacun), ou une combinaison équivalente la détruisent
+  (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`).
+  À la destruction : explosion, retrait immédiat de la course et de la
+  mini-carte, **+200 pts** pour le pilote qui l'abat
+  (`CITY_RUSH_POLICE_DESTROY_SCORE`). La berline du trafic rappelée par un
+  contact est destructible comme l'escouade ; à la course suivante, le trafic
+  repart au complet.
 - **Le dernier tour sous surveillance.** Deux choses accompagnent l'escouade.
   D'abord un **hélicoptère d'observation** se poste dans le ciel pendant le
   dernier tour : 18 m devant la voiture du pilote, 8 m au-dessus de la
@@ -932,19 +943,20 @@ et le dernier tour durait 21 s.
   (les tunnels de la Shuto de Tokyo), il n'y a plus de ciel : l'appareil
   s'efface (`WATCH_HELI_TUNNEL_HIDE`) plutôt que de voler dans les panneaux
   suspendus, et il reparaît à la sortie — le smoke compte ces rentrées.
-  Ensuite la **barre de vie du pilote** s'allume dans le HUD :
-  **huit carrés** logiques, mais **dessinés d'un seul trait, sans segments
-  visibles**, qui partent du vert et glissent vers l'orange puis le rouge en se
-  vidant (`CITY_RUSH_PLAYER_HEALTH`, `cityRushPlayerHealthColor`,
-  `CITY_RUSH_PLAYER_BAR_COLORS`). Un **tir rouge reçu** en coûte deux ; un tir
-  bleu (règle héritée, aucun bonus bleu n'est généré) en coûte un. **Percuter
-  une voiture de police ne retire aucune vie au joueur** : c'est la voiture de
-  police qui perd un point de sa barre (`CITY_RUSH_POLICE_DAMAGE.collision`).
+  La **barre de vie du joueur et des rivaux** est active dès le départ :
+  **quinze cellules** en trois groupes de cinq — bleu, vert, jaune — dont les
+  trois dernières virent au rouge à l'état critique
+  (`CITY_RUSH_PLAYER_HEALTH`, `cityRushHealthSegments`,
+  `CITY_RUSH_PLAYER_BAR_COLORS`). Chaque tir rouge reçu retire **une cellule**
+  sans dérapage ni ralentissement ; le tir bleu en retire aussi une. Les tirs
+  reçus par les voitures de police suivent leur coque distincte : rouge −3,
+  bleu −2, collision −1. **Percuter une voiture de police ne retire aucune vie
+  au joueur** : seule la police perd un point (`CITY_RUSH_POLICE_DAMAGE.collision`).
   Le trafic et les rivaux ne touchent pas non plus la coque, ils ne font que
   ralentir. Le contact policier compte seulement quand le pilote **arrive sur**
   une berline **devant lui**, à une vitesse supérieure
   (`cityRushPoliceCollisionHit`) ; la berline repliée derrière lui pour tirer
-  ne déclenche pas de choc. À deux carrés ou moins, la barre passe en
+  ne déclenche pas de choc. À trois cellules ou moins, la barre passe en
   « CRITIQUE » (pulsation rouge), et **à zéro la course est perdue** : le pilote
   part en toupie (`cityRushStunSpin`, deux tours) dans une **fumée noire**,
   pétarade de pneus et explosion, s'immobilise, puis la course se clôt sur une
@@ -1273,7 +1285,7 @@ npm run check:city-rush          # règles pures (tours, repli, classement, obje
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
-npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (4 200 m, dernier tour de 1 200 m), sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, aucune vie perdue au contact, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point, le joueur n'en perd aucun ; l'épave est vérifiée si des tirs vident la coque
@@ -1282,31 +1294,30 @@ npm run check:vice-city-account-grants # progression de compte : cache isolé pa
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
-à 30 Hz avec un pilote naïf (6 tours par défaut, 4 200 m ;
+à 30 Hz avec un pilote naïf (6 tours par défaut, 8 400 m ;
 `CITY_RUSH_SMOKE_LAPS=4 npm run check:city-rush-smoke` joue une course de
-3 000 m, et `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke` fige le
+6 000 m, et `CITY_RUSH_SMOKE_SEED=42 npm run check:city-rush-smoke` fige le
 hasard pour rejouer exactement le même scénario — un échec du smoke est
 intermittent par nature, la graine le rend reproductible) : il vérifie les passages de ligne (début des tours
 2 à 6, puis le point de passage du grand dernier tour, une seule fois), le
-compteur du dernier tour (il court sur 1 200 m sans retomber à zéro au
-portique), l’arrivée après 4 200 m, le HUD, le nombre de meshes affichés, la
+compteur du dernier tour (il court sur 2 400 m sans retomber à zéro au
+portique), l’arrivée après 8 400 m, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
-aussi l'**escouade de police** : une seule entrée en piste, deux berlines
-arrivées derrière le leader (jamais devant, jamais à plus de 140 m), sans
-attaque d'hélicoptère ni missile, qui
-rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
-parcours (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
-plus de 200 m de retard — seuils calibrés sur plus de 700 courses, avec une
-large marge),
-ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
-disparaissent à la ligne et font sonner puis éteindre leur sirène. Il suit
-l'**hélicoptère d'observation** (nœud `watch-helicopter` : absent hors du
-dernier tour, rotor et pod animés pendant le suivi, **cadrage vérifié à
-l'écran** — projeté par la vraie caméra, il doit rester dans la bande de ciel
-entre la route et les cartes du HUD au moins 85 % du dernier tour —, éloigné à
-l'arrivée, effacé par `reset()`) et la **barre de vie du pilote** (jamais avant son dernier tour,
-pleine à l'apparition, bornée, jamais croissante ; un contact policier ne
-produit aucun `player-hit`, et chaque tir encaissé respecte le barème). Il ne dit rien
+aussi l'**escouade de police** : une seule entrée en piste au dernier tour du
+joueur, trois voitures (deux berlines et un SUV) qui apparaissent derrière lui,
+le prennent pour cible même s'il n'est pas leader, le rejoignent à moins de 30 m
+et restent dans son sillage (au moins 40 % du dernier tour à moins de 80 m,
+jamais plus de 200 m de retard). Elles sont absentes du classement, disparaissent
+à l'arrivée et font sonner puis éteindre leur sirène. Le smoke valide aussi
+chaque événement de représailles émis : le rival touchant une voiture de police
+reçoit une unité dédiée qui le cible exclusivement. Il suit l'**hélicoptère
+d'observation** (nœud `watch-helicopter` : absent hors du dernier tour, rotor et
+pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par la
+vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
+du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
+`reset()`) et les **barres de vie des pilotes** (15 cellules pleines dès le
+départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème,
+et un contact policier ne produit aucun `player-hit`). Il ne dit rien
 du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
 l'image.
 
@@ -1338,7 +1349,7 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   Karussell**, Hohe Acht, Hedwigshöhe, Wippermann, Eschbach, Brünnchen,
   Eiskurve, Pflanzgarten, Stefan-Bellof-S, Schwalbenschwanz, Galgenkopf,
   Döttinger Höhe, Start-Ziel.
-- **Le relief.** La piste monte et descend pour de vrai : la boucle de 600 m
+- **Le relief.** La piste monte et descend pour de vrai : la boucle de 1 200 m
   porte le profil d'altitude réel du circuit (relevé kilomètre par kilomètre),
   remis à l'échelle pour rester lisible — le HUD affiche l'altitude officielle
   du point traversé (320 m à Breidscheid, 620 m à la Hohe Acht).
@@ -1359,9 +1370,9 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
 
 ### Ce qui est adapté (et pourquoi)
 
-- **L'échelle.** Comme la C1 (14,8 km) tient dans une boucle de 600 m, le Ring
-  la rejoue au **1:35** : les repères kilométriques, les noms et l'ordre sont
-  réels, la longueur ne l'est pas. Le HUD affiche le kilomètre officiel.
+- **L'échelle.** Comme la C1 (14,8 km) tient dans une boucle de 1 200 m, le
+  Ring la rejoue au **1:17** : les repères kilométriques, les noms et l'ordre
+  sont réels, la longueur ne l'est pas. Le HUD affiche le kilomètre officiel.
 - **Les voies.** La piste fait **9,20 m** (les 8,40 m réels plus la marge
   peinte) au lieu des 13,40 m d'une artère urbaine, et se partage en **quatre
   voies dans le même sens** : un circuit permanent ne croise personne, donc
@@ -1373,7 +1384,7 @@ Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
   piste étroite, un troisième condamne une voie et l'escouade du dernier tour
   ne peut plus revenir sur le leader.
 - **Les virages serrés** sont élargis par rapport au réel (200 m au Karussell
-  deviennent 320 m) pour que leur rayon reste jouable au 1:35.
+  deviennent 320 m) pour que leur rayon reste jouable au 1:17.
 - **Le tempo** est posé (116 BPM), plus proche du rythme d'un tour de huit
   minutes que d'une course de rue.
 

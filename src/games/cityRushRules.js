@@ -1,27 +1,30 @@
 // Règles pures de Vice City Rush : séparées du rendu Three.js pour garder
 // les durées, les voies et la génération de rue faciles à vérifier.
 //
-// La course se joue en circuit : six tours par défaut d'une boucle de 600 m. Le
-// décor est généré une fois pour la boucle et se répète, si bien que l'on
+// La course se joue en circuit : six tours par défaut d'une boucle de 1 200 m.
+// Le décor est généré une fois pour la boucle et se répète, si bien que l'on
 // repasse sous le portique de départ (tribunes, feux, ligne à damier) à chaque
-// tour.
+// tour. La boucle a été doublée (600 m → 1 200 m) pour rendre les stages plus
+// longs : deux fois plus de décor, de façades et de repères avant de revoir le
+// portique.
 //
 // **Le dernier tour est plus long que les autres** : il enchaîne
-// `CITY_RUSH_FINAL_LAP_LOOPS` boucles (deux, soit 1 200 m) au lieu d'une. Le
+// `CITY_RUSH_FINAL_LAP_LOOPS` boucles (deux, soit 2 400 m) au lieu d'une. Le
 // portique est fixe dans le décor : on le recroise donc en cours de dernier
 // tour (à mi-parcours avec deux boucles). Ce passage n'est qu'un point de
 // passage (`'checkpoint'`, voir `cityRushLineKind`) — il ne lance aucun tour —
-// et seule la ligne qui clôt la dernière boucle est l'arrivée. Rien d'autre ne
-// change : le décor reste une boucle de 600 m, seule la distance à parcourir
-// s'allonge.
+// et seule la ligne qui clôt la dernière boucle est l'arrivée. Le décor suit :
+// c'est toute la boucle de 1 200 m qui s'allonge, pas seulement la distance à
+// parcourir.
 export const CITY_RUSH_LAPS = 6; // nombre de tours par défaut (les modes de jeu fixent le leur)
-export const CITY_RUSH_LAP_LENGTH = 600;
+export const CITY_RUSH_LAP_LENGTH = 1200; // m : longueur d'une boucle du stage (doublée pour des stages plus longs)
 export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la boucle
-// Mode Sprint : course solo à checkpoints, sans police ni arme. Quatorze checkpoints
-// tous les 300 m (une demi-boucle) : le dernier est l'arrivée, pile sous le
-// portique. Chaque checkpoint recharge le chrono à 15 s ; des pads turbo verts
-// sont espacés sur la piste pour aider le pilote à les atteindre.
-export const CITY_RUSH_SPRINT_CHECKPOINTS = 14;
+// Mode Sprint : course solo à checkpoints, sans police ni arme. Seize checkpoints
+// tous les 300 m (un quart de boucle) : le dernier est l'arrivée, pile sous le
+// portique (16 × 300 m = 4 800 m = 4 boucles exactes). Chaque checkpoint
+// recharge le chrono à 15 s ; des pads turbo verts sont espacés sur la piste
+// pour aider le pilote à les atteindre.
+export const CITY_RUSH_SPRINT_CHECKPOINTS = 16;
 export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
 export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 6;
@@ -466,7 +469,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser, et touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Contre une voiture de police à six points de vie, un tir rouge inflige 3 dégâts ; un carambolage en accélérant n’en inflige qu’un et ne retire aucune vie au joueur.`,
+    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote, il retire un carré de vie sans dérapage ni ralentissement ; contre une voiture de police à six points de vie, il inflige 3 dégâts. Un carambolage en accélérant retire un point à la police, jamais au joueur.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -591,7 +594,7 @@ export function cityRushPickupPopScale(progress) {
 // Le sens retenu est 内回り (uchi-mawari, l'anneau intérieur, antihoraire) :
 // le palais impérial reste donc toujours à GAUCHE, la ville, la baie et la
 // Tokyo Tower à DROITE ou à gauche selon le secteur — les `side` ci-dessous
-// suivent la géographie réelle. La boucle de 600 m du jeu est une réduction
+// suivent la géographie réelle. La boucle de 1 200 m du jeu est une réduction
 // fidèle du tour : `km` est le point kilométrique officiel compté depuis
 // Nihonbashi (il décroît en 内回り) et `from`/`to` donnent la position sur le
 // tour du jeu (0 → 1), calculée par `shutoC1At` pour que panneaux, tunnels,
@@ -838,8 +841,8 @@ export function shutoC1Readout(lapProgress, route = CITY_RUSH_SHUTO_C1) {
 // droite, sans compter les courbes intermédiaires), près de 300 m de dénivelé
 // entre le point bas de Breidscheid (320 m) et le sommet de la Hohe Acht
 // (620 m), des pentes jusqu'à 18 % en montée et 11 % en descente. Le tour du
-// jeu reste une boucle de 600 m : chaque boucle rejoue donc les 20,832 km à
-// l'échelle 1:35, dans l'ordre réel, sens horaire, du pont d'Antoniusbuche
+// jeu reste une boucle de 1 200 m : chaque boucle rejoue donc les 20,832 km à
+// l'échelle 1:17, dans l'ordre réel, sens horaire, du pont d'Antoniusbuche
 // (kilomètre zéro du tour officiel) à la ligne d'arrivée de la Start-Ziel-Anlage.
 export const NORDSCHLEIFE_LENGTH_KM = 20.832;
 export const NORDSCHLEIFE_CORNERS = 73; // officiel : 33 à gauche, 40 à droite
@@ -1783,7 +1786,7 @@ function safeFinalLapLoops(finalLapLoops) {
 
 // Distance d'une course de `laps` tours : chaque tour fait une boucle, sauf le
 // dernier qui en enchaîne `finalLapLoops`. Trois tours donnent ainsi
-// 600 + 600 + 1 200 = 2 400 m.
+// 1 200 + 1 200 + 2 400 = 4 800 m.
 export function cityRushRaceDistance(laps = CITY_RUSH_LAPS, lapLength = CITY_RUSH_LAP_LENGTH, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
   const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
   return (safeLapCount(laps) - 1 + safeFinalLapLoops(finalLapLoops)) * safeLap;
@@ -1806,7 +1809,7 @@ export function cityRushLapForDistance(distance, lapLength = CITY_RUSH_LAP_LENGT
 
 // Progression (0 → 1) à l'intérieur du tour courant ; vaut 1 une fois la
 // course bouclée pour que la jauge reste pleine sur l'écran d'arrivée. Au
-// dernier tour la jauge court sur toute sa longueur (1 200 m), pas sur une
+// dernier tour la jauge court sur toute sa longueur (2 400 m), pas sur une
 // seule boucle : elle ne retombe pas à 0 quand on recroise le portique.
 export function cityRushLapProgress(distance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
   const safeDistance = Math.max(0, Number(distance) || 0);
@@ -1923,10 +1926,11 @@ export function cityRushTrackPitch(distance, lapLength = CITY_RUSH_LAP_LENGTH, a
 // bien que deux virages voisins se raccordent sans cassure. La première
 // intégration donne le cap, la seconde le déport latéral de la piste. Le profil
 // est ensuite refermé — cap, déport, altitude et pente valent zéro à 0 m comme
-// à 600 m — pour que la boucle suivante repasse sous le portique sans saut,
+// au bout du tour — pour que la boucle suivante repasse sous le portique sans
+// saut,
 // exactement comme un tour de circuit qui repasse sur la ligne.
 //
-// Échelle : 1:35 sur la longueur (20,832 km → 600 m), comme la C1 de Tokyo.
+// Échelle : 1:17 sur la longueur (20,832 km → 1 200 m), comme la C1 de Tokyo.
 // Courbure et relief sont volontairement amplifiés pour rester lisibles à cette
 // échelle : le vrai Karussell (48°) devient le virage le plus serré du jeu et
 // les 300 m de dénivelé du Ring se voient à l'horizon, quand bien même ils ne
@@ -1938,7 +1942,7 @@ export const CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET = 15; // unités monde : déport 
 export const CITY_RUSH_NORDSCHLEIFE_MAX_GRADE = 0.1; // 10 % de pente visible (18 % réels)
 // km réel, angle du virage (°, + à droite), étendue (km). L'étendue des virages
 // lents est élargie par rapport au réel (le Karussell passe de 200 m à 320 m)
-// pour que leur rayon reste jouable à l'échelle 1:35 : c'est l'adaptation
+// pour que leur rayon reste jouable à l'échelle 1:17 : c'est l'adaptation
 // annoncée, pas un oubli.
 export const CITY_RUSH_NORDSCHLEIFE_TURNS = Object.freeze([
   Object.freeze([0.20, 3, 0.030]), // Antoniusbuche : léger appui à droite sur le pont
@@ -2368,6 +2372,7 @@ export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, exclu
 
 // Le trafic conserve une distance de sécurité; les voitures de course ne
 // se bloquent plus entre elles lorsqu'elles sont marquées `collisionGroup`.
+// Un véhicule en l'air (saut sur tremplin) passe au-dessus du sol sans blocage.
 export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR_GAP) {
   const resolved = cars.map((car) => {
     const previousDistance = Number.isFinite(Number(car.previousDistance)) ? Number(car.previousDistance) : 0;
@@ -2378,8 +2383,10 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
   const safeGap = Math.max(0, Number(minimumGap) || 0);
   for (let index = 0; index < ordered.length; index += 1) {
     const following = ordered[index];
+    if (following.jumping || following.isJumping) continue;
     for (let frontIndex = 0; frontIndex < index; frontIndex += 1) {
       const front = ordered[frontIndex];
+      if (front.jumping || front.isJumping) continue;
       if (front.collisionGroup === 'racer' && following.collisionGroup === 'racer') continue;
       const sameLane = front.lane === following.lane;
       const frontWidth = Number.isFinite(Number(front.width)) ? Number(front.width) : 1.9;
@@ -2409,6 +2416,7 @@ const finiteNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? N
  * couples `racer` → `traffic` sont retournés. `x` permet aussi de détecter un
  * changement de voie en cours, quand les deux voitures n'ont pas encore le
  * même numéro de voie mais que leurs carrosseries se recouvrent.
+ * Une voiture en train de sauter franchit le trafic par les airs sans impact.
  */
 export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_TRAFFIC_IMPACT_GAP) {
   const safeGap = Math.max(0, finiteNumber(minimumGap, CITY_RUSH_TRAFFIC_IMPACT_GAP));
@@ -2417,6 +2425,7 @@ export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_T
   const impacts = [];
 
   for (const racer of racers) {
+    if (racer.jumping || racer.isJumping) continue;
     const racerPrevious = finiteNumber(racer.previousDistance);
     const racerNext = Math.max(racerPrevious, finiteNumber(racer.nextDistance, racerPrevious));
     const racerWidth = Math.max(0, finiteNumber(racer.width, 1.9));
@@ -2591,7 +2600,67 @@ export function chooseCityRushAiLane({
   return bestLane;
 }
 
-// ── Pilotes internationaux & avatars distincts ──────────────────────────────
+// ── Tremplins et sauts ───────────────────────────────────────────────────────
+// Des rampes espacées font décoller la voiture sur une trajectoire parabolique.
+// Le pool court et les grands intervalles évitent de surcharger la piste ; en
+// vol, le véhicule garde assez de hauteur pour franchir le trafic.
+export const CITY_RUSH_RAMP_COUNT = 3;
+export const CITY_RUSH_RAMP_WIDTH = 2.4;
+export const CITY_RUSH_RAMP_LENGTH = 4.8;
+export const CITY_RUSH_RAMP_HEIGHT = 0.85;
+export const CITY_RUSH_RAMP_CONTACT_WINDOW = 2.6;
+export const CITY_RUSH_RAMP_SPACING_MIN = 260;
+export const CITY_RUSH_RAMP_SPACING_MAX = 340;
+
+/**
+ * Calcule la distance de saut (en mètres) franchie par la voiture selon la vitesse
+ * à laquelle le tremplin est abordé.
+ */
+export function computeCityRushJumpDistance(speed) {
+  const s = Math.max(0, Number(speed) || 0);
+  return Math.max(16, s * 1.15 + 4);
+}
+
+/**
+ * Calcule la hauteur maximale du saut (en mètres) selon la vitesse d'élan.
+ */
+export function computeCityRushJumpHeight(speed) {
+  const s = Math.max(0, Number(speed) || 0);
+  return Math.min(2.8, Math.max(1.4, 1.0 + s * 0.03));
+}
+
+/**
+ * Calcule l'élévation Y au cours du saut selon la distance franchie.
+ */
+export function computeCityRushJumpElevation(jumpDistanceTraveled, totalJumpDistance, peakHeight = 3.5) {
+  const total = Math.max(0.1, Number(totalJumpDistance) || 1);
+  const traveled = Math.max(0, Number(jumpDistanceTraveled) || 0);
+  const progress = Math.max(0, Math.min(1, traveled / total));
+  if (progress >= 1) return 0;
+  const height = Math.max(0, Number(peakHeight) || 3.5);
+  return height * Math.sin(Math.PI * progress);
+}
+
+/**
+ * Calcule l'inclinaison longitudinale (pitch) de la caisse en vol :
+ * cabré à l'impulsion, stabilisé au sommet, léger piqué avant le contact.
+ */
+export function computeCityRushJumpPitch(progress) {
+  const p = Math.max(0, Math.min(1, Number(progress) || 0));
+  if (p < 0.25) return 0.16 * (1 - p / 0.25);
+  if (p > 0.75) return -0.09 * ((p - 0.75) / 0.25);
+  return 0;
+}
+
+/**
+ * Détecte si un véhicule entre en contact avec un tremplin sur sa voie.
+ */
+export function detectCityRushRampContact(carDistance, carLane, rampDistance, rampLane, contactWindow = CITY_RUSH_RAMP_CONTACT_WINDOW) {
+  if (Number(carLane) !== Number(rampLane)) return false;
+  const gap = Math.abs((Number(carDistance) || 0) - (Number(rampDistance) || 0));
+  return gap <= (Number(contactWindow) || CITY_RUSH_RAMP_CONTACT_WINDOW);
+}
+
 // Chaque course réunit 3 pilotes : notre joueur et 2 rivaux, chacun avec un
 // avatar et un prénom issus d'un pays différent autour du monde.
 export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno']);
@@ -2759,45 +2828,35 @@ export function selectCityRushRacers({
 }
 
 // ── L'escouade de police du dernier tour ────────────────────────────────────
-// Au passage du dernier tour, deux véhicules d'interception entrent en piste
-// juste derrière le premier du classement. L'escouade mélange berlines et SUV;
-// une unité détruite est remplacée par un renfort quelques secondes plus tard.
-// Elles ne sont **pas classées** :
-// `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
-// Leur mission est de harceler le leader à l'arrivée, puis celle des renforts
-// est de viser le joueur : ils chargent la mitrailleuse avec les rares bonus
-// rouges. L'attaque d'hélicoptère a été retirée.
-//
-// Contrairement aux autres voitures de course, un véhicule de police est
-// **solide** : il ne se traverse pas. Il peut donc se rabattre devant le leader puis
-// lever le pied pour le retenir — un barrage roulant, exactement l'effet
-// d'une voiture lente percutée — avant de repartir et de revenir à la charge.
-export const CITY_RUSH_POLICE_COUNT = 2;
+// Au dernier tour, trois véhicules d'interception prennent le joueur pour
+// cible. En mode Poursuite, ils entrent dès le départ. Un rival qui tire sur
+// une voiture de police reçoit son propre poursuivant, sans détourner l'escouade
+// du joueur. Les renforts de l'escouade reviennent quelques secondes après une
+// destruction. Les unités restent hors classement et hors écran d'arrivée ;
+// les attaques d'hélicoptère sont supprimées, mais l'appareil d'observation
+// continue de suivre le joueur au dernier tour.
+export const CITY_RUSH_POLICE_COUNT = 3;
+export const CITY_RUSH_POLICE_EXTRA_PER_ATTACKER = 1;
 // Les renforts reviennent par vagues plutôt qu'instantanément : assez de temps
 // pour profiter d'une destruction, sans laisser la poursuite retomber.
 export const CITY_RUSH_POLICE_REINFORCEMENT_DELAY = 3.6; // s
-// La deuxième voiture et les renforts de son slot utilisent le modèle SUV.
-export const CITY_RUSH_POLICE_VEHICLE_TYPES = Object.freeze(['police', 'police-suv']);
-// Un véhicule sur chacune des deux voies extérieures de la course : les
-// poursuivants encadrent le leader sans démarrer dans la voie médiane, la plus
-// exposée aux voitures qui viennent en face.
-export const CITY_RUSH_POLICE_LANES = Object.freeze([
-  CITY_RUSH_FORWARD_LANES[0],
-  CITY_RUSH_FORWARD_LANES[CITY_RUSH_FORWARD_LANES.length - 1],
-]);
+// Trois unités : deux berlines et un SUV.
+export const CITY_RUSH_POLICE_VEHICLE_TYPES = Object.freeze(['police', 'police-suv', 'police']);
+// Une voiture dans chacune des voies de course pour encadrer la poursuite.
+export const CITY_RUSH_POLICE_LANES = Object.freeze([...CITY_RUSH_FORWARD_LANES]);
 // La police ne convoite que les bonus rouges de mitrailleuse.
 export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL]);
 export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge vaut cinq bonus ordinaires
 export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.06;
 // Une berline lancée à la poursuite dépasse toujours la voiture qu'elle chasse :
-// sa vitesse de sprint ne dépend pas d'une pointe fixe, mais de celle du leader.
+// sa vitesse de sprint suit celle de sa cible, plutôt qu'une pointe fixe.
 // Sans ce plancher, une supercar à 179 km/h distancerait définitivement les
 // poursuivants (base × 1,34 ≈ 178 km/h) et le dernier tour n'aurait plus d'enjeu.
-export const CITY_RUSH_POLICE_CHASE_SPEED_FACTOR = 1.18; // × la vitesse du leader, minimum en sprint
-export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant le leader
-export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle du leader
-export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière le leader pour ouvrir le feu
-export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en piste, derrière le leader
+export const CITY_RUSH_POLICE_CHASE_SPEED_FACTOR = 1.18; // × la vitesse de la cible, minimum en sprint
+export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant la cible
+export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle de la cible
+export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière la cible pour ouvrir le feu
+export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en piste, derrière la cible
 export const CITY_RUSH_POLICE_LOOKAHEAD = 200; // m : portée de convoitise des bonus
 export const CITY_RUSH_POLICE_STEAL_NOTICE = 150; // m : au-delà, la page ne commente plus un vol de bonus
 export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafales de la même berline
@@ -2895,10 +2954,11 @@ export function cityRushPoliceContact({
   return Math.abs(lateral - otherLateral) < Math.max(1.2, halfWidths);
 }
 
-// L'escouade ne prend en chasse que le premier du classement. `entries` ne
-// contient que les pilotes classés (notre joueur et les trois rivaux) : à
-// égalité, le premier de la liste — notre joueur — est déclaré leader, comme
-// dans `rankCityRushRacers`.
+// Sélectionne le pilote le plus avancé pour les décisions de barrage et les
+// calculs de peloton ; le monde déclenche l'arrivée de la police au dernier tour
+// du joueur et assigne explicitement sa cible, quel que soit son rang. `entries`
+// ne contient que les pilotes classés ; en cas d'égalité, le premier de la liste
+// devient leader, comme dans `rankCityRushRacers`.
 export function cityRushPackLeader(entries = []) {
   let leader = null;
   for (const entry of Array.isArray(entries) ? entries : []) {
@@ -3198,22 +3258,18 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
   });
 }
 
-// ── La barre de vie du pilote (dernier tour) ────────────────────────────────
-// Au dernier tour du pilote — le seul tour du Sprint, le sixième du Circuit
-// et de la Poursuite (où l'escouade, elle, est en piste depuis le départ : la
-// barre suit le pilote, pas le leader) — la voiture du joueur reçoit une barre
-// de vie de **huit carrés**. La page la dessine **sans jamais montrer les carrés** : une
-// barre continue qui part du vert et glisse vers l'orange puis le rouge en se
-// vidant (`cityRushPlayerHealthColor`). Le barème reste en carrés : un tir
-// droit bleu en coûte un, une rafale rouge deux. Un contact avec une berline de
-// police n'entame pas la coque du pilote ; c'est la police qui encaisse un petit
-// dégât (`CITY_RUSH_POLICE_DAMAGE.collision`). Le trafic et les autres voitures
-// de course ne touchent pas la barre non plus.
-export const CITY_RUSH_PLAYER_HEALTH = 8; // carrés de la barre, pleine au dernier tour
+// ── Barres de vie des voitures de course ────────────────────────────────────
+// Le joueur et ses deux rivaux ont quinze cellules de vie, visibles dès le
+// départ effectif. Elles se vident par groupes de cinq : bleu, vert, puis
+// jaune ; les trois dernières cellules jaunes passent au rouge. Les tirs
+// retirent une cellule et le tir rouge ne fait ni déraper ni ralentir sa cible.
+// Le choc contre une voiture de police abîme la police, jamais le joueur.
+export const CITY_RUSH_PLAYER_HEALTH = 15;
+export const CITY_RUSH_RACER_HEALTH = CITY_RUSH_PLAYER_HEALTH;
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
-  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // un tir droit bleu
-  [CITY_RUSH_POWERS.PISTOL]: 2, // le tir droit rouge de l'AK-47
-  collision: 0, // percuter une voiture de police ne retire aucune vie au joueur
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
+  [CITY_RUSH_POWERS.PISTOL]: 1,
+  collision: 0,
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
 // Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
@@ -3221,8 +3277,9 @@ export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui
 // complets, `cityRushStunSpin`) — la page laisse ensuite la place au bilan.
 export const CITY_RUSH_WRECK_SECONDS = 3.2;
 export const CITY_RUSH_WRECK_SPIN_TURNS = 2;
-// Deux carrés ou moins : la page passe la barre en alerte (pulsation rouge).
-export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 2;
+// Les trois derniers carrés jaunes sont le seuil d'alerte rouge.
+export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 3;
+export const CITY_RUSH_HEALTH_GROUP_SIZE = 5;
 
 export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
   const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));
@@ -3231,26 +3288,35 @@ export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = 
   return Math.max(0, safeHealth - damage);
 }
 
-// Vert → orange → rouge, interpolés entre trois arrêts : la barre se réchauffe
-// progressivement au lieu de changer de couleur par paliers.
-export const CITY_RUSH_PLAYER_BAR_COLORS = Object.freeze({ full: '#2be06a', mid: '#ffa53d', low: '#ff3b4d' });
-const BAR_FULL_RGB = Object.freeze([0x2b, 0xe0, 0x6a]);
-const BAR_MID_RGB = Object.freeze([0xff, 0xa5, 0x3d]);
-const BAR_LOW_RGB = Object.freeze([0xff, 0x3b, 0x4d]);
-const mixChannel = (from, to, amount) => Math.round(from + (to - from) * amount);
-const rgbToHex = ([r, g, b]) => `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+export const CITY_RUSH_PLAYER_BAR_COLORS = Object.freeze({
+  blue: '#48b9ff',
+  green: '#50e48a',
+  yellow: '#ffd44f',
+  critical: '#ff526e',
+});
 
-export function cityRushPlayerHealthColor(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
-  const ceiling = Math.max(1, Number(max) || CITY_RUSH_PLAYER_HEALTH);
-  const ratio = Math.max(0, Math.min(1, (Number(health) || 0) / ceiling));
-  const [from, to, amount] = ratio >= 0.5
-    ? [BAR_MID_RGB, BAR_FULL_RGB, (ratio - 0.5) / 0.5]
-    : [BAR_LOW_RGB, BAR_MID_RGB, ratio / 0.5];
-  return rgbToHex([
-    mixChannel(from[0], to[0], amount),
-    mixChannel(from[1], to[1], amount),
-    mixChannel(from[2], to[2], amount),
-  ]);
+/**
+ * Découpe la vie en 15 cellules colorées en trois groupes de cinq.
+ * La santé se vide de gauche à droite (bleu, vert, jaune) ; quand il ne reste
+ * que trois cellules jaunes, elles deviennent rouges.
+ */
+export function cityRushHealthSegments(health = CITY_RUSH_PLAYER_HEALTH) {
+  const safeHealth = Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Math.trunc(Number(health) || 0)));
+  const firstFilled = CITY_RUSH_PLAYER_HEALTH - safeHealth;
+  const groups = ['blue', 'green', 'yellow'];
+  return Array.from({ length: CITY_RUSH_PLAYER_HEALTH }, (_, index) => {
+    const groupIndex = Math.floor(index / CITY_RUSH_HEALTH_GROUP_SIZE);
+    const active = index >= firstFilled;
+    const critical = active && safeHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && groupIndex === 2;
+    const tone = critical ? 'critical' : groups[groupIndex];
+    return { index, groupIndex, group: groups[groupIndex], active, critical, tone, color: CITY_RUSH_PLAYER_BAR_COLORS[tone] };
+  });
+}
+
+// Compatibilité avec les petits widgets qui n'affichent qu'une seule teinte :
+// renvoie la couleur de la première cellule encore allumée.
+export function cityRushPlayerHealthColor(health = CITY_RUSH_PLAYER_HEALTH) {
+  return cityRushHealthSegments(health).find((segment) => segment.active)?.color || CITY_RUSH_PLAYER_BAR_COLORS.critical;
 }
 
 // Cooldown d'un carambolage : une berline collée au pare-chocs du pilote ne
@@ -3331,7 +3397,7 @@ export function cityRushWatchHelicopterPose({ playerX = 0, clock = 0, leaving = 
 }
 
 // ── Mini-carte du circuit & focus joueur ────────────────────────────────────
-// Projette une distance (en mètres sur la boucle de 600 m) et une voie
+// Projette une distance (en mètres sur la boucle de 1 200 m) et une voie
 // (0..CITY_RUSH_LANE_X.length - 1) sur la mini-carte 2D (repère 100 × 100).
 export function cityRushMinimapPoint(
   distance = 0,

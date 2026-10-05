@@ -193,7 +193,8 @@ for (let run = 0; run < RUNS; run += 1) {
     };
 
     let frames = 0;
-    const maxFrames = 30 * 300;
+    // 12 minutes virtuelles : la course standard fait maintenant 8 400 m.
+    const maxFrames = 30 * 720;
     while (!callbacks.finish && frames < maxFrames) {
       const hud = callbacks.huds.at(-1);
       if (hud && !actionsDisabledChecked) {
