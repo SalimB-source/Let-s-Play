@@ -75,7 +75,11 @@ import {
   cityRushOncomingImpactX,
   addCityRushCharge,
   approachCityRushSpeed,
+  advanceCityRushOncomingBonus,
   cityRushCleanLineFactor,
+  cityRushOncomingBonusFactor,
+  CITY_RUSH_ONCOMING_BONUS_MAX,
+  CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION,
   cityRushTrafficRecoveryRate,
   cityRushPickupRowCount,
   cityRushSprintCheckpointTime,
@@ -786,12 +790,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const sceneryRandom = seededRandom(cityIndex * 131 + 7);
   // Voies du parcours : six voies à double sens pour les villes et les routes
   // ouvertes, quatre voies resserrées autour de l'axe pour un circuit permanent
-  // (le Nordschleife). `oncomingLanes` est alors vide : personne n'arrive de face.
+  // (le Nordschleife). `oncomingLanes` est alors vide : personne n'arrive de
+  // face. Le côté du contresens suit le pays (`driveSide`) : à gauche en
+  // conduite à droite, à droite à Londres et sur la Shuto de Tokyo.
   const courseLanes = cityRushLaneConfig(city);
   const laneCount = courseLanes.laneCount;
   const laneX = courseLanes.laneX;
   const forwardLanes = courseLanes.forwardLanes;
   const oncomingLanes = courseLanes.oncomingLanes;
+  const oncomingLaneSet = new Set(oncomingLanes);
+  const driveSide = courseLanes.driveSide;
   const policeLanes = courseLanes.policeLanes;
   const defaultLanes = courseLanes.defaultLanes;
   const playerStartLane = defaultLanes[0];
@@ -1111,8 +1119,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   });
 
   // ── Trafic venant en face ─────────────────────────────────────────────
-  // Les trois voies de gauche sont en sens inverse : ces véhicules arrivent
-  // face à la course, puis reparaissent au loin une fois passés derrière les
+  // Les trois voies en sens inverse — à gauche de l'axe jaune par défaut, à
+  // droite à Londres et sur la Shuto de Tokyo — voient arriver ces véhicules
+  // face à la course ; ils reparaissent au loin une fois passés derrière les
   // pilotes. Un véhicule percuté dévie vers le bord sans quitter la chaussée.
   const oncomingPoliceSpecs = trafficTypes.filter((spec) => isCityRushPoliceTrafficType(spec.id));
   const oncomingCars = Array.from({ length: effectiveOncomingCount }, (_, index) => {
@@ -1453,6 +1462,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Conduite en ligne : changer de voie ne ralentit pas, mais cela remet à
   // zéro le bonus de vitesse « ligne propre » chargé en tenant sa voie.
   let playerCleanLineTime = 0;
+  // Bonus de contresens : rouler dans les voies en sens inverse charge une
+  // jauge de vitesse cumulative (voir `advanceCityRushOncomingBonus`), qui
+  // retombe dès que la voiture revient dans le sens de la course. `stage` sert
+  // à n'annoncer chaque palier qu'une fois (charge / plein / perdu).
+  let playerOncomingTime = 0;
+  let playerOncomingStage = 'none';
   let score = 0;
   let pickedUp = 0;
   let inventory = createCityRushInventory();
@@ -1782,6 +1797,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       trafficImpactLeft: playerTrafficImpactLeft,
       boostLeft: playerBoostLeft,
       stunLeft: playerStunLeft,
+      // Bonus de contresens : facteur de vitesse courant (1 → rien) et temps
+      // déjà chargé dans les voies en sens inverse.
+      oncomingBonus: cityRushOncomingBonusFactor(playerOncomingTime),
+      oncomingBonusMax: CITY_RUSH_ONCOMING_BONUS_MAX,
+      oncomingTime: playerOncomingTime,
       // La santé du joueur s'affiche dès le début effectif de la course.
       playerHealth: playerHealthActive ? playerHealth : null,
       playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
@@ -1938,6 +1958,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerSkidDuration = 0.85;
     playerSkidSide = 1;
     playerCleanLineTime = 0;
+    playerOncomingTime = 0;
+    playerOncomingStage = 'none';
     score = 0;
     pickedUp = 0;
     inventory = createCityRushInventory();
@@ -3476,9 +3498,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const traffic = rollingTraffic().map((car) => ({
       id: car.id, lane: car.lane, distance: car.distance, x: car.currentX, width: car.width, speed: car.currentSpeed,
     }));
-    // Le trafic venant en face rend les voies de gauche infréquentables pour
-    // l'escouade (vitesse négative : les voies passent pour bouchées). Il ne
-    // bloque en revanche pas le déplacement des berlines — il se croise.
+    // Le trafic venant en face rend les voies du contresens infréquentables
+    // pour l'escouade (vitesse négative : les voies passent pour bouchées). Il
+    // ne bloque en revanche pas le déplacement des berlines — il se croise.
     const oncomingForLanes = oncomingCars
       .filter((car) => !car.rallied && !car.destroyed)
       .map((car) => ({
@@ -3857,6 +3879,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (actorId === 'player') {
       // Choc frontal = plus punitif que le trafic lent : impact + ralenti long + reprise boostée
       // + blocage solide : on recale le joueur derrière la voiture adverse.
+      // C'est aussi le prix du contresens : la jauge de vitesse cumulée que le
+      // pilote chargeait dans les voies inverses est perdue net.
+      if (playerOncomingTime > 0) {
+        playerOncomingTime = 0;
+        playerOncomingStage = 'none';
+        getCallbacks().effect?.({ type: 'oncoming-bonus', stage: 'lost', lane: playerLane });
+      }
       playerTrafficImpactLeft = Math.max(playerTrafficImpactLeft, CITY_RUSH_TRAFFIC_IMPACT_DURATION * 1.25);
       playerSlowLeft = Math.max(playerSlowLeft, 1.15);
       playerTrafficRecoverLeft = CITY_RUSH_TRAFFIC_RECOVERY_DURATION * 1.2;
@@ -3910,7 +3939,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming: true,
       pushedAside: !policeContact,
       policeContact,
-      pushDirection: 'left',
+      // La voiture heurtée dérape vers le bord extérieur de son sens de
+      // circulation : à gauche quand on roule à droite, à droite à Londres et
+      // sur la Shuto (voir `cityRushOncomingImpactX`).
+      pushDirection: driveSide === 'left' ? 'right' : 'left',
     });
   }
 
@@ -3961,7 +3993,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function respawnOncomingAhead(oncoming) {
     // Un circuit à sens unique n'a aucun véhicule en face : rien à replacer.
     if (!oncomingLanes.length) return;
-    // Réapparaît loin devant, sur l'une des trois voies de gauche, sans se
+    // Réapparaît loin devant, sur l'une des trois voies du contresens, sans se
     // coller à un autre véhicule venant en face dans la même voie.
     const lane = oncomingLanes[Math.floor(Math.random() * oncomingLanes.length)];
     // Sur route très peu fréquentée, les véhicules venant en face sont
@@ -3989,7 +4021,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Immobilisée après l'épave : la voiture part en toupie et le volant ne
       // répond plus jusqu'à la fin de l'animation.
       if (playerStunLeft > 0) return;
-      const nextLane = cityRushLaneAfterAction(playerLane, name, laneCount);
+      // En plein saut, la voiture garde la voie de son décollage : une voiture
+      // en l'air ne se décale pas (voir `cityRushLaneAfterAction`).
+      const nextLane = cityRushLaneAfterAction(playerLane, name, laneCount, { airborne: playerJumpState.active });
       if (nextLane !== playerLane && canEnterLane('player', nextLane)) {
         playerLane = nextLane;
         // Changer de voie ne ralentit pas : la voiture glisse à pleine
@@ -4517,12 +4551,41 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerHealthFlash = Math.max(0, playerHealthFlash - dt);
       // Voie tenue sans bouger : le bonus de ligne propre monte doucement.
       playerCleanLineTime += dt;
+      // Bonus de contresens : la jauge monte tant que la voiture roule dans une
+      // voie en sens inverse, et retombe dès qu'elle revient dans le sens de la
+      // course. Une voiture immobilisée (épave, toupie) ne charge plus rien.
+      const inOncomingLane = playerStunLeft <= 0 && !playerWrecked && oncomingLaneSet.has(playerLane);
+      playerOncomingTime = advanceCityRushOncomingBonus(playerOncomingTime, dt, inOncomingLane);
+      const oncomingStage = playerOncomingTime <= 0
+        ? 'none'
+        : (playerOncomingTime >= CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION - 1e-9 ? 'full' : 'charging');
+      if (oncomingStage !== playerOncomingStage) {
+        if (oncomingStage === 'charging') {
+          getCallbacks().effect?.({
+            type: 'oncoming-bonus',
+            stage: 'charging',
+            lane: playerLane,
+            factor: cityRushOncomingBonusFactor(playerOncomingTime),
+          });
+        } else if (oncomingStage === 'full') {
+          getCallbacks().effect?.({
+            type: 'oncoming-bonus',
+            stage: 'full',
+            lane: playerLane,
+            factor: CITY_RUSH_ONCOMING_BONUS_MAX,
+          });
+        }
+        playerOncomingStage = oncomingStage;
+      }
       const speedScale = (playerSlowLeft > 0 || playerTrafficImpactLeft > 0 ? 0.63 : 1) * (playerBlueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1);
       const boostScale = playerBoostLeft > 0 ? CITY_RUSH_TRACK_BOOST_SPEED_FACTOR : 1;
       // Un changement de voie ne figure plus dans cette équation : seule la
-      // voie tenue agit sur la vitesse, et uniquement à la hausse.
+      // voie tenue agit sur la vitesse, et uniquement à la hausse. Le
+      // contresens s'y ajoute : c'est la récompense des voies les plus
+      // dangereuses de la chaussée.
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : PLAYER_SPEED * playerProfile.powerMultiplier * speedScale * boostScale * cleanLineScale;
+      const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
+      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : PLAYER_SPEED * playerProfile.powerMultiplier * speedScale * boostScale * cleanLineScale * oncomingScale;
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt);
       const priorPlayerX = playerX;
       playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
@@ -4546,9 +4609,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       ];
       for (const racer of racers) {
         racer.healthFlash = Math.max(0, (racer.healthFlash || 0) - dt);
-        // Une épave ou une cible immobilisée ne choisit pas de nouvelle voie.
-        if (!racer.wrecked && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0) racer.changeIn -= dt;
-        if (!racer.wrecked && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0 && racer.changeIn <= 0) {
+        // Une épave, une cible immobilisée ou une voiture en plein saut ne
+        // choisit pas de nouvelle voie : en l'air, personne ne se décale.
+        const racerAirborne = Boolean(racer.jumpState?.active);
+        if (!racer.wrecked && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0 && !racerAirborne) racer.changeIn -= dt;
+        if (!racer.wrecked && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0 && !racerAirborne && racer.changeIn <= 0) {
           const availableLanes = [racer.lane];
           for (const lane of [racer.lane - 1, racer.lane + 1]) {
             if (lane >= 0 && lane < laneCount && canEnterLane(racer.id, lane)) availableLanes.push(lane);
@@ -4978,7 +5043,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           );
         } else if (oncoming.pushedAside) {
           oncoming.pushAsideElapsed += dt;
-          oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed, oncoming.width);
+          oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed, oncoming.width, driveSide);
         } else {
           oncoming.currentX = lerp(oncoming.currentX, laneX(oncoming.lane), Math.min(1, dt * 3.4));
         }

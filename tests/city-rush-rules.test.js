@@ -131,6 +131,16 @@ import {
   CITY_RUSH_CLEAN_LINE_RAMP_DURATION,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   cityRushCleanLineFactor,
+  CITY_RUSH_DRIVE_SIDES,
+  CITY_RUSH_LEFT_HALF_LANES,
+  CITY_RUSH_RIGHT_HALF_LANES,
+  CITY_RUSH_DEFAULT_LANES_LEFT_HAND,
+  CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION,
+  CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION,
+  CITY_RUSH_ONCOMING_BONUS_MAX,
+  advanceCityRushOncomingBonus,
+  cityRushDriveSide,
+  cityRushOncomingBonusFactor,
   cityRushBrakingRate,
   CITY_RUSH_BRAKE_RATE_FLOOR,
   cityRushPickupRowCount,
@@ -452,6 +462,34 @@ test('an oncoming collision nudges the hit car one lane without leaving the road
       >= -CITY_RUSH_ROAD_HALF_WIDTH + CITY_RUSH_ONCOMING_EDGE_MARGIN - 1e-9,
     'la voiture reste sur la chaussée avec une marge');
   }
+
+  // Conduite à gauche (Londres, Shuto) : le contresens arrive par la droite, et
+  // la voiture heurtée dérape vers le bord droit en miroir exact.
+  for (const lane of CITY_RUSH_RIGHT_HALF_LANES) {
+    const laneStartX = CITY_RUSH_LANE_X[lane];
+    const targetX = cityRushOncomingImpactX(
+      laneStartX, CITY_RUSH_ONCOMING_EJECT_DURATION, CITY_RUSH_ONCOMING_MAX_WIDTH, 'left',
+    );
+    assert.ok(targetX - laneStartX >= 0 && targetX - laneStartX <= CITY_RUSH_LANE_WIDTH + 1e-9,
+      `la voiture venant de la voie ${lane + 1} dévie d'au plus une voie vers la droite`);
+    assert.ok(targetX + CITY_RUSH_ONCOMING_MAX_WIDTH / 2
+      <= CITY_RUSH_ROAD_HALF_WIDTH - CITY_RUSH_ONCOMING_EDGE_MARGIN + 1e-9,
+    'la voiture reste sur la chaussée, à droite de l’axe');
+  }
+  // Le miroir est exact : la trajectoire d'une voiture heurtée à l'abscisse -x
+  // d'une course à gauche est l'opposée de celle de la voiture heurtée à +x
+  // d'une course à droite.
+  for (const laneX of CITY_RUSH_LANE_X) {
+    const toTheRight = cityRushOncomingImpactX(laneX, 0.3, 1.9, 'right');
+    const toTheLeft = cityRushOncomingImpactX(-laneX, 0.3, 1.9, 'left');
+    assert.ok(Math.abs(toTheRight + toTheLeft) < 1e-9, `la trajectoire de l’abscisse ${laneX} est reflétée`);
+  }
+  assert.ok(Math.abs(cityRushOncomingImpactX(Number.NaN, 0, CITY_RUSH_ONCOMING_MAX_WIDTH, 'left') - CITY_RUSH_LANE_X[5]) < 1e-9,
+    'sans abscisse de départ, un contresens à droite repart de la voie la plus à droite');
+  assert.ok(Math.abs(
+    cityRushOncomingImpactX(Number.NaN, CITY_RUSH_ONCOMING_EJECT_DURATION, CITY_RUSH_ONCOMING_MAX_WIDTH, 'right')
+      - cityRushOncomingImpactX(-CITY_RUSH_LANE_X[5], CITY_RUSH_ONCOMING_EJECT_DURATION, CITY_RUSH_ONCOMING_MAX_WIDTH, 'right'),
+  ) < 1e-9, 'sans abscisse de départ, le défaut reste la voie de contresens historique');
 });
 
 test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
@@ -1504,6 +1542,101 @@ test('lane changes clamp at both edges of the six-lane road', () => {
   assert.equal(cityRushLaneAfterAction(2, 'right'), 3);
   assert.equal(cityRushLaneAfterAction(0, 'left'), 0);
   assert.equal(cityRushLaneAfterAction(5, 'right'), 5);
+});
+
+test('a jump locks the wheel: an airborne car keeps its take-off lane', () => {
+  // En plein saut, la commande de voie ne répond plus : la voiture garde la
+  // voie de son décollage jusqu'à l'atterrissage. Une fois au sol, le volant
+  // retrouve exactement son comportement d'avant.
+  for (const lane of [0, 1, 2, 3, 4, 5]) {
+    assert.equal(cityRushLaneAfterAction(lane, 'left', 6, { airborne: true }), lane,
+      `en l’air, la voie ${lane} ne bouge pas vers la gauche`);
+    assert.equal(cityRushLaneAfterAction(lane, 'right', 6, { airborne: true }), lane,
+      `en l’air, la voie ${lane} ne bouge pas vers la droite`);
+  }
+  assert.equal(cityRushLaneAfterAction(3, 'left', 6, { airborne: false }), 2, 'au sol, rien ne change');
+  assert.equal(cityRushLaneAfterAction(3, 'left', 6), 2, 'le saut est optionnel : le défaut reste le sol');
+});
+
+test('London and the Shutō C1 drive on the left, the other courses on the right', () => {
+  // Les deux parcours britannique et japonais inversent les moitiés : la course
+  // tient la gauche de l'axe jaune et le contresens arrive par la droite. Tout
+  // le reste du jeu garde la disposition historique.
+  assert.deepEqual(CITY_RUSH_DRIVE_SIDES, ['right', 'left']);
+  const leftHand = CITY_RUSH_CITIES.filter((city) => city.driveSide === 'left').map((city) => city.id);
+  assert.deepEqual(leftHand, ['tokyo', 'london'], 'seuls Tokyo et Londres roulent à gauche');
+  // L'identifiant du parcours suffit : pas besoin de retrouver l'objet.
+  assert.equal(cityRushDriveSide('london'), 'left');
+  assert.equal(cityRushDriveSide('tokyo'), 'left');
+  assert.equal(cityRushDriveSide('vice-city'), 'right');
+  assert.equal(cityRushDriveSide('nordschleife'), 'right');
+  assert.equal(cityRushDriveSide(null), 'right');
+  assert.equal(cityRushDriveSide(undefined), 'right');
+
+  for (const id of ['tokyo', 'london']) {
+    const city = CITY_RUSH_CITIES.find((item) => item.id === id);
+    const lanes = cityRushLaneConfig(city);
+    assert.equal(cityRushDriveSide(city), 'left');
+    assert.equal(lanes.driveSide, 'left');
+    assert.equal(lanes.raceway, false);
+    assert.deepEqual([...lanes.lanes], [0, 1, 2, 3, 4, 5], 'la grille des six voies ne bouge pas');
+    assert.deepEqual([...lanes.forwardLanes], [...CITY_RUSH_LEFT_HALF_LANES], `${id} : la course passe à gauche de l'axe`);
+    assert.deepEqual([...lanes.oncomingLanes], [...CITY_RUSH_RIGHT_HALF_LANES], `${id} : le contresens arrive par la droite`);
+    assert.deepEqual([...lanes.policeLanes], [...CITY_RUSH_LEFT_HALF_LANES], `${id} : l'escouade chasse dans le sens de la course`);
+    assert.deepEqual([...lanes.defaultLanes], [...CITY_RUSH_DEFAULT_LANES_LEFT_HAND], `${id} : la grille de départ est reflétée`);
+    // Position réelle des voitures au départ : le joueur au milieu de la moitié
+    // gauche, ses deux rivaux de part et d'autre.
+    assert.deepEqual([...lanes.defaultLanes].map((lane) => lanes.laneX(lane)), [-3.15, -5.25, -1.05]);
+    // Les abscisses ne changent pas : c'est le rôle des moitiés qui s'échange.
+    assert.deepEqual([...lanes.oncomingLanes].map((lane) => lanes.laneX(lane)), [1.05, 3.15, 5.25]);
+  }
+
+  for (const city of CITY_RUSH_CITIES.filter((item) => item.id !== 'tokyo' && item.id !== 'london')) {
+    const lanes = cityRushLaneConfig(city);
+    assert.equal(cityRushDriveSide(city), 'right', `${city.id} roule à droite`);
+    assert.deepEqual([...lanes.forwardLanes], [...CITY_RUSH_FORWARD_LANES]);
+    assert.deepEqual([...lanes.oncomingLanes], [...CITY_RUSH_ONCOMING_LANES]);
+    assert.deepEqual([...lanes.defaultLanes], [...CITY_RUSH_DEFAULT_LANES]);
+  }
+  // Un parcours sans contresens (le Ring) reste « à droite » sans que cela ne
+  // change quoi que ce soit : ses quatre voies vont dans le même sens.
+  const ring = cityRushLaneConfig(CITY_RUSH_NORDSCHLEIFE_COURSE);
+  assert.equal(ring.oncomingLanes.length, 0);
+  assert.equal(ring.raceway, true);
+});
+
+test('the oncoming bonus ramps up in the wrong-way lanes and drains on the way back', () => {
+  assert.equal(CITY_RUSH_ONCOMING_BONUS_MAX, 1.35);
+  assert.equal(cityRushOncomingBonusFactor(0), 1, 'jauge vide : aucune vitesse en plus');
+  assert.equal(cityRushOncomingBonusFactor(CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION), CITY_RUSH_ONCOMING_BONUS_MAX);
+  assert.equal(cityRushOncomingBonusFactor(CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION * 4), CITY_RUSH_ONCOMING_BONUS_MAX,
+    'la jauge est plafonnée');
+  assert.equal(cityRushOncomingBonusFactor(-3), 1);
+  assert.equal(cityRushOncomingBonusFactor('abc'), 1);
+  const half = cityRushOncomingBonusFactor(CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION / 2);
+  assert.ok(half > 1 && half < CITY_RUSH_ONCOMING_BONUS_MAX, 'la montée est progressive');
+
+  // La jauge monte dans les voies inverses, image par image, sans dépasser le
+  // plafond…
+  let time = 0;
+  for (let frame = 0; frame < 400; frame += 1) time = advanceCityRushOncomingBonus(time, 1 / 60, true);
+  assert.equal(time, CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION);
+  // …et retombe dès le retour dans le sens de la course, plus vite qu'elle n'a
+  // monté : `DECAY_DURATION` suffit à vider une jauge pleine, là où il en faut
+  // `RAMP_DURATION` pour la remplir.
+  const drained = advanceCityRushOncomingBonus(
+    CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION, CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION, false,
+  );
+  assert.equal(drained, 0, 'une jauge pleine se vide en DECAY_DURATION');
+  assert.ok(CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION < CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION,
+    'la jauge redescend plus vite qu’elle ne monte');
+  const halfway = advanceCityRushOncomingBonus(
+    CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION, CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION / 2, false,
+  );
+  assert.ok(halfway > 0 && halfway < CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION,
+    'la retombée est progressive, pas instantanée');
+  assert.equal(advanceCityRushOncomingBonus(0, 1, false), 0, 'une jauge vide ne descend pas sous zéro');
+  assert.equal(advanceCityRushOncomingBonus(2, -5, true), 2, 'un pas négatif ne fait pas reculer la jauge');
 });
 
 test('cars in the same lane cannot pass and keep a safe gap, while other lanes stay free', () => {

@@ -52,23 +52,38 @@ export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
 // sens unique, exactement la largeur d'une voiture entre deux voies.
 export const CITY_RUSH_RACEWAY_ROAD_WIDTH = 9.2;
 export const CITY_RUSH_RACEWAY_ROAD_HALF = CITY_RUSH_RACEWAY_ROAD_WIDTH / 2;
-// Six voies au total : trois en sens inverse à gauche, trois dans le sens de
-// la course à droite. Les voies ajoutées restent au même espacement de 2,1 m.
+// Six voies au total : trois d'un sens, trois dans l'autre, séparées par l'axe
+// jaune central. Les voies restent au même espacement de 2,1 m ; c'est le
+// **côté** du contresens qui dépend du pays (voir `cityRushDriveSide`) : à
+// droite de l'axe en Amérique et en France, à gauche au Royaume-Uni et au
+// Japon.
 export const CITY_RUSH_LANE_X = Object.freeze([-5.25, -3.15, -1.05, 1.05, 3.15, 5.25]);
 export const CITY_RUSH_LANES_PER_DIRECTION = 3;
-export const CITY_RUSH_ONCOMING_LANES = Object.freeze(
+// Moitié gauche (abscisses négatives) et moitié droite de la chaussée, dans
+// l'ordre des voies de la grille.
+export const CITY_RUSH_LEFT_HALF_LANES = Object.freeze(
   Array.from({ length: CITY_RUSH_LANES_PER_DIRECTION }, (_, lane) => lane),
 );
-export const CITY_RUSH_FORWARD_LANES = Object.freeze(
+export const CITY_RUSH_RIGHT_HALF_LANES = Object.freeze(
   Array.from({ length: CITY_RUSH_LANES_PER_DIRECTION }, (_, lane) => lane + CITY_RUSH_LANES_PER_DIRECTION),
 );
+// Conduite à droite — le cas historique et le défaut de tous les parcours qui
+// ne précisent rien : le contresens arrive par la gauche, la course se tient à
+// droite.
+export const CITY_RUSH_ONCOMING_LANES = CITY_RUSH_LEFT_HALF_LANES;
+export const CITY_RUSH_FORWARD_LANES = CITY_RUSH_RIGHT_HALF_LANES;
 // Le joueur part au milieu des voies de course, avec ses deux rivaux de part
-// et d'autre pour que la nouvelle chaussée soit visible dès le départ.
+// et d'autre pour que la chaussée soit visible dès le départ. En conduite à
+// gauche, la même grille est simplement reflétée : le joueur au milieu de la
+// moitié gauche (voie 1), ses rivaux de part et d'autre (−5,25 m et −3,15 m).
 export const CITY_RUSH_DEFAULT_LANES = Object.freeze([
   CITY_RUSH_LANES_PER_DIRECTION + 1,
   CITY_RUSH_LANE_X.length - 1,
   CITY_RUSH_LANES_PER_DIRECTION,
 ]);
+export const CITY_RUSH_DEFAULT_LANES_LEFT_HAND = Object.freeze(
+  CITY_RUSH_DEFAULT_LANES.map((lane) => CITY_RUSH_LANE_X.length - 1 - lane),
+);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 // La simulation reste volontairement sur une ligne (les voies, collisions et
 // bonus sont ainsi déterministes), mais le rendu suit cette ligne centrale :
@@ -104,8 +119,25 @@ export const CITY_RUSH_ONCOMING_SAFE_OUTER_X = -(
 );
 export const CITY_RUSH_ONCOMING_EJECT_DURATION = 0.72; // s : la voiture heurtée dérape sans quitter la chaussée
 
-export function cityRushOncomingImpactX(startX, elapsed, vehicleWidth = CITY_RUSH_ONCOMING_MAX_WIDTH) {
-  const start = Number.isFinite(Number(startX)) ? Number(startX) : CITY_RUSH_LANE_X[0];
+/**
+ * Décalage d'un véhicule heurté de face : il dérape d'une voie au plus vers le
+ * bord extérieur de son sens de circulation, sans quitter la chaussée. En
+ * conduite à gauche (Londres, Tokyo), le contresens arrive par la droite : tout
+ * le calcul est simplement reflété autour de l'axe jaune. `driveSide` est le
+ * côté de circulation du parcours, tel que le donne `cityRushDriveSide`.
+ */
+export function cityRushOncomingImpactX(
+  startX,
+  elapsed,
+  vehicleWidth = CITY_RUSH_ONCOMING_MAX_WIDTH,
+  driveSide = 'right',
+) {
+  // `side` ramène le calcul du côté droit : la conduite à gauche est le miroir
+  // exact de la conduite à droite, il n'y a donc qu'une seule formule.
+  const side = driveSide === 'left' ? -1 : 1;
+  const fallback = side * CITY_RUSH_LANE_X[0];
+  const startXValue = Number.isFinite(Number(startX)) ? Number(startX) : fallback;
+  const start = side * startXValue;
   const width = Number.isFinite(Number(vehicleWidth)) && Number(vehicleWidth) > 0
     ? Number(vehicleWidth)
     : CITY_RUSH_ONCOMING_MAX_WIDTH;
@@ -119,7 +151,7 @@ export function cityRushOncomingImpactX(startX, elapsed, vehicleWidth = CITY_RUS
   // Le choc la décale d'une voie au maximum et la retient avant le bord,
   // en tenant compte de la largeur réelle du véhicule.
   const targetX = Math.max(safeOuterX, start - CITY_RUSH_LANE_WIDTH);
-  return start + (targetX - start) * eased;
+  return side * (start + (targetX - start) * eased);
 }
 
 export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
@@ -319,16 +351,18 @@ export function isCityRushFreeCar(carId, cars = CITY_RUSH_CARS) {
 }
 
 // Le trafic d'obstacle roule nettement moins vite que les voitures de course.
-// La route est à double sens : les trois voies de droite vont dans le sens de
-// la course, les trois voies de gauche accueillent le trafic venant en face.
+// La route est à double sens : trois voies vont dans le sens de la course, les
+// trois autres accueillent le trafic venant en face — à droite de l'axe par
+// défaut, à gauche sur les parcours en conduite à gauche (`cityRushDriveSide`).
 // Trafic allégé pour laisser respirer la course (demande : moins de trafic).
 export const CITY_RUSH_TRAFFIC_COUNT = 8;
 export const CITY_RUSH_TRAFFIC_LANES = Object.freeze(
   Array.from({ length: CITY_RUSH_TRAFFIC_COUNT }, (_, index) => CITY_RUSH_FORWARD_LANES[index % CITY_RUSH_FORWARD_LANES.length]),
 );
 
-// Trafic venant en face : les véhicules des trois voies de gauche roulent vers
-// le joueur, croisent la course, puis reparaissent au loin une fois passés.
+// Trafic venant en face : les véhicules du contresens roulent vers le joueur,
+// croisent la course, puis reparaissent au loin une fois passés (moitié gauche
+// de la chaussée en conduite à droite, moitié droite à Londres et à Tokyo).
 // Réduit aussi pour éviter l'effet embouteillage, mais avec collision solide.
 export const CITY_RUSH_ONCOMING_COUNT = 3;
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
@@ -406,6 +440,44 @@ export function cityRushCleanLineFactor(cleanLineTime) {
   if (CITY_RUSH_CLEAN_LINE_RAMP_DURATION <= 0) return CITY_RUSH_CLEAN_LINE_MAX_BONUS;
   const progress = Math.min(1, held / CITY_RUSH_CLEAN_LINE_RAMP_DURATION);
   return 1 + (CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * progress;
+}
+
+// ── Bonus de contresens : la voie inverse paye, tant qu'on y survit ─────────
+// Les trois voies en sens inverse sont les plus dangereuses de la chaussée : le
+// trafic y arrive de face, et un choc frontal coûte cher (voiture recalée,
+// ralenti long, dérapage). La contrepartie est un bonus de vitesse
+// **cumulatif** : chaque seconde passée dans ces voies charge un peu plus de
+// vitesse, jusqu'à `CITY_RUSH_ONCOMING_BONUS_MAX` une fois la jauge pleine.
+// Revenir dans le sens de la course la vide — plus vite qu'elle ne s'est
+// chargée — et un choc frontal l'annule net (voir `applyOncomingImpact` dans
+// `ViceCityWorld.jsx`). Un parcours sans contresens (le Ring) ne charge jamais
+// cette jauge : il n'y a personne en face.
+export const CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION = 4; // s de contresens pour la jauge pleine
+export const CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION = 1.2; // s pour retomber une fois revenu
+export const CITY_RUSH_ONCOMING_BONUS_MAX = 1.35; // × vitesse à jauge pleine
+
+/** Facteur de vitesse du bonus de contresens (1 → rien, `MAX` → jauge pleine). */
+export function cityRushOncomingBonusFactor(oncomingTime) {
+  const held = Math.max(0, Number(oncomingTime) || 0);
+  if (CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION <= 0) return CITY_RUSH_ONCOMING_BONUS_MAX;
+  const progress = Math.min(1, held / CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION);
+  return 1 + (CITY_RUSH_ONCOMING_BONUS_MAX - 1) * progress;
+}
+
+/**
+ * Fait vivre la jauge de contresens d'une image : elle monte tant que la
+ * voiture roule dans une voie en sens inverse, et retombe — en
+ * `CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION` secondes — dès qu'elle revient
+ * dans le sens de la course. `dt` en secondes ; le résultat reste dans
+ * [0, `CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION`].
+ */
+export function advanceCityRushOncomingBonus(oncomingTime, dt, inOncomingLanes = false) {
+  const held = Math.max(0, Number(oncomingTime) || 0);
+  const step = Math.max(0, Number(dt) || 0);
+  if (inOncomingLanes) return Math.min(CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION, held + step);
+  if (CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION <= 0) return 0;
+  const drain = step * (CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION / CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION);
+  return Math.max(0, held - drain);
 }
 
 export function cityRushHitDuration(baseDuration, carProfile) {
@@ -1533,6 +1605,9 @@ export const CITY_RUSH_CITIES = Object.freeze([
     // le décor vers `shutoC1Stage.js` et la skyline vers la baie de Tokyo.
     id: 'tokyo', name: 'SHUTŌ C1', label: 'TOKYO · SHUTO EXPRESSWAY ROUTE 1', district: 'C1 内回り · 都心環状線',
     tagline: '14,8 km de viaduc, trois tunnels, zéro feu rouge.', accent: '#3ce08a', secondary: '#ff9d4d',
+    // Le Japon roule à gauche : la course tient la moitié gauche de la C1 et le
+    // trafic venant en face arrive par la droite (voir `cityRushDriveSide`).
+    driveSide: 'left',
     background: 0x0a0f22, fog: 0x1d2140, asphalt: 0x14171f, sidewalk: 0x2a2740,
     buildingColors: Object.freeze([0x2b3150, 0x3a3557, 0x1f3348, 0x453a52, 0x2a2c40]),
     windowColor: 0x8fe9ff, skyTop: 0x090d22, skyGlow: 0x2fd07d, style: 'shuto',
@@ -1550,6 +1625,9 @@ export const CITY_RUSH_CITIES = Object.freeze([
   Object.freeze({
     id: 'london', name: 'LONDRES', label: 'LONDRES · ROYAUME-UNI', district: 'SOHO',
     tagline: 'La brume cache un raccourci.', accent: '#e8bd64', secondary: '#70cbd1',
+    // Le Royaume-Uni roule à gauche : les trois voies de course sont à gauche
+    // de l'axe et le contresens arrive par la droite.
+    driveSide: 'left',
     background: 0x151e31, fog: 0x39495a, asphalt: 0x171c27, sidewalk: 0x3c4149,
     buildingColors: Object.freeze([0x845f54, 0x987265, 0x6f5650, 0xa78470, 0x795b56]),
     windowColor: 0xffd98d, skyTop: 0x17253c, skyGlow: 0xffbd77, style: 'london',
@@ -1705,6 +1783,28 @@ export function clampCityRushLane(lane, laneCount = CITY_RUSH_LANE_X.length) {
   return Math.max(0, Math.min(laneCount - 1, parsed));
 }
 
+// ── Sens de circulation ─────────────────────────────────────────────────────
+// La plupart des parcours se roulent à droite : la course tient la moitié
+// droite de la chaussée et le trafic vient en face par la gauche. Les deux
+// parcours qui se jouent dans un pays où l'on roule à gauche — **Londres** et
+// la **Shuto Expressway Route 1 de Tokyo** — portent `driveSide: 'left'` : les
+// trois voies de course passent à gauche de l'axe jaune et le contresens
+// arrive par la droite. Un circuit à sens unique (le Ring) ignore ce champ,
+// faute de trafic en face.
+export const CITY_RUSH_DRIVE_SIDES = Object.freeze(['right', 'left']);
+
+/**
+ * Côté de circulation d'un parcours, accepté sous forme d'objet (une entrée de
+ * `CITY_RUSH_COURSES`) ou d'identifiant (`'london'`, `'tokyo'`…) : `'right'`
+ * par défaut, `'left'` pour les parcours qui roulent à gauche.
+ */
+export function cityRushDriveSide(course = null) {
+  const resolved = typeof course === 'string'
+    ? CITY_RUSH_COURSES.find((entry) => entry.id === course) || null
+    : course;
+  return resolved?.driveSide === 'left' ? 'left' : 'right';
+}
+
 // ── Voies du parcours ───────────────────────────────────────────────────────
 // Les cinq villes et les routes ouvertes gardent les six voies historiques à
 // double sens. Un circuit permanent (le Nürburgring Nordschleife) roule en sens
@@ -1718,8 +1818,9 @@ export function cityRushLaneCount(course) {
 
 /**
  * Abscisse (en mètres) d'une voie. Sur un parcours à double sens, les six voies
- * gardent exactement leurs positions historiques (de −5,25 m à +5,25 m, les
- * trois de gauche venant en face). Sur un circuit à sens unique, les voies se
+ * gardent exactement leurs positions historiques (de −5,25 m à +5,25 m ; c'est
+ * le *rôle* de chaque moitié — course ou contresens — qui change selon le pays,
+ * jamais l'abscisse). Sur un circuit à sens unique, les voies se
  * répartissent symétriquement autour de l'axe, au pas de 2,10 m : les quatre
  * voies du Ring tombent ainsi exactement sur les quatre voies intérieures de la
  * grille urbaine (∓1,05 m et ∓3,15 m), c'est-à-dire la largeur de bitume réelle
@@ -1735,26 +1836,35 @@ export function cityRushLaneX(lane, laneCount = CITY_RUSH_LANE_X.length) {
 }
 
 /**
- * Toutes les voies d'un parcours, prêtes à l'emploi pour le monde 3D : nombre
- * de voies, abscisse de chacune, voies du sens de course, voies en sens inverse
- * (vides sur un circuit), voies de la grille de départ et voies de police.
+ * Toutes les voies d'un parcours, prêtes à l'emploi pour le monde 3D : sens de
+ * circulation, nombre de voies, abscisse de chacune, voies du sens de course,
+ * voies en sens inverse (vides sur un circuit), voies de la grille de départ et
+ * voies de police. Sur un parcours en conduite à gauche (Londres, Tokyo), les
+ * deux moitiés sont simplement échangées : la course passe à gauche de l'axe
+ * jaune et le contresens à droite.
  */
 export function cityRushLaneConfig(course) {
   const laneCount = cityRushLaneCount(course);
+  const driveSide = cityRushDriveSide(course);
+  const leftHand = driveSide === 'left';
   const raceway = laneCount < CITY_RUSH_LANE_X.length;
   const laneX = (lane) => cityRushLaneX(lane, laneCount);
   if (!raceway) {
+    const forwardLanes = leftHand ? CITY_RUSH_LEFT_HALF_LANES : CITY_RUSH_FORWARD_LANES;
     return {
       laneCount,
       raceway: false,
+      driveSide,
       laneX,
       roadHalf: CITY_RUSH_ROAD_HALF_WIDTH,
       roadWidth: CITY_RUSH_ROAD_WIDTH,
       lanes: Object.freeze(Array.from({ length: laneCount }, (_, lane) => lane)),
-      forwardLanes: CITY_RUSH_FORWARD_LANES,
-      oncomingLanes: CITY_RUSH_ONCOMING_LANES,
-      policeLanes: CITY_RUSH_POLICE_LANES,
-      defaultLanes: CITY_RUSH_DEFAULT_LANES,
+      forwardLanes,
+      oncomingLanes: leftHand ? CITY_RUSH_RIGHT_HALF_LANES : CITY_RUSH_ONCOMING_LANES,
+      // Les berlines de l'escouade chassent dans le sens de la course, jamais
+      // sur les voies du contresens.
+      policeLanes: leftHand ? CITY_RUSH_LEFT_HALF_LANES : CITY_RUSH_POLICE_LANES,
+      defaultLanes: leftHand ? CITY_RUSH_DEFAULT_LANES_LEFT_HAND : CITY_RUSH_DEFAULT_LANES,
       gridLanes: CITY_RUSH_LANE_X,
     };
   }
@@ -1765,6 +1875,9 @@ export function cityRushLaneConfig(course) {
   return {
     laneCount,
     raceway: true,
+    // Un circuit à sens unique n'a pas de contresens : le côté de conduite n'y
+    // change rien, et `oncomingLanes` reste vide.
+    driveSide,
     laneX,
     roadHalf: CITY_RUSH_RACEWAY_ROAD_HALF,
     roadWidth: CITY_RUSH_RACEWAY_ROAD_WIDTH,
@@ -2629,7 +2742,13 @@ export function createCityRushBoostEncounter(random = Math.random, course = null
   return { pickups: [{ lane: lanes[index], type: CITY_RUSH_PICKUPS.BOOST }] };
 }
 
-export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE_X.length) {
+/**
+ * Voie d'arrivée d'une commande gauche/droite. En plein saut (`airborne`), le
+ * volant ne répond plus : la voiture garde la voie de son décollage jusqu'à
+ * l'atterrissage, elle ne se décale pas en l'air. Hors saut, rien ne change.
+ */
+export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE_X.length, { airborne = false } = {}) {
+  if (airborne) return clampCityRushLane(lane, laneCount);
   if (action === 'left') return clampCityRushLane(lane - 1, laneCount);
   if (action === 'right') return clampCityRushLane(lane + 1, laneCount);
   return clampCityRushLane(lane, laneCount);

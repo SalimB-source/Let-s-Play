@@ -165,3 +165,68 @@ quatre voies ne se lisaient donc qu'à la grille de départ.
   voies de chaque parcours » (villes et Ring).
 - `npm run check:city-rush`, `check:city-rush-nordschleife`,
   `check:city-rush-smoke -- --all`, `npx vite build`.
+
+## Suite — le contresens paye, la voie se verrouille en l'air, Londres et Tokyo passent à gauche
+
+Demande : « Dans le jeu Vice City Rush, les 3 voies de la route inverse donnent
+un bonus cumulatif de vitesse. Sur la course de Londres et du Japon, inverse les
+voies de gauche et de droite (conduite à gauche). Aussi par rapport au saut, le
+saut empêche de bouger en l'air. » Deux points ont été confirmés avec le joueur
+avant d'écrire : le bonus de contresens était à **créer** (il n'existait pas —
+seule la « ligne propre » donnait de la vitesse), et le verrou de voie en plein
+saut est la **règle voulue**, pas un bogue à corriger.
+
+### Ce qui change
+
+- **Bonus de contresens** (`cityRushRules.js`) : `CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION`
+  = 4 s pour la jauge pleine, `CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION` = 1,2 s
+  pour la vider (plus vite qu'elle ne monte), `CITY_RUSH_ONCOMING_BONUS_MAX` =
+  1,35 ×, `cityRushOncomingBonusFactor(jauge)` et
+  `advanceCityRushOncomingBonus(jauge, dt, inOncoming)`. La jauge se **multiplie**
+  aux autres facteurs dans `targetPlayerSpeed` (`ViceCityWorld.jsx`), ne monte
+  que si le pilote roule dans une voie de `oncomingLaneSet` sans être épave ou
+  sonné, et retombe sinon.
+- **Conséquences jouables** : `applyOncomingImpact` remet la jauge à zéro et
+  émet `oncoming-bonus`/`'lost'` en plus du choc frontal (qui recale le joueur
+  derrière la voiture en face) ; le HUD publie `oncomingBonus`,
+  `oncomingBonusMax` et `oncomingTime` ; la page affiche le pourcentage dans la
+  carte VITESSE (`.city-rush-speed-bonus`) et la pastille
+  `CONTRESENS · +X %` (`.city-rush-status-pill.is-oncoming`), avec le règlement
+  du bandeau de mode mis à jour.
+- **Conduite à gauche** : `CITY_RUSH_DRIVE_SIDES` / `cityRushDriveSide(parcours)`
+  et `driveSide: 'left'` sur `tokyo` et `london` (villes **et** thèmes). Dans
+  `cityRushLaneConfig`, la conduite à gauche échange les moitiés : `forwardLanes`
+  = [0,1,2], `oncomingLanes` = [3,4,5], `policeLanes` = moitié de course, et la
+  grille de départ passe à `CITY_RUSH_DEFAULT_LANES_LEFT_HAND` = [1,0,2] (joueur
+  au milieu de la moitié gauche). Les **abscisses** ne changent pas : c'est le
+  rôle des moitiés qui s'échange, donc `cityRushOncomingImpactX(startX, elapsed,
+  width, driveSide)` renvoie le véhicule heurté vers le **bord de son sens** (à
+  droite) et l'effet `traffic-impact` porte `pushDirection: 'right'`.
+- **Textures** : `makeRoadTexture` (rues, dont Londres) et
+  `makeExpresswayDeckTexture` (tablier de la Shuto) lisent
+  `cityRushThemeDriveSide(theme)` et peignent les flèches de voie en miroir (les
+  voies de course pointent vers l'avant, le contresens vers le joueur).
+- **Saut** : `cityRushLaneAfterAction(voie, action, nombre, { airborne })`
+  retourne la voie de décollage sans la changer quand `airborne` est vrai.
+  `action()` du joueur passe `airborne: playerJumpState.active` et le choix de
+  voie des rivaux est gelé par `racerAirborne` (`racer.jumpState.active`). Le
+  guide des tremplins de `ViceCityRushPage.jsx` l'annonce.
+
+### Vérifications
+
+- `tests/city-rush-rules.test.js` : « a jump locks the wheel… », « London and
+  the Shutō C1 drive on the left… » (moitiés, grille reflétée, abscisses
+  inchangées, Ring sans contresens) et « the oncoming bonus ramps up… »
+  (montée, plafond, retombée plus rapide, bornes basses) ; le test du choc
+  frontal couvre la déviation miroir.
+- `tests/city-rush-themes.test.js` : « the driving side is painted by the theme
+  and mirrored by the course, city by city » (Tokyo et Londres seuls à gauche,
+  thème et parcours d'accord).
+- `tests/city-rush-hud.test.js` : le bonus dans le monde/le HUD/la page, la
+  conduite à gauche jusque dans les textures, le verrou de voie en l'air
+  (joueur et rivaux) et le texte du guide.
+- `npm run check:city-rush`, `check:city-rush-smoke -- --all` (le pilote
+  automatique vise le contresens selon `cityRushLaneConfig` et la jauge doit
+  bouger sur les sept parcours à trafic en face, jamais sur le Ring),
+  `check:city-rush-nordschleife-lanes`, `check:city-rush-sprint`,
+  `check:city-rush-wreck`, `check:vice-city-fullscreen`, `npx vite build`.

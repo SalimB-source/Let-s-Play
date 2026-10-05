@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { CITY_RUSH_LANE_X, CITY_RUSH_ROAD_WIDTH } from './cityRushRules.js';
 import { makeCanvasTexture, neonText } from './cityRushBuilder.js';
+import { cityRushThemeDriveSide } from './cityRushThemes.js';
 
 const FACADE_TILE_PX = { width: 256, height: 288 };
 // Un carreau de façade couvre 4 unités de large sur 3 étages.
@@ -273,12 +274,18 @@ export function makeRoadTexture(theme, random) {
     ctx.fillStyle = 'rgba(255,255,255,.72)';
     ctx.fillRect(width * 0.012, 0, 4, height);
     ctx.fillRect(width * 0.988 - 4, 0, 4, height);
-    // Flèches de voie au sol, une par carreau. Les voies de gauche sont
-    // en sens inverse : leurs flèches pointent vers le joueur.
+    // Flèches de voie au sol, une par carreau. Le carreau se répète en
+    // longueur et le ruban défile vers le joueur : le **haut** du dessin est
+    // donc le sens de la course (voir `makeCanvasTexture` : le canvas est
+    // retourné à l'upload, v = 1 en haut, et le ruban avance avec v). Une
+    // flèche de voie de course pointe vers le haut ; une flèche de contresens
+    // pointe vers le bas, c'est-à-dire vers le joueur. Le côté du contresens
+    // suit le pays : à gauche en conduite à droite, à droite à Londres.
     ctx.fillStyle = 'rgba(255,255,255,.26)';
+    const leftHand = cityRushThemeDriveSide(theme) === 'left';
     for (const laneCenter of CITY_RUSH_LANE_X) {
       const px = laneToPixel(laneCenter);
-      const oncoming = laneCenter < 0;
+      const oncoming = leftHand ? laneCenter > 0 : laneCenter < 0;
       ctx.beginPath();
       if (oncoming) {
         ctx.moveTo(px, 230);
@@ -1149,15 +1156,20 @@ export function makeExpresswayDeckTexture(theme, random, { halfWidth = 10.6 } = 
     ctx.fillRect(toPixel(-0.13), 0, metersToPx(0.12), height);
     ctx.fillRect(toPixel(0.01), 0, metersToPx(0.12), height);
 
-    // Flèches de voie japonaises : longues et fines, une par carreau. Les
-    // voies de gauche viennent en face (sens inverse de l'anneau).
+    // Flèches de voie japonaises : longues et fines, une par carreau. Le haut
+    // du carreau est le sens de la course (le ruban défile vers le joueur, voir
+    // `makeRoadTexture`) : une flèche de voie de course pointe vers le haut,
+    // une flèche de contresens pointe vers le bas, vers le joueur. Le Japon
+    // roule à gauche : sur la C1, les trois voies de course sont donc à gauche
+    // de l'axe jaune et le contresens à droite.
     ctx.fillStyle = 'rgba(238, 244, 255, .22)';
+    const leftHand = cityRushThemeDriveSide(theme) === 'left';
     for (const laneCenter of CITY_RUSH_LANE_X) {
       const px = toPixel(laneCenter);
-      const oncoming = laneCenter < 0;
-      const tip = oncoming ? height * 0.2 : height * 0.8;
-      const tail = oncoming ? height * 0.72 : height * 0.28;
-      const head = oncoming ? height * 0.32 : height * 0.68;
+      const oncoming = leftHand ? laneCenter > 0 : laneCenter < 0;
+      const tip = oncoming ? height * 0.8 : height * 0.2;
+      const tail = oncoming ? height * 0.28 : height * 0.72;
+      const head = oncoming ? height * 0.68 : height * 0.32;
       ctx.beginPath();
       ctx.moveTo(px, tip);
       ctx.lineTo(px + metersToPx(0.34), head);

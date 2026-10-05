@@ -813,9 +813,10 @@ officielle secteur par secteur (voir « Tokyo : la C1 » plus bas).
 
 Le trafic, les tirs et la police ralentissent les courses réelles (le pilote
 d'essai du smoke met 10 à 15 % de plus que ces temps), tandis que le bonus de
-« ligne propre » (jusqu'à +12 % en tenant sa voie) les raccourcit. Changer de
+« ligne propre » (jusqu'à +12 % en tenant sa voie) et celui de **contresens**
+(jusqu'à +35 % en restant dans les voies inverses) les raccourcissent. Changer de
 voie ne compte ni dans l'un ni dans l'autre : le malus d'écart a été supprimé
-(voir « Changer de voie ne ralentit plus »). Avant ces réglages, une course ne
+(voir « Changer de voie ne ralentit plus » et « Le contresens paie »). Avant ces réglages, une course ne
 comptait que 1 à 3 tours d'une boucle de 600 m (1 min 02 en Circuit)
 et le dernier tour durait 21 s.
 
@@ -983,6 +984,60 @@ et le dernier tour durait 21 s.
   ralentissement, et le seul levier « voie » reste ≥ 1) et
   `tests/city-rush-hud.test.js` (le malus ne doit réapparaître ni dans le monde
   ni dans la page).
+- **Le contresens paie — tant qu'on y reste.** Les **trois voies en sens
+  inverse** (à gauche de l'axe jaune en conduite à droite, à droite à Londres et
+  sur la Shuto) chargent une **jauge de vitesse cumulative** : `playerOncomingTime`
+  monte d'une seconde par seconde passée dans ces voies, jusqu'à
+  `CITY_RUSH_ONCOMING_BONUS_RAMP_DURATION` = **4 s**, et le facteur de vitesse
+  `cityRushOncomingBonusFactor` suit de **1 ×** à `CITY_RUSH_ONCOMING_BONUS_MAX` =
+  **1,35 ×**. Il se **multiplie** au bonus de ligne propre dans
+  `targetPlayerSpeed` (jusqu'à ~1,51 × combinés) : c'est la récompense des voies
+  les plus dangereuses de la chaussée. Revenir dans le sens de la course vide la
+  jauge en `CITY_RUSH_ONCOMING_BONUS_DECAY_DURATION` = **1,2 s seulement** —
+  elle retombe plus vite qu'elle n'a monté — et un **choc frontal** l'annule
+  net (`playerOncomingTime = 0` dans `applyOncomingImpact`, avec l'effet
+  `oncoming-bonus` de palier `'lost'`) : le pilote est recalé derrière la voiture
+  en face, sans vitesse. Le HUD expose `oncomingBonus` (facteur courant) et la
+  page affiche le pourcentage gagné dans la carte **VITESSE** (badge
+  `.city-rush-speed-bonus`) et la pastille d'état **CONTRESENS · +X %**
+  (`.city-rush-status-pill.is-oncoming`, rose néon). Un parcours sans trafic en
+  face — le Ring — ne charge jamais cette jauge : `oncomingLanes` est vide, donc
+  `advanceCityRushOncomingBonus` ne monte pas. Le smoke vérifie que la jauge a
+  bougé sur les sept parcours à contresens, qu'elle reste dans
+  [1 ; 1,35] et qu'elle n'a **jamais** bougé sur le Nordschleife.
+- **En plein saut, la voie est verrouillée.** Un saut de tremplin ne se pilote
+  pas : tant que `playerJumpState.active` (ou `racer.jumpState.active` pour un
+  rival), `cityRushLaneAfterAction` reçoit `{ airborne: true }` et **rend la voie
+  de décollage inchangée** — la voiture retombe dans la voie qu'elle a quittée,
+  jamais à côté. Le verrou est dans la règle pure
+  (`cityRushLaneAfterAction`, option `airborne`), appliqué au joueur par
+  `action()` (`airborne: playerJumpState.active`) et aux rivaux par
+  `racerAirborne` dans leur choix de voie ; la visée du joueur, elle, reste
+  libre. Le guide des tremplins de `ViceCityRushPage.jsx` l'annonce
+  (« en l'air, la voiture garde sa voie ») et
+  `tests/city-rush-rules.test.js` le tient pour les six voies.
+- **Londres et Tokyo roulent à gauche.** Les deux parcours portent
+  `driveSide: 'left'` (`CITY_RUSH_CITIES` dans `cityRushRules.js`, et le même
+  champ sur leur thème pour les textures) : `cityRushLaneConfig` échange alors
+  les moitiés — la **course** tient les trois voies de **gauche** (abscisses
+  négatives), le **contresens** arrive par la **droite**, la police chasse dans
+  le sens de la course et la **grille de départ est reflétée**
+  (`CITY_RUSH_DEFAULT_LANES_LEFT_HAND` = `[1, 0, 2]` : le joueur au milieu de la
+  moitié gauche, ses rivaux de part et d'autre). Les abscisses ne changent pas :
+  c'est le **rôle** des moitiés qui s'échange, et donc les flèches peintes au sol
+  — `makeRoadTexture` (rues, dont Londres) et `makeExpresswayDeckTexture`
+  (tablier de la Shuto) déduisent `leftHand` de `cityRushThemeDriveSide(theme)`
+  et peignent une flèche de contresens **vers le bas** sur la moitié droite.
+  La déviation après un choc frontal suit le même miroir :
+  `cityRushOncomingImpactX(startX, elapsed, width, driveSide)` renvoie la voiture
+  vers le **bord extérieur de son sens** — à droite à Londres et sur la C1 — et
+  l'effet `traffic-impact` porte `pushDirection: 'right'` pour que le bandeau
+  annonce « POUSSÉE À DROITE ». Le pilote automatique du smoke et le test des
+  règles lisent tous deux `cityRushLaneConfig`, plus aucune voie n'est codée en
+  dur. Trois tests tiennent la bascule : « London and the Shutō C1 drive on the
+  left… » (`tests/city-rush-rules.test.js`), « the driving side is painted by
+  the theme… » (`tests/city-rush-themes.test.js`) et « Londres et Tokyo roulent
+  à gauche jusque dans le décor et la page » (`tests/city-rush-hud.test.js`).
 - **Les bonus.** En course, seuls deux objets apparaissent sur la route :
   le **pad turbo vert** et le bonus **rouge d'AK-47**. Le rouge est **très
   rare** : seulement **5 % des objets** générés sont rouges, contre 95 % de pads
@@ -1031,7 +1086,9 @@ et le dernier tour durait 21 s.
   la page Jeux montrent désormais la plage en plein jour.
 - **Tokyo : la C1, anneau intérieur de la Shuto.** Le circuit de Tokyo suit la
   **Route 1 都心環状線** telle qu'elle existe : 14,8 km, trois voies par sens,
-  limité à **50 km/h**, kilomètre zéro au **pont de 日本橋**, sens de la course
+  **conduite à gauche** (comme au Japon : le contresens arrive par la droite,
+  voir « Londres et Tokyo roulent à gauche »), limité à **50 km/h**, kilomètre
+  zéro au **pont de 日本橋**, sens de la course
   **内回り** (anti-horaire). `CITY_RUSH_SHUTO_C1` (`cityRushRules.js`) découpe
   l'anneau en **quinze secteurs** portant chacun son point kilométrique officiel,
   sa nature et son côté réel : 江戸橋JCT → 神田橋 → **竹橋JCT** (le grand
@@ -1285,7 +1342,8 @@ npm run check:city-rush          # règles pures (tours, repli, classement, obje
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
-npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring)
+npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, aucune vie perdue au contact, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point, le joueur n'en perd aucun ; l'épave est vérifiée si des tirs vident la coque

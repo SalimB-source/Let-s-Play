@@ -39,6 +39,7 @@ import {
   CITY_RUSH_SPRINT_DISTANCE,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
+  CITY_RUSH_ONCOMING_BONUS_MAX,
   NORDSCHLEIFE_RELIEF_M,
   CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
@@ -529,6 +530,20 @@ export default function ViceCityRushPage() {
     : Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Number(hud.playerHealth) || 0));
   const playerHealthMax = Number(hud.playerHealthMax) || CITY_RUSH_PLAYER_HEALTH;
   const playerHealthCritical = playerHealthValue !== null && playerHealthValue <= CITY_RUSH_PLAYER_HEALTH_CRITICAL;
+  // Bonus de contresens : pourcentage de vitesse cumulé dans les voies en sens
+  // inverse (0 % tant que la jauge est vide). C'est la récompense des voies les
+  // plus dangereuses de la chaussée, et elle se paie d'un choc frontal.
+  const oncomingBonusPercent = Math.max(0, Math.round(((Number(hud.oncomingBonus) || 1) - 1) * 100));
+  const oncomingCharged = oncomingBonusPercent > 0;
+  const statusTone = hud.stunLeft > 0
+    ? 'is-stunned'
+    : hud.trafficImpactLeft > 0
+      ? 'is-impact'
+      : hud.boostLeft > 0
+        ? 'is-boost'
+        : hud.slowLeft > 0
+          ? 'is-slow'
+          : 'is-oncoming';
   const bestTime = bests[cityId] || null;
   const isRaceWon = Boolean(!storyMode && result && result.rank === 1 && !result.destroyed && !result.timedOut);
   const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && !result?.destroyed && storyChapter >= STORY_CHAPTERS.length);
@@ -875,7 +890,7 @@ export default function ViceCityRushPage() {
       effect.oncoming
         ? effect.policeContact
           ? 'CONTACT POLICIER · LA PATROUILLE EN FACE FAIT DEMI-TOUR.'
-          : 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.'
+          : `CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À ${effect.pushDirection === 'right' ? 'DROITE' : 'GAUCHE'} · BONUS DE CONTRESENS PERDU.`
         : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`,
       effect.policeContact ? 'pistol' : 'slow',
     );
@@ -903,6 +918,11 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'tunnel-scrape') showToast('PAROI RACLÉE · LA VOIE EST MURÉE SOUS LE TUNNEL · RALENTI.', 'slow');
     else if (effect.type === 'ramp-jump') showToast(`TREMPLIN · SAUT ${Math.round(effect.distance)} M !`, 'boost');
     else if (effect.type === 'jump-overpass') showToast('SAUT PAR-DESSUS LE TRAFIC !', 'boost');
+    else if (effect.type === 'oncoming-bonus') {
+      if (effect.stage === 'charging') showToast('CONTRESENS · BONUS DE VITESSE EN CHARGE · TIENS LA VOIE INVERSE.', 'boost');
+      else if (effect.stage === 'full') showToast(`CONTRESENS · +${Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % PLEIN GAZ !`, 'boost');
+      else if (effect.stage === 'lost') showToast('CHOC FRONTAL · BONUS DE CONTRESENS PERDU.', 'slow');
+    }
   }
 
   const onLap = (info) => {
@@ -1099,6 +1119,11 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-hud-card city-rush-speed-card">
                   <span className="city-rush-hud-label">VITESSE</span>
                   <strong>{hud.speed}<small> km/h</small></strong>
+                  {oncomingCharged && (
+                    <span className="city-rush-speed-bonus" aria-label={`Bonus de contresens : plus ${oncomingBonusPercent} pour cent de vitesse`}>
+                      +{oncomingBonusPercent} %
+                    </span>
+                  )}
                   <span className="city-rush-time">{formatTime(hud.elapsed)}</span>
                 </div>
               </div>
@@ -1170,9 +1195,17 @@ export default function ViceCityRushPage() {
                 <CityRushRaceList racers={standings} pursuers={hud.police} laps={currentLaps} />
               </div>}
 
-              {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0) && (
-                <div className={`city-rush-status-pill${hud.stunLeft > 0 ? ' is-stunned' : hud.trafficImpactLeft > 0 ? ' is-impact' : hud.boostLeft > 0 ? ' is-boost' : ' is-slow'}`}>
-                  {hud.stunLeft > 0 ? `ÉPAVE · ${hud.stunLeft.toFixed(1)} s` : hud.trafficImpactLeft > 0 ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s` : hud.boostLeft > 0 ? `TURBO · ${hud.boostLeft.toFixed(1)} s` : `RALENTI · ${hud.slowLeft.toFixed(1)} s`}
+              {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0 || oncomingCharged) && (
+                <div className={`city-rush-status-pill ${statusTone}`}>
+                  {hud.stunLeft > 0
+                    ? `ÉPAVE · ${hud.stunLeft.toFixed(1)} s`
+                    : hud.trafficImpactLeft > 0
+                      ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s`
+                      : hud.boostLeft > 0
+                        ? `TURBO · ${hud.boostLeft.toFixed(1)} s`
+                        : hud.slowLeft > 0
+                          ? `RALENTI · ${hud.slowLeft.toFixed(1)} s`
+                          : `CONTRESENS · +${oncomingBonusPercent} %`}
                 </div>
               )}
               {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
@@ -1702,7 +1735,7 @@ export default function ViceCityRushPage() {
               </div>
               <div className="city-rush-guide-item is-ramp">
                 <span className="city-rush-guide-glyph" aria-hidden="true">▲</span>
-                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour bondir sur plusieurs dizaines de mètres selon ta vitesse et survoler le trafic et les barrages sans collision.</small></div>
+                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour bondir sur plusieurs dizaines de mètres selon ta vitesse et survoler le trafic et les barrages sans collision. En l’air, la voiture garde sa voie : le volant ne répond qu’à l’atterrissage.</small></div>
                 <kbd>SAUT</kbd>
               </div>
             </div>
@@ -1711,7 +1744,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro.</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
           </section>
 
           {/* En Sprint, la carte de l'escouade disparaît : titre, sirène et

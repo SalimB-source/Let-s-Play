@@ -6,6 +6,7 @@ import {
   CITY_RUSH_THEMES,
   cityRushLightRig,
   cityRushTheme,
+  cityRushThemeDriveSide,
 } from '../src/games/cityRushThemes.js';
 
 // Luminance relative (0 → 1) d'une couleur 0xrrggbb : sert à distinguer un ciel
@@ -162,4 +163,25 @@ test('Tokyo runs on the Shuto Expressway Route 1 with an expressway art directio
   assert.notEqual(theme.daylight, true);
   assert.equal(theme.ground, undefined);
   assert.equal(theme.materials, undefined);
+});
+
+test('the driving side is painted by the theme and mirrored by the course, city by city', () => {
+  // Le côté de circulation vit à deux endroits : la ville (règles, voies) et
+  // son thème (textures de route, flèches au sol). Le commentaire du thème de
+  // Tokyo le dit : les deux doivent rester d'accord, sinon les flèches
+  // annoncent un contresens que le jeu ne connaît pas.
+  for (const city of CITY_RUSH_CITIES) {
+    const theme = cityRushTheme(city.id);
+    const expected = city.id === 'tokyo' || city.id === 'london' ? 'left' : 'right';
+    assert.equal(theme.driveSide || 'right', expected, `${city.id} : thème`);
+    assert.equal(city.driveSide || 'right', expected, `${city.id} : parcours`);
+    assert.equal(cityRushThemeDriveSide(theme), expected, `${city.id} : helper de texture`);
+  }
+  // Les seuls thèmes « à gauche » sont Tokyo et Londres : les autres n'ont pas
+  // le champ (défaut « à droite »), pas un champ contradictoire.
+  const leftHand = Object.entries(CITY_RUSH_THEMES)
+    .filter(([, theme]) => cityRushThemeDriveSide(theme) === 'left')
+    .map(([id]) => id)
+    .sort();
+  assert.deepEqual(leftHand, ['london', 'tokyo']);
 });
