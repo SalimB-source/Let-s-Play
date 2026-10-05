@@ -77,7 +77,7 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN, CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
-  CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers,
+  CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
 } = await import('../src/games/cityRushRules.js');
 
 // Tours de la course jouée : 6 par défaut (4 200 m) ;
@@ -446,10 +446,14 @@ for (const [index, city] of courses.entries()) {
     if (rallyTarget && hud && frames % 4 === 0) {
       let targetLane = hud.playerLane;
       let closest = Infinity;
-      CITY_RUSH_LANE_X.forEach((x, index) => {
-        const delta = Math.abs(x - rallyTarget.position.x);
+      // Les voies du parcours, pas les six voies historiques : sur la piste
+      // resserrée du Ring, une abscisse de voie urbaine désignerait la voie
+      // opposée et le pilote automatique se rabattrait du mauvais côté.
+      const smokeLanes = cityRushLaneConfig(city);
+      for (let index = 0; index < smokeLanes.laneCount; index += 1) {
+        const delta = Math.abs(smokeLanes.laneX(index) - rallyTarget.position.x);
         if (delta < closest) { closest = delta; targetLane = index; }
-      });
+      }
       if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
     }
     // Hélico d'observation : visible seulement au dernier tour, et il tourne.
@@ -666,8 +670,19 @@ for (const [index, city] of courses.entries()) {
   if (callbacks.errors.length) fail('erreurs remontées', callbacks.errors);
 
   const finish = callbacks.finish;
+  // Un circuit permanent (Nordschleife) roule en sens unique : aucun véhicule
+  // ne peut être heurté de face. On exige donc le choc frontal là où il y a du
+  // trafic en face, et son absence — pas seulement sa rareté — là où il n'y en a
+  // pas : une voiture à contresens sur un circuit serait un vrai bogue.
+  const oncomingLanes = cityRushLaneConfig(city).oncomingLanes.length;
   const oncomingImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.oncoming && effect.pushedAside && effect.pushDirection === 'left');
-  if (!oncomingImpacts.length) fail('aucune collision frontale n’a poussé la voiture touchée vers la gauche', callbacks.effects.filter((effect) => effect.type === 'traffic-impact'));
+  const trafficImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact');
+  if (oncomingLanes > 0 && !oncomingImpacts.length) fail('aucune collision frontale n’a poussé la voiture touchée vers la gauche', trafficImpacts);
+  if (oncomingLanes === 0) {
+    const headOn = trafficImpacts.filter((effect) => effect.oncoming);
+    if (headOn.length) fail('un parcours sans trafic en face a subi une collision frontale', headOn);
+    if (!trafficImpacts.length) fail('aucun contact avec le trafic sur un parcours qui en compte', trafficImpacts);
+  }
   if (finish.laps !== RACE_LAPS) fail('finish.laps ≠ nombre de tours de la course', finish);
   if (!Array.isArray(finish.racers) || finish.racers.length !== 3) fail('chaque course doit finir avec exactement trois pilotes', finish.racers);
   if (!Array.isArray(callbacks.huds.at(-1)?.racers) || callbacks.huds.at(-1).racers.length !== 3) {
@@ -871,9 +886,16 @@ for (const [index, city] of courses.entries()) {
     if (car.police !== 'POLICE ROUTIÈRE') fail('une berline rappelée n’est pas identifiée comme police routière', car);
   }
   const ralliedIds = [...ralliedInHud];
-  if (ralliedHudFrames < 60) fail('la police routière rappelée ne tient pas la chasse', ralliedHudFrames);
-  if (ralliedAheadFrames < 60) fail('la police routière rappelée ne se porte jamais devant le pilote qu’elle chasse', ralliedAheadFrames);
-  if (!ralliedBlockadeFrames) fail('la police routière rappelée ne s’est jamais mise en barrage devant le pilote');
+  // Le joueur peut descendre la berline rappelée au tir rouge : la poursuite
+  // s'arrête alors légitimement, parfois avant les deux secondes exigées. On ne
+  // compte donc comme manquement que les berlines rappelées encore en piste —
+  // c'est le cas sur un circuit resserré, où le joueur et la police partagent
+  // les deux mêmes voies et où le contact arrive plus vite.
+  const ralliedWrecked = callbacks.effects.some((effect) => effect.type === 'police-destroyed'
+    && effect.police === 'POLICE ROUTIÈRE');
+  if (ralliedHudFrames < 60 && !ralliedWrecked) fail('la police routière rappelée ne tient pas la chasse', ralliedHudFrames);
+  if (ralliedAheadFrames < 60 && !ralliedWrecked) fail('la police routière rappelée ne se porte jamais devant le pilote qu’elle chasse', ralliedAheadFrames);
+  if (!ralliedBlockadeFrames && !ralliedWrecked) fail('la police routière rappelée ne s’est jamais mise en barrage devant le pilote');
   if ((lastHud.police || []).some((car) => ralliedIds.includes(car.id))) {
     fail('une berline rappelée reste en piste après l’arrivée', lastHud.police);
   }

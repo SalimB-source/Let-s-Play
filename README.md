@@ -789,8 +789,10 @@ grand écran.
 
 ## Vice City Rush : les tours, ligne de départ et décor
 
-Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
-villes (Vice City, New York, Tokyo, Paris, Londres). Chaque ville est une boucle
+Le jeu (`/jeu/vice-city-rush`) est une course d'arcade dans cinq villes (Vice
+City, New York, Tokyo, Paris, Londres), complétées par **trois parcours**
+(Route 66, campagne mexicaine, Nürburgring Nordschleife — voir « Le
+Nordschleife » plus bas). Chaque parcours est une boucle
 de **600 m** qu'on reparcourt ; les courses standard passent maintenant à
 **six tours**, avec un dernier tour double de **1 200 m** : **4 200 m au total**.
 Le Sprint s'allonge lui aussi à quatorze checkpoints. C'est au dernier tour que
@@ -1271,7 +1273,7 @@ npm run check:city-rush          # règles pures (tours, repli, classement, obje
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
-npm run check:city-rush-smoke    # les sept parcours (cinq villes + Route 66 + campagne mexicaine) : course complète de 6 tours (4 200 m, dernier tour de 1 200 m), sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (4 200 m, dernier tour de 1 200 m), sans exception, éclatements visibles
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, aucune vie perdue au contact, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point, le joueur n'en perd aucun ; l'épave est vérifiée si des tirs vident la coque
@@ -1314,6 +1316,107 @@ quatre feux, chaque passage de ligne (point de passage compris) et la fanfare.
 Aucun son de missile, de frappe ou de rotor d'attaque ne doit se déclencher ;
 l'hélicoptère d'observation reste silencieux. Les compteurs sont imprimés à la
 fin de chaque parcours.
+
+## Vice City Rush : le Nürburgring Nordschleife
+
+Le huitième parcours jouable est la **Nordschleife du Nürburgring**, la « Grüne
+Hölle » de l'Eifel : **20,832 km**, **73 virages** (33 à gauche, 40 à droite),
+près de **300 m de dénivelé** entre le point bas de Breidscheid (320 m) et le
+sommet de la Hohe Acht (620 m), jusqu'à 18 % de montée après le Karussell et
+11 % de descente dans la Fuchsröhre. Le tour se court **dans le sens horaire**,
+du pont d'Antoniusbuche (kilomètre zéro) à la ligne d'arrivée de la
+Start-Ziel-Anlage — comme le vrai tour des 24 Heures.
+
+### Ce qui est fidèle
+
+- **L'enchaînement des virages.** Les 36 secteurs du jeu portent les noms réels,
+  dans l'ordre du tour : Antoniusbuche, Tiergarten, T13, Hohenrain, les trois
+  Hatzenbach, Hocheichen, Quiddelbacher Höhe, Flugplatz, Kottenborn,
+  Schwedenkreuz, Aremberg, Fuchsröhre, Adenauer Forst, Metzgesfeld, Kallenhard,
+  Spiegelkurve, Dreifach-Rechts, Wehrseifen, Breidscheid, Ex-Mühle,
+  Lauda-Links, Bergwerk, Kesselchen, Mutkurve, Steilstrecke, **Caracciola-
+  Karussell**, Hohe Acht, Hedwigshöhe, Wippermann, Eschbach, Brünnchen,
+  Eiskurve, Pflanzgarten, Stefan-Bellof-S, Schwalbenschwanz, Galgenkopf,
+  Döttinger Höhe, Start-Ziel.
+- **Le relief.** La piste monte et descend pour de vrai : la boucle de 600 m
+  porte le profil d'altitude réel du circuit (relevé kilomètre par kilomètre),
+  remis à l'échelle pour rester lisible — le HUD affiche l'altitude officielle
+  du point traversé (320 m à Breidscheid, 620 m à la Hohe Acht).
+- **Le tracé.** Le déport latéral de la piste n'est plus la sinusoïde des
+  villes : c'est l'intégrale de la courbure réelle du Ring (une cloche par
+  virage, angle et point kilométrique réels), refermée pour repasser exactement
+  sous le portique à chaque tour. Le Karussell (48°) devient le virage le plus
+  serré du jeu.
+- **La mini-carte** dessine la silhouette du circuit, relevée dans
+  OpenStreetMap (© les contributeurs d'OpenStreetMap, ODbL) : descente sud vers
+  Breidscheid puis épingle est du Karussell.
+- **Le décor** : forêt de l'Eifel, glissières et doubles glissières, vibreurs
+  rouge et blanc, trappes à graviers, postes de commissaires, pierres
+  kilométriques, panneaux blancs allemands (atlas dédié), pont d'Antoniusbuche,
+  pont et village de Breidscheid, croix du Schwedenkreuz (1638), mémorial Niki
+  Lauda, virole de béton du Karussell, tour de la Hohe Acht, talus spectateurs
+  de Brünnchen et de Pflanzgarten, tribunes de la Start-Ziel-Anlage.
+
+### Ce qui est adapté (et pourquoi)
+
+- **L'échelle.** Comme la C1 (14,8 km) tient dans une boucle de 600 m, le Ring
+  la rejoue au **1:35** : les repères kilométriques, les noms et l'ordre sont
+  réels, la longueur ne l'est pas. Le HUD affiche le kilomètre officiel.
+- **Les voies.** La piste fait **9,20 m** (les 8,40 m réels plus la marge
+  peinte) au lieu des 13,40 m d'une artère urbaine, et se partage en **quatre
+  voies dans le même sens** : un circuit permanent ne croise personne, donc
+  **aucun véhicule en face** (les voies de contresens sont vides, la police, les
+  bonus et les rivaux ne se placent que sur les voies de course).
+- **Le trafic** est celui d'une journée de tourisme : une voiture médicale, une
+  berline de police (les Touristenfahrten en voient) et une GT de passage —
+  jamais de camion-poubelle. Deux véhicules seulement, un par voie : sur une
+  piste étroite, un troisième condamne une voie et l'escouade du dernier tour
+  ne peut plus revenir sur le leader.
+- **Les virages serrés** sont élargis par rapport au réel (200 m au Karussell
+  deviennent 320 m) pour que leur rayon reste jouable au 1:35.
+- **Le tempo** est posé (116 BPM), plus proche du rythme d'un tour de huit
+  minutes que d'une course de rue.
+
+Le parcours se débloque **après la campagne mexicaine**, comme les autres : il
+s'ajoute à la fin de `CITY_RUSH_COURSES`, donc sans toucher aux sauvegardes
+existantes. Il porte les deux succès de collection (`vice-city-tour`,
+`vice-grand-slam`), dont les seuils passent de 7 à 8 parcours.
+
+### Où vit le code
+
+- `src/games/cityRushRules.js` — données du circuit (`CITY_RUSH_NORDSCHLEIFE`,
+  ses 36 `ringSector`, `NORDSCHLEIFE_ALTITUDE_KM`, `nordschleifeReadout`),
+  profil de piste (`CITY_RUSH_NORDSCHLEIFE_TURNS`,
+  `nordschleifeTrackOffset/Tangent/Yaw/Elevation/Grade/Pitch`,
+  `cityRushTrackProfile`), configuration des voies (`cityRushLaneConfig`)
+  et silhouette de mini-carte (`cityRushMinimapTrackShape`) ;
+- `src/games/nordschleifeStage.js` — le décor du Ring (piste, herbe,
+  glissières, vibreurs, graviers, panneaux allemands, ponts, village,
+  karussell, tour, tribunes) ;
+- `src/games/cityRushStage.js` — ruban de piste et décor fusionné pilotés par le
+  profil du parcours (`updateCurvedStrip`, `makeRoad`, `finishLoopGeometry`) ;
+- `src/games/cityRushStartLine.js` — gabarit de la zone de départ (portique,
+  tribunes, dalles) à l'échelle de la piste, texte au sol `START` ;
+- `src/games/ViceCityWorld.jsx` — aiguillage décor/route, voies du parcours,
+  trafic propre au parcours, HUD de route (`nordschleifeRouteHud`) ;
+- `src/games/ViceCityRushPage.jsx` + `src/games/cityRushTextures.js` — vignette,
+  plaque de route `NS · 20 832 km · SENS HORAIRE · V-MAX 300 km/h`, panneau du
+  portique `START · ZIEL` ;
+- `public/nordschleife-thumb.jpg` — vignette du circuit.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-smoke -- --city=nordschleife   # course complète sur le Ring
+npm run check:city-rush                                # règles et thèmes, Ring compris
+```
+
+Le smoke vérifie en plus, sur un parcours sans trafic en face, qu'**aucun choc
+frontal** ne s'est produit (et qu'un parcours qui a du trafic en face, lui, en
+produit bien un) : une voiture à contresens sur un circuit serait un vrai bogue.
+Comme le hasard décide du trafic et des bonus,
+`CITY_RUSH_SMOKE_SEED=31 npm run check:city-rush-smoke -- --city=nordschleife`
+rejoue exactement le même scénario.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 

@@ -38,6 +38,7 @@ import {
   CITY_RUSH_SPRINT_DISTANCE,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
+  NORDSCHLEIFE_RELIEF_M,
   CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
@@ -80,6 +81,7 @@ const CITY_THUMBNAILS = {
   paris: 'paris-thumb.jpg',
   london: 'london-thumb.jpg',
   'mexico-countryside': 'mexico-countryside-thumb.jpg',
+  nordschleife: 'nordschleife-thumb.jpg',
 };
 const CAR_THUMBNAILS = {
   'city-hatch': 'car-mistral-14.jpg',
@@ -1111,6 +1113,13 @@ export default function ViceCityRushPage() {
                   {hud.route.cover?.kind === 'cut' && (
                     <span className="city-rush-route-cover is-cut">TRANCHÉE · {hud.route.cover.name}</span>
                   )}
+                  {/* Circuit permanent : l'altitude et la surface du point
+                      traversé remplacent la couverture des voies urbaines. */}
+                  {hud.route.altitudeM !== undefined && (
+                    <span className="city-rush-route-cover is-altitude">
+                      {hud.route.tag || `ALTITUDE · ${hud.route.altitudeM} M`}
+                    </span>
+                  )}
                   {hud.route.next && (
                     <span className="city-rush-route-next">
                       <i aria-hidden="true">{hud.route.next.sign?.arrow || '↑'}</i>
@@ -1296,7 +1305,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, ${formatSprintSeconds(sprintCheckpointBonus)} s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : city.raceway ? ` — chaque boucle rejoue un trente-cinquième du tour réel de ${city.route.lengthKm.toLocaleString('fr-FR')} km, du pont d'Antoniusbuche (km 0) à la Start-Ziel-Anlage, ${city.route.corners} virages et ${NORDSCHLEIFE_RELIEF_M} m de dénivelé` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, ${formatSprintSeconds(sprintCheckpointBonus)} s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
                       {CITY_RUSH_COURSES.map((option, index) => (
@@ -1332,7 +1341,7 @@ export default function ViceCityRushPage() {
                           <em className={`city-rush-city-route${option.route ? '' : ' is-ghost'}`} aria-hidden={option.route ? undefined : 'true'}>
                             {option.route ? (
                               <>
-                                <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLimit} {option.route.speedUnit || 'km/h'}
+                                <i>{option.route.marker}</i> {option.route.lengthKm.toLocaleString('fr-FR')} km · {option.route.direction} · {option.route.speedLabel ? `${option.route.speedLabel} ` : ''}{option.route.speedLimit} {option.route.speedUnit || 'km/h'}
                               </>
                             ) : (
                               <>

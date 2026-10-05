@@ -518,7 +518,7 @@ const MIRAGE_CUPS = ['desert', 'winds', 'worldtour', 'legends', 'sbr'];
 check('le seuil Vitrine complète couvre toutes les coupes', ACHIEVEMENTS.find(({ id }) => id === 'mirage-cup-collection').target, MIRAGE_CUPS.length);
 MIRAGE_CUPS.forEach((cupId) => record(play('mirage_cup_won', { cupId })));
 
-const VICE_CITIES = ['vice-city', 'new-york', 'tokyo', 'paris', 'london', 'route-66', 'mexico-countryside'];
+const VICE_CITIES = ['vice-city', 'new-york', 'tokyo', 'paris', 'london', 'route-66', 'mexico-countryside', 'nordschleife'];
 check('le seuil Tour du monde couvre toutes les villes', ACHIEVEMENTS.find(({ id }) => id === 'vice-city-tour').target, VICE_CITIES.length);
 VICE_CITIES.forEach((city, index) => {
   record(play('vice_city_run', { city, mode: ['circuit', 'sprint', 'pursuit'][index % 3], rank: 1, score: 2000 + index * 600 }));

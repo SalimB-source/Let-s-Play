@@ -43,6 +43,12 @@ export const CITY_RUSH_PLAYER_SPEED = 35; // m/s : rythme de course relevé à e
 export const CITY_RUSH_LANE_WIDTH = 2.1;
 export const CITY_RUSH_ROAD_WIDTH = 13.4;
 export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
+// Piste d'un circuit permanent (Nürburgring Nordschleife) : 9,20 m de bitume —
+// les 8,40 m réels du Ring plus 0,40 m de marge peinte de chaque côté — au lieu
+// des 13,40 m d'une artère urbaine. Quatre voies de 2,10 m s'y partagent le
+// sens unique, exactement la largeur d'une voiture entre deux voies.
+export const CITY_RUSH_RACEWAY_ROAD_WIDTH = 9.2;
+export const CITY_RUSH_RACEWAY_ROAD_HALF = CITY_RUSH_RACEWAY_ROAD_WIDTH / 2;
 // Six voies au total : trois en sens inverse à gauche, trois dans le sens de
 // la course à droite. Les voies ajoutées restent au même espacement de 2,1 m.
 export const CITY_RUSH_LANE_X = Object.freeze([-5.25, -3.15, -1.05, 1.05, 3.15, 5.25]);
@@ -739,9 +745,15 @@ export const CITY_RUSH_SHUTO_C1 = Object.freeze({
   ]),
 });
 
-/** La route réelle d'une ville : seule la C1 (Tokyo) en a une pour l'instant. */
+/**
+ * La route réelle d'une ville : Tokyo roule sur la C1 de la Shuto, le
+ * Nürburgring sur la Nordschleife. Les autres parcours n'ont pas encore de
+ * tracé officiel.
+ */
 export function cityRushRouteFor(cityId) {
-  return cityId === 'tokyo' ? CITY_RUSH_SHUTO_C1 : null;
+  if (cityId === 'tokyo') return CITY_RUSH_SHUTO_C1;
+  if (cityId === 'nordschleife') return CITY_RUSH_NORDSCHLEIFE;
+  return null;
 }
 
 /** Secteur de la C1 couvrant une position sur le tour (0 → 1). */
@@ -821,6 +833,458 @@ export function shutoC1Readout(lapProgress, route = CITY_RUSH_SHUTO_C1) {
   };
 }
 
+// ── Nürburgring Nordschleife ────────────────────────────────────────────────
+// La « Grüne Hölle » de l'Eifel : 20,832 km, 73 virages (33 à gauche, 40 à
+// droite, sans compter les courbes intermédiaires), près de 300 m de dénivelé
+// entre le point bas de Breidscheid (320 m) et le sommet de la Hohe Acht
+// (620 m), des pentes jusqu'à 18 % en montée et 11 % en descente. Le tour du
+// jeu reste une boucle de 600 m : chaque boucle rejoue donc les 20,832 km à
+// l'échelle 1:35, dans l'ordre réel, sens horaire, du pont d'Antoniusbuche
+// (kilomètre zéro du tour officiel) à la ligne d'arrivée de la Start-Ziel-Anlage.
+export const NORDSCHLEIFE_LENGTH_KM = 20.832;
+export const NORDSCHLEIFE_CORNERS = 73; // officiel : 33 à gauche, 40 à droite
+export const NORDSCHLEIFE_LEFT_CORNERS = 33;
+export const NORDSCHLEIFE_RIGHT_CORNERS = 40;
+export const NORDSCHLEIFE_RELIEF_M = 300; // dénivelé total du tour
+export const NORDSCHLEIFE_LOW_M = 320; // Breidscheid, point le plus bas
+export const NORDSCHLEIFE_HIGH_M = 620; // Hohe Acht, point le plus haut
+export const NORDSCHLEIFE_MAX_UP = 18; // % : montée du Karussell à la Hohe Acht
+export const NORDSCHLEIFE_MAX_DOWN = 11; // % : descente de la Fuchsröhre
+export const NORDSCHLEIFE_OPENED = 1927;
+
+/**
+ * Position sur le tour (0 → 1) d'un point kilométrique officiel du Ring.
+ * Le kilométrage croît avec la course (contrairement à la C1 de Tokyo, qui se
+ * parcourt en 内回り et dont les bornes décroissent).
+ */
+export function nordschleifeAt(km, lengthKm = NORDSCHLEIFE_LENGTH_KM) {
+  const safeLength = Number.isFinite(Number(lengthKm)) && Number(lengthKm) > 0 ? Number(lengthKm) : NORDSCHLEIFE_LENGTH_KM;
+  const safeKm = Number.isFinite(Number(km)) ? Number(km) : 0;
+  return ((safeKm % safeLength) + safeLength) % safeLength / safeLength;
+}
+
+/** Point kilométrique officiel (depuis Antoniusbuche) d'une position du tour. */
+export function nordschleifeKmAt(lapProgress, lengthKm = NORDSCHLEIFE_LENGTH_KM) {
+  const safeLength = Number.isFinite(Number(lengthKm)) && Number(lengthKm) > 0 ? Number(lengthKm) : NORDSCHLEIFE_LENGTH_KM;
+  const progress = clamp01(Number(lapProgress) || 0);
+  return Number((safeLength * progress).toFixed(1));
+}
+
+// Profil d'altitude approché du tour, ancré sur les points relevés au bord de
+// la piste (point bas de Breidscheid 320 m, sommet de la Hohe Acht 620 m,
+// plateau du Hatzenbach, cuvette de la Fuchsröhre, creux du Kesselchen). Il
+// n'alimente que l'affichage : le relief jouable, lui, reste celui du moteur.
+export const NORDSCHLEIFE_ALTITUDE_KM = Object.freeze([
+  [0.0, 570], [0.65, 575], [1.4, 580], [2.2, 620], [2.7, 560],
+  [3.2, 570], [3.6, 600], [4.2, 600], [5.2, 535], [5.8, 460],
+  [6.3, 420], [6.9, 400], [7.1, 430], [7.7, 455], [8.2, 470],
+  [8.75, 455], [9.0, 430], [9.35, 360], [9.7, 320], [9.95, 335],
+  [10.3, 380], [10.65, 420], [11.2, 430], [11.6, 395], [12.1, 450],
+  [12.6, 470], [13.1, 500], [13.3, 520], [13.45, 540], [13.6, 560],
+  [13.85, 590], [14.3, 620], [14.85, 590], [15.15, 575], [15.55, 565],
+  [16.05, 555], [16.45, 545], [16.95, 525], [17.25, 520], [17.6, 505],
+  [18.1, 480], [18.75, 450], [19.3, 460], [20.1, 520], [20.55, 560],
+  [20.832, 570],
+]);
+
+/** Altitude (m) du circuit à une position du tour, interpolée entre les repères. */
+export function nordschleifeAltitudeAt(lapProgress, lengthKm = NORDSCHLEIFE_LENGTH_KM) {
+  const safeLength = Number.isFinite(Number(lengthKm)) && Number(lengthKm) > 0 ? Number(lengthKm) : NORDSCHLEIFE_LENGTH_KM;
+  const progress = clamp01(Number(lapProgress) || 0);
+  const km = ((safeLength * progress) % safeLength + safeLength) % safeLength;
+  const table = NORDSCHLEIFE_ALTITUDE_KM;
+  if (km <= table[0][0]) return table[0][1];
+  for (let index = 1; index < table.length; index += 1) {
+    const [previousKm, previousAltitude] = table[index - 1];
+    const [nextKm, nextAltitude] = table[index];
+    if (km <= nextKm) {
+      const t = (km - previousKm) / (nextKm - previousKm || 1);
+      return Math.round(previousAltitude + (nextAltitude - previousAltitude) * t);
+    }
+  }
+  return table[table.length - 1][1];
+}
+
+/**
+ * Secteur d'un parcours à secteurs, pour n'importe quelle route officielle :
+ * le dernier secteur se referme sur 1 pour que la ligne d'arrivée lui
+ * appartienne encore.
+ */
+export function cityRushRouteSectorAt(lapProgress, route) {
+  const progress = clamp01(Number(lapProgress) || 0);
+  const sectors = route?.sectors || [];
+  return sectors.find((sector) => progress >= sector.from && (progress < sector.to || sector.to <= sector.from))
+    || sectors[sectors.length - 1]
+    || null;
+}
+
+/**
+ * Prochaine annonce au tableau de bord : le secteur signé le plus proche devant
+ * la voiture, avec sa distance réelle en mètres (comme les panneaux d'approche
+ * de la Shuto ou les panneaux blancs du Ring).
+ */
+export function cityRushRouteNextSign(lapProgress, route) {
+  const progress = clamp01(Number(lapProgress) || 0);
+  const sectors = route?.sectors || [];
+  let best = null;
+  for (const sector of sectors) {
+    if (!sector.sign) continue;
+    const ahead = sector.from >= progress ? sector.from - progress : sector.from + 1 - progress;
+    if (ahead < 1e-6) continue;
+    if (!best || ahead < best.ahead) best = { sector, ahead };
+  }
+  if (!best) return null;
+  return {
+    id: best.sector.id,
+    name: best.sector.name,
+    romaji: best.sector.romaji,
+    kind: best.sector.kind,
+    km: best.sector.km,
+    side: best.sector.side || 0,
+    ahead: best.ahead,
+    aheadM: Math.round(best.ahead * (route.lengthKm || 1) * 1000),
+    sign: best.sector.sign,
+  };
+}
+
+/** Lecture complète du tableau de bord du Nürburgring Nordschleife. */
+export function nordschleifeReadout(lapProgress, route = CITY_RUSH_NORDSCHLEIFE) {
+  const sector = cityRushRouteSectorAt(lapProgress, route);
+  const surface = sector?.banked ? 'concrete' : sector?.kind === 'summit' || sector?.crest ? 'asphalte crête' : 'asphalte';
+  return {
+    km: nordschleifeKmAt(lapProgress, route.lengthKm),
+    marker: route.marker,
+    name: route.name,
+    direction: route.direction,
+    directionRomaji: route.directionRomaji,
+    speedLimit: route.speedLimit,
+    altitudeM: nordschleifeAltitudeAt(lapProgress, route.lengthKm),
+    surface,
+    sector: sector
+      ? { id: sector.id, name: sector.name, romaji: sector.romaji, kind: sector.kind, note: sector.note || '', side: sector.side || 0 }
+      : null,
+    next: cityRushRouteNextSign(lapProgress, route),
+  };
+}
+
+const ringSector = (id, fromKm, toKm, data) => Object.freeze({
+  id,
+  km: fromKm,
+  kmEnd: toKm,
+  from: nordschleifeAt(fromKm),
+  to: nordschleifeAt(toKm),
+  ...data,
+});
+
+export const CITY_RUSH_NORDSCHLEIFE = Object.freeze({
+  id: 'nordschleife',
+  marker: 'NS',
+  name: 'NÜRBURGRING NORDSCHLEIFE',
+  // Les noms de la « Grüne Hölle » sont ceux des lieux-dits de l'Eifel : ils ne
+  // se traduisent pas. Le sous-titre donne en revanche le rôle du secteur dans
+  // le tour, comme le panneau blanc que l'on croise au bord de la piste.
+  romaji: 'DIE GRÜNE HÖLLE',
+  direction: 'SENS HORAIRE',
+  directionRomaji: 'CLOCKWISE',
+  kmDirection: 'increase',
+  lengthKm: NORDSCHLEIFE_LENGTH_KM,
+  corners: NORDSCHLEIFE_CORNERS,
+  // Circuit permanent : aucune limitation, mais une vitesse de pointe connue
+  // sur la Döttinger Höhe — c'est elle que la plaque de route affiche.
+  speedLimit: 300,
+  speedUnit: 'km/h',
+  speedLabel: 'V-MAX',
+  opened: NORDSCHLEIFE_OPENED,
+  origin: Object.freeze({ name: 'ANTONIUSBUCHE', romaji: 'KM 0 · BRIDGE TO GANTRY', note: 'le pont sur la piste, kilomètre zéro du tour' }),
+  // Trente-cinq secteurs contigus, dans l'ordre réel de la course : leur union
+  // couvre exactement un tour, si bien que le décor comme le HUD savent où l'on
+  // se trouve sans ambiguïté. `side` est le côté réel du repère (+1 à droite,
+  // -1 à gauche) pour un pilote qui tourne dans le sens horaire.
+  sectors: Object.freeze([
+    ringSector('antoniusbuche', 0, 0.65, {
+      kind: 'straight', name: 'Antoniusbuche', romaji: 'KURVE 1 · 250 KM/H', side: 1,
+      note: 'Kilomètre zéro, sous le pont de la route d\'Adenau ; la ligne du chrono « Bridge to Gantry ».',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Antoniusbuche km 0', 'Kurve 1 · 250 km/h']) }),
+      bridge: Object.freeze({ name: 'Antoniusbuche-Brücke', spanM: 14 }),
+    }),
+    ringSector('tiergarten', 0.65, 1.4, {
+      kind: 'straight', name: 'Tiergarten', romaji: 'KURVE 2–4 · START-ZIEL', side: -1,
+      note: 'La longue ligne droite d\'arrivée et sa tribune T13, la Start-Ziel-Anlage historique.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Tiergarten', 'Kurven 2–4']) }),
+      startArea: true,
+    }),
+    ringSector('hohenrain', 1.4, 1.95, {
+      kind: 'corner', name: 'Hohenrain', romaji: 'CHICANE · 90 KM/H', side: 1,
+      note: 'La chicane qui ramène les voitures sur la boucle : deux appuis violents avant Hatzenbach.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Hohenrain', 'Chicane']), hazard: true }),
+      corner: Object.freeze({ direction: 'chicane', number: 4 }),
+    }),
+    ringSector('hatzenbach', 1.95, 3.0, {
+      kind: 'corner', name: 'Hatzenbach', romaji: 'KURVEN 5–9 · LE RYTHME', side: -1,
+      note: 'Le premier vrai enchaînement du Ring : gauche, droite, gauche, droite — celui qui donne le tour.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Hatzenbach', 'Kurven 5–9']) }),
+      corner: Object.freeze({ direction: 'complex', number: 6 }),
+    }),
+    ringSector('hocheichen', 3.0, 3.4, {
+      kind: 'corner', name: 'Hocheichen', romaji: 'KURVE 10 · À FOND', side: -1,
+      note: 'Virage à gauche rapide, sous les chênes qui ont donné leur nom au secteur.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Hocheichen', 'Kurve 10']) }),
+      corner: Object.freeze({ direction: 'left', number: 10 }),
+    }),
+    ringSector('quiddelbacher-hoehe', 3.4, 3.9, {
+      kind: 'crest', name: 'Quiddelbacher Höhe', romaji: 'KRUPPE · LE PONT', side: 1,
+      note: 'La crête : la piste franchit un pont, plonge et remonte — les roues avant décollent.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Quiddelbacher Höhe', 'Kruppe']), hazard: true }),
+      crest: true,
+    }),
+    ringSector('flugplatz', 3.9, 4.7, {
+      kind: 'crest', name: 'Flugplatz', romaji: 'KURVE 11 · DÉCOLLAGE', side: -1,
+      note: 'L\'ancien terrain des planeurs, à gauche : le saut le plus célèbre du Ring, double apex à droite.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Flugplatz', 'Kurve 11']) }),
+      corner: Object.freeze({ direction: 'right', number: 11 }), landmarkSide: -1,
+      airfield: true,
+    }),
+    ringSector('kottenborn', 4.7, 5.05, {
+      kind: 'corner', name: 'Kottenborn', romaji: 'KURVE 12 · GAUCHE', side: 1,
+      note: 'Bosse à gauche, tout en haut du plateau, avant la descente du Schwedenkreuz.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Kottenborn', 'Kurve 12']) }),
+      corner: Object.freeze({ direction: 'left', number: 12 }),
+    }),
+    ringSector('schwedenkreuz', 5.05, 5.6, {
+      kind: 'corner', name: 'Schwedenkreuz', romaji: 'KURVE 13 · 240 KM/H', side: -1,
+      note: 'Gauche rapide en descente ; la croix de pierre de 1638 se dresse encore à droite de la piste.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Schwedenkreuz', 'Kurve 13']) }),
+      corner: Object.freeze({ direction: 'left', number: 13 }),
+      landmark: Object.freeze({ id: 'schwedenkreuz', name: 'SCHWEDENKREUZ', romaji: '1638', side: 1, km: 5.2 }),
+      cross: true,
+    }),
+    ringSector('aremberg', 5.6, 6.1, {
+      kind: 'corner', name: 'Aremberg', romaji: 'KURVE 14 · 90° DROITE', side: -1,
+      note: 'Freinage le plus violent du début de tour, puis une droite en appui : la sortie compte plus que l\'entrée.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Aremberg', 'Kurve 14']), hazard: true }),
+      corner: Object.freeze({ direction: 'right', number: 14 }),
+      landmark: Object.freeze({ id: 'aremberg', name: 'AREMBERG', romaji: 'KURVE 14', side: 1, km: 5.8 }),
+    }),
+    ringSector('fuchsroehre', 6.1, 6.6, {
+      kind: 'descent', name: 'Fuchsröhre', romaji: '−11 % · COMPRESSION', side: 1,
+      note: 'Le « terrier du renard » : 11 % de descente à fond, puis la compression au fond du creux.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Fuchsröhre', 'Kurve 15']), hazard: true }),
+      corner: Object.freeze({ direction: 'left', number: 15 }),
+      landmark: Object.freeze({ id: 'fuchsroehre', name: 'FUCHSRÖHRE', romaji: '−11 %', side: -1, km: 6.2 }),
+    }),
+    ringSector('adenauer-forst', 6.6, 7.35, {
+      kind: 'corner', name: 'Adenauer Forst', romaji: 'KURVEN 16–17 · PIÈGE', side: -1,
+      note: 'Gauche puis droite serrée en forêt : le piège favori des spectateurs, à la sortie du creux.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Adenauer Forst', 'Kurven 16–17']), hazard: true }),
+      corner: Object.freeze({ direction: 'right-left', number: 16 }),
+    }),
+    ringSector('metzgesfeld', 7.35, 7.9, {
+      kind: 'corner', name: 'Metzgesfeld', romaji: 'KURVE 18 · GAUCHE', side: 1,
+      note: 'Virage aveugle à gauche : la piste se dérobe derrière la crête.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Metzgesfeld', 'Kurve 18']) }),
+      corner: Object.freeze({ direction: 'left', number: 18 }),
+    }),
+    ringSector('kallenhard', 7.9, 8.35, {
+      kind: 'corner', name: 'Kallenhard', romaji: 'KURVE 19 · DROITE', side: -1,
+      note: 'Droite en descente vers la vallée du Wehrseifen.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Kallenhard', 'Kurve 19']) }),
+      corner: Object.freeze({ direction: 'right', number: 19 }),
+    }),
+    ringSector('spiegelkurve', 8.35, 8.75, {
+      kind: 'corner', name: 'Spiegelkurve', romaji: 'DREIFACH-RECHTS', side: 1,
+      note: 'Gauche puis trois droites qui se referment : le « Miss-Hit-Miss » des pilotes britanniques.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Spiegelkurve', 'Dreifach-Rechts']) }),
+      corner: Object.freeze({ direction: 'left-rights', number: 20 }),
+    }),
+    ringSector('wehrseifen', 8.75, 9.35, {
+      kind: 'corner', name: 'Wehrseifen', romaji: 'KURVE 21 · ÉPINGLE', side: -1,
+      note: 'Épingle à gauche la plus lente du secteur nord, en descente, entre deux murs.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Wehrseifen', 'Kurve 21']), hazard: true }),
+      corner: Object.freeze({ direction: 'left', number: 21 }),
+    }),
+    ringSector('breidscheid', 9.35, 9.95, {
+      kind: 'low', name: 'Breidscheid', romaji: 'POINT BAS · 320 M', side: 1,
+      note: 'Le village et le point le plus bas du circuit : le pont de la L 92 enjambe la piste.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Breidscheid 320 m', 'Tiefster Punkt']) }),
+      gate: true, village: true,
+      bridge: Object.freeze({ name: 'Breidscheid-Brücke', spanM: 16 }),
+    }),
+    ringSector('exmuehle', 9.95, 10.3, {
+      kind: 'corner', name: 'Ex-Mühle', romaji: 'KURVE 22 · RAMPE', side: -1,
+      note: 'Rampe raide puis droite : l\'ancien moulin d\'Adenau marque la remontée vers le nord.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Ex-Mühle', 'Kurve 22']) }),
+      corner: Object.freeze({ direction: 'right', number: 22 }),
+    }),
+    ringSector('lauda-links', 10.3, 10.65, {
+      kind: 'corner', name: 'Lauda-Links', romaji: 'KURVE 23 · 1976', side: 1,
+      note: 'Le gauche où Niki Lauda a brûlé en 1976 ; le dernier virage de la Formule 1 sur le Ring.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Lauda-Links', 'Kurve 23']) }),
+      corner: Object.freeze({ direction: 'left', number: 23 }),
+      landmark: Object.freeze({ id: 'lauda', name: 'NIKI LAUDA 1976', romaji: 'KURVE 23', side: 1, km: 10.4 }),
+    }),
+    ringSector('bergwerk', 10.65, 11.2, {
+      kind: 'corner', name: 'Bergwerk', romaji: 'KURVE 24 · DROITE', side: 1,
+      note: 'Droite qui se referme en montée : la vieille mine de plomb et d\'argent d\'où vient le nom.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Bergwerk', 'Kurve 24']), hazard: true }),
+      corner: Object.freeze({ direction: 'right', number: 24 }),
+    }),
+    ringSector('kesselchen', 11.2, 12.1, {
+      kind: 'climb', name: 'Kesselchen', romaji: '18 % · GAUCHE RAPIDE', side: -1,
+      note: 'La cuvette puis l\'interminable montée à gauche : 18 %, la pente la plus forte du circuit.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Kesselchen', '18 % · Kurve 25']) }),
+      corner: Object.freeze({ direction: 'left', number: 25 }), climb: true,
+    }),
+    ringSector('mutkurve', 12.1, 12.6, {
+      kind: 'corner', name: 'Mutkurve', romaji: 'KURVE 26 · LE COURAGE', side: -1,
+      note: 'Le « virage du courage » : gauche plein d\'élan tout en haut de la montée.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Mutkurve', 'Kurve 26']) }),
+      corner: Object.freeze({ direction: 'left', number: 26 }),
+    }),
+    ringSector('klostertal', 12.6, 13.1, {
+      kind: 'corner', name: 'Klostertal', romaji: 'KURVE 27 · DROITE', side: 1,
+      note: 'Longue droite rapide dans le vallon du couvent, avant la Steilstrecke.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Klostertal', 'Kurve 27']) }),
+      corner: Object.freeze({ direction: 'right', number: 27 }),
+    }),
+    ringSector('karussell', 13.1, 13.85, {
+      kind: 'banked', name: 'Caracciola-Karussell', romaji: 'KURVE 28 · VIROLE', side: -1,
+      note: 'L\'anneau de béton incliné à gauche, dalles et vibreurs : le virage le plus célèbre du sport automobile.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Karussell', 'Kurve 28']), hazard: true }),
+      corner: Object.freeze({ direction: 'left', number: 28 }),
+      landmark: Object.freeze({ id: 'karussell', name: 'KARUSSELL', romaji: 'KURVE 28', side: -1, km: 13.5 }),
+      banked: true,
+    }),
+    ringSector('hohe-acht', 13.85, 14.5, {
+      kind: 'summit', name: 'Hohe Acht', romaji: 'SOMMET · 620 M', side: 1,
+      note: 'Le point culminant du circuit : la tour de l\'Eifel se voit de la piste.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Hohe Acht 620 m', 'Höchster Punkt']) }),
+      corner: Object.freeze({ direction: 'right', number: 29 }),
+      landmark: Object.freeze({ id: 'hohe-acht', name: 'HOHE ACHT 620 M', romaji: 'HÖCHSTER PUNKT', side: 1, km: 14.3 }),
+      summit: true, tower: true,
+    }),
+    ringSector('hedwigshoehe', 14.5, 14.95, {
+      kind: 'corner', name: 'Hedwigshöhe', romaji: 'KURVE 30 · DROITE', side: -1,
+      note: 'Descente rapide vers l\'Eschbach, entre les sapins serrés.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Hedwigshöhe', 'Kurve 30']) }),
+      corner: Object.freeze({ direction: 'right', number: 30 }),
+    }),
+    ringSector('wippermann', 14.95, 15.35, {
+      kind: 'corner', name: 'Wippermann', romaji: 'KURVE 31 · BOSSES', side: -1,
+      note: 'Ses bosses faisaient « basculer » les voitures ; c\'est de là que vient son nom.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Wippermann', 'Kurve 31']) }),
+      corner: Object.freeze({ direction: 'right', number: 31 }),
+    }),
+    ringSector('eschbach', 15.35, 15.75, {
+      kind: 'corner', name: 'Eschbach', romaji: 'KURVE 32 · PONT', side: 1,
+      note: 'Gauche sous un pont, sur le ruisseau de l\'Eschbach.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Eschbach', 'Kurve 32']) }),
+      corner: Object.freeze({ direction: 'left', number: 32 }),
+      bridge: Object.freeze({ name: 'Eschbach-Brücke', spanM: 10 }),
+    }),
+    ringSector('bruennchen', 15.75, 16.55, {
+      kind: 'corner', name: 'Brünnchen', romaji: 'KURVEN 33–34 · YOUTUBE', side: 1,
+      note: 'Le « petit puits » : double droite en descente devant les talus où se massent les caméras.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Brünnchen', 'Kurven 33–34']) }),
+      corner: Object.freeze({ direction: 'right', number: 33 }),
+    }),
+    ringSector('eiskurve', 16.55, 16.95, {
+      kind: 'corner', name: 'Eiskurve', romaji: 'KURVE 35 · GAUCHE', side: -1,
+      note: 'Le virage de glace : à l\'ombre des sapins, il gèle avant tout le reste du circuit.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Eiskurve', 'Kurve 35']) }),
+      corner: Object.freeze({ direction: 'left', number: 35 }),
+    }),
+    ringSector('pflanzgarten', 16.95, 17.6, {
+      kind: 'jump', name: 'Pflanzgarten', romaji: 'SPRUNGHÜGEL · LES SAUTS', side: 1,
+      note: 'Les jardins du château : deux bosses où les voitures décollent, puis la double droite rapide.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Pflanzgarten', 'Kurven 36–37']), hazard: true }),
+      corner: Object.freeze({ direction: 'right', number: 36 }), jumps: true,
+    }),
+    ringSector('stefan-bellof-s', 17.6, 18.1, {
+      kind: 'corner', name: 'Stefan-Bellof-S', romaji: 'S DU RECORD · 1983', side: -1,
+      note: 'Le gauche-droite où Stefan Bellof a signé son tour de 6:11 en 1983.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Stefan-Bellof-S', 'Kurve 38']) }),
+      corner: Object.freeze({ direction: 'left', number: 38 }),
+    }),
+    ringSector('schwalbenschwanz', 18.1, 18.75, {
+      kind: 'banked', name: 'Schwalbenschwanz', romaji: 'KURVE 39 · QUEUE D\'ARONDE', side: -1,
+      note: 'La queue d\'aronde vue du ciel : gauche serrée puis le petit Karussell de béton.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Schwalbenschwanz', 'Kurven 39–40']), hazard: true }),
+      corner: Object.freeze({ direction: 'left', number: 39 }),
+      landmark: Object.freeze({ id: 'schwalbenschwanz', name: 'SCHWALBENSCHWANZ', romaji: 'KURVE 39', side: -1, km: 18.3 }),
+      banked: true,
+    }),
+    ringSector('galgenkopf', 18.75, 19.3, {
+      kind: 'corner', name: 'Galgenkopf', romaji: 'KURVE 41 · 200 KM/H', side: -1,
+      note: 'La tête de potence : droite rapide en descente, dernière courbe avant la longue ligne droite.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Galgenkopf', 'Kurve 41']) }),
+      corner: Object.freeze({ direction: 'right', number: 41 }),
+    }),
+    ringSector('doettinger-hoehe', 19.3, 20.55, {
+      kind: 'straight', name: 'Döttinger Höhe', romaji: '2 135 M · 300 KM/H', side: 1,
+      note: 'La plus longue ligne droite du circuit : le moteur décide, la vitesse de pointe parle.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Döttinger Höhe', '2 135 m']) }),
+      gantry: true, straight: true,
+    }),
+    ringSector('start-ziel', 20.55, 20.832, {
+      kind: 'straight', name: 'Start-Ziel', romaji: 'KURVE 42 · ARRIVÉE', side: -1,
+      note: 'Retour sous le pont d\'Antoniusbuche : la ligne d\'arrivée de la Start-Ziel-Anlage.',
+      sign: Object.freeze({ route: 'NS', lines: Object.freeze(['Start und Ziel', 'Kurve 42']) }),
+      startArea: true,
+    }),
+  ]),
+  // Tracé de mini-carte : 42 repères relevés dans OpenStreetMap (© les
+  // contributeurs d'OpenStreetMap, ODbL), dans l'ordre du tour. Les points sont
+  // donnés en kilomètres relatifs au centre de la boucle (x vers l'est, y vers
+  // le sud, comme à l'écran) — comme le contour de la C1 de Tokyo. La polyligne
+  // est plus courte que les 20,832 km réels : elle relie les seuls repères
+  // nommés, sans les courbes intermédiaires.
+  outlineKm: Object.freeze([
+    [-0.09, 2.09], // km 0 · Antoniusbuche, pont sur la piste
+    [-0.54, 2.47], // Tiergarten
+    [-0.99, 2.78], // T13 · Start-Ziel-Anlage
+    [-1.35, 2.76], // Hohenrain, la chicane
+    [-1.77, 2.70], // Hatzenbach
+    [-2.00, 2.58], // Hatzenbach · gauche
+    [-2.21, 2.44], // Hocheichen
+    [-2.57, 2.14], // Quiddelbacher Höhe, le pont
+    [-2.68, 1.67], // Flugplatz
+    [-2.83, 1.01], // Schwedenkreuz
+    [-3.05, 0.59], // Aremberg, la pointe ouest
+    [-2.68, 0.18], // Fuchsröhre
+    [-2.31, -0.32], // Adenauer Forst
+    [-2.05, -0.81], // Metzgesfeld
+    [-2.05, -1.22], // Kallenhard
+    [-1.97, -1.43], // Spiegelkurve
+    [-1.80, -1.57], // Dreifach-Rechts
+    [-1.51, -1.51], // Wehrseifen
+    [-1.26, -1.51], // Breidscheid, point bas
+    [-1.01, -1.55], // Ex-Mühle
+    [-0.68, -1.83], // Lauda-Links
+    [-0.26, -1.81], // Bergwerk
+    [0.60, -1.15], // Kesselchen
+    [1.14, -1.05], // Mutkurve
+    [1.46, -1.18], // Klostertal
+    [1.63, -1.09], // Steilstrecke
+    [1.56, -0.95], // Caracciola-Karussell
+    [1.76, -1.04], // sortie du Karussell
+    [1.99, -1.24], // Hohe Acht, point haut
+    [2.22, -1.30], // Hedwigshöhe
+    [2.46, -1.43], // Wippermann
+    [2.64, -1.31], // Eschbach
+    [2.78, -1.04], // Brünnchen
+    [2.84, -0.74], // Eiskurve
+    [2.68, -0.58], // Pflanzgarten
+    [2.46, -0.23], // Sprunghügel
+    [2.22, 0.18], // Stefan-Bellof-S
+    [1.97, 0.39], // Schwalbenschwanz
+    [1.57, 0.52], // Kleines Karussell
+    [1.27, 0.61], // Galgenkopf
+    [1.46, 0.95], // Döttinger Höhe
+    [1.00, 1.38], // Döttinger Höhe · 1 000 m
+    [0.34, 1.82], // Döttinger Höhe · Hohenrain 500 m
+  ]),
+});
+
 // Tracé réel de l'anneau, en kilomètres relatifs au centre de la boucle
 // (x vers l'est, y vers le sud, comme à l'écran) : les seize points suivent
 // l'ordre de la course en 内回り et reproduisent l'œuf dissymétrique de la C1 —
@@ -896,7 +1360,65 @@ function shutoOutline() {
  * la Route 66 dessine son axe Chicago → Santa Monica en grand ruban ouest.
  * Les autres villes gardent la boucle générique de `cityRushMinimapPoint`.
  */
+/**
+ * Forme de mini-carte bâtie sur une polyligne fermée, en kilomètres relatifs au
+ * centre du tracé : chaque point porte sa position, la longueur cumulée sert à
+ * retrouver un point par interpolation et `at()` fournit la position comme la
+ * tangente, exactement comme la boucle générique.
+ */
+function polylineTrackShape(id, points) {
+  const cumulative = [0];
+  for (let index = 1; index <= points.length; index += 1) {
+    const previous = points[index - 1];
+    const next = points[index % points.length];
+    cumulative.push(cumulative[index - 1] + Math.hypot(next[0] - previous[0], next[1] - previous[1]));
+  }
+  const total = cumulative[points.length];
+  return {
+    id,
+    total,
+    at(progress) {
+      const wrapped = ((Number(progress) || 0) % 1 + 1) % 1;
+      const target = wrapped * total;
+      let low = 0;
+      let high = cumulative.length - 1;
+      while (low + 1 < high) {
+        const middle = (low + high) >> 1;
+        if (cumulative[middle] <= target) low = middle;
+        else high = middle;
+      }
+      const span = cumulative[low + 1] - cumulative[low] || 1;
+      const t = (target - cumulative[low]) / span;
+      const a = points[low % points.length];
+      const b = points[(low + 1) % points.length];
+      const norm = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return {
+        centerX: a[0] + (b[0] - a[0]) * t,
+        centerY: a[1] + (b[1] - a[1]) * t,
+        tangentX: (b[0] - a[0]) / norm,
+        tangentY: (b[1] - a[1]) / norm,
+      };
+    },
+    path(steps = 120) {
+      const count = Math.max(24, Math.trunc(Number(steps) || 120));
+      const commands = [];
+      for (let index = 0; index < count; index += 1) {
+        const point = points[Math.floor((index / count) * points.length) % points.length];
+        commands.push(`${index === 0 ? 'M' : 'L'} ${point[0].toFixed(2)} ${point[1].toFixed(2)}`);
+      }
+      commands.push('Z');
+      return commands.join(' ');
+    },
+  };
+}
+
 export function cityRushMinimapTrackShape(cityId) {
+  if (cityId === 'nordschleife') {
+    // Le tracé réel du Ring, relevé dans OpenStreetMap (© les contributeurs
+    // d'OpenStreetMap, ODbL) : la longue descente sud vers Breidscheid puis
+    // l'épingle est du Karussell, comme sur une carte du circuit.
+    return polylineTrackShape('nordschleife', CITY_RUSH_NORDSCHLEIFE.outlineKm);
+  }
   if (cityId === 'route-66') {
     // Tracé éditorial simplifié, mais géographiquement lisible : Midwest en
     // haut, détour par le Nouveau-Mexique, puis descente vers l'Arizona et la
@@ -1123,11 +1645,127 @@ export const CITY_RUSH_MEXICO_COUNTRYSIDE = Object.freeze({
 
 // Les écrans libres mélangent villes et routes légendaires sans modifier les
 // constantes historiques attendues par les succès qui comptent les villes.
-export const CITY_RUSH_COURSES = Object.freeze([...CITY_RUSH_CITIES, CITY_RUSH_ROUTE_66, CITY_RUSH_MEXICO_COUNTRYSIDE]);
+// ── Nürburgring Nordschleife ────────────────────────────────────────────────
+// Le circuit permanent se joue en sens unique, à deux voies resserrées autour
+// de l'axe (8,40 m de bitume utile au lieu des 13,40 m de l'autoroute
+// urbaine) : plus de trafic en face, un décor de forêt, de bas-côtés herbeux,
+// de glissières et de panneaux allemands, et le tour réel rejoué secteur par
+// secteur — Hatzenbach, Flugplatz, Aremberg, Fuchsröhre, Bergwerk, Karussell,
+// Hohe Acht, Brünnchen, Döttinger Höhe.
+export const CITY_RUSH_NORDSCHLEIFE_COURSE = Object.freeze({
+  ...CITY_RUSH_NORDSCHLEIFE,
+  label: 'ALLEMAGNE · EIFEL · RHÉNANIE-PALATINAT',
+  district: 'NÜRBURGRING · GRÜNE HÖLLE',
+  tagline: '20,832 km, 73 virages, 300 m de dénivelé : la Grüne Hölle.',
+  accent: '#d7b049',
+  secondary: '#5f8f4a',
+  background: 0x8fb6cf,
+  fog: 0xc9d7c4,
+  asphalt: 0x4a4a4c,
+  sidewalk: 0x4f7a3c,
+  buildingColors: Object.freeze([0xb8b0a2, 0x8f8878, 0xc9c2b0, 0x7d7566, 0xa39a86]),
+  windowColor: 0x50606a,
+  skyTop: 0x3f7fbe,
+  skyGlow: 0xf3d9a4,
+  style: 'nordschleife',
+  // Quatre voies dans le même sens, aucun véhicule en face : un circuit, pas
+  // une route. Les voies occupent le cœur de la grille urbaine (∓1,05 m et
+  // ∓3,15 m), soit exactement la largeur de bitume du Ring.
+  laneCount: 4,
+  oncomingCount: 0,
+  // Sur la piste, le trafic est celui d'une journée de tourisme : une voiture
+  // médicale, une berline de police (la Nordschleife en voit pendant les
+  // Touristenfahrten) et une GT de passage. Pas de camion-poubelle.
+  trafficTypes: Object.freeze(['ambulance', 'police', 'white-lambo']),
+  // Trafic volontairement réduit à deux véhicules lents — un par voie — pour
+  // laisser respirer les enchaînements : sur une piste à deux voies, un
+  // troisième véhicule condamne une voie et l'escouade de police du dernier
+  // tour ne peut plus revenir sur le leader.
+  trafficCount: 2,
+  raceway: true,
+  signs: Object.freeze(['NORDSCHLEIFE', 'EINFAHRT', 'DÖTTINGER HÖHE', 'GRÜNE HÖLLE', 'NÜRBURGRING']),
+  route: CITY_RUSH_NORDSCHLEIFE,
+});
+
+export const CITY_RUSH_COURSES = Object.freeze([...CITY_RUSH_CITIES, CITY_RUSH_ROUTE_66, CITY_RUSH_MEXICO_COUNTRYSIDE, CITY_RUSH_NORDSCHLEIFE_COURSE]);
 
 export function clampCityRushLane(lane, laneCount = CITY_RUSH_LANE_X.length) {
   const parsed = Number.isFinite(Number(lane)) ? Math.trunc(Number(lane)) : 0;
   return Math.max(0, Math.min(laneCount - 1, parsed));
+}
+
+// ── Voies du parcours ───────────────────────────────────────────────────────
+// Les cinq villes et les routes ouvertes gardent les six voies historiques à
+// double sens. Un circuit permanent (le Nürburgring Nordschleife) roule en sens
+// unique : `laneCount` resserre alors la grille autour de l'axe de la piste, et
+// `oncomingLanes` se vide — plus personne n'arrive de face.
+export function cityRushLaneCount(course) {
+  const count = Math.trunc(Number(course?.laneCount));
+  if (!Number.isFinite(count) || count < 1) return CITY_RUSH_LANE_X.length;
+  return Math.max(1, Math.min(CITY_RUSH_LANE_X.length, count));
+}
+
+/**
+ * Abscisse (en mètres) d'une voie. Sur un parcours à double sens, les six voies
+ * gardent exactement leurs positions historiques (de −5,25 m à +5,25 m, les
+ * trois de gauche venant en face). Sur un circuit à sens unique, les voies se
+ * répartissent symétriquement autour de l'axe, au pas de 2,10 m : les quatre
+ * voies du Ring tombent ainsi exactement sur les quatre voies intérieures de la
+ * grille urbaine (∓1,05 m et ∓3,15 m), c'est-à-dire la largeur de bitume réelle
+ * d'une piste de circuit.
+ */
+export function cityRushLaneX(lane, laneCount = CITY_RUSH_LANE_X.length) {
+  const index = clampCityRushLane(lane, laneCount);
+  if (laneCount >= CITY_RUSH_LANE_X.length) return CITY_RUSH_LANE_X[index];
+  const centered = (index - (laneCount - 1) / 2) * CITY_RUSH_LANE_WIDTH;
+  // Deux voies centrées tombent exactement sur les deux voies intérieures de
+  // la grille urbaine (∓1,05 m) : rien ne bouge pour un parcours resserré.
+  return centered;
+}
+
+/**
+ * Toutes les voies d'un parcours, prêtes à l'emploi pour le monde 3D : nombre
+ * de voies, abscisse de chacune, voies du sens de course, voies en sens inverse
+ * (vides sur un circuit), voies de la grille de départ et voies de police.
+ */
+export function cityRushLaneConfig(course) {
+  const laneCount = cityRushLaneCount(course);
+  const raceway = laneCount < CITY_RUSH_LANE_X.length;
+  const laneX = (lane) => cityRushLaneX(lane, laneCount);
+  if (!raceway) {
+    return {
+      laneCount,
+      raceway: false,
+      laneX,
+      roadHalf: CITY_RUSH_ROAD_HALF_WIDTH,
+      roadWidth: CITY_RUSH_ROAD_WIDTH,
+      lanes: Object.freeze(Array.from({ length: laneCount }, (_, lane) => lane)),
+      forwardLanes: CITY_RUSH_FORWARD_LANES,
+      oncomingLanes: CITY_RUSH_ONCOMING_LANES,
+      policeLanes: CITY_RUSH_POLICE_LANES,
+      defaultLanes: CITY_RUSH_DEFAULT_LANES,
+      gridLanes: CITY_RUSH_LANE_X,
+    };
+  }
+  const lanes = Object.freeze(Array.from({ length: laneCount }, (_, lane) => lane));
+  // Sur une piste étroite, les berlines de police partent des deux extrémités
+  // de la grille et la meute se répartit en alternance.
+  const policeLanes = Object.freeze(laneCount > 1 ? [0, laneCount - 1] : [0]);
+  return {
+    laneCount,
+    raceway: true,
+    laneX,
+    roadHalf: CITY_RUSH_RACEWAY_ROAD_HALF,
+    roadWidth: CITY_RUSH_RACEWAY_ROAD_WIDTH,
+    lanes,
+    forwardLanes: lanes,
+    oncomingLanes: Object.freeze([]),
+    policeLanes,
+    // La grille de départ alterne gauche/droite comme les vraies grilles de
+    // circuit : chaque rangée décale la voiture d'une demi-voie.
+    defaultLanes: Object.freeze(Array.from({ length: Math.max(laneCount, CITY_RUSH_RACER_SLOTS.length) }, (_, index) => index % laneCount)),
+    gridLanes: lanes,
+  };
 }
 
 // Nombre de tours d'une course : un entier d'au moins 1.
@@ -1274,6 +1912,251 @@ export function cityRushTrackGrade(distance, lapLength = CITY_RUSH_LAP_LENGTH, a
 export function cityRushTrackPitch(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_HILL_AMPLITUDE, scrollScale = CITY_RUSH_SCROLL_SCALE) {
   const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
   return Math.atan2(cityRushTrackGrade(distance, lapLength, amplitude), scale);
+}
+
+
+// ── Profil de piste du Nordschleife (rendu) ────────────────────────────────
+// Les villes se contentent de deux grands S très doux ; le Ring, lui, est une
+// succession de 73 virages. On intègre donc la courbure réelle du tracé : chaque
+// virage est décrit par son point kilométrique, son angle total (positif à
+// droite) et son étendue — une cloche de courbure nulle à ses extrémités, si
+// bien que deux virages voisins se raccordent sans cassure. La première
+// intégration donne le cap, la seconde le déport latéral de la piste. Le profil
+// est ensuite refermé — cap, déport, altitude et pente valent zéro à 0 m comme
+// à 600 m — pour que la boucle suivante repasse sous le portique sans saut,
+// exactement comme un tour de circuit qui repasse sur la ligne.
+//
+// Échelle : 1:35 sur la longueur (20,832 km → 600 m), comme la C1 de Tokyo.
+// Courbure et relief sont volontairement amplifiés pour rester lisibles à cette
+// échelle : le vrai Karussell (48°) devient le virage le plus serré du jeu et
+// les 300 m de dénivelé du Ring se voient à l'horizon, quand bien même ils ne
+// peuvent pas dépasser 10 % de pente à l'écran sans casser la lecture du
+// trafic. Les deux échelles sont calculées, pas devinées : elles découlent du
+// déport maximal et de la pente maximale déclarés ci-dessous.
+export const CITY_RUSH_NORDSCHLEIFE_PROFILE_STEPS = 2400;
+export const CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET = 15; // unités monde : déport latéral maximal
+export const CITY_RUSH_NORDSCHLEIFE_MAX_GRADE = 0.1; // 10 % de pente visible (18 % réels)
+// km réel, angle du virage (°, + à droite), étendue (km). L'étendue des virages
+// lents est élargie par rapport au réel (le Karussell passe de 200 m à 320 m)
+// pour que leur rayon reste jouable à l'échelle 1:35 : c'est l'adaptation
+// annoncée, pas un oubli.
+export const CITY_RUSH_NORDSCHLEIFE_TURNS = Object.freeze([
+  Object.freeze([0.20, 3, 0.030]), // Antoniusbuche : léger appui à droite sur le pont
+  Object.freeze([0.60, 6, 0.040]), // Tiergarten : la piste se dérobe vers la Start-Ziel
+  Object.freeze([1.05, -8, 0.053]), // Sabine-Schmitz : gauche rapide avant la T13
+  Object.freeze([1.60, -16, 0.107]), // T13 : gauche appuyée sur la ligne d'arrivée
+  Object.freeze([2.00, 18, 0.120]), // Hohenrain : droite de la chicane
+  Object.freeze([2.40, -14, 0.093]), // Hatzenbach 1 : gauche
+  Object.freeze([2.65, 12, 0.080]), // Hatzenbach 2 : droite
+  Object.freeze([2.90, -10, 0.067]), // Hatzenbach 3 : gauche
+  Object.freeze([3.10, -8, 0.053]), // Hocheichen : gauche sous les chênes
+  Object.freeze([3.40, -12, 0.080]), // Quiddelbacher Höhe : gauche de la crête
+  Object.freeze([3.85, 4, 0.030]), // Flugplatz 1 : la piste plonge
+  Object.freeze([4.15, 14, 0.093]), // Flugplatz 2 : double apex droite, le saut
+  Object.freeze([4.60, -13, 0.087]), // Kottenborn : gauche du plateau
+  Object.freeze([5.10, -20, 0.133]), // Schwedenkreuz : gauche rapide en descente
+  Object.freeze([5.70, 42, 0.280]), // Aremberg : freinage, droite serrée
+  Object.freeze([6.25, -18, 0.120]), // Fuchsröhre : gauche rapide à −11 %
+  Object.freeze([6.80, -12, 0.080]), // Adenauer Forst 1 : gauche
+  Object.freeze([7.00, 22, 0.147]), // Adenauer Forst 2 : droite du S
+  Object.freeze([7.35, -13, 0.087]), // Metzgesfeld : gauche aveugle
+  Object.freeze([7.85, 21, 0.140]), // Kallenhard : droite en descente
+  Object.freeze([8.30, -13, 0.087]), // Spiegelkurve : gauche
+  Object.freeze([8.65, 26, 0.173]), // Dreifach-Rechts : droite, droite, droite
+  Object.freeze([9.15, -30, 0.200]), // Wehrseifen : épingle en descente
+  Object.freeze([9.65, 12, 0.080]), // Ex-Mühle : droite sur la rampe raide
+  Object.freeze([10.50, -12, 0.080]), // Lauda-Links : gauche rapide
+  Object.freeze([10.95, 26, 0.173]), // Bergwerk : la droite se referme
+  Object.freeze([11.65, -22, 0.147]), // Kesselchen : longue montée à gauche
+  Object.freeze([12.25, -16, 0.107]), // Mutkurve : gauche de la montée
+  Object.freeze([12.65, 18, 0.120]), // Steilstrecke : droite de la rampe
+  Object.freeze([13.35, -48, 0.320]), // Karussell : la virole de béton
+  Object.freeze([13.85, 16, 0.107]), // Hohe Acht : droite du sommet
+  Object.freeze([14.20, 14, 0.093]), // Hedwigshöhe : droite
+  Object.freeze([14.55, 16, 0.107]), // Wippermann : droite bosselée
+  Object.freeze([14.90, -14, 0.093]), // Eschbach : gauche
+  Object.freeze([15.45, 30, 0.200]), // Brünnchen : double droite en descente
+  Object.freeze([15.95, -18, 0.120]), // Eiskurve : gauche sous les sapins
+  Object.freeze([16.45, 24, 0.160]), // Pflanzgarten : droite, saut
+  Object.freeze([16.95, -20, 0.133]), // Stefan-Bellof-S : gauche
+  Object.freeze([17.35, -34, 0.227]), // Schwalbenschwanz : gauche serrée
+  Object.freeze([17.80, -14, 0.093]), // Galgenkopf : gauche sous la colline
+  Object.freeze([18.35, 20, 0.133]), // Galgenkopf 2 : droite rapide
+  Object.freeze([19.20, -6, 0.600]), // Döttinger Höhe : la ligne droite s'ouvre
+]);
+const nordschleifeProfile = (() => {
+  const steps = CITY_RUSH_NORDSCHLEIFE_PROFILE_STEPS;
+  const ds = CITY_RUSH_LAP_LENGTH / steps;
+  const unitsPerKm = CITY_RUSH_LAP_LENGTH / NORDSCHLEIFE_LENGTH_KM;
+  const wrapDelta = (delta) => {
+    let value = delta;
+    if (value > CITY_RUSH_LAP_LENGTH / 2) value -= CITY_RUSH_LAP_LENGTH;
+    if (value < -CITY_RUSH_LAP_LENGTH / 2) value += CITY_RUSH_LAP_LENGTH;
+    return value;
+  };
+  // Courbure (radians par unité de piste) d'une échelle donnée.
+  const curvature = (scale) => {
+    const table = new Float64Array(steps);
+    for (const [km, angleDeg, spanKm] of CITY_RUSH_NORDSCHLEIFE_TURNS) {
+      const centre = km * unitsPerKm;
+      const half = (spanKm * unitsPerKm) / 2;
+      const peak = (scale * ((angleDeg * Math.PI) / 180)) / (half * 2);
+      for (let index = 0; index < steps; index += 1) {
+        const delta = wrapDelta(index * ds - centre);
+        if (Math.abs(delta) >= half) continue;
+        table[index] += peak * 0.5 * (1 + Math.cos((Math.PI * delta) / half));
+      }
+    }
+    return table;
+  };
+  // Double intégration, puis retrait de la dérive linéaire : cap et déport
+  // reviennent exactement à zéro à la ligne.
+  const integrate = (scale) => {
+    const table = curvature(scale);
+    const heading = new Float64Array(steps);
+    const offset = new Float64Array(steps);
+    let h = 0;
+    let x = 0;
+    for (let index = 0; index < steps; index += 1) {
+      h += table[index] * ds;
+      x += h * ds;
+      heading[index] = h;
+      offset[index] = x;
+    }
+    const headingDrift = h / CITY_RUSH_LAP_LENGTH;
+    const offsetDrift = (x - (headingDrift * CITY_RUSH_LAP_LENGTH * CITY_RUSH_LAP_LENGTH) / 2) / CITY_RUSH_LAP_LENGTH;
+    for (let index = 0; index < steps; index += 1) {
+      const metre = index * ds;
+      heading[index] -= headingDrift * metre;
+      offset[index] -= offsetDrift * metre + (headingDrift * metre * metre) / 2;
+    }
+    return { heading, offset };
+  };
+  // Le déport est linéaire en échelle : une première passe suffit à la choisir.
+  const probe = integrate(1).offset;
+  let probeMax = 0;
+  for (let index = 0; index < steps; index += 1) probeMax = Math.max(probeMax, Math.abs(probe[index]));
+  const scale = CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET / Math.max(1e-6, probeMax);
+  const { heading, offset } = integrate(scale);
+  // Relief : le relevé réel du tour (Breidscheid 320 m, Hohe Acht 620 m), lissé
+  // à la même cadence, puis remis à l'échelle pour plafonner la pente visible.
+  const altitudeAt = (metre) => {
+    const km = (metre / CITY_RUSH_LAP_LENGTH) * NORDSCHLEIFE_LENGTH_KM;
+    const table = NORDSCHLEIFE_ALTITUDE_KM;
+    if (km <= table[0][0]) return table[0][1];
+    for (let index = 1; index < table.length; index += 1) {
+      const [previousKm, previousAltitude] = table[index - 1];
+      const [nextKm, nextAltitude] = table[index];
+      if (km <= nextKm) {
+        const t = (km - previousKm) / (nextKm - previousKm || 1);
+        const eased = t * t * (3 - 2 * t);
+        return previousAltitude + (nextAltitude - previousAltitude) * eased;
+      }
+    }
+    return table[table.length - 1][1];
+  };
+  const elevation = new Float64Array(steps);
+  const grade = new Float64Array(steps);
+  const buildElevation = (reliefScale) => {
+    // Pente par différence avant : le tour se referme sur lui-même, si bien que
+    // la pente reste continue au passage de la ligne.
+    let rise = 0;
+    for (let index = 0; index < steps; index += 1) {
+      const next = altitudeAt(((index + 1) % steps) * ds) * reliefScale;
+      grade[index] = (next - altitudeAt(index * ds) * reliefScale) / ds;
+      rise += grade[index] * ds;
+    }
+    // Le relevé réel ne revient pas exactement à son altitude de départ : on
+    // retire d'abord la dérive de pente, puis celle de hauteur.
+    const gradeDrift = rise / CITY_RUSH_LAP_LENGTH;
+    let altitudeSum = 0;
+    for (let index = 0; index < steps; index += 1) {
+      grade[index] -= gradeDrift;
+      altitudeSum += grade[index] * ds;
+    }
+    const altitudeDrift = altitudeSum / CITY_RUSH_LAP_LENGTH;
+    let cursor = 0;
+    for (let index = 0; index < steps; index += 1) {
+      cursor += grade[index] * ds;
+      elevation[index] = cursor - altitudeDrift * index * ds;
+    }
+  };
+  buildElevation(1);
+  let gradeMax = 0;
+  for (let index = 0; index < steps; index += 1) gradeMax = Math.max(gradeMax, Math.abs(grade[index]));
+  const reliefScale = CITY_RUSH_NORDSCHLEIFE_MAX_GRADE / Math.max(1e-6, gradeMax);
+  buildElevation(reliefScale);
+  return Object.freeze({ steps, ds, heading, offset, elevation, grade, curvatureScale: scale, reliefScale });
+})();
+
+/** Déport latéral (unités monde) de la piste du Ring à une distance du tour. */
+export function nordschleifeTrackOffset(distance) {
+  return nordschleifeTrackSample(nordschleifeProfile.offset, distance);
+}
+
+/** Cap local de la piste (unités X par mètre de course). */
+export function nordschleifeTrackTangent(distance) {
+  return nordschleifeTrackSample(nordschleifeProfile.heading, distance);
+}
+
+export function nordschleifeTrackYaw(distance, scrollScale = CITY_RUSH_SCROLL_SCALE) {
+  const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
+  return -Math.atan2(nordschleifeTrackTangent(distance), scale);
+}
+
+/** Hauteur de la chaussée (unités monde) : le relief réel du Ring, mis à l'échelle. */
+export function nordschleifeTrackElevation(distance) {
+  return nordschleifeTrackSample(nordschleifeProfile.elevation, distance);
+}
+
+/** Pente locale (unités Y par mètre de course), plafonnée à 10 % visibles. */
+export function nordschleifeTrackGrade(distance) {
+  return nordschleifeTrackSample(nordschleifeProfile.grade, distance);
+}
+
+export function nordschleifeTrackPitch(distance, scrollScale = CITY_RUSH_SCROLL_SCALE) {
+  const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
+  return Math.atan2(nordschleifeTrackGrade(distance), scale);
+}
+
+/**
+ * Profil de rendu d'un parcours : les villes gardent leurs deux S très doux et
+ * leur relief nul à la ligne, le Ring joue la vraie suite de ses virages. Le
+ * monde et le décor n'ont ainsi qu'un seul jeu de fonctions à appeler, quel que
+ * soit l'endroit du tour.
+ */
+export const CITY_RUSH_TRACK_PROFILE_DEFAULT = Object.freeze({
+  id: 'city',
+  offset: cityRushTrackOffset,
+  tangent: cityRushTrackTangent,
+  yaw: cityRushTrackYaw,
+  elevation: cityRushTrackElevation,
+  grade: cityRushTrackGrade,
+  pitch: cityRushTrackPitch,
+});
+
+export const CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE = Object.freeze({
+  id: 'nordschleife',
+  offset: nordschleifeTrackOffset,
+  tangent: nordschleifeTrackTangent,
+  yaw: nordschleifeTrackYaw,
+  elevation: nordschleifeTrackElevation,
+  grade: nordschleifeTrackGrade,
+  pitch: nordschleifeTrackPitch,
+});
+
+export function cityRushTrackProfile(course) {
+  return course?.style === 'nordschleife' ? CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE : CITY_RUSH_TRACK_PROFILE_DEFAULT;
+}
+
+function nordschleifeTrackSample(values, distance) {
+  const steps = values.length;
+  const lapLength = CITY_RUSH_LAP_LENGTH;
+  const wrapped = ((Number(distance) || 0) % lapLength + lapLength) % lapLength;
+  const position = (wrapped / lapLength) * steps;
+  const index = Math.floor(position);
+  const next = (index + 1) % steps;
+  return values[index] + (values[next] - values[index]) * (position - index);
 }
 
 // `inventory` contient les points de jauge (0 jusqu'au coût), pas un stock
@@ -1595,8 +2478,9 @@ export function chooseCityRushTrafficEscapeLane({
  * Génère une rangée de bonus sans flaques ni zones de ralentissement.
  * Le turbo apparaît sous forme de pad posé sur la chaussée.
  */
-export function createCityRushEncounter(random = Math.random) {
-  const available = Array.from({ length: CITY_RUSH_LANE_X.length }, (_, lane) => lane);
+export function createCityRushEncounter(random = Math.random, laneCount = CITY_RUSH_LANE_X.length) {
+  const count = Math.max(1, Math.min(CITY_RUSH_LANE_X.length, Math.trunc(Number(laneCount)) || CITY_RUSH_LANE_X.length));
+  const available = Array.from({ length: count }, (_, lane) => lane);
   // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
   // des rangées pleines. Parmi les objets, 95 % sont des pads turbo et seulement
   // 5 % des bonus rouges d'AK-47 : le tir rouge reste rare même sur une longue course.
@@ -1623,8 +2507,8 @@ export function createCityRushEncounter(random = Math.random) {
  * course. La cadence est réglée par `CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL` dans
  * le monde 3D ; aucune arme ni autre bonus ne peut apparaître dans ce mode.
  */
-export function createCityRushBoostEncounter(random = Math.random) {
-  const lanes = CITY_RUSH_FORWARD_LANES;
+export function createCityRushBoostEncounter(random = Math.random, course = null) {
+  const lanes = course ? cityRushLaneConfig(course).forwardLanes : CITY_RUSH_FORWARD_LANES;
   const sample = Number(random());
   const index = Math.max(0, Math.min(lanes.length - 1, Math.floor((Number.isFinite(sample) ? sample : 0) * lanes.length)));
   return { pickups: [{ lane: lanes[index], type: CITY_RUSH_PICKUPS.BOOST }] };
@@ -1850,7 +2734,10 @@ export function selectCityRushRacers({
     cursor = (cursor + stride) % total;
   }
 
-  const defaultLanes = CITY_RUSH_DEFAULT_LANES;
+  // Un circuit resserré n'a que deux voies : la grille alterne alors
+  // gauche/droite au lieu de suivre les trois voies du sens de course.
+  const course = CITY_RUSH_COURSES.find((item) => item.id === cityId) || null;
+  const { defaultLanes } = cityRushLaneConfig(course);
   return CITY_RUSH_RACER_SLOTS.map((slotId, index) => {
     const driver = chosen[index];
     return {

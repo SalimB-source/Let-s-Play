@@ -10,20 +10,39 @@
 // drapeaux et confettis.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { CITY_RUSH_LANE_X, CITY_RUSH_LAPS, CITY_RUSH_ROAD_HALF_WIDTH, CITY_RUSH_ROAD_WIDTH, CITY_RUSH_SCROLL_SCALE } from './cityRushRules.js';
+import { CITY_RUSH_LAPS, CITY_RUSH_SCROLL_SCALE, cityRushLaneConfig } from './cityRushRules.js';
 import { SignAtlas, drawBannerCell, seededRandom } from './cityRushBuilder.js';
 import { makeCheckerTexture, makeGantrySignTexture, makeStartGroundTexture, makeLapBoard } from './cityRushTextures.js';
 import { START_ZONE_HALF } from './cityRushStage.js';
 
 const SCALE = CITY_RUSH_SCROLL_SCALE;
 const STAND_HALF = 15.8; // demi-longueur des tribunes (unités monde ≈ ±22 m)
-const STAND_INNER_X = 11.5;
-const GANTRY_X = 8.6;
 // 8,4 m : le boîtier des feux (point bas ≈ 7,3 m) reste au-dessus de la caméra
 // de poursuite (≤ 6,7 m) quand elle passe sous le portique à chaque tour, et
 // le panneau reste visible sous le HUD pendant l'approche.
 const GANTRY_HEIGHT = 8.4;
 export const START_LIGHT_COUNT = 5;
+
+/**
+ * Gabarit de la zone de départ d'un parcours. Une artère urbaine est large :
+ * trottoirs, tribunes en retrait (11,50 m) et portique à 8,60 m au-dessus des
+ * six voies. Un circuit permanent est étroit — 8,40 m de piste réelle — donc
+ * les tribunes se rapprochent du vibreur et le portique se resserre à la
+ * largeur du ruban : c'est la même Start-Ziel-Anlage, à l'échelle du Ring.
+ */
+function startLineLayout(city) {
+  const { roadWidth, roadHalf, raceway, gridLanes } = cityRushLaneConfig(city);
+  return {
+    raceway,
+    roadWidth,
+    roadHalf,
+    gridLanes,
+    gantryX: roadHalf + 1.9,
+    standInner: roadHalf + 4.8,
+    slabInner: roadHalf + (raceway ? 2.2 : 3.1),
+    slabWidth: raceway ? 7.6 : 10.2,
+  };
+}
 
 function basic(options) {
   return new THREE.MeshBasicMaterial(options);
@@ -52,7 +71,7 @@ export function createStartLineMaterials(city, theme) {
     checker: basic({ map: checker, toneMapped: false }),
     checkerFlag: basic({ map: makeCheckerTexture(8, 5), side: THREE.DoubleSide, toneMapped: false }),
     gantry: basic({ map: makeGantrySignTexture(city, theme), toneMapped: false }),
-    groundText: basic({ map: makeStartGroundTexture('DÉPART'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    groundText: basic({ map: makeStartGroundTexture(city.raceway ? 'START' : 'DÉPART'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     banner: basic({ map: bannerTexture }),
     bannerUvs,
     seatA: new THREE.MeshStandardMaterial({ color: new THREE.Color(city.accent).multiplyScalar(0.8), roughness: 0.75 }),
@@ -72,16 +91,17 @@ export function createStartLineMaterials(city, theme) {
 export function buildStartComplex({ city, theme, materials: m, startMaterials: s, batch, random = seededRandom(7), lite = false }) {
   const lineZ = 0;
   const zoneHalf = START_ZONE_HALF * SCALE;
+  const layout = startLineLayout(city);
 
   // ── Dalle béton de part et d'autre de la chaussée, jusqu'aux tribunes ──
   for (const side of [-1, 1]) {
-    batch.box(m.concrete, [side * 14.9, -0.06, lineZ], [10.2, 0.12, zoneHalf * 2]);
+    batch.box(m.concrete, [side * (layout.slabInner + layout.slabWidth / 2), -0.06, lineZ], [layout.slabWidth, 0.12, zoneHalf * 2]);
   }
 
   // ── Ligne à damier + bandes vibreurs ─────────────────────────────────
-  batch.plane(s.checker, [0, 0.025, lineZ], CITY_RUSH_ROAD_WIDTH, 1.6, [-Math.PI / 2, 0, 0]);
-  batch.plane(s.checker, [0, 0.03, lineZ + 1.2], CITY_RUSH_ROAD_WIDTH, 0.14, [-Math.PI / 2, 0, 0], { uv: [0, 0.2, 1, 0.21] });
-  const rumbleX = CITY_RUSH_ROAD_HALF_WIDTH - 0.25;
+  batch.plane(s.checker, [0, 0.025, lineZ], layout.roadWidth, 1.6, [-Math.PI / 2, 0, 0]);
+  batch.plane(s.checker, [0, 0.03, lineZ + 1.2], layout.roadWidth, 0.14, [-Math.PI / 2, 0, 0], { uv: [0, 0.2, 1, 0.21] });
+  const rumbleX = layout.roadHalf - 0.25;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 16; index += 1) {
       const z = -STAND_HALF + 1 + index * 2;
@@ -93,7 +113,7 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
   batch.plane(s.groundText, [0, 0.04, lineZ + 5.6], 9, 1.76, [-Math.PI / 2, 0, 0]);
   const gridRows = [0.6, 5.4];
   gridRows.forEach((rowZ, rowIndex) => {
-    CITY_RUSH_LANE_X.forEach((laneX, laneIndex) => {
+    layout.gridLanes.forEach((laneX, laneIndex) => {
       if (rowIndex === 1 && laneIndex % 2 === 0) return;
       const length = 3.4;
       batch.plane(s.gridPaint, [laneX - 0.78, 0.035, rowZ + length / 2], 0.08, length, [-Math.PI / 2, 0, 0]);
@@ -104,7 +124,7 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
 
   // ── Portique : pylônes, poutre treillis, panneau, boîtier des feux ────
   for (const side of [-1, 1]) {
-    const x = side * GANTRY_X;
+    const x = side * layout.gantryX;
     batch.box(m.concrete, [x, 0.25, lineZ], [1.4, 0.5, 1.4]);
     batch.box(m.darkMetal, [x, GANTRY_HEIGHT / 2 + 0.5, lineZ], [0.72, GANTRY_HEIGHT, 0.72]);
     batch.box(m.metal, [x, GANTRY_HEIGHT + 0.5, lineZ], [1.0, 0.16, 1.0]);
@@ -114,17 +134,17 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
     }
   }
   const beamY = GANTRY_HEIGHT + 0.5;
-  batch.box(m.metal, [0, beamY, lineZ - 0.5], [GANTRY_X * 2 + 0.7, 0.26, 0.26]);
-  batch.box(m.metal, [0, beamY, lineZ + 0.5], [GANTRY_X * 2 + 0.7, 0.26, 0.26]);
-  batch.box(m.metal, [0, beamY + 1.1, lineZ - 0.5], [GANTRY_X * 2 + 0.7, 0.22, 0.22]);
-  batch.box(m.metal, [0, beamY + 1.1, lineZ + 0.5], [GANTRY_X * 2 + 0.7, 0.22, 0.22]);
+  batch.box(m.metal, [0, beamY, lineZ - 0.5], [layout.gantryX * 2 + 0.7, 0.26, 0.26]);
+  batch.box(m.metal, [0, beamY, lineZ + 0.5], [layout.gantryX * 2 + 0.7, 0.26, 0.26]);
+  batch.box(m.metal, [0, beamY + 1.1, lineZ - 0.5], [layout.gantryX * 2 + 0.7, 0.22, 0.22]);
+  batch.box(m.metal, [0, beamY + 1.1, lineZ + 0.5], [layout.gantryX * 2 + 0.7, 0.22, 0.22]);
   for (let index = 0; index <= 12; index += 1) {
-    const x = -GANTRY_X + index * (GANTRY_X * 2 / 12);
+    const x = -layout.gantryX + index * (layout.gantryX * 2 / 12);
     batch.box(m.metal, [x, beamY + 0.55, lineZ - 0.5], [0.08, 1.1, 0.08]);
     batch.box(m.metal, [x, beamY + 0.55, lineZ + 0.5], [0.08, 1.1, 0.08]);
     batch.box(m.metal, [x, beamY + 0.55, lineZ], [0.08, 0.08, 1.0]);
     if (index < 12) {
-      batch.box(m.metal, [x + GANTRY_X / 12, beamY + 0.55, lineZ + 0.5], [0.08, 1.75, 0.06], [0, 0, (index % 2 ? 1 : -1) * 0.92]);
+      batch.box(m.metal, [x + layout.gantryX / 12, beamY + 0.55, lineZ + 0.5], [0.08, 1.75, 0.06], [0, 0, (index % 2 ? 1 : -1) * 0.92]);
     }
   }
   // Panneau DÉPART · ARRIVÉE (face avant et face arrière).
@@ -151,14 +171,14 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
   for (const side of [-1, 1]) {
     for (let tier = 0; tier < tiers; tier += 1) {
       const height = 0.55 * (tier + 1);
-      const x = side * (STAND_INNER_X + 0.75 + tier * 1.5);
+      const x = side * (layout.standInner + 0.75 + tier * 1.5);
       batch.box(m.concrete, [x, height / 2, lineZ], [1.5, height, STAND_HALF * 2]);
       batch.box(tier % 2 ? s.seatA : s.seatB, [x + side * 0.15, height + 0.14, lineZ], [1.1, 0.28, STAND_HALF * 2 - 0.4]);
     }
-    const rearX = side * (STAND_INNER_X + tiers * 1.5 + 0.3);
+    const rearX = side * (layout.standInner + tiers * 1.5 + 0.3);
     batch.box(m.concrete, [rearX, 1.9, lineZ], [0.4, 3.8, STAND_HALF * 2]);
     // Garde-corps avant + bannières de sponsors face à la piste.
-    const railX = side * (STAND_INNER_X - 0.3);
+    const railX = side * (layout.standInner - 0.3);
     batch.box(m.white, [railX, 0.5, lineZ], [0.12, 1.0, STAND_HALF * 2]);
     batch.box(m.metal, [railX, 1.04, lineZ], [0.08, 0.08, STAND_HALF * 2]);
     const bannerCount = Math.floor((STAND_HALF * 2) / 4);
@@ -168,20 +188,20 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
       batch.plane(s.banner, [railX - side * 0.08, 0.5, z], 3.8, 0.84, [0, side < 0 ? Math.PI / 2 : -Math.PI / 2, 0], { uv });
     }
     // Auvent incliné + poteaux.
-    const canopyX = side * (STAND_INNER_X + 3.9);
+    const canopyX = side * (layout.standInner + 3.9);
     batch.box(s.canopy, [canopyX, 5.3, lineZ], [8.8, 0.16, STAND_HALF * 2 + 0.6], [0, 0, side * 0.1]);
     batch.box(m.metal, [canopyX, 5.46, lineZ], [8.8, 0.08, 0.3], [0, 0, side * 0.1]);
     for (const z of [-STAND_HALF + 0.6, -STAND_HALF / 3, STAND_HALF / 3, STAND_HALF - 0.6]) {
-      batch.cylinder(m.metal, [side * (STAND_INNER_X + tiers * 1.5 - 0.3), 2.65, z], 0.1, 0.1, 5.3, 6);
-      batch.cylinder(m.metal, [side * (STAND_INNER_X + 0.3), 2.9, z], 0.07, 0.07, 5.8, 6);
+      batch.cylinder(m.metal, [side * (layout.standInner + tiers * 1.5 - 0.3), 2.65, z], 0.1, 0.1, 5.3, 6);
+      batch.cylinder(m.metal, [side * (layout.standInner + 0.3), 2.9, z], 0.07, 0.07, 5.8, 6);
     }
     // Lisses lumineuses sous l'auvent.
     batch.box(m.neonWhite, [canopyX, 5.18, lineZ], [0.1, 0.06, STAND_HALF * 2 - 1]);
-    batch.box(m.neon, [side * (STAND_INNER_X + 0.4), 5.6, lineZ], [0.1, 0.1, STAND_HALF * 2 - 1]);
+    batch.box(m.neon, [side * (layout.standInner + 0.4), 5.6, lineZ], [0.1, 0.1, STAND_HALF * 2 - 1]);
     // Escaliers d'accès aux extrémités.
     for (const end of [-1, 1]) {
       for (let step = 0; step < 6; step += 1) {
-        batch.box(m.concrete, [side * (STAND_INNER_X + 0.4 + step * 1.1), 0.2 + step * 0.42, lineZ + end * (STAND_HALF + 0.55)], [1.1, 0.4 + step * 0.84, 1.1]);
+        batch.box(m.concrete, [side * (layout.standInner + 0.4 + step * 1.1), 0.2 + step * 0.42, lineZ + end * (STAND_HALF + 0.55)], [1.1, 0.4 + step * 0.84, 1.1]);
       }
     }
   }
@@ -215,16 +235,16 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
   // ── Fanions tendus en travers de la piste ────────────────────────────
   const pennantMaterials = [m.red, m.yellow, m.blue, m.white, m.green];
   for (const z of [lineZ - 12, lineZ + 12]) {
-    batch.cylinder(m.darkMetal, [0, 7.9, z], 0.025, 0.025, 2 * (STAND_INNER_X - 0.6), 4, [0, 0, Math.PI / 2]);
+    batch.cylinder(m.darkMetal, [0, 7.9, z], 0.025, 0.025, 2 * (layout.standInner - 0.6), 4, [0, 0, Math.PI / 2]);
     for (let index = 0; index < 18; index += 1) {
-      const x = -STAND_INNER_X + 1.2 + index * 1.2;
+      const x = -layout.standInner + 1.2 + index * 1.2;
       batch.cone(pennantMaterials[index % pennantMaterials.length], [x, 7.6, z], 0.26, 0.55, 3, [Math.PI, 0, 0]);
     }
   }
   // Pavoisement : hampes derrière les tribunes (les drapeaux sont animés).
   for (const side of [-1, 1]) {
     for (const z of [-12, -4, 4, 12]) {
-      batch.cylinder(m.white, [side * (STAND_INNER_X + tiers * 1.5 + 1.2), 3.6, z], 0.06, 0.08, 7.2, 6);
+      batch.cylinder(m.white, [side * (layout.standInner + tiers * 1.5 + 1.2), 3.6, z], 0.06, 0.08, 7.2, 6);
     }
   }
 }
@@ -294,6 +314,7 @@ export function createStartLineDynamics({ city, theme, materials: m, startMateri
   const disposables = [];
   const accent = new THREE.Color(city.accent);
   const secondary = new THREE.Color(city.secondary);
+  const layout = startLineLayout(city);
   const beamY = GANTRY_HEIGHT + 0.5;
 
   // ── Feux de départ ─────────────────────────────────────────────────────
@@ -352,7 +373,7 @@ export function createStartLineDynamics({ city, theme, materials: m, startMateri
   for (let index = 0; index < 4; index += 1) {
     const pivot = new THREE.Object3D();
     const side = index < 2 ? -1 : 1;
-    pivot.position.set(side * (GANTRY_X - 0.2 + (index % 2) * 0.4), beamY + 0.2, 0);
+    pivot.position.set(side * (layout.gantryX - 0.2 + (index % 2) * 0.4), beamY + 0.2, 0);
     const beam = new THREE.Mesh(beamGeometry, beamMaterials[index % 2]);
     pivot.add(beam);
     group.add(pivot);
@@ -375,7 +396,7 @@ export function createStartLineDynamics({ city, theme, materials: m, startMateri
       flag.phase = random() * Math.PI * 2;
       disposables.push(flag.geometry);
       const mesh = new THREE.Mesh(flag.geometry, flagMaterials[(index + (side > 0 ? 1 : 0)) % flagMaterials.length]);
-      mesh.position.set(side * (STAND_INNER_X + tiers * 1.5 + 1.2) + side * 0.05, 6.0, z + 0.06);
+      mesh.position.set(side * (layout.standInner + tiers * 1.5 + 1.2) + side * 0.05, 6.0, z + 0.06);
       mesh.frustumCulled = false;
       group.add(mesh);
       flags.push(flag);
@@ -435,7 +456,7 @@ export function createStartLineDynamics({ city, theme, materials: m, startMateri
   for (const side of [-1, 1]) {
     for (let tier = 0; tier < tiers; tier += 1) {
       for (let seat = 0; seat < perTier; seat += 1) {
-        const x = side * (STAND_INNER_X + 0.85 + tier * 1.5) + (random() - 0.5) * 0.5;
+        const x = side * (layout.standInner + 0.85 + tier * 1.5) + (random() - 0.5) * 0.5;
         const z = -STAND_HALF + 1.2 + (seat + random() * 0.6) * ((STAND_HALF * 2 - 2.4) / perTier);
         const y = 0.55 * (tier + 1) + 0.28;
         const spectator = { x, y, z, side, phase: random() * Math.PI * 2, rate: 5 + random() * 3, height: 0.85 + random() * 0.3 };
@@ -528,7 +549,7 @@ export function createStartLineDynamics({ city, theme, materials: m, startMateri
     confettiTimer = 7;
     for (let index = 0; index < confettiCount; index += 1) {
       const side = random() < 0.5 ? -1 : 1;
-      confettiPositions[index * 3] = side * (GANTRY_X - 1.5 + random() * 3);
+      confettiPositions[index * 3] = side * (layout.gantryX - 1.5 + random() * 3);
       confettiPositions[index * 3 + 1] = beamY + 0.5 + random() * 2.5;
       confettiPositions[index * 3 + 2] = (random() - 0.5) * 2;
       confettiVelocity[index * 3] = -side * (1.5 + random() * 4.5);

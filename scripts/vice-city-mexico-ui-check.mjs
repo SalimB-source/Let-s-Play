@@ -10,7 +10,7 @@
  * rien ne le signale.
  *
  * Deux filets recouvrent maintenant ce parcours :
- *   • `npm run check:city-rush-smoke` joue une course complète sur les sept
+ *   • `npm run check:city-rush-smoke` joue une course complète sur les huit
  *     parcours (villes ET routes) — c'est lui attrape le plantage du décor ;
  *   • ce contrôle regarde l'interface : la carte du Mexique est proposée,
  *     débloquée, sa miniature existe sur le disque et pointe dessus, le garage
