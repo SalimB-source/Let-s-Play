@@ -81,6 +81,8 @@ const {
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
   CITY_RUSH_ONCOMING_BONUS_MAX,
+  CITY_RUSH_PLAYER_SPEED, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, CITY_RUSH_CLEAN_LINE_MAX_BONUS,
+  cityRushCoursePace,
 } = await import('../src/games/cityRushRules.js');
 
 // Tours de la course jouée : 6 par défaut (8 400 m) ;
@@ -222,6 +224,29 @@ for (const [index, city] of courses.entries()) {
   for (const key of ['start', 'pause', 'reset', 'action', 'setPhase', 'setCountdown', 'destroy']) {
     if (typeof world[key] !== 'function') fail(`API manquante : ${key}`, api);
   }
+
+  // Rythme du parcours : le monde applique `pace` (voir `cityRushCoursePace`) à
+  // la pointe du pilote comme à tout ce qui roule — le Ring est le seul
+  // parcours ralenti, les villes et les routes gardent la pointe du garage. Un
+  // `paced()` oublié dans la boucle se lit ici, pas à l'œil nu.
+  const coursePace = cityRushCoursePace(city);
+  const historicTopSpeed = CITY_RUSH_PLAYER_SPEED * car.powerMultiplier;
+  if (Math.abs(world.topSpeed - historicTopSpeed * coursePace) > 1e-9) {
+    fail('la pointe du monde ne suit pas le rythme du parcours', {
+      parcours: city.id, rythme: coursePace, pointeMonde: world.topSpeed, attendue: historicTopSpeed * coursePace,
+    });
+  }
+  if (coursePace < 1 && world.topSpeed >= historicTopSpeed) {
+    fail(`un parcours à rythme ${coursePace} doit défiler plus lentement qu'au rythme historique`, {
+      parcours: city.id, pointeMonde: world.topSpeed, pointeHistorique: historicTopSpeed,
+    });
+  }
+  // Plafond du compteur : la pointe du parcours, multipliée par tous les bonus
+  // de vitesse empilables (pad turbo, ligne propre, contresens). Au-delà, une
+  // vitesse du monde échappe au rythme du parcours.
+  const hudSpeedCeiling = world.topSpeed * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR
+    * CITY_RUSH_CLEAN_LINE_MAX_BONUS * CITY_RUSH_ONCOMING_BONUS_MAX * 3.6 + 1;
+  let maxHudSpeed = 0;
 
   const scene = world.scene || null;
   // Éclatement et réapparition des bonus : le pool d'effets vit dans la scène,
@@ -462,7 +487,10 @@ for (const [index, city] of courses.entries()) {
         if (!rallyTarget || node.position.z > rallyTarget.position.z) rallyTarget = node;
       }
     }
-    if (hud && hud.speed < 70) slowFrames += 1; else slowFrames = 0;
+    if (hud) maxHudSpeed = Math.max(maxHudSpeed, hud.speed);
+    // Le seuil de « on traîne » suit le rythme du parcours : sur le Ring, la
+    // même voiture roule plus lentement sans être en difficulté.
+    if (hud && hud.speed < 70 * coursePace) slowFrames += 1; else slowFrames = 0;
     if (slowFrames > 12 && !rallyTarget && frames > 110) {
       world.action(steer);
       steer = steer === 'left' ? 'right' : 'left';
@@ -700,6 +728,11 @@ for (const [index, city] of courses.entries()) {
   }
   const raceSeconds = (frames * FRAME_MS) / 1000;
   if (!callbacks.finish) fail(`arrivée jamais atteinte après ${raceSeconds.toFixed(0)} s virtuelles`, callbacks.huds.at(-1));
+  if (maxHudSpeed > hudSpeedCeiling) {
+    fail(`le compteur dépasse le plafond du parcours (${Math.round(hudSpeedCeiling)} km/h)`, {
+      parcours: city.id, rythme: coursePace, maxHudSpeed, plafond: hudSpeedCeiling,
+    });
+  }
   if (callbacks.huds.length <= hudBefore) fail('aucun HUD émis pendant la course');
   if (typeof console !== 'undefined' && process.env.CITY_RUSH_SMOKE_VERBOSE) console.log('épave mesurée :', { wreckFrames, wreckSpinTurns, wreckSmokeFrames, wreckLastSpeed });
   if (callbacks.errors.length) fail('erreurs remontées', callbacks.errors);
@@ -1201,7 +1234,7 @@ for (const [index, city] of courses.entries()) {
 
   const effectTypes = [...new Set(callbacks.effects.map((e) => e.type))];
   console.log(
-    `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames` +
+    `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames · rythme ${coursePace} · pointe ${Math.round(world.topSpeed * 3.6)} km/h (compteur max ${maxHudSpeed}, plafond ${Math.round(hudSpeedCeiling)})` +
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · rangées devant le pilote chaque image (fenêtre ${Number.isFinite(rowFrontGapMin) ? rowFrontGapMin.toFixed(0) : '—'}–${rowFrontGapMax.toFixed(0)} m) · effets ${effectTypes.join('/')}` +
     ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (joueur ${Math.round(firstPoliceHud.distance || 0)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max de la plus proche ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage${policeStunFrames ? ` · ${policeStunFrames} f sonnée` : ''}` : 'jamais entrée'}` +
