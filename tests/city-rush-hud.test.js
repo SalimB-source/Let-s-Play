@@ -33,6 +33,16 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   assert.equal(declarations['border-radius'], '50%');
 });
 
+test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la relâche', () => {
+  assert.match(world, /const PISTOL_HOLD_FIRE_INTERVAL = 0\.12/);
+  assert.match(world, /let pistolKeyHeld = false/);
+  assert.match(world, /pistolKeyHeld && pistolHoldCooldown <= 0/);
+  assert.match(world, /window\.addEventListener\('keyup', onKeyUp\)/);
+  assert.match(world, /const onWindowBlur = \(\) => releasePistolKey/);
+  assert.match(world, /if \(pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged/);
+  assert.match(world, /if \(usePower\(CITY_RUSH_POWERS\.PISTOL\)\) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL/);
+});
+
 test('the mobile player health bar is compact and sits lower without covering the corner HUD', () => {
   assert.ok(mobileHealthRule, 'la règle mobile de la barre de coque existe');
   assert.equal(mobileHealthDeclarations.left, '50%', 'la barre reste centrée entre le classement et les commandes');

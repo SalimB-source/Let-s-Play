@@ -78,7 +78,13 @@ export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 5
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé au sol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
-export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.55; // part des bonus qui sont des pads turbo au sol
+// Les chargeurs rouges sont volontairement rares : un pilote doit choisir le
+// moment du tir et conserver ses sept balles au lieu de pouvoir en recharger
+// une à chaque rangée de bonus.
+export const CITY_RUSH_RED_PICKUP_CHANCE = 0.2;
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE; // 80 % de pads turbo au sol
+export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
+export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
 export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';
 export const CITY_RUSH_ONCOMING_MAX_WIDTH = 2.12;
@@ -423,12 +429,13 @@ export const CITY_RUSH_POWERS = Object.freeze({
 // Le turbo n'est plus un pouvoir à charger : c'est un pad lumineux au sol.
 export const CITY_RUSH_PICKUPS = Object.freeze({ BOOST: 'boost' });
 
-// La mitrailleuse rouge se charge avec un seul bonus. Les anciens coûts bleu
-// et jaune restent définis pour les règles héritées, mais ces bonus ne sont
-// plus générés ni proposés dans Vice City Rush.
+// Le coût du tir rouge représente désormais la capacité de son chargeur :
+// chaque bonus rouge recharge sept balles, puis chaque pression en dépense une.
+// Les anciens coûts bleu et jaune restent définis pour les règles héritées,
+// mais ces bonus ne sont plus générés ni proposés dans Vice City Rush.
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
-  [CITY_RUSH_POWERS.PISTOL]: 1, // rouge · une rafale
+  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_PISTOL_MAX_AMMO, // rouge · 7 balles par bonus
   [CITY_RUSH_POWERS.RADIO]: 4,
 });
 
@@ -441,7 +448,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#48b9ff',
     key: 'A',
     automatic: false,
-    description: `Un seul bonus bleu suffit pour charger ce tir droit, sans viser : il touche au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée perd près de la moitié de sa vitesse pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s, avec un dérapage bien visible. Trois tirs bleus détruisent une berline de police.`,
+    description: `Un seul bonus bleu suffit pour charger ce tir droit, sans viser : il touche au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée perd près de la moitié de sa vitesse pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s, avec un dérapage bien visible. Deux tirs bleus détruisent une berline de police.`,
     duration: CITY_RUSH_BLUE_SHOT_DURATION,
     speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
@@ -450,10 +457,11 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     name: 'AK-47',
     shortName: 'AK-47',
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.PISTOL],
+    ammoPerPickup: CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Un seul bonus rouge charge l’AK-47. Le tir part tout droit, sans viser : il touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Contre une voiture de police, un tir rouge ou un carambolage enlève la moitié de sa vie : deux impacts la détruisent.',
+    description: `Les bonus rouges sont rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier ennemi sur ta voie. La voiture adverse part en toupie tout en ralentissant. Contre une voiture de police à quatre carrés de vie, chaque tir rouge en détruit un carré.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -1275,7 +1283,9 @@ export function createCityRushInventory() {
   return Object.fromEntries(Object.keys(CITY_RUSH_POWER_RULES).map((key) => [CITY_RUSH_POWER_RULES[key].id, 0]));
 }
 
-export function addCityRushCharge(inventory, type, amount = 1) {
+export function addCityRushCharge(inventory, type, amount = type === CITY_RUSH_POWERS.PISTOL
+  ? CITY_RUSH_PISTOL_AMMO_PER_PICKUP
+  : 1) {
   if (!CITY_RUSH_POWER_RULES[type]) return { ...createCityRushInventory(), ...inventory };
   const cost = CITY_RUSH_POWER_CHARGE_COST[type];
   const current = Math.min(cost, Math.max(0, Math.trunc(Number(inventory?.[type]) || 0)));
@@ -1285,9 +1295,17 @@ export function addCityRushCharge(inventory, type, amount = 1) {
 
 export function consumeCityRushCharge(inventory, type) {
   const normalized = { ...createCityRushInventory(), ...inventory };
-  if (!CITY_RUSH_POWER_RULES[type] || normalized[type] < CITY_RUSH_POWER_CHARGE_COST[type]) {
-    return { inventory: normalized, consumed: false };
+  const current = Math.max(0, Math.trunc(Number(normalized[type]) || 0));
+  if (!CITY_RUSH_POWER_RULES[type]) return { inventory: normalized, consumed: false };
+  // Le tir rouge est un stock de balles : une pression ne vide plus le
+  // chargeur, elle retire exactement une balle. Les autres pouvoirs gardent
+  // leur ancienne logique de jauge unique.
+  if (type === CITY_RUSH_POWERS.PISTOL) {
+    if (current <= 0) return { inventory: normalized, consumed: false };
+    normalized[type] = current - 1;
+    return { inventory: normalized, consumed: true };
   }
+  if (current < CITY_RUSH_POWER_CHARGE_COST[type]) return { inventory: normalized, consumed: false };
   normalized[type] = 0;
   return { inventory: normalized, consumed: true };
 }
@@ -1295,14 +1313,17 @@ export function consumeCityRushCharge(inventory, type) {
 export function isCityRushPowerCharged(inventory, type) {
   const cost = CITY_RUSH_POWER_CHARGE_COST[type];
   if (!Number.isFinite(cost) || cost <= 0) return false;
-  return Math.max(0, Math.trunc(Number(inventory?.[type]) || 0)) >= cost;
+  const current = Math.max(0, Math.trunc(Number(inventory?.[type]) || 0));
+  // Pour l'AK-47, « chargé » signifie qu'il reste au moins une balle : le
+  // bouton doit rester utilisable de 7 jusqu'à la dernière balle.
+  return type === CITY_RUSH_POWERS.PISTOL ? current > 0 : current >= cost;
 }
 
 /**
- * Les bonus rouges restent sur la route pour ceux qui doivent encore charger.
+ * Les bonus rouges restent sur la route pour ceux qui n'ont plus de balle.
  * Ils ne disparaissent globalement qu'une fois le joueur et tous les
- * adversaires actifs chargés ; le filtrage individuel empêche un pilote déjà
- * prêt de reprendre le bonus réservé aux autres.
+ * adversaires actifs armés ; le filtrage individuel empêche un pilote qui a
+ * encore des balles de prendre le chargeur réservé aux autres.
  */
 export function shouldHideCityRushPistolPickup(playerInventory, opponentInventories = []) {
   if (!isCityRushPowerCharged(playerInventory, CITY_RUSH_POWERS.PISTOL)) return false;
@@ -1313,6 +1334,8 @@ export function shouldHideCityRushPistolPickup(playerInventory, opponentInventor
 export function canCollectCityRushPickup(inventory, type, { redPickupsHidden = false } = {}) {
   if (type === CITY_RUSH_PICKUPS.BOOST) return true;
   if (type !== CITY_RUSH_POWERS.PISTOL || redPickupsHidden) return false;
+  // Un chargeur rouge recharge sept balles d'un coup : on ne ramasse pas un
+  // deuxième chargeur tant qu'il en reste, afin que la rareté soit lisible.
   return !isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL);
 }
 
@@ -1587,10 +1610,11 @@ export function createCityRushEncounter(random = Math.random) {
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // Seuls les pads turbo et les bonus rouges de mitrailleuse apparaissent.
-    const type = roll < CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE
-      ? CITY_RUSH_PICKUPS.BOOST
-      : CITY_RUSH_POWERS.PISTOL;
+    // Les pads restent fréquents, mais le chargeur rouge est volontairement
+    // rare : une rangée sur cinq environ propose des balles.
+    const type = roll < CITY_RUSH_RED_PICKUP_CHANCE
+      ? CITY_RUSH_POWERS.PISTOL
+      : CITY_RUSH_PICKUPS.BOOST;
     pickups.push({ lane, type });
   }
 
@@ -1896,18 +1920,17 @@ export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafa
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
-// Les berlines de l'escouade ont une barre de vie : **trois tirs droits bleus**
-// (2 points chacun), OU **deux tirs rouges d'AK-47** (3 points chacun), OU
-// **un tir rouge et une collision** (3 points chacun), OU **deux collisions**
-// (3 points chacune), OU **un seul missile d'hélicoptère** (6 points) les
-// détruisent. Le barème est en points plutôt qu'en coups — un tir bleu ne
-// compte pas comme un tir rouge — et reste pur, donc testable hors de three.js.
-export const CITY_RUSH_POLICE_HEALTH = 6;
+// Les berlines de l'escouade ont désormais **quatre carrés de vie**. Une
+// balle rouge enlève exactement un carré : il faut quatre tirs rouges pour
+// détruire une voiture de police. Les autres impacts gardent leur logique :
+// deux tirs bleus, deux collisions, ou un seul missile d'hélicoptère suffisent.
+// Le barème reste pur, donc testable hors de three.js.
+export const CITY_RUSH_POLICE_HEALTH = 4;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
-  [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // trois tirs droits bleus (2 · 3 = 6)
-  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH / 2, // un tir rouge retire la moitié de la vie
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // deux tirs droits bleus (2 · 2 = 4)
+  [CITY_RUSH_POWERS.PISTOL]: 1, // un tir rouge détruit un carré
   [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
-  collision: CITY_RUSH_POLICE_HEALTH / 2, // un carambolage retire la moitié de la vie
+  collision: CITY_RUSH_POLICE_HEALTH / 2, // un carambolage retire deux carrés
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
