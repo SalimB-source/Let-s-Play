@@ -93,8 +93,8 @@ s'ouvre en courbe douce puis se resserre sur une cassure franche.
   - `'tightening'` — 45 % de l'angle en entrée douce, 55 % dans une cassure
     étroite placée vers la sortie (Aremberg, Metzgesfeld, Wehrbüsch,
     Brünnchen, Schwalbenschwanz…).
-  - `'snap'` — cassure seule, concentrée (chicane de Hohenrain, épingle
-    d'Adenauer Forst, virole du Karussell).
+  - `'snap'` — cassure seule, concentrée (épingle d'Adenauer Forst, virole du
+    Karussell).
   - `'smooth'` — la cloche rapide d'origine (ligne droite, crêtes, Fuchsröhre
     d'entrée).
   Chaque forme est **normalisée à une aire de 1** : l'angle annoncé reste
