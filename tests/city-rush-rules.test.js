@@ -174,10 +174,13 @@ import {
   markCityRushPickupTaken,
   rankCityRushRacers,
   resolveCityRushCarMovement,
+  CITY_RUSH_RAMP_COUNT,
   CITY_RUSH_RAMP_WIDTH,
   CITY_RUSH_RAMP_LENGTH,
   CITY_RUSH_RAMP_HEIGHT,
   CITY_RUSH_RAMP_CONTACT_WINDOW,
+  CITY_RUSH_RAMP_SPACING_MIN,
+  CITY_RUSH_RAMP_SPACING_MAX,
   computeCityRushJumpDistance,
   computeCityRushJumpHeight,
   computeCityRushJumpElevation,
@@ -2082,7 +2085,10 @@ test('Sprint : 14 checkpoints, 15 s entre chaque, arrivée au dernier', async ()
   assert.ok(rules.CITY_RUSH_SPRINT_CHECKPOINT_SPACING / rules.CITY_RUSH_PLAYER_SPEED < 15);
 });
 
-test('les tremplins et sauts font bondir la voiture sur une portée et hauteur proportionnelles à la vitesse', () => {
+test('les tremplins sont rares et les sauts moins hauts, avec une portée liée à la vitesse', () => {
+  assert.equal(CITY_RUSH_RAMP_COUNT, 3, 'seules trois rampes sont conservées dans le circuit');
+  assert.ok(CITY_RUSH_RAMP_SPACING_MIN >= 250, 'les rampes sont beaucoup plus espacées');
+  assert.ok(CITY_RUSH_RAMP_SPACING_MAX >= 300);
   assert.ok(CITY_RUSH_RAMP_WIDTH >= 2.0 && CITY_RUSH_RAMP_WIDTH <= 2.6);
   assert.ok(CITY_RUSH_RAMP_LENGTH >= 4.0 && CITY_RUSH_RAMP_LENGTH <= 6.0);
   assert.ok(CITY_RUSH_RAMP_HEIGHT >= 0.7 && CITY_RUSH_RAMP_HEIGHT <= 1.2);
@@ -2101,8 +2107,8 @@ test('les tremplins et sauts font bondir la voiture sur une portée et hauteur p
   const slowHeight = computeCityRushJumpHeight(15);
   const fastHeight = computeCityRushJumpHeight(60);
   assert.ok(fastHeight > slowHeight, 'la hauteur maximale augmente avec la vitesse');
-  assert.ok(slowHeight >= 2.2, 'hauteur suffisante pour passer au-dessus du trafic');
-  assert.ok(fastHeight <= 6.0, 'hauteur contenue sous les portiques');
+  assert.ok(slowHeight >= 1.4 && slowHeight < 2.0, 'même le saut lent reste modéré et franchit le trafic');
+  assert.ok(fastHeight <= 2.8, 'la hauteur est plafonnée à moins de trois mètres');
 
   // Trajectoire en cloche (élévation et pitch)
   const y0 = computeCityRushJumpElevation(0, medDist, 3.5);

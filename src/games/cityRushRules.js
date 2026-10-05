@@ -1713,15 +1713,16 @@ export function chooseCityRushAiLane({
 }
 
 // ── Tremplins et sauts ───────────────────────────────────────────────────────
-// Des rampes disposées le long de la piste font décoller la voiture sur une
-// trajectoire parabolique dont la portée et la hauteur dépendent de la vitesse.
-// En vol, le véhicule passe au-dessus du trafic et des barrages sans collision.
+// Des rampes espacées font décoller la voiture sur une trajectoire parabolique.
+// Le pool court et les grands intervalles évitent de surcharger la piste ; en
+// vol, le véhicule garde assez de hauteur pour franchir le trafic.
+export const CITY_RUSH_RAMP_COUNT = 3;
 export const CITY_RUSH_RAMP_WIDTH = 2.4;
 export const CITY_RUSH_RAMP_LENGTH = 4.8;
 export const CITY_RUSH_RAMP_HEIGHT = 0.85;
 export const CITY_RUSH_RAMP_CONTACT_WINDOW = 2.6;
-export const CITY_RUSH_RAMP_SPACING_MIN = 85;
-export const CITY_RUSH_RAMP_SPACING_MAX = 125;
+export const CITY_RUSH_RAMP_SPACING_MIN = 260;
+export const CITY_RUSH_RAMP_SPACING_MAX = 340;
 
 /**
  * Calcule la distance de saut (en mètres) franchie par la voiture selon la vitesse
@@ -1737,7 +1738,7 @@ export function computeCityRushJumpDistance(speed) {
  */
 export function computeCityRushJumpHeight(speed) {
   const s = Math.max(0, Number(speed) || 0);
-  return Math.min(5.6, Math.max(2.2, 1.8 + s * 0.062));
+  return Math.min(2.8, Math.max(1.4, 1.0 + s * 0.03));
 }
 
 /**

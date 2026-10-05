@@ -129,6 +129,7 @@ import {
   resolveCityRushCarMovement,
   resolveCityRushPoliceMovement,
   selectCityRushRacers,
+  CITY_RUSH_RAMP_COUNT,
   CITY_RUSH_RAMP_WIDTH,
   CITY_RUSH_RAMP_LENGTH,
   CITY_RUSH_RAMP_HEIGHT,
@@ -1205,9 +1206,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     rows.push({ index, group, slots, trackDistance: 0, pickups: [], pickupClaims: new Map(), crossedRacers: new Set() });
   }
 
-  const RAMP_COUNT = 8;
   const ramps = [];
-  for (let index = 0; index < RAMP_COUNT; index += 1) {
+  for (let index = 0; index < CITY_RUSH_RAMP_COUNT; index += 1) {
     const rampObj = makeRampObject(shared, city);
     scene.add(rampObj.group);
     ramps.push({
