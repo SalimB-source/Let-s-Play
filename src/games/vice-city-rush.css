@@ -497,6 +497,26 @@
   animation: crHurtFlash 0.34s ease-out;
 }
 
+/* Mire d'une berline dans le dos : un halo rouge remonte du bas du cadre, de
+   plus en plus vif à mesure que le viseur se ferme (`--cr-aim`, 0 → 1, envoyé
+   par le HUD). C'est le seul avertissement avant la rafale : se décaler casse
+   l'alignement et la rafale ne part pas. */
+.city-rush-viewport.is-aimed::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: calc(0.22 + var(--cr-aim, 0) * 0.78);
+  background: radial-gradient(96% 74% at 50% 104%, rgba(255, 44, 78, 0.46), transparent 66%);
+  animation: crAimPulse 0.82s ease-in-out infinite;
+}
+
+@keyframes crAimPulse {
+  0%, 100% { filter: brightness(0.82); }
+  50% { filter: brightness(1.28); }
+}
+
 @keyframes crHurtFlash { from { opacity: 1; } to { opacity: 0; } }
 
 /* ── HUD ── */

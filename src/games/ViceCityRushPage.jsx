@@ -45,6 +45,7 @@ import {
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
+  CITY_RUSH_POLICE_AIM_TIME,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   CITY_RUSH_PICKUPS,
@@ -182,7 +183,7 @@ const RACE_MODES = [
     id: 'pursuit',
     name: 'POURSUITE',
     label: `${CITY_RUSH_LAPS} TOURS · POLICE TOTALE`,
-    desc: `${CITY_RUSH_LAPS} tours, avec trois voitures de police sur tes traces dès le départ. Chaque rival qui touche une voiture de police avec un tir reçoit un poursuivant dédié. Les voitures de police du trafic peuvent aussi être détruites par les tirs rouges. Le joueur et ses adversaires ont chacun 15 carrés de vie ; le tir rouge en enlève un sans dérapage ni ralentissement. Mode défi : aucun billet vert.`,
+    desc: `${CITY_RUSH_LAPS} tours, avec trois voitures de police sur tes traces dès le départ. Chaque rival qui touche une voiture de police avec un tir reçoit un poursuivant dédié. Les voitures de police du trafic peuvent aussi être détruites par les tirs rouges. Le joueur et ses adversaires ont chacun 15 carrés de vie ; le tir rouge en enlève un sans dérapage ni ralentissement. Une berline armée se range dans ton dos : change de voie ou décale-toi avant que sa mire ne se ferme. Mode défi : aucun billet vert.`,
     accent: '#ffd44f',
     secondary: '#ff526e',
     laps: CITY_RUSH_LAPS,
@@ -533,6 +534,13 @@ export default function ViceCityRushPage() {
     : Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Number(hud.playerHealth) || 0));
   const playerHealthMax = Number(hud.playerHealthMax) || CITY_RUSH_PLAYER_HEALTH;
   const playerHealthCritical = playerHealthValue !== null && playerHealthValue <= CITY_RUSH_PLAYER_HEALTH_CRITICAL;
+  // Mire d'une berline dans le dos : progression du viseur (0 → 1) de la
+  // berline qui tient le pilote dans sa ligne de tir. Elle alimente le halo
+  // rouge du cadre : le pilote voit qu'il est visé avant que la rafale ne
+  // parte, et peut se décaler pour casser l'alignement.
+  const policeAim = (Array.isArray(hud.police) ? hud.police : [])
+    .filter((car) => car?.aimTargetId === 'player')
+    .reduce((best, car) => Math.max(best, Number(car.aim) || 0), 0);
   // Bonus de contresens : pourcentage de vitesse cumulé dans les voies en sens
   // inverse (0 % tant que la jauge est vide). C'est la récompense des voies les
   // plus dangereuses de la chaussée, et elle se paie d'un choc frontal.
@@ -910,6 +918,7 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ L’AK-47 (ROUGE)${effect.ready ? ' · IL EST CHARGÉ' : ''}.`, 'pistol');
+    else if (effect.type === 'police-aim') showToast(`🎯 ${effect.police} DANS TON DOS · DÉCALE-TOI OU ELLE TIRE.`, 'pistol');
     else if (effect.type === 'police-rally') showToast(
       `${effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`}${effect.healthLost > 0 ? ` CHOC · −1 CARRÉ (${effect.health}/${effect.maxHealth}).` : ''}`,
       'pistol',
@@ -1095,7 +1104,10 @@ export default function ViceCityRushPage() {
             </div>
           </div>
 
-          <div className={`city-rush-viewport${phase === 'intro' ? ' is-intro' : ''}${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}`}>
+          <div
+            className={`city-rush-viewport${phase === 'intro' ? ' is-intro' : ''}${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}${policeAim > 0 && phase === 'playing' ? ' is-aimed' : ''}`}
+            style={policeAim > 0 ? { '--cr-aim': policeAim.toFixed(2) } : undefined}
+          >
             <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? false : mode.policeFromStart} raceFormat={sprintMode ? 'sprint' : 'laps'} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onPickup={onPowerPickup} onEffect={effectMessage} onLap={onLap} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
 
@@ -1784,7 +1796,7 @@ export default function ViceCityRushPage() {
                     {!storyMode && mode.policeFromStart
                       ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
                       : 'En Circuit, trois voitures de police entrent au dernier tour et te prennent pour cible, même si tu n’es pas en tête.'}
-                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline de police a six points de vie : un tir rouge lui inflige 3 dégâts et un carambolage à pleine allure lui en inflige un, en te coûtant à toi aussi un carré. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui inflige 3 dégâts et un carambolage à pleine allure lui en inflige un, en te coûtant à toi aussi un carré. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
 
                   </>
                 )}

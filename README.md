@@ -924,6 +924,25 @@ et le dernier tour durait 21 s.
   `applyTrafficImpact`). Le changement de voie est calculé à la position de la
   berline, pas à celle du joueur.
 
+  **Ce sont les rafales qui vident la coque du joueur.** La mitrailleuse d'une
+  berline part **tout droit dans sa voie** : la berline doit donc se placer
+  derrière le pilote, dans sa voie, pour ouvrir le feu. Une seule unité prend
+  cette « ligne de tir » par client — la plus proche **derrière** lui
+  (`fireLiners`, `CITY_RUSH_POLICE_FIRE_LINE_RANGE`) — ; les autres gardent
+  leur voie, leurs vols de bonus et leurs rafales opportunistes, et une berline
+  du trafic rappelée par un contact n'y a jamais droit. **La rafale n'est tirée
+  qu'après un temps d'alignement** (`CITY_RUSH_POLICE_AIM_TIME` = 1,05 s) :
+  tant que la cible reste sur l'axe de la voie, le viseur se ferme
+  (`cityRushPoliceAimHold`), et le moindre écart latéral
+  (`CITY_RUSH_POLICE_AIM_TOLERANCE` = 1,15 m) ou changement de voie le remet à
+  zéro — c'est la contre-mesure du joueur, et le HUD l'annonce (`aim`,
+  `aimTargetId`, halo `is-aimed` du cadre, bandeau « DANS TON DOS »). **La
+  police ne tire jamais sur ses collègues** : la liste des cibles d'un tireur
+  policier exclut la police (`laneShotCandidates`), sinon l'escouade — qui
+  roule en file devant le leader — vidait ses chargeurs dans le pare-chocs de
+  la berline qui la précédait, et le joueur ne perdait jamais un carré. Chaque
+  rafale qui touche le joueur lui retire **une cellule** ; la barre à zéro le
+  met en épave.
   **Percuter la police en accélérant abîme les deux coques.** Le contact
   ne compte que si la berline est devant et que le joueur arrive dessus plus
   vite (`cityRushPoliceCollisionHit`). Il retire **un point de vie** à la
@@ -932,7 +951,8 @@ et le dernier tour durait 21 s.
   répit de choc. Une berline a six points de vie : deux tirs rouges d'AK-47
   (3 points chacun), trois tirs bleus (2 points chacun), six carambolages
   (1 point chacun), ou une combinaison équivalente la détruisent
-  (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`).
+  (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
+  barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
   À la destruction : explosion, retrait immédiat de la course et de la
   mini-carte, **+200 pts** pour le pilote qui l'abat
   (`CITY_RUSH_POLICE_DESTROY_SCORE`). La berline du trafic rappelée par un
@@ -1363,6 +1383,7 @@ npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, v
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide
+npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```

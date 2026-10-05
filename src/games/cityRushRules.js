@@ -3176,6 +3176,15 @@ export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en pi
 export const CITY_RUSH_POLICE_LOOKAHEAD = 200; // m : portée de convoitise des bonus
 export const CITY_RUSH_POLICE_STEAL_NOTICE = 150; // m : au-delà, la page ne commente plus un vol de bonus
 export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafales de la même berline
+// La mitrailleuse est fixée sur l'axe de la voie : la berline garde son viseur
+// sur une cible **immobile dans la voie** pendant un temps d'alignement avant
+// d'ouvrir le feu. Un pilote qui change de voie, ou qui se décale latéralement
+// hors de l'axe, casse l'alignement et la rafale ne part pas — c'est la
+// contre-mesure du joueur, et ce qui rend le danger lisible plutôt que fatal :
+// la berline prévient en se calant dans le dos, l'alignement se voit au HUD.
+export const CITY_RUSH_POLICE_AIM_TIME = 1.05; // s : temps de mire avant la rafale
+export const CITY_RUSH_POLICE_AIM_TOLERANCE = 1.15; // m : écart latéral toléré entre la cible et l'axe de la voie
+export const CITY_RUSH_POLICE_AIM_NOTICE_COOLDOWN = 3.2; // s : deux avis de mire ne se répètent pas plus vite
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
@@ -3210,6 +3219,37 @@ export function cityRushPoliceShotsLeft(health = CITY_RUSH_POLICE_HEALTH, source
   return Math.ceil(safeHealth / damage);
 }
 
+// ── Alignement de la rafale : le viseur de la berline ───────────────────────
+// Le temps de mire se cumule tant que la cible reste sur l'axe de la voie et
+// devant la berline ; il retombe à zéro au moindre écart (changement de voie,
+// décalage latéral, cible sortie de la ligne de tir, rafale partie).
+export function cityRushPoliceAimAligned({
+  x = 0,
+  laneX = 0,
+  tolerance = CITY_RUSH_POLICE_AIM_TOLERANCE,
+} = {}) {
+  const lateral = Math.abs(Number(x) - Number(laneX));
+  const slack = Math.max(0, Number(tolerance) || 0);
+  return Number.isFinite(lateral) && lateral <= slack;
+}
+
+export function cityRushPoliceAimHold({
+  aim = 0,
+  aligned = false,
+  dt = 0,
+  duration = CITY_RUSH_POLICE_AIM_TIME,
+} = {}) {
+  const safeDuration = Math.max(0.001, Number(duration) || CITY_RUSH_POLICE_AIM_TIME);
+  const safeAim = Math.max(0, Math.min(safeDuration, Number(aim) || 0));
+  if (!aligned) return 0;
+  return Math.min(safeDuration, safeAim + Math.max(0, Number(dt) || 0));
+}
+
+export function cityRushPoliceAimReady(aim = 0, duration = CITY_RUSH_POLICE_AIM_TIME) {
+  const safeDuration = Math.max(0.001, Number(duration) || CITY_RUSH_POLICE_AIM_TIME);
+  return Math.max(0, Number(aim) || 0) >= safeDuration;
+}
+
 // Prime de destruction : le pilote qui fait exploser une berline la touche.
 export const CITY_RUSH_POLICE_DESTROY_SCORE = 200;
 
@@ -3236,6 +3276,17 @@ export const CITY_RUSH_POLICE_BLOCKADE_HOLD = 3.2; // s : durée d'un barrage av
 export const CITY_RUSH_POLICE_INTERCEPT_RANGE = 80; // m : devant le leader, portée où la berline vise sa voie
 export const CITY_RUSH_POLICE_INTERCEPT_WEIGHT = 3; // un barrage vaut trois bonus ordinaires
 export const CITY_RUSH_POLICE_HUNT_RANGE = 60; // m : sous cette distance, un rouge/jaune passe avant le barrage
+
+// ── Ligne de tir : la berline armée se replace dans le dos du pilote ────────
+// Une rafale part tout droit devant le capot : pour arroser le pilote, la
+// berline doit donc rouler dans **sa** voie, quelques mètres derrière lui
+// (`CITY_RUSH_POLICE_ATTACK_LEAD`). Comme le barrage, c'est un choix de
+// mission : la berline armée se rabat une voie à la fois vers celle de son
+// client, sans se laisser détourner par un pad turbo. Sans cela, l'escouade
+// gardait sa voie de convoitise et vidait ses chargeurs dans le vide — le
+// pilote ne perdait jamais un seul carré.
+export const CITY_RUSH_POLICE_FIRE_LINE_RANGE = CITY_RUSH_BLUE_SHOT_MAX_RANGE; // m : portée de la rafale
+export const CITY_RUSH_POLICE_FIRE_LINE_WEIGHT = 3; // une ligne de tir vaut un barrage
 // Engluée (vitesse effondrée derrière une voiture qu'elle ne peut plus
 // traverser), la berline cherche d'abord à s'extraire de la voie : rester
 // collée derrière un pilote l'empêcherait de venir le bloquer.
@@ -3425,6 +3476,9 @@ export function chooseCityRushPoliceLane({
   interceptLane = null,
   interceptGap = 0,
   interceptRange = CITY_RUSH_POLICE_INTERCEPT_RANGE,
+  fireLane = null,
+  fireGap = 0,
+  fireRange = CITY_RUSH_POLICE_FIRE_LINE_RANGE,
   stuck = false,
   lookAheadDistance = CITY_RUSH_POLICE_LOOKAHEAD,
 } = {}) {
@@ -3444,6 +3498,14 @@ export function chooseCityRushPoliceLane({
   const intercepting = interceptLane !== null && interceptLane !== undefined
     && Number.isFinite(interceptLead) && interceptLead >= 0 && interceptLead <= interceptLimit;
   const interceptTarget = intercepting ? clampCityRushLane(interceptLane, laneCount) : null;
+  // Miroir du barrage : une berline armée qui se trouve **derrière** son client
+  // vise sa voie pour lui tirer dans le dos. Les deux missions s'excluent — on
+  // ne barre pas la route depuis l'arrière.
+  const fireLead = Number(fireGap);
+  const fireLimit = Math.max(1, Number(fireRange) || CITY_RUSH_POLICE_FIRE_LINE_RANGE);
+  const firing = interceptTarget === null && fireLane !== null && fireLane !== undefined
+    && Number.isFinite(fireLead) && fireLead <= 0 && fireLead >= -fireLimit;
+  const fireTarget = firing ? clampCityRushLane(fireLane, laneCount) : null;
   // Une voie bouchée par un véhicule lent est écartée d'office tant qu'une voie
   // libre est ouverte : la convoitise (×100) écrasait la prudence, et l'escouade
   // restait collée à un camion, à 5 m/s, pendant que le leader s'envolait.
@@ -3462,6 +3524,19 @@ export function chooseCityRushPoliceLane({
       return Number.isFinite(gap) && gap > -3 && gap <= CITY_RUSH_POLICE_HUNT_RANGE;
     });
     const toward = interceptTarget > lane ? lane + 1 : interceptTarget < lane ? lane - 1 : lane;
+    if (!huntedWithinReach && options.includes(toward)) return toward;
+  }
+  // Ligne de tir : la berline armée se rabat dans la voie de son client, une
+  // voie à la fois, dès qu'elle est derrière lui. Une voie bouchée reste
+  // contournée (`options`), et un rouge à portée de capot passe avant — mais
+  // une berline déjà chargée ne convoite plus les rouges.
+  if (fireTarget !== null) {
+    const huntedWithinReach = pickups.some((pickup) => {
+      if (!CITY_RUSH_POLICE_HUNT_TYPES.includes(pickup.type)) return false;
+      const gap = Number(pickup.distance) - Number(distance);
+      return Number.isFinite(gap) && gap > -3 && gap <= CITY_RUSH_POLICE_HUNT_RANGE;
+    });
+    const toward = fireTarget > lane ? lane + 1 : fireTarget < lane ? lane - 1 : lane;
     if (!huntedWithinReach && options.includes(toward)) return toward;
   }
   let bestLane = options.includes(lane) ? lane : options[0];
@@ -3514,6 +3589,12 @@ export function chooseCityRushPoliceLane({
     if (interceptTarget !== null && candidate === interceptTarget) {
       const urgency = 1 - Math.max(0, interceptLead) / interceptLimit;
       greed += CITY_RUSH_POLICE_INTERCEPT_WEIGHT * (22 + urgency * 10);
+    }
+    // Même poids pour la ligne de tir quand le rabattement direct vers la voie du
+    // client est bouché : la berline armée préfère une voie qui la rapproche de
+    // son pare-chocs plutôt que de repartir à la chasse aux pads turbo.
+    if (fireTarget !== null && candidate === fireTarget) {
+      greed += CITY_RUSH_POLICE_FIRE_LINE_WEIGHT * (22 + 10);
     }
     // À défaut de bonus, une berline se rabat volontiers dans la voie du
     // leader ou dans sa voie d'entrée : l'escouade encadre la piste au lieu

@@ -201,3 +201,73 @@ test('en plein saut, personne ne change de voie : ni le joueur, ni les rivaux', 
   // La page le dit au joueur dans le guide des tremplins.
   assert.match(page, /en l’air, la voiture garde sa voie/);
 });
+
+test('la police tire sur les pilotes, jamais sur ses collègues', () => {
+  // La liste des cibles d'un tir part du tireur : un policier ne prend pas la
+  // police dans sa ligne de tir (sinon l'escouade, qui roule en file devant le
+  // leader, vidait ses chargeurs dans le pare-chocs de la berline précédente).
+  const candidates = world.match(/function laneShotCandidates\([\s\S]*?\n  function firstEnemyOnLane/)?.[0] || '';
+  assert.ok(candidates, 'la liste des cibles des tirs existe');
+  assert.match(candidates, /const policeAttacker = Boolean\(activePursuerById\(attackerId\)\)/);
+  assert.match(candidates, /\.\.\.\(policeAttacker \? \[\] : activePursuers\(\)/,
+    'la police ne se vise pas elle-même');
+  assert.match(candidates, /policeAttacker \? \[\] : \[\.\.\.trafficCars, \.\.\.oncomingCars\]/,
+    'un tireur policier ne vise pas non plus la police du trafic');
+  // Les pilotes, eux, gardent la police dans leurs cibles : le joueur abat les
+  // berlines à l’AK-47 et un rival qui touche la police reçoit son poursuivant.
+  assert.match(candidates, /attackerId === 'player'\s*\n?\s*\? \[\.\.\.trafficCars, \.\.\.oncomingCars\]/);
+});
+
+test('une berline armée se range dans le dos du pilote, avec une mire annoncée', () => {
+  const policeUpdate = world.match(/function updatePolice\([\s\S]*?\n  function canEnterLane/)?.[0] || '';
+  assert.ok(policeUpdate, 'la mise à jour de l’escouade existe');
+  // Une seule berline prend la ligne de tir par client, et jamais une berline
+  // du trafic rappelée par un contact.
+  assert.match(policeUpdate, /const fireLiners = new Map\(\)/);
+  assert.match(policeUpdate, /if \(police\.rallied\) continue;/);
+  assert.match(policeUpdate, /gap >= 0 \|\| gap < -CITY_RUSH_POLICE_FIRE_LINE_RANGE/);
+  assert.match(policeUpdate, /fireLane: !police\.rallied && fireLiners\.get\(leader\.id\)\?\.police === police \? leader\.lane : null/);
+  // La rafale attend l'alignement : le temps de mire se cumule et retombe à
+  // zéro dès que la cible se décale.
+  assert.match(policeUpdate, /const aligned = Boolean\(target\) && cityRushPoliceAimAligned\(/);
+  assert.match(policeUpdate, /police\.aimLeft = cityRushPoliceAimHold\(\{ aim: police\.aimLeft, aligned: true, dt \}\)/);
+  assert.match(policeUpdate, /if \(!cityRushPoliceAimReady\(police\.aimLeft\)\) continue;/);
+  assert.match(policeUpdate, /fireAsPolice\(police\);[\s\S]*?police\.aimLeft = 0;/);
+  assert.match(policeUpdate, /type: 'police-aim'/);
+  // La cible d'une mire doit porter sa position latérale : la mire se casse
+  // quand le pilote se décale, pas seulement quand il change de voie.
+  assert.match(world, /x: playerCar\.position\.x/);
+  assert.match(world, /x: racer\.currentX/);
+  // Le HUD annonce la mire, la page la montre et prévient le pilote.
+  assert.match(world, /aim: police\.aimLeft > 0 \? clamp\(police\.aimLeft \/ CITY_RUSH_POLICE_AIM_TIME, 0, 1\) : 0/);
+  assert.match(world, /aimTargetId: police\.aimTargetId \|\| null/);
+  assert.match(page, /const policeAim = \(Array\.isArray\(hud\.police\)/);
+  assert.match(page, /policeAim > 0 && phase === 'playing' \? ' is-aimed' : ''/);
+  assert.match(page, /'--cr-aim': policeAim\.toFixed\(2\)/);
+  assert.match(page, /effect\.type === 'police-aim'/);
+  assert.match(css, /\.city-rush-viewport\.is-aimed::before\s*\{/);
+  assert.match(css, /@keyframes crAimPulse\s*\{/);
+});
+
+test('une berline détruite nomme son auteur, et la poursuite reste en course', () => {
+  assert.match(world, /type: 'police-destroyed'[\s\S]*?attackerId: attackerId \|\| null/,
+    'l’auteur du dernier dégât voyage avec l’explosion');
+  assert.match(world, /CITY_RUSH_POLICE_FIRE_LINE_RANGE/);
+  assert.match(world, /CITY_RUSH_POLICE_AIM_TIME/);
+});
+
+test('la barre d’une berline affiche bien ses six carrés de vie', () => {
+  // Le nombre de carrés dessinés au-dessus du toit vient de la règle : changer
+  // la vie de la police change la barre, et réciproquement.
+  const bar = world.match(/function attachPoliceHealthBar\([\s\S]*?\nfunction detachPoliceHealthBar/)?.[0] || '';
+  assert.ok(bar, 'la barre de vie des berlines existe');
+  assert.match(bar, /const segmentCount = CITY_RUSH_POLICE_HEALTH;/);
+  assert.match(bar, /Array\.from\(\{ length: segmentCount \}/);
+  assert.match(bar, /Array\.from\(\{ length: segmentCount \}, \(_, index\) => \{/);
+  // Les carrés allumés suivent la vie restante, arrondie au carré supérieur.
+  assert.match(world, /segment\.visible = segmentIndex < remainingSquares;/);
+  assert.match(world, /const remainingSquares = Math\.ceil\(clamp\(police\.health, 0, CITY_RUSH_POLICE_HEALTH\)\)/);
+  // La page annonce les six carrés dans le bandeau de touche.
+  assert.match(page, /CARRÉS\./);
+  assert.match(page, /effect\.maxHealth/);
+});
