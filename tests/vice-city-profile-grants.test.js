@@ -182,7 +182,7 @@ test('les listes du SQL ne dérivent pas du catalogue du jeu', () => {
   for (const course of CITY_RUSH_COURSES) assert.ok(course.id.length > 0);
   assert.match(grants, new RegExp(`jsonb_build_array\\([\\s\\S]*?'${CITY_RUSH_CARS.length === 0 ? '' : CITY_RUSH_CARS[0].id}'`));
   assert.equal(CITY_RUSH_CARS.length, 8);
-  assert.equal(CITY_RUSH_COURSES.length, 7);
+  assert.equal(CITY_RUSH_COURSES.length, 8);
 });
 
 /** Contenu brut du document écrit sous une clé (pour vérifier la forme exacte). */

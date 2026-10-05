@@ -36,9 +36,13 @@ export const CITY_RUSH_MUSIC_BPM = Object.freeze({
 });
 export const CITY_RUSH_DEFAULT_BPM = 122;
 export const CITY_RUSH_ROUTE_66_BPM = 108;
+// Le Ring : tempo posé, plus proche du rythme d'un tour de 8 minutes que d'une
+// course de rue. Constant à part, comme la 66, pour ne pas toucher aux villes.
+export const CITY_RUSH_NORDSCHLEIFE_BPM = 116;
 
 export function cityRushMusicBpm(cityId) {
   if (cityId === 'route-66') return CITY_RUSH_ROUTE_66_BPM;
+  if (cityId === 'nordschleife') return CITY_RUSH_NORDSCHLEIFE_BPM;
   return CITY_RUSH_MUSIC_BPM[cityId] || CITY_RUSH_DEFAULT_BPM;
 }
 

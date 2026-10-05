@@ -311,6 +311,66 @@ export const CITY_RUSH_THEMES = Object.freeze({
       exposure: 1.0,
     }),
   }),
+  // ── Nürburgring Nordschleife · Eifel ──────────────────────────────────
+  // Ciel d'orage qui se lève sur la forêt : la « Grüne Hölle » change de
+  // temps tous les kilomètres. Le thème porte `raceway` — le monde construit
+  // alors la piste étroite de `nordschleifeStage.js` au lieu d'une rue — et
+  // `roadHalf` fixe sa largeur : 9,20 m de bitume (8,40 m utiles, comme le
+  // vrai Ring, plus la marge peinte de chaque côté).
+  nordschleife: Object.freeze({
+    daylight: true,
+    raceway: true,
+    roadHalf: 4.6,
+    verge: true,
+    sky: Object.freeze({
+      top: 0x2f6fb2, mid: 0x7fa8c8, horizon: 0xd9e0d0, haze: 0xe8e4cf,
+      sun: Object.freeze({ color: 0xfff6dc, glow: 0xf2cf8a, elevation: 0.58, radius: 0.052, stripes: 0 }),
+      stars: 0, moon: 0,
+    }),
+    // Le Ring a son microclimat : averse sur la Hohe Acht, soleil à Breidscheid.
+    weather: 'rain',
+    fogNear: 120, fogFar: 420,
+    facade: Object.freeze({
+      style: 'eifel', floor: 1.4, litRatio: 0.02, litColors: ['#ffe9b0'],
+      wall: '#e6e1d4', glass: '#3d5566', sheen: 'rgba(240, 244, 232, .2)', frame: '#6b5a44',
+    }),
+    shops: Object.freeze([
+      { text: 'MOTORSPORT SHOP', color: '#c8382f', awning: '#f4f1e8' },
+      { text: 'RING CAFÉ', color: '#3f6d4a', awning: '#e8dcb8' },
+      { text: 'REIFEN DIENST', color: '#2f3a42', awning: '#d7b049' },
+      { text: 'EIFEL BRAUHAUS', color: '#8f4134', awning: '#f4f1e8' },
+    ]),
+    shopWall: '#cfc7b4', shopTrim: '#5a5145', shopDoor: '#2f3a42',
+    verticalSigns: Object.freeze(['NORDSCHLEIFE', 'EIFEL', 'RING°', 'GRÜNE HÖLLE', 'BOXENGASSE']),
+    sponsors: Object.freeze(['NÜRBURGRING', 'GRÜNE HÖLLE', 'EIFEL', 'RING RACING', 'ADENAU', 'DÖTTINGER HÖHE']),
+    gate: Object.freeze({ style: 'nordschleife', text: 'NORDSCHLEIFE · EINFAHRT' }),
+    gantryText: 'NORDSCHLEIFE',
+    crowdColors: Object.freeze([0xf4f1e8, 0xc8382f, 0xd7b049, 0x3f6d4a, 0x2f3a42, 0x8f4134]),
+    roadTint: 0x4a4a4c, laneColor: '#f4f1e8', centerLineColor: '#f4d35e', edgeColor: '#f4f1e8', sidewalkTint: 0x4f7a3c,
+    lamp: 'ring', tree: 'eifel',
+    ground: 0x3f6634,
+    glow: 0.1,
+    lampCone: 0.01,
+    accentCone: 0.04,
+    curb: 0x6f6a63,
+    skyline: Object.freeze({ base: [110, 124, 96], window: 'rgba(255, 240, 200, .14)' }),
+    materials: Object.freeze({
+      kerbRed: 0xc8382f, kerbWhite: 0xf1efe6, armco: 0xa8adb4, armcoPost: 0x6b7076,
+      concrete: 0x9a978d, concreteDark: 0x74716a, gravel: 0x9a8f7c, gravelDark: 0x7d7361,
+      grass: 0x4f7a3c, grassDark: 0x375c2c, foliage: 0x2f5a30, foliageLight: 0x477a3a,
+      trunk: 0x53402f, wood: 0x7a5b3a, steel: 0x8e949c, darkMetal: 0x2e3238,
+      stone: 0x8d867a, slate: 0x3a3f47, plaster: 0xe6e1d4, roofTile: 0x8f4134,
+      canopy: 0xd9d3c2, terracotta: 0x8f4134,
+    }),
+    light: Object.freeze({
+      key: Object.freeze({ color: 0xfff2d6, intensity: 2.9, position: [-16, 38, 6] }),
+      hemi: Object.freeze({ sky: 0xcfe2ef, ground: 0x5a6b4a, intensity: 1.5 }),
+      rim: Object.freeze({ color: 0xf2cf8a, intensity: 0.5, position: [16, 12, -30] }),
+      fill: Object.freeze({ color: 0x8fb0c8, intensity: 3.4, distance: 90, position: [0, 9, -30] }),
+      headlamp: 0,
+      exposure: 1.0,
+    }),
+  }),
 });
 
 export function cityRushTheme(cityId) {

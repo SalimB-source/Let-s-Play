@@ -8,6 +8,7 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_ROAD_HALF_WIDTH,
   CITY_RUSH_SCROLL_SCALE,
+  CITY_RUSH_TRACK_PROFILE_DEFAULT,
   cityRushTrackElevation,
   cityRushTrackOffset,
 } from './cityRushRules.js';
@@ -248,18 +249,18 @@ export function makeCurvedStripGeometry(innerX, outerX, y = 0, segments = ROAD_C
 // Actualise une bande de bitume à partir de la distance réelle du joueur.
 // La courbe et le léger relief sont appliqués à chaque rangée de sommets :
 // marquages, trottoirs, bordures et lignes néon suivent la même chaussée.
-export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ) {
+export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT) {
   const positions = mesh.geometry.attributes.position;
   const segments = positions.count / 2 - 1;
-  const playerCurve = cityRushTrackOffset(playerDistance);
-  const playerElevation = cityRushTrackElevation(playerDistance);
+  const playerCurve = profile.offset(playerDistance);
+  const playerElevation = profile.elevation(playerDistance);
   const baseY = mesh.geometry.userData.trackBaseY || 0;
   for (let index = 0; index <= segments; index += 1) {
     const progress = index / segments;
     const gap = ROAD_VIEW_BEHIND + (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * progress;
     const trackDistance = playerDistance + gap;
-    const centerX = cityRushTrackOffset(trackDistance) - playerCurve;
-    const y = baseY + cityRushTrackElevation(trackDistance) - playerElevation;
+    const centerX = profile.offset(trackDistance) - playerCurve;
+    const y = baseY + profile.elevation(trackDistance) - playerElevation;
     const z = playerZ - gap * SCALE;
     const first = index * 2;
     positions.setXYZ(first, centerX + innerX, y, z);
@@ -271,7 +272,7 @@ export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ)
   mesh.geometry.computeVertexNormals();
 }
 
-export function makeRoad(scene, theme, random, playerZ) {
+export function makeRoad(scene, theme, random, playerZ, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT) {
   const roadTexture = makeRoadTexture(theme, random);
   roadTexture.repeat.set(1, (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * SCALE / ROAD_TILE_LENGTH);
   const roadMaterial = new THREE.MeshStandardMaterial({
@@ -320,9 +321,9 @@ export function makeRoad(scene, theme, random, playerZ) {
   });
 
   const updateCurve = (distance = 0) => {
-    updateCurvedStrip(ground, -210, 210, distance, playerZ);
-    updateCurvedStrip(road, -ROAD_HALF, ROAD_HALF, distance, playerZ);
-    strips.forEach(({ mesh, inner, outer }) => updateCurvedStrip(mesh, inner, outer, distance, playerZ));
+    updateCurvedStrip(ground, -210, 210, distance, playerZ, profile);
+    updateCurvedStrip(road, -ROAD_HALF, ROAD_HALF, distance, playerZ, profile);
+    strips.forEach(({ mesh, inner, outer }) => updateCurvedStrip(mesh, inner, outer, distance, playerZ, profile));
   };
   updateCurve(0);
 
@@ -1700,15 +1701,15 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
 // une seule fois selon la ligne centrale et le relief du circuit : façades,
 // lampadaires et portique suivent ainsi les mêmes courbes et montées que la
 // chaussée, sans coût à chaque image. La copie suivante partage cette géométrie.
-function bendLoopGeometry(group) {
+function bendLoopGeometry(group, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT) {
   group.traverse((object) => {
     if (!object.isMesh || !object.geometry?.attributes?.position) return;
     const positions = object.geometry.attributes.position;
     for (let index = 0; index < positions.count; index += 1) {
       const z = positions.getZ(index);
       const trackMeters = -z / SCALE;
-      positions.setX(index, positions.getX(index) + cityRushTrackOffset(trackMeters));
-      positions.setY(index, positions.getY(index) + cityRushTrackElevation(trackMeters));
+      positions.setX(index, positions.getX(index) + profile.offset(trackMeters));
+      positions.setY(index, positions.getY(index) + profile.elevation(trackMeters));
     }
     positions.needsUpdate = true;
     // Les façades et le sol reçoivent toujours la lumière de la bonne
@@ -1718,9 +1719,9 @@ function bendLoopGeometry(group) {
   });
 }
 
-export function finishLoopGeometry(batch, scene) {
+export function finishLoopGeometry(batch, scene, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT) {
   const copyA = batch.build('city-loop');
-  bendLoopGeometry(copyA);
+  bendLoopGeometry(copyA, profile);
   const copyB = cloneBatchGroup(copyA);
   scene.add(copyA, copyB);
   return [copyA, copyB];

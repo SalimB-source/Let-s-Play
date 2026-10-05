@@ -36,6 +36,7 @@
     "check:city-rush-sprint": "node scripts/city-rush-sprint-smoke.mjs",
     "check:city-rush-sprint-ui": "node scripts/vice-city-sprint-ui-check.mjs",
     "check:city-rush-mexico": "node scripts/vice-city-mexico-ui-check.mjs",
+    "check:city-rush-nordschleife": "node scripts/vice-city-nordschleife-ui-check.mjs",
     "check:city-rush-weapons": "node scripts/city-rush-blue-shot-police-check.mjs --all",
     "check:city-rush-blue-shot": "node scripts/city-rush-blue-shot-police-check.mjs --all",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",

@@ -795,6 +795,30 @@ export function makeGantrySignTexture(city, theme) {
       neonText(ctx, (route.signExits || []).join('  ·  '), width - 70, height * 0.5, '800 34px "Orbitron", Arial, sans-serif', '#f4f8f1', 0, 'right');
     }, 1536, 320, { smooth: true });
   }
+  // Start-Ziel-Anlage du Nürburgring : le portique historique porte un panneau
+  // noir et blanc, la pastille de la route NS et les noms réels du circuit —
+  // en allemand, comme sur place.
+  if (theme.raceway) {
+    const route = city.route || {};
+    return makeCanvasTexture((ctx, width, height) => {
+      ctx.fillStyle = '#0b0d10';
+      ctx.fillRect(0, 0, width, height);
+      const cell = 32;
+      for (let column = 0; column < width / cell; column += 1) {
+        for (let row = 0; row < 2; row += 1) {
+          ctx.fillStyle = (row + column) % 2 ? '#f3f3ef' : '#0b0d10';
+          ctx.fillRect(column * cell, row * cell, cell, cell);
+          ctx.fillRect(column * cell, height - (row + 1) * cell, cell, cell);
+        }
+      }
+      ctx.fillStyle = city.accent;
+      ctx.fillRect(0, cell * 2, width, 6);
+      ctx.fillRect(0, height - cell * 2 - 6, width, 6);
+      neonText(ctx, 'START · ZIEL', width * 0.5, height * 0.4, '900 88px "Orbitron", Arial, sans-serif', '#f6f4ec', 22);
+      neonText(ctx, `${route.origin?.name || 'ANTONIUSBUCHE'} · KM 0 · ${route.direction || 'SENS HORAIRE'}`, width * 0.5, height * 0.66, '800 40px "Orbitron", Arial, sans-serif', city.accent, 12);
+      neonText(ctx, `${route.name || city.name} · ${theme.gantryText || 'GRÜNE HÖLLE'}`, width * 0.5, height * 0.85, '700 34px "Orbitron", Arial, sans-serif', '#b9c9a8', 0);
+    }, 1536, 320, { smooth: true });
+  }
   return makeCanvasTexture((ctx, width, height) => {
     ctx.fillStyle = '#0a0d1c';
     ctx.fillRect(0, 0, width, height);
