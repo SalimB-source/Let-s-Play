@@ -2714,22 +2714,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-radar .city-rush-race-list-badges b { display: none; }
 
   /* Le radar et les commandes occupent les deux coins inférieurs. La barre
-     reste centrée au-dessus d'eux : ancrée en bas à gauche, elle était cachée
-     derrière le classement, qui a un z-index supérieur. */
+     reste centrée dans l'espace libre, mais passe sur une ligne compacte et
+     descend près du bas du jeu pour laisser davantage de route visible. */
   .city-rush-health {
     z-index: 6;
     left: 50%;
     right: auto;
-    bottom: calc(230px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(218px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
     width: min(156px, 44%);
-    padding: 6px 8px 7px;
-    border-radius: 10px;
+    padding: 5px 8px;
+    border-radius: 9px;
   }
-  .city-rush-health-head { margin-bottom: 4px; }
-  .city-rush-health-head b { font-size: 8px; }
-  .city-rush-health-head small { font-size: 7px; }
-  .city-rush-health-track { height: 8px; }
+  .city-rush-health-head { flex: 0 0 auto; margin-bottom: 0; }
+  .city-rush-health-head b { font-size: 7px; }
+  .city-rush-health-head small { display: none; }
+  .city-rush-health-track { flex: 1; min-width: 0; height: 6px; }
 
   .city-rush-status-pill { top: 84px; font-size: 9.5px; padding: 7px 12px; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .city-rush-toast { top: 118px; font-size: 11px; padding: 10px 14px; max-width: min(420px, calc(100% - 20px)); }
