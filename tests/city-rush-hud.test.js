@@ -161,3 +161,43 @@ test('changer de voie ne ralentit plus : ni malus dans le monde, ni promesse dan
   assert.match(page, /changer de voie ne ralentit plus/i);
 });
 
+test('le bonus de contresens vit dans le monde, s’affiche et se perd au choc frontal', () => {
+  // Le monde fait vivre la jauge (règles importées), l’expose au HUD et
+  // l’annonce par paliers.
+  assert.match(world, /advanceCityRushOncomingBonus\(playerOncomingTime, dt, inOncomingLane\)/);
+  assert.match(world, /playerOncomingTime = 0;/);
+  assert.match(world, /playerOncomingStage = 'none';/);
+  assert.match(world, /oncomingBonus: cityRushOncomingBonusFactor\(playerOncomingTime\)/);
+  assert.match(world, /const oncomingScale = cityRushOncomingBonusFactor\(playerOncomingTime\)/);
+  const oncomingTargetLine = world.match(/const targetPlayerSpeed = [^\n]+/)?.[0] || '';
+  assert.match(oncomingTargetLine, /oncomingScale/, 'le contresens entre dans la vitesse visée');
+  assert.match(world, /type: 'oncoming-bonus'/);
+  assert.match(world, /stage: 'lost'/);
+  // La page l’affiche : pourcentage dans la carte VITESSE et pastille d’état
+  // « CONTRESENS », avec le règlement qui l’explique.
+  assert.match(page, /oncomingBonusPercent/);
+  assert.match(page, /city-rush-speed-bonus/);
+  assert.match(page, /CONTRESENS/);
+  assert.match(page, /Rouler à contresens/);
+  assert.match(css, /\.city-rush-status-pill\.is-oncoming\s*\{/);
+  assert.match(css, /\.city-rush-speed-bonus\s*\{/);
+});
+
+test('Londres et Tokyo roulent à gauche jusque dans le décor et la page', () => {
+  const themes = readFileSync(new URL('../src/games/cityRushThemes.js', import.meta.url), 'utf8');
+  const textures = readFileSync(new URL('../src/games/cityRushTextures.js', import.meta.url), 'utf8');
+  assert.match(world, /const driveSide = courseLanes\.driveSide/);
+  assert.match(world, /pushDirection: driveSide === 'left' \? 'right' : 'left'/);
+  assert.match(world, /cityRushOncomingImpactX\(oncoming\.pushAsideStartX, oncoming\.pushAsideElapsed, oncoming\.width, driveSide\)/);
+  assert.match(page, /city\.driveSide === 'left'/);
+  assert.match(themes, /driveSide: 'left'/);
+  assert.match(textures, /const leftHand = cityRushThemeDriveSide\(theme\) === 'left'/);
+});
+
+test('en plein saut, personne ne change de voie : ni le joueur, ni les rivaux', () => {
+  assert.match(world, /const nextLane = cityRushLaneAfterAction\(playerLane, name, laneCount, \{ airborne: playerJumpState\.active \}\)/);
+  assert.match(world, /const racerAirborne = Boolean\(racer\.jumpState\?\.active\)/);
+  assert.match(world, /&& !racerAirborne\) racer\.changeIn -= dt/);
+  // La page le dit au joueur dans le guide des tremplins.
+  assert.match(page, /en l’air, la voiture garde sa voie/);
+});

@@ -145,6 +145,12 @@ export const CITY_RUSH_THEMES = Object.freeze({
   // 北の丸 → 千代田 → 霞が関 → 谷町 → 飯倉 → 芝公園 et sa Tokyo Tower →
   // 浜崎橋 → 汐留 → 銀座 → 京橋 → 宝町) viennent de `CITY_RUSH_SHUTO_C1`.
   tokyo: Object.freeze({
+    // Le Japon roule à gauche : la chaussée de la C1 peint ses flèches de voie
+    // en miroir — la moitié gauche va dans le sens de la course, la droite
+    // vient en face. Côté règles, le même champ vit sur la ville, dans
+    // `CITY_RUSH_CITIES` (`driveSide: 'left'`) ; le test des thèmes vérifie que
+    // les deux restent d'accord.
+    driveSide: 'left',
     sky: Object.freeze({
       top: 0x070b1e, mid: 0x1d1a44, horizon: 0x6d3560, haze: 0xffa463,
       sun: Object.freeze({ color: 0xfff6e0, glow: 0xf54eae, elevation: 0.2, radius: 0.048, stripes: 0 }),
@@ -232,6 +238,10 @@ export const CITY_RUSH_THEMES = Object.freeze({
     lamp: 'globe', tree: 'plane',
   }),
   london: Object.freeze({
+    // Le Royaume-Uni roule à gauche (voir le commentaire du thème de Tokyo) :
+    // les flèches des trois voies de gauche pointent vers l'avant, celles de
+    // droite viennent vers le joueur.
+    driveSide: 'left',
     sky: Object.freeze({
       top: 0x0b1226, mid: 0x1f3047, horizon: 0x4f5f6c, haze: 0xd8b27a,
       sun: Object.freeze({ color: 0xfff4de, glow: 0xffc879, elevation: 0.17, radius: 0.05, stripes: 0 }),
@@ -375,6 +385,16 @@ export const CITY_RUSH_THEMES = Object.freeze({
 
 export function cityRushTheme(cityId) {
   return CITY_RUSH_THEMES[cityId] || CITY_RUSH_THEMES['vice-city'];
+}
+
+/**
+ * Côté de circulation peint par un thème : `'right'` par défaut, `'left'` pour
+ * les thèmes qui roulent à gauche (Londres, Tokyo). Les textures de route s'en
+ * servent pour orienter leurs flèches de voie ; côté règles, c'est le même côté
+ * que `cityRushDriveSide` sur la ville.
+ */
+export function cityRushThemeDriveSide(theme) {
+  return theme?.driveSide === 'left' ? 'left' : 'right';
 }
 
 // ── Éclairage ──────────────────────────────────────────────────────────────

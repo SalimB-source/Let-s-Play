@@ -80,6 +80,7 @@ const {
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
+  CITY_RUSH_ONCOMING_BONUS_MAX,
 } = await import('../src/games/cityRushRules.js');
 
 // Tours de la course jouée : 6 par défaut (8 400 m) ;
@@ -161,6 +162,9 @@ const POLICE_MAX_LAG = 200; // m
 for (const [index, city] of courses.entries()) {
   const carId = smokeCarIds[index % smokeCarIds.length];
   const car = CITY_RUSH_CARS.find((profile) => profile.id === carId) || CITY_RUSH_CARS[0];
+  // Voies du parcours : le pilote automatique s'y réfère pour viser le
+  // contresens (à gauche ou à droite selon le pays) et pour se rabattre.
+  const courseLanes = cityRushLaneConfig(city);
   const callbacks = {
     ready: 0, errors: [], huds: [], laps: [], effects: [], pickups: [], finish: null,
   };
@@ -429,17 +433,26 @@ for (const [index, city] of courses.entries()) {
 
   while (!callbacks.finish && frames < maxFrames) {
     const hud = callbacks.huds[callbacks.huds.length - 1];
-    if (frames === 0 || frames === 1) world.action('left'); // provoque un face-à-face contrôlé dans la voie inverse
+    // Les voies du contresens dépendent du pays (à gauche en Amérique et en
+    // France, à droite à Londres et sur la Shuto) : le pilote automatique suit
+    // la configuration du parcours, jamais un numéro de voie codé en dur.
+    const oncomingSteer = courseLanes.driveSide === 'left' ? 'right' : 'left';
+    const raceSteer = courseLanes.driveSide === 'left' ? 'left' : 'right';
+    const playerInOncoming = hud ? courseLanes.oncomingLanes.includes(hud.playerLane) : false;
+    if (frames === 0 || frames === 1) world.action(oncomingSteer); // provoque un face-à-face contrôlé dans la voie inverse
     // Pilote naïf : si on traîne derrière le trafic, on tente de changer de voie ;
     // on déclenche chaque pouvoir dès qu'il est chargé. Tant qu'aucun contact
     // n'a eu lieu, il vise délibérément une berline de police du trafic : c'est
     // le seul moyen d'éprouver la riposte policière de façon déterministe.
     const rallyContactSeen = callbacks.effects.some((effect) => effect.type === 'police-rally');
     const oncomingSeen = callbacks.effects.some((effect) => effect.type === 'traffic-impact' && effect.oncoming);
-    if (!oncomingSeen && hud && hud.playerLane > 2 && frames < 80 && frames % 4 === 0) {
-      world.action('left');
-    } else if (oncomingSeen && hud && hud.playerLane < 3 && frames % 4 === 0) {
-      world.action('right');
+    // On cherche le face-à-face tant qu'il n'a pas eu lieu : un tremplin pris en
+    // route peut désormais immobiliser le volant quelques secondes, la fenêtre
+    // n'est donc plus bornée aux premières images.
+    if (!oncomingSeen && !playerInOncoming && frames % 4 === 0) {
+      world.action(oncomingSteer);
+    } else if (oncomingSeen && playerInOncoming && frames % 4 === 0) {
+      world.action(raceSteer);
     }
     let rallyTarget = null;
     if (!rallyContactSeen && frames > 30) {
@@ -460,9 +473,8 @@ for (const [index, city] of courses.entries()) {
       // Les voies du parcours, pas les six voies historiques : sur la piste
       // resserrée du Ring, une abscisse de voie urbaine désignerait la voie
       // opposée et le pilote automatique se rabattrait du mauvais côté.
-      const smokeLanes = cityRushLaneConfig(city);
-      for (let index = 0; index < smokeLanes.laneCount; index += 1) {
-        const delta = Math.abs(smokeLanes.laneX(index) - rallyTarget.position.x);
+      for (let index = 0; index < courseLanes.laneCount; index += 1) {
+        const delta = Math.abs(courseLanes.laneX(index) - rallyTarget.position.x);
         if (delta < closest) { closest = delta; targetLane = index; }
       }
       if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
@@ -703,10 +715,14 @@ for (const [index, city] of courses.entries()) {
   if (turnaroundEffects.some((effect) => effect.duration !== CITY_RUSH_POLICE_TURNAROUND_DURATION)) {
     fail('le demi-tour d’une patrouille ne dure pas 1,5 seconde', turnaroundEffects);
   }
+  // Le véhicule heurté de face dérape vers le bord extérieur de son sens de
+  // circulation : à gauche quand on roule à droite, à droite à Londres et sur
+  // la Shuto de Tokyo (voir `cityRushOncomingImpactX`).
+  const expectedPushSide = courseLanes.driveSide === 'left' ? 'right' : 'left';
   const oncomingImpacts = callbacks.effects.filter((effect) => (
     effect.type === 'traffic-impact'
     && effect.oncoming
-    && (effect.policeContact || (effect.pushedAside && effect.pushDirection === 'left'))
+    && (effect.policeContact || (effect.pushedAside && effect.pushDirection === expectedPushSide))
   ));
   const trafficImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact');
   if (oncomingLanes > 0 && !oncomingImpacts.length) {
@@ -723,9 +739,22 @@ for (const [index, city] of courses.entries()) {
     fail('le HUD ne contient pas exactement trois pilotes', callbacks.huds.at(-1));
   }
   const lastHud = callbacks.huds.at(-1);
-  for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers', 'wantedLevel']) {
+  for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers', 'wantedLevel', 'oncomingBonus']) {
     if (!(field in lastHud)) fail(`champ HUD manquant : ${field}`, Object.keys(lastHud));
   }
+  // Bonus de contresens : dès que le parcours a du trafic en face et que le
+  // pilote automatique y a roulé, la jauge a dû se charger (facteur > 1), et
+  // son facteur HUD doit rester dans les bornes de la règle. Un parcours sans
+  // contresens ne doit jamais la charger.
+  const bonusHuds = callbacks.huds.filter((entry) => Number(entry.oncomingBonus) > 1 + 1e-9);
+  if (oncomingLanes > 0 && !bonusHuds.length) {
+    fail('la jauge de bonus de contresens n’a jamais bougé alors que le pilote a roulé dans les voies inverses', lastHud);
+  }
+  if (oncomingLanes === 0 && bonusHuds.length) {
+    fail('un parcours sans trafic en face a chargé le bonus de contresens', bonusHuds[0]);
+  }
+  const badBonus = callbacks.huds.find((entry) => !(Number(entry.oncomingBonus) >= 1 && Number(entry.oncomingBonus) <= CITY_RUSH_ONCOMING_BONUS_MAX + 1e-9));
+  if (badBonus) fail('facteur de bonus de contresens hors bornes', badBonus);
   // Au dernier tour, la « longueur du tour » du HUD est celle du grand tour.
   const expectedLapLength = lastHud.lap >= RACE_LAPS ? CITY_RUSH_FINAL_LAP_LENGTH : CITY_RUSH_LAP_LENGTH;
   if (lastHud.laps !== RACE_LAPS || lastHud.lapLength !== expectedLapLength) fail('HUD laps/lapLength incohérents', lastHud);
