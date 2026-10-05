@@ -461,7 +461,7 @@ for (const [index, city] of courses.entries()) {
     }
     if (hud && frames % 15 === 0) {
       const type = CITY_RUSH_POWERS.PISTOL;
-      if ((hud.inventory?.[type] || 0) >= CITY_RUSH_POWER_RULES[type].chargeCost) world.action(type);
+      if ((hud.inventory?.[type] || 0) > 0) world.action(type);
     }
     runFrames(1, `course f${frames}`);
     // Le cadrage se juge après l'image, caméra à jour. On laisse passer le
@@ -993,8 +993,8 @@ for (const [index, city] of courses.entries()) {
   }
   if ((audioCalls.boost || 0) < groundBoosts.length) fail('un pad turbo ramassé n’a pas déclenché son boost sonore', { groundBoosts: groundBoosts.length, audioCalls });
   const redPickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.PISTOL);
-  if (!redPickups.length || redPickups.some((pickup) => pickup.chargeCost !== 1 || pickup.progress < 1)) {
-    fail('un unique bonus rouge ne charge pas la mitrailleuse', redPickups);
+  if (!redPickups.length || redPickups.some((pickup) => pickup.chargeCost !== 7 || pickup.progress !== 7 || pickup.ammo !== 7)) {
+    fail('un bonus rouge ne recharge pas les sept balles de la mitrailleuse', redPickups);
   }
   const unsupportedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
   if (unsupportedPickups.length) fail('un bonus bleu ou jaune est encore collecté sur la route', unsupportedPickups);

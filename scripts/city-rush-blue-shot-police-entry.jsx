@@ -204,7 +204,7 @@ for (let run = 0; run < RUNS; run += 1) {
         world.action(CITY_RUSH_POWERS.RADIO);
         actionsDisabledChecked = true;
       }
-      if (hud && (hud.inventory?.[redType] || 0) >= CITY_RUSH_POWER_RULES[redType].chargeCost) {
+      if (hud && (hud.inventory?.[redType] || 0) > 0) {
         world.action(redType);
       } else if (hud && steeringCooldown <= 0) {
         // Aller chercher un bonus rouge visible, sans jamais suivre un ancien
@@ -252,8 +252,8 @@ for (let run = 0; run < RUNS; run += 1) {
     const unexpectedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, redType].includes(pickup.type));
     if (unexpectedPickups.length) fail(`[${city.id}] un pickup bleu/jaune a été collecté`, unexpectedPickups);
     const redPickups = callbacks.pickups.filter((pickup) => pickup.type === redType);
-    if (redPickups.some((pickup) => pickup.chargeCost !== 1 || pickup.progress !== 1)) {
-      fail(`[${city.id}] un seul bonus rouge ne charge pas la mitrailleuse`, redPickups);
+    if (redPickups.some((pickup) => pickup.chargeCost !== 7 || pickup.progress !== 7 || pickup.ammo !== 7)) {
+      fail(`[${city.id}] un bonus rouge ne recharge pas les sept balles de la mitrailleuse`, redPickups);
     }
     if (!actionsDisabledChecked) fail(`[${city.id}] les actions interdites du pilote n'ont pas été vérifiées`);
     if (audioCalls.gunshot) fail(`[${city.id}] un tir bleu a encore joué le son de pistolet`, audioCalls);
