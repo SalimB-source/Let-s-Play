@@ -112,6 +112,68 @@ export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
 export const CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED = 300; // m/s : projectile droit, sans guidage
 export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la place de tirer devant le capot
 
+// ── Distance de streaming : calibrée sur la voiture, pas sur une vitesse fixe ─
+// Tout ce qui apparaît devant le pilote (trafic, contresens, rangées de bonus,
+// rivaux) était calé sur une seule vitesse de pointe. Avec une échelle de
+// puissance qui va du simple au double, une borne fixe se traduit par « moins de
+// temps de réaction » pour les voitures rapides : on exprime donc ces distances
+// en secondes de trajet, à la vitesse de pointe réelle de la voiture.
+export const CITY_RUSH_TRAFFIC_VIEW_SECONDS = 4.2; // s : le trafic doit se voir arriver
+export const CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN = 150; // m : portée historique (voiture à 1,00)
+export const CITY_RUSH_TRAFFIC_VIEW_BEHIND = 18; // m : on garde un peu de trafic dans le rétro
+
+export function cityRushTrafficViewAhead(topSpeed = CITY_RUSH_PLAYER_SPEED) {
+  const speed = Math.max(0, Number(topSpeed) || 0);
+  return Math.max(CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN, speed * CITY_RUSH_TRAFFIC_VIEW_SECONDS);
+}
+
+// Les rangées de bonus sont réparties tous les 24-32 m : il en faut donc d'autant
+// plus en réserve devant le pilote que la voiture est rapide, pour conserver la
+// même avance en secondes (et la même densité de bonus au mètre).
+export const CITY_RUSH_PICKUP_ROW_SPACING_MIN = 24; // m
+export const CITY_RUSH_PICKUP_ROW_SPACING_MAX = 32; // m
+export const CITY_RUSH_PICKUP_ROW_LEAD_SECONDS = 9.5; // s de rangées semées devant le pilote
+export const CITY_RUSH_PICKUP_ROW_COUNT_MIN = 12; // réserve historique (voiture à 1,00)
+export const CITY_RUSH_PICKUP_ROW_COUNT_MAX = 26; // garde-fou : 26 rangées × 2 bonus en mémoire
+
+export function cityRushPickupRowCount(topSpeed = CITY_RUSH_PLAYER_SPEED, {
+  lead = CITY_RUSH_PICKUP_ROW_LEAD_SECONDS,
+  spacing = (CITY_RUSH_PICKUP_ROW_SPACING_MIN + CITY_RUSH_PICKUP_ROW_SPACING_MAX) / 2,
+  min = CITY_RUSH_PICKUP_ROW_COUNT_MIN,
+  max = CITY_RUSH_PICKUP_ROW_COUNT_MAX,
+} = {}) {
+  const speed = Math.max(0, Number(topSpeed) || 0);
+  const leadSeconds = Math.max(0, Number(lead) || 0);
+  const gap = Math.max(1, Number(spacing) || 1);
+  const floor = Math.max(1, Math.trunc(Number(min) || CITY_RUSH_PICKUP_ROW_COUNT_MIN));
+  const ceiling = Math.max(floor, Math.trunc(Number(max) || CITY_RUSH_PICKUP_ROW_COUNT_MAX));
+  return Math.min(ceiling, Math.max(floor, Math.ceil((speed * leadSeconds) / gap)));
+}
+
+// Le Sprint se court contre le chrono : 300 m entre deux portes. À la vitesse de
+// référence (1,00) le bonus vaut les 15 s historiques, et il suit ensuite la
+// voiture — sans quoi la citadine de départ (83 km/h) n'atteindrait jamais le
+// checkpoint suivant, et la supercar n'aurait plus aucune pression.
+export const CITY_RUSH_SPRINT_CHECKPOINT_MARGIN = 1.75; // marge sur un trajet « à fond »
+export const CITY_RUSH_SPRINT_CHECKPOINT_TIME_MIN = 9; // s
+export const CITY_RUSH_SPRINT_CHECKPOINT_TIME_MAX = 19; // s
+
+export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, {
+  spacing = CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
+  margin = CITY_RUSH_SPRINT_CHECKPOINT_MARGIN,
+  min = CITY_RUSH_SPRINT_CHECKPOINT_TIME_MIN,
+  max = CITY_RUSH_SPRINT_CHECKPOINT_TIME_MAX,
+} = {}) {
+  const speed = Math.max(1, Number(topSpeed) || CITY_RUSH_PLAYER_SPEED);
+  const flat = Math.max(1, Number(spacing) || CITY_RUSH_SPRINT_CHECKPOINT_SPACING);
+  const marginFactor = Math.max(1, Number(margin) || CITY_RUSH_SPRINT_CHECKPOINT_MARGIN);
+  const floor = Math.max(0, Number(min) || 0);
+  const ceiling = Math.max(floor, Number(max) || Number.MAX_SAFE_INTEGER);
+  const raw = (flat / speed) * marginFactor;
+  const clamped = Math.min(ceiling, Math.max(floor, raw));
+  return Math.round(clamped * 2) / 2; // demi-seconde : lisible au HUD
+}
+
 // Huit voitures aux silhouettes et compromis de conduite distincts. La compacte
 // de départ est une citadine 5 portes inspirée des petites françaises des
 // années 90 : aucun emblème ni logo de constructeur n'est modélisé.
@@ -125,69 +187,74 @@ export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la plac
 // `accelerationRate` (m/s²) règle le temps pour atteindre cette pointe et
 // `hitRecoveryMultiplier` le temps perdu après un choc.
 //
-// Échelle volontairement large : 0,70 pour la citadine offerte (~88 km/h)
-// jusqu'à 1,32 pour la supercar la plus chère (~166 km/h), soit +89 % de
-// vitesse de pointe et près de 70 s de gagnées sur les 3 600 m d'une course.
-// L'écart se paie comptant : `ViceCityWorld.jsx` donne aux deux rivaux les
-// profils les plus lents du catalogue hors voiture du joueur, donc une voiture
-// chère rend la course nettement plus facile et la citadine de départ très
-// difficile — c'est le sens de la progression du garage.
+// Échelle volontairement large : 0,66 pour la citadine offerte (~83 km/h)
+// jusqu'à 1,42 pour la supercar la plus chère (~179 km/h), soit plus du double
+// de vitesse de pointe entre l'entrée et le haut du garage. L'écart se paie
+// comptant : `ViceCityWorld.jsx` donne aux deux rivaux les profils les plus
+// lents du catalogue hors voiture du joueur, donc une voiture chère rend la
+// course nettement plus facile et la citadine de départ très difficile — c'est
+// le sens de la progression du garage.
 // Pour accentuer (ou réduire) l'écart, il n'y a que trois curseurs à toucher :
 //   1. `powerMultiplier`       → vitesse de pointe ;
-//   2. `accelerationRate`      → temps de montée en vitesse ;
+//   2. `accelerationRate`      → temps de montée en vitesse (et freinage, voir
+//                                `cityRushBrakingRate`) ;
 //   3. `hitRecoveryMultiplier` → temps perdu après un choc.
-// Deux garde-fous au-delà de ~1,45 (~183 km/h) : agrandir
-// `CITY_RUSH_RACER_VIEW_DISTANCE` (120 m aujourd'hui, il sert aussi de portée
-// au tir bleu) pour que rivaux et trafic se dessinent assez tôt, et garder les
-// poursuivants capables de suivre (`CITY_RUSH_POLICE_BASE_SPEED`, qui sprinte
-// déjà à ×1,34 quand le leader les distance).
+// Un écart de cette taille se répercute sur tout ce qui était calibré pour une
+// seule vitesse. Les accompagnateurs (déjà en place) suivent la voiture :
+//   · `cityRushTrafficViewAhead` / `cityRushPickupRowCount` — le trafic, le
+//     contresens et les rangées de bonus se dessinent d'autant plus loin que la
+//     pointe est élevée (sinon on les découvre trop tard à 180 km/h) ;
+//   · `cityRushSprintCheckpointTime` — le chrono du Sprint se calcule sur la
+//     voiture, sinon la citadine ne peut pas atteindre le checkpoint suivant ;
+//   · `CITY_RUSH_POLICE_CHASE_SPEED_FACTOR` — une berline lancée à la poursuite
+//     dépasse toujours la voiture qu'elle chasse, quelle que soit sa pointe.
 export const CITY_RUSH_CARS = Object.freeze([
   Object.freeze({
     id: 'city-hatch', archetype: 'city-hatch', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
-    power: 24, powerMultiplier: 0.7, acceleration: 40, accelerationRate: 6.8, recovery: 44, hitRecoveryMultiplier: 1.12,
+    power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 6.2, recovery: 44, hitRecoveryMultiplier: 1.22,
     widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
   }),
   Object.freeze({
     id: 'nova-18-gt', archetype: 'nova-hatch', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
     bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
-    power: 40, powerMultiplier: 0.8, acceleration: 54, accelerationRate: 7.7, recovery: 62, hitRecoveryMultiplier: 1.04,
+    power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 7.4, recovery: 64, hitRecoveryMultiplier: 1.12,
     widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
   }),
   Object.freeze({
     id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
     bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
-    power: 66, powerMultiplier: 0.94, acceleration: 87, accelerationRate: 9.5, recovery: 94, hitRecoveryMultiplier: 0.88,
+    power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
   }),
   Object.freeze({
     id: 'vice-roadster', archetype: 'ferrari', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
     bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c', price: 400,
-    power: 74, powerMultiplier: 1.02, acceleration: 83, accelerationRate: 9.1, recovery: 82, hitRecoveryMultiplier: 0.96,
+    power: 72, powerMultiplier: 1.02, acceleration: 82, accelerationRate: 9.1, recovery: 84, hitRecoveryMultiplier: 0.94,
     widthScale: 1, heightScale: 1, lengthScale: 1,
   }),
   Object.freeze({
     id: 'turbo-gt', archetype: 'porsche', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
     bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8', price: 550,
-    power: 84, powerMultiplier: 1.1, acceleration: 72, accelerationRate: 8.6, recovery: 74, hitRecoveryMultiplier: 1.06,
+    power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 8.4, recovery: 74, hitRecoveryMultiplier: 1.06,
     widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'muscle-86', archetype: 'audi', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
     bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa', price: 650,
-    power: 88, powerMultiplier: 1.16, acceleration: 95, accelerationRate: 9.8, recovery: 70, hitRecoveryMultiplier: 1.08,
+    power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 10.6, recovery: 66, hitRecoveryMultiplier: 1.18,
     widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
     bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455', price: 800,
-    power: 92, powerMultiplier: 1.24, acceleration: 85, accelerationRate: 9.3, recovery: 76, hitRecoveryMultiplier: 1.0,
+    power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 9.6, recovery: 76, hitRecoveryMultiplier: 1.02,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
   }),
   Object.freeze({
     id: 'toro-v12', archetype: 'lamborghini', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
     bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703', price: 1000,
-    power: 97, powerMultiplier: 1.32, acceleration: 90, accelerationRate: 9.6, recovery: 72, hitRecoveryMultiplier: 1.07,
+    power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16,
     widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),
 ]);
@@ -221,6 +288,19 @@ export const CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN = 1.2;
 export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_CAR_GAP;
 export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.5;
 
+// Le freinage suivait un plancher fixe (18 m/s²) : toutes les voitures
+// s'arrêtaient exactement pareil, et l'écart d'accélération ne se voyait donc
+// qu'au démarrage. Les freins suivent maintenant le modèle — une supercar
+// encaisse un choc, une toupie ou un barrage et repart plus vite qu'une
+// citadine — avec un plancher plus bas pour qu'aucune voiture ne « flotte ».
+export const CITY_RUSH_BRAKE_RATE_FACTOR = 1.85; // × l'accélération du modèle
+export const CITY_RUSH_BRAKE_RATE_FLOOR = 12; // m/s² : plancher de freinage
+
+export function cityRushBrakingRate(accelerationRate) {
+  const acceleration = Math.max(0, Number(accelerationRate) || 0);
+  return Math.max(CITY_RUSH_BRAKE_RATE_FLOOR, acceleration * CITY_RUSH_BRAKE_RATE_FACTOR);
+}
+
 export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRate, deltaTime) {
   const current = Math.max(0, Number(currentSpeed) || 0);
   const target = Math.max(0, Number(targetSpeed) || 0);
@@ -228,7 +308,7 @@ export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRat
   const acceleration = Math.max(0, Number(accelerationRate) || 0);
   if (target <= 0) return 0;
   if (target >= current) return Math.min(target, current + acceleration * elapsed);
-  const braking = Math.max(18, acceleration * 1.8);
+  const braking = cityRushBrakingRate(acceleration);
   return Math.max(target, current - braking * elapsed);
 }
 
@@ -1755,6 +1835,11 @@ export const CITY_RUSH_POLICE_LANES = Object.freeze([
 export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL]);
 export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge vaut cinq bonus ordinaires
 export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.06;
+// Une berline lancée à la poursuite dépasse toujours la voiture qu'elle chasse :
+// sa vitesse de sprint ne dépend pas d'une pointe fixe, mais de celle du leader.
+// Sans ce plancher, une supercar à 179 km/h distancerait définitivement les
+// poursuivants (base × 1,34 ≈ 178 km/h) et le dernier tour n'aurait plus d'enjeu.
+export const CITY_RUSH_POLICE_CHASE_SPEED_FACTOR = 1.18; // × la vitesse du leader, minimum en sprint
 export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant le leader
 export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle du leader
 export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière le leader pour ouvrir le feu
@@ -1932,6 +2017,7 @@ export function cityRushPolicePace({
   tolerance = CITY_RUSH_POLICE_LEAD_SLACK,
   sprint = 1.34,
   ease = 0.9,
+  chaseSpeedFactor = CITY_RUSH_POLICE_CHASE_SPEED_FACTOR,
   blocking = false,
 } = {}) {
   const safeBase = Math.max(0, Number(baseSpeed) || 0);
@@ -1940,11 +2026,15 @@ export function cityRushPolicePace({
   const safeLead = Number(lead) || 0;
   const slack = Math.max(0, Number(tolerance) || 0);
   const sprintFactor = Math.max(1, Number(sprint) || 1.34);
+  const chaseFactor = Math.max(1, Number(chaseSpeedFactor) || CITY_RUSH_POLICE_CHASE_SPEED_FACTOR);
   const easeFactor = Math.min(1, Math.max(0.2, Number(ease) || 0.9));
   // Barrage : devant le leader, la berline lève le pied au lieu de tenir sa
   // hauteur. C'est ce qui force le poursuivi à la percuter ou à la contourner.
   if (blocking && safeGap > 0) return cityRushPoliceBlockadePace({ leaderSpeed: safeLeader, baseSpeed: safeBase });
-  if (safeGap < safeLead - slack) return safeBase * sprintFactor;
+  // Sprint : la vitesse de base suffit pour une voiture ordinaire, mais une
+  // berline doit aussi pouvoir revenir sur une supercar — d'où le plancher
+  // relatif à la vitesse du leader (voir CITY_RUSH_POLICE_CHASE_SPEED_FACTOR).
+  if (safeGap < safeLead - slack) return Math.max(safeBase * sprintFactor, safeLeader * chaseFactor);
   if (safeGap > safeLead + slack) {
     // Trop en avant : elle lève le pied d'autant plus qu'elle est loin. Une
     // berline ne part pas gagner la course — elle attend le leader.

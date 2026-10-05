@@ -110,6 +110,21 @@ import {
   CITY_RUSH_CLEAN_LINE_RAMP_DURATION,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   cityRushCleanLineFactor,
+  cityRushBrakingRate,
+  CITY_RUSH_BRAKE_RATE_FLOOR,
+  cityRushPickupRowCount,
+  CITY_RUSH_PICKUP_ROW_COUNT_MIN,
+  CITY_RUSH_PICKUP_ROW_COUNT_MAX,
+  CITY_RUSH_PICKUP_ROW_SPACING_MIN,
+  CITY_RUSH_PICKUP_ROW_SPACING_MAX,
+  cityRushSprintCheckpointTime,
+  CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
+  CITY_RUSH_SPRINT_CHECKPOINT_TIME_MIN,
+  CITY_RUSH_SPRINT_CHECKPOINT_TIME_MAX,
+  cityRushTrafficViewAhead,
+  CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN,
+  CITY_RUSH_POLICE_CHASE_SPEED_FACTOR,
+  CITY_RUSH_POLICE_BASE_SPEED,
   chooseCityRushAiLane,
   chooseCityRushTrafficEscapeLane,
   cityRushHitDuration,
@@ -501,6 +516,55 @@ test('l’écart de puissance entre la citadine de départ et la supercar est fr
   // dans les deux sens, du départ difficile à la course dominée.
   const slowestRivals = CITY_RUSH_CARS.slice(0, 2);
   assert.ok(top.powerMultiplier / slowestRivals[1].powerMultiplier >= 1.6);
+});
+
+test('chaque système calibré pour une seule vitesse suit désormais la voiture', () => {
+  const starter = CITY_RUSH_CARS[0];
+  const top = CITY_RUSH_CARS[CITY_RUSH_CARS.length - 1];
+  const topSpeed = (car) => CITY_RUSH_PLAYER_SPEED * car.powerMultiplier;
+
+  // Freinage : les freins suivent le modèle (fini le plancher unique à 18 m/s²),
+  // donc une supercar repart plus vite après un choc qu'une citadine.
+  assert.equal(cityRushBrakingRate(0), CITY_RUSH_BRAKE_RATE_FLOOR);
+  assert.ok(cityRushBrakingRate(top.accelerationRate) > cityRushBrakingRate(starter.accelerationRate));
+  assert.ok(
+    approachCityRushSpeed(30, 10, top.accelerationRate, 1) < approachCityRushSpeed(30, 10, starter.accelerationRate, 1),
+    'la supercar freine plus court que la citadine',
+  );
+
+  // Streaming : le trafic se voit arriver aussi longtemps, quelle que soit la pointe.
+  assert.equal(cityRushTrafficViewAhead(CITY_RUSH_PLAYER_SPEED), CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN);
+  assert.ok(cityRushTrafficViewAhead(topSpeed(top)) > CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN);
+  assert.ok(cityRushTrafficViewAhead(topSpeed(top)) >= topSpeed(top) * 4);
+
+  // Rangées de bonus : même avance en secondes, donc plus de rangées semées
+  // devant une voiture rapide (la densité de bonus au mètre, elle, ne bouge pas).
+  assert.equal(cityRushPickupRowCount(CITY_RUSH_PLAYER_SPEED), CITY_RUSH_PICKUP_ROW_COUNT_MIN);
+  assert.ok(cityRushPickupRowCount(topSpeed(top)) > CITY_RUSH_PICKUP_ROW_COUNT_MIN);
+  assert.equal(cityRushPickupRowCount(0), CITY_RUSH_PICKUP_ROW_COUNT_MIN);
+  assert.ok(cityRushPickupRowCount(1000) <= CITY_RUSH_PICKUP_ROW_COUNT_MAX);
+  assert.ok(CITY_RUSH_PICKUP_ROW_COUNT_MIN * CITY_RUSH_PICKUP_ROW_SPACING_MIN > 0);
+
+  // Sprint : 15 s à la vitesse de référence, puis le chrono suit la voiture —
+  // la citadine a besoin de plus de temps, la supercar n'a plus de cadeau.
+  assert.equal(cityRushSprintCheckpointTime(CITY_RUSH_PLAYER_SPEED), 15);
+  assert.ok(cityRushSprintCheckpointTime(topSpeed(starter)) > 15);
+  assert.ok(cityRushSprintCheckpointTime(topSpeed(top)) < 15);
+  for (const car of CITY_RUSH_CARS) {
+    const speed = topSpeed(car);
+    const bonus = cityRushSprintCheckpointTime(speed);
+    assert.ok(bonus >= CITY_RUSH_SPRINT_CHECKPOINT_TIME_MIN && bonus <= CITY_RUSH_SPRINT_CHECKPOINT_TIME_MAX,
+      `${car.id} reste dans les bornes du chrono`);
+    const flat = CITY_RUSH_SPRINT_CHECKPOINT_SPACING / speed;
+    assert.ok(bonus >= flat * 1.2, `${car.id} a la marge pour atteindre le checkpoint suivant`);
+    assert.ok(bonus <= flat * 2, `${car.id} n'a pas une marge absurde`);
+  }
+
+  // Police : une berline lancée à la poursuite revient toujours sur la voiture
+  // qu'elle chasse, même une supercar à 179 km/h.
+  const chase = cityRushPolicePace({ gap: -60, baseSpeed: CITY_RUSH_POLICE_BASE_SPEED, leaderSpeed: topSpeed(top) });
+  assert.ok(chase >= topSpeed(top) * CITY_RUSH_POLICE_CHASE_SPEED_FACTOR - 1e-9);
+  assert.ok(chase > CITY_RUSH_POLICE_BASE_SPEED * 1.34 - 1e-9);
 });
 
 test('the active loadout has one red machine-gun charge plus automatic ground boosts', () => {
