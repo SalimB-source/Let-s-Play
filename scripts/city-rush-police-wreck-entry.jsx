@@ -265,15 +265,16 @@ for (let run = 0; run < RUNS; run += 1) {
     let examined = 0; // destructions déjà examinées (suivies ou hors cadre)
     let shotsFired = 0;
     const maxFrames = 30 * 240;
-    // Berlines de l'escouade abattues **par le pilote** : les berlines du
-    // trafic (rappelées ou banalisées) partagent le maillage du flot, et une
-    // berline descendue par un rival ou par un carambolage tombe n'importe où —
-    // souvent hors cadre. Le pilote, lui, tire de loin sur une berline devant
-    // lui : l'agonie se voit du début à la fin.
-    const squadDestructions = () => callbacks.effects
-      .filter((item) => item.type === 'police-destroyed'
-        && /^police-\d+$/.test(String(item.id))
-        && item.attackerId === 'player');
+    // Berlines de l'escouade détruites, quel qu'en soit l'auteur : le trafic
+    // (rappelées ou banalisées) partage le maillage du flot, mais ses
+    // destructions portent un autre identifiant et tombent n'importe où. Une
+    // berline de l'escouade, elle, agonit toujours au même endroit — le pilote
+    // qui la rejoint la voit faire son tête-à-queue puis brûler. La vérif
+    // n'exige pas que ce soit le pilote qui l'ait abattue (un rival peut la
+    // descendre loin devant) : seule compte la distance à laquelle l'agonie
+    // commence, pour qu'elle soit observable de bout en bout.
+    const policeDestructions = () => callbacks.effects
+      .filter((item) => item.type === 'police-destroyed' && /^police-\d+$/.test(String(item.id)));
 
     while (!callbacks.finished && virtualFrame < maxFrames && !(tracked && tracked.done)) {
       const hud = callbacks.huds.at(-1);
@@ -285,39 +286,53 @@ for (let run = 0; run < RUNS; run += 1) {
           .filter((police) => !String(police.id).startsWith('rally-'))
           .map((police) => ({ ...police, gap: (Number(police.rawDistance) || 0) - playerDistance }));
         const byGap = (a, b) => a.gap - b.gap;
-        const inRange = squad
-          .filter((police) => police.gap >= TARGET_GAP_MIN && police.gap <= TARGET_GAP_MAX)
-          .sort(byGap);
-        const closeBy = squad
-          .filter((police) => police.gap > -4 && police.gap < TARGET_GAP_MAX)
-          .sort(byGap);
+        const laneOf = (police) => laneOfX(police.x);
+        // La balle s'arrête sur le premier véhicule de la voie : une autre
+        // berline ou un rival devant la cible la prendrait à sa place, le
+        // trafic l'absorbe pour rien. Une berline n'est donc tirable que si sa
+        // voie est libre jusqu'à elle — la plus avancée de chaque voie l'est
+        // par construction, les suivantes non tant que la première roule là.
+        const clearLane = (target) => {
+          const lane = laneOf(target);
+          const rivals = (hud.racers || [])
+            .filter((racer) => !racer.isPlayer && !racer.wrecked)
+            .some((racer) => between(racer, playerDistance, lane, target.gap));
+          if (rivals) return false;
+          const others = squad.some((police) => police.id !== target.id
+            && between(police, playerDistance, lane, target.gap));
+          if (others) return false;
+          return !trafficBetween(lane, target.gap);
+        };
         // Le tir rouge ne retire qu'un carré : six impacts pour envoyer une
         // berline à la casse. Le pilote verrouille donc sa cible et la suit
         // jusqu'au bout, au lieu de repartir d'une autre à chaque image — la
         // fenêtre de tir (voie libre, berline alignée) ne dure pas six fois
-        // plus longtemps qu'un tir.
-        const locked = lockedId
-          ? squad.find((police) => police.id === lockedId
-            && police.gap > TARGET_GAP_MIN - 20 && police.gap <= TARGET_GAP_MAX + 20)
-          : null;
-        const target = locked || inRange[0]
-          || (virtualFrame > TARGET_FALLBACK_FRAME ? closeBy[0] : null)
-          || null;
+        // plus longtemps qu'un tir. Il choisit la plus **lointaine** des
+        // berlines tirables, pour disposer de la plus longue descente possible
+        // avant que la distance ne referme : l'agonie ne se suit qu'à bonne
+        // distance, sinon le pilote dépasse la carcasse pendant son
+        // tête-à-queue (cf. OBSERVABLE_GAP_MIN).
+        const shootable = squad
+          .filter((police) => police.gap >= TARGET_GAP_MIN && police.gap <= TARGET_GAP_MAX && clearLane(police))
+          .sort(byGap);
+        const locked = lockedId ? shootable.find((police) => police.id === lockedId) : null;
+        let target = locked || shootable.at(-1) || null;
+        if (!target && virtualFrame > TARGET_FALLBACK_FRAME) {
+          // Dernier recours : plus de cible à bonne distance depuis un moment,
+          // la vérif ne doit pas tourner indéfiniment. On tire sur la plus
+          // lointaine des berlines devant, même hors des bornes de portée.
+          const ahead = squad
+            .filter((police) => police.gap > 0 && police.gap <= TARGET_GAP_MAX)
+            .sort(byGap);
+          target = ahead.at(-1) || null;
+        }
         lockedId = target ? target.id : null;
         if (target && virtualFrame % 3 === 0) {
-          const targetLane = laneOfX(target.x);
+          const targetLane = laneOf(target);
           if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
-          else if (virtualFrame % 4 === 0) {
-            const rivals = (hud.racers || [])
-              .filter((racer) => !racer.isPlayer && !racer.wrecked)
-              .some((racer) => between(racer, playerDistance, targetLane, target.gap));
-            const others = (hud.police || [])
-              .filter((police) => police !== target)
-              .some((police) => between(police, playerDistance, targetLane, target.gap));
-            if (!rivals && !others && !trafficBetween(targetLane, target.gap)) {
-              world.action(CITY_RUSH_POWERS.PISTOL);
-              shotsFired += 1;
-            }
+          else if (virtualFrame % 4 === 0 && clearLane(target)) {
+            world.action(CITY_RUSH_POWERS.PISTOL);
+            shotsFired += 1;
           }
         }
       }
@@ -325,7 +340,7 @@ for (let run = 0; run < RUNS; run += 1) {
 
       // ── La coque vient de céder ─────────────────────────────────────────
       if (!tracked) {
-        const effect = squadDestructions()[examined];
+        const effect = policeDestructions()[examined];
         if (effect) {
           examined += 1;
           // L'agonie est annoncée avec l'explosion.
@@ -360,7 +375,7 @@ for (let run = 0; run < RUNS; run += 1) {
           // destruction : son agonie ne se voit pas, la vérif attend la suivante.
           if (!inFrame || !(gapAtDeath > OBSERVABLE_GAP_MIN)) {
             if (VERBOSE) {
-              console.log(`[${city.id}#${run + 1}] ${effect.police} détruite à ${gapAtDeath === null ? '?' : gapAtDeath.toFixed(0)} m : agonie non observable`);
+              console.log(`[${city.id}#${run + 1}] ${effect.police} détruite à ${gapAtDeath === null ? '?' : gapAtDeath.toFixed(0)} m par ${effect.attackerId} : agonie non observable`);
             }
             continue;
           }
@@ -663,8 +678,8 @@ if (!fullBurns && !violations) {
 }
 
 if (violations) {
-  console.error(`VÉRIF CARCASSE DE POLICE ÉCHOUÉE — ${violations} manquement(s) sur ${races} course(s) et ${destructions} destruction(s).`);
+  console.error(`VÉRIF CARCASSE DE POLICE ÉCHOUÉE — ${violations} manquement(s) sur ${races} course(s) et ${destructions} agonie(s) suivie(s).`);
   process.exit(3);
 }
-console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${destructions} berline(s) abattue(s) : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
+console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${destructions} berline(s) détruite(s) à bonne distance : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
 process.exit(0);

@@ -39,10 +39,9 @@ import {
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
   CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL,
-  CITY_RUSH_PLAYER_HEALTH,
-  CITY_RUSH_RACER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   CITY_RUSH_PLAYER_HEALTH_FLASH,
+  cityRushCarMaxHealth,
   CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
   CITY_RUSH_WRECK_SECONDS,
   CITY_RUSH_WRECK_SPIN_TURNS,
@@ -1113,6 +1112,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
 
   const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
+  // Chaque voiture encaisse selon sa propre coque (`durabilityMultiplier`) :
+  // la citadine lente tient 23 carrés, la supercar rapide 7. Les deux rivaux
+  // reçoivent la vie de **leur** profil, comme le joueur.
+  const playerMaxHealth = cityRushCarMaxHealth(playerProfile);
   // Vitesse de pointe de la voiture engagée, rythme du parcours compris : elle
   // règle le streaming (trafic, contresens, rangées de bonus) et le chrono du
   // Sprint. Les trois systèmes étaient calibrés sur une seule vitesse ; ils
@@ -1166,7 +1169,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       profile,
       distance: 0,
       lap: 1,
-      health: CITY_RUSH_RACER_HEALTH,
+      maxHealth: cityRushCarMaxHealth(profile),
+      health: cityRushCarMaxHealth(profile),
       healthFlash: 0,
       wrecked: false,
       baseSpeed: paced(PLAYER_SPEED * profile.powerMultiplier),
@@ -1378,7 +1382,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // voiture — trafic, contresens ou berline de police — en retire une aussi :
   // le carambolage arme un court répit partagé
   // (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) pour ne compter qu'un carré par choc.
-  let playerHealth = CITY_RUSH_PLAYER_HEALTH;
+  let playerHealth = playerMaxHealth;
   let playerHealthActive = false;
   let playerHealthFlash = 0;
   let playerCollisionCooldownLeft = 0;
@@ -1602,6 +1606,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerBlueShotSlowLeft = 0;
   let playerTrafficRecoverLeft = 0;
   let playerTrafficImpactLeft = 0;
+  // Couples coureur/voiture lente déjà en contact : un impact par épisode (voir
+  // `detectCityRushTrafficImpacts`), pour qu'un pilote retenu juste derrière une
+  // voiture lente soit facturé une fois — et non à chaque image — sans jamais
+  // rester collé au seuil sans rien toucher.
+  const trafficContacts = new Set();
   let playerBoostLeft = 0;
   let playerStunLeft = 0;
   let playerStunTotal = 0;
@@ -1650,6 +1659,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     {
       id: 'player',
       isPlayer: true,
+      carId: playerProfile.id,
       driverId: playerDriver.driverId,
       name: playerDriver.name,
       displayName: playerDriver.displayName,
@@ -1665,13 +1675,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       mesh: playerCar,
       lap,
       health: playerHealth,
-      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      maxHealth: playerMaxHealth,
       healthFlash: playerHealthFlash,
       wrecked: playerWrecked,
     },
     ...racers.map((racer) => ({
       id: racer.id,
       isPlayer: false,
+      carId: racer.profile.id,
       driverId: racer.driverId,
       name: racer.name,
       displayName: racer.displayName,
@@ -1687,7 +1698,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       mesh: racer.mesh,
       lap: racer.lap,
       health: racer.health,
-      maxHealth: CITY_RUSH_RACER_HEALTH,
+      maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
       healthFlash: racer.healthFlash,
       wrecked: racer.wrecked,
     })),
@@ -1936,7 +1947,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lane: racer.lane,
         x: racer.x,
         health: racer.health,
-        maxHealth: racer.maxHealth || CITY_RUSH_RACER_HEALTH,
+        maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
         healthFlash: racer.healthFlash || 0,
         wrecked: Boolean(racer.wrecked),
       })),
@@ -1953,7 +1964,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncomingTime: playerOncomingTime,
       // La santé du joueur s'affiche dès le début effectif de la course.
       playerHealth: playerHealthActive ? playerHealth : null,
-      playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+      playerHealthMax: playerMaxHealth,
       playerHealthActive,
       playerHealthFlash,
       score,
@@ -2105,6 +2116,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerBlueShotSlowLeft = 0;
     playerTrafficRecoverLeft = 0;
     playerTrafficImpactLeft = 0;
+    trafficContacts.clear();
     playerBoostLeft = 0;
     playerStunLeft = 0;
     playerStunTotal = 0;
@@ -2130,7 +2142,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     watchHelicopter.visible = false;
     watchHeliLeaving = 0;
     watchHeliAge = 0;
-    playerHealth = CITY_RUSH_PLAYER_HEALTH;
+    playerHealth = playerMaxHealth;
     playerHealthActive = false;
     playerHealthFlash = 0;
     playerCollisionCooldownLeft = 0;
@@ -2146,7 +2158,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     racers.forEach((racer, index) => {
       racer.distance = 0;
       racer.lap = 1;
-      racer.health = CITY_RUSH_RACER_HEALTH;
+      racer.health = racer.maxHealth || cityRushCarMaxHealth(racer.profile);
       racer.healthFlash = 0;
       racer.wrecked = false;
       racer.finalLapAnnounced = false;
@@ -2698,7 +2710,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       source,
       damage: lost,
       health: racer.health,
-      maxHealth: CITY_RUSH_RACER_HEALTH,
+      maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
       critical: racer.health <= CITY_RUSH_PLAYER_HEALTH_CRITICAL,
       ...extra,
     });
@@ -2725,7 +2737,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         type: 'pistol-hit-player',
         attacker: attacker?.name || 'RIVAL',
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       });
     } else if (target.isPolice) {
       // Police marquée ou banalisée : trois étoiles et dégâts de coque.
@@ -3750,7 +3762,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'police',
         healthLost,
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       });
       if (rallied) {
         raiseWantedLevel({ police: true, reason: traffic.type === 'undercover-police' ? 'undercover-contact' : 'police-contact' });
@@ -3766,13 +3778,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function activatePlayerHealth() {
     if (playerHealthActive) return;
     playerHealthActive = true;
-    playerHealth = CITY_RUSH_PLAYER_HEALTH;
+    playerHealth = playerMaxHealth;
     playerHealthFlash = 0;
     playerCollisionCooldownLeft = 0;
     getCallbacks().effect?.({
       type: 'player-health',
       health: playerHealth,
-      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      maxHealth: playerMaxHealth,
       lap,
     });
     emitHud(true);
@@ -3795,7 +3807,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       source,
       damage: lost,
       health: playerHealth,
-      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      maxHealth: playerMaxHealth,
       attacker: attackerId ? getRaceVehicleState(attackerId)?.name || null : null,
       critical: playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL,
       lap,
@@ -3890,7 +3902,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       victim: 'police',
       playerHealthLost,
       playerHealth,
-      playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+      playerHealthMax: playerMaxHealth,
     });
   }
 
@@ -4399,7 +4411,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'traffic',
         healthLost,
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       } : {}),
     });
     return true;
@@ -4518,7 +4530,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'oncoming',
         healthLost,
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       } : {}),
     });
   }
@@ -5411,7 +5423,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       ];
       // Le contact est détecté avant le maintien de la distance de sécurité :
       // un joueur humain comme une IA déclenche le même choc et le même rabat.
-      const trafficImpactsThisFrame = detectCityRushTrafficImpacts(movementRequests, CITY_RUSH_TRAFFIC_IMPACT_GAP);
+      const trafficImpactsThisFrame = detectCityRushTrafficImpacts(movementRequests, CITY_RUSH_TRAFFIC_IMPACT_GAP, trafficContacts);
       for (const contact of trafficImpactsThisFrame) {
         const traffic = trafficCars.find((item) => item.id === contact.trafficId);
         if (traffic) applyTrafficImpact(contact.racerId, traffic);

@@ -994,10 +994,14 @@ et le dernier tour durait 21 s.
   s'efface (`WATCH_HELI_TUNNEL_HIDE`) plutôt que de voler dans les panneaux
   suspendus, et il reparaît à la sortie — le smoke compte ces rentrées.
   La **barre de vie du joueur et des rivaux** est active dès le départ :
-  **quinze cellules** en trois groupes de cinq — bleu, vert, jaune — dont les
-  trois dernières virent au rouge à l'état critique
+  **quinze cellules de base** en trois groupes de cinq — bleu, vert, jaune —
+  dont les trois dernières virent au rouge à l'état critique
   (`CITY_RUSH_PLAYER_HEALTH`, `cityRushHealthSegments`,
-  `CITY_RUSH_PLAYER_BAR_COLORS`). Chaque tir rouge reçu retire **une cellule**
+  `CITY_RUSH_PLAYER_BAR_COLORS`). **Chaque voiture a sa propre coque** :
+  la citadine offerte MISTRAL 1.4 en compte **vingt-trois**, la PULSE RS
+  **sept** — la coque suit la solidité du modèle
+  (`cityRushCarMaxHealth` = quinze fois `durabilityMultiplier`, bornée par
+  `CITY_RUSH_CAR_HEALTH_MIN`) ; les rivaux gardent la coque de base. Chaque tir rouge reçu retire **une cellule**
   sans dérapage ni ralentissement ; le tir bleu en retire aussi une. Les tirs
   reçus par les voitures de police suivent leur coque distincte : rouge −3,
   bleu −2, collision −1. **Percuter une voiture retire un carré au pilote**,
@@ -1008,7 +1012,14 @@ et le dernier tour durait 21 s.
   carambolage ne coûte jamais plus d'un carré : le choc arme un **répit
   partagé** de 1,5 s (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`), le temps de
   reprendre, pour qu'un embouteillage ou deux carrosseries restées collées ne
-  vident pas la barre d'un coup. Le trafic et les rivaux ne se heurtent entre
+  vident pas la barre d'un coup. Le seuil de choc contre le **trafic lent**
+  n'est plus la distance de sécurité de 4,8 m mais **l'enveloppe de la
+  carrosserie** : 3,6 m pare-chocs contre pare-chocs, 2,9 m une fois l'aile
+  dégagée (`cityRushTrafficContactGap`, `CITY_RUSH_TRAFFIC_CAR_GAP`,
+  `CITY_RUSH_TRAFFIC_PASS_GAP`) — une esquive entamée à temps raccourcit le
+  seuil et passe, une esquive jamais entamée touche. La retenue du suiveur suit
+  la même enveloppe, sans quoi le moteur arrêterait la voiture juste au-delà du
+  seuil et le choc ne tomberait jamais. Le trafic et les rivaux ne se heurtent entre
   eux qu'en ralentissant, sans toucher la coque du pilote. Le contact policier
   compte seulement quand le pilote **arrive sur** une berline **devant lui**, à
   une vitesse supérieure
@@ -1431,8 +1442,10 @@ d'observation** (nœud `watch-helicopter` : absent hors du dernier tour, rotor e
 pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par la
 vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
 du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
-`reset()`) et les **barres de vie des pilotes** (15 cellules pleines dès le
-départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème).
+`reset()`) et les **barres de vie des pilotes** (la coque de chaque voiture
+pleine dès le départ — vingt-trois cellules pour la MISTRAL, sept pour la
+PULSE RS, quinze pour les rivaux —, bornées et jamais croissantes ; chaque tir
+encaissé respecte le barème).
 Le **carré du carambolage est neutralisé dans ce harnais** : le lanceur patche
 l'ancre `collision: 1` de `cityRushRules.js` en `collision: 0`, sinon le pilote
 d'essai — qui ne se dérobe jamais — finirait en épave avant l'arrivée. Le

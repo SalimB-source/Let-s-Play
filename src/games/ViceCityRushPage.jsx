@@ -41,8 +41,8 @@ import {
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_ONCOMING_BONUS_MAX,
   NORDSCHLEIFE_RELIEF_M,
-  CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
+  cityRushCarMaxHealth,
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_POLICE_AIM_TIME,
@@ -76,6 +76,11 @@ const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
   { key: 'recovery', label: 'REPRISE' },
+  // La coque s'affiche en carrés de vie : la barre suit la jauge `durability`
+  // du catalogue, le nombre annonce ce que la voiture encaisse vraiment
+  // (`cityRushCarMaxHealth`). Une petite voiture lente peut donc afficher une
+  // longue barre et un gros chiffre, une supercar l'inverse.
+  { key: 'durability', label: 'COQUE', cells: true },
 ];
 const CITY_THUMBNAILS = {
   'vice-city': 'vice-city-thumb.jpg',
@@ -96,9 +101,9 @@ const CAR_THUMBNAILS = {
   'night-comet': 'car-wolfsburg-gtr.jpg',
   'vega-gt-67': 'car-bavaria-mcs.jpg',
   'toro-v12': 'car-tempesta-lp780.jpg',
-  'volt-aero': 'car-volt-aero.svg',
-  'atlas-xr': 'car-atlas-xr.svg',
-  'pulse-rs': 'car-pulse-rs.svg',
+  'volt-aero': 'car-volt-aero.jpg',
+  'atlas-xr': 'car-atlas-xr.jpg',
+  'pulse-rs': 'car-pulse-rs.jpg',
 };
 
 const STORY_ENDINGS = {
@@ -218,8 +223,11 @@ const EMPTY_HUD = {
   boostLeft: 0,
   stunLeft: 0,
   // Barre de vie du pilote : nulle tant que le dernier tour n'a pas commencé.
+  // Le maximum n'est pas encore connu — chaque voiture a sa propre coque :
+  // le monde l'annonce dès sa première image, et d'ici là c'est la coque de
+  // la voiture sélectionnée qui sert de repli (voir `playerHealthMax` plus bas).
   playerHealth: null,
-  playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+  playerHealthMax: null,
   playerHealthActive: false,
   playerHealthFlash: 0,
   police: [],
@@ -529,13 +537,18 @@ export default function ViceCityRushPage() {
       ? Number(hud.wantedLevel)
       : (Array.isArray(hud.police) ? hud.police.length : 0),
   ));
-  // Quinze cellules pour le pilote comme pour les rivaux : les cellules
-  // s'allument par groupes bleu, vert et jaune, puis les trois dernières
-  // deviennent rouges.
+  // Chaque voiture a sa propre coque : les cellules s'allument par groupes
+  // bleu, vert et jaune, puis les trois dernières deviennent rouges. Sept
+  // carrés pour une PULSE RS, vingt-trois pour une MISTRAL 1.4 (le maximum
+  // arrive par le HUD du monde ; celui de la voiture sélectionnée sert de
+  // repli avant le premier envoi).
+  const playerHealthMax = Math.max(
+    1,
+    Number(hud.playerHealthMax) || cityRushCarMaxHealth(selectedCar),
+  );
   const playerHealthValue = hud.playerHealth === null || hud.playerHealth === undefined
     ? null
-    : Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Number(hud.playerHealth) || 0));
-  const playerHealthMax = Number(hud.playerHealthMax) || CITY_RUSH_PLAYER_HEALTH;
+    : Math.max(0, Math.min(playerHealthMax, Number(hud.playerHealth) || 0));
   const playerHealthCritical = playerHealthValue !== null && playerHealthValue <= CITY_RUSH_PLAYER_HEALTH_CRITICAL;
   // Mire d'une berline dans le dos : progression du viseur (0 → 1) de la
   // berline qui tient le pilote dans sa ligne de tir. Elle alimente le halo
@@ -1544,10 +1557,16 @@ export default function ViceCityRushPage() {
                               <small className="city-rush-car-class">{car.className}</small>
                               <span className="city-rush-car-stats">
                                 {CAR_STATS.map((stat) => (
-                                  <span className="city-rush-car-stat" key={stat.key}>
+                                  <span
+                                    className="city-rush-car-stat"
+                                    key={stat.key}
+                                    title={stat.cells
+                                      ? `${car.name} : ${cityRushCarMaxHealth(car)} carrés de coque`
+                                      : undefined}
+                                  >
                                     <small>{stat.label}</small>
                                     <i className="city-rush-car-stat-track" aria-hidden="true"><i style={{ width: `${car[stat.key]}%` }} /></i>
-                                    <b>{car[stat.key]}</b>
+                                    <b>{stat.cells ? cityRushCarMaxHealth(car) : car[stat.key]}</b>
                                   </span>
                                 ))}
                               </span>
