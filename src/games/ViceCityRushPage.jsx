@@ -1290,12 +1290,29 @@ export default function ViceCityRushPage() {
                   return (
                     <button
                       type="button"
-                      className={`city-rush-machine-gun-button${ready ? ' is-ready' : ''}`}
+                      className={`city-rush-machine-gun-button${ready ? ' is-ready' : ' is-empty'}${ready && ammo <= 2 ? ' is-low' : ''}`}
                       onClick={() => actionsRef.current?.(type)}
                       disabled={!ready}
                       title={ready ? `AK-47 chargé · ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} · appuie ou maintiens Z pour tirer` : `Ramasse un bonus rouge rare pour obtenir ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles`}
                       aria-label={ready ? `Tirer à l’AK-47, ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} ; maintiens Z pour vider le chargeur` : `AK-47 : 0/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}, ramasse un bonus rouge rare`}
                     >
+                      {/* Anneau de munitions : un segment par balle du chargeur. */}
+                      <svg className="city-rush-machine-gun-ammo" viewBox="0 0 100 100" aria-hidden="true">
+                        {Array.from({ length: CITY_RUSH_PISTOL_AMMO_PER_PICKUP }, (_, index) => {
+                          const total = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+                          const span = 360 / total;
+                          const from = ((index * span) + 4 - 90) * (Math.PI / 180);
+                          const to = (((index + 1) * span) - 4 - 90) * (Math.PI / 180);
+                          const r = 47;
+                          return (
+                            <path
+                              key={index}
+                              className={index < ammo ? 'is-loaded' : ''}
+                              d={`M ${50 + r * Math.cos(from)} ${50 + r * Math.sin(from)} A ${r} ${r} 0 0 1 ${50 + r * Math.cos(to)} ${50 + r * Math.sin(to)}`}
+                            />
+                          );
+                        })}
+                      </svg>
                       <span className="city-rush-machine-gun-label">AK-47</span>
                       <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
                       <span className="city-rush-machine-gun-status">{ready ? `CHARGÉ ${ammo}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}` : `0 / ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}`}</span>

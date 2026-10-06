@@ -518,3 +518,50 @@
   .city-rush-viewport .city-rush-hud .city-rush-toast { animation: none; }
   .city-rush-viewport .city-rush-hud .city-rush-lap-banner { animation: none; }
 }
+
+/* ── Bouton de tir AK-47 ──
+   Chargé : rouge vif, lueur pulsée, anneau de munitions (un segment par balle).
+   Vide : entièrement grisé, sans lueur, l'anneau reste en pointillés éteints. */
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { overflow: visible; }
+
+.city-rush-machine-gun-ammo {
+  position: absolute;
+  inset: -9px;
+  width: calc(100% + 18px);
+  height: calc(100% + 18px);
+  overflow: visible;
+  pointer-events: none;
+}
+.city-rush-machine-gun-ammo path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke 0.2s ease, filter 0.2s ease;
+}
+.city-rush-machine-gun-ammo path.is-loaded {
+  stroke: #ff4d6a;
+  filter: drop-shadow(0 0 3px rgba(255, 60, 90, 0.9));
+}
+.city-rush-machine-gun-button.is-low .city-rush-machine-gun-ammo path.is-loaded {
+  stroke: #ffb648;
+  filter: drop-shadow(0 0 3px rgba(255, 182, 72, 0.9));
+}
+
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-button.is-empty {
+  border: 2px solid rgba(160, 166, 178, 0.45);
+  background: radial-gradient(circle at 42% 30%, #3a3f49, #22262e 55%, #15181e 100%);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55), 0 8px 22px rgba(0, 0, 0, 0.45);
+  color: #8b919c;
+  filter: grayscale(1);
+  cursor: not-allowed;
+  animation: none;
+}
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-button.is-empty .city-rush-machine-gun-icon {
+  color: #7d838e;
+  opacity: 0.7;
+}
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-button.is-empty .city-rush-machine-gun-status {
+  color: #a3a9b4;
+}
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-button.is-empty::after { display: none; }

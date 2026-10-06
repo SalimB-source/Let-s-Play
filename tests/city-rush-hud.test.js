@@ -304,3 +304,10 @@ test('les flèches de direction ne sont plus affichées ; le compteur à aiguill
   assert.match(gauge, /onClick=\{toggle\}/);
   assert.match(gauge, /'mph'/);
 });
+
+test('le bouton AK-47 vide est grisé et montre un anneau de munitions', () => {
+  const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
+  assert.match(page, /ready \? ' is-ready' : ' is-empty'/);
+  assert.match(page, /city-rush-machine-gun-ammo/);
+  assert.match(hudCss, /\.city-rush-machine-gun-button\.is-empty \{[^}]*filter: grayscale\(1\)/);
+});
