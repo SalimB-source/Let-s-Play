@@ -92,7 +92,7 @@ const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
   CITY_RUSH_LAPS, CITY_RUSH_POLICE_AIM_TIME, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceMaxHealth, cityRushPoliceAimHold,
-  cityRushPoliceAimReady,
+  cityRushPoliceAimReady, cityRushMiniGarageRepair,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -151,8 +151,13 @@ for (let run = 0; run < RUNS; run += 1) {
       effect: (e) => { callbacks.effects.push(e); },
     }), car.id, { current: audioStub }, null, TEST_LAPS, PURSUIT_FROM_START);
 
+    const miniGarages = world.scene.children.filter((object) => object.name === 'city-rush-mini-garage');
+    let earlyGarageSeen = false;
     world.setPhase('countdown');
     for (let i = 0; i < 95; i += 1) stepFrame();
+    if (miniGarages.some((garage) => garage.visible) || callbacks.huds.at(-1)?.miniGaragesActive) {
+      violations.push(`[${city.id}#${run}] les garages apparaissent au compte à rebours en Poursuite`);
+    }
     world.setPhase('playing');
     world.start();
 
@@ -181,6 +186,12 @@ for (let run = 0; run < RUNS; run += 1) {
       }
       // Pilote du pire cas : il ne se décale jamais (il reste dans sa voie).
       stepFrame();
+      const nextHud = callbacks.huds.at(-1);
+      if (!earlyGarageSeen && nextHud?.lap < TEST_LAPS
+        && (miniGarages.some((garage) => garage.visible) || nextHud.miniGaragesActive)) {
+        earlyGarageSeen = true;
+        violations.push(`[${city.id}#${run}] les garages apparaissent avant le dernier tour en Poursuite`);
+      }
       frames += 1;
     }
     aimedFrames += runAimFrames;
@@ -197,6 +208,14 @@ for (let run = 0; run < RUNS; run += 1) {
           violations.push(`[${city.id}#${run}] la barre ne démarre pas à ${carMaxHealth} cellules (coque de ${car.name})`);
         }
         healthSeries = effect.health;
+        continue;
+      }
+      if (effect.type === 'mini-garage-used') {
+        if (effect.lap !== TEST_LAPS || effect.healthBefore !== tracked
+          || effect.health !== cityRushMiniGarageRepair(tracked, carMaxHealth)) {
+          violations.push(`[${city.id}#${run}] le garage répare hors du dernier tour ou au-delà de la coque`, effect);
+        }
+        tracked = effect.health;
         continue;
       }
       if (effect.type !== 'player-hit') continue;

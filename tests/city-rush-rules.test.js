@@ -78,12 +78,16 @@ import {
   CITY_RUSH_MINI_GARAGE_COUNT,
   CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS,
   CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
+  CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
   isCityRushPoliceTrafficType,
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
+  cityRushMiniGaragesAvailable,
+  cityRushMiniGarageCanUse,
+  cityRushMiniGarageRepair,
   cityRushMiniGarageCanClearWanted,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
@@ -1101,25 +1105,70 @@ test('chaque carte a deux mini-garages traversables sur la voie à droite du sen
   }
 
   assert.ok(CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH > 3.5 && CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH < 3.6);
-  const exitDistance = 360 + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  const finalLapStart = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH;
+  const exitDistance = finalLapStart + 360 + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
   const crossing = {
     previousDistance: exitDistance - 1,
     nextDistance: exitDistance + 1,
     garageExitDistance: exitDistance,
     playerLane: 5,
     garageLane: 5,
+    lap: CITY_RUSH_LAPS,
+    laps: CITY_RUSH_LAPS,
     wantedLevel: 3,
   };
   assert.equal(cityRushMiniGarageCanClearWanted(crossing), true, 'la recherche ne s’efface qu’à la sortie du portique');
   assert.equal(cityRushMiniGarageCanClearWanted({
     ...crossing,
-    previousDistance: 359,
-    nextDistance: 361,
+    previousDistance: finalLapStart + 359,
+    nextDistance: finalLapStart + 361,
   }), false, 'passer au centre du garage ne suffit pas : la voiture doit en sortir');
-  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, wantedLevel: 0 }), false, 'un garage sans recherche reste disponible');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, wantedLevel: 0 }), false, 'sans recherche, aucune étoile à effacer');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: 4 }), false, 'il faut traverser la voie de la porte');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, used: true }), false, 'chaque mini-garage ne sert qu’une fois');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, previousDistance: exitDistance }), false, 'il faut franchir la sortie pendant cette image');
+});
+
+test('les mini-garages ne sont utilisables qu’au dernier tour, jamais en Sprint', () => {
+  assert.equal(cityRushMiniGaragesAvailable(), false, 'pas de garage au départ d’une course normale');
+  for (const laps of [1, 3, CITY_RUSH_LAPS]) {
+    for (let lap = 1; lap < laps; lap += 1) {
+      assert.equal(cityRushMiniGaragesAvailable({ lap, laps }), false, `tour ${lap}/${laps} sans garage`);
+    }
+    assert.equal(cityRushMiniGaragesAvailable({ lap: laps, laps }), true, `garages au tour ${laps}/${laps}`);
+    assert.equal(cityRushMiniGaragesAvailable({ lap: laps, laps, sprint: true }), false, 'pas de garage en Sprint');
+  }
+
+  const exit = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH + 360 + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  const crossing = {
+    previousDistance: exit - 1, nextDistance: exit + 1, garageExitDistance: exit,
+    playerLane: 5, garageLane: 5, lap: CITY_RUSH_LAPS, laps: CITY_RUSH_LAPS,
+    wantedLevel: 0,
+  };
+  assert.equal(cityRushMiniGarageCanUse(crossing), true, 'la réparation fonctionne même sans étoiles');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, lap: CITY_RUSH_LAPS - 1, wantedLevel: 5 }), false,
+    'une poursuite avant le dernier tour n’ouvre pas les garages');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, lap: CITY_RUSH_LAPS - 1, wantedLevel: 5 }), false);
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, sprint: true }), false);
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, used: true }), false, 'pas de deuxième réparation');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, playerLane: 4 }), false, 'pas de réparation depuis une voie voisine');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, nextDistance: exit - 0.1 }), false, 'le service attend la sortie');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, previousDistance: exit }), false, 'pas de service répété après la sortie');
+});
+
+test('chaque mini-garage rend deux cellules au maximum, sans dépasser la coque ni ressusciter une épave', () => {
+  assert.equal(CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, 2);
+  for (const car of CITY_RUSH_CARS) {
+    const max = cityRushCarMaxHealth(car);
+    assert.equal(cityRushMiniGarageRepair(max - 3, max), max - 1, `${car.id} récupère deux cellules`);
+    assert.equal(cityRushMiniGarageRepair(max - 1, max), max, `${car.id} ne dépasse pas sa résistance`);
+    assert.equal(cityRushMiniGarageRepair(max, max), max, `${car.id} reste pleine`);
+    assert.equal(cityRushMiniGarageRepair(max + 2, max), max, `${car.id} reste plafonnée`);
+    assert.equal(cityRushMiniGarageRepair(1, max), 3, `${car.id} peut sortir du seuil critique`);
+    assert.equal(cityRushMiniGarageRepair(0, max), 0, 'une épave ne reprend pas la course');
+  }
+  assert.equal(cityRushMiniGarageRepair(-2), 0);
+  assert.equal(cityRushMiniGarageRepair(NaN), 0);
 });
 
 test('trois voitures de police poursuivent le joueur et un renfort est réservé par rival — hors classement', () => {

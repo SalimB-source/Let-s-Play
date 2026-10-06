@@ -3319,11 +3319,12 @@ export function cityRushWantedLevelAfterPoliceDestroyed(currentLevel = 0, destro
   return Math.max(current, Math.min(CITY_RUSH_WANTED_MAX_STARS, 3 + count));
 }
 
-// Deux portes de service sont semées sur la boucle de chaque carte. Elles
-// reviennent avec le décor à chaque tour, mais ne peuvent être utilisées
-// qu'une fois chacune dans une course.
+// Deux portes de service apparaissent au dernier tour de chaque carte, même
+// en mode Poursuite. Une porte ratée revient dans la deuxième boucle de ce
+// dernier tour, mais chaque garage ne peut servir qu'une fois par course.
 export const CITY_RUSH_MINI_GARAGE_COUNT = 2;
 export const CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS = Object.freeze([360, 840]);
+export const CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT = 2; // cellules rendues à la coque
 // Longueur du portique (5,1 unités de scène) convertie en mètres de piste.
 export const CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH = 2.55 / CITY_RUSH_SCROLL_SCALE;
 
@@ -3333,31 +3334,42 @@ export function cityRushMiniGarageLane(course) {
   return forwardLanes[forwardLanes.length - 1] ?? 0;
 }
 
+/** Les garages sont réservés au dernier tour, jamais au Sprint solo. */
+export function cityRushMiniGaragesAvailable({ lap = 1, laps = CITY_RUSH_LAPS, sprint = false } = {}) {
+  return !sprint && Number(lap) >= safeLapCount(laps);
+}
+
 /**
- * La recherche n'est effacée qu'une fois la voiture sortie du portique, dans la
- * bonne voie, avec des étoiles actives et un garage encore disponible.
+ * Le service attend la sortie du portique, dans la bonne voie, au dernier
+ * tour. Il répare aussi une voiture sans étoiles ; chaque porte ne sert qu'une fois.
  */
-export function cityRushMiniGarageCanClearWanted({
+export function cityRushMiniGarageCanUse({
   previousDistance,
   nextDistance,
   garageExitDistance,
   playerLane,
   garageLane,
-  wantedLevel = 0,
+  lap = 1,
+  laps = CITY_RUSH_LAPS,
+  sprint = false,
   used = false,
 } = {}) {
   const previous = Number(previousDistance);
   const next = Number(nextDistance);
   const exit = Number(garageExitDistance);
-  const stars = Math.floor(Number(wantedLevel) || 0);
-  return !used
+  return cityRushMiniGaragesAvailable({ lap, laps, sprint })
+    && !used
     && Number.isFinite(previous)
     && Number.isFinite(next)
     && Number.isFinite(exit)
     && previous < exit
     && next >= exit
-    && Number(playerLane) === Number(garageLane)
-    && stars > 0;
+    && Number(playerLane) === Number(garageLane);
+}
+
+/** Un passage valide efface les étoiles actives en plus de réparer la coque. */
+export function cityRushMiniGarageCanClearWanted(options = {}) {
+  return cityRushMiniGarageCanUse(options) && Math.floor(Number(options.wantedLevel) || 0) > 0;
 }
 
 // Portée de vue des patrouilles à cinq étoiles : toute voiture de police
@@ -4028,6 +4040,13 @@ export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = 
   const damage = Number(CITY_RUSH_PLAYER_DAMAGE[source]);
   if (!Number.isFinite(damage) || damage <= 0) return safeHealth;
   return Math.max(0, safeHealth - damage);
+}
+
+/** Petite réparation de garage, plafonnée à la coque choisie, sans ressusciter une épave. */
+export function cityRushMiniGarageRepair(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
+  const safeMax = Math.max(1, Math.trunc(Number(max) || CITY_RUSH_PLAYER_HEALTH));
+  const safeHealth = Math.max(0, Math.min(safeMax, Math.trunc(Number(health) || 0)));
+  return safeHealth > 0 ? Math.min(safeMax, safeHealth + CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT) : 0;
 }
 
 export const CITY_RUSH_PLAYER_BAR_COLORS = Object.freeze({

@@ -77,7 +77,7 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
-  CITY_RUSH_MINI_GARAGE_COUNT, cityRushMiniGarageLane,
+  CITY_RUSH_MINI_GARAGE_COUNT, CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS, CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, cityRushMiniGarageLane,
   CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
@@ -310,6 +310,11 @@ for (const [index, city] of courses.entries()) {
     || garage.userData.lane !== cityRushMiniGarageLane(city))) {
     fail('les mini-garages ne sont pas sur la voie extérieure du sens de course', miniGarageNodes.map((garage) => garage.userData));
   }
+  if (miniGarageNodes.some((garage, index) => garage.visible
+    || garage.userData.trackDistance !== FINAL_LAP_START + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index])) {
+    fail('les mini-garages doivent être masqués et ancrés au dernier tour dès la construction', miniGarageNodes.map((garage) => garage.userData));
+  }
+  let miniGarageVisibleFrames = 0;
   // L'hélico d'observation du dernier tour, construit une seule fois.
   if (watchHeliNodes.length !== 1) fail('l’hélico d’observation n’est pas construit une seule fois', watchHeliNodes.length);
   const watchHeli = watchHeliNodes[0];
@@ -353,7 +358,10 @@ for (const [index, city] of courses.entries()) {
     fail('une course normale ne démarre pas à zéro étoile', callbacks.huds[0]);
   }
   if (callbacks.huds[0]?.miniGaragesRemaining !== CITY_RUSH_MINI_GARAGE_COUNT) {
-    fail('le HUD ne montre pas les deux mini-garages au départ', callbacks.huds[0]);
+    fail('le HUD ne réserve pas les deux mini-garages pour le dernier tour', callbacks.huds[0]);
+  }
+  if (callbacks.huds[0]?.miniGaragesActive || miniGarageNodes.some((garage) => garage.visible)) {
+    fail('les mini-garages ou leur compteur apparaissent avant la course');
   }
   if (slowZoneNodes) fail('une zone d’huile ou de ralentissement est encore rendue', slowZoneNodes);
   if (!pickupSlots.some((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST)) fail('aucun pad turbo vert n’est placé sur la piste');
@@ -382,7 +390,8 @@ for (const [index, city] of courses.entries()) {
     fail('reset() ne remet pas les étoiles à zéro pour la course suivante', callbacks.huds.at(-1));
   }
   if (callbacks.huds.at(-1)?.miniGaragesRemaining !== CITY_RUSH_MINI_GARAGE_COUNT
-    || miniGarageNodes.some((garage) => garage.userData.used)) {
+    || callbacks.huds.at(-1)?.miniGaragesActive
+    || miniGarageNodes.some((garage) => garage.userData.used || garage.visible)) {
     fail('reset() ne réarme pas les deux mini-garages pour la course suivante', {
       hud: callbacks.huds.at(-1), garages: miniGarageNodes.map((garage) => garage.userData),
     });
@@ -595,6 +604,12 @@ for (const [index, city] of courses.entries()) {
       if ((hud.inventory?.[type] || 0) > 0) world.action(type);
     }
     runFrames(1, `course f${frames}`);
+    const visibleGarages = miniGarageNodes.filter((garage) => garage.visible);
+    if (visibleGarages.length && world.distance < FINAL_LAP_START) {
+      fail('un mini-garage apparaît avant le dernier tour', { distance: world.distance, garages: visibleGarages.map((garage) => garage.userData) });
+    }
+    if (visibleGarages.some((garage) => garage.userData.used)) fail('un garage consommé reste visible');
+    if (visibleGarages.length) miniGarageVisibleFrames += 1;
     // Le cadrage se juge après l'image, caméra à jour. On laisse passer le
     // temps de rapprochement (1,5 s) *de chaque apparition* : l'appareil revient
     // de haut après un tunnel, ces images-là ne disent rien du vol de croisière.
@@ -919,8 +934,27 @@ for (const [index, city] of courses.entries()) {
   if (miniGarageUses.length > CITY_RUSH_MINI_GARAGE_COUNT) {
     fail('plus de deux mini-garages ont été utilisés dans une course', miniGarageUses);
   }
-  if (miniGarageUses.some((effect) => Number(effect.previousStars) < 1 || Number(effect.stars) !== 0)) {
+  if (miniGarageUses.some((effect) => Number(effect.previousStars) < 0 || Number(effect.stars) !== 0)) {
     fail('un mini-garage utilisé ne remet pas la recherche à zéro', miniGarageUses);
+  }
+  if (miniGarageUses.some((effect) => effect.lap !== RACE_LAPS)) {
+    fail('un mini-garage a servi avant le dernier tour', miniGarageUses);
+  }
+  if (miniGarageUses.some((effect) => effect.healthBefore <= 0 || effect.health > effect.maxHealth
+    || effect.healthRestored !== Math.min(CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, effect.maxHealth - effect.healthBefore)
+    || effect.health !== effect.healthBefore + effect.healthRestored)) {
+    fail('la réparation d’un mini-garage est incorrecte ou dépasse la résistance de la voiture', miniGarageUses);
+  }
+  const garageHealthRestored = miniGarageUses.reduce((total, effect) => total + effect.healthRestored, 0);
+  if (callbacks.huds.some((entry) => entry.miniGaragesActive && entry.lap < entry.laps)) {
+    fail('le compteur de mini-garages est actif avant le dernier tour');
+  }
+  if (callbacks.huds.some((entry) => entry.distance >= FINAL_LAP_START + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[0])
+    && !miniGarageVisibleFrames) {
+    fail('les mini-garages ne sont jamais apparus pendant le dernier tour');
+  }
+  if (lastHud.miniGaragesActive || miniGarageNodes.some((garage) => garage.visible)) {
+    fail('les mini-garages ou leur compteur restent affichés après l’arrivée');
   }
   if (new Set(miniGarageUses.map((effect) => effect.garage)).size !== miniGarageUses.length) {
     fail('un mini-garage a été utilisé plusieurs fois', miniGarageUses);
@@ -1247,7 +1281,7 @@ for (const [index, city] of courses.entries()) {
   }
   }
   // La barre de vie est pleine dès le départ, visible pendant toute la course,
-  // bornée et non-croissante ; chaque tir encaissé en retire un (le carré du
+  // bornée et ne remontant que dans les garages ; chaque tir encaissé en retire un (le carré du
   // carambolage est neutralisé par le lanceur, voir plus bas). Chaque voiture a
   // **son** maximum (`cityRushCarMaxHealth`) : celui du pilote est calculé
   // depuis la voiture de l'essai, celui des rivaux depuis leur propre profil.
@@ -1273,16 +1307,23 @@ for (const [index, city] of courses.entries()) {
   }
   let healthBadBounds = 0;
   let healthRiseFrames = 0;
+  let healthRiseTotal = 0;
   let healthPrevious = null;
   for (const entry of healthHuds) {
     const value = Number(entry.playerHealth);
     const max = Number(entry.playerHealthMax);
     if (!Number.isFinite(value) || !Number.isFinite(max) || value < 0 || value > max) healthBadBounds += 1;
-    if (healthPrevious !== null && value > healthPrevious) healthRiseFrames += 1;
+    if (healthPrevious !== null && value > healthPrevious) {
+      healthRiseFrames += 1;
+      healthRiseTotal += value - healthPrevious;
+    }
     healthPrevious = value;
   }
   if (healthBadBounds) fail(`la barre de vie du pilote sort de ses bornes sur ${healthBadBounds} images`);
-  if (healthRiseFrames) fail(`la barre de vie du pilote remonte sur ${healthRiseFrames} images`);
+  if (healthRiseFrames !== miniGarageUses.filter((effect) => effect.healthRestored > 0).length
+    || healthRiseTotal !== garageHealthRestored) {
+    fail(`la barre de vie du pilote remonte hors réparation sur ${healthRiseFrames} images`, miniGarageUses);
+  }
   if (lastHud.playerHealthActive) fail('la barre de vie du pilote reste après l’arrivée', lastHud.playerHealth);
   let runningHealth = null;
   for (const effect of callbacks.effects) {
@@ -1290,6 +1331,11 @@ for (const [index, city] of courses.entries()) {
       if (effect.maxHealth !== playerMaxHealth) fail('la barre de vie du pilote n’a pas le maximum de sa coque', effect);
       runningHealth = effect.health;
       if (runningHealth !== playerMaxHealth) fail('la barre de vie du pilote ne part pas pleine', effect);
+      continue;
+    }
+    if (effect.type === 'mini-garage-used') {
+      if (runningHealth !== effect.healthBefore) fail('le garage ne répare pas la santé réelle du pilote', effect);
+      runningHealth = effect.health;
       continue;
     }
     if (effect.type !== 'player-hit') continue;
@@ -1382,6 +1428,11 @@ for (const [index, city] of courses.entries()) {
   runFrames(10, 'replay countdown');
   const hudAfterReset = callbacks.huds.at(-1);
   if (hudAfterReset.lap !== 1 || hudAfterReset.distance > 1) fail('reset() ne remet pas la course au tour 1', hudAfterReset);
+  if (hudAfterReset.miniGaragesActive || hudAfterReset.miniGaragesRemaining !== CITY_RUSH_MINI_GARAGE_COUNT
+    || miniGarageNodes.some((garage, index) => garage.visible || garage.userData.used
+      || garage.userData.trackDistance !== FINAL_LAP_START + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index])) {
+    fail('reset() ne réarme pas et ne masque pas les garages pour le dernier tour suivant', hudAfterReset);
+  }
   if (watchHeli.visible) fail('l’hélico d’observation reste dans le ciel après reset()');
   if (hudAfterReset.playerHealthActive || hudAfterReset.playerHealth !== null) {
     fail('la barre de vie du pilote survit à reset()', hudAfterReset.playerHealth);
@@ -1399,6 +1450,7 @@ for (const [index, city] of courses.entries()) {
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
     ` · hélico d’observation ${watchHeliFinalLapFrames} f (${watchHeliReturns} rentrée(s) de tunnel · rotor ${watchHeliRotorTurns} tours · cadre y ${watchHeliNdcYMin.toFixed(2)}–${watchHeliNdcYMax.toFixed(2)}, moy ${(watchHeliNdcYSum / Math.max(1, watchHeliMeasured)).toFixed(2)} · x ≤ ${watchHeliNdcXMax.toFixed(2)} · ${(watchHeliFramedFrames / Math.max(1, watchHeliMeasured) * 100).toFixed(0)} % dans la bande)` +
+    ` · mini-garages ${miniGarageVisibleFrames} f au dernier tour · ${miniGarageUses.length} passage(s) · ${garageHealthRestored} cellule(s) rendue(s)` +
     ` · barre de vie du pilote ${healthHuds.length} HUD · ${healthHitEffects} touche(s) subie(s) (rouge ${healthHitsBySource.pistol || 0} · carambolage ${healthHitsBySource.collision || 0}) · ${healthCubes} passage(s) à zéro` +
     ` (${policePlayerOverlapFrames} f de recouvrement · rival ${Number.isFinite(policeAiOverlap) ? policeAiOverlap.toFixed(1) : '—'} m)` +
 
