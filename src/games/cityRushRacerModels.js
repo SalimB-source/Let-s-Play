@@ -916,11 +916,13 @@ export function animateRacerCar(car, state, dt, elapsed) {
     slowed = false,
     impacting = false,
     stunned = false,
+    violentImpact = 0,
     skidding = false,
     idle = false,
     braking = false,
   } = state;
   const anim = data.anim;
+  const impactForce = clamp(Number(violentImpact) || 0, 0, 1);
   const acceleration = dt > 0 ? (speed - anim.lastSpeed) / dt : 0;
   anim.lastSpeed = speed;
 
@@ -934,9 +936,14 @@ export function animateRacerCar(car, state, dt, elapsed) {
   const vibration = idle ? Math.sin(elapsed * 38) * 0.003 : Math.sin(elapsed * 46) * 0.0022 * Math.min(1, speed / 8);
   const impactRoll = impacting ? Math.sin(elapsed * 31) * 0.075 : 0;
   const impactPitch = impacting ? Math.sin(elapsed * 24) * 0.035 : 0;
-  data.body.rotation.z = anim.roll + impactRoll + (stunned ? Math.sin(elapsed * 19) * 0.03 : 0);
-  data.body.rotation.x = anim.pitch + impactPitch;
-  data.body.position.y = vibration + (slowed ? Math.sin(elapsed * 27) * 0.02 : 0) + (impacting ? Math.abs(Math.sin(elapsed * 22)) * 0.035 : 0) + (idle ? Math.sin(elapsed * 2.2) * 0.006 : 0);
+  // Un coup de SUV fait rebondir la caisse et la secoue de droite à gauche,
+  // sans imposer de stun ni modifier la vitesse du pilote.
+  const violentRoll = Math.sin(elapsed * 58) * 0.17 * impactForce;
+  const violentPitch = Math.sin(elapsed * 47 + 0.8) * 0.1 * impactForce;
+  const violentBounce = Math.abs(Math.sin(elapsed * 54)) * 0.11 * impactForce;
+  data.body.rotation.z = anim.roll + impactRoll + violentRoll + (stunned ? Math.sin(elapsed * 19) * 0.03 : 0);
+  data.body.rotation.x = anim.pitch + impactPitch + violentPitch;
+  data.body.position.y = vibration + (slowed ? Math.sin(elapsed * 27) * 0.02 : 0) + (impacting ? Math.abs(Math.sin(elapsed * 22)) * 0.035 : 0) + violentBounce + (idle ? Math.sin(elapsed * 2.2) * 0.006 : 0);
 
   const brake = braking || slowed || stunned;
   data.materials.tailLight.color.setHex(stunned ? 0xfff0b0 : brake ? 0xff5a6a : 0xff3449);

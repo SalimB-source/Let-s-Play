@@ -142,6 +142,22 @@ test('roues, caisse, feux et turbo restent animés sans animation de personnage'
   assert.equal(car.userData.headPivot, undefined, 'aucune animation de tête n’existe');
 });
 
+test('un choc de SUV fait violemment rebondir et tanguer la caisse', () => {
+  const car = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });
+  const ordinaryImpactCar = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });
+  const impactFrame = 1 / 30;
+  const impactTime = 0.04;
+  animateRacerCar(car, { speed: 0, maxSpeed: 30, violentImpact: 1 }, impactFrame, impactTime);
+  animateRacerCar(ordinaryImpactCar, { speed: 0, maxSpeed: 30 }, impactFrame, impactTime);
+
+  assert.ok(Math.abs(car.userData.body.rotation.z) > Math.abs(ordinaryImpactCar.userData.body.rotation.z) + 0.08,
+    'le choc renforcé impose un roulis nettement supérieur');
+  assert.ok(Math.abs(car.userData.body.rotation.x) > Math.abs(ordinaryImpactCar.userData.body.rotation.x) + 0.03,
+    'le choc renforce aussi le tangage');
+  assert.ok(car.userData.body.position.y > ordinaryImpactCar.userData.body.position.y + 0.06,
+    'la voiture rebondit sous la force du choc');
+});
+
 test('chaque modèle reste dans un budget de rendu léger pour les rivales', () => {
   for (const [index, profile] of CITY_RUSH_CARS.entries()) {
     const car = makeRacerCar(profile, { player: index === 0, number: index + 1, driver: ROSTER[index % ROSTER.length] });
