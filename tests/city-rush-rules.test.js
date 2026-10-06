@@ -76,10 +76,6 @@ import {
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
   CITY_RUSH_MINI_GARAGE_COUNT,
-  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
-  CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS,
-  CITY_RUSH_MINI_GARAGE_KINDS,
-  CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
   CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE,
   CITY_RUSH_MINI_GARAGE_SIGN_LEAD,
   CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
@@ -91,8 +87,6 @@ import {
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
   cityRushMiniGarageAvailable,
-  cityRushMiniGaragesAvailable,
-  cityRushMiniGarageKindAt,
   cityRushMiniGarageMidRaceDistance,
   cityRushMiniGarageTrackDistances,
   cityRushMiniGarageCanUse,
@@ -222,6 +216,13 @@ import {
   CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN,
   CITY_RUSH_POLICE_CHASE_SPEED_FACTOR,
   CITY_RUSH_POLICE_BASE_SPEED,
+  CITY_RUSH_RIVAL_PACE,
+  CITY_RUSH_RIVAL_FINAL_LAP_PUSH,
+  cityRushRivalPaceFactor,
+  cityRushAiBrakingRate,
+  cityRushAiBrakingDistance,
+  cityRushAiLaneBlocked,
+  CITY_RUSH_AI_BRAKING_MARGIN,
   chooseCityRushAiLane,
   chooseCityRushTrafficEscapeLane,
   cityRushHitDuration,
@@ -1137,58 +1138,52 @@ test('tirer sur la police donne trois étoiles, puis les destructions font monte
   assert.ok(Number.isFinite(CITY_RUSH_POLICE_SIGHT_RANGE) && CITY_RUSH_POLICE_SIGHT_RANGE > 0, 'portée de vue positive');
 });
 
-test('chaque carte a deux mini-garages traversables sur la voie à droite du sens de course', () => {
-  assert.equal(CITY_RUSH_MINI_GARAGE_COUNT, 2, 'une porte de mi-course plus une porte du dernier tour');
-  assert.deepEqual([...CITY_RUSH_MINI_GARAGE_KINDS], [CITY_RUSH_MINI_GARAGE_MID_RACE_KIND, CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND]);
-  assert.equal(CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.length, CITY_RUSH_MINI_GARAGE_COUNT - 1,
-    'un seul portique reste au dernier tour');
-  assert.ok(CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.every((offset) => offset > 0 && offset < CITY_RUSH_LAP_LENGTH));
+test('chaque carte a un seul mini-garage traversable, à mi-course, sur la voie à droite du sens de course', () => {
+  assert.equal(CITY_RUSH_MINI_GARAGE_COUNT, 1, 'une seule porte : celle de mi-course');
   assert.ok(CITY_RUSH_MINI_GARAGE_SIGN_LEAD >= 20, 'l’indication de voie se voit arriver quelques dizaines de mètres avant');
   for (const course of CITY_RUSH_COURSES) {
     const lanes = cityRushLaneConfig(course).forwardLanes;
-    assert.equal(cityRushMiniGarageLane(course), lanes.at(-1), `${course.id} place les garages à droite dans son sens de course`);
+    assert.equal(cityRushMiniGarageLane(course), lanes.at(-1), `${course.id} place le garage à droite dans son sens de course`);
   }
 
   const distances = cityRushMiniGarageTrackDistances();
   assert.equal(distances.length, CITY_RUSH_MINI_GARAGE_COUNT);
-  assert.equal(distances[0], cityRushMiniGarageMidRaceDistance(), 'la première porte est posée à mi-parcours');
+  assert.equal(distances[0], cityRushMiniGarageMidRaceDistance(), 'la porte est posée à mi-parcours');
   assert.equal(distances[0], cityRushRaceDistance() * CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE);
   assert.equal(distances[0], cityRushRaceDistance() / 2, 'elle tombe exactement à la moitié du parcours');
-  assert.ok(distances[0] < distances[1], 'la porte de mi-course arrive avant celle du dernier tour');
-  assert.equal(distances[1], (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0]);
-  assert.equal(cityRushMiniGarageKindAt(0), CITY_RUSH_MINI_GARAGE_MID_RACE_KIND);
-  assert.equal(cityRushMiniGarageKindAt(1), CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND);
-  // Quelle que soit la longueur du mode, la porte de mi-course reste au milieu.
+  // La porte du dernier tour a été retirée : plus aucun portique après la
+  // ligne du dernier tour.
+  const finalLapStart = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH;
+  assert.ok(distances.every((distance) => distance < finalLapStart),
+    'aucun mini-garage ne subsiste sur le dernier tour', distances);
+  // Quelle que soit la longueur du mode, la porte reste au milieu.
   for (const laps of [1, 3, CITY_RUSH_LAPS]) {
     const track = cityRushMiniGarageTrackDistances({ laps });
-    assert.ok(Math.abs(track[0] / cityRushRaceDistance(laps) - 0.5) < 1e-9, `${laps} tours : la porte tombe à mi-course`);
     assert.equal(track.length, CITY_RUSH_MINI_GARAGE_COUNT);
+    assert.ok(Math.abs(track[0] / cityRushRaceDistance(laps) - 0.5) < 1e-9, `${laps} tours : la porte tombe à mi-course`);
   }
 
   assert.ok(CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH > 3.5 && CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH < 3.6);
-  const finalLapStart = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH;
-  const exitDistance = finalLapStart + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  const exitDistance = distances[0] + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
   const crossing = {
     previousDistance: exitDistance - 1,
     nextDistance: exitDistance + 1,
     garageExitDistance: exitDistance,
     playerLane: 5,
     garageLane: 5,
-    kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
-    lap: CITY_RUSH_LAPS,
-    laps: CITY_RUSH_LAPS,
     wantedLevel: 3,
   };
   assert.equal(cityRushMiniGarageCanClearWanted(crossing), true, 'la recherche ne s’efface qu’à la sortie du portique');
   assert.equal(cityRushMiniGarageCanClearWanted({
     ...crossing,
-    previousDistance: finalLapStart + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] - 1,
-    nextDistance: finalLapStart + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] + 1,
+    previousDistance: distances[0] - 1,
+    nextDistance: distances[0] + 1,
   }), false, 'passer au centre du garage ne suffit pas : la voiture doit en sortir');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, wantedLevel: 0 }), false, 'sans recherche, aucune étoile à effacer');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: 4 }), false, 'il faut traverser la voie de la porte');
-  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, used: true }), false, 'chaque mini-garage ne sert qu’une fois');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, used: true }), false, 'le mini-garage ne sert qu’une fois');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, previousDistance: exitDistance }), false, 'il faut franchir la sortie pendant cette image');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, sprint: true }), false, 'aucun garage en Sprint');
 });
 
 test('le mini-garage baisse progressivement les niveaux de recherche élevés', () => {
@@ -1200,62 +1195,35 @@ test('le mini-garage baisse progressivement les niveaux de recherche élevés', 
   assert.equal(cityRushMiniGarageWantedLevel(0), 0);
 });
 
-test('la porte de mi-course s’ouvre dès le départ, celle du dernier tour attend le dernier tour, jamais en Sprint', () => {
-  assert.equal(cityRushMiniGaragesAvailable(), false, 'pas de portique du dernier tour au départ d’une course normale');
-  assert.equal(
-    cityRushMiniGarageAvailable({ kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND }),
-    true,
-    'la porte de mi-course est là dès le premier tour',
-  );
-  assert.equal(cityRushMiniGarageAvailable({ kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND, sprint: true }), false, 'pas de garage en Sprint');
+test('l’unique porte est ouverte dès le départ, jamais en Sprint', () => {
+  assert.equal(cityRushMiniGarageAvailable(), true, 'la porte est là dès le premier mètre');
+  assert.equal(cityRushMiniGarageAvailable({ sprint: true }), false, 'pas de garage en Sprint');
   for (const laps of [1, 3, CITY_RUSH_LAPS]) {
-    for (let lap = 1; lap < laps; lap += 1) {
-      assert.equal(cityRushMiniGaragesAvailable({ lap, laps }), false, `tour ${lap}/${laps} sans portique du dernier tour`);
-      assert.equal(cityRushMiniGarageAvailable({ kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND, lap, laps }), true,
-        `tour ${lap}/${laps} : la porte de mi-course reste ouverte`);
+    for (let lap = 1; lap <= laps; lap += 1) {
+      assert.equal(cityRushMiniGarageAvailable({ lap, laps }), true, `tour ${lap}/${laps} : la porte reste ouverte`);
+      assert.equal(cityRushMiniGarageAvailable({ lap, laps, sprint: true }), false, `tour ${lap}/${laps} : jamais de garage en Sprint`);
     }
-    assert.equal(cityRushMiniGaragesAvailable({ lap: laps, laps }), true, `garages au tour ${laps}/${laps}`);
-    assert.equal(cityRushMiniGaragesAvailable({ lap: laps, laps, sprint: true }), false, 'pas de garage en Sprint');
   }
 
-  // La porte de mi-course se traverse au début du quatrième tour d'une course
-  // de six tours, sans étoiles ni escouade en piste.
+  // La porte se traverse au début du quatrième tour d'une course de six tours,
+  // sans étoiles ni escouade en piste.
   const midExit = cityRushMiniGarageMidRaceDistance() + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
-  const midCrossing = {
+  const crossing = {
     previousDistance: midExit - 1,
     nextDistance: midExit + 1,
     garageExitDistance: midExit,
     playerLane: 5,
     garageLane: 5,
-    kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
     lap: 4,
     laps: CITY_RUSH_LAPS,
     wantedLevel: 0,
   };
-  assert.equal(cityRushMiniGarageCanUse(midCrossing), true, 'la porte de mi-course sert même sans étoiles et sans escouade');
-  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, sprint: true }), false);
-  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, playerLane: 4 }), false, 'pas de réparation depuis une voie voisine');
-  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, used: true }), false, 'pas de deuxième passage');
-  // La porte du dernier tour, elle, reste fermée tant que le tour n'est pas là.
-  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND }), false,
-    'la porte de mi-course ne vaut pas pour celle du dernier tour');
-
-  const exit = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
-  const crossing = {
-    previousDistance: exit - 1, nextDistance: exit + 1, garageExitDistance: exit,
-    playerLane: 5, garageLane: 5, kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
-    lap: CITY_RUSH_LAPS, laps: CITY_RUSH_LAPS,
-    wantedLevel: 0,
-  };
-  assert.equal(cityRushMiniGarageCanUse(crossing), true, 'la réparation fonctionne même sans étoiles');
-  assert.equal(cityRushMiniGarageCanUse({ ...crossing, lap: CITY_RUSH_LAPS - 1, wantedLevel: 5 }), false,
-    'une poursuite avant le dernier tour n’ouvre pas les garages');
-  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, lap: CITY_RUSH_LAPS - 1, wantedLevel: 5 }), false);
+  assert.equal(cityRushMiniGarageCanUse(crossing), true, 'le garage sert même sans étoiles et sans escouade');
   assert.equal(cityRushMiniGarageCanUse({ ...crossing, sprint: true }), false);
-  assert.equal(cityRushMiniGarageCanUse({ ...crossing, used: true }), false, 'pas de deuxième réparation');
   assert.equal(cityRushMiniGarageCanUse({ ...crossing, playerLane: 4 }), false, 'pas de réparation depuis une voie voisine');
-  assert.equal(cityRushMiniGarageCanUse({ ...crossing, nextDistance: exit - 0.1 }), false, 'le service attend la sortie');
-  assert.equal(cityRushMiniGarageCanUse({ ...crossing, previousDistance: exit }), false, 'pas de service répété après la sortie');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, used: true }), false, 'pas de deuxième passage');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, nextDistance: midExit - 0.1 }), false, 'le service attend la sortie');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, previousDistance: midExit }), false, 'pas de service répété après la sortie');
 });
 
 test('chaque mini-garage rend deux cellules au maximum, sans dépasser la coque ni ressusciter une épave', () => {
@@ -3218,6 +3186,94 @@ test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () 
   assert.equal(cityRushPlayerDamage(1, 'suv-collision'), 0, 'pas de vie négative au dernier carré');
   assert.equal(cityRushPlayerDamage(0, 'suv-collision'), 0);
   assert.equal(cityRushPlayerDamage(15, 'collision'), 14, 'les autres collisions ne changent pas');
+});
+
+test('chaque rival freine à la distance d’arrêt de son propre modèle', () => {
+  const citadine = CITY_RUSH_CARS.find((car) => car.id === 'city-hatch');
+  const supercar = CITY_RUSH_CARS.find((car) => car.id === 'pulse-rs');
+  // Le taux de freinage d'un rival est celui de sa fiche : une citadine freine
+  // au plancher du barème, une supercar bien plus fort — c'est ce qui lui
+  // permet de viser un bonus plus près d'un camion sans payer le carambolage.
+  assert.equal(cityRushAiBrakingRate(citadine.accelerationRate), CITY_RUSH_BRAKE_RATE_FLOOR);
+  assert.ok(cityRushAiBrakingRate(supercar.accelerationRate) > CITY_RUSH_BRAKE_RATE_FLOOR);
+  assert.equal(cityRushAiBrakingRate(citadine.accelerationRate), cityRushBrakingRate(citadine.accelerationRate));
+  // La distance d'arrêt suit le carré de la vitesse et la marge de sécurité.
+  assert.ok(Math.abs(cityRushAiBrakingDistance(30) - (30 * 30) / (2 * CITY_RUSH_BRAKE_RATE_FLOOR) * CITY_RUSH_AI_BRAKING_MARGIN) < 1e-9);
+  assert.ok(cityRushAiBrakingDistance(60) > cityRushAiBrakingDistance(30) * 3.9, 'freiner de 60 m/s coûte bien plus que le double de 30');
+  assert.equal(
+    cityRushAiBrakingDistance(30, { brakingRate: cityRushAiBrakingRate(citadine.accelerationRate) }),
+    cityRushAiBrakingDistance(30),
+    'la citadine freine à la distance du barème',
+  );
+  assert.ok(
+    cityRushAiBrakingDistance(30, { brakingRate: cityRushAiBrakingRate(supercar.accelerationRate) })
+      < cityRushAiBrakingDistance(30) * 0.6,
+    'la supercar freine sensiblement plus court',
+  );
+
+  // Même camion, même vitesse : la voie est bouchée pour la citadine, ouverte
+  // pour la supercar. Le camion roule à 5 m/s à 30 m devant.
+  const truck = [{ lane: 1, distance: 30, speed: 5 }];
+  const blockedFor = (car) => cityRushAiLaneBlocked({
+    lane: 1, distance: 0, speed: 30, traffic: truck,
+    brakingRate: cityRushAiBrakingRate(car.accelerationRate),
+  });
+  assert.equal(blockedFor(citadine), true, 'la citadine ne peut pas s’arrêter avant le camion');
+  assert.equal(blockedFor(supercar), false, 'la supercar s’arrête avant le camion');
+
+  // Et le choix de voie suit : un pad turbo dans une voie bouchée vaut le coup
+  // pour la supercar, pas pour la citadine (on ne vise pas un mur pour un pad).
+  const padInTruckLane = [{ lane: 1, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }];
+  const laneFor = (car) => chooseCityRushAiLane({
+    currentLane: 1, distance: 0, speed: 30, availableLanes: [0, 1, 2], traffic: truck,
+    pickups: padInTruckLane,
+    brakingRate: cityRushAiBrakingRate(car.accelerationRate),
+  });
+  assert.equal(laneFor(citadine), 0, 'la citadine se décale au lieu de plonger sur le camion');
+  assert.equal(laneFor(supercar), 1, 'la supercar prend le pad, elle freine assez court');
+});
+
+test('le rythme de course des rivaux est un vrai cran au-dessus, dernier tour compris', () => {
+  assert.equal(CITY_RUSH_RIVAL_PACE, 1.05);
+  assert.equal(CITY_RUSH_RIVAL_FINAL_LAP_PUSH, 1.02);
+  assert.equal(cityRushRivalPaceFactor(), CITY_RUSH_RIVAL_PACE);
+  assert.ok(cityRushRivalPaceFactor({ finalLap: true }) > cityRushRivalPaceFactor(),
+    'le dernier tour des rivaux pousse encore le rythme');
+  assert.ok(Math.abs(cityRushRivalPaceFactor({ finalLap: true }) - CITY_RUSH_RIVAL_PACE * CITY_RUSH_RIVAL_FINAL_LAP_PUSH) < 1e-9);
+  // Un cran franc mais pas absurde : sous les 3 % de rythme en plus, la course
+  // se joue à la première faute ; au-delà de 8 %, la voiture du joueur ne peut
+  // plus suivre même en ligne propre.
+  assert.ok(CITY_RUSH_RIVAL_PACE > 1.02 && CITY_RUSH_RIVAL_PACE < 1.08);
+});
+
+test('une voiture qui atterrit ne se pose pas dans une berline', () => {
+  const berline = { id: 'police-1', collisionGroup: 'police', lane: 1, x: 0, width: 1.94 };
+  const landing = {
+    id: 'player', collisionGroup: 'racer', lane: 1, x: 0, width: 1.9,
+    previousDistance: 98, nextDistance: 98.5, landing: true,
+  };
+  const follow = { ...landing, landing: false };
+  const jump = { ...landing, landing: false, jumping: true };
+  const resolved = (car) => resolveCityRushCarMovement([
+    { ...berline, previousDistance: 100, nextDistance: 100 },
+    car,
+  ]).find((item) => item.id === 'player').nextDistance;
+  // Sans l'atterrissage, le plancher `previousDistance` fige le pilote dans la
+  // berline qu'il vient de survoler (l'écart reste sous les 4,8 m).
+  assert.equal(resolved(follow), 98);
+  // À l'atterrissage, la voiture est retenue à la distance de sécurité : elle
+  // recule de la correction plutôt que de rester dans la carrosserie.
+  assert.equal(resolved(landing), 100 - CITY_RUSH_CAR_GAP);
+  // En vol, le saut reste un saut : la voiture passe au-dessus sans être
+  // rabotée (c'est ce qui permet de franchir un bouchon par un tremplin).
+  assert.equal(resolved(jump), 98.5);
+
+  // Le recul ne descend jamais sous zéro, même près de la ligne de départ.
+  const nearStart = resolveCityRushCarMovement([
+    { id: 'police-1', collisionGroup: 'police', lane: 1, x: 0, width: 1.94, previousDistance: 2, nextDistance: 2 },
+    { id: 'player', collisionGroup: 'racer', lane: 1, x: 0, width: 1.9, previousDistance: 1, nextDistance: 1.4, landing: true },
+  ]).find((item) => item.id === 'player').nextDistance;
+  assert.equal(nearStart, 0);
 });
 
 test('la herse des quatre étoiles couvre trois voies du sens de course', () => {

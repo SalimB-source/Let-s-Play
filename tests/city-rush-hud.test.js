@@ -161,7 +161,7 @@ test('le niveau de recherche à cinq étoiles est explicite, visible et réiniti
     'l’animation de demi-tour progresse avec le temps réel');
 });
 
-test('les étoiles suivent les tirs/destructions et deux mini-garages réparent la coque au dernier tour', () => {
+test('les étoiles suivent les tirs/destructions et l’unique mini-garage répare la coque à mi-course', () => {
   const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
   const policeDestruction = world.match(/function destroyPolice\([\s\S]*?\n  function acquirePoliceWreckHusk/)?.[0] || '';
   assert.match(world, /cityRushWantedLevelAfterHit\(wantedLevel, \{ hit: true, police \}\)/,
@@ -184,7 +184,7 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(world, /miniGaragesRemaining: miniGarages\.filter\(\(garage\) => !garage\.used\)\.length/);
   assert.match(page, /miniGaragesRemaining:\s*CITY_RUSH_MINI_GARAGE_COUNT/);
   assert.match(page, /city-rush-gta-garages/);
-  assert.match(page, /MINI-GARAGES/);
+  assert.match(page, /MINI-GARAGE DISPONIBLE/);
   assert.match(page, /MINI-GARAGE DANS \$\{miniGarageNextDistance\} M/,
     'le compteur annonce la distance de la prochaine porte');
   assert.match(page, /`\$\{previousStars\} → \$\{currentStars\} ÉTOILE/,
@@ -196,23 +196,23 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(page, /miniGaragesActive: false/, 'le compteur n’est pas disponible au départ');
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
     'le compteur des garages n’apparaît qu’avec une porte en approche');
-  assert.match(page, /l’un à mi-parcours/);
+  assert.match(page, /un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours/);
   assert.match(page, /rend aussi jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/,
     'le bandeau annonce la réparation rendue par le portique');
 
-  // Une porte de mi-course (ouverte dès le départ) et une porte du dernier tour.
-  assert.match(world, /const kind = cityRushMiniGarageKindAt\(index\)/);
+  // Une seule porte, ouverte dès le départ : plus aucune n'attend le dernier
+  // tour depuis le retrait de celle du dernier tour.
   assert.match(world, /const miniGarageTrackDistances = cityRushMiniGarageTrackDistances\(\{ laps: effectiveLaps \}\)/);
+  assert.doesNotMatch(world, /cityRushMiniGarageKindAt|CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND/,
+    'le monde ne distingue plus de porte de dernier tour');
   const availability = world.match(/function miniGarageAvailable\(garage\)[\s\S]*?\n  function miniGaragesAvailable/)?.[0] || '';
   assert.match(availability, /phase === 'playing' && !finished && !playerWrecked/);
-  assert.match(availability, /garage\.kind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND && !policeDeployed/,
-    'la porte du dernier tour attend l’escouade ; celle de mi-course n’attend personne');
-  assert.match(availability, /cityRushMiniGarageAvailable\(\{[\s\S]*?kind: garage\.kind, lap, laps: effectiveLaps, sprint/,
-    'chaque porte interroge son propre tour d’ouverture');
+  assert.match(availability, /return cityRushMiniGarageAvailable\(\{ sprint \}\)/,
+    'la porte ne s’ouvre que hors Sprint, quel que soit le tour');
   const placement = world.match(/function placeMiniGarage\(garage\)[\s\S]*?\n  function setMiniGaragesToStart/)?.[0] || '';
   assert.match(placement, /!miniGarageAvailable\(garage\)/, 'le rendu applique la même disponibilité que le service');
   assert.match(world, /garage\.trackDistance = miniGarageTrackDistances\[index\]/,
-    'chaque porte repart de son repère (mi-course ou dernier tour)');
+    'la porte repart de son repère de mi-course');
   const service = world.match(/function useMiniGarage\([\s\S]*?\n  function updateMiniGarages/)?.[0] || '';
   assert.match(service, /playerHealth = cityRushMiniGarageRepair\(playerHealth, playerMaxHealth\)/,
     'la réparation utilise la résistance de la voiture sélectionnée');
@@ -385,9 +385,34 @@ test('Londres et Tokyo roulent à gauche jusque dans le décor et la page', () =
 test('en plein saut, personne ne change de voie : ni le joueur, ni les rivaux', () => {
   assert.match(world, /const nextLane = cityRushLaneAfterAction\(playerLane, name, laneCount, \{ airborne: playerJumpState\.active \}\)/);
   assert.match(world, /const racerAirborne = Boolean\(racer\.jumpState\?\.active\)/);
-  assert.match(world, /&& !racerAirborne\) racer\.changeIn -= dt/);
+  assert.match(world, /const racerCanThink = !racer\.wrecked && racer\.stunLeft <= 0 && \(racer\.spinLeft \|\| 0\) <= 0 && !racerAirborne/);
+  assert.match(world, /if \(racerCanThink\) racer\.changeIn -= dt/);
+  assert.match(world, /if \(racerCanThink && racer\.changeIn <= 0\)/);
   // La page le dit au joueur dans le guide des tremplins.
   assert.match(page, /en l’air, la voiture garde sa voie/);
+});
+
+test('les rivaux courent à leur rythme et lisent la route à leur distance d’arrêt', () => {
+  // Le rythme des rivaux part de la fiche de leur modèle, plus le cran de
+  // `CITY_RUSH_RIVAL_PACE` : la difficulté est un choix de conception, pas un
+  // hasard de construction.
+  assert.match(world, /baseSpeed: paced\(PLAYER_SPEED \* profile\.powerMultiplier \* cityRushRivalPaceFactor\(\)\)/);
+  // Le réflexe comme le choix de voie jugent la scène à la distance d'arrêt du
+  // rival (voir `cityRushAiBrakingRate`) : une supercar freine plus court
+  // qu'une citadine, et chaque voie est lue avec le bon modèle.
+  const brakingRateWired = world.match(/brakingRate: cityRushAiBrakingRate\(racer\.profile\.accelerationRate\)/g) || [];
+  assert.equal(brakingRateWired.length, 2, 'le réflexe et le choix de voie partagent le taux de freinage du modèle');
+});
+
+test('l’atterrissage d’un saut est transmis au résolveur de mouvement', () => {
+  // Le résolveur ne peut pas savoir qu'une voiture vient de toucher le sol :
+  // le monde le lui dit, sinon le plancher du suiveur l'y fige dans la
+  // carrosserie qu'elle vient de survoler (voir `resolveCityRushCarMovement`).
+  assert.match(world, /let playerLandedThisFrame = false;/);
+  assert.match(world, /landing: playerLandedThisFrame/);
+  assert.match(world, /racer\.landedThisFrame = false;/);
+  assert.match(world, /racer\.landedThisFrame = true;/);
+  assert.match(world, /landing: Boolean\(racer\.landedThisFrame\)/);
 });
 
 test('la police tire sur les pilotes, jamais sur ses collègues', () => {
@@ -414,7 +439,8 @@ test('une berline armée se range dans le dos du pilote, avec une mire annoncée
   assert.match(policeUpdate, /const fireLiners = new Map\(\)/);
   assert.match(policeUpdate, /if \(police\.rallied\) continue;/);
   assert.match(policeUpdate, /gap >= 0 \|\| gap < -CITY_RUSH_POLICE_FIRE_LINE_RANGE/);
-  assert.match(policeUpdate, /fireLane: !police\.rallied && fireLiners\.get\(leader\.id\)\?\.police === police \? leader\.lane : null/);
+  assert.match(policeUpdate, /const isFireLiner = !police\.rallied && fireLiners\.get\(leader\.id\)\?\.police === police;/);
+  assert.match(policeUpdate, /fireLane: isFireLiner \? leader\.lane : null/);
   // La rafale attend l'alignement : le temps de mire se cumule et retombe à
   // zéro dès que la cible se décale.
   assert.match(policeUpdate, /const aligned = Boolean\(target\) && cityRushPoliceAimAligned\(/);

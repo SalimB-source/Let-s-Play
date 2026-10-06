@@ -122,6 +122,32 @@ export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHAN
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
+
+// ── Le rythme des rivaux : ils courent pour gagner ──────────────────────────
+// Nova et Juno ne se contentaient plus de suivre la voiture du joueur : leur
+// mécanique donne désormais 5 % de plus que la fiche de leur modèle, et ils
+// lâchent tout au dernier tour (+2 %). La contrepartie reste entièrement dans
+// les mains du joueur : le bonus de ligne propre (jusqu'à 1,12 ×), le contresens
+// (jusqu'à 1,35 ×, multiplié au précédent) et le turbo des pads (1,46 × contre
+// 1,38 × pour les rivaux) valent plus que cet écart — à condition de rouler
+// proprement, ce que l'IA ne fait plus à leur place.
+//
+// Un rival coincé entre le trafic garde aussi un peu plus de vitesse qu'avant
+// (`CITY_RUSH_RIVAL_SLOW_FACTOR`, contre 0,63 pour le joueur) : un choc évité
+// vaut mieux qu'un choc encaissé, et ils les évitent maintenant.
+export const CITY_RUSH_RIVAL_PACE = 1.05; // × la pointe de leur fiche de modèle
+export const CITY_RUSH_RIVAL_FINAL_LAP_PUSH = 1.02; // × le rythme, au dernier tour de ce rival
+export const CITY_RUSH_RIVAL_SLOW_FACTOR = 0.62; // part de vitesse conservée après un carambolage
+
+/**
+ * Rythme d'un rival : sa fiche de modèle, plus la surcharge de course, plus le
+ * tout dernier tour où il ne retient plus rien. Le facteur s'applique à la
+ * vitesse de pointe comme aux accélérations (elles suivent le même modèle).
+ */
+export function cityRushRivalPaceFactor({ finalLap = false } = {}) {
+  return CITY_RUSH_RIVAL_PACE * (finalLap ? CITY_RUSH_RIVAL_FINAL_LAP_PUSH : 1);
+}
+
 export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';
 export const CITY_RUSH_ONCOMING_MAX_WIDTH = 2.12;
 export const CITY_RUSH_ONCOMING_EDGE_MARGIN = 0.3;
@@ -2795,10 +2821,16 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
           passGap: Math.min(safeGap, CITY_RUSH_TRAFFIC_PASS_GAP),
         }) + CITY_RUSH_TRAFFIC_HOLD_MARGIN)
         : safeGap;
-      following.nextDistance = Math.min(
-        following.nextDistance,
-        Math.max(following.previousDistance, front.nextDistance - pairGap),
-      );
+      const hold = front.nextDistance - pairGap;
+      // Une voiture qui vient d'atterrir ne se pose pas dans une carrosserie :
+      // elle est retenue à la distance de sécurité, quitte à reculer de la
+      // correction. Sans cette exception, le plancher `previousDistance` la
+      // figeait à l'intérieur du véhicule qu'elle venait de survoler — les
+      // berlines sont solides, on ne les traverse pas, même en retombant.
+      const floor = (following.landing || following.justLanded)
+        ? Math.max(0, hold)
+        : Math.max(following.previousDistance, hold);
+      following.nextDistance = Math.min(following.nextDistance, floor);
     }
   }
   return resolved;
@@ -2983,11 +3015,134 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
   return clampCityRushLane(lane, laneCount);
 }
 
-// Choisit une prochaine voie en équilibrant les bonus à portée et les
-// menaces lentes, parmi les changements de voie effectivement disponibles.
+// ── Le cerveau des rivaux ───────────────────────────────────────────────────
+// Un rival ne se contente plus de viser le bonus le plus proche : il court pour
+// gagner. Le choix de voie arbitre maintenant quatre envies, dans cet ordre —
+// ramasser (les pads turbo d'abord), se mettre en position de tir quand la
+// mitrailleuse est chargée, franchir un tremplin qui survole le trafic, et ne
+// jamais encaisser un choc évitable. Un carambolage coûte 0,6 s de
+// ralentissement et un dérapage : l'éviter vaut tous les bonus du monde, d'où
+// le **veto** des voies bouchées (`cityRushAiLaneBlocked`) — un tremplin posé
+// plus près que l'obstacle garde la voie ouverte, le rival passe par-dessus.
+export const CITY_RUSH_AI_LANE_CHANGE_COST = 1.25; // marge de confort : on ne zigzague pas sans raison
+export const CITY_RUSH_AI_LANE_COOLDOWN_MIN = 0.3; // s : relecture de la route, au plus vite
+export const CITY_RUSH_AI_LANE_COOLDOWN_MAX = 0.5; // s : relecture de la route, au plus lent
+export const CITY_RUSH_AI_REFLEX = 0.12; // s : un obstacle imminent rappelle le cerveau — sans télépathie
+export const CITY_RUSH_AI_BRAKING_MARGIN = 1.35; // × la distance de freinage : au-delà, la voie est bouchée
+export const CITY_RUSH_AI_WEAPON_LANE_WEIGHT = 2.2; // aligner une mitrailleuse chargée vaut deux pads turbo
+export const CITY_RUSH_AI_RAMP_WEIGHT = 1.15; // un tremplin à portée vaut un pad turbo
+export const CITY_RUSH_AI_RAMP_JAMMED_FACTOR = 1.6; // … et davantage quand il survole un bouchon
+export const CITY_RUSH_AI_CROWD_PENALTY = 30; // deux rivaux ne s'entassent pas dans la même voie
+export const CITY_RUSH_AI_OVERTAKE_WEIGHT = 1.4; // un concurrent plus lent devant : on le double
+export const CITY_RUSH_AI_CHASING_BOOST_WEIGHT = 1.4; // un poursuivant tente plus volontiers un pad
+export const CITY_RUSH_AI_CLOSING_SPEED_SHARE = 0.85; // sous 85 % de ma vitesse, le véhicule me bouche
+export const CITY_RUSH_AI_LOOKAHEAD = 165; // m : la route lue devant le capot d'un rival
+
+/**
+ * Distance (m) qu'il faut à une voiture pour s'arrêter, marge de sécurité
+ * comprise. Le monde passe le taux de freinage du modèle du rival
+ * (`cityRushAiBrakingRate`) : une supercar freine plus court qu'une citadine et
+ * se permet donc de viser un bonus plus près d'un camion. Sans taux fourni, le
+ * cerveau retombe sur le plancher du barème (`CITY_RUSH_BRAKE_RATE_FLOOR`) —
+ * une voiture dont on ne connaît que la vitesse.
+ */
+export function cityRushAiBrakingDistance(speed, {
+  brakingRate = CITY_RUSH_BRAKE_RATE_FLOOR,
+  margin = CITY_RUSH_AI_BRAKING_MARGIN,
+} = {}) {
+  const velocity = Math.max(0, Number(speed) || 0);
+  const rate = Math.max(0.001, Number(brakingRate) || CITY_RUSH_BRAKE_RATE_FLOOR);
+  const factor = Math.max(1, Number(margin) || CITY_RUSH_AI_BRAKING_MARGIN);
+  return (velocity * velocity) / (2 * rate) * factor;
+}
+
+/**
+ * Taux de freinage d'un rival : celui de son modèle (`cityRushBrakingRate`),
+ * pour que la voie soit jugée bouchée à **sa** distance d'arrêt et pas à celle
+ * d'une voiture imaginaire. Une supercar freine plus court qu'une citadine, et
+ * se permet donc de viser un bonus plus près d'un camion.
+ */
+export function cityRushAiBrakingRate(accelerationRate) {
+  return cityRushBrakingRate(accelerationRate);
+}
+
+/**
+ * Cette voie est-elle bouchée devant la voiture ? `true` quand un véhicule
+ * **solide** y roule plus lentement (ou arrive en sens inverse) à portée de
+ * freinage. Seuls les véhicules solides comptent : deux rivaux se traversent,
+ * ils ne se bouchent pas — les autres pilotes sont traités comme des
+ * concurrents à doubler (voir `rivals` dans `chooseCityRushAiLane`).
+ *
+ * Un tremplin posé **avant** l'obstacle rouvre la voie : le rival décolle et
+ * passe au-dessus. C'est la seule façon de traverser un bouchon sans perdre de
+ * vitesse, et c'est précisément ce qu'un bon pilote cherche à faire.
+ */
+export function cityRushAiLaneBlocked({
+  lane = 0,
+  distance = 0,
+  speed = CITY_RUSH_PLAYER_SPEED,
+  traffic = [],
+  ramps = [],
+  laneCount = CITY_RUSH_LANE_X.length,
+  lookAheadDistance = CITY_RUSH_AI_LOOKAHEAD,
+  brakingRate = CITY_RUSH_BRAKE_RATE_FLOOR,
+} = {}) {
+  const target = clampCityRushLane(lane, laneCount);
+  const racerSpeed = Math.max(0, Number(speed) || 0);
+  const reach = cityRushAiBrakingDistance(racerSpeed, { brakingRate });
+  const lookAhead = Math.max(1, Number(lookAheadDistance) || CITY_RUSH_AI_LOOKAHEAD);
+  let blockingGap = Infinity;
+  for (const vehicle of Array.isArray(traffic) ? traffic : []) {
+    if (!vehicle || clampCityRushLane(vehicle.lane, laneCount) !== target) continue;
+    const gap = Number(vehicle.distance) - Number(distance);
+    if (!Number.isFinite(gap) || gap < -3 || gap > reach) continue;
+    const vehicleSpeed = Math.max(-racerSpeed, Number(vehicle.speed) || 0);
+    // Un véhicule qui roule presque aussi vite ne bouche pas la voie (on le
+    // suit) ; un contresens, si — sa vitesse est négative.
+    if (vehicleSpeed >= 0 && vehicleSpeed >= racerSpeed * CITY_RUSH_AI_CLOSING_SPEED_SHARE) continue;
+    blockingGap = Math.min(blockingGap, gap);
+  }
+  if (!Number.isFinite(blockingGap)) return false;
+  const jumpable = (Array.isArray(ramps) ? ramps : []).some((ramp) => {
+    if (!ramp || clampCityRushLane(ramp.lane, laneCount) !== target) return false;
+    const gap = Number(ramp.distance) - Number(distance);
+    return Number.isFinite(gap) && gap > 0 && gap <= Math.min(blockingGap, lookAhead);
+  });
+  return !jumpable;
+}
+
+/**
+ * Délai avant la prochaine décision de voie d'un rival. Court quand un danger
+ * est déjà là (freinage d'urgence), plus long quand la route est libre : c'est
+ * ce qui évite le zigzag permanent sans rendre l'IA myope. Le tirage garde une
+ * part d'aléatoire pour que deux rivaux ne réagissent pas à la même image.
+ */
+export function cityRushAiThinkDelay(random = Math.random, { urgent = false } = {}) {
+  const sample = Number(typeof random === 'function' ? random() : random);
+  const t = Number.isFinite(sample) ? Math.min(1, Math.max(0, sample)) : 0.5;
+  if (urgent) return CITY_RUSH_AI_REFLEX * (0.7 + t * 0.6);
+  return CITY_RUSH_AI_LANE_COOLDOWN_MIN + t * (CITY_RUSH_AI_LANE_COOLDOWN_MAX - CITY_RUSH_AI_LANE_COOLDOWN_MIN);
+}
+
+// Choisit une prochaine voie en équilibrant les bonus à portée et les menaces
+// lentes, parmi les changements de voie effectivement disponibles.
 // `oncomingLanes` liste les voies en sens inverse : y rouler coûte un petit
 // malus permanent (le danger peut surgir de face à tout instant), si bien
 // qu'à danger égal un pilote se rabat toujours vers le sens de la course.
+//
+// Le cerveau de course ajoute quatre entrées facultatives, toutes absentes d'un
+// appel « ramassage » ordinaire (les règles restent donc testables à
+// l'identique) :
+//   · `rivals` — les autres pilotes, avec leur voie et leur vitesse. Ils ne
+//     bloquent pas la voie (deux rivaux se traversent) mais occupent la
+//     trajectoire : un concurrent plus lent devant se double, et deux rivaux ne
+//     s'entassent pas dans la même voie ;
+//   · `ramps` — les tremplins à portée, à viser pour survoler un bouchon ;
+//   · `weaponReady` + `targets` — la mitrailleuse chargée et les adversaires
+//     qu'un tir droit peut atteindre : le rival se rabat dans leur voie pour
+//     les aligner, exactement comme la police le fait derrière le joueur ;
+//   · `chasing` — le rival est derrière : un pad turbo vaut alors plus cher,
+//     parce qu'un poursuivant tente ce que le leader ne tente plus.
 export function chooseCityRushAiLane({
   currentLane = 0,
   laneCount = CITY_RUSH_LANE_X.length,
@@ -2998,6 +3153,12 @@ export function chooseCityRushAiLane({
   traffic = [],
   oncomingLanes = CITY_RUSH_ONCOMING_LANES,
   lookAheadDistance = 145,
+  rivals = [],
+  ramps = [],
+  weaponReady = false,
+  targets = [],
+  chasing = false,
+  brakingRate = CITY_RUSH_BRAKE_RATE_FLOOR,
 } = {}) {
   const lane = clampCityRushLane(currentLane, laneCount);
   const allowed = new Set((availableLanes || Array.from({ length: laneCount }, (_, index) => index))
@@ -3009,11 +3170,30 @@ export function chooseCityRushAiLane({
   const racerSpeed = Math.max(0, Number(speed) || 0);
   const oncoming = new Set((Array.isArray(oncomingLanes) ? oncomingLanes : [])
     .map((oncomingLane) => clampCityRushLane(oncomingLane, laneCount)));
-  let bestLane = lane;
+  const rivalCars = Array.isArray(rivals) ? rivals.filter(Boolean) : [];
+  const rampList = Array.isArray(ramps) ? ramps.filter(Boolean) : [];
+  const targetList = Array.isArray(targets) ? targets.filter(Boolean) : [];
+  const threats = Array.isArray(traffic) ? traffic.filter(Boolean) : [];
+  // Une voie bouchée est écartée d'office tant qu'une autre reste ouverte :
+  // viser un bonus dans un mur, c'est payer un carambolage pour un pad. Si tout
+  // est bouché, le choix d'origine revient — un rival ne s'arrête jamais.
+  const openLanes = candidates.filter((candidate) => !cityRushAiLaneBlocked({
+    lane: candidate,
+    distance,
+    speed: racerSpeed,
+    traffic: threats,
+    ramps: rampList,
+    laneCount,
+    lookAheadDistance: lookAhead,
+    brakingRate,
+  }));
+  const options = openLanes.length ? openLanes : candidates;
+  const boostWeight = CITY_RUSH_AI_TRACK_BOOST_WEIGHT * (chasing ? CITY_RUSH_AI_CHASING_BOOST_WEIGHT : 1);
+  let bestLane = options.includes(lane) ? lane : options[0];
   let bestScore = -Infinity;
 
-  for (const candidate of candidates) {
-    let safetyScore = -Math.abs(candidate - lane) * 1.25;
+  for (const candidate of options) {
+    let safetyScore = -Math.abs(candidate - lane) * CITY_RUSH_AI_LANE_CHANGE_COST;
     if (oncoming.has(candidate)) safetyScore -= 6;
     let pickupPriority = 0;
     for (const pickup of pickups) {
@@ -3027,12 +3207,43 @@ export function chooseCityRushAiLane({
       // bonus d'inventaire, même s'il est un peu plus loin. Les voies bloquées
       // et le trafic venant en face restent toutefois des limites de sécurité.
       // Même avec une jauge pleine, le rival continue de viser les objets à portée.
-      const weight = pickup.type === CITY_RUSH_PICKUPS.BOOST ? CITY_RUSH_AI_TRACK_BOOST_WEIGHT : 1;
+      const weight = pickup.type === CITY_RUSH_PICKUPS.BOOST ? boostWeight : 1;
       pickupPriority += weight * (22 + urgency * 8) * laneAffinity;
     }
-    for (const vehicle of traffic) {
+    // Mitrailleuse chargée : une voie qui aligne un adversaire à portée de tir
+    // vaut deux pads turbo. Le projectile part tout droit — se placer dans la
+    // voie de la cible est la seule façon de la toucher, et une cible déjà
+    // alignée est une raison de ne pas bouger.
+    let weaponPriority = 0;
+    if (weaponReady) {
+      for (const target of targetList) {
+        if (clampCityRushLane(target.lane, laneCount) !== candidate) continue;
+        const gap = Number(target.distance) - Number(distance);
+        if (!Number.isFinite(gap) || gap <= CITY_RUSH_BLUE_SHOT_MIN_GAP || gap > CITY_RUSH_BLUE_SHOT_MAX_RANGE) continue;
+        const urgency = 1 - gap / CITY_RUSH_BLUE_SHOT_MAX_RANGE;
+        weaponPriority += CITY_RUSH_AI_WEAPON_LANE_WEIGHT * (22 + urgency * 10);
+      }
+    }
+    // Tremplin : le prendre, c'est franchir le trafic sans perdre un mètre par
+    // seconde. Un tremplin qui retombe derrière un véhicule lent vaut donc
+    // beaucoup plus cher qu'un tremplin au hasard.
+    let rampPriority = 0;
+    for (const ramp of rampList) {
+      if (clampCityRushLane(ramp.lane, laneCount) !== candidate) continue;
+      const gap = Number(ramp.distance) - Number(distance);
+      if (!Number.isFinite(gap) || gap <= 0 || gap > lookAhead) continue;
+      const jammed = threats.some((vehicle) => {
+        if (clampCityRushLane(vehicle.lane, laneCount) !== candidate) return false;
+        const vehicleGap = Number(vehicle.distance) - Number(distance);
+        return Number.isFinite(vehicleGap) && vehicleGap > gap && vehicleGap <= gap + lookAhead;
+      });
+      const weight = CITY_RUSH_AI_RAMP_WEIGHT * (jammed ? CITY_RUSH_AI_RAMP_JAMMED_FACTOR : 1);
+      rampPriority += weight * (22 + (1 - gap / lookAhead) * 10);
+    }
+    let racingScore = 0;
+    for (const vehicle of threats) {
       const gap = Number(vehicle.distance) - Number(distance);
-      if (vehicle.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
+      if (clampCityRushLane(vehicle.lane, laneCount) !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
       // Une vitesse négative signale un véhicule venant en face : la vitesse
       // de fermeture est alors la somme des deux vitesses. Marqué `oncoming`,
       // le danger passe à l'échelle des bonus : un pilote ne se jette pas
@@ -3043,9 +3254,23 @@ export function chooseCityRushAiLane({
       const hazardWeight = vehicle.oncoming ? 130 : 1;
       safetyScore -= hazardWeight * (timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5);
     }
+    // Les autres pilotes : de vrais concurrents, pas des murs. Rester roue dans
+    // roue derrière un plus lent fait perdre la course — le rival cherche la
+    // voie libre pour le doubler. Deux voitures de la même équipe, à la même
+    // hauteur, se répartissent la chaussée au lieu de rouler en file indienne.
+    for (const rival of rivalCars) {
+      const gap = Number(rival.distance) - Number(distance);
+      const rivalLane = clampCityRushLane(rival.lane, laneCount);
+      if (!Number.isFinite(gap)) continue;
+      if (rivalLane === candidate && Math.abs(gap) < 8) racingScore -= CITY_RUSH_AI_CROWD_PENALTY;
+      if (rivalLane !== candidate || gap <= 0 || gap > lookAhead) continue;
+      const rivalSpeed = Math.max(0, Number(rival.speed) || 0);
+      if (rivalSpeed >= racerSpeed * CITY_RUSH_AI_CLOSING_SPEED_SHARE) continue;
+      racingScore -= CITY_RUSH_AI_OVERTAKE_WEIGHT * (22 + (1 - gap / lookAhead) * 10);
+    }
     // Sépare explicitement les objectifs des risques : aucune pénalité de
     // circulation ne doit rendre un bonus moins intéressant qu'une voie vide.
-    const score = pickupPriority * 100 + safetyScore;
+    const score = (pickupPriority + weaponPriority + rampPriority) * 100 + safetyScore + racingScore;
     if (score > bestScore) {
       bestScore = score;
       bestLane = candidate;
@@ -3322,29 +3547,21 @@ export function cityRushWantedLevelAfterPoliceDestroyed(currentLevel = 0, destro
   return Math.max(current, Math.min(CITY_RUSH_WANTED_MAX_STARS, 3 + count));
 }
 
-// ── Les deux portes de service d'une course ─────────────────────────────────
-// Chaque carte garde deux passages de service, mais ils ne sont plus groupés
+// ── L'unique porte de service d'une course ──────────────────────────────────
+// Chaque carte ne garde plus qu'un seul passage de service, et il n'est plus
 // sur le dernier tour :
 //
-//   · **mi-course** — une porte au milieu du parcours, à la moitié de la
-//     distance totale. Elle est là dès le départ, se répare sans étoiles, et
-//     permet de reprendre une coque abîmée avant même que l'escouade du dernier
-//     tour n'entre en piste ;
-//   · **dernier tour** — l'ancienne première porte du dernier tour (360 m après
-//     la ligne), seule rescapée du duo : la seconde (840 m) est retirée.
+//   · **mi-course** — la porte se dresse au milieu du parcours, à la moitié de
+//     la distance totale. Elle est là dès le départ, se traverse sans étoiles,
+//     et permet de reprendre une coque abîmée avant même que l'escouade du
+//     dernier tour n'entre en piste.
 //
+// L'ancienne porte du dernier tour (360 m après sa ligne) est retirée : le
+// dernier tour ne répare plus, la course entière ne compte qu'un seul garage.
 // Une porte ratée revient dans la boucle suivante, mais chaque garage ne peut
 // servir qu'une fois par course.
-export const CITY_RUSH_MINI_GARAGE_MID_RACE_KIND = 'mid-race';
-export const CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND = 'final-lap';
-export const CITY_RUSH_MINI_GARAGE_KINDS = Object.freeze([
-  CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
-  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
-]);
-// Positions du/des portique(s) du dernier tour, comptées depuis sa ligne.
-export const CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS = Object.freeze([360]);
-// Deux portes : celle de mi-course, plus celles du dernier tour.
-export const CITY_RUSH_MINI_GARAGE_COUNT = CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.length + 1;
+// Une seule porte : celle de mi-course, et rien d'autre.
+export const CITY_RUSH_MINI_GARAGE_COUNT = 1;
 // Part du parcours où se tient la porte de mi-course (la moitié).
 export const CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE = 0.5;
 export const CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT = 2; // cellules rendues à la coque
@@ -3372,9 +3589,8 @@ export function cityRushMiniGarageMidRaceDistance({
 }
 
 /**
- * Les portiques d'une course, dans l'ordre où le pilote les rencontre : la
- * porte de mi-course puis celle(s) du dernier tour. Les distances sont
- * absolues — le décor se répète tous les `lapLength` mètres, si bien qu'une
+ * Le portique de la course : celui de mi-course, et lui seul. La distance est
+ * absolue — le décor se répète tous les `lapLength` mètres, si bien que la
  * porte se pose n'importe où dans le parcours.
  */
 export function cityRushMiniGarageTrackDistances({
@@ -3382,46 +3598,24 @@ export function cityRushMiniGarageTrackDistances({
   lapLength = CITY_RUSH_LAP_LENGTH,
   finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS,
 } = {}) {
-  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
-  const finalLapStart = (safeLapCount(laps) - 1) * safeLap;
   return Object.freeze([
     cityRushMiniGarageMidRaceDistance({ laps, lapLength, finalLapLoops }),
-    ...CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.map((offset) => finalLapStart + offset),
   ]);
 }
 
-/** Nature d'un portique, dans l'ordre de `cityRushMiniGarageTrackDistances`. */
-export function cityRushMiniGarageKindAt(index = 0) {
-  return Number(index) <= 0 ? CITY_RUSH_MINI_GARAGE_MID_RACE_KIND : CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND;
-}
-
 /**
- * Une porte est-elle ouverte ? Celle de mi-course l'est dès le départ (seul le
- * Sprint l'ignore) ; celle du dernier tour attend le dernier tour, comme avant.
+ * La porte est-elle ouverte ? Elle l'est dès le départ de la course, seul le
+ * Sprint l'ignore : plus aucune porte ne dépend du tour en cours depuis le
+ * retrait de celle du dernier tour.
  */
-export function cityRushMiniGarageAvailable({
-  kind = CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
-  lap = 1,
-  laps = CITY_RUSH_LAPS,
-  sprint = false,
-} = {}) {
-  if (sprint) return false;
-  if (kind === CITY_RUSH_MINI_GARAGE_MID_RACE_KIND) return true;
-  return Number(lap) >= safeLapCount(laps);
-}
-
-/** Portes du dernier tour uniquement — le format historique du compteur HUD. */
-export function cityRushMiniGaragesAvailable({ lap = 1, laps = CITY_RUSH_LAPS, sprint = false } = {}) {
-  return cityRushMiniGarageAvailable({
-    kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND, lap, laps, sprint,
-  });
+export function cityRushMiniGarageAvailable({ sprint = false } = {}) {
+  return !sprint;
 }
 
 /**
- * Le service attend la sortie du portique, dans la bonne voie. Il s'ouvre au
- * dernier tour pour la porte du dernier tour, et à tout moment pour celle de
- * mi-course. Il répare aussi une voiture sans étoiles ; chaque porte ne sert
- * qu'une fois.
+ * Le service attend la sortie du portique, dans la bonne voie. La porte est
+ * ouverte à tout moment de la course. Il répare aussi une voiture sans
+ * étoiles ; chaque porte ne sert qu'une fois.
  */
 export function cityRushMiniGarageCanUse({
   previousDistance,
@@ -3429,16 +3623,13 @@ export function cityRushMiniGarageCanUse({
   garageExitDistance,
   playerLane,
   garageLane,
-  kind = CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
-  lap = 1,
-  laps = CITY_RUSH_LAPS,
   sprint = false,
   used = false,
 } = {}) {
   const previous = Number(previousDistance);
   const next = Number(nextDistance);
   const exit = Number(garageExitDistance);
-  return cityRushMiniGarageAvailable({ kind, lap, laps, sprint })
+  return cityRushMiniGarageAvailable({ sprint })
     && !used
     && Number.isFinite(previous)
     && Number.isFinite(next)
@@ -3493,26 +3684,38 @@ export const CITY_RUSH_POLICE_LANES = Object.freeze([...CITY_RUSH_FORWARD_LANES]
 // La police ne convoite que les bonus rouges de mitrailleuse.
 export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL]);
 export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge vaut cinq bonus ordinaires
-export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.06;
+// Croisière de l'escouade : 12 % au-dessus du rythme de référence (contre 6 %
+// avant). Une berline ne se traîne plus derrière le peloton — elle le précède.
+export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.12;
 // Une berline lancée à la poursuite dépasse toujours la voiture qu'elle chasse :
-// sa vitesse de sprint suit celle de sa cible, plutôt qu'une pointe fixe.
-// Sans ce plancher, une supercar à 179 km/h distancerait définitivement les
-// poursuivants (base × 1,34 ≈ 178 km/h) et le dernier tour n'aurait plus d'enjeu.
-export const CITY_RUSH_POLICE_CHASE_SPEED_FACTOR = 1.18; // × la vitesse de la cible, minimum en sprint
+// sa vitesse de sprint suit celle de sa cible, plutôt qu'une pointe fixe, et le
+// facteur de retour est monté à 1,24 — distancée, elle revient plus vite qu'un
+// rival ne creuse l'écart. Sans ce plancher, une supercar à 179 km/h
+// distancerait définitivement les poursuivants et le dernier tour n'aurait plus
+// d'enjeu.
+export const CITY_RUSH_POLICE_CHASE_SPEED_FACTOR = 1.24; // × la vitesse de la cible, minimum en sprint
 export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant la cible
 export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle de la cible
 export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière la cible pour ouvrir le feu
 export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en piste, derrière la cible
 export const CITY_RUSH_POLICE_LOOKAHEAD = 200; // m : portée de convoitise des bonus
 export const CITY_RUSH_POLICE_STEAL_NOTICE = 150; // m : au-delà, la page ne commente plus un vol de bonus
-export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafales de la même berline
+export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 1.9; // s : délai entre deux rafales de la même berline
+// Le pilote vient de se décaler sous le nez d'une berline élue (barrage ou
+// ligne de tir) : elle relance son choix de voie tout de suite, au lieu de
+// terminer son délai de décision et de tirer dans la voie qu'il vient de
+// quitter. C'est ce qui empêche un joueur de se mettre hors de portée en
+// balayant les six voies toutes les demi-secondes.
+export const CITY_RUSH_POLICE_PURSUIT_REFLEX = 0.12; // s : temps de réaction après un écart de la cible
 // La mitrailleuse est fixée sur l'axe de la voie : la berline garde son viseur
 // sur une cible **immobile dans la voie** pendant un temps d'alignement avant
 // d'ouvrir le feu. Un pilote qui change de voie, ou qui se décale latéralement
 // hors de l'axe, casse l'alignement et la rafale ne part pas — c'est la
 // contre-mesure du joueur, et ce qui rend le danger lisible plutôt que fatal :
 // la berline prévient en se calant dans le dos, l'alignement se voit au HUD.
-export const CITY_RUSH_POLICE_AIM_TIME = 1.05; // s : temps de mire avant la rafale
+// Le temps de mire est descendu à 0,9 s : la contre-mesure (se décaler) reste
+// large, mais une berline déjà dans le dos ne laisse plus une seconde entière.
+export const CITY_RUSH_POLICE_AIM_TIME = 0.9; // s : temps de mire avant la rafale
 export const CITY_RUSH_POLICE_AIM_TOLERANCE = 1.15; // m : écart latéral toléré entre la cible et l'axe de la voie
 export const CITY_RUSH_POLICE_AIM_NOTICE_COOLDOWN = 3.2; // s : deux avis de mire ne se répètent pas plus vite
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
@@ -3668,7 +3871,7 @@ export function createCityRushPoliceInventory() {
 export const CITY_RUSH_POLICE_BLOCKADE_RANGE = 34; // m : hauteur maximale d'un barrage devant le leader
 export const CITY_RUSH_POLICE_BLOCKADE_SPEED_FACTOR = 0.62; // de sa vitesse d'ancrage
 export const CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED = 12; // m/s : un barrage roule, il ne s'arrête jamais
-export const CITY_RUSH_POLICE_BLOCKADE_HOLD = 3.2; // s : durée d'un barrage avant de repartir
+export const CITY_RUSH_POLICE_BLOCKADE_HOLD = 3.6; // s : durée d'un barrage avant de repartir
 export const CITY_RUSH_POLICE_INTERCEPT_RANGE = 80; // m : devant le leader, portée où la berline vise sa voie
 export const CITY_RUSH_POLICE_INTERCEPT_WEIGHT = 3; // un barrage vaut trois bonus ordinaires
 export const CITY_RUSH_POLICE_HUNT_RANGE = 60; // m : sous cette distance, un rouge/jaune passe avant le barrage
@@ -3820,7 +4023,12 @@ export function cityRushPolicePace({
     return Math.max(6, safeLeader * easeFactor * brake);
   }
   // Croisière : la berline tient sa position, mais ne s'arrête jamais net.
-  return Math.max(safeLeader, safeBase * 0.82);
+  const cruise = Math.max(safeLeader, safeBase * 0.82);
+  // … et depuis l'arrière, elle ne roule jamais plus vite que la voiture
+  // qu'elle suit. Sans ce plafond, la croisière de l'escouade (12 % au-dessus du
+  // rythme de référence) poussait la berline dans le pare-chocs de son client :
+  // un poursuivant suit, il ne percute pas — le barrage, lui, garde son frein.
+  return safeGap <= 0 ? Math.min(safeLeader, cruise) : cruise;
 }
 
 // Une voie est « bouchée » pour une berline quand un véhicule lent la précède à
