@@ -292,8 +292,12 @@ for (const [index, city] of courses.entries()) {
   const miniGarageNodes = [];
   let slowZoneNodes = 0;
   // Berlines de police du trafic : le pilote d'essai les vise pour provoquer le
-  // scénario « on percute un agent » (voir la boucle de course).
+  // scénario « on percute un agent » (voir la boucle de course). Les autres
+  // voitures lentes sont gardées à part : sur un circuit sans contresens, le
+  // pilote doit aussi éprouver le carambolage civil, et un pilote qui se
+  // contente d'esquiver n'en provoquait plus aucun.
   const policeTrafficNodes = [];
+  const civilTrafficNodes = [];
   // Les voitures de course sont maintenant fermées et sans mesh de personnage ;
   // le pilote reste uniquement dans les métadonnées utilisées par le classement.
   const visibleDriverMeshes = [];
@@ -305,9 +309,12 @@ for (const [index, city] of courses.entries()) {
     if (object.name === 'watch-helicopter') watchHeliNodes.push(object);
     if (object.name === 'pickup-burst') burstNodes.push(object);
     if (object.name === 'city-rush-mini-garage') miniGarageNodes.push(object);
-    if (String(object.name).startsWith('traffic-')
-      && CITY_RUSH_POLICE_TRAFFIC_TYPES.includes(object.name.slice('traffic-'.length))) {
-      policeTrafficNodes.push(object);
+    if (String(object.name).startsWith('traffic-')) {
+      if (CITY_RUSH_POLICE_TRAFFIC_TYPES.includes(object.name.slice('traffic-'.length))) {
+        policeTrafficNodes.push(object);
+      } else {
+        civilTrafficNodes.push(object);
+      }
     }
     if (object.userData?.type === 'slow-zone') slowZoneNodes += 1;
     if (object.userData?.kind === 'racer') racerCars.push(object);
@@ -576,11 +583,22 @@ for (const [index, city] of courses.entries()) {
         if (!rallyTarget || node.position.z > rallyTarget.position.z) rallyTarget = node;
       }
     }
+    // Même logique pour le carambolage civil, mais seulement là où rien ne
+    // vient d'en face : ailleurs, le face-à-face obligatoire l'éprouve déjà, et
+    // viser une voiture lente y ferait courir le pilote après un contresens.
+    const civilContactSeen = callbacks.effects.some((effect) => effect.type === 'traffic-impact' && !effect.oncoming);
+    let civilTarget = null;
+    if (!civilContactSeen && !rallyTarget && courseLanes.oncomingLanes.length === 0 && frames > 30) {
+      for (const node of civilTrafficNodes) {
+        if (!node.visible || node.position.z > 3.1 - 6) continue;
+        if (!civilTarget || node.position.z > civilTarget.position.z) civilTarget = node;
+      }
+    }
     if (hud) maxHudSpeed = Math.max(maxHudSpeed, hud.speed);
     // Le seuil de « on traîne » suit le rythme du parcours : sur le Ring, la
     // même voiture roule plus lentement sans être en difficulté.
     if (hud && hud.speed < 70 * coursePace) slowFrames += 1; else slowFrames = 0;
-    if (slowFrames > 12 && !rallyTarget && frames > 110) {
+    if (slowFrames > 12 && !rallyTarget && !civilTarget && frames > 110) {
       world.action(steer);
       steer = steer === 'left' ? 'right' : 'left';
       slowFrames = 0;
@@ -633,6 +651,15 @@ for (const [index, city] of courses.entries()) {
     ));
     if (garageTarget && hud && frames % 2 === 0 && hud.playerLane !== garageTarget.userData.lane) {
       world.action(hud.playerLane < garageTarget.userData.lane ? 'right' : 'left');
+    }
+    if (civilTarget && hud && !aimedCar && frames % 4 === 0) {
+      let targetLane = hud.playerLane;
+      let closest = Infinity;
+      for (let index = 0; index < courseLanes.laneCount; index += 1) {
+        const delta = Math.abs(courseLanes.laneX(index) - civilTarget.position.x);
+        if (delta < closest) { closest = delta; targetLane = index; }
+      }
+      if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
     }
     // Hélico d'observation : visible seulement au dernier tour, et il tourne.
     // Le HUD est étranglé (une émission toutes les 100 ms) : on juge la
