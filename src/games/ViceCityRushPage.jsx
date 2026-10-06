@@ -1052,22 +1052,7 @@ export default function ViceCityRushPage() {
 
   return (
     <div className={`city-rush-page${immersive ? ' is-immersive' : ''}`} style={{ '--city-accent': city.accent, '--city-secondary': city.secondary, '--mode-accent': mode.accent, '--mode-secondary': mode.secondary }}>
-      <header className="city-rush-heading wrap">
-        <div>
-          <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <span style={{ opacity: 0.4, margin: '0 6px' }}>/</span> UNE VILLE. UNE ROUTE. AUCUNE LIMITE.</p>
-          <h1><span>VICE CITY</span><em>RUSH</em></h1>
-          <p className="city-rush-lede">
-            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur sept parcours : cinq villes, la mythique Route 66 et une route de campagne ensoleillée au Mexique.
-          </p>
-          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES · 2 ROUTES</span><span>3 MODES DE COURSE</span></div>
-          <div className="city-rush-hero-actions">
-            <a className="city-rush-hero-cta" href="#vice-city-rush-console">
-              LANCER LE JEU <span aria-hidden="true">▶</span>
-            </a>
-          </div>
-        </div>
-        <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
-      </header>
+      <h1 className="sr-only">Vice City Rush — Course arcade 3D</h1>
 
       <main className="city-rush-layout wrap">
         <section id="vice-city-rush-console" className={`city-rush-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`} ref={shellRef} aria-label="Partie de Vice City Rush">
