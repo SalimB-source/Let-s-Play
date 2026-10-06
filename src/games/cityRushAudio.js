@@ -51,7 +51,8 @@ const STEPS_PER_BAR = 16;
 const BARS_PER_LOOP = 8;
 export const CITY_RUSH_LOOP_STEPS = STEPS_PER_BAR * BARS_PER_LOOP;
 
-// Progression disco, une mesure par accord : Dm7 · G7 · Cmaj7 · Am7.
+// ── VICE CITY (Miami, Floride) ────────────────────────────────────────
+// Progression disco d'origine, une mesure par accord : Dm7 · G7 · Cmaj7 · Am7.
 const CHORDS = Object.freeze([
   Object.freeze({ root: 38, intervals: Object.freeze([0, 3, 7, 10]) }),
   Object.freeze({ root: 43, intervals: Object.freeze([0, 4, 7, 10]) }),
@@ -76,6 +77,119 @@ const LEAD_8 = Object.freeze([
   Object.freeze([72, 74, 76, 74, 72, null, null, null]),
   Object.freeze([79, 79, 76, 74, 72, 74, null, null]),
   Object.freeze([74, 72, 69, 71, 72, null, null, null]),
+]);
+
+// ── TOKYO · SHUTO EXPRESSWAY C1 (Japon) ───────────────────────────────
+// Ambiance Eurobeat / synth-wave nocturne nippone sur l'anneau de la C1 :
+// basse nerveuse en doubles croches (16th notes), cocotte staccato,
+// progression rapide Am · F · G · Em et lead tranchant en quinte/octave.
+const TOKYO_CHORDS = Object.freeze([
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 3, 7, 12]) }), // Am
+  Object.freeze({ root: 41, intervals: Object.freeze([0, 4, 7, 12]) }), // F
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 4, 7, 12]) }), // G
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 3, 7, 12]) }), // Em
+]);
+const TOKYO_LEAD = Object.freeze([
+  Object.freeze([69, 72, 76, 79, 76, 72, 74, 76]),
+  Object.freeze([77, 76, 74, 72, 74, 76, 74, 72]),
+  Object.freeze([79, 77, 76, 74, 76, 79, 81, 79]),
+  Object.freeze([76, 74, 72, 71, 69, 71, 72, 69]),
+]);
+
+// ── PARIS · RIVE GAUCHE (France) ──────────────────────────────────────
+// Valse / French touch nocturne mélancolique et élégante : temps fort marqué,
+// accords veloutés en Dm · Gm · A7 · Dm, accordéon/piano feutré et lead expressif.
+const PARIS_CHORDS = Object.freeze([
+  Object.freeze({ root: 38, intervals: Object.freeze([0, 3, 7, 12]) }), // Dm
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 3, 7, 10]) }), // Gm7
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 4, 7, 10]) }), // A7
+  Object.freeze({ root: 38, intervals: Object.freeze([0, 3, 7, 12]) }), // Dm
+]);
+const PARIS_LEAD = Object.freeze([
+  Object.freeze([74, null, 77, 76, 74, null, 73, 74]),
+  Object.freeze([79, null, 77, 76, 74, 76, 77, null]),
+  Object.freeze([76, null, 74, 73, 71, 73, 74, 76]),
+  Object.freeze([74, null, 72, 70, 69, 70, 72, 74]),
+]);
+
+// ── LONDRES · SOHO (Royaume-Uni) ──────────────────────────────────────
+// Garage / UK drill / drum & bass syncopé : basse 808 reese profonde,
+// hi-hats rapides en triolets/doubles, stabs dub percutants en Cm · Ab · Fm · G.
+const LONDON_CHORDS = Object.freeze([
+  Object.freeze({ root: 36, intervals: Object.freeze([0, 3, 7, 10]) }), // Cm7
+  Object.freeze({ root: 44, intervals: Object.freeze([0, 4, 7, 11]) }), // Abmaj7
+  Object.freeze({ root: 41, intervals: Object.freeze([0, 3, 7, 10]) }), // Fm7
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 4, 7, 10]) }), // G7
+]);
+const LONDON_LEAD = Object.freeze([
+  Object.freeze([72, null, 75, null, 74, 72, 70, null]),
+  Object.freeze([75, 77, 79, null, 77, 75, 74, null]),
+  Object.freeze([72, null, 70, 72, 74, null, 72, 70]),
+  Object.freeze([71, null, 74, null, 72, 71, 69, 71]),
+]);
+
+// ── NEW YORK · MIDTOWN (USA) ──────────────────────────────────────────
+// Boom-bap / funk urbain new-yorkais des 90s : grosse caisse lourde syncopée,
+// rim-shot tranchant, basse funk slappée et cuivres jazz nocturnes en Fm7 · Bbm7 · Eb7 · Abmaj7.
+const NY_CHORDS = Object.freeze([
+  Object.freeze({ root: 41, intervals: Object.freeze([0, 3, 7, 10]) }), // Fm7
+  Object.freeze({ root: 46, intervals: Object.freeze([0, 3, 7, 10]) }), // Bbm7
+  Object.freeze({ root: 39, intervals: Object.freeze([0, 4, 7, 10]) }), // Eb7
+  Object.freeze({ root: 44, intervals: Object.freeze([0, 4, 7, 11]) }), // Abmaj7
+]);
+const NY_LEAD = Object.freeze([
+  Object.freeze([77, null, 75, 72, 75, 77, null, 80]),
+  Object.freeze([82, 80, 77, null, 75, 77, null, null]),
+  Object.freeze([75, null, 78, 80, 78, 75, null, 77]),
+  Object.freeze([75, 72, 70, 72, 75, null, null, null]),
+]);
+
+// ── ROUTE 66 · MOTHER ROAD (USA) ──────────────────────────────────────
+// Blues rock américain poussiéreux : shuffle de batterie (charleston syncopé),
+// basse boogie-woogie marchante en E blues, riffs d'orgue saturé.
+const ROUTE_66_CHORDS = Object.freeze([
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 4, 7, 10]) }), // E7
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 4, 7, 10]) }), // A7
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 4, 7, 10]) }), // E7
+  Object.freeze({ root: 47, intervals: Object.freeze([0, 4, 7, 10]) }), // B7
+]);
+const ROUTE_66_LEAD = Object.freeze([
+  Object.freeze([76, null, 79, 81, 79, 76, 74, 76]),
+  Object.freeze([81, null, 84, 86, 84, 81, 79, 81]),
+  Object.freeze([76, 79, 81, 82, 81, 79, 76, null]),
+  Object.freeze([83, 81, 79, 76, 74, 71, 74, 76]),
+]);
+
+// ── CARRETERA DEL SOL (Mexique) ───────────────────────────────────────
+// Cumbia / mariachi ensoleillé : guitarrón rebondissant (temps 1 et 3),
+// stabs de trompettes cuivrées ensoleillées et percussion maraca en G · C · D7 · G.
+const MEXICO_CHORDS = Object.freeze([
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 4, 7, 12]) }), // G
+  Object.freeze({ root: 48, intervals: Object.freeze([0, 4, 7, 12]) }), // C
+  Object.freeze({ root: 38, intervals: Object.freeze([0, 4, 7, 10]) }), // D7
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 4, 7, 12]) }), // G
+]);
+const MEXICO_LEAD = Object.freeze([
+  Object.freeze([74, 79, null, 79, 83, 81, 79, null]),
+  Object.freeze([84, 83, 81, 79, 81, 84, null, null]),
+  Object.freeze([86, null, 84, 83, 81, 79, 81, null]),
+  Object.freeze([79, 74, 71, 74, 79, null, null, null]),
+]);
+
+// ── NÜRBURGRING NORDSCHLEIFE (Allemagne) ──────────────────────────────
+// Kraftwerk / Krautrock / techno mécanique de l'Eifel : basse motorik
+// hypnotique et droite, kick sec, résonances industrielles en Dm · Bb · Gm · A.
+const NORDSCHLEIFE_CHORDS = Object.freeze([
+  Object.freeze({ root: 38, intervals: Object.freeze([0, 3, 7, 12]) }), // Dm
+  Object.freeze({ root: 46, intervals: Object.freeze([0, 4, 7, 12]) }), // Bb
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 3, 7, 12]) }), // Gm
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 4, 7, 12]) }), // A
+]);
+const NORDSCHLEIFE_LEAD = Object.freeze([
+  Object.freeze([74, 74, 77, 74, 81, 77, 74, null]),
+  Object.freeze([77, 77, 82, 77, 86, 82, 77, null]),
+  Object.freeze([79, 79, 82, 79, 86, 82, 79, null]),
+  Object.freeze([81, 81, 85, 81, 88, 85, 81, 77]),
 ]);
 
 // Hauteur du moteur : cinq rapports, le régime remonte à chaque passage de
@@ -350,6 +464,17 @@ export class CityRushAudio {
   }
 
   playStep(step, time) {
+    if (this.cityId === 'tokyo') { this.playTokyo(step, time); return; }
+    if (this.cityId === 'paris') { this.playParis(step, time); return; }
+    if (this.cityId === 'london') { this.playLondon(step, time); return; }
+    if (this.cityId === 'new-york') { this.playNewYork(step, time); return; }
+    if (this.cityId === 'route-66') { this.playRoute66(step, time); return; }
+    if (this.cityId === 'mexico-countryside') { this.playMexico(step, time); return; }
+    if (this.cityId === 'nordschleife') { this.playNordschleife(step, time); return; }
+    this.playViceCity(step, time);
+  }
+
+  playViceCity(step, time) {
     const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
     const beat = step % STEPS_PER_BAR;
     const chord = CHORDS[bar % CHORDS.length];
@@ -378,6 +503,372 @@ export class CityRushAudio {
     // Cymbale et remplissage pour marquer le retour de la boucle.
     if (step === 0) this.crash(time);
     if (bar === 7 && beat === 15) this.noise(time, 0.12, 0.07, { type: 'bandpass', frequency: 1400, q: 1.4, destination: this.musicBus });
+  }
+
+  // ── Japon · Shutō C1 (Eurobeat / Synth-wave nocturne) ───────────────
+  playTokyo(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = TOKYO_CHORDS[bar % TOKYO_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Kick 4-on-the-floor puissant
+    if (beat % 4 === 0) {
+      this.kick(time);
+      this.noise(time, 0.02, 0.09, { type: 'highpass', frequency: 4500, destination: this.musicBus });
+    }
+    // Charleston rapide en doubles croches (16th hats) avec accent ouvert sur contretemps
+    if (beat % 2 === 1) {
+      this.hat(time, false);
+    } else if (beat % 4 === 2) {
+      this.hat(time, true);
+    }
+    // Caisse claire synthé agressive sur temps 2 et 4
+    if (beat === 4 || beat === 12) {
+      this.tone(210, time, 0.08, 'triangle', 0.18, { filter: 1400, destination: this.musicBus });
+      this.noise(time, 0.14, 0.22, { type: 'bandpass', frequency: 1900, q: 1.2, destination: this.musicBus });
+    }
+    // Basse Eurobeat rapide en doubles croches (octaves et rebonds)
+    const tokyoBassOffsets = [0, 12, 0, 12, 0, 7, 12, 0, 0, 12, 0, 12, 7, 12, 10, 12];
+    const bassOffset = tokyoBassOffsets[beat];
+    this.tone(midiToFrequency(chord.root + bassOffset), time, stepLength * 0.75, 'sawtooth', 0.18, {
+      filter: 1100, filterTo: 350, attack: 0.005, destination: this.musicBus,
+    });
+    // Stabs synthé super-saw typiques Initial D sur contretemps
+    if ([2, 6, 8, 10, 14].includes(beat)) {
+      chord.intervals.forEach((interval) => {
+        this.tone(midiToFrequency(chord.root + 12 + interval), time, stepLength * 1.1, 'sawtooth', 0.055, {
+          filter: 3600, filterTo: 1200, attack: 0.006, detune: 9, destination: this.musicBus,
+        });
+      });
+    }
+    // Lead de course sur la seconde moitié
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = TOKYO_LEAD[(bar - 4) % TOKYO_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.8, 'sawtooth', 0.12, {
+          filter: 4800, filterTo: 2200, attack: 0.008, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note + 12), time + 0.004, stepLength * 1.2, 'square', 0.035, {
+          filter: 5400, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
+  }
+
+  // ── France · Paris Rive Gauche (Valse / French Touch nocturne) ──────
+  playParis(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = PARIS_CHORDS[bar % PARIS_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Rythme élégant : kick velouté sur temps 1 et demi-mesure (temps 3)
+    if (beat === 0 || beat === 8) {
+      this.tone(115, time, 0.12, 'sine', 0.45, { destination: this.musicBus });
+      this.tone(48, time + 0.02, 0.18, 'sine', 0.25, { destination: this.musicBus });
+    }
+    // Charleston doux et brossé
+    if (beat % 2 === 0) {
+      this.noise(time, beat === 14 ? 0.12 : 0.04, 0.055, {
+        type: 'highpass', frequency: 7800, destination: this.musicBus,
+      });
+    }
+    // Claquement doux feutré sur 4 et 12
+    if (beat === 4 || beat === 12) {
+      this.noise(time, 0.08, 0.14, { type: 'bandpass', frequency: 1600, q: 0.9, destination: this.musicBus });
+    }
+    // Basse ronde jazz/French touch
+    if (beat === 0 || beat === 6 || beat === 10) {
+      const noteMidi = chord.root + (beat === 6 ? 7 : beat === 10 ? 12 : 0);
+      this.tone(midiToFrequency(noteMidi), time, stepLength * 2.2, 'triangle', 0.22, {
+        destination: this.musicBus,
+      });
+    }
+    // Nappe d'accordéon / Rhodes mélancolique sur les temps 2 et 4
+    if (beat === 4 || beat === 10) {
+      chord.intervals.forEach((interval, idx) => {
+        this.tone(midiToFrequency(chord.root + 12 + interval), time, stepLength * 2.8, 'sawtooth', 0.045, {
+          filter: 1200, attack: 0.04, detune: idx % 2 ? 6 : -6, destination: this.musicBus,
+        });
+      });
+    }
+    // Mélodie poétique de violon / synthé vintage
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = PARIS_LEAD[(bar - 4) % PARIS_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.9, 'sine', 0.14, {
+          destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note), time + 0.01, stepLength * 1.8, 'triangle', 0.08, {
+          filter: 2400, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
+  }
+
+  // ── Royaume-Uni · Londres Soho (UK Garage / Bassline) ────────────────
+  playLondon(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = LONDON_CHORDS[bar % LONDON_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Kick 2-step syncopé : pas sur chaque temps, mais avec rebond sur beat 6 ou 7
+    if (beat === 0 || beat === 6 || beat === 10) {
+      this.kick(time);
+    }
+    // Rimshot percutant UK garage
+    if (beat === 4 || beat === 12) {
+      this.tone(340, time, 0.04, 'triangle', 0.15, { destination: this.musicBus });
+      this.noise(time, 0.07, 0.24, { type: 'bandpass', frequency: 2800, q: 2.1, destination: this.musicBus });
+    }
+    // Hi-hats syncopés et sautillants en croches/doubles
+    if (beat % 2 === 1 || beat === 2 || beat === 8 || beat === 14) {
+      this.hat(time, beat === 14 || beat === 6);
+    }
+    // Basse Reese / sub 808 profonde et modulée
+    if (beat === 2 || beat === 6 || beat === 8 || beat === 12) {
+      const noteMidi = chord.root + (beat === 6 ? 10 : beat === 12 ? 7 : 0);
+      this.tone(midiToFrequency(noteMidi), time, stepLength * 2, 'sawtooth', 0.22, {
+        filter: 620, filterTo: 220, attack: 0.01, destination: this.musicBus,
+      });
+      this.tone(midiToFrequency(noteMidi) / 2, time, stepLength * 2, 'sine', 0.28, {
+        destination: this.musicBus,
+      });
+    }
+    // Dub stabs d'orgue M1 caractéristiques de Londres
+    if (beat === 3 || beat === 7 || beat === 11 || beat === 15) {
+      chord.intervals.forEach((interval) => {
+        this.tone(midiToFrequency(chord.root + 24 + interval), time, stepLength * 0.9, 'triangle', 0.08, {
+          filter: 2800, filterTo: 800, attack: 0.005, destination: this.musicBus,
+        });
+      });
+    }
+    // Lead underground syncopé
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = LONDON_LEAD[(bar - 4) % LONDON_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.5, 'square', 0.09, {
+          filter: 3200, filterTo: 1400, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
+  }
+
+  // ── USA · New York Midtown (Boom-Bap / Urban Jazz-Funk) ─────────────
+  playNewYork(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = NY_CHORDS[bar % NY_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Kick boom-bap lourd (temps 1, contretemps syncopé)
+    if (beat === 0 || beat === 6 || beat === 10) {
+      this.tone(140, time, 0.14, 'sine', 0.58, { destination: this.musicBus });
+      this.tone(42, time + 0.015, 0.22, 'sine', 0.32, { destination: this.musicBus });
+    }
+    // Caisse claire claquante de rue sur 4 et 12
+    if (beat === 4 || beat === 12) {
+      this.tone(180, time, 0.09, 'triangle', 0.16, { destination: this.musicBus });
+      this.noise(time, 0.11, 0.26, { type: 'bandpass', frequency: 1600, q: 1.0, destination: this.musicBus });
+    }
+    // Shaker / Hi-hat jazzy new-yorkais
+    if (beat % 2 === 0) {
+      this.noise(time, 0.035, 0.065, { type: 'highpass', frequency: 8500, destination: this.musicBus });
+    }
+    // Ligne de basse funk slappée urbaine
+    const nyBassMap = [0, null, 12, null, 0, 7, 10, null, 12, null, 7, 5, 0, null, 7, 10];
+    const bassInt = nyBassMap[beat];
+    if (bassInt !== null && bassInt !== undefined) {
+      this.tone(midiToFrequency(chord.root + bassInt), time, stepLength * 1.4, 'sawtooth', 0.19, {
+        filter: 750, filterTo: 350, attack: 0.008, destination: this.musicBus,
+      });
+      this.tone(midiToFrequency(chord.root + bassInt), time, stepLength * 1.2, 'sine', 0.16, {
+        destination: this.musicBus,
+      });
+    }
+    // Cuivres jazz nocturnes sur accords de 7e
+    if (beat === 2 || beat === 8 || beat === 14) {
+      chord.intervals.forEach((interval) => {
+        this.tone(midiToFrequency(chord.root + 12 + interval), time, stepLength * 1.8, 'sawtooth', 0.05, {
+          filter: 2100, filterTo: 900, attack: 0.02, destination: this.musicBus,
+        });
+      });
+    }
+    // Lead cuivré / trompette urbaine
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = NY_LEAD[(bar - 4) % NY_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.6, 'sawtooth', 0.095, {
+          filter: 3200, filterTo: 1800, attack: 0.015, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
+  }
+
+  // ── USA · Historic Route 66 (Blues-Rock / Boogie-Woogie) ────────────
+  playRoute66(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = ROUTE_66_CHORDS[bar % ROUTE_66_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Batterie blues-rock : grosse caisse sur 0 et 8, caisse claire sur 4 et 12
+    if (beat === 0 || beat === 8) {
+      this.tone(125, time, 0.12, 'sine', 0.5, { destination: this.musicBus });
+      this.tone(50, time + 0.02, 0.18, 'sine', 0.22, { destination: this.musicBus });
+    }
+    if (beat === 4 || beat === 12) {
+      this.tone(195, time, 0.08, 'triangle', 0.14, { destination: this.musicBus });
+      this.noise(time, 0.1, 0.22, { type: 'bandpass', frequency: 1800, q: 1.1, destination: this.musicBus });
+    }
+    // Shuffle de ride/charleston boogie (croches balancées)
+    if ([0, 3, 4, 7, 8, 11, 12, 15].includes(beat)) {
+      this.noise(time, 0.04, 0.05, { type: 'highpass', frequency: 7000, destination: this.musicBus });
+    }
+    // Walking bass / boogie blues marchant
+    const boogieIntervals = [0, 4, 7, 9, 10, 9, 7, 4];
+    if (beat % 2 === 0) {
+      const boogieNote = chord.root + boogieIntervals[(beat / 2) % 8];
+      this.tone(midiToFrequency(boogieNote), time, stepLength * 1.5, 'triangle', 0.22, {
+        destination: this.musicBus,
+      });
+      this.tone(midiToFrequency(boogieNote), time, stepLength * 1.0, 'sawtooth', 0.08, {
+        filter: 480, destination: this.musicBus,
+      });
+    }
+    // Accords d'orgue Hammond / guitare blues saturée
+    if (beat === 2 || beat === 6 || beat === 10 || beat === 14) {
+      chord.intervals.forEach((interval) => {
+        this.tone(midiToFrequency(chord.root + 12 + interval), time, stepLength * 1.2, 'sawtooth', 0.045, {
+          filter: 1800, filterTo: 900, attack: 0.01, destination: this.musicBus,
+        });
+      });
+    }
+    // Solo de guitare blues / harmonica sur la 2e partie
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = ROUTE_66_LEAD[(bar - 4) % ROUTE_66_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.8, 'sawtooth', 0.11, {
+          filter: 3400, filterTo: 1600, attack: 0.01, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note), time + 0.008, stepLength * 1.6, 'square', 0.03, {
+          filter: 2600, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
+  }
+
+  // ── Mexique · Carretera del Sol (Cumbia / Mariachi ensoleillé) ──────
+  playMexico(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = MEXICO_CHORDS[bar % MEXICO_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Tambora mexicaine / percussion cumbia sur temps 1 et 3
+    if (beat === 0 || beat === 8) {
+      this.tone(100, time, 0.16, 'sine', 0.45, { destination: this.musicBus });
+      this.tone(55, time + 0.02, 0.2, 'sine', 0.28, { destination: this.musicBus });
+    }
+    // Güiro / Maracas frottées sur chaque contretemps
+    if (beat % 2 === 1) {
+      this.noise(time, 0.035, 0.065, { type: 'bandpass', frequency: 3800, q: 1.4, destination: this.musicBus });
+    }
+    // Guitarrón bondissant mexicain
+    if (beat === 0 || beat === 6 || beat === 8 || beat === 14) {
+      const rootNote = chord.root + (beat === 6 || beat === 14 ? 7 : 0);
+      this.tone(midiToFrequency(rootNote), time, stepLength * 1.7, 'triangle', 0.24, {
+        destination: this.musicBus,
+      });
+      this.tone(midiToFrequency(rootNote), time, stepLength * 1.2, 'sine', 0.15, {
+        destination: this.musicBus,
+      });
+    }
+    // Vihuela / Stabs de trompette mariachi festive
+    if (beat === 3 || beat === 7 || beat === 11 || beat === 15) {
+      chord.intervals.forEach((interval) => {
+        this.tone(midiToFrequency(chord.root + 24 + interval), time, stepLength * 1.1, 'sawtooth', 0.065, {
+          filter: 3400, filterTo: 1400, attack: 0.008, destination: this.musicBus,
+        });
+      });
+    }
+    // Refrain enjoué de trompettes mexicaines
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = MEXICO_LEAD[(bar - 4) % MEXICO_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.7, 'sawtooth', 0.13, {
+          filter: 3800, filterTo: 2200, attack: 0.012, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note + 4), time + 0.005, stepLength * 1.6, 'sawtooth', 0.07, {
+          filter: 3400, attack: 0.012, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
+  }
+
+  // ── Allemagne · Nürburgring Nordschleife (Krautrock / Techno Motorik) 
+  playNordschleife(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = NORDSCHLEIFE_CHORDS[bar % NORDSCHLEIFE_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Kick techno sec et précis sur les 4 temps
+    if (beat % 4 === 0) {
+      this.tone(150, time, 0.09, 'sine', 0.52, { destination: this.musicBus });
+      this.tone(50, time + 0.01, 0.14, 'sine', 0.28, { destination: this.musicBus });
+      this.noise(time, 0.02, 0.08, { type: 'highpass', frequency: 3200, destination: this.musicBus });
+    }
+    // Charleston mécanique et rigide
+    if (beat % 2 === 1) {
+      this.noise(time, 0.025, 0.05, { type: 'highpass', frequency: 9500, destination: this.musicBus });
+    } else if (beat % 4 === 2) {
+      this.noise(time, 0.06, 0.07, { type: 'highpass', frequency: 7500, destination: this.musicBus });
+    }
+    // Clac industriel sur 4 et 12
+    if (beat === 4 || beat === 12) {
+      this.tone(260, time, 0.05, 'triangle', 0.12, { destination: this.musicBus });
+      this.noise(time, 0.08, 0.18, { type: 'bandpass', frequency: 2400, q: 2.5, destination: this.musicBus });
+    }
+    // Basse motorik allemande métronomique continue (croches pulsées)
+    if (beat % 2 === 0) {
+      const motorikNote = chord.root + (beat === 8 || beat === 14 ? 7 : 0);
+      this.tone(midiToFrequency(motorikNote), time, stepLength * 1.6, 'sawtooth', 0.18, {
+        filter: 800, filterTo: 300, attack: 0.005, destination: this.musicBus,
+      });
+      this.tone(midiToFrequency(motorikNote) / 2, time, stepLength * 1.6, 'sine', 0.15, {
+        destination: this.musicBus,
+      });
+    }
+    // Arpège de synthé modulaire / séquenceur analogique allemand
+    const krautArp = [0, 7, 12, 7, 0, 7, 12, 15];
+    const arpInt = krautArp[(beat / 2) % 8];
+    if (beat % 2 === 0) {
+      this.tone(midiToFrequency(chord.root + 12 + arpInt), time, stepLength * 0.9, 'triangle', 0.07, {
+        filter: 2200, attack: 0.004, destination: this.musicBus,
+      });
+    }
+    // Thème d'autoroute / ring futuriste précis
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = NORDSCHLEIFE_LEAD[(bar - 4) % NORDSCHLEIFE_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.7, 'square', 0.09, {
+          filter: 3600, filterTo: 1800, attack: 0.006, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note + 12), time + 0.004, stepLength * 1.2, 'sawtooth', 0.035, {
+          filter: 4200, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
   }
 
   kick(time) {
