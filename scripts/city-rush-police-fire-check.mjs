@@ -85,7 +85,7 @@ const server = await createServer({
               .replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)(')
               // Précondition de test : l'escouade entre armée, pour vérifier la
               // ligne de tir et la mire sans attendre qu'une berline rafle un
-              // bonus rouge (5 % des objets, et le hasard décide).
+              // bonus rouge (8 % des objets, et le hasard décide).
               // (sept balles, comme `CITY_RUSH_PISTOL_AMMO_PER_PICKUP`).
               .replaceAll('createCityRushPoliceInventory()', '({ pistol: 7 })'),
             map: null,

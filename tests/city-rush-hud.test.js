@@ -32,6 +32,13 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   assert.equal(declarations.width, '102px');
   assert.equal(declarations.height, '102px');
   assert.equal(declarations['border-radius'], '50%');
+
+  const readyRule = css.match(/\.city-rush-machine-gun-button\.is-ready\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(readyRule, /border:\s*3px solid #fff/);
+  assert.match(readyRule, /animation:\s*crMachineGunReadyGlow/);
+  assert.match(css, /@keyframes crMachineGunReadyGlow/);
+  assert.match(css, /\.city-rush-machine-gun-button\.is-ready,\s*\n\s*\.city-rush-machine-gun-button\.is-ready::after/);
+  assert.match(page, /ready \? `CHARGÉ \${ammo}\/\$\{CITY_RUSH_PISTOL_AMMO_PER_PICKUP\}`/);
 });
 
 test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la relâche', () => {

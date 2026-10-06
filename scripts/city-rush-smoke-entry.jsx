@@ -1300,7 +1300,7 @@ for (const [index, city] of courses.entries()) {
   }
   if ((audioCalls.boost || 0) < groundBoosts.length) fail('un pad turbo ramassé n’a pas déclenché son boost sonore', { groundBoosts: groundBoosts.length, audioCalls });
   const redPickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.PISTOL);
-  // Le bonus rouge n'apparaît que 5 % du temps : une longue course peut très
+  // Le bonus rouge n'apparaît que dans 8 % des objets : une longue course peut encore
   // bien se terminer sans que le pilote en croise un. S'il en ramasse un, il
   // doit recharger le chargeur complet de sept balles.
   if (redPickups.some((pickup) => pickup.chargeCost !== CITY_RUSH_PISTOL_AMMO_PER_PICKUP

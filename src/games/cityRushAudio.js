@@ -9,7 +9,7 @@
 //   - `engine({ speed, throttle, boost })` est appelé à chaque image par le
 //     monde 3D : le moteur est un nœud permanent dont on ne fait bouger que
 //     la fréquence et le volume (pas de création d'oscillateur par frame) ;
-//   - les bruitages (`gunshot`, `skid`, `helicopterStart`, `explosion`…)
+//   - les bruitages (`gunshot`, `pistolReload`, `skid`, `explosion`…)
 //     fabriquent leurs nœuds à la volée et se taisent si le son est coupé.
 //
 // La musique est un disco de synthé : grosse caisse à quatre temps,
@@ -954,9 +954,28 @@ export class CityRushAudio {
   }
 
   // ── Petits bruitages de course ──────────────────────────────────────
+  /** Changement de chargeur : extraction, insertion, puis armement de la culasse. */
+  pistolReload({ pan = 0, delay = 0 } = {}) {
+    if (!this.ready()) return;
+    const time = this.context.currentTime + 0.005 + Math.max(0, delay);
+    const out = this.panned(pan);
+
+    // Petit déclic métallique pour libérer le chargeur vide.
+    this.noise(time, 0.045, 0.18, { type: 'bandpass', frequency: 2500, q: 2.2, destination: out });
+    this.tone(410, time, 0.055, 'square', 0.045, { filter: 2100, attack: 0.002, destination: out });
+    // Le chargeur neuf s'emboîte avec un claquement plus sourd.
+    this.noise(time + 0.12, 0.075, 0.24, { type: 'bandpass', frequency: 1150, q: 1.3, destination: out });
+    this.tone(155, time + 0.12, 0.075, 'triangle', 0.13, { filter: 600, destination: out });
+    // Course de culasse, puis verrouillage sec : la mitrailleuse est prête.
+    this.noise(time + 0.25, 0.11, 0.18, { type: 'bandpass', frequency: 3100, frequencyTo: 1300, q: 1.7, destination: out });
+    this.noise(time + 0.42, 0.05, 0.2, { type: 'highpass', frequency: 2800, destination: out });
+    this.tone(520, time + 0.42, 0.055, 'square', 0.05, { filter: 2500, destination: out });
+  }
+
   /** Bonus ramassé : un bip par couleur, un accord quand la jauge est pleine. */
   pickup(type = 'boost', { ready = false } = {}) {
     if (!this.ready()) return;
+    if (type === 'pistol') this.pistolReload();
     const root = { 'blue-shot': 60, pistol: 64, boost: 69, radio: 74 }[type] ?? 69;
     const time = this.context.currentTime + 0.005;
     const out = this.sfxBus;

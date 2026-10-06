@@ -583,10 +583,11 @@ test('oncoming traffic on the left lanes is dodged like a wall, never rammed', (
   }), 3, 'sans bonus vers la gauche, on quitte le sens inverse');
 });
 
-test('rivals only chase red machine-gun bonuses while uncharged; boosts stay available', () => {
+test('rivals chase red machine-gun bonuses to refill partial magazines; full magazines ignore them', () => {
   const redPickup = { lane: 2, distance: 40, type: CITY_RUSH_POWERS.PISTOL };
   const emptyInventory = { pistol: 0 };
-  const loadedInventory = { pistol: 1 };
+  const partialInventory = { pistol: 1 };
+  const fullInventory = { pistol: CITY_RUSH_PISTOL_AMMO_PER_PICKUP };
   const unchargedPickups = [redPickup].filter((pickup) => canCollectCityRushPickup(emptyInventory, pickup.type));
   assert.equal(chooseCityRushAiLane({
     currentLane: 1,
@@ -596,8 +597,13 @@ test('rivals only chase red machine-gun bonuses while uncharged; boosts stay ava
     pickups: unchargedPickups,
   }), 2, 'le rival prend le bonus rouge pour charger sa mitrailleuse');
 
-  const loadedPickups = [redPickup].filter((pickup) => canCollectCityRushPickup(loadedInventory, pickup.type));
-  assert.deepEqual(loadedPickups, [], 'une voiture déjà chargée ne suit plus le bonus rouge');
+  const partialPickups = [redPickup].filter((pickup) => canCollectCityRushPickup(partialInventory, pickup.type));
+  assert.deepEqual(partialPickups, [redPickup], 'un rival peut remplir son chargeur même s’il lui reste une balle');
+  assert.equal(addCityRushCharge(partialInventory, CITY_RUSH_POWERS.PISTOL)[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
+    'le ramassage complète le chargeur jusqu’à sept balles');
+
+  const loadedPickups = [redPickup].filter((pickup) => canCollectCityRushPickup(fullInventory, pickup.type));
+  assert.deepEqual(loadedPickups, [], 'une voiture au chargeur plein laisse le bonus aux autres');
   assert.equal(chooseCityRushAiLane({
     currentLane: 1,
     distance: 10,
@@ -607,7 +613,7 @@ test('rivals only chase red machine-gun bonuses while uncharged; boosts stay ava
 
   const boost = { lane: 2, distance: 40, type: CITY_RUSH_PICKUPS.BOOST };
   const loadedRacerPickups = [redPickup, boost]
-    .filter((pickup) => canCollectCityRushPickup(loadedInventory, pickup.type));
+    .filter((pickup) => canCollectCityRushPickup(fullInventory, pickup.type));
   assert.deepEqual(loadedRacerPickups, [boost], 'un boost reste disponible même avec la mitrailleuse chargée');
   assert.equal(chooseCityRushAiLane({
     currentLane: 1,
@@ -719,15 +725,16 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
 test('the active loadout has seven red machine-gun bullets plus automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 8400); // 6 tours : 5 boucles de 1 200 m + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
-  assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.05, 'le bonus rouge n’apparaît que dans 5 % des objets');
+  assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.08, 'le bonus rouge apparaît maintenant dans 8 % des objets');
   assert.equal(CITY_RUSH_PISTOL_AMMO_PER_PICKUP, 7);
-  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.95);
+  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.92);
   assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, radio: 4 });
   assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 7);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.ammoPerPickup, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /bonus rouge.*très rares/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /bonus rouges sont rares/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /remplit le chargeur.*même s'il en reste déjà/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /7 balles/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.name, /AK-47/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /tout droit/i);
@@ -926,21 +933,25 @@ test('one red pickup grants seven bullets while inventory tracks remain independ
   assert.equal(overfilled.radio, CITY_RUSH_POWER_CHARGE_COST.radio);
 });
 
-test('red pickups remain available until every active racer has ammunition, and never reload a ready racer twice', () => {
-  const charged = { pistol: CITY_RUSH_PISTOL_AMMO_PER_PICKUP };
+test('red pickups stay visible until every active racer has a full magazine and top up partial ones', () => {
+  const full = { pistol: CITY_RUSH_PISTOL_AMMO_PER_PICKUP };
+  const partial = { pistol: 3 };
   const empty = { pistol: 0 };
   assert.equal(shouldHideCityRushPistolPickup(empty, [empty, empty]), false, 'le joueur doit d’abord charger');
-  assert.equal(shouldHideCityRushPistolPickup(charged, [empty, charged]), false, 'un rival non chargé garde les bonus visibles');
-  assert.equal(shouldHideCityRushPistolPickup(charged, [charged, charged]), true, 'toutes les voitures sont prêtes');
+  assert.equal(shouldHideCityRushPistolPickup(full, [partial, full]), false, 'un rival à moitié chargé garde les bonus visibles');
+  assert.equal(shouldHideCityRushPistolPickup(full, [full, full]), true, 'les bonus disparaissent quand tous les chargeurs sont pleins');
+  assert.equal(shouldHideCityRushPistolPickup(partial, [full, full]), false, 'le joueur peut recharger avant d’être à sec');
   const afterPlayerShot = { pistol: 0 };
-  assert.equal(shouldHideCityRushPistolPickup(afterPlayerShot, [charged, charged]), false, 'le bonus rouge réapparaît après le tir du joueur');
-  assert.equal(canCollectCityRushPickup(afterPlayerShot, 'pistol'), true, 'le joueur peut de nouveau recharger après avoir tiré');
-  assert.equal(shouldHideCityRushPistolPickup(charged, []), true, 'sans adversaire actif, le joueur seul suffit');
+  assert.equal(shouldHideCityRushPistolPickup(afterPlayerShot, [full, full]), false, 'le bonus rouge reste visible après un tir');
+  assert.equal(canCollectCityRushPickup(afterPlayerShot, 'pistol'), true, 'le joueur peut de nouveau charger après le tir');
+  assert.equal(shouldHideCityRushPistolPickup(full, []), true, 'sans adversaire actif, le joueur seul suffit');
   assert.equal(isCityRushPowerCharged({ pistol: 9 }, 'pistol'), true, 'les inventaires saturés sont traités comme chargés');
-  assert.equal(canCollectCityRushPickup(empty, 'pistol'), true, 'un pilote non chargé peut prendre le rouge');
-  assert.equal(canCollectCityRushPickup(charged, 'pistol'), false, 'un pilote prêt laisse le bonus rouge aux autres');
-  assert.equal(canCollectCityRushPickup(empty, 'pistol', { redPickupsHidden: true }), false, 'quand tout le monde est prêt, le rouge est caché');
-  assert.equal(canCollectCityRushPickup(charged, CITY_RUSH_PICKUPS.BOOST), true, 'la règle ne masque jamais les boosts');
+  assert.equal(canCollectCityRushPickup(empty, 'pistol'), true, 'un pilote sans balle peut prendre le rouge');
+  assert.equal(canCollectCityRushPickup(partial, 'pistol'), true, 'un pilote peut compléter un chargeur partiellement dépensé');
+  assert.equal(addCityRushCharge(partial, CITY_RUSH_POWERS.PISTOL)[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_PISTOL_AMMO_PER_PICKUP, 'le bonus remet le chargeur à 100 %');
+  assert.equal(canCollectCityRushPickup(full, 'pistol'), false, 'un chargeur plein ne gaspille pas de bonus');
+  assert.equal(canCollectCityRushPickup(partial, 'pistol', { redPickupsHidden: true }), false, 'un bonus masqué reste impossible à ramasser');
+  assert.equal(canCollectCityRushPickup(empty, CITY_RUSH_PICKUPS.BOOST), true, 'la règle ne masque jamais les boosts');
   assert.equal(canCollectCityRushPickup(empty, 'radio'), false, 'les bonus retirés ne peuvent plus être collectés');
 });
 
@@ -1905,8 +1916,8 @@ test('pickup encounters contain only red machine-gun bonuses and ground boosts',
   }
   const redRate = pickupCounts[CITY_RUSH_POWERS.PISTOL] / totalPickups;
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
-  assert.ok(redRate >= 0.03 && redRate <= 0.07, `le bonus rouge reste très rare (${(redRate * 100).toFixed(1)} %)`);
-  assert.ok(boostRate >= 0.93 && boostRate <= 0.97, `les pads turbo sont très majoritaires (${(boostRate * 100).toFixed(1)} %)`);
+  assert.ok(redRate >= 0.06 && redRate <= 0.10, `le bonus rouge apparaît environ 8 % du temps (${(redRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.90 && boostRate <= 0.94, `les pads turbo restent très majoritaires (${(boostRate * 100).toFixed(1)} %)`);
   assert.equal(pickupCounts['blue-shot'], undefined);
   assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
