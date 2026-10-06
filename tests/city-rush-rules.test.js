@@ -216,6 +216,13 @@ import {
   CITY_RUSH_TRAFFIC_VIEW_AHEAD_MIN,
   CITY_RUSH_POLICE_CHASE_SPEED_FACTOR,
   CITY_RUSH_POLICE_BASE_SPEED,
+  CITY_RUSH_RIVAL_PACE,
+  CITY_RUSH_RIVAL_FINAL_LAP_PUSH,
+  cityRushRivalPaceFactor,
+  cityRushAiBrakingRate,
+  cityRushAiBrakingDistance,
+  cityRushAiLaneBlocked,
+  CITY_RUSH_AI_BRAKING_MARGIN,
   chooseCityRushAiLane,
   chooseCityRushTrafficEscapeLane,
   cityRushHitDuration,
@@ -3179,6 +3186,94 @@ test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () 
   assert.equal(cityRushPlayerDamage(1, 'suv-collision'), 0, 'pas de vie négative au dernier carré');
   assert.equal(cityRushPlayerDamage(0, 'suv-collision'), 0);
   assert.equal(cityRushPlayerDamage(15, 'collision'), 14, 'les autres collisions ne changent pas');
+});
+
+test('chaque rival freine à la distance d’arrêt de son propre modèle', () => {
+  const citadine = CITY_RUSH_CARS.find((car) => car.id === 'city-hatch');
+  const supercar = CITY_RUSH_CARS.find((car) => car.id === 'pulse-rs');
+  // Le taux de freinage d'un rival est celui de sa fiche : une citadine freine
+  // au plancher du barème, une supercar bien plus fort — c'est ce qui lui
+  // permet de viser un bonus plus près d'un camion sans payer le carambolage.
+  assert.equal(cityRushAiBrakingRate(citadine.accelerationRate), CITY_RUSH_BRAKE_RATE_FLOOR);
+  assert.ok(cityRushAiBrakingRate(supercar.accelerationRate) > CITY_RUSH_BRAKE_RATE_FLOOR);
+  assert.equal(cityRushAiBrakingRate(citadine.accelerationRate), cityRushBrakingRate(citadine.accelerationRate));
+  // La distance d'arrêt suit le carré de la vitesse et la marge de sécurité.
+  assert.ok(Math.abs(cityRushAiBrakingDistance(30) - (30 * 30) / (2 * CITY_RUSH_BRAKE_RATE_FLOOR) * CITY_RUSH_AI_BRAKING_MARGIN) < 1e-9);
+  assert.ok(cityRushAiBrakingDistance(60) > cityRushAiBrakingDistance(30) * 3.9, 'freiner de 60 m/s coûte bien plus que le double de 30');
+  assert.equal(
+    cityRushAiBrakingDistance(30, { brakingRate: cityRushAiBrakingRate(citadine.accelerationRate) }),
+    cityRushAiBrakingDistance(30),
+    'la citadine freine à la distance du barème',
+  );
+  assert.ok(
+    cityRushAiBrakingDistance(30, { brakingRate: cityRushAiBrakingRate(supercar.accelerationRate) })
+      < cityRushAiBrakingDistance(30) * 0.6,
+    'la supercar freine sensiblement plus court',
+  );
+
+  // Même camion, même vitesse : la voie est bouchée pour la citadine, ouverte
+  // pour la supercar. Le camion roule à 5 m/s à 30 m devant.
+  const truck = [{ lane: 1, distance: 30, speed: 5 }];
+  const blockedFor = (car) => cityRushAiLaneBlocked({
+    lane: 1, distance: 0, speed: 30, traffic: truck,
+    brakingRate: cityRushAiBrakingRate(car.accelerationRate),
+  });
+  assert.equal(blockedFor(citadine), true, 'la citadine ne peut pas s’arrêter avant le camion');
+  assert.equal(blockedFor(supercar), false, 'la supercar s’arrête avant le camion');
+
+  // Et le choix de voie suit : un pad turbo dans une voie bouchée vaut le coup
+  // pour la supercar, pas pour la citadine (on ne vise pas un mur pour un pad).
+  const padInTruckLane = [{ lane: 1, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }];
+  const laneFor = (car) => chooseCityRushAiLane({
+    currentLane: 1, distance: 0, speed: 30, availableLanes: [0, 1, 2], traffic: truck,
+    pickups: padInTruckLane,
+    brakingRate: cityRushAiBrakingRate(car.accelerationRate),
+  });
+  assert.equal(laneFor(citadine), 0, 'la citadine se décale au lieu de plonger sur le camion');
+  assert.equal(laneFor(supercar), 1, 'la supercar prend le pad, elle freine assez court');
+});
+
+test('le rythme de course des rivaux est un vrai cran au-dessus, dernier tour compris', () => {
+  assert.equal(CITY_RUSH_RIVAL_PACE, 1.05);
+  assert.equal(CITY_RUSH_RIVAL_FINAL_LAP_PUSH, 1.02);
+  assert.equal(cityRushRivalPaceFactor(), CITY_RUSH_RIVAL_PACE);
+  assert.ok(cityRushRivalPaceFactor({ finalLap: true }) > cityRushRivalPaceFactor(),
+    'le dernier tour des rivaux pousse encore le rythme');
+  assert.ok(Math.abs(cityRushRivalPaceFactor({ finalLap: true }) - CITY_RUSH_RIVAL_PACE * CITY_RUSH_RIVAL_FINAL_LAP_PUSH) < 1e-9);
+  // Un cran franc mais pas absurde : sous les 3 % de rythme en plus, la course
+  // se joue à la première faute ; au-delà de 8 %, la voiture du joueur ne peut
+  // plus suivre même en ligne propre.
+  assert.ok(CITY_RUSH_RIVAL_PACE > 1.02 && CITY_RUSH_RIVAL_PACE < 1.08);
+});
+
+test('une voiture qui atterrit ne se pose pas dans une berline', () => {
+  const berline = { id: 'police-1', collisionGroup: 'police', lane: 1, x: 0, width: 1.94 };
+  const landing = {
+    id: 'player', collisionGroup: 'racer', lane: 1, x: 0, width: 1.9,
+    previousDistance: 98, nextDistance: 98.5, landing: true,
+  };
+  const follow = { ...landing, landing: false };
+  const jump = { ...landing, landing: false, jumping: true };
+  const resolved = (car) => resolveCityRushCarMovement([
+    { ...berline, previousDistance: 100, nextDistance: 100 },
+    car,
+  ]).find((item) => item.id === 'player').nextDistance;
+  // Sans l'atterrissage, le plancher `previousDistance` fige le pilote dans la
+  // berline qu'il vient de survoler (l'écart reste sous les 4,8 m).
+  assert.equal(resolved(follow), 98);
+  // À l'atterrissage, la voiture est retenue à la distance de sécurité : elle
+  // recule de la correction plutôt que de rester dans la carrosserie.
+  assert.equal(resolved(landing), 100 - CITY_RUSH_CAR_GAP);
+  // En vol, le saut reste un saut : la voiture passe au-dessus sans être
+  // rabotée (c'est ce qui permet de franchir un bouchon par un tremplin).
+  assert.equal(resolved(jump), 98.5);
+
+  // Le recul ne descend jamais sous zéro, même près de la ligne de départ.
+  const nearStart = resolveCityRushCarMovement([
+    { id: 'police-1', collisionGroup: 'police', lane: 1, x: 0, width: 1.94, previousDistance: 2, nextDistance: 2 },
+    { id: 'player', collisionGroup: 'racer', lane: 1, x: 0, width: 1.9, previousDistance: 1, nextDistance: 1.4, landing: true },
+  ]).find((item) => item.id === 'player').nextDistance;
+  assert.equal(nearStart, 0);
 });
 
 test('la herse des quatre étoiles couvre trois voies du sens de course', () => {
