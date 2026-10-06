@@ -565,3 +565,31 @@
   color: #a3a9b4;
 }
 .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button.is-empty::after { display: none; }
+
+/* ── Compte à rebours : la route reste visible ──
+   Plus de voile opaque ni de flou : la scène 3D (la caméra glisse jusqu'à la
+   vue de course) est visible dès « 3 ». Seul un léger dégradé central garde
+   les chiffres lisibles sur le ciel clair comme sur le bitume. */
+.city-rush-page .city-rush-viewport .city-rush-countdown,
+.city-rush-viewport .city-rush-overlay.city-rush-countdown {
+  background: radial-gradient(60% 45% at 50% 46%, rgba(4, 6, 12, 0.42), transparent 75%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.city-rush-viewport .city-rush-countdown > span,
+.city-rush-viewport .city-rush-countdown small {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(5, 8, 16, 0.72);
+  color: #f2f4fa;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.city-rush-viewport .city-rush-countdown small { color: var(--city-secondary, #43ead5); }
+
+.city-rush-viewport .city-rush-countdown strong {
+  text-shadow: 0 0 34px var(--city-accent, #ff4fa3), 0 4px 0 rgba(0, 0, 0, 0.55), 0 14px 40px rgba(0, 0, 0, 0.75);
+}

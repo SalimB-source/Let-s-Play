@@ -311,3 +311,9 @@ test('le bouton AK-47 vide est grisé et montre un anneau de munitions', () => {
   assert.match(page, /city-rush-machine-gun-ammo/);
   assert.match(hudCss, /\.city-rush-machine-gun-button\.is-empty \{[^}]*filter: grayscale\(1\)/);
 });
+
+test('le compte à rebours laisse voir la route (pas de voile opaque)', () => {
+  const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
+  assert.match(hudCss, /\.city-rush-page \.city-rush-viewport \.city-rush-countdown,[^{]*\{[^}]*backdrop-filter: none;[^}]*\}/);
+  assert.doesNotMatch(hudCss.match(/\.city-rush-page \.city-rush-viewport \.city-rush-countdown,[^{]*\{([^}]*)\}/)[1], /#090c12/);
+});
