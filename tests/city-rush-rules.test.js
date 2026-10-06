@@ -76,7 +76,12 @@ import {
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
   CITY_RUSH_MINI_GARAGE_COUNT,
-  CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS,
+  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
+  CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS,
+  CITY_RUSH_MINI_GARAGE_KINDS,
+  CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
+  CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE,
+  CITY_RUSH_MINI_GARAGE_SIGN_LEAD,
   CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
   CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
@@ -85,7 +90,11 @@ import {
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
+  cityRushMiniGarageAvailable,
   cityRushMiniGaragesAvailable,
+  cityRushMiniGarageKindAt,
+  cityRushMiniGarageMidRaceDistance,
+  cityRushMiniGarageTrackDistances,
   cityRushMiniGarageCanUse,
   cityRushMiniGarageRepair,
   cityRushMiniGarageCanClearWanted,
@@ -1095,24 +1104,43 @@ test('tirer sur la police donne trois étoiles, puis les destructions font monte
 });
 
 test('chaque carte a deux mini-garages traversables sur la voie à droite du sens de course', () => {
-  assert.equal(CITY_RUSH_MINI_GARAGE_COUNT, 2);
-  assert.equal(CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS.length, CITY_RUSH_MINI_GARAGE_COUNT);
-  assert.ok(CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS.every((position) => position > 0 && position < CITY_RUSH_LAP_LENGTH));
-  assert.ok(CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[0] < CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[1]);
+  assert.equal(CITY_RUSH_MINI_GARAGE_COUNT, 2, 'une porte de mi-course plus une porte du dernier tour');
+  assert.deepEqual([...CITY_RUSH_MINI_GARAGE_KINDS], [CITY_RUSH_MINI_GARAGE_MID_RACE_KIND, CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND]);
+  assert.equal(CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.length, CITY_RUSH_MINI_GARAGE_COUNT - 1,
+    'un seul portique reste au dernier tour');
+  assert.ok(CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.every((offset) => offset > 0 && offset < CITY_RUSH_LAP_LENGTH));
+  assert.ok(CITY_RUSH_MINI_GARAGE_SIGN_LEAD >= 20, 'l’indication de voie se voit arriver quelques dizaines de mètres avant');
   for (const course of CITY_RUSH_COURSES) {
     const lanes = cityRushLaneConfig(course).forwardLanes;
     assert.equal(cityRushMiniGarageLane(course), lanes.at(-1), `${course.id} place les garages à droite dans son sens de course`);
   }
 
+  const distances = cityRushMiniGarageTrackDistances();
+  assert.equal(distances.length, CITY_RUSH_MINI_GARAGE_COUNT);
+  assert.equal(distances[0], cityRushMiniGarageMidRaceDistance(), 'la première porte est posée à mi-parcours');
+  assert.equal(distances[0], cityRushRaceDistance() * CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE);
+  assert.equal(distances[0], cityRushRaceDistance() / 2, 'elle tombe exactement à la moitié du parcours');
+  assert.ok(distances[0] < distances[1], 'la porte de mi-course arrive avant celle du dernier tour');
+  assert.equal(distances[1], (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0]);
+  assert.equal(cityRushMiniGarageKindAt(0), CITY_RUSH_MINI_GARAGE_MID_RACE_KIND);
+  assert.equal(cityRushMiniGarageKindAt(1), CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND);
+  // Quelle que soit la longueur du mode, la porte de mi-course reste au milieu.
+  for (const laps of [1, 3, CITY_RUSH_LAPS]) {
+    const track = cityRushMiniGarageTrackDistances({ laps });
+    assert.ok(Math.abs(track[0] / cityRushRaceDistance(laps) - 0.5) < 1e-9, `${laps} tours : la porte tombe à mi-course`);
+    assert.equal(track.length, CITY_RUSH_MINI_GARAGE_COUNT);
+  }
+
   assert.ok(CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH > 3.5 && CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH < 3.6);
   const finalLapStart = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH;
-  const exitDistance = finalLapStart + 360 + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  const exitDistance = finalLapStart + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
   const crossing = {
     previousDistance: exitDistance - 1,
     nextDistance: exitDistance + 1,
     garageExitDistance: exitDistance,
     playerLane: 5,
     garageLane: 5,
+    kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
     lap: CITY_RUSH_LAPS,
     laps: CITY_RUSH_LAPS,
     wantedLevel: 3,
@@ -1120,8 +1148,8 @@ test('chaque carte a deux mini-garages traversables sur la voie à droite du sen
   assert.equal(cityRushMiniGarageCanClearWanted(crossing), true, 'la recherche ne s’efface qu’à la sortie du portique');
   assert.equal(cityRushMiniGarageCanClearWanted({
     ...crossing,
-    previousDistance: finalLapStart + 359,
-    nextDistance: finalLapStart + 361,
+    previousDistance: finalLapStart + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] - 1,
+    nextDistance: finalLapStart + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] + 1,
   }), false, 'passer au centre du garage ne suffit pas : la voiture doit en sortir');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, wantedLevel: 0 }), false, 'sans recherche, aucune étoile à effacer');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: 4 }), false, 'il faut traverser la voie de la porte');
@@ -1129,20 +1157,51 @@ test('chaque carte a deux mini-garages traversables sur la voie à droite du sen
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, previousDistance: exitDistance }), false, 'il faut franchir la sortie pendant cette image');
 });
 
-test('les mini-garages ne sont utilisables qu’au dernier tour, jamais en Sprint', () => {
-  assert.equal(cityRushMiniGaragesAvailable(), false, 'pas de garage au départ d’une course normale');
+test('la porte de mi-course s’ouvre dès le départ, celle du dernier tour attend le dernier tour, jamais en Sprint', () => {
+  assert.equal(cityRushMiniGaragesAvailable(), false, 'pas de portique du dernier tour au départ d’une course normale');
+  assert.equal(
+    cityRushMiniGarageAvailable({ kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND }),
+    true,
+    'la porte de mi-course est là dès le premier tour',
+  );
+  assert.equal(cityRushMiniGarageAvailable({ kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND, sprint: true }), false, 'pas de garage en Sprint');
   for (const laps of [1, 3, CITY_RUSH_LAPS]) {
     for (let lap = 1; lap < laps; lap += 1) {
-      assert.equal(cityRushMiniGaragesAvailable({ lap, laps }), false, `tour ${lap}/${laps} sans garage`);
+      assert.equal(cityRushMiniGaragesAvailable({ lap, laps }), false, `tour ${lap}/${laps} sans portique du dernier tour`);
+      assert.equal(cityRushMiniGarageAvailable({ kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND, lap, laps }), true,
+        `tour ${lap}/${laps} : la porte de mi-course reste ouverte`);
     }
     assert.equal(cityRushMiniGaragesAvailable({ lap: laps, laps }), true, `garages au tour ${laps}/${laps}`);
     assert.equal(cityRushMiniGaragesAvailable({ lap: laps, laps, sprint: true }), false, 'pas de garage en Sprint');
   }
 
-  const exit = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH + 360 + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  // La porte de mi-course se traverse au début du quatrième tour d'une course
+  // de six tours, sans étoiles ni escouade en piste.
+  const midExit = cityRushMiniGarageMidRaceDistance() + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  const midCrossing = {
+    previousDistance: midExit - 1,
+    nextDistance: midExit + 1,
+    garageExitDistance: midExit,
+    playerLane: 5,
+    garageLane: 5,
+    kind: CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
+    lap: 4,
+    laps: CITY_RUSH_LAPS,
+    wantedLevel: 0,
+  };
+  assert.equal(cityRushMiniGarageCanUse(midCrossing), true, 'la porte de mi-course sert même sans étoiles et sans escouade');
+  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, sprint: true }), false);
+  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, playerLane: 4 }), false, 'pas de réparation depuis une voie voisine');
+  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, used: true }), false, 'pas de deuxième passage');
+  // La porte du dernier tour, elle, reste fermée tant que le tour n'est pas là.
+  assert.equal(cityRushMiniGarageCanUse({ ...midCrossing, kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND }), false,
+    'la porte de mi-course ne vaut pas pour celle du dernier tour');
+
+  const exit = (CITY_RUSH_LAPS - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS[0] + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
   const crossing = {
     previousDistance: exit - 1, nextDistance: exit + 1, garageExitDistance: exit,
-    playerLane: 5, garageLane: 5, lap: CITY_RUSH_LAPS, laps: CITY_RUSH_LAPS,
+    playerLane: 5, garageLane: 5, kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
+    lap: CITY_RUSH_LAPS, laps: CITY_RUSH_LAPS,
     wantedLevel: 0,
   };
   assert.equal(cityRushMiniGarageCanUse(crossing), true, 'la réparation fonctionne même sans étoiles');

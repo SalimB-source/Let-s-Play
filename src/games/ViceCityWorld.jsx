@@ -61,7 +61,9 @@ import {
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
   CITY_RUSH_MINI_GARAGE_COUNT,
-  CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS,
+  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
+  CITY_RUSH_MINI_GARAGE_HUD_RANGE,
+  CITY_RUSH_MINI_GARAGE_SIGN_LEAD,
   CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
   CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
@@ -130,9 +132,12 @@ import {
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
+  cityRushMiniGarageAvailable,
   cityRushMiniGaragesAvailable,
   cityRushMiniGarageCanUse,
+  cityRushMiniGarageKindAt,
   cityRushMiniGarageRepair,
+  cityRushMiniGarageTrackDistances,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
   cityRushPolicePace,
@@ -455,9 +460,47 @@ function makeMiniGarageMaterials(city) {
     ctx.strokeStyle = city.accent;
     ctx.lineWidth = 8;
     ctx.strokeRect(5, 5, width - 10, height - 10);
-    neonText(ctx, 'MINI GARAGE', width / 2, height * 0.42, '900 58px "Orbitron", Arial, sans-serif', city.accent, 16);
-    neonText(ctx, `ÉTOILES → 0 · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.78, '800 26px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
+    neonText(ctx, 'MINI GARAGE', width / 2, height * 0.3, '900 54px "Orbitron", Arial, sans-serif', city.accent, 16);
+    neonText(ctx, `ÉTOILES → 0 · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.6, '800 24px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
+    neonText(ctx, 'POLICE LARGUÉE', width / 2, height * 0.86, '900 26px "Orbitron", Arial, sans-serif', '#7dffb0', 10);
   }, 512, 160, { smooth: true });
+
+  // Peinture de voie : le mot GARAGE et une grande flèche, étirés dans le sens
+  // de la route pour rester lisibles à 130 km/h.
+  const lanePaintTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(12, 12, width - 24, height - 24);
+    // Grande flèche vers l'avant (le haut du dessin pointe vers le portique).
+    ctx.fillStyle = city.accent;
+    ctx.beginPath();
+    ctx.moveTo(width / 2, height * 0.08);
+    ctx.lineTo(width * 0.82, height * 0.4);
+    ctx.lineTo(width * 0.62, height * 0.4);
+    ctx.lineTo(width * 0.62, height * 0.56);
+    ctx.lineTo(width * 0.38, height * 0.56);
+    ctx.lineTo(width * 0.38, height * 0.4);
+    ctx.lineTo(width * 0.18, height * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#fff3cc';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    neonText(ctx, 'GARAGE', width / 2, height * 0.74, '900 74px "Orbitron", Arial, sans-serif', '#ffffff', 18);
+    neonText(ctx, 'VOIE DE SERVICE', width / 2, height * 0.92, '800 30px "Orbitron", Arial, sans-serif', city.accent, 10);
+  }, 256, 512, { smooth: true });
+
+  const roadSignTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#070b14';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = city.accent;
+    ctx.lineWidth = 8;
+    ctx.strokeRect(5, 5, width - 10, height - 10);
+    neonText(ctx, 'GARAGE', width / 2, height * 0.3, '900 62px "Orbitron", Arial, sans-serif', city.accent, 16);
+    neonText(ctx, `DANS ${CITY_RUSH_MINI_GARAGE_SIGN_LEAD} M`, width / 2, height * 0.6, '900 44px "Orbitron", Arial, sans-serif', '#fff3cc', 10);
+    neonText(ctx, '↓ RESTE SUR TA VOIE ↓', width / 2, height * 0.86, '800 26px "Orbitron", Arial, sans-serif', '#7dffb0', 8);
+  }, 512, 256, { smooth: true });
 
   return {
     body: standard(0x151c2a, { roughness: 0.5, metalness: 0.48 }),
@@ -467,7 +510,62 @@ function makeMiniGarageMaterials(city) {
     secondary: new THREE.MeshBasicMaterial({ color: city.secondary, toneMapped: false, fog: false }),
     laneMark: new THREE.MeshBasicMaterial({ color: '#ecf6fa', toneMapped: false, fog: false }),
     sign: new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide }),
+    lanePaint: new THREE.MeshBasicMaterial({
+      map: lanePaintTexture,
+      transparent: true,
+      toneMapped: false,
+      fog: false,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    }),
+    roadSign: new THREE.MeshBasicMaterial({ map: roadSignTexture, toneMapped: false, fog: false, side: THREE.DoubleSide }),
   };
+}
+
+// Indication de voie : quelques mètres avant le portique, la voie du garage est
+// peinte au sol (flèche + « GARAGE ») et bordée de chevrons lumineux, plus un
+// panneau de bord de voie qui rappelle la distance. Tout est enfant du groupe
+// du garage : le repère disparaît avec lui quand la porte est fermée ou servie.
+function addMiniGarageLaneGuidance(group, materials, addBox) {
+  const signLead = CITY_RUSH_MINI_GARAGE_SIGN_LEAD * SCALE;
+  const paint = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 6.2), materials.lanePaint);
+  paint.name = 'mini-garage-lane-paint';
+  paint.rotation.x = -Math.PI / 2;
+  paint.position.set(0, 0.035, signLead - 1.4);
+  group.add(paint);
+
+  // Chevrons au sol entre 8 m et 26 m avant l'entrée : ils dessinent le couloir
+  // à suivre, leur pointe tournée vers le portique.
+  const chevronCount = 9;
+  for (let step = 0; step < chevronCount; step += 1) {
+    const distance = 8 + step * 2.2; // m avant la porte
+    for (const side of [-1, 1]) {
+      const chevron = addBox(
+        'mini-garage-approach-chevron',
+        [0.62, 0.03, 0.12],
+        [side * 0.42, 0.028, distance * SCALE],
+        step % 2 === 0 ? materials.accent : materials.laneMark,
+      );
+      chevron.rotation.y = side * (step % 2 === 0 ? 0.62 : 0.48);
+    }
+  }
+
+  // Panneau de bord de voie : le dernier rappel avant l'entrée.
+  const postSide = 1;
+  addBox('mini-garage-sign-post', [0.1, 2.3, 0.1], [postSide * 1.32, 1.15, signLead], materials.body);
+  addBox('mini-garage-sign-frame-road', [1.95, 0.92, 0.12], [postSide * 1.32, 2.5, signLead], materials.body);
+  const roadSign = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 0.82), materials.roadSign);
+  roadSign.name = 'mini-garage-road-sign';
+  roadSign.position.set(postSide * 1.32, 2.5, signLead + 0.065);
+  group.add(roadSign);
+  const roadSignBack = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 0.82), materials.roadSign);
+  roadSignBack.name = 'mini-garage-road-sign';
+  roadSignBack.position.set(postSide * 1.32, 2.5, signLead - 0.065);
+  roadSignBack.rotation.y = Math.PI;
+  group.add(roadSignBack);
 }
 
 function makeMiniGarageObject(index, materials) {
@@ -516,6 +614,10 @@ function makeMiniGarageObject(index, materials) {
     chevron.position.set(0, 0.108, 1.35 - index * 1.1);
     group.add(chevron);
   }
+
+  // Indication de voie : peinte quelques mètres avant le portique pour que le
+  // pilote ne rate pas la porte de service.
+  addMiniGarageLaneGuidance(group, materials, addBox);
 
   return group;
 }
@@ -1467,6 +1569,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   let policeDeployed = false;
+  // La police a abandonné la poursuite (sortie d'un mini-garage) : plus aucune
+  // relève ne part tant que le pilote ne provoque pas de nouveau la police.
+  let policePursuitDropped = false;
   // Niveau de recherche propre au joueur : les modes normaux commencent à zéro,
   // tandis que le mode Poursuite démarre à cinq étoiles comme son escouade.
   let wantedLevel = effectivePoliceFromStart ? CITY_RUSH_WANTED_MAX_STARS : 0;
@@ -1533,10 +1638,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function requiredPlayerPursuerSlots() {
-    return Math.max(
-      policeDeployed ? CITY_RUSH_POLICE_COUNT : 0,
-      cityRushPoliceCountForWantedLevel(wantedLevel),
-    );
+    // Une poursuite abandonnée (mini-garage) ne se relève plus toute seule :
+    // seules les étoiles regagnées depuis rappellent la police.
+    const squadSlots = policeDeployed && !policePursuitDropped ? CITY_RUSH_POLICE_COUNT : 0;
+    return Math.max(squadSlots, cityRushPoliceCountForWantedLevel(wantedLevel));
   }
 
   function beginOncomingPoliceTurnaround(oncoming, { asBackup = false, targetId = 'player' } = {}) {
@@ -1644,6 +1749,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     if (wantedLevel === previous) return wantedLevel;
 
+    // Une nouvelle provocation annule l'abandon : la police reprend la chasse.
+    policePursuitDropped = false;
     if (wantedLevel >= CITY_RUSH_WANTED_MAX_STARS) turnAroundOncomingPoliceAsBackup();
     dispatchWantedPolice();
     getCallbacks().effect?.({
@@ -1718,15 +1825,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackYaw = (trackDistance) => trackProfile.yaw(trackDistance);
   const miniGarageLane = cityRushMiniGarageLane(city);
   const miniGarageMaterials = sprint ? null : makeMiniGarageMaterials(city);
-  const miniGarages = sprint ? [] : Array.from({ length: CITY_RUSH_MINI_GARAGE_COUNT }, (_, index) => {
+  // Deux portes par course : celle de mi-course, puis celle du dernier tour.
+  const miniGarageTrackDistances = cityRushMiniGarageTrackDistances({ laps: effectiveLaps });
+  const miniGarages = sprint ? [] : miniGarageTrackDistances.map((trackDistance, index) => {
+    const kind = cityRushMiniGarageKindAt(index);
     const group = makeMiniGarageObject(index + 1, miniGarageMaterials);
     group.userData.lane = miniGarageLane;
+    group.userData.garageKind = kind;
     scene.add(group);
     return {
       index: index + 1,
+      kind,
       group,
       lane: miniGarageLane,
-      trackDistance: (effectiveLaps - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index],
+      trackDistance,
       used: false,
     };
   });
@@ -1897,16 +2009,40 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     lastRampDistanceSlot = next;
   }
 
+  // Une porte est ouverte si la course bat son plein et si son tour est venu :
+  // la porte de mi-course est là dès le départ, celle du dernier tour attend
+  // l'escouade (dernier tour en Circuit, début de course en Poursuite).
+  function miniGarageAvailable(garage) {
+    if (!garage) return false;
+    if (!(phase === 'playing' && !finished && !playerWrecked)) return false;
+    if (garage.kind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND && !policeDeployed) return false;
+    return cityRushMiniGarageAvailable({
+      kind: garage.kind, lap, laps: effectiveLaps, sprint,
+    });
+  }
+
   function miniGaragesAvailable() {
-    return phase === 'playing' && !finished && !playerWrecked && policeDeployed
-      && cityRushMiniGaragesAvailable({ lap, laps: effectiveLaps, sprint });
+    return miniGarages.some((garage) => miniGarageAvailable(garage));
+  }
+
+  // Porte la plus proche encore utilisable — sert au compteur du HUD, qui ne
+  // s'allume que lorsqu'un garage approche vraiment.
+  function nextMiniGarageGap() {
+    let best = null;
+    for (const garage of miniGarages) {
+      if (garage.used || !miniGarageAvailable(garage)) continue;
+      const gap = garage.trackDistance - distance;
+      if (gap < -CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH) continue;
+      if (best === null || gap < best) best = gap;
+    }
+    return best;
   }
 
   function placeMiniGarage(garage) {
     if (!garage) return;
     garage.group.userData.trackDistance = garage.trackDistance;
     garage.group.userData.used = garage.used;
-    if (garage.used || !miniGaragesAvailable()) {
+    if (garage.used || !miniGarageAvailable(garage)) {
       garage.group.visible = false;
       return;
     }
@@ -1922,7 +2058,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function setMiniGaragesToStart() {
     miniGarages.forEach((garage, index) => {
-      garage.trackDistance = (effectiveLaps - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index];
+      garage.trackDistance = miniGarageTrackDistances[index];
       garage.used = false;
       garage.group.userData.used = false;
       placeMiniGarage(garage);
@@ -1939,10 +2075,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     wantedLevel = 0;
     garage.group.userData.used = true;
     garage.group.visible = false;
+    // Sortir du portique coupe la poursuite : les berlines qui chassaient le
+    // pilote se remettent à rouler normalement et l'abandonnent.
+    const pursuersReleased = releasePolicePursuit({ targetId: 'player' });
     const remaining = miniGarages.filter((item) => !item.used).length;
     getCallbacks().effect?.({
       type: 'mini-garage-used',
       garage: garage.index,
+      garageKind: garage.kind,
       previousStars,
       stars: wantedLevel,
       remaining,
@@ -1951,16 +2091,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       health: playerHealth,
       maxHealth: playerMaxHealth,
       healthRestored: playerHealth - healthBefore,
+      pursuersReleased,
     });
     emitHud(true);
   }
 
   function updateMiniGarages(previousDistance) {
-    if (!miniGaragesAvailable()) {
-      miniGarages.forEach(placeMiniGarage);
-      return;
-    }
     for (const garage of miniGarages) {
+      // Tant que le tour de la porte n'est pas venu, elle reste ancrée à son
+      // repère et masquée : elle ne dérive pas vers les tours suivants.
+      if (!miniGarageAvailable(garage)) {
+        placeMiniGarage(garage);
+        continue;
+      }
       const garageExitDistance = garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
       if (cityRushMiniGarageCanUse({
         previousDistance,
@@ -1968,18 +2111,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         garageExitDistance,
         playerLane,
         garageLane: garage.lane,
+        kind: garage.kind,
         lap,
         laps: effectiveLaps,
         sprint,
         used: garage.used,
       })) {
         // La voiture sort du portique : les étoiles s'effacent, la coque est
-        // réparée et le décor disparaît derrière elle, une seule fois par garage.
+        // réparée, la poursuite est abandonnée et le décor disparaît derrière
+        // elle, une seule fois par garage.
         useMiniGarage(garage);
         continue;
       }
-      // Une porte ratée revient au même repère dans la deuxième boucle du
-      // grand dernier tour. Elle ne s'affiche jamais dans les tours précédents.
+      // Une porte ratée revient au même repère dans la boucle suivante.
       while (!garage.used && garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance) {
         garage.trackDistance += CITY_RUSH_LAP_LENGTH;
       }
@@ -2207,9 +2351,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       leader: standings.leader?.name || '—',
       wantedLevel,
       wantedMaxStars: CITY_RUSH_WANTED_MAX_STARS,
-      miniGaragesActive: miniGaragesAvailable(),
+      miniGaragesActive: miniGarages.some((garage) => {
+        const gap = garage.trackDistance - distance;
+        return !garage.used && miniGarageAvailable(garage) && gap <= CITY_RUSH_MINI_GARAGE_HUD_RANGE;
+      }),
       miniGaragesRemaining: miniGarages.filter((garage) => !garage.used).length,
       miniGaragesTotal: CITY_RUSH_MINI_GARAGE_COUNT,
+      miniGarageNextDistance: nextMiniGarageGap(),
       oncomingPoliceTurnarounds: oncomingCars
         .filter((car) => isCityRushPoliceTrafficType(car.type) && car.turnaroundState === 'turning')
         .map((car) => ({
@@ -2485,6 +2633,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
     // L'escouade et ses réserves repartent pour la prochaine course.
     policeDeployed = false;
+    policePursuitDropped = false;
+    // Les berlines lâchées en cours de route quittent la piste avec la course.
+    clearPatrolPolice();
     wantedLevel = effectivePoliceFromStart ? CITY_RUSH_WANTED_MAX_STARS : 0;
     policeDestroyedByPlayer = 0;
     nextPoliceUnitNumber = policeCars.length + 1;
@@ -3819,6 +3970,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // chemin qui appellerait le déploiement (dernier tour, poursuite, renfort).
     if (sprint || policeDeployed) return;
     policeDeployed = true;
+    // L'escouade scénarisée du dernier tour repart en chasse, même si le pilote
+    // venait de semer la police dans un mini-garage.
+    policePursuitDropped = false;
     const player = raceEntries().find((entry) => entry.id === 'player');
     const squad = policeCars.filter((police) => police.squad);
     squad.forEach((police, index) => {
@@ -4005,10 +4159,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   // À l'arrivée, une berline rappelée retrouve son flot d'origine. Une épave
   // détruite reste invisible jusqu'au prochain départ ; un renfort venant en
-  // face reprend alors son sens initial.
-  function releaseRalliedPolice() {
-    if (!ralliedCars.length) return;
+  // face reprend alors son sens initial. `targetId` permet de ne rendre au flot
+  // que les voitures qui chassaient un pilote donné — la sortie d'un mini-garage
+  // lâche le joueur sans relâcher les poursuivants d'un rival.
+  function releaseRalliedPolice({ targetId = null } = {}) {
+    if (!ralliedCars.length) return 0;
+    let released = 0;
+    const kept = targetId === null ? [] : ralliedCars.filter((police) => police.targetId !== targetId);
     for (const police of ralliedCars) {
+      if (targetId !== null && police.targetId !== targetId) continue;
+      released += 1;
       detachPoliceGlow(police.mesh);
       detachPoliceHealthBar(police.mesh);
       const vehicle = police.origin === 'oncoming'
@@ -4022,6 +4182,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       vehicle.rallied = false;
       vehicle.currentSpeed = vehicle.baseSpeed;
+      police.mesh.visible = true;
       if (police.origin === 'oncoming') {
         vehicle.turnaroundState = null;
         vehicle.turnaroundElapsed = 0;
@@ -4032,6 +4193,200 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
     }
     ralliedCars.length = 0;
+    ralliedCars.push(...kept);
+    return released;
+  }
+
+  // ── La poursuite abandonnée : la police se remet à rouler normalement ─────
+  // Sortir d'un mini-garage coupe la chasse pour de bon. Une unité de l'escouade
+  // rend sa berline de poursuite (halo et barre de vie compris) et une voiture
+  // de patrouille ordinaire prend sa place, au même endroit et à la même
+  // allure : elle roule vers l'avant dans sa voie, ne tire plus, ne barre plus,
+  // et se laisse distancer. Une patrouille rappelée du trafic reprend
+  // simplement sa ronde ; une berline venue en face qui amorçait son demi-tour
+  // achève sa manœuvre dans son sens habituel.
+  const patrolCars = [];
+  const patrolMeshPool = [];
+  let patrolSerial = 0;
+
+  function acquirePatrolMesh(vehicleType) {
+    const free = patrolMeshPool.find((entry) => entry.vehicleType === vehicleType && !entry.busy);
+    if (free) {
+      free.busy = true;
+      free.mesh.visible = true;
+      return free.mesh;
+    }
+    const mesh = makeTrafficVehicle(vehicleType);
+    mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
+    scene.add(mesh);
+    patrolMeshPool.push({ vehicleType, mesh, busy: true });
+    return mesh;
+  }
+
+  function releasePatrolMesh(mesh) {
+    const entry = patrolMeshPool.find((item) => item.mesh === mesh);
+    if (!entry) return;
+    entry.busy = false;
+    entry.mesh.visible = false;
+  }
+
+  function abandonOncomingPoliceTurnaround(oncoming) {
+    if (!oncoming || oncoming.turnaroundState !== 'turning') return false;
+    oncoming.turnaroundState = null;
+    oncoming.turnaroundElapsed = 0;
+    oncoming.turnaroundTargetId = null;
+    oncoming.turnaroundAsBackup = false;
+    oncoming.turnaroundTargetLane = null;
+    oncoming.mesh.rotation.set(-trackPitch(oncoming.distance), trackYaw(oncoming.distance) + Math.PI, 0);
+    return true;
+  }
+
+  // La berline de poursuite quitte la chasse et devient un véhicule de
+  // patrouille : sa coque reste intacte, mais elle roule désormais à l'allure
+  // du trafic dans la voie où elle se trouve.
+  function spawnPatrolPolice(squadCar) {
+    const spec = CITY_RUSH_TRAFFIC_TYPES.find((vehicle) => vehicle.id === squadCar.vehicleType)
+      || CITY_RUSH_TRAFFIC_TYPES[0];
+    const mesh = acquirePatrolMesh(squadCar.vehicleType);
+    patrolSerial += 1;
+    const patrol = {
+      id: `patrol-${patrolSerial}`,
+      name: spec.name,
+      type: squadCar.vehicleType,
+      mesh,
+      lane: squadCar.lane,
+      currentX: squadCar.currentX,
+      distance: squadCar.distance,
+      width: squadCar.width,
+      // Allure du trafic, jamais celle d'une poursuite : la berline se laisse
+      // distancer et sort du champ derrière le pilote.
+      baseSpeed: paced(spec.speed * randomRange(0.94, 1.06)),
+      currentSpeed: Math.max(squadCar.currentSpeed * 0.6, paced(spec.speed)),
+      phase: squadCar.phase,
+      impactLeft: 0,
+      impactCooldownLeft: 0,
+      impactChanging: false,
+      impactFromLane: null,
+      impactTargetLane: null,
+    };
+    patrol.mesh.name = `patrol-${squadCar.vehicleType}`;
+    patrol.mesh.position.set(
+      patrol.currentX + trackRelativeX(patrol.distance),
+      trackRelativeY(patrol.distance),
+      PLAYER_Z - (patrol.distance - distance) * SCALE,
+    );
+    patrol.mesh.rotation.set(trackPitch(patrol.distance), trackYaw(patrol.distance), 0);
+    patrol.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
+    patrolCars.push(patrol);
+    return patrol;
+  }
+
+  function releaseSquadPoliceUnit(police) {
+    const patrol = spawnPatrolPolice(police);
+    police.active = false;
+    police.targetId = null;
+    police.inventory = createCityRushPoliceInventory();
+    police.blockLeft = 0;
+    police.lastPassGap = undefined;
+    police.mesh.visible = false;
+    const queuedAt = policeReinforcementQueue.indexOf(police);
+    if (queuedAt >= 0) policeReinforcementQueue.splice(queuedAt, 1);
+    police.reinforcementPending = false;
+    return patrol;
+  }
+
+  /**
+   * Le joueur sort d'un garage : la police abandonne la poursuite. Les unités
+   * qui le chassaient redeviennent du trafic (conduite normale), les renforts
+   * prévus sont annulés, et plus aucune relève ne part tant qu'il ne provoque
+   * pas de nouveau la police. Renvoie le nombre de poursuivants lâchés.
+   */
+  function releasePolicePursuit({ targetId = 'player' } = {}) {
+    if (sprint) return 0;
+    let released = 0;
+    for (const police of policeCars) {
+      if (!police.active || police.targetId !== targetId) continue;
+      releaseSquadPoliceUnit(police);
+      released += 1;
+    }
+    released += releaseRalliedPolice({ targetId });
+    for (const oncoming of oncomingCars) {
+      if (oncoming.turnaroundState !== 'turning' || oncoming.turnaroundTargetId !== targetId) continue;
+      if (abandonOncomingPoliceTurnaround(oncoming)) released += 1;
+    }
+    const playerTargeted = targetId === 'player';
+    if (playerTargeted) {
+      policePursuitDropped = true;
+      policeReinforcementQueue.length = 0;
+      policeReinforcementTimer = 0;
+    }
+    if (released > 0) audioRef?.current?.policeSirenOff?.();
+    return released;
+  }
+
+  // Conduite normale d'une berline lâchée : elle avance dans sa voie, à
+  // l'allure du flot, sans jamais viser, barrer ou tirer. Hors du champ du
+  // joueur, elle quitte la piste.
+  function updatePatrolPolice(dt, movementById = null) {
+    if (!patrolCars.length) return;
+    for (let index = patrolCars.length - 1; index >= 0; index -= 1) {
+      const patrol = patrolCars[index];
+      patrol.impactLeft = Math.max(0, patrol.impactLeft - dt);
+      patrol.impactCooldownLeft = Math.max(0, patrol.impactCooldownLeft - dt);
+      // Un véhicule de patrouille n'a plus de pilote poursuivant : il garde sa
+      // voie et son allure, et se laisse rejoindre comme n'importe quel trafic.
+      const targetSpeed = Math.max(
+        paced(3.4),
+        patrol.baseSpeed + paced(Math.sin(elapsed * 0.5 + patrol.phase) * 0.18),
+      );
+      patrol.currentSpeed = approachCityRushSpeed(
+        patrol.currentSpeed,
+        targetSpeed,
+        cityRushTrafficRecoveryRate(1, 0),
+        dt,
+        coursePace,
+      );
+      const priorDistance = patrol.distance;
+      patrol.distance = movementById?.get(patrol.id)
+        ?? (priorDistance + patrol.currentSpeed * dt);
+      const laneChangeRate = patrol.impactChanging
+        ? Math.min(1, dt / CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION)
+        : Math.min(1, dt * 3.4);
+      const priorX = patrol.currentX;
+      patrol.currentX = lerp(patrol.currentX, laneX(patrol.lane), laneChangeRate);
+      if (patrol.impactChanging && Math.abs(patrol.currentX - laneX(patrol.lane)) < 0.06) {
+        patrol.currentX = laneX(patrol.lane);
+        patrol.impactChanging = false;
+        patrol.impactFromLane = null;
+        patrol.impactTargetLane = null;
+      }
+      const gap = patrol.distance - distance;
+      const visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
+      patrol.mesh.visible = visible;
+      if (visible) {
+        patrol.mesh.position.set(
+          patrol.currentX + trackRelativeX(patrol.distance),
+          trackRelativeY(patrol.distance),
+          PLAYER_Z - gap * SCALE,
+        );
+        patrol.mesh.rotation.x = trackPitch(patrol.distance);
+        patrol.mesh.rotation.y = lerp(
+          patrol.mesh.rotation.y,
+          trackYaw(patrol.distance) + clamp((patrol.currentX - priorX) * -2.8, -0.26, 0.26),
+          Math.min(1, dt * 12),
+        );
+        patrol.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += patrol.currentSpeed * dt * 0.95; });
+      } else if (gap < -CITY_RUSH_TRAFFIC_VIEW_BEHIND) {
+        // Distancée : elle quitte la scène pour de bon.
+        releasePatrolMesh(patrol.mesh);
+        patrolCars.splice(index, 1);
+      }
+    }
+  }
+
+  function clearPatrolPolice() {
+    for (const patrol of patrolCars) releasePatrolMesh(patrol.mesh);
+    patrolCars.length = 0;
   }
 
   // Petit tête-à-queue contrôlé après un contact : la police se rabat vers
@@ -4388,7 +4743,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // repérer une voie bouchée (une berline évite de s'y engluer).
     const traffic = rollingTraffic().map((car) => ({
       id: car.id, lane: car.lane, distance: car.distance, x: car.currentX, width: car.width, speed: car.currentSpeed,
-    }));
+    // Les berlines lâchées par un mini-garage comptent comme du trafic : une
+    // poursuite qui repart ne les traverse pas.
+    })).concat(patrolCars.map((car) => ({
+      id: car.id, lane: car.lane, distance: car.distance, x: car.currentX, width: car.width, speed: car.currentSpeed,
+    })));
     // Le trafic venant en face rend les voies du contresens infréquentables
     // pour l'escouade (vitesse négative : les voies passent pour bouchées). Il
     // ne bloque en revanche pas le déplacement des berlines — il se croise.
@@ -4618,7 +4977,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // elle n'était plus jamais à l'écran. Un choc refusé (véhicule déjà en
     // train de se rabattre, ou en délai de grâce) est rejoué à l'image suivante.
     for (const car of resolved) {
-      const blocker = car.blockedBy ? trafficCars.find((item) => item.id === car.blockedBy) : null;
+      const blocker = car.blockedBy
+        ? trafficCars.find((item) => item.id === car.blockedBy)
+          || patrolCars.find((item) => item.id === car.blockedBy)
+          || null
+        : null;
       if (blocker) applyTrafficImpact(car.id, blocker);
     }
     let nearest = Infinity;
@@ -5923,12 +6286,25 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           previousDistance: police.distance,
           nextDistance: police.distance,
         })),
+        // Les berlines lâchées par un mini-garage roulent comme le trafic : la
+        // même enveloppe de carrosserie les rend solides, et un carambolage
+        // coûte au pilote exactement ce qu'il coûte contre une voiture lente.
+        ...patrolCars.map((patrol) => ({
+          id: patrol.id,
+          collisionGroup: 'traffic',
+          lane: patrol.lane,
+          x: patrol.currentX,
+          width: patrol.width,
+          previousDistance: patrol.distance,
+          nextDistance: patrol.distance + patrol.currentSpeed * dt,
+        })),
       ];
       // Le contact est détecté avant le maintien de la distance de sécurité :
       // un joueur humain comme une IA déclenche le même choc et le même rabat.
       const trafficImpactsThisFrame = detectCityRushTrafficImpacts(movementRequests, CITY_RUSH_TRAFFIC_IMPACT_GAP, trafficContacts);
       for (const contact of trafficImpactsThisFrame) {
-        const traffic = trafficCars.find((item) => item.id === contact.trafficId);
+        const traffic = trafficCars.find((item) => item.id === contact.trafficId)
+          || patrolCars.find((item) => item.id === contact.trafficId);
         if (traffic) applyTrafficImpact(contact.racerId, traffic, contact);
       }
       const resolvedCars = resolveCityRushCarMovement(movementRequests);
@@ -6104,6 +6480,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           });
         }
       }
+
+      // Berlines lâchées par un mini-garage : elles ont quitté la chasse et
+      // roulent normalement, à l'allure du trafic, jusqu'à sortir du champ.
+      updatePatrolPolice(dt, movementById);
 
       // Trafic venant en face : il roule vers la course sur les trois voies de
       // gauche, croise les pilotes, puis reparaît au loin une fois passé.
