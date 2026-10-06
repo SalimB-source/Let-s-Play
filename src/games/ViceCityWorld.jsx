@@ -62,6 +62,7 @@ import {
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
+  CITY_RUSH_POLICE_SIGHT_RANGE,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
   CITY_RUSH_POLICE_AIM_NOTICE_COOLDOWN,
   CITY_RUSH_POLICE_AIM_TIME,
@@ -1488,6 +1489,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
+  // À cinq étoiles (un tir sur une patrouille les y porte directement), toute
+  // voiture de police qui aperçoit le pilote rejoint la chasse sans attendre
+  // le contact : les berlines en ronde dans le même sens se rallient dès
+  // qu'elles sont à portée de vue, celles venant en face font demi-tour.
+  function checkPoliceSightRally() {
+    if (sprint || !active || finished) return;
+    if (wantedLevel < CITY_RUSH_WANTED_MAX_STARS) return;
+    for (const traffic of trafficCars) {
+      if (traffic.rallied || traffic.destroyed || !isCityRushPoliceTrafficType(traffic.type)) continue;
+      if (Math.abs(traffic.distance - distance) > CITY_RUSH_POLICE_SIGHT_RANGE) continue;
+      rallyTrafficPolice(traffic, 'player', { sighted: true });
+    }
+    turnAroundOncomingPoliceAsBackup();
+  }
+
   function dispatchWantedPolice() {
     if (sprint || finished) return 0;
     const desired = requiredPlayerPursuerSlots();
@@ -1524,10 +1540,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return activated;
   }
 
-  function raiseWantedLevel({ police = false, reason = 'vehicle-hit' } = {}) {
+  function raiseWantedLevel({ police = false, shot = false, reason = 'vehicle-hit' } = {}) {
     if (sprint || !active || finished) return wantedLevel;
     const previous = wantedLevel;
-    wantedLevel = cityRushWantedLevelAfterHit(wantedLevel, { hit: true, police });
+    wantedLevel = cityRushWantedLevelAfterHit(wantedLevel, { hit: true, police, shot });
     if (wantedLevel === previous) return wantedLevel;
 
     if (wantedLevel >= CITY_RUSH_WANTED_MAX_STARS) turnAroundOncomingPoliceAsBackup();
@@ -2754,7 +2770,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         maxHealth: playerMaxHealth,
       });
     } else if (target.isPolice) {
-      // Police marquée ou banalisée : trois étoiles et dégâts de coque.
+      // Police marquée ou banalisée : un tir fait passer à cinq étoiles
+      // directement (escouade complète + SUV), avec dégâts de coque.
       damagePolice(target.racer, CITY_RUSH_POWERS.PISTOL, attackerId);
     } else if (target.isCivilianTraffic) {
       // Une voiture civile touchée déclenche la recherche, sans barre de vie.
@@ -3146,13 +3163,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const hasHealth = police.health !== null && Number.isFinite(Number(police.health));
     if (hasHealth && Number(police.health) <= 0) return;
     const healthBeforeHit = hasHealth ? Number(police.health) : CITY_RUSH_POLICE_HEALTH;
-    // Un tir sur une patrouille (ou un choc contre elle) déclenche directement
-    // trois étoiles. Une voiture de police venant en face se retourne aussi pour
-    // rejoindre le quota des deux poursuivants.
+    // Tirer sur une patrouille fait monter les étoiles à 5 directement :
+    // l'escouade complète (berlines + SUV) est déployée et les voitures de
+    // police croisées sur la route prennent le pilote en chasse dès qu'elles
+    // le voient. Un simple contact (carambolage) reste à trois étoiles. Une
+    // patrouille venant en face se retourne aussi pour rejoindre la poursuite.
     if (attackerId === 'player') {
       const oncoming = oncomingCars.find((vehicle) => vehicle === police);
       if (oncoming) beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: 'player' });
-      raiseWantedLevel({ police: true, reason: source === 'collision' ? 'police-contact' : 'police-shot' });
+      const isShot = source !== 'collision';
+      raiseWantedLevel({ police: true, shot: isShot, reason: isShot ? 'police-shot' : 'police-contact' });
     }
     // Chaque rival reçoit son unité réservée dès son premier tir réussi sur
     // une voiture de police, même si ce tir détruit sa cible.
@@ -5880,6 +5900,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Un contact avec une berline de police « pnj » la rappelle : elle sort
       // de sa ronde et prend le pilote en chasse (voir `rallyTrafficPolice`).
       checkPoliceRally();
+      // À cinq étoiles, les patrouilles croisées sur la route n'attendent pas
+      // le contact : elles prennent le pilote en chasse dès qu'elles le voient.
+      checkPoliceSightRally();
       // Les trois voitures de base entrent au dernier tour du joueur (ou dès
       // le départ en mode Poursuite) et le prennent toujours pour cible, même
       // si un rival mène la course.
