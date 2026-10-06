@@ -3,8 +3,58 @@
 // vitrage panoramique, signatures LED, jantes aérodynamiques et détails affleurants.
 // L'habitacle reste sombre et vide pour ne pas afficher de personnage.
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createBatch } from './cityRushBuilder.js';
 import { makeCarPlateTexture } from './cityRushTextures.js';
+
+// ── Reflets studio ──────────────────────────────────────────────────────────
+// Une carte d'environnement générée à la volée (RoomEnvironment, aucun fichier
+// à charger) donne à la peinture, au chrome et aux optiques les reflets qui
+// font la « vraie » carrosserie : le vernis des miniatures du garage vient de
+// là, et non plus des seuls 4 éclairages de la scène. Le PMREM est calculé une
+// seule fois pour toute la partie, puis partagé par les onze modèles et par le
+// trafic.
+let carEnvironment = null;
+let carRenderer = null;
+
+/**
+ * Branche les reflets sur le moteur de rendu du monde. Appelé une fois par
+ * `ViceCityWorld` juste après la création du renderer ; sans renderer (tests
+ * Node, outils de contrôle), les matériaux gardent simplement leur rendu
+ * actuel — aucune image, aucun contexte WebGL à créer en avance.
+ */
+export function configureCarReflections(renderer) {
+  carRenderer = renderer || null;
+  carEnvironment = null;
+}
+
+function carEnvironmentMap() {
+  if (carEnvironment) return carEnvironment;
+  if (!carRenderer) return null;
+  try {
+    const pmrem = new THREE.PMREMGenerator(carRenderer);
+    const room = new RoomEnvironment();
+    carEnvironment = pmrem.fromScene(room, 0.035).texture;
+    room.dispose?.();
+    pmrem.dispose();
+  } catch {
+    // Contexte de test (renderer factice) ou WebGL sans cibles flottantes : la
+    // carrosserie garde son rendu sans reflets, le jeu ne s'arrête pas.
+    carRenderer = null;
+    return null;
+  }
+  return carEnvironment;
+}
+
+/** Peinture de carrosserie : vernis + reflets de l'environnement. */
+function applyPaintFinish(material) {
+  const environment = carEnvironmentMap();
+  if (!environment) return material;
+  material.envMap = environment;
+  material.envMapIntensity = 1.15;
+  material.needsUpdate = true;
+  return material;
+}
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const lerp = (a, b, amount) => a + (b - a) * amount;
@@ -28,7 +78,7 @@ const CAR_MODELS = {
     // Citadine cinq portes contemporaine : capot court, pare-brise incliné,
     // vitrage panoramique sombre et hayon compact, sans badge constructeur.
     wheelX: 0.88, wheelZ: [-1.20, 1.13], wheelRadius: 0.305, wheelWidth: 0.23, wheelStyle: 'aero-five',
-    doorSeams: [-0.12, 0.78], grilleWidth: 0.76,
+    doorSeams: [-0.12, 0.78], grilleWidth: 0.76, frontStyle: 'retro',
     stations: [
       [-2.00, 0.25, 0.37, 0.48, 0.55, 0.11], [-1.84, 0.58, 0.38, 0.65, 0.75, 0.38],
       [-1.61, 0.78, 0.39, 0.76, 0.82, 0.59], [-1.34, 0.87, 0.40, 0.82, 0.86, 0.69],
@@ -51,7 +101,7 @@ const CAR_MODELS = {
     // Compacte GT cinq portes actuelle : pavillon panoramique, hayon incliné
     // et épaules plus tendues, sans badge ni logo de constructeur.
     wheelX: 0.92, wheelZ: [-1.18, 1.17], wheelRadius: 0.325, wheelWidth: 0.25, wheelStyle: 'split-five',
-    doorSeams: [-0.08, 0.77], grilleWidth: 0.78,
+    doorSeams: [-0.08, 0.77], grilleWidth: 0.78, frontStyle: 'led',
     stations: [
       [-2.00, 0.28, 0.37, 0.49, 0.56, 0.13], [-1.84, 0.63, 0.38, 0.66, 0.74, 0.41],
       [-1.57, 0.84, 0.39, 0.77, 0.85, 0.62], [-1.28, 0.91, 0.40, 0.83, 0.93, 0.71],
@@ -73,7 +123,7 @@ const CAR_MODELS = {
   },
   ferrari: {
     wheelX: 0.93, wheelZ: [-1.16, 1.15], wheelRadius: 0.35, wheelWidth: 0.27, wheelStyle: 'split-five',
-    doorSeams: [-0.18], grilleWidth: 1.08,
+    doorSeams: [-0.18], grilleWidth: 1.08, frontStyle: 'led',
     stations: [
       [-2.00, 0.28, 0.38, 0.50, 0.55, 0.13], [-1.82, 0.62, 0.38, 0.66, 0.73, 0.43],
       [-1.48, 0.86, 0.39, 0.78, 0.88, 0.67], [-1.12, 0.94, 0.40, 0.83, 0.94, 0.75],
@@ -91,8 +141,8 @@ const CAR_MODELS = {
     ],
   },
   porsche: {
-    wheelX: 0.94, wheelZ: [-1.13, 1.20], wheelRadius: 0.35, wheelWidth: 0.28, wheelStyle: 'split-five',
-    doorSeams: [-0.16], grilleWidth: 0.92,
+    wheelX: 0.94, wheelZ: [-1.13, 1.20], wheelRadius: 0.35, wheelWidth: 0.28, wheelStyle: 'classic-five',
+    doorSeams: [-0.16], grilleWidth: 0.92, frontStyle: 'retro',
     stations: [
       [-2.00, 0.30, 0.39, 0.50, 0.56, 0.14], [-1.82, 0.61, 0.39, 0.65, 0.74, 0.40],
       [-1.50, 0.82, 0.39, 0.76, 0.86, 0.62], [-1.15, 0.90, 0.40, 0.82, 0.94, 0.70],
@@ -111,7 +161,7 @@ const CAR_MODELS = {
   },
   audi: {
     wheelX: 0.95, wheelZ: [-1.16, 1.15], wheelRadius: 0.35, wheelWidth: 0.29, wheelStyle: 'split-five',
-    doorSeams: [-0.16], grilleWidth: 1.16,
+    doorSeams: [-0.16], grilleWidth: 1.16, frontStyle: 'led',
     stations: [
       [-2.00, 0.27, 0.38, 0.50, 0.55, 0.12], [-1.82, 0.62, 0.38, 0.65, 0.72, 0.41],
       [-1.50, 0.86, 0.39, 0.78, 0.87, 0.66], [-1.12, 0.93, 0.40, 0.82, 0.93, 0.74],
@@ -132,7 +182,7 @@ const CAR_MODELS = {
     // Hot hatch 2020s : nez bas, épaules musclées, pare-brise incliné et toit
     // fuyant vers un hayon court. Aucun badge ou détail de constructeur.
     wheelX: 0.96, wheelZ: [-1.18, 1.15], wheelRadius: 0.36, wheelWidth: 0.28, wheelStyle: 'aero-five',
-    doorSeams: [-0.10, 0.80], grilleWidth: 0.90,
+    doorSeams: [-0.10, 0.80], grilleWidth: 0.90, frontStyle: 'led',
     stations: [
       [-2.00, 0.28, 0.37, 0.49, 0.54, 0.12], [-1.84, 0.60, 0.38, 0.63, 0.69, 0.38],
       [-1.60, 0.84, 0.39, 0.75, 0.83, 0.62], [-1.30, 0.94, 0.40, 0.81, 0.92, 0.72],
@@ -152,8 +202,8 @@ const CAR_MODELS = {
     ],
   },
   bmw: {
-    wheelX: 0.94, wheelZ: [-1.20, 1.16], wheelRadius: 0.34, wheelWidth: 0.26, wheelStyle: 'split-five',
-    doorSeams: [-0.16], grilleWidth: 0.58,
+    wheelX: 0.94, wheelZ: [-1.20, 1.16], wheelRadius: 0.34, wheelWidth: 0.26, wheelStyle: 'wire',
+    doorSeams: [-0.16], grilleWidth: 0.58, frontStyle: 'classic',
     stations: [
       [-2.00, 0.28, 0.39, 0.48, 0.52, 0.13], [-1.82, 0.61, 0.39, 0.61, 0.70, 0.37],
       [-1.52, 0.81, 0.39, 0.73, 0.81, 0.60], [-1.18, 0.90, 0.40, 0.79, 0.88, 0.69],
@@ -173,7 +223,7 @@ const CAR_MODELS = {
   },
   lamborghini: {
     wheelX: 0.95, wheelZ: [-1.16, 1.17], wheelRadius: 0.35, wheelWidth: 0.29, wheelStyle: 'turbofan',
-    doorSeams: [-0.12], grilleWidth: 1.20,
+    doorSeams: [-0.12], grilleWidth: 1.20, frontStyle: 'retro',
     stations: [
       [-2.00, 0.27, 0.38, 0.50, 0.54, 0.12], [-1.82, 0.64, 0.38, 0.67, 0.73, 0.41],
       [-1.49, 0.88, 0.39, 0.78, 0.84, 0.68], [-1.13, 0.95, 0.40, 0.83, 0.92, 0.76],
@@ -207,7 +257,7 @@ const CAR_MODELS = {
     sideWindows: [[[0.84,0.91,-0.68],[0.59,1.21,-0.27],[0.59,1.21,0.18],[0.85,0.91,0.40]],[[0.86,0.91,0.44],[0.61,1.16,0.35],[0.73,0.97,0.92],[0.89,0.87,0.81]]],
   },
   'sport-crossover': {
-    wheelX: 0.98, wheelZ: [-1.20, 1.18], wheelRadius: 0.37, wheelWidth: 0.29, wheelStyle: 'aero-five',
+    wheelX: 0.98, wheelZ: [-1.20, 1.18], wheelRadius: 0.37, wheelWidth: 0.29, wheelStyle: 'split-five',
     doorSeams: [-0.16, 0.72], grilleWidth: 0.92,
     stations: [
       [-2.00,0.34,0.42,0.58,0.65,0.20],[-1.82,0.72,0.42,0.76,0.86,0.51],[-1.52,0.92,0.43,0.86,1.02,0.70],
@@ -238,8 +288,11 @@ function standard(color, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.18, ...extra });
 }
 
+// Peinture de carrosserie : vernis brillant et reflets studio, comme les
+// miniatures du garage. Le chrome et les optiques reçoivent aussi la carte
+// d'environnement (voir makeRacerCar).
 function paint(color, extra = {}) {
-  return new THREE.MeshPhysicalMaterial({
+  return applyPaintFinish(new THREE.MeshPhysicalMaterial({
     color,
     roughness: 0.22,
     metalness: 0.38,
@@ -248,7 +301,7 @@ function paint(color, extra = {}) {
     emissive: color,
     emissiveIntensity: 0.025,
     ...extra,
-  });
+  }));
 }
 
 function mesh(parent, geometry, material, position, scale = [1, 1, 1], rotation = null) {
@@ -260,10 +313,18 @@ function mesh(parent, geometry, material, position, scale = [1, 1, 1], rotation 
   return object;
 }
 
+// Le profil de série donne des pavillons hauts et étroits : une fois lissés, ils
+// font « tente ». Ces deux réglages d'échelle ramènent les onze silhouettes vers
+// les proportions d'une carrosserie réelle : habitacle écrasé de 12 % et
+// pavillon élargi, donc épaulements plus larges, vitrage plus tendu et une
+// voiture plus large que haute à l'œil.
+const GREENHOUSE_SQUASH = 1.0;
+const ROOF_WIDTH_GAIN = 1.06;
+
 function sampleCarStation(model, z) {
   const stations = model.stations;
-  if (z <= stations[0][0]) return [...stations[0]];
-  if (z >= stations[stations.length - 1][0]) return [...stations[stations.length - 1]];
+  if (z <= stations[0][0]) return shapeStation(stations[0]);
+  if (z >= stations[stations.length - 1][0]) return shapeStation(stations[stations.length - 1]);
 
   let index = 0;
   while (index < stations.length - 2 && stations[index + 1][0] < z) index += 1;
@@ -291,77 +352,229 @@ function sampleCarStation(model, z) {
     const margin = Math.abs(right[channel] - left[channel]) * 0.12 + 0.004;
     result.push(clamp(value, Math.min(left[channel], right[channel]) - margin, Math.max(left[channel], right[channel]) + margin));
   }
-  return result;
+  return shapeStation(result);
 }
 
-function makeCarShell(model) {
-  const positions = [];
-  const indices = [];
-  const ringSize = 11;
-  const subdivisions = 3;
-  const sections = [];
+/** Applique les réglages de proportions à une station échantillonnée. */
+function shapeStation(sample) {
+  const shaped = [...sample];
+  shaped[4] = shaped[3] + (shaped[4] - shaped[3]) * GREENHOUSE_SQUASH;
+  shaped[5] = Math.min(shaped[1] * 0.94, shaped[5] * ROOF_WIDTH_GAIN);
+  return shaped;
+}
 
-  for (let index = 0; index < model.stations.length - 1; index += 1) {
-    const start = model.stations[index];
-    const end = model.stations[index + 1];
-    for (let step = 0; step < subdivisions; step += 1) {
-      const t = step / subdivisions;
-      sections.push(sampleCarStation(model, start[0] + (end[0] - start[0]) * t));
+// ── Coque : sections transversales galbées, sommets partagés ────────────────
+// Le profil transversal est déduit des six canaux de chaque station
+// (z, demi-largeur, bas de caisse, épaule, toit, demi-largeur de toit) : le
+// galbe des flancs (tumblehome), le repli du seuil et la couronne de pavillon
+// sont calculés, donc la carrosserie est une **surface continue** — plus
+// d'empilement de rectangles en escalier. Les sections partagent leurs sommets
+// avec leurs voisines : les normales sont lissées le long de la voiture et les
+// facettes disparaissent.
+const RING_SIZE = 32;
+
+/** Points de la section transversale, du sommet de pavillon au plancher (demi-profil). */
+function ringHalfProfile([, width, lower, shoulder, roof, roofWidth]) {
+  const crown = Math.max(0.008, (roof - shoulder) * 0.07);
+  const waist = lower + (shoulder - lower) * 0.62;
+  return [
+    [0, roof + crown],
+    [roofWidth, roof],
+    [lerp(roofWidth, width * 0.78, 0.45), lerp(roof, shoulder, 0.48)],
+    [width * 0.955, shoulder],
+    [width, waist],
+    [width * 0.972, lerp(waist, lower, 0.62)],
+    [width * 0.90, lower],
+    [width * 0.44, lower - 0.03],
+    [0, lower - 0.052],
+  ];
+}
+
+/**
+ * Ré-échantillonne le demi-profil en `RING_SIZE / 2` points réguliers : le
+ * pavillon et les flancs reçoivent assez de sommets pour que la découpe du
+ * vitrage et le galbe de la carrosserie restent fins.
+ */
+function resampleHalfProfile(sample) {
+  const control = ringHalfProfile(sample);
+  const lengths = [0];
+  for (let index = 1; index < control.length; index += 1) {
+    lengths.push(lengths[index - 1] + Math.hypot(control[index][0] - control[index - 1][0], control[index][1] - control[index - 1][1]));
+  }
+  const total = lengths[lengths.length - 1] || 1;
+  const points = [];
+  const half = RING_SIZE / 2 + 1;
+  for (let step = 0; step < half; step += 1) {
+    const target = (step / (half - 1)) * total;
+    let index = 1;
+    while (index < lengths.length - 1 && lengths[index] < target) index += 1;
+    const span = lengths[index] - lengths[index - 1] || 1;
+    const t = (target - lengths[index - 1]) / span;
+    points.push([
+      lerp(control[index - 1][0], control[index][0], t),
+      lerp(control[index - 1][1], control[index][1], t),
+    ]);
+  }
+  return points;
+}
+
+function ringProfile(sample) {
+  const points = [];
+  const half = resampleHalfProfile(sample);
+  for (const point of half) points.push(point);
+  for (let index = half.length - 2; index > 0; index -= 1) points.push([-half[index][0], half[index][1]]);
+  return points;
+}
+
+/** Indice signé : 0 = sommet de pavillon, ±(RING_SIZE/2) = bas de plancher, ±(RING_SIZE/4) ≈ épaule. */
+function signedRingIndex(edge) {
+  return edge <= RING_SIZE / 2 ? edge : edge - RING_SIZE;
+}
+
+/** Découpe longitudinale adaptative : les zones courbées reçoivent plus de sections. */
+function shellSections(model, maxStep = 0.05, minSteps = 2, maxSteps = 8) {
+  const stations = model.stations;
+  const rows = [];
+  for (let index = 0; index < stations.length - 1; index += 1) {
+    const start = stations[index][0];
+    const end = stations[index + 1][0];
+    let delta = 0;
+    for (let channel = 1; channel < stations[index].length; channel += 1) {
+      delta = Math.max(delta, Math.abs(stations[index + 1][channel] - stations[index][channel]));
+    }
+    const steps = clamp(Math.ceil(delta / maxStep), minSteps, maxSteps);
+    for (let step = 0; step < steps; step += 1) rows.push(sampleCarStation(model, start + (end - start) * (step / steps)));
+  }
+  rows.push([...stations[stations.length - 1]]);
+  return rows;
+}
+
+// ── Vitrage conforme ────────────────────────────────────────────────────────
+// Les vitres ne sont plus des plans rapportés : chaque ouverture est projetée
+// dans l'espace (z, indice de section) puis re-projetée **sur la carrosserie**,
+// décalée de quelques millimètres le long de la normale de surface. Le
+// pare-brise, la lunette et les panneaux latéraux épousent donc exactement le
+// galbe du pavillon, du capot et des flancs, comme une vraie vitre posée dans
+// sa baie — sans facettes en escalier ni scintillement avec la coque.
+
+/** Point de la surface de carrosserie à (z, s), s = indice signé de section. */
+function surfacePoint(model, z, s) {
+  const half = resampleHalfProfile(sampleCarStation(model, z));
+  const a = clamp(Math.abs(s), 0, half.length - 1);
+  const index = Math.min(Math.floor(a), half.length - 2);
+  const t = a - index;
+  const sign = s < 0 ? -1 : 1;
+  return [
+    sign * lerp(half[index][0], half[index + 1][0], t),
+    lerp(half[index][1], half[index + 1][1], t),
+    z,
+  ];
+}
+
+function surfaceNormal(model, z, s) {
+  const step = 0.02;
+  const along = 0.20;
+  const point = surfacePoint(model, z, s);
+  const alongZ = surfacePoint(model, z + step, s);
+  const alongS = surfacePoint(model, z, s + along);
+  const nx = (alongZ[1] - point[1]) * (alongS[2] - point[2]) - (alongZ[2] - point[2]) * (alongS[1] - point[1]);
+  const ny = (alongZ[2] - point[2]) * (alongS[0] - point[0]) - (alongZ[0] - point[0]) * (alongS[2] - point[2]);
+  const nz = (alongZ[0] - point[0]) * (alongS[1] - point[1]) - (alongZ[1] - point[1]) * (alongS[0] - point[0]);
+  // Orientation vers l'extérieur : on s'écarte du cœur de la voiture.
+  const core = sampleCarStation(model, z);
+  const outward = [point[0], point[1] - (core[2] + core[4]) / 2, point[2] - z];
+  const sign = nx * outward[0] + ny * outward[1] + nz * outward[2] >= 0 ? 1 : -1;
+  const length = Math.hypot(nx, ny, nz) || 1;
+  return [(sign * nx) / length, (sign * ny) / length, (sign * nz) / length];
+}
+
+/** Hauteur de la carrosserie à (x, z) : sert à poser feux, ouïes et baguettes. */
+function surfaceYAt(model, z, x) {
+  const half = resampleHalfProfile(sampleCarStation(model, z));
+  const target = Math.abs(x);
+  let best = half[half.length - 1][1];
+  let widest = 0;
+  for (let index = 1; index < half.length; index += 1) if (half[index][0] > half[widest][0]) widest = index;
+  for (let index = 0; index < widest; index += 1) {
+    const [x0, y0] = half[index];
+    const [x1, y1] = half[index + 1];
+    if (target < Math.min(x0, x1) - 1e-6 || target > Math.max(x0, x1) + 1e-6) continue;
+    const span = x1 - x0 || 1;
+    best = lerp(y0, y1, (target - x0) / span);
+  }
+  return best;
+}
+
+/** Demi-largeur de la carrosserie à une station. */
+function halfWidthAt(model, z) {
+  return sampleCarStation(model, z)[1];
+}
+
+/** Projette un point 3D du modèle sur la surface : renvoie sa coordonnée `s`. */
+function projectToSurface(model, x, y, z) {
+  const half = resampleHalfProfile(sampleCarStation(model, z));
+  const sign = x < 0 ? -1 : 1;
+  let best = 0;
+  let bestDistance = Infinity;
+  for (let index = 0; index < half.length - 1; index += 1) {
+    const ax = sign * half[index][0];
+    const ay = half[index][1];
+    const bx = sign * half[index + 1][0];
+    const by = half[index + 1][1];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lengthSquared = dx * dx + dy * dy || 1;
+    const t = clamp(((x - ax) * dx + (y - ay) * dy) / lengthSquared, 0, 1);
+    const distance = Math.hypot(ax + dx * t - x, ay + dy * t - y);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = index + t;
     }
   }
-  sections.push([...model.stations[model.stations.length - 1]]);
+  return sign * best;
+}
 
-  const rings = sections.map(([z, width, lower, shoulder, roof, roofWidth]) => {
-    const sideDrop = lower + (shoulder - lower) * 0.28;
-    const belly = lower - 0.055;
-    return [
-      [roofWidth, roof], [width * 0.91, shoulder], [width, sideDrop],
-      [width * 0.92, lower], [width * 0.48, belly], [0, belly - 0.014],
-      [-width * 0.48, belly], [-width * 0.92, lower], [-width, sideDrop],
-      [-width * 0.91, shoulder], [-roofWidth, roof],
-    ].map(([x, y]) => { positions.push(x, y, z); return positions.length / 3 - 1; });
+/**
+ * Panneau de vitrage : le contour du profil (quatre points, dans l'ordre) est
+ * projeté en (z, s), resserré vers son centre pour laisser un entourage peint,
+ * puis échantillonné en grille sur la surface, décalé de `offset` vers
+ * l'extérieur.
+ */
+function addConformingGlass(batch, material, model, polygon, offset = 0.011, inset = 0.035) {
+  const corners = polygon.map(([x, y, z]) => {
+    const s = projectToSurface(model, x, y, z);
+    return [z, s];
   });
+  const centerZ = corners.reduce((sum, [z]) => sum + z, 0) / corners.length;
+  const centerS = corners.reduce((sum, [, s]) => sum + s, 0) / corners.length;
+  const shaped = corners.map(([z, s]) => [lerp(centerZ, z, 1 - inset), lerp(centerS, s, 1 - inset)]);
 
-  for (let section = 0; section < rings.length - 1; section += 1) {
-    for (let edge = 0; edge < ringSize; edge += 1) {
-      const a = rings[section][edge];
-      const b = rings[section][(edge + 1) % ringSize];
-      const c = rings[section + 1][edge];
-      const d = rings[section + 1][(edge + 1) % ringSize];
-      // Sections progress from the nose to the tail; this winding faces out.
-      indices.push(a, c, b, c, d, b);
-    }
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-function addPanoramicRoof(batch, material, model) {
-  const startZ = -0.24;
-  const endZ = 0.38;
-  const longitudinalSteps = 6;
-  const roofFractions = [-0.58, -0.2, 0.2, 0.58];
+  const columns = 5;
+  const rows = 4;
   const positions = [];
   const uvs = [];
   const indices = [];
-
-  for (let row = 0; row <= longitudinalSteps; row += 1) {
-    const z = startZ + (endZ - startZ) * (row / longitudinalSteps);
-    const [, , , , roofHeight, roofWidth] = sampleCarStation(model, z);
-    for (let column = 0; column < roofFractions.length; column += 1) {
-      positions.push(roofFractions[column] * roofWidth, roofHeight + 0.014, z);
-      uvs.push(column / (roofFractions.length - 1), row / longitudinalSteps);
+  for (let row = 0; row <= rows; row += 1) {
+    const v = row / rows;
+    const startZ = lerp(shaped[0][0], shaped[3][0], v);
+    const startS = lerp(shaped[0][1], shaped[3][1], v);
+    const endZ = lerp(shaped[1][0], shaped[2][0], v);
+    const endS = lerp(shaped[1][1], shaped[2][1], v);
+    for (let column = 0; column <= columns; column += 1) {
+      const u = column / columns;
+      const z = lerp(startZ, endZ, u);
+      const s = lerp(startS, endS, u);
+      const point = surfacePoint(model, z, s);
+      const normal = surfaceNormal(model, z, s);
+      positions.push(point[0] + normal[0] * offset, point[1] + normal[1] * offset, point[2] + normal[2] * offset);
+      uvs.push(u, v);
     }
   }
-  for (let row = 0; row < longitudinalSteps; row += 1) {
-    for (let column = 0; column < roofFractions.length - 1; column += 1) {
-      const a = row * roofFractions.length + column;
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      const a = row * (columns + 1) + column;
       const b = a + 1;
-      const c = a + roofFractions.length;
+      const c = a + columns + 1;
       const d = c + 1;
       indices.push(a, c, b, c, d, b);
     }
@@ -371,8 +584,109 @@ function addPanoramicRoof(batch, material, model) {
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
   batch.custom(material, geometry);
   geometry.dispose();
+}
+
+function addGlazing(spec, batch, material) {
+  if (spec.windshield) addConformingGlass(batch, material, spec, spec.windshield, 0.011, 0.045);
+  if (spec.rearGlass) addConformingGlass(batch, material, spec, spec.rearGlass, 0.011, 0.05);
+  for (const pane of spec.sideWindows) {
+    addConformingGlass(batch, material, spec, pane.map(([x, y, z]) => [x, y, z]), 0.010, 0.06);
+    addConformingGlass(batch, material, spec, pane.map(([x, y, z]) => [-x, y, z]), 0.010, 0.06);
+  }
+}
+
+/**
+ * Centre de roue : le pneu affleure le plan de flanc de la carrosserie (à
+ * quelques millimètres près) au lieu de dépasser comme un disque rapporté.
+ */
+function wheelCenterX(model, z) {
+  const [, halfWidth] = sampleCarStation(model, z);
+  return Math.max(0.1, Math.min(model.wheelX, halfWidth - model.wheelWidth * 0.5 - 0.006));
+}
+
+/** Rayon de l'ouverture d'aile : le pneu garde un jeu constant sous la coque. */
+function archRadius(model) {
+  return model.wheelRadius + 0.052;
+}
+
+/** Vrai si le point (x, y, z) tombe dans une ouverture d'aile. */
+function insideWheelArch(model, x, y, z, radius = archRadius(model)) {
+  const side = x < 0 ? -1 : 1;
+  for (const wheelZ of model.wheelZ) {
+    if (Math.abs(z - wheelZ) > radius) continue;
+    const centerX = wheelCenterX(model, wheelZ);
+    if (x * side < centerX - 0.16) continue;
+    const dx = x - side * centerX;
+    const dy = y - model.wheelRadius;
+    if (dx * dx + dy * dy < radius * radius) return true;
+  }
+  return false;
+}
+
+/** Coque : une seule surface lissée, du nez à la queue. */
+function buildShellGeometries(model) {
+  const rows = shellSections(model);
+  const positions = [];
+  const indices = [];
+  const grid = rows.map((sample) => {
+    const z = sample[0];
+    return ringProfile(sample).map(([x, y]) => { positions.push(x, y, z); return positions.length / 3 - 1; });
+  });
+
+  // Les facettes qui tombent dans une ouverture d'aile sont retirées : la coque
+  // est réellement percée au-dessus des roues, comme une carrosserie posée sur
+  // ses passages de roue. Les sommets restent partagés, donc le lissage des
+  // normales ne bouge pas.
+  const centroid = (a, b, c) => [
+    (positions[a * 3] + positions[b * 3] + positions[c * 3]) / 3,
+    (positions[a * 3 + 1] + positions[b * 3 + 1] + positions[c * 3 + 1]) / 3,
+    (positions[a * 3 + 2] + positions[b * 3 + 2] + positions[c * 3 + 2]) / 3,
+  ];
+  const pushFace = (a, b, c) => {
+    const [x, y, z] = centroid(a, b, c);
+    if (insideWheelArch(model, x, y, z)) return;
+    indices.push(a, b, c);
+  };
+
+  for (let section = 0; section < grid.length - 1; section += 1) {
+    for (let edge = 0; edge < RING_SIZE; edge += 1) {
+      const a = grid[section][edge];
+      const b = grid[section][(edge + 1) % RING_SIZE];
+      const c = grid[section + 1][edge];
+      const d = grid[section + 1][(edge + 1) % RING_SIZE];
+      // Les sections vont du nez à la queue : ce sens de rotation sort vers l'extérieur.
+      pushFace(a, c, b);
+      pushFace(c, d, b);
+    }
+  }
+
+  // Nez et queue fermés par un éventail : plus de trou visible de face.
+  for (const [section, flip] of [[0, false], [grid.length - 1, true]]) {
+    const ring = grid[section];
+    let centerX = 0;
+    let centerY = 0;
+    for (const vertex of ring) {
+      centerX += positions[vertex * 3];
+      centerY += positions[vertex * 3 + 1];
+    }
+    const center = positions.length / 3;
+    positions.push(centerX / RING_SIZE, centerY / RING_SIZE, rows[section][0]);
+    for (let edge = 0; edge < RING_SIZE; edge += 1) {
+      const a = ring[edge];
+      const b = ring[(edge + 1) % RING_SIZE];
+      pushFace(...(flip ? [center, a, b] : [center, b, a]));
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  return { body: geometry, sectionCount: rows.length };
 }
 function polygonGeometry(points) {
   const geometry = new THREE.BufferGeometry();
@@ -416,6 +730,31 @@ function addRacingStripes(batch, material, stations, startZ, endZ, centers = [-0
         [center + half, end[4] + 0.012, end[0]],
         [center + half, start[4] + 0.012, start[0]],
       ]);
+    }
+  }
+}
+
+/**
+ * Passage de roue : un demi-tube sombre tapisse chaque ouverture d'aile.
+ * Sans lui, la coque percée laisserait voir l'intérieur de la voiture.
+ */
+function addWheelWells(batch, material, model) {
+  const radius = archRadius(model) - 0.008;
+  for (const side of [-1, 1]) {
+    for (const z of model.wheelZ) {
+      const centerX = wheelCenterX(model, z);
+      const outer = sampleCarStation(model, z)[1];
+      const inner = Math.max(0.05, centerX - 0.26);
+      const length = outer + 0.02 - inner;
+      batch.cylinder(
+        material,
+        [side * (inner + length / 2), model.wheelRadius, z],
+        radius,
+        radius,
+        length,
+        14,
+        [0, 0, Math.PI / 2],
+      );
     }
   }
 }
@@ -493,29 +832,70 @@ export function setRacerDriver(car, driver) {
 }
 
 function makeSteeringLights(spec, batch, materials) {
-  const { black, carbon, lightWhite, lightAmber, headGlow } = materials;
-  const fasciaWidth = clamp(spec.grilleWidth * 1.12, 0.72, 1.38);
+  const { black, carbon, chrome, lightWhite, lightAmber, headGlow } = materials;
+  const style = spec.frontStyle || 'led';
+  // Toutes les cotes partent de la vraie largeur et de la vraie hauteur de la
+  // coque à hauteur du nez : aucun feu ni écope ne dépasse du flanc.
+  const noseZ = -1.87;
+  const halfWidth = halfWidthAt(spec, noseZ);
+  const fasciaWidth = Math.min(spec.grilleWidth * 1.12, halfWidth * 1.72);
+  const lampX = halfWidth * 0.56;
+  const lampY = surfaceYAt(spec, noseZ, lampX) - 0.035;
+  const lampWidth = Math.min(0.40, halfWidth * 0.74);
 
-  // A badge-free, low nose with a dark active-air intake replaces the older
-  // oversized grilles. The slim light signatures are shared by the whole fleet.
-  batch.box(black, [0, 0.555, -1.86], [fasciaWidth, 0.16, 0.055]);
-  batch.box(carbon, [0, 0.445, -1.89], [Math.min(1.82, fasciaWidth + 0.42), 0.075, 0.10]);
-  batch.box(black, [0, 0.355, -1.91], [1.48, 0.045, 0.08]);
+  if (style === 'classic') {
+    // GT des années 60 : calandre chromée à nid d'abeille, deux optiques rondes
+    // par côté, pare-chocs chromés. Aucun logo.
+    batch.box(chrome, [0, lampY - 0.17, -1.915], [Math.min(halfWidth * 1.94, 1.90), 0.075, 0.13]);
+    batch.box(chrome, [0, lampY - 0.015, -1.875], [Math.min(halfWidth * 1.36, 1.34), 0.20, 0.05]);
+    batch.box(black, [0, lampY - 0.015, -1.902], [Math.min(halfWidth * 1.18, 1.16), 0.15, 0.03]);
+    for (const side of [-1, 1]) {
+      // Optiques encastrées dans le nez : la couronne chromée dépasse d'un
+      // millimètre, la lentille affleure la carrosserie.
+      for (const offset of [0.56, 0.82]) {
+        const x = side * halfWidth * offset;
+        batch.cylinder(chrome, [x, lampY + 0.03, -1.902], 0.088, 0.088, 0.05, 14, [Math.PI / 2, 0, 0]);
+        batch.cylinder(lightWhite, [x, lampY + 0.03, -1.922], 0.068, 0.068, 0.02, 14, [Math.PI / 2, 0, 0]);
+      }
+      batch.box(lightAmber, [side * halfWidth * 0.62, lampY - 0.20, -1.905], [0.075, 0.05, 0.03]);
+    }
+    return;
+  }
+
+  if (style === 'retro') {
+    // Huitième de siècle : optiques rectangulaires fumées, calandre à lamelles,
+    // bandeau de pare-chocs noir et longue prise d'air basse.
+    batch.box(black, [0, lampY - 0.13, -1.882], [Math.min(fasciaWidth, halfWidth * 1.5), 0.17, 0.05]);
+    for (let slat = 0; slat < 4; slat += 1) {
+      batch.box(carbon, [0, lampY - 0.06 - slat * 0.05, -1.905], [Math.min(fasciaWidth * 0.94, halfWidth * 1.42), 0.016, 0.02]);
+    }
+    batch.box(black, [0, lampY - 0.31, -1.895], [Math.min(halfWidth * 1.86, 1.78), 0.075, 0.075]);
+    for (const side of [-1, 1]) {
+      const x = side * lampX;
+      batch.box(black, [x, lampY, -1.868], [Math.min(lampWidth * 1.08, 0.44), 0.115, 0.05]);
+      batch.box(lightWhite, [x, lampY + 0.012, -1.900], [Math.min(lampWidth * 0.92, 0.38), 0.032, 0.022]);
+      batch.box(lightAmber, [side * halfWidth * 0.94, lampY - 0.05, -1.898], [0.05, 0.022, 0.022]);
+      if (headGlow) batch.plane(headGlow, [x, lampY, -1.916], lampWidth * 1.5, 0.20, [0, Math.PI, 0]);
+      batch.box(black, [side * halfWidth * 0.9, lampY - 0.235, -1.885], [halfWidth * 0.2, 0.14, 0.05]);
+    }
+    return;
+  }
+
+  // Signature contemporaine : nez bas sans badge, prise d'air active sombre et
+  // optiques matricielles à LED.
+  batch.box(black, [0, lampY - 0.10, -1.86], [fasciaWidth, 0.16, 0.055]);
+  batch.box(carbon, [0, lampY - 0.19, -1.89], [Math.min(fasciaWidth + 0.36, halfWidth * 1.94), 0.075, 0.10]);
+  batch.box(black, [0, lampY - 0.28, -1.91], [Math.min(1.30, halfWidth * 1.6), 0.045, 0.08]);
 
   for (const side of [-1, 1]) {
-    const x = side * 0.49;
-    // Smoked headlamp housing with a crisp white daytime-running light and a
-    // separate amber pixel at the outer edge, like a current LED matrix unit.
-    batch.box(black, [x, 0.704, -1.865], [0.39, 0.105, 0.055]);
-    batch.box(lightWhite, [x - side * 0.015, 0.713, -1.901], [0.31, 0.025, 0.022], [0, 0, side * 0.035]);
-    batch.box(lightWhite, [side * 0.665, 0.681, -1.902], [0.095, 0.022, 0.022], [0, 0, -side * 0.24]);
-    batch.box(lightAmber, [side * 0.735, 0.65, -1.899], [0.045, 0.02, 0.02]);
-    batch.plane(headGlow, [x, 0.704, -1.922], 0.56, 0.19, [0, Math.PI, 0]);
-
-    // Vertical air curtains and their narrow inlets sharpen the bumper without
-    // adding detached parts or draw calls.
-    batch.box(black, [side * 0.755, 0.51, -1.88], [0.13, 0.19, 0.055]);
-    batch.box(carbon, [side * 0.755, 0.51, -1.914], [0.035, 0.12, 0.02]);
+    const x = side * lampX;
+    batch.box(black, [x, lampY, -1.862], [lampWidth, 0.105, 0.055]);
+    batch.box(lightWhite, [x - side * 0.012, lampY + 0.009, -1.899], [lampWidth * 0.8, 0.025, 0.022], [0, 0, side * 0.035]);
+    batch.box(lightWhite, [side * halfWidth * 0.82, lampY - 0.024, -1.900], [lampWidth * 0.26, 0.022, 0.022], [0, 0, -side * 0.24]);
+    batch.box(lightAmber, [side * halfWidth * 0.93, lampY - 0.055, -1.897], [0.045, 0.02, 0.02]);
+    if (headGlow) batch.plane(headGlow, [x, lampY, -1.918], lampWidth * 1.5, 0.19, [0, Math.PI, 0]);
+    batch.box(black, [side * halfWidth * 0.90, lampY - 0.26, -1.88], [halfWidth * 0.22, 0.19, 0.055]);
+    batch.box(carbon, [side * halfWidth * 0.90, lampY - 0.26, -1.914], [halfWidth * 0.06, 0.12, 0.02]);
   }
 }
 
@@ -524,7 +904,7 @@ function addRearDetails(profile, spec, batch, materials) {
   const rear = sampleCarStation(spec, 1.72);
   const rearWidth = rear[1];
   const lampY = lerp(rear[2], rear[3], 0.78);
-  const lampWidth = clamp(rearWidth * 1.78, 0.82, 1.52);
+  const lampWidth = clamp(rearWidth * 1.78, 0.82, Math.min(1.52, rearWidth * 1.9));
   const lampZ = 1.81;
 
   // Wide smoked panel and a thin, animated full-width LED blade modernize the
@@ -555,7 +935,7 @@ function addRearDetails(profile, spec, batch, materials) {
 
   // Sport models keep a small integrated lip instead of the dated tall whale-tail.
   if (['porsche', 'ferrari', 'lamborghini', 'electric-gt', 'neo-roadster'].includes(profile.archetype)) {
-    const lipWidth = Math.min(1.72, rearWidth * 2.05);
+    const lipWidth = Math.min(1.62, rearWidth * 1.94);
     batch.box(body, [0, rear[4] + 0.012, 1.49], [lipWidth, 0.035, 0.13], [-0.05, 0, 0]);
   }
 }
@@ -663,15 +1043,8 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
     batch.box(carbon, [0, 0.39, -1.96], [1.90, 0.055, 0.14]);
   }
 
-  // Le toit est une vraie coque peinte ; ces vitres opaques et fumées masquent
-  // complètement l'habitacle, aucun mesh de visage ou de pilote n'est ajouté.
-  if (spec.windshield) addPanel(batch, materials.glass, spec.windshield);
-  if (spec.rearGlass) addPanel(batch, materials.glass, spec.rearGlass);
-  for (const pane of spec.sideWindows) {
-    addSidePanel(batch, materials.glass, pane, 1);
-    addSidePanel(batch, materials.glass, pane, -1);
-  }
-  addPanoramicRoof(batch, materials.glass, spec);
+  // Le vitrage fait partie de la coque (voir buildShellGeometries) : aucune
+  // vitre rapportée, donc aucun scintillement ni montant qui bâille.
 }
 
 // Signatures de miniature : accents très lisibles à distance qui reprennent
@@ -742,7 +1115,7 @@ export function makeRacerCar(profile, options = {}) {
     livery: paint(liveryColor, { roughness: 0.36, metalness: 0.24, emissiveIntensity: 0.008 }),
     black: standard(0x10141b, { roughness: 0.78, metalness: 0.12 }),
     carbon: standard(0x1a1f27, { roughness: 0.62, metalness: 0.28 }),
-    chrome: standard(0xcbd3dc, { roughness: 0.24, metalness: 0.78 }),
+    chrome: applyPaintFinish(standard(0xcbd3dc, { roughness: 0.24, metalness: 0.78 })),
     // Très sombre et opaque : le cockpit ne laisse jamais apparaître de pilote.
     glass: new THREE.MeshPhysicalMaterial({
       name: `${profile.id}-opaque-tinted-glass`,
@@ -765,13 +1138,16 @@ export function makeRacerCar(profile, options = {}) {
     underglow: new THREE.MeshBasicMaterial({ color: profile.accent, transparent: true, opacity: daylight ? (player ? 0.08 : 0.035) : player ? 0.20 : 0.09, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
     flameOuter: new THREE.MeshBasicMaterial({ color: profile.accent, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
     flameInner: new THREE.MeshBasicMaterial({ color: 0xfff2ad, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
-    wheel: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.46 }),
+    // Passage de roue : mat, très sombre, visible depuis l'intérieur du tube.
+    well: standard(0x0a0d12, { roughness: 0.96, metalness: 0.04, side: THREE.DoubleSide }),
+    wheel: applyPaintFinish(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.46 })),
     plate: new THREE.MeshBasicMaterial({ map: makeCarPlateTexture(profile, number), toneMapped: false }),
   };
 
   const details = createBatch();
   const box = (material, position, size, rotation = null) => details.box(material, position, size, rotation);
-  const shell = new THREE.Mesh(makeCarShell(spec), materials.body);
+  const surfaces = buildShellGeometries(spec);
+  const shell = new THREE.Mesh(surfaces.body, materials.body);
   shell.name = `${profile.id}-coachwork-shell`;
   shell.castShadow = true;
   body.add(shell);
@@ -795,6 +1171,9 @@ export function makeRacerCar(profile, options = {}) {
   }
 
   addWheelArch(details, materials.body, spec);
+  addWheelWells(details, materials.well, spec);
+  // Vitrage conforme à la carrosserie, puis détails du modèle.
+  addGlazing(spec, details, materials.glass);
   addModelSpecificDetails(profile, spec, details, materials);
   addThumbnailSignature(profile, spec, details, materials);
   makeSteeringLights(spec, details, materials);
@@ -827,7 +1206,7 @@ export function makeRacerCar(profile, options = {}) {
       const wheelZ = spec.wheelZ[axle];
       const pivot = new THREE.Group();
       pivot.name = `${profile.id}-${axle === 0 ? 'front' : 'rear'}-${side < 0 ? 'left' : 'right'}-wheel-pivot`;
-      pivot.position.set(side * spec.wheelX, spec.wheelRadius, wheelZ);
+      pivot.position.set(side * wheelCenterX(spec, wheelZ), spec.wheelRadius, wheelZ);
       const wheel = makeWheel({
         radius: spec.wheelRadius,
         width: spec.wheelWidth,
@@ -873,7 +1252,10 @@ export function makeRacerCar(profile, options = {}) {
     headlightCones,
     boostFlames,
     exhaustOffsets: [[-0.52, 0.35, 1.90], [0.52, 0.35, 1.90]],
-    rearWheelOffsets: [[-spec.wheelX, 0.08, spec.wheelZ[1]], [spec.wheelX, 0.08, spec.wheelZ[1]]],
+    rearWheelOffsets: [
+      [-wheelCenterX(spec, spec.wheelZ[spec.wheelZ.length - 1]), 0.08, spec.wheelZ[spec.wheelZ.length - 1]],
+      [wheelCenterX(spec, spec.wheelZ[spec.wheelZ.length - 1]), 0.08, spec.wheelZ[spec.wheelZ.length - 1]],
+    ],
     materials,
     anim: { roll: 0, pitch: 0, lastSpeed: 0 },
   };
