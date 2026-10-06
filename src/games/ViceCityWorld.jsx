@@ -1363,6 +1363,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       skidDuration: 0.85,
       skidSide: 1,
       skidSmokeTimer: 0,
+      jumpState: { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0 },
+      currentJumpY: 0,
+      currentJumpPitch: 0,
       powerCooldown: 0,
       inventory: createCityRushPoliceInventory(),
       active: false,
@@ -2042,6 +2045,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         rawDistance: police.distance,
         lane: police.lane,
         x: police.currentX,
+        isJumping: Boolean(police.jumpState?.active),
+        jumpHeight: Number(police.currentJumpY) || 0,
         mode: police.mode,
         // Sonnée par un tir ou ralentie par un choc : la berline est hors jeu
         // quelques secondes — la page peut le montrer, les vérifications ne la
@@ -3445,6 +3450,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       {
         id: 'player', name: 'TOI', isPlayer: true, distance, lane: playerLane,
         x: playerX, width: playerCollisionWidth(), speed: currentSpeed, racer: null,
+        jumping: Boolean(playerJumpState.active),
       },
       ...racers.map((racer) => ({
         id: racer.id,
@@ -3456,6 +3462,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         width: racerCollisionWidth(racer),
         speed: racer.currentSpeed || racer.baseSpeed,
         racer,
+        jumping: Boolean(racer.jumpState?.active),
       })),
     ];
   }
@@ -3521,6 +3528,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.skidSide = 1;
     police.skidDuration = 0.85;
     police.skidSmokeTimer = 0;
+    police.jumpState = { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0 };
+    police.currentJumpY = 0;
+    police.currentJumpPitch = 0;
     police.powerCooldown = 0;
     police.maxHealth = cityRushPoliceMaxHealth(police.vehicleType);
     police.health = police.maxHealth;
@@ -3738,6 +3748,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       skidDuration: 0.85,
       skidSide: 1,
       skidSmokeTimer: 0,
+      jumpState: { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0 },
+      currentJumpY: 0,
+      currentJumpPitch: 0,
       powerCooldown: 0,
       inventory: createCityRushPoliceInventory(),
       active: true,
@@ -3870,7 +3883,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Contact avec une voiture de police en ronde (marquée ou banalisée) : la
   // voiture rappelée compte comme un poursuivant du quota de recherche.
   function checkPoliceRally() {
-    if (sprint || !active || finished) return;
+    if (sprint || !active || finished || playerJumpState.active) return;
     const playerXNow = playerCar.position.x;
     const playerWidth = playerCollisionWidth();
     for (const traffic of trafficCars) {
@@ -4062,11 +4075,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // ne doit jamais produire un choc invisible.
   function checkPoliceCollisions() {
     if (sprint || !active || finished) return;
-    if (playerJumpState.active && (playerCar.position.y || 0) > 0.8) return;
+    if (playerJumpState.active) return;
     const playerXNow = playerCar.position.x;
     const playerWidth = playerCollisionWidth();
     for (const police of activePursuers()) {
-      if (police.health <= 0 || police.collisionCooldownLeft > 0) continue;
+      if (police.health <= 0 || police.collisionCooldownLeft > 0 || police.jumpState?.active) continue;
       if (!cityRushPoliceCollisionHit({
         gap: police.distance - distance,
         closing: currentSpeed - (Number(police.currentSpeed) || 0),
@@ -4292,8 +4305,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
       // Sonnée ou fraîchement percutée, la berline garde son choix de voie :
       // le minuteur attend la fin de la toupie ou du répit après le choc.
-      if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0) police.changeIn -= dt;
-      if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0 && police.changeIn <= 0) {
+      let policeAirborne = Boolean(police.jumpState?.active);
+      if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0 && !policeAirborne) police.changeIn -= dt;
+      if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0 && !policeAirborne && police.changeIn <= 0) {
         // Un barrage ne change pas de voie : c'est ce qui le rend lisible.
         if (!barring) {
           const availableLanes = [police.lane];
@@ -4360,6 +4374,28 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.currentSpeed = approachCityRushSpeed(police.currentSpeed, Math.max(0, targetSpeed), 13.5, dt, coursePace);
       police.currentX = lerp(police.currentX, laneX(police.lane), Math.min(1, dt * 5.6));
       const before = priorDistances.get(police.id);
+      // Les poursuivants empruntent aussi les tremplins : le choix de voie
+      // est gelé en vol, pour qu'ils atterrissent dans la voie de décollage.
+      if (!policeAirborne && police.stunLeft <= 0) {
+        for (const ramp of ramps) {
+          if (ramp.lane !== police.lane || !detectCityRushRampContact(police.distance, police.lane, ramp.trackDistance, ramp.lane)) continue;
+          const takeoffSpeed = Math.max(14, police.currentSpeed || police.baseSpeed);
+          police.jumpState = {
+            active: true,
+            startDistance: police.distance,
+            totalDistance: computeCityRushJumpDistance(takeoffSpeed),
+            maxHeight: computeCityRushJumpHeight(takeoffSpeed),
+            takeoffSpeed,
+            progress: 0,
+          };
+          policeAirborne = true;
+          if (police.mesh.visible) {
+            audioRef?.current?.rampJump?.({ pan: vehiclePan(police.id), speed: takeoffSpeed });
+            emitPoliceSkidSmoke(police);
+          }
+          break;
+        }
+      }
       requests.push({
         id: police.id,
         lane: police.lane,
@@ -4367,6 +4403,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         width: police.width,
         distance: before,
         nextDistance: before + police.currentSpeed * dt,
+        jumping: policeAirborne,
       });
     }
 
@@ -4383,18 +4420,38 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (blocker) applyTrafficImpact(car.id, blocker);
     }
     let nearest = Infinity;
+    const landedPolice = [];
     for (const police of pursuers) {
       const before = priorDistances.get(police.id);
       const priorX = priorXs.get(police.id);
       police.distance = resolvedById.get(police.id) ?? before;
       police.currentSpeed = dt > 0 ? Math.max(0, (police.distance - before) / dt) : police.currentSpeed;
+      let policeLanded = false;
+      if (police.jumpState?.active) {
+        const jumpTraveled = police.distance - police.jumpState.startDistance;
+        const progress = clamp(jumpTraveled / Math.max(1, police.jumpState.totalDistance), 0, 1);
+        police.jumpState.progress = progress;
+        if (progress < 1) {
+          police.currentJumpY = computeCityRushJumpElevation(jumpTraveled, police.jumpState.totalDistance, police.jumpState.maxHeight);
+          police.currentJumpPitch = computeCityRushJumpPitch(progress);
+        } else {
+          police.jumpState.active = false;
+          police.currentJumpY = 0;
+          police.currentJumpPitch = 0;
+          policeLanded = true;
+        }
+      }
       const gap = police.distance - distance;
       const visible = police.active && gap > -CITY_RUSH_POLICE_VIEW_BEHIND && gap < 150;
       // Une rafale encaissée fait déraper la berline, comme les rivaux.
       const skid = skidOffset(police.skidLeft, police.skidDuration, police.skidSide || 1);
       police.mesh.visible = visible;
-      police.mesh.position.set(police.currentX + skid + trackRelativeX(police.distance), trackRelativeY(police.distance) + (police.stunLeft > 0 ? 0.05 : 0), PLAYER_Z - gap * SCALE);
-      police.mesh.rotation.x = trackPitch(police.distance);
+      police.mesh.position.set(
+        police.currentX + skid + trackRelativeX(police.distance),
+        trackRelativeY(police.distance) + (police.currentJumpY || 0) + (police.stunLeft > 0 ? 0.05 : 0),
+        PLAYER_Z - gap * SCALE,
+      );
+      police.mesh.rotation.x = trackPitch(police.distance) + (police.currentJumpPitch || 0);
       // Toupie du stun héliporté pour la berline bombardée, comme les rivaux.
       police.mesh.rotation.y = trackYaw(police.distance) + cityRushStunSpin(police.stunLeft, police.stunTotal) + clamp((police.currentX - priorX) * -3.2 + skid * 0.22, -0.22, 0.22);
       const policeSkidRoll = police.vehicleType === 'police-suv' ? 0.085 : 0.045;
@@ -4443,6 +4500,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (relative > 2.5) audioRef?.current?.passby({ pan: vehiclePan(police.id), speed: clamp(relative / 14, 0, 1) });
       }
       if (police.active) nearest = Math.min(nearest, Math.abs(gap));
+      if (policeLanded) landedPolice.push(police);
+    }
+
+    // Une patrouille qui touche le sol après un saut est détruite : son
+    // dérapage réglementaire mène à la toupie puis à l'explosion de l'épave.
+    for (const police of landedPolice) {
+      if (police.mesh.visible) {
+        audioRef?.current?.rampLand?.({ pan: vehiclePan(police.id), speed: police.currentSpeed });
+        emitPoliceSkidSmoke(police);
+      }
+      destroyPolice(police, 'ramp-landing', null);
     }
 
     // La sirène suit la proximité de la berline la plus proche : l'escouade
@@ -4457,7 +4525,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // pilote visé peut donc casser la mire en se décalant — sans cela, chaque
     // rafale touchait, et quinze carrés y passaient en une boucle.
     for (const police of pursuers) {
-      if (police.stunLeft > 0 || police.powerCooldown > 0
+      if (!police.active || police.stunLeft > 0 || police.powerCooldown > 0
         || !isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL)) {
         police.aimLeft = 0;
         police.aimTargetId = null;
@@ -4749,14 +4817,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const priorMap = priorActorDistances instanceof Map ? priorActorDistances : null;
 
     const actors = [
-      { id: 'player', x: playerCar.position.x, width: playerCollisionWidth(), distance, priorDistance: priorMap?.get('player') ?? distance, jumping: Boolean(playerJumpState.active && (playerCar.position.y || 0) > 0.8) },
+      { id: 'player', x: playerCar.position.x, width: playerCollisionWidth(), distance, priorDistance: priorMap?.get('player') ?? distance, jumping: Boolean(playerJumpState.active) },
       ...racers.map((racer) => ({
         id: racer.id,
         x: racer.mesh.position.x,
         width: racerCollisionWidth(racer),
         distance: racer.distance,
         priorDistance: priorMap?.get(racer.id) ?? racer.distance,
-        jumping: Boolean(racer.jumpState?.active && (racer.currentJumpY || 0) > 0.8),
+        jumping: Boolean(racer.jumpState?.active),
       })),
       ...activePursuers().map((police) => ({
         id: police.id,
@@ -4764,7 +4832,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         width: police.width,
         distance: police.distance,
         priorDistance: police.distance,
-        jumping: false,
       })),
     ];
 
@@ -5613,7 +5680,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           width: 1.9 * playerProfile.widthScale,
           previousDistance: priorDistance,
           nextDistance: priorDistance + requestedPlayerSpeed * dt,
-          jumping: Boolean(playerJumpState.active && playerJumpY > 0.8),
+          jumping: Boolean(playerJumpState.active),
         },
         ...racers.map((racer) => ({
           id: racer.id,
@@ -5623,7 +5690,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           width: 1.9 * 0.92 * racer.profile.widthScale,
           previousDistance: priorRacerDistances.get(racer.id),
           nextDistance: priorRacerDistances.get(racer.id) + requestedRacerSpeeds.get(racer.id) * dt,
-          jumping: Boolean(racer.jumpState?.active && (racer.currentJumpY || 0) > 0.8),
+          jumping: Boolean(racer.jumpState?.active),
         })),
         ...rollingTraffic().map((traffic) => ({
           id: traffic.id,

@@ -1550,6 +1550,28 @@ test('les berlines sont solides : ni le trafic, ni les pilotes ne les traversent
   assert.equal(swerving(CITY_RUSH_LANE_X[1] - 1).blockedBy, 'truck-1', 'encore à cheval sur la voie de la berline');
   assert.equal(swerving(CITY_RUSH_LANE_X[0]).blockedBy, null, 'rabattu : la voie est libre');
 });
+test('une berline de police en saut franchit le trafic mais ne traverse pas les pilotes', () => {
+  const flyingPolice = resolveCityRushPoliceMovement([
+    { id: 'police-airborne', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1000, nextDistance: 1030, width: 1.94, jumping: true },
+  ], [{ id: 'truck', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1010, nextDistance: 1012, width: 2.1 }], CITY_RUSH_CAR_GAP)[0];
+  assert.equal(flyingPolice.nextDistance, 1030, 'la police ne percute pas le camion pendant son saut');
+  assert.equal(flyingPolice.blockedBy, null);
+
+  const groundedPolice = resolveCityRushPoliceMovement([
+    { id: 'police-grounded', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1000, nextDistance: 1030, width: 1.94 },
+  ], [{ id: 'truck-airborne', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1010, nextDistance: 1012, width: 2.1, jumping: true }], CITY_RUSH_CAR_GAP)[0];
+  assert.equal(groundedPolice.nextDistance, 1030, 'une voiture au sol ne freine pas derrière un camion en l’air');
+  assert.equal(groundedPolice.blockedBy, null);
+
+  const racerStillBlocks = resolveCityRushPoliceMovement([
+    { id: 'police-airborne', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1000, nextDistance: 1030, width: 1.94, jumping: true },
+  ], [], CITY_RUSH_CAR_GAP, [
+    { id: 'player', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1010, nextDistance: 1012, width: 1.9 },
+  ])[0];
+  assert.equal(racerStillBlocks.nextDistance, 1012 - CITY_RUSH_CAR_GAP,
+    'même en vol, la police n’atterrit pas en traversant un pilote');
+});
+
 test('au dernier tour, la riposte rouge peut viser la berline la plus proche', () => {
   // Sans escouade déployée, pas de cible : la jauge reste chargée.
   assert.equal(cityRushPoliceTarget([], 1200), null);
