@@ -110,7 +110,7 @@ const stepFrame = () => {
 };
 
 const {
-  CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
+  CITY_RUSH_CAR_GAP, CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
 } = await import('../src/games/cityRushRules.js');
 // Deux carambolages ne peuvent pas retirer un carré à moins du répit partagé :
 // le monde le décrémente d'une image (`dt`) avant de tester le contact, donc le
@@ -311,9 +311,16 @@ for (let run = 0; run < RUNS; run += 1) {
         console.error(`[${city.id}#${run}] deux carambolages ont retiré un carré à ${delta} image(s) d’écart (répit ${COLLISION_RUSH_FRAMES})`, collisionHitFrames);
       }
     }
-    if (playerRamDamage.some((effect) => !(Number(effect.gap) >= 0))) {
+    // Le carambolage se juge sur la voiture que le pilote rattrape : l'écart
+    // doit donc être positif. Une **patrouille** fait exception, et c'est la
+    // règle elle-même qui le dit : `cityRushPoliceContact` accepte un écart
+    // négatif jusqu'à la distance de sécurité (4,8 m) — le pilote qui frôle
+    // une patrouille en la dépassant la touche au pare-chocs alors que son
+    // centre est déjà un rien devant. On ne refuse donc que ce que la règle
+    // refuse : une voiture franchement derrière.
+    if (playerRamDamage.some((effect) => !(Number(effect.gap) > -CITY_RUSH_CAR_GAP))) {
       violations += 1;
-      console.error(`[${city.id}#${run}] un carambolage est compté sans écart entre la voiture et le pilote`, playerRamDamage);
+      console.error(`[${city.id}#${run}] un carambolage est compté avec une voiture derrière le pilote`, playerRamDamage);
     }
     if (policeRamHits.some((effect) => effect.damage !== 1)) {
       violations += 1;

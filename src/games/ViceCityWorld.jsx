@@ -4352,7 +4352,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
-  function applyTrafficImpact(racerId, traffic) {
+  function applyTrafficImpact(racerId, traffic, contact = null) {
     if (!traffic || traffic.impactCooldownLeft > 0 || traffic.impactChanging) return false;
     const racer = racerId === 'player' ? null : racers.find((item) => item.id === racerId);
     const squadCar = racerId === 'player' || racer ? null : policeCars.find((item) => item.id === racerId);
@@ -4379,7 +4379,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'traffic',
         name: traffic.name,
         id: traffic.id,
-        gap: traffic.distance - distance,
+        // L'écart annoncé est celui du contact, relevé avant le mouvement de
+        // l'image (`previousGap`) : le pilote arrive sur une voiture qui est
+        // devant lui, jamais sur une qu'il vient de dépasser. Les rares appels
+        // sans contact (berline poussée dans le trafic) gardent l'écart du jour.
+        gap: Number.isFinite(Number(contact?.previousGap))
+          ? Number(contact.previousGap)
+          : traffic.distance - distance,
         lane: traffic.lane,
       });
     } else if (racer) {
@@ -5426,7 +5432,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const trafficImpactsThisFrame = detectCityRushTrafficImpacts(movementRequests, CITY_RUSH_TRAFFIC_IMPACT_GAP, trafficContacts);
       for (const contact of trafficImpactsThisFrame) {
         const traffic = trafficCars.find((item) => item.id === contact.trafficId);
-        if (traffic) applyTrafficImpact(contact.racerId, traffic);
+        if (traffic) applyTrafficImpact(contact.racerId, traffic, contact);
       }
       const resolvedCars = resolveCityRushCarMovement(movementRequests);
       const movementById = new Map(resolvedCars.map((car) => [car.id, car.nextDistance]));
