@@ -115,10 +115,12 @@ export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 5
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé au sol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
-// Les bonus rouges restent rares, mais sont un peu plus fréquents (8 %) ;
-// chaque chargeur ramassé remet sept balles dans l'AK-47.
-export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08;
-export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE; // 92 % de pads turbo au sol
+// Les objets de la route mêlent les pads turbo, les chargeurs rouges de l'AK-47
+// et les trousses de soin « + » rouges. Les soins restent assez espacés pour
+// garder les chocs dangereux, sans laisser une coque abîmée sans solution.
+export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08; // chargeur d'AK-47
+export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de pads turbo au sol
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
@@ -706,8 +708,11 @@ export const CITY_RUSH_POWERS = Object.freeze({
   RADIO: 'radio',
 });
 
-// Le turbo n'est plus un pouvoir à charger : c'est un pad lumineux au sol.
-export const CITY_RUSH_PICKUPS = Object.freeze({ BOOST: 'boost' });
+// Le turbo et les soins sont des bonus instantanés au sol, pas des pouvoirs
+// à charger dans l'inventaire.
+export const CITY_RUSH_PICKUPS = Object.freeze({ BOOST: 'boost', HEALTH: 'health' });
+export const CITY_RUSH_HEALTH_PICKUP_RESTORE = 1;
+export const CITY_RUSH_HEALTH_PICKUP_COLOR = '#ff4055';
 
 // Le coût du tir rouge représente désormais la capacité de son chargeur :
 // chaque bonus rouge recharge sept balles, puis chaque pression en dépense une.
@@ -741,7 +746,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont rares : chacun remplit le chargeur de l'AK-47 à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule, ou deux contre un SUV de police blindé. Un SUV a dix carrés de vie : dix balles rouges pour le détruire.`,
+    description: `Les chargeurs d'AK-47 restent rares : chacun remplit le chargeur de l'arme à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule, ou deux contre un SUV de police blindé. Un SUV a dix carrés de vie : dix balles rouges pour le détruire.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -2671,8 +2676,18 @@ export function shouldHideCityRushPistolPickup(playerInventory, opponentInventor
   return opponents.every(hasFullCityRushPistolMagazine);
 }
 
-export function canCollectCityRushPickup(inventory, type, { redPickupsHidden = false } = {}) {
+export function canCollectCityRushPickup(inventory, type, {
+  redPickupsHidden = false,
+  health = 0,
+  maxHealth = 0,
+} = {}) {
   if (type === CITY_RUSH_PICKUPS.BOOST) return true;
+  if (type === CITY_RUSH_PICKUPS.HEALTH) {
+    const currentHealth = Math.max(0, Math.trunc(Number(health) || 0));
+    const safeMaxHealth = Math.max(0, Math.trunc(Number(maxHealth) || 0));
+    // Un soin ne ressuscite pas une épave et n'est pas gaspillé sur une coque pleine.
+    return currentHealth > 0 && currentHealth < safeMaxHealth;
+  }
   if (type !== CITY_RUSH_POWERS.PISTOL || redPickupsHidden) return false;
   // Un chargeur rouge complète les balles jusqu'à sept : on peut le ramasser
   // même avec quelques balles, mais pas gaspiller un chargeur déjà plein.
@@ -3036,8 +3051,8 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
   const count = Math.max(1, Math.min(CITY_RUSH_LANE_X.length, Math.trunc(Number(laneCount)) || CITY_RUSH_LANE_X.length));
   const available = Array.from({ length: count }, (_, lane) => lane);
   // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
-  // des rangées pleines. Parmi les objets, 92 % sont des pads turbo et 8 % des
-  // bonus rouges d'AK-47 : le rouge reste rare, mais revient un peu plus souvent.
+  // des rangées pleines. Les pads turbo restent majoritaires ; les chargeurs
+  // rouges et les trousses de soin apparaissent régulièrement sans envahir la route.
   const pickupCount = random() < 0.05 ? 0 : Math.min(available.length, random() < 0.7 ? 1 : 2);
   const pickups = [];
 
@@ -3049,7 +3064,9 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
     // probabilité d'apparition sur chaque emplacement.
     const type = roll < CITY_RUSH_RED_PICKUP_CHANCE
       ? CITY_RUSH_POWERS.PISTOL
-      : CITY_RUSH_PICKUPS.BOOST;
+      : roll < CITY_RUSH_RED_PICKUP_CHANCE + CITY_RUSH_HEALTH_PICKUP_CHANCE
+        ? CITY_RUSH_PICKUPS.HEALTH
+        : CITY_RUSH_PICKUPS.BOOST;
     pickups.push({ lane, type });
   }
 
@@ -3629,19 +3646,32 @@ export function cityRushWantedLevelAfterPoliceDestroyed(currentLevel = 0, destro
 export const CITY_RUSH_MINI_GARAGE_COUNT = 1;
 // Part du parcours où se tient la porte de mi-course (la moitié).
 export const CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE = 0.5;
-export const CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT = 2; // cellules rendues à la coque
+export const CITY_RUSH_MINI_GARAGE_LANE_COUNT = 2;
+export const CITY_RUSH_MINI_GARAGE_WIDTH = CITY_RUSH_LANE_WIDTH * CITY_RUSH_MINI_GARAGE_LANE_COUNT + 1.2;
+export const CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT = 6; // carrés rendus à la coque
 // Longueur du portique (5,1 unités de scène) convertie en mètres de piste.
 export const CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH = 2.55 / CITY_RUSH_SCROLL_SCALE;
-// Indication peinte sur la voie du garage : elle commence à cette distance
-// devant le portique, pour que le pilote ne rate pas la porte à pleine vitesse.
+// Indication peinte sur les deux voies centrales : elle commence à cette
+// distance devant le portique, pour que le pilote ne rate pas la porte à pleine vitesse.
 export const CITY_RUSH_MINI_GARAGE_SIGN_LEAD = 34; // m
 // Le HUD n'allume le compteur que lorsque la porte approche vraiment.
 export const CITY_RUSH_MINI_GARAGE_HUD_RANGE = 500; // m
 
-/** Dernière voie du sens de course : la voie la plus à droite du joueur. */
+/**
+ * Les deux voies centrales de la chaussée, numérotées à partir de 1 dans
+ * l'affichage (voies 3 et 4 sur les routes urbaines à six voies). Sur le Ring,
+ * où la piste n'a que quatre voies, le portique couvre ses deux voies centrales.
+ */
+export function cityRushMiniGarageLanes(course) {
+  const { laneCount } = cityRushLaneConfig(course);
+  const count = Math.max(1, Math.min(CITY_RUSH_MINI_GARAGE_LANE_COUNT, laneCount));
+  const firstLane = Math.floor((laneCount - count) / 2);
+  return Object.freeze(Array.from({ length: count }, (_, index) => firstLane + index));
+}
+
+/** Voie centrale gauche du portique, gardée pour les anciens appelants. */
 export function cityRushMiniGarageLane(course) {
-  const { forwardLanes } = cityRushLaneConfig(course);
-  return forwardLanes[forwardLanes.length - 1] ?? 0;
+  return cityRushMiniGarageLanes(course)[0] ?? 0;
 }
 
 /** Distance absolue de la porte de mi-course : la moitié du parcours. */
@@ -3678,8 +3708,8 @@ export function cityRushMiniGarageAvailable({ sprint = false } = {}) {
 }
 
 /**
- * Le service attend la sortie du portique, dans la bonne voie. La porte est
- * ouverte à tout moment de la course. Il répare aussi une voiture sans
+ * Le service attend la sortie du portique, dans l'une de ses deux voies centrales.
+ * La porte est ouverte à tout moment de la course. Il répare aussi une voiture sans
  * étoiles ; chaque porte ne sert qu'une fois.
  */
 export function cityRushMiniGarageCanUse({
@@ -3688,12 +3718,19 @@ export function cityRushMiniGarageCanUse({
   garageExitDistance,
   playerLane,
   garageLane,
+  garageLanes,
   sprint = false,
   used = false,
 } = {}) {
   const previous = Number(previousDistance);
   const next = Number(nextDistance);
   const exit = Number(garageExitDistance);
+  const allowedLanes = Array.isArray(garageLanes)
+    ? garageLanes
+    : Array.isArray(garageLane) ? garageLane : [garageLane];
+  const isOnGarageLane = allowedLanes.some((lane) => (
+    Number.isFinite(Number(lane)) && Number(playerLane) === Number(lane)
+  ));
   return cityRushMiniGarageAvailable({ sprint })
     && !used
     && Number.isFinite(previous)
@@ -3701,7 +3738,7 @@ export function cityRushMiniGarageCanUse({
     && Number.isFinite(exit)
     && previous < exit
     && next >= exit
-    && Number(playerLane) === Number(garageLane);
+    && isOnGarageLane;
 }
 
 /**
@@ -4571,7 +4608,16 @@ export function cityRushPlayerDamage(health = CITY_RUSH_PLAYER_HEALTH, source = 
   return Math.max(0, safeHealth - damage);
 }
 
-/** Petite réparation de garage, plafonnée à la coque choisie, sans ressusciter une épave. */
+/** Un « + » rouge rend un carré à une coque endommagée, sans ressusciter une épave. */
+export function cityRushHealthPickupRepair(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
+  const safeMax = Math.max(1, Math.trunc(Number(max) || CITY_RUSH_PLAYER_HEALTH));
+  const safeHealth = Math.max(0, Math.min(safeMax, Math.trunc(Number(health) || 0)));
+  return safeHealth > 0
+    ? Math.min(safeMax, safeHealth + CITY_RUSH_HEALTH_PICKUP_RESTORE)
+    : 0;
+}
+
+/** Réparation de garage, plafonnée à la coque choisie, sans ressusciter une épave. */
 export function cityRushMiniGarageRepair(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
   const safeMax = Math.max(1, Math.trunc(Number(max) || CITY_RUSH_PLAYER_HEALTH));
   const safeHealth = Math.max(0, Math.min(safeMax, Math.trunc(Number(health) || 0)));

@@ -77,7 +77,8 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_TRAFFIC_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
-  CITY_RUSH_MINI_GARAGE_COUNT, CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, cityRushMiniGarageLane,
+  CITY_RUSH_MINI_GARAGE_COUNT, CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, CITY_RUSH_MINI_GARAGE_WIDTH,
+  CITY_RUSH_HEALTH_PICKUP_RESTORE, cityRushMiniGarageLanes,
   CITY_RUSH_MINI_GARAGE_HUD_RANGE,
   cityRushMiniGarageTrackDistances, cityRushMiniGarageMidRaceDistance, cityRushMiniGarageWantedLevel,
   CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
@@ -386,9 +387,21 @@ for (const [index, city] of courses.entries()) {
   if (miniGarageNodes.length !== CITY_RUSH_MINI_GARAGE_COUNT) {
     fail(`la carte ne contient pas exactement ${CITY_RUSH_MINI_GARAGE_COUNT} mini-garage(s)`, miniGarageNodes.length);
   }
+  const expectedGarageLanes = cityRushMiniGarageLanes(city);
   if (miniGarageNodes.some((garage) => garage.userData.kind !== 'mini-garage'
-    || garage.userData.lane !== cityRushMiniGarageLane(city))) {
-    fail('le mini-garage n’est pas sur la voie extérieure du sens de course', miniGarageNodes.map((garage) => garage.userData));
+    || garage.userData.lane !== expectedGarageLanes[0]
+    || JSON.stringify(garage.userData.lanes) !== JSON.stringify(expectedGarageLanes))) {
+    fail('le mini-garage ne couvre pas les deux voies centrales', miniGarageNodes.map((garage) => garage.userData));
+  }
+  const garageRoof = miniGarageNodes[0]?.getObjectByName('mini-garage-roof');
+  const garageHealthPlus = miniGarageNodes[0]?.getObjectByName('mini-garage-health-plus');
+  if (!garageRoof || garageRoof.geometry.parameters.width < CITY_RUSH_MINI_GARAGE_WIDTH
+    || !garageHealthPlus || Math.abs(miniGarageNodes[0].position.x) > 1e-6) {
+    fail('le mini-garage n’est pas élargi, centré et surmonté d’un plus rouge', {
+      width: garageRoof?.geometry?.parameters?.width,
+      centerX: miniGarageNodes[0]?.position.x,
+      healthPlus: Boolean(garageHealthPlus),
+    });
   }
   if (miniGarageNodes.some((garage, index) => garage.visible
     || garage.userData.trackDistance !== MINI_GARAGE_TRACK_DISTANCES[index])) {
@@ -736,17 +749,20 @@ for (const [index, city] of courses.entries()) {
         world.action(away);
       }
     }
-    // Mini-garage : le pilote automatique se rabat vers la voie de service dès
-    // qu'un portique approche, comme le ferait un joueur prévenu par le panneau.
-    // C'est le seul moyen d'éprouver la traversée — et donc la remise en
-    // conduite normale de la police — de façon déterministe.
+    // Mini-garage : le pilote automatique se rabat vers l'une des deux voies
+    // centrales dès qu'un portique approche, comme le ferait un joueur prévenu.
+    // C'est le seul moyen d'éprouver la traversée de façon déterministe.
     const garageTarget = !aimedCar && miniGarageNodes.find((garage) => (
       !garage.userData.used
       && garage.visible
       && garage.userData.trackDistance - world.distance < 130
     ));
-    if (garageTarget && hud && frames % 2 === 0 && hud.playerLane !== garageTarget.userData.lane) {
-      world.action(hud.playerLane < garageTarget.userData.lane ? 'right' : 'left');
+    if (garageTarget && hud && frames % 2 === 0) {
+      const garageLanes = garageTarget.userData.lanes || [garageTarget.userData.lane];
+      const targetLane = garageLanes.reduce((closest, lane) => (
+        Math.abs(lane - hud.playerLane) < Math.abs(closest - hud.playerLane) ? lane : closest
+      ), garageLanes[0]);
+      if (hud.playerLane !== targetLane) world.action(hud.playerLane < targetLane ? 'right' : 'left');
     }
     if (civilTarget && hud && !aimedCar && frames % 4 === 0) {
       const targetLane = trafficNodeLane(civilTarget, courseLanes);
@@ -1761,7 +1777,7 @@ for (const [index, city] of courses.entries()) {
   }
   }
   // La barre de vie est pleine dès le départ, visible pendant toute la course,
-  // bornée et ne remontant que dans les garages ; chaque tir encaissé en retire un (le carré du
+  // bornée et ne remontant que dans les garages ou sur un plus rouge ; chaque tir encaissé en retire un (le carré du
   // carambolage est neutralisé par le lanceur, voir plus bas). Chaque voiture a
   // **son** maximum (`cityRushCarMaxHealth`) : celui du pilote est calculé
   // depuis la voiture de l'essai, celui des rivaux depuis leur propre profil.
@@ -1800,9 +1816,16 @@ for (const [index, city] of courses.entries()) {
     healthPrevious = value;
   }
   if (healthBadBounds) fail(`la barre de vie du pilote sort de ses bornes sur ${healthBadBounds} images`);
-  if (healthRiseFrames !== miniGarageUses.filter((effect) => effect.healthRestored > 0).length
-    || healthRiseTotal !== garageHealthRestored) {
-    fail(`la barre de vie du pilote remonte hors réparation sur ${healthRiseFrames} images`, miniGarageUses);
+  const playerHealthPickupEffects = callbacks.effects.filter((effect) => effect.type === 'player-health-pickup');
+  const healthPickupRestored = playerHealthPickupEffects.reduce((total, effect) => total + Number(effect.healthRestored || 0), 0);
+  const healthRestoreCount = miniGarageUses.filter((effect) => effect.healthRestored > 0).length
+    + playerHealthPickupEffects.filter((effect) => effect.healthRestored > 0).length;
+  if (healthRiseFrames !== healthRestoreCount
+    || healthRiseTotal !== garageHealthRestored + healthPickupRestored) {
+    fail(`la barre de vie du pilote remonte hors réparation/soin sur ${healthRiseFrames} images`, {
+      garages: miniGarageUses,
+      plusRouges: playerHealthPickupEffects,
+    });
   }
   if (lastHud.playerHealthActive) fail('la barre de vie du pilote reste après l’arrivée', lastHud.playerHealth);
   let runningHealth = null;
@@ -1813,8 +1836,17 @@ for (const [index, city] of courses.entries()) {
       if (runningHealth !== playerMaxHealth) fail('la barre de vie du pilote ne part pas pleine', effect);
       continue;
     }
-    if (effect.type === 'mini-garage-used') {
-      if (runningHealth !== effect.healthBefore) fail('le garage ne répare pas la santé réelle du pilote', effect);
+    if (effect.type === 'mini-garage-used' || effect.type === 'player-health-pickup') {
+      if (runningHealth !== effect.healthBefore) fail('une réparation ne part pas de la santé réelle du pilote', effect);
+      const expectedRestored = Math.min(CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, effect.maxHealth - effect.healthBefore);
+      if (effect.type === 'player-health-pickup'
+        && effect.healthRestored !== Math.min(CITY_RUSH_HEALTH_PICKUP_RESTORE, effect.maxHealth - effect.healthBefore)) {
+        fail('le plus rouge ne rend pas exactement un carré de vie', effect);
+      }
+      if (effect.type === 'mini-garage-used'
+        && effect.healthRestored !== expectedRestored) {
+        fail('le mini-garage ne rend pas six carrés au maximum', effect);
+      }
       runningHealth = effect.health;
       continue;
     }
@@ -1873,9 +1905,19 @@ for (const [index, city] of courses.entries()) {
     || pickup.ammo !== CITY_RUSH_PISTOL_AMMO_PER_PICKUP)) {
     fail('un bonus rouge ramassé ne recharge pas les sept balles de l’AK-47', redPickups);
   }
-  const unsupportedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
+  const healthPickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_PICKUPS.HEALTH);
+  if (healthPickups.some((pickup) => pickup.healthRestored !== CITY_RUSH_HEALTH_PICKUP_RESTORE
+    || pickup.chargeCost !== CITY_RUSH_HEALTH_PICKUP_RESTORE
+    || pickup.health > pickup.maxHealth)) {
+    fail('un plus rouge ne rend pas exactement un carré de vie', healthPickups);
+  }
+  const unsupportedPickups = callbacks.pickups.filter((pickup) => ![
+    CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL,
+  ].includes(pickup.type));
   if (unsupportedPickups.length) fail('un bonus bleu ou jaune est encore collecté sur la route', unsupportedPickups);
-  if (callbacks.pickups.some((pickup) => pickup.autoActivated && pickup.type !== CITY_RUSH_PICKUPS.BOOST && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
+  if (callbacks.pickups.some((pickup) => pickup.autoActivated
+    && ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH].includes(pickup.type)
+    && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
     fail('un pouvoir manuel a été signalé comme activation automatique', callbacks.pickups.filter((pickup) => pickup.autoActivated));
   }
   const unsupportedShotEffects = new Set([

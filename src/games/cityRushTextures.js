@@ -968,7 +968,23 @@ export function makePickupMaterial(type, color) {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    if (type === 'blue-shot') {
+    if (type === 'health') {
+      // Trousse de soin : croix rouge bien distincte du « + » bleu de l'ancien tir.
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.roundRect(57, 57, 142, 142, 25);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(108, 75, 40, 106, 12);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(75, 108, 106, 40, 12);
+      ctx.fill();
+    } else if (type === 'blue-shot') {
       // Bonus bleu « + » : une seule icône recharge immédiatement un tir droit.
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = color;

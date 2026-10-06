@@ -15,6 +15,9 @@ import {
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_AI_TRACK_BOOST_WEIGHT,
   CITY_RUSH_RED_PICKUP_CHANCE,
+  CITY_RUSH_HEALTH_PICKUP_CHANCE,
+  CITY_RUSH_HEALTH_PICKUP_RESTORE,
+  CITY_RUSH_HEALTH_PICKUP_COLOR,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE,
   CITY_RUSH_BLUE_SHOT_DURATION,
@@ -81,6 +84,8 @@ import {
   CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE,
   CITY_RUSH_MINI_GARAGE_SIGN_LEAD,
   CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
+  CITY_RUSH_MINI_GARAGE_LANE_COUNT,
+  CITY_RUSH_MINI_GARAGE_WIDTH,
   CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
@@ -88,6 +93,7 @@ import {
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
+  cityRushMiniGarageLanes,
   cityRushMiniGarageAvailable,
   cityRushMiniGarageMidRaceDistance,
   cityRushMiniGarageTrackDistances,
@@ -153,6 +159,7 @@ import {
   CITY_RUSH_WATCH_HELI_LATERAL,
   CITY_RUSH_RACER_SLOTS,
   cityRushPlayerDamage,
+  cityRushHealthPickupRepair,
   cityRushHealthSegments,
   cityRushPlayerHealthColor,
   cityRushPoliceCollisionHit,
@@ -902,18 +909,21 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
   assert.ok(chase > CITY_RUSH_POLICE_BASE_SPEED * 1.34 - 1e-9);
 });
 
-test('the active loadout has seven red machine-gun bullets plus automatic ground boosts', () => {
+test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 8400); // 6 tours : 5 boucles de 1 200 m + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
-  assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.08, 'le bonus rouge apparaît maintenant dans 8 % des objets');
+  assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.08, 'le chargeur rouge apparaît dans 8 % des objets');
+  assert.equal(CITY_RUSH_HEALTH_PICKUP_CHANCE, 0.06, 'le plus de soin apparaît dans 6 % des objets');
+  assert.equal(CITY_RUSH_HEALTH_PICKUP_RESTORE, 1);
+  assert.equal(CITY_RUSH_HEALTH_PICKUP_COLOR, '#ff4055');
   assert.equal(CITY_RUSH_PISTOL_AMMO_PER_PICKUP, 7);
-  assert.equal(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE, 0.92);
+  assert.ok(Math.abs(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE - 0.86) < 1e-12);
   assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, radio: 4 });
   assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 7);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.ammoPerPickup, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /bonus rouges sont rares/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /chargeurs d'AK-47 restent rares/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /remplit le chargeur.*même s'il en reste déjà/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /7 balles/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.name, /AK-47/i);
@@ -1133,6 +1143,15 @@ test('red pickups stay visible until every active racer has a full magazine and 
   assert.equal(canCollectCityRushPickup(partial, 'pistol', { redPickupsHidden: true }), false, 'un bonus masqué reste impossible à ramasser');
   assert.equal(canCollectCityRushPickup(empty, CITY_RUSH_PICKUPS.BOOST), true, 'la règle ne masque jamais les boosts');
   assert.equal(canCollectCityRushPickup(empty, 'radio'), false, 'les bonus retirés ne peuvent plus être collectés');
+  assert.equal(canCollectCityRushPickup(empty, CITY_RUSH_PICKUPS.HEALTH, { health: 4, maxHealth: 7 }), true,
+    'une coque endommagée peut ramasser un plus rouge');
+  assert.equal(canCollectCityRushPickup(empty, CITY_RUSH_PICKUPS.HEALTH, { health: 7, maxHealth: 7 }), false,
+    'une coque pleine ne gaspille pas de soin');
+  assert.equal(canCollectCityRushPickup(empty, CITY_RUSH_PICKUPS.HEALTH, { health: 0, maxHealth: 7 }), false,
+    'un plus rouge ne ranime pas une épave');
+  assert.equal(cityRushHealthPickupRepair(4, 7), 5, 'le plus rouge rend exactement un carré');
+  assert.equal(cityRushHealthPickupRepair(7, 7), 7, 'le soin respecte la vie maximale');
+  assert.equal(cityRushHealthPickupRepair(0, 7), 0, 'le soin ne ressuscite pas');
 });
 
 test('a collected item bursts into shards, then reappears 0.1 s later', () => {
@@ -1236,13 +1255,28 @@ test('tirer sur la police donne trois étoiles, puis les destructions font monte
   assert.ok(Number.isFinite(CITY_RUSH_POLICE_SIGHT_RANGE) && CITY_RUSH_POLICE_SIGHT_RANGE > 0, 'portée de vue positive');
 });
 
-test('chaque carte a un seul mini-garage traversable, à mi-course, sur la voie à droite du sens de course', () => {
+test('chaque carte a un mini-garage élargi au centre des deux voies centrales', () => {
   assert.equal(CITY_RUSH_MINI_GARAGE_COUNT, 1, 'une seule porte : celle de mi-course');
+  assert.equal(CITY_RUSH_MINI_GARAGE_LANE_COUNT, 2);
+  assert.ok(CITY_RUSH_MINI_GARAGE_WIDTH >= CITY_RUSH_LANE_WIDTH * 2, 'le portique couvre la largeur de deux voies');
+  assert.ok(CITY_RUSH_MINI_GARAGE_WIDTH < CITY_RUSH_ROAD_WIDTH, 'il reste à l’intérieur de la chaussée');
+  assert.equal(CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, 6, 'le garage rend six carrés au maximum');
   assert.ok(CITY_RUSH_MINI_GARAGE_SIGN_LEAD >= 20, 'l’indication de voie se voit arriver quelques dizaines de mètres avant');
   for (const course of CITY_RUSH_COURSES) {
-    const lanes = cityRushLaneConfig(course).forwardLanes;
-    assert.equal(cityRushMiniGarageLane(course), lanes.at(-1), `${course.id} place le garage à droite dans son sens de course`);
+    const { laneCount, laneX } = cityRushLaneConfig(course);
+    const garageLanes = cityRushMiniGarageLanes(course);
+    const expectedCount = Math.min(CITY_RUSH_MINI_GARAGE_LANE_COUNT, laneCount);
+    const expectedFirst = Math.floor((laneCount - expectedCount) / 2);
+    assert.deepEqual(garageLanes, Array.from({ length: expectedCount }, (_, index) => expectedFirst + index),
+      `${course.id} couvre les voies centrales`);
+    assert.equal(cityRushMiniGarageLane(course), garageLanes[0], `${course.id} conserve une voie de référence stable`);
+    if (garageLanes.length === 2) {
+      assert.equal((laneX(garageLanes[0]) + laneX(garageLanes[1])) / 2, 0,
+        `${course.id} centre le portique entre ses deux voies`);
+    }
   }
+  assert.deepEqual(cityRushMiniGarageLanes(CITY_RUSH_CITIES[0]), [2, 3], 'voies 3 et 4 sur les routes urbaines à six voies');
+  assert.deepEqual(cityRushMiniGarageLanes(CITY_RUSH_NORDSCHLEIFE_COURSE), [1, 2], 'les deux voies centrales du Ring');
 
   const distances = cityRushMiniGarageTrackDistances();
   assert.equal(distances.length, CITY_RUSH_MINI_GARAGE_COUNT);
@@ -1262,23 +1296,27 @@ test('chaque carte a un seul mini-garage traversable, à mi-course, sur la voie 
   }
 
   assert.ok(CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH > 3.5 && CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH < 3.6);
+  const garageLanes = cityRushMiniGarageLanes(CITY_RUSH_CITIES[0]);
   const exitDistance = distances[0] + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
   const crossing = {
     previousDistance: exitDistance - 1,
     nextDistance: exitDistance + 1,
     garageExitDistance: exitDistance,
-    playerLane: 5,
-    garageLane: 5,
+    playerLane: garageLanes[0],
+    garageLanes,
     wantedLevel: 3,
   };
-  assert.equal(cityRushMiniGarageCanClearWanted(crossing), true, 'la recherche ne s’efface qu’à la sortie du portique');
+  assert.equal(cityRushMiniGarageCanClearWanted(crossing), true, 'la recherche s’efface après avoir traversé le portique');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: garageLanes[1] }), true,
+    'la deuxième voie centrale est également réparée');
   assert.equal(cityRushMiniGarageCanClearWanted({
     ...crossing,
     previousDistance: distances[0] - 1,
     nextDistance: distances[0] + 1,
   }), false, 'passer au centre du garage ne suffit pas : la voiture doit en sortir');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, wantedLevel: 0 }), false, 'sans recherche, aucune étoile à effacer');
-  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: 4 }), false, 'il faut traverser la voie de la porte');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: garageLanes[0] - 1 }), false,
+    'une voie extérieure au portique ne déclenche pas le service');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, used: true }), false, 'le mini-garage ne sert qu’une fois');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, previousDistance: exitDistance }), false, 'il faut franchir la sortie pendant cette image');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, sprint: true }), false, 'aucun garage en Sprint');
@@ -1306,33 +1344,37 @@ test('l’unique porte est ouverte dès le départ, jamais en Sprint', () => {
   // La porte se traverse au début du quatrième tour d'une course de six tours,
   // sans étoiles ni escouade en piste.
   const midExit = cityRushMiniGarageMidRaceDistance() + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  const garageLanes = cityRushMiniGarageLanes(CITY_RUSH_CITIES[0]);
   const crossing = {
     previousDistance: midExit - 1,
     nextDistance: midExit + 1,
     garageExitDistance: midExit,
-    playerLane: 5,
-    garageLane: 5,
+    playerLane: garageLanes[0],
+    garageLanes,
     lap: 4,
     laps: CITY_RUSH_LAPS,
     wantedLevel: 0,
   };
   assert.equal(cityRushMiniGarageCanUse(crossing), true, 'le garage sert même sans étoiles et sans escouade');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, playerLane: garageLanes[1] }), true, 'les deux voies centrales sont réparées');
   assert.equal(cityRushMiniGarageCanUse({ ...crossing, sprint: true }), false);
-  assert.equal(cityRushMiniGarageCanUse({ ...crossing, playerLane: 4 }), false, 'pas de réparation depuis une voie voisine');
+  assert.equal(cityRushMiniGarageCanUse({ ...crossing, playerLane: garageLanes[0] - 1 }), false, 'pas de réparation depuis une voie voisine');
   assert.equal(cityRushMiniGarageCanUse({ ...crossing, used: true }), false, 'pas de deuxième passage');
   assert.equal(cityRushMiniGarageCanUse({ ...crossing, nextDistance: midExit - 0.1 }), false, 'le service attend la sortie');
   assert.equal(cityRushMiniGarageCanUse({ ...crossing, previousDistance: midExit }), false, 'pas de service répété après la sortie');
 });
 
-test('chaque mini-garage rend deux cellules au maximum, sans dépasser la coque ni ressusciter une épave', () => {
-  assert.equal(CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, 2);
+test('chaque mini-garage rend six carrés au maximum, sans dépasser la coque ni ressusciter une épave', () => {
+  assert.equal(CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, 6);
   for (const car of CITY_RUSH_CARS) {
     const max = cityRushCarMaxHealth(car);
-    assert.equal(cityRushMiniGarageRepair(max - 3, max), max - 1, `${car.id} récupère deux cellules`);
-    assert.equal(cityRushMiniGarageRepair(max - 1, max), max, `${car.id} ne dépasse pas sa résistance`);
+    const damaged = Math.max(1, max - 7);
+    assert.equal(cityRushMiniGarageRepair(damaged, max), Math.min(max, damaged + 6), `${car.id} récupère six carrés au maximum`);
+    assert.equal(cityRushMiniGarageRepair(max - 5, max), max, `${car.id} ne dépasse pas sa résistance`);
+    assert.equal(cityRushMiniGarageRepair(max - 1, max), max, `${car.id} récupère son dernier carré`);
     assert.equal(cityRushMiniGarageRepair(max, max), max, `${car.id} reste pleine`);
     assert.equal(cityRushMiniGarageRepair(max + 2, max), max, `${car.id} reste plafonnée`);
-    assert.equal(cityRushMiniGarageRepair(1, max), 3, `${car.id} peut sortir du seuil critique`);
+    assert.equal(cityRushMiniGarageRepair(1, max), Math.min(max, 7), `${car.id} sort du seuil critique`);
     assert.equal(cityRushMiniGarageRepair(0, max), 0, 'une épave ne reprend pas la course');
   }
   assert.equal(cityRushMiniGarageRepair(-2), 0);
@@ -2361,13 +2403,17 @@ test('cars changing lanes still block one another while their body widths overla
   assert.equal(byId['clear-lane'], 30);
 });
 
-test('pickup encounters contain only red machine-gun bonuses and ground boosts', () => {
+test('pickup encounters contain red machine-gun bonuses, red health crosses, and ground boosts', () => {
   let seed = 112;
   const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
   let sawEmptyRow = false;
   let sawTwoPickups = false;
   let totalPickups = 0;
-  const pickupCounts = { [CITY_RUSH_PICKUPS.BOOST]: 0, [CITY_RUSH_POWERS.PISTOL]: 0 };
+  const pickupCounts = {
+    [CITY_RUSH_PICKUPS.BOOST]: 0,
+    [CITY_RUSH_PICKUPS.HEALTH]: 0,
+    [CITY_RUSH_POWERS.PISTOL]: 0,
+  };
   for (let index = 0; index < 10000; index += 1) {
     const encounter = createCityRushEncounter(random);
     assert.equal(Object.hasOwn(encounter, 'slowLane'), false);
@@ -2378,16 +2424,18 @@ test('pickup encounters contain only red machine-gun bonuses and ground boosts',
     const pickupLanes = new Set();
     for (const pickup of encounter.pickups) {
       assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
-      assert.ok([CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
+      assert.ok([CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
       assert.ok(!pickupLanes.has(pickup.lane));
       pickupLanes.add(pickup.lane);
     }
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
   const redRate = pickupCounts[CITY_RUSH_POWERS.PISTOL] / totalPickups;
+  const healthRate = pickupCounts[CITY_RUSH_PICKUPS.HEALTH] / totalPickups;
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
-  assert.ok(redRate >= 0.06 && redRate <= 0.10, `le bonus rouge apparaît environ 8 % du temps (${(redRate * 100).toFixed(1)} %)`);
-  assert.ok(boostRate >= 0.90 && boostRate <= 0.94, `les pads turbo restent très majoritaires (${(boostRate * 100).toFixed(1)} %)`);
+  assert.ok(redRate >= 0.06 && redRate <= 0.10, `le chargeur rouge apparaît environ 8 % du temps (${(redRate * 100).toFixed(1)} %)`);
+  assert.ok(healthRate >= 0.04 && healthRate <= 0.08, `le plus de soin apparaît environ 6 % du temps (${(healthRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.82 && boostRate <= 0.90, `les pads turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
   assert.equal(pickupCounts['blue-shot'], undefined);
   assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
