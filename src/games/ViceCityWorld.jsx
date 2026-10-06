@@ -1642,6 +1642,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let randomSeed = Math.random;
   let launchSmokeLeft = 0;
   let playerSmokeTimer = 0;
+  let playerDamageSmokeTimer = 0;
+  const playerHoodScratch = new THREE.Vector3();
   let coastSpeed = 0;
   let introAngle = Math.PI * 0.82;
   let countdownTime = 0;
@@ -3077,6 +3079,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
               color: 0x3a3a44, opacity: 0.5, scale: 0.52, grow: 2.3, life: 0.85,
               velocity: [(Math.random() - 0.5) * 1.8, 1.1 + Math.random() * 0.5, (Math.random() - 0.5) * 1.8],
             });
+            // Panache noir épais du capot pendant le tête-à-queue, juste
+            // avant l'explosion.
+            policeHoodScratch.set(0, 1.1, -1.3);
+            mesh.localToWorld(policeHoodScratch);
+            smoke.emit(policeHoodScratch, {
+              color: 0x1f1f25, opacity: 0.72, scale: 0.6, grow: 3.0, life: 1.3,
+              velocity: [(Math.random() - 0.5) * 0.8, 2.2 + Math.random() * 0.8, (Math.random() - 0.5) * 0.8],
+            });
             wreck.smokeTimer = 0.06;
           }
         }
@@ -3973,6 +3983,40 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, { redPickupsHidden: hideRedForRace })));
   }
 
+  // Fumée de capot : une berline touchée fume avant d'exploser. Plus sa barre
+  // descend, plus la fumée est dense, sombre et fréquente — à un ou deux carrés
+  // près, un panache noir s'échappe du moteur et annonce l'explosion.
+  const policeHoodScratch = new THREE.Vector3();
+  function emitPoliceDamageSmoke(police, dt) {
+    const mesh = police?.mesh;
+    if (!mesh?.visible || police.active === false) return;
+    const health = Number(police.health);
+    // Vie max propre au modèle (le SUV est blindé).
+    const maxHealth = Number(police.maxHealth) || cityRushPoliceMaxHealth(police.vehicleType || police.type) || CITY_RUSH_POLICE_HEALTH;
+    if (!Number.isFinite(health) || health <= 0 || health >= maxHealth) return;
+    const damage = 1 - health / maxHealth; // 0 → 1
+    police.damageSmokeTimer = (police.damageSmokeTimer || 0) - dt;
+    if (police.damageSmokeTimer > 0) return;
+    police.damageSmokeTimer = lite ? 0.2 - damage * 0.1 : 0.16 - damage * 0.11;
+    policeHoodScratch.set((Math.random() - 0.5) * 0.5, 1.05, -1.35);
+    mesh.localToWorld(policeHoodScratch);
+    // Gris clair à peine touchée → noir épais en fin de vie.
+    const shade = Math.round(0xb4 - damage * 0x86);
+    const color = (shade << 16) | (shade << 8) | (shade + 6);
+    smoke.emit(policeHoodScratch, {
+      color,
+      opacity: 0.28 + damage * 0.42,
+      scale: 0.28 + damage * 0.38,
+      grow: 2.2 + damage * 1.2,
+      life: 0.7 + damage * 0.6,
+      velocity: [(Math.random() - 0.5) * 0.7, 1.3 + damage * 1.1, 1.6 + Math.random() * 0.8],
+    });
+    // Coque presque percée : quelques étincelles orangées dans la fumée.
+    if (health <= 2 && Math.random() < 0.35) {
+      smoke.emit(policeHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.14, grow: 1.4, life: 0.32, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), 1.2] });
+    }
+  }
+
   function updatePolice(dt, packLeaderEntry) {
     // Sprint : aucune unité en piste, aucune annonce — la chasse ne tourne pas.
     if (sprint) return;
@@ -3981,6 +4025,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     policeAimNoticeCooldown = Math.max(0, policeAimNoticeCooldown - dt);
     const pursuers = activePursuers();
     pursuers.forEach((police) => { police.healthFlash = Math.max(0, (police.healthFlash || 0) - dt); });
+    pursuers.forEach((police) => emitPoliceDamageSmoke(police, dt));
+    // Patrouilles encore en ronde — police en civil (banalisée) et police
+    // routière, dans le flot comme en face : elles fument aussi dès qu'elles
+    // sont touchées, avant d'exploser.
+    for (const car of trafficCars) {
+      if (!car.rallied && !car.destroyed && isCityRushPoliceTrafficType(car.type)) emitPoliceDamageSmoke(car, dt);
+    }
+    for (const car of oncomingCars) {
+      if (!car.rallied && !car.destroyed && isCityRushPoliceTrafficType(car.type)) emitPoliceDamageSmoke(car, dt);
+    }
     if (!pursuers.length) return;
     // Le trafic en ronde : identifiant pour l'impact, position et vitesse pour
     // repérer une voie bouchée (une berline évite de s'y engluer).
@@ -5710,6 +5764,30 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
       launchSmokeLeft = Math.max(0, launchSmokeLeft - dt);
+      // Fumée de capot du joueur : plus la barre de vie descend, plus elle est
+      // dense, sombre et fréquente (gris léger → panache noir + étincelles).
+      // Opacité plafonnée : la fumée file vers la caméra sans masquer la route.
+      if (!playerWrecked && playerHealth > 0 && playerHealth < playerMaxHealth) {
+        playerDamageSmokeTimer -= dt;
+        if (playerDamageSmokeTimer <= 0) {
+          const damage = 1 - playerHealth / playerMaxHealth;
+          playerDamageSmokeTimer = (lite ? 0.24 : 0.18) - damage * (lite ? 0.12 : 0.12);
+          playerHoodScratch.set((Math.random() - 0.5) * 0.6, 0.95, -1.45);
+          playerCar.localToWorld(playerHoodScratch);
+          const shade = Math.round(0xbe - damage * 0x92);
+          smoke.emit(playerHoodScratch, {
+            color: (shade << 16) | (shade << 8) | (shade + 6),
+            opacity: 0.18 + damage * 0.34,
+            scale: 0.22 + damage * 0.34,
+            grow: 2.0 + damage * 1.1,
+            life: 0.55 + damage * 0.5,
+            velocity: [(Math.random() - 0.5) * 0.6, 1.4 + damage * 1.0, 1.8 + Math.random() * 0.8],
+          });
+          if (playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && Math.random() < 0.35) {
+            smoke.emit(playerHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.13, grow: 1.4, life: 0.3, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), 1.4] });
+          }
+        }
+      }
 
       worldTravel = (distance - priorDistance) * SCALE;
       // Un contact avec une berline de police « pnj » la rappelle : elle sort

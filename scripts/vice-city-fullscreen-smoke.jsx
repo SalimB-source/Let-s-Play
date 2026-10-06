@@ -167,7 +167,7 @@ const waitForIntroStep = (node, label) => until(() => {
   return active && squash(active.textContent).includes(label) ? active : null;
 }, `l’écran « ${label} » de l’intro`);
 const waitForCountdown = (node) => until(() => node.querySelector('.city-rush-countdown'), 'le compte à rebours');
-const waitForRace = (node) => until(() => node.querySelector('.city-rush-hud-top'), 'le départ de la course');
+const waitForRace = (node) => until(() => node.querySelector('.city-rush-hud'), 'le départ de la course');
 const waitForPause = (node) => until(() => node.querySelector('.city-rush-pause-overlay'), 'la pause');
 const waitForResult = (node) => until(() => node.querySelector('.city-rush-result-overlay'), 'l’écran d’arrivée');
 
@@ -326,7 +326,7 @@ export async function checkViceCityFullscreen(assert) {
       assert.deepEqual(since(api, before), { requests: 1, exits: 0 });
       await press('f');
       assert.deepEqual(shellState(node, api), CLOSED, 'F referme');
-      assert.ok(node.querySelector('.city-rush-hud-top') && !node.querySelector('.city-rush-pause-overlay'), 'F n’a pas mis la course en pause (c’est un choix du joueur, pas une sortie du navigateur)');
+      assert.ok(node.querySelector('.city-rush-hud') && !node.querySelector('.city-rush-pause-overlay'), 'F n’a pas mis la course en pause (c’est un choix du joueur, pas une sortie du navigateur)');
       await press('F');
       assert.deepEqual(shellState(node, api), OPEN, 'F majuscule (Maj ou verrouillage) aussi');
       for (const [label, init] of [

@@ -5,6 +5,7 @@ import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushStoryScene from './CityRushStoryScene';
 import CityRushRaceList from './CityRushRaceList';
 import CityRushHealthBar from './CityRushHealthBar';
+import CityRushSpeedometer from './CityRushSpeedometer';
 import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
@@ -62,6 +63,7 @@ import { useAchievementAction } from '../achievements/AchievementContext';
 import { VICE_CITY_STORY_MODE } from '../achievements/engine';
 import './vice-city-rush.css';
 import './vice-city-rush-cinematic.css';
+import './vice-city-rush-hud.css';
 
 // v4 : la boucle du stage double (600 m → 1 200 m), donc les courses à six
 // tours passent à 8 400 m et le Sprint à seize checkpoints / 4 800 m ; les
@@ -1127,8 +1129,12 @@ export default function ViceCityRushPage() {
             <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? false : mode.policeFromStart} raceFormat={sprintMode ? 'sprint' : 'laps'} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onPickup={onPowerPickup} onEffect={effectMessage} onLap={onLap} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
 
-            {phase === 'playing' && <>
-              <div className="city-rush-hud-top">
+            {phase === 'playing' && (
+              /* HUD de course en zones : chaque élément vit dans sa propre case de
+                 grille (coins, bandeau central, pied), si bien qu'aucun bloc ne
+                 peut en recouvrir un autre, quelle que soit la taille d'écran. */
+              <div className={`city-rush-hud${sprintMode ? ' is-sprint' : ''}`}>
+                <div className="city-rush-hud-zone is-top-left">
                 {sprintMode ? (
                 <div className="city-rush-hud-card city-rush-position-card">
                   <span className="city-rush-hud-label">SOLO</span>
@@ -1167,32 +1173,57 @@ export default function ViceCityRushPage() {
                   </div>
                 </div>
                 )}
-                <div className="city-rush-hud-card city-rush-speed-card">
-                  <span className="city-rush-hud-label">VITESSE</span>
-                  <strong>{hud.speed}<small> km/h</small></strong>
-                  {oncomingCharged && (
-                    <span className="city-rush-speed-bonus" aria-label={`Bonus de contresens : plus ${oncomingBonusPercent} pour cent de vitesse`}>
-                      +{oncomingBonusPercent} %
-                    </span>
-                  )}
-                  <span className="city-rush-time">{formatTime(hud.elapsed)}</span>
                 </div>
-              </div>
 
-              {playerHealthValue !== null && phase === 'playing' && (
-                <div
-                  className={`city-rush-health${playerHealthCritical ? ' is-critical' : ''}${hud.playerHealthFlash > 0 ? ' is-hit' : ''}`}
-                  role="status"
-                  aria-label={`Vie de ta voiture : ${playerHealthValue} carrés sur ${playerHealthMax}${playerHealthCritical ? ' — critique' : ''}`}
-                >
-                  <span className="city-rush-health-head">
-                    <b>VIE</b>
-                    <small>{playerHealthCritical ? 'CRITIQUE' : `${playerHealthValue}/${playerHealthMax}`}</small>
-                  </span>
-                  <CityRushHealthBar health={playerHealthValue} maxHealth={playerHealthMax} label="Vie du joueur" flash={hud.playerHealthFlash > 0} />
+                <div className="city-rush-hud-zone is-top-center" aria-live="polite">
+              {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0 || oncomingCharged) && (
+                <div className={`city-rush-status-pill ${statusTone}`}>
+                  {hud.stunLeft > 0
+                    ? `ÉPAVE · ${hud.stunLeft.toFixed(1)} s`
+                    : hud.trafficImpactLeft > 0
+                      ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s`
+                      : hud.boostLeft > 0
+                        ? `TURBO · ${hud.boostLeft.toFixed(1)} s`
+                        : hud.slowLeft > 0
+                          ? `RALENTI · ${hud.slowLeft.toFixed(1)} s`
+                          : `CONTRESENS · +${oncomingBonusPercent} %`}
                 </div>
               )}
+              {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
+              {lapBanner && (
+                <div className={`city-rush-lap-banner${lapBanner.final ? ' is-final' : ''}`} key={lapBanner.nonce} role="status" aria-live="polite">
+                  {lapBanner.sprint ? <>
+                  <span>{`CHECKPOINT ${lapBanner.checkpoint} / ${lapBanner.checkpoints}`}</span>
+                  <strong>+{lapBanner.timeBonus} S</strong>
+                  <small>{lapBanner.remaining > 1 ? `Encore ${lapBanner.remaining} checkpoints · ${formatTime(lapBanner.elapsed)}` : 'Prochain checkpoint : l’arrivée !'}</small>
+                  </> : <>
+                  <span>{lapBanner.checkpoint ? checkpointKicker(lapBanner.remaining) : lapBanner.final ? 'LIGNE FRANCHIE · DERNIER TOUR' : `LIGNE FRANCHIE · TOUR ${lapBanner.lap} / ${lapBanner.laps}`}</span>
+                  <strong>{lapBanner.checkpoint ? `PLUS QUE ${lapBanner.remaining} M` : lapBanner.final ? 'FINAL LAP' : `LAP ${lapBanner.lap}`}</strong>
+                  <small>{lapBanner.checkpoint ? 'Ce n’est pas encore l’arrivée · tout donner.' : lapBanner.final ? `Plus que ${lapBanner.remaining} m · tout donner.` : `${(lapBanner.laps - lapBanner.lap + 1)} tours restants · ${formatTime(lapBanner.elapsed)}`}</small>
+                  </>}
+                </div>
+              )}
+                </div>
 
+                <div className="city-rush-hud-zone is-top-right">
+              <div className={`city-rush-gta-cash${wantedStars > 0 ? ' is-wanted' : ''}`} aria-label={`Butin : ${hud.score || 0} points`}>
+                <b>{(hud.score || 0).toLocaleString('fr-FR')} PTS</b>
+                <small>{formatTime(hud.elapsed)}</small>
+                {wantedStars > 0 && (
+                  <span className="city-rush-gta-wanted" role="status" aria-label={`Police en chasse · niveau ${wantedStars} sur ${CITY_RUSH_WANTED_MAX_STARS}`}>
+                    {Array.from({ length: CITY_RUSH_WANTED_MAX_STARS }, (_, index) => index + 1)
+                      .map((star) => <i key={star} className={star <= wantedStars ? 'is-on' : ''} aria-hidden="true">★</i>)}
+                  </span>
+                )}
+              </div>
+
+                </div>
+
+                <div className="city-rush-hud-zone is-mid-left">
+                  {!sprintMode && <CityRushRaceList racers={standings} pursuers={hud.police} laps={currentLaps} />}
+                </div>
+
+                <div className="city-rush-hud-zone is-mid-right">
               {/* Plaque de signalisation de la route officielle : sur la Shuto
                   C1 de Tokyo elle donne le secteur, le point kilométrique, la
                   couverture (tunnel ou tranchée) et la prochaine jonction. */}
@@ -1231,64 +1262,37 @@ export default function ViceCityRushPage() {
                 </div>
               )}
 
-              <div className={`city-rush-gta-cash${wantedStars > 0 ? ' is-wanted' : ''}`} aria-label={`Butin : ${hud.score || 0} points`}>
-                <b>{(hud.score || 0).toLocaleString('fr-FR')} PTS</b>
-                <small>{formatTime(hud.elapsed)}</small>
-                {wantedStars > 0 && (
-                  <span className="city-rush-gta-wanted" role="status" aria-label={`Police en chasse · niveau ${wantedStars} sur ${CITY_RUSH_WANTED_MAX_STARS}`}>
-                    {Array.from({ length: CITY_RUSH_WANTED_MAX_STARS }, (_, index) => index + 1)
-                      .map((star) => <i key={star} className={star <= wantedStars ? 'is-on' : ''} aria-hidden="true">★</i>)}
+                </div>
+
+                <div className="city-rush-hud-zone is-bottom-left">
+                  <div className="city-rush-speedometer-wrap">
+                    <CityRushSpeedometer speed={hud.speed} boosting={hud.boostLeft > 0} />
+                  {oncomingCharged && (
+                    <span className="city-rush-speed-bonus" aria-label={`Bonus de contresens : plus ${oncomingBonusPercent} pour cent de vitesse`}>
+                      +{oncomingBonusPercent} %
+                    </span>
+                  )}
+                  </div>
+                </div>
+
+                <div className="city-rush-hud-zone is-bottom-center">
+              {playerHealthValue !== null && phase === 'playing' && (
+                <div
+                  className={`city-rush-health${playerHealthCritical ? ' is-critical' : ''}${hud.playerHealthFlash > 0 ? ' is-hit' : ''}`}
+                  role="status"
+                  aria-label={`Vie de ta voiture : ${playerHealthValue} carrés sur ${playerHealthMax}${playerHealthCritical ? ' — critique' : ''}`}
+                >
+                  <span className="city-rush-health-head">
+                    <b>VIE</b>
+                    <small>{playerHealthCritical ? 'CRITIQUE' : `${playerHealthValue}/${playerHealthMax}`}</small>
                   </span>
-                )}
-              </div>
-
-              {!sprintMode && <div className="city-rush-radar">
-                <CityRushRaceList racers={standings} pursuers={hud.police} laps={currentLaps} />
-              </div>}
-
-              {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0 || oncomingCharged) && (
-                <div className={`city-rush-status-pill ${statusTone}`}>
-                  {hud.stunLeft > 0
-                    ? `ÉPAVE · ${hud.stunLeft.toFixed(1)} s`
-                    : hud.trafficImpactLeft > 0
-                      ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s`
-                      : hud.boostLeft > 0
-                        ? `TURBO · ${hud.boostLeft.toFixed(1)} s`
-                        : hud.slowLeft > 0
-                          ? `RALENTI · ${hud.slowLeft.toFixed(1)} s`
-                          : `CONTRESENS · +${oncomingBonusPercent} %`}
+                  <CityRushHealthBar health={playerHealthValue} maxHealth={playerHealthMax} label="Vie du joueur" flash={hud.playerHealthFlash > 0} />
                 </div>
               )}
-              {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
-              {lapBanner && (
-                <div className={`city-rush-lap-banner${lapBanner.final ? ' is-final' : ''}`} key={lapBanner.nonce} role="status" aria-live="polite">
-                  {lapBanner.sprint ? <>
-                  <span>{`CHECKPOINT ${lapBanner.checkpoint} / ${lapBanner.checkpoints}`}</span>
-                  <strong>+{lapBanner.timeBonus} S</strong>
-                  <small>{lapBanner.remaining > 1 ? `Encore ${lapBanner.remaining} checkpoints · ${formatTime(lapBanner.elapsed)}` : 'Prochain checkpoint : l’arrivée !'}</small>
-                  </> : <>
-                  <span>{lapBanner.checkpoint ? checkpointKicker(lapBanner.remaining) : lapBanner.final ? 'LIGNE FRANCHIE · DERNIER TOUR' : `LIGNE FRANCHIE · TOUR ${lapBanner.lap} / ${lapBanner.laps}`}</span>
-                  <strong>{lapBanner.checkpoint ? `PLUS QUE ${lapBanner.remaining} M` : lapBanner.final ? 'FINAL LAP' : `LAP ${lapBanner.lap}`}</strong>
-                  <small>{lapBanner.checkpoint ? 'Ce n’est pas encore l’arrivée · tout donner.' : lapBanner.final ? `Plus que ${lapBanner.remaining} m · tout donner.` : `${(lapBanner.laps - lapBanner.lap + 1)} tours restants · ${formatTime(lapBanner.elapsed)}`}</small>
-                  </>}
+
                 </div>
-              )}
-              <div className="city-rush-controls-bottom">
-                <div className="city-rush-steering" aria-label="Changer de voie">
-                  <button
-                    type="button"
-                    onPointerDown={(event) => { event.preventDefault(); actionsRef.current?.('left'); }}
-                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); actionsRef.current?.('left'); } }}
-                    aria-label="Aller à gauche"
-                  >←</button>
-                  <span>VOIES</span>
-                  <button
-                    type="button"
-                    onPointerDown={(event) => { event.preventDefault(); actionsRef.current?.('right'); }}
-                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); actionsRef.current?.('right'); } }}
-                    aria-label="Aller à droite"
-                  >→</button>
-                </div>
+
+                <div className="city-rush-hud-zone is-bottom-right">
                 {/* Le Sprint n'a pas d'arme : seuls les boosts au sol sont
                     disponibles, le bouton AK-47 n'a donc pas sa place ici. */}
                 {!sprintMode && (() => {
@@ -1299,20 +1303,38 @@ export default function ViceCityRushPage() {
                   return (
                     <button
                       type="button"
-                      className={`city-rush-machine-gun-button${ready ? ' is-ready' : ''}`}
+                      className={`city-rush-machine-gun-button${ready ? ' is-ready' : ' is-empty'}${ready && ammo <= 2 ? ' is-low' : ''}`}
                       onClick={() => actionsRef.current?.(type)}
                       disabled={!ready}
                       title={ready ? `AK-47 chargé · ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} · appuie ou maintiens Z pour tirer` : `Ramasse un bonus rouge rare pour obtenir ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles`}
                       aria-label={ready ? `Tirer à l’AK-47, ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} ; maintiens Z pour vider le chargeur` : `AK-47 : 0/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}, ramasse un bonus rouge rare`}
                     >
+                      {/* Anneau de munitions : un segment par balle du chargeur. */}
+                      <svg className="city-rush-machine-gun-ammo" viewBox="0 0 100 100" aria-hidden="true">
+                        {Array.from({ length: CITY_RUSH_PISTOL_AMMO_PER_PICKUP }, (_, index) => {
+                          const total = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+                          const span = 360 / total;
+                          const from = ((index * span) + 4 - 90) * (Math.PI / 180);
+                          const to = (((index + 1) * span) - 4 - 90) * (Math.PI / 180);
+                          const r = 47;
+                          return (
+                            <path
+                              key={index}
+                              className={index < ammo ? 'is-loaded' : ''}
+                              d={`M ${50 + r * Math.cos(from)} ${50 + r * Math.sin(from)} A ${r} ${r} 0 0 1 ${50 + r * Math.cos(to)} ${50 + r * Math.sin(to)}`}
+                            />
+                          );
+                        })}
+                      </svg>
                       <span className="city-rush-machine-gun-label">AK-47</span>
                       <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
                       <span className="city-rush-machine-gun-status">{ready ? `CHARGÉ ${ammo}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}` : `0 / ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}`}</span>
                     </button>
                   );
                 })()}
+                </div>
               </div>
-            </>}
+            )}
 
             {phase === 'intro' && (
               <div className="city-rush-overlay city-rush-intro">

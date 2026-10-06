@@ -286,6 +286,37 @@ test('la barre de police affiche six carrés pour une berline, dix pour un SUV',
   assert.doesNotMatch(page, /3 dégâts|trois dégâts/, 'plus aucun texte ne promet trois dégâts d’un tir rouge');
 });
 
+test('le HUD de course est une grille de zones : aucun élément ne se superpose', () => {
+  const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
+  assert.match(page, /import '\.\/vice-city-rush-hud\.css'/);
+  assert.match(page, /className=\{`city-rush-hud\$\{sprintMode/);
+  for (const zone of ['is-top-left', 'is-top-center', 'is-top-right', 'is-mid-left', 'is-mid-right', 'is-bottom-left', 'is-bottom-center', 'is-bottom-right']) {
+    assert.match(page, new RegExp(`city-rush-hud-zone ${zone}`), `zone ${zone} présente`);
+  }
+  assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \{[^}]*display: grid;[^}]*grid-template-areas:/);
+  assert.doesNotMatch(page, /city-rush-controls-bottom|className="city-rush-radar"/);
+});
+
+test('les flèches de direction ne sont plus affichées ; le compteur à aiguille occupe le bas gauche', () => {
+  assert.doesNotMatch(page, /city-rush-steering/);
+  assert.match(page, /city-rush-hud-zone is-bottom-left">\s*<div className="city-rush-speedometer-wrap">\s*<CityRushSpeedometer speed=\{hud\.speed\}/);
+  const gauge = readFileSync(new URL('../src/games/CityRushSpeedometer.jsx', import.meta.url), 'utf8');
+  assert.match(gauge, /onClick=\{toggle\}/);
+  assert.match(gauge, /'mph'/);
+});
+
+test('le bouton AK-47 vide est grisé et montre un anneau de munitions', () => {
+  const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
+  assert.match(page, /ready \? ' is-ready' : ' is-empty'/);
+  assert.match(page, /city-rush-machine-gun-ammo/);
+  assert.match(hudCss, /\.city-rush-machine-gun-button\.is-empty \{[^}]*filter: grayscale\(1\)/);
+});
+
+test('le compte à rebours laisse voir la route (pas de voile opaque)', () => {
+  const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
+  assert.match(hudCss, /\.city-rush-page \.city-rush-viewport \.city-rush-countdown,[^{]*\{[^}]*backdrop-filter: none;[^}]*\}/);
+  assert.doesNotMatch(hudCss.match(/\.city-rush-page \.city-rush-viewport \.city-rush-countdown,[^{]*\{([^}]*)\}/)[1], /#090c12/);
+});
 
 test('le blindage du SUV est conservé à la création, au rejeu et au renfort', () => {
   assert.match(world, /health: cityRushPoliceMaxHealth\(vehicleType\)/);
