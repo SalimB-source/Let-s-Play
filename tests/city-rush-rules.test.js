@@ -74,10 +74,17 @@ import {
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_POLICE_SIGHT_RANGE,
   CITY_RUSH_WANTED_MAX_STARS,
+  CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
+  CITY_RUSH_MINI_GARAGE_COUNT,
+  CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS,
+  CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
   isCityRushPoliceTrafficType,
   cityRushWantedLevelAfterHit,
+  cityRushWantedLevelAfterPoliceDestroyed,
+  cityRushMiniGarageLane,
+  cityRushMiniGarageCanClearWanted,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
   CITY_RUSH_POLICE_DAMAGE,
@@ -1065,18 +1072,54 @@ test('cinq étoiles de recherche déclenchent la poursuite et les patrouilles fo
   assert.equal(cityRushPoliceTurnaroundProgress(3), 1);
 });
 
-test('tirer sur une voiture de police fait passer directement à cinq étoiles (escouade complète + SUV)', () => {
-  // Un tir sur une patrouille saute toutes les étapes : cinq étoiles d'un coup,
-  // quel que soit le niveau de départ (0, 1, 3 ou déjà 4).
-  assert.equal(cityRushWantedLevelAfterHit(0, { police: true, shot: true }), 5, 'un tir sur la police passe à cinq étoiles dès zéro');
-  assert.equal(cityRushWantedLevelAfterHit(1, { police: true, shot: true }), 5, 'un tir sur la police passe à cinq étoiles depuis une étoile');
-  assert.equal(cityRushWantedLevelAfterHit(3, { police: true, shot: true }), 5, 'un tir sur la police passe à cinq étoiles depuis trois étoiles');
-  assert.equal(cityRushWantedLevelAfterHit(4, { police: true, shot: true }), 5, 'un tir sur la police reste plafonné à cinq étoiles');
+test('tirer sur la police donne trois étoiles, puis les destructions font monter à quatre et cinq', () => {
+  assert.equal(CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS, 2);
+  assert.equal(cityRushWantedLevelAfterHit(0, { police: true }), 3, 'le premier tir sur la police donne trois étoiles');
+  assert.equal(cityRushWantedLevelAfterHit(1, { police: true }), 3, 'un tir depuis une étoile monte à trois');
+  assert.equal(cityRushWantedLevelAfterHit(3, { police: true }), 3, 'les tirs suivants ne montent pas les étoiles seuls');
+  assert.equal(cityRushWantedLevelAfterHit(4, { police: true }), 4, 'un tir ne fait pas baisser un niveau déjà plus élevé');
+  assert.equal(cityRushWantedLevelAfterPoliceDestroyed(0, 1), 4, 'la première voiture détruite donne quatre étoiles même sans tir préalable');
+  assert.equal(cityRushWantedLevelAfterPoliceDestroyed(3, 1), 4, 'la première destruction fait passer de trois à quatre étoiles');
+  assert.equal(cityRushWantedLevelAfterPoliceDestroyed(4, 2), 5, 'deux destructions font passer à cinq étoiles');
+  assert.equal(cityRushWantedLevelAfterPoliceDestroyed(0, 2), 5, 'deux destructions suffisent à atteindre cinq étoiles');
+  assert.equal(cityRushWantedLevelAfterPoliceDestroyed(5, 3), 5, 'le niveau reste plafonné à cinq étoiles');
   // À cinq étoiles, l'escouade complète sort : les trois unités, dont le SUV.
   assert.equal(cityRushPoliceCountForWantedLevel(5), CITY_RUSH_POLICE_COUNT, 'cinq étoiles déploient les trois unités');
   assert.ok(CITY_RUSH_POLICE_VEHICLE_TYPES.includes('police-suv'), 'l’escouade comprend bien un SUV');
   // Les patrouilles croisées sur la route chassent à vue : la portée existe.
   assert.ok(Number.isFinite(CITY_RUSH_POLICE_SIGHT_RANGE) && CITY_RUSH_POLICE_SIGHT_RANGE > 0, 'portée de vue positive');
+});
+
+test('chaque carte a deux mini-garages traversables sur la voie à droite du sens de course', () => {
+  assert.equal(CITY_RUSH_MINI_GARAGE_COUNT, 2);
+  assert.equal(CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS.length, CITY_RUSH_MINI_GARAGE_COUNT);
+  assert.ok(CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS.every((position) => position > 0 && position < CITY_RUSH_LAP_LENGTH));
+  assert.ok(CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[0] < CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[1]);
+  for (const course of CITY_RUSH_COURSES) {
+    const lanes = cityRushLaneConfig(course).forwardLanes;
+    assert.equal(cityRushMiniGarageLane(course), lanes.at(-1), `${course.id} place les garages à droite dans son sens de course`);
+  }
+
+  assert.ok(CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH > 3.5 && CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH < 3.6);
+  const exitDistance = 360 + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+  const crossing = {
+    previousDistance: exitDistance - 1,
+    nextDistance: exitDistance + 1,
+    garageExitDistance: exitDistance,
+    playerLane: 5,
+    garageLane: 5,
+    wantedLevel: 3,
+  };
+  assert.equal(cityRushMiniGarageCanClearWanted(crossing), true, 'la recherche ne s’efface qu’à la sortie du portique');
+  assert.equal(cityRushMiniGarageCanClearWanted({
+    ...crossing,
+    previousDistance: 359,
+    nextDistance: 361,
+  }), false, 'passer au centre du garage ne suffit pas : la voiture doit en sortir');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, wantedLevel: 0 }), false, 'un garage sans recherche reste disponible');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: 4 }), false, 'il faut traverser la voie de la porte');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, used: true }), false, 'chaque mini-garage ne sert qu’une fois');
+  assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, previousDistance: exitDistance }), false, 'il faut franchir la sortie pendant cette image');
 });
 
 test('trois voitures de police poursuivent le joueur et un renfort est réservé par rival — hors classement', () => {

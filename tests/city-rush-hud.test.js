@@ -102,6 +102,33 @@ test('le niveau de recherche à cinq étoiles est explicite, visible et réiniti
     'l’animation de demi-tour progresse avec le temps réel');
 });
 
+test('les étoiles suivent les tirs/destructions et deux mini-garages réinitialisent la recherche', () => {
+  const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
+  const policeDestruction = world.match(/function destroyPolice\([\s\S]*?\n  function acquirePoliceWreckHusk/)?.[0] || '';
+  assert.match(world, /cityRushWantedLevelAfterHit\(wantedLevel, \{ hit: true, police \}\)/,
+    'un tir ou contact policier élève la recherche sans passer directement à cinq');
+  assert.match(policeDamage, /const isShot = source !== 'collision';[\s\S]*?raiseWantedLevel\(\{ police: true, reason: isShot \? 'police-shot' : 'police-contact' \}\)/,
+    'un tir réussi sur la police déclenche bien le palier de trois étoiles');
+  assert.match(world, /cityRushWantedLevelAfterPoliceDestroyed\(wantedLevel, policeDestroyedByPlayer\)/,
+    'les destructions de police comptent séparément');
+  assert.match(policeDestruction, /raiseWantedLevel\(\{ police: true, destroyed: true, reason: 'police-destroyed' \}\)/,
+    'détruire une voiture de police applique le palier de destruction');
+  assert.match(world, /policeDestroyedByPlayer = Math\.min\(CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS, policeDestroyedByPlayer \+ 1\)/);
+  assert.match(world, /CITY_RUSH_MINI_GARAGE_COUNT/);
+  assert.match(world, /const garageExitDistance = garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH/,
+    'la remise à zéro attend que la voiture ait traversé toute la longueur du portique');
+  assert.match(world, /while \(!garage\.used && garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance\)/,
+    'le garage reste visible jusqu’à ce que la voiture en sorte');
+  assert.match(world, /cityRushMiniGarageCanClearWanted\(/);
+  assert.match(world, /wantedLevel = 0;[\s\S]*?type: 'mini-garage-used'/,
+    'la sortie du mini-garage remet le niveau à zéro et annonce son usage');
+  assert.match(world, /miniGaragesRemaining: miniGarages\.filter\(\(garage\) => !garage\.used\)\.length/);
+  assert.match(page, /miniGaragesRemaining:\s*CITY_RUSH_MINI_GARAGE_COUNT/);
+  assert.match(page, /city-rush-gta-garages/);
+  assert.match(page, /MINI-GARAGES/);
+  assert.match(page, /MINI-GARAGE · \$\{effect\.previousStars\} ÉTOILES EFFACÉES/);
+});
+
 test('les berlines de police du trafic sont ciblables par un tir rouge', () => {
   const candidates = world.match(/function laneShotCandidates\([\s\S]*?\n  function firstEnemyOnLane/)?.[0] || '';
   const vehicleState = world.match(/function getRaceVehicleState\([\s\S]*?\n  function isVisibleInPlayerCamera/)?.[0] || '';

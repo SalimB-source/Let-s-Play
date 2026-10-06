@@ -59,6 +59,10 @@ import {
   CITY_RUSH_POLICE_BLOCKADE_HOLD,
   CITY_RUSH_POLICE_COUNT,
   CITY_RUSH_WANTED_MAX_STARS,
+  CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
+  CITY_RUSH_MINI_GARAGE_COUNT,
+  CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS,
+  CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
@@ -123,6 +127,9 @@ import {
   cityRushPoliceContact,
   cityRushPoliceDamage,
   cityRushWantedLevelAfterHit,
+  cityRushWantedLevelAfterPoliceDestroyed,
+  cityRushMiniGarageLane,
+  cityRushMiniGarageCanClearWanted,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
   cityRushPolicePace,
@@ -173,7 +180,7 @@ import {
   shutoC1Readout,
 } from './cityRushRules';
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
-import { createBatch, seededRandom } from './cityRushBuilder';
+import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStage';
@@ -436,6 +443,78 @@ function makeRampObject(shared, city) {
     phase: Math.random() * Math.PI * 2,
   };
   return { group, chevrons, holo };
+}
+
+function makeMiniGarageMaterials(city) {
+  const signTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#070b14';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = city.accent;
+    ctx.lineWidth = 8;
+    ctx.strokeRect(5, 5, width - 10, height - 10);
+    neonText(ctx, 'MINI GARAGE', width / 2, height * 0.42, '900 58px "Orbitron", Arial, sans-serif', city.accent, 16);
+    neonText(ctx, 'ÉTOILES → 0', width / 2, height * 0.78, '800 30px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
+  }, 512, 160, { smooth: true });
+
+  return {
+    body: standard(0x151c2a, { roughness: 0.5, metalness: 0.48 }),
+    wall: standard(0x0b101a, { roughness: 0.76, metalness: 0.16 }),
+    floor: standard(0x0a1117, { roughness: 0.62, metalness: 0.3 }),
+    accent: new THREE.MeshBasicMaterial({ color: city.accent, toneMapped: false, fog: false }),
+    secondary: new THREE.MeshBasicMaterial({ color: city.secondary, toneMapped: false, fog: false }),
+    laneMark: new THREE.MeshBasicMaterial({ color: '#ecf6fa', toneMapped: false, fog: false }),
+    sign: new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide }),
+  };
+}
+
+function makeMiniGarageObject(index, materials) {
+  const group = new THREE.Group();
+  group.name = 'city-rush-mini-garage';
+  group.userData = { kind: 'mini-garage', index, lane: null, trackDistance: 0, used: false };
+
+  const addBox = (name, size, position, material) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    mesh.name = name;
+    mesh.position.set(...position);
+    group.add(mesh);
+    return mesh;
+  };
+
+  // Portique de service ouvert : ses côtés et son toit dessinent un petit
+  // atelier, mais l'ouverture reste assez large pour traverser sans collision.
+  addBox('mini-garage-floor', [3.25, 0.08, 5.1], [0, 0.045, 0], materials.floor);
+  addBox('mini-garage-roof', [3.0, 0.22, 5.0], [0, 2.74, 0], materials.body);
+  addBox('mini-garage-front-beam', [2.95, 0.26, 0.24], [0, 2.56, 2.38], materials.body);
+  addBox('mini-garage-back-beam', [2.95, 0.22, 0.2], [0, 2.51, -2.38], materials.body);
+  addBox('mini-garage-open-shutter', [2.35, 0.38, 0.12], [0, 2.25, -2.34], materials.wall);
+
+  for (const side of [-1, 1]) {
+    addBox('mini-garage-side-wall', [0.18, 1.9, 4.56], [side * 1.38, 1.02, 0], materials.wall);
+    addBox('mini-garage-front-pillar', [0.2, 2.58, 0.28], [side * 1.3, 1.35, 2.35], materials.body);
+    addBox('mini-garage-neon-pillar', [0.07, 2.22, 0.06], [side * 1.17, 1.38, 2.51], materials.accent);
+    addBox('mini-garage-side-neon', [0.055, 0.07, 4.4], [side * 1.29, 1.96, 0], materials.secondary);
+    addBox('mini-garage-entry-mark', [0.08, 0.035, 4.65], [side * 1.05, 0.105, 0], materials.accent);
+  }
+
+  addBox('mini-garage-roof-neon', [2.8, 0.08, 0.08], [0, 2.62, 2.53], materials.accent);
+  addBox('mini-garage-sign-frame', [2.62, 0.78, 0.14], [0, 3.14, 2.52], materials.body);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.48, 0.62), materials.sign);
+  sign.name = 'mini-garage-sign';
+  sign.position.set(0, 3.14, 2.605);
+  group.add(sign);
+
+  // Les chevrons au sol rendent la trajectoire de traversée lisible au joueur.
+  for (let index = 0; index < 3; index += 1) {
+    const chevron = new THREE.Mesh(
+      new THREE.BoxGeometry(0.48, 0.035, 0.1),
+      index === 1 ? materials.secondary : materials.laneMark,
+    );
+    chevron.name = 'mini-garage-drive-through-mark';
+    chevron.position.set(0, 0.108, 1.35 - index * 1.1);
+    group.add(chevron);
+  }
+
+  return group;
 }
 
 function setPickupKind(pickup, type, laneX, shared) {
@@ -1388,6 +1467,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Niveau de recherche propre au joueur : les modes normaux commencent à zéro,
   // tandis que le mode Poursuite démarre à cinq étoiles comme son escouade.
   let wantedLevel = effectivePoliceFromStart ? CITY_RUSH_WANTED_MAX_STARS : 0;
+  // Destructions de police réalisées par le joueur depuis le dernier passage
+  // au mini-garage : la première vaut quatre étoiles, la deuxième cinq.
+  let policeDestroyedByPlayer = 0;
   // Les trois unités de base et les voitures réservées aux rivaux ont déjà
   // leur numéro ; les remplaçantes suivantes commencent après toute la réserve.
   let nextPoliceUnitNumber = policeCars.length + 1;
@@ -1497,7 +1579,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
-  // À cinq étoiles (un tir sur une patrouille les y porte directement), toute
+  // À cinq étoiles (atteintes à la deuxième destruction de police), toute
   // voiture de police qui aperçoit le pilote rejoint la chasse sans attendre
   // le contact : les berlines en ronde dans le même sens se rallient dès
   // qu'elles sont à portée de vue, celles venant en face font demi-tour.
@@ -1548,10 +1630,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return activated;
   }
 
-  function raiseWantedLevel({ police = false, shot = false, reason = 'vehicle-hit' } = {}) {
+  function raiseWantedLevel({ police = false, destroyed = false, reason = 'vehicle-hit' } = {}) {
     if (sprint || !active || finished) return wantedLevel;
     const previous = wantedLevel;
-    wantedLevel = cityRushWantedLevelAfterHit(wantedLevel, { hit: true, police, shot });
+    if (destroyed) {
+      policeDestroyedByPlayer = Math.min(CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS, policeDestroyedByPlayer + 1);
+      wantedLevel = cityRushWantedLevelAfterPoliceDestroyed(wantedLevel, policeDestroyedByPlayer);
+    } else {
+      wantedLevel = cityRushWantedLevelAfterHit(wantedLevel, { hit: true, police });
+    }
     if (wantedLevel === previous) return wantedLevel;
 
     if (wantedLevel >= CITY_RUSH_WANTED_MAX_STARS) turnAroundOncomingPoliceAsBackup();
@@ -1562,6 +1649,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       stars: wantedLevel,
       maxStars: CITY_RUSH_WANTED_MAX_STARS,
       reason,
+      policeDestroyedByPlayer,
       pursuitCars: cityRushPoliceCountForWantedLevel(wantedLevel),
     });
     emitHud(true);
@@ -1625,6 +1713,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackRelativeY = (trackDistance) => trackProfile.elevation(trackDistance) - trackProfile.elevation(distance);
   const trackPitch = (trackDistance) => trackProfile.pitch(trackDistance);
   const trackYaw = (trackDistance) => trackProfile.yaw(trackDistance);
+  const miniGarageLane = cityRushMiniGarageLane(city);
+  const miniGarageMaterials = sprint ? null : makeMiniGarageMaterials(city);
+  const miniGarages = sprint ? [] : Array.from({ length: CITY_RUSH_MINI_GARAGE_COUNT }, (_, index) => {
+    const group = makeMiniGarageObject(index + 1, miniGarageMaterials);
+    group.userData.lane = miniGarageLane;
+    scene.add(group);
+    return {
+      index: index + 1,
+      group,
+      lane: miniGarageLane,
+      trackDistance: CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index],
+      used: false,
+    };
+  });
   let lap = 1;
   // Dernière ligne annoncée (1 = fin du tour 1 …) : un choc frontal peut recaler
   // le joueur derrière une ligne qu'il vient de franchir ; en la repassant il ne
@@ -1790,6 +1892,77 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       next += randomRange(CITY_RUSH_RAMP_SPACING_MIN, CITY_RUSH_RAMP_SPACING_MAX);
     }
     lastRampDistanceSlot = next;
+  }
+
+  function placeMiniGarage(garage) {
+    if (!garage || garage.used) {
+      if (garage?.group) garage.group.visible = false;
+      return;
+    }
+    const gap = garage.trackDistance - distance;
+    garage.group.position.set(
+      laneX(garage.lane) + trackRelativeX(garage.trackDistance),
+      trackRelativeY(garage.trackDistance),
+      PLAYER_Z - gap * SCALE,
+    );
+    garage.group.rotation.set(trackPitch(garage.trackDistance), trackYaw(garage.trackDistance), 0);
+    garage.group.userData.trackDistance = garage.trackDistance;
+    garage.group.userData.used = garage.used;
+    garage.group.visible = gap > -25 && gap * SCALE < theme.fogFar + 20;
+  }
+
+  function setMiniGaragesToStart() {
+    miniGarages.forEach((garage, index) => {
+      garage.trackDistance = CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index];
+      garage.used = false;
+      garage.group.userData.used = false;
+      placeMiniGarage(garage);
+    });
+  }
+
+  function clearWantedAtMiniGarage(garage) {
+    const previousStars = wantedLevel;
+    garage.used = true;
+    policeDestroyedByPlayer = 0;
+    wantedLevel = 0;
+    garage.group.userData.used = true;
+    garage.group.visible = false;
+    const remaining = miniGarages.filter((item) => !item.used).length;
+    getCallbacks().effect?.({
+      type: 'mini-garage-used',
+      garage: garage.index,
+      previousStars,
+      stars: wantedLevel,
+      remaining,
+    });
+    emitHud(true);
+  }
+
+  function updateMiniGarages(previousDistance) {
+    for (const garage of miniGarages) {
+      const garageExitDistance = garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+      if (cityRushMiniGarageCanClearWanted({
+        previousDistance,
+        nextDistance: distance,
+        garageExitDistance,
+        playerLane,
+        garageLane: garage.lane,
+        wantedLevel,
+        used: garage.used,
+      })) {
+        // La voiture a parcouru tout le portique : elle sort du garage, puis
+        // seulement alors les étoiles s'effacent et le décor disparaît derrière elle.
+        clearWantedAtMiniGarage(garage);
+        continue;
+      }
+      // Si la porte a été ratée (ou traversée sans étoiles), elle revient au
+      // même repère de la carte au tour suivant. On la garde visible jusqu'à
+      // ce que l'arrière du portique ait dépassé la voiture.
+      while (!garage.used && garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance) {
+        garage.trackDistance += CITY_RUSH_LAP_LENGTH;
+      }
+      placeMiniGarage(garage);
+    }
   }
 
   function updateRamps(dt) {
@@ -2012,6 +2185,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       leader: standings.leader?.name || '—',
       wantedLevel,
       wantedMaxStars: CITY_RUSH_WANTED_MAX_STARS,
+      miniGaragesRemaining: miniGarages.filter((garage) => !garage.used).length,
+      miniGaragesTotal: CITY_RUSH_MINI_GARAGE_COUNT,
       oncomingPoliceTurnarounds: oncomingCars
         .filter((car) => isCityRushPoliceTrafficType(car.type) && car.turnaroundState === 'turning')
         .map((car) => ({
@@ -2288,6 +2463,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // L'escouade et ses réserves repartent pour la prochaine course.
     policeDeployed = false;
     wantedLevel = effectivePoliceFromStart ? CITY_RUSH_WANTED_MAX_STARS : 0;
+    policeDestroyedByPlayer = 0;
     nextPoliceUnitNumber = policeCars.length + 1;
     policeReinforcementTimer = 0;
     policeReinforcementQueue.length = 0;
@@ -2336,6 +2512,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     audioRef?.current?.policeSirenOff?.();
     setRowsToStart();
     setRampsToStart();
+    setMiniGaragesToStart();
     startLine.setLights(0);
     startLine.setFinalLap(false);
     startLine.setBoard(`TOUR 1/${effectiveLaps}`, lapBoardSubtitle(1));
@@ -2808,8 +2985,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         maxHealth: playerMaxHealth,
       });
     } else if (target.isPolice) {
-      // Police marquée ou banalisée : un tir fait passer à cinq étoiles
-      // directement (escouade complète + SUV), avec dégâts de coque.
+      // Police marquée ou banalisée : un tir réussi monte à trois étoiles ;
+      // les destructions font ensuite passer à quatre puis cinq.
       damagePolice(target.racer, CITY_RUSH_POWERS.PISTOL, attackerId);
     } else if (target.isCivilianTraffic) {
       // Une voiture civile touchée déclenche la recherche, sans barre de vie.
@@ -2947,6 +3124,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (byPlayer) {
       score += CITY_RUSH_POLICE_DESTROY_SCORE;
       cameraKick = Math.max(cameraKick, 0.42);
+      raiseWantedLevel({ police: true, destroyed: true, reason: 'police-destroyed' });
     }
     getCallbacks().effect?.({
       type: 'police-destroyed',
@@ -2966,6 +3144,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Auteur du dernier dégât : la page peut le nommer, et les vérifications
       // s'assurent qu'aucune berline n'est détruite par une autre berline.
       attackerId: attackerId || null,
+      policeDestroyedByPlayer,
+      wantedLevel,
       reinforcementScheduled,
       lap,
     });
@@ -3201,16 +3381,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const hasHealth = police.health !== null && Number.isFinite(Number(police.health));
     if (hasHealth && Number(police.health) <= 0) return;
     const healthBeforeHit = hasHealth ? Number(police.health) : CITY_RUSH_POLICE_HEALTH;
-    // Tirer sur une patrouille fait monter les étoiles à 5 directement :
-    // l'escouade complète (berlines + SUV) est déployée et les voitures de
-    // police croisées sur la route prennent le pilote en chasse dès qu'elles
-    // le voient. Un simple contact (carambolage) reste à trois étoiles. Une
-    // patrouille venant en face se retourne aussi pour rejoindre la poursuite.
+    // Tirer sur une patrouille monte à trois étoiles ; la détruire ajoute
+    // ensuite une étoile (la deuxième destruction atteint cinq). Un simple
+    // contact reste lui aussi à trois étoiles. Une patrouille venant en face
+    // se retourne pour rejoindre la poursuite.
     if (attackerId === 'player') {
       const oncoming = oncomingCars.find((vehicle) => vehicle === police);
       if (oncoming) beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: 'player' });
       const isShot = source !== 'collision';
-      raiseWantedLevel({ police: true, shot: isShot, reason: isShot ? 'police-shot' : 'police-contact' });
+      raiseWantedLevel({ police: true, reason: isShot ? 'police-shot' : 'police-contact' });
     }
     // Chaque rival reçoit son unité réservée dès son premier tir réussi sur
     // une voiture de police, même si ce tir détruit sa cible.
@@ -6056,6 +6235,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       updateWreck(dt);
       updateRows(dt);
       updateRamps(dt);
+      updateMiniGarages(priorDistance);
       racers.forEach((racer) => useRacerPower(racer));
       updateVisualEffects(dt);
       updateTrafficImpacts(dt);
@@ -6088,6 +6268,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           ramp.group.position.set(laneX(ramp.lane) + trackRelativeX(ramp.trackDistance), trackRelativeY(ramp.trackDistance), PLAYER_Z - gap * SCALE);
           ramp.group.rotation.set(trackPitch(ramp.trackDistance), trackYaw(ramp.trackDistance), 0);
         }
+        miniGarages.forEach(placeMiniGarage);
       }
       // Bande-son hors course : ralenti sur la grille et en pause, roue libre
       // pendant le tour d'honneur (la vitesse de `coastSpeed` reste audible).
