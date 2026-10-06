@@ -10,6 +10,7 @@ import { autoNewsListing } from '../lib/autoNews';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
+import NewsFeaturedStory from '../components/NewsFeaturedStory';
 
 // Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
 // telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
@@ -48,12 +49,10 @@ const FEATURED_COPY = {
 };
 
 // Actus récentes rédigées à la main par la rédaction, les plus fraîches en
-// tête. LA PREMIÈRE ENTRÉE EST « L'ACTU GAMING DU JOUR » : elle ouvre la grille
-// de /news/gaming en grand (carte « à la une ») et alimente la bannière vidéo +
-// texte du hub /news (src/pages/News.jsx, qui projette la première vidéo
-// officielle déclarée dans src/articleTrailers.js, ou le visuel de l'actu à
-// défaut). Pour changer la une, il suffit d'insérer la nouvelle actu ici, en
-// tête de liste — rien d'autre à brancher.
+// tête. LA PREMIÈRE ENTRÉE EST « L'ACTU GAMING DU JOUR » : elle ouvre /news/gaming
+// dans un bandeau vidéo + texte (sa première vidéo officielle est déclarée dans
+// src/articleTrailers.js) et alimente aussi la une du hub /news. Pour changer la
+// une, il suffit d'insérer la nouvelle actu ici, en tête de liste.
 //
 // Actus du mardi 06.10.2026 : la position de Rockstar sur la satire de
 // GTA VI ouvre la page ; suivent les actus du lundi 05.10.2026 (lancement
@@ -130,8 +129,8 @@ export default function News(){
   // La page reste lisible par défaut : 12 actus maximum affichées, le bouton
   // « Voir toutes les actus » déplie le reste de la liste.
   const visibleArticles = showAll ? articles : articles.slice(0, 12);
-  // Le dernier article paru ouvre la grille en grand sur 2 colonnes (actu à la
-  // une) : les autres actus restent visibles à côté d'elle dès le premier écran.
+  // Le dernier article paru devient le bandeau à la une au-dessus de la grille ;
+  // seuls les autres articles occupent les quatre colonnes du flux.
   const [topStory, ...gridArticles] = visibleArticles;
   const allNewsLabel = lang === 'fr' ? 'Voir toutes les actus' : lang === 'ar' ? 'عرض كل الأخبار' : 'See all news';
 
@@ -187,21 +186,15 @@ export default function News(){
       </div>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
-        {/* Chaque carte est enveloppée dans une cellule `.news-grid-cell` : la
-            carte porte le `clip-path` (coin biseauté) et la cellule porte
-            l'ombre (`filter: drop-shadow`). Posée sur la carte, l'ombre serait
-            découpée avec elle — clip-path s'applique après filter/box-shadow. */}
+        <NewsFeaturedStory
+          story={topStory}
+          todayLabel={featured.today}
+          renderStoryImage={renderStoryImage}
+          renderBadges={renderBadges}
+        />
+        {/* Chaque article est dans une cellule : la carte porte le coin biseauté,
+            et la cellule son ombre portée pour qu'elle ne soit pas rognée. */}
         <div className="news-carousel is-grid">
-          {topStory && <div className="news-grid-cell news-grid-cell--today"><Link className="daily-news-card news-today" to={topStory.to} data-parallax="0.04" data-parallax-limit="19">
-            <div className="daily-news-image">{renderStoryImage(topStory, 'eager')}{renderBadges(topStory)}</div>
-            <div className="daily-news-copy">
-              <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
-              <span className="news-kicker">{topStory.kicker}</span>
-              <h2>{topStory.title}</h2>
-              <p>{topStory.excerpt}</p>
-              <span className="read-link">{topStory.read} <Arrow /></span>
-            </div>
-          </Link></div>}
           {gridArticles.map((article, index) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
             <div className="news-carousel-image">{renderStoryImage(article)}{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
