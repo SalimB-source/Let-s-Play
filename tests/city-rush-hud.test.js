@@ -102,7 +102,24 @@ test('les berlines de police du trafic sont ciblables par un tir rouge', () => {
   assert.match(policeDamage, /const healthBeforeHit = hasHealth \? Number\(police\.health\) : CITY_RUSH_POLICE_HEALTH/,
     'les berlines civiles reçoivent leur santé complète au premier impact');
   assert.match(policeDamage, /cityRushPoliceDamage\(healthBeforeHit, source\)/);
-  assert.match(policeDamage, /if \(source !== CITY_RUSH_POWERS\.PISTOL\)/, 'un tir rouge ne fait pas déraper la voiture de police');
+  assert.match(policeDamage, /if \(source === CITY_RUSH_POWERS\.BLUE_SHOT\)/, 'le tir bleu peut déraper, contrairement au tir rouge');
+});
+
+test('un choc avec la police fait déraper les deux voitures et rabat la patrouille', () => {
+  const collisionAnimation = world.match(/function startPoliceCollisionAnimation\([\s\S]*?\n  }\n\n  \/\/ Contact avec une voiture de police/)?.[0] || '';
+  const directCollision = world.match(/function applyPoliceCollision\([\s\S]*?\n  }\n/)?.[0] || '';
+  assert.ok(collisionAnimation, 'l’animation de collision avec la police existe');
+  assert.match(collisionAnimation, /forwardLanes\.includes\(lane\)/, 'la police reste dans le sens de course');
+  assert.match(collisionAnimation, /canEnterLane\(police\.id, lane\)/, 'la voie choisie est libre si possible');
+  assert.match(collisionAnimation, /police\.lane = nextLane/);
+  assert.match(collisionAnimation, /police\.skidLeft = policeSkidDuration/);
+  assert.match(collisionAnimation, /playerSkidLeft = nextPlayerSkidDuration/);
+  assert.match(collisionAnimation, /playerSkidSide = -skidSide/, 'le joueur glisse légèrement dans l’autre sens');
+  assert.match(directCollision, /startPoliceCollisionAnimation\(police\)/);
+  assert.match(world, /if \(rallied\) \{[\s\S]*?startPoliceCollisionAnimation\(rallied\)/,
+    'la patrouille percutée déclenche elle aussi l’animation');
+  assert.match(world, /police\.mesh\.rotation\.z = skidOffset\(police\.skidLeft/);
+  assert.match(world, /function emitPoliceSkidSmoke\([\s\S]*?smoke\.emit\(scratch/);
 });
 
 test('un tir rouge retire de la vie sans ralentir ni faire déraper sa cible', () => {

@@ -96,7 +96,7 @@ const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
-  CITY_RUSH_LAPS,
+  CITY_RUSH_LAPS, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_RALLY_TOLERANCE,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -293,9 +293,18 @@ for (let run = 0; run < RUNS; run += 1) {
         console.error(`[${city.id}#${run}] deux carambolages ont retiré un carré à ${delta} image(s) d’écart (répit ${COLLISION_RUSH_FRAMES})`, collisionHitFrames);
       }
     }
-    if (playerRamDamage.some((effect) => !(Number(effect.gap) >= 0))) {
+    const invalidRamGap = playerRamDamage.some((effect) => {
+      const gap = Number(effect.gap);
+      const patrolContact = effect.victim === 'police' && String(effect.carId || '').startsWith('traffic-');
+      if (!Number.isFinite(gap)) return true;
+      // Une patrouille de police du trafic est rappelée au contact dans sa
+      // fenêtre de pare-chocs, même si elle se trouvait juste derrière.
+      if (patrolContact) return Math.abs(gap) > CITY_RUSH_CAR_GAP + CITY_RUSH_POLICE_RALLY_TOLERANCE;
+      return gap < 0;
+    });
+    if (invalidRamGap) {
       violations += 1;
-      console.error(`[${city.id}#${run}] un carambolage est compté sans écart entre la voiture et le pilote`, playerRamDamage);
+      console.error(`[${city.id}#${run}] un carambolage sort de sa fenêtre de contact`, playerRamDamage);
     }
     if (policeRamHits.some((effect) => effect.damage !== 1)) {
       violations += 1;
