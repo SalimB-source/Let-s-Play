@@ -767,6 +767,30 @@ const writers = sourceFiles(path.join(root, 'src'))
   .map((file) => path.relative(root, file));
 check('un seul module écrit la progression locale', writers.join(', ') || 'aucun', 'aucun');
 
+// La vitrine à trophées du profil range ses cartes sur **cinq colonnes** dans
+// l'application (téléphone), et garde sa grille `auto-fill` sur bureau. La
+// règle doit rester dans une requête portant la condition téléphone du dépôt
+// (`src/lib/phoneLayout.js`), sinon un téléphone à la fenêtre élargie perd les
+// cinq colonnes — voir aussi `npm run check:phone-css`.
+const shelfCss = read('src/achievements/trophy-shelf.css');
+ok(
+  'vitrine : cinq trophées par ligne dans l’application',
+  /@media[^{]*max-device-width:600px[^{]*\{[\s\S]*?\.trophy-category-grid[^{]*\{\s*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/.test(shelfCss),
+);
+// La grille de la vitrine porte aussi les classes `achievement-grid compact` :
+// sans ces trois classes, `.achievement-grid.compact` (deux classes, dans
+// `src/achievements/achievements.css`) garderait son `auto-fill` et les cinq
+// colonnes ne s'appliqueraient jamais — quelle que soit la requête média.
+ok(
+  '… la règle a la spécificité requise face à `.achievement-grid.compact`',
+  /\.trophy-category-grid\.achievement-grid\.compact\s*\{/.test(shelfCss),
+);
+const shelfBaseGrid = shelfCss.match(/^\.trophy-category-grid\s*\{([^}]*)\}/m);
+ok(
+  '… hors téléphone, la grille reste `auto-fill` (aucun compte imposé)',
+  Boolean(shelfBaseGrid) && !shelfBaseGrid[1].includes('grid-template-columns'),
+);
+
 /* ------------------------------------------------------------------------ */
 /* 5. Bulle d'information : elle ne doit jamais sortir de l'écran            */
 /* ------------------------------------------------------------------------ */

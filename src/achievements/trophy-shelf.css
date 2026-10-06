@@ -222,3 +222,62 @@
   .trophy-category-count { order: 3; }
   .trophy-category-copy { flex-basis: calc(100% - 60px); }
 }
+
+/* --------------- Application : cinq trophées par étagère ----------------- */
+/* Dans l'application, chaque catégorie range ses trophées sur **cinq
+   colonnes** fixes — et non plus au nombre que la largeur laisse entrer
+   (`auto-fill`, deux colonnes sur un téléphone) : la vitrine se parcourt d'un
+   coup d'œil sans faire défiler une colonne de cartes.
+
+   C'est exactement la mise en page que le hub applique déjà au panneau des
+   succès (`src/profile-lists.css`, « five compact achievement cards per row ») :
+   mêmes vignettes (icône 30 px, nom 7 px, grade 6 px, pistes séparées de 5 px),
+   pour que les deux grilles aient la même allure. Le titre entier d'un trophée
+   reste dans sa bulle d'information et dans `aria-label`.
+
+   La condition téléphone suit la convention du dépôt
+   (`src/lib/phoneLayout.js`) : elle couvre aussi un téléphone dont la fenêtre
+   de mise en page a été élargie (zoom de page mémorisé, « version
+   ordinateur », WebView). Le bureau garde sa grille `auto-fill`. */
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  /* Les bords se resserrent d'autant : la vitrine (12 px) + l'étagère (8 px)
+     laissent la largeur utile du panneau des succès du hub — une piste de
+     58,4 px sur un écran de 390 px, contre 58,8 px dans le hub : les deux
+     vignettes ont la même taille au pixel près (ou presque). */
+  .trophy-shelf { padding: 14px 12px; }
+  .trophy-category { padding: 12px 8px 14px; }
+
+  /* Les trois classes sont nécessaires : la grille de la vitrine est une
+     `achievement-grid compact`, et `.achievement-grid.compact`
+     (src/achievements/achievements.css) impose déjà son `auto-fill` avec deux
+     classes — un sélecteur à une seule classe ne passerait jamais. Même
+     parade que celle du hub (`src/profile-lists.css`). */
+  .trophy-category-grid.achievement-grid.compact {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  /* Vignettes : les mêmes mesures que les cinq colonnes du panneau des
+     succès, pour que les deux grilles se ressemblent. `minmax(0, 1fr)` :
+     aucune piste ne peut être élargie par son contenu, la ligne ne déborde
+     jamais de l'écran. */
+  .trophy-category-grid .achievement-card { min-width: 0; }
+
+  .trophy-category-grid .achievement-card-inner {
+    padding: 7px 2px;
+    min-height: 86px;
+  }
+
+  .trophy-category-grid .achievement-card-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .trophy-category-grid .achievement-card-inner h3 {
+    overflow-wrap: anywhere;
+    font-size: 7px;
+    line-height: 1.15;
+  }
+
+  .trophy-category-grid .achievement-card-tier { font-size: 6px; }
+}
