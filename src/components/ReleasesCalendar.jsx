@@ -172,8 +172,8 @@ export function ReleaseCard({ release, today, lang, copy }){
   );
   const className = `release-card${past ? ' is-past' : ''}`;
   return release.to
-    ? <Link className={`${className} is-linked`} to={release.to} key={release.slug}>{body}</Link>
-    : <div className={className} key={release.slug}>{body}</div>;
+    ? <Link className={`${className} is-linked`} to={release.to} key={release.slug} data-parallax="0.04" data-parallax-limit="18">{body}</Link>
+    : <div className={className} key={release.slug} data-parallax="0.04" data-parallax-limit="18">{body}</div>;
 }
 
 /** Grille des sorties d'un mois (page Actus : mois actif — page calendrier : chaque mois). */

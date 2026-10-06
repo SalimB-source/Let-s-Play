@@ -173,7 +173,7 @@ export default function News() {
 
       <div className="news-hub-grid wrap">
         {/* Carte GAMING */}
-        <Link to="/news/gaming" className="news-hub-card news-hub-card--gaming">
+        <Link to="/news/gaming" className="news-hub-card news-hub-card--gaming" data-parallax="0.035" data-parallax-limit="17">
           <div className="news-hub-card-image">
             <img src={`${base}category-gaming-thumb.jpg`} alt="Actus Gaming — manette néon sur fond cyberpunk" />
             <div className="news-hub-card-overlay" />
@@ -192,7 +192,7 @@ export default function News() {
         </Link>
 
         {/* Carte CINÉMA / SÉRIES */}
-        <Link to="/news/cinema" className="news-hub-card news-hub-card--cinema">
+        <Link to="/news/cinema" className="news-hub-card news-hub-card--cinema" data-parallax="0.05" data-parallax-limit="22">
           <div className="news-hub-card-image">
             <img src={`${base}category-cinema-thumb.jpg`} alt="Actus Cinéma & Séries — clap et bobine de film sous un projecteur" />
             <div className="news-hub-card-overlay" />
@@ -211,7 +211,7 @@ export default function News() {
         </Link>
 
         {/* Carte TECH */}
-        <Link to="/news/tech" className="news-hub-card news-hub-card--tech">
+        <Link to="/news/tech" className="news-hub-card news-hub-card--tech" data-parallax="0.04" data-parallax-limit="19">
           <div className="news-hub-card-image">
             <img src={`${base}category-tech-thumb.jpg`} alt="Actus Tech — puce et interface holographique sous les néons, main robotisée" />
             <div className="news-hub-card-overlay" />
@@ -242,7 +242,7 @@ export default function News() {
             <p className="eyebrow"><span className="live-dot" /> {todayCopy.eyebrow}</p>
             <Link className="arrow-link" to="/news/gaming">{todayCopy.seeAll} <Arrow /></Link>
           </div>
-          <article className="daily-news-card home-news-card">
+          <article className="daily-news-card home-news-card" data-parallax="0.04" data-parallax-limit="20">
             <div className="daily-news-image home-news-video">
               {todayVideo ? (
                 <iframe

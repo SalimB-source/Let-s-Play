@@ -63,7 +63,7 @@ export default function VideoThumb({ id, quality, lead, alt = '', fallbackLabel,
   if (thumb.failed) {
     const classes = className ? `video-thumb-fallback ${className}` : 'video-thumb-fallback';
     return (
-      <span className={classes} role="img" aria-label={alt || fallbackLabel || 'Let’s Play'}>
+      <span {...rest} className={classes} role="img" aria-label={alt || fallbackLabel || 'Let’s Play'}>
         <span className="video-thumb-fallback-mark" aria-hidden="true">▶</span>
         <span className="video-thumb-fallback-label">{fallbackLabel || 'LET’S PLAY'}</span>
       </span>

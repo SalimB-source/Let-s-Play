@@ -192,7 +192,7 @@ export default function News(){
             l'ombre (`filter: drop-shadow`). Posée sur la carte, l'ombre serait
             découpée avec elle — clip-path s'applique après filter/box-shadow. */}
         <div className="news-carousel is-grid">
-          {topStory && <div className="news-grid-cell news-grid-cell--today"><Link className="daily-news-card news-today" to={topStory.to}>
+          {topStory && <div className="news-grid-cell news-grid-cell--today"><Link className="daily-news-card news-today" to={topStory.to} data-parallax="0.04" data-parallax-limit="19">
             <div className="daily-news-image">{renderStoryImage(topStory, 'eager')}{renderBadges(topStory)}</div>
             <div className="daily-news-copy">
               <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
@@ -202,7 +202,7 @@ export default function News(){
               <span className="read-link">{topStory.read} <Arrow /></span>
             </div>
           </Link></div>}
-          {gridArticles.map((article) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to}>
+          {gridArticles.map((article, index) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
             <div className="news-carousel-image">{renderStoryImage(article)}{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link></div>)}
