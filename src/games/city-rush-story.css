@@ -89,7 +89,31 @@
   background: linear-gradient(to top, rgba(8, 6, 16, 0.88) 0%, rgba(8, 6, 16, 0.25) 45%, rgba(8, 6, 16, 0.05) 70%);
 }
 
-/* Gros plan sur un personnage : portrait géant sur fond de sa couleur. */
+/* Illustration canonique du personnage : la même image revient à chaque réplique. */
+.cr-comic-speaker-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  background: #100c17;
+  animation: cr-comic-pop 0.28s ease-out;
+}
+.cr-comic-speaker-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+.cr-comic-speaker-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 55%, rgba(8, 6, 16, .28));
+  pointer-events: none;
+}
+
+/* Gros plan de repli pour un portrait non illustré dans le casting. */
 .cr-comic-portrait {
   position: absolute;
   inset: 0;
@@ -201,8 +225,6 @@
   border-bottom: 3px solid #000;
   transform: rotate(45deg);
 }
-.cr-comic-bubble-avatar { flex: 0 0 44px; width: 44px; }
-.cr-comic-bubble-avatar svg { width: 44px; height: 44px; display: block; }
 .cr-comic-bubble-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cr-comic-bubble-body b {
   font-size: 11px;
@@ -284,26 +306,320 @@
 .cr-story-star-line.is-missed { opacity: 0.55; }
 .cr-story-star-line.is-missed b { color: rgba(255, 255, 255, 0.6); }
 
-/* ── Sélecteur de chapitre (rejouer pour les étoiles) ────────────────────── */
-.cr-story-chapter-dots { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-.cr-story-chapter-dots button {
+/* ── Sélecteur de chapitres : lisible, détaillé et replié par défaut ─────── */
+.city-rush-page .cr-story-hub {
+  display: grid;
+  gap: 9px;
+  width: min(1080px, 100%);
+}
+
+.city-rush-page .cr-story-hub-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.city-rush-page .cr-story-hub-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.cr-story-hub-kicker,
+.cr-story-free-mode-heading > span {
+  color: #ff9fb5;
+  font: 800 9px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.city-rush-page .cr-story-hub-heading h3 {
+  margin: 0;
+  color: #f7f8fa;
+  font: 900 17px/1.15 var(--display, system-ui, sans-serif);
+  letter-spacing: .01em;
+}
+
+.cr-story-hub-progress {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  color: #aeb7c4;
+  font: 700 9px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  text-align: right;
+}
+
+.cr-story-hub-progress b {
+  color: #ffd44f;
+  font-weight: 850;
+}
+
+.city-rush-page .city-rush-story-banner {
+  grid-template-columns: minmax(150px, 27%) minmax(0, 1fr);
+  gap: 0;
+  width: 100%;
+  min-height: 142px;
+  padding: 0;
+  border: 1px solid #343b46;
+  border-left: 3px solid #e45f80;
+  border-radius: 6px;
+  background: #11151d;
+  box-shadow: none;
+  color: #f5f7fb;
+}
+
+.city-rush-page .city-rush-story-banner:hover {
+  border-color: #d66a8c;
+  background: #151922;
+  color: #f5f7fb;
   font: inherit;
-  min-width: 40px;
-  min-height: 30px;
-  height: auto;
-  padding: 2px 8px;
-  border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.06);
+}
+
+.city-rush-page .city-rush-story-banner-visual {
+  min-height: 142px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: #0b0e14;
+}
+
+.city-rush-page .city-rush-story-banner-visual img {
+  object-position: center 45%;
+}
+
+.city-rush-page .city-rush-story-banner-badge {
+  left: 8px;
+  bottom: 8px;
+  padding: 5px 7px;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 3px;
+  background: rgba(8,10,14,.9);
+  color: #ffd44f;
+  font: 800 8px/1.2 var(--mono, ui-monospace, monospace);
+  letter-spacing: .08em;
+}
+
+.city-rush-page .city-rush-story-banner-body {
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  padding: 13px 16px;
+}
+
+.city-rush-page .city-rush-story-banner-meta {
+  gap: 7px;
+}
+
+.city-rush-page .city-rush-story-banner-meta .city-rush-mode-tag {
+  padding: 3px 6px;
+  border-color: #593447;
+  border-radius: 3px;
+  background: #261821;
+  color: #ffb2c5;
+  font: 800 8px/1.2 var(--mono, ui-monospace, monospace);
+  letter-spacing: .05em;
+}
+
+.city-rush-page .city-rush-story-banner-meta small {
+  color: #aab2bd;
+  font: 700 9px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+}
+
+.city-rush-page .city-rush-story-banner-body > b {
   color: #fff;
+  font: 900 18px/1.15 var(--display, system-ui, sans-serif);
+  letter-spacing: 0;
+}
+
+.city-rush-page .city-rush-story-description {
+  max-width: 620px;
+  color: #aeb7c4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.city-rush-page .city-rush-story-banner-actions {
+  margin-top: 1px;
+}
+
+.city-rush-page .city-rush-story-launch-label {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid #855062;
+  border-radius: 4px;
+  background: #37202b;
+  color: #ffdbe3;
+  font: 850 9px/1.15 var(--mono, ui-monospace, monospace);
+  letter-spacing: .05em;
+}
+
+.city-rush-page .city-rush-story-launch-label i {
   font-size: 11px;
-  font-weight: 900;
+}
+
+.city-rush-page .cr-story-chapter-select {
+  overflow: hidden;
+  border: 1px solid #303742;
+  border-radius: 5px;
+  background: #0e1219;
+}
+
+.city-rush-page .cr-story-chapter-select > summary {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  color: #e4e8ee;
+  list-style: none;
   cursor: pointer;
 }
-.cr-story-chapter-dots button:hover:not(:disabled) { border-color: #ffd44f; }
-.cr-story-chapter-dots button.is-current { border-color: #ffd44f; background: rgba(255, 212, 79, 0.18); color: #ffd44f; }
-.cr-story-chapter-dots button:disabled { opacity: 0.3; cursor: default; }
-.cr-story-chapter-dots button .cr-dot-stars { display: block; font-size: 8px; color: #ffd44f; letter-spacing: 1px; }
+
+.city-rush-page .cr-story-chapter-select > summary::-webkit-details-marker { display: none; }
+
+.cr-story-chapter-select-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cr-story-chapter-select-copy b {
+  color: #f2f4f8;
+  font: 800 10px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.cr-story-chapter-select-copy small {
+  color: #929dab;
+  font: 600 10px/1.4 var(--body, system-ui, sans-serif);
+}
+
+.cr-story-chapter-select-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  color: #c9d7f2;
+  font: 750 9px/1.2 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.cr-story-chapter-select-action i {
+  display: inline-block;
+  color: #ff9fb5;
+  font-size: 13px;
+  font-style: normal;
+  transition: transform .18s ease;
+}
+
+.cr-story-chapter-select[open] > summary {
+  border-bottom: 1px solid #303742;
+  background: #121722;
+}
+
+.cr-story-chapter-select[open] .cr-story-chapter-select-action i { transform: rotate(180deg); }
+
+.cr-story-chapter-list {
+  display: grid;
+  gap: 1px;
+  background: #282f39;
+}
+
+.cr-story-chapter-option {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 7px 12px;
+  border: 0;
+  background: #0e1219;
+  color: #edf0f5;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.cr-story-chapter-option:not(:disabled):hover { background: #171d27; }
+.cr-story-chapter-option:disabled { color: #78818e; cursor: not-allowed; }
+
+.cr-story-chapter-number {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #434b58;
+  border-radius: 4px;
+  color: #aeb9c7;
+  font: 800 10px/1 var(--mono, ui-monospace, monospace);
+}
+
+.cr-story-chapter-option:not(:disabled) .cr-story-chapter-number {
+  border-color: #5d4550;
+  background: #231821;
+  color: #ffb4c7;
+}
+
+.cr-story-chapter-name {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.cr-story-chapter-name small {
+  color: #8e98a6;
+  font: 650 8px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .06em;
+}
+
+.cr-story-chapter-name b {
+  overflow: hidden;
+  color: #f0f2f6;
+  font: 750 11px/1.3 var(--body, system-ui, sans-serif);
+  text-overflow: ellipsis;
+}
+
+.cr-story-chapter-option:disabled .cr-story-chapter-name b { color: #87909c; }
+
+.cr-story-chapter-status {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  color: #aab4c2;
+  font: 750 8px/1.1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .05em;
+  text-align: right;
+}
+
+.cr-story-chapter-status > b {
+  color: #ffd44f;
+  font-size: 9px;
+}
+
+.cr-story-chapter-option:disabled .cr-story-chapter-status { color: #737d8a; }
+
+.cr-story-free-mode-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  width: min(1080px, 100%);
+  padding: 2px 2px 0;
+  border-top: 1px solid #303640;
+}
+
+.cr-story-free-mode-heading > small {
+  color: #929dab;
+  font: 600 10px/1.45 var(--body, system-ui, sans-serif);
+}
 
 /* ── Cinématique : récap et carte de course ──────────────────────────────── */
 .cr-story-recap { max-width: 660px; margin: 10px auto 0; }
@@ -352,4 +668,424 @@
   .cr-comic-stage { min-height: 320px; }
   .cr-comic-bubble-body p { font-size: 13px; }
   .cr-comic-sfx { font-size: clamp(36px, 12vw, 56px); }
+}
+
+/* ── Écran de chapitre : une hiérarchie simple, du récit à la course ─────── */
+.city-rush-page .city-rush-story-cinematic {
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(12px, 2vh, 18px);
+  padding: clamp(16px, 2.8vh, 28px) clamp(14px, 3vw, 38px);
+  background:
+    radial-gradient(800px 500px at 12% 0%, rgba(57, 120, 246, .08), transparent 64%),
+    linear-gradient(180deg, #090c12 0%, #0b0e14 100%);
+  text-align: left;
+}
+
+.city-rush-page .cr-story-chapter-header,
+.city-rush-page .cr-comic,
+.city-rush-page .cr-story-mission-card,
+.city-rush-page .cr-story-chapter-actions {
+  width: min(820px, 100%);
+  margin-inline: auto;
+}
+
+.cr-story-chapter-header {
+  display: grid;
+  gap: 9px;
+}
+
+.cr-story-chapter-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cr-story-chapter-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 12px;
+}
+
+.cr-story-chapter-kicker,
+.cr-story-chapter-count {
+  color: #a8b1bf;
+  font: 750 9px/1.4 var(--mono, ui-monospace, monospace);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.cr-story-chapter-count { color: #ffb5c7; }
+
+.city-rush-page .cr-story-chapter-header h2 {
+  margin: 0;
+  color: #f7f8fa;
+  font: 900 clamp(25px, 3.4vw, 42px)/1.08 var(--display, system-ui, sans-serif);
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.city-rush-page .cr-story-chapter-back {
+  display: inline-flex;
+  min-height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: 1px solid #343c48;
+  border-radius: 4px;
+  background: #11151d;
+  color: #b9c1cd;
+  font: 750 8px/1.1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+
+.city-rush-page .cr-story-chapter-back:hover {
+  border-color: #65748a;
+  background: #171d27;
+  color: #fff;
+}
+
+.city-rush-page .cr-story-chapter-header .cr-story-recap {
+  display: grid;
+  gap: 4px;
+  max-width: 740px;
+  margin: 0;
+  padding: 9px 12px;
+  border-left: 2px solid #e45f80;
+  border-radius: 0 4px 4px 0;
+  background: #11151d;
+  color: #b7bfca;
+  font: 500 12px/1.5 var(--body, system-ui, sans-serif);
+}
+
+.city-rush-page .cr-story-chapter-header .cr-story-recap b {
+  color: #ffb4c7;
+  font: 800 8px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .1em;
+}
+
+.city-rush-page .cr-comic {
+  gap: 9px;
+  max-width: 820px;
+  padding: 12px;
+  border: 1px solid #2c333e;
+  border-radius: 6px;
+  background: #11151d;
+}
+
+.city-rush-page .cr-comic-head { min-height: 20px; }
+.city-rush-page .cr-comic-kicker { font-size: 10px; letter-spacing: .12em; }
+.city-rush-page .cr-comic-progress { gap: 4px; }
+.city-rush-page .cr-comic-progress i { width: 16px; height: 4px; }
+
+.city-rush-page .cr-comic-stage {
+  min-height: clamp(280px, 38vw, 410px);
+  border: 1px solid #050608;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.city-rush-page .cr-comic-stage:hover {
+  box-shadow: 0 0 0 1px rgba(255, 212, 79, .5);
+}
+
+.city-rush-page .cr-comic-nav { gap: 8px; }
+
+.city-rush-page .cr-comic-nav-button {
+  min-height: 34px;
+  padding: 7px 11px;
+  border-width: 1px;
+  border-radius: 4px;
+  font-size: 9px;
+  letter-spacing: .06em;
+}
+
+.city-rush-page .cr-comic-nav-button.is-primary {
+  border-color: #5b90ff;
+  background: #3978f6;
+  box-shadow: none;
+  color: #fff;
+}
+
+.city-rush-page .cr-comic-nav-button.is-primary:hover {
+  border-color: #83adff;
+  background: #4d87ff;
+  color: #fff;
+}
+
+.city-rush-page .cr-comic-nav-button.is-quiet {
+  margin-left: auto;
+  border-color: transparent;
+  background: transparent;
+  color: #99a2af;
+  font-size: 8px;
+}
+
+.city-rush-page .cr-comic-hint {
+  flex: 1 1 auto;
+  color: #8f99a8;
+  font-size: 10px;
+  letter-spacing: .02em;
+}
+
+.city-rush-page .cr-story-mission-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #303742;
+  border-radius: 6px;
+  background: #11151d;
+}
+
+.cr-story-mission-goal {
+  display: grid;
+  gap: 4px;
+}
+
+.cr-story-mission-kicker {
+  margin: 0;
+  color: #ffb4c7;
+  font: 800 8px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .12em;
+}
+
+.cr-story-mission-goal h3 {
+  margin: 0;
+  color: #f7f8fa;
+  font: 900 18px/1.2 var(--display, system-ui, sans-serif);
+}
+
+.cr-story-mission-goal > p:last-child {
+  margin: 0;
+  color: #aeb7c4;
+  font: 500 12px/1.5 var(--body, system-ui, sans-serif);
+}
+
+.cr-story-mission-course {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 11px;
+  border: 1px solid #2b323d;
+  border-radius: 4px;
+  background: #0c1017;
+}
+
+.cr-story-mission-course > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.cr-story-mission-course small {
+  color: #909baa;
+  font: 750 8px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .06em;
+}
+
+.cr-story-mission-course b {
+  color: #f1f3f7;
+  font: 800 12px/1.35 var(--body, system-ui, sans-serif);
+}
+
+.cr-story-mission-course p {
+  margin: 0;
+  color: #87919f;
+  font: 500 10px/1.45 var(--body, system-ui, sans-serif);
+}
+
+.cr-story-mission-distance {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  color: #d8e4ff;
+  font: 800 9px/1.25 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  text-align: right;
+}
+
+.cr-story-mission-distance i {
+  color: #9aa5b4;
+  font: 650 8px/1.25 var(--mono, ui-monospace, monospace);
+  font-style: normal;
+}
+
+.cr-story-mission-car,
+.cr-story-mission-boss {
+  margin: 0;
+  color: #98a2af;
+  font: 700 8px/1.4 var(--mono, ui-monospace, monospace);
+  letter-spacing: .05em;
+}
+
+.cr-story-mission-boss { color: #ff9aa9; }
+
+.city-rush-page .cr-story-challenges {
+  overflow: hidden;
+  border-top: 1px solid #2b323d;
+}
+
+.city-rush-page .cr-story-challenges > summary {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 1px 0;
+  color: #e4e8ee;
+  list-style: none;
+  cursor: pointer;
+}
+
+.city-rush-page .cr-story-challenges > summary::-webkit-details-marker { display: none; }
+
+.cr-story-challenges > summary > span {
+  display: grid;
+  gap: 3px;
+}
+
+.cr-story-challenges > summary b {
+  color: #e8ebf0;
+  font: 800 9px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.cr-story-challenges > summary small {
+  color: #8993a1;
+  font: 600 10px/1.4 var(--body, system-ui, sans-serif);
+}
+
+.cr-story-challenges > summary > i {
+  color: #ffb4c7;
+  font: 600 14px/1 var(--body, system-ui, sans-serif);
+  font-style: normal;
+  transition: transform .18s ease;
+}
+
+.cr-story-challenges[open] > summary > i { transform: rotate(180deg); }
+
+.cr-story-challenge-list {
+  display: grid;
+  gap: 6px;
+  padding: 2px 0 1px;
+}
+
+.cr-story-challenge-list p {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  color: #aeb7c4;
+  font: 500 11px/1.45 var(--body, system-ui, sans-serif);
+}
+
+.cr-story-challenge-list p b {
+  color: #ffd44f;
+  font: 800 8px/1.4 var(--mono, ui-monospace, monospace);
+  letter-spacing: .06em;
+}
+
+.city-rush-page .cr-story-chapter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+}
+
+.city-rush-page .cr-story-chapter-actions .city-rush-start-button {
+  min-height: 42px;
+  padding-inline: 15px;
+  border-radius: 4px;
+  font-size: 9px;
+}
+
+.city-rush-page .cr-story-chapter-actions .city-rush-text-button {
+  min-height: 38px;
+  font-size: 9px;
+}
+
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page .cr-story-hub-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .city-rush-page .cr-story-hub-progress {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .city-rush-page .city-rush-story-banner {
+    grid-template-columns: 104px minmax(0, 1fr);
+    min-height: 132px;
+  }
+
+  .city-rush-page .city-rush-story-banner-visual { min-height: 132px; }
+  .city-rush-page .city-rush-story-banner-body { gap: 5px; padding: 9px 10px; }
+  .city-rush-page .city-rush-story-banner-meta { gap: 4px; }
+  .city-rush-page .city-rush-story-banner-meta small { font-size: 8px; }
+  .city-rush-page .city-rush-story-banner-body > b { font-size: 13px; }
+  .city-rush-page .city-rush-story-description { font-size: 10px; line-height: 1.35; -webkit-line-clamp: 2; }
+  .city-rush-page .city-rush-story-banner-actions { margin-top: 0; }
+  .city-rush-page .city-rush-story-launch-label { min-height: 27px; padding-inline: 6px; font-size: 8px; }
+  .city-rush-page .city-rush-story-banner-badge { left: 5px; bottom: 5px; padding: 4px 5px; font-size: 7px; }
+
+  .city-rush-page .cr-story-chapter-select > summary { min-height: 50px; padding-inline: 9px; }
+  .cr-story-chapter-select-copy b { font-size: 9px; }
+  .cr-story-chapter-select-copy small { font-size: 9px; }
+  .cr-story-chapter-select-action { gap: 4px; font-size: 8px; }
+  .cr-story-chapter-option { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 7px; padding-inline: 8px; }
+  .cr-story-chapter-number { width: 27px; height: 27px; font-size: 9px; }
+  .cr-story-chapter-name small { font-size: 7px; }
+  .cr-story-chapter-name b { font-size: 10px; }
+  .cr-story-chapter-status { font-size: 7px; }
+
+  .city-rush-page .city-rush-story-cinematic {
+    gap: 12px;
+    padding: 14px 12px 18px;
+  }
+
+  .cr-story-chapter-header { gap: 7px; }
+  .cr-story-chapter-header-top { align-items: flex-start; gap: 8px; }
+  .cr-story-chapter-labels { gap: 4px 8px; }
+  .cr-story-chapter-kicker, .cr-story-chapter-count { font-size: 8px; }
+  .city-rush-page .cr-story-chapter-header h2 { font-size: clamp(24px, 7vw, 34px); }
+  .city-rush-page .cr-story-chapter-back { min-height: 30px; padding-inline: 7px; font-size: 7px; }
+  .city-rush-page .cr-story-chapter-header .cr-story-recap { font-size: 11px; }
+  .city-rush-page .cr-comic { padding: 8px; gap: 7px; }
+  .city-rush-page .cr-comic-stage { min-height: 300px; }
+  .city-rush-page .cr-comic-nav { gap: 6px; }
+  .city-rush-page .cr-comic-hint { order: 3; flex-basis: 100%; text-align: center; }
+  .city-rush-page .cr-comic-nav-button { min-height: 32px; padding-inline: 8px; }
+  .city-rush-page .cr-story-mission-card { gap: 10px; padding: 11px; }
+  .cr-story-mission-course { grid-template-columns: 1fr; gap: 7px; }
+  .cr-story-mission-distance { display: flex; flex-wrap: wrap; justify-items: start; justify-content: flex-start; gap: 5px 9px; text-align: left; }
+  .cr-story-mission-distance i { padding-left: 8px; border-left: 1px solid #39414d; }
+  .cr-story-challenge-list p { grid-template-columns: 56px minmax(0, 1fr); font-size: 10px; }
+  .city-rush-page .cr-story-chapter-actions { gap: 7px; }
+  .city-rush-page .cr-story-chapter-actions .city-rush-start-button { flex: 1 1 100%; }
+  .city-rush-page .cr-story-chapter-actions .city-rush-text-button { flex: 1 1 auto; }
+}
+
+@media (max-width: 390px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page .city-rush-story-banner { grid-template-columns: 84px minmax(0, 1fr); min-height: 120px; }
+  .city-rush-page .city-rush-story-banner-visual { min-height: 120px; }
+  .city-rush-page .city-rush-story-banner-body { padding: 7px 8px; }
+  .city-rush-page .city-rush-story-banner-meta .city-rush-mode-tag { padding: 2px 4px; font-size: 7px; }
+  .city-rush-page .city-rush-story-banner-meta small { font-size: 7px; }
+  .city-rush-page .city-rush-story-banner-body > b { font-size: 12px; }
+  .city-rush-page .city-rush-story-description { font-size: 9px; }
+  .city-rush-page .city-rush-story-launch-label { font-size: 8px; }
+  .cr-story-chapter-option { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 5px; }
+  .cr-story-chapter-status > span { max-width: 58px; text-align: right; }
+  .city-rush-page .cr-story-chapter-back { max-width: 98px; white-space: normal; }
 }

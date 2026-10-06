@@ -16,9 +16,9 @@ import {
 
 // ── Casting ───────────────────────────────────────────────────────────────
 // Les personnages sont définis UNE fois et réutilisés partout : cases BD,
-// radio en course, grille de départ (Dante en boss), cinématiques. Chaque
-// avatar reprend le format de `CityRushDriverAvatar` (coupe + accessoire
-// existants, palette propre) : aucun nouveau dessin à produire.
+// radio en course, grille de départ (Dante en boss), cinématiques. `avatar`
+// sert aux petites icônes de HUD ; `comicArt` est le portrait BD canonique,
+// toujours réutilisé pour que l’apparence reste identique à chaque réplique.
 export const CITY_RUSH_STORY_CAST = Object.freeze({
   narrator: Object.freeze({
     id: 'narrator', name: 'NARRATEUR', short: '…', color: '#9fb2c8', icon: '🎬',
@@ -28,6 +28,7 @@ export const CITY_RUSH_STORY_CAST = Object.freeze({
   nico: Object.freeze({
     id: 'nico', name: 'NICO VEGA', short: 'NICO', color: '#43ead5', icon: '🏁',
     role: 'Le pilote. Toi. Peu de mots, que de la conduite.',
+    comicArt: 'vice-city-comic-nico.webp',
     avatar: Object.freeze({
       id: 'avatar-nico', skin: '#e8b48c', hair: '#14161f', hairStyle: 'swept',
       accessory: 'mirror-shades', accessoryColor: '#43ead5', outfit: '#1e3a5f',
@@ -37,6 +38,7 @@ export const CITY_RUSH_STORY_CAST = Object.freeze({
   luna: Object.freeze({
     id: 'luna', name: 'LUNA REYES', short: 'LUNA', color: '#ff5db8', icon: '🎧',
     role: 'Mécano-hackeuse. Ta voix radio pendant les courses.',
+    comicArt: 'vice-city-comic-luna.webp',
     avatar: Object.freeze({
       id: 'avatar-luna', skin: '#c8875b', hair: '#241428', hairStyle: 'neon-bangs',
       accessory: 'neon-headset', accessoryColor: '#ff5db8', outfit: '#5c2e6e',
@@ -46,6 +48,7 @@ export const CITY_RUSH_STORY_CAST = Object.freeze({
   dante: Object.freeze({
     id: 'dante', name: 'DANTE CROSS', short: 'DANTE', color: '#ff3b3b', icon: '😈',
     role: 'Le rival. Trois ans qu’il te doit une explication.',
+    comicArt: 'vice-city-comic-dante.webp',
     avatar: Object.freeze({
       id: 'avatar-dante', skin: '#d89b72', hair: '#0f0d12', hairStyle: 'short-fade',
       accessory: 'mirror-shades', accessoryColor: '#ff3b3b', outfit: '#3a0f16',
@@ -55,6 +58,7 @@ export const CITY_RUSH_STORY_CAST = Object.freeze({
   voss: Object.freeze({
     id: 'voss', name: 'MR. VOSS', short: 'VOSS', color: '#c9a44a', icon: '🎩',
     role: 'Le promoteur. L’ombre derrière tout ça.',
+    comicArt: 'vice-city-comic-voss.webp',
     avatar: Object.freeze({
       id: 'avatar-voss', skin: '#f1c2a0', hair: '#c9c9c9', hairStyle: 'swept',
       accessory: 'octagon-gold', accessoryColor: '#c9a44a', outfit: '#2b2b33',
@@ -64,6 +68,7 @@ export const CITY_RUSH_STORY_CAST = Object.freeze({
   marlow: Object.freeze({
     id: 'marlow', name: 'SGT. MARLOW', short: 'MARLOW', color: '#48b9ff', icon: '🚨',
     role: 'Flic obsessionnel. Il te veut, vivant de préférence.',
+    comicArt: 'vice-city-comic-marlow.webp',
     avatar: Object.freeze({
       id: 'avatar-marlow', skin: '#9e6240', hair: '#151218', hairStyle: 'cap-back',
       accessory: 'aviator-gold', accessoryColor: '#ffd44f', outfit: '#1b3a6e',
@@ -74,6 +79,11 @@ export const CITY_RUSH_STORY_CAST = Object.freeze({
 
 export function storyCastMember(id) {
   return CITY_RUSH_STORY_CAST[id] || CITY_RUSH_STORY_CAST.narrator;
+}
+
+/** Portrait BD canonique du personnage, identique à chacune de ses répliques. */
+export function storyCastComicArt(id) {
+  return storyCastMember(id).comicArt || null;
 }
 
 // ── Visuels des cases ─────────────────────────────────────────────────────

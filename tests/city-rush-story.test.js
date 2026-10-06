@@ -20,6 +20,7 @@ import {
   getStoryChapter,
   mapLegacyStoryChapter,
   storyArtFor,
+  storyCastComicArt,
   storyEndingUnlocked,
   storyRingTargetTime,
   storySprintParTime,
@@ -67,6 +68,32 @@ test('le casting est réutilisable (héros, alliée, boss, fixer, rivale)', () =
     assert.ok(member?.color, `${id} a une couleur`);
     if (id !== 'narrator') assert.ok(member?.avatar && typeof member.avatar === 'object', `${id} a un avatar`);
   }
+});
+
+test('chaque personnage qui parle garde son portrait BD canonique', () => {
+  const checked = new Set();
+  for (const entry of CITY_RUSH_STORY_CHAPTERS) {
+    for (const panels of Object.values(entry.comic || {})) {
+      for (const panel of panels || []) {
+        for (const bubble of panel.bubbles || []) {
+          if (bubble.who === 'narrator') continue;
+          const art = storyCastComicArt(bubble.who);
+          assert.ok(art, `${bubble.who} a un portrait BD canonique`);
+          if (checked.has(art)) continue;
+          checked.add(art);
+          assert.equal(existsSync(new URL(`../public/${art}`, import.meta.url)), true, `portrait ${art}`);
+        }
+      }
+    }
+  }
+  assert.deepEqual([...checked].sort(), [
+    'vice-city-comic-dante.webp',
+    'vice-city-comic-luna.webp',
+    'vice-city-comic-marlow.webp',
+    'vice-city-comic-nico.webp',
+    'vice-city-comic-voss.webp',
+  ].sort());
+  assert.equal(storyCastComicArt('narrator'), null, 'le narrateur garde le cartouche de narration');
 });
 
 test('chaque chapitre a un décor BD existant sur le disque', () => {
