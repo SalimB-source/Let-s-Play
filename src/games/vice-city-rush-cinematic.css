@@ -1177,6 +1177,21 @@
   border: 1px solid rgba(225, 233, 245, .1);
   background: linear-gradient(0deg, rgba(5, 8, 12, .32), transparent 45%);
 }
+.city-rush-page .city-rush-car-card-top::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, var(--car-accent) 16%, transparent) 50%, transparent 66%);
+  opacity: .46;
+  transform: translateX(-85%);
+  transition: transform .55s cubic-bezier(.16, 1, .3, 1);
+}
+.city-rush-page .city-rush-car-card:hover .city-rush-car-card-top::before,
+.city-rush-page .city-rush-car-card.is-selected .city-rush-car-card-top::before {
+  transform: translateX(85%);
+}
 
 .city-rush-page .city-rush-car-image {
   position: absolute;
@@ -1190,6 +1205,26 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  filter: saturate(1.08) contrast(1.04);
+  transition: transform .45s cubic-bezier(.16, 1, .3, 1), filter .3s ease;
+}
+.city-rush-page .city-rush-car-card:hover .city-rush-car-image img,
+.city-rush-page .city-rush-car-card.is-selected .city-rush-car-image img {
+  transform: scale(1.045);
+  filter: saturate(1.18) contrast(1.06);
+}
+.city-rush-page .city-rush-car-match-tag {
+  position: absolute;
+  left: 7px;
+  bottom: 7px;
+  z-index: 3;
+  padding: 3px 5px;
+  border: 1px solid color-mix(in srgb, var(--car-accent) 42%, rgba(233, 239, 249, .18));
+  border-radius: 3px;
+  background: rgba(8, 11, 16, .82);
+  color: color-mix(in srgb, var(--car-accent) 72%, #f0f3f8);
+  font: 800 7px/1 var(--mono, monospace);
+  letter-spacing: .08em;
 }
 
 .city-rush-page .city-rush-car-number {

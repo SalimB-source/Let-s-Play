@@ -702,6 +702,55 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
   }
 }
 
+// Signatures de miniature : accents très lisibles à distance qui reprennent
+// les contrastes des cartes du garage, sans ajouter de logo constructeur.
+function addThumbnailSignature(profile, spec, batch, materials) {
+  const { archetype } = profile;
+  const { black, trim, chrome, livery } = materials;
+  if (archetype === 'city-hatch') {
+    for (const side of [-1, 1]) {
+      batch.box(black, [side * 0.62, 0.91, -1.02], [0.035, 0.018, 0.48]);
+      batch.box(trim, [side * 0.82, 0.51, 0.08], [0.028, 0.028, 2.24]);
+    }
+  } else if (archetype === 'nova-hatch') {
+    for (const side of [-1, 1]) {
+      batch.box(trim, [side * 0.91, 0.67, 0.10], [0.025, 0.035, 2.18]);
+      batch.box(black, [side * 0.77, 1.39, 0.12], [0.025, 0.025, 1.18]);
+    }
+  } else if (archetype === 'ferrari') {
+    addRacingStripes(batch, trim, spec.stations, -1.58, -0.38, [-0.10, 0.10]);
+    for (const side of [-1, 1]) batch.box(trim, [side * 0.91, 0.51, 0.22], [0.028, 0.028, 1.58]);
+  } else if (archetype === 'porsche') {
+    for (const side of [-1, 1]) {
+      batch.box(trim, [side * 0.92, 0.54, 0.48], [0.028, 0.035, 1.44]);
+      batch.box(trim, [side * 0.58, 0.96, -1.30], [0.045, 0.018, 0.42]);
+    }
+  } else if (archetype === 'audi') {
+    for (const side of [-1, 1]) {
+      batch.box(trim, [side * 0.94, 0.68, 0.16], [0.032, 0.032, 1.82]);
+      batch.box(chrome, [side * 0.70, 1.00, -0.54], [0.026, 0.028, 0.52]);
+    }
+  } else if (archetype === 'volkswagen') {
+    for (const side of [-1, 1]) batch.box(livery, [side * 0.92, 0.68, 0.02], [0.028, 0.038, 2.60]);
+  } else if (archetype === 'electric-gt') {
+    addRacingStripes(batch, trim, spec.stations, -1.55, 1.45, [-0.11, 0.11]);
+    for (const side of [-1, 1]) batch.box(trim, [side * 0.94, 0.50, 0.18], [0.032, 0.034, 1.58]);
+  } else if (archetype === 'sport-crossover') {
+    for (const side of [-1, 1]) {
+      batch.box(trim, [side * 0.99, 1.49, 0.10], [0.07, 0.055, 2.28]);
+      batch.box(black, [side * 0.94, 0.52, 0.20], [0.035, 0.035, 2.52]);
+    }
+  } else if (archetype === 'neo-roadster') {
+    addRacingStripes(batch, trim, spec.stations, -1.30, 1.36, [-0.10, 0.10]);
+    batch.box(black, [0, 0.57, 1.34], [1.42, 0.04, 0.38]);
+  } else if (archetype === 'bmw') {
+    addRacingStripes(batch, livery, spec.stations, -0.72, 0.72, [-0.115, 0.115]);
+  } else if (archetype === 'lamborghini') {
+    batch.box(trim, [0, 0.57, -0.08], [0.20, 0.026, 1.72]);
+    for (const side of [-1, 1]) batch.box(trim, [side * 0.93, 0.64, 0.58], [0.025, 0.025, 0.72]);
+  }
+}
+
 /** Construit une voiture fermée, dédiée au modèle sélectionné dans le garage. */
 export function makeRacerCar(profile, options = {}) {
   const { player = false, number = 1, daylight = false, driver = null } = options;
@@ -772,6 +821,7 @@ export function makeRacerCar(profile, options = {}) {
 
   addWheelArch(details, materials.body, spec);
   addModelSpecificDetails(profile, spec, details, materials);
+  addThumbnailSignature(profile, spec, details, materials);
   makeSteeringLights(profile, spec, details, materials);
   addRearDetails(profile, spec, details, materials);
 
