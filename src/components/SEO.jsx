@@ -202,12 +202,13 @@ const pageMeta = {
     description: 'Meta a présenté le 23 septembre 2026 des lunettes de réalité virtuelle à 1 299 dollars, attendues au printemps 2027, et le Muse Charm, un accessoire à porter sur soi pour parler à l’agent Muse, annoncé pour décembre sans prix.',
     image: 'https://image.cnbcfm.com/api/v1/image/108367218-Julia_Meta_VR_2.jpg?v=1790211668&w=1600&h=900&vtcrop=y', type: 'article', published: '2026-0-23', section: 'Actualités tech',
   },
-  // Actu tech du 06.10.2026 — pas d'image de presse disponible : la couverture
-  // éditoriale est rasterisée en JPEG (og:image n'accepte pas le SVG).
+  // Actu tech du 06.10.2026 — photo de presse de la source (Carlos Barría /
+  // Reuters, via The Guardian) : la carte et le partage social montrent la
+  // gamme de lunettes visée par le texte norvégien.
   '/news/tech/norvege-lunettes-connectees-interdiction': {
     title: 'La Norvège interdit les lunettes connectées dans l’espace public — Let’s Play',
     description: 'Le gouvernement norvégien annonce une interdiction temporaire des lunettes à caméra dans les lieux publics — parcs, plages, musées, centres commerciaux, écoles, crèches, hôpitaux ou salles de sport —, l’usage privé restant autorisé. Meta rappelle que ses lunettes signalent l’enregistrement par une LED, et Oslo bannit déjà ces lunettes dans ses écoles.',
-    image: 'norvege-lunettes-connectees-news.jpg', type: 'article', published: '2026-10-06', section: 'Actualités tech',
+    image: 'https://i.guim.co.uk/img/media/40af5768117abd5443d47eba0a698ad852dd88a1/451_0_4085_3270/master/4085.jpg?width=1200&dpr=1&s=none&crop=none', type: 'article', published: '2026-10-06', section: 'Actualités tech',
   },
   '/news/cinema/endgame-encore-record-avatar': {
     title: 'Box-office mondial : Endgame frôle le trône d’Avatar — Let’s Play',

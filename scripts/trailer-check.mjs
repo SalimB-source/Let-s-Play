@@ -14,8 +14,9 @@
  *      mention de crédit, aucune entrée muette ;
  *   2. la couverture : chaque actu cinéma du site (clés de
  *      `src/pages/CurrentNews.jsx` et cartes du hub `src/pages/CinemaNews.jsx`)
- *      a une entrée — vidéos ou mention d'absence — et aucune entrée ne pointe
- *      vers un article qui n'existe pas ;
+ *      a une entrée — vidéos ou mention d'absence —, une actu gaming publiée
+ *      par `/news/gaming` peut en déclarer une sans y être obligée, et aucune
+ *      entrée ne pointe vers un article qui n'existe pas ;
  *   3. le rendu réel (SSR) : un seul lecteur par article, l'embed de la première
  *      vidéo, le sélecteur et ses miniatures quand il y a plusieurs vidéos, le
  *      lien YouTube, la note d'illustration, la mention d'absence, et les
@@ -108,6 +109,12 @@ const OFFICIAL_CHANNELS = new Set([
   // restent écartées.
   'Pathé Cinémas',
   'STUDIOCANAL',
+  // Chaîne vérifiée le 06.10.2026 pour l'actu gaming du jour : « Grand Theft
+  // Auto VI Trailer 1 » (QdBZY2fkU-0) et « Trailer 2 » (VQRLujxTm3c) sont les
+  // uploads de Rockstar Games lui-même — URLs relevées sur rockstargames.com/VI
+  // et sur l'archive publique des deux trailers. Les reprises (chaînes de
+  // compilation, ré-uploads, versions doublées) restent écartées.
+  'Rockstar Games',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
@@ -162,9 +169,20 @@ const hubRoutes = [...new Set([...read('src/pages/CinemaNews.jsx').matchAll(/to:
 const hubKeys = hubRoutes.map((route) => route.replace(/^\/news\//, ''));
 const covered = [...new Set([...cinemaKeys, ...hubKeys])];
 
-console.log(`  ${cinemaKeys.length} actus cinéma, ${hubRoutes.length} cartes du hub, ${keys.length} entrées\n`);
+// Les actus gaming publiées par le hub /news/gaming peuvent, elles aussi,
+// déclarer leurs vidéos officielles (trailers de studio) : ces clés sont
+// contrôlées quand elles existent, sans obligation d'entrée — une actu gaming
+// sans vidéo officielle reste valide, contrairement au cinéma.
+const gamingRoutes = [...new Set([...read('src/pages/GamingNews.jsx').matchAll(/to:\s*'(\/news\/[a-z0-9-]+(?:\/[a-z0-9-]+)?)'/g)].map((m) => m[1]))];
+const gamingKeys = [...new Set(gamingRoutes.map((route) => route.replace(/^\/news\//, '')))];
+const published = [...new Set([...covered, ...gamingKeys])];
+// SSR : les actus cinéma, plus les actus gaming qui portent réellement une
+// entrée (vidéos ou mention) dans le fichier.
+const rendered = [...new Set([...covered, ...keys.filter((key) => gamingKeys.includes(key))])];
 
-check('toutes les clés du fichier sont des actus cinéma publiées', keys.filter((key) => !covered.includes(key)).join(', ') || 'aucune', 'aucune');
+console.log(`  ${cinemaKeys.length} actus cinéma, ${hubRoutes.length} cartes du hub, ${gamingKeys.length} actus gaming publiées, ${keys.length} entrées\n`);
+
+check('toutes les clés du fichier correspondent à une actu publiée (cinéma ou gaming)', keys.filter((key) => !published.includes(key)).join(', ') || 'aucune', 'aucune');
 check('toutes les actus cinéma ont une entrée (vidéo ou mention)', covered.filter((key) => !getArticleTrailerEntry(key)).join(', ') || 'aucune', 'aucune');
 check('toutes les cartes du hub ont une entrée', hubKeys.filter((key) => !getArticleTrailerEntry(key)).join(', ') || 'aucune', 'aucune');
 
@@ -203,8 +221,8 @@ execFileSync(
 
 const { renderArticle, renderHub } = await import(path.join(outDir, 'trailer-smoke.js'));
 
-console.log(`  ${covered.length} article(s) rendu(s)\n`);
-for (const key of covered) {
+console.log(`  ${rendered.length} article(s) rendu(s)\n`);
+for (const key of rendered) {
   const entry = getArticleTrailerEntry(key);
   const page = renderArticle(key);
   const videos = entry.items || [];
@@ -269,6 +287,7 @@ function sourceFiles(dir) {
 const data = read('src/articleTrailers.js');
 const component = read('src/components/ArticleTrailer.jsx');
 const cinemaHub = read('src/pages/CinemaNews.jsx');
+const gamingHub = read('src/pages/GamingNews.jsx');
 const articlePage = read('src/pages/CurrentNews.jsx');
 
 check('les données ne codent aucune URL d’embed', /youtube\.com\/embed|youtube-nocookie\.com\/embed/.test(data), false);
@@ -281,6 +300,7 @@ check('le sélecteur n’invente aucune URL de miniature', component.includes(TH
 check('la page actu rend le bloc bande-annonce', /<ArticleTrailer \{\.\.\.trailer\} \/>/.test(articlePage), true);
 check('la page actu lit les vidéos du fichier de données', /getArticleTrailerEntry\(key\)/.test(articlePage), true);
 check('le hub cinéma calcule ses pastilles depuis les données', /trailerFlagLabel\(article\.to\)/.test(cinemaHub), true);
+check('le hub gaming calcule ses pastilles depuis les données', /trailerFlagLabel\(article\.to\)/.test(gamingHub), true);
 
 // Le coordinateur « une seule vidéo à la fois » repose sur `enablejsapi=1`,
 // ajouté par la fabrique : aucun lecteur du bloc ne doit s'en passer.
@@ -296,7 +316,7 @@ check('aucun embed YouTube codé en dur hors de src/lib/videoPlayback.js', hardc
 /* ---------------------------------------------------------------- résumé */
 
 if (failures) {
-  console.log(`\nBandes-annonces des actus cinéma : ${failures} contrôle(s) en échec\n`);
+  console.log(`\nBandes-annonces des actus : ${failures} contrôle(s) en échec\n`);
   process.exit(1);
 }
-console.log(`\nBandes-annonces des actus cinéma : OK (${withVideos.length} actu(s) avec vidéo, ${waiting.length} en attente, ${items.length} vidéo(s) officielle(s))\n`);
+console.log(`\nBandes-annonces des actus (cinéma et gaming) : OK (${withVideos.length} actu(s) avec vidéo, ${waiting.length} en attente, ${items.length} vidéo(s) officielle(s))\n`);

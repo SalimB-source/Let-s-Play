@@ -3616,8 +3616,12 @@ en deux temps, chapô, deux sections titrées, citation et encadré
   Bros. suspendent temporairement le tournage de The Batman Part II : Matt
   Reeves s’éloigne pour une affaire familiale, sans date de reprise, la sortie
   américaine restant fixée au 18 février 2028 (déclaration à Deadline, IGN,
-  Sortir à Paris). L’actu n’a aucune bande-annonce à montrer : l’entrée
-  `src/articleTrailers.js` porte donc `pending`, comme la règle l’exige.
+  Sortir à Paris). La suite n’ayant publié aucune image animée — seul un camera
+  test a été diffusé par Matt Reeves sur Vimeo en juillet 2026 —, l’actu est
+  illustrée par la campagne officielle de *The Batman* (2022) : l’entrée
+  `src/articleTrailers.js` reprend le trailer 2 de 2022 avec une `note` qui dit
+  ce que le lecteur regarde, et `src/articleGalleries.js` en tire trois
+  photogrammes, crédités de la même façon.
 
 Fournée du 28.09.2026 :
 
@@ -3635,8 +3639,13 @@ Le 06.10.2026, l’actu gaming du jour suit le même chemin —
 `/news/gta-6-satire-monde-invente`, la position de Rockstar sur la satire de
 GTA VI exposée par son vice-président chargé de la narration Rupert Humphries
 (entretien au magazine Love relayé par Eurogamer, via Gamekult) : entrée dans
-`CurrentNews.jsx`, carte en tête de `GamingNews.jsx`, route explicite dans
-`src/main.jsx`, recherche et sitemap.
+`CurrentNews.jsx`, carte en tête de `GamingNews.jsx` (pastille
+« bande-annonce »), route explicite dans `src/main.jsx`, recherche et sitemap.
+Elle est la première actu gaming à déclarer ses vidéos : les deux trailers
+officiels de Rockstar Games (Trailer 1 et Trailer 2) dans
+`src/articleTrailers.js`, et trois photogrammes du trailer 2 dans
+`src/articleGalleries.js` — `npm run check:trailers` couvre désormais ces clés
+gaming, sans exiger d’entrée pour les actus qui n’ont rien à montrer.
 
 Le 28.09.2026, trois actus gaming ont été rédigées à la main au gabarit du
 robot (`/news/minecraft-the-sift-nouvelle-dimension`,
@@ -3747,7 +3756,10 @@ gabarit éditorial que le gaming et le cinéma. Fournée du 06.10.2026 :
   musées, écoles, crèches, établissements de santé, salles de sport et
   événements publics, sans toucher à l’usage privé : la ministre du Numérique
   Torgeir Micaelsen invoque le risque d’être filmé à son insu, Meta répond par
-  la LED qui clignote (The Guardian, AFP via France 24 et Le Soir).
+  la LED qui clignote (The Guardian, AFP via France 24 et Le Soir). Miniature :
+  la photo de presse du Guardian (Mark Zuckerberg présentant la gamme de
+  lunettes connectées de Meta, Carlos Barría/Reuters), la couverture éditoriale
+  maison restant le repli de la carte.
 
 Fournée du 21-28.09.2026 :
 
