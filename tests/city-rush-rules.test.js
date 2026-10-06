@@ -51,10 +51,12 @@ import {
   CITY_RUSH_TRAFFIC_IMPACT_DURATION,
   CITY_RUSH_TRAFFIC_IMPACT_GAP,
   CITY_RUSH_TRAFFIC_CAR_GAP,
+  CITY_RUSH_TRAFFIC_HITBOX_SCALE,
   CITY_RUSH_TRAFFIC_HOLD_MARGIN,
   CITY_RUSH_TRAFFIC_PASS_GAP,
   CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION,
   cityRushTrafficContactGap,
+  cityRushTrafficHitboxWidth,
   CITY_RUSH_PICKUP_BURST_DURATION,
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
@@ -531,6 +533,102 @@ test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) 
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0] }), 2, 'une voie occupée est évitée');
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2] }), 4, 'la nouvelle voie extérieure reste disponible');
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2, 4] }), 1, 'les deux voisines occupées font glisser le dégagement');
+});
+
+test('la hit-box des voitures du trafic est resserrée : l’esquive de dernière seconde passe', () => {
+  // Demande : « réduire la hit-box des voitures qui circulent sur la route pour
+  // pouvoir les éviter au dernier moment ». La carrosserie garde sa largeur à
+  // l'écran ; c'est la boîte qui juge le contact qui est plus étroite.
+  assert.ok(CITY_RUSH_TRAFFIC_HITBOX_SCALE > 0 && CITY_RUSH_TRAFFIC_HITBOX_SCALE < 1,
+    'la boîte du trafic est strictement plus petite que la carrosserie');
+  assert.ok(Math.abs(cityRushTrafficHitboxWidth(1.94) - 1.94 * CITY_RUSH_TRAFFIC_HITBOX_SCALE) < 1e-9);
+  assert.equal(cityRushTrafficHitboxWidth(1.94, 1), 1.94, 'l’échelle pleine rend la carrosserie');
+  assert.ok(cityRushTrafficHitboxWidth(undefined) > 1,
+    'une largeur inconnue retombe sur la berline de référence : jamais une boîte nulle');
+
+  // Le pilote a entamé son esquive de 1,70 m sur les 2,10 m qui séparent deux
+  // voies. Avec la carrosserie pleine, les deux voitures se recouvrent encore
+  // (1,70 < 1,92) et l'enveloppe vaut 2,98 m : à 2,95 m, le choc serait facturé.
+  // Avec la boîte resserrée (1,53 m de demi-somme), la boîte du trafic est
+  // dégagée : plus aucun contact, même à cette distance.
+  const swerve = 1.7;
+  const lateGap = 2.95;
+  const bodyEnvelope = cityRushTrafficContactGap(swerve, { bodyWidth: 1.9, trafficWidth: 1.94 });
+  const hitboxEnvelope = cityRushTrafficContactGap(swerve, {
+    bodyWidth: 1.9,
+    trafficWidth: cityRushTrafficHitboxWidth(1.94),
+  });
+  assert.ok(bodyEnvelope > lateGap, 'avec la carrosserie pleine, l’esquive tardive toucherait');
+  assert.equal(hitboxEnvelope, CITY_RUSH_TRAFFIC_PASS_GAP, 'boîte dégagée : l’enveloppe tombe au frôlement');
+
+  const slow = { previousDistance: 140, nextDistance: 140.2 };
+  const lateDodge = detectCityRushTrafficImpacts([
+    {
+      id: 'player', collisionGroup: 'racer', lane: 2, x: CITY_RUSH_LANE_X[1] + swerve, width: 1.9,
+      previousDistance: 135.9, nextDistance: 137.25,
+    },
+    { id: 'traffic-1', collisionGroup: 'traffic', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, ...slow },
+  ]);
+  assert.deepEqual(lateDodge, [], 'la boîte resserrée laisse passer une esquive entamée au dernier moment');
+
+  // Boîte encore recouverte (1,20 m d’esquive) : le contact est bien facturé,
+  // la réduction n'est pas une disparition du trafic solide.
+  const coveredSwerve = 1.2;
+  const coveredEnvelope = cityRushTrafficContactGap(coveredSwerve, {
+    bodyWidth: 1.9,
+    trafficWidth: cityRushTrafficHitboxWidth(1.94),
+  });
+  assert.ok(coveredEnvelope > hitboxEnvelope,
+    'boîte encore recouverte : l’enveloppe reste plus longue que le frôlement');
+  const covered = detectCityRushTrafficImpacts([
+    {
+      id: 'player', collisionGroup: 'racer', lane: 2, x: CITY_RUSH_LANE_X[1] + coveredSwerve, width: 1.9,
+      previousDistance: 136, nextDistance: 137.2,
+    },
+    { id: 'traffic-1', collisionGroup: 'traffic', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, ...slow },
+  ]);
+  assert.equal(covered.length, 1, 'boîtes recouvertes : le choc tombe toujours');
+  assert.equal(covered[0].racerId, 'player');
+  assert.equal(covered[0].trafficId, 'traffic-1');
+
+  // La retenue du moteur suit la même boîte : recouverte, le suiveur est arrêté
+  // à l'enveloppe resserrée (+ la marge de 5 cm) ; dégagée, il n'est plus
+  // ralenti du tout — sinon le pilote serait dégagé par la détection mais
+  // raboté par le moteur, et l'esquive de dernière seconde resterait bloquée.
+  const heldMoved = resolveCityRushCarMovement([
+    {
+      id: 'player', collisionGroup: 'racer', lane: 2, x: CITY_RUSH_LANE_X[1] + coveredSwerve, width: 1.9,
+      previousDistance: 136, nextDistance: 137.2,
+    },
+    { id: 'traffic-1', collisionGroup: 'traffic', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, ...slow },
+  ]);
+  const heldById = Object.fromEntries(heldMoved.map((car) => [car.id, car.nextDistance]));
+  assert.ok(Math.abs(heldById.player - (slow.nextDistance - coveredEnvelope - CITY_RUSH_TRAFFIC_HOLD_MARGIN)) < 1e-9,
+    'le suiveur est retenu à l’enveloppe de la boîte resserrée');
+
+  const freedMoved = resolveCityRushCarMovement([
+    {
+      id: 'player', collisionGroup: 'racer', lane: 2, x: CITY_RUSH_LANE_X[1] + swerve, width: 1.9,
+      previousDistance: 136, nextDistance: 137.25,
+    },
+    { id: 'traffic-1', collisionGroup: 'traffic', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, ...slow },
+  ]);
+  const freedById = Object.fromEntries(freedMoved.map((car) => [car.id, car.nextDistance]));
+  assert.equal(freedById.player, 137.25, 'boîte dégagée : le moteur ne retient plus la voiture');
+
+  // Dans l'axe, la boîte resserrée ne change rien : le choc tombe toujours
+  // pare-chocs contre pare-chocs quand le pilote n'a pas tourné le volant.
+  assert.equal(
+    cityRushTrafficContactGap(0, { bodyWidth: 1.9, trafficWidth: cityRushTrafficHitboxWidth(1.94) }),
+    CITY_RUSH_TRAFFIC_CAR_GAP,
+    'voie tenue : le seuil axial reste le pare-chocs contre pare-chocs',
+  );
+  // La règle d'enveloppe reste pure : c'est l'appelant qui passe la boîte du
+  // trafic. Les berlines de police en chasse gardent donc leur carrosserie
+  // pleine — leur contact est jugé par `cityRushPoliceCollisionHit` —, et la
+  // marge d'esquive est bien celle de la boîte resserrée.
+  assert.ok(bodyEnvelope > hitboxEnvelope,
+    'la carrosserie pleine retient plus loin que la boîte du trafic');
 });
 
 test('an oncoming collision nudges the hit car one lane without leaving the road', () => {

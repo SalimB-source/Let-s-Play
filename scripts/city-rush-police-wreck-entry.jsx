@@ -152,7 +152,10 @@ const PLAYER_Z = 3.1;
 const TARGET_GAP_MIN = 45;
 const TARGET_GAP_MAX = 110;
 // Écart minimal au moment de la destruction pour que l'agonie soit observable :
-// trop près, le pilote dépasse la berline pendant son tête-à-queue.
+// trop près, le pilote dépasse la berline pendant son tête-à-queue. Ce filtre
+// est un garde-fou bon marché — le verdict exact est rendu à l'apparition de la
+// carcasse (`huskGap`, une fois la berline arrêtée), car la distance couverte
+// pendant la toupie dépend de la vitesse du pilote.
 const OBSERVABLE_GAP_MIN = 30;
 // Au-delà de cette attente sans cible dans la fenêtre, on tire sur la berline
 // la plus proche : la vérif ne doit pas tourner indéfiniment.
@@ -499,6 +502,21 @@ for (let run = 0; run < RUNS; run += 1) {
           const drift = Math.abs(trackDistanceOf(husk) - tracked.lastTrackDistance);
           if (drift > 1) {
             fail(`[${city.id}] la carcasse n'apparaît pas là où la berline s'est arrêtée`, { drift });
+          }
+          // Le pilote peut dépasser la berline pendant son tête-à-queue (à
+          // 160 km/h il couvre 76 m en 1,7 s) : la carcasse naît alors déjà
+          // derrière lui, hors de la fenêtre de dessin (`…_VIEW_BEHIND`, 22 m),
+          // et le monde a raison de ne pas la dessiner. L'agonie n'est pas
+          // observable — on attend la destruction suivante au lieu de la
+          // déclarer fautive, comme pour une berline hors cadre au moment du
+          // boum. Toutes les mesures ci-dessous ne valent que pour une carcasse
+          // née dans le cadre.
+          const huskGap = tracked.huskTrackDistance - (Number(world.distance) || 0);
+          if (huskGap < -(CITY_RUSH_POLICE_WRECK_VIEW_BEHIND - 2)) {
+            if (VERBOSE) {
+              console.log(`[${city.id}#${run + 1}] carcasse née ${Math.abs(huskGap).toFixed(1)} m derrière le pilote (dépassée pendant le tête-à-queue) : agonie non observable`);
+            }
+            tracked = null;
           }
         } else if (tracked.spinFrames > SPIN_FRAMES + 12) {
           fail(`[${city.id}] le tête-à-queue dépasse ${SPIN_FRAMES} images sans exploser`, {

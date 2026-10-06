@@ -1007,9 +1007,12 @@ et le dernier tour durait 21 s.
   reste immédiat, avec **+200 pts** pour le pilote qui l'abat
   (`CITY_RUSH_POLICE_DESTROY_SCORE`) ; la vérif
   `npm run check:city-rush-police-wreck` compte les tours, la décélération, le
-  moment de l'explosion et la durée du feu. La berline du trafic rappelée par un
-  contact est destructible comme l'escouade ; à la course suivante, le trafic
-  repart au complet.
+  moment de l'explosion et la durée du feu ; une agonie que le pilote **dépasse
+  pendant le tête-à-queue** (la carcasse naît alors derrière lui, hors de la
+  fenêtre de dessin de 22 m, et le monde a raison de ne pas la dessiner) est
+  écartée, la vérif attendant la destruction suivante. La berline du trafic
+  rappelée par un contact est destructible comme l'escouade ; à la course
+  suivante, le trafic repart au complet.
 - **Quatre étoiles : la herse.** À partir de la quatrième étoile, deux voitures
   de police — une berline et un SUV (`CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES`) —
   apparaissent **devant** le pilote et se rangent **en travers des trois voies
@@ -1109,7 +1112,23 @@ et le dernier tour durait 21 s.
   carrosserie** : 3,6 m pare-chocs contre pare-chocs, 2,9 m une fois l'aile
   dégagée (`cityRushTrafficContactGap`, `CITY_RUSH_TRAFFIC_CAR_GAP`,
   `CITY_RUSH_TRAFFIC_PASS_GAP`) — une esquive entamée à temps raccourcit le
-  seuil et passe, une esquive jamais entamée touche. La retenue du suiveur suit
+  seuil et passe, une esquive jamais entamée touche. Les voitures **qui
+  circulent sur la route** — trafic lent, contresens, berlines lâchées par un
+  mini-garage et patrouilles du flot — sont en plus jugées sur une **boîte de
+  contact resserrée** : `CITY_RUSH_TRAFFIC_HITBOX_SCALE` = **0,6** de leur
+  largeur réelle (`cityRushTrafficHitboxWidth`), soit 1,16 m pour une berline
+  de 1,94 m. Sur une chaussée à voies de 2,10 m, la boîte pleine exigeait 91 %
+  du changement de voie pour être dégagé, la boîte resserrée se contente de
+  73 % : un coup de volant donné **au dernier moment** passe là où il se payait
+  un carré. La même boîte sert partout où le véhicule est jugé — détection du
+  choc, retenue du suiveur (`resolveCityRushCarMovement`), choc frontal
+  (`checkOncomingImpacts`) et contact d'une patrouille (`checkPoliceRally`) —
+  pour que le pilote ne soit pas dégagé par l'un et raboté par l'autre. Le
+  verrou de rabattement (`canEnterLane`) garde, lui, les carrosseries : c'est
+  une distance de sécurité de changement de voie (4,8 m), plus stricte que le
+  choc qu'elle évite. Les berlines de **police en chasse** gardent leur
+  carrosserie pleine : leur contact est jugé à part
+  (`cityRushPoliceCollisionHit`). La retenue du suiveur suit
   la même enveloppe, sans quoi le moteur arrêterait la voiture juste au-delà du
   seuil et le choc ne tomberait jamais. Le trafic et les rivaux ne se heurtent entre
   eux qu'en ralentissant, sans toucher la coque du pilote. Le contact policier
