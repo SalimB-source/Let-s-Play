@@ -314,7 +314,17 @@
   border-color: rgba(255, 82, 110, 0.6);
 }
 
-.city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { pointer-events: auto; }
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-button {
+  pointer-events: auto;
+  width: 128px;
+  height: 128px;
+  grid-template-rows: 14px 1fr 14px;
+  padding: 14px;
+}
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-label { font-size: 9px; }
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-status { font-size: 12px; }
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon { width: 50px; height: 50px; }
+.city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon svg { width: 52px; height: 52px; }
 
 /* ── Écrans moyens : colonnes plus serrées ── */
 @media (max-width: 900px) {
@@ -403,7 +413,9 @@
   .city-rush-viewport .city-rush-hud .city-rush-steering { padding: 5px; gap: 6px; border-radius: 14px; }
   .city-rush-viewport .city-rush-hud .city-rush-steering > span { display: none; }
   .city-rush-viewport .city-rush-hud .city-rush-steering button { width: 56px; height: 56px; border-radius: 12px; touch-action: none; }
-  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 86px; height: 86px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 104px; height: 104px; padding: 11px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon { width: 40px; height: 40px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon svg { width: 42px; height: 42px; }
 }
 
 /* ── Compteur de vitesse à aiguille (bas gauche) ── */
@@ -509,7 +521,7 @@
   .city-rush-viewport .city-rush-hud .city-rush-route-sign,
   .city-rush-viewport .city-rush-hud .city-rush-race-list-copy small,
   .city-rush-viewport .city-rush-hud .city-rush-mini-lights { display: none; }
-  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 80px; height: 80px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 96px; height: 96px; }
   .city-rush-viewport .city-rush-hud .city-rush-speedometer { width: 104px; }
 }
 
