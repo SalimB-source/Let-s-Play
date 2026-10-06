@@ -67,6 +67,38 @@ import {
   CITY_RUSH_POLICE_COUNT,
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
+  CITY_RUSH_SPIKE_BLOCK_ALERT_RANGE,
+  CITY_RUSH_SPIKE_BLOCK_COOLDOWN,
+  CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION,
+  CITY_RUSH_SPIKE_BLOCK_LEAD,
+  CITY_RUSH_SPIKE_BLOCK_LIFETIME,
+  CITY_RUSH_SPIKE_BLOCK_PACK_DURATION,
+  CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES,
+  CITY_RUSH_SPIKE_DAMAGE_SOURCE,
+  CITY_RUSH_SPIKE_HALF_LENGTH,
+  CITY_RUSH_SPIKE_IMPACT_DURATION,
+  CITY_RUSH_SPIKE_LAY_DURATION,
+  CITY_RUSH_SPIKE_LANES,
+  CITY_RUSH_SPIKE_SLOW_DURATION,
+  CITY_RUSH_SPIKE_SLOW_FACTOR,
+  CITY_RUSH_SUV_CHARGE_ALERT_RANGE,
+  CITY_RUSH_SUV_CHARGE_COUNT,
+  CITY_RUSH_SUV_CHARGE_LATERAL_RATE,
+  CITY_RUSH_SUV_CHARGE_LOCK_RANGE,
+  CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND,
+  CITY_RUSH_SUV_CHARGE_RELOAD,
+  CITY_RUSH_SUV_CHARGE_SPAWN_LEAD,
+  CITY_RUSH_SUV_CHARGE_TYPE,
+  cityRushSpikeBlockCount,
+  cityRushSpikeHit,
+  cityRushSpikeLaidLanes,
+  cityRushSpikeLanes,
+  cityRushSpikeLayProgress,
+  cityRushSpikePace,
+  cityRushSuvChargeCount,
+  cityRushSuvChargeLocked,
+  cityRushSuvChargeSpeed,
+  cityRushSuvChargeStep,
   CITY_RUSH_MINI_GARAGE_COUNT,
   CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
   CITY_RUSH_MINI_GARAGE_HUD_RANGE,
@@ -145,6 +177,7 @@ import {
   cityRushMiniGarageCanUse,
   cityRushMiniGarageKindAt,
   cityRushMiniGarageRepair,
+  cityRushMiniGarageWantedLevel,
   cityRushMiniGarageTrackDistances,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
@@ -1627,6 +1660,80 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
 
+  // ── Les SUV de charge du contresens ────────────────────────────────────
+  // Cinq étoiles ne se contentent plus d'attendre le pilote : deux SUV
+  // d'interception arrivent **de face** et foncent sur lui. Ils vivent dans le
+  // contresens (`oncomingCars`) pour hériter du rendu, de la détection balayée
+  // des chocs et de la conversion en poursuivants, mais leur conduite est
+  // propre (voir `updateSuvCharges`) : ils apparaissent loin devant, visent la
+  // voie du pilote à portée de verrou, se rabattent à vitesse limitée et
+  // roulent plus vite que sa pointe. Le contact les retourne — le demi-tour
+  // réglementaire des patrouilles — et ils rejoignent la chasse.
+  const suvCharges = Array.from({ length: CITY_RUSH_SUV_CHARGE_COUNT }, (_, index) => {
+    const mesh = makeTrafficVehicle(CITY_RUSH_SUV_CHARGE_TYPE);
+    withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+    mesh.name = `suv-charge-${index + 1}`;
+    mesh.visible = false;
+    scene.add(mesh);
+    return {
+      // Même famille que les patrouilles du contresens : le contact déclenche
+      // la poursuite, le demi-tour et la montée d'étoiles comme pour elles.
+      ...(CITY_RUSH_TRAFFIC_TYPES.find((spec) => spec.id === 'police') || CITY_RUSH_TRAFFIC_TYPES[0]),
+      type: 'police',
+      vehicleType: CITY_RUSH_SUV_CHARGE_TYPE,
+      id: `suv-charge-${index + 1}`,
+      name: policeUnitName(index + 1, CITY_RUSH_SUV_CHARGE_TYPE),
+      charge: true,
+      chargeIndex: index,
+      chargeState: 'dormant', // dormant | charging | reloading
+      chargeReloadLeft: 0,
+      chargeAnnounced: false,
+      chargeLocked: false,
+      mesh,
+      // Dormant : garé loin derrière la grille, il n'apparaîtra qu'à cinq
+      // étoiles (`armSuvCharge` le replace au loin devant le pilote).
+      distance: -1200,
+      lane: oncomingLanes.length ? oncomingLanes[index % oncomingLanes.length] : CITY_RUSH_ONCOMING_LANES[0],
+      currentX: 0,
+      baseSpeed: 0,
+      currentSpeed: 0,
+      impactCooldownLeft: 0,
+      pushedAside: false,
+      pushAsideElapsed: 0,
+      pushAsideStartX: null,
+      phase: 0.8 + index * 1.7,
+      lastPassGap: undefined,
+      health: cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE),
+      maxHealth: cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE),
+      healthFlash: 0,
+      destroyed: false,
+      rallied: false,
+      turnaroundState: null,
+      turnaroundElapsed: 0,
+      turnaroundTargetId: null,
+      turnaroundAsBackup: false,
+      turnaroundTargetLane: null,
+    };
+  });
+  oncomingCars.push(...suvCharges);
+
+  // ── La herse : le barrage éclair des quatre étoiles ────────────────────
+  // État du dispositif monté par deux voitures de police (voir
+  // `beginSpikeBlock`/`updateSpikeBlock`). `idle` = aucun barrage ; les voitures
+  // prennent position, la herse se déroule voie par voie, puis elle est posée ;
+  // une fois le pilote passé, les voitures rangent et repartent (`packing`).
+  const SPIKE_BLOCK_ID = 'spike-block';
+  const spikeBlock = {
+    state: 'idle', // idle | deploying | laying | set | packing
+    elapsed: 0,
+    age: 0,
+    distance: 0,
+    lanes: [],
+    cooldownLeft: 0,
+    meshes: null,
+    cars: [],
+  };
+
   // ── L'escouade de police et ses renforts ciblés ────────────────────────
   // Trois voitures poursuivent le joueur. Deux unités supplémentaires sont
   // gardées en réserve, une par rival ; elles ne sortent que si ce rival tire
@@ -1790,8 +1897,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function turnAroundOncomingPoliceAsBackup() {
+    // Les SUV de charge gardent leur charge : ils ne font demi-tour qu'au
+    // contact (voir `updateSuvCharges`), le demi-tour à vue restant le lot des
+    // patrouilles du flot.
     const turning = oncomingCars.filter((car) => (
-      isCityRushPoliceTrafficType(car.type) && !car.destroyed && !car.rallied
+      isCityRushPoliceTrafficType(car.type) && !car.destroyed && !car.rallied && !car.charge
     ));
     let started = 0;
     for (const car of turning) {
@@ -1993,6 +2103,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // lacet oscillant, purement visuels (les règles de vitesse/vie restent les mêmes).
   let playerSuvImpactLeft = 0;
   let playerSuvImpactSide = 1;
+  // Crevaison sur la herse : les pneus à plat, la voiture ne repart pas à fond
+  // pendant quelques secondes (facteur `CITY_RUSH_SPIKE_SLOW_FACTOR`).
+  let playerSpikeSlowLeft = 0;
   // Conduite en ligne : changer de voie ne ralentit pas, mais cela remet à
   // zéro le bonus de vitesse « ligne propre » chargé en tenant sa voie.
   let playerCleanLineTime = 0;
@@ -2193,12 +2306,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerHealthFlash = 0;
     garage.used = true;
     policeDestroyedByPlayer = 0;
-    wantedLevel = 0;
+    wantedLevel = cityRushMiniGarageWantedLevel(previousStars);
     garage.group.userData.used = true;
     garage.group.visible = false;
-    // Sortir du portique coupe la poursuite : les berlines qui chassaient le
-    // pilote se remettent à rouler normalement et l'abandonnent.
-    const pursuersReleased = releasePolicePursuit({ targetId: 'player' });
+    // À trois étoiles ou moins, le portique coupe entièrement la poursuite.
+    // À quatre ou cinq, elle continue au niveau réduit (4 → 3, 5 → 4).
+    const pursuersReleased = wantedLevel === 0
+      ? releasePolicePursuit({ targetId: 'player' })
+      : 0;
     const remaining = miniGarages.filter((item) => !item.used).length;
     const healthRestored = playerHealth - healthBefore;
     // Le passage à l'atelier s'entend : pont élévateur, clé à chocs, capot
@@ -2491,6 +2606,28 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           duration: CITY_RUSH_POLICE_TURNAROUND_DURATION,
           backup: Boolean(car.turnaroundAsBackup),
         })),
+      // La herse des quatre étoiles : sa phase, sa distance devant le pilote et
+      // les voies couvertes (le HUD et les vérifications s'y raccrochent).
+      spikeBlock: spikeBlock.state === 'idle' ? null : {
+        state: spikeBlock.state,
+        gap: Math.round(spikeBlock.distance - distance),
+        lanes: [...spikeBlock.lanes],
+        covered: spikeBlock.lanes.includes(playerLane),
+        slowLeft: playerSpikeSlowLeft,
+        cooldown: Math.round(spikeBlock.cooldownLeft * 10) / 10,
+      },
+      // Les SUV de charge du contresens (voir `updateSuvCharges`).
+      suvCharges: suvCharges.map((charge) => ({
+        id: charge.id,
+        state: charge.destroyed ? 'destroyed' : charge.chargeState,
+        gap: Math.round(charge.distance - distance),
+        lane: charge.lane,
+        locked: Boolean(charge.chargeLocked),
+        rallied: Boolean(charge.rallied),
+        turnedAround: charge.turnaroundState === 'turning',
+        reloadLeft: Math.round(charge.chargeReloadLeft * 10) / 10,
+        destroyed: Boolean(charge.destroyed),
+      })),
       // Les voitures de police ne sont pas classées : elles sont transmises à
       // part pour le compteur de poursuite (et jamais au classement des pilotes).
       police: activePursuers().map((police) => ({
@@ -2638,6 +2775,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerSkidSide = 1;
     playerSuvImpactLeft = 0;
     playerSuvImpactSide = 1;
+    playerSpikeSlowLeft = 0;
     playerCleanLineTime = 0;
     playerOncomingTime = 0;
     playerOncomingStage = 'none';
@@ -2744,6 +2882,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming.pushAsideElapsed = 0;
       oncoming.pushAsideStartX = null;
       oncoming.lastPassGap = undefined;
+      if (oncoming.charge) {
+        // Les SUV de charge repartent dormants : ils n'apparaîtront qu'à cinq
+        // étoiles, au loin devant la grille (voir `updateSuvCharges`).
+        oncoming.chargeState = 'dormant';
+        oncoming.chargeReloadLeft = 0;
+        oncoming.chargeAnnounced = false;
+        oncoming.chargeLocked = false;
+        oncoming.baseSpeed = 0;
+        oncoming.currentSpeed = 0;
+        oncoming.health = cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE);
+        oncoming.maxHealth = oncoming.health;
+        oncoming.mesh.visible = false;
+        animatePoliceDamageFire(oncoming.mesh, 0, 0);
+        oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
+        oncoming.destroyed = false;
+        oncoming.rallied = false;
+        oncoming.turnaroundState = null;
+        oncoming.turnaroundElapsed = 0;
+        oncoming.turnaroundTargetId = null;
+        oncoming.turnaroundAsBackup = false;
+        oncoming.turnaroundTargetLane = null;
+        return;
+      }
       oncoming.health = isCityRushPoliceTrafficType(oncoming.type) ? CITY_RUSH_POLICE_HEALTH : null;
       oncoming.damageSmokeTimer = 0;
       animatePoliceDamageFire(oncoming.mesh, 0, 0);
@@ -2760,6 +2921,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
       oncoming.mesh.userData.beacons.forEach((beacon) => { beacon.material.opacity = 1; });
     });
+    // La herse de la course précédente est rangée : le dispositif sera remonté
+    // au prochain passage à quatre étoiles.
+    dismissSpikeBlock();
     // L'escouade et ses réserves repartent pour la prochaine course.
     policeDeployed = false;
     policePursuitDropped = false;
@@ -2904,7 +3068,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer: trafficVehicle,
         isPolice,
         isTrafficPolice: isPolice,
-        isUndercoverPolice: trafficVehicle.type === 'undercover-police',
+        isTaxi: trafficVehicle.type === 'taxi',
         isCivilianTraffic: !isPolice,
       };
     }
@@ -3073,6 +3237,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Le flot lent, le trafic venant en face **et** les berlines de police :
   // tout véhicule avec lequel une voiture de course peut faire des étincelles.
   function getImpactMesh(vehicleId) {
+    // La herse n'est pas une voiture : ses étincelles se jouent sur le tapis de
+    // la première voie couverte, à la ligne du dispositif.
+    if (vehicleId === SPIKE_BLOCK_ID) return spikeBlock.meshes?.laneGroups?.[0] || null;
     return trafficCars.find((item) => item.id === vehicleId)?.mesh
       || oncomingCars.find((item) => item.id === vehicleId)?.mesh
       || activePursuerById(vehicleId)?.mesh
@@ -4208,6 +4375,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // contact. Les berlines rappelées rejoignent la même IA de barrage et de tir
   // que l'escouade principale.
   function rallyPoliceVehicle(vehicle, { origin = 'traffic', targetId = 'player', asBackup = false } = {}) {
+    // Un SUV de charge garde son type de trafic (« police ») pour la détection
+    // des chocs, mais son modèle propre (`vehicleType`) décide de sa coque et de
+    // son nom une fois qu'il chasse.
+    const policeType = vehicle?.vehicleType || vehicle?.type;
     if (!vehicle || vehicle.rallied || vehicle.destroyed || !isCityRushPoliceTrafficType(vehicle.type)) return null;
     vehicle.rallied = true;
     const fromOncoming = origin === 'oncoming';
@@ -4217,9 +4388,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       vehicle.lane = vehicle.turnaroundTargetLane ?? vehicle.lane;
     }
     const lane = vehicle.lane;
+    const maxHealth = cityRushPoliceMaxHealth(policeType);
     const police = {
       id: `rally-${vehicle.id}`,
-      name: vehicle.type === 'undercover-police' ? 'POLICE EN CIVIL' : 'POLICE ROUTIÈRE',
+      name: policeType === CITY_RUSH_SUV_CHARGE_TYPE ? 'POLICE SUV' : 'POLICE ROUTIÈRE',
       index: CITY_RUSH_POLICE_COUNT + ralliedCars.length,
       squad: false,
       rallied: true,
@@ -4227,7 +4399,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       wantedBackup: Boolean(asBackup),
       origin,
       originId: vehicle.id,
-      vehicleType: vehicle.type,
+      vehicleType: policeType,
       mesh: vehicle.mesh,
       lane,
       currentX: vehicle.currentX,
@@ -4252,7 +4424,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       powerCooldown: 0,
       inventory: createCityRushPoliceInventory(),
       active: true,
-      health: Math.max(1, Number(vehicle.health) || CITY_RUSH_POLICE_HEALTH),
+      health: Math.max(1, Math.min(Number(vehicle.health) || maxHealth, maxHealth)),
+      maxHealth,
       healthFlash: 0,
       mode: 'hunt',
       blockLeft: 0,
@@ -4615,9 +4788,385 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         spawnTrafficImpact('player', rallied.id);
         audioRef?.current?.skid({ pan: vehiclePan(rallied.id), intensity: 0.9, duration: POLICE_RAM_SKID_DURATION });
         cameraKick = Math.max(cameraKick, 0.42);
-        raiseWantedLevel({ police: true, reason: traffic.type === 'undercover-police' ? 'undercover-contact' : 'police-contact' });
+        raiseWantedLevel({ police: true, reason: 'police-contact' });
       }
     }
+  }
+
+  // ── Les SUV de charge : viser, foncer, se retourner ─────────────────────
+  // Appelée à chaque image juste avant la boucle du contresens (qui se charge
+  // du déplacement, du rendu et du choc balayé). Trois états :
+  //   · `dormant`   — sous cinq étoiles (ou en Sprint), le SUV attend au loin ;
+  //   · `charging`  — il est apparu loin devant, vise la voie du pilote à portée
+  //                   de verrou et fonce ; une charge manquée le recycle ;
+  //   · `reloading` — quelques secondes d'absence avant de repartir au loin.
+  // Le contact, lui, ne se joue pas ici : la boucle du contresens détecte le
+  // choc et déclenche le demi-tour réglementaire, puis la chasse.
+  function armSuvCharge(charge) {
+    charge.chargeState = 'charging';
+    charge.chargeReloadLeft = 0;
+    charge.chargeAnnounced = false;
+    charge.chargeLocked = false;
+    // Coque intacte : la charge suivante repart d'un SUV neuf.
+    charge.health = cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE);
+    charge.maxHealth = cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE);
+    charge.healthFlash = 0;
+    charge.turnaroundState = null;
+    charge.turnaroundElapsed = 0;
+    charge.turnaroundTargetId = null;
+    charge.turnaroundAsBackup = false;
+    charge.turnaroundTargetLane = null;
+    charge.impactCooldownLeft = 0;
+    charge.pushedAside = false;
+    charge.pushAsideElapsed = 0;
+    charge.pushAsideStartX = null;
+    charge.lastPassGap = undefined;
+    charge.mesh.visible = false;
+    if (oncomingLanes.length) charge.lane = oncomingLanes[Math.floor(Math.random() * oncomingLanes.length)];
+    charge.currentX = laneX(charge.lane);
+    // Décalage entre les deux SUV : ils n'arrivent pas en meute, le pilote a le
+    // temps de lire la première charge.
+    charge.distance = distance + CITY_RUSH_SUV_CHARGE_SPAWN_LEAD + charge.chargeIndex * 60;
+    charge.baseSpeed = cityRushSuvChargeSpeed(playerTopSpeed);
+    charge.currentSpeed = charge.baseSpeed;
+  }
+
+  function updateSuvCharges(dt) {
+    if (sprint) return;
+    const wanted = cityRushSuvChargeCount(wantedLevel, { sprint, hasOncoming: oncomingLanes.length > 0 });
+    for (const charge of suvCharges) {
+      // La chasse (patrouille rappelée) ou l'épave gère le maillage : la charge
+      // n'y touche plus.
+      if (charge.rallied || charge.destroyed) continue;
+      if (charge.chargeState === 'dormant') {
+        charge.mesh.visible = false;
+        charge.baseSpeed = 0;
+        if (wanted > charge.chargeIndex) armSuvCharge(charge);
+        continue;
+      }
+      // La poursuite est retombée sous cinq étoiles (mini-garage, drapeau) :
+      // les SUV en charge rentrent au loin au lieu de continuer seuls.
+      if (wanted <= charge.chargeIndex) {
+        charge.chargeState = 'dormant';
+        charge.chargeReloadLeft = 0;
+        charge.chargeAnnounced = false;
+        charge.chargeLocked = false;
+        charge.baseSpeed = 0;
+        charge.currentSpeed = 0;
+        charge.mesh.visible = false;
+        continue;
+      }
+      if (charge.chargeState === 'reloading') {
+        charge.mesh.visible = false;
+        charge.chargeReloadLeft = Math.max(0, charge.chargeReloadLeft - dt);
+        if (charge.chargeReloadLeft <= 0) armSuvCharge(charge);
+        continue;
+      }
+      // Le demi-tour d'après contact est piloté par la boucle du contresens.
+      if (charge.turnaroundState === 'turning' || charge.turnaroundState === 'joined') continue;
+      const gap = charge.distance - distance;
+      if (gap < -CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND) {
+        // Le SUV est repassé derrière sans toucher le pilote : la charge est
+        // manquée, il recharge et reviendra au loin.
+        charge.chargeState = 'reloading';
+        charge.chargeReloadLeft = CITY_RUSH_SUV_CHARGE_RELOAD;
+        charge.chargeAnnounced = false;
+        charge.chargeLocked = false;
+        charge.mesh.visible = false;
+        continue;
+      }
+      // Plus rapide que la pointe du pilote, avec un plancher : la charge
+      // ferme la distance même sur un parcours lent.
+      charge.baseSpeed = cityRushSuvChargeSpeed(playerTopSpeed);
+      charge.chargeLocked = cityRushSuvChargeLocked({ gap, range: CITY_RUSH_SUV_CHARGE_LOCK_RANGE });
+      if (charge.chargeLocked) charge.lane = playerLane;
+      if (!charge.chargeAnnounced && gap <= CITY_RUSH_SUV_CHARGE_ALERT_RANGE) {
+        charge.chargeAnnounced = true;
+        getCallbacks().effect?.({
+          type: 'police-suv-charge',
+          id: charge.id,
+          police: charge.name,
+          distance: Math.round(gap),
+          lane: charge.lane,
+          speed: Math.round(charge.baseSpeed * 3.6),
+          lap,
+        });
+        audioRef?.current?.policeSiren?.({ level: 0.34 });
+      }
+    }
+  }
+
+  // ── La herse des quatre étoiles : positionner, dérouler, percer ─────────
+  // Deux voitures de police prennent position à trois cents mètres devant le
+  // pilote et déroulent un tapis à pointes sur les voies du sens de course. La
+  // traverser crève les pneus : un carré de coque (`CITY_RUSH_SPIKE_DAMAGE`)
+  // et une longue remise en vitesse (`cityRushSpikePace`). Les voies du
+  // contresens et un saut par-dessus le dispositif restent des échappatoires.
+  function buildSpikeBlockMeshes() {
+    if (spikeBlock.meshes) return spikeBlock.meshes;
+    const root = new THREE.Group();
+    root.name = 'spike-block';
+    const lanePitch = Math.max(1.4, Math.abs(laneX(1) - laneX(0)) || 2.1);
+    const stripGeometry = new THREE.BoxGeometry(1, 0.07, 0.34);
+    const toothGeometry = new THREE.ConeGeometry(0.06, 0.17, 4);
+    const beaconGeometry = new THREE.BoxGeometry(0.17, 0.09, 0.1);
+    const stripMaterial = standard(0x1b1f27, { metalness: 0.62, roughness: 0.42 });
+    const toothMaterial = standard(0xdde5f0, { metalness: 0.88, roughness: 0.24, emissive: 0x24313f, emissiveIntensity: 0.5 });
+    const laneGroups = Array.from({ length: CITY_RUSH_SPIKE_LANES }, (_, index) => {
+      const laneGroup = new THREE.Group();
+      laneGroup.name = `spike-lane-${index}`;
+      const strip = new THREE.Mesh(stripGeometry, stripMaterial);
+      strip.scale.x = lanePitch * 0.94;
+      laneGroup.add(strip);
+      const teeth = Array.from({ length: 5 }, (_, toothIndex) => {
+        const tooth = new THREE.Mesh(toothGeometry, toothMaterial);
+        tooth.position.set(-lanePitch * 0.36 + toothIndex * lanePitch * 0.18, 0.12, 0);
+        laneGroup.add(tooth);
+        return tooth;
+      });
+      const beacon = new THREE.Mesh(beaconGeometry, new THREE.MeshBasicMaterial({
+        color: 0xffb43a, transparent: true, opacity: 0.9, toneMapped: false,
+      }));
+      beacon.position.set(0, 0.22, 0);
+      laneGroup.add(beacon);
+      laneGroup.userData = { strip, teeth, beacon };
+      laneGroup.visible = false;
+      root.add(laneGroup);
+      return laneGroup;
+    });
+    // Deux voitures de police ferment le dispositif à ses extrémités, en
+    // travers : elles se rangent pendant le déploiement puis repartent au
+    // rangement (voir `placeSpikeBlock`).
+    const cars = CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES.slice(0, 2).map((vehicleType) => {
+      const mesh = makeTrafficVehicle(vehicleType);
+      withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+      mesh.name = `spike-car-${vehicleType}`;
+      mesh.visible = false;
+      root.add(mesh);
+      return { mesh, side: 0, x: 0, z: 0 };
+    });
+    scene.add(root);
+    spikeBlock.meshes = { root, laneGroups, cars };
+    spikeBlock.cars = cars;
+    spikeBlock.lanePitch = lanePitch;
+    return spikeBlock.meshes;
+  }
+
+  function hideSpikeBlock() {
+    const meshes = spikeBlock.meshes;
+    if (!meshes) return;
+    meshes.root.visible = false;
+    meshes.laneGroups.forEach((laneGroup) => { laneGroup.visible = false; });
+    meshes.cars.forEach((car) => { car.mesh.visible = false; });
+  }
+
+  function beginSpikeBlock() {
+    if (!forwardLanes.length) return false;
+    buildSpikeBlockMeshes();
+    spikeBlock.state = 'deploying';
+    spikeBlock.elapsed = 0;
+    spikeBlock.age = 0;
+    spikeBlock.distance = distance + CITY_RUSH_SPIKE_BLOCK_LEAD;
+    spikeBlock.lanes = [...cityRushSpikeLanes(forwardLanes, CITY_RUSH_SPIKE_LANES)];
+    spikeBlock.meshes.root.visible = true;
+    spikeBlock.meshes.laneGroups.forEach((laneGroup) => { laneGroup.visible = false; });
+    spikeBlock.meshes.cars.forEach((car) => { car.mesh.visible = false; });
+    getCallbacks().effect?.({
+      type: 'police-spike-block',
+      stage: 'deploy',
+      lanes: spikeBlock.lanes.length,
+      lane: playerLane,
+      distance: CITY_RUSH_SPIKE_BLOCK_LEAD,
+      lap,
+    });
+    audioRef?.current?.policeSiren?.({ level: 0.4 });
+    return true;
+  }
+
+  // Placement du dispositif dans le monde : les voitures se rangent pendant le
+  // déploiement, la herse se déroule voie par voie, et tout repart au rangement.
+  function placeSpikeBlock(dt) {
+    const meshes = spikeBlock.meshes;
+    if (!meshes) return;
+    const gap = spikeBlock.distance - distance;
+    const baseZ = PLAYER_Z - gap * SCALE;
+    const baseY = trackRelativeY(spikeBlock.distance);
+    const curveX = trackRelativeX(spikeBlock.distance);
+    const yaw = trackYaw(spikeBlock.distance);
+    const lanes = spikeBlock.lanes;
+    const packing = spikeBlock.state === 'packing';
+    const deployProgress = packing
+      ? 1 - cityRushSpikeLayProgress(spikeBlock.elapsed, CITY_RUSH_SPIKE_BLOCK_PACK_DURATION)
+      : cityRushSpikeLayProgress(spikeBlock.elapsed, CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION);
+    const layProgress = packing ? 0 : cityRushSpikeLayProgress(spikeBlock.elapsed, CITY_RUSH_SPIKE_LAY_DURATION);
+    const laidLanes = spikeBlock.state === 'set' ? lanes.length : cityRushSpikeLaidLanes(spikeBlock.elapsed, {
+      lanes: lanes.length,
+      duration: CITY_RUSH_SPIKE_LAY_DURATION,
+    });
+    meshes.root.visible = true;
+    meshes.laneGroups.forEach((laneGroup, index) => {
+      const lane = lanes[index];
+      if (lane === undefined || packing) {
+        laneGroup.visible = false;
+        return;
+      }
+      // Pendant la prise de position, la herse n'est pas encore déroulée : le
+      // tapis apparaît voie par voie, dans l'ordre de pose.
+      const inline = spikeBlock.state === 'laying' || spikeBlock.state === 'set';
+      const reveal = inline
+        ? clamp(Math.max(laidLanes > index ? 1 : 0, layProgress * lanes.length - index), 0, 1)
+        : 0;
+      laneGroup.visible = reveal > 0.02;
+      if (!laneGroup.visible) return;
+      laneGroup.position.set(laneX(lane) + curveX, baseY + 0.02, baseZ);
+      laneGroup.rotation.y = yaw;
+      laneGroup.userData.strip.scale.x = Math.max(0.02, spikeBlock.lanePitch * 0.94 * reveal);
+      laneGroup.userData.teeth.forEach((tooth, toothIndex) => {
+        tooth.visible = reveal >= (toothIndex + 0.5) / 5;
+      });
+      laneGroup.userData.beacon.material.opacity = Math.floor(clockTime * 6 + index) % 2 === 0 ? 0.9 : 0.25;
+    });
+    const deployEase = smoothstep(deployProgress);
+    meshes.cars.forEach((car, index) => {
+      const lane = index === 0 ? lanes[0] : lanes[lanes.length - 1];
+      if (lane === undefined || deployEase <= 0.02) {
+        car.mesh.visible = false;
+        return;
+      }
+      const parkedX = laneX(lane) + (index === 0 ? -1 : 1) * (spikeBlock.lanePitch * 0.5 + 0.24);
+      car.mesh.visible = true;
+      car.mesh.position.set(lerp(laneX(lane), parkedX, deployEase) + curveX, baseY + 0.02, baseZ + (index === 0 ? 1.1 : -0.9));
+      car.mesh.rotation.set(0, yaw + (index === 0 ? 1 : -1) * 0.52 * deployEase, 0);
+      car.mesh.userData.wheels?.forEach((wheel) => { wheel.rotation.x += dt * 5; });
+      car.mesh.userData.beacons?.forEach((beacon, beaconIndex) => {
+        beacon.material.opacity = Math.floor(clockTime * 9 + beaconIndex) % 2 === 0 ? 1 : 0.16;
+      });
+    });
+  }
+
+  function applySpikeHit(laidLanes) {
+    const lost = applyCarCollision({
+      victim: 'spike',
+      name: 'HERSE DE POLICE',
+      id: SPIKE_BLOCK_ID,
+      gap: spikeBlock.distance - distance,
+      lane: playerLane,
+      source: CITY_RUSH_SPIKE_DAMAGE_SOURCE,
+    });
+    // Pneus crevés : la vitesse visée tombe au facteur de la règle pendant
+    // `CITY_RUSH_SPIKE_SLOW_DURATION`, le temps de repartir.
+    playerSpikeSlowLeft = Math.max(playerSpikeSlowLeft, CITY_RUSH_SPIKE_SLOW_DURATION);
+    playerSkidLeft = Math.max(playerSkidLeft, CITY_RUSH_SPIKE_IMPACT_DURATION);
+    playerSkidDuration = CITY_RUSH_SPIKE_IMPACT_DURATION;
+    playerSkidSide = Math.random() < 0.5 ? -1 : 1;
+    cameraKick = Math.max(cameraKick, 1.05);
+    spawnTrafficImpact('player', SPIKE_BLOCK_ID, 1.4);
+    audioRef?.current?.skid({ pan: vehiclePan('player'), intensity: 1.35, duration: 0.95 });
+    getCallbacks().effect?.({
+      type: 'police-spike-hit',
+      lanes: laidLanes,
+      lane: playerLane,
+      healthLost: lost,
+      health: playerHealth,
+      maxHealth: playerMaxHealth,
+      slowSeconds: CITY_RUSH_SPIKE_SLOW_DURATION,
+      factor: CITY_RUSH_SPIKE_SLOW_FACTOR,
+      lap,
+    });
+  }
+
+  function spikeBlockReady() {
+    return active && !finished && !playerWrecked && !sprint
+      && cityRushSpikeBlockCount(wantedLevel, { sprint }) > 0
+      && spikeBlock.cooldownLeft <= 0;
+  }
+
+  // Appelée juste après le carambolage des berlines : le dispositif se monte,
+  // se déroule, se franchit, puis se range — jamais en Sprint, et jamais avant
+  // la quatrième étoile.
+  function updateSpikeBlock(dt, priorDistance) {
+    if (sprint) return;
+    if (spikeBlock.state === 'idle') {
+      if (!spikeBlockReady()) return;
+      beginSpikeBlock();
+      return;
+    }
+    spikeBlock.elapsed += dt;
+    spikeBlock.age += dt;
+    const lanes = spikeBlock.lanes;
+    const laidLanes = spikeBlock.state === 'set'
+      ? lanes.length
+      : cityRushSpikeLaidLanes(spikeBlock.elapsed, { lanes: lanes.length, duration: CITY_RUSH_SPIKE_LAY_DURATION });
+    if (spikeBlock.state === 'deploying' && spikeBlock.elapsed >= CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION) {
+      // Les voitures sont rangées : la herse commence à se dérouler.
+      spikeBlock.state = 'laying';
+      spikeBlock.elapsed = 0;
+      getCallbacks().effect?.({
+        type: 'police-spike-block',
+        stage: 'lay',
+        lanes: lanes.length,
+        lane: playerLane,
+        covered: lanes.includes(playerLane),
+        lap,
+      });
+    } else if (spikeBlock.state === 'laying' && laidLanes >= lanes.length) {
+      spikeBlock.state = 'set';
+      getCallbacks().effect?.({
+        type: 'police-spike-block',
+        stage: 'set',
+        lanes: lanes.length,
+        lane: playerLane,
+        covered: lanes.includes(playerLane),
+        lap,
+      });
+    }
+    // Franchissement : détection balayée sur la voie du pilote. Un saut passe
+    // au-dessus du dispositif, les voies non couvertes et le contresens aussi.
+    const crossing = spikeBlock.state === 'laying' || spikeBlock.state === 'set';
+    if (crossing && !playerWrecked && !playerJumpState.active
+      && cityRushSpikeHit({
+        previousDistance: priorDistance,
+        nextDistance: distance,
+        spikeDistance: spikeBlock.distance,
+        lane: playerLane,
+        lanes: forwardLanes,
+        laidLanes,
+      })) {
+      applySpikeHit(laidLanes);
+    }
+    // Le pilote est passé (ou la herse attend depuis trop longtemps) : les
+    // voitures rangent le dispositif et repartent devant.
+    const passed = spikeBlock.distance - distance < -(CITY_RUSH_SPIKE_HALF_LENGTH + 8);
+    if (spikeBlock.state !== 'packing' && (passed || spikeBlock.age >= CITY_RUSH_SPIKE_BLOCK_LIFETIME)) {
+      spikeBlock.state = 'packing';
+      spikeBlock.elapsed = 0;
+      getCallbacks().effect?.({
+        type: 'police-spike-block',
+        stage: 'pack',
+        lanes: lanes.length,
+        passed,
+        lap,
+      });
+    } else if (spikeBlock.state === 'packing' && spikeBlock.elapsed >= CITY_RUSH_SPIKE_BLOCK_PACK_DURATION) {
+      spikeBlock.state = 'idle';
+      spikeBlock.elapsed = 0;
+      spikeBlock.age = 0;
+      spikeBlock.cooldownLeft = CITY_RUSH_SPIKE_BLOCK_COOLDOWN;
+      hideSpikeBlock();
+      return;
+    }
+    placeSpikeBlock(dt);
+  }
+
+  function dismissSpikeBlock() {
+    const wasActive = spikeBlock.state !== 'idle';
+    spikeBlock.state = 'idle';
+    spikeBlock.elapsed = 0;
+    spikeBlock.age = 0;
+    spikeBlock.cooldownLeft = 0;
+    spikeBlock.lanes = [];
+    hideSpikeBlock();
+    return wasActive;
   }
 
   // ── Dégâts et HUD de santé du pilote ───────────────────────────────────
@@ -5427,7 +5976,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Une patrouille (y compris banalisée) heurtée de face se retourne, puis
       // occupe l'une des places de la poursuite déclenchée à trois étoiles.
       beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: 'player' });
-      raiseWantedLevel({ police: true, reason: oncoming.type === 'undercover-police' ? 'undercover-contact' : 'police-contact' });
+      raiseWantedLevel({ police: true, reason: 'police-contact' });
     }
     oncoming.impactCooldownLeft = CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN * 1.15;
     if (!policeContact && !oncoming.pushedAside) {
@@ -5475,7 +6024,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         playerCurrentSpeed = Math.min(playerCurrentSpeed, paced(6));
         currentSpeed = Math.min(currentSpeed, paced(6));
       }
-      // Un choc frontal se paie aussi d'un carré (voir `applyCarCollision`).
+      // Un choc frontal se paie aussi d'un carré (voir `applyCarCollision`) ;
+      // le SUV d'interception, lui, en coûte deux comme celui de l'escouade.
+      const chargeSuv = oncoming.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE;
       healthLost = applyCarCollision({
         victim: 'oncoming',
         name: oncoming.name,
@@ -5483,7 +6034,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         gap: contactGap,
         lane: oncoming.lane,
         policeContact,
+        source: chargeSuv ? 'suv-collision' : 'collision',
       });
+      if (chargeSuv) {
+        // Même secousse de caisse que le SUV de l'escouade : le choc est lourd.
+        playerSuvImpactLeft = PLAYER_POLICE_SUV_RAM_IMPACT_DURATION;
+        playerSuvImpactSide = side;
+        cameraKick = Math.max(cameraKick, 1.35);
+        spawnPoliceSuvCollisionSparks(oncoming);
+      }
     } else {
       const racer = racers.find((item) => item.id === actorId);
       const squadCar = racer ? null : activePursuerById(actorId);
@@ -5523,6 +6082,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming: true,
       pushedAside: !policeContact,
       policeContact,
+      // Le SUV d'interception se nomme dans le bandeau : c'est lui qui fait
+      // demi-tour et prend le pilote en chasse.
+      vehicleType: oncoming.vehicleType || null,
+      isSuv: oncoming.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE,
       // La voiture heurtée dérape vers le bord extérieur de son sens de
       // circulation : à gauche quand on roule à droite, à droite à Londres et
       // sur la Shuto (voir `cityRushOncomingImpactX`).
@@ -5586,8 +6149,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // coller à un autre véhicule venant en face dans la même voie.
     const lane = oncomingLanes[Math.floor(Math.random() * oncomingLanes.length)];
     // Sur route très peu fréquentée, les véhicules venant en face sont
-    // encore plus rares et mieux espacés.
-    const lightOncoming = oncomingCars.length <= 1;
+    // encore plus rares et mieux espacés. Les SUV de charge ne comptent pas :
+    // ils ne font pas partie du flot et ne se recyclent pas ici.
+    const lightOncoming = oncomingCars.filter((car) => !car.charge).length <= 1;
     let nextDistance = distance + randomRange(lightOncoming ? 320 : 150, lightOncoming ? 480 : 235);
     for (const other of oncomingCars) {
       if (other === oncoming || other.lane !== lane) continue;
@@ -5912,6 +6476,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mesh.visible = false;
     });
     releaseRalliedPolice();
+    // La herse quitte la route avec le drapeau à damier : ses voitures rangent
+    // le dispositif et repartent devant.
+    dismissSpikeBlock();
     miniGarages.forEach(placeMiniGarage);
     audioRef?.current?.policeSirenOff?.();
     // Une épave ne fait pas la fête : pas de confettis ni de drapeau à damier.
@@ -6102,7 +6669,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       followRate = 2.4;
     } else {
       const speedRatio = clamp(currentSpeed / (playerTopSpeed * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR), 0, 1);
-      const shake = (playerStunLeft > 0 ? 0.14 : playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 ? 0.05 : 0) + cameraKick * 0.22;
+      const shake = (playerStunLeft > 0 ? 0.14 : playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerSpikeSlowLeft > 0 ? 0.05 : 0) + cameraKick * 0.22;
       // La caméra regarde quelques mètres plus loin sur l'axe courbe et se
       // place elle-même sur le morceau de route derrière la voiture. Le résultat
       // reste très doux : la route tourne, pas la tête du joueur.
@@ -6158,6 +6725,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerStunLeft = Math.max(0, playerStunLeft - dt);
       playerSkidLeft = Math.max(0, playerSkidLeft - dt);
       playerSuvImpactLeft = Math.max(0, playerSuvImpactLeft - dt);
+      playerSpikeSlowLeft = Math.max(0, playerSpikeSlowLeft - dt);
       playerHealthFlash = Math.max(0, playerHealthFlash - dt);
       playerCollisionCooldownLeft = Math.max(0, playerCollisionCooldownLeft - dt);
       // Voie tenue sans bouger : le bonus de ligne propre monte doucement.
@@ -6189,6 +6757,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         playerOncomingStage = oncomingStage;
       }
       const speedScale = (playerSlowLeft > 0 || playerTrafficImpactLeft > 0 ? 0.63 : 1) * (playerBlueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1);
+      // Pneus crevés par la herse : la vitesse visée tombe au facteur de la
+      // règle (`cityRushSpikePace`) tant que la crevaison court.
+      const spikeScale = playerSpikeSlowLeft > 0 ? cityRushSpikePace(1, CITY_RUSH_SPIKE_SLOW_FACTOR) : 1;
       const boostScale = playerBoostLeft > 0 ? CITY_RUSH_TRACK_BOOST_SPEED_FACTOR : 1;
       // Un changement de voie ne figure plus dans cette équation : seule la
       // voie tenue agit sur la vitesse, et uniquement à la hausse. Le
@@ -6196,7 +6767,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // dangereuses de la chaussée.
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
       const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * boostScale * cleanLineScale * oncomingScale;
+      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
       // pointe est plus basse, la montée en régime garde sa durée.
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
@@ -6680,6 +7251,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const gap = traffic.distance - distance;
         traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
         traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
+        // La voie est publiée à part : sur un circuit courbe, l'abscisse monde
+        // mêle le décalage de la courbe et la voie, et un lecteur extérieur (le
+        // harnais) ne peut pas la retrouver depuis la position seule.
+        traffic.mesh.userData.lane = traffic.lane;
+        traffic.mesh.userData.trackDistance = traffic.distance;
         traffic.mesh.rotation.x = trackPitch(traffic.distance);
         traffic.mesh.rotation.y = lerp(traffic.mesh.rotation.y, trackYaw(traffic.distance) + clamp((traffic.currentX - priorTrafficX) * -2.8, -0.26, 0.26), Math.min(1, dt * 12));
         if (traffic.mesh.visible) {
@@ -6702,8 +7278,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         ['player', priorDistance],
         ...Array.from(priorRacerDistances.entries()),
       ]);
+      // Les SUV de charge règlent leur visée avant la boucle, qui se charge du
+      // déplacement, du rendu et du choc balayé.
+      updateSuvCharges(dt);
       for (const oncoming of oncomingCars) {
         if (oncoming.rallied || oncoming.destroyed) {
+          oncoming.mesh.visible = false;
+          continue;
+        }
+        // SUV de charge dormant ou en rechargement : il attend au loin que la
+        // poursuite le rappelle (voir `updateSuvCharges`), ni vu ni percuté.
+        if (oncoming.chargeState === 'dormant' || oncoming.chargeState === 'reloading') {
           oncoming.mesh.visible = false;
           continue;
         }
@@ -6727,8 +7312,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           paced(oncoming.pushedAside ? 2.6 : 3.8),
           oncoming.baseSpeed * shoveSpeedScale * turnSpeedScale + paced(Math.sin(elapsed * 0.5 + oncoming.phase) * 0.18),
         );
-        oncoming.distance -= requestedOncomingSpeed * dt;
-        oncoming.currentSpeed = requestedOncomingSpeed;
+        // Un SUV de charge ne se contente pas de ralentir dans son demi-tour :
+        // il freine, s'arrête face au pilote, puis repart dans l'autre sens. Le
+        // signe suit le cosinus de la manœuvre (1 → 0 → −1), sans quoi la
+        // voiture traverserait le pilote pendant qu'elle se retourne.
+        const turnDirection = oncoming.charge && turning ? Math.cos(turnProgress * Math.PI) : 1;
+        oncoming.distance -= requestedOncomingSpeed * turnDirection * dt;
+        oncoming.currentSpeed = requestedOncomingSpeed * turnDirection;
         if (turning) {
           oncoming.currentX = lerp(
             oncoming.currentX,
@@ -6738,10 +7328,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         } else if (oncoming.pushedAside) {
           oncoming.pushAsideElapsed += dt;
           oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed, oncoming.width, driveSide);
+        } else if (oncoming.charge && oncoming.chargeLocked) {
+          // Le SUV de charge vise la voie du pilote : il se rabat à vitesse
+          // limitée (`cityRushSuvChargeStep`), donc un changement de voie au
+          // dernier moment le fait passer à côté.
+          oncoming.currentX = cityRushSuvChargeStep(
+            oncoming.currentX,
+            laneX(oncoming.turnaroundTargetLane ?? oncoming.lane),
+            dt,
+          );
         } else {
           oncoming.currentX = lerp(oncoming.currentX, laneX(oncoming.lane), Math.min(1, dt * 3.4));
         }
-        if (!turning && oncoming.distance < distance - 30) respawnOncomingAhead(oncoming);
+        // Le recyclage du flot ne concerne pas les SUV de charge : les leurs
+        // sont réglés par `updateSuvCharges` (apparition au loin, rechargement).
+        if (!turning && !oncoming.charge && oncoming.distance < distance - 30) respawnOncomingAhead(oncoming);
         const gap = oncoming.distance - distance;
         // Sifflement au croisement, une fois par passage comme les rivaux.
         const previousOncomingGap = oncoming.lastPassGap;
@@ -6752,6 +7353,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (!turning) checkOncomingImpacts(oncoming, priorOncomingDistance, priorActorDistancesForOncoming);
         oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
         oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
+        oncoming.mesh.userData.lane = oncoming.lane;
+        oncoming.mesh.userData.trackDistance = oncoming.distance;
         oncoming.mesh.rotation.x = lerp(-trackPitch(oncoming.distance), trackPitch(oncoming.distance), turnEase);
         oncoming.mesh.rotation.y = trackYaw(oncoming.distance)
           + Math.PI * (1 - turnEase)
@@ -6786,7 +7389,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (launchSmokeLeft > 0 && currentSpeed < 20) {
           emitWheelSmoke(playerCar, { color: 0xe4e4ea, opacity: 0.5, scale: 0.5, grow: 2.4, life: 0.9, velocity: [0, 0.5, 2.6] });
           playerSmokeTimer = 0.05;
-        } else if (playerSkidLeft > 0 || ((playerSlowLeft > 0 || playerBlueShotSlowLeft > 0) && currentSpeed > 4)) {
+        } else if (playerSkidLeft > 0 || ((playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerSpikeSlowLeft > 0) && currentSpeed > 4)) {
           emitWheelSmoke(playerCar, { color: 0xcfd0d8, opacity: 0.45, scale: 0.42, grow: 2.2, life: 0.7 });
           playerSmokeTimer = 0.06;
         } else if (playerBoostLeft > 0) {
@@ -6840,6 +7443,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Le carambolage avec une berline se juge après le déplacement des
       // berlines : le contact est alors décrit à la position du jour.
       checkPoliceCollisions();
+      // La herse des quatre étoiles : montage, pose voie par voie, franchissement
+      // (détection balayée sur `priorDistance`), puis rangement.
+      updateSpikeBlock(dt, priorDistance);
       if (sprint) updateSprintCheckpoints(dt);
       else handleLapCrossings(priorDistance);
       // Garde de secours : si la course a rejoint le dernier tour sans avoir
@@ -6919,6 +7525,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
         if (phase === 'finished') {
           traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
+        // La voie est publiée à part : sur un circuit courbe, l'abscisse monde
+        // mêle le décalage de la courbe et la voie, et un lecteur extérieur (le
+        // harnais) ne peut pas la retrouver depuis la position seule.
+        traffic.mesh.userData.lane = traffic.lane;
+        traffic.mesh.userData.trackDistance = traffic.distance;
           traffic.mesh.rotation.set(trackPitch(traffic.distance), trackYaw(traffic.distance), 0);
         }
       }
@@ -6926,6 +7537,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // d'honneur ; il attend, feux allumés, pendant l'intro et le compte à rebours.
       for (const oncoming of oncomingCars) {
         if (oncoming.rallied || oncoming.destroyed) {
+          oncoming.mesh.visible = false;
+          continue;
+        }
+        // Les SUV de charge n'appartiennent pas au flot : ils attendent, cachés,
+        // que la poursuite les rappelle (voir `updateSuvCharges`).
+        if (oncoming.charge) {
           oncoming.mesh.visible = false;
           continue;
         }
@@ -6937,6 +7554,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
         if (phase === 'finished') {
           oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
+        oncoming.mesh.userData.lane = oncoming.lane;
+        oncoming.mesh.userData.trackDistance = oncoming.distance;
           oncoming.mesh.rotation.set(-trackPitch(oncoming.distance), trackYaw(oncoming.distance) + Math.PI, 0);
         }
       }

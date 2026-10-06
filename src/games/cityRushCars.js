@@ -104,11 +104,11 @@ export function makeTrafficVehicle(type) {
   const isTruck = type === 'garbage-truck';
   const isSports = type === 'white-lambo';
   const policeSUV = type === 'police-suv';
-  const undercoverPolice = type === 'undercover-police';
+  const taxi = type === 'taxi';
   const police = type === 'police' || policeSUV;
   const ambulance = type === 'ambulance';
-  const bodyColor = police ? 0xf2f3f0 : undercoverPolice ? 0x242a32 : ambulance ? 0xf8f7f0 : isTruck ? 0x4d8f55 : 0xf7f7f4;
-  const accentColor = policeSUV ? 0x101923 : police ? 0x142947 : undercoverPolice ? 0x171c23 : ambulance ? 0xe64a50 : isTruck ? 0xe0b847 : 0x1a1f2b;
+  const bodyColor = police ? 0xf2f3f0 : taxi ? 0xf7c22c : ambulance ? 0xf8f7f0 : isTruck ? 0x4d8f55 : 0xf7f7f4;
+  const accentColor = policeSUV ? 0x101923 : police ? 0x142947 : taxi ? 0x191a20 : ambulance ? 0xe64a50 : isTruck ? 0xe0b847 : 0x1a1f2b;
   const m = {
     body: (isSports || policeSUV) ? paint(bodyColor, { clearcoat: 0.9, roughness: 0.22, emissiveIntensity: 0.02 }) : standard(bodyColor, { roughness: 0.55, metalness: 0.15 }),
     accent: standard(accentColor, { roughness: policeSUV ? 0.3 : 0.6 }),
@@ -275,6 +275,38 @@ export function makeTrafficVehicle(type) {
     // Feux bleus/rouges dans la lunette arrière.
     beacon('red', [-0.34, 1.38, 1.53], [0.3, 0.04, 0.02]);
     beacon('blue', [0.34, 1.38, 1.53], [0.3, 0.04, 0.02]);
+  } else if (taxi) {
+    // Taxi de la ville : berline jaune à damier et lanterne « TAXI » sur le
+    // pavillon. C'est la voiture civile de Vice City Rush — aucune patrouille ne
+    // se cache derrière elle, et la percuter ne déclenche aucune poursuite.
+    box(m.dark, [0, 0.32, 0], [width * 0.9, 0.14, length * 0.9]);
+    smoothBox(m.body, [0, 0.56, 0], [width, 0.4, length * 0.92], 0.08);
+    smoothBox(m.body, [0, 0.74, -length * 0.3], [width * 0.96, 0.1, 1.0], 0.04); // capot
+    smoothBox(m.body, [0, 0.98, 0.1], [width * 0.86, 0.5, 1.8], 0.11); // pavillon
+    box(m.glass, [0, 1.0, -0.82], [width * 0.8, 0.42, 0.05], [0.3, 0, 0]);
+    box(m.glass, [0, 1.0, 1.02], [width * 0.8, 0.4, 0.05], [-0.3, 0, 0]);
+    for (const side of [-1, 1]) {
+      box(m.glass, [side * width * 0.43, 1.02, 0.1], [0.04, 0.34, 1.5]);
+      // Bandeau damier : la marque des taxis de la ville, sur les deux flancs.
+      for (let square = 0; square < 9; square += 1) {
+        box(square % 2 === 0 ? m.accent : m.body, [side * (width * 0.5 + 0.012), 0.5, -1.16 + square * 0.29], [0.03, 0.17, 0.29]);
+      }
+      decal(4, [side * (width * 0.5 + 0.03), 0.68, 0.1], [0.94, 0.3], [0, side * Math.PI / 2, 0]);
+      box(m.chrome, [side * (width * 0.5 + 0.08), 0.9, -0.5], [0.12, 0.08, 0.16]);
+    }
+    // Lanterne de pavillon, allumée en permanence : « TAXI » se lit des deux
+    // côtés de la voiture.
+    box(m.accent, [0, 1.26, 0.1], [0.52, 0.14, 0.24]);
+    box(m.warm, [0, 1.32, 0.1], [0.44, 0.06, 0.18]);
+    decal(4, [0, 1.26, -0.03], [0.86, 0.28], [0, Math.PI, 0]);
+    decal(4, [0, 1.26, 0.23], [0.86, 0.28]);
+    box(m.chrome, [0, 0.42, -length * 0.47], [width * 0.98, 0.12, 0.12]);
+    box(m.chrome, [0, 0.42, length * 0.47], [width * 0.98, 0.12, 0.12]);
+    box(m.tail, [0, 0.64, length * 0.47 + 0.04], [width * 0.32, 0.025, 0.025]);
+    for (const side of [-1, 1]) {
+      box(m.warm, [side * width * 0.36, 0.62, -length * 0.46 - 0.02], [0.32, 0.045, 0.04]);
+      box(m.tail, [side * width * 0.36, 0.64, length * 0.46 + 0.02], [0.36, 0.05, 0.04]);
+    }
   } else {
     // Berlines d'intervention : police et ambulance.
     box(m.dark, [0, 0.32, 0], [width * 0.9, 0.14, length * 0.9]);
@@ -337,8 +369,8 @@ export function makeTrafficVehicle(type) {
     kind: 'traffic',
     trafficType: type,
     isPoliceSUV: policeSUV,
-    isUndercoverPolice: undercoverPolice,
-    isPolice: police || undercoverPolice,
+    isTaxi: taxi,
+    isPolice: police,
     wheels,
     beacons,
     width,

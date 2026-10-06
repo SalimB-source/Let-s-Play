@@ -141,15 +141,16 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(world, /while \(!garage\.used && garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance\)/,
     'le garage reste visible jusqu’à ce que la voiture en sorte');
   assert.match(world, /cityRushMiniGarageCanUse\(/);
-  assert.match(world, /wantedLevel = 0;[\s\S]*?type: 'mini-garage-used'/,
-    'la sortie du mini-garage remet le niveau à zéro et annonce son usage');
+  assert.match(world, /wantedLevel = cityRushMiniGarageWantedLevel\(previousStars\);[\s\S]*?type: 'mini-garage-used'/,
+    'la sortie du mini-garage baisse le niveau selon le nombre d’étoiles et annonce son usage');
   assert.match(world, /miniGaragesRemaining: miniGarages\.filter\(\(garage\) => !garage\.used\)\.length/);
   assert.match(page, /miniGaragesRemaining:\s*CITY_RUSH_MINI_GARAGE_COUNT/);
   assert.match(page, /city-rush-gta-garages/);
   assert.match(page, /MINI-GARAGES/);
   assert.match(page, /MINI-GARAGE DANS \$\{miniGarageNextDistance\} M/,
     'le compteur annonce la distance de la prochaine porte');
-  assert.match(page, /effect\.previousStars > 0 \? `\$\{effect\.previousStars\} ÉTOILES EFFACÉES/);
+  assert.match(page, /`\$\{previousStars\} → \$\{currentStars\} ÉTOILE/,
+    'le bandeau affiche clairement la baisse du nombre d’étoiles');
   assert.match(page, /Number\(effect\.healthRestored\)/, 'le bandeau annonce la réparation réellement reçue');
   assert.match(page, /POINT\$\{restored === 1 \? '' : 'S'\} DE VIE/);
   assert.match(page, /Number\(effect\.pursuersReleased\) > 0[\s\S]*?LA POLICE ABANDONNE LA POURSUITE/,
@@ -158,7 +159,8 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
     'le compteur des garages n’apparaît qu’avec une porte en approche');
   assert.match(page, /l’un à mi-parcours/);
-  assert.match(page, /rend jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/);
+  assert.match(page, /rend aussi jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/,
+    'le bandeau annonce la réparation rendue par le portique');
 
   // Une porte de mi-course (ouverte dès le départ) et une porte du dernier tour.
   assert.match(world, /const kind = cityRushMiniGarageKindAt\(index\)/);
@@ -180,8 +182,8 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
     'le service calcule une fois les points rendus, pour le bandeau et le bruitage');
   assert.match(service, /audioRef\?\.current\?\.garageRepair\?\.\(\{ pan: vehiclePan\('player'\), restored: healthRestored \}\)/,
     'la traversée joue le bruitage d’atelier, accord de réparation compris seulement si la coque a repris des points');
-  assert.match(service, /const pursuersReleased = releasePolicePursuit\(\{ targetId: 'player' \}\)/,
-    'la sortie du garage fait abandonner la poursuite aux berlines qui chassaient le joueur');
+  assert.match(service, /const pursuersReleased = wantedLevel === 0\s*\?\s*releasePolicePursuit\(\{ targetId: 'player' \}\)\s*:\s*0/,
+    'la sortie du garage ne fait abandonner la poursuite que si le niveau retombe à zéro');
   assert.match(world, /miniGaragesActive: miniGarages\.some\(\(garage\) => \{/);
   assert.match(world, /miniGarageNextDistance: nextMiniGarageGap\(\)/);
 });
