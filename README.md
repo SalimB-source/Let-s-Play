@@ -3806,6 +3806,36 @@ sa couleur d’univers (violet #a855f7, #6d28d9 en thème clair) déclinée dans
 `src/news-carousel.css` et `src/theme.css` — la grille passe à trois colonnes
 sur desktop, deux sous 1100 px, une sous 780 px.
 
+## Hub Actus : la bannière « actu gaming du jour »
+
+Sous les trois cartes du hub (`/news`), une bannière reprend **l'actu gaming
+du jour** au gabarit de la une de l'accueil : la vidéo officielle de l'article
+se lit sur place dans la colonne de gauche (lecteur du site, `youTubeEmbedUrl`,
+donc soumis à la règle « une seule vidéo à la fois »), la colonne de droite —
+pastille « Actu du jour », date · source, titre, chapô, « Lire l'article » —
+est le lien vers l'article. Le libellé de section annonce ce que montre le
+cadre (« BANDE-ANNONCE OFFICIELLE · ROCKSTAR GAMES ») et un lien renvoie au
+flux `/news/gaming`.
+
+Rien n'est recopié : la bannière lit **la première entrée de
+`latestGamingStories`** dans `src/pages/GamingNews.jsx` (exportée sous le nom
+`gamingTopStory`), c'est-à-dire la carte qui ouvre déjà `/news/gaming` en
+grand. Pour changer la une, on insère la nouvelle actu **en tête de cette
+liste** — le hub et le flux gaming suivent ensemble, rien d'autre à brancher.
+La vidéo vient de `src/articleTrailers.js` : `leadTrailer(route)` renvoie la
+première vidéo officielle déclarée pour l'article (la même dont la pastille des
+cartes reprend la nature). Une actu sans vidéo officielle n'a pas de cadre
+vide : son visuel (`image`, puis `fallbackImage` si l'image distante ne répond
+plus) remplit le cadre 16/10 à la place du lecteur.
+
+Où vit le code : `src/pages/News.jsx` (balisage, textes FR / EN / AR),
+`src/news-carousel.css` (`.news-hub-today` : espacement du hub et visuel de
+repli) — la carte elle-même réutilise les classes de l'accueil
+(`.featured-dossiers--news`, `.home-news-card`, `src/daily-news.css`), thème
+clair compris. Vérifications : `npm run check:light-news` (le hub est rendu
+en thème clair), `npm run check:i18n` (rendu FR / EN / AR, dictionnaire
+partiel), `npm run check:trailers` et `npm run check:videos`.
+
 ## Robot actus du jour
 
 La page Actus s’alimente toute seule : un robot (`scripts/news-bot/`) tourne

@@ -20,7 +20,10 @@
 .news-today .daily-news-copy .news-kicker{margin-top:14px}
 .news-today .daily-news-copy h2{margin-top:12px}@media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.news-carousel-section{padding-top:104px;padding-bottom:40px}.monthly-releases+.news-carousel-section{padding-top:70px}.news-carousel-head{align-items:start;flex-direction:column;padding-top:30px}.news-carousel-controls{align-self:flex-end;margin-top:-8px}.news-carousel-card{flex-basis:78vw}.news-carousel-copy{padding:16px}.news-carousel-copy h2{font-size:19px;line-height:1.2;margin:8px 0 10px}.news-carousel-copy p{font-size:12px;line-height:1.35;margin-bottom:8px}.news-carousel-copy .news-kicker{font-size:9px}.news-carousel-copy .read-link{font-size:9px}}
 
-/* ===== NEWS HUB — page intermédiaire de choix entre Gaming et Cinéma ===== */
+/* ===== NEWS HUB — page intermédiaire de choix entre Gaming, Cinéma et Tech ===== */
+/* Les trois cartes sont volontairement compactes : visuel en 16/9 (et non 16/10)
+   et bloc texte resserré (padding, interlignes, ligne méta), pour qu'elles
+   tiennent plus facilement à l'écran sans sacrifier titre ni description. */
 .news-hub-section{padding-top:128px;padding-bottom:60px}
 .news-hub-back{padding:110px 0 0}
 .news-hub-back + .news-carousel-section{padding-top:18px}
@@ -33,25 +36,41 @@
 .news-hub-card--gaming:hover{border-color:#22d3ee}
 .news-hub-card--cinema:hover{border-color:#f59e0b}
 .news-hub-card--tech:hover{border-color:#a855f7}
-.news-hub-card-image{position:relative;aspect-ratio:16/10;overflow:hidden}
+.news-hub-card-image{position:relative;aspect-ratio:16/9;overflow:hidden}
 .news-hub-card-image img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .6s}
 .news-hub-card:hover .news-hub-card-image img{transform:scale(1.06)}
 .news-hub-card-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,6,15,.18) 0%,rgba(5,6,15,.42) 55%,rgba(5,6,15,.92) 100%);pointer-events:none}
 .news-hub-card-num{position:absolute;top:16px;left:18px;z-index:2;font-family:var(--display);font-weight:800;font-size:46px;line-height:1;color:rgba(255,255,255,.85);text-shadow:0 4px 18px rgba(0,0,0,.55)}
 .news-hub-card-image .news-feature-badge{top:auto;left:18px;bottom:18px;z-index:2}
 .news-hub-card-image .news-feature-arrow{display:none}
-.news-hub-card-copy{padding:clamp(22px,2.4vw,36px);display:flex;flex-direction:column;gap:10px;flex:1}
-.news-hub-card-copy h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,2.3vw,36px);line-height:1.04;letter-spacing:.01em;text-transform:uppercase;margin:8px 0 0;text-wrap:balance}
+.news-hub-card-copy{padding:clamp(20px,2vw,28px);display:flex;flex-direction:column;gap:8px;flex:1}
+.news-hub-card-copy h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,2.3vw,36px);line-height:1.04;letter-spacing:.01em;text-transform:uppercase;margin:4px 0 0;text-wrap:balance}
 .news-hub-card-copy h2 em{font-style:normal}
 .news-hub-card--gaming h2 em{color:#22d3ee;text-shadow:0 0 22px rgba(34,211,238,.45)}
 .news-hub-card--cinema h2 em{color:#f59e0b;text-shadow:0 0 22px rgba(245,158,11,.4)}
 .news-hub-card--tech h2 em{color:#a855f7;text-shadow:0 0 22px rgba(168,85,247,.45)}
-.news-hub-card-copy p{color:var(--muted);font-size:14px;line-height:1.55;margin:0;max-width:520px}
-.news-hub-card-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:auto;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)}
+.news-hub-card-copy p{color:var(--muted);font-size:14px;line-height:1.5;margin:0;max-width:520px}
+.news-hub-card-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
 .news-hub-card-meta>span:first-child{font:600 11px var(--mono);letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
 .news-hub-card--gaming .read-link{color:#22d3ee}
 .news-hub-card--cinema .read-link{color:#f59e0b}
 .news-hub-card--tech .read-link{color:#a855f7}
+/* Bannière « actu gaming du jour » sous les trois cartes : même carte vidéo +
+   texte que la une de l'accueil (.featured-dossiers--news / .home-news-card,
+   daily-news.css). Ici seuls l'espacement et le visuel de repli changent : la
+   bannière suit la grille de près (le CTA garde ensuite sa marge habituelle),
+   l'en-tête se réduit à un libellé + le lien vers le flux gaming, et l'image
+   d'une actu sans vidéo officielle remplit le cadre 16/10 comme le lecteur. */
+.news-hub-section .news-hub-today{padding:44px 0 0}
+.news-hub-section .news-hub-today .featured-dossiers-head{align-items:center;padding-top:14px}
+.news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin:0}
+.news-hub-section .news-hub-today .home-news-video img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* Sous 800 px l'en-tête passe en bloc (daily-news.css) : le lien vers le flux
+   gaming redescend sous le libellé, avec le même retrait que sur l'accueil. */
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .news-hub-section .news-hub-today{padding-top:36px}
+  .news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin-top:14px}
+}
 /* Trois univers sur desktop ; sous 1100 px la grille repasse à deux colonnes
    (la troisième carte ouvre la ligne suivante) et les titres remontent d’un
    cran, avant le passage en une seule colonne sur mobile. */
@@ -63,9 +82,8 @@
   .news-hub-section{padding-top:104px;padding-bottom:40px}
   .news-hub-back{padding-top:84px}
   .news-hub-grid{grid-template-columns:1fr;gap:18px}
-  .news-hub-card-image{aspect-ratio:16/9}
   .news-hub-card-num{font-size:40px;top:12px;left:14px}
-  .news-hub-card-copy{padding:22px 20px 26px}
+  .news-hub-card-copy{padding:20px 20px 22px}
   .news-hub-card-copy h2{font-size:28px}
-  .news-hub-card-meta{flex-direction:column;align-items:flex-start;gap:10px}
+  .news-hub-card-meta{flex-direction:column;align-items:flex-start;gap:8px}
 }
