@@ -84,6 +84,7 @@ import {
 } from './cityRushStory';
 import './vice-city-rush-hud.css';
 import './city-rush-story.css';
+import './vice-city-rush-comic.css';
 
 // v4 : la boucle du stage double (600 m → 1 200 m), donc les courses à six
 // tours passent à 8 400 m et le Sprint à seize checkpoints / 4 800 m ; les
