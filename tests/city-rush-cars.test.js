@@ -74,7 +74,13 @@ test('la flotte de police comprend une berline et un SUV haut perché', () => {
   assert.ok(suv.userData.length > sedan.userData.length, 'le SUV a un empattement plus long');
   assert.ok(suvBounds.max.y > sedanBounds.max.y + 0.2, 'le toit du SUV est visiblement plus haut que celui de la berline');
   assert.equal(suv.userData.wheels.length, 4);
-  assert.equal(suv.userData.beacons.length, 2);
+  assert.equal(suv.userData.beacons.length, 6, 'rampe LED, calandre et lunette arrière');
+  assert.equal(sedan.userData.beacons.length, 2, 'les gyrophares des berlines sont inchangés');
+  assert.ok(countMeshes(suv) <= 22, 'les détails restent fusionnés pour limiter les appels de rendu');
+  suv.traverse((object) => {
+    if (!object.isMesh) return;
+    assert.ok(Array.from(object.geometry.attributes.position.array).every(Number.isFinite), 'géométrie finie');
+  });
 });
 
 test('la berline de police banalisée ne montre ni gyrophare ni marquage', () => {

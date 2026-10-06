@@ -994,10 +994,14 @@ et le dernier tour durait 21 s.
   s'efface (`WATCH_HELI_TUNNEL_HIDE`) plutôt que de voler dans les panneaux
   suspendus, et il reparaît à la sortie — le smoke compte ces rentrées.
   La **barre de vie du joueur et des rivaux** est active dès le départ :
-  **quinze cellules** en trois groupes de cinq — bleu, vert, jaune — dont les
-  trois dernières virent au rouge à l'état critique
+  **quinze cellules de base** en trois groupes de cinq — bleu, vert, jaune —
+  dont les trois dernières virent au rouge à l'état critique
   (`CITY_RUSH_PLAYER_HEALTH`, `cityRushHealthSegments`,
-  `CITY_RUSH_PLAYER_BAR_COLORS`). Chaque tir rouge reçu retire **une cellule**
+  `CITY_RUSH_PLAYER_BAR_COLORS`). **Chaque voiture a sa propre coque** :
+  la citadine offerte MISTRAL 1.4 en compte **vingt-trois**, la PULSE RS
+  **sept** — la coque suit la solidité du modèle
+  (`cityRushCarMaxHealth` = quinze fois `durabilityMultiplier`, bornée par
+  `CITY_RUSH_CAR_HEALTH_MIN`) ; les rivaux gardent la coque de base. Chaque tir rouge reçu retire **une cellule**
   sans dérapage ni ralentissement ; le tir bleu en retire aussi une. Les tirs
   reçus par les voitures de police suivent leur coque distincte : rouge −3,
   bleu −2, collision −1. **Percuter une voiture retire un carré au pilote**,
@@ -1008,7 +1012,14 @@ et le dernier tour durait 21 s.
   carambolage ne coûte jamais plus d'un carré : le choc arme un **répit
   partagé** de 1,5 s (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`), le temps de
   reprendre, pour qu'un embouteillage ou deux carrosseries restées collées ne
-  vident pas la barre d'un coup. Le trafic et les rivaux ne se heurtent entre
+  vident pas la barre d'un coup. Le seuil de choc contre le **trafic lent**
+  n'est plus la distance de sécurité de 4,8 m mais **l'enveloppe de la
+  carrosserie** : 3,6 m pare-chocs contre pare-chocs, 2,9 m une fois l'aile
+  dégagée (`cityRushTrafficContactGap`, `CITY_RUSH_TRAFFIC_CAR_GAP`,
+  `CITY_RUSH_TRAFFIC_PASS_GAP`) — une esquive entamée à temps raccourcit le
+  seuil et passe, une esquive jamais entamée touche. La retenue du suiveur suit
+  la même enveloppe, sans quoi le moteur arrêterait la voiture juste au-delà du
+  seuil et le choc ne tomberait jamais. Le trafic et les rivaux ne se heurtent entre
   eux qu'en ralentissant, sans toucher la coque du pilote. Le contact policier
   compte seulement quand le pilote **arrive sur** une berline **devant lui**, à
   une vitesse supérieure
@@ -1431,8 +1442,10 @@ d'observation** (nœud `watch-helicopter` : absent hors du dernier tour, rotor e
 pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par la
 vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
 du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
-`reset()`) et les **barres de vie des pilotes** (15 cellules pleines dès le
-départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème).
+`reset()`) et les **barres de vie des pilotes** (la coque de chaque voiture
+pleine dès le départ — vingt-trois cellules pour la MISTRAL, sept pour la
+PULSE RS, quinze pour les rivaux —, bornées et jamais croissantes ; chaque tir
+encaissé respecte le barème).
 Le **carré du carambolage est neutralisé dans ce harnais** : le lanceur patche
 l'ancre `collision: 1` de `cityRushRules.js` en `collision: 0`, sinon le pilote
 d'essai — qui ne se dérobe jamais — finirait en épave avant l'arrivée. Le
@@ -3610,7 +3623,20 @@ tech ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
-« À RETENIR », source d’origine citée et liée. Fournée du 28.09.2026 :
+« À RETENIR », source d’origine citée et liée. Fournée du 06.10.2026 :
+
+- `/news/cinema/the-batman-part-ii-tournage-suspendu` — DC Studios et Warner
+  Bros. suspendent temporairement le tournage de The Batman Part II : Matt
+  Reeves s’éloigne pour une affaire familiale, sans date de reprise, la sortie
+  américaine restant fixée au 18 février 2028 (déclaration à Deadline, IGN,
+  Sortir à Paris). La suite n’ayant publié aucune image animée — seul un camera
+  test a été diffusé par Matt Reeves sur Vimeo en juillet 2026 —, l’actu est
+  illustrée par la campagne officielle de *The Batman* (2022) : l’entrée
+  `src/articleTrailers.js` reprend le trailer 2 de 2022 avec une `note` qui dit
+  ce que le lecteur regarde, et `src/articleGalleries.js` en tire trois
+  photogrammes, crédités de la même façon.
+
+Fournée du 28.09.2026 :
 
 - `/news/cinema/box-office-us-endgame-encore-26-millions` — le bilan
   consolidé du week-end américain : Endgame – Encore premier à 26 M$,
@@ -3622,7 +3648,19 @@ en deux temps, chapô, deux sections titrées, citation et encadré
   New York Film Festival de la suite de Godzilla Minus One, premier film de
   la saga classé R, dates de sortie confirmées (Variety, Toho).
 
-Le même jour, trois actus gaming ont été rédigées à la main au gabarit du
+Le 06.10.2026, l’actu gaming du jour suit le même chemin —
+`/news/gta-6-satire-monde-invente`, la position de Rockstar sur la satire de
+GTA VI exposée par son vice-président chargé de la narration Rupert Humphries
+(entretien au magazine Love relayé par Eurogamer, via Gamekult) : entrée dans
+`CurrentNews.jsx`, carte en tête de `GamingNews.jsx` (pastille
+« bande-annonce »), route explicite dans `src/main.jsx`, recherche et sitemap.
+Elle est la première actu gaming à déclarer ses vidéos : les deux trailers
+officiels de Rockstar Games (Trailer 1 et Trailer 2) dans
+`src/articleTrailers.js`, et trois photogrammes du trailer 2 dans
+`src/articleGalleries.js` — `npm run check:trailers` couvre désormais ces clés
+gaming, sans exiger d’entrée pour les actus qui n’ont rien à montrer.
+
+Le 28.09.2026, trois actus gaming ont été rédigées à la main au gabarit du
 robot (`/news/minecraft-the-sift-nouvelle-dimension`,
 `/news/the-witcher-3-remastered-sortie-29-septembre`,
 `/news/xbox-nadella-restructuration`) : entrées dans `CurrentNews.jsx`,
@@ -3724,7 +3762,19 @@ Deux cas particuliers, pour que rien ne reste implicite :
 
 Troisième zone du hub Actus (`/news`) : la page `/news/tech`
 (`src/pages/TechNews.jsx`) rassemble les actus tech de la semaine, au même
-gabarit éditorial que le gaming et le cinéma. Fournée du 21-28.09.2026 :
+gabarit éditorial que le gaming et le cinéma. Fournée du 06.10.2026 :
+
+- `/news/tech/norvege-lunettes-connectees-interdiction` — la Norvège veut
+  interdire temporairement les lunettes à caméra dans les parcs, plages,
+  musées, écoles, crèches, établissements de santé, salles de sport et
+  événements publics, sans toucher à l’usage privé : la ministre du Numérique
+  Torgeir Micaelsen invoque le risque d’être filmé à son insu, Meta répond par
+  la LED qui clignote (The Guardian, AFP via France 24 et Le Soir). Miniature :
+  la photo de presse du Guardian (Mark Zuckerberg présentant la gamme de
+  lunettes connectées de Meta, Carlos Barría/Reuters), la couverture éditoriale
+  maison restant le repli de la carte.
+
+Fournée du 21-28.09.2026 :
 
 - `/news/tech/starship-flight-14-premier-vol-orbital` — le vol 14 de Starship
   vise la première mise en orbite et le déploiement de 26 satellites

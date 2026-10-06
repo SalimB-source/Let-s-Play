@@ -5,10 +5,13 @@
 //   node scripts/city-rush-wreck-check.mjs            (une ville)
 //   node scripts/city-rush-wreck-check.mjs --all      (les cinq villes)
 //   node scripts/city-rush-wreck-check.mjs --runs=5   (cinq courses par ville)
-// Le pilote d'essai démarre avec trois cellules (maxHealth reste 15) : assez
-// pour enchaîner deux carambolages espacés par le répit avant l'épave, assez
-// peu pour l'atteindre en une trentaine de secondes. La barre pleine est
-// couverte par les tests de règles et le smoke de course.
+// Le pilote d'essai démarre avec trois cellules : assez pour enchaîner deux
+// carambolages espacés par le répit avant l'épave, assez peu pour l'atteindre
+// en une trentaine de secondes. Depuis les coques par voiture, la limite porte
+// sur `playerMaxHealth` — la valeur d'où sortent la barre, le HUD et les
+// remises à zéro —, donc le maximum affiché est bien celui de l'essai. La
+// barre pleine de chaque voiture est couverte par les tests de règles et le
+// smoke de course.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -89,7 +92,7 @@ const server = await createServer({
             // cellule par tir.
             code: code
               .replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)(')
-              .replaceAll('playerHealth = CITY_RUSH_PLAYER_HEALTH;', 'playerHealth = 3;'),
+              .replaceAll('const playerMaxHealth = cityRushCarMaxHealth(playerProfile);', 'const playerMaxHealth = 3;'),
             map: null,
           };
         }

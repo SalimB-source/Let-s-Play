@@ -77,7 +77,7 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
-  CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN,
+  CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
@@ -1021,7 +1021,8 @@ for (const [index, city] of courses.entries()) {
   // l'entrée en piste), et une berline détruite les a bien eus avant l'explosion.
   for (const hud of callbacks.huds) {
     for (const car of hud.police || []) {
-      if (!Number.isFinite(car.health) || !Number.isFinite(car.maxHealth)) {
+      if (!Number.isFinite(car.health) || car.maxHealth !== cityRushPoliceMaxHealth(car.vehicleType)
+        || car.health < 0 || car.health > car.maxHealth) {
         fail('une berline de police du HUD n’a pas de barre de vie', car);
       }
     }
@@ -1032,9 +1033,9 @@ for (const [index, city] of courses.entries()) {
       .map((hud) => (hud.police || []).find((car) => car.id === effect.id || car.name === effect.police))
       .filter(Boolean);
     if (!seen.length && !effect.trafficPolice) fail('une voiture de poursuite détruite n’est jamais apparue dans le HUD', effect);
-    if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== CITY_RUSH_POLICE_HEALTH
+    if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== cityRushPoliceMaxHealth(effect.vehicleType)
       || effect.health !== 0) {
-      fail('l’explosion ne confirme pas les six cases de santé de la police', effect);
+      fail('l’explosion ne confirme pas les cases de santé du véhicule policier', effect);
     }
     if (seen.length && !(seen[0].health >= 1 && seen[0].health <= seen[0].maxHealth)) {
       fail('une voiture de poursuite détruite n’avait pas de vie cohérente dans le HUD', seen[0]);
@@ -1214,14 +1215,21 @@ for (const [index, city] of courses.entries()) {
     fail('l’hélico d’observation suit le pilote hors du dernier tour', { watchHeliEarlyFrames, watchHeliFinalLapFrames });
   }
   }
-  // La barre de quinze carrés est pleine dès le départ, visible pendant toute
-  // la course, bornée et non-croissante ; chaque tir encaissé en retire un (le
-  // carré du carambolage est neutralisé par le lanceur, voir plus bas).
+  // La barre de vie est pleine dès le départ, visible pendant toute la course,
+  // bornée et non-croissante ; chaque tir encaissé en retire un (le carré du
+  // carambolage est neutralisé par le lanceur, voir plus bas). Chaque voiture a
+  // **son** maximum (`cityRushCarMaxHealth`) : celui du pilote est calculé
+  // depuis la voiture de l'essai, celui des rivaux depuis leur propre profil.
+  const playerMaxHealth = cityRushCarMaxHealth(car);
+  const catalogueMaxHealth = CITY_RUSH_CARS.map((profile) => cityRushCarMaxHealth(profile));
+  const maxHealthByCarId = Object.fromEntries(CITY_RUSH_CARS.map((profile) => [profile.id, cityRushCarMaxHealth(profile)]));
   const racerHuds = callbacks.huds.flatMap((entry) => entry.racers || []);
   for (const racer of racerHuds) {
-    if (racer.maxHealth !== CITY_RUSH_PLAYER_HEALTH || !Number.isFinite(racer.health)
-      || racer.health < 0 || racer.health > CITY_RUSH_PLAYER_HEALTH) {
-      fail('une voiture de course n’a pas une barre de quinze cases valide', racer);
+    const expectedMax = racer.isPlayer ? playerMaxHealth : maxHealthByCarId[racer.carId] ?? racer.maxHealth;
+    if (!Number.isFinite(racer.maxHealth) || racer.maxHealth !== expectedMax
+      || !catalogueMaxHealth.includes(racer.maxHealth)
+      || !Number.isFinite(racer.health) || racer.health < 0 || racer.health > racer.maxHealth) {
+      fail('une voiture de course n’a pas la barre de vie de sa coque', racer);
     }
   }
   const healthHuds = callbacks.huds.filter((entry) => entry.playerHealthActive);
@@ -1248,9 +1256,9 @@ for (const [index, city] of courses.entries()) {
   let runningHealth = null;
   for (const effect of callbacks.effects) {
     if (effect.type === 'player-health') {
-      if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH) fail('la barre de vie du pilote n’a pas son maximum', effect);
+      if (effect.maxHealth !== playerMaxHealth) fail('la barre de vie du pilote n’a pas le maximum de sa coque', effect);
       runningHealth = effect.health;
-      if (runningHealth !== CITY_RUSH_PLAYER_HEALTH) fail('la barre de vie du pilote ne part pas pleine', effect);
+      if (runningHealth !== playerMaxHealth) fail('la barre de vie du pilote ne part pas pleine', effect);
       continue;
     }
     if (effect.type !== 'player-hit') continue;
@@ -1260,7 +1268,7 @@ for (const [index, city] of courses.entries()) {
     // trafic rattrapé et la berline percutée en accélérant arrivent avec un
     // écart positif. Le face-à-face, lui, croise les carrosseries au mètre
     // près : la distance annoncée y est une magnitude (≥ 0).
-    if (effect.source === 'collision'
+    if (['collision', 'suv-collision'].includes(effect.source)
       && !(Number.isFinite(Number(effect.gap)) && Number(effect.gap) >= 0)) {
       healthBadDamage += 1;
       fail('un carambolage est compté sur une voiture sans écart avec le pilote', effect);
@@ -1279,11 +1287,11 @@ for (const [index, city] of courses.entries()) {
   // tours. La règle est vérifiée par les tests purs et par la vérif
   // coque/police, qui joue le vrai barème sur une barre de trois cellules
   // (un carré par carambolage, espacé par le répit).
-  const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
+  const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && ['collision', 'suv-collision'].includes(effect.source));
   if (playerRamDamage.length) {
     fail('un carambolage a retiré de la vie au joueur alors que le lanceur neutralise ce coût', playerRamDamage);
   }
-  const policeRamDamage = callbacks.effects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
+  const policeRamDamage = callbacks.effects.filter((effect) => effect.type === 'police-hit' && ['collision', 'suv-collision'].includes(effect.source));
   if (policeRamDamage.some((effect) => effect.damage !== 1)) {
     fail('un carambolage en accélérant n’a pas retiré exactement un point de vie à la police', policeRamDamage);
   }

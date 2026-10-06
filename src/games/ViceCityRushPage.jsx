@@ -42,8 +42,8 @@ import {
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_ONCOMING_BONUS_MAX,
   NORDSCHLEIFE_RELIEF_M,
-  CITY_RUSH_PLAYER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
+  cityRushCarMaxHealth,
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_POLICE_AIM_TIME,
@@ -78,6 +78,11 @@ const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
   { key: 'recovery', label: 'REPRISE' },
+  // La coque s'affiche en carrés de vie : la barre suit la jauge `durability`
+  // du catalogue, le nombre annonce ce que la voiture encaisse vraiment
+  // (`cityRushCarMaxHealth`). Une petite voiture lente peut donc afficher une
+  // longue barre et un gros chiffre, une supercar l'inverse.
+  { key: 'durability', label: 'COQUE', cells: true },
 ];
 const CITY_THUMBNAILS = {
   'vice-city': 'vice-city-thumb.jpg',
@@ -98,9 +103,9 @@ const CAR_THUMBNAILS = {
   'night-comet': 'car-wolfsburg-gtr.jpg',
   'vega-gt-67': 'car-bavaria-mcs.jpg',
   'toro-v12': 'car-tempesta-lp780.jpg',
-  'volt-aero': 'car-volt-aero.svg',
-  'atlas-xr': 'car-atlas-xr.svg',
-  'pulse-rs': 'car-pulse-rs.svg',
+  'volt-aero': 'car-volt-aero.jpg',
+  'atlas-xr': 'car-atlas-xr.jpg',
+  'pulse-rs': 'car-pulse-rs.jpg',
 };
 
 const STORY_ENDINGS = {
@@ -220,8 +225,11 @@ const EMPTY_HUD = {
   boostLeft: 0,
   stunLeft: 0,
   // Barre de vie du pilote : nulle tant que le dernier tour n'a pas commencé.
+  // Le maximum n'est pas encore connu — chaque voiture a sa propre coque :
+  // le monde l'annonce dès sa première image, et d'ici là c'est la coque de
+  // la voiture sélectionnée qui sert de repli (voir `playerHealthMax` plus bas).
   playerHealth: null,
-  playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+  playerHealthMax: null,
   playerHealthActive: false,
   playerHealthFlash: 0,
   police: [],
@@ -531,13 +539,18 @@ export default function ViceCityRushPage() {
       ? Number(hud.wantedLevel)
       : (Array.isArray(hud.police) ? hud.police.length : 0),
   ));
-  // Quinze cellules pour le pilote comme pour les rivaux : les cellules
-  // s'allument par groupes bleu, vert et jaune, puis les trois dernières
-  // deviennent rouges.
+  // Chaque voiture a sa propre coque : les cellules s'allument par groupes
+  // bleu, vert et jaune, puis les trois dernières deviennent rouges. Sept
+  // carrés pour une PULSE RS, vingt-trois pour une MISTRAL 1.4 (le maximum
+  // arrive par le HUD du monde ; celui de la voiture sélectionnée sert de
+  // repli avant le premier envoi).
+  const playerHealthMax = Math.max(
+    1,
+    Number(hud.playerHealthMax) || cityRushCarMaxHealth(selectedCar),
+  );
   const playerHealthValue = hud.playerHealth === null || hud.playerHealth === undefined
     ? null
-    : Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Number(hud.playerHealth) || 0));
-  const playerHealthMax = Number(hud.playerHealthMax) || CITY_RUSH_PLAYER_HEALTH;
+    : Math.max(0, Math.min(playerHealthMax, Number(hud.playerHealth) || 0));
   const playerHealthCritical = playerHealthValue !== null && playerHealthValue <= CITY_RUSH_PLAYER_HEALTH_CRITICAL;
   // Mire d'une berline dans le dos : progression du viseur (0 → 1) de la
   // berline qui tient le pilote dans sa ligne de tir. Elle alimente le halo
@@ -933,10 +946,10 @@ export default function ViceCityRushPage() {
     }
     else if (effect.type === 'police-hit' && effect.source === 'collision') {
       // Le carambolage abîme les deux coques : la berline perd un point, le
-      // pilote un carré — sauf si le répit de choc court encore.
+      // pilote un carré, ou deux contre un SUV — sauf pendant le répit de choc.
       showToast(
         effect.playerHealthLost > 0
-          ? `IMPACT À L’ACCÉLÉRATION · ${effect.police} PERD 1 POINT · TA COQUE PERD 1 CARRÉ (${effect.playerHealth}/${effect.playerHealthMax}).`
+          ? `IMPACT À L’ACCÉLÉRATION · ${effect.police} PERD 1 POINT · TA COQUE PERD ${effect.playerHealthLost} CARRÉ${effect.playerHealthLost > 1 ? 'S' : ''} (${effect.playerHealth}/${effect.playerHealthMax}).`
           : `IMPACT · ${effect.police} PERD 1 POINT · RÉPIT DE CHOC · TA COQUE EST INTACTE.`,
         'pistol',
       );
@@ -1567,10 +1580,16 @@ export default function ViceCityRushPage() {
                               <small className="city-rush-car-class">{car.className}</small>
                               <span className="city-rush-car-stats">
                                 {CAR_STATS.map((stat) => (
-                                  <span className="city-rush-car-stat" key={stat.key}>
+                                  <span
+                                    className="city-rush-car-stat"
+                                    key={stat.key}
+                                    title={stat.cells
+                                      ? `${car.name} : ${cityRushCarMaxHealth(car)} carrés de coque`
+                                      : undefined}
+                                  >
                                     <small>{stat.label}</small>
                                     <i className="city-rush-car-stat-track" aria-hidden="true"><i style={{ width: `${car[stat.key]}%` }} /></i>
-                                    <b>{car[stat.key]}</b>
+                                    <b>{stat.cells ? cityRushCarMaxHealth(car) : car[stat.key]}</b>
                                   </span>
                                 ))}
                               </span>
@@ -1805,7 +1824,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, jamais plus d’un par carambolage (le temps de reprendre). Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, ou deux contre un SUV de police. Un répit après chaque choc empêche les dégâts répétés tant que les voitures restent collées. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
           </section>
 
           {/* En Sprint, la carte de l'escouade disparaît : titre, sirène et
@@ -1822,7 +1841,7 @@ export default function ViceCityRushPage() {
                     {!storyMode && mode.policeFromStart
                       ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
                       : 'En Circuit, trois voitures de police entrent au dernier tour et te prennent pour cible, même si tu n’es pas en tête.'}
-                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
 
                   </>
                 )}

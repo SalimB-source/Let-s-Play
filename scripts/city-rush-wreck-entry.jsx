@@ -110,12 +110,16 @@ const stepFrame = () => {
 };
 
 const {
-  CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
+  CITY_RUSH_CAR_GAP, CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
 } = await import('../src/games/cityRushRules.js');
 // Deux carambolages ne peuvent pas retirer un carré à moins du répit partagé :
 // le monde le décrémente d'une image (`dt`) avant de tester le contact, donc le
 // plus court écart réel est le plafond du répit en images.
 const COLLISION_RUSH_FRAMES = Math.ceil(CITY_RUSH_PLAYER_COLLISION_COOLDOWN / FRAME_MS * 1000);
+// Durée de l'animation d'épave (3,2 s) : passé ce délai la toupie est finie et
+// la course se clôt. On n'y mesure plus la vitesse — la fin de course peut
+// arriver une image après la fin de la toupie, où la voiture repart déjà.
+const WRECK_FRAMES = Math.round(CITY_RUSH_WRECK_SECONDS / FRAME_MS * 1000);
 
 const cityArg = process.argv.find((a) => a.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_WRECK_ALL === '1';
@@ -128,6 +132,10 @@ const WRECK_TEST_LAPS = Math.min(CITY_RUSH_LAPS, 3);
 // Réserve de cellules imposée par le lanceur (voir `city-rush-wreck-check.mjs`) :
 // trois carrés, assez pour deux carambolages espacés par le répit avant l'épave.
 const WRECK_TEST_HEALTH = 3;
+// Le lanceur remplace la coque de la voiture par cette même valeur (voir
+// `city-rush-wreck-check.mjs`) : la barre du HUD et l'effet `player-health`
+// annoncent donc trois carrés, pas ceux du catalogue.
+const WRECK_TEST_MAX_HEALTH = WRECK_TEST_HEALTH;
 
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
@@ -248,9 +256,19 @@ for (let run = 0; run < RUNS; run += 1) {
         if (spinNow > wreckSpinLast) wreckSpinTurns += 1;
         wreckSpinLast = spinNow;
         if (visibleSmoke() >= 3) wreckSmokeFrames += 1;
-        const speedNow = world.speed;
-        if (Number.isFinite(speedNow)) wreckSpeedSum = Math.max(wreckSpeedSum, speedNow);
-        wreckLastMeasuredSpeed = speedNow;
+        // La vitesse ne se lit que pendant la toupie. La course peut se clore
+        // une image après la fin du tête-à-queue, quand la voiture repart
+        // déjà : cette image-là ne dit rien de l'arrêt. La dernière mesure
+        // retenue est donc celle du palier bas — l'épave doit y être arrêtée.
+        if (wreckFrames <= WRECK_FRAMES) {
+          const speedNow = world.speed;
+          if (Number.isFinite(speedNow)) {
+            wreckSpeedSum = Math.max(wreckSpeedSum, speedNow);
+            if (wreckLastMeasuredSpeed === null || speedNow <= wreckLastMeasuredSpeed + 1e-9) {
+              wreckLastMeasuredSpeed = speedNow;
+            }
+          }
+        }
       }
     }
 
@@ -258,7 +276,7 @@ for (let run = 0; run < RUNS; run += 1) {
     const healthEvents = callbacks.effects.filter((effect) => effect.type === 'player-health' || effect.type === 'player-hit');
     for (const effect of healthEvents) {
       if (effect.type === 'player-health') {
-        if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH || effect.health !== WRECK_TEST_HEALTH) {
+        if (effect.maxHealth !== WRECK_TEST_MAX_HEALTH || effect.health !== WRECK_TEST_HEALTH) {
           violations += 1;
           console.error(`[${city.id}#${run}] ÉCHEC : le smoke ne démarre pas à la réserve de cellules préconditionnée`, effect);
         }
@@ -293,9 +311,16 @@ for (let run = 0; run < RUNS; run += 1) {
         console.error(`[${city.id}#${run}] deux carambolages ont retiré un carré à ${delta} image(s) d’écart (répit ${COLLISION_RUSH_FRAMES})`, collisionHitFrames);
       }
     }
-    if (playerRamDamage.some((effect) => !(Number(effect.gap) >= 0))) {
+    // Le carambolage se juge sur la voiture que le pilote rattrape : l'écart
+    // doit donc être positif. Une **patrouille** fait exception, et c'est la
+    // règle elle-même qui le dit : `cityRushPoliceContact` accepte un écart
+    // négatif jusqu'à la distance de sécurité (4,8 m) — le pilote qui frôle
+    // une patrouille en la dépassant la touche au pare-chocs alors que son
+    // centre est déjà un rien devant. On ne refuse donc que ce que la règle
+    // refuse : une voiture franchement derrière.
+    if (playerRamDamage.some((effect) => !(Number(effect.gap) > -CITY_RUSH_CAR_GAP))) {
       violations += 1;
-      console.error(`[${city.id}#${run}] un carambolage est compté sans écart entre la voiture et le pilote`, playerRamDamage);
+      console.error(`[${city.id}#${run}] un carambolage est compté avec une voiture derrière le pilote`, playerRamDamage);
     }
     if (policeRamHits.some((effect) => effect.damage !== 1)) {
       violations += 1;
@@ -320,7 +345,11 @@ for (let run = 0; run < RUNS; run += 1) {
     }
     wrecks += 1;
     const finish = callbacks.finish;
-    const lastSpeed = world.speed;
+    // La vitesse de fin d'épave est celle mesurée pendant la toupie, pas la
+    // vitesse courante du monde : la boucle peut courir une ou deux images de
+    // plus après la fin du tête-à-queue, où la voiture repart déjà — la course,
+    // elle, est close.
+    const lastSpeed = wreckLastMeasuredSpeed;
     const checks = [
       [finish?.destroyed === true, 'la course perdue n’est pas marquée détruite', finish && { destroyed: finish.destroyed, rank: finish.rank }],
       [finish?.rank === finish?.racers?.length, 'l’épave n’est pas classée dernière', finish && { rank: finish.rank, racers: finish.racers?.length }],
@@ -341,7 +370,7 @@ for (let run = 0; run < RUNS; run += 1) {
       if (!ok) { violations += 1; console.error(`[${city.id}#${run}] ÉCHEC : ${msg}`, extra ?? ''); }
     }
     if (VERBOSE || run === 0) {
-      console.log(`[${city.id}#${run}] épave en ${(frames / 30).toFixed(1)} s · toupie ${wreckSpinTurns} images · fumée ${wreckSmokeFrames} images · vitesse au choc ${wreckSpeedSum.toFixed(1)} m/s · dernière mesure ${Number(wreckLastMeasuredSpeed).toFixed(2)} m/s (${CITY_RUSH_WRECK_SECONDS} s d’épave) · coque ${CITY_RUSH_PLAYER_HEALTH} carrés`);
+      console.log(`[${city.id}#${run}] épave en ${(frames / 30).toFixed(1)} s · toupie ${wreckSpinTurns} images · fumée ${wreckSmokeFrames} images · vitesse au choc ${wreckSpeedSum.toFixed(1)} m/s · dernière mesure ${Number(wreckLastMeasuredSpeed).toFixed(2)} m/s (${CITY_RUSH_WRECK_SECONDS} s d’épave) · coque ${WRECK_TEST_MAX_HEALTH} carrés`);
     }
     world.destroy();
   }
@@ -360,5 +389,5 @@ if (violations) {
     races, wrecks, policeRamHitsTotal, playerRamHitsTotal, maxRamsPerRace, ramVictimsSeen: [...ramVictimsSeen],
   });
 }
-console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${playerRamHitsTotal} carambolage(s) joueur validé(s) (${[...ramVictimsSeen].sort().join('/')}, un carré chacun, jusqu'à ${maxRamsPerRace} par course), ${policeRamHitsTotal} carambolage(s) validé(s) côté police${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${CITY_RUSH_PLAYER_HEALTH} carrés, cellule de test limitée au module du smoke, graine ${BASE_SEED}).`);
+console.log(`VÉRIF COQUE/POLICE OK — ${races} course(s), ${playerRamHitsTotal} carambolage(s) joueur validé(s) (${[...ramVictimsSeen].sort().join('/')}, un carré chacun, jusqu'à ${maxRamsPerRace} par course), ${policeRamHitsTotal} carambolage(s) validé(s) côté police${wrecks ? `, ${wrecks} épave(s) vérifiée(s)` : ''} (barre ${WRECK_TEST_MAX_HEALTH} carrés, cellule de test limitée au module du smoke, graine ${BASE_SEED}).`);
 process.exit(0);

@@ -263,17 +263,17 @@ test('une berline détruite nomme son auteur, et la poursuite reste en course', 
   assert.match(world, /CITY_RUSH_POLICE_AIM_TIME/);
 });
 
-test('la barre d’une berline affiche bien ses six carrés de vie', () => {
+test('la barre de police affiche six carrés pour une berline, dix pour un SUV', () => {
   // Le nombre de carrés dessinés au-dessus du toit vient de la règle : changer
   // la vie de la police change la barre, et réciproquement.
   const bar = world.match(/function attachPoliceHealthBar\([\s\S]*?\nfunction detachPoliceHealthBar/)?.[0] || '';
   assert.ok(bar, 'la barre de vie des berlines existe');
-  assert.match(bar, /const segmentCount = CITY_RUSH_POLICE_HEALTH;/);
+  assert.match(bar, /const segmentCount = cityRushPoliceMaxHealth\(group\.userData\?\.trafficType\);/);
   assert.match(bar, /Array\.from\(\{ length: segmentCount \}/);
   assert.match(bar, /Array\.from\(\{ length: segmentCount \}, \(_, index\) => \{/);
   // Les carrés allumés suivent la vie restante, arrondie au carré supérieur.
   assert.match(world, /segment\.visible = segmentIndex < remainingSquares;/);
-  assert.match(world, /const remainingSquares = Math\.ceil\(clamp\(police\.health, 0, CITY_RUSH_POLICE_HEALTH\)\)/);
+  assert.match(world, /const remainingSquares = Math\.ceil\(clamp\(police\.health, 0, policeMax\)\)/);
   // La page annonce les six carrés dans le bandeau de touche — et un seul
   // carré emporté par balle, au bandeau comme dans la règle affichée.
   assert.match(page, /CARRÉS\./);
@@ -316,4 +316,25 @@ test('le compte à rebours laisse voir la route (pas de voile opaque)', () => {
   const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
   assert.match(hudCss, /\.city-rush-page \.city-rush-viewport \.city-rush-countdown,[^{]*\{[^}]*backdrop-filter: none;[^}]*\}/);
   assert.doesNotMatch(hudCss.match(/\.city-rush-page \.city-rush-viewport \.city-rush-countdown,[^{]*\{([^}]*)\}/)[1], /#090c12/);
+});
+
+test('le blindage du SUV est conservé à la création, au rejeu et au renfort', () => {
+  assert.match(world, /health: cityRushPoliceMaxHealth\(vehicleType\)/);
+  assert.match(world, /maxHealth: cityRushPoliceMaxHealth\(vehicleType\)/);
+  assert.match(world, /police\.health = cityRushPoliceMaxHealth\(police\.vehicleType\)/);
+  const activation = world.match(/function activatePoliceUnit\([\s\S]*?function /)?.[0] || '';
+  assert.match(activation, /police\.maxHealth = cityRushPoliceMaxHealth\(police\.vehicleType\)/);
+  assert.match(activation, /police\.health = police\.maxHealth/);
+  assert.match(world, /maxHealth: police\.maxHealth \|\| CITY_RUSH_POLICE_HEALTH/);
+});
+
+test('le choc du SUV coûte deux carrés sans contourner le répit partagé', () => {
+  const collision = world.match(/function applyPoliceCollision\([\s\S]*?function /)?.[0] || '';
+  assert.match(collision, /applyCarCollision\([\s\S]*?source: police\.vehicleType === 'police-suv' \? 'suv-collision' : 'collision'/);
+  const shared = world.match(/function applyCarCollision\([\s\S]*?function /)?.[0] || '';
+  assert.match(shared, /if \(playerCollisionCooldownLeft > 0\) return 0;/);
+  assert.match(shared, /damagePlayer\(source, null/);
+  assert.match(shared, /if \(lost > 0\) playerCollisionCooldownLeft = CITY_RUSH_PLAYER_COLLISION_COOLDOWN;/);
+  assert.match(collision, /damagePolice\(police, 'collision', 'player'/);
+  assert.match(page, /TA COQUE PERD \$\{effect\.playerHealthLost\}/);
 });

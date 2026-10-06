@@ -90,8 +90,8 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
-  CITY_RUSH_LAPS, CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_AIM_TIME,
-  CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceAimHold,
+  CITY_RUSH_LAPS, CITY_RUSH_POLICE_AIM_TIME, cityRushCarMaxHealth,
+  CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceMaxHealth, cityRushPoliceAimHold,
   cityRushPoliceAimReady,
 } = await import('../src/games/cityRushRules.js');
 
@@ -127,7 +127,10 @@ const violations = [];
 for (let run = 0; run < RUNS; run += 1) {
   seed = (BASE_SEED + run * 7919) >>> 0;
   for (const city of cities) {
+    // La supercar du garage : sept carrés de coque seulement (voir
+    // `cityRushCarMaxHealth`), le pire cas pour la barre du pilote.
     const car = CITY_RUSH_CARS.at(-1);
+    const carMaxHealth = cityRushCarMaxHealth(car);
     const callbacks = { errors: [], huds: [], effects: [], finish: null };
     const audioStub = new Proxy({}, { get: () => () => {} });
     const mount = {
@@ -155,7 +158,7 @@ for (let run = 0; run < RUNS; run += 1) {
 
     let frames = 0;
     const maxFrames = 240 * 60;
-    let health = CITY_RUSH_PLAYER_HEALTH;
+    let health = carMaxHealth;
     let lastHealth = null;
     let runAimFrames = 0;
     while (!callbacks.finish && frames < maxFrames) {
@@ -185,13 +188,13 @@ for (let run = 0; run < RUNS; run += 1) {
     const hits = callbacks.effects.filter((effect) => effect.type === 'player-hit');
     playerHits += hits.length;
     // Chaque impact retire exactement une cellule, et le HUD suit la barre.
-    let tracked = CITY_RUSH_PLAYER_HEALTH;
+    let tracked = carMaxHealth;
     let healthSeries = null;
     for (const effect of callbacks.effects) {
       if (effect.type === 'player-health') {
         tracked = effect.health;
-        if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH) {
-          violations.push(`[${city.id}#${run}] la barre ne démarre pas à ${CITY_RUSH_PLAYER_HEALTH} cellules`);
+        if (effect.maxHealth !== carMaxHealth) {
+          violations.push(`[${city.id}#${run}] la barre ne démarre pas à ${carMaxHealth} cellules (coque de ${car.name})`);
         }
         healthSeries = effect.health;
         continue;
@@ -214,7 +217,7 @@ for (let run = 0; run < RUNS; run += 1) {
         policeFriendlyFire += 1;
         violations.push(`[${city.id}#${run}] une berline a détruit une autre berline`, effect);
       }
-      if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== CITY_RUSH_POLICE_HEALTH) {
+      if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== cityRushPoliceMaxHealth(effect.vehicleType)) {
         violations.push(`[${city.id}#${run}] une berline n’a pas ses six cases de vie`, effect);
       }
     }
