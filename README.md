@@ -954,9 +954,28 @@ et le dernier tour durait 21 s.
   rouges, ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
   barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
-  À la destruction : explosion, retrait immédiat de la course et de la
-  mini-carte, **+200 pts** pour le pilote qui l'abat
-  (`CITY_RUSH_POLICE_DESTROY_SCORE`). La berline du trafic rappelée par un
+  À la destruction, la berline ne disparaît pas d'un coup : elle **part en
+  tête-à-queue** — **deux tours sur elle-même** (`cityRushStunSpin`,
+  `CITY_RUSH_POLICE_WRECK_SPIN_TURNS`) pendant que sa vitesse fond jusqu'à
+  l'arrêt (`cityRushPoliceWreckSpeed`, 1,7 s,
+  `CITY_RUSH_POLICE_WRECK_SPIN_SECONDS`), gomme, fumée et gyrophare allumé —
+  puis elle **explose à l'arrêt** et laisse une **carcasse en feu** immobile
+  sur la piste : coque noircie, vitres soufflées, quatre flammes qui faiblissent
+  vers les braises et colonne de fumée noire
+  (`CITY_RUSH_POLICE_WRECK_*`, nœuds `police-wreck` et `police-wreck-fire`).
+  La carcasse reste **visible et en feu** tout l'incendie
+  (`CITY_RUSH_POLICE_WRECK_BURN_SECONDS`), tant qu'elle est dans le cadre, puis
+  quitte la scène une fois consumée ; au-delà de
+  `CITY_RUSH_POLICE_WRECK_MAX` épaves suivies, la plus ancienne — la plus loin
+  derrière — cède son modèle. Le maillage de la berline appartient à son agonie
+  jusqu'au bout : sa relève, retenue pendant le tête-à-queue
+  (`wreckPending`), ne reprend la piste qu'à l'explosion — sans quoi la berline
+  s'évanouirait en pleine toupie, le renfort réutilisant le même objet.
+  Le retrait de la course et de la mini-carte, lui,
+  reste immédiat, avec **+200 pts** pour le pilote qui l'abat
+  (`CITY_RUSH_POLICE_DESTROY_SCORE`) ; la vérif
+  `npm run check:city-rush-police-wreck` compte les tours, la décélération, le
+  moment de l'explosion et la durée du feu. La berline du trafic rappelée par un
   contact est destructible comme l'escouade ; à la course suivante, le trafic
   repart au complet.
 - **Le dernier tour sous surveillance.** Deux choses accompagnent l'escouade.
@@ -1385,6 +1404,7 @@ npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
+npm run check:city-rush-police-wreck # destruction d'une berline : deux tours de tête-à-queue en décélérant, explosion à l'arrêt, carcasse laissée en feu tout l'incendie
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```

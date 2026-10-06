@@ -3254,6 +3254,60 @@ export function cityRushPoliceAimReady(aim = 0, duration = CITY_RUSH_POLICE_AIM_
 // Prime de destruction : le pilote qui fait exploser une berline la touche.
 export const CITY_RUSH_POLICE_DESTROY_SCORE = 200;
 
+// ── Épave d'une berline de police détruite ──────────────────────────────────
+// La coque cède, mais la berline ne disparaît pas d'un coup. Elle part en
+// tête-à-queue sur **deux tours complets** en perdant toute sa vitesse — la
+// rotation suit la courbe de la toupie du pilote (`cityRushStunSpin`), donc la
+// berline pivote vite puis se pose face à la route —, **explose** à la fin du
+// tête-à-queue, et sa **carcasse calcinée reste en piste, en feu**, ancrée là
+// où elle s'est immobilisée. La carcasse est dessinée tant qu'elle est dans le
+// cadre (même fenêtre que le trafic dans le rétroviseur) et le feu, lui, dure
+// `CITY_RUSH_POLICE_WRECK_BURN_SECONDS` — bien après que le pilote l'a dépassée.
+export const CITY_RUSH_POLICE_WRECK_SPIN_TURNS = 2; // tours complets avant l'explosion
+export const CITY_RUSH_POLICE_WRECK_SPIN_SECONDS = 1.7; // s : durée du tête-à-queue
+export const CITY_RUSH_POLICE_WRECK_VIEW_BEHIND = CITY_RUSH_POLICE_VIEW_BEHIND; // m : fenêtre derrière le pilote
+// Le feu dure : pleine flamme à l'explosion, il faiblit jusqu'à un plancher de
+// braises sur `CITY_RUSH_POLICE_WRECK_BURN_SECONDS`, puis la carcasse a fini de
+// se consumer et quitte la scène — le pilote est alors très loin devant.
+export const CITY_RUSH_POLICE_WRECK_BURN_SECONDS = 18; // s : durée de l'incendie
+export const CITY_RUSH_POLICE_WRECK_FLAME_FLOOR = 0.45; // intensité minimale (braises)
+// Garde-fou de scène : au-delà de ce nombre de carcasses suivies, la plus
+// ancienne — donc la plus loin derrière le pilote — s'efface et son modèle est
+// réutilisé. Un incendie dure `CITY_RUSH_POLICE_WRECK_BURN_SECONDS`, soit bien
+// plus que le temps de dépasser une carcasse : le plafond ne se atteint que
+// dans une course où les berlines sautent les unes après les autres.
+export const CITY_RUSH_POLICE_WRECK_MAX = 8;
+
+// Vitesse de la berline pendant le tête-à-queue : la décélération suit la
+// rotation (ease-out), la carcasse glisse donc vite au début puis s'immobilise
+// exactement quand elle arrête de tourner.
+export function cityRushPoliceWreckSpeed(startSpeed = 0, spinLeft = 0, spinTotal = CITY_RUSH_POLICE_WRECK_SPIN_SECONDS) {
+  const speed = Math.max(0, Number(startSpeed) || 0);
+  const total = Math.max(0, Number(spinTotal) || 0);
+  if (total <= 0) return 0;
+  const left = Math.min(total, Math.max(0, Number(spinLeft) || 0));
+  const remaining = left / total;
+  return speed * remaining * remaining;
+}
+
+// Distance parcourue entre la perte de la coque et l'explosion : l'intégrale de
+// la décélération ci-dessus, soit un tiers de la distance à vitesse constante.
+export function cityRushPoliceWreckSlide(startSpeed = 0, spinTotal = CITY_RUSH_POLICE_WRECK_SPIN_SECONDS) {
+  const speed = Math.max(0, Number(startSpeed) || 0);
+  const total = Math.max(0, Number(spinTotal) || 0);
+  return (speed * total) / 3;
+}
+
+// Intensité du feu de la carcasse : pleine flamme à l'explosion, puis un
+// affaiblissement linéaire vers le plancher de braises, où il se maintient.
+export function cityRushPoliceWreckFlame(burnElapsed = 0, burnSeconds = CITY_RUSH_POLICE_WRECK_BURN_SECONDS) {
+  const seconds = Math.max(0, Number(burnElapsed) || 0);
+  const total = Math.max(0, Number(burnSeconds) || 0);
+  const floor = Math.min(1, Math.max(0, Number(CITY_RUSH_POLICE_WRECK_FLAME_FLOOR)));
+  if (total <= 0) return 1;
+  return Math.max(floor, 1 - (1 - floor) * (seconds / total));
+}
+
 // Les berlines entrent sans charge de mitrailleuse ni attaque d'hélicoptère.
 export const CITY_RUSH_POLICE_START_CHARGES = Object.freeze([]);
 
