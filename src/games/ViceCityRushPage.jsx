@@ -1552,6 +1552,7 @@ export default function ViceCityRushPage() {
                                 <span className={`city-rush-car-lock-badge${owned ? ' is-owned' : ''}${offered ? ' is-offered' : ''}`}>
                                   {carGarageBadge(car, owned)}
                                 </span>
+                                <span className="city-rush-car-match-tag" aria-hidden="true">MINIATURE · 3D</span>
                               </span>
                               <b className="city-rush-car-name">{car.name}</b>
                               <small className="city-rush-car-class">{car.className}</small>
