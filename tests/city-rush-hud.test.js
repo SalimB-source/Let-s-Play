@@ -267,7 +267,14 @@ test('la barre d’une berline affiche bien ses six carrés de vie', () => {
   // Les carrés allumés suivent la vie restante, arrondie au carré supérieur.
   assert.match(world, /segment\.visible = segmentIndex < remainingSquares;/);
   assert.match(world, /const remainingSquares = Math\.ceil\(clamp\(police\.health, 0, CITY_RUSH_POLICE_HEALTH\)\)/);
-  // La page annonce les six carrés dans le bandeau de touche.
+  // La page annonce les six carrés dans le bandeau de touche — et un seul
+  // carré emporté par balle, au bandeau comme dans la règle affichée.
   assert.match(page, /CARRÉS\./);
   assert.match(page, /effect\.maxHealth/);
+  const pistolToast = page.match(/effect\.type === 'police-hit' && effect\.source === 'pistol'\) \{\s*showToast\(([\s\S]*?), 'pistol'\)/)?.[1] || '';
+  assert.ok(pistolToast, 'le bandeau de la berline touchée par une balle rouge existe');
+  assert.match(pistolToast, /−1 CARRÉ/, 'une balle rouge n’enlève jamais qu’un carré à la berline');
+  assert.match(page, /une berline de police[^.]*un tir rouge lui retire un seul carré/i,
+    'la règle affichée promet un seul carré par tir rouge, berline comme adversaire');
+  assert.doesNotMatch(page, /3 dégâts|trois dégâts/, 'plus aucun texte ne promet trois dégâts d’un tir rouge');
 });

@@ -2643,9 +2643,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   // ── Destruction des berlines de police ──────────────────────────────
-  // Trois tirs droits bleus, deux tirs rouges ou six carambolages en accélérant
-  // détruisent la berline. Sa barre segmentée descend à chaque dégât, puis elle
-  // explose et disparaît de la course comme de la mini-carte. Aucun missile.
+  // Trois tirs droits bleus, six tirs rouges ou six carambolages en accélérant
+  // détruisent la berline : le tir rouge ne retire jamais qu’un seul carré,
+  // comme contre un adversaire. Sa barre segmentée descend à chaque dégât,
+  // puis elle explose et disparaît de la course comme de la mini-carte.
+  // Aucun missile.
   const policeExplosions = [];
 
   function poseExplosion(mesh, worldPosition, age = 0) {
@@ -2770,20 +2772,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       return;
     }
     police.healthFlash = 0.28;
-    // Les tirs rouges retirent une cellule sans dérapage ni ralentissement.
+    // Le tir rouge retire un seul carré, sans dérapage ni ralentissement.
     if (source !== CITY_RUSH_POWERS.PISTOL) {
       police.skidLeft = Math.max(police.skidLeft, 0.4);
       police.skidDuration = 0.4;
       police.skidSide = Math.random() < 0.5 ? -1 : 1;
     }
     // Une berline touchée mais encore debout se raconte au pilote qui l'a
-    // atteinte : un tir bleu enlève deux points, un tir rouge trois et un
-    // carambolage à pleine allure un seul. Un carambolage coûte aussi un carré
-    // au pilote : `extra` porte ce que sa coque a encaissé (voir
-    // `applyPoliceCollision`).
+    // atteinte : un tir bleu enlève deux points, un tir rouge comme un
+    // carambolage à pleine allure un seul — la mitrailleuse n'emporte jamais
+    // plus d'un carré, contre une berline comme contre une voiture de course.
+    // Un carambolage coûte aussi un carré au pilote : `extra` porte ce que sa
+    // coque a encaissé (voir `applyPoliceCollision`).
     if (attackerId === 'player') {
       getCallbacks().effect?.({
         type: 'police-hit',
+        // Identifiant de la berline touchée : plusieurs patrouilles portent le
+        // même nom, et les vérifications suivent leur barre voiture par voiture.
+        id: police.id,
         police: police.name,
         health: police.health,
         maxHealth: CITY_RUSH_POLICE_HEALTH,

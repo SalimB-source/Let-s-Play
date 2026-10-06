@@ -732,9 +732,11 @@ test('the active loadout has seven red machine-gun bullets plus automatic ground
   assert.match(CITY_RUSH_POWER_RULES.pistol.name, /AK-47/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /tout droit/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /premier adversaire ou la première voiture de police/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /retire un carré de vie/i);
+  // Une balle rouge = un seul carré, chez un pilote comme dans une berline.
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /contre un pilote comme contre une voiture de police à six carrés de vie/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /ne retire jamais qu’un seul carré/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /sans dérapage ni ralentissement/i);
-  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /voiture de police à six points de vie.*inflige 3 dégâts/i);
+  assert.match(CITY_RUSH_POWER_RULES.pistol.description, /six balles pour une berline/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, et un carré au pilote/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     'blue-shot': 'A', pistol: 'Z', radio: 'R',
@@ -1064,14 +1066,16 @@ test('le joueur et les rivaux ont quinze cellules ; tirs et carambolages coûten
   assert.equal(CITY_RUSH_PLAYER_HEALTH_CRITICAL, 3);
   assert.equal(CITY_RUSH_HEALTH_GROUP_SIZE, 5);
 
-  // La police garde une coque distincte : deux rouges, trois bleus ou six
-  // carambolages la détruisent. Chaque carambolage coûte aussi un carré au
-  // pilote, avec le répit partagé qui borne les contacts à répétition.
+  // La police garde une coque distincte mais au même tarif : trois bleus, six
+  // rouges ou six carambolages la détruisent. Chaque carambolage coûte aussi un
+  // carré au pilote, avec le répit partagé qui borne les contacts à répétition.
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
-  assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, 3);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, 1, 'le tir rouge ne retire qu’un carré à une berline');
+  assert.equal(CITY_RUSH_POLICE_DAMAGE.pistol, CITY_RUSH_PLAYER_DAMAGE.pistol,
+    'une balle rouge coûte le même carré à une voiture de police qu’à un adversaire');
   assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision'), CITY_RUSH_POLICE_HEALTH - 1);
-  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'pistol'), 3);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'pistol'), CITY_RUSH_POLICE_HEALTH - 1);
   assert.ok(CITY_RUSH_POLICE_COLLISION_COOLDOWN > 0.5);
   assert.ok(CITY_RUSH_POLICE_COLLISION_TOLERANCE > 0);
 });
@@ -1430,10 +1434,10 @@ test('au dernier tour, la riposte rouge peut viser la berline la plus proche', (
   ], 1200).id, 'police-2');
 });
 
-test('barre de vie des berlines : six points, tir rouge puissant, un point par carambolage', () => {
+test('barre de vie des berlines : six carrés, un seul emporté par tir rouge, un point par carambolage', () => {
   assert.equal(CITY_RUSH_POLICE_HEALTH, 6);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2);
-  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 3);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 1);
   assert.equal(CITY_RUSH_POLICE_DAMAGE.collision, 1);
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.RADIO], 0,
     'l’attaque d’hélicoptère n’inflige plus de dégâts');
@@ -1444,14 +1448,23 @@ test('barre de vie des berlines : six points, tir rouge puissant, un point par c
   assert.equal(afterSecondBlue, 2);
   assert.equal(cityRushPoliceDamage(afterSecondBlue, CITY_RUSH_POWERS.BLUE_SHOT), 0);
 
+  // Un tir rouge ne retire qu’un carré : la berline n’est jamais effacée d’un
+  // coup, et un chargeur de sept balles en vient à bout avec une balle de reste.
   const afterFirstRed = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL);
-  assert.equal(afterFirstRed, 3);
-  assert.equal(cityRushPoliceDamage(afterFirstRed, CITY_RUSH_POWERS.PISTOL), 0);
-  assert.equal(cityRushPoliceDamage(afterFirstRed, 'collision'), 2,
+  assert.equal(afterFirstRed, 5, 'le premier tir rouge laisse cinq carrés sur six');
+  let redHealth = CITY_RUSH_POLICE_HEALTH;
+  for (let shot = 1; shot <= 5; shot += 1) {
+    redHealth = cityRushPoliceDamage(redHealth, CITY_RUSH_POWERS.PISTOL);
+    assert.equal(redHealth, CITY_RUSH_POLICE_HEALTH - shot, `le tir rouge ${shot} ne retire qu’un carré`);
+  }
+  assert.equal(cityRushPoliceDamage(redHealth, CITY_RUSH_POWERS.PISTOL), 0, 'le sixième tir rouge achève la berline');
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'collision'), 5,
+    'un carambolage en accélérant coûte le même carré qu’une balle rouge');
+  assert.equal(cityRushPoliceDamage(afterFirstRed, 'collision'), 4,
     'un carambolage en accélérant retire un seul point après le tir rouge');
-  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(afterFirstRed, 'collision'), 'collision'), 1);
-  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(cityRushPoliceDamage(afterFirstRed, 'collision'), 'collision'), 'collision'), 0,
-    'trois carambolages supplémentaires achèvent une berline déjà touchée par un tir rouge');
+  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(afterFirstRed, 'collision'), 'collision'), 3);
+  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(cityRushPoliceDamage(afterFirstRed, 'collision'), 'collision'), 'collision'), 2,
+    'trois carambolages supplémentaires laissent encore deux carrés à une berline touchée par un tir rouge');
   assert.equal(cityRushPoliceDamage(1, 'collision'), 0);
   assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.BLUE_SHOT), 0);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), CITY_RUSH_POLICE_HEALTH,
@@ -1460,14 +1473,49 @@ test('barre de vie des berlines : six points, tir rouge puissant, un point par c
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, null), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
 });
+
+test('un tir rouge ne retire jamais qu’un seul carré — berline de police comme adversaire', () => {
+  // Le même prix pour tout le monde : une balle rouge = une cellule.
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 1);
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE[CITY_RUSH_POWERS.PISTOL], 1);
+
+  // Côté adversaires : quinze carrés, un par balle.
+  let racerHealth = CITY_RUSH_RACER_HEALTH;
+  for (let shot = 1; shot <= CITY_RUSH_RACER_HEALTH; shot += 1) {
+    const next = cityRushPlayerDamage(racerHealth, CITY_RUSH_POWERS.PISTOL);
+    assert.equal(racerHealth - next, 1, `le tir rouge ${shot} ne retire qu’un carré à un pilote`);
+    racerHealth = next;
+  }
+  assert.equal(racerHealth, 0, 'quinze balles rouges couchent une voiture de course');
+  assert.equal(cityRushPlayerDamage(0, CITY_RUSH_POWERS.PISTOL), 0, 'une épave n’a plus de carré à perdre');
+
+  // Côté police : six carrés sur le toit, un par balle — plus de frappe à trois
+  // points qui effaçait la moitié de la barre d’un seul tir.
+  let policeHealth = CITY_RUSH_POLICE_HEALTH;
+  for (let shot = 1; shot <= CITY_RUSH_POLICE_HEALTH; shot += 1) {
+    const next = cityRushPoliceDamage(policeHealth, CITY_RUSH_POWERS.PISTOL);
+    assert.equal(policeHealth - next, 1, `le tir rouge ${shot} ne retire qu’un carré à une berline`);
+    policeHealth = next;
+  }
+  assert.equal(policeHealth, 0, 'six balles rouges détruisent une berline');
+  assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.PISTOL), 0, 'une berline explosée n’a plus de carré à perdre');
+
+  // Le tir rouge reste utile contre la police : un chargeur entier vient à bout
+  // d’une berline neuve, avec une balle de reste.
+  assert.ok(CITY_RUSH_PISTOL_AMMO_PER_PICKUP >= CITY_RUSH_POLICE_HEALTH,
+    'un chargeur doit pouvoir venir à bout d’une berline à six carrés');
+});
+
 test('le bandeau « berline touchée » compte les tirs restants, pas les points de vie', () => {
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT), 3, 'trois tirs bleus au départ');
   assert.equal(cityRushPoliceShotsLeft(2, CITY_RUSH_POWERS.BLUE_SHOT), 1, 'un tir bleu après le premier');
   assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'épave : plus rien à tirer');
-  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 2, 'deux tirs rouges au départ');
-  assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 1, 'un tir rouge après le premier');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 6, 'six tirs rouges au départ');
+  assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 3, 'trois tirs rouges après trois carrés perdus');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH - 1, CITY_RUSH_POWERS.PISTOL), 5,
+    'un tir rouge encaissé laisse cinq cartouches à tirer');
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, 'collision'), 6, 'six petits carambolages au départ');
-  assert.equal(cityRushPoliceShotsLeft(3, 'collision'), 3, 'trois carambolages après un tir rouge');
+  assert.equal(cityRushPoliceShotsLeft(3, 'collision'), 3, 'trois carambolages pour trois carrés restants');
   assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.PISTOL), 0, 'épave : plus de tir rouge');
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 0, 'aucun missile, attaque supprimée');
   // Arme non létale ou inconnue : aucun tir ne compte.

@@ -570,7 +570,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote, il retire un carré de vie sans dérapage ni ralentissement ; contre une voiture de police à six points de vie, il inflige 3 dégâts. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule.`,
+    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -3188,9 +3188,14 @@ export const CITY_RUSH_POLICE_AIM_NOTICE_COOLDOWN = 3.2; // s : deux avis de mir
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
-// Six points de vie pour chaque berline : trois tirs bleus (2 points chacun),
-// deux tirs rouges d’AK-47 (3 points chacun), ou six carambolages en accélérant
-// (1 point chacun) la détruisent. La coque du pilote paie elle aussi le contact
+// Six carrés de vie pour chaque berline, affichés sur son toit : trois tirs
+// bleus (2 points chacun) ou six carambolages en accélérant (1 point chacun) la
+// détruisent. Le tir rouge d’AK-47 suit exactement la même règle que contre un
+// pilote : **un seul carré par balle** (`CITY_RUSH_POLICE_DAMAGE.pistol` = 1),
+// donc six impacts pour envoyer une berline à la casse. Un chargeur de
+// `CITY_RUSH_PISTOL_AMMO_PER_PICKUP` balles suffit tout juste à nettoyer une
+// voiture de police, et il faut économiser ses tirs plutôt que viser la
+// destruction instantanée. La coque du pilote paie elle aussi le contact
 // d’un carré (`CITY_RUSH_PLAYER_DAMAGE.collision`), avec un répit partagé
 // (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) : six carambolages coûtent donc six
 // carrés au joueur.
@@ -3198,7 +3203,8 @@ export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est con
 export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2,
-  [CITY_RUSH_POWERS.PISTOL]: 3,
+  // Un tir rouge ne retire qu’un carré, à une berline comme à un adversaire.
+  [CITY_RUSH_POWERS.PISTOL]: 1,
   [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
   collision: 1, // contact en accélérant : la police perd un point, le pilote un carré
 });
