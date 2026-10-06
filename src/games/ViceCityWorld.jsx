@@ -2079,6 +2079,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // pilote se remettent à rouler normalement et l'abandonnent.
     const pursuersReleased = releasePolicePursuit({ targetId: 'player' });
     const remaining = miniGarages.filter((item) => !item.used).length;
+    const healthRestored = playerHealth - healthBefore;
+    // Le passage à l'atelier s'entend : pont élévateur, clé à chocs, capot
+    // qui claque, et l'accord de « réparée » quand la coque a repris des points.
+    audioRef?.current?.garageRepair?.({ pan: vehiclePan('player'), restored: healthRestored });
     getCallbacks().effect?.({
       type: 'mini-garage-used',
       garage: garage.index,
@@ -2090,7 +2094,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       healthBefore,
       health: playerHealth,
       maxHealth: playerMaxHealth,
-      healthRestored: playerHealth - healthBefore,
+      healthRestored,
       pursuersReleased,
     });
     emitHud(true);

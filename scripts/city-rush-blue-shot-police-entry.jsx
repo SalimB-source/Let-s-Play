@@ -97,7 +97,7 @@ const stepFrame = () => {
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
-  'policeSiren', 'policeSirenOff',
+  'policeSiren', 'policeSirenOff', 'garageRepair',
 ];
 const cityArg = process.argv.find((arg) => arg.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_WEAPONS_ALL === '1' || process.env.CITY_RUSH_BLUE_SHOT_ALL === '1';
