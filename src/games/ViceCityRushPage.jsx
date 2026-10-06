@@ -906,7 +906,10 @@ export default function ViceCityRushPage() {
     if (!effect) return;
     if (effect.type === 'wanted-level') {
       const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Number(effect.stars) || 0));
-      showToast(`🚨 NIVEAU DE RECHERCHE · ${stars} ÉTOILE${stars > 1 ? 'S' : ''} SUR ${CITY_RUSH_WANTED_MAX_STARS}`, 'pistol');
+      if (effect.reason === 'police-shot') {
+        showToast(`🚨 TIR SUR LA POLICE · ${stars} ÉTOILES DIRECTES · ESCOUADE COMPLÈTE ET SUV DÉPLOYÉS · LES PATROUILLES DE LA ROUTE TE CHASSENT À VUE.`, 'pistol');
+      }
+      else showToast(`🚨 NIVEAU DE RECHERCHE · ${stars} ÉTOILE${stars > 1 ? 'S' : ''} SUR ${CITY_RUSH_WANTED_MAX_STARS}`, 'pistol');
     }
     else if (effect.type === 'police-oncoming-turnaround') {
       const count = Math.max(1, Number(effect.count) || 1);
@@ -938,7 +941,11 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ L’AK-47 (ROUGE)${effect.ready ? ' · IL EST CHARGÉ' : ''}.`, 'pistol');
     else if (effect.type === 'police-aim') showToast(`🎯 ${effect.police} DANS TON DOS · DÉCALE-TOI OU ELLE TIRE.`, 'pistol');
     else if (effect.type === 'police-rally') showToast(
-      `${effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`}${effect.healthLost > 0 ? ` CHOC · −1 CARRÉ (${effect.health}/${effect.maxHealth}).` : ''}`,
+      `${effect.targetId === 'player'
+        ? (effect.sighted
+          ? `🚨 ${effect.police} T’A VU · ELLE TE PREND EN CHASSE.`
+          : `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.`)
+        : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`}${effect.healthLost > 0 ? ` CHOC · −1 CARRÉ (${effect.health}/${effect.maxHealth}).` : ''}`,
       'pistol',
     );
     else if (effect.type === 'police-hit' && effect.source === 'pistol') {

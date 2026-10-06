@@ -3290,13 +3290,23 @@ export const CITY_RUSH_POLICE_COUNT = 3;
 export const CITY_RUSH_WANTED_MAX_STARS = 5;
 export const CITY_RUSH_POLICE_TURNAROUND_DURATION = 1.5; // s : demi-tour des patrouilles venant en face
 
-/** Étoile gagnée sur un véhicule touché ; une police touchée fait passer à 3. */
-export function cityRushWantedLevelAfterHit(currentLevel = 0, { hit = true, police = false } = {}) {
+/**
+ * Étoile gagnée sur un véhicule touché. Un simple contact avec une patrouille
+ * fait passer à 3, mais TIRER sur une voiture de police fait monter les
+ * étoiles à 5 directement : l'escouade complète sort (berlines + SUV) et les
+ * patrouilles croisées sur la route prennent le pilote en chasse dès qu'elles
+ * le voient (`CITY_RUSH_POLICE_SIGHT_RANGE`).
+ */
+export function cityRushWantedLevelAfterHit(currentLevel = 0, { hit = true, police = false, shot = false } = {}) {
   const current = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(currentLevel) || 0)));
   if (!hit) return current;
-  if (police) return Math.max(current, 3);
+  if (police) return shot ? CITY_RUSH_WANTED_MAX_STARS : Math.max(current, 3);
   return Math.min(CITY_RUSH_WANTED_MAX_STARS, current + 1);
 }
+
+// Portée de vue des patrouilles à cinq étoiles : toute voiture de police
+// aperçue sur la route (même sens ou contresens) rejoint la chasse.
+export const CITY_RUSH_POLICE_SIGHT_RANGE = 60; // m
 
 /** Nombre de poursuivants de l'escouade selon le niveau de recherche. */
 export function cityRushPoliceCountForWantedLevel(level = 0) {

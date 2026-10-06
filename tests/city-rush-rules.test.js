@@ -72,6 +72,7 @@ import {
   CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
+  CITY_RUSH_POLICE_SIGHT_RANGE,
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
@@ -1062,6 +1063,20 @@ test('cinq étoiles de recherche déclenchent la poursuite et les patrouilles fo
   assert.equal(cityRushPoliceTurnaroundProgress(0.75), 0.5);
   assert.equal(cityRushPoliceTurnaroundProgress(1.5), 1);
   assert.equal(cityRushPoliceTurnaroundProgress(3), 1);
+});
+
+test('tirer sur une voiture de police fait passer directement à cinq étoiles (escouade complète + SUV)', () => {
+  // Un tir sur une patrouille saute toutes les étapes : cinq étoiles d'un coup,
+  // quel que soit le niveau de départ (0, 1, 3 ou déjà 4).
+  assert.equal(cityRushWantedLevelAfterHit(0, { police: true, shot: true }), 5, 'un tir sur la police passe à cinq étoiles dès zéro');
+  assert.equal(cityRushWantedLevelAfterHit(1, { police: true, shot: true }), 5, 'un tir sur la police passe à cinq étoiles depuis une étoile');
+  assert.equal(cityRushWantedLevelAfterHit(3, { police: true, shot: true }), 5, 'un tir sur la police passe à cinq étoiles depuis trois étoiles');
+  assert.equal(cityRushWantedLevelAfterHit(4, { police: true, shot: true }), 5, 'un tir sur la police reste plafonné à cinq étoiles');
+  // À cinq étoiles, l'escouade complète sort : les trois unités, dont le SUV.
+  assert.equal(cityRushPoliceCountForWantedLevel(5), CITY_RUSH_POLICE_COUNT, 'cinq étoiles déploient les trois unités');
+  assert.ok(CITY_RUSH_POLICE_VEHICLE_TYPES.includes('police-suv'), 'l’escouade comprend bien un SUV');
+  // Les patrouilles croisées sur la route chassent à vue : la portée existe.
+  assert.ok(Number.isFinite(CITY_RUSH_POLICE_SIGHT_RANGE) && CITY_RUSH_POLICE_SIGHT_RANGE > 0, 'portée de vue positive');
 });
 
 test('trois voitures de police poursuivent le joueur et un renfort est réservé par rival — hors classement', () => {
