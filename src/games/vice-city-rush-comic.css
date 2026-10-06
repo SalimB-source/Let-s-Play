@@ -6,49 +6,50 @@
  */
 
 :root .city-rush-page.city-rush-page {
-  --cr-bg: #100a2c;
-  --cr-bg-2: #1b0d45;
-  --cr-panel: #211047;
-  --cr-panel-2: #2a1458;
-  --cr-panel-solid: #201043;
-  --cr-border: rgba(255, 255, 255, .2);
-  --cr-border-strong: rgba(255, 255, 255, .42);
-  --cr-text: #fff9e9;
-  --cr-muted: #d3c9f7;
-  --cr-faint: #a99bd9;
-  --cr-dim: rgba(255, 255, 255, .16);
+  --cr-bg: #0d0620;
+  --cr-bg-2: #170a3d;
+  --cr-panel: #1c0c3e;
+  --cr-panel-2: #251050;
+  --cr-panel-solid: #1a0a38;
+  --cr-border: rgba(255, 255, 255, .25);
+  --cr-border-strong: rgba(255, 255, 255, .5);
+  --cr-text: #fffbea;
+  --cr-muted: #ddd0ff;
+  --cr-faint: #bbaae8;
+  --cr-dim: rgba(255, 255, 255, .2);
   --cr-radius-xl: 28px;
   --cr-radius-lg: 22px;
   --cr-radius-md: 16px;
   --cr-radius-sm: 12px;
   --cr-radius-pill: 999px;
-  --cr-shadow-soft: 0 8px 0 rgba(5, 3, 22, .65), 0 16px 32px rgba(0, 0, 0, .3);
-  --cr-shadow-hard: 0 18px 0 rgba(4, 2, 18, .68), 0 28px 64px rgba(0, 0, 0, .42);
-  --cr-ink: #09051e;
+  --cr-shadow-soft: 0 8px 0 rgba(5, 3, 22, .75), 0 16px 32px rgba(0, 0, 0, .4);
+  --cr-shadow-hard: 0 18px 0 rgba(4, 2, 18, .8), 0 28px 64px rgba(0, 0, 0, .55);
+  --cr-ink: #06021a;
   --cr-paper: #fff7dc;
-  --cr-pink: #ff45bb;
-  --cr-cyan: #45f3e2;
-  --cr-yellow: #ffe441;
-  --cr-lime: #9cff43;
-  --cr-violet: #8e57ff;
+  --cr-pink: #ff36b8;
+  --cr-cyan: #30f5e4;
+  --cr-yellow: #ffe130;
+  --cr-lime: #8cff30;
+  --cr-violet: #9b5cff;
   color: var(--cr-text);
   color-scheme: dark;
   background:
-    radial-gradient(ellipse at 5% 4%, rgba(255, 57, 177, .2), transparent 31%),
-    radial-gradient(ellipse at 96% 16%, rgba(40, 225, 220, .14), transparent 29%),
-    radial-gradient(ellipse at 72% 100%, rgba(132, 82, 255, .18), transparent 40%),
-    linear-gradient(145deg, #170b3d 0%, #0b0821 56%, #10102d 100%);
+    radial-gradient(ellipse at 5% 4%, rgba(255, 36, 170, .3), transparent 35%),
+    radial-gradient(ellipse at 96% 16%, rgba(30, 235, 220, .22), transparent 33%),
+    radial-gradient(ellipse at 72% 100%, rgba(140, 70, 255, .28), transparent 44%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 225, 48, .08), transparent 50%),
+    linear-gradient(145deg, #130832 0%, #070418 56%, #0c0a24 100%);
 }
 
 :root .city-rush-page.city-rush-page::before {
   z-index: 0;
-  opacity: .17;
+  opacity: .32;
   background-image:
-    radial-gradient(circle, rgba(255, 228, 65, .58) 1.15px, transparent 1.6px),
-    radial-gradient(circle, rgba(69, 243, 226, .46) 1px, transparent 1.5px);
+    radial-gradient(circle, rgba(255, 228, 65, .65) 1.3px, transparent 1.8px),
+    radial-gradient(circle, rgba(69, 243, 226, .52) 1.15px, transparent 1.65px);
   background-position: 0 0, 5px 5px;
-  background-size: 11px 11px, 19px 19px;
-  mask-image: linear-gradient(115deg, #000 0%, transparent 48%, #000 100%);
+  background-size: 10px 10px, 17px 17px;
+  mask-image: linear-gradient(115deg, #000 0%, transparent 55%, #000 100%);
 }
 
 .city-rush-page.city-rush-page .city-rush-layout,
@@ -59,14 +60,15 @@
 
 /* The game window gets an inked frame and a printed, two-colour edge. */
 .city-rush-page.city-rush-page .city-rush-shell {
-  border: 4px solid var(--cr-ink);
+  border: 5px solid var(--cr-ink);
   border-radius: 28px;
-  background: #10082d;
+  background: #0d0625;
   box-shadow:
     0 0 0 3px var(--cr-yellow),
-    0 0 0 7px var(--cr-pink),
-    0 18px 0 rgba(5, 3, 22, .8),
-    0 32px 74px rgba(0, 0, 0, .42);
+    0 0 0 8px var(--cr-pink),
+    0 0 0 11px var(--cr-ink),
+    0 18px 0 rgba(5, 3, 22, .85),
+    0 32px 74px rgba(0, 0, 0, .55);
   isolation: isolate;
 }
 
@@ -74,19 +76,21 @@
   border-color: var(--cr-ink);
   box-shadow:
     0 0 0 3px var(--cr-cyan),
-    0 0 0 7px var(--cr-pink),
-    0 18px 0 rgba(5, 3, 22, .8),
-    0 32px 74px rgba(0, 0, 0, .42);
+    0 0 0 8px var(--cr-pink),
+    0 0 0 11px var(--cr-ink),
+    0 18px 0 rgba(5, 3, 22, .85),
+    0 32px 74px rgba(0, 0, 0, .55);
 }
 
 .city-rush-page.city-rush-page .city-rush-shell.is-immersive {
   border: 0;
   border-radius: 0;
-  background: #10082d;
+  background: #0d0625;
   box-shadow:
-    inset 0 0 0 3px var(--cr-ink),
-    inset 0 0 0 6px var(--cr-yellow),
-    inset 0 0 0 9px var(--cr-pink);
+    inset 0 0 0 4px var(--cr-ink),
+    inset 0 0 0 7px var(--cr-yellow),
+    inset 0 0 0 10px var(--cr-pink),
+    inset 0 0 0 13px var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-shell.is-immersive::before {
@@ -98,22 +102,22 @@
   position: relative;
   height: 72px;
   padding-inline: clamp(14px, 2.2vw, 30px);
-  border-bottom: 3px solid var(--cr-ink);
+  border-bottom: 4px solid var(--cr-ink);
   background:
-    linear-gradient(90deg, rgba(255, 69, 187, .13), transparent 30%, rgba(69, 243, 226, .1)),
-    #1a0b40;
-  box-shadow: inset 0 -4px 0 rgba(255, 69, 187, .38);
+    linear-gradient(90deg, rgba(255, 36, 170, .2), transparent 30%, rgba(30, 235, 220, .16)),
+    linear-gradient(180deg, #1a0840, #120530);
+  box-shadow: inset 0 -5px 0 rgba(255, 36, 170, .5);
 }
 
 .city-rush-page.city-rush-page .city-rush-topbar::after {
   position: absolute;
   right: 0;
-  bottom: -3px;
+  bottom: -4px;
   left: 0;
-  height: 3px;
+  height: 4px;
   content: '';
   pointer-events: none;
-  background: linear-gradient(90deg, var(--cr-pink), var(--cr-yellow) 48%, var(--cr-cyan));
+  background: linear-gradient(90deg, var(--cr-pink), var(--cr-yellow) 35%, var(--cr-lime) 65%, var(--cr-cyan));
 }
 
 .city-rush-page.city-rush-page .city-rush-location { gap: 12px; }
@@ -121,10 +125,10 @@
 .city-rush-page.city-rush-page .city-rush-location-mark {
   width: 44px;
   height: 44px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 15px;
   background: var(--cr-yellow);
-  box-shadow: 3px 3px 0 var(--cr-pink);
+  box-shadow: 4px 4px 0 var(--cr-pink), 6px 6px 0 var(--cr-ink);
   color: var(--cr-ink);
   font-size: 20px;
   font-weight: 900 !important;
@@ -160,10 +164,10 @@
 .city-rush-page.city-rush-page .city-rush-wallet {
   min-height: 42px;
   padding: 5px 12px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 999px;
   background: var(--cr-lime);
-  box-shadow: 3px 3px 0 var(--cr-ink);
+  box-shadow: 4px 4px 0 var(--cr-ink);
   color: var(--cr-ink);
 }
 
@@ -174,10 +178,10 @@
 .city-rush-page.city-rush-page .city-rush-top-button {
   min-height: 40px;
   padding-inline: 13px;
-  border: 2px solid var(--cr-ink);
+  border: 3px solid var(--cr-ink);
   border-radius: 999px;
   background: #fff5d5;
-  box-shadow: 3px 3px 0 var(--cr-ink);
+  box-shadow: 4px 4px 0 var(--cr-ink);
   color: var(--cr-ink);
   font-size: 10px;
   font-weight: 900 !important;
@@ -185,10 +189,10 @@
 }
 
 .city-rush-page.city-rush-page .city-rush-top-button:hover {
-  transform: translate(-1px, -1px) rotate(-1deg);
+  transform: translate(-2px, -2px) rotate(-1.5deg);
   border-color: var(--cr-ink);
   background: var(--cr-cyan);
-  box-shadow: 5px 5px 0 var(--cr-ink);
+  box-shadow: 6px 6px 0 var(--cr-ink);
   color: var(--cr-ink);
 }
 
@@ -234,16 +238,17 @@
 }
 
 .city-rush-page.city-rush-page .city-rush-canvas {
-  filter: saturate(1.2) contrast(1.07);
+  filter: saturate(1.35) contrast(1.14) brightness(1.03);
 }
 
 /* A fine comic-print screen tone over the 3D scene; gameplay remains fully visible. */
 .city-rush-page.city-rush-page .city-rush-vignette {
   background:
-    radial-gradient(circle, rgba(255, 246, 198, .18) 1px, transparent 1.5px) 0 0 / 10px 10px,
-    radial-gradient(120% 120% at 50% 20%, transparent 42%, rgba(10, 3, 38, .3) 100%),
-    linear-gradient(180deg, rgba(12, 5, 42, .06), transparent 26%, transparent 76%, rgba(10, 3, 38, .3));
-  opacity: .42;
+    radial-gradient(circle, rgba(255, 246, 198, .25) 1.1px, transparent 1.6px) 0 0 / 9px 9px,
+    radial-gradient(circle, rgba(255, 57, 177, .08) 1px, transparent 1.5px) 4px 4px / 14px 14px,
+    radial-gradient(120% 120% at 50% 20%, transparent 42%, rgba(8, 2, 32, .35) 100%),
+    linear-gradient(180deg, rgba(10, 4, 36, .08), transparent 26%, transparent 76%, rgba(8, 2, 32, .35));
+  opacity: .5;
   mix-blend-mode: soft-light;
 }
 
@@ -264,15 +269,16 @@
   overflow-x: hidden;
   overflow-y: auto;
   color: var(--cr-text);
-  background-color: #120a34;
+  background-color: #0d0625;
   background-image:
-    linear-gradient(110deg, rgba(15, 7, 46, .91) 0%, rgba(19, 8, 50, .77) 42%, rgba(13, 22, 55, .52) 100%),
-    radial-gradient(circle, rgba(255, 225, 65, .15) 1px, transparent 1.65px),
-    linear-gradient(0deg, rgba(13, 6, 40, .93), transparent 52%),
+    linear-gradient(110deg, rgba(12, 5, 40, .93) 0%, rgba(16, 6, 44, .8) 42%, rgba(10, 18, 48, .55) 100%),
+    radial-gradient(circle, rgba(255, 215, 48, .18) 1.2px, transparent 1.7px),
+    radial-gradient(circle, rgba(255, 36, 170, .06) 1px, transparent 1.5px),
+    linear-gradient(0deg, rgba(10, 4, 36, .95), transparent 52%),
     url('../../public/vice-city-rush-keyart.jpg');
-  background-position: center, 0 0, center, 62% 54%;
-  background-size: cover, 12px 12px, cover, cover;
-  background-repeat: no-repeat, repeat, no-repeat, no-repeat;
+  background-position: center, 0 0, 3px 3px, center, 62% 54%;
+  background-size: cover, 11px 11px, 16px 16px, cover, cover;
+  background-repeat: no-repeat, repeat, repeat, no-repeat, no-repeat;
   scrollbar-color: var(--cr-pink) #1c1045;
 }
 
@@ -283,11 +289,12 @@
   content: '';
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 86% 12%, rgba(255, 65, 185, .34), transparent 25%),
-    radial-gradient(ellipse at 7% 100%, rgba(69, 243, 226, .22), transparent 28%),
-    repeating-radial-gradient(circle at 84% 18%, rgba(255, 255, 255, .08) 0 1px, transparent 1.5px 9px);
+    radial-gradient(ellipse at 86% 12%, rgba(255, 36, 170, .42), transparent 28%),
+    radial-gradient(ellipse at 7% 100%, rgba(30, 235, 220, .3), transparent 32%),
+    radial-gradient(ellipse at 50% 50%, rgba(140, 70, 255, .12), transparent 45%),
+    repeating-radial-gradient(circle at 84% 18%, rgba(255, 255, 255, .1) 0 1px, transparent 1.5px 8px);
   mix-blend-mode: screen;
-  opacity: .66;
+  opacity: .72;
 }
 
 .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) > * {
@@ -381,14 +388,14 @@
 .city-rush-page.city-rush-page .city-rush-result-overlay h2 {
   position: relative;
   margin: 12px 0 10px;
-  color: #fff9e9;
+  color: #fffbea;
   font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif !important;
   font-size: clamp(54px, 7.4vh, 94px);
   font-weight: 900 !important;
   line-height: .78;
   letter-spacing: -.025em;
-  text-shadow: 3px 3px 0 var(--cr-ink), 6px 6px 0 var(--cr-pink), 8px 8px 0 var(--cr-ink);
-  -webkit-text-stroke: 1px var(--cr-ink);
+  text-shadow: 3px 3px 0 var(--cr-ink), 5px 5px 0 var(--cr-pink), 7px 7px 0 var(--cr-violet), 9px 9px 0 var(--cr-ink);
+  -webkit-text-stroke: 1.5px var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-intro h2 em,
@@ -437,13 +444,14 @@
 .city-rush-page.city-rush-page .cr-story-hub {
   min-width: 0;
   padding: 15px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 24px;
   background:
-    radial-gradient(circle, rgba(255, 228, 65, .12) 1px, transparent 1.65px) 0 0 / 11px 11px,
-    linear-gradient(135deg, rgba(255, 69, 187, .23), transparent 55%),
-    linear-gradient(145deg, rgba(36, 16, 84, .98), rgba(16, 9, 45, .98));
-  box-shadow: 6px 6px 0 var(--cr-ink), 10px 10px 0 var(--cr-cyan);
+    radial-gradient(circle, rgba(255, 225, 48, .14) 1px, transparent 1.7px) 0 0 / 10px 10px,
+    radial-gradient(circle, rgba(255, 36, 170, .06) 1px, transparent 1.5px) 4px 4px / 16px 16px,
+    linear-gradient(135deg, rgba(255, 36, 170, .28), transparent 55%),
+    linear-gradient(145deg, rgba(30, 12, 76, .99), rgba(12, 6, 38, .99));
+  box-shadow: 7px 7px 0 var(--cr-ink), 11px 11px 0 var(--cr-cyan);
 }
 
 .city-rush-page.city-rush-page .cr-story-hub-heading {
@@ -495,19 +503,19 @@
   grid-template-columns: minmax(150px, 31%) minmax(0, 1fr);
   width: 100%;
   min-height: 156px;
-  border: 3px solid var(--cr-ink);
-  border-left: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
+  border-left: 4px solid var(--cr-ink);
   border-radius: 19px;
   background: var(--cr-paper);
-  box-shadow: 4px 4px 0 var(--cr-ink);
+  box-shadow: 5px 5px 0 var(--cr-ink);
   color: var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-story-banner:hover {
-  transform: translate(-2px, -2px) rotate(-.4deg);
+  transform: translate(-3px, -3px) rotate(-.6deg);
   border-color: var(--cr-ink);
   background: #fffdf5;
-  box-shadow: 7px 7px 0 var(--cr-pink);
+  box-shadow: 8px 8px 0 var(--cr-pink), 12px 12px 0 var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-story-banner-visual {
@@ -605,12 +613,12 @@
   min-height: 155px;
   gap: 6px;
   padding: 13px 15px 12px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 21px;
   background:
-    radial-gradient(circle, rgba(255, 255, 255, .11) 1px, transparent 1.6px) right top / 11px 11px,
-    linear-gradient(145deg, #28134f, #171037 72%);
-  box-shadow: 4px 4px 0 var(--cr-ink);
+    radial-gradient(circle, rgba(255, 255, 255, .13) 1.1px, transparent 1.7px) right top / 10px 10px,
+    linear-gradient(145deg, #2a1255, #150e34 72%);
+  box-shadow: 5px 5px 0 var(--cr-ink);
   color: #fff9e9;
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
@@ -631,19 +639,19 @@
 }
 
 .city-rush-page.city-rush-page .city-rush-mode-card:hover {
-  transform: translate(-2px, -3px) rotate(-.6deg);
+  transform: translate(-3px, -4px) rotate(-.8deg);
   border-color: var(--cr-ink);
-  background-color: #302064;
-  box-shadow: 7px 7px 0 var(--mode-accent), 10px 10px 0 var(--cr-ink);
+  background-color: #322068;
+  box-shadow: 8px 8px 0 var(--mode-accent), 12px 12px 0 var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-mode-card.is-selected {
-  transform: translate(-1px, -2px) rotate(-.7deg);
+  transform: translate(-2px, -3px) rotate(-.9deg);
   border-color: var(--cr-ink);
   background:
-    radial-gradient(circle, rgba(255, 255, 255, .16) 1px, transparent 1.6px) right top / 10px 10px,
-    linear-gradient(145deg, #49216c, #221143 74%);
-  box-shadow: 5px 5px 0 var(--cr-yellow), 8px 8px 0 var(--cr-ink);
+    radial-gradient(circle, rgba(255, 255, 255, .18) 1px, transparent 1.6px) right top / 10px 10px,
+    linear-gradient(145deg, #4c2070, #201040 74%);
+  box-shadow: 6px 6px 0 var(--cr-yellow), 10px 10px 0 var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-mode-number {
@@ -775,23 +783,24 @@
 .city-rush-page.city-rush-page .city-rush-text-button {
   min-height: 46px;
   padding-inline: 19px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 999px;
   background: var(--cr-lime);
-  box-shadow: 4px 4px 0 var(--cr-ink);
+  box-shadow: 5px 5px 0 var(--cr-ink);
   color: var(--cr-ink);
   font-size: 10px;
   font-weight: 900 !important;
-  letter-spacing: .1em;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
 }
 
 .city-rush-page.city-rush-page .city-rush-start-button:hover,
 .city-rush-page.city-rush-page .city-rush-text-button:hover {
-  transform: translate(-2px, -2px) rotate(-.5deg);
+  transform: translate(-3px, -3px) rotate(-.7deg);
   border-color: var(--cr-ink);
   background: var(--cr-yellow);
-  box-shadow: 7px 7px 0 var(--cr-pink), 10px 10px 0 var(--cr-ink);
+  box-shadow: 8px 8px 0 var(--cr-pink), 12px 12px 0 var(--cr-ink);
   color: var(--cr-ink);
 }
 
@@ -846,10 +855,10 @@
 
 .city-rush-page.city-rush-page .city-rush-city-card {
   min-height: 178px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 19px;
-  background: #211047;
-  box-shadow: 4px 4px 0 var(--cr-ink);
+  background: #1e0e42;
+  box-shadow: 5px 5px 0 var(--cr-ink);
   color: #fff9e9;
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
@@ -872,10 +881,10 @@
 }
 
 .city-rush-page.city-rush-page .city-rush-city-card:hover {
-  transform: translate(-2px, -3px) rotate(-.5deg);
+  transform: translate(-3px, -4px) rotate(-.7deg);
   border-color: var(--cr-ink);
-  background: #34206a;
-  box-shadow: 7px 7px 0 var(--card-accent), 10px 10px 0 var(--cr-ink);
+  background: #362068;
+  box-shadow: 8px 8px 0 var(--card-accent), 12px 12px 0 var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-city-card.is-selected {
@@ -944,18 +953,18 @@
   min-height: 206px;
   gap: 7px;
   padding: 9px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 18px;
-  background: #211047;
-  box-shadow: 4px 4px 0 var(--cr-ink);
+  background: #1e0e42;
+  box-shadow: 5px 5px 0 var(--cr-ink);
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
 
 .city-rush-page.city-rush-page .city-rush-car-card:hover {
-  transform: translate(-2px, -3px) rotate(-.4deg);
+  transform: translate(-3px, -4px) rotate(-.6deg);
   border-color: var(--cr-ink);
-  background: #30205f;
-  box-shadow: 7px 7px 0 var(--car-accent), 10px 10px 0 var(--cr-ink);
+  background: #322060;
+  box-shadow: 8px 8px 0 var(--car-accent), 12px 12px 0 var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-car-card.is-selected {
@@ -1042,12 +1051,13 @@
 .city-rush-page.city-rush-page .city-rush-side-card,
 .city-rush-page.city-rush-page .city-rush-no-collision-note {
   padding: 19px;
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 23px;
   background:
-    radial-gradient(circle, rgba(255, 228, 65, .09) 1px, transparent 1.7px) 0 0 / 12px 12px,
-    linear-gradient(145deg, #281455, #160d37);
-  box-shadow: 5px 5px 0 var(--cr-pink), 8px 8px 0 var(--cr-ink);
+    radial-gradient(circle, rgba(255, 225, 48, .11) 1px, transparent 1.7px) 0 0 / 11px 11px,
+    radial-gradient(circle, rgba(255, 36, 170, .06) 1px, transparent 1.5px) 4px 4px / 16px 16px,
+    linear-gradient(145deg, #261250, #130b32);
+  box-shadow: 6px 6px 0 var(--cr-pink), 10px 10px 0 var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-side-heading {
@@ -1066,13 +1076,13 @@
 }
 
 .city-rush-page.city-rush-page .city-rush-side-card h3 {
-  color: #fff9e9;
+  color: #fffbea;
   font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif !important;
   font-size: 27px;
   font-weight: 900 !important;
   line-height: .98;
   letter-spacing: .01em;
-  text-shadow: 2px 2px 0 var(--cr-ink), 4px 4px 0 var(--cr-pink);
+  text-shadow: 2px 2px 0 var(--cr-ink), 4px 4px 0 var(--cr-pink), 6px 6px 0 var(--cr-violet);
 }
 
 .city-rush-page.city-rush-page .city-rush-side-card h3 em { color: var(--cr-yellow); }
@@ -1125,22 +1135,22 @@
 
 .city-rush-page.city-rush-page .city-rush-page-footer {
   padding-top: 19px;
-  border-color: rgba(255, 255, 255, .24);
+  border-color: rgba(255, 255, 255, .3);
 }
 
 .city-rush-page.city-rush-page .city-rush-page-footer a {
-  border: 2px solid var(--cr-ink);
+  border: 3px solid var(--cr-ink);
   border-radius: 999px;
   background: var(--cr-yellow);
-  box-shadow: 3px 3px 0 var(--cr-ink);
+  box-shadow: 4px 4px 0 var(--cr-ink);
   color: var(--cr-ink);
   font-weight: 900 !important;
 }
 
 .city-rush-page.city-rush-page .city-rush-page-footer a:hover {
-  transform: translate(-1px, -1px);
+  transform: translate(-2px, -2px);
   background: var(--cr-cyan);
-  box-shadow: 5px 5px 0 var(--cr-pink), 7px 7px 0 var(--cr-ink);
+  box-shadow: 6px 6px 0 var(--cr-pink), 9px 9px 0 var(--cr-ink);
   color: var(--cr-ink);
 }
 
@@ -1152,10 +1162,10 @@
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list,
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-health,
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-route-sign {
-  border: 3px solid var(--cr-ink);
+  border: 4px solid var(--cr-ink);
   border-radius: 18px;
-  background-color: rgba(18, 7, 52, .94);
-  box-shadow: 4px 4px 0 rgba(255, 228, 65, .9), 7px 7px 0 var(--cr-ink);
+  background-color: rgba(14, 5, 44, .96);
+  box-shadow: 5px 5px 0 rgba(255, 225, 48, .95), 8px 8px 0 var(--cr-ink);
   color: #fff9e9;
 }
 
@@ -1238,11 +1248,13 @@
 .city-rush-page.city-rush-page .city-rush-pause-overlay,
 .city-rush-page.city-rush-page .city-rush-result-overlay,
 .city-rush-page.city-rush-page .city-rush-countdown {
-  color: #fff9e9;
+  color: #fffbea;
   background:
-    radial-gradient(circle, rgba(255, 228, 65, .14) 1px, transparent 1.6px) 0 0 / 12px 12px,
-    radial-gradient(ellipse at 50% 40%, rgba(255, 69, 187, .32), transparent 40%),
-    linear-gradient(140deg, rgba(21, 8, 59, .97), rgba(7, 5, 27, .97));
+    radial-gradient(circle, rgba(255, 225, 48, .18) 1.1px, transparent 1.65px) 0 0 / 10px 10px,
+    radial-gradient(circle, rgba(255, 36, 170, .06) 1px, transparent 1.5px) 4px 4px / 15px 15px,
+    radial-gradient(ellipse at 50% 40%, rgba(255, 36, 170, .4), transparent 45%),
+    radial-gradient(ellipse at 20% 80%, rgba(30, 235, 220, .15), transparent 35%),
+    linear-gradient(140deg, rgba(18, 6, 52, .98), rgba(5, 3, 22, .98));
 }
 
 .city-rush-page.city-rush-page .city-rush-pause-overlay .city-rush-overlay-kicker,
@@ -1263,8 +1275,8 @@
   color: var(--cr-yellow);
   font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif !important;
   font-weight: 900 !important;
-  -webkit-text-stroke: 3px var(--cr-ink);
-  text-shadow: 5px 5px 0 var(--cr-pink), 9px 9px 0 var(--cr-ink);
+  -webkit-text-stroke: 4px var(--cr-ink);
+  text-shadow: 6px 6px 0 var(--cr-pink), 10px 10px 0 var(--cr-violet), 14px 14px 0 var(--cr-ink);
 }
 
 .city-rush-page.city-rush-page .city-rush-countdown small { color: var(--cr-cyan); font-weight: 900 !important; }
@@ -1310,13 +1322,13 @@
 }
 
 .city-rush-page.city-rush-page .cr-comic-stage img { filter: saturate(1.25) contrast(1.08); }
-.city-rush-page.city-rush-page .cr-comic-stage { border-radius: 22px; box-shadow: 6px 6px 0 var(--cr-yellow), 10px 10px 0 var(--cr-ink); }
+.city-rush-page.city-rush-page .cr-comic-stage { border-radius: 22px; box-shadow: 7px 7px 0 var(--cr-yellow), 12px 12px 0 var(--cr-ink); }
 
 /* Keyboard focus stays obvious against the ink-heavy palette. */
 .city-rush-page.city-rush-page :is(button, a):focus-visible {
-  outline: 4px solid var(--cr-cyan);
+  outline: 5px solid var(--cr-cyan);
   outline-offset: 4px;
-  box-shadow: 0 0 0 7px var(--cr-ink), 0 0 0 10px var(--cr-yellow);
+  box-shadow: 0 0 0 8px var(--cr-ink), 0 0 0 11px var(--cr-yellow);
 }
 
 /* === responsive layout ================================================= */
