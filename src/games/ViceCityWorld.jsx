@@ -100,7 +100,6 @@ import {
   cityRushSuvChargeSpeed,
   cityRushSuvChargeStep,
   CITY_RUSH_MINI_GARAGE_COUNT,
-  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
   CITY_RUSH_MINI_GARAGE_HUD_RANGE,
   CITY_RUSH_MINI_GARAGE_SIGN_LEAD,
   CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
@@ -173,9 +172,7 @@ import {
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
   cityRushMiniGarageAvailable,
-  cityRushMiniGaragesAvailable,
   cityRushMiniGarageCanUse,
-  cityRushMiniGarageKindAt,
   cityRushMiniGarageRepair,
   cityRushMiniGarageWantedLevel,
   cityRushMiniGarageTrackDistances,
@@ -1943,7 +1940,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     let activated = 0;
     for (const police of policeCars.filter((unit) => unit.squad)) {
       if (missing <= 0) break;
-      if (police.active || police.reinforcementPending) continue;
+      // `wreckPending` : la berline agonise encore, son maillage est réservé.
+      if (police.active || police.reinforcementPending || police.wreckPending) continue;
       if (!police.everDeployed) {
         activatePoliceUnit(police, target, {
           reinforcement: false,
@@ -2056,17 +2054,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackYaw = (trackDistance) => trackProfile.yaw(trackDistance);
   const miniGarageLane = cityRushMiniGarageLane(city);
   const miniGarageMaterials = sprint ? null : makeMiniGarageMaterials(city);
-  // Deux portes par course : celle de mi-course, puis celle du dernier tour.
+  // Une seule porte par course : celle de mi-course, à la moitié du parcours.
   const miniGarageTrackDistances = cityRushMiniGarageTrackDistances({ laps: effectiveLaps });
   const miniGarages = sprint ? [] : miniGarageTrackDistances.map((trackDistance, index) => {
-    const kind = cityRushMiniGarageKindAt(index);
     const group = makeMiniGarageObject(index + 1, miniGarageMaterials);
     group.userData.lane = miniGarageLane;
-    group.userData.garageKind = kind;
     scene.add(group);
     return {
       index: index + 1,
-      kind,
       group,
       lane: miniGarageLane,
       trackDistance,
@@ -2243,16 +2238,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     lastRampDistanceSlot = next;
   }
 
-  // Une porte est ouverte si la course bat son plein et si son tour est venu :
-  // la porte de mi-course est là dès le départ, celle du dernier tour attend
-  // l'escouade (dernier tour en Circuit, début de course en Poursuite).
+  // La porte est ouverte dès que la course bat son plein : elle est posée à
+  // mi-parcours et n'attend aucun tour, seule la Sprint la supprime.
   function miniGarageAvailable(garage) {
     if (!garage) return false;
     if (!(phase === 'playing' && !finished && !playerWrecked)) return false;
-    if (garage.kind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND && !policeDeployed) return false;
-    return cityRushMiniGarageAvailable({
-      kind: garage.kind, lap, laps: effectiveLaps, sprint,
-    });
+    return cityRushMiniGarageAvailable({ sprint });
   }
 
   function miniGaragesAvailable() {
@@ -2322,7 +2313,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     getCallbacks().effect?.({
       type: 'mini-garage-used',
       garage: garage.index,
-      garageKind: garage.kind,
       previousStars,
       stars: wantedLevel,
       remaining,
@@ -2338,8 +2328,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function updateMiniGarages(previousDistance) {
     for (const garage of miniGarages) {
-      // Tant que le tour de la porte n'est pas venu, elle reste ancrée à son
-      // repère et masquée : elle ne dérive pas vers les tours suivants.
+      // Hors course (compte à rebours, épave, arrivée) ou en Sprint, la porte
+      // reste ancrée à son repère et masquée : elle ne dérive pas vers les
+      // tours suivants.
       if (!miniGarageAvailable(garage)) {
         placeMiniGarage(garage);
         continue;
@@ -2351,9 +2342,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         garageExitDistance,
         playerLane,
         garageLane: garage.lane,
-        kind: garage.kind,
-        lap,
-        laps: effectiveLaps,
         sprint,
         used: garage.used,
       })) {
@@ -4285,7 +4273,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const player = raceEntries().find((entry) => entry.id === 'player');
     const squad = policeCars.filter((police) => police.squad);
     squad.forEach((police, index) => {
-      if (police.active) return;
+      // Une berline en pleine agonie garde son maillage jusqu'à l'explosion :
+      // le déploiement ne peut pas la réactiver sans couper son tête-à-queue
+      // (`wreckPending`, posé par `beginPoliceWreck`). Sa relève partira à
+      // l'explosion, par `queuePoliceReinforcement`.
+      if (police.active || police.wreckPending) return;
       const queuedAt = policeReinforcementQueue.indexOf(police);
       if (queuedAt >= 0) policeReinforcementQueue.splice(queuedAt, 1);
       police.reinforcementPending = false;

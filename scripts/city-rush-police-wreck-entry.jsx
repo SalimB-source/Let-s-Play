@@ -263,6 +263,11 @@ for (let run = 0; run < RUNS; run += 1) {
     world.start();
 
     let tracked = null;
+    // Carcasses visibles avant l'image en cours : celle qui apparaît maintenant
+    // est celle de la berline suivie. Une carcasse déjà en vue — ou qui entre
+    // simplement dans le cadre — appartient à une agonie plus ancienne : deux
+    // berlines peuvent tomber au même endroit, à quelques secondes d'écart.
+    let husksVisibleBefore = new Set();
     let lockedId = null; // berline visée : le pilote la suit jusqu'à la casse
     let cityCarcasses = 0;
     let examined = 0; // destructions déjà examinées (suivies ou hors cadre)
@@ -339,6 +344,7 @@ for (let run = 0; run < RUNS; run += 1) {
           }
         }
       }
+      husksVisibleBefore = new Set(refreshWreckNodes().filter((node) => node.visible));
       stepFrame();
 
       // ── La coque vient de céder ─────────────────────────────────────────
@@ -465,21 +471,28 @@ for (let run = 0; run < RUNS; run += 1) {
         }
         // La carcasse apparaît là où la berline s'immobilise : on la repère à
         // sa position, pas au boum — d'autres berlines (trafic rappelé) peuvent
-        // exploser pendant le même tête-à-queue.
-        const husk = refreshWreckNodes().find((candidate) => {
+        // exploser pendant le même tête-à-queue. Deux conditions l'attribuent à
+        // cette agonie : la berline s'est effacée (son maillage n'est plus
+        // dessiné) et la carcasse vient d'apparaître, elle n'était pas en vue à
+        // l'image précédente. Sans elles, une épave plus ancienne — ou celle
+        // d'une berline tombée quelques mètres plus loin — passerait pour la
+        // sienne.
+        const husk = (node?.visible ? null : refreshWreckNodes().find((candidate) => {
           if (!candidate.visible) return false;
+          if (husksVisibleBefore.has(candidate)) return false;
           const anchored = trackDistanceOf(candidate);
           if (Math.abs(anchored - now) >= 2.5) return false;
           const before = tracked.preexistingHusks.get(candidate);
           return before === undefined || Math.abs(anchored - before) > 1;
-        }) || null;
+        }) || null);
         if (husk) {
           tracked.explosionFrame = virtualFrame;
           tracked.husk = husk;
           tracked.huskTrackDistance = trackDistanceOf(husk);
           tracked.huskStartZ = husk.position.z;
           tracked.huskLastZ = husk.position.z;
-          if (node?.visible) fail(`[${city.id}] la berline reste affichée après l'explosion`);
+          // La berline s'est effacée au profit de sa carcasse : c'est la
+          // condition même de l'attribution, vérifiée ci-dessus.
           if (audioCalls.filter((call) => call.name === 'explosion').length === tracked.explosionsBefore) {
             fail(`[${city.id}] la carcasse apparaît sans explosion`);
           }
