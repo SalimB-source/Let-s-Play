@@ -96,7 +96,7 @@ const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
-  CITY_RUSH_LAPS,
+  CITY_RUSH_LAPS, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_RALLY_TOLERANCE,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -110,7 +110,7 @@ const stepFrame = () => {
 };
 
 const {
-  CITY_RUSH_CAR_GAP, CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
+  CITY_RUSH_WRECK_SECONDS, CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
 } = await import('../src/games/cityRushRules.js');
 // Deux carambolages ne peuvent pas retirer un carré à moins du répit partagé :
 // le monde le décrémente d'une image (`dt`) avant de tester le contact, donc le
@@ -283,9 +283,12 @@ for (let run = 0; run < RUNS; run += 1) {
         trackedHealth = effect.health;
         continue;
       }
-      if (trackedHealth === null || effect.damage !== 1 || effect.health !== trackedHealth - 1) {
+      const maximumDamage = effect.source === 'suv-collision' ? 2 : 1;
+      const expectedDamage = Math.min(maximumDamage, Math.max(0, Number(trackedHealth) || 0));
+      const expectedHealth = Math.max(0, (Number(trackedHealth) || 0) - expectedDamage);
+      if (trackedHealth === null || effect.damage !== expectedDamage || effect.health !== expectedHealth) {
         violations += 1;
-        console.error(`[${city.id}#${run}] ÉCHEC : un impact ne retire pas exactement une cellule`, { trackedHealth, effect });
+        console.error(`[${city.id}#${run}] ÉCHEC : les dégâts de l’impact ne correspondent pas à sa catégorie`, { trackedHealth, expectedDamage, effect });
       }
       trackedHealth = effect.health;
     }
@@ -311,16 +314,18 @@ for (let run = 0; run < RUNS; run += 1) {
         console.error(`[${city.id}#${run}] deux carambolages ont retiré un carré à ${delta} image(s) d’écart (répit ${COLLISION_RUSH_FRAMES})`, collisionHitFrames);
       }
     }
-    // Le carambolage se juge sur la voiture que le pilote rattrape : l'écart
-    // doit donc être positif. Une **patrouille** fait exception, et c'est la
-    // règle elle-même qui le dit : `cityRushPoliceContact` accepte un écart
-    // négatif jusqu'à la distance de sécurité (4,8 m) — le pilote qui frôle
-    // une patrouille en la dépassant la touche au pare-chocs alors que son
-    // centre est déjà un rien devant. On ne refuse donc que ce que la règle
-    // refuse : une voiture franchement derrière.
-    if (playerRamDamage.some((effect) => !(Number(effect.gap) > -CITY_RUSH_CAR_GAP))) {
+    const invalidRamGap = playerRamDamage.some((effect) => {
+      const gap = Number(effect.gap);
+      const patrolContact = effect.victim === 'police' && String(effect.carId || '').startsWith('traffic-');
+      if (!Number.isFinite(gap)) return true;
+      // Une patrouille de police du trafic est rappelée au contact dans sa
+      // fenêtre de pare-chocs, même si elle se trouvait juste derrière.
+      if (patrolContact) return Math.abs(gap) > CITY_RUSH_CAR_GAP + CITY_RUSH_POLICE_RALLY_TOLERANCE;
+      return gap < 0;
+    });
+    if (invalidRamGap) {
       violations += 1;
-      console.error(`[${city.id}#${run}] un carambolage est compté avec une voiture derrière le pilote`, playerRamDamage);
+      console.error(`[${city.id}#${run}] un carambolage sort de sa fenêtre de contact`, playerRamDamage);
     }
     if (policeRamHits.some((effect) => effect.damage !== 1)) {
       violations += 1;

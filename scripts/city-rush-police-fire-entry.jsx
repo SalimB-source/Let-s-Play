@@ -200,8 +200,13 @@ for (let run = 0; run < RUNS; run += 1) {
         continue;
       }
       if (effect.type !== 'player-hit') continue;
-      if (effect.damage !== 1 || effect.health !== tracked - 1) {
-        violations.push(`[${city.id}#${run}] un impact ne retire pas exactement une cellule`, { tracked, effect });
+      const maximumDamage = effect.source === 'suv-collision' ? 2 : 1;
+      const expectedDamage = Math.min(maximumDamage, Math.max(0, Number(tracked) || 0));
+      const expectedHealth = Math.max(0, tracked - expectedDamage);
+      if (effect.damage !== expectedDamage || effect.health !== expectedHealth) {
+        violations.push(`[${city.id}#${run}] les dégâts de l’impact ne correspondent pas à sa catégorie`, {
+          tracked, expectedDamage, effect,
+        });
       }
       tracked = effect.health;
     }
