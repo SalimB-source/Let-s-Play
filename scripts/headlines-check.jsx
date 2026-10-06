@@ -94,6 +94,7 @@ export const ROUTES = [
     'minecraft-world-hotel-chessington-2027', 'minecraft-the-sift-nouvelle-dimension',
     'the-witcher-3-remastered-sortie-29-septembre', 'xbox-nadella-restructuration',
     'god-of-war-laufey-precommandes-arc-serpent',
+    'gta-6-satire-monde-invente',
   ].map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   // Actus cinéma : route préfixée /news/cinema/:slug, clés d'article « cinema/<slug> ».
   ...[
@@ -103,12 +104,14 @@ export const ROUTES = [
     'jojo-steel-ball-run-episode-2', 'dune-messiah-trailer', 'last-of-us-saison-3',
     'marvel-doctor-doom', 'stranger-things-saison-5', 'joker-folie-a-deux',
     'house-of-dragon-saison-3', 'blade-reboot', 'arcane-saison-2',
+    'the-batman-part-ii-tournage-suspendu',
   ].map((slug) => [`/news/cinema/${slug}`, CurrentNews, '/news/cinema/:slug', { slug: `cinema/${slug}` }]),
   // Actus tech : route préfixée /news/tech/:slug, clés d'article « tech/<slug> ».
   ...[
     'starship-flight-14-premier-vol-orbital', 'copilot-home-code-autopilot',
     'apple-taptic-engine-verdict-5-7-milliards', 'agent-openai-portail-australien',
     'meta-connect-2026-lunettes-muse-charm',
+    'norvege-lunettes-connectees-interdiction',
   ].map((slug) => [`/news/tech/${slug}`, CurrentNews, '/news/tech/:slug', { slug: `tech/${slug}` }]),
   ...Object.keys(autoStories).map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   ['/reviews', Reviews],

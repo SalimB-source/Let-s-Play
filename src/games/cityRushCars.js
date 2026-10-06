@@ -1,6 +1,7 @@
 // Voitures de course, fumée et trafic de Vice City Rush. Les modèles de course
 // vivent dans cityRushRacerModels.js ; le trafic conserve ses propres véhicules.
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
 import { createBatch } from './cityRushBuilder.js';
 import { makeTrafficDecalAtlas, makeSmokeTexture } from './cityRushTextures.js';
@@ -107,16 +108,17 @@ export function makeTrafficVehicle(type) {
   const police = type === 'police' || policeSUV;
   const ambulance = type === 'ambulance';
   const bodyColor = police ? 0xf2f3f0 : undercoverPolice ? 0x242a32 : ambulance ? 0xf8f7f0 : isTruck ? 0x4d8f55 : 0xf7f7f4;
-  const accentColor = police ? 0x142947 : undercoverPolice ? 0x171c23 : ambulance ? 0xe64a50 : isTruck ? 0xe0b847 : 0x1a1f2b;
+  const accentColor = policeSUV ? 0x101923 : police ? 0x142947 : undercoverPolice ? 0x171c23 : ambulance ? 0xe64a50 : isTruck ? 0xe0b847 : 0x1a1f2b;
   const m = {
-    body: isSports ? paint(bodyColor, { clearcoat: 0.9, roughness: 0.22, emissiveIntensity: 0.02 }) : standard(bodyColor, { roughness: 0.55, metalness: 0.15 }),
-    accent: standard(accentColor, { roughness: 0.6 }),
+    body: (isSports || policeSUV) ? paint(bodyColor, { clearcoat: 0.9, roughness: 0.22, emissiveIntensity: 0.02 }) : standard(bodyColor, { roughness: 0.55, metalness: 0.15 }),
+    accent: standard(accentColor, { roughness: policeSUV ? 0.3 : 0.6 }),
     glass: standard(isSports ? 0x101c2a : 0x1c3346, { metalness: 0.2, roughness: 0.18 }),
     dark: standard(0x12161f, { roughness: 0.88 }),
     chrome: standard(0xc9d3d8, { metalness: 0.6, roughness: 0.3 }),
     wheel: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.3 }),
-    warm: new THREE.MeshBasicMaterial({ color: 0xffefb4, toneMapped: false }),
+    warm: new THREE.MeshBasicMaterial({ color: policeSUV ? 0xe9f6ff : 0xffefb4, toneMapped: false }),
     tail: new THREE.MeshBasicMaterial({ color: 0xff3450, toneMapped: false }),
+    stripe: policeSUV ? standard(0x1f6dff, { roughness: 0.3 }) : null,
     decal: new THREE.MeshBasicMaterial({ map: trafficDecals.texture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
   };
   const beaconColors = { red: 0xff293f, blue: 0x28baff, amber: 0xffb13b };
@@ -174,31 +176,99 @@ export function makeTrafficVehicle(type) {
     box(m.dark, [0, 0.36, -1.9], [width * 0.98, 0.1, 0.1]);
     for (const x of [-0.4, -0.15, 0.15, 0.4]) b.cylinder(m.chrome, [x, 0.4, 1.9], 0.04, 0.04, 0.1, 8, [Math.PI / 2, 0, 0]);
   } else if (policeSUV) {
-    // SUV d'interception : caisse plus haute et plus carrée qu'une berline,
-    // fenêtres latérales verticales, marchepieds et pare-chocs renforcés.
-    box(m.dark, [0, 0.34, 0], [width * 0.94, 0.17, length * 0.93]);
-    box(m.body, [0, 0.62, 0], [width, 0.5, length * 0.92]);
-    box(m.body, [0, 0.89, -length * 0.31], [width * 0.97, 0.13, 1.18]); // capot haut
-    box(m.body, [0, 1.19, 0.18], [width * 0.9, 0.72, 2.45]); // pavillon carré
-    box(m.glass, [0, 1.27, -0.83], [width * 0.8, 0.48, 0.06], [0.24, 0, 0]);
-    box(m.glass, [0, 1.27, 1.36], [width * 0.78, 0.47, 0.06], [-0.18, 0, 0]);
-    for (const side of [-1, 1]) {
-      box(m.glass, [side * width * 0.44, 1.27, 0.16], [0.05, 0.38, 1.32]);
-      box(m.glass, [side * width * 0.44, 1.27, 1.05], [0.05, 0.38, 0.46]);
-      box(m.accent, [side * (width * 0.5 + 0.015), 0.7, 0.16], [0.035, 0.18, 2.68]);
-      box(m.dark, [side * (width * 0.5 + 0.06), 0.48, 0.16], [0.12, 0.12, 2.45]); // marchepied
-      decal(0, [side * (width * 0.5 + 0.04), 0.76, 0.2], [1.45, 0.32], [0, side * Math.PI / 2, 0]);
-      box(m.chrome, [side * width * 0.53, 1.0, -0.62], [0.13, 0.1, 0.2]); // rétroviseur
-      box(m.warm, [side * width * 0.36, 0.68, -length * 0.46 - 0.03], [0.32, 0.13, 0.06]);
-      box(m.tail, [side * width * 0.36, 0.71, length * 0.46 + 0.03], [0.28, 0.22, 0.06]);
+    // SUV d'interception moderne (type Explorer/Durango Pursuit) : livrée
+    // bicolore portes noires, montants laqués noirs « toit flottant », pare-buffle,
+    // signatures LED fines, rampe lumineuse LED extra-plate et carénages d'ailes.
+    const W = width;
+    const L = length;
+    // Chanfreins réels, fusionnés par matériau comme les autres véhicules.
+    const rounded = (material, position, size, radius) => {
+      const geometry = new RoundedBoxGeometry(...size, 1, radius);
+      b.custom(material, geometry, position);
+      geometry.dispose();
+    };
+    const glazing = (points) => {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(points.flat(), 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+      geometry.setIndex([0, 1, 2, 0, 2, 3]);
+      geometry.computeVertexNormals();
+      b.custom(m.glass, geometry);
+      geometry.dispose();
+    };
+    m.glass.side = THREE.DoubleSide;
+    // Soubassement et bas de caisse.
+    box(m.dark, [0, 0.36, 0], [W * 0.94, 0.18, L * 0.93]);
+    // Caisse principale : partie basse noire (portes), ailes blanches.
+    rounded(m.body, [0, 0.66, 0], [W, 0.52, L * 0.94], 0.09);
+    rounded(m.accent, [0, 0.66, 0.12], [W * 1.006, 0.5, 2.2], 0.06); // portes noires
+    // Capot sculpté, légèrement plongeant, avec nervure centrale.
+    box(m.body, [0, 0.95, -L * 0.33], [W * 0.96, 0.1, 1.28], [0.06, 0, 0]);
+    box(m.body, [0, 1.0, -L * 0.33], [W * 0.42, 0.04, 1.2], [0.06, 0, 0]);
+    // Habitacle : montants noirs + vitrage affleurant, toit blanc flottant.
+    const cabin = new THREE.BoxGeometry(W * 0.88, 0.5, 1);
+    const vertices = cabin.attributes.position;
+    for (let i = 0; i < vertices.count; i += 1) {
+      const top = vertices.getY(i) > 0;
+      vertices.setZ(i, vertices.getZ(i) < 0 ? (top ? -0.73 : -1.26) : (top ? 1.4 : 1.96));
     }
-    box(m.dark, [0, 1.57, 0.18], [width * 0.92, 0.09, 2.38]); // galerie de toit
-    box(m.dark, [0, 1.55, 0.18], [width * 0.77, 0.08, 0.3]); // socle des gyrophares
-    beacon('red', [-0.48, 1.66, 0.18], [0.38, 0.16, 0.32]);
-    beacon('blue', [0.48, 1.66, 0.18], [0.38, 0.16, 0.32]);
-    box(m.dark, [0, 0.48, -length * 0.48], [width * 1.02, 0.2, 0.15]); // pare-chocs avant
-    box(m.dark, [0, 0.48, length * 0.48], [width * 1.02, 0.2, 0.15]); // pare-chocs arrière
-    box(m.chrome, [0, 0.65, -length * 0.48 - 0.025], [width * 0.56, 0.12, 0.04]); // calandre
+    cabin.computeVertexNormals();
+    b.custom(m.accent, cabin, [0, 1.22, 0]);
+    cabin.dispose();
+    box(m.body, [0, 1.5, 0.3], [W * 0.86, 0.07, 2.1]); // pavillon
+    glazing([[-0.81, 1.01, -1.23], [0.81, 1.01, -1.23], [0.81, 1.44, -0.775], [-0.81, 1.44, -0.775]]);
+    glazing([[0.8, 1.04, 1.895], [-0.8, 1.04, 1.895], [-0.8, 1.44, 1.447], [0.8, 1.44, 1.447]]);
+    for (const side of [-1, 1]) {
+      box(m.glass, [side * (W * 0.44 + 0.005), 1.24, -0.12], [0.03, 0.36, 0.95]);
+      box(m.glass, [side * (W * 0.44 + 0.005), 1.24, 0.92], [0.03, 0.34, 0.8]);
+      box(m.dark, [side * (W * 0.44 + 0.02), 1.24, 0.4], [0.02, 0.38, 0.08]); // montant B
+      // Carénages d'ailes en plastique noir mat.
+      for (const z of [-L * 0.29, L * 0.29]) box(m.dark, [side * (W * 0.5 + 0.02), 0.7, z], [0.06, 0.14, 0.92]);
+      // Bandeau « POLICE » sur les portes + liseré bleu réfléchissant.
+      box(m.body, [side * (W * 0.5 + 0.03), 0.74, 0.14], [0.02, 0.34, 1.64]); // cartouche contrasté
+      decal(0, [side * (W * 0.5 + 0.05), 0.74, 0.14], [1.6, 0.34], [0, side * Math.PI / 2, 0]);
+      box(m.stripe, [side * (W * 0.5 + 0.012), 0.5, 0.12], [0.02, 0.04, L * 0.9]);
+      // Marchepied alu.
+      box(m.chrome, [side * (W * 0.5 + 0.05), 0.42, 0.14], [0.1, 0.05, 2.1]);
+      // Rétroviseur noir avec répétiteur LED.
+      box(m.dark, [side * (W * 0.5 + 0.08), 1.06, -0.66], [0.16, 0.12, 0.22]);
+      box(m.warm, [side * (W * 0.5 + 0.16), 1.06, -0.66], [0.01, 0.03, 0.18]);
+      // Phares : signature LED fine en C, feu arrière en bandeau.
+      box(m.dark, [side * W * 0.33, 0.84, -L * 0.47], [0.5, 0.14, 0.06]);
+      box(m.warm, [side * W * 0.33, 0.87, -L * 0.47 - 0.035], [0.46, 0.035, 0.02]);
+      box(m.warm, [side * W * 0.12, 0.82, -L * 0.47 - 0.035], [0.03, 0.1, 0.02]);
+      box(m.tail, [side * W * 0.3, 0.92, L * 0.47 + 0.03], [0.6, 0.06, 0.04]);
+      box(m.tail, [side * W * 0.46, 0.82, L * 0.47 + 0.03], [0.06, 0.18, 0.04]);
+      // Flashs de calandre bleu/rouge cachés dans le pare-buffle.
+      beacon(side < 0 ? 'red' : 'blue', [side * 0.22, 0.62, -L * 0.5 - 0.14], [0.14, 0.06, 0.03]);
+    }
+    // Bandeau arrière noir entre les feux.
+    box(m.dark, [0, 0.92, L * 0.47 + 0.02], [W * 0.36, 0.08, 0.03]);
+    // Calandre noire laquée et pare-buffle d'intervention.
+    box(m.dark, [0, 0.66, -L * 0.47 - 0.02], [W * 0.62, 0.26, 0.06]);
+    for (const x of [-0.35, -0.12, 0.12, 0.35]) box(m.chrome, [x * W * 0.5, 0.66, -L * 0.47 - 0.05], [0.02, 0.2, 0.02]);
+    box(m.dark, [0, 0.46, -L * 0.48], [W * 1.02, 0.2, 0.16]); // bouclier avant
+    box(m.dark, [0, 0.72, -L * 0.5 - 0.12], [W * 0.58, 0.07, 0.07]); // barre haute
+    box(m.dark, [0, 0.5, -L * 0.5 - 0.12], [W * 0.62, 0.07, 0.07]); // barre basse
+    for (const x of [-0.26, 0.26]) box(m.dark, [x * W, 0.6, -L * 0.5 - 0.08], [0.07, 0.36, 0.14]);
+    box(m.dark, [0, 0.48, L * 0.48], [W * 1.02, 0.22, 0.15]); // bouclier arrière
+    box(m.chrome, [0, 0.4, L * 0.48 + 0.08], [W * 0.3, 0.04, 0.03]); // diffuseur
+    box(m.body, [0, 1.08, 1.7], [W * 0.89, 0.24, 0.65]); // hayon
+    box(m.dark, [0, 1.49, 1.37], [W * 0.88, 0.055, 0.3]); // becquet de pavillon
+    for (const side of [-1, 1]) {
+      box(m.dark, [side * W * 0.35, 1.56, 0.52], [0.045, 0.055, 1.5]); // rails
+    }
+    // Antennes et rampe LED extra-plate.
+    box(m.dark, [0.3, 1.62, 0.9], [0.02, 0.2, 0.02]);
+    box(m.dark, [-0.3, 1.6, 1.0], [0.02, 0.16, 0.02]);
+    box(m.dark, [0, 1.565, -0.12], [W * 0.8, 0.05, 0.34]); // socle de rampe
+    box(m.chrome, [0, 1.58, -0.12], [W * 0.82, 0.03, 0.36]);
+    beacon('red', [-W * 0.21, 1.63, -0.12], [W * 0.36, 0.08, 0.3]);
+    beacon('blue', [W * 0.21, 1.63, -0.12], [W * 0.36, 0.08, 0.3]);
+    box(m.warm, [0, 1.63, -0.12], [0.1, 0.07, 0.3]); // module central blanc
+    // Feux bleus/rouges dans la lunette arrière.
+    beacon('red', [-0.34, 1.38, 1.53], [0.3, 0.04, 0.02]);
+    beacon('blue', [0.34, 1.38, 1.53], [0.3, 0.04, 0.02]);
   } else {
     // Berlines d'intervention : police et ambulance.
     box(m.dark, [0, 0.32, 0], [width * 0.9, 0.14, length * 0.9]);
@@ -246,10 +316,10 @@ export function makeTrafficVehicle(type) {
 
   const wheels = [];
   const wheelAxles = isTruck ? [-1.48, 0.92, 1.48] : [-length * 0.29, length * 0.29];
-  const radius = isTruck ? 0.36 : policeSUV ? 0.34 : 0.3;
+  const radius = isTruck ? 0.36 : policeSUV ? 0.37 : 0.3;
   for (const side of [-1, 1]) {
     for (const z of wheelAxles) {
-      const wheel = makeWheel({ radius, width: isTruck ? 0.26 : policeSUV ? 0.25 : 0.22, side, material: m.wheel, racing: false });
+      const wheel = makeWheel({ radius, width: isTruck ? 0.26 : policeSUV ? 0.28 : 0.22, side, material: m.wheel, racing: policeSUV, style: 'split-five' });
       wheel.position.set(side * width * 0.49, radius, z);
       group.add(wheel);
       wheels.push(wheel);
