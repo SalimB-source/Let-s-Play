@@ -2874,7 +2874,14 @@ Dans le profil `/auth` comme sur la page `/profile`, la **vitrine à trophées**
 une étagère par famille, avec son icône, son accroche, le nombre de trophées
 gagnés et sa barre de progression — et un filtre « Tous / Gagnés / À gagner ».
 Les cartes sont celles du panneau des succès (bulle d'information au survol,
-cadre du grade) ; la catégorie Mirage Rush embarque en plus la collection des
+cadre du grade) ; dans **l'application**, chaque étagère les range sur **cinq
+colonnes** fixes (`repeat(5, minmax(0, 1fr))` dans la requête « téléphone » de
+`src/achievements/trophy-shelf.css`) : les cartes passent en vignettes — icône
+réduite, nom tenu sur deux lignes au plus (le titre entier reste dans la bulle
+d'information), grade resserré — et les bords de la vitrine se resserrent pour
+que les cinq pistes restent lisibles ; le bureau garde sa grille `auto-fill`
+(autant de colonnes que la largeur en laisse entrer). La catégorie Mirage Rush
+embarque en plus la collection des
 coupes remportées. La vitrine ne répète ni le niveau, ni le rang, ni
 la barre d'XP : tout cela vit dans la carte du joueur, juste au-dessus (un seul
 bloc de progression par page). La **bulle d'information** d'une carte — la
@@ -3075,7 +3082,8 @@ Editor du projet Supabase (le script est relançable sans risque).
   compteur de file, boîte de dialogue accessible, rien sans succès à fêter),
   plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
   plus aucun reste des anciennes notifications, un seul module écrit la
-  progression locale).
+  progression locale, la vitrine rangée sur cinq colonnes dans
+  l'application).
 - `npm run check:i18n` — les routes × FR / EN / AR (la langue se passe au
   provider, le site étant publié en français), dont le hub joueur `/auth`.
 - `npm run check:headlines` — tous les gros titres rendus (h1 de page, d'article
