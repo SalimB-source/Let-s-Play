@@ -1260,24 +1260,6 @@ export default function ViceCityRushPage() {
 
                 </div>
 
-                <div className="city-rush-hud-zone is-bottom-left">
-                <div className="city-rush-steering" aria-label="Changer de voie">
-                  <button
-                    type="button"
-                    onPointerDown={(event) => { event.preventDefault(); actionsRef.current?.('left'); }}
-                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); actionsRef.current?.('left'); } }}
-                    aria-label="Aller à gauche"
-                  >←</button>
-                  <span>VOIES</span>
-                  <button
-                    type="button"
-                    onPointerDown={(event) => { event.preventDefault(); actionsRef.current?.('right'); }}
-                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); actionsRef.current?.('right'); } }}
-                    aria-label="Aller à droite"
-                  >→</button>
-                </div>
-                </div>
-
                 <div className="city-rush-hud-zone is-bottom-center">
               {playerHealthValue !== null && phase === 'playing' && (
                 <div
