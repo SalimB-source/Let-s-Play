@@ -46,9 +46,47 @@ test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la r
   assert.match(world, /let pistolKeyHeld = false/);
   assert.match(world, /pistolKeyHeld && pistolHoldCooldown <= 0/);
   assert.match(world, /window\.addEventListener\('keyup', onKeyUp\)/);
-  assert.match(world, /const onWindowBlur = \(\) => releasePistolKey/);
+  assert.match(world, /const onWindowBlur = \(\) => \{/);
   assert.match(world, /if \(pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged/);
   assert.match(world, /if \(usePower\(CITY_RUSH_POWERS\.PISTOL\)\) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL/);
+});
+
+test('maintenir une flèche enchaîne les changements de voie jusqu’à la relâche', () => {
+  // Le calendrier est celui d'un clavier système : l'écart part à l'image même
+  // de la pression, le deuxième attend le délai de répétition, les suivants
+  // s'enchaînent à la cadence — calée sur le glissement latéral de la voiture.
+  assert.match(world, /const STEER_HOLD_FIRST_DELAY = 0\.26/);
+  assert.match(world, /const STEER_HOLD_LANE_INTERVAL = 0\.18/);
+  assert.match(world, /const steerKeysHeld = new Map\(\)/);
+  assert.match(world, /let steerHoldDirection = null/);
+  assert.match(world, /let steerHoldCooldown = 0/);
+  // Les quatre touches du volant sont déclarées ensemble, AZERTY compris.
+  assert.match(world, /const STEER_KEY_DIRECTIONS = Object\.freeze\(\{\s*\n\s*arrowleft: 'left',\s*\n\s*q: 'left',\s*\n\s*arrowright: 'right',\s*\n\s*d: 'right',/);
+  // La première pression répond tout de suite. Q et ← tiennent la même
+  // direction : la seconde touche ne relance ni écart immédiat, ni délai.
+  assert.match(world, /const steerDirection = STEER_KEY_DIRECTIONS\[key\];/);
+  assert.match(world, /if \(pressSteerKey\(key\)\) action\(steerDirection\)/);
+  assert.match(world, /if \(directionHeld\) return false;/);
+  assert.match(world, /steerHoldCooldown = STEER_HOLD_FIRST_DELAY;/);
+  // Les écarts suivants partent de la boucle de rendu, jamais de la répétition
+  // native du clavier, qui reste ignorée.
+  assert.match(world, /if \(!active \|\| finished \|\| event\.repeat\) return;/);
+  assert.match(world, /steerHoldCooldown = Math\.max\(0, steerHoldCooldown - dt\);\s*\n\s*if \(steerHoldDirection && steerHoldCooldown <= 0\) \{\s*\n\s*action\(steerHoldDirection\);\s*\n\s*steerHoldCooldown = STEER_HOLD_LANE_INTERVAL;/);
+  // La relâche s'écoute même hors course : une touche laissée enfoncée pendant
+  // la pause ne repart pas toute seule au retour en piste.
+  assert.match(world, /if \(STEER_KEY_DIRECTIONS\[key\]\) \{ liftSteerKey\(key\); return; \}/);
+  // Relâcher une touche rend la main à la dernière encore enfoncée : l'autre
+  // flèche, ou un doublon de la même direction (Q relâché, ← toujours enfoncé).
+  assert.match(world, /const liftSteerKey = \(key\) => \{\s*\n\s*if \(!steerKeysHeld\.has\(key\)\) return;/);
+  assert.match(world, /steerHoldDirection = steerKeysHeld\.size \? \[\.\.\.steerKeysHeld\.values\(\)\]\.pop\(\) : null;/);
+  // Fenêtre quittée, pause, nouvelle course et démontage lâchent les touches.
+  assert.match(world, /releasePistolKey\(\);\s*\n\s*releaseSteerKeys\(\);\s*\n\s*\};/);
+  assert.equal(world.match(/releaseSteerKeys\(\);/g)?.length, 4,
+    'relâche sur le blur, au reset, à la pause et au démontage');
+  // La page annonce le maintien dans les commandes et le règlement du mode.
+  assert.match(page, /← → \/ Q D · VOIES \(MAINTENIR\)/);
+  assert.match(page, /← → \/ Q D : VOIES \(MAINTENIR\)/);
+  assert.match(page, /Maintenir ← ou → \(Q \/ D\) enchaîne les écarts tout seul/);
 });
 
 test('une voiture de police qui atterrit après un saut se détruit et part en épave', () => {
