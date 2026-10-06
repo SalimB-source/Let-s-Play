@@ -40,6 +40,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
 import { CITY_RUSH_FREE_CAR_COUNT } from '../src/games/cityRushRules.js';
+import { CITY_RUSH_STORY_CHAPTER_COUNT } from '../src/games/cityRushStory.js';
+import { CITY_RUSH_PROGRESS_KEY } from '../src/games/cityRushProgress.js';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -232,8 +234,34 @@ export async function checkViceCityFullscreen(assert) {
       assert.equal(api.requests, 1, 'une demande native au premier geste');
 
       await click(node.querySelector('.city-rush-story-banner'));
-      assert.ok(node.querySelector('.city-rush-story-cinematic'), 'la bannière histoire entière est cliquable');
-      await click(node.querySelector('.city-rush-story-cinematic .city-rush-text-button'));
+      const storyChapterPage = node.querySelector('.city-rush-story-cinematic');
+      assert.ok(storyChapterPage, 'la bannière histoire entière est cliquable');
+      assert.match(squash(storyChapterPage.querySelector('.cr-story-chapter-count')?.textContent), /CHAPITRE 01 \/ 10/, 'la page indique clairement le chapitre courant et la progression');
+      assert.ok(storyChapterPage.querySelector('.cr-comic'), 'le briefing BD reste au centre de la page de chapitre');
+      assert.ok(storyChapterPage.querySelector('.cr-story-chapter-back'), 'un retour aux modes est toujours disponible pendant le briefing');
+      const comicStage = storyChapterPage.querySelector('.cr-comic-stage');
+      assert.ok(comicStage, 'la case BD entière avance au clic');
+      assert.equal(comicStage.querySelector('.cr-comic-bubble'), null, 'la réplique attend le premier clic');
+      await click(comicStage);
+      assert.match(comicStage.querySelector('.cr-comic-speaker-art img')?.getAttribute('src') || '', /vice-city-comic-nico\.webp/, 'Nico apparaît quand sa réplique arrive');
+      assert.match(squash(comicStage.querySelector('.cr-comic-bubble')?.textContent), /Deux tours/, 'le dialogue de Nico apparaît avec son portrait');
+      await click(comicStage);
+      const danteImage = comicStage.querySelector('.cr-comic-speaker-art img')?.getAttribute('src');
+      assert.match(danteImage || '', /vice-city-comic-dante\.webp/, 'la transition de case montre Dante dès sa première réplique');
+      assert.match(squash(comicStage.querySelector('.cr-comic-bubble')?.textContent), /Profite du soleil/, 'le texte affiché correspond au personnage visible');
+      await click(comicStage);
+      assert.match(comicStage.querySelector('.cr-comic-speaker-art img')?.getAttribute('src') || '', /vice-city-comic-nico\.webp/, 'le portrait change quand Nico reprend la parole');
+      assert.match(squash(comicStage.querySelector('.cr-comic-bubble')?.textContent), /Sur la piste, Dante/, 'la réplique suivante remplace la précédente');
+      await click(storyChapterPage.querySelector('.cr-comic-nav-button:not(.is-primary):not(.is-quiet)'));
+      assert.equal(comicStage.querySelector('.cr-comic-speaker-art img')?.getAttribute('src'), danteImage, 'le même portrait canonique de Dante revient en remontant les répliques');
+      await click(storyChapterPage.querySelector('.cr-comic-nav-button.is-quiet'));
+      const missionCard = storyChapterPage.querySelector('.cr-story-mission-card');
+      assert.ok(missionCard, 'le briefing laisse place à une fiche de mission distincte');
+      assert.ok(missionCard.querySelector('.cr-story-mission-goal h3'), 'l’objectif principal est mis en évidence');
+      assert.equal(missionCard.querySelector('.cr-story-challenges').open, false, 'les défis bonus restent repliés pour alléger la fiche');
+      await click(missionCard.querySelector('.cr-story-challenges summary'));
+      assert.equal(missionCard.querySelectorAll('.cr-story-challenge-list p').length, 3, 'l’ouverture révèle les deux défis et le conseil');
+      await click(storyChapterPage.querySelector('.cr-story-chapter-back'));
       await waitForIntroStep(node, 'MODE');
 
       // Le bouton de la barre referme le plein écran.
@@ -345,6 +373,34 @@ export async function checkViceCityFullscreen(assert) {
       assert.deepEqual(shellState(node, api), CLOSED);
       await unmount();
       assert.deepEqual([nothingNative(api), locked()], [true, false], 'quitter la page referme le plein écran et lève le verrou');
+    }
+
+    // ── 3b. Sélecteur de chapitres : titres visibles, verrous explicites ────
+    window.localStorage.clear();
+    window.localStorage.setItem(CITY_RUSH_PROGRESS_KEY, JSON.stringify({
+      cash: 0,
+      ownedCarIds: [],
+      completedCourseIds: [],
+      storyChapter: 3,
+      storyEnding: '',
+      storyVersion: 2,
+      storyStars: { prologue: 2, retour: 1 },
+    }));
+    {
+      const { node, unmount } = await mountPage('/jeu/vice-city-rush');
+      const selector = node.querySelector('.cr-story-chapter-select');
+      assert.ok(selector, 'une campagne commencée expose le sélecteur de chapitres');
+      assert.equal(selector.open, false, 'la liste reste repliée pour ne pas encombrer le menu');
+      await click(selector.querySelector('summary'));
+      const chapters = [...selector.querySelectorAll('.cr-story-chapter-option')];
+      assert.equal(chapters.length, CITY_RUSH_STORY_CHAPTER_COUNT, 'les dix chapitres portent leur titre dans la liste');
+      assert.equal(chapters.filter((chapter) => !chapter.disabled).length, 3, 'seuls les chapitres déjà atteints sont rejouables');
+      assert.match(squash(chapters[1].textContent), /LE RETOUR/, 'le titre est lisible sans infobulle');
+      assert.equal(chapters[3].disabled, true, 'le chapitre suivant reste verrouillé dans la liste secondaire');
+      await click(chapters[1]);
+      const replay = node.querySelector('.city-rush-story-cinematic');
+      assert.match(squash(replay.querySelector('#city-rush-story-title')?.textContent), /LE RETOUR/, 'choisir un titre lance bien le chapitre correspondant');
+      await unmount();
     }
 
     // ── 4-6. Cas limites du navigateur ──────────────────────────────────────

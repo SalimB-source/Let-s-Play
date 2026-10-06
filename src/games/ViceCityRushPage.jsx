@@ -907,6 +907,13 @@ export default function ViceCityRushPage() {
     setPhase('cinematic');
   }
 
+  function returnToModePicker() {
+    setResult(null);
+    setStoryMode(false);
+    setPhase('intro');
+    setIntroStep('mode');
+  }
+
   function chooseStoryEnding(ending) {
     const picked = CITY_RUSH_STORY_ENDINGS[ending];
     if (!picked || !storyEndingUnlocked(ending, storyTotal)) return;
@@ -1570,7 +1577,7 @@ export default function ViceCityRushPage() {
             {phase === 'intro' && (
               <div className="city-rush-overlay city-rush-intro">
                 {/* Stepper */}
-                <div className="city-rush-stepper" aria-label="Étapes de préparation">
+                <div className="city-rush-stepper" aria-label="Étapes de préparation des courses libres">
                   {[
                     { id: 'mode', label: 'MODE' },
                     { id: 'city', label: 'VILLE' },
@@ -1586,13 +1593,6 @@ export default function ViceCityRushPage() {
                       <i>{idx + 1}</i><b>{step.label}</b>
                     </button>
                   ))}
-                  <button
-                    type="button"
-                    className="city-rush-stepper-item is-story"
-                    onClick={() => beginStory()}
-                  >
-                    <i>★</i><b>HISTOIRE · NICO VEGA</b>
-                  </button>
                 </div>
 
                 {introStep === 'mode' && (
@@ -1600,51 +1600,105 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
                       <h2>VICE CITY<br /><em>RUSH.</em></h2>
-                      <p>La ville est à toi. Termine chaque parcours pour ouvrir le suivant. Le Circuit et l’Histoire remplissent ton portefeuille : le 1er gagne 50 billets verts, le 2e 30 et le 3e 10 — de quoi débloquer de nouvelles voitures. Sprint et Poursuite sont des modes défi sans gain d’argent. Vice City t’attend pour le départ.</p>
+                      <p>Choisis un mode, une ville et une voiture. Pour suivre l’histoire de Nico Vega, reprends la campagne ci-dessous.</p>
                     </div>
 
-                    <button
-                      type="button"
-                      className="city-rush-story-banner"
-                      onClick={() => beginStory()}
-                      aria-label={`Lancer le mode histoire de Nico Vega${storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT ? ', recommencer la campagne' : `, chapitre ${nextStoryIndex + 1} sur ${CITY_RUSH_STORY_CHAPTER_COUNT}`}`}
-                    >
-                      <span className="city-rush-story-banner-visual" aria-hidden="true">
-                        <img src={`${import.meta.env.BASE_URL || '/'}${storyArtFor(previewStoryChapter, previewStoryChapter.sceneKind)}`} alt="" />
-                        <span className="city-rush-story-banner-badge">
+                    <section className="cr-story-hub" aria-labelledby="cr-story-hub-title">
+                      <div className="cr-story-hub-heading">
+                        <div>
+                          <span className="cr-story-hub-kicker">MODE HISTOIRE</span>
+                          <h3 id="cr-story-hub-title">MIDNIGHT REVANCHE</h3>
+                        </div>
+                        <span className="cr-story-hub-progress">
                           {storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT
-                            ? `CAMPAGNE TERMINÉE · ${storyTotal}★/30`
-                            : `CHAPITRE ${String(nextStoryIndex + 1).padStart(2, '0')} / ${String(CITY_RUSH_STORY_CHAPTER_COUNT).padStart(2, '0')} · ${storyTotal}★`}
+                            ? 'Campagne terminée'
+                            : `${storyChapter} / ${CITY_RUSH_STORY_CHAPTER_COUNT} chapitres terminés`}
+                          <b>★ {storyTotal}/30</b>
                         </span>
-                      </span>
-                      <span className="city-rush-story-banner-body">
-                        <span className="city-rush-story-banner-meta">
-                          <span className="city-rush-mode-tag" style={{ '--tag-accent': '#ff5d7e' }}>CAMPAGNE SOLO</span>
-                          <small>ACTE {previewStoryChapter.act} · {previewStoryChapter.actTitle} · {previewStoryCity.name.toUpperCase()} · {previewStoryChapter.year}</small>
-                        </span>
-                        <b>{previewStoryChapter.title}</b>
-                        <span className="city-rush-story-description">{previewStoryChapter.recap || previewStoryChapter.objective.detail}</span>
-                        <span className="city-rush-story-banner-actions">
-                          <span className="city-rush-story-launch-label">JOUER LE CHAPITRE {nextStoryIndex + 1} <i aria-hidden="true">↗</i></span>
-                          <small>10 chapitres · BD · radio · ★ étoiles · 3 fins</small>
-                        </span>
-                      </span>
-                    </button>
-                    {storyChapter > 0 && (
-                      <div className="cr-story-chapter-dots" role="group" aria-label="Rejouer un chapitre débloqué">
-                        {CITY_RUSH_STORY_CHAPTERS.map((entry, index) => {
-                          const unlocked = index < storyChapter || storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT;
-                          const stars = Math.max(0, Math.min(3, Math.floor(Number(storyStars[entry.id]) || 0)));
-                          return (
-                            <button key={entry.id} type="button" className={index === nextStoryIndex ? 'is-current' : undefined} disabled={!unlocked} onClick={() => beginStory(index)} title={unlocked ? `${entry.title} · ${stars}/3 ★` : `Chapitre ${index + 1} verrouillé`} aria-label={unlocked ? `Chapitre ${index + 1} : ${entry.title}, ${stars} étoiles sur 3` : `Chapitre ${index + 1} verrouillé`}>
-                              {index + 1}
-                              <span className="cr-dot-stars" aria-hidden="true">{unlocked ? `${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}` : '🔒'}</span>
-                            </button>
-                          );
-                        })}
                       </div>
-                    )}
 
+                      <button
+                        type="button"
+                        className="city-rush-story-banner"
+                        onClick={() => beginStory()}
+                        aria-label={storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT
+                          ? 'Recommencer la campagne Midnight Revanche'
+                          : `Continuer Midnight Revanche au chapitre ${nextStoryIndex + 1} : ${previewStoryChapter.title}`}
+                      >
+                        <span className="city-rush-story-banner-visual" aria-hidden="true">
+                          <img src={`${import.meta.env.BASE_URL || '/'}${storyArtFor(previewStoryChapter, previewStoryChapter.sceneKind)}`} alt="" />
+                          <span className="city-rush-story-banner-badge">
+                            {storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT
+                              ? 'CAMPAGNE TERMINÉE'
+                              : `CHAPITRE ${String(nextStoryIndex + 1).padStart(2, '0')} / ${String(CITY_RUSH_STORY_CHAPTER_COUNT).padStart(2, '0')}`}
+                          </span>
+                        </span>
+                        <span className="city-rush-story-banner-body">
+                          <span className="city-rush-story-banner-meta">
+                            <span className="city-rush-mode-tag" style={{ '--tag-accent': '#ff5d7e' }}>ACTE {previewStoryChapter.act} · {previewStoryChapter.actTitle}</span>
+                            <small>{previewStoryCity.name} · {previewStoryChapter.year}</small>
+                          </span>
+                          <b>{previewStoryChapter.title}</b>
+                          <span className="city-rush-story-description">{previewStoryChapter.recap || previewStoryChapter.objective.detail}</span>
+                          <span className="city-rush-story-banner-actions">
+                            <span className="city-rush-story-launch-label">
+                              {storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT
+                                ? 'RECOMMENCER LA CAMPAGNE'
+                                : `CONTINUER · CHAPITRE ${String(nextStoryIndex + 1).padStart(2, '0')}`}
+                              <i aria-hidden="true">↗</i>
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+
+                      {storyChapter > 0 && (
+                        <details className="cr-story-chapter-select">
+                          <summary>
+                            <span className="cr-story-chapter-select-copy">
+                              <b>Rejouer un chapitre</b>
+                              <small>{storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT
+                                ? 'Tous les chapitres sont disponibles'
+                                : 'Choisir parmi les chapitres déjà atteints'}</small>
+                            </span>
+                            <span className="cr-story-chapter-select-action">Liste des chapitres <i aria-hidden="true">⌄</i></span>
+                          </summary>
+                          <div className="cr-story-chapter-list" role="group" aria-label="Choisir un chapitre débloqué">
+                            {CITY_RUSH_STORY_CHAPTERS.map((entry, index) => {
+                              const unlocked = index < storyChapter || storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT;
+                              const stars = Math.max(0, Math.min(3, Math.floor(Number(storyStars[entry.id]) || 0)));
+                              const number = String(index + 1).padStart(2, '0');
+                              return (
+                                <button
+                                  key={entry.id}
+                                  type="button"
+                                  className={`cr-story-chapter-option${unlocked ? '' : ' is-locked'}`}
+                                  disabled={!unlocked}
+                                  onClick={() => beginStory(index)}
+                                  aria-label={unlocked
+                                    ? `Rejouer le chapitre ${index + 1}, ${entry.title}, ${stars} étoiles sur 3`
+                                    : `Chapitre ${index + 1}, ${entry.title}, verrouillé. Termine les chapitres précédents pour le débloquer`}
+                                >
+                                  <span className="cr-story-chapter-number">{number}</span>
+                                  <span className="cr-story-chapter-name">
+                                    <small>ACTE {entry.act} · {entry.actTitle} · {entry.year}</small>
+                                    <b>{entry.title}</b>
+                                  </span>
+                                  <span className="cr-story-chapter-status">
+                                    <span>{unlocked ? 'REJOUER' : 'VERROUILLÉ'}</span>
+                                    {unlocked && <b>★ {stars}/3</b>}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </details>
+                      )}
+                    </section>
+
+                    <div className="cr-story-free-mode-heading">
+                      <span>COURSES LIBRES</span>
+                      <small>Choisis ton défi</small>
+                    </div>
                     <div className="city-rush-mode-picker" role="group" aria-label="Choisir un mode de course">
                       {RACE_MODES.map((m, index) => (
                         <button
@@ -1869,11 +1923,20 @@ export default function ViceCityRushPage() {
 
             {phase === 'cinematic' && storyMode && currentStoryRace && (
               <div className="city-rush-overlay city-rush-intro city-rush-story-cinematic" role="dialog" aria-modal="true" aria-labelledby="city-rush-story-title">
-                <div className="city-rush-intro-copy">
-                  <span className="city-rush-overlay-kicker"><i /> MODE HISTOIRE · ACTE {currentStoryRace.act} « {currentStoryRace.actTitle} » · {currentStoryRace.year}</span>
-                  <h2 id="city-rush-story-title">CHAPITRE {storyRaceChapter + 1} / {CITY_RUSH_STORY_CHAPTER_COUNT}<br /><em>{currentStoryRace.title}</em></h2>
-                  {currentStoryRace.recap ? <p className="cr-story-recap"><b>PRÉCÉDEMMENT…</b> {currentStoryRace.recap}</p> : null}
-                </div>
+                <header className="cr-story-chapter-header">
+                  <div className="cr-story-chapter-header-top">
+                    <div className="cr-story-chapter-labels">
+                      <span className="cr-story-chapter-kicker">MODE HISTOIRE · ACTE {currentStoryRace.act} · {currentStoryRace.actTitle} · {currentStoryRace.year}</span>
+                      <span className="cr-story-chapter-count">CHAPITRE {String(storyRaceChapter + 1).padStart(2, '0')} / {String(CITY_RUSH_STORY_CHAPTER_COUNT).padStart(2, '0')}</span>
+                    </div>
+                    <button type="button" className="cr-story-chapter-back" onClick={returnToModePicker}>← RETOUR AUX MODES</button>
+                  </div>
+                  <h2 id="city-rush-story-title">{currentStoryRace.title}</h2>
+                  {currentStoryRace.recap ? (
+                    <p className="cr-story-recap"><b>PRÉCÉDEMMENT</b><span>{currentStoryRace.recap}</span></p>
+                  ) : null}
+                </header>
+
                 {!briefingDone ? (
                   <CityRushComic
                     chapter={currentStoryRace}
@@ -1885,23 +1948,50 @@ export default function ViceCityRushPage() {
                   />
                 ) : (
                   <>
-                    <div className="city-rush-story-race-card">
-                      <div><small>OBJECTIF · CHAPITRE {storyRaceChapter + 1} / {CITY_RUSH_STORY_CHAPTER_COUNT}</small><span>{currentStoryRace.race.type}</span></div>
-                      <b>{currentStoryRace.race.name}</b>
-                      <p>{currentStoryRace.race.route}</p>
-                    </div>
-                    <div className="cr-story-race-meta">
-                      <p><b>★ {currentStoryRace.objective.label}</b> — {currentStoryRace.objective.detail}</p>
-                      <p>{sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS · SOLO` : `${currentLaps} TOURS`} · {RACE_KM}{currentStoryRace.id === 'ring' && storyTargetTime !== null ? ` · CIBLE ${formatTime(storyTargetTime)}` : ''}{sprintMode && storySprintPar !== null ? ` · PAR ${formatTime(storySprintPar)}` : ''}</p>
-                      <p>{currentStoryRace.fixedCarId ? `VOITURE PRÊTÉE : ${(CITY_RUSH_CARS.find((car) => car.id === currentStoryRace.fixedCarId)?.name || '').toUpperCase()}` : `NICO VEGA · ${selectedCar.name} — ${selectedCar.className.toLowerCase()}`}</p>
-                      {currentStoryRace.boss ? <p className="is-boss">⚠ {currentStoryRace.boss.label}</p> : null}
-                      <p>★ DÉFIS : {currentStoryRace.stars.two.label} · {currentStoryRace.stars.three.label}</p>
-                      <p>◍ ASTUCE : {currentStoryRace.tip}</p>
-                    </div>
-                    <div className="city-rush-intro-actions" style={{ justifyContent: 'center' }}>
+                    <section className="cr-story-mission-card" aria-labelledby="cr-story-mission-title">
+                      <div className="cr-story-mission-goal">
+                        <p className="cr-story-mission-kicker">OBJECTIF PRINCIPAL</p>
+                        <h3 id="cr-story-mission-title">{currentStoryRace.objective.label}</h3>
+                        <p>{currentStoryRace.objective.detail}</p>
+                      </div>
+
+                      <div className="cr-story-mission-course">
+                        <div>
+                          <small>PROCHAINE COURSE · {currentStoryRace.race.type}</small>
+                          <b>{currentStoryRace.race.name}</b>
+                          <p>{currentStoryRace.race.route}</p>
+                        </div>
+                        <span className="cr-story-mission-distance">
+                          {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOURS`}
+                          <i>{RACE_KM}</i>
+                          {currentStoryRace.id === 'ring' && storyTargetTime !== null && <i>CIBLE {formatTime(storyTargetTime)}</i>}
+                          {sprintMode && storySprintPar !== null && <i>PAR {formatTime(storySprintPar)}</i>}
+                        </span>
+                      </div>
+
+                      <p className="cr-story-mission-car">
+                        {currentStoryRace.fixedCarId
+                          ? `VOITURE PRÊTÉE · ${(CITY_RUSH_CARS.find((car) => car.id === currentStoryRace.fixedCarId)?.name || '').toUpperCase()}`
+                          : `NICO VEGA · ${selectedCar.name} · ${selectedCar.className.toLowerCase()}`}
+                      </p>
+                      {currentStoryRace.boss ? <p className="cr-story-mission-boss">⚠ {currentStoryRace.boss.label}</p> : null}
+
+                      <details className="cr-story-challenges">
+                        <summary>
+                          <span><b>Défis secondaires</b><small>2 objectifs pour les étoiles bonus</small></span>
+                          <i aria-hidden="true">⌄</i>
+                        </summary>
+                        <div className="cr-story-challenge-list">
+                          <p><b>2 ★</b><span>{currentStoryRace.stars.two.label}</span></p>
+                          <p><b>3 ★</b><span>{currentStoryRace.stars.three.label}</span></p>
+                          <p><b>CONSEIL</b><span>{currentStoryRace.tip}</span></p>
+                        </div>
+                      </details>
+                    </section>
+
+                    <div className="cr-story-chapter-actions">
                       <button type="button" className="city-rush-start-button" onClick={() => startRace()}>LANCER LA COURSE <span>↗</span></button>
-                      <button type="button" className="city-rush-text-button" onClick={() => setBriefingDone(false)}>← REVOIR LA BD</button>
-                      <button type="button" className="city-rush-text-button" onClick={() => { setStoryMode(false); setPhase('intro'); setIntroStep('mode'); }}>← RETOUR AUX MODES</button>
+                      <button type="button" className="city-rush-text-button" onClick={() => setBriefingDone(false)}>REVOIR LE BRIEFING</button>
                     </div>
                   </>
                 )}
