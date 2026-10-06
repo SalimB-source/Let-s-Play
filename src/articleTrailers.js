@@ -1,7 +1,8 @@
-// Bandes-annonces et teasers intégrés au corps des articles des actus cinéma.
+// Bandes-annonces et teasers intégrés au corps des articles des actus.
 //
-// Clé = identifiant de l'article (le même que les cartes du hub
-// `/news/cinema`, donc préfixé « cinema/ »). Le gabarit de page
+// Clé = identifiant de l'article (le même que les cartes du hub `/news/cinema`,
+// donc préfixé « cinema/ » — ou celui du hub `/news/gaming` quand une actu
+// gaming déclare les trailers d'un studio). Le gabarit de page
 // (`src/pages/CurrentNews.jsx`) appelle `getArticleTrailers(key)` et rend
 // `src/components/ArticleTrailer.jsx` juste après le chapô — même mécanique
 // que les galeries de captures (`src/articleGalleries.js`).
@@ -66,6 +67,36 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // ---- Fournée du mardi 06.10.2026 -----------------------------------------
+  // Gaming : Rockstar Games publie ses trailers sur sa propre chaîne — les
+  // seules vidéos officielles montrant l’État de Leonida dont parle l’article.
+  // L’Extended Look du 27.08.2026 n’est pas repris ici : ses URLs n’ont pas pu
+  // être recoupées le jour de la rédaction, contrairement à celles des deux
+  // trailers (relevées sur rockstargames.com/VI et sur le listing des uploads
+  // Rockstar). L’entrée vit sous une clé gaming : `npm run check:trailers`
+  // accepte désormais les actus gaming publiées par le hub `/news/gaming`.
+  'gta-6-satire-monde-invente': {
+    label: 'GRAND THEFT AUTO VI', meta: 'ROCKSTAR GAMES · LEONIDA',
+    items: [
+      { id: 'QdBZY2fkU-0', kind: 'trailer', title: 'Grand Theft Auto VI Trailer 1', channel: 'Rockstar Games', verified: '06.10.2026', note: 'À titre d’illustration : le premier trailer officiel (04.12.2023) présente Leonida et Vice City, le monde inventé où se jouera la satire du jeu.' },
+      { id: 'VQRLujxTm3c', kind: 'trailer', title: 'Grand Theft Auto VI Trailer 2', channel: 'Rockstar Games', verified: '06.10.2026', note: 'À titre d’illustration : le deuxième trailer officiel (06.05.2025) suit Jason et Lucia dans Leonida, quelques mois avant la sortie du jeu.' },
+    ],
+    credit: 'Vidéos officielles : Rockstar Games, sur YouTube (trailers 1 et 2).',
+  },
+  // Cinéma : la suite n’a publié aucune bande-annonce. Le seul aperçu animé de
+  // 2026 est un camera test diffusé par Matt Reeves sur son compte Vimeo —
+  // hors du lecteur YouTube du site —, donc l’actu s’appuie sur la campagne
+  // officielle de The Batman (2022), reprise à titre d’illustration (`note`),
+  // comme les galeries reprennent la saga précédente. Identifiant et chaîne
+  // recoupés le 06.10.2026 : upload Warner Bros. du « Trailer 2 » de 2022,
+  // listé par la fiche Archive.org du trailer.
+  'cinema/the-batman-part-ii-tournage-suspendu': {
+    label: 'THE BATMAN PART II', meta: 'DC STUDIOS · WARNER BROS.',
+    items: [
+      { id: 'mqqft2x_Aa4', kind: 'trailer', title: 'The Batman – Trailer 2 (2022)', channel: 'Warner Bros.', verified: '06.10.2026', note: 'À titre d’illustration : la bande-annonce de The Batman (2022), premier film de l’univers de Matt Reeves — The Batman Part II, toujours en tournage, n’a publié aucune image animée.' },
+    ],
+    credit: 'Vidéo officielle : Warner Bros., sur YouTube (campagne de The Batman, 2022).',
+  },
   // ---- Fournée du 05.10.2026 ------------------------------------------------
   // « Les Misérables » de Fred Cavayé : bande-annonce française publiée par le
   // distributeur Pathé Cinémas (ZZRo2fIbomE), complétée par la version

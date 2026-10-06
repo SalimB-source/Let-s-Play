@@ -9,6 +9,7 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { autoNewsListing } from '../lib/autoNews';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
+import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 
 // Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
 // telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
@@ -26,7 +27,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 05.10.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
+    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 06.10.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
   },
   fr: {
     cards: [
@@ -34,7 +35,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 05.10.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
+    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 06.10.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
   },
   ar: {
     cards: [
@@ -42,7 +43,7 @@ const FEATURED_COPY = {
       ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 05.10.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
+    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 06.10.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
   }
 };
 
@@ -55,13 +56,15 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  // Actus du lundi 05.10.2026 : le lancement free-to-play d'Aion 2 ouvre la
-  // page ; suivent les actus du week-end des 03-04.10.2026 — RuneScape 4
-  // annoncé au RuneFest, les concerts des 40 ans de Castlevania et la fronde
-  // contre le code généré par IA dans l'émulation —, puis celles du
-  // 28-29.09.2026, celles du robot et les articles manuels de la rédaction
-  // dans l'ordre.
+  // Actus du mardi 06.10.2026 : la position de Rockstar sur la satire de
+  // GTA VI ouvre la page ; suivent les actus du lundi 05.10.2026 (lancement
+  // free-to-play d'Aion 2, sortie de Gears of War: E-Day), celles du week-end
+  // des 03-04.10.2026 — RuneScape 4 annoncé au RuneFest, les concerts des
+  // 40 ans de Castlevania et la fronde contre le code généré par IA dans
+  // l'émulation —, puis celles du 28-29.09.2026, celles du robot et les
+  // articles manuels de la rédaction dans l'ordre.
   const articles = useMemo(() => [
+    { to: '/news/gta-6-satire-monde-invente', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872331/nous-ne-souhaitons-cibler-aucune-personne-aucun-evenement-ni-aucun-mouvement-en-particulier-gta-vi-ne-visera-pas-la-satire-d-une-actualite-reelle-33b4df1a__930_300__0-7-2548-833.jpg', fallbackImage: 'gta-6-satire-monde-invente-news.svg', alt: 'GTA VI — visuel officiel Rockstar Games relayé par Gamekult', badge: 'ROCKSTAR · GTA 6', kicker: '06.10.2026 · GAMEKULT', title: 'ROCKSTAR INVENTE SON MONDE.', excerpt: 'Rockstar ne vise « aucune personne, aucun événement ni aucun mouvement en particulier » : la satire de GTA VI se jouera dans un État fictif nourri de la Floride, rendu plus grotesque que la réalité. Sortie maintenue au 19 novembre sur PS5 et Xbox Series.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
     { to: '/news/gears-of-war-e-day-sortie-mondiale', image: youTubeThumbUrl('TOEuNKz3XW8'), fallbackImage: 'gears-of-war-e-day-news.svg', alt: 'Gears of War: E-Day — Marcus Fenix dans le trailer de lancement officiel publié par la chaîne Gears of War', badge: 'THE COALITION · XBOX', kicker: '05.10.2026 · METACRITIC', title: 'E-DAY EST ENFIN LÀ.', excerpt: 'Le préquel de Gears of War sort demain sur Xbox Series X|S et PC, dès le premier jour dans le Game Pass. Cinq actes, vingt-six chapitres et un 87 sur Metacritic : le meilleur score de la saga depuis Gears of War 3.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/aion-2-ouverture-occidentale', image: youTubeThumbUrl('YYelxy0eEsA'), fallbackImage: 'aion-2-news.svg', alt: 'Aion 2 — plan du trailer de lancement officiel « Heirs of the Broken Sky » publié par NCSOFT', badge: 'NCSOFT · MMORPG', kicker: '05.10.2026 · NCSOFT', title: 'AION 2 OUVRE L’OCCIDENT.', excerpt: 'Le MMORPG de NCSOFT passe au free-to-play ce lundi à 13 h UTC (15 h à Paris) sur PC, via Steam et le lanceur maison PURPLE. Cinq jours d’accès anticipé s’achèvent, la progression est conservée — et l’hôtel des ventes reste lié à l’abonnement facultatif.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/runescape-4-runefest-annonce', image: 'runescape-4-teaser.jpg', fallbackImage: 'runescape-4-news.svg', alt: 'RuneScape 4 — un magicien se protège les yeux de la lumière, capture du teaser d’annonce dévoilé au RuneFest 2026 (Jagex)', badge: 'JAGEX · MMORPG', kicker: '03.10.2026 · ACTUGAMING', title: 'RUNESCAPE 4 ÉCRIT SON SIXIÈME ÂGE.', excerpt: 'Jagex a refermé son RuneFest par l’annonce d’un quatrième MMORPG, provisoirement baptisé RuneScape 4, développé sous Unreal Engine. L’aventure se déroulera au Sixième Âge et débutera à Ashenfall, sans date de sortie. Toute la franchise repart en parallèle : Reignited le 2 décembre, Blood Crystal Saga en 2027 et un raid inédit pour Old School RuneScape.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
@@ -135,9 +138,16 @@ export default function News(){
     const sentimentId = getArticleSentiment(article);
     const meta = sentimentMeta(sentimentId);
     const views = viewsMap[normalizeArticleId(article.to)] ?? null;
+    const trailerFlag = trailerFlagLabel(article.to);
     return (
       <>
         <span className="news-feature-badge">{article.badge}</span>
+        {trailerFlag ? (
+          <span className="news-trailer-flag" title={trailerFlagTitle(article.to)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            {trailerFlag}
+          </span>
+        ) : null}
         <span className="news-feature-arrow">↗</span>
         <span className={`news-sentiment ${meta.color}`} title={meta.label} aria-label={meta.label}>
           {meta.emoji}
