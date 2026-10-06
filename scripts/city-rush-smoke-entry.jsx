@@ -77,7 +77,9 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
-  CITY_RUSH_MINI_GARAGE_COUNT, CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS, CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, cityRushMiniGarageLane,
+  CITY_RUSH_MINI_GARAGE_COUNT, CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, cityRushMiniGarageLane,
+  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND, CITY_RUSH_MINI_GARAGE_HUD_RANGE, CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
+  CITY_RUSH_MINI_GARAGE_KINDS, cityRushMiniGarageTrackDistances, cityRushMiniGarageMidRaceDistance,
   CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
@@ -108,6 +110,9 @@ const RACE_DISTANCE = cityRushRaceDistance(RACE_LAPS);
 // La ligne où commence le grand dernier tour : avant elle, l'hélico
 // d'observation n'a rien à faire dans le ciel.
 const FINAL_LAP_START = (RACE_LAPS - 1) * CITY_RUSH_LAP_LENGTH;
+// Les deux portiques de service de la course jouée : la porte de mi-course,
+// puis l'unique porte du dernier tour.
+const MINI_GARAGE_TRACK_DISTANCES = cityRushMiniGarageTrackDistances({ laps: RACE_LAPS });
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
 const FRAME_MS = 1000 / 30;
@@ -185,6 +190,9 @@ for (const [index, city] of courses.entries()) {
   const courseLanes = cityRushLaneConfig(city);
   const callbacks = {
     ready: 0, errors: [], huds: [], laps: [], effects: [], pickups: [], finish: null,
+    // Chaque passage en mini-garage est suivi du premier HUD émis ensuite :
+    // c'est sur cette image que se vérifie le relâchement de la poursuite.
+    garageChecks: [], awaitingGarage: null,
   };
   // Les contacts de police sont légitimes : le pilote inflige 1 dégât à la
   // berline, et en encaisse un carré. On retient leur frame pour ne pas
@@ -217,13 +225,24 @@ for (const [index, city] of courses.entries()) {
     world = createCityRushWorld(mount, city, () => ({
       ready: () => { callbacks.ready += 1; },
       error: (e) => { callbacks.errors.push(e); console.error('CALLBACK ERROR:', e); },
-      hud: (h) => { callbacks.huds.push(h); },
+      hud: (h) => {
+        callbacks.huds.push(h);
+        if (callbacks.awaitingGarage && !callbacks.awaitingGarage.nextHud) {
+          callbacks.awaitingGarage.nextHud = h;
+          callbacks.awaitingGarage = null;
+        }
+      },
       finish: (r) => { callbacks.finish = r; },
       pickup: (p) => { callbacks.pickups.push(p); },
       effect: (e) => {
         callbacks.effects.push(e);
         if (e.type === 'police-hit' && e.source === 'collision') {
           policeCollisionFrames.set(e.police, virtualFrame);
+        }
+        if (e.type === 'mini-garage-used') {
+          const check = { effect: e, nextHud: null };
+          callbacks.garageChecks.push(check);
+          callbacks.awaitingGarage = check;
         }
         // Compté à la source : les contrôles d'arrivée lisent `wreckEffects`.
         if (e.type === 'player-wrecked') wreckEffects += 1;
@@ -311,8 +330,27 @@ for (const [index, city] of courses.entries()) {
     fail('les mini-garages ne sont pas sur la voie extérieure du sens de course', miniGarageNodes.map((garage) => garage.userData));
   }
   if (miniGarageNodes.some((garage, index) => garage.visible
-    || garage.userData.trackDistance !== FINAL_LAP_START + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index])) {
-    fail('les mini-garages doivent être masqués et ancrés au dernier tour dès la construction', miniGarageNodes.map((garage) => garage.userData));
+    || garage.userData.trackDistance !== MINI_GARAGE_TRACK_DISTANCES[index])) {
+    fail('les mini-garages doivent être masqués et ancrés (mi-course puis dernier tour) dès la construction', miniGarageNodes.map((garage) => garage.userData));
+  }
+  // Une porte de mi-course (à la moitié du parcours) et une porte du dernier
+  // tour : la seconde porte du dernier tour a été retirée.
+  if (miniGarageNodes[0]?.userData.garageKind !== CITY_RUSH_MINI_GARAGE_MID_RACE_KIND
+    || miniGarageNodes[1]?.userData.garageKind !== CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND) {
+    fail('les portiques ne sont pas, dans l’ordre, celui de mi-course puis celui du dernier tour', miniGarageNodes.map((garage) => garage.userData));
+  }
+  if (Math.abs(MINI_GARAGE_TRACK_DISTANCES[0] - cityRushRaceDistance(RACE_LAPS) / 2) > 1e-9) {
+    fail('la porte de mi-course ne tombe pas à la moitié du parcours', MINI_GARAGE_TRACK_DISTANCES);
+  }
+  if (MINI_GARAGE_TRACK_DISTANCES[1] >= FINAL_LAP_START + CITY_RUSH_LAP_LENGTH) {
+    fail('la porte du dernier tour sort de la dernière boucle', MINI_GARAGE_TRACK_DISTANCES);
+  }
+  if (!CITY_RUSH_MINI_GARAGE_KINDS.includes(CITY_RUSH_MINI_GARAGE_MID_RACE_KIND)
+    || !CITY_RUSH_MINI_GARAGE_KINDS.includes(CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND)) {
+    fail('les natures de portique ne sont pas déclarées', CITY_RUSH_MINI_GARAGE_KINDS);
+  }
+  if (cityRushMiniGarageMidRaceDistance({ laps: RACE_LAPS }) !== MINI_GARAGE_TRACK_DISTANCES[0]) {
+    fail('la porte de mi-course ne suit pas la moitié du parcours', MINI_GARAGE_TRACK_DISTANCES);
   }
   let miniGarageVisibleFrames = 0;
   // L'hélico d'observation du dernier tour, construit une seule fois.
@@ -358,7 +396,7 @@ for (const [index, city] of courses.entries()) {
     fail('une course normale ne démarre pas à zéro étoile', callbacks.huds[0]);
   }
   if (callbacks.huds[0]?.miniGaragesRemaining !== CITY_RUSH_MINI_GARAGE_COUNT) {
-    fail('le HUD ne réserve pas les deux mini-garages pour le dernier tour', callbacks.huds[0]);
+    fail('le HUD ne réserve pas les deux mini-garages de la course', callbacks.huds[0]);
   }
   if (callbacks.huds[0]?.miniGaragesActive || miniGarageNodes.some((garage) => garage.visible)) {
     fail('les mini-garages ou leur compteur apparaissent avant la course');
@@ -584,6 +622,18 @@ for (const [index, city] of courses.entries()) {
         world.action(away);
       }
     }
+    // Mini-garage : le pilote automatique se rabat vers la voie de service dès
+    // qu'un portique approche, comme le ferait un joueur prévenu par le panneau.
+    // C'est le seul moyen d'éprouver la traversée — et donc la remise en
+    // conduite normale de la police — de façon déterministe.
+    const garageTarget = !aimedCar && miniGarageNodes.find((garage) => (
+      !garage.userData.used
+      && garage.visible
+      && garage.userData.trackDistance - world.distance < 130
+    ));
+    if (garageTarget && hud && frames % 2 === 0 && hud.playerLane !== garageTarget.userData.lane) {
+      world.action(hud.playerLane < garageTarget.userData.lane ? 'right' : 'left');
+    }
     // Hélico d'observation : visible seulement au dernier tour, et il tourne.
     // Le HUD est étranglé (une émission toutes les 100 ms) : on juge la
     // visibilité sur la distance du monde, exacte à l'image.
@@ -605,8 +655,12 @@ for (const [index, city] of courses.entries()) {
     }
     runFrames(1, `course f${frames}`);
     const visibleGarages = miniGarageNodes.filter((garage) => garage.visible);
-    if (visibleGarages.length && world.distance < FINAL_LAP_START) {
-      fail('un mini-garage apparaît avant le dernier tour', { distance: world.distance, garages: visibleGarages.map((garage) => garage.userData) });
+    // Seule la porte de mi-course a le droit d'apparaître avant le dernier tour.
+    const earlyGarages = visibleGarages.filter((garage) => (
+      garage.userData.garageKind !== CITY_RUSH_MINI_GARAGE_MID_RACE_KIND && world.distance < FINAL_LAP_START
+    ));
+    if (earlyGarages.length) {
+      fail('la porte du dernier tour apparaît avant le dernier tour', { distance: world.distance, garages: earlyGarages.map((garage) => garage.userData) });
     }
     if (visibleGarages.some((garage) => garage.userData.used)) fail('un garage consommé reste visible');
     if (visibleGarages.length) miniGarageVisibleFrames += 1;
@@ -937,8 +991,46 @@ for (const [index, city] of courses.entries()) {
   if (miniGarageUses.some((effect) => Number(effect.previousStars) < 0 || Number(effect.stars) !== 0)) {
     fail('un mini-garage utilisé ne remet pas la recherche à zéro', miniGarageUses);
   }
-  if (miniGarageUses.some((effect) => effect.lap !== RACE_LAPS)) {
-    fail('un mini-garage a servi avant le dernier tour', miniGarageUses);
+  if (miniGarageUses.some((effect) => effect.garageKind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND && effect.lap !== RACE_LAPS)) {
+    fail('la porte du dernier tour a servi avant le dernier tour', miniGarageUses);
+  }
+  if (miniGarageUses.some((effect) => effect.garageKind === CITY_RUSH_MINI_GARAGE_MID_RACE_KIND
+    && effect.lap >= RACE_LAPS)) {
+    fail('la porte de mi-course n’a servi qu’au dernier tour : le pilote l’a ratée', miniGarageUses);
+  }
+  if (miniGarageUses.some((effect) => !CITY_RUSH_MINI_GARAGE_KINDS.includes(effect.garageKind))) {
+    fail('un portique servi n’annonce pas sa nature', miniGarageUses);
+  }
+  // Sortir d'un portique lâche la police : l'image suivante ne montre plus une
+  // seule berline qui chasse le joueur (une réserve partie chasser un rival,
+  // elle, reste en piste et c'est voulu). Recontacter la police après coup est
+  // une nouvelle provocation : elle ne compte pas comme un relâchement raté.
+  for (const check of callbacks.garageChecks) {
+    if (!check.nextHud) {
+      fail('aucun HUD n’est émis après un passage en mini-garage', check.effect);
+      continue;
+    }
+    const chasers = (check.nextHud.police || []).filter((car) => car.targetId === 'player');
+    if (chasers.length) {
+      fail('une berline reste en chasse après la sortie du mini-garage', {
+        effect: check.effect,
+        stars: check.nextHud.wantedLevel,
+        distance: check.nextHud.distance,
+        chasers: chasers.map((car) => `${car.id}/${car.mode || '?'}`),
+      });
+    }
+    if (Number(check.nextHud.wantedLevel) !== 0) {
+      fail('un mini-garage ne remet pas la recherche à zéro sur l’image suivante', {
+        effect: check.effect, wantedLevel: check.nextHud.wantedLevel,
+      });
+    }
+  }
+  if (miniGarageUses.some((effect) => !Number.isFinite(Number(effect.pursuersReleased)))) {
+    fail('un mini-garage servi n’annonce pas les poursuivants lâchés', miniGarageUses);
+  }
+  const garagePursuersReleased = miniGarageUses.reduce((total, effect) => total + Number(effect.pursuersReleased || 0), 0);
+  if (wantedEffects.some((effect) => effect.stars >= 3) && miniGarageUses.length && garagePursuersReleased === 0) {
+    fail('aucune poursuite n’a été lâchée par un mini-garage alors que la police était en chasse', miniGarageUses);
   }
   if (miniGarageUses.some((effect) => effect.healthBefore <= 0 || effect.health > effect.maxHealth
     || effect.healthRestored !== Math.min(CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, effect.maxHealth - effect.healthBefore)
@@ -946,10 +1038,16 @@ for (const [index, city] of courses.entries()) {
     fail('la réparation d’un mini-garage est incorrecte ou dépasse la résistance de la voiture', miniGarageUses);
   }
   const garageHealthRestored = miniGarageUses.reduce((total, effect) => total + effect.healthRestored, 0);
-  if (callbacks.huds.some((entry) => entry.miniGaragesActive && entry.lap < entry.laps)) {
-    fail('le compteur de mini-garages est actif avant le dernier tour');
-  }
-  if (callbacks.huds.some((entry) => entry.distance >= FINAL_LAP_START + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[0])
+  // Le compteur ne s'allume qu'à l'approche d'une porte : jamais à distance de
+  // course, et jamais sans porte utilisable devant.
+  const earlyGarageCounter = callbacks.huds.find((entry) => entry.miniGaragesActive
+    && (!Number.isFinite(Number(entry.miniGarageNextDistance))
+      || Number(entry.miniGarageNextDistance) > CITY_RUSH_MINI_GARAGE_HUD_RANGE));
+  if (earlyGarageCounter) fail('le compteur de mini-garages s’allume sans porte en approche', earlyGarageCounter);
+  const garageHudBeforeMidCourse = callbacks.huds.find((entry) => entry.miniGaragesActive
+    && Number(entry.distance) < MINI_GARAGE_TRACK_DISTANCES[0] - CITY_RUSH_MINI_GARAGE_HUD_RANGE - 1);
+  if (garageHudBeforeMidCourse) fail('le compteur de mini-garages s’allume avant la porte de mi-course', garageHudBeforeMidCourse);
+  if (callbacks.huds.some((entry) => entry.distance >= MINI_GARAGE_TRACK_DISTANCES[1])
     && !miniGarageVisibleFrames) {
     fail('les mini-garages ne sont jamais apparus pendant le dernier tour');
   }
@@ -1202,8 +1300,11 @@ for (const [index, city] of courses.entries()) {
   }
   const rallyEvents = [...rallies, ...completedOncomingPolice];
   if (!ralliedInHud.size && rallyEvents.length) fail('une berline rappelée n’apparaît jamais dans le HUD', rallyEvents);
-  if (ralliedInHud.size !== rallyEvents.length) {
-    fail(`${rallyEvents.length} contact(s)/demi-tour(s) pour ${ralliedInHud.size} berline(s) rappelée(s) en piste`, [...ralliedInHud]);
+  // Une berline lâchée par un mini-garage retourne à sa ronde : un contact
+  // ultérieur peut la rappeler une seconde fois. Les événements peuvent donc
+  // dépasser les berlines distinctes vues en chasse — jamais l'inverse.
+  if (ralliedInHud.size > rallyEvents.length) {
+    fail(`${ralliedInHud.size} berline(s) rappelée(s) en piste pour ${rallyEvents.length} contact(s)/demi-tour(s)`, [...ralliedInHud]);
   }
   for (const car of rallies) {
     if (!['POLICE ROUTIÈRE', 'POLICE EN CIVIL'].includes(car.police)) {
@@ -1430,8 +1531,8 @@ for (const [index, city] of courses.entries()) {
   if (hudAfterReset.lap !== 1 || hudAfterReset.distance > 1) fail('reset() ne remet pas la course au tour 1', hudAfterReset);
   if (hudAfterReset.miniGaragesActive || hudAfterReset.miniGaragesRemaining !== CITY_RUSH_MINI_GARAGE_COUNT
     || miniGarageNodes.some((garage, index) => garage.visible || garage.userData.used
-      || garage.userData.trackDistance !== FINAL_LAP_START + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index])) {
-    fail('reset() ne réarme pas et ne masque pas les garages pour le dernier tour suivant', hudAfterReset);
+      || garage.userData.trackDistance !== MINI_GARAGE_TRACK_DISTANCES[index])) {
+    fail('reset() ne réarme pas et ne masque pas les garages pour la course suivante', hudAfterReset);
   }
   if (watchHeli.visible) fail('l’hélico d’observation reste dans le ciel après reset()');
   if (hudAfterReset.playerHealthActive || hudAfterReset.playerHealth !== null) {
@@ -1450,7 +1551,7 @@ for (const [index, city] of courses.entries()) {
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
     ` · hélico d’observation ${watchHeliFinalLapFrames} f (${watchHeliReturns} rentrée(s) de tunnel · rotor ${watchHeliRotorTurns} tours · cadre y ${watchHeliNdcYMin.toFixed(2)}–${watchHeliNdcYMax.toFixed(2)}, moy ${(watchHeliNdcYSum / Math.max(1, watchHeliMeasured)).toFixed(2)} · x ≤ ${watchHeliNdcXMax.toFixed(2)} · ${(watchHeliFramedFrames / Math.max(1, watchHeliMeasured) * 100).toFixed(0)} % dans la bande)` +
-    ` · mini-garages ${miniGarageVisibleFrames} f au dernier tour · ${miniGarageUses.length} passage(s) · ${garageHealthRestored} cellule(s) rendue(s)` +
+    ` · mini-garages ${miniGarageVisibleFrames} f en vue · ${miniGarageUses.length} passage(s) · ${garageHealthRestored} cellule(s) rendue(s) · ${garagePursuersReleased} poursuite(s) lâchée(s)` +
     ` · barre de vie du pilote ${healthHuds.length} HUD · ${healthHitEffects} touche(s) subie(s) (rouge ${healthHitsBySource.pistol || 0} · carambolage ${healthHitsBySource.collision || 0}) · ${healthCubes} passage(s) à zéro` +
     ` (${policePlayerOverlapFrames} f de recouvrement · rival ${Number.isFinite(policeAiOverlap) ? policeAiOverlap.toFixed(1) : '—'} m)` +
 

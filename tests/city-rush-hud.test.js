@@ -126,28 +126,68 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(page, /miniGaragesRemaining:\s*CITY_RUSH_MINI_GARAGE_COUNT/);
   assert.match(page, /city-rush-gta-garages/);
   assert.match(page, /MINI-GARAGES/);
+  assert.match(page, /MINI-GARAGE DANS \$\{miniGarageNextDistance\} M/,
+    'le compteur annonce la distance de la prochaine porte');
   assert.match(page, /effect\.previousStars > 0 \? `\$\{effect\.previousStars\} ÉTOILES EFFACÉES/);
   assert.match(page, /Number\(effect\.healthRestored\)/, 'le bandeau annonce la réparation réellement reçue');
   assert.match(page, /POINT\$\{restored === 1 \? '' : 'S'\} DE VIE/);
+  assert.match(page, /Number\(effect\.pursuersReleased\) > 0[\s\S]*?LA POLICE ABANDONNE LA POURSUITE/,
+    'la sortie du garage annonce la poursuite abandonnée');
   assert.match(page, /miniGaragesActive: false/, 'le compteur n’est pas disponible au départ');
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
-    'le compteur des garages n’apparaît qu’avec les garages du dernier tour');
-  assert.match(page, /Au dernier tour uniquement, même en Poursuite/);
+    'le compteur des garages n’apparaît qu’avec une porte en approche');
+  assert.match(page, /l’un à mi-parcours/);
   assert.match(page, /rend jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/);
 
-  const availability = world.match(/function miniGaragesAvailable\(\)[\s\S]*?\n  function placeMiniGarage/)?.[0] || '';
-  assert.match(availability, /phase === 'playing' && !finished && !playerWrecked && policeDeployed/);
-  assert.match(availability, /cityRushMiniGaragesAvailable\(\{ lap, laps: effectiveLaps, sprint \}\)/,
-    'l’arrivée anticipée de la police en Poursuite ne suffit pas à ouvrir les garages');
-  const placement = world.match(/function placeMiniGarage\([\s\S]*?\n  function setMiniGaragesToStart/)?.[0] || '';
-  assert.match(placement, /!miniGaragesAvailable\(\)/, 'le rendu applique la même disponibilité que le service');
-  assert.match(world, /garage\.trackDistance = \(effectiveLaps - 1\) \* CITY_RUSH_LAP_LENGTH \+ CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS\[index\]/,
-    'les positions sont ancrées au début du dernier tour');
+  // Une porte de mi-course (ouverte dès le départ) et une porte du dernier tour.
+  assert.match(world, /const kind = cityRushMiniGarageKindAt\(index\)/);
+  assert.match(world, /const miniGarageTrackDistances = cityRushMiniGarageTrackDistances\(\{ laps: effectiveLaps \}\)/);
+  const availability = world.match(/function miniGarageAvailable\(garage\)[\s\S]*?\n  function miniGaragesAvailable/)?.[0] || '';
+  assert.match(availability, /phase === 'playing' && !finished && !playerWrecked/);
+  assert.match(availability, /garage\.kind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND && !policeDeployed/,
+    'la porte du dernier tour attend l’escouade ; celle de mi-course n’attend personne');
+  assert.match(availability, /cityRushMiniGarageAvailable\(\{[\s\S]*?kind: garage\.kind, lap, laps: effectiveLaps, sprint/,
+    'chaque porte interroge son propre tour d’ouverture');
+  const placement = world.match(/function placeMiniGarage\(garage\)[\s\S]*?\n  function setMiniGaragesToStart/)?.[0] || '';
+  assert.match(placement, /!miniGarageAvailable\(garage\)/, 'le rendu applique la même disponibilité que le service');
+  assert.match(world, /garage\.trackDistance = miniGarageTrackDistances\[index\]/,
+    'chaque porte repart de son repère (mi-course ou dernier tour)');
   const service = world.match(/function useMiniGarage\([\s\S]*?\n  function updateMiniGarages/)?.[0] || '';
   assert.match(service, /playerHealth = cityRushMiniGarageRepair\(playerHealth, playerMaxHealth\)/,
     'la réparation utilise la résistance de la voiture sélectionnée');
   assert.match(service, /healthRestored: playerHealth - healthBefore/);
-  assert.match(world, /miniGaragesActive: miniGaragesAvailable\(\)/);
+  assert.match(service, /const pursuersReleased = releasePolicePursuit\(\{ targetId: 'player' \}\)/,
+    'la sortie du garage fait abandonner la poursuite aux berlines qui chassaient le joueur');
+  assert.match(world, /miniGaragesActive: miniGarages\.some\(\(garage\) => \{/);
+  assert.match(world, /miniGarageNextDistance: nextMiniGarageGap\(\)/);
+});
+
+test('sortir d’un mini-garage fait reprendre une conduite normale aux poursuivants', () => {
+  const release = world.match(/function releasePolicePursuit\([\s\S]*?\n  function updatePatrolPolice/)?.[0] || '';
+  assert.ok(release, 'la remise en conduite normale existe dans le monde');
+  assert.match(release, /policePursuitDropped = true/,
+    'la poursuite lâchée ne se relève plus toute seule');
+  assert.match(release, /policeReinforcementQueue\.length = 0/,
+    'les renforts déjà prévus sont annulés');
+  assert.match(release, /releaseRalliedPolice\(\{ targetId \}\)/,
+    'les patrouilles rappelées retournent à leur ronde');
+  assert.match(release, /abandonOncomingPoliceTurnaround\(oncoming\)/,
+    'une berline à demi retournée reprend son sens');
+  assert.match(world, /function releaseSquadPoliceUnit\(police\)[\s\S]*?police\.active = false/,
+    'l’unité d’escouade quitte la chasse');
+  assert.match(world, /function spawnPatrolPolice\(squadCar\)[\s\S]*?baseSpeed: paced\(spec\.speed \* randomRange/,
+    'une voiture de patrouille ordinaire prend sa place, à l’allure du trafic');
+  assert.match(world, /function updatePatrolPolice\(dt, movementById = null\)[\s\S]*?releasePatrolMesh\(patrol\.mesh\)[\s\S]*?patrolCars\.splice\(index, 1\)/,
+    'une berline distancée quitte la scène');
+  assert.match(world, /const squadSlots = policeDeployed && !policePursuitDropped \? CITY_RUSH_POLICE_COUNT : 0/,
+    'aucune relève ne part tant que le pilote ne provoque pas de nouveau la police');
+  assert.match(world, /policeDeployed = true;[\s\S]*?policePursuitDropped = false;/,
+    'le déploiement scénarisé du dernier tour repart en chasse');
+  assert.match(world, /policePursuitDropped = false;\n    if \(wantedLevel >= CITY_RUSH_WANTED_MAX_STARS\)/,
+    'une nouvelle provocation annule l’abandon');
+  assert.match(world, /patrolCars\.map\(\(patrol\) => \(\{\n          id: patrol\.id,\n          collisionGroup: 'traffic'/,
+    'les berlines lâchées roulent comme du trafic, chocs compris');
+  assert.match(world, /clearPatrolPolice\(\)/);
 });
 
 test('les berlines de police du trafic sont ciblables par un tir rouge', () => {

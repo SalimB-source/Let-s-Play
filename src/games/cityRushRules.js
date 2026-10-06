@@ -3319,14 +3319,39 @@ export function cityRushWantedLevelAfterPoliceDestroyed(currentLevel = 0, destro
   return Math.max(current, Math.min(CITY_RUSH_WANTED_MAX_STARS, 3 + count));
 }
 
-// Deux portes de service apparaissent au dernier tour de chaque carte, même
-// en mode Poursuite. Une porte ratée revient dans la deuxième boucle de ce
-// dernier tour, mais chaque garage ne peut servir qu'une fois par course.
-export const CITY_RUSH_MINI_GARAGE_COUNT = 2;
-export const CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS = Object.freeze([360, 840]);
+// ── Les deux portes de service d'une course ─────────────────────────────────
+// Chaque carte garde deux passages de service, mais ils ne sont plus groupés
+// sur le dernier tour :
+//
+//   · **mi-course** — une porte au milieu du parcours, à la moitié de la
+//     distance totale. Elle est là dès le départ, se répare sans étoiles, et
+//     permet de reprendre une coque abîmée avant même que l'escouade du dernier
+//     tour n'entre en piste ;
+//   · **dernier tour** — l'ancienne première porte du dernier tour (360 m après
+//     la ligne), seule rescapée du duo : la seconde (840 m) est retirée.
+//
+// Une porte ratée revient dans la boucle suivante, mais chaque garage ne peut
+// servir qu'une fois par course.
+export const CITY_RUSH_MINI_GARAGE_MID_RACE_KIND = 'mid-race';
+export const CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND = 'final-lap';
+export const CITY_RUSH_MINI_GARAGE_KINDS = Object.freeze([
+  CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
+  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
+]);
+// Positions du/des portique(s) du dernier tour, comptées depuis sa ligne.
+export const CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS = Object.freeze([360]);
+// Deux portes : celle de mi-course, plus celles du dernier tour.
+export const CITY_RUSH_MINI_GARAGE_COUNT = CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.length + 1;
+// Part du parcours où se tient la porte de mi-course (la moitié).
+export const CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE = 0.5;
 export const CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT = 2; // cellules rendues à la coque
 // Longueur du portique (5,1 unités de scène) convertie en mètres de piste.
 export const CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH = 2.55 / CITY_RUSH_SCROLL_SCALE;
+// Indication peinte sur la voie du garage : elle commence à cette distance
+// devant le portique, pour que le pilote ne rate pas la porte à pleine vitesse.
+export const CITY_RUSH_MINI_GARAGE_SIGN_LEAD = 34; // m
+// Le HUD n'allume le compteur que lorsque la porte approche vraiment.
+export const CITY_RUSH_MINI_GARAGE_HUD_RANGE = 500; // m
 
 /** Dernière voie du sens de course : la voie la plus à droite du joueur. */
 export function cityRushMiniGarageLane(course) {
@@ -3334,14 +3359,66 @@ export function cityRushMiniGarageLane(course) {
   return forwardLanes[forwardLanes.length - 1] ?? 0;
 }
 
-/** Les garages sont réservés au dernier tour, jamais au Sprint solo. */
-export function cityRushMiniGaragesAvailable({ lap = 1, laps = CITY_RUSH_LAPS, sprint = false } = {}) {
-  return !sprint && Number(lap) >= safeLapCount(laps);
+/** Distance absolue de la porte de mi-course : la moitié du parcours. */
+export function cityRushMiniGarageMidRaceDistance({
+  laps = CITY_RUSH_LAPS,
+  lapLength = CITY_RUSH_LAP_LENGTH,
+  finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS,
+} = {}) {
+  return cityRushRaceDistance(laps, lapLength, finalLapLoops) * CITY_RUSH_MINI_GARAGE_MID_RACE_SHARE;
 }
 
 /**
- * Le service attend la sortie du portique, dans la bonne voie, au dernier
- * tour. Il répare aussi une voiture sans étoiles ; chaque porte ne sert qu'une fois.
+ * Les portiques d'une course, dans l'ordre où le pilote les rencontre : la
+ * porte de mi-course puis celle(s) du dernier tour. Les distances sont
+ * absolues — le décor se répète tous les `lapLength` mètres, si bien qu'une
+ * porte se pose n'importe où dans le parcours.
+ */
+export function cityRushMiniGarageTrackDistances({
+  laps = CITY_RUSH_LAPS,
+  lapLength = CITY_RUSH_LAP_LENGTH,
+  finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS,
+} = {}) {
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  const finalLapStart = (safeLapCount(laps) - 1) * safeLap;
+  return Object.freeze([
+    cityRushMiniGarageMidRaceDistance({ laps, lapLength, finalLapLoops }),
+    ...CITY_RUSH_MINI_GARAGE_FINAL_LAP_OFFSETS.map((offset) => finalLapStart + offset),
+  ]);
+}
+
+/** Nature d'un portique, dans l'ordre de `cityRushMiniGarageTrackDistances`. */
+export function cityRushMiniGarageKindAt(index = 0) {
+  return Number(index) <= 0 ? CITY_RUSH_MINI_GARAGE_MID_RACE_KIND : CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND;
+}
+
+/**
+ * Une porte est-elle ouverte ? Celle de mi-course l'est dès le départ (seul le
+ * Sprint l'ignore) ; celle du dernier tour attend le dernier tour, comme avant.
+ */
+export function cityRushMiniGarageAvailable({
+  kind = CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
+  lap = 1,
+  laps = CITY_RUSH_LAPS,
+  sprint = false,
+} = {}) {
+  if (sprint) return false;
+  if (kind === CITY_RUSH_MINI_GARAGE_MID_RACE_KIND) return true;
+  return Number(lap) >= safeLapCount(laps);
+}
+
+/** Portes du dernier tour uniquement — le format historique du compteur HUD. */
+export function cityRushMiniGaragesAvailable({ lap = 1, laps = CITY_RUSH_LAPS, sprint = false } = {}) {
+  return cityRushMiniGarageAvailable({
+    kind: CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND, lap, laps, sprint,
+  });
+}
+
+/**
+ * Le service attend la sortie du portique, dans la bonne voie. Il s'ouvre au
+ * dernier tour pour la porte du dernier tour, et à tout moment pour celle de
+ * mi-course. Il répare aussi une voiture sans étoiles ; chaque porte ne sert
+ * qu'une fois.
  */
 export function cityRushMiniGarageCanUse({
   previousDistance,
@@ -3349,6 +3426,7 @@ export function cityRushMiniGarageCanUse({
   garageExitDistance,
   playerLane,
   garageLane,
+  kind = CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND,
   lap = 1,
   laps = CITY_RUSH_LAPS,
   sprint = false,
@@ -3357,7 +3435,7 @@ export function cityRushMiniGarageCanUse({
   const previous = Number(previousDistance);
   const next = Number(nextDistance);
   const exit = Number(garageExitDistance);
-  return cityRushMiniGaragesAvailable({ lap, laps, sprint })
+  return cityRushMiniGarageAvailable({ kind, lap, laps, sprint })
     && !used
     && Number.isFinite(previous)
     && Number.isFinite(next)

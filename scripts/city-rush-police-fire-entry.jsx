@@ -93,6 +93,7 @@ const {
   CITY_RUSH_LAPS, CITY_RUSH_POLICE_AIM_TIME, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceMaxHealth, cityRushPoliceAimHold,
   cityRushPoliceAimReady, cityRushMiniGarageRepair,
+  CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND, CITY_RUSH_MINI_GARAGE_MID_RACE_KIND,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -152,6 +153,9 @@ for (let run = 0; run < RUNS; run += 1) {
     }), car.id, { current: audioStub }, null, TEST_LAPS, PURSUIT_FROM_START);
 
     const miniGarages = world.scene.children.filter((object) => object.name === 'city-rush-mini-garage');
+    const finalLapGarages = miniGarages.filter((garage) => (
+      garage.userData.garageKind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND
+    ));
     let earlyGarageSeen = false;
     world.setPhase('countdown');
     for (let i = 0; i < 95; i += 1) stepFrame();
@@ -187,10 +191,18 @@ for (let run = 0; run < RUNS; run += 1) {
       // Pilote du pire cas : il ne se décale jamais (il reste dans sa voie).
       stepFrame();
       const nextHud = callbacks.huds.at(-1);
+      // Seule la porte du dernier tour est réservée au dernier tour : celle de
+      // mi-course se dresse au milieu du parcours, c'est son rôle. Passé la
+      // porte de mi-course, le compteur allumé ne peut plus désigner qu'elle.
+      const midRaceUsed = callbacks.effects.some((effect) => (
+        effect.type === 'mini-garage-used'
+        && effect.garageKind === CITY_RUSH_MINI_GARAGE_MID_RACE_KIND
+      ));
       if (!earlyGarageSeen && nextHud?.lap < TEST_LAPS
-        && (miniGarages.some((garage) => garage.visible) || nextHud.miniGaragesActive)) {
+        && (finalLapGarages.some((garage) => garage.visible)
+          || (midRaceUsed && nextHud.miniGaragesActive))) {
         earlyGarageSeen = true;
-        violations.push(`[${city.id}#${run}] les garages apparaissent avant le dernier tour en Poursuite`);
+        violations.push(`[${city.id}#${run}] la porte du dernier tour apparaît avant le dernier tour en Poursuite`);
       }
       frames += 1;
     }
@@ -211,9 +223,15 @@ for (let run = 0; run < RUNS; run += 1) {
         continue;
       }
       if (effect.type === 'mini-garage-used') {
-        if (effect.lap !== TEST_LAPS || effect.healthBefore !== tracked
+        // La porte de mi-course se sert au milieu du parcours, celle du
+        // dernier tour au dernier tour : chacune a sa fenêtre.
+        const wrongLap = effect.garageKind === CITY_RUSH_MINI_GARAGE_MID_RACE_KIND
+          ? effect.lap >= TEST_LAPS
+          : effect.lap !== TEST_LAPS;
+        if (![CITY_RUSH_MINI_GARAGE_MID_RACE_KIND, CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND].includes(effect.garageKind)
+          || wrongLap || effect.healthBefore !== tracked
           || effect.health !== cityRushMiniGarageRepair(tracked, carMaxHealth)) {
-          violations.push(`[${city.id}#${run}] le garage répare hors du dernier tour ou au-delà de la coque`, effect);
+          violations.push(`[${city.id}#${run}] le garage répare hors de son tour ou au-delà de la coque`, effect);
         }
         tracked = effect.health;
         continue;
