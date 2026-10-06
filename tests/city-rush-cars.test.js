@@ -93,16 +93,18 @@ test('la flotte de police comprend une berline et un SUV haut perché', () => {
   });
 });
 
-test('la berline de police banalisée ne montre ni gyrophare ni marquage', () => {
-  const unmarked = makeTrafficVehicle('undercover-police');
-  assert.equal(unmarked.userData.trafficType, 'undercover-police');
-  assert.equal(unmarked.userData.isPolice, true, 'la simulation la reconnaît comme police');
-  assert.equal(unmarked.userData.isUndercoverPolice, true);
-  assert.equal(unmarked.userData.beacons.length, 0, 'aucun gyrophare n’est visible');
-  const visibleNames = [];
-  unmarked.traverse((object) => { if (object.isMesh) visibleNames.push(object.name); });
-  assert.ok(!visibleNames.some((name) => /decal|beacon|lightbar|police-mark/i.test(name)),
-    'aucun élément de marquage policier n’est dans le modèle');
+test('le taxi remplace la berline banalisée : voiture civile jaune, sans gyrophare', () => {
+  const taxi = makeTrafficVehicle('taxi');
+  assert.equal(taxi.userData.trafficType, 'taxi');
+  assert.equal(taxi.userData.isTaxi, true);
+  assert.equal(taxi.userData.isPolice, false, 'aucune patrouille ne se cache derrière un taxi');
+  assert.equal(taxi.userData.isPoliceSUV, false);
+  assert.equal(taxi.userData.beacons.length, 0, 'un taxi n’a ni gyrophare ni rampe');
+  const colors = [];
+  taxi.traverse((object) => { if (object.isMesh && object.material?.color) colors.push(object.material.color.getHex()); });
+  assert.ok(colors.includes(0xf7c22c), 'la carrosserie jaune du taxi se lit');
+  assert.ok(colors.includes(0x191a20), 'le damier et la lanterne reprennent le noir du taxi');
+  assert.ok(taxi.userData.width > 0 && taxi.userData.length > 0, 'le taxi garde une empreinte de berline');
 });
 
 test('les coupés ne contiennent aucun personnage, même quand un pilote est assigné', () => {
