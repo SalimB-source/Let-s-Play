@@ -82,6 +82,9 @@ const {
   CITY_RUSH_MINI_GARAGE_KINDS, cityRushMiniGarageTrackDistances, cityRushMiniGarageMidRaceDistance,
   CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
+  CITY_RUSH_WANTED_MAX_STARS, CITY_RUSH_SPIKE_BLOCK_STARS, CITY_RUSH_SPIKE_BLOCK_LEAD, CITY_RUSH_SPIKE_BLOCK_COOLDOWN,
+  CITY_RUSH_SPIKE_LANES, CITY_RUSH_SPIKE_SLOW_DURATION, CITY_RUSH_SPIKE_SLOW_FACTOR, cityRushSpikeLanes,
+  CITY_RUSH_SUV_CHARGE_COUNT, CITY_RUSH_SUV_CHARGE_TYPE, CITY_RUSH_SUV_CHARGE_ALERT_RANGE,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
   CITY_RUSH_ONCOMING_BONUS_MAX,
@@ -199,6 +202,15 @@ for (const [index, city] of courses.entries()) {
   // signaler l'intervalle de collision comme un passage à travers une voiture
   // solide.
   const policeCollisionFrames = new Map();
+  // Montages de herse, dans l'ordre : le délai de la règle doit séparer deux
+  // barrages, et le franchissement doit venir après la pose.
+  const spikeDeployFrames = [];
+  // Un choc frontal recule le pilote derrière la voiture qu'il vient de
+  // heurter (`applyOncomingImpact` recale sa distance). Une berline qui le
+  // suivait de près se retrouve alors à moins de `CITY_RUSH_CAR_GAP` : ce n'est
+  // pas un passage à travers une voiture solide, c'est le pilote qui a reculé.
+  // On retient la frame de chaque face-à-face pour l'épargner à la mesure.
+  let oncomingShoveFrame = -Infinity;
   const audioCalls = {};
   const audioStub = {};
   for (const name of AUDIO_METHODS) {
@@ -239,6 +251,10 @@ for (const [index, city] of courses.entries()) {
         if (e.type === 'police-hit' && e.source === 'collision') {
           policeCollisionFrames.set(e.police, virtualFrame);
         }
+        if (e.type === 'traffic-impact' && e.oncoming && e.isPlayer) {
+          oncomingShoveFrame = virtualFrame;
+        }
+        if (e.type === 'police-spike-block' && e.stage === 'deploy') spikeDeployFrames.push(virtualFrame);
         if (e.type === 'mini-garage-used') {
           const check = { effect: e, nextHud: null };
           callbacks.garageChecks.push(check);
@@ -816,13 +832,17 @@ for (const [index, city] of courses.entries()) {
           const inCollisionWindow = racer.isPlayer
             && Number.isFinite(lastCollisionFrame)
             && virtualFrame - lastCollisionFrame <= collisionGraceFrames;
+          // Même répit après un face-à-face : le recul du pilote est mécanique.
+          const inShoveWindow = racer.isPlayer && virtualFrame - oncomingShoveFrame <= collisionGraceFrames;
           const isJumpingOver = Boolean(
             (racer.isPlayer && (world.isJumping || world.jumpHeight > 0.8)) ||
             racer.isJumping ||
             hud.isJumping ||
             (racer.jumpHeight && racer.jumpHeight > 0.8)
           );
-          const overlapNow = contactCatchUp || inCollisionWindow || isJumpingOver ? Infinity : Math.abs(carDistance - racerDistance);
+          const overlapNow = contactCatchUp || inCollisionWindow || inShoveWindow || isJumpingOver
+            ? Infinity
+            : Math.abs(carDistance - racerDistance);
           if (!racer.isPlayer) {
             if (overlapNow < policeAiOverlap) policeAiOverlap = overlapNow;
             continue;
@@ -984,12 +1004,123 @@ for (const [index, city] of courses.entries()) {
   if (!wantedEffects.some((effect) => effect.stars >= 3)) {
     fail('un contact avec la police ne fait pas monter la recherche à trois étoiles', wantedEffects);
   }
+
+  // ── La herse des quatre étoiles ──────────────────────────────────────────
+  // Deux voitures de police se rangent en travers du sens de course et déroulent
+  // le tapis voie par voie : prise de position → pose → herse en place →
+  // rangement. Le pilote d'essai ne se dérobe pas et la traverse, mais le
+  // carré et la crevaison sont neutralisés par le lanceur — le barème est
+  // vérifié par les tests purs.
+  const spikeBlocks = callbacks.effects.filter((effect) => effect.type === 'police-spike-block');
+  const spikeHits = callbacks.effects.filter((effect) => effect.type === 'police-spike-hit');
+  const spikeDeploys = spikeBlocks.filter((effect) => effect.stage === 'deploy');
+  const expectedSpikeLanes = cityRushSpikeLanes(courseLanes.forwardLanes, CITY_RUSH_SPIKE_LANES).length;
+  if (wantedEffects.some((effect) => Number(effect.stars) >= CITY_RUSH_SPIKE_BLOCK_STARS) && !spikeDeploys.length) {
+    fail('quatre étoiles atteintes sans qu’aucune herse ne se dresse', wantedEffects);
+  }
+  if (spikeDeploys.some((effect) => effect.lanes !== expectedSpikeLanes || effect.distance !== CITY_RUSH_SPIKE_BLOCK_LEAD)) {
+    fail('une herse ne couvre pas les voies du sens de course ou se dresse à la mauvaise distance', spikeDeploys);
+  }
+  if (spikeBlocks.some((effect) => effect.stage === 'set' && effect.lanes !== expectedSpikeLanes)) {
+    fail('la herse posée ne couvre pas les voies annoncées', spikeBlocks);
+  }
+  if (spikeDeploys.length && !spikeBlocks.some((effect) => effect.stage === 'set')) {
+    fail('une herse déployée ne se pose jamais', spikeBlocks.map((effect) => effect.stage));
+  }
+  // Deux barrages ne se suivent pas plus vite que le délai de la règle (le
+  // rangement pris en compte, la marge reste sous le dixième).
+  const spikeCooldownFrames = Math.floor((CITY_RUSH_SPIKE_BLOCK_COOLDOWN / (FRAME_MS / 1000)) * 0.9);
+  for (let index = 1; index < spikeDeployFrames.length; index += 1) {
+    if (spikeDeployFrames[index] - spikeDeployFrames[index - 1] < spikeCooldownFrames) {
+      fail('deux herses se suivent plus vite que le délai de la règle', spikeDeployFrames);
+    }
+  }
+  if (spikeHits.some((effect) => !(Number(effect.lane) >= 0) || !(Number(effect.lanes) >= 1)
+    || Number(effect.lanes) > expectedSpikeLanes)) {
+    fail('un franchissement de herse ne dit pas sa voie ni les voies posées', spikeHits);
+  }
+  if (spikeHits.some((effect) => Number(effect.healthLost) !== 0)) {
+    fail('la herse a retiré un carré au pilote alors que le lanceur neutralise ce coût', spikeHits);
+  }
+  if (spikeHits.some((effect) => effect.slowSeconds !== CITY_RUSH_SPIKE_SLOW_DURATION
+    || effect.factor !== CITY_RUSH_SPIKE_SLOW_FACTOR)) {
+    fail('la crevaison de la herse n’annonce pas le barème de la règle', spikeHits);
+  }
+  // Le HUD publie la herse montée : ses voies, sa distance et son état.
+  const spikeHuds = callbacks.huds.filter((hud) => hud.spikeBlock);
+  if (spikeHuds.some((hud) => !['deploying', 'laying', 'set', 'packing'].includes(hud.spikeBlock.state)
+    || !Array.isArray(hud.spikeBlock.lanes) || hud.spikeBlock.lanes.length !== expectedSpikeLanes
+    || !Number.isFinite(hud.spikeBlock.gap) || typeof hud.spikeBlock.covered !== 'boolean')) {
+    fail('le HUD de la herse sort de ses états, de ses voies ou de sa distance', spikeHuds[0]);
+  }
+  if (spikeDeploys.length && !spikeHuds.length) fail('la herse n’apparaît jamais dans le HUD');
+
+  // ── Les SUV de charge du contresens ──────────────────────────────────────
+  // À cinq étoiles, deux SUV arrivent de face, visent la voie du pilote et
+  // foncent ; le contact les retourne et les met dans la roue de la chasse.
+  const suvAlerts = callbacks.effects.filter((effect) => effect.type === 'police-suv-charge');
+  const suvContacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.isSuv && effect.policeContact);
+  const suvFiveStars = wantedEffects.some((effect) => Number(effect.stars) >= CITY_RUSH_WANTED_MAX_STARS);
+  if (oncomingLanes > 0 && suvFiveStars && !suvAlerts.length) {
+    fail('cinq étoiles sans aucune charge de SUV annoncée', wantedEffects);
+  }
+  if (oncomingLanes === 0 && (suvAlerts.length || suvContacts.length)) {
+    fail('un parcours en sens unique a subi une charge de SUV', suvAlerts);
+  }
+  if (suvAlerts.some((effect) => !(Number(effect.distance) > 0
+    && Number(effect.distance) <= CITY_RUSH_SUV_CHARGE_ALERT_RANGE))) {
+    fail('une charge de SUV est annoncée hors de sa portée d’alerte', suvAlerts);
+  }
+  if (suvContacts.some((effect) => Number(effect.healthLost) !== 0)) {
+    fail('un SUV d’interception a retiré un carré au pilote alors que le lanceur neutralise ce coût', suvContacts);
+  }
+  const suvPursued = new Set();
+  for (const hud of callbacks.huds) {
+    for (const car of hud.police || []) if (car.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE) suvPursued.add(car.id);
+  }
+  // Le SUV touché fait demi-tour : il chasse, ou il a été descendu pendant la
+  // manœuvre (le tir du pilote ou la rafale d'un rival).
+  const suvTurned = callbacks.effects.some((effect) => effect.type === 'police-turnaround-complete'
+    && String(effect.id).startsWith('rally-suv-charge'));
+  const suvDestroyed = callbacks.effects.some((effect) => effect.type === 'police-destroyed'
+    && effect.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE);
+  if (suvContacts.length && !suvPursued.size && !suvTurned && !suvDestroyed) {
+    fail('un SUV de charge touché n’a pas fait demi-tour vers la chasse', suvContacts);
+  }
+  // Le HUD suit les deux SUV — dormants tant que la course n'est pas à cinq
+  // étoiles (ou sur un parcours sans contresens).
+  const suvHuds = callbacks.huds.filter((hud) => Array.isArray(hud.suvCharges));
+  if (!suvHuds.length) fail('le HUD ne rapporte jamais les SUV de charge');
+  if (suvHuds.some((hud) => hud.suvCharges.length !== CITY_RUSH_SUV_CHARGE_COUNT)) {
+    fail('le HUD ne suit pas les deux SUV de charge', suvHuds[0].suvCharges);
+  }
+  const suvBadState = callbacks.huds.find((hud) => (hud.suvCharges || []).some((car) => !['dormant', 'charging', 'reloading', 'destroyed'].includes(car.state)));
+  if (suvBadState) fail('un SUV de charge annonce un état inconnu', suvBadState.suvCharges);
+  // Aucun SUV ne se met en charge sous cinq étoiles. On surveille les
+  // transitions (et non l'état courant) : après l'arrivée, le dernier HUD peut
+  // encore montrer une charge déjà close, faute d'image suivante.
+  const suvEarly = callbacks.huds.find((hud, index) => {
+    if (Number(hud.wantedLevel || 0) >= CITY_RUSH_WANTED_MAX_STARS) return false;
+    const before = index > 0 ? callbacks.huds[index - 1].suvCharges || [] : [];
+    return (hud.suvCharges || []).some((car) => {
+      const wasDormant = (before.find((older) => older.id === car.id) || { state: 'dormant' }).state === 'dormant';
+      return wasDormant && car.state !== 'dormant';
+    });
+  });
+  if (suvEarly) fail(`un SUV de charge s’est activé avant cinq étoiles (étoiles ${suvEarly.wantedLevel})`, suvEarly.suvCharges);
+  if (suvAlerts.some((effect) => Number(effect.speed) <= 0)) {
+    fail('une charge de SUV annonce une vitesse nulle', suvAlerts);
+  }
   const miniGarageUses = callbacks.effects.filter((effect) => effect.type === 'mini-garage-used');
   if (miniGarageUses.length > CITY_RUSH_MINI_GARAGE_COUNT) {
     fail('plus de deux mini-garages ont été utilisés dans une course', miniGarageUses);
   }
-  if (miniGarageUses.some((effect) => Number(effect.previousStars) < 0 || Number(effect.stars) !== 0)) {
-    fail('un mini-garage utilisé ne remet pas la recherche à zéro', miniGarageUses);
+  // Le barème du portique est progressif : au-dessus de trois étoiles la
+  // recherche ne baisse que d'un cran, à trois ou moins elle retombe à zéro.
+  const garageStarsAfter = (previous) => (Number(previous) > 3 ? Number(previous) - 1 : 0);
+  if (miniGarageUses.some((effect) => Number(effect.previousStars) < 0
+    || Number(effect.stars) !== garageStarsAfter(effect.previousStars))) {
+    fail('un mini-garage utilisé ne baisse pas la recherche selon son barème', miniGarageUses);
   }
   if (miniGarageUses.some((effect) => effect.garageKind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND && effect.lap !== RACE_LAPS)) {
     fail('la porte du dernier tour a servi avant le dernier tour', miniGarageUses);
@@ -1010,8 +1141,11 @@ for (const [index, city] of courses.entries()) {
       fail('aucun HUD n’est émis après un passage en mini-garage', check.effect);
       continue;
     }
+    const expectedStars = garageStarsAfter(check.effect.previousStars);
     const chasers = (check.nextHud.police || []).filter((car) => car.targetId === 'player');
-    if (chasers.length) {
+    // Une poursuite ne s'arrête complètement que si la recherche retombe à
+    // zéro ; au-dessus de trois étoiles, elle continue au niveau réduit.
+    if (expectedStars === 0 && chasers.length) {
       fail('une berline reste en chasse après la sortie du mini-garage', {
         effect: check.effect,
         stars: check.nextHud.wantedLevel,
@@ -1019,9 +1153,9 @@ for (const [index, city] of courses.entries()) {
         chasers: chasers.map((car) => `${car.id}/${car.mode || '?'}`),
       });
     }
-    if (Number(check.nextHud.wantedLevel) !== 0) {
-      fail('un mini-garage ne remet pas la recherche à zéro sur l’image suivante', {
-        effect: check.effect, wantedLevel: check.nextHud.wantedLevel,
+    if (Number(check.nextHud.wantedLevel) !== expectedStars) {
+      fail('un mini-garage ne laisse pas la recherche au niveau de sa règle sur l’image suivante', {
+        effect: check.effect, wantedLevel: check.nextHud.wantedLevel, expectedStars,
       });
     }
   }
@@ -1029,7 +1163,9 @@ for (const [index, city] of courses.entries()) {
     fail('un mini-garage servi n’annonce pas les poursuivants lâchés', miniGarageUses);
   }
   const garagePursuersReleased = miniGarageUses.reduce((total, effect) => total + Number(effect.pursuersReleased || 0), 0);
-  if (wantedEffects.some((effect) => effect.stars >= 3) && miniGarageUses.length && garagePursuersReleased === 0) {
+  if (wantedEffects.some((effect) => effect.stars >= 3)
+    && miniGarageUses.some((effect) => garageStarsAfter(effect.previousStars) === 0)
+    && garagePursuersReleased === 0) {
     fail('aucune poursuite n’a été lâchée par un mini-garage alors que la police était en chasse', miniGarageUses);
   }
   if (miniGarageUses.some((effect) => effect.healthBefore <= 0 || effect.health > effect.maxHealth
@@ -1314,8 +1450,8 @@ for (const [index, city] of courses.entries()) {
     fail(`${ralliedInHud.size} berline(s) rappelée(s) en piste pour ${rallyEvents.length} contact(s)/demi-tour(s)`, [...ralliedInHud]);
   }
   for (const car of rallies) {
-    if (!['POLICE ROUTIÈRE', 'POLICE EN CIVIL'].includes(car.police)) {
-      fail('une berline rappelée n’est pas identifiée comme police routière ou banalisée', car);
+    if (!['POLICE ROUTIÈRE', 'POLICE EN CIVIL', 'POLICE SUV'].includes(car.police)) {
+      fail('une berline rappelée n’est pas identifiée comme police routière, banalisée ou SUV', car);
     }
   }
   const ralliedIds = [...ralliedInHud];

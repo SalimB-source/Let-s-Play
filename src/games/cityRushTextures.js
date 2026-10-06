@@ -913,11 +913,11 @@ export function makeRacingNumberTexture(profile, number) {
 }
 
 export function makeTrafficDecalAtlas() {
-  // 4 cases : POLICE, AMBULANCE, croix rouge, sigle de la voirie.
+  // 5 cases : POLICE, AMBULANCE, croix rouge, sigle de la voirie, TAXI.
   const cell = 256;
   const height = 96;
   const texture = makeCanvasTexture((ctx) => {
-    ctx.clearRect(0, 0, cell * 4, height);
+    ctx.clearRect(0, 0, cell * 5, height);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '900 54px "Orbitron", Arial, sans-serif';
@@ -932,8 +932,15 @@ export function makeTrafficDecalAtlas() {
     ctx.fillStyle = '#f5e6a3';
     ctx.font = '900 34px "Orbitron", Arial, sans-serif';
     ctx.fillText('CITY WASTE', cell * 3.5, height / 2 + 2);
-  }, cell * 4, height, { smooth: true });
-  const uv = (index) => [index / 4 + 0.004, 0.02, (index + 1) / 4 - 0.004, 0.98];
+    // Le taxi porte le jaune de la ville sur un cartouche sombre : la plaque
+    // reste lisible sur une carrosserie dorée.
+    ctx.fillStyle = '#191a20';
+    ctx.fillRect(cell * 4 + 16, 12, cell - 32, height - 24);
+    ctx.fillStyle = '#f7c22c';
+    ctx.font = '900 52px "Orbitron", Arial, sans-serif';
+    ctx.fillText('TAXI', cell * 4.5, height / 2 + 2);
+  }, cell * 5, height, { smooth: true });
+  const uv = (index) => [index / 5 + 0.003, 0.02, (index + 1) / 5 - 0.003, 0.98];
   return { texture, uv };
 }
 

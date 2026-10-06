@@ -416,15 +416,18 @@ export const CITY_RUSH_TRAFFIC_LANES = Object.freeze(
 export const CITY_RUSH_ONCOMING_COUNT = 3;
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
-  // Garder la patrouille banalisée juste après la voiture marquée garantit
-  // sa présence même sur les parcours qui limitent le nombre de voitures.
-  Object.freeze({ id: 'undercover-police', name: 'Berline banalisée', speed: 6.8, width: 1.94, length: 3.8 }),
+  // Plus une seule berline « en civil » sur la route : l'ancienne banalisée
+  // noire a cédé sa place au taxi, la voiture civile de la ville. Le taxi roule
+  // comme le trafic ordinaire et ne déclenche aucune poursuite.
+  Object.freeze({ id: 'taxi', name: 'Taxi', speed: 6.8, width: 1.94, length: 3.8 }),
   Object.freeze({ id: 'ambulance', name: 'Ambulance', speed: 5.3, width: 1.98, length: 4.0 }),
   Object.freeze({ id: 'garbage-truck', name: 'Camion-poubelle', speed: 4.4, width: CITY_RUSH_ONCOMING_MAX_WIDTH, length: 4.6 }),
   Object.freeze({ id: 'white-lambo', name: 'Tempesta V12 blanche', speed: 7.2, width: 1.92, length: 3.8 }),
 ]);
 
-export const CITY_RUSH_POLICE_TRAFFIC_TYPES = Object.freeze(['police', 'undercover-police']);
+// Les seules voitures de police du trafic sont désormais les voitures marquées :
+// percuter l'une d'elles la fait sortir de sa ronde et partir en chasse.
+export const CITY_RUSH_POLICE_TRAFFIC_TYPES = Object.freeze(['police']);
 export function isCityRushPoliceTrafficType(type) {
   return CITY_RUSH_POLICE_TRAFFIC_TYPES.includes(String(type || ''));
 }
@@ -4056,6 +4059,170 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
   });
 }
 
+// ── La herse : le barrage éclair des voitures de police à quatre étoiles ────
+// À quatre étoiles, deux voitures de police se portent devant le pilote et
+// déploient une herse en travers des trois voies du sens de course. La scène se
+// lit en trois temps :
+//
+//   1. **la prise de position** — les deux voitures apparaissent devant le
+//      pilote et viennent se ranger en travers, une à chaque extrémité du
+//      barrage, gyrophares allumés ;
+//   2. **la pose** — la herse se déroule de voie en voie : un pilote qui arrive
+//      pendant la pose passe encore par les voies non couvertes ;
+//   3. **le passage** — franchir la ligne sur une voie couverte crève les pneus :
+//      un carré de coque (`CITY_RUSH_SPIKE_DAMAGE_SOURCE`) et une longue remise
+//      en vitesse. Les voies du contresens et un saut restent des
+//      échappatoires : la herse ne couvre que le sens de la course.
+//
+// Une fois le pilote passé (crevé ou non), les voitures rangent la herse et
+// repartent devant, hors de la course. Le barrage revient après un délai —
+// jamais en Sprint, et jamais avant la quatrième étoile.
+export const CITY_RUSH_SPIKE_BLOCK_STARS = 4;
+export const CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES = Object.freeze(['police', 'police-suv']);
+export const CITY_RUSH_SPIKE_BLOCK_COUNT = CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES.length;
+export const CITY_RUSH_SPIKE_LANES = 3; // voies de course couvertes par la herse
+export const CITY_RUSH_SPIKE_BLOCK_LEAD = 340; // m : la herse se dresse devant le pilote
+export const CITY_RUSH_SPIKE_BLOCK_COOLDOWN = 26; // s entre deux barrages
+export const CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION = 0.9; // s : les voitures se rangent en travers
+export const CITY_RUSH_SPIKE_LAY_DURATION = 1.4; // s : pose de la herse, voie par voie
+export const CITY_RUSH_SPIKE_BLOCK_LIFETIME = 22; // s : barrage retiré si le pilote ne vient pas
+export const CITY_RUSH_SPIKE_BLOCK_PACK_DURATION = 2.6; // s : les voitures repartent après le passage
+export const CITY_RUSH_SPIKE_BLOCK_ALERT_RANGE = 320; // m : distance d'annonce au pilote
+export const CITY_RUSH_SPIKE_HALF_LENGTH = 2.4; // m : demi-longueur du tapis à pointes
+export const CITY_RUSH_SPIKE_SLOW_DURATION = 2.6; // s : crevaison, la remise en vitesse est longue
+export const CITY_RUSH_SPIKE_SLOW_FACTOR = 0.42; // × la vitesse visée pendant la crevaison
+export const CITY_RUSH_SPIKE_IMPACT_DURATION = 1.1; // s : secousse de caisse au passage
+export const CITY_RUSH_SPIKE_DAMAGE_SOURCE = 'spike';
+export const CITY_RUSH_SPIKE_DAMAGE = 1; // carré de coque perdu sur la herse
+
+/** Nombre de voitures qui montent un barrage selon le niveau de recherche. */
+export function cityRushSpikeBlockCount(wantedLevel = 0, { sprint = false } = {}) {
+  if (sprint) return 0;
+  const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(wantedLevel) || 0)));
+  return stars >= CITY_RUSH_SPIKE_BLOCK_STARS ? CITY_RUSH_SPIKE_BLOCK_COUNT : 0;
+}
+
+/**
+ * Voies couvertes par la herse : les voies du sens de course, de la plus à
+ * gauche à la plus à droite. Sur un parcours à quatre voies (le Ring), la herse
+ * s'arrête à trois : la dernière voie reste ouverte, faute de contresens où se
+ * rabattre.
+ */
+export function cityRushSpikeLanes(forwardLanes = CITY_RUSH_FORWARD_LANES, count = CITY_RUSH_SPIKE_LANES) {
+  const lanes = Array.isArray(forwardLanes) && forwardLanes.length ? forwardLanes : CITY_RUSH_FORWARD_LANES;
+  const wanted = Math.max(1, Math.min(Math.floor(Number(count) || CITY_RUSH_SPIKE_LANES), lanes.length));
+  return Object.freeze(lanes.slice(0, wanted));
+}
+
+/** Voies déjà couvertes après `elapsed` secondes de pose (0 → `lanes`). */
+export function cityRushSpikeLaidLanes(elapsed = 0, {
+  lanes = CITY_RUSH_SPIKE_LANES,
+  duration = CITY_RUSH_SPIKE_LAY_DURATION,
+} = {}) {
+  const total = Math.max(1, Math.floor(Number(lanes) || CITY_RUSH_SPIKE_LANES));
+  const span = Math.max(0.001, Number(duration) || CITY_RUSH_SPIKE_LAY_DURATION);
+  const seconds = Math.max(0, Number(elapsed) || 0);
+  if (seconds >= span) return total;
+  return Math.min(total, Math.floor((seconds / span) * total));
+}
+
+/** Progression de la pose (0 → 1), pour dérouler la herse au rendu. */
+export function cityRushSpikeLayProgress(elapsed = 0, duration = CITY_RUSH_SPIKE_LAY_DURATION) {
+  const span = Math.max(0.001, Number(duration) || CITY_RUSH_SPIKE_LAY_DURATION);
+  return Math.max(0, Math.min(1, (Number(elapsed) || 0) / span));
+}
+
+/**
+ * Le pilote franchit-il la ligne de la herse sur une voie couverte ? Le
+ * franchissement se juge sur le segment parcouru pendant l'image (détection
+ * balayée) : une voiture trop rapide pour être vue *sur* la ligne est quand
+ * même pincée.
+ */
+export function cityRushSpikeHit({
+  previousDistance,
+  nextDistance,
+  spikeDistance,
+  lane,
+  lanes = [],
+  laidLanes = CITY_RUSH_SPIKE_LANES,
+} = {}) {
+  const previous = Number(previousDistance);
+  const next = Number(nextDistance);
+  const line = Number(spikeDistance);
+  if (!Number.isFinite(previous) || !Number.isFinite(next) || !Number.isFinite(line)) return false;
+  if (!(previous < line && next >= line)) return false;
+  const order = Array.isArray(lanes) ? lanes : [];
+  const covered = Math.max(0, Math.min(order.length, Math.floor(Number(laidLanes) || 0)));
+  return order.slice(0, covered).includes(Math.trunc(Number(lane)));
+}
+
+/** Vitesse visée après une crevaison : on ne repart pas à fond, pneus à plat. */
+export function cityRushSpikePace(speed = 0, factor = CITY_RUSH_SPIKE_SLOW_FACTOR) {
+  const value = Math.max(0, Number(speed) || 0);
+  const ratio = Math.min(1, Math.max(0.1, Number(factor) || CITY_RUSH_SPIKE_SLOW_FACTOR));
+  return value * ratio;
+}
+
+// ── Les SUV de tête : la charge à cinq étoiles ──────────────────────────────
+// Cinq étoiles ne se contentent plus d'attendre le pilote : deux SUV
+// d'interception arrivent **de face**, dans les voies du contresens, et foncent
+// sur lui. Leur conduite est celle d'un missile guidé :
+//
+//   · ils visent la voie du pilote dès qu'ils sont à portée de verrouillage
+//     (`CITY_RUSH_SUV_CHARGE_LOCK_RANGE`) et se rabattent latéralement à
+//     vitesse limitée (`CITY_RUSH_SUV_CHARGE_LATERAL_RATE`) : changer de voie
+//     au dernier moment les fait passer à côté ;
+//   · ils roulent plus vite que la pointe du pilote, sans quoi la charge ne
+//     serait qu'une voiture de plus à esquiver ;
+//   · **le contact les retourne** : un SUV qui touche le pilote — ou que le
+//     pilote percute — fait demi-tour sur la même animation que les patrouilles
+//     (`CITY_RUSH_POLICE_TURNAROUND_DURATION`) puis rejoint la chasse ;
+//   · une charge manquée n'est pas perdue : le SUV repasse au loin et revient.
+export const CITY_RUSH_SUV_CHARGE_COUNT = 2;
+export const CITY_RUSH_SUV_CHARGE_TYPE = 'police-suv';
+export const CITY_RUSH_SUV_CHARGE_SPAWN_LEAD = 420; // m : distance de départ d'une charge
+export const CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND = 45; // m derrière le pilote : la charge est manquée
+export const CITY_RUSH_SUV_CHARGE_RELOAD = 2.4; // s avant de repartir pour une charge
+export const CITY_RUSH_SUV_CHARGE_SPEED_FACTOR = 1.22; // × la pointe du pilote
+export const CITY_RUSH_SUV_CHARGE_MIN_SPEED = 24; // m/s : plancher, même sur un parcours lent
+export const CITY_RUSH_SUV_CHARGE_LOCK_RANGE = 150; // m : sous cette distance, la voie visée se verrouille
+export const CITY_RUSH_SUV_CHARGE_LATERAL_RATE = 3.4; // m/s de rabattement vers la voie visée
+export const CITY_RUSH_SUV_CHARGE_ALERT_RANGE = 300; // m : « SUV EN CHARGE » annoncé au pilote
+
+/** Nombre de SUV de charge actifs (aucun avant cinq étoiles, jamais en Sprint). */
+export function cityRushSuvChargeCount(wantedLevel = 0, { sprint = false, hasOncoming = true } = {}) {
+  if (sprint || !hasOncoming) return 0;
+  const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(wantedLevel) || 0)));
+  return stars >= CITY_RUSH_WANTED_MAX_STARS ? CITY_RUSH_SUV_CHARGE_COUNT : 0;
+}
+
+/** Vitesse de la charge : plus rapide que la pointe du pilote, avec un plancher. */
+export function cityRushSuvChargeSpeed(playerTopSpeed = CITY_RUSH_PLAYER_SPEED, {
+  factor = CITY_RUSH_SUV_CHARGE_SPEED_FACTOR,
+  floor = CITY_RUSH_SUV_CHARGE_MIN_SPEED,
+} = {}) {
+  const top = Math.max(0, Number(playerTopSpeed) || 0);
+  const ratio = Math.max(1, Number(factor) || CITY_RUSH_SUV_CHARGE_SPEED_FACTOR);
+  return Math.max(Math.max(0, Number(floor) || 0), top * ratio);
+}
+
+/** La charge verrouille-t-elle la voie du pilote ? (SUV devant lui, à portée) */
+export function cityRushSuvChargeLocked({ gap = 0, range = CITY_RUSH_SUV_CHARGE_LOCK_RANGE } = {}) {
+  const ahead = Number(gap);
+  const reach = Math.max(1, Number(range) || CITY_RUSH_SUV_CHARGE_LOCK_RANGE);
+  return Number.isFinite(ahead) && ahead > 0 && ahead <= reach;
+}
+
+/** Un pas de rabattement latéral vers la voie visée, à vitesse limitée. */
+export function cityRushSuvChargeStep(currentX, targetX, dt, rate = CITY_RUSH_SUV_CHARGE_LATERAL_RATE) {
+  const from = Number(currentX) || 0;
+  const to = Number(targetX);
+  if (!Number.isFinite(to)) return from;
+  const step = Math.max(0, Number(rate) || 0) * Math.max(0, Number(dt) || 0);
+  if (Math.abs(to - from) <= step) return to;
+  return from + Math.sign(to - from) * step;
+}
+
 // ── Barres de vie des voitures de course ────────────────────────────────────
 // Le joueur et ses deux rivaux ont une barre de vie visible dès le départ
 // effectif, remplie par groupes de cinq : bleu, vert, puis jaune ; les trois
@@ -4104,6 +4271,7 @@ export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   // remplacée par le lanceur du smoke de course (voir `city-rush-smoke.mjs`).
   collision: 1, // choc contre une voiture : un carré pour le pilote
   'suv-collision': 2, // choc contre un SUV de police blindé : deux carrés
+  spike: 1, // herse : un carré pour le pilote, pneus crevés
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
 // Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
