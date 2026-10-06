@@ -916,15 +916,21 @@ et le dernier tour durait 21 s.
   Quelques mètres avant l'entrée, la voie est peinte au sol (flèche et
   « GARAGE ») et bordée de chevrons lumineux, avec un panneau de bord de voie
   qui rappelle la distance (`CITY_RUSH_MINI_GARAGE_SIGN_LEAD`) : l'indication
-  naît et disparaît avec la porte, pour qu'on ne la manque pas. Sortir du
-  portique dans sa voie efface les étoiles et rend **jusqu'à deux cellules de
-  vie**, sans dépasser la résistance maximale de la voiture choisie
-  (`CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT`, `cityRushMiniGarageRepair`). La
-  réparation fonctionne aussi sans étoiles, mais ne ressuscite pas une épave.
-  **La poursuite est abandonnée** : les berlines qui chassaient le joueur
-  reprennent une conduite normale, à l'allure du trafic, dans leur voie — plus
-  de tir, plus de barrage, plus de mire —, puis quittent la scène une fois
-  distancées ; il faut une nouvelle provocation pour qu'une escouade reparte.
+  naît et disparaît avec sa porte, pour qu'on ne la manque pas. Sortir du
+  portique dans sa voie **fait baisser la recherche d'un cran** au-dessus de
+  trois étoiles — de cinq à quatre, de quatre à trois — et la **ramène à zéro**
+  à trois étoiles ou moins (`cityRushMiniGarageWantedLevel`) ; il rend aussi
+  **jusqu'à deux cellules de vie**, sans dépasser la résistance maximale de la
+  voiture choisie (`CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT`,
+  `cityRushMiniGarageRepair`). La réparation fonctionne aussi sans étoiles, mais
+  ne ressuscite pas une épave. **Quand la recherche retombe à zéro, la poursuite
+  est abandonnée** : les berlines qui chassaient le joueur reprennent une
+  conduite normale, à l'allure du trafic, dans leur voie — plus de tir, plus de
+  barrage, plus de mire —, puis quittent la scène une fois distancées ; il faut
+  une nouvelle provocation pour qu'une escouade reparte. Au-dessus de trois
+  étoiles, elle continue au niveau réduit, et les dispositifs suivent le
+  niveau : la herse reste montée à quatre étoiles, les SUV d'interception
+  rentrent au loin dès qu'on redescend sous cinq.
   Le garage ne sert **qu'une fois par course** ; la porte ratée revient au
   même repère dans la boucle suivante. Le compteur ne s'allume qu'à l'approche
   de la porte (`CITY_RUSH_MINI_GARAGE_HUD_RANGE`) et le bandeau annonce les
@@ -1004,6 +1010,66 @@ et le dernier tour durait 21 s.
   moment de l'explosion et la durée du feu. La berline du trafic rappelée par un
   contact est destructible comme l'escouade ; à la course suivante, le trafic
   repart au complet.
+- **Quatre étoiles : la herse.** À partir de la quatrième étoile, deux voitures
+  de police — une berline et un SUV (`CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES`) —
+  apparaissent **devant** le pilote et se rangent **en travers des trois voies
+  du sens de course** (`CITY_RUSH_SPIKE_BLOCK_STARS` = 4,
+  `CITY_RUSH_SPIKE_LANES` = 3), 340 m devant lui
+  (`CITY_RUSH_SPIKE_BLOCK_LEAD`). Le dispositif se lit en trois temps : les
+  voitures **se rangent** (0,9 s, `CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION`),
+  puis la herse **se déroule voie par voie** (1,4 s,
+  `CITY_RUSH_SPIKE_LAY_DURATION`, `cityRushSpikeLaidLanes`) — un pilote qui
+  arrive pendant la pose passe encore par les voies non couvertes —, puis elle
+  est **posée**. Franchir la ligne sur une voie couverte **crève les pneus** :
+  **un carré de coque** (`CITY_RUSH_SPIKE_DAMAGE`, source `spike` dans
+  `CITY_RUSH_PLAYER_DAMAGE`) et une longue remise en vitesse à **0,42 ×** de la
+  vitesse visée pendant **2,6 s** (`CITY_RUSH_SPIKE_SLOW_FACTOR`,
+  `CITY_RUSH_SPIKE_SLOW_DURATION`, `cityRushSpikePace`), avec une secousse de
+  caisse à l'impact (`CITY_RUSH_SPIKE_IMPACT_DURATION`). La détection est
+  **balayée** (`cityRushSpikeHit` : `previous < ligne <= next`) et bornée à la
+  voie du pilote, si bien qu'**un saut** au-dessus du tapis et **les voies du
+  contresens** restent des échappatoires — la herse ne couvre que le sens de la
+  course. Une fois le pilote passé, les voitures rangent le dispositif et
+  repartent ; un barrage jamais franchi est démonté au bout de 22 s
+  (`CITY_RUSH_SPIKE_BLOCK_LIFETIME`), et le suivant ne revient qu'après 26 s de
+  délai (`CITY_RUSH_SPIKE_BLOCK_COOLDOWN`). Le HUD expose `spikeBlock`
+  (`state` : `deploying`, `laying`, `set`, `packing`, plus `gap`, `lanes`,
+  `covered`, `slowLeft`, `cooldown`) et la page raconte chaque étape (« HERSE ·
+  LES BLEUS SE RANGENT EN TRAVERS… », « HERSE EN COURS DE POSE… », « HERSE
+  POSÉE · TA VOIE EST COUVERTE · DÉCALE-TOI, SAUTE OU PASSE EN CONTRESENS. »,
+  « HERSE RANGÉE · LA ROUTE SE LIBÈRE. ») jusqu'au constat du passage (« HERSE ·
+  PNEUS CREVÉS · … · VITESSE EN BERNE … S. »). La herse est rangée par
+  `reset()` et à l'arrivée, et elle n'existe **jamais en Sprint**
+  (`cityRushSpikeBlockCount` rend 0).
+- **Cinq étoiles : les SUV d'interception.** En plus des demi-tours à vue des
+  patrouilles du contresens — qui restent en place —, la cinquième étoile fait
+  entrer **deux SUV de police** par les voies en sens inverse
+  (`CITY_RUSH_SUV_CHARGE_COUNT` = 2, `CITY_RUSH_SUV_CHARGE_TYPE` =
+  `police-suv`). Ils naissent 420 m devant le pilote
+  (`CITY_RUSH_SUV_CHARGE_SPAWN_LEAD`), espacés de 60 m pour que la première
+  charge se lise avant la seconde, et **foncent sur lui** : leur vitesse suit la
+  pointe du pilote × **1,22** (`CITY_RUSH_SUV_CHARGE_SPEED_FACTOR`) avec un
+  plancher de **24 m/s** (`CITY_RUSH_SUV_CHARGE_MIN_SPEED`,
+  `cityRushSuvChargeSpeed`). La charge est annoncée à 300 m
+  (`CITY_RUSH_SUV_CHARGE_ALERT_RANGE`, effet `police-suv-charge` et bandeau
+  « SUV D'INTERCEPTION EN CHARGE · … M · IL VISE TA VOIE, CHANGE DE FILE. ») ; à moins de 150 m
+  (`CITY_RUSH_SUV_CHARGE_LOCK_RANGE`), le SUV **verrouille la voie du pilote**
+  (`cityRushSuvChargeLocked`) et se rabat dessus à **3,4 m/s**
+  (`CITY_RUSH_SUV_CHARGE_LATERAL_RATE`, `cityRushSuvChargeStep`) — doubler ne
+  suffit plus, il faut sortir de sa trajectoire. Le choc est le plus cher du
+  jeu : **deux carrés de coque** (`suv-collision` dans
+  `CITY_RUSH_PLAYER_DAMAGE`, bandeau « CHOC AVEC LE SUV D'INTERCEPTION · IL
+  FAIT DEMI-TOUR ET TE PREND EN CHASSE »). Après nous avoir touchés, les SUV
+  **font demi-tour et nous pourchassent** : ils rejoignent la chasse par
+  `rallyPoliceVehicle` (nom « POLICE SUV », même coque que la police,
+  `cityRushPoliceMaxHealth`). Un SUV qui passe 45 m derrière le pilote sans le
+  toucher a manqué sa charge : il recharge 2,4 s et revient
+  (`CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND`, `CITY_RUSH_SUV_CHARGE_RELOAD`). Le
+  HUD les suit un par un (`suvCharges` : `state` — `dormant`, `charging`,
+  `reloading` —, `gap`, `lane`, `locked`, `turnedAround`, `destroyed`) ; ils
+  rentrent au loin si la poursuite retombe sous cinq étoiles, et ni eux ni la
+  herse n'existent en Sprint (`cityRushSuvChargeCount` rend 0 sans contresens,
+  ou en Sprint).
 - **Le dernier tour sous surveillance.** Deux choses accompagnent l'escouade.
   D'abord un **hélicoptère d'observation** se poste dans le ciel pendant le
   dernier tour : 18 m devant la voiture du pilote, 8 m au-dessus de la
@@ -1060,6 +1126,16 @@ et le dernier tour durait 21 s.
   au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
   (`CITY_RUSH_PLAYER_DAMAGE`, `CITY_RUSH_PLAYER_HEALTH_CRITICAL`,
   `CITY_RUSH_POLICE_COLLISION_COOLDOWN`).
+- **Le taxi remplace la berline banalisée.** La voiture de police **en civil**
+  noire a quitté la route : `CITY_RUSH_TRAFFIC_TYPES` aligne désormais le
+  **taxi** jaune à bandeau damier (`taxi`, `isTaxi` dans `cityRushCars.js`), au
+  même profil de conduite (6,8 m/s) que la banalisée qu'elle remplace. Il roule
+  comme le trafic ordinaire et ne déclenche **aucune** poursuite ;
+  `CITY_RUSH_POLICE_TRAFFIC_TYPES` ne contient plus que les voitures
+  **marquées** (`['police']`), seules à sortir de leur ronde quand on les
+  percute, et la raison d'effet `'undercover-contact'` a disparu. Le taxi n'a ni
+  gyrophare ni marquage latéral : caisse jaune, toit noir et damier sur les
+  flancs.
 - **Changer de voie ne ralentit plus.** Doubler, se rabattre ou esquiver le
   trafic est **gratuit en vitesse** : la voiture glisse latéralement vers
   `CITY_RUSH_LANE_X` à pleine allure, sans coup de frein. L'ancien malus —
@@ -1219,7 +1295,7 @@ et le dernier tour durait 21 s.
 - **Les voitures.** Cabriolets et rivaux modélisés (phares, feux arrière,
   flammes de turbo, roues qui tournent et se braquent, roulis et tangage selon
   la conduite, fumée au démarrage et dans les dérapages) ; le trafic (police,
-  ambulance, camion-poubelle, Lamborghini blanche) a ses gyrophares et ses
+  taxi, ambulance, camion-poubelle, Lamborghini blanche) a ses gyrophares et ses
   décalcomanies. Les cabriolets sont **décapotés et leurs pilotes ont le visage
   à l'air** (voir « Les pilotes dans le cockpit » plus bas) : plus un seul
   casque intégral dans la course, chaque tête est celle de l'avatar du pilote
@@ -1247,7 +1323,12 @@ et le dernier tour durait 21 s.
   `cityRushLapProgress`, `cityRushRaceDistance`, `cityRushLineKind` pour le
   grand dernier tour, `cityRushTrackGap` pour replier la boucle devant la
   caméra, `cityRushTrackOffset`/`Elevation`/`Yaw`/`Pitch` pour la ligne centrale
-  courbée du rendu), **données de la Shuto C1** (`CITY_RUSH_SHUTO_C1`,
+  courbée du rendu), **barème des étoiles** (`cityRushWantedLevelAfterHit`,
+  `cityRushWantedLevelAfterPoliceDestroyed`), **herse** (`CITY_RUSH_SPIKE_*`,
+  `cityRushSpikeLanes`, `cityRushSpikeLaidLanes`, `cityRushSpikeHit`,
+  `cityRushSpikePace`), **SUV d'interception** (`CITY_RUSH_SUV_CHARGE_*`,
+  `cityRushSuvChargeCount`, `cityRushSuvChargeSpeed`, `cityRushSuvChargeLocked`,
+  `cityRushSuvChargeStep`), **données de la Shuto C1** (`CITY_RUSH_SHUTO_C1`,
   `shutoC1SectorAt`, `shutoC1KmAt`, `shutoC1CoverAt`, `shutoC1NextJunction`,
   `shutoC1Readout`) et **silhouette officielle de l'anneau**
   (`cityRushMinimapTrackShape`, `routeTicks`) ;
@@ -1277,8 +1358,11 @@ et le dernier tour durait 21 s.
   dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
   passages de ligne, environnement de tunnel de la C1, **hélicoptère
-  d'observation** et **barre de vie du pilote** — `activatePlayerHealth`,
-  `damagePlayer`, `checkPoliceCollisions`) ;
+  d'observation**, **barre de vie du pilote** — `activatePlayerHealth`,
+  `damagePlayer`, `checkPoliceCollisions` —, **herse** — `beginSpikeBlock`,
+  `updateSpikeBlock`, `dismissSpikeBlock`, `applySpikeHit` — et **SUV
+  d'interception** — `armSuvCharge`, `updateSuvCharges`, la boucle du contresens
+  qui les fait demi-tour puis `rallyPoliceVehicle`) ;
   `src/games/ViceCityRushPage.jsx` et `src/games/vice-city-rush.css` — la page,
   le HUD (carte TOUR, bannière de tour, plaque de signalisation de la route,
   liste des pilotes) ;
@@ -1435,11 +1519,11 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ### Vérifications
 
 ```bash
-npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, herse des quatre étoiles, SUV des cinq étoiles, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
-npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring)
+npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring), herse et SUV d'interception vérifiés sans leurs dégâts
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
@@ -1476,6 +1560,16 @@ du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
 pleine dès le départ — vingt-trois cellules pour la MISTRAL, sept pour la
 PULSE RS, quinze pour les rivaux —, bornées et jamais croissantes ; chaque tir
 encaissé respecte le barème).
+Il suit aussi les deux dispositifs du barème des étoiles : la **herse**
+(quatre états `deploying` → `laying` → `set` → `packing`, trois voies du sens
+de course annoncées, jamais montée avant la quatrième étoile ni en Sprint) et
+les **SUV d'interception** (deux au plus, aucun armé sous cinq étoiles, contact
+à deux carrés, demi-tour après le choc puis chasse). Comme pour le carambolage,
+le harnais **neutralise leurs dégâts** pour ne pas finir en épave avant
+l'arrivée : le lanceur patche `spike: 1` et `'suv-collision': 2` en `0` et
+ramène `CITY_RUSH_SPIKE_SLOW_FACTOR` à `1`. Le barème réel — un carré sur la
+herse, deux sur un SUV, vitesse à 0,42 × pendant 2,6 s — est tenu par les tests
+purs (`npm run check:city-rush`) et par le harnais d'armes.
 Le **carré du carambolage est neutralisé dans ce harnais** : le lanceur patche
 l'ancre `collision: 1` de `cityRushRules.js` en `collision: 0`, sinon le pilote
 d'essai — qui ne se dérobe jamais — finirait en épave avant l'arrivée. Le

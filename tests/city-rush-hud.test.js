@@ -159,7 +159,8 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
     'le compteur des garages n’apparaît qu’avec une porte en approche');
   assert.match(page, /un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours/);
-  assert.match(page, /rend aussi jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/);
+  assert.match(page, /rend aussi jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/,
+    'le bandeau annonce la réparation rendue par le portique');
 
   // Une seule porte, ouverte dès le départ : plus aucune n'attend le dernier
   // tour depuis le retrait de celle du dernier tour.
@@ -181,8 +182,8 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
     'le service calcule une fois les points rendus, pour le bandeau et le bruitage');
   assert.match(service, /audioRef\?\.current\?\.garageRepair\?\.\(\{ pan: vehiclePan\('player'\), restored: healthRestored \}\)/,
     'la traversée joue le bruitage d’atelier, accord de réparation compris seulement si la coque a repris des points');
-  assert.match(service, /const pursuersReleased = wantedLevel === 0\n\s*\? releasePolicePursuit\(\{ targetId: 'player' \}\)\n\s*: 0;/,
-    'la sortie du garage ne fait abandonner la poursuite qu’une fois la recherche retombée à zéro');
+  assert.match(service, /const pursuersReleased = wantedLevel === 0\s*\?\s*releasePolicePursuit\(\{ targetId: 'player' \}\)\s*:\s*0/,
+    'la sortie du garage ne fait abandonner la poursuite que si le niveau retombe à zéro');
   assert.match(world, /miniGaragesActive: miniGarages\.some\(\(garage\) => \{/);
   assert.match(world, /miniGarageNextDistance: nextMiniGarageGap\(\)/);
 });

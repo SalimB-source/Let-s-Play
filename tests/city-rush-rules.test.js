@@ -99,6 +99,36 @@ import {
   CITY_RUSH_POLICE_HEALTH,
   CITY_RUSH_POLICE_SUV_HEALTH,
   cityRushPoliceMaxHealth,
+  CITY_RUSH_SPIKE_BLOCK_COUNT,
+  CITY_RUSH_SPIKE_BLOCK_LEAD,
+  CITY_RUSH_SPIKE_BLOCK_STARS,
+  CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES,
+  CITY_RUSH_SPIKE_DAMAGE,
+  CITY_RUSH_SPIKE_DAMAGE_SOURCE,
+  CITY_RUSH_SPIKE_LANES,
+  CITY_RUSH_SPIKE_LAY_DURATION,
+  CITY_RUSH_SPIKE_SLOW_DURATION,
+  CITY_RUSH_SPIKE_SLOW_FACTOR,
+  cityRushSpikeBlockCount,
+  cityRushSpikeHit,
+  cityRushSpikeLaidLanes,
+  cityRushSpikeLanes,
+  cityRushSpikeLayProgress,
+  cityRushSpikePace,
+  CITY_RUSH_SUV_CHARGE_ALERT_RANGE,
+  CITY_RUSH_SUV_CHARGE_COUNT,
+  CITY_RUSH_SUV_CHARGE_LATERAL_RATE,
+  CITY_RUSH_SUV_CHARGE_LOCK_RANGE,
+  CITY_RUSH_SUV_CHARGE_MIN_SPEED,
+  CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND,
+  CITY_RUSH_SUV_CHARGE_RELOAD,
+  CITY_RUSH_SUV_CHARGE_SPAWN_LEAD,
+  CITY_RUSH_SUV_CHARGE_SPEED_FACTOR,
+  CITY_RUSH_SUV_CHARGE_TYPE,
+  cityRushSuvChargeCount,
+  cityRushSuvChargeLocked,
+  cityRushSuvChargeSpeed,
+  cityRushSuvChargeStep,
   CITY_RUSH_POLICE_START_CHARGES,
   CITY_RUSH_POLICE_HUNT_RANGE,
   CITY_RUSH_POLICE_RALLY_TOLERANCE,
@@ -425,11 +455,14 @@ test('eight slow traffic cars span three forward lanes and safely block racers (
     'une seule voiture venant en face par voie de gauche');
   assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1, 2]);
   assert.deepEqual(CITY_RUSH_TRAFFIC_TYPES.map((vehicle) => vehicle.id), [
-    'police', 'undercover-police', 'ambulance', 'garbage-truck', 'white-lambo',
+    'police', 'taxi', 'ambulance', 'garbage-truck', 'white-lambo',
   ]);
-  assert.deepEqual([...CITY_RUSH_POLICE_TRAFFIC_TYPES], ['police', 'undercover-police']);
+  assert.deepEqual([...CITY_RUSH_POLICE_TRAFFIC_TYPES], ['police']);
   assert.equal(isCityRushPoliceTrafficType('police'), true);
-  assert.equal(isCityRushPoliceTrafficType('undercover-police'), true);
+  // Le taxi est la voiture civile de la ville : aucune patrouille banalisée ne
+  // se cache derrière lui, percuter un taxi ne déclenche pas la poursuite.
+  assert.equal(isCityRushPoliceTrafficType('taxi'), false);
+  assert.equal(isCityRushPoliceTrafficType('undercover-police'), false, 'la berline banalisée a quitté la route');
   assert.equal(isCityRushPoliceTrafficType('ambulance'), false);
   for (const vehicle of CITY_RUSH_TRAFFIC_TYPES) {
     assert.ok(vehicle.speed > 0 && vehicle.speed <= 8, `${vehicle.name} roule lentement`);
@@ -1228,6 +1261,8 @@ test('la coque de base fait quinze cellules ; tirs et carambolages coûtent une 
   assert.equal(CITY_RUSH_PLAYER_DAMAGE.pistol, 1);
   // Percuter une voiture — civile ou berline de police — retire un carré.
   assert.equal(CITY_RUSH_PLAYER_DAMAGE.collision, 1);
+  // La herse crève les pneus : un carré, comme un carambolage.
+  assert.equal(CITY_RUSH_PLAYER_DAMAGE.spike, 1);
   assert.ok(CITY_RUSH_PLAYER_COLLISION_COOLDOWN > 0.5 && CITY_RUSH_PLAYER_COLLISION_COOLDOWN <= 3,
     'le répit protège la barre des contacts à répétition sans immuniser le pilote');
   assert.equal(cityRushPlayerDamage(CITY_RUSH_PLAYER_HEALTH, 'blue-shot'), 14);
@@ -1236,6 +1271,8 @@ test('la coque de base fait quinze cellules ; tirs et carambolages coûtent une 
   assert.equal(cityRushPlayerDamage(5, 'collision'), 4);
   assert.equal(cityRushPlayerDamage(1, 'pistol'), 0);
   assert.equal(cityRushPlayerDamage(0, 'blue-shot'), 0);
+  assert.equal(cityRushPlayerDamage(5, 'spike'), 4, 'la herse retire un carré');
+  assert.equal(cityRushPlayerDamage(1, 'spike'), 0, 'la herse ne passe pas sous zéro');
   assert.equal(cityRushPlayerDamage(5, 'boost'), 5);
   assert.equal(cityRushPlayerDamage(5, undefined), 4);
   assert.equal(cityRushPlayerDamage(-3, 'collision'), 0);
@@ -3125,7 +3162,7 @@ test('une voiture qui saute passe au-dessus du trafic et des autres voitures san
 test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () => {
   assert.equal(CITY_RUSH_POLICE_SUV_HEALTH, 10);
   assert.equal(cityRushPoliceMaxHealth('police-suv'), 10);
-  for (const type of ['police', 'undercover-police', undefined, null]) {
+  for (const type of ['police', 'taxi', undefined, null]) {
     assert.equal(cityRushPoliceMaxHealth(type), 6, 'les berlines gardent leur résistance');
   }
   for (const [source, hits, damage] of [['pistol', 10, 1], ['blue-shot', 5, 2], ['collision', 10, 1]]) {
@@ -3142,4 +3179,110 @@ test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () 
   assert.equal(cityRushPlayerDamage(1, 'suv-collision'), 0, 'pas de vie négative au dernier carré');
   assert.equal(cityRushPlayerDamage(0, 'suv-collision'), 0);
   assert.equal(cityRushPlayerDamage(15, 'collision'), 14, 'les autres collisions ne changent pas');
+});
+
+test('la herse des quatre étoiles couvre trois voies du sens de course', () => {
+  assert.equal(CITY_RUSH_SPIKE_BLOCK_STARS, 4);
+  assert.equal(CITY_RUSH_SPIKE_LANES, 3);
+  assert.equal(CITY_RUSH_SPIKE_BLOCK_COUNT, CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES.length);
+  assert.ok(CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES.includes('police'), 'une berline de police monte le barrage');
+  assert.ok(CITY_RUSH_SPIKE_BLOCK_LEAD >= 250,
+    'la herse se dresse loin devant, le temps de la voir venir et de choisir sa voie');
+  assert.equal(CITY_RUSH_SPIKE_DAMAGE, 1);
+  assert.equal(CITY_RUSH_SPIKE_DAMAGE_SOURCE, 'spike');
+  assert.ok(CITY_RUSH_SPIKE_SLOW_FACTOR < 0.5, 'les pneus crevés coûtent plus de la moitié de la vitesse');
+  assert.ok(CITY_RUSH_SPIKE_SLOW_DURATION >= 1, 'la remise en vitesse est longue');
+
+  // Aucune voiture avant la quatrième étoile, jamais en Sprint.
+  assert.equal(cityRushSpikeBlockCount(0), 0);
+  assert.equal(cityRushSpikeBlockCount(2), 0);
+  assert.equal(cityRushSpikeBlockCount(CITY_RUSH_SPIKE_BLOCK_STARS - 1), 0);
+  assert.equal(cityRushSpikeBlockCount(CITY_RUSH_SPIKE_BLOCK_STARS), CITY_RUSH_SPIKE_BLOCK_COUNT);
+  assert.equal(cityRushSpikeBlockCount(CITY_RUSH_WANTED_MAX_STARS), CITY_RUSH_SPIKE_BLOCK_COUNT);
+  assert.equal(cityRushSpikeBlockCount(CITY_RUSH_WANTED_MAX_STARS + 3), CITY_RUSH_SPIKE_BLOCK_COUNT);
+  assert.equal(cityRushSpikeBlockCount(CITY_RUSH_WANTED_MAX_STARS, { sprint: true }), 0);
+
+  // Voies couvertes : les voies du sens de course, de la plus à gauche à la
+  // plus à droite ; un parcours à deux voies les couvre toutes les deux.
+  const forward = cityRushLaneConfig(CITY_RUSH_CITIES[0]).forwardLanes;
+  assert.deepEqual([...cityRushSpikeLanes(forward)], forward.slice(0, CITY_RUSH_SPIKE_LANES));
+  assert.deepEqual([...cityRushSpikeLanes([3, 4], 3)], [3, 4]);
+  assert.deepEqual([...cityRushSpikeLanes()], CITY_RUSH_FORWARD_LANES.slice(0, CITY_RUSH_SPIKE_LANES));
+});
+
+test('la herse se déroule voie par voie et ne perce que les voies couvertes', () => {
+  // Pose : une voie toutes les `duration / lanes` secondes, les trois à la fin.
+  assert.equal(cityRushSpikeLaidLanes(0, { lanes: 3, duration: CITY_RUSH_SPIKE_LAY_DURATION }), 0);
+  assert.equal(cityRushSpikeLaidLanes(CITY_RUSH_SPIKE_LAY_DURATION / 3 - 0.01, { lanes: 3, duration: CITY_RUSH_SPIKE_LAY_DURATION }), 0);
+  assert.equal(cityRushSpikeLaidLanes(CITY_RUSH_SPIKE_LAY_DURATION / 3, { lanes: 3, duration: CITY_RUSH_SPIKE_LAY_DURATION }), 1);
+  assert.equal(cityRushSpikeLaidLanes(CITY_RUSH_SPIKE_LAY_DURATION - 0.01, { lanes: 3, duration: CITY_RUSH_SPIKE_LAY_DURATION }), 2);
+  assert.equal(cityRushSpikeLaidLanes(CITY_RUSH_SPIKE_LAY_DURATION, { lanes: 3, duration: CITY_RUSH_SPIKE_LAY_DURATION }), 3);
+  assert.equal(cityRushSpikeLaidLanes(99, { lanes: 3, duration: CITY_RUSH_SPIKE_LAY_DURATION }), 3);
+  assert.equal(cityRushSpikeLayProgress(0), 0);
+  assert.equal(cityRushSpikeLayProgress(CITY_RUSH_SPIKE_LAY_DURATION / 2), 0.5);
+  assert.equal(cityRushSpikeLayProgress(CITY_RUSH_SPIKE_LAY_DURATION * 3), 1);
+
+  const lanes = [3, 4, 5];
+  // Franchissement balayé : la ligne tombe entre les deux positions de l'image.
+  assert.equal(cityRushSpikeHit({ previousDistance: 100, nextDistance: 105, spikeDistance: 103, lane: 3, lanes, laidLanes: 3 }), true);
+  // Une voiture trop rapide pour être vue *sur* la ligne est quand même pincée
+  // (35 m/s, une image à 30 i/s : 1,17 m entre deux positions).
+  assert.equal(cityRushSpikeHit({ previousDistance: 101.9, nextDistance: 103.1, spikeDistance: 103, lane: 4, lanes, laidLanes: 3 }), true);
+  // Voie pas encore posée : le pilote passe.
+  assert.equal(cityRushSpikeHit({ previousDistance: 100, nextDistance: 105, spikeDistance: 103, lane: 5, lanes, laidLanes: 1 }), false);
+  // Contresens : la herse ne couvre que le sens de la course.
+  assert.equal(cityRushSpikeHit({ previousDistance: 100, nextDistance: 105, spikeDistance: 103, lane: 2, lanes, laidLanes: 3 }), false);
+  // La ligne déjà franchie ne compte pas deux fois.
+  assert.equal(cityRushSpikeHit({ previousDistance: 105, nextDistance: 110, spikeDistance: 103, lane: 3, lanes, laidLanes: 3 }), false);
+  // Loin de la ligne : rien.
+  assert.equal(cityRushSpikeHit({ previousDistance: 60, nextDistance: 65, spikeDistance: 103, lane: 3, lanes, laidLanes: 3 }), false);
+  assert.equal(cityRushSpikeHit({ previousDistance: NaN, nextDistance: 5, spikeDistance: 3, lane: 3, lanes, laidLanes: 3 }), false);
+
+  // Crevaison : la vitesse visée tombe au facteur de la règle.
+  assert.equal(cityRushSpikePace(35), 35 * CITY_RUSH_SPIKE_SLOW_FACTOR);
+  assert.ok(cityRushSpikePace(35) < 35 * 0.5);
+  assert.equal(cityRushSpikePace(0), 0);
+  assert.equal(cityRushSpikePace(35, 1), 35, 'un facteur neutre ne change rien');
+});
+
+test('les SUV de charge arrivent de face à cinq étoiles, plus vite que le pilote', () => {
+  assert.equal(CITY_RUSH_SUV_CHARGE_TYPE, 'police-suv');
+  assert.equal(CITY_RUSH_SUV_CHARGE_COUNT, 2);
+  assert.equal(cityRushSuvChargeCount(0), 0);
+  assert.equal(cityRushSuvChargeCount(CITY_RUSH_WANTED_MAX_STARS - 1), 0);
+  assert.equal(cityRushSuvChargeCount(CITY_RUSH_WANTED_MAX_STARS), CITY_RUSH_SUV_CHARGE_COUNT);
+  assert.equal(cityRushSuvChargeCount(CITY_RUSH_WANTED_MAX_STARS, { sprint: true }), 0);
+  assert.equal(cityRushSuvChargeCount(CITY_RUSH_WANTED_MAX_STARS, { hasOncoming: false }), 0,
+    'un parcours en sens unique n’a pas de face-à-face');
+
+  // La charge ferme la distance : plus rapide que la pointe du pilote, avec un
+  // plancher pour les parcours lents.
+  const top = CITY_RUSH_PLAYER_SPEED;
+  assert.equal(cityRushSuvChargeSpeed(top), top * CITY_RUSH_SUV_CHARGE_SPEED_FACTOR);
+  assert.ok(cityRushSuvChargeSpeed(top) > top);
+  assert.equal(cityRushSuvChargeSpeed(4), CITY_RUSH_SUV_CHARGE_MIN_SPEED);
+  assert.ok(cityRushSuvChargeSpeed(0) >= CITY_RUSH_SUV_CHARGE_MIN_SPEED);
+
+  // Verrouillage de la voie visée : à portée, et seulement devant.
+  assert.equal(cityRushSuvChargeLocked({ gap: CITY_RUSH_SUV_CHARGE_LOCK_RANGE }), true);
+  assert.equal(cityRushSuvChargeLocked({ gap: 120 }), true);
+  assert.equal(cityRushSuvChargeLocked({ gap: CITY_RUSH_SUV_CHARGE_LOCK_RANGE + 1 }), false);
+  assert.equal(cityRushSuvChargeLocked({ gap: -12 }), false, 'un SUV repassé derrière ne vise plus');
+  assert.equal(cityRushSuvChargeLocked({ gap: 0 }), false);
+  assert.equal(cityRushSuvChargeLocked({}), false);
+
+  // Rabattement latéral à vitesse limitée : un changement de voie au dernier
+  // moment fait rater la charge.
+  const target = 6.3;
+  assert.equal(cityRushSuvChargeStep(0, target, 0.5), CITY_RUSH_SUV_CHARGE_LATERAL_RATE * 0.5);
+  assert.equal(cityRushSuvChargeStep(0, target, 0.5), 1.7);
+  assert.equal(cityRushSuvChargeStep(target - 0.1, target, 0.5), target, 'le dernier pas ne dépasse pas la voie visée');
+  assert.equal(cityRushSuvChargeStep(target, target, 0.5), target);
+  assert.equal(cityRushSuvChargeStep(0, target, 0), 0);
+
+  // La charge est annoncée avant d'arriver, et repasse au loin une fois manquée.
+  assert.ok(CITY_RUSH_SUV_CHARGE_SPAWN_LEAD > CITY_RUSH_SUV_CHARGE_ALERT_RANGE);
+  assert.ok(CITY_RUSH_SUV_CHARGE_ALERT_RANGE > CITY_RUSH_SUV_CHARGE_LOCK_RANGE);
+  assert.ok(CITY_RUSH_SUV_CHARGE_LOCK_RANGE > CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND);
+  assert.ok(CITY_RUSH_SUV_CHARGE_RELOAD > 0 && CITY_RUSH_SUV_CHARGE_RELOAD < 10);
 });

@@ -242,6 +242,10 @@ const EMPTY_HUD = {
   miniGaragesTotal: CITY_RUSH_MINI_GARAGE_COUNT,
   miniGarageNextDistance: null,
   oncomingPoliceTurnarounds: [],
+  // La herse des quatre étoiles (`null` tant qu'aucun barrage n'est monté) et
+  // les SUV de charge du contresens (voir `ViceCityWorld`).
+  spikeBlock: null,
+  suvCharges: [],
 };
 
 // Bannière du point de passage du dernier tour : on recroise le portique, mais
@@ -941,11 +945,45 @@ export default function ViceCityRushPage() {
       showToast(
         effect.oncoming
           ? effect.policeContact
-            ? `CONTACT POLICIER · LA PATROUILLE EN FACE FAIT DEMI-TOUR${cost}.`
+            ? effect.isSuv
+              ? `CHOC AVEC LE SUV D’INTERCEPTION · IL FAIT DEMI-TOUR ET TE PREND EN CHASSE${cost}.`
+              : `CONTACT POLICIER · LA PATROUILLE EN FACE FAIT DEMI-TOUR${cost}.`
             : `CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À ${effect.pushDirection === 'right' ? 'DROITE' : 'GAUCHE'} · BONUS DE CONTRESENS PERDU${cost}.`
           : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI${cost}.`,
         effect.policeContact ? 'pistol' : 'slow',
       );
+    }
+    else if (effect.type === 'police-suv-charge') {
+      // À cinq étoiles, deux SUV arrivent de face et foncent sur le pilote : ils
+      // visent sa voie à portée de verrou et le contact les retourne.
+      const distance = Math.max(0, Math.round(Number(effect.distance) || 0));
+      showToast(`🚨 SUV D’INTERCEPTION EN CHARGE · ${distance} M · IL VISE TA VOIE, CHANGE DE FILE.`, 'pistol');
+    }
+    else if (effect.type === 'police-spike-block') {
+      // La herse des quatre étoiles : les voitures se rangent en travers puis
+      // déroulent le tapis voie par voie — les voies non couvertes restent une
+      // échappatoire, comme le contresens et les tremplins.
+      const lanes = Math.max(1, Number(effect.lanes) || 0);
+      const lanesLabel = `${lanes} VOIE${lanes > 1 ? 'S' : ''}`;
+      if (effect.stage === 'deploy') {
+        showToast(`🚧 HERSE · LES BLEUS SE RANGENT EN TRAVERS À ${Math.round(Number(effect.distance) || 0)} M SUR ${lanesLabel}.`, 'pistol');
+      } else if (effect.stage === 'lay') {
+        showToast(`🚧 HERSE EN COURS DE POSE · ${lanesLabel} DU SENS DE COURSE.`, 'pistol');
+      } else if (effect.stage === 'set') {
+        showToast(effect.covered
+          ? `🚧 HERSE POSÉE · TA VOIE EST COUVERTE · DÉCALE-TOI, SAUTE OU PASSE EN CONTRESENS.`
+          : `🚧 HERSE POSÉE · ${lanesLabel} COUVERTES · TA VOIE RESTE OUVERTE.`, 'pistol');
+      } else if (effect.stage === 'pack') {
+        showToast('🚧 HERSE RANGÉE · LA ROUTE SE LIBÈRE.', 'neutral');
+      }
+    }
+    else if (effect.type === 'police-spike-hit') {
+      // Crevaison : un carré de coque et une longue remise en vitesse, sauf si
+      // le répit de choc a déjà payé le carambolage.
+      const loss = effect.healthLost > 0
+        ? `−${effect.healthLost} CARRÉ (${effect.health}/${effect.maxHealth})`
+        : 'RÉPIT DE CHOC · PAS DE CARRÉ';
+      showToast(`💥 HERSE · PNEUS CREVÉS · ${loss} · VITESSE EN BERNE ${Number(effect.slowSeconds || 0).toFixed(1)} S.`, 'slow');
     }
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
@@ -1872,7 +1910,8 @@ export default function ViceCityRushPage() {
                     {!storyMode && mode.policeFromStart
                       ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
                       : 'En Circuit, trois voitures de police entrent au dernier tour et te prennent pour cible, même si tu n’es pas en tête.'}
-                    {' '}Tirer sur une voiture de police fait monter la recherche à trois étoiles ; la première destruction la fait passer à quatre, la deuxième à cinq. Chaque carte garde un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours — à la moitié de la course —, y compris en Poursuite. Une flèche peinte sur la voie et des chevrons lumineux l’annoncent quelques mètres avant l’entrée, et un panneau de bord de voie rappelle la distance. Sa traversée fait passer la recherche de cinq à quatre étoiles, de quatre à trois, ou de trois (et moins) à zéro. Elle rend aussi jusqu’à {CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} points de vie — sans dépasser la résistance maximale de ta voiture. La poursuite ne s’arrête complètement que lorsque le niveau retombe à zéro. Il répare aussi sans étoiles ; il ne sert qu’une fois par course. Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                    {' '}Tirer sur une voiture de police fait monter la recherche à trois étoiles ; la première destruction la fait passer à quatre, la deuxième à cinq. À quatre étoiles, deux voitures de police se rangent en travers devant toi et déploient une herse sur les trois voies du sens de course : si tu la franchis sans te décaler, sans sauter et sans passer en contresens, tu crèves les pneus — un carré de coque et une longue perte de vitesse. À cinq étoiles, deux SUV d’interception arrivent de face par les voies inverses et foncent sur toi, en verrouillant ta voie ; un choc coûte deux carrés, et les SUV font ensuite demi-tour pour te prendre en chasse.  Chaque carte garde un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours — à la moitié de la course —, y compris en Poursuite. Une flèche peinte sur la voie et des chevrons lumineux l’annoncent quelques mètres avant l’entrée, et un panneau de bord de voie rappelle la distance. Sa traversée fait passer la recherche de cinq à quatre étoiles, de quatre à trois, ou de trois (et moins) à zéro. Elle rend aussi jusqu’à {CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} points de vie — sans dépasser la résistance maximale de ta voiture. La poursuite ne s’arrête complètement que lorsque le niveau retombe à zéro. Il répare aussi sans étoiles ; il ne sert qu’une fois par course. Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+
 
                   </>
                 )}
