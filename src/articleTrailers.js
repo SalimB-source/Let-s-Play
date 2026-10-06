@@ -374,3 +374,18 @@ export function trailerFlagTitle(routeOrKey) {
   const trailers = getArticleTrailers(articleKeyOf(routeOrKey));
   return trailers ? KIND_HINTS[trailers.items[0].kind] || KIND_HINTS.trailer : null;
 }
+
+/**
+ * Vidéo de tête d'un article — la première déclarée, celle dont la pastille
+ * du hub reprend la nature — ou null si l'article n'a aucune vidéo officielle.
+ * C'est elle que la bannière « actu gaming du jour » du hub `/news` projette
+ * dans sa carte (src/pages/News.jsx), à la place du visuel de l'actu.
+ *
+ * @param {string} routeOrKey route de la carte (ex. `/news/gta-6-satire-monde-invente`)
+ *   ou identifiant d'article
+ * @returns {{id: string, kind: string, title: string, channel: string, note?: string}|null}
+ */
+export function leadTrailer(routeOrKey) {
+  const trailers = getArticleTrailers(articleKeyOf(routeOrKey));
+  return trailers ? trailers.items[0] : null;
+}

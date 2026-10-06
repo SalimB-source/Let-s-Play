@@ -55,6 +55,22 @@
 .news-hub-card--gaming .read-link{color:#22d3ee}
 .news-hub-card--cinema .read-link{color:#f59e0b}
 .news-hub-card--tech .read-link{color:#a855f7}
+/* Bannière « actu gaming du jour » sous les trois cartes : même carte vidéo +
+   texte que la une de l'accueil (.featured-dossiers--news / .home-news-card,
+   daily-news.css). Ici seuls l'espacement et le visuel de repli changent : la
+   bannière suit la grille de près (le CTA garde ensuite sa marge habituelle),
+   l'en-tête se réduit à un libellé + le lien vers le flux gaming, et l'image
+   d'une actu sans vidéo officielle remplit le cadre 16/10 comme le lecteur. */
+.news-hub-section .news-hub-today{padding:44px 0 0}
+.news-hub-section .news-hub-today .featured-dossiers-head{align-items:center;padding-top:14px}
+.news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin:0}
+.news-hub-section .news-hub-today .home-news-video img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* Sous 800 px l'en-tête passe en bloc (daily-news.css) : le lien vers le flux
+   gaming redescend sous le libellé, avec le même retrait que sur l'accueil. */
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .news-hub-section .news-hub-today{padding-top:36px}
+  .news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin-top:14px}
+}
 /* Trois univers sur desktop ; sous 1100 px la grille repasse à deux colonnes
    (la troisième carte ouvre la ligne suivante) et les titres remontent d’un
    cran, avant le passage en une seule colonne sur mobile. */
