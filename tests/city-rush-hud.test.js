@@ -504,6 +504,16 @@ test('le HUD de course est une grille de zones : aucun élément ne se superpose
   assert.doesNotMatch(page, /city-rush-controls-bottom|className="city-rush-radar"/);
 });
 
+test('le HUD tactile compacte la barre haute et réorganise le paysage mobile', () => {
+  const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
+  assert.match(hudCss, /\.city-rush-shell\.is-running \.city-rush-wallet \{ display: none; \}/);
+  assert.match(hudCss, /\.city-rush-shell\.is-running \.city-rush-topbar \{[^}]*height: 48px;[^}]*flex: 0 0 48px/);
+  assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \.city-rush-lap-card \{[^}]*flex: 1 1 110px/);
+  assert.match(hudCss, /@media \(orientation: landscape\) and \(max-height: 520px\) and \(pointer: coarse\)/);
+  assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \.city-rush-speedometer \{ width: 86px; \}/);
+  assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud-zone\.is-mid-left,[\s\S]*?display: none;/);
+});
+
 test('les flèches de direction ne sont plus affichées ; le compteur à aiguille occupe le bas gauche', () => {
   assert.doesNotMatch(page, /city-rush-steering/);
   assert.match(page, /city-rush-hud-zone is-bottom-left">\s*<div className="city-rush-speedometer-wrap">\s*<CityRushSpeedometer speed=\{hud\.speed\}/);
