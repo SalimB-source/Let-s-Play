@@ -1929,7 +1929,7 @@
   background: #102219;
 }
 
-@media (max-width: 700px), (hover:none) and (pointer:coarse) and (orientation: portrait) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation: portrait) {
   .city-rush-page .city-rush-wallet { min-width: 54px; gap: 4px; padding: 4px 5px; }
   .city-rush-page .city-rush-wallet-icon { width: 17px; height: 17px; }
   .city-rush-page .city-rush-wallet small { display: none; }

@@ -1320,7 +1320,7 @@
 }
 
 /* === responsive layout ================================================= */
-@media (min-width: 1101px) {
+@media (min-width: 1101px) and (hover:hover), (min-width: 1101px) and (min-device-width:601px) {
   .city-rush-page.city-rush-page .city-rush-intro:has(.cr-story-hub) {
     display: grid;
     grid-template-columns: minmax(285px, .78fr) minmax(430px, 1.22fr);
@@ -1347,7 +1347,7 @@
   .city-rush-page.city-rush-page .city-rush-intro:has(.cr-story-hub) > .city-rush-intro-foot { grid-area: foot; }
 }
 
-@media (min-width: 901px) {
+@media (min-width: 901px) and (hover:hover), (min-width: 901px) and (min-device-width:601px) {
   .city-rush-page.city-rush-page .city-rush-intro:has(.city-rush-city-picker) {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1370,7 +1370,7 @@
   .city-rush-page.city-rush-page .city-rush-city-picker.is-large { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-@media (max-height: 820px) and (min-width: 901px) {
+@media (max-height: 820px) and (min-width: 901px) and (hover:hover), (max-height: 820px) and (min-width: 901px) and (min-device-width:601px) {
   .city-rush-page.city-rush-page .city-rush-topbar { height: 64px; }
   .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) { gap: 8px; padding-top: 10px; padding-bottom: 12px; }
   .city-rush-page.city-rush-page .city-rush-intro h2 { margin: 7px 0; font-size: clamp(48px, 6.6vh, 78px); }
@@ -1398,7 +1398,7 @@
   .city-rush-page.city-rush-page .city-rush-page-footer { flex-wrap: wrap; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .city-rush-page.city-rush-page .city-rush-shell { border-radius: 22px; }
   .city-rush-page.city-rush-page .city-rush-shell.is-immersive { border-radius: 0; }
 
@@ -1498,7 +1498,7 @@
   .city-rush-page.city-rush-page .city-rush-page-footer { flex-direction: column; align-items: flex-start; }
 }
 
-@media (max-width: 440px) {
+@media (max-width: 440px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .city-rush-page.city-rush-page .city-rush-location small { max-width: 42vw; font-size: 6px; }
   .city-rush-page.city-rush-page .city-rush-topbar { padding-inline: 9px; }
   .city-rush-page.city-rush-page .city-rush-location b { font-size: 12px; }

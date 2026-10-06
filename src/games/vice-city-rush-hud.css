@@ -622,3 +622,166 @@
 .city-rush-viewport .city-rush-countdown strong {
   text-shadow: 0 0 34px var(--city-accent, #ff4fa3), 0 4px 0 rgba(0, 0, 0, 0.55), 0 14px 40px rgba(0, 0, 0, 0.75);
 }
+
+/* ── HUD tactile : hiérarchie pensée pour le téléphone et la WebView Android ──
+   La scène reste libre au centre : informations de course en haut, classement
+   et route dans les coins médians, état du véhicule puis commandes en bas. */
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-shell.is-running .city-rush-topbar {
+    height: 48px;
+    min-height: 48px;
+    flex: 0 0 48px;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .city-rush-shell.is-running .city-rush-location { gap: 8px; }
+  .city-rush-shell.is-running .city-rush-location small { display: none; }
+  .city-rush-shell.is-running .city-rush-wallet { display: none; }
+  .city-rush-shell.is-running .city-rush-top-actions { gap: 4px; }
+  .city-rush-shell.is-running .city-rush-top-button {
+    min-width: 40px;
+    height: 38px;
+    padding-inline: 8px;
+    justify-content: center;
+    font-size: 8px;
+  }
+  .city-rush-shell.is-running .city-rush-sound-button,
+  .city-rush-shell.is-running .city-rush-fullscreen-button { width: 38px; }
+  .city-rush-shell.is-running .city-rush-top-button.is-quiet {
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+    font-size: 0;
+  }
+  .city-rush-shell.is-running .city-rush-top-button.is-quiet::before {
+    content: '↶';
+    font: 700 16px/1 system-ui, sans-serif;
+  }
+  .city-rush-shell.is-running .city-rush-live-pill {
+    display: inline-flex;
+    width: 24px;
+    height: 30px;
+    justify-content: center;
+    gap: 0;
+    overflow: hidden;
+    padding: 0;
+    font-size: 0;
+    letter-spacing: 0;
+  }
+  .city-rush-shell.is-running .city-rush-live-pill i { flex: 0 0 6px; }
+
+  .city-rush-viewport .city-rush-hud {
+    --hud-pad: 9px;
+    --hud-gap: 7px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "tl tr"
+      "tc tc"
+      "ml mr"
+      "bc bc"
+      "bl br";
+    align-items: stretch;
+  }
+
+  .city-rush-viewport .city-rush-hud-zone.is-top-left {
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .city-rush-viewport .city-rush-hud-zone.is-top-right { align-items: flex-end; }
+  .city-rush-viewport .city-rush-hud .city-rush-position-card { flex: 0 0 auto; }
+  .city-rush-viewport .city-rush-hud .city-rush-lap-card {
+    flex: 1 1 110px;
+    min-width: 0;
+    max-width: 180px;
+  }
+  .city-rush-viewport .city-rush-hud-zone.is-top-center {
+    width: min(100%, 440px);
+    justify-self: center;
+  }
+  .city-rush-viewport .city-rush-hud-zone.is-mid-left,
+  .city-rush-viewport .city-rush-hud-zone.is-mid-right {
+    justify-content: flex-start;
+    align-self: start;
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-race-list {
+    width: min(150px, 100%);
+    max-height: min(32vh, 190px);
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-route-sign {
+    width: fit-content;
+    max-width: 100%;
+    gap: 5px;
+    padding: 5px 7px;
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-route-badge {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-route-sector b { font-size: 11px; }
+  .city-rush-viewport .city-rush-hud .city-rush-route-next { display: none; }
+  .city-rush-viewport .city-rush-hud .city-rush-toast,
+  .city-rush-viewport .city-rush-hud .city-rush-lap-banner { max-width: calc(100vw - 36px); }
+  .city-rush-viewport .city-rush-hud .city-rush-lap-banner { text-align: center; }
+  .city-rush-viewport .city-rush-hud-zone.is-bottom-left { align-items: flex-start; }
+  .city-rush-viewport .city-rush-hud-zone.is-bottom-right { align-items: flex-end; }
+  .city-rush-viewport .city-rush-hud .city-rush-health { width: min(280px, 100%); }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button {
+    width: 100px;
+    height: 100px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* En paysage mobile, la route doit primer sur le classement : on retire les
+   panneaux secondaires et on garde les jauges accessibles dans les coins. */
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  .city-rush-shell.is-running .city-rush-topbar {
+    height: 42px;
+    min-height: 42px;
+    flex-basis: 42px;
+    padding-inline: 8px;
+  }
+  .city-rush-shell.is-running .city-rush-top-button { height: 36px; min-width: 38px; }
+
+  .city-rush-viewport .city-rush-hud {
+    --hud-pad: 6px;
+    --hud-gap: 5px;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "tl tr"
+      "tc tc"
+      ".  ."
+      "bc bc"
+      "bl br";
+  }
+  .city-rush-viewport .city-rush-hud-zone.is-mid-left,
+  .city-rush-viewport .city-rush-hud-zone.is-mid-right { display: none; }
+  .city-rush-viewport .city-rush-hud .city-rush-position-card { padding: 4px 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-lap-card { padding: 4px 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-hud-label { font-size: 6px; }
+  .city-rush-viewport .city-rush-hud .city-rush-hud-card > strong { font-size: 15px; }
+  .city-rush-viewport .city-rush-hud .city-rush-gta-cash { padding: 3px 6px; }
+  .city-rush-viewport .city-rush-hud .city-rush-health { padding: 3px 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 80px; height: 80px; padding: 8px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-label { font-size: 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-status { font-size: 9px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon,
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon svg { width: 34px; height: 34px; }
+  .city-rush-viewport .city-rush-hud .city-rush-speedometer { width: 86px; }
+  .city-rush-viewport .city-rush-hud .city-rush-speedometer-readout { display: none; }
+}
+
+@media (max-width: 380px), (hover:none) and (pointer:coarse) and (max-device-width:600px) and (orientation:portrait) {
+  .city-rush-shell.is-running .city-rush-location > span:last-child { display: none; }
+  .city-rush-shell.is-running .city-rush-location-mark { width: 30px; height: 30px; }
+  .city-rush-viewport .city-rush-hud { --hud-pad: 7px; --hud-gap: 5px; }
+  .city-rush-viewport .city-rush-hud .city-rush-hud-card { padding: 5px 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-lap-card { flex-basis: 94px; }
+  .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 88px; height: 88px; }
+}

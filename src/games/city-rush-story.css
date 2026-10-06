@@ -664,7 +664,7 @@
   50% { border-color: rgba(255, 82, 110, 0.35); }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   /* Plus de hauteur sur mobile pour que les bulles ne cachent pas l'illustration. */
   .cr-comic-stage { min-height: 380px; }
   .cr-comic-bubble-body p { font-size: 13px; }
