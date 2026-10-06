@@ -372,3 +372,38 @@ test('les bruitages ne sont jamais créés hors d’un contexte vivant', () => {
   audio.destroy();
   assert.equal(audio.engineNodes, null);
 });
+
+test('chaque stage / parcours de Vice City Rush a sa propre partition musicale', async () => {
+  const cities = ['vice-city', 'tokyo', 'paris', 'london', 'new-york', 'route-66', 'mexico-countryside', 'nordschleife'];
+  const notesByCity = {};
+
+  for (const cityId of cities) {
+    const audio = await boot(cityId);
+    try {
+      const events = audio.context.events;
+      const stepLength = 60 / cityRushMusicBpm(cityId) / 4;
+      for (let step = 0; step < CITY_RUSH_LOOP_STEPS; step += 1) {
+        audio.playStep(step, step * stepLength);
+      }
+      assert.ok(events.length > 100, `${cityId} produit une partition riche`);
+      const oscFreqs = events.filter((e) => e.kind === 'osc').map((e) => Math.round(e.frequency));
+      notesByCity[cityId] = oscFreqs;
+    } finally {
+      shutdown(audio);
+    }
+  }
+
+  // Vérifie que toutes les musiques de ville/pays sont distinctes de celle de Vice City et entre elles
+  for (let i = 0; i < cities.length; i += 1) {
+    for (let j = i + 1; j < cities.length; j += 1) {
+      const cityA = cities[i];
+      const cityB = cities[j];
+      assert.notDeepEqual(
+        notesByCity[cityA],
+        notesByCity[cityB],
+        `La musique de ${cityA} doit être différente de celle de ${cityB}`,
+      );
+    }
+  }
+});
+
