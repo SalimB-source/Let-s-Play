@@ -195,6 +195,11 @@ const EXPLOSION_RADIUS = 3.4;
 // la berline se décale sur une voie voisine, le pilote part légèrement de l'autre côté.
 const POLICE_RAM_SKID_DURATION = 0.72;
 const PLAYER_POLICE_RAM_SKID_DURATION = 0.58;
+// Le SUV blindé pèse nettement plus lourd : il emporte davantage les deux
+// voitures et déclenche une secousse prolongée, sans ajouter de dégâts.
+const POLICE_SUV_RAM_SKID_DURATION = 1.08;
+const PLAYER_POLICE_SUV_RAM_IMPACT_DURATION = 1.05;
+const POLICE_SUV_RAM_VFX_INTENSITY = 1.8;
 const POLICE_RAM_LANE_CHANGE_HOLD = 0.45;
 const POLICE_SKID_SMOKE_INTERVAL = 0.075;
 // Le tir rouge d'AK-47 reprend le projectile droit du tir bleu : chaque
@@ -867,7 +872,7 @@ function makeTrafficImpactEffect() {
     group.add(spark);
     sparks.push(spark);
   }
-  group.userData = { flash, ring, sparks, flashMaterial, ringMaterial, sparkMaterial, age: 0, active: false };
+  group.userData = { flash, ring, sparks, flashMaterial, ringMaterial, sparkMaterial, age: 0, active: false, intensity: 1 };
   group.visible = false;
   return group;
 }
@@ -1643,6 +1648,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerSkidLeft = 0;
   let playerSkidDuration = 0.85;
   let playerSkidSide = 1;
+  // Secousse réservée au contact avec le SUV de police : roulis de caisse et
+  // lacet oscillant, purement visuels (les règles de vitesse/vie restent les mêmes).
+  let playerSuvImpactLeft = 0;
+  let playerSuvImpactSide = 1;
   // Conduite en ligne : changer de voie ne ralentit pas, mais cela remet à
   // zéro le bonus de vitesse « ligne propre » chargé en tenant sa voie.
   let playerCleanLineTime = 0;
@@ -2151,6 +2160,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerSkidLeft = 0;
     playerSkidDuration = 0.85;
     playerSkidSide = 1;
+    playerSuvImpactLeft = 0;
+    playerSuvImpactSide = 1;
     playerCleanLineTime = 0;
     playerOncomingTime = 0;
     playerOncomingStage = 'none';
@@ -2581,7 +2592,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       || null;
   }
 
-  function spawnTrafficImpact(racerId, trafficId) {
+  function spawnTrafficImpact(racerId, trafficId, intensity = 1) {
     const racer = getVehicleMesh(racerId);
     const traffic = getImpactMesh(trafficId);
     if (!racer || !traffic || !trafficImpacts.length) return;
@@ -2590,20 +2601,41 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const data = effect.userData;
     data.active = true;
     data.age = 0;
+    data.intensity = clamp(Number(intensity) || 1, 0.8, 2.2);
     data.racerId = racerId;
     data.trafficId = trafficId;
     data.flashMaterial.opacity = 1;
     data.ringMaterial.opacity = 0.9;
     data.sparkMaterial.opacity = 1;
-    data.flash.scale.setScalar(0.42);
-    data.ring.scale.setScalar(0.28);
+    data.flash.scale.setScalar(0.42 * data.intensity);
+    data.ring.scale.setScalar(0.28 * data.intensity);
     data.sparks.forEach((spark) => {
       spark.visible = true;
-      spark.scale.set(1, 1, 0.55);
+      spark.scale.set(1, 1, 0.55 * data.intensity);
     });
     effect.visible = true;
     effect.position.lerpVectors(racer.position, traffic.position, 0.5);
     effect.position.y = 0;
+  }
+
+  // Pluie d'étincelles au point de contact : le SUV est assez lourd pour
+  // arracher quelques gerbes orange en plus du flash et de l'onde de choc.
+  function spawnPoliceSuvCollisionSparks(police) {
+    if (!police?.mesh) return;
+    scratch.copy(playerCar.position).lerp(police.mesh.position, 0.5);
+    scratch.y = Math.max(0.35, scratch.y + 0.35);
+    for (let spark = 0; spark < 9; spark += 1) {
+      const angle = (spark / 9) * Math.PI * 2 + (Math.random() - 0.5) * 0.22;
+      const reach = 2.4 + Math.random() * 2.8;
+      smoke.emit(scratch, {
+        color: spark % 3 === 0 ? 0xffe07a : 0xff8a2a,
+        opacity: 0.94,
+        scale: 0.16 + Math.random() * 0.08,
+        grow: 1.2,
+        life: 0.34 + Math.random() * 0.12,
+        velocity: [Math.cos(angle) * reach, 1.8 + Math.random() * 2.4, Math.sin(angle) * reach],
+      });
+    }
   }
 
   function updateTrafficImpact(effect, dt) {
@@ -2611,24 +2643,25 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!data.active) return;
     data.age += dt;
     const progress = clamp(data.age / CITY_RUSH_TRAFFIC_IMPACT_DURATION, 0, 1);
+    const intensity = clamp(Number(data.intensity) || 1, 0.8, 2.2);
     const racer = getVehicleMesh(data.racerId);
     const traffic = getImpactMesh(data.trafficId);
     if (racer && traffic) effect.position.lerpVectors(racer.position, traffic.position, 0.5);
     effect.position.y = 0;
 
     const flashLife = clamp(data.age / 0.14, 0, 1);
-    data.flash.scale.setScalar(0.42 + flashLife * 0.85);
+    data.flash.scale.setScalar((0.42 + flashLife * 0.85) * intensity);
     data.flashMaterial.opacity = (1 - flashLife) * 0.95;
     const ringLife = smoothstep(progress);
-    data.ring.scale.setScalar(0.28 + ringLife * 2.35);
+    data.ring.scale.setScalar((0.28 + ringLife * 2.35) * intensity);
     data.ringMaterial.opacity = (1 - progress) * 0.82;
     data.sparkMaterial.opacity = (1 - progress) * 0.95;
     data.sparks.forEach((spark) => {
       const angle = spark.userData.angle;
-      const reach = 0.42 + smoothstep(clamp(data.age / 0.62, 0, 1)) * 1.45;
+      const reach = (0.42 + smoothstep(clamp(data.age / 0.62, 0, 1)) * 1.45) * intensity;
       spark.position.set(Math.cos(angle) * reach, 0.55 + Math.sin(angle * 1.7) * spark.userData.lift * reach, Math.sin(angle) * reach);
       spark.rotation.set(data.age * 9, angle + data.age * 4, data.age * 7);
-      spark.scale.set(1, 1, Math.max(0.2, 1 - progress * 0.7));
+      spark.scale.set(1, 1, Math.max(0.2, 1 - progress * 0.7) * intensity);
     });
     if (progress >= 1) {
       data.active = false;
@@ -3792,6 +3825,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // l'interpolation habituelle de `updatePolice`, pas téléportée.
   function startPoliceCollisionAnimation(police) {
     if (!police) return;
+    const isSuv = police.vehicleType === 'police-suv';
     const relativeSide = Math.sign(police.currentX - playerCar.position.x);
     const preferredSide = relativeSide || (police.lane === forwardLanes[forwardLanes.length - 1] ? -1 : 1);
     const adjacentLanes = [police.lane + preferredSide, police.lane - preferredSide]
@@ -3810,7 +3844,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const skidSide = nextLane === null
       ? preferredSide
       : Math.sign(laneX(nextLane) - police.currentX) || preferredSide;
-    const policeSkidDuration = Math.max(POLICE_RAM_SKID_DURATION, Number(police.skidLeft) || 0);
+    const policeSkidDuration = Math.max(
+      isSuv ? POLICE_SUV_RAM_SKID_DURATION : POLICE_RAM_SKID_DURATION,
+      Number(police.skidLeft) || 0,
+    );
     police.skidLeft = policeSkidDuration;
     police.skidDuration = policeSkidDuration;
     police.skidSide = skidSide;
@@ -3984,11 +4021,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // L'impact reste rapide, mais les deux voitures dérapent brièvement et la
   // police se rabat sur une voie voisine au lieu de s'immobiliser.
   function applyPoliceCollision(police) {
+    const isSuv = police.vehicleType === 'police-suv';
     police.collisionCooldownLeft = CITY_RUSH_POLICE_COLLISION_COOLDOWN;
     startPoliceCollisionAnimation(police);
-    spawnTrafficImpact('player', police.id);
-    audioRef?.current?.skid({ pan: vehiclePan('player'), intensity: 1.1, duration: 0.82 });
-    cameraKick = Math.max(cameraKick, 0.52);
+    spawnTrafficImpact('player', police.id, isSuv ? POLICE_SUV_RAM_VFX_INTENSITY : 1);
+    audioRef?.current?.skid({
+      pan: vehiclePan('player'),
+      intensity: isSuv ? 1.3 : 1.1,
+      duration: isSuv ? 0.95 : 0.82,
+    });
+    cameraKick = Math.max(cameraKick, isSuv ? 1.55 : 0.52);
+    if (isSuv) spawnPoliceSuvCollisionSparks(police);
     // Le carambolage abîme les deux coques : la berline perd un point de vie,
     // le pilote un carré, ou deux contre un SUV. Le répit partagé (`applyCarCollision`) empêche un
     // contact collé au pare-chocs — ou deux berlines heurtées coup sur coup —
@@ -4000,6 +4043,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       gap: police.distance - distance,
       source: police.vehicleType === 'police-suv' ? 'suv-collision' : 'collision',
     });
+    if (isSuv && !playerWrecked) {
+      playerSuvImpactLeft = PLAYER_POLICE_SUV_RAM_IMPACT_DURATION;
+      playerSuvImpactSide = playerSkidSide || 1;
+    }
     damagePolice(police, 'collision', 'player', {
       victim: 'police',
       playerHealthLost,
@@ -4350,7 +4397,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mesh.rotation.x = trackPitch(police.distance);
       // Toupie du stun héliporté pour la berline bombardée, comme les rivaux.
       police.mesh.rotation.y = trackYaw(police.distance) + cityRushStunSpin(police.stunLeft, police.stunTotal) + clamp((police.currentX - priorX) * -3.2 + skid * 0.22, -0.22, 0.22);
-      police.mesh.rotation.z = skidOffset(police.skidLeft, police.skidDuration, police.skidSide || 1, 0.045, 13);
+      const policeSkidRoll = police.vehicleType === 'police-suv' ? 0.085 : 0.045;
+      const policeSkidFrequency = police.vehicleType === 'police-suv' ? 17 : 13;
+      police.mesh.rotation.z = skidOffset(police.skidLeft, police.skidDuration, police.skidSide || 1, policeSkidRoll, policeSkidFrequency);
       if (visible && police.skidLeft > 0 && police.skidSmokeTimer <= 0) {
         emitPoliceSkidSmoke(police);
         police.skidSmokeTimer = POLICE_SKID_SMOKE_INTERVAL;
@@ -5315,6 +5364,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerBoostLeft = Math.max(0, playerBoostLeft - dt);
       playerStunLeft = Math.max(0, playerStunLeft - dt);
       playerSkidLeft = Math.max(0, playerSkidLeft - dt);
+      playerSuvImpactLeft = Math.max(0, playerSuvImpactLeft - dt);
       playerHealthFlash = Math.max(0, playerHealthFlash - dt);
       playerCollisionCooldownLeft = Math.max(0, playerCollisionCooldownLeft - dt);
       // Voie tenue sans bouger : le bonus de ligne propre monte doucement.
@@ -5359,6 +5409,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
       const priorPlayerX = playerX;
       playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
+      const playerSuvImpactAmount = playerWrecked
+        ? 0
+        : clamp(playerSuvImpactLeft / PLAYER_POLICE_SUV_RAM_IMPACT_DURATION, 0, 1);
+      const playerSuvImpactProgress = 1 - playerSuvImpactAmount;
+      const playerSuvImpactYaw = playerSuvImpactAmount > 0
+        ? Math.sin(playerSuvImpactProgress * Math.PI * 4) * playerSuvImpactAmount * 0.85 * playerSuvImpactSide
+        : 0;
+      // Le décalage transmis au résolveur de collisions reste celui du
+      // dérapage habituel ; l'animation SUV plus ample se joue sur la caisse.
       const playerSkid = skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide);
 
       const requestedRacerSpeeds = new Map();
@@ -5626,7 +5685,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
 
       const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal, playerWrecked ? playerWreckSpinTurns : undefined);
-      playerCar.rotation.y = trackYaw(distance) + playerSpin + clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12) + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
+      playerCar.rotation.y = trackYaw(distance)
+        + playerSpin
+        + playerSuvImpactYaw
+        + clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12)
+        + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
       const playerSteer = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
       animateRacerCar(playerCar, {
         speed: currentSpeed,
@@ -5637,6 +5700,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         slowed: playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerTrafficImpactLeft > 0,
         impacting: playerTrafficImpactLeft > 0 || playerWrecked,
         stunned: playerStunLeft > 0 && !playerWrecked,
+        violentImpact: playerSuvImpactAmount,
         skidding: playerSkidLeft > 0,
         braking: currentSpeed < priorSpeed - paced(2) * dt && currentSpeed > 1,
       }, dt, clockTime);
