@@ -97,7 +97,8 @@ const server = await createServer({
             throw new Error('ancre du carambolage introuvable dans cityRushRules — mettre à jour le lanceur de la vérif armes');
           }
           return {
-            code: code.replace(anchor, '  collision: 0, // harnais : carré du carambolage neutralisé'),
+            code: code.replace(anchor, '  collision: 0, // harnais : carré du carambolage neutralisé')
+              .replace("'suv-collision': 2,", "'suv-collision': 0,"),
             map: null,
           };
         }

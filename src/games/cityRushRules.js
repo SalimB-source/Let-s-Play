@@ -650,7 +650,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#48b9ff',
     key: 'A',
     automatic: false,
-    description: `Un seul bonus bleu suffit pour charger ce tir droit, sans viser : il touche au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée perd près de la moitié de sa vitesse pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s, avec un dérapage bien visible. Trois tirs bleus détruisent une berline de police.`,
+    description: `Un seul bonus bleu suffit pour charger ce tir droit, sans viser : il touche au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée perd près de la moitié de sa vitesse pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s, avec un dérapage bien visible. Trois tirs bleus détruisent une berline de police, cinq un SUV blindé.`,
     duration: CITY_RUSH_BLUE_SHOT_DURATION,
     speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
@@ -663,7 +663,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont rares : chacun remplit le chargeur de l'AK-47 à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule.`,
+    description: `Les bonus rouges sont rares : chacun remplit le chargeur de l'AK-47 à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule, ou deux contre un SUV de police blindé. Un SUV a dix carrés de vie : dix balles rouges pour le détruire.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -3362,12 +3362,18 @@ export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est con
 // carrés au joueur.
 // Le barème reste pur, donc testable hors de three.js.
 export const CITY_RUSH_POLICE_HEALTH = 6;
+// Le SUV d'interception est blindé : dix carrés au lieu de six, et le percuter
+// coûte deux carrés au pilote (`CITY_RUSH_PLAYER_DAMAGE['suv-collision']`).
+export const CITY_RUSH_POLICE_SUV_HEALTH = 10;
+export function cityRushPoliceMaxHealth(vehicleType = 'police') {
+  return vehicleType === 'police-suv' ? CITY_RUSH_POLICE_SUV_HEALTH : CITY_RUSH_POLICE_HEALTH;
+}
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2,
   // Un tir rouge ne retire qu’un carré, à une berline comme à un adversaire.
   [CITY_RUSH_POWERS.PISTOL]: 1,
   [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
-  collision: 1, // contact en accélérant : la police perd un point, le pilote un carré
+  collision: 1, // la police perd un point, le pilote un carré (deux contre un SUV)
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
@@ -3927,6 +3933,7 @@ export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   // Ancre de patch des harnais de course longue ; la ligne du dessous est
   // remplacée par le lanceur du smoke de course (voir `city-rush-smoke.mjs`).
   collision: 1, // choc contre une voiture : un carré pour le pilote
+  'suv-collision': 2, // choc contre un SUV de police blindé : deux carrés
 });
 export const CITY_RUSH_PLAYER_HEALTH_FLASH = 0.3; // s : éclair de la barre qui vient d'encaisser
 // Barre à zéro : la voiture part en toupie dans sa fumée, s'arrête, et la
@@ -3938,7 +3945,7 @@ export const CITY_RUSH_WRECK_SPIN_TURNS = 2;
 export const CITY_RUSH_PLAYER_HEALTH_CRITICAL = 3;
 export const CITY_RUSH_HEALTH_GROUP_SIZE = 5;
 
-// Un carambolage ne retire qu'un carré, quel que soit le nombre de contacts
+// Un carambolage retire un carré (deux contre un SUV), quel que soit le nombre de contacts
 // qu'il produit : le choc arme un répit partagé par toutes les voitures
 // (trafic, contresens, berline de police). Sans lui, un embouteillage — ou
 // deux carrosseries restées collées après le choc — facturerait un carré par

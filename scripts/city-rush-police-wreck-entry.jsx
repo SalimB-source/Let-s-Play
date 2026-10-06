@@ -95,7 +95,7 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
-  CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_SCROLL_SCALE, cityRushPoliceMaxHealth,
   CITY_RUSH_POLICE_WRECK_SPIN_TURNS, CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
   CITY_RUSH_POLICE_WRECK_VIEW_BEHIND, CITY_RUSH_POLICE_WRECK_BURN_SECONDS,
   cityRushPoliceWreckSpeed, cityRushPoliceWreckSlide, cityRushPoliceWreckFlame, cityRushTrackProfile,
@@ -349,7 +349,7 @@ for (let run = 0; run < RUNS; run += 1) {
             || effect.wreckBurning !== true) {
             fail(`[${city.id}] l'explosion n'annonce pas le tête-à-queue et la carcasse en feu`, effect);
           }
-          if (effect.health !== 0 || effect.maxHealth !== CITY_RUSH_POLICE_HEALTH) {
+          if (effect.health !== 0 || effect.maxHealth !== cityRushPoliceMaxHealth(effect.vehicleType)) {
             fail(`[${city.id}] la destruction ne confirme pas la coque à zéro`, effect);
           }
           // La berline qui agonise sort du HUD à l'image même de la
