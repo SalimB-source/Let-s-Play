@@ -3874,6 +3874,10 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
     const carWidth = lateralWidth(car);
     const blockers = [...trafficList, ...racerList, ...list.filter((other) => other !== car)];
     for (const other of blockers) {
+      // En vol, la berline franchit le trafic lent sans choc ni freinage.
+      // Les autres voitures de course et ses collègues restent des obstacles :
+      // la police ne traverse jamais un pilote à l'atterrissage.
+      if (trafficList.includes(other) && (car.jumping || car.isJumping || other.jumping || other.isJumping)) continue;
       // Le trafic et les pilotes sont déjà à leur position du jour ; entre
       // berlines, on vise la position demandée pour que la seconde ne colle
       // pas deux fois la distance de sécurité.

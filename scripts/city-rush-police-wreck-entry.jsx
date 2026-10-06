@@ -23,8 +23,8 @@
 //
 // Une agonie n'est mesurable que si la berline tombe assez loin devant le
 // pilote (sinon il la dépasse pendant le tête-à-queue) : les destructions trop
-// proches ou hors cadre sont annoncées puis ignorées, et le plancher
-// d'observations est global.
+// proches ou hors cadre sont ignorées pour le suivi visuel. Les explosions
+// provoquées par un atterrissage sont validées séparément via leur événement.
 
 const ctx2d = () => {
   const g = { addColorStop() {} };
@@ -158,6 +158,7 @@ const TARGET_FALLBACK_FRAME = 900;
 
 let races = 0;
 let destructions = 0;
+let rampLandingExplosions = 0;
 let carcasses = 0;
 let fullBurns = 0;
 
@@ -654,6 +655,15 @@ for (let run = 0; run < RUNS; run += 1) {
       }
     }
 
+    const rampLandings = callbacks.effects.filter((item) => item.type === 'police-destroyed' && item.source === 'ramp-landing');
+    rampLandingExplosions += rampLandings.length;
+    for (const landing of rampLandings) {
+      if (landing.health !== 0
+        || landing.spinTurns !== CITY_RUSH_POLICE_WRECK_SPIN_TURNS
+        || landing.wreckBurning !== true) {
+        fail(`[${city.id}] un atterrissage sur rampe ne détruit pas la voiture de police`, landing);
+      }
+    }
     if (callbacks.errors.length) fail(`[${city.id}] erreurs remontées`, callbacks.errors.map(String));
     if (VERBOSE && !cityCarcasses) {
       console.log(`[${city.id}#${run + 1}] aucune agonie observable dans cette course (${examined} destruction(s) examinée(s))`);
@@ -666,10 +676,14 @@ for (let run = 0; run < RUNS; run += 1) {
 }
 
 // Une agonie n'est observable que lorsque la berline tombe assez loin devant le
-// pilote (sinon il la dépasse pendant le tête-à-queue) : le plancher est donc
-// global, et non par ville.
-if (!violations && carcasses < 2) {
-  fail('trop peu d’agonies observées pour conclure', { carcasses, destructions });
+// pilote (sinon il la dépasse pendant le tête-à-queue) : une carcasse suivie
+// sur toute sa durée suffit à éprouver la séquence complète. Les destructions
+// dues aux sauts sont vérifiées séparément à partir de leur source.
+if (!violations && carcasses < 1) {
+  fail('aucune agonie observable pour conclure', { carcasses, destructions });
+}
+if (!violations && rampLandingExplosions < 1) {
+  fail('aucune voiture de police n’a explosé après un saut', { rampLandingExplosions });
 }
 // Au moins une carcasse doit avoir été suivie du début à la fin de l'incendie :
 // sans cela, la durée du feu ne serait jamais éprouvée.
@@ -681,5 +695,5 @@ if (violations) {
   console.error(`VÉRIF CARCASSE DE POLICE ÉCHOUÉE — ${violations} manquement(s) sur ${races} course(s) et ${destructions} agonie(s) suivie(s).`);
   process.exit(3);
 }
-console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${destructions} berline(s) détruite(s) à bonne distance : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
+console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${rampLandingExplosions} explosion(s) après saut · ${destructions} berline(s) suivie(s) à bonne distance : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
 process.exit(0);

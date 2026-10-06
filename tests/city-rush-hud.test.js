@@ -51,6 +51,18 @@ test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la r
   assert.match(world, /if \(usePower\(CITY_RUSH_POWERS\.PISTOL\)\) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL/);
 });
 
+test('une voiture de police qui atterrit après un saut se détruit et part en épave', () => {
+  assert.match(world, /police\.jumpState = \{\s*active: true,[\s\S]*?computeCityRushJumpDistance\(takeoffSpeed\)/,
+    'une patrouille déclenche le même saut que les voitures de course');
+  assert.match(world, /jumping: policeAirborne/, 'la résolution de mouvement sait que la berline est en l’air');
+  assert.match(world, /destroyPolice\(police, 'ramp-landing', null\)/,
+    'le toucher du sol déclenche le dérapage et la séquence d’explosion de la carcasse');
+  const policeCollision = world.match(/function checkPoliceCollisions\(\) \{[\s\S]*?\n  \}/)?.[0] || '';
+  assert.match(policeCollision, /police\.jumpState\?\.active/);
+  assert.match(world, /trackRelativeY\(police\.distance\) \+ \(police\.currentJumpY \|\| 0\)/,
+    'la position verticale suit bien la trajectoire du saut');
+});
+
 test('the mobile fifteen-cell player health bar is compact and sits above the corner HUD', () => {
   assert.ok(mobileHealthRule, 'la règle mobile de la barre de vie existe');
   assert.equal(mobileHealthDeclarations.left, '50%', 'la barre reste centrée entre le classement et les commandes');
