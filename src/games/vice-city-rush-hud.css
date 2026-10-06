@@ -480,8 +480,16 @@
 .city-rush-speedometer-readout b { color: #fff; font: 800 15px/1 var(--mono, monospace); font-variant-numeric: tabular-nums; }
 .city-rush-speedometer-readout small { color: rgba(220, 226, 255, 0.7); font: 700 7px/1 var(--mono, monospace); letter-spacing: 0.08em; }
 
-/* Bonus de contresens : sous le compteur, dans le flux. */
-.city-rush-viewport .city-rush-hud .city-rush-speedometer-wrap .city-rush-speed-bonus { position: static; margin: 0; }
+/* Bonus de contresens : posé dans le coin haut droit (vide) du carré du
+   compteur, hors du flux — son apparition ne déplace plus le cadran. */
+.city-rush-viewport .city-rush-hud .city-rush-speedometer-wrap .city-rush-speed-bonus {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  margin: 0;
+  pointer-events: none;
+  background: rgba(40, 6, 28, 0.92);
+}
 
 @keyframes crSpeedRed { from { opacity: 0.6; } to { opacity: 1; } }
 
