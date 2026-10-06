@@ -4004,6 +4004,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const pursuers = activePursuers();
     pursuers.forEach((police) => { police.healthFlash = Math.max(0, (police.healthFlash || 0) - dt); });
     pursuers.forEach((police) => emitPoliceDamageSmoke(police, dt));
+    // Patrouilles encore en ronde — police en civil (banalisée) et police
+    // routière, dans le flot comme en face : elles fument aussi dès qu'elles
+    // sont touchées, avant d'exploser.
+    for (const car of trafficCars) {
+      if (!car.rallied && !car.destroyed && isCityRushPoliceTrafficType(car.type)) emitPoliceDamageSmoke(car, dt);
+    }
+    for (const car of oncomingCars) {
+      if (!car.rallied && !car.destroyed && isCityRushPoliceTrafficType(car.type)) emitPoliceDamageSmoke(car, dt);
+    }
     if (!pursuers.length) return;
     // Le trafic en ronde : identifiant pour l'impact, position et vitesse pour
     // repérer une voie bouchée (une berline évite de s'y engluer).
