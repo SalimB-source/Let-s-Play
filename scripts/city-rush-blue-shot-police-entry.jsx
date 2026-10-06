@@ -262,11 +262,11 @@ for (let run = 0; run < RUNS; run += 1) {
     // Le carré du carambolage est neutralisé par le lanceur (voir son en-tête) :
     // aucun `player-hit` de collision ne doit donc apparaître, et la barre reste
     // intacte pendant les six tours du pilote d'essai.
-    const accidentalPlayerCollisionHits = firstRaceEffects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
+    const accidentalPlayerCollisionHits = firstRaceEffects.filter((effect) => effect.type === 'player-hit' && ['collision', 'suv-collision'].includes(effect.source));
     if (accidentalPlayerCollisionHits.length) {
       fail(`[${city.id}] un carambolage a retiré de la vie au joueur malgré la neutralisation du lanceur`, accidentalPlayerCollisionHits);
     }
-    const ramHits = firstRaceEffects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
+    const ramHits = firstRaceEffects.filter((effect) => effect.type === 'police-hit' && ['collision', 'suv-collision'].includes(effect.source));
     if (ramHits.some((effect) => effect.damage !== 1)) {
       fail(`[${city.id}] un carambolage n'a pas retiré exactement un point à la police`, ramHits);
     }

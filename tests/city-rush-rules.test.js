@@ -81,6 +81,8 @@ import {
   cityRushPoliceTurnaroundProgress,
   CITY_RUSH_POLICE_DAMAGE,
   CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_POLICE_SUV_HEALTH,
+  cityRushPoliceMaxHealth,
   CITY_RUSH_POLICE_START_CHARGES,
   CITY_RUSH_POLICE_HUNT_RANGE,
   CITY_RUSH_POLICE_RALLY_TOLERANCE,
@@ -2958,4 +2960,27 @@ test('une voiture qui saute passe au-dessus du trafic et des autres voitures san
   ]);
   const jumpingById = Object.fromEntries(jumpingMoved.map((c) => [c.id, c.nextDistance]));
   assert.equal(jumpingById.player, 25, 'en saut, la voiture poursuit sa trajectoire par-dessus');
+});
+
+
+test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () => {
+  assert.equal(CITY_RUSH_POLICE_SUV_HEALTH, 10);
+  assert.equal(cityRushPoliceMaxHealth('police-suv'), 10);
+  for (const type of ['police', 'undercover-police', undefined, null]) {
+    assert.equal(cityRushPoliceMaxHealth(type), 6, 'les berlines gardent leur résistance');
+  }
+  for (const [source, hits, damage] of [['pistol', 10, 1], ['blue-shot', 5, 2], ['collision', 10, 1]]) {
+    let health = cityRushPoliceMaxHealth('police-suv');
+    assert.equal(cityRushPoliceShotsLeft(health, source), hits);
+    for (let hit = 1; hit <= hits; hit += 1) {
+      health = cityRushPoliceDamage(health, source);
+      assert.equal(health, 10 - hit * damage);
+    }
+    assert.equal(cityRushPoliceDamage(health, source), 0);
+  }
+  assert.equal(cityRushPlayerDamage(15, 'suv-collision'), 13);
+  assert.equal(cityRushPlayerDamage(2, 'suv-collision'), 0);
+  assert.equal(cityRushPlayerDamage(1, 'suv-collision'), 0, 'pas de vie négative au dernier carré');
+  assert.equal(cityRushPlayerDamage(0, 'suv-collision'), 0);
+  assert.equal(cityRushPlayerDamage(15, 'collision'), 14, 'les autres collisions ne changent pas');
 });

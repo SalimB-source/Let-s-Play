@@ -91,7 +91,7 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
   CITY_RUSH_LAPS, CITY_RUSH_POLICE_AIM_TIME, cityRushCarMaxHealth,
-  CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceAimHold,
+  CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceMaxHealth, cityRushPoliceAimHold,
   cityRushPoliceAimReady,
 } = await import('../src/games/cityRushRules.js');
 
@@ -217,7 +217,7 @@ for (let run = 0; run < RUNS; run += 1) {
         policeFriendlyFire += 1;
         violations.push(`[${city.id}#${run}] une berline a détruit une autre berline`, effect);
       }
-      if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== CITY_RUSH_POLICE_HEALTH) {
+      if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== cityRushPoliceMaxHealth(effect.vehicleType)) {
         violations.push(`[${city.id}#${run}] une berline n’a pas ses six cases de vie`, effect);
       }
     }

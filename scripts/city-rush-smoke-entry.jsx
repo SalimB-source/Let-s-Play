@@ -77,7 +77,7 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
-  CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
+  CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
@@ -1021,7 +1021,8 @@ for (const [index, city] of courses.entries()) {
   // l'entrée en piste), et une berline détruite les a bien eus avant l'explosion.
   for (const hud of callbacks.huds) {
     for (const car of hud.police || []) {
-      if (!Number.isFinite(car.health) || !Number.isFinite(car.maxHealth)) {
+      if (!Number.isFinite(car.health) || car.maxHealth !== cityRushPoliceMaxHealth(car.vehicleType)
+        || car.health < 0 || car.health > car.maxHealth) {
         fail('une berline de police du HUD n’a pas de barre de vie', car);
       }
     }
@@ -1032,9 +1033,9 @@ for (const [index, city] of courses.entries()) {
       .map((hud) => (hud.police || []).find((car) => car.id === effect.id || car.name === effect.police))
       .filter(Boolean);
     if (!seen.length && !effect.trafficPolice) fail('une voiture de poursuite détruite n’est jamais apparue dans le HUD', effect);
-    if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== CITY_RUSH_POLICE_HEALTH
+    if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== cityRushPoliceMaxHealth(effect.vehicleType)
       || effect.health !== 0) {
-      fail('l’explosion ne confirme pas les six cases de santé de la police', effect);
+      fail('l’explosion ne confirme pas les cases de santé du véhicule policier', effect);
     }
     if (seen.length && !(seen[0].health >= 1 && seen[0].health <= seen[0].maxHealth)) {
       fail('une voiture de poursuite détruite n’avait pas de vie cohérente dans le HUD', seen[0]);
@@ -1267,7 +1268,7 @@ for (const [index, city] of courses.entries()) {
     // trafic rattrapé et la berline percutée en accélérant arrivent avec un
     // écart positif. Le face-à-face, lui, croise les carrosseries au mètre
     // près : la distance annoncée y est une magnitude (≥ 0).
-    if (effect.source === 'collision'
+    if (['collision', 'suv-collision'].includes(effect.source)
       && !(Number.isFinite(Number(effect.gap)) && Number(effect.gap) >= 0)) {
       healthBadDamage += 1;
       fail('un carambolage est compté sur une voiture sans écart avec le pilote', effect);
@@ -1286,11 +1287,11 @@ for (const [index, city] of courses.entries()) {
   // tours. La règle est vérifiée par les tests purs et par la vérif
   // coque/police, qui joue le vrai barème sur une barre de trois cellules
   // (un carré par carambolage, espacé par le répit).
-  const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
+  const playerRamDamage = callbacks.effects.filter((effect) => effect.type === 'player-hit' && ['collision', 'suv-collision'].includes(effect.source));
   if (playerRamDamage.length) {
     fail('un carambolage a retiré de la vie au joueur alors que le lanceur neutralise ce coût', playerRamDamage);
   }
-  const policeRamDamage = callbacks.effects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
+  const policeRamDamage = callbacks.effects.filter((effect) => effect.type === 'police-hit' && ['collision', 'suv-collision'].includes(effect.source));
   if (policeRamDamage.some((effect) => effect.damage !== 1)) {
     fail('un carambolage en accélérant n’a pas retiré exactement un point de vie à la police', policeRamDamage);
   }
