@@ -924,8 +924,8 @@ export const ACHIEVEMENTS = [
   // Trophées du jeu Vice City Rush (`/jeu/vice-city-rush`) : chaque course
   // terminée envoie l'action `vice_city_run` (ville, mode, place, butin,
   // chapitre d'histoire). Cibles calées sur le contenu réel du jeu : cinq
-  // villes (`CITY_RUSH_CITIES`), trois modes de course et six chapitres
-  // d'histoire (`STORY_CHAPTERS`).
+  // villes (`CITY_RUSH_CITIES`), trois modes de course et dix chapitres
+  // d'histoire (`CITY_RUSH_STORY_CHAPTERS`), prologue compris.
   {
     id: 'vice-first-race',
     icon: 'icons/achievements/vice-first-race.svg',
@@ -949,9 +949,9 @@ export const ACHIEVEMENTS = [
     metric: 'viceCityStoryChapters',
     target: 1,
     labels: {
-      en: { name: 'Chapter one', desc: 'Win the first chapter of the Vice City Rush story.' },
-      fr: { name: 'Chapitre un', desc: 'Remporte le premier chapitre du mode Histoire de Vice City Rush.' },
-      ar: { name: 'الفصل الأول', desc: 'افز بالفصل الأول من طور القصة في Vice City Rush.' },
+      en: { name: 'Prologue', desc: 'Complete the prologue of the Vice City Rush story.' },
+      fr: { name: 'Prologue', desc: 'Termine le prologue du mode Histoire de Vice City Rush.' },
+      ar: { name: 'المقدمة', desc: 'أكمل مقدمة طور القصة في Vice City Rush.' },
     },
   },
   {
@@ -1033,12 +1033,12 @@ export const ACHIEVEMENTS = [
     rarity: 'gold',
     xp: 250,
     metric: 'viceCityStoryChapters',
-    // Six chapitres (`STORY_CHAPTERS` de ViceCityRushPage.jsx), finale compris.
-    target: 6,
+    // Dix chapitres (`CITY_RUSH_STORY_CHAPTERS`), prologue et finale compris.
+    target: 10,
     labels: {
-      en: { name: 'End of the story', desc: 'Win all six chapters of the Vice City Rush story.' },
-      fr: { name: 'Fin de l’histoire', desc: 'Remporte les six chapitres du mode Histoire de Vice City Rush.' },
-      ar: { name: 'نهاية القصة', desc: 'افز بفصول طور القصة الستة كلها في Vice City Rush.' },
+      en: { name: 'End of the story', desc: 'Win all ten chapters of the Vice City Rush story.' },
+      fr: { name: 'Fin de l’histoire', desc: 'Remporte les dix chapitres du mode Histoire de Vice City Rush.' },
+      ar: { name: 'نهاية القصة', desc: 'افز بفصول طور القصة العشرة كلها في Vice City Rush.' },
     },
   },
   {

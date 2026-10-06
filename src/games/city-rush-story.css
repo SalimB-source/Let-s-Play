@@ -1,0 +1,355 @@
+/* ── Mode Histoire « MIDNIGHT REVANCHE » : lecteur BD et scènes ──────────────
+   Cases épaisses façon comics (bordures noires, trame de points), cartouches
+   jaunes de narration, bulles avec portraits du casting, onomatopées géantes. */
+
+.cr-comic {
+  --cr-paper: #f4efe4;
+  --cr-ink: #14101c;
+  --cr-caption: #ffd44f;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(680px, 100%);
+  margin: 0 auto;
+}
+
+.cr-comic-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cr-comic-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #ffd44f;
+  text-transform: uppercase;
+}
+.cr-comic-kicker i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5d7e;
+  box-shadow: 0 0 10px #ff5d7e;
+}
+
+.cr-comic-progress {
+  display: inline-flex;
+  gap: 6px;
+}
+.cr-comic-progress i {
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.cr-comic-progress i.is-read { background: #43ead5; border-color: #43ead5; }
+.cr-comic-progress i.is-current { background: #ffd44f; border-color: #ffd44f; }
+
+/* La case : un bouton géant — cliquer fait apparaître la suite. */
+.cr-comic-stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 380px;
+  padding: 0;
+  border: 4px solid #000;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.14), transparent 55%),
+    radial-gradient(rgba(255, 255, 255, 0.16) 1.2px, transparent 1.3px),
+    linear-gradient(135deg, #1b1430, #0c0a18);
+  background-size: auto, 14px 14px, auto;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(255, 212, 79, 0.35);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.cr-comic-stage:hover { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(255, 212, 79, 0.8); }
+
+.cr-comic-art,
+.cr-comic-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cr-comic-art img { object-fit: cover; }
+.cr-comic-art-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8, 6, 16, 0.88) 0%, rgba(8, 6, 16, 0.25) 45%, rgba(8, 6, 16, 0.05) 70%);
+}
+
+/* Gros plan sur un personnage : portrait géant sur fond de sa couleur. */
+.cr-comic-portrait {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background:
+    radial-gradient(circle at 50% 30%, var(--cr-speaker) 0%, transparent 62%),
+    radial-gradient(rgba(255, 255, 255, 0.2) 1.4px, transparent 1.5px),
+    linear-gradient(160deg, #191225, #0b0916);
+  background-size: auto, 16px 16px, auto;
+}
+.cr-comic-portrait-frame {
+  width: min(220px, 44%);
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.6));
+  animation: cr-comic-pop 0.35s ease-out;
+}
+.cr-comic-portrait-frame svg { width: 100%; height: auto; display: block; }
+.cr-comic-portrait-name {
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  font-size: 14px;
+  color: #fff;
+  background: #000;
+  border: 2px solid var(--cr-speaker);
+  border-radius: 999px;
+  padding: 4px 14px;
+}
+
+/* Cartouche jaune du narrateur, en haut de la case. */
+.cr-comic-caption {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  background: var(--cr-caption);
+  color: var(--cr-ink);
+  border: 3px solid #000;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.85);
+  animation: cr-comic-pop 0.3s ease-out;
+}
+
+/* Onomatopée géante, penchée comme dans les comics. */
+.cr-comic-sfx {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-size: clamp(44px, 9vw, 84px);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: #ffe45e;
+  -webkit-text-stroke: 2px #000;
+  text-shadow: 4px 4px 0 #ff3b3b, 8px 8px 0 #000;
+  pointer-events: none;
+  animation: cr-comic-sfx 0.45s cubic-bezier(0.2, 2.2, 0.4, 1);
+}
+@keyframes cr-comic-sfx {
+  from { transform: translate(-50%, -50%) rotate(-8deg) scale(0.2); opacity: 0; }
+  to { transform: translate(-50%, -50%) rotate(-8deg) scale(1); opacity: 1; }
+}
+@keyframes cr-comic-pop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Les bulles, en bas de la case, révélées une par une. */
+.cr-comic-bubbles {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.cr-comic-bubble {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.97);
+  color: var(--cr-ink);
+  border: 3px solid #000;
+  border-radius: 16px;
+  padding: 8px 12px 8px 8px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.85);
+  animation: cr-comic-pop 0.28s ease-out;
+  position: relative;
+}
+.cr-comic-bubble::after {
+  content: '';
+  position: absolute;
+  left: 26px;
+  bottom: -9px;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border-right: 3px solid #000;
+  border-bottom: 3px solid #000;
+  transform: rotate(45deg);
+}
+.cr-comic-bubble-avatar { flex: 0 0 44px; width: 44px; }
+.cr-comic-bubble-avatar svg { width: 44px; height: 44px; display: block; }
+.cr-comic-bubble-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cr-comic-bubble-body b {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--cr-speaker);
+}
+.cr-comic-bubble-body p { margin: 0; font-size: 14px; line-height: 1.45; font-weight: 600; }
+.cr-comic-bubble.is-narration {
+  background: var(--cr-caption);
+  border-radius: 6px;
+}
+.cr-comic-bubble.is-narration::after { display: none; }
+.cr-comic-bubble.is-narration p { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+.cr-comic-more {
+  align-self: center;
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  text-shadow: 2px 2px 0 #000;
+  animation: cr-comic-blink 1s infinite;
+}
+@keyframes cr-comic-blink { 50% { opacity: 0.25; } }
+
+.cr-comic-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cr-comic-nav-button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.cr-comic-nav-button:hover:not(:disabled) { border-color: #ffd44f; color: #ffd44f; }
+.cr-comic-nav-button:disabled { opacity: 0.35; cursor: default; }
+.cr-comic-nav-button.is-primary {
+  background: #ffd44f;
+  border-color: #000;
+  color: #14101c;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.9);
+}
+.cr-comic-nav-button.is-primary:hover { background: #ffe45e; color: #14101c; }
+.cr-comic-nav-button.is-quiet { margin-left: auto; font-size: 11px; opacity: 0.75; }
+.cr-comic-hint { font-size: 11px; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.65); }
+
+/* ── Pastille d’objectif en course ───────────────────────────────────────── */
+.cr-story-objective {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 8, 20, 0.85);
+  border: 2px solid #ffd44f;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #ffd44f;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+}
+.cr-story-objective small { font-weight: 700; letter-spacing: 0.06em; color: #fff; }
+
+/* ── Étoiles du débrief ──────────────────────────────────────────────────── */
+.cr-story-stars { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.cr-story-stars-row { font-size: 30px; letter-spacing: 0.15em; line-height: 1; }
+.cr-story-stars-row i { font-style: normal; }
+.cr-story-stars-row i.is-earned { color: #ffd44f; text-shadow: 0 0 14px rgba(255, 212, 79, 0.8); }
+.cr-story-stars-row i:not(.is-earned) { color: rgba(255, 255, 255, 0.22); }
+.cr-story-star-line { font-size: 12px; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.85); }
+.cr-story-star-line b { color: #ffd44f; }
+.cr-story-star-line.is-missed { opacity: 0.55; }
+.cr-story-star-line.is-missed b { color: rgba(255, 255, 255, 0.6); }
+
+/* ── Sélecteur de chapitre (rejouer pour les étoiles) ────────────────────── */
+.cr-story-chapter-dots { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.cr-story-chapter-dots button {
+  font: inherit;
+  min-width: 40px;
+  min-height: 30px;
+  height: auto;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.cr-story-chapter-dots button:hover:not(:disabled) { border-color: #ffd44f; }
+.cr-story-chapter-dots button.is-current { border-color: #ffd44f; background: rgba(255, 212, 79, 0.18); color: #ffd44f; }
+.cr-story-chapter-dots button:disabled { opacity: 0.3; cursor: default; }
+.cr-story-chapter-dots button .cr-dot-stars { display: block; font-size: 8px; color: #ffd44f; letter-spacing: 1px; }
+
+/* ── Cinématique : récap et carte de course ──────────────────────────────── */
+.cr-story-recap { max-width: 660px; margin: 10px auto 0; }
+.cr-story-recap b { color: #ffd44f; letter-spacing: 0.1em; margin-right: 8px; }
+.cr-story-race-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 660px;
+  margin: 12px auto 0;
+  padding: 12px 18px;
+  background: rgba(7, 10, 24, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: #f0eff7;
+}
+.cr-story-race-meta p { margin: 0; }
+.cr-story-race-meta b { color: #ffd44f; }
+.cr-story-race-meta .is-boss { color: #ff8fa0; font-weight: 900; letter-spacing: 0.1em; }
+
+/* ── Total d’étoiles devant les trois fins ─────────────────────────────────── */
+.cr-story-stars-total {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #ffd44f;
+}
+
+/* ── Pastille d’objectif : alerte panne ────────────────────────────────────── */
+.cr-story-objective.is-alert {
+  border-color: #ff526e;
+  color: #ff8fa0;
+  animation: cr-story-alert-blink 0.7s steps(2) infinite;
+}
+@keyframes cr-story-alert-blink {
+  50% { border-color: rgba(255, 82, 110, 0.35); }
+}
+
+@media (max-width: 640px) {
+  .cr-comic-stage { min-height: 320px; }
+  .cr-comic-bubble-body p { font-size: 13px; }
+  .cr-comic-sfx { font-size: clamp(36px, 12vw, 56px); }
+}
