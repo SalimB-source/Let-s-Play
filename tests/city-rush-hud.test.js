@@ -63,6 +63,27 @@ test('une voiture de police qui atterrit après un saut se détruit et part en �
     'la position verticale suit bien la trajectoire du saut');
 });
 
+test('les tirs allument des flammes de plus en plus grandes sur les voitures de police', () => {
+  const fireAnimation = world.match(/function animatePoliceDamageFire\([\s\S]*?\n}\n/)?.[0] || '';
+  const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
+  assert.match(world, /group\.name = 'police-damage-fire'/, 'les flammes sont attachées à la voiture touchée');
+  assert.match(world, /const POLICE_DAMAGE_FIRE_SPOTS = 6/,
+    'la coque d’une berline peut allumer un foyer supplémentaire à chaque impact');
+  assert.match(fireAnimation, /const progress = clamp\(level \* POLICE_DAMAGE_FIRE_SPOTS - index, 0, 1\)/,
+    'les foyers apparaissent par étapes selon la part de coque perdue');
+  assert.match(fireAnimation, /flame\.group\.visible = progress > 0\.025/);
+  assert.match(fireAnimation, /flame\.group\.scale\.set\(width \* flicker, height, width \* flicker\)/,
+    'les foyers déjà allumés grandissent aussi avec les dégâts');
+  assert.match(policeDamage, /animatePoliceDamageFire\(police\.mesh, 1 - clamp\(police\.health \/ maxHealth, 0, 1\), clockTime\)/,
+    'chaque tir actualise immédiatement les flammes à partir de la coque restante');
+  assert.match(world, /animatePoliceDamageFire\(mesh, 1, clockTime\)/,
+    'l’embrasement maximal reste visible pendant le tête-à-queue');
+  assert.match(world, /if \(wreck\.mesh\) animatePoliceDamageFire\(wreck\.mesh, 0, clockTime\)/,
+    'les flammes de dégâts passent le relais à la carcasse en feu');
+  assert.match(world, /if \(isCityRushPoliceTrafficType\(spec\.id\)\) \{\s*withPoliceVisualRandom\(\(\) => attachPoliceDamageFire\(mesh, policeDamageFireKit\)\)/,
+    'les voitures de police du trafic ont le même effet que l’escouade');
+});
+
 test('the mobile fifteen-cell player health bar is compact and sits above the corner HUD', () => {
   assert.ok(mobileHealthRule, 'la règle mobile de la barre de vie existe');
   assert.equal(mobileHealthDeclarations.left, '50%', 'la barre reste centrée entre le classement et les commandes');
@@ -120,15 +141,16 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   assert.match(world, /while \(!garage\.used && garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance\)/,
     'le garage reste visible jusqu’à ce que la voiture en sorte');
   assert.match(world, /cityRushMiniGarageCanUse\(/);
-  assert.match(world, /wantedLevel = 0;[\s\S]*?type: 'mini-garage-used'/,
-    'la sortie du mini-garage remet le niveau à zéro et annonce son usage');
+  assert.match(world, /wantedLevel = cityRushMiniGarageWantedLevel\(previousStars\);[\s\S]*?type: 'mini-garage-used'/,
+    'la sortie du mini-garage baisse le niveau selon le nombre d’étoiles et annonce son usage');
   assert.match(world, /miniGaragesRemaining: miniGarages\.filter\(\(garage\) => !garage\.used\)\.length/);
   assert.match(page, /miniGaragesRemaining:\s*CITY_RUSH_MINI_GARAGE_COUNT/);
   assert.match(page, /city-rush-gta-garages/);
   assert.match(page, /MINI-GARAGE DISPONIBLE/);
   assert.match(page, /MINI-GARAGE DANS \$\{miniGarageNextDistance\} M/,
     'le compteur annonce la distance de la prochaine porte');
-  assert.match(page, /effect\.previousStars > 0 \? `\$\{effect\.previousStars\} ÉTOILES EFFACÉES/);
+  assert.match(page, /`\$\{previousStars\} → \$\{currentStars\} ÉTOILE/,
+    'le bandeau affiche clairement la baisse du nombre d’étoiles');
   assert.match(page, /Number\(effect\.healthRestored\)/, 'le bandeau annonce la réparation réellement reçue');
   assert.match(page, /POINT\$\{restored === 1 \? '' : 'S'\} DE VIE/);
   assert.match(page, /Number\(effect\.pursuersReleased\) > 0[\s\S]*?LA POLICE ABANDONNE LA POURSUITE/,
@@ -137,7 +159,7 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
     'le compteur des garages n’apparaît qu’avec une porte en approche');
   assert.match(page, /un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours/);
-  assert.match(page, /rend jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/);
+  assert.match(page, /rend aussi jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/);
 
   // Une seule porte, ouverte dès le départ : plus aucune n'attend le dernier
   // tour depuis le retrait de celle du dernier tour.
@@ -155,9 +177,12 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   const service = world.match(/function useMiniGarage\([\s\S]*?\n  function updateMiniGarages/)?.[0] || '';
   assert.match(service, /playerHealth = cityRushMiniGarageRepair\(playerHealth, playerMaxHealth\)/,
     'la réparation utilise la résistance de la voiture sélectionnée');
-  assert.match(service, /healthRestored: playerHealth - healthBefore/);
-  assert.match(service, /const pursuersReleased = releasePolicePursuit\(\{ targetId: 'player' \}\)/,
-    'la sortie du garage fait abandonner la poursuite aux berlines qui chassaient le joueur');
+  assert.match(service, /const healthRestored = playerHealth - healthBefore;[\s\S]*?healthRestored,/,
+    'le service calcule une fois les points rendus, pour le bandeau et le bruitage');
+  assert.match(service, /audioRef\?\.current\?\.garageRepair\?\.\(\{ pan: vehiclePan\('player'\), restored: healthRestored \}\)/,
+    'la traversée joue le bruitage d’atelier, accord de réparation compris seulement si la coque a repris des points');
+  assert.match(service, /const pursuersReleased = wantedLevel === 0\n\s*\? releasePolicePursuit\(\{ targetId: 'player' \}\)\n\s*: 0;/,
+    'la sortie du garage ne fait abandonner la poursuite qu’une fois la recherche retombée à zéro');
   assert.match(world, /miniGaragesActive: miniGarages\.some\(\(garage\) => \{/);
   assert.match(world, /miniGarageNextDistance: nextMiniGarageGap\(\)/);
 });

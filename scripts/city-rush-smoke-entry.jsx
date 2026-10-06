@@ -79,7 +79,7 @@ const {
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
   CITY_RUSH_MINI_GARAGE_COUNT, CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, cityRushMiniGarageLane,
   CITY_RUSH_MINI_GARAGE_HUD_RANGE,
-  cityRushMiniGarageTrackDistances, cityRushMiniGarageMidRaceDistance,
+  cityRushMiniGarageTrackDistances, cityRushMiniGarageMidRaceDistance, cityRushMiniGarageWantedLevel,
   CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
@@ -169,7 +169,7 @@ const smokeCarIds = ['nova-18-gt', 'vice-roadster', 'turbo-gt', 'muscle-86', 'ni
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
-  'policeSiren', 'policeSirenOff',
+  'policeSiren', 'policeSirenOff', 'garageRepair',
 ];
 
 // L'escouade du dernier tour doit rester dans le sillage du joueur sur tous les
@@ -987,8 +987,11 @@ for (const [index, city] of courses.entries()) {
   if (miniGarageUses.length > CITY_RUSH_MINI_GARAGE_COUNT) {
     fail('plus d’un mini-garage a été utilisé dans une course', miniGarageUses);
   }
-  if (miniGarageUses.some((effect) => Number(effect.previousStars) < 0 || Number(effect.stars) !== 0)) {
-    fail('un mini-garage utilisé ne remet pas la recherche à zéro', miniGarageUses);
+  // La recherche ne tombe à zéro qu'à trois étoiles ou moins : au-dessus, le
+  // portique ne la fait reculer que d'un cran (`cityRushMiniGarageWantedLevel`).
+  if (miniGarageUses.some((effect) => Number(effect.previousStars) < 0
+    || Number(effect.stars) !== cityRushMiniGarageWantedLevel(Number(effect.previousStars) || 0))) {
+    fail('un mini-garage utilisé ne baisse pas la recherche comme la règle l’annonce', miniGarageUses);
   }
   // La porte s'annonce avant son repère : le pilote doit l'avoir vue arriver à
   // mi-course, même s'il la rate et la retrouve une boucle plus loin.
@@ -1004,8 +1007,11 @@ for (const [index, city] of courses.entries()) {
       fail('aucun HUD n’est émis après un passage en mini-garage', check.effect);
       continue;
     }
+    const expectedStars = cityRushMiniGarageWantedLevel(Number(check.effect.previousStars) || 0);
     const chasers = (check.nextHud.police || []).filter((car) => car.targetId === 'player');
-    if (chasers.length) {
+    // La poursuite ne s'éteint qu'avec la dernière étoile : à quatre ou cinq,
+    // le portique la fait reculer d'un cran et les berlines restent en chasse.
+    if (expectedStars === 0 && chasers.length) {
       fail('une berline reste en chasse après la sortie du mini-garage', {
         effect: check.effect,
         stars: check.nextHud.wantedLevel,
@@ -1013,9 +1019,9 @@ for (const [index, city] of courses.entries()) {
         chasers: chasers.map((car) => `${car.id}/${car.mode || '?'}`),
       });
     }
-    if (Number(check.nextHud.wantedLevel) !== 0) {
-      fail('un mini-garage ne remet pas la recherche à zéro sur l’image suivante', {
-        effect: check.effect, wantedLevel: check.nextHud.wantedLevel,
+    if (Number(check.nextHud.wantedLevel) !== expectedStars) {
+      fail('un mini-garage ne baisse pas la recherche comme la règle l’annonce', {
+        effect: check.effect, wantedLevel: check.nextHud.wantedLevel, expectedStars,
       });
     }
   }
@@ -1026,7 +1032,8 @@ for (const [index, city] of courses.entries()) {
   // Un passage qui avait des berlines à ses trousses doit les avoir lâchées.
   // Celui de mi-course peut tomber avant la première étoile : sans poursuite en
   // cours, il n'y a rien à relâcher.
-  const chasedUses = callbacks.garageChecks.filter((check) => check.chasersBefore > 0);
+  const chasedUses = callbacks.garageChecks.filter((check) => check.chasersBefore > 0
+    && cityRushMiniGarageWantedLevel(Number(check.effect.previousStars) || 0) === 0);
   if (chasedUses.length && garagePursuersReleased === 0) {
     fail('aucune poursuite n’a été lâchée par un mini-garage alors que la police était en chasse', miniGarageUses);
   }
@@ -1036,6 +1043,13 @@ for (const [index, city] of courses.entries()) {
     fail('la réparation d’un mini-garage est incorrecte ou dépasse la résistance de la voiture', miniGarageUses);
   }
   const garageHealthRestored = miniGarageUses.reduce((total, effect) => total + effect.healthRestored, 0);
+  // Chaque portique traversé s'entend : un bruitage d'atelier par passage, ni
+  // plus (un garage ne sert qu'une fois) ni moins (une sortie muette).
+  if ((audioCalls.garageRepair || 0) !== miniGarageUses.length) {
+    fail('chaque passage en mini-garage doit jouer le bruitage de réparation', {
+      passages: miniGarageUses.length, sons: audioCalls.garageRepair || 0,
+    });
+  }
   // Le compteur ne s'allume qu'à l'approche d'une porte : jamais à distance de
   // course, et jamais sans porte utilisable devant.
   const earlyGarageCounter = callbacks.huds.find((entry) => entry.miniGaragesActive

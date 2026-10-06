@@ -134,6 +134,7 @@ import {
   cityRushMiniGarageAvailable,
   cityRushMiniGarageCanUse,
   cityRushMiniGarageRepair,
+  cityRushMiniGarageWantedLevel,
   cityRushMiniGarageTrackDistances,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
@@ -834,6 +835,96 @@ function detachPoliceHealthBar(group) {
   delete group.userData.healthBar;
 }
 
+// Une voiture de police touchée s'embrase progressivement : un nouveau foyer
+// apparaît au fil des impacts, et ceux déjà allumés grandissent jusqu'au
+// tête-à-queue. Les cônes sont partagés dans le monde courant ; leurs matériaux
+// restent propres à chaque voiture pour que les flammes vacillent séparément.
+const POLICE_DAMAGE_FIRE_SPOTS = 6;
+
+function createPoliceDamageFireKit() {
+  const outerGeometry = new THREE.ConeGeometry(0.3, 0.9, 7, 1, true);
+  outerGeometry.translate(0, 0.45, 0);
+  const coreGeometry = new THREE.ConeGeometry(0.17, 0.56, 6, 1, true);
+  coreGeometry.translate(0, 0.28, 0);
+  return { outerGeometry, coreGeometry };
+}
+
+function attachPoliceDamageFire(mesh, kit) {
+  if (!mesh || !kit || mesh.userData.damageFire) return mesh?.userData?.damageFire || null;
+  const isSuv = mesh.userData.trafficType === 'police-suv';
+  const hoodY = isSuv ? 1.02 : 0.76;
+  const hoodZ = isSuv ? -1.78 : -1.18;
+  const roofY = isSuv ? 1.56 : 1.29;
+  const trunkY = isSuv ? 0.94 : 0.75;
+  const trunkZ = isSuv ? 1.7 : 1.22;
+  const spots = [
+    [-0.36, hoodY, hoodZ],
+    [0, hoodY + 0.04, hoodZ - 0.08],
+    [0.36, hoodY, hoodZ],
+    [-0.36, trunkY, trunkZ],
+    [0, roofY, 0.16],
+    [0.36, trunkY, trunkZ],
+  ];
+  const group = new THREE.Group();
+  group.name = 'police-damage-fire';
+  group.visible = false;
+  group.renderOrder = 3;
+  const flames = spots.map(([x, y, z], index) => {
+    const outerMaterial = new THREE.MeshBasicMaterial({
+      color: index % 2 === 0 ? 0xff5b1f : 0xff8528,
+      transparent: true, opacity: 0, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const coreMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffd34a, transparent: true, opacity: 0, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const flame = new THREE.Group();
+    flame.name = 'police-damage-flame';
+    flame.position.set(x, y, z);
+    flame.userData.phase = index * 1.71;
+    flame.add(
+      new THREE.Mesh(kit.outerGeometry, outerMaterial),
+      new THREE.Mesh(kit.coreGeometry, coreMaterial),
+    );
+    flame.children.forEach((child) => { child.castShadow = false; child.receiveShadow = false; });
+    flame.visible = false;
+    group.add(flame);
+    return { group: flame, baseY: y, outerMaterial, coreMaterial };
+  });
+  mesh.add(group);
+  mesh.userData.damageFire = { group, flames, level: 0 };
+  return mesh.userData.damageFire;
+}
+
+function animatePoliceDamageFire(mesh, damageLevel = 0, clockTime = 0) {
+  const fire = mesh?.userData?.damageFire;
+  if (!fire) return;
+  const level = clamp(Number(damageLevel) || 0, 0, 1);
+  fire.level = level;
+  fire.group.visible = level > 0.001;
+  if (!fire.group.visible) {
+    fire.flames.forEach((flame) => { flame.group.visible = false; });
+    return;
+  }
+  fire.flames.forEach((flame, index) => {
+    // Une barre de vie standard compte six cases : chaque impact allume un
+    // foyer supplémentaire. Les derniers foyers du SUV grandissent par étapes
+    // plus fines, puisque sa coque blindée compte dix cases.
+    const progress = clamp(level * POLICE_DAMAGE_FIRE_SPOTS - index, 0, 1);
+    flame.group.visible = progress > 0.025;
+    if (!flame.group.visible) return;
+    const flicker = 0.84 + 0.16 * Math.sin(clockTime * (9.2 + index * 1.35) + flame.group.userData.phase);
+    const width = 0.24 + level * 0.62 + progress * 0.28;
+    const height = (0.22 + level * 0.88 + progress * 0.55) * flicker;
+    flame.group.scale.set(width * flicker, height, width * flicker);
+    flame.group.position.y = flame.baseY + Math.sin(clockTime * 11 + flame.group.userData.phase) * 0.025;
+    flame.group.rotation.y = clockTime * (0.7 + index * 0.11) + flame.group.userData.phase;
+    flame.outerMaterial.opacity = clamp((0.2 + progress * 0.48 + level * 0.2) * flicker, 0, 0.9);
+    flame.coreMaterial.opacity = clamp((0.22 + progress * 0.48 + level * 0.24) * flicker, 0, 0.94);
+  });
+}
+
 // Véhicule d'interception du dernier tour : berline ou SUV, avec le halo
 // rouge et bleu et la barre de vie des unités de poursuite.
 function makePolicePursuitCar(vehicleType = 'police') {
@@ -1137,6 +1228,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const paced = (speed) => speed * coursePace;
 
   const scene = new THREE.Scene();
+  // Three.js crée des UUID avec Math.random(). Isole ces appels visuels pour
+  // que l'ajout des flammes ne décale pas les tirages de gameplay ni les seeds.
+  const policeVisualRandom = seededRandom(0xF17E + cityIndex * 997);
+  const withPoliceVisualRandom = (create) => {
+    const gameplayRandom = Math.random;
+    Math.random = policeVisualRandom;
+    try {
+      return create();
+    } finally {
+      Math.random = gameplayRandom;
+    }
+  };
+  const policeDamageFireKit = withPoliceVisualRandom(createPoliceDamageFireKit);
   scene.background = new THREE.Color(city.background);
   const fogColor = new THREE.Color(city.fog).lerp(new THREE.Color(theme.sky.haze), 0.22);
   scene.fog = new THREE.Fog(fogColor, theme.fogNear, theme.fogFar);
@@ -1433,6 +1537,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trafficCars = Array.from({ length: effectiveTrafficCount }, (_, index) => {
     const spec = trafficTypes[index % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
+    if (isCityRushPoliceTrafficType(spec.id)) {
+      withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+    }
     scene.add(mesh);
     return {
       ...spec,
@@ -1476,6 +1583,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       ? oncomingPoliceSpecs[index]
       : trafficTypes[(index + 2) % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
+    if (isCityRushPoliceTrafficType(spec.id)) {
+      withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+    }
     scene.add(mesh);
     return {
       ...spec,
@@ -1514,6 +1624,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const lane = policeLanes[index % policeLanes.length];
     const vehicleType = CITY_RUSH_POLICE_VEHICLE_TYPES[index % CITY_RUSH_POLICE_VEHICLE_TYPES.length];
     const mesh = makePolicePursuitCar(vehicleType);
+    withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
     mesh.visible = false;
     scene.add(mesh);
     return {
@@ -2063,13 +2174,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerHealthFlash = 0;
     garage.used = true;
     policeDestroyedByPlayer = 0;
-    wantedLevel = 0;
+    wantedLevel = cityRushMiniGarageWantedLevel(previousStars);
     garage.group.userData.used = true;
     garage.group.visible = false;
-    // Sortir du portique coupe la poursuite : les berlines qui chassaient le
-    // pilote se remettent à rouler normalement et l'abandonnent.
-    const pursuersReleased = releasePolicePursuit({ targetId: 'player' });
+    // À trois étoiles ou moins, le portique coupe entièrement la poursuite.
+    // À quatre ou cinq, elle continue au niveau réduit (4 → 3, 5 → 4).
+    const pursuersReleased = wantedLevel === 0
+      ? releasePolicePursuit({ targetId: 'player' })
+      : 0;
     const remaining = miniGarages.filter((item) => !item.used).length;
+    const healthRestored = playerHealth - healthBefore;
+    // Le passage à l'atelier s'entend : pont élévateur, clé à chocs, capot
+    // qui claque, et l'accord de « réparée » quand la coque a repris des points.
+    audioRef?.current?.garageRepair?.({ pan: vehiclePan('player'), restored: healthRestored });
     getCallbacks().effect?.({
       type: 'mini-garage-used',
       garage: garage.index,
@@ -2080,7 +2197,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       healthBefore,
       health: playerHealth,
       maxHealth: playerMaxHealth,
-      healthRestored: playerHealth - healthBefore,
+      healthRestored,
       pursuersReleased,
     });
     emitHud(true);
@@ -2577,6 +2694,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.rallied = false;
       traffic.destroyed = false;
       traffic.health = isCityRushPoliceTrafficType(traffic.type) ? CITY_RUSH_POLICE_HEALTH : null;
+      traffic.damageSmokeTimer = 0;
+      animatePoliceDamageFire(traffic.mesh, 0, 0);
       traffic.distance = 82 + index * (trafficCars.length > 3 ? 68 : 180) + randomRange(-7, 7);
       traffic.lane = forwardLanes[index % forwardLanes.length];
       traffic.currentX = laneX(traffic.lane);
@@ -2606,6 +2725,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming.pushAsideStartX = null;
       oncoming.lastPassGap = undefined;
       oncoming.health = isCityRushPoliceTrafficType(oncoming.type) ? CITY_RUSH_POLICE_HEALTH : null;
+      oncoming.damageSmokeTimer = 0;
+      animatePoliceDamageFire(oncoming.mesh, 0, 0);
       oncoming.destroyed = false;
       oncoming.rallied = false;
       oncoming.turnaroundState = null;
@@ -2659,6 +2780,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.powerCooldown = 0;
       police.health = cityRushPoliceMaxHealth(police.vehicleType);
       police.healthFlash = 0;
+      police.damageSmokeTimer = 0;
+      animatePoliceDamageFire(police.mesh, 0, 0);
       police.mode = 'hunt';
       police.blockLeft = 0;
       police.blockArmed = true;
@@ -3407,6 +3530,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     const pursuit = police.mesh.userData.pursuit;
     if (pursuit) pursuit.glowMaterial.opacity = 0;
+    // À la coque percée, les petits feux de dégâts deviennent un embrasement
+    // complet qui accompagne la berline pendant son tête-à-queue.
+    animatePoliceDamageFire(police.mesh, 1, clockTime);
     police.mesh.visible = true;
     // Réservée : sa relève ne peut pas reprendre le maillage avant
     // l'explosion, sinon la berline disparaîtrait en plein tête-à-queue.
@@ -3428,6 +3554,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     wreck.speed = 0;
     wreck.burnElapsed = 0;
     const worldPosition = wreckWorldPosition(wreck, wreckScratch);
+    if (wreck.mesh) animatePoliceDamageFire(wreck.mesh, 0, clockTime);
     if (wreck.mesh && policeWreckMeshFree(wreck)) wreck.mesh.visible = false;
     // Le maillage retourne au parc : la relève de l'escouade, retenue pendant
     // le tête-à-queue, peut maintenant reprendre la piste.
@@ -3481,6 +3608,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           mesh.userData.beacons?.forEach((beacon, beaconIndex) => {
             beacon.material.opacity = Math.floor(clockTime * 9 + beaconIndex) % 2 === 0 ? 1 : 0.16;
           });
+          animatePoliceDamageFire(mesh, 1, clockTime);
           if (mesh.visible && wreck.speed > 0.6 && wreck.smokeTimer <= 0) {
             smoke.emit(mesh.position, {
               color: 0x3a3a44, opacity: 0.5, scale: 0.52, grow: 2.3, life: 0.85,
@@ -3557,6 +3685,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // une voiture de police, même si ce tir détruit sa cible.
     if (attackerId && attackerId !== 'player') registerPoliceRetaliation(attackerId, source);
     police.health = cityRushPoliceDamage(healthBeforeHit, source);
+    const maxHealth = Number(police.maxHealth)
+      || cityRushPoliceMaxHealth(police.vehicleType || police.type)
+      || CITY_RUSH_POLICE_HEALTH;
+    animatePoliceDamageFire(police.mesh, 1 - clamp(police.health / maxHealth, 0, 1), clockTime);
     if (police.health <= 0) {
       destroyPolice(police, source, attackerId);
       return;
@@ -3876,6 +4008,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.maxHealth = cityRushPoliceMaxHealth(police.vehicleType);
     police.health = police.maxHealth;
     police.healthFlash = 0;
+    police.damageSmokeTimer = 0;
+    animatePoliceDamageFire(police.mesh, 0, clockTime);
     police.changeIn = 0.3 + police.index * 0.35;
     police.mode = 'hunt';
     police.blockLeft = 0;
@@ -4209,6 +4343,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       return free.mesh;
     }
     const mesh = makeTrafficVehicle(vehicleType);
+    withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
     mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
     scene.add(mesh);
     patrolMeshPool.push({ vehicleType, mesh, busy: true });
@@ -4678,18 +4813,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, { redPickupsHidden: hideRedForRace })));
   }
 
-  // Fumée de capot : une berline touchée fume avant d'exploser. Plus sa barre
-  // descend, plus la fumée est dense, sombre et fréquente — à un ou deux carrés
-  // près, un panache noir s'échappe du moteur et annonce l'explosion.
+  // Fumée de capot : une berline touchée s'embrase et fume avant d'exploser.
+  // Plus sa barre descend, plus les flammes grandissent et plus la fumée devient
+  // dense et sombre ; le panache noir annonce l'explosion imminente.
   const policeHoodScratch = new THREE.Vector3();
   function emitPoliceDamageSmoke(police, dt) {
     const mesh = police?.mesh;
-    if (!mesh?.visible || police.active === false) return;
+    if (!mesh) return;
     const health = Number(police.health);
     // Vie max propre au modèle (le SUV est blindé).
     const maxHealth = Number(police.maxHealth) || cityRushPoliceMaxHealth(police.vehicleType || police.type) || CITY_RUSH_POLICE_HEALTH;
-    if (!Number.isFinite(health) || health <= 0 || health >= maxHealth) return;
-    const damage = 1 - health / maxHealth; // 0 → 1
+    const damage = Number.isFinite(health) && maxHealth > 0
+      ? clamp(1 - health / maxHealth, 0, 1)
+      : 0;
+    animatePoliceDamageFire(mesh, damage, clockTime);
+    if (!mesh.visible || police.active === false || !Number.isFinite(health) || health <= 0 || health >= maxHealth) return;
     police.damageSmokeTimer = (police.damageSmokeTimer || 0) - dt;
     if (police.damageSmokeTimer > 0) return;
     police.damageSmokeTimer = lite ? 0.2 - damage * 0.1 : 0.16 - damage * 0.11;

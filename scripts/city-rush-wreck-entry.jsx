@@ -140,7 +140,7 @@ const WRECK_TEST_MAX_HEALTH = WRECK_TEST_HEALTH;
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
-  'policeSiren', 'policeSirenOff',
+  'policeSiren', 'policeSirenOff', 'garageRepair',
 ];
 
 let races = 0;
