@@ -236,7 +236,7 @@ import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometr
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
-import { animateRacerCar, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
+import { animateRacerCar, configureCarReflections, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
 import { makeLapBoard, makePickupMaterial } from './cityRushTextures';
 
 const PLAYER_Z = 3.1;
@@ -1361,6 +1361,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   renderer.toneMappingExposure = lightRig.exposure;
   renderer.shadowMap.enabled = !lite;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Reflets studio des carrosseries : la carte d'environnement est dérivée du
+  // renderer, donc branchée juste après sa création (avant les voitures).
+  configureCarReflections(renderer);
   renderer.domElement.className = 'city-rush-canvas';
   renderer.domElement.setAttribute('aria-label', `Course de voitures 3D dans ${city.name} : ${effectiveLaps} tours, change de voie, ramasse les plus rouges pour récupérer un carré de vie, évite le trafic et traverse le mini-garage central pour réparer jusqu'à six carrés.`);
   mount.appendChild(renderer.domElement);
