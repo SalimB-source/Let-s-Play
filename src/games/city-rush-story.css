@@ -665,8 +665,11 @@
 }
 
 @media (max-width: 640px) {
-  .cr-comic-stage { min-height: 320px; }
+  /* Plus de hauteur sur mobile pour que les bulles ne cachent pas l'illustration. */
+  .cr-comic-stage { min-height: 380px; }
   .cr-comic-bubble-body p { font-size: 13px; }
+  .cr-comic-bubbles { gap: 6px; bottom: 10px; left: 10px; right: 10px; }
+  .cr-comic-caption { top: 8px; left: 8px; right: 8px; font-size: 11px; padding: 7px 10px; }
   .cr-comic-sfx { font-size: clamp(36px, 12vw, 56px); }
 }
 
@@ -843,26 +846,32 @@
 
 .cr-story-mission-goal {
   display: grid;
-  gap: 4px;
+  gap: 6px;
+  padding: 12px 13px;
+  border-left: 3px solid #ffd44f;
+  border-radius: 4px;
+  background: linear-gradient(95deg, rgba(255, 212, 79, 0.10), rgba(255, 212, 79, 0.02) 60%, transparent);
 }
 
 .cr-story-mission-kicker {
   margin: 0;
-  color: #ffb4c7;
-  font: 800 8px/1.35 var(--mono, ui-monospace, monospace);
-  letter-spacing: .12em;
+  color: #ffd44f;
+  font: 850 9px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .18em;
+  text-transform: uppercase;
 }
 
 .cr-story-mission-goal h3 {
   margin: 0;
-  color: #f7f8fa;
-  font: 900 18px/1.2 var(--display, system-ui, sans-serif);
+  color: #ffffff;
+  font: 900 clamp(20px, 3.4vw, 26px)/1.1 var(--display, system-ui, sans-serif);
+  letter-spacing: -0.01em;
 }
 
 .cr-story-mission-goal > p:last-child {
   margin: 0;
-  color: #aeb7c4;
-  font: 500 12px/1.5 var(--body, system-ui, sans-serif);
+  color: #c6cedb;
+  font: 500 12.5px/1.45 var(--body, system-ui, sans-serif);
 }
 
 .cr-story-mission-course {
@@ -927,7 +936,10 @@
 
 .city-rush-page .cr-story-challenges {
   overflow: hidden;
-  border-top: 1px solid #2b323d;
+  margin-top: 2px;
+  border: 1px dashed #2f3744;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .city-rush-page .cr-story-challenges > summary {
@@ -936,11 +948,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 7px 1px 0;
+  padding: 8px 11px;
   color: #e4e8ee;
   list-style: none;
   cursor: pointer;
+  transition: background .15s ease;
 }
+
+.city-rush-page .cr-story-challenges > summary:hover { background: rgba(255,255,255,0.03); }
 
 .city-rush-page .cr-story-challenges > summary::-webkit-details-marker { display: none; }
 
@@ -973,7 +988,8 @@
 .cr-story-challenge-list {
   display: grid;
   gap: 6px;
-  padding: 2px 0 1px;
+  padding: 4px 12px 12px;
+  border-top: 1px dashed #2b323d;
 }
 
 .cr-story-challenge-list p {
@@ -1024,20 +1040,35 @@
     text-align: left;
   }
 
+  /* Bannière story : image en pleine largeur (pas étroite à gauche) pour que
+     l'illustration respire et ne soit pas écrasée par le texte sur mobile. */
   .city-rush-page .city-rush-story-banner {
-    grid-template-columns: 104px minmax(0, 1fr);
-    min-height: 132px;
+    grid-template-columns: 1fr;
+    min-height: unset;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
-  .city-rush-page .city-rush-story-banner-visual { min-height: 132px; }
-  .city-rush-page .city-rush-story-banner-body { gap: 5px; padding: 9px 10px; }
+  .city-rush-page .city-rush-story-banner-visual {
+    min-height: 168px;
+    height: 168px;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .city-rush-page .city-rush-story-banner-visual img {
+    object-position: center 40%;
+  }
+
+  .city-rush-page .city-rush-story-banner-body { gap: 5px; padding: 11px 12px 12px; }
   .city-rush-page .city-rush-story-banner-meta { gap: 4px; }
   .city-rush-page .city-rush-story-banner-meta small { font-size: 8px; }
-  .city-rush-page .city-rush-story-banner-body > b { font-size: 13px; }
-  .city-rush-page .city-rush-story-description { font-size: 10px; line-height: 1.35; -webkit-line-clamp: 2; }
-  .city-rush-page .city-rush-story-banner-actions { margin-top: 0; }
-  .city-rush-page .city-rush-story-launch-label { min-height: 27px; padding-inline: 6px; font-size: 8px; }
-  .city-rush-page .city-rush-story-banner-badge { left: 5px; bottom: 5px; padding: 4px 5px; font-size: 7px; }
+  .city-rush-page .city-rush-story-banner-body > b { font-size: 15px; }
+  .city-rush-page .city-rush-story-description { font-size: 11px; line-height: 1.4; -webkit-line-clamp: 2; }
+  .city-rush-page .city-rush-story-banner-actions { margin-top: 4px; }
+  .city-rush-page .city-rush-story-launch-label { min-height: 28px; padding-inline: 8px; font-size: 8px; }
+  .city-rush-page .city-rush-story-banner-badge { left: 6px; bottom: 6px; padding: 4px 6px; font-size: 7px; }
 
   .city-rush-page .cr-story-chapter-select > summary { min-height: 50px; padding-inline: 9px; }
   .cr-story-chapter-select-copy b { font-size: 9px; }
@@ -1062,28 +1093,57 @@
   .city-rush-page .cr-story-chapter-back { min-height: 30px; padding-inline: 7px; font-size: 7px; }
   .city-rush-page .cr-story-chapter-header .cr-story-recap { font-size: 11px; }
   .city-rush-page .cr-comic { padding: 8px; gap: 7px; }
-  .city-rush-page .cr-comic-stage { min-height: 300px; }
+  /* Cases BD : hauteur plus généreuse pour que l'illustration ne soit pas
+     cachée par les bulles et le cartouche de narration sur mobile. */
+  .city-rush-page .cr-comic-stage { min-height: clamp(340px, 56vw, 420px); }
+  .city-rush-page .cr-comic-bubbles { bottom: 10px; left: 10px; right: 10px; gap: 6px; }
+  .city-rush-page .cr-comic-caption {
+    top: 8px; left: 8px; right: 8px;
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+  .city-rush-page .cr-comic-bubble { padding: 7px 10px 7px 7px; }
+  .city-rush-page .cr-comic-bubble-body p { font-size: 13px; line-height: 1.38; }
+  .city-rush-page .cr-comic-bubble-body b { font-size: 10px; }
   .city-rush-page .cr-comic-nav { gap: 6px; }
   .city-rush-page .cr-comic-hint { order: 3; flex-basis: 100%; text-align: center; }
   .city-rush-page .cr-comic-nav-button { min-height: 32px; padding-inline: 8px; }
-  .city-rush-page .cr-story-mission-card { gap: 10px; padding: 11px; }
-  .cr-story-mission-course { grid-template-columns: 1fr; gap: 7px; }
-  .cr-story-mission-distance { display: flex; flex-wrap: wrap; justify-items: start; justify-content: flex-start; gap: 5px 9px; text-align: left; }
+  /* Carte de mission : aérée, l'objectif saute aux yeux et les détails
+     secondaires (voiture, boss, étoiles) sont relégués pour ne pas
+     embrouiller le joueur sur ce qu'il faut faire. */
+  .city-rush-page .cr-story-mission-card { gap: 10px; padding: 14px 13px; }
+  .cr-story-mission-goal h3 { font-size: 22px; letter-spacing: -0.01em; }
+  .cr-story-mission-goal > p:last-child { font-size: 12px; line-height: 1.45; }
+  .cr-story-mission-course { grid-template-columns: 1fr; gap: 7px; padding: 9px 10px; }
+  .cr-story-mission-course b { font-size: 12px; }
+  .cr-story-mission-course p { font-size: 10px; }
+  .cr-story-mission-course small { font-size: 7px; }
+  .cr-story-mission-distance { display: flex; flex-wrap: wrap; justify-items: start; justify-content: flex-start; gap: 5px 9px; text-align: left; font-size: 8px; }
   .cr-story-mission-distance i { padding-left: 8px; border-left: 1px solid #39414d; }
-  .cr-story-challenge-list p { grid-template-columns: 56px minmax(0, 1fr); font-size: 10px; }
+  .cr-story-mission-car, .cr-story-mission-boss { font-size: 7px; opacity: 0.85; }
+  .cr-story-challenge-list { gap: 5px; padding: 4px 11px 11px; }
+  .cr-story-challenge-list p { grid-template-columns: 56px minmax(0, 1fr); font-size: 10.5px; line-height: 1.4; }
+  .cr-story-challenge-list p b { font-size: 7px; }
   .city-rush-page .cr-story-chapter-actions { gap: 7px; }
-  .city-rush-page .cr-story-chapter-actions .city-rush-start-button { flex: 1 1 100%; }
+  .city-rush-page .cr-story-chapter-actions .city-rush-start-button { flex: 1 1 100%; min-height: 48px; font-size: 10px; }
   .city-rush-page .cr-story-chapter-actions .city-rush-text-button { flex: 1 1 auto; }
 }
 
 @media (max-width: 390px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
-  .city-rush-page .city-rush-story-banner { grid-template-columns: 84px minmax(0, 1fr); min-height: 120px; }
-  .city-rush-page .city-rush-story-banner-visual { min-height: 120px; }
-  .city-rush-page .city-rush-story-banner-body { padding: 7px 8px; }
+  /* Bannière story : garder l'image pleine largeur même sur les tout petits écrans */
+  .city-rush-page .city-rush-story-banner {
+    grid-template-columns: 1fr;
+    min-height: unset;
+  }
+  .city-rush-page .city-rush-story-banner-visual {
+    min-height: 150px;
+    height: 150px;
+  }
+  .city-rush-page .city-rush-story-banner-body { padding: 10px 10px 11px; }
   .city-rush-page .city-rush-story-banner-meta .city-rush-mode-tag { padding: 2px 4px; font-size: 7px; }
   .city-rush-page .city-rush-story-banner-meta small { font-size: 7px; }
-  .city-rush-page .city-rush-story-banner-body > b { font-size: 12px; }
-  .city-rush-page .city-rush-story-description { font-size: 9px; }
+  .city-rush-page .city-rush-story-banner-body > b { font-size: 13px; }
+  .city-rush-page .city-rush-story-description { font-size: 10px; line-height: 1.35; }
   .city-rush-page .city-rush-story-launch-label { font-size: 8px; }
   .cr-story-chapter-option { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 5px; }
   .cr-story-chapter-status > span { max-width: 58px; text-align: right; }

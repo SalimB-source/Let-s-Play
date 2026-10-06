@@ -1949,39 +1949,40 @@ export default function ViceCityRushPage() {
                 ) : (
                   <>
                     <section className="cr-story-mission-card" aria-labelledby="cr-story-mission-title">
+                      {/* Objectif principal : mis en avant, tout le reste est
+                          secondaire et replié pour qu'on comprenne d'un coup
+                          d'œil ce qu'il faut faire. */}
                       <div className="cr-story-mission-goal">
-                        <p className="cr-story-mission-kicker">OBJECTIF PRINCIPAL</p>
+                        <p className="cr-story-mission-kicker">🎯  OBJECTIF</p>
                         <h3 id="cr-story-mission-title">{currentStoryRace.objective.label}</h3>
                         <p>{currentStoryRace.objective.detail}</p>
                       </div>
 
                       <div className="cr-story-mission-course">
                         <div>
-                          <small>PROCHAINE COURSE · {currentStoryRace.race.type}</small>
+                          <small>{currentStoryRace.race.type}{currentStoryRace.boss ? ' · BOSS' : ''}</small>
                           <b>{currentStoryRace.race.name}</b>
-                          <p>{currentStoryRace.race.route}</p>
                         </div>
                         <span className="cr-story-mission-distance">
-                          {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOURS`}
+                          {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CP` : `${currentLaps} T`}
                           <i>{RACE_KM}</i>
                           {currentStoryRace.id === 'ring' && storyTargetTime !== null && <i>CIBLE {formatTime(storyTargetTime)}</i>}
                           {sprintMode && storySprintPar !== null && <i>PAR {formatTime(storySprintPar)}</i>}
                         </span>
                       </div>
 
-                      <p className="cr-story-mission-car">
-                        {currentStoryRace.fixedCarId
-                          ? `VOITURE PRÊTÉE · ${(CITY_RUSH_CARS.find((car) => car.id === currentStoryRace.fixedCarId)?.name || '').toUpperCase()}`
-                          : `NICO VEGA · ${selectedCar.name} · ${selectedCar.className.toLowerCase()}`}
-                      </p>
-                      {currentStoryRace.boss ? <p className="cr-story-mission-boss">⚠ {currentStoryRace.boss.label}</p> : null}
-
                       <details className="cr-story-challenges">
                         <summary>
-                          <span><b>Défis secondaires</b><small>2 objectifs pour les étoiles bonus</small></span>
+                          <span><b>Détails &amp; défis</b><small>Infos de course, étoiles bonus et conseil</small></span>
                           <i aria-hidden="true">⌄</i>
                         </summary>
                         <div className="cr-story-challenge-list">
+                          <p><b>PARCOURS</b><span>{currentStoryRace.race.route}</span></p>
+                          <p><b>VOITURE</b><span>{currentStoryRace.fixedCarId
+                            ? (CITY_RUSH_CARS.find((car) => car.id === currentStoryRace.fixedCarId)?.name || '').toUpperCase() + ' (prêtée)'
+                            : `${selectedCar.name} · ${selectedCar.className.toLowerCase()}`}</span></p>
+                          {currentStoryRace.rules?.weaponsEnabled === false ? <p><b>RÈGLES</b><span>Course pure, pas d'armes</span></p> : null}
+                          {currentStoryRace.rules?.policeEnabled ? <p><b>RISQUE</b><span>La police est de la partie</span></p> : null}
                           <p><b>2 ★</b><span>{currentStoryRace.stars.two.label}</span></p>
                           <p><b>3 ★</b><span>{currentStoryRace.stars.three.label}</span></p>
                           <p><b>CONSEIL</b><span>{currentStoryRace.tip}</span></p>
@@ -1990,7 +1991,9 @@ export default function ViceCityRushPage() {
                     </section>
 
                     <div className="cr-story-chapter-actions">
-                      <button type="button" className="city-rush-start-button" onClick={() => startRace()}>LANCER LA COURSE <span>↗</span></button>
+                      <button type="button" className="city-rush-start-button" onClick={() => startRace()}>
+                        {currentStoryRace.boss ? 'AFFRONTER LE BOSS ↗' : 'LANCER LA COURSE ↗'}
+                      </button>
                       <button type="button" className="city-rush-text-button" onClick={() => setBriefingDone(false)}>REVOIR LE BRIEFING</button>
                     </div>
                   </>
