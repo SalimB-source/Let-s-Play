@@ -19,6 +19,7 @@ import { avatarFor, displayNameFor } from '../lib/comments';
 import { isPhoneLayout } from '../lib/phoneLayout';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
+import { initScrollParallax } from '../lib/scrollParallax';
 import ArticleReadingTools from './ArticleReadingTools';
 import NeonBackdrop from './NeonBackdrop';
 import { socialText } from '../social/socialCopy';
@@ -126,6 +127,10 @@ export default function Layout({ children }) {
       }
     };
   }, []);
+
+  // Parallax léger sur les cartes et visuels éditoriaux de toutes les pages.
+  // Le coordinateur observe aussi les cartes montées plus tard par les routes lazy.
+  useEffect(() => initScrollParallax(), []);
 
   // scrolled shrink
   useEffect(() => {

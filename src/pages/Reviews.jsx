@@ -74,8 +74,8 @@ export default function Reviews(){
         <div className="section-label"><span>{c.gridLabel}</span><span>{c.gridRange}</span></div>
         <div className="latest-tests-head"><div><p className="eyebrow"><span className="live-dot" /> {c.gridEyebrow}</p><h2>{c.gridTitleA}<br/><em>{c.gridTitleB}</em></h2></div></div>
         <div className="latest-tests-grid">
-          {gameTests.map((test) => (
-            <Link className="latest-test-card" to={test.route} key={test.slug}>
+          {gameTests.map((test, index) => (
+            <Link className="latest-test-card" to={test.route} key={test.slug} data-parallax={index % 2 ? '0.05' : '0.032'} data-parallax-limit={index % 2 ? '20' : '15'}>
               <div className="latest-test-image">
                 <img src={test.image} alt={test.alt} loading="lazy" />
                 <span className={`latest-test-score score-badge ${scoreTier(test.score)}`}>
@@ -113,8 +113,8 @@ export default function Reviews(){
           <Link className="arrow-link" to="/dossiers">{d.seeAll} <Arrow/></Link>
         </div>
         <div className="featured-dossiers-grid">
-          {featuredDossiers.map((dossier) => (
-            <article className="featured-dossier" id={dossier.id} key={dossier.id}>
+          {featuredDossiers.map((dossier, index) => (
+            <article className="featured-dossier" id={dossier.id} key={dossier.id} data-parallax={index ? '0.05' : '0.035'} data-parallax-limit={index ? '21' : '16'}>
               <div className="featured-dossier-player hud-frame">
                 <iframe src={youTubeEmbedUrl(dossier.video)} title={dossier.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
               </div>
@@ -140,8 +140,8 @@ export default function Reviews(){
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">{t.reviews.reels.seeAll} <Arrow /></a>
         </div>
         <div className="reels-grid">
-          {reels.map((reel) => (
-            <div className="reel-card hud-frame" key={reel.id}>
+          {reels.map((reel, index) => (
+            <div className="reel-card hud-frame" key={reel.id} data-parallax={index % 2 ? '0.055' : '0.04'} data-parallax-limit={index % 2 ? '22' : '18'}>
               <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
               <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
             </div>

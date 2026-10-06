@@ -177,7 +177,7 @@ export default function CinemaNews() {
         <div className="news-carousel is-grid">
           {topStory && (
             <div className="news-grid-cell news-grid-cell--today">
-              <Link className="daily-news-card news-today" to={topStory.to}>
+              <Link className="daily-news-card news-today" to={topStory.to} data-parallax="0.04" data-parallax-limit="19">
                 <div className="daily-news-image">
                   {renderStoryImage(topStory, 'eager')}
                   {renderBadges(topStory)}
@@ -193,9 +193,9 @@ export default function CinemaNews() {
               </Link>
             </div>
           )}
-          {gridArticles.map((article) => (
+          {gridArticles.map((article, index) => (
             <div className="news-grid-cell" key={article.to}>
-              <Link className="news-carousel-card" to={article.to}>
+              <Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
                 <div className="news-carousel-image">
                   {renderStoryImage(article)}
                   {renderBadges(article)}

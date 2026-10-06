@@ -123,7 +123,7 @@ export default function QuizzesPage() {
       {daily && (
         <section className="wrap">
           {dailyFinished ? (
-            <div className="quiz-daily hud-frame is-finished">
+            <div className="quiz-daily hud-frame is-finished" data-parallax="0.04" data-parallax-limit="18">
               <div className="quiz-daily-copy">
                 <p className="eyebrow">{copy.dailyEyebrow}</p>
                 <h2>{quizLabel(daily.labels, lang)?.title}</h2>
@@ -142,7 +142,7 @@ export default function QuizzesPage() {
               </span>
             </div>
           ) : (
-            <Link className="quiz-daily hud-frame" to={daily.route}>
+            <Link className="quiz-daily hud-frame" to={daily.route} data-parallax="0.04" data-parallax-limit="18">
               <div className="quiz-daily-copy">
                 <p className="eyebrow"><span className="live-dot" /> {copy.dailyEyebrow}</p>
                 <h2>{quizLabel(daily.labels, lang)?.title}</h2>
@@ -198,7 +198,7 @@ export default function QuizzesPage() {
               .replace('{total}', String(categoryCounts.all))}
         </p>
         <div className="quiz-grid">
-          {shownQuizzes.map((quiz) => {
+          {shownQuizzes.map((quiz, index) => {
             // Meilleure partie de l'appareil, tous niveaux confondus : le record
             // affiché nomme son niveau (`title`), et la pastille à côté rappelle
             // la progression — aucune difficulté n'est imposée par la grille,
@@ -208,6 +208,8 @@ export default function QuizzesPage() {
             // Les trois niveaux terminés : la carte passe en niveaux de gris,
             // affiche « TERMINÉ » et n'est plus un lien — le quizz est verrouillé.
             const finished = done === QUIZ_LEVELS.length;
+            const parallaxSpeed = index % 3 === 1 ? '0.055' : '0.035';
+            const parallaxLimit = index % 3 === 1 ? '20' : '15';
             // Carte compacte : miniature, pastilles, TITRE, méta. Le chapeau
             // (`labels.text`) n'est plus affiché ici — il reste lu sur la
             // bannière du quizz du jour et sur l'écran d'intro du quizz, là où
@@ -242,8 +244,8 @@ export default function QuizzesPage() {
               </>
             );
             return finished
-              ? <div className="quiz-card is-finished" key={quiz.slug} aria-label={`${title} — ${copy.finished}`}>{body}</div>
-              : <Link className="quiz-card" to={quiz.route} key={quiz.slug}>{body}</Link>;
+              ? <div className="quiz-card is-finished" key={quiz.slug} aria-label={`${title} — ${copy.finished}`} data-parallax={parallaxSpeed} data-parallax-limit={parallaxLimit}>{body}</div>
+              : <Link className="quiz-card" to={quiz.route} key={quiz.slug} data-parallax={parallaxSpeed} data-parallax-limit={parallaxLimit}>{body}</Link>;
           })}
         </div>
         {shownQuizzes.length === 0 && <p className="quiz-filter-empty">{copy.filterEmpty}</p>}
@@ -255,7 +257,7 @@ export default function QuizzesPage() {
           <h2 id="quiz-category-survival-title">{copy.categorySurvivalTitle}</h2>
           <p>{copy.categorySurvivalIntro.replace('{n}', String(SURVIVAL_QUESTION_COUNT))}</p>
         </div>
-        <Link className="quiz-survival-card hud-frame" to="/quizz/survival">
+        <Link className="quiz-survival-card hud-frame" to="/quizz/survival" data-parallax="0.05" data-parallax-limit="20">
           <span className="quiz-survival-rec" aria-hidden="true"><i /> REC</span>
           <span className="quiz-survival-tape" aria-hidden="true">QUARANTINE</span>
           <span className="quiz-survival-copy">

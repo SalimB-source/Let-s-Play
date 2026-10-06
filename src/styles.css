@@ -138,6 +138,11 @@ img{max-width:100%}
 
 .wrap{width:min(1240px,calc(100% - 56px));margin:auto}
 
+/* Les éléments marqués suivent le scroll à une vitesse différente ; la
+   propriété translate laisse intacts leurs effets de survol/transform. */
+[data-parallax]{translate:0 var(--parallax-y,0px)}
+@media(prefers-reduced-motion:reduce){[data-parallax]{translate:none !important}}
+
 /* ============ NAV — GLASS ISLAND (Option A) ============ */
 /* Île flottante centrée : verre dépoli sombre, bords arrondis 16px,
    ombre douce. Au scroll elle se resserre (64px → 58px) et s'opacifie.
@@ -807,12 +812,12 @@ img{max-width:100%}
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
   width:100%;height:100%;object-fit:cover;object-position:center;
   background-position:center;background-size:cover;background-repeat:no-repeat;
-  transform:scale(1.03);
+  transform:scale(1.06);
   animation:hero-drift 24s ease-in-out infinite alternate;
 }
-@keyframes hero-drift{to{transform:scale(1.08)}}
+@keyframes hero-drift{to{transform:scale(1.1)}}
 @media (prefers-reduced-motion: reduce){
-  .hero-bg{animation:none;transform:scale(1.03)}
+  .hero-bg{animation:none;transform:scale(1.06)}
 }
 .hero-shade{
   position:absolute;inset:0;z-index:3;
