@@ -290,13 +290,17 @@ test('le HUD de course est une grille de zones : aucun élément ne se superpose
   const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
   assert.match(page, /import '\.\/vice-city-rush-hud\.css'/);
   assert.match(page, /className=\{`city-rush-hud\$\{sprintMode/);
-  for (const zone of ['is-top-left', 'is-top-center', 'is-top-right', 'is-mid-left', 'is-mid-right', 'is-bottom-center', 'is-bottom-right']) {
+  for (const zone of ['is-top-left', 'is-top-center', 'is-top-right', 'is-mid-left', 'is-mid-right', 'is-bottom-left', 'is-bottom-center', 'is-bottom-right']) {
     assert.match(page, new RegExp(`city-rush-hud-zone ${zone}`), `zone ${zone} présente`);
   }
   assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \{[^}]*display: grid;[^}]*grid-template-areas:/);
   assert.doesNotMatch(page, /city-rush-controls-bottom|className="city-rush-radar"/);
 });
 
-test('les flèches de direction ne sont plus affichées dans le HUD', () => {
-  assert.doesNotMatch(page, /city-rush-steering|is-bottom-left/);
+test('les flèches de direction ne sont plus affichées ; le compteur à aiguille occupe le bas gauche', () => {
+  assert.doesNotMatch(page, /city-rush-steering/);
+  assert.match(page, /city-rush-hud-zone is-bottom-left">\s*<div className="city-rush-speedometer-wrap">\s*<CityRushSpeedometer speed=\{hud\.speed\}/);
+  const gauge = readFileSync(new URL('../src/games/CityRushSpeedometer.jsx', import.meta.url), 'utf8');
+  assert.match(gauge, /onClick=\{toggle\}/);
+  assert.match(gauge, /'mph'/);
 });

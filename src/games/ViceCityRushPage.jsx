@@ -5,6 +5,7 @@ import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushStoryScene from './CityRushStoryScene';
 import CityRushRaceList from './CityRushRaceList';
 import CityRushHealthBar from './CityRushHealthBar';
+import CityRushSpeedometer from './CityRushSpeedometer';
 import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
@@ -1192,16 +1193,6 @@ export default function ViceCityRushPage() {
                 </div>
 
                 <div className="city-rush-hud-zone is-top-right">
-                <div className="city-rush-hud-card city-rush-speed-card">
-                  <span className="city-rush-hud-label">VITESSE</span>
-                  <strong>{hud.speed}<small> km/h</small></strong>
-                  {oncomingCharged && (
-                    <span className="city-rush-speed-bonus" aria-label={`Bonus de contresens : plus ${oncomingBonusPercent} pour cent de vitesse`}>
-                      +{oncomingBonusPercent} %
-                    </span>
-                  )}
-                  <span className="city-rush-time">{formatTime(hud.elapsed)}</span>
-                </div>
               <div className={`city-rush-gta-cash${wantedStars > 0 ? ' is-wanted' : ''}`} aria-label={`Butin : ${hud.score || 0} points`}>
                 <b>{(hud.score || 0).toLocaleString('fr-FR')} PTS</b>
                 <small>{formatTime(hud.elapsed)}</small>
@@ -1258,6 +1249,17 @@ export default function ViceCityRushPage() {
                 </div>
               )}
 
+                </div>
+
+                <div className="city-rush-hud-zone is-bottom-left">
+                  <div className="city-rush-speedometer-wrap">
+                    <CityRushSpeedometer speed={hud.speed} boosting={hud.boostLeft > 0} />
+                  {oncomingCharged && (
+                    <span className="city-rush-speed-bonus" aria-label={`Bonus de contresens : plus ${oncomingBonusPercent} pour cent de vitesse`}>
+                      +{oncomingBonusPercent} %
+                    </span>
+                  )}
+                  </div>
                 </div>
 
                 <div className="city-rush-hud-zone is-bottom-center">
