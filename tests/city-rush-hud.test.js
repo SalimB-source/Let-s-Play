@@ -63,6 +63,27 @@ test('une voiture de police qui atterrit après un saut se détruit et part en �
     'la position verticale suit bien la trajectoire du saut');
 });
 
+test('les tirs allument des flammes de plus en plus grandes sur les voitures de police', () => {
+  const fireAnimation = world.match(/function animatePoliceDamageFire\([\s\S]*?\n}\n/)?.[0] || '';
+  const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
+  assert.match(world, /group\.name = 'police-damage-fire'/, 'les flammes sont attachées à la voiture touchée');
+  assert.match(world, /const POLICE_DAMAGE_FIRE_SPOTS = 6/,
+    'la coque d’une berline peut allumer un foyer supplémentaire à chaque impact');
+  assert.match(fireAnimation, /const progress = clamp\(level \* POLICE_DAMAGE_FIRE_SPOTS - index, 0, 1\)/,
+    'les foyers apparaissent par étapes selon la part de coque perdue');
+  assert.match(fireAnimation, /flame\.group\.visible = progress > 0\.025/);
+  assert.match(fireAnimation, /flame\.group\.scale\.set\(width \* flicker, height, width \* flicker\)/,
+    'les foyers déjà allumés grandissent aussi avec les dégâts');
+  assert.match(policeDamage, /animatePoliceDamageFire\(police\.mesh, 1 - clamp\(police\.health \/ maxHealth, 0, 1\), clockTime\)/,
+    'chaque tir actualise immédiatement les flammes à partir de la coque restante');
+  assert.match(world, /animatePoliceDamageFire\(mesh, 1, clockTime\)/,
+    'l’embrasement maximal reste visible pendant le tête-à-queue');
+  assert.match(world, /if \(wreck\.mesh\) animatePoliceDamageFire\(wreck\.mesh, 0, clockTime\)/,
+    'les flammes de dégâts passent le relais à la carcasse en feu');
+  assert.match(world, /if \(isCityRushPoliceTrafficType\(spec\.id\)\) \{\s*withPoliceVisualRandom\(\(\) => attachPoliceDamageFire\(mesh, policeDamageFireKit\)\)/,
+    'les voitures de police du trafic ont le même effet que l’escouade');
+});
+
 test('the mobile fifteen-cell player health bar is compact and sits above the corner HUD', () => {
   assert.ok(mobileHealthRule, 'la règle mobile de la barre de vie existe');
   assert.equal(mobileHealthDeclarations.left, '50%', 'la barre reste centrée entre le classement et les commandes');
