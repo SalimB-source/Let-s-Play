@@ -908,6 +908,19 @@ et le dernier tour durait 21 s.
   `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
   sept balles avec chaque bonus rouge.
 
+  **Deux mini-garages, uniquement au dernier tour.** Sur chaque carte, deux
+  portiques traversables apparaissent sur la voie la plus à droite du sens de
+  course, jamais pendant les tours précédents ni en Sprint. Même en Poursuite,
+  l'arrivée anticipée de la police ne les fait pas apparaître plus tôt. Sortir
+  d'un portique dans sa voie efface les étoiles et rend **jusqu'à deux cellules
+  de vie**, sans dépasser la résistance maximale de la voiture choisie
+  (`CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT`, `cityRushMiniGarageRepair`). La
+  réparation fonctionne aussi sans étoiles, mais ne ressuscite pas une épave.
+  Chaque garage ne sert **qu'une fois par course** ; une porte ratée revient
+  dans la deuxième boucle du grand dernier tour. Le compteur n'apparaît qu'à
+  ce dernier tour et le bandeau annonce les points réellement rendus. Un
+  nouveau départ réarme les deux portes et les masque à nouveau.
+
   **Les rivaux qui touchent la police reçoivent leur propre poursuivant.** Deux
   voitures supplémentaires sont gardées en réserve, une par rival ; dès qu'un
   rival réussit un tir sur une voiture de police — escouade ou police du trafic

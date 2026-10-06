@@ -63,6 +63,7 @@ import {
   CITY_RUSH_MINI_GARAGE_COUNT,
   CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS,
   CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
+  CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
@@ -129,7 +130,9 @@ import {
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
-  cityRushMiniGarageCanClearWanted,
+  cityRushMiniGaragesAvailable,
+  cityRushMiniGarageCanUse,
+  cityRushMiniGarageRepair,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
   cityRushPolicePace,
@@ -453,7 +456,7 @@ function makeMiniGarageMaterials(city) {
     ctx.lineWidth = 8;
     ctx.strokeRect(5, 5, width - 10, height - 10);
     neonText(ctx, 'MINI GARAGE', width / 2, height * 0.42, '900 58px "Orbitron", Arial, sans-serif', city.accent, 16);
-    neonText(ctx, 'ÉTOILES → 0', width / 2, height * 0.78, '800 30px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
+    neonText(ctx, `ÉTOILES → 0 · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.78, '800 26px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
   }, 512, 160, { smooth: true });
 
   return {
@@ -1723,7 +1726,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       index: index + 1,
       group,
       lane: miniGarageLane,
-      trackDistance: CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index],
+      trackDistance: (effectiveLaps - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index],
       used: false,
     };
   });
@@ -1894,9 +1897,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     lastRampDistanceSlot = next;
   }
 
+  function miniGaragesAvailable() {
+    return phase === 'playing' && !finished && !playerWrecked && policeDeployed
+      && cityRushMiniGaragesAvailable({ lap, laps: effectiveLaps, sprint });
+  }
+
   function placeMiniGarage(garage) {
-    if (!garage || garage.used) {
-      if (garage?.group) garage.group.visible = false;
+    if (!garage) return;
+    garage.group.userData.trackDistance = garage.trackDistance;
+    garage.group.userData.used = garage.used;
+    if (garage.used || !miniGaragesAvailable()) {
+      garage.group.visible = false;
       return;
     }
     const gap = garage.trackDistance - distance;
@@ -1906,22 +1917,23 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       PLAYER_Z - gap * SCALE,
     );
     garage.group.rotation.set(trackPitch(garage.trackDistance), trackYaw(garage.trackDistance), 0);
-    garage.group.userData.trackDistance = garage.trackDistance;
-    garage.group.userData.used = garage.used;
     garage.group.visible = gap > -25 && gap * SCALE < theme.fogFar + 20;
   }
 
   function setMiniGaragesToStart() {
     miniGarages.forEach((garage, index) => {
-      garage.trackDistance = CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index];
+      garage.trackDistance = (effectiveLaps - 1) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS[index];
       garage.used = false;
       garage.group.userData.used = false;
       placeMiniGarage(garage);
     });
   }
 
-  function clearWantedAtMiniGarage(garage) {
+  function useMiniGarage(garage) {
     const previousStars = wantedLevel;
+    const healthBefore = playerHealth;
+    playerHealth = cityRushMiniGarageRepair(playerHealth, playerMaxHealth);
+    playerHealthFlash = 0;
     garage.used = true;
     policeDestroyedByPlayer = 0;
     wantedLevel = 0;
@@ -1934,30 +1946,40 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       previousStars,
       stars: wantedLevel,
       remaining,
+      lap,
+      healthBefore,
+      health: playerHealth,
+      maxHealth: playerMaxHealth,
+      healthRestored: playerHealth - healthBefore,
     });
     emitHud(true);
   }
 
   function updateMiniGarages(previousDistance) {
+    if (!miniGaragesAvailable()) {
+      miniGarages.forEach(placeMiniGarage);
+      return;
+    }
     for (const garage of miniGarages) {
       const garageExitDistance = garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
-      if (cityRushMiniGarageCanClearWanted({
+      if (cityRushMiniGarageCanUse({
         previousDistance,
         nextDistance: distance,
         garageExitDistance,
         playerLane,
         garageLane: garage.lane,
-        wantedLevel,
+        lap,
+        laps: effectiveLaps,
+        sprint,
         used: garage.used,
       })) {
-        // La voiture a parcouru tout le portique : elle sort du garage, puis
-        // seulement alors les étoiles s'effacent et le décor disparaît derrière elle.
-        clearWantedAtMiniGarage(garage);
+        // La voiture sort du portique : les étoiles s'effacent, la coque est
+        // réparée et le décor disparaît derrière elle, une seule fois par garage.
+        useMiniGarage(garage);
         continue;
       }
-      // Si la porte a été ratée (ou traversée sans étoiles), elle revient au
-      // même repère de la carte au tour suivant. On la garde visible jusqu'à
-      // ce que l'arrière du portique ait dépassé la voiture.
+      // Une porte ratée revient au même repère dans la deuxième boucle du
+      // grand dernier tour. Elle ne s'affiche jamais dans les tours précédents.
       while (!garage.used && garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance) {
         garage.trackDistance += CITY_RUSH_LAP_LENGTH;
       }
@@ -2185,6 +2207,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       leader: standings.leader?.name || '—',
       wantedLevel,
       wantedMaxStars: CITY_RUSH_WANTED_MAX_STARS,
+      miniGaragesActive: miniGaragesAvailable(),
       miniGaragesRemaining: miniGarages.filter((garage) => !garage.used).length,
       miniGaragesTotal: CITY_RUSH_MINI_GARAGE_COUNT,
       oncomingPoliceTurnarounds: oncomingCars
@@ -5366,6 +5389,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mesh.visible = false;
     });
     releaseRalliedPolice();
+    miniGarages.forEach(placeMiniGarage);
     audioRef?.current?.policeSirenOff?.();
     // Une épave ne fait pas la fête : pas de confettis ni de drapeau à damier.
     if (!destroyed) startLine.celebrate();
