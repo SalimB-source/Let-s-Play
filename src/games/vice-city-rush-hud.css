@@ -420,7 +420,7 @@
   --gauge-glow: rgba(61, 91, 255, 0.75);
   position: relative;
   display: block;
-  width: clamp(150px, 15vw, 190px);
+  width: clamp(180px, 18vw, 230px);
   aspect-ratio: 1;
   padding: 0;
   border: 0;
