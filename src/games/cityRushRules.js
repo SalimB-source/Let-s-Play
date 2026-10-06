@@ -267,71 +267,89 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
 //     voiture, sinon la citadine ne peut pas atteindre le checkpoint suivant ;
 //   · `CITY_RUSH_POLICE_CHASE_SPEED_FACTOR` — une berline lancée à la poursuite
 //     dépasse toujours la voiture qu'elle chasse, quelle que soit sa pointe.
+//
+// ── Résistance : combien de carrés encaisse chaque coque ? ────────────────
+// La vie n'est plus la même pour tout le monde : chaque carrosserie a ses
+// **points de vie**, réglés par `durabilityMultiplier` via
+// `cityRushCarMaxHealth` (le même couple que `power` / `powerMultiplier` :
+// `durability` n'est que la jauge 0-100 du garage, tenue alignée sur le
+// classement réel, et `durabilityMultiplier` est le seul levier de course).
+//
+// Le barème suit la puissance **à l'envers, mais avec des écarts voulus** :
+// une petite voiture lente et lourde (MISTRAL 1.4 : 0,66 de pointe) encaisse
+// 23 carrés, tandis que la supercar la plus rapide du garage (PULSE RS : 1,44)
+// tombe en 7 carrés. Entre les deux, la résistance n'est pas une simple
+// fonction de la vitesse — le VOLT AERO GT (1,18) encaisse 15 carrés, donc
+// mieux que le KRONOS 930 TURBO (1,14, 13 carrés) ou le VORTEX RS-10 (1,22,
+// 12 carrés) qui vont pourtant plus vite : les voitures rapides se paient en
+// fragilité, les lentes se consolent en encaissant. Moyenne du catalogue :
+// ~14,5 carrés, soit la barre historique de quinze — la difficulté d'ensemble
+// ne bouge pas, c'est sa répartition qui change.
 export const CITY_RUSH_CARS = Object.freeze([
   Object.freeze({
     id: 'city-hatch', archetype: 'city-hatch', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
-    power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 6.2, recovery: 44, hitRecoveryMultiplier: 1.22,
+    power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 6.2, recovery: 44, hitRecoveryMultiplier: 1.22, durability: 100, durabilityMultiplier: 1.52,
     widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
   }),
   Object.freeze({
     id: 'nova-18-gt', archetype: 'nova-hatch', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
     bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
-    power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 7.4, recovery: 64, hitRecoveryMultiplier: 1.12,
+    power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 7.4, recovery: 64, hitRecoveryMultiplier: 1.12, durability: 89, durabilityMultiplier: 1.36,
     widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
   }),
   Object.freeze({
     id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
     bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
-    power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82,
+    power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82, durability: 79, durabilityMultiplier: 1.2,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
   }),
   Object.freeze({
     id: 'vice-roadster', archetype: 'ferrari', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
     bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c', price: 400,
-    power: 72, powerMultiplier: 1.02, acceleration: 82, accelerationRate: 9.1, recovery: 84, hitRecoveryMultiplier: 0.94,
+    power: 72, powerMultiplier: 1.02, acceleration: 82, accelerationRate: 9.1, recovery: 84, hitRecoveryMultiplier: 0.94, durability: 62, durabilityMultiplier: 0.94,
     widthScale: 1, heightScale: 1, lengthScale: 1,
   }),
   Object.freeze({
     id: 'turbo-gt', archetype: 'porsche', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
     bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8', price: 550,
-    power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 8.4, recovery: 74, hitRecoveryMultiplier: 1.06,
+    power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 8.4, recovery: 74, hitRecoveryMultiplier: 1.06, durability: 57, durabilityMultiplier: 0.86,
     widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'muscle-86', archetype: 'audi', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
     bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa', price: 650,
-    power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 10.6, recovery: 66, hitRecoveryMultiplier: 1.18,
+    power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 10.6, recovery: 66, hitRecoveryMultiplier: 1.18, durability: 53, durabilityMultiplier: 0.8,
     widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
     bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455', price: 800,
-    power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 9.6, recovery: 76, hitRecoveryMultiplier: 1.02,
+    power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 9.6, recovery: 76, hitRecoveryMultiplier: 1.02, durability: 49, durabilityMultiplier: 0.74,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
   }),
   Object.freeze({
     id: 'toro-v12', archetype: 'lamborghini', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
     bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703', price: 1000,
-    power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16,
+    power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16, durability: 39, durabilityMultiplier: 0.6,
     widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),
   Object.freeze({
     id: 'volt-aero', archetype: 'electric-gt', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
     bodyColor: 0x35d7d0, trimColor: 0xd9ffff, driverColor: 0x15212d, accent: '#42f5dc', price: 600,
-    power: 86, powerMultiplier: 1.18, acceleration: 100, accelerationRate: 11.4, recovery: 85, hitRecoveryMultiplier: 0.94,
+    power: 86, powerMultiplier: 1.18, acceleration: 100, accelerationRate: 11.4, recovery: 85, hitRecoveryMultiplier: 0.94, durability: 66, durabilityMultiplier: 1.0,
     widthScale: 1.02, heightScale: 0.96, lengthScale: 1.04,
   }),
   Object.freeze({
     id: 'atlas-xr', archetype: 'sport-crossover', name: 'ATLAS XR', className: 'CROSSOVER SPORT · HYBRIDE INTÉGRALE',
     bodyColor: 0x7848e8, trimColor: 0xffc857, driverColor: 0x1b2030, accent: '#a78bfa', price: 750,
-    power: 90, powerMultiplier: 1.27, acceleration: 91, accelerationRate: 10.1, recovery: 100, hitRecoveryMultiplier: 0.79,
+    power: 90, powerMultiplier: 1.27, acceleration: 91, accelerationRate: 10.1, recovery: 100, hitRecoveryMultiplier: 0.79, durability: 75, durabilityMultiplier: 1.14,
     widthScale: 1.08, heightScale: 1.10, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'pulse-rs', archetype: 'neo-roadster', name: 'PULSE RS', className: 'ROADSTER ÉLECTRIQUE · PERFORMANCE SILENCIEUSE',
     bodyColor: 0xf05a8a, trimColor: 0xffedf5, driverColor: 0x202331, accent: '#ff72ac', price: 1150,
-    power: 99, powerMultiplier: 1.44, acceleration: 100, accelerationRate: 12.2, recovery: 78, hitRecoveryMultiplier: 1.02,
+    power: 99, powerMultiplier: 1.44, acceleration: 100, accelerationRate: 12.2, recovery: 78, hitRecoveryMultiplier: 1.02, durability: 31, durabilityMultiplier: 0.47,
     widthScale: 1.04, heightScale: 0.91, lengthScale: 1.06,
   }),
 ]);
@@ -419,8 +437,65 @@ export function isCityRushPoliceTrafficType(type) {
 // joueur humain et les IA encaissent exactement la même durée (0,6 s).
 export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 0.6;
 export const CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN = 1.2;
-export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_CAR_GAP;
 export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.5;
+
+// ── Enveloppe de contact du trafic lent ─────────────────────────────────────
+// Le trafic lent n'est pas un mur : c'est une carrosserie posée sur la route,
+// et on peut passer à côté d'elle. Le seuil de choc n'est donc plus la distance
+// de sécurité (4,8 m, `CITY_RUSH_CAR_GAP`, qui sert aux berlines de police et
+// aux rabattements) mais l'enveloppe réelle de la voiture :
+//
+//   · **pare-chocs contre pare-chocs** (3,6 m), quand les deux carrosseries
+//     sont dans l'axe : le choc tombe quand elles se touchent vraiment. Avant,
+//     il tombait un mètre plus tôt — à l'écran, on perdait un carré en heurtant
+//     une voiture qui n'était pas encore touchée, et une esquive de dernière
+//     seconde était punie alors que le pilote avait tourné le volant ;
+//   · **frôlement porte contre porte** (2,9 m) dès que l'aile a dégagé l'autre
+//     voiture : plus le pilote a entamé son esquive latérale, plus il peut
+//     approcher sans rien casser. C'est ce qui donne la marge de manœuvre :
+//     une esquive commencée à temps passe, une esquive jamais commencée touche.
+//
+// `resolveCityRushCarMovement` applique **la même enveloppe** à la retenue du
+// suiveur (`cityRushTrafficContactGap`), sans quoi le moteur le bloquerait à
+// 4,8 m du véhicule et le choc ne pourrait plus jamais être atteint. Les
+// berlines de police et les voitures de course gardent la distance de sécurité
+// historique : leur collision est jugée autrement (`cityRushPoliceCollisionHit`).
+export const CITY_RUSH_TRAFFIC_CAR_GAP = 3.6; // m : pare-chocs contre pare-chocs
+export const CITY_RUSH_TRAFFIC_PASS_GAP = 2.9; // m : frôlement latéral, une fois l'aile dégagée
+// Ancien nom, conservé pour les harnais : seuil de choc du trafic dans l'axe.
+export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_TRAFFIC_CAR_GAP;
+// La retenue du suiveur s'arrête **juste au-delà** de l'enveloppe, de ce
+// centimètre de marge : le choc est jugé sur la distance *demandée*, avant le
+// rabotage du moteur. Une retenue pile sur le seuil n'entrerait donc jamais
+// « depuis l'extérieur » (`wasOutsideContact`) et le pilote resterait collé
+// derrière la voiture lente sans jamais la toucher — ni s'arrêter, ni
+// s'écarter : le bouchon parfait. Avec la marge, le premier contact est franc
+// (le suiveur demande à passer dedans) et la voiture touchée se rabat.
+export const CITY_RUSH_TRAFFIC_HOLD_MARGIN = 0.05; // m
+
+/**
+ * Distance longitudinale en dessous de laquelle deux voitures se touchent,
+ * selon l'écart latéral entre leurs deux centres. Dans l'axe : `contactGap`
+ * (pare-chocs contre pare-chocs). Aile contre aile (`lateralDistance` ≥ la
+ * somme des demi-largeurs) : `passGap`, le frôlement. Entre les deux, la
+ * dégressivité suit la part de carrosserie déjà dégagée — c'est cette pente
+ * qui récompense une esquive entamée et laisse passer le pilote qui se décale.
+ */
+export function cityRushTrafficContactGap(lateralDistance, {
+  bodyWidth = 1.9,
+  trafficWidth = 1.9,
+  contactGap = CITY_RUSH_TRAFFIC_CAR_GAP,
+  passGap = CITY_RUSH_TRAFFIC_PASS_GAP,
+} = {}) {
+  const safe = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+  const safeContact = Math.max(0, safe(contactGap, CITY_RUSH_TRAFFIC_CAR_GAP));
+  const brush = Math.max(0, Math.min(safeContact, safe(passGap, CITY_RUSH_TRAFFIC_PASS_GAP)));
+  const halfWidth = (Math.max(0, safe(bodyWidth, 1.9)) + Math.max(0, safe(trafficWidth, 1.9))) / 2;
+  if (halfWidth <= 0) return brush;
+  const distance = Math.abs(safe(lateralDistance, 0));
+  if (distance >= halfWidth) return brush;
+  return brush + (safeContact - brush) * (1 - distance / halfWidth);
+}
 
 // Le freinage suivait un plancher fixe (18 m/s²) : toutes les voitures
 // s'arrêtaient exactement pareil, et l'écart d'accélération ne se voyait donc
@@ -2674,6 +2749,12 @@ export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, exclu
 // Le trafic conserve une distance de sécurité; les voitures de course ne
 // se bloquent plus entre elles lorsqu'elles sont marquées `collisionGroup`.
 // Un véhicule en l'air (saut sur tremplin) passe au-dessus du sol sans blocage.
+// Devant un véhicule du **trafic lent** (`collisionGroup: 'traffic'`), la
+// retenue n'est pas la distance de sécurité mais l'enveloppe de contact du
+// véhicule (`cityRushTrafficContactGap`) : elle suit l'écart latéral réel, donc
+// un pilote qui se décale peut approcher de plus près sans être raboté — c'est
+// exactement le seuil que `detectCityRushTrafficImpacts` facture, et sans cette
+// cohérence le choc ne se déclencherait jamais.
 export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR_GAP) {
   const resolved = cars.map((car) => {
     const previousDistance = Number.isFinite(Number(car.previousDistance)) ? Number(car.previousDistance) : 0;
@@ -2696,9 +2777,24 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
         && Number.isFinite(Number(following.x))
         && Math.abs(Number(front.x) - Number(following.x)) < (frontWidth + followingWidth) / 2;
       if (!sameLane && !lateralOverlap) continue;
+      // Le trafic lent retient à **son** enveloppe de carrosserie (3,6 m dans
+      // l'axe, 2,9 m une fois l'aile dégagée), pas à la distance de sécurité
+      // des berlines : c'est le seuil de la détection de choc, augmenté de
+      // `CITY_RUSH_TRAFFIC_HOLD_MARGIN` pour que le suiveur qui ferme la
+      // distance soit arrêté juste *avant* le contact, puis facturé par la
+      // détection (il demande à passer dedans). Un appelant qui demande une
+      // marge plus serrée reste maître du plafond.
+      const pairGap = front.collisionGroup === 'traffic'
+        ? Math.min(safeGap, cityRushTrafficContactGap(Number(front.x) - Number(following.x), {
+          bodyWidth: followingWidth,
+          trafficWidth: frontWidth,
+          contactGap: Math.min(safeGap, CITY_RUSH_TRAFFIC_CAR_GAP),
+          passGap: Math.min(safeGap, CITY_RUSH_TRAFFIC_PASS_GAP),
+        }) + CITY_RUSH_TRAFFIC_HOLD_MARGIN)
+        : safeGap;
       following.nextDistance = Math.min(
         following.nextDistance,
-        Math.max(following.previousDistance, front.nextDistance - safeGap),
+        Math.max(following.previousDistance, front.nextDistance - pairGap),
       );
     }
   }
@@ -2718,8 +2814,20 @@ const finiteNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? N
  * changement de voie en cours, quand les deux voitures n'ont pas encore le
  * même numéro de voie mais que leurs carrosseries se recouvrent.
  * Une voiture en train de sauter franchit le trafic par les airs sans impact.
+ *
+ * Le seuil longitudinal n'est plus un mur unique de 4,8 m : il suit l'écart
+ * latéral réel des deux carrosseries (`cityRushTrafficContactGap`). Une esquive
+ * commencée avant le choc raccourcit la voiture lente dans l'axe et laisse
+ * passer le pilote ; une esquive jamais commencée touche au pare-chocs.
+ *
+ * `contacts` est la mémoire du monde (un `Set` de couples `coureur\0véhicule`) :
+ * elle garantit **un impact par épisode de contact**, y compris pour le suiveur
+ * que le moteur retient juste au-delà de l'enveloppe — sans elle, ce suiveur
+ * n'entrerait jamais dans l'enveloppe (il est raboté avant) et ne serait jamais
+ * facturé, ou le serait à chaque image s'il la touchait. Sans `Set` (appel pur),
+ * la géométrie seule tranche : un contact ne compte qu'en venant de l'extérieur.
  */
-export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_TRAFFIC_IMPACT_GAP) {
+export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_TRAFFIC_IMPACT_GAP, contacts = null) {
   const safeGap = Math.max(0, finiteNumber(minimumGap, CITY_RUSH_TRAFFIC_IMPACT_GAP));
   const racers = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'racer');
   const traffic = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'traffic');
@@ -2735,20 +2843,56 @@ export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_T
       const trafficNext = Math.max(trafficPrevious, finiteNumber(vehicle.nextDistance, trafficPrevious));
       const trafficWidth = Math.max(0, finiteNumber(vehicle.width, 1.9));
       const sameLane = racer.lane === vehicle.lane;
-      const lateralOverlap = Number.isFinite(Number(racer.x))
-        && Number.isFinite(Number(vehicle.x))
-        && Math.abs(Number(racer.x) - Number(vehicle.x)) < (racerWidth + trafficWidth) / 2;
-      if (!sameLane && !lateralOverlap) continue;
+      const hasLateral = Number.isFinite(Number(racer.x)) && Number.isFinite(Number(vehicle.x));
+      // Sans position latérale connue, on juge les deux voitures dans l'axe :
+      // l'enveloppe reste pleine, comme avant le découpage par écart latéral.
+      const lateralDistance = hasLateral ? Math.abs(Number(racer.x) - Number(vehicle.x)) : 0;
+      const lateralOverlap = hasLateral && lateralDistance < (racerWidth + trafficWidth) / 2;
+      const contactKey = contacts && racer.id !== undefined && vehicle.id !== undefined
+        ? `${racer.id}\u0000${vehicle.id}`
+        : null;
+      if (!sameLane && !lateralOverlap) {
+        // Voie et carrosserie dégagées : le couple se sépare, l'épisode est
+        // terminé — un nouveau contact comptera de nouveau.
+        if (contactKey) contacts.delete(contactKey);
+        continue;
+      }
+
+      // L'enveloppe du véhicule lent dans l'axe : pleine quand les deux
+      // carrosseries sont superposées, réduite au frôlement dès que l'aile a
+      // dégagé l'obstacle (`cityRushTrafficContactGap`). Le pilote qui a
+      // entamé son esquive est jugé sur cette enveloppe plus courte.
+      const contactGap = cityRushTrafficContactGap(lateralDistance, {
+        bodyWidth: racerWidth,
+        trafficWidth,
+        contactGap: safeGap,
+      });
 
       const previousGap = trafficPrevious - racerPrevious;
       const requestedGap = trafficNext - racerNext;
-      // Ne pas transformer deux voitures déjà espacées de moins de `safeGap`
-      // en une suite infinie d'impacts : il faut entrer dans la marge depuis
-      // l'arrière, ce qui laisse le temps au véhicule de se rabattre.
-      const wasOutsideContact = previousGap > safeGap + 1e-7;
-      const touches = requestedGap <= safeGap + 1e-7
-        || racerNext >= trafficPrevious - safeGap - 1e-7;
-      if (!wasOutsideContact || !touches) continue;
+      // Le choc se juge **par l'arrière** : le coureur arrive sur une voiture
+      // qui est devant lui (ou à hauteur). Une voiture déjà dépassée, ou qui
+      // le suit, ne peut pas lui être facturée — elle compterait un carambolage
+      // à un écart négatif.
+      const ahead = previousGap >= 0;
+      const touches = requestedGap <= contactGap + 1e-7
+        || racerNext >= trafficPrevious - contactGap - 1e-7;
+      // Ne pas transformer deux voitures en contact en une suite infinie
+      // d'impacts : un couple déjà facturé attend de s'être séparé avant de
+      // compter de nouveau. `contacts` (fourni par le monde, un couple par
+      // épisode) tient cette mémoire ; sans lui — appel pur, tests — on
+      // retombe sur la géométrie : « venait-on de l'extérieur ? ». Sans
+      // mémoire, un suiveur arrêté pile sur la retenue du moteur ne serait
+      // jamais facturé, puisque le rabotage l'empêche d'entrer dans
+      // l'enveloppe (cf. `CITY_RUSH_TRAFFIC_HOLD_MARGIN`).
+      const alreadyContact = contacts
+        ? contacts.has(contactKey)
+        : previousGap <= contactGap + 1e-7;
+      if (contactKey) {
+        if (touches && ahead) contacts.add(contactKey);
+        else contacts.delete(contactKey);
+      }
+      if (alreadyContact || !touches || !ahead) continue;
       impacts.push({
         racerId: racer.id,
         trafficId: vehicle.id,
@@ -3737,16 +3881,46 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
 }
 
 // ── Barres de vie des voitures de course ────────────────────────────────────
-// Le joueur et ses deux rivaux ont quinze cellules de vie, visibles dès le
-// départ effectif. Elles se vident par groupes de cinq : bleu, vert, puis
-// jaune ; les trois dernières cellules jaunes passent au rouge. Les tirs
-// retirent une cellule et le tir rouge ne fait ni déraper ni ralentir sa cible.
-// Percuter une voiture — le trafic lent, un véhicule venant en face ou une
-// berline de police — retire aussi une cellule : le choc contre une berline de
-// police abîme désormais les deux coques, le pilote y laissant un carré et la
-// police un point de vie.
+// Le joueur et ses deux rivaux ont une barre de vie visible dès le départ
+// effectif, remplie par groupes de cinq : bleu, vert, puis jaune ; les trois
+// dernières cellules passent au rouge. Les tirs retirent une cellule et le tir
+// rouge ne fait ni déraper ni ralentir sa cible. Percuter une voiture — le
+// trafic lent, un véhicule venant en face ou une berline de police — retire
+// aussi une cellule : le choc contre une berline de police abîme désormais les
+// deux coques, le pilote y laissant un carré et la police un point de vie.
+//
+// **Le nombre de cellules dépend de la voiture** (`cityRushCarMaxHealth`) :
+// `CITY_RUSH_PLAYER_HEALTH` n'est plus qu'un barème de référence — quinze
+// cellules pour une coque à `durabilityMultiplier: 1` —, et chaque profil du
+// catalogue donne la sienne (7 pour la PULSE RS, 23 pour la MISTRAL 1.4). Un
+// cran de vie reste un carré : ce qui change est le nombre de crans avant
+// l'épave, donc le nombre de chocs que la voiture encaisse.
 export const CITY_RUSH_PLAYER_HEALTH = 15;
 export const CITY_RUSH_RACER_HEALTH = CITY_RUSH_PLAYER_HEALTH;
+
+// ── Points de vie par voiture ───────────────────────────────────────────────
+// `durabilityMultiplier` (voir `CITY_RUSH_CARS`) est le seul levier : la coque
+// encaisse `CITY_RUSH_PLAYER_HEALTH × durabilityMultiplier` carrés, arrondis.
+// Le plancher de quatre carrés garantit qu'aucune voiture ne parte à l'épave en
+// moins de quatre chocs, même si un profil futur descendait très bas ; les
+// entrées aberrantes (voiture inconnue, valeur manquante) retombent sur la
+// référence de quinze.
+export const CITY_RUSH_CAR_HEALTH_MIN = 4;
+export const CITY_RUSH_CAR_HEALTH_MULTIPLIER_MIN = 0.25;
+
+export function cityRushCarMaxHealth(profile, base = CITY_RUSH_PLAYER_HEALTH) {
+  const reference = Math.max(1, Math.round(Number(base) || CITY_RUSH_PLAYER_HEALTH));
+  const multiplier = Number(profile?.durabilityMultiplier);
+  const safeMultiplier = Number.isFinite(multiplier) && multiplier > 0
+    ? Math.max(CITY_RUSH_CAR_HEALTH_MULTIPLIER_MIN, multiplier)
+    : 1;
+  return Math.max(CITY_RUSH_CAR_HEALTH_MIN, Math.round(reference * safeMultiplier));
+}
+
+/** Barre de référence d'une voiture inconnue : celle du barème historique. */
+export function cityRushBaseMaxHealth() {
+  return CITY_RUSH_PLAYER_HEALTH;
+}
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
   [CITY_RUSH_POWERS.PISTOL]: 1,
@@ -3787,27 +3961,46 @@ export const CITY_RUSH_PLAYER_BAR_COLORS = Object.freeze({
 });
 
 /**
- * Découpe la vie en 15 cellules colorées en trois groupes de cinq.
- * La santé se vide de gauche à droite (bleu, vert, jaune) ; quand il ne reste
- * que trois cellules jaunes, elles deviennent rouges.
+ * Découpe la vie en cellules colorées, par groupes de cinq.
+ * La santé se vide de gauche à droite ; le ton d'un groupe suit sa place dans
+ * la barre — bleu au début, vert au milieu, jaune dans la dernière longueur.
+ * Quand il ne reste que trois cellules, elles deviennent rouges.
+ *
+ * `max` est la vie de **cette** voiture (`cityRushCarMaxHealth`) : une barre de
+ * sept cellules (PULSE RS) affiche un groupe bleu et un groupe jaune, une barre
+ * de vingt-trois (MISTRAL 1.4) en affiche cinq. Laissé à `CITY_RUSH_PLAYER_HEALTH`,
+ * le découpage reste exactement celui du barème historique — quinze cellules,
+ * trois groupes bleu / vert / jaune, les trois dernières au rouge.
  */
-export function cityRushHealthSegments(health = CITY_RUSH_PLAYER_HEALTH) {
-  const safeHealth = Math.max(0, Math.min(CITY_RUSH_PLAYER_HEALTH, Math.trunc(Number(health) || 0)));
-  const firstFilled = CITY_RUSH_PLAYER_HEALTH - safeHealth;
-  const groups = ['blue', 'green', 'yellow'];
-  return Array.from({ length: CITY_RUSH_PLAYER_HEALTH }, (_, index) => {
+export function cityRushHealthSegments(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
+  const safeMax = Math.max(1, Math.trunc(Number(max) || CITY_RUSH_PLAYER_HEALTH));
+  const safeHealth = Math.max(0, Math.min(safeMax, Math.trunc(Number(health) || 0)));
+  const firstFilled = safeMax - safeHealth;
+  const groupCount = Math.ceil(safeMax / CITY_RUSH_HEALTH_GROUP_SIZE);
+  return Array.from({ length: safeMax }, (_, index) => {
     const groupIndex = Math.floor(index / CITY_RUSH_HEALTH_GROUP_SIZE);
+    const group = cityRushHealthGroupTone((groupIndex * CITY_RUSH_HEALTH_GROUP_SIZE) / safeMax);
     const active = index >= firstFilled;
-    const critical = active && safeHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && groupIndex === 2;
-    const tone = critical ? 'critical' : groups[groupIndex];
-    return { index, groupIndex, group: groups[groupIndex], active, critical, tone, color: CITY_RUSH_PLAYER_BAR_COLORS[tone] };
+    const critical = active && safeHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && groupIndex === groupCount - 1;
+    const tone = critical ? 'critical' : group;
+    return { index, groupIndex, group, active, critical, tone, color: CITY_RUSH_PLAYER_BAR_COLORS[tone] };
   });
+}
+
+/** Le ton d'un groupe selon sa place dans la barre : premier tiers, milieu, fin. */
+export function cityRushHealthGroupTone(ratio = 0) {
+  const value = Number(ratio);
+  const safeRatio = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+  if (safeRatio >= 2 / 3) return 'yellow';
+  if (safeRatio >= 1 / 3) return 'green';
+  return 'blue';
 }
 
 // Compatibilité avec les petits widgets qui n'affichent qu'une seule teinte :
 // renvoie la couleur de la première cellule encore allumée.
-export function cityRushPlayerHealthColor(health = CITY_RUSH_PLAYER_HEALTH) {
-  return cityRushHealthSegments(health).find((segment) => segment.active)?.color || CITY_RUSH_PLAYER_BAR_COLORS.critical;
+export function cityRushPlayerHealthColor(health = CITY_RUSH_PLAYER_HEALTH, max = CITY_RUSH_PLAYER_HEALTH) {
+  return cityRushHealthSegments(health, max).find((segment) => segment.active)?.color
+    || CITY_RUSH_PLAYER_BAR_COLORS.critical;
 }
 
 // Cooldown d'un carambolage : une berline collée au pare-chocs du pilote ne

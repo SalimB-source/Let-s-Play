@@ -77,7 +77,7 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
-  CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN,
+  CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
@@ -1214,14 +1214,21 @@ for (const [index, city] of courses.entries()) {
     fail('l’hélico d’observation suit le pilote hors du dernier tour', { watchHeliEarlyFrames, watchHeliFinalLapFrames });
   }
   }
-  // La barre de quinze carrés est pleine dès le départ, visible pendant toute
-  // la course, bornée et non-croissante ; chaque tir encaissé en retire un (le
-  // carré du carambolage est neutralisé par le lanceur, voir plus bas).
+  // La barre de vie est pleine dès le départ, visible pendant toute la course,
+  // bornée et non-croissante ; chaque tir encaissé en retire un (le carré du
+  // carambolage est neutralisé par le lanceur, voir plus bas). Chaque voiture a
+  // **son** maximum (`cityRushCarMaxHealth`) : celui du pilote est calculé
+  // depuis la voiture de l'essai, celui des rivaux depuis leur propre profil.
+  const playerMaxHealth = cityRushCarMaxHealth(car);
+  const catalogueMaxHealth = CITY_RUSH_CARS.map((profile) => cityRushCarMaxHealth(profile));
+  const maxHealthByCarId = Object.fromEntries(CITY_RUSH_CARS.map((profile) => [profile.id, cityRushCarMaxHealth(profile)]));
   const racerHuds = callbacks.huds.flatMap((entry) => entry.racers || []);
   for (const racer of racerHuds) {
-    if (racer.maxHealth !== CITY_RUSH_PLAYER_HEALTH || !Number.isFinite(racer.health)
-      || racer.health < 0 || racer.health > CITY_RUSH_PLAYER_HEALTH) {
-      fail('une voiture de course n’a pas une barre de quinze cases valide', racer);
+    const expectedMax = racer.isPlayer ? playerMaxHealth : maxHealthByCarId[racer.carId] ?? racer.maxHealth;
+    if (!Number.isFinite(racer.maxHealth) || racer.maxHealth !== expectedMax
+      || !catalogueMaxHealth.includes(racer.maxHealth)
+      || !Number.isFinite(racer.health) || racer.health < 0 || racer.health > racer.maxHealth) {
+      fail('une voiture de course n’a pas la barre de vie de sa coque', racer);
     }
   }
   const healthHuds = callbacks.huds.filter((entry) => entry.playerHealthActive);
@@ -1248,9 +1255,9 @@ for (const [index, city] of courses.entries()) {
   let runningHealth = null;
   for (const effect of callbacks.effects) {
     if (effect.type === 'player-health') {
-      if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH) fail('la barre de vie du pilote n’a pas son maximum', effect);
+      if (effect.maxHealth !== playerMaxHealth) fail('la barre de vie du pilote n’a pas le maximum de sa coque', effect);
       runningHealth = effect.health;
-      if (runningHealth !== CITY_RUSH_PLAYER_HEALTH) fail('la barre de vie du pilote ne part pas pleine', effect);
+      if (runningHealth !== playerMaxHealth) fail('la barre de vie du pilote ne part pas pleine', effect);
       continue;
     }
     if (effect.type !== 'player-hit') continue;
