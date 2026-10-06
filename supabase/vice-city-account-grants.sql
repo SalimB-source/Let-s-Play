@@ -99,7 +99,7 @@ declare
   -- du grant doivent suivre le contenu réellement livré par la page.
   all_cars jsonb := jsonb_build_array(
     'city-hatch', 'nova-18-gt', 'night-comet', 'vice-roadster',
-    'turbo-gt', 'muscle-86', 'vega-gt-67', 'toro-v12'
+    'turbo-gt', 'muscle-86', 'vega-gt-67', 'toro-v12', 'volt-aero', 'atlas-xr', 'pulse-rs'
   );
   all_courses jsonb := jsonb_build_array(
     'vice-city', 'new-york', 'tokyo', 'paris', 'london',

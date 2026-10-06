@@ -248,7 +248,7 @@ test('the five city routes have a distinct identity and complete palettes', () =
 });
 
 test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
-  assert.equal(CITY_RUSH_CARS.length, 8);
+  assert.equal(CITY_RUSH_CARS.length, 11);
   const starter = CITY_RUSH_CARS[0];
   assert.equal(starter.id, 'city-hatch');
   assert.equal(starter.price, 0);
@@ -264,12 +264,12 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   // Les prix restent dans le catalogue : c'est le garage (la progression) qui
   // offre le trio le moins puissant, pas la fiche de la voiture.
   assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0),
-    'les sept autres voitures gardent un prix catalogue (le trio le moins puissant est offert sans achat)');
+    'les dix autres voitures gardent un prix catalogue (le trio le moins puissant est offert sans achat)');
   assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
   assert.deepEqual(
     new Set(CITY_RUSH_CARS.map((car) => car.archetype)),
-    new Set(['city-hatch', 'nova-hatch', 'ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini']),
+    new Set(['city-hatch', 'nova-hatch', 'ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini', 'electric-gt', 'sport-crossover', 'neo-roadster']),
   );
   const forbiddenBrandNames = /\b(ferrari|porsche|lamborghini|lambo|bmw|audi|volkswagen)\b/i;
   for (const car of CITY_RUSH_CARS) {

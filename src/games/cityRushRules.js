@@ -233,7 +233,7 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
   return Math.round(clamped * 2) / 2; // demi-seconde : lisible au HUD
 }
 
-// Huit voitures aux silhouettes et compromis de conduite distincts. La compacte
+// Onze voitures aux silhouettes et compromis de conduite distincts. La compacte
 // de départ est une citadine 5 portes inspirée des petites françaises des
 // années 90 : aucun emblème ni logo de constructeur n'est modélisé.
 //
@@ -316,6 +316,24 @@ export const CITY_RUSH_CARS = Object.freeze([
     power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16,
     widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),
+  Object.freeze({
+    id: 'volt-aero', archetype: 'electric-gt', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
+    bodyColor: 0x35d7d0, trimColor: 0xd9ffff, driverColor: 0x15212d, accent: '#42f5dc', price: 600,
+    power: 86, powerMultiplier: 1.18, acceleration: 100, accelerationRate: 11.4, recovery: 85, hitRecoveryMultiplier: 0.94,
+    widthScale: 1.02, heightScale: 0.96, lengthScale: 1.04,
+  }),
+  Object.freeze({
+    id: 'atlas-xr', archetype: 'sport-crossover', name: 'ATLAS XR', className: 'CROSSOVER SPORT · HYBRIDE INTÉGRALE',
+    bodyColor: 0x7848e8, trimColor: 0xffc857, driverColor: 0x1b2030, accent: '#a78bfa', price: 750,
+    power: 90, powerMultiplier: 1.27, acceleration: 91, accelerationRate: 10.1, recovery: 100, hitRecoveryMultiplier: 0.79,
+    widthScale: 1.08, heightScale: 1.10, lengthScale: 1.08,
+  }),
+  Object.freeze({
+    id: 'pulse-rs', archetype: 'neo-roadster', name: 'PULSE RS', className: 'ROADSTER ÉLECTRIQUE · PERFORMANCE SILENCIEUSE',
+    bodyColor: 0xf05a8a, trimColor: 0xffedf5, driverColor: 0x202331, accent: '#ff72ac', price: 1150,
+    power: 99, powerMultiplier: 1.44, acceleration: 100, accelerationRate: 12.2, recovery: 78, hitRecoveryMultiplier: 1.02,
+    widthScale: 1.04, heightScale: 0.91, lengthScale: 1.06,
+  }),
 ]);
 
 // ── Garage : les trois voitures les moins puissantes sont offertes ─────────
@@ -329,7 +347,7 @@ export const CITY_RUSH_CARS = Object.freeze([
 //
 // La liste est calculée depuis `CITY_RUSH_CARS` : ajouter une voiture plus
 // lente que le trio la fait entrer d'elle-même dans l'offre, et les prix du
-// catalogue restent la référence pour les cinq autres voitures. Le garage les
+// catalogue restent la référence pour les huit autres voitures. Le garage les
 // marque « OFFERTE » (voir `ViceCityRushPage.jsx`) et `cityRushProgress.js`
 // les ajoute au garage de chaque sauvegarde — visiteur, compte connecté et
 // instantané serveur compris.

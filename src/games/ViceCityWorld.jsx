@@ -1126,7 +1126,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // toujours les 15 s historiques, mais la citadine (83 km/h) a besoin de plus
   // de temps et la supercar de moins pour garder la même pression.
   const sprintTimeBonus = cityRushSprintCheckpointTime(playerTopSpeed);
-  const rivalProfiles = CITY_RUSH_CARS.filter((car) => car.id !== playerProfile.id);
+  // Matchmaking garage : les deux adversaires prennent les profils les plus
+  // proches de la voiture choisie. Une citadine rencontre ainsi des compactes,
+  // une supercar des sportives voisines ; les écarts restent lisibles sans
+  // supprimer la progression ni fabriquer un adversaire identique au joueur.
+  const rivalProfiles = CITY_RUSH_CARS
+    .filter((car) => car.id !== playerProfile.id)
+    .sort((a, b) => {
+      const delta = Math.abs(a.powerMultiplier - playerProfile.powerMultiplier) - Math.abs(b.powerMultiplier - playerProfile.powerMultiplier);
+      return delta || a.powerMultiplier - b.powerMultiplier;
+    });
   const playerCar = makeRacerCar(playerProfile, {
     player: true,
     number: CITY_RUSH_CARS.indexOf(playerProfile) + 1,

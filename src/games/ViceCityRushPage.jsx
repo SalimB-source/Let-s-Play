@@ -96,6 +96,9 @@ const CAR_THUMBNAILS = {
   'night-comet': 'car-wolfsburg-gtr.jpg',
   'vega-gt-67': 'car-bavaria-mcs.jpg',
   'toro-v12': 'car-tempesta-lp780.jpg',
+  'volt-aero': 'car-volt-aero.svg',
+  'atlas-xr': 'car-atlas-xr.svg',
+  'pulse-rs': 'car-pulse-rs.svg',
 };
 
 const STORY_ENDINGS = {
@@ -1498,7 +1501,7 @@ export default function ViceCityRushPage() {
 
                     <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-car-title">GARAGE · {CITY_RUSH_CARS.length} VOITURES</span>
+                        <span id="city-rush-car-title">GARAGE · {CITY_RUSH_CARS.length} MODÈLES</span>
                         <small>{CITY_RUSH_FREE_CAR_COUNT} VOITURES OFFERTES · {formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name} · TOUCHE POUR PARTIR</small>
                       </div>
                       <div className="city-rush-car-grid" role="group" aria-label="Lancer une course avec une voiture">
