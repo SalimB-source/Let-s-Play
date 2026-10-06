@@ -176,7 +176,10 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   const service = world.match(/function useMiniGarage\([\s\S]*?\n  function updateMiniGarages/)?.[0] || '';
   assert.match(service, /playerHealth = cityRushMiniGarageRepair\(playerHealth, playerMaxHealth\)/,
     'la réparation utilise la résistance de la voiture sélectionnée');
-  assert.match(service, /healthRestored: playerHealth - healthBefore/);
+  assert.match(service, /const healthRestored = playerHealth - healthBefore;[\s\S]*?healthRestored,/,
+    'le service calcule une fois les points rendus, pour le bandeau et le bruitage');
+  assert.match(service, /audioRef\?\.current\?\.garageRepair\?\.\(\{ pan: vehiclePan\('player'\), restored: healthRestored \}\)/,
+    'la traversée joue le bruitage d’atelier, accord de réparation compris seulement si la coque a repris des points');
   assert.match(service, /const pursuersReleased = releasePolicePursuit\(\{ targetId: 'player' \}\)/,
     'la sortie du garage fait abandonner la poursuite aux berlines qui chassaient le joueur');
   assert.match(world, /miniGaragesActive: miniGarages\.some\(\(garage\) => \{/);

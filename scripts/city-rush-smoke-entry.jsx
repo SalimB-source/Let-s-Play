@@ -170,7 +170,7 @@ const smokeCarIds = ['nova-18-gt', 'vice-roadster', 'turbo-gt', 'muscle-86', 'ni
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
-  'policeSiren', 'policeSirenOff',
+  'policeSiren', 'policeSirenOff', 'garageRepair',
 ];
 
 // L'escouade du dernier tour doit rester dans le sillage du joueur sur tous les
@@ -1038,6 +1038,13 @@ for (const [index, city] of courses.entries()) {
     fail('la réparation d’un mini-garage est incorrecte ou dépasse la résistance de la voiture', miniGarageUses);
   }
   const garageHealthRestored = miniGarageUses.reduce((total, effect) => total + effect.healthRestored, 0);
+  // Chaque portique traversé s'entend : un bruitage d'atelier par passage, ni
+  // plus (un garage ne sert qu'une fois) ni moins (une sortie muette).
+  if ((audioCalls.garageRepair || 0) !== miniGarageUses.length) {
+    fail('chaque passage en mini-garage doit jouer le bruitage de réparation', {
+      passages: miniGarageUses.length, sons: audioCalls.garageRepair || 0,
+    });
+  }
   // Le compteur ne s'allume qu'à l'approche d'une porte : jamais à distance de
   // course, et jamais sans porte utilisable devant.
   const earlyGarageCounter = callbacks.huds.find((entry) => entry.miniGaragesActive

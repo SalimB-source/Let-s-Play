@@ -931,7 +931,10 @@ et le dernier tour durait 21 s.
   même repère dans la boucle suivante. Le compteur ne s'allume qu'à l'approche
   d'une porte utilisable (`CITY_RUSH_MINI_GARAGE_HUD_RANGE`) et le bandeau
   annonce les points réellement rendus. Un nouveau départ réarme les deux portes
-  et les masque à nouveau.
+  et les masque à nouveau. **La traversée s'entend** : l'atelier prend la voiture
+  en charge — pont hydraulique qui monte, clé à chocs, capot qui claque — et ne
+  joue l'accord de « réparée » que si la coque a repris des points
+  (`garageRepair`, bande-son).
 
   **Les rivaux qui touchent la police reçoivent leur propre poursuivant.** Deux
   voitures supplémentaires sont gardées en réserve, une par rival ; dès qu'un
@@ -1418,7 +1421,11 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une
   deuxième voix désaccordée qui fait battre la sirène ; le niveau suit la
   proximité de la berline la plus proche, `policeSiren({ level })`, et
-  `policeSirenOff()` éteint les nœuds), plus les bips de ramassage, les feux de
+  `policeSirenOff()` éteint les nœuds), **le passage au mini-garage**
+  (`garageRepair({ restored })` : souffle du pont hydraulique, cliquetis de la
+  clé à chocs, outil reposé, capot rabattu, et trois notes claires seulement si
+  la coque a vraiment repris des points — coque intacte, l'atelier se contente
+  de vérifier), plus les bips de ramassage, les feux de
   départ, les passages de ligne et la fanfare d'arrivée. Chaque bruitage est **panoramiqué** selon la voie de
   la voiture concernée (`vehiclePan`).
 - **Le bouton SON** de la barre du jeu (touche **M**) : un interrupteur

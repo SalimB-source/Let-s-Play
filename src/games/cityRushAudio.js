@@ -1536,6 +1536,68 @@ export class CityRushAudio {
     });
   }
 
+  /**
+   * Sortie de mini-garage : l'atelier remet la coque à neuf. Le pont
+   * hydraulique qui monte, la clé à chocs qui déboulonne (cliquetis de plus en
+   * plus serrés), deux clés qui s'entrechoquent, le capot que le mécano
+   * rabat — et, seulement si des points de vie ont vraiment été rendus, trois
+   * notes claires qui disent « elle est réparée ». Coque déjà intacte,
+   * l'atelier ne fait que vérifier : pas d'accord de confirmation.
+   */
+  garageRepair({ pan = 0, restored = 0 } = {}) {
+    if (!this.ready()) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    const out = this.panned(pan);
+    const repaired = Math.max(0, Math.round(Number(restored) || 0)) > 0;
+
+    // Le pont élévateur : appel d'air grave qui monte, pompe qui se met en route.
+    this.noise(time, 0.52, 0.15, {
+      type: 'bandpass', frequency: 620, frequencyTo: 2400, q: 0.9, destination: out,
+    });
+    this.tone(88, time, 0.34, 'sine', 0.12, { filter: 320, destination: out });
+
+    // La clé à chocs : huit coups de cliquet, de plus en plus rapprochés.
+    const ratchet = [0, 0.055, 0.1, 0.14, 0.185, 0.225, 0.26, 0.3];
+    ratchet.forEach((offset, index) => {
+      const at = time + 0.08 + offset;
+      const tighten = 1 - index / (ratchet.length * 1.6);
+      this.noise(at, 0.055, 0.12 + tighten * 0.05, {
+        type: 'bandpass', frequency: 1900 + index * 190, q: 2.4, destination: out,
+      });
+      this.tone(300 + index * 26, at, 0.05, 'square', 0.05, {
+        filter: 2600, attack: 0.002, destination: out,
+      });
+    });
+
+    // L'outil qu'on repose sur l'établi : deux claquements métalliques.
+    this.noise(time + 0.46, 0.09, 0.15, { type: 'highpass', frequency: 3400, destination: out });
+    this.tone(1180, time + 0.46, 0.12, 'square', 0.055, {
+      filter: 5200, attack: 0.002, destination: out,
+    });
+    this.tone(1570, time + 0.5, 0.1, 'square', 0.04, {
+      filter: 6000, attack: 0.002, destination: out,
+    });
+
+    // Le capot claque : la voiture est prête à repartir.
+    this.tone(120, time + 0.6, 0.22, 'sine', 0.22, {
+      filter: 420, filterTo: 70, destination: out,
+    });
+    this.noise(time + 0.6, 0.14, 0.17, {
+      type: 'bandpass', frequency: 1500, frequencyTo: 700, q: 1.8, destination: out,
+    });
+
+    // Accord de « réparée » : il ne retentit que si la coque a repris des points.
+    if (repaired) {
+      [76, 81, 88].forEach((note, index) => {
+        this.tone(midiToFrequency(note), time + 0.74 + index * 0.09, 0.42, 'triangle', 0.1, {
+          filter: 6000, destination: out,
+        });
+      });
+      this.noise(time + 0.74, 0.3, 0.05, { type: 'highpass', frequency: 6200, destination: out });
+    }
+  }
+
   /** Feux de départ : un bip par seconde, un accord sur le GO. */
   countdownBeep(step) {
     if (!this.ready()) return;
