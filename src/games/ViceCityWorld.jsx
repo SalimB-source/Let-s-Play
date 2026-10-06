@@ -50,6 +50,11 @@ import {
   CITY_RUSH_POLICE_COLLISION_COOLDOWN,
   CITY_RUSH_POLICE_HEALTH,
   CITY_RUSH_POLICE_DESTROY_SCORE,
+  CITY_RUSH_POLICE_WRECK_SPIN_TURNS,
+  CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
+  CITY_RUSH_POLICE_WRECK_VIEW_BEHIND,
+  CITY_RUSH_POLICE_WRECK_BURN_SECONDS,
+  CITY_RUSH_POLICE_WRECK_MAX,
   CITY_RUSH_POLICE_BASE_SPEED,
   CITY_RUSH_POLICE_BLOCKADE_HOLD,
   CITY_RUSH_POLICE_COUNT,
@@ -121,6 +126,8 @@ import {
   cityRushPoliceTurnaroundProgress,
   cityRushPolicePace,
   cityRushPoliceShotsLeft,
+  cityRushPoliceWreckSpeed,
+  cityRushPoliceWreckFlame,
   cityRushRaceDistance,
   cityRushTrackElevation,
   cityRushTrackGap,
@@ -642,6 +649,119 @@ function makePolicePursuitCar(vehicleType = 'police') {
   attachPoliceGlow(group);
   attachPoliceHealthBar(group);
   return group;
+}
+
+// ── Carcasse calcinée d'une berline détruite ────────────────────────────────
+// Emplacements du feu sur la carcasse : capot, habitacle, coffre. Chaque
+// flamme vacille à son rythme (`animatePoliceWreckHusk`).
+const WRECK_FLAME_SPOTS = Object.freeze([
+  [-0.42, 0.74, -1.02],
+  [0.38, 0.7, 0.16],
+  [0.02, 0.84, -0.2],
+  [0, 0.64, 1.26],
+]);
+
+// Matériaux et géométries du feu. Ils ne sont **jamais** partagés entre deux
+// mondes : `disposeScene` jette tout matériau trouvé dans la scène, donc un kit
+// partagé serait détruit avec le premier monde fermé.
+function createPoliceWreckKit() {
+  const char = new THREE.MeshStandardMaterial({ color: 0x1b1a1e, roughness: 0.96, metalness: 0.04 });
+  const glass = new THREE.MeshStandardMaterial({ color: 0x0b0d11, roughness: 0.42, metalness: 0.25 });
+  const flameGeometry = new THREE.ConeGeometry(0.36, 1.12, 7, 1, true);
+  flameGeometry.translate(0, 0.56, 0);
+  const coreGeometry = new THREE.ConeGeometry(0.2, 0.64, 6, 1, true);
+  coreGeometry.translate(0, 0.32, 0);
+  return { char, glass, flameGeometry, coreGeometry };
+}
+
+// La carcasse garde les volumes exacts de la berline (`makeTrafficVehicle`),
+// mais sa tôle est noircie, ses vitres sont fumées, et tout ce qui brûle —
+// gyrophares, phares, feux, autocollants — a fondu. Le feu qui la dévore fait
+// partie du même groupe : il suit la carcasse, ancrée sur la piste.
+function makePoliceWreckHusk(vehicleType, kit) {
+  const husk = makeTrafficVehicle(vehicleType);
+  husk.name = 'police-wreck';
+  const melted = [];
+  husk.traverse((child) => {
+    if (!child.isMesh) return;
+    const material = child.material;
+    // Matériaux bruts = gyrophares, phares et feux ; matériau texturé =
+    // autocollants. Rien de tout cela ne survit à l'incendie.
+    if (material?.isMeshBasicMaterial || material?.map) {
+      melted.push(child);
+      return;
+    }
+    const smoked = (material?.metalness || 0) >= 0.2 && (material?.roughness || 1) <= 0.25;
+    child.material = smoked ? kit.glass : kit.char;
+  });
+  melted.forEach((child) => child.parent?.remove(child));
+  const fire = new THREE.Group();
+  fire.name = 'police-wreck-fire';
+  const flames = [];
+  const flameMaterials = [];
+  WRECK_FLAME_SPOTS.forEach(([x, y, z], index) => {
+    const outerMaterial = new THREE.MeshBasicMaterial({
+      color: index % 2 === 0 ? 0xff6a1f : 0xff8f2e,
+      transparent: true, opacity: 0.82, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const coreMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffd34a, transparent: true, opacity: 0.9, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+    });
+    flameMaterials.push(outerMaterial, coreMaterial);
+    const flame = new THREE.Group();
+    flame.add(new THREE.Mesh(kit.flameGeometry, outerMaterial), new THREE.Mesh(kit.coreGeometry, coreMaterial));
+    flame.position.set(x, y, z);
+    flame.userData.phase = index * 1.9;
+    fire.add(flame);
+    flames.push(flame);
+  });
+  // Braise : un halo additif au ras de la tôle, lisible de loin et de nuit.
+  const ember = new THREE.Mesh(
+    new THREE.SphereGeometry(0.95, 12, 10),
+    new THREE.MeshBasicMaterial({
+      color: 0xff5a1e, transparent: true, opacity: 0.2, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+    }),
+  );
+  ember.position.y = 0.72;
+  ember.scale.set(1, 0.5, 1.5);
+  // Trace calcinée laissée sur la chaussée par l'incendie.
+  const scorch = new THREE.Mesh(
+    new THREE.CircleGeometry(2.1, 20),
+    new THREE.MeshBasicMaterial({ color: 0x100c0a, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }),
+  );
+  scorch.rotation.x = -Math.PI / 2;
+  scorch.position.y = 0.015;
+  fire.add(ember, scorch);
+  husk.add(fire);
+  husk.userData.wreck = { flames, flameMaterials, ember, scorch };
+  husk.userData.taken = false;
+  husk.visible = false;
+  return husk;
+}
+
+// Le feu vit : chaque flamme respire à son rythme, et l'ensemble suit
+// l'intensité renvoyée par `cityRushPoliceWreckFlame` — pleine flamme à
+// l'explosion, braises ensuite, jamais éteint tant que la carcasse est là.
+function animatePoliceWreckHusk(husk, intensity, clockTime) {
+  const wreck = husk.userData?.wreck;
+  if (!wreck) return;
+  const level = clamp(Number(intensity) || 0, 0, 1);
+  wreck.flames.forEach((flame, index) => {
+    const flicker = 0.74
+      + 0.26 * Math.sin(clockTime * (7.4 + index * 1.7) + flame.userData.phase)
+      + 0.1 * Math.sin(clockTime * (13.1 + index * 2.3) + flame.userData.phase * 1.7);
+    const spread = Math.max(0.18, level * (0.82 + 0.18 * flicker));
+    flame.scale.set(spread, Math.max(0.1, level * flicker), spread);
+    flame.rotation.y = clockTime * (0.6 + index * 0.17) + flame.userData.phase;
+  });
+  wreck.flameMaterials.forEach((material, index) => {
+    const base = index % 2 === 0 ? 0.82 : 0.9;
+    material.opacity = clamp(base * level * (0.72 + 0.28 * Math.sin(clockTime * (10.5 + index * 1.3))), 0, 1);
+  });
+  wreck.ember.material.opacity = clamp(0.08 + 0.2 * level * (0.7 + 0.3 * Math.sin(clockTime * 5.3)), 0, 1);
 }
 
 function makeImpact(shared) {
@@ -2110,6 +2230,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     policeStealNoticeCooldown = 0;
     policeBlockNoticeCooldown = 0;
     policeAimNoticeCooldown = 0;
+    // Les carcasses en feu de la course précédente partent avec elle.
+    clearPoliceWrecks();
     policeCars.forEach((police) => {
       police.active = false;
       police.everDeployed = false;
@@ -2646,8 +2768,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Trois tirs droits bleus, six tirs rouges ou six carambolages en accélérant
   // détruisent la berline : le tir rouge ne retire jamais qu’un seul carré,
   // comme contre un adversaire. Sa barre segmentée descend à chaque dégât,
-  // puis elle explose et disparaît de la course comme de la mini-carte.
-  // Aucun missile.
+  // puis elle part en tête-à-queue sur deux tours en ralentissant, explose à la
+  // fin de sa glissade, et laisse sa carcasse calcinée en feu sur la piste
+  // (`beginPoliceWreck`, `updatePoliceWrecks`). Elle sort dès la coque percée de
+  // la course comme de la mini-carte. Aucun missile.
   const policeExplosions = [];
 
   function poseExplosion(mesh, worldPosition, age = 0) {
@@ -2690,7 +2814,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.health = 0;
     police.healthFlash = 0;
     const byPlayer = attackerId === 'player';
-    const worldPosition = police.mesh.position.clone();
     // Le panoramique du boum se calcule avant la sortie de piste.
     const pan = vehiclePan(police.id);
     // L'escouade sort de la chasse ; la berline rappelée est ôtée de la liste.
@@ -2712,7 +2835,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         associatedVehicle.turnaroundState = 'destroyed';
       }
     }
-    police.mesh.visible = false;
+    // Le maillage reste affiché : la berline part en tête-à-queue avant
+    // d'exploser (`beginPoliceWreck`), ce n'est qu'ensuite qu'elle s'efface au
+    // profit de sa carcasse calcinée.
     const civilianTrafficPolice = trafficCars.find((traffic) => traffic === police);
     const civilianOncomingPolice = oncomingCars.find((traffic) => traffic === police);
     if (civilianTrafficPolice) civilianTrafficPolice.destroyed = true;
@@ -2725,7 +2850,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const needsReplacement = activePlayerPursuerSlots() + policeReinforcementQueue.length < requiredPlayerPursuerSlots();
     const reinforcementScheduled = Boolean(police.squad && needsReplacement && !playerWrecked
       && queuePoliceReinforcement(police));
-    spawnPoliceExplosion(worldPosition, pan);
+    // Tête-à-queue de deux tours en ralentissant, explosion à la fin de la
+    // glissade, puis carcasse calcinée laissée en piste, en feu. L'explosion
+    // (et son boum) arrive donc au terme du tête-à-queue, pas ici.
+    beginPoliceWreck(police, { pan, byPlayer });
     if (byPlayer) {
       score += CITY_RUSH_POLICE_DESTROY_SCORE;
       cameraKick = Math.max(cameraKick, 0.42);
@@ -2739,6 +2867,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       maxHealth: CITY_RUSH_POLICE_HEALTH,
       source,
       byPlayer,
+      // L'agonie est annoncée avec l'explosion : deux tours de tête-à-queue en
+      // ralentissant, puis une carcasse qui brûle sur la piste.
+      spinTurns: CITY_RUSH_POLICE_WRECK_SPIN_TURNS,
+      spinSeconds: CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
+      wreckBurning: true,
       // Auteur du dernier dégât : la page peut le nommer, et les vérifications
       // s'assurent qu'aucune berline n'est détruite par une autre berline.
       attackerId: attackerId || null,
@@ -2748,6 +2881,202 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     emitHud(true);
     // La dernière berline explose : la sirène s'éteint avec elle.
     if (!activePursuers().length) audioRef?.current?.policeSirenOff?.();
+  }
+
+  // ── Carcasses en feu des berlines détruites ───────────────────────────────
+  // Une berline dont la coque a cédé ne s'évapore pas : elle part en
+  // tête-à-queue sur deux tours complets en perdant toute sa vitesse, explose à
+  // la fin de sa glissade, puis sa **carcasse calcinée reste en piste, en feu**,
+  // jusqu'à ce que le pilote l'ait dépassée. Chaque carcasse est ancrée sur la
+  // piste (`wreck.distance`) : elle suit le défilement du décor comme le trafic.
+  const policeWrecks = [];
+  const policeWreckHusks = [];
+  const wreckScratch = new THREE.Vector3();
+  let policeWreckKit = null;
+
+  // Une carcasse libérée est réutilisée : la tôle noircie et les flammes sont
+  // les mêmes d'une berline à l'autre, seul le modèle (berline/SUV/civil) varie.
+  function acquirePoliceWreckHusk(vehicleType) {
+    const reusable = policeWreckHusks.find((husk) => !husk.userData.taken && husk.userData.trafficType === vehicleType);
+    if (reusable) return reusable;
+    if (!policeWreckKit) policeWreckKit = createPoliceWreckKit();
+    const husk = makePoliceWreckHusk(vehicleType, policeWreckKit);
+    scene.add(husk);
+    policeWreckHusks.push(husk);
+    return husk;
+  }
+
+  function releasePoliceWreck(wreck) {
+    const index = policeWrecks.indexOf(wreck);
+    if (index >= 0) policeWrecks.splice(index, 1);
+    if (wreck.husk) {
+      wreck.husk.userData.taken = false;
+      wreck.husk.visible = false;
+    }
+    // La berline du tête-à-queue rend son maillage au parc — sauf si l'unité a
+    // déjà repris la piste entre-temps (une relève peut arriver à 3,6 s).
+    if (wreck.mesh && wreck.police?.active === false) wreck.mesh.visible = false;
+  }
+
+  function clearPoliceWrecks() {
+    for (let index = policeWrecks.length - 1; index >= 0; index -= 1) releasePoliceWreck(policeWrecks[index]);
+    policeWrecks.length = 0;
+  }
+
+  // Piste → monde : le même calcul que le trafic, la carcasse en moins du
+  // mouvement (elle ne bouge plus après l'explosion).
+  function wreckWorldPosition(wreck, target) {
+    return target.set(
+      wreck.x + trackRelativeX(wreck.distance),
+      trackRelativeY(wreck.distance),
+      PLAYER_Z - (wreck.distance - distance) * SCALE,
+    );
+  }
+
+  // La coque vient de céder : la berline part en tête-à-queue. Elle garde son
+  // maillage — c'est elle qui tourne sur elle-même — pendant que sa vitesse
+  // fond sur `CITY_RUSH_POLICE_WRECK_SPIN_SECONDS`.
+  function beginPoliceWreck(police, { pan = 0, byPlayer = false } = {}) {
+    const startSpeed = Math.max(0, Number(police.currentSpeed) || 0);
+    const wreck = {
+      id: police.id,
+      name: police.name,
+      byPlayer,
+      police,
+      mesh: police.mesh,
+      husk: null,
+      distance: police.distance,
+      x: police.currentX,
+      startSpeed,
+      speed: startSpeed,
+      spinLeft: CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
+      spinTotal: CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
+      exploded: false,
+      burnElapsed: 0,
+      smokeTimer: 0,
+      pan,
+    };
+    // La poursuite s'éteint avec la coque : plus de halo ni de barre de vie
+    // au-dessus d'une berline qui agonise (le maillage, lui, retourne au parc).
+    const healthBar = police.mesh.userData.healthBar;
+    if (healthBar) {
+      healthBar.bar.visible = false;
+      healthBar.flash.material.opacity = 0;
+    }
+    const pursuit = police.mesh.userData.pursuit;
+    if (pursuit) pursuit.glowMaterial.opacity = 0;
+    police.mesh.visible = true;
+    policeWrecks.push(wreck);
+    // Garde-fou de scène : au-delà du plafond, la carcasse la plus ancienne —
+    // donc la plus loin derrière le pilote — s'efface.
+    while (policeWrecks.length > CITY_RUSH_POLICE_WRECK_MAX) releasePoliceWreck(policeWrecks[0]);
+    return wreck;
+  }
+
+  // Fin du tête-à-queue : la berline explose et sa carcasse calcinée prend sa
+  // place, au même endroit et dans le même sens. C'est elle qui reste visible,
+  // en feu, jusqu'à sortir du cadre.
+  function explodePoliceWreck(wreck) {
+    if (!wreck || wreck.exploded) return;
+    wreck.exploded = true;
+    wreck.spinLeft = 0;
+    wreck.speed = 0;
+    wreck.burnElapsed = 0;
+    const worldPosition = wreckWorldPosition(wreck, wreckScratch);
+    if (wreck.mesh && wreck.police?.active === false) wreck.mesh.visible = false;
+    const husk = acquirePoliceWreckHusk(wreck.police?.vehicleType || 'police');
+    husk.userData.taken = true;
+    husk.position.copy(worldPosition);
+    husk.rotation.set(trackPitch(wreck.distance), trackYaw(wreck.distance), 0);
+    husk.visible = true;
+    animatePoliceWreckHusk(husk, 1, clockTime);
+    wreck.husk = husk;
+    spawnPoliceExplosion(worldPosition, wreck.pan);
+  }
+
+  // Le drapeau à damier n'interrompt pas une agonie : une berline encore en
+  // tête-à-queue explose sur-le-champ — son boum est donc toujours joué — et sa
+  // carcasse continue de brûler pendant le tour d'honneur.
+  function flushPoliceWrecks() {
+    [...policeWrecks].forEach((wreck) => { if (!wreck.exploded) explodePoliceWreck(wreck); });
+  }
+
+  // Tête-à-queue puis carcasse en feu. Appelé à chaque image, y compris hors
+  // course, pour que la carcasse suive le défilement de la piste et brûle
+  // encore à l'arrivée.
+  function updatePoliceWrecks(dt) {
+    if (!policeWrecks.length) return;
+    for (let index = policeWrecks.length - 1; index >= 0; index -= 1) {
+      const wreck = policeWrecks[index];
+      wreck.smokeTimer = Math.max(0, wreck.smokeTimer - dt);
+      if (!wreck.exploded) {
+        // Deux tours sur elle-même (`cityRushStunSpin`) pendant que la vitesse
+        // fond (`cityRushPoliceWreckSpeed`) : gomme, fumée et gyrophare compris.
+        wreck.spinLeft = Math.max(0, wreck.spinLeft - dt);
+        wreck.speed = cityRushPoliceWreckSpeed(wreck.startSpeed, wreck.spinLeft, wreck.spinTotal);
+        wreck.distance += wreck.speed * dt;
+        const mesh = wreck.mesh;
+        if (mesh) {
+          const spinGap = wreck.distance - distance;
+          mesh.visible = wreck.police?.active === false
+            && spinGap > -CITY_RUSH_POLICE_WRECK_VIEW_BEHIND && spinGap < 150;
+          wreckWorldPosition(wreck, mesh.position);
+          mesh.rotation.set(
+            trackPitch(wreck.distance),
+            trackYaw(wreck.distance) + cityRushStunSpin(wreck.spinLeft, wreck.spinTotal, CITY_RUSH_POLICE_WRECK_SPIN_TURNS),
+            0,
+          );
+          mesh.userData.wheels?.forEach((wheel) => { wheel.rotation.x += wreck.speed * dt * 0.95; });
+          mesh.userData.beacons?.forEach((beacon, beaconIndex) => {
+            beacon.material.opacity = Math.floor(clockTime * 9 + beaconIndex) % 2 === 0 ? 1 : 0.16;
+          });
+          if (mesh.visible && wreck.speed > 0.6 && wreck.smokeTimer <= 0) {
+            smoke.emit(mesh.position, {
+              color: 0x3a3a44, opacity: 0.5, scale: 0.52, grow: 2.3, life: 0.85,
+              velocity: [(Math.random() - 0.5) * 1.8, 1.1 + Math.random() * 0.5, (Math.random() - 0.5) * 1.8],
+            });
+            wreck.smokeTimer = 0.06;
+          }
+        }
+        if (wreck.spinLeft > 0) continue;
+        explodePoliceWreck(wreck);
+        wreck.smokeTimer = 0;
+      }
+      // Carcasse en feu : immobile sur la piste. Elle est dessinée tant
+      // qu'elle est dans le cadre (même fenêtre que le trafic derrière le
+      // rétro) et brûle `CITY_RUSH_POLICE_WRECK_BURN_SECONDS`, flamme pleine
+      // puis braises, avant de quitter la scène — le pilote est loin.
+      const husk = wreck.husk;
+      if (!husk) {
+        releasePoliceWreck(wreck);
+        continue;
+      }
+      const gap = wreck.distance - distance;
+      wreck.burnElapsed += dt;
+      wreckWorldPosition(wreck, husk.position);
+      husk.visible = gap > -CITY_RUSH_POLICE_WRECK_VIEW_BEHIND && gap < 150;
+      const intensity = cityRushPoliceWreckFlame(wreck.burnElapsed, CITY_RUSH_POLICE_WRECK_BURN_SECONDS);
+      animatePoliceWreckHusk(husk, intensity, clockTime);
+      if (wreck.burnElapsed >= CITY_RUSH_POLICE_WRECK_BURN_SECONDS) {
+        releasePoliceWreck(wreck);
+        continue;
+      }
+      // Fumée noire et braises : l'incendie se voit avant la carcasse. Rien ne
+      // sert d'en cracher quand la carcasse est hors cadre.
+      if (husk.visible && wreck.smokeTimer <= 0) {
+        smoke.emit(husk.position, {
+          color: 0x2c2c34, opacity: 0.2 + 0.42 * intensity, scale: 0.62, grow: 2.6, life: 1.25,
+          velocity: [(Math.random() - 0.5) * 0.9, 1.5 + Math.random() * 0.9, (Math.random() - 0.5) * 0.9],
+        });
+        if (Math.random() < 0.5 * intensity) {
+          smoke.emit(husk.position, {
+            color: 0xff8a3a, opacity: 0.8, scale: 0.3, grow: 2.0, life: 0.5,
+            velocity: [(Math.random() - 0.5) * 2.2, 2.2 + Math.random() * 1.6, (Math.random() - 0.5) * 2.2],
+          });
+        }
+        wreck.smokeTimer = 0.075;
+      }
+    }
   }
 
   function damagePolice(police, source, attackerId, extra = null) {
@@ -4521,6 +4850,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     phase = 'finished';
     finishTime = 0;
     coastSpeed = currentSpeed;
+    // Une berline encore en tête-à-queue explose avant que les effets ne soient
+    // nettoyés : son boum est joué, et sa carcasse brûlera pendant le tour
+    // d'honneur (`updatePoliceWrecks`).
+    flushPoliceWrecks();
     clearVisualEffects();
     // La barre de vie du pilote s'éteint avec la course ; l'hélico
     // d'observation, lui, s'éloigne en montant (voir `updateWatchHelicopter`).
@@ -5446,6 +5779,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
     }
+
+    // Carcasses de berlines : tête-à-queue, explosion, puis incendie. Placé
+    // après toutes les poses de véhicules (trafic compris, qui masque les
+    // voitures détruites) et hors de la branche « en course », pour que la
+    // carcasse continue de brûler pendant le tour d'honneur.
+    updatePoliceWrecks(dt);
 
     // Décor : boucle repliée, portique animé, route, pluie, ciel, fumée.
     const lineGap = placeTrack();
