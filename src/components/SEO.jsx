@@ -255,12 +255,12 @@ const pageMeta = {
     description: 'Sony complète le casting de son biopic Fred Astaire : Tom Holland en Fred, Margaret Qualley en Adele Astaire et Sabrina Carpenter en Ginger Rogers, sous la direction de Paul King. Aucune date de sortie pour l’instant.',
     image: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', type: 'article', published: '2026-09-27', section: 'Actualités cinéma',
   },
-  // Actu cinéma du 06.10.2026 — image de la bande-annonce Warner Bros. (2022)
-  // relayée par Sortir à Paris, la suite n'ayant encore aucun visuel propre.
+  // Actu cinéma du 06.10.2026 — miniature de la bande-annonce officielle
+  // Warner Bros. (2022), la suite n'ayant encore aucun visuel propre.
   '/news/cinema/the-batman-part-ii-tournage-suspendu': {
     title: 'The Batman Part II : le tournage suspendu pour une affaire familiale — Let’s Play',
     description: 'DC Studios et Warner Bros. ont confirmé le 5 octobre 2026 la suspension temporaire du tournage de The Batman Part II, le temps que Matt Reeves se consacre à une affaire familiale. Aucune date de reprise n’est annoncée ; la sortie américaine reste fixée au 18 février 2028, avec Robert Pattinson, Jeffrey Wright, Andy Serkis et Colin Farrell.',
-    image: 'https://cdn.sortiraparis.com/images/80/66131/576238-the-batman-de-matt-reeves-bande-annonce.jpg', type: 'article', published: '2026-10-06', section: 'Actualités cinéma',
+    image: youTubeThumbUrl('mqqft2x_Aa4'), type: 'article', published: '2026-10-06', section: 'Actualités cinéma',
   },
 };
 
