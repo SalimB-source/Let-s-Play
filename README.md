@@ -967,7 +967,11 @@ et le dernier tour durait 21 s.
   (`CITY_RUSH_POLICE_WRECK_BURN_SECONDS`), tant qu'elle est dans le cadre, puis
   quitte la scène une fois consumée ; au-delà de
   `CITY_RUSH_POLICE_WRECK_MAX` épaves suivies, la plus ancienne — la plus loin
-  derrière — cède son modèle. Le retrait de la course et de la mini-carte, lui,
+  derrière — cède son modèle. Le maillage de la berline appartient à son agonie
+  jusqu'au bout : sa relève, retenue pendant le tête-à-queue
+  (`wreckPending`), ne reprend la piste qu'à l'explosion — sans quoi la berline
+  s'évanouirait en pleine toupie, le renfort réutilisant le même objet.
+  Le retrait de la course et de la mini-carte, lui,
   reste immédiat, avec **+200 pts** pour le pilote qui l'abat
   (`CITY_RUSH_POLICE_DESTROY_SCORE`) ; la vérif
   `npm run check:city-rush-police-wreck` compte les tours, la décélération, le

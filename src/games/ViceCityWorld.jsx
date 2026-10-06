@@ -2915,7 +2915,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     // La berline du tête-à-queue rend son maillage au parc — sauf si l'unité a
     // déjà repris la piste entre-temps (une relève peut arriver à 3,6 s).
-    if (wreck.mesh && wreck.police?.active === false) wreck.mesh.visible = false;
+    if (wreck.mesh && policeWreckMeshFree(wreck)) wreck.mesh.visible = false;
+    if (wreck.police) wreck.police.wreckPending = false;
   }
 
   function clearPoliceWrecks() {
@@ -2936,6 +2937,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // La coque vient de céder : la berline part en tête-à-queue. Elle garde son
   // maillage — c'est elle qui tourne sur elle-même — pendant que sa vitesse
   // fond sur `CITY_RUSH_POLICE_WRECK_SPIN_SECONDS`.
+  // Le maillage d'une berline en agonie appartient à son tête-à-queue tant que
+  // la carcasse n'a pas pris le relais. Une berline d'escouade porte `active`
+  // (sa relève la réactive), une berline rappelée du trafic n'en a pas : dans
+  // les deux cas, `active !== true` signifie « libre ».
+  function policeWreckMeshFree(wreck) {
+    return !wreck?.police || wreck.police.active !== true;
+  }
+
   function beginPoliceWreck(police, { pan = 0, byPlayer = false } = {}) {
     const startSpeed = Math.max(0, Number(police.currentSpeed) || 0);
     const wreck = {
@@ -2966,6 +2975,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const pursuit = police.mesh.userData.pursuit;
     if (pursuit) pursuit.glowMaterial.opacity = 0;
     police.mesh.visible = true;
+    // Réservée : sa relève ne peut pas reprendre le maillage avant
+    // l'explosion, sinon la berline disparaîtrait en plein tête-à-queue.
+    police.wreckPending = true;
     policeWrecks.push(wreck);
     // Garde-fou de scène : au-delà du plafond, la carcasse la plus ancienne —
     // donc la plus loin derrière le pilote — s'efface.
@@ -2983,7 +2995,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     wreck.speed = 0;
     wreck.burnElapsed = 0;
     const worldPosition = wreckWorldPosition(wreck, wreckScratch);
-    if (wreck.mesh && wreck.police?.active === false) wreck.mesh.visible = false;
+    if (wreck.mesh && policeWreckMeshFree(wreck)) wreck.mesh.visible = false;
+    // Le maillage retourne au parc : la relève de l'escouade, retenue pendant
+    // le tête-à-queue, peut maintenant reprendre la piste.
+    if (wreck.police) {
+      wreck.police.wreckPending = false;
+      if (wreck.police.squad) queuePoliceReinforcement(wreck.police);
+    }
     const husk = acquirePoliceWreckHusk(wreck.police?.vehicleType || 'police');
     husk.userData.taken = true;
     husk.position.copy(worldPosition);
@@ -3018,7 +3036,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const mesh = wreck.mesh;
         if (mesh) {
           const spinGap = wreck.distance - distance;
-          mesh.visible = wreck.police?.active === false
+          mesh.visible = policeWreckMeshFree(wreck)
             && spinGap > -CITY_RUSH_POLICE_WRECK_VIEW_BEHIND && spinGap < 150;
           wreckWorldPosition(wreck, mesh.position);
           mesh.rotation.set(
@@ -3038,7 +3056,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             wreck.smokeTimer = 0.06;
           }
         }
-        if (wreck.spinLeft > 0) continue;
+        if (policeWreckMeshFree(wreck) && wreck.spinLeft > 0) continue;
         explodePoliceWreck(wreck);
         wreck.smokeTimer = 0;
       }
@@ -3523,7 +3541,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function queuePoliceReinforcement(police) {
-    if (!police?.squad || !police.everDeployed || police.active || police.reinforcementPending) return false;
+    // `wreckPending` : l'unité agonise encore (tête-à-queue), son maillage est
+    // réservé — la relève est appelée à l'explosion (`explodePoliceWreck`).
+    if (!police?.squad || !police.everDeployed || police.active || police.reinforcementPending
+      || police.wreckPending) return false;
     police.reinforcementPending = true;
     policeReinforcementQueue.push(police);
     if (policeReinforcementQueue.length === 1) {
@@ -3541,7 +3562,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     let accounted = activePlayerPursuerSlots() + policeReinforcementQueue.length;
     for (const police of policeCars) {
       if (accounted >= desired) break;
-      if (!police.squad || !police.everDeployed || police.active || police.reinforcementPending) continue;
+      if (!police.squad || !police.everDeployed || police.active || police.reinforcementPending
+        || police.wreckPending) continue;
       if (queuePoliceReinforcement(police)) accounted += 1;
     }
     if (!policeReinforcementQueue.length) return;

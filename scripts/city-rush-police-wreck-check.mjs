@@ -84,7 +84,7 @@ const server = await createServer({
         if (id.includes('ViceCityWorld')) {
           return {
             // Précondition de test : le chargeur du pilote d'essai est garni
-            // (70 balles, dix chargeurs) au départ comme au rejeu, pour abattre
+            // (140 balles, vingt chargeurs) au départ comme au rejeu, pour abattre
             // une berline dans chaque ville sans attendre un bonus rouge — les
             // balles perdues dans les rivaux comptent. Les deux affectations
             // terminées par un point-virgule sont celles du pilote (déclaration
@@ -93,7 +93,7 @@ const server = await createServer({
               .replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)(')
               .replaceAll(
                 'createCityRushInventory();',
-                '{ ...createCityRushInventory(), [CITY_RUSH_POWERS.PISTOL]: 70 };',
+                '{ ...createCityRushInventory(), [CITY_RUSH_POWERS.PISTOL]: 140 };',
               ),
             map: null,
           };

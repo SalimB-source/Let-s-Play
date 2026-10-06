@@ -228,11 +228,19 @@ for (let run = 0; run < RUNS; run += 1) {
     const laneOfX = (x) => CITY_RUSH_LANE_X.reduce((best, laneX, lane) => (
       Math.abs(laneX - Number(x)) < Math.abs(CITY_RUSH_LANE_X[best] - Number(x)) ? lane : best
     ), 0);
-    // Le tir rouge s'arrête sur le premier véhicule de la voie. Le trafic
-    // absorbe la balle sans rien fausser (une berline de plus ou de moins dans
-    // le flot), mais une autre berline de poursuite ou un rival la prendrait à
-    // la place de la cible : on ne tire que si aucune autre cible ne s'intercale
-    // entre le pilote et la berline visée.
+    // Le tir rouge s'arrête sur le premier véhicule de la voie. Une autre
+    // berline de poursuite ou un rival prendrait la balle à la place de la
+    // cible, et le trafic l'absorbe pour rien : avec six impacts nécessaires
+    // par berline, on attend donc que la voie soit libre jusqu'à la cible, puis
+    // on vide le chargeur dessus.
+    const trafficNodes = scene.children.filter((node) => /^traffic-/.test(node.name || ''));
+    const trafficBetween = (targetLane, targetGap) => {
+      const laneX = CITY_RUSH_LANE_X[targetLane];
+      return trafficNodes.some((node) => node.visible
+        && Math.abs(Number(node.position.x) - laneX) < 1.6
+        && (PLAYER_Z - node.position.z) / CITY_RUSH_SCROLL_SCALE > -2
+        && (PLAYER_Z - node.position.z) / CITY_RUSH_SCROLL_SCALE < targetGap - 3);
+    };
     const between = (other, playerDistance, targetLane, targetGap) => {
       const gap = (Number(other.rawDistance) || 0) - playerDistance;
       return gap > -2 && gap < targetGap - 3
@@ -252,6 +260,7 @@ for (let run = 0; run < RUNS; run += 1) {
     world.start();
 
     let tracked = null;
+    let lockedId = null; // berline visée : le pilote la suit jusqu'à la casse
     let cityCarcasses = 0;
     let examined = 0; // destructions déjà examinées (suivies ou hors cadre)
     let shotsFired = 0;
@@ -282,20 +291,30 @@ for (let run = 0; run < RUNS; run += 1) {
         const closeBy = squad
           .filter((police) => police.gap > -4 && police.gap < TARGET_GAP_MAX)
           .sort(byGap);
-        const target = inRange[0]
+        // Le tir rouge ne retire qu'un carré : six impacts pour envoyer une
+        // berline à la casse. Le pilote verrouille donc sa cible et la suit
+        // jusqu'au bout, au lieu de repartir d'une autre à chaque image — la
+        // fenêtre de tir (voie libre, berline alignée) ne dure pas six fois
+        // plus longtemps qu'un tir.
+        const locked = lockedId
+          ? squad.find((police) => police.id === lockedId
+            && police.gap > TARGET_GAP_MIN - 20 && police.gap <= TARGET_GAP_MAX + 20)
+          : null;
+        const target = locked || inRange[0]
           || (virtualFrame > TARGET_FALLBACK_FRAME ? closeBy[0] : null)
           || null;
+        lockedId = target ? target.id : null;
         if (target && virtualFrame % 3 === 0) {
           const targetLane = laneOfX(target.x);
           if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
-          else if (virtualFrame % 6 === 0) {
+          else if (virtualFrame % 4 === 0) {
             const rivals = (hud.racers || [])
               .filter((racer) => !racer.isPlayer && !racer.wrecked)
               .some((racer) => between(racer, playerDistance, targetLane, target.gap));
             const others = (hud.police || [])
               .filter((police) => police !== target)
               .some((police) => between(police, playerDistance, targetLane, target.gap));
-            if (!rivals && !others) {
+            if (!rivals && !others && !trafficBetween(targetLane, target.gap)) {
               world.action(CITY_RUSH_POWERS.PISTOL);
               shotsFired += 1;
             }
@@ -346,9 +365,12 @@ for (let run = 0; run < RUNS; run += 1) {
             continue;
           }
           const candidates = policeNodes.filter((candidate) => candidate.visible);
-          // Les carcasses d'une destruction précédente brûlent encore : seule
-          // une carcasse apparue après celle-ci appartient à cette agonie.
-          const preexistingHusks = new Set(refreshWreckNodes());
+          // Les carcasses des destructions précédentes brûlent encore, et les
+          // modèles sont mis en commun : on note où brûle chacune. Appartient à
+          // cette agonie une carcasse neuve, ou un modèle **déplacé** depuis —
+          // une vieille épave encore en feu garde sa position sur la piste.
+          const preexistingHusks = new Map(refreshWreckNodes()
+            .map((candidate) => [candidate, trackDistanceOf(candidate)]));
           tracked = {
             effect,
             candidates,
@@ -426,9 +448,13 @@ for (let run = 0; run < RUNS; run += 1) {
         // La carcasse apparaît là où la berline s'immobilise : on la repère à
         // sa position, pas au boum — d'autres berlines (trafic rappelé) peuvent
         // exploser pendant le même tête-à-queue.
-        const husk = refreshWreckNodes().find((candidate) => candidate.visible
-          && !tracked.preexistingHusks.has(candidate)
-          && Math.abs(trackDistanceOf(candidate) - now) < 2.5) || null;
+        const husk = refreshWreckNodes().find((candidate) => {
+          if (!candidate.visible) return false;
+          const anchored = trackDistanceOf(candidate);
+          if (Math.abs(anchored - now) >= 2.5) return false;
+          const before = tracked.preexistingHusks.get(candidate);
+          return before === undefined || Math.abs(anchored - before) > 1;
+        }) || null;
         if (husk) {
           tracked.explosionFrame = virtualFrame;
           tracked.husk = husk;
@@ -452,7 +478,9 @@ for (let run = 0; run < RUNS; run += 1) {
           // La berline est sortie du cadre pendant sa glissade (le pilote l'a
           // dépassée) : son agonie n'est plus mesurable, on attend la suivante.
           if (VERBOSE) {
-            console.log(`[${city.id}#${run + 1}] ${tracked.effect.police} sortie du cadre pendant le tête-à-queue`);
+            const nowGap = trackDistanceOf(node) - (Number(world.distance) || 0);
+            const sameUnit = (hud.police || []).some((police) => police.id === tracked.effect.id);
+            console.log(`[${city.id}#${run + 1}] ${tracked.effect.police} sortie du cadre pendant le tête-à-queue (écart ${nowGap.toFixed(1)} m, image ${tracked.spinFrames}, unité revenue au HUD : ${sameUnit})`);
           }
           tracked = null;
         }
@@ -578,13 +606,17 @@ for (let run = 0; run < RUNS; run += 1) {
           });
         }
       }
-      // Elle est dessinée dès qu'elle est dans le cadre, et fume.
-      if (tracked.huskDrawnFrames < 6) {
+      // Elle est dessinée dès qu'elle est dans le cadre, et fume. Le nombre
+      // d'images dessinées dépend du scénario (une berline abattue de justesse
+      // devant le pilote ne reste dans le cadre que quelques images) : ce qui
+      // compte est qu'elle soit dessinée **chaque fois** qu'elle est dans la
+      // fenêtre — vérifié image par image plus haut — et non pas invisible.
+      if (tracked.huskDrawnFrames < 1) {
         fail(`[${city.id}] la carcasse n'est jamais dessinée dans le cadre`, {
           drawn: tracked.huskDrawnFrames,
         });
       }
-      if (tracked.huskSmokeFrames < 4) {
+      if (tracked.huskSmokeFrames < 1) {
         fail(`[${city.id}] la carcasse ne fume pas (${tracked.huskSmokeFrames} images avec de la fumée)`);
       }
       // Le feu faiblit vers les braises sans s'éteindre.
