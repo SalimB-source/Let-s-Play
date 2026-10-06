@@ -77,6 +77,7 @@ const {
   CITY_RUSH_COURSES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
+  CITY_RUSH_MINI_GARAGE_COUNT, cityRushMiniGarageLane,
   CITY_RUSH_PLAYER_HEALTH, cityRushPoliceMaxHealth, CITY_RUSH_POLICE_COLLISION_COOLDOWN, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
@@ -269,6 +270,7 @@ for (const [index, city] of courses.entries()) {
   // 30 Hz) plus tard sur sa rangée.
   const burstNodes = [];
   const pickupSlots = [];
+  const miniGarageNodes = [];
   let slowZoneNodes = 0;
   // Berlines de police du trafic : le pilote d'essai les vise pour provoquer le
   // scénario « on percute un agent » (voir la boucle de course).
@@ -283,6 +285,7 @@ for (const [index, city] of courses.entries()) {
   scene?.traverse((object) => {
     if (object.name === 'watch-helicopter') watchHeliNodes.push(object);
     if (object.name === 'pickup-burst') burstNodes.push(object);
+    if (object.name === 'city-rush-mini-garage') miniGarageNodes.push(object);
     if (String(object.name).startsWith('traffic-')
       && CITY_RUSH_POLICE_TRAFFIC_TYPES.includes(object.name.slice('traffic-'.length))) {
       policeTrafficNodes.push(object);
@@ -300,6 +303,13 @@ for (const [index, city] of courses.entries()) {
   if (racerCars.length < 3) fail('les trois voitures de course ne sont pas construites', racerCars.length);
   if (racerCars.some((car) => !car.userData.driverId)) fail('l’identité pilote manque aux métadonnées du HUD', racerCars.map((car) => car.userData.driverId));
   if (racerCars.some((car) => !car.userData.archetype)) fail('une voiture n’a pas de modèle 3D dédié', racerCars.map((car) => car.userData.profileId));
+  if (miniGarageNodes.length !== CITY_RUSH_MINI_GARAGE_COUNT) {
+    fail('la carte ne contient pas exactement deux mini-garages', miniGarageNodes.length);
+  }
+  if (miniGarageNodes.some((garage) => garage.userData.kind !== 'mini-garage'
+    || garage.userData.lane !== cityRushMiniGarageLane(city))) {
+    fail('les mini-garages ne sont pas sur la voie extérieure du sens de course', miniGarageNodes.map((garage) => garage.userData));
+  }
   // L'hélico d'observation du dernier tour, construit une seule fois.
   if (watchHeliNodes.length !== 1) fail('l’hélico d’observation n’est pas construit une seule fois', watchHeliNodes.length);
   const watchHeli = watchHeliNodes[0];
@@ -342,6 +352,9 @@ for (const [index, city] of courses.entries()) {
   if (callbacks.huds[0]?.wantedLevel !== 0) {
     fail('une course normale ne démarre pas à zéro étoile', callbacks.huds[0]);
   }
+  if (callbacks.huds[0]?.miniGaragesRemaining !== CITY_RUSH_MINI_GARAGE_COUNT) {
+    fail('le HUD ne montre pas les deux mini-garages au départ', callbacks.huds[0]);
+  }
   if (slowZoneNodes) fail('une zone d’huile ou de ralentissement est encore rendue', slowZoneNodes);
   if (!pickupSlots.some((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST)) fail('aucun pad turbo vert n’est placé sur la piste');
   const introStats = scene ? countVisible(scene) : null;
@@ -367,6 +380,12 @@ for (const [index, city] of courses.entries()) {
   world.reset();
   if (callbacks.huds.at(-1)?.wantedLevel !== 0) {
     fail('reset() ne remet pas les étoiles à zéro pour la course suivante', callbacks.huds.at(-1));
+  }
+  if (callbacks.huds.at(-1)?.miniGaragesRemaining !== CITY_RUSH_MINI_GARAGE_COUNT
+    || miniGarageNodes.some((garage) => garage.userData.used)) {
+    fail('reset() ne réarme pas les deux mini-garages pour la course suivante', {
+      hud: callbacks.huds.at(-1), garages: miniGarageNodes.map((garage) => garage.userData),
+    });
   }
   world.setPhase('countdown');
   for (const n of [3, 2, 1]) { world.setCountdown(n); runFrames(24, `countdown ${n}`); }
@@ -872,7 +891,7 @@ for (const [index, city] of courses.entries()) {
     fail('le HUD ne contient pas exactement trois pilotes', callbacks.huds.at(-1));
   }
   const lastHud = callbacks.huds.at(-1);
-  for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers', 'wantedLevel', 'oncomingBonus']) {
+  for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers', 'wantedLevel', 'miniGaragesRemaining', 'oncomingBonus']) {
     if (!(field in lastHud)) fail(`champ HUD manquant : ${field}`, Object.keys(lastHud));
   }
   // Bonus de contresens : dès que le parcours a du trafic en face et que le
@@ -896,7 +915,19 @@ for (const [index, city] of courses.entries()) {
   if (!wantedEffects.some((effect) => effect.stars >= 3)) {
     fail('un contact avec la police ne fait pas monter la recherche à trois étoiles', wantedEffects);
   }
-  if (lastHud.wantedLevel < 3) fail('le HUD ne conserve pas les étoiles de recherche gagnées pendant la course', lastHud);
+  const miniGarageUses = callbacks.effects.filter((effect) => effect.type === 'mini-garage-used');
+  if (miniGarageUses.length > CITY_RUSH_MINI_GARAGE_COUNT) {
+    fail('plus de deux mini-garages ont été utilisés dans une course', miniGarageUses);
+  }
+  if (miniGarageUses.some((effect) => Number(effect.previousStars) < 1 || Number(effect.stars) !== 0)) {
+    fail('un mini-garage utilisé ne remet pas la recherche à zéro', miniGarageUses);
+  }
+  if (new Set(miniGarageUses.map((effect) => effect.garage)).size !== miniGarageUses.length) {
+    fail('un mini-garage a été utilisé plusieurs fois', miniGarageUses);
+  }
+  if (lastHud.wantedLevel < 3 && miniGarageUses.length === 0) {
+    fail('le HUD ne conserve pas les étoiles et aucun mini-garage ne les a effacées', lastHud);
+  }
   if (finalLapBadGauge) fail(`le compteur du dernier tour est faux sur ${finalLapBadGauge} images (il doit courir sur 1 200 m)`, { finalLapHudFrames, samples: finalLapGaugeSamples });
   if (finalLapBadLength) fail('longueur de tour incohérente au dernier tour (attendu 1 200 m, compteur ≤ longueur)', { finalLapBadLength, finalLapHudFrames });
   if ([...lapSeen].some((lap) => lap < 1 || lap > RACE_LAPS)) fail('le HUD a affiché un tour hors course', [...lapSeen]);

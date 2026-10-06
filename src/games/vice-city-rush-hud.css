@@ -205,6 +205,21 @@
 
 .city-rush-viewport .city-rush-hud .city-rush-gta-wanted { margin-top: 0; gap: 3px; }
 .city-rush-viewport .city-rush-hud .city-rush-gta-wanted i { font-size: 16px; }
+.city-rush-viewport .city-rush-hud .city-rush-gta-garages {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  color: rgba(184, 255, 225, 0.88);
+  font: 800 9px/1 var(--mono, monospace);
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 10px rgba(75, 243, 174, 0.3);
+  white-space: nowrap;
+}
+.city-rush-viewport .city-rush-hud .city-rush-gta-garages i {
+  color: #77f2bd;
+  font: 900 15px/1 sans-serif;
+}
 
 /* ── Bandeau central : état, messages, annonces de tour (empilés) ── */
 .city-rush-viewport .city-rush-hud .city-rush-status-pill {
@@ -381,6 +396,8 @@
   .city-rush-viewport .city-rush-hud .city-rush-gta-cash { padding: 5px 9px; }
   .city-rush-viewport .city-rush-hud .city-rush-gta-cash > b { font-size: 12px; }
   .city-rush-viewport .city-rush-hud .city-rush-gta-wanted i { font-size: 12px; }
+  .city-rush-viewport .city-rush-hud .city-rush-gta-garages { font-size: 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-gta-garages i { font-size: 12px; }
 
   .city-rush-viewport .city-rush-hud .city-rush-status-pill { padding: 5px 11px; font-size: 8px; }
   .city-rush-viewport .city-rush-hud .city-rush-toast { padding: 7px 11px; font-size: 9px; }

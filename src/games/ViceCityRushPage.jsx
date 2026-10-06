@@ -41,6 +41,7 @@ import {
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_ONCOMING_BONUS_MAX,
+  CITY_RUSH_MINI_GARAGE_COUNT,
   NORDSCHLEIFE_RELIEF_M,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   cityRushCarMaxHealth,
@@ -235,6 +236,8 @@ const EMPTY_HUD = {
   police: [],
   wantedLevel: 0,
   wantedMaxStars: CITY_RUSH_WANTED_MAX_STARS,
+  miniGaragesRemaining: CITY_RUSH_MINI_GARAGE_COUNT,
+  miniGaragesTotal: CITY_RUSH_MINI_GARAGE_COUNT,
   oncomingPoliceTurnarounds: [],
 };
 
@@ -538,6 +541,12 @@ export default function ViceCityRushPage() {
     Number.isFinite(Number(hud.wantedLevel))
       ? Number(hud.wantedLevel)
       : (Array.isArray(hud.police) ? hud.police.length : 0),
+  ));
+  const miniGaragesRemaining = Math.max(0, Math.min(
+    CITY_RUSH_MINI_GARAGE_COUNT,
+    Number.isFinite(Number(hud.miniGaragesRemaining))
+      ? Number(hud.miniGaragesRemaining)
+      : CITY_RUSH_MINI_GARAGE_COUNT,
   ));
   // Chaque voiture a sa propre coque : les cellules s'allument par groupes
   // bleu, vert et jaune, puis les trois dernières deviennent rouges. Sept
@@ -907,7 +916,7 @@ export default function ViceCityRushPage() {
     if (effect.type === 'wanted-level') {
       const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Number(effect.stars) || 0));
       if (effect.reason === 'police-shot') {
-        showToast(`🚨 TIR SUR LA POLICE · ${stars} ÉTOILES DIRECTES · ESCOUADE COMPLÈTE ET SUV DÉPLOYÉS · LES PATROUILLES DE LA ROUTE TE CHASSENT À VUE.`, 'pistol');
+        showToast(`🚨 TIR SUR LA POLICE · ${stars} ÉTOILES · LA POURSUITE S’INTENSIFIE.`, 'pistol');
       }
       else showToast(`🚨 NIVEAU DE RECHERCHE · ${stars} ÉTOILE${stars > 1 ? 'S' : ''} SUR ${CITY_RUSH_WANTED_MAX_STARS}`, 'pistol');
     }
@@ -961,8 +970,12 @@ export default function ViceCityRushPage() {
         'pistol',
       );
     }
+    else if (effect.type === 'mini-garage-used') {
+      const remaining = Math.max(0, Number(effect.remaining) || 0);
+      showToast(`🛠 MINI-GARAGE · ${effect.previousStars} ÉTOILES EFFACÉES · ${remaining} GARAGE${remaining === 1 ? '' : 'S'} RESTANT${remaining === 1 ? '' : 'S'}.`, 'boost');
+    }
     else if (effect.type === 'police-destroyed') showToast(effect.byPlayer
-      ? `💥 ${effect.police} DÉTRUITE · +200 PTS${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`
+      ? `💥 ${effect.police} DÉTRUITE · +200 PTS · ${effect.wantedLevel || 0} ÉTOILES${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`
       : `💥 ${effect.police} DÉTRUITE${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`, 'radio');
     else if (effect.type === 'police-retaliation') showToast(`🚨 RENFORT · ${effect.police} PREND ${effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'racer-wrecked') showToast(`💥 ${effect.target} EST HORS COURSE.`, 'radio');
@@ -1205,6 +1218,12 @@ export default function ViceCityRushPage() {
                   <span className="city-rush-gta-wanted" role="status" aria-label={`Police en chasse · niveau ${wantedStars} sur ${CITY_RUSH_WANTED_MAX_STARS}`}>
                     {Array.from({ length: CITY_RUSH_WANTED_MAX_STARS }, (_, index) => index + 1)
                       .map((star) => <i key={star} className={star <= wantedStars ? 'is-on' : ''} aria-hidden="true">★</i>)}
+                  </span>
+                )}
+                {!sprintMode && (
+                  <span className="city-rush-gta-garages" aria-label={`Mini-garages disponibles : ${miniGaragesRemaining} sur ${CITY_RUSH_MINI_GARAGE_COUNT}`}>
+                    <i aria-hidden="true">⌂</i>
+                    <b>{miniGaragesRemaining}/{CITY_RUSH_MINI_GARAGE_COUNT} MINI-GARAGES</b>
                   </span>
                 )}
               </div>
@@ -1833,7 +1852,7 @@ export default function ViceCityRushPage() {
                     {!storyMode && mode.policeFromStart
                       ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
                       : 'En Circuit, trois voitures de police entrent au dernier tour et te prennent pour cible, même si tu n’es pas en tête.'}
-                    {' '}Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                    {' '}Tirer sur une voiture de police fait monter la recherche à trois étoiles ; la première destruction la fait passer à quatre, la deuxième à cinq. Chaque carte propose deux mini-garages traversables sur la voie la plus à droite : traverse-en un avec des étoiles pour les effacer ; chacun ne sert qu’une fois par course. Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
 
                   </>
                 )}

@@ -3288,20 +3288,76 @@ export function selectCityRushRacers({
 // continue de suivre le joueur au dernier tour.
 export const CITY_RUSH_POLICE_COUNT = 3;
 export const CITY_RUSH_WANTED_MAX_STARS = 5;
+export const CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS = 2;
 export const CITY_RUSH_POLICE_TURNAROUND_DURATION = 1.5; // s : demi-tour des patrouilles venant en face
 
 /**
- * Étoile gagnée sur un véhicule touché. Un simple contact avec une patrouille
- * fait passer à 3, mais TIRER sur une voiture de police fait monter les
- * étoiles à 5 directement : l'escouade complète sort (berlines + SUV) et les
- * patrouilles croisées sur la route prennent le pilote en chasse dès qu'elles
- * le voient (`CITY_RUSH_POLICE_SIGHT_RANGE`).
+ * Niveau de recherche après un impact réussi. Une voiture ordinaire ajoute une
+ * étoile ; toucher une patrouille — par tir ou par collision — monte à trois.
+ * La destruction de voitures de police est comptée séparément ci-dessous :
+ * la première ajoute la quatrième étoile, la deuxième la cinquième.
  */
-export function cityRushWantedLevelAfterHit(currentLevel = 0, { hit = true, police = false, shot = false } = {}) {
+export function cityRushWantedLevelAfterHit(currentLevel = 0, { hit = true, police = false } = {}) {
   const current = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(currentLevel) || 0)));
   if (!hit) return current;
-  if (police) return shot ? CITY_RUSH_WANTED_MAX_STARS : Math.max(current, 3);
+  if (police) return Math.max(current, 3);
   return Math.min(CITY_RUSH_WANTED_MAX_STARS, current + 1);
+}
+
+/**
+ * Niveau de recherche après une destruction de police par le joueur.
+ * `destroyedCount` est le nombre de voitures détruites depuis le dernier
+ * passage au mini-garage : une destruction donne 4 étoiles, deux donnent 5.
+ */
+export function cityRushWantedLevelAfterPoliceDestroyed(currentLevel = 0, destroyedCount = 1) {
+  const current = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(currentLevel) || 0)));
+  const count = Math.max(0, Math.min(
+    CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
+    Math.floor(Number(destroyedCount) || 0),
+  ));
+  if (count === 0) return current;
+  return Math.max(current, Math.min(CITY_RUSH_WANTED_MAX_STARS, 3 + count));
+}
+
+// Deux portes de service sont semées sur la boucle de chaque carte. Elles
+// reviennent avec le décor à chaque tour, mais ne peuvent être utilisées
+// qu'une fois chacune dans une course.
+export const CITY_RUSH_MINI_GARAGE_COUNT = 2;
+export const CITY_RUSH_MINI_GARAGE_TRACK_POSITIONS = Object.freeze([360, 840]);
+// Longueur du portique (5,1 unités de scène) convertie en mètres de piste.
+export const CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH = 2.55 / CITY_RUSH_SCROLL_SCALE;
+
+/** Dernière voie du sens de course : la voie la plus à droite du joueur. */
+export function cityRushMiniGarageLane(course) {
+  const { forwardLanes } = cityRushLaneConfig(course);
+  return forwardLanes[forwardLanes.length - 1] ?? 0;
+}
+
+/**
+ * La recherche n'est effacée qu'une fois la voiture sortie du portique, dans la
+ * bonne voie, avec des étoiles actives et un garage encore disponible.
+ */
+export function cityRushMiniGarageCanClearWanted({
+  previousDistance,
+  nextDistance,
+  garageExitDistance,
+  playerLane,
+  garageLane,
+  wantedLevel = 0,
+  used = false,
+} = {}) {
+  const previous = Number(previousDistance);
+  const next = Number(nextDistance);
+  const exit = Number(garageExitDistance);
+  const stars = Math.floor(Number(wantedLevel) || 0);
+  return !used
+    && Number.isFinite(previous)
+    && Number.isFinite(next)
+    && Number.isFinite(exit)
+    && previous < exit
+    && next >= exit
+    && Number(playerLane) === Number(garageLane)
+    && stars > 0;
 }
 
 // Portée de vue des patrouilles à cinq étoiles : toute voiture de police

@@ -133,7 +133,9 @@ const AUDIO_METHODS = [
 const cityArg = process.argv.find((arg) => arg.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_POLICE_WRECK_ALL === '1';
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((city) => city.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
-const RUNS = Math.max(1, Math.floor(Number(process.env.CITY_RUSH_POLICE_WRECK_RUNS || process.argv.find((arg) => arg.startsWith('--runs='))?.slice(7) || 1)));
+// Deux graines par défaut évitent de faire dépendre l’observation des carcasses
+// du seul tirage des patrouilles et du trafic d’une ville.
+const RUNS = Math.max(1, Math.floor(Number(process.env.CITY_RUSH_POLICE_WRECK_RUNS || process.argv.find((arg) => arg.startsWith('--runs='))?.slice(7) || 2)));
 const VERBOSE = process.env.CITY_RUSH_POLICE_WRECK_VERBOSE === '1';
 // Trois tours : assez pour croiser l'escouade et l'abattre, assez court pour
 // rester un smoke. La police entre dès le départ (mode Poursuite).
