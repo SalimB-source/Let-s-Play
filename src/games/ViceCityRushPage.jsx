@@ -100,7 +100,7 @@ const CAR_THUMBNAILS = {
   'vice-roadster': 'car-cavallo-f8-gtb.jpg',
   'turbo-gt': 'car-kronos-930-turbo.jpg',
   'muscle-86': 'car-vortex-rs-10.jpg',
-  'night-comet': 'car-wolfsburg-gtr.jpg',
+  'night-comet': 'car-wolfsburg-gtr.jpg?v=2',
   'vega-gt-67': 'car-bavaria-mcs.jpg',
   'toro-v12': 'car-tempesta-lp780.jpg',
   'volt-aero': 'car-volt-aero.jpg',

@@ -35,7 +35,7 @@ function geometrySignature(geometry) {
 
 test('les voitures ont des coques fermées distinctes et des vitrages opaques', () => {
   const signatures = new Set();
-  const expectedWheels = ['eight-hole', 'classic-five', 'eight-hole', 'split-five', 'classic-five', 'split-five', 'wire', 'turbofan', 'split-five', 'eight-hole', 'turbofan'];
+  const expectedWheels = ['aero-five', 'split-five', 'aero-five', 'split-five', 'split-five', 'split-five', 'split-five', 'turbofan', 'split-five', 'aero-five', 'turbofan'];
 
   CITY_RUSH_CARS.forEach((profile, index) => {
     const car = makeRacerCar(profile, { player: index === 0, number: index + 1, driver: ROSTER[0] });
@@ -43,7 +43,13 @@ test('les voitures ont des coques fermées distinctes et des vitrages opaques', 
     const signature = geometrySignature(shell.geometry);
     assert.equal(signatures.has(signature), false, `${profile.name} ne réutilise pas la silhouette d'une autre voiture`);
     signatures.add(signature);
-    assert.ok(shell.geometry.attributes.position.count >= 150, `${profile.name} possède une coque longitudinale détaillée`);
+    assert.ok(shell.geometry.attributes.position.count >= 400, `${profile.name} possède une coque longitudinale lissée et détaillée`);
+    const headlights = car.userData.body.getObjectByName(`${profile.id}-modern-led-headlights`);
+    const tailbar = car.userData.body.getObjectByName(`${profile.id}-modern-led-tailbar`);
+    assert.ok(headlights?.isMesh, `${profile.name} reçoit une signature lumineuse LED moderne`);
+    assert.ok(tailbar?.isMesh, `${profile.name} reçoit un bandeau LED arrière`);
+    assert.ok(headlights.geometry.attributes.position.count >= 24);
+    assert.ok(tailbar.geometry.attributes.position.count >= 24);
     assert.equal(car.userData.archetype, profile.archetype);
     assert.equal(car.userData.wheelStyle, expectedWheels[index]);
     assert.equal(car.userData.wheels.length, 4);
@@ -55,6 +61,10 @@ test('les voitures ont des coques fermées distinctes et des vitrages opaques', 
     assert.equal(glass.material.side, THREE.DoubleSide, 'les vitres se lisent depuis les deux côtés');
     assert.ok(glass.geometry.attributes.position.count >= 24, `${profile.name} a un ensemble de vitres segmenté`);
     assert.equal(car.userData.driverId, ROSTER[0].driverId, 'le pilote reste disponible pour le classement');
+    car.traverse((object) => {
+      if (!object.isMesh) return;
+      assert.ok(Array.from(object.geometry.attributes.position.array).every(Number.isFinite), `${profile.name} garde une géométrie finie`);
+    });
   });
 
   assert.equal(signatures.size, CITY_RUSH_CARS.length, 'chaque miniature correspond à une forme 3D différente');

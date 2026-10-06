@@ -130,6 +130,11 @@ export function makeTrafficVehicle(type) {
   const b = createBatch();
   const box = (material, position, size, rotation = null) => b.box(material, position, size, rotation);
   const decal = (index, position, size, rotation) => b.plane(m.decal, position, size[0], size[1], rotation, { uv: trafficDecals.uv(index) });
+  const smoothBox = (material, position, size, radius = 0.08) => {
+    const geometry = new RoundedBoxGeometry(...size, 1, Math.min(radius, Math.min(...size) * 0.45));
+    b.custom(material, geometry, position);
+    geometry.dispose();
+  };
   const beacon = (color, position, size) => {
     const material = new THREE.MeshBasicMaterial({ color: beaconColors[color], toneMapped: false, transparent: true, opacity: 1 });
     beacons.push(mesh(group, UNIT_BOX, material, position, size));
@@ -138,16 +143,16 @@ export function makeTrafficVehicle(type) {
   if (isTruck) {
     // Benne à ordures : cabine avancée, caisson, bras hydrauliques, gyrophares ambre.
     box(m.dark, [0, 0.42, 0], [width * 0.9, 0.3, length * 0.92]);
-    box(m.body, [0, 1.0, -1.42], [width * 0.92, 1.1, 1.3]); // cabine
+    smoothBox(m.body, [0, 1.0, -1.42], [width * 0.92, 1.1, 1.3], 0.12); // cabine
     box(m.glass, [0, 1.18, -2.08], [width * 0.74, 0.5, 0.05]);
     for (const side of [-1, 1]) {
       box(m.glass, [side * width * 0.46, 1.18, -1.42], [0.04, 0.42, 0.7]);
       box(m.chrome, [side * width * 0.52, 1.3, -1.7], [0.08, 0.2, 0.14]); // rétros
-      box(m.warm, [side * width * 0.36, 0.72, -2.1], [0.26, 0.14, 0.05]);
+      box(m.warm, [side * width * 0.36, 0.72, -2.1], [0.30, 0.075, 0.05]);
       box(m.tail, [side * width * 0.4, 0.74, length * 0.46 + 0.02], [0.2, 0.22, 0.05]);
     }
     box(m.chrome, [0, 0.5, -2.12], [width * 0.96, 0.16, 0.1]); // pare-chocs
-    box(m.body, [0, 1.22, 0.62], [width * 0.96, 1.3, 2.5]); // caisson
+    smoothBox(m.body, [0, 1.22, 0.62], [width * 0.96, 1.3, 2.5], 0.08); // caisson
     box(m.accent, [0, 1.9, 0.62], [width * 0.98, 0.1, 2.56]);
     box(m.dark, [0, 1.1, 1.9], [width * 0.92, 1.05, 0.2]); // trappe arrière
     for (const x of [-0.6, -0.3, 0, 0.3, 0.6]) box(m.dark, [x * width * 0.7, 1.22, 0.62], [0.06, 1.2, 2.5]); // nervures
@@ -160,20 +165,21 @@ export function makeTrafficVehicle(type) {
   } else if (isSports) {
     // Supercar blanche : coin plat, phares fins, aileron.
     box(m.dark, [0, 0.3, 0], [width * 0.9, 0.12, length * 0.9]);
-    box(m.body, [0, 0.5, 0.1], [width, 0.3, length * 0.9]);
-    box(m.body, [0, 0.62, -1.1], [width * 0.94, 0.14, 1.4], [0.12, 0, 0]); // capot plongeant
+    smoothBox(m.body, [0, 0.5, 0.1], [width, 0.3, length * 0.9], 0.08);
+    smoothBox(m.body, [0, 0.62, -1.1], [width * 0.94, 0.14, 1.4], 0.045); // capot plongeant
     box(m.glass, [0, 0.86, -0.2], [width * 0.8, 0.3, 1.1], [0.25, 0, 0]); // bulle
-    box(m.body, [0, 0.78, 0.9], [width * 0.96, 0.26, 1.3]); // capot moteur
+    smoothBox(m.body, [0, 0.78, 0.9], [width * 0.96, 0.26, 1.3], 0.07); // capot moteur
     box(m.dark, [0, 0.92, 0.9], [width * 0.7, 0.03, 1.0]); // grille moteur
     box(m.dark, [0, 1.0, 1.55], [width * 0.98, 0.05, 0.32], [-0.1, 0, 0]); // aileron
     for (const side of [-1, 1]) {
       box(m.dark, [side * width * 0.42, 0.86, 1.52], [0.05, 0.2, 0.36]);
-      box(m.warm, [side * width * 0.36, 0.58, -1.86], [0.4, 0.06, 0.05]);
-      box(m.tail, [side * width * 0.34, 0.68, 1.86], [0.42, 0.1, 0.04]);
+      box(m.warm, [side * width * 0.36, 0.58, -1.86], [0.42, 0.035, 0.035]);
+      box(m.tail, [side * width * 0.34, 0.68, 1.86], [0.46, 0.045, 0.04]);
       box(m.dark, [side * width * 0.47, 0.44, -0.2], [0.08, 0.16, 0.9]); // prise d'air latérale
       box(m.chrome, [side * width * 0.5, 0.78, -0.5], [0.1, 0.06, 0.16]);
     }
     box(m.dark, [0, 0.36, -1.9], [width * 0.98, 0.1, 0.1]);
+    box(m.tail, [0, 0.68, 1.88], [width * 0.22, 0.03, 0.035]);
     for (const x of [-0.4, -0.15, 0.15, 0.4]) b.cylinder(m.chrome, [x, 0.4, 1.9], 0.04, 0.04, 0.1, 8, [Math.PI / 2, 0, 0]);
   } else if (policeSUV) {
     // SUV d'interception moderne (type Explorer/Durango Pursuit) : livrée
@@ -272,10 +278,10 @@ export function makeTrafficVehicle(type) {
   } else {
     // Berlines d'intervention : police et ambulance.
     box(m.dark, [0, 0.32, 0], [width * 0.9, 0.14, length * 0.9]);
-    box(m.body, [0, 0.56, 0], [width, 0.4, length * 0.92]);
-    box(m.body, [0, 0.74, -length * 0.3], [width * 0.96, 0.1, 1.0]); // capot
+    smoothBox(m.body, [0, 0.56, 0], [width, 0.4, length * 0.92], 0.08);
+    smoothBox(m.body, [0, 0.74, -length * 0.3], [width * 0.96, 0.1, 1.0], 0.04); // capot
     if (ambulance) {
-      box(m.body, [0, 1.14, 0.45], [width * 0.98, 0.9, 2.3]); // cellule
+      smoothBox(m.body, [0, 1.14, 0.45], [width * 0.98, 0.9, 2.3], 0.09); // cellule
       box(m.accent, [0, 1.6, 0.45], [width * 1.0, 0.1, 2.34]);
       box(m.glass, [0, 1.08, -0.72], [width * 0.84, 0.46, 0.06]);
       for (const side of [-1, 1]) {
@@ -286,7 +292,7 @@ export function makeTrafficVehicle(type) {
       box(m.glass, [0, 1.3, 1.62], [width * 0.6, 0.4, 0.04]);
       for (const x of [-0.5, 0.5]) for (const z of [-0.6, 1.4]) beacon('red', [x, 1.68, z], [0.18, 0.12, 0.18]);
     } else {
-      box(m.body, [0, 0.98, 0.1], [width * 0.86, 0.5, 1.8]); // pavillon
+      smoothBox(m.body, [0, 0.98, 0.1], [width * 0.86, 0.5, 1.8], 0.11); // pavillon
       box(m.glass, [0, 1.0, -0.82], [width * 0.8, 0.42, 0.05], [0.3, 0, 0]);
       box(m.glass, [0, 1.0, 1.02], [width * 0.8, 0.4, 0.05], [-0.3, 0, 0]);
       for (const side of [-1, 1]) {
@@ -306,11 +312,12 @@ export function makeTrafficVehicle(type) {
       }
     }
     for (const side of [-1, 1]) {
-      box(m.warm, [side * width * 0.36, 0.62, -length * 0.46 - 0.02], [0.3, 0.12, 0.05]);
-      box(m.tail, [side * width * 0.36, 0.64, length * 0.46 + 0.02], [0.34, 0.12, 0.05]);
+      box(m.warm, [side * width * 0.36, 0.62, -length * 0.46 - 0.02], [0.32, 0.045, 0.04]);
+      box(m.tail, [side * width * 0.36, 0.64, length * 0.46 + 0.02], [0.36, 0.05, 0.04]);
     }
     box(m.chrome, [0, 0.42, -length * 0.47], [width * 0.98, 0.12, 0.12]);
     box(m.chrome, [0, 0.42, length * 0.47], [width * 0.98, 0.12, 0.12]);
+    box(m.tail, [0, 0.64, length * 0.47 + 0.04], [width * 0.32, 0.025, 0.025]); // bandeau LED arrière
   }
   group.add(b.build('traffic-body'));
 
