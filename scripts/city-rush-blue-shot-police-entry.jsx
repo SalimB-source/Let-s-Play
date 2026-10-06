@@ -270,6 +270,33 @@ for (let run = 0; run < RUNS; run += 1) {
     if (ramHits.some((effect) => effect.damage !== 1)) {
       fail(`[${city.id}] un carambolage n'a pas retiré exactement un point à la police`, ramHits);
     }
+    // Le tir rouge est une arme d'usure, jamais une frappe massive : chaque
+    // balle qui touche une berline de police, un adversaire ou le pilote
+    // n'emporte **qu'un seul carré**. Le `damage` remonté par un impact est le
+    // delta réel de la barre de vie (`cityRushPoliceDamage`,
+    // `cityRushPlayerDamage`) : l'exiger à 1 vérifie donc le barème jusque dans
+    // le monde three.js, pas seulement dans les règles pures.
+    const redHits = firstRaceEffects.filter((effect) => {
+      if (effect.source !== redType) return false;
+      return effect.type === 'police-hit' || effect.type === 'pistol' || effect.type === 'player-hit';
+    });
+    const redPoliceHits = redHits.filter((effect) => effect.type === 'police-hit');
+    const redRacerHits = redHits.filter((effect) => effect.type === 'pistol');
+    const redPlayerHits = redHits.filter((effect) => effect.type === 'player-hit');
+    const fatRedHits = redHits.filter((effect) => Number(effect.damage) !== 1);
+    if (fatRedHits.length) {
+      fail(`[${city.id}] un tir rouge a retiré plus d'un carré (voiture de police, adversaire ou pilote)`, fatRedHits);
+    }
+    for (const effect of redHits) {
+      const maxHealth = Number(effect.maxHealth);
+      const health = Number(effect.health);
+      if (!Number.isFinite(health) || !Number.isFinite(maxHealth) || health < 0 || health > maxHealth) {
+        fail(`[${city.id}] un impact de tir rouge laisse une barre de vie hors de ses bornes`, effect);
+      }
+    }
+    if (VERBOSE) {
+      console.log(`[${city.id}] balles rouges : ${redPoliceHits.length} sur la police, ${redRacerHits.length} sur les pilotes, ${redPlayerHits.length} encaissées — 1 carré chacune`);
+    }
 
     // reset() ne doit ni rappeler un hélicoptère, ni réactiver un ancien missile.
     const beforeReplay = callbacks.effects.length;
@@ -287,7 +314,7 @@ for (let run = 0; run < RUNS; run += 1) {
     const replayForbidden = replayEffects.filter((effect) => forbiddenShotEffects.has(effect.type));
     if (replayForbidden.length) fail(`[${city.id}] le replay a réactivé un tir supprimé`, replayForbidden);
 
-    console.log(`[${city.id}#${run + 1}] OK · ${frames} frames · ${redPickups.length} bonus rouges rares · attaque d'hélicoptère désactivée · reset validé`);
+    console.log(`[${city.id}#${run + 1}] OK · ${frames} frames · ${redPickups.length} bonus rouges rares · ${redPoliceHits.length} balle(s) rouge(s) sur la police à 1 carré chacune · attaque d'hélicoptère désactivée · reset validé`);
     if (VERBOSE) console.log(`[${city.id}] effets course :`, [...new Set(firstRaceEffects.map((effect) => effect.type))]);
     world.destroy();
   }

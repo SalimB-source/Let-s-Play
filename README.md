@@ -948,9 +948,10 @@ et le dernier tour durait 21 s.
   vite (`cityRushPoliceCollisionHit`). Il retire **un point de vie** à la
   police **et un carré de vie** à la voiture du joueur, comme n'importe quel
   carambolage (`CITY_RUSH_PLAYER_DAMAGE.collision`), le tout espacé par le
-  répit de choc. Une berline a six points de vie : deux tirs rouges d'AK-47
-  (3 points chacun), trois tirs bleus (2 points chacun), six carambolages
-  (1 point chacun), ou une combinaison équivalente la détruisent
+  répit de choc. Une berline a six carrés de vie : **un tir rouge d'AK-47 lui
+  retire un seul carré** — le même prix qu'contre un pilote — ; trois tirs
+  bleus (2 points chacun), six carambolages (1 point chacun), six balles
+  rouges, ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
   barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
   À la destruction : explosion, retrait immédiat de la course et de la
