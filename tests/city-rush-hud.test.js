@@ -285,3 +285,14 @@ test('la barre d’une berline affiche bien ses six carrés de vie', () => {
     'la règle affichée promet un seul carré par tir rouge, berline comme adversaire');
   assert.doesNotMatch(page, /3 dégâts|trois dégâts/, 'plus aucun texte ne promet trois dégâts d’un tir rouge');
 });
+
+test('le HUD de course est une grille de zones : aucun élément ne se superpose', () => {
+  const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
+  assert.match(page, /import '\.\/vice-city-rush-hud\.css'/);
+  assert.match(page, /className=\{`city-rush-hud\$\{sprintMode/);
+  for (const zone of ['is-top-left', 'is-top-center', 'is-top-right', 'is-mid-left', 'is-mid-right', 'is-bottom-left', 'is-bottom-center', 'is-bottom-right']) {
+    assert.match(page, new RegExp(`city-rush-hud-zone ${zone}`), `zone ${zone} présente`);
+  }
+  assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \{[^}]*display: grid;[^}]*grid-template-areas:/);
+  assert.doesNotMatch(page, /city-rush-controls-bottom|className="city-rush-radar"/);
+});
