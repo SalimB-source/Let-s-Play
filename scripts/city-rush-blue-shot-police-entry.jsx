@@ -247,7 +247,9 @@ for (let run = 0; run < RUNS; run += 1) {
     }
     const forbidden = firstRaceEffects.filter((effect) => forbiddenShotEffects.has(effect.type));
     if (forbidden.length) fail(`[${city.id}] un tir bleu ou un hélicoptère d'IA non policier a été déclenché`, forbidden);
-    const unexpectedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, redType].includes(pickup.type));
+    const unexpectedPickups = callbacks.pickups.filter((pickup) => ![
+      CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, redType,
+    ].includes(pickup.type));
     if (unexpectedPickups.length) fail(`[${city.id}] un pickup bleu/jaune a été collecté`, unexpectedPickups);
     const redPickups = callbacks.pickups.filter((pickup) => pickup.type === redType);
     if (redPickups.some((pickup) => pickup.chargeCost !== 7 || pickup.progress !== 7 || pickup.ammo !== 7)) {

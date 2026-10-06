@@ -43,6 +43,7 @@ import {
   CITY_RUSH_ONCOMING_BONUS_MAX,
   CITY_RUSH_MINI_GARAGE_COUNT,
   CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
+  CITY_RUSH_HEALTH_PICKUP_RESTORE,
   NORDSCHLEIFE_RELIEF_M,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   cityRushCarMaxHealth,
@@ -322,6 +323,10 @@ function PowerIcon({ type, className = '' }) {
         <rect x="3" y="4" width="26" height="24" rx="3" />
         <path d="M11 21v-8l5 4v-5l5 4v-5" />
         <path d="m17 7 4 4 4-4" />
+      </>}
+      {type === CITY_RUSH_PICKUPS.HEALTH && <>
+        <rect x="4" y="4" width="24" height="24" rx="5" />
+        <path d="M16 9v14M9 16h14" />
       </>}
     </svg>
   );
@@ -1054,6 +1059,11 @@ export default function ViceCityRushPage() {
       showToast(`PAD TURBO · ACCÉLÉRATION PENDANT ${formatSeconds(CITY_RUSH_TRACK_BOOST_DURATION)}.`, 'boost');
       return;
     }
+    if (pickup.type === CITY_RUSH_PICKUPS.HEALTH) {
+      const restored = Math.max(1, Number(pickup.healthRestored) || CITY_RUSH_HEALTH_PICKUP_RESTORE);
+      showToast(`PLUS ROUGE · +${restored} CARRÉ DE VIE · ${pickup.health}/${pickup.maxHealth}.`, 'pistol');
+      return;
+    }
     const rule = CITY_RUSH_POWER_RULES[pickup.type];
     if (!rule) return;
     if (pickup.type === CITY_RUSH_POWERS.PISTOL) {
@@ -1275,8 +1285,8 @@ export default function ViceCityRushPage() {
                     className="city-rush-gta-garages"
                     role="status"
                     aria-label={miniGarageNextDistance === null
-                      ? 'Mini-garage disponible sur la voie de droite'
-                      : `Mini-garage dans ${miniGarageNextDistance} mètres sur la voie de droite`}
+                      ? 'Mini-garage disponible au centre de la chaussée'
+                      : `Mini-garage dans ${miniGarageNextDistance} mètres au centre de la chaussée`}
                   >
                     <i aria-hidden="true">⌂</i>
                     <b>{miniGarageNextDistance === null
@@ -1879,8 +1889,13 @@ export default function ViceCityRushPage() {
               })}
               <div className="city-rush-guide-item is-boost">
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
-                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Les bonus rouges sont rares : chacun recharge {CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles d’AK-47.</small></div>
+                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Les chargeurs rouges de l’AK-47 restent distincts des soins.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
+              </div>
+              <div className="city-rush-guide-item is-health">
+                <span><PowerIcon type={CITY_RUSH_PICKUPS.HEALTH} /></span>
+                <div><b>PLUS ROUGE · +{CITY_RUSH_HEALTH_PICKUP_RESTORE} CARRÉ DE VIE</b><small>Ramasse une trousse marquée d’une croix rouge pour réparer un carré de coque. Le soin ne dépasse pas la vie maximale et ne ranime pas une épave.</small></div>
+                <kbd>+{CITY_RUSH_HEALTH_PICKUP_RESTORE}</kbd>
               </div>
               <div className="city-rush-guide-item is-ramp">
                 <span className="city-rush-guide-glyph" aria-hidden="true">▲</span>
@@ -1910,7 +1925,7 @@ export default function ViceCityRushPage() {
                     {!storyMode && mode.policeFromStart
                       ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
                       : 'En Circuit, trois voitures de police entrent au dernier tour et te prennent pour cible, même si tu n’es pas en tête.'}
-                    {' '}Tirer sur une voiture de police fait monter la recherche à trois étoiles ; la première destruction la fait passer à quatre, la deuxième à cinq. À quatre étoiles, deux voitures de police se rangent en travers devant toi et déploient une herse sur les trois voies du sens de course : si tu la franchis sans te décaler, sans sauter et sans passer en contresens, tu crèves les pneus — un carré de coque et une longue perte de vitesse. À cinq étoiles, deux SUV d’interception arrivent de face par les voies inverses et foncent sur toi, en verrouillant ta voie ; un choc coûte deux carrés, et les SUV font ensuite demi-tour pour te prendre en chasse.  Chaque carte garde un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours — à la moitié de la course —, y compris en Poursuite. Une flèche peinte sur la voie et des chevrons lumineux l’annoncent quelques mètres avant l’entrée, et un panneau de bord de voie rappelle la distance. Sa traversée fait passer la recherche de cinq à quatre étoiles, de quatre à trois, ou de trois (et moins) à zéro. Elle rend aussi jusqu’à {CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} points de vie — sans dépasser la résistance maximale de ta voiture. La poursuite ne s’arrête complètement que lorsque le niveau retombe à zéro. Il répare aussi sans étoiles ; il ne sert qu’une fois par course. Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                    {' '}Tirer sur une voiture de police fait monter la recherche à trois étoiles ; la première destruction la fait passer à quatre, la deuxième à cinq. À quatre étoiles, deux voitures de police se rangent en travers devant toi et déploient une herse sur les trois voies du sens de course : si tu la franchis sans te décaler, sans sauter et sans passer en contresens, tu crèves les pneus — un carré de coque et une longue perte de vitesse. À cinq étoiles, deux SUV d’interception arrivent de face par les voies inverses et foncent sur toi, en verrouillant ta voie ; un choc coûte deux carrés, et les SUV font ensuite demi-tour pour te prendre en chasse.  Chaque carte garde un seul mini-garage élargi, placé au centre de la chaussée et couvrant les deux voies centrales (voies 3 et 4 sur les routes à six voies), à mi-parcours — à la moitié de la course —, y compris en Poursuite. Une flèche peinte sur la chaussée et des chevrons lumineux l’annoncent quelques mètres avant l’entrée, et un panneau rappelle la distance. Sa traversée fait passer la recherche de cinq à quatre étoiles, de quatre à trois, ou de trois (et moins) à zéro. Elle rend aussi jusqu’à {CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} carrés de vie — sans dépasser la résistance maximale de ta voiture. La poursuite ne s’arrête complètement que lorsque le niveau retombe à zéro. Il répare aussi sans étoiles ; il ne sert qu’une fois par course. Chaque rival qui touche une voiture de police avec un tir reçoit son propre poursuivant, qui le chasse lui seul. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
 
 
                   </>

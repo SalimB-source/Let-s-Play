@@ -48,6 +48,10 @@ import {
   CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   CITY_RUSH_PLAYER_HEALTH_FLASH,
+  CITY_RUSH_HEALTH_PICKUP_COLOR,
+  CITY_RUSH_HEALTH_PICKUP_RESTORE,
+  cityRushHealthPickupRepair,
+  CITY_RUSH_MINI_GARAGE_WIDTH,
   cityRushCarMaxHealth,
   CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
   CITY_RUSH_WRECK_SECONDS,
@@ -171,7 +175,7 @@ import {
   cityRushTrafficHitboxWidth,
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
-  cityRushMiniGarageLane,
+  cityRushMiniGarageLanes,
   cityRushMiniGarageAvailable,
   cityRushMiniGarageCanUse,
   cityRushMiniGarageRepair,
@@ -242,6 +246,7 @@ const LAP_UNITS = CITY_RUSH_LAP_LENGTH * SCALE;
 const CAMERA_BASE_FOV = 44;
 const MAX_FRAME = 0.04;
 const POWER_TYPES = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO];
+const PICKUP_ICON_TYPES = [...POWER_TYPES, CITY_RUSH_PICKUPS.HEALTH];
 // Rayon (en unités monde) de la zone d'effet de l'explosion de l'hélicoptère :
 // à peu près une case (une voie) de chaque côté, touchant les adversaires proches.
 const EXPLOSION_RADIUS = 3.4;
@@ -516,7 +521,8 @@ function makeRampObject(shared, city) {
   return { group, chevrons, holo };
 }
 
-function makeMiniGarageMaterials(city) {
+function makeMiniGarageMaterials(city, garageLanes) {
+  const laneLabel = (garageLanes || []).map((lane) => Number(lane) + 1).join(' + ');
   const signTexture = makeCanvasTexture((ctx, width, height) => {
     ctx.fillStyle = '#070b14';
     ctx.fillRect(0, 0, width, height);
@@ -524,7 +530,7 @@ function makeMiniGarageMaterials(city) {
     ctx.lineWidth = 8;
     ctx.strokeRect(5, 5, width - 10, height - 10);
     neonText(ctx, 'MINI GARAGE', width / 2, height * 0.3, '900 54px "Orbitron", Arial, sans-serif', city.accent, 16);
-    neonText(ctx, `ÉTOILES → 0 · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.6, '800 24px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
+    neonText(ctx, `VOIES ${laneLabel} · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.6, '800 24px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
     neonText(ctx, 'POLICE LARGUÉE', width / 2, height * 0.86, '900 26px "Orbitron", Arial, sans-serif', '#7dffb0', 10);
   }, 512, 160, { smooth: true });
 
@@ -551,8 +557,8 @@ function makeMiniGarageMaterials(city) {
     ctx.lineWidth = 6;
     ctx.stroke();
     neonText(ctx, 'GARAGE', width / 2, height * 0.74, '900 74px "Orbitron", Arial, sans-serif', '#ffffff', 18);
-    neonText(ctx, 'VOIE DE SERVICE', width / 2, height * 0.92, '800 30px "Orbitron", Arial, sans-serif', city.accent, 10);
-  }, 256, 512, { smooth: true });
+    neonText(ctx, `VOIES ${laneLabel} · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.92, '800 26px "Orbitron", Arial, sans-serif', city.accent, 10);
+  }, 512, 512, { smooth: true });
 
   const roadSignTexture = makeCanvasTexture((ctx, width, height) => {
     ctx.fillStyle = '#070b14';
@@ -561,8 +567,8 @@ function makeMiniGarageMaterials(city) {
     ctx.lineWidth = 8;
     ctx.strokeRect(5, 5, width - 10, height - 10);
     neonText(ctx, 'GARAGE', width / 2, height * 0.3, '900 62px "Orbitron", Arial, sans-serif', city.accent, 16);
-    neonText(ctx, `DANS ${CITY_RUSH_MINI_GARAGE_SIGN_LEAD} M`, width / 2, height * 0.6, '900 44px "Orbitron", Arial, sans-serif', '#fff3cc', 10);
-    neonText(ctx, '↓ RESTE SUR TA VOIE ↓', width / 2, height * 0.86, '800 26px "Orbitron", Arial, sans-serif', '#7dffb0', 8);
+    neonText(ctx, `DANS ${CITY_RUSH_MINI_GARAGE_SIGN_LEAD} M · +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} VIE`, width / 2, height * 0.6, '900 36px "Orbitron", Arial, sans-serif', '#fff3cc', 10);
+    neonText(ctx, `↓ RESTE SUR ${laneLabel} ↓`, width / 2, height * 0.86, '800 26px "Orbitron", Arial, sans-serif', '#7dffb0', 8);
   }, 512, 256, { smooth: true });
 
   return {
@@ -571,6 +577,8 @@ function makeMiniGarageMaterials(city) {
     floor: standard(0x0a1117, { roughness: 0.62, metalness: 0.3 }),
     accent: new THREE.MeshBasicMaterial({ color: city.accent, toneMapped: false, fog: false }),
     secondary: new THREE.MeshBasicMaterial({ color: city.secondary, toneMapped: false, fog: false }),
+    health: new THREE.MeshBasicMaterial({ color: CITY_RUSH_HEALTH_PICKUP_COLOR, toneMapped: false, fog: false }),
+    healthPanel: new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, fog: false }),
     laneMark: new THREE.MeshBasicMaterial({ color: '#ecf6fa', toneMapped: false, fog: false }),
     sign: new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide }),
     lanePaint: new THREE.MeshBasicMaterial({
@@ -588,13 +596,13 @@ function makeMiniGarageMaterials(city) {
   };
 }
 
-// Indication de voie : quelques mètres avant le portique, la voie du garage est
-// peinte au sol (flèche + « GARAGE ») et bordée de chevrons lumineux, plus un
-// panneau de bord de voie qui rappelle la distance. Tout est enfant du groupe
+// Indication de voie : quelques mètres avant le portique, les deux voies
+// centrales sont peintes au sol (flèche + « GARAGE ») et bordées de chevrons,
+// plus un panneau de bord de voie qui rappelle la distance. Tout est enfant du groupe
 // du garage : le repère disparaît avec lui quand la porte est fermée ou servie.
 function addMiniGarageLaneGuidance(group, materials, addBox) {
   const signLead = CITY_RUSH_MINI_GARAGE_SIGN_LEAD * SCALE;
-  const paint = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 6.2), materials.lanePaint);
+  const paint = new THREE.Mesh(new THREE.PlaneGeometry(CITY_RUSH_MINI_GARAGE_WIDTH - 0.4, 6.2), materials.lanePaint);
   paint.name = 'mini-garage-lane-paint';
   paint.rotation.x = -Math.PI / 2;
   paint.position.set(0, 0.035, signLead - 1.4);
@@ -608,8 +616,8 @@ function addMiniGarageLaneGuidance(group, materials, addBox) {
     for (const side of [-1, 1]) {
       const chevron = addBox(
         'mini-garage-approach-chevron',
-        [0.62, 0.03, 0.12],
-        [side * 0.42, 0.028, distance * SCALE],
+        [0.72, 0.03, 0.12],
+        [side * (CITY_RUSH_MINI_GARAGE_WIDTH * 0.36), 0.028, distance * SCALE],
         step % 2 === 0 ? materials.accent : materials.laneMark,
       );
       chevron.rotation.y = side * (step % 2 === 0 ? 0.62 : 0.48);
@@ -618,23 +626,31 @@ function addMiniGarageLaneGuidance(group, materials, addBox) {
 
   // Panneau de bord de voie : le dernier rappel avant l'entrée.
   const postSide = 1;
-  addBox('mini-garage-sign-post', [0.1, 2.3, 0.1], [postSide * 1.32, 1.15, signLead], materials.body);
-  addBox('mini-garage-sign-frame-road', [1.95, 0.92, 0.12], [postSide * 1.32, 2.5, signLead], materials.body);
-  const roadSign = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 0.82), materials.roadSign);
+  const postX = postSide * (CITY_RUSH_MINI_GARAGE_WIDTH / 2 + 0.8);
+  addBox('mini-garage-sign-post', [0.1, 2.3, 0.1], [postX, 1.15, signLead], materials.body);
+  addBox('mini-garage-sign-frame-road', [2.2, 0.92, 0.12], [postX, 2.5, signLead], materials.body);
+  const roadSign = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.82), materials.roadSign);
   roadSign.name = 'mini-garage-road-sign';
-  roadSign.position.set(postSide * 1.32, 2.5, signLead + 0.065);
+  roadSign.position.set(postX, 2.5, signLead + 0.065);
   group.add(roadSign);
-  const roadSignBack = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 0.82), materials.roadSign);
+  const roadSignBack = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.82), materials.roadSign);
   roadSignBack.name = 'mini-garage-road-sign';
-  roadSignBack.position.set(postSide * 1.32, 2.5, signLead - 0.065);
+  roadSignBack.position.set(postX, 2.5, signLead - 0.065);
   roadSignBack.rotation.y = Math.PI;
   group.add(roadSignBack);
 }
 
-function makeMiniGarageObject(index, materials) {
+function makeMiniGarageObject(index, materials, garageLanes) {
   const group = new THREE.Group();
   group.name = 'city-rush-mini-garage';
-  group.userData = { kind: 'mini-garage', index, lane: null, trackDistance: 0, used: false };
+  group.userData = {
+    kind: 'mini-garage',
+    index,
+    lane: garageLanes[0] ?? null,
+    lanes: [...garageLanes],
+    trackDistance: 0,
+    used: false,
+  };
 
   const addBox = (name, size, position, material) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
@@ -644,28 +660,41 @@ function makeMiniGarageObject(index, materials) {
     return mesh;
   };
 
-  // Portique de service ouvert : ses côtés et son toit dessinent un petit
-  // atelier, mais l'ouverture reste assez large pour traverser sans collision.
-  addBox('mini-garage-floor', [3.25, 0.08, 5.1], [0, 0.045, 0], materials.floor);
-  addBox('mini-garage-roof', [3.0, 0.22, 5.0], [0, 2.74, 0], materials.body);
-  addBox('mini-garage-front-beam', [2.95, 0.26, 0.24], [0, 2.56, 2.38], materials.body);
-  addBox('mini-garage-back-beam', [2.95, 0.22, 0.2], [0, 2.51, -2.38], materials.body);
-  addBox('mini-garage-open-shutter', [2.35, 0.38, 0.12], [0, 2.25, -2.34], materials.wall);
+  const halfWidth = CITY_RUSH_MINI_GARAGE_WIDTH / 2;
+  // Portique ouvert, élargi pour couvrir les deux voies centrales sans
+  // encombrer les voies voisines. Le joueur peut traverser par l'une ou l'autre.
+  addBox('mini-garage-floor', [CITY_RUSH_MINI_GARAGE_WIDTH + 0.3, 0.08, 5.1], [0, 0.045, 0], materials.floor);
+  addBox('mini-garage-roof', [CITY_RUSH_MINI_GARAGE_WIDTH, 0.22, 5.0], [0, 2.74, 0], materials.body);
+  addBox('mini-garage-front-beam', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.12, 0.26, 0.24], [0, 2.56, 2.38], materials.body);
+  addBox('mini-garage-back-beam', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.12, 0.22, 0.2], [0, 2.51, -2.38], materials.body);
+  addBox('mini-garage-open-shutter', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.8, 0.38, 0.12], [0, 2.25, -2.34], materials.wall);
 
   for (const side of [-1, 1]) {
-    addBox('mini-garage-side-wall', [0.18, 1.9, 4.56], [side * 1.38, 1.02, 0], materials.wall);
-    addBox('mini-garage-front-pillar', [0.2, 2.58, 0.28], [side * 1.3, 1.35, 2.35], materials.body);
-    addBox('mini-garage-neon-pillar', [0.07, 2.22, 0.06], [side * 1.17, 1.38, 2.51], materials.accent);
-    addBox('mini-garage-side-neon', [0.055, 0.07, 4.4], [side * 1.29, 1.96, 0], materials.secondary);
-    addBox('mini-garage-entry-mark', [0.08, 0.035, 4.65], [side * 1.05, 0.105, 0], materials.accent);
+    addBox('mini-garage-side-wall', [0.18, 1.9, 4.56], [side * (halfWidth - 0.18), 1.02, 0], materials.wall);
+    addBox('mini-garage-front-pillar', [0.2, 2.58, 0.28], [side * (halfWidth - 0.25), 1.35, 2.35], materials.body);
+    addBox('mini-garage-neon-pillar', [0.07, 2.22, 0.06], [side * (halfWidth - 0.48), 1.38, 2.51], materials.accent);
+    addBox('mini-garage-side-neon', [0.055, 0.07, 4.4], [side * (halfWidth - 0.25), 1.96, 0], materials.secondary);
+    addBox('mini-garage-entry-mark', [0.08, 0.035, 4.65], [side * (halfWidth - 0.55), 0.105, 0], materials.accent);
   }
 
-  addBox('mini-garage-roof-neon', [2.8, 0.08, 0.08], [0, 2.62, 2.53], materials.accent);
-  addBox('mini-garage-sign-frame', [2.62, 0.78, 0.14], [0, 3.14, 2.52], materials.body);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.48, 0.62), materials.sign);
+  addBox('mini-garage-roof-neon', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.3, 0.08, 0.08], [0, 2.62, 2.53], materials.accent);
+  addBox('mini-garage-sign-frame', [4.3, 0.78, 0.14], [0, 3.14, 2.52], materials.body);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 0.62), materials.sign);
   sign.name = 'mini-garage-sign';
   sign.position.set(0, 3.14, 2.605);
   group.add(sign);
+
+  // Plus rouge au-dessus de l'atelier : il signale la réparation même à distance.
+  const healthPlus = new THREE.Group();
+  healthPlus.name = 'mini-garage-health-plus';
+  healthPlus.position.set(0, 4.18, 2.54);
+  const plusPanel = new THREE.Mesh(new THREE.BoxGeometry(1.08, 1.08, 0.12), materials.healthPanel);
+  const plusVertical = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.78, 0.16), materials.health);
+  const plusHorizontal = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.28, 0.16), materials.health);
+  plusVertical.position.set(0, 0, 0.1);
+  plusHorizontal.position.set(0, 0, 0.1);
+  healthPlus.add(plusPanel, plusVertical, plusHorizontal);
+  group.add(healthPlus);
 
   // Les chevrons au sol rendent la trajectoire de traversée lisible au joueur.
   for (let index = 0; index < 3; index += 1) {
@@ -678,8 +707,7 @@ function makeMiniGarageObject(index, materials) {
     group.add(chevron);
   }
 
-  // Indication de voie : peinte quelques mètres avant le portique pour que le
-  // pilote ne rate pas la porte de service.
+  // Une indication large couvre les deux voies centrales du portique.
   addMiniGarageLaneGuidance(group, materials, addBox);
 
   return group;
@@ -1322,7 +1350,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   renderer.shadowMap.enabled = !lite;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.className = 'city-rush-canvas';
-  renderer.domElement.setAttribute('aria-label', `Course de voitures 3D dans ${city.name} : ${effectiveLaps} tours de circuit, change de voie, ramasse des bonus et des boosts au sol, évite le trafic et la police.`);
+  renderer.domElement.setAttribute('aria-label', `Course de voitures 3D dans ${city.name} : ${effectiveLaps} tours, change de voie, ramasse les plus rouges pour récupérer un carré de vie, évite le trafic et traverse le mini-garage central pour réparer jusqu'à six carrés.`);
   mount.appendChild(renderer.domElement);
 
   // ── Lumières ─────────────────────────────────────────────────────────
@@ -1418,9 +1446,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     pickupRingGeometry: new THREE.TorusGeometry(0.82, 0.06, 4, 16),
     pickupBeamGeometry: new THREE.PlaneGeometry(0.42, 3.4),
     pickupHaloGeometry: new THREE.CircleGeometry(0.9, 18),
-    pickupMaterials: Object.fromEntries(POWER_TYPES.map((type) => [type, makePickupMaterial(type, CITY_RUSH_POWER_RULES[type].color)])),
-    pickupRingMaterials: Object.fromEntries(POWER_TYPES.map((type) => [type, new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type].color, transparent: true, opacity: 0.95, toneMapped: false })])),
-    pickupBeamMaterials: Object.fromEntries(POWER_TYPES.map((type) => [type, new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type].color, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false })])),
+    pickupMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
+      type,
+      makePickupMaterial(type, CITY_RUSH_POWER_RULES[type]?.color || CITY_RUSH_HEALTH_PICKUP_COLOR),
+    ])),
+    pickupRingMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
+      type,
+      new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type]?.color || CITY_RUSH_HEALTH_PICKUP_COLOR, transparent: true, opacity: 0.95, toneMapped: false }),
+    ])),
+    pickupBeamMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
+      type,
+      new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type]?.color || CITY_RUSH_HEALTH_PICKUP_COLOR, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+    ])),
     boostPadGeometry: new THREE.BoxGeometry(1.62, 0.08, 3.4),
     boostPadMaterial: standard(0x09251a, { roughness: 0.38, metalness: 0.48, emissive: 0x0a6336, emissiveIntensity: 0.72 }),
     boostPadEdgeGeometry: new THREE.BoxGeometry(1, 1, 1),
@@ -2077,18 +2114,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackRelativeY = (trackDistance) => trackProfile.elevation(trackDistance) - trackProfile.elevation(distance);
   const trackPitch = (trackDistance) => trackProfile.pitch(trackDistance);
   const trackYaw = (trackDistance) => trackProfile.yaw(trackDistance);
-  const miniGarageLane = cityRushMiniGarageLane(city);
-  const miniGarageMaterials = sprint ? null : makeMiniGarageMaterials(city);
+  const miniGarageLanes = cityRushMiniGarageLanes(city);
+  const miniGarageMaterials = sprint ? null : makeMiniGarageMaterials(city, miniGarageLanes);
   // Une seule porte par course : celle de mi-course, à la moitié du parcours.
   const miniGarageTrackDistances = cityRushMiniGarageTrackDistances({ laps: effectiveLaps });
   const miniGarages = sprint ? [] : miniGarageTrackDistances.map((trackDistance, index) => {
-    const group = makeMiniGarageObject(index + 1, miniGarageMaterials);
-    group.userData.lane = miniGarageLane;
+    const group = makeMiniGarageObject(index + 1, miniGarageMaterials, miniGarageLanes);
     scene.add(group);
     return {
       index: index + 1,
       group,
-      lane: miniGarageLane,
+      lanes: miniGarageLanes,
       trackDistance,
       used: false,
     };
@@ -2340,7 +2376,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     const gap = garage.trackDistance - distance;
     garage.group.position.set(
-      laneX(garage.lane) + trackRelativeX(garage.trackDistance),
+      trackRelativeX(garage.trackDistance),
       trackRelativeY(garage.trackDistance),
       PLAYER_Z - gap * SCALE,
     );
@@ -2408,7 +2444,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         nextDistance: distance,
         garageExitDistance,
         playerLane,
-        garageLane: garage.lane,
+        garageLanes: garage.lanes,
         sprint,
         used: garage.used,
       })) {
@@ -3238,7 +3274,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     data.baseX = x;
     data.baseY = y;
     data.specs = reduceMotion ? [] : cityRushPickupBurstShards(CITY_RUSH_PICKUP_BURST_SHARDS, Math.random);
-    pickupBurstColor.set(CITY_RUSH_POWER_RULES[type]?.color || (type === CITY_RUSH_PICKUPS.BOOST ? CITY_RUSH_TRACK_BOOST_COLOR : '#ffffff'));
+    pickupBurstColor.set(CITY_RUSH_POWER_RULES[type]?.color || (
+      type === CITY_RUSH_PICKUPS.HEALTH ? CITY_RUSH_HEALTH_PICKUP_COLOR
+        : type === CITY_RUSH_PICKUPS.BOOST ? CITY_RUSH_TRACK_BOOST_COLOR : '#ffffff'
+    ));
     data.shardMaterial.color.copy(pickupBurstColor);
     data.shardMaterial.opacity = 1;
     data.ringMaterial.color.copy(pickupBurstColor);
@@ -5431,7 +5470,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   // Les choix de voie des rivaux et de la police partagent ces bonus visibles,
   // avec un filtre propre à l'inventaire de chaque voiture.
-  function visiblePickups(actorInventory = null) {
+  function visiblePickups(actorInventory = null, actorHealth = 0, actorMaxHealth = 0) {
     const hideRedForRace = redPickupsHiddenForRace();
     return rows.flatMap((row) => row.pickups
       .map((pickup, index) => ({
@@ -5441,7 +5480,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         visible: row.slots[index]?.visible,
       }))
       .filter((pickup) => !pickup.claimed && pickup.visible)
-      .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, { redPickupsHidden: hideRedForRace })));
+      .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, {
+        redPickupsHidden: hideRedForRace,
+        health: actorHealth,
+        maxHealth: actorMaxHealth,
+      })));
   }
 
   // Fumée de capot : une berline touchée s'embrase et fume avant d'exploser.
@@ -5656,7 +5699,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             distance: police.distance,
             speed: police.currentSpeed || police.baseSpeed,
             availableLanes,
-            pickups: visiblePickups(police.inventory),
+            pickups: visiblePickups(police.inventory, police.health, police.maxHealth),
             traffic: [...traffic, ...oncomingForLanes],
             racers: raceCars,
             targetLane: leader.lane,
@@ -6290,6 +6333,39 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       return;
     }
 
+    if (type === CITY_RUSH_PICKUPS.HEALTH) {
+      const healthBefore = playerHealth;
+      playerHealth = cityRushHealthPickupRepair(playerHealth, playerMaxHealth);
+      const healthRestored = playerHealth - healthBefore;
+      if (healthRestored <= 0) return;
+      playerHealthFlash = 0;
+      score += 100;
+      pickedUp += 1;
+      audioRef?.current?.pickup?.(type, { ready: true });
+      getCallbacks().effect?.({
+        type: 'player-health-pickup',
+        healthBefore,
+        health: playerHealth,
+        maxHealth: playerMaxHealth,
+        healthRestored,
+        lane,
+      });
+      getCallbacks().pickup?.({
+        type,
+        progress: healthRestored,
+        chargeCost: CITY_RUSH_HEALTH_PICKUP_RESTORE,
+        ready: true,
+        newlyReady: true,
+        autoActivated: true,
+        health: playerHealth,
+        maxHealth: playerMaxHealth,
+        healthRestored,
+        lane,
+      });
+      emitHud(true);
+      return;
+    }
+
     const before = inventory[type] || 0;
     const pickupAmount = type === CITY_RUSH_POWERS.PISTOL ? CITY_RUSH_PISTOL_AMMO_PER_PICKUP : 1;
     inventory = addCityRushCharge(inventory, type, pickupAmount);
@@ -6310,6 +6386,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function collectRacerPickup(racer, type) {
+    if (type === CITY_RUSH_PICKUPS.HEALTH) {
+      racer.health = cityRushHealthPickupRepair(racer.health, racer.maxHealth || cityRushCarMaxHealth(racer.profile));
+      racer.healthFlash = 0;
+      return;
+    }
     if (type === CITY_RUSH_PICKUPS.BOOST) {
       racer.boostLeft = Math.max(racer.boostLeft, CITY_RUSH_TRACK_BOOST_DURATION);
       getCallbacks().effect?.({ type: 'rival-boost', rival: racer.name });
@@ -6325,6 +6406,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Un policier ne marque pas de points : il empoche le bonus, et la page
   // prévient quand un rouge ou un jaune est raflé sous le nez du joueur.
   function collectPolicePickup(police, type, lane) {
+    if (type === CITY_RUSH_PICKUPS.HEALTH) {
+      police.health = cityRushHealthPickupRepair(
+        police.health,
+        police.maxHealth || cityRushPoliceMaxHealth(police.vehicleType || police.type),
+      );
+      police.healthFlash = 0;
+      return;
+    }
     if (type === CITY_RUSH_PICKUPS.BOOST) {
       police.boostLeft = Math.max(police.boostLeft || 0, CITY_RUSH_TRACK_BOOST_DURATION);
       return;
@@ -6356,11 +6445,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const rowRecycleAnchor = distance;
     const hideRedForRace = redPickupsHiddenForRace();
     const participants = [
-      { id: 'player', distance, lane: playerLane, speed: currentSpeed },
-      ...racers.map((racer) => ({ id: racer.id, distance: racer.distance, lane: racer.lane, speed: racer.stunLeft > 0 ? 0 : racer.baseSpeed, racer })),
-      // La police peut charger sa mitrailleuse avec les mêmes bonus rouges.
+      { id: 'player', distance, lane: playerLane, speed: currentSpeed, health: playerHealth, maxHealth: playerMaxHealth },
+      ...racers.map((racer) => ({
+        id: racer.id,
+        distance: racer.distance,
+        lane: racer.lane,
+        speed: racer.stunLeft > 0 ? 0 : racer.baseSpeed,
+        health: racer.health,
+        maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
+        racer,
+      })),
+      // La police peut charger sa mitrailleuse ou reprendre un carré comme les pilotes.
       ...activePursuers().map((police) => ({
-        id: police.id, distance: police.distance, lane: police.lane, speed: police.currentSpeed, racer: police, police: true,
+        id: police.id,
+        distance: police.distance,
+        lane: police.lane,
+        speed: police.currentSpeed,
+        health: police.health,
+        maxHealth: police.maxHealth || cityRushPoliceMaxHealth(police.vehicleType || police.type),
+        racer: police,
+        police: true,
       })),
     ].sort((a, b) => b.distance - a.distance);
 
@@ -6415,7 +6519,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const pickupIndex = row.pickups.findIndex((item, index) => (
           item.lane === participant.lane
           && !isCityRushPickupHidden(row.pickupClaims, index, elapsed)
-          && canCollectCityRushPickup(participantInventory, item.type, { redPickupsHidden: hideRedForRace })
+          && canCollectCityRushPickup(participantInventory, item.type, {
+            redPickupsHidden: hideRedForRace,
+            health: participant.health,
+            maxHealth: participant.maxHealth,
+          })
         ));
         if (pickupIndex < 0) continue;
         markCityRushPickupTaken(row.pickupClaims, pickupIndex, elapsed, CITY_RUSH_PICKUP_RESPAWN_DELAY);
@@ -6871,7 +6979,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
       const requestedRacerSpeeds = new Map();
       const priorRacerXs = new Map();
-      const aiPickups = new Map(racers.map((racer) => [racer.id, visiblePickups(racer.inventory)]));
+      const aiPickups = new Map(racers.map((racer) => [
+        racer.id,
+        visiblePickups(racer.inventory, racer.health, racer.maxHealth || cityRushCarMaxHealth(racer.profile)),
+      ]));
       // Les rivaux courent pour gagner : distance du leader de la course (le
       // pilote compris), et voie, tremplins et armes sont relus dans ce sens.
       const raceLeaderDistance = Math.max(distance, ...racers.map((racer) => racer.distance));

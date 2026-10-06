@@ -196,8 +196,8 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   assert.match(page, /miniGaragesActive: false/, 'le compteur n’est pas disponible au départ');
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
     'le compteur des garages n’apparaît qu’avec une porte en approche');
-  assert.match(page, /un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours/);
-  assert.match(page, /rend aussi jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/,
+  assert.match(page, /un seul mini-garage élargi, placé au centre de la chaussée[\s\S]*?voies 3 et 4/);
+  assert.match(page, /rend aussi jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} carrés de vie/,
     'le bandeau annonce la réparation rendue par le portique');
 
   // Une seule porte, ouverte dès le départ : plus aucune n'attend le dernier
