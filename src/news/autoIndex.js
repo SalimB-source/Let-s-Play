@@ -1,7 +1,39 @@
 // ⚙️ FICHIER GÉNÉRÉ par scripts/news-bot/fetch-news.mjs — ne pas éditer à la main.
-// Dernière génération : 2026-10-05T11:46:42.995Z — 31 article(s).
+// Dernière génération : 2026-10-06T11:27:30.449Z — 32 article(s).
 // Ce module alimente la page Actus et les routes /news/<slug> du site.
 export const autoStories = {
+  "gta-6-rockstar-explique-pourquoi-le-jeu-ne-fera-pas-trop-de": {
+    "slug": "gta-6-rockstar-explique-pourquoi-le-jeu-ne-fera-pas-trop-de",
+    "date": "06.10.2026",
+    "category": "ACTUALITÉ · ACTUGAMING",
+    "image": "news-auto/gta-6-rockstar-explique-pourquoi-le-jeu-ne-fera-pas-trop-de-official.jpg",
+    "imageAlt": "GTA 6 : Rockstar explique pourquoi le jeu ne fera pas trop de références directes aux événements politiques actuels — visuel éditorial Let’s Play",
+    "cover": "ROCKSTAR",
+    "title": "GTA 6 : ROCKSTAR",
+    "accent": "EXPLIQUE POURQUOI LE.",
+    "dek": "En 2018, Dan Houser s’estimait heureux de ne pas devoir sortir GTA 6 immédiatement, afin d’éviter de publier le jeu durant le premier mandat de Donald Trump.",
+    "lead": "S’il pensait cela, c’était parce qu’il pensait que la satire d’un tel gouvernement devenait difficile, tant la réalité dépassait rapidement la fiction ( The Boys l’a prouvé).",
+    "intro": "En 2026, Rockstar va pourtant devoir sortir son GTA 6 dans une Amérique qui est encore gouvernée par le même président orange, et c’est en partie pour cela que le studio se passera bien de références trop directes aux problèmes sociétaux du moment.",
+    "h2": "LES FAITS",
+    "p1": "C’est ce qu’a expliqué Rupert Humphries, vice-président en charge de la division narration chez Rockstar, auprès du magazine Love (relayé par Eurogamer).",
+    "quote": "Humphries reconnaît que cette région donne beaucoup de matière, même si GTA 6 évitera les références trop marquées :",
+    "quoteBy": "L’ANALYSE LET’S PLAY",
+    "h2b": "LE CONTEXTE",
+    "p2": "GTA 6 ne devrait pas être trop direct dans ses références à la société actuelle, car selon Humphries, il fallait faire en sorte que le jeu soit pertinent sur la durée pendant des années : « Si une tendance explose pendant six mois, vous devez la voir pour ce qu’elle est sans vous précipiter pour la pourchasser ».",
+    "p3": "Pour se justifier, il déclare que même les précédents jeux GTA ont évité de trop s’appuyer sur des éléments politiques (ah bon ?), en faisant exception de GTA IV qui arrivait dans un contexte post-11 septembre, après la mise en place de la loi antiterroriste Patriot Act : « Si l’on regarde les précédents GTA, la politique nationale n’a jamais vraiment été au cœur du sujet. L’essor du département de la Sécurité intérieure et le Patriot Act occupaient une place importante dans GTA 4, mais c’était surtout parce que le New York post-11 septembre était vraiment central pour tous ces problèmes. Nous cherchons à créer des jeux qui semblent parfaitement ancrés dans leur époque de sortie, sans pour autant refléter fidèlement le monde dans lequel nous vivons, sans être trop précis à propos d’une personne, d’un événement ou d’un mouvement en particulier. »",
+    "p4": "Cet article a été préparé automatiquement par la rédaction Let’s Play à partir de la source citée ci-dessous. La rédaction suivra les prochaines annonces pour compléter le dossier. Et vous, qu’avez-vous envie de voir en premier ? Dites-le dans les commentaires.",
+    "take": "À RETENIR",
+    "takeText": "En 2018, Dan Houser s&rsquo;estimait heureux de ne pas devoir sortir GTA 6 immédiatement, afin d&rsquo;éviter de publier le jeu durant le premier [...]",
+    "source": "D’après ActuGaming, article consulté le 06.10.2026.",
+    "sourceUrl": "https://www.actugaming.net/gta-6-rockstar-explique-pourquoi-le-jeu-ne-fera-pas-trop-de-references-directes-aux-evenements-societaux-actuels-828545/",
+    "sourceDetail": "Lire l’article source",
+    "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
+    "sentiment": "positive",
+    "thumbnail": "news-auto/gta-6-rockstar-explique-pourquoi-le-jeu-ne-fera-pas-trop-de-official.jpg",
+    "officialThumbnailUrl": "https://static.actugaming.net/media/2026/08/gta-6-jason-duval-07-889x500.jpg",
+    "auto": true,
+    "sourceName": "ActuGaming"
+  },
   "j-ai-fait-ce-que-j-ai-pu-il-n-y-aura-pas-de-version-physique": {
     "slug": "j-ai-fait-ce-que-j-ai-pu-il-n-y-aura-pas-de-version-physique",
     "date": "05.10.2026",
