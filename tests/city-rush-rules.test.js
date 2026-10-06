@@ -97,6 +97,7 @@ import {
   cityRushMiniGarageTrackDistances,
   cityRushMiniGarageCanUse,
   cityRushMiniGarageRepair,
+  cityRushMiniGarageWantedLevel,
   cityRushMiniGarageCanClearWanted,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
@@ -1155,6 +1156,15 @@ test('chaque carte a deux mini-garages traversables sur la voie à droite du sen
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, playerLane: 4 }), false, 'il faut traverser la voie de la porte');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, used: true }), false, 'chaque mini-garage ne sert qu’une fois');
   assert.equal(cityRushMiniGarageCanClearWanted({ ...crossing, previousDistance: exitDistance }), false, 'il faut franchir la sortie pendant cette image');
+});
+
+test('le mini-garage baisse progressivement les niveaux de recherche élevés', () => {
+  assert.equal(cityRushMiniGarageWantedLevel(5), 4, 'cinq étoiles descendent à quatre');
+  assert.equal(cityRushMiniGarageWantedLevel(4), 3, 'quatre étoiles descendent à trois');
+  assert.equal(cityRushMiniGarageWantedLevel(3), 0, 'trois étoiles sont entièrement effacées');
+  assert.equal(cityRushMiniGarageWantedLevel(2), 0);
+  assert.equal(cityRushMiniGarageWantedLevel(1), 0);
+  assert.equal(cityRushMiniGarageWantedLevel(0), 0);
 });
 
 test('la porte de mi-course s’ouvre dès le départ, celle du dernier tour attend le dernier tour, jamais en Sprint', () => {

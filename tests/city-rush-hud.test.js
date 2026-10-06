@@ -141,15 +141,16 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(world, /while \(!garage\.used && garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance\)/,
     'le garage reste visible jusqu’à ce que la voiture en sorte');
   assert.match(world, /cityRushMiniGarageCanUse\(/);
-  assert.match(world, /wantedLevel = 0;[\s\S]*?type: 'mini-garage-used'/,
-    'la sortie du mini-garage remet le niveau à zéro et annonce son usage');
+  assert.match(world, /wantedLevel = cityRushMiniGarageWantedLevel\(previousStars\);[\s\S]*?type: 'mini-garage-used'/,
+    'la sortie du mini-garage baisse le niveau selon le nombre d’étoiles et annonce son usage');
   assert.match(world, /miniGaragesRemaining: miniGarages\.filter\(\(garage\) => !garage\.used\)\.length/);
   assert.match(page, /miniGaragesRemaining:\s*CITY_RUSH_MINI_GARAGE_COUNT/);
   assert.match(page, /city-rush-gta-garages/);
   assert.match(page, /MINI-GARAGES/);
   assert.match(page, /MINI-GARAGE DANS \$\{miniGarageNextDistance\} M/,
     'le compteur annonce la distance de la prochaine porte');
-  assert.match(page, /effect\.previousStars > 0 \? `\$\{effect\.previousStars\} ÉTOILES EFFACÉES/);
+  assert.match(page, /`\$\{previousStars\} → \$\{currentStars\} ÉTOILE/,
+    'le bandeau affiche clairement la baisse du nombre d’étoiles');
   assert.match(page, /Number\(effect\.healthRestored\)/, 'le bandeau annonce la réparation réellement reçue');
   assert.match(page, /POINT\$\{restored === 1 \? '' : 'S'\} DE VIE/);
   assert.match(page, /Number\(effect\.pursuersReleased\) > 0[\s\S]*?LA POLICE ABANDONNE LA POURSUITE/,

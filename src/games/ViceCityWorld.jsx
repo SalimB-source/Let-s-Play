@@ -137,6 +137,7 @@ import {
   cityRushMiniGarageCanUse,
   cityRushMiniGarageKindAt,
   cityRushMiniGarageRepair,
+  cityRushMiniGarageWantedLevel,
   cityRushMiniGarageTrackDistances,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
@@ -2182,12 +2183,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerHealthFlash = 0;
     garage.used = true;
     policeDestroyedByPlayer = 0;
-    wantedLevel = 0;
+    wantedLevel = cityRushMiniGarageWantedLevel(previousStars);
     garage.group.userData.used = true;
     garage.group.visible = false;
-    // Sortir du portique coupe la poursuite : les berlines qui chassaient le
-    // pilote se remettent à rouler normalement et l'abandonnent.
-    const pursuersReleased = releasePolicePursuit({ targetId: 'player' });
+    // À trois étoiles ou moins, le portique coupe entièrement la poursuite.
+    // À quatre ou cinq, elle continue au niveau réduit (4 → 3, 5 → 4).
+    const pursuersReleased = wantedLevel === 0
+      ? releasePolicePursuit({ targetId: 'player' })
+      : 0;
     const remaining = miniGarages.filter((item) => !item.used).length;
     const healthRestored = playerHealth - healthBefore;
     // Le passage à l'atelier s'entend : pont élévateur, clé à chocs, capot

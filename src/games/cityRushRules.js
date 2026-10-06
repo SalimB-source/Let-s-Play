@@ -3445,7 +3445,17 @@ export function cityRushMiniGarageCanUse({
     && Number(playerLane) === Number(garageLane);
 }
 
-/** Un passage valide efface les étoiles actives en plus de réparer la coque. */
+/**
+ * Niveau de recherche à la sortie d'un mini-garage.
+ * Les niveaux les plus dangereux ne sont réduits que d'un cran ; à trois
+ * étoiles ou moins, le garage suffit à semer complètement la police.
+ */
+export function cityRushMiniGarageWantedLevel(level = 0) {
+  const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(level) || 0)));
+  return stars > 3 ? stars - 1 : 0;
+}
+
+/** Un passage valide baisse les étoiles actives en plus de réparer la coque. */
 export function cityRushMiniGarageCanClearWanted(options = {}) {
   return cityRushMiniGarageCanUse(options) && Math.floor(Number(options.wantedLevel) || 0) > 0;
 }
