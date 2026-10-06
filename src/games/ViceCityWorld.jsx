@@ -262,6 +262,30 @@ const POLICE_SKID_SMOKE_INTERVAL = 0.075;
 // Maintien de Z : une balle part à intervalle régulier jusqu'à la relâche ou
 // l'épuisement du chargeur, indépendamment de la répétition native du clavier.
 const PISTOL_HOLD_FIRE_INTERVAL = 0.12;
+// Maintien des flèches : garder ← (ou Q) / → (ou D) enfoncé enchaîne les
+// changements de voie tout seul, un écart par cran, jusqu'à la relâche. Le
+// pilote n'a plus à marteler la touche pour traverser la chaussée : la cadence
+// est calée sur le glissement latéral de la voiture (`playerX` rejoint
+// `laneX(playerLane)` à raison de `dt * 12`), donc chaque écart est presque
+// terminé quand le suivant démarre et la dérive reste lisible. La répétition
+// native du clavier, elle, est ignorée (`event.repeat`) : trop lente au premier
+// cran puis incontrôlable, elle ne donnait ni fluidité ni précision.
+// Comme au clavier système, la répétition attend un court délai avant de
+// démarrer, puis enchaîne à sa cadence : un appui simplement un peu long reste
+// **un** écart — en avaler deux par accident, c'est un pare-chocs dans le
+// trafic. Le délai est plus court que celui du système (0,26 s contre 0,5 s) :
+// traverser la chaussée doit rester immédiat.
+const STEER_HOLD_FIRST_DELAY = 0.26;
+const STEER_HOLD_LANE_INTERVAL = 0.18;
+// Les quatre touches du volant, AZERTY compris : les deux paires tiennent la
+// même direction, mais chaque touche est suivie **physiquement** — relâcher Q
+// pendant que ← reste enfoncé ne coupe pas le maintien.
+const STEER_KEY_DIRECTIONS = Object.freeze({
+  arrowleft: 'left',
+  q: 'left',
+  arrowright: 'right',
+  d: 'right',
+});
 // Caméra de poursuite plus basse que l'ancienne vue plongeante (8,8 m) :
 // on voit l'horizon, la skyline, les portes et le portique de départ. Tout
 // élément qui enjambe la route doit rester au-dessus de 7,1 m.
@@ -2116,6 +2140,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let inventory = createCityRushInventory();
   let pistolKeyHeld = false;
   let pistolHoldCooldown = 0;
+  // Maintien des flèches : `steerKeysHeld` liste les touches physiques encore
+  // enfoncées avec leur direction, dans l'ordre de pression — Q et ← peuvent
+  // l'être ensemble sans se couper l'un l'autre. `steerHoldDirection` est la
+  // direction qui pilote le volant (la dernière touche pressée gagne) et
+  // `steerHoldCooldown` le temps restant avant le prochain écart.
+  const steerKeysHeld = new Map();
+  let steerHoldDirection = null;
+  let steerHoldCooldown = 0;
   let finished = false;
   let lastHudAt = 0;
   let lastFrame = performance.now();
@@ -2136,6 +2168,40 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const releasePistolKey = () => {
     pistolKeyHeld = false;
     pistolHoldCooldown = 0;
+  };
+  // Une pression de flèche répond tout de suite, puis le maintien prend le
+  // relais : le deuxième écart part `STEER_HOLD_FIRST_DELAY` plus tard (le
+  // délai de répétition), les suivants s'enchaînent à
+  // `STEER_HOLD_LANE_INTERVAL` tant qu'une touche reste enfoncée. Renvoie vrai
+  // quand la pression doit déclencher l'écart immédiat.
+  const pressSteerKey = (key) => {
+    const direction = STEER_KEY_DIRECTIONS[key];
+    if (!direction) return false;
+    // ← et Q (comme → et D) tiennent la même direction : la seconde touche ne
+    // relance ni écart immédiat ni délai, le maintien est déjà en route.
+    const directionHeld = [...steerKeysHeld.values()].includes(direction);
+    // Réinsérer en dernier : `Map` garde l'ordre de pression, et c'est la
+    // dernière touche pressée qui pilote le volant.
+    steerKeysHeld.delete(key);
+    steerKeysHeld.set(key, direction);
+    steerHoldDirection = direction;
+    if (directionHeld) return false;
+    steerHoldCooldown = STEER_HOLD_FIRST_DELAY;
+    return true;
+  };
+  const liftSteerKey = (key) => {
+    if (!steerKeysHeld.has(key)) return;
+    steerKeysHeld.delete(key);
+    // La main revient à la dernière touche encore enfoncée : l'autre flèche, ou
+    // un doublon de la même direction (Q relâché pendant que ← reste enfoncé) —
+    // le maintien continue alors sans repartir de zéro. Plus aucune touche :
+    // le volant se relâche, y compris au milieu d'un écart.
+    steerHoldDirection = steerKeysHeld.size ? [...steerKeysHeld.values()].pop() : null;
+  };
+  const releaseSteerKeys = () => {
+    steerKeysHeld.clear();
+    steerHoldDirection = null;
+    steerHoldCooldown = 0;
   };
   const cameraTarget = new THREE.Vector3().copy(CHASE_POSITION);
   const lookTarget = new THREE.Vector3().copy(CHASE_LOOK);
@@ -2741,6 +2807,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function reset() {
     active = false;
     releasePistolKey();
+    releaseSteerKeys();
     clearVisualEffects();
     elapsed = 0;
     distance = 0;
@@ -6722,6 +6789,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL)) {
         if (usePower(CITY_RUSH_POWERS.PISTOL)) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
       }
+      // Maintien des flèches : tant que ← / → (ou Q / D) reste enfoncé, un écart
+      // repart à cadence régulière, sans attendre une nouvelle pression. Une
+      // voie fermée (trafic, saut en cours, toupie) ne fait rien sur le coup :
+      // le cran suivant retente sa chance, ce qui donne le glissement continu
+      // attendu — la voiture se rabat dès que la voie s'ouvre.
+      steerHoldCooldown = Math.max(0, steerHoldCooldown - dt);
+      if (steerHoldDirection && steerHoldCooldown <= 0) {
+        action(steerHoldDirection);
+        steerHoldCooldown = STEER_HOLD_LANE_INTERVAL;
+      }
       elapsed += dt;
       const priorDistance = distance;
       const priorRacerDistances = new Map(racers.map((racer) => [racer.id, racer.distance]));
@@ -7611,9 +7688,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const key = event.key.toLowerCase();
     if (['arrowleft', 'arrowright', 'q', 'd', 'z'].includes(key)) event.preventDefault();
     if (!active || finished || event.repeat) return;
-    if (key === 'arrowleft' || key === 'q') action('left');
-    else if (key === 'arrowright' || key === 'd') action('right');
-    else if (key === 'z') {
+    const steerDirection = STEER_KEY_DIRECTIONS[key];
+    if (steerDirection) {
+      // La première pression répond tout de suite ; les écarts suivants sont
+      // cadencés par la boucle de rendu tant que la touche reste enfoncée.
+      if (pressSteerKey(key)) action(steerDirection);
+    } else if (key === 'z') {
       pistolKeyHeld = true;
       pistolHoldCooldown = 0;
       action(CITY_RUSH_POWERS.PISTOL);
@@ -7623,11 +7703,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
   function onKeyUp(event) {
-    if (event.key.toLowerCase() !== 'z') return;
+    const key = event.key.toLowerCase();
+    // La relâche s'écoute même hors course : un maintien enregistré puis mis en
+    // pause ne doit pas repartir tout seul au retour en piste.
+    if (STEER_KEY_DIRECTIONS[key]) { liftSteerKey(key); return; }
+    if (key !== 'z') return;
     event.preventDefault();
     releasePistolKey();
   }
-  const onWindowBlur = () => releasePistolKey();
+  const onWindowBlur = () => {
+    // Fenêtre quittée : plus aucune touche n'est fiable, on lâche tout.
+    releasePistolKey();
+    releaseSteerKeys();
+  };
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', onWindowBlur);
@@ -7694,6 +7782,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     pause() {
       active = false;
       releasePistolKey();
+      // Pause : le maintien des flèches s'arrête net, la reprise ne repart pas
+      // d'elle-même dans une direction laissée enfoncée avant la pause.
+      releaseSteerKeys();
       currentSpeed = 0;
       audioRef?.current?.engine({ speed: 0, throttle: 0, idle: true });
     },
@@ -7730,6 +7821,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onWindowBlur);
       releasePistolKey();
+      releaseSteerKeys();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.domElement.removeEventListener('pointercancel', onPointerCancel);

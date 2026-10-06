@@ -1172,6 +1172,39 @@ et le dernier tour durait 21 s.
   ralentissement, et le seul levier « voie » reste ≥ 1) et
   `tests/city-rush-hud.test.js` (le malus ne doit réapparaître ni dans le monde
   ni dans la page).
+- **Maintenir la flèche enchaîne les écarts.** Garder `←` / `→` (ou `Q` / `D`)
+  enfoncé décale la voiture **voie par voie, tout seul**, jusqu'à la relâche :
+  plus besoin de marteler la touche pour traverser la chaussée. Le calendrier
+  est celui d'un clavier système, dans `ViceCityWorld.jsx` — l'écart part à
+  l'image même de la pression, le **deuxième** attend le délai de répétition
+  `STEER_HOLD_FIRST_DELAY` = **0,26 s**, les suivants s'enchaînent à
+  `STEER_HOLD_LANE_INTERVAL` = **0,18 s** : un appui simplement un peu long
+  reste **un** écart (en avaler deux par accident, c'est un pare-chocs dans le
+  trafic), tandis qu'un vrai maintien traverse les six voies en ~0,8 s. La
+  cadence est calée sur le glissement latéral (`playerX` rejoint
+  `laneX(playerLane)` à raison de `dt * 12`) : chaque écart est presque terminé
+  quand le suivant démarre, la dérive reste lisible et continue. C'est le même
+  schéma que le maintien de `Z` à l'AK-47 (`PISTOL_HOLD_FIRE_INTERVAL`), et la
+  **répétition native du clavier est ignorée** (`event.repeat`) : trop lente au
+  premier cran puis incontrôlable, elle ne donnait ni fluidité ni précision.
+  Une voie fermée (trafic, contresens, berline) ne déclenche rien sur le coup ;
+  le cran suivant retente sa chance et la voiture se rabat dès que la voie
+  s'ouvre. En l'air, le volant ne répond toujours pas
+  (`cityRushLaneAfterAction`). Les touches sont suivies **physiquement**
+  (`STEER_KEY_DIRECTIONS`, `steerKeysHeld` en `Map` ordonnée) : les deux
+  flèches enfoncées ensemble donnent la main à **la dernière pressée**, et la
+  relâcher rend la main à celle qui reste enfoncée ; `Q` et `←` tiennent la même
+  direction sans doublonner la cadence ni se couper l'un l'autre. Le maintien
+  est lâché à la relâche, en pause, à la perte de la fenêtre (`blur`), au
+  `reset()` et au démontage : aucune touche ne reste coincée, et une touche
+  tenue pendant le compte à rebours ne décale pas la voiture au feu vert. La
+  page l'annonce — `← → / Q D : VOIES (MAINTENIR)` dans le pied de l'écran de
+  préparation et le rappel bureau, plus une phrase dans le règlement du mode.
+  Deux vérifications le tiennent : « maintenir une flèche enchaîne les
+  changements de voie jusqu'à la relâche » (`tests/city-rush-hud.test.js`) et
+  `npm run check:city-rush-steer-hold`, qui dispatche de **vrais événements
+  clavier** dans le moteur et mesure le calendrier image par image (60 Hz) sur
+  les cinq villes, conduite à droite comme à gauche.
 - **Le contresens paie — tant qu'on y reste.** Les **trois voies en sens
   inverse** (à gauche de l'axe jaune en conduite à droite, à droite à Londres et
   sur la Shuto) chargent une **jauge de vitesse cumulative** : `playerOncomingTime`
@@ -1543,6 +1576,7 @@ npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
 npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring), herse et SUV d'interception vérifiés sans leurs dégâts
+npm run check:city-rush-steer-hold # le maintien des flèches : une pression = un écart, le maintien enchaîne (délai 0,26 s puis 0,18 s) jusqu'au bord de la chaussée, la relâche / la pause / la perte de la fenêtre arrêtent tout, Q et D alignés, répétition native ignorée
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
