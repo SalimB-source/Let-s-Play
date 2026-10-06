@@ -505,6 +505,38 @@ function surfaceYAt(model, z, x) {
   return best;
 }
 
+/**
+ * Élément posé au bord du pavillon (barre de toit, rail, galerie) : il suit la
+ * vraie largeur et la vraie hauteur du toit d'une station à l'autre au lieu de
+ * flotter au-dessus de la carrosserie.
+ */
+function addRoofEdgeRail(batch, material, model, { startZ, endZ, edge = 0.86, height = 0.05, width = 0.055, lift = 0.02 }) {
+  // Une barre continue par côté, calée sur la **largeur minimale** du pavillon
+  // (elle ne dépasse jamais) et sur sa hauteur moyenne (elle ne flotte pas).
+  let narrowest = Infinity;
+  const steps = 6;
+  for (let index = 0; index <= steps; index += 1) {
+    const z = lerp(startZ, endZ, index / steps);
+    const [, , , , , roofWidth] = sampleCarStation(model, z);
+    narrowest = Math.min(narrowest, Math.min(roofWidth * edge, halfWidthAt(model, z) * 0.94));
+  }
+  // Le rail suit la ligne de pavillon : chaque tronçon se pose sur la hauteur
+  // réelle du toit à sa station, avec un léger recouvrement pour rester continu.
+  const span = Math.abs(endZ - startZ);
+  const segments = 6;
+  for (const side of [-1, 1]) {
+    for (let index = 0; index < segments; index += 1) {
+      const z = lerp(startZ, endZ, (index + 0.5) / segments);
+      const roof = sampleCarStation(model, z)[4];
+      batch.box(
+        material,
+        [side * narrowest, roof + lift + height / 2, z],
+        [width, height, (span / segments) * 1.2],
+      );
+    }
+  }
+}
+
 /** Demi-largeur de la carrosserie à une station. */
 function halfWidthAt(model, z) {
   return sampleCarStation(model, z)[1];
@@ -609,18 +641,24 @@ function wheelCenterX(model, z) {
 
 /** Rayon de l'ouverture d'aile : le pneu garde un jeu constant sous la coque. */
 function archRadius(model) {
-  return model.wheelRadius + 0.052;
+  return model.wheelRadius + 0.04;
 }
 
-/** Vrai si le point (x, y, z) tombe dans une ouverture d'aile. */
+/**
+ * Vrai si le point (x, y, z) tombe dans une ouverture d'aile. L'ouverture est
+ * volontairement un **demi-cercle au-dessus de l'axe de roue** : le bas de
+ * caisse (seuil) reste plein derrière la roue, comme sur une vraie carrosserie —
+ * creuser plus bas ouvrait la voiture sur toute sa hauteur.
+ */
 function insideWheelArch(model, x, y, z, radius = archRadius(model)) {
   const side = x < 0 ? -1 : 1;
+  const dy = y - model.wheelRadius;
+  if (dy < -0.015) return false;
   for (const wheelZ of model.wheelZ) {
     if (Math.abs(z - wheelZ) > radius) continue;
     const centerX = wheelCenterX(model, wheelZ);
     if (x * side < centerX - 0.16) continue;
     const dx = x - side * centerX;
-    const dy = y - model.wheelRadius;
     if (dx * dx + dy * dy < radius * radius) return true;
   }
   return false;
@@ -739,7 +777,7 @@ function addRacingStripes(batch, material, stations, startZ, endZ, centers = [-0
  * Sans lui, la coque percée laisserait voir l'intérieur de la voiture.
  */
 function addWheelWells(batch, material, model) {
-  const radius = archRadius(model) - 0.008;
+  const radius = archRadius(model) - 0.006;
   for (const side of [-1, 1]) {
     for (const z of model.wheelZ) {
       const centerX = wheelCenterX(model, z);
@@ -760,7 +798,7 @@ function addWheelWells(batch, material, model) {
 }
 
 function addWheelArch(batch, material, model) {
-  const geometry = new THREE.TorusGeometry(model.wheelRadius + 0.055, 0.024, 5, 22, Math.PI);
+  const geometry = new THREE.TorusGeometry(model.wheelRadius + 0.042, 0.02, 5, 22, Math.PI);
   // Le demi-tore passe par le haut de la roue, dans le plan YZ.
   geometry.rotateY(Math.PI / 2);
   for (const side of [-1, 1]) {
@@ -1054,13 +1092,13 @@ function addThumbnailSignature(profile, spec, batch, materials) {
   const { black, trim, chrome, livery } = materials;
   if (archetype === 'city-hatch') {
     for (const side of [-1, 1]) {
-      batch.box(black, [side * 0.62, 0.91, -1.02], [0.035, 0.018, 0.48]);
-      batch.box(trim, [side * 0.82, 0.51, 0.08], [0.028, 0.028, 2.24]);
+      batch.box(black, [side * halfWidthAt(spec, -1.02) * 0.64, surfaceYAt(spec, -1.02, halfWidthAt(spec, -1.02) * 0.64) + 0.005, -1.02], [0.035, 0.016, 0.44]);
+      batch.box(trim, [side * (halfWidthAt(spec, 0.08) - 0.008), 0.51, 0.08], [0.028, 0.028, 2.24]);
     }
   } else if (archetype === 'nova-hatch') {
     for (const side of [-1, 1]) {
-      batch.box(trim, [side * 0.91, 0.67, 0.10], [0.025, 0.035, 2.18]);
-      batch.box(black, [side * 0.77, 1.39, 0.12], [0.025, 0.025, 1.18]);
+      batch.box(trim, [side * (halfWidthAt(spec, 0.10) - 0.006), 0.67, 0.10], [0.025, 0.035, 2.18]);
+      addRoofEdgeRail(batch, black, spec, { startZ: -0.5, endZ: 0.72, edge: 0.66, height: 0.026, width: 0.026, lift: 0.006 });
     }
   } else if (archetype === 'ferrari') {
     addRacingStripes(batch, trim, spec.stations, -1.58, -0.38, [-0.10, 0.10]);
@@ -1081,9 +1119,10 @@ function addThumbnailSignature(profile, spec, batch, materials) {
     addRacingStripes(batch, trim, spec.stations, -1.55, 1.45, [-0.11, 0.11]);
     for (const side of [-1, 1]) batch.box(trim, [side * 0.94, 0.50, 0.18], [0.032, 0.034, 1.58]);
   } else if (archetype === 'sport-crossover') {
+    // Rails de toit réellement posés sur le pavillon, qui suivent sa largeur.
+    addRoofEdgeRail(batch, trim, spec, { startZ: -0.95, endZ: 1.12, edge: 0.80, height: 0.055, width: 0.07, lift: 0.012 });
     for (const side of [-1, 1]) {
-      batch.box(trim, [side * 0.99, 1.49, 0.10], [0.07, 0.055, 2.28]);
-      batch.box(black, [side * 0.94, 0.52, 0.20], [0.035, 0.035, 2.52]);
+      batch.box(black, [side * (halfWidthAt(spec, 0.2) - 0.03), 0.52, 0.20], [0.035, 0.035, 2.52]);
     }
   } else if (archetype === 'neo-roadster') {
     addRacingStripes(batch, trim, spec.stations, -1.30, 1.36, [-0.10, 0.10]);

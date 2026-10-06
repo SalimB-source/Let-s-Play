@@ -1406,6 +1406,11 @@ et le dernier tour durait 21 s.
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes (et leurs **pilotes à
   visage découvert**, voir « Les pilotes dans le cockpit »), trafic, fumée ;
+- `src/games/cityRushRacerModels.js` — les onze carrosseries de course, et
+  `scripts/city-rush-car-preview.mjs` (ou `npm run preview:city-rush-cars`) —
+  rendu **logiciel** des onze voitures (trois angles + planche de contact) pour
+  contrôler les formes sans lancer le jeu ; les images vont dans `.cache/`,
+  ignoré par git ;
 - `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
   dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,

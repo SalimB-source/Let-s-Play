@@ -374,6 +374,29 @@ const VIEWS = [
 mkdirSync(outDir, { recursive: true });
 const profiles = CITY_RUSH_CARS.filter((car) => !onlyCar || car.id === onlyCar || car.archetype === onlyCar);
 
+// ── Planche de contact : les onze voitures d'un coup, même angle. ───────────
+if (args.includes('--sheet')) {
+  const columns = 4;
+  const rows = Math.ceil(profiles.length / columns);
+  const sheetWidth = tileWidth * columns;
+  const sheetHeight = tileHeight * rows;
+  const sheet = new Uint8Array(sheetWidth * sheetHeight * 3);
+  const view = VIEWS[0];
+  profiles.forEach((profile, index) => {
+    const car = makeRacerCar(profile, { player: true, number: index + 1, daylight: true });
+    const tile = render(car, collectTriangles(car), view, tileWidth, tileHeight);
+    const originX = (index % columns) * tileWidth;
+    const originY = Math.floor(index / columns) * tileHeight;
+    for (let y = 0; y < tileHeight; y += 1) {
+      const to = ((originY + y) * sheetWidth + originX) * 3;
+      sheet.set(tile.subarray(y * tileWidth * 3, (y + 1) * tileWidth * 3), to);
+    }
+  });
+  const file = path.join(outDir, 'planche.png');
+  writeFileSync(file, encodePng(sheetWidth, sheetHeight, sheet));
+  console.log(`${profiles.length} voitures → ${path.relative(root, file)}`);
+}
+
 for (const profile of profiles) {
   const car = makeRacerCar(profile, { player: true, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight: true });
   const triangles = collectTriangles(car);
