@@ -1631,6 +1631,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let randomSeed = Math.random;
   let launchSmokeLeft = 0;
   let playerSmokeTimer = 0;
+  let playerDamageSmokeTimer = 0;
+  const playerHoodScratch = new THREE.Vector3();
   let coastSpeed = 0;
   let introAngle = Math.PI * 0.82;
   let countdownTime = 0;
@@ -5735,6 +5737,30 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
       launchSmokeLeft = Math.max(0, launchSmokeLeft - dt);
+      // Fumée de capot du joueur : plus la barre de vie descend, plus elle est
+      // dense, sombre et fréquente (gris léger → panache noir + étincelles).
+      // Opacité plafonnée : la fumée file vers la caméra sans masquer la route.
+      if (!playerWrecked && playerHealth > 0 && playerHealth < CITY_RUSH_PLAYER_HEALTH) {
+        playerDamageSmokeTimer -= dt;
+        if (playerDamageSmokeTimer <= 0) {
+          const damage = 1 - playerHealth / CITY_RUSH_PLAYER_HEALTH;
+          playerDamageSmokeTimer = (lite ? 0.24 : 0.18) - damage * (lite ? 0.12 : 0.12);
+          playerHoodScratch.set((Math.random() - 0.5) * 0.6, 0.95, -1.45);
+          playerCar.localToWorld(playerHoodScratch);
+          const shade = Math.round(0xbe - damage * 0x92);
+          smoke.emit(playerHoodScratch, {
+            color: (shade << 16) | (shade << 8) | (shade + 6),
+            opacity: 0.18 + damage * 0.34,
+            scale: 0.22 + damage * 0.34,
+            grow: 2.0 + damage * 1.1,
+            life: 0.55 + damage * 0.5,
+            velocity: [(Math.random() - 0.5) * 0.6, 1.4 + damage * 1.0, 1.8 + Math.random() * 0.8],
+          });
+          if (playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && Math.random() < 0.35) {
+            smoke.emit(playerHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.13, grow: 1.4, life: 0.3, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), 1.4] });
+          }
+        }
+      }
 
       worldTravel = (distance - priorDistance) * SCALE;
       // Un contact avec une berline de police « pnj » la rappelle : elle sort
