@@ -908,17 +908,15 @@ et le dernier tour durait 21 s.
   `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
   sept balles avec chaque bonus rouge.
 
-  **Deux mini-garages : un à mi-course, un au dernier tour.** Sur chaque carte,
-  deux portiques traversables apparaissent sur la voie la plus à droite du sens
-  de course, jamais en Sprint. Le premier se dresse **à la moitié de la distance
-  totale** — 4 200 m sur les 8 400 m d'un Circuit, pendant le quatrième tour —
-  dès que la course bat son plein, même en Poursuite. Le second attend **le
-  dernier tour** (360 m après son début) : comme l'escouade, il ne se montre pas
-  avant, sauf quand Poursuite la fait entrer dès le premier mètre. Quelques
-  mètres avant chaque entrée, la voie est peinte au sol (flèche et
+  **Un seul mini-garage, à mi-course.** Sur chaque carte, un unique portique
+  traversable apparaît sur la voie la plus à droite du sens de course, jamais en
+  Sprint. Il se dresse **à la moitié de la distance totale** — 4 200 m sur les
+  8 400 m d'un Circuit, pendant le quatrième tour — dès que la course bat son
+  plein, même en Poursuite : aucune porte n'attend plus le dernier tour.
+  Quelques mètres avant l'entrée, la voie est peinte au sol (flèche et
   « GARAGE ») et bordée de chevrons lumineux, avec un panneau de bord de voie
   qui rappelle la distance (`CITY_RUSH_MINI_GARAGE_SIGN_LEAD`) : l'indication
-  naît et disparaît avec sa porte, pour qu'on ne la manque pas. Sortir d'un
+  naît et disparaît avec la porte, pour qu'on ne la manque pas. Sortir du
   portique dans sa voie efface les étoiles et rend **jusqu'à deux cellules de
   vie**, sans dépasser la résistance maximale de la voiture choisie
   (`CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT`, `cityRushMiniGarageRepair`). La
@@ -927,11 +925,11 @@ et le dernier tour durait 21 s.
   reprennent une conduite normale, à l'allure du trafic, dans leur voie — plus
   de tir, plus de barrage, plus de mire —, puis quittent la scène une fois
   distancées ; il faut une nouvelle provocation pour qu'une escouade reparte.
-  Chaque garage ne sert **qu'une fois par course** ; une porte ratée revient au
+  Le garage ne sert **qu'une fois par course** ; la porte ratée revient au
   même repère dans la boucle suivante. Le compteur ne s'allume qu'à l'approche
-  d'une porte utilisable (`CITY_RUSH_MINI_GARAGE_HUD_RANGE`) et le bandeau
-  annonce les points réellement rendus. Un nouveau départ réarme les deux portes
-  et les masque à nouveau.
+  de la porte (`CITY_RUSH_MINI_GARAGE_HUD_RANGE`) et le bandeau annonce les
+  points réellement rendus. Un nouveau départ réarme la porte et la masque à
+  nouveau.
 
   **Les rivaux qui touchent la police reçoivent leur propre poursuivant.** Deux
   voitures supplémentaires sont gardées en réserve, une par rival ; dès qu'un

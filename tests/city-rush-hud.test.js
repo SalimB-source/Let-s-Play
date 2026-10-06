@@ -102,7 +102,7 @@ test('le niveau de recherche à cinq étoiles est explicite, visible et réiniti
     'l’animation de demi-tour progresse avec le temps réel');
 });
 
-test('les étoiles suivent les tirs/destructions et deux mini-garages réparent la coque au dernier tour', () => {
+test('les étoiles suivent les tirs/destructions et l’unique mini-garage répare la coque à mi-course', () => {
   const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
   const policeDestruction = world.match(/function destroyPolice\([\s\S]*?\n  function acquirePoliceWreckHusk/)?.[0] || '';
   assert.match(world, /cityRushWantedLevelAfterHit\(wantedLevel, \{ hit: true, police \}\)/,
@@ -125,7 +125,7 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(world, /miniGaragesRemaining: miniGarages\.filter\(\(garage\) => !garage\.used\)\.length/);
   assert.match(page, /miniGaragesRemaining:\s*CITY_RUSH_MINI_GARAGE_COUNT/);
   assert.match(page, /city-rush-gta-garages/);
-  assert.match(page, /MINI-GARAGES/);
+  assert.match(page, /MINI-GARAGE DISPONIBLE/);
   assert.match(page, /MINI-GARAGE DANS \$\{miniGarageNextDistance\} M/,
     'le compteur annonce la distance de la prochaine porte');
   assert.match(page, /effect\.previousStars > 0 \? `\$\{effect\.previousStars\} ÉTOILES EFFACÉES/);
@@ -136,22 +136,22 @@ test('les étoiles suivent les tirs/destructions et deux mini-garages réparent 
   assert.match(page, /miniGaragesActive: false/, 'le compteur n’est pas disponible au départ');
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
     'le compteur des garages n’apparaît qu’avec une porte en approche');
-  assert.match(page, /l’un à mi-parcours/);
+  assert.match(page, /un seul mini-garage traversable sur la voie la plus à droite, à mi-parcours/);
   assert.match(page, /rend jusqu’à \{CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT\} points de vie/);
 
-  // Une porte de mi-course (ouverte dès le départ) et une porte du dernier tour.
-  assert.match(world, /const kind = cityRushMiniGarageKindAt\(index\)/);
+  // Une seule porte, ouverte dès le départ : plus aucune n'attend le dernier
+  // tour depuis le retrait de celle du dernier tour.
   assert.match(world, /const miniGarageTrackDistances = cityRushMiniGarageTrackDistances\(\{ laps: effectiveLaps \}\)/);
+  assert.doesNotMatch(world, /cityRushMiniGarageKindAt|CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND/,
+    'le monde ne distingue plus de porte de dernier tour');
   const availability = world.match(/function miniGarageAvailable\(garage\)[\s\S]*?\n  function miniGaragesAvailable/)?.[0] || '';
   assert.match(availability, /phase === 'playing' && !finished && !playerWrecked/);
-  assert.match(availability, /garage\.kind === CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND && !policeDeployed/,
-    'la porte du dernier tour attend l’escouade ; celle de mi-course n’attend personne');
-  assert.match(availability, /cityRushMiniGarageAvailable\(\{[\s\S]*?kind: garage\.kind, lap, laps: effectiveLaps, sprint/,
-    'chaque porte interroge son propre tour d’ouverture');
+  assert.match(availability, /return cityRushMiniGarageAvailable\(\{ sprint \}\)/,
+    'la porte ne s’ouvre que hors Sprint, quel que soit le tour');
   const placement = world.match(/function placeMiniGarage\(garage\)[\s\S]*?\n  function setMiniGaragesToStart/)?.[0] || '';
   assert.match(placement, /!miniGarageAvailable\(garage\)/, 'le rendu applique la même disponibilité que le service');
   assert.match(world, /garage\.trackDistance = miniGarageTrackDistances\[index\]/,
-    'chaque porte repart de son repère (mi-course ou dernier tour)');
+    'la porte repart de son repère de mi-course');
   const service = world.match(/function useMiniGarage\([\s\S]*?\n  function updateMiniGarages/)?.[0] || '';
   assert.match(service, /playerHealth = cityRushMiniGarageRepair\(playerHealth, playerMaxHealth\)/,
     'la réparation utilise la résistance de la voiture sélectionnée');
