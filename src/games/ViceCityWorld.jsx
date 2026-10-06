@@ -1277,15 +1277,27 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps') {
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null) {
   // Sprint : course solo à checkpoints, sans police ni arme ; seuls les pads
   // turbo restent disponibles comme bonus.
   const sprint = raceFormat === 'sprint';
+  // Règles spéciales du mode Histoire (`cityRushStory.js`, une entrée par
+  // chapitre) : armes coupées (course pure), police absente (duel, chrono),
+  // coque réduite (survie), voitures/allures imposées aux rivaux (boss) et
+  // panne scriptée (prologue). `null` en mode libre : rien ne change.
+  const storyWeaponsEnabled = storyRules?.weaponsEnabled !== false;
+  const storyPoliceEnabled = storyRules?.policeEnabled !== false;
+  const storyHealthOverride = Number.isFinite(Number(storyRules?.playerHealthOverride)) && Number(storyRules.playerHealthOverride) > 0
+    ? Math.floor(Number(storyRules.playerHealthOverride))
+    : null;
+  const storyRivalCarIds = storyRules?.rivalCarIds && typeof storyRules.rivalCarIds === 'object' ? storyRules.rivalCarIds : null;
+  const storyRivalPace = storyRules?.rivalPace && typeof storyRules.rivalPace === 'object' ? storyRules.rivalPace : null;
+  const storyBreakdown = storyRules?.breakdown && typeof storyRules.breakdown === 'object' ? storyRules.breakdown : null;
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
   // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
   // `laps` × la boucle. Le décor, lui, reste une boucle de 1 200 m qui se répète.
   const effectiveDistance = sprint ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(effectiveLaps);
-  const effectivePoliceFromStart = !sprint && Boolean(policeFromStart);
+  const effectivePoliceFromStart = !sprint && storyPoliceEnabled && Boolean(policeFromStart);
   const theme = cityRushTheme(city.id);
   const lightRig = cityRushLightRig(theme, city);
   const lite = detectLiteQuality();
@@ -1515,7 +1527,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Chaque voiture encaisse selon sa propre coque (`durabilityMultiplier`) :
   // la citadine lente tient 23 carrés, la supercar rapide 7. Les deux rivaux
   // reçoivent la vie de **leur** profil, comme le joueur.
-  const playerMaxHealth = cityRushCarMaxHealth(playerProfile);
+  const playerMaxHealth = storyHealthOverride ?? cityRushCarMaxHealth(playerProfile);
   // Vitesse de pointe de la voiture engagée, rythme du parcours compris : elle
   // règle le streaming (trafic, contresens, rangées de bonus) et le chrono du
   // Sprint. Les trois systèmes étaient calibrés sur une seule vitesse ; ils
@@ -1554,7 +1566,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     { id: 'juno', lane: defaultLanes[2], phase: 2.4, changeIn: 2.1, skidSide: -1 },
   ];
   const racers = racerSpecs.map((spec, index) => {
-    const profile = rivalProfiles[index];
+    const storyProfile = storyRivalCarIds?.[spec.id]
+      ? CITY_RUSH_CARS.find((car) => car.id === storyRivalCarIds[spec.id]) || null
+      : null;
+    const profile = storyProfile || rivalProfiles[index];
     const driver = currentRoster.find((item) => item.id === spec.id) || currentRoster[index + 1];
     return {
       ...spec,
@@ -1885,6 +1900,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Épave : barre à zéro. La voiture tourne sur elle-même dans sa fumée, perd
   // toute vitesse, puis la course est déclarée perdue (`finishRace`).
   let playerWrecked = false;
+  // Panne scriptée du prologue : avertissement, puis calage moteur avant la
+  // ligne (`storyBreakdown`, parts de la distance totale). Tant que la panne
+  // n’a pas frappé, la voiture roule normalement.
+  let storyBreakdownWarned = false;
+  let storyBreakdownActive = false;
+  let storyBreakdownLeft = 0;
+  let storyBreakdownSmokeTimer = 0;
+  let storyRankAtBreakdown = null;
+  // Statistiques des défis d’histoire, remises à zéro à chaque course.
+  let playerShotsFired = 0;
+  let playerHitsTaken = 0;
+  let policeDestroyedTotal = 0;
   let playerWreckLeft = 0;
   let playerWreckSpinTurns = CITY_RUSH_WRECK_SPIN_TURNS;
   // L'hélico d'observation du dernier tour : il se pose dans le ciel, suit le
@@ -2030,7 +2057,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function raiseWantedLevel({ police = false, destroyed = false, reason = 'vehicle-hit' } = {}) {
-    if (sprint || !active || finished) return wantedLevel;
+    if (sprint || !active || finished || !storyPoliceEnabled) return wantedLevel;
     const previous = wantedLevel;
     if (destroyed) {
       policeDestroyedByPlayer = Math.min(CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS, policeDestroyedByPlayer + 1);
@@ -2301,6 +2328,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         ? createCityRushBoostEncounter(randomSeed, city)
         : { pickups: [] })
       : createCityRushEncounter(randomSeed, laneCount);
+    // Course « pure » du mode Histoire : aucun chargeur rouge sur la route —
+    // les emplacements deviennent des pads turbo, et l’AK-47 reste muet.
+    if (!storyWeaponsEnabled && Array.isArray(encounter.pickups)) {
+      encounter.pickups = encounter.pickups.map((pickup) => (
+        pickup?.type === CITY_RUSH_POWERS.PISTOL ? { ...pickup, type: CITY_RUSH_PICKUPS.BOOST } : pickup
+      ));
+    }
     row.pickups = encounter.pickups;
     row.pickupClaims.clear();
     row.crossedRacers.clear();
@@ -2893,6 +2927,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerCollisionCooldownLeft = 0;
     playerWrecked = false;
     playerWreckLeft = 0;
+    storyBreakdownWarned = false;
+    storyBreakdownActive = false;
+    storyBreakdownLeft = 0;
+    storyBreakdownSmokeTimer = 0;
+    storyRankAtBreakdown = null;
+    playerShotsFired = 0;
+    playerHitsTaken = 0;
     playerJumpState = { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0, overpassTriggered: false };
     playerLandingBounce = 0;
     playerDropShadow.visible = false;
@@ -3023,6 +3064,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     clearPatrolPolice();
     wantedLevel = effectivePoliceFromStart ? CITY_RUSH_WANTED_MAX_STARS : 0;
     policeDestroyedByPlayer = 0;
+    policeDestroyedTotal = 0;
     nextPoliceUnitNumber = policeCars.length + 1;
     policeReinforcementTimer = 0;
     policeReinforcementQueue.length = 0;
@@ -3648,6 +3690,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.health = 0;
     police.healthFlash = 0;
     const byPlayer = attackerId === 'player';
+    if (byPlayer) policeDestroyedTotal += 1;
     // Le panoramique du boum se calcule avant la sortie de piste.
     const pan = vehiclePan(police.id);
     // L'escouade sort de la chasse ; la berline rappelée est ôtée de la liste.
@@ -4153,13 +4196,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function usePower(type) {
-    if (sprint || !active || finished || type !== CITY_RUSH_POWERS.PISTOL) return false;
+    if (sprint || !active || finished || !storyWeaponsEnabled || type !== CITY_RUSH_POWERS.PISTOL) return false;
     const consumed = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL);
     if (!consumed.consumed) {
       getCallbacks().effect?.({ type: 'empty', item: CITY_RUSH_POWERS.PISTOL });
       return false;
     }
     inventory = consumed.inventory;
+    playerShotsFired += 1;
     spawnActionPulse('player', CITY_RUSH_POWERS.PISTOL);
     // Tout droit, sans viser : le projectile part même si la voie est vide.
     fireStraightShot('player', null, CITY_RUSH_POWERS.PISTOL);
@@ -4168,7 +4212,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function useRacerPower(racer) {
-    if (sprint) return false;
+    if (sprint || !storyWeaponsEnabled) return false;
     const type = CITY_RUSH_POWERS.PISTOL;
     if (racer.wrecked || racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 || racer.powerCooldown > 0 || !isCityRushPowerCharged(racer.inventory, type)) return false;
     // L'IA ne gaspille pas sa charge dans le vide : quelqu'un doit déjà occuper
@@ -4229,7 +4273,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function registerPoliceRetaliation(attackerId, source = CITY_RUSH_POWERS.PISTOL) {
-    if (!attackerId || attackerId === 'player') return null;
+    if (!attackerId || attackerId === 'player' || !storyPoliceEnabled) return null;
     const attacker = racers.find((racer) => racer.id === attackerId);
     if (!attacker || attacker.wrecked || policeRetaliationByAttacker.has(attackerId)) {
       return policeRetaliationByAttacker.get(attackerId) || null;
@@ -5303,6 +5347,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerHealth = cityRushPlayerDamage(playerHealth, source);
     const lost = before - playerHealth;
     if (lost <= 0) return 0;
+    playerHitsTaken += 1;
     playerHealthFlash = CITY_RUSH_PLAYER_HEALTH_FLASH;
     // Le choc se sent aussi à la caméra : d'autant plus que le carré coûte cher.
     cameraKick = Math.max(cameraKick, 0.2 + lost * 0.06);
@@ -5381,6 +5426,38 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (playerWreckLeft > 0) return;
     // L'épave est immobile depuis la fin de la toupie : la course est perdue.
     finishRace({ destroyed: true });
+  }
+
+  // Panne scriptée du prologue : un avertissement moteur (`story-warning`),
+  // puis le calage (`story-breakdown`) — la voiture ralentit en fumant, et la
+  // course se clôt en sabotage, pas en épave. Une voiture déjà en épave (chocs)
+  // ne cale pas : elle a déjà perdu.
+  function updateStoryBreakdown(dt) {
+    if (!storyBreakdown || finished || playerWrecked || storyBreakdownActive) {
+      if (!storyBreakdown || finished || playerWrecked) return;
+    } else {
+      const warnAt = effectiveDistance * (Number(storyBreakdown.warnShare) || 0.62);
+      const failAt = effectiveDistance * (Number(storyBreakdown.failShare) || 0.8);
+      if (!storyBreakdownWarned && distance >= warnAt) {
+        storyBreakdownWarned = true;
+        getCallbacks().effect?.({ type: 'story-warning' });
+      }
+      if (distance >= failAt) {
+        storyBreakdownActive = true;
+        storyBreakdownLeft = CITY_RUSH_WRECK_SECONDS;
+        storyRankAtBreakdown = rankCityRushRacers(makeRacerRows()).rank;
+        cameraKick = Math.max(cameraKick, 0.8);
+        getCallbacks().effect?.({ type: 'story-breakdown', rank: storyRankAtBreakdown });
+      }
+    }
+    if (!storyBreakdownActive || finished) return;
+    storyBreakdownLeft = Math.max(0, storyBreakdownLeft - dt);
+    storyBreakdownSmokeTimer -= dt;
+    if (storyBreakdownSmokeTimer <= 0) {
+      storyBreakdownSmokeTimer = 0.14;
+      smoke.emit(playerCar.position, { color: 0x2a2a33, opacity: 0.65, scale: 0.9, grow: 2.4, life: 1.2, velocity: [0, 2.2, 0.5] });
+    }
+    if (storyBreakdownLeft <= 0) finishRace({ destroyed: true, sabotaged: true });
   }
 
   // Percuter une berline solide en arrivant dessus à pleine allure : elle perd
@@ -6675,6 +6752,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const ordered = destroyed
       ? [...standings.ordered.filter((racer) => racer.id !== 'player'), ...standings.ordered.filter((racer) => racer.id === 'player')]
       : standings.ordered;
+    // Marge du pilote sur son meilleur poursuivant (négative s’il est battu) :
+    // les défis « gagner avec X m d’avance » se jugent là-dessus.
+    const playerEntry = standings.ordered.find((racer) => racer.id === 'player');
+    const bestOtherEntry = standings.ordered.find((racer) => racer.id !== 'player');
+    const finishMargin = playerEntry && bestOtherEntry
+      ? Math.round((Number(playerEntry.distance) || 0) - (Number(bestOtherEntry.distance) || 0))
+      : 0;
     getCallbacks().finish?.({
       city: city.id,
       duration: elapsed,
@@ -6684,6 +6768,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       checkpoints: sprint ? sprintCheckpoints : null,
       timedOut,
       destroyed,
+      sabotaged: Boolean(options.sabotaged),
+      rankAtBreakdown: storyRankAtBreakdown,
+      healthLeft: Math.max(0, Math.round(playerHealth)),
+      healthMax: playerMaxHealth,
+      policeDestroyed: policeDestroyedTotal,
+      shotsFired: playerShotsFired,
+      hitsTaken: playerHitsTaken,
+      margin: finishMargin,
       rank: destroyed ? ordered.length : standings.rank,
       winner: standings.leader?.name || '—',
       winnerId: standings.leader?.id || null,
@@ -6960,7 +7052,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // dangereuses de la chaussée.
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
       const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale;
+      const breakdownScale = storyBreakdownActive ? 0 : 1;
+      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
       // pointe est plus basse, la montée en régime garde sa durée.
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
@@ -7075,9 +7168,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         // le tout dernier tour de ce rival, où il ne retient plus rien.
         const racerFinalLap = cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps;
         const racerPace = cityRushRivalPaceFactor({ finalLap: racerFinalLap });
+        // Boss du mode Histoire (Dante) : un multiplicateur propre au rival,
+        // par-dessus le rythme de course habituel.
+        const storyPaceBoost = Number(storyRivalPace?.[racer.id]) > 0 ? Number(storyRivalPace[racer.id]) : 1;
         const speedTarget = racer.wrecked || racer.stunLeft > 0
           ? 0
-          : racer.baseSpeed * racerPace * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38);
+          : racer.baseSpeed * racerPace * storyPaceBoost * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38);
         const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt, coursePace);
         requestedRacerSpeeds.set(racer.id, requestedSpeed);
         priorRacerXs.set(racer.id, racer.currentX);
@@ -7622,16 +7718,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       worldTravel = (distance - priorDistance) * SCALE;
       // Un contact avec une berline de police « pnj » la rappelle : elle sort
       // de sa ronde et prend le pilote en chasse (voir `rallyTrafficPolice`).
-      checkPoliceRally();
+      // Chapitres « sans police » du mode Histoire : ni ralliement au contact,
+      // ni ralliement à vue — les berlines du trafic restent du décor.
+      if (storyPoliceEnabled) checkPoliceRally();
       // À cinq étoiles, les patrouilles croisées sur la route n'attendent pas
       // le contact : elles prennent le pilote en chasse dès qu'elles le voient.
-      checkPoliceSightRally();
+      if (storyPoliceEnabled) checkPoliceSightRally();
       // Les trois voitures de base entrent au dernier tour du joueur (ou dès
       // le départ en mode Poursuite) et le prennent toujours pour cible, même
       // si un rival mène la course.
       const leader = refreshPackLeader();
       const playerLap = cityRushLapForDistance(distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
-      if (!policeDeployed && !sprint) {
+      if (!policeDeployed && !sprint && storyPoliceEnabled) {
         if (effectivePoliceFromStart && distance > 8) deployPolice();
         else if (playerLap >= effectiveLaps) deployPolice();
       }
@@ -7648,6 +7746,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // initialisé sa coque au départ, la barre s'active au plus tard ici.
       if (!playerHealthActive && lap >= effectiveLaps) activatePlayerHealth();
       updatePoliceReinforcements(dt);
+      updateStoryBreakdown(dt);
       updateWreck(dt);
       updateRows(dt);
       updateRamps(dt);
@@ -7943,7 +8042,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
@@ -7960,7 +8059,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
-      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat);
+      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -7973,7 +8072,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       worldRef.current = null;
       if (actionsRef) actionsRef.current = null;
     };
-  }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, actionsRef, audioRef]);
+  }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, storyRules, actionsRef, audioRef]);
 
   useEffect(() => {
     if (roster) worldRef.current?.setRoster?.(roster);

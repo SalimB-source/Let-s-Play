@@ -523,9 +523,9 @@ check('le seuil Tour du monde couvre toutes les villes', ACHIEVEMENTS.find(({ id
 VICE_CITIES.forEach((city, index) => {
   record(play('vice_city_run', { city, mode: ['circuit', 'sprint', 'pursuit'][index % 3], rank: 1, score: 2000 + index * 600 }));
 });
-// Mode Histoire : les six chapitres remportés, un par un (le chapitre rejoué
+// Mode Histoire : les dix chapitres remportés, un par un (le chapitre rejoué
 // ne compte pas deux fois — l'ensemble dédoublonne par numéro).
-const STORY_CHAPTER_COUNT = 6;
+const STORY_CHAPTER_COUNT = 10;
 check('le seuil Fin de l’histoire couvre tous les chapitres', ACHIEVEMENTS.find(({ id }) => id === 'vice-story-hero').target, STORY_CHAPTER_COUNT);
 for (let chapter = 0; chapter < STORY_CHAPTER_COUNT; chapter += 1) {
   record(play('vice_city_run', {

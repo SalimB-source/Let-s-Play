@@ -165,7 +165,7 @@ begin
     'cash', current_cash + case when coalesce(did_grant, false) then bonus else 0 end,
     'ownedCarIds', all_cars,
     'completedCourseIds', all_courses,
-    'storyChapter', 6
+    'storyChapter', 10
   );
 
   insert into public.vice_city_rush_progress (user_id, progress, updated_at)
@@ -182,7 +182,7 @@ begin
     'cash', current_cash + case when coalesce(did_grant, false) then bonus else 0 end,
     'cars_unlocked', 8,
     'courses_unlocked', 7,
-    'story_chapters', 6
+    'story_chapters', 10
   );
 end;
 $$;
