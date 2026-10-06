@@ -274,6 +274,16 @@ export const articleTrailers = {
   },
 
   // ---- Annonces sans images animées ----------------------------------------
+  // The Batman Part II — tournage suspendu le 05.10.2026 (déclaration de
+  // DC Studios et Warner Bros.). Aucune image animée de la suite n'a été
+  // publiée à ce jour : ni teaser, ni bande-annonce, ni extrait — le film est
+  // toujours en production et la reprise n'est pas datée. L'entrée dit donc
+  // l'absence plutôt que d'illustrer avec la campagne du Batman de 2022.
+  'cinema/the-batman-part-ii-tournage-suspendu': {
+    label: 'THE BATMAN PART II', meta: 'DC STUDIOS · WARNER BROS.',
+    pending: 'Aucune bande-annonce : The Batman Part II est toujours en tournage et n’a fait l’objet d’aucune image animée officielle — DC Studios et Warner Bros. n’ont publié ni teaser, ni extrait, et la reprise du tournage n’est pas datée. La campagne du Batman de 2022 ne sert pas d’illustration ici.',
+  },
+
   // Carte du hub cinéma servie par le gabarit Blizzard (`/news/diablo-netflix`) :
   // l'annonce d'ouverture de la BlizzCon 2026 n'a été accompagnée d'aucun visuel
   // animé, ni par Blizzard ni par Netflix.

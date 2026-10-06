@@ -3610,7 +3610,16 @@ tech ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
-« À RETENIR », source d’origine citée et liée. Fournée du 28.09.2026 :
+« À RETENIR », source d’origine citée et liée. Fournée du 06.10.2026 :
+
+- `/news/cinema/the-batman-part-ii-tournage-suspendu` — DC Studios et Warner
+  Bros. suspendent temporairement le tournage de The Batman Part II : Matt
+  Reeves s’éloigne pour une affaire familiale, sans date de reprise, la sortie
+  américaine restant fixée au 18 février 2028 (déclaration à Deadline, IGN,
+  Sortir à Paris). L’actu n’a aucune bande-annonce à montrer : l’entrée
+  `src/articleTrailers.js` porte donc `pending`, comme la règle l’exige.
+
+Fournée du 28.09.2026 :
 
 - `/news/cinema/box-office-us-endgame-encore-26-millions` — le bilan
   consolidé du week-end américain : Endgame – Encore premier à 26 M$,
@@ -3622,7 +3631,14 @@ en deux temps, chapô, deux sections titrées, citation et encadré
   New York Film Festival de la suite de Godzilla Minus One, premier film de
   la saga classé R, dates de sortie confirmées (Variety, Toho).
 
-Le même jour, trois actus gaming ont été rédigées à la main au gabarit du
+Le 06.10.2026, l’actu gaming du jour suit le même chemin —
+`/news/gta-6-satire-monde-invente`, la position de Rockstar sur la satire de
+GTA VI exposée par son vice-président chargé de la narration Rupert Humphries
+(entretien au magazine Love relayé par Eurogamer, via Gamekult) : entrée dans
+`CurrentNews.jsx`, carte en tête de `GamingNews.jsx`, route explicite dans
+`src/main.jsx`, recherche et sitemap.
+
+Le 28.09.2026, trois actus gaming ont été rédigées à la main au gabarit du
 robot (`/news/minecraft-the-sift-nouvelle-dimension`,
 `/news/the-witcher-3-remastered-sortie-29-septembre`,
 `/news/xbox-nadella-restructuration`) : entrées dans `CurrentNews.jsx`,
@@ -3724,7 +3740,16 @@ Deux cas particuliers, pour que rien ne reste implicite :
 
 Troisième zone du hub Actus (`/news`) : la page `/news/tech`
 (`src/pages/TechNews.jsx`) rassemble les actus tech de la semaine, au même
-gabarit éditorial que le gaming et le cinéma. Fournée du 21-28.09.2026 :
+gabarit éditorial que le gaming et le cinéma. Fournée du 06.10.2026 :
+
+- `/news/tech/norvege-lunettes-connectees-interdiction` — la Norvège veut
+  interdire temporairement les lunettes à caméra dans les parcs, plages,
+  musées, écoles, crèches, établissements de santé, salles de sport et
+  événements publics, sans toucher à l’usage privé : la ministre du Numérique
+  Torgeir Micaelsen invoque le risque d’être filmé à son insu, Meta répond par
+  la LED qui clignote (The Guardian, AFP via France 24 et Le Soir).
+
+Fournée du 21-28.09.2026 :
 
 - `/news/tech/starship-flight-14-premier-vol-orbital` — le vol 14 de Starship
   vise la première mise en orbite et le déploiement de 26 satellites
