@@ -484,6 +484,11 @@ export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.5;
 //     approcher sans rien casser. C'est ce qui donne la marge de manœuvre :
 //     une esquive commencée à temps passe, une esquive jamais commencée touche.
 //
+// L'écart latéral qui sépare ces deux seuils n'est plus la somme des largeurs
+// des carrosseries mais celle des **boîtes de contact** du trafic, resserrées
+// par `CITY_RUSH_TRAFFIC_HITBOX_SCALE` (voir plus bas) : c'est la boîte qui
+// juge le contact, pas la tôle.
+//
 // `resolveCityRushCarMovement` applique **la même enveloppe** à la retenue du
 // suiveur (`cityRushTrafficContactGap`), sans quoi le moteur le bloquerait à
 // 4,8 m du véhicule et le choc ne pourrait plus jamais être atteint. Les
@@ -502,6 +507,45 @@ export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_TRAFFIC_CAR_GAP;
 // (le suiveur demande à passer dedans) et la voiture touchée se rabat.
 export const CITY_RUSH_TRAFFIC_HOLD_MARGIN = 0.05; // m
 
+// ── Boîte de contact du trafic : une esquive de dernière seconde ────────────
+// Demande : « réduire la hit-box des voitures qui circulent sur la route pour
+// pouvoir les éviter au dernier moment ». La carrosserie garde sa taille à
+// l'écran — c'est la **boîte** qui juge le contact qui est resserrée.
+//
+// Une voiture lente de 1,94 m ne compte donc plus que sur 1,16 m de large
+// (`CITY_RUSH_TRAFFIC_HITBOX_SCALE` = 0,6 de la largeur réelle), celles du
+// contresens comme les berlines lâchées par un mini-garage. Sur une chaussée à
+// voies de 2,10 m, la conséquence est directe : avec la boîte pleine, le pilote
+// devait avoir accompli 91 % de son changement de voie pour être hors de
+// portée ; la boîte resserrée le dégage à 73 %, et l'enveloppe diagonale tombe
+// à son minimum (le frôlement) au même moment. Un coup de volant donné au
+// dernier moment passe donc là où il se payait un carré.
+//
+// La boîte resserrée sert **partout** où le contact d'un véhicule du trafic est
+// facturé : détection du choc (`detectCityRushTrafficImpacts`), retenue du
+// suiveur (`resolveCityRushCarMovement`), choc frontal (`checkOncomingImpacts`)
+// et contact d'une patrouille (`checkPoliceRally`) — sans cette unité, le
+// pilote serait dégagé par la détection mais raboté par la retenue. Le **verrou
+// de rabattement** (`canEnterLane`) garde en revanche les carrosseries : c'est
+// une distance de sécurité de changement de voie (4,8 m), plus stricte que le
+// choc qu'elle évite, pas une boîte de contact.
+//
+// Les **berlines de police en chasse** ne sont pas concernées : elles
+// poursuivent le pilote et gardent leur carrosserie pleine (leur contact est
+// jugé par `cityRushPoliceCollisionHit`, une règle à part).
+export const CITY_RUSH_TRAFFIC_HITBOX_SCALE = 0.6;
+
+/**
+ * Largeur de la boîte de contact d'un véhicule du trafic : sa carrosserie
+ * (`width`) multipliée par `CITY_RUSH_TRAFFIC_HITBOX_SCALE`. Une largeur
+ * inconnue retombe sur la berline de référence (1,94 m).
+ */
+export function cityRushTrafficHitboxWidth(width, scale = CITY_RUSH_TRAFFIC_HITBOX_SCALE) {
+  const safeWidth = Number.isFinite(Number(width)) ? Math.max(0, Number(width)) : 1.94;
+  const safeScale = Number.isFinite(Number(scale)) ? Math.max(0, Number(scale)) : CITY_RUSH_TRAFFIC_HITBOX_SCALE;
+  return safeWidth * safeScale;
+}
+
 /**
  * Distance longitudinale en dessous de laquelle deux voitures se touchent,
  * selon l'écart latéral entre leurs deux centres. Dans l'axe : `contactGap`
@@ -509,6 +553,11 @@ export const CITY_RUSH_TRAFFIC_HOLD_MARGIN = 0.05; // m
  * somme des demi-largeurs) : `passGap`, le frôlement. Entre les deux, la
  * dégressivité suit la part de carrosserie déjà dégagée — c'est cette pente
  * qui récompense une esquive entamée et laisse passer le pilote qui se décale.
+ *
+ * `trafficWidth` est la **boîte de contact** du véhicule jugé
+ * (`cityRushTrafficHitboxWidth`), pas sa largeur visuelle : la pente tombe donc
+ * à son minimum dès que l'aile a dégagé la boîte, plus tôt qu'avec la
+ * carrosserie pleine.
  */
 export function cityRushTrafficContactGap(lateralDistance, {
   bodyWidth = 1.9,
@@ -2780,8 +2829,9 @@ export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, exclu
 // Un véhicule en l'air (saut sur tremplin) passe au-dessus du sol sans blocage.
 // Devant un véhicule du **trafic lent** (`collisionGroup: 'traffic'`), la
 // retenue n'est pas la distance de sécurité mais l'enveloppe de contact du
-// véhicule (`cityRushTrafficContactGap`) : elle suit l'écart latéral réel, donc
-// un pilote qui se décale peut approcher de plus près sans être raboté — c'est
+// véhicule (`cityRushTrafficContactGap`), mesurée sur sa **boîte resserrée**
+// (`cityRushTrafficHitboxWidth`) : elle suit l'écart latéral réel, donc un
+// pilote qui se décale peut approcher de plus près sans être raboté — c'est
 // exactement le seuil que `detectCityRushTrafficImpacts` facture, et sans cette
 // cohérence le choc ne se déclencherait jamais.
 export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR_GAP) {
@@ -2800,15 +2850,24 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
       if (front.jumping || front.isJumping) continue;
       if (front.collisionGroup === 'racer' && following.collisionGroup === 'racer') continue;
       const sameLane = front.lane === following.lane;
-      const frontWidth = Number.isFinite(Number(front.width)) ? Number(front.width) : 1.9;
+      const rawFrontWidth = Number.isFinite(Number(front.width)) ? Number(front.width) : 1.9;
+      // Devant un véhicule du trafic, la largeur opposée est sa **boîte de
+      // contact** (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`) : la retenue et le
+      // recouvrement latéral qui la déclenche sont ceux de la détection de
+      // choc, sinon le moteur arrêterait le suiveur sur une carrosserie plus
+      // large que le seuil facturé et l'esquive de dernière seconde resterait
+      // bloquée avant d'avoir pu passer.
+      const frontWidth = front.collisionGroup === 'traffic'
+        ? cityRushTrafficHitboxWidth(rawFrontWidth)
+        : rawFrontWidth;
       const followingWidth = Number.isFinite(Number(following.width)) ? Number(following.width) : 1.9;
       const lateralOverlap = Number.isFinite(Number(front.x))
         && Number.isFinite(Number(following.x))
         && Math.abs(Number(front.x) - Number(following.x)) < (frontWidth + followingWidth) / 2;
       if (!sameLane && !lateralOverlap) continue;
-      // Le trafic lent retient à **son** enveloppe de carrosserie (3,6 m dans
-      // l'axe, 2,9 m une fois l'aile dégagée), pas à la distance de sécurité
-      // des berlines : c'est le seuil de la détection de choc, augmenté de
+      // Le trafic lent retient à **son** enveloppe (3,6 m dans l'axe, 2,9 m
+      // une fois l'aile dégagée), pas à la distance de sécurité des berlines :
+      // c'est le seuil de la détection de choc, augmenté de
       // `CITY_RUSH_TRAFFIC_HOLD_MARGIN` pour que le suiveur qui ferme la
       // distance soit arrêté juste *avant* le contact, puis facturé par la
       // détection (il demande à passer dedans). Un appelant qui demande une
@@ -2851,9 +2910,12 @@ const finiteNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? N
  * Une voiture en train de sauter franchit le trafic par les airs sans impact.
  *
  * Le seuil longitudinal n'est plus un mur unique de 4,8 m : il suit l'écart
- * latéral réel des deux carrosseries (`cityRushTrafficContactGap`). Une esquive
- * commencée avant le choc raccourcit la voiture lente dans l'axe et laisse
- * passer le pilote ; une esquive jamais commencée touche au pare-chocs.
+ * latéral réel des deux **boîtes de contact** (`cityRushTrafficContactGap`).
+ * Une esquive commencée avant le choc raccourcit la voiture lente dans l'axe et
+ * laisse passer le pilote ; une esquive jamais commencée touche au pare-chocs.
+ * La boîte du trafic elle-même est resserrée par rapport à sa carrosserie
+ * (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`) : il en faut donc encore moins pour être
+ * dégagé — c'est la marge d'esquive de dernière seconde.
  *
  * `contacts` est la mémoire du monde (un `Set` de couples `coureur\0véhicule`) :
  * elle garantit **un impact par épisode de contact**, y compris pour le suiveur
@@ -2876,7 +2938,10 @@ export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_T
     for (const vehicle of traffic) {
       const trafficPrevious = finiteNumber(vehicle.previousDistance);
       const trafficNext = Math.max(trafficPrevious, finiteNumber(vehicle.nextDistance, trafficPrevious));
-      const trafficWidth = Math.max(0, finiteNumber(vehicle.width, 1.9));
+      // Le véhicule du trafic est jugé sur sa **boîte de contact**, plus
+      // étroite que sa carrosserie (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`) : c'est
+      // ce qui laisse passer une esquive de dernière seconde.
+      const trafficWidth = cityRushTrafficHitboxWidth(finiteNumber(vehicle.width, 1.9));
       const sameLane = racer.lane === vehicle.lane;
       const hasLateral = Number.isFinite(Number(racer.x)) && Number.isFinite(Number(vehicle.x));
       // Sans position latérale connue, on juge les deux voitures dans l'axe :

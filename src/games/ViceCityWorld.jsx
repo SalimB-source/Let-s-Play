@@ -168,6 +168,7 @@ import {
   cityRushPoliceBlocksLeader,
   cityRushPoliceContact,
   cityRushPoliceDamage,
+  cityRushTrafficHitboxWidth,
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
   cityRushMiniGarageLane,
@@ -4753,11 +4754,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const playerWidth = playerCollisionWidth();
     for (const traffic of trafficCars) {
       if (traffic.rallied || traffic.destroyed || !isCityRushPoliceTrafficType(traffic.type)) continue;
+      // La patrouille est un véhicule **du trafic** : son contact latéral se
+      // juge sur sa boîte resserrée (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`), comme
+      // le reste de la circulation. La portée longitudinale, elle, reste celle
+      // du contact policier (distance de sécurité + tolérance) : toucher une
+      // patrouille, c'est déclencher une poursuite, et la règle est commune aux
+      // berlines de police.
       if (!cityRushPoliceContact({
         gap: traffic.distance - distance,
         x: traffic.currentX,
         targetX: playerXNow,
-        width: traffic.width,
+        width: cityRushTrafficHitboxWidth(traffic.width),
         targetWidth: playerWidth,
       })) continue;
       // Toucher une patrouille coûte un carré comme n'importe quelle voiture :
@@ -5843,7 +5850,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       ?? (actorId === 'player' ? playerCollisionWidth() : racerCollisionWidth(actor));
     // Les adversaires se traversent sans collision; le trafic lent **et les
     // berlines de police du dernier tour** sont solides et bloquent la voie :
-    // on ne se rabat pas sur leur capot.
+    // on ne se rabat pas sur leur capot. Le verrou juge les **carrosseries**,
+    // pas les boîtes de contact du trafic (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`) :
+    // c'est une règle de rabattement (une distance de sécurité, 4,8 m), plus
+    // stricte que le choc qu'elle évite — la boîte resserrée sert au contact
+    // facturé, pas à autoriser un rabat sur un pare-chocs.
     const obstacles = [
       ...rollingTraffic().map((traffic) => ({ lane: traffic.lane, x: traffic.currentX, width: traffic.width, distance: traffic.distance })),
       // Le trafic venant en face bloque aussi la voie : on ne se rabat pas
@@ -6115,11 +6126,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       })),
     ];
 
+    // Le véhicule du contresens est jugé sur sa **boîte de contact**
+    // (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`), comme le trafic lent : le croiser de
+    // justesse ne coûte plus un carré.
+    const oncomingWidth = cityRushTrafficHitboxWidth(oncoming.width);
+
     for (const actor of actors) {
       if (actor.jumping) continue;
       const gapAfter = oncoming.distance - actor.distance;
       const gapBefore = priorOncoming - (Number.isFinite(actor.priorDistance) ? actor.priorDistance : actor.distance);
-      const lateralOverlap = Math.abs(actor.x - oncoming.currentX) < (actor.width + oncoming.width) / 2;
+      const lateralOverlap = Math.abs(actor.x - oncoming.currentX) < (actor.width + oncomingWidth) / 2;
       if (!lateralOverlap) continue;
 
       // Détection balayée : on touche si on est dans la fenêtre [-2.5, 4.0] après le mouvement,

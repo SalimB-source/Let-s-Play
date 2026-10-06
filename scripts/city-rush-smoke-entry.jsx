@@ -622,7 +622,15 @@ for (const [index, city] of courses.entries()) {
   const finishNotes = [];
   let healthBadDamage = 0;
 
+  // Distance **exacte** atteinte par le pilote : le HUD arrondit la sienne au
+  // mètre (`hud.distance`), et une course qui s'arrête à 5 999,8 m y lit
+  // « 6 000 m ». Le monde, lui, ouvre le dernier tour sur la distance exacte :
+  // le harnais juge le rendez-vous de l'escouade sur la même mesure, sinon il
+  // réclame une escouade qu'une course arrêtée juste sous la ligne n'a jamais
+  // appelée.
+  let playerExactReach = 0;
   while (!callbacks.finish && frames < maxFrames) {
+    playerExactReach = Math.max(playerExactReach, world.distance || 0);
     const hud = callbacks.huds[callbacks.huds.length - 1];
     // Les voies du contresens dépendent du pays (à gauche en Amérique et en
     // France, à droite à Londres et sur la Shuto) : le pilote automatique suit
@@ -639,8 +647,13 @@ for (const [index, city] of courses.entries()) {
     const oncomingSeen = callbacks.effects.some((effect) => effect.type === 'traffic-impact' && effect.oncoming);
     // On cherche le face-à-face tant qu'il n'a pas eu lieu : un tremplin pris en
     // route peut désormais immobiliser le volant quelques secondes, la fenêtre
-    // n'est donc plus bornée aux premières images.
-    if (!oncomingSeen && !playerInOncoming && frames % 4 === 0) {
+    // n'est donc plus bornée aux premières images. Un parcours **sans
+    // contresens** — le Ring se joue en sens unique — n'a rien à chercher : la
+    // règle tirait alors vers la voie inverse toutes les quatre images, à
+    // contresens du rabattement vers le portique de mi-course qu'elle
+    // empêchait d'atteindre.
+    const huntsOncoming = courseLanes.oncomingLanes.length > 0;
+    if (huntsOncoming && !oncomingSeen && !playerInOncoming && frames % 4 === 0) {
       world.action(oncomingSteer);
     } else if (oncomingSeen && playerInOncoming && frames % 4 === 0) {
       world.action(raceSteer);
@@ -1498,7 +1511,11 @@ for (const [index, city] of courses.entries()) {
   // avant d'y arriver — la coque du pilote vidée sous les rafales de police —
   // ne l'appelle jamais : les vérifications qui suivent l'escouade, le
   // décrochage, le barrage et l'hélico d'observation n'ont alors plus d'objet.
-  const squadRendezvous = playerReach >= FINAL_LAP_START;
+  // Le rendez-vous se juge sur la distance exacte, pas sur le HUD arrondi : un
+  // pilote arrêté juste sous la ligne (5 999,8 m lus « 6 000 m ») n'a jamais
+  // entamé son dernier tour, le monde n'a donc pas déployé l'escouade — la
+  // vérifier aurait exigé une arrivée que la course n'a jamais appelée.
+  const squadRendezvous = playerExactReach >= FINAL_LAP_START;
   // Escouade du dernier tour du joueur : deux berlines + un SUV, sans charge rouge, jamais classée.
   const policeArrivals = callbacks.effects.filter((effect) => effect.type === 'police-arrival');
   if (squadRendezvous) {
