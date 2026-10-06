@@ -297,7 +297,6 @@
   [data-theme='light'] .article-byline > span:nth-child(2),
   [data-theme='light'] .article-toc-progress,
   [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
-  [data-theme='light'] .news-carousel.is-grid .news-today .read-link,
   [data-theme='light'] .partners-head h2 em,
   [data-theme='light'] .partner-link:hover,
   [data-theme='light'] .partner-detail-facts-label,
@@ -1395,20 +1394,16 @@
 [data-theme='light'] .article-toc-toggle{background:rgba(255,255,255,.9);box-shadow:var(--shadow-sm)}
 [data-theme='light'] .article-toc-panel{background:rgba(255,255,255,.96)}
 [data-theme='light'] .article-toc-progress{color:var(--yellow-ink)}
-[data-theme='light'] .news-carousel.is-grid .news-carousel-card,
-[data-theme='light'] .news-carousel.is-grid .news-today{
+[data-theme='light'] .news-carousel.is-grid .news-carousel-card{
   background:linear-gradient(155deg,#ffffff,#f3f4fb);
   border-color:var(--line);
 }
 /* Ombre sur la cellule parente (pas sur la carte, rognée par son clip-path) —
    même mécanique qu'en thème sombre, voir news-view-toggle.css. */
-[data-theme='light'] .news-carousel.is-grid .news-grid-cell,
-[data-theme='light'] .news-carousel.is-grid .news-grid-cell--today{filter:drop-shadow(0 4px 8px rgba(28,24,72,.10))}
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell{filter:drop-shadow(0 4px 8px rgba(28,24,72,.10))}
 [data-theme='light'] .news-carousel.is-grid .news-grid-cell:hover{filter:drop-shadow(0 16px 22px rgba(14,116,144,.24))}
-[data-theme='light'] .news-carousel.is-grid .news-carousel-copy h2,
-[data-theme='light'] .news-carousel.is-grid .news-today .daily-news-copy h2{color:var(--ink)}
-[data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
-[data-theme='light'] .news-carousel.is-grid .news-today .read-link{color:var(--yellow-ink)}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-copy h2{color:var(--ink)}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link{color:var(--yellow-ink)}
 
 /* ============ 14. ACTUS — HUB ET FLUX ============ */
 /* Le hub Actus (/news) et ses deux flux (/news/gaming, /news/cinema) ont été
@@ -1457,7 +1452,6 @@
   background:var(--yellow-ink);
 }
 [data-theme='light'] .news-carousel.is-grid .news-carousel-card::before,
-[data-theme='light'] .news-carousel.is-grid .news-today::before,
 [data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(3n) .news-carousel-card::before,
 [data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{
   box-shadow:none;

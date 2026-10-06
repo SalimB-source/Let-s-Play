@@ -10,6 +10,7 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // Une actu dont la bande-annonce officielle est intégrée à l'article affiche
 // une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
+import NewsFeaturedStory from '../components/NewsFeaturedStory';
 
 // Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
 // Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
@@ -174,25 +175,13 @@ export default function CinemaNews() {
 
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{copy.section}</span><span>{copy.updated}</span></div>
+        <NewsFeaturedStory
+          story={topStory}
+          todayLabel={copy.today}
+          renderStoryImage={renderStoryImage}
+          renderBadges={renderBadges}
+        />
         <div className="news-carousel is-grid">
-          {topStory && (
-            <div className="news-grid-cell news-grid-cell--today">
-              <Link className="daily-news-card news-today" to={topStory.to} data-parallax="0.04" data-parallax-limit="19">
-                <div className="daily-news-image">
-                  {renderStoryImage(topStory, 'eager')}
-                  {renderBadges(topStory)}
-                </div>
-                <div className="daily-news-copy">
-                  <p className="eyebrow"><span className="live-dot" /> {copy.today}</p>
-                  {topStory.imageCredit && <span className="cinema-image-credit">{topStory.imageCredit}</span>}
-                  <span className="news-kicker">{topStory.kicker}</span>
-                  <h2>{topStory.title}</h2>
-                  <p>{topStory.excerpt}</p>
-                  <span className="read-link">{topStory.read} <Arrow /></span>
-                </div>
-              </Link>
-            </div>
-          )}
           {gridArticles.map((article, index) => (
             <div className="news-grid-cell" key={article.to}>
               <Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
