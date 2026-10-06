@@ -207,6 +207,19 @@ test('le moteur suit la vitesse : plus haut en turbo, muet à l’arrêt', async
   } finally { shutdown(audio); }
 });
 
+test('un bonus rouge joue un son mécanique de changement de chargeur', async () => {
+  const audio = await boot();
+  try {
+    const before = audio.context.events.length;
+    audio.pickup('pistol');
+    const reload = audio.context.events.slice(before);
+    const clacks = reload.filter((event) => event.kind === 'noise');
+    assert.ok(clacks.length >= 4, 'le rechargement enchaîne plusieurs déclics et bruits mécaniques');
+    assert.ok(clacks.some((event) => event.at >= 0.4), 'le dernier verrouillage arrive après l’insertion du chargeur');
+    assert.ok(reload.some((event) => event.kind === 'osc' && event.at >= 0.4), 'le verrouillage final a aussi son claquement tonal');
+  } finally { shutdown(audio); }
+});
+
 test('tir, dérapage et explosion programment du son, et se taisent quand le son est coupé', async () => {
   const audio = await boot();
   try {
@@ -223,6 +236,7 @@ test('tir, dérapage et explosion programment du son, et se taisent quand le son
     audio.explosion();
     audio.missileLaunch();
     audio.pickup('boost');
+    audio.pickup('pistol');
     audio.lap(true);
     audio.finish(1);
     audio.countdownBeep(3);

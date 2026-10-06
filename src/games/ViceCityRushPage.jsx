@@ -969,7 +969,7 @@ export default function ViceCityRushPage() {
     const rule = CITY_RUSH_POWER_RULES[pickup.type];
     if (!rule) return;
     if (pickup.type === CITY_RUSH_POWERS.PISTOL) {
-      showToast(`AK-47 · +${pickup.ammo || CITY_RUSH_PISTOL_AMMO_PER_PICKUP} BALLES · CHARGEUR PRÊT`, pickup.type);
+      showToast(`AK-47 · CHARGEUR PLEIN · ${pickup.progress || CITY_RUSH_PISTOL_AMMO_PER_PICKUP}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} BALLES`, pickup.type);
       return;
     }
     const progress = Math.min(rule.chargeCost, pickup.progress || 0);
@@ -1291,7 +1291,7 @@ export default function ViceCityRushPage() {
                     >
                       <span className="city-rush-machine-gun-label">AK-47</span>
                       <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
-                      <span className="city-rush-machine-gun-status">{ready ? `${ammo} BALLE${ammo > 1 ? 'S' : ''}` : `0 / ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}`}</span>
+                      <span className="city-rush-machine-gun-status">{ready ? `CHARGÉ ${ammo}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}` : `0 / ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}`}</span>
                     </button>
                   );
                 })()}

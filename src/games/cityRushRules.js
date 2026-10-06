@@ -115,10 +115,10 @@ export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 5
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé au sol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
-// Les bonus rouges sont très rares (5 %) ; un chargeur ramassé donne sept
-// balles, ce qui laisse au pilote de quoi choisir ses tirs.
-export const CITY_RUSH_RED_PICKUP_CHANCE = 0.05;
-export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE; // 95 % de pads turbo au sol
+// Les bonus rouges restent rares, mais sont un peu plus fréquents (8 %) ;
+// chaque chargeur ramassé remet sept balles dans l'AK-47.
+export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08;
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE; // 92 % de pads turbo au sol
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
@@ -570,7 +570,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les bonus rouges sont très rares : chacun recharge ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule.`,
+    description: `Les bonus rouges sont rares : chacun remplit le chargeur de l'AK-47 à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -2485,23 +2485,27 @@ export function isCityRushPowerCharged(inventory, type) {
 }
 
 /**
- * Les bonus rouges restent sur la route pour ceux qui n'ont plus de balle.
- * Ils ne disparaissent globalement qu'une fois le joueur et tous les
- * adversaires actifs armés ; le filtrage individuel empêche un pilote qui a
- * encore des balles de prendre le chargeur réservé aux autres.
+ * Les bonus rouges restent visibles tant qu'un participant peut compléter
+ * son chargeur. Un chargeur plein laisse le bonus à ceux qui ont déjà tiré ;
+ * seul un peloton entièrement rechargé le masque sur toute la route.
  */
+function hasFullCityRushPistolMagazine(inventory) {
+  const ammo = Math.max(0, Math.trunc(Number(inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0));
+  return ammo >= CITY_RUSH_PISTOL_MAX_AMMO;
+}
+
 export function shouldHideCityRushPistolPickup(playerInventory, opponentInventories = []) {
-  if (!isCityRushPowerCharged(playerInventory, CITY_RUSH_POWERS.PISTOL)) return false;
+  if (!hasFullCityRushPistolMagazine(playerInventory)) return false;
   const opponents = Array.isArray(opponentInventories) ? opponentInventories : [];
-  return opponents.every((inventory) => isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL));
+  return opponents.every(hasFullCityRushPistolMagazine);
 }
 
 export function canCollectCityRushPickup(inventory, type, { redPickupsHidden = false } = {}) {
   if (type === CITY_RUSH_PICKUPS.BOOST) return true;
   if (type !== CITY_RUSH_POWERS.PISTOL || redPickupsHidden) return false;
-  // Un chargeur rouge recharge sept balles d'un coup : on ne ramasse pas un
-  // deuxième chargeur tant qu'il en reste, afin que la rareté soit lisible.
-  return !isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL);
+  // Un chargeur rouge complète les balles jusqu'à sept : on peut le ramasser
+  // même avec quelques balles, mais pas gaspiller un chargeur déjà plein.
+  return !hasFullCityRushPistolMagazine(inventory);
 }
 
 export function rankCityRushRacers(racers, playerId = 'player') {
@@ -2770,8 +2774,8 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
   const count = Math.max(1, Math.min(CITY_RUSH_LANE_X.length, Math.trunc(Number(laneCount)) || CITY_RUSH_LANE_X.length));
   const available = Array.from({ length: count }, (_, lane) => lane);
   // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
-  // des rangées pleines. Parmi les objets, 95 % sont des pads turbo et seulement
-  // 5 % des bonus rouges d'AK-47 : le tir rouge reste rare même sur une longue course.
+  // des rangées pleines. Parmi les objets, 92 % sont des pads turbo et 8 % des
+  // bonus rouges d'AK-47 : le rouge reste rare, mais revient un peu plus souvent.
   const pickupCount = random() < 0.05 ? 0 : Math.min(available.length, random() < 0.7 ? 1 : 2);
   const pickups = [];
 
@@ -2779,8 +2783,8 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // Les pads restent fréquents, mais le chargeur rouge est volontairement
-    // rare : une rangée sur cinq environ propose des balles.
+    // Les pads restent fréquents, mais le chargeur rouge garde une faible
+    // probabilité d'apparition sur chaque emplacement.
     const type = roll < CITY_RUSH_RED_PICKUP_CHANCE
       ? CITY_RUSH_POWERS.PISTOL
       : CITY_RUSH_PICKUPS.BOOST;

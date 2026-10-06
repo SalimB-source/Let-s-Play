@@ -1299,11 +1299,12 @@
 }
 
 .city-rush-machine-gun-button.is-ready {
-  border-color: #ffe2e6;
-  background: radial-gradient(circle at 42% 28%, #ff7185, #df203c 52%, #7c1024 100%);
-  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.12), 0 0 26px rgba(255, 45, 75, 0.62), 0 8px 24px rgba(0, 0, 0, 0.48);
+  border: 3px solid #fff;
+  background: radial-gradient(circle at 42% 28%, #ff9eac, #ff294b 48%, #a30c2c 100%);
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.2), 0 0 0 3px rgba(255, 82, 110, 0.4), 0 0 34px 8px rgba(255, 45, 75, 0.78), 0 8px 24px rgba(0, 0, 0, 0.48);
   color: #fff;
   cursor: pointer;
+  animation: crMachineGunReadyGlow 1.25s ease-in-out infinite alternate;
 }
 
 .city-rush-machine-gun-button.is-ready::after {
@@ -1319,6 +1320,11 @@
 @keyframes crMachineGunReadyPulse {
   0% { transform: scale(0.94); opacity: 0.75; }
   100% { transform: scale(1.16); opacity: 0; }
+}
+
+@keyframes crMachineGunReadyGlow {
+  from { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.16), 0 0 0 2px rgba(255, 82, 110, 0.32), 0 0 24px 5px rgba(255, 45, 75, 0.62), 0 8px 24px rgba(0, 0, 0, 0.48); }
+  to { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.28), 0 0 0 4px rgba(255, 82, 110, 0.52), 0 0 40px 11px rgba(255, 45, 75, 0.9), 0 8px 24px rgba(0, 0, 0, 0.48); }
 }
 
 .city-rush-machine-gun-button:hover:not(:disabled) { transform: translateY(-2px); }
@@ -2885,6 +2891,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-lap-banner,
   .city-rush-power-pip,
   .city-rush-health.is-critical,
+  .city-rush-machine-gun-button.is-ready,
   .city-rush-machine-gun-button.is-ready::after,
   .city-rush-gta-wanted i.is-on,
   .city-rush-viewport.is-boosting::after,
