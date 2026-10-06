@@ -2021,11 +2021,12 @@ If a variable is missing, `/auth` shows exactly which one under the form.
    friends list (see « Amis : demandes, liste et présence ») and the
    `direct_messages` / `message_blocks` / `message_reports` tables behind the
    1-à-1 messaging (see « Messagerie : discussions 1-à-1 entre amis »). The
-   script is idempotent: re-run it after pulling a newer version. It also
-   creates the `kind` / `attachment_*` columns and the private `voice-messages`
-   Storage bucket inherited from the old voice messaging: nothing in the app
-   uses them any more (see « Nettoyage optionnel du schéma » in the messaging
-   section to drop them).
+   script is idempotent: re-run it after pulling a newer version. The
+   voice-messaging leftovers (old `kind` / `attachment_*` columns and the
+   private `voice-messages` Storage bucket) are no longer part of it: on a
+   project that still has them, run `supabase/remove-voice-messages.sql` once
+   (see « Nettoyage de l'ancienne messagerie vocale » in the messaging
+   section).
    The SQL Editor wraps the file in **one transaction**, so a single error used
    to roll everything back — and the script looks like it ran while nothing was
    created. It is therefore guarded: steps that depend on Supabase-internal
@@ -2303,10 +2304,10 @@ L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil 
 **Le message vocal a été retiré** : le bouton micro, l'enregistreur, la bulle
 de lecture, l'upload dans le bucket `voice-messages` et le diagnostic
 `window.__lpVoiceDiag()` n'existent plus — la messagerie est **texte
-uniquement**. Les colonnes `kind` / `attachment_*` et le bucket restent dans
-`supabase/schema.sql` (le script est rejoué tel quel sur les projets déjà en
-place) ; voir « Nettoyage optionnel du schéma » à la fin de cette section si
-tu veux les effacer.
+uniquement**. `supabase/schema.sql` ne crée plus les colonnes `kind` /
+`attachment_*` ni le bucket ; sur un projet qui les a encore, exécute une fois
+`supabase/remove-voice-messages.sql` (voir « Nettoyage de l'ancienne messagerie
+vocale » à la fin de cette section).
 
 **Où écrire à un ami** :
 
@@ -2377,39 +2378,26 @@ script doit afficher `OK` pour `table public.direct_messages`,
 de lecture seul modifiable`, `tables blocages / signalements`, `politiques
 RLS blocages (3) / signalements (2)` et `effacement des conversations pour soi
 (table, RLS, RPC, filtre messages)` ; `realtime direct_messages` peut rester
-`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). La dernière
-ligne du tableau, `messages vocaux (colonnes + bucket + politiques de
-stockage)`, est **héritée de l'ancienne messagerie vocale** : elle peut rester
-`ABSENT` sans conséquence, plus rien dans l'application ne s'en sert. Tant que
+`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). Tant que
 la table manque, la fenêtre l'explique (« La messagerie n'est pas encore
 activée sur ce déploiement… ») sans rien casser d'autre.
 
-### Nettoyage optionnel du schéma
+### Nettoyage de l'ancienne messagerie vocale
 
-Le message vocal ayant été retiré de l'application, les objets SQL qui le
-servaient ne sont plus utilisés : les colonnes `kind`, `attachment_path`,
-`attachment_duration`, `attachment_mime` de `direct_messages` et le bucket
-privé `voice-messages`. `supabase/schema.sql` continue de les créer (le script
-est rejoué tel quel sur les projets existants, et les retirer du fichier ne
-les supprimerait pas d'une base déjà à jour). Pour les effacer réellement —
-**opération définitive : les messages vocaux encore stockés sont perdus** —,
-dans Dashboard → SQL Editor :
+Le message vocal ayant été retiré de l'application, deux reliquats peuvent
+subsister sur les projets créés avant sa suppression : les colonnes `kind`,
+`attachment_path`, `attachment_duration`, `attachment_mime` de
+`direct_messages` et le bucket privé `voice-messages`. `supabase/schema.sql`
+ne les crée plus. Pour les effacer réellement — **opération définitive : les
+messages vocaux encore stockés sont perdus** —, coller **tout** le fichier
+`supabase/remove-voice-messages.sql` dans Dashboard → SQL Editor et l'exécuter.
 
-```sql
-drop policy if exists "Players upload their own voice messages" on storage.objects;
-drop policy if exists "Conversation participants read voice messages" on storage.objects;
-drop policy if exists "Senders delete their own voice messages" on storage.objects;
-delete from storage.objects where bucket_id = 'voice-messages';
-delete from storage.buckets where id = 'voice-messages';
--- Messages vocaux restés en base : leur `body` est vide, ils s'afficheraient
--- comme des bulles vides. À supprimer AVANT de retirer la colonne `kind`.
-delete from public.direct_messages where kind = 'voice';
-alter table public.direct_messages
-  drop column if exists kind,
-  drop column if exists attachment_path,
-  drop column if exists attachment_duration,
-  drop column if exists attachment_mime;
-```
+L'ordre des opérations compte : les triggers de `direct_messages` référencent
+les colonnes vocales, et les remplacer (le script le fait en premier, par leur
+version « texte uniquement » identique à `schema.sql`) avant de supprimer les
+colonnes — sinon chaque envoi de message planterait. Le script supprime ensuite
+les messages vocaux (bulles vides), les colonnes, le bucket et ses politiques,
+et affiche un tableau de contrôle : chaque ligne doit indiquer `OK`.
 
 Sans ce nettoyage, la messagerie fonctionne exactement pareil : colonnes vides
 et bucket inutilisé.
