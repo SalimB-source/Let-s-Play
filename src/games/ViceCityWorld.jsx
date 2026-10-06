@@ -3062,6 +3062,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
               color: 0x3a3a44, opacity: 0.5, scale: 0.52, grow: 2.3, life: 0.85,
               velocity: [(Math.random() - 0.5) * 1.8, 1.1 + Math.random() * 0.5, (Math.random() - 0.5) * 1.8],
             });
+            // Panache noir épais du capot pendant le tête-à-queue, juste
+            // avant l'explosion.
+            policeHoodScratch.set(0, 1.1, -1.3);
+            mesh.localToWorld(policeHoodScratch);
+            smoke.emit(policeHoodScratch, {
+              color: 0x1f1f25, opacity: 0.72, scale: 0.6, grow: 3.0, life: 1.3,
+              velocity: [(Math.random() - 0.5) * 0.8, 2.2 + Math.random() * 0.8, (Math.random() - 0.5) * 0.8],
+            });
             wreck.smokeTimer = 0.06;
           }
         }
@@ -3955,6 +3963,38 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, { redPickupsHidden: hideRedForRace })));
   }
 
+  // Fumée de capot : une berline touchée fume avant d'exploser. Plus sa barre
+  // descend, plus la fumée est dense, sombre et fréquente — à un ou deux carrés
+  // près, un panache noir s'échappe du moteur et annonce l'explosion.
+  const policeHoodScratch = new THREE.Vector3();
+  function emitPoliceDamageSmoke(police, dt) {
+    const mesh = police?.mesh;
+    if (!mesh?.visible || police.active === false) return;
+    const health = Number(police.health);
+    if (!Number.isFinite(health) || health <= 0 || health >= CITY_RUSH_POLICE_HEALTH) return;
+    const damage = 1 - health / CITY_RUSH_POLICE_HEALTH; // 0 → 1
+    police.damageSmokeTimer = (police.damageSmokeTimer || 0) - dt;
+    if (police.damageSmokeTimer > 0) return;
+    police.damageSmokeTimer = lite ? 0.2 - damage * 0.1 : 0.16 - damage * 0.11;
+    policeHoodScratch.set((Math.random() - 0.5) * 0.5, 1.05, -1.35);
+    mesh.localToWorld(policeHoodScratch);
+    // Gris clair à peine touchée → noir épais en fin de vie.
+    const shade = Math.round(0xb4 - damage * 0x86);
+    const color = (shade << 16) | (shade << 8) | (shade + 6);
+    smoke.emit(policeHoodScratch, {
+      color,
+      opacity: 0.28 + damage * 0.42,
+      scale: 0.28 + damage * 0.38,
+      grow: 2.2 + damage * 1.2,
+      life: 0.7 + damage * 0.6,
+      velocity: [(Math.random() - 0.5) * 0.7, 1.3 + damage * 1.1, 1.6 + Math.random() * 0.8],
+    });
+    // Coque presque percée : quelques étincelles orangées dans la fumée.
+    if (health <= 2 && Math.random() < 0.35) {
+      smoke.emit(policeHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.14, grow: 1.4, life: 0.32, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), 1.2] });
+    }
+  }
+
   function updatePolice(dt, packLeaderEntry) {
     // Sprint : aucune unité en piste, aucune annonce — la chasse ne tourne pas.
     if (sprint) return;
@@ -3963,6 +4003,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     policeAimNoticeCooldown = Math.max(0, policeAimNoticeCooldown - dt);
     const pursuers = activePursuers();
     pursuers.forEach((police) => { police.healthFlash = Math.max(0, (police.healthFlash || 0) - dt); });
+    pursuers.forEach((police) => emitPoliceDamageSmoke(police, dt));
     if (!pursuers.length) return;
     // Le trafic en ronde : identifiant pour l'impact, position et vitesse pour
     // repérer une voie bouchée (une berline évite de s'y engluer).
