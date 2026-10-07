@@ -30,6 +30,8 @@
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
     "check:mirage-engine": "node --test tests/mirage-engine.test.js",
     "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-bazooka.test.js tests/city-rush-themes.test.js tests/city-rush-hud.test.js tests/city-rush-progression.test.js tests/city-rush-story.test.js tests/city-rush-tournament.test.js",
+    "check:city-rush-tutorial": "node --test tests/city-rush-tutorial.test.js",
+    "check:city-rush-tutorial-ui": "node scripts/city-rush-tutorial-ui-check.mjs",
     "check:city-rush-bazooka": "node scripts/city-rush-bazooka-check.mjs",
     "check:city-rush-story": "node --test tests/city-rush-story.test.js",
     "check:city-rush-story-cars": "node scripts/vice-city-story-cars-check.mjs",

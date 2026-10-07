@@ -366,6 +366,12 @@
   color: #7af2b0;
 }
 
+.city-rush-top-button.is-guide {
+  background: rgba(84, 234, 209, 0.13);
+  border-color: rgba(84, 234, 209, 0.32);
+  color: #9af9e7;
+}
+
 .city-rush-sound-button {
   width: 36px;
   padding: 0;
@@ -1710,6 +1716,49 @@
   line-height: 1.6;
 }
 
+.city-rush-tutorial-launch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(840px, 100%);
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--city-accent) 30%, rgba(255, 255, 255, 0.12));
+  border-radius: 13px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--city-accent) 12%, rgba(255, 255, 255, 0.035)), rgba(255, 255, 255, 0.025));
+  color: var(--cr-text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s var(--cr-ease), border-color 0.18s var(--cr-ease), background 0.18s var(--cr-ease), box-shadow 0.18s var(--cr-ease);
+}
+
+.city-rush-tutorial-launch:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--city-accent) 58%, transparent);
+  background: color-mix(in srgb, var(--city-accent) 10%, rgba(255, 255, 255, 0.06));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--city-accent) 10%, transparent);
+}
+
+.city-rush-tutorial-launch:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.city-rush-tutorial-launch-mark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding-left: 2px;
+  border: 1px solid color-mix(in srgb, var(--city-accent) 46%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--city-accent) 15%, transparent);
+  color: var(--city-accent);
+  font-size: 11px;
+}
+
+.city-rush-tutorial-launch > span:nth-child(2) { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.city-rush-tutorial-launch b { font: 900 10px/1 var(--mono, monospace); letter-spacing: 0.12em; }
+.city-rush-tutorial-launch small { color: var(--cr-muted); font: 600 9px/1.2 var(--mono, monospace); letter-spacing: 0.035em; }
+.city-rush-tutorial-launch > i { color: var(--city-accent); font: 800 16px/1 system-ui, sans-serif; font-style: normal; }
+
 .city-rush-car-select-heading {
   display: flex;
   align-items: center;
@@ -2845,6 +2894,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-intro-copy { text-align: left; }
   .city-rush-intro h2 { font-size: clamp(28px, 9vw, 36px); }
   .city-rush-intro-copy > p { font-size: 11px; }
+  .city-rush-tutorial-launch { gap: 9px; padding: 9px 10px; }
+  .city-rush-tutorial-launch-mark { width: 30px; height: 30px; }
+  .city-rush-tutorial-launch b { font-size: 8px; }
+  .city-rush-tutorial-launch small { font-size: 7px; }
 
   .city-rush-city-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .city-rush-city-card:nth-child(5) { grid-column: 1 / -1; }
@@ -3560,3 +3613,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+/* Le tutoriel est une course guidée, pas une page qui remplace le circuit :
+   toute la largeur revient au jeu et le tableau latéral s'efface pendant ce tour. */
+.city-rush-page.is-tutorial .city-rush-layout { grid-template-columns: minmax(0, 1fr); }
+.city-rush-page.is-tutorial .city-rush-sidebar { display: none; }
+.city-rush-page.is-tutorial .city-rush-live-pill { display: none; }
+
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-page.is-tutorial .city-rush-tutorial-guide-toggle {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
+  .city-rush-page.is-tutorial .city-rush-tutorial-guide-toggle::before {
+    content: '✦';
+    font-size: 13px;
+  }
+}
