@@ -32,6 +32,7 @@
     "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-bazooka.test.js tests/city-rush-themes.test.js tests/city-rush-hud.test.js tests/city-rush-progression.test.js tests/city-rush-story.test.js",
     "check:city-rush-bazooka": "node scripts/city-rush-bazooka-check.mjs",
     "check:city-rush-story": "node --test tests/city-rush-story.test.js",
+    "check:city-rush-story-cars": "node scripts/vice-city-story-cars-check.mjs",
     "check:city-rush-audio": "node --test tests/city-rush-audio.test.js",
     "check:city-rush-cars": "node --test tests/city-rush-cars.test.js",
     "preview:city-rush-cars": "node scripts/city-rush-car-preview.mjs --sheet",

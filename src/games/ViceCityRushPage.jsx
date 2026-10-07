@@ -532,7 +532,27 @@ export default function ViceCityRushPage() {
   const activeModeLabel = storyMode ? `CHAPITRE ${String(storyRaceChapter + 1).padStart(2, '0')} / ${CITY_RUSH_STORY_CHAPTER_COUNT}` : mode.label;
   const cashRewardsEnabled = storyMode || mode.cashRewards !== false;
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
-  const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === carId) || CITY_RUSH_CARS[0], [carId]);
+  // Voiture du garage vraiment disponible : le choix du pilote, ou — s'il ne
+  // fait plus partie de son garage (instantané d'un autre compte appliqué en
+  // cours de route) — la première voiture possédée. L'Histoire, elle, ne
+  // connaît aucun verrou : elle part toujours d'une voiture roulante.
+  const garageCarId = useMemo(
+    () => (isCityRushCarOwned(careerProgress, carId)
+      ? carId
+      : (careerProgress.ownedCarIds[0] || CITY_RUSH_STARTER_CAR_ID)),
+    [careerProgress, carId],
+  );
+  // Voiture engagée dans la course qui s'affiche. Le scénario prête parfois la
+  // sienne (`fixedCarId` : la MISTRAL du prologue de 1983, la TEMPESTA de Voss
+  // sur le Ring) : le prêt vaut pour **ce chapitre seulement** et n'écrase
+  // jamais le choix du garage (`carId`). Autrement la voiture prêtée collait au
+  // pilote jusqu'à la fin de la campagne — la MISTRAL du prologue remplaçait la
+  // voiture achetée pour les neuf chapitres suivants, et la TEMPESTA du Ring
+  // retombait sur la citadine de départ une fois rendue.
+  const activeCarId = storyMode
+    ? (currentStoryRace?.fixedCarId || garageCarId)
+    : carId;
+  const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === activeCarId) || CITY_RUSH_CARS[0], [activeCarId]);
   // Chrono du Sprint : la valeur publiée par le monde pendant la course, et
   // sinon celle calculée pour la voiture sélectionnée dans le garage — au
   // rythme du parcours, exactement comme le monde : sur le Ring, plus posé, la
@@ -816,7 +836,9 @@ export default function ViceCityRushPage() {
     if (connected && !progressionReady) return;
     const savedProgress = careerProgressRef.current;
     const targetCityId = requestedCityId || (storyMode ? (currentStoryRace?.city || cityId) : cityId);
-    const selectedCarId = requestedCarId || carId;
+    // Voiture contrôlée au départ : celle demandée par le garage, sinon celle
+    // qui est engagée (prêt du scénario compris — voir `activeCarId`).
+    const selectedCarId = requestedCarId || activeCarId;
     if (!storyMode && !isCityRushCourseUnlocked(savedProgress, targetCityId)) {
       setStoryMode(false);
       setIntroStep('city');
@@ -884,13 +906,11 @@ export default function ViceCityRushPage() {
     const maxIndex = Math.min(progress, CITY_RUSH_STORY_CHAPTER_COUNT - 1);
     const requested = chapterIndex === null ? maxIndex : Math.max(0, Math.min(maxIndex, chapterIndex));
     const chapter = getStoryChapter(requested);
-    const savedProgress = careerProgressRef.current;
-    // Voiture prêtée par le scénario (prologue, Ring) ou voiture du garage.
-    const storyCarId = chapter.fixedCarId
-      || (isCityRushCarOwned(savedProgress, carId) ? carId : (savedProgress.ownedCarIds[0] || CITY_RUSH_STARTER_CAR_ID));
+    // La voiture du chapitre ne se décide pas ici : `activeCarId` prend celle
+    // que le scénario prête (`fixedCarId`) ou, sinon, celle du garage — sans
+    // jamais écraser le choix du pilote, qui doit survivre au prêt.
     setStoryMode(true);
     setStoryRaceChapter(requested);
-    setCarId(storyCarId);
     setCityId(chapter.city);
     setResult(null);
     setBriefingDone(false);

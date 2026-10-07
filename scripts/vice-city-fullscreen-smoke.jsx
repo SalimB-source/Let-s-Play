@@ -260,7 +260,21 @@ export async function checkViceCityFullscreen(assert) {
       assert.ok(missionCard.querySelector('.cr-story-mission-goal h3'), 'l’objectif principal est mis en évidence');
       assert.equal(missionCard.querySelector('.cr-story-challenges').open, false, 'les défis bonus restent repliés pour alléger la fiche');
       await click(missionCard.querySelector('.cr-story-challenges summary'));
-      assert.equal(missionCard.querySelectorAll('.cr-story-challenge-list p').length, 3, 'l’ouverture révèle les deux défis et le conseil');
+      // Le prologue replie cinq lignes : le parcours, la voiture, les deux
+      // défis et le conseil (les lignes « RÈGLES » et « RISQUE » n'apparaissent
+      // que sur les chapitres sans arme ou avec la police).
+      const challengeLines = [...missionCard.querySelectorAll('.cr-story-challenge-list p')]
+        .map((line) => ({ label: squash(line.querySelector('b')?.textContent), value: squash(line.querySelector('span')?.textContent) }));
+      assert.deepEqual(
+        challengeLines.map((line) => line.label),
+        ['PARCOURS', 'VOITURE', '2 ★', '3 ★', 'CONSEIL'],
+        'l’ouverture révèle le parcours, la voiture, les deux défis et le conseil',
+      );
+      // La voiture du prologue est prêtée par le scénario : la MISTRAL 1.4 de
+      // 1983, annoncée comme telle (voir `npm run check:city-rush-story-cars`).
+      const briefedCar = challengeLines.find((line) => line.label === 'VOITURE')?.value || '';
+      assert.match(briefedCar, /MISTRAL 1\.4/i, 'le prologue annonce la voiture prêtée par le scénario');
+      assert.match(briefedCar, /prêtée/i, 'le briefing dit que la voiture du prologue est prêtée');
       await click(storyChapterPage.querySelector('.cr-story-chapter-back'));
       await waitForIntroStep(node, 'MODE');
 
