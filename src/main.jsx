@@ -20,6 +20,7 @@ import './messages/messages.css';
 import './messages/calls.css';
 import './social/social.css';
 import './typography.css';
+import './large-screen.css'; // paliers ≥ 1440 px : conteneur, grilles, rythme
 import './theme.css';        // thème clair : importé en dernier (surcharge)
 import { LanguageProvider } from './i18n/LanguageContext';
 import { ThemeProvider } from './theme/ThemeContext';
