@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
+import ViceCityGarageStage from './ViceCityGarageStage';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushComic from './CityRushComic';
 import CityRushRaceList from './CityRushRaceList';
@@ -109,6 +110,9 @@ import './vice-city-rush-hud.css';
 import './city-rush-story.css';
 import './vice-city-rush-comic.css';
 import './city-rush-tournament.css';
+// Le garage 3D (hub type Need for Speed) est posé en dernier : il surcharge
+// la mise en page de préparation sans toucher aux feuilles déjà vérifiées.
+import './vice-city-rush-garage.css';
 
 // v4 : la boucle du stage double (600 m → 1 200 m), donc les courses à six
 // tours passent à 8 400 m et le Sprint à seize checkpoints / 4 800 m ; les
@@ -656,6 +660,18 @@ export default function ViceCityRushPage() {
       : (careerProgress.ownedCarIds[0] || CITY_RUSH_STARTER_CAR_ID)),
     [careerProgress, carId],
   );
+  // Voiture montrée dans le garage 3D. Le curseur du joueur (survol d'une
+  // carte, focus clavier) la fait changer sans rien lancer : on admire le
+  // modèle, la course ne part qu'au tap. Sur appareil tactile, pas de survol —
+  // la scène reste sur la voiture du garage.
+  const [previewCarId, setPreviewCarId] = useState(null);
+  const stageCar = useMemo(() => {
+    const wanted = previewCarId || garageCarId;
+    return CITY_RUSH_CARS.find((item) => item.id === wanted)
+      || CITY_RUSH_CARS.find((item) => item.id === garageCarId)
+      || CITY_RUSH_CARS[0];
+  }, [previewCarId, garageCarId]);
+  const stagePreviewing = Boolean(previewCarId) && previewCarId !== garageCarId;
   // Voiture engagée dans la course qui s'affiche. Le scénario prête parfois la
   // sienne (`fixedCarId` : la MISTRAL du prologue de 1983, la TEMPESTA de Voss
   // sur le Ring) : le prêt vaut pour **ce chapitre seulement** et n'écrase
@@ -1455,6 +1471,7 @@ export default function ViceCityRushPage() {
     startRace({ carId: nextCarId });
   };
   const goBack = () => {
+    setPreviewCarId(null);
     // En tournoi, pas d'étape ville : retour aux modes, tournoi abandonné.
     if (tournamentMode) {
       resetTournament();
@@ -1825,6 +1842,7 @@ export default function ViceCityRushPage() {
                         }
                         if (step.id === 'mode') resetTournament();
                         setStoryMode(false);
+                        setPreviewCarId(null);
                         setIntroStep(step.id);
                       }}
                       aria-current={introStep === step.id ? 'step' : undefined}
@@ -1833,6 +1851,36 @@ export default function ViceCityRushPage() {
                       <i>{idx + 1}</i><b>{step.label}</b>
                     </button>
                   ))}
+                  {/* Plaque du garage : la voiture montée sur le plateau 3D,
+                      avec son état. Elle suit le curseur dans la grille des
+                      modèles sans jamais lancer la course. */}
+                  <span className="city-rush-hub-plate">
+                    <i aria-hidden="true" />
+                    <b>{stageCar.name}</b>
+                    <small>{stageCar.className}</small>
+                    <em className={stagePreviewing ? 'is-preview' : ''}>
+                      {stagePreviewing ? 'APERÇU' : carGarageBadge(stageCar, isCityRushCarOwned(careerProgress, stageCar.id))}
+                    </em>
+                  </span>
+                </div>
+
+                {/* Garage 3D : la voiture modélisée tourne sur son plateau
+                    derrière les menus. Le tap sur un modèle la met au plateau
+                    (survol ou focus clavier) ; la course, elle, ne part qu'au
+                    lancer. Sans WebGL, la scène laisse la photo du modèle. */}
+                <div className="city-rush-hub-stage" aria-hidden="true">
+                  <ViceCityGarageStage
+                    carId={stageCar.id}
+                    carName={stageCar.name}
+                    accent={stageCar.accent}
+                    // À l'étape MODE, la bannière Histoire tient la colonne de
+                    // droite : la caméra se range de son côté pour que la
+                    // voiture se lise à gauche, dans le prolongement du titre.
+                    cameraShift={introStep === 'mode' ? 2.1 : 0}
+                    fallbackSrc={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[stageCar.id] || CAR_THUMBNAILS['vice-roadster']}`}
+                  />
+                  <span className="city-rush-hub-stage-scrim" aria-hidden="true" />
+                  <span className="city-rush-hub-stage-frame" aria-hidden="true" />
                 </div>
 
                 {introStep === 'mode' && (
@@ -2153,9 +2201,17 @@ export default function ViceCityRushPage() {
                             <button
                               key={car.id}
                               type="button"
-                              className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}${owned ? '' : ' is-locked'}${!owned && !canAfford ? ' is-unaffordable' : ''}`}
+                              className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}${owned ? '' : ' is-locked'}${!owned && !canAfford ? ' is-unaffordable' : ''}${previewCarId === car.id ? ' is-previewed' : ''}`}
                               style={{ '--car-accent': car.accent }}
                               onClick={() => chooseCarAndStart(car.id)}
+                              // Le curseur (souris) et le focus (clavier) montent
+                              // le modèle sur le plateau du garage : on admire la
+                              // voiture avant de la lancer. Rien ne part au
+                              // survol, et le tactile n'a pas de survol.
+                              onMouseEnter={() => setPreviewCarId(car.id)}
+                              onMouseLeave={() => setPreviewCarId((current) => (current === car.id ? null : current))}
+                              onFocus={() => setPreviewCarId(car.id)}
+                              onBlur={() => setPreviewCarId((current) => (current === car.id ? null : current))}
                               disabled={!owned && !canAfford}
                               aria-label={owned
                                 ? tournamentMode
@@ -2222,6 +2278,8 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-foot">
                   <span className="is-key-hint">← → / Q D · VOIES (MAINTENIR)</span>
                   <span className="is-touch-hint">GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE</span>
+                  <span className="is-key-hint">SOURIS SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
+                  <span className="is-touch-hint">GLISSE SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
                   <span className="is-key-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : 'A / Z / R · POUVOIRS · BONUS VERT : TURBO'}</span>
                   <span className="is-touch-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : 'BOUTON ROUGE · AK-47 · BONUS VERT : TURBO'}</span>
                   <span>{currentLaps} TOURS · {currentDistance} M</span>

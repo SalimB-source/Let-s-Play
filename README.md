@@ -850,6 +850,80 @@ l'extérieur » comme Échap). Elle ne dit rien du rendu réel : pour cela, ouvr
 jeu dans un vrai navigateur (`npm run dev`) et le passer en plein écran sur un
 grand écran.
 
+## Vice City Rush : le garage 3D, façon Need for Speed
+
+L'écran de préparation — **MODE → VILLE → GARAGE** — est devenu un garage. La
+voiture du moment est **modélisée en 3D** (`three.js`), posée sur un plateau
+tournant au milieu d'une cabine d'atelier éclairée comme un studio, et **tous
+les menus restent au-dessus, sur la même page** : rien ne change de route, rien
+ne s'ouvre par-dessus, on prépare sa course en regardant sa voiture.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ [1 MODE] [2 VILLE] [3 GARAGE]      MISTRAL 1.4 · DÉPART  │ ← barre d'étapes + plaque
+├───────────────────────────────────────────────────╥──────┤
+│  VICE CITY                                        ║      │
+│  RUSH.                                            ║ 3D   │
+│  Choisis un mode, une ville…                      ║GARAGE│ ← la scène, en fond
+├───────────────────────────────────────────────────╣      │
+│  [CIRCUIT]  [POURSUITE]  [SPRINT]   · bannière Histoire  │ ← les menus, au-dessus
+└──────────────────────────────────────────────────────────┘
+```
+
+- **La scène.** `ViceCityGarageStage.jsx` monte sa propre scène three.js : dalle
+  de béton (bruit, joints et taches d'huile dessinés au canvas), tôles peintes,
+  plateau tournant cerclé d'un néon à la couleur de la voiture, marquage au sol,
+  enseignes au néon (« VICE CITY RUSH » + le nom du modèle monté, « EST. 1986 »),
+  rampes de lumières au plafond, projecteurs qui découpent la carrosserie,
+  poussières dans les faisceaux, piles de pneus, établi à rouleaux, bidons et
+  étagères. La voiture, elle, sort du même constructeur que la course
+  (`makeRacerCar`, phares allumés) : pas un deuxième modèle à maintenir.
+- **Le plateau tourne.** Un tour en ~37 secondes. Glisser le regard (souris ou
+  doigt) décale légèrement la caméra autour de la voiture ; au doigt, seul le
+  geste horizontal regarde la voiture (`touch-action: pan-y`), le vertical
+  continue de faire défiler la page. `prefers-reduced-motion` arrête la rotation.
+- **La plaque du garage**, en bout de barre d'étapes, annonce le modèle monté sur
+  le plateau et son état (DÉPART / OFFERTE / ACHETÉE / prix). Survoler une carte
+  du garage — ou la prendre au clavier — fait tourner le modèle au plateau et
+  passe la plaque en **APERÇU** : on admire, la course ne part qu'au lancer.
+- **Un décor, jamais un obstacle.** La scène est posée en couche de fond
+  (`position: absolute; inset: 0; pointer-events: none`) : les grilles à zones
+  nommées des menus (`stepper / copy / modes / story / actions / foot`) n'ont pas
+  bougé d'une ligne, et un clic sur une voiture part en course comme avant.
+- **Sans WebGL** (vieux appareil, contexte perdu, bac à sable de test), la scène
+  se retire et la photo du modèle prend le relais dans la même baie : l'écran de
+  préparation reste complet.
+- **Batterie.** La boucle de rendu se met en pause quand l'onglet est caché ou
+  que la scène sort de l'écran ; matériaux, géométries et le contexte WebGL sont
+  rendus à la fermeture (changement de voiture, départ en course, démontage).
+
+### Où vit le code
+
+- `src/games/ViceCityGarageStage.jsx` — la scène three.js (cabine, plateau,
+  lumières, poussières, boucle de rendu, repli sans WebGL) ;
+- `src/games/vice-city-rush-garage.css` — la couche de fond, le voile de
+  contraste, le cadre de baie, la plaque du garage et la carte en aperçu ;
+  importée en dernier par la page, elle surcharge la mise en page de préparation
+  sans toucher aux feuilles déjà vérifiées ;
+- `src/games/ViceCityRushPage.jsx` — la scène montée dans le hub, la plaque, et
+  l'état `previewCarId` (survol / focus clavier) qui choisit le modèle monté.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-garage-3d   # la page dans jsdom, scène de garage doublée
+```
+
+jsdom n'a pas de WebGL : la vérification monte la vraie page et prouve au passage
+que le repli photo fonctionne. Elle lit ensuite les feuilles de style pour tenir
+les invariants — la scène reste hors flux (`position: absolute`, `z-index: 0`,
+`pointer-events: none`), les menus passent devant (`position: relative`,
+`z-index: 1`), les zones nommées des grilles sont intactes — et regarde la page
+monter l'étape garage, la plaque annoncer la voiture, le focus clavier la faire
+tourner au modèle visé (APERÇU) sans lancer la course, et le tap sur une voiture
+offerte partir au compte à rebours. Le rendu réel, lui, se juge dans un vrai
+navigateur (`npm run dev`).
+
 ## Vice City Rush : les tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
