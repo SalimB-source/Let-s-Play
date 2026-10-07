@@ -19,3 +19,4 @@ android/.idea/
 
 # Harnais locaux jetables (rendus logiciels, vérifications headless)
 .cache/
+.wrangler/

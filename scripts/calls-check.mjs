@@ -199,22 +199,39 @@ check('message policy AR présent', callsCopy.ar.errPermissionPolicy.length > 10
 check('describeCallError policy (FR)', describeCallError({ name: 'NotAllowedError' }, callsText('fr'), 'policy'), callsCopy.fr.errPermissionPolicy);
 check('describeCallError policy (EN)', describeCallError({ name: 'NotAllowedError' }, callsText('en'), 'policy'), callsCopy.en.errPermissionPolicy);
 
-// Garde-fou déploiement : l'en-tête `Permissions-Policy` de vercel.json est
-// servi à CHAQUE réponse du site (celui que charge l'APK Android). Un
-// `microphone=()` ou `camera=()` y désactive micro et caméra pour toujours :
-// permissions du joueur et correctifs de code mis à part. C'est la vraie cause
-// de la panne du 27/09/2026 (« ça me demande d'activer le micro et la
-// caméra mais c'est déjà fait ») : ne jamais laisser ce réglage revenir.
+// Garde-fou déploiement : l'en-tête `Permissions-Policy` est servi à CHAQUE
+// réponse du site (celui que charge l'APK Android) — via vercel.json sur
+// Vercel, via public/_headers sur Cloudflare Pages. Un `microphone=()` ou
+// `camera=()` y désactive micro et caméra pour toujours : permissions du
+// joueur et correctifs de code mis à part. C'est la vraie cause de la panne
+// du 27/09/2026 (« ça me demande d'activer le micro et la caméra mais
+// c'est déjà fait ») : ne jamais laisser ce réglage revenir.
 const vercelConfig = JSON.parse(readFileSync(path.join(root, 'vercel.json'), 'utf8'));
 const policyHeader = (vercelConfig.headers || [])
   .flatMap((entry) => entry.headers || [])
   .find((header) => String(header.key).toLowerCase() === 'permissions-policy');
-check('en-tête Permissions-Policy déclaré', Boolean(policyHeader));
+check('en-tête Permissions-Policy déclaré (vercel.json)', Boolean(policyHeader));
 const policyValue = policyHeader ? String(policyHeader.value) : '';
-check('… le micro n’y est pas interdit', /microphone=\(\)/.test(policyValue), false);
-check('… la caméra n’y est pas interdite', /camera=\(\)/.test(policyValue), false);
-check('… le micro reste ouvert au site', /microphone=\(self\)/.test(policyValue));
-check('… la caméra reste ouverte au site', /camera=\(self\)/.test(policyValue));
+check('… le micro n’est pas interdit (vercel.json)', /microphone=\(\)/.test(policyValue), false);
+check('… la caméra n’est pas interdite (vercel.json)', /camera=\(\)/.test(policyValue), false);
+check('… le micro reste ouvert au site (vercel.json)', /microphone=\(self\)/.test(policyValue));
+check('… la caméra reste ouverte au site (vercel.json)', /camera=\(self\)/.test(policyValue));
+
+// Même garde-fou pour Cloudflare Pages : public/_headers (copié dans dist/)
+// doit déclarer exactement la même politique, sinon un déploiement Cloudflare
+// perdrait micro et caméra. Le fichier suit le format « path » suivi de
+// lignes « Clé: valeur » indentées.
+const headersFile = readFileSync(path.join(root, 'public', '_headers'), 'utf8');
+const cfPolicyLine = headersFile
+  .split('\n')
+  .map((line) => line.trim())
+  .find((line) => line.toLowerCase().startsWith('permissions-policy:'));
+check('en-tête Permissions-Policy déclaré (public/_headers)', Boolean(cfPolicyLine));
+const cfPolicyValue = cfPolicyLine ? cfPolicyLine.slice(cfPolicyLine.indexOf(':') + 1).trim() : '';
+check('… le micro n’est pas interdit (public/_headers)', /microphone=\(\)/.test(cfPolicyValue), false);
+check('… la caméra n’est pas interdite (public/_headers)', /camera=\(\)/.test(cfPolicyValue), false);
+check('… le micro reste ouvert au site (public/_headers)', /microphone=\(self\)/.test(cfPolicyValue));
+check('… la caméra reste ouverte au site (public/_headers)', /camera=\(self\)/.test(cfPolicyValue));
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/2] rendu SSR\n');

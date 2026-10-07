@@ -26,7 +26,10 @@ const supabaseAnonKey = pickEnv(
 
 export default defineConfig({
   plugins: [react()],
-  base: process.env.VERCEL ? '/' : '/Let-s-Play/',
+  // Vercel and Cloudflare Pages both serve the site from the domain root
+  // (Vercel sets VERCEL=1, Cloudflare Pages sets CF_PAGES=1 in the build
+  // environment). GitHub Pages serves it under the repo-name sub-path.
+  base: (process.env.VERCEL || process.env.CF_PAGES) ? '/' : '/Let-s-Play/',
   server: {
     allowedHosts: true,
   },

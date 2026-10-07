@@ -1,0 +1,10 @@
+# Cloudflare Pages response headers — mirrors vercel.json (Vercel) so the
+# site keeps the same browser-hardening baseline after migrating away from
+# Vercel. Cloudflare Pages reads this file from the build output directory
+# (public/ is copied into dist/ by Vite).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), geolocation=(), microphone=(self), payment=(), usb=()
+  X-Frame-Options: SAMEORIGIN
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
