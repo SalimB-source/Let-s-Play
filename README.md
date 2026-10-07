@@ -4338,11 +4338,14 @@ sur desktop, deux sous 1100 px, une sous 780 px.
 ## Hub Actus : les actus du jour ouvrent la page
 
 Le hub (`/news`) commence par **les actus du jour** (`id="actus-du-jour"` :
-trois cartes, une par univers, avec leurs miniatures dédiées) avant les trois
-cartes d'univers (`01 / GAMING`, `02 / CINÉMA`, `03 / TECH`). L'ordre vit dans
+trois cartes, une par univers, avec leurs miniatures dédiées). Viennent ensuite
+le bandeau du hub (« 02 / NEWS HUB » + « Choisis ton univers », qui introduit la
+suite), les trois cartes d'univers (`01 / GAMING`, `02 / CINÉMA`, `03 / TECH`),
+puis la bannière « actu gaming du jour ». Le `h1` reste la première chose écrite
+dans la page, mais il n'est là que pour les lecteurs d'écran. L'ordre vit dans
 `src/pages/News.jsx` ; l'espacement est réglé par `.news-hub-headlines` dans
 `src/news-carousel.css` (section en tête de page : pas de marge haute propre,
-c'est elle qui sépare les univers qui suivent).
+c'est elle qui laisse respirer le bandeau qui suit).
 
 ## Hub Actus : la bannière « actu gaming du jour »
 

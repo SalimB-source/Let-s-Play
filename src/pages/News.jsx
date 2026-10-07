@@ -233,17 +233,12 @@ export default function News() {
 
   return (
     <section className="news-hub-section">
-      <div className="news-hub-head wrap">
-        <div className="section-label"><span>02 / NEWS HUB</span><span>{copy.updated}</span></div>
-        <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
-        {/* Gros titre retiré du visuel : le h1 ne reste que pour les lecteurs
-            d'écran et le référencement (invisible à l'affichage). */}
-        <h1 className="sr-only">{copy.h1a} {copy.h1b}</h1>
-        <p className="news-hub-intro">{copy.intro}</p>
-      </div>
+      {/* Titre de la page : réservé aux lecteurs d'écran et au référencement,
+          il reste la première chose lue sans s'afficher. */}
+      <h1 className="sr-only">{copy.h1a} {copy.h1b}</h1>
 
-      {/* LES ACTUS DU JOUR (07.10.2026) : elles ouvrent la page, avant les trois
-          univers — 3 cartes avec leurs miniatures dédiées. */}
+      {/* LES ACTUS DU JOUR (07.10.2026) : elles ouvrent la page — 3 cartes
+          avec leurs miniatures dédiées, avant le bandeau du hub. */}
       <section className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" id="actus-du-jour">
         <div className="section-label">
           <span>{todaySectionCopy.label}</span>
@@ -296,6 +291,14 @@ export default function News() {
           ))}
         </div>
       </section>
+
+      {/* Bandeau du hub (« 02 / NEWS HUB ») : il introduit les trois univers
+          qui suivent, juste sous les actus du jour. */}
+      <div className="news-hub-head wrap">
+        <div className="section-label"><span>02 / NEWS HUB</span><span>{copy.updated}</span></div>
+        <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
+        <p className="news-hub-intro">{copy.intro}</p>
+      </div>
 
       <div className="news-hub-grid wrap">
         {/* Carte GAMING */}
