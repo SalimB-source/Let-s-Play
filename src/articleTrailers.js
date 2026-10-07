@@ -67,6 +67,23 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // ---- Fournée du mercredi 07.10.2026 ---------------------------------------
+  // GTA VI (gaming) : les bandes-annonces officielles de Rockstar Games
+  // présentent Leonida et Vice City, où se déroulera GTA VI.
+  'gta-6-cloud-pc-dementi-xbox': {
+    label: 'GRAND THEFT AUTO VI', meta: 'ROCKSTAR GAMES · LEONIDA',
+    items: [
+      { id: 'QdBZY2fkU-0', kind: 'trailer', title: 'Grand Theft Auto VI Trailer 1', channel: 'Rockstar Games', verified: '07.10.2026', note: 'À titre d’illustration : le premier trailer officiel (04.12.2023) présente Leonida et Vice City, où se jouera GTA VI.' },
+      { id: 'VQRLujxTm3c', kind: 'trailer', title: 'Grand Theft Auto VI Trailer 2', channel: 'Rockstar Games', verified: '07.10.2026', note: 'À titre d’illustration : le deuxième trailer officiel (06.05.2025) suit Jason et Lucia dans Leonida.' },
+    ],
+    credit: 'Vidéos officielles : Rockstar Games, sur YouTube (trailers 1 et 2).',
+  },
+  // Spider-Man 4 (cinéma) : Destin Daniel Cretton prépare le tournage,
+  // aucune image animée officielle n’a encore été publiée.
+  'cinema/spider-man-4-destin-daniel-cretton': {
+    label: 'SPIDER-MAN 4', meta: 'SONY PICTURES · MARVEL STUDIOS',
+    pending: 'Aucune bande-annonce : le quatrième opus de Spider-Man avec Tom Holland et Zendaya n’a encore dévoilé aucune image officielle — Sony Pictures et Marvel Studios préparent le tournage pour l’été.',
+  },
   // ---- Fournée du mardi 06.10.2026 -----------------------------------------
   // Gaming : Rockstar Games publie ses trailers sur sa propre chaîne — les
   // seules vidéos officielles montrant l’État de Leonida dont parle l’article.

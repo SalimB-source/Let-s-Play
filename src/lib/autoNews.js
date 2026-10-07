@@ -15,6 +15,7 @@ const storyNumber = (label) => {
 // (évite les doublons dans la grille GamingNews et dans la recherche).
 const SUPERSEDED_AUTO_SLUGS = new Set([
   'physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de',
+  'pendant-4h-cette-nuit-etat-de-grace-gta-6-allait-etre-jouabl',
 ]);
 
 export const autoNewsStories = Object.values(autoStories)

@@ -26,7 +26,7 @@ export default function TechNews() {
   const copy = {
     en: {
       section: 'TECH NEWS',
-      updated: 'Updated 06.10.2026',
+      updated: 'Updated 07.10.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -39,7 +39,7 @@ export default function TechNews() {
     },
     fr: {
       section: 'ACTUS TECH',
-      updated: 'Mis à jour le 06.10.2026',
+      updated: 'Mis à jour le 07.10.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -52,7 +52,7 @@ export default function TechNews() {
     },
     ar: {
       section: 'أخبار التقنية',
-      updated: 'آخر تحديث 06.10.2026',
+      updated: 'آخر تحديث 07.10.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -65,7 +65,7 @@ export default function TechNews() {
     },
   }[lang] || {
     section: 'ACTUS TECH',
-    updated: 'Mis à jour le 06.10.2026',
+    updated: 'Mis à jour le 07.10.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -77,20 +77,19 @@ export default function TechNews() {
     back: 'Retour au hub',
   };
 
-  // Actu tech du mardi 06.10.2026 : l'interdiction partielle des lunettes
-  // connectées voulue par la Norvège ouvre la page ; suivent l'actu du lundi
-  // 05.10.2026 (la « Super Intelligence Force » de Trump et le futur
-  // SpaceXSI d'Elon Musk), puis celles du week-end des 03-04.10.2026 —
-  // cyberattaque de la Région Hauts-de-France, technique HashHiding de la
-  // Corée du Nord et livraisons de Tesla au troisième trimestre —, le vol 14
-  // de Starship (première mise en orbite), la plateforme de sécurité des
-  // agents de NVIDIA (OpenShell + Sentry) et le déjeuner IA à la Maison-
+  // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
+  // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic) ;
+  // suivent l'actu du mardi 06.10.2026 (interdiction partielle des lunettes
+  // connectées en Norvège), celle du lundi 05.10.2026 (la « Super Intelligence
+  // Force » de Trump et SpaceXSI), puis celles du week-end des 03-04.10.2026
+  // — cyberattaque Hauts-de-France, technique HashHiding et livraisons Tesla —,
+  // le vol 14 de Starship, OpenShell de NVIDIA et le déjeuner IA à la Maison-
   // Blanche. Les plus récentes ouvrent la page ; chaque carte affiche le
-  // visuel officiel publié par la marque ou par l’article source (page de
-  // lancement SpaceX, communiqué NVIDIA, photo de presse Reuters / Semafor),
-  // avec la carte éditoriale du gabarit du robot (`fallbackImage`,
-  // public/*.svg) en repli.
+  // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   const articles = useMemo(() => [
+    // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
+    // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic).
+    { to: '/news/tech/ai-act-europe-premiers-controles', image: 'ai-act-europe-regulation-news.jpg', fallbackImage: 'ai-act-europe-controles-news.svg', alt: 'Régulation européenne de l’intelligence artificielle — illustration éditoriale originale Let’s Play', badge: 'EUROPE · RÉGULATION IA', kicker: '07.10.2026 · REUTERS', title: 'L’AI ACT : L’EUROPE S’ACTIVE.', excerpt: 'Le Bureau européen de l’IA adresse ses premières demandes de conformité aux concepteurs de modèles frontières dépassant 10^25 FLOPs. Les laboratoires ont 30 jours pour documenter leurs systèmes, sous peine d’amendes allant jusqu’à 7 % du chiffre d’affaires mondial.', read: copy.read, sentiment: 'mixed' },
     // Actu tech du mardi 06.10.2026 : la Norvège veut couper les caméras des
     // lunettes connectées dans les lieux publics — l'usage privé reste permis.
     { to: '/news/tech/norvege-lunettes-connectees-interdiction', image: 'https://i.guim.co.uk/img/media/40af5768117abd5443d47eba0a698ad852dd88a1/451_0_4085_3270/master/4085.jpg?width=1200&dpr=1&s=none&crop=none', fallbackImage: 'norvege-lunettes-connectees-news.svg', alt: 'Mark Zuckerberg présente la gamme de lunettes connectées de Meta — photo Carlos Barría/Reuters publiée par The Guardian', badge: 'NORVÈGE · VIE PRIVÉE', kicker: '06.10.2026 · THE GUARDIAN', title: 'LA NORVÈGE COUPE LES CAMÉRAS.', excerpt: 'Le gouvernement veut interdire temporairement les lunettes connectées dans les parcs, plages, musées, écoles, crèches, établissements de santé, salles de sport et événements publics. L’usage privé resterait autorisé ; le texte, encore à déposer, est soutenu par un groupe d’experts chargé d’une régulation permanente.', read: copy.read, sentiment: 'mixed' },

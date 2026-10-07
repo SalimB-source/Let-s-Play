@@ -156,6 +156,12 @@ const pageMeta = {
     description: 'Le PDG de Microsoft juge « formidable » la rationalisation de Xbox menée par Asha Sharma et promet un retour à la croissance dès le prochain exercice fiscal, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.',
     image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', type: 'article', published: '2026-09-28', section: 'Actualités gaming',
   },
+  // Actu gaming du 07.10.2026 — le visuel Gamekult sert aussi de repli.
+  '/news/gta-6-cloud-pc-dementi-xbox': {
+    title: 'GTA 6 : Xbox dément toute exclusivité de streaming sur PC — Let’s Play',
+    description: 'Après un rapport de The Verge évoquant des droits de streaming pour GTA VI, Matthew Ball, Chief Strategy Officer de Xbox, a formellement démenti : GTA 6 ne sera pas streamable sur PC au lancement le 19 novembre 2026 et reste cantonné aux consoles PS5 et Xbox Series.',
+    image: 'gta-6-cloud-pc-dementi-news.jpg', type: 'article', published: '2026-10-07', section: 'Actualités gaming',
+  },
   // Actu gaming du 06.10.2026 — le visuel Gamekult sert aussi de repli.
   '/news/gta-6-satire-monde-invente': {
     title: 'GTA 6 : Rockstar assume une satire d’un monde inventé — Let’s Play',
@@ -201,6 +207,12 @@ const pageMeta = {
     title: 'Meta Connect 2026 : lunettes VR à 1 299 $ et Muse Charm — Let’s Play',
     description: 'Meta a présenté le 23 septembre 2026 des lunettes de réalité virtuelle à 1 299 dollars, attendues au printemps 2027, et le Muse Charm, un accessoire à porter sur soi pour parler à l’agent Muse, annoncé pour décembre sans prix.',
     image: 'https://image.cnbcfm.com/api/v1/image/108367218-Julia_Meta_VR_2.jpg?v=1790211668&w=1600&h=900&vtcrop=y', type: 'article', published: '2026-0-23', section: 'Actualités tech',
+  },
+  // Actu tech du 07.10.2026 — illustration de la réglementation européenne.
+  '/news/tech/ai-act-europe-premiers-controles': {
+    title: 'L’AI Act en Europe : le Bureau de l’IA lance ses premiers contrôles — Let’s Play',
+    description: 'La Commission européenne et son AI Office ouvrent la première phase de contrôle des modèles d’IA frontières : les laboratoires ont 30 jours pour justifier de leur conformité sous peine d’amendes pouvant atteindre 7 % du chiffre d’affaires.',
+    image: 'ai-act-europe-regulation-news.jpg', type: 'article', published: '2026-10-07', section: 'Actualités tech',
   },
   // Actu tech du 06.10.2026 — photo de presse de la source (Carlos Barría /
   // Reuters, via The Guardian) : la carte et le partage social montrent la
@@ -254,6 +266,12 @@ const pageMeta = {
     title: 'Le biopic Fred Astaire réunit Tom Holland, Margaret Qualley et Sabrina Carpenter — Let’s Play',
     description: 'Sony complète le casting de son biopic Fred Astaire : Tom Holland en Fred, Margaret Qualley en Adele Astaire et Sabrina Carpenter en Ginger Rogers, sous la direction de Paul King. Aucune date de sortie pour l’instant.',
     image: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', type: 'article', published: '2026-09-27', section: 'Actualités cinéma',
+  },
+  // Actu cinéma du 07.10.2026 — officialisation de la réalisation de Spider-Man 4.
+  '/news/cinema/spider-man-4-destin-daniel-cretton': {
+    title: 'Spider-Man 4 : Destin Daniel Cretton réalisera le film pour juillet 2027 — Let’s Play',
+    description: 'Sony Pictures et Marvel Studios officialisent Destin Daniel Cretton à la réalisation de Spider-Man 4 avec Tom Holland et Zendaya. Tournage prévu à l’été pour une sortie mondiale en salles en juillet 2027.',
+    image: 'spider-man-4-cretton-news.jpg', type: 'article', published: '2026-10-07', section: 'Actualités cinéma',
   },
   // Actu cinéma du 06.10.2026 — miniature de la bande-annonce officielle
   // Warner Bros. (2022), la suite n'ayant encore aucun visuel propre.
