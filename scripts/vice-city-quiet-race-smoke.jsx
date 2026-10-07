@@ -123,7 +123,7 @@ export async function checkViceCityQuietRace(assert) {
     assert.equal(worldProbe.props?.onLap, undefined, 'la page n’écoute plus les passages de ligne');
 
     // Le bouton jaune est empilé sous l'AK-47 et reste grisé tant que le HUD
-    // n'annonce pas la traversée de l'entrepôt du dernier tour.
+    // n'annonce pas la traversée d'un des deux entrepôts (30 % / 65 %).
     const gunButton = mustFind(node, '.city-rush-machine-gun-button', 'commande rouge');
     const bazookaButton = mustFind(node, '.city-rush-bazooka-button', 'commande bazooka');
     assert.ok(gunButton.nextElementSibling === bazookaButton, 'le bouton bazooka se place directement sous le bouton rouge');

@@ -229,7 +229,11 @@ const EMPTY_HUD = {
   inventory: createCityRushInventory(),
   bazookaAmmo: 0,
   bazookaPickupTaken: false,
+  bazookaPickupsTaken: 0,
+  bazookaPickupsTotal: 0,
   bazookaEnabled: false,
+  bazookaNextDistance: null,
+  bazookaWarehouseGap: null,
   score: 0,
   pickups: 0,
   slowLeft: 0,
@@ -569,7 +573,9 @@ export default function ViceCityRushPage() {
   }, [storyMode, currentStoryRace]);
   const storyWeaponsOn = !storyMode || storyRules?.weaponsEnabled !== false;
   const storyPoliceOn = !storyMode || storyRules?.policeEnabled !== false;
-  const bazookaMode = cityId === 'vice-city' && !sprintMode && storyWeaponsOn && storyPoliceOn && storyRules?.bazookaEnabled !== false;
+  // Le bazooka est sur toutes les cartes (hors Sprint et chapitres sans arme) :
+  // deux entrepôts par course, à 30 % puis 65 % du parcours.
+  const bazookaMode = !sprintMode && storyWeaponsOn && storyPoliceOn && storyRules?.bazookaEnabled !== false;
   // Chronos de référence des chapitres contre-la-montre : cible fixe de la
   // TEMPESTA prêtée sur le Ring, par calculé sur la voiture engagée en Sprint.
   const storyTargetTime = useMemo(
@@ -1368,13 +1374,15 @@ export default function ViceCityRushPage() {
                 {bazookaMode && (() => {
                   const ammo = Math.max(0, Math.min(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, Number(hud.bazookaAmmo) || 0));
                   const ready = ammo > 0;
+                  // Épuisé : les deux entrepôts sont ramassés et il ne reste
+                  // aucune roquette ; sinon le prochain entrepôt réapprovisionne.
                   const exhausted = hud.bazookaPickupTaken && ammo === 0;
                   const stateLabel = ready ? `${ammo} TIR${ammo > 1 ? 'S' : ''} · X` : exhausted ? 'ÉPUISÉ' : 'À RAMASSER';
                   const hint = ready
                     ? `Tirer au bazooka · ${ammo} tir${ammo > 1 ? 's' : ''} restant${ammo > 1 ? 's' : ''} · touche X`
                     : exhausted
-                      ? 'Bazooka épuisé : les deux tirs ont été utilisés'
-                      : 'Bazooka verrouillé : ramasse le bonus jaune dans l’entrepôt au dernier tour';
+                      ? 'Bazooka épuisé : les deux entrepôts sont vides et les tirs sont utilisés'
+                      : 'Bazooka verrouillé : ramasse le bonus jaune dans un entrepôt (30 % ou 65 % de la course)';
                   return (
                     <button
                       type="button"
@@ -1535,7 +1543,7 @@ export default function ViceCityRushPage() {
                           <b>{m.name}</b>
                           <small>{m.label}</small>
                           <span className="city-rush-mode-description">{m.desc}</span>
-                          {cityId === 'vice-city' && m.format !== 'sprint' && <span className="city-rush-mode-bazooka-hint">BAZOOKA · 2 TIRS · ENTREPÔT JAUNE AU DERNIER TOUR</span>}
+                          {m.format !== 'sprint' && <span className="city-rush-mode-bazooka-hint">BAZOOKA · 2 TIRS · 2 ENTREPÔTS JAUNES (30 % / 65 %)</span>}
                           <span className="city-rush-mode-card-footer">
                             <span className="city-rush-mode-laps"><i />{m.format === 'sprint' ? `${m.checkpoints} CHECKPOINTS · ${CITY_RUSH_SPRINT_DISTANCE} M` : `${m.laps} TOUR${m.laps > 1 ? 'S' : ''} · ${cityRushRaceDistance(m.laps)} M`}</span>
                             <span className="city-rush-card-action">VILLE <i aria-hidden="true">↗</i></span>
@@ -2039,8 +2047,8 @@ export default function ViceCityRushPage() {
               {bazookaMode && (
                 <div className="city-rush-guide-item is-bazooka">
                   <span><PowerIcon type="bazooka" /></span>
-                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS · DERNIER TOUR</b><small>À Vice City, traverse l’entrepôt jaune sur le bas-côté au dernier tour. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de deux cases. Chaque tir compte.</small></div>
-                  <kbd>X · 2</kbd>
+                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS PAR ENTREPÔT</b><small>Sur chaque carte, deux entrepôts jaunes sur le bas-côté : un à 30 % de la course, avant le garage de vie, un à 65 %. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de deux cases. Chaque tir compte.</small></div>
+                  <kbd>X · 4</kbd>
                 </div>
               )}
               {storyMode && !storyWeaponsOn && (

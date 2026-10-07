@@ -1,5 +1,8 @@
-// Vérification d'intégration réelle du pickup, du bouton d'action monde et du
-// projectile du bazooka avec un faux renderer WebGL (aucun GPU requis).
+// Vérification d’intégration réelle des deux entrepôts de bazooka (30 % puis
+// 65 % de la course, sur toutes les cartes) : ramassage du premier lot avant
+// le garage de vie, épuisement, réapprovisionnement au second entrepôt, tir de
+// bout en bout sur une poursuite du dernier tour et reset d’inventaire — avec
+// un faux renderer WebGL (aucun GPU requis).
 const ctx2d = () => {
   const gradient = { addColorStop() {} };
   return {
@@ -71,7 +74,9 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
+  cityRushBazookaTrackDistances,
   cityRushLaneConfig,
+  cityRushRaceDistance,
   selectCityRushRacers,
 } = await import('../src/games/cityRushRules.js');
 
@@ -140,99 +145,195 @@ const world = createCityRushWorld(
 );
 const scene = world.scene;
 const hud = () => callbacks.huds.at(-1);
-const warehouse = [];
+const warehouses = [];
 scene.traverse((object) => {
-  if (object.name === 'city-rush-bazooka-warehouse') warehouse.push(object);
+  if (object.name === 'city-rush-bazooka-warehouse') warehouses.push(object);
 });
-if (warehouse.length !== 1) fail('l’entrepôt unique de Vice City manque à la scène', { found: warehouse.length });
-if (warehouse[0].visible) fail('l’entrepôt ne doit pas apparaître avant le dernier tour');
+if (warehouses.length !== 2) fail('les deux entrepôts de bazooka manquent à la scène', { found: warehouses.length });
+if (warehouses.some((warehouse) => warehouse.visible)) fail('les entrepôts ne doivent pas apparaître avant le départ');
+
+// Deux entrepôts par course : 30 % puis 65 % du parcours, le premier avant le
+// garage de vie de mi-course (50 %), le second après.
+const totalDistance = cityRushRaceDistance(3);
+const expectedDistances = cityRushBazookaTrackDistances({ laps: 3 });
+if (expectedDistances.length !== 2) fail('deux entrepôts sont attendus par course', { expectedDistances });
+if (expectedDistances[0] !== totalDistance * 0.3) fail('le premier entrepôt doit être à 30 % de la course', { expectedDistances, totalDistance });
+if (expectedDistances[1] !== totalDistance * 0.65) fail('le second entrepôt doit être à 65 % de la course', { expectedDistances, totalDistance });
+if (!(expectedDistances[0] < totalDistance * 0.5 && expectedDistances[1] > totalDistance * 0.5)) {
+  fail('le premier entrepôt doit précéder le garage de vie (50 %), le second le suivre', { expectedDistances });
+}
 
 world.setPhase('playing');
 world.start();
-const warehouseDistance = hud()?.bazookaWarehouseGap;
-if (!Number.isFinite(warehouseDistance)) fail('la distance de l’entrepôt n’est pas publiée au HUD', hud());
-
-let collectedAt = null;
-let playerLane = null;
-let frame = 0;
-const maxFrames = 9000;
-while (!callbacks.finish && frame < maxFrames) {
-  const state = hud();
-  const gap = Number(state?.bazookaWarehouseGap);
-  playerLane = Number(state?.playerLane);
-  // La voie extérieure est celle de l’entrée. On s’y place largement avant
-  // le hangar, et on réessaie si une voiture occupe momentanément la voie.
-  if (!state?.bazookaPickupTaken && Number.isFinite(gap) && gap < 520 && gap > -8
-      && playerLane !== bazookaLane && frame % 6 === 0) {
-    world.action(playerLane < bazookaLane ? 'right' : 'left');
-  }
-  if (!state?.bazookaPickupTaken && Number.isFinite(gap) && gap < 460 && !warehouse[0].visible) {
-    fail('le hangar ne devient pas visible à l’approche du dernier tour', { gap, lap: state?.lap });
-  }
-  if (state?.bazookaPickupTaken) {
-    collectedAt = state.distance;
-    break;
-  }
-  if (Number.isFinite(gap) && gap < -18) {
-    fail('le pilote a dépassé l’entrepôt sans ramasser le bazooka', {
-      gap,
-      distance: state?.distance,
-      lap: state?.lap,
-      playerLane,
-      bazookaLane,
+runFrames(1, 'démarrage');
+const firstGap = hud()?.bazookaNextDistance;
+if (!Number.isFinite(firstGap)) fail('la distance du prochain entrepôt n’est pas publiée au HUD', hud());
+if (Math.abs(firstGap - expectedDistances[0]) > 2) {
+  fail('le HUD annonce le premier entrepôt, à 30 % de la course', { firstGap, expectedDistances });
+}
+const garageGap = hud()?.miniGarageNextDistance;
+if (!Number.isFinite(garageGap) || !(firstGap < garageGap)) {
+  fail('le premier entrepôt doit être annoncé avant le garage de vie', { firstGap, garageGap });
+}
+// Les deux entrepôts sont ancrés à leur repère, dans l’ordre du parcours.
+const byDistance = [...warehouses].sort((a, b) => a.userData.trackDistance - b.userData.trackDistance);
+const pickupOffset = 6.1 / 0.72; // BAZOOKA_PICKUP_LOCAL_Z / SCALE
+byDistance.forEach((warehouse, index) => {
+  if (Math.abs(warehouse.userData.trackDistance - (expectedDistances[index] + pickupOffset)) > 0.5) {
+    fail('un entrepôt n’est pas ancré à sa part de la course', {
+      trackDistance: warehouse.userData.trackDistance,
+      expected: expectedDistances[index] + pickupOffset,
+      index,
     });
   }
-  runFrames(1, 'approche du hangar');
+});
+
+let frame = 0;
+const maxFrames = 12000;
+// Ramasse le prochain entrepôt non pris : la voie extérieure est celle de
+// l’entrée. On s’y place largement avant le hangar, et on réessaie si une
+// voiture occupe momentanément la voie.
+const collectNextWarehouse = (index) => {
+  while (!callbacks.finish && frame < maxFrames) {
+    const state = hud();
+    if ((Number(state?.bazookaPickupsTaken) || 0) === index + 1) return Number(state.distance);
+    const gap = Number(state?.bazookaNextDistance);
+    const playerLane = Number(state?.playerLane);
+    if (Number.isFinite(gap) && gap < 520 && gap > -8 && playerLane !== bazookaLane && frame % 6 === 0) {
+      world.action(playerLane < bazookaLane ? 'right' : 'left');
+    }
+    if (Number.isFinite(gap) && gap < 460 && !byDistance[index].visible) {
+      fail('l’entrepôt ne devient pas visible à l’approche', { gap, lap: state?.lap, index });
+    }
+    if (Number.isFinite(gap) && gap < -18) {
+      fail('le pilote a dépassé l’entrepôt sans ramasser le bazooka', {
+        gap,
+        distance: state?.distance,
+        lap: state?.lap,
+        playerLane,
+        bazookaLane,
+        index,
+      });
+    }
+    runFrames(1, `approche de l’entrepôt ${index + 1}`);
+    frame += 1;
+  }
+  return null;
+};
+
+// ── Premier entrepôt : 30 % de la course, avant le garage de vie ────────────
+const firstPickupDistance = collectNextWarehouse(0);
+if (firstPickupDistance === null) fail('le premier ramassage de bazooka n’a pas eu lieu', { hud: hud(), frame, finish: callbacks.finish });
+if (Math.abs(firstPickupDistance - expectedDistances[0]) > 30) {
+  fail('le premier entrepôt n’est pas ramassé à 30 % de la course', { firstPickupDistance, expectedDistances });
+}
+if ((hud()?.lap || 0) < 2) fail('le premier entrepôt doit être atteint avant le dernier tour', hud());
+if (hud()?.bazookaAmmo !== 2) fail('le premier entrepôt doit donner exactement deux tirs', hud());
+if (hud()?.bazookaPickupsTaken !== 1 || hud()?.bazookaPickupsTotal !== 2) fail('le HUD doit compter un entrepôt ramassé sur deux', hud());
+if (hud()?.bazookaPickupTaken) fail('le ramassage ne doit pas être définitif tant que le second entrepôt reste à traverser', hud());
+if (byDistance[0].userData.pickup.visible) fail('le marqueur jaune du premier entrepôt doit disparaître après le ramassage');
+if (!callbacks.effects.some((effect) => effect.type === 'bazooka-pickup' && effect.warehouse === 1)) {
+  fail('l’événement du premier pickup bazooka manque', callbacks.effects.slice(-6));
+}
+
+// Le premier lot est vidé avant le second entrepôt : le prochain ramassage
+// devra réapprovisionner les deux roquettes.
+if (!world.action('bazooka')) fail('le premier tir du premier lot n’a pas été accepté', hud());
+if (hud()?.bazookaAmmo !== 1) fail('le premier tir doit consommer exactement une roquette', hud());
+if (!world.action('bazooka')) fail('le deuxième tir du premier lot n’a pas été accepté', hud());
+if (hud()?.bazookaAmmo !== 0) fail('le deuxième tir doit vider le premier lot', hud());
+if (world.action('bazooka')) fail('un troisième tir ne doit pas être possible sans roquette');
+if (audioCalls.missileLaunch !== 2) fail('les deux tirs du premier lot doivent jouer leur son de lancement', audioCalls);
+
+// ── Second entrepôt : 65 % de la course, après le garage de vie ───────────
+const secondPickupDistance = collectNextWarehouse(1);
+if (secondPickupDistance === null) fail('le second ramassage de bazooka n’a pas eu lieu', { hud: hud(), frame, finish: callbacks.finish });
+if (Math.abs(secondPickupDistance - expectedDistances[1]) > 30) {
+  fail('le second entrepôt n’est pas ramassé à 65 % de la course', { secondPickupDistance, expectedDistances });
+}
+if ((hud()?.lap || 0) < 3) fail('le second entrepôt doit être atteint au dernier tour', hud());
+if (hud()?.bazookaAmmo !== 2) fail('le second entrepôt doit réapprovisionner les deux tirs', hud());
+if (hud()?.bazookaPickupsTaken !== 2) fail('le HUD doit compter les deux entrepôts ramassés', hud());
+if (!hud()?.bazookaPickupTaken) fail('les deux entrepôts ramassés doivent marquer le bazooka définitivement consommé', hud());
+if (byDistance[1].userData.pickup.visible) fail('le marqueur jaune du second entrepôt doit disparaître après le ramassage');
+if (callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup').length !== 2) {
+  fail('deux événements de pickup bazooka sont attendus', callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup'));
+}
+
+// ── Tir de bout en bout sur une poursuite du dernier tour ─────────────────
+// Le bazooka verrouille une patrouille sur la voie du joueur : on cherche
+// d’abord une cible alignée, sinon on se rabat sur la voie d’une patrouille
+// adjacente (le monde peut refuser le écart si la voie est encombrée).
+let forwardPolice = null;
+let playerLane = Number(hud()?.playerLane);
+let aimFrame = 0;
+while (!forwardPolice && !callbacks.finish && aimFrame < 1200) {
+  const state = hud();
+  playerLane = Number(state?.playerLane);
+  forwardPolice = (state?.police || [])
+    .filter((police) => police.rawDistance > world.distance + 2
+      && police.rawDistance - world.distance < 120
+      && police.lane === playerLane)
+    .sort((a, b) => a.rawDistance - b.rawDistance)[0] || null;
+  if (forwardPolice) break;
+  const adjacent = (state?.police || [])
+    .filter((police) => police.rawDistance > world.distance + 2
+      && police.rawDistance - world.distance < 120
+      && Math.abs(police.lane - playerLane) === 1)
+    .sort((a, b) => a.rawDistance - b.rawDistance)[0] || null;
+  if (adjacent) {
+    world.action(adjacent.lane > playerLane ? 'right' : 'left');
+    runFrames(1, 'rabattement sur la voie de la patrouille');
+  } else {
+    runFrames(1, 'recherche d’une patrouille à portée');
+  }
+  aimFrame += 1;
   frame += 1;
 }
-if (!collectedAt) fail('le ramassage du bazooka n’a pas eu lieu', { hud: hud(), frame, finish: callbacks.finish });
-if (hud()?.bazookaAmmo !== 2) fail('le hangar doit donner exactement deux tirs', hud());
-if (!hud()?.bazookaPickupTaken) fail('le pickup doit être marqué consommé après la traversée');
-if (warehouse[0].userData.pickup.visible) fail('le marqueur jaune doit disparaître après le ramassage');
-if (!callbacks.effects.some((effect) => effect.type === 'bazooka-pickup')) fail('l’événement du pickup bazooka manque');
-
-const playerDistanceAtPickup = world.distance;
-const laneAtPickup = Number(hud()?.playerLane);
-const forwardPolice = (hud()?.police || [])
-  .filter((police) => police.rawDistance > playerDistanceAtPickup + 2
-    && police.rawDistance - playerDistanceAtPickup < 120
-    && Math.abs(police.lane - laneAtPickup) <= 1)
-  .sort((a, b) => a.rawDistance - b.rawDistance)[0];
 if (!forwardPolice) fail('aucune voiture de police à portée pour valider le tir de bout en bout', hud()?.police);
-if (forwardPolice.lane !== laneAtPickup) {
-  if (Math.abs(forwardPolice.lane - laneAtPickup) !== 1) {
-    fail('la cible de police n’est pas adjacente à la voie du pickup', { forwardPolice, laneAtPickup });
-  }
-  world.action(forwardPolice.lane > laneAtPickup ? 'right' : 'left');
+playerLane = Number(hud()?.playerLane);
+if (forwardPolice.lane !== playerLane) {
+  fail('la cible de police n’est pas sur la voie du joueur au moment du tir', { forwardPolice, playerLane });
 }
+const countProjectiles = () => {
+  let count = 0;
+  scene.traverse((object) => { if (object.name === 'city-rush-bazooka-projectile') count += 1; });
+  return count;
+};
+const impactsBefore = callbacks.effects.filter((effect) => effect.type === 'bazooka-impact').length;
+const projectilesBefore = countProjectiles();
 const firstShot = world.action('bazooka');
-if (!firstShot) fail('le premier tir disponible n’a pas été accepté', hud());
+if (!firstShot) fail('le tir du dernier tour n’a pas été accepté', hud());
 if (hud()?.bazookaAmmo !== 1) fail('le premier tir doit consommer exactement une roquette', hud());
 if (!callbacks.effects.some((effect) => effect.type === 'bazooka-fired' && effect.ammo === 1)) {
   fail('l’action monde n’a pas signalé le tir et le stock restant', callbacks.effects.slice(-6));
 }
-const launchedShots = [];
-scene.traverse((object) => {
-  if (object.name === 'city-rush-bazooka-projectile') launchedShots.push(object);
-});
-if (launchedShots.length !== 1) fail('la roquette n’a pas été créée comme projectile droit', { found: launchedShots.length });
-
+if (countProjectiles() !== projectilesBefore + 1) {
+  fail('la roquette n’a pas été créée comme projectile droit', { found: countProjectiles(), projectilesBefore });
+}
 const firstFire = callbacks.effects.filter((effect) => effect.type === 'bazooka-fired').at(-1);
 if (firstFire?.targetId !== forwardPolice.id) {
-  fail('le bazooka n’a pas verrouillé la première patrouille visible de sa voie', { firstFire, expected: forwardPolice, laneAtPickup });
+  fail('le bazooka n’a pas verrouillé la première patrouille visible de sa voie', { firstFire, expected: forwardPolice, playerLane });
 }
 // La voiture de police était devant le joueur : le projectile doit la croiser
 // puis la détruire en un seul impact.
-for (let step = 0; step < 90 && !callbacks.effects.some((effect) => effect.type === 'bazooka-impact'); step += 1) {
+for (let step = 0; step < 90 && callbacks.effects.filter((effect) => effect.type === 'bazooka-impact').length === impactsBefore; step += 1) {
   runFrames(1, 'vol de la roquette');
 }
-const impact = callbacks.effects.findLast((effect) => effect.type === 'bazooka-impact');
-if (!impact) fail('la roquette verrouillée n’a jamais déclenché son explosion', { firstFire, hud: hud() });
-if (!impact.destroyed?.includes(firstFire.targetId)) {
-  fail('le premier véhicule de police touché n’a pas été détruit par le souffle', { firstFire, impact });
+const impact = callbacks.effects.filter((effect) => effect.type === 'bazooka-impact').at(-1);
+if (!impact || callbacks.effects.filter((effect) => effect.type === 'bazooka-impact').length === impactsBefore) {
+  fail('la roquette verrouillée n’a jamais déclenché son explosion', { firstFire, hud: hud() });
 }
-if (!callbacks.effects.some((effect) => effect.type === 'police-destroyed' && effect.id === firstFire.targetId && effect.source === 'bazooka')) {
-  fail('la destruction de police n’est pas créditée au tir bazooka', { firstFire, impact });
+// Le balayage du projectile s’arrête sur le premier véhicule de la voie : en
+// pleine poursuite, une patrouille peut se rabattre devant la cible verrouillée
+// pendant le vol. L’impact doit quoi qu’il en soit détruire au moins une
+// patrouille, et chaque destruction du souffle est créditée au bazooka.
+if (!Array.isArray(impact.destroyed) || impact.destroyed.length === 0) {
+  fail('le souffle de la roquette n’a détruit aucune patrouille', { firstFire, impact });
+}
+const bazookaKills = callbacks.effects.filter((effect) => effect.type === 'police-destroyed' && effect.source === 'bazooka');
+if (!impact.destroyed.some((id) => bazookaKills.some((kill) => kill.id === id))) {
+  fail('la destruction de police n’est pas créditée au tir bazooka', { firstFire, impact, bazookaKills });
 }
 
 if (hud()?.bazookaAmmo !== 1) fail('le stock doit rester à un tir après la première roquette', hud());
@@ -242,12 +343,13 @@ if (world.action('bazooka')) fail('un troisième tir ne doit pas être possible'
 
 const resetTaken = callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup').length;
 world.reset();
-if (hud()?.bazookaAmmo !== 0 || hud()?.bazookaPickupTaken) fail('reset() doit réinitialiser les deux tirs et le ramassage', hud());
-if (!warehouse[0].userData.pickup.visible) fail('reset() doit restaurer le marqueur unique de l’entrepôt');
+if (hud()?.bazookaAmmo !== 0 || hud()?.bazookaPickupTaken) fail('reset() doit réinitialiser les tirs et le ramassage', hud());
+if ((Number(hud()?.bazookaPickupsTaken) || 0) !== 0) fail('reset() doit rendre les deux entrepôts à nouveau traversables', hud());
+if (byDistance.some((warehouse) => !warehouse.userData.pickup.visible)) fail('reset() doit restaurer les marqueurs jaunes des deux entrepôts');
 if (callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup').length !== resetTaken) {
   fail('reset() ne doit pas ramasser automatiquement le bazooka');
 }
-if (audioCalls.missileLaunch !== 2) fail('les deux tirs doivent jouer leur son de lancement', audioCalls);
+if (audioCalls.missileLaunch !== 4) fail('les quatre tirs doivent jouer leur son de lancement', audioCalls);
 if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
 world.destroy();
-console.log(`check:city-rush-bazooka ✓ — entrepôt du dernier tour traversé voie ${bazookaLane}, 2 tirs, projectile droit, impact police intégré, reset par course (${frame} images).`);
+console.log(`check:city-rush-bazooka ✓ — deux entrepôts (30 % / 65 % de la course) ramassés voie ${bazookaLane}, réapprovisionnement au second, 4 tirs, projectile droit, impact police intégré, reset par course (${frame} images).`);

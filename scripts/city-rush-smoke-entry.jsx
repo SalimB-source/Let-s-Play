@@ -86,7 +86,7 @@ const {
   CITY_RUSH_WANTED_MAX_STARS, CITY_RUSH_SPIKE_BLOCK_STARS, CITY_RUSH_SPIKE_BLOCK_LEAD, CITY_RUSH_SPIKE_BLOCK_COOLDOWN,
   CITY_RUSH_SPIKE_LANES, CITY_RUSH_SPIKE_SLOW_DURATION, CITY_RUSH_SPIKE_SLOW_FACTOR, cityRushSpikeLanes,
   CITY_RUSH_SUV_CHARGE_COUNT, CITY_RUSH_SUV_CHARGE_TYPE, CITY_RUSH_SUV_CHARGE_ALERT_RANGE,
-  CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
+  CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
   CITY_RUSH_ONCOMING_BONUS_MAX,
   CITY_RUSH_PLAYER_SPEED, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, CITY_RUSH_CLEAN_LINE_MAX_BONUS,
@@ -1911,10 +1911,18 @@ for (const [index, city] of courses.entries()) {
     || pickup.health > pickup.maxHealth)) {
     fail('un plus rouge ne rend pas exactement un carré de vie', healthPickups);
   }
+  // Le bazooka est un bonus de route à part entière : deux entrepôts par course
+  // (30 % puis 65 %), chacun rechargeant les deux roquettes.
+  const bazookaPickups = callbacks.pickups.filter((pickup) => pickup.type === 'bazooka');
+  if (bazookaPickups.some((pickup) => pickup.chargeCost !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
+    || pickup.progress !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
+    || pickup.ammo !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP)) {
+    fail('un entrepôt de bazooka ramassé ne recharge pas les deux roquettes', bazookaPickups);
+  }
   const unsupportedPickups = callbacks.pickups.filter((pickup) => ![
-    CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL,
+    CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL, 'bazooka',
   ].includes(pickup.type));
-  if (unsupportedPickups.length) fail('un bonus bleu ou jaune est encore collecté sur la route', unsupportedPickups);
+  if (unsupportedPickups.length) fail('un bonus bleu est encore collecté sur la route', unsupportedPickups);
   if (callbacks.pickups.some((pickup) => pickup.autoActivated
     && ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH].includes(pickup.type)
     && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
