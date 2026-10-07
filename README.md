@@ -152,6 +152,61 @@ Côté **APK Android**, la WebView reçoit `setUseWideViewPort(true)` et
 `setLoadWithOverviewMode(true)` (`android/app/src/main/java/dz/letsplay/officiel/MainActivity.java`) :
 sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
 
+## Grand écran (≥ 1440 px)
+
+Tout le site éditorial tient dans un seul conteneur, `.wrap`, plafonné à
+**1240 px** — `.nav` et `.hero-content` reprennent la même valeur. C'est un bon
+choix de lecture sur un portable, mais sur un écran de bureau ce plafond laisse
+la page au milieu du fond : 340 px de vide de chaque côté en 1920, plus de
+660 px en 2560. Les grilles restaient figées à quatre colonnes (vignettes de
+plus en plus grosses) et les colonnes de texte s'allongeaient jusqu'à 150
+caractères.
+
+**`src/large-screen.css`** est la surcouche qui règle ça. Importée après les
+feuilles de page et juste avant `theme.css` (qui ne s'occupe que des couleurs),
+elle ne s'applique **jamais en dessous de 1440 px** : le rendu sur téléphone,
+tablette et portable est inchangé.
+
+Trois paliers, dans l'esprit des points de rupture déjà utilisés (801 / 1201 px) :
+
+| Palier | Conteneur | Grilles de cartes | Rythme vertical |
+|---|---|---|---|
+| ≥ 1440 px | 1360 px | inchangées (4 colonnes) | 110 → 124 px |
+| ≥ 1920 px | 1760 px | 5 colonnes | 140 px |
+| ≥ 2560 px | 2240 px | 6 colonnes | 160 px |
+
+Le conteneur est piloté par une seule variable par palier (`--lp-shell`), que
+les trois conteneurs du site consomment ensemble — impossible d'en élargir un
+sans les autres. Les titres montent d'un cran au palier 2 (les plafonds de
+`clamp()` étaient atteints dès ~1300 px), et le corps du texte d'un article
+passe à 18 px au palier 3 **sans allonger la mesure de lecture** (68 caractères).
+
+### Deux règles à connaître avant d'y toucher
+
+1. **N'ajouter une colonne qu'aux grilles alimentées par des données** (tests,
+   flux d'articles, recherche, calendrier des sorties). Une grille à nombre
+   d'éléments fixe — les 4 reels, les 3 cartes du hub d'actu, les 3 formats, les
+   3 statistiques — laisserait un trou béant dans sa dernière rangée. Celles-là
+   grandissent avec le conteneur, ce qui est voulu.
+2. **Les grilles remplissent la largeur, la prose ne la remplit jamais.** Une
+   ligne de 150 caractères est illisible, même si elle « occupe la place ». Les
+   colonnes de lecture (`.article-layout`, `.dossier-reading`) sont recadrées
+   plutôt qu'élargies : sur un écran large, la colonne latérale d'un article
+   partait sinon à près de 600 px du texte qu'elle accompagne.
+
+Toute requête `min-width` de ce fichier doit porter son garde-fou téléphone
+(`(min-device-width:601px)`), comme partout ailleurs.
+
+```bash
+npm run check:large-screen   # paliers, conteneurs, garde-fous et grilles fixes
+```
+
+`check:large-screen` relit la feuille, vérifie que les trois paliers sont
+ordonnés et que le conteneur s'élargit à chacun, que `.wrap` / `.nav` /
+`.hero-content` avancent ensemble, que chaque requête média garde sa condition
+téléphone, et qu'aucune grille à nombre d'éléments fixe ne reçoit de colonne
+supplémentaire. C'est le filet qui rend la règle n° 1 vérifiable.
+
 ## Mirage Rush : le plein écran
 
 Le jeu (`/jeu/mirage-rush`) **se lance en plein écran de base**, sur ordinateur
