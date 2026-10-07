@@ -9,9 +9,11 @@ import {
   CityRushAudio,
   CITY_RUSH_DEFAULT_BPM,
   CITY_RUSH_ENGINE_GEARS,
+  CITY_RUSH_ENGINE_PROFILES,
   CITY_RUSH_LOOP_STEPS,
   CITY_RUSH_MUSIC_BPM,
   cityRushEngineRpm,
+  cityRushEngineProfile,
   cityRushMusicBpm,
 } from '../src/games/cityRushAudio.js';
 
@@ -188,6 +190,13 @@ test('le séquenceur programme le bon nombre de pas pour le tempo de la ville', 
     assert.ok(expected >= Math.ceil(0.12 / (60 / cityRushMusicBpm('paris') / 4)), 'Tokyo programme au moins autant de pas que Paris');
     assert.ok(Math.abs(audio.nextTime - expected * stepLength) < 1e-9);
   } finally { shutdown(audio); }
+});
+
+test('les voitures modernes disposent de textures moteur distinctes', () => {
+  assert.notEqual(cityRushEngineProfile('volkswagen'), cityRushEngineProfile('porsche'));
+  assert.notEqual(cityRushEngineProfile('porsche').edge, cityRushEngineProfile('lamborghini').edge);
+  assert.ok(cityRushEngineProfile('electric-gt').electric, 'le groupe électrique a une signature dédiée');
+  assert.equal(cityRushEngineProfile('unknown'), CITY_RUSH_ENGINE_PROFILES['city-hatch'], 'un archétype inconnu reste compatible');
 });
 
 test('le moteur suit la vitesse : plus haut en turbo, muet à l’arrêt', async () => {
