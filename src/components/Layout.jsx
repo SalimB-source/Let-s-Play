@@ -128,8 +128,8 @@ export default function Layout({ children }) {
     };
   }, []);
 
-  // Parallax léger sur les cartes et visuels éditoriaux de toutes les pages.
-  // Le coordinateur observe aussi les cartes montées plus tard par les routes lazy.
+  // Parallax léger sur les sections, cartes et blocs éditoriaux du site.
+  // Le coordinateur observe aussi les éléments montés plus tard par les routes lazy.
   useEffect(() => initScrollParallax(), []);
 
   // scrolled shrink
