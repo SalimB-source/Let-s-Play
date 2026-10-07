@@ -16,6 +16,19 @@ function mustFind(node, selector, label) {
   return element;
 }
 
+const coachPanel = (node) => mustFind(
+  node,
+  '.cr-tutorial-layer.is-in-game:not([hidden]) .cr-tutorial-panel[role="region"]',
+  'coach intégré au circuit',
+);
+const tutorialEvent = (event) => act(async () => { worldProbe.props.onTutorial(event); });
+const lessonComplete = (index, success) => tutorialEvent({
+  type: 'lesson-complete', index, id: null, label: null, success, total: 10, elapsed: 8 + index * 6,
+});
+const lessonStart = (index, police) => tutorialEvent({
+  type: 'lesson-start', index, id: null, label: null, total: 10, police, elapsed: 8 + index * 6,
+});
+
 export async function checkCityRushTutorialUi(assert) {
   const node = document.createElement('div');
   document.body.append(node);
@@ -36,8 +49,11 @@ export async function checkCityRushTutorialUi(assert) {
     assert.ok(node.querySelector('.city-rush-countdown'), 'le tutoriel lance une vraie course');
     assert.equal(worldProbe.props.raceFormat, 'laps');
     assert.equal(worldProbe.props.raceLaps, 1, 'la course d’entraînement dure un tour');
-    assert.equal(worldProbe.props.racePoliceFromStart, true, 'la police est présente dès le départ pour la leçon');
-    assert.equal(worldProbe.props.tutorialMode, true, 'le moteur active les rencontres garanties du tutoriel');
+    assert.equal(
+      worldProbe.props.racePoliceFromStart, false,
+      'la route reste vide de police : l’escouade n’entre qu’à la leçon des tirs',
+    );
+    assert.equal(worldProbe.props.tutorialMode, true, 'le moteur joue lui-même les mini-tutos');
     assert.equal(worldProbe.props.cityId, 'vice-city');
     assert.equal(worldProbe.props.roster.filter((racer) => racer.isPlayer).length, 1, 'la route est un entraînement solo');
     assert.ok(node.querySelector('.city-rush-page.is-tutorial'));
@@ -45,9 +61,12 @@ export async function checkCityRushTutorialUi(assert) {
     // Le compte à rebours réel de la page (3, 2, 1, GO) ouvre le coach au-dessus
     // du circuit vivant. Il ne capture ni les flèches de conduite ni P.
     for (let tick = 0; tick < 4; tick += 1) await settle(850);
-    let panel = mustFind(node, '.cr-tutorial-layer.is-in-game:not([hidden]) .cr-tutorial-panel[role="region"]', 'coach intégré au circuit');
+    let panel = coachPanel(node);
     assert.equal(node.querySelectorAll('.cr-tutorial-progress-segment').length, 10);
     assert.match(squash(panel.textContent), /Change de voie, sans lever le pied/);
+    assert.match(squash(panel.textContent), /EN DIRECT/);
+    assert.match(squash(panel.textContent), /DÉMONSTRATION 1 EN COURS/, 'la démonstration annonce la leçon jouée');
+    assert.match(squash(panel.textContent), /ROUTE SANS POLICE/, 'aucune berline avant la leçon des tirs');
     assert.ok(node.querySelector('.city-rush-world-stub[data-phase="playing"]'), 'la course réelle tourne sous le coach');
 
     const arrow = new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
@@ -55,14 +74,36 @@ export async function checkCityRushTutorialUi(assert) {
     assert.equal(arrow.defaultPrevented, false, 'les flèches ne sont pas détournées par le tutoriel');
     assert.match(squash(panel.textContent), /Change de voie, sans lever le pied/);
 
-    await click(mustFind(node, '.cr-tutorial-nav-button.is-next', 'avancer manuellement dans la leçon'));
-    panel = mustFind(node, '.cr-tutorial-layer:not([hidden]) .cr-tutorial-panel', 'étape suivante');
+    // Le moteur annonce la leçon réussie en piste : le tic vert tombe, le coach
+    // passe tout seul à la leçon suivante.
+    await lessonComplete(0, 'CHANGEMENT DE VOIE RÉUSSI');
+    await lessonStart(1, false);
+    panel = coachPanel(node);
+    const firstSegment = node.querySelectorAll('.cr-tutorial-progress-segment')[0];
+    assert.ok(firstSegment.classList.contains('is-done'), 'la leçon réussie porte son tic vert');
+    assert.equal(squash(firstSegment.querySelector('b')?.textContent), '✓');
+    assert.match(squash(panel.textContent), /CHANGEMENT DE VOIE RÉUSSI/);
+    assert.match(squash(panel.textContent), /1 \/ 10/);
+    assert.match(squash(panel.textContent), /La ligne propre récompense la patience/, 'la 2e démo s’est lancée');
+    assert.match(squash(panel.textContent), /EN DIRECT/);
+
+    // Feuilleter les fiches ne change pas la leçon jouée : PRÉCÉDENT revient sur
+    // la leçon réussie, REVENIR AU DIRECT ramène à la démonstration en cours.
+    await click(mustFind(node, '.cr-tutorial-nav-button.is-quiet', 'feuilleter la leçon précédente'));
+    panel = coachPanel(node);
+    assert.match(squash(panel.textContent), /Change de voie, sans lever le pied/);
+    assert.match(squash(panel.textContent), /DÉJÀ RÉUSSIE/);
+    await click(mustFind(node, '.cr-tutorial-nav-button.is-playback', 'revenir à la démonstration'));
+    panel = coachPanel(node);
     assert.match(squash(panel.textContent), /La ligne propre récompense la patience/);
-    await click(mustFind(node, '.cr-tutorial-nav-button.is-playback', 'suspendre les conseils sans arrêter la voiture'));
-    assert.match(squash(panel.textContent), /REPRENDRE/);
+    assert.match(squash(panel.textContent), /EN DIRECT/);
+
+    await click(mustFind(node, '.cr-tutorial-nav-button.is-next', 'feuilleter la leçon suivante'));
+    panel = coachPanel(node);
+    assert.match(squash(panel.textContent), /À VENIR/);
 
     await click(node.querySelectorAll('.cr-tutorial-progress-segment')[4]);
-    panel = mustFind(node, '.cr-tutorial-layer:not([hidden]) .cr-tutorial-panel', 'accès direct à la leçon Bazooka');
+    panel = coachPanel(node);
     assert.match(squash(panel.textContent), /Traverse le conteneur jaune/);
     assert.match(squash(panel.textContent), /BOUTON JAUNE/);
 
@@ -77,8 +118,25 @@ export async function checkCityRushTutorialUi(assert) {
     assert.ok(node.querySelector('.city-rush-tutorial-guide-toggle'), 'le guide peut être rouvert depuis la barre de jeu');
     assert.ok(mustFind(node, '.cr-tutorial-layer', 'le coach reste monté pour conserver l’étape').hidden);
     await click(mustFind(node, '.city-rush-tutorial-guide-toggle', 'rouvrir le coach'));
-    panel = mustFind(node, '.cr-tutorial-layer:not([hidden]) .cr-tutorial-panel', 'guide rouvert à la même étape');
+    panel = coachPanel(node);
     assert.match(squash(panel.textContent), /Traverse le conteneur jaune/);
+
+    // La leçon des tirs fait entrer l'escouade : le bandeau passe au rouge.
+    await lessonStart(2, true);
+    panel = coachPanel(node);
+    assert.match(squash(panel.textContent), /POLICE EN PISTE/, 'la police entre en piste pour la leçon des tirs');
+
+    // Toutes les leçons réussies, puis la fin du tour guidé : dix tics verts.
+    await tutorialEvent({ type: 'lesson-start', index: 9, id: null, label: null, total: 10, police: true, elapsed: 60 });
+    for (let index = 1; index < 10; index += 1) await lessonComplete(index, `RÉUSSITE ${index}`);
+    await tutorialEvent({ type: 'complete', total: 10, elapsed: 66, score: 900 });
+    panel = coachPanel(node);
+    assert.equal(
+      node.querySelectorAll('.cr-tutorial-progress-segment.is-done').length, 10,
+      'les dix mini-tutos finissent par un tic vert',
+    );
+    assert.match(squash(panel.textContent), /GUIDE TERMINÉ/);
+    assert.match(squash(panel.textContent), /MASQUER LE COACH/);
 
     await act(async () => worldProbe.props.onFinish({
       city: 'vice-city',
@@ -103,6 +161,8 @@ export async function checkCityRushTutorialUi(assert) {
     assert.ok(replay, 'le résultat permet de rejouer le tour guidé');
     await click(replay);
     assert.ok(node.querySelector('.city-rush-countdown'));
+    // Nouveau tour : le coach repart de la première démo, sans tic vert.
+    assert.equal(node.querySelectorAll('.cr-tutorial-progress-segment.is-done').length, 0);
     const cancel = new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
     await act(async () => window.dispatchEvent(cancel));
     assert.ok(node.querySelector('.city-rush-intro'), 'Échap annule le compte à rebours et revient au menu');

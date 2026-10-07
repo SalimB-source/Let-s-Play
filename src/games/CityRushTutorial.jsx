@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  CITY_RUSH_TUTORIAL_STEP_DURATION_MS,
-  CITY_RUSH_TUTORIAL_STEPS,
-} from './cityRushTutorial.js';
+import { CITY_RUSH_TUTORIAL_STEPS } from './cityRushTutorial.js';
 import './city-rush-tutorial.css';
 
 function DemoCar({ kind = 'player' }) {
@@ -205,43 +202,59 @@ function TutorialKeys({ step }) {
   );
 }
 
-export default function CityRushTutorial({ inGame = true, visible = true, coursePhase = 'playing', onClose = () => {} }) {
-  const [stepIndex, setStepIndex] = useState(0);
-  const [playing, setPlaying] = useState(true);
-  const [completed, setCompleted] = useState(false);
-  const currentStep = CITY_RUSH_TUTORIAL_STEPS[stepIndex];
-  const lastIndex = CITY_RUSH_TUTORIAL_STEPS.length - 1;
-  const autoPlaying = visible && coursePhase === 'playing' && playing;
-
+export default function CityRushTutorial({
+  inGame = true,
+  visible = true,
+  coursePhase = 'playing',
+  onClose = () => {},
+  lessonIndex = 0,
+  completedCount = 0,
+  tick = null,
+  police = false,
+  complete = false,
+}) {
+  const total = CITY_RUSH_TUTORIAL_STEPS.length;
+  const paused = coursePhase !== 'playing';
+  const liveIndex = Math.max(0, Math.min(total - 1, Number(lessonIndex) || 0));
+  const doneCount = Math.max(0, Math.min(total, Number(completedCount) || 0));
+  // La démonstration mène la fiche : le coach suit la leçon que la voiture est
+  // en train de jouer. Le pilote peut feuilleter les autres fiches (PRÉCÉDENT /
+  // SUIVANT), la prochaine leçon le ramène au direct.
+  const [viewIndex, setViewIndex] = useState(liveIndex);
+  const [browsing, setBrowsing] = useState(false);
   useEffect(() => {
-    if (!visible || coursePhase !== 'playing' || !playing || completed) return undefined;
-    const timeout = window.setTimeout(() => {
-      if (stepIndex < lastIndex) {
-        setStepIndex((index) => index + 1);
-      } else {
-        setPlaying(false);
-        setCompleted(true);
-      }
-    }, CITY_RUSH_TUTORIAL_STEP_DURATION_MS);
-    return () => window.clearTimeout(timeout);
-  }, [visible, coursePhase, playing, completed, stepIndex, lastIndex]);
+    setViewIndex(liveIndex);
+    setBrowsing(false);
+  }, [liveIndex]);
+  useEffect(() => {
+    if (!tick) return;
+    setViewIndex(Math.max(0, Math.min(total - 1, Number(tick.index) || 0)));
+    setBrowsing(false);
+  }, [tick?.nonce, total]);
+  const shownIndex = Math.max(0, Math.min(total - 1, viewIndex));
+  const currentStep = CITY_RUSH_TUTORIAL_STEPS[shownIndex];
+  const lastDoneStep = doneCount > 0 ? CITY_RUSH_TUTORIAL_STEPS[doneCount - 1] : null;
+  const live = !browsing && shownIndex === liveIndex;
+  const stepDone = shownIndex < doneCount;
+  const stepUpcoming = shownIndex > liveIndex;
+  const liveStep = CITY_RUSH_TUTORIAL_STEPS[liveIndex];
 
   const goToStep = (index) => {
-    const next = Math.max(0, Math.min(lastIndex, index));
-    setStepIndex(next);
-    setCompleted(false);
-    setPlaying(true);
+    const next = Math.max(0, Math.min(total - 1, index));
+    setViewIndex(next);
+    setBrowsing(next !== liveIndex);
   };
-
-  const togglePlayback = () => {
-    if (completed) {
-      setStepIndex(0);
-      setCompleted(false);
-      setPlaying(true);
-      return;
-    }
-    setPlaying((value) => !value);
+  const backToLive = () => {
+    setViewIndex(liveIndex);
+    setBrowsing(false);
   };
+  const stepState = complete
+    ? 'GUIDE TERMINÉ · LIGNE D’ARRIVÉE'
+    : stepDone
+      ? `${currentStep.chapter} · DÉJÀ RÉUSSIE`
+      : stepUpcoming
+        ? `${currentStep.chapter} · À VENIR`
+        : `${currentStep.chapter} · EN DIRECT`;
 
   return (
     <div
@@ -259,8 +272,12 @@ export default function CityRushTutorial({ inGame = true, visible = true, course
         <header className="cr-tutorial-header">
           <div className="cr-tutorial-brand">
             <span className="cr-tutorial-brand-mark" aria-hidden="true">▶</span>
-            <span><b>COACH EN COURSE</b><small>10 ÉTAPES · 1 TOUR SANS ENJEU</small></span>
+            <span><b>COACH EN COURSE</b><small>{total} DÉMOS · LA VOITURE ROULE TOUTE SEULE</small></span>
           </div>
+          <span className={`cr-tutorial-police-chip${police ? ' is-live' : ''}`}>
+            <i aria-hidden="true" />
+            {police ? 'POLICE EN PISTE' : 'ROUTE SANS POLICE'}
+          </span>
           <button
             type="button"
             className="cr-tutorial-close"
@@ -274,36 +291,44 @@ export default function CityRushTutorial({ inGame = true, visible = true, course
 
         <div className="cr-tutorial-progress" role="group" aria-label="Progression du tutoriel">
           {CITY_RUSH_TUTORIAL_STEPS.map((step, index) => {
-            const finished = index < stepIndex || completed;
-            const active = index === stepIndex && !completed;
+            const finished = index < doneCount;
+            const active = index === liveIndex;
             return (
               <button
                 key={step.id}
                 type="button"
-                className={`cr-tutorial-progress-segment${finished ? ' is-done' : ''}${active ? ' is-current' : ''}`}
+                className={`cr-tutorial-progress-segment${finished ? ' is-done' : ''}${active ? ' is-current' : ''}${active && !complete ? ' is-animating' : ''}`}
                 onClick={() => goToStep(index)}
-                aria-label={`Afficher l’étape ${index + 1} : ${step.label}`}
+                aria-label={`${finished ? 'Étape réussie' : 'Afficher l’étape'} ${index + 1} : ${step.label}`}
                 aria-current={active ? 'step' : undefined}
               >
-                <span>
-                  <i
-                    key={`${stepIndex}-${completed}`}
-                    className={active ? 'is-animating' : ''}
-                    style={active
-                      ? { animationDuration: `${CITY_RUSH_TUTORIAL_STEP_DURATION_MS}ms`, animationPlayState: autoPlaying ? 'running' : 'paused' }
-                      : undefined}
-                  />
-                </span>
+                <span>{finished ? <b aria-hidden="true">✓</b> : <i />}</span>
               </button>
             );
           })}
         </div>
 
+        <div className="cr-tutorial-tick-row">
+          {doneCount > 0 ? (
+            <div className="cr-tutorial-tick" key={tick?.nonce || `done-${doneCount}`} role="status" aria-live="polite">
+              <span aria-hidden="true">✓</span>
+              <b>{tick?.label || lastDoneStep?.success || 'ÉTAPE RÉUSSIE'}</b>
+              <i>{doneCount} / {total}</i>
+            </div>
+          ) : (
+            <div className="cr-tutorial-tick is-idle">
+              <span aria-hidden="true">▶</span>
+              <b>{complete ? 'TOUR GUIDÉ TERMINÉ' : `DÉMONSTRATION ${liveIndex + 1} EN COURS · ${liveStep?.label || ''}`}</b>
+              <i>0 / {total}</i>
+            </div>
+          )}
+        </div>
+
         <main className="cr-tutorial-main" key={currentStep.id}>
           <div className="cr-tutorial-copy" aria-live="polite">
             <div className="cr-tutorial-step-meta">
-              <span>{completed ? 'GUIDE TERMINÉ · TERMINE TON TOUR' : currentStep.chapter}</span>
-              <b>{String(stepIndex + 1).padStart(2, '0')} <i>/</i> {String(CITY_RUSH_TUTORIAL_STEPS.length).padStart(2, '0')}</b>
+              <span>{stepState}</span>
+              <b>{String(shownIndex + 1).padStart(2, '0')} <i>/</i> {String(total).padStart(2, '0')}</b>
             </div>
             <h2 id="cr-tutorial-title">{currentStep.title}</h2>
             <p id="cr-tutorial-description">{currentStep.description}</p>
@@ -319,22 +344,32 @@ export default function CityRushTutorial({ inGame = true, visible = true, course
             <span>Z <small>MITRAILLEUSE</small></span>
             <span>X <small>BAZOOKA</small></span>
             <span>P <small>PAUSE</small></span>
+            <span>{paused ? 'PAUSE' : 'AUTO'} <small>{paused ? 'COURSE SUSPENDUE' : 'LA VOITURE CONDUIT'}</small></span>
           </div>
           <div className="cr-tutorial-nav">
-            <button type="button" className="cr-tutorial-nav-button is-quiet" onClick={() => goToStep(stepIndex - 1)} disabled={stepIndex === 0}>
+            <button type="button" className="cr-tutorial-nav-button is-quiet" onClick={() => goToStep(shownIndex - 1)} disabled={shownIndex === 0}>
               <span aria-hidden="true">←</span> PRÉCÉDENT
             </button>
-            <button type="button" className="cr-tutorial-nav-button is-playback" onClick={togglePlayback}>
-              <span aria-hidden="true">{completed ? '↻' : playing ? 'Ⅱ' : '▶'}</span>
-              {completed ? 'REJOUER' : playing ? 'PAUSE DU GUIDE' : 'REPRENDRE'}
+            <button
+              type="button"
+              className="cr-tutorial-nav-button is-playback"
+              onClick={backToLive}
+              disabled={live}
+              title={live ? 'La fiche suit la démonstration en cours' : 'Revenir à la leçon jouée en ce moment'}
+            >
+              <span aria-hidden="true">{live ? '◉' : '▶'}</span>
+              {live ? 'SUIT LA DÉMO' : 'REVENIR AU DIRECT'}
             </button>
             <button
               type="button"
               className="cr-tutorial-nav-button is-next"
-              onClick={() => (stepIndex === lastIndex ? onClose() : goToStep(stepIndex + 1))}
+              onClick={() => {
+                if (shownIndex === total - 1 && live) onClose();
+                else goToStep(shownIndex + 1);
+              }}
             >
-              {stepIndex === lastIndex ? 'MASQUER' : 'SUIVANT'}
-              <span aria-hidden="true">{stepIndex === lastIndex ? '✓' : '→'}</span>
+              {shownIndex === total - 1 && live ? 'MASQUER LE COACH' : 'SUIVANT'}
+              <span aria-hidden="true">{shownIndex === total - 1 && live ? '✓' : '→'}</span>
             </button>
           </div>
         </footer>
