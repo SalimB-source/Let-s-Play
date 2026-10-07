@@ -1050,6 +1050,22 @@ export function makePickupMaterial(type, color) {
       // Cache-flamme
       ctx.fillRect(234, 120, 16, 20);
       ctx.restore();
+    } else if (type === 'boost') {
+      // Turbo : l'éclair blanc du bonus vert, celui qui flotte au-dessus de la
+      // chaussée, cerclé de son anneau (l'ancien pad posé au sol a disparu).
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.moveTo(154, 36);
+      ctx.lineTo(86, 148);
+      ctx.lineTo(124, 148);
+      ctx.lineTo(102, 220);
+      ctx.lineTo(172, 104);
+      ctx.lineTo(132, 104);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
     } else {
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 8;

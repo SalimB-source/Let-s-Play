@@ -351,7 +351,7 @@ export const CITY_RUSH_STORY_CHAPTERS = Object.freeze([
     boss: null,
     objective: Object.freeze({ type: 'win', check: 'win', label: 'FINIS 1ER — SANS ARMES', detail: 'Pas d’AK-47, pas de police. Que du pilotage.' }),
     cash: Object.freeze({ type: 'rank' }),
-    tip: 'Aucune arme sur cette course : les pads turbo verts sont tes seuls amis.',
+    tip: 'Aucune arme sur cette course : les bonus turbo verts sont tes seuls amis.',
     recap: 'Planque au Mexique, chez l’oncle de Luna. Pour payer le vol vers Tokyo : gagner la course locale.',
     comic: Object.freeze({
       briefing: Object.freeze([
@@ -384,7 +384,7 @@ export const CITY_RUSH_STORY_CHAPTERS = Object.freeze([
     boss: null,
     objective: Object.freeze({ type: 'sprint', check: 'sprint-done', label: 'LIVRE LE DOSSIER À TEMPS', detail: '16 checkpoints. Le chrono ne pardonne pas.' }),
     cash: Object.freeze({ type: 'flat', amount: 30 }),
-    tip: 'Chaque portique recharge le chrono. Vise les pads turbo verts !',
+    tip: 'Chaque portique recharge le chrono. Vise les bonus turbo verts !',
     recap: 'Tokyo. Le mécano de Dante veut vendre le dossier… au pied du péage de Takarachō.',
     comic: Object.freeze({
       briefing: Object.freeze([

@@ -782,7 +782,7 @@ test('rivals prefer a more distant ground boost to a nearby inventory bonus', ()
       { lane: 2, distance: 1005, type: CITY_RUSH_POWERS.PISTOL },
     ],
   });
-  assert.equal(nextLane, 0, 'le rival s’écarte pour le pad turbo avant de prendre le bonus rouge plus proche');
+  assert.equal(nextLane, 0, 'le rival s’écarte pour le bonus turbo avant de prendre le bonus rouge plus proche');
 });
 
 test('oncoming traffic on the left lanes is dodged like a wall, never rammed', () => {
@@ -1005,7 +1005,7 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].color, '#48b9ff');
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].automatic, false);
   assert.match(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].description, /one pickup|un seul bonus/i);
-  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_PICKUPS.BOOST], undefined, 'le turbo au sol n’est pas un pouvoir stocké');
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_PICKUPS.BOOST], undefined, 'le bonus turbo vert n’est pas un pouvoir stocké');
   assert.equal(CITY_RUSH_TRACK_BOOST_DURATION, 3);
   assert.equal(CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 1.46);
   assert.equal(CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR, 1.38);
@@ -1812,7 +1812,7 @@ test('l’escouade traverse la route pour rafler un bonus rouge de mitrailleuse'
     { lane: 3, type: 'pistol', distance: 1180 },
   ];
   assert.equal(chooseCityRushPoliceLane({ ...common, pickups }), 2);
-  // Le rival ordinaire vise le pad turbo proche avant le bonus de tir lointain.
+  // Le rival ordinaire vise le bonus turbo proche avant le bonus de tir lointain.
   assert.equal(chooseCityRushAiLane({ ...common, pickups }), 0);
   // Le trafic reste évité : un camion pile dans la voie voisine.
   const trafficLane = chooseCityRushPoliceLane({
@@ -2093,7 +2093,7 @@ test('les berlines entrent sans charge et ne disposent d’aucune attaque d’h�
   assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0, 'aucun tir bleu');
   assert.equal(inventory[CITY_RUSH_POWERS.PISTOL], 0, 'la mitrailleuse doit être chargée par un bonus rouge');
   assert.equal(inventory[CITY_RUSH_POWERS.RADIO], 0, 'l’hélicoptère n’est pas stocké dans la jauge');
-  assert.equal(Object.hasOwn(inventory, CITY_RUSH_PICKUPS.BOOST), false, 'le pad turbo ne se stocke pas');
+  assert.equal(Object.hasOwn(inventory, CITY_RUSH_PICKUPS.BOOST), false, 'le bonus turbo ne se stocke pas');
   assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL).consumed, false);
   assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, false);
   assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.RADIO).consumed, false);
@@ -3459,8 +3459,8 @@ test('chaque rival freine à la distance d’arrêt de son propre modèle', () =
   assert.equal(blockedFor(citadine), true, 'la citadine ne peut pas s’arrêter avant le camion');
   assert.equal(blockedFor(supercar), false, 'la supercar s’arrête avant le camion');
 
-  // Et le choix de voie suit : un pad turbo dans une voie bouchée vaut le coup
-  // pour la supercar, pas pour la citadine (on ne vise pas un mur pour un pad).
+  // Et le choix de voie suit : un bonus turbo dans une voie bouchée vaut le coup
+  // pour la supercar, pas pour la citadine (on ne vise pas un mur pour un bonus).
   const padInTruckLane = [{ lane: 1, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }];
   const laneFor = (car) => chooseCityRushAiLane({
     currentLane: 1, distance: 0, speed: 30, availableLanes: [0, 1, 2], traffic: truck,
@@ -3468,7 +3468,7 @@ test('chaque rival freine à la distance d’arrêt de son propre modèle', () =
     brakingRate: cityRushAiBrakingRate(car.accelerationRate),
   });
   assert.equal(laneFor(citadine), 0, 'la citadine se décale au lieu de plonger sur le camion');
-  assert.equal(laneFor(supercar), 1, 'la supercar prend le pad, elle freine assez court');
+  assert.equal(laneFor(supercar), 1, 'la supercar prend le bonus, elle freine assez court');
 });
 
 test('le rythme de course des rivaux est un vrai cran au-dessus, dernier tour compris', () => {

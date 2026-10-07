@@ -22,8 +22,8 @@ export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la
 // Mode Sprint : course solo à checkpoints, sans police ni arme. Seize checkpoints
 // tous les 300 m (un quart de boucle) : le dernier est l'arrivée, pile sous le
 // portique (16 × 300 m = 4 800 m = 4 boucles exactes). Chaque checkpoint
-// recharge le chrono à 15 s ; des pads turbo verts sont espacés sur la piste
-// pour aider le pilote à les atteindre.
+// recharge le chrono à 15 s ; des bonus turbo verts flottent au-dessus de la
+// piste pour aider le pilote à les atteindre.
 export const CITY_RUSH_SPRINT_CHECKPOINTS = 16;
 export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
@@ -112,15 +112,15 @@ export const CITY_RUSH_CAR_GAP = 4.8;
 export const CITY_RUSH_RACER_VIEW_DISTANCE = 120; // m : portée avant où un rival est rendu à l'écran
 export const CITY_RUSH_BLUE_SHOT_DURATION = 1.8; // s : ralentissement bien visible après un tir bleu
 export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 55 % de sa vitesse
-export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé au sol
-export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
-export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
-// Les objets de la route mêlent les pads turbo, les chargeurs rouges de l'AK-47
+export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du bonus turbo vert ramassé en vol
+export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un bonus turbo
+export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un bonus turbo
+// Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de l'AK-47
 // et les trousses de soin « + » rouges. Les soins restent assez espacés pour
 // garder les chocs dangereux, sans laisser une coque abîmée sans solution.
 export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08; // chargeur d'AK-47
 export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
-export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de pads turbo au sol
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de bonus turbo verts
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 // Le bazooka apparaît deux fois sur chaque carte : deux entrepôts, un avant
@@ -133,7 +133,7 @@ export const CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH = CITY_RUSH_LANE_WIDTH * 1.35;
 // Parts de la distance totale de la course où se dressent les deux entrepôts :
 // le premier avant le garage de vie (50 %), le second après.
 export const CITY_RUSH_BAZOOKA_PICKUP_SHARES = Object.freeze([0.3, 0.65]);
-export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
+export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un bonus turbo pèse trois bonus d'inventaire pour les rivaux
 
 // ── Le rythme des rivaux : ils courent pour gagner ──────────────────────────
 // Nova et Juno ne se contentaient plus de suivre la voiture du joueur : leur
@@ -3175,13 +3175,13 @@ export function chooseCityRushTrafficEscapeLane({
 
 /**
  * Génère une rangée de bonus sans flaques ni zones de ralentissement.
- * Le turbo apparaît sous forme de pad posé sur la chaussée.
+ * Le turbo apparaît sous forme de bonus vert flottant au-dessus de la chaussée.
  */
 export function createCityRushEncounter(random = Math.random, laneCount = CITY_RUSH_LANE_X.length) {
   const count = Math.max(1, Math.min(CITY_RUSH_LANE_X.length, Math.trunc(Number(laneCount)) || CITY_RUSH_LANE_X.length));
   const available = Array.from({ length: count }, (_, lane) => lane);
   // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
-  // des rangées pleines. Les pads turbo restent majoritaires ; les chargeurs
+  // des rangées pleines. Les bonus turbo restent majoritaires ; les chargeurs
   // rouges et les trousses de soin apparaissent régulièrement sans envahir la route.
   const pickupCount = random() < 0.05 ? 0 : Math.min(available.length, random() < 0.7 ? 1 : 2);
   const pickups = [];
@@ -3190,7 +3190,7 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // Les pads restent fréquents, mais le chargeur rouge garde une faible
+    // Les bonus turbo restent fréquents, mais le chargeur rouge garde une faible
     // probabilité d'apparition sur chaque emplacement.
     const type = roll < CITY_RUSH_RED_PICKUP_CHANCE
       ? CITY_RUSH_POWERS.PISTOL
@@ -3204,7 +3204,7 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
 }
 
 /**
- * Sprint : un pad turbo posé au sol, placé uniquement sur une voie du sens de
+ * Sprint : un bonus turbo vert flottant, placé uniquement sur une voie du sens de
  * course. La cadence est réglée par `CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL` dans
  * le monde 3D ; aucune arme ni autre bonus ne peut apparaître dans ce mode.
  */
@@ -3230,7 +3230,7 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
 // ── Le cerveau des rivaux ───────────────────────────────────────────────────
 // Un rival ne se contente plus de viser le bonus le plus proche : il court pour
 // gagner. Le choix de voie arbitre maintenant quatre envies, dans cet ordre —
-// ramasser (les pads turbo d'abord), se mettre en position de tir quand la
+// ramasser (les bonus turbo d'abord), se mettre en position de tir quand la
 // mitrailleuse est chargée, franchir un tremplin qui survole le trafic, et ne
 // jamais encaisser un choc évitable. Un carambolage coûte 0,6 s de
 // ralentissement et un dérapage : l'éviter vaut tous les bonus du monde, d'où
@@ -3241,8 +3241,8 @@ export const CITY_RUSH_AI_LANE_COOLDOWN_MIN = 0.3; // s : relecture de la route,
 export const CITY_RUSH_AI_LANE_COOLDOWN_MAX = 0.5; // s : relecture de la route, au plus lent
 export const CITY_RUSH_AI_REFLEX = 0.12; // s : un obstacle imminent rappelle le cerveau — sans télépathie
 export const CITY_RUSH_AI_BRAKING_MARGIN = 1.35; // × la distance de freinage : au-delà, la voie est bouchée
-export const CITY_RUSH_AI_WEAPON_LANE_WEIGHT = 2.2; // aligner une mitrailleuse chargée vaut deux pads turbo
-export const CITY_RUSH_AI_RAMP_WEIGHT = 1.15; // un tremplin à portée vaut un pad turbo
+export const CITY_RUSH_AI_WEAPON_LANE_WEIGHT = 2.2; // aligner une mitrailleuse chargée vaut deux bonus turbo
+export const CITY_RUSH_AI_RAMP_WEIGHT = 1.15; // un tremplin à portée vaut un bonus turbo
 export const CITY_RUSH_AI_RAMP_JAMMED_FACTOR = 1.6; // … et davantage quand il survole un bouchon
 export const CITY_RUSH_AI_CROWD_PENALTY = 30; // deux rivaux ne s'entassent pas dans la même voie
 export const CITY_RUSH_AI_OVERTAKE_WEIGHT = 1.4; // un concurrent plus lent devant : on le double
@@ -3353,7 +3353,7 @@ export function cityRushAiThinkDelay(random = Math.random, { urgent = false } = 
 //   · `weaponReady` + `targets` — la mitrailleuse chargée et les adversaires
 //     qu'un tir droit peut atteindre : le rival se rabat dans leur voie pour
 //     les aligner, exactement comme la police le fait derrière le joueur ;
-//   · `chasing` — le rival est derrière : un pad turbo vaut alors plus cher,
+//   · `chasing` — le rival est derrière : un bonus turbo vaut alors plus cher,
 //     parce qu'un poursuivant tente ce que le leader ne tente plus.
 export function chooseCityRushAiLane({
   currentLane = 0,
@@ -3415,7 +3415,7 @@ export function chooseCityRushAiLane({
       const laneAffinity = Math.max(0, 1 - Math.abs(pickupLane - candidate) * 0.34);
       if (laneAffinity === 0) continue;
       const urgency = 1 - gap / lookAhead;
-      // Ramasser passe avant le confort de conduite : le pad turbo pèse trois
+      // Ramasser passe avant le confort de conduite : le bonus turbo pèse trois
       // bonus d'inventaire, même s'il est un peu plus loin. Les voies bloquées
       // et le trafic venant en face restent toutefois des limites de sécurité.
       // Même avec une jauge pleine, le rival continue de viser les objets à portée.
@@ -3423,7 +3423,7 @@ export function chooseCityRushAiLane({
       pickupPriority += weight * (22 + urgency * 8) * laneAffinity;
     }
     // Mitrailleuse chargée : une voie qui aligne un adversaire à portée de tir
-    // vaut deux pads turbo. Le projectile part tout droit — se placer dans la
+    // vaut deux bonus turbo. Le projectile part tout droit — se placer dans la
     // voie de la cible est la seule façon de la toucher, et une cible déjà
     // alignée est une raison de ne pas bouger.
     let weaponPriority = 0;
@@ -4184,7 +4184,7 @@ export const CITY_RUSH_POLICE_HUNT_RANGE = 60; // m : sous cette distance, un ro
 // berline doit donc rouler dans **sa** voie, quelques mètres derrière lui
 // (`CITY_RUSH_POLICE_ATTACK_LEAD`). Comme le barrage, c'est un choix de
 // mission : la berline armée se rabat une voie à la fois vers celle de son
-// client, sans se laisser détourner par un pad turbo. Sans cela, l'escouade
+// client, sans se laisser détourner par un bonus turbo. Sans cela, l'escouade
 // gardait sa voie de convoitise et vidait ses chargeurs dans le vide — le
 // pilote ne perdait jamais un seul carré.
 export const CITY_RUSH_POLICE_FIRE_LINE_RANGE = CITY_RUSH_BLUE_SHOT_MAX_RANGE; // m : portée de la rafale
@@ -4499,7 +4499,7 @@ export function chooseCityRushPoliceLane({
     }
     // Même poids pour la ligne de tir quand le rabattement direct vers la voie du
     // client est bouché : la berline armée préfère une voie qui la rapproche de
-    // son pare-chocs plutôt que de repartir à la chasse aux pads turbo.
+    // son pare-chocs plutôt que de repartir à la chasse aux bonus turbo.
     if (fireTarget !== null && candidate === fireTarget) {
       greed += CITY_RUSH_POLICE_FIRE_LINE_WEIGHT * (22 + 10);
     }
