@@ -109,6 +109,56 @@
 
 .rpg-intro__pitch li strong { color: var(--cyan); display: block; margin-bottom: 2px; }
 
+/* L'équipe, visages et voix, avant d'ouvrir le combat. */
+.rpg-intro__team {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(160deg, rgba(26, 20, 12, .92), rgba(10, 10, 22, .92));
+}
+
+.rpg-intro__team h3 {
+  font-family: var(--font-gaming);
+  font-size: 15px;
+  letter-spacing: .12em;
+  margin: 0 0 14px;
+  color: var(--yellow);
+}
+
+.rpg-intro__team ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.rpg-intro__team li {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, .03);
+}
+
+.rpg-intro__team img {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .35);
+}
+
+.rpg-intro__team strong { font-family: var(--font-gaming); font-size: 12px; letter-spacing: .05em; }
+.rpg-intro__team small { color: var(--dim); font-size: 11px; }
+.rpg-intro__team p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; font-style: italic; }
+
 /* La maquette de combat traverse l'intro sur toute la largeur. */
 .rpg-intro__art {
   grid-column: 1 / -1;

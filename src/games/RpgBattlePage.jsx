@@ -459,6 +459,19 @@ export default function RpgBattlePage() {
               Ouvrir le combat
             </button>
           </div>
+          <div className="rpg-intro__team">
+            <h3>L’équipe</h3>
+            <ul>
+              {[...RPG_DEMO_PARTY, ...RPG_DEMO_RESERVE].map((member) => (
+                <li key={member.id}>
+                  <img src={portraitSrc(member)} alt={`Portrait de ${member.name}`} />
+                  <strong>{member.name}</strong>
+                  <small>{member.role}</small>
+                  <p>« {member.line} »</p>
+                </li>
+              ))}
+            </ul>
+          </div>
           <figure className="rpg-intro__art">
             <img
               src={`${import.meta.env.BASE_URL}sablier-de-bab-el-combat.jpg`}
