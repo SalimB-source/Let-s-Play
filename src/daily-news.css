@@ -1,29 +1,29 @@
 .daily-news{padding:128px 0 60px}.daily-news-card{display:grid;grid-template-columns:1.35fr 1fr;min-height:360px;margin-top:28px;overflow:hidden;background:linear-gradient(110deg,rgba(14,17,38,.98),rgba(11,13,30,.78));border:1px solid var(--line-strong);transition:transform .22s,border-color .22s,box-shadow .22s}.daily-news-card:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 20px 46px rgba(0,0,0,.34)}.home-news-card{margin-top:46px}.daily-news-image{position:relative;min-height:360px;overflow:hidden}.daily-news-image .news-feature-badge,.daily-news-image .news-feature-arrow,.daily-news-image .news-sentiment,.daily-news-image .news-views{z-index:1}.daily-news-image img{width:100%;height:100%;display:block;object-fit:cover;object-position:70% center;transition:transform .45s}.daily-news-image iframe{width:100%;height:100%;min-height:360px;display:block;border:0}.daily-news-card:hover .daily-news-image img{transform:scale(1.03)}.daily-news-copy{display:flex;flex-direction:column;justify-content:center;padding:clamp(28px,5vw,72px)}.daily-news-copy h2,.daily-news-copy h3{font-family:var(--display);font-weight:800;font-size:clamp(32px,4.6vw,60px);line-height:1.05;letter-spacing:.01em;text-wrap:balance;margin:20px 0}.daily-news-copy h2 em,.daily-news-copy h3 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.42)}.daily-news-copy>p:not(.eyebrow){color:var(--muted);font-size:16px;line-height:1.55;max-width:480px;margin:0 0 24px}.daily-news-copy .read-link{margin-top:8px}@media(max-width:700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.daily-news{padding:104px 0 40px}.daily-news-card{grid-template-columns:1fr;min-height:0}.daily-news-image{min-height:220px;aspect-ratio:16/9}.daily-news-image iframe{min-height:220px}.daily-news-copy{padding:26px 22px 30px}.daily-news-copy h2,.daily-news-copy h3{font-size:36px;line-height:1.08;margin:16px 0}.daily-news-copy>p:not(.eyebrow){font-size:14px}}
 
 /* Accueil : une une plus compacte, avec le trailer officiel jouable en ligne. */
-.featured-dossiers--news{padding:56px 0 36px}
-.featured-dossiers--news .featured-dossiers-head{padding-top:18px}
+.featured-dossiers--news{padding:64px 0 44px}
+.featured-dossiers--news .featured-dossiers-head{padding-top:24px}
 .featured-dossiers--news .featured-dossiers-head h2{font-size:clamp(28px,3.6vw,44px);line-height:1.04;margin:10px 0 0}
 .featured-dossiers--news .featured-dossiers-head>.arrow-link{margin-bottom:5px}
 /* La une occupe toute la largeur de la section (plus de plafond à 1040px qui
    la laissait centrée avec des marges mortes) et gagne un peu de hauteur : la
    colonne vidéo passe de 16/9 à 16/10, ce qui allonge la carte à toutes les
    largeurs — la colonne de texte, alignée à côté, suit la même hauteur. */
-.featured-dossiers--news .home-news-card{width:100%;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:0;margin:24px 0 0}
+.featured-dossiers--news .home-news-card{width:100%;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:0;margin:32px 0 0}
 .featured-dossiers--news .home-news-video{min-width:0;min-height:0;aspect-ratio:16/10;background:#05060f}
 .featured-dossiers--news .home-news-video iframe{position:absolute;inset:0;width:100%;height:100%;min-height:0}
 .featured-dossiers--news .home-news-card .daily-news-copy{min-width:0;padding:clamp(20px,3vw,36px);color:inherit;text-decoration:none}
-.featured-dossiers--news .home-news-card .daily-news-copy .news-kicker{display:block;margin-top:9px;font-size:9px;letter-spacing:.14em}
-.featured-dossiers--news .home-news-card .daily-news-copy h3{font-size:clamp(24px,2.5vw,34px);line-height:1.08;margin:12px 0}
-.featured-dossiers--news .home-news-card .daily-news-copy>p:not(.eyebrow){max-width:38rem;margin:0 0 16px;font-size:14px;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}
+.featured-dossiers--news .home-news-card .daily-news-copy .news-kicker{display:block;margin-top:12px;font-size:9px;letter-spacing:.14em}
+.featured-dossiers--news .home-news-card .daily-news-copy h3{font-size:clamp(24px,2.5vw,34px);line-height:1.12;margin:16px 0}
+.featured-dossiers--news .home-news-card .daily-news-copy>p:not(.eyebrow){max-width:38rem;margin:0 0 18px;font-size:15px;line-height:1.6;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}
 .featured-dossiers--news .home-news-card .daily-news-copy .read-link{margin-top:auto}
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
-  .featured-dossiers--news{padding:40px 0 28px}
+  .featured-dossiers--news{padding:44px 0 34px}
   .featured-dossiers--news .featured-dossiers-head{display:block;padding-top:16px}
   .featured-dossiers--news .featured-dossiers-head>.arrow-link{display:inline-flex;margin-top:14px;margin-bottom:0}
 }
 @media(max-width:700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
-  .featured-dossiers--news .home-news-card{grid-template-columns:1fr;margin-top:18px}
+  .featured-dossiers--news .home-news-card{grid-template-columns:1fr;margin-top:22px}
   /* Même ratio 16/10 qu'au-dessus : la une empilée gagne elle aussi un peu de
      hauteur, sans pousser le titre hors du premier écran. */
   .featured-dossiers--news .home-news-video{min-height:0;aspect-ratio:16/10}
