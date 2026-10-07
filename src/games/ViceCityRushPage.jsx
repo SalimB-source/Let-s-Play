@@ -54,6 +54,7 @@ import {
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_POLICE_AIM_TIME,
+  CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   CITY_RUSH_PICKUPS,
@@ -597,7 +598,7 @@ export default function ViceCityRushPage() {
   const storyWeaponsOn = !storyMode || storyRules?.weaponsEnabled !== false;
   const storyPoliceOn = !storyMode || storyRules?.policeEnabled !== false;
   // Le bazooka est sur toutes les cartes (hors Sprint et chapitres sans arme) :
-  // deux entrepôts par course, à 30 % puis 65 % du parcours.
+  // deux conteneurs par course, à 30 % puis 65 % du parcours.
   const bazookaMode = !sprintMode && storyWeaponsOn && storyPoliceOn && storyRules?.bazookaEnabled !== false;
   // Chronos de référence des chapitres contre-la-montre : cible fixe de la
   // TEMPESTA prêtée sur le Ring, par calculé sur la voiture engagée en Sprint.
@@ -1597,7 +1598,7 @@ export default function ViceCityRushPage() {
                           <b>{m.name}</b>
                           <small>{m.label}</small>
                           <span className="city-rush-mode-description">{m.desc}</span>
-                          {m.format !== 'sprint' && <span className="city-rush-mode-bazooka-hint">BAZOOKA · 2 TIRS · 2 ENTREPÔTS JAUNES (30 % / 65 %)</span>}
+                          {m.format !== 'sprint' && <span className="city-rush-mode-bazooka-hint">BAZOOKA · 2 TIRS · 2 CONTENEURS JAUNES (30 % / 65 %)</span>}
                           <span className="city-rush-mode-card-footer">
                             <span className="city-rush-mode-laps"><i />{m.format === 'sprint' ? `${m.checkpoints} CHECKPOINTS · ${CITY_RUSH_SPRINT_DISTANCE} M` : `${m.laps} TOUR${m.laps > 1 ? 'S' : ''} · ${cityRushRaceDistance(m.laps)} M`}</span>
                             <span className="city-rush-card-action">VILLE <i aria-hidden="true">↗</i></span>
@@ -2101,7 +2102,7 @@ export default function ViceCityRushPage() {
               {bazookaMode && (
                 <div className="city-rush-guide-item is-bazooka">
                   <span><PowerIcon type="bazooka" /></span>
-                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS PAR ENTREPÔT</b><small>Sur chaque carte, deux entrepôts jaunes sur le bas-côté : un à 30 % de la course, avant le garage de vie, un à 65 %. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de {CITY_RUSH_BAZOOKA_BLAST_CELLS} cases. Chaque tir compte.</small></div>
+                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS PAR CONTENEUR</b><small>Sur chaque carte, deux conteneurs maritimes jaunes qui prennent deux voies de la chaussée : un à 30 % de la course, avant le garage de vie, un à 65 %. On les traverse de part en part, sous le toit, sur la voie extérieure. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de {CITY_RUSH_BAZOOKA_BLAST_CELLS} cases. Chaque tir compte.</small></div>
                   <kbd>X · 4</kbd>
                 </div>
               )}
@@ -2124,7 +2125,7 @@ export default function ViceCityRushPage() {
               </div>
               <div className="city-rush-guide-item is-ramp">
                 <span className="city-rush-guide-glyph" aria-hidden="true">▲</span>
-                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour bondir sur plusieurs dizaines de mètres selon ta vitesse et survoler le trafic et les barrages sans collision. En l’air, la voiture garde sa voie : le volant ne répond qu’à l’atterrissage.</small></div>
+                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour bondir sur plusieurs dizaines de mètres selon ta vitesse et survoler le trafic et les barrages sans collision. En l’air, la voiture garde sa voie : le volant ne répond qu’à l’atterrissage. Une voiture de police qui saute ne part pas en épave à la retombée : chaque atterrissage lui coûte {CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés de vie, et elle n’explose que sa barre vidée.</small></div>
                 <kbd>SAUT</kbd>
               </div>
             </div>
@@ -2152,7 +2153,7 @@ export default function ViceCityRushPage() {
                     {!storyMode && mode.policeFromStart
                       ? 'En Poursuite, trois voitures de police te prennent pour cible dès le départ.'
                       : 'En Circuit, trois voitures de police entrent au dernier tour et te prennent pour cible, même si tu n’es pas en tête.'}
-                    {' '}Tirer sur une voiture de police fait monter la recherche à trois étoiles ; la première destruction la fait passer à quatre, la deuxième à cinq. À quatre étoiles, deux voitures de police se rangent en travers devant toi et déploient une herse sur les trois voies du sens de course : si tu la franchis sans te décaler, sans sauter et sans passer en contresens, tu crèves les pneus — un carré de coque et une longue perte de vitesse. À cinq étoiles, deux SUV d’interception arrivent de face par les voies inverses et foncent sur toi, en verrouillant ta voie ; un choc coûte deux carrés, et les SUV font ensuite demi-tour pour te prendre en chasse.  Chaque carte garde un seul mini-garage élargi, placé au centre de la chaussée et couvrant les deux voies centrales (voies 3 et 4 sur les routes à six voies), à mi-parcours — à la moitié de la course —, y compris en Poursuite. Une flèche peinte sur la chaussée et des chevrons lumineux l’annoncent quelques mètres avant l’entrée, et un panneau rappelle la distance. Sa traversée fait passer la recherche de cinq à quatre étoiles, de quatre à trois, ou de trois (et moins) à zéro. Elle rend aussi jusqu’à {CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} carrés de vie — sans dépasser la résistance maximale de ta voiture. La poursuite ne s’arrête complètement que lorsque le niveau retombe à zéro. Il répare aussi sans étoiles ; il ne sert qu’une fois par course. Chaque rival qui touche une voiture de police — d’un tir ou d’un carambolage — reçoit son propre poursuivant, qui le chasse lui seul ; le premier du classement à l’ouverture du dernier tour est chassé de la même façon. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
+                    {' '}Tirer sur une voiture de police fait monter la recherche à trois étoiles ; la première destruction la fait passer à quatre, la deuxième à cinq. À quatre étoiles, deux voitures de police se rangent en travers devant toi et déploient une herse sur les trois voies du sens de course : si tu la franchis sans te décaler, sans sauter et sans passer en contresens, tu crèves les pneus — un carré de coque et une longue perte de vitesse. À cinq étoiles, deux SUV d’interception arrivent de face par les voies inverses et foncent sur toi, en verrouillant ta voie ; un choc coûte deux carrés, et les SUV font ensuite demi-tour pour te prendre en chasse.  Chaque carte garde un seul mini-garage élargi, placé au centre de la chaussée et couvrant les deux voies centrales (voies 3 et 4 sur les routes à six voies), à mi-parcours — à la moitié de la course —, y compris en Poursuite. Une flèche peinte sur la chaussée et des chevrons lumineux l’annoncent quelques mètres avant l’entrée, et un panneau rappelle la distance. Sa traversée fait passer la recherche de cinq à quatre étoiles, de quatre à trois, ou de trois (et moins) à zéro. Elle rend aussi jusqu’à {CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} carrés de vie — sans dépasser la résistance maximale de ta voiture. La poursuite ne s’arrête complètement que lorsque le niveau retombe à zéro. Il répare aussi sans étoiles ; il ne sert qu’une fois par course. Chaque rival qui touche une voiture de police — d’un tir ou d’un carambolage — reçoit son propre poursuivant, qui le chasse lui seul ; le premier du classement à l’ouverture du dernier tour est chassé de la même façon. Les voitures de police du trafic sont aussi vulnérables aux tirs rouges. Le joueur et ses adversaires ont chacun 15 cellules : cinq bleues, cinq vertes, puis cinq jaunes ; les trois dernières passent au rouge. Un tir rouge en enlève une sans dérapage ni ralentissement. Une berline armée se range dans ton dos et te vise : son halo rouge te prévient, et il te suffit de te décaler pour casser sa mire — la rafale ne part qu’après son temps d’alignement ({CITY_RUSH_POLICE_AIM_TIME.toFixed(2).replace('.', ',')} s). Une berline de police a six points de vie, affichés en six carrés au-dessus de son toit : un tir rouge lui retire un seul carré — le même prix qu’contre un adversaire — et un carambolage à pleine allure tout autant, en te coûtant à toi aussi un carré. Un saut de tremplin lui coûte {CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés à l’atterrissage : elle s’allume, garde la chasse, et n’explose que sa barre vidée — trois sauts pour une berline neuve, cinq pour un SUV. Un SUV de police blindé dispose de dix carrés : cinq tirs bleus ou dix balles rouges le détruisent, et le percuter te coûte deux carrés au lieu d’un. Les renforts de l’escouade reviennent après destruction. L’attaque d’hélicoptère est supprimée ; l’hélicoptère d’observation suit le joueur au dernier tour sans tirer.
 
 
                   </>

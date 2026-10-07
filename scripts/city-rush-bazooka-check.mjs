@@ -1,7 +1,8 @@
 // `npm run check:city-rush-bazooka` — simulation réelle avec un faux
 // WebGLRenderer : deux entrepôts par course (30 % puis 65 %) ramassés sur Vice
-// City, deux hangars vérifiés sur les **huit cartes** (reflétés hors de la
-// chaussée en conduite à gauche), projectile droit et reset d’inventaire.
+// City, deux conteneurs vérifiés sur les **huit cartes** (chacun prenant deux
+// voies de son côté de l’axe, reflété en conduite à gauche), projectile droit et
+// reset d’inventaire.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';

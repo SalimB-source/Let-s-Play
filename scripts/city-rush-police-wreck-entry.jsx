@@ -23,8 +23,13 @@
 //
 // Une agonie n'est mesurable que si la berline tombe assez loin devant le
 // pilote (sinon il la dépasse pendant le tête-à-queue) : les destructions trop
-// proches ou hors cadre sont ignorées pour le suivi visuel. Les explosions
-// provoquées par un atterrissage sont validées séparément via leur événement.
+// proches ou hors cadre sont ignorées pour le suivi visuel.
+//
+// Un atterrissage de saut ne détruit plus la berline : il lui coûte deux
+// carrés (événement `police-ramp-landing`), et la casse n'arrive qu'à la
+// barre vidée. La vérif suit donc ces sauts encaissés — deux carrés chacun,
+// berline toujours en vie — séparément des destructions, qui doivent toutes
+// tomber sur `health: 0` avec la même agonie que sous les balles.
 
 const ctx2d = () => {
   const g = { addColorStop() {} };
@@ -96,6 +101,7 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
   CITY_RUSH_SCROLL_SCALE, cityRushPoliceMaxHealth,
+  CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
   CITY_RUSH_POLICE_WRECK_SPIN_TURNS, CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
   CITY_RUSH_POLICE_WRECK_VIEW_BEHIND, CITY_RUSH_POLICE_WRECK_BURN_SECONDS,
   cityRushPoliceWreckSpeed, cityRushPoliceWreckSlide, cityRushPoliceWreckFlame, cityRushTrackProfile,
@@ -164,6 +170,10 @@ const TARGET_FALLBACK_FRAME = 900;
 let races = 0;
 let destructions = 0;
 let rampLandingExplosions = 0;
+// Un atterrissage ne détruit plus la berline : il lui coûte
+// `CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE` carrés. On compte donc les sauts
+// encaissés, et on ne valide l'explosion que sur une barre vidée.
+let rampLandingsAbsorbed = 0;
 let carcasses = 0;
 let fullBurns = 0;
 
@@ -688,13 +698,38 @@ for (let run = 0; run < RUNS; run += 1) {
       }
     }
 
-    const rampLandings = callbacks.effects.filter((item) => item.type === 'police-destroyed' && item.source === 'ramp-landing');
+    // Atterrissages encaissés : chacun coûte deux carrés, et la berline reste
+    // en chasse tant qu'il lui reste de la vie.
+    const absorbedLandings = callbacks.effects.filter((item) => item.type === 'police-ramp-landing');
+    rampLandingsAbsorbed += absorbedLandings.length;
+    for (const landing of absorbedLandings) {
+      if (landing.damage !== CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE) {
+        fail(`[${city.id}] un atterrissage sur rampe ne coûte pas ${CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés`, landing);
+      }
+      if (!(landing.health > 0) || landing.destroyed !== false) {
+        fail(`[${city.id}] une berline qui a encore de la vie est détruite par son atterrissage`, landing);
+      }
+      if (landing.maxHealth !== cityRushPoliceMaxHealth(landing.vehicleType)
+        || !(landing.health < landing.maxHealth)) {
+        fail(`[${city.id}] l'atterrissage n'abîme pas la coque de la berline`, landing);
+      }
+      if (landing.landingsToDestroy !== Math.ceil(landing.health / CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE)) {
+        fail(`[${city.id}] le compte des atterrissages restants avant la casse est faux`, landing);
+      }
+      if (landing.source !== CITY_RUSH_POLICE_RAMP_LANDING_SOURCE) {
+        fail(`[${city.id}] l'atterrissage ne porte pas sa source de dégâts`, landing);
+      }
+    }
+    // La destruction ne tombe qu'à zéro : même source, même agonie que sous les
+    // balles (tête-à-queue, explosion à l'arrêt, carcasse en feu).
+    const rampLandings = callbacks.effects.filter((item) => item.type === 'police-destroyed'
+      && item.source === CITY_RUSH_POLICE_RAMP_LANDING_SOURCE);
     rampLandingExplosions += rampLandings.length;
     for (const landing of rampLandings) {
       if (landing.health !== 0
         || landing.spinTurns !== CITY_RUSH_POLICE_WRECK_SPIN_TURNS
         || landing.wreckBurning !== true) {
-        fail(`[${city.id}] un atterrissage sur rampe ne détruit pas la voiture de police`, landing);
+        fail(`[${city.id}] un atterrissage qui vide la barre ne détruit pas la voiture de police`, landing);
       }
     }
     if (callbacks.errors.length) fail(`[${city.id}] erreurs remontées`, callbacks.errors.map(String));
@@ -710,13 +745,17 @@ for (let run = 0; run < RUNS; run += 1) {
 
 // Une agonie n'est observable que lorsque la berline tombe assez loin devant le
 // pilote (sinon il la dépasse pendant le tête-à-queue) : une carcasse suivie
-// sur toute sa durée suffit à éprouver la séquence complète. Les destructions
-// dues aux sauts sont vérifiées séparément à partir de leur source.
+// sur toute sa durée suffit à éprouver la séquence complète. Les sauts sont
+// vérifiés séparément : au moins une berline doit avoir **encaissé** un
+// atterrissage sans exploser, et une destruction d'atterrissage ne peut tomber
+// que sur une barre vidée.
 if (!violations && carcasses < 1) {
   fail('aucune agonie observable pour conclure', { carcasses, destructions });
 }
-if (!violations && rampLandingExplosions < 1) {
-  fail('aucune voiture de police n’a explosé après un saut', { rampLandingExplosions });
+if (!violations && rampLandingsAbsorbed < 1) {
+  fail('aucune voiture de police n’a encaissé d’atterrissage après un saut', {
+    rampLandingsAbsorbed, rampLandingExplosions,
+  });
 }
 // Au moins une carcasse doit avoir été suivie du début à la fin de l'incendie :
 // sans cela, la durée du feu ne serait jamais éprouvée.
@@ -728,5 +767,5 @@ if (violations) {
   console.error(`VÉRIF CARCASSE DE POLICE ÉCHOUÉE — ${violations} manquement(s) sur ${races} course(s) et ${destructions} agonie(s) suivie(s).`);
   process.exit(3);
 }
-console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${rampLandingExplosions} explosion(s) après saut · ${destructions} berline(s) suivie(s) à bonne distance : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
+console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${rampLandingsAbsorbed} atterrissage(s) encaissé(s) à ${CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés, ${rampLandingExplosions} explosion(s) après saut · ${destructions} berline(s) suivie(s) à bonne distance : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
 process.exit(0);

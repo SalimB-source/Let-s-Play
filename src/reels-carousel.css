@@ -132,3 +132,12 @@
   .reel-slide-index,.reel-slide-open{font-size:9px;letter-spacing:.1em}
   .reel-embed{min-height:380px}.reel-embed iframe{min-height:380px}
 }
+
+/* La première courte vidéo de l'accueil attend d'entrer dans le viewport :
+   la vignette occupe le cadre jusqu'au démarrage du lecteur YouTube. */
+.reel-card .scroll-autoplay-video{position:absolute;inset:0;overflow:hidden;background:var(--panel)}
+.reel-card .scroll-autoplay-video-poster,
+.reel-card .scroll-autoplay-video iframe{
+  position:absolute;inset:0;width:100%;height:100%;min-height:0;
+  display:block;border:0;object-fit:cover;background:var(--panel);
+}

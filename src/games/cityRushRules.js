@@ -123,9 +123,10 @@ export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
 export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de bonus turbo verts
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
-// Le bazooka apparaît deux fois sur chaque carte : deux entrepôts, un avant
-// le garage de vie de mi-course (30 % du parcours), un après (65 %). Chaque
-// traversée donne deux roquettes ; il n'y a pas d'autre réapprovisionnement.
+// Le bazooka apparaît deux fois sur chaque carte : deux **conteneurs** de deux
+// voies, un avant le garage de vie de mi-course (30 % du parcours), un après
+// (65 %). Chaque traversée donne deux roquettes ; il n'y a pas d'autre
+// réapprovisionnement.
 export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 2;
 export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 8;
 export const CITY_RUSH_BAZOOKA_PROJECTILE_SPEED = 180; // roquette visible, tirée droit devant
@@ -4043,12 +4044,27 @@ export const CITY_RUSH_POLICE_SUV_HEALTH = 10;
 export function cityRushPoliceMaxHealth(vehicleType = 'police') {
   return vehicleType === 'police-suv' ? CITY_RUSH_POLICE_SUV_HEALTH : CITY_RUSH_POLICE_HEALTH;
 }
+// Un saut de tremplin ne détruit plus la berline qui le prend : l'atterrissage
+// lui coûte **deux carrés**, le prix d'un tir bleu. Une berline neuve retombe
+// donc trois fois avant la casse (6 → 4 → 2 → 0), un SUV blindé cinq fois
+// (10 → 8 → … → 0). Le dérapage, le boum d'atterrissage et la gomme sont joués
+// à chaque contact — le saut se paie à chaque fois — et les flammes de dégâts
+// s'allument sur la coque abîmée : une patrouille qui a sauté se reconnaît de
+// loin. Elle n'est détruite (tête-à-queue, explosion, carcasse en feu) que
+// lorsque sa barre tombe à zéro, exactement comme sous les balles.
+export const CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE = 2;
+// Source de dégâts de l'atterrissage : elle voyage dans les événements du monde
+// (`police-hit`, `police-destroyed`) pour que la page et les vérifications
+// distinguent le saut du tir et du carambolage.
+export const CITY_RUSH_POLICE_RAMP_LANDING_SOURCE = 'ramp-landing';
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2,
   // Un tir rouge ne retire qu’un carré, à une berline comme à un adversaire.
   [CITY_RUSH_POWERS.PISTOL]: 1,
   [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
   collision: 1, // la police perd un point, le pilote un carré (deux contre un SUV)
+  // L'atterrissage d'un saut de tremplin : deux carrés, comme un tir bleu.
+  [CITY_RUSH_POLICE_RAMP_LANDING_SOURCE]: CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE,
 });
 
 export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
@@ -4060,6 +4076,8 @@ export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = 
 
 // Combien de tirs de cette arme reste-t-il avant l'explosion ? Sert au bandeau
 // « berline touchée » : « encore trois tirs bleus » plutôt qu'une barre brute.
+// La même fonction compte les atterrissages restants d'une berline abîmée par
+// ses sauts (`source` = `'ramp-landing'`) : « encore deux tremplins ».
 export function cityRushPoliceShotsLeft(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
   const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));
   const damage = Number(CITY_RUSH_POLICE_DAMAGE[source]);

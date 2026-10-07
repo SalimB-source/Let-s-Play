@@ -941,17 +941,23 @@ et le dernier tour durait 21 s.
   bande-son).
 
   **Le bazooka se ramasse deux fois par course, sur toutes les cartes.** Deux
-  entrepôts jaunes bordent la piste, posés à **30 % puis à 65 % de la distance
-  totale** (`CITY_RUSH_BAZOOKA_PICKUP_SHARES`, `cityRushBazookaTrackDistances`) :
-  le premier se dresse **avant** la porte de mi-course (50 %), le second
-  **après**, quel que soit le nombre de tours et quelle que soit la carte — les
-  repères portent sur le parcours entier, pas sur une boucle. Chacun s'ouvre sur
-  la **voie extérieure du sens de course** (la plus à droite en conduite à
-  droite, la plus à gauche à Londres et sur la Shutō C1, où le hangar est
-  **reflété** — `bazookaOutwardSide`, `makeBazookaWarehouse(…, side)` — pour
-  rester sur le bas-côté au lieu de s'étaler sur les voies du contresens). Une
+  **conteneurs maritimes de 40 pieds** jalonnent la piste, posés à **30 % puis à
+  65 % de la distance totale** (`CITY_RUSH_BAZOOKA_PICKUP_SHARES`,
+  `cityRushBazookaTrackDistances`) : le premier se dresse **avant** la porte de
+  mi-course (50 %), le second **après**, quel que soit le nombre de tours et
+  quelle que soit la carte — les repères portent sur le parcours entier, pas sur
+  une boucle. Chaque caisse prend **deux voies** du sens de course : la **voie
+  extérieure** de ramassage (la plus à droite en conduite à droite, la plus à
+  gauche à Londres et sur la Shutō C1) et celle qui la borde vers l'axe jaune,
+  soit 4,20 m de large. Elle est **ouverte aux deux bouts** — la voiture entre
+  par la travée avant, ramasse la roquette sous le toit et ressort par la porte
+  arrière — et ses quatre vantaux, rabattus à plat contre les parois, gardent
+  toute la largeur libre. Le conteneur est **reflété** selon le côté de conduite
+  (`bazookaOutwardSide`, `makeBazookaContainer(…, side)`) : sa paroi intérieure
+  tombe au bord du contresens, sur l'axe jaune à Londres et sur la Shutō C1, au
+  lieu de s'étaler sur les voies d'en face. Une
   traversée rend `CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP` = **2 roquettes** ; le
-  second entrepôt réapprovisionne, chaque hangar ne servant **qu'une fois par
+  second conteneur réapprovisionne, chacun ne servant **qu'une fois par
   course** et un nouveau départ réarmant les deux. Le HUD porte le compte
   (`bazookaPickupsTaken`, `bazookaPickupsTotal`) et la distance du prochain
   repère (`bazookaNextDistance`, `bazookaWarehouseGap` pour les appelants
@@ -1021,6 +1027,19 @@ et le dernier tour durait 21 s.
   rouges, ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
   barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
+  **Un saut de tremplin ne la détruit plus à la retombée.** Chaque
+  atterrissage lui coûte **deux carrés** — le prix d'un tir bleu
+  (`CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE`, source `'ramp-landing'` de
+  `CITY_RUSH_POLICE_RAMP_LANDING_SOURCE` dans `CITY_RUSH_POLICE_DAMAGE`) — avec
+  le boum d'atterrissage, la gomme, le flash de la barre et les flammes de
+  dégâts : une berline neuve retombe **trois fois** avant la casse, un SUV
+  blindé **cinq fois**. Tant qu'il lui reste un carré elle poursuit ; à zéro,
+  `damagePolice` passe la main à `destroyPolice` avec la même source, et
+  l'agonie décrite ci-dessous suit son cours. Le monde publie chaque saut
+  encaissé (effet `police-ramp-landing` : `damage`, `health`, `maxHealth`,
+  `landingsToDestroy`) et `npm run check:city-rush-police-wreck` vérifie qu'une
+  berline encore en vie n'est jamais détruite par son atterrissage, et qu'une
+  destruction d'atterrissage tombe bien sur une barre vidée.
   À la destruction, la berline ne disparaît pas d'un coup : elle **part en
   tête-à-queue** — **deux tours sur elle-même** (`cityRushStunSpin`,
   `CITY_RUSH_POLICE_WRECK_SPIN_TURNS`) pendant que sa vitesse fond jusqu'à
@@ -1651,7 +1670,7 @@ npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + c
 npm run check:city-rush-steer-hold # le maintien des flèches : une pression = un écart, le maintien enchaîne (délai 0,26 s puis 0,18 s) jusqu'au bord de la chaussée, la relâche / la pause / la perte de la fenêtre arrêtent tout, Q et D alignés, répétition native ignorée
 npm run check:city-rush-quiet    # le choix du mode au doigt (empilé, sans carrousel, avant l'Histoire) et la course muette (la vraie page en jsdom, moteur doublé)
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
-npm run check:city-rush-bazooka  # les deux entrepôts du bazooka sur les huit cartes : repères à 30 % et 65 % encadrant le garage de vie, ramassages et réapprovisionnement, hangar reflété hors de la chaussée en conduite à gauche, roquette droite, impact police, reset
+npm run check:city-rush-bazooka  # les deux conteneurs du bazooka sur les huit cartes : repères à 30 % et 65 % encadrant le garage de vie, ramassages et réapprovisionnement, caisse de deux voies reflétée de son côté de l'axe en conduite à gauche, roquette droite, impact police, reset
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide

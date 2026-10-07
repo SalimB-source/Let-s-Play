@@ -335,9 +335,23 @@ export default function Home() {
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">Voir tous les reels <Arrow /></a>
         </div>
         <div className="reels-grid">
-          {reels.map((reel) => (
+          {reels.map((reel, index) => (
             <div className="reel-card hud-frame" key={reel.id} data-parallax="0.05" data-parallax-limit="20">
-              <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              {index === 0 ? (
+                <ScrollAutoplayVideo
+                  id={reel.id}
+                  title={`${reel.label} — Let’s Play`}
+                  posterAlt={`Miniature de ${reel.label} — Let’s Play`}
+                />
+              ) : (
+                <iframe
+                  src={youTubeEmbedUrl(reel.id)}
+                  title={`${reel.label} — Let’s Play`}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              )}
               <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
             </div>
           ))}

@@ -96,16 +96,25 @@ test('le ramassage demande une traversée de l’entrée sur la voie extérieure
   assert.equal(cityRushBazookaPickupCanUse({ ...crossing, previousDistance: 90, nextDistance: 94 }), false);
 });
 
-test('le hangar se reflète hors de la chaussée en conduite à gauche', () => {
-  // Le hangar s'étend toujours vers l'extérieur du sens de course : sans ce
-  // miroir, il recouvrirait les voies du contresens à Londres et sur la Shutō.
-  assert.match(worldSource, /function makeBazookaWarehouse\(city, pickupLaneX, side = 1\)/);
+test('chaque conteneur prend les deux voies extérieures du sens de course, sans mordre sur le contresens', () => {
+  // Le conteneur n'est plus un hangar de bas-côté : c'est une caisse de 40
+  // pieds posée sur la chaussée, large de **deux voies** — celle du ramassage
+  // et celle qui la borde vers l'axe jaune. En conduite à gauche (Londres,
+  // Shutō C1), tout le conteneur est reflété : sans ce miroir, il s'étalerait
+  // sur les voies du contresens au lieu de rester de son côté de l'axe.
+  assert.match(worldSource, /function makeBazookaContainer\(city, pickupLaneX, side = 1\)/);
   assert.match(worldSource, /neonText\(ctx, 'BAZOOKA HERE'/);
   assert.match(worldSource, /sign\.userData = \{ label: 'BAZOOKA HERE' \}/);
   assert.match(worldSource, /const bazookaOutwardSide = driveSide === 'left' \? -1 : 1/);
-  assert.match(worldSource, /makeBazookaWarehouse\(city, laneX\(bazookaPickupLane\), bazookaOutwardSide\)/);
+  assert.match(worldSource, /makeBazookaContainer\(city, laneX\(bazookaPickupLane\), bazookaOutwardSide\)/);
   assert.match(worldSource, /const out = \(offset\) => pickupLaneX \+ side \* offset/);
-  assert.match(worldSource, /addBox\('bazooka-warehouse-side-wall', \[0\.34, 4\.3, 22\.6\], \[outerX/);
+  // La caisse fait exactement deux voies, de la voie de ramassage à la voie
+  // voisine vers l'axe, et c'est cette largeur qui est posée sur la chaussée.
+  assert.match(worldSource, /const WIDTH = CITY_RUSH_LANE_WIDTH \* 2/);
+  assert.match(worldSource, /const innerX = out\(-CITY_RUSH_LANE_WIDTH \* 1\.5\)/);
+  assert.match(worldSource, /const outerX = out\(CITY_RUSH_LANE_WIDTH \/ 2\)/);
+  assert.match(worldSource, /addBox\('bazooka-container-inner-wall', \[WALL, CEILING, LENGTH\], \[innerWallX/);
+  assert.match(worldSource, /addBox\('bazooka-container-outer-wall', \[WALL, CEILING, LENGTH\], \[outerWallX/);
   // Les sept parcours à trafic en face suivent leur côté de conduite ; le Ring,
   // à sens unique, garde l'extérieur droit comme le reste du jeu.
   for (const course of CITY_RUSH_COURSES) {
@@ -120,6 +129,18 @@ test('le hangar se reflète hors de la chaussée en conduite à gauche', () => {
       `voie extérieure de ${course.name}`,
     );
     assert.equal(side, leftHand ? -1 : 1);
+    // Les deux voies du conteneur : une voie et demie vers l'axe, une demie
+    // vers le bas-côté, soit deux voies pleines pour la caisse.
+    const innerEdge = pickupLaneX - side * CITY_RUSH_LANE_WIDTH * 1.5;
+    const outerEdge = pickupLaneX + side * CITY_RUSH_LANE_WIDTH / 2;
+    const containerWidth = (outerEdge - innerEdge) * side;
+    assert.ok(Math.abs(containerWidth - CITY_RUSH_LANE_WIDTH * 2) < 1e-9, `largeur du conteneur de ${course.name}`);
+    // Le conteneur ne franchit jamais l'axe jaune — sur le Ring, à sens
+    // unique, sa paroi intérieure tombe exactement sur l'axe de la piste...
+    assert.ok(side * innerEdge >= -1e-9, `le conteneur de ${course.name} doit rester de son côté de l'axe`);
+    // ...et il ne quitte jamais le bitume de son côté : la paroi extérieure
+    // reste en deçà du bord de la chaussée.
+    assert.ok(side * outerEdge <= laneConfig.roadHalf + 1e-9, `le conteneur de ${course.name} doit rester sur la chaussée`);
   }
   assert.deepEqual(
     CITY_RUSH_COURSES.filter((course) => cityRushDriveSide(course) === 'left').map((course) => course.id).sort(),

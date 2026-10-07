@@ -138,10 +138,16 @@ img{max-width:100%}
 
 .wrap{width:min(1240px,calc(100% - 56px));margin:auto}
 
-/* Les éléments marqués suivent le scroll à une vitesse différente ; la
-   propriété translate laisse intacts leurs effets de survol/transform. */
-[data-parallax]{translate:0 var(--parallax-y,0px)}
-@media(prefers-reduced-motion:reduce){[data-parallax]{translate:none !important}}
+/* Les blocs balisés à la main et ceux repérés dans les pages suivent le
+   défilement à une vitesse différente ; `translate` préserve les transforms
+   de survol. Les zones de jeu plein écran et les lecteurs gardent leur propre
+   repère. */
+[data-parallax],
+[data-scroll-parallax]{translate:0 var(--parallax-y,0px)}
+@media(prefers-reduced-motion:reduce){
+  [data-parallax],
+  [data-scroll-parallax]{translate:none !important}
+}
 
 /* ============ NAV — GLASS ISLAND (Option A) ============ */
 /* Île flottante centrée : verre dépoli sombre, bords arrondis 16px,
@@ -252,12 +258,15 @@ img{max-width:100%}
   .nav-primary{gap:1px;padding:2px}
   .nav-primary a{padding:6px 7px;font-size:9.5px;letter-spacing:.08em}
   .nav-actions{gap:6px}
+  .nav-account.nav-login,
+  .nav-account.nav-register{padding:7px 10px;font-size:10px;letter-spacing:.1em}
 }
 /* Comptes — île : pilules arrondies, même langage que les liens */
 .nav-account.nav-login,
 .nav-account.nav-register{
   display:inline-flex;align-items:center;justify-content:center;
   padding:8px 14px;
+  white-space:nowrap;flex-shrink:0;
   font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;
   border-radius:999px;
   border:1px solid rgba(255,255,255,.12);
