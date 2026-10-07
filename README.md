@@ -1027,6 +1027,19 @@ et le dernier tour durait 21 s.
   rouges, ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
   barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
+  **Un saut de tremplin ne la détruit plus à la retombée.** Chaque
+  atterrissage lui coûte **deux carrés** — le prix d'un tir bleu
+  (`CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE`, source `'ramp-landing'` de
+  `CITY_RUSH_POLICE_RAMP_LANDING_SOURCE` dans `CITY_RUSH_POLICE_DAMAGE`) — avec
+  le boum d'atterrissage, la gomme, le flash de la barre et les flammes de
+  dégâts : une berline neuve retombe **trois fois** avant la casse, un SUV
+  blindé **cinq fois**. Tant qu'il lui reste un carré elle poursuit ; à zéro,
+  `damagePolice` passe la main à `destroyPolice` avec la même source, et
+  l'agonie décrite ci-dessous suit son cours. Le monde publie chaque saut
+  encaissé (effet `police-ramp-landing` : `damage`, `health`, `maxHealth`,
+  `landingsToDestroy`) et `npm run check:city-rush-police-wreck` vérifie qu'une
+  berline encore en vie n'est jamais détruite par son atterrissage, et qu'une
+  destruction d'atterrissage tombe bien sur une barre vidée.
   À la destruction, la berline ne disparaît pas d'un coup : elle **part en
   tête-à-queue** — **deux tours sur elle-même** (`cityRushStunSpin`,
   `CITY_RUSH_POLICE_WRECK_SPIN_TURNS`) pendant que sa vitesse fond jusqu'à

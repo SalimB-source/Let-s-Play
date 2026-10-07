@@ -64,6 +64,7 @@ import {
   CITY_RUSH_POLICE_ATTACK_LEAD,
   CITY_RUSH_POLICE_COLLISION_COOLDOWN,
   CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
   cityRushPoliceMaxHealth,
   CITY_RUSH_POLICE_DESTROY_SCORE,
   CITY_RUSH_POLICE_WRECK_SPIN_TURNS,
@@ -6714,14 +6715,39 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (policeLanded) landedPolice.push(police);
     }
 
-    // Une patrouille qui touche le sol après un saut est détruite : son
-    // dérapage réglementaire mène à la toupie puis à l'explosion de l'épave.
+    // Une patrouille qui touche le sol après un saut encaisse : l'atterrissage
+    // lui coûte **deux carrés de vie** (`CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE`,
+    // le prix d'un tir bleu), avec son boum et sa gomme. Elle n'est détruite —
+    // tête-à-queue, explosion, carcasse en feu — que si sa barre tombe à zéro :
+    // `damagePolice` appelle alors `destroyPolice` avec la même source
+    // `'ramp-landing'`. Une berline neuve survit donc à deux sauts et part en
+    // épave au troisième, un SUV blindé au cinquième ; la barre au-dessus du
+    // toit, son flash et les flammes de dégâts racontent chaque atterrissage
+    // encaissé, et la poursuite continue tant qu'il reste un carré.
     for (const police of landedPolice) {
       if (police.mesh.visible) {
         audioRef?.current?.rampLand?.({ pan: vehiclePan(police.id), speed: police.currentSpeed });
         emitPoliceSkidSmoke(police);
       }
-      destroyPolice(police, 'ramp-landing', null);
+      const healthBeforeLanding = Number(police.health) || 0;
+      damagePolice(police, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE, null);
+      // Le saut qui ne tue pas est raconté quand même : la page et les
+      // vérifications suivent la coque perdue à chaque atterrissage.
+      if (police.active !== false) {
+        getCallbacks().effect?.({
+          type: 'police-ramp-landing',
+          vehicleType: police.vehicleType || police.type || 'police',
+          id: police.id,
+          police: police.name,
+          health: police.health,
+          maxHealth: police.maxHealth || CITY_RUSH_POLICE_HEALTH,
+          damage: healthBeforeLanding - Number(police.health),
+          source: CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
+          // Atterrissages restants avant la casse, barre actuelle comprise.
+          landingsToDestroy: cityRushPoliceShotsLeft(police.health, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE),
+          destroyed: false,
+        });
+      }
     }
 
     // La sirène suit la proximité de la berline la plus proche : l'escouade

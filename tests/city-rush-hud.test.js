@@ -97,12 +97,25 @@ test('maintenir une flèche enchaîne les changements de voie jusqu’à la rel�
   assert.match(page, /Maintenir ← ou → \(Q \/ D\) enchaîne les écarts tout seul/);
 });
 
-test('une voiture de police qui atterrit après un saut se détruit et part en épave', () => {
+test('une voiture de police qui atterrit après un saut perd deux carrés et n’explose que vidée', () => {
   assert.match(world, /police\.jumpState = \{\s*active: true,[\s\S]*?computeCityRushJumpDistance\(takeoffSpeed\)/,
     'une patrouille déclenche le même saut que les voitures de course');
   assert.match(world, /jumping: policeAirborne/, 'la résolution de mouvement sait que la berline est en l’air');
-  assert.match(world, /destroyPolice\(police, 'ramp-landing', null\)/,
-    'le toucher du sol déclenche le dérapage et la séquence d’explosion de la carcasse');
+  // L’atterrissage coûte deux carrés (le prix d’un tir bleu) au lieu de
+  // détruire la berline : elle n’explose que lorsque sa barre tombe à zéro,
+  // ce que fait `damagePolice` en appelant `destroyPolice` avec la même source.
+  assert.match(world, /damagePolice\(police, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE, null\)/,
+    'le toucher du sol inflige les dégâts d’atterrissage, qui vident la barre saut après saut');
+  assert.doesNotMatch(world, /destroyPolice\(police, 'ramp-landing', null\)/,
+    'plus aucune destruction directe à l’atterrissage');
+  assert.match(world, /audioRef\?\.current\?\.rampLand\?\.\(\{ pan: vehiclePan\(police\.id\), speed: police\.currentSpeed \}\)/,
+    'chaque retombée joue son boum d’atterrissage');
+  assert.match(world, /emitPoliceSkidSmoke\(police\);\s*\n\s*\}\s*\n\s*const healthBeforeLanding/,
+    'la gomme de l’atterrissage est émise avant de compter les dégâts');
+  assert.match(world, /type: 'police-ramp-landing'[\s\S]*?damage: healthBeforeLanding - Number\(police\.health\)/,
+    'le monde raconte chaque atterrissage encaissé, avec la coque perdue');
+  assert.match(world, /landingsToDestroy: cityRushPoliceShotsLeft\(police\.health, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE\)/,
+    'l’événement compte les atterrissages restants avant la casse');
   const policeCollision = world.match(/function checkPoliceCollisions\(\) \{[\s\S]*?\n  \}/)?.[0] || '';
   assert.match(policeCollision, /police\.jumpState\?\.active/);
   assert.match(world, /trackRelativeY\(police\.distance\) \+ \(police\.currentJumpY \|\| 0\)/,
