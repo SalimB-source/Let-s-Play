@@ -1,4 +1,4 @@
-.news-view-tools{display:flex;align-items:end;gap:16px;padding-bottom:4px}.news-all-actions{display:flex;justify-content:center;margin:34px 0 4px}.news-all-actions .button{border:0;cursor:pointer}.news-empty{grid-column:1 / -1;color:var(--muted);padding:36px 0}.news-view-toggle{display:flex;border:1px solid var(--line-strong);background:rgba(255,255,255,.04);padding:3px}.news-view-toggle button{border:0;background:transparent;color:var(--muted);padding:10px 14px;cursor:pointer;font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;transition:background .2s,color .2s}.news-view-toggle button:hover,.news-view-toggle button.active{background:var(--cyan);color:var(--bg)}
+.news-view-tools{display:flex;align-items:end;gap:16px;padding-bottom:4px}.news-all-actions{display:flex;justify-content:center;margin:46px 0 4px}.news-all-actions .button{border:0;cursor:pointer}.news-empty{grid-column:1 / -1;color:var(--muted);padding:36px 0}.news-view-toggle{display:flex;border:1px solid var(--line-strong);background:rgba(255,255,255,.04);padding:3px}.news-view-toggle button{border:0;background:transparent;color:var(--muted);padding:10px 14px;cursor:pointer;font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;transition:background .2s,color .2s}.news-view-toggle button:hover,.news-view-toggle button.active{background:var(--cyan);color:var(--bg)}
 /* Les articles du flux s'affichent en quatre colonnes sur grand écran ; la une
    est séparée de cette grille et garde le format vidéo + texte de l'accueil. */
 .news-carousel.is-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;scroll-snap-type:none;align-items:stretch}
@@ -14,7 +14,7 @@
 /* Quatre colonnes laissent la place à l'extrait et au lien de chaque article,
    même sur les grands écrans : seul le titre est libéré de sa limite de lignes. */
 @media(min-width:1201px) and (hover:hover), (min-width:1201px) and (min-device-width:601px){
-  .news-carousel.is-grid{gap:26px}
+  .news-carousel.is-grid{column-gap:26px;row-gap:40px}
   .news-carousel.is-grid .news-carousel-image{min-height:160px}
   .news-carousel.is-grid .news-carousel-copy{padding:22px}
   .news-carousel.is-grid .news-kicker{font-size:9px;letter-spacing:.1em}
@@ -38,7 +38,7 @@
 @media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-view-tools{width:100%;justify-content:space-between;align-items:center}
   .news-view-toggle button{padding:9px 11px}
-  .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;row-gap:24px}
   .news-carousel.is-grid .news-carousel-card{flex-basis:auto;width:100%}
   .news-carousel.is-grid .news-carousel-image{min-height:0;aspect-ratio:4/3}
   .news-carousel.is-grid .news-carousel-image .news-feature-badge,
@@ -158,7 +158,8 @@
   background:linear-gradient(90deg,var(--yellow),var(--cyan),transparent);
 }
 .news-carousel.is-grid{
-  gap:26px;
+  column-gap:26px;
+  row-gap:38px;
   align-items:stretch;
 }
 .news-carousel.is-grid .news-carousel-card{
@@ -234,7 +235,7 @@
 }
 .news-carousel.is-grid .news-carousel-card:hover .read-link{gap:13px;color:var(--cyan)}
 @media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
-  .news-carousel.is-grid{gap:14px}
+  .news-carousel.is-grid{column-gap:14px;row-gap:24px}
   .news-carousel.is-grid .news-carousel-card:hover{transform:translateY(-4px)}
   .news-carousel.is-grid .news-carousel-copy .read-link{display:none}
 }
