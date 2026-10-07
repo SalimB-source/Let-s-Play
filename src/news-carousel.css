@@ -64,9 +64,15 @@
 .news-hub-section .news-hub-today .featured-dossiers-head{align-items:center;padding-top:14px}
 .news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin:0}
 .news-hub-section .news-hub-today .home-news-video img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* Les actus du jour ouvrent le hub : leur section est la première de la page,
+   juste sous le bandeau d'introduction (d'où l'espacement haut à zéro), et
+   c'est elle qui laisse respirer les trois univers qui suivent. */
+.news-hub-section .news-hub-headlines{padding:0 0 72px}
+.news-hub-section .news-hub-headlines + .news-hub-grid{margin-top:0}
 /* Sous 800 px l'en-tête passe en bloc (daily-news.css) : le lien vers le flux
    gaming redescend sous le libellé, avec le même retrait que sur l'accueil. */
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .news-hub-section .news-hub-headlines{padding-bottom:52px}
   .news-hub-section .news-hub-today{padding-top:48px}
   .news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin-top:14px}
 }

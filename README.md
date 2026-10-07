@@ -4335,9 +4335,18 @@ sa couleur d’univers (violet #a855f7, #6d28d9 en thème clair) déclinée dans
 `src/news-carousel.css` et `src/theme.css` — la grille passe à trois colonnes
 sur desktop, deux sous 1100 px, une sous 780 px.
 
+## Hub Actus : les actus du jour ouvrent la page
+
+Le hub (`/news`) commence par **les actus du jour** (`id="actus-du-jour"` :
+trois cartes, une par univers, avec leurs miniatures dédiées) avant les trois
+cartes d'univers (`01 / GAMING`, `02 / CINÉMA`, `03 / TECH`). L'ordre vit dans
+`src/pages/News.jsx` ; l'espacement est réglé par `.news-hub-headlines` dans
+`src/news-carousel.css` (section en tête de page : pas de marge haute propre,
+c'est elle qui sépare les univers qui suivent).
+
 ## Hub Actus : la bannière « actu gaming du jour »
 
-Sous les trois cartes du hub (`/news`), une bannière reprend **l'actu gaming
+Sous les trois cartes d'univers, une bannière reprend **l'actu gaming
 du jour** au gabarit de la une de l'accueil : la vidéo officielle de l'article
 se lit sur place dans la colonne de gauche (lecteur du site, `youTubeEmbedUrl`,
 donc soumis à la règle « une seule vidéo à la fois »), la colonne de droite —

@@ -242,6 +242,61 @@ export default function News() {
         <p className="news-hub-intro">{copy.intro}</p>
       </div>
 
+      {/* LES ACTUS DU JOUR (07.10.2026) : elles ouvrent la page, avant les trois
+          univers — 3 cartes avec leurs miniatures dédiées. */}
+      <section className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" id="actus-du-jour">
+        <div className="section-label">
+          <span>{todaySectionCopy.label}</span>
+          <span>{todaySectionCopy.date}</span>
+        </div>
+        <div className="featured-dossiers-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {todaySectionCopy.eyebrow}</p>
+            <h2>{todaySectionCopy.headingA}<br /><em>{todaySectionCopy.headingB}</em></h2>
+          </div>
+        </div>
+
+        <div className="news-carousel is-grid">
+          {todayStories.map((story) => (
+            <div className="news-grid-cell" key={story.to}>
+              <Link
+                className="news-carousel-card"
+                to={story.to}
+              >
+                <div className="news-carousel-image">
+                  <img
+                    src={imageUrl(story.image)}
+                    alt={story.alt}
+                    loading="lazy"
+                    onError={(event) => {
+                      if (story.fallbackImage && event.currentTarget.dataset.fallback !== 'true') {
+                        event.currentTarget.dataset.fallback = 'true';
+                        event.currentTarget.src = imageUrl(story.fallbackImage);
+                      }
+                    }}
+                  />
+                  <span className="news-feature-badge">{story.badge}</span>
+                  <span className="news-feature-arrow">↗</span>
+                  <span
+                    className={`news-sentiment ${story.sentiment}`}
+                    title={story.badge}
+                    aria-label={story.badge}
+                  >
+                    {story.sentiment === 'positive' ? '😊' : '😐'}
+                  </span>
+                </div>
+                <div className="news-carousel-copy">
+                  <span className="news-kicker">{story.kicker}</span>
+                  <h2>{story.title}</h2>
+                  <p>{story.excerpt}</p>
+                  <span className="read-link">{todaySectionCopy.read} <Arrow /></span>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="news-hub-grid wrap">
         {/* Carte GAMING */}
         <Link to="/news/gaming" className="news-hub-card news-hub-card--gaming">
@@ -300,60 +355,6 @@ export default function News() {
           </div>
         </Link>
       </div>
-
-      {/* LES ACTUS DU JOUR (07.10.2026) : 3 cartes avec miniatures dédiées pour Gaming, Cinéma et Tech */}
-      <section className="featured-dossiers featured-dossiers--news wrap" id="actus-du-jour" style={{ marginTop: '56px' }}>
-        <div className="section-label">
-          <span>{todaySectionCopy.label}</span>
-          <span>{todaySectionCopy.date}</span>
-        </div>
-        <div className="featured-dossiers-head">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> {todaySectionCopy.eyebrow}</p>
-            <h2>{todaySectionCopy.headingA}<br /><em>{todaySectionCopy.headingB}</em></h2>
-          </div>
-        </div>
-
-        <div className="news-carousel is-grid">
-          {todayStories.map((story) => (
-            <div className="news-grid-cell" key={story.to}>
-              <Link
-                className="news-carousel-card"
-                to={story.to}
-              >
-                <div className="news-carousel-image">
-                  <img
-                    src={imageUrl(story.image)}
-                    alt={story.alt}
-                    loading="lazy"
-                    onError={(event) => {
-                      if (story.fallbackImage && event.currentTarget.dataset.fallback !== 'true') {
-                        event.currentTarget.dataset.fallback = 'true';
-                        event.currentTarget.src = imageUrl(story.fallbackImage);
-                      }
-                    }}
-                  />
-                  <span className="news-feature-badge">{story.badge}</span>
-                  <span className="news-feature-arrow">↗</span>
-                  <span
-                    className={`news-sentiment ${story.sentiment}`}
-                    title={story.badge}
-                    aria-label={story.badge}
-                  >
-                    {story.sentiment === 'positive' ? '😊' : '😐'}
-                  </span>
-                </div>
-                <div className="news-carousel-copy">
-                  <span className="news-kicker">{story.kicker}</span>
-                  <h2>{story.title}</h2>
-                  <p>{story.excerpt}</p>
-                  <span className="read-link">{todaySectionCopy.read} <Arrow /></span>
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* ACTU GAMING DU JOUR — même carte que la une de l'accueil (Home.jsx) :
           lecteur YouTube du site à gauche, texte cliquable à droite. Les
