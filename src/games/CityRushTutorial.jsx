@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  CITY_RUSH_TUTORIAL_DURATION_SECONDS,
   CITY_RUSH_TUTORIAL_STEP_DURATION_MS,
   CITY_RUSH_TUTORIAL_STEPS,
 } from './cityRushTutorial.js';
@@ -206,24 +205,16 @@ function TutorialKeys({ step }) {
   );
 }
 
-export default function CityRushTutorial({ onClose }) {
+export default function CityRushTutorial({ inGame = true, visible = true, coursePhase = 'playing', onClose = () => {} }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [completed, setCompleted] = useState(false);
-  const closeButtonRef = useRef(null);
   const currentStep = CITY_RUSH_TUTORIAL_STEPS[stepIndex];
   const lastIndex = CITY_RUSH_TUTORIAL_STEPS.length - 1;
+  const autoPlaying = visible && coursePhase === 'playing' && playing;
 
   useEffect(() => {
-    const previouslyFocused = document.activeElement;
-    closeButtonRef.current?.focus();
-    return () => {
-      if (previouslyFocused?.isConnected) previouslyFocused.focus?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!playing || completed) return undefined;
+    if (!visible || coursePhase !== 'playing' || !playing || completed) return undefined;
     const timeout = window.setTimeout(() => {
       if (stepIndex < lastIndex) {
         setStepIndex((index) => index + 1);
@@ -233,7 +224,7 @@ export default function CityRushTutorial({ onClose }) {
       }
     }, CITY_RUSH_TUTORIAL_STEP_DURATION_MS);
     return () => window.clearTimeout(timeout);
-  }, [playing, completed, stepIndex, lastIndex]);
+  }, [visible, coursePhase, playing, completed, stepIndex, lastIndex]);
 
   const goToStep = (index) => {
     const next = Math.max(0, Math.min(lastIndex, index));
@@ -252,65 +243,30 @@ export default function CityRushTutorial({ onClose }) {
     setPlaying((value) => !value);
   };
 
-  const handleKeyDown = (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
-      return;
-    }
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-      event.preventDefault();
-      event.stopPropagation();
-      goToStep(stepIndex + (event.key === 'ArrowRight' ? 1 : -1));
-      return;
-    }
-    if (event.key.toLowerCase() === 'p') {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const focusable = [...event.currentTarget.querySelectorAll('button:not([disabled])')];
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
   return (
     <div
-      className="cr-tutorial-layer"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+      className={`cr-tutorial-layer${inGame ? ' is-in-game' : ''}`}
+      hidden={!visible}
+      aria-hidden={!visible}
     >
       <section
         className="cr-tutorial-panel"
-        role="dialog"
-        aria-modal="true"
+        role={inGame ? 'region' : 'dialog'}
+        aria-modal={inGame ? undefined : 'true'}
         aria-labelledby="cr-tutorial-title"
         aria-describedby="cr-tutorial-description"
-        onKeyDown={handleKeyDown}
       >
         <header className="cr-tutorial-header">
           <div className="cr-tutorial-brand">
             <span className="cr-tutorial-brand-mark" aria-hidden="true">▶</span>
-            <span><b>TUTORIEL EXPRESS</b><small>10 MINI-DÉMOS · ENV. {CITY_RUSH_TUTORIAL_DURATION_SECONDS} S</small></span>
+            <span><b>COACH EN COURSE</b><small>10 ÉTAPES · 1 TOUR SANS ENJEU</small></span>
           </div>
           <button
-            ref={closeButtonRef}
             type="button"
             className="cr-tutorial-close"
             onClick={onClose}
-            aria-label="Fermer le tutoriel et revenir au jeu"
-            title="Fermer le tutoriel"
+            aria-label="Masquer le guide, continuer la course"
+            title="Masquer le guide (la course continue)"
           >
             <span aria-hidden="true">×</span>
           </button>
@@ -334,7 +290,7 @@ export default function CityRushTutorial({ onClose }) {
                     key={`${stepIndex}-${completed}`}
                     className={active ? 'is-animating' : ''}
                     style={active
-                      ? { animationDuration: `${CITY_RUSH_TUTORIAL_STEP_DURATION_MS}ms`, animationPlayState: playing ? 'running' : 'paused' }
+                      ? { animationDuration: `${CITY_RUSH_TUTORIAL_STEP_DURATION_MS}ms`, animationPlayState: autoPlaying ? 'running' : 'paused' }
                       : undefined}
                   />
                 </span>
@@ -346,7 +302,7 @@ export default function CityRushTutorial({ onClose }) {
         <main className="cr-tutorial-main" key={currentStep.id}>
           <div className="cr-tutorial-copy" aria-live="polite">
             <div className="cr-tutorial-step-meta">
-              <span>{currentStep.chapter}</span>
+              <span>{completed ? 'GUIDE TERMINÉ · TERMINE TON TOUR' : currentStep.chapter}</span>
               <b>{String(stepIndex + 1).padStart(2, '0')} <i>/</i> {String(CITY_RUSH_TUTORIAL_STEPS.length).padStart(2, '0')}</b>
             </div>
             <h2 id="cr-tutorial-title">{currentStep.title}</h2>
@@ -358,11 +314,11 @@ export default function CityRushTutorial({ onClose }) {
         </main>
 
         <footer className="cr-tutorial-footer">
-          <div className="cr-tutorial-utility-hint" aria-label="Raccourcis de navigation du tutoriel">
-            <span>← / → <small>NAVIGUER</small></span>
-            <span>ÉCHAP <small>FERMER</small></span>
-            <span>M <small>SON</small></span>
-            <span>F <small>PLEIN ÉCRAN</small></span>
+          <div className="cr-tutorial-utility-hint" aria-label="Commandes de course">
+            <span>← / → <small>VOIES</small></span>
+            <span>Z <small>MITRAILLEUSE</small></span>
+            <span>X <small>BAZOOKA</small></span>
+            <span>P <small>PAUSE</small></span>
           </div>
           <div className="cr-tutorial-nav">
             <button type="button" className="cr-tutorial-nav-button is-quiet" onClick={() => goToStep(stepIndex - 1)} disabled={stepIndex === 0}>
@@ -370,14 +326,14 @@ export default function CityRushTutorial({ onClose }) {
             </button>
             <button type="button" className="cr-tutorial-nav-button is-playback" onClick={togglePlayback}>
               <span aria-hidden="true">{completed ? '↻' : playing ? 'Ⅱ' : '▶'}</span>
-              {completed ? 'REJOUER' : playing ? 'PAUSE' : 'REPRENDRE'}
+              {completed ? 'REJOUER' : playing ? 'PAUSE DU GUIDE' : 'REPRENDRE'}
             </button>
             <button
               type="button"
               className="cr-tutorial-nav-button is-next"
               onClick={() => (stepIndex === lastIndex ? onClose() : goToStep(stepIndex + 1))}
             >
-              {stepIndex === lastIndex ? (completed ? 'FERMER' : 'TERMINER') : 'SUIVANT'}
+              {stepIndex === lastIndex ? 'MASQUER' : 'SUIVANT'}
               <span aria-hidden="true">{stepIndex === lastIndex ? '✓' : '→'}</span>
             </button>
           </div>

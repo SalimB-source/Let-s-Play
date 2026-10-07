@@ -658,3 +658,115 @@
   .cr-tutorial-progress-segment i.is-animating { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
   .cr-tutorial-panel button { transition: none; }
 }
+
+/* HUD d'entraînement : le vrai circuit reste visible et continue de répondre
+   aux commandes pendant que le coach livre une consigne courte. */
+.cr-tutorial-layer.is-in-game {
+  display: block;
+  padding: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: none;
+  pointer-events: none;
+}
+
+.cr-tutorial-layer[hidden] { display: none !important; }
+
+.cr-tutorial-layer.is-in-game .cr-tutorial-panel {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: flex;
+  width: min(500px, calc(100% - 28px));
+  max-height: min(68vh, 500px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(10, 16, 28, 0.94), rgba(5, 9, 17, 0.91));
+  box-shadow: 0 12px 42px rgba(0, 0, 0, 0.43), 0 0 28px rgba(67, 234, 213, 0.09), inset 0 1px rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  animation: crTutorialPanelIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cr-tutorial-layer.is-in-game .cr-tutorial-header {
+  min-height: 48px;
+  gap: 8px;
+  padding: 7px 10px;
+}
+
+.cr-tutorial-layer.is-in-game .cr-tutorial-brand { gap: 8px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-brand-mark { width: 28px; height: 28px; border-radius: 8px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-brand b { font-size: 8px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-brand small { font-size: 6px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-close { width: 29px; height: 29px; border-radius: 8px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-close span { font-size: 22px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-progress { gap: 3px; padding: 7px 11px 0; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-progress-segment { height: 10px; }
+
+.cr-tutorial-layer.is-in-game .cr-tutorial-main {
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.64fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 8px 11px 9px;
+}
+
+.cr-tutorial-layer.is-in-game .cr-tutorial-step-meta { margin-bottom: 7px; font-size: 7px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-step-meta > b { font-size: 8px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-copy h2 { margin-bottom: 7px; font-size: clamp(17px, 2.2vw, 22px); }
+.cr-tutorial-layer.is-in-game .cr-tutorial-copy > p { font-size: 10px; line-height: 1.38; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-tip { gap: 5px; margin-top: 7px; padding: 6px 7px; font-size: 6px; line-height: 1.4; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-tip > i { font-size: 10px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-keys { gap: 5px; margin-top: 7px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-key-list { gap: 4px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-key-list kbd,
+.cr-tutorial-layer.is-in-game .cr-tutorial-action-chip,
+.cr-tutorial-layer.is-in-game .cr-tutorial-touch-chip { min-height: 20px; padding: 3px 6px; font-size: 7px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-art { min-height: 118px; max-height: 142px; border-radius: 10px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-art-label { top: 6px; left: 6px; padding: 5px 6px; font-size: 6px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-art-corner { right: 5px; bottom: 5px; padding: 4px 5px; font-size: 5px; }
+
+.cr-tutorial-layer.is-in-game .cr-tutorial-footer {
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 7px 10px 9px;
+}
+
+.cr-tutorial-layer.is-in-game .cr-tutorial-utility-hint { gap: 4px 9px; font-size: 6px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-utility-hint small { font-size: 6px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-nav { gap: 5px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-nav-button { min-height: 30px; gap: 4px; padding-inline: 8px; font-size: 6px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-nav-button > span { font-size: 11px; }
+
+@media (max-width: 760px) {
+  .cr-tutorial-layer.is-in-game .cr-tutorial-panel {
+    top: 8px;
+    right: 8px;
+    width: min(360px, calc(100% - 16px));
+    max-height: min(56vh, 390px);
+    border-radius: 13px;
+  }
+
+  .cr-tutorial-layer.is-in-game .cr-tutorial-header { min-height: 42px; padding: 6px 8px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-progress { padding: 6px 9px 0; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-main { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 6px 9px 7px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-art { display: none; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-step-meta { margin-bottom: 5px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-copy h2 { margin-bottom: 5px; font-size: clamp(16px, 4.8vw, 19px); }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-copy > p { font-size: 9px; line-height: 1.35; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-tip { margin-top: 5px; padding: 5px 6px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-keys { margin-top: 5px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-footer { align-items: stretch; flex-direction: column; gap: 6px; padding: 6px 8px 8px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-utility-hint { justify-content: space-between; font-size: 6px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-nav { width: 100%; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-nav-button { flex: 1 1 0; min-width: 0; padding-inline: 4px; font-size: 6px; }
+}
+
+@media (max-height: 620px) and (min-width: 761px) {
+  .cr-tutorial-layer.is-in-game .cr-tutorial-panel { max-height: 63vh; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-art { min-height: 92px; max-height: 104px; }
+  .cr-tutorial-layer.is-in-game .cr-tutorial-main { gap: 7px; padding-block: 6px; }
+}

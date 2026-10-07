@@ -1,7 +1,7 @@
 /**
- * Vérifie le vrai composant Vice City Rush dans jsdom : entrée depuis le menu,
- * progression, pause, raccourcis clavier et fermeture sans lancer la course.
- * Le moteur 3D est remplacé par le stub partagé des smoke tests.
+ * Vérifie le vrai composant Vice City Rush dans jsdom : le guide démarre une
+ * course solo, reste dans le HUD sans capturer les commandes, puis ne crédite
+ * ni portefeuille ni progression. Le moteur 3D est remplacé par le stub partagé.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,7 +41,7 @@ const { checkCityRushTutorialUi } = await import('../node_modules/.cache/city-ru
 let exitCode = 0;
 try {
   await checkCityRushTutorialUi(assert);
-  console.log('check:city-rush-tutorial-ui ✓ — le guide s’ouvre, se parcourt, se met en pause et se ferme depuis le menu.');
+  console.log('check:city-rush-tutorial-ui ✓ — le tutoriel lance une course solo, guide sans bloquer les commandes et n’accorde aucune récompense.');
 } catch (error) {
   console.error(error?.stack || error?.message || error);
   exitCode = 1;

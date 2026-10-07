@@ -95,7 +95,7 @@ export const CITY_RUSH_TUTORIAL_STEPS = Object.freeze([
     label: 'La police',
     chapter: '06 · POURSUITE',
     title: 'Quand la mire rougit, décale-toi.',
-    description: 'En Circuit, la police arrive au dernier tour ; en Poursuite, elle est là dès le départ. Ses étoiles montent quand tu l’attaques : herse à 4 ★, SUV de face à 5 ★.',
+    description: 'Dans cet entraînement et en Poursuite, la police est là dès le départ ; en Circuit normal, elle arrive au dernier tour. Ses étoiles montent si tu l’attaques : herse à 4 ★, SUV de face à 5 ★.',
     tip: 'LE HALO ROUGE T’AVERTIT : CHANGE DE VOIE AVANT LA FIN DE LA MIRE.',
     controls: ['← / → · ESQUIVER'],
     touch: 'GLISSE POUR ESQUIVER',

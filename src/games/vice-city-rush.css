@@ -366,6 +366,12 @@
   color: #7af2b0;
 }
 
+.city-rush-top-button.is-guide {
+  background: rgba(84, 234, 209, 0.13);
+  border-color: rgba(84, 234, 209, 0.32);
+  color: #9af9e7;
+}
+
 .city-rush-sound-button {
   width: 36px;
   padding: 0;
@@ -3607,3 +3613,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+/* Le tutoriel est une course guidée, pas une page qui remplace le circuit :
+   toute la largeur revient au jeu et le tableau latéral s'efface pendant ce tour. */
+.city-rush-page.is-tutorial .city-rush-layout { grid-template-columns: minmax(0, 1fr); }
+.city-rush-page.is-tutorial .city-rush-sidebar { display: none; }
+.city-rush-page.is-tutorial .city-rush-live-pill { display: none; }
+
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-page.is-tutorial .city-rush-tutorial-guide-toggle {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
+  .city-rush-page.is-tutorial .city-rush-tutorial-guide-toggle::before {
+    content: '✦';
+    font-size: 13px;
+  }
+}

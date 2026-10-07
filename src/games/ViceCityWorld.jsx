@@ -1678,7 +1678,7 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null) {
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false) {
   // Sprint : course solo à checkpoints, sans police ni arme ; seuls les pads
   // turbo restent disponibles comme bonus.
   const sprint = raceFormat === 'sprint';
@@ -2776,6 +2776,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       encounter.pickups = encounter.pickups.map((pickup) => (
         pickup?.type === CITY_RUSH_POWERS.PISTOL ? { ...pickup, type: CITY_RUSH_PICKUPS.BOOST } : pickup
       ));
+    }
+    // Le parcours guidé garantit que les consignes importantes croisent bien
+    // leur exemple réel : un chargeur rouge, un éclair vert et des soins, tous
+    // dans la voie de départ pour rester accessibles aux débutants.
+    if (tutorialMode && !sprint) {
+      const lessonPickup = row.trackDistance >= 360 && row.trackDistance < 420
+        ? CITY_RUSH_POWERS.PISTOL
+        : row.trackDistance >= 520 && row.trackDistance < 580
+          ? CITY_RUSH_PICKUPS.BOOST
+          : row.trackDistance >= 1270 && row.trackDistance < 1330
+            ? CITY_RUSH_PICKUPS.HEALTH
+            : null;
+      if (lessonPickup) encounter.pickups = [{ lane: playerStartLane, type: lessonPickup }];
     }
     row.pickups = encounter.pickups;
     row.pickupClaims.clear();
@@ -8971,7 +8984,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
@@ -8988,7 +9001,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
-      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules);
+      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -9001,7 +9014,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       worldRef.current = null;
       if (actionsRef) actionsRef.current = null;
     };
-  }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, storyRules, actionsRef, audioRef]);
+  }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode, actionsRef, audioRef]);
 
   useEffect(() => {
     if (roster) worldRef.current?.setRoster?.(roster);
