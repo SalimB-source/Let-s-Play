@@ -1,5 +1,5 @@
 // Progression persistante de Vice City Rush : portefeuille, garage, ordre des
-// parcours et campagne Histoire.
+// parcours, campagne Histoire et tournois (terminés + titres de champion).
 // Les courses restent jouables à partir du premier circuit ; une arrivée normale
 // débloque le parcours suivant. Seuls les modes rémunérés versent des billets :
 // 1er → 50, 2e → 30, 3e (ou épave, classée dernière) → 10.
@@ -185,8 +185,7 @@ export function cityRushStorageKey(userId) {
 }
 
 /** Étoiles de campagne : `{ chapitreId: 1..3 }` (seuls les chapitres étoilés sont gardés). */
-export function normalizeCityRushStoryStars(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+export function normalizeCityRushStoryStars(value) {  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   const clean = {};
   for (const [id, stars] of Object.entries(value)) {
     if (typeof id !== 'string' || !id) continue;
@@ -206,6 +205,37 @@ export function withUpgradedCityRushStory(value) {
   return { ...value, storyChapter: mapLegacyStoryChapter(value.storyChapter) };
 }
 
+/**
+ * Tournois : identifiants terminés (les trois courses courues, dans l'ordre du
+ * catalogue) et titres de champion (`{ tournoiId: nombre de sacres }`). Les
+ * identifiants inconnus sont oubliés : un catalogue réduit n'hérite jamais des
+ * trophées d'un catalogue plus large.
+ */
+export function normalizeCityRushTournaments(value = null, tournamentIds = null) {
+  const known = Array.isArray(tournamentIds) && tournamentIds.length > 0
+    ? tournamentIds
+    : ['sunset', 'europe', 'pacifique', 'legendes'];
+  const order = new Map(known.map((id, index) => [id, index]));
+  const seen = new Set();
+  const completedTournamentIds = [];
+  for (const id of Array.isArray(value?.completedTournamentIds) ? value.completedTournamentIds : []) {
+    if (typeof id !== 'string' || !order.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    completedTournamentIds.push(id);
+  }
+  completedTournamentIds.sort((a, b) => order.get(a) - order.get(b));
+  const tournamentTitles = {};
+  const rawTitles = value?.tournamentTitles;
+  if (rawTitles && typeof rawTitles === 'object' && !Array.isArray(rawTitles)) {
+    for (const [id, count] of Object.entries(rawTitles)) {
+      if (!order.has(id)) continue;
+      const wins = Math.max(0, Math.floor(Number(count) || 0));
+      if (wins > 0) tournamentTitles[id] = wins;
+    }
+  }
+  return { completedTournamentIds, tournamentTitles };
+}
+
 /** Campagne Histoire : chapitre courant (0 = prologue), fin choisie, étoiles. */
 export function normalizeCityRushStory(value = null, chapters = CITY_RUSH_STORY_CHAPTERS) {
   const total = Math.max(0, Math.floor(Number(chapters) || 0));
@@ -223,11 +253,12 @@ export function normalizeCityRushStory(value = null, chapters = CITY_RUSH_STORY_
   };
 }
 
-/** Sauvegarde complète : carrière (portefeuille, garage, parcours) + Histoire. */
+/** Sauvegarde complète : carrière (portefeuille, garage, parcours) + Histoire + tournois. */
 export function normalizeCityRushSave(value, { cars = CITY_RUSH_CARS, courses = CITY_RUSH_COURSES } = {}) {
   return {
     ...normalizeCityRushProgress(value, { cars, courses }),
     ...normalizeCityRushStory(value),
+    ...normalizeCityRushTournaments(value),
   };
 }
 

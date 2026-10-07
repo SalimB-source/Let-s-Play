@@ -244,6 +244,13 @@ viceGame = reduce(viceGame, { type: 'vice_city_run', city: 'paris', mode: 'pursu
 // Deux victoires avant cette course : la 2 place n'en ajoute pas une troisième.
 check('Vice City Rush : une 2e place ne compte pas de victoire', metricValue(viceGame, 'viceCityWins'), 2);
 check('Vice City Rush : … mais garde le butin record', metricValue(viceGame, 'viceCityBestScore'), 2400);
+viceGame = reduce(viceGame, { type: 'vice_city_run', city: 'vice-city', mode: 'tournament', rank: 1, score: 100 }).state;
+check('Vice City Rush : une manche de tournoi ne valide pas un mode de course', metricValue(viceGame, 'viceCityModesPlayed'), 1);
+check('Vice City Rush : … mais compte sa victoire', metricValue(viceGame, 'viceCityWins'), 3);
+viceGame = reduce(viceGame, { type: 'vice_city_tournament_won', tournamentId: 'sunset' }).state;
+check('Vice City Rush : un titre de tournoi crédite sa coupe', metricValue(viceGame, 'viceCityTournamentsWon'), 1);
+viceGame = reduce(viceGame, { type: 'vice_city_tournament_won', tournamentId: 'sunset' }).state;
+check('Vice City Rush : un titre rejoué ne compte pas deux fois', metricValue(viceGame, 'viceCityTournamentsWon'), 1);
 const mergedGames = mergeStates(mirageGame, viceGame);
 check('fusion : les records de jeu survivent', metricValue(mergedGames, 'mirageBestScore'), 1500);
 check('fusion : … des deux jeux', metricValue(mergedGames, 'viceCityBestScore'), 2400);
@@ -536,6 +543,14 @@ for (let chapter = 0; chapter < STORY_CHAPTER_COUNT; chapter += 1) {
     storyChapter: chapter,
   }));
 }
+// Tournois : une manche courue (elle ne compte pas dans « trois styles ») et
+// les quatre titres soulevés, un par un — de quoi ouvrir premier titre et
+// quatre titres. Le doublon ne compte pas deux fois.
+const VICE_TOURNAMENTS = ['sunset', 'europe', 'pacifique', 'legendes'];
+check('le seuil Quatre titres couvre tous les tournois', ACHIEVEMENTS.find(({ id }) => id === 'vice-tournament-slam').target, VICE_TOURNAMENTS.length);
+record(play('vice_city_run', { city: 'vice-city', mode: 'tournament', rank: 1, score: 1800 }));
+VICE_TOURNAMENTS.forEach((tournamentId) => record(play('vice_city_tournament_won', { tournamentId })));
+record(play('vice_city_tournament_won', { tournamentId: VICE_TOURNAMENTS[0] }));
 
 const finalSummary = summarize(scenario);
 const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((item) => item.id === entry.id)?.unlocked).map((entry) => entry.id);
@@ -738,6 +753,7 @@ const sources = [
   // Les deux jeux d'arcade annoncent leurs courses au moteur des succès.
   ['src/games/MirageRushPage.jsx', "trackAchievement('mirage_run'"],
   ['src/games/ViceCityRushPage.jsx', "trackAchievement('vice_city_run'"],
+  ['src/games/ViceCityRushPage.jsx', "trackAchievement('vice_city_tournament_won'"],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
   ['src/achievements/AchievementPopup.jsx', 'dismissNotification(entry.id)'],
   ['src/main.jsx', '<AchievementPopup />'],

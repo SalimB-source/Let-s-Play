@@ -1,0 +1,385 @@
+/* ── Tournois de Vice City Rush : hub des 4 coupes et classement général ─────
+   Trois courses imposées, sans police ni armes, avec les mêmes rivaux : le hub
+   vit sur l'étape « mode » de l'intro (sous la campagne Histoire), le
+   classement sur l'écran d'arrivée de chaque manche. */
+
+/* Hub : même gabarit que la campagne Histoire, en doré plutôt qu'en rose. */
+.city-rush-page .cr-tournament-hub {
+  display: grid;
+  gap: 9px;
+  width: min(1080px, 100%);
+}
+
+.city-rush-page .cr-tournament-hub-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.city-rush-page .cr-tournament-hub-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.cr-tournament-hub-kicker {
+  color: #ffd44f;
+  font: 800 9px/1.3 var(--mono, ui-monospace, monospace);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.city-rush-page .cr-tournament-hub-heading h3 {
+  margin: 0;
+  color: #f7f8fa;
+  font: 900 17px/1.15 var(--display, system-ui, sans-serif);
+  letter-spacing: .01em;
+}
+
+.cr-tournament-hub-progress {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  color: #aeb7c4;
+  font: 700 9px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  text-align: right;
+}
+
+.cr-tournament-hub-progress b {
+  color: #ffd44f;
+  font-weight: 850;
+}
+
+/* Grille des 4 coupes : 4 colonnes sur grand écran, 2 en dessous, 1 au doigt. */
+.cr-tournament-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.cr-tournament-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-height: 250px;
+  padding: 18px 14px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--cr-border);
+  color: var(--cr-text);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.26s var(--cr-ease);
+  isolation: isolate;
+}
+
+.cr-tournament-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(420px 200px at 10% 0%, color-mix(in srgb, var(--tournament-accent) 18%, transparent), transparent 60%);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.26s var(--cr-ease);
+}
+
+.cr-tournament-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--tournament-accent), var(--tournament-secondary));
+  opacity: 0;
+  transition: opacity 0.24s var(--cr-ease);
+}
+
+.cr-tournament-card:hover:not(:disabled) {
+  transform: translateY(-3px);
+  background: rgba(255,255,255,0.07);
+  border-color: color-mix(in srgb, var(--tournament-accent) 32%, var(--cr-border));
+  box-shadow: 0 12px 32px rgba(0,0,0,0.24), 0 0 24px color-mix(in srgb, var(--tournament-accent) 12%, transparent);
+}
+
+.cr-tournament-card:hover:not(:disabled)::before { opacity: 0.9; }
+.cr-tournament-card:hover:not(:disabled)::after { opacity: 1; }
+
+/* Verrouillé : grisé, sans soulèvement — le clic est déjà coupé (`disabled`). */
+.cr-tournament-card.is-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: saturate(0.4);
+}
+
+/* Terminé : filet doré en bas ; titré : la carte entière passe en or. */
+.cr-tournament-card.is-done::after { opacity: 0.55; }
+
+.cr-tournament-card.is-champion {
+  border-color: color-mix(in srgb, #ffd44f 45%, var(--cr-border));
+  box-shadow: 0 0 26px color-mix(in srgb, #ffd44f 14%, transparent);
+}
+
+.cr-tournament-card.is-champion::after { opacity: 1; }
+
+.cr-tournament-number {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  color: var(--cr-faint);
+  font: 700 10px var(--mono, monospace);
+  letter-spacing: 0.08em;
+}
+
+.cr-tournament-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-top: 4px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tournament-accent) 14%, rgba(255,255,255,0.04));
+  border: 1px solid color-mix(in srgb, var(--tournament-accent) 18%, transparent);
+  font-size: 20px;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--tournament-accent) 14%, transparent);
+}
+
+.cr-tournament-card b {
+  margin-top: 2px;
+  color: var(--cr-text);
+  font: 900 13px var(--mono, monospace);
+  letter-spacing: 0.06em;
+}
+
+.cr-tournament-card small {
+  color: var(--tournament-accent);
+  font: 700 9px var(--mono, monospace);
+  letter-spacing: 0.1em;
+}
+
+.cr-tournament-legs-list {
+  color: var(--cr-text);
+  font: 800 9px/1.5 var(--mono, monospace);
+  letter-spacing: 0.04em;
+}
+
+.cr-tournament-description {
+  color: var(--cr-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.cr-tournament-meta {
+  color: #ffd21f;
+  font: 900 8px/1.5 var(--mono, monospace);
+  letter-spacing: 0.045em;
+  text-shadow: 0 0 9px rgba(255, 210, 31, 0.26);
+}
+
+.cr-tournament-status {
+  margin-top: auto;
+  padding-top: 8px;
+  color: var(--tournament-secondary);
+  font: 850 9px var(--mono, monospace);
+  letter-spacing: 0.1em;
+}
+
+.cr-tournament-card.is-locked .cr-tournament-status { color: var(--cr-faint); }
+.cr-tournament-card.is-champion .cr-tournament-status { color: #ffd44f; }
+
+/* Classement général : sur l'écran d'arrivée, sous la grille du podium. */
+.cr-tournament-standings {
+  display: grid;
+  gap: 6px;
+  width: min(560px, 100%);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid var(--cr-border);
+}
+
+.cr-tournament-standings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.cr-tournament-standings-head span {
+  color: var(--cr-muted);
+  font: 800 8px var(--mono, monospace);
+  letter-spacing: 0.14em;
+}
+
+.cr-tournament-standings-head b {
+  color: #ffd44f;
+  font: 850 10px var(--mono, monospace);
+  letter-spacing: 0.06em;
+  text-align: right;
+}
+
+.cr-tournament-row {
+  display: grid;
+  grid-template-columns: 26px 34px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.cr-tournament-row.is-player {
+  background: rgba(67, 234, 213, 0.08);
+  border-color: rgba(67, 234, 213, 0.25);
+}
+
+.cr-tournament-row.is-leader .cr-tournament-rank { color: #ffd44f; }
+
+.cr-tournament-rank {
+  color: var(--cr-muted);
+  font: 850 13px var(--mono, monospace);
+}
+
+.cr-tournament-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.cr-tournament-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cr-tournament-driver {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cr-tournament-driver b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cr-text);
+  font: 850 11px var(--mono, monospace);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cr-tournament-driver small {
+  color: var(--cr-muted);
+  font: 700 8px var(--mono, monospace);
+  letter-spacing: 0.08em;
+}
+
+/* Places manche par manche : la victoire est dorée. */
+.cr-tournament-legs {
+  display: flex;
+  gap: 5px;
+}
+
+.cr-tournament-legs i {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--cr-text);
+  font: 800 9px var(--mono, monospace);
+  font-style: normal;
+}
+
+.cr-tournament-legs i.is-win {
+  background: rgba(255, 212, 79, 0.16);
+  border-color: rgba(255, 212, 79, 0.45);
+  color: #ffd44f;
+}
+
+.cr-tournament-points {
+  display: grid;
+  justify-items: end;
+  gap: 0;
+  min-width: 44px;
+}
+
+.cr-tournament-points b {
+  color: var(--cr-text);
+  font: 900 15px var(--mono, monospace);
+}
+
+.cr-tournament-points small {
+  color: var(--cr-muted);
+  font: 800 7px var(--mono, monospace);
+  letter-spacing: 0.14em;
+}
+
+.cr-tournament-standings-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  color: var(--cr-muted);
+  font: 800 8px var(--mono, monospace);
+  letter-spacing: 0.1em;
+}
+
+.cr-tournament-standings-foot b { color: var(--cr-text); }
+
+/* Étape du stepper inaccessible en tournoi (la ville est imposée). */
+.city-rush-page .city-rush-stepper-item.is-locked {
+  opacity: 0.45;
+}
+
+/* Tablette étroite et fenêtre réduite : deux coupes par rangée. */
+@media (max-width: 1100px) {
+  .cr-tournament-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-page .cr-tournament-hub-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .city-rush-page .cr-tournament-hub-progress {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .cr-tournament-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .cr-tournament-card { min-height: unset; }
+
+  /* Classement : le pilote garde sa rangée, les manches passent en dessous. */
+  .cr-tournament-row {
+    grid-template-columns: 26px 34px minmax(0, 1fr) auto;
+  }
+
+  .cr-tournament-row .cr-tournament-legs {
+    grid-column: 2 / 5;
+  }
+}

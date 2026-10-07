@@ -17,6 +17,7 @@ import {
   CITY_RUSH_CASH_BY_PLACE,
   CITY_RUSH_STARTER_CAR_ID,
   awardCityRushRace,
+  cityRushCashForRaceResult,
   cityRushStorageKey,
   isCityRushCarFree,
   isCityRushCarOwned,
@@ -25,6 +26,7 @@ import {
   migrateCityRushLegacyStory,
   normalizeCityRushProgress,
   normalizeCityRushSave,
+  normalizeCityRushTournaments,
   purchaseCityRushCar,
   writeCityRushSave,
   withUpgradedCityRushStory,
@@ -70,8 +72,23 @@ import {
   selectCityRushRacers,
 } from './cityRushRules';
 import { cityRushTheme } from './cityRushThemes';
+import {
+  CITY_RUSH_TOURNAMENTS,
+  CITY_RUSH_TOURNAMENT_LEGS,
+  CITY_RUSH_TOURNAMENT_POINTS,
+  cityRushTournamentRequirement,
+  cityRushTournamentRivalRules,
+  cityRushTournamentStandings,
+  cityRushTournamentWinner,
+  createCityRushTournamentRun,
+  getCityRushTournament,
+  isCityRushTournamentComplete,
+  isCityRushTournamentUnlocked,
+  recordCityRushTournamentRace,
+  selectCityRushTournamentRacers,
+} from './cityRushTournaments';
 import { useAchievementAction } from '../achievements/AchievementContext';
-import { VICE_CITY_STORY_MODE } from '../achievements/engine';
+import { VICE_CITY_STORY_MODE, VICE_CITY_TOURNAMENT_MODE } from '../achievements/engine';
 import './vice-city-rush.css';
 import './vice-city-rush-cinematic.css';
 import {
@@ -91,6 +108,7 @@ import {
 import './vice-city-rush-hud.css';
 import './city-rush-story.css';
 import './vice-city-rush-comic.css';
+import './city-rush-tournament.css';
 
 // v4 : la boucle du stage double (600 m → 1 200 m), donc les courses à six
 // tours passent à 8 400 m et le Sprint à seize checkpoints / 4 800 m ; les
@@ -301,11 +319,53 @@ function ordinal(place) {
   return place === 1 ? '1er' : `${place}e`;
 }
 function cashRewardReason(result) {
+  if (result?.tournament?.complete && result.tournament.champion) return 'RÉCOMPENSE · TITRE DE CHAMPION';
+  if (result?.tournament) return `RÉCOMPENSE · ${ordinal(result?.rank).toUpperCase()} PLACE`;
   if (result?.storyChapterId && result?.sprint) return 'RÉCOMPENSE · DOSSIER LIVRÉ';
   if (result?.storyChapterId) return 'RÉCOMPENSE · OBJECTIF REMPLI';
   if (result?.sprint) return 'MODE DÉFI · SANS BILLETS';
   if (result?.destroyed) return 'RÉCOMPENSE · ÉPAVE DERNIÈRE';
   return `RÉCOMPENSE · ${ordinal(result?.rank).toUpperCase()} PLACE`;
+}
+
+/**
+ * Classement général d'un tournoi : un rang par pilote, ses places course par
+ * course et son total. Les visages viennent de la grille du tournoi (les
+ * rivaux ne changent pas d'une course à l'autre).
+ */
+function TournamentStandings({ tournament, standings, roster, legsRun }) {
+  if (!tournament || !Array.isArray(standings) || standings.length === 0) return null;
+  return (
+    <div className="cr-tournament-standings" role="status" aria-label={`Classement général du tournoi ${tournament.name}`}>
+      <div className="cr-tournament-standings-head">
+        <span>CLASSEMENT GÉNÉRAL</span>
+        <b>{tournament.icon} {tournament.name}</b>
+      </div>
+      {standings.map((row) => {
+        const driver = roster.find((racer) => racer.id === row.slot) || {};
+        return (
+          <div key={row.slot} className={`cr-tournament-row${row.isPlayer ? ' is-player' : ''}${row.rank === 1 ? ' is-leader' : ''}`}>
+            <span className="cr-tournament-rank">{String(row.rank).padStart(2, '0')}</span>
+            <span className="cr-tournament-avatar"><CityRushDriverAvatar driver={driver} decorative /></span>
+            <span className="cr-tournament-driver">
+              <b>{driver.name || row.slot.toUpperCase()}{row.isPlayer && <em className="city-rush-you-badge">TOI</em>}</b>
+              <small>{driver.flag} {driver.country}</small>
+            </span>
+            <span className="cr-tournament-legs" aria-label={`Places : ${row.places.map((place) => (place === null ? 'en attente' : ordinal(place))).join(', ')}`}>
+              {row.places.map((place, index) => (
+                <i key={index} className={place === 1 ? 'is-win' : ''}>{place === null ? '–' : ordinal(place)}</i>
+              ))}
+            </span>
+            <span className="cr-tournament-points"><b>{row.points}</b><small>PTS</small></span>
+          </div>
+        );
+      })}
+      <div className="cr-tournament-standings-foot">
+        <span>{legsRun} / {tournament.legs.length} COURSES</span>
+        <b>{CITY_RUSH_TOURNAMENT_POINTS.join(' · ')} PTS</b>
+      </div>
+    </div>
+  );
 }
 function PowerIcon({ type, className = '' }) {
   if (type === 'bazooka') {
@@ -357,6 +417,32 @@ function rankProgress(racer) {
   return Math.round(Math.max(0, Math.min(1, Number(racer?.progress) || 0)) * 100);
 }
 
+/**
+ * Récit de l'écran d'arrivée d'un tournoi : place de la manche, tête du
+ * général et prochaine ville — ou sacre du champion à la troisième course.
+ */
+function tournamentResultText({ result, tournament, roster }) {
+  const table = result?.tournament;
+  if (!table || !tournament) return '';
+  const playerRow = table.standings.find((row) => row.isPlayer) || {};
+  const leaderRow = table.standings[0] || {};
+  const leaderDriver = (roster || []).find((racer) => racer.id === leaderRow.slot);
+  const winnerDriver = (roster || []).find((racer) => racer.id === table.winnerSlot);
+  if (table.complete && table.champion) {
+    return `Tu soulèves ${tournament.name} avec ${playerRow.points ?? 0} points en ${tournament.legs.length} courses ! La prime de ${formatCash(table.bonus)} billets verts rejoint ton portefeuille.`;
+  }
+  if (table.complete) {
+    return `${winnerDriver?.displayName || 'Ton rival'} soulève ${tournament.name} avec ${leaderRow.points ?? 0} points. Tu termines ${ordinal(playerRow.rank || 3)} du général avec ${playerRow.points ?? 0} points — la revanche t’attend.`;
+  }
+  const legCity = CITY_RUSH_COURSES.find((course) => course.id === result.city);
+  const nextCity = CITY_RUSH_COURSES.find((course) => course.id === tournament.legs[table.raceIndex + 1]);
+  const place = result.destroyed ? 'Épave bonne dernière' : ordinal(result.rank);
+  const lead = leaderRow.isPlayer
+    ? `Tu mènes le général avec ${playerRow.points ?? 0} points.`
+    : `${leaderDriver?.displayName || 'Ton rival'} mène le général (${leaderRow.points ?? 0} pts), tu en as ${playerRow.points ?? 0}.`;
+  return `Manche ${table.raceIndex + 1}/${tournament.legs.length} : ${place} à ${legCity?.name || result.city}. ${lead} Cap sur ${nextCity?.name || 'la suite'}.`;
+}
+
 export default function ViceCityRushPage() {
   // Sauvegarde de l'appareil au premier rendu (cache du visiteur, ancienne
   // campagne Histoire reprise) : le compte connecté la remplace dès que son
@@ -371,6 +457,14 @@ export default function ViceCityRushPage() {
   const [storyStars, setStoryStars] = useState(() => initialSave.storyStars || {});
   const [briefingDone, setBriefingDone] = useState(false);
   const [storyAlert, setStoryAlert] = useState(null);
+  // Tournoi en cours : identifiant, manche (0 = 1ʳᵉ course) et courses courues.
+  // Tout est remis à zéro en quittant vers les menus (abandon du tournoi).
+  const [tournamentId, setTournamentId] = useState(null);
+  const [tournamentLeg, setTournamentLeg] = useState(0);
+  const [tournamentRun, setTournamentRun] = useState(null);
+  // Palmarès des tournois (terminés + titres), miroir de la sauvegarde — même
+  // principe que les étoiles d'histoire ci-dessus.
+  const [tournamentHistory, setTournamentHistory] = useState(() => normalizeCityRushTournaments(initialSave));
   const [playerDriverId, setPlayerDriverId] = useState(CITY_RUSH_DRIVERS[0].id);
   const [modeId, setModeId] = useState(RACE_MODES[0].id);
   const [introStep, setIntroStep] = useState('mode'); // mode -> city -> garage
@@ -440,7 +534,7 @@ export default function ViceCityRushPage() {
   phaseRef.current = phase;
   soundOnRef.current = soundOn;
 
-  /** Applique une sauvegarde au jeu : carrière et campagne Histoire d'un coup. */
+  /** Applique une sauvegarde au jeu : carrière, campagne Histoire et tournois d'un coup. */
   const applySave = useCallback((rawSave) => {
     const next = normalizeCityRushSave(withUpgradedCityRushStory(rawSave));
     const career = careerFromSave(next);
@@ -452,6 +546,7 @@ export default function ViceCityRushPage() {
     setStoryRaceChapter(save.storyChapter);
     setStoryEnding(save.storyEnding);
     setStoryStars(save.storyStars || {});
+    setTournamentHistory(normalizeCityRushTournaments(save));
     return save;
   }, []);
 
@@ -531,15 +626,25 @@ export default function ViceCityRushPage() {
   const city = useMemo(() => CITY_RUSH_COURSES.find((item) => item.id === cityId) || CITY_RUSH_COURSES[0], [cityId]);
   const mode = useMemo(() => RACE_MODES.find((m) => m.id === modeId) || RACE_MODES[0], [modeId]);
   const currentStoryRace = storyMode ? getStoryChapter(storyRaceChapter) : null;
-  const currentLaps = tutorialMode ? 1 : storyMode ? (currentStoryRace?.laps ?? CITY_RUSH_LAPS) : mode.laps;
+  // Tournoi actif : les quatre modes (tutoriel, Histoire, tournoi, libre)
+  // s'excluent — entrer dans l'un fait toujours sortir des trois autres.
+  const tournament = tournamentId ? getCityRushTournament(tournamentId) : null;
+  const tournamentMode = Boolean(tournament);
+  const currentLaps = tutorialMode ? 1 : storyMode
+    ? (currentStoryRace?.laps ?? CITY_RUSH_LAPS)
+    : tournamentMode ? (tournament.laps ?? CITY_RUSH_LAPS) : mode.laps;
   // Le dernier tour enchaîne deux boucles : 6 tours = 5 × 1 200 m + 2 400 m.
-  const sprintMode = storyMode ? currentStoryRace?.format === 'sprint' : mode.format === 'sprint';
+  // Un tournoi ne court qu'en circuit (3 tours, jamais de sprint solo).
+  const sprintMode = tournamentMode ? false : storyMode ? currentStoryRace?.format === 'sprint' : mode.format === 'sprint';
   const soloMode = sprintMode || tutorialMode;
   const currentDistance = sprintMode ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(currentLaps);
   const RACE_KM = `${(currentDistance / 1000).toFixed(1).replace('.', ',')} KM`;
-  const activeModeName = tutorialMode ? 'TUTORIEL' : storyMode ? 'HISTOIRE' : mode.name;
-  const activeModeLabel = tutorialMode ? 'ENTRAÎNEMENT · 1 TOUR' : storyMode ? `CHAPITRE ${String(storyRaceChapter + 1).padStart(2, '0')} / ${CITY_RUSH_STORY_CHAPTER_COUNT}` : mode.label;
-  const cashRewardsEnabled = !tutorialMode && (storyMode || mode.cashRewards !== false);
+  const activeModeName = tutorialMode ? 'TUTORIEL' : storyMode ? 'HISTOIRE' : tournamentMode ? 'TOURNOI' : mode.name;
+  const activeModeLabel = tutorialMode ? 'ENTRAÎNEMENT · 1 TOUR' : storyMode
+    ? `CHAPITRE ${String(storyRaceChapter + 1).padStart(2, '0')} / ${CITY_RUSH_STORY_CHAPTER_COUNT}`
+    : tournamentMode ? `COURSE ${tournamentLeg + 1} / ${tournament.legs.length} · ${tournament.name}` : mode.label;
+  const cashRewardsEnabled = !tutorialMode && (storyMode || tournamentMode || mode.cashRewards !== false);
+  const tournamentTitlesWon = Object.values(tournamentHistory.tournamentTitles || {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   // Voiture du garage vraiment disponible : le choix du pilote, ou — s'il ne
   // fait plus partie de son garage (instantané d'un autre compte appliqué en
@@ -572,6 +677,11 @@ export default function ViceCityRushPage() {
   );
   const sprintCheckpointSeconds = Math.max(0, Number(hud.sprint?.timeTotal) || sprintCheckpointBonus);
   const roster = useMemo(() => {
+    // Tournoi : les deux rivaux attitrés, les mêmes sur les trois courses (ni
+    // `runId` ni tirage : la grille ne change pas en route).
+    if (tournamentMode && tournament) {
+      return selectCityRushTournamentRacers({ tournamentId: tournament.id, cityId, playerDriverId });
+    }
     const racers = selectCityRushRacers({ cityId, carId: selectedCar.id, runId, playerDriverId });
     if (tutorialMode) return racers.filter((racer) => racer.isPlayer);
     if (!storyMode) return racers;
@@ -586,10 +696,24 @@ export default function ViceCityRushPage() {
       }
       return racer;
     });
-  }, [cityId, selectedCar.id, runId, playerDriverId, tutorialMode, storyMode, storyRaceChapter, currentStoryRace]);
-  // Règles spéciales du chapitre : transmises au monde (armes, police, coque,
-  // boss, panne scriptée). Mémorisé : le monde se recrée quand l’objet change.
+  }, [cityId, selectedCar.id, runId, playerDriverId, tutorialMode, storyMode, storyRaceChapter, currentStoryRace, tournamentMode, tournament]);
+  // Règles spéciales du chapitre — ou du tournoi : transmises au monde (armes,
+  // police, coque, boss, panne scriptée). Mémorisé : le monde se recrée quand
+  // l’objet change. Un tournoi court toujours « pur » : sans police ni armes,
+  // avec les voitures et le rythme de ses rivaux attitrés.
   const storyRules = useMemo(() => {
+    if (tournamentMode && tournament) {
+      const rivals = cityRushTournamentRivalRules(tournament);
+      return {
+        weaponsEnabled: false,
+        policeEnabled: false,
+        bazookaEnabled: false,
+        playerHealthOverride: null,
+        rivalCarIds: rivals.rivalCarIds,
+        rivalPace: rivals.rivalPace,
+        breakdown: null,
+      };
+    }
     if (!storyMode || !currentStoryRace) return null;
     const rules = currentStoryRace.rules || {};
     return {
@@ -601,9 +725,12 @@ export default function ViceCityRushPage() {
       rivalPace: rules.rivalPace || null,
       breakdown: rules.breakdown || null,
     };
-  }, [storyMode, currentStoryRace]);
-  const storyWeaponsOn = !storyMode || storyRules?.weaponsEnabled !== false;
-  const storyPoliceOn = !storyMode || storyRules?.policeEnabled !== false;
+  }, [storyMode, currentStoryRace, tournamentMode, tournament]);
+  const storyWeaponsOn = (!storyMode && !tournamentMode) || storyRules?.weaponsEnabled !== false;
+  const storyPoliceOn = (!storyMode && !tournamentMode) || storyRules?.policeEnabled !== false;
+  // Course « pure » (turbo, soins et tremplins, ni armes ni police) : certains
+  // chapitres d'histoire, et tous les tournois.
+  const pureRace = tournamentMode || (storyMode && !storyWeaponsOn);
   // Le bazooka est sur toutes les cartes (hors Sprint et chapitres sans arme) :
   // deux conteneurs par course, à 30 % puis 65 % du parcours.
   const bazookaMode = !sprintMode && storyWeaponsOn && storyPoliceOn && storyRules?.bazookaEnabled !== false;
@@ -675,7 +802,13 @@ export default function ViceCityRushPage() {
   const oncomingBonusPercent = Math.max(0, Math.round(((Number(hud.oncomingBonus) || 1) - 1) * 100));
   const oncomingCharged = oncomingBonusPercent > 0;
   const bestTime = bests[cityId] || null;
-  const isRaceWon = Boolean(!storyMode && !tutorialMode && result && result.rank === 1 && !result.destroyed && !result.timedOut);
+  // Tournoi de l'écran d'arrivée : retrouvé par son identifiant (le résultat
+  // survit au changement de manche), avec le visage du champion.
+  const resultTournament = result?.tournament ? getCityRushTournament(result.tournament.tournamentId) : null;
+  const resultTournamentWinner = result?.tournament?.winnerSlot
+    ? roster.find((racer) => racer.id === result.tournament.winnerSlot) || null
+    : null;
+  const isRaceWon = Boolean(!storyMode && !tutorialMode && !tournamentMode && result && result.rank === 1 && !result.destroyed && !result.timedOut);
   const finalStoryVictory = Boolean(storyMode && result?.objectiveMet && storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT);
   const nextStoryIndex = storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT ? 0 : storyChapter;
   const previewStoryChapter = getStoryChapter(nextStoryIndex);
@@ -847,28 +980,36 @@ export default function ViceCityRushPage() {
     // précédente (celle de l'appareil ou d'un autre compte).
     if (connected && !progressionReady) return;
     const savedProgress = careerProgressRef.current;
-    const targetCityId = requestedCityId || (tutorial ? 'vice-city' : storyMode ? (currentStoryRace?.city || cityId) : cityId);
+    const targetCityId = requestedCityId
+      || (tutorial ? 'vice-city' : storyMode ? (currentStoryRace?.city || cityId) : tournamentMode && tournament ? (tournament.legs[tournamentLeg] || cityId) : cityId);
     // Voiture contrôlée au départ : celle demandée par le garage, sinon celle
     // qui est engagée (prêt du scénario compris — voir `activeCarId`).
     const selectedCarId = requestedCarId || (tutorial ? garageCarId : activeCarId);
-    if (!storyMode && !isCityRushCourseUnlocked(savedProgress, targetCityId)) {
+    // L’histoire et les tournois sont indépendants de la carrière : parcours
+    // toujours ouverts — seule la course libre suit l'ordre des parcours
+    // (le tutoriel part toujours sur Vice City, ouverte à tous).
+    if (!storyMode && !tournamentMode && !isCityRushCourseUnlocked(savedProgress, targetCityId)) {
       setStoryMode(false);
       setIntroStep('city');
       setPhase('intro');
       showToast('COURSE VERROUILLÉE · TERMINE D’ABORD LE PARCOURS PRÉCÉDENT.', 'locked');
       return;
     }
-    // L’histoire est indépendante de la carrière : parcours toujours ouverts,
-    // voiture parfois prêtée (prologue, Ring) — aucun verrou à contrôler.
+    // L’histoire prête parfois sa voiture (prologue, Ring) ; le tournoi court
+    // avec celle du garage, qui doit donc être possédée — sinon retour au
+    // garage du tournoi, sans perdre la manche en cours.
     if (!storyMode && !isCityRushCarOwned(savedProgress, selectedCarId)) {
-      setStoryMode(false);
+      if (!tournamentMode) setStoryMode(false);
       setIntroStep('garage');
       setPhase('intro');
-      showToast('VOITURE VERROUILLÉE · ACHÈTE-LA AVEC TES BILLETS VERTS.', 'locked');
+      showToast(tournamentMode
+        ? 'VOITURE VERROUILLÉE · CHOISIS UNE VOITURE DE TON GARAGE POUR CONTINUER LE TOURNOI.'
+        : 'VOITURE VERROUILLÉE · ACHÈTE-LA AVEC TES BILLETS VERTS.', 'locked');
       return;
     }
     if (tutorial) {
       setStoryMode(false);
+      resetTournament();
       setCarId(selectedCarId);
       setModeId('circuit');
       setIntroStep('mode');
@@ -901,7 +1042,18 @@ export default function ViceCityRushPage() {
     if (soundOnRef.current) audioRef.current?.start();
     setPhase('countdown');
   }
-  startRaceRef.current = startRace;
+  // Touche Entrée : relance la course — sauf sur l'écran d'arrivée d'un
+  // tournoi, où elle enchaîne la manche suivante (une manche courue ne se
+  // rejoue pas : le classement resterait malhonnête, et les billets
+  // tomberaient deux fois).
+  startRaceRef.current = () => {
+    if (tournamentMode && phaseRef.current === 'finished' && result?.tournament && !result.tournament.complete) {
+      startNextTournamentLeg();
+      return;
+    }
+    if (tournamentMode && phaseRef.current === 'finished' && result?.tournament?.complete) return;
+    startRace();
+  };
 
   function startTutorialRace() {
     startRace({ carId: garageCarId, cityId: 'vice-city', tutorial: true });
@@ -918,8 +1070,64 @@ export default function ViceCityRushPage() {
     }
   }
 
+  /** Quitte le tournoi en cours (abandon : les gains des manches courues sont gardés). */
+  function resetTournament() {
+    setTournamentId(null);
+    setTournamentLeg(0);
+    setTournamentRun(null);
+  }
+
+  /**
+   * Entre dans un tournoi : trois courses imposées, sans police ni armes, avec
+   * la même voiture et les mêmes rivaux du début à la fin. La ville est
+   * imposée manche par manche — le garage est la seule étape avant le départ.
+   */
+  function chooseTournament(nextTournamentId) {
+    if (connected && !progressionReady) return;
+    const entry = getCityRushTournament(nextTournamentId);
+    if (!entry) return;
+    if (!isCityRushTournamentUnlocked(nextTournamentId, tournamentHistory.completedTournamentIds)) {
+      const requirement = cityRushTournamentRequirement(nextTournamentId);
+      showToast(`TOURNOI VERROUILLÉ · TERMINE ${requirement?.name || 'LE TOURNOI PRÉCÉDENT'}.`, 'locked');
+      return;
+    }
+    setStoryMode(false);
+    setTutorialMode(false);
+    setTutorialGuideOpen(false);
+    setTournamentId(entry.id);
+    setTournamentLeg(0);
+    setTournamentRun(createCityRushTournamentRun(entry.id));
+    setCityId(entry.legs[0]);
+    setResult(null);
+    setIntroStep('garage');
+    setPhase('intro');
+  }
+
+  /** Manche suivante du tournoi : même voiture, mêmes rivaux, ville imposée. */
+  function startNextTournamentLeg() {
+    if (!tournamentMode || !tournament) return;
+    // Compte en cours de chargement : la manche avancerait sans course.
+    if (connected && !progressionReady) return;
+    const nextLeg = tournamentLeg + 1;
+    if (nextLeg < 0 || nextLeg >= tournament.legs.length) return;
+    setTournamentLeg(nextLeg);
+    // La ville passe en explicite : `tournamentLeg` ne sera à jour qu'au
+    // prochain rendu, et `startRace` doit partir sur la bonne manche.
+    startRace({ cityId: tournament.legs[nextLeg] });
+  }
+
+  /** Recommence le tournoi à zéro (même voiture, classement effacé). */
+  function restartTournament() {
+    if (!tournamentMode || !tournament) return;
+    if (connected && !progressionReady) return;
+    setTournamentLeg(0);
+    setTournamentRun(createCityRushTournamentRun(tournament.id));
+    startRace({ cityId: tournament.legs[0] });
+  }
+
   function beginStory(chapterIndex = null) {
     if (connected && !progressionReady) return;
+    resetTournament();
     setTutorialMode(false);
     setTutorialGuideOpen(false);
     // L’histoire est indépendante de la carrière : aucun parcours à débloquer
@@ -951,6 +1159,7 @@ export default function ViceCityRushPage() {
     setTutorialMode(false);
     setTutorialGuideOpen(false);
     setStoryMode(false);
+    resetTournament();
     setPhase('intro');
     setIntroStep('mode');
   }
@@ -990,6 +1199,89 @@ export default function ViceCityRushPage() {
 
     const courseId = nextResult.city || (storyMode ? currentStoryRace?.city : cityId) || 'vice-city';
     const progressBeforeRace = careerProgressRef.current;
+    // Tournoi : chaque manche paie comme un Circuit (50 / 30 / 10 billets,
+    // l'épave restant bonne dernière), les points s'ajoutent au classement,
+    // et le champion empoche la prime à la troisième course. Comme l'histoire,
+    // un tournoi ne valide aucun parcours du mode libre.
+    if (tournamentMode && tournament) {
+      const legCash = cityRushCashForRaceResult({
+        rank: nextResult.rank,
+        modeId: 'circuit',
+        destroyed: Boolean(nextResult.destroyed),
+        timedOut: Boolean(nextResult.timedOut),
+      });
+      const safeRun = tournamentRun || createCityRushTournamentRun(tournament.id);
+      const nextRun = recordCityRushTournamentRace(safeRun, { ...nextResult, city: courseId });
+      // Une manche déjà enregistrée (rejouée par un moyen détourné) ne paie
+      // pas deux fois : le classement refuse le doublon, la caisse aussi.
+      const recorded = nextRun !== safeRun;
+      const complete = isCityRushTournamentComplete(nextRun);
+      const tournamentStandings = cityRushTournamentStandings(nextRun);
+      const tournamentWinner = complete ? cityRushTournamentWinner(nextRun) : null;
+      const champion = Boolean(recorded && complete && tournamentWinner?.isPlayer);
+      const championBonus = champion ? Math.max(0, Math.floor(Number(tournament.championBonus) || 0)) : 0;
+      const tournamentCash = recorded ? legCash + championBonus : 0;
+      let completedIds = tournamentHistory.completedTournamentIds;
+      let tournamentTitles = tournamentHistory.tournamentTitles;
+      if (recorded && complete && !completedIds.includes(tournament.id)) {
+        completedIds = [...completedIds, tournament.id];
+      }
+      if (champion) {
+        tournamentTitles = { ...tournamentTitles, [tournament.id]: (Number(tournamentTitles[tournament.id]) || 0) + 1 };
+      }
+      const tournamentIndex = CITY_RUSH_TOURNAMENTS.findIndex((entry) => entry.id === tournament.id);
+      const followingTournament = tournamentIndex >= 0 ? CITY_RUSH_TOURNAMENTS[tournamentIndex + 1] : null;
+      const unlockedNextId = recorded && complete && followingTournament
+        && !isCityRushTournamentUnlocked(followingTournament.id, tournamentHistory.completedTournamentIds)
+        && isCityRushTournamentUnlocked(followingTournament.id, completedIds)
+        ? followingTournament.id
+        : null;
+      const savedTournament = persistSave({
+        cash: progressBeforeRace.cash + tournamentCash,
+        completedTournamentIds: completedIds,
+        tournamentTitles,
+      });
+      const tournamentCareer = careerFromSave(savedTournament);
+      careerProgressRef.current = tournamentCareer;
+      setCareerProgress(tournamentCareer);
+      if (recorded && complete) setTournamentHistory(normalizeCityRushTournaments(savedTournament));
+      setTournamentRun(nextRun);
+      setResult({
+        ...nextResult,
+        cashAwarded: tournamentCash,
+        cashBalance: savedTournament.cash,
+        newlyUnlockedCourse: null,
+        tournament: {
+          tournamentId: tournament.id,
+          raceIndex: tournamentLeg,
+          legsRun: nextRun.races.length,
+          complete,
+          champion,
+          bonus: championBonus,
+          standings: tournamentStandings,
+          winnerSlot: tournamentWinner?.slot || null,
+          unlockedNextId,
+        },
+      });
+      trackAchievement('vice_city_run', {
+        city: courseId,
+        mode: VICE_CITY_TOURNAMENT_MODE,
+        rank: nextResult.rank,
+        score: nextResult.score,
+        storyChapter: null,
+      });
+      if (champion) trackAchievement('vice_city_tournament_won', { tournamentId: tournament.id });
+      setPhase('finished');
+      if (nextResult.rank === 1) {
+        const previous = bests[courseId];
+        if (!previous || nextResult.duration < previous) {
+          const nextBests = { ...bests, [courseId]: nextResult.duration };
+          setBests(nextBests);
+          writeBests(nextBests);
+        }
+      }
+      return;
+    }
     // Mode Histoire : l’objectif du chapitre (victoire, survie, chrono, panne
     // scriptée) décide seul — ni le podium brut, ni la carrière (l’histoire
     // ne valide aucun parcours du mode libre).
@@ -1120,10 +1412,17 @@ export default function ViceCityRushPage() {
   // Le dernier choix lance directement le compte à rebours, sans bouton séparé.
   const chooseMode = (nextModeId) => {
     setStoryMode(false);
+    resetTournament();
     setModeId(nextModeId);
     setIntroStep('city');
   };
   const chooseCity = (nextCityId) => {
+    // Un tournoi impose ses villes manche par manche : l'étape ville n'existe
+    // pas pour lui (garde-fou — les cartes sont déjà inaccessibles).
+    if (tournamentMode) {
+      showToast('VILLE IMPOSÉE PAR LE TOURNOI · CHOISIS TA VOITURE.', 'locked');
+      return;
+    }
     if (!isCityRushCourseUnlocked(careerProgressRef.current, nextCityId)) {
       const index = CITY_RUSH_COURSES.findIndex((course) => course.id === nextCityId);
       const previous = index > 0 ? CITY_RUSH_COURSES[index - 1] : null;
@@ -1156,6 +1455,12 @@ export default function ViceCityRushPage() {
     startRace({ carId: nextCarId });
   };
   const goBack = () => {
+    // En tournoi, pas d'étape ville : retour aux modes, tournoi abandonné.
+    if (tournamentMode) {
+      resetTournament();
+      setIntroStep('mode');
+      return;
+    }
     if (introStep === 'garage') setIntroStep('city');
     else if (introStep === 'city') setIntroStep('mode');
   };
@@ -1176,6 +1481,8 @@ export default function ViceCityRushPage() {
                     ? `${city.name} · ENTRAÎNEMENT GUIDÉ · 1 TOUR`
                     : storyMode
                       ? <>{currentStoryRace?.race?.name || city.district} <i>·</i> {currentStoryRace?.race?.type || city.label} · {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOURS`}</>
+                      : tournamentMode
+                        ? `${tournament.name} · COURSE ${tournamentLeg + 1}/${tournament.legs.length} · ${selectedCar.name}`
                       : introStep === 'mode'
                         ? `${city.name} · ${mode.label}`
                         : introStep === 'city'
@@ -1507,9 +1814,21 @@ export default function ViceCityRushPage() {
                     <button
                       key={step.id}
                       type="button"
-                      className={`city-rush-stepper-item${introStep === step.id ? ' is-active' : ''}${['mode','city','garage'].indexOf(introStep) > idx ? ' is-done' : ''}`}
-                      onClick={() => { setStoryMode(false); setIntroStep(step.id); }}
+                      className={`city-rush-stepper-item${introStep === step.id ? ' is-active' : ''}${['mode','city','garage'].indexOf(introStep) > idx ? ' is-done' : ''}${tournamentMode && step.id === 'city' ? ' is-locked' : ''}`}
+                      onClick={() => {
+                        // En tournoi, la ville est imposée manche par manche :
+                        // l'étape ville n'existe pas, et revenir aux modes
+                        // abandonne le tournoi en cours.
+                        if (tournamentMode && step.id === 'city') {
+                          showToast('VILLE IMPOSÉE PAR LE TOURNOI · CHOISIS TA VOITURE.', 'locked');
+                          return;
+                        }
+                        if (step.id === 'mode') resetTournament();
+                        setStoryMode(false);
+                        setIntroStep(step.id);
+                      }}
                       aria-current={introStep === step.id ? 'step' : undefined}
+                      aria-disabled={tournamentMode && step.id === 'city' ? true : undefined}
                     >
                       <i>{idx + 1}</i><b>{step.label}</b>
                     </button>
@@ -1521,7 +1840,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
                       <h2>VICE CITY<br /><em>RUSH.</em></h2>
-                      <p>Choisis un mode, une ville et une voiture. Pour suivre l’histoire de Nico Vega, reprends la campagne ci-dessous.</p>
+                      <p>Choisis un mode, une ville et une voiture. Pour suivre l’histoire de Nico Vega, reprends la campagne ci-dessous — ou vise un titre en tournoi : trois courses sans police ni armes.</p>
                     </div>
 
                     <button type="button" className="city-rush-tutorial-launch" onClick={startTutorialRace}>
@@ -1620,6 +1939,58 @@ export default function ViceCityRushPage() {
                           </div>
                         </details>
                       )}
+                    </section>
+
+                    <section className="cr-tournament-hub" aria-labelledby="cr-tournament-hub-title">
+                      <div className="cr-tournament-hub-heading">
+                        <div>
+                          <span className="cr-tournament-hub-kicker">TOURNOIS · {CITY_RUSH_TOURNAMENT_LEGS} COURSES · SANS POLICE NI ARMES</span>
+                          <h3 id="cr-tournament-hub-title">TROIS COURSES, UN TITRE</h3>
+                        </div>
+                        <span className="cr-tournament-hub-progress">
+                          {tournamentHistory.completedTournamentIds.length} / {CITY_RUSH_TOURNAMENTS.length} tournois terminés
+                          <b>🏆 {tournamentTitlesWon} TITRE{tournamentTitlesWon > 1 ? 'S' : ''}</b>
+                        </span>
+                      </div>
+                      <div className="cr-tournament-grid" role="group" aria-label="Choisir un tournoi">
+                        {CITY_RUSH_TOURNAMENTS.map((entry, index) => {
+                          const unlocked = isCityRushTournamentUnlocked(entry.id, tournamentHistory.completedTournamentIds);
+                          const done = tournamentHistory.completedTournamentIds.includes(entry.id);
+                          const titles = Number(tournamentHistory.tournamentTitles[entry.id]) || 0;
+                          const requirement = cityRushTournamentRequirement(entry.id);
+                          const legNames = entry.legs.map((legId) => CITY_RUSH_COURSES.find((course) => course.id === legId)?.name || legId);
+                          return (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              className={`cr-tournament-card${unlocked ? '' : ' is-locked'}${done ? ' is-done' : ''}${titles > 0 ? ' is-champion' : ''}`}
+                              style={{ '--tournament-accent': entry.accent, '--tournament-secondary': entry.secondary }}
+                              onClick={() => chooseTournament(entry.id)}
+                              disabled={!unlocked}
+                              aria-label={unlocked
+                                ? `${entry.name}, ${entry.tagline} : ${legNames.join(', ')}. ${done ? 'Terminé' : 'À jouer'}${titles > 0 ? `, ${titles} titre${titles > 1 ? 's' : ''} de champion` : ''}`
+                                : `${entry.name}, verrouillé. Termine ${requirement?.name || 'le tournoi précédent'} pour le débloquer`}
+                            >
+                              <span className="cr-tournament-number">0{index + 1}</span>
+                              <span className="cr-tournament-icon" aria-hidden="true">{entry.icon}</span>
+                              <b>{entry.name}</b>
+                              <small>{entry.tagline}</small>
+                              <span className="cr-tournament-legs-list" aria-hidden="true">{legNames.join(' → ')}</span>
+                              <span className="cr-tournament-description">{entry.desc}</span>
+                              <span className="cr-tournament-meta">
+                                {entry.laps} TOURS/COURSE · {CITY_RUSH_TOURNAMENT_POINTS.join(' · ')} PTS · +{formatCash(entry.championBonus)} AU CHAMPION
+                              </span>
+                              <span className="cr-tournament-status">
+                                {!unlocked
+                                  ? `🔒 APRÈS ${requirement?.name || 'LE PRÉCÉDENT'}`
+                                  : titles > 0
+                                    ? `🏆 TITRE ×${titles} · REJOUER`
+                                    : done ? '✓ TERMINÉ · REJOUER' : 'JOUER ↗'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </section>
 
                     <div className="cr-story-free-mode-heading">
@@ -1727,14 +2098,18 @@ export default function ViceCityRushPage() {
                 {introStep === 'garage' && (
                   <>
                     <div className="city-rush-intro-copy">
-                      <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
-                      <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. {cashRewardsEnabled ? '50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les sept autres modèles.' : `${mode.name} est un mode défi : il ne rapporte aucun billet vert, même à l’arrivée.`}</p>
+                      <span className="city-rush-overlay-kicker"><i /> {tournamentMode ? `TOURNOI · ${tournament.name} · COURSE ${tournamentLeg + 1}/${tournament.legs.length}` : `03 / GARAGE · ${city.district} · ${mode.name}`}</span>
+                      <h2>{tournamentMode ? <>EN PISTE<br /><em>POUR LE TITRE.</em></> : <>PRÊT À<br /><em>ROULER.</em></>}</h2>
+                      {tournamentMode ? (
+                        <p>{tournament.desc} {tournamentLeg === 0 ? `${city.name} ouvre le bal` : `Manche ${tournamentLeg + 1} : ${city.name}`} : {tournament.laps} tours ({currentDistance} m), sans police ni armes, avec la même voiture et les mêmes rivaux sur les {tournament.legs.length} courses. {CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche, et +{formatCash(tournament.championBonus)} billets verts pour le champion.</p>
+                      ) : (
+                        <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. {cashRewardsEnabled ? '50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les sept autres modèles.' : `${mode.name} est un mode défi : il ne rapporte aucun billet vert, même à l’arrivée.`}</p>
+                      )}
                     </div>
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-driver-title">PILOTE · FACULTATIF · {mode.name}</span>
+                        <span id="city-rush-driver-title">{tournamentMode ? `PILOTE · ${tournament.name} · MÊMES RIVAUX SUR ${tournament.legs.length} COURSES` : `PILOTE · FACULTATIF · ${mode.name}`}</span>
                         {/* En Sprint, les trois visages sont des identités au
                             choix, pas une grille de départ : on le dit, sinon
                             ils ressemblent à des adversaires. */}
@@ -1764,7 +2139,7 @@ export default function ViceCityRushPage() {
                     <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
                       <div className="city-rush-car-select-heading">
                         <span id="city-rush-car-title">GARAGE · {CITY_RUSH_CARS.length} MODÈLES</span>
-                        <small>{CITY_RUSH_FREE_CAR_COUNT} VOITURES OFFERTES · {formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name} · TOUCHE POUR PARTIR</small>
+                        <small>{CITY_RUSH_FREE_CAR_COUNT} VOITURES OFFERTES · {formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name}{tournamentMode ? ` · MÊME VOITURE SUR LES ${tournament.legs.length} COURSES` : ''} · TOUCHE POUR PARTIR</small>
                       </div>
                       <div className="city-rush-car-grid" role="group" aria-label="Lancer une course avec une voiture">
                         {CITY_RUSH_CARS.map((car, index) => {
@@ -1783,7 +2158,9 @@ export default function ViceCityRushPage() {
                               onClick={() => chooseCarAndStart(car.id)}
                               disabled={!owned && !canAfford}
                               aria-label={owned
-                                ? `Lancer le mode ${mode.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
+                                ? tournamentMode
+                                  ? `Lancer la course ${tournamentLeg + 1} sur ${tournament.legs.length} du ${tournament.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
+                                  : `Lancer le mode ${mode.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
                                 : canAfford
                                   ? `Acheter ${car.name} pour ${formatCash(car.price)} billets verts`
                                   : `${car.name} verrouillée, il manque ${formatCash(shortfall)} billets verts`}
@@ -1832,9 +2209,9 @@ export default function ViceCityRushPage() {
                     {worldError && <p className="city-rush-error" role="alert">Le moteur 3D n’a pas pu démarrer : {worldError}</p>}
 
                     <div className="city-rush-intro-actions">
-                      <button type="button" className="city-rush-text-button" onClick={goBack}>← VILLE</button>
-                      <span className="city-rush-selection-hint">Touche une voiture pour lancer · {mode.name}</span>
-                      <div className="city-rush-best-note"><span>{city.name} · {mode.label}</span><b>{bestTime ? formatTime(bestTime) : '— : —'}</b></div>
+                      <button type="button" className="city-rush-text-button" onClick={goBack}>{tournamentMode ? '← TOURNOIS' : '← VILLE'}</button>
+                      <span className="city-rush-selection-hint">Touche une voiture pour lancer · {tournamentMode ? `COURSE ${tournamentLeg + 1}/${tournament.legs.length}` : mode.name}</span>
+                      <div className="city-rush-best-note"><span>{city.name} · {tournamentMode ? tournament.name : mode.label}</span><b>{bestTime ? formatTime(bestTime) : '— : —'}</b></div>
                     </div>
                   </>
                 )}
@@ -1845,8 +2222,8 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-foot">
                   <span className="is-key-hint">← → / Q D · VOIES (MAINTENIR)</span>
                   <span className="is-touch-hint">GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE</span>
-                  <span className="is-key-hint">A / Z / R · POUVOIRS · BONUS VERT : TURBO</span>
-                  <span className="is-touch-hint">BOUTON ROUGE · AK-47 · BONUS VERT : TURBO</span>
+                  <span className="is-key-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : 'A / Z / R · POUVOIRS · BONUS VERT : TURBO'}</span>
+                  <span className="is-touch-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : 'BOUTON ROUGE · AK-47 · BONUS VERT : TURBO'}</span>
                   <span>{currentLaps} TOURS · {currentDistance} M</span>
                   <span className="is-key-hint">M · SON</span>
                   <span className="is-key-hint">F · PLEIN ÉCRAN</span>
@@ -1936,7 +2313,7 @@ export default function ViceCityRushPage() {
 
             {phase === 'countdown' && (
               <div className="city-rush-overlay city-rush-countdown" aria-live="assertive">
-                <span>{tutorialMode ? 'TUTORIEL GUIDÉ · PRÊT ?' : storyMode ? 'PRÊT·E, PILOTE ?' : `${mode.name} · ${city.district} · PRÊT ?`}</span>
+                <span>{tutorialMode ? 'TUTORIEL GUIDÉ · PRÊT ?' : storyMode ? 'PRÊT·E, PILOTE ?' : tournamentMode ? `${tournament.name} · COURSE ${tournamentLeg + 1}/${tournament.legs.length} · PRÊT ?` : `${mode.name} · ${city.district} · PRÊT ?`}</span>
                 <strong key={countdown}>{countdown > 0 ? countdown : 'GO!'}</strong>
                 <small>{tutorialMode ? '1 TOUR · SOLO · SANS ENJEU' : currentStoryRace?.race?.name || city.district} · {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS · SOLO` : tutorialMode ? RACE_KM : `${currentLaps} TOURS · ${RACE_KM}`}</small>
               </div>
@@ -1956,8 +2333,14 @@ export default function ViceCityRushPage() {
 
             {phase === 'finished' && result && (
               <div className={`city-rush-overlay city-rush-result-overlay${result.destroyed ? ' is-destroyed' : ''}`}>
-                <span className="city-rush-overlay-kicker">{result.tutorial ? (result.destroyed ? 'ENTRAÎNEMENT · COQUE DÉTRUITE' : 'TUTORIEL EN COURSE · TERMINÉ') : result.timedOut ? `TEMPS ÉCOULÉ · COURSE PERDUE` : result.sabotaged ? `SABOTAGE · PANNE MOTEUR` : result.destroyed ? `COQUE DÉTRUITE · COURSE PERDUE` : result.sprint ? `SPRINT RÉUSSI · ${formatTime(result.duration)}` : result.rank === 1 ? `VICTOIRE · ${activeModeName}` : `ARRIVÉE · ${activeModeName}`} · {result.tutorial ? '1 TOUR' : result.sprint ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${result.laps || currentLaps} TOURS`}</span>
-                <h2>{result.tutorial ? result.destroyed ? <>RETOURNE<br /><em>EN PISTE.</em></> : <>LES BASES<br /><em>SONT LÀ.</em></> : result.timedOut && !storyMode ? <>CHRONO<br /><em>À ZÉRO.</em></> : result.sabotaged ? <>SABOTAGE<br /><em>MOTEUR !</em></> : result.destroyed ? <>TON ÉPAVE<br /><em>FUME ENCORE.</em></> : finalStoryVictory ? storyEnding ? <>{CITY_RUSH_STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : storyMode && result.objectiveMet ? <>OBJECTIF<br /><em>REMPLI !</em></> : storyMode ? <>OBJECTIF<br /><em>MANQUÉ.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
+                <span className="city-rush-overlay-kicker">{result.tournament && resultTournament ? (
+                  <>{result.tournament.complete
+                    ? (result.tournament.champion ? 'CHAMPION DU TOURNOI' : `${(resultTournamentWinner?.name || 'RIVAL')} CHAMPION`)
+                    : `MANCHE ${result.tournament.raceIndex + 1} / ${resultTournament.legs.length} TERMINÉE`} · {resultTournament.name}</>
+                ) : (
+                  <>{result.tutorial ? (result.destroyed ? 'ENTRAÎNEMENT · COQUE DÉTRUITE' : 'TUTORIEL EN COURSE · TERMINÉ') : result.timedOut ? `TEMPS ÉCOULÉ · COURSE PERDUE` : result.sabotaged ? `SABOTAGE · PANNE MOTEUR` : result.destroyed ? `COQUE DÉTRUITE · COURSE PERDUE` : result.sprint ? `SPRINT RÉUSSI · ${formatTime(result.duration)}` : result.rank === 1 ? `VICTOIRE · ${activeModeName}` : `ARRIVÉE · ${activeModeName}`} · {result.tutorial ? '1 TOUR' : result.sprint ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${result.laps || currentLaps} TOURS`}</>
+                )}</span>
+                <h2>{result.tournament?.complete && result.tournament.champion ? <>CHAMPION<br /><em>DU TOURNOI.</em></> : result.tournament?.complete ? <>{(resultTournamentWinner?.displayName || 'Rival').toUpperCase()}<br /><em>CHAMPION.</em></> : result.tutorial ? result.destroyed ? <>RETOURNE<br /><em>EN PISTE.</em></> : <>LES BASES<br /><em>SONT LÀ.</em></> : result.timedOut && !storyMode ? <>CHRONO<br /><em>À ZÉRO.</em></> : result.sabotaged ? <>SABOTAGE<br /><em>MOTEUR !</em></> : result.destroyed ? <>TON ÉPAVE<br /><em>FUME ENCORE.</em></> : result.tournament && result.rank === 1 ? <>MANCHE<br /><em>REMPORTÉE.</em></> : result.tournament ? <>CAP SUR<br /><em>LA SUIVANTE.</em></> : finalStoryVictory ? storyEnding ? <>{CITY_RUSH_STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : storyMode && result.objectiveMet ? <>OBJECTIF<br /><em>REMPLI !</em></> : storyMode ? <>OBJECTIF<br /><em>MANQUÉ.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
                 <div className="city-rush-result-grid">
                   {result.tutorial
                     ? <div><small>PARCOURS</small><b>1 TOUR</b></div>
@@ -1968,6 +2351,14 @@ export default function ViceCityRushPage() {
                   <div><small>{result.sprint ? 'CHECKPOINT MOYEN' : 'TOUR MOYEN'}</small><b>{formatTime((result.duration || 0) / (result.sprint ? CITY_RUSH_SPRINT_CHECKPOINTS : (result.laps || currentLaps || CITY_RUSH_LAPS)))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
                 </div>
+                {result.tournament && resultTournament && (
+                  <TournamentStandings
+                    tournament={resultTournament}
+                    standings={result.tournament.standings}
+                    roster={roster}
+                    legsRun={result.tournament.legsRun}
+                  />
+                )}
                 {storyMode && currentStoryRace && (
                   <div className="cr-story-stars" role="status" aria-label={result.objectiveMet ? `Objectif rempli, ${result.storyStars} étoiles sur 3` : 'Objectif manqué, aucune étoile'}>
                     <div className="cr-story-stars-row" aria-hidden="true">
@@ -1997,28 +2388,36 @@ export default function ViceCityRushPage() {
                     <span>{CITY_RUSH_COURSES.find((course) => course.id === result.newlyUnlockedCourse)?.name}</span>
                   </div>
                 )}
+                {result.tournament?.unlockedNextId && (
+                  <div className="city-rush-course-unlocked-notice" role="status">
+                    <b>✦ NOUVEAU TOURNOI DÉBLOQUÉ</b>
+                    <span>{getCityRushTournament(result.tournament.unlockedNextId)?.name}</span>
+                  </div>
+                )}
                 <p>
-                  {result.tutorial
-                    ? result.destroyed
-                      ? 'La police et les obstacles font partie de l’entraînement. Repars quand tu veux : aucune récompense ni progression n’est en jeu.'
-                      : 'Tu viens de parcourir les bases en course réelle. Commandes, armes, police et services : à toi de les mettre en pratique, sans enjeu ni récompense.'
-                    : result.timedOut && !storyMode
-                      ? `Les ${formatSprintSeconds(sprintCheckpointBonus)} secondes se sont écoulées avant le checkpoint ${(result.checkpoints || 0) + 1} sur ${CITY_RUSH_SPRINT_CHECKPOINTS}. La revanche t’attend.`
-                      : result.sabotaged
-                        ? 'Le moteur cale à 500 m de la ligne — exactement comme en 1983. Sauf que cette fois, tu sais qui a touché à la mécanique.'
-                        : result.destroyed
-                          ? `Ta coque est tombée à zéro : la voiture a tourné sur elle-même dans sa fumée avant de s’arrêter, hors course. ${result.winner} l’emporte ; la revanche t’attend.`
-                          : finalStoryVictory && storyEnding
-                            ? CITY_RUSH_STORY_ENDINGS[storyEnding].text
-                            : finalStoryVictory
-                              ? 'Dante est vaincu. Nico tient enfin les preuves : à lui de choisir ce qu’il fera de sa revanche.'
-                              : storyMode && result.objectiveMet
-                                ? `Objectif rempli : ${currentStoryRace?.objective?.label || 'chapitre terminé'} !`
-                                : storyMode
-                                  ? `Objectif manqué : ${currentStoryRace?.objective?.detail || 'recommence le chapitre'}. La revanche t’attend.`
-                                  : result.rank === 1
-                                    ? (result.sprint ? `Les ${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints de ${city.name} franchis en ${formatTime(result.duration)}.` : `Tu remportes le ${mode.name} sur ${city.name}.`)
-                                    : (result.sprint ? `${result.winner} franchit la ligne en tête du sprint. La revanche t’attend.` : `${result.winner} franchit la ligne en tête après ${result.laps || currentLaps} tours. La revanche t’attend.`)}{' '}
+                  {result.tournament && resultTournament
+                    ? tournamentResultText({ result, tournament: resultTournament, roster })
+                    : result.tutorial
+                      ? result.destroyed
+                        ? 'La police et les obstacles font partie de l’entraînement. Repars quand tu veux : aucune récompense ni progression n’est en jeu.'
+                        : 'Tu viens de parcourir les bases en course réelle. Commandes, armes, police et services : à toi de les mettre en pratique, sans enjeu ni récompense.'
+                      : result.timedOut && !storyMode
+                        ? `Les ${formatSprintSeconds(sprintCheckpointBonus)} secondes se sont écoulées avant le checkpoint ${(result.checkpoints || 0) + 1} sur ${CITY_RUSH_SPRINT_CHECKPOINTS}. La revanche t’attend.`
+                        : result.sabotaged
+                          ? 'Le moteur cale à 500 m de la ligne — exactement comme en 1983. Sauf que cette fois, tu sais qui a touché à la mécanique.'
+                          : result.destroyed
+                            ? `Ta coque est tombée à zéro : la voiture a tourné sur elle-même dans sa fumée avant de s’arrêter, hors course. ${result.winner} l’emporte ; la revanche t’attend.`
+                            : finalStoryVictory && storyEnding
+                              ? CITY_RUSH_STORY_ENDINGS[storyEnding].text
+                              : finalStoryVictory
+                                ? 'Dante est vaincu. Nico tient enfin les preuves : à lui de choisir ce qu’il fera de sa revanche.'
+                                : storyMode && result.objectiveMet
+                                  ? `Objectif rempli : ${currentStoryRace?.objective?.label || 'chapitre terminé'} !`
+                                  : storyMode
+                                    ? `Objectif manqué : ${currentStoryRace?.objective?.detail || 'recommence le chapitre'}. La revanche t’attend.`
+                                    : result.rank === 1
+                                      ? (result.sprint ? `Les ${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints de ${city.name} franchis en ${formatTime(result.duration)}.` : `Tu remportes le ${mode.name} sur ${city.name}.`)
+                                      : (result.sprint ? `${result.winner} franchit la ligne en tête du sprint. La revanche t’attend.` : `${result.winner} franchit la ligne en tête après ${result.laps || currentLaps} tours. La revanche t’attend.`)}{' '}
                   {!result.tutorial && !finalStoryVictory && !result.sprint && `${result.pickups} objet${result.pickups > 1 ? 's' : ''} ramassé${result.pickups > 1 ? 's' : ''}.`}
                 </p>
                 {storyMode && currentStoryRace && (
@@ -2046,7 +2445,13 @@ export default function ViceCityRushPage() {
                   </div>
                 )}
                 <div className="city-rush-overlay-buttons" id="city-rush-result-buttons">
-                  {result.tutorial ? (
+                  {result.tournament && resultTournament && !result.tournament.complete ? (
+                    <button type="button" className="city-rush-start-button is-gold city-rush-next-race-button" onClick={startNextTournamentLeg}>
+                      COURSE SUIVANTE · {(CITY_RUSH_COURSES.find((course) => course.id === resultTournament.legs[result.tournament.raceIndex + 1])?.name || '').toUpperCase()} <span>↗</span>
+                    </button>
+                  ) : result.tournament && resultTournament ? (
+                    <button type="button" className="city-rush-start-button" onClick={restartTournament}>REJOUER LE TOURNOI <span>↻</span></button>
+                  ) : result.tutorial ? (
                     <button type="button" className="city-rush-start-button" onClick={startTutorialRace}>REJOUER LE TUTORIEL <span>↻</span></button>
                   ) : storyMode && result.objectiveMet && !finalStoryVictory ? (
                     <>
@@ -2070,7 +2475,9 @@ export default function ViceCityRushPage() {
                     </>
                   )}
                   <button type="button" className="city-rush-text-button" onClick={returnToModePicker}>
-                    {storyMode ? 'MODE LIBRE / VILLE' : 'CHANGER DE MODE'}
+                    {result.tournament
+                      ? (result.tournament.complete ? 'AUTRES TOURNOIS' : 'ABANDONNER LE TOURNOI')
+                      : storyMode ? 'MODE LIBRE / VILLE' : 'CHANGER DE MODE'}
                   </button>
                 </div>
               </div>
@@ -2146,8 +2553,8 @@ export default function ViceCityRushPage() {
           </section>
           ) : (
           <section className="city-rush-side-card city-rush-item-guide">
-            <div className="city-rush-side-heading"><span>OBJETS</span><i>{storyMode && !storyWeaponsOn ? 'SANS ARME · TURBO' : bazookaMode ? '2 ARMES + TURBO' : '1 ARME + TURBO'}</i></div>
-            <h3>{storyMode && !storyWeaponsOn ? <>Course pure.<br /><em>Pilotage seul.</em></> : <>Ramasse.<br /><em>Déclenche.</em></>}</h3>
+            <div className="city-rush-side-heading"><span>OBJETS</span><i>{pureRace ? 'SANS ARME · TURBO' : bazookaMode ? '2 ARMES + TURBO' : '1 ARME + TURBO'}</i></div>
+            <h3>{pureRace ? <>Course pure.<br /><em>Pilotage seul.</em></> : <>Ramasse.<br /><em>Déclenche.</em></>}</h3>
             <div className="city-rush-guide-list">
               {storyWeaponsOn && POWER_ORDER.map((type) => {
                 const rule = CITY_RUSH_POWER_RULES[type];
@@ -2166,10 +2573,10 @@ export default function ViceCityRushPage() {
                   <kbd>X · {CITY_RUSH_BAZOOKA_AMMO_PER_RACE}</kbd>
                 </div>
               )}
-              {storyMode && !storyWeaponsOn && (
+              {pureRace && (
                 <div className="city-rush-guide-item is-solo">
                   <span className="city-rush-guide-glyph" aria-hidden="true">◎</span>
-                  <div><b>COURSE PURE · AUCUNE ARME</b><small>Pas de chargeur rouge dans ce chapitre : les emplacements donnent des turbos. Seul le pilotage compte.</small></div>
+                  <div><b>COURSE PURE · AUCUNE ARME</b><small>{tournamentMode ? `Pas de chargeur rouge en tournoi : les emplacements donnent des turbos, sur les ${tournament.legs.length} courses. Seul le pilotage compte.` : 'Pas de chargeur rouge dans ce chapitre : les emplacements donnent des turbos. Seul le pilotage compte.'}</small></div>
                   <kbd>PUR</kbd>
                 </div>
               )}
@@ -2194,20 +2601,23 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : objectif — ${currentStoryRace?.objective?.label || ''}. ${currentStoryRace?.objective?.detail || ''} ${currentStoryRace?.tip || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, ou deux contre un SUV de police. Un répit après chaque choc empêche les dégâts répétés tant que les voitures restent collées. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Maintenir ← ou → (Q / D) enchaîne les écarts tout seul, sans marteler la touche : la voiture glisse de voie en voie jusqu’à la relâche. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{tournamentMode ? `${tournament.name}, manche ${tournamentLeg + 1}/${tournament.legs.length} : ${tournament.legs.length} courses de ${tournament.laps} tours sans police ni armes, ${CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche.` : storyMode ? `${currentStoryRace?.race?.name || city.name} : objectif — ${currentStoryRace?.objective?.label || ''}. ${currentStoryRace?.objective?.detail || ''} ${currentStoryRace?.tip || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, ou deux contre un SUV de police. Un répit après chaque choc empêche les dégâts répétés tant que les voitures restent collées. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Maintenir ← ou → (Q / D) enchaîne les écarts tout seul, sans marteler la touche : la voiture glisse de voie en voie jusqu’à la relâche. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
           </section>
 
-          {/* En Sprint, la carte de l'escouade disparaît : titre, sirène et
-              couleur rouge compris. Elle est remplacée par la carte solo. */}
-          <section className={`city-rush-no-collision-note${sprintMode || (storyMode && !storyPoliceOn) ? ' is-solo' : ' is-police'}`}>
-            <span className="city-rush-no-collision-icon" aria-hidden="true">{sprintMode || (storyMode && !storyPoliceOn) ? '⚡' : '🚨'}</span>
+          {/* En Sprint comme en tournoi, la carte de l'escouade disparaît : titre,
+              sirène et couleur rouge compris. Elle est remplacée par la carte
+              solo. */}
+          <section className={`city-rush-no-collision-note${sprintMode || tournamentMode || (storyMode && !storyPoliceOn) ? ' is-solo' : ' is-police'}`}>
+            <span className="city-rush-no-collision-icon" aria-hidden="true">{sprintMode || tournamentMode || (storyMode && !storyPoliceOn) ? '⚡' : '🚨'}</span>
             <div>
-              <b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : storyMode && !storyPoliceOn ? 'CHAPITRE SANS POLICE' : 'ESCOUADE DE POLICE'}</b>
+              <b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : tournamentMode ? 'TOURNOI · SANS POLICE' : storyMode && !storyPoliceOn ? 'CHAPITRE SANS POLICE' : 'ESCOUADE DE POLICE'}</b>
               <p>
                 {sprintMode ? (
                   <>Rien à fuir dans ce mode : ni escouade, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les bonus turbo verts flottant au-dessus de la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, et chaque choc te coûte un carré de vie.</>
                 ) : storyMode && !storyPoliceOn ? (
                   <>Aucune poursuite dans ce chapitre : ni escouade, ni niveau de recherche, ni herse. Les berlines croisées restent du décor — concentre-toi sur l’objectif.</>
+                ) : tournamentMode ? (
+                  <>Aucune poursuite en tournoi : ni escouade, ni niveau de recherche, ni herse — les {tournament.legs.length} manches se jouent à la régulière, sans police ni armes. Le trafic civil bloque toujours la voie, et chaque choc te coûte un carré de vie.</>
                 ) : (
                   <>
                     {!storyMode && mode.policeFromStart

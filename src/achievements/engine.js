@@ -48,9 +48,14 @@ export const VICE_CITY_WON_CITIES_KEY = 'vice_city_won_cities';
 export const VICE_CITY_MODES_KEY = 'vice_city_modes';
 /** Chapitres du mode Histoire de Vice City Rush remportés. */
 export const VICE_CITY_STORY_KEY = 'vice_city_story_chapters';
+/** Tournois de Vice City Rush remportés (un titre par tournoi). */
+export const VICE_CITY_TOURNAMENT_TROPHIES_KEY = 'vice_city_tournament_trophies';
 /** Le mode Histoire de Vice City Rush n'est pas un « mode de course » : il
     a ses propres trophées de chapitres et ne doit pas valider « trois styles ». */
 export const VICE_CITY_STORY_MODE = 'story';
+/** Les tournois non plus : leurs titres ont leurs propres trophées, et une
+    manche de tournoi ne valide pas « trois styles » (Circuit/Sprint/Poursuite). */
+export const VICE_CITY_TOURNAMENT_MODE = 'tournament';
 
 // Invalidation indépendante de la version globale : la remise à zéro des
 // quizz doit supprimer les anciennes parties sur les copies locales et dans
@@ -349,6 +354,12 @@ export function reduce(state, action = {}) {
       next = addToSet(current, MIRAGE_CUP_TROPHIES_KEY, action.cupId);
       break;
 
+    // Titre de tournoi Vice City Rush : un identifiant par tournoi, sans
+    // doublon même si le joueur soulève plusieurs fois la même coupe.
+    case 'vice_city_tournament_won':
+      next = addToSet(current, VICE_CITY_TOURNAMENT_TROPHIES_KEY, action.tournamentId);
+      break;
+
     /* ------------------------- Jeux d'arcade du site ------------------------ */
     // Une course de Mirage Rush terminée (ruée, duel, coupe ou en ligne) :
     // `{ stage, mode, score, gems, won }`. Le terrain et le mode sont gardés
@@ -368,10 +379,14 @@ export function reduce(state, action = {}) {
     // storyChapter }`. `mode` vaut `circuit`, `sprint`, `pursuit` — ou `story`
     // pour le mode Histoire, qui ne compte pas dans « trois styles » mais
     // alimente ses propres trophées de chapitres (`storyChapter`, 0 = premier).
+    // Les manches de tournoi (`tournament`) ne comptent pas non plus dans
+    // « trois styles » : leurs titres passent par `vice_city_tournament_won`.
     case 'vice_city_run': {
       next = counter(current, 'vice_city_runs');
       next = addToSet(next, VICE_CITY_CITIES_KEY, action.city);
-      if (action.mode !== VICE_CITY_STORY_MODE) next = addToSet(next, VICE_CITY_MODES_KEY, action.mode);
+      if (action.mode !== VICE_CITY_STORY_MODE && action.mode !== VICE_CITY_TOURNAMENT_MODE) {
+        next = addToSet(next, VICE_CITY_MODES_KEY, action.mode);
+      }
       next = raise(next, 'vice_city_best_score', action.score);
       if (Number(action.rank) === 1) {
         next = counter(next, 'vice_city_wins');
@@ -546,6 +561,8 @@ export const METRICS = {
   viceCityModesPlayed: (state) => setSize(state, VICE_CITY_MODES_KEY),
   /** Chapitres du mode Histoire remportés. */
   viceCityStoryChapters: (state) => setSize(state, VICE_CITY_STORY_KEY),
+  /** Tournois remportés — les titres de champion de Vice City Rush. */
+  viceCityTournamentsWon: (state) => setSize(state, VICE_CITY_TOURNAMENT_TROPHIES_KEY),
 };
 
 /** Valeur d'une métrique (0 si la métrique n'existe pas — jamais d'exception). */
