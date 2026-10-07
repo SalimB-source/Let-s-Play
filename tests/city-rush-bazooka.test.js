@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+  CITY_RUSH_BAZOOKA_AMMO_PER_RACE,
   CITY_RUSH_BAZOOKA_BLAST_CELLS,
   CITY_RUSH_BAZOOKA_PICKUP_SHARES,
   CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
@@ -24,8 +25,9 @@ const pageSource = readFileSync(new URL('../src/games/ViceCityRushPage.jsx', imp
 const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
 const baseCss = readFileSync(new URL('../src/games/vice-city-rush.css', import.meta.url), 'utf8');
 
-test('le bonus jaune donne deux roquettes et la portée du souffle couvre huit cases pour toucher les patrouilles à côté', () => {
-  assert.equal(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, 2);
+test('le bonus jaune donne un seul tir — deux roquettes par course — et la portée du souffle couvre huit cases pour toucher les patrouilles à côté', () => {
+  assert.equal(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, 1);
+  assert.equal(CITY_RUSH_BAZOOKA_AMMO_PER_RACE, 2, 'une roquette par conteneur, deux conteneurs');
   assert.equal(CITY_RUSH_BAZOOKA_BLAST_CELLS, 8);
   assert.ok(CITY_RUSH_BAZOOKA_PROJECTILE_SPEED > 0);
   assert.ok(Math.abs(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH - 16.8) < 1e-9);

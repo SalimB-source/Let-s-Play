@@ -32,6 +32,7 @@ import {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
   CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+  CITY_RUSH_BAZOOKA_AMMO_PER_RACE,
   CITY_RUSH_BAZOOKA_BLAST_CELLS,
   CITY_RUSH_DISTANCE,
   CITY_RUSH_DRIVERS,
@@ -1598,7 +1599,7 @@ export default function ViceCityRushPage() {
                           <b>{m.name}</b>
                           <small>{m.label}</small>
                           <span className="city-rush-mode-description">{m.desc}</span>
-                          {m.format !== 'sprint' && <span className="city-rush-mode-bazooka-hint">BAZOOKA · 2 TIRS · 2 CONTENEURS JAUNES (30 % / 65 %)</span>}
+                          {m.format !== 'sprint' && <span className="city-rush-mode-bazooka-hint">BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIR{CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP > 1 ? 'S' : ''} · 2 CONTENEURS JAUNES (30 % / 65 %)</span>}
                           <span className="city-rush-mode-card-footer">
                             <span className="city-rush-mode-laps"><i />{m.format === 'sprint' ? `${m.checkpoints} CHECKPOINTS · ${CITY_RUSH_SPRINT_DISTANCE} M` : `${m.laps} TOUR${m.laps > 1 ? 'S' : ''} · ${cityRushRaceDistance(m.laps)} M`}</span>
                             <span className="city-rush-card-action">VILLE <i aria-hidden="true">↗</i></span>
@@ -2102,8 +2103,8 @@ export default function ViceCityRushPage() {
               {bazookaMode && (
                 <div className="city-rush-guide-item is-bazooka">
                   <span><PowerIcon type="bazooka" /></span>
-                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS PAR CONTENEUR</b><small>Sur chaque carte, deux conteneurs maritimes jaunes qui prennent deux voies de la chaussée : un à 30 % de la course, avant le garage de vie, un à 65 %. On les traverse de part en part, sous le toit, sur la voie extérieure. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de {CITY_RUSH_BAZOOKA_BLAST_CELLS} cases. Chaque tir compte.</small></div>
-                  <kbd>X · 4</kbd>
+                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIR{CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP > 1 ? 'S' : ''} PAR CONTENEUR</b><small>Sur chaque carte, deux conteneurs maritimes jaunes qui prennent deux voies de la chaussée : un à 30 % de la course, avant le garage de vie, un à 65 %. On les traverse de part en part, sous le toit, sur la voie extérieure. Chaque traversée ne rend qu’une seule roquette — {CITY_RUSH_BAZOOKA_AMMO_PER_RACE} tirs par course —, et X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de {CITY_RUSH_BAZOOKA_BLAST_CELLS} cases. Chaque tir compte.</small></div>
+                  <kbd>X · {CITY_RUSH_BAZOOKA_AMMO_PER_RACE}</kbd>
                 </div>
               )}
               {storyMode && !storyWeaponsOn && (

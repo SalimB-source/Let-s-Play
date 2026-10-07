@@ -956,9 +956,10 @@ et le dernier tour durait 21 s.
   (`bazookaOutwardSide`, `makeBazookaContainer(…, side)`) : sa paroi intérieure
   tombe au bord du contresens, sur l'axe jaune à Londres et sur la Shutō C1, au
   lieu de s'étaler sur les voies d'en face. Une
-  traversée rend `CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP` = **2 roquettes** ; le
-  second conteneur réapprovisionne, chacun ne servant **qu'une fois par
-  course** et un nouveau départ réarmant les deux. Le HUD porte le compte
+  traversée rend `CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP` = **une seule roquette**
+  (`CITY_RUSH_BAZOOKA_AMMO_PER_RACE` = **2 tirs par course**) ; le second
+  conteneur réapprovisionne, chacun ne servant **qu'une fois par course** et un
+  nouveau départ réarmant les deux. Le HUD porte le compte
   (`bazookaPickupsTaken`, `bazookaPickupsTotal`) et la distance du prochain
   repère (`bazookaNextDistance`, `bazookaWarehouseGap` pour les appelants
   historiques) ; `X` ou le bouton jaune tire droit devant — la roquette

@@ -809,7 +809,15 @@ function makeBazookaContainer(city, pickupLaneX, side = 1) {
     ctx.lineWidth = 3;
     ctx.strokeRect(14, 14, width - 28, height - 28);
     neonText(ctx, 'BAZOOKA HERE', width / 2, height * 0.44, '900 56px "Orbitron", Arial, sans-serif', '#ffd21f', 14);
-    neonText(ctx, '↓ BAZOOKA · 2 TIRS ↓', width / 2, height * 0.8, '900 30px "Orbitron", Arial, sans-serif', '#fff4c2', 8);
+    neonText(
+      ctx,
+      `↓ BAZOOKA · ${CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIR${CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP > 1 ? 'S' : ''} ↓`,
+      width / 2,
+      height * 0.8,
+      '900 30px "Orbitron", Arial, sans-serif',
+      '#fff4c2',
+      8,
+    );
   }, 512, 160, { smooth: true });
   // Plaque d'immatriculation peinte sur la caisse : le nom du parcours, le
   // format et la charge — la petite touche qui rend le conteneur crédible.
