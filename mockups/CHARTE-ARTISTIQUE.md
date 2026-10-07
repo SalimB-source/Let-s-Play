@@ -12,6 +12,7 @@ sur les images**, pas inventées.
 | `02-planche-personnages.png` | Héros en 5 poses, PIX en 3 humeurs, les 6 familles d'ennemis du désert en 6 dessins isolés | ✅ validée (référence de production) |
 | `03-carte-pouvoir-vent.png` | Anatomie d'une carte-pouvoir : cadre or, fond indigo, plaque de légende | ✅ validée |
 | `04-hub-grande-salle.png` | La Grande Salle : 12 bornes sous housse, une allumée, comptoir, jukebox, carte au mur | ✅ validée |
+| `05-prototype-feel-captures.png` | Six captures du prototype jouable : entrée du puits, bac à sable, grand trou, mode mesures (F3), corniches, écran de salle franchie | ✅ rendu réel du code (`mockups/05`) |
 
 ---
 

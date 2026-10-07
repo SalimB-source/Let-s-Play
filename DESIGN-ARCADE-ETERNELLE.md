@@ -610,6 +610,8 @@ grès — 72 × 46 tuiles.
   règle de niveau qui refuse une montée infranchissable et 60 s d'entrées
   aléatoires) et `npm run check:arcade-feel-ui` (la page se rend, 600 images
   peintes sur un faux contexte 2D, aucun dégradé — la charte l'interdit).
+- **Captures** : `mockups/05-prototype-feel-captures.png` — six images réellement
+  peintes par `arcadeFeelArt.js` (dont une en mode mesures).
 - **Décision prise par ce prototype** : les personnages sont **dessinés par
   code**, pas par planches de sprites — ils restent lisibles à 12 img/s, se
   recolorient et se testent sans navigateur. (Question §16.7 close.)
