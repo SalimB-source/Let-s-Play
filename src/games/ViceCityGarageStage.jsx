@@ -18,22 +18,45 @@ import { makeCanvasTexture, neonText, seededRandom } from './cityRushBuilder.js'
 import { CITY_RUSH_CARS } from './cityRushRules.js';
 
 /* ── La cabine, en mètres ─────────────────────────────────────────────────── */
-const ROOM_WIDTH = 26; // x : −13 → 13
-const ROOM_DEPTH = 17; // z : −8.5 → 8.5
-const ROOM_HEIGHT = 7.6;
+// Une baie d'atelier : le plateau occupe l'essentiel du cadre, la voiture est
+// le sujet. Le décor (néon, rampes, outillage) l'entoure sans jamais le réduire.
+// La cabine est assez grande pour que la caméra y reste toujours, même quand le
+// cadrage recule pour faire passer une voiture entière sur un écran de téléphone.
+const ROOM_WIDTH = 22; // x : −11 → 11
+const ROOM_DEPTH = 22; // z : −11 → 11
+const ROOM_HEIGHT = 6.4;
 const BACK_WALL_Z = -ROOM_DEPTH / 2;
-const TURNTABLE_RADIUS = 3.25;
+const TURNTABLE_RADIUS = 3.6;
 const TURNTABLE_TOP = 0.16; // épaisseur du plateau
-const CAMERA_TARGET = new THREE.Vector3(0, 0.78, 0);
-const CAMERA_BASE = new THREE.Vector3(5.2, 2.1, 6.9);
+const CAMERA_TARGET = new THREE.Vector3(0, 0.7, 0);
+// Direction du regard : trois-quarts avant, légèrement plongeant sur la voiture.
+const CAMERA_DIRECTION = new THREE.Vector3(0.738, 0.226, 0.636).normalize();
+const CAMERA_FOV = 40;
+// Le cadre se règle sur le plateau : il doit occuper ~92 % de la largeur visible,
+// quelle que soit la forme de l'écran. Sur une fenêtre large, la caméra se
+// rapproche (gros plan) ; sur un téléphone, elle recule jusqu'à ce que la
+// voiture entière passe dans le cadre.
+const FRAME_PLATFORM_FILL = 0.92;
+const FRAME_MIN_DISTANCE = 4.4;
+// Recul maximal : assez pour qu'une voiture entière (diagonale comprise, car le
+// plateau tourne) passe dans le cadre d'un écran de téléphone.
+const FRAME_MAX_DISTANCE = 13;
 // Décalage de caméra offert par la page : à l'étape MODE, la bannière Histoire
 // occupe la colonne de droite (fond opaque), donc la caméra se range à droite
 // et la voiture se lit à gauche du cadre, dans le prolongement du chapeau.
-const CAMERA_SHIFT_MODE = 2.1;
+const CAMERA_SHIFT_MODE = 1.6;
 const TURNTABLE_SPEED = 0.17; // rad/s : un tour en ~37 secondes
-const POINTER_YAW = 0.17; // rad : léger déport du regard à la souris
-const POINTER_PITCH = 0.3; // m : idem à la verticale
+const POINTER_YAW = 0.14; // rad : léger déport du regard à la souris
+const POINTER_PITCH = 0.26; // m : idem à la verticale
 const UP = new THREE.Vector3(0, 1, 0);
+
+/** Distance caméra ↔ plateau pour que le plateau remplisse le cadre. */
+function frameDistance(fovDegrees, aspect) {
+  const half = Math.tan((fovDegrees * Math.PI) / 180 / 2);
+  const wanted = (TURNTABLE_RADIUS * 2) / FRAME_PLATFORM_FILL;
+  const fitted = wanted / (2 * half * Math.max(aspect, 0.4));
+  return Math.min(FRAME_MAX_DISTANCE, Math.max(FRAME_MIN_DISTANCE, fitted));
+}
 
 /** Le plateau ne tourne plus si l'appareil demande moins de mouvement. */
 function detectReducedMotion() {
@@ -231,15 +254,18 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x04060a);
-    scene.fog = new THREE.Fog(0x04060a, 17, 36);
+    scene.fog = new THREE.Fog(0x04060a, 12, 34);
 
-    const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 120);
-    // Le point de vue de départ : la caméra se range sur le côté demandé par la
-    // page, la voiture reste au milieu de son plateau.
-    const cameraBase = CAMERA_BASE.clone();
-    cameraBase.x += Number(cameraShift) || 0;
-    camera.position.copy(cameraBase);
-    camera.lookAt(CAMERA_TARGET);
+    const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.1, 60);
+    // Distance de cadrage : réglée à chaque changement de taille pour que le
+    // plateau remplisse le cadre (voir `frameDistance`). La boucle de rendu
+    // replace ensuite la caméra à chaque image (parallasse, décalage de page).
+    let distance = FRAME_MIN_DISTANCE;
+    const applyCameraBase = () => {
+      camera.position.copy(CAMERA_DIRECTION).multiplyScalar(distance).add(CAMERA_TARGET);
+      camera.position.x += Number(cameraShift) || 0;
+      camera.lookAt(CAMERA_TARGET);
+    };
 
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -321,12 +347,12 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
     }
 
     /* ── Enseigne et halo, fond de cabine ─────────────────────────────────── */
-    const signGlow = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(11, 3.6)), materials.glow);
-    signGlow.position.set(0, 3.5, BACK_WALL_Z + 0.05);
+    const signGlow = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(10, 3.3)), materials.glow);
+    signGlow.position.set(0, 3.0, BACK_WALL_Z + 0.05);
     room.add(signGlow);
 
-    const sign = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(7.8, 1.95)), materials.sign);
-    sign.position.set(0, 3.5, BACK_WALL_Z + 0.08);
+    const sign = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(7.2, 1.8)), materials.sign);
+    sign.position.set(0, 3.0, BACK_WALL_Z + 0.08);
     room.add(sign);
 
     // Plaque d'immatriculation du mur : la date d'ouverture du garage.
@@ -340,10 +366,10 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
       neonText(ctx, 'EST. 1986', width / 2, height * 0.4, `900 ${Math.round(height * 0.26)}px "Orbitron", Arial, sans-serif`, '#f2c14e', 12);
       neonText(ctx, 'VICE CITY · MIAMI', width / 2, height * 0.74, `800 ${Math.round(height * 0.15)}px "Orbitron", Arial, sans-serif`, '#cfe0ff', 8);
     }, 512, 200, { smooth: true }));
-    const wallPlate = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(1.7, 0.66)), material(() => new THREE.MeshBasicMaterial({
+    const wallPlate = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(1.5, 0.58)), material(() => new THREE.MeshBasicMaterial({
       map: plateTexture, transparent: true, toneMapped: false,
     })));
-    wallPlate.position.set(-8.6, 4.4, BACK_WALL_Z + 0.1);
+    wallPlate.position.set(-7.6, 3.5, BACK_WALL_Z + 0.1);
     room.add(wallPlate);
 
     /* ── Plateau tournant ─────────────────────────────────────────────────── */
@@ -387,22 +413,22 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
     room.add(props);
 
     const chest = makeToolChest(materials);
-    chest.position.set(-8.4, 0, -2.2);
+    chest.position.set(-6.2, 0, -1.4);
     chest.rotation.y = 0.5;
     props.add(chest);
 
-    for (const [x, z] of [[-8.9, -6.4], [-7.6, -6.9]]) {
+    for (const [x, z] of [[-6.6, -4.0], [-5.6, -4.6]]) {
       const stack = makeTireStack(materials, 4);
       stack.position.set(x, 0, z);
       props.add(stack);
     }
-    for (const [x, z] of [[8.9, -6.2], [8.9, -6.9]]) {
+    for (const [x, z] of [[6.6, -3.8], [6.6, -4.4]]) {
       const stack = makeTireStack(materials, 3);
       stack.position.set(x, 0, z);
       props.add(stack);
     }
 
-    for (const [x, z] of [[8.2, -2.6], [8.2, -2.0]]) {
+    for (const [x, z] of [[6.2, -2.0], [6.2, -1.5]]) {
       const can = makeJerryCan(materials);
       can.position.set(x, 0, z);
       can.rotation.y = -0.4;
@@ -411,12 +437,12 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
 
     // Étagère murale avec caisses d'outillage.
     for (const side of [-1, 1]) {
-      const shelf = new THREE.Mesh(geometry(() => new THREE.BoxGeometry(4.2, 0.08, 0.5)), materials.steelDark);
-      shelf.position.set(side * 8.6, 2.4, -4.4);
+      const shelf = new THREE.Mesh(geometry(() => new THREE.BoxGeometry(3.6, 0.08, 0.5)), materials.steelDark);
+      shelf.position.set(side * 6.4, 2.0, -3.0);
       props.add(shelf);
       for (let index = 0; index < 3; index += 1) {
         const crate = new THREE.Mesh(geometry(() => new THREE.BoxGeometry(0.7, 0.4, 0.42)), index === 1 ? materials.red : materials.steel);
-        crate.position.set(side * 8.6 + (index - 1) * 1.1, 2.64, -4.4);
+        crate.position.set(side * 6.4 + (index - 1) * 0.95, 2.24, -3.0);
         crate.castShadow = true;
         props.add(crate);
       }
@@ -426,35 +452,35 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
     scene.add(new THREE.AmbientLight(0x2a3648, 0.55));
     scene.add(new THREE.HemisphereLight(0x415470, 0x0a0c10, 0.6));
 
-    for (const z of [-4.2, 0, 4.2]) {
-      const strip = new THREE.Mesh(geometry(() => new THREE.BoxGeometry(0.42, 0.07, 11)), materials.strip);
-      strip.position.set(0, ROOM_HEIGHT - 0.12, z);
+    for (const z of [-4, 0, 4]) {
+      const strip = new THREE.Mesh(geometry(() => new THREE.BoxGeometry(0.38, 0.06, 12)), materials.strip);
+      strip.position.set(0, ROOM_HEIGHT - 0.1, z);
       room.add(strip);
     }
 
-    const key = new THREE.SpotLight(0xfff3e2, 430, 26, 0.62, 0.7, 2);
-    key.position.set(4.6, ROOM_HEIGHT - 0.3, 4.6);
+    const key = new THREE.SpotLight(0xfff3e2, 480, 20, 0.66, 0.7, 2);
+    key.position.set(3.6, ROOM_HEIGHT - 0.25, 3.6);
     key.target.position.copy(CAMERA_TARGET);
     key.castShadow = !lite;
     key.shadow.mapSize.set(1024, 1024);
-    key.shadow.camera.near = 1.5;
-    key.shadow.camera.far = 22;
+    key.shadow.camera.near = 1.2;
+    key.shadow.camera.far = 18;
     key.shadow.bias = -0.0006;
     key.shadow.radius = 3;
     scene.add(key, key.target);
 
-    const fill = new THREE.SpotLight(0xcfe0ff, 190, 26, 0.7, 0.85, 2);
-    fill.position.set(-5.4, ROOM_HEIGHT - 0.6, 1.8);
+    const fill = new THREE.SpotLight(0xcfe0ff, 230, 20, 0.75, 0.85, 2);
+    fill.position.set(-4.2, ROOM_HEIGHT - 0.5, 1.4);
     fill.target.position.copy(CAMERA_TARGET);
     scene.add(fill, fill.target);
 
-    const rim = new THREE.SpotLight(accentColor.getHex(), 240, 24, 0.75, 0.9, 2);
-    rim.position.set(-1.2, 4.4, BACK_WALL_Z + 2.4);
-    rim.target.position.set(0, 0.7, 0.4);
+    const rim = new THREE.SpotLight(accentColor.getHex(), 280, 18, 0.8, 0.9, 2);
+    rim.position.set(-1.0, 3.6, BACK_WALL_Z + 2.4);
+    rim.target.position.set(0, 0.7, 0.3);
     scene.add(rim, rim.target);
 
-    const signLight = new THREE.PointLight(accentColor.getHex(), 26, 12, 2);
-    signLight.position.set(0, 3.4, BACK_WALL_Z + 1.6);
+    const signLight = new THREE.PointLight(accentColor.getHex(), 40, 14, 2);
+    signLight.position.set(0, 2.8, BACK_WALL_Z + 1.6);
     scene.add(signLight);
 
     /* ── La voiture, sur le plateau ───────────────────────────────────────── */
@@ -480,9 +506,9 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
     const dustPositions = new Float32Array(dustCount * 3);
     const random = seededRandom(21);
     for (let index = 0; index < dustCount; index += 1) {
-      dustPositions[index * 3] = (random() - 0.5) * 15;
-      dustPositions[index * 3 + 1] = 0.2 + random() * 5.4;
-      dustPositions[index * 3 + 2] = (random() - 0.5) * 12;
+      dustPositions[index * 3] = (random() - 0.5) * 12;
+      dustPositions[index * 3 + 1] = 0.2 + random() * 4.4;
+      dustPositions[index * 3 + 2] = (random() - 0.5) * 9.5;
     }
     const dustGeometry = geometry(() => {
       const item = new THREE.BufferGeometry();
@@ -498,10 +524,12 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
       const height = Math.max(1, mount.clientHeight || 1);
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
-      // Une scène plus haute que large (téléphone) recadre pour garder la
-      // voiture entière dans le cadre.
-      camera.fov = height > width ? 46 : 36;
+      // Le plateau doit remplir le cadre : la caméra se rapproche ou recule
+      // selon la forme de la fenêtre (large → gros plan, téléphone → recul
+      // jusqu'à ce que la voiture entière passe).
+      distance = frameDistance(camera.fov, camera.aspect);
       camera.updateProjectionMatrix();
+      applyCameraBase();
     };
     resize();
 
@@ -561,7 +589,10 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
 
     const offset = new THREE.Vector3();
     const placeCamera = () => {
-      offset.copy(cameraBase).applyAxisAngle(UP, smoothX * POINTER_YAW);
+      // La caméra tourne autour du plateau (regard à la souris / au doigt) en
+      // gardant la distance de cadrage.
+      offset.copy(CAMERA_DIRECTION).applyAxisAngle(UP, smoothX * POINTER_YAW).multiplyScalar(distance).add(CAMERA_TARGET);
+      offset.x += (Number(cameraShift) || 0) * Math.cos(smoothX * POINTER_YAW);
       offset.y += smoothY * POINTER_PITCH;
       camera.position.copy(offset);
       camera.lookAt(CAMERA_TARGET.x, CAMERA_TARGET.y + smoothY * 0.06, CAMERA_TARGET.z);

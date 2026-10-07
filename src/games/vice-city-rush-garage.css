@@ -68,9 +68,9 @@
   height: 100% !important;
 }
 
-/* Voile de contraste : noir derrière les étapes et le chapeau, dégradé plus
-   léger sur la voiture, à nouveau noir sous les vignettes — le modèle reste
-   lisible sans rien manger des menus. */
+/* Voile de contraste : noir derrière les étapes et le chapeau, bande dégagée
+   sur la voiture (au tiers milieu du cadre), à nouveau noir sous les vignettes
+   — le modèle reste lisible sans rien manger des menus. */
 .city-rush-page .city-rush-hub-stage-scrim {
   position: absolute;
   inset: 0;
@@ -78,11 +78,12 @@
   background:
     linear-gradient(180deg,
       rgba(4, 6, 10, .95) 0%,
-      rgba(4, 6, 10, .78) 17%,
-      rgba(4, 6, 10, .3) 38%,
-      rgba(4, 6, 10, .18) 55%,
-      rgba(4, 6, 10, .8) 82%,
-      rgba(4, 6, 10, .96) 100%),
+      rgba(4, 6, 10, .84) 12%,
+      rgba(4, 6, 10, .45) 26%,
+      rgba(4, 6, 10, .16) 44%,
+      rgba(4, 6, 10, .12) 66%,
+      rgba(4, 6, 10, .7) 80%,
+      rgba(4, 6, 10, .95) 100%),
     radial-gradient(135% 95% at 50% 42%, rgba(4, 6, 10, 0) 40%, rgba(4, 6, 10, .55) 100%);
 }
 
@@ -213,7 +214,7 @@
   .city-rush-page .city-rush-hub-stage-frame { inset: 6px; }
 }
 
-@media (max-width: 760px), (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .city-rush-page .city-rush-hub-plate { flex-basis: 100%; margin-left: 0; justify-content: flex-end; }
   .city-rush-page .city-rush-hub-plate small { display: none; }
   .city-rush-page .city-rush-hub-stage-frame { inset: 6px; border-radius: 12px; }

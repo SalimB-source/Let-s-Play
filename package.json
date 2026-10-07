@@ -41,6 +41,7 @@
     "preview:city-rush-cars": "node scripts/city-rush-car-preview.mjs --sheet",
     "check:city-rush-garage": "node scripts/vice-city-garage-check.mjs",
     "check:city-rush-garage-3d": "node scripts/vice-city-garage-3d-check.mjs",
+    "check:city-rush-garage-3d-scene": "node scripts/vice-city-garage-3d-scene-check.mjs",
     "check:city-rush-tournament": "node scripts/vice-city-tournament-check.mjs",
     "check:city-rush-quiet": "node scripts/vice-city-quiet-race-check.mjs",
     "check:city-rush-smoke": "node scripts/city-rush-smoke.mjs --all",

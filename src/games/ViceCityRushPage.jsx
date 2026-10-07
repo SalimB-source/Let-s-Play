@@ -1876,7 +1876,7 @@ export default function ViceCityRushPage() {
                     // À l'étape MODE, la bannière Histoire tient la colonne de
                     // droite : la caméra se range de son côté pour que la
                     // voiture se lise à gauche, dans le prolongement du titre.
-                    cameraShift={introStep === 'mode' ? 2.1 : 0}
+                    cameraShift={introStep === 'mode' ? 1.6 : 0}
                     fallbackSrc={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[stageCar.id] || CAR_THUMBNAILS['vice-roadster']}`}
                   />
                   <span className="city-rush-hub-stage-scrim" aria-hidden="true" />

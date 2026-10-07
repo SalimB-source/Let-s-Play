@@ -862,10 +862,10 @@ ne s'ouvre par-dessus, on prépare sa course en regardant sa voiture.
 ┌──────────────────────────────────────────────────────────┐
 │ [1 MODE] [2 VILLE] [3 GARAGE]      MISTRAL 1.4 · DÉPART  │ ← barre d'étapes + plaque
 ├───────────────────────────────────────────────────╥──────┤
-│  VICE CITY                                        ║      │
-│  RUSH.                                            ║ 3D   │
-│  Choisis un mode, une ville…                      ║GARAGE│ ← la scène, en fond
-├───────────────────────────────────────────────────╣      │
+│  VICE CITY                                        ║ ▓▓▓ │
+│  RUSH.                                            ║ ▓▓▓ │
+│  Choisis un mode, une ville…                      ║ ▓▓▓ │ ← la scène, en fond
+├───────────────────────────────────────────────────╣ ▓▓▓ │
 │  [CIRCUIT]  [POURSUITE]  [SPRINT]   · bannière Histoire  │ ← les menus, au-dessus
 └──────────────────────────────────────────────────────────┘
 ```
@@ -878,6 +878,14 @@ ne s'ouvre par-dessus, on prépare sa course en regardant sa voiture.
   poussières dans les faisceaux, piles de pneus, établi à rouleaux, bidons et
   étagères. La voiture, elle, sort du même constructeur que la course
   (`makeRacerCar`, phares allumés) : pas un deuxième modèle à maintenir.
+- **Le cadre est réglé sur le plateau.** La caméra se place à la distance qui
+  fait occuper au plateau ~92 % de la largeur visible, quelle que soit la forme
+  de la fenêtre : elle se rapproche sur un écran large (gros plan) et recule
+  jusqu'à 13 m sur un téléphone pour qu'une voiture entière — diagonale
+  comprise, puisque le plateau tourne — passe dans le cadre. La voiture occupe
+  alors ~55 % de la largeur sur un écran de préparation, ~85 % sur un téléphone.
+  Le dégradé du voile de contraste dégage justement la bande du milieu, là où la
+  voiture se lit.
 - **Le plateau tourne.** Un tour en ~37 secondes. Glisser le regard (souris ou
   doigt) décale légèrement la caméra autour de la voiture ; au doigt, seul le
   geste horizontal regarde la voiture (`touch-action: pan-y`), le vertical
@@ -906,12 +914,16 @@ ne s'ouvre par-dessus, on prépare sa course en regardant sa voiture.
   importée en dernier par la page, elle surcharge la mise en page de préparation
   sans toucher aux feuilles déjà vérifiées ;
 - `src/games/ViceCityRushPage.jsx` — la scène montée dans le hub, la plaque, et
-  l'état `previewCarId` (survol / focus clavier) qui choisit le modèle monté.
+  l'état `previewCarId` (survol / focus clavier) qui choisit le modèle monté ;
+- `scripts/vice-city-garage-3d-scene-check.mjs` — la vérification de la scène
+  (avec `vice-city-garage-3d-scene-smoke.jsx`, `vice-city-garage-3d-three-stub.mjs`
+  et `vice-city-garage-3d-fake-renderer.mjs`).
 
 ### Vérifications
 
 ```bash
-npm run check:city-rush-garage-3d   # la page dans jsdom, scène de garage doublée
+npm run check:city-rush-garage-3d         # la page dans jsdom, scène de garage doublée
+npm run check:city-rush-garage-3d-scene   # la scène three.js, renderer factice
 ```
 
 jsdom n'a pas de WebGL : la vérification monte la vraie page et prouve au passage
@@ -921,8 +933,16 @@ les invariants — la scène reste hors flux (`position: absolute`, `z-index: 0`
 `z-index: 1`), les zones nommées des grilles sont intactes — et regarde la page
 monter l'étape garage, la plaque annoncer la voiture, le focus clavier la faire
 tourner au modèle visé (APERÇU) sans lancer la course, et le tap sur une voiture
-offerte partir au compte à rebours. Le rendu réel, lui, se juge dans un vrai
-navigateur (`npm run dev`).
+offerte partir au compte à rebours.
+
+`check:city-rush-garage-3d-scene` va plus loin : `three` y est remplacé par une
+doublure dont le renderer est factice, donc **la scène se construit pour de
+vrai** sans GPU. Elle inspecte alors la cabine (88 maillages, six lumières,
+poussières), la voiture modélisée, le plateau qui tourne, la caméra qui reste
+dans la cabine, et le cadrage : part de la largeur occupée par le plateau,
+part occupée par la voiture (elle est le sujet du cadre, pas un détail du décor)
+et recul maximal qui fait tenir une voiture entière sur un écran de téléphone.
+Le rendu réel, lui, se juge dans un vrai navigateur (`npm run dev`).
 
 ## Vice City Rush : les tours, ligne de départ et décor
 
