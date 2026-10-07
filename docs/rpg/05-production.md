@@ -8,9 +8,9 @@
 | Contrainte de conception | ✅ aucun réflexe : combat 100 % décisionnel (`03-combat.md`) |
 | Histoire complète | ✅ Bab El, 5 compagnons, 7 chapitres, 3 fins (`02-histoire.md`) |
 | **Moteur de combat codé + jouable** | ✅ `src/games/rpgCombat.js` + page `/jeu/sablier-de-bab-el` |
-| Règles vérifiées par des tests | ✅ `npm run check:rpg` (51 tests) et `npm run check:rpg-ui` |
+| Règles vérifiées par des tests | ✅ `npm run check:rpg` (51 tests combat + 13 exploration) et `npm run check:rpg-ui` |
 | Direction artistique | 🟡 maquettes en cours (voir `04-progression-da.md`) |
-| Exploration, villes, dialogues | ⬜ à faire |
+| Exploration, villes, dialogues | 🟡 exploration d'un palier jouable entre les vagues ; villes/dialogues à faire |
 | Contenu (7 chapitres) | ⬜ à faire |
 
 Le prototype actuel couvre **un seul combat** : 4 compagnons, 3 vagues dont un

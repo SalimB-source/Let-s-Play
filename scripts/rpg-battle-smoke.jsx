@@ -118,10 +118,31 @@ export async function checkRpgBattle(assert) {
   assert.match(container.querySelector('.rpg-overlay').textContent, /Vague repoussée/);
   assert.match(container.querySelector('.rpg-log').textContent, /Balayeur|raclette|Tourbillon|Sac de sable/i);
 
-  // ── On enchaîne sur la vague suivante ───────────────────────────────────
-  await act(async () => { findButton('continuer').click(); });
+  // ── Entre les vagues : le palier se visite avant de redescendre ─────────
+  await act(async () => { findButton('Monter au palier').click(); });
+  await act(async () => { await wait(400); });
+  assert.ok(container.querySelector('.rpg-explore'), 'l’exploration du palier doit s’ouvrir après la vague 1');
+  assert.match(container.textContent, /Heures avant le cycle/);
+  assert.equal(container.querySelectorAll('.rpg-place').length >= 4, true, 'le palier doit offrir plusieurs lieux');
+  // On vend la ferraille : +30 sable de poche, une heure en moins.
+  await act(async () => { findButton('ferraille').click(); });
+  await act(async () => { await wait(120); });
+  assert.match(container.textContent, /Sable de poche 30/, 'le sable de poche doit être affiché');
+  assert.match(container.querySelector('.rpg-explore__hours').textContent, /Heures avant le cycle/);
+  // L'action faite est cochée et rejouable nulle part.
+  const doneButton = findButton('ferraille');
+  assert.equal(doneButton.disabled, true, 'une action faite ne se rejoue pas');
+  // Un choix moral s'ouvre sans se trancher tant qu'on n'a pas choisi.
+  await act(async () => { findButton('Affronter la Liste').click(); });
+  await act(async () => { await wait(120); });
+  assert.ok(findButton('Arracher la page de Salem'), 'le choix moral doit proposer ses deux options');
+
+  // ── On descend : le sable de poche se verse au sol, la vague 2 commence ─
+  await act(async () => { findButton('Descendre').click(); });
   await act(async () => { await wait(900); });
   assert.match(container.textContent, /Vague 2/);
+  const notreSol = Number((container.textContent.match(/notre sol (\d+)/) ?? [null, NaN])[1]);
+  assert.ok(notreSol >= 30, `le sable de poche doit être versé sur notre sol (lu : ${notreSol})`);
   assert.equal(container.querySelectorAll('.rpg-ally').length, 4, 'l’équipe doit être au complet après le palier');
   // La permutation n'est proposée que pendant le tour d'un compagnon.
   let swapButton = null;

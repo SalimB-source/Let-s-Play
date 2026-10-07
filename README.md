@@ -2246,7 +2246,11 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
   l'identique.
 - `src/games/rpgContent.js` — le seul fichier qui connaît l'univers : les 5
   compagnons et leurs 19 compétences, les 4 ennemis et leurs 16 actions, les
-  trois vagues. Changer de concept n'exige qu'un autre fichier comme celui-ci.
+  trois vagues, et les deux paliers à explorer entre elles. Changer de concept
+  n'exige qu'un autre fichier comme celui-ci.
+- `src/games/rpgExplore.js` — l'exploration d'un palier : trois heures à
+  dépenser en actions (soins, sable, buffs, choix moraux), versées au combat
+  suivant. Même contrat : décider, jamais réagir.
 - `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
   Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
   jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
@@ -2273,11 +2277,14 @@ formule de dégâts et multiplicateur d'étage, intention annoncée et ses cinq
 familles, garde, barrage, contre-élément, interruption, retard d'un round,
 sable (chute au sol, récolte, souffle, sorts à coût de sable), Fêlure,
 Consonance, Cristallisation, Astrolabe, phases de boss, réserve, récompenses,
-difficultés. Puis `scripts/rpg-battle-smoke.mjs` contrôle la cohérence du
-contenu (éléments, familles d'intention, et surtout : **chaque incantation
-ennemie doit pouvoir être interrompue par l'équipe**) et **joue vraiment les
-trois vagues** avec un pilote automatique qui emploie les six réponses,
-jusqu'à la victoire, Astrolabe et phase 2 du boss compris.
+difficultés. Les **13 tests** de `tests/rpg-explore.test.js` couvrent
+l'exploration d'un palier : heures dépensées, actions uniques, soins, sable de
+poche, choix moraux et versement des buffs au combat suivant. Puis
+`scripts/rpg-battle-smoke.mjs` contrôle la cohérence du contenu (éléments,
+familles d'intention, et surtout : **chaque incantation ennemie doit pouvoir
+être interrompue par l'équipe**) et **joue vraiment les trois vagues** avec un
+pilote automatique qui emploie les six réponses, jusqu'à la victoire,
+Astrolabe et phase 2 du boss compris.
 
 C'est cette simulation qui a fait corriger le prototype : elle a montré que la
 Chaudière du boss s'annonçait interruptible à l'Eau alors qu'aucune compétence

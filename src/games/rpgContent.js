@@ -504,3 +504,195 @@ export const RPG_DEMO_HELP = [
     text: 'À 100 de Fêlure, l’ennemi est Fêlé : il n’agit pas, subit ×2, et le premier coup qui le touche est gratuit. Trois éléments dans un round : ×1,5 et +1 Verre.',
   },
 ];
+
+// ── Exploration : deux paliers à traverser entre les vagues ────────────────
+// Chaque action coûte une heure ; le cycle n'attend pas, mais il ne presse
+// jamais. Les effets sont appliqués par rpgExplore.js.
+export const RPG_EXPLORE_PALIERS = [
+  null, // on démarre au cœur du combat, pas de palier avant la vague 1
+  {
+    id: 'palier-5',
+    title: 'Palier 5 · Le Souk suspendu',
+    lede: 'Le tram vous laisse sur une place étroite où le linge claque entre les arches. En bas, on entend encore les balayeurs. Ici, on vit comme si le cycle n’existait pas.',
+    places: [
+      {
+        id: 'puis',
+        name: 'Le puits public',
+        npc: 'Barka, la doyenne',
+        line: 'L’eau baisse plus vite que les étages. Alors on compte les deux.',
+        actions: [
+          {
+            id: 'eau',
+            label: 'Puiser pour l’équipe',
+            text: 'Barka regarde vos plaies sans un mot, et tend la corde. L’eau est froide, presque douce.',
+            cost: 1,
+            effects: { healAll: 0.25 },
+          },
+          {
+            id: 'ecouter',
+            label: 'Écouter l’eau avec Barka',
+            text: '« Le sable fait un bruit de registre qu’on feuillette. » Elle rit. Vous repartez avec une outre pleine et sa bénédiction têtue.',
+            cost: 1,
+            choices: [
+              { label: 'Puiser pour l’équipe', text: 'Vous tirez la corde jusqu’aux épaules qui craquent. L’équipe boit, respire, se redresse.', effects: { healAll: 0.25 } },
+              { label: 'Puiser pour les anciens du palier', text: 'Vous remplissez leurs jarres à eux. Zoher vous glisse une poignée de sable de ferraille en faisant semblant de ne pas avoir vu.', effects: { sand: 20, flag: 'baraka' } },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'souk',
+        name: 'Le souk des descendeurs',
+        npc: 'Zoher, gamin du souk',
+        line: 'Tout se vend, même ce qui vient d’en bas. Surtout ce qui vient d’en bas.',
+        actions: [
+          {
+            id: 'ferraille',
+            label: 'Vendre la ferraille des balayeurs',
+            text: 'Les plaques de laiton arrachées à l’automate valent plus que leur poids : les descendeurs les achètent sans marchander.',
+            cost: 1,
+            effects: { sand: 30 },
+          },
+          {
+            id: 'onguent',
+            label: 'Acheter l’onguent de verre (20 sable)',
+            text: 'Un baume vert pâle qui sent la braise éteinte. Sur les blessures, il fait un bruit de bulle qui éclate, puis plus rien ne fait mal.',
+            cost: 1,
+            effects: { spend: 20, healWeak: true },
+          },
+        ],
+      },
+      {
+        id: 'tram',
+        name: 'La station du tramway',
+        npc: 'Hnia, la mécanicienne',
+        line: 'Elle monte encore, ma cabine. Tant que quelqu’un paie le câble.',
+        actions: [
+          {
+            id: 'reparer',
+            label: 'Réparer la cabine avec Hnia',
+            text: 'Trois heures de câbles et de graisse. Au dernier palier, la cabine vous lâche au-dessus de l’ennemi : on descend de haut, comme toujours.',
+            cost: 1,
+            effects: { buff: 'atk', flag: 'tram' },
+          },
+          {
+            id: 'cables',
+            label: 'Réquisitionner les câbles',
+            text: 'Hnia ne dit rien. Elle note votre nom sur un carnet à spirale, très soigneusement. Le cuivre part dans votre sac.',
+            cost: 1,
+            effects: { sand: 25, flag: 'cables' },
+          },
+        ],
+      },
+      {
+        id: 'antichambre',
+        name: 'L’antichambre de la Chambre des Heures',
+        npc: 'Un greffier sans ruban',
+        line: 'La Liste n’est pas une punition. C’est une horloge comme une autre.',
+        actions: [
+          {
+            id: 'liste',
+            label: 'Affronter la Liste',
+            text: 'Le greffier pousse un formulaire vers vous. Deux cases, une seule encre.',
+            cost: 1,
+            choices: [
+              { label: 'Signer la dérogation', text: 'Votre paraphe vaut un verre de priorité : l’administration, une fois, vous doit quelque chose.', effects: { buff: 'verre', flag: 'signe' } },
+              { label: 'Arracher la page de Salem', text: 'Le nom de Salem quitte le registre. Quelque part, un segment de son Nom se soude. Le greffier ne lève même pas les yeux.', effects: { name: 'salem', flag: 'page-arrachee' } },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'palier-6',
+    title: 'Palier 6 · L’Étage blanc',
+    lede: 'Ici, le sable n’est jamais monté : les murs sont blancs, les arches propres, et le silence a un goût de dimanche. C’est l’étage qui ne croit pas au cycle.',
+    places: [
+      {
+        id: 'soufflerie',
+        name: 'La soufflerie de Fériel',
+        npc: 'Personne. Le four est encore tiède.',
+        line: 'Sur le banc, une canne de rechange et un carnet de bulles ratées, datées, signées.',
+        actions: [
+          {
+            id: 'ampoule',
+            label: 'Souffler une ampoule de verre',
+            text: 'Fériel vous guide la main depuis le carnet : « Plus lent. Le verre sent la peur. » L’ampoule tient. Quelque chose de votre équipe tient aussi.',
+            cost: 1,
+            effects: { buff: 'verre', flag: 'ampoule' },
+          },
+          {
+            id: 'calcin',
+            label: 'Balayer le calcin',
+            text: 'Les éclats de verre ratés se revendent au souk comme du sable de première qualité. Personne n’est dupe. Tout le monde est content.',
+            cost: 1,
+            effects: { sand: 25 },
+          },
+        ],
+      },
+      {
+        id: 'beffroi',
+        name: 'Le beffroi',
+        npc: 'Le sonnier sourd',
+        line: 'Il ne vous entend pas venir. Il vous regarde venir, c’est tout.',
+        actions: [
+          {
+            id: 'sourdine',
+            label: 'Feutrer le tocsin',
+            text: 'Vous bourrez le battant de laine et de lin. Au prochain assaut, leurs cloches sonneront comme à travers un mur — et leurs coups avec.',
+            cost: 1,
+            effects: { buff: 'sourdine', flag: 'feutre' },
+          },
+          {
+            id: 'morts',
+            label: 'Sonner pour les disparus',
+            text: 'Le vieux sonne neuf coups, un par étage perdu. L’équipe se tient droite. On repart moins lourds.',
+            cost: 1,
+            effects: { healAll: 0.15, flag: 'memorial' },
+          },
+        ],
+      },
+      {
+        id: 'bureau',
+        name: 'Le bureau de la Liste',
+        npc: 'Trois chaises vides, un tampon',
+        line: 'Sur le registre, la page du prochain cycle est déjà imprimée. Seule l’encre manque.',
+        actions: [
+          {
+            id: 'page',
+            label: 'Trancher devant le registre',
+            text: 'Le tampon attend. La page aussi.',
+            cost: 1,
+            choices: [
+              { label: 'Brûler la page du cycle', text: 'Yamina tient la flamme jusqu’au bout des doigts. Au prochain combat, l’administration bafouille : une heure de plus avant que l’Astrolabe ne sonne.', effects: { buff: 'pret', name: 'yamina', flag: 'page-brulee' } },
+              { label: 'Tamponner trois laissez-passer', text: 'Des soins de première classe, signés d’une administration qui n’existe plus tout à fait. On prend.', effects: { healAll: 0.2, flag: 'laissez-passer' } },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'terrasse',
+        name: 'La terrasse du bord',
+        npc: 'Le vent, le sable au loin',
+        line: 'D’ici, on voit la dune respirer. Elle est belle. C’est ça le plus difficile.',
+        actions: [
+          {
+            id: 'regarder',
+            label: 'Regarder monter le sable',
+            text: 'Un quart d’heure à ne rien faire, vraiment rien. Le cœur redescend, les mains s’ouvrent.',
+            cost: 1,
+            effects: { healAll: 0.1 },
+          },
+          {
+            id: 'souffler',
+            label: 'Reprendre son souffle',
+            text: 'Assis sur le parapet, l’équipe partage une galette et ne parle de rien d’important. C’est précisément ça, l’important.',
+            cost: 0,
+            effects: { healAll: 0.05 },
+          },
+        ],
+      },
+    ],
+  },
+];

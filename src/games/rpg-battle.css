@@ -229,6 +229,122 @@
 }
 
 /* ── Combat ──────────────────────────────────────────────────────────────── */
+/* ── Exploration d'un palier entre les vagues ────────────────────────────── */
+.rpg-explore { display: grid; gap: 14px; margin-top: 18px; }
+
+.rpg-explore__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rpg-explore__head h2 {
+  font-family: var(--font-gaming);
+  font-size: clamp(20px, 3.4vw, 30px);
+  margin: 0;
+  color: var(--yellow);
+  letter-spacing: .06em;
+}
+
+.rpg-explore__hours { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+
+.rpg-explore__lede { margin: 0; color: var(--muted); max-width: 78ch; font-style: italic; }
+
+.rpg-explore__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.rpg-place {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(26, 20, 12, .92), rgba(10, 10, 22, .92));
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.rpg-place h3 {
+  margin: 0;
+  font-family: var(--font-gaming);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--cyan);
+}
+
+.rpg-place__npc { margin: 0; color: var(--muted); font-size: 12.5px; }
+.rpg-place__npc strong { color: var(--ink); }
+
+.rpg-place__actions { display: grid; gap: 8px; }
+
+.rpg-choice {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.rpg-choice p { margin: 0; color: var(--muted); font-size: 12.5px; font-style: italic; }
+
+.rpg-explore__team {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(26, 20, 12, .92), rgba(10, 10, 22, .92));
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.rpg-explore__team h3 {
+  margin: 0;
+  font-family: var(--font-gaming);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--yellow);
+}
+
+.rpg-explore__team ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+.rpg-explore__team li { display: flex; gap: 10px; align-items: center; }
+
+.rpg-explore__team img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border: 1px solid var(--line-strong);
+}
+
+.rpg-explore__team li span { display: grid; gap: 3px; flex: 1; }
+.rpg-explore__team strong { font-size: 12px; letter-spacing: .04em; }
+.rpg-explore__team small { color: var(--dim); font-size: 11px; }
+
+.rpg-explore__pocket { margin: 0; color: var(--muted); font-size: 12.5px; }
+.rpg-explore__pocket strong { color: var(--yellow); }
+.rpg-explore__buffs { margin: 0; color: var(--cyan); font-size: 12.5px; }
+
+.rpg-explore__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, .03);
+}
+
+.rpg-explore__foot p { margin: 0; color: var(--muted); font-size: 13px; }
+
 /* ── Scène 3D : l'équipe face aux ennemis ────────────────────────────────── */
 .rpg-scene {
   position: relative;

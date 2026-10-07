@@ -34,7 +34,14 @@ import {
   RPG_DEMO_RESERVE,
   RPG_DEMO_WAVES,
   RPG_ELEMENT_ICONS,
+  RPG_EXPLORE_PALIERS,
 } from './rpgContent';
+import {
+  rpgApplyExplore,
+  rpgCreateExplore,
+  rpgExploreAct,
+  RPG_EXPLORE_HOURS,
+} from './rpgExplore';
 import './rpg-battle.css';
 
 /**
@@ -50,6 +57,14 @@ import './rpg-battle.css';
 /** Chaque acteur porte un champ `portrait` ; le fichier vit dans /public/portraits. */
 const portraitSrc = (actor) =>
   `${import.meta.env.BASE_URL}portraits/${actor.portrait ?? actor.id}.jpg`;
+
+/** Ce que l'exploration verse dans le combat suivant, en langage joueur. */
+const BUFF_LABELS = {
+  atk: 'L’équipe frappera +10 %',
+  verre: '+1 Verre au début du combat',
+  pret: 'L’Astrolabe sonnera une heure plus tard',
+  sourdine: 'Ennemis assourdis : −10 % d’attaque',
+};
 
 function Bar({ value, max, tone = 'hp' }) {
   const ratio = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
@@ -202,6 +217,9 @@ export default function RpgBattlePage() {
   const timersRef = useRef([]);
   // Événements éphémères pour la scène 3D (ruées, zones, soins, souffles).
   const sceneQueueRef = useRef([]);
+  // L'exploration en cours entre deux vagues (null pendant les combats).
+  const exploreRef = useRef(null);
+  const [choice, setChoice] = useState(null);
   const battle = battleRef.current;
 
   const later = useCallback((fn, delay) => {
@@ -367,6 +385,28 @@ export default function RpgBattlePage() {
     later(pump, 500);
   }, [clearTimers, difficulty, later, pump]);
 
+  // Descendre au combat suivant : l'exploration se verse dans la bataille.
+  const descend = useCallback(() => {
+    const state = battleRef.current;
+    if (!state) return;
+    clearTimers();
+    const wave = RPG_DEMO_WAVES[waveIndex];
+    if (exploreRef.current) rpgApplyExplore(exploreRef.current, state);
+    exploreRef.current = null;
+    rpgAddFoes(state, wave.foes);
+    state.over = null;
+    state.clock = wave.clockInterval;
+    state.clockInterval = wave.clockInterval;
+    state.clockStrike = 0;
+    state.consonance = false;
+    state.roundElements = [];
+    setScreen('combat');
+    force();
+    later(pump, 700);
+  }, [clearTimers, later, pump, waveIndex]);
+
+  // Après une vague : l'équipe respire, puis monte au palier suivant —
+  // qui se visite avant de redescendre se battre.
   const nextWave = useCallback(() => {
     const state = battleRef.current;
     const index = waveIndex + 1;
@@ -378,7 +418,6 @@ export default function RpgBattlePage() {
     // Purge des minuteurs en attente : sans ça, un overlay programmé pendant la
     // vague précédente se rouvre au milieu de la suivante.
     clearTimers();
-    const wave = RPG_DEMO_WAVES[index];
     for (const member of state.actors) {
       if (member.side === 'equipe' || member.side === 'reserve') {
         if (!member.alive) {
@@ -393,23 +432,42 @@ export default function RpgBattlePage() {
       member.felure = 0;
       member.fele = false;
     }
-    rpgAddFoes(state, wave.foes);
-    state.over = null;
-    state.clock = wave.clockInterval;
-    state.clockInterval = wave.clockInterval;
-    state.clockStrike = 0;
-    state.consonance = false;
-    state.roundElements = [];
     setWaveIndex(index);
     setTargetId(null);
     setAllyId(null);
-    setScreen('combat');
+    const palier = RPG_EXPLORE_PALIERS[index];
+    if (palier) {
+      exploreRef.current = rpgCreateExplore({ places: palier.places });
+      setChoice(null);
+      setScreen('exploration');
+      force();
+      return;
+    }
+    descend();
+  }, [clearTimers, descend, waveIndex]);
+
+  // Une action d'exploration : une heure, un effet, jamais de réflexe.
+  const exploreAct = useCallback((placeId, actionId, option = null) => {
+    const state = battleRef.current;
+    const explore = exploreRef.current;
+    if (!state || !explore) return;
+    const result = rpgExploreAct(explore, state.actors, placeId, actionId, option);
+    if (!result.ok) {
+      const reasons = {
+        heures: 'Le cycle reprend : plus une heure libre.',
+        'sable-insuffisant': 'Pas assez de sable de poche.',
+        'deja-fait': 'Déjà fait, cette heure-ci.',
+      };
+      showFlash(reasons[result.reason] ?? 'Impossible.', 'refus');
+      return;
+    }
+    setChoice(null);
     force();
-    later(pump, 700);
-  }, [clearTimers, later, pump, waveIndex]);
+  }, [showFlash]);
 
   // ── Rendu ────────────────────────────────────────────────────────────────
   const current = battle ? rpgCurrentActor(battle) : null;
+  const explore = exploreRef.current;
   const team = battle ? battle.actors.filter((a) => a.side === 'equipe') : [];
   const foes = battle ? battle.actors.filter((a) => a.side === 'ennemi') : [];
   const reserve = battle ? battle.actors.filter((a) => a.side === 'reserve') : [];
@@ -508,7 +566,105 @@ export default function RpgBattlePage() {
         </section>
       )}
 
-      {battle && screen !== 'intro' && screen !== 'fin' && (
+      {screen === 'exploration' && explore && (
+        <section className="rpg-explore">
+          <header className="rpg-explore__head">
+            <h2>{RPG_EXPLORE_PALIERS[waveIndex]?.title ?? 'Un palier de Bab El'}</h2>
+            <p className="rpg-explore__hours" title="Chaque action coûte une heure">
+              Heures avant le cycle
+              <span className="rpg-pa">
+                {Array.from({ length: RPG_EXPLORE_HOURS }, (_, i) => (
+                  <span key={i} className={i < explore.hours ? 'is-on' : 'is-off'} />
+                ))}
+              </span>
+            </p>
+          </header>
+          <p className="rpg-explore__lede">{RPG_EXPLORE_PALIERS[waveIndex]?.lede}</p>
+          <div className="rpg-explore__grid">
+            {explore.places.map((place) => (
+              <article className="rpg-place" key={place.id}>
+                <h3>{place.name}</h3>
+                <p className="rpg-place__npc"><strong>{place.npc}.</strong> « {place.line} »</p>
+                <div className="rpg-place__actions">
+                  {place.actions.map((action) => {
+                    const cost = action.cost ?? 1;
+                    const key = `${place.id}/${action.id}`;
+                    const done = Boolean(place.done[action.id]);
+                    if (action.choices && choice === key) {
+                      return (
+                        <div className="rpg-choice" key={action.id}>
+                          <p>{action.text}</p>
+                          {action.choices.map((opt, i) => (
+                            <button
+                              key={opt.label}
+                              type="button"
+                              className="rpg-btn"
+                              disabled={explore.hours < cost}
+                              onClick={() => exploreAct(place.id, action.id, i)}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                          <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setChoice(null)}>
+                            Reculer
+                          </button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button
+                        key={action.id}
+                        type="button"
+                        className="rpg-btn"
+                        disabled={done || explore.hours < cost}
+                        onClick={() => (action.choices ? setChoice(key) : exploreAct(place.id, action.id))}
+                      >
+                        {action.label}
+                        {done ? ' ✓' : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              </article>
+            ))}
+            <aside className="rpg-explore__team">
+              <h3>L’équipe</h3>
+              <ul>
+                {team.map((actor) => (
+                  <li key={actor.id}>
+                    <img src={portraitSrc(actor)} alt="" aria-hidden="true" />
+                    <span>
+                      <strong>{actor.name}</strong>
+                      <small>{actor.hp} / {actor.maxHp} PV</small>
+                      <Bar value={actor.hp} max={actor.maxHp} tone={actor.hp / actor.maxHp < 0.35 ? 'low' : 'hp'} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="rpg-explore__pocket">
+                Sable de poche <strong>{explore.pocket}</strong> — versé sur notre sol au prochain combat.
+              </p>
+              {explore.buffs.length > 0 && (
+                <p className="rpg-explore__buffs">
+                  {explore.buffs.map((b) => BUFF_LABELS[b] ?? b).join(' · ')}
+                </p>
+              )}
+            </aside>
+          </div>
+          <div className="rpg-explore__foot">
+            <p>
+              {explore.hours === 0
+                ? 'L’Astrolabe tourne : le cycle reprend, il faut descendre.'
+                : 'Les heures non passées seront perdues avec le cycle.'}
+            </p>
+            <button type="button" className="rpg-btn rpg-btn--primary" onClick={descend}>
+              Descendre — le cycle reprend →
+            </button>
+          </div>
+        </section>
+      )}
+
+      {battle && screen !== 'intro' && screen !== 'fin' && screen !== 'exploration' && (
         <section className="rpg-battle" data-strike={battle.clockStrike > 0 ? 'on' : 'off'}>
           <RpgBattleScene battleRef={battleRef} queueRef={sceneQueueRef} />
           <div className="rpg-battle__top">
@@ -688,7 +844,9 @@ export default function RpgBattlePage() {
                   : 'Le Prototype retombe en pièces de laiton. Le cycle est tenu.'}
               </p>
               <button type="button" className="rpg-btn rpg-btn--primary" onClick={nextWave}>
-                {waveIndex + 1 < RPG_DEMO_WAVES.length ? 'Changer de palier, puis continuer' : 'Voir le bilan'}
+                {waveIndex + 1 < RPG_DEMO_WAVES.length
+                  ? (RPG_EXPLORE_PALIERS[waveIndex + 1] ? 'Monter au palier et souffler' : 'Changer de palier, puis continuer')
+                  : 'Voir le bilan'}
               </button>
             </div>
           )}
