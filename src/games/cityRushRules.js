@@ -100,9 +100,9 @@ export const CITY_RUSH_DEFAULT_LANES_LEFT_HAND = Object.freeze(
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 // La simulation reste volontairement sur une ligne (les voies, collisions et
 // bonus sont ainsi déterministes), mais le rendu suit cette ligne centrale :
-// deux grands S très doux donnent de vrais virages visuels sans transformer
-// chaque changement de voie en dérapage. Le déport reste proche d'une voie et
-// le raccord départ/arrivée est parfaitement plat.
+// le profil urbain générique dessine deux grands S très doux, sans transformer
+// chaque changement de voie en dérapage. Vice City utilise un profil dédié,
+// avec des courbes longues et des virages secs. Les raccords restent plats.
 export const CITY_RUSH_TURN_AMPLITUDE = 2.35;
 // Relief volontairement modéré : suffisamment ample pour lire une montée ou
 // une descente à l'horizon, sans masquer le trafic ni gêner les changements de
@@ -2309,6 +2309,60 @@ export function cityRushTrackGrade(distance, lapLength = CITY_RUSH_LAP_LENGTH, a
   return (safeAmplitude * Math.PI * 2 / safeLap) * (Math.cos(phase) - Math.cos(phase * 2));
 }
 
+// Vice City a son propre tracé, au lieu des deux ondulations discrètes des
+// autres rues : trois longues courbes rapides débouchent chacune sur un virage
+// sec. Chaque déplacement latéral utilise un smoothstep, nul en pente à l'entrée
+// comme à la sortie ; les portions droites entre les virages et la ligne de
+// départ restent donc stables, et le tour se referme sans saut.
+export const CITY_RUSH_VICE_CITY_TURNS = Object.freeze([
+  Object.freeze({ start: 78, end: 238, from: 0, to: 18, kind: 'long', name: 'Ocean Drive' }),
+  Object.freeze({ start: 302, end: 350, from: 18, to: 0, kind: 'sharp', name: 'MacArthur Causeway' }),
+  Object.freeze({ start: 414, end: 570, from: 0, to: -18, kind: 'long', name: 'Downtown' }),
+  Object.freeze({ start: 644, end: 692, from: -18, to: 0, kind: 'sharp', name: 'Port de Vice City' }),
+  Object.freeze({ start: 758, end: 920, from: 0, to: 18, kind: 'long', name: 'Washington Beach' }),
+  Object.freeze({ start: 988, end: 1036, from: 18, to: 0, kind: 'sharp', name: 'Ocean Drive chicane' }),
+]);
+
+function viceCityTrackDistance(distance) {
+  const rawDistance = Number(distance);
+  const safeDistance = Number.isFinite(rawDistance) ? rawDistance : 0;
+  const lap = CITY_RUSH_LAP_LENGTH;
+  return ((safeDistance % lap) + lap) % lap;
+}
+
+/** Déport latéral (unités monde) de la succession de virages de Vice City. */
+export function viceCityTrackOffset(distance) {
+  const wrapped = viceCityTrackDistance(distance);
+  for (const turn of CITY_RUSH_VICE_CITY_TURNS) {
+    if (wrapped < turn.start) return turn.from;
+    if (wrapped <= turn.end) {
+      const progress = (wrapped - turn.start) / (turn.end - turn.start);
+      const eased = progress * progress * (3 - 2 * progress);
+      return turn.from + (turn.to - turn.from) * eased;
+    }
+  }
+  return 0;
+}
+
+/** Pente de la ligne centrale du tracé de Vice City (unités X par mètre). */
+export function viceCityTrackTangent(distance) {
+  const wrapped = viceCityTrackDistance(distance);
+  for (const turn of CITY_RUSH_VICE_CITY_TURNS) {
+    if (wrapped < turn.start || wrapped > turn.end) continue;
+    const span = turn.end - turn.start;
+    const progress = (wrapped - turn.start) / span;
+    const tangent = ((turn.to - turn.from) * 6 * progress * (1 - progress)) / span;
+    return tangent === 0 ? 0 : tangent;
+  }
+  return 0;
+}
+
+/** Lacet de rendu qui aligne les véhicules sur les virages de Vice City. */
+export function viceCityTrackYaw(distance, scrollScale = CITY_RUSH_SCROLL_SCALE) {
+  const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
+  return -Math.atan2(viceCityTrackTangent(distance), scale);
+}
+
 /** Tangage visuel appliqué aux véhicules et accessoires ancrés à la piste. */
 export function cityRushTrackPitch(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_HILL_AMPLITUDE, scrollScale = CITY_RUSH_SCROLL_SCALE) {
   const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
@@ -2605,10 +2659,10 @@ export function nordschleifeTrackPitch(distance, scrollScale = CITY_RUSH_SCROLL_
 }
 
 /**
- * Profil de rendu d'un parcours : les villes gardent leurs deux S très doux et
- * leur relief nul à la ligne, le Ring joue la vraie suite de ses virages. Le
- * monde et le décor n'ont ainsi qu'un seul jeu de fonctions à appeler, quel que
- * soit l'endroit du tour.
+ * Profil de rendu d'un parcours : les villes ordinaires gardent leurs deux S
+ * très doux, Vice City joue sa succession de longues courbes et de virages secs,
+ * et le Ring rejoue ses virages. Le monde et le décor n'ont ainsi qu'un seul jeu
+ * de fonctions à appeler, quel que soit l'endroit du tour.
  */
 export const CITY_RUSH_TRACK_PROFILE_DEFAULT = Object.freeze({
   id: 'city',
@@ -2630,8 +2684,22 @@ export const CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE = Object.freeze({
   pitch: nordschleifeTrackPitch,
 });
 
+export const CITY_RUSH_TRACK_PROFILE_VICE_CITY = Object.freeze({
+  id: 'vice-city',
+  offset: viceCityTrackOffset,
+  tangent: viceCityTrackTangent,
+  yaw: viceCityTrackYaw,
+  elevation: cityRushTrackElevation,
+  grade: cityRushTrackGrade,
+  pitch: cityRushTrackPitch,
+});
+
 export function cityRushTrackProfile(course) {
-  return course?.style === 'nordschleife' ? CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE : CITY_RUSH_TRACK_PROFILE_DEFAULT;
+  const resolved = typeof course === 'string'
+    ? CITY_RUSH_COURSES.find((entry) => entry.id === course) || null
+    : course;
+  if (resolved?.id === 'vice-city') return CITY_RUSH_TRACK_PROFILE_VICE_CITY;
+  return resolved?.style === 'nordschleife' ? CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE : CITY_RUSH_TRACK_PROFILE_DEFAULT;
 }
 
 function nordschleifeTrackSample(values, distance) {

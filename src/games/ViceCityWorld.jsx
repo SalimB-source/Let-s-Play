@@ -1481,8 +1481,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     : forwardLanes[forwardLanes.length - 1];
   const defaultLanes = courseLanes.defaultLanes;
   const playerStartLane = defaultLanes[0];
-  // Le tracé de rendu du parcours : deux S très doux pour les villes et les
-  // routes, la suite réelle des 73 virages du Ring pour le Nordschleife.
+  // Tracé de rendu : Vice City enchaîne longues courbes et virages secs, les
+  // autres villes gardent deux S doux, et le Ring rejoue ses 73 virages.
   const trackProfile = cityRushTrackProfile(city);
   // Rythme du parcours : 1 partout, `CITY_RUSH_RACEWAY_PACE` sur le Ring, où le
   // défilement à 126 km/h rend la piste illisible. **Tout** ce qui roule passe

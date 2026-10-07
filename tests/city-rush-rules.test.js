@@ -183,6 +183,10 @@ import {
   cityRushTrackPitch,
   cityRushTrackTangent,
   cityRushTrackYaw,
+  viceCityTrackOffset,
+  viceCityTrackTangent,
+  viceCityTrackYaw,
+  cityRushTrackProfile,
   cityRushMinimapPoint,
   cityRushMinimapTrackPath,
   cityRushMinimapTrackShape,
@@ -306,6 +310,9 @@ import {
   CITY_RUSH_NORDSCHLEIFE_MAX_OFFSET,
   CITY_RUSH_NORDSCHLEIFE_PROFILE_STEPS,
   CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE,
+  CITY_RUSH_TRACK_PROFILE_DEFAULT,
+  CITY_RUSH_TRACK_PROFILE_VICE_CITY,
+  CITY_RUSH_VICE_CITY_TURNS,
   nordschleifeCornerCurve,
   nordschleifeTrackOffset,
   nordschleifeTrackTangent,
@@ -446,6 +453,47 @@ test('the rendered circuit has gentle, seamless turns while race lanes stay logi
     'le même virage se répète à chaque tour');
   assert.ok(Math.abs(cityRushTrackYaw(CITY_RUSH_LAP_LENGTH * 0.18)) < 0.08,
     'le lacet reste léger, même au cœur du virage');
+});
+
+test('Vice City combines long sweepers with sharp turns and a seamless lap', () => {
+  const lap = CITY_RUSH_LAP_LENGTH;
+  const profile = CITY_RUSH_TRACK_PROFILE_VICE_CITY;
+  assert.equal(profile.id, 'vice-city');
+  assert.equal(cityRushTrackProfile(CITY_RUSH_CITIES[0]), profile);
+  assert.equal(cityRushTrackProfile('vice-city'), profile);
+  for (const city of CITY_RUSH_CITIES.slice(1)) {
+    assert.equal(cityRushTrackProfile(city), CITY_RUSH_TRACK_PROFILE_DEFAULT, `${city.id} garde son profil urbain doux`);
+  }
+  assert.equal(cityRushTrackProfile(CITY_RUSH_NORDSCHLEIFE_COURSE), CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE);
+  assert.deepEqual(CITY_RUSH_VICE_CITY_TURNS.map((turn) => turn.kind), ['long', 'sharp', 'long', 'sharp', 'long', 'sharp']);
+
+  assert.equal(viceCityTrackOffset(0), 0, 'la ligne de départ est centrée');
+  assert.equal(viceCityTrackOffset(lap), 0, 'la boucle revient exactement à son point de départ');
+  assert.equal(viceCityTrackTangent(0), 0, 'le raccord de départ est droit');
+  assert.equal(viceCityTrackTangent(lap), 0, 'le raccord d’arrivée est droit');
+  assert.equal(viceCityTrackOffset(117), viceCityTrackOffset(117 + lap), 'le tracé se répète à chaque tour');
+  assert.equal(viceCityTrackOffset(-83), viceCityTrackOffset(lap - 83), 'les distances négatives replient correctement la boucle');
+
+  const peakYaw = (turn) => {
+    let peak = 0;
+    for (let index = 0; index <= 100; index += 1) {
+      const distance = turn.start + ((turn.end - turn.start) * index) / 100;
+      peak = Math.max(peak, Math.abs((viceCityTrackYaw(distance) * 180) / Math.PI));
+    }
+    return peak;
+  };
+  const longTurns = CITY_RUSH_VICE_CITY_TURNS.filter((turn) => turn.kind === 'long');
+  const sharpTurns = CITY_RUSH_VICE_CITY_TURNS.filter((turn) => turn.kind === 'sharp');
+  assert.ok(longTurns.every((turn) => turn.end - turn.start >= 150), 'les courbes longues tiennent au moins 150 m');
+  assert.ok(longTurns.every((turn) => peakYaw(turn) >= 12 && peakYaw(turn) < 16), 'les longues courbes restent rapides mais lisibles');
+  assert.ok(sharpTurns.every((turn) => turn.end - turn.start <= 50), 'les virages secs sont resserrés');
+  assert.ok(sharpTurns.every((turn) => peakYaw(turn) >= 35 && peakYaw(turn) < 42), 'les virages secs tournent franchement');
+  for (const turn of CITY_RUSH_VICE_CITY_TURNS) {
+    assert.equal(viceCityTrackOffset(turn.start), turn.from, `${turn.name} commence sans déport supplémentaire`);
+    assert.equal(viceCityTrackOffset(turn.end), turn.to, `${turn.name} se raccorde proprement à la ligne suivante`);
+    assert.equal(viceCityTrackTangent(turn.start), 0, `${turn.name} n’a pas de cassure à l’entrée`);
+    assert.equal(viceCityTrackTangent(turn.end), 0, `${turn.name} n’a pas de cassure à la sortie`);
+  }
 });
 
 test('the rendered circuit rises and falls with a gentle seamless road profile', () => {
