@@ -17,6 +17,14 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // ---- Actus du mercredi 07.10.2026 ----------------------------------------
+  // Gaming : photogrammes du trailer officiel de GTA VI montrant Vice City.
+  'gta-6-cloud-pc-dementi-xbox': { label: 'GTA VI', meta: 'ROCKSTAR GAMES · XBOX CLOUD', items: [
+    { src: youTubeFrameUrl('VQRLujxTm3c', 1), alt: 'Grand Theft Auto VI — photogramme du trailer 2 officiel de Rockstar Games', caption: '01 / Vice City sous les néons, terrain exclusif aux consoles au lancement' },
+    { src: youTubeFrameUrl('VQRLujxTm3c', 2), alt: 'Grand Theft Auto VI — plan du trailer 2 officiel montrant l’action dans Leonida', caption: '02 / Leonida, inaccessible aux joueurs PC lors de la sortie du 19 novembre' },
+    { src: youTubeFrameUrl('VQRLujxTm3c', 3), alt: 'Grand Theft Auto VI — duo Jason et Lucia dans le trailer officiel', caption: '03 / Le lancement console le plus attendu de l’année' },
+  ], credit: 'Photogrammes extraits du trailer officiel de Grand Theft Auto VI (Rockstar Games).', creditSources: [{ label: 'le trailer 2 sur YouTube', href: 'https://www.youtube.com/watch?v=VQRLujxTm3c' }] },
+
   // ---- Actus du mardi 06.10.2026 ------------------------------------------
   // Gaming : les photogrammes viennent du trailer 2 officiel de Rockstar Games
   // (06.05.2025), le dernier avant l’Extended Look du 27.08.2026 — c’est lui
