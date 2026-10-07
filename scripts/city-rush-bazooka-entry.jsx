@@ -74,6 +74,7 @@ const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
+  CITY_RUSH_LANE_WIDTH,
   cityRushBazookaTrackDistances,
   cityRushDriveSide,
   cityRushLaneConfig,
@@ -148,7 +149,7 @@ const scene = world.scene;
 const hud = () => callbacks.huds.at(-1);
 const warehouses = [];
 scene.traverse((object) => {
-  if (object.name === 'city-rush-bazooka-warehouse') warehouses.push(object);
+  if (object.name === 'city-rush-bazooka-container') warehouses.push(object);
 });
 if (warehouses.length !== 2) fail('les deux entrepôts de bazooka manquent à la scène', { found: warehouses.length });
 if (warehouses.some((warehouse) => warehouse.visible)) fail('les entrepôts ne doivent pas apparaître avant le départ');
@@ -192,7 +193,7 @@ byDistance.forEach((warehouse, index) => {
 let frame = 0;
 const maxFrames = 12000;
 // Ramasse le prochain entrepôt non pris : la voie extérieure est celle de
-// l’entrée. On s’y place largement avant le hangar, et on réessaie si une
+// l’entrée. On s’y place largement avant le conteneur, et on réessaie si une
 // voiture occupe momentanément la voie.
 const collectNextWarehouse = (index) => {
   while (!callbacks.finish && frame < maxFrames) {
@@ -354,11 +355,11 @@ if (audioCalls.missileLaunch !== 4) fail('les quatre tirs doivent jouer leur son
 if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
 world.destroy();
 
-// ── Les huit cartes : deux hangars chacun, hors de la chaussée ───────────────
-// Chaque parcours du jeu est construit une fois. Le hangar s'ouvre toujours sur
-// l'**extérieur** du sens de course : à droite en conduite à droite, à gauche à
-// Londres et sur la Shutō C1, où tout le bâtiment est reflété — sinon il
-// s'étalerait sur les voies du contresens.
+// ── Les huit cartes : deux conteneurs de deux voies chacun ──────────────────
+// Chaque parcours du jeu est construit une fois. Le conteneur prend toujours
+// les **deux voies extérieures** du sens de course : à droite en conduite à
+// droite, à gauche à Londres et sur la Shutō C1, où toute la caisse est
+// reflétée — sinon il s'étalerait sur les voies du contresens.
 for (const course of CITY_RUSH_COURSES) {
   const laneConfig = cityRushLaneConfig(course);
   const leftHand = cityRushDriveSide(course) === 'left';
@@ -377,39 +378,62 @@ for (const course of CITY_RUSH_COURSES) {
   );
   const groups = [];
   courseWorld.scene.traverse((object) => {
-    if (object.name === 'city-rush-bazooka-warehouse') groups.push(object);
+    if (object.name === 'city-rush-bazooka-container') groups.push(object);
   });
-  if (groups.length !== 2) fail(`la carte ${course.name} doit poser deux entrepôts de bazooka`, { found: groups.length });
+  if (groups.length !== 2) fail(`la carte ${course.name} doit poser deux conteneurs de bazooka`, { found: groups.length });
   for (const group of groups) {
     if (group.userData.side !== outward) {
-      fail(`le hangar de ${course.name} doit se refléter selon le côté de conduite`, { side: group.userData.side, outward });
+      fail(`le conteneur de ${course.name} doit se refléter selon le côté de conduite`, { side: group.userData.side, outward });
     }
     const marker = group.children.find((child) => child.name === 'city-rush-bazooka-pickup');
     if (!marker || marker.position.x !== pickupLaneX) {
       fail(`le marqueur de ${course.name} doit se tenir sur la voie extérieure`, { marker: marker?.position?.x, pickupLaneX });
     }
-    const sign = group.children.find((child) => child.name === 'bazooka-warehouse-sign');
-    const roof = group.children.find((child) => child.name === 'bazooka-warehouse-roof');
+    const sign = group.children.find((child) => child.name === 'bazooka-container-sign');
+    const roof = group.children.find((child) => child.name === 'bazooka-container-roof');
     if (!sign || sign.userData?.label !== 'BAZOOKA HERE' || !roof || !(sign.position.y > roof.position.y)) {
-      fail(`la pancarte BAZOOKA HERE de ${course.name} doit surplomber le toit du garage`, {
+      fail(`la pancarte BAZOOKA HERE de ${course.name} doit surplomber le toit du conteneur`, {
         label: sign?.userData?.label,
         signY: sign?.position?.y,
         roofY: roof?.position?.y,
       });
     }
-    const sideWall = group.children.find((child) => child.name === 'bazooka-warehouse-side-wall');
-    if (!sideWall || Math.sign(sideWall.position.x) !== outward) {
-      fail(`le hangar de ${course.name} doit s’étendre hors de la chaussée`, { wall: sideWall?.position?.x, outward });
+    // La caisse prend **deux voies** : une voie et demie vers l'axe jaune, une
+    // demie vers le bas-côté, depuis la voie extérieure de ramassage. Les deux
+    // parois doivent tomber sur ces bords — sans ce miroir, le conteneur
+    // mordrait sur les voies du contresens à Londres et sur la Shutō C1.
+    const innerWall = group.children.find((child) => child.name === 'bazooka-container-inner-wall');
+    const outerWall = group.children.find((child) => child.name === 'bazooka-container-outer-wall');
+    const innerEdge = pickupLaneX - outward * CITY_RUSH_LANE_WIDTH * 1.5;
+    const outerEdge = pickupLaneX + outward * CITY_RUSH_LANE_WIDTH / 2;
+    const wallThickness = innerWall?.geometry?.parameters?.width;
+    if (!innerWall || !outerWall || Math.abs(innerWall.position.x - (innerEdge + outward * wallThickness / 2)) > 1e-9) {
+      fail(`la paroi intérieure de ${course.name} doit border la troisième voie`, {
+        innerWall: innerWall?.position?.x,
+        innerEdge,
+        outward,
+      });
     }
-    // Le mur du fond ne mord pas sur la chaussée : la travée ouverte couvre la
-    // voie de ramassage, jamais les voies du contresens.
-    const wall = group.children.find((child) => child.name === 'bazooka-warehouse-front-right-wall');
-    const wallInnerEdge = wall.position.x - outward * (wall.geometry.parameters.width / 2);
-    if (outward * wallInnerEdge < outward * pickupLaneX) {
-      fail(`la façade de ${course.name} doit rester de son côté de la chaussée`, { wallInnerEdge, pickupLaneX, outward });
+    if (Math.abs(outerWall.position.x - (outerEdge - outward * wallThickness / 2)) > 1e-9) {
+      fail(`la paroi extérieure de ${course.name} doit border le bas-côté`, {
+        outerWall: outerWall.position.x,
+        outerEdge,
+        outward,
+      });
+    }
+    if (Math.abs((outerEdge - innerEdge) * outward - CITY_RUSH_LANE_WIDTH * 2) > 1e-9) {
+      fail(`le conteneur de ${course.name} doit être large de deux voies`, { innerEdge, outerEdge });
+    }
+    // La caisse ne franchit pas l'axe jaune (sur le Ring, à sens unique, sa
+    // paroi intérieure tombe exactement dessus) et ne quitte pas le bitume.
+    if (outward * innerEdge < -1e-9) {
+      fail(`le conteneur de ${course.name} doit rester de son côté de l’axe`, { innerEdge, outward });
+    }
+    if (Math.abs(outerEdge) > laneConfig.roadHalf + 1e-9) {
+      fail(`le conteneur de ${course.name} doit rester sur la chaussée`, { outerEdge, roadHalf: laneConfig.roadHalf });
     }
   }
   courseWorld.destroy();
 }
 if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
-console.log(`check:city-rush-bazooka ✓ — deux entrepôts (30 % / 65 % de la course) ramassés voie ${bazookaLane}, réapprovisionnement au second, 4 tirs, projectile droit, impact police intégré, reset par course (${frame} images, ${CITY_RUSH_COURSES.length} cartes vérifiées).`);
+console.log(`check:city-rush-bazooka ✓ — deux conteneurs de deux voies (30 % / 65 % de la course) ramassés voie ${bazookaLane}, réapprovisionnement au second, 4 tirs, projectile droit, impact police intégré, reset par course (${frame} images, ${CITY_RUSH_COURSES.length} cartes vérifiées).`);

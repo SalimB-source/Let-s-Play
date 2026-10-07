@@ -739,21 +739,59 @@ function makeMiniGarageObject(index, materials, garageLanes) {
 }
 
 /**
- * Entrepôt de bord de route, ouvert sur la voie extérieure du sens de course.
+ * Entrepôt du bazooka : un **conteneur maritime de 40 pieds** posé sur la
+ * chaussée et ouvert aux deux bouts. La voiture entre par la travée avant,
+ * ramasse la roquette sous le toit, puis ressort par la porte arrière ; les
+ * quatre vantaux, rabattus à plat contre les parois, ne mordent jamais sur les
+ * voies.
  *
- * `side` vaut +1 quand la chaussée se tient à droite — le hangar s'étend alors
- * vers les abscisses positives — et −1 en conduite à gauche (Londres, Shutō C1),
- * où tout le bâtiment est reflété : sans ce miroir, il s'étalerait sur les voies
- * du contresens au lieu de rester sur le bas-côté.
+ * Le conteneur prend **deux voies** du sens de course — la voie extérieure du
+ * ramassage et celle qui la borde vers l'axe jaune — soit 4,20 m de large, de
+ * `out(-3,15)` à `out(+1,05)`.
+ *
+ * `side` vaut +1 quand la chaussée se tient à droite — le conteneur s'étend
+ * alors vers les abscisses positives — et −1 en conduite à gauche (Londres,
+ * Shutō C1), où tout le conteneur est reflété : sans ce miroir, il s'étalerait
+ * sur les voies du contresens au lieu de rester de son côté de l'axe.
  */
-function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
+function makeBazookaContainer(city, pickupLaneX, side = 1) {
   const group = new THREE.Group();
-  group.name = 'city-rush-bazooka-warehouse';
-  const wall = standard(0xc8b99e, { roughness: 0.88, metalness: 0.04 });
-  const wallDark = standard(0x6d665b, { roughness: 0.84, metalness: 0.14 });
-  const roof = standard(0x59616a, { roughness: 0.58, metalness: 0.34 });
-  const floor = standard(0x817b70, { roughness: 0.92, metalness: 0.02 });
-  const crate = standard(0x8c672f, { roughness: 0.72, metalness: 0.12 });
+  group.name = 'city-rush-bazooka-container';
+  const cityName = String(city?.name || '').toUpperCase();
+
+  // ── Tôle ondulée ─────────────────────────────────────────────────────────
+  // La caisse d'un conteneur se lit d'abord à ses ondes : verticales sur les
+  // parois, transversales sur le toit. Deux textures répétées valent mieux que
+  // quarante nervures en boîtes.
+  const corrugated = (base, shade, waves, across = false) => makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, width, height);
+    const band = (across ? height : width) / waves;
+    for (let index = 0; index < waves; index += 1) {
+      const start = index * band;
+      const gradient = across
+        ? ctx.createLinearGradient(0, start, 0, start + band)
+        : ctx.createLinearGradient(start, 0, start + band, 0);
+      gradient.addColorStop(0, base);
+      gradient.addColorStop(0.3, shade);
+      gradient.addColorStop(0.5, base);
+      gradient.addColorStop(0.8, shade);
+      gradient.addColorStop(1, base);
+      ctx.fillStyle = gradient;
+      if (across) ctx.fillRect(0, start, width, band);
+      else ctx.fillRect(start, 0, band, height);
+    }
+  }, 192, 192, { smooth: true, repeat: true });
+  const wallTexture = corrugated('#b85a22', '#7c3712', 6);
+  wallTexture.repeat.set(6, 1);
+  const roofTexture = corrugated('#9aa0a4', '#6f767c', 4, true);
+  roofTexture.repeat.set(1, 9);
+
+  const wall = new THREE.MeshStandardMaterial({ map: wallTexture, roughness: 0.74, metalness: 0.26, flatShading: true });
+  const roof = new THREE.MeshStandardMaterial({ map: roofTexture, roughness: 0.62, metalness: 0.3, flatShading: true });
+  const frame = standard(0x3a414b, { roughness: 0.46, metalness: 0.62 });
+  const floor = standard(0x4a4038, { roughness: 0.9, metalness: 0.05 });
+  const wood = standard(0x8c672f, { roughness: 0.72, metalness: 0.12 });
   const yellow = new THREE.MeshBasicMaterial({ color: 0xffd21f, toneMapped: false, fog: false });
   const warmGlow = new THREE.MeshBasicMaterial({
     color: 0xffd21f, transparent: true, opacity: 0.7,
@@ -772,7 +810,26 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
     neonText(ctx, 'BAZOOKA HERE', width / 2, height * 0.44, '900 56px "Orbitron", Arial, sans-serif', '#ffd21f', 14);
     neonText(ctx, '↓ BAZOOKA · 2 TIRS ↓', width / 2, height * 0.8, '900 30px "Orbitron", Arial, sans-serif', '#fff4c2', 8);
   }, 512, 160, { smooth: true });
+  // Plaque d'immatriculation peinte sur la caisse : le nom du parcours, le
+  // format et la charge — la petite touche qui rend le conteneur crédible.
+  const plateTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#181c23';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = '#ffd21f';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(4, 4, width - 8, height - 8);
+    const title = cityName || 'BAZU 4002 7';
+    let font = 40;
+    ctx.font = `900 ${font}px "Orbitron", Arial, sans-serif`;
+    while (font > 20 && ctx.measureText(title).width > width - 60) {
+      font -= 2;
+      ctx.font = `900 ${font}px "Orbitron", Arial, sans-serif`;
+    }
+    neonText(ctx, title, width / 2, height * 0.34, `900 ${font}px "Orbitron", Arial, sans-serif`, '#ffd21f', 10);
+    neonText(ctx, "40' HC · 30 480 KG · 2 VOIES", width / 2, height * 0.72, '900 26px "Orbitron", Arial, sans-serif', '#e8e2d2', 6);
+  }, 512, 160, { smooth: true });
   const signMaterial = new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide });
+  const plateMaterial = new THREE.MeshBasicMaterial({ map: plateTexture, toneMapped: false, fog: false, side: THREE.DoubleSide });
 
   const addBox = (name, size, position, material) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
@@ -781,57 +838,128 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
     group.add(mesh);
     return mesh;
   };
-  const innerX = pickupLaneX + side * 4.85;
-  const outerX = pickupLaneX + side * 11.6;
+
+  // ── Cotes de la caisse ───────────────────────────────────────────────────
+  // 40 pieds de long (12,20 m), hauteur de caisse haute (2,90 m sous plafond)
+  // et **deux voies** de large (4,20 m) : la voie de ramassage et celle qui la
+  // borde vers l'axe. La travée avant s'ouvre là où s'ouvrait l'ancien
+  // entrepôt, à 8,70 m du repère, pour que la roquette tombe toujours à 6,10 m
+  // du centre du conteneur.
+  const BASE = 0.16; // plancher bois, au-dessus des rails de base
+  const WALL = 0.1; // épaisseur de tôle
+  const CEILING = 2.9; // hauteur libre sous le toit
+  const WIDTH = CITY_RUSH_LANE_WIDTH * 2; // deux voies de 2,10 m
+  const LENGTH = 12.2; // 40 pieds
+  const doorZ = 8.7;
+  const backZ = doorZ - LENGTH;
+  const centerZ = doorZ - LENGTH / 2;
   // Décalage latéral signé : positif vers l'extérieur de la chaussée.
   const out = (offset) => pickupLaneX + side * offset;
-  const doorZ = 8.7;
-  const buildingHalfWidth = 13.25 / 2;
-  const signX = out(0.25);
-  const signY = 5.55;
+  const innerX = out(-CITY_RUSH_LANE_WIDTH * 1.5);
+  const outerX = out(CITY_RUSH_LANE_WIDTH / 2);
+  const centerX = out(-CITY_RUSH_LANE_WIDTH / 2);
+  const topY = BASE + CEILING;
+  const innerWallX = innerX + side * WALL / 2;
+  const outerWallX = outerX - side * WALL / 2;
 
-  // La travée ouverte mord sur la voie extérieure : on roule sous l'auvent,
-  // entre les palettes, puis on ressort sur la route.
-  addBox('bazooka-warehouse-floor', [13.25, 0.12, 23.4], [innerX, 0.055, 0], floor);
-  addBox('bazooka-warehouse-roof', [13.55, 0.3, 23.6], [innerX, 4.45, -0.15], roof);
-  addBox('bazooka-warehouse-side-wall', [0.34, 4.3, 22.6], [outerX, 2.15, -0.15], wall);
-  addBox('bazooka-warehouse-back-wall', [13.25, 4.3, 0.38], [innerX, 2.15, -11.45], wall);
-  addBox('bazooka-warehouse-front-left-pillar', [0.52, 4.1, 0.62], [out(-2.35), 2.05, doorZ], wallDark);
-  addBox('bazooka-warehouse-front-right-pillar', [0.52, 4.1, 0.62], [out(2.4), 2.05, doorZ], wallDark);
-  addBox('bazooka-warehouse-front-right-wall', [buildingHalfWidth - 2.6, 3.35, 0.58], [out(7.75), 1.7, doorZ], wall);
-  addBox('bazooka-warehouse-entry-beam', [13.25, 0.44, 0.72], [innerX, 4.1, doorZ], wallDark);
-  addBox('bazooka-warehouse-sign-frame', [6.6, 1.65, 0.32], [signX, signY, doorZ], roof);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(6.3, 1.38), signMaterial);
-  sign.name = 'bazooka-warehouse-sign';
+  // Coque : plancher, toit débordant, parois ondulées, poteaux d'angle et
+  // ferrures. Le couloir de la voiture reste libre d'un bout à l'autre : le
+  // plancher n'est qu'un platelage de bois le long des deux parois, la
+  // chaussée elle-même tient lieu de sol sous les roues.
+  for (const floorSide of [-1, 1]) {
+    addBox(
+      'bazooka-container-floor',
+      [0.5, 0.12, LENGTH - 0.3],
+      [centerX + side * floorSide * (WIDTH / 2 - WALL - 0.25), BASE - 0.06, centerZ],
+      floor,
+    );
+  }
+  addBox('bazooka-container-roof', [WIDTH + 0.2, 0.2, LENGTH + 0.16], [centerX, topY + 0.1, centerZ], roof);
+  addBox('bazooka-container-inner-wall', [WALL, CEILING, LENGTH], [innerWallX, BASE + CEILING / 2, centerZ], wall);
+  addBox('bazooka-container-outer-wall', [WALL, CEILING, LENGTH], [outerWallX, BASE + CEILING / 2, centerZ], wall);
+  for (const wallX of [innerWallX, outerWallX]) {
+    // Rails de base : la caisse ne pose pas sa tôle directement sur le bitume.
+    addBox('bazooka-container-bottom-rail', [0.2, 0.24, LENGTH], [wallX, 0.12, centerZ], frame);
+    for (const end of [doorZ, backZ]) {
+      const inward = Math.sign(end - centerZ);
+      const cornerZ = end - inward * 0.13;
+      addBox('bazooka-container-corner-post', [0.24, CEILING + 0.08, 0.26], [wallX, BASE + (CEILING + 0.08) / 2, cornerZ], frame);
+      // Ferrure d'angle ISO : le bloc d'acier qui signe les quatre coins.
+      addBox('bazooka-container-corner-block', [0.34, 0.26, 0.34], [wallX, topY - 0.16, cornerZ], frame);
+    }
+  }
+  // Traverse de porte, aux deux bouts : la travée garde 2,40 m de haut sous
+  // poutre, et le conteneur reste ouvert de part en part.
+  for (const end of [doorZ, backZ]) {
+    const inward = Math.sign(end - centerZ);
+    addBox('bazooka-container-header-beam', [WIDTH - 0.24, 0.5, 0.26], [centerX, topY - 0.25, end - inward * 0.13], frame);
+  }
+  // Deux réglettes néon courent sous le toit : la travée reste lisible dans
+  // l'ombre de la caisse.
+  for (const wallX of [innerX + side * 0.16, outerX - side * 0.16]) {
+    addBox('bazooka-container-neon', [0.07, 0.1, LENGTH - 0.8], [wallX, BASE + 2.34, centerZ], yellow);
+  }
+  // Stries jaunes devant la travée : le repère se voit au soleil, et la
+  // troisième tombe pile sur la voie de ramassage.
+  for (let stripe = 0; stripe < 3; stripe += 1) {
+    addBox('bazooka-container-entry-stripe', [0.22, 0.03, 1.6], [out(-2.6 + stripe * 1.3), 0.13, doorZ + 0.85], yellow);
+  }
+  // Enseigne au-dessus du toit : elle surplombe la caisse pour rester lisible
+  // de loin, déportée vers l'extérieur pour ne pas barrer la vue du pilote sur
+  // sa voiture pendant la traversée.
+  const signX = centerX + side * 0.35;
+  const signY = topY + 1.05;
+  addBox('bazooka-container-sign-frame', [4.9, 1.3, 0.3], [signX, signY, doorZ + 0.12], frame);
+  for (const postX of [signX - 1.7, signX + 1.7]) {
+    addBox('bazooka-container-sign-post', [0.2, 0.26, 0.2], [postX, topY + 0.3, doorZ - 0.1], frame);
+  }
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.1), signMaterial);
+  sign.name = 'bazooka-container-sign';
   sign.userData = { label: 'BAZOOKA HERE' };
-  sign.position.set(signX, signY, doorZ + 0.18);
+  sign.position.set(signX, signY, doorZ + 0.3);
   group.add(sign);
-  const savedRandom = Math.random;
-  Math.random = seededRandom(0xBA20);
-  try {
-    addBox('bazooka-warehouse-sign-post-left', [0.22, 0.65, 0.22], [out(-1.6), 4.72, doorZ], wallDark);
-    addBox('bazooka-warehouse-sign-post-right', [0.22, 0.65, 0.22], [out(2.1), 4.72, doorZ], wallDark);
-    addBox('bazooka-warehouse-sign-neon-top', [6.68, 0.09, 0.36], [signX, signY + 0.84, doorZ], yellow);
-    addBox('bazooka-warehouse-sign-neon-bottom', [6.68, 0.09, 0.36], [signX, signY - 0.84, doorZ], yellow);
-  } finally {
-    Math.random = savedRandom;
+  // Plaques d'immatriculation sur les deux parois, comme sur une vraie caisse :
+  // celle de la paroi intérieure est la seule face que la caméra de poursuite
+  // voit de face pendant l'approche, l'autre habille le bas-côté.
+  for (const plateSide of [-1, 1]) {
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.6), plateMaterial);
+    plate.name = 'bazooka-container-plate';
+    plate.position.set(
+      (plateSide > 0 ? outerX : innerX) + side * plateSide * 0.05,
+      BASE + 1.35,
+      centerZ + plateSide * 2.6,
+    );
+    plate.rotation.y = plateSide * Math.PI / 2 * side;
+    group.add(plate);
   }
 
-  // Étagères et caisses lisibles à travers l'entrée ; elles restent hors du
-  // couloir de la voiture qui traverse le hangar.
-  for (const z of [-5.2, -1.7, 2.0]) {
-    addBox('bazooka-warehouse-shelf', [0.26, 2.1, 2.8], [out(8.5), 1.05, z], wallDark);
-    addBox('bazooka-warehouse-pallet', [1.3, 0.62, 1.05], [out(5.4), 0.42, z], crate);
-  }
-  // Stries jaunes à l'entrée : la porte et le couloir restent visibles au soleil.
-  for (let stripe = 0; stripe < 5; stripe += 1) {
-    addBox('bazooka-warehouse-entry-stripe', [0.22, 0.025, 2.4], [out(-1.65 + stripe * 0.92), 0.13, doorZ - 1.35], yellow);
+  // ── Vantaux rabattus ─────────────────────────────────────────────────────
+  // Les quatre portes du conteneur s'ouvrent à plat contre les parois : la
+  // travée garde ses 4,20 m de large et les barres de verrouillage restent du
+  // côté du bas-côté, jamais dans la trajectoire des voitures.
+  for (const leafSide of [-1, 1]) {
+    const faceX = leafSide > 0 ? outerX : innerX;
+    const leafX = faceX + side * leafSide * 0.06;
+    for (const end of [doorZ, backZ]) {
+      const inward = Math.sign(end - centerZ);
+      const leafZ = end - inward * 1.08;
+      addBox('bazooka-container-door', [0.12, 2.36, 1.7], [leafX, BASE + 1.18, leafZ], wall);
+      for (const offset of [-0.79, -0.26, 0.26, 0.79]) {
+        addBox('bazooka-container-door-bar', [0.07, 2.14, 0.1], [leafX + side * leafSide * 0.1, BASE + 1.18, leafZ + offset], frame);
+      }
+      for (const offset of [-0.26, 0.26]) {
+        addBox('bazooka-container-door-cam', [0.06, 0.24, 0.34], [leafX + side * leafSide * 0.11, BASE + 1.18, leafZ + offset], yellow);
+      }
+      for (const height of [0.5, 2.2]) {
+        addBox('bazooka-container-door-hinge', [0.2, 0.24, 0.16], [faceX + side * leafSide * 0.02, BASE + height, end - inward * 0.1], frame);
+      }
+    }
   }
 
   const pickup = new THREE.Group();
   pickup.name = 'city-rush-bazooka-pickup';
   pickup.position.set(pickupLaneX, 1.22, BAZOOKA_PICKUP_LOCAL_Z);
-  const pickupBase = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.72, 1.02), crate);
+  const pickupBase = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.72, 1.02), wood);
   pickupBase.position.y = -0.57;
   pickup.add(pickupBase);
   const baseStripe = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.1, 1.04), yellow);
@@ -849,9 +977,9 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
   nose.rotation.x = -Math.PI / 2;
   nose.position.z = -0.68;
   rocket.add(nose);
-  for (const side of [-1, 1]) {
+  for (const rocketSide of [-1, 1]) {
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.055, 0.28), yellow);
-    fin.position.set(side * 0.18, 0, 0.4);
+    fin.position.set(rocketSide * 0.18, 0, 0.4);
     rocket.add(fin);
   }
   pickup.add(rocket);
@@ -866,9 +994,11 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
   pickupHalo.rotation.x = -Math.PI / 2;
   pickupHalo.position.y = -0.07;
   pickup.add(pickupHalo);
-  const pickupBeam = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 3.3), warmGlow);
+  // Le faisceau s'arrête sous le toit du conteneur : il éclaire la travée au
+  // lieu de traverser la caisse.
+  const pickupBeam = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 2.2), warmGlow);
   pickupBeam.name = 'bazooka-pickup-beam';
-  pickupBeam.position.y = 0.98;
+  pickupBeam.position.y = 0.62;
   pickup.add(pickupBeam);
   group.add(pickup);
   group.userData = { pickup, pickupRing, pickupHalo, pickupBeam, rocket, trackDistance: 0, side };
@@ -2338,13 +2468,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   // Deux entrepôts par course, sur toutes les cartes : un à 30 % du parcours
-  // (avant le garage de vie de mi-course), un à 65 % (après). Le hangar s'ouvre
-  // sur l'**extérieur** de la chaussée : à droite en conduite à droite, à gauche
-  // à Londres et sur la Shutō C1, où tout le bâtiment est reflété.
+  // (avant le garage de vie de mi-course), un à 65 % (après). Chacun est un
+  // conteneur de 40 pieds qui prend les **deux voies extérieures** du sens de
+  // course : à droite en conduite à droite, à gauche à Londres et sur la Shutō
+  // C1, où tout le conteneur est reflété.
   const bazookaOutwardSide = driveSide === 'left' ? -1 : 1;
   const bazookaWarehouses = bazookaWarehouseEnabled
     ? bazookaTrackDistances.map((trackDistance, index) => {
-      const group = makeBazookaWarehouse(city, laneX(bazookaPickupLane), bazookaOutwardSide);
+      const group = makeBazookaContainer(city, laneX(bazookaPickupLane), bazookaOutwardSide);
       group.visible = false;
       scene.add(group);
       return {

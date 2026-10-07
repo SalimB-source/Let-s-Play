@@ -207,9 +207,9 @@ for (let run = 0; run < RUNS; run += 1) {
         world.action(redType);
       } else if (hud && steeringCooldown <= 0) {
         // Aller chercher un bonus rouge visible, sans jamais suivre un ancien
-        // pickup bleu/jaune ni les entrepôts du bazooka, qui ne sont plus des
-        // pickups de la route mais des hangars de bord de piste. Le boost au
-        // sol reste librement collectable.
+        // pickup bleu/jaune ni les conteneurs du bazooka, qui ne sont plus des
+        // pickups de la route mais des caisses posées sur la chaussée. Le boost
+        // au sol reste librement collectable.
         let best = null;
         for (const slot of pickupSlots) {
           if (!slot.visible || ![CITY_RUSH_PICKUPS.BOOST, redType].includes(slot.userData.type)) continue;
