@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quitter Vercel — guide simple (Cloudflare Pages, gratuit)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(160deg, #eef4ff 0%, #fdf3e7 100%);
+    color: #1f2937;
+    line-height: 1.6;
+    padding: 24px 16px 64px;
+  }
+  .page { max-width: 820px; margin: 0 auto; }
+  header.hero {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 8px 30px rgba(30, 64, 175, 0.10);
+    border-top: 6px solid #f6821f;
+    margin-bottom: 24px;
+  }
+  h1 { font-size: 1.7rem; color: #111827; margin-bottom: 10px; }
+  .hero p.lead { font-size: 1.05rem; color: #374151; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip {
+    background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
+    border-radius: 999px; padding: 6px 14px; font-size: 0.9rem; font-weight: 600;
+  }
+  .card {
+    background: #ffffff; border-radius: 14px; padding: 24px 26px;
+    box-shadow: 0 4px 18px rgba(17, 24, 39, 0.06);
+    margin-bottom: 20px;
+  }
+  h2 { font-size: 1.25rem; margin-bottom: 12px; color: #111827; }
+  h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #2563eb; color: #fff; font-size: 0.95rem; margin-right: 10px;
+    vertical-align: middle;
+  }
+  ol.steps { margin: 10px 0 0 22px; }
+  ol.steps li { margin-bottom: 8px; }
+  ul.ticks { margin: 10px 0 0 22px; }
+  ul.ticks li { margin-bottom: 8px; list-style: none; position: relative; padding-left: 26px; }
+  ul.ticks li::before { content: "✅"; position: absolute; left: 0; top: 0; }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px;
+    padding: 1px 7px; font-size: 0.9em; color: #b45309;
+  }
+  pre {
+    background: #111827; color: #e5e7eb; border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.9rem; margin-top: 10px;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  th { background: #f9fafb; color: #374151; font-weight: 700; }
+  tr:last-child td { border-bottom: none; }
+  .note {
+    background: #fffbeb; border-left: 4px solid #f59e0b;
+    border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 0.95rem;
+  }
+  .good {
+    background: #ecfdf5; border-left: 4px solid #10b981;
+    border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 0.95rem;
+  }
+  .checklist { list-style: none; margin: 0; padding: 0; }
+  .checklist li { margin-bottom: 10px; }
+  .checklist label {
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 12px 16px; font-weight: 600; transition: background 0.15s;
+  }
+  .checklist label:hover { background: #eff6ff; }
+  .checklist input[type="checkbox"] { width: 20px; height: 20px; accent-color: #2563eb; flex-shrink: 0; }
+  .checklist input:checked + span { text-decoration: line-through; color: #9ca3af; }
+  .checklist a { color: inherit; text-decoration: none; flex: 1; }
+  .checklist .time { color: #6b7280; font-weight: 400; font-size: 0.85rem; white-space: nowrap; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+  .col { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; }
+  .col strong { display: block; margin-bottom: 4px; color: #1d4ed8; }
+  footer { text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 32px; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .card, header.hero { box-shadow: none; border: 1px solid #e5e7eb; }
+    .checklist input { appearance: none; border: 2px solid #2563eb; border-radius: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <h1>🚀 Quitter Vercel — guide simple</h1>
+    <p class="lead">
+      Ton site fonctionnera <strong>exactement pareil</strong> sans Vercel.
+      <strong>Tout le code est déjà prêt dans ce dépôt</strong> — il te reste
+      juste à brancher ton compte Cloudflare (gratuit).
+    </p>
+    <div class="chips">
+      <span class="chip">✅ Gratuit (comme Vercel)</span>
+      <span class="chip">✅ Déploiement auto à chaque <code>git push</code></span>
+      <span class="chip">✅ Adresse en <code>….pages.dev</code></span>
+      <span class="chip">✅ Supabase continue de fonctionner</span>
+    </div>
+  </header>
+
+  <section class="card" id="checklist">
+    <h2>✅ Check-list (coche au fur et à mesure)</h2>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-step="1"><a href="#etape1"><span><strong>Étape 1</strong> — Créer un compte Cloudflare</span></a><span class="time">2 min</span></label></li>
+      <li><label><input type="checkbox" data-step="2"><a href="#etape2"><span><strong>Étape 2</strong> — Connecter le dépôt GitHub</span></a><span class="time">3 min</span></label></li>
+      <li><label><input type="checkbox" data-step="3"><a href="#etape3"><span><strong>Étape 3</strong> — Copier les 3 clés depuis Vercel</span></a><span class="time">2 min</span></label></li>
+      <li><label><input type="checkbox" data-step="4"><a href="#etape4"><span><strong>Étape 4</strong> — Vérifier que le site marche</span></a><span class="time">2 min</span></label></li>
+      <li><label><input type="checkbox" data-step="5"><a href="#etape5"><span><strong>Étape 5</strong> — Autoriser la nouvelle adresse dans Supabase</span></a><span class="time">1 min</span></label></li>
+      <li><label><input type="checkbox" data-step="6"><a href="#etape6"><span><strong>Étape 6</strong> — Supprimer le projet Vercel</span></a><span class="time">1 min</span></label></li>
+    </ul>
+  </section>
+
+  <section class="card" id="etape1">
+    <h2><span class="num">1</span>Compte Cloudflare (gratuit)</h2>
+    <ol class="steps">
+      <li>Va sur <strong>dash.cloudflare.com</strong></li>
+      <li>Clique sur <strong>« Sign up »</strong> (en haut à droite)</li>
+      <li>Crée un compte avec ton email</li>
+      <li>Valide l'email qu'on t'envoie</li>
+    </ol>
+    <div class="note">💡 Pas besoin de carte bancaire. Pas besoin de nom de domaine.<br>
+    👉 Si tu as déjà un compte Cloudflare (pour le captcha « Turnstile » à l'inscription), cette étape est déjà faite.</div>
+  </section>
+
+  <section class="card" id="etape2">
+    <h2><span class="num">2</span>Connecter ton site</h2>
+    <ol class="steps">
+      <li>Dans le menu de gauche : <strong>Workers &amp; Pages</strong></li>
+      <li>Bouton <strong>« Create application »</strong> → onglet <strong>« Pages »</strong> → <strong>« Connect to Git »</strong></li>
+      <li>Autorise Cloudflare à voir ton GitHub, choisis le dépôt <code>Let-s-Play</code></li>
+      <li>Écran « Set up builds and deployments » — remplis exactement comme ça :</li>
+    </ol>
+    <table>
+      <tr><th>Champ</th><th>Valeur</th></tr>
+      <tr><td>Production branch</td><td><code>main</code></td></tr>
+      <tr><td>Build command</td><td><code>npm run build</code></td></tr>
+      <tr><td>Build output directory</td><td><code>dist</code></td></tr>
+    </table>
+    <ol class="steps" start="5">
+      <li>Clique <strong>« Save and Deploy »</strong></li>
+      <li>Attends 1–2 minutes. Ton site sera en ligne sur une adresse du type :
+        <strong><code>https://let-s-play-xxx.pages.dev</code></strong> (note-la, tu en auras besoin)</li>
+    </ol>
+  </section>
+
+  <section class="card" id="etape3">
+    <h2><span class="num">3</span>Copier les clés <span style="color:#b45309;">(important)</span></h2>
+    <p>Ton site a besoin de 3 valeurs. <strong>Copie-les depuis Vercel</strong> (elles y sont déjà) vers Cloudflare.</p>
+    <p>🔎 <strong>Pour les trouver sur Vercel :</strong> vercel.com → ton projet « let-s-play » → <strong>Settings</strong> → <strong>Environment Variables</strong>.<br>
+    ➕ <strong>Pour les mettre sur Cloudflare :</strong> ton projet Pages → <strong>Settings</strong> → <strong>Environment variables</strong> → <strong>Add variable</strong>.</p>
+    <table>
+      <tr><th>Nom de la variable</th><th>Où la trouver</th><th>Type sur Cloudflare</th></tr>
+      <tr>
+        <td><code>VITE_SUPABASE_URL</code></td>
+        <td>Vercel (ou dashboard Supabase → Settings → API → Project URL)</td>
+        <td><strong>Production + Preview</strong>, texte normal</td>
+      </tr>
+      <tr>
+        <td><code>VITE_SUPABASE_PUBLISHABLE_KEY</code></td>
+        <td>Vercel (ou Supabase → Settings → API → anon/public key)</td>
+        <td><strong>Production + Preview</strong>, texte normal</td>
+      </tr>
+      <tr>
+        <td><code>YOUTUBE_API_KEY</code></td>
+        <td>Vercel (clé API YouTube, commence par <code>AIza</code>)</td>
+        <td><strong>Production + Preview</strong>, coche <strong>« Encrypt »</strong> (secret)</td>
+      </tr>
+    </table>
+    <div class="note">💡 Ne recopie pas <code>VITE_TURNSTILE_SITE_KEY</code> si tu ne t'en sers pas (c'est la protection anti-bot à l'inscription — si tu l'as sur Vercel, copie-la aussi, c'est une 4ᵉ variable).</div>
+    <p style="margin-top:12px;">Clique <strong>Save</strong> après chaque variable.</p>
+  </section>
+
+  <section class="card" id="etape4">
+    <h2><span class="num">4</span>Vérifier que tout marche</h2>
+    <p>Ouvre <code>https://ton-site.pages.dev</code> et teste :</p>
+    <ul class="ticks">
+      <li><strong>La page d'accueil s'affiche</strong></li>
+      <li><strong>Ouvre directement</strong> <code>https://ton-site.pages.dev/auth</code> — la page de connexion doit s'afficher (pas une erreur 404)</li>
+      <li><strong>Connecte-toi</strong> avec ton compte</li>
+      <li><strong>Le micro/caméra</strong> dans un appel vocal/vidéo te demande la permission normalement</li>
+    </ul>
+  </section>
+
+  <section class="card" id="etape5">
+    <h2><span class="num">5</span>Dire à Supabase la nouvelle adresse</h2>
+    <p>Supabase ne sait pas encore que ton site a déménagé.</p>
+    <ol class="steps">
+      <li>Va sur <strong>supabase.com</strong> → ton projet → <strong>Authentication</strong> (menu gauche)</li>
+      <li><strong>URL Configuration</strong></li>
+      <li>Dans <strong>Redirect URLs</strong>, ajoute :</li>
+    </ol>
+    <pre><code>https://ton-site.pages.dev/**</code></pre>
+    <p style="margin-top:8px;">(remplace par ta vraie adresse <code>pages.dev</code>)</p>
+    <ol class="steps" start="4">
+      <li><strong>Save</strong></li>
+    </ol>
+    <div class="note">💡 Si tu as un nom de domaine perso, ajoute-le ici aussi plus tard.</div>
+  </section>
+
+  <section class="card" id="etape6">
+    <h2><span class="num">6</span>Supprimer Vercel</h2>
+    <p>Quand les étapes 1–5 sont validées :</p>
+    <ol class="steps">
+      <li>Va sur <strong>vercel.com</strong> → ton projet « let-s-play »</li>
+      <li><strong>Settings</strong> → <strong>General</strong> → tout en bas : <strong>« Delete this project »</strong></li>
+      <li>Confirme.</li>
+    </ol>
+    <div class="good">🎉 <strong>C'est fini.</strong> Vercel est débranché, ton site tourne sur Cloudflare.</div>
+  </section>
+
+  <section class="card">
+    <h2>Et après ?</h2>
+    <div class="cols">
+      <div class="col"><strong>🔄 Déploiement auto</strong>Chaque modification poussée sur GitHub (<code>git push</code>) déploie automatiquement le site, comme avant avec Vercel.</div>
+      <div class="col"><strong>👀 Aperçu par PR</strong>Chaque pull request aura son propre lien de test (aperçu).</div>
+      <div class="col"><strong>🪞 Miroir de secours</strong>GitHub Pages (<code>salimb-source.github.io/Let-s-Play/</code>) continue de tourner en parallèle — tu peux l'ignorer.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>🩹 Si quelque chose ne marche pas</h2>
+    <table>
+      <tr><th>Symptôme</th><th>Cause</th><th>Solution</th></tr>
+      <tr><td>Page blanche / « démo » partout</td><td>Les clés Supabase ne sont pas copiées</td><td>Refais l'étape 3</td></tr>
+      <tr><td>La connexion ne marche pas</td><td>L'adresse n'est pas autorisée dans Supabase</td><td>Refais l'étape 5</td></tr>
+      <tr><td>Le badge « live » YouTube ne s'affiche pas</td><td><code>YOUTUBE_API_KEY</code> manquante</td><td>Étape 3, coche bien « Encrypt »</td></tr>
+      <tr><td>Le micro ne marche pas dans les appels</td><td>Ne touche <strong>rien</strong></td><td>Ne modifie jamais le fichier <code>public/_headers</code> sans demander</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>🧪 Tester sur ton ordinateur avant (optionnel)</h2>
+    <pre><code>npm install
+npm run build
+npx wrangler pages dev dist</code></pre>
+    <p style="margin-top:8px;">Puis ouvre <strong>http://localhost:8788</strong> dans ton navigateur.</p>
+  </section>
+
+  <section class="card">
+    <h2>📁 Fichiers ajoutés dans ce dépôt (pour info)</h2>
+    <table>
+      <tr><th>Fichier</th><th>À quoi il sert</th></tr>
+      <tr><td><code>functions/api/youtube-live.js</code></td><td>Le badge « live » YouTube (avant : <code>api/youtube-live.js</code> sur Vercel)</td></tr>
+      <tr><td><code>functions/[[path]].js</code></td><td>Sert l'appli sur les liens profonds (<code>/auth</code>, <code>/news/…</code>)</td></tr>
+      <tr><td><code>public/_headers</code></td><td>Les mêmes protections de sécurité que <code>vercel.json</code></td></tr>
+      <tr><td><code>public/_routes.json</code></td><td>Dit à Cloudflare quelles routes passent par les fonctions</td></tr>
+      <tr><td><code>vite.config.js</code></td><td>Adapté automatiquement (rien à faire)</td></tr>
+    </table>
+    <p style="margin-top:12px;"><code>vercel.json</code> et <code>api/</code> restent en place tant que Vercel tourne — ils seront inutiles après la migration, tu pourras les supprimer.</p>
+  </section>
+
+  <footer>Guide de migration Let's Play — Vercel → Cloudflare Pages · <span id="saved"></span></footer>
+</div>
+
+<script>
+  // Les cases cochées sont mémorisées dans le navigateur (localStorage).
+  const boxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+  const saved = document.getElementById('saved');
+  boxes.forEach((box) => {
+    box.checked = localStorage.getItem('migration-step-' + box.dataset.step) === '1';
+    box.addEventListener('change', () => {
+      localStorage.setItem('migration-step-' + box.dataset.step, box.checked ? '1' : '0');
+      const done = [...boxes].filter((b) => b.checked).length;
+      saved.textContent = done === boxes.length ? '— toutes les étapes sont faites ✅' : '';
+    });
+  });
+  if ([...boxes].every((b) => b.checked)) saved.textContent = '— toutes les étapes sont faites ✅';
+</script>
+</body>
+</html>
