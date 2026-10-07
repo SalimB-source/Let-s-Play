@@ -254,13 +254,6 @@ const EMPTY_HUD = {
   suvCharges: [],
 };
 
-// Bannière du point de passage du dernier tour : on recroise le portique, mais
-// la course n'est pas finie — on dit combien de boucles il reste.
-function checkpointKicker(remaining) {
-  const loops = Math.max(1, Math.round((Number(remaining) || 0) / CITY_RUSH_LAP_LENGTH));
-  return loops > 1 ? `DERNIER TOUR · ENCORE ${loops} BOUCLES` : 'DERNIER TOUR · DERNIÈRE BOUCLE';
-}
-
 function readBests() {
   try {
     const value = JSON.parse(window.localStorage.getItem(BEST_KEY) || '{}');
@@ -290,10 +283,6 @@ function formatTime(seconds = 0) {
 function formatSprintSeconds(seconds = 0) {
   const value = Math.max(0, Number(seconds) || 0);
   return Number.isInteger(value) ? String(value) : value.toFixed(1).replace('.', ',');
-}
-function formatSeconds(seconds, fallback = 0) {
-  const value = Number.isFinite(Number(seconds)) ? Math.max(0, Number(seconds)) : fallback;
-  return `${value.toFixed(1).replace('.', ',')} s`;
 }
 function ordinal(place) {
   return place === 1 ? '1er' : `${place}e`;
@@ -371,7 +360,6 @@ export default function ViceCityRushPage() {
   // tant que l'instantané du compte (ou du visiteur) n'a pas été appliqué.
   const [loadedProgressUserId, setLoadedProgressUserId] = useState(null);
   const [toast, setToast] = useState(null);
-  const [lapBanner, setLapBanner] = useState(null);
   const [worldError, setWorldError] = useState('');
   const [soundOn, setSoundOn] = useState(readSoundPref);
   const audioRef = useRef(null);
@@ -385,13 +373,11 @@ export default function ViceCityRushPage() {
   // peut pas être écrasée par l'instantané initial (même file que Mirage Rush).
   const progressSaveQueueRef = useRef(Promise.resolve());
   const activeRaceSessionRef = useRef(0);
-  const radioFiredRef = useRef([]);
   const finishedRaceSessionRef = useRef(-1);
   const actionsRef = useRef(null);
   const shellRef = useRef(null);
   const phaseRef = useRef(phase);
   const toastTimerRef = useRef(null);
-  const lapTimerRef = useRef(null);
   const startRaceRef = useRef(null);
   // Phase à rendre à « REPRENDRE » quand c'est le navigateur (Échap, geste
   // « retour » d'Android) qui a refermé le plein écran : une pause décidée par
@@ -633,15 +619,6 @@ export default function ViceCityRushPage() {
   // plus dangereuses de la chaussée, et elle se paie d'un choc frontal.
   const oncomingBonusPercent = Math.max(0, Math.round(((Number(hud.oncomingBonus) || 1) - 1) * 100));
   const oncomingCharged = oncomingBonusPercent > 0;
-  const statusTone = hud.stunLeft > 0
-    ? 'is-stunned'
-    : hud.trafficImpactLeft > 0
-      ? 'is-impact'
-      : hud.boostLeft > 0
-        ? 'is-boost'
-        : hud.slowLeft > 0
-          ? 'is-slow'
-          : 'is-oncoming';
   const bestTime = bests[cityId] || null;
   const isRaceWon = Boolean(!storyMode && result && result.rank === 1 && !result.destroyed && !result.timedOut);
   const finalStoryVictory = Boolean(storyMode && result?.objectiveMet && storyChapter >= CITY_RUSH_STORY_CHAPTER_COUNT);
@@ -748,16 +725,6 @@ export default function ViceCityRushPage() {
   const resumeRace = useCallback(() => setPhase(resumePhaseRef.current || 'playing'), []);
   nativeExitRef.current = pauseRace;
 
-  // Radio d’histoire : la ligne de départ part à l’extinction des feux, la
-  // ligne de mi-course au passage des 50 %.
-  useEffect(() => {
-    if (phase === 'playing' && storyMode) fireStoryRadio('start');
-  }, [phase, runId, storyMode]);
-  useEffect(() => {
-    if (phase !== 'playing' || !storyMode) return;
-    if ((hud.progress || 0) >= 0.5) fireStoryRadio('half');
-  }, [phase, storyMode, hud.progress]);
-
   useEffect(() => {
     if (phase !== 'countdown') return undefined;
     if (countdown > 0) {
@@ -801,10 +768,13 @@ export default function ViceCityRushPage() {
 
   useEffect(() => () => {
     window.clearTimeout(toastTimerRef.current);
-    window.clearTimeout(lapTimerRef.current);
   }, []);
 
+  // Retour des menus : le garage, une course verrouillée ou la fin d'un
+  // chapitre répondent encore par une fenêtre de message. En course, non : le
+  // pilote roule, et rien ne vient se poser sur la route (voir `effectMessage`).
   function showToast(message, tone = 'neutral') {
+    if (phaseRef.current === 'playing') return;
     window.clearTimeout(toastTimerRef.current);
     setToast({ message, tone, nonce: Date.now() });
     toastTimerRef.current = window.setTimeout(() => setToast(null), 2300);
@@ -814,11 +784,6 @@ export default function ViceCityRushPage() {
     const career = careerFromSave(saved);
     careerProgressRef.current = career;
     setCareerProgress(career);
-  }
-  function showLapBanner(info) {
-    window.clearTimeout(lapTimerRef.current);
-    setLapBanner({ ...info, nonce: Date.now() });
-    lapTimerRef.current = window.setTimeout(() => setLapBanner(null), info.final ? 2300 : 1800);
   }
   function startRace({ carId: requestedCarId = null, cityId: requestedCityId = null } = {}) {
     // Compte en cours de chargement : la course partirait sur la progression
@@ -849,11 +814,12 @@ export default function ViceCityRushPage() {
     activeRaceSessionRef.current += 1;
     setWorldError('');
     setResult(null);
-    radioFiredRef.current = [];
     setStoryAlert(null);
     setHud(EMPTY_HUD);
-    setLapBanner(null);
-    window.clearTimeout(lapTimerRef.current);
+    // Le message du garage ne suit pas la voiture en piste : le départ efface
+    // le dernier mot des menus, sinon il réapparaîtrait à l'arrivée.
+    setToast(null);
+    window.clearTimeout(toastTimerRef.current);
     setCountdown(3);
     setRunId((value) => value + 1);
     // Clic sur « LANCER » (« REJOUER », « COURSE SUIVANTE », « CHAPITRE SUIVANT ») ou touche Entrée :
@@ -903,7 +869,6 @@ export default function ViceCityRushPage() {
     setCityId(chapter.city);
     setResult(null);
     setBriefingDone(false);
-    radioFiredRef.current = [];
     setStoryAlert(null);
     setPhase('cinematic');
   }
@@ -1041,190 +1006,17 @@ export default function ViceCityRushPage() {
     }
   }
 
-  // Radio d’histoire : une ligne par déclencheur et par course, dans la voix
-  // du casting BD — les mêmes voix que les bulles.
-  function fireStoryRadio(trigger) {
-    if (!storyMode || !currentStoryRace || phaseRef.current !== 'playing') return;
-    const fired = radioFiredRef.current;
-    const line = (currentStoryRace.radio || []).find((entry, index) => entry.on === trigger && !fired.includes(`${trigger}:${index}`));
-    if (!line) return;
-    fired.push(`${trigger}:${currentStoryRace.radio.indexOf(line)}`);
-    const voice = CITY_RUSH_STORY_CAST[line.who] || CITY_RUSH_STORY_CAST.narrator;
-    showToast(`${voice.icon} ${voice.name} — ${line.text}`, 'radio');
-  }
-
+  // ── Retours du moteur 3D ────────────────────────────────────────────────
+  // La course est muette : plus aucune fenêtre de message ne raconte les
+  // chocs, les bonus, les herses ou les mouvements de police. Le moteur 3D
+  // garde ses propres signaux — fumée, éclats, halo rouge du viseur, sirènes,
+  // étoiles de recherche, carte OBJECTIF du HUD — et la page ne retient que ce
+  // qui change l'affichage du scénario.
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'wanted-level') {
-      const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Number(effect.stars) || 0));
-      if (effect.reason === 'police-shot') {
-        showToast(`🚨 TIR SUR LA POLICE · ${stars} ÉTOILES · LA POURSUITE S’INTENSIFIE.`, 'pistol');
-      }
-      else showToast(`🚨 NIVEAU DE RECHERCHE · ${stars} ÉTOILE${stars > 1 ? 'S' : ''} SUR ${CITY_RUSH_WANTED_MAX_STARS}`, 'pistol');
-      if (stars >= 3) fireStoryRadio('wanted');
-    }
-    else if (effect.type === 'police-oncoming-turnaround') {
-      const count = Math.max(1, Number(effect.count) || 1);
-      showToast(`🚨 ${count} PATROUILLE${count > 1 ? 'S' : ''} EN FACE · DEMI-TOUR EN COURS (${Number(effect.duration).toFixed(1)} S).`, 'pistol');
-    }
-    else if (effect.type === 'pistol') showToast(`AK-47 · ${effect.target} TOUCHÉ · −1 CARRÉ · ${effect.health}/${effect.maxHealth} CARRÉS DE VIE.`, 'pistol');
-    else if (effect.type === 'pistol-hit-player') {
-      showToast(`AK-47 · ${effect.attacker} TE TOUCHE · −1 CARRÉ · ${effect.health}/${effect.maxHealth} CARRÉS.`, 'pistol');
-      fireStoryRadio('hit');
-    }
-    else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
-    else if (effect.type === 'traffic-impact') {
-      // Chaque choc contre une voiture coûte un carré de vie ; le répit de choc
-      // (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) fait qu'un carambolage en chaîne
-      // n'est facturé qu'une fois, et le bandeau le dit alors franchement.
-      const cost = effect.isPlayer
-        ? (effect.healthLost > 0
-          ? ` · −1 CARRÉ (${effect.health}/${effect.maxHealth})`
-          : ' · RÉPIT DE CHOC · PAS DE CARRÉ')
-        : '';
-      showToast(
-        effect.oncoming
-          ? effect.policeContact
-            ? effect.isSuv
-              ? `CHOC AVEC LE SUV D’INTERCEPTION · IL FAIT DEMI-TOUR ET TE PREND EN CHASSE${cost}.`
-              : `CONTACT POLICIER · LA PATROUILLE EN FACE FAIT DEMI-TOUR${cost}.`
-            : `CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À ${effect.pushDirection === 'right' ? 'DROITE' : 'GAUCHE'} · BONUS DE CONTRESENS PERDU${cost}.`
-          : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI${cost}.`,
-        effect.policeContact ? 'pistol' : 'slow',
-      );
-    }
-    else if (effect.type === 'police-suv-charge') {
-      // À cinq étoiles, deux SUV arrivent de face et foncent sur le pilote : ils
-      // visent sa voie à portée de verrou et le contact les retourne.
-      const distance = Math.max(0, Math.round(Number(effect.distance) || 0));
-      showToast(`🚨 SUV D’INTERCEPTION EN CHARGE · ${distance} M · IL VISE TA VOIE, CHANGE DE FILE.`, 'pistol');
-    }
-    else if (effect.type === 'police-spike-block') {
-      // La herse des quatre étoiles : les voitures se rangent en travers puis
-      // déroulent le tapis voie par voie — les voies non couvertes restent une
-      // échappatoire, comme le contresens et les tremplins.
-      const lanes = Math.max(1, Number(effect.lanes) || 0);
-      const lanesLabel = `${lanes} VOIE${lanes > 1 ? 'S' : ''}`;
-      if (effect.stage === 'deploy') {
-        showToast(`🚧 HERSE · LES BLEUS SE RANGENT EN TRAVERS À ${Math.round(Number(effect.distance) || 0)} M SUR ${lanesLabel}.`, 'pistol');
-      } else if (effect.stage === 'lay') {
-        showToast(`🚧 HERSE EN COURS DE POSE · ${lanesLabel} DU SENS DE COURSE.`, 'pistol');
-      } else if (effect.stage === 'set') {
-        showToast(effect.covered
-          ? `🚧 HERSE POSÉE · TA VOIE EST COUVERTE · DÉCALE-TOI, SAUTE OU PASSE EN CONTRESENS.`
-          : `🚧 HERSE POSÉE · ${lanesLabel} COUVERTES · TA VOIE RESTE OUVERTE.`, 'pistol');
-      } else if (effect.stage === 'pack') {
-        showToast('🚧 HERSE RANGÉE · LA ROUTE SE LIBÈRE.', 'neutral');
-      }
-    }
-    else if (effect.type === 'police-spike-hit') {
-      // Crevaison : un carré de coque et une longue remise en vitesse, sauf si
-      // le répit de choc a déjà payé le carambolage.
-      const loss = effect.healthLost > 0
-        ? `−${effect.healthLost} CARRÉ (${effect.health}/${effect.maxHealth})`
-        : 'RÉPIT DE CHOC · PAS DE CARRÉ';
-      showToast(`💥 HERSE · PNEUS CREVÉS · ${loss} · VITESSE EN BERNE ${Number(effect.slowSeconds || 0).toFixed(1)} S.`, 'slow');
-      fireStoryRadio('hit');
-    }
-    else if (effect.type === 'story-warning') {
-      setStoryAlert('warn');
-      fireStoryRadio('warn');
-    }
-    else if (effect.type === 'story-breakdown') {
-      setStoryAlert('breakdown');
-      fireStoryRadio('breakdown');
-    }
-    else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
-    else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
-    else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ L’AK-47 (ROUGE)${effect.ready ? ' · IL EST CHARGÉ' : ''}.`, 'pistol');
-    else if (effect.type === 'police-aim') showToast(`🎯 ${effect.police} DANS TON DOS · DÉCALE-TOI OU ELLE TIRE.`, 'pistol');
-    else if (effect.type === 'police-rally') showToast(
-      `${effect.targetId === 'player'
-        ? (effect.sighted
-          ? `🚨 ${effect.police} T’A VU · ELLE TE PREND EN CHASSE.`
-          : `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.`)
-        : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`}${effect.healthLost > 0 ? ` CHOC · −1 CARRÉ (${effect.health}/${effect.maxHealth}).` : ''}`,
-      'pistol',
-    );
-    else if (effect.type === 'police-hit' && effect.source === 'pistol') {
-      showToast(`AK-47 · ${effect.police} TOUCHÉE · −1 CARRÉ · ${effect.health}/${effect.maxHealth} CARRÉS.`, 'pistol');
-    }
-    else if (effect.type === 'police-hit' && effect.source === 'collision') {
-      // Le carambolage abîme les deux coques : la berline perd un point, le
-      // pilote un carré, ou deux contre un SUV — sauf pendant le répit de choc.
-      showToast(
-        effect.playerHealthLost > 0
-          ? `IMPACT À L’ACCÉLÉRATION · ${effect.police} PERD 1 POINT · TA COQUE PERD ${effect.playerHealthLost} CARRÉ${effect.playerHealthLost > 1 ? 'S' : ''} (${effect.playerHealth}/${effect.playerHealthMax}).`
-          : `IMPACT · ${effect.police} PERD 1 POINT · RÉPIT DE CHOC · TA COQUE EST INTACTE.`,
-        'pistol',
-      );
-    }
-    else if (effect.type === 'mini-garage-used') {
-      const remaining = Math.max(0, Number(effect.remaining) || 0);
-      const restored = Math.max(0, Number(effect.healthRestored) || 0);
-      const repair = restored > 0 ? `+${restored} POINT${restored === 1 ? '' : 'S'} DE VIE` : 'COQUE INTACTE';
-      const previousStars = Math.max(0, Number(effect.previousStars) || 0);
-      const currentStars = Math.max(0, Number(effect.stars) || 0);
-      const wantedDrop = previousStars > 0
-        ? `${previousStars} → ${currentStars} ÉTOILE${currentStars > 1 ? 'S' : ''} · `
-        : '';
-      const dropped = Number(effect.pursuersReleased) > 0
-        ? ` · LA POLICE ABANDONNE LA POURSUITE (${Number(effect.pursuersReleased)})`
-        : currentStars > 0 ? ' · LA POURSUITE CONTINUE' : '';
-      showToast(`🛠 MINI-GARAGE · ${wantedDrop}${repair}${dropped} · ${remaining} GARAGE${remaining === 1 ? '' : 'S'} RESTANT${remaining === 1 ? '' : 'S'}.`, 'boost');
-    }
-    else if (effect.type === 'police-destroyed') showToast(effect.byPlayer
-      ? `💥 ${effect.police} DÉTRUITE · +200 PTS · ${effect.wantedLevel || 0} ÉTOILES${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`
-      : `💥 ${effect.police} DÉTRUITE${effect.reinforcementScheduled ? ' · RENFORT EN ROUTE.' : ' · ELLE QUITTE LA COURSE.'}`, 'radio');
-    else if (effect.type === 'police-retaliation') showToast(`🚨 RENFORT · ${effect.police} PREND ${effect.target} EN CHASSE.`, 'pistol');
-    else if (effect.type === 'racer-wrecked') showToast(`💥 ${effect.target} EST HORS COURSE.`, 'radio');
-    else if (effect.type === 'police-reinforcement') showToast(`🚨 RENFORT · ${effect.police} TE PREND EN CHASSE.`, 'pistol');
-    else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
-      const wall = effect.walls > 1 ? 'PAROIS DES DEUX CÔTÉS' : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;
-      showToast(`${effect.name} · ${effect.open} VOIES OUVERTES SUR 4 · ${wall}.`, 'neutral');
-    }
-    else if (effect.type === 'sprint-timeout') showToast(`TEMPS ÉCOULÉ · ${effect.checkpoints} / ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS.`, 'slow');
-    else if (effect.type === 'tunnel-scrape') showToast('PAROI RACLÉE · LA VOIE EST MURÉE SOUS LE TUNNEL · RALENTI.', 'slow');
-    else if (effect.type === 'ramp-jump') showToast(`TREMPLIN · SAUT ${Math.round(effect.distance)} M !`, 'boost');
-    else if (effect.type === 'jump-overpass') showToast('SAUT PAR-DESSUS LE TRAFIC !', 'boost');
-    else if (effect.type === 'oncoming-bonus') {
-      if (effect.stage === 'charging') showToast('CONTRESENS · BONUS DE VITESSE EN CHARGE · TIENS LA VOIE INVERSE.', 'boost');
-      else if (effect.stage === 'full') showToast(`CONTRESENS · +${Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % PLEIN GAZ !`, 'boost');
-      else if (effect.stage === 'lost') showToast('CHOC FRONTAL · BONUS DE CONTRESENS PERDU.', 'slow');
-    }
+    if (effect.type === 'story-warning') setStoryAlert('warn');
+    else if (effect.type === 'story-breakdown') setStoryAlert('breakdown');
   }
-
-  const onLap = (info) => {
-    if (!info || (!info.sprint && info.lap > info.laps)) return;
-    showLapBanner(info);
-    if (info.sprint) {
-      if (info.remaining <= 2) fireStoryRadio('finallap');
-    } else if (info.final) fireStoryRadio('finallap');
-  };
-  const onPowerPickup = (pickup) => {
-    if (pickup.type === CITY_RUSH_PICKUPS.BOOST) {
-      showToast(`PAD TURBO · ACCÉLÉRATION PENDANT ${formatSeconds(CITY_RUSH_TRACK_BOOST_DURATION)}.`, 'boost');
-      return;
-    }
-    if (pickup.type === CITY_RUSH_PICKUPS.HEALTH) {
-      const restored = Math.max(1, Number(pickup.healthRestored) || CITY_RUSH_HEALTH_PICKUP_RESTORE);
-      showToast(`PLUS ROUGE · +${restored} CARRÉ DE VIE · ${pickup.health}/${pickup.maxHealth}.`, 'pistol');
-      return;
-    }
-    const rule = CITY_RUSH_POWER_RULES[pickup.type];
-    if (!rule) return;
-    if (pickup.type === CITY_RUSH_POWERS.PISTOL) {
-      showToast(`AK-47 · CHARGEUR PLEIN · ${pickup.progress || CITY_RUSH_PISTOL_AMMO_PER_PICKUP}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} BALLES`, pickup.type);
-      return;
-    }
-    const progress = Math.min(rule.chargeCost, pickup.progress || 0);
-    const message = pickup.newlyReady
-      ? `${rule.shortName.toUpperCase()} CHARGÉ · TOUCHE ${rule.key}`
-      : pickup.ready
-        ? `${rule.shortName.toUpperCase()} · JAUGE PLEINE (${progress}/${rule.chargeCost})`
-        : `${rule.shortName.toUpperCase()} · CHARGEMENT ${progress}/${rule.chargeCost}`;
-    showToast(message, pickup.type);
-  };
 
   // Les vignettes sont les actions principales : mode → parcours → voiture.
   // Le dernier choix lance directement le compte à rebours, sans bouton séparé.
@@ -1338,8 +1130,15 @@ export default function ViceCityRushPage() {
             className={`city-rush-viewport${phase === 'intro' ? ' is-intro' : ''}${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}${policeAim > 0 && phase === 'playing' ? ' is-aimed' : ''}`}
             style={policeAim > 0 ? { '--cr-aim': policeAim.toFixed(2) } : undefined}
           >
-            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onPickup={onPowerPickup} onEffect={effectMessage} onLap={onLap} audioRef={audioRef} />
+            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
+
+            {/* Fenêtre de message des menus (garage, course verrouillée, fin
+                d’histoire). Elle vit hors du HUD de course : la route reste nue
+                tant que la voiture roule. */}
+            {phase !== 'playing' && toast && (
+              <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>
+            )}
 
             {phase === 'playing' && (
               /* HUD de course en zones : chaque élément vit dans sa propre case de
@@ -1401,33 +1200,10 @@ export default function ViceCityRushPage() {
                   )}
                 </div>
               )}
-              {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0 || oncomingCharged) && (
-                <div className={`city-rush-status-pill ${statusTone}`}>
-                  {hud.stunLeft > 0
-                    ? `ÉPAVE · ${hud.stunLeft.toFixed(1)} s`
-                    : hud.trafficImpactLeft > 0
-                      ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s`
-                      : hud.boostLeft > 0
-                        ? `TURBO · ${hud.boostLeft.toFixed(1)} s`
-                        : hud.slowLeft > 0
-                          ? `RALENTI · ${hud.slowLeft.toFixed(1)} s`
-                          : `CONTRESENS · +${oncomingBonusPercent} %`}
-                </div>
-              )}
-              {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
-              {lapBanner && (
-                <div className={`city-rush-lap-banner${lapBanner.final ? ' is-final' : ''}`} key={lapBanner.nonce} role="status" aria-live="polite">
-                  {lapBanner.sprint ? <>
-                  <span>{`CHECKPOINT ${lapBanner.checkpoint} / ${lapBanner.checkpoints}`}</span>
-                  <strong>+{lapBanner.timeBonus} S</strong>
-                  <small>{lapBanner.remaining > 1 ? `Encore ${lapBanner.remaining} checkpoints · ${formatTime(lapBanner.elapsed)}` : 'Prochain checkpoint : l’arrivée !'}</small>
-                  </> : <>
-                  <span>{lapBanner.checkpoint ? checkpointKicker(lapBanner.remaining) : lapBanner.final ? 'LIGNE FRANCHIE · DERNIER TOUR' : `LIGNE FRANCHIE · TOUR ${lapBanner.lap} / ${lapBanner.laps}`}</span>
-                  <strong>{lapBanner.checkpoint ? `PLUS QUE ${lapBanner.remaining} M` : lapBanner.final ? 'FINAL LAP' : `LAP ${lapBanner.lap}`}</strong>
-                  <small>{lapBanner.checkpoint ? 'Ce n’est pas encore l’arrivée · tout donner.' : lapBanner.final ? `Plus que ${lapBanner.remaining} m · tout donner.` : `${(lapBanner.laps - lapBanner.lap + 1)} tours restants · ${formatTime(lapBanner.elapsed)}`}</small>
-                  </>}
-                </div>
-              )}
+              {/* Rien d’autre ici : ni fenêtre de message, ni bandeau de tour,
+                  ni pastille d’état. Le tour, les checkpoints, le chrono, le
+                  butin et la vie se lisent dans leurs cartes du HUD ; le reste
+                  (chocs, herses, bonus, police) se voit dans la scène. */}
                 </div>
 
                 <div className="city-rush-hud-zone is-top-right">
@@ -1912,12 +1688,17 @@ export default function ViceCityRushPage() {
                   </>
                 )}
 
+                {/* Rappels d'écran : les touches sur ordinateur, les gestes au
+                    doigt (la feuille de style montre l'un ou l'autre selon le
+                    pointeur). */}
                 <div className="city-rush-intro-foot">
-                  <span>← → / Q D · VOIES (MAINTENIR)</span>
-                  <span>A / Z / R · POUVOIRS · PAD VERT : TURBO</span>
+                  <span className="is-key-hint">← → / Q D · VOIES (MAINTENIR)</span>
+                  <span className="is-touch-hint">GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE</span>
+                  <span className="is-key-hint">A / Z / R · POUVOIRS · PAD VERT : TURBO</span>
+                  <span className="is-touch-hint">BOUTON ROUGE · AK-47 · PAD VERT : TURBO</span>
                   <span>{currentLaps} TOURS · {currentDistance} M</span>
-                  <span>M · SON</span>
-                  <span>F · PLEIN ÉCRAN</span>
+                  <span className="is-key-hint">M · SON</span>
+                  <span className="is-key-hint">F · PLEIN ÉCRAN</span>
                 </div>
               </div>
             )}
