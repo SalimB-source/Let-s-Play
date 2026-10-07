@@ -939,6 +939,28 @@ et le dernier tour durait 21 s.
   l'accord de « réparée » que si la coque a repris des points (`garageRepair`,
   bande-son).
 
+  **Le bazooka se ramasse deux fois par course, sur toutes les cartes.** Deux
+  entrepôts jaunes bordent la piste, posés à **30 % puis à 65 % de la distance
+  totale** (`CITY_RUSH_BAZOOKA_PICKUP_SHARES`, `cityRushBazookaTrackDistances`) :
+  le premier se dresse **avant** la porte de mi-course (50 %), le second
+  **après**, quel que soit le nombre de tours et quelle que soit la carte — les
+  repères portent sur le parcours entier, pas sur une boucle. Chacun s'ouvre sur
+  la **voie extérieure du sens de course** (la plus à droite en conduite à
+  droite, la plus à gauche à Londres et sur la Shutō C1, où le hangar est
+  **reflété** — `bazookaOutwardSide`, `makeBazookaWarehouse(…, side)` — pour
+  rester sur le bas-côté au lieu de s'étaler sur les voies du contresens). Une
+  traversée rend `CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP` = **2 roquettes** ; le
+  second entrepôt réapprovisionne, chaque hangar ne servant **qu'une fois par
+  course** et un nouveau départ réarmant les deux. Le HUD porte le compte
+  (`bazookaPickupsTaken`, `bazookaPickupsTotal`) et la distance du prochain
+  repère (`bazookaNextDistance`, `bazookaWarehouseGap` pour les appelants
+  historiques) ; `X` ou le bouton jaune tire droit devant — la roquette
+  verrouille la première patrouille de la voie et son souffle balaie **deux
+  cases** (`CITY_RUSH_BAZOOKA_BLAST_CELLS`). Le mode Histoire garde la main : le
+  **Sprint** (solo sans arme) et les chapitres qui coupent les armes
+  (`weaponsEnabled: false`), la police (`policeEnabled: false`) ou le bazooka
+  (`bazookaEnabled: false`) n'ont aucun entrepôt.
+
   **Les rivaux aussi se font pourchasser par la police.** Deux voitures
   supplémentaires sont gardées en réserve, une par rival ; **trois motifs**
   ouvrent son dossier : un tir réussi sur une voiture de police — escouade ou
@@ -1597,6 +1619,7 @@ npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + c
 npm run check:city-rush-steer-hold # le maintien des flèches : une pression = un écart, le maintien enchaîne (délai 0,26 s puis 0,18 s) jusqu'au bord de la chaussée, la relâche / la pause / la perte de la fenêtre arrêtent tout, Q et D alignés, répétition native ignorée
 npm run check:city-rush-quiet    # le choix du mode au doigt (empilé, sans carrousel, avant l'Histoire) et la course muette (la vraie page en jsdom, moteur doublé)
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
+npm run check:city-rush-bazooka  # les deux entrepôts du bazooka sur les huit cartes : repères à 30 % et 65 % encadrant le garage de vie, ramassages et réapprovisionnement, hangar reflété hors de la chaussée en conduite à gauche, roquette droite, impact police, reset
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide

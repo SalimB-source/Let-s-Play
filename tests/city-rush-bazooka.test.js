@@ -6,11 +6,14 @@ import {
   CITY_RUSH_BAZOOKA_BLAST_CELLS,
   CITY_RUSH_BAZOOKA_PICKUP_SHARES,
   CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
+  CITY_RUSH_COURSES,
   CITY_RUSH_LANE_WIDTH,
   cityRushBazookaBlastContains,
   cityRushBazookaPickupCanUse,
   cityRushBazookaTarget,
   cityRushBazookaTrackDistances,
+  cityRushDriveSide,
+  cityRushLaneConfig,
   cityRushMiniGarageMidRaceDistance,
   cityRushRaceDistance,
 } from '../src/games/cityRushRules.js';
@@ -90,6 +93,35 @@ test('le ramassage demande une traversée de l’entrée sur la voie extérieure
   assert.equal(cityRushBazookaPickupCanUse({ ...crossing, used: true }), false);
   assert.equal(cityRushBazookaPickupCanUse({ ...crossing, previousDistance: 101, nextDistance: 99 }), false);
   assert.equal(cityRushBazookaPickupCanUse({ ...crossing, previousDistance: 90, nextDistance: 94 }), false);
+});
+
+test('le hangar se reflète hors de la chaussée en conduite à gauche', () => {
+  // Le hangar s'étend toujours vers l'extérieur du sens de course : sans ce
+  // miroir, il recouvrirait les voies du contresens à Londres et sur la Shutō.
+  assert.match(worldSource, /function makeBazookaWarehouse\(city, pickupLaneX, side = 1\)/);
+  assert.match(worldSource, /const bazookaOutwardSide = driveSide === 'left' \? -1 : 1/);
+  assert.match(worldSource, /makeBazookaWarehouse\(city, laneX\(bazookaPickupLane\), bazookaOutwardSide\)/);
+  assert.match(worldSource, /const out = \(offset\) => pickupLaneX \+ side \* offset/);
+  assert.match(worldSource, /addBox\('bazooka-warehouse-side-wall', \[0\.34, 4\.3, 22\.6\], \[outerX/);
+  // Les sept parcours à trafic en face suivent leur côté de conduite ; le Ring,
+  // à sens unique, garde l'extérieur droit comme le reste du jeu.
+  for (const course of CITY_RUSH_COURSES) {
+    const leftHand = cityRushDriveSide(course) === 'left';
+    const laneConfig = cityRushLaneConfig(course);
+    const pickupLane = leftHand ? laneConfig.forwardLanes[0] : laneConfig.forwardLanes.at(-1);
+    const pickupLaneX = laneConfig.laneX(pickupLane);
+    const side = leftHand ? -1 : 1;
+    // La voie de ramassage est bien la plus à l'extérieur du sens de course.
+    assert.ok(
+      laneConfig.forwardLanes.every((lane) => side * laneConfig.laneX(lane) <= side * pickupLaneX + 1e-9),
+      `voie extérieure de ${course.name}`,
+    );
+    assert.equal(side, leftHand ? -1 : 1);
+  }
+  assert.deepEqual(
+    CITY_RUSH_COURSES.filter((course) => cityRushDriveSide(course) === 'left').map((course) => course.id).sort(),
+    ['london', 'tokyo'],
+  );
 });
 
 test('deux entrepôts sur toutes les cartes, reliés à l’inventaire, au tir direct et au bouton tactile jaune', () => {

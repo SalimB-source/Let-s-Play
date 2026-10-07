@@ -75,6 +75,7 @@ const {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
   cityRushBazookaTrackDistances,
+  cityRushDriveSide,
   cityRushLaneConfig,
   cityRushRaceDistance,
   selectCityRushRacers,
@@ -352,4 +353,54 @@ if (callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup').lengt
 if (audioCalls.missileLaunch !== 4) fail('les quatre tirs doivent jouer leur son de lancement', audioCalls);
 if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
 world.destroy();
-console.log(`check:city-rush-bazooka ✓ — deux entrepôts (30 % / 65 % de la course) ramassés voie ${bazookaLane}, réapprovisionnement au second, 4 tirs, projectile droit, impact police intégré, reset par course (${frame} images).`);
+
+// ── Les huit cartes : deux hangars chacun, hors de la chaussée ───────────────
+// Chaque parcours du jeu est construit une fois. Le hangar s'ouvre toujours sur
+// l'**extérieur** du sens de course : à droite en conduite à droite, à gauche à
+// Londres et sur la Shutō C1, où tout le bâtiment est reflété — sinon il
+// s'étalerait sur les voies du contresens.
+for (const course of CITY_RUSH_COURSES) {
+  const laneConfig = cityRushLaneConfig(course);
+  const leftHand = cityRushDriveSide(course) === 'left';
+  const outward = leftHand ? -1 : 1;
+  const pickupLane = leftHand ? laneConfig.forwardLanes[0] : laneConfig.forwardLanes.at(-1);
+  const pickupLaneX = laneConfig.laneX(pickupLane);
+  const courseWorld = createCityRushWorld(
+    mount,
+    course,
+    () => ({ error: (error) => callbacks.errors.push(error) }),
+    car.id,
+    { current: audioStub },
+    null,
+    3,
+    false,
+  );
+  const groups = [];
+  courseWorld.scene.traverse((object) => {
+    if (object.name === 'city-rush-bazooka-warehouse') groups.push(object);
+  });
+  if (groups.length !== 2) fail(`la carte ${course.name} doit poser deux entrepôts de bazooka`, { found: groups.length });
+  for (const group of groups) {
+    if (group.userData.side !== outward) {
+      fail(`le hangar de ${course.name} doit se refléter selon le côté de conduite`, { side: group.userData.side, outward });
+    }
+    const marker = group.children.find((child) => child.name === 'city-rush-bazooka-pickup');
+    if (!marker || marker.position.x !== pickupLaneX) {
+      fail(`le marqueur de ${course.name} doit se tenir sur la voie extérieure`, { marker: marker?.position?.x, pickupLaneX });
+    }
+    const sideWall = group.children.find((child) => child.name === 'bazooka-warehouse-side-wall');
+    if (!sideWall || Math.sign(sideWall.position.x) !== outward) {
+      fail(`le hangar de ${course.name} doit s’étendre hors de la chaussée`, { wall: sideWall?.position?.x, outward });
+    }
+    // Le mur du fond ne mord pas sur la chaussée : la travée ouverte couvre la
+    // voie de ramassage, jamais les voies du contresens.
+    const wall = group.children.find((child) => child.name === 'bazooka-warehouse-front-right-wall');
+    const wallInnerEdge = wall.position.x - outward * (wall.geometry.parameters.width / 2);
+    if (outward * wallInnerEdge < outward * pickupLaneX) {
+      fail(`la façade de ${course.name} doit rester de son côté de la chaussée`, { wallInnerEdge, pickupLaneX, outward });
+    }
+  }
+  courseWorld.destroy();
+}
+if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
+console.log(`check:city-rush-bazooka ✓ — deux entrepôts (30 % / 65 % de la course) ramassés voie ${bazookaLane}, réapprovisionnement au second, 4 tirs, projectile droit, impact police intégré, reset par course (${frame} images, ${CITY_RUSH_COURSES.length} cartes vérifiées).`);
