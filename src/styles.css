@@ -252,12 +252,15 @@ img{max-width:100%}
   .nav-primary{gap:1px;padding:2px}
   .nav-primary a{padding:6px 7px;font-size:9.5px;letter-spacing:.08em}
   .nav-actions{gap:6px}
+  .nav-account.nav-login,
+  .nav-account.nav-register{padding:7px 10px;font-size:10px;letter-spacing:.1em}
 }
 /* Comptes — île : pilules arrondies, même langage que les liens */
 .nav-account.nav-login,
 .nav-account.nav-register{
   display:inline-flex;align-items:center;justify-content:center;
   padding:8px 14px;
+  white-space:nowrap;flex-shrink:0;
   font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;
   border-radius:999px;
   border:1px solid rgba(255,255,255,.12);
