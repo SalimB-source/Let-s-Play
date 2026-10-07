@@ -229,6 +229,61 @@ test('un bonus rouge joue un son mécanique de changement de chargeur', async ()
   } finally { shutdown(audio); }
 });
 
+test('la traversée d’un mini-garage joue l’atelier : pont, clé à chocs, capot, puis l’accord réparée', async () => {
+  const audio = await boot();
+  try {
+    const before = audio.context.events.length;
+    audio.garageRepair({ restored: 2 });
+    const repaired = audio.context.events.slice(before);
+
+    // Le pont hydraulique souffle dès la première image.
+    const lift = repaired.find((event) => event.kind === 'noise');
+    assert.ok(lift && lift.at <= 0.01, 'l’appel d’air du pont part immédiatement');
+    assert.ok(lift.duration >= 0.4, 'le pont monte sur une longue tenue');
+
+    // La clé à chocs : une rafale de cliquetis métalliques dans les premiers
+    // quarante centièmes, bien plus nombreuse que le simple souffle du pont.
+    const ratchet = repaired.filter((event) => event.kind === 'noise' && event.at > 0.07 && event.at < 0.42);
+    assert.ok(ratchet.length >= 8, `la clé à chocs claque plusieurs fois (${ratchet.length} coups)`);
+    const cliquetis = repaired.filter((event) => event.kind === 'osc' && event.at > 0.07 && event.at < 0.42);
+    assert.ok(cliquetis.length >= 8, 'chaque coup de cliquet a sa composante métallique');
+    assert.ok(
+      cliquetis.every((event) => event.frequency > 250 && event.frequency < 700),
+      'les cliquetis restent dans le registre de la clé à chocs',
+    );
+
+    // Le capot claque juste avant l’accord.
+    assert.ok(
+      repaired.some((event) => event.kind === 'osc' && event.at > 0.58 && event.at < 0.62 && event.frequency <= 130),
+      'le capot est rabattu dans le grave',
+    );
+
+    // L’accord de « réparée » : trois notes claires après le capot.
+    const accord = repaired.filter((event) => event.kind === 'osc' && event.at >= 0.73);
+    assert.equal(accord.length, 3, 'trois notes de confirmation quand la coque a repris des points');
+    assert.ok(accord.every((event) => event.frequency > 500), 'l’accord sonne clair, au-dessus de l’atelier');
+  } finally { shutdown(audio); }
+});
+
+test('une coque déjà intacte entend l’atelier mais pas l’accord de réparation', async () => {
+  const audio = await boot();
+  try {
+    const before = audio.context.events.length;
+    audio.garageRepair({ restored: 0 });
+    const events = audio.context.events.slice(before);
+    assert.ok(events.length > 10, 'le passage au garage s’entend quand même');
+    assert.ok(
+      events.every((event) => event.at < 0.73),
+      'aucune note de confirmation n’est jouée sans point de vie rendu',
+    );
+    // Le bruitage reste muet quand le son est coupé.
+    audio.stop();
+    const stopped = audio.context.events.length;
+    audio.garageRepair({ restored: 2 });
+    assert.equal(audio.context.events.length, stopped, 'son coupé : l’atelier ne programme plus rien');
+  } finally { shutdown(audio); }
+});
+
 test('tir, dérapage et explosion programment du son, et se taisent quand le son est coupé', async () => {
   const audio = await boot();
   try {
@@ -249,6 +304,7 @@ test('tir, dérapage et explosion programment du son, et se taisent quand le son
     audio.lap(true);
     audio.finish(1);
     audio.countdownBeep(3);
+    audio.garageRepair({ restored: 2 });
     assert.equal(audio.context.events.length, before, 'son coupé : plus aucun nœud programmé');
   } finally { shutdown(audio); }
 });
@@ -346,6 +402,9 @@ test('le monde déclenche les bruitages au bon endroit', async () => {
   assert.match(world, /audioRef\?\.current\?\.gunshot\(\{ pan: vehiclePan\(attackerId\) \}\)/);
   assert.match(world, /audioRef\?\.current\?\.pickup\(type, \{ ready/);
   assert.match(world, /audioRef\?\.current\?\.countdownBeep\(step\)/);
+  // Sortie de mini-garage : le bruitage d'atelier, avec les points rendus.
+  assert.match(world, /audioRef\?\.current\?\.garageRepair\?\.\(\{ pan: vehiclePan\('player'\), restored: healthRestored \}\)/,
+    'le garage joue la réparation et sait combien de points la coque a repris');
   // Escouade de police : sirène pilotée par la proximité, extinction à la fin.
   assert.match(world, /audioRef\?\.current\?\.policeSiren\?\.\(\{/);
   assert.match(world, /audioRef\?\.current\?\.policeSirenOff\?\.\(\)/);
@@ -372,6 +431,7 @@ test('les bruitages ne sont jamais créés hors d’un contexte vivant', () => {
   audio.policeSirenOff();
   audio.disposeSiren();
   audio.pickup('radio');
+  audio.garageRepair();
   audio.lap();
   audio.finish();
   audio.crowd();
@@ -381,3 +441,38 @@ test('les bruitages ne sont jamais créés hors d’un contexte vivant', () => {
   audio.destroy();
   assert.equal(audio.engineNodes, null);
 });
+
+test('chaque stage / parcours de Vice City Rush a sa propre partition musicale', async () => {
+  const cities = ['vice-city', 'tokyo', 'paris', 'london', 'new-york', 'route-66', 'mexico-countryside', 'nordschleife'];
+  const notesByCity = {};
+
+  for (const cityId of cities) {
+    const audio = await boot(cityId);
+    try {
+      const events = audio.context.events;
+      const stepLength = 60 / cityRushMusicBpm(cityId) / 4;
+      for (let step = 0; step < CITY_RUSH_LOOP_STEPS; step += 1) {
+        audio.playStep(step, step * stepLength);
+      }
+      assert.ok(events.length > 100, `${cityId} produit une partition riche`);
+      const oscFreqs = events.filter((e) => e.kind === 'osc').map((e) => Math.round(e.frequency));
+      notesByCity[cityId] = oscFreqs;
+    } finally {
+      shutdown(audio);
+    }
+  }
+
+  // Vérifie que toutes les musiques de ville/pays sont distinctes de celle de Vice City et entre elles
+  for (let i = 0; i < cities.length; i += 1) {
+    for (let j = i + 1; j < cities.length; j += 1) {
+      const cityA = cities[i];
+      const cityB = cities[j];
+      assert.notDeepEqual(
+        notesByCity[cityA],
+        notesByCity[cityB],
+        `La musique de ${cityA} doit être différente de celle de ${cityB}`,
+      );
+    }
+  }
+});
+

@@ -836,13 +836,12 @@ et le dernier tour durait 21 s.
   passage du milieu du dernier tour) et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
-- **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
-  · TOUR 2/6 » — « LAP 2 », « LAP 3 » — (puis « DERNIER TOUR » en doré), la
-  carte TOUR du HUD avance, les rivaux annoncent leur dernier tour. Le dernier
-  passage termine la course. La bannière s'affiche **dans le coin inférieur
-  gauche** — au-dessus des flèches de direction sur ordinateur, au-dessus du
-  classement sur téléphone — et **sans flou** : fond opaque, texte net, entrée
-  et sortie par glissement (`crLapIn` ne touche plus à `filter`).
+- **Les tours.** Chaque passage de ligne fait avancer la carte TOUR du HUD
+  (et les rivaux annoncent leur dernier tour) ; le dernier passage termine la
+  course. **Rien ne s'affiche à l'écran** : la bannière « LIGNE FRANCHIE ·
+  TOUR 2/6 » et le « PLUS QUE 1200 M » du milieu du dernier tour ont disparu
+  avec le reste des messages de course (voir « Le mode au doigt et la course
+  muette »).
 - **Le grand dernier tour.** Il fait `CITY_RUSH_FINAL_LAP_LOOPS` = **2** boucles
   (2 400 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
   donc on le recroise **au milieu du dernier tour** : ce n'est qu'un **point de
@@ -871,8 +870,9 @@ et le dernier tour durait 21 s.
   (`racerSpecs = []`), **aucune police** (escouade jamais déployée, berline
   retirée du trafic — `CITY_RUSH_TRAFFIC_TYPES` filtré sur `id !== 'police'` —,
   hélicoptère d'observation laissé au sol), **aucune arme** (l'AK-47 est
-  ignoré, la barre de coque ne s'arme pas). Seuls les pads turbo verts sont
-  placés périodiquement sur la chaussée (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL`) ;
+  ignoré, la barre de coque ne s'arme pas). Seuls les bonus turbo verts — des
+  éclairs flottant au-dessus de la chaussée — sont
+  placés périodiquement (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL`) ;
   aucun bonus rouge ni pouvoir d'hélicoptère n'apparaît. À la place :
   **16 checkpoints**
   espacés de `CITY_RUSH_SPRINT_CHECKPOINT_SPACING` = **300 m**
@@ -902,18 +902,92 @@ et le dernier tour durait 21 s.
   `rankCityRushRacers` ne les voit jamais, la grille garde trois pilotes, et le
   HUD les affiche à part (`hud.police`, marqueurs rouge et bleu de la mini-carte).
   Elles convoitent les bonus rouges d'AK-47 ; un bonus rouge ne représente que
-  **5 % des objets** sur la route, contre 95 % de pads turbo
+  **5 % des objets** sur la route, contre 95 % de bonus turbo
   (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de tir vaut cinq bonus
   ordinaires dans leur choix de voie (`CITY_RUSH_POLICE_HUNT_TYPES`,
   `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
   sept balles avec chaque bonus rouge.
 
-  **Les rivaux qui touchent la police reçoivent leur propre poursuivant.** Deux
-  voitures supplémentaires sont gardées en réserve, une par rival ; dès qu'un
-  rival réussit un tir sur une voiture de police — escouade ou police du trafic
-  — son unité réservée le chasse exclusivement, sans détourner les trois voitures
-  du joueur. Les voitures de police du trafic sont également vulnérables aux
-  tirs rouges. **L'attaque d'hélicoptère a été retirée** : aucun missile ni
+  **Un seul mini-garage, à mi-course.** Sur chaque carte, un unique portique
+  traversable apparaît sur la voie la plus à droite du sens de course, jamais en
+  Sprint. Il se dresse **à la moitié de la distance totale** — 4 200 m sur les
+  8 400 m d'un Circuit, pendant le quatrième tour — dès que la course bat son
+  plein, même en Poursuite : aucune porte n'attend plus le dernier tour.
+  Quelques mètres avant l'entrée, la voie est peinte au sol (flèche et
+  « GARAGE ») et bordée de chevrons lumineux, avec un panneau de bord de voie
+  qui rappelle la distance (`CITY_RUSH_MINI_GARAGE_SIGN_LEAD`) : l'indication
+  naît et disparaît avec sa porte, pour qu'on ne la manque pas. Sortir du
+  portique dans sa voie **fait baisser la recherche d'un cran** au-dessus de
+  trois étoiles — de cinq à quatre, de quatre à trois — et la **ramène à zéro**
+  à trois étoiles ou moins (`cityRushMiniGarageWantedLevel`) ; il rend aussi
+  **jusqu'à deux cellules de vie**, sans dépasser la résistance maximale de la
+  voiture choisie (`CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT`,
+  `cityRushMiniGarageRepair`). La réparation fonctionne aussi sans étoiles, mais
+  ne ressuscite pas une épave. **Quand la recherche retombe à zéro, la poursuite
+  est abandonnée** : les berlines qui chassaient le joueur reprennent une
+  conduite normale, à l'allure du trafic, dans leur voie — plus de tir, plus de
+  barrage, plus de mire —, puis quittent la scène une fois distancées ; il faut
+  une nouvelle provocation pour qu'une escouade reparte. Au-dessus de trois
+  étoiles, elle continue au niveau réduit, et les dispositifs suivent le
+  niveau : la herse reste montée à quatre étoiles, les SUV d'interception
+  rentrent au loin dès qu'on redescend sous cinq.
+  Le garage ne sert **qu'une fois par course** ; la porte ratée revient au
+  même repère dans la boucle suivante. Le compteur ne s'allume qu'à l'approche
+  de la porte (`CITY_RUSH_MINI_GARAGE_HUD_RANGE`) ; les points rendus se lisent
+  sur la coque et dans la carte de vie du HUD. Un nouveau départ réarme la porte et la masque à
+  nouveau. **La traversée s'entend** : l'atelier prend la voiture en charge —
+  pont hydraulique qui monte, clé à chocs, capot qui claque — et ne joue
+  l'accord de « réparée » que si la coque a repris des points (`garageRepair`,
+  bande-son).
+
+  **Le bazooka se ramasse deux fois par course, sur toutes les cartes.** Deux
+  **conteneurs maritimes de 40 pieds** jalonnent la piste, posés à **30 % puis à
+  65 % de la distance totale** (`CITY_RUSH_BAZOOKA_PICKUP_SHARES`,
+  `cityRushBazookaTrackDistances`) : le premier se dresse **avant** la porte de
+  mi-course (50 %), le second **après**, quel que soit le nombre de tours et
+  quelle que soit la carte — les repères portent sur le parcours entier, pas sur
+  une boucle. Chaque caisse prend **deux voies** du sens de course : la **voie
+  extérieure** de ramassage (la plus à droite en conduite à droite, la plus à
+  gauche à Londres et sur la Shutō C1) et celle qui la borde vers l'axe jaune,
+  soit 4,20 m de large. Elle est **ouverte aux deux bouts** — la voiture entre
+  par la travée avant, ramasse la roquette sous le toit et ressort par la porte
+  arrière — et ses quatre vantaux, rabattus à plat contre les parois, gardent
+  toute la largeur libre. Le conteneur est **reflété** selon le côté de conduite
+  (`bazookaOutwardSide`, `makeBazookaContainer(…, side)`) : sa paroi intérieure
+  tombe au bord du contresens, sur l'axe jaune à Londres et sur la Shutō C1, au
+  lieu de s'étaler sur les voies d'en face. Une
+  traversée rend `CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP` = **une seule roquette**
+  (`CITY_RUSH_BAZOOKA_AMMO_PER_RACE` = **2 tirs par course**) ; le second
+  conteneur réapprovisionne, chacun ne servant **qu'une fois par course** et un
+  nouveau départ réarmant les deux. Le HUD porte le compte
+  (`bazookaPickupsTaken`, `bazookaPickupsTotal`) et la distance du prochain
+  repère (`bazookaNextDistance`, `bazookaWarehouseGap` pour les appelants
+  historiques) ; `X` ou le bouton jaune tire droit devant — la roquette
+  verrouille la première patrouille de la voie et son souffle balaie **deux
+  cases** (`CITY_RUSH_BAZOOKA_BLAST_CELLS`). Le mode Histoire garde la main : le
+  **Sprint** (solo sans arme) et les chapitres qui coupent les armes
+  (`weaponsEnabled: false`), la police (`policeEnabled: false`) ou le bazooka
+  (`bazookaEnabled: false`) n'ont aucun entrepôt.
+
+  **Les rivaux aussi se font pourchasser par la police.** Deux voitures
+  supplémentaires sont gardées en réserve, une par rival ; **trois motifs**
+  ouvrent son dossier : un tir réussi sur une voiture de police — escouade ou
+  police du trafic —, un **carambolage** avec elle — la berline de ronde
+  percutée sort de sa patrouille (`rallyTrafficPolice`), la patrouille du
+  contresens heurtée de face se retourne pour lui (`applyOncomingImpact`), et la
+  berline de poursuite emboutie encaisse le choc (`checkRivalPoliceCollisions`,
+  `cityRushPoliceCollisionHit`) —, et la **tête de course à l'ouverture du
+  dernier tour** (`chaseLastLapLeader`, `cityRushRivalLeaderWanted`). Chaque
+  motif vaut **trois étoiles**, le barème du contact du joueur
+  (`cityRushRivalWantedLevelAfterContact`), et sort l'unité réservée du rival,
+  qui le chasse exclusivement — jamais le joueur, jamais un autre rival — sans
+  détourner les trois voitures du joueur. Une unité dédiée détruite est relevée
+  après le même délai que l'escouade, tant que le dossier reste ouvert
+  (`reason: 'pursuer-renewal'`) ; l'épave d'un rival, elle, referme son dossier
+  et lâche ses poursuivants. Le classement l'annonce : la ligne du rival
+  recherché allume la pastille rouge de poursuite (`wanted`, `pursued`), jamais
+  celle du joueur. Les voitures de police du trafic sont également vulnérables
+  aux tirs rouges. **L'attaque d'hélicoptère a été retirée** : aucun missile ni
   frappe aérienne ne peut toucher qui que ce soit.
 
   L'escouade opère dans les cinq villes et sur les routes de carrière — jamais
@@ -936,7 +1010,7 @@ et le dernier tour durait 21 s.
   (`cityRushPoliceAimHold`), et le moindre écart latéral
   (`CITY_RUSH_POLICE_AIM_TOLERANCE` = 1,15 m) ou changement de voie le remet à
   zéro — c'est la contre-mesure du joueur, et le HUD l'annonce (`aim`,
-  `aimTargetId`, halo `is-aimed` du cadre, bandeau « DANS TON DOS »). **La
+  `aimTargetId`, halo `is-aimed` du cadre). **La
   police ne tire jamais sur ses collègues** : la liste des cibles d'un tireur
   policier exclut la police (`laneShotCandidates`), sinon l'escouade — qui
   roule en file devant le leader — vidait ses chargeurs dans le pare-chocs de
@@ -954,6 +1028,19 @@ et le dernier tour durait 21 s.
   rouges, ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
   barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
+  **Un saut de tremplin ne la détruit plus à la retombée.** Chaque
+  atterrissage lui coûte **deux carrés** — le prix d'un tir bleu
+  (`CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE`, source `'ramp-landing'` de
+  `CITY_RUSH_POLICE_RAMP_LANDING_SOURCE` dans `CITY_RUSH_POLICE_DAMAGE`) — avec
+  le boum d'atterrissage, la gomme, le flash de la barre et les flammes de
+  dégâts : une berline neuve retombe **trois fois** avant la casse, un SUV
+  blindé **cinq fois**. Tant qu'il lui reste un carré elle poursuit ; à zéro,
+  `damagePolice` passe la main à `destroyPolice` avec la même source, et
+  l'agonie décrite ci-dessous suit son cours. Le monde publie chaque saut
+  encaissé (effet `police-ramp-landing` : `damage`, `health`, `maxHealth`,
+  `landingsToDestroy`) et `npm run check:city-rush-police-wreck` vérifie qu'une
+  berline encore en vie n'est jamais détruite par son atterrissage, et qu'une
+  destruction d'atterrissage tombe bien sur une barre vidée.
   À la destruction, la berline ne disparaît pas d'un coup : elle **part en
   tête-à-queue** — **deux tours sur elle-même** (`cityRushStunSpin`,
   `CITY_RUSH_POLICE_WRECK_SPIN_TURNS`) pendant que sa vitesse fond jusqu'à
@@ -975,9 +1062,72 @@ et le dernier tour durait 21 s.
   reste immédiat, avec **+200 pts** pour le pilote qui l'abat
   (`CITY_RUSH_POLICE_DESTROY_SCORE`) ; la vérif
   `npm run check:city-rush-police-wreck` compte les tours, la décélération, le
-  moment de l'explosion et la durée du feu. La berline du trafic rappelée par un
-  contact est destructible comme l'escouade ; à la course suivante, le trafic
-  repart au complet.
+  moment de l'explosion et la durée du feu ; une agonie que le pilote **dépasse
+  pendant le tête-à-queue** (la carcasse naît alors derrière lui, hors de la
+  fenêtre de dessin de 22 m, et le monde a raison de ne pas la dessiner) est
+  écartée, la vérif attendant la destruction suivante. La berline du trafic
+  rappelée par un contact est destructible comme l'escouade ; à la course
+  suivante, le trafic repart au complet.
+- **Quatre étoiles : la herse.** À partir de la quatrième étoile, deux voitures
+  de police — une berline et un SUV (`CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES`) —
+  apparaissent **devant** le pilote et se rangent **en travers des trois voies
+  du sens de course** (`CITY_RUSH_SPIKE_BLOCK_STARS` = 4,
+  `CITY_RUSH_SPIKE_LANES` = 3), 340 m devant lui
+  (`CITY_RUSH_SPIKE_BLOCK_LEAD`). Le dispositif se lit en trois temps : les
+  voitures **se rangent** (0,9 s, `CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION`),
+  puis la herse **se déroule voie par voie** (1,4 s,
+  `CITY_RUSH_SPIKE_LAY_DURATION`, `cityRushSpikeLaidLanes`) — un pilote qui
+  arrive pendant la pose passe encore par les voies non couvertes —, puis elle
+  est **posée**. Franchir la ligne sur une voie couverte **crève les pneus** :
+  **un carré de coque** (`CITY_RUSH_SPIKE_DAMAGE`, source `spike` dans
+  `CITY_RUSH_PLAYER_DAMAGE`) et une longue remise en vitesse à **0,42 ×** de la
+  vitesse visée pendant **2,6 s** (`CITY_RUSH_SPIKE_SLOW_FACTOR`,
+  `CITY_RUSH_SPIKE_SLOW_DURATION`, `cityRushSpikePace`), avec une secousse de
+  caisse à l'impact (`CITY_RUSH_SPIKE_IMPACT_DURATION`). La détection est
+  **balayée** (`cityRushSpikeHit` : `previous < ligne <= next`) et bornée à la
+  voie du pilote, si bien qu'**un saut** au-dessus du tapis et **les voies du
+  contresens** restent des échappatoires — la herse ne couvre que le sens de la
+  course. Une fois le pilote passé, les voitures rangent le dispositif et
+  repartent ; un barrage jamais franchi est démonté au bout de 22 s
+  (`CITY_RUSH_SPIKE_BLOCK_LIFETIME`), et le suivant ne revient qu'après 26 s de
+  délai (`CITY_RUSH_SPIKE_BLOCK_COOLDOWN`). Le HUD expose `spikeBlock`
+  (`state` : `deploying`, `laying`, `set`, `packing`, plus `gap`, `lanes`,
+  `covered`, `slowLeft`, `cooldown`) et la page raconte chaque étape (« HERSE ·
+  LES BLEUS SE RANGENT EN TRAVERS… », « HERSE EN COURS DE POSE… », « HERSE
+  POSÉE · TA VOIE EST COUVERTE · DÉCALE-TOI, SAUTE OU PASSE EN CONTRESENS. »,
+  « HERSE RANGÉE · LA ROUTE SE LIBÈRE. ») jusqu'au constat du passage (« HERSE ·
+  PNEUS CREVÉS · … · VITESSE EN BERNE … S. »). La herse est rangée par
+  `reset()` et à l'arrivée, et elle n'existe **jamais en Sprint**
+  (`cityRushSpikeBlockCount` rend 0).
+- **Cinq étoiles : les SUV d'interception.** En plus des demi-tours à vue des
+  patrouilles du contresens — qui restent en place —, la cinquième étoile fait
+  entrer **deux SUV de police** par les voies en sens inverse
+  (`CITY_RUSH_SUV_CHARGE_COUNT` = 2, `CITY_RUSH_SUV_CHARGE_TYPE` =
+  `police-suv`). Ils naissent 420 m devant le pilote
+  (`CITY_RUSH_SUV_CHARGE_SPAWN_LEAD`), espacés de 60 m pour que la première
+  charge se lise avant la seconde, et **foncent sur lui** : leur vitesse suit la
+  pointe du pilote × **1,22** (`CITY_RUSH_SUV_CHARGE_SPEED_FACTOR`) avec un
+  plancher de **24 m/s** (`CITY_RUSH_SUV_CHARGE_MIN_SPEED`,
+  `cityRushSuvChargeSpeed`). La charge est annoncée à 300 m
+  (`CITY_RUSH_SUV_CHARGE_ALERT_RANGE`, effet `police-suv-charge` — l'effet est
+  bien émis, mais **plus rien ne s'écrit à l'écran** : le SUV qui arrive face à
+  soi se lit dans la scène) ; à moins de 150 m
+  (`CITY_RUSH_SUV_CHARGE_LOCK_RANGE`), le SUV **verrouille la voie du pilote**
+  (`cityRushSuvChargeLocked`) et se rabat dessus à **3,4 m/s**
+  (`CITY_RUSH_SUV_CHARGE_LATERAL_RATE`, `cityRushSuvChargeStep`) — doubler ne
+  suffit plus, il faut sortir de sa trajectoire. Le choc est le plus cher du
+  jeu : **deux carrés de coque** (`suv-collision` dans
+  `CITY_RUSH_PLAYER_DAMAGE`). Après nous avoir touchés, les SUV
+  **font demi-tour et nous pourchassent** : ils rejoignent la chasse par
+  `rallyPoliceVehicle` (nom « POLICE SUV », même coque que la police,
+  `cityRushPoliceMaxHealth`). Un SUV qui passe 45 m derrière le pilote sans le
+  toucher a manqué sa charge : il recharge 2,4 s et revient
+  (`CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND`, `CITY_RUSH_SUV_CHARGE_RELOAD`). Le
+  HUD les suit un par un (`suvCharges` : `state` — `dormant`, `charging`,
+  `reloading` —, `gap`, `lane`, `locked`, `turnedAround`, `destroyed`) ; ils
+  rentrent au loin si la poursuite retombe sous cinq étoiles, et ni eux ni la
+  herse n'existent en Sprint (`cityRushSuvChargeCount` rend 0 sans contresens,
+  ou en Sprint).
 - **Le dernier tour sous surveillance.** Deux choses accompagnent l'escouade.
   D'abord un **hélicoptère d'observation** se poste dans le ciel pendant le
   dernier tour : 18 m devant la voiture du pilote, 8 m au-dessus de la
@@ -994,10 +1144,14 @@ et le dernier tour durait 21 s.
   s'efface (`WATCH_HELI_TUNNEL_HIDE`) plutôt que de voler dans les panneaux
   suspendus, et il reparaît à la sortie — le smoke compte ces rentrées.
   La **barre de vie du joueur et des rivaux** est active dès le départ :
-  **quinze cellules** en trois groupes de cinq — bleu, vert, jaune — dont les
-  trois dernières virent au rouge à l'état critique
+  **quinze cellules de base** en trois groupes de cinq — bleu, vert, jaune —
+  dont les trois dernières virent au rouge à l'état critique
   (`CITY_RUSH_PLAYER_HEALTH`, `cityRushHealthSegments`,
-  `CITY_RUSH_PLAYER_BAR_COLORS`). Chaque tir rouge reçu retire **une cellule**
+  `CITY_RUSH_PLAYER_BAR_COLORS`). **Chaque voiture a sa propre coque** :
+  la citadine offerte MISTRAL 1.4 en compte **vingt-trois**, la PULSE RS
+  **sept** — la coque suit la solidité du modèle
+  (`cityRushCarMaxHealth` = quinze fois `durabilityMultiplier`, bornée par
+  `CITY_RUSH_CAR_HEALTH_MIN`) ; les rivaux gardent la coque de base. Chaque tir rouge reçu retire **une cellule**
   sans dérapage ni ralentissement ; le tir bleu en retire aussi une. Les tirs
   reçus par les voitures de police suivent leur coque distincte : rouge −3,
   bleu −2, collision −1. **Percuter une voiture retire un carré au pilote**,
@@ -1008,7 +1162,30 @@ et le dernier tour durait 21 s.
   carambolage ne coûte jamais plus d'un carré : le choc arme un **répit
   partagé** de 1,5 s (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`), le temps de
   reprendre, pour qu'un embouteillage ou deux carrosseries restées collées ne
-  vident pas la barre d'un coup. Le trafic et les rivaux ne se heurtent entre
+  vident pas la barre d'un coup. Le seuil de choc contre le **trafic lent**
+  n'est plus la distance de sécurité de 4,8 m mais **l'enveloppe de la
+  carrosserie** : 3,6 m pare-chocs contre pare-chocs, 2,9 m une fois l'aile
+  dégagée (`cityRushTrafficContactGap`, `CITY_RUSH_TRAFFIC_CAR_GAP`,
+  `CITY_RUSH_TRAFFIC_PASS_GAP`) — une esquive entamée à temps raccourcit le
+  seuil et passe, une esquive jamais entamée touche. Les voitures **qui
+  circulent sur la route** — trafic lent, contresens, berlines lâchées par un
+  mini-garage et patrouilles du flot — sont en plus jugées sur une **boîte de
+  contact resserrée** : `CITY_RUSH_TRAFFIC_HITBOX_SCALE` = **0,6** de leur
+  largeur réelle (`cityRushTrafficHitboxWidth`), soit 1,16 m pour une berline
+  de 1,94 m. Sur une chaussée à voies de 2,10 m, la boîte pleine exigeait 91 %
+  du changement de voie pour être dégagé, la boîte resserrée se contente de
+  73 % : un coup de volant donné **au dernier moment** passe là où il se payait
+  un carré. La même boîte sert partout où le véhicule est jugé — détection du
+  choc, retenue du suiveur (`resolveCityRushCarMovement`), choc frontal
+  (`checkOncomingImpacts`) et contact d'une patrouille (`checkPoliceRally`) —
+  pour que le pilote ne soit pas dégagé par l'un et raboté par l'autre. Le
+  verrou de rabattement (`canEnterLane`) garde, lui, les carrosseries : c'est
+  une distance de sécurité de changement de voie (4,8 m), plus stricte que le
+  choc qu'elle évite. Les berlines de **police en chasse** gardent leur
+  carrosserie pleine : leur contact est jugé à part
+  (`cityRushPoliceCollisionHit`). La retenue du suiveur suit
+  la même enveloppe, sans quoi le moteur arrêterait la voiture juste au-delà du
+  seuil et le choc ne tomberait jamais. Le trafic et les rivaux ne se heurtent entre
   eux qu'en ralentissant, sans toucher la coque du pilote. Le contact policier
   compte seulement quand le pilote **arrive sur** une berline **devant lui**, à
   une vitesse supérieure
@@ -1023,14 +1200,24 @@ et le dernier tour durait 21 s.
   au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
   (`CITY_RUSH_PLAYER_DAMAGE`, `CITY_RUSH_PLAYER_HEALTH_CRITICAL`,
   `CITY_RUSH_POLICE_COLLISION_COOLDOWN`).
+- **Le taxi remplace la berline banalisée.** La voiture de police **en civil**
+  noire a quitté la route : `CITY_RUSH_TRAFFIC_TYPES` aligne désormais le
+  **taxi** jaune à bandeau damier (`taxi`, `isTaxi` dans `cityRushCars.js`), au
+  même profil de conduite (6,8 m/s) que la banalisée qu'elle remplace. Il roule
+  comme le trafic ordinaire et ne déclenche **aucune** poursuite ;
+  `CITY_RUSH_POLICE_TRAFFIC_TYPES` ne contient plus que les voitures
+  **marquées** (`['police']`), seules à sortir de leur ronde quand on les
+  percute, et la raison d'effet `'undercover-contact'` a disparu. Le taxi n'a ni
+  gyrophare ni marquage latéral : caisse jaune, toit noir et damier sur les
+  flancs.
 - **Changer de voie ne ralentit plus.** Doubler, se rabattre ou esquiver le
   trafic est **gratuit en vitesse** : la voiture glisse latéralement vers
   `CITY_RUSH_LANE_X` à pleine allure, sans coup de frein. L'ancien malus —
   `CITY_RUSH_LANE_CHANGE_SLOW_FACTOR` = **0,9 ×** pendant
   `CITY_RUSH_LANE_CHANGE_SLOW_DURATION` = **0,8 s** après chaque écart — n'existe
   plus : les deux constantes ont quitté `cityRushRules.js`, `targetPlayerSpeed`
-  dans `ViceCityWorld.jsx` ne multiplie plus aucun facteur d'écart, et le
-  bandeau de mode de `ViceCityRushPage.jsx` ne l'annonce plus. Seule la
+  dans `ViceCityWorld.jsx` ne multiplie plus aucun facteur d'écart, et rien
+  ne l'annonce à l'écran. Seule la
   récompense subsiste : tenir sa voie charge le bonus **« ligne propre »**
   (`cityRushCleanLineFactor`, jusqu'à `CITY_RUSH_CLEAN_LINE_MAX_BONUS` =
   **1,12 ×** au bout de `CITY_RUSH_CLEAN_LINE_RAMP_DURATION` = **3,5 s**), et un
@@ -1040,6 +1227,39 @@ et le dernier tour durait 21 s.
   ralentissement, et le seul levier « voie » reste ≥ 1) et
   `tests/city-rush-hud.test.js` (le malus ne doit réapparaître ni dans le monde
   ni dans la page).
+- **Maintenir la flèche enchaîne les écarts.** Garder `←` / `→` (ou `Q` / `D`)
+  enfoncé décale la voiture **voie par voie, tout seul**, jusqu'à la relâche :
+  plus besoin de marteler la touche pour traverser la chaussée. Le calendrier
+  est celui d'un clavier système, dans `ViceCityWorld.jsx` — l'écart part à
+  l'image même de la pression, le **deuxième** attend le délai de répétition
+  `STEER_HOLD_FIRST_DELAY` = **0,26 s**, les suivants s'enchaînent à
+  `STEER_HOLD_LANE_INTERVAL` = **0,18 s** : un appui simplement un peu long
+  reste **un** écart (en avaler deux par accident, c'est un pare-chocs dans le
+  trafic), tandis qu'un vrai maintien traverse les six voies en ~0,8 s. La
+  cadence est calée sur le glissement latéral (`playerX` rejoint
+  `laneX(playerLane)` à raison de `dt * 12`) : chaque écart est presque terminé
+  quand le suivant démarre, la dérive reste lisible et continue. C'est le même
+  schéma que le maintien de `Z` à l'AK-47 (`PISTOL_HOLD_FIRE_INTERVAL`), et la
+  **répétition native du clavier est ignorée** (`event.repeat`) : trop lente au
+  premier cran puis incontrôlable, elle ne donnait ni fluidité ni précision.
+  Une voie fermée (trafic, contresens, berline) ne déclenche rien sur le coup ;
+  le cran suivant retente sa chance et la voiture se rabat dès que la voie
+  s'ouvre. En l'air, le volant ne répond toujours pas
+  (`cityRushLaneAfterAction`). Les touches sont suivies **physiquement**
+  (`STEER_KEY_DIRECTIONS`, `steerKeysHeld` en `Map` ordonnée) : les deux
+  flèches enfoncées ensemble donnent la main à **la dernière pressée**, et la
+  relâcher rend la main à celle qui reste enfoncée ; `Q` et `←` tiennent la même
+  direction sans doublonner la cadence ni se couper l'un l'autre. Le maintien
+  est lâché à la relâche, en pause, à la perte de la fenêtre (`blur`), au
+  `reset()` et au démontage : aucune touche ne reste coincée, et une touche
+  tenue pendant le compte à rebours ne décale pas la voiture au feu vert. La
+  page l'annonce — `← → / Q D : VOIES (MAINTENIR)` dans le pied de l'écran de
+  préparation et le rappel bureau, plus une phrase dans le règlement du mode.
+  Deux vérifications le tiennent : « maintenir une flèche enchaîne les
+  changements de voie jusqu'à la relâche » (`tests/city-rush-hud.test.js`) et
+  `npm run check:city-rush-steer-hold`, qui dispatche de **vrais événements
+  clavier** dans le moteur et mesure le calendrier image par image (60 Hz) sur
+  les cinq villes, conduite à droite comme à gauche.
 - **Le contresens paie — tant qu'on y reste.** Les **trois voies en sens
   inverse** (à gauche de l'axe jaune en conduite à droite, à droite à Londres et
   sur la Shuto) chargent une **jauge de vitesse cumulative** : `playerOncomingTime`
@@ -1055,8 +1275,9 @@ et le dernier tour durait 21 s.
   `oncoming-bonus` de palier `'lost'`) : le pilote est recalé derrière la voiture
   en face, sans vitesse. Le HUD expose `oncomingBonus` (facteur courant) et la
   page affiche le pourcentage gagné dans la carte **VITESSE** (badge
-  `.city-rush-speed-bonus`) et la pastille d'état **CONTRESENS · +X %**
-  (`.city-rush-status-pill.is-oncoming`, rose néon). Un parcours sans trafic en
+  `.city-rush-speed-bonus`) **et nulle part ailleurs** : la pastille d'état
+  **CONTRESENS · +X %** (`.city-rush-status-pill.is-oncoming`) a été retirée
+  avec le reste des messages de course. Un parcours sans trafic en
   face — le Ring — ne charge jamais cette jauge : `oncomingLanes` est vide, donc
   `advanceCityRushOncomingBonus` ne monte pas. Le smoke vérifie que la jauge a
   bougé sur les sept parcours à contresens, qu'elle reste dans
@@ -1087,20 +1308,27 @@ et le dernier tour durait 21 s.
   La déviation après un choc frontal suit le même miroir :
   `cityRushOncomingImpactX(startX, elapsed, width, driveSide)` renvoie la voiture
   vers le **bord extérieur de son sens** — à droite à Londres et sur la C1 — et
-  l'effet `traffic-impact` porte `pushDirection: 'right'` pour que le bandeau
-  annonce « POUSSÉE À DROITE ». Le pilote automatique du smoke et le test des
+  l'effet `traffic-impact` porte `pushDirection: 'right'` — la poussée se lit
+  dans la scène, plus aucun bandeau ne l'écrit. Le pilote automatique du smoke et le test des
   règles lisent tous deux `cityRushLaneConfig`, plus aucune voie n'est codée en
   dur. Trois tests tiennent la bascule : « London and the Shutō C1 drive on the
   left… » (`tests/city-rush-rules.test.js`), « the driving side is painted by
   the theme… » (`tests/city-rush-themes.test.js`) et « Londres et Tokyo roulent
   à gauche jusque dans le décor et la page » (`tests/city-rush-hud.test.js`).
 - **Les bonus.** En course, seuls deux objets apparaissent sur la route :
-  le **pad turbo vert** et le bonus **rouge d'AK-47**. Le rouge est **très
+  le **bonus turbo vert** et le bonus **rouge d'AK-47**. Tous deux **flottent**
+  au-dessus de la chaussée (`PICKUP_FLOAT_HEIGHT` = 1,3 m dans
+  `ViceCityWorld.jsx`) : plus aucune dalle posée sur le bitume. Le turbo est
+  l'éclair blanc du disque vert (`makePickupMaterial('boost', …)` dans
+  `cityRushTextures.js`), le seul bonus à porter l'anneau incliné qui tourne
+  autour de son éclair (`userData.orbit`) ; la couleur vient de `pickupColor()`
+  — vert `CITY_RUSH_TRACK_BOOST_COLOR`, rouge des soins, ou la teinte du
+  pouvoir. Le rouge est **très
   rare** : seulement **5 % des objets** générés sont rouges, contre 95 % de pads
   turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.95`,
   `CITY_RUSH_RED_PICKUP_CHANCE = 0.05`). Chaque bonus rouge rare recharge les
   **sept balles** du chargeur ; chaque pression en tire une, et maintenir `Z`
-  tire à cadence régulière. Le pad vert s'active automatiquement et accélère
+  tire à cadence régulière. Le bonus vert s'active automatiquement et accélère
   pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Les anciens pouvoirs bleu et jaune
   restent dans les règles internes mais ne sont ni générés ni proposés au
   joueur : **aucune attaque d'hélicoptère** n'est disponible. L'appareil visible
@@ -1182,7 +1410,7 @@ et le dernier tour durait 21 s.
 - **Les voitures.** Cabriolets et rivaux modélisés (phares, feux arrière,
   flammes de turbo, roues qui tournent et se braquent, roulis et tangage selon
   la conduite, fumée au démarrage et dans les dérapages) ; le trafic (police,
-  ambulance, camion-poubelle, Lamborghini blanche) a ses gyrophares et ses
+  taxi, ambulance, camion-poubelle, Lamborghini blanche) a ses gyrophares et ses
   décalcomanies. Les cabriolets sont **décapotés et leurs pilotes ont le visage
   à l'air** (voir « Les pilotes dans le cockpit » plus bas) : plus un seul
   casque intégral dans la course, chaque tête est celle de l'avatar du pilote
@@ -1203,6 +1431,29 @@ et le dernier tour durait 21 s.
   définition plafonnée. Le décor est fusionné par matériau (quelques dizaines
   d'appels de rendu pour toute une ville).
 
+### Les voitures du mode Histoire
+
+La campagne « MIDNIGHT REVANCHE » (dix chapitres, dans `cityRushStory.js`) ne
+change pas le garage du pilote : elle **prête** parfois une voiture, le temps
+d'un chapitre. Deux prêts seulement, écrits dans les données du scénario
+(`fixedCarId`) : la **MISTRAL 1.4** du prologue de 1983 — lente mais incassable,
+c'est celle qui tombe en panne à 500 m de la ligne — et la **TEMPESTA LP-780**
+de Mr. Voss sur le Nürburgring, dont le chrono cible (`storyRingTargetTime`) est
+calculé sur elle. Les huit autres chapitres se courent avec la voiture choisie
+au garage, et le briefing l'annonce (« VOITURE · … (prêtée) » ou le nom de la
+voiture du pilote).
+
+Un prêt ne vaut **que pour son chapitre** : il est appliqué à la course engagée
+(`activeCarId`, dans `ViceCityRushPage.jsx`) sans jamais écraser la sélection du
+garage (`carId`). Autrement la voiture prêtée suivait le pilote — la MISTRAL du
+prologue remplaçait la voiture achetée pour les neuf chapitres suivants, la
+TEMPESTA du Ring retombait sur la citadine de départ une fois rendue, et le
+garage affichait la voiture prêtée comme sélectionnée après la campagne. Les
+rivaux, eux, gardent leur matchmaking habituel (les deux profils les plus
+proches de la voiture engagée), sauf quand le chapitre impose un modèle
+(`rules.rivalCarIds`) ou une allure (`rules.rivalPace` : Dante roule à +5 % au
+duel de Paris, +6 % à la finale).
+
 ### Où vit le code
 
 - `src/games/cityRushRules.js` — règles pures : tours, longueur, classement,
@@ -1210,7 +1461,12 @@ et le dernier tour durait 21 s.
   `cityRushLapProgress`, `cityRushRaceDistance`, `cityRushLineKind` pour le
   grand dernier tour, `cityRushTrackGap` pour replier la boucle devant la
   caméra, `cityRushTrackOffset`/`Elevation`/`Yaw`/`Pitch` pour la ligne centrale
-  courbée du rendu), **données de la Shuto C1** (`CITY_RUSH_SHUTO_C1`,
+  courbée du rendu), **barème des étoiles** (`cityRushWantedLevelAfterHit`,
+  `cityRushWantedLevelAfterPoliceDestroyed`), **herse** (`CITY_RUSH_SPIKE_*`,
+  `cityRushSpikeLanes`, `cityRushSpikeLaidLanes`, `cityRushSpikeHit`,
+  `cityRushSpikePace`), **SUV d'interception** (`CITY_RUSH_SUV_CHARGE_*`,
+  `cityRushSuvChargeCount`, `cityRushSuvChargeSpeed`, `cityRushSuvChargeLocked`,
+  `cityRushSuvChargeStep`), **données de la Shuto C1** (`CITY_RUSH_SHUTO_C1`,
   `shutoC1SectorAt`, `shutoC1KmAt`, `shutoC1CoverAt`, `shutoC1NextJunction`,
   `shutoC1Readout`) et **silhouette officielle de l'anneau**
   (`cityRushMinimapTrackShape`, `routeTicks`) ;
@@ -1236,12 +1492,20 @@ et le dernier tour durait 21 s.
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes (et leurs **pilotes à
   visage découvert**, voir « Les pilotes dans le cockpit »), trafic, fumée ;
+- `src/games/cityRushRacerModels.js` — les onze carrosseries de course, et
+  `scripts/city-rush-car-preview.mjs` (ou `npm run preview:city-rush-cars`) —
+  rendu **logiciel** des onze voitures (trois angles + planche de contact) pour
+  contrôler les formes sans lancer le jeu ; les images vont dans `.cache/`,
+  ignoré par git ;
 - `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
   dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
   passages de ligne, environnement de tunnel de la C1, **hélicoptère
-  d'observation** et **barre de vie du pilote** — `activatePlayerHealth`,
-  `damagePlayer`, `checkPoliceCollisions`) ;
+  d'observation**, **barre de vie du pilote** — `activatePlayerHealth`,
+  `damagePlayer`, `checkPoliceCollisions` —, **herse** — `beginSpikeBlock`,
+  `updateSpikeBlock`, `dismissSpikeBlock`, `applySpikeHit` — et **SUV
+  d'interception** — `armSuvCharge`, `updateSuvCharges`, la boucle du contresens
+  qui les fait demi-tour puis `rallyPoliceVehicle`) ;
   `src/games/ViceCityRushPage.jsx` et `src/games/vice-city-rush.css` — la page,
   le HUD (carte TOUR, bannière de tour, plaque de signalisation de la route,
   liste des pilotes) ;
@@ -1382,7 +1646,11 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une
   deuxième voix désaccordée qui fait battre la sirène ; le niveau suit la
   proximité de la berline la plus proche, `policeSiren({ level })`, et
-  `policeSirenOff()` éteint les nœuds), plus les bips de ramassage, les feux de
+  `policeSirenOff()` éteint les nœuds), **le passage au mini-garage**
+  (`garageRepair({ restored })` : souffle du pont hydraulique, cliquetis de la
+  clé à chocs, outil reposé, capot rabattu, et trois notes claires seulement si
+  la coque a vraiment repris des points — coque intacte, l'atelier se contente
+  de vérifier), plus les bips de ramassage, les feux de
   départ, les passages de ligne et la fanfare d'arrivée. Chaque bruitage est **panoramiqué** selon la voie de
   la voiture concernée (`vehiclePan`).
 - **Le bouton SON** de la barre du jeu (touche **M**) : un interrupteur
@@ -1394,17 +1662,23 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ### Vérifications
 
 ```bash
-npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, herse des quatre étoiles, SUV des cinq étoiles, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
-npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring)
+npm run check:city-rush-story-cars # les voitures du mode Histoire dans la vraie page (jsdom) : les dix chapitres parcourent le monde avec la bonne voiture — MISTRAL 1.4 prêtée au prologue, TEMPESTA LP-780 prêtée sur le Ring, voiture choisie au garage partout ailleurs (y compris juste après un prêt), briefing conforme et sélection du garage conservée après la campagne
+npm run check:city-rush-tournament # la Coupe Sunset de bout en bout dans la vraie page (jsdom) : 3 manches sans police ni armes, sacre à 26 pts, prime +100 billets, Coupe d'Europe débloquée, sauvegarde à jour
+npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring), herse et SUV d'interception vérifiés sans leurs dégâts
+npm run check:city-rush-steer-hold # le maintien des flèches : une pression = un écart, le maintien enchaîne (délai 0,26 s puis 0,18 s) jusqu'au bord de la chaussée, la relâche / la pause / la perte de la fenêtre arrêtent tout, Q et D alignés, répétition native ignorée
+npm run check:city-rush-quiet    # le choix du mode au doigt (empilé, sans carrousel, avant l'Histoire) et la course muette (la vraie page en jsdom, moteur doublé)
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
+npm run check:city-rush-bazooka  # les deux conteneurs du bazooka sur les huit cartes : repères à 30 % et 65 % encadrant le garage de vie, ramassages et réapprovisionnement, caisse de deux voies reflétée de son côté de l'axe en conduite à gauche, roquette droite, impact police, reset
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:city-rush-police-wreck # destruction d'une berline : deux tours de tête-à-queue en décélérant, explosion à l'arrêt, carcasse laissée en feu tout l'incendie
+npm run check:city-rush-rival-police # les rivaux aussi sont pourchassés : carambolage avec la police et tête de course au dernier tour (deux passes : motifs mêlés, puis motif du premier seul)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```
@@ -1425,14 +1699,27 @@ le prennent pour cible même s'il n'est pas leader, le rejoignent à moins de 30
 et restent dans son sillage (au moins 40 % du dernier tour à moins de 80 m,
 jamais plus de 200 m de retard). Elles sont absentes du classement, disparaissent
 à l'arrivée et font sonner puis éteindre leur sirène. Le smoke valide aussi
-chaque événement de représailles émis : le rival touchant une voiture de police
-reçoit une unité dédiée qui le cible exclusivement. Il suit l'**hélicoptère
+chaque événement de représailles émis — tir, carambolage (`police-contact`) ou
+tête de course du dernier tour (`last-lap-leader`) — : le rival touchant une
+voiture de police reçoit une unité dédiée qui le cible exclusivement. Il suit l'**hélicoptère
 d'observation** (nœud `watch-helicopter` : absent hors du dernier tour, rotor et
 pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par la
 vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
 du HUD au moins 85 % du dernier tour —, éloigné à l'arrivée, effacé par
-`reset()`) et les **barres de vie des pilotes** (15 cellules pleines dès le
-départ, bornées et jamais croissantes ; chaque tir encaissé respecte le barème).
+`reset()`) et les **barres de vie des pilotes** (la coque de chaque voiture
+pleine dès le départ — vingt-trois cellules pour la MISTRAL, sept pour la
+PULSE RS, quinze pour les rivaux —, bornées et jamais croissantes ; chaque tir
+encaissé respecte le barème).
+Il suit aussi les deux dispositifs du barème des étoiles : la **herse**
+(quatre états `deploying` → `laying` → `set` → `packing`, trois voies du sens
+de course annoncées, jamais montée avant la quatrième étoile ni en Sprint) et
+les **SUV d'interception** (deux au plus, aucun armé sous cinq étoiles, contact
+à deux carrés, demi-tour après le choc puis chasse). Comme pour le carambolage,
+le harnais **neutralise leurs dégâts** pour ne pas finir en épave avant
+l'arrivée : le lanceur patche `spike: 1` et `'suv-collision': 2` en `0` et
+ramène `CITY_RUSH_SPIKE_SLOW_FACTOR` à `1`. Le barème réel — un carré sur la
+herse, deux sur un SUV, vitesse à 0,42 × pendant 2,6 s — est tenu par les tests
+purs (`npm run check:city-rush`) et par le harnais d'armes.
 Le **carré du carambolage est neutralisé dans ce harnais** : le lanceur patche
 l'ancre `collision: 1` de `cityRushRules.js` en `collision: 0`, sinon le pilote
 d'essai — qui ne se dérobe jamais — finirait en épave avant l'arrivée. Le
@@ -1448,6 +1735,65 @@ quatre feux, chaque passage de ligne (point de passage compris) et la fanfare.
 Aucun son de missile, de frappe ou de rotor d'attaque ne doit se déclencher ;
 l'hélicoptère d'observation reste silencieux. Les compteurs sont imprimés à la
 fin de chaque parcours.
+
+## Vice City Rush : le mode au doigt et la course muette
+
+Deux promesses d'écran que `npm run check:city-rush-quiet` vérifie ensemble,
+parce qu'elles font la même chose : laisser la route au pilote.
+
+- **Le choix du mode se touche.** Sur téléphone et sur tablette, les trois
+  vignettes (CIRCUIT, SPRINT, POURSUITE) se rangeaient dans une bande
+  horizontale à défilement aimanté : au moindre mouvement du doigt le
+  glissement l'emportait sur le clic, et le mode restait dur à ouvrir. Elles
+  sont maintenant **empilées en rangées pleine largeur** — icône à gauche,
+  titre et détails à droite, `touch-action: manipulation` (pas de double tape,
+  pas de délai), aucun défilement latéral nulle part —, et passent **avant la
+  bannière Histoire** : une rangée, un doigt, la course. La grille s'adapte
+  d'elle-même : trois rangées sur un téléphone tenu droit, deux ou trois
+  vignettes côte à côte dès que l'écran s'élargit (tablette, téléphone couché),
+  et sur une fenêtre basse le chapeau d'étape, le libellé « cours libres » et la
+  description d'une ligne s'effacent pour que les trois modes tiennent dans
+  l'écran. **Le desktop ne change pas** : trois colonnes, survol compris.
+- **La course est muette.** Plus de fenêtre de message, plus de bandeau de tour
+  (« LIGNE FRANCHIE · TOUR 2/6 », « PLUS QUE 1200 M »), plus de pastille d'état
+  (« CONTRESENS · +X % », herse, garage, tunnel, poursuite abandonnée) pendant
+  que la voiture roule : les faits de course vivent dans les **cartes du HUD**
+  (position, tour, chrono, billets, vitesse, coque) et dans la **scène** — une
+  berline qui vise garde son halo, un SUV qui charge arrive en face, un choc
+  frontal reste un choc. La page ne demande même plus au moteur de les lui
+  annoncer : `onPickup`, `onLap` et la radio de course ne sont plus branchés.
+  Hors course, les menus répondent toujours (garage, voiture achetée, fin de
+  chapitre) : l'unique fenêtre restante est celle des menus, montée seulement
+  hors course, et `startRace()` la referme pour qu'un message de garage ne
+  déborde jamais sur la piste (il réapparaissait sinon sur l'écran d'arrivée).
+
+### Où vit le code
+
+- `src/games/ViceCityRushPage.jsx` — `showToast` (sourd pendant la course),
+  `startRace` (qui vide la fenêtre des menus), et plus aucun message branché
+  sur les effets du moteur ;
+- `src/games/vice-city-rush-comic.css` — la section « Choix du mode au doigt »
+  (grille empilée, `touch-action`, rappels de gestes au lieu du clavier) et les
+  paliers « tablette » et « écrans bas » ;
+- `tests/city-rush-hud.test.js` — le contrat muet (aucune surface de message
+  dans la course, HUD complet, menus toujours bavards) ;
+- `scripts/vice-city-quiet-race-check.mjs` et
+  `scripts/vice-city-quiet-race-smoke.jsx` — la vérification : les règles de
+  style se lisent dans la feuille, puis la vraie page est montée sous jsdom sur
+  la doublure du moteur 3D.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-quiet    # les trois modes empilés (et la tablette en grille) + la course sans aucune surface de message
+```
+
+Le smoke achète une voiture (la fenêtre « DÉBLOQUÉE » doit répondre, dans la
+fenêtre de jeu et non dans le HUD), lance la course avec la voiture offerte,
+déverse seize effets de course d'un coup (trafic, tir, herse, SUV, garage,
+tunnel, sprint, avertissement d'histoire) et exige **zéro** `.city-rush-toast`,
+`.city-rush-lap-banner` et `.city-rush-status-pill`, puis l'arrivée sans
+message traînant sur l'écran de résultat.
 
 ## Vice City Rush : le Nürburgring Nordschleife
 
@@ -1649,6 +1995,55 @@ produit bien un) : une voiture à contresens sur un circuit serait un vrai bogue
 Comme le hasard décide du trafic et des bonus,
 `CITY_RUSH_SMOKE_SEED=31 npm run check:city-rush-smoke -- --city=nordschleife`
 rejoue exactement le même scénario.
+
+## Vice City Rush : les tournois
+
+Le jeu (`/jeu/vice-city-rush`) propose quatre **tournois** — la **Coupe Sunset**
+(Vice City, Route 66, New York), la **Coupe d'Europe** (Paris, Londres,
+Nordschleife), la **Coupe Pacifique** (Tokyo, Route 66, Mexique) et la **Coupe
+des Légendes** (New York, Nordschleife, Vice City). Chaque tournoi se joue en
+**3 courses de 3 tours**, avec la même voiture et les mêmes rivaux du début à
+la fin, **sans police ni armes** : la grille et les règles sont imposées, seul
+le pilotage compte.
+
+Le hub des tournois (l'étape « mode » de l'accueil) les affiche en ordre : le
+suivant se débloque en terminant le précédent, qu'on soit champion ou non. Une
+manche courue **ne se rejoue pas** — le bouton propose la suivante, et la
+touche Entrée l'enchaîne aussi. Les points suivent le barème 10 · 6 · 3, et les
+égalités se départagent aux points, puis aux victoires, puis à la dernière
+place (l'ordre de la grille tranche les égalités parfaites). Chaque manche
+paie le tarif du circuit (50 / 30 / 10 billets verts), et seul le champion
+touche la prime du tournoi (100, 150, 200 puis 300 billets) — les tournois ne
+débloquent jamais les parcours du mode libre. Deux succès récompensent les
+champions : un premier titre, puis les quatre titres.
+
+### Où vit le code
+
+- `src/games/cityRushTournaments.js` — le catalogue pur : les 4 tournois, le
+  déblocage, le barème, les rivaux, les grilles et le classement général ;
+- `src/games/ViceCityRushPage.jsx` — le hub, le garage imposé (ville et rivaux
+  du tournoi) et les écrans de manche (classement, sacre, prime) ;
+- `src/games/cityRushProgress.js` — la sauvegarde : `completedTournamentIds`
+  et `tournamentTitles` (JSONB, aucune migration SQL) ;
+- `src/games/city-rush-tournament.css` — le hub, les cartes et le classement
+  (requêtes téléphone gardées, comme partout) ;
+- `src/achievements/catalog.js` et `src/achievements/engine.js` — les succès
+  `vice-tournament-title` et `vice-tournament-slam`, nourris par l'action
+  `vice_city_tournament_won` (un tournoi n'est pas un « mode de course » : il
+  ne valide pas « trois styles »).
+
+### Vérifications
+
+```bash
+npm run check:city-rush-tournament
+```
+
+La vraie page est montée dans jsdom (moteur 3D doublé, comme le garage) et la
+Coupe Sunset est jouée pour de vrai : hub (Sunset ouvert, les trois autres
+verrouillés), règles « pures » reçues par le monde (3 tours, ni police ni
+armes, rivaux attitrés), victoire puis 2e place puis victoire (sacre à
+26 pts), prime +100, déblocage de la Coupe d'Europe, sauvegarde (230 billets)
+et abandon propre depuis le garage.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 
@@ -1983,11 +2378,12 @@ If a variable is missing, `/auth` shows exactly which one under the form.
    friends list (see « Amis : demandes, liste et présence ») and the
    `direct_messages` / `message_blocks` / `message_reports` tables behind the
    1-à-1 messaging (see « Messagerie : discussions 1-à-1 entre amis »). The
-   script is idempotent: re-run it after pulling a newer version. It also
-   creates the `kind` / `attachment_*` columns and the private `voice-messages`
-   Storage bucket inherited from the old voice messaging: nothing in the app
-   uses them any more (see « Nettoyage optionnel du schéma » in the messaging
-   section to drop them).
+   script is idempotent: re-run it after pulling a newer version. The
+   voice-messaging leftovers (old `kind` / `attachment_*` columns and the
+   private `voice-messages` Storage bucket) are no longer part of it: on a
+   project that still has them, run `supabase/remove-voice-messages.sql` once
+   (see « Nettoyage de l'ancienne messagerie vocale » in the messaging
+   section).
    The SQL Editor wraps the file in **one transaction**, so a single error used
    to roll everything back — and the script looks like it ran while nothing was
    created. It is therefore guarded: steps that depend on Supabase-internal
@@ -2265,10 +2661,10 @@ L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil 
 **Le message vocal a été retiré** : le bouton micro, l'enregistreur, la bulle
 de lecture, l'upload dans le bucket `voice-messages` et le diagnostic
 `window.__lpVoiceDiag()` n'existent plus — la messagerie est **texte
-uniquement**. Les colonnes `kind` / `attachment_*` et le bucket restent dans
-`supabase/schema.sql` (le script est rejoué tel quel sur les projets déjà en
-place) ; voir « Nettoyage optionnel du schéma » à la fin de cette section si
-tu veux les effacer.
+uniquement**. `supabase/schema.sql` ne crée plus les colonnes `kind` /
+`attachment_*` ni le bucket ; sur un projet qui les a encore, exécute une fois
+`supabase/remove-voice-messages.sql` (voir « Nettoyage de l'ancienne messagerie
+vocale » à la fin de cette section).
 
 **Où écrire à un ami** :
 
@@ -2339,39 +2735,26 @@ script doit afficher `OK` pour `table public.direct_messages`,
 de lecture seul modifiable`, `tables blocages / signalements`, `politiques
 RLS blocages (3) / signalements (2)` et `effacement des conversations pour soi
 (table, RLS, RPC, filtre messages)` ; `realtime direct_messages` peut rester
-`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). La dernière
-ligne du tableau, `messages vocaux (colonnes + bucket + politiques de
-stockage)`, est **héritée de l'ancienne messagerie vocale** : elle peut rester
-`ABSENT` sans conséquence, plus rien dans l'application ne s'en sert. Tant que
+`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). Tant que
 la table manque, la fenêtre l'explique (« La messagerie n'est pas encore
 activée sur ce déploiement… ») sans rien casser d'autre.
 
-### Nettoyage optionnel du schéma
+### Nettoyage de l'ancienne messagerie vocale
 
-Le message vocal ayant été retiré de l'application, les objets SQL qui le
-servaient ne sont plus utilisés : les colonnes `kind`, `attachment_path`,
-`attachment_duration`, `attachment_mime` de `direct_messages` et le bucket
-privé `voice-messages`. `supabase/schema.sql` continue de les créer (le script
-est rejoué tel quel sur les projets existants, et les retirer du fichier ne
-les supprimerait pas d'une base déjà à jour). Pour les effacer réellement —
-**opération définitive : les messages vocaux encore stockés sont perdus** —,
-dans Dashboard → SQL Editor :
+Le message vocal ayant été retiré de l'application, deux reliquats peuvent
+subsister sur les projets créés avant sa suppression : les colonnes `kind`,
+`attachment_path`, `attachment_duration`, `attachment_mime` de
+`direct_messages` et le bucket privé `voice-messages`. `supabase/schema.sql`
+ne les crée plus. Pour les effacer réellement — **opération définitive : les
+messages vocaux encore stockés sont perdus** —, coller **tout** le fichier
+`supabase/remove-voice-messages.sql` dans Dashboard → SQL Editor et l'exécuter.
 
-```sql
-drop policy if exists "Players upload their own voice messages" on storage.objects;
-drop policy if exists "Conversation participants read voice messages" on storage.objects;
-drop policy if exists "Senders delete their own voice messages" on storage.objects;
-delete from storage.objects where bucket_id = 'voice-messages';
-delete from storage.buckets where id = 'voice-messages';
--- Messages vocaux restés en base : leur `body` est vide, ils s'afficheraient
--- comme des bulles vides. À supprimer AVANT de retirer la colonne `kind`.
-delete from public.direct_messages where kind = 'voice';
-alter table public.direct_messages
-  drop column if exists kind,
-  drop column if exists attachment_path,
-  drop column if exists attachment_duration,
-  drop column if exists attachment_mime;
-```
+L'ordre des opérations compte : les triggers de `direct_messages` référencent
+les colonnes vocales, et les remplacer (le script le fait en premier, par leur
+version « texte uniquement » identique à `schema.sql`) avant de supprimer les
+colonnes — sinon chaque envoi de message planterait. Le script supprime ensuite
+les messages vocaux (bulles vides), les colonnes, le bucket et ses politiques,
+et affiche un tableau de contrôle : chaque ligne doit indiquer `OK`.
 
 Sans ce nettoyage, la messagerie fonctionne exactement pareil : colonnes vides
 et bucket inutilisé.
@@ -2696,7 +3079,14 @@ Dans le profil `/auth` comme sur la page `/profile`, la **vitrine à trophées**
 une étagère par famille, avec son icône, son accroche, le nombre de trophées
 gagnés et sa barre de progression — et un filtre « Tous / Gagnés / À gagner ».
 Les cartes sont celles du panneau des succès (bulle d'information au survol,
-cadre du grade) ; la catégorie Mirage Rush embarque en plus la collection des
+cadre du grade) ; dans **l'application**, chaque étagère les range sur **cinq
+colonnes** fixes (`repeat(5, minmax(0, 1fr))` dans la requête « téléphone » de
+`src/achievements/trophy-shelf.css`) : les cartes passent en vignettes — icône
+réduite, nom tenu sur deux lignes au plus (le titre entier reste dans la bulle
+d'information), grade resserré — et les bords de la vitrine se resserrent pour
+que les cinq pistes restent lisibles ; le bureau garde sa grille `auto-fill`
+(autant de colonnes que la largeur en laisse entrer). La catégorie Mirage Rush
+embarque en plus la collection des
 coupes remportées. La vitrine ne répète ni le niveau, ni le rang, ni
 la barre d'XP : tout cela vit dans la carte du joueur, juste au-dessus (un seul
 bloc de progression par page). La **bulle d'information** d'une carte — la
@@ -2802,17 +3192,19 @@ débloquent le nouvel objectif sans être rejouées.
 
 ### Trophées des jeux d'arcade : Mirage Rush et Vice City Rush
 
-Dix-huit trophées (neuf par jeu) se gagnent **manette en main**, sur le site :
+Vingt trophées (neuf pour Mirage Rush, onze pour Vice City Rush) se gagnent
+**manette en main**, sur le site :
 
 | Jeu | Ce qui se gagne | Trophées |
 | --- | --- | --- |
 | Mirage Rush (`/jeu/mirage-rush`) | première course, trois puis dix terrains, 15 cristaux sur une course, 1 000 puis 3 000 points, cinq victoires, première coupe, les cinq coupes | premier galop, trois horizons, mains de cristal, mille éclats, premier trophée, cinq victoires, tempête d'or, carte complète, vitrine complète |
-| Vice City Rush (`/jeu/vice-city-rush`) | première course, premier puis sixième chapitre d'histoire, première victoire, les trois modes, 1 500 puis 4 000 points de butin, les cinq villes, une victoire par ville | premier départ, chapitre un, première place, trois styles, butin de rue, tour du monde, coffre plein, fin de l'histoire, grand chelem |
+| Vice City Rush (`/jeu/vice-city-rush`) | première course, premier puis sixième chapitre d'histoire, première victoire, les trois modes, 1 500 puis 4 000 points de butin, les cinq villes, une victoire par ville, premier titre de champion, les quatre titres | premier départ, chapitre un, première place, trois styles, butin de rue, tour du monde, coffre plein, fin de l'histoire, grand chelem, premier titre, quatre titres |
 
 Chaque course terminée envoie une action au moteur — `mirage_run` (terrain,
 mode, score, cristaux, première place) depuis `MirageRushPage.jsx`,
-`vice_city_run` (ville, mode, place, butin, chapitre d'histoire gagné) depuis
-`ViceCityRushPage.jsx`. Le moteur ne garde que ce qui doit durer : les
+`vice_city_run` (ville, mode, place, butin, chapitre d'histoire gagné) et
+`vice_city_tournament_won` (tournoi gagné) depuis `ViceCityRushPage.jsx`. Le
+moteur ne garde que ce qui doit durer : les
 **records** (score, cristaux) au maximum — une fusion entre appareils prend le
 meilleur —, les choses **distinctes** en ensembles (un terrain rejoué, une
 ville recorourue ou un chapitre revécu ne comptent pas deux fois), et un
@@ -2897,7 +3289,8 @@ Editor du projet Supabase (le script est relançable sans risque).
   compteur de file, boîte de dialogue accessible, rien sans succès à fêter),
   plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
   plus aucun reste des anciennes notifications, un seul module écrit la
-  progression locale).
+  progression locale, la vitrine rangée sur cinq colonnes dans
+  l'application).
 - `npm run check:i18n` — les routes × FR / EN / AR (la langue se passe au
   provider, le site étant publié en français), dont le hub joueur `/auth`.
 - `npm run check:headlines` — tous les gros titres rendus (h1 de page, d'article
@@ -3610,7 +4003,20 @@ tech ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
-« À RETENIR », source d’origine citée et liée. Fournée du 28.09.2026 :
+« À RETENIR », source d’origine citée et liée. Fournée du 06.10.2026 :
+
+- `/news/cinema/the-batman-part-ii-tournage-suspendu` — DC Studios et Warner
+  Bros. suspendent temporairement le tournage de The Batman Part II : Matt
+  Reeves s’éloigne pour une affaire familiale, sans date de reprise, la sortie
+  américaine restant fixée au 18 février 2028 (déclaration à Deadline, IGN,
+  Sortir à Paris). La suite n’ayant publié aucune image animée — seul un camera
+  test a été diffusé par Matt Reeves sur Vimeo en juillet 2026 —, l’actu est
+  illustrée par la campagne officielle de *The Batman* (2022) : l’entrée
+  `src/articleTrailers.js` reprend le trailer 2 de 2022 avec une `note` qui dit
+  ce que le lecteur regarde, et `src/articleGalleries.js` en tire trois
+  photogrammes, crédités de la même façon.
+
+Fournée du 28.09.2026 :
 
 - `/news/cinema/box-office-us-endgame-encore-26-millions` — le bilan
   consolidé du week-end américain : Endgame – Encore premier à 26 M$,
@@ -3622,7 +4028,19 @@ en deux temps, chapô, deux sections titrées, citation et encadré
   New York Film Festival de la suite de Godzilla Minus One, premier film de
   la saga classé R, dates de sortie confirmées (Variety, Toho).
 
-Le même jour, trois actus gaming ont été rédigées à la main au gabarit du
+Le 06.10.2026, l’actu gaming du jour suit le même chemin —
+`/news/gta-6-satire-monde-invente`, la position de Rockstar sur la satire de
+GTA VI exposée par son vice-président chargé de la narration Rupert Humphries
+(entretien au magazine Love relayé par Eurogamer, via Gamekult) : entrée dans
+`CurrentNews.jsx`, carte en tête de `GamingNews.jsx` (pastille
+« bande-annonce »), route explicite dans `src/main.jsx`, recherche et sitemap.
+Elle est la première actu gaming à déclarer ses vidéos : les deux trailers
+officiels de Rockstar Games (Trailer 1 et Trailer 2) dans
+`src/articleTrailers.js`, et trois photogrammes du trailer 2 dans
+`src/articleGalleries.js` — `npm run check:trailers` couvre désormais ces clés
+gaming, sans exiger d’entrée pour les actus qui n’ont rien à montrer.
+
+Le 28.09.2026, trois actus gaming ont été rédigées à la main au gabarit du
 robot (`/news/minecraft-the-sift-nouvelle-dimension`,
 `/news/the-witcher-3-remastered-sortie-29-septembre`,
 `/news/xbox-nadella-restructuration`) : entrées dans `CurrentNews.jsx`,
@@ -3724,7 +4142,19 @@ Deux cas particuliers, pour que rien ne reste implicite :
 
 Troisième zone du hub Actus (`/news`) : la page `/news/tech`
 (`src/pages/TechNews.jsx`) rassemble les actus tech de la semaine, au même
-gabarit éditorial que le gaming et le cinéma. Fournée du 21-28.09.2026 :
+gabarit éditorial que le gaming et le cinéma. Fournée du 06.10.2026 :
+
+- `/news/tech/norvege-lunettes-connectees-interdiction` — la Norvège veut
+  interdire temporairement les lunettes à caméra dans les parcs, plages,
+  musées, écoles, crèches, établissements de santé, salles de sport et
+  événements publics, sans toucher à l’usage privé : la ministre du Numérique
+  Torgeir Micaelsen invoque le risque d’être filmé à son insu, Meta répond par
+  la LED qui clignote (The Guardian, AFP via France 24 et Le Soir). Miniature :
+  la photo de presse du Guardian (Mark Zuckerberg présentant la gamme de
+  lunettes connectées de Meta, Carlos Barría/Reuters), la couverture éditoriale
+  maison restant le repli de la carte.
+
+Fournée du 21-28.09.2026 :
 
 - `/news/tech/starship-flight-14-premier-vol-orbital` — le vol 14 de Starship
   vise la première mise en orbite et le déploiement de 26 satellites
@@ -3755,6 +4185,36 @@ Le hub, lui, ajoute une troisième carte (`03 / TECH`) dans `News.jsx`, avec
 sa couleur d’univers (violet #a855f7, #6d28d9 en thème clair) déclinée dans
 `src/news-carousel.css` et `src/theme.css` — la grille passe à trois colonnes
 sur desktop, deux sous 1100 px, une sous 780 px.
+
+## Hub Actus : la bannière « actu gaming du jour »
+
+Sous les trois cartes du hub (`/news`), une bannière reprend **l'actu gaming
+du jour** au gabarit de la une de l'accueil : la vidéo officielle de l'article
+se lit sur place dans la colonne de gauche (lecteur du site, `youTubeEmbedUrl`,
+donc soumis à la règle « une seule vidéo à la fois »), la colonne de droite —
+pastille « Actu du jour », date · source, titre, chapô, « Lire l'article » —
+est le lien vers l'article. Le libellé de section annonce ce que montre le
+cadre (« BANDE-ANNONCE OFFICIELLE · ROCKSTAR GAMES ») et un lien renvoie au
+flux `/news/gaming`.
+
+Rien n'est recopié : la bannière lit **la première entrée de
+`latestGamingStories`** dans `src/pages/GamingNews.jsx` (exportée sous le nom
+`gamingTopStory`), c'est-à-dire la carte qui ouvre déjà `/news/gaming` en
+grand. Pour changer la une, on insère la nouvelle actu **en tête de cette
+liste** — le hub et le flux gaming suivent ensemble, rien d'autre à brancher.
+La vidéo vient de `src/articleTrailers.js` : `leadTrailer(route)` renvoie la
+première vidéo officielle déclarée pour l'article (la même dont la pastille des
+cartes reprend la nature). Une actu sans vidéo officielle n'a pas de cadre
+vide : son visuel (`image`, puis `fallbackImage` si l'image distante ne répond
+plus) remplit le cadre 16/10 à la place du lecteur.
+
+Où vit le code : `src/pages/News.jsx` (balisage, textes FR / EN / AR),
+`src/news-carousel.css` (`.news-hub-today` : espacement du hub et visuel de
+repli) — la carte elle-même réutilise les classes de l'accueil
+(`.featured-dossiers--news`, `.home-news-card`, `src/daily-news.css`), thème
+clair compris. Vérifications : `npm run check:light-news` (le hub est rendu
+en thème clair), `npm run check:i18n` (rendu FR / EN / AR, dictionnaire
+partiel), `npm run check:trailers` et `npm run check:videos`.
 
 ## Robot actus du jour
 

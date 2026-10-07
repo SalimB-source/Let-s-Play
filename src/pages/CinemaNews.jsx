@@ -10,6 +10,7 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // Une actu dont la bande-annonce officielle est intégrée à l'article affiche
 // une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
+import NewsFeaturedStory from '../components/NewsFeaturedStory';
 
 // Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
 // Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
@@ -26,7 +27,7 @@ export default function CinemaNews() {
   const copy = {
     en: {
       section: 'CINEMA & SERIES NEWS',
-      updated: 'Updated 05.10.2026',
+      updated: 'Updated 07.10.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -39,7 +40,7 @@ export default function CinemaNews() {
     },
     fr: {
       section: 'ACTUS CINÉMA & SÉRIES',
-      updated: 'Mis à jour le 05.10.2026',
+      updated: 'Mis à jour le 07.10.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -52,7 +53,7 @@ export default function CinemaNews() {
     },
     ar: {
       section: 'أخبار السينما والمسلسلات',
-      updated: 'آخر تحديث 05.10.2026',
+      updated: 'آخر تحديث 07.10.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -65,7 +66,7 @@ export default function CinemaNews() {
     },
   }[lang] || {
     section: 'ACTUS CINÉMA & SÉRIES',
-    updated: 'Mis à jour le 05.10.2026',
+    updated: 'Mis à jour le 07.10.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -80,13 +81,15 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
-  // Actus cinéma du lundi 05.10.2026 : la sortie des Misérables de Fred Cavayé
-  // et l'arrivée de la saison 2 de Marshals sur Paramount+ France ouvrent la
-  // page ; suivent les actus du week-end des 03-04.10.2026 — le démarrage de
-  // Verity devant Digger au box-office, la bande-annonce de la saison 2 de
-  // Dexter: Resurrection et les premiers avis de Beware Boiúna —, puis celles
-  // du 26-29.09.2026.
+  // Actus cinéma du mercredi 07.10.2026 : l'officialisation de Destin Daniel
+  // Cretton à la réalisation de Spider-Man 4 ouvre la page ; suivent l'actu du
+  // mardi 06.10.2026 (pause de tournage de The Batman Part II), celles du lundi
+  // 05.10.2026 — Les Misérables de Fred Cavayé et Marshals saison 2 —, celles
+  // du week-end des 03-04.10.2026 — Verity vs Digger, Dexter Resurrection S2
+  // et Beware Boiúna —, puis celles du 26-29.09.2026.
   const articles = useMemo(() => [
+    { to: '/news/cinema/spider-man-4-destin-daniel-cretton', image: 'spider-man-4-cretton-news.jpg', fallbackImage: 'spider-man-4-cretton-news.svg', imageCredit: 'PHOTO DE PRESSE · SONY PICTURES / MARVEL STUDIOS', alt: 'Tom Holland dans le rôle de Peter Parker / Spider-Man — photo officielle Sony Pictures / Marvel Studios', badge: 'MARVEL · SONY PICTURES', kicker: '07.10.2026 · VARIETY', title: 'SPIDER-MAN 4 : LE CAP EST FIXÉ.', excerpt: 'Destin Daniel Cretton réalisera Spider-Man 4 avec Tom Holland et Zendaya. Sony Pictures et Marvel Studios arrêtent un tournage pour l’été et visent une sortie mondiale en salles en juillet 2027, intercalée entre les prochains Avengers.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/the-batman-part-ii-tournage-suspendu', image: youTubeThumbUrl('mqqft2x_Aa4'), fallbackImage: 'the-batman-part-ii-tournage-suspendu-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · WARNER BROS. PICTURES', alt: 'The Batman de Matt Reeves — miniature de la bande-annonce officielle Warner Bros. Pictures (2022)', badge: 'DC STUDIOS · TOURNAGE', kicker: '06.10.2026 · DC STUDIOS', title: 'GOTHAM RETIENT SON SOUFFLE.', excerpt: 'Warner Bros. et DC Studios ont suspendu temporairement le tournage de The Batman Part II : Matt Reeves s’éloigne de la production pour une affaire familiale, sans date de reprise. La sortie américaine reste fixée au 18 février 2028, avec Robert Pattinson, Jeffrey Wright, Andy Serkis et Colin Farrell.', read: copy.read, sentiment: 'negative' },
     { to: '/news/cinema/les-miserables-cavaye-14-octobre', image: youTubeThumbUrl('ZZRo2fIbomE'), fallbackImage: 'les-miserables-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · PATHÉ CINÉMAS', alt: 'Les Misérables de Fred Cavayé — Vincent Lindon en Jean Valjean dans la bande-annonce française de Pathé Cinémas', badge: 'CINÉMA · FRED CAVAYÉ', kicker: '05.10.2026 · PATHÉ', title: 'VALJEAN ET JAVERT SORTENT.', excerpt: 'Vincent Lindon et Tahar Rahim s’affrontent dans l’adaptation de Victor Hugo signée Fred Cavayé, avec Noémie Merlant, Camille Cottin et Benjamin Lavernhe. La bande-annonce est en ligne, le film sort le 14 octobre dans les salles françaises.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/marshals-saison-2-paramount-france', image: youTubeThumbUrl('mtk4ZZutvLc'), fallbackImage: 'marshals-saison-2-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · CBS', alt: 'Marshals: A Yellowstone Story saison 2 — Luke Grimes en Kayce Dutton, image du trailer officiel CBS', badge: 'PARAMOUNT+ · SÉRIE', kicker: '05.10.2026 · PARAMOUNT+', title: 'LES MARSHALS REVIENNENT.', excerpt: 'Luke Grimes reprend Kayce Dutton pour la saison 2 de Marshals: A Yellowstone Story, disponible ce lundi en France sur Paramount+, un jour après la diffusion américaine sur CBS. Au moins dix-huit épisodes hebdomadaires, et l’enlèvement de Tate en fil rouge.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/box-office-verity-digger', image: 'cinema-verity.jpg', fallbackImage: 'box-office-verity-digger-news.svg', imageCredit: 'PHOTO DE PRESSE · AMAZON MGM STUDIOS', alt: 'Verity — Dakota Johnson dans le thriller d’Amazon MGM Studios adapté du roman de Colleen Hoover', badge: 'CINÉMA · BOX-OFFICE', kicker: '04.10.2026 · VARIETY', title: 'VERITY DEVANT DIGGER.', excerpt: 'L’adaptation du roman de Colleen Hoover vise 33,6 M$ pour son premier week-end dans 3 510 salles. Digger, porté par Tom Cruise et Iñárritu, s’effondre autour de 7,5 M$ pour un budget de 160 à 180 M$. En France, Kraken signe le meilleur démarrage d’un film d’horreur français depuis plus de 25 ans.', read: copy.read, sentiment: 'mixed' },
@@ -172,28 +175,16 @@ export default function CinemaNews() {
 
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{copy.section}</span><span>{copy.updated}</span></div>
+        <NewsFeaturedStory
+          story={topStory}
+          todayLabel={copy.today}
+          renderStoryImage={renderStoryImage}
+          renderBadges={renderBadges}
+        />
         <div className="news-carousel is-grid">
-          {topStory && (
-            <div className="news-grid-cell news-grid-cell--today">
-              <Link className="daily-news-card news-today" to={topStory.to}>
-                <div className="daily-news-image">
-                  {renderStoryImage(topStory, 'eager')}
-                  {renderBadges(topStory)}
-                </div>
-                <div className="daily-news-copy">
-                  <p className="eyebrow"><span className="live-dot" /> {copy.today}</p>
-                  {topStory.imageCredit && <span className="cinema-image-credit">{topStory.imageCredit}</span>}
-                  <span className="news-kicker">{topStory.kicker}</span>
-                  <h2>{topStory.title}</h2>
-                  <p>{topStory.excerpt}</p>
-                  <span className="read-link">{topStory.read} <Arrow /></span>
-                </div>
-              </Link>
-            </div>
-          )}
-          {gridArticles.map((article) => (
+          {gridArticles.map((article, index) => (
             <div className="news-grid-cell" key={article.to}>
-              <Link className="news-carousel-card" to={article.to}>
+              <Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
                 <div className="news-carousel-image">
                   {renderStoryImage(article)}
                   {renderBadges(article)}

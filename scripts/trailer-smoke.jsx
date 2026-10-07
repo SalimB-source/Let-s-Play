@@ -134,9 +134,19 @@ export function renderArticle(key) {
  */
 export function renderHub() {
   const html = render('/news/cinema', CinemaNews, '/news/cinema');
-  const cards = [...html.matchAll(/<a\b[^>]*>/g)]
-    .filter((match) => /class="[^"]*(?:daily-news-card|news-carousel-card)/.test(match[0]))
+  // La une est désormais une bannière <article> (vidéo + lien texte) au-dessus
+  // de la grille : on la compte comme première carte du flux.
+  const featured = [...html.matchAll(/<article\b[^>]*class="[^"]*news-featured-story[^"]*"[^>]*>/g)]
+    .map((match) => {
+      const end = html.indexOf('</article>', match.index);
+      const block = html.slice(match.index, end < 0 ? html.length : end);
+      const link = /<a\b[^>]*class="[^"]*daily-news-copy[^"]*"[^>]*>/.exec(block);
+      return link ? { tag: link[0], index: match.index } : null;
+    })
+    .filter(Boolean);
+  const articles = [...html.matchAll(/<a\b[^>]*class="[^"]*news-carousel-card[^"]*"[^>]*>/g)]
     .map((match) => ({ tag: match[0], index: match.index }));
+  const cards = [...featured, ...articles].sort((a, b) => a.index - b.index);
 
   return cards.map((card, i) => {
     const slice = html.slice(card.index, i + 1 < cards.length ? cards[i + 1].index : html.length);

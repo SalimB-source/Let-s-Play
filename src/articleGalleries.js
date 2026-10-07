@@ -17,6 +17,32 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // ---- Actus du mercredi 07.10.2026 ----------------------------------------
+  // Gaming : photogrammes du trailer officiel de GTA VI montrant Vice City.
+  'gta-6-cloud-pc-dementi-xbox': { label: 'GTA VI', meta: 'ROCKSTAR GAMES · XBOX CLOUD', items: [
+    { src: youTubeFrameUrl('VQRLujxTm3c', 1), alt: 'Grand Theft Auto VI — photogramme du trailer 2 officiel de Rockstar Games', caption: '01 / Vice City sous les néons, terrain exclusif aux consoles au lancement' },
+    { src: youTubeFrameUrl('VQRLujxTm3c', 2), alt: 'Grand Theft Auto VI — plan du trailer 2 officiel montrant l’action dans Leonida', caption: '02 / Leonida, inaccessible aux joueurs PC lors de la sortie du 19 novembre' },
+    { src: youTubeFrameUrl('VQRLujxTm3c', 3), alt: 'Grand Theft Auto VI — duo Jason et Lucia dans le trailer officiel', caption: '03 / Le lancement console le plus attendu de l’année' },
+  ], credit: 'Photogrammes extraits du trailer officiel de Grand Theft Auto VI (Rockstar Games).', creditSources: [{ label: 'le trailer 2 sur YouTube', href: 'https://www.youtube.com/watch?v=VQRLujxTm3c' }] },
+
+  // ---- Actus du mardi 06.10.2026 ------------------------------------------
+  // Gaming : les photogrammes viennent du trailer 2 officiel de Rockstar Games
+  // (06.05.2025), le dernier avant l’Extended Look du 27.08.2026 — c’est lui
+  // qui montre le mieux l’État fictif de Leonida dont parle l’article.
+  'gta-6-satire-monde-invente': { label: 'GTA VI', meta: 'ROCKSTAR GAMES · LEONIDA', items: [
+    { src: youTubeFrameUrl('VQRLujxTm3c', 1), alt: 'Grand Theft Auto VI — photogramme du trailer 2 officiel de Rockstar Games', caption: '01 / Leonida, la Floride fictive de Rockstar' },
+    { src: youTubeFrameUrl('VQRLujxTm3c', 2), alt: 'Grand Theft Auto VI — plan du trailer 2 officiel, entre Vice City et ses excès', caption: '02 / Vice City, matière première d’une satire plus grande que nature' },
+    { src: youTubeFrameUrl('VQRLujxTm3c', 3), alt: 'Grand Theft Auto VI — dernier plan du trailer 2 officiel de Rockstar Games', caption: '03 / Jason et Lucia, le duo du prochain Grand Theft Auto' },
+  ], credit: 'Photogrammes extraits du trailer 2 officiel de Rockstar Games, publié le 06.05.2025.', creditSources: [{ label: 'le trailer 2 sur YouTube', href: 'https://www.youtube.com/watch?v=VQRLujxTm3c' }] },
+  // Cinéma : la suite n’a montré qu’un camera test diffusé par Matt Reeves en
+  // juillet 2026 (Vimeo, hors YouTube) — les captures viennent donc de la
+  // bande-annonce de The Batman (2022), et le crédit le dit.
+  'cinema/the-batman-part-ii-tournage-suspendu': { label: 'THE BATMAN', meta: 'WARNER BROS. · 2022', items: [
+    { src: youTubeFrameUrl('mqqft2x_Aa4', 1), alt: 'The Batman (2022) — photogramme de la bande-annonce officielle Warner Bros.', caption: '01 / Gotham City, sous la pluie et les néons de Matt Reeves' },
+    { src: youTubeFrameUrl('mqqft2x_Aa4', 2), alt: 'The Batman (2022) — plan de la bande-annonce officielle Warner Bros.', caption: '02 / Robert Pattinson dans la campagne de 2022' },
+    { src: youTubeFrameUrl('mqqft2x_Aa4', 3), alt: 'The Batman (2022) — dernier plan de la bande-annonce officielle Warner Bros.', caption: '03 / Le dernier aperçu en mouvement de l’univers de The Batman' },
+  ], credit: 'Photogrammes extraits de la bande-annonce officielle de The Batman (2022), reprise à titre d’illustration : The Batman Part II n’a publié aucune image animée — la suite n’a montré qu’un camera test diffusé par Matt Reeves en juillet 2026.', creditSources: [{ label: 'la bande-annonce de 2022 sur YouTube', href: 'https://www.youtube.com/watch?v=mqqft2x_Aa4' }] },
+
   // ---- Actus du lundi 05.10.2026 ------------------------------------------
   'gears-of-war-e-day-sortie-mondiale': { label: 'GEARS OF WAR: E-DAY', meta: 'THE COALITION · XBOX', items: [
     { src: youTubeFrameUrl('TOEuNKz3XW8', 1), alt: 'Gears of War: E-Day — photogramme du trailer de lancement officiel', caption: '01 / Marcus et Dom au premier jour de l’Emergence' },

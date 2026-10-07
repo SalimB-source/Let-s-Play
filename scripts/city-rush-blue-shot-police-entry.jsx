@@ -97,7 +97,7 @@ const stepFrame = () => {
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
-  'policeSiren', 'policeSirenOff',
+  'policeSiren', 'policeSirenOff', 'garageRepair',
 ];
 const cityArg = process.argv.find((arg) => arg.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_WEAPONS_ALL === '1' || process.env.CITY_RUSH_BLUE_SHOT_ALL === '1';
@@ -207,7 +207,9 @@ for (let run = 0; run < RUNS; run += 1) {
         world.action(redType);
       } else if (hud && steeringCooldown <= 0) {
         // Aller chercher un bonus rouge visible, sans jamais suivre un ancien
-        // pickup bleu/jaune. Le boost au sol reste librement collectable.
+        // pickup bleu/jaune ni les conteneurs du bazooka, qui ne sont plus des
+        // pickups de la route mais des caisses posées sur la chaussée. Le boost
+        // au sol reste librement collectable.
         let best = null;
         for (const slot of pickupSlots) {
           if (!slot.visible || ![CITY_RUSH_PICKUPS.BOOST, redType].includes(slot.userData.type)) continue;
@@ -247,7 +249,12 @@ for (let run = 0; run < RUNS; run += 1) {
     }
     const forbidden = firstRaceEffects.filter((effect) => forbiddenShotEffects.has(effect.type));
     if (forbidden.length) fail(`[${city.id}] un tir bleu ou un hélicoptère d'IA non policier a été déclenché`, forbidden);
-    const unexpectedPickups = callbacks.pickups.filter((pickup) => ![CITY_RUSH_PICKUPS.BOOST, redType].includes(pickup.type));
+    // Le bazooka garde ses deux entrepôts de bord de piste (30 % puis 65 % de
+    // la course) : les traverser est légitime, les autres bonus bleu/jaune ne
+    // le sont pas.
+    const unexpectedPickups = callbacks.pickups.filter((pickup) => ![
+      CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, redType, 'bazooka',
+    ].includes(pickup.type));
     if (unexpectedPickups.length) fail(`[${city.id}] un pickup bleu/jaune a été collecté`, unexpectedPickups);
     const redPickups = callbacks.pickups.filter((pickup) => pickup.type === redType);
     if (redPickups.some((pickup) => pickup.chargeCost !== 7 || pickup.progress !== 7 || pickup.ammo !== 7)) {
@@ -262,11 +269,11 @@ for (let run = 0; run < RUNS; run += 1) {
     // Le carré du carambolage est neutralisé par le lanceur (voir son en-tête) :
     // aucun `player-hit` de collision ne doit donc apparaître, et la barre reste
     // intacte pendant les six tours du pilote d'essai.
-    const accidentalPlayerCollisionHits = firstRaceEffects.filter((effect) => effect.type === 'player-hit' && effect.source === 'collision');
+    const accidentalPlayerCollisionHits = firstRaceEffects.filter((effect) => effect.type === 'player-hit' && ['collision', 'suv-collision'].includes(effect.source));
     if (accidentalPlayerCollisionHits.length) {
       fail(`[${city.id}] un carambolage a retiré de la vie au joueur malgré la neutralisation du lanceur`, accidentalPlayerCollisionHits);
     }
-    const ramHits = firstRaceEffects.filter((effect) => effect.type === 'police-hit' && effect.source === 'collision');
+    const ramHits = firstRaceEffects.filter((effect) => effect.type === 'police-hit' && ['collision', 'suv-collision'].includes(effect.source));
     if (ramHits.some((effect) => effect.damage !== 1)) {
       fail(`[${city.id}] un carambolage n'a pas retiré exactement un point à la police`, ramHits);
     }

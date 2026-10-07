@@ -1,93 +1,48 @@
 .news-view-tools{display:flex;align-items:end;gap:16px;padding-bottom:4px}.news-all-actions{display:flex;justify-content:center;margin:34px 0 4px}.news-all-actions .button{border:0;cursor:pointer}.news-empty{grid-column:1 / -1;color:var(--muted);padding:36px 0}.news-view-toggle{display:flex;border:1px solid var(--line-strong);background:rgba(255,255,255,.04);padding:3px}.news-view-toggle button{border:0;background:transparent;color:var(--muted);padding:10px 14px;cursor:pointer;font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;transition:background .2s,color .2s}.news-view-toggle button:hover,.news-view-toggle button.active{background:var(--cyan);color:var(--bg)}
-/* Grille : les cartes gardent leur hauteur naturelle (image 16/10 + texte en
-   dessous) pour que le titre de chaque article reste lisible en entier, sans
-   troncature liée à un format carré forcé. */
-/* Sur PC (grand écran), la grille passe à 5 colonnes : voir le bloc
-   `@media(min-width:1201px)` plus bas, qui adapte la carte à cette largeur
-   réduite (titre en entier, plus d'extrait ni de lien « lire l'article »). */
-.news-carousel.is-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));overflow:visible;scroll-snap-type:none;align-items:stretch}
-/* La cellule est l'élément de grille ; la carte qu'elle contient la remplit
-   (grille à une case : étirement automatique dans les deux sens). C'est elle
-   qui porte l'ombre — voir « Ombre de profondeur » plus bas. */
+/* Les articles du flux s'affichent en quatre colonnes sur grand écran ; la une
+   est séparée de cette grille et garde le format vidéo + texte de l'accueil. */
+.news-carousel.is-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;scroll-snap-type:none;align-items:stretch}
+/* La cellule porte l'ombre de la carte, qui serait rognée par son coin biseauté
+   si elle était appliquée directement à l'élément qui porte le clip-path. */
 .news-carousel.is-grid .news-grid-cell{display:grid;min-width:0}
-.news-carousel.is-grid .news-grid-cell--today{grid-column:span 2}
 .news-carousel.is-grid .news-carousel-card{width:100%;min-width:0;height:100%;aspect-ratio:auto}
 .news-carousel.is-grid .news-carousel-card:hover{transform:translateY(-4px)}
 .news-carousel.is-grid .news-carousel-image{flex:none;aspect-ratio:16/10;min-height:150px}
 .news-carousel.is-grid .news-carousel-copy{justify-content:flex-start;padding:18px 18px 20px}
 .news-carousel.is-grid .news-carousel-copy h2{font-size:clamp(18px,1.6vw,22px);line-height:1.22;-webkit-line-clamp:4}
 .news-carousel.is-grid .news-carousel-copy p{-webkit-line-clamp:3}
-/* Actu à la une : intégrée à la grille sur 2 colonnes (au lieu de toute la
-   largeur en format paysage) pour que les autres actus soient visibles à côté
-   d'elle dès le premier écran. Sa hauteur s'aligne sur celle des cartes de sa
-   rangée ; son image remplit sa colonne grâce à object-fit:cover. */
-.news-carousel.is-grid .news-today{margin:0;min-height:0}
-.news-carousel.is-grid .news-today .daily-news-image{min-height:0}
-.news-carousel.is-grid .news-today .daily-news-copy{padding:clamp(20px,2.4vw,32px)}
-.news-carousel.is-grid .news-today .daily-news-copy h2{font-size:clamp(20px,2vw,28px);line-height:1.12;margin:12px 0}
-.news-carousel.is-grid .news-today .daily-news-copy>p:not(.eyebrow){font-size:14px;line-height:1.5;margin:0 0 16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-/* ----- Version PC (5 colonnes) -----
-   À 5 colonnes, chaque carte ne mesure plus qu'environ 230px : l'extrait et le
-   lien « lire l'article » sont retirés pour laisser toute la place au titre,
-   qui n'est plus tronqué (plus de `-webkit-line-clamp`) et reste donc lisible
-   en entier, même sur les intitulés les plus longs. */
+/* Quatre colonnes laissent la place à l'extrait et au lien de chaque article,
+   même sur les grands écrans : seul le titre est libéré de sa limite de lignes. */
 @media(min-width:1201px) and (hover:hover), (min-width:1201px) and (min-device-width:601px){
-  /* Gouttière resserrée : à 5 colonnes, chaque pixel gagné profite au titre. */
-  .news-carousel.is-grid{gap:16px}
-  .news-carousel.is-grid .news-carousel-image{min-height:124px}
-  .news-carousel.is-grid .news-carousel-copy{padding:14px 14px 16px}
-  .news-carousel.is-grid .news-kicker{font-size:9px;letter-spacing:.08em}
+  .news-carousel.is-grid{gap:18px}
+  .news-carousel.is-grid .news-carousel-image{min-height:160px}
+  .news-carousel.is-grid .news-carousel-copy{padding:18px}
+  .news-carousel.is-grid .news-kicker{font-size:9px;letter-spacing:.1em}
   .news-carousel.is-grid .news-carousel-copy h2{
     display:block;
-    font-size:clamp(15px,1.15vw,18px);
-    line-height:1.3;
+    font-size:clamp(18px,1.25vw,20px);
+    line-height:1.24;
     letter-spacing:0;
-    margin:8px 0 0;
+    margin:8px 0 10px;
     -webkit-line-clamp:unset;
     overflow:visible;
   }
-  /* Le smiley sentiment et le badge restent lisibles malgré la carte étroite. */
   .news-carousel.is-grid .news-sentiment{width:38px;height:38px;font-size:20px;top:9px;right:9px}
   .news-carousel.is-grid .news-carousel-image .news-feature-badge{top:10px;left:10px;padding:6px 8px;font:500 8px var(--mono);letter-spacing:.1em}
   .news-carousel.is-grid .news-carousel-image .news-feature-arrow{right:12px;bottom:12px;font:24px var(--body)}
   .news-carousel.is-grid .news-views{padding:5px 7px;font:600 9px var(--mono)}
-  /* Extrait + CTA supprimés de toutes les cartes, une à la une comprise : les
-     cartes d'une même rangée gardent ainsi la même hauteur. */
-  .news-carousel.is-grid .news-carousel-copy p,
-  .news-carousel.is-grid .news-carousel-copy .read-link,
-  .news-carousel.is-grid .news-today .daily-news-copy>p:not(.eyebrow),
-  .news-carousel.is-grid .news-today .daily-news-copy .read-link{display:none}
-  .news-carousel.is-grid .news-today .daily-news-copy{padding:18px 20px 20px}
-  .news-carousel.is-grid .news-today .daily-news-copy h2{
-    display:block;
-    font-size:clamp(16px,1.2vw,20px);
-    line-height:1.18;
-    margin:10px 0 0;
-    -webkit-line-clamp:unset;
-    overflow:visible;
-  }
 }
-/* Écrans intermédiaires (petits portables, tablettes paysage) : on repasse à
-   4 colonnes, avec l'extrait et le CTA de nouveau visibles. */
 @media(max-width:1200px){.news-carousel.is-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:1100px){.news-carousel.is-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  /* La une occupe alors toute la rangée (2 colonnes) : seule sur sa ligne, son
-     image garde une hauteur minimale le temps d'être empilée sous 700px. */
-  .news-carousel.is-grid .news-today .daily-news-image{min-height:240px}
-}
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-view-tools{width:100%;justify-content:space-between;align-items:center}
   .news-view-toggle button{padding:9px 11px}
-
-  /* Les actus restent denses sur téléphone, sans sacrifier le titre :
-     l'extrait et le CTA passent après lui et ne sont donc pas affichés ici. */
   .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .news-carousel.is-grid .news-carousel-card{flex-basis:auto;width:100%}
   .news-carousel.is-grid .news-carousel-image{min-height:0;aspect-ratio:4/3}
   .news-carousel.is-grid .news-carousel-image .news-feature-badge,
   .news-carousel.is-grid .news-carousel-image .news-feature-arrow{display:none}
-  /* Le smiley reste agrandi mais se réduit un peu sur les petites cartes. */
   .news-carousel.is-grid .news-sentiment{width:40px;height:40px;font-size:21px;top:10px;right:10px}
   .news-carousel.is-grid .news-carousel-copy{padding:12px 10px 14px}
   .news-carousel.is-grid .news-carousel-copy h2{
@@ -100,14 +55,87 @@
   }
   .news-carousel.is-grid .news-carousel-copy p,
   .news-carousel.is-grid .news-carousel-copy .read-link{display:none}
-  /* La une suit le même régime que les autres cartes : image 16/9 + titre, sans
-     extrait ni CTA, pour ne pas saturer le premier écran du téléphone. */
-  .news-carousel.is-grid .news-today .daily-news-image{min-height:0;aspect-ratio:16/9}
-  .news-carousel.is-grid .news-today .daily-news-copy{padding:16px 14px 18px;justify-content:flex-start}
-  .news-carousel.is-grid .news-today .daily-news-copy h2{display:block;font-size:clamp(20px,5.4vw,24px);line-height:1.25;margin:10px 0 0;overflow:visible}
-  .news-carousel.is-grid .news-today .daily-news-copy>p:not(.eyebrow),
-  .news-carousel.is-grid .news-today .daily-news-copy .read-link{display:none}
   .news-carousel.is-grid .news-kicker{font-size:9px;line-height:1.35;letter-spacing:.08em}
+}
+
+/* La une ouvre le flux, comme sur l'accueil : vidéo (si une bande-annonce
+   officielle est déclarée) et texte éditorial dans une bannière horizontale. */
+.news-carousel-section .news-featured-story{
+  display:grid;
+  width:100%;
+  grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+  min-height:0;
+  margin:0 0 30px;
+}
+.news-carousel-section .news-featured-story .daily-news-image{
+  min-width:0;
+  min-height:0;
+  aspect-ratio:16/10;
+  background:#05060f;
+}
+.news-featured-story .daily-news-image>img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+.news-featured-story .scroll-autoplay-video{
+  position:absolute;
+  z-index:0;
+  inset:0;
+  overflow:hidden;
+  background:#05060f;
+}
+.news-featured-story .scroll-autoplay-video-poster,
+.news-featured-story .scroll-autoplay-video iframe{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  border:0;
+  object-fit:cover;
+  background:#05060f;
+}
+.news-featured-story .scroll-autoplay-video iframe{min-height:0}
+.news-carousel-section .news-featured-story .daily-news-copy{
+  min-width:0;
+  padding:clamp(24px,3vw,40px);
+  color:inherit;
+  text-decoration:none;
+}
+.news-featured-story .daily-news-copy .news-kicker{
+  display:block;
+  margin:9px 0 0;
+  font-size:9px;
+  letter-spacing:.14em;
+}
+.news-featured-story .daily-news-copy h2{
+  font-size:clamp(24px,2.5vw,36px);
+  line-height:1.08;
+  margin:12px 0;
+}
+.news-featured-story .daily-news-copy>p:not(.eyebrow){
+  max-width:38rem;
+  margin:0 0 16px;
+  font-size:14px;
+  line-height:1.5;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:4;
+  overflow:hidden;
+}
+.news-featured-story .daily-news-copy .read-link{margin-top:auto}
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .news-carousel-section .news-featured-story{grid-template-columns:1fr;margin-bottom:24px}
+  .news-carousel-section .news-featured-story .daily-news-image{aspect-ratio:16/10}
+  .news-carousel-section .news-featured-story .daily-news-copy{padding:24px 22px 28px}
+  .news-featured-story .daily-news-copy h2{font-size:clamp(24px,7vw,32px)}
+}
+@media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .news-carousel-section .news-featured-story .daily-news-image{aspect-ratio:16/9}
+  .news-carousel-section .news-featured-story .daily-news-copy{padding:20px 18px 24px}
+  .news-featured-story .daily-news-copy h2{font-size:clamp(23px,7vw,30px)}
 }
 
 /* --------------------------------------------------------------------------
@@ -133,8 +161,7 @@
   gap:18px;
   align-items:stretch;
 }
-.news-carousel.is-grid .news-carousel-card,
-.news-carousel.is-grid .news-today{
+.news-carousel.is-grid .news-carousel-card{
   position:relative;
   isolation:isolate;
   border-color:rgba(148,130,255,.26);
@@ -142,8 +169,7 @@
   clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);
   transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .3s;
 }
-.news-carousel.is-grid .news-carousel-card::before,
-.news-carousel.is-grid .news-today::before{
+.news-carousel.is-grid .news-carousel-card::before{
   content:"";
   position:absolute;
   z-index:3;
@@ -159,17 +185,14 @@
    seule dans la sienne). */
 .news-carousel.is-grid .news-grid-cell:nth-child(3n) .news-carousel-card::before{background:var(--violet);box-shadow:0 0 14px rgba(168,85,247,.55)}
 .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{background:var(--yellow);box-shadow:0 0 14px rgba(255,214,25,.48)}
-.news-carousel.is-grid .news-carousel-card:hover,
-.news-carousel.is-grid .news-today:hover{
+.news-carousel.is-grid .news-carousel-card:hover{
   transform:translateY(-7px);
   border-color:var(--cyan);
 }
-.news-carousel.is-grid .news-carousel-image,
-.news-carousel.is-grid .daily-news-image{
+.news-carousel.is-grid .news-carousel-image{
   background:#080a18;
 }
-.news-carousel.is-grid .news-carousel-image::before,
-.news-carousel.is-grid .daily-news-image::before{
+.news-carousel.is-grid .news-carousel-image::before{
   content:"";
   position:absolute;
   z-index:1;
@@ -179,34 +202,28 @@
   opacity:.18;
   mix-blend-mode:screen;
 }
-.news-carousel.is-grid .news-carousel-image img,
-.news-carousel.is-grid .daily-news-image img{
+.news-carousel.is-grid .news-carousel-image img{
   filter:saturate(.88) contrast(1.06);
   transition:transform .6s cubic-bezier(.16,1,.3,1),filter .35s;
 }
-.news-carousel.is-grid .news-carousel-card:hover .news-carousel-image img,
-.news-carousel.is-grid .news-today:hover .daily-news-image img{
+.news-carousel.is-grid .news-carousel-card:hover .news-carousel-image img{
   transform:scale(1.07);
   filter:saturate(1.08) contrast(1.08);
 }
-.news-carousel.is-grid .news-carousel-copy,
-.news-carousel.is-grid .news-today .daily-news-copy{
+.news-carousel.is-grid .news-carousel-copy{
   position:relative;
   z-index:2;
 }
-.news-carousel.is-grid .news-carousel-copy .news-kicker,
-.news-carousel.is-grid .news-today .news-kicker{
+.news-carousel.is-grid .news-carousel-copy .news-kicker{
   color:var(--cyan);
   font-size:9px;
   letter-spacing:.14em;
 }
-.news-carousel.is-grid .news-carousel-copy h2,
-.news-carousel.is-grid .news-today .daily-news-copy h2{
+.news-carousel.is-grid .news-carousel-copy h2{
   letter-spacing:.015em;
   text-wrap:balance;
 }
-.news-carousel.is-grid .news-carousel-copy .read-link,
-.news-carousel.is-grid .news-today .read-link{
+.news-carousel.is-grid .news-carousel-copy .read-link{
   display:inline-flex;
   align-items:center;
   gap:8px;
@@ -215,18 +232,11 @@
   color:var(--yellow);
   transition:color .2s,gap .2s;
 }
-.news-carousel.is-grid .news-carousel-card:hover .read-link,
-.news-carousel.is-grid .news-today:hover .read-link{gap:13px;color:var(--cyan)}
-@media(min-width:1201px) and (hover:hover), (min-width:1201px) and (min-device-width:601px){
-  .news-carousel.is-grid .news-carousel-copy .read-link,
-  .news-carousel.is-grid .news-today .read-link{display:none}
-}
+.news-carousel.is-grid .news-carousel-card:hover .read-link{gap:13px;color:var(--cyan)}
 @media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-carousel.is-grid{gap:12px}
-  .news-carousel.is-grid .news-carousel-card:hover,
-  .news-carousel.is-grid .news-today:hover{transform:translateY(-4px)}
-  .news-carousel.is-grid .news-carousel-copy .read-link,
-  .news-carousel.is-grid .news-today .read-link{display:none}
+  .news-carousel.is-grid .news-carousel-card:hover{transform:translateY(-4px)}
+  .news-carousel.is-grid .news-carousel-copy .read-link{display:none}
 }
 
 /* Ombre de profondeur : les cartes reposent sur la page au lieu de flotter
@@ -244,11 +254,6 @@
     drop-shadow(0 18px 22px rgba(0,0,0,.42))
     drop-shadow(0 0 12px rgba(34,211,238,.12));
   transition:filter .3s;
-}
-.news-carousel.is-grid .news-grid-cell--today{
-  filter:
-    drop-shadow(0 22px 28px rgba(0,0,0,.48))
-    drop-shadow(0 0 16px rgba(124,58,237,.18));
 }
 .news-carousel.is-grid .news-grid-cell:hover{
   filter:

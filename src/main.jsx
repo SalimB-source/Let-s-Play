@@ -172,6 +172,8 @@ function App() {
             <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
+            <Route path="/news/gta-6-cloud-pc-dementi-xbox" element={<CurrentNews slug="gta-6-cloud-pc-dementi-xbox" />} />
+            <Route path="/news/gta-6-satire-monde-invente" element={<CurrentNews slug="gta-6-satire-monde-invente" />} />
             <Route path="/news/physint-budget-400-millions-xbox" element={<CurrentNews slug="physint-budget-400-millions-xbox" />} />
             <Route path="/news/minecraft-the-sift-nouvelle-dimension" element={<CurrentNews slug="minecraft-the-sift-nouvelle-dimension" />} />
             <Route path="/news/god-of-war-laufey-precommandes-arc-serpent" element={<CurrentNews slug="god-of-war-laufey-precommandes-arc-serpent" />} />

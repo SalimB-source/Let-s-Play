@@ -244,6 +244,13 @@ viceGame = reduce(viceGame, { type: 'vice_city_run', city: 'paris', mode: 'pursu
 // Deux victoires avant cette course : la 2 place n'en ajoute pas une troisième.
 check('Vice City Rush : une 2e place ne compte pas de victoire', metricValue(viceGame, 'viceCityWins'), 2);
 check('Vice City Rush : … mais garde le butin record', metricValue(viceGame, 'viceCityBestScore'), 2400);
+viceGame = reduce(viceGame, { type: 'vice_city_run', city: 'vice-city', mode: 'tournament', rank: 1, score: 100 }).state;
+check('Vice City Rush : une manche de tournoi ne valide pas un mode de course', metricValue(viceGame, 'viceCityModesPlayed'), 1);
+check('Vice City Rush : … mais compte sa victoire', metricValue(viceGame, 'viceCityWins'), 3);
+viceGame = reduce(viceGame, { type: 'vice_city_tournament_won', tournamentId: 'sunset' }).state;
+check('Vice City Rush : un titre de tournoi crédite sa coupe', metricValue(viceGame, 'viceCityTournamentsWon'), 1);
+viceGame = reduce(viceGame, { type: 'vice_city_tournament_won', tournamentId: 'sunset' }).state;
+check('Vice City Rush : un titre rejoué ne compte pas deux fois', metricValue(viceGame, 'viceCityTournamentsWon'), 1);
 const mergedGames = mergeStates(mirageGame, viceGame);
 check('fusion : les records de jeu survivent', metricValue(mergedGames, 'mirageBestScore'), 1500);
 check('fusion : … des deux jeux', metricValue(mergedGames, 'viceCityBestScore'), 2400);
@@ -523,9 +530,9 @@ check('le seuil Tour du monde couvre toutes les villes', ACHIEVEMENTS.find(({ id
 VICE_CITIES.forEach((city, index) => {
   record(play('vice_city_run', { city, mode: ['circuit', 'sprint', 'pursuit'][index % 3], rank: 1, score: 2000 + index * 600 }));
 });
-// Mode Histoire : les six chapitres remportés, un par un (le chapitre rejoué
+// Mode Histoire : les dix chapitres remportés, un par un (le chapitre rejoué
 // ne compte pas deux fois — l'ensemble dédoublonne par numéro).
-const STORY_CHAPTER_COUNT = 6;
+const STORY_CHAPTER_COUNT = 10;
 check('le seuil Fin de l’histoire couvre tous les chapitres', ACHIEVEMENTS.find(({ id }) => id === 'vice-story-hero').target, STORY_CHAPTER_COUNT);
 for (let chapter = 0; chapter < STORY_CHAPTER_COUNT; chapter += 1) {
   record(play('vice_city_run', {
@@ -536,6 +543,14 @@ for (let chapter = 0; chapter < STORY_CHAPTER_COUNT; chapter += 1) {
     storyChapter: chapter,
   }));
 }
+// Tournois : une manche courue (elle ne compte pas dans « trois styles ») et
+// les quatre titres soulevés, un par un — de quoi ouvrir premier titre et
+// quatre titres. Le doublon ne compte pas deux fois.
+const VICE_TOURNAMENTS = ['sunset', 'europe', 'pacifique', 'legendes'];
+check('le seuil Quatre titres couvre tous les tournois', ACHIEVEMENTS.find(({ id }) => id === 'vice-tournament-slam').target, VICE_TOURNAMENTS.length);
+record(play('vice_city_run', { city: 'vice-city', mode: 'tournament', rank: 1, score: 1800 }));
+VICE_TOURNAMENTS.forEach((tournamentId) => record(play('vice_city_tournament_won', { tournamentId })));
+record(play('vice_city_tournament_won', { tournamentId: VICE_TOURNAMENTS[0] }));
 
 const finalSummary = summarize(scenario);
 const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((item) => item.id === entry.id)?.unlocked).map((entry) => entry.id);
@@ -738,6 +753,7 @@ const sources = [
   // Les deux jeux d'arcade annoncent leurs courses au moteur des succès.
   ['src/games/MirageRushPage.jsx', "trackAchievement('mirage_run'"],
   ['src/games/ViceCityRushPage.jsx', "trackAchievement('vice_city_run'"],
+  ['src/games/ViceCityRushPage.jsx', "trackAchievement('vice_city_tournament_won'"],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
   ['src/achievements/AchievementPopup.jsx', 'dismissNotification(entry.id)'],
   ['src/main.jsx', '<AchievementPopup />'],
@@ -766,6 +782,30 @@ const writers = sourceFiles(path.join(root, 'src'))
   .filter((file) => /letsplay_achievements/.test(readFileSync(file, 'utf8')))
   .map((file) => path.relative(root, file));
 check('un seul module écrit la progression locale', writers.join(', ') || 'aucun', 'aucun');
+
+// La vitrine à trophées du profil range ses cartes sur **cinq colonnes** dans
+// l'application (téléphone), et garde sa grille `auto-fill` sur bureau. La
+// règle doit rester dans une requête portant la condition téléphone du dépôt
+// (`src/lib/phoneLayout.js`), sinon un téléphone à la fenêtre élargie perd les
+// cinq colonnes — voir aussi `npm run check:phone-css`.
+const shelfCss = read('src/achievements/trophy-shelf.css');
+ok(
+  'vitrine : cinq trophées par ligne dans l’application',
+  /@media[^{]*max-device-width:600px[^{]*\{[\s\S]*?\.trophy-category-grid[^{]*\{\s*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/.test(shelfCss),
+);
+// La grille de la vitrine porte aussi les classes `achievement-grid compact` :
+// sans ces trois classes, `.achievement-grid.compact` (deux classes, dans
+// `src/achievements/achievements.css`) garderait son `auto-fill` et les cinq
+// colonnes ne s'appliqueraient jamais — quelle que soit la requête média.
+ok(
+  '… la règle a la spécificité requise face à `.achievement-grid.compact`',
+  /\.trophy-category-grid\.achievement-grid\.compact\s*\{/.test(shelfCss),
+);
+const shelfBaseGrid = shelfCss.match(/^\.trophy-category-grid\s*\{([^}]*)\}/m);
+ok(
+  '… hors téléphone, la grille reste `auto-fill` (aucun compte imposé)',
+  Boolean(shelfBaseGrid) && !shelfBaseGrid[1].includes('grid-template-columns'),
+);
 
 /* ------------------------------------------------------------------------ */
 /* 5. Bulle d'information : elle ne doit jamais sortir de l'écran            */

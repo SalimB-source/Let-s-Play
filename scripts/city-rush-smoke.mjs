@@ -104,11 +104,21 @@ const server = await createServer({
         // coût sur une barre d'une cellule.
         if (id.includes('cityRushRules')) {
           const anchor = '  collision: 1, // choc contre une voiture : un carré pour le pilote';
-          if (!code.includes(anchor)) {
-            throw new Error('ancre du carambolage introuvable dans cityRushRules — mettre à jour le lanceur du smoke');
+          const spikeAnchor = '  spike: 1, // herse : un carré pour le pilote, pneus crevés';
+          const spikeSlowAnchor = 'export const CITY_RUSH_SPIKE_SLOW_FACTOR = 0.42; // × la vitesse visée pendant la crevaison';
+          if (!code.includes(anchor) || !code.includes(spikeAnchor) || !code.includes(spikeSlowAnchor)) {
+            throw new Error('ancre du carambolage ou de la herse introuvable dans cityRushRules — mettre à jour le lanceur du smoke');
           }
           return {
-            code: code.replace(anchor, '  collision: 0, // harnais : carré du carambolage neutralisé'),
+            code: code.replace(anchor, '  collision: 0, // harnais : carré du carambolage neutralisé')
+              .replace("'suv-collision': 2,", "'suv-collision': 0,")
+              // La herse des quatre étoiles se dresse sur la route du pilote
+              // d'essai, qui ne se dérobe pas : son carré et sa crevaison sont
+              // neutralisés comme le carambolage, sinon la course longue
+              // s'achèverait sur une épave. Le barème de la herse est vérifié
+              // par les tests purs.
+              .replace(spikeAnchor, '  spike: 0, // harnais : carré de la herse neutralisé')
+              .replace(spikeSlowAnchor, 'export const CITY_RUSH_SPIKE_SLOW_FACTOR = 1; // harnais : crevaison neutralisée'),
             map: null,
           };
         }

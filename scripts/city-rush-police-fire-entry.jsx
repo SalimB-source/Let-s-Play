@@ -90,9 +90,9 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
-  CITY_RUSH_LAPS, CITY_RUSH_PLAYER_HEALTH, CITY_RUSH_POLICE_AIM_TIME,
-  CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceAimHold,
-  cityRushPoliceAimReady,
+  CITY_RUSH_LAPS, CITY_RUSH_POLICE_AIM_TIME, cityRushCarMaxHealth,
+  CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceMaxHealth, cityRushPoliceAimHold,
+  cityRushPoliceAimReady, cityRushHealthPickupRepair, cityRushMiniGarageRepair,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -127,7 +127,10 @@ const violations = [];
 for (let run = 0; run < RUNS; run += 1) {
   seed = (BASE_SEED + run * 7919) >>> 0;
   for (const city of cities) {
+    // La supercar du garage : sept carrés de coque seulement (voir
+    // `cityRushCarMaxHealth`), le pire cas pour la barre du pilote.
     const car = CITY_RUSH_CARS.at(-1);
+    const carMaxHealth = cityRushCarMaxHealth(car);
     const callbacks = { errors: [], huds: [], effects: [], finish: null };
     const audioStub = new Proxy({}, { get: () => () => {} });
     const mount = {
@@ -148,14 +151,18 @@ for (let run = 0; run < RUNS; run += 1) {
       effect: (e) => { callbacks.effects.push(e); },
     }), car.id, { current: audioStub }, null, TEST_LAPS, PURSUIT_FROM_START);
 
+    const miniGarages = world.scene.children.filter((object) => object.name === 'city-rush-mini-garage');
     world.setPhase('countdown');
     for (let i = 0; i < 95; i += 1) stepFrame();
+    if (miniGarages.some((garage) => garage.visible) || callbacks.huds.at(-1)?.miniGaragesActive) {
+      violations.push(`[${city.id}#${run}] les garages apparaissent au compte à rebours en Poursuite`);
+    }
     world.setPhase('playing');
     world.start();
 
     let frames = 0;
     const maxFrames = 240 * 60;
-    let health = CITY_RUSH_PLAYER_HEALTH;
+    let health = carMaxHealth;
     let lastHealth = null;
     let runAimFrames = 0;
     while (!callbacks.finish && frames < maxFrames) {
@@ -178,6 +185,13 @@ for (let run = 0; run < RUNS; run += 1) {
       }
       // Pilote du pire cas : il ne se décale jamais (il reste dans sa voie).
       stepFrame();
+      const nextHud = callbacks.huds.at(-1);
+      // L'unique porte est celle de mi-course : elle se dresse au milieu du
+      // parcours. Une fois servie, le compteur ne doit plus se rallumer.
+      const midRaceUsed = callbacks.effects.some((effect) => effect.type === 'mini-garage-used');
+      if (midRaceUsed && nextHud?.miniGaragesActive) {
+        violations.push(`[${city.id}#${run}] le compteur reste allumé après le passage au mini-garage en Poursuite`);
+      }
       frames += 1;
     }
     aimedFrames += runAimFrames;
@@ -185,20 +199,43 @@ for (let run = 0; run < RUNS; run += 1) {
     const hits = callbacks.effects.filter((effect) => effect.type === 'player-hit');
     playerHits += hits.length;
     // Chaque impact retire exactement une cellule, et le HUD suit la barre.
-    let tracked = CITY_RUSH_PLAYER_HEALTH;
+    let tracked = carMaxHealth;
     let healthSeries = null;
     for (const effect of callbacks.effects) {
       if (effect.type === 'player-health') {
         tracked = effect.health;
-        if (effect.maxHealth !== CITY_RUSH_PLAYER_HEALTH) {
-          violations.push(`[${city.id}#${run}] la barre ne démarre pas à ${CITY_RUSH_PLAYER_HEALTH} cellules`);
+        if (effect.maxHealth !== carMaxHealth) {
+          violations.push(`[${city.id}#${run}] la barre ne démarre pas à ${carMaxHealth} cellules (coque de ${car.name})`);
         }
         healthSeries = effect.health;
         continue;
       }
+      if (effect.type === 'player-health-pickup') {
+        // Le « + » rouge répare la coque réelle ; le prochain tir doit donc
+        // être comparé au nouveau stock de vie, pas à la valeur avant pickup.
+        if (effect.healthBefore !== tracked
+          || effect.health !== cityRushHealthPickupRepair(tracked, carMaxHealth)) {
+          violations.push(`[${city.id}#${run}] le bonus de vie ne répare pas la coque du pilote`, effect);
+        }
+        tracked = effect.health;
+        continue;
+      }
+      if (effect.type === 'mini-garage-used') {
+        // L'unique porte est celle de mi-course : elle répare la coque réelle,
+        // une seule fois par course, sans jamais dépasser sa résistance.
+        if (effect.healthBefore !== tracked
+          || effect.health !== cityRushMiniGarageRepair(tracked, carMaxHealth)) {
+          violations.push(`[${city.id}#${run}] le garage ne répare pas la coque du pilote`, effect);
+        }
+        tracked = effect.health;
+        continue;
+      }
       if (effect.type !== 'player-hit') continue;
-      if (effect.damage !== 1 || effect.health !== tracked - 1) {
-        violations.push(`[${city.id}#${run}] un impact ne retire pas exactement une cellule`, { tracked, effect });
+      const maximumDamage = effect.source === 'suv-collision' ? 2 : 1;
+      const expectedDamage = Math.min(maximumDamage, Math.max(0, Number(tracked) || 0));
+      const expectedHealth = Math.max(0, tracked - expectedDamage);
+      if (effect.damage !== expectedDamage || effect.health !== expectedHealth) {
+        violations.push(`[${city.id}#${run}] les dégâts de l’impact ne correspondent pas à sa catégorie`, JSON.stringify({ tracked, expectedDamage, effect }));
       }
       tracked = effect.health;
     }
@@ -214,7 +251,7 @@ for (let run = 0; run < RUNS; run += 1) {
         policeFriendlyFire += 1;
         violations.push(`[${city.id}#${run}] une berline a détruit une autre berline`, effect);
       }
-      if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== CITY_RUSH_POLICE_HEALTH) {
+      if (!Number.isFinite(effect.maxHealth) || effect.maxHealth !== cityRushPoliceMaxHealth(effect.vehicleType)) {
         violations.push(`[${city.id}#${run}] une berline n’a pas ses six cases de vie`, effect);
       }
     }

@@ -6,6 +6,7 @@ import { Arrow } from '../components/ReleasesCalendar';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
+import NewsFeaturedStory from '../components/NewsFeaturedStory';
 
 // Les URLs absolues (visuels officiels) passent telles quelles, les fichiers
 // locaux du site prennent le préfixe du baseUrl ; une carte éditoriale SVG de
@@ -14,9 +15,9 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 // Page des actus TECH — troisième zone du hub `/news`, au même gabarit que les
-// pages gaming et cinéma : une une sur deux colonnes, puis la grille des actus.
-// Les cartes renvoient vers `/news/tech/<slug>` (route générique servie par
-// CurrentNews avec le préfixe `tech/`).
+// pages gaming et cinéma : une mise en avant vidéo + texte, puis la grille des
+// actus. Les cartes renvoient vers `/news/tech/<slug>` (route générique servie
+// par CurrentNews avec le préfixe `tech/`).
 export default function TechNews() {
   const { lang } = useLanguage();
   const [showAll, setShowAll] = useState(false);
@@ -25,7 +26,7 @@ export default function TechNews() {
   const copy = {
     en: {
       section: 'TECH NEWS',
-      updated: 'Updated 05.10.2026',
+      updated: 'Updated 07.10.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -38,7 +39,7 @@ export default function TechNews() {
     },
     fr: {
       section: 'ACTUS TECH',
-      updated: 'Mis à jour le 05.10.2026',
+      updated: 'Mis à jour le 07.10.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -51,7 +52,7 @@ export default function TechNews() {
     },
     ar: {
       section: 'أخبار التقنية',
-      updated: 'آخر تحديث 05.10.2026',
+      updated: 'آخر تحديث 07.10.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -64,7 +65,7 @@ export default function TechNews() {
     },
   }[lang] || {
     section: 'ACTUS TECH',
-    updated: 'Mis à jour le 05.10.2026',
+    updated: 'Mis à jour le 07.10.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -76,19 +77,25 @@ export default function TechNews() {
     back: 'Retour au hub',
   };
 
-  // Actus tech du week-end (03-04.10.2026) en tête : cyberattaque de la Région
-  // Hauts-de-France, technique HashHiding de la Corée du Nord et livraisons de
-  // Tesla au troisième trimestre ; suivent le vol 14 de Starship (première mise
-  // en orbite), la plateforme de sécurité des agents de NVIDIA (OpenShell +
-  // Sentry) et le déjeuner IA à la Maison-Blanche. Les plus récentes ouvrent la
-  // page ; chaque carte affiche le visuel officiel publié par la marque ou par
-  // l’article source (page de lancement SpaceX, communiqué NVIDIA, photo de
-  // presse Reuters / Semafor), avec la carte éditoriale du gabarit du robot
-  // (`fallbackImage`, public/*.svg) en repli.
+  // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
+  // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic) ;
+  // suivent l'actu du mardi 06.10.2026 (interdiction partielle des lunettes
+  // connectées en Norvège), celle du lundi 05.10.2026 (la « Super Intelligence
+  // Force » de Trump et SpaceXSI), puis celles du week-end des 03-04.10.2026
+  // — cyberattaque Hauts-de-France, technique HashHiding et livraisons Tesla —,
+  // le vol 14 de Starship, OpenShell de NVIDIA et le déjeuner IA à la Maison-
+  // Blanche. Les plus récentes ouvrent la page ; chaque carte affiche le
+  // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   const articles = useMemo(() => [
+    // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
+    // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic).
+    { to: '/news/tech/ai-act-europe-premiers-controles', image: 'ai-act-europe-regulation-news.jpg', fallbackImage: 'ai-act-europe-controles-news.svg', alt: 'Régulation européenne de l’intelligence artificielle — illustration éditoriale originale Let’s Play', badge: 'EUROPE · RÉGULATION IA', kicker: '07.10.2026 · REUTERS', title: 'L’AI ACT : L’EUROPE S’ACTIVE.', excerpt: 'Le Bureau européen de l’IA adresse ses premières demandes de conformité aux concepteurs de modèles frontières dépassant 10^25 FLOPs. Les laboratoires ont 30 jours pour documenter leurs systèmes, sous peine d’amendes allant jusqu’à 7 % du chiffre d’affaires mondial.', read: copy.read, sentiment: 'mixed' },
+    // Actu tech du mardi 06.10.2026 : la Norvège veut couper les caméras des
+    // lunettes connectées dans les lieux publics — l'usage privé reste permis.
+    { to: '/news/tech/norvege-lunettes-connectees-interdiction', image: 'https://i.guim.co.uk/img/media/40af5768117abd5443d47eba0a698ad852dd88a1/451_0_4085_3270/master/4085.jpg?width=1200&dpr=1&s=none&crop=none', fallbackImage: 'norvege-lunettes-connectees-news.svg', alt: 'Mark Zuckerberg présente la gamme de lunettes connectées de Meta — photo Carlos Barría/Reuters publiée par The Guardian', badge: 'NORVÈGE · VIE PRIVÉE', kicker: '06.10.2026 · THE GUARDIAN', title: 'LA NORVÈGE COUPE LES CAMÉRAS.', excerpt: 'Le gouvernement veut interdire temporairement les lunettes connectées dans les parcs, plages, musées, écoles, crèches, établissements de santé, salles de sport et événements publics. L’usage privé resterait autorisé ; le texte, encore à déposer, est soutenu par un groupe d’experts chargé d’une régulation permanente.', read: copy.read, sentiment: 'mixed' },
     // Actu tech du lundi 05.10.2026 : la « Super Intelligence Force » de Trump
-    // et le futur SpaceXSI d'Elon Musk ouvrent la page.
-    { to: '/news/tech/super-intelligence-force-spacexsi', image: youTubeThumbUrl('6UBA8iL3x54'), fallbackImage: 'super-intelligence-force-news.svg', alt: 'La Maison-Blanche pendant la réunion consacrée à la « super intelligence » — image de la vidéo officielle publiée par The White House', badge: 'IA · WASHINGTON', kicker: '05.10.2026 · DATACONOMY', title: 'L’IA S’APPELLE DÉSORMAIS « SI ».', excerpt: 'Trump a annoncé dimanche la création d’une « Super Intelligence Force », présidée par Jay Clayton, avec un rapport attendu sous 120 jours. Le décret du 29 septembre impose déjà le sigle aux agences fédérales, et Elon Musk a confirmé vouloir renommer SpaceXAI en SpaceXSI.', read: copy.read, sentiment: 'mixed' },
+    // et le futur SpaceXSI d'Elon Musk.
+    { to: '/news/tech/super-intelligence-force-spacexsi', image: youTubeThumbUrl('6UBA8iL3x54'), fallbackImage: 'super-intelligence-force-news.svg', alt: 'La Maison-Blanche pendant la réunion consacrée à la « super intelligence » — image de la vidéo officielle publiée par The White House', badge: 'IA · WASHINGTON', kicker: '05.10.2026 · DATACONOMY', title: 'L’IA S’APPELLE « SI ».', excerpt: 'Trump a annoncé dimanche la création d’une « Super Intelligence Force », présidée par Jay Clayton, avec un rapport attendu sous 120 jours. Le décret du 29 septembre impose déjà le sigle aux agences fédérales, et Elon Musk a confirmé vouloir renommer SpaceXAI en SpaceXSI.', read: copy.read, sentiment: 'mixed' },
     // Actus tech du week-end des 03-04.10.2026 : la cyberattaque de la Région
     // Hauts-de-France, les livraisons trimestrielles de Tesla et la technique
     // HashHiding des pirates nord-coréens. Les plus récentes ouvrent la page.
@@ -157,27 +164,16 @@ export default function TechNews() {
 
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{copy.section}</span><span>{copy.updated}</span></div>
+        <NewsFeaturedStory
+          story={topStory}
+          todayLabel={copy.today}
+          renderStoryImage={renderStoryImage}
+          renderBadges={renderBadges}
+        />
         <div className="news-carousel is-grid">
-          {topStory && (
-            <div className="news-grid-cell news-grid-cell--today">
-              <Link className="daily-news-card news-today" to={topStory.to}>
-                <div className="daily-news-image">
-                  {renderStoryImage(topStory, 'eager')}
-                  {renderBadges(topStory)}
-                </div>
-                <div className="daily-news-copy">
-                  <p className="eyebrow"><span className="live-dot" /> {copy.today}</p>
-                  <span className="news-kicker">{topStory.kicker}</span>
-                  <h2>{topStory.title}</h2>
-                  <p>{topStory.excerpt}</p>
-                  <span className="read-link">{topStory.read} <Arrow /></span>
-                </div>
-              </Link>
-            </div>
-          )}
-          {gridArticles.map((article) => (
+          {gridArticles.map((article, index) => (
             <div className="news-grid-cell" key={article.to}>
-              <Link className="news-carousel-card" to={article.to}>
+              <Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
                 <div className="news-carousel-image">
                   {renderStoryImage(article)}
                   {renderBadges(article)}

@@ -1,5 +1,5 @@
 // Progression persistante de Vice City Rush : portefeuille, garage, ordre des
-// parcours et campagne Histoire.
+// parcours, campagne Histoire et tournois (terminés + titres de champion).
 // Les courses restent jouables à partir du premier circuit ; une arrivée normale
 // débloque le parcours suivant. Seuls les modes rémunérés versent des billets :
 // 1er → 50, 2e → 30, 3e (ou épave, classée dernière) → 10.
@@ -12,12 +12,13 @@
 // et la copie serveur (`public.vice_city_rush_progress`, voir `viceCityApi.js`)
 // suit le joueur d'un appareil à l'autre — même principe que Mirage Rush.
 import { CITY_RUSH_CARS, CITY_RUSH_COURSES, cityRushFreeCarIds } from './cityRushRules.js';
+import { CITY_RUSH_STORY_CHAPTER_COUNT, CITY_RUSH_STORY_VERSION, mapLegacyStoryChapter } from './cityRushStory.js';
 
 export const CITY_RUSH_PROGRESS_KEY = 'letsplay_vice_city_rush_progress_v1';
 export const CITY_RUSH_STARTER_CAR_ID = 'city-hatch';
 
-/** Chapitres du mode Histoire (`STORY_CHAPTERS`, dans ViceCityRushPage). */
-export const CITY_RUSH_STORY_CHAPTERS = 6;
+/** Chapitres du mode Histoire (`CITY_RUSH_STORY_CHAPTERS`, prologue compris). */
+export const CITY_RUSH_STORY_CHAPTERS = CITY_RUSH_STORY_CHAPTER_COUNT;
 /**
  * Anciennes clés locales du mode Histoire (chapitre + fin choisie), avant que
  * la campagne n'entre dans la sauvegarde : reprises une seule fois par
@@ -183,7 +184,59 @@ export function cityRushStorageKey(userId) {
   return id ? `${CITY_RUSH_PROGRESS_KEY}:user:${id}` : CITY_RUSH_PROGRESS_KEY;
 }
 
-/** Campagne Histoire : chapitre courant (0 = premier) et fin choisie. */
+/** Étoiles de campagne : `{ chapitreId: 1..3 }` (seuls les chapitres étoilés sont gardés). */
+export function normalizeCityRushStoryStars(value) {  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const clean = {};
+  for (const [id, stars] of Object.entries(value)) {
+    if (typeof id !== 'string' || !id) continue;
+    const count = Math.max(0, Math.min(3, Math.floor(Number(stars) || 0)));
+    if (count > 0) clean[id] = count;
+  }
+  return clean;
+}
+
+/**
+ * Replace un document d’avant la refonte (6 chapitres) sur le nouveau
+ * découpage (10 chapitres) : un joueur à jour (version tamponnée) passe
+ * sans toucher, une ancienne sauvegarde est remappée au chapitre équivalent.
+ */
+export function withUpgradedCityRushStory(value) {
+  if (!value || typeof value !== 'object' || value.storyVersion === CITY_RUSH_STORY_VERSION) return value;
+  return { ...value, storyChapter: mapLegacyStoryChapter(value.storyChapter) };
+}
+
+/**
+ * Tournois : identifiants terminés (les trois courses courues, dans l'ordre du
+ * catalogue) et titres de champion (`{ tournoiId: nombre de sacres }`). Les
+ * identifiants inconnus sont oubliés : un catalogue réduit n'hérite jamais des
+ * trophées d'un catalogue plus large.
+ */
+export function normalizeCityRushTournaments(value = null, tournamentIds = null) {
+  const known = Array.isArray(tournamentIds) && tournamentIds.length > 0
+    ? tournamentIds
+    : ['sunset', 'europe', 'pacifique', 'legendes'];
+  const order = new Map(known.map((id, index) => [id, index]));
+  const seen = new Set();
+  const completedTournamentIds = [];
+  for (const id of Array.isArray(value?.completedTournamentIds) ? value.completedTournamentIds : []) {
+    if (typeof id !== 'string' || !order.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    completedTournamentIds.push(id);
+  }
+  completedTournamentIds.sort((a, b) => order.get(a) - order.get(b));
+  const tournamentTitles = {};
+  const rawTitles = value?.tournamentTitles;
+  if (rawTitles && typeof rawTitles === 'object' && !Array.isArray(rawTitles)) {
+    for (const [id, count] of Object.entries(rawTitles)) {
+      if (!order.has(id)) continue;
+      const wins = Math.max(0, Math.floor(Number(count) || 0));
+      if (wins > 0) tournamentTitles[id] = wins;
+    }
+  }
+  return { completedTournamentIds, tournamentTitles };
+}
+
+/** Campagne Histoire : chapitre courant (0 = prologue), fin choisie, étoiles. */
 export function normalizeCityRushStory(value = null, chapters = CITY_RUSH_STORY_CHAPTERS) {
   const total = Math.max(0, Math.floor(Number(chapters) || 0));
   const rawChapter = Number(value?.storyChapter);
@@ -192,21 +245,27 @@ export function normalizeCityRushStory(value = null, chapters = CITY_RUSH_STORY_
     : 0;
   const rawEnding = typeof value?.storyEnding === 'string' ? value.storyEnding.trim() : '';
   const storyEnding = /^[a-z][a-z0-9-]{0,31}$/.test(rawEnding) ? rawEnding : '';
-  return { storyChapter, storyEnding };
+  return {
+    storyChapter,
+    storyEnding,
+    storyVersion: CITY_RUSH_STORY_VERSION,
+    storyStars: normalizeCityRushStoryStars(value?.storyStars),
+  };
 }
 
-/** Sauvegarde complète : carrière (portefeuille, garage, parcours) + Histoire. */
+/** Sauvegarde complète : carrière (portefeuille, garage, parcours) + Histoire + tournois. */
 export function normalizeCityRushSave(value, { cars = CITY_RUSH_CARS, courses = CITY_RUSH_COURSES } = {}) {
   return {
     ...normalizeCityRushProgress(value, { cars, courses }),
     ...normalizeCityRushStory(value),
+    ...normalizeCityRushTournaments(value),
   };
 }
 
 export function readCityRushSave(storage = browserStorage(), key = CITY_RUSH_PROGRESS_KEY) {
   try {
     const raw = storage?.getItem(key);
-    return normalizeCityRushSave(raw ? JSON.parse(raw) : null);
+    return normalizeCityRushSave(withUpgradedCityRushStory(raw ? JSON.parse(raw) : null));
   } catch {
     return normalizeCityRushSave(null);
   }
@@ -240,7 +299,8 @@ export function migrateCityRushLegacyStory(storage = browserStorage(), key = CIT
     }
   } catch { legacy = null; }
   if (!legacy) return saved;
-  const next = writeCityRushSave({ ...saved, ...legacy }, storage, key);
+  // Les anciennes clés datent des 6 chapitres : même remappage qu’une vieille ligne.
+  const next = writeCityRushSave({ ...saved, storyChapter: mapLegacyStoryChapter(legacy.storyChapter), storyEnding: legacy.storyEnding }, storage, key);
   try {
     storage?.removeItem?.(CITY_RUSH_LEGACY_STORY_KEY);
     storage?.removeItem?.(CITY_RUSH_LEGACY_STORY_ENDING_KEY);

@@ -129,35 +129,30 @@ const CONTEXTS = {
     width: Math.min(620, wrapOf(vw)), size: clamp(28, vw * 0.06, 48),
     ls: 0, weight: 800, split: true,
   }),
-  // .news-carousel-copy h2 — carte de la grille Actus
+  // .news-carousel-copy h2 — carte de la grille Actus (quatre colonnes max)
   newsCard: (vw) => {
     const wrap = wrapOf(vw);
     if (vw >= 1201) {
-      const card = (wrap - 16 * 4) / 5;
-      return { width: card - 28, size: clamp(15, vw * 0.0115, 18), ls: 0, weight: 700 };
+      const card = (wrap - 18 * 3) / 4;
+      return { width: card - 36, size: clamp(18, vw * 0.0125, 20), ls: 0.015, weight: 700 };
     }
     const cols = vw > 1100 ? 4 : vw > 800 ? 3 : 2;
-    const gap = vw <= 650 ? 12 : 22;
-    const pad = vw <= 650 ? 10 : clamp(16, vw * 0.02, 26);
+    const gap = vw <= 650 ? 12 : 18;
+    const pad = vw <= 650 ? 10 : 18;
     return {
       width: (wrap - gap * (cols - 1)) / cols - pad * 2,
       size: vw <= 650 ? clamp(16, vw * 0.042, 18) : clamp(18, vw * 0.016, 22),
-      ls: 0.01, weight: 700,
+      ls: 0.015, weight: 700,
     };
   },
-  // .news-carousel.is-grid .news-today .daily-news-copy h2 — carte « à la une »
+  // .news-featured-story .daily-news-copy h2 — bandeau vidéo + texte en tête du flux
   newsToday: (vw) => {
     const wrap = wrapOf(vw);
-    if (vw >= 1201) {
-      const card = (wrap - 16 * 4) / 5;
-      return { width: card * 2 + 16 - 40, size: clamp(16, vw * 0.012, 20), ls: 0.01, weight: 800 };
-    }
-    if (vw <= 650) return { width: wrap - 28, size: clamp(20, vw * 0.054, 24), ls: 0.01, weight: 800 };
-    if (vw <= 800) return { width: wrap - clamp(20, vw * 0.024, 32) * 2, size: clamp(20, vw * 0.02, 28), ls: 0.01, weight: 800 };
-    const cols = vw > 1100 ? 4 : 3;
-    const card = (wrap - 22 * (cols - 1)) / cols;
-    const pad = clamp(20, vw * 0.024, 32);
-    return { width: card * 2 + 22 - pad * 2, size: clamp(20, vw * 0.02, 28), ls: 0.01, weight: 800 };
+    if (vw <= 650) return { width: wrap - 36, size: clamp(23, vw * 0.07, 30), ls: 0.01, weight: 800 };
+    if (vw <= 800) return { width: wrap - 44, size: clamp(24, vw * 0.07, 32), ls: 0.01, weight: 800 };
+    const textColumn = wrap * (0.85 / 2);
+    const padding = clamp(24, vw * 0.03, 40);
+    return { width: textColumn - padding * 2, size: clamp(24, vw * 0.025, 36), ls: 0.01, weight: 800 };
   },
   // Têtes de section (.featured-dossiers-head, .latest-tests-head, .reels-head,
   // .monthly-releases-head…) : le h2 occupe toute la largeur du wrap.

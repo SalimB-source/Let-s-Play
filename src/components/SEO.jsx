@@ -156,6 +156,18 @@ const pageMeta = {
     description: 'Le PDG de Microsoft juge « formidable » la rationalisation de Xbox menée par Asha Sharma et promet un retour à la croissance dès le prochain exercice fiscal, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.',
     image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', type: 'article', published: '2026-09-28', section: 'Actualités gaming',
   },
+  // Actu gaming du 07.10.2026 — le visuel Gamekult sert aussi de repli.
+  '/news/gta-6-cloud-pc-dementi-xbox': {
+    title: 'GTA 6 : Xbox dément toute exclusivité de streaming sur PC — Let’s Play',
+    description: 'Après un rapport de The Verge évoquant des droits de streaming pour GTA VI, Matthew Ball, Chief Strategy Officer de Xbox, a formellement démenti : GTA 6 ne sera pas streamable sur PC au lancement le 19 novembre 2026 et reste cantonné aux consoles PS5 et Xbox Series.',
+    image: 'gta-6-cloud-pc-dementi-news.jpg', type: 'article', published: '2026-10-07', section: 'Actualités gaming',
+  },
+  // Actu gaming du 06.10.2026 — le visuel Gamekult sert aussi de repli.
+  '/news/gta-6-satire-monde-invente': {
+    title: 'GTA 6 : Rockstar assume une satire d’un monde inventé — Let’s Play',
+    description: 'Dans un entretien accordé au magazine Love et relayé par Eurogamer, Rupert Humphries et Rob Nelson expliquent que GTA VI ne visera « aucune personne, aucun événement ni aucun mouvement en particulier » : la satire portera sur un État fictif inspiré de la Floride, plus grotesque que la réalité. Sortie maintenue au 19 novembre sur PS5 et Xbox Series.',
+    image: 'https://cdn.gamekult.com/optim/images/news/30/3050872331/nous-ne-souhaitons-cibler-aucune-personne-aucun-evenement-ni-aucun-mouvement-en-particulier-gta-vi-ne-visera-pas-la-satire-d-une-actualite-reelle-33b4df1a__930_300__0-7-2548-833.jpg', type: 'article', published: '2026-10-06', section: 'Actualités gaming',
+  },
   '/news/tech/starship-vol-14-orbite-atteinte': {
     title: 'Starship atteint enfin l’orbite : 26 satellites Starlink V3 déployés — Let’s Play',
     description: 'Le 28 septembre 2026, le vol 14 de Starship a atteint l’orbite pour la première fois et déployé 26 satellites Starlink V3 opérationnels. Une panne d’un Raptor Vacuum en montée a ramené le vaisseau dans le Pacifique nord après 3 h 09, au lieu des dix heures prévues.',
@@ -195,6 +207,20 @@ const pageMeta = {
     title: 'Meta Connect 2026 : lunettes VR à 1 299 $ et Muse Charm — Let’s Play',
     description: 'Meta a présenté le 23 septembre 2026 des lunettes de réalité virtuelle à 1 299 dollars, attendues au printemps 2027, et le Muse Charm, un accessoire à porter sur soi pour parler à l’agent Muse, annoncé pour décembre sans prix.',
     image: 'https://image.cnbcfm.com/api/v1/image/108367218-Julia_Meta_VR_2.jpg?v=1790211668&w=1600&h=900&vtcrop=y', type: 'article', published: '2026-0-23', section: 'Actualités tech',
+  },
+  // Actu tech du 07.10.2026 — illustration de la réglementation européenne.
+  '/news/tech/ai-act-europe-premiers-controles': {
+    title: 'L’AI Act en Europe : le Bureau de l’IA lance ses premiers contrôles — Let’s Play',
+    description: 'La Commission européenne et son AI Office ouvrent la première phase de contrôle des modèles d’IA frontières : les laboratoires ont 30 jours pour justifier de leur conformité sous peine d’amendes pouvant atteindre 7 % du chiffre d’affaires.',
+    image: 'ai-act-europe-regulation-news.jpg', type: 'article', published: '2026-10-07', section: 'Actualités tech',
+  },
+  // Actu tech du 06.10.2026 — photo de presse de la source (Carlos Barría /
+  // Reuters, via The Guardian) : la carte et le partage social montrent la
+  // gamme de lunettes visée par le texte norvégien.
+  '/news/tech/norvege-lunettes-connectees-interdiction': {
+    title: 'La Norvège interdit les lunettes connectées dans l’espace public — Let’s Play',
+    description: 'Le gouvernement norvégien annonce une interdiction temporaire des lunettes à caméra dans les lieux publics — parcs, plages, musées, centres commerciaux, écoles, crèches, hôpitaux ou salles de sport —, l’usage privé restant autorisé. Meta rappelle que ses lunettes signalent l’enregistrement par une LED, et Oslo bannit déjà ces lunettes dans ses écoles.',
+    image: 'https://i.guim.co.uk/img/media/40af5768117abd5443d47eba0a698ad852dd88a1/451_0_4085_3270/master/4085.jpg?width=1200&dpr=1&s=none&crop=none', type: 'article', published: '2026-10-06', section: 'Actualités tech',
   },
   '/news/cinema/endgame-encore-record-avatar': {
     title: 'Box-office mondial : Endgame frôle le trône d’Avatar — Let’s Play',
@@ -240,6 +266,19 @@ const pageMeta = {
     title: 'Le biopic Fred Astaire réunit Tom Holland, Margaret Qualley et Sabrina Carpenter — Let’s Play',
     description: 'Sony complète le casting de son biopic Fred Astaire : Tom Holland en Fred, Margaret Qualley en Adele Astaire et Sabrina Carpenter en Ginger Rogers, sous la direction de Paul King. Aucune date de sortie pour l’instant.',
     image: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', type: 'article', published: '2026-09-27', section: 'Actualités cinéma',
+  },
+  // Actu cinéma du 07.10.2026 — officialisation de la réalisation de Spider-Man 4.
+  '/news/cinema/spider-man-4-destin-daniel-cretton': {
+    title: 'Spider-Man 4 : Destin Daniel Cretton réalisera le film pour juillet 2027 — Let’s Play',
+    description: 'Sony Pictures et Marvel Studios officialisent Destin Daniel Cretton à la réalisation de Spider-Man 4 avec Tom Holland et Zendaya. Tournage prévu à l’été pour une sortie mondiale en salles en juillet 2027.',
+    image: 'spider-man-4-cretton-news.jpg', type: 'article', published: '2026-10-07', section: 'Actualités cinéma',
+  },
+  // Actu cinéma du 06.10.2026 — miniature de la bande-annonce officielle
+  // Warner Bros. (2022), la suite n'ayant encore aucun visuel propre.
+  '/news/cinema/the-batman-part-ii-tournage-suspendu': {
+    title: 'The Batman Part II : le tournage suspendu pour une affaire familiale — Let’s Play',
+    description: 'DC Studios et Warner Bros. ont confirmé le 5 octobre 2026 la suspension temporaire du tournage de The Batman Part II, le temps que Matt Reeves se consacre à une affaire familiale. Aucune date de reprise n’est annoncée ; la sortie américaine reste fixée au 18 février 2028, avec Robert Pattinson, Jeffrey Wright, Andy Serkis et Colin Farrell.',
+    image: youTubeThumbUrl('mqqft2x_Aa4'), type: 'article', published: '2026-10-06', section: 'Actualités cinéma',
   },
 };
 

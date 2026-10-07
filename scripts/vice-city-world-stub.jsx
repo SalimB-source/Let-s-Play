@@ -10,16 +10,21 @@
  */
 import React, { useEffect } from 'react';
 
-export const worldProbe = { mounted: 0, props: null };
+export const worldProbe = { mounted: 0, props: null, actions: [] };
 
 export default function ViceCityWorldStub(props) {
   worldProbe.props = props;
   useEffect(() => {
     worldProbe.mounted += 1;
-    return () => { worldProbe.mounted -= 1; };
+    worldProbe.actions.length = 0;
+    if (props.actionsRef) props.actionsRef.current = (name) => worldProbe.actions.push(name);
+    return () => {
+      worldProbe.mounted -= 1;
+      if (props.actionsRef) props.actionsRef.current = null;
+    };
   }, []);
   // Le vrai moteur se reconstruit (et se redéclare prêt) à chaque course :
   // `runId` change à chaque lancement.
   useEffect(() => { props.onReady?.(); }, [props.runId]);
-  return <div className="city-rush-world-stub" data-phase={props.phase} />;
+  return <div className="city-rush-world city-rush-world-stub" data-phase={props.phase} />;
 }

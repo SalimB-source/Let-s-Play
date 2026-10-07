@@ -366,6 +366,12 @@
   color: #7af2b0;
 }
 
+.city-rush-top-button.is-guide {
+  background: rgba(84, 234, 209, 0.13);
+  border-color: rgba(84, 234, 209, 0.32);
+  color: #9af9e7;
+}
+
 .city-rush-sound-button {
   width: 36px;
   padding: 0;
@@ -433,6 +439,27 @@
   z-index: 0;
 }
 
+/* Secousse réservée à l'impact du bazooka : la scène 3D tremble, mais les
+   commandes du HUD restent stables et faciles à toucher. */
+.city-rush-world.is-bazooka-shaking {
+  transform-origin: center center;
+  animation: crBazookaScreenShake 0.72s linear both;
+  will-change: transform;
+}
+
+@keyframes crBazookaScreenShake {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+  5% { transform: translate3d(-11px, 6px, 0) rotate(-0.42deg); }
+  10% { transform: translate3d(10px, -7px, 0) rotate(0.38deg); }
+  16% { transform: translate3d(-8px, 5px, 0) rotate(-0.3deg); }
+  23% { transform: translate3d(7px, -4px, 0) rotate(0.24deg); }
+  32% { transform: translate3d(-5px, 3px, 0) rotate(-0.17deg); }
+  43% { transform: translate3d(4px, -3px, 0) rotate(0.13deg); }
+  56% { transform: translate3d(-3px, 2px, 0) rotate(-0.09deg); }
+  72% { transform: translate3d(2px, -1px, 0) rotate(0.06deg); }
+  88% { transform: translate3d(-1px, 1px, 0) rotate(-0.03deg); }
+}
+
 .city-rush-canvas {
   display: block;
   width: 100%;
@@ -460,6 +487,32 @@
   background:
     radial-gradient(120% 120% at 50% 20%, transparent 40%, rgba(0,0,0,0.24) 100%),
     linear-gradient(180deg, rgba(0,0,0,0.18) 0%, transparent 22%, transparent 78%, rgba(0,0,0,0.32) 100%);
+}
+
+/* Halo rouge d'impact : il encadre l'image sans masquer le centre de la route,
+   puis s'éteint avec la secousse de la caméra. */
+.city-rush-bazooka-blast-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 48%, transparent 35%, rgba(120, 0, 16, 0.2) 67%, rgba(255, 22, 48, 0.78) 100%),
+    linear-gradient(180deg, rgba(255, 35, 55, 0.18), transparent 24%, transparent 72%, rgba(255, 12, 34, 0.4));
+  box-shadow: inset 0 0 115px rgba(255, 18, 38, 0.72);
+  animation: crBazookaBlastVignette 0.92s ease-out both;
+}
+
+@keyframes crBazookaBlastVignette {
+  0% { opacity: 0; }
+  9% { opacity: 1; }
+  24% { opacity: 0.88; }
+  48% { opacity: 0.58; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-rush-bazooka-blast-vignette { animation-duration: 0.34s; }
 }
 
 .city-rush-viewport.is-boosting::after,
@@ -940,6 +993,13 @@
   font-style: normal;
 }
 
+/* Un rival que la police chasse : la pastille prend le rouge des poursuites,
+   à côté de son nom — le classement se lit d'un coup d'œil. */
+.city-rush-race-list-copy b em.city-rush-race-list-pursued {
+  color: #ff9aa8;
+  text-shadow: 0 0 6px rgba(255, 43, 69, 0.5);
+}
+
 .city-rush-race-list-copy small {
   overflow: hidden;
   color: var(--cr-faint);
@@ -1354,6 +1414,56 @@
 .city-rush-machine-gun-icon svg { width: 40px; height: 40px; }
 .city-rush-machine-gun-button.is-ready .city-rush-machine-gun-icon { color: #fff; filter: drop-shadow(0 1px 4px rgba(72, 0, 12, 0.7)); }
 
+/* Second arme, sous la mitrailleuse : verrouillée en gris jusqu'au pickup jaune. */
+.city-rush-bazooka-button {
+  position: relative;
+  display: grid;
+  grid-template-rows: 11px 1fr 12px;
+  justify-items: center;
+  align-items: center;
+  gap: 2px;
+  width: 108px;
+  height: 76px;
+  padding: 7px 12px;
+  border: 2px solid rgba(157, 164, 174, 0.62);
+  border-radius: 17px;
+  background: linear-gradient(145deg, rgba(98, 105, 115, 0.22), rgba(20, 24, 31, 0.97) 72%);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.035), 0 7px 18px rgba(0, 0, 0, 0.4);
+  color: #9ca3ad;
+  font: 900 8px/1 var(--mono, monospace);
+  letter-spacing: 0.1em;
+  text-align: center;
+  cursor: not-allowed;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.14s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+.city-rush-bazooka-button.is-empty {
+  border-color: rgba(157, 164, 174, 0.62);
+  color: #9ca3ad;
+  cursor: not-allowed;
+}
+.city-rush-bazooka-button.is-ready {
+  border-color: #ffe35b;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 230, 101, 0.32), rgba(52, 42, 7, 0.97) 78%);
+  box-shadow: inset 0 0 0 3px rgba(255, 228, 75, 0.12), 0 0 0 2px rgba(255, 215, 43, 0.2), 0 0 24px 5px rgba(255, 198, 27, 0.36), 0 7px 18px rgba(0, 0, 0, 0.42);
+  color: #ffe88a;
+  cursor: pointer;
+}
+.city-rush-bazooka-button:hover:not(:disabled) { transform: translateY(-2px); }
+.city-rush-bazooka-button:active:not(:disabled) { transform: scale(0.95); }
+.city-rush-bazooka-button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.city-rush-bazooka-label,
+.city-rush-bazooka-status,
+.city-rush-bazooka-icon { position: relative; z-index: 1; }
+.city-rush-bazooka-label { font-size: 7px; }
+.city-rush-bazooka-status { font-size: 8px; letter-spacing: 0.07em; }
+.city-rush-bazooka-icon { display: grid; place-items: center; width: 31px; height: 31px; color: #858b95; }
+.city-rush-bazooka-icon svg { width: 31px; height: 31px; }
+.city-rush-bazooka-button.is-ready .city-rush-bazooka-icon { color: #ffe66a; filter: drop-shadow(0 0 5px rgba(255, 213, 39, 0.68)); }
+
 /* Power bar — modern dock */
 .city-rush-power-bar {
   display: flex;
@@ -1605,6 +1715,49 @@
   font-size: 13px;
   line-height: 1.6;
 }
+
+.city-rush-tutorial-launch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(840px, 100%);
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--city-accent) 30%, rgba(255, 255, 255, 0.12));
+  border-radius: 13px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--city-accent) 12%, rgba(255, 255, 255, 0.035)), rgba(255, 255, 255, 0.025));
+  color: var(--cr-text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s var(--cr-ease), border-color 0.18s var(--cr-ease), background 0.18s var(--cr-ease), box-shadow 0.18s var(--cr-ease);
+}
+
+.city-rush-tutorial-launch:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--city-accent) 58%, transparent);
+  background: color-mix(in srgb, var(--city-accent) 10%, rgba(255, 255, 255, 0.06));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--city-accent) 10%, transparent);
+}
+
+.city-rush-tutorial-launch:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.city-rush-tutorial-launch-mark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding-left: 2px;
+  border: 1px solid color-mix(in srgb, var(--city-accent) 46%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--city-accent) 15%, transparent);
+  color: var(--city-accent);
+  font-size: 11px;
+}
+
+.city-rush-tutorial-launch > span:nth-child(2) { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.city-rush-tutorial-launch b { font: 900 10px/1 var(--mono, monospace); letter-spacing: 0.12em; }
+.city-rush-tutorial-launch small { color: var(--cr-muted); font: 600 9px/1.2 var(--mono, monospace); letter-spacing: 0.035em; }
+.city-rush-tutorial-launch > i { color: var(--city-accent); font: 800 16px/1 system-ui, sans-serif; font-style: normal; }
 
 .city-rush-car-select-heading {
   display: flex;
@@ -2514,6 +2667,8 @@
 
 .city-rush-guide-item.is-blue-shot { --power-color: #48b9ff; }
 .city-rush-guide-item.is-pistol { --power-color: #ff526e; }
+.city-rush-guide-item.is-bazooka { --power-color: #ffd21f; }
+.city-rush-guide-item.is-health { --power-color: #ff4055; }
 .city-rush-guide-item.is-radio { --power-color: #ffd44f; }
 .city-rush-guide-item.is-boost { --power-color: #50e48a; }
 .city-rush-guide-item.is-ramp { --power-color: #ffaa00; }
@@ -2739,6 +2894,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-intro-copy { text-align: left; }
   .city-rush-intro h2 { font-size: clamp(28px, 9vw, 36px); }
   .city-rush-intro-copy > p { font-size: 11px; }
+  .city-rush-tutorial-launch { gap: 9px; padding: 9px 10px; }
+  .city-rush-tutorial-launch-mark { width: 30px; height: 30px; }
+  .city-rush-tutorial-launch b { font-size: 8px; }
+  .city-rush-tutorial-launch small { font-size: 7px; }
 
   .city-rush-city-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .city-rush-city-card:nth-child(5) { grid-column: 1 / -1; }
@@ -3083,6 +3242,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: var(--cr-muted);
   font-size: 11px;
   line-height: 1.5;
+}
+
+.city-rush-mode-bazooka-hint {
+  color: #ffd21f;
+  font: 900 8px/1.35 var(--mono, monospace);
+  letter-spacing: 0.045em;
+  text-shadow: 0 0 9px rgba(255, 210, 31, 0.26);
 }
 
 .city-rush-mode-laps {
@@ -3447,3 +3613,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+/* Le tutoriel est une course guidée, pas une page qui remplace le circuit :
+   toute la largeur revient au jeu et le tableau latéral s'efface pendant ce tour. */
+.city-rush-page.is-tutorial .city-rush-layout { grid-template-columns: minmax(0, 1fr); }
+.city-rush-page.is-tutorial .city-rush-sidebar { display: none; }
+.city-rush-page.is-tutorial .city-rush-live-pill { display: none; }
+
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-page.is-tutorial .city-rush-tutorial-guide-toggle {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
+  .city-rush-page.is-tutorial .city-rush-tutorial-guide-toggle::before {
+    content: '✦';
+    font-size: 13px;
+  }
+}

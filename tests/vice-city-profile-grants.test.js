@@ -27,6 +27,7 @@ import {
   readCityRushSave,
   writeCityRushSave,
 } from '../src/games/cityRushProgress.js';
+import { CITY_RUSH_STORY_CHAPTER_COUNT, CITY_RUSH_STORY_VERSION } from '../src/games/cityRushStory.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const schema = read('../supabase/schema.sql');
@@ -89,6 +90,10 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
     completedCourseIds: ['vice-city', 'new-york'],
     storyChapter: 3,
     storyEnding: '',
+    storyVersion: CITY_RUSH_STORY_VERSION,
+    storyStars: {},
+    completedTournamentIds: [],
+    tournamentTitles: {},
   });
   assert.deepEqual(readCityRushSave(storage), saved);
   // Données hostiles : chapitre hors bornes, identifiants inconnus, fin inconnue.
@@ -98,6 +103,10 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
     completedCourseIds: [],
     storyChapter: CITY_RUSH_STORY_CHAPTERS,
     storyEnding: '',
+    storyVersion: CITY_RUSH_STORY_VERSION,
+    storyStars: {},
+    completedTournamentIds: [],
+    tournamentTitles: {},
   });
 });
 
@@ -107,7 +116,8 @@ test('le récit des anciennes clés locales est repris une seule fois', () => {
     [CITY_RUSH_LEGACY_STORY_ENDING_KEY]: 'revenge',
   });
   const migrated = migrateCityRushLegacyStory(storage);
-  assert.equal(migrated.storyChapter, 4);
+  // Les anciennes clés datent des 6 chapitres : Londres (4) devient le chapitre 7.
+  assert.equal(migrated.storyChapter, 7);
   assert.equal(migrated.storyEnding, 'revenge');
   assert.equal(storage.values.has(CITY_RUSH_LEGACY_STORY_KEY), false);
   assert.equal(storage.values.has(CITY_RUSH_LEGACY_STORY_ENDING_KEY), false);
@@ -119,7 +129,7 @@ test('le récit des anciennes clés locales est repris une seule fois', () => {
 
 test('la première connexion reprend la sauvegarde de l’appareil, puis l’isole', () => {
   const storage = fakeStorage({
-    [CITY_RUSH_PROGRESS_KEY]: JSON.stringify({ cash: 50, completedCourseIds: ['vice-city'], storyChapter: 1 }),
+    [CITY_RUSH_PROGRESS_KEY]: JSON.stringify({ cash: 50, completedCourseIds: ['vice-city'], storyChapter: 1, storyVersion: CITY_RUSH_STORY_VERSION }),
   });
   const accountSave = loadCityRushAccountSave('user-a', storage);
   assert.equal(accountSave.cash, 50);
@@ -151,7 +161,7 @@ test('le grant admin est privé, idempotent, additif et couvre tout le catalogue
   assert.match(grants, /on conflict \(user_id, grant_code\) do nothing/i);
   assert.match(grants, /bonus integer := 5000/i);
   assert.match(grants, /'cash', current_cash \+ case when coalesce\(did_grant, false\) then bonus else 0 end/i);
-  assert.match(grants, /'storyChapter', 6/);
+  assert.match(grants, /'storyChapter', 10/);
   assert.match(grants, /insert into public\.vice_city_rush_progress \(user_id, progress, updated_at\)/i);
   assert.match(grants, /on conflict \(user_id\) do update/i);
   assert.match(grants, /'already_granted', not coalesce\(did_grant, false\)/i);
@@ -173,8 +183,8 @@ test('le jeu connecté charge et publie sa progression par la table privée', ()
   assert.match(page, /loadCityRushAccountSave\(ownerId\)/);
   assert.match(page, /if \(connected && !progressionReady\) return;/);
   assert.doesNotMatch(page, /letsplay_vice_city_rush_story_v1/);
-  // Le nombre de chapitres de la sauvegarde suit le tableau de la page.
-  assert.equal((page.match(/^  \{ city: '/gm) || []).length, CITY_RUSH_STORY_CHAPTERS);
+  // Le nombre de chapitres de la sauvegarde suit le scénario.
+  assert.equal(CITY_RUSH_STORY_CHAPTER_COUNT, CITY_RUSH_STORY_CHAPTERS);
 });
 
 test('les listes du SQL ne dérivent pas du catalogue du jeu', () => {

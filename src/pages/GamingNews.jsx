@@ -9,6 +9,8 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { autoNewsListing } from '../lib/autoNews';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
+import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
+import NewsFeaturedStory from '../components/NewsFeaturedStory';
 
 // Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
 // telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
@@ -26,7 +28,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 05.10.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
+    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 07.10.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
   },
   fr: {
     cards: [
@@ -34,7 +36,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 05.10.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
+    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 07.10.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
   },
   ar: {
     cards: [
@@ -42,9 +44,42 @@ const FEATURED_COPY = {
       ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 05.10.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
+    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 07.10.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
   }
 };
+
+// Actus récentes rédigées à la main par la rédaction, les plus fraîches en
+// tête. LA PREMIÈRE ENTRÉE EST « L'ACTU GAMING DU JOUR » : elle ouvre /news/gaming
+// dans un bandeau vidéo + texte (sa première vidéo officielle est déclarée dans
+// src/articleTrailers.js) et alimente aussi la une du hub /news. Pour changer la
+// une, il suffit d'insérer la nouvelle actu ici, en tête de liste.
+//
+// Actus du mercredi 07.10.2026 : le démenti de Xbox sur le streaming PC
+// de GTA VI ouvre la page ; suivent l'actu du mardi 06.10.2026 (satire
+// Rockstar dans GTA VI), celles du lundi 05.10.2026 (lancement free-to-play
+// d'Aion 2, sortie de Gears of War: E-Day), celles du week-end des 03-04.10.2026
+// — RuneScape 4 annoncé au RuneFest, les concerts des 40 ans de Castlevania
+// et la fronde contre le code généré par IA dans l'émulation —, puis celles du
+// 28-29.09.2026, celles du robot et les articles manuels de la rédaction dans l'ordre.
+export const latestGamingStories = [
+  { to: '/news/gta-6-cloud-pc-dementi-xbox', image: 'gta-6-cloud-pc-dementi-news.jpg', fallbackImage: 'gta-6-cloud-pc-dementi-news.svg', alt: 'GTA VI — plan officiel de Vice City sous les néons, Rockstar Games relayé par Gamekult', badge: 'XBOX · GTA 6', kicker: '07.10.2026 · GAMEKULT', title: 'GTA 6 SUR PC : LE DÉMENTI TOMBE.', excerpt: 'Pendant quatre heures cette nuit, l’espoir d’un GTA VI jouable sur PC via Xbox Cloud Gaming a enflammé les réseaux. Matthew Ball, Chief Strategy Officer de Xbox, a coupé court aux rumeurs : le jeu ne sera pas streamé sur PC et reste strictement sur consoles au lancement.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+  { to: '/news/gta-6-satire-monde-invente', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872331/nous-ne-souhaitons-cibler-aucune-personne-aucun-evenement-ni-aucun-mouvement-en-particulier-gta-vi-ne-visera-pas-la-satire-d-une-actualite-reelle-33b4df1a__930_300__0-7-2548-833.jpg', fallbackImage: 'gta-6-satire-monde-invente-news.svg', alt: 'GTA VI — visuel officiel Rockstar Games relayé par Gamekult', badge: 'ROCKSTAR · GTA 6', kicker: '06.10.2026 · GAMEKULT', title: 'ROCKSTAR INVENTE SON MONDE.', excerpt: 'Rockstar ne vise « aucune personne, aucun événement ni aucun mouvement en particulier » : la satire de GTA VI se jouera dans un État fictif nourri de la Floride, rendu plus grotesque que la réalité. Sortie maintenue au 19 novembre sur PS5 et Xbox Series.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+  { to: '/news/gears-of-war-e-day-sortie-mondiale', image: youTubeThumbUrl('TOEuNKz3XW8'), fallbackImage: 'gears-of-war-e-day-news.svg', alt: 'Gears of War: E-Day — Marcus Fenix dans le trailer de lancement officiel publié par la chaîne Gears of War', badge: 'THE COALITION · XBOX', kicker: '05.10.2026 · METACRITIC', title: 'E-DAY EST ENFIN LÀ.', excerpt: 'Le préquel de Gears of War sort demain sur Xbox Series X|S et PC, dès le premier jour dans le Game Pass. Cinq actes, vingt-six chapitres et un 87 sur Metacritic : le meilleur score de la saga depuis Gears of War 3.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/aion-2-ouverture-occidentale', image: youTubeThumbUrl('YYelxy0eEsA'), fallbackImage: 'aion-2-news.svg', alt: 'Aion 2 — plan du trailer de lancement officiel « Heirs of the Broken Sky » publié par NCSOFT', badge: 'NCSOFT · MMORPG', kicker: '05.10.2026 · NCSOFT', title: 'AION 2 OUVRE L’OCCIDENT.', excerpt: 'Le MMORPG de NCSOFT passe au free-to-play ce lundi à 13 h UTC (15 h à Paris) sur PC, via Steam et le lanceur maison PURPLE. Cinq jours d’accès anticipé s’achèvent, la progression est conservée — et l’hôtel des ventes reste lié à l’abonnement facultatif.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/runescape-4-runefest-annonce', image: 'runescape-4-teaser.jpg', fallbackImage: 'runescape-4-news.svg', alt: 'RuneScape 4 — un magicien se protège les yeux de la lumière, capture du teaser d’annonce dévoilé au RuneFest 2026 (Jagex)', badge: 'JAGEX · MMORPG', kicker: '03.10.2026 · ACTUGAMING', title: 'RUNESCAPE 4 ÉCRIT SON SIXIÈME ÂGE.', excerpt: 'Jagex a refermé son RuneFest par l’annonce d’un quatrième MMORPG, provisoirement baptisé RuneScape 4, développé sous Unreal Engine. L’aventure se déroulera au Sixième Âge et débutera à Ashenfall, sans date de sortie. Toute la franchise repart en parallèle : Reignited le 2 décembre, Blood Crystal Saga en 2027 et un raid inédit pour Old School RuneScape.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/castlevania-40-ans-concerts-symphoniques', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872268/pour-les-40-ans-de-castlevania-et-la-sortie-de-belmont-s-curse-des-concerts-symphoniques-vont-avoir-lieu-65c89bda__930_300__0-112-1887-720.png', fallbackImage: 'castlevania-40-ans-news.svg', alt: 'Castlevania 40th Anniversary — An Orchestral Concert, visuel de l’annonce officielle Konami', badge: 'KONAMI · CONCERTS', kicker: '04.10.2026 · GAMEKULT', title: 'CASTLEVANIA FÊTE SES 40 ANS SUR SCÈNE.', excerpt: 'Trois concerts symphoniques à Tokyo (13 mars), Londres (14 mars) et Los Angeles (26 mars), avec un orchestre de vingt-cinq musiciens et des arrangements signés Adam Hoskins. Les musiques de Belmont’s Curse, attendu le 15 octobre sur PC et consoles, y seront jouées en live pour la première fois.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/vibe-coding-emulation-decompilation', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872249/du-code-bacle-par-ia-ralentit-des-projets-d-emulation-et-de-decompilation-les-developpeurs-poussent-un-coup-de-gueule-7c5509e8__930_300__0-41-739-279.jpg', fallbackImage: 'vibe-coding-emulation-news.svg', alt: 'Émulation et décompilation — illustration de l’article Gamekult consacré au code généré par IA', badge: 'PRÉSERVATION · IA', kicker: '03.10.2026 · GAMEKULT', title: 'LE VIBE CODING POLLUE LA PRÉSERVATION.', excerpt: 'Les mainteneurs de RPCS3 menacent de bannir les contributions générées en masse par IA sans relecture. Le portage PC de Mario Kart Wii a été critiqué pour la même raison, quand les projets Donkey Kong 64 et Super Mario Galaxy revendiquent un travail « 100 % humain ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+  { to: '/news/physint-budget-400-millions-xbox', image: 'kojima_mindplayer.webp', alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', badge: 'PHYSINT · XBOX', kicker: '29.09.2026 · KOJIMA PRODUCTIONS', title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.', excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft a signé pour un montant « nettement inférieur ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+  { to: '/news/god-of-war-laufey-precommandes-arc-serpent', image: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/5bd30eac480284e480a9ba68e9f06472584219f4.jpg?resize=1088%2C612&crop_strategy=smart', fallbackImage: 'god-of-war-laufey-arc-serpent-news.svg', alt: 'God of War Laufey — artwork officiel de Faye face à Begtse, le cube Phranque à ses côtés (Santa Monica Studio)', badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES', kicker: '29.09.2026 · SANTA MONICA STUDIO', title: 'FAYE DÉGAINE L’ARC-SERPENT.', excerpt: 'À l’ouverture des précommandes, Santa Monica Studio détaille la deuxième arme de Faye et la grille des éditions : 79,99 € en Standard, 89,99 € en numérique Deluxe, une mise à niveau à 10 € et aucun collector. Sortie le 16 février 2027 sur PS5.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/minecraft-world-hotel-chessington-2027', image: 'screenshots/minecraft-world-hotel/01.jpg', fallbackImage: 'minecraft-world-hotel-chessington-news.svg', alt: 'Minecraft World Hotel — la chambre familiale aux lits superposés, concept art officiel Merlin Entertainments / Mojang Studios', badge: 'MINECRAFT WORLD · CHESSINGTON', kicker: '29.09.2026 · MERLIN ENTERTAINMENTS', title: 'MINECRAFT DORT À CHESSINGTON EN 2027.', excerpt: 'Le Minecraft Live du 26 septembre a livré la deuxième annonce du parc : le premier hôtel officiel Minecraft au monde, près de 70 chambres sur quatre étages, ouvrira en 2027 au land Minecraft World — en même temps que le rollercoaster Escape the Nether.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/minecraft-the-sift-nouvelle-dimension', image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg', fallbackImage: 'minecraft-the-sift-news.svg', alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios', badge: 'MINECRAFT · THE SIFT', kicker: '28.09.2026 · MOJANG', title: 'MINECRAFT OUVRE SA 4E DIMENSION.', excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/the-witcher-3-remastered-sortie-29-septembre', image: 'https://public.cdn.cdpr.app/common/news/974db3ceaf0e6035a922cbbd7c7770b0_q90_1280x720.jpeg', fallbackImage: 'witcher-3-remastered-news.svg', alt: 'Geralt de Riv sur le visuel officiel de The Witcher 3: Wild Hunt – Remastered — CD PROJEKT RED', badge: 'THE WITCHER 3 · REMASTERED', kicker: '28.09.2026 · CD PROJEKT RED', title: 'THE WITCHER 3 REVIENT REMASTERISÉ.', excerpt: 'Déverrouillage mondial mardi à 10 h UTC (11 h à Alger) sur PC, PS5, Xbox Series X|S et Switch 2. Gratuit pour les propriétaires du jeu sur PC et consoles actuelles, environ 45 Go, sans préchargement.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+  { to: '/news/xbox-nadella-restructuration', image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', fallbackImage: 'xbox-nadella-news.svg', alt: 'Portrait officiel de Satya Nadella, PDG de Microsoft', badge: 'XBOX · MICROSOFT', kicker: '28.09.2026 · VGC', title: 'NADELLA DÉFEND LA CURE XBOX.', excerpt: 'Le PDG de Microsoft juge « formidable » la rationalisation menée par Asha Sharma et promet un retour à la croissance de Xbox, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+  { to: '/news/halo-activision', image: 'masterchief-activision.webp', alt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', badge: 'HALO · ACTIVISION', kicker: '26.09.2026 · XBOX', title: 'HALO PASSE CHEZ ACTIVISION.', excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+];
+
+// L'actu gaming du jour (voir ci-dessus).
+export const gamingTopStory = latestGamingStories[0];
 
 // La section calendrier + compte à rebours (01) a été déplacée sur la page
 // d'accueil, juste après le hero — la frise complète vit sur /calendrier.
@@ -55,25 +90,8 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  // Actus du lundi 05.10.2026 : le lancement free-to-play d'Aion 2 ouvre la
-  // page ; suivent les actus du week-end des 03-04.10.2026 — RuneScape 4
-  // annoncé au RuneFest, les concerts des 40 ans de Castlevania et la fronde
-  // contre le code généré par IA dans l'émulation —, puis celles du
-  // 28-29.09.2026, celles du robot et les articles manuels de la rédaction
-  // dans l'ordre.
   const articles = useMemo(() => [
-    { to: '/news/gears-of-war-e-day-sortie-mondiale', image: youTubeThumbUrl('TOEuNKz3XW8'), fallbackImage: 'gears-of-war-e-day-news.svg', alt: 'Gears of War: E-Day — Marcus Fenix dans le trailer de lancement officiel publié par la chaîne Gears of War', badge: 'THE COALITION · XBOX', kicker: '05.10.2026 · METACRITIC', title: 'E-DAY EST ENFIN LÀ.', excerpt: 'Le préquel de Gears of War sort demain sur Xbox Series X|S et PC, dès le premier jour dans le Game Pass. Cinq actes, vingt-six chapitres et un 87 sur Metacritic : le meilleur score de la saga depuis Gears of War 3.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/aion-2-ouverture-occidentale', image: youTubeThumbUrl('YYelxy0eEsA'), fallbackImage: 'aion-2-news.svg', alt: 'Aion 2 — plan du trailer de lancement officiel « Heirs of the Broken Sky » publié par NCSOFT', badge: 'NCSOFT · MMORPG', kicker: '05.10.2026 · NCSOFT', title: 'AION 2 OUVRE L’OCCIDENT.', excerpt: 'Le MMORPG de NCSOFT passe au free-to-play ce lundi à 13 h UTC (15 h à Paris) sur PC, via Steam et le lanceur maison PURPLE. Cinq jours d’accès anticipé s’achèvent, la progression est conservée — et l’hôtel des ventes reste lié à l’abonnement facultatif.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/runescape-4-runefest-annonce', image: 'runescape-4-teaser.jpg', fallbackImage: 'runescape-4-news.svg', alt: 'RuneScape 4 — un magicien se protège les yeux de la lumière, capture du teaser d’annonce dévoilé au RuneFest 2026 (Jagex)', badge: 'JAGEX · MMORPG', kicker: '03.10.2026 · ACTUGAMING', title: 'RUNESCAPE 4 ÉCRIT SON SIXIÈME ÂGE.', excerpt: 'Jagex a refermé son RuneFest par l’annonce d’un quatrième MMORPG, provisoirement baptisé RuneScape 4, développé sous Unreal Engine. L’aventure se déroulera au Sixième Âge et débutera à Ashenfall, sans date de sortie. Toute la franchise repart en parallèle : Reignited le 2 décembre, Blood Crystal Saga en 2027 et un raid inédit pour Old School RuneScape.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/castlevania-40-ans-concerts-symphoniques', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872268/pour-les-40-ans-de-castlevania-et-la-sortie-de-belmont-s-curse-des-concerts-symphoniques-vont-avoir-lieu-65c89bda__930_300__0-112-1887-720.png', fallbackImage: 'castlevania-40-ans-news.svg', alt: 'Castlevania 40th Anniversary — An Orchestral Concert, visuel de l’annonce officielle Konami', badge: 'KONAMI · CONCERTS', kicker: '04.10.2026 · GAMEKULT', title: 'CASTLEVANIA FÊTE SES 40 ANS SUR SCÈNE.', excerpt: 'Trois concerts symphoniques à Tokyo (13 mars), Londres (14 mars) et Los Angeles (26 mars), avec un orchestre de vingt-cinq musiciens et des arrangements signés Adam Hoskins. Les musiques de Belmont’s Curse, attendu le 15 octobre sur PC et consoles, y seront jouées en live pour la première fois.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/vibe-coding-emulation-decompilation', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872249/du-code-bacle-par-ia-ralentit-des-projets-d-emulation-et-de-decompilation-les-developpeurs-poussent-un-coup-de-gueule-7c5509e8__930_300__0-41-739-279.jpg', fallbackImage: 'vibe-coding-emulation-news.svg', alt: 'Émulation et décompilation — illustration de l’article Gamekult consacré au code généré par IA', badge: 'PRÉSERVATION · IA', kicker: '03.10.2026 · GAMEKULT', title: 'LE VIBE CODING POLLUE LA PRÉSERVATION.', excerpt: 'Les mainteneurs de RPCS3 menacent de bannir les contributions générées en masse par IA sans relecture. Le portage PC de Mario Kart Wii a été critiqué pour la même raison, quand les projets Donkey Kong 64 et Super Mario Galaxy revendiquent un travail « 100 % humain ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
-    { to: '/news/physint-budget-400-millions-xbox', image: 'kojima_mindplayer.webp', alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', badge: 'PHYSINT · XBOX', kicker: '29.09.2026 · KOJIMA PRODUCTIONS', title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.', excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft a signé pour un montant « nettement inférieur ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
-    { to: '/news/god-of-war-laufey-precommandes-arc-serpent', image: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/5bd30eac480284e480a9ba68e9f06472584219f4.jpg?resize=1088%2C612&crop_strategy=smart', fallbackImage: 'god-of-war-laufey-arc-serpent-news.svg', alt: 'God of War Laufey — artwork officiel de Faye face à Begtse, le cube Phranque à ses côtés (Santa Monica Studio)', badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES', kicker: '29.09.2026 · SANTA MONICA STUDIO', title: 'FAYE DÉGAINE L’ARC-SERPENT.', excerpt: 'À l’ouverture des précommandes, Santa Monica Studio détaille la deuxième arme de Faye et la grille des éditions : 79,99 € en Standard, 89,99 € en numérique Deluxe, une mise à niveau à 10 € et aucun collector. Sortie le 16 février 2027 sur PS5.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/minecraft-world-hotel-chessington-2027', image: 'screenshots/minecraft-world-hotel/01.jpg', fallbackImage: 'minecraft-world-hotel-chessington-news.svg', alt: 'Minecraft World Hotel — la chambre familiale aux lits superposés, concept art officiel Merlin Entertainments / Mojang Studios', badge: 'MINECRAFT WORLD · CHESSINGTON', kicker: '29.09.2026 · MERLIN ENTERTAINMENTS', title: 'MINECRAFT DORT À CHESSINGTON EN 2027.', excerpt: 'Le Minecraft Live du 26 septembre a livré la deuxième annonce du parc : le premier hôtel officiel Minecraft au monde, près de 70 chambres sur quatre étages, ouvrira en 2027 au land Minecraft World — en même temps que le rollercoaster Escape the Nether.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/minecraft-the-sift-nouvelle-dimension', image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg', fallbackImage: 'minecraft-the-sift-news.svg', alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios', badge: 'MINECRAFT · THE SIFT', kicker: '28.09.2026 · MOJANG', title: 'MINECRAFT OUVRE SA 4E DIMENSION.', excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/the-witcher-3-remastered-sortie-29-septembre', image: 'https://public.cdn.cdpr.app/common/news/974db3ceaf0e6035a922cbbd7c7770b0_q90_1280x720.jpeg', fallbackImage: 'witcher-3-remastered-news.svg', alt: 'Geralt de Riv sur le visuel officiel de The Witcher 3: Wild Hunt – Remastered — CD PROJEKT RED', badge: 'THE WITCHER 3 · REMASTERED', kicker: '28.09.2026 · CD PROJEKT RED', title: 'THE WITCHER 3 REVIENT REMASTERISÉ.', excerpt: 'Déverrouillage mondial mardi à 10 h UTC (11 h à Alger) sur PC, PS5, Xbox Series X|S et Switch 2. Gratuit pour les propriétaires du jeu sur PC et consoles actuelles, environ 45 Go, sans préchargement.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
-    { to: '/news/xbox-nadella-restructuration', image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', fallbackImage: 'xbox-nadella-news.svg', alt: 'Portrait officiel de Satya Nadella, PDG de Microsoft', badge: 'XBOX · MICROSOFT', kicker: '28.09.2026 · VGC', title: 'NADELLA DÉFEND LA CURE XBOX.', excerpt: 'Le PDG de Microsoft juge « formidable » la rationalisation menée par Asha Sharma et promet un retour à la croissance de Xbox, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
-    { to: '/news/halo-activision', image: 'masterchief-activision.webp', alt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', badge: 'HALO · ACTIVISION', kicker: '26.09.2026 · XBOX', title: 'HALO PASSE CHEZ ACTIVISION.', excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+    ...latestGamingStories,
     ...autoNewsListing,
     { to: '/news/ea-sports-fc-27-carriere-dynamique', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', alt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV (visuel officiel EA Sports FC)', badge: 'EA SPORTS FC 27 · CARRIÈRE', kicker: '22.09.2026 · ELECTRONIC ARTS', title: 'EA SPORTS FC 27 FAIT VIVRE SA CARRIÈRE.', excerpt: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale dynamique, scénarios créés par la communauté et crises de vestiaire : la refonte du mode Carrière est le vrai chantier de l’édition 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/netmarble-tgs-2026', image: 'tokyo-game-show-2026-news.jpg', alt: 'Tokyo Game Show 2026 — visuel officiel de l’événement', badge: 'TGS 2026 · NETMARBLE', kicker: '21.09.2026 · NETMARBLE', title: 'NETMARBLE QUITTE LE TGS AVEC TROIS JEUX.', excerpt: 'Shangri-La Frontier: The Seven Colossi, Solo Leveling: KARMA et Pearl in Blue ont été montrés sous forme de démos. Les dates de sortie restent ouvertes.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
@@ -112,8 +130,8 @@ export default function News(){
   // La page reste lisible par défaut : 12 actus maximum affichées, le bouton
   // « Voir toutes les actus » déplie le reste de la liste.
   const visibleArticles = showAll ? articles : articles.slice(0, 12);
-  // Le dernier article paru ouvre la grille en grand sur 2 colonnes (actu à la
-  // une) : les autres actus restent visibles à côté d'elle dès le premier écran.
+  // Le dernier article paru devient le bandeau à la une au-dessus de la grille ;
+  // seuls les autres articles occupent les quatre colonnes du flux.
   const [topStory, ...gridArticles] = visibleArticles;
   const allNewsLabel = lang === 'fr' ? 'Voir toutes les actus' : lang === 'ar' ? 'عرض كل الأخبار' : 'See all news';
 
@@ -135,9 +153,16 @@ export default function News(){
     const sentimentId = getArticleSentiment(article);
     const meta = sentimentMeta(sentimentId);
     const views = viewsMap[normalizeArticleId(article.to)] ?? null;
+    const trailerFlag = trailerFlagLabel(article.to);
     return (
       <>
         <span className="news-feature-badge">{article.badge}</span>
+        {trailerFlag ? (
+          <span className="news-trailer-flag" title={trailerFlagTitle(article.to)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            {trailerFlag}
+          </span>
+        ) : null}
         <span className="news-feature-arrow">↗</span>
         <span className={`news-sentiment ${meta.color}`} title={meta.label} aria-label={meta.label}>
           {meta.emoji}
@@ -162,22 +187,16 @@ export default function News(){
       </div>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
-        {/* Chaque carte est enveloppée dans une cellule `.news-grid-cell` : la
-            carte porte le `clip-path` (coin biseauté) et la cellule porte
-            l'ombre (`filter: drop-shadow`). Posée sur la carte, l'ombre serait
-            découpée avec elle — clip-path s'applique après filter/box-shadow. */}
+        <NewsFeaturedStory
+          story={topStory}
+          todayLabel={featured.today}
+          renderStoryImage={renderStoryImage}
+          renderBadges={renderBadges}
+        />
+        {/* Chaque article est dans une cellule : la carte porte le coin biseauté,
+            et la cellule son ombre portée pour qu'elle ne soit pas rognée. */}
         <div className="news-carousel is-grid">
-          {topStory && <div className="news-grid-cell news-grid-cell--today"><Link className="daily-news-card news-today" to={topStory.to}>
-            <div className="daily-news-image">{renderStoryImage(topStory, 'eager')}{renderBadges(topStory)}</div>
-            <div className="daily-news-copy">
-              <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
-              <span className="news-kicker">{topStory.kicker}</span>
-              <h2>{topStory.title}</h2>
-              <p>{topStory.excerpt}</p>
-              <span className="read-link">{topStory.read} <Arrow /></span>
-            </div>
-          </Link></div>}
-          {gridArticles.map((article) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to}>
+          {gridArticles.map((article, index) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
             <div className="news-carousel-image">{renderStoryImage(article)}{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link></div>)}

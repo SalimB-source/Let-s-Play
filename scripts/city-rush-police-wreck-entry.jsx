@@ -23,8 +23,13 @@
 //
 // Une agonie n'est mesurable que si la berline tombe assez loin devant le
 // pilote (sinon il la dépasse pendant le tête-à-queue) : les destructions trop
-// proches ou hors cadre sont annoncées puis ignorées, et le plancher
-// d'observations est global.
+// proches ou hors cadre sont ignorées pour le suivi visuel.
+//
+// Un atterrissage de saut ne détruit plus la berline : il lui coûte deux
+// carrés (événement `police-ramp-landing`), et la casse n'arrive qu'à la
+// barre vidée. La vérif suit donc ces sauts encaissés — deux carrés chacun,
+// berline toujours en vie — séparément des destructions, qui doivent toutes
+// tomber sur `health: 0` avec la même agonie que sous les balles.
 
 const ctx2d = () => {
   const g = { addColorStop() {} };
@@ -95,7 +100,8 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
-  CITY_RUSH_SCROLL_SCALE, CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_SCROLL_SCALE, cityRushPoliceMaxHealth,
+  CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
   CITY_RUSH_POLICE_WRECK_SPIN_TURNS, CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
   CITY_RUSH_POLICE_WRECK_VIEW_BEHIND, CITY_RUSH_POLICE_WRECK_BURN_SECONDS,
   cityRushPoliceWreckSpeed, cityRushPoliceWreckSlide, cityRushPoliceWreckFlame, cityRushTrackProfile,
@@ -127,13 +133,15 @@ const stepFrame = () => {
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
-  'policeSiren', 'policeSirenOff',
+  'policeSiren', 'policeSirenOff', 'garageRepair',
 ];
 
 const cityArg = process.argv.find((arg) => arg.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_POLICE_WRECK_ALL === '1';
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((city) => city.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
-const RUNS = Math.max(1, Math.floor(Number(process.env.CITY_RUSH_POLICE_WRECK_RUNS || process.argv.find((arg) => arg.startsWith('--runs='))?.slice(7) || 1)));
+// Deux graines par défaut évitent de faire dépendre l’observation des carcasses
+// du seul tirage des patrouilles et du trafic d’une ville.
+const RUNS = Math.max(1, Math.floor(Number(process.env.CITY_RUSH_POLICE_WRECK_RUNS || process.argv.find((arg) => arg.startsWith('--runs='))?.slice(7) || 2)));
 const VERBOSE = process.env.CITY_RUSH_POLICE_WRECK_VERBOSE === '1';
 // Trois tours : assez pour croiser l'escouade et l'abattre, assez court pour
 // rester un smoke. La police entre dès le départ (mode Poursuite).
@@ -150,7 +158,10 @@ const PLAYER_Z = 3.1;
 const TARGET_GAP_MIN = 45;
 const TARGET_GAP_MAX = 110;
 // Écart minimal au moment de la destruction pour que l'agonie soit observable :
-// trop près, le pilote dépasse la berline pendant son tête-à-queue.
+// trop près, le pilote dépasse la berline pendant son tête-à-queue. Ce filtre
+// est un garde-fou bon marché — le verdict exact est rendu à l'apparition de la
+// carcasse (`huskGap`, une fois la berline arrêtée), car la distance couverte
+// pendant la toupie dépend de la vitesse du pilote.
 const OBSERVABLE_GAP_MIN = 30;
 // Au-delà de cette attente sans cible dans la fenêtre, on tire sur la berline
 // la plus proche : la vérif ne doit pas tourner indéfiniment.
@@ -158,6 +169,11 @@ const TARGET_FALLBACK_FRAME = 900;
 
 let races = 0;
 let destructions = 0;
+let rampLandingExplosions = 0;
+// Un atterrissage ne détruit plus la berline : il lui coûte
+// `CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE` carrés. On compte donc les sauts
+// encaissés, et on ne valide l'explosion que sur une barre vidée.
+let rampLandingsAbsorbed = 0;
 let carcasses = 0;
 let fullBurns = 0;
 
@@ -260,20 +276,26 @@ for (let run = 0; run < RUNS; run += 1) {
     world.start();
 
     let tracked = null;
+    // Carcasses visibles avant l'image en cours : celle qui apparaît maintenant
+    // est celle de la berline suivie. Une carcasse déjà en vue — ou qui entre
+    // simplement dans le cadre — appartient à une agonie plus ancienne : deux
+    // berlines peuvent tomber au même endroit, à quelques secondes d'écart.
+    let husksVisibleBefore = new Set();
     let lockedId = null; // berline visée : le pilote la suit jusqu'à la casse
     let cityCarcasses = 0;
     let examined = 0; // destructions déjà examinées (suivies ou hors cadre)
     let shotsFired = 0;
     const maxFrames = 30 * 240;
-    // Berlines de l'escouade abattues **par le pilote** : les berlines du
-    // trafic (rappelées ou banalisées) partagent le maillage du flot, et une
-    // berline descendue par un rival ou par un carambolage tombe n'importe où —
-    // souvent hors cadre. Le pilote, lui, tire de loin sur une berline devant
-    // lui : l'agonie se voit du début à la fin.
-    const squadDestructions = () => callbacks.effects
-      .filter((item) => item.type === 'police-destroyed'
-        && /^police-\d+$/.test(String(item.id))
-        && item.attackerId === 'player');
+    // Berlines de l'escouade détruites, quel qu'en soit l'auteur : le trafic
+    // (rappelées ou banalisées) partage le maillage du flot, mais ses
+    // destructions portent un autre identifiant et tombent n'importe où. Une
+    // berline de l'escouade, elle, agonit toujours au même endroit — le pilote
+    // qui la rejoint la voit faire son tête-à-queue puis brûler. La vérif
+    // n'exige pas que ce soit le pilote qui l'ait abattue (un rival peut la
+    // descendre loin devant) : seule compte la distance à laquelle l'agonie
+    // commence, pour qu'elle soit observable de bout en bout.
+    const policeDestructions = () => callbacks.effects
+      .filter((item) => item.type === 'police-destroyed' && /^police-\d+$/.test(String(item.id)));
 
     while (!callbacks.finished && virtualFrame < maxFrames && !(tracked && tracked.done)) {
       const hud = callbacks.huds.at(-1);
@@ -285,47 +307,62 @@ for (let run = 0; run < RUNS; run += 1) {
           .filter((police) => !String(police.id).startsWith('rally-'))
           .map((police) => ({ ...police, gap: (Number(police.rawDistance) || 0) - playerDistance }));
         const byGap = (a, b) => a.gap - b.gap;
-        const inRange = squad
-          .filter((police) => police.gap >= TARGET_GAP_MIN && police.gap <= TARGET_GAP_MAX)
-          .sort(byGap);
-        const closeBy = squad
-          .filter((police) => police.gap > -4 && police.gap < TARGET_GAP_MAX)
-          .sort(byGap);
+        const laneOf = (police) => laneOfX(police.x);
+        // La balle s'arrête sur le premier véhicule de la voie : une autre
+        // berline ou un rival devant la cible la prendrait à sa place, le
+        // trafic l'absorbe pour rien. Une berline n'est donc tirable que si sa
+        // voie est libre jusqu'à elle — la plus avancée de chaque voie l'est
+        // par construction, les suivantes non tant que la première roule là.
+        const clearLane = (target) => {
+          const lane = laneOf(target);
+          const rivals = (hud.racers || [])
+            .filter((racer) => !racer.isPlayer && !racer.wrecked)
+            .some((racer) => between(racer, playerDistance, lane, target.gap));
+          if (rivals) return false;
+          const others = squad.some((police) => police.id !== target.id
+            && between(police, playerDistance, lane, target.gap));
+          if (others) return false;
+          return !trafficBetween(lane, target.gap);
+        };
         // Le tir rouge ne retire qu'un carré : six impacts pour envoyer une
         // berline à la casse. Le pilote verrouille donc sa cible et la suit
         // jusqu'au bout, au lieu de repartir d'une autre à chaque image — la
         // fenêtre de tir (voie libre, berline alignée) ne dure pas six fois
-        // plus longtemps qu'un tir.
-        const locked = lockedId
-          ? squad.find((police) => police.id === lockedId
-            && police.gap > TARGET_GAP_MIN - 20 && police.gap <= TARGET_GAP_MAX + 20)
-          : null;
-        const target = locked || inRange[0]
-          || (virtualFrame > TARGET_FALLBACK_FRAME ? closeBy[0] : null)
-          || null;
+        // plus longtemps qu'un tir. Il choisit la plus **lointaine** des
+        // berlines tirables, pour disposer de la plus longue descente possible
+        // avant que la distance ne referme : l'agonie ne se suit qu'à bonne
+        // distance, sinon le pilote dépasse la carcasse pendant son
+        // tête-à-queue (cf. OBSERVABLE_GAP_MIN).
+        const shootable = squad
+          .filter((police) => police.gap >= TARGET_GAP_MIN && police.gap <= TARGET_GAP_MAX && clearLane(police))
+          .sort(byGap);
+        const locked = lockedId ? shootable.find((police) => police.id === lockedId) : null;
+        let target = locked || shootable.at(-1) || null;
+        if (!target && virtualFrame > TARGET_FALLBACK_FRAME) {
+          // Dernier recours : plus de cible à bonne distance depuis un moment,
+          // la vérif ne doit pas tourner indéfiniment. On tire sur la plus
+          // lointaine des berlines devant, même hors des bornes de portée.
+          const ahead = squad
+            .filter((police) => police.gap > 0 && police.gap <= TARGET_GAP_MAX)
+            .sort(byGap);
+          target = ahead.at(-1) || null;
+        }
         lockedId = target ? target.id : null;
         if (target && virtualFrame % 3 === 0) {
-          const targetLane = laneOfX(target.x);
+          const targetLane = laneOf(target);
           if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
-          else if (virtualFrame % 4 === 0) {
-            const rivals = (hud.racers || [])
-              .filter((racer) => !racer.isPlayer && !racer.wrecked)
-              .some((racer) => between(racer, playerDistance, targetLane, target.gap));
-            const others = (hud.police || [])
-              .filter((police) => police !== target)
-              .some((police) => between(police, playerDistance, targetLane, target.gap));
-            if (!rivals && !others && !trafficBetween(targetLane, target.gap)) {
-              world.action(CITY_RUSH_POWERS.PISTOL);
-              shotsFired += 1;
-            }
+          else if (virtualFrame % 4 === 0 && clearLane(target)) {
+            world.action(CITY_RUSH_POWERS.PISTOL);
+            shotsFired += 1;
           }
         }
       }
+      husksVisibleBefore = new Set(refreshWreckNodes().filter((node) => node.visible));
       stepFrame();
 
       // ── La coque vient de céder ─────────────────────────────────────────
       if (!tracked) {
-        const effect = squadDestructions()[examined];
+        const effect = policeDestructions()[examined];
         if (effect) {
           examined += 1;
           // L'agonie est annoncée avec l'explosion.
@@ -334,7 +371,7 @@ for (let run = 0; run < RUNS; run += 1) {
             || effect.wreckBurning !== true) {
             fail(`[${city.id}] l'explosion n'annonce pas le tête-à-queue et la carcasse en feu`, effect);
           }
-          if (effect.health !== 0 || effect.maxHealth !== CITY_RUSH_POLICE_HEALTH) {
+          if (effect.health !== 0 || effect.maxHealth !== cityRushPoliceMaxHealth(effect.vehicleType)) {
             fail(`[${city.id}] la destruction ne confirme pas la coque à zéro`, effect);
           }
           // La berline qui agonise sort du HUD à l'image même de la
@@ -360,7 +397,7 @@ for (let run = 0; run < RUNS; run += 1) {
           // destruction : son agonie ne se voit pas, la vérif attend la suivante.
           if (!inFrame || !(gapAtDeath > OBSERVABLE_GAP_MIN)) {
             if (VERBOSE) {
-              console.log(`[${city.id}#${run + 1}] ${effect.police} détruite à ${gapAtDeath === null ? '?' : gapAtDeath.toFixed(0)} m : agonie non observable`);
+              console.log(`[${city.id}#${run + 1}] ${effect.police} détruite à ${gapAtDeath === null ? '?' : gapAtDeath.toFixed(0)} m par ${effect.attackerId} : agonie non observable`);
             }
             continue;
           }
@@ -447,27 +484,49 @@ for (let run = 0; run < RUNS; run += 1) {
         }
         // La carcasse apparaît là où la berline s'immobilise : on la repère à
         // sa position, pas au boum — d'autres berlines (trafic rappelé) peuvent
-        // exploser pendant le même tête-à-queue.
-        const husk = refreshWreckNodes().find((candidate) => {
+        // exploser pendant le même tête-à-queue. Deux conditions l'attribuent à
+        // cette agonie : la berline s'est effacée (son maillage n'est plus
+        // dessiné) et la carcasse vient d'apparaître, elle n'était pas en vue à
+        // l'image précédente. Sans elles, une épave plus ancienne — ou celle
+        // d'une berline tombée quelques mètres plus loin — passerait pour la
+        // sienne.
+        const husk = (node?.visible ? null : refreshWreckNodes().find((candidate) => {
           if (!candidate.visible) return false;
+          if (husksVisibleBefore.has(candidate)) return false;
           const anchored = trackDistanceOf(candidate);
           if (Math.abs(anchored - now) >= 2.5) return false;
           const before = tracked.preexistingHusks.get(candidate);
           return before === undefined || Math.abs(anchored - before) > 1;
-        }) || null;
+        }) || null);
         if (husk) {
           tracked.explosionFrame = virtualFrame;
           tracked.husk = husk;
           tracked.huskTrackDistance = trackDistanceOf(husk);
           tracked.huskStartZ = husk.position.z;
           tracked.huskLastZ = husk.position.z;
-          if (node?.visible) fail(`[${city.id}] la berline reste affichée après l'explosion`);
+          // La berline s'est effacée au profit de sa carcasse : c'est la
+          // condition même de l'attribution, vérifiée ci-dessus.
           if (audioCalls.filter((call) => call.name === 'explosion').length === tracked.explosionsBefore) {
             fail(`[${city.id}] la carcasse apparaît sans explosion`);
           }
           const drift = Math.abs(trackDistanceOf(husk) - tracked.lastTrackDistance);
           if (drift > 1) {
             fail(`[${city.id}] la carcasse n'apparaît pas là où la berline s'est arrêtée`, { drift });
+          }
+          // Le pilote peut dépasser la berline pendant son tête-à-queue (à
+          // 160 km/h il couvre 76 m en 1,7 s) : la carcasse naît alors déjà
+          // derrière lui, hors de la fenêtre de dessin (`…_VIEW_BEHIND`, 22 m),
+          // et le monde a raison de ne pas la dessiner. L'agonie n'est pas
+          // observable — on attend la destruction suivante au lieu de la
+          // déclarer fautive, comme pour une berline hors cadre au moment du
+          // boum. Toutes les mesures ci-dessous ne valent que pour une carcasse
+          // née dans le cadre.
+          const huskGap = tracked.huskTrackDistance - (Number(world.distance) || 0);
+          if (huskGap < -(CITY_RUSH_POLICE_WRECK_VIEW_BEHIND - 2)) {
+            if (VERBOSE) {
+              console.log(`[${city.id}#${run + 1}] carcasse née ${Math.abs(huskGap).toFixed(1)} m derrière le pilote (dépassée pendant le tête-à-queue) : agonie non observable`);
+            }
+            tracked = null;
           }
         } else if (tracked.spinFrames > SPIN_FRAMES + 12) {
           fail(`[${city.id}] le tête-à-queue dépasse ${SPIN_FRAMES} images sans exploser`, {
@@ -639,6 +698,40 @@ for (let run = 0; run < RUNS; run += 1) {
       }
     }
 
+    // Atterrissages encaissés : chacun coûte deux carrés, et la berline reste
+    // en chasse tant qu'il lui reste de la vie.
+    const absorbedLandings = callbacks.effects.filter((item) => item.type === 'police-ramp-landing');
+    rampLandingsAbsorbed += absorbedLandings.length;
+    for (const landing of absorbedLandings) {
+      if (landing.damage !== CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE) {
+        fail(`[${city.id}] un atterrissage sur rampe ne coûte pas ${CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés`, landing);
+      }
+      if (!(landing.health > 0) || landing.destroyed !== false) {
+        fail(`[${city.id}] une berline qui a encore de la vie est détruite par son atterrissage`, landing);
+      }
+      if (landing.maxHealth !== cityRushPoliceMaxHealth(landing.vehicleType)
+        || !(landing.health < landing.maxHealth)) {
+        fail(`[${city.id}] l'atterrissage n'abîme pas la coque de la berline`, landing);
+      }
+      if (landing.landingsToDestroy !== Math.ceil(landing.health / CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE)) {
+        fail(`[${city.id}] le compte des atterrissages restants avant la casse est faux`, landing);
+      }
+      if (landing.source !== CITY_RUSH_POLICE_RAMP_LANDING_SOURCE) {
+        fail(`[${city.id}] l'atterrissage ne porte pas sa source de dégâts`, landing);
+      }
+    }
+    // La destruction ne tombe qu'à zéro : même source, même agonie que sous les
+    // balles (tête-à-queue, explosion à l'arrêt, carcasse en feu).
+    const rampLandings = callbacks.effects.filter((item) => item.type === 'police-destroyed'
+      && item.source === CITY_RUSH_POLICE_RAMP_LANDING_SOURCE);
+    rampLandingExplosions += rampLandings.length;
+    for (const landing of rampLandings) {
+      if (landing.health !== 0
+        || landing.spinTurns !== CITY_RUSH_POLICE_WRECK_SPIN_TURNS
+        || landing.wreckBurning !== true) {
+        fail(`[${city.id}] un atterrissage qui vide la barre ne détruit pas la voiture de police`, landing);
+      }
+    }
     if (callbacks.errors.length) fail(`[${city.id}] erreurs remontées`, callbacks.errors.map(String));
     if (VERBOSE && !cityCarcasses) {
       console.log(`[${city.id}#${run + 1}] aucune agonie observable dans cette course (${examined} destruction(s) examinée(s))`);
@@ -651,10 +744,18 @@ for (let run = 0; run < RUNS; run += 1) {
 }
 
 // Une agonie n'est observable que lorsque la berline tombe assez loin devant le
-// pilote (sinon il la dépasse pendant le tête-à-queue) : le plancher est donc
-// global, et non par ville.
-if (!violations && carcasses < 2) {
-  fail('trop peu d’agonies observées pour conclure', { carcasses, destructions });
+// pilote (sinon il la dépasse pendant le tête-à-queue) : une carcasse suivie
+// sur toute sa durée suffit à éprouver la séquence complète. Les sauts sont
+// vérifiés séparément : au moins une berline doit avoir **encaissé** un
+// atterrissage sans exploser, et une destruction d'atterrissage ne peut tomber
+// que sur une barre vidée.
+if (!violations && carcasses < 1) {
+  fail('aucune agonie observable pour conclure', { carcasses, destructions });
+}
+if (!violations && rampLandingsAbsorbed < 1) {
+  fail('aucune voiture de police n’a encaissé d’atterrissage après un saut', {
+    rampLandingsAbsorbed, rampLandingExplosions,
+  });
 }
 // Au moins une carcasse doit avoir été suivie du début à la fin de l'incendie :
 // sans cela, la durée du feu ne serait jamais éprouvée.
@@ -663,8 +764,8 @@ if (!fullBurns && !violations) {
 }
 
 if (violations) {
-  console.error(`VÉRIF CARCASSE DE POLICE ÉCHOUÉE — ${violations} manquement(s) sur ${races} course(s) et ${destructions} destruction(s).`);
+  console.error(`VÉRIF CARCASSE DE POLICE ÉCHOUÉE — ${violations} manquement(s) sur ${races} course(s) et ${destructions} agonie(s) suivie(s).`);
   process.exit(3);
 }
-console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${destructions} berline(s) abattue(s) : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
+console.log(`VÉRIF CARCASSE DE POLICE OK — ${cities.length} ville(s) × ${RUNS} course(s) · ${rampLandingsAbsorbed} atterrissage(s) encaissé(s) à ${CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés, ${rampLandingExplosions} explosion(s) après saut · ${destructions} berline(s) suivie(s) à bonne distance : ${CITY_RUSH_POLICE_WRECK_SPIN_TURNS} tours de tête-à-queue en ${CITY_RUSH_POLICE_WRECK_SPIN_SECONDS} s, explosion à l'arrêt, ${carcasses} carcasse(s) laissée(s) en feu, dont ${fullBurns} suivie(s) pendant tout l'incendie de ${CITY_RUSH_POLICE_WRECK_BURN_SECONDS} s.`);
 process.exit(0);

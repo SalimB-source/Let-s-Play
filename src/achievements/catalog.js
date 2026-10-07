@@ -923,9 +923,11 @@ export const ACHIEVEMENTS = [
   /* ----------------------------- Vice City Rush ---------------------------- */
   // Trophées du jeu Vice City Rush (`/jeu/vice-city-rush`) : chaque course
   // terminée envoie l'action `vice_city_run` (ville, mode, place, butin,
-  // chapitre d'histoire). Cibles calées sur le contenu réel du jeu : cinq
-  // villes (`CITY_RUSH_CITIES`), trois modes de course et six chapitres
-  // d'histoire (`STORY_CHAPTERS`).
+  // chapitre d'histoire), et chaque titre l'action `vice_city_tournament_won`
+  // (tournoi). Cibles calées sur le contenu réel du jeu : cinq
+  // villes (`CITY_RUSH_CITIES`), trois modes de course, dix chapitres
+  // d'histoire (`CITY_RUSH_STORY_CHAPTERS`), prologue compris, et quatre
+  // tournois (`CITY_RUSH_TOURNAMENTS`).
   {
     id: 'vice-first-race',
     icon: 'icons/achievements/vice-first-race.svg',
@@ -949,9 +951,9 @@ export const ACHIEVEMENTS = [
     metric: 'viceCityStoryChapters',
     target: 1,
     labels: {
-      en: { name: 'Chapter one', desc: 'Win the first chapter of the Vice City Rush story.' },
-      fr: { name: 'Chapitre un', desc: 'Remporte le premier chapitre du mode Histoire de Vice City Rush.' },
-      ar: { name: 'الفصل الأول', desc: 'افز بالفصل الأول من طور القصة في Vice City Rush.' },
+      en: { name: 'Prologue', desc: 'Complete the prologue of the Vice City Rush story.' },
+      fr: { name: 'Prologue', desc: 'Termine le prologue du mode Histoire de Vice City Rush.' },
+      ar: { name: 'المقدمة', desc: 'أكمل مقدمة طور القصة في Vice City Rush.' },
     },
   },
   {
@@ -980,6 +982,20 @@ export const ACHIEVEMENTS = [
       en: { name: 'Three styles', desc: 'Finish a race in all three modes: Circuit, Sprint and Pursuit.' },
       fr: { name: 'Trois styles', desc: 'Termine une course dans les trois modes : Circuit, Sprint et Poursuite.' },
       ar: { name: 'ثلاثة أساليب', desc: 'أنهِ سباقًا في الأطوار الثلاثة: الحلبة والسبرنت والمطاردة.' },
+    },
+  },
+  {
+    id: 'vice-tournament-title',
+    icon: 'icons/achievements/vice-tournament-title.svg',
+    group: 'vicecity',
+    rarity: 'silver',
+    xp: 90,
+    metric: 'viceCityTournamentsWon',
+    target: 1,
+    labels: {
+      en: { name: 'First title', desc: 'Win a Vice City Rush tournament.' },
+      fr: { name: 'Premier titre', desc: 'Soulève un tournoi de Vice City Rush.' },
+      ar: { name: 'اللقب الأول', desc: 'توج بلقب بطولة في Vice City Rush.' },
     },
   },
   {
@@ -1033,12 +1049,12 @@ export const ACHIEVEMENTS = [
     rarity: 'gold',
     xp: 250,
     metric: 'viceCityStoryChapters',
-    // Six chapitres (`STORY_CHAPTERS` de ViceCityRushPage.jsx), finale compris.
-    target: 6,
+    // Dix chapitres (`CITY_RUSH_STORY_CHAPTERS`), prologue et finale compris.
+    target: 10,
     labels: {
-      en: { name: 'End of the story', desc: 'Win all six chapters of the Vice City Rush story.' },
-      fr: { name: 'Fin de l’histoire', desc: 'Remporte les six chapitres du mode Histoire de Vice City Rush.' },
-      ar: { name: 'نهاية القصة', desc: 'افز بفصول طور القصة الستة كلها في Vice City Rush.' },
+      en: { name: 'End of the story', desc: 'Win all ten chapters of the Vice City Rush story.' },
+      fr: { name: 'Fin de l’histoire', desc: 'Remporte les dix chapitres du mode Histoire de Vice City Rush.' },
+      ar: { name: 'نهاية القصة', desc: 'افز بفصول طور القصة العشرة كلها في Vice City Rush.' },
     },
   },
   {
@@ -1053,6 +1069,22 @@ export const ACHIEVEMENTS = [
       en: { name: 'Grand slam', desc: 'Win a race on each of the eight courses.' },
       fr: { name: 'Grand chelem', desc: 'Remporte une course sur chacun des huit parcours.' },
       ar: { name: 'الغراند سلام', desc: 'افز بسباق في كل مسار من المسارات الثمانية.' },
+    },
+  },
+  {
+    id: 'vice-tournament-slam',
+    icon: 'icons/achievements/vice-tournament-slam.svg',
+    group: 'vicecity',
+    rarity: 'platinum',
+    xp: 400,
+    metric: 'viceCityTournamentsWon',
+    // Quatre tournois au catalogue (`CITY_RUSH_TOURNAMENTS`) : Sunset,
+    // Europe, Pacifique, Légendes.
+    target: 4,
+    labels: {
+      en: { name: 'Four titles', desc: 'Win all four Vice City Rush tournaments.' },
+      fr: { name: 'Quatre titres', desc: 'Soulève les quatre tournois de Vice City Rush.' },
+      ar: { name: 'أربعة ألقاب', desc: 'توج بجميع بطولات Vice City Rush الأربع.' },
     },
   },
 ];

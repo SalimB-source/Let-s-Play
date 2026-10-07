@@ -36,6 +36,12 @@ const base = youTubeEmbedUrl('aTs0zhm6Leg');
 check('embed standard', base, 'https://www.youtube.com/embed/aTs0zhm6Leg?rel=0&modestbranding=1&enablejsapi=1');
 check('enablejsapi présent', new URL(base).searchParams.get('enablejsapi'), '1');
 check('autoplay à la demande (modale)', youTubeEmbedUrl('abc', { autoplay: true }).includes('autoplay=1'), true);
+const scrollAutoplayUrl = new URL(youTubeEmbedUrl('abc', { autoplay: true, muted: true, playsinline: true }));
+check('autoplay au scroll : muet et intégré à la page', [
+  scrollAutoplayUrl.searchParams.get('autoplay'),
+  scrollAutoplayUrl.searchParams.get('mute'),
+  scrollAutoplayUrl.searchParams.get('playsinline'),
+].join('/'), '1/1/1');
 check('pas d’autoplay par défaut', base.includes('autoplay'), false);
 check('start ignoré si absent', youTubeEmbedUrl('abc', { start: 0 }).includes('start'), false);
 check('start conservé si demandé', youTubeEmbedUrl('abc', { start: 389 }).includes('start=389'), true);

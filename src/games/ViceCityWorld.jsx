@@ -11,10 +11,22 @@ import {
   CITY_RUSH_BLUE_SHOT_MAX_RANGE,
   CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED,
   CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
+  CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+  CITY_RUSH_BAZOOKA_BLAST_CELLS,
+  CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH,
+  CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
+  CITY_RUSH_LANE_WIDTH,
   CITY_RUSH_PISTOL_SPIN_TURNS,
   CITY_RUSH_TRACK_BOOST_DURATION,
   CITY_RUSH_TRACK_BOOST_SPEED_FACTOR,
   CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR,
+  CITY_RUSH_RIVAL_SLOW_FACTOR,
+  cityRushRivalPaceFactor,
+  CITY_RUSH_AI_LOOKAHEAD,
+  CITY_RUSH_AI_REFLEX,
+  cityRushAiLaneBlocked,
+  cityRushAiThinkDelay,
+  cityRushAiBrakingRate,
   CITY_RUSH_TRACK_BOOST_COLOR,
   CITY_RUSH_RACER_VIEW_DISTANCE,
   cityRushLaneConfig,
@@ -39,16 +51,21 @@ import {
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
   CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL,
-  CITY_RUSH_PLAYER_HEALTH,
-  CITY_RUSH_RACER_HEALTH,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   CITY_RUSH_PLAYER_HEALTH_FLASH,
+  CITY_RUSH_HEALTH_PICKUP_COLOR,
+  CITY_RUSH_HEALTH_PICKUP_RESTORE,
+  cityRushHealthPickupRepair,
+  CITY_RUSH_MINI_GARAGE_WIDTH,
+  cityRushCarMaxHealth,
   CITY_RUSH_PLAYER_COLLISION_COOLDOWN,
   CITY_RUSH_WRECK_SECONDS,
   CITY_RUSH_WRECK_SPIN_TURNS,
   CITY_RUSH_POLICE_ATTACK_LEAD,
   CITY_RUSH_POLICE_COLLISION_COOLDOWN,
   CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
+  cityRushPoliceMaxHealth,
   CITY_RUSH_POLICE_DESTROY_SCORE,
   CITY_RUSH_POLICE_WRECK_SPIN_TURNS,
   CITY_RUSH_POLICE_WRECK_SPIN_SECONDS,
@@ -59,9 +76,48 @@ import {
   CITY_RUSH_POLICE_BLOCKADE_HOLD,
   CITY_RUSH_POLICE_COUNT,
   CITY_RUSH_WANTED_MAX_STARS,
+  CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS,
+  CITY_RUSH_SPIKE_BLOCK_ALERT_RANGE,
+  CITY_RUSH_SPIKE_BLOCK_COOLDOWN,
+  CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION,
+  CITY_RUSH_SPIKE_BLOCK_LEAD,
+  CITY_RUSH_SPIKE_BLOCK_LIFETIME,
+  CITY_RUSH_SPIKE_BLOCK_PACK_DURATION,
+  CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES,
+  CITY_RUSH_SPIKE_DAMAGE_SOURCE,
+  CITY_RUSH_SPIKE_HALF_LENGTH,
+  CITY_RUSH_SPIKE_IMPACT_DURATION,
+  CITY_RUSH_SPIKE_LAY_DURATION,
+  CITY_RUSH_SPIKE_LANES,
+  CITY_RUSH_SPIKE_SLOW_DURATION,
+  CITY_RUSH_SPIKE_SLOW_FACTOR,
+  CITY_RUSH_SUV_CHARGE_ALERT_RANGE,
+  CITY_RUSH_SUV_CHARGE_COUNT,
+  CITY_RUSH_SUV_CHARGE_LATERAL_RATE,
+  CITY_RUSH_SUV_CHARGE_LOCK_RANGE,
+  CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND,
+  CITY_RUSH_SUV_CHARGE_RELOAD,
+  CITY_RUSH_SUV_CHARGE_SPAWN_LEAD,
+  CITY_RUSH_SUV_CHARGE_TYPE,
+  cityRushSpikeBlockCount,
+  cityRushSpikeHit,
+  cityRushSpikeLaidLanes,
+  cityRushSpikeLanes,
+  cityRushSpikeLayProgress,
+  cityRushSpikePace,
+  cityRushSuvChargeCount,
+  cityRushSuvChargeLocked,
+  cityRushSuvChargeSpeed,
+  cityRushSuvChargeStep,
+  CITY_RUSH_MINI_GARAGE_COUNT,
+  CITY_RUSH_MINI_GARAGE_HUD_RANGE,
+  CITY_RUSH_MINI_GARAGE_SIGN_LEAD,
+  CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
+  CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
   CITY_RUSH_POLICE_TURNAROUND_DURATION,
   CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_POLICE_REINFORCEMENT_DELAY,
+  CITY_RUSH_POLICE_SIGHT_RANGE,
   CITY_RUSH_POLICE_VEHICLE_TYPES,
   CITY_RUSH_POLICE_AIM_NOTICE_COOLDOWN,
   CITY_RUSH_POLICE_AIM_TIME,
@@ -72,6 +128,7 @@ import {
   CITY_RUSH_POLICE_LEAD,
   CITY_RUSH_POLICE_LEAD_SLACK,
   CITY_RUSH_POLICE_LOOKAHEAD,
+  CITY_RUSH_POLICE_PURSUIT_REFLEX,
   CITY_RUSH_POLICE_RALLY_BASE_SPEED,
   CITY_RUSH_POLICE_SPAWN_BEHIND,
   CITY_RUSH_POLICE_STEAL_NOTICE,
@@ -106,6 +163,10 @@ import {
   cityRushLapForDistance,
   cityRushLapLength,
   cityRushLapProgress,
+  cityRushBazookaTrackDistances,
+  cityRushBazookaPickupCanUse,
+  cityRushBazookaTarget,
+  cityRushBazookaBlastContains,
   cityRushLineKind,
   cityRushPackLeader,
   cityRushPickupBurstShards,
@@ -121,7 +182,19 @@ import {
   cityRushPoliceBlocksLeader,
   cityRushPoliceContact,
   cityRushPoliceDamage,
+  cityRushTrafficHitboxWidth,
   cityRushWantedLevelAfterHit,
+  cityRushWantedLevelAfterPoliceDestroyed,
+  // Les rivaux aussi : contact avec la police ou tête de course au dernier tour.
+  cityRushRivalWantedLevelAfterContact,
+  cityRushRivalPursued,
+  cityRushRivalLeaderWanted,
+  cityRushMiniGarageLanes,
+  cityRushMiniGarageAvailable,
+  cityRushMiniGarageCanUse,
+  cityRushMiniGarageRepair,
+  cityRushMiniGarageWantedLevel,
+  cityRushMiniGarageTrackDistances,
   cityRushPoliceCountForWantedLevel,
   cityRushPoliceTurnaroundProgress,
   cityRushPolicePace,
@@ -172,12 +245,12 @@ import {
   shutoC1Readout,
 } from './cityRushRules';
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
-import { createBatch, seededRandom } from './cityRushBuilder';
+import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
-import { animateRacerCar, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
+import { animateRacerCar, configureCarReflections, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
 import { makeLapBoard, makePickupMaterial } from './cityRushTextures';
 
 const PLAYER_Z = 3.1;
@@ -187,15 +260,68 @@ const LAP_UNITS = CITY_RUSH_LAP_LENGTH * SCALE;
 const CAMERA_BASE_FOV = 44;
 const MAX_FRAME = 0.04;
 const POWER_TYPES = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO];
+// Tous les bonus portent une icône flottante : les pouvoirs, le turbo vert et
+// les soins. Le turbo n'est plus une dalle posée sur la chaussée.
+const PICKUP_ICON_TYPES = [...POWER_TYPES, CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH];
+// Hauteur de vol commune à tous les bonus, au-dessus de la chaussée.
+const PICKUP_FLOAT_HEIGHT = 1.3;
+// Inclinaison de l'anneau du turbo : sans elle, l'anneau tournerait dans son
+// propre plan et paraîtrait immobile (un tore est symétrique).
+const PICKUP_ORBIT_TILT = 0.32;
+// La couleur d'un bonus : celle de son pouvoir, le vert du turbo, le rouge des
+// soins — la couleur passée en secours sert aux effets sans type connu.
+const pickupColor = (type, fallback = CITY_RUSH_HEALTH_PICKUP_COLOR) => (
+  CITY_RUSH_POWER_RULES[type]?.color
+  || (type === CITY_RUSH_PICKUPS.BOOST
+    ? CITY_RUSH_TRACK_BOOST_COLOR
+    : type === CITY_RUSH_PICKUPS.HEALTH ? CITY_RUSH_HEALTH_PICKUP_COLOR : fallback)
+);
 // Rayon (en unités monde) de la zone d'effet de l'explosion de l'hélicoptère :
 // à peu près une case (une voie) de chaque côté, touchant les adversaires proches.
 const EXPLOSION_RADIUS = 3.4;
+const BAZOOKA_EXPLOSION_RADIUS = CITY_RUSH_LANE_WIDTH * CITY_RUSH_BAZOOKA_BLAST_CELLS;
+const BAZOOKA_PICKUP_LOCAL_Z = 6.1;
+// Un accrochage avec une patrouille provoque une courte glissade visuelle :
+// la berline se décale sur une voie voisine, le pilote part légèrement de l'autre côté.
+const POLICE_RAM_SKID_DURATION = 0.72;
+const PLAYER_POLICE_RAM_SKID_DURATION = 0.58;
+// Le SUV blindé pèse nettement plus lourd : il emporte davantage les deux
+// voitures et déclenche une secousse prolongée, sans ajouter de dégâts.
+const POLICE_SUV_RAM_SKID_DURATION = 1.08;
+const PLAYER_POLICE_SUV_RAM_IMPACT_DURATION = 1.05;
+const POLICE_SUV_RAM_VFX_INTENSITY = 1.8;
+const POLICE_RAM_LANE_CHANGE_HOLD = 0.45;
+const POLICE_SKID_SMOKE_INTERVAL = 0.075;
 // Le tir rouge d'AK-47 reprend le projectile droit du tir bleu : chaque
 // pression lance une balle, sans guidage, qui s'arrête sur le premier ennemi
 // de la voie. Un chargeur ramassé en contient sept.
 // Maintien de Z : une balle part à intervalle régulier jusqu'à la relâche ou
 // l'épuisement du chargeur, indépendamment de la répétition native du clavier.
 const PISTOL_HOLD_FIRE_INTERVAL = 0.12;
+// Maintien des flèches : garder ← (ou Q) / → (ou D) enfoncé enchaîne les
+// changements de voie tout seul, un écart par cran, jusqu'à la relâche. Le
+// pilote n'a plus à marteler la touche pour traverser la chaussée : la cadence
+// est calée sur le glissement latéral de la voiture (`playerX` rejoint
+// `laneX(playerLane)` à raison de `dt * 12`), donc chaque écart est presque
+// terminé quand le suivant démarre et la dérive reste lisible. La répétition
+// native du clavier, elle, est ignorée (`event.repeat`) : trop lente au premier
+// cran puis incontrôlable, elle ne donnait ni fluidité ni précision.
+// Comme au clavier système, la répétition attend un court délai avant de
+// démarrer, puis enchaîne à sa cadence : un appui simplement un peu long reste
+// **un** écart — en avaler deux par accident, c'est un pare-chocs dans le
+// trafic. Le délai est plus court que celui du système (0,26 s contre 0,5 s) :
+// traverser la chaussée doit rester immédiat.
+const STEER_HOLD_FIRST_DELAY = 0.26;
+const STEER_HOLD_LANE_INTERVAL = 0.18;
+// Les quatre touches du volant, AZERTY compris : les deux paires tiennent la
+// même direction, mais chaque touche est suivie **physiquement** — relâcher Q
+// pendant que ← reste enfoncé ne coupe pas le maintien.
+const STEER_KEY_DIRECTIONS = Object.freeze({
+  arrowleft: 'left',
+  q: 'left',
+  arrowright: 'right',
+  d: 'right',
+});
 // Caméra de poursuite plus basse que l'ancienne vue plongeante (8,8 m) :
 // on voit l'horizon, la skyline, les portes et le portique de départ. Tout
 // élément qui enjambe la route doit rester au-dessus de 7,1 m.
@@ -254,53 +380,48 @@ function makeBoostChevronGeometry() {
   return new THREE.ShapeGeometry(shape);
 }
 
+// Un bonus flottant : une icône lumineuse suspendue au-dessus de la chaussée,
+// son faisceau de lumière, un anneau et un halo posés au sol pour marquer la
+// voie. Le turbo vert n'est plus une dalle : c'est le même bonus flottant, en
+// vert, avec un anneau incliné qui tourne autour de son éclair.
 function makePickupObject(shared) {
   const group = new THREE.Group();
   const icon = new THREE.Mesh(shared.pickupGeometry, shared.pickupMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   icon.position.y = 0.15;
   group.add(icon);
+  // Anneau « d'apesanteur » : légèrement incliné, il tourne autour de l'icône.
+  // Seul le turbo l'affiche (voir `setPickupKind`).
+  const orbit = new THREE.Mesh(shared.pickupOrbitGeometry, shared.pickupRingMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
+  orbit.position.y = 0.15;
+  orbit.scale.set(0.95, 0.95, 1);
+  orbit.rotation.x = PICKUP_ORBIT_TILT;
+  orbit.visible = false;
+  group.add(orbit);
   const ring = new THREE.Mesh(shared.pickupRingGeometry, shared.pickupRingMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   ring.rotation.x = Math.PI / 2;
   ring.position.y = -1.25;
   group.add(ring);
   const beam = new THREE.Mesh(shared.pickupBeamGeometry, shared.pickupBeamMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   beam.position.y = 0.6;
+  // Le faisceau passe derrière l'icône : sans ce recul, les deux plans sont
+  // coplanaires et se disputent le z-buffer au centre du bonus (clignotement).
+  beam.position.z = -0.03;
   group.add(beam);
   const halo = new THREE.Mesh(shared.pickupHaloGeometry, shared.pickupBeamMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   halo.rotation.x = -Math.PI / 2;
   halo.position.y = -1.27;
   group.add(halo);
 
-  // Pad turbo posé à plat sur la chaussée : dalle sombre, bord lumineux et
-  // trois flèches orientées dans le sens de la route (vers le fond d'écran).
-  const pad = new THREE.Group();
-  const plate = new THREE.Mesh(shared.boostPadGeometry, shared.boostPadMaterial);
-  plate.position.y = 0.04;
-  pad.add(plate);
-  const edgePositions = [
-    [0, 0.09, -1.68, 1.54, 0.018, 0.055],
-    [0, 0.09, 1.68, 1.54, 0.018, 0.055],
-    [-0.77, 0.09, 0, 0.055, 0.018, 3.34],
-    [0.77, 0.09, 0, 0.055, 0.018, 3.34],
-  ];
-  for (const [x, y, z, width, height, length] of edgePositions) {
-    const edge = new THREE.Mesh(shared.boostPadEdgeGeometry, shared.boostPadEdgeMaterial);
-    edge.scale.set(width, height, length);
-    edge.position.set(x, y, z);
-    pad.add(edge);
-  }
-  const arrows = [];
-  for (let index = 0; index < 3; index += 1) {
-    const arrow = new THREE.Mesh(shared.boostChevronGeometry, shared.boostChevronMaterial);
-    arrow.rotation.x = -Math.PI / 2;
-    arrow.position.set(0, 0.091, -0.96 + index * 0.96);
-    pad.add(arrow);
-    arrows.push(arrow);
-  }
-  pad.visible = false;
-  pad.userData = { plate, arrows, phase: Math.random() * Math.PI * 2 };
-  group.add(pad);
-  group.userData = { icon, ring, beam, halo, pad, phase: Math.random() * Math.PI * 2, type: CITY_RUSH_POWERS.BLUE_SHOT };
+  group.userData = {
+    kind: 'city-rush-pickup',
+    icon,
+    orbit,
+    ring,
+    beam,
+    halo,
+    phase: Math.random() * Math.PI * 2,
+    type: CITY_RUSH_POWERS.BLUE_SHOT,
+  };
   return group;
 }
 
@@ -348,7 +469,7 @@ function makeSprintCheckpointGate(city, roadHalf = CITY_RUSH_ROAD_HALF_WIDTH) {
   group.add(sign);
 
   // Deux bandes au ras du bitume matérialisent aussi la ligne de passage, sans
-  // masquer les voies ni gêner le ramassage des pads turbo.
+  // masquer les voies ni gêner le ramassage des bonus turbo.
   addBox('checkpoint-road-mark', roadMarkMaterial, [markHalf * 2, 0.045, 0.24], [0, 0.055, -0.38]);
   addBox('checkpoint-road-mark', secondaryMaterial, [markHalf * 2, 0.045, 0.16], [0, 0.058, 0.38]);
 
@@ -426,22 +547,491 @@ function makeRampObject(shared, city) {
   return { group, chevrons, holo };
 }
 
+function makeMiniGarageMaterials(city, garageLanes) {
+  const laneLabel = (garageLanes || []).map((lane) => Number(lane) + 1).join(' + ');
+  const signTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#070b14';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = city.accent;
+    ctx.lineWidth = 8;
+    ctx.strokeRect(5, 5, width - 10, height - 10);
+    neonText(ctx, 'MINI GARAGE', width / 2, height * 0.3, '900 54px "Orbitron", Arial, sans-serif', city.accent, 16);
+    neonText(ctx, `VOIES ${laneLabel} · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.6, '800 24px "Orbitron", Arial, sans-serif', '#fff3cc', 8);
+    neonText(ctx, 'POLICE LARGUÉE', width / 2, height * 0.86, '900 26px "Orbitron", Arial, sans-serif', '#7dffb0', 10);
+  }, 512, 160, { smooth: true });
+
+  // Peinture de voie : le mot GARAGE et une grande flèche, étirés dans le sens
+  // de la route pour rester lisibles à 130 km/h.
+  const lanePaintTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(12, 12, width - 24, height - 24);
+    // Grande flèche vers l'avant (le haut du dessin pointe vers le portique).
+    ctx.fillStyle = city.accent;
+    ctx.beginPath();
+    ctx.moveTo(width / 2, height * 0.08);
+    ctx.lineTo(width * 0.82, height * 0.4);
+    ctx.lineTo(width * 0.62, height * 0.4);
+    ctx.lineTo(width * 0.62, height * 0.56);
+    ctx.lineTo(width * 0.38, height * 0.56);
+    ctx.lineTo(width * 0.38, height * 0.4);
+    ctx.lineTo(width * 0.18, height * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#fff3cc';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    neonText(ctx, 'GARAGE', width / 2, height * 0.74, '900 74px "Orbitron", Arial, sans-serif', '#ffffff', 18);
+    neonText(ctx, `VOIES ${laneLabel} · VIE +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`, width / 2, height * 0.92, '800 26px "Orbitron", Arial, sans-serif', city.accent, 10);
+  }, 512, 512, { smooth: true });
+
+  const roadSignTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#070b14';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = city.accent;
+    ctx.lineWidth = 8;
+    ctx.strokeRect(5, 5, width - 10, height - 10);
+    neonText(ctx, 'GARAGE', width / 2, height * 0.3, '900 62px "Orbitron", Arial, sans-serif', city.accent, 16);
+    neonText(ctx, `DANS ${CITY_RUSH_MINI_GARAGE_SIGN_LEAD} M · +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} VIE`, width / 2, height * 0.6, '900 36px "Orbitron", Arial, sans-serif', '#fff3cc', 10);
+    neonText(ctx, `↓ RESTE SUR ${laneLabel} ↓`, width / 2, height * 0.86, '800 26px "Orbitron", Arial, sans-serif', '#7dffb0', 8);
+  }, 512, 256, { smooth: true });
+
+  return {
+    body: standard(0x151c2a, { roughness: 0.5, metalness: 0.48 }),
+    wall: standard(0x0b101a, { roughness: 0.76, metalness: 0.16 }),
+    floor: standard(0x0a1117, { roughness: 0.62, metalness: 0.3 }),
+    accent: new THREE.MeshBasicMaterial({ color: city.accent, toneMapped: false, fog: false }),
+    secondary: new THREE.MeshBasicMaterial({ color: city.secondary, toneMapped: false, fog: false }),
+    health: new THREE.MeshBasicMaterial({ color: CITY_RUSH_HEALTH_PICKUP_COLOR, toneMapped: false, fog: false }),
+    healthPanel: new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, fog: false }),
+    laneMark: new THREE.MeshBasicMaterial({ color: '#ecf6fa', toneMapped: false, fog: false }),
+    sign: new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide }),
+    lanePaint: new THREE.MeshBasicMaterial({
+      map: lanePaintTexture,
+      transparent: true,
+      toneMapped: false,
+      fog: false,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    }),
+    roadSign: new THREE.MeshBasicMaterial({ map: roadSignTexture, toneMapped: false, fog: false, side: THREE.DoubleSide }),
+  };
+}
+
+// Indication de voie : quelques mètres avant le portique, les deux voies
+// centrales sont peintes au sol (flèche + « GARAGE ») et bordées de chevrons,
+// plus un panneau de bord de voie qui rappelle la distance. Tout est enfant du groupe
+// du garage : le repère disparaît avec lui quand la porte est fermée ou servie.
+function addMiniGarageLaneGuidance(group, materials, addBox) {
+  const signLead = CITY_RUSH_MINI_GARAGE_SIGN_LEAD * SCALE;
+  const paint = new THREE.Mesh(new THREE.PlaneGeometry(CITY_RUSH_MINI_GARAGE_WIDTH - 0.4, 6.2), materials.lanePaint);
+  paint.name = 'mini-garage-lane-paint';
+  paint.rotation.x = -Math.PI / 2;
+  paint.position.set(0, 0.035, signLead - 1.4);
+  group.add(paint);
+
+  // Chevrons au sol entre 8 m et 26 m avant l'entrée : ils dessinent le couloir
+  // à suivre, leur pointe tournée vers le portique.
+  const chevronCount = 9;
+  for (let step = 0; step < chevronCount; step += 1) {
+    const distance = 8 + step * 2.2; // m avant la porte
+    for (const side of [-1, 1]) {
+      const chevron = addBox(
+        'mini-garage-approach-chevron',
+        [0.72, 0.03, 0.12],
+        [side * (CITY_RUSH_MINI_GARAGE_WIDTH * 0.36), 0.028, distance * SCALE],
+        step % 2 === 0 ? materials.accent : materials.laneMark,
+      );
+      chevron.rotation.y = side * (step % 2 === 0 ? 0.62 : 0.48);
+    }
+  }
+
+  // Panneau de bord de voie : le dernier rappel avant l'entrée.
+  const postSide = 1;
+  const postX = postSide * (CITY_RUSH_MINI_GARAGE_WIDTH / 2 + 0.8);
+  addBox('mini-garage-sign-post', [0.1, 2.3, 0.1], [postX, 1.15, signLead], materials.body);
+  addBox('mini-garage-sign-frame-road', [2.2, 0.92, 0.12], [postX, 2.5, signLead], materials.body);
+  const roadSign = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.82), materials.roadSign);
+  roadSign.name = 'mini-garage-road-sign';
+  roadSign.position.set(postX, 2.5, signLead + 0.065);
+  group.add(roadSign);
+  const roadSignBack = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.82), materials.roadSign);
+  roadSignBack.name = 'mini-garage-road-sign';
+  roadSignBack.position.set(postX, 2.5, signLead - 0.065);
+  roadSignBack.rotation.y = Math.PI;
+  group.add(roadSignBack);
+}
+
+function makeMiniGarageObject(index, materials, garageLanes) {
+  const group = new THREE.Group();
+  group.name = 'city-rush-mini-garage';
+  group.userData = {
+    kind: 'mini-garage',
+    index,
+    lane: garageLanes[0] ?? null,
+    lanes: [...garageLanes],
+    trackDistance: 0,
+    used: false,
+  };
+
+  const addBox = (name, size, position, material) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    mesh.name = name;
+    mesh.position.set(...position);
+    group.add(mesh);
+    return mesh;
+  };
+
+  const halfWidth = CITY_RUSH_MINI_GARAGE_WIDTH / 2;
+  // Portique ouvert, élargi pour couvrir les deux voies centrales sans
+  // encombrer les voies voisines. Le joueur peut traverser par l'une ou l'autre.
+  addBox('mini-garage-floor', [CITY_RUSH_MINI_GARAGE_WIDTH + 0.3, 0.08, 5.1], [0, 0.045, 0], materials.floor);
+  addBox('mini-garage-roof', [CITY_RUSH_MINI_GARAGE_WIDTH, 0.22, 5.0], [0, 2.74, 0], materials.body);
+  addBox('mini-garage-front-beam', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.12, 0.26, 0.24], [0, 2.56, 2.38], materials.body);
+  addBox('mini-garage-back-beam', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.12, 0.22, 0.2], [0, 2.51, -2.38], materials.body);
+  addBox('mini-garage-open-shutter', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.8, 0.38, 0.12], [0, 2.25, -2.34], materials.wall);
+
+  for (const side of [-1, 1]) {
+    addBox('mini-garage-side-wall', [0.18, 1.9, 4.56], [side * (halfWidth - 0.18), 1.02, 0], materials.wall);
+    addBox('mini-garage-front-pillar', [0.2, 2.58, 0.28], [side * (halfWidth - 0.25), 1.35, 2.35], materials.body);
+    addBox('mini-garage-neon-pillar', [0.07, 2.22, 0.06], [side * (halfWidth - 0.48), 1.38, 2.51], materials.accent);
+    addBox('mini-garage-side-neon', [0.055, 0.07, 4.4], [side * (halfWidth - 0.25), 1.96, 0], materials.secondary);
+    addBox('mini-garage-entry-mark', [0.08, 0.035, 4.65], [side * (halfWidth - 0.55), 0.105, 0], materials.accent);
+  }
+
+  addBox('mini-garage-roof-neon', [CITY_RUSH_MINI_GARAGE_WIDTH - 0.3, 0.08, 0.08], [0, 2.62, 2.53], materials.accent);
+  addBox('mini-garage-sign-frame', [4.3, 0.78, 0.14], [0, 3.14, 2.52], materials.body);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 0.62), materials.sign);
+  sign.name = 'mini-garage-sign';
+  sign.position.set(0, 3.14, 2.605);
+  group.add(sign);
+
+  // Plus rouge au-dessus de l'atelier : il signale la réparation même à distance.
+  const healthPlus = new THREE.Group();
+  healthPlus.name = 'mini-garage-health-plus';
+  healthPlus.position.set(0, 4.18, 2.54);
+  const plusPanel = new THREE.Mesh(new THREE.BoxGeometry(1.08, 1.08, 0.12), materials.healthPanel);
+  const plusVertical = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.78, 0.16), materials.health);
+  const plusHorizontal = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.28, 0.16), materials.health);
+  plusVertical.position.set(0, 0, 0.1);
+  plusHorizontal.position.set(0, 0, 0.1);
+  healthPlus.add(plusPanel, plusVertical, plusHorizontal);
+  group.add(healthPlus);
+
+  // Les chevrons au sol rendent la trajectoire de traversée lisible au joueur.
+  for (let index = 0; index < 3; index += 1) {
+    const chevron = new THREE.Mesh(
+      new THREE.BoxGeometry(0.48, 0.035, 0.1),
+      index === 1 ? materials.secondary : materials.laneMark,
+    );
+    chevron.name = 'mini-garage-drive-through-mark';
+    chevron.position.set(0, 0.108, 1.35 - index * 1.1);
+    group.add(chevron);
+  }
+
+  // Une indication large couvre les deux voies centrales du portique.
+  addMiniGarageLaneGuidance(group, materials, addBox);
+
+  return group;
+}
+
+/**
+ * Entrepôt du bazooka : un **conteneur maritime de 40 pieds** posé sur la
+ * chaussée et ouvert aux deux bouts. La voiture entre par la travée avant,
+ * ramasse la roquette sous le toit, puis ressort par la porte arrière ; les
+ * quatre vantaux, rabattus à plat contre les parois, ne mordent jamais sur les
+ * voies.
+ *
+ * Le conteneur prend **deux voies** du sens de course — la voie extérieure du
+ * ramassage et celle qui la borde vers l'axe jaune — soit 4,20 m de large, de
+ * `out(-3,15)` à `out(+1,05)`.
+ *
+ * `side` vaut +1 quand la chaussée se tient à droite — le conteneur s'étend
+ * alors vers les abscisses positives — et −1 en conduite à gauche (Londres,
+ * Shutō C1), où tout le conteneur est reflété : sans ce miroir, il s'étalerait
+ * sur les voies du contresens au lieu de rester de son côté de l'axe.
+ */
+function makeBazookaContainer(city, pickupLaneX, side = 1) {
+  const group = new THREE.Group();
+  group.name = 'city-rush-bazooka-container';
+  const cityName = String(city?.name || '').toUpperCase();
+
+  // ── Tôle ondulée ─────────────────────────────────────────────────────────
+  // La caisse d'un conteneur se lit d'abord à ses ondes : verticales sur les
+  // parois, transversales sur le toit. Deux textures répétées valent mieux que
+  // quarante nervures en boîtes.
+  const corrugated = (base, shade, waves, across = false) => makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, width, height);
+    const band = (across ? height : width) / waves;
+    for (let index = 0; index < waves; index += 1) {
+      const start = index * band;
+      const gradient = across
+        ? ctx.createLinearGradient(0, start, 0, start + band)
+        : ctx.createLinearGradient(start, 0, start + band, 0);
+      gradient.addColorStop(0, base);
+      gradient.addColorStop(0.3, shade);
+      gradient.addColorStop(0.5, base);
+      gradient.addColorStop(0.8, shade);
+      gradient.addColorStop(1, base);
+      ctx.fillStyle = gradient;
+      if (across) ctx.fillRect(0, start, width, band);
+      else ctx.fillRect(start, 0, band, height);
+    }
+  }, 192, 192, { smooth: true, repeat: true });
+  const wallTexture = corrugated('#b85a22', '#7c3712', 6);
+  wallTexture.repeat.set(6, 1);
+  const roofTexture = corrugated('#9aa0a4', '#6f767c', 4, true);
+  roofTexture.repeat.set(1, 9);
+
+  const wall = new THREE.MeshStandardMaterial({ map: wallTexture, roughness: 0.74, metalness: 0.26, flatShading: true });
+  const roof = new THREE.MeshStandardMaterial({ map: roofTexture, roughness: 0.62, metalness: 0.3, flatShading: true });
+  const frame = standard(0x3a414b, { roughness: 0.46, metalness: 0.62 });
+  const floor = standard(0x4a4038, { roughness: 0.9, metalness: 0.05 });
+  const wood = standard(0x8c672f, { roughness: 0.72, metalness: 0.12 });
+  const yellow = new THREE.MeshBasicMaterial({ color: 0xffd21f, toneMapped: false, fog: false });
+  const warmGlow = new THREE.MeshBasicMaterial({
+    color: 0xffd21f, transparent: true, opacity: 0.7,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false,
+  });
+  const bazookaMetal = standard(0x333840, { roughness: 0.4, metalness: 0.72 });
+  const signTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#111318';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = '#ffd21f';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(5, 5, width - 10, height - 10);
+    ctx.strokeStyle = 'rgba(255, 244, 194, 0.55)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(14, 14, width - 28, height - 28);
+    neonText(ctx, 'BAZOOKA HERE', width / 2, height * 0.44, '900 56px "Orbitron", Arial, sans-serif', '#ffd21f', 14);
+    neonText(
+      ctx,
+      `↓ BAZOOKA · ${CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIR${CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP > 1 ? 'S' : ''} ↓`,
+      width / 2,
+      height * 0.8,
+      '900 30px "Orbitron", Arial, sans-serif',
+      '#fff4c2',
+      8,
+    );
+  }, 512, 160, { smooth: true });
+  // Plaque d'immatriculation peinte sur la caisse : le nom du parcours, le
+  // format et la charge — la petite touche qui rend le conteneur crédible.
+  const plateTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#181c23';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = '#ffd21f';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(4, 4, width - 8, height - 8);
+    const title = cityName || 'BAZU 4002 7';
+    let font = 40;
+    ctx.font = `900 ${font}px "Orbitron", Arial, sans-serif`;
+    while (font > 20 && ctx.measureText(title).width > width - 60) {
+      font -= 2;
+      ctx.font = `900 ${font}px "Orbitron", Arial, sans-serif`;
+    }
+    neonText(ctx, title, width / 2, height * 0.34, `900 ${font}px "Orbitron", Arial, sans-serif`, '#ffd21f', 10);
+    neonText(ctx, "40' HC · 30 480 KG · 2 VOIES", width / 2, height * 0.72, '900 26px "Orbitron", Arial, sans-serif', '#e8e2d2', 6);
+  }, 512, 160, { smooth: true });
+  const signMaterial = new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide });
+  const plateMaterial = new THREE.MeshBasicMaterial({ map: plateTexture, toneMapped: false, fog: false, side: THREE.DoubleSide });
+
+  const addBox = (name, size, position, material) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    mesh.name = name;
+    mesh.position.set(...position);
+    group.add(mesh);
+    return mesh;
+  };
+
+  // ── Cotes de la caisse ───────────────────────────────────────────────────
+  // 40 pieds de long (12,20 m), hauteur de caisse haute (2,90 m sous plafond)
+  // et **deux voies** de large (4,20 m) : la voie de ramassage et celle qui la
+  // borde vers l'axe. La travée avant s'ouvre là où s'ouvrait l'ancien
+  // entrepôt, à 8,70 m du repère, pour que la roquette tombe toujours à 6,10 m
+  // du centre du conteneur.
+  const BASE = 0.16; // plancher bois, au-dessus des rails de base
+  const WALL = 0.1; // épaisseur de tôle
+  const CEILING = 2.9; // hauteur libre sous le toit
+  const WIDTH = CITY_RUSH_LANE_WIDTH * 2; // deux voies de 2,10 m
+  const LENGTH = 12.2; // 40 pieds
+  const doorZ = 8.7;
+  const backZ = doorZ - LENGTH;
+  const centerZ = doorZ - LENGTH / 2;
+  // Décalage latéral signé : positif vers l'extérieur de la chaussée.
+  const out = (offset) => pickupLaneX + side * offset;
+  const innerX = out(-CITY_RUSH_LANE_WIDTH * 1.5);
+  const outerX = out(CITY_RUSH_LANE_WIDTH / 2);
+  const centerX = out(-CITY_RUSH_LANE_WIDTH / 2);
+  const topY = BASE + CEILING;
+  const innerWallX = innerX + side * WALL / 2;
+  const outerWallX = outerX - side * WALL / 2;
+
+  // Coque : plancher, toit débordant, parois ondulées, poteaux d'angle et
+  // ferrures. Le couloir de la voiture reste libre d'un bout à l'autre : le
+  // plancher n'est qu'un platelage de bois le long des deux parois, la
+  // chaussée elle-même tient lieu de sol sous les roues.
+  for (const floorSide of [-1, 1]) {
+    addBox(
+      'bazooka-container-floor',
+      [0.5, 0.12, LENGTH - 0.3],
+      [centerX + side * floorSide * (WIDTH / 2 - WALL - 0.25), BASE - 0.06, centerZ],
+      floor,
+    );
+  }
+  addBox('bazooka-container-roof', [WIDTH + 0.2, 0.2, LENGTH + 0.16], [centerX, topY + 0.1, centerZ], roof);
+  addBox('bazooka-container-inner-wall', [WALL, CEILING, LENGTH], [innerWallX, BASE + CEILING / 2, centerZ], wall);
+  addBox('bazooka-container-outer-wall', [WALL, CEILING, LENGTH], [outerWallX, BASE + CEILING / 2, centerZ], wall);
+  for (const wallX of [innerWallX, outerWallX]) {
+    // Rails de base : la caisse ne pose pas sa tôle directement sur le bitume.
+    addBox('bazooka-container-bottom-rail', [0.2, 0.24, LENGTH], [wallX, 0.12, centerZ], frame);
+    for (const end of [doorZ, backZ]) {
+      const inward = Math.sign(end - centerZ);
+      const cornerZ = end - inward * 0.13;
+      addBox('bazooka-container-corner-post', [0.24, CEILING + 0.08, 0.26], [wallX, BASE + (CEILING + 0.08) / 2, cornerZ], frame);
+      // Ferrure d'angle ISO : le bloc d'acier qui signe les quatre coins.
+      addBox('bazooka-container-corner-block', [0.34, 0.26, 0.34], [wallX, topY - 0.16, cornerZ], frame);
+    }
+  }
+  // Traverse de porte, aux deux bouts : la travée garde 2,40 m de haut sous
+  // poutre, et le conteneur reste ouvert de part en part.
+  for (const end of [doorZ, backZ]) {
+    const inward = Math.sign(end - centerZ);
+    addBox('bazooka-container-header-beam', [WIDTH - 0.24, 0.5, 0.26], [centerX, topY - 0.25, end - inward * 0.13], frame);
+  }
+  // Deux réglettes néon courent sous le toit : la travée reste lisible dans
+  // l'ombre de la caisse.
+  for (const wallX of [innerX + side * 0.16, outerX - side * 0.16]) {
+    addBox('bazooka-container-neon', [0.07, 0.1, LENGTH - 0.8], [wallX, BASE + 2.34, centerZ], yellow);
+  }
+  // Stries jaunes devant la travée : le repère se voit au soleil, et la
+  // troisième tombe pile sur la voie de ramassage.
+  for (let stripe = 0; stripe < 3; stripe += 1) {
+    addBox('bazooka-container-entry-stripe', [0.22, 0.03, 1.6], [out(-2.6 + stripe * 1.3), 0.13, doorZ + 0.85], yellow);
+  }
+  // Enseigne au-dessus du toit : elle surplombe la caisse pour rester lisible
+  // de loin, déportée vers l'extérieur pour ne pas barrer la vue du pilote sur
+  // sa voiture pendant la traversée.
+  const signX = centerX + side * 0.35;
+  const signY = topY + 1.05;
+  addBox('bazooka-container-sign-frame', [4.9, 1.3, 0.3], [signX, signY, doorZ + 0.12], frame);
+  for (const postX of [signX - 1.7, signX + 1.7]) {
+    addBox('bazooka-container-sign-post', [0.2, 0.26, 0.2], [postX, topY + 0.3, doorZ - 0.1], frame);
+  }
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.1), signMaterial);
+  sign.name = 'bazooka-container-sign';
+  sign.userData = { label: 'BAZOOKA HERE' };
+  sign.position.set(signX, signY, doorZ + 0.3);
+  group.add(sign);
+  // Plaques d'immatriculation sur les deux parois, comme sur une vraie caisse :
+  // celle de la paroi intérieure est la seule face que la caméra de poursuite
+  // voit de face pendant l'approche, l'autre habille le bas-côté.
+  for (const plateSide of [-1, 1]) {
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.6), plateMaterial);
+    plate.name = 'bazooka-container-plate';
+    plate.position.set(
+      (plateSide > 0 ? outerX : innerX) + side * plateSide * 0.05,
+      BASE + 1.35,
+      centerZ + plateSide * 2.6,
+    );
+    plate.rotation.y = plateSide * Math.PI / 2 * side;
+    group.add(plate);
+  }
+
+  // ── Vantaux rabattus ─────────────────────────────────────────────────────
+  // Les quatre portes du conteneur s'ouvrent à plat contre les parois : la
+  // travée garde ses 4,20 m de large et les barres de verrouillage restent du
+  // côté du bas-côté, jamais dans la trajectoire des voitures.
+  for (const leafSide of [-1, 1]) {
+    const faceX = leafSide > 0 ? outerX : innerX;
+    const leafX = faceX + side * leafSide * 0.06;
+    for (const end of [doorZ, backZ]) {
+      const inward = Math.sign(end - centerZ);
+      const leafZ = end - inward * 1.08;
+      addBox('bazooka-container-door', [0.12, 2.36, 1.7], [leafX, BASE + 1.18, leafZ], wall);
+      for (const offset of [-0.79, -0.26, 0.26, 0.79]) {
+        addBox('bazooka-container-door-bar', [0.07, 2.14, 0.1], [leafX + side * leafSide * 0.1, BASE + 1.18, leafZ + offset], frame);
+      }
+      for (const offset of [-0.26, 0.26]) {
+        addBox('bazooka-container-door-cam', [0.06, 0.24, 0.34], [leafX + side * leafSide * 0.11, BASE + 1.18, leafZ + offset], yellow);
+      }
+      for (const height of [0.5, 2.2]) {
+        addBox('bazooka-container-door-hinge', [0.2, 0.24, 0.16], [faceX + side * leafSide * 0.02, BASE + height, end - inward * 0.1], frame);
+      }
+    }
+  }
+
+  const pickup = new THREE.Group();
+  pickup.name = 'city-rush-bazooka-pickup';
+  pickup.position.set(pickupLaneX, 1.22, BAZOOKA_PICKUP_LOCAL_Z);
+  const pickupBase = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.72, 1.02), wood);
+  pickupBase.position.y = -0.57;
+  pickup.add(pickupBase);
+  const baseStripe = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.1, 1.04), yellow);
+  baseStripe.position.y = -0.24;
+  pickup.add(baseStripe);
+
+  const rocket = new THREE.Group();
+  rocket.name = 'bazooka-pickup-rocket';
+  rocket.position.set(0, 0.11, -0.08);
+  rocket.rotation.y = -0.18;
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.08, 8), bazookaMetal);
+  tube.rotation.x = -Math.PI / 2;
+  rocket.add(tube);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 8), yellow);
+  nose.rotation.x = -Math.PI / 2;
+  nose.position.z = -0.68;
+  rocket.add(nose);
+  for (const rocketSide of [-1, 1]) {
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.055, 0.28), yellow);
+    fin.position.set(rocketSide * 0.18, 0, 0.4);
+    rocket.add(fin);
+  }
+  pickup.add(rocket);
+
+  const pickupRing = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.075, 8, 28), yellow);
+  pickupRing.name = 'bazooka-pickup-ring';
+  pickupRing.rotation.x = Math.PI / 2;
+  pickupRing.position.y = -0.08;
+  pickup.add(pickupRing);
+  const pickupHalo = new THREE.Mesh(new THREE.CircleGeometry(0.88, 24), warmGlow);
+  pickupHalo.name = 'bazooka-pickup-halo';
+  pickupHalo.rotation.x = -Math.PI / 2;
+  pickupHalo.position.y = -0.07;
+  pickup.add(pickupHalo);
+  // Le faisceau s'arrête sous le toit du conteneur : il éclaire la travée au
+  // lieu de traverser la caisse.
+  const pickupBeam = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 2.2), warmGlow);
+  pickupBeam.name = 'bazooka-pickup-beam';
+  pickupBeam.position.y = 0.62;
+  pickup.add(pickupBeam);
+  group.add(pickup);
+  group.userData = { pickup, pickupRing, pickupHalo, pickupBeam, rocket, trackDistance: 0, side };
+  return group;
+}
+
 function setPickupKind(pickup, type, laneX, shared) {
   pickup.userData.type = type;
-  const isBoostPad = type === CITY_RUSH_PICKUPS.BOOST;
-  pickup.userData.pad.visible = isBoostPad;
-  pickup.userData.pad.scale.set(1, 1, 1);
-  pickup.userData.icon.visible = !isBoostPad;
-  pickup.userData.ring.visible = !isBoostPad;
-  pickup.userData.beam.visible = !isBoostPad;
-  pickup.userData.halo.visible = !isBoostPad;
-  if (!isBoostPad) {
-    pickup.userData.icon.material = shared.pickupMaterials[type];
-    pickup.userData.ring.material = shared.pickupRingMaterials[type];
-    pickup.userData.beam.material = shared.pickupBeamMaterials[type];
-    pickup.userData.halo.material = shared.pickupBeamMaterials[type];
-  }
-  pickup.position.set(laneX, isBoostPad ? 0 : 1.3, 0);
+  const { icon, orbit, ring, beam, halo } = pickup.userData;
+  icon.material = shared.pickupMaterials[type];
+  ring.material = shared.pickupRingMaterials[type];
+  orbit.material = shared.pickupRingMaterials[type];
+  beam.material = shared.pickupBeamMaterials[type];
+  halo.material = shared.pickupBeamMaterials[type];
+  // Le turbo vert est le seul bonus à porter l'anneau vertical qui tourne
+  // autour de son éclair ; les autres gardent leur icône seule.
+  orbit.visible = type === CITY_RUSH_PICKUPS.BOOST;
+  orbit.rotation.set(PICKUP_ORBIT_TILT, 0, 0);
+  // La rangée est centrée sur l'axe de la route : le bonus doit garder son
+  // décalage local pour apparaître sur la voie tirée par la génération.
+  pickup.position.x = laneX;
+  // Tous les bonus flottent à la même hauteur : le turbo ne se plaque plus sur
+  // la chaussée, il lévite au-dessus comme les autres.
+  pickup.position.y = PICKUP_FLOAT_HEIGHT;
   // Le bonus (ré)apparaît en gonflant : voir `updatePickupPop`.
   pickup.userData.pop = 0;
   pickup.scale.setScalar(0.001);
@@ -605,7 +1195,7 @@ function attachPoliceHealthBar(group) {
     new THREE.MeshBasicMaterial({ color: 0x0f1420, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }),
   );
   background.position.z = -0.01;
-  const segmentCount = CITY_RUSH_POLICE_HEALTH;
+  const segmentCount = cityRushPoliceMaxHealth(group.userData?.trafficType);
   const segmentWidth = (POLICE_BAR_WIDTH - POLICE_BAR_GAP * (segmentCount - 1)) / segmentCount;
   const segments = Array.from({ length: segmentCount }, (_, index) => {
     const segment = new THREE.Mesh(
@@ -639,6 +1229,96 @@ function detachPoliceHealthBar(group) {
     child.material?.dispose?.();
   });
   delete group.userData.healthBar;
+}
+
+// Une voiture de police touchée s'embrase progressivement : un nouveau foyer
+// apparaît au fil des impacts, et ceux déjà allumés grandissent jusqu'au
+// tête-à-queue. Les cônes sont partagés dans le monde courant ; leurs matériaux
+// restent propres à chaque voiture pour que les flammes vacillent séparément.
+const POLICE_DAMAGE_FIRE_SPOTS = 6;
+
+function createPoliceDamageFireKit() {
+  const outerGeometry = new THREE.ConeGeometry(0.3, 0.9, 7, 1, true);
+  outerGeometry.translate(0, 0.45, 0);
+  const coreGeometry = new THREE.ConeGeometry(0.17, 0.56, 6, 1, true);
+  coreGeometry.translate(0, 0.28, 0);
+  return { outerGeometry, coreGeometry };
+}
+
+function attachPoliceDamageFire(mesh, kit) {
+  if (!mesh || !kit || mesh.userData.damageFire) return mesh?.userData?.damageFire || null;
+  const isSuv = mesh.userData.trafficType === 'police-suv';
+  const hoodY = isSuv ? 1.02 : 0.76;
+  const hoodZ = isSuv ? -1.78 : -1.18;
+  const roofY = isSuv ? 1.56 : 1.29;
+  const trunkY = isSuv ? 0.94 : 0.75;
+  const trunkZ = isSuv ? 1.7 : 1.22;
+  const spots = [
+    [-0.36, hoodY, hoodZ],
+    [0, hoodY + 0.04, hoodZ - 0.08],
+    [0.36, hoodY, hoodZ],
+    [-0.36, trunkY, trunkZ],
+    [0, roofY, 0.16],
+    [0.36, trunkY, trunkZ],
+  ];
+  const group = new THREE.Group();
+  group.name = 'police-damage-fire';
+  group.visible = false;
+  group.renderOrder = 3;
+  const flames = spots.map(([x, y, z], index) => {
+    const outerMaterial = new THREE.MeshBasicMaterial({
+      color: index % 2 === 0 ? 0xff5b1f : 0xff8528,
+      transparent: true, opacity: 0, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const coreMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffd34a, transparent: true, opacity: 0, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const flame = new THREE.Group();
+    flame.name = 'police-damage-flame';
+    flame.position.set(x, y, z);
+    flame.userData.phase = index * 1.71;
+    flame.add(
+      new THREE.Mesh(kit.outerGeometry, outerMaterial),
+      new THREE.Mesh(kit.coreGeometry, coreMaterial),
+    );
+    flame.children.forEach((child) => { child.castShadow = false; child.receiveShadow = false; });
+    flame.visible = false;
+    group.add(flame);
+    return { group: flame, baseY: y, outerMaterial, coreMaterial };
+  });
+  mesh.add(group);
+  mesh.userData.damageFire = { group, flames, level: 0 };
+  return mesh.userData.damageFire;
+}
+
+function animatePoliceDamageFire(mesh, damageLevel = 0, clockTime = 0) {
+  const fire = mesh?.userData?.damageFire;
+  if (!fire) return;
+  const level = clamp(Number(damageLevel) || 0, 0, 1);
+  fire.level = level;
+  fire.group.visible = level > 0.001;
+  if (!fire.group.visible) {
+    fire.flames.forEach((flame) => { flame.group.visible = false; });
+    return;
+  }
+  fire.flames.forEach((flame, index) => {
+    // Une barre de vie standard compte six cases : chaque impact allume un
+    // foyer supplémentaire. Les derniers foyers du SUV grandissent par étapes
+    // plus fines, puisque sa coque blindée compte dix cases.
+    const progress = clamp(level * POLICE_DAMAGE_FIRE_SPOTS - index, 0, 1);
+    flame.group.visible = progress > 0.025;
+    if (!flame.group.visible) return;
+    const flicker = 0.84 + 0.16 * Math.sin(clockTime * (9.2 + index * 1.35) + flame.group.userData.phase);
+    const width = 0.24 + level * 0.62 + progress * 0.28;
+    const height = (0.22 + level * 0.88 + progress * 0.55) * flicker;
+    flame.group.scale.set(width * flicker, height, width * flicker);
+    flame.group.position.y = flame.baseY + Math.sin(clockTime * 11 + flame.group.userData.phase) * 0.025;
+    flame.group.rotation.y = clockTime * (0.7 + index * 0.11) + flame.group.userData.phase;
+    flame.outerMaterial.opacity = clamp((0.2 + progress * 0.48 + level * 0.2) * flicker, 0, 0.9);
+    flame.coreMaterial.opacity = clamp((0.22 + progress * 0.48 + level * 0.24) * flicker, 0, 0.94);
+  });
 }
 
 // Véhicule d'interception du dernier tour : berline ou SUV, avec le halo
@@ -764,8 +1444,101 @@ function animatePoliceWreckHusk(husk, intensity, clockTime) {
   wreck.ember.material.opacity = clamp(0.08 + 0.2 * level * (0.7 + 0.3 * Math.sin(clockTime * 5.3)), 0, 1);
 }
 
-function makeImpact(shared) {
+const BAZOOKA_EXPLOSION_SECONDS = 1.85;
+const BAZOOKA_SCORCH_SECONDS = 4.8;
+
+// Panache en champignon : un fût incandescent pousse un chapeau de fumée
+// charbonneuse, découpé en bourrelets pour garder une silhouette lisible en 3D.
+// Ses matériaux sont propres à l'impact (aucun partage avec les carcasses).
+function makeBazookaMushroomCloud() {
   const group = new THREE.Group();
+  group.name = 'bazooka-mushroom-cloud';
+  const sootMaterial = new THREE.MeshBasicMaterial({
+    color: 0x453438, transparent: true, opacity: 0, depthWrite: false,
+    side: THREE.DoubleSide, toneMapped: false,
+  });
+  const fireMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff6127, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+  });
+  const coreMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffd15a, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+  });
+  const stemSmoke = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.78, 0.22, 3.3, 14, 4, true), sootMaterial,
+  );
+  stemSmoke.name = 'bazooka-mushroom-stem-smoke';
+  stemSmoke.position.y = 1.72;
+  const stemFire = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.48, 0.12, 2.9, 12, 4, true), fireMaterial,
+  );
+  stemFire.name = 'bazooka-mushroom-stem-fire';
+  stemFire.position.y = 1.52;
+  const stemCore = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.06, 2.45, 10, 4, true), coreMaterial,
+  );
+  stemCore.name = 'bazooka-mushroom-stem-core';
+  stemCore.position.y = 1.32;
+
+  const puffGeometry = new THREE.SphereGeometry(1, 16, 12);
+  const puffs = [
+    [0, 3.45, 0, 1.65, 0.76, 1.45],
+    [-1.12, 3.25, 0.02, 0.98, 0.66, 0.96],
+    [1.12, 3.25, 0.02, 0.98, 0.66, 0.96],
+    [0, 3.22, -1.04, 1.05, 0.64, 0.92],
+    [0, 3.22, 1.04, 1.05, 0.64, 0.92],
+    [0, 4.02, 0, 1.02, 0.58, 0.98],
+  ];
+  for (const [x, y, z, sx, sy, sz] of puffs) {
+    const soot = new THREE.Mesh(puffGeometry, sootMaterial);
+    soot.position.set(x, y, z);
+    soot.scale.set(sx, sy, sz);
+    group.add(soot);
+    // Les langues de feu sont plus petites : elles s'éteignent pendant que le
+    // bourrelet sombre continue de monter, comme un vrai panache de souffle.
+    const flame = new THREE.Mesh(puffGeometry, fireMaterial);
+    flame.position.set(x * 0.82, y - 0.08, z * 0.82);
+    flame.scale.set(sx * 0.62, sy * 0.58, sz * 0.62);
+    group.add(flame);
+  }
+  group.add(stemSmoke, stemFire, stemCore);
+  return {
+    group,
+    sootMaterial,
+    fireMaterial,
+    coreMaterial,
+    stemSmoke,
+    stemFire,
+    stemCore,
+  };
+}
+
+function animateBazookaMushroomCloud(cloud, t, scale) {
+  if (!cloud) return;
+  const appear = smoothstep(t / 0.12);
+  const rise = smoothstep(t / 0.68);
+  const dissolve = 1 - smoothstep((t - 1.12) / 0.68);
+  const fireFade = 1 - smoothstep((t - 0.18) / 0.64);
+  cloud.group.visible = t < BAZOOKA_EXPLOSION_SECONDS;
+  cloud.group.position.y = 0.12 + rise * 1.35;
+  cloud.group.scale.set(
+    scale * (0.5 + rise * 0.58),
+    scale * (0.55 + rise * 0.5),
+    scale * (0.5 + rise * 0.58),
+  );
+  cloud.group.rotation.y = Math.sin(t * 1.8) * 0.075;
+  cloud.sootMaterial.opacity = 0.76 * appear * dissolve;
+  cloud.fireMaterial.opacity = 0.84 * appear * fireFade * dissolve;
+  cloud.coreMaterial.opacity = 0.96 * appear * (1 - smoothstep(t / 0.5)) * dissolve;
+  cloud.stemSmoke.scale.y = 0.78 + rise * 0.3;
+  cloud.stemFire.scale.y = 0.78 + rise * 0.3;
+  cloud.stemCore.scale.y = 0.8 + rise * 0.25;
+}
+
+function makeImpact(shared, { bazooka = false } = {}) {
+  const group = new THREE.Group();
+  group.name = bazooka ? 'city-rush-bazooka-explosion' : 'police-explosion';
   // Éclair initial : une sphère additive très brillante qui jaillit à l'impact.
   const flash = new THREE.Mesh(
     new THREE.SphereGeometry(0.7, 14, 12),
@@ -791,40 +1564,53 @@ function makeImpact(shared) {
   );
   ring.rotation.x = Math.PI / 2;
   ring.position.y = 0.06;
-  // Trace noire laissée sur la route (décalage goudronné) qui s'estompe lentement.
+  // La roquette grave un vrai rond de goudron noir qui reste visible après le
+  // flash et la fumée, puis se dissipe doucement au fil des secondes.
   const scorch = new THREE.Mesh(
-    new THREE.CircleGeometry(1.5, 22),
-    new THREE.MeshBasicMaterial({ color: 0x140d0a, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
+    new THREE.CircleGeometry(bazooka ? 2.35 : 1.5, bazooka ? 28 : 22),
+    new THREE.MeshBasicMaterial({ color: 0x0a0808, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
   );
+  scorch.name = bazooka ? 'bazooka-scorch-mark' : 'police-explosion-scorch';
   scorch.rotation.x = -Math.PI / 2;
   scorch.position.y = 0.02;
+  const mushroomCloud = bazooka ? makeBazookaMushroomCloud() : null;
   group.add(flash, fireball, inner, ring, scorch);
-  group.userData = { flash, fireball, inner, ring, scorch, age: 0 };
+  if (mushroomCloud) group.add(mushroomCloud.group);
+  group.userData = { flash, fireball, inner, ring, scorch, mushroomCloud, age: 0 };
   group.visible = false;
   return group;
 }
 
-// Anime un ensemble d'explosion (impact d'hélico comme berline détruite) :
-// éclair bref, boule de feu, noyau chaud, onde de choc et trace au sol.
-function animateExplosion(fx, t) {
+// Anime un impact de berline ou le champignon de la roquette : flash bref,
+// boule de feu, onde de choc et, pour le bazooka, panache ascendant + brûlure.
+function animateExplosion(fx, t, { radius = EXPLOSION_RADIUS, scale = 1, bazooka = false } = {}) {
   // Éclair initial très bref.
   const flashLife = clamp(t / 0.12, 0, 1);
-  fx.userData.flash.scale.setScalar(1.4 + flashLife * 1.2);
+  fx.userData.flash.scale.setScalar((1.4 + flashLife * 1.2) * scale);
   fx.userData.flash.material.opacity = (1 - flashLife) * 0.95;
   // Boule de feu qui se dilate puis se dissipe.
   const fireLife = clamp(t / 0.5, 0, 1);
-  fx.userData.fireball.scale.setScalar(0.4 + fireLife * 2.1);
+  fx.userData.fireball.scale.setScalar((0.4 + fireLife * 2.1) * scale);
   fx.userData.fireball.material.opacity = (1 - fireLife) * 0.95;
   const innerLife = clamp(t / 0.32, 0, 1);
-  fx.userData.inner.scale.setScalar(0.3 + innerLife * 1.2);
+  fx.userData.inner.scale.setScalar((0.3 + innerLife * 1.2) * scale);
   fx.userData.inner.material.opacity = (1 - innerLife);
   // Onde de choc au sol, qui se propage jusqu'au rayon de la zone d'effet.
   const ringLife = clamp(t / 0.55, 0, 1);
-  fx.userData.ring.scale.setScalar(0.4 + ringLife * (EXPLOSION_RADIUS / 0.6 - 0.4));
+  fx.userData.ring.scale.setScalar(0.4 + ringLife * (radius / 0.6 - 0.4));
   fx.userData.ring.material.opacity = (1 - ringLife) * 0.9;
-  // Trace noire laissée sur la route : apparaît vite, puis s'estompe.
-  const scorchLife = clamp(t / 0.6, 0, 1);
-  fx.userData.scorch.material.opacity = Math.sin(Math.min(1, scorchLife * 1.6) * Math.PI) * 0.7;
+  if (bazooka) {
+    animateBazookaMushroomCloud(fx.userData.mushroomCloud, t, scale);
+    const scorchAppear = smoothstep(t / 0.14);
+    const scorchFade = 1 - smoothstep((t - 3.0) / (BAZOOKA_SCORCH_SECONDS - 3.0));
+    fx.userData.scorch.scale.setScalar(scale * (0.94 + smoothstep(t / 0.32) * 0.06));
+    fx.userData.scorch.material.opacity = 0.86 * scorchAppear * scorchFade;
+  } else {
+    // La trace d'une explosion ordinaire garde sa durée historique.
+    const scorchLife = clamp(t / 0.6, 0, 1);
+    fx.userData.scorch.scale.setScalar(scale);
+    fx.userData.scorch.material.opacity = Math.sin(Math.min(1, scorchLife * 1.6) * Math.PI) * 0.7;
+  }
 }
 
 // Choc voiture / trafic : flash blanc, étincelles et onde de choc orange.
@@ -860,7 +1646,7 @@ function makeTrafficImpactEffect() {
     group.add(spark);
     sparks.push(spark);
   }
-  group.userData = { flash, ring, sparks, flashMaterial, ringMaterial, sparkMaterial, age: 0, active: false };
+  group.userData = { flash, ring, sparks, flashMaterial, ringMaterial, sparkMaterial, age: 0, active: false, intensity: 1 };
   group.visible = false;
   return group;
 }
@@ -900,15 +1686,32 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps') {
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false) {
   // Sprint : course solo à checkpoints, sans police ni arme ; seuls les pads
   // turbo restent disponibles comme bonus.
   const sprint = raceFormat === 'sprint';
+  // Règles spéciales du mode Histoire (`cityRushStory.js`, une entrée par
+  // chapitre) : armes coupées (course pure), police absente (duel, chrono),
+  // coque réduite (survie), voitures/allures imposées aux rivaux (boss) et
+  // panne scriptée (prologue). `null` en mode libre : rien ne change.
+  const storyWeaponsEnabled = storyRules?.weaponsEnabled !== false;
+  const storyPoliceEnabled = storyRules?.policeEnabled !== false;
+  // Le bazooka est sur toutes les cartes : deux entrepôts par course, à 30 %
+  // puis 65 % du parcours — seul le Sprint et les chapitres sans arme/police
+  // le retirent.
+  const bazookaWarehouseEnabled = !sprint && storyWeaponsEnabled && storyPoliceEnabled && storyRules?.bazookaEnabled !== false;
+  const storyHealthOverride = Number.isFinite(Number(storyRules?.playerHealthOverride)) && Number(storyRules.playerHealthOverride) > 0
+    ? Math.floor(Number(storyRules.playerHealthOverride))
+    : null;
+  const storyRivalCarIds = storyRules?.rivalCarIds && typeof storyRules.rivalCarIds === 'object' ? storyRules.rivalCarIds : null;
+  const storyRivalPace = storyRules?.rivalPace && typeof storyRules.rivalPace === 'object' ? storyRules.rivalPace : null;
+  const storyBreakdown = storyRules?.breakdown && typeof storyRules.breakdown === 'object' ? storyRules.breakdown : null;
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
+  const bazookaTrackDistances = cityRushBazookaTrackDistances({ laps: effectiveLaps });
   // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
   // `laps` × la boucle. Le décor, lui, reste une boucle de 1 200 m qui se répète.
   const effectiveDistance = sprint ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(effectiveLaps);
-  const effectivePoliceFromStart = !sprint && Boolean(policeFromStart);
+  const effectivePoliceFromStart = !sprint && storyPoliceEnabled && Boolean(policeFromStart);
   const theme = cityRushTheme(city.id);
   const lightRig = cityRushLightRig(theme, city);
   const lite = detectLiteQuality();
@@ -929,10 +1732,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const oncomingLaneSet = new Set(oncomingLanes);
   const driveSide = courseLanes.driveSide;
   const policeLanes = courseLanes.policeLanes;
+  const bazookaPickupLane = driveSide === 'left'
+    ? forwardLanes[0]
+    : forwardLanes[forwardLanes.length - 1];
   const defaultLanes = courseLanes.defaultLanes;
   const playerStartLane = defaultLanes[0];
-  // Le tracé de rendu du parcours : deux S très doux pour les villes et les
-  // routes, la suite réelle des 73 virages du Ring pour le Nordschleife.
+  // Tracé de rendu : Vice City enchaîne longues courbes et virages secs, les
+  // autres villes gardent deux S doux, et le Ring rejoue ses 73 virages.
   const trackProfile = cityRushTrackProfile(city);
   // Rythme du parcours : 1 partout, `CITY_RUSH_RACEWAY_PACE` sur le Ring, où le
   // défilement à 126 km/h rend la piste illisible. **Tout** ce qui roule passe
@@ -944,6 +1750,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const paced = (speed) => speed * coursePace;
 
   const scene = new THREE.Scene();
+  // Three.js crée des UUID avec Math.random(). Isole ces appels visuels pour
+  // que l'ajout des flammes ne décale pas les tirages de gameplay ni les seeds.
+  const policeVisualRandom = seededRandom(0xF17E + cityIndex * 997);
+  const withPoliceVisualRandom = (create) => {
+    const gameplayRandom = Math.random;
+    Math.random = policeVisualRandom;
+    try {
+      return create();
+    } finally {
+      Math.random = gameplayRandom;
+    }
+  };
+  const policeDamageFireKit = withPoliceVisualRandom(createPoliceDamageFireKit);
   scene.background = new THREE.Color(city.background);
   const fogColor = new THREE.Color(city.fog).lerp(new THREE.Color(theme.sky.haze), 0.22);
   scene.fog = new THREE.Fog(fogColor, theme.fogNear, theme.fogFar);
@@ -959,8 +1778,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   renderer.toneMappingExposure = lightRig.exposure;
   renderer.shadowMap.enabled = !lite;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Reflets studio des carrosseries : la carte d'environnement est dérivée du
+  // renderer, donc branchée juste après sa création (avant les voitures).
+  configureCarReflections(renderer);
   renderer.domElement.className = 'city-rush-canvas';
-  renderer.domElement.setAttribute('aria-label', `Course de voitures 3D dans ${city.name} : ${effectiveLaps} tours de circuit, change de voie, ramasse des bonus et des boosts au sol, évite le trafic et la police.`);
+  renderer.domElement.setAttribute('aria-label', `Course de voitures 3D dans ${city.name} : ${effectiveLaps} tours, change de voie, ramasse les plus rouges pour récupérer un carré de vie, évite le trafic et traverse le mini-garage central pour réparer jusqu'à six carrés.`);
   mount.appendChild(renderer.domElement);
 
   // ── Lumières ─────────────────────────────────────────────────────────
@@ -1054,17 +1876,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const shared = {
     pickupGeometry: new THREE.PlaneGeometry(1.5, 1.5),
     pickupRingGeometry: new THREE.TorusGeometry(0.82, 0.06, 4, 16),
+    // L'anneau qui tourne autour du bonus vert : plus rond que celui du sol,
+    // il se voit de près (6 segments radiaux, 30 de long).
+    pickupOrbitGeometry: new THREE.TorusGeometry(0.82, 0.055, 6, 30),
     pickupBeamGeometry: new THREE.PlaneGeometry(0.42, 3.4),
     pickupHaloGeometry: new THREE.CircleGeometry(0.9, 18),
-    pickupMaterials: Object.fromEntries(POWER_TYPES.map((type) => [type, makePickupMaterial(type, CITY_RUSH_POWER_RULES[type].color)])),
-    pickupRingMaterials: Object.fromEntries(POWER_TYPES.map((type) => [type, new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type].color, transparent: true, opacity: 0.95, toneMapped: false })])),
-    pickupBeamMaterials: Object.fromEntries(POWER_TYPES.map((type) => [type, new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type].color, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false })])),
-    boostPadGeometry: new THREE.BoxGeometry(1.62, 0.08, 3.4),
-    boostPadMaterial: standard(0x09251a, { roughness: 0.38, metalness: 0.48, emissive: 0x0a6336, emissiveIntensity: 0.72 }),
-    boostPadEdgeGeometry: new THREE.BoxGeometry(1, 1, 1),
-    boostPadEdgeMaterial: new THREE.MeshBasicMaterial({ color: CITY_RUSH_TRACK_BOOST_COLOR, toneMapped: false }),
+    pickupMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
+      type,
+      makePickupMaterial(type, pickupColor(type)),
+    ])),
+    pickupRingMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
+      type,
+      new THREE.MeshBasicMaterial({ color: pickupColor(type), transparent: true, opacity: 0.95, toneMapped: false }),
+    ])),
+    pickupBeamMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
+      type,
+      new THREE.MeshBasicMaterial({ color: pickupColor(type), transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+    ])),
+    // Les chevrons verts restent ceux du tremplin : le bonus turbo, lui, est
+    // désormais une icône flottante (voir `makePickupObject`).
     boostChevronGeometry: makeBoostChevronGeometry(),
-    boostChevronMaterial: new THREE.MeshBasicMaterial({ color: '#d8ffe4', side: THREE.DoubleSide, toneMapped: false }),
     heliBody: standard(0x232d3b, { metalness: 0.48, roughness: 0.4 }),
     heliGlass: standard(0x68dce5, { emissive: 0x185d73, emissiveIntensity: 0.42, metalness: 0.27, roughness: 0.18 }),
     heliTrim: standard(0xf0ce65, { metalness: 0.58, roughness: 0.34 }),
@@ -1113,6 +1944,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
 
   const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
+  // Chaque voiture encaisse selon sa propre coque (`durabilityMultiplier`) :
+  // la citadine lente tient 23 carrés, la supercar rapide 7. Les deux rivaux
+  // reçoivent la vie de **leur** profil, comme le joueur.
+  const playerMaxHealth = storyHealthOverride ?? cityRushCarMaxHealth(playerProfile);
   // Vitesse de pointe de la voiture engagée, rythme du parcours compris : elle
   // règle le streaming (trafic, contresens, rangées de bonus) et le chrono du
   // Sprint. Les trois systèmes étaient calibrés sur une seule vitesse ; ils
@@ -1151,7 +1986,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     { id: 'juno', lane: defaultLanes[2], phase: 2.4, changeIn: 2.1, skidSide: -1 },
   ];
   const racers = racerSpecs.map((spec, index) => {
-    const profile = rivalProfiles[index];
+    const storyProfile = storyRivalCarIds?.[spec.id]
+      ? CITY_RUSH_CARS.find((car) => car.id === storyRivalCarIds[spec.id]) || null
+      : null;
+    const profile = storyProfile || rivalProfiles[index];
     const driver = currentRoster.find((item) => item.id === spec.id) || currentRoster[index + 1];
     return {
       ...spec,
@@ -1166,10 +2004,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       profile,
       distance: 0,
       lap: 1,
-      health: CITY_RUSH_RACER_HEALTH,
+      maxHealth: cityRushCarMaxHealth(profile),
+      health: cityRushCarMaxHealth(profile),
       healthFlash: 0,
       wrecked: false,
-      baseSpeed: paced(PLAYER_SPEED * profile.powerMultiplier),
+      // Le rythme de course des rivaux (voir `CITY_RUSH_RIVAL_PACE`) : la fiche
+      // de leur modèle, plus 5 %. C'est la base sur laquelle s'ajoutent le
+      // dernier tour, les bonus turbo et les ralentissements.
+      baseSpeed: paced(PLAYER_SPEED * profile.powerMultiplier * cityRushRivalPaceFactor()),
       currentSpeed: 0,
       mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight, driver }),
       currentX: laneX(spec.lane),
@@ -1188,6 +2030,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       powerCooldown: 0,
       smokeTimer: 0,
       finalLapAnnounced: false,
+      // Niveau de recherche du rival : il monte à trois étoiles quand il touche
+      // une voiture de police (carambolage comme tir) et quand il mène la course
+      // au dernier tour. Zéro tant qu'il n'a rien fait — et une seule berline lui
+      // est alors dédiée (voir `registerPoliceRetaliation`).
+      wantedLevel: 0,
     };
   });
   racers.forEach((racer) => scene.add(racer.mesh));
@@ -1235,6 +2082,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trafficCars = Array.from({ length: effectiveTrafficCount }, (_, index) => {
     const spec = trafficTypes[index % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
+    if (isCityRushPoliceTrafficType(spec.id)) {
+      withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+    }
     scene.add(mesh);
     return {
       ...spec,
@@ -1278,6 +2128,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       ? oncomingPoliceSpecs[index]
       : trafficTypes[(index + 2) % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
+    if (isCityRushPoliceTrafficType(spec.id)) {
+      withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+    }
     scene.add(mesh);
     return {
       ...spec,
@@ -1306,6 +2159,80 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
 
+  // ── Les SUV de charge du contresens ────────────────────────────────────
+  // Cinq étoiles ne se contentent plus d'attendre le pilote : deux SUV
+  // d'interception arrivent **de face** et foncent sur lui. Ils vivent dans le
+  // contresens (`oncomingCars`) pour hériter du rendu, de la détection balayée
+  // des chocs et de la conversion en poursuivants, mais leur conduite est
+  // propre (voir `updateSuvCharges`) : ils apparaissent loin devant, visent la
+  // voie du pilote à portée de verrou, se rabattent à vitesse limitée et
+  // roulent plus vite que sa pointe. Le contact les retourne — le demi-tour
+  // réglementaire des patrouilles — et ils rejoignent la chasse.
+  const suvCharges = Array.from({ length: CITY_RUSH_SUV_CHARGE_COUNT }, (_, index) => {
+    const mesh = makeTrafficVehicle(CITY_RUSH_SUV_CHARGE_TYPE);
+    withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+    mesh.name = `suv-charge-${index + 1}`;
+    mesh.visible = false;
+    scene.add(mesh);
+    return {
+      // Même famille que les patrouilles du contresens : le contact déclenche
+      // la poursuite, le demi-tour et la montée d'étoiles comme pour elles.
+      ...(CITY_RUSH_TRAFFIC_TYPES.find((spec) => spec.id === 'police') || CITY_RUSH_TRAFFIC_TYPES[0]),
+      type: 'police',
+      vehicleType: CITY_RUSH_SUV_CHARGE_TYPE,
+      id: `suv-charge-${index + 1}`,
+      name: policeUnitName(index + 1, CITY_RUSH_SUV_CHARGE_TYPE),
+      charge: true,
+      chargeIndex: index,
+      chargeState: 'dormant', // dormant | charging | reloading
+      chargeReloadLeft: 0,
+      chargeAnnounced: false,
+      chargeLocked: false,
+      mesh,
+      // Dormant : garé loin derrière la grille, il n'apparaîtra qu'à cinq
+      // étoiles (`armSuvCharge` le replace au loin devant le pilote).
+      distance: -1200,
+      lane: oncomingLanes.length ? oncomingLanes[index % oncomingLanes.length] : CITY_RUSH_ONCOMING_LANES[0],
+      currentX: 0,
+      baseSpeed: 0,
+      currentSpeed: 0,
+      impactCooldownLeft: 0,
+      pushedAside: false,
+      pushAsideElapsed: 0,
+      pushAsideStartX: null,
+      phase: 0.8 + index * 1.7,
+      lastPassGap: undefined,
+      health: cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE),
+      maxHealth: cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE),
+      healthFlash: 0,
+      destroyed: false,
+      rallied: false,
+      turnaroundState: null,
+      turnaroundElapsed: 0,
+      turnaroundTargetId: null,
+      turnaroundAsBackup: false,
+      turnaroundTargetLane: null,
+    };
+  });
+  oncomingCars.push(...suvCharges);
+
+  // ── La herse : le barrage éclair des quatre étoiles ────────────────────
+  // État du dispositif monté par deux voitures de police (voir
+  // `beginSpikeBlock`/`updateSpikeBlock`). `idle` = aucun barrage ; les voitures
+  // prennent position, la herse se déroule voie par voie, puis elle est posée ;
+  // une fois le pilote passé, les voitures rangent et repartent (`packing`).
+  const SPIKE_BLOCK_ID = 'spike-block';
+  const spikeBlock = {
+    state: 'idle', // idle | deploying | laying | set | packing
+    elapsed: 0,
+    age: 0,
+    distance: 0,
+    lanes: [],
+    cooldownLeft: 0,
+    meshes: null,
+    cars: [],
+  };
+
   // ── L'escouade de police et ses renforts ciblés ────────────────────────
   // Trois voitures poursuivent le joueur. Deux unités supplémentaires sont
   // gardées en réserve, une par rival ; elles ne sortent que si ce rival tire
@@ -1316,6 +2243,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const lane = policeLanes[index % policeLanes.length];
     const vehicleType = CITY_RUSH_POLICE_VEHICLE_TYPES[index % CITY_RUSH_POLICE_VEHICLE_TYPES.length];
     const mesh = makePolicePursuitCar(vehicleType);
+    withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
     mesh.visible = false;
     scene.add(mesh);
     return {
@@ -1344,13 +2272,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       stunTotal: 0,
       skidLeft: 0,
       skidDuration: 0.85,
+      skidSide: 1,
+      skidSmokeTimer: 0,
+      jumpState: { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0 },
+      currentJumpY: 0,
+      currentJumpPitch: 0,
       powerCooldown: 0,
       inventory: createCityRushPoliceInventory(),
       active: false,
       everDeployed: false,
       reinforcementPending: false,
       reinforcement: false,
-      health: CITY_RUSH_POLICE_HEALTH,
+      health: cityRushPoliceMaxHealth(vehicleType),
+      maxHealth: cityRushPoliceMaxHealth(vehicleType),
       healthFlash: 0,
       mode: 'hunt',
       blockLeft: 0,
@@ -1362,9 +2296,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   let policeDeployed = false;
+  // La police a abandonné la poursuite (sortie d'un mini-garage) : plus aucune
+  // relève ne part tant que le pilote ne provoque pas de nouveau la police.
+  let policePursuitDropped = false;
   // Niveau de recherche propre au joueur : les modes normaux commencent à zéro,
   // tandis que le mode Poursuite démarre à cinq étoiles comme son escouade.
   let wantedLevel = effectivePoliceFromStart ? CITY_RUSH_WANTED_MAX_STARS : 0;
+  // Destructions de police réalisées par le joueur depuis le dernier passage
+  // au mini-garage : la première vaut quatre étoiles, la deuxième cinq.
+  let policeDestroyedByPlayer = 0;
   // Les trois unités de base et les voitures réservées aux rivaux ont déjà
   // leur numéro ; les remplaçantes suivantes commencent après toute la réserve.
   let nextPoliceUnitNumber = policeCars.length + 1;
@@ -1378,13 +2318,25 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // voiture — trafic, contresens ou berline de police — en retire une aussi :
   // le carambolage arme un court répit partagé
   // (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) pour ne compter qu'un carré par choc.
-  let playerHealth = CITY_RUSH_PLAYER_HEALTH;
+  let playerHealth = playerMaxHealth;
   let playerHealthActive = false;
   let playerHealthFlash = 0;
   let playerCollisionCooldownLeft = 0;
   // Épave : barre à zéro. La voiture tourne sur elle-même dans sa fumée, perd
   // toute vitesse, puis la course est déclarée perdue (`finishRace`).
   let playerWrecked = false;
+  // Panne scriptée du prologue : avertissement, puis calage moteur avant la
+  // ligne (`storyBreakdown`, parts de la distance totale). Tant que la panne
+  // n’a pas frappé, la voiture roule normalement.
+  let storyBreakdownWarned = false;
+  let storyBreakdownActive = false;
+  let storyBreakdownLeft = 0;
+  let storyBreakdownSmokeTimer = 0;
+  let storyRankAtBreakdown = null;
+  // Statistiques des défis d’histoire, remises à zéro à chaque course.
+  let playerShotsFired = 0;
+  let playerHitsTaken = 0;
+  let policeDestroyedTotal = 0;
   let playerWreckLeft = 0;
   let playerWreckSpinTurns = CITY_RUSH_WRECK_SPIN_TURNS;
   // L'hélico d'observation du dernier tour : il se pose dans le ciel, suit le
@@ -1425,10 +2377,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function requiredPlayerPursuerSlots() {
-    return Math.max(
-      policeDeployed ? CITY_RUSH_POLICE_COUNT : 0,
-      cityRushPoliceCountForWantedLevel(wantedLevel),
-    );
+    // Une poursuite abandonnée (mini-garage) ne se relève plus toute seule :
+    // seules les étoiles regagnées depuis rappellent la police.
+    const squadSlots = policeDeployed && !policePursuitDropped ? CITY_RUSH_POLICE_COUNT : 0;
+    return Math.max(squadSlots, cityRushPoliceCountForWantedLevel(wantedLevel));
   }
 
   function beginOncomingPoliceTurnaround(oncoming, { asBackup = false, targetId = 'player' } = {}) {
@@ -1456,8 +2408,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function turnAroundOncomingPoliceAsBackup() {
+    // Les SUV de charge gardent leur charge : ils ne font demi-tour qu'au
+    // contact (voir `updateSuvCharges`), le demi-tour à vue restant le lot des
+    // patrouilles du flot.
     const turning = oncomingCars.filter((car) => (
-      isCityRushPoliceTrafficType(car.type) && !car.destroyed && !car.rallied
+      isCityRushPoliceTrafficType(car.type) && !car.destroyed && !car.rallied && !car.charge
     ));
     let started = 0;
     for (const car of turning) {
@@ -1474,6 +2429,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
+  // À cinq étoiles (atteintes à la deuxième destruction de police), toute
+  // voiture de police qui aperçoit le pilote rejoint la chasse sans attendre
+  // le contact : les berlines en ronde dans le même sens se rallient dès
+  // qu'elles sont à portée de vue, celles venant en face font demi-tour.
+  function checkPoliceSightRally() {
+    if (sprint || !active || finished) return;
+    if (wantedLevel < CITY_RUSH_WANTED_MAX_STARS) return;
+    for (const traffic of trafficCars) {
+      if (traffic.rallied || traffic.destroyed || !isCityRushPoliceTrafficType(traffic.type)) continue;
+      if (Math.abs(traffic.distance - distance) > CITY_RUSH_POLICE_SIGHT_RANGE) continue;
+      rallyTrafficPolice(traffic, 'player', { sighted: true });
+    }
+    turnAroundOncomingPoliceAsBackup();
+  }
+
   function dispatchWantedPolice() {
     if (sprint || finished) return 0;
     const desired = requiredPlayerPursuerSlots();
@@ -1484,7 +2454,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     let activated = 0;
     for (const police of policeCars.filter((unit) => unit.squad)) {
       if (missing <= 0) break;
-      if (police.active || police.reinforcementPending) continue;
+      // `wreckPending` : la berline agonise encore, son maillage est réservé.
+      if (police.active || police.reinforcementPending || police.wreckPending) continue;
       if (!police.everDeployed) {
         activatePoliceUnit(police, target, {
           reinforcement: false,
@@ -1510,12 +2481,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return activated;
   }
 
-  function raiseWantedLevel({ police = false, reason = 'vehicle-hit' } = {}) {
-    if (sprint || !active || finished) return wantedLevel;
+  function raiseWantedLevel({ police = false, destroyed = false, reason = 'vehicle-hit' } = {}) {
+    if (sprint || !active || finished || !storyPoliceEnabled) return wantedLevel;
     const previous = wantedLevel;
-    wantedLevel = cityRushWantedLevelAfterHit(wantedLevel, { hit: true, police });
+    if (destroyed) {
+      policeDestroyedByPlayer = Math.min(CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS, policeDestroyedByPlayer + 1);
+      wantedLevel = cityRushWantedLevelAfterPoliceDestroyed(wantedLevel, policeDestroyedByPlayer);
+    } else {
+      wantedLevel = cityRushWantedLevelAfterHit(wantedLevel, { hit: true, police });
+    }
     if (wantedLevel === previous) return wantedLevel;
 
+    // Une nouvelle provocation annule l'abandon : la police reprend la chasse.
+    policePursuitDropped = false;
     if (wantedLevel >= CITY_RUSH_WANTED_MAX_STARS) turnAroundOncomingPoliceAsBackup();
     dispatchWantedPolice();
     getCallbacks().effect?.({
@@ -1524,6 +2502,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       stars: wantedLevel,
       maxStars: CITY_RUSH_WANTED_MAX_STARS,
       reason,
+      policeDestroyedByPlayer,
       pursuitCars: cityRushPoliceCountForWantedLevel(wantedLevel),
     });
     emitHud(true);
@@ -1587,6 +2566,42 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackRelativeY = (trackDistance) => trackProfile.elevation(trackDistance) - trackProfile.elevation(distance);
   const trackPitch = (trackDistance) => trackProfile.pitch(trackDistance);
   const trackYaw = (trackDistance) => trackProfile.yaw(trackDistance);
+  const miniGarageLanes = cityRushMiniGarageLanes(city);
+  const miniGarageMaterials = sprint ? null : makeMiniGarageMaterials(city, miniGarageLanes);
+  // Une seule porte par course : celle de mi-course, à la moitié du parcours.
+  const miniGarageTrackDistances = cityRushMiniGarageTrackDistances({ laps: effectiveLaps });
+  const miniGarages = sprint ? [] : miniGarageTrackDistances.map((trackDistance, index) => {
+    const group = makeMiniGarageObject(index + 1, miniGarageMaterials, miniGarageLanes);
+    scene.add(group);
+    return {
+      index: index + 1,
+      group,
+      lanes: miniGarageLanes,
+      trackDistance,
+      used: false,
+    };
+  });
+  // Deux entrepôts par course, sur toutes les cartes : un à 30 % du parcours
+  // (avant le garage de vie de mi-course), un à 65 % (après). Chacun est un
+  // conteneur de 40 pieds qui prend les **deux voies extérieures** du sens de
+  // course : à droite en conduite à droite, à gauche à Londres et sur la Shutō
+  // C1, où tout le conteneur est reflété.
+  const bazookaOutwardSide = driveSide === 'left' ? -1 : 1;
+  const bazookaWarehouses = bazookaWarehouseEnabled
+    ? bazookaTrackDistances.map((trackDistance, index) => {
+      const group = makeBazookaContainer(city, laneX(bazookaPickupLane), bazookaOutwardSide);
+      group.visible = false;
+      scene.add(group);
+      return {
+        index: index + 1,
+        group,
+        trackDistance,
+        taken: false,
+      };
+    })
+    : [];
+  let bazookaAmmo = 0;
+  let bazookaPickupTaken = false;
   let lap = 1;
   // Dernière ligne annoncée (1 = fin du tour 1 …) : un choc frontal peut recaler
   // le joueur derrière une ligne qu'il vient de franchir ; en la repassant il ne
@@ -1602,12 +2617,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerBlueShotSlowLeft = 0;
   let playerTrafficRecoverLeft = 0;
   let playerTrafficImpactLeft = 0;
+  // Couples coureur/voiture lente déjà en contact : un impact par épisode (voir
+  // `detectCityRushTrafficImpacts`), pour qu'un pilote retenu juste derrière une
+  // voiture lente soit facturé une fois — et non à chaque image — sans jamais
+  // rester collé au seuil sans rien toucher.
+  const trafficContacts = new Set();
   let playerBoostLeft = 0;
   let playerStunLeft = 0;
   let playerStunTotal = 0;
   let playerSkidLeft = 0;
   let playerSkidDuration = 0.85;
   let playerSkidSide = 1;
+  // Secousse réservée au contact avec le SUV de police : roulis de caisse et
+  // lacet oscillant, purement visuels (les règles de vitesse/vie restent les mêmes).
+  let playerSuvImpactLeft = 0;
+  let playerSuvImpactSide = 1;
+  // Crevaison sur la herse : les pneus à plat, la voiture ne repart pas à fond
+  // pendant quelques secondes (facteur `CITY_RUSH_SPIKE_SLOW_FACTOR`).
+  let playerSpikeSlowLeft = 0;
   // Conduite en ligne : changer de voie ne ralentit pas, mais cela remet à
   // zéro le bonus de vitesse « ligne propre » chargé en tenant sa voie.
   let playerCleanLineTime = 0;
@@ -1622,6 +2649,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let inventory = createCityRushInventory();
   let pistolKeyHeld = false;
   let pistolHoldCooldown = 0;
+  // Maintien des flèches : `steerKeysHeld` liste les touches physiques encore
+  // enfoncées avec leur direction, dans l'ordre de pression — Q et ← peuvent
+  // l'être ensemble sans se couper l'un l'autre. `steerHoldDirection` est la
+  // direction qui pilote le volant (la dernière touche pressée gagne) et
+  // `steerHoldCooldown` le temps restant avant le prochain écart.
+  const steerKeysHeld = new Map();
+  let steerHoldDirection = null;
+  let steerHoldCooldown = 0;
   let finished = false;
   let lastHudAt = 0;
   let lastFrame = performance.now();
@@ -1631,6 +2666,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let randomSeed = Math.random;
   let launchSmokeLeft = 0;
   let playerSmokeTimer = 0;
+  let playerDamageSmokeTimer = 0;
+  const playerHoodScratch = new THREE.Vector3();
   let coastSpeed = 0;
   let introAngle = Math.PI * 0.82;
   let countdownTime = 0;
@@ -1641,6 +2678,40 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     pistolKeyHeld = false;
     pistolHoldCooldown = 0;
   };
+  // Une pression de flèche répond tout de suite, puis le maintien prend le
+  // relais : le deuxième écart part `STEER_HOLD_FIRST_DELAY` plus tard (le
+  // délai de répétition), les suivants s'enchaînent à
+  // `STEER_HOLD_LANE_INTERVAL` tant qu'une touche reste enfoncée. Renvoie vrai
+  // quand la pression doit déclencher l'écart immédiat.
+  const pressSteerKey = (key) => {
+    const direction = STEER_KEY_DIRECTIONS[key];
+    if (!direction) return false;
+    // ← et Q (comme → et D) tiennent la même direction : la seconde touche ne
+    // relance ni écart immédiat ni délai, le maintien est déjà en route.
+    const directionHeld = [...steerKeysHeld.values()].includes(direction);
+    // Réinsérer en dernier : `Map` garde l'ordre de pression, et c'est la
+    // dernière touche pressée qui pilote le volant.
+    steerKeysHeld.delete(key);
+    steerKeysHeld.set(key, direction);
+    steerHoldDirection = direction;
+    if (directionHeld) return false;
+    steerHoldCooldown = STEER_HOLD_FIRST_DELAY;
+    return true;
+  };
+  const liftSteerKey = (key) => {
+    if (!steerKeysHeld.has(key)) return;
+    steerKeysHeld.delete(key);
+    // La main revient à la dernière touche encore enfoncée : l'autre flèche, ou
+    // un doublon de la même direction (Q relâché pendant que ← reste enfoncé) —
+    // le maintien continue alors sans repartir de zéro. Plus aucune touche :
+    // le volant se relâche, y compris au milieu d'un écart.
+    steerHoldDirection = steerKeysHeld.size ? [...steerKeysHeld.values()].pop() : null;
+  };
+  const releaseSteerKeys = () => {
+    steerKeysHeld.clear();
+    steerHoldDirection = null;
+    steerHoldCooldown = 0;
+  };
   const cameraTarget = new THREE.Vector3().copy(CHASE_POSITION);
   const lookTarget = new THREE.Vector3().copy(CHASE_LOOK);
   const lookCurrent = new THREE.Vector3().copy(CHASE_LOOK);
@@ -1650,6 +2721,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     {
       id: 'player',
       isPlayer: true,
+      carId: playerProfile.id,
       driverId: playerDriver.driverId,
       name: playerDriver.name,
       displayName: playerDriver.displayName,
@@ -1665,13 +2737,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       mesh: playerCar,
       lap,
       health: playerHealth,
-      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      maxHealth: playerMaxHealth,
       healthFlash: playerHealthFlash,
       wrecked: playerWrecked,
+      // Niveau de recherche de la course : le HUD du classement s'y raccroche.
+      wantedLevel,
     },
     ...racers.map((racer) => ({
       id: racer.id,
       isPlayer: false,
+      carId: racer.profile.id,
       driverId: racer.driverId,
       name: racer.name,
       displayName: racer.displayName,
@@ -1687,9 +2762,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       mesh: racer.mesh,
       lap: racer.lap,
       health: racer.health,
-      maxHealth: CITY_RUSH_RACER_HEALTH,
+      maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
       healthFlash: racer.healthFlash,
       wrecked: racer.wrecked,
+      // Recherche propre au rival : le classement affiche sa poursuite.
+      wantedLevel: racer.wantedLevel || 0,
     })),
   ];
 
@@ -1701,6 +2778,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         ? createCityRushBoostEncounter(randomSeed, city)
         : { pickups: [] })
       : createCityRushEncounter(randomSeed, laneCount);
+    // Course « pure » du mode Histoire : aucun chargeur rouge sur la route —
+    // les emplacements deviennent des bonus turbo, et l’AK-47 reste muet.
+    if (!storyWeaponsEnabled && Array.isArray(encounter.pickups)) {
+      encounter.pickups = encounter.pickups.map((pickup) => (
+        pickup?.type === CITY_RUSH_POWERS.PISTOL ? { ...pickup, type: CITY_RUSH_PICKUPS.BOOST } : pickup
+      ));
+    }
+    // Le parcours guidé garantit que les consignes importantes croisent bien
+    // leur exemple réel : un chargeur rouge, un éclair vert et des soins, tous
+    // dans la voie de départ pour rester accessibles aux débutants.
+    if (tutorialMode && !sprint) {
+      const lessonPickup = row.trackDistance >= 360 && row.trackDistance < 420
+        ? CITY_RUSH_POWERS.PISTOL
+        : row.trackDistance >= 520 && row.trackDistance < 580
+          ? CITY_RUSH_PICKUPS.BOOST
+          : row.trackDistance >= 1270 && row.trackDistance < 1330
+            ? CITY_RUSH_PICKUPS.HEALTH
+            : null;
+      if (lessonPickup) encounter.pickups = [{ lane: playerStartLane, type: lessonPickup }];
+    }
     row.pickups = encounter.pickups;
     row.pickupClaims.clear();
     row.crossedRacers.clear();
@@ -1739,6 +2836,212 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       next += randomRange(CITY_RUSH_RAMP_SPACING_MIN, CITY_RUSH_RAMP_SPACING_MAX);
     }
     lastRampDistanceSlot = next;
+  }
+
+  // La porte est ouverte dès que la course bat son plein : elle est posée à
+  // mi-parcours et n'attend aucun tour, seule la Sprint la supprime.
+  function miniGarageAvailable(garage) {
+    if (!garage) return false;
+    if (!(phase === 'playing' && !finished && !playerWrecked)) return false;
+    return cityRushMiniGarageAvailable({ sprint });
+  }
+
+  function miniGaragesAvailable() {
+    return miniGarages.some((garage) => miniGarageAvailable(garage));
+  }
+
+  // Porte la plus proche encore utilisable — sert au compteur du HUD, qui ne
+  // s'allume que lorsqu'un garage approche vraiment.
+  function nextMiniGarageGap() {
+    let best = null;
+    for (const garage of miniGarages) {
+      if (garage.used || !miniGarageAvailable(garage)) continue;
+      const gap = garage.trackDistance - distance;
+      if (gap < -CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH) continue;
+      if (best === null || gap < best) best = gap;
+    }
+    return best;
+  }
+
+  // Entrepôt de bazooka le plus proche encore à traverser — sert au compteur
+  // du HUD. `null` quand les deux entrepôts de la course sont derrière (ou
+  // déjà ramassés).
+  function nextBazookaWarehouseGap() {
+    let best = null;
+    for (const warehouse of bazookaWarehouses) {
+      if (warehouse.taken) continue;
+      const gap = warehouse.trackDistance - distance;
+      if (gap < -CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH) continue;
+      if (best === null || gap < best) best = gap;
+    }
+    return best === null ? null : Math.round(best);
+  }
+
+  function placeMiniGarage(garage) {
+    if (!garage) return;
+    garage.group.userData.trackDistance = garage.trackDistance;
+    garage.group.userData.used = garage.used;
+    if (garage.used || !miniGarageAvailable(garage)) {
+      garage.group.visible = false;
+      return;
+    }
+    const gap = garage.trackDistance - distance;
+    garage.group.position.set(
+      trackRelativeX(garage.trackDistance),
+      trackRelativeY(garage.trackDistance),
+      PLAYER_Z - gap * SCALE,
+    );
+    garage.group.rotation.set(trackPitch(garage.trackDistance), trackYaw(garage.trackDistance), 0);
+    garage.group.visible = gap > -25 && gap * SCALE < theme.fogFar + 20;
+  }
+
+  // Chaque entrepôt est ancré à son repère (30 % puis 65 % de la course) dès
+  // le départ : il n'attend plus le dernier tour, et le marqueur jaune disparaît
+  // après la traversée tandis que le bâtiment reste en bord de route.
+  function placeBazookaWarehouse(warehouse) {
+    if (!warehouse) return;
+    const group = warehouse.group;
+    const warehouseTrackDistance = warehouse.trackDistance + BAZOOKA_PICKUP_LOCAL_Z / SCALE;
+    group.userData.trackDistance = warehouseTrackDistance;
+    const gap = warehouse.trackDistance - distance;
+    const available = phase === 'playing' && !finished && !playerWrecked;
+    group.position.set(
+      trackRelativeX(warehouseTrackDistance),
+      trackRelativeY(warehouseTrackDistance),
+      PLAYER_Z - (warehouseTrackDistance - distance) * SCALE,
+    );
+    group.rotation.set(trackPitch(warehouseTrackDistance), trackYaw(warehouseTrackDistance), 0);
+    group.visible = available && gap > -24 && gap * SCALE < theme.fogFar + 28;
+    group.userData.pickup.visible = !warehouse.taken;
+  }
+
+  function collectBazookaWarehouse(warehouse) {
+    if (!warehouse || warehouse.taken) return false;
+    warehouse.taken = true;
+    bazookaAmmo = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP;
+    warehouse.group.userData.pickup.visible = false;
+    // Le ramassage n'est définitivement consommé que lorsque les deux
+    // entrepôts de la course ont été traversés.
+    bazookaPickupTaken = bazookaWarehouses.every((item) => item.taken);
+    score += 250;
+    pickedUp += 1;
+    audioRef?.current?.pickup?.('bazooka', { ready: true });
+    getCallbacks().pickup?.({
+      type: 'bazooka',
+      ammo: bazookaAmmo,
+      progress: bazookaAmmo,
+      chargeCost: CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+      ready: true,
+      newlyReady: true,
+      autoActivated: false,
+      lane: bazookaPickupLane,
+      warehouse: warehouse.index,
+    });
+    getCallbacks().effect?.({ type: 'bazooka-pickup', ammo: bazookaAmmo, lane: bazookaPickupLane, warehouse: warehouse.index });
+    emitHud(true);
+    return true;
+  }
+
+  function updateBazookaWarehouses(previousDistance, dt = 0) {
+    for (const warehouse of bazookaWarehouses) {
+      placeBazookaWarehouse(warehouse);
+      if (!warehouse.group.visible || warehouse.taken) continue;
+      const { pickup, pickupRing, pickupHalo, pickupBeam, rocket } = warehouse.group.userData;
+      pickup.rotation.y += Math.max(0, dt) * 0.65;
+      rocket.rotation.z = Math.sin(clockTime * 1.8) * 0.05;
+      pickupRing.rotation.z += Math.max(0, dt) * 0.82;
+      pickupHalo.material.opacity = 0.28 + (Math.sin(clockTime * 3.2) + 1) * 0.14;
+      pickupBeam.material.opacity = 0.2 + (Math.sin(clockTime * 4.1) + 1) * 0.18;
+      if (cityRushBazookaPickupCanUse({
+        previousDistance,
+        nextDistance: distance,
+        pickupDistance: warehouse.trackDistance,
+        playerLane,
+        pickupLane: bazookaPickupLane,
+        used: warehouse.taken,
+      })) {
+        collectBazookaWarehouse(warehouse);
+        placeBazookaWarehouse(warehouse);
+      }
+    }
+  }
+
+  function setMiniGaragesToStart() {
+    miniGarages.forEach((garage, index) => {
+      garage.trackDistance = miniGarageTrackDistances[index];
+      garage.used = false;
+      garage.group.userData.used = false;
+      placeMiniGarage(garage);
+    });
+  }
+
+  function useMiniGarage(garage) {
+    const previousStars = wantedLevel;
+    const healthBefore = playerHealth;
+    playerHealth = cityRushMiniGarageRepair(playerHealth, playerMaxHealth);
+    playerHealthFlash = 0;
+    garage.used = true;
+    policeDestroyedByPlayer = 0;
+    wantedLevel = cityRushMiniGarageWantedLevel(previousStars);
+    garage.group.userData.used = true;
+    garage.group.visible = false;
+    // À trois étoiles ou moins, le portique coupe entièrement la poursuite.
+    // À quatre ou cinq, elle continue au niveau réduit (4 → 3, 5 → 4).
+    const pursuersReleased = wantedLevel === 0
+      ? releasePolicePursuit({ targetId: 'player' })
+      : 0;
+    const remaining = miniGarages.filter((item) => !item.used).length;
+    const healthRestored = playerHealth - healthBefore;
+    // Le passage à l'atelier s'entend : pont élévateur, clé à chocs, capot
+    // qui claque, et l'accord de « réparée » quand la coque a repris des points.
+    audioRef?.current?.garageRepair?.({ pan: vehiclePan('player'), restored: healthRestored });
+    getCallbacks().effect?.({
+      type: 'mini-garage-used',
+      garage: garage.index,
+      previousStars,
+      stars: wantedLevel,
+      remaining,
+      lap,
+      healthBefore,
+      health: playerHealth,
+      maxHealth: playerMaxHealth,
+      healthRestored,
+      pursuersReleased,
+    });
+    emitHud(true);
+  }
+
+  function updateMiniGarages(previousDistance) {
+    for (const garage of miniGarages) {
+      // Hors course (compte à rebours, épave, arrivée) ou en Sprint, la porte
+      // reste ancrée à son repère et masquée : elle ne dérive pas vers les
+      // tours suivants.
+      if (!miniGarageAvailable(garage)) {
+        placeMiniGarage(garage);
+        continue;
+      }
+      const garageExitDistance = garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
+      if (cityRushMiniGarageCanUse({
+        previousDistance,
+        nextDistance: distance,
+        garageExitDistance,
+        playerLane,
+        garageLanes: garage.lanes,
+        sprint,
+        used: garage.used,
+      })) {
+        // La voiture sort du portique : les étoiles s'effacent, la coque est
+        // réparée, la poursuite est abandonnée et le décor disparaît derrière
+        // elle, une seule fois par garage.
+        useMiniGarage(garage);
+        continue;
+      }
+      // Une porte ratée revient au même repère dans la boucle suivante.
+      while (!garage.used && garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance) {
+        garage.trackDistance += CITY_RUSH_LAP_LENGTH;
+      }
+      placeMiniGarage(garage);
+    }
   }
 
   function updateRamps(dt) {
@@ -1936,11 +3239,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lane: racer.lane,
         x: racer.x,
         health: racer.health,
-        maxHealth: racer.maxHealth || CITY_RUSH_RACER_HEALTH,
+        maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
         healthFlash: racer.healthFlash || 0,
         wrecked: Boolean(racer.wrecked),
+        // Recherche propre à chaque pilote : celle de la course pour le joueur,
+        // celle de son dossier pour un rival. `pursued` allume la pastille de
+        // poursuite du classement.
+        wanted: Math.max(0, Math.floor(Number(racer.wantedLevel) || 0)),
+        pursued: racer.id !== 'player' && cityRushRivalPursued(racer.wantedLevel || 0),
       })),
       inventory: { ...inventory },
+      bazookaAmmo,
+      bazookaPickupTaken,
+      bazookaPickupsTaken: bazookaWarehouses.filter((warehouse) => warehouse.taken).length,
+      bazookaPickupsTotal: bazookaWarehouses.length,
+      bazookaEnabled: bazookaWarehouseEnabled,
+      // Distance du prochain entrepôt à traverser (30 % puis 65 % de la
+      // course) ; `bazookaWarehouseGap` garde le même repère pour les
+      // consommateurs historiques.
+      bazookaNextDistance: bazookaWarehouseEnabled ? nextBazookaWarehouseGap() : null,
+      bazookaWarehouseGap: bazookaWarehouseEnabled ? nextBazookaWarehouseGap() : null,
       playerLane,
       slowLeft: Math.max(playerSlowLeft, playerBlueShotSlowLeft),
       trafficImpactLeft: playerTrafficImpactLeft,
@@ -1953,7 +3271,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncomingTime: playerOncomingTime,
       // La santé du joueur s'affiche dès le début effectif de la course.
       playerHealth: playerHealthActive ? playerHealth : null,
-      playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+      playerHealthMax: playerMaxHealth,
       playerHealthActive,
       playerHealthFlash,
       score,
@@ -1961,6 +3279,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       leader: standings.leader?.name || '—',
       wantedLevel,
       wantedMaxStars: CITY_RUSH_WANTED_MAX_STARS,
+      miniGaragesActive: miniGarages.some((garage) => {
+        const gap = garage.trackDistance - distance;
+        return !garage.used && miniGarageAvailable(garage) && gap <= CITY_RUSH_MINI_GARAGE_HUD_RANGE;
+      }),
+      miniGaragesRemaining: miniGarages.filter((garage) => !garage.used).length,
+      miniGaragesTotal: CITY_RUSH_MINI_GARAGE_COUNT,
+      miniGarageNextDistance: nextMiniGarageGap(),
       oncomingPoliceTurnarounds: oncomingCars
         .filter((car) => isCityRushPoliceTrafficType(car.type) && car.turnaroundState === 'turning')
         .map((car) => ({
@@ -1969,6 +3294,28 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           duration: CITY_RUSH_POLICE_TURNAROUND_DURATION,
           backup: Boolean(car.turnaroundAsBackup),
         })),
+      // La herse des quatre étoiles : sa phase, sa distance devant le pilote et
+      // les voies couvertes (le HUD et les vérifications s'y raccrochent).
+      spikeBlock: spikeBlock.state === 'idle' ? null : {
+        state: spikeBlock.state,
+        gap: Math.round(spikeBlock.distance - distance),
+        lanes: [...spikeBlock.lanes],
+        covered: spikeBlock.lanes.includes(playerLane),
+        slowLeft: playerSpikeSlowLeft,
+        cooldown: Math.round(spikeBlock.cooldownLeft * 10) / 10,
+      },
+      // Les SUV de charge du contresens (voir `updateSuvCharges`).
+      suvCharges: suvCharges.map((charge) => ({
+        id: charge.id,
+        state: charge.destroyed ? 'destroyed' : charge.chargeState,
+        gap: Math.round(charge.distance - distance),
+        lane: charge.lane,
+        locked: Boolean(charge.chargeLocked),
+        rallied: Boolean(charge.rallied),
+        turnedAround: charge.turnaroundState === 'turning',
+        reloadLeft: Math.round(charge.chargeReloadLeft * 10) / 10,
+        destroyed: Boolean(charge.destroyed),
+      })),
       // Les voitures de police ne sont pas classées : elles sont transmises à
       // part pour le compteur de poursuite (et jamais au classement des pilotes).
       police: activePursuers().map((police) => ({
@@ -1986,7 +3333,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         turnedAround: police.origin === 'oncoming',
         wantedBackup: Boolean(police.wantedBackup),
         health: police.health,
-        maxHealth: CITY_RUSH_POLICE_HEALTH,
+        maxHealth: police.maxHealth || CITY_RUSH_POLICE_HEALTH,
         armed: { [CITY_RUSH_POWERS.PISTOL]: isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL) },
         distance: Math.round(police.distance),
         // Distance non arrondie : les vérifications de collision la comparent
@@ -1994,6 +3341,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         rawDistance: police.distance,
         lane: police.lane,
         x: police.currentX,
+        isJumping: Boolean(police.jumpState?.active),
+        jumpHeight: Number(police.currentJumpY) || 0,
         mode: police.mode,
         // Sonnée par un tir ou ralentie par un choc : la berline est hors jeu
         // quelques secondes — la page peut le montrer, les vérifications ne la
@@ -2091,6 +3440,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function reset() {
     active = false;
     releasePistolKey();
+    releaseSteerKeys();
     clearVisualEffects();
     elapsed = 0;
     distance = 0;
@@ -2105,18 +3455,30 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerBlueShotSlowLeft = 0;
     playerTrafficRecoverLeft = 0;
     playerTrafficImpactLeft = 0;
+    trafficContacts.clear();
     playerBoostLeft = 0;
     playerStunLeft = 0;
     playerStunTotal = 0;
     playerSkidLeft = 0;
     playerSkidDuration = 0.85;
     playerSkidSide = 1;
+    playerSuvImpactLeft = 0;
+    playerSuvImpactSide = 1;
+    playerSpikeSlowLeft = 0;
     playerCleanLineTime = 0;
     playerOncomingTime = 0;
     playerOncomingStage = 'none';
     score = 0;
     pickedUp = 0;
     inventory = createCityRushInventory();
+    bazookaAmmo = 0;
+    bazookaPickupTaken = false;
+    // Les deux entrepôts repartent à leur repère (30 % et 65 % de la course)
+    // et leur marqueur jaune redevient visible.
+    bazookaWarehouses.forEach((warehouse, index) => {
+      warehouse.trackDistance = bazookaTrackDistances[index];
+      warehouse.taken = false;
+    });
     finished = false;
     currentSpeed = 0;
     playerCurrentSpeed = 0;
@@ -2130,12 +3492,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     watchHelicopter.visible = false;
     watchHeliLeaving = 0;
     watchHeliAge = 0;
-    playerHealth = CITY_RUSH_PLAYER_HEALTH;
+    playerHealth = playerMaxHealth;
     playerHealthActive = false;
     playerHealthFlash = 0;
     playerCollisionCooldownLeft = 0;
     playerWrecked = false;
     playerWreckLeft = 0;
+    storyBreakdownWarned = false;
+    storyBreakdownActive = false;
+    storyBreakdownLeft = 0;
+    storyBreakdownSmokeTimer = 0;
+    storyRankAtBreakdown = null;
+    playerShotsFired = 0;
+    playerHitsTaken = 0;
     playerJumpState = { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0, overpassTriggered: false };
     playerLandingBounce = 0;
     playerDropShadow.visible = false;
@@ -2146,10 +3515,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     racers.forEach((racer, index) => {
       racer.distance = 0;
       racer.lap = 1;
-      racer.health = CITY_RUSH_RACER_HEALTH;
+      racer.health = racer.maxHealth || cityRushCarMaxHealth(racer.profile);
       racer.healthFlash = 0;
       racer.wrecked = false;
       racer.finalLapAnnounced = false;
+      // Nouvelle course, nouveau casier : aucun rival n'est recherché.
+      racer.wantedLevel = 0;
       racer.currentSpeed = 0;
       racer.lane = defaultLanes[index + 1];
       racer.currentX = laneX(racer.lane);
@@ -2187,6 +3558,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.rallied = false;
       traffic.destroyed = false;
       traffic.health = isCityRushPoliceTrafficType(traffic.type) ? CITY_RUSH_POLICE_HEALTH : null;
+      traffic.damageSmokeTimer = 0;
+      animatePoliceDamageFire(traffic.mesh, 0, 0);
       traffic.distance = 82 + index * (trafficCars.length > 3 ? 68 : 180) + randomRange(-7, 7);
       traffic.lane = forwardLanes[index % forwardLanes.length];
       traffic.currentX = laneX(traffic.lane);
@@ -2215,7 +3588,32 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming.pushAsideElapsed = 0;
       oncoming.pushAsideStartX = null;
       oncoming.lastPassGap = undefined;
+      if (oncoming.charge) {
+        // Les SUV de charge repartent dormants : ils n'apparaîtront qu'à cinq
+        // étoiles, au loin devant la grille (voir `updateSuvCharges`).
+        oncoming.chargeState = 'dormant';
+        oncoming.chargeReloadLeft = 0;
+        oncoming.chargeAnnounced = false;
+        oncoming.chargeLocked = false;
+        oncoming.baseSpeed = 0;
+        oncoming.currentSpeed = 0;
+        oncoming.health = cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE);
+        oncoming.maxHealth = oncoming.health;
+        oncoming.mesh.visible = false;
+        animatePoliceDamageFire(oncoming.mesh, 0, 0);
+        oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
+        oncoming.destroyed = false;
+        oncoming.rallied = false;
+        oncoming.turnaroundState = null;
+        oncoming.turnaroundElapsed = 0;
+        oncoming.turnaroundTargetId = null;
+        oncoming.turnaroundAsBackup = false;
+        oncoming.turnaroundTargetLane = null;
+        return;
+      }
       oncoming.health = isCityRushPoliceTrafficType(oncoming.type) ? CITY_RUSH_POLICE_HEALTH : null;
+      oncoming.damageSmokeTimer = 0;
+      animatePoliceDamageFire(oncoming.mesh, 0, 0);
       oncoming.destroyed = false;
       oncoming.rallied = false;
       oncoming.turnaroundState = null;
@@ -2229,9 +3627,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
       oncoming.mesh.userData.beacons.forEach((beacon) => { beacon.material.opacity = 1; });
     });
+    // La herse de la course précédente est rangée : le dispositif sera remonté
+    // au prochain passage à quatre étoiles.
+    dismissSpikeBlock();
     // L'escouade et ses réserves repartent pour la prochaine course.
     policeDeployed = false;
+    policePursuitDropped = false;
+    // Les berlines lâchées en cours de route quittent la piste avec la course.
+    clearPatrolPolice();
     wantedLevel = effectivePoliceFromStart ? CITY_RUSH_WANTED_MAX_STARS : 0;
+    policeDestroyedByPlayer = 0;
+    policeDestroyedTotal = 0;
     nextPoliceUnitNumber = policeCars.length + 1;
     policeReinforcementTimer = 0;
     policeReinforcementQueue.length = 0;
@@ -2260,9 +3666,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.stunTotal = 0;
       police.skidLeft = 0;
       police.skidDuration = 0.85;
+      police.skidSide = 1;
+      police.skidSmokeTimer = 0;
       police.powerCooldown = 0;
-      police.health = CITY_RUSH_POLICE_HEALTH;
+      police.health = cityRushPoliceMaxHealth(police.vehicleType);
       police.healthFlash = 0;
+      police.damageSmokeTimer = 0;
+      animatePoliceDamageFire(police.mesh, 0, 0);
       police.mode = 'hunt';
       police.blockLeft = 0;
       police.blockArmed = true;
@@ -2278,11 +3688,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     audioRef?.current?.policeSirenOff?.();
     setRowsToStart();
     setRampsToStart();
+    setMiniGaragesToStart();
     startLine.setLights(0);
     startLine.setFinalLap(false);
     startLine.setBoard(`TOUR 1/${effectiveLaps}`, lapBoardSubtitle(1));
     syncSprintCheckpointDisplay();
     placeTrack();
+    bazookaWarehouses.forEach(placeBazookaWarehouse);
     emitHud(true);
   }
 
@@ -2322,6 +3734,34 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
+  function bazookaPoliceCandidates({ includeHidden = false } = {}) {
+    const vehicles = [
+      ...activePursuers(),
+      ...trafficCars.filter((car) => isCityRushPoliceTrafficType(car.type) && !car.rallied && !car.destroyed),
+      ...oncomingCars.filter((car) => isCityRushPoliceTrafficType(car.type) && !car.rallied && !car.destroyed),
+    ];
+    const seen = new Set();
+    return vehicles
+      .filter((vehicle) => {
+        if (!vehicle?.id || seen.has(vehicle.id)) return false;
+        seen.add(vehicle.id);
+        return true;
+      })
+      .map((vehicle) => getRaceVehicleState(vehicle.id))
+      .filter((vehicle) => vehicle?.isPolice && vehicle.racer && (includeHidden || vehicle.visible !== false));
+  }
+
+  function firstPoliceOnLane(attackerId = 'player') {
+    const attacker = getRaceVehicleState(attackerId);
+    if (!attacker) return null;
+    return cityRushBazookaTarget({
+      attackerDistance: attacker.distance,
+      attackerLane: attacker.lane,
+      police: bazookaPoliceCandidates(),
+      maxDistance: CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+    });
+  }
+
   function getVehicleMesh(vehicleId) {
     if (vehicleId === 'player') return playerCar;
     const racer = racers.find((item) => item.id === vehicleId);
@@ -2348,7 +3788,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Une berline détruite n'est plus un état de course : les tirs en vol
     // continuent tout droit à travers l'emplacement de l'épave.
     if (police && police.health > 0) {
-      return { id: police.id, name: police.name, distance: police.distance, lane: police.lane, x: police.currentX, mesh: police.mesh, racer: police, isPolice: true };
+      return { id: police.id, name: police.name, distance: police.distance, lane: police.lane, x: police.currentX, mesh: police.mesh, visible: police.mesh.visible, racer: police, isPolice: true };
     }
     const trafficVehicle = [...trafficCars, ...oncomingCars].find((item) => item.id === vehicleId);
     if (trafficVehicle && !trafficVehicle.rallied && !trafficVehicle.destroyed
@@ -2361,10 +3801,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lane: trafficVehicle.lane,
         x: trafficVehicle.currentX,
         mesh: trafficVehicle.mesh,
+        visible: trafficVehicle.mesh.visible,
         racer: trafficVehicle,
         isPolice,
         isTrafficPolice: isPolice,
-        isUndercoverPolice: trafficVehicle.type === 'undercover-police',
+        isTaxi: trafficVehicle.type === 'taxi',
         isCivilianTraffic: !isPolice,
       };
     }
@@ -2458,8 +3899,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function spawnActionPulse(sourceId, type) {
     const source = getVehicleMesh(sourceId);
     const rule = CITY_RUSH_POWER_RULES[type];
-    if (!source || !rule) return;
-    const color = Number.parseInt(rule.color.slice(1), 16);
+    if (!source || (!rule && type !== 'bazooka')) return;
+    const color = type === 'bazooka' ? 0xffd21f : Number.parseInt(rule.color.slice(1), 16);
     const mesh = makeActionPulse(color);
     mesh.position.copy(source.position).add(new THREE.Vector3(0, 1.1, 0));
     mesh.scale.setScalar(0.18);
@@ -2478,7 +3919,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     data.baseX = x;
     data.baseY = y;
     data.specs = reduceMotion ? [] : cityRushPickupBurstShards(CITY_RUSH_PICKUP_BURST_SHARDS, Math.random);
-    pickupBurstColor.set(CITY_RUSH_POWER_RULES[type]?.color || (type === CITY_RUSH_PICKUPS.BOOST ? CITY_RUSH_TRACK_BOOST_COLOR : '#ffffff'));
+    pickupBurstColor.set(pickupColor(type, '#ffffff'));
     data.shardMaterial.color.copy(pickupBurstColor);
     data.shardMaterial.opacity = 1;
     data.ringMaterial.color.copy(pickupBurstColor);
@@ -2533,13 +3974,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Le flot lent, le trafic venant en face **et** les berlines de police :
   // tout véhicule avec lequel une voiture de course peut faire des étincelles.
   function getImpactMesh(vehicleId) {
+    // La herse n'est pas une voiture : ses étincelles se jouent sur le tapis de
+    // la première voie couverte, à la ligne du dispositif.
+    if (vehicleId === SPIKE_BLOCK_ID) return spikeBlock.meshes?.laneGroups?.[0] || null;
     return trafficCars.find((item) => item.id === vehicleId)?.mesh
       || oncomingCars.find((item) => item.id === vehicleId)?.mesh
       || activePursuerById(vehicleId)?.mesh
       || null;
   }
 
-  function spawnTrafficImpact(racerId, trafficId) {
+  function spawnTrafficImpact(racerId, trafficId, intensity = 1) {
     const racer = getVehicleMesh(racerId);
     const traffic = getImpactMesh(trafficId);
     if (!racer || !traffic || !trafficImpacts.length) return;
@@ -2548,20 +3992,41 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const data = effect.userData;
     data.active = true;
     data.age = 0;
+    data.intensity = clamp(Number(intensity) || 1, 0.8, 2.2);
     data.racerId = racerId;
     data.trafficId = trafficId;
     data.flashMaterial.opacity = 1;
     data.ringMaterial.opacity = 0.9;
     data.sparkMaterial.opacity = 1;
-    data.flash.scale.setScalar(0.42);
-    data.ring.scale.setScalar(0.28);
+    data.flash.scale.setScalar(0.42 * data.intensity);
+    data.ring.scale.setScalar(0.28 * data.intensity);
     data.sparks.forEach((spark) => {
       spark.visible = true;
-      spark.scale.set(1, 1, 0.55);
+      spark.scale.set(1, 1, 0.55 * data.intensity);
     });
     effect.visible = true;
     effect.position.lerpVectors(racer.position, traffic.position, 0.5);
     effect.position.y = 0;
+  }
+
+  // Pluie d'étincelles au point de contact : le SUV est assez lourd pour
+  // arracher quelques gerbes orange en plus du flash et de l'onde de choc.
+  function spawnPoliceSuvCollisionSparks(police) {
+    if (!police?.mesh) return;
+    scratch.copy(playerCar.position).lerp(police.mesh.position, 0.5);
+    scratch.y = Math.max(0.35, scratch.y + 0.35);
+    for (let spark = 0; spark < 9; spark += 1) {
+      const angle = (spark / 9) * Math.PI * 2 + (Math.random() - 0.5) * 0.22;
+      const reach = 2.4 + Math.random() * 2.8;
+      smoke.emit(scratch, {
+        color: spark % 3 === 0 ? 0xffe07a : 0xff8a2a,
+        opacity: 0.94,
+        scale: 0.16 + Math.random() * 0.08,
+        grow: 1.2,
+        life: 0.34 + Math.random() * 0.12,
+        velocity: [Math.cos(angle) * reach, 1.8 + Math.random() * 2.4, Math.sin(angle) * reach],
+      });
+    }
   }
 
   function updateTrafficImpact(effect, dt) {
@@ -2569,24 +4034,25 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!data.active) return;
     data.age += dt;
     const progress = clamp(data.age / CITY_RUSH_TRAFFIC_IMPACT_DURATION, 0, 1);
+    const intensity = clamp(Number(data.intensity) || 1, 0.8, 2.2);
     const racer = getVehicleMesh(data.racerId);
     const traffic = getImpactMesh(data.trafficId);
     if (racer && traffic) effect.position.lerpVectors(racer.position, traffic.position, 0.5);
     effect.position.y = 0;
 
     const flashLife = clamp(data.age / 0.14, 0, 1);
-    data.flash.scale.setScalar(0.42 + flashLife * 0.85);
+    data.flash.scale.setScalar((0.42 + flashLife * 0.85) * intensity);
     data.flashMaterial.opacity = (1 - flashLife) * 0.95;
     const ringLife = smoothstep(progress);
-    data.ring.scale.setScalar(0.28 + ringLife * 2.35);
+    data.ring.scale.setScalar((0.28 + ringLife * 2.35) * intensity);
     data.ringMaterial.opacity = (1 - progress) * 0.82;
     data.sparkMaterial.opacity = (1 - progress) * 0.95;
     data.sparks.forEach((spark) => {
       const angle = spark.userData.angle;
-      const reach = 0.42 + smoothstep(clamp(data.age / 0.62, 0, 1)) * 1.45;
+      const reach = (0.42 + smoothstep(clamp(data.age / 0.62, 0, 1)) * 1.45) * intensity;
       spark.position.set(Math.cos(angle) * reach, 0.55 + Math.sin(angle * 1.7) * spark.userData.lift * reach, Math.sin(angle) * reach);
       spark.rotation.set(data.age * 9, angle + data.age * 4, data.age * 7);
-      spark.scale.set(1, 1, Math.max(0.2, 1 - progress * 0.7));
+      spark.scale.set(1, 1, Math.max(0.2, 1 - progress * 0.7) * intensity);
     });
     if (progress >= 1) {
       data.active = false;
@@ -2643,31 +4109,82 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return group;
   }
 
+  function makeBazookaTracer() {
+    const group = new THREE.Group();
+    group.name = 'city-rush-bazooka-projectile';
+    const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x343a43, toneMapped: false });
+    const noseMaterial = new THREE.MeshBasicMaterial({ color: 0xffd21f, toneMapped: false });
+    const finMaterial = new THREE.MeshBasicMaterial({ color: 0xffa91f, toneMapped: false });
+    const flameMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff7a1f, transparent: true, opacity: 0.92, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+    });
+    const burstMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffdf69, transparent: true, opacity: 1, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+    });
+    const core = new THREE.Group();
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.82, 8), bodyMaterial);
+    tube.rotation.x = -Math.PI / 2;
+    core.add(tube);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.34, 8), noseMaterial);
+    nose.rotation.x = -Math.PI / 2;
+    nose.position.z = -0.57;
+    core.add(nose);
+    for (const side of [-1, 1]) {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.065, 0.29), finMaterial);
+      fin.position.set(side * 0.18, 0, 0.34);
+      core.add(fin);
+    }
+    const trail = new THREE.Group();
+    const exhaust = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.05, 8), flameMaterial);
+    exhaust.rotation.x = Math.PI / 2;
+    exhaust.position.z = 0.78;
+    trail.add(exhaust);
+    const hotCore = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.7, 7), noseMaterial);
+    hotCore.rotation.x = Math.PI / 2;
+    hotCore.position.z = 0.72;
+    trail.add(hotCore);
+    const burst = new THREE.Group();
+    const flash = new THREE.Mesh(new THREE.SphereGeometry(0.36, 10, 8), burstMaterial);
+    burst.add(flash);
+    burst.visible = false;
+    group.add(core, trail, burst);
+    group.userData = { core, trail, burst, burstMaterial };
+    return group;
+  }
+
   function fireStraightShot(attackerId, target, kind = CITY_RUSH_POWERS.BLUE_SHOT) {
     const attacker = getRaceVehicleState(attackerId);
     if (!attacker) return false;
     const muzzleOffset = 1.12;
     const isPistol = kind === CITY_RUSH_POWERS.PISTOL;
-    // Le tir rouge part toujours tout droit, sans viser : pas de riposte
-    // guidée vers l'arrière. Le tir bleu peut encore inverser le sens.
-    const direction = isPistol
+    const isBazooka = kind === 'bazooka';
+    // Mitrailleuse et bazooka : toujours vers l'avant. Le tir bleu peut encore
+    // inverser le sens lorsqu'il riposte à une voiture déjà dépassée.
+    const direction = isPistol || isBazooka
       ? 1
       : (Number.isFinite(Number(target?.distance)) && Number(target.distance) < attacker.distance ? -1 : 1);
     const startTrackDistance = attacker.distance + (direction * muzzleOffset) / SCALE;
-    const mesh = isPistol
-      ? makeBulletTracer({ coreColor: 0xffe08a, trailColor: 0xff526e, burstColor: 0xff9aa8 })
-      : makeBulletTracer({ coreColor: 0xe7faff, trailColor: 0x48b9ff, burstColor: 0x9be5ff });
+    const mesh = isBazooka
+      ? makeBazookaTracer()
+      : isPistol
+        ? makeBulletTracer({ coreColor: 0xffe08a, trailColor: 0xff526e, burstColor: 0xff9aa8 })
+        : makeBulletTracer({ coreColor: 0xe7faff, trailColor: 0x48b9ff, burstColor: 0x9be5ff });
     mesh.rotation.y = direction > 0 ? 0 : Math.PI;
     scene.add(mesh);
+    const shotSpeed = isBazooka ? CITY_RUSH_BAZOOKA_PROJECTILE_SPEED : CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED;
     straightShots.push({
       mesh,
       attackerId,
       kind,
-      unguided: isPistol,
+      bazooka: isBazooka,
+      unguided: isPistol || isBazooka,
       targetId: isPistol ? null : (target?.id || null),
       lane: attacker.lane,
       x: laneX(attacker.lane),
       direction,
+      speed: shotSpeed,
       startTrackDistance,
       previousTrackDistance: startTrackDistance,
       trackDistance: startTrackDistance,
@@ -2678,6 +4195,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       hitPoint: new THREE.Vector3(),
     });
     if (isPistol) audioRef?.current?.machineGun({ pan: vehiclePan(attackerId) });
+    else if (isBazooka) audioRef?.current?.missileLaunch?.({ pan: vehiclePan(attackerId) });
     else audioRef?.current?.gunshot({ pan: vehiclePan(attackerId) });
     return true;
   }
@@ -2698,7 +4216,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       source,
       damage: lost,
       health: racer.health,
-      maxHealth: CITY_RUSH_RACER_HEALTH,
+      maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
       critical: racer.health <= CITY_RUSH_PLAYER_HEALTH_CRITICAL,
       ...extra,
     });
@@ -2707,6 +4225,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.stunLeft = CITY_RUSH_WRECK_SECONDS;
       racer.stunTotal = CITY_RUSH_WRECK_SECONDS;
       racer.boostLeft = 0;
+      // La police renonce à un adversaire à terre : le dossier se referme
+      // (plus de pastille de poursuite au classement) et ses poursuivants —
+      // l'unité réservée comme la berline du trafic rappelée par un carambolage
+      // — reprennent une conduite normale au lieu de tourner autour d'une épave.
+      if (racer.wantedLevel > 0) {
+        racer.wantedLevel = 0;
+        releasePolicePursuit({ targetId: racer.id });
+      }
       getCallbacks().effect?.({ type: 'racer-wrecked', target: racer.name, targetId: racer.id, attackerId, health: 0 });
     }
     emitHud(true);
@@ -2725,10 +4251,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         type: 'pistol-hit-player',
         attacker: attacker?.name || 'RIVAL',
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       });
     } else if (target.isPolice) {
-      // Police marquée ou banalisée : trois étoiles et dégâts de coque.
+      // Police marquée ou banalisée : un tir réussi monte à trois étoiles ;
+      // les destructions font ensuite passer à quatre puis cinq.
       damagePolice(target.racer, CITY_RUSH_POWERS.PISTOL, attackerId);
     } else if (target.isCivilianTraffic) {
       // Une voiture civile touchée déclenche la recherche, sans barre de vie.
@@ -2794,10 +4321,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     policeExplosions.push(mesh);
   }
 
-  function spawnPoliceExplosion(worldPosition, pan = 0) {
+  function spawnPoliceExplosion(worldPosition, pan = 0, { sound = true } = {}) {
     const mesh = makeImpact(shared);
     poseExplosion(mesh, worldPosition);
-    audioRef?.current?.explosion({ pan });
+    if (sound) audioRef?.current?.explosion({ pan });
     cameraKick = Math.max(cameraKick, 0.32);
     // Fumée noire, braises et débris : l'épave brûle au milieu de la voie.
     for (let puff = 0; puff < 5; puff += 1) {
@@ -2823,6 +4350,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.health = 0;
     police.healthFlash = 0;
     const byPlayer = attackerId === 'player';
+    if (byPlayer) policeDestroyedTotal += 1;
     // Le panoramique du boum se calcule avant la sortie de piste.
     const pan = vehiclePan(police.id);
     // L'escouade sort de la chasse ; la berline rappelée est ôtée de la liste.
@@ -2859,6 +4387,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const needsReplacement = activePlayerPursuerSlots() + policeReinforcementQueue.length < requiredPlayerPursuerSlots();
     const reinforcementScheduled = Boolean(police.squad && needsReplacement && !playerWrecked
       && queuePoliceReinforcement(police));
+    // Une unité réservée à un rival se relève tant que le dossier du rival
+    // reste ouvert : un rival recherché n'échappe pas à la police parce qu'une
+    // berline a brûlé sur un tremplin. La relève est demandée par
+    // `registerPoliceRetaliation`, qui repasse à chaque contact — et à chaque
+    // image du dernier tour si le rival mène la course (`chaseLastLapLeader`).
+    if (!police.squad && police.reserveForId
+      && policeRetaliationByAttacker.get(police.reserveForId) === police) {
+      police.reinforcementAt = elapsed + CITY_RUSH_POLICE_REINFORCEMENT_DELAY;
+    }
     // Tête-à-queue de deux tours en ralentissant, explosion à la fin de la
     // glissade, puis carcasse calcinée laissée en piste, en feu. L'explosion
     // (et son boum) arrive donc au terme du tête-à-queue, pas ici.
@@ -2866,14 +4403,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (byPlayer) {
       score += CITY_RUSH_POLICE_DESTROY_SCORE;
       cameraKick = Math.max(cameraKick, 0.42);
+      raiseWantedLevel({ police: true, destroyed: true, reason: 'police-destroyed' });
     }
     getCallbacks().effect?.({
       type: 'police-destroyed',
+      vehicleType: police.vehicleType || police.type || 'police',
       id: police.id,
       police: police.name,
       trafficPolice: Boolean(police.rallied || civilianTrafficPolice || civilianOncomingPolice),
       health: police.health,
-      maxHealth: CITY_RUSH_POLICE_HEALTH,
+      maxHealth: police.maxHealth || CITY_RUSH_POLICE_HEALTH,
       source,
       byPlayer,
       // L'agonie est annoncée avec l'explosion : deux tours de tête-à-queue en
@@ -2884,6 +4423,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Auteur du dernier dégât : la page peut le nommer, et les vérifications
       // s'assurent qu'aucune berline n'est détruite par une autre berline.
       attackerId: attackerId || null,
+      policeDestroyedByPlayer,
+      wantedLevel,
       reinforcementScheduled,
       lap,
     });
@@ -2983,6 +4524,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     const pursuit = police.mesh.userData.pursuit;
     if (pursuit) pursuit.glowMaterial.opacity = 0;
+    // À la coque percée, les petits feux de dégâts deviennent un embrasement
+    // complet qui accompagne la berline pendant son tête-à-queue.
+    animatePoliceDamageFire(police.mesh, 1, clockTime);
     police.mesh.visible = true;
     // Réservée : sa relève ne peut pas reprendre le maillage avant
     // l'explosion, sinon la berline disparaîtrait en plein tête-à-queue.
@@ -2997,13 +4541,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Fin du tête-à-queue : la berline explose et sa carcasse calcinée prend sa
   // place, au même endroit et dans le même sens. C'est elle qui reste visible,
   // en feu, jusqu'à sortir du cadre.
-  function explodePoliceWreck(wreck) {
+  function explodePoliceWreck(wreck, { sound = true } = {}) {
     if (!wreck || wreck.exploded) return;
     wreck.exploded = true;
     wreck.spinLeft = 0;
     wreck.speed = 0;
     wreck.burnElapsed = 0;
     const worldPosition = wreckWorldPosition(wreck, wreckScratch);
+    if (wreck.mesh) animatePoliceDamageFire(wreck.mesh, 0, clockTime);
     if (wreck.mesh && policeWreckMeshFree(wreck)) wreck.mesh.visible = false;
     // Le maillage retourne au parc : la relève de l'escouade, retenue pendant
     // le tête-à-queue, peut maintenant reprendre la piste.
@@ -3018,7 +4563,69 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     husk.visible = true;
     animatePoliceWreckHusk(husk, 1, clockTime);
     wreck.husk = husk;
-    spawnPoliceExplosion(worldPosition, wreck.pan);
+    spawnPoliceExplosion(worldPosition, wreck.pan, { sound });
+  }
+
+  function spawnBazookaImpact(worldPosition, pan = 0, { trackDistance = distance, trackX = 0 } = {}) {
+    const mesh = makeImpact(shared, { bazooka: true });
+    mesh.userData.bazooka = true;
+    mesh.userData.trackDistance = Number(trackDistance);
+    mesh.userData.trackX = Number(trackX) || 0;
+    poseExplosion(mesh, worldPosition);
+    audioRef?.current?.explosion?.({ pan });
+    cameraKick = Math.max(cameraKick, reduceMotion ? 0.35 : 1.45);
+    for (let puff = 0; puff < 12; puff += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const reach = 2.8 + Math.random() * BAZOOKA_EXPLOSION_RADIUS;
+      smoke.emit(worldPosition, {
+        color: puff % 3 === 0 ? 0xffb036 : 0x37333c,
+        opacity: puff % 3 === 0 ? 0.86 : 0.56,
+        scale: 0.6 + Math.random() * 0.55,
+        grow: 2.5,
+        life: 0.95 + Math.random() * 0.35,
+        velocity: [Math.cos(angle) * reach, 1.6 + Math.random() * 2.2, Math.sin(angle) * reach],
+      });
+    }
+  }
+
+  function applyBazookaImpact(target, attackerId = 'player') {
+    if (attackerId !== 'player' || !target?.isPolice || !target.racer) return false;
+    const centerDistance = Number(target.distance);
+    const centerX = Number.isFinite(Number(target.x)) ? Number(target.x) : laneX(target.lane);
+    // Le groupe d'explosion est ancré au niveau de la chaussée : le flash et
+    // le panache montent depuis ce point, tandis que la trace noire reste posée
+    // sur le goudron (elle ne flotte pas à la hauteur du centre de la voiture).
+    const blastPosition = target.mesh.position.clone();
+    const blastPan = vehiclePan(target.id);
+    const victims = bazookaPoliceCandidates({ includeHidden: true }).filter((candidate) => cityRushBazookaBlastContains({
+      centerDistance,
+      centerX,
+      vehicleDistance: candidate.distance,
+      vehicleX: Number.isFinite(Number(candidate.x)) ? Number(candidate.x) : laneX(candidate.lane),
+      radiusCells: CITY_RUSH_BAZOOKA_BLAST_CELLS,
+    }));
+    if (!victims.some((candidate) => candidate.id === target.id)) victims.unshift(target);
+
+    const destroyed = [];
+    for (const candidate of victims) {
+      const police = candidate.racer;
+      if (!police || police.destroyed || police.health <= 0) continue;
+      if (police.active === false && !trafficCars.includes(police) && !oncomingCars.includes(police)) continue;
+      destroyPolice(police, 'bazooka', attackerId);
+      const wreck = policeWrecks.find((item) => item.police === police && !item.exploded);
+      if (wreck) explodePoliceWreck(wreck, { sound: false });
+      destroyed.push(candidate.id);
+    }
+
+    spawnBazookaImpact(blastPosition, blastPan, { trackDistance: centerDistance, trackX: centerX });
+    getCallbacks().effect?.({
+      type: 'bazooka-impact',
+      targetId: target.id,
+      radiusCells: CITY_RUSH_BAZOOKA_BLAST_CELLS,
+      destroyed,
+      count: destroyed.length,
+    });
+    return destroyed.length > 0;
   }
 
   // Le drapeau à damier n'interrompt pas une agonie : une berline encore en
@@ -3057,10 +4664,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           mesh.userData.beacons?.forEach((beacon, beaconIndex) => {
             beacon.material.opacity = Math.floor(clockTime * 9 + beaconIndex) % 2 === 0 ? 1 : 0.16;
           });
+          animatePoliceDamageFire(mesh, 1, clockTime);
           if (mesh.visible && wreck.speed > 0.6 && wreck.smokeTimer <= 0) {
             smoke.emit(mesh.position, {
               color: 0x3a3a44, opacity: 0.5, scale: 0.52, grow: 2.3, life: 0.85,
               velocity: [(Math.random() - 0.5) * 1.8, 1.1 + Math.random() * 0.5, (Math.random() - 0.5) * 1.8],
+            });
+            // Panache noir épais du capot pendant le tête-à-queue, juste
+            // avant l'explosion.
+            policeHoodScratch.set(0, 1.1, -1.3);
+            mesh.localToWorld(policeHoodScratch);
+            smoke.emit(policeHoodScratch, {
+              color: 0x1f1f25, opacity: 0.72, scale: 0.6, grow: 3.0, life: 1.3,
+              velocity: [(Math.random() - 0.5) * 0.8, 2.2 + Math.random() * 0.8, (Math.random() - 0.5) * 0.8],
             });
             wreck.smokeTimer = 0.06;
           }
@@ -3111,44 +4727,59 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const hasHealth = police.health !== null && Number.isFinite(Number(police.health));
     if (hasHealth && Number(police.health) <= 0) return;
     const healthBeforeHit = hasHealth ? Number(police.health) : CITY_RUSH_POLICE_HEALTH;
-    // Un tir sur une patrouille (ou un choc contre elle) déclenche directement
-    // trois étoiles. Une voiture de police venant en face se retourne aussi pour
-    // rejoindre le quota des deux poursuivants.
+    // Tirer sur une patrouille monte à trois étoiles ; la détruire ajoute
+    // ensuite une étoile (la deuxième destruction atteint cinq). Un simple
+    // contact reste lui aussi à trois étoiles. Une patrouille venant en face
+    // se retourne pour rejoindre la poursuite.
     if (attackerId === 'player') {
       const oncoming = oncomingCars.find((vehicle) => vehicle === police);
       if (oncoming) beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: 'player' });
-      raiseWantedLevel({ police: true, reason: source === 'collision' ? 'police-contact' : 'police-shot' });
+      const isShot = source !== 'collision';
+      raiseWantedLevel({ police: true, reason: isShot ? 'police-shot' : 'police-contact' });
     }
-    // Chaque rival reçoit son unité réservée dès son premier tir réussi sur
-    // une voiture de police, même si ce tir détruit sa cible.
-    if (attackerId && attackerId !== 'player') registerPoliceRetaliation(attackerId, source);
+    // Chaque rival reçoit son unité réservée dès son premier tir réussi — ou
+    // son premier carambolage — sur une voiture de police, même si ce tir
+    // détruit sa cible. Le motif distingue le tir du carambolage.
+    if (attackerId && attackerId !== 'player') {
+      registerPoliceRetaliation(attackerId, source, {
+        reason: source === 'collision' ? 'police-contact' : 'police-shot',
+      });
+    }
     police.health = cityRushPoliceDamage(healthBeforeHit, source);
+    const maxHealth = Number(police.maxHealth)
+      || cityRushPoliceMaxHealth(police.vehicleType || police.type)
+      || CITY_RUSH_POLICE_HEALTH;
+    animatePoliceDamageFire(police.mesh, 1 - clamp(police.health / maxHealth, 0, 1), clockTime);
     if (police.health <= 0) {
       destroyPolice(police, source, attackerId);
       return;
     }
     police.healthFlash = 0.28;
     // Le tir rouge retire un seul carré, sans dérapage ni ralentissement.
-    if (source !== CITY_RUSH_POWERS.PISTOL) {
-      police.skidLeft = Math.max(police.skidLeft, 0.4);
-      police.skidDuration = 0.4;
+    // Le bleu garde son petit coup de raquette ; le carambolage, lui, déclenche
+    // la glissade et le changement de voie dans `startPoliceCollisionAnimation`.
+    if (source === CITY_RUSH_POWERS.BLUE_SHOT) {
+      police.skidDuration = Math.max(0.4, Number(police.skidLeft) || 0);
+      police.skidLeft = police.skidDuration;
       police.skidSide = Math.random() < 0.5 ? -1 : 1;
+      police.skidSmokeTimer = 0;
     }
     // Une berline touchée mais encore debout se raconte au pilote qui l'a
     // atteinte : un tir bleu enlève deux points, un tir rouge comme un
     // carambolage à pleine allure un seul — la mitrailleuse n'emporte jamais
     // plus d'un carré, contre une berline comme contre une voiture de course.
-    // Un carambolage coûte aussi un carré au pilote : `extra` porte ce que sa
+    // Un carambolage coûte un carré au pilote (deux contre un SUV) : `extra` porte ce que sa
     // coque a encaissé (voir `applyPoliceCollision`).
     if (attackerId === 'player') {
       getCallbacks().effect?.({
         type: 'police-hit',
+        vehicleType: police.vehicleType || police.type || 'police',
         // Identifiant de la berline touchée : plusieurs patrouilles portent le
         // même nom, et les vérifications suivent leur barre voiture par voiture.
         id: police.id,
         police: police.name,
         health: police.health,
-        maxHealth: CITY_RUSH_POLICE_HEALTH,
+        maxHealth: police.maxHealth || CITY_RUSH_POLICE_HEALTH,
         damage: healthBeforeHit - police.health,
         source,
         remaining: cityRushPoliceShotsLeft(police.health, source),
@@ -3188,7 +4819,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         shot.trackDistance = direction > 0
           ? Math.min(
             shot.maxTrackDistance,
-            shot.startTrackDistance + paced(CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED) * shot.age,
+            shot.startTrackDistance + paced(shot.speed || CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED) * shot.age,
           )
           : Math.max(
             shot.maxTrackDistance,
@@ -3211,20 +4842,39 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           lane: shot.lane,
           fromDistance,
           toDistance,
-          targets: shot.unguided
-            ? laneShotCandidates(shot.attackerId)
-            : activePursuers()
-              .filter((police) => police.id !== shot.attackerId && police.id !== target?.id)
-              .map((police) => getRaceVehicleState(police.id))
-              .filter(Boolean),
+          targets: shot.bazooka
+            ? bazookaPoliceCandidates()
+            : shot.unguided
+              ? laneShotCandidates(shot.attackerId)
+              : activePursuers()
+                .filter((police) => police.id !== shot.attackerId && police.id !== target?.id)
+                .map((police) => getRaceVehicleState(police.id))
+                .filter(Boolean),
         });
         const hitBySweep = Boolean(swept)
-          && (shot.unguided
+          && (shot.bazooka
+            || shot.unguided
             || !crossedTarget
             || Math.abs(Number(swept.distance) - previousProjectileDistance)
               <= Math.abs(Number(target.distance) - previousProjectileDistance));
+        const bazookaProximityHit = !swept && shot.bazooka && !target
+          ? activePursuers()
+            .map((police) => getRaceVehicleState(police.id))
+            .filter((candidate) => candidate
+              && Number(candidate.distance) > fromDistance
+              && Number(candidate.distance) <= toDistance
+              && cityRushBazookaBlastContains({
+                centerDistance: candidate.distance,
+                centerX: shot.x,
+                vehicleDistance: candidate.distance,
+                vehicleX: Number.isFinite(Number(candidate.x)) ? Number(candidate.x) : laneX(candidate.lane),
+                radiusCells: CITY_RUSH_BAZOOKA_BLAST_CELLS,
+              }))
+            .sort((a, b) => Number(a.distance) - Number(b.distance))[0] || null
+          : null;
         const resolveImpact = (hitTarget) => {
-          applyStraightShotHit(hitTarget, shot.attackerId, shot.kind);
+          if (shot.bazooka) applyBazookaImpact(hitTarget, shot.attackerId);
+          else applyStraightShotHit(hitTarget, shot.attackerId, shot.kind);
           shot.phase = 'impact';
           shot.age = 0;
           shot.hitPoint.copy(hitTarget.mesh.position).add(new THREE.Vector3(0, 0.85, 0));
@@ -3236,6 +4886,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
         if (hitBySweep) {
           resolveImpact(swept);
+        } else if (bazookaProximityHit) {
+          resolveImpact(bazookaProximityHit);
+        } else if (shot.bazooka && crossedTarget && target) {
+          resolveImpact(target);
         } else if (!shot.unguided && crossedTarget) {
           if (target.lane === shot.lane) {
             resolveImpact(target);
@@ -3249,7 +4903,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
         if (shot.phase === 'flight') {
           shot.previousTargetDistance = target ? target.distance : null;
-          shot.mesh.position.set(shot.x + trackRelativeX(shot.trackDistance), 0.82 + trackRelativeY(shot.trackDistance), PLAYER_Z - (shot.trackDistance - distance) * SCALE);
+          const shotHeight = shot.bazooka ? 1.1 : 0.82;
+          shot.mesh.position.set(shot.x + trackRelativeX(shot.trackDistance), shotHeight + trackRelativeY(shot.trackDistance), PLAYER_Z - (shot.trackDistance - distance) * SCALE);
           // La traînée reste derrière la balle, y compris en riposte, et suit
           // l'axe local du virage et du relief.
           shot.mesh.rotation.set(trackPitch(shot.trackDistance), trackYaw(shot.trackDistance) + (direction > 0 ? 0 : Math.PI), 0);
@@ -3280,9 +4935,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Explosions des berlines détruites : l'effet s'éteint après sa courte animation.
     for (let index = policeExplosions.length - 1; index >= 0; index -= 1) {
       const explosion = policeExplosions[index];
+      if (explosion.userData.bazooka && Number.isFinite(explosion.userData.trackDistance)) {
+        const trackDistance = explosion.userData.trackDistance;
+        explosion.position.set(
+          explosion.userData.trackX + trackRelativeX(trackDistance),
+          trackRelativeY(trackDistance),
+          PLAYER_Z - (trackDistance - distance) * SCALE,
+        );
+        explosion.rotation.set(trackPitch(trackDistance), trackYaw(trackDistance), 0);
+      }
       explosion.userData.age += dt;
-      animateExplosion(explosion, explosion.userData.age);
-      if (explosion.userData.age > 0.62) {
+      animateExplosion(explosion, explosion.userData.age, explosion.userData.bazooka
+        ? { radius: BAZOOKA_EXPLOSION_RADIUS, scale: 2.05, bazooka: true }
+        : {});
+      const lifetime = explosion.userData.bazooka ? BAZOOKA_SCORCH_SECONDS : 0.62;
+      if (explosion.userData.age > lifetime) {
         explosion.visible = false;
         policeExplosions.splice(index, 1);
       }
@@ -3301,13 +4968,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function usePower(type) {
-    if (sprint || !active || finished || type !== CITY_RUSH_POWERS.PISTOL) return false;
+    if (sprint || !active || finished || !storyWeaponsEnabled || type !== CITY_RUSH_POWERS.PISTOL) return false;
     const consumed = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL);
     if (!consumed.consumed) {
       getCallbacks().effect?.({ type: 'empty', item: CITY_RUSH_POWERS.PISTOL });
       return false;
     }
     inventory = consumed.inventory;
+    playerShotsFired += 1;
     spawnActionPulse('player', CITY_RUSH_POWERS.PISTOL);
     // Tout droit, sans viser : le projectile part même si la voie est vide.
     fireStraightShot('player', null, CITY_RUSH_POWERS.PISTOL);
@@ -3315,8 +4983,22 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return true;
   }
 
+  function useBazooka() {
+    if (sprint || !active || finished || !storyWeaponsEnabled || !bazookaWarehouseEnabled || bazookaAmmo <= 0) return false;
+    const target = firstPoliceOnLane('player');
+    bazookaAmmo -= 1;
+    playerShotsFired += 1;
+    spawnActionPulse('player', 'bazooka');
+    // La roquette part toujours droit devant : elle verrouille uniquement la
+    // première patrouille de la voie, puis son explosion balaie deux cases.
+    fireStraightShot('player', target, 'bazooka');
+    getCallbacks().effect?.({ type: 'bazooka-fired', ammo: bazookaAmmo, targetId: target?.id || null });
+    emitHud(true);
+    return true;
+  }
+
   function useRacerPower(racer) {
-    if (sprint) return false;
+    if (sprint || !storyWeaponsEnabled) return false;
     const type = CITY_RUSH_POWERS.PISTOL;
     if (racer.wrecked || racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 || racer.powerCooldown > 0 || !isCityRushPowerCharged(racer.inventory, type)) return false;
     // L'IA ne gaspille pas sa charge dans le vide : quelqu'un doit déjà occuper
@@ -3353,6 +5035,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       {
         id: 'player', name: 'TOI', isPlayer: true, distance, lane: playerLane,
         x: playerX, width: playerCollisionWidth(), speed: currentSpeed, racer: null,
+        jumping: Boolean(playerJumpState.active),
       },
       ...racers.map((racer) => ({
         id: racer.id,
@@ -3364,6 +5047,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         width: racerCollisionWidth(racer),
         speed: racer.currentSpeed || racer.baseSpeed,
         racer,
+        jumping: Boolean(racer.jumpState?.active),
       })),
     ];
   }
@@ -3374,15 +5058,62 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return packLeader;
   }
 
-  function registerPoliceRetaliation(attackerId, source = CITY_RUSH_POWERS.PISTOL) {
-    if (!attackerId || attackerId === 'player') return null;
+  // ── Le dossier d'un rival ───────────────────────────────────────────────
+  // Trois motifs ouvrent un dossier contre un adversaire : un tir réussi, un
+  // carambolage avec une berline, et la tête de course à l'ouverture du dernier
+  // tour. Le premier des trois monte son niveau de recherche à trois étoiles —
+  // le barème du contact policier — et sort la berline qui lui est réservée
+  // (`reserveForId`) ; les suivants n'ajoutent pas d'unité, et l'escouade du
+  // joueur ne détourne jamais sa chasse. Une berline détruite n'est pas
+  // remplacée : un rival garde son poursuivant, ou n'en a plus.
+  function registerPoliceRetaliation(attackerId, source = CITY_RUSH_POWERS.PISTOL, { reason = 'police-shot' } = {}) {
+    if (sprint || !attackerId || attackerId === 'player' || !storyPoliceEnabled || finished) return null;
     const attacker = racers.find((racer) => racer.id === attackerId);
-    if (!attacker || attacker.wrecked || policeRetaliationByAttacker.has(attackerId)) {
-      return policeRetaliationByAttacker.get(attackerId) || null;
+    if (!attacker || attacker.wrecked) return null;
+    const previousStars = attacker.wantedLevel || 0;
+    const stars = cityRushRivalWantedLevelAfterContact(previousStars);
+    if (stars !== previousStars) {
+      attacker.wantedLevel = stars;
+      emitHud(true);
+    }
+    const assigned = policeRetaliationByAttacker.get(attackerId);
+    if (assigned) {
+      // Le poursuivant d'un rival se relève comme l'escouade du joueur : une
+      // berline détruite repart derrière le même rival tant que le dossier
+      // reste ouvert (trois étoiles), après le même délai de relève. La relève
+      // repart derrière **son** rival, jamais derrière le joueur.
+      if (!assigned.active && !assigned.wreckPending && Number(assigned.health) <= 0
+        && elapsed >= (Number(assigned.reinforcementAt) || 0)) {
+        const target = raceEntries().find((entry) => entry.id === attackerId);
+        if (target) {
+          activatePoliceUnit(assigned, target, {
+            reinforcement: true,
+            unitNumber: assigned.unitNumber,
+            targetId: attackerId,
+          });
+          audioRef?.current?.policeSiren?.({ level: 0.5 });
+          getCallbacks().effect?.({
+            type: 'police-retaliation',
+            id: assigned.id,
+            police: assigned.name,
+            target: attacker.name,
+            targetId: attackerId,
+            source,
+            // La relève du poursuivant d'un rival : même unité, même dossier.
+            reason: 'pursuer-renewal',
+            stars,
+            count: CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
+            lap,
+          });
+          emitHud(true);
+        }
+      }
+      return assigned;
     }
     const reserve = policeCars.find((police) => police.reserveForId === attackerId);
     if (!reserve || reserve.everDeployed) return null;
     const target = raceEntries().find((entry) => entry.id === attackerId);
+    if (!target) return null;
     activatePoliceUnit(reserve, target, {
       reinforcement: true,
       unitNumber: reserve.unitNumber,
@@ -3397,11 +5128,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       target: attacker.name,
       targetId: attackerId,
       source,
+      // Le motif du dossier : `police-shot`, `police-contact` ou
+      // `last-lap-leader`. Les vérifications s'y raccrochent.
+      reason,
+      stars,
       count: CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
       lap,
     });
     emitHud(true);
     return reserve;
+  }
+
+  // Le premier du dernier tour est chassé comme le pilote : le contrôle repasse
+  // à chaque image, sans jamais redonner d'unité au même rival, et il attend que
+  // le dernier tour du pilote soit ouvert — l'escouade du joueur, elle, entre au
+  // même moment.
+  function chaseLastLapLeader(leader, playerLap) {
+    if (sprint || !storyPoliceEnabled || finished) return null;
+    const leaderId = typeof leader?.id === 'string' ? leader.id : null;
+    if (!cityRushRivalLeaderWanted({ leader: leaderId, lastLap: playerLap >= effectiveLaps })) return null;
+    return registerPoliceRetaliation(leaderId, null, { reason: 'last-lap-leader' });
   }
 
   function activatePoliceUnit(police, target, { reinforcement = false, unitNumber = null, targetId = 'player' } = {}) {
@@ -3428,9 +5174,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.skidLeft = 0;
     police.skidSide = 1;
     police.skidDuration = 0.85;
+    police.skidSmokeTimer = 0;
+    police.jumpState = { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0 };
+    police.currentJumpY = 0;
+    police.currentJumpPitch = 0;
     police.powerCooldown = 0;
-    police.health = CITY_RUSH_POLICE_HEALTH;
+    police.maxHealth = cityRushPoliceMaxHealth(police.vehicleType);
+    police.health = police.maxHealth;
     police.healthFlash = 0;
+    police.damageSmokeTimer = 0;
+    animatePoliceDamageFire(police.mesh, 0, clockTime);
     police.changeIn = 0.3 + police.index * 0.35;
     police.mode = 'hunt';
     police.blockLeft = 0;
@@ -3513,10 +5266,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // chemin qui appellerait le déploiement (dernier tour, poursuite, renfort).
     if (sprint || policeDeployed) return;
     policeDeployed = true;
+    // L'escouade scénarisée du dernier tour repart en chasse, même si le pilote
+    // venait de semer la police dans un mini-garage.
+    policePursuitDropped = false;
     const player = raceEntries().find((entry) => entry.id === 'player');
     const squad = policeCars.filter((police) => police.squad);
     squad.forEach((police, index) => {
-      if (police.active) return;
+      // Une berline en pleine agonie garde son maillage jusqu'à l'explosion :
+      // le déploiement ne peut pas la réactiver sans couper son tête-à-queue
+      // (`wreckPending`, posé par `beginPoliceWreck`). Sa relève partira à
+      // l'explosion, par `queuePoliceReinforcement`.
+      if (police.active || police.wreckPending) return;
       const queuedAt = policeReinforcementQueue.indexOf(police);
       if (queuedAt >= 0) policeReinforcementQueue.splice(queuedAt, 1);
       police.reinforcementPending = false;
@@ -3606,6 +5366,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // contact. Les berlines rappelées rejoignent la même IA de barrage et de tir
   // que l'escouade principale.
   function rallyPoliceVehicle(vehicle, { origin = 'traffic', targetId = 'player', asBackup = false } = {}) {
+    // Un SUV de charge garde son type de trafic (« police ») pour la détection
+    // des chocs, mais son modèle propre (`vehicleType`) décide de sa coque et de
+    // son nom une fois qu'il chasse.
+    const policeType = vehicle?.vehicleType || vehicle?.type;
     if (!vehicle || vehicle.rallied || vehicle.destroyed || !isCityRushPoliceTrafficType(vehicle.type)) return null;
     vehicle.rallied = true;
     const fromOncoming = origin === 'oncoming';
@@ -3615,9 +5379,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       vehicle.lane = vehicle.turnaroundTargetLane ?? vehicle.lane;
     }
     const lane = vehicle.lane;
+    const maxHealth = cityRushPoliceMaxHealth(policeType);
     const police = {
       id: `rally-${vehicle.id}`,
-      name: vehicle.type === 'undercover-police' ? 'POLICE EN CIVIL' : 'POLICE ROUTIÈRE',
+      name: policeType === CITY_RUSH_SUV_CHARGE_TYPE ? 'POLICE SUV' : 'POLICE ROUTIÈRE',
       index: CITY_RUSH_POLICE_COUNT + ralliedCars.length,
       squad: false,
       rallied: true,
@@ -3625,7 +5390,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       wantedBackup: Boolean(asBackup),
       origin,
       originId: vehicle.id,
-      vehicleType: vehicle.type,
+      vehicleType: policeType,
       mesh: vehicle.mesh,
       lane,
       currentX: vehicle.currentX,
@@ -3641,10 +5406,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       stunLeft: 0,
       stunTotal: 0,
       skidLeft: 0,
+      skidDuration: 0.85,
+      skidSide: 1,
+      skidSmokeTimer: 0,
+      jumpState: { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0 },
+      currentJumpY: 0,
+      currentJumpPitch: 0,
       powerCooldown: 0,
       inventory: createCityRushPoliceInventory(),
       active: true,
-      health: Math.max(1, Number(vehicle.health) || CITY_RUSH_POLICE_HEALTH),
+      health: Math.max(1, Math.min(Number(vehicle.health) || maxHealth, maxHealth)),
+      maxHealth,
       healthFlash: 0,
       mode: 'hunt',
       blockLeft: 0,
@@ -3693,10 +5465,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   // À l'arrivée, une berline rappelée retrouve son flot d'origine. Une épave
   // détruite reste invisible jusqu'au prochain départ ; un renfort venant en
-  // face reprend alors son sens initial.
-  function releaseRalliedPolice() {
-    if (!ralliedCars.length) return;
+  // face reprend alors son sens initial. `targetId` permet de ne rendre au flot
+  // que les voitures qui chassaient un pilote donné — la sortie d'un mini-garage
+  // lâche le joueur sans relâcher les poursuivants d'un rival.
+  function releaseRalliedPolice({ targetId = null } = {}) {
+    if (!ralliedCars.length) return 0;
+    let released = 0;
+    const kept = targetId === null ? [] : ralliedCars.filter((police) => police.targetId !== targetId);
     for (const police of ralliedCars) {
+      if (targetId !== null && police.targetId !== targetId) continue;
+      released += 1;
       detachPoliceGlow(police.mesh);
       detachPoliceHealthBar(police.mesh);
       const vehicle = police.origin === 'oncoming'
@@ -3710,6 +5488,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       vehicle.rallied = false;
       vehicle.currentSpeed = vehicle.baseSpeed;
+      police.mesh.visible = true;
       if (police.origin === 'oncoming') {
         vehicle.turnaroundState = null;
         vehicle.turnaroundElapsed = 0;
@@ -3720,21 +5499,270 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
     }
     ralliedCars.length = 0;
+    ralliedCars.push(...kept);
+    return released;
+  }
+
+  // ── La poursuite abandonnée : la police se remet à rouler normalement ─────
+  // Sortir d'un mini-garage coupe la chasse pour de bon. Une unité de l'escouade
+  // rend sa berline de poursuite (halo et barre de vie compris) et une voiture
+  // de patrouille ordinaire prend sa place, au même endroit et à la même
+  // allure : elle roule vers l'avant dans sa voie, ne tire plus, ne barre plus,
+  // et se laisse distancer. Une patrouille rappelée du trafic reprend
+  // simplement sa ronde ; une berline venue en face qui amorçait son demi-tour
+  // achève sa manœuvre dans son sens habituel.
+  const patrolCars = [];
+  const patrolMeshPool = [];
+  let patrolSerial = 0;
+
+  function acquirePatrolMesh(vehicleType) {
+    const free = patrolMeshPool.find((entry) => entry.vehicleType === vehicleType && !entry.busy);
+    if (free) {
+      free.busy = true;
+      free.mesh.visible = true;
+      return free.mesh;
+    }
+    const mesh = makeTrafficVehicle(vehicleType);
+    withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+    mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
+    scene.add(mesh);
+    patrolMeshPool.push({ vehicleType, mesh, busy: true });
+    return mesh;
+  }
+
+  function releasePatrolMesh(mesh) {
+    const entry = patrolMeshPool.find((item) => item.mesh === mesh);
+    if (!entry) return;
+    entry.busy = false;
+    entry.mesh.visible = false;
+  }
+
+  function abandonOncomingPoliceTurnaround(oncoming) {
+    if (!oncoming || oncoming.turnaroundState !== 'turning') return false;
+    oncoming.turnaroundState = null;
+    oncoming.turnaroundElapsed = 0;
+    oncoming.turnaroundTargetId = null;
+    oncoming.turnaroundAsBackup = false;
+    oncoming.turnaroundTargetLane = null;
+    oncoming.mesh.rotation.set(-trackPitch(oncoming.distance), trackYaw(oncoming.distance) + Math.PI, 0);
+    return true;
+  }
+
+  // La berline de poursuite quitte la chasse et devient un véhicule de
+  // patrouille : sa coque reste intacte, mais elle roule désormais à l'allure
+  // du trafic dans la voie où elle se trouve.
+  function spawnPatrolPolice(squadCar) {
+    const spec = CITY_RUSH_TRAFFIC_TYPES.find((vehicle) => vehicle.id === squadCar.vehicleType)
+      || CITY_RUSH_TRAFFIC_TYPES[0];
+    const mesh = acquirePatrolMesh(squadCar.vehicleType);
+    patrolSerial += 1;
+    const patrol = {
+      id: `patrol-${patrolSerial}`,
+      name: spec.name,
+      type: squadCar.vehicleType,
+      mesh,
+      lane: squadCar.lane,
+      currentX: squadCar.currentX,
+      distance: squadCar.distance,
+      width: squadCar.width,
+      // Allure du trafic, jamais celle d'une poursuite : la berline se laisse
+      // distancer et sort du champ derrière le pilote.
+      baseSpeed: paced(spec.speed * randomRange(0.94, 1.06)),
+      currentSpeed: Math.max(squadCar.currentSpeed * 0.6, paced(spec.speed)),
+      phase: squadCar.phase,
+      impactLeft: 0,
+      impactCooldownLeft: 0,
+      impactChanging: false,
+      impactFromLane: null,
+      impactTargetLane: null,
+    };
+    patrol.mesh.name = `patrol-${squadCar.vehicleType}`;
+    patrol.mesh.position.set(
+      patrol.currentX + trackRelativeX(patrol.distance),
+      trackRelativeY(patrol.distance),
+      PLAYER_Z - (patrol.distance - distance) * SCALE,
+    );
+    patrol.mesh.rotation.set(trackPitch(patrol.distance), trackYaw(patrol.distance), 0);
+    patrol.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
+    patrolCars.push(patrol);
+    return patrol;
+  }
+
+  function releaseSquadPoliceUnit(police) {
+    const patrol = spawnPatrolPolice(police);
+    police.active = false;
+    police.targetId = null;
+    police.inventory = createCityRushPoliceInventory();
+    police.blockLeft = 0;
+    police.lastPassGap = undefined;
+    police.mesh.visible = false;
+    const queuedAt = policeReinforcementQueue.indexOf(police);
+    if (queuedAt >= 0) policeReinforcementQueue.splice(queuedAt, 1);
+    police.reinforcementPending = false;
+    return patrol;
+  }
+
+  /**
+   * Le joueur sort d'un garage : la police abandonne la poursuite. Les unités
+   * qui le chassaient redeviennent du trafic (conduite normale), les renforts
+   * prévus sont annulés, et plus aucune relève ne part tant qu'il ne provoque
+   * pas de nouveau la police. Renvoie le nombre de poursuivants lâchés.
+   */
+  function releasePolicePursuit({ targetId = 'player' } = {}) {
+    if (sprint) return 0;
+    let released = 0;
+    for (const police of policeCars) {
+      if (!police.active || police.targetId !== targetId) continue;
+      releaseSquadPoliceUnit(police);
+      released += 1;
+    }
+    released += releaseRalliedPolice({ targetId });
+    for (const oncoming of oncomingCars) {
+      if (oncoming.turnaroundState !== 'turning' || oncoming.turnaroundTargetId !== targetId) continue;
+      if (abandonOncomingPoliceTurnaround(oncoming)) released += 1;
+    }
+    const playerTargeted = targetId === 'player';
+    if (playerTargeted) {
+      policePursuitDropped = true;
+      policeReinforcementQueue.length = 0;
+      policeReinforcementTimer = 0;
+    }
+    if (released > 0) audioRef?.current?.policeSirenOff?.();
+    return released;
+  }
+
+  // Conduite normale d'une berline lâchée : elle avance dans sa voie, à
+  // l'allure du flot, sans jamais viser, barrer ou tirer. Hors du champ du
+  // joueur, elle quitte la piste.
+  function updatePatrolPolice(dt, movementById = null) {
+    if (!patrolCars.length) return;
+    for (let index = patrolCars.length - 1; index >= 0; index -= 1) {
+      const patrol = patrolCars[index];
+      patrol.impactLeft = Math.max(0, patrol.impactLeft - dt);
+      patrol.impactCooldownLeft = Math.max(0, patrol.impactCooldownLeft - dt);
+      // Un véhicule de patrouille n'a plus de pilote poursuivant : il garde sa
+      // voie et son allure, et se laisse rejoindre comme n'importe quel trafic.
+      const targetSpeed = Math.max(
+        paced(3.4),
+        patrol.baseSpeed + paced(Math.sin(elapsed * 0.5 + patrol.phase) * 0.18),
+      );
+      patrol.currentSpeed = approachCityRushSpeed(
+        patrol.currentSpeed,
+        targetSpeed,
+        cityRushTrafficRecoveryRate(1, 0),
+        dt,
+        coursePace,
+      );
+      const priorDistance = patrol.distance;
+      patrol.distance = movementById?.get(patrol.id)
+        ?? (priorDistance + patrol.currentSpeed * dt);
+      const laneChangeRate = patrol.impactChanging
+        ? Math.min(1, dt / CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION)
+        : Math.min(1, dt * 3.4);
+      const priorX = patrol.currentX;
+      patrol.currentX = lerp(patrol.currentX, laneX(patrol.lane), laneChangeRate);
+      if (patrol.impactChanging && Math.abs(patrol.currentX - laneX(patrol.lane)) < 0.06) {
+        patrol.currentX = laneX(patrol.lane);
+        patrol.impactChanging = false;
+        patrol.impactFromLane = null;
+        patrol.impactTargetLane = null;
+      }
+      const gap = patrol.distance - distance;
+      const visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
+      patrol.mesh.visible = visible;
+      if (visible) {
+        patrol.mesh.position.set(
+          patrol.currentX + trackRelativeX(patrol.distance),
+          trackRelativeY(patrol.distance),
+          PLAYER_Z - gap * SCALE,
+        );
+        patrol.mesh.rotation.x = trackPitch(patrol.distance);
+        patrol.mesh.rotation.y = lerp(
+          patrol.mesh.rotation.y,
+          trackYaw(patrol.distance) + clamp((patrol.currentX - priorX) * -2.8, -0.26, 0.26),
+          Math.min(1, dt * 12),
+        );
+        patrol.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += patrol.currentSpeed * dt * 0.95; });
+      } else if (gap < -CITY_RUSH_TRAFFIC_VIEW_BEHIND) {
+        // Distancée : elle quitte la scène pour de bon.
+        releasePatrolMesh(patrol.mesh);
+        patrolCars.splice(index, 1);
+      }
+    }
+  }
+
+  function clearPatrolPolice() {
+    for (const patrol of patrolCars) releasePatrolMesh(patrol.mesh);
+    patrolCars.length = 0;
+  }
+
+  // Petit tête-à-queue contrôlé après un contact : la police se rabat vers
+  // une voie voisine libre (en restant dans son sens de circulation), tandis
+  // que le joueur glisse brièvement dans l'autre sens. La voie est animée par
+  // l'interpolation habituelle de `updatePolice`, pas téléportée.
+  function startPoliceCollisionAnimation(police) {
+    if (!police) return;
+    const isSuv = police.vehicleType === 'police-suv';
+    const relativeSide = Math.sign(police.currentX - playerCar.position.x);
+    const preferredSide = relativeSide || (police.lane === forwardLanes[forwardLanes.length - 1] ? -1 : 1);
+    const adjacentLanes = [police.lane + preferredSide, police.lane - preferredSide]
+      .filter((lane, index, lanes) => (
+        lane >= 0
+        && lane < laneCount
+        && lane !== police.lane
+        && forwardLanes.includes(lane)
+        && lanes.indexOf(lane) === index
+      ));
+    // On privilégie une voie libre ; si le peloton est serré, la voiture tente
+    // quand même son rabat le plus proche, que le résolveur de mouvement sécurise.
+    const nextLane = adjacentLanes.find((lane) => canEnterLane(police.id, lane))
+      ?? adjacentLanes[0]
+      ?? null;
+    const skidSide = nextLane === null
+      ? preferredSide
+      : Math.sign(laneX(nextLane) - police.currentX) || preferredSide;
+    const policeSkidDuration = Math.max(
+      isSuv ? POLICE_SUV_RAM_SKID_DURATION : POLICE_RAM_SKID_DURATION,
+      Number(police.skidLeft) || 0,
+    );
+    police.skidLeft = policeSkidDuration;
+    police.skidDuration = policeSkidDuration;
+    police.skidSide = skidSide;
+    police.skidSmokeTimer = 0;
+    police.collisionCooldownLeft = Math.max(
+      Number(police.collisionCooldownLeft) || 0,
+      CITY_RUSH_POLICE_COLLISION_COOLDOWN,
+    );
+    if (nextLane !== null) {
+      police.lane = nextLane;
+      police.changeIn = Math.max(POLICE_RAM_LANE_CHANGE_HOLD, Number(police.changeIn) || 0);
+    }
+
+    const nextPlayerSkidDuration = Math.max(PLAYER_POLICE_RAM_SKID_DURATION, Number(playerSkidLeft) || 0);
+    playerSkidLeft = nextPlayerSkidDuration;
+    playerSkidDuration = nextPlayerSkidDuration;
+    playerSkidSide = -skidSide;
   }
 
   // Contact avec une voiture de police en ronde (marquée ou banalisée) : la
   // voiture rappelée compte comme un poursuivant du quota de recherche.
   function checkPoliceRally() {
-    if (sprint || !active || finished) return;
+    if (sprint || !active || finished || playerJumpState.active) return;
     const playerXNow = playerCar.position.x;
     const playerWidth = playerCollisionWidth();
     for (const traffic of trafficCars) {
       if (traffic.rallied || traffic.destroyed || !isCityRushPoliceTrafficType(traffic.type)) continue;
+      // La patrouille est un véhicule **du trafic** : son contact latéral se
+      // juge sur sa boîte resserrée (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`), comme
+      // le reste de la circulation. La portée longitudinale, elle, reste celle
+      // du contact policier (distance de sécurité + tolérance) : toucher une
+      // patrouille, c'est déclencher une poursuite, et la règle est commune aux
+      // berlines de police.
       if (!cityRushPoliceContact({
         gap: traffic.distance - distance,
         x: traffic.currentX,
         targetX: playerXNow,
-        width: traffic.width,
+        width: cityRushTrafficHitboxWidth(traffic.width),
         targetWidth: playerWidth,
       })) continue;
       // Toucher une patrouille coûte un carré comme n'importe quelle voiture :
@@ -3750,12 +5778,392 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'police',
         healthLost,
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       });
       if (rallied) {
-        raiseWantedLevel({ police: true, reason: traffic.type === 'undercover-police' ? 'undercover-contact' : 'police-contact' });
+        startPoliceCollisionAnimation(rallied);
+        spawnTrafficImpact('player', rallied.id);
+        audioRef?.current?.skid({ pan: vehiclePan(rallied.id), intensity: 0.9, duration: POLICE_RAM_SKID_DURATION });
+        cameraKick = Math.max(cameraKick, 0.42);
+        raiseWantedLevel({ police: true, reason: 'police-contact' });
       }
     }
+  }
+
+  // ── Les SUV de charge : viser, foncer, se retourner ─────────────────────
+  // Appelée à chaque image juste avant la boucle du contresens (qui se charge
+  // du déplacement, du rendu et du choc balayé). Trois états :
+  //   · `dormant`   — sous cinq étoiles (ou en Sprint), le SUV attend au loin ;
+  //   · `charging`  — il est apparu loin devant, vise la voie du pilote à portée
+  //                   de verrou et fonce ; une charge manquée le recycle ;
+  //   · `reloading` — quelques secondes d'absence avant de repartir au loin.
+  // Le contact, lui, ne se joue pas ici : la boucle du contresens détecte le
+  // choc et déclenche le demi-tour réglementaire, puis la chasse.
+  function armSuvCharge(charge) {
+    charge.chargeState = 'charging';
+    charge.chargeReloadLeft = 0;
+    charge.chargeAnnounced = false;
+    charge.chargeLocked = false;
+    // Coque intacte : la charge suivante repart d'un SUV neuf.
+    charge.health = cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE);
+    charge.maxHealth = cityRushPoliceMaxHealth(CITY_RUSH_SUV_CHARGE_TYPE);
+    charge.healthFlash = 0;
+    charge.turnaroundState = null;
+    charge.turnaroundElapsed = 0;
+    charge.turnaroundTargetId = null;
+    charge.turnaroundAsBackup = false;
+    charge.turnaroundTargetLane = null;
+    charge.impactCooldownLeft = 0;
+    charge.pushedAside = false;
+    charge.pushAsideElapsed = 0;
+    charge.pushAsideStartX = null;
+    charge.lastPassGap = undefined;
+    charge.mesh.visible = false;
+    if (oncomingLanes.length) charge.lane = oncomingLanes[Math.floor(Math.random() * oncomingLanes.length)];
+    charge.currentX = laneX(charge.lane);
+    // Décalage entre les deux SUV : ils n'arrivent pas en meute, le pilote a le
+    // temps de lire la première charge.
+    charge.distance = distance + CITY_RUSH_SUV_CHARGE_SPAWN_LEAD + charge.chargeIndex * 60;
+    charge.baseSpeed = cityRushSuvChargeSpeed(playerTopSpeed);
+    charge.currentSpeed = charge.baseSpeed;
+  }
+
+  function updateSuvCharges(dt) {
+    if (sprint) return;
+    const wanted = cityRushSuvChargeCount(wantedLevel, { sprint, hasOncoming: oncomingLanes.length > 0 });
+    for (const charge of suvCharges) {
+      // La chasse (patrouille rappelée) ou l'épave gère le maillage : la charge
+      // n'y touche plus.
+      if (charge.rallied || charge.destroyed) continue;
+      if (charge.chargeState === 'dormant') {
+        charge.mesh.visible = false;
+        charge.baseSpeed = 0;
+        if (wanted > charge.chargeIndex) armSuvCharge(charge);
+        continue;
+      }
+      // La poursuite est retombée sous cinq étoiles (mini-garage, drapeau) :
+      // les SUV en charge rentrent au loin au lieu de continuer seuls.
+      if (wanted <= charge.chargeIndex) {
+        charge.chargeState = 'dormant';
+        charge.chargeReloadLeft = 0;
+        charge.chargeAnnounced = false;
+        charge.chargeLocked = false;
+        charge.baseSpeed = 0;
+        charge.currentSpeed = 0;
+        charge.mesh.visible = false;
+        continue;
+      }
+      if (charge.chargeState === 'reloading') {
+        charge.mesh.visible = false;
+        charge.chargeReloadLeft = Math.max(0, charge.chargeReloadLeft - dt);
+        if (charge.chargeReloadLeft <= 0) armSuvCharge(charge);
+        continue;
+      }
+      // Le demi-tour d'après contact est piloté par la boucle du contresens.
+      if (charge.turnaroundState === 'turning' || charge.turnaroundState === 'joined') continue;
+      const gap = charge.distance - distance;
+      if (gap < -CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND) {
+        // Le SUV est repassé derrière sans toucher le pilote : la charge est
+        // manquée, il recharge et reviendra au loin.
+        charge.chargeState = 'reloading';
+        charge.chargeReloadLeft = CITY_RUSH_SUV_CHARGE_RELOAD;
+        charge.chargeAnnounced = false;
+        charge.chargeLocked = false;
+        charge.mesh.visible = false;
+        continue;
+      }
+      // Plus rapide que la pointe du pilote, avec un plancher : la charge
+      // ferme la distance même sur un parcours lent.
+      charge.baseSpeed = cityRushSuvChargeSpeed(playerTopSpeed);
+      charge.chargeLocked = cityRushSuvChargeLocked({ gap, range: CITY_RUSH_SUV_CHARGE_LOCK_RANGE });
+      if (charge.chargeLocked) charge.lane = playerLane;
+      if (!charge.chargeAnnounced && gap <= CITY_RUSH_SUV_CHARGE_ALERT_RANGE) {
+        charge.chargeAnnounced = true;
+        getCallbacks().effect?.({
+          type: 'police-suv-charge',
+          id: charge.id,
+          police: charge.name,
+          distance: Math.round(gap),
+          lane: charge.lane,
+          speed: Math.round(charge.baseSpeed * 3.6),
+          lap,
+        });
+        audioRef?.current?.policeSiren?.({ level: 0.34 });
+      }
+    }
+  }
+
+  // ── La herse des quatre étoiles : positionner, dérouler, percer ─────────
+  // Deux voitures de police prennent position à trois cents mètres devant le
+  // pilote et déroulent un tapis à pointes sur les voies du sens de course. La
+  // traverser crève les pneus : un carré de coque (`CITY_RUSH_SPIKE_DAMAGE`)
+  // et une longue remise en vitesse (`cityRushSpikePace`). Les voies du
+  // contresens et un saut par-dessus le dispositif restent des échappatoires.
+  function buildSpikeBlockMeshes() {
+    if (spikeBlock.meshes) return spikeBlock.meshes;
+    const root = new THREE.Group();
+    root.name = 'spike-block';
+    const lanePitch = Math.max(1.4, Math.abs(laneX(1) - laneX(0)) || 2.1);
+    const stripGeometry = new THREE.BoxGeometry(1, 0.07, 0.34);
+    const toothGeometry = new THREE.ConeGeometry(0.06, 0.17, 4);
+    const beaconGeometry = new THREE.BoxGeometry(0.17, 0.09, 0.1);
+    const stripMaterial = standard(0x1b1f27, { metalness: 0.62, roughness: 0.42 });
+    const toothMaterial = standard(0xdde5f0, { metalness: 0.88, roughness: 0.24, emissive: 0x24313f, emissiveIntensity: 0.5 });
+    const laneGroups = Array.from({ length: CITY_RUSH_SPIKE_LANES }, (_, index) => {
+      const laneGroup = new THREE.Group();
+      laneGroup.name = `spike-lane-${index}`;
+      const strip = new THREE.Mesh(stripGeometry, stripMaterial);
+      strip.scale.x = lanePitch * 0.94;
+      laneGroup.add(strip);
+      const teeth = Array.from({ length: 5 }, (_, toothIndex) => {
+        const tooth = new THREE.Mesh(toothGeometry, toothMaterial);
+        tooth.position.set(-lanePitch * 0.36 + toothIndex * lanePitch * 0.18, 0.12, 0);
+        laneGroup.add(tooth);
+        return tooth;
+      });
+      const beacon = new THREE.Mesh(beaconGeometry, new THREE.MeshBasicMaterial({
+        color: 0xffb43a, transparent: true, opacity: 0.9, toneMapped: false,
+      }));
+      beacon.position.set(0, 0.22, 0);
+      laneGroup.add(beacon);
+      laneGroup.userData = { strip, teeth, beacon };
+      laneGroup.visible = false;
+      root.add(laneGroup);
+      return laneGroup;
+    });
+    // Deux voitures de police ferment le dispositif à ses extrémités, en
+    // travers : elles se rangent pendant le déploiement puis repartent au
+    // rangement (voir `placeSpikeBlock`).
+    const cars = CITY_RUSH_SPIKE_BLOCK_VEHICLE_TYPES.slice(0, 2).map((vehicleType) => {
+      const mesh = makeTrafficVehicle(vehicleType);
+      withPoliceVisualRandom(() => attachPoliceDamageFire(mesh, policeDamageFireKit));
+      mesh.name = `spike-car-${vehicleType}`;
+      mesh.visible = false;
+      root.add(mesh);
+      return { mesh, side: 0, x: 0, z: 0 };
+    });
+    scene.add(root);
+    spikeBlock.meshes = { root, laneGroups, cars };
+    spikeBlock.cars = cars;
+    spikeBlock.lanePitch = lanePitch;
+    return spikeBlock.meshes;
+  }
+
+  function hideSpikeBlock() {
+    const meshes = spikeBlock.meshes;
+    if (!meshes) return;
+    meshes.root.visible = false;
+    meshes.laneGroups.forEach((laneGroup) => { laneGroup.visible = false; });
+    meshes.cars.forEach((car) => { car.mesh.visible = false; });
+  }
+
+  function beginSpikeBlock() {
+    if (!forwardLanes.length) return false;
+    buildSpikeBlockMeshes();
+    spikeBlock.state = 'deploying';
+    spikeBlock.elapsed = 0;
+    spikeBlock.age = 0;
+    spikeBlock.distance = distance + CITY_RUSH_SPIKE_BLOCK_LEAD;
+    spikeBlock.lanes = [...cityRushSpikeLanes(forwardLanes, CITY_RUSH_SPIKE_LANES)];
+    spikeBlock.meshes.root.visible = true;
+    spikeBlock.meshes.laneGroups.forEach((laneGroup) => { laneGroup.visible = false; });
+    spikeBlock.meshes.cars.forEach((car) => { car.mesh.visible = false; });
+    getCallbacks().effect?.({
+      type: 'police-spike-block',
+      stage: 'deploy',
+      lanes: spikeBlock.lanes.length,
+      lane: playerLane,
+      distance: CITY_RUSH_SPIKE_BLOCK_LEAD,
+      lap,
+    });
+    audioRef?.current?.policeSiren?.({ level: 0.4 });
+    return true;
+  }
+
+  // Placement du dispositif dans le monde : les voitures se rangent pendant le
+  // déploiement, la herse se déroule voie par voie, et tout repart au rangement.
+  function placeSpikeBlock(dt) {
+    const meshes = spikeBlock.meshes;
+    if (!meshes) return;
+    const gap = spikeBlock.distance - distance;
+    const baseZ = PLAYER_Z - gap * SCALE;
+    const baseY = trackRelativeY(spikeBlock.distance);
+    const curveX = trackRelativeX(spikeBlock.distance);
+    const yaw = trackYaw(spikeBlock.distance);
+    const lanes = spikeBlock.lanes;
+    const packing = spikeBlock.state === 'packing';
+    const deployProgress = packing
+      ? 1 - cityRushSpikeLayProgress(spikeBlock.elapsed, CITY_RUSH_SPIKE_BLOCK_PACK_DURATION)
+      : cityRushSpikeLayProgress(spikeBlock.elapsed, CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION);
+    const layProgress = packing ? 0 : cityRushSpikeLayProgress(spikeBlock.elapsed, CITY_RUSH_SPIKE_LAY_DURATION);
+    const laidLanes = spikeBlock.state === 'set' ? lanes.length : cityRushSpikeLaidLanes(spikeBlock.elapsed, {
+      lanes: lanes.length,
+      duration: CITY_RUSH_SPIKE_LAY_DURATION,
+    });
+    meshes.root.visible = true;
+    meshes.laneGroups.forEach((laneGroup, index) => {
+      const lane = lanes[index];
+      if (lane === undefined || packing) {
+        laneGroup.visible = false;
+        return;
+      }
+      // Pendant la prise de position, la herse n'est pas encore déroulée : le
+      // tapis apparaît voie par voie, dans l'ordre de pose.
+      const inline = spikeBlock.state === 'laying' || spikeBlock.state === 'set';
+      const reveal = inline
+        ? clamp(Math.max(laidLanes > index ? 1 : 0, layProgress * lanes.length - index), 0, 1)
+        : 0;
+      laneGroup.visible = reveal > 0.02;
+      if (!laneGroup.visible) return;
+      laneGroup.position.set(laneX(lane) + curveX, baseY + 0.02, baseZ);
+      laneGroup.rotation.y = yaw;
+      laneGroup.userData.strip.scale.x = Math.max(0.02, spikeBlock.lanePitch * 0.94 * reveal);
+      laneGroup.userData.teeth.forEach((tooth, toothIndex) => {
+        tooth.visible = reveal >= (toothIndex + 0.5) / 5;
+      });
+      laneGroup.userData.beacon.material.opacity = Math.floor(clockTime * 6 + index) % 2 === 0 ? 0.9 : 0.25;
+    });
+    const deployEase = smoothstep(deployProgress);
+    meshes.cars.forEach((car, index) => {
+      const lane = index === 0 ? lanes[0] : lanes[lanes.length - 1];
+      if (lane === undefined || deployEase <= 0.02) {
+        car.mesh.visible = false;
+        return;
+      }
+      const parkedX = laneX(lane) + (index === 0 ? -1 : 1) * (spikeBlock.lanePitch * 0.5 + 0.24);
+      car.mesh.visible = true;
+      car.mesh.position.set(lerp(laneX(lane), parkedX, deployEase) + curveX, baseY + 0.02, baseZ + (index === 0 ? 1.1 : -0.9));
+      car.mesh.rotation.set(0, yaw + (index === 0 ? 1 : -1) * 0.52 * deployEase, 0);
+      car.mesh.userData.wheels?.forEach((wheel) => { wheel.rotation.x += dt * 5; });
+      car.mesh.userData.beacons?.forEach((beacon, beaconIndex) => {
+        beacon.material.opacity = Math.floor(clockTime * 9 + beaconIndex) % 2 === 0 ? 1 : 0.16;
+      });
+    });
+  }
+
+  function applySpikeHit(laidLanes) {
+    const lost = applyCarCollision({
+      victim: 'spike',
+      name: 'HERSE DE POLICE',
+      id: SPIKE_BLOCK_ID,
+      gap: spikeBlock.distance - distance,
+      lane: playerLane,
+      source: CITY_RUSH_SPIKE_DAMAGE_SOURCE,
+    });
+    // Pneus crevés : la vitesse visée tombe au facteur de la règle pendant
+    // `CITY_RUSH_SPIKE_SLOW_DURATION`, le temps de repartir.
+    playerSpikeSlowLeft = Math.max(playerSpikeSlowLeft, CITY_RUSH_SPIKE_SLOW_DURATION);
+    playerSkidLeft = Math.max(playerSkidLeft, CITY_RUSH_SPIKE_IMPACT_DURATION);
+    playerSkidDuration = CITY_RUSH_SPIKE_IMPACT_DURATION;
+    playerSkidSide = Math.random() < 0.5 ? -1 : 1;
+    cameraKick = Math.max(cameraKick, 1.05);
+    spawnTrafficImpact('player', SPIKE_BLOCK_ID, 1.4);
+    audioRef?.current?.skid({ pan: vehiclePan('player'), intensity: 1.35, duration: 0.95 });
+    getCallbacks().effect?.({
+      type: 'police-spike-hit',
+      lanes: laidLanes,
+      lane: playerLane,
+      healthLost: lost,
+      health: playerHealth,
+      maxHealth: playerMaxHealth,
+      slowSeconds: CITY_RUSH_SPIKE_SLOW_DURATION,
+      factor: CITY_RUSH_SPIKE_SLOW_FACTOR,
+      lap,
+    });
+  }
+
+  function spikeBlockReady() {
+    return active && !finished && !playerWrecked && !sprint
+      && cityRushSpikeBlockCount(wantedLevel, { sprint }) > 0
+      && spikeBlock.cooldownLeft <= 0;
+  }
+
+  // Appelée juste après le carambolage des berlines : le dispositif se monte,
+  // se déroule, se franchit, puis se range — jamais en Sprint, et jamais avant
+  // la quatrième étoile.
+  function updateSpikeBlock(dt, priorDistance) {
+    if (sprint) return;
+    if (spikeBlock.state === 'idle') {
+      if (!spikeBlockReady()) return;
+      beginSpikeBlock();
+      return;
+    }
+    spikeBlock.elapsed += dt;
+    spikeBlock.age += dt;
+    const lanes = spikeBlock.lanes;
+    const laidLanes = spikeBlock.state === 'set'
+      ? lanes.length
+      : cityRushSpikeLaidLanes(spikeBlock.elapsed, { lanes: lanes.length, duration: CITY_RUSH_SPIKE_LAY_DURATION });
+    if (spikeBlock.state === 'deploying' && spikeBlock.elapsed >= CITY_RUSH_SPIKE_BLOCK_DEPLOY_DURATION) {
+      // Les voitures sont rangées : la herse commence à se dérouler.
+      spikeBlock.state = 'laying';
+      spikeBlock.elapsed = 0;
+      getCallbacks().effect?.({
+        type: 'police-spike-block',
+        stage: 'lay',
+        lanes: lanes.length,
+        lane: playerLane,
+        covered: lanes.includes(playerLane),
+        lap,
+      });
+    } else if (spikeBlock.state === 'laying' && laidLanes >= lanes.length) {
+      spikeBlock.state = 'set';
+      getCallbacks().effect?.({
+        type: 'police-spike-block',
+        stage: 'set',
+        lanes: lanes.length,
+        lane: playerLane,
+        covered: lanes.includes(playerLane),
+        lap,
+      });
+    }
+    // Franchissement : détection balayée sur la voie du pilote. Un saut passe
+    // au-dessus du dispositif, les voies non couvertes et le contresens aussi.
+    const crossing = spikeBlock.state === 'laying' || spikeBlock.state === 'set';
+    if (crossing && !playerWrecked && !playerJumpState.active
+      && cityRushSpikeHit({
+        previousDistance: priorDistance,
+        nextDistance: distance,
+        spikeDistance: spikeBlock.distance,
+        lane: playerLane,
+        lanes: forwardLanes,
+        laidLanes,
+      })) {
+      applySpikeHit(laidLanes);
+    }
+    // Le pilote est passé (ou la herse attend depuis trop longtemps) : les
+    // voitures rangent le dispositif et repartent devant.
+    const passed = spikeBlock.distance - distance < -(CITY_RUSH_SPIKE_HALF_LENGTH + 8);
+    if (spikeBlock.state !== 'packing' && (passed || spikeBlock.age >= CITY_RUSH_SPIKE_BLOCK_LIFETIME)) {
+      spikeBlock.state = 'packing';
+      spikeBlock.elapsed = 0;
+      getCallbacks().effect?.({
+        type: 'police-spike-block',
+        stage: 'pack',
+        lanes: lanes.length,
+        passed,
+        lap,
+      });
+    } else if (spikeBlock.state === 'packing' && spikeBlock.elapsed >= CITY_RUSH_SPIKE_BLOCK_PACK_DURATION) {
+      spikeBlock.state = 'idle';
+      spikeBlock.elapsed = 0;
+      spikeBlock.age = 0;
+      spikeBlock.cooldownLeft = CITY_RUSH_SPIKE_BLOCK_COOLDOWN;
+      hideSpikeBlock();
+      return;
+    }
+    placeSpikeBlock(dt);
+  }
+
+  function dismissSpikeBlock() {
+    const wasActive = spikeBlock.state !== 'idle';
+    spikeBlock.state = 'idle';
+    spikeBlock.elapsed = 0;
+    spikeBlock.age = 0;
+    spikeBlock.cooldownLeft = 0;
+    spikeBlock.lanes = [];
+    hideSpikeBlock();
+    return wasActive;
   }
 
   // ── Dégâts et HUD de santé du pilote ───────────────────────────────────
@@ -3766,13 +6174,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function activatePlayerHealth() {
     if (playerHealthActive) return;
     playerHealthActive = true;
-    playerHealth = CITY_RUSH_PLAYER_HEALTH;
+    playerHealth = playerMaxHealth;
     playerHealthFlash = 0;
     playerCollisionCooldownLeft = 0;
     getCallbacks().effect?.({
       type: 'player-health',
       health: playerHealth,
-      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      maxHealth: playerMaxHealth,
       lap,
     });
     emitHud(true);
@@ -3787,6 +6195,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerHealth = cityRushPlayerDamage(playerHealth, source);
     const lost = before - playerHealth;
     if (lost <= 0) return 0;
+    playerHitsTaken += 1;
     playerHealthFlash = CITY_RUSH_PLAYER_HEALTH_FLASH;
     // Le choc se sent aussi à la caméra : d'autant plus que le carré coûte cher.
     cameraKick = Math.max(cameraKick, 0.2 + lost * 0.06);
@@ -3795,7 +6204,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       source,
       damage: lost,
       health: playerHealth,
-      maxHealth: CITY_RUSH_PLAYER_HEALTH,
+      maxHealth: playerMaxHealth,
       attacker: attackerId ? getRaceVehicleState(attackerId)?.name || null : null,
       critical: playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL,
       lap,
@@ -3810,18 +6219,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   // Percuter une voiture — le trafic lent, un véhicule venant en face ou une
-  // berline de police — retire un carré de vie. Le choc arme un répit partagé
+  // berline de police — retire un carré de vie (deux contre un SUV). Le choc arme un répit partagé
   // (`CITY_RUSH_PLAYER_COLLISION_COOLDOWN`) : un carambolage en chaîne dans un
   // embouteillage, ou deux carrosseries restées collées après le choc, ne
-  // facturent qu'un seul carré. Le répit vaut pour **toutes** les voitures :
+  // facturent que le premier choc. Le répit vaut pour **toutes** les voitures :
   // après un choc, un second contact immédiat — même avec une autre voiture —
   // est gratuit, la barre a le temps de montrer le carré perdu.
   // `victim` distingue les trois familles pour les messages et les vérifs, et
-  // `gap` porte la distance voiture/pilote au moment du choc (positive : la
-  // voiture heurtée est devant).
-  function applyCarCollision({ victim = 'traffic', name = null, id = null, gap = null, ...extra } = {}) {
+  // `gap` porte l'écart longitudinal voiture/pilote au moment du choc (positif
+  // si la voiture est devant, négatif si elle est derrière).
+  function applyCarCollision({ victim = 'traffic', name = null, id = null, gap = null, source = 'collision', ...extra } = {}) {
     if (playerCollisionCooldownLeft > 0) return 0;
-    const lost = damagePlayer('collision', null, {
+    const lost = damagePlayer(source, null, {
       victim,
       carId: id,
       car: name,
@@ -3867,17 +6276,56 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     finishRace({ destroyed: true });
   }
 
+  // Panne scriptée du prologue : un avertissement moteur (`story-warning`),
+  // puis le calage (`story-breakdown`) — la voiture ralentit en fumant, et la
+  // course se clôt en sabotage, pas en épave. Une voiture déjà en épave (chocs)
+  // ne cale pas : elle a déjà perdu.
+  function updateStoryBreakdown(dt) {
+    if (!storyBreakdown || finished || playerWrecked || storyBreakdownActive) {
+      if (!storyBreakdown || finished || playerWrecked) return;
+    } else {
+      const warnAt = effectiveDistance * (Number(storyBreakdown.warnShare) || 0.62);
+      const failAt = effectiveDistance * (Number(storyBreakdown.failShare) || 0.8);
+      if (!storyBreakdownWarned && distance >= warnAt) {
+        storyBreakdownWarned = true;
+        getCallbacks().effect?.({ type: 'story-warning' });
+      }
+      if (distance >= failAt) {
+        storyBreakdownActive = true;
+        storyBreakdownLeft = CITY_RUSH_WRECK_SECONDS;
+        storyRankAtBreakdown = rankCityRushRacers(makeRacerRows()).rank;
+        cameraKick = Math.max(cameraKick, 0.8);
+        getCallbacks().effect?.({ type: 'story-breakdown', rank: storyRankAtBreakdown });
+      }
+    }
+    if (!storyBreakdownActive || finished) return;
+    storyBreakdownLeft = Math.max(0, storyBreakdownLeft - dt);
+    storyBreakdownSmokeTimer -= dt;
+    if (storyBreakdownSmokeTimer <= 0) {
+      storyBreakdownSmokeTimer = 0.14;
+      smoke.emit(playerCar.position, { color: 0x2a2a33, opacity: 0.65, scale: 0.9, grow: 2.4, life: 1.2, velocity: [0, 2.2, 0.5] });
+    }
+    if (storyBreakdownLeft <= 0) finishRace({ destroyed: true, sabotaged: true });
+  }
+
   // Percuter une berline solide en arrivant dessus à pleine allure : elle perd
-  // un point de vie et le pilote y laisse un carré. L'animation reste celle
-  // d'un choc net — étincelles, cri de pneus, secousse de caméra — sans l'état
-  // « choc » du trafic : aucune des deux voitures ne se met à ramper.
+  // un point de vie et le pilote y laisse un carré (deux contre un SUV).
+  // L'impact reste rapide, mais les deux voitures dérapent brièvement et la
+  // police se rabat sur une voie voisine au lieu de s'immobiliser.
   function applyPoliceCollision(police) {
+    const isSuv = police.vehicleType === 'police-suv';
     police.collisionCooldownLeft = CITY_RUSH_POLICE_COLLISION_COOLDOWN;
-    spawnTrafficImpact('player', police.id);
-    audioRef?.current?.skid({ pan: vehiclePan('player'), intensity: 1.1, duration: 0.82 });
-    cameraKick = Math.max(cameraKick, 0.52);
+    startPoliceCollisionAnimation(police);
+    spawnTrafficImpact('player', police.id, isSuv ? POLICE_SUV_RAM_VFX_INTENSITY : 1);
+    audioRef?.current?.skid({
+      pan: vehiclePan('player'),
+      intensity: isSuv ? 1.3 : 1.1,
+      duration: isSuv ? 0.95 : 0.82,
+    });
+    cameraKick = Math.max(cameraKick, isSuv ? 1.55 : 0.52);
+    if (isSuv) spawnPoliceSuvCollisionSparks(police);
     // Le carambolage abîme les deux coques : la berline perd un point de vie,
-    // le pilote un carré. Le répit partagé (`applyCarCollision`) empêche un
+    // le pilote un carré, ou deux contre un SUV. Le répit partagé (`applyCarCollision`) empêche un
     // contact collé au pare-chocs — ou deux berlines heurtées coup sur coup —
     // de retirer plusieurs carrés d'affilée.
     const playerHealthLost = applyCarCollision({
@@ -3885,12 +6333,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       name: police.name,
       id: police.id,
       gap: police.distance - distance,
+      source: police.vehicleType === 'police-suv' ? 'suv-collision' : 'collision',
     });
+    if (isSuv && !playerWrecked) {
+      playerSuvImpactLeft = PLAYER_POLICE_SUV_RAM_IMPACT_DURATION;
+      playerSuvImpactSide = playerSkidSide || 1;
+    }
     damagePolice(police, 'collision', 'player', {
       victim: 'police',
       playerHealthLost,
       playerHealth,
-      playerHealthMax: CITY_RUSH_PLAYER_HEALTH,
+      playerHealthMax: playerMaxHealth,
     });
   }
 
@@ -3901,11 +6354,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // ne doit jamais produire un choc invisible.
   function checkPoliceCollisions() {
     if (sprint || !active || finished) return;
-    if (playerJumpState.active && (playerCar.position.y || 0) > 0.8) return;
+    if (playerJumpState.active) return;
     const playerXNow = playerCar.position.x;
     const playerWidth = playerCollisionWidth();
     for (const police of activePursuers()) {
-      if (police.health <= 0 || police.collisionCooldownLeft > 0) continue;
+      if (police.health <= 0 || police.collisionCooldownLeft > 0 || police.jumpState?.active) continue;
       if (!cityRushPoliceCollisionHit({
         gap: police.distance - distance,
         closing: currentSpeed - (Number(police.currentSpeed) || 0),
@@ -3915,6 +6368,51 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         targetWidth: playerWidth,
       })) continue;
       applyPoliceCollision(police);
+    }
+  }
+
+  // Les adversaires carambolent les berlines exactement comme le joueur : le
+  // rival doit **arriver sur** la berline plus vite qu'elle ne roule
+  // (`cityRushPoliceCollisionHit`), la coque de la berline perd un point, les
+  // deux voitures dérapent, et le dossier du rival s'ouvre. La berline qui
+  // chasse déjà ce rival ne relance pas son dossier, et le répit de choc
+  // (`collisionCooldownLeft`) empêche un carambolage collé au pare-chocs d'être
+  // facturé à chaque image. Le contrôle passe après le déplacement des berlines :
+  // c'est le freinage du barrage qui crée le choc, décrit à la position du jour.
+  function checkRivalPoliceCollisions() {
+    if (sprint || !active || finished) return;
+    for (const racer of racers) {
+      if (racer.wrecked || racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 || racer.jumpState?.active) continue;
+      for (const police of activePursuers()) {
+        if (police.health <= 0 || police.collisionCooldownLeft > 0 || police.jumpState?.active) continue;
+        if (!cityRushPoliceCollisionHit({
+          gap: police.distance - racer.distance,
+          closing: (racer.currentSpeed || 0) - (Number(police.currentSpeed) || 0),
+          x: police.currentX,
+          targetX: racer.currentX,
+          width: police.width,
+          targetWidth: racerCollisionWidth(racer),
+        })) continue;
+        const isSuv = police.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE;
+        const side = Math.sign(racer.currentX - police.currentX) || 1;
+        police.collisionCooldownLeft = CITY_RUSH_POLICE_COLLISION_COOLDOWN;
+        police.skidLeft = Math.max(police.skidLeft, isSuv ? POLICE_SUV_RAM_SKID_DURATION : POLICE_RAM_SKID_DURATION);
+        police.skidDuration = police.skidLeft;
+        police.skidSide = -side;
+        police.skidSmokeTimer = 0;
+        racer.trafficImpactLeft = Math.max(racer.trafficImpactLeft, CITY_RUSH_TRAFFIC_IMPACT_DURATION * 1.25);
+        racer.skidLeft = Math.max(racer.skidLeft, 1.1);
+        racer.skidDuration = 1.1;
+        racer.skidSide = side;
+        racer.boostLeft = 0;
+        if (police.mesh.visible) {
+          spawnTrafficImpact(racer.id, police.id, isSuv ? POLICE_SUV_RAM_VFX_INTENSITY : 1);
+          audioRef?.current?.skid({ pan: vehiclePan(police.id), intensity: isSuv ? 1.3 : 1.05, duration: 0.82 });
+        }
+        // `damagePolice` ouvre aussi le dossier du rival (`registerPoliceRetaliation`) :
+        // le carambolage vaut trois étoiles, comme un tir.
+        damagePolice(police, 'collision', racer.id, { victim: 'police', racer: racer.name });
+      }
     }
   }
 
@@ -3942,7 +6440,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   // Les choix de voie des rivaux et de la police partagent ces bonus visibles,
   // avec un filtre propre à l'inventaire de chaque voiture.
-  function visiblePickups(actorInventory = null) {
+  function visiblePickups(actorInventory = null, actorHealth = 0, actorMaxHealth = 0) {
     const hideRedForRace = redPickupsHiddenForRace();
     return rows.flatMap((row) => row.pickups
       .map((pickup, index) => ({
@@ -3952,7 +6450,48 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         visible: row.slots[index]?.visible,
       }))
       .filter((pickup) => !pickup.claimed && pickup.visible)
-      .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, { redPickupsHidden: hideRedForRace })));
+      .filter((pickup) => canCollectCityRushPickup(actorInventory, pickup.type, {
+        redPickupsHidden: hideRedForRace,
+        health: actorHealth,
+        maxHealth: actorMaxHealth,
+      })));
+  }
+
+  // Fumée de capot : une berline touchée s'embrase et fume avant d'exploser.
+  // Plus sa barre descend, plus les flammes grandissent et plus la fumée devient
+  // dense et sombre ; le panache noir annonce l'explosion imminente.
+  const policeHoodScratch = new THREE.Vector3();
+  function emitPoliceDamageSmoke(police, dt) {
+    const mesh = police?.mesh;
+    if (!mesh) return;
+    const health = Number(police.health);
+    // Vie max propre au modèle (le SUV est blindé).
+    const maxHealth = Number(police.maxHealth) || cityRushPoliceMaxHealth(police.vehicleType || police.type) || CITY_RUSH_POLICE_HEALTH;
+    const damage = Number.isFinite(health) && maxHealth > 0
+      ? clamp(1 - health / maxHealth, 0, 1)
+      : 0;
+    animatePoliceDamageFire(mesh, damage, clockTime);
+    if (!mesh.visible || police.active === false || !Number.isFinite(health) || health <= 0 || health >= maxHealth) return;
+    police.damageSmokeTimer = (police.damageSmokeTimer || 0) - dt;
+    if (police.damageSmokeTimer > 0) return;
+    police.damageSmokeTimer = lite ? 0.2 - damage * 0.1 : 0.16 - damage * 0.11;
+    policeHoodScratch.set((Math.random() - 0.5) * 0.5, 1.05, -1.35);
+    mesh.localToWorld(policeHoodScratch);
+    // Gris clair à peine touchée → noir épais en fin de vie.
+    const shade = Math.round(0xb4 - damage * 0x86);
+    const color = (shade << 16) | (shade << 8) | (shade + 6);
+    smoke.emit(policeHoodScratch, {
+      color,
+      opacity: 0.28 + damage * 0.42,
+      scale: 0.28 + damage * 0.38,
+      grow: 2.2 + damage * 1.2,
+      life: 0.7 + damage * 0.6,
+      velocity: [(Math.random() - 0.5) * 0.7, 1.3 + damage * 1.1, 1.6 + Math.random() * 0.8],
+    });
+    // Coque presque percée : quelques étincelles orangées dans la fumée.
+    if (health <= 2 && Math.random() < 0.35) {
+      smoke.emit(policeHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.14, grow: 1.4, life: 0.32, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), 1.2] });
+    }
   }
 
   function updatePolice(dt, packLeaderEntry) {
@@ -3963,12 +6502,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     policeAimNoticeCooldown = Math.max(0, policeAimNoticeCooldown - dt);
     const pursuers = activePursuers();
     pursuers.forEach((police) => { police.healthFlash = Math.max(0, (police.healthFlash || 0) - dt); });
+    pursuers.forEach((police) => emitPoliceDamageSmoke(police, dt));
+    // Patrouilles encore en ronde — police en civil (banalisée) et police
+    // routière, dans le flot comme en face : elles fument aussi dès qu'elles
+    // sont touchées, avant d'exploser.
+    for (const car of trafficCars) {
+      if (!car.rallied && !car.destroyed && isCityRushPoliceTrafficType(car.type)) emitPoliceDamageSmoke(car, dt);
+    }
+    for (const car of oncomingCars) {
+      if (!car.rallied && !car.destroyed && isCityRushPoliceTrafficType(car.type)) emitPoliceDamageSmoke(car, dt);
+    }
     if (!pursuers.length) return;
     // Le trafic en ronde : identifiant pour l'impact, position et vitesse pour
     // repérer une voie bouchée (une berline évite de s'y engluer).
     const traffic = rollingTraffic().map((car) => ({
       id: car.id, lane: car.lane, distance: car.distance, x: car.currentX, width: car.width, speed: car.currentSpeed,
-    }));
+    // Les berlines lâchées par un mini-garage comptent comme du trafic : une
+    // poursuite qui repart ne les traverse pas.
+    })).concat(patrolCars.map((car) => ({
+      id: car.id, lane: car.lane, distance: car.distance, x: car.currentX, width: car.width, speed: car.currentSpeed,
+    })));
     // Le trafic venant en face rend les voies du contresens infréquentables
     // pour l'escouade (vitesse négative : les voies passent pour bouchées). Il
     // ne bloque en revanche pas le déplacement des berlines — il se croise.
@@ -4040,6 +6593,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.powerCooldown = Math.max(0, police.powerCooldown - dt);
       police.blockLeft = Math.max(0, police.blockLeft - dt);
       police.collisionCooldownLeft = Math.max(0, (police.collisionCooldownLeft || 0) - dt);
+      police.skidSmokeTimer = Math.max(0, (Number(police.skidSmokeTimer) || 0) - dt);
       // La seule arme de la police est la mitrailleuse rouge, chargée par un bonus.
       const charged = isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL);
       const armed = charged && police.powerCooldown <= 0;
@@ -4083,11 +6637,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // (rouge ou bleu) et leader devant : elle se replie pour tirer. Sinon
       // elle chasse devant lui, à hauteur de ses bonus.
       police.mode = barring ? 'blockade' : armed ? 'attack' : 'hunt';
+      // Élue pour la ligne de tir : elle seule vise la voie de son client pour
+      // ouvrir le feu droit devant son capot (la rafale part toujours vers
+      // l'avant). C'est la contrepartie du barrage, réservée à l'arrière.
+      const isFireLiner = !police.rallied && fireLiners.get(leader.id)?.police === police;
+      // Le pilote vient de se décaler sous le nez d'une berline élue (barrage
+      // ou ligne de tir) : elle relance son choix de voie tout de suite, au
+      // lieu de finir son délai et de tirer dans la voie qu'il vient de
+      // quitter. Sans ce réflexe, un joueur qui balayait les voies à
+      // 0,4 s d'intervalle restait intouchable.
+      if (police.watchedLane !== undefined && police.watchedLane !== leader.lane
+        && (isInterceptor || isFireLiner)) {
+        police.changeIn = Math.min(police.changeIn, CITY_RUSH_POLICE_PURSUIT_REFLEX);
+      }
+      police.watchedLane = leader.lane;
 
-      // Bombardée, la berline ne choisit plus sa trajectoire : la décision
-      // (et son minuteur) attendent la fin de la toupie, comme les rivaux.
-      if (police.stunLeft <= 0) police.changeIn -= dt;
-      if (police.stunLeft <= 0 && police.changeIn <= 0) {
+      // Sonnée ou fraîchement percutée, la berline garde son choix de voie :
+      // le minuteur attend la fin de la toupie ou du répit après le choc.
+      let policeAirborne = Boolean(police.jumpState?.active);
+      if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0 && !policeAirborne) police.changeIn -= dt;
+      if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0 && !policeAirborne && police.changeIn <= 0) {
         // Un barrage ne change pas de voie : c'est ce qui le rend lisible.
         if (!barring) {
           const availableLanes = [police.lane];
@@ -4100,7 +6669,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             distance: police.distance,
             speed: police.currentSpeed || police.baseSpeed,
             availableLanes,
-            pickups: visiblePickups(police.inventory),
+            pickups: visiblePickups(police.inventory, police.health, police.maxHealth),
             traffic: [...traffic, ...oncomingForLanes],
             racers: raceCars,
             targetLane: leader.lane,
@@ -4113,7 +6682,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             // pour ouvrir le feu droit devant son capot (la rafale part toujours
             // vers l'avant). C'est la contrepartie du barrage, réservée à
             // l'arrière.
-            fireLane: !police.rallied && fireLiners.get(leader.id)?.police === police ? leader.lane : null,
+            fireLane: isFireLiner ? leader.lane : null,
             fireGap: gap,
             // Engluée derrière une voiture solide : elle s'extrait de la voie
             // avant de penser aux bonus, sinon elle ne verrait jamais le
@@ -4150,10 +6719,32 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Engluée derrière un véhicule lent ou un pilote, ou sonnée par un choc :
       // elle relance tout de suite son choix de voie au lieu d'attendre la fin
       // de son délai.
-      if (police.currentSpeed < targetSpeed * 0.55) police.changeIn = Math.min(police.changeIn, 0.1);
+      if (police.collisionCooldownLeft <= 0 && police.currentSpeed < targetSpeed * 0.55) police.changeIn = Math.min(police.changeIn, 0.1);
       police.currentSpeed = approachCityRushSpeed(police.currentSpeed, Math.max(0, targetSpeed), 13.5, dt, coursePace);
       police.currentX = lerp(police.currentX, laneX(police.lane), Math.min(1, dt * 5.6));
       const before = priorDistances.get(police.id);
+      // Les poursuivants empruntent aussi les tremplins : le choix de voie
+      // est gelé en vol, pour qu'ils atterrissent dans la voie de décollage.
+      if (!policeAirborne && police.stunLeft <= 0) {
+        for (const ramp of ramps) {
+          if (ramp.lane !== police.lane || !detectCityRushRampContact(police.distance, police.lane, ramp.trackDistance, ramp.lane)) continue;
+          const takeoffSpeed = Math.max(14, police.currentSpeed || police.baseSpeed);
+          police.jumpState = {
+            active: true,
+            startDistance: police.distance,
+            totalDistance: computeCityRushJumpDistance(takeoffSpeed),
+            maxHeight: computeCityRushJumpHeight(takeoffSpeed),
+            takeoffSpeed,
+            progress: 0,
+          };
+          policeAirborne = true;
+          if (police.mesh.visible) {
+            audioRef?.current?.rampJump?.({ pan: vehiclePan(police.id), speed: takeoffSpeed });
+            emitPoliceSkidSmoke(police);
+          }
+          break;
+        }
+      }
       requests.push({
         id: police.id,
         lane: police.lane,
@@ -4161,6 +6752,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         width: police.width,
         distance: before,
         nextDistance: before + police.currentSpeed * dt,
+        jumping: policeAirborne,
       });
     }
 
@@ -4173,24 +6765,55 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // elle n'était plus jamais à l'écran. Un choc refusé (véhicule déjà en
     // train de se rabattre, ou en délai de grâce) est rejoué à l'image suivante.
     for (const car of resolved) {
-      const blocker = car.blockedBy ? trafficCars.find((item) => item.id === car.blockedBy) : null;
+      const blocker = car.blockedBy
+        ? trafficCars.find((item) => item.id === car.blockedBy)
+          || patrolCars.find((item) => item.id === car.blockedBy)
+          || null
+        : null;
       if (blocker) applyTrafficImpact(car.id, blocker);
     }
     let nearest = Infinity;
+    const landedPolice = [];
     for (const police of pursuers) {
       const before = priorDistances.get(police.id);
       const priorX = priorXs.get(police.id);
       police.distance = resolvedById.get(police.id) ?? before;
       police.currentSpeed = dt > 0 ? Math.max(0, (police.distance - before) / dt) : police.currentSpeed;
+      let policeLanded = false;
+      if (police.jumpState?.active) {
+        const jumpTraveled = police.distance - police.jumpState.startDistance;
+        const progress = clamp(jumpTraveled / Math.max(1, police.jumpState.totalDistance), 0, 1);
+        police.jumpState.progress = progress;
+        if (progress < 1) {
+          police.currentJumpY = computeCityRushJumpElevation(jumpTraveled, police.jumpState.totalDistance, police.jumpState.maxHeight);
+          police.currentJumpPitch = computeCityRushJumpPitch(progress);
+        } else {
+          police.jumpState.active = false;
+          police.currentJumpY = 0;
+          police.currentJumpPitch = 0;
+          policeLanded = true;
+        }
+      }
       const gap = police.distance - distance;
       const visible = police.active && gap > -CITY_RUSH_POLICE_VIEW_BEHIND && gap < 150;
       // Une rafale encaissée fait déraper la berline, comme les rivaux.
       const skid = skidOffset(police.skidLeft, police.skidDuration, police.skidSide || 1);
       police.mesh.visible = visible;
-      police.mesh.position.set(police.currentX + skid + trackRelativeX(police.distance), trackRelativeY(police.distance) + (police.stunLeft > 0 ? 0.05 : 0), PLAYER_Z - gap * SCALE);
-      police.mesh.rotation.x = trackPitch(police.distance);
+      police.mesh.position.set(
+        police.currentX + skid + trackRelativeX(police.distance),
+        trackRelativeY(police.distance) + (police.currentJumpY || 0) + (police.stunLeft > 0 ? 0.05 : 0),
+        PLAYER_Z - gap * SCALE,
+      );
+      police.mesh.rotation.x = trackPitch(police.distance) + (police.currentJumpPitch || 0);
       // Toupie du stun héliporté pour la berline bombardée, comme les rivaux.
       police.mesh.rotation.y = trackYaw(police.distance) + cityRushStunSpin(police.stunLeft, police.stunTotal) + clamp((police.currentX - priorX) * -3.2 + skid * 0.22, -0.22, 0.22);
+      const policeSkidRoll = police.vehicleType === 'police-suv' ? 0.085 : 0.045;
+      const policeSkidFrequency = police.vehicleType === 'police-suv' ? 17 : 13;
+      police.mesh.rotation.z = skidOffset(police.skidLeft, police.skidDuration, police.skidSide || 1, policeSkidRoll, policeSkidFrequency);
+      if (visible && police.skidLeft > 0 && police.skidSmokeTimer <= 0) {
+        emitPoliceSkidSmoke(police);
+        police.skidSmokeTimer = POLICE_SKID_SMOKE_INTERVAL;
+      }
       // Halo rouge/bleu sous le châssis et gyrophares : la poursuite se voit
       // de loin, contrairement à la berline du trafic lent.
       const pursuit = police.mesh.userData.pursuit;
@@ -4208,8 +6831,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // caméra, qui se vide de droite à gauche et flashe à chaque dégât.
       const healthBar = police.mesh.userData.healthBar;
       if (healthBar) {
-        const ratio = clamp(police.health / CITY_RUSH_POLICE_HEALTH, 0, 1);
-        const remainingSquares = Math.ceil(clamp(police.health, 0, CITY_RUSH_POLICE_HEALTH));
+        const policeMax = police.maxHealth || CITY_RUSH_POLICE_HEALTH;
+        const ratio = clamp(police.health / policeMax, 0, 1);
+        const remainingSquares = Math.ceil(clamp(police.health, 0, policeMax));
         healthBar.bar.visible = visible && police.health > 0;
         if (healthBar.bar.visible) {
           healthBar.segments?.forEach((segment, segmentIndex) => {
@@ -4229,6 +6853,42 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (relative > 2.5) audioRef?.current?.passby({ pan: vehiclePan(police.id), speed: clamp(relative / 14, 0, 1) });
       }
       if (police.active) nearest = Math.min(nearest, Math.abs(gap));
+      if (policeLanded) landedPolice.push(police);
+    }
+
+    // Une patrouille qui touche le sol après un saut encaisse : l'atterrissage
+    // lui coûte **deux carrés de vie** (`CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE`,
+    // le prix d'un tir bleu), avec son boum et sa gomme. Elle n'est détruite —
+    // tête-à-queue, explosion, carcasse en feu — que si sa barre tombe à zéro :
+    // `damagePolice` appelle alors `destroyPolice` avec la même source
+    // `'ramp-landing'`. Une berline neuve survit donc à deux sauts et part en
+    // épave au troisième, un SUV blindé au cinquième ; la barre au-dessus du
+    // toit, son flash et les flammes de dégâts racontent chaque atterrissage
+    // encaissé, et la poursuite continue tant qu'il reste un carré.
+    for (const police of landedPolice) {
+      if (police.mesh.visible) {
+        audioRef?.current?.rampLand?.({ pan: vehiclePan(police.id), speed: police.currentSpeed });
+        emitPoliceSkidSmoke(police);
+      }
+      const healthBeforeLanding = Number(police.health) || 0;
+      damagePolice(police, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE, null);
+      // Le saut qui ne tue pas est raconté quand même : la page et les
+      // vérifications suivent la coque perdue à chaque atterrissage.
+      if (police.active !== false) {
+        getCallbacks().effect?.({
+          type: 'police-ramp-landing',
+          vehicleType: police.vehicleType || police.type || 'police',
+          id: police.id,
+          police: police.name,
+          health: police.health,
+          maxHealth: police.maxHealth || CITY_RUSH_POLICE_HEALTH,
+          damage: healthBeforeLanding - Number(police.health),
+          source: CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
+          // Atterrissages restants avant la casse, barre actuelle comprise.
+          landingsToDestroy: cityRushPoliceShotsLeft(police.health, CITY_RUSH_POLICE_RAMP_LANDING_SOURCE),
+          destroyed: false,
+        });
+      }
     }
 
     // La sirène suit la proximité de la berline la plus proche : l'escouade
@@ -4243,7 +6903,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // pilote visé peut donc casser la mire en se décalant — sans cela, chaque
     // rafale touchait, et quinze carrés y passaient en une boucle.
     for (const police of pursuers) {
-      if (police.stunLeft > 0 || police.powerCooldown > 0
+      if (!police.active || police.stunLeft > 0 || police.powerCooldown > 0
         || !isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL)) {
         police.aimLeft = 0;
         police.aimTargetId = null;
@@ -4295,7 +6955,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       ?? (actorId === 'player' ? playerCollisionWidth() : racerCollisionWidth(actor));
     // Les adversaires se traversent sans collision; le trafic lent **et les
     // berlines de police du dernier tour** sont solides et bloquent la voie :
-    // on ne se rabat pas sur leur capot.
+    // on ne se rabat pas sur leur capot. Le verrou juge les **carrosseries**,
+    // pas les boîtes de contact du trafic (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`) :
+    // c'est une règle de rabattement (une distance de sécurité, 4,8 m), plus
+    // stricte que le choc qu'elle évite — la boîte resserrée sert au contact
+    // facturé, pas à autoriser un rabat sur un pare-chocs.
     const obstacles = [
       ...rollingTraffic().map((traffic) => ({ lane: traffic.lane, x: traffic.currentX, width: traffic.width, distance: traffic.distance })),
       // Le trafic venant en face bloque aussi la voie : on ne se rabat pas
@@ -4340,12 +7004,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
-  function applyTrafficImpact(racerId, traffic) {
+  function applyTrafficImpact(racerId, traffic, contact = null) {
     if (!traffic || traffic.impactCooldownLeft > 0 || traffic.impactChanging) return false;
     const racer = racerId === 'player' ? null : racers.find((item) => item.id === racerId);
     const squadCar = racerId === 'player' || racer ? null : policeCars.find((item) => item.id === racerId);
+    // Un rival qui emboutit une berline de ronde la sort de sa patrouille :
+    // exactement le réflexe du pilote (`checkPoliceRally`), mais le contact
+    // ouvre en plus son dossier — trois étoiles et sa berline dédiée. Le
+    // contrôle passe **avant** le rabattement : un choc refusé faute de voie
+    // libre reste un choc, et le dossier du rival ne dépend pas de la place que
+    // la berline heurtée peut se faire dans le flot.
+    let rivalPoliceContact = false;
+    if (racer && !traffic.rallied && isCityRushPoliceTrafficType(traffic.type)) {
+      rivalPoliceContact = Boolean(rallyTrafficPolice(traffic, racer.id, {
+        victim: 'police',
+        racer: racer.name,
+      }));
+      registerPoliceRetaliation(racer.id, 'collision', { reason: 'police-contact' });
+    }
     const escapeLane = trafficImpactEscapeLane(traffic);
-    if (escapeLane === traffic.lane) return false;
+    if (escapeLane === traffic.lane) return rivalPoliceContact;
 
     traffic.impactLeft = CITY_RUSH_TRAFFIC_IMPACT_DURATION;
     traffic.impactCooldownLeft = CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN;
@@ -4367,7 +7045,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'traffic',
         name: traffic.name,
         id: traffic.id,
-        gap: traffic.distance - distance,
+        // L'écart annoncé est celui du contact, relevé avant le mouvement de
+        // l'image (`previousGap`) : le pilote arrive sur une voiture qui est
+        // devant lui, jamais sur une qu'il vient de dépasser. Les rares appels
+        // sans contact (berline poussée dans le trafic) gardent l'écart du jour.
+        gap: Number.isFinite(Number(contact?.previousGap))
+          ? Number(contact.previousGap)
+          : traffic.distance - distance,
         lane: traffic.lane,
       });
     } else if (racer) {
@@ -4399,7 +7083,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'traffic',
         healthLost,
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       } : {}),
     });
     return true;
@@ -4409,12 +7093,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Collision solide : le pilote est ralenti et la voiture adverse dévie d'une
   // voie au plus, en restant sur la chaussée.
   function applyOncomingImpact(actorId, oncoming) {
-    const policeContact = actorId === 'player' && isCityRushPoliceTrafficType(oncoming.type);
+    const racerActor = actorId === 'player' ? null : racers.find((item) => item.id === actorId) || null;
+    // Un rival heurte une patrouille de face : elle se retourne pour lui comme
+    // elle le ferait pour le pilote, et l'adversaire ouvre son dossier — son
+    // contact vaut trois étoiles, sans toucher à la recherche du joueur.
+    const policeContact = (actorId === 'player' || Boolean(racerActor))
+      && isCityRushPoliceTrafficType(oncoming.type);
     if (policeContact) {
       // Une patrouille (y compris banalisée) heurtée de face se retourne, puis
       // occupe l'une des places de la poursuite déclenchée à trois étoiles.
-      beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: 'player' });
-      raiseWantedLevel({ police: true, reason: oncoming.type === 'undercover-police' ? 'undercover-contact' : 'police-contact' });
+      beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: actorId });
+      if (racerActor) registerPoliceRetaliation(racerActor.id, 'collision', { reason: 'police-contact' });
+      else raiseWantedLevel({ police: true, reason: 'police-contact' });
     }
     oncoming.impactCooldownLeft = CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN * 1.15;
     if (!policeContact && !oncoming.pushedAside) {
@@ -4462,7 +7152,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         playerCurrentSpeed = Math.min(playerCurrentSpeed, paced(6));
         currentSpeed = Math.min(currentSpeed, paced(6));
       }
-      // Un choc frontal se paie aussi d'un carré (voir `applyCarCollision`).
+      // Un choc frontal se paie aussi d'un carré (voir `applyCarCollision`) ;
+      // le SUV d'interception, lui, en coûte deux comme celui de l'escouade.
+      const chargeSuv = oncoming.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE;
       healthLost = applyCarCollision({
         victim: 'oncoming',
         name: oncoming.name,
@@ -4470,7 +7162,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         gap: contactGap,
         lane: oncoming.lane,
         policeContact,
+        source: chargeSuv ? 'suv-collision' : 'collision',
       });
+      if (chargeSuv) {
+        // Même secousse de caisse que le SUV de l'escouade : le choc est lourd.
+        playerSuvImpactLeft = PLAYER_POLICE_SUV_RAM_IMPACT_DURATION;
+        playerSuvImpactSide = side;
+        cameraKick = Math.max(cameraKick, 1.35);
+        spawnPoliceSuvCollisionSparks(oncoming);
+      }
     } else {
       const racer = racers.find((item) => item.id === actorId);
       const squadCar = racer ? null : activePursuerById(actorId);
@@ -4510,6 +7210,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming: true,
       pushedAside: !policeContact,
       policeContact,
+      // Le SUV d'interception se nomme dans le bandeau : c'est lui qui fait
+      // demi-tour et prend le pilote en chasse.
+      vehicleType: oncoming.vehicleType || null,
+      isSuv: oncoming.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE,
       // La voiture heurtée dérape vers le bord extérieur de son sens de
       // circulation : à gauche quand on roule à droite, à droite à Londres et
       // sur la Shuto (voir `cityRushOncomingImpactX`).
@@ -4518,7 +7222,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         victim: 'oncoming',
         healthLost,
         health: playerHealth,
-        maxHealth: CITY_RUSH_PLAYER_HEALTH,
+        maxHealth: playerMaxHealth,
       } : {}),
     });
   }
@@ -4529,14 +7233,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const priorMap = priorActorDistances instanceof Map ? priorActorDistances : null;
 
     const actors = [
-      { id: 'player', x: playerCar.position.x, width: playerCollisionWidth(), distance, priorDistance: priorMap?.get('player') ?? distance, jumping: Boolean(playerJumpState.active && (playerCar.position.y || 0) > 0.8) },
+      { id: 'player', x: playerCar.position.x, width: playerCollisionWidth(), distance, priorDistance: priorMap?.get('player') ?? distance, jumping: Boolean(playerJumpState.active) },
       ...racers.map((racer) => ({
         id: racer.id,
         x: racer.mesh.position.x,
         width: racerCollisionWidth(racer),
         distance: racer.distance,
         priorDistance: priorMap?.get(racer.id) ?? racer.distance,
-        jumping: Boolean(racer.jumpState?.active && (racer.currentJumpY || 0) > 0.8),
+        jumping: Boolean(racer.jumpState?.active),
       })),
       ...activePursuers().map((police) => ({
         id: police.id,
@@ -4544,15 +7248,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         width: police.width,
         distance: police.distance,
         priorDistance: police.distance,
-        jumping: false,
       })),
     ];
+
+    // Le véhicule du contresens est jugé sur sa **boîte de contact**
+    // (`CITY_RUSH_TRAFFIC_HITBOX_SCALE`), comme le trafic lent : le croiser de
+    // justesse ne coûte plus un carré.
+    const oncomingWidth = cityRushTrafficHitboxWidth(oncoming.width);
 
     for (const actor of actors) {
       if (actor.jumping) continue;
       const gapAfter = oncoming.distance - actor.distance;
       const gapBefore = priorOncoming - (Number.isFinite(actor.priorDistance) ? actor.priorDistance : actor.distance);
-      const lateralOverlap = Math.abs(actor.x - oncoming.currentX) < (actor.width + oncoming.width) / 2;
+      const lateralOverlap = Math.abs(actor.x - oncoming.currentX) < (actor.width + oncomingWidth) / 2;
       if (!lateralOverlap) continue;
 
       // Détection balayée : on touche si on est dans la fenêtre [-2.5, 4.0] après le mouvement,
@@ -4574,8 +7282,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // coller à un autre véhicule venant en face dans la même voie.
     const lane = oncomingLanes[Math.floor(Math.random() * oncomingLanes.length)];
     // Sur route très peu fréquentée, les véhicules venant en face sont
-    // encore plus rares et mieux espacés.
-    const lightOncoming = oncomingCars.length <= 1;
+    // encore plus rares et mieux espacés. Les SUV de charge ne comptent pas :
+    // ils ne font pas partie du flot et ne se recyclent pas ici.
+    const lightOncoming = oncomingCars.filter((car) => !car.charge).length <= 1;
     let nextDistance = distance + randomRange(lightOncoming ? 320 : 150, lightOncoming ? 480 : 235);
     for (const other of oncomingCars) {
       if (other === oncoming || other.lane !== lane) continue;
@@ -4610,6 +7319,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       return;
     }
+    if (name === 'bazooka' || name === 'use_bazooka') return useBazooka();
     const aliases = {
       use_pistol: CITY_RUSH_POWERS.PISTOL,
       pistol: CITY_RUSH_POWERS.PISTOL,
@@ -4639,6 +7349,39 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       return;
     }
 
+    if (type === CITY_RUSH_PICKUPS.HEALTH) {
+      const healthBefore = playerHealth;
+      playerHealth = cityRushHealthPickupRepair(playerHealth, playerMaxHealth);
+      const healthRestored = playerHealth - healthBefore;
+      if (healthRestored <= 0) return;
+      playerHealthFlash = 0;
+      score += 100;
+      pickedUp += 1;
+      audioRef?.current?.pickup?.(type, { ready: true });
+      getCallbacks().effect?.({
+        type: 'player-health-pickup',
+        healthBefore,
+        health: playerHealth,
+        maxHealth: playerMaxHealth,
+        healthRestored,
+        lane,
+      });
+      getCallbacks().pickup?.({
+        type,
+        progress: healthRestored,
+        chargeCost: CITY_RUSH_HEALTH_PICKUP_RESTORE,
+        ready: true,
+        newlyReady: true,
+        autoActivated: true,
+        health: playerHealth,
+        maxHealth: playerMaxHealth,
+        healthRestored,
+        lane,
+      });
+      emitHud(true);
+      return;
+    }
+
     const before = inventory[type] || 0;
     const pickupAmount = type === CITY_RUSH_POWERS.PISTOL ? CITY_RUSH_PISTOL_AMMO_PER_PICKUP : 1;
     inventory = addCityRushCharge(inventory, type, pickupAmount);
@@ -4659,6 +7402,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function collectRacerPickup(racer, type) {
+    if (type === CITY_RUSH_PICKUPS.HEALTH) {
+      racer.health = cityRushHealthPickupRepair(racer.health, racer.maxHealth || cityRushCarMaxHealth(racer.profile));
+      racer.healthFlash = 0;
+      return;
+    }
     if (type === CITY_RUSH_PICKUPS.BOOST) {
       racer.boostLeft = Math.max(racer.boostLeft, CITY_RUSH_TRACK_BOOST_DURATION);
       getCallbacks().effect?.({ type: 'rival-boost', rival: racer.name });
@@ -4674,6 +7422,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Un policier ne marque pas de points : il empoche le bonus, et la page
   // prévient quand un rouge ou un jaune est raflé sous le nez du joueur.
   function collectPolicePickup(police, type, lane) {
+    if (type === CITY_RUSH_PICKUPS.HEALTH) {
+      police.health = cityRushHealthPickupRepair(
+        police.health,
+        police.maxHealth || cityRushPoliceMaxHealth(police.vehicleType || police.type),
+      );
+      police.healthFlash = 0;
+      return;
+    }
     if (type === CITY_RUSH_PICKUPS.BOOST) {
       police.boostLeft = Math.max(police.boostLeft || 0, CITY_RUSH_TRACK_BOOST_DURATION);
       return;
@@ -4705,11 +7461,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const rowRecycleAnchor = distance;
     const hideRedForRace = redPickupsHiddenForRace();
     const participants = [
-      { id: 'player', distance, lane: playerLane, speed: currentSpeed },
-      ...racers.map((racer) => ({ id: racer.id, distance: racer.distance, lane: racer.lane, speed: racer.stunLeft > 0 ? 0 : racer.baseSpeed, racer })),
-      // La police peut charger sa mitrailleuse avec les mêmes bonus rouges.
+      { id: 'player', distance, lane: playerLane, speed: currentSpeed, health: playerHealth, maxHealth: playerMaxHealth },
+      ...racers.map((racer) => ({
+        id: racer.id,
+        distance: racer.distance,
+        lane: racer.lane,
+        speed: racer.stunLeft > 0 ? 0 : racer.baseSpeed,
+        health: racer.health,
+        maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
+        racer,
+      })),
+      // La police peut charger sa mitrailleuse ou reprendre un carré comme les pilotes.
       ...activePursuers().map((police) => ({
-        id: police.id, distance: police.distance, lane: police.lane, speed: police.currentSpeed, racer: police, police: true,
+        id: police.id,
+        distance: police.distance,
+        lane: police.lane,
+        speed: police.currentSpeed,
+        health: police.health,
+        maxHealth: police.maxHealth || cityRushPoliceMaxHealth(police.vehicleType || police.type),
+        racer: police,
+        police: true,
       })),
     ].sort((a, b) => b.distance - a.distance);
 
@@ -4738,17 +7509,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           slot.userData.pop = 0;
           slot.scale.setScalar(0.001);
         }
-        if (slot.userData.type === CITY_RUSH_PICKUPS.BOOST) {
-          slot.position.y = 0;
-          slot.rotation.set(0, 0, 0);
-          const pulse = 0.92 + Math.sin(elapsed * 5 + slot.userData.pad.userData.phase) * 0.08;
-          slot.userData.pad.scale.set(pulse, 1, pulse);
-        } else {
-          const bob = Math.sin(elapsed * 4.1 + slot.userData.phase) * 0.12;
-          slot.position.y = 1.3 + bob;
-          slot.rotation.y = Math.sin(elapsed * 2.5 + slot.userData.phase) * 0.12;
-          slot.userData.ring.rotation.z += dt * 1.4;
-          slot.userData.halo.scale.setScalar(1 + Math.sin(elapsed * 3.2 + slot.userData.phase) * 0.12);
+        // Tous les bonus flottent : léger tangage, balancement de l'icône,
+        // anneau du sol qui tourne et halo qui respire. Le turbo ajoute la
+        // rotation de son anneau.
+        const bob = Math.sin(elapsed * 4.1 + slot.userData.phase) * 0.12;
+        slot.position.y = PICKUP_FLOAT_HEIGHT + bob;
+        slot.rotation.y = Math.sin(elapsed * 2.5 + slot.userData.phase) * 0.12;
+        slot.userData.ring.rotation.z += dt * 1.4;
+        slot.userData.halo.scale.setScalar(1 + Math.sin(elapsed * 3.2 + slot.userData.phase) * 0.12);
+        if (slot.userData.orbit.visible) {
+          // L'anneau du bonus vert tourne autour de son éclair : un tour complet
+          // en ~2,4 s.
+          slot.userData.orbit.rotation.y += dt * 2.6;
         }
       });
 
@@ -4764,7 +7536,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const pickupIndex = row.pickups.findIndex((item, index) => (
           item.lane === participant.lane
           && !isCityRushPickupHidden(row.pickupClaims, index, elapsed)
-          && canCollectCityRushPickup(participantInventory, item.type, { redPickupsHidden: hideRedForRace })
+          && canCollectCityRushPickup(participantInventory, item.type, {
+            redPickupsHidden: hideRedForRace,
+            health: participant.health,
+            maxHealth: participant.maxHealth,
+          })
         ));
         if (pickupIndex < 0) continue;
         markCityRushPickupTaken(row.pickupClaims, pickupIndex, elapsed, CITY_RUSH_PICKUP_RESPAWN_DELAY);
@@ -4900,6 +7676,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mesh.visible = false;
     });
     releaseRalliedPolice();
+    // La herse quitte la route avec le drapeau à damier : ses voitures rangent
+    // le dispositif et repartent devant.
+    dismissSpikeBlock();
+    miniGarages.forEach(placeMiniGarage);
     audioRef?.current?.policeSirenOff?.();
     // Une épave ne fait pas la fête : pas de confettis ni de drapeau à damier.
     if (!destroyed) startLine.celebrate();
@@ -4912,6 +7692,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const ordered = destroyed
       ? [...standings.ordered.filter((racer) => racer.id !== 'player'), ...standings.ordered.filter((racer) => racer.id === 'player')]
       : standings.ordered;
+    // Marge du pilote sur son meilleur poursuivant (négative s’il est battu) :
+    // les défis « gagner avec X m d’avance » se jugent là-dessus.
+    const playerEntry = standings.ordered.find((racer) => racer.id === 'player');
+    const bestOtherEntry = standings.ordered.find((racer) => racer.id !== 'player');
+    const finishMargin = playerEntry && bestOtherEntry
+      ? Math.round((Number(playerEntry.distance) || 0) - (Number(bestOtherEntry.distance) || 0))
+      : 0;
     getCallbacks().finish?.({
       city: city.id,
       duration: elapsed,
@@ -4921,6 +7708,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       checkpoints: sprint ? sprintCheckpoints : null,
       timedOut,
       destroyed,
+      sabotaged: Boolean(options.sabotaged),
+      rankAtBreakdown: storyRankAtBreakdown,
+      healthLeft: Math.max(0, Math.round(playerHealth)),
+      healthMax: playerMaxHealth,
+      policeDestroyed: policeDestroyedTotal,
+      shotsFired: playerShotsFired,
+      hitsTaken: playerHitsTaken,
+      margin: finishMargin,
       rank: destroyed ? ordered.length : standings.rank,
       winner: standings.leader?.name || '—',
       winnerId: standings.leader?.id || null,
@@ -4949,6 +7744,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       scratch.set(offset[0], offset[1], offset[2]);
       car.localToWorld(scratch);
       smoke.emit(scratch, options);
+    }
+  }
+
+  function emitPoliceSkidSmoke(police) {
+    const rearWheels = (police.mesh?.userData?.wheels || []).filter((wheel) => wheel.position.z > 0);
+    for (const wheel of rearWheels) {
+      wheel.getWorldPosition(scratch);
+      smoke.emit(scratch, {
+        color: 0xd2d4dc,
+        opacity: 0.34,
+        scale: 0.3,
+        grow: 2.05,
+        life: 0.5,
+        velocity: [(police.skidSide || 1) * 0.45, 0.35, 0.8],
+      });
     }
   }
 
@@ -5074,7 +7884,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       followRate = 2.4;
     } else {
       const speedRatio = clamp(currentSpeed / (playerTopSpeed * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR), 0, 1);
-      const shake = (playerStunLeft > 0 ? 0.14 : playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 ? 0.05 : 0) + cameraKick * 0.22;
+      const shake = (playerStunLeft > 0 ? 0.14 : playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerSpikeSlowLeft > 0 ? 0.05 : 0) + cameraKick * 0.22;
       // La caméra regarde quelques mètres plus loin sur l'axe courbe et se
       // place elle-même sur le morceau de route derrière la voiture. Le résultat
       // reste très doux : la route tourne, pas la tête du joueur.
@@ -5119,6 +7929,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL)) {
         if (usePower(CITY_RUSH_POWERS.PISTOL)) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
       }
+      // Maintien des flèches : tant que ← / → (ou Q / D) reste enfoncé, un écart
+      // repart à cadence régulière, sans attendre une nouvelle pression. Une
+      // voie fermée (trafic, saut en cours, toupie) ne fait rien sur le coup :
+      // le cran suivant retente sa chance, ce qui donne le glissement continu
+      // attendu — la voiture se rabat dès que la voie s'ouvre.
+      steerHoldCooldown = Math.max(0, steerHoldCooldown - dt);
+      if (steerHoldDirection && steerHoldCooldown <= 0) {
+        action(steerHoldDirection);
+        steerHoldCooldown = STEER_HOLD_LANE_INTERVAL;
+      }
       elapsed += dt;
       const priorDistance = distance;
       const priorRacerDistances = new Map(racers.map((racer) => [racer.id, racer.distance]));
@@ -5129,6 +7949,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerBoostLeft = Math.max(0, playerBoostLeft - dt);
       playerStunLeft = Math.max(0, playerStunLeft - dt);
       playerSkidLeft = Math.max(0, playerSkidLeft - dt);
+      playerSuvImpactLeft = Math.max(0, playerSuvImpactLeft - dt);
+      playerSpikeSlowLeft = Math.max(0, playerSpikeSlowLeft - dt);
       playerHealthFlash = Math.max(0, playerHealthFlash - dt);
       playerCollisionCooldownLeft = Math.max(0, playerCollisionCooldownLeft - dt);
       // Voie tenue sans bouger : le bonus de ligne propre monte doucement.
@@ -5160,6 +7982,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         playerOncomingStage = oncomingStage;
       }
       const speedScale = (playerSlowLeft > 0 || playerTrafficImpactLeft > 0 ? 0.63 : 1) * (playerBlueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1);
+      // Pneus crevés par la herse : la vitesse visée tombe au facteur de la
+      // règle (`cityRushSpikePace`) tant que la crevaison court.
+      const spikeScale = playerSpikeSlowLeft > 0 ? cityRushSpikePace(1, CITY_RUSH_SPIKE_SLOW_FACTOR) : 1;
       const boostScale = playerBoostLeft > 0 ? CITY_RUSH_TRACK_BOOST_SPEED_FACTOR : 1;
       // Un changement de voie ne figure plus dans cette équation : seule la
       // voie tenue agit sur la vitesse, et uniquement à la hausse. Le
@@ -5167,17 +7992,34 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // dangereuses de la chaussée.
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
       const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * boostScale * cleanLineScale * oncomingScale;
+      const breakdownScale = storyBreakdownActive ? 0 : 1;
+      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
       // pointe est plus basse, la montée en régime garde sa durée.
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
       const priorPlayerX = playerX;
       playerX = lerp(playerX, laneX(playerLane), Math.min(1, dt * 12));
+      const playerSuvImpactAmount = playerWrecked
+        ? 0
+        : clamp(playerSuvImpactLeft / PLAYER_POLICE_SUV_RAM_IMPACT_DURATION, 0, 1);
+      const playerSuvImpactProgress = 1 - playerSuvImpactAmount;
+      const playerSuvImpactYaw = playerSuvImpactAmount > 0
+        ? Math.sin(playerSuvImpactProgress * Math.PI * 4) * playerSuvImpactAmount * 0.85 * playerSuvImpactSide
+        : 0;
+      // Le décalage transmis au résolveur de collisions reste celui du
+      // dérapage habituel ; l'animation SUV plus ample se joue sur la caisse.
       const playerSkid = skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide);
 
       const requestedRacerSpeeds = new Map();
       const priorRacerXs = new Map();
-      const aiPickups = new Map(racers.map((racer) => [racer.id, visiblePickups(racer.inventory)]));
+      const aiPickups = new Map(racers.map((racer) => [
+        racer.id,
+        visiblePickups(racer.inventory, racer.health, racer.maxHealth || cityRushCarMaxHealth(racer.profile)),
+      ]));
+      // Les rivaux courent pour gagner : distance du leader de la course (le
+      // pilote compris), et voie, tremplins et armes sont relus dans ce sens.
+      const raceLeaderDistance = Math.max(distance, ...racers.map((racer) => racer.distance));
+      const aiRamps = ramps.map((ramp) => ({ lane: ramp.lane, distance: ramp.trackDistance }));
       const aiTraffic = [
         ...rollingTraffic().map((traffic) => ({ lane: traffic.lane, distance: traffic.distance, speed: traffic.currentSpeed })),
         // Les berlines de police du dernier tour sont solides : les rivaux les
@@ -5196,16 +8038,40 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         // Une épave, une cible immobilisée ou une voiture en plein saut ne
         // choisit pas de nouvelle voie : en l'air, personne ne se décale.
         const racerAirborne = Boolean(racer.jumpState?.active);
-        if (!racer.wrecked && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0 && !racerAirborne) racer.changeIn -= dt;
-        if (!racer.wrecked && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0 && !racerAirborne && racer.changeIn <= 0) {
+        const racerCanThink = !racer.wrecked && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0 && !racerAirborne;
+        if (racerCanThink) racer.changeIn -= dt;
+        // Réflexe : un obstacle qui bouche sa voie rappelle le cerveau sans
+        // attendre la fin du délai de décision. Un bon pilote freine des deux
+        // pieds *avant* de choisir où passer — c'est ce qui sépare un rival qui
+        // évite le trafic d'un rival qui s'y encastre à 0,6 s près.
+        if (racerCanThink && racer.changeIn > CITY_RUSH_AI_REFLEX && cityRushAiLaneBlocked({
+          lane: racer.lane,
+          distance: racer.distance,
+          speed: racer.currentSpeed || racer.baseSpeed,
+          traffic: aiTraffic,
+          ramps: aiRamps,
+          laneCount,
+          // Chaque rival freine au taux de **son** modèle : une supercar juge
+          // une voie bouchée plus tard qu'une citadine, exactement comme le
+          // joueur au volant de la même voiture.
+          brakingRate: cityRushAiBrakingRate(racer.profile.accelerationRate),
+        })) {
+          racer.changeIn = Math.min(racer.changeIn, cityRushAiThinkDelay(Math.random, { urgent: true }));
+        }
+        if (racerCanThink && racer.changeIn <= 0) {
           const availableLanes = [racer.lane];
           for (const lane of [racer.lane - 1, racer.lane + 1]) {
             if (lane >= 0 && lane < laneCount && canEnterLane(racer.id, lane)) availableLanes.push(lane);
           }
+          // Les autres pilotes sont des concurrents : ils n'ont pas leur place
+          // dans `traffic` (les voitures de course se traversent), ils servent à
+          // doubler et à se répartir la chaussée.
           const otherRacers = [
-            { lane: playerLane, distance, speed: currentSpeed },
-            ...racers.filter((other) => other.id !== racer.id).map((other) => ({ lane: other.lane, distance: other.distance, speed: other.currentSpeed || other.baseSpeed })),
+            { lane: playerLane, distance, speed: currentSpeed, id: 'player', wrecked: playerWrecked },
+            ...racers.filter((other) => other.id !== racer.id)
+              .map((other) => ({ lane: other.lane, distance: other.distance, speed: other.currentSpeed || other.baseSpeed, id: other.id, wrecked: other.wrecked })),
           ];
+          const weaponReady = isCityRushPowerCharged(racer.inventory, CITY_RUSH_POWERS.PISTOL);
           const nextLane = chooseCityRushAiLane({
             currentLane: racer.lane,
             laneCount,
@@ -5214,11 +8080,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             speed: racer.currentSpeed || racer.baseSpeed,
             availableLanes,
             pickups: aiPickups.get(racer.id) || [],
-            traffic: [...aiTraffic, ...otherRacers],
-            lookAheadDistance: 145,
+            traffic: aiTraffic,
+            rivals: otherRacers,
+            ramps: aiRamps,
+            weaponReady,
+            // Une cible de tir doit être devant et encore en course : un pilote
+            // déjà en épave ne se tire pas dessus.
+            targets: otherRacers.filter((other) => !other.wrecked && other.distance > racer.distance),
+            chasing: racer.distance < raceLeaderDistance - 1,
+            lookAheadDistance: CITY_RUSH_AI_LOOKAHEAD,
+            brakingRate: cityRushAiBrakingRate(racer.profile.accelerationRate),
           });
           if (nextLane !== racer.lane) racer.lane = nextLane;
-          racer.changeIn = randomRange(0.36, 0.62);
+          racer.changeIn = cityRushAiThinkDelay();
         }
         racer.slowLeft = Math.max(0, racer.slowLeft - dt);
         racer.blueShotSlowLeft = Math.max(0, racer.blueShotSlowLeft - dt);
@@ -5230,7 +8104,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer.skidLeft = Math.max(0, racer.skidLeft - dt);
         racer.powerCooldown = Math.max(0, racer.powerCooldown - dt);
         const racerSlowed = racer.slowLeft > 0 || racer.trafficImpactLeft > 0;
-        const speedTarget = racer.wrecked || racer.stunLeft > 0 ? 0 : racer.baseSpeed * (racerSlowed ? 0.56 : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38);
+        // Le rythme de course : la fiche du modèle, la surcharge des rivaux, et
+        // le tout dernier tour de ce rival, où il ne retient plus rien.
+        const racerFinalLap = cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps;
+        const racerPace = cityRushRivalPaceFactor({ finalLap: racerFinalLap });
+        // Boss du mode Histoire (Dante) : un multiplicateur propre au rival,
+        // par-dessus le rythme de course habituel.
+        const storyPaceBoost = Number(storyRivalPace?.[racer.id]) > 0 ? Number(storyRivalPace[racer.id]) : 1;
+        const speedTarget = racer.wrecked || racer.stunLeft > 0
+          ? 0
+          : racer.baseSpeed * racerPace * storyPaceBoost * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38);
         const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt, coursePace);
         requestedRacerSpeeds.set(racer.id, requestedSpeed);
         priorRacerXs.set(racer.id, racer.currentX);
@@ -5295,6 +8178,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Trajectoire en l'air du joueur
       let playerJumpY = 0;
       let playerJumpPitch = 0;
+      // Atterrissage de cette image : la voiture ne se pose pas dans une
+      // berline (voir `resolveCityRushCarMovement`).
+      let playerLandedThisFrame = false;
       if (playerJumpState.active) {
         const jumpTraveled = distance - playerJumpState.startDistance;
         const progress = clamp(jumpTraveled / Math.max(1, playerJumpState.totalDistance), 0, 1);
@@ -5304,6 +8190,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           playerJumpPitch = computeCityRushJumpPitch(progress);
         } else {
           playerJumpState.active = false;
+          playerLandedThisFrame = true;
           playerJumpY = 0;
           playerJumpPitch = 0;
           playerLandingBounce = 0.14;
@@ -5321,6 +8208,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       for (const racer of racers) {
         let racerJumpY = 0;
         let racerJumpPitch = 0;
+        racer.landedThisFrame = false;
         if (racer.jumpState?.active) {
           const jumpTraveled = racer.distance - racer.jumpState.startDistance;
           const progress = clamp(jumpTraveled / Math.max(1, racer.jumpState.totalDistance), 0, 1);
@@ -5330,6 +8218,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             racerJumpPitch = computeCityRushJumpPitch(progress);
           } else {
             racer.jumpState.active = false;
+            racer.landedThisFrame = true;
             racerJumpY = 0;
             racerJumpPitch = 0;
             if (racer.mesh.visible) {
@@ -5368,7 +8257,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           width: 1.9 * playerProfile.widthScale,
           previousDistance: priorDistance,
           nextDistance: priorDistance + requestedPlayerSpeed * dt,
-          jumping: Boolean(playerJumpState.active && playerJumpY > 0.8),
+          jumping: Boolean(playerJumpState.active),
+          landing: playerLandedThisFrame,
         },
         ...racers.map((racer) => ({
           id: racer.id,
@@ -5378,7 +8268,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           width: 1.9 * 0.92 * racer.profile.widthScale,
           previousDistance: priorRacerDistances.get(racer.id),
           nextDistance: priorRacerDistances.get(racer.id) + requestedRacerSpeeds.get(racer.id) * dt,
-          jumping: Boolean(racer.jumpState?.active && (racer.currentJumpY || 0) > 0.8),
+          jumping: Boolean(racer.jumpState?.active),
+          landing: Boolean(racer.landedThisFrame),
         })),
         ...rollingTraffic().map((traffic) => ({
           id: traffic.id,
@@ -5408,13 +8299,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           previousDistance: police.distance,
           nextDistance: police.distance,
         })),
+        // Les berlines lâchées par un mini-garage roulent comme le trafic : la
+        // même enveloppe de carrosserie les rend solides, et un carambolage
+        // coûte au pilote exactement ce qu'il coûte contre une voiture lente.
+        ...patrolCars.map((patrol) => ({
+          id: patrol.id,
+          collisionGroup: 'traffic',
+          lane: patrol.lane,
+          x: patrol.currentX,
+          width: patrol.width,
+          previousDistance: patrol.distance,
+          nextDistance: patrol.distance + patrol.currentSpeed * dt,
+        })),
       ];
       // Le contact est détecté avant le maintien de la distance de sécurité :
       // un joueur humain comme une IA déclenche le même choc et le même rabat.
-      const trafficImpactsThisFrame = detectCityRushTrafficImpacts(movementRequests, CITY_RUSH_TRAFFIC_IMPACT_GAP);
+      const trafficImpactsThisFrame = detectCityRushTrafficImpacts(movementRequests, CITY_RUSH_TRAFFIC_IMPACT_GAP, trafficContacts);
       for (const contact of trafficImpactsThisFrame) {
-        const traffic = trafficCars.find((item) => item.id === contact.trafficId);
-        if (traffic) applyTrafficImpact(contact.racerId, traffic);
+        const traffic = trafficCars.find((item) => item.id === contact.trafficId)
+          || patrolCars.find((item) => item.id === contact.trafficId);
+        if (traffic) applyTrafficImpact(contact.racerId, traffic, contact);
       }
       const resolvedCars = resolveCityRushCarMovement(movementRequests);
       const movementById = new Map(resolvedCars.map((car) => [car.id, car.nextDistance]));
@@ -5440,7 +8344,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
 
       const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal, playerWrecked ? playerWreckSpinTurns : undefined);
-      playerCar.rotation.y = trackYaw(distance) + playerSpin + clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12) + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
+      playerCar.rotation.y = trackYaw(distance)
+        + playerSpin
+        + playerSuvImpactYaw
+        + clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12)
+        + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
       const playerSteer = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
       animateRacerCar(playerCar, {
         speed: currentSpeed,
@@ -5451,6 +8359,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         slowed: playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerTrafficImpactLeft > 0,
         impacting: playerTrafficImpactLeft > 0 || playerWrecked,
         stunned: playerStunLeft > 0 && !playerWrecked,
+        violentImpact: playerSuvImpactAmount,
         skidding: playerSkidLeft > 0,
         braking: currentSpeed < priorSpeed - paced(2) * dt && currentSpeed > 1,
       }, dt, clockTime);
@@ -5575,6 +8484,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const gap = traffic.distance - distance;
         traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
         traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
+        // La voie est publiée à part : sur un circuit courbe, l'abscisse monde
+        // mêle le décalage de la courbe et la voie, et un lecteur extérieur (le
+        // harnais) ne peut pas la retrouver depuis la position seule.
+        traffic.mesh.userData.lane = traffic.lane;
+        traffic.mesh.userData.trackDistance = traffic.distance;
         traffic.mesh.rotation.x = trackPitch(traffic.distance);
         traffic.mesh.rotation.y = lerp(traffic.mesh.rotation.y, trackYaw(traffic.distance) + clamp((traffic.currentX - priorTrafficX) * -2.8, -0.26, 0.26), Math.min(1, dt * 12));
         if (traffic.mesh.visible) {
@@ -5586,6 +8500,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
 
+      // Berlines lâchées par un mini-garage : elles ont quitté la chasse et
+      // roulent normalement, à l'allure du trafic, jusqu'à sortir du champ.
+      updatePatrolPolice(dt, movementById);
+
       // Trafic venant en face : il roule vers la course sur les trois voies de
       // gauche, croise les pilotes, puis reparaît au loin une fois passé.
       // Collision frontale solide : détection balayée pour éviter le tunneling.
@@ -5593,8 +8511,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         ['player', priorDistance],
         ...Array.from(priorRacerDistances.entries()),
       ]);
+      // Les SUV de charge règlent leur visée avant la boucle, qui se charge du
+      // déplacement, du rendu et du choc balayé.
+      updateSuvCharges(dt);
       for (const oncoming of oncomingCars) {
         if (oncoming.rallied || oncoming.destroyed) {
+          oncoming.mesh.visible = false;
+          continue;
+        }
+        // SUV de charge dormant ou en rechargement : il attend au loin que la
+        // poursuite le rappelle (voir `updateSuvCharges`), ni vu ni percuté.
+        if (oncoming.chargeState === 'dormant' || oncoming.chargeState === 'reloading') {
           oncoming.mesh.visible = false;
           continue;
         }
@@ -5618,8 +8545,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           paced(oncoming.pushedAside ? 2.6 : 3.8),
           oncoming.baseSpeed * shoveSpeedScale * turnSpeedScale + paced(Math.sin(elapsed * 0.5 + oncoming.phase) * 0.18),
         );
-        oncoming.distance -= requestedOncomingSpeed * dt;
-        oncoming.currentSpeed = requestedOncomingSpeed;
+        // Un SUV de charge ne se contente pas de ralentir dans son demi-tour :
+        // il freine, s'arrête face au pilote, puis repart dans l'autre sens. Le
+        // signe suit le cosinus de la manœuvre (1 → 0 → −1), sans quoi la
+        // voiture traverserait le pilote pendant qu'elle se retourne.
+        const turnDirection = oncoming.charge && turning ? Math.cos(turnProgress * Math.PI) : 1;
+        oncoming.distance -= requestedOncomingSpeed * turnDirection * dt;
+        oncoming.currentSpeed = requestedOncomingSpeed * turnDirection;
         if (turning) {
           oncoming.currentX = lerp(
             oncoming.currentX,
@@ -5629,10 +8561,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         } else if (oncoming.pushedAside) {
           oncoming.pushAsideElapsed += dt;
           oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed, oncoming.width, driveSide);
+        } else if (oncoming.charge && oncoming.chargeLocked) {
+          // Le SUV de charge vise la voie du pilote : il se rabat à vitesse
+          // limitée (`cityRushSuvChargeStep`), donc un changement de voie au
+          // dernier moment le fait passer à côté.
+          oncoming.currentX = cityRushSuvChargeStep(
+            oncoming.currentX,
+            laneX(oncoming.turnaroundTargetLane ?? oncoming.lane),
+            dt,
+          );
         } else {
           oncoming.currentX = lerp(oncoming.currentX, laneX(oncoming.lane), Math.min(1, dt * 3.4));
         }
-        if (!turning && oncoming.distance < distance - 30) respawnOncomingAhead(oncoming);
+        // Le recyclage du flot ne concerne pas les SUV de charge : les leurs
+        // sont réglés par `updateSuvCharges` (apparition au loin, rechargement).
+        if (!turning && !oncoming.charge && oncoming.distance < distance - 30) respawnOncomingAhead(oncoming);
         const gap = oncoming.distance - distance;
         // Sifflement au croisement, une fois par passage comme les rivaux.
         const previousOncomingGap = oncoming.lastPassGap;
@@ -5643,6 +8586,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (!turning) checkOncomingImpacts(oncoming, priorOncomingDistance, priorActorDistancesForOncoming);
         oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
         oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
+        oncoming.mesh.userData.lane = oncoming.lane;
+        oncoming.mesh.userData.trackDistance = oncoming.distance;
         oncoming.mesh.rotation.x = lerp(-trackPitch(oncoming.distance), trackPitch(oncoming.distance), turnEase);
         oncoming.mesh.rotation.y = trackYaw(oncoming.distance)
           + Math.PI * (1 - turnEase)
@@ -5677,7 +8622,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (launchSmokeLeft > 0 && currentSpeed < 20) {
           emitWheelSmoke(playerCar, { color: 0xe4e4ea, opacity: 0.5, scale: 0.5, grow: 2.4, life: 0.9, velocity: [0, 0.5, 2.6] });
           playerSmokeTimer = 0.05;
-        } else if (playerSkidLeft > 0 || ((playerSlowLeft > 0 || playerBlueShotSlowLeft > 0) && currentSpeed > 4)) {
+        } else if (playerSkidLeft > 0 || ((playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerSpikeSlowLeft > 0) && currentSpeed > 4)) {
           emitWheelSmoke(playerCar, { color: 0xcfd0d8, opacity: 0.45, scale: 0.42, grow: 2.2, life: 0.7 });
           playerSmokeTimer = 0.06;
         } else if (playerBoostLeft > 0) {
@@ -5686,33 +8631,75 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
       launchSmokeLeft = Math.max(0, launchSmokeLeft - dt);
+      // Fumée de capot du joueur : plus la barre de vie descend, plus elle est
+      // dense, sombre et fréquente (gris léger → panache noir + étincelles).
+      // Opacité plafonnée : la fumée file vers la caméra sans masquer la route.
+      if (!playerWrecked && playerHealth > 0 && playerHealth < playerMaxHealth) {
+        playerDamageSmokeTimer -= dt;
+        if (playerDamageSmokeTimer <= 0) {
+          const damage = 1 - playerHealth / playerMaxHealth;
+          playerDamageSmokeTimer = (lite ? 0.24 : 0.18) - damage * (lite ? 0.12 : 0.12);
+          playerHoodScratch.set((Math.random() - 0.5) * 0.6, 0.95, -1.45);
+          playerCar.localToWorld(playerHoodScratch);
+          const shade = Math.round(0xbe - damage * 0x92);
+          smoke.emit(playerHoodScratch, {
+            color: (shade << 16) | (shade << 8) | (shade + 6),
+            opacity: 0.18 + damage * 0.34,
+            scale: 0.22 + damage * 0.34,
+            grow: 2.0 + damage * 1.1,
+            life: 0.55 + damage * 0.5,
+            velocity: [(Math.random() - 0.5) * 0.6, 1.4 + damage * 1.0, 1.8 + Math.random() * 0.8],
+          });
+          if (playerHealth <= CITY_RUSH_PLAYER_HEALTH_CRITICAL && Math.random() < 0.35) {
+            smoke.emit(playerHoodScratch, { color: 0xff8a33, opacity: 0.8, scale: 0.13, grow: 1.4, life: 0.3, velocity: [(Math.random() - 0.5) * 1.6, 1.8 + Math.random(), 1.4] });
+          }
+        }
+      }
 
       worldTravel = (distance - priorDistance) * SCALE;
       // Un contact avec une berline de police « pnj » la rappelle : elle sort
       // de sa ronde et prend le pilote en chasse (voir `rallyTrafficPolice`).
-      checkPoliceRally();
+      // Chapitres « sans police » du mode Histoire : ni ralliement au contact,
+      // ni ralliement à vue — les berlines du trafic restent du décor.
+      if (storyPoliceEnabled) checkPoliceRally();
+      // À cinq étoiles, les patrouilles croisées sur la route n'attendent pas
+      // le contact : elles prennent le pilote en chasse dès qu'elles le voient.
+      if (storyPoliceEnabled) checkPoliceSightRally();
       // Les trois voitures de base entrent au dernier tour du joueur (ou dès
       // le départ en mode Poursuite) et le prennent toujours pour cible, même
       // si un rival mène la course.
       const leader = refreshPackLeader();
       const playerLap = cityRushLapForDistance(distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
-      if (!policeDeployed && !sprint) {
+      if (!policeDeployed && !sprint && storyPoliceEnabled) {
         if (effectivePoliceFromStart && distance > 8) deployPolice();
         else if (playerLap >= effectiveLaps) deployPolice();
       }
       updatePolice(dt, leader);
+      // Le premier du dernier tour est chassé comme le pilote : un adversaire
+      // qui mène la course à l'ouverture du dernier tour reçoit la berline qui
+      // lui est réservée (voir `chaseLastLapLeader`).
+      chaseLastLapLeader(leader, playerLap);
       // Le carambolage avec une berline se juge après le déplacement des
       // berlines : le contact est alors décrit à la position du jour.
       checkPoliceCollisions();
+      // Les adversaires carambolent les berlines de la même façon : le rival qui
+      // arrive sur une berline ouvre son dossier et abîme sa coque.
+      checkRivalPoliceCollisions();
+      // La herse des quatre étoiles : montage, pose voie par voie, franchissement
+      // (détection balayée sur `priorDistance`), puis rangement.
+      updateSpikeBlock(dt, priorDistance);
       if (sprint) updateSprintCheckpoints(dt);
       else handleLapCrossings(priorDistance);
       // Garde de secours : si la course a rejoint le dernier tour sans avoir
       // initialisé sa coque au départ, la barre s'active au plus tard ici.
       if (!playerHealthActive && lap >= effectiveLaps) activatePlayerHealth();
       updatePoliceReinforcements(dt);
+      updateStoryBreakdown(dt);
       updateWreck(dt);
       updateRows(dt);
       updateRamps(dt);
+      updateMiniGarages(priorDistance);
+      updateBazookaWarehouses(priorDistance, dt);
       racers.forEach((racer) => useRacerPower(racer));
       updateVisualEffects(dt);
       updateTrafficImpacts(dt);
@@ -5745,6 +8732,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           ramp.group.position.set(laneX(ramp.lane) + trackRelativeX(ramp.trackDistance), trackRelativeY(ramp.trackDistance), PLAYER_Z - gap * SCALE);
           ramp.group.rotation.set(trackPitch(ramp.trackDistance), trackYaw(ramp.trackDistance), 0);
         }
+        miniGarages.forEach(placeMiniGarage);
       }
       // Bande-son hors course : ralenti sur la grille et en pause, roue libre
       // pendant le tour d'honneur (la vitesse de `coastSpeed` reste audible).
@@ -5781,6 +8769,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
         if (phase === 'finished') {
           traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
+        // La voie est publiée à part : sur un circuit courbe, l'abscisse monde
+        // mêle le décalage de la courbe et la voie, et un lecteur extérieur (le
+        // harnais) ne peut pas la retrouver depuis la position seule.
+        traffic.mesh.userData.lane = traffic.lane;
+        traffic.mesh.userData.trackDistance = traffic.distance;
           traffic.mesh.rotation.set(trackPitch(traffic.distance), trackYaw(traffic.distance), 0);
         }
       }
@@ -5788,6 +8781,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // d'honneur ; il attend, feux allumés, pendant l'intro et le compte à rebours.
       for (const oncoming of oncomingCars) {
         if (oncoming.rallied || oncoming.destroyed) {
+          oncoming.mesh.visible = false;
+          continue;
+        }
+        // Les SUV de charge n'appartiennent pas au flot : ils attendent, cachés,
+        // que la poursuite les rappelle (voir `updateSuvCharges`).
+        if (oncoming.charge) {
           oncoming.mesh.visible = false;
           continue;
         }
@@ -5799,6 +8798,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
         if (phase === 'finished') {
           oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
+        oncoming.mesh.userData.lane = oncoming.lane;
+        oncoming.mesh.userData.trackDistance = oncoming.distance;
           oncoming.mesh.rotation.set(-trackPitch(oncoming.distance), trackYaw(oncoming.distance) + Math.PI, 0);
         }
       }
@@ -5844,25 +8845,38 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const target = event.target?.tagName;
     if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
     const key = event.key.toLowerCase();
-    if (['arrowleft', 'arrowright', 'q', 'd', 'z'].includes(key)) event.preventDefault();
+    if (['arrowleft', 'arrowright', 'q', 'd', 'z', 'x'].includes(key)) event.preventDefault();
     if (!active || finished || event.repeat) return;
-    if (key === 'arrowleft' || key === 'q') action('left');
-    else if (key === 'arrowright' || key === 'd') action('right');
-    else if (key === 'z') {
+    const steerDirection = STEER_KEY_DIRECTIONS[key];
+    if (steerDirection) {
+      // La première pression répond tout de suite ; les écarts suivants sont
+      // cadencés par la boucle de rendu tant que la touche reste enfoncée.
+      if (pressSteerKey(key)) action(steerDirection);
+    } else if (key === 'z') {
       pistolKeyHeld = true;
       pistolHoldCooldown = 0;
       action(CITY_RUSH_POWERS.PISTOL);
       // Le premier tir part immédiatement ; les suivants sont cadencés dans
       // la boucle de rendu tant que la touche reste enfoncée.
       pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
+    } else if (key === 'x') {
+      action('bazooka');
     }
   }
   function onKeyUp(event) {
-    if (event.key.toLowerCase() !== 'z') return;
+    const key = event.key.toLowerCase();
+    // La relâche s'écoute même hors course : un maintien enregistré puis mis en
+    // pause ne doit pas repartir tout seul au retour en piste.
+    if (STEER_KEY_DIRECTIONS[key]) { liftSteerKey(key); return; }
+    if (key !== 'z') return;
     event.preventDefault();
     releasePistolKey();
   }
-  const onWindowBlur = () => releasePistolKey();
+  const onWindowBlur = () => {
+    // Fenêtre quittée : plus aucune touche n'est fiable, on lâche tout.
+    releasePistolKey();
+    releaseSteerKeys();
+  };
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', onWindowBlur);
@@ -5929,6 +8943,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     pause() {
       active = false;
       releasePistolKey();
+      // Pause : le maintien des flèches s'arrête net, la reprise ne repart pas
+      // d'elle-même dans une direction laissée enfoncée avant la pause.
+      releaseSteerKeys();
       currentSpeed = 0;
       audioRef?.current?.engine({ speed: 0, throttle: 0, idle: true });
     },
@@ -5965,6 +8982,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onWindowBlur);
       releasePistolKey();
+      releaseSteerKeys();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.domElement.removeEventListener('pointercancel', onPointerCancel);
@@ -5975,7 +8993,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
@@ -5992,7 +9010,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
-      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat);
+      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -6005,7 +9023,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       worldRef.current = null;
       if (actionsRef) actionsRef.current = null;
     };
-  }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, actionsRef, audioRef]);
+  }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode, actionsRef, audioRef]);
 
   useEffect(() => {
     if (roster) worldRef.current?.setRoster?.(roster);

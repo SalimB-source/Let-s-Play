@@ -35,7 +35,9 @@ function geometrySignature(geometry) {
 
 test('les voitures ont des coques fermées distinctes et des vitrages opaques', () => {
   const signatures = new Set();
-  const expectedWheels = ['eight-hole', 'classic-five', 'eight-hole', 'split-five', 'classic-five', 'split-five', 'split-five', 'turbofan', 'split-five', 'eight-hole', 'turbofan'];
+  // Jantes alignées sur les miniatures du garage : cinq branches pour la
+// Kronos, jante filaire pour la Bavaria M-CS, jante aérée pour l'Atlas XR.
+  const expectedWheels = ['aero-five', 'split-five', 'aero-five', 'split-five', 'classic-five', 'split-five', 'wire', 'turbofan', 'split-five', 'split-five', 'turbofan'];
 
   CITY_RUSH_CARS.forEach((profile, index) => {
     const car = makeRacerCar(profile, { player: index === 0, number: index + 1, driver: ROSTER[0] });
@@ -43,7 +45,13 @@ test('les voitures ont des coques fermées distinctes et des vitrages opaques', 
     const signature = geometrySignature(shell.geometry);
     assert.equal(signatures.has(signature), false, `${profile.name} ne réutilise pas la silhouette d'une autre voiture`);
     signatures.add(signature);
-    assert.ok(shell.geometry.attributes.position.count >= 150, `${profile.name} possède une coque longitudinale détaillée`);
+    assert.ok(shell.geometry.attributes.position.count >= 400, `${profile.name} possède une coque longitudinale lissée et détaillée`);
+    const headlights = car.userData.body.getObjectByName(`${profile.id}-modern-led-headlights`);
+    const tailbar = car.userData.body.getObjectByName(`${profile.id}-modern-led-tailbar`);
+    assert.ok(headlights?.isMesh, `${profile.name} reçoit une signature lumineuse LED moderne`);
+    assert.ok(tailbar?.isMesh, `${profile.name} reçoit un bandeau LED arrière`);
+    assert.ok(headlights.geometry.attributes.position.count >= 24);
+    assert.ok(tailbar.geometry.attributes.position.count >= 24);
     assert.equal(car.userData.archetype, profile.archetype);
     assert.equal(car.userData.wheelStyle, expectedWheels[index]);
     assert.equal(car.userData.wheels.length, 4);
@@ -55,6 +63,10 @@ test('les voitures ont des coques fermées distinctes et des vitrages opaques', 
     assert.equal(glass.material.side, THREE.DoubleSide, 'les vitres se lisent depuis les deux côtés');
     assert.ok(glass.geometry.attributes.position.count >= 24, `${profile.name} a un ensemble de vitres segmenté`);
     assert.equal(car.userData.driverId, ROSTER[0].driverId, 'le pilote reste disponible pour le classement');
+    car.traverse((object) => {
+      if (!object.isMesh) return;
+      assert.ok(Array.from(object.geometry.attributes.position.array).every(Number.isFinite), `${profile.name} garde une géométrie finie`);
+    });
   });
 
   assert.equal(signatures.size, CITY_RUSH_CARS.length, 'chaque miniature correspond à une forme 3D différente');
@@ -74,19 +86,27 @@ test('la flotte de police comprend une berline et un SUV haut perché', () => {
   assert.ok(suv.userData.length > sedan.userData.length, 'le SUV a un empattement plus long');
   assert.ok(suvBounds.max.y > sedanBounds.max.y + 0.2, 'le toit du SUV est visiblement plus haut que celui de la berline');
   assert.equal(suv.userData.wheels.length, 4);
-  assert.equal(suv.userData.beacons.length, 2);
+  assert.equal(suv.userData.beacons.length, 6, 'rampe LED, calandre et lunette arrière');
+  assert.equal(sedan.userData.beacons.length, 2, 'les gyrophares des berlines sont inchangés');
+  assert.ok(countMeshes(suv) <= 22, 'les détails restent fusionnés pour limiter les appels de rendu');
+  suv.traverse((object) => {
+    if (!object.isMesh) return;
+    assert.ok(Array.from(object.geometry.attributes.position.array).every(Number.isFinite), 'géométrie finie');
+  });
 });
 
-test('la berline de police banalisée ne montre ni gyrophare ni marquage', () => {
-  const unmarked = makeTrafficVehicle('undercover-police');
-  assert.equal(unmarked.userData.trafficType, 'undercover-police');
-  assert.equal(unmarked.userData.isPolice, true, 'la simulation la reconnaît comme police');
-  assert.equal(unmarked.userData.isUndercoverPolice, true);
-  assert.equal(unmarked.userData.beacons.length, 0, 'aucun gyrophare n’est visible');
-  const visibleNames = [];
-  unmarked.traverse((object) => { if (object.isMesh) visibleNames.push(object.name); });
-  assert.ok(!visibleNames.some((name) => /decal|beacon|lightbar|police-mark/i.test(name)),
-    'aucun élément de marquage policier n’est dans le modèle');
+test('le taxi remplace la berline banalisée : voiture civile jaune, sans gyrophare', () => {
+  const taxi = makeTrafficVehicle('taxi');
+  assert.equal(taxi.userData.trafficType, 'taxi');
+  assert.equal(taxi.userData.isTaxi, true);
+  assert.equal(taxi.userData.isPolice, false, 'aucune patrouille ne se cache derrière un taxi');
+  assert.equal(taxi.userData.isPoliceSUV, false);
+  assert.equal(taxi.userData.beacons.length, 0, 'un taxi n’a ni gyrophare ni rampe');
+  const colors = [];
+  taxi.traverse((object) => { if (object.isMesh && object.material?.color) colors.push(object.material.color.getHex()); });
+  assert.ok(colors.includes(0xf7c22c), 'la carrosserie jaune du taxi se lit');
+  assert.ok(colors.includes(0x191a20), 'le damier et la lanterne reprennent le noir du taxi');
+  assert.ok(taxi.userData.width > 0 && taxi.userData.length > 0, 'le taxi garde une empreinte de berline');
 });
 
 test('les coupés ne contiennent aucun personnage, même quand un pilote est assigné', () => {
@@ -134,6 +154,22 @@ test('roues, caisse, feux et turbo restent animés sans animation de personnage'
   assert.ok(car.userData.boostFlames.every((flame) => flame.group.visible), 'les flammes restent liées au turbo');
   assert.equal(car.userData.materials.tailLight.color.getHex(), 0xff5a6a, 'les feux stop restent animés');
   assert.equal(car.userData.headPivot, undefined, 'aucune animation de tête n’existe');
+});
+
+test('un choc de SUV fait violemment rebondir et tanguer la caisse', () => {
+  const car = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });
+  const ordinaryImpactCar = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });
+  const impactFrame = 1 / 30;
+  const impactTime = 0.04;
+  animateRacerCar(car, { speed: 0, maxSpeed: 30, violentImpact: 1 }, impactFrame, impactTime);
+  animateRacerCar(ordinaryImpactCar, { speed: 0, maxSpeed: 30 }, impactFrame, impactTime);
+
+  assert.ok(Math.abs(car.userData.body.rotation.z) > Math.abs(ordinaryImpactCar.userData.body.rotation.z) + 0.08,
+    'le choc renforcé impose un roulis nettement supérieur');
+  assert.ok(Math.abs(car.userData.body.rotation.x) > Math.abs(ordinaryImpactCar.userData.body.rotation.x) + 0.03,
+    'le choc renforce aussi le tangage');
+  assert.ok(car.userData.body.position.y > ordinaryImpactCar.userData.body.position.y + 0.06,
+    'la voiture rebondit sous la force du choc');
 });
 
 test('chaque modèle reste dans un budget de rendu léger pour les rivales', () => {

@@ -913,11 +913,11 @@ export function makeRacingNumberTexture(profile, number) {
 }
 
 export function makeTrafficDecalAtlas() {
-  // 4 cases : POLICE, AMBULANCE, croix rouge, sigle de la voirie.
+  // 5 cases : POLICE, AMBULANCE, croix rouge, sigle de la voirie, TAXI.
   const cell = 256;
   const height = 96;
   const texture = makeCanvasTexture((ctx) => {
-    ctx.clearRect(0, 0, cell * 4, height);
+    ctx.clearRect(0, 0, cell * 5, height);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '900 54px "Orbitron", Arial, sans-serif';
@@ -932,8 +932,15 @@ export function makeTrafficDecalAtlas() {
     ctx.fillStyle = '#f5e6a3';
     ctx.font = '900 34px "Orbitron", Arial, sans-serif';
     ctx.fillText('CITY WASTE', cell * 3.5, height / 2 + 2);
-  }, cell * 4, height, { smooth: true });
-  const uv = (index) => [index / 4 + 0.004, 0.02, (index + 1) / 4 - 0.004, 0.98];
+    // Le taxi porte le jaune de la ville sur un cartouche sombre : la plaque
+    // reste lisible sur une carrosserie dorée.
+    ctx.fillStyle = '#191a20';
+    ctx.fillRect(cell * 4 + 16, 12, cell - 32, height - 24);
+    ctx.fillStyle = '#f7c22c';
+    ctx.font = '900 52px "Orbitron", Arial, sans-serif';
+    ctx.fillText('TAXI', cell * 4.5, height / 2 + 2);
+  }, cell * 5, height, { smooth: true });
+  const uv = (index) => [index / 5 + 0.003, 0.02, (index + 1) / 5 - 0.003, 0.98];
   return { texture, uv };
 }
 
@@ -961,7 +968,23 @@ export function makePickupMaterial(type, color) {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    if (type === 'blue-shot') {
+    if (type === 'health') {
+      // Trousse de soin : croix rouge bien distincte du « + » bleu de l'ancien tir.
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.roundRect(57, 57, 142, 142, 25);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(108, 75, 40, 106, 12);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(75, 108, 106, 40, 12);
+      ctx.fill();
+    } else if (type === 'blue-shot') {
       // Bonus bleu « + » : une seule icône recharge immédiatement un tir droit.
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = color;
@@ -1027,6 +1050,22 @@ export function makePickupMaterial(type, color) {
       // Cache-flamme
       ctx.fillRect(234, 120, 16, 20);
       ctx.restore();
+    } else if (type === 'boost') {
+      // Turbo : l'éclair blanc du bonus vert, celui qui flotte au-dessus de la
+      // chaussée, cerclé de son anneau (l'ancien pad posé au sol a disparu).
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.moveTo(154, 36);
+      ctx.lineTo(86, 148);
+      ctx.lineTo(124, 148);
+      ctx.lineTo(102, 220);
+      ctx.lineTo(172, 104);
+      ctx.lineTo(132, 104);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
     } else {
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 8;

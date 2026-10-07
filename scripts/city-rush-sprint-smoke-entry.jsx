@@ -84,6 +84,19 @@ const {
 } = await import('../src/games/cityRushRules.js');
 const fail = (msg, extra) => { console.error('SPRINT SMOKE FAILED:', msg, extra ?? ''); process.exit(1); };
 
+// Le trafic du Sprint est tiré au sort (implantation des véhicules, bonus,
+// dérapages). Le tirage est figé ville par ville pour que la vérif rende le
+// même verdict d'une exécution à l'autre : sans cela, un scénario malchanceux
+// — un bouchon qui bloque le pilote sans jamais déclencher de choc — se
+// présente comme une régression. `CITY_RUSH_SPRINT_SEED=…` rejoue un autre
+// tirage pour éprouver le scénario suivant.
+const BASE_SEED = (Number(process.env.CITY_RUSH_SPRINT_SEED) >>> 0) || 0x5f3a2c19;
+let randomSeed = BASE_SEED;
+Math.random = () => {
+  randomSeed = (randomSeed * 1664525 + 1013904223) >>> 0;
+  return randomSeed / 4294967296;
+};
+
 function play(city) {
   const cb = { huds: [], laps: [], effects: [], pickups: [], finish: null };
   const mount = { clientWidth: 1280, clientHeight: 720, getBoundingClientRect: () => ({ width: 1280, height: 720, top: 0, left: 0 }), appendChild() {}, removeChild() {}, addEventListener() {}, removeEventListener() {}, ownerDocument: globalThis.document, querySelector: () => null, classList: { add() {}, remove() {} }, style: {} };
@@ -122,7 +135,8 @@ function play(city) {
   return { cb, frames, checkpointGate, boostPads, checkpointSnapshots, screenVisible };
 }
 
-for (const city of CITY_RUSH_CITIES) {
+for (const [cityIndex, city] of CITY_RUSH_CITIES.entries()) {
+  randomSeed = (BASE_SEED + cityIndex * 104729) >>> 0;
   const { cb, frames, checkpointGate, boostPads, checkpointSnapshots, screenVisible } = play(city);
   if (!cb.finish) fail(`[${city.id}] pas d'arrivée`);
   const r = cb.finish;
@@ -145,14 +159,21 @@ for (const city of CITY_RUSH_CITIES) {
     }
   }
   if (!screenVisible) fail('le panneau du prochain checkpoint est hors champ caméra au départ');
-  if (boostPads.length < 2 || boostPads.some((pad) => !pad.userData.pad.visible)) {
-    fail('les pads turbo ne sont pas visibles au sol en Sprint', boostPads.map((pad) => ({ type: pad.userData.type, visible: pad.userData.pad?.visible })));
+  // Le turbo du Sprint est un bonus vert flottant : icône au-dessus de la
+  // chaussée, anneau incliné qui tourne — plus aucune dalle au sol.
+  if (boostPads.length < 2 || boostPads.some((slot) => !slot.userData.icon?.visible || !slot.userData.orbit?.visible || slot.position.y < 1)) {
+    fail('les bonus turbo verts ne flottent pas en Sprint', boostPads.map((slot) => ({
+      type: slot.userData.type,
+      y: slot.position.y,
+      icon: slot.userData.icon?.visible,
+      orbit: slot.userData.orbit?.visible,
+    })));
   }
-  if (!cb.pickups.length) fail('aucun pad turbo ramassé en Sprint');
+  if (!cb.pickups.length) fail('aucun bonus turbo flottant ramassé en Sprint');
   const nonBoostPickups = cb.pickups.filter((pickup) => pickup.type !== CITY_RUSH_PICKUPS.BOOST);
   if (nonBoostPickups.length) fail('un bonus autre que turbo est ramassable en Sprint', nonBoostPickups);
   if (cb.pickups.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
-    fail('un pad turbo du Sprint ne s’active pas automatiquement', cb.pickups);
+    fail('un bonus turbo du Sprint ne s’active pas automatiquement', cb.pickups);
   }
   // L'annonce de la barre du joueur est attendue en solo ; seul un effet
   // d'arme, de rival ou de police doit invalider le Sprint.
