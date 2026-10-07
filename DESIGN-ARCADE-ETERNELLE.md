@@ -13,6 +13,13 @@ niveau de la salle, de la carte et du réglage.
 | Cartes | **Clés + collection + deck équipé** — 12 cartes-pouvoir (3 équipées), 33 cartes-légende (3 équipées) |
 | Prochaine étape | Ce document, puis les maquettes visuelles, puis le prototype du *feel* |
 
+**Maquettes : produites et validées** — quatre images dans `mockups/` (écran de
+jeu du stage 1-1, planche de personnages, carte-pouvoir, hub) et la charte qui
+en découle, **`mockups/CHARTE-ARTISTIQUE.md`** : palettes mesurées au pixel,
+tailles de cellule, tableau des animations (12 img/s pour les personnages),
+anatomie du HUD et des cartes, écarts à corriger. C'est la référence
+contraignante du dessin comme du code.
+
 ---
 
 ## 1. Le monde en un coup d'œil
@@ -539,6 +546,13 @@ scripts/plateformer-*-check.mjs   parcours automatique de stages, UI en jsdom
 ```
 Vignette `public/arcade-eternelle-thumb.jpg`, entrée dans la navigation « Jeux »,
 chapitre dans `README.md` : mêmes rails que Mirage Rush et Vice City Rush.
+
+**La charte artistique fait autorité** (`mockups/CHARTE-ARTISTIQUE.md`) :
+échelle interne **640 × 360 px** pour une tuile de **32 px**, mise à l'échelle
+entière ×2/×3 ; contour d'encre de 2 px tracé séparément du remplissage ;
+**animation des personnages à 12 img/s** (une image toutes les 5 images de
+simulation à 60 Hz) ; trames en motif précuit appliqué en masque ; décors cuits
+dans un canvas hors écran (un décor = un seul blit).
 
 ### 14.3 Performance
 60 ips sur un téléphone de milieu de gamme : 1 canvas, rendu en couches (décor →

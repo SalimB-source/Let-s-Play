@@ -402,8 +402,8 @@ partout :
 
 | Étape | Livrable |
 | --- | --- |
-| 0 | Ce document (en cours) |
-| 1 | Maquettes visuelles + charte (palette, héros, HUD, une salle) |
+| 0 | Ce document + `DESIGN-ARCADE-ETERNELLE.md` (design détaillé) — **fait** |
+| 1 | Maquettes visuelles + charte (palette, héros, HUD, une salle) — **fait** (`mockups/`) |
 | 2 | **Prototype « feel »** : une salle, course/saut/attaque/dash, 60 ips, au clavier — c'est ici qu'on juge le jeu |
 | 3 | Moteur de stages : tuiles, collisions, portes, 1 pouvoir-clé, 3 ennemis |
 | 4 | Cartes : ramassage, classeur, HUD, sauvegarde, carte du monde |
