@@ -1,0 +1,332 @@
+/* Écran-titre de Vice City Rush — menu principal façon Need for Speed :
+   Most Wanted (2005). Décor photo statique, logo griffé, carrousel cerisé
+   de jaune, encre grunge et raccourcis clavier. Les polices « Pirata One »
+   (street gothique) et « Permanent Marker » (tag) sont chargées dans
+   index.html avec le reste des Google Fonts. */
+
+.vcr-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 1600; /* au-dessus de la nav (1000), du menu mobile (1300) et de la pause (1500) */
+  overflow: hidden;
+  background: #07080d;
+  color: #fff;
+  font-family: 'Pirata One', 'Orbitron', sans-serif;
+}
+
+/* ── Décor ─────────────────────────────────────────────────────────────── */
+.vcr-menu-scene { position: absolute; inset: 0; }
+.vcr-menu-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+  filter: saturate(1.05) contrast(1.04);
+}
+.vcr-menu-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(4, 5, 9, 0.88),
+    rgba(4, 5, 9, 0.18) 30%,
+    rgba(4, 5, 9, 0.22) 60%,
+    rgba(4, 5, 9, 0.94) 88%
+  );
+}
+.vcr-menu-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 3px 3px;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* ── Encre grunge ──────────────────────────────────────────────────────── */
+.vcr-splat {
+  position: absolute;
+  color: rgba(4, 5, 9, 0.9);
+  pointer-events: none;
+  z-index: 1;
+}
+.vcr-splat-logo {
+  top: -46px;
+  right: 2%;
+  width: min(620px, 78vw);
+  transform: rotate(-4deg);
+}
+.vcr-splat-bar {
+  bottom: -56px;
+  left: 50%;
+  width: min(980px, 118vw);
+  transform: translateX(-50%) rotate(2deg);
+}
+
+/* ── Logo ──────────────────────────────────────────────────────────────── */
+.vcr-menu-logo {
+  position: absolute;
+  top: clamp(14px, 4.5vh, 44px);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 2;
+  animation: vcr-menu-flicker 4.2s infinite;
+}
+.vcr-menu-logo-kicker {
+  display: block;
+  font-family: 'Permanent Marker', cursive;
+  font-size: clamp(11px, 1.6vw, 15px);
+  letter-spacing: 0.28em;
+  color: #8fd8ff;
+  text-shadow: 0 0 10px rgba(80, 200, 255, 0.55);
+}
+.vcr-menu-logo-title {
+  margin: 4px 0 0;
+  font-family: 'Pirata One', 'Orbitron', sans-serif;
+  font-weight: 400;
+  font-size: clamp(46px, 9vw, 100px);
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow:
+    0 0 2px #fff,
+    0 3px 0 #0a0c12,
+    0 6px 18px rgba(0, 0, 0, 0.9),
+    0 0 26px rgba(255, 93, 184, 0.35);
+}
+.vcr-menu-logo-title b {
+  font-weight: 400;
+  color: #ffd23e;
+  text-shadow:
+    0 3px 0 #0a0c12,
+    0 0 22px rgba(255, 210, 62, 0.55);
+}
+.vcr-menu-logo-scratch {
+  display: block;
+  height: 8px;
+  margin: 6px auto 0;
+  width: min(420px, 70vw);
+  transform: skewY(-1.2deg);
+  background: repeating-linear-gradient(
+    100deg,
+    #fff 0 16px,
+    transparent 16px 22px,
+    #fff 22px 30px,
+    transparent 30px 40px
+  );
+  opacity: 0.75;
+}
+@keyframes vcr-menu-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.86; }
+  94% { opacity: 1; }
+  97% { opacity: 0.92; }
+  98% { opacity: 1; }
+}
+
+/* ── « main menu » + tag graffiti ──────────────────────────────────────── */
+.vcr-menu-main-label {
+  position: absolute;
+  right: clamp(12px, 5vw, 72px);
+  bottom: 34%;
+  text-align: right;
+  z-index: 2;
+}
+.vcr-menu-main-text {
+  font-size: clamp(24px, 3.6vw, 44px);
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-shadow: 0 2px 10px #000, 0 0 18px rgba(255, 255, 255, 0.25);
+}
+.vcr-menu-tag {
+  display: inline-block;
+  margin-right: 12px;
+  font-family: 'Permanent Marker', cursive;
+  font-size: clamp(15px, 2.2vw, 26px);
+  color: #ff5db8;
+  transform: rotate(-8deg);
+  text-shadow: 0 0 12px rgba(255, 93, 184, 0.7);
+}
+
+/* ── Carrousel des modes ───────────────────────────────────────────────── */
+.vcr-menu-bar {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(88px, 17vh, 158px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 1.6vw, 20px);
+  z-index: 2;
+}
+.vcr-entry {
+  position: relative;
+  width: clamp(52px, 8.6vw, 92px);
+  aspect-ratio: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: #dfe6f2;
+  opacity: 0.72;
+  cursor: pointer;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.85));
+}
+.vcr-entry:hover { opacity: 0.95; }
+.vcr-entry.is-selected {
+  opacity: 1;
+  color: #fff;
+  transform: translateY(-4px) scale(1.1);
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 10px rgba(255, 210, 62, 0.45));
+}
+/* Les quatre coins jaunes qui cerisent l'entrée choisie, comme la référence. */
+.vcr-entry.is-selected::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background:
+    linear-gradient(#ffd23e, #ffd23e) top left / 14px 3px,
+    linear-gradient(#ffd23e, #ffd23e) top left / 3px 14px,
+    linear-gradient(#ffd23e, #ffd23e) top right / 14px 3px,
+    linear-gradient(#ffd23e, #ffd23e) top right / 3px 14px,
+    linear-gradient(#ffd23e, #ffd23e) bottom left / 14px 3px,
+    linear-gradient(#ffd23e, #ffd23e) bottom left / 3px 14px,
+    linear-gradient(#ffd23e, #ffd23e) bottom right / 14px 3px,
+    linear-gradient(#ffd23e, #ffd23e) bottom right / 3px 14px;
+  background-repeat: no-repeat;
+}
+.vcr-entry-icon { width: 100%; height: 100%; display: block; }
+.vcr-menu-arrow {
+  border: none;
+  background: none;
+  color: #ffd23e;
+  font-size: clamp(26px, 3.4vw, 40px);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.85;
+  padding: 4px 6px;
+  text-shadow: 0 0 10px rgba(255, 210, 62, 0.5);
+}
+.vcr-menu-arrow:hover { opacity: 1; }
+
+.vcr-menu-selected {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(40px, 9.5vh, 92px);
+  margin: 0;
+  text-align: center;
+  font-size: clamp(22px, 3.2vw, 38px);
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow: 0 2px 10px #000;
+  z-index: 2;
+}
+
+/* ── Barre de raccourcis ───────────────────────────────────────────────── */
+.vcr-menu-keys {
+  position: absolute;
+  left: clamp(10px, 2vw, 26px);
+  bottom: clamp(10px, 2.4vh, 20px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  z-index: 2;
+}
+.vcr-key-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(8, 10, 16, 0.74);
+  color: #dfe5f2;
+  font-family: 'Pirata One', 'Orbitron', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+}
+.vcr-key-chip:hover { border-color: rgba(255, 210, 62, 0.6); color: #fff; }
+.vcr-key-chip kbd {
+  background: #fff;
+  color: #0b0d13;
+  border-radius: 4px;
+  padding: 1px 7px;
+  font: 700 12px/1.5 'Google Sans', system-ui, sans-serif;
+}
+
+.vcr-menu-car-name {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  font-family: 'Permanent Marker', cursive;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+  transform: rotate(-2deg);
+  z-index: 2;
+}
+
+/* ── Panneaux stats / options ──────────────────────────────────────────── */
+.vcr-menu-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  min-width: min(340px, 88vw);
+  padding: 20px 26px 22px;
+  background: rgba(7, 9, 14, 0.94);
+  border: 1px solid rgba(255, 210, 62, 0.4);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.8);
+}
+.vcr-menu-panel h2 {
+  margin: 0 0 12px;
+  font-family: 'Pirata One', 'Orbitron', sans-serif;
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  color: #ffd23e;
+}
+.vcr-menu-panel ul { list-style: none; margin: 0; padding: 0; }
+.vcr-menu-panel li {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 7px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.16);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+.vcr-menu-panel li span { color: #aeb7c8; }
+.vcr-menu-panel-actions { display: grid; gap: 8px; }
+.vcr-menu-panel button {
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: 'Pirata One', 'Orbitron', sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.vcr-menu-panel button:hover { border-color: #ffd23e; color: #ffd23e; }
+.vcr-menu-panel-close { margin-top: 14px; }
+
+/* ── Mobile ────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .vcr-menu-main-label { bottom: 40%; right: 6%; }
+  .vcr-menu-bar { bottom: clamp(96px, 20vh, 150px); }
+  .vcr-menu-keys { gap: 6px; }
+  .vcr-key-chip { font-size: 12px; padding: 5px 8px; }
+  .vcr-splat-logo { top: -60px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vcr-menu-logo { animation: none; }
+  .vcr-entry,
+  .vcr-entry.is-selected { transition: none; transform: none; }
+}

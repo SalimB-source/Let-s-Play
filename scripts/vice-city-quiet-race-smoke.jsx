@@ -22,6 +22,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
+import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
 import { CITY_RUSH_CARS, CITY_RUSH_FREE_CAR_IDS } from '../src/games/cityRushRules.js';
 import { CITY_RUSH_PROGRESS_KEY } from '../src/games/cityRushProgress.js';
 import { worldProbe } from './vice-city-world-stub.jsx';
@@ -55,6 +56,7 @@ async function mountPage(node) {
     </AuthProvider>,
   ));
   await settle(30);
+  await dismissTitleMenu(node);
   return root;
 }
 

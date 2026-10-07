@@ -39,6 +39,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
+import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
 import { CITY_RUSH_FREE_CAR_COUNT } from '../src/games/cityRushRules.js';
 import { CITY_RUSH_STORY_CHAPTER_COUNT } from '../src/games/cityRushStory.js';
 import { CITY_RUSH_PROGRESS_KEY } from '../src/games/cityRushProgress.js';
@@ -69,6 +70,7 @@ async function mountPage(entry) {
     </AuthProvider>,
   ));
   await act(async () => { await sleep(30); });
+  await dismissTitleMenu(node);
   return { node, unmount: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 
@@ -347,7 +349,10 @@ export async function checkViceCityFullscreen(assert) {
       assert.ok(!node.querySelector('.city-rush-pause-overlay'), 'REPRENDRE relance la course');
 
       // Même chose pendant le compte à rebours : REPRENDRE rend le compte à rebours.
+      // « ↶ MENU » ouvre désormais l'écran-titre : on le referme comme un
+      // joueur qui veut juste revenir au sélecteur de modes.
       await click(node.querySelector('.city-rush-top-button.is-quiet'));
+      await dismissTitleMenu(node);
       await waitForIntroStep(node, 'MODE');
       await press('f');
       assert.deepEqual(shellState(node, api), OPEN, 'F rouvre le plein écran depuis l’intro');
