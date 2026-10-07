@@ -1,0 +1,162 @@
+import {
+  CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+  CITY_RUSH_BAZOOKA_PICKUP_SHARES,
+  CITY_RUSH_CLEAN_LINE_MAX_BONUS,
+  CITY_RUSH_HEALTH_PICKUP_RESTORE,
+  CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
+  CITY_RUSH_ONCOMING_BONUS_MAX,
+  CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
+  CITY_RUSH_SPRINT_CHECKPOINTS,
+  CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
+  CITY_RUSH_TRACK_BOOST_DURATION,
+} from './cityRushRules.js';
+import { CITY_RUSH_CASH_BY_PLACE } from './cityRushProgress.js';
+
+export const CITY_RUSH_TUTORIAL_STEP_DURATION_MS = 5200;
+
+const cleanLineBonus = Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100);
+const oncomingBonus = Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100);
+const bazookaPickupPercentages = CITY_RUSH_BAZOOKA_PICKUP_SHARES
+  .map((share) => Math.round(share * 100))
+  .join(' % puis ');
+
+/**
+ * Dix scènes courtes, rejouables à la demande. Le texte reste volontairement
+ * bref : une démonstration animée et une consigne actionnable par écran.
+ */
+export const CITY_RUSH_TUTORIAL_STEPS = Object.freeze([
+  {
+    id: 'steering',
+    label: 'Le volant',
+    chapter: '01 · PILOTAGE',
+    title: 'Change de voie, sans lever le pied.',
+    description: 'La voiture accélère toute seule. Décale-toi avec ← / → ou Q / D — ou glisse sur la route. Garde la touche pour enchaîner les voies.',
+    tip: 'ÉVITE LE TRAFIC · LE CHANGEMENT DE VOIE NE RALENTIT PAS.',
+    controls: ['←', '→', 'Q', 'D'],
+    touch: 'GLISSE ← / →',
+    scene: 'steering',
+    visual: 'DÉCALER · DOUBLER · ÉVITER',
+    accent: '#54ead1',
+  },
+  {
+    id: 'speed',
+    label: 'Gagner de la vitesse',
+    chapter: '02 · TRAJECTOIRE',
+    title: 'La ligne propre récompense la patience.',
+    description: `Garde ta voie environ 3,5 s pour charger jusqu’à +${cleanLineBonus} %. Sur les routes à double sens, le contresens monte jusqu’à +${oncomingBonus} %, mais un choc frontal annule le bonus et abîme la voiture.`,
+    tip: 'PLUS SÛR : RESTE DANS TON SENS ET TIENS UNE VOIE.',
+    controls: ['TENIR SA VOIE'],
+    touch: 'CONTRESENS = RISQUE',
+    scene: 'speed',
+    visual: `LIGNE PROPRE +${cleanLineBonus} % · CONTRESENS +${oncomingBonus} %`,
+    accent: '#76d8ff',
+  },
+  {
+    id: 'magazine',
+    label: 'AK-47',
+    chapter: '03 · ARME ROUGE',
+    title: 'Recharge, puis tire avec Z.',
+    description: `Traverse un chargeur rouge : il se ramasse automatiquement et complète l’AK-47 jusqu’à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles. Appuie ou maintiens Z (ou le bouton rouge) pour tirer droit dans ta voie.`,
+    tip: 'VISE LA BONNE VOIE : LE TIR TOUCHE LA PREMIÈRE CIBLE DEVANT TOI.',
+    controls: ['Z · TIRER', 'MAINTENIR · RAFALE'],
+    touch: 'BOUTON ROUGE',
+    scene: 'magazine',
+    visual: `CHARGEUR ROUGE · ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} BALLES`,
+    accent: '#ff536d',
+  },
+  {
+    id: 'boost',
+    label: 'Boost de vitesse',
+    chapter: '04 · TURBO VERT',
+    title: 'L’éclair vert se déclenche tout seul.',
+    description: `Passe sur un éclair vert flottant : le bonus est automatique et te propulse pendant ${CITY_RUSH_TRACK_BOOST_DURATION} secondes. Aligne ta voiture avec celui que tu veux ramasser.`,
+    tip: 'AUCUNE TOUCHE À PRESSER · LE TURBO PART AU CONTACT.',
+    controls: ['RAMASSAGE AUTO'],
+    touch: 'VISE L’ÉCLAIR',
+    scene: 'boost',
+    visual: `TURBO · ${CITY_RUSH_TRACK_BOOST_DURATION} S`,
+    accent: '#55f5a7',
+  },
+  {
+    id: 'bazooka',
+    label: 'Bazooka',
+    chapter: '05 · ARME JAUNE',
+    title: 'Traverse le conteneur jaune.',
+    description: `Deux entrepôts sont placés à ${bazookaPickupPercentages} % de la course, sur une voie extérieure. Passe dans l’ouverture pour prendre ${CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} roquettes, puis presse X ou le bouton jaune.`,
+    tip: 'LES ROQUETTES FILENT TOUT DROIT ET EXPLOSENT PRÈS DES VOITURES DE POLICE.',
+    controls: ['X · TIRER'],
+    touch: 'BOUTON JAUNE',
+    scene: 'bazooka',
+    visual: `CONTENEUR JAUNE · ${CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} ROQUETTES`,
+    accent: '#ffd447',
+  },
+  {
+    id: 'police',
+    label: 'La police',
+    chapter: '06 · POURSUITE',
+    title: 'Quand la mire rougit, décale-toi.',
+    description: 'En Circuit, la police arrive au dernier tour ; en Poursuite, elle est là dès le départ. Ses étoiles montent quand tu l’attaques : herse à 4 ★, SUV de face à 5 ★.',
+    tip: 'LE HALO ROUGE T’AVERTIT : CHANGE DE VOIE AVANT LA FIN DE LA MIRE.',
+    controls: ['← / → · ESQUIVER'],
+    touch: 'GLISSE POUR ESQUIVER',
+    scene: 'police',
+    visual: 'MIRE ROUGE → DÉCALE-TOI',
+    accent: '#ff687c',
+  },
+  {
+    id: 'garage',
+    label: 'Mini-garage',
+    chapter: '07 · SERVICE',
+    title: 'Traverse le mini-garage à mi-course.',
+    description: `Au milieu du parcours, passe dans l’une des deux voies centrales : le garage ne sert qu’une fois et répare jusqu’à ${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT} cases de coque. Il fait aussi baisser ton indice de recherche.`,
+    tip: 'SUIS LES CHEVRONS PEINTS ET LE PANNEAU « MINI-GARAGE ».',
+    controls: ['MI-PARCOURS'],
+    touch: '2 VOIES CENTRALES',
+    scene: 'garage',
+    visual: `RÉPARATION · JUSQU’À +${CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT}`,
+    accent: '#61efb0',
+  },
+  {
+    id: 'health',
+    label: 'Vie & collisions',
+    chapter: '08 · COQUE',
+    title: 'Protège ta coque et ramasse les soins.',
+    description: `Un carambolage coûte 1 case (2 contre un SUV blindé). La trousse avec une croix rouge rend ${CITY_RUSH_HEALTH_PICKUP_RESTORE} case si ta coque n’est pas pleine.`,
+    tip: 'SURVEILLE LA JAUGE DE VIE : ELLE DÉPEND DE LA VOITURE CHOISIE.',
+    controls: ['CROIX ROUGE · +1'],
+    touch: 'RAMASSAGE AUTO',
+    scene: 'health',
+    visual: `SOINS · +${CITY_RUSH_HEALTH_PICKUP_RESTORE} CASE`,
+    accent: '#ff6179',
+  },
+  {
+    id: 'ramp',
+    label: 'Tremplins',
+    chapter: '09 · SAUT',
+    title: 'Prends la rampe dans la bonne voie.',
+    description: 'La voiture saute au contact et peut survoler le trafic ou une herse. En l’air, elle garde sa voie : choisis ton passage avant de décoller.',
+    tip: 'LE VOLANT NE RÉPOND QU’APRÈS L’ATTERRISSAGE.',
+    controls: ['CHOISIS TA VOIE'],
+    touch: 'SAUT AUTOMATIQUE',
+    scene: 'ramp',
+    visual: 'RAMPE → SAUT → ATTERRISSAGE',
+    accent: '#c09aff',
+  },
+  {
+    id: 'modes',
+    label: 'Modes & progression',
+    chapter: '10 · À TOI DE JOUER',
+    title: 'Choisis ton défi, puis décroche les récompenses.',
+    description: `Circuit : podium = ${CITY_RUSH_CASH_BY_PLACE.join(' / ')} billets verts. Poursuite : police dès le départ, sans billets. Sprint : ${CITY_RUSH_SPRINT_CHECKPOINTS} portes tous les ${CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m ; chacune ajoute du temps, sans armes ni police. En Histoire, suis l’objectif pour gagner des étoiles.`,
+    tip: 'RAPPEL · P : PAUSE · M : SON · F : PLEIN ÉCRAN.',
+    controls: ['CIRCUIT', 'POURSUITE', 'SPRINT'],
+    touch: 'BONNE COURSE !',
+    scene: 'modes',
+    visual: `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS · PODIUM · ÉTOILES`,
+    accent: '#ff70bf',
+  },
+]);
+
+export const CITY_RUSH_TUTORIAL_DURATION_SECONDS = Math.ceil(
+  (CITY_RUSH_TUTORIAL_STEPS.length * CITY_RUSH_TUTORIAL_STEP_DURATION_MS) / 1000,
+);

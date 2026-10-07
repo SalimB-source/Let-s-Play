@@ -6,6 +6,8 @@ import CityRushComic from './CityRushComic';
 import CityRushRaceList from './CityRushRaceList';
 import CityRushHealthBar from './CityRushHealthBar';
 import CityRushSpeedometer from './CityRushSpeedometer';
+import CityRushTutorial from './CityRushTutorial';
+import { CITY_RUSH_TUTORIAL_DURATION_SECONDS, CITY_RUSH_TUTORIAL_STEPS } from './cityRushTutorial';
 import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
@@ -385,6 +387,7 @@ export default function ViceCityRushPage() {
   const [loadedProgressUserId, setLoadedProgressUserId] = useState(null);
   const [toast, setToast] = useState(null);
   const [worldError, setWorldError] = useState('');
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(readSoundPref);
   const audioRef = useRef(null);
   const soundOnRef = useRef(soundOn);
@@ -1486,6 +1489,12 @@ export default function ViceCityRushPage() {
                       <p>Choisis un mode, une ville et une voiture. Pour suivre l’histoire de Nico Vega, reprends la campagne ci-dessous.</p>
                     </div>
 
+                    <button type="button" className="city-rush-tutorial-launch" onClick={() => setTutorialOpen(true)}>
+                      <span className="city-rush-tutorial-launch-mark" aria-hidden="true">▶</span>
+                      <span><b>APPRENDRE À ROULER</b><small>{CITY_RUSH_TUTORIAL_STEPS.length} mini-tutos · env. {CITY_RUSH_TUTORIAL_DURATION_SECONDS} secondes</small></span>
+                      <i aria-hidden="true">↗</i>
+                    </button>
+
                     <section className="cr-story-hub" aria-labelledby="cr-story-hub-title">
                       <div className="cr-story-hub-heading">
                         <div>
@@ -1904,6 +1913,7 @@ export default function ViceCityRushPage() {
                 <h2>REPRENDS<br /><em>LE VOLANT.</em></h2>
                 <div className="city-rush-overlay-buttons">
                   <button type="button" className="city-rush-start-button" onClick={resumeRace}>REPRENDRE <span>▶</span></button>
+                  <button type="button" className="city-rush-text-button" onClick={() => setTutorialOpen(true)}>REVOIR LE TUTORIEL</button>
                   <button type="button" className="city-rush-text-button" onClick={() => { setStoryMode(false); setPhase('intro'); setIntroStep('mode'); }}>MENU PRINCIPAL</button>
                 </div>
                 <small>{city.name} · {activeModeLabel} · la route attend.</small>
@@ -2030,6 +2040,7 @@ export default function ViceCityRushPage() {
             <span className="city-rush-desktop-hint">← → / Q D : VOIES (MAINTENIR) {sprintMode || !storyWeaponsOn ? '' : <><b>·</b> Z : MITRAILLEUSE {bazookaMode && <><b>·</b> X : BAZOOKA</>} </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
             <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE{sprintMode ? ' · SOLO CONTRE LA MONTRE' : !storyWeaponsOn ? ' · COURSE PURE, SANS ARME' : bazookaMode ? ' · OBJETS EN BAS · X : BAZOOKA' : ' · OBJETS EN BAS'}</span>
           </div>
+          {tutorialOpen && <CityRushTutorial onClose={() => setTutorialOpen(false)} />}
         </section>
 
         <aside className="city-rush-sidebar">
