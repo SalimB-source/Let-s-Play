@@ -187,12 +187,16 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   assert.match(page, /MINI-GARAGE DISPONIBLE/);
   assert.match(page, /MINI-GARAGE DANS \$\{miniGarageNextDistance\} M/,
     'le compteur annonce la distance de la prochaine porte');
-  assert.match(page, /`\$\{previousStars\} → \$\{currentStars\} ÉTOILE/,
-    'le bandeau affiche clairement la baisse du nombre d’étoiles');
-  assert.match(page, /Number\(effect\.healthRestored\)/, 'le bandeau annonce la réparation réellement reçue');
-  assert.match(page, /POINT\$\{restored === 1 \? '' : 'S'\} DE VIE/);
-  assert.match(page, /Number\(effect\.pursuersReleased\) > 0[\s\S]*?LA POLICE ABANDONNE LA POURSUITE/,
-    'la sortie du garage annonce la poursuite abandonnée');
+  // Le passage à l'atelier est un événement du monde : la page n'en fait plus
+  // un message (course muette), elle se contente de la scène — pont qui se
+  // referme, poursuite qui décroche — et de la carte MINI-GARAGE du HUD.
+  assert.match(world, /const healthRestored = playerHealth - healthBefore;/,
+    'le monde mesure la réparation réellement rendue');
+  assert.match(world, /healthRestored,\s*\n\s*pursuersReleased,/, 'le monde publie la réparation et les poursuivants lâchés');
+  assert.match(world, /pursuersReleased = wantedLevel === 0\s*\n?\s*\? releasePolicePursuit\(\{ targetId: 'player' \}\)/,
+    'le monde compte lui-même les poursuivants lâchés');
+  assert.doesNotMatch(page, /LA POLICE ABANDONNE LA POURSUITE/,
+    'plus aucun message n’annonce l’abandon de la poursuite');
   assert.match(page, /miniGaragesActive: false/, 'le compteur n’est pas disponible au départ');
   assert.match(page, /!sprintMode && hud\.miniGaragesActive && \(/,
     'le compteur des garages n’apparaît qu’avec une porte en approche');
@@ -361,12 +365,12 @@ test('le bonus de contresens vit dans le monde, s’affiche et se perd au choc f
   assert.match(oncomingTargetLine, /oncomingScale/, 'le contresens entre dans la vitesse visée');
   assert.match(world, /type: 'oncoming-bonus'/);
   assert.match(world, /stage: 'lost'/);
-  // La page l’affiche : pourcentage dans la carte VITESSE et pastille d’état
-  // « CONTRESENS », avec le règlement qui l’explique.
+  // La page l’affiche une seule fois, dans la carte VITESSE : le pourcentage
+  // gagné, avec le règlement qui l’explique. Pas de message de course.
   assert.match(page, /oncomingBonusPercent/);
   assert.match(page, /city-rush-speed-bonus/);
-  assert.match(page, /CONTRESENS/);
   assert.match(page, /Rouler à contresens/);
+  assert.doesNotMatch(page, /CONTRESENS ·/, 'plus aucune pastille de course ne récite le bonus');
   assert.match(css, /\.city-rush-status-pill\.is-oncoming\s*\{/);
   assert.match(css, /\.city-rush-speed-bonus\s*\{/);
 });
@@ -452,13 +456,16 @@ test('une berline armée se range dans le dos du pilote, avec une mire annoncée
   // quand le pilote se décale, pas seulement quand il change de voie.
   assert.match(world, /x: playerCar\.position\.x/);
   assert.match(world, /x: racer\.currentX/);
-  // Le HUD annonce la mire, la page la montre et prévient le pilote.
+  // Le HUD annonce la mire, la page la montre — halo rouge du cadre, alimenté
+  // par la progression du viseur — et se tait : le pilote voit qu'on le vise
+  // sans qu'un message ne le lui raconte.
   assert.match(world, /aim: police\.aimLeft > 0 \? clamp\(police\.aimLeft \/ CITY_RUSH_POLICE_AIM_TIME, 0, 1\) : 0/);
   assert.match(world, /aimTargetId: police\.aimTargetId \|\| null/);
   assert.match(page, /const policeAim = \(Array\.isArray\(hud\.police\)/);
   assert.match(page, /policeAim > 0 && phase === 'playing' \? ' is-aimed' : ''/);
   assert.match(page, /'--cr-aim': policeAim\.toFixed\(2\)/);
-  assert.match(page, /effect\.type === 'police-aim'/);
+  assert.doesNotMatch(page, /effect\.type === 'police-aim'/,
+    'la mire ne passe plus par une fenêtre de message');
   assert.match(css, /\.city-rush-viewport\.is-aimed::before\s*\{/);
   assert.match(css, /@keyframes crAimPulse\s*\{/);
 });
@@ -481,13 +488,14 @@ test('la barre de police affiche six carrés pour une berline, dix pour un SUV',
   // Les carrés allumés suivent la vie restante, arrondie au carré supérieur.
   assert.match(world, /segment\.visible = segmentIndex < remainingSquares;/);
   assert.match(world, /const remainingSquares = Math\.ceil\(clamp\(police\.health, 0, policeMax\)\)/);
-  // La page annonce les six carrés dans le bandeau de touche — et un seul
-  // carré emporté par balle, au bandeau comme dans la règle affichée.
-  assert.match(page, /CARRÉS\./);
-  assert.match(page, /effect\.maxHealth/);
-  const pistolToast = page.match(/effect\.type === 'police-hit' && effect\.source === 'pistol'\) \{\s*showToast\(([\s\S]*?), 'pistol'\)/)?.[1] || '';
-  assert.ok(pistolToast, 'le bandeau de la berline touchée par une balle rouge existe');
-  assert.match(pistolToast, /−1 CARRÉ/, 'une balle rouge n’enlève jamais qu’un carré à la berline');
+  // Une balle rouge n’emporte jamais qu’un carré : la règle est écrite dans le
+  // monde (`damage: healthBeforeHit - police.health`), et la règle affichée au
+  // garage la promet au joueur. La course, elle, ne commente plus les tirs.
+  assert.match(world, /damage: healthBeforeHit - police\.health/);
+  const pistolHit = world.match(/type: 'police-hit'([\s\S]*?)\n\s*\}\);/)?.[1] || '';
+  assert.match(pistolHit, /health: police\.health,[\s\S]*?maxHealth: police\.maxHealth/, 'le monde publie la vie restante de la berline');
+  assert.doesNotMatch(page, /−1 CARRÉ · \$\{effect\.health\}/,
+    'plus aucun message ne récite le carré emporté par la balle');
   assert.match(page, /une berline de police[^.]*un tir rouge lui retire un seul carré/i,
     'la règle affichée promet un seul carré par tir rouge, berline comme adversaire');
   assert.doesNotMatch(page, /3 dégâts|trois dégâts/, 'plus aucun texte ne promet trois dégâts d’un tir rouge');
@@ -553,5 +561,8 @@ test('le choc du SUV coûte deux carrés sans contourner le répit partagé', ()
   assert.match(shared, /damagePlayer\(source, null/);
   assert.match(shared, /if \(lost > 0\) playerCollisionCooldownLeft = CITY_RUSH_PLAYER_COLLISION_COOLDOWN;/);
   assert.match(collision, /damagePolice\(police, 'collision', 'player'/);
-  assert.match(page, /TA COQUE PERD \$\{effect\.playerHealthLost\}/);
+  // Le carré perdu est mesuré dans le monde et publié avec l’impact ; la page
+  // n’en fait plus un message, la coque du pilote s’allume un instant.
+  assert.match(collision, /playerHealthLost,[\s\S]*?playerHealthMax: playerMaxHealth/);
+  assert.doesNotMatch(page, /TA COQUE PERD \$\{effect\.playerHealthLost\}/);
 });

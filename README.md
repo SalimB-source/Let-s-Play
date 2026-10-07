@@ -836,13 +836,12 @@ et le dernier tour durait 21 s.
   passage du milieu du dernier tour) et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
-- **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
-  · TOUR 2/6 » — « LAP 2 », « LAP 3 » — (puis « DERNIER TOUR » en doré), la
-  carte TOUR du HUD avance, les rivaux annoncent leur dernier tour. Le dernier
-  passage termine la course. La bannière s'affiche **dans le coin inférieur
-  gauche** — au-dessus des flèches de direction sur ordinateur, au-dessus du
-  classement sur téléphone — et **sans flou** : fond opaque, texte net, entrée
-  et sortie par glissement (`crLapIn` ne touche plus à `filter`).
+- **Les tours.** Chaque passage de ligne fait avancer la carte TOUR du HUD
+  (et les rivaux annoncent leur dernier tour) ; le dernier passage termine la
+  course. **Rien ne s'affiche à l'écran** : la bannière « LIGNE FRANCHIE ·
+  TOUR 2/6 » et le « PLUS QUE 1200 M » du milieu du dernier tour ont disparu
+  avec le reste des messages de course (voir « Le mode au doigt et la course
+  muette »).
 - **Le grand dernier tour.** Il fait `CITY_RUSH_FINAL_LAP_LOOPS` = **2** boucles
   (2 400 m, `CITY_RUSH_FINAL_LAP_LENGTH`). Le portique est fixe dans le décor,
   donc on le recroise **au milieu du dernier tour** : ce n'est qu'un **point de
@@ -933,8 +932,8 @@ et le dernier tour durait 21 s.
   rentrent au loin dès qu'on redescend sous cinq.
   Le garage ne sert **qu'une fois par course** ; la porte ratée revient au
   même repère dans la boucle suivante. Le compteur ne s'allume qu'à l'approche
-  de la porte (`CITY_RUSH_MINI_GARAGE_HUD_RANGE`) et le bandeau annonce les
-  points réellement rendus. Un nouveau départ réarme la porte et la masque à
+  de la porte (`CITY_RUSH_MINI_GARAGE_HUD_RANGE`) ; les points rendus se lisent
+  sur la coque et dans la carte de vie du HUD. Un nouveau départ réarme la porte et la masque à
   nouveau. **La traversée s'entend** : l'atelier prend la voiture en charge —
   pont hydraulique qui monte, clé à chocs, capot qui claque — et ne joue
   l'accord de « réparée » que si la coque a repris des points (`garageRepair`,
@@ -968,7 +967,7 @@ et le dernier tour durait 21 s.
   (`cityRushPoliceAimHold`), et le moindre écart latéral
   (`CITY_RUSH_POLICE_AIM_TOLERANCE` = 1,15 m) ou changement de voie le remet à
   zéro — c'est la contre-mesure du joueur, et le HUD l'annonce (`aim`,
-  `aimTargetId`, halo `is-aimed` du cadre, bandeau « DANS TON DOS »). **La
+  `aimTargetId`, halo `is-aimed` du cadre). **La
   police ne tire jamais sur ses collègues** : la liste des cibles d'un tireur
   policier exclut la police (`laneShotCandidates`), sinon l'escouade — qui
   roule en file devant le leader — vidait ses chargeurs dans le pare-chocs de
@@ -1054,15 +1053,15 @@ et le dernier tour durait 21 s.
   pointe du pilote × **1,22** (`CITY_RUSH_SUV_CHARGE_SPEED_FACTOR`) avec un
   plancher de **24 m/s** (`CITY_RUSH_SUV_CHARGE_MIN_SPEED`,
   `cityRushSuvChargeSpeed`). La charge est annoncée à 300 m
-  (`CITY_RUSH_SUV_CHARGE_ALERT_RANGE`, effet `police-suv-charge` et bandeau
-  « SUV D'INTERCEPTION EN CHARGE · … M · IL VISE TA VOIE, CHANGE DE FILE. ») ; à moins de 150 m
+  (`CITY_RUSH_SUV_CHARGE_ALERT_RANGE`, effet `police-suv-charge` — l'effet est
+  bien émis, mais **plus rien ne s'écrit à l'écran** : le SUV qui arrive face à
+  soi se lit dans la scène) ; à moins de 150 m
   (`CITY_RUSH_SUV_CHARGE_LOCK_RANGE`), le SUV **verrouille la voie du pilote**
   (`cityRushSuvChargeLocked`) et se rabat dessus à **3,4 m/s**
   (`CITY_RUSH_SUV_CHARGE_LATERAL_RATE`, `cityRushSuvChargeStep`) — doubler ne
   suffit plus, il faut sortir de sa trajectoire. Le choc est le plus cher du
   jeu : **deux carrés de coque** (`suv-collision` dans
-  `CITY_RUSH_PLAYER_DAMAGE`, bandeau « CHOC AVEC LE SUV D'INTERCEPTION · IL
-  FAIT DEMI-TOUR ET TE PREND EN CHASSE »). Après nous avoir touchés, les SUV
+  `CITY_RUSH_PLAYER_DAMAGE`). Après nous avoir touchés, les SUV
   **font demi-tour et nous pourchassent** : ils rejoignent la chasse par
   `rallyPoliceVehicle` (nom « POLICE SUV », même coque que la police,
   `cityRushPoliceMaxHealth`). Un SUV qui passe 45 m derrière le pilote sans le
@@ -1161,8 +1160,8 @@ et le dernier tour durait 21 s.
   `CITY_RUSH_LANE_CHANGE_SLOW_FACTOR` = **0,9 ×** pendant
   `CITY_RUSH_LANE_CHANGE_SLOW_DURATION` = **0,8 s** après chaque écart — n'existe
   plus : les deux constantes ont quitté `cityRushRules.js`, `targetPlayerSpeed`
-  dans `ViceCityWorld.jsx` ne multiplie plus aucun facteur d'écart, et le
-  bandeau de mode de `ViceCityRushPage.jsx` ne l'annonce plus. Seule la
+  dans `ViceCityWorld.jsx` ne multiplie plus aucun facteur d'écart, et rien
+  ne l'annonce à l'écran. Seule la
   récompense subsiste : tenir sa voie charge le bonus **« ligne propre »**
   (`cityRushCleanLineFactor`, jusqu'à `CITY_RUSH_CLEAN_LINE_MAX_BONUS` =
   **1,12 ×** au bout de `CITY_RUSH_CLEAN_LINE_RAMP_DURATION` = **3,5 s**), et un
@@ -1220,8 +1219,9 @@ et le dernier tour durait 21 s.
   `oncoming-bonus` de palier `'lost'`) : le pilote est recalé derrière la voiture
   en face, sans vitesse. Le HUD expose `oncomingBonus` (facteur courant) et la
   page affiche le pourcentage gagné dans la carte **VITESSE** (badge
-  `.city-rush-speed-bonus`) et la pastille d'état **CONTRESENS · +X %**
-  (`.city-rush-status-pill.is-oncoming`, rose néon). Un parcours sans trafic en
+  `.city-rush-speed-bonus`) **et nulle part ailleurs** : la pastille d'état
+  **CONTRESENS · +X %** (`.city-rush-status-pill.is-oncoming`) a été retirée
+  avec le reste des messages de course. Un parcours sans trafic en
   face — le Ring — ne charge jamais cette jauge : `oncomingLanes` est vide, donc
   `advanceCityRushOncomingBonus` ne monte pas. Le smoke vérifie que la jauge a
   bougé sur les sept parcours à contresens, qu'elle reste dans
@@ -1252,8 +1252,8 @@ et le dernier tour durait 21 s.
   La déviation après un choc frontal suit le même miroir :
   `cityRushOncomingImpactX(startX, elapsed, width, driveSide)` renvoie la voiture
   vers le **bord extérieur de son sens** — à droite à Londres et sur la C1 — et
-  l'effet `traffic-impact` porte `pushDirection: 'right'` pour que le bandeau
-  annonce « POUSSÉE À DROITE ». Le pilote automatique du smoke et le test des
+  l'effet `traffic-impact` porte `pushDirection: 'right'` — la poussée se lit
+  dans la scène, plus aucun bandeau ne l'écrit. Le pilote automatique du smoke et le test des
   règles lisent tous deux `cityRushLaneConfig`, plus aucune voie n'est codée en
   dur. Trois tests tiennent la bascule : « London and the Shutō C1 drive on the
   left… » (`tests/city-rush-rules.test.js`), « the driving side is painted by
@@ -1582,6 +1582,7 @@ npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de cas
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
 npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring), herse et SUV d'interception vérifiés sans leurs dégâts
 npm run check:city-rush-steer-hold # le maintien des flèches : une pression = un écart, le maintien enchaîne (délai 0,26 s puis 0,18 s) jusqu'au bord de la chaussée, la relâche / la pause / la perte de la fenêtre arrêtent tout, Q et D alignés, répétition native ignorée
+npm run check:city-rush-quiet    # le choix du mode au doigt (empilé, sans carrousel, avant l'Histoire) et la course muette (la vraie page en jsdom, moteur doublé)
 npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, vers l'avant côté course et vers le joueur côté contresens — Vice City à droite, Londres et la Shuto à gauche
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
@@ -1643,6 +1644,65 @@ quatre feux, chaque passage de ligne (point de passage compris) et la fanfare.
 Aucun son de missile, de frappe ou de rotor d'attaque ne doit se déclencher ;
 l'hélicoptère d'observation reste silencieux. Les compteurs sont imprimés à la
 fin de chaque parcours.
+
+## Vice City Rush : le mode au doigt et la course muette
+
+Deux promesses d'écran que `npm run check:city-rush-quiet` vérifie ensemble,
+parce qu'elles font la même chose : laisser la route au pilote.
+
+- **Le choix du mode se touche.** Sur téléphone et sur tablette, les trois
+  vignettes (CIRCUIT, SPRINT, POURSUITE) se rangeaient dans une bande
+  horizontale à défilement aimanté : au moindre mouvement du doigt le
+  glissement l'emportait sur le clic, et le mode restait dur à ouvrir. Elles
+  sont maintenant **empilées en rangées pleine largeur** — icône à gauche,
+  titre et détails à droite, `touch-action: manipulation` (pas de double tape,
+  pas de délai), aucun défilement latéral nulle part —, et passent **avant la
+  bannière Histoire** : une rangée, un doigt, la course. La grille s'adapte
+  d'elle-même : trois rangées sur un téléphone tenu droit, deux ou trois
+  vignettes côte à côte dès que l'écran s'élargit (tablette, téléphone couché),
+  et sur une fenêtre basse le chapeau d'étape, le libellé « cours libres » et la
+  description d'une ligne s'effacent pour que les trois modes tiennent dans
+  l'écran. **Le desktop ne change pas** : trois colonnes, survol compris.
+- **La course est muette.** Plus de fenêtre de message, plus de bandeau de tour
+  (« LIGNE FRANCHIE · TOUR 2/6 », « PLUS QUE 1200 M »), plus de pastille d'état
+  (« CONTRESENS · +X % », herse, garage, tunnel, poursuite abandonnée) pendant
+  que la voiture roule : les faits de course vivent dans les **cartes du HUD**
+  (position, tour, chrono, billets, vitesse, coque) et dans la **scène** — une
+  berline qui vise garde son halo, un SUV qui charge arrive en face, un choc
+  frontal reste un choc. La page ne demande même plus au moteur de les lui
+  annoncer : `onPickup`, `onLap` et la radio de course ne sont plus branchés.
+  Hors course, les menus répondent toujours (garage, voiture achetée, fin de
+  chapitre) : l'unique fenêtre restante est celle des menus, montée seulement
+  hors course, et `startRace()` la referme pour qu'un message de garage ne
+  déborde jamais sur la piste (il réapparaissait sinon sur l'écran d'arrivée).
+
+### Où vit le code
+
+- `src/games/ViceCityRushPage.jsx` — `showToast` (sourd pendant la course),
+  `startRace` (qui vide la fenêtre des menus), et plus aucun message branché
+  sur les effets du moteur ;
+- `src/games/vice-city-rush-comic.css` — la section « Choix du mode au doigt »
+  (grille empilée, `touch-action`, rappels de gestes au lieu du clavier) et les
+  paliers « tablette » et « écrans bas » ;
+- `tests/city-rush-hud.test.js` — le contrat muet (aucune surface de message
+  dans la course, HUD complet, menus toujours bavards) ;
+- `scripts/vice-city-quiet-race-check.mjs` et
+  `scripts/vice-city-quiet-race-smoke.jsx` — la vérification : les règles de
+  style se lisent dans la feuille, puis la vraie page est montée sous jsdom sur
+  la doublure du moteur 3D.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-quiet    # les trois modes empilés (et la tablette en grille) + la course sans aucune surface de message
+```
+
+Le smoke achète une voiture (la fenêtre « DÉBLOQUÉE » doit répondre, dans la
+fenêtre de jeu et non dans le HUD), lance la course avec la voiture offerte,
+déverse seize effets de course d'un coup (trafic, tir, herse, SUV, garage,
+tunnel, sprint, avertissement d'histoire) et exige **zéro** `.city-rush-toast`,
+`.city-rush-lap-banner` et `.city-rush-status-pill`, puis l'arrivée sans
+message traînant sur l'écran de résultat.
 
 ## Vice City Rush : le Nürburgring Nordschleife
 
