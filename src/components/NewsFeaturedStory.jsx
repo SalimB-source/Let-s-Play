@@ -14,7 +14,7 @@ export default function NewsFeaturedStory({ story, todayLabel, renderStoryImage,
   const trailer = leadTrailer(story.to);
 
   return (
-    <article className="daily-news-card news-today news-featured-story" data-parallax="0.04" data-parallax-limit="20">
+    <article className="daily-news-card news-today news-featured-story">
       <div className="daily-news-image news-featured-story-media">
         {trailer ? (
           <ScrollAutoplayVideo

@@ -133,12 +133,12 @@ const CONTEXTS = {
   newsCard: (vw) => {
     const wrap = wrapOf(vw);
     if (vw >= 1201) {
-      const card = (wrap - 18 * 3) / 4;
-      return { width: card - 36, size: clamp(18, vw * 0.0125, 20), ls: 0.015, weight: 700 };
+      const card = (wrap - 26 * 3) / 4;
+      return { width: card - 44, size: clamp(18, vw * 0.0125, 20), ls: 0.015, weight: 700 };
     }
     const cols = vw > 1100 ? 4 : vw > 800 ? 3 : 2;
-    const gap = vw <= 650 ? 12 : 18;
-    const pad = vw <= 650 ? 10 : 18;
+    const gap = vw <= 650 ? 14 : 26;
+    const pad = vw <= 650 ? 10 : 20;
     return {
       width: (wrap - gap * (cols - 1)) / cols - pad * 2,
       size: vw <= 650 ? clamp(16, vw * 0.042, 18) : clamp(18, vw * 0.016, 22),

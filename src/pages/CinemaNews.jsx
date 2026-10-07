@@ -182,9 +182,9 @@ export default function CinemaNews() {
           renderBadges={renderBadges}
         />
         <div className="news-carousel is-grid">
-          {gridArticles.map((article, index) => (
+          {gridArticles.map((article) => (
             <div className="news-grid-cell" key={article.to}>
-              <Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
+              <Link className="news-carousel-card" to={article.to}>
                 <div className="news-carousel-image">
                   {renderStoryImage(article)}
                   {renderBadges(article)}

@@ -6,30 +6,28 @@
 .news-sentiment.mixed{background:#eab308;color:#111;border-color:rgba(0,0,0,.08)}
 .news-views{position:absolute;left:10px;bottom:10px;z-index:2;display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(5,6,15,.82);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);color:#fff;font:600 10px var(--mono);letter-spacing:.06em;box-shadow:0 4px 14px rgba(0,0,0,.32)}
 .news-views svg{width:13px;height:13px;display:block}
-.news-carousel-section{padding-top:128px;padding-bottom:60px}
+.news-carousel-section{padding-top:128px;padding-bottom:104px}
 /* Les 128px du haut servent à passer sous le header fixe quand le carrousel ouvre la page ;
    derrière la section 01 (calendrier du mois), on revient à un espacement de section normal. */
 .monthly-releases+.news-carousel-section{padding-top:110px}
-.news-carousel-head{display:flex;align-items:end;justify-content:space-between;gap:28px;padding:42px 0 30px}.news-carousel-head h1{font-family:var(--display);font-size:clamp(40px,7vw,88px);line-height:.98;letter-spacing:.01em;margin:18px 0 0}.news-carousel-head h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 26px rgba(34,211,238,.45)}.news-carousel-controls{display:flex;gap:10px;padding-bottom:4px}.news-carousel-controls button{width:46px;height:46px;border:1px solid var(--line-strong);background:rgba(255,255,255,.04);color:var(--cyan);font:24px var(--body);cursor:pointer;transition:background .2s,border-color .2s,color .2s}.news-carousel-controls button:hover{background:var(--cyan);border-color:var(--cyan);color:var(--bg)}.news-carousel{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 2px;padding:4px 2px 18px;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#3a4178 transparent}.news-carousel::-webkit-scrollbar{height:8px}.news-carousel::-webkit-scrollbar-track{background:transparent}.news-carousel::-webkit-scrollbar-thumb{background:#3a4178;border:0}.news-carousel-card{flex:0 0 clamp(280px,30vw,360px);aspect-ratio:3/5;display:flex;flex-direction:column;scroll-snap-align:start;overflow:hidden;background:linear-gradient(145deg,rgba(14,17,38,.96),rgba(11,13,30,.78));border:1px solid var(--line);transition:transform .22s,border-color .22s,box-shadow .22s}.news-carousel-card:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 18px 36px rgba(0,0,0,.28)}.news-carousel-image{position:relative;flex:0 0 54%;min-height:0;overflow:hidden;background:var(--panel)}.news-carousel-image img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .45s}.news-carousel-card:hover .news-carousel-image img{transform:scale(1.04)}.news-carousel-image::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 52%,rgba(5,6,15,.58));pointer-events:none}.news-carousel-image .news-feature-badge,.news-carousel-image .news-feature-arrow{z-index:1}.news-carousel-copy{display:flex;flex:1;min-height:0;flex-direction:column;justify-content:space-between;padding:clamp(16px,2vw,26px)}.news-carousel-copy h2{font-family:var(--display);font-weight:700;font-size:clamp(19px,1.8vw,25px);line-height:1.18;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance;color:#fff;margin:10px 0 12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.news-carousel-copy p{color:var(--muted);font-size:13px;line-height:1.4;margin:0 0 12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.news-carousel-copy .read-link{margin-top:auto}.news-carousel-section+.cta{padding-top:40px}
+.news-carousel-head{display:flex;align-items:end;justify-content:space-between;gap:28px;padding:48px 0 38px}.news-carousel-head h1{font-family:var(--display);font-size:clamp(40px,7vw,88px);line-height:.98;letter-spacing:.01em;margin:18px 0 0}.news-carousel-head h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 26px rgba(34,211,238,.45)}.news-carousel-controls{display:flex;gap:10px;padding-bottom:4px}.news-carousel-controls button{width:46px;height:46px;border:1px solid var(--line-strong);background:rgba(255,255,255,.04);color:var(--cyan);font:24px var(--body);cursor:pointer;transition:background .2s,border-color .2s,color .2s}.news-carousel-controls button:hover{background:var(--cyan);border-color:var(--cyan);color:var(--bg)}.news-carousel{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 2px;padding:4px 2px 18px;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#3a4178 transparent}.news-carousel::-webkit-scrollbar{height:8px}.news-carousel::-webkit-scrollbar-track{background:transparent}.news-carousel::-webkit-scrollbar-thumb{background:#3a4178;border:0}.news-carousel-card{flex:0 0 clamp(280px,30vw,360px);aspect-ratio:3/5;display:flex;flex-direction:column;scroll-snap-align:start;overflow:hidden;background:linear-gradient(145deg,rgba(14,17,38,.96),rgba(11,13,30,.78));border:1px solid var(--line);transition:transform .22s,border-color .22s,box-shadow .22s}.news-carousel-card:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 18px 36px rgba(0,0,0,.28)}.news-carousel-image{position:relative;flex:0 0 54%;min-height:0;overflow:hidden;background:var(--panel)}.news-carousel-image img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .45s}.news-carousel-card:hover .news-carousel-image img{transform:scale(1.04)}.news-carousel-image::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 52%,rgba(5,6,15,.58));pointer-events:none}.news-carousel-image .news-feature-badge,.news-carousel-image .news-feature-arrow{z-index:1}.news-carousel-copy{display:flex;flex:1;min-height:0;flex-direction:column;justify-content:space-between;padding:clamp(18px,2.2vw,28px)}.news-carousel-copy h2{font-family:var(--display);font-weight:700;font-size:clamp(19px,1.8vw,25px);line-height:1.18;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance;color:#fff;margin:14px 0 16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.news-carousel-copy p{color:var(--muted);font-size:13px;line-height:1.55;margin:0 0 16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.news-carousel-copy .read-link{margin-top:auto}.news-carousel-section+.cta{padding-top:56px}
 /* Le filtre par catégorie a été retiré de la page Actus : le libellé de section
    respire directement au-dessus de la « news du jour ». */
-.news-carousel-section>.section-label{margin-bottom:30px}
+.news-carousel-section>.section-label{margin-bottom:38px}
 /* L'actu à la une mène le flux dans un bandeau horizontal dédié ; la grille
    quatre colonnes ne contient ensuite que les autres articles. */
 .news-today .daily-news-copy .news-kicker{margin-top:14px}
-.news-today .daily-news-copy h2{margin-top:12px}@media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.news-carousel-section{padding-top:104px;padding-bottom:40px}.monthly-releases+.news-carousel-section{padding-top:70px}.news-carousel-head{align-items:start;flex-direction:column;padding-top:30px}.news-carousel-controls{align-self:flex-end;margin-top:-8px}.news-carousel-card{flex-basis:78vw}.news-carousel-copy{padding:16px}.news-carousel-copy h2{font-size:19px;line-height:1.2;margin:8px 0 10px}.news-carousel-copy p{font-size:12px;line-height:1.35;margin-bottom:8px}.news-carousel-copy .news-kicker{font-size:9px}.news-carousel-copy .read-link{font-size:9px}}
+.news-today .daily-news-copy h2{margin-top:12px}@media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.news-carousel-section{padding-top:104px;padding-bottom:60px}.monthly-releases+.news-carousel-section{padding-top:70px}.news-carousel-head{align-items:start;flex-direction:column;padding-top:30px}.news-carousel-controls{align-self:flex-end;margin-top:-8px}.news-carousel-card{flex-basis:78vw}.news-carousel-copy{padding:16px}.news-carousel-copy h2{font-size:19px;line-height:1.2;margin:8px 0 10px}.news-carousel-copy p{font-size:12px;line-height:1.35;margin-bottom:8px}.news-carousel-copy .news-kicker{font-size:9px}.news-carousel-copy .read-link{font-size:9px}}
 
 /* ===== NEWS HUB — page intermédiaire de choix entre Gaming, Cinéma et Tech ===== */
 /* Les trois cartes sont volontairement compactes : visuel en 16/9 (et non 16/10)
    et bloc texte resserré (padding, interlignes, ligne méta), pour qu'elles
    tiennent plus facilement à l'écran sans sacrifier titre ni description. */
-.news-hub-section{padding-top:128px;padding-bottom:60px}
+.news-hub-section{padding-top:110px;padding-bottom:112px}
 .news-hub-back{padding:110px 0 0}
-.news-hub-back + .news-carousel-section{padding-top:18px}
-.news-hub-head{padding-bottom:42px}
-.news-hub-head .section-label{margin-bottom:28px}
-.news-hub-intro{color:var(--muted);font-size:17px;line-height:1.5;max-width:560px;margin:18px 0 0}
-.news-hub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:24px}
+.news-hub-back + .news-carousel-section{padding-top:30px}
+.news-hub-head .section-label{margin-bottom:34px}
+.news-hub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:40px}
 .news-hub-card{position:relative;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(145deg,rgba(14,17,38,.96),rgba(11,13,30,.78));border:1px solid var(--line-strong);text-decoration:none;color:#fff;transition:transform .25s,border-color .25s,box-shadow .25s}
 .news-hub-card:hover{transform:translateY(-6px);box-shadow:0 22px 50px rgba(0,0,0,.4)}
 .news-hub-card--gaming:hover{border-color:#22d3ee}
@@ -42,33 +40,36 @@
 .news-hub-card-num{position:absolute;top:16px;left:18px;z-index:2;font-family:var(--display);font-weight:800;font-size:46px;line-height:1;color:rgba(255,255,255,.85);text-shadow:0 4px 18px rgba(0,0,0,.55)}
 .news-hub-card-image .news-feature-badge{top:auto;left:18px;bottom:18px;z-index:2}
 .news-hub-card-image .news-feature-arrow{display:none}
-.news-hub-card-copy{padding:clamp(20px,2vw,28px);display:flex;flex-direction:column;gap:8px;flex:1}
-.news-hub-card-copy h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,2.3vw,36px);line-height:1.04;letter-spacing:.01em;text-transform:uppercase;margin:4px 0 0;text-wrap:balance}
+.news-hub-card-copy{padding:clamp(22px,2.2vw,32px);display:flex;flex-direction:column;gap:12px;flex:1}
+.news-hub-card-copy h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,2.3vw,36px);line-height:1.04;letter-spacing:.01em;text-transform:uppercase;margin:6px 0 0;text-wrap:balance}
 .news-hub-card-copy h2 em{font-style:normal}
 .news-hub-card--gaming h2 em{color:#22d3ee;text-shadow:0 0 22px rgba(34,211,238,.45)}
 .news-hub-card--cinema h2 em{color:#f59e0b;text-shadow:0 0 22px rgba(245,158,11,.4)}
 .news-hub-card--tech h2 em{color:#a855f7;text-shadow:0 0 22px rgba(168,85,247,.45)}
-.news-hub-card-copy p{color:var(--muted);font-size:14px;line-height:1.5;margin:0;max-width:520px}
-.news-hub-card-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+.news-hub-card-copy p{color:var(--muted);font-size:14px;line-height:1.6;margin:0;max-width:520px}
+.news-hub-card-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 14px;margin-top:auto;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)}
 .news-hub-card-meta>span:first-child{font:600 11px var(--mono);letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
 .news-hub-card--gaming .read-link{color:#22d3ee}
 .news-hub-card--cinema .read-link{color:#f59e0b}
 .news-hub-card--tech .read-link{color:#a855f7}
-/* Bannière « actu gaming du jour » sous les trois cartes : même carte vidéo +
-   texte que la une de l'accueil (.featured-dossiers--news / .home-news-card,
-   daily-news.css). Ici seuls l'espacement et le visuel de repli changent : la
-   bannière suit la grille de près (le CTA garde ensuite sa marge habituelle),
-   l'en-tête se réduit à un libellé + le lien vers le flux gaming, et l'image
-   d'une actu sans vidéo officielle remplit le cadre 16/10 comme le lecteur. */
-.news-hub-section .news-hub-today{padding:44px 0 0}
-.news-hub-section .news-hub-today .featured-dossiers-head{align-items:center;padding-top:14px}
-.news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin:0}
-.news-hub-section .news-hub-today .home-news-video img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-/* Sous 800 px l'en-tête passe en bloc (daily-news.css) : le lien vers le flux
-   gaming redescend sous le libellé, avec le même retrait que sur l'accueil. */
+/* Les actus du jour ouvrent le hub : leur section est la première de la page,
+   tout en haut (d'où l'espacement haut à zéro) et c'est elle qui laisse
+   respirer le bandeau du hub — puis les trois univers — qui suivent. */
+.news-hub-section .news-hub-headlines{padding:0 0 72px}
+/* Les actus du jour sont trois : elles tiennent toute la rangée, comme les
+   trois univers juste en dessous. La grille générique des actus en prévoit
+   quatre (cinq puis six sur très grand écran) — la quatrième colonne resterait
+   vide sous les trois cartes. La règle l'emporte par sa spécificité sur
+   `.news-carousel.is-grid` (news-view-toggle.css et les paliers de
+   large-screen.css), d'où le rappel en deux colonnes dans le palier téléphone. */
+.news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Bandeau du hub réduit à son libellé et à l'œil « Choisis ton univers » : les
+   trois cartes d'univers remontent donc juste sous lui. */
+.news-hub-section .news-hub-head{padding-bottom:20px}
+.news-hub-section .news-hub-head + .news-hub-grid{margin-top:24px}
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
-  .news-hub-section .news-hub-today{padding-top:36px}
-  .news-hub-section .news-hub-today .featured-dossiers-head>.arrow-link{margin-top:14px}
+  .news-hub-section .news-hub-headlines{padding-bottom:52px}
+  .news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 /* Trois univers sur desktop ; sous 1100 px la grille repasse à deux colonnes
    (la troisième carte ouvre la ligne suivante) et les titres remontent d’un
@@ -80,9 +81,9 @@
 @media(max-width:780px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-hub-section{padding-top:104px;padding-bottom:40px}
   .news-hub-back{padding-top:84px}
-  .news-hub-grid{grid-template-columns:1fr;gap:18px}
+  .news-hub-grid{grid-template-columns:1fr;gap:28px}
   .news-hub-card-num{font-size:40px;top:12px;left:14px}
-  .news-hub-card-copy{padding:20px 20px 22px}
+  .news-hub-card-copy{padding:22px 20px 24px}
   .news-hub-card-copy h2{font-size:28px}
   .news-hub-card-meta{flex-direction:column;align-items:flex-start;gap:8px}
 }

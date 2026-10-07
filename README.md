@@ -185,8 +185,10 @@ passe à 18 px au palier 3 **sans allonger la mesure de lecture** (68 caractère
 
 1. **N'ajouter une colonne qu'aux grilles alimentées par des données** (tests,
    flux d'articles, recherche, calendrier des sorties). Une grille à nombre
-   d'éléments fixe — les 4 reels, les 3 cartes du hub d'actu, les 3 formats, les
-   3 statistiques — laisserait un trou béant dans sa dernière rangée. Celles-là
+   d'éléments fixe — les 4 reels, les 3 cartes du hub d'actu, les 3 actus du
+   jour du hub (verrouillées à trois colonnes dans `src/news-carousel.css`), les
+   3 formats, les 3 statistiques — laisserait un trou béant dans sa dernière
+   rangée. Celles-là
    grandissent avec le conteneur, ce qui est voulu.
 2. **Les grilles remplissent la largeur, la prose ne la remplit jamais.** Une
    ligne de 150 caractères est illisible, même si elle « occupe la place ». Les
@@ -4335,35 +4337,17 @@ sa couleur d’univers (violet #a855f7, #6d28d9 en thème clair) déclinée dans
 `src/news-carousel.css` et `src/theme.css` — la grille passe à trois colonnes
 sur desktop, deux sous 1100 px, une sous 780 px.
 
-## Hub Actus : la bannière « actu gaming du jour »
+## Hub Actus : les actus du jour ouvrent la page
 
-Sous les trois cartes du hub (`/news`), une bannière reprend **l'actu gaming
-du jour** au gabarit de la une de l'accueil : la vidéo officielle de l'article
-se lit sur place dans la colonne de gauche (lecteur du site, `youTubeEmbedUrl`,
-donc soumis à la règle « une seule vidéo à la fois »), la colonne de droite —
-pastille « Actu du jour », date · source, titre, chapô, « Lire l'article » —
-est le lien vers l'article. Le libellé de section annonce ce que montre le
-cadre (« BANDE-ANNONCE OFFICIELLE · ROCKSTAR GAMES ») et un lien renvoie au
-flux `/news/gaming`.
-
-Rien n'est recopié : la bannière lit **la première entrée de
-`latestGamingStories`** dans `src/pages/GamingNews.jsx` (exportée sous le nom
-`gamingTopStory`), c'est-à-dire la carte qui ouvre déjà `/news/gaming` en
-grand. Pour changer la une, on insère la nouvelle actu **en tête de cette
-liste** — le hub et le flux gaming suivent ensemble, rien d'autre à brancher.
-La vidéo vient de `src/articleTrailers.js` : `leadTrailer(route)` renvoie la
-première vidéo officielle déclarée pour l'article (la même dont la pastille des
-cartes reprend la nature). Une actu sans vidéo officielle n'a pas de cadre
-vide : son visuel (`image`, puis `fallbackImage` si l'image distante ne répond
-plus) remplit le cadre 16/10 à la place du lecteur.
-
-Où vit le code : `src/pages/News.jsx` (balisage, textes FR / EN / AR),
-`src/news-carousel.css` (`.news-hub-today` : espacement du hub et visuel de
-repli) — la carte elle-même réutilise les classes de l'accueil
-(`.featured-dossiers--news`, `.home-news-card`, `src/daily-news.css`), thème
-clair compris. Vérifications : `npm run check:light-news` (le hub est rendu
-en thème clair), `npm run check:i18n` (rendu FR / EN / AR, dictionnaire
-partiel), `npm run check:trailers` et `npm run check:videos`.
+Le hub (`/news`) commence par **les actus du jour** (`id="actus-du-jour"` :
+trois cartes, une par univers, avec leurs miniatures dédiées). Viennent ensuite
+le bandeau du hub (« 02 / NEWS HUB » + « Choisis ton univers », qui introduit la
+suite) puis les trois cartes d'univers (`01 / GAMING`, `02 / CINÉMA`,
+`03 / TECH`). Le `h1` reste la première chose écrite
+dans la page, mais il n'est là que pour les lecteurs d'écran. L'ordre vit dans
+`src/pages/News.jsx` ; l'espacement est réglé par `.news-hub-headlines` dans
+`src/news-carousel.css` (section en tête de page : pas de marge haute propre,
+c'est elle qui laisse respirer le bandeau qui suit).
 
 ## Robot actus du jour
 

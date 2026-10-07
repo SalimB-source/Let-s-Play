@@ -48,23 +48,43 @@ export async function exerciseCommunity(assert) {
       element.dispatchEvent(new window.Event('input', { bubbles: true }));
     });
   };
+  const selectOption = async (element, value) => {
+    assert.ok(element, 'liste de thèmes présente');
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+    await act(async () => {
+      setter.call(element, value);
+      element.dispatchEvent(new window.Event('change', { bubbles: true }));
+    });
+  };
 
   try {
     await act(async () => root.render(createCommunityApp('fr')));
-    assert.ok(node.textContent.includes('Les joueurs de soulslike'), 'le groupe exemple Soulslike est affiché');
-    assert.ok(node.textContent.includes('Boss impossibles'), 'la description du groupe exemple est affichée');
-    assert.equal(node.querySelectorAll('.community-comment').length, 3, 'les commentaires de départ sont visibles');
+    // Plus de groupe exemple : la page ouvre sur les deux invitations à créer
+    // le premier groupe (carte du hero et panneau de discussion).
+    assert.equal(node.querySelectorAll('.community-group-card').length, 0, 'aucun groupe par défaut');
+    assert.ok(node.querySelector('.community-feature-card.is-empty'), 'la carte du hero invite à créer le premier groupe');
+    assert.ok(node.querySelector('.community-empty-discussion'), 'le panneau de discussion annonce qu’il n’y a aucun groupe');
 
     await click(node.querySelector('.community-hero-actions .community-button-primary'));
     const name = 'Les explorateurs du Rift';
+    const theme = node.querySelector('.community-create-form select');
+    assert.ok(theme, 'le formulaire propose un thème');
+    assert.ok(
+      [...theme.options].map((option) => option.value).join('|').includes('Gaming'),
+      'les thèmes proposés couvrent les univers du site (Gaming…)',
+    );
+    assert.ok([...theme.options].map((option) => option.value).includes('Tech'), 'les thèmes proposés couvrent Tech');
     await fill(node.querySelector('.community-create-form input[type="text"]'), name);
     await fill(node.querySelector('.community-create-form textarea'), 'Un groupe pour partager nos builds, nos découvertes et nos astuces de jeu.');
+    await selectOption(theme, 'Tech');
     await fill(node.querySelector('.community-create-row input'), 'Rift, coop');
     await click(node.querySelector('.community-modal-actions button[type="submit"]'));
 
     const createdCard = [...node.querySelectorAll('.community-group-card')].find((card) => card.textContent.includes(name));
     assert.ok(createdCard, 'le groupe créé rejoint la liste');
+    assert.ok(createdCard.textContent.includes('Tech'), 'la carte affiche le thème choisi');
     assert.ok(node.querySelector('.community-discussion-title h3')?.textContent.includes(name), 'le nouveau groupe devient actif');
+    assert.ok(node.querySelector('.community-feature-card h2')?.textContent.includes(name), 'la carte du hero met le groupe à la une');
 
     const message = 'Quel est votre build favori pour commencer une nouvelle partie ?';
     await fill(node.querySelector('#community-comment-input'), message);
