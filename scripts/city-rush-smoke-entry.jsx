@@ -326,7 +326,7 @@ for (const [index, city] of courses.entries()) {
     });
   }
   // Plafond du compteur : la pointe du parcours, multipliée par tous les bonus
-  // de vitesse empilables (pad turbo, ligne propre, contresens). Au-delà, une
+  // de vitesse empilables (bonus turbo, ligne propre, contresens). Au-delà, une
   // vitesse du monde échappe au rythme du parcours.
   const hudSpeedCeiling = world.topSpeed * CITY_RUSH_TRACK_BOOST_SPEED_FACTOR
     * CITY_RUSH_CLEAN_LINE_MAX_BONUS * CITY_RUSH_ONCOMING_BONUS_MAX * 3.6 + 1;
@@ -374,9 +374,7 @@ for (const [index, city] of courses.entries()) {
     if (object.userData?.type === 'slow-zone') slowZoneNodes += 1;
     if (object.userData?.kind === 'racer') racerCars.push(object);
     if (object.isMesh && /driver|face|helmet|torso|forearm/i.test(object.name || '')) visibleDriverMeshes.push(object.name);
-    if (object.userData?.icon && object.userData?.ring && object.userData?.beam && object.userData?.halo && object.userData?.pad) {
-      pickupSlots.push(object);
-    }
+    if (object.userData?.kind === 'city-rush-pickup') pickupSlots.push(object);
   });
   // Les voitures de course sont fermées (aucun personnage visible) et portent
   // leur modèle 3D dédié : c'est l'état voulu par les modèles modernisés.
@@ -471,7 +469,17 @@ for (const [index, city] of courses.entries()) {
     fail('les mini-garages ou leur compteur apparaissent avant la course');
   }
   if (slowZoneNodes) fail('une zone d’huile ou de ralentissement est encore rendue', slowZoneNodes);
-  if (!pickupSlots.some((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST)) fail('aucun pad turbo vert n’est placé sur la piste');
+  // Le turbo vert est un bonus flottant : icône au-dessus de la chaussée et
+  // anneau incliné qui tourne autour d'elle, plus aucune dalle sur le bitume.
+  const boostSlots = pickupSlots.filter((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST);
+  if (!boostSlots.length) fail('aucun bonus turbo vert n’est placé sur la piste');
+  if (boostSlots.some((slot) => !slot.userData.icon?.visible || slot.position.y < 1)) {
+    fail('le bonus turbo vert doit flotter au-dessus de la chaussée', boostSlots.map((slot) => ({ y: slot.position.y, type: slot.userData.type })));
+  }
+  const floatingSlots = pickupSlots.filter((slot) => slot.userData.orbit?.visible);
+  if (floatingSlots.some((slot) => slot.userData.type !== CITY_RUSH_PICKUPS.BOOST)) {
+    fail('seul le bonus turbo vert porte l’anneau flottant', floatingSlots.map((slot) => slot.userData.type));
+  }
   const introStats = scene ? countVisible(scene) : null;
 
   // Changement de pilote au garage : le HUD et les métadonnées des trois
@@ -1922,11 +1930,11 @@ for (const [index, city] of courses.entries()) {
   if (!audioCalls.policeSiren) fail('la sirène de police n’a jamais sonné', audioCalls);
 
   const groundBoosts = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_PICKUPS.BOOST);
-  if (!groundBoosts.length) fail('le pilote n’a pas ramassé de pad turbo pendant la course', callbacks.pickups);
+  if (!groundBoosts.length) fail('le pilote n’a pas ramassé de bonus turbo pendant la course', callbacks.pickups);
   if (groundBoosts.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
-    fail('un pad turbo ne s’est pas activé automatiquement au ramassage', groundBoosts);
+    fail('un bonus turbo ne s’est pas activé automatiquement au ramassage', groundBoosts);
   }
-  if ((audioCalls.boost || 0) < groundBoosts.length) fail('un pad turbo ramassé n’a pas déclenché son boost sonore', { groundBoosts: groundBoosts.length, audioCalls });
+  if ((audioCalls.boost || 0) < groundBoosts.length) fail('un bonus turbo ramassé n’a pas déclenché son boost sonore', { groundBoosts: groundBoosts.length, audioCalls });
   const redPickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.PISTOL);
   // Le bonus rouge n'apparaît que dans 8 % des objets : une longue course peut encore
   // bien se terminer sans que le pilote en croise un. S'il en ramasse un, il

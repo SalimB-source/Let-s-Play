@@ -188,7 +188,7 @@ const RACE_MODES = [
     id: 'sprint',
     name: 'SPRINT',
     label: `SOLO · ${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS`,
-    desc: `En solo contre la montre, sans adversaire ni police. Franchis ${CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles espacées de 300 m : chaque checkpoint recharge le chrono à 15 s. Ramasse les pads turbo verts au sol pour accélérer ; aucune arme. Chrono à zéro, course perdue. Mode défi : aucun billet vert.`,
+    desc: `En solo contre la montre, sans adversaire ni police. Franchis ${CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles espacées de 300 m : chaque checkpoint recharge le chrono à 15 s. Ramasse les bonus turbo verts flottants pour accélérer ; aucune arme. Chrono à zéro, course perdue. Mode défi : aucun billet vert.`,
     accent: '#ff5db8',
     secondary: '#ffd44f',
     laps: 1,
@@ -336,11 +336,11 @@ function PowerIcon({ type, className = '' }) {
   const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' };
   return (
     <svg className={className} viewBox="0 0 32 32" aria-hidden="true" {...common}>
-      {type === CITY_RUSH_PICKUPS.BOOST && <>
-        <rect x="3" y="4" width="26" height="24" rx="3" />
-        <path d="M11 21v-8l5 4v-5l5 4v-5" />
-        <path d="m17 7 4 4 4-4" />
-      </>}
+      {/* Le turbo est un bonus vert flottant : un éclair, plus la dalle au sol
+          d'autrefois. */}
+      {type === CITY_RUSH_PICKUPS.BOOST && (
+        <path d="M20 3 8 18h6.5L12 29l12-16h-6.5L20 3Z" />
+      )}
       {type === CITY_RUSH_PICKUPS.HEALTH && <>
         <rect x="4" y="4" width="24" height="24" rx="5" />
         <path d="M16 9v14M9 16h14" />
@@ -1747,8 +1747,8 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-foot">
                   <span className="is-key-hint">← → / Q D · VOIES (MAINTENIR)</span>
                   <span className="is-touch-hint">GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE</span>
-                  <span className="is-key-hint">A / Z / R · POUVOIRS · PAD VERT : TURBO</span>
-                  <span className="is-touch-hint">BOUTON ROUGE · AK-47 · PAD VERT : TURBO</span>
+                  <span className="is-key-hint">A / Z / R · POUVOIRS · BONUS VERT : TURBO</span>
+                  <span className="is-touch-hint">BOUTON ROUGE · AK-47 · BONUS VERT : TURBO</span>
                   <span>{currentLaps} TOURS · {currentDistance} M</span>
                   <span className="is-key-hint">M · SON</span>
                   <span className="is-key-hint">F · PLEIN ÉCRAN</span>
@@ -2001,7 +2001,7 @@ export default function ViceCityRushPage() {
             <div className="city-rush-leader-foot"><span>OBJECTIF · {activeModeName}</span><b>{sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOURS`} · {currentDistance} M</b></div>
           </section>
 
-          {/* Le Sprint possède ses checkpoints et ses pads turbo, mais aucune
+          {/* Le Sprint possède ses checkpoints et son bonus turbo flottant, mais aucune
               arme : la carte solo remplace le guide d'équipement classique. */}
           {sprintMode ? (
           <section className="city-rush-side-card city-rush-item-guide is-sprint">
@@ -2015,7 +2015,7 @@ export default function ViceCityRushPage() {
               </div>
               <div className="city-rush-guide-item is-boost">
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
-                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad vert lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. C'est le seul bonus du Sprint.</small></div>
+                <div><b>TURBO FLOTTANT · AUTOMATIQUE</b><small>Traverse un bonus vert flottant — l’éclair au-dessus de la chaussée — pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. C'est le seul bonus du Sprint.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
               </div>
               <div className="city-rush-guide-item is-ramp">
@@ -2061,7 +2061,7 @@ export default function ViceCityRushPage() {
               )}
               <div className="city-rush-guide-item is-boost">
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
-                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Les chargeurs rouges de l’AK-47 restent distincts des soins.</small></div>
+                <div><b>TURBO FLOTTANT · AUTOMATIQUE</b><small>Traverse un bonus vert flottant — l’éclair au-dessus de la chaussée — pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Les chargeurs rouges de l’AK-47 restent distincts des soins.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
               </div>
               <div className="city-rush-guide-item is-health">
@@ -2091,7 +2091,7 @@ export default function ViceCityRushPage() {
               <b>{sprintMode ? 'SPRINT SOLO · AUCUNE POURSUITE' : storyMode && !storyPoliceOn ? 'CHAPITRE SANS POLICE' : 'ESCOUADE DE POLICE'}</b>
               <p>
                 {sprintMode ? (
-                  <>Rien à fuir dans ce mode : ni escouade, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les pads turbo verts posés sur la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, et chaque choc te coûte un carré de vie.</>
+                  <>Rien à fuir dans ce mode : ni escouade, ni berline de police, ni hélicoptère d’observation, ni adversaire en piste. Seulement toi, le chrono, les {CITY_RUSH_SPRINT_CHECKPOINTS} portes visibles tous les {CITY_RUSH_SPRINT_CHECKPOINT_SPACING} m et les bonus turbo verts flottant au-dessus de la chaussée — {CITY_RUSH_SPRINT_DISTANCE} m en tout. Le trafic civil bloque toujours la voie, et chaque choc te coûte un carré de vie.</>
                 ) : storyMode && !storyPoliceOn ? (
                   <>Aucune poursuite dans ce chapitre : ni escouade, ni niveau de recherche, ni herse. Les berlines croisées restent du décor — concentre-toi sur l’objectif.</>
                 ) : (

@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// Vérif d'intégration de Vice City Rush : bonus rouges rares/pads turbo,
+// Vérif d'intégration de Vice City Rush : bonus rouges rares/bonus turbo verts flottants,
 // aucun tir bleu ni attaque d'hélicoptère, dégâts de contact à la police,
 // y compris après reset(). Le monde est construit pour de vrai avec un faux
 // WebGLRenderer.

@@ -159,14 +159,21 @@ for (const [cityIndex, city] of CITY_RUSH_CITIES.entries()) {
     }
   }
   if (!screenVisible) fail('le panneau du prochain checkpoint est hors champ caméra au départ');
-  if (boostPads.length < 2 || boostPads.some((pad) => !pad.userData.pad.visible)) {
-    fail('les pads turbo ne sont pas visibles au sol en Sprint', boostPads.map((pad) => ({ type: pad.userData.type, visible: pad.userData.pad?.visible })));
+  // Le turbo du Sprint est un bonus vert flottant : icône au-dessus de la
+  // chaussée, anneau incliné qui tourne — plus aucune dalle au sol.
+  if (boostPads.length < 2 || boostPads.some((slot) => !slot.userData.icon?.visible || !slot.userData.orbit?.visible || slot.position.y < 1)) {
+    fail('les bonus turbo verts ne flottent pas en Sprint', boostPads.map((slot) => ({
+      type: slot.userData.type,
+      y: slot.position.y,
+      icon: slot.userData.icon?.visible,
+      orbit: slot.userData.orbit?.visible,
+    })));
   }
-  if (!cb.pickups.length) fail('aucun pad turbo ramassé en Sprint');
+  if (!cb.pickups.length) fail('aucun bonus turbo flottant ramassé en Sprint');
   const nonBoostPickups = cb.pickups.filter((pickup) => pickup.type !== CITY_RUSH_PICKUPS.BOOST);
   if (nonBoostPickups.length) fail('un bonus autre que turbo est ramassable en Sprint', nonBoostPickups);
   if (cb.pickups.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
-    fail('un pad turbo du Sprint ne s’active pas automatiquement', cb.pickups);
+    fail('un bonus turbo du Sprint ne s’active pas automatiquement', cb.pickups);
   }
   // L'annonce de la barre du joueur est attendue en solo ; seul un effet
   // d'arme, de rival ou de police doit invalider le Sprint.

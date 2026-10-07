@@ -259,7 +259,22 @@ const LAP_UNITS = CITY_RUSH_LAP_LENGTH * SCALE;
 const CAMERA_BASE_FOV = 44;
 const MAX_FRAME = 0.04;
 const POWER_TYPES = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO];
-const PICKUP_ICON_TYPES = [...POWER_TYPES, CITY_RUSH_PICKUPS.HEALTH];
+// Tous les bonus portent une icône flottante : les pouvoirs, le turbo vert et
+// les soins. Le turbo n'est plus une dalle posée sur la chaussée.
+const PICKUP_ICON_TYPES = [...POWER_TYPES, CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH];
+// Hauteur de vol commune à tous les bonus, au-dessus de la chaussée.
+const PICKUP_FLOAT_HEIGHT = 1.3;
+// Inclinaison de l'anneau du turbo : sans elle, l'anneau tournerait dans son
+// propre plan et paraîtrait immobile (un tore est symétrique).
+const PICKUP_ORBIT_TILT = 0.32;
+// La couleur d'un bonus : celle de son pouvoir, le vert du turbo, le rouge des
+// soins — la couleur passée en secours sert aux effets sans type connu.
+const pickupColor = (type, fallback = CITY_RUSH_HEALTH_PICKUP_COLOR) => (
+  CITY_RUSH_POWER_RULES[type]?.color
+  || (type === CITY_RUSH_PICKUPS.BOOST
+    ? CITY_RUSH_TRACK_BOOST_COLOR
+    : type === CITY_RUSH_PICKUPS.HEALTH ? CITY_RUSH_HEALTH_PICKUP_COLOR : fallback)
+);
 // Rayon (en unités monde) de la zone d'effet de l'explosion de l'hélicoptère :
 // à peu près une case (une voie) de chaque côté, touchant les adversaires proches.
 const EXPLOSION_RADIUS = 3.4;
@@ -364,53 +379,48 @@ function makeBoostChevronGeometry() {
   return new THREE.ShapeGeometry(shape);
 }
 
+// Un bonus flottant : une icône lumineuse suspendue au-dessus de la chaussée,
+// son faisceau de lumière, un anneau et un halo posés au sol pour marquer la
+// voie. Le turbo vert n'est plus une dalle : c'est le même bonus flottant, en
+// vert, avec un anneau incliné qui tourne autour de son éclair.
 function makePickupObject(shared) {
   const group = new THREE.Group();
   const icon = new THREE.Mesh(shared.pickupGeometry, shared.pickupMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   icon.position.y = 0.15;
   group.add(icon);
+  // Anneau « d'apesanteur » : légèrement incliné, il tourne autour de l'icône.
+  // Seul le turbo l'affiche (voir `setPickupKind`).
+  const orbit = new THREE.Mesh(shared.pickupOrbitGeometry, shared.pickupRingMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
+  orbit.position.y = 0.15;
+  orbit.scale.set(0.95, 0.95, 1);
+  orbit.rotation.x = PICKUP_ORBIT_TILT;
+  orbit.visible = false;
+  group.add(orbit);
   const ring = new THREE.Mesh(shared.pickupRingGeometry, shared.pickupRingMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   ring.rotation.x = Math.PI / 2;
   ring.position.y = -1.25;
   group.add(ring);
   const beam = new THREE.Mesh(shared.pickupBeamGeometry, shared.pickupBeamMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   beam.position.y = 0.6;
+  // Le faisceau passe derrière l'icône : sans ce recul, les deux plans sont
+  // coplanaires et se disputent le z-buffer au centre du bonus (clignotement).
+  beam.position.z = -0.03;
   group.add(beam);
   const halo = new THREE.Mesh(shared.pickupHaloGeometry, shared.pickupBeamMaterials[CITY_RUSH_POWERS.BLUE_SHOT]);
   halo.rotation.x = -Math.PI / 2;
   halo.position.y = -1.27;
   group.add(halo);
 
-  // Pad turbo posé à plat sur la chaussée : dalle sombre, bord lumineux et
-  // trois flèches orientées dans le sens de la route (vers le fond d'écran).
-  const pad = new THREE.Group();
-  const plate = new THREE.Mesh(shared.boostPadGeometry, shared.boostPadMaterial);
-  plate.position.y = 0.04;
-  pad.add(plate);
-  const edgePositions = [
-    [0, 0.09, -1.68, 1.54, 0.018, 0.055],
-    [0, 0.09, 1.68, 1.54, 0.018, 0.055],
-    [-0.77, 0.09, 0, 0.055, 0.018, 3.34],
-    [0.77, 0.09, 0, 0.055, 0.018, 3.34],
-  ];
-  for (const [x, y, z, width, height, length] of edgePositions) {
-    const edge = new THREE.Mesh(shared.boostPadEdgeGeometry, shared.boostPadEdgeMaterial);
-    edge.scale.set(width, height, length);
-    edge.position.set(x, y, z);
-    pad.add(edge);
-  }
-  const arrows = [];
-  for (let index = 0; index < 3; index += 1) {
-    const arrow = new THREE.Mesh(shared.boostChevronGeometry, shared.boostChevronMaterial);
-    arrow.rotation.x = -Math.PI / 2;
-    arrow.position.set(0, 0.091, -0.96 + index * 0.96);
-    pad.add(arrow);
-    arrows.push(arrow);
-  }
-  pad.visible = false;
-  pad.userData = { plate, arrows, phase: Math.random() * Math.PI * 2 };
-  group.add(pad);
-  group.userData = { icon, ring, beam, halo, pad, phase: Math.random() * Math.PI * 2, type: CITY_RUSH_POWERS.BLUE_SHOT };
+  group.userData = {
+    kind: 'city-rush-pickup',
+    icon,
+    orbit,
+    ring,
+    beam,
+    halo,
+    phase: Math.random() * Math.PI * 2,
+    type: CITY_RUSH_POWERS.BLUE_SHOT,
+  };
   return group;
 }
 
@@ -458,7 +468,7 @@ function makeSprintCheckpointGate(city, roadHalf = CITY_RUSH_ROAD_HALF_WIDTH) {
   group.add(sign);
 
   // Deux bandes au ras du bitume matérialisent aussi la ligne de passage, sans
-  // masquer les voies ni gêner le ramassage des pads turbo.
+  // masquer les voies ni gêner le ramassage des bonus turbo.
   addBox('checkpoint-road-mark', roadMarkMaterial, [markHalf * 2, 0.045, 0.24], [0, 0.055, -0.38]);
   addBox('checkpoint-road-mark', secondaryMaterial, [markHalf * 2, 0.045, 0.16], [0, 0.058, 0.38]);
 
@@ -867,20 +877,19 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
 
 function setPickupKind(pickup, type, laneX, shared) {
   pickup.userData.type = type;
-  const isBoostPad = type === CITY_RUSH_PICKUPS.BOOST;
-  pickup.userData.pad.visible = isBoostPad;
-  pickup.userData.pad.scale.set(1, 1, 1);
-  pickup.userData.icon.visible = !isBoostPad;
-  pickup.userData.ring.visible = !isBoostPad;
-  pickup.userData.beam.visible = !isBoostPad;
-  pickup.userData.halo.visible = !isBoostPad;
-  if (!isBoostPad) {
-    pickup.userData.icon.material = shared.pickupMaterials[type];
-    pickup.userData.ring.material = shared.pickupRingMaterials[type];
-    pickup.userData.beam.material = shared.pickupBeamMaterials[type];
-    pickup.userData.halo.material = shared.pickupBeamMaterials[type];
-  }
-  pickup.position.set(laneX, isBoostPad ? 0 : 1.3, 0);
+  const { icon, orbit, ring, beam, halo } = pickup.userData;
+  icon.material = shared.pickupMaterials[type];
+  ring.material = shared.pickupRingMaterials[type];
+  orbit.material = shared.pickupRingMaterials[type];
+  beam.material = shared.pickupBeamMaterials[type];
+  halo.material = shared.pickupBeamMaterials[type];
+  // Le turbo vert est le seul bonus à porter l'anneau vertical qui tourne
+  // autour de son éclair ; les autres gardent leur icône seule.
+  orbit.visible = type === CITY_RUSH_PICKUPS.BOOST;
+  orbit.rotation.set(PICKUP_ORBIT_TILT, 0, 0);
+  // Tous les bonus flottent à la même hauteur : le turbo ne se plaque plus sur
+  // la chaussée, il lévite au-dessus comme les autres.
+  pickup.position.y = PICKUP_FLOAT_HEIGHT;
   // Le bonus (ré)apparaît en gonflant : voir `updatePickupPop`.
   pickup.userData.pop = 0;
   pickup.scale.setScalar(0.001);
@@ -1620,26 +1629,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const shared = {
     pickupGeometry: new THREE.PlaneGeometry(1.5, 1.5),
     pickupRingGeometry: new THREE.TorusGeometry(0.82, 0.06, 4, 16),
+    // L'anneau qui tourne autour du bonus vert : plus rond que celui du sol,
+    // il se voit de près (6 segments radiaux, 30 de long).
+    pickupOrbitGeometry: new THREE.TorusGeometry(0.82, 0.055, 6, 30),
     pickupBeamGeometry: new THREE.PlaneGeometry(0.42, 3.4),
     pickupHaloGeometry: new THREE.CircleGeometry(0.9, 18),
     pickupMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
       type,
-      makePickupMaterial(type, CITY_RUSH_POWER_RULES[type]?.color || CITY_RUSH_HEALTH_PICKUP_COLOR),
+      makePickupMaterial(type, pickupColor(type)),
     ])),
     pickupRingMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
       type,
-      new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type]?.color || CITY_RUSH_HEALTH_PICKUP_COLOR, transparent: true, opacity: 0.95, toneMapped: false }),
+      new THREE.MeshBasicMaterial({ color: pickupColor(type), transparent: true, opacity: 0.95, toneMapped: false }),
     ])),
     pickupBeamMaterials: Object.fromEntries(PICKUP_ICON_TYPES.map((type) => [
       type,
-      new THREE.MeshBasicMaterial({ color: CITY_RUSH_POWER_RULES[type]?.color || CITY_RUSH_HEALTH_PICKUP_COLOR, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+      new THREE.MeshBasicMaterial({ color: pickupColor(type), transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
     ])),
-    boostPadGeometry: new THREE.BoxGeometry(1.62, 0.08, 3.4),
-    boostPadMaterial: standard(0x09251a, { roughness: 0.38, metalness: 0.48, emissive: 0x0a6336, emissiveIntensity: 0.72 }),
-    boostPadEdgeGeometry: new THREE.BoxGeometry(1, 1, 1),
-    boostPadEdgeMaterial: new THREE.MeshBasicMaterial({ color: CITY_RUSH_TRACK_BOOST_COLOR, toneMapped: false }),
+    // Les chevrons verts restent ceux du tremplin : le bonus turbo, lui, est
+    // désormais une icône flottante (voir `makePickupObject`).
     boostChevronGeometry: makeBoostChevronGeometry(),
-    boostChevronMaterial: new THREE.MeshBasicMaterial({ color: '#d8ffe4', side: THREE.DoubleSide, toneMapped: false }),
     heliBody: standard(0x232d3b, { metalness: 0.48, roughness: 0.4 }),
     heliGlass: standard(0x68dce5, { emissive: 0x185d73, emissiveIntensity: 0.42, metalness: 0.27, roughness: 0.18 }),
     heliTrim: standard(0xf0ce65, { metalness: 0.58, roughness: 0.34 }),
@@ -1754,7 +1763,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       wrecked: false,
       // Le rythme de course des rivaux (voir `CITY_RUSH_RIVAL_PACE`) : la fiche
       // de leur modèle, plus 5 %. C'est la base sur laquelle s'ajoutent le
-      // dernier tour, les pads turbo et les ralentissements.
+      // dernier tour, les bonus turbo et les ralentissements.
       baseSpeed: paced(PLAYER_SPEED * profile.powerMultiplier * cityRushRivalPaceFactor()),
       currentSpeed: 0,
       mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight, driver }),
@@ -2522,7 +2531,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         : { pickups: [] })
       : createCityRushEncounter(randomSeed, laneCount);
     // Course « pure » du mode Histoire : aucun chargeur rouge sur la route —
-    // les emplacements deviennent des pads turbo, et l’AK-47 reste muet.
+    // les emplacements deviennent des bonus turbo, et l’AK-47 reste muet.
     if (!storyWeaponsEnabled && Array.isArray(encounter.pickups)) {
       encounter.pickups = encounter.pickups.map((pickup) => (
         pickup?.type === CITY_RUSH_POWERS.PISTOL ? { ...pickup, type: CITY_RUSH_PICKUPS.BOOST } : pickup
@@ -3649,10 +3658,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     data.baseX = x;
     data.baseY = y;
     data.specs = reduceMotion ? [] : cityRushPickupBurstShards(CITY_RUSH_PICKUP_BURST_SHARDS, Math.random);
-    pickupBurstColor.set(CITY_RUSH_POWER_RULES[type]?.color || (
-      type === CITY_RUSH_PICKUPS.HEALTH ? CITY_RUSH_HEALTH_PICKUP_COLOR
-        : type === CITY_RUSH_PICKUPS.BOOST ? CITY_RUSH_TRACK_BOOST_COLOR : '#ffffff'
-    ));
+    pickupBurstColor.set(pickupColor(type, '#ffffff'));
     data.shardMaterial.color.copy(pickupBurstColor);
     data.shardMaterial.opacity = 1;
     data.ringMaterial.color.copy(pickupBurstColor);
@@ -7202,17 +7208,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           slot.userData.pop = 0;
           slot.scale.setScalar(0.001);
         }
-        if (slot.userData.type === CITY_RUSH_PICKUPS.BOOST) {
-          slot.position.y = 0;
-          slot.rotation.set(0, 0, 0);
-          const pulse = 0.92 + Math.sin(elapsed * 5 + slot.userData.pad.userData.phase) * 0.08;
-          slot.userData.pad.scale.set(pulse, 1, pulse);
-        } else {
-          const bob = Math.sin(elapsed * 4.1 + slot.userData.phase) * 0.12;
-          slot.position.y = 1.3 + bob;
-          slot.rotation.y = Math.sin(elapsed * 2.5 + slot.userData.phase) * 0.12;
-          slot.userData.ring.rotation.z += dt * 1.4;
-          slot.userData.halo.scale.setScalar(1 + Math.sin(elapsed * 3.2 + slot.userData.phase) * 0.12);
+        // Tous les bonus flottent : léger tangage, balancement de l'icône,
+        // anneau du sol qui tourne et halo qui respire. Le turbo ajoute la
+        // rotation de son anneau.
+        const bob = Math.sin(elapsed * 4.1 + slot.userData.phase) * 0.12;
+        slot.position.y = PICKUP_FLOAT_HEIGHT + bob;
+        slot.rotation.y = Math.sin(elapsed * 2.5 + slot.userData.phase) * 0.12;
+        slot.userData.ring.rotation.z += dt * 1.4;
+        slot.userData.halo.scale.setScalar(1 + Math.sin(elapsed * 3.2 + slot.userData.phase) * 0.12);
+        if (slot.userData.orbit.visible) {
+          // L'anneau du bonus vert tourne autour de son éclair : un tour complet
+          // en ~2,4 s.
+          slot.userData.orbit.rotation.y += dt * 2.6;
         }
       });
 
