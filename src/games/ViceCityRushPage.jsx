@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
 import ViceCityGarageStage, { CAMERA_SHIFT_MODE } from './ViceCityGarageStage';
+import ViceCityRushMainMenu from './ViceCityRushMainMenu';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushComic from './CityRushComic';
 import CityRushRaceList from './CityRushRaceList';
@@ -494,6 +495,12 @@ export default function ViceCityRushPage() {
   const [tutorialDoneCount, setTutorialDoneCount] = useState(0);
   const [tutorialTick, setTutorialTick] = useState(null);
   const [soundOn, setSoundOn] = useState(readSoundPref);
+  // Écran-titre façon NFS : Most Wanted posé à l'arrivée : le carrousel du
+  // menu chapeaute la page. Version légère — la photo du modèle sert de décor
+  // statique, aucune scène 3D n'est montée tant que le menu est ouvert.
+  const [titleMenuOpen, setTitleMenuOpen] = useState(true);
+  const titleMenuOpenRef = useRef(true);
+  useEffect(() => { titleMenuOpenRef.current = titleMenuOpen; }, [titleMenuOpen]);
   const audioRef = useRef(null);
   const soundOnRef = useRef(soundOn);
   // Sauvegarde complète en mémoire (carrière + Histoire) : chaque écriture part
@@ -864,6 +871,9 @@ export default function ViceCityRushPage() {
   useEffect(() => {
     if (!immersive) return undefined;
     const upgrade = (event) => {
+      // L'écran-titre reste dans la page : le natif ne part qu'une fois le
+      // mode choisi (le geste de lancement le demande lui-même).
+      if (titleMenuOpenRef.current) return;
       if (nativeFullscreenElement()) return;
       const tag = event.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -948,6 +958,9 @@ export default function ViceCityRushPage() {
     const onKeyDown = (event) => {
       const target = event.target?.tagName;
       if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
+      // L'écran-titre accapare le clavier (flèches, Entrée, G, T, F, M) : la
+      // page ne doit pas lancer de course ni basculer le son en même temps.
+      if (titleMenuOpenRef.current) return;
       const key = event.key.toLowerCase();
       if (isFullscreenShortcut(event)) {
         // F : plein écran natif (la couche fixe sert déjà de repli). Voir aussi
@@ -1189,6 +1202,39 @@ export default function ViceCityRushPage() {
     resetTournament();
     setPhase('intro');
     setIntroStep('mode');
+  }
+
+  /** Rouvre l'écran-titre (boutons « ↶ MENU » et « MENU PRINCIPAL »). */
+  function openTitleMenu() {
+    returnToModePicker();
+    setTitleMenuOpen(true);
+  }
+
+  /** Carrousel de l'écran-titre : chaque entrée route vers l'existant. */
+  function handleTitlePick(entryId) {
+    setTitleMenuOpen(false);
+    if (entryId === 'story') {
+      beginStory();
+      return;
+    }
+    if (entryId === 'garage') {
+      setTutorialMode(false);
+      setTutorialGuideOpen(false);
+      setStoryMode(false);
+      resetTournament();
+      setResult(null);
+      setPhase('intro');
+      setIntroStep('garage');
+      return;
+    }
+    // Tournois et course rapide : leurs listes vivent à l'étape « modes ».
+    returnToModePicker();
+  }
+
+  function handleTitleTutorial() {
+    setTitleMenuOpen(false);
+    returnToModePicker();
+    startTutorialRace();
   }
 
   function chooseStoryEnding(ending) {
@@ -1521,6 +1567,23 @@ export default function ViceCityRushPage() {
     <div className={`city-rush-page${immersive ? ' is-immersive' : ''}${tutorialMode ? ' is-tutorial' : ''}`} style={{ '--city-accent': city.accent, '--city-secondary': city.secondary, '--mode-accent': mode.accent, '--mode-secondary': mode.secondary }}>
       <h1 className="sr-only">Vice City Rush — Course arcade 3D</h1>
 
+      {titleMenuOpen && (
+        <ViceCityRushMainMenu
+          car={CITY_RUSH_CARS.find((item) => item.id === garageCarId) || CITY_RUSH_CARS[0]}
+          carThumb={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[garageCarId] || CAR_THUMBNAILS['vice-roadster']}`}
+          cashLabel={formatCash(careerProgress.cash)}
+          stars={Object.values(storyStars).reduce((total, value) => total + (Number(value) || 0), 0)}
+          starsTotal={storyTotal}
+          tournamentsDone={tournamentHistory.completedTournamentIds.length}
+          bestsCount={Object.keys(bests).length}
+          soundOn={soundOn}
+          onToggleSound={toggleSound}
+          onToggleFullscreen={toggleImmersive}
+          onStartTutorial={handleTitleTutorial}
+          onPick={handleTitlePick}
+        />
+      )}
+
       <main className="city-rush-layout wrap">
         <section id="vice-city-rush-console" className={`city-rush-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`} ref={shellRef} aria-label="Partie de Vice City Rush">
           <div className="city-rush-topbar">
@@ -1575,8 +1638,11 @@ export default function ViceCityRushPage() {
               {phase === 'playing' && <>
                 <span className="city-rush-live-pill"><i /> {activeModeName} · EN COURSE</span>
                 <button type="button" className="city-rush-top-button" onClick={pauseRace}>Ⅱ PAUSE</button>
-                <button type="button" className="city-rush-top-button is-quiet" onClick={returnToModePicker}>↶ MENU</button>
+                <button type="button" className="city-rush-top-button is-quiet" onClick={openTitleMenu}>↶ MENU</button>
               </>}
+              {(phase === 'intro' || phase === 'cinematic' || phase === 'finished') && (
+                <button type="button" className="city-rush-top-button is-quiet" onClick={openTitleMenu}>↶ MENU</button>
+              )}
               {phase === 'paused' && <>
                 <span className="city-rush-live-pill is-paused"><i /> PAUSE</span>
                 <button type="button" className="city-rush-top-button is-resume" onClick={resumeRace}>▶ REPRENDRE</button>
@@ -2418,7 +2484,7 @@ export default function ViceCityRushPage() {
                 <h2>REPRENDS<br /><em>LE VOLANT.</em></h2>
                 <div className="city-rush-overlay-buttons">
                   <button type="button" className="city-rush-start-button" onClick={resumeRace}>REPRENDRE <span>▶</span></button>
-                  <button type="button" className="city-rush-text-button" onClick={returnToModePicker}>MENU PRINCIPAL</button>
+                  <button type="button" className="city-rush-text-button" onClick={openTitleMenu}>MENU PRINCIPAL</button>
                 </div>
                 <small>{city.name} · {activeModeLabel} · la route attend.</small>
               </div>

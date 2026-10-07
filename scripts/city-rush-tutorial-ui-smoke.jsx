@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
+import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,6 +42,7 @@ export async function checkCityRushTutorialUi(assert) {
     </AuthProvider>,
   ));
   await settle(35);
+  await dismissTitleMenu(node);
 
   try {
     const walletBefore = squash(mustFind(node, '.city-rush-wallet', 'portefeuille initial').textContent);

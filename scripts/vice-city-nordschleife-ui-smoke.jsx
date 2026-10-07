@@ -18,6 +18,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
+import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
 const NORDSCHLEIFE_ID = 'nordschleife';
@@ -66,6 +67,7 @@ export async function checkViceCityNordschleifeUi(assert) {
       </AuthProvider>,
     ));
     await settle(30);
+    await dismissTitleMenu(node);
 
     // 1. Le mode CIRCUIT propose les huit parcours, le Ring compris.
     const modeCards = [...node.querySelectorAll('.city-rush-mode-card')];
