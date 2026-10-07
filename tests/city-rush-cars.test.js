@@ -35,7 +35,7 @@ function geometrySignature(geometry) {
 
 test('les voitures ont des coques fermées distinctes et des vitrages opaques', () => {
   const signatures = new Set();
-  const expectedWheels = ['eight-hole', 'classic-five', 'eight-hole', 'split-five', 'classic-five', 'split-five', 'wire', 'turbofan', 'split-five', 'eight-hole', 'turbofan'];
+  const expectedWheels = ['eight-hole', 'classic-five', 'eight-hole', 'split-five', 'classic-five', 'split-five', 'split-five', 'turbofan', 'split-five', 'eight-hole', 'turbofan'];
 
   CITY_RUSH_CARS.forEach((profile, index) => {
     const car = makeRacerCar(profile, { player: index === 0, number: index + 1, driver: ROSTER[0] });

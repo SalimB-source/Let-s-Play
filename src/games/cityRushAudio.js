@@ -95,6 +95,29 @@ export function cityRushEngineRpm(speedRatio, gears = CITY_RUSH_ENGINE_GEARS) {
 const midiToFrequency = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+// Les véhicules modernes ne partagent plus un seul « moteur synthé ». Chaque
+// famille garde le même contrat de volume et de régime, mais possède sa
+// matière : citadine feutrée, hot hatch râpeuse, GT pleine, supercar aiguë ou
+// groupe électrique avec sifflement d'inverter.
+export const CITY_RUSH_ENGINE_PROFILES = Object.freeze({
+  'city-hatch': Object.freeze({ body: 'triangle', sub: 'sine', edge: 'sawtooth', edgeRatio: 2.35, lowpass: 760, noise: 520, lfo: 17 }),
+  'nova-hatch': Object.freeze({ body: 'triangle', sub: 'square', edge: 'sawtooth', edgeRatio: 2.55, lowpass: 860, noise: 600, lfo: 19 }),
+  volkswagen: Object.freeze({ body: 'sawtooth', sub: 'triangle', edge: 'sawtooth', edgeRatio: 2.65, lowpass: 1120, noise: 720, lfo: 22 }),
+  porsche: Object.freeze({ body: 'sawtooth', sub: 'sine', edge: 'square', edgeRatio: 2.05, lowpass: 980, noise: 680, lfo: 20 }),
+  bmw: Object.freeze({ body: 'sawtooth', sub: 'sine', edge: 'sawtooth', edgeRatio: 2.25, lowpass: 1180, noise: 760, lfo: 21 }),
+  audi: Object.freeze({ body: 'sawtooth', sub: 'square', edge: 'sawtooth', edgeRatio: 3.05, lowpass: 1480, noise: 900, lfo: 25 }),
+  lamborghini: Object.freeze({ body: 'sawtooth', sub: 'square', edge: 'sawtooth', edgeRatio: 3.35, lowpass: 1720, noise: 980, lfo: 28 }),
+  'electric-gt': Object.freeze({ body: 'triangle', sub: 'sine', edge: 'sawtooth', edgeRatio: 4.8, lowpass: 2200, noise: 460, lfo: 8, electric: true }),
+  'sport-crossover': Object.freeze({ body: 'triangle', sub: 'sine', edge: 'sawtooth', edgeRatio: 4.2, lowpass: 1850, noise: 540, lfo: 10, electric: true }),
+  'neo-roadster': Object.freeze({ body: 'triangle', sub: 'sine', edge: 'square', edgeRatio: 5.2, lowpass: 2450, noise: 420, lfo: 7, electric: true }),
+});
+
+const DEFAULT_ENGINE_PROFILE = CITY_RUSH_ENGINE_PROFILES['city-hatch'];
+
+export function cityRushEngineProfile(archetype) {
+  return CITY_RUSH_ENGINE_PROFILES[archetype] || DEFAULT_ENGINE_PROFILE;
+}
+
 export class CityRushAudio {
   constructor() {
     this.cityId = 'vice-city';
@@ -114,6 +137,7 @@ export class CityRushAudio {
     this.session = 0;
     this.engineNodes = null;
     this.engineState = null;
+    this.engineProfile = DEFAULT_ENGINE_PROFILE;
     this.heliNodes = null;
     this.heliStopTimer = null;
     this.sirenBus = null;
@@ -448,15 +472,17 @@ export class CityRushAudio {
   }
 
   // ── Moteur : un nœud permanent, piloté à chaque image ───────────────
-  ensureEngine() {
-    if (this.engineNodes || !this.context) return this.engineNodes;
+  ensureEngine(profile = this.engineProfile) {
+    if (!this.context) return this.engineNodes;
+    if (this.engineNodes && this.engineNodes.profile === profile) return this.engineNodes;
+    if (this.engineNodes) this.disposeEngine();
     const ctx = this.context;
     const out = ctx.createGain();
     out.gain.value = 0.0001;
     out.connect(this.engineBus);
     const lowpass = ctx.createBiquadFilter();
     lowpass.type = 'lowpass';
-    lowpass.frequency.value = 700;
+    lowpass.frequency.value = profile.lowpass;
     lowpass.Q.value = 0.8;
     lowpass.connect(out);
 
@@ -473,9 +499,9 @@ export class CityRushAudio {
       oscillator.start();
       return { oscillator, gain };
     };
-    const body = make('sawtooth', 1, 0.5);
-    const sub = make('square', 0.5, 0.32);
-    const edge = make('sawtooth', 2.01, 0.12);
+    const body = make(profile.body, 1, profile.electric ? 0.38 : 0.5);
+    const sub = make(profile.sub, 0.5, profile.electric ? 0.22 : 0.32);
+    const edge = make(profile.edge, profile.edgeRatio, profile.electric ? 0.17 : 0.12);
 
     // Souffle et bruit de roulement : le bruit blanc monte avec la vitesse.
     const noise = ctx.createBufferSource();
@@ -484,7 +510,7 @@ export class CityRushAudio {
     noise.buffer = this.noiseBuffer();
     noise.loop = true;
     noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.value = 600;
+    noiseFilter.frequency.value = profile.noise;
     noiseFilter.Q.value = 0.7;
     noiseGain.gain.value = 0.12;
     noise.connect(noiseFilter);
@@ -496,13 +522,13 @@ export class CityRushAudio {
     const lfo = ctx.createOscillator();
     const lfoDepth = ctx.createGain();
     lfo.type = 'sine';
-    lfo.frequency.value = 22;
-    lfoDepth.gain.value = 0.16;
+    lfo.frequency.value = profile.lfo;
+    lfoDepth.gain.value = profile.electric ? 0.08 : 0.16;
     lfo.connect(lfoDepth);
     lfoDepth.connect(out.gain);
     lfo.start();
 
-    this.engineNodes = { out, lowpass, body, sub, edge, noiseFilter, noiseGain, noise, lfo, lfoDepth };
+    this.engineNodes = { out, lowpass, body, sub, edge, noiseFilter, noiseGain, noise, lfo, lfoDepth, profile };
     return this.engineNodes;
   }
 
@@ -527,9 +553,10 @@ export class CityRushAudio {
    * (1 quand on écrase l'accélérateur), `boost` le turbo, `idle` le ralenti
    * du tour d'honneur ou de la grille de départ.
    */
-  engine({ speed = 0, throttle = 0, boost = false, idle = false, mute = false } = {}) {
+  engine({ speed = 0, throttle = 0, boost = false, idle = false, mute = false, engineProfile = null } = {}) {
     if (!this.running || !this.context) return;
-    const nodes = this.ensureEngine();
+    if (engineProfile) this.engineProfile = cityRushEngineProfile(engineProfile);
+    const nodes = this.ensureEngine(this.engineProfile);
     if (!nodes) return;
     // Le monde appelle `engine()` à chaque image : on ne reprogramme les
     // automations que quand la valeur bouge vraiment (128 crans de vitesse,
@@ -538,8 +565,8 @@ export class CityRushAudio {
     const push = Math.round(clamp(Number(throttle) || 0, 0, 1) * 10) / 10;
     const state = this.engineState || (this.engineState = {});
     const changed = state.ratio !== ratio || state.push !== push || state.boost !== boost
-      || state.idle !== idle || state.mute !== mute;
-    if (changed) Object.assign(state, { ratio, push, boost, idle, mute });
+      || state.idle !== idle || state.mute !== mute || state.profile !== this.engineProfile;
+    if (changed) Object.assign(state, { ratio, push, boost, idle, mute, profile: this.engineProfile });
     if (!changed) return;
     const { rpm, frequency } = cityRushEngineRpm(ratio);
     const pitched = frequency * (boost ? 1.14 : 1);
@@ -548,10 +575,10 @@ export class CityRushAudio {
     nodes.body.oscillator.frequency.setTargetAtTime(pitched, now, glide);
     nodes.sub.oscillator.frequency.setTargetAtTime(pitched * 0.5, now, glide);
     nodes.edge.oscillator.frequency.setTargetAtTime(pitched * 2.01, now, glide);
-    nodes.lowpass.frequency.setTargetAtTime(560 + rpm * 1750 + (boost ? 900 : 0), now, 0.08);
-    nodes.noiseFilter.frequency.setTargetAtTime(420 + ratio * 1500, now, 0.08);
-    nodes.noiseGain.gain.setTargetAtTime(0.08 + ratio * 0.2, now, 0.1);
-    nodes.lfo.frequency.setTargetAtTime(11 + rpm * 26, now, 0.1);
+    nodes.lowpass.frequency.setTargetAtTime(this.engineProfile.lowpass + rpm * 1750 + (boost ? 900 : 0), now, 0.08);
+    nodes.noiseFilter.frequency.setTargetAtTime(this.engineProfile.noise + ratio * 1500, now, 0.08);
+    nodes.noiseGain.gain.setTargetAtTime((this.engineProfile.electric ? 0.045 : 0.08) + ratio * 0.2, now, 0.1);
+    nodes.lfo.frequency.setTargetAtTime(this.engineProfile.lfo * 0.55 + rpm * (this.engineProfile.electric ? 8 : 26), now, 0.1);
     const volume = mute
       ? 0.0001
       : idle

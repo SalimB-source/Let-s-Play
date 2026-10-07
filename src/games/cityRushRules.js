@@ -234,8 +234,8 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
 }
 
 // Onze voitures aux silhouettes et compromis de conduite distincts. La compacte
-// de départ est une citadine 5 portes inspirée des petites françaises des
-// années 90 : aucun emblème ni logo de constructeur n'est modélisé.
+// de départ est une petite citadine 5 portes contemporaine : empattement court,
+// grandes roues et signatures lumineuses LED, sans emblème ni logo constructeur.
 //
 // ── Puissance : quels champs changent vraiment la course ? ────────────────
 // `powerMultiplier` est **le** levier : la vitesse de pointe réelle vaut
@@ -272,19 +272,21 @@ export const CITY_RUSH_CARS = Object.freeze([
     id: 'city-hatch', archetype: 'city-hatch', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
     power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 6.2, recovery: 44, hitRecoveryMultiplier: 1.22,
-    widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
+    // Petit gabarit, mais stance moderne : caisse basse et roues visuellement
+    // généreuses plutôt qu'une silhouette haute de voiture ancienne.
+    widthScale: 0.90, heightScale: 0.93, lengthScale: 0.90,
   }),
   Object.freeze({
     id: 'nova-18-gt', archetype: 'nova-hatch', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
     bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
     power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 7.4, recovery: 64, hitRecoveryMultiplier: 1.12,
-    widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
+    widthScale: 0.92, heightScale: 0.94, lengthScale: 0.92,
   }),
   Object.freeze({
     id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
     bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
     power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82,
-    widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
+    widthScale: 0.95, heightScale: 0.92, lengthScale: 0.96,
   }),
   Object.freeze({
     id: 'vice-roadster', archetype: 'ferrari', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
@@ -296,25 +298,25 @@ export const CITY_RUSH_CARS = Object.freeze([
     id: 'turbo-gt', archetype: 'porsche', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
     bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8', price: 550,
     power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 8.4, recovery: 74, hitRecoveryMultiplier: 1.06,
-    widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
+    widthScale: 1.03, heightScale: 0.93, lengthScale: 1.06,
   }),
   Object.freeze({
     id: 'muscle-86', archetype: 'audi', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
     bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa', price: 650,
     power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 10.6, recovery: 66, hitRecoveryMultiplier: 1.18,
-    widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
+    widthScale: 1.07, heightScale: 0.98, lengthScale: 1.07,
   }),
   Object.freeze({
     id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
     bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455', price: 800,
     power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 9.6, recovery: 76, hitRecoveryMultiplier: 1.02,
-    widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
+    widthScale: 1.06, heightScale: 0.96, lengthScale: 1.08,
   }),
   Object.freeze({
     id: 'toro-v12', archetype: 'lamborghini', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
     bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703', price: 1000,
     power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16,
-    widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
+    widthScale: 1.05, heightScale: 0.89, lengthScale: 1.07,
   }),
   Object.freeze({
     id: 'volt-aero', archetype: 'electric-gt', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
@@ -4169,4 +4171,3 @@ export function buildCityRushMinimapState(
       : [],
   };
 }
-

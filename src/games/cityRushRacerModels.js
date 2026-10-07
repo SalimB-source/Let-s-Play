@@ -24,10 +24,10 @@ HEADLIGHT_CONE.translate(0, 0, -4.5);
 // voiture son capot, son pavillon et son arrière propres.
 const CAR_MODELS = {
   'city-hatch': {
-    // Petite citadine française cinq portes, calée sur la miniature Mistral :
-    // capot presque horizontal, pare-brise redressé, pavillon haut et hayon
-    // très court. La silhouette reste volontairement sans badge constructeur.
-    wheelX: 0.88, wheelZ: [-1.20, 1.13], wheelRadius: 0.305, wheelWidth: 0.23, wheelStyle: 'eight-hole',
+    // Petite citadine cinq portes contemporaine, calée sur la miniature Mistral :
+    // empattement court, roues généreuses, capot tendu et pavillon légèrement
+    // abaissé. La silhouette reste volontairement sans badge constructeur.
+    wheelX: 0.88, wheelZ: [-1.20, 1.13], wheelRadius: 0.335, wheelWidth: 0.24, wheelStyle: 'eight-hole',
     doorSeams: [-0.12, 0.78], grilleWidth: 0.76,
     stations: [
       [-2.00, 0.25, 0.37, 0.48, 0.55, 0.11], [-1.84, 0.58, 0.38, 0.65, 0.75, 0.38],
@@ -48,11 +48,10 @@ const CAR_MODELS = {
     ],
   },
   'nova-hatch': {
-    // Compacte 5 portes du début des années 2000 : capot court, toit haut,
-    // hayon incliné, montants arrière épais et vitrage en trois parties.
-    // Sa silhouette et ses feux ronds dans des optiques rectangulaires suivent
-    // la nouvelle miniature de garage, sans badge ni logo de constructeur.
-    wheelX: 0.92, wheelZ: [-1.18, 1.17], wheelRadius: 0.325, wheelWidth: 0.25, wheelStyle: 'classic-five',
+    // Compacte 5 portes contemporaine : capot court, pavillon bas, vitrage
+    // tendu et roues plus grandes. Les surfaces suivent la miniature de garage,
+    // sans badge ni logo de constructeur.
+    wheelX: 0.92, wheelZ: [-1.18, 1.17], wheelRadius: 0.345, wheelWidth: 0.255, wheelStyle: 'classic-five',
     doorSeams: [-0.08, 0.77], grilleWidth: 0.78,
     stations: [
       [-2.00, 0.28, 0.37, 0.49, 0.56, 0.13], [-1.84, 0.63, 0.38, 0.66, 0.74, 0.41],
@@ -151,7 +150,7 @@ const CAR_MODELS = {
     ],
   },
   bmw: {
-    wheelX: 0.94, wheelZ: [-1.20, 1.16], wheelRadius: 0.34, wheelWidth: 0.26, wheelStyle: 'wire',
+    wheelX: 0.94, wheelZ: [-1.20, 1.16], wheelRadius: 0.35, wheelWidth: 0.27, wheelStyle: 'split-five',
     doorSeams: [-0.16], grilleWidth: 0.58,
     stations: [
       [-2.00, 0.28, 0.39, 0.48, 0.52, 0.13], [-1.82, 0.61, 0.39, 0.61, 0.70, 0.37],
@@ -583,37 +582,40 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
   const sideLineX = spec.wheelX - 0.015;
 
   if (archetype === 'nova-hatch') {
-    // Baguettes de protection de série, deux portes et petites répétitions
-    // orange : les détails suivent les bandes noires de la miniature studio.
+    // Citadine compacte contemporaine : bas de caisse sombre très fin, poignées
+    // affleurantes et signature LED plutôt que baguettes de protection rétro.
     for (const side of [-1, 1]) {
-      batch.box(carbon, [side * 0.918, 0.625, -0.28], [0.038, 0.062, 0.66]);
-      batch.box(carbon, [side * 0.918, 0.625, 0.57], [0.038, 0.062, 0.78]);
-      batch.box(carbon, [side * 0.902, 0.435, 0.10], [0.05, 0.075, 2.94]);
+      batch.box(carbon, [side * 0.918, 0.525, -0.28], [0.030, 0.045, 0.66]);
+      batch.box(carbon, [side * 0.918, 0.525, 0.57], [0.030, 0.045, 0.78]);
+      batch.box(carbon, [side * 0.902, 0.405, 0.10], [0.040, 0.055, 2.94]);
       batch.box(lightAmber, [side * 0.93, 0.80, -0.96], [0.025, 0.055, 0.11]);
-      batch.box(black, [side * 0.94, 0.765, -0.36], [0.03, 0.042, 0.16]);
-      batch.box(black, [side * 0.94, 0.765, 0.53], [0.03, 0.042, 0.16]);
+      batch.box(black, [side * 0.94, 0.735, -0.36], [0.025, 0.030, 0.16]);
+      batch.box(black, [side * 0.94, 0.735, 0.53], [0.025, 0.030, 0.16]);
     }
-    for (const side of [-1, 1]) batch.box(black, [side * 0.60, 0.925, -1.27], [0.016, 0.012, 0.42]);
-    batch.box(body, [0, 1.045, 1.54], [1.24, 0.035, 0.11], [-0.03, 0, 0]);
+    for (const side of [-1, 1]) batch.box(lightWhite, [side * 0.58, 0.79, -1.84], [0.30, 0.035, 0.035]);
+    batch.box(black, [0, 0.61, -1.96], [1.16, 0.075, 0.055]);
+    batch.box(body, [0, 1.01, 1.54], [1.24, 0.035, 0.11], [-0.03, 0, 0]);
   }
 
   if (archetype === 'city-hatch') {
-    // Grosses baguettes noires, deux portes bien découpées et bas de caisse
-    // sobres : ce sont les signes les plus lisibles de la miniature de profil.
+    // Petite citadine moderne : flancs propres, bas de caisse discret et fine
+    // signature lumineuse LED qui évite l'effet « voiture des années 80 ».
     for (const side of [-1, 1]) {
-      batch.box(carbon, [side * 0.895, 0.655, -0.36], [0.045, 0.075, 0.70]);
-      batch.box(carbon, [side * 0.895, 0.655, 0.54], [0.045, 0.075, 0.82]);
-      batch.box(carbon, [side * 0.88, 0.405, 0.10], [0.055, 0.085, 2.92]);
-      // Petit répétiteur orange sur l'aile avant et poignées noires de série.
+      batch.box(carbon, [side * 0.895, 0.535, -0.36], [0.032, 0.050, 0.70]);
+      batch.box(carbon, [side * 0.895, 0.535, 0.54], [0.032, 0.050, 0.82]);
+      batch.box(carbon, [side * 0.88, 0.385, 0.10], [0.042, 0.060, 2.92]);
+      // Répétiteur orange compact et poignées affleurantes.
       batch.box(lightAmber, [side * 0.902, 0.80, -0.93], [0.025, 0.055, 0.10]);
-      batch.box(black, [side * 0.915, 0.765, -0.37], [0.03, 0.045, 0.17]);
-      batch.box(black, [side * 0.915, 0.765, 0.53], [0.03, 0.045, 0.17]);
+      batch.box(black, [side * 0.915, 0.735, -0.37], [0.025, 0.030, 0.17]);
+      batch.box(black, [side * 0.915, 0.735, 0.53], [0.025, 0.030, 0.17]);
     }
-    // Deux lignes fines donnent au capot plat ses joints sans ajouter de logo.
+    for (const side of [-1, 1]) batch.box(lightWhite, [side * 0.58, 0.79, -1.84], [0.30, 0.035, 0.035]);
+    batch.box(black, [0, 0.61, -1.96], [1.16, 0.075, 0.055]);
+    // Deux lignes fines donnent au capot tendu ses joints sans ajouter de logo.
     for (const side of [-1, 1]) batch.box(black, [side * 0.62, 0.895, -1.27], [0.018, 0.014, 0.55]);
     batch.box(black, [0, 0.925, -0.91], [1.22, 0.014, 0.018]);
-    // Lèvre peinte au-dessus du hayon, très courte comme sur la photo studio.
-    batch.box(body, [0, 1.19, 1.49], [1.34, 0.055, 0.16], [-0.08, 0, 0]);
+    // Lèvre peinte au-dessus du hayon, très courte et aérodynamique.
+    batch.box(body, [0, 1.15, 1.49], [1.34, 0.055, 0.16], [-0.08, 0, 0]);
   }
 
   if (archetype === 'ferrari') {
@@ -627,23 +629,24 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
   }
 
   if (archetype === 'porsche') {
-    // Coupé turbo des années 80 : capot plongeant, ouïes arrière et large aileron.
+    // Coupé turbo modernisé : capot plongeant, ouïes arrière et large aileron,
+    // mais avec une signature LED basse à la place des phares escamotables.
     for (const side of [-1, 1]) {
       batch.box(trim, [side * 0.92, 0.62, 0.38], [0.024, 0.026, 1.45]);
       addSidePanel(batch, black, [[0.89, 0.56, 0.81], [0.92, 0.78, 0.78], [0.92, 0.78, 1.25], [0.89, 0.56, 1.28]], side);
       for (let slot = 0; slot < 3; slot += 1) batch.box(carbon, [side * 0.92, 0.59 + slot * 0.055, 1.00], [0.025, 0.018, 0.30]);
     }
     for (const side of [-1, 1]) {
-      batch.box(black, [side * 0.53, 0.87, -1.35], [0.23, 0.018, 0.23]); // capots de phares escamotables
-      batch.box(chrome, [side * 0.53, 0.86, -1.36], [0.19, 0.012, 0.17]);
-      batch.box(lightWhite, [side * 0.53, 0.865, -1.38], [0.14, 0.016, 0.12]);
+      batch.box(black, [side * 0.53, 0.87, -1.35], [0.25, 0.018, 0.18]);
+      batch.box(lightWhite, [side * 0.53, 0.87, -1.38], [0.20, 0.016, 0.035]);
     }
     batch.box(carbon, [0, 0.84, 1.22], [1.38, 0.06, 0.43]); // grille moteur arrière
     for (let slat = 0; slat < 5; slat += 1) batch.box(black, [0, 0.875, 1.06 + slat * 0.075], [1.10, 0.018, 0.025]);
   }
 
   if (archetype === 'audi') {
-    // Supercar bleue à moteur central : longues ouïes derrière les portes.
+    // Supercar bleue à moteur central : signature LED basse et longues ouïes
+    // derrière les portes, dans une lecture plus contemporaine.
     for (const side of [-1, 1]) {
       addSidePanel(batch, black, [[0.89, 0.55, 0.35], [0.93, 0.78, 0.31], [0.93, 0.78, 0.93], [0.89, 0.55, 1.00]], side);
       for (let slat = 0; slat < 3; slat += 1) batch.box(carbon, [side * 0.94, 0.60 + slat * 0.065, 0.65], [0.02, 0.018, 0.43]);
@@ -651,11 +654,15 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
     }
     batch.box(carbon, [0, 0.84, 1.32], [1.42, 0.055, 0.36]); // capot moteur à lamelles
     for (let slat = 0; slat < 5; slat += 1) batch.box(black, [0, 0.875, 1.17 + slat * 0.07], [1.16, 0.016, 0.022]);
-    for (const side of [-1, 1]) batch.box(black, [side * 0.44, 0.90, -1.02], [0.05, 0.02, 0.42]);
+    for (const side of [-1, 1]) {
+      batch.box(black, [side * 0.44, 0.90, -1.02], [0.05, 0.02, 0.42]);
+      batch.box(lightWhite, [side * 0.57, 0.74, -1.79], [0.34, 0.025, 0.035]);
+    }
   }
 
   if (archetype === 'volkswagen') {
-    // Compacte 5 portes carrée, vitres hautes et bande rouge le long des flancs.
+    // Hot hatch compacte modernisée : la bande rouge reste une signature
+    // sportive, tandis que les optiques et les surfaces deviennent plus nettes.
     for (const side of [-1, 1]) {
       batch.box(livery, [side * sideLineX, 0.61, 0.02], [0.025, 0.045, 2.55]);
       batch.box(carbon, [side * 0.90, 0.40, 0.02], [0.06, 0.08, 3.25]);
@@ -665,21 +672,24 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
     batch.box(carbon, [0, 0.34, -1.88], [1.72, 0.14, 0.12]);
     batch.box(carbon, [0, 0.33, 1.91], [1.76, 0.14, 0.12]);
     batch.box(black, [0, 0.96, 1.76], [1.14, 0.045, 0.075]); // hayon arrière
+    for (const side of [-1, 1]) batch.box(lightWhite, [side * 0.54, 0.78, -1.84], [0.30, 0.032, 0.035]);
   }
 
   if (archetype === 'bmw') {
-    // Grand tourisme classique : doubles bandes rouges et éléments chromés.
+    // Coupé Motorsport modernisé : doubles bandes rouges, roues contemporaines
+    // et éléments métalliques réduits au strict nécessaire.
     addRacingStripes(batch, livery, spec.stations, -1.48, 1.62);
     for (const side of [-1, 1]) {
       batch.box(livery, [side * sideLineX, 0.57, 0.08], [0.02, 0.018, 2.25]);
       batch.box(chrome, [side * 0.94, 0.72, 0.40], [0.032, 0.032, 0.17]);
-      batch.box(chrome, [side * 0.97, 0.92, -0.62], [0.18, 0.055, 0.14]); // petit rétro chromé
+      batch.box(black, [side * 0.97, 0.92, -0.62], [0.18, 0.055, 0.14]); // rétro aérodynamique
     }
-    batch.box(chrome, [0, 0.42, -1.94], [1.78, 0.075, 0.08]);
+    for (const side of [-1, 1]) batch.box(lightWhite, [side * 0.54, 0.75, -1.84], [0.27, 0.03, 0.035]);
   }
 
   if (archetype === 'lamborghini') {
-    // Supercar en coin : prises d'air latérales, persiennes et portes anguleuses.
+    // Supercar en coin modernisée : prises d'air latérales, persiennes et
+    // portes anguleuses, avec des optiques LED intégrées au bouclier.
     for (const side of [-1, 1]) {
       addSidePanel(batch, black, [[0.88, 0.57, 0.38], [0.94, 0.82, 0.33], [0.94, 0.82, 0.99], [0.88, 0.57, 1.04]], side);
       for (let slat = 0; slat < 4; slat += 1) batch.box(carbon, [side * 0.95, 0.62 + slat * 0.055, 0.67], [0.022, 0.018, 0.49]);
@@ -689,7 +699,10 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
     batch.box(black, [0, 0.54, 1.25], [1.10, 0.06, 0.58]);
     for (let slat = 0; slat < 6; slat += 1) batch.box(carbon, [0, 0.585, 1.02 + slat * 0.085], [1.18, 0.022, 0.025]);
     batch.box(carbon, [0, 0.39, -1.96], [1.90, 0.055, 0.14]);
-    for (const side of [-1, 1]) batch.box(black, [side * 0.53, 0.87, -1.33], [0.28, 0.016, 0.25]); // phares escamotables
+    for (const side of [-1, 1]) {
+      batch.box(black, [side * 0.53, 0.87, -1.33], [0.28, 0.016, 0.18]);
+      batch.box(lightWhite, [side * 0.53, 0.875, -1.36], [0.22, 0.018, 0.035]);
+    }
   }
 
   // Le toit est une vraie coque peinte ; ces vitres opaques et fumées masquent

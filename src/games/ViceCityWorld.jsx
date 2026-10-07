@@ -5463,6 +5463,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         speed: clamp(currentSpeed / (playerTopSpeed * 1.46), 0, 1),
         throttle: clamp((requestedPlayerSpeed - currentSpeed) / 8, 0, 1),
         boost: playerBoostLeft > 0,
+        engineProfile: playerProfile.archetype,
       });
 
       for (const racer of racers) {
