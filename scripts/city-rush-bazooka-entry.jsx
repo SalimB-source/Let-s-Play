@@ -230,7 +230,7 @@ if (Math.abs(firstPickupDistance - expectedDistances[0]) > 30) {
   fail('le premier entrepôt n’est pas ramassé à 30 % de la course', { firstPickupDistance, expectedDistances });
 }
 if ((hud()?.lap || 0) < 2) fail('le premier entrepôt doit être atteint avant le dernier tour', hud());
-if (hud()?.bazookaAmmo !== 2) fail('le premier entrepôt doit donner exactement deux tirs', hud());
+if (hud()?.bazookaAmmo !== 1) fail('le premier entrepôt doit donner exactement un tir', hud());
 if (hud()?.bazookaPickupsTaken !== 1 || hud()?.bazookaPickupsTotal !== 2) fail('le HUD doit compter un entrepôt ramassé sur deux', hud());
 if (hud()?.bazookaPickupTaken) fail('le ramassage ne doit pas être définitif tant que le second entrepôt reste à traverser', hud());
 if (byDistance[0].userData.pickup.visible) fail('le marqueur jaune du premier entrepôt doit disparaître après le ramassage');
@@ -239,13 +239,11 @@ if (!callbacks.effects.some((effect) => effect.type === 'bazooka-pickup' && effe
 }
 
 // Le premier lot est vidé avant le second entrepôt : le prochain ramassage
-// devra réapprovisionner les deux roquettes.
-if (!world.action('bazooka')) fail('le premier tir du premier lot n’a pas été accepté', hud());
-if (hud()?.bazookaAmmo !== 1) fail('le premier tir doit consommer exactement une roquette', hud());
-if (!world.action('bazooka')) fail('le deuxième tir du premier lot n’a pas été accepté', hud());
-if (hud()?.bazookaAmmo !== 0) fail('le deuxième tir doit vider le premier lot', hud());
-if (world.action('bazooka')) fail('un troisième tir ne doit pas être possible sans roquette');
-if (audioCalls.missileLaunch !== 2) fail('les deux tirs du premier lot doivent jouer leur son de lancement', audioCalls);
+// devra réapprovisionner l’unique roquette.
+if (!world.action('bazooka')) fail('le tir du premier lot n’a pas été accepté', hud());
+if (hud()?.bazookaAmmo !== 0) fail('le tir doit consommer l’unique roquette du premier lot', hud());
+if (world.action('bazooka')) fail('un second tir ne doit pas être possible sans roquette');
+if (audioCalls.missileLaunch !== 1) fail('le tir du premier lot doit jouer son son de lancement', audioCalls);
 
 // ── Second entrepôt : 65 % de la course, après le garage de vie ───────────
 const secondPickupDistance = collectNextWarehouse(1);
@@ -254,7 +252,7 @@ if (Math.abs(secondPickupDistance - expectedDistances[1]) > 30) {
   fail('le second entrepôt n’est pas ramassé à 65 % de la course', { secondPickupDistance, expectedDistances });
 }
 if ((hud()?.lap || 0) < 3) fail('le second entrepôt doit être atteint au dernier tour', hud());
-if (hud()?.bazookaAmmo !== 2) fail('le second entrepôt doit réapprovisionner les deux tirs', hud());
+if (hud()?.bazookaAmmo !== 1) fail('le second entrepôt doit réapprovisionner l’unique roquette', hud());
 if (hud()?.bazookaPickupsTaken !== 2) fail('le HUD doit compter les deux entrepôts ramassés', hud());
 if (!hud()?.bazookaPickupTaken) fail('les deux entrepôts ramassés doivent marquer le bazooka définitivement consommé', hud());
 if (byDistance[1].userData.pickup.visible) fail('le marqueur jaune du second entrepôt doit disparaître après le ramassage');
@@ -306,8 +304,8 @@ const impactsBefore = callbacks.effects.filter((effect) => effect.type === 'bazo
 const projectilesBefore = countProjectiles();
 const firstShot = world.action('bazooka');
 if (!firstShot) fail('le tir du dernier tour n’a pas été accepté', hud());
-if (hud()?.bazookaAmmo !== 1) fail('le premier tir doit consommer exactement une roquette', hud());
-if (!callbacks.effects.some((effect) => effect.type === 'bazooka-fired' && effect.ammo === 1)) {
+if (hud()?.bazookaAmmo !== 0) fail('le tir doit consommer l’unique roquette du second lot', hud());
+if (!callbacks.effects.some((effect) => effect.type === 'bazooka-fired' && effect.ammo === 0)) {
   fail('l’action monde n’a pas signalé le tir et le stock restant', callbacks.effects.slice(-6));
 }
 if (countProjectiles() !== projectilesBefore + 1) {
@@ -375,10 +373,10 @@ if (!scorchMark.visible || Number(scorchMark.material?.opacity) < 0.5) {
   });
 }
 
-if (hud()?.bazookaAmmo !== 1) fail('le stock doit rester à un tir après la première roquette', hud());
-if (!world.action('bazooka')) fail('le deuxième tir n’a pas été accepté', hud());
-if (hud()?.bazookaAmmo !== 0) fail('le deuxième tir doit vider le stock', hud());
-if (world.action('bazooka')) fail('un troisième tir ne doit pas être possible');
+// La roquette du dernier tour était la seconde et dernière de la course : le
+// stock doit rester vide jusqu’à l’arrivée.
+if (hud()?.bazookaAmmo !== 0) fail('le stock doit être vide après la roquette du dernier tour', hud());
+if (world.action('bazooka')) fail('un tir ne doit plus être possible une fois les deux conteneurs vidés');
 
 const resetTaken = callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup').length;
 world.reset();
@@ -388,7 +386,7 @@ if (byDistance.some((warehouse) => !warehouse.userData.pickup.visible)) fail('re
 if (callbacks.effects.filter((effect) => effect.type === 'bazooka-pickup').length !== resetTaken) {
   fail('reset() ne doit pas ramasser automatiquement le bazooka');
 }
-if (audioCalls.missileLaunch !== 4) fail('les quatre tirs doivent jouer leur son de lancement', audioCalls);
+if (audioCalls.missileLaunch !== 2) fail('les deux roquettes de la course doivent jouer leur son de lancement', audioCalls);
 if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
 world.destroy();
 
@@ -473,4 +471,4 @@ for (const course of CITY_RUSH_COURSES) {
   courseWorld.destroy();
 }
 if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
-console.log(`check:city-rush-bazooka ✓ — deux conteneurs de deux voies (30 % / 65 % de la course) ramassés voie ${bazookaLane}, réapprovisionnement au second, 4 tirs, projectile droit, impact police intégré, reset par course (${frame} images, ${CITY_RUSH_COURSES.length} cartes vérifiées).`);
+console.log(`check:city-rush-bazooka ✓ — deux conteneurs de deux voies (30 % / 65 % de la course) ramassés voie ${bazookaLane}, réapprovisionnement au second, un tir par conteneur (2 roquettes par course), projectile droit, impact police intégré, reset par course (${frame} images, ${CITY_RUSH_COURSES.length} cartes vérifiées).`);

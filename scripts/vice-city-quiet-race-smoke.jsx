@@ -142,16 +142,16 @@ export async function checkViceCityQuietRace(assert) {
       playerHealthFlash: 0, police: [], wantedLevel: 0, wantedMaxStars: 5,
       miniGaragesActive: false, miniGaragesRemaining: 1, miniGaragesTotal: 1,
       miniGarageNextDistance: null, oncomingPoliceTurnarounds: [], spikeBlock: null, suvCharges: [],
-      bazookaAmmo: 2, bazookaPickupTaken: true,
+      bazookaAmmo: 1, bazookaPickupTaken: true,
     };
     await act(async () => worldProbe.props?.onHud?.(fakeHud));
     assert.equal(bazookaButton.disabled, false, 'le bouton devient disponible après le pickup');
     assert.match(bazookaButton.className, /is-ready/, 'le bouton prêt prend l’accent jaune');
-    assert.match(bazookaButton.textContent, /2 TIRS · X/, 'le HUD montre les deux tirs et le raccourci');
+    assert.match(bazookaButton.textContent, /1 TIR · X/, 'le HUD montre l’unique tir et le raccourci');
     await click(bazookaButton);
     assert.deepEqual(worldProbe.actions, ['bazooka'], 'le bouton transmet bien l’action bazooka au monde');
     await act(async () => worldProbe.props?.onHud?.({ ...fakeHud, bazookaAmmo: 0 }));
-    assert.equal(bazookaButton.disabled, true, 'le bouton se reverrouille une fois les deux tirs utilisés');
+    assert.equal(bazookaButton.disabled, true, 'le bouton se reverrouille une fois le tir utilisé');
     assert.match(bazookaButton.textContent, /ÉPUISÉ/, 'le HUD signale le stock épuisé');
 
     // Une volée d'événements de course : ceux qui ouvraient autrefois une

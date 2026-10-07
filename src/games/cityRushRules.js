@@ -125,15 +125,19 @@ export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 // Le bazooka apparaît deux fois sur chaque carte : deux **conteneurs** de deux
 // voies, un avant le garage de vie de mi-course (30 % du parcours), un après
-// (65 %). Chaque traversée donne deux roquettes ; il n'y a pas d'autre
-// réapprovisionnement.
-export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 2;
+// (65 %). Chaque traversée donne **une seule roquette** ; il n'y a pas d'autre
+// réapprovisionnement, si bien que le second conteneur est le seul moyen de
+// reprendre un tir après avoir lâché le premier.
+export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 1;
 export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 8;
 export const CITY_RUSH_BAZOOKA_PROJECTILE_SPEED = 180; // roquette visible, tirée droit devant
 export const CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH = CITY_RUSH_LANE_WIDTH * 1.35;
 // Parts de la distance totale de la course où se dressent les deux entrepôts :
 // le premier avant le garage de vie (50 %), le second après.
 export const CITY_RUSH_BAZOOKA_PICKUP_SHARES = Object.freeze([0.3, 0.65]);
+// Total de roquettes d'une course : une par conteneur traversé.
+export const CITY_RUSH_BAZOOKA_AMMO_PER_RACE = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
+  * CITY_RUSH_BAZOOKA_PICKUP_SHARES.length;
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un bonus turbo pèse trois bonus d'inventaire pour les rivaux
 
 // ── Le rythme des rivaux : ils courent pour gagner ──────────────────────────

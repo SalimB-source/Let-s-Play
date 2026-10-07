@@ -1951,14 +1951,14 @@ for (const [index, city] of courses.entries()) {
     fail('un plus rouge ne rend pas exactement un carré de vie', healthPickups);
   }
   // Le bazooka est un bonus de route à part entière : deux entrepôts par course
-  // (30 % puis 65 %), chacun rechargeant les deux roquettes, sans activation
+  // (30 % puis 65 %), chacun rechargeant une seule roquette, sans activation
   // automatique.
   const bazookaPickups = callbacks.pickups.filter((pickup) => pickup.type === 'bazooka');
   if (bazookaPickups.some((pickup) => pickup.ammo !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
     || pickup.progress !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
     || pickup.chargeCost !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
     || pickup.autoActivated)) {
-    fail('un entrepôt de bazooka ramassé ne recharge pas les deux roquettes', bazookaPickups);
+    fail('un entrepôt de bazooka ramassé ne recharge pas son unique roquette', bazookaPickups);
   }
   const unsupportedPickups = callbacks.pickups.filter((pickup) => ![
     CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL, 'bazooka',
