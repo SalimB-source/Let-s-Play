@@ -751,13 +751,16 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
   });
   const bazookaMetal = standard(0x333840, { roughness: 0.4, metalness: 0.72 });
   const signTexture = makeCanvasTexture((ctx, width, height) => {
-    ctx.fillStyle = '#191b1e';
+    ctx.fillStyle = '#111318';
     ctx.fillRect(0, 0, width, height);
     ctx.strokeStyle = '#ffd21f';
     ctx.lineWidth = 10;
     ctx.strokeRect(5, 5, width - 10, height - 10);
-    neonText(ctx, 'ENTREPÔT', width / 2, height * 0.38, '900 62px "Orbitron", Arial, sans-serif', '#fff4c2', 12);
-    neonText(ctx, 'BAZOOKA · 2 TIRS', width / 2, height * 0.76, '900 38px "Orbitron", Arial, sans-serif', '#ffd21f', 9);
+    ctx.strokeStyle = 'rgba(255, 244, 194, 0.55)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(14, 14, width - 28, height - 28);
+    neonText(ctx, 'BAZOOKA HERE', width / 2, height * 0.44, '900 56px "Orbitron", Arial, sans-serif', '#ffd21f', 14);
+    neonText(ctx, '↓ BAZOOKA · 2 TIRS ↓', width / 2, height * 0.8, '900 30px "Orbitron", Arial, sans-serif', '#fff4c2', 8);
   }, 512, 160, { smooth: true });
   const signMaterial = new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide });
 
@@ -774,6 +777,8 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
   const out = (offset) => pickupLaneX + side * offset;
   const doorZ = 8.7;
   const buildingHalfWidth = 13.25 / 2;
+  const signX = out(0.25);
+  const signY = 5.55;
 
   // La travée ouverte mord sur la voie extérieure : on roule sous l'auvent,
   // entre les palettes, puis on ressort sur la route.
@@ -785,11 +790,22 @@ function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
   addBox('bazooka-warehouse-front-right-pillar', [0.52, 4.1, 0.62], [out(2.4), 2.05, doorZ], wallDark);
   addBox('bazooka-warehouse-front-right-wall', [buildingHalfWidth - 2.6, 3.35, 0.58], [out(7.75), 1.7, doorZ], wall);
   addBox('bazooka-warehouse-entry-beam', [13.25, 0.44, 0.72], [innerX, 4.1, doorZ], wallDark);
-  addBox('bazooka-warehouse-sign-frame', [5.8, 1.25, 0.3], [out(2.1), 4.95, doorZ], roof);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.55, 1.02), signMaterial);
+  addBox('bazooka-warehouse-sign-frame', [6.6, 1.65, 0.32], [signX, signY, doorZ], roof);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(6.3, 1.38), signMaterial);
   sign.name = 'bazooka-warehouse-sign';
-  sign.position.set(out(2.1), 4.95, doorZ + 0.17);
+  sign.userData = { label: 'BAZOOKA HERE' };
+  sign.position.set(signX, signY, doorZ + 0.18);
   group.add(sign);
+  const savedRandom = Math.random;
+  Math.random = seededRandom(0xBA20);
+  try {
+    addBox('bazooka-warehouse-sign-post-left', [0.22, 0.65, 0.22], [out(-1.6), 4.72, doorZ], wallDark);
+    addBox('bazooka-warehouse-sign-post-right', [0.22, 0.65, 0.22], [out(2.1), 4.72, doorZ], wallDark);
+    addBox('bazooka-warehouse-sign-neon-top', [6.68, 0.09, 0.36], [signX, signY + 0.84, doorZ], yellow);
+    addBox('bazooka-warehouse-sign-neon-bottom', [6.68, 0.09, 0.36], [signX, signY - 0.84, doorZ], yellow);
+  } finally {
+    Math.random = savedRandom;
+  }
 
   // Étagères et caisses lisibles à travers l'entrée ; elles restent hors du
   // couloir de la voiture qui traverse le hangar.
@@ -4569,6 +4585,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             || !crossedTarget
             || Math.abs(Number(swept.distance) - previousProjectileDistance)
               <= Math.abs(Number(target.distance) - previousProjectileDistance));
+        const bazookaProximityHit = !swept && shot.bazooka && !target
+          ? activePursuers()
+            .map((police) => getRaceVehicleState(police.id))
+            .filter((candidate) => candidate
+              && Number(candidate.distance) > fromDistance
+              && Number(candidate.distance) <= toDistance
+              && cityRushBazookaBlastContains({
+                centerDistance: candidate.distance,
+                centerX: shot.x,
+                vehicleDistance: candidate.distance,
+                vehicleX: Number.isFinite(Number(candidate.x)) ? Number(candidate.x) : laneX(candidate.lane),
+                radiusCells: CITY_RUSH_BAZOOKA_BLAST_CELLS,
+              }))
+            .sort((a, b) => Number(a.distance) - Number(b.distance))[0] || null
+          : null;
         const resolveImpact = (hitTarget) => {
           if (shot.bazooka) applyBazookaImpact(hitTarget, shot.attackerId);
           else applyStraightShotHit(hitTarget, shot.attackerId, shot.kind);
@@ -4583,6 +4614,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
         if (hitBySweep) {
           resolveImpact(swept);
+        } else if (bazookaProximityHit) {
+          resolveImpact(bazookaProximityHit);
+        } else if (shot.bazooka && crossedTarget && target) {
+          resolveImpact(target);
         } else if (!shot.unguided && crossedTarget) {
           if (target.lane === shot.lane) {
             resolveImpact(target);

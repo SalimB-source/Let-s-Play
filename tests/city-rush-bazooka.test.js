@@ -24,11 +24,11 @@ const pageSource = readFileSync(new URL('../src/games/ViceCityRushPage.jsx', imp
 const hudCss = readFileSync(new URL('../src/games/vice-city-rush-hud.css', import.meta.url), 'utf8');
 const baseCss = readFileSync(new URL('../src/games/vice-city-rush.css', import.meta.url), 'utf8');
 
-test('le bonus jaune donne deux roquettes et la portée du souffle vaut deux cases', () => {
+test('le bonus jaune donne deux roquettes et la portée du souffle couvre huit cases pour toucher les patrouilles à côté', () => {
   assert.equal(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, 2);
-  assert.equal(CITY_RUSH_BAZOOKA_BLAST_CELLS, 2);
+  assert.equal(CITY_RUSH_BAZOOKA_BLAST_CELLS, 8);
   assert.ok(CITY_RUSH_BAZOOKA_PROJECTILE_SPEED > 0);
-  assert.equal(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH, 4.2);
+  assert.ok(Math.abs(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH - 16.8) < 1e-9);
 });
 
 test('deux entrepôts par course, à 30 % et 65 % du parcours — le premier avant le garage de vie', () => {
@@ -63,7 +63,7 @@ test('la roquette verrouille la première voiture de police vivante devant elle,
   assert.equal(cityRushBazookaTarget({ attackerDistance: 100, attackerLane: 4, police, maxDistance: 3 }), null);
 });
 
-test('le souffle circulaire atteint deux cases autour de la voiture visée, pas au-delà', () => {
+test('le souffle circulaire atteint les voitures de police situées à côté dans le rayon de huit cases, pas au-delà', () => {
   const blast = (vehicleDistance, vehicleX) => cityRushBazookaBlastContains({
     centerDistance: 500,
     centerX: 0,
@@ -72,10 +72,11 @@ test('le souffle circulaire atteint deux cases autour de la voiture visée, pas 
   });
   assert.equal(blast(500, 0), true);
   assert.equal(blast(500, CITY_RUSH_LANE_WIDTH * 2), true);
-  assert.equal(blast(500 + CITY_RUSH_LANE_WIDTH * 2, 0), true);
-  assert.equal(blast(500 + CITY_RUSH_LANE_WIDTH, CITY_RUSH_LANE_WIDTH), true);
-  assert.equal(blast(500 + CITY_RUSH_LANE_WIDTH * 2, CITY_RUSH_LANE_WIDTH * 2), false);
-  assert.equal(blast(500, CITY_RUSH_LANE_WIDTH * 2 + 0.01), false);
+  assert.equal(blast(500 + 12, CITY_RUSH_LANE_WIDTH * 2), true);
+  assert.equal(blast(500, CITY_RUSH_LANE_WIDTH * CITY_RUSH_BAZOOKA_BLAST_CELLS), true);
+  assert.equal(blast(500 + CITY_RUSH_LANE_WIDTH * CITY_RUSH_BAZOOKA_BLAST_CELLS, 0), true);
+  assert.equal(blast(500 + CITY_RUSH_LANE_WIDTH * CITY_RUSH_BAZOOKA_BLAST_CELLS, CITY_RUSH_LANE_WIDTH * CITY_RUSH_BAZOOKA_BLAST_CELLS), false);
+  assert.equal(blast(500, CITY_RUSH_LANE_WIDTH * CITY_RUSH_BAZOOKA_BLAST_CELLS + 0.01), false);
   assert.equal(cityRushBazookaBlastContains({ centerDistance: NaN, vehicleDistance: 0 }), false);
 });
 
@@ -99,6 +100,8 @@ test('le hangar se reflète hors de la chaussée en conduite à gauche', () => {
   // Le hangar s'étend toujours vers l'extérieur du sens de course : sans ce
   // miroir, il recouvrirait les voies du contresens à Londres et sur la Shutō.
   assert.match(worldSource, /function makeBazookaWarehouse\(city, pickupLaneX, side = 1\)/);
+  assert.match(worldSource, /neonText\(ctx, 'BAZOOKA HERE'/);
+  assert.match(worldSource, /sign\.userData = \{ label: 'BAZOOKA HERE' \}/);
   assert.match(worldSource, /const bazookaOutwardSide = driveSide === 'left' \? -1 : 1/);
   assert.match(worldSource, /makeBazookaWarehouse\(city, laneX\(bazookaPickupLane\), bazookaOutwardSide\)/);
   assert.match(worldSource, /const out = \(offset\) => pickupLaneX \+ side \* offset/);

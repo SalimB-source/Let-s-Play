@@ -329,8 +329,8 @@ if (!impact || callbacks.effects.filter((effect) => effect.type === 'bazooka-imp
 // pleine poursuite, une patrouille peut se rabattre devant la cible verrouillée
 // pendant le vol. L’impact doit quoi qu’il en soit détruire au moins une
 // patrouille, et chaque destruction du souffle est créditée au bazooka.
-if (!Array.isArray(impact.destroyed) || impact.destroyed.length === 0) {
-  fail('le souffle de la roquette n’a détruit aucune patrouille', { firstFire, impact });
+if (!Array.isArray(impact.destroyed) || impact.destroyed.length < 2) {
+  fail('le souffle de la roquette doit aussi détruire les voitures de police situées à côté', { firstFire, impact });
 }
 const bazookaKills = callbacks.effects.filter((effect) => effect.type === 'police-destroyed' && effect.source === 'bazooka');
 if (!impact.destroyed.some((id) => bazookaKills.some((kill) => kill.id === id))) {
@@ -387,6 +387,15 @@ for (const course of CITY_RUSH_COURSES) {
     const marker = group.children.find((child) => child.name === 'city-rush-bazooka-pickup');
     if (!marker || marker.position.x !== pickupLaneX) {
       fail(`le marqueur de ${course.name} doit se tenir sur la voie extérieure`, { marker: marker?.position?.x, pickupLaneX });
+    }
+    const sign = group.children.find((child) => child.name === 'bazooka-warehouse-sign');
+    const roof = group.children.find((child) => child.name === 'bazooka-warehouse-roof');
+    if (!sign || sign.userData?.label !== 'BAZOOKA HERE' || !roof || !(sign.position.y > roof.position.y)) {
+      fail(`la pancarte BAZOOKA HERE de ${course.name} doit surplomber le toit du garage`, {
+        label: sign?.userData?.label,
+        signY: sign?.position?.y,
+        roofY: roof?.position?.y,
+      });
     }
     const sideWall = group.children.find((child) => child.name === 'bazooka-warehouse-side-wall');
     if (!sideWall || Math.sign(sideWall.position.x) !== outward) {

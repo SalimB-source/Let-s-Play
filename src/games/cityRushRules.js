@@ -127,7 +127,7 @@ export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 // le garage de vie de mi-course (30 % du parcours), un après (65 %). Chaque
 // traversée donne deux roquettes ; il n'y a pas d'autre réapprovisionnement.
 export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 2;
-export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 2;
+export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 8;
 export const CITY_RUSH_BAZOOKA_PROJECTILE_SPEED = 180; // roquette visible, tirée droit devant
 export const CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH = CITY_RUSH_LANE_WIDTH * 1.35;
 // Parts de la distance totale de la course où se dressent les deux entrepôts :

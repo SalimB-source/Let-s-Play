@@ -32,6 +32,7 @@ import {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
   CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+  CITY_RUSH_BAZOOKA_BLAST_CELLS,
   CITY_RUSH_DISTANCE,
   CITY_RUSH_DRIVERS,
   CITY_RUSH_FINAL_LAP_LOOPS,
@@ -2047,7 +2048,7 @@ export default function ViceCityRushPage() {
               {bazookaMode && (
                 <div className="city-rush-guide-item is-bazooka">
                   <span><PowerIcon type="bazooka" /></span>
-                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS PAR ENTREPÔT</b><small>Sur chaque carte, deux entrepôts jaunes sur le bas-côté : un à 30 % de la course, avant le garage de vie, un à 65 %. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de deux cases. Chaque tir compte.</small></div>
+                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS PAR ENTREPÔT</b><small>Sur chaque carte, deux entrepôts jaunes sur le bas-côté : un à 30 % de la course, avant le garage de vie, un à 65 %. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de {CITY_RUSH_BAZOOKA_BLAST_CELLS} cases. Chaque tir compte.</small></div>
                   <kbd>X · 4</kbd>
                 </div>
               )}
