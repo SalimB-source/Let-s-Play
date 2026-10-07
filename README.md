@@ -1411,6 +1411,29 @@ et le dernier tour durait 21 s.
   définition plafonnée. Le décor est fusionné par matériau (quelques dizaines
   d'appels de rendu pour toute une ville).
 
+### Les voitures du mode Histoire
+
+La campagne « MIDNIGHT REVANCHE » (dix chapitres, dans `cityRushStory.js`) ne
+change pas le garage du pilote : elle **prête** parfois une voiture, le temps
+d'un chapitre. Deux prêts seulement, écrits dans les données du scénario
+(`fixedCarId`) : la **MISTRAL 1.4** du prologue de 1983 — lente mais incassable,
+c'est celle qui tombe en panne à 500 m de la ligne — et la **TEMPESTA LP-780**
+de Mr. Voss sur le Nürburgring, dont le chrono cible (`storyRingTargetTime`) est
+calculé sur elle. Les huit autres chapitres se courent avec la voiture choisie
+au garage, et le briefing l'annonce (« VOITURE · … (prêtée) » ou le nom de la
+voiture du pilote).
+
+Un prêt ne vaut **que pour son chapitre** : il est appliqué à la course engagée
+(`activeCarId`, dans `ViceCityRushPage.jsx`) sans jamais écraser la sélection du
+garage (`carId`). Autrement la voiture prêtée suivait le pilote — la MISTRAL du
+prologue remplaçait la voiture achetée pour les neuf chapitres suivants, la
+TEMPESTA du Ring retombait sur la citadine de départ une fois rendue, et le
+garage affichait la voiture prêtée comme sélectionnée après la campagne. Les
+rivaux, eux, gardent leur matchmaking habituel (les deux profils les plus
+proches de la voiture engagée), sauf quand le chapitre impose un modèle
+(`rules.rivalCarIds`) ou une allure (`rules.rivalPace` : Dante roule à +5 % au
+duel de Paris, +6 % à la finale).
+
 ### Où vit le code
 
 - `src/games/cityRushRules.js` — règles pures : tours, longueur, classement,
@@ -1623,6 +1646,7 @@ npm run check:city-rush          # règles pures (tours, repli, classement, obje
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
+npm run check:city-rush-story-cars # les voitures du mode Histoire dans la vraie page (jsdom) : les dix chapitres parcourent le monde avec la bonne voiture — MISTRAL 1.4 prêtée au prologue, TEMPESTA LP-780 prêtée sur le Ring, voiture choisie au garage partout ailleurs (y compris juste après un prêt), briefing conforme et sélection du garage conservée après la campagne
 npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring), herse et SUV d'interception vérifiés sans leurs dégâts
 npm run check:city-rush-steer-hold # le maintien des flèches : une pression = un écart, le maintien enchaîne (délai 0,26 s puis 0,18 s) jusqu'au bord de la chaussée, la relâche / la pause / la perte de la fenêtre arrêtent tout, Q et D alignés, répétition native ignorée
 npm run check:city-rush-quiet    # le choix du mode au doigt (empilé, sans carrousel, avant l'Histoire) et la course muette (la vraie page en jsdom, moteur doublé)
