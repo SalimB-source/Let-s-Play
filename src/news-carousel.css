@@ -80,7 +80,7 @@
 @media(max-width:780px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-hub-section{padding-top:104px;padding-bottom:40px}
   .news-hub-back{padding-top:84px}
-  .news-hub-grid{grid-template-columns:1fr;gap:24px}
+  .news-hub-grid{grid-template-columns:1fr;gap:28px}
   .news-hub-card-num{font-size:40px;top:12px;left:14px}
   .news-hub-card-copy{padding:22px 20px 24px}
   .news-hub-card-copy h2{font-size:28px}

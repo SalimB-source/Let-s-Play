@@ -14,7 +14,7 @@
 /* Quatre colonnes laissent la place à l'extrait et au lien de chaque article,
    même sur les grands écrans : seul le titre est libéré de sa limite de lignes. */
 @media(min-width:1201px) and (hover:hover), (min-width:1201px) and (min-device-width:601px){
-  .news-carousel.is-grid{column-gap:26px;row-gap:40px}
+  .news-carousel.is-grid{column-gap:26px;row-gap:58px}
   .news-carousel.is-grid .news-carousel-image{min-height:160px}
   .news-carousel.is-grid .news-carousel-copy{padding:22px}
   .news-carousel.is-grid .news-kicker{font-size:9px;letter-spacing:.1em}
@@ -38,7 +38,7 @@
 @media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-view-tools{width:100%;justify-content:space-between;align-items:center}
   .news-view-toggle button{padding:9px 11px}
-  .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;row-gap:24px}
+  .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;row-gap:34px}
   .news-carousel.is-grid .news-carousel-card{flex-basis:auto;width:100%}
   .news-carousel.is-grid .news-carousel-image{min-height:0;aspect-ratio:4/3}
   .news-carousel.is-grid .news-carousel-image .news-feature-badge,
@@ -159,7 +159,7 @@
 }
 .news-carousel.is-grid{
   column-gap:26px;
-  row-gap:38px;
+  row-gap:54px;
   align-items:stretch;
 }
 .news-carousel.is-grid .news-carousel-card{
@@ -235,7 +235,7 @@
 }
 .news-carousel.is-grid .news-carousel-card:hover .read-link{gap:13px;color:var(--cyan)}
 @media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
-  .news-carousel.is-grid{column-gap:14px;row-gap:24px}
+  .news-carousel.is-grid{column-gap:14px;row-gap:34px}
   .news-carousel.is-grid .news-carousel-card:hover{transform:translateY(-4px)}
   .news-carousel.is-grid .news-carousel-copy .read-link{display:none}
 }
