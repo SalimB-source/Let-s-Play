@@ -585,6 +585,37 @@ physique).
 
 ---
 
+## 15 bis. Prototype du feel — livré
+
+La page `src/games/ArcadeFeelPrototype.jsx` (route **`/jeu/arcade-eternelle`**,
+aucun lien de navigation tant que ce n'est pas un jeu) contient la salle
+d'essai **« Le Puits Sec »** (`feel-01`) : course, sprint, saut variable, coyote,
+mémoire de saut, saut mural, attaque 3 coups (dont plongeant), esquive, dash
+aérien, sable mouvant, quatre scarabées, deux vautours, une idole et un golem de
+grès — 72 × 46 tuiles.
+
+- **Simulation** : `src/games/arcadeFeel.js` — pas fixe de 1/60 s, sans DOM ni
+  `Date`, donc testable et rejouable. `step(state, input)` seul avance le monde ;
+  `measureFeel()` relève les chiffres du réglage courant.
+- **Rendu** : `src/games/arcadeFeelArt.js` — décor cuit une fois en canvas hors
+  écran (un `drawImage` recadré par image), personnages redessinés en aplats à
+  **12 img/s** (mémoire de 5 images de simulation), particules et onomatopées à
+  60 img/s. HUD de la charte : cœurs, jetons, trois emplacements de cartes,
+  compteur, **F3** pour les boîtes de collision et les mesures.
+- **Réglage mesuré** (relevé par `measureFeel`, vérifié par les tests) :
+  saut tenu **3,35 tuiles**, relâché tout de suite **2,05** (61 %), course
+  **6,26 tuiles/s**, sprint **8,34 tuiles/s**, temps de vol **0,48 s**.
+  Budget de rendu mesuré : **1,8 ms par image** (11 % du budget 60 ips).
+- **Vérifications** : `npm run test:arcade` (26 tests de simulation, dont une
+  règle de niveau qui refuse une montée infranchissable et 60 s d'entrées
+  aléatoires) et `npm run check:arcade-feel-ui` (la page se rend, 600 images
+  peintes sur un faux contexte 2D, aucun dégradé — la charte l'interdit).
+- **Décision prise par ce prototype** : les personnages sont **dessinés par
+  code**, pas par planches de sprites — ils restent lisibles à 12 img/s, se
+  recolorient et se testent sans navigateur. (Question §16.7 close.)
+
+---
+
 ## 16. Ce qui reste à trancher
 
 1. **Nom du héros** : « le Dernier Client » (anonyme, fort) / **NOUR**
