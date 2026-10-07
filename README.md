@@ -177,7 +177,11 @@ Trois paliers, dans l'esprit des points de rupture déjà utilisés (801 / 1201 
 
 Le conteneur est piloté par une seule variable par palier (`--lp-shell`), que
 les trois conteneurs du site consomment ensemble — impossible d'en élargir un
-sans les autres. Les titres montent d'un cran au palier 2 (les plafonds de
+sans les autres. Seule la une de l'accueil sort du rang : `#actu-une`
+(`src/daily-news.css`) déborde de 40 px de chaque côté, soit 80 px de plus que
+`.wrap`, pour marquer la hiérarchie. Elle suit la même variable, donc elle
+s'élargit avec les paliers, et son plafond (`100% - 32px`) lui garde 16 px de
+marge avec les bords de la fenêtre quand la place manque. Les titres montent d'un cran au palier 2 (les plafonds de
 `clamp()` étaient atteints dès ~1300 px), et le corps du texte d'un article
 passe à 18 px au palier 3 **sans allonger la mesure de lecture** (68 caractères).
 
