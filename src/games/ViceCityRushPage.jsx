@@ -374,6 +374,8 @@ export default function ViceCityRushPage() {
   const [countdown, setCountdown] = useState(3);
   const [runId, setRunId] = useState(0);
   const [hud, setHud] = useState(EMPTY_HUD);
+  // Identifiant d'impact : la clé relance la vignette rouge pour chaque roquette.
+  const [bazookaImpactPulse, setBazookaImpactPulse] = useState(0);
   const [result, setResult] = useState(null);
   const [bests, setBests] = useState(readBests);
   const [careerProgress, setCareerProgress] = useState(() => careerFromSave(initialSave));
@@ -1059,7 +1061,24 @@ export default function ViceCityRushPage() {
   // qui change l'affichage du scénario.
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'story-warning') setStoryAlert('warn');
+    if (effect.type === 'bazooka-impact') {
+      setBazookaImpactPulse((previous) => previous + 1);
+      // Secousse physique du décor 3D, sans faire trembler le HUD. Le reflow
+      // force une nouvelle lecture des images-clés même sur deux impacts
+      // rapprochés ; le monde retrouve sa place à la fin de l'animation.
+      const worldElement = shellRef.current?.querySelector('.city-rush-world');
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      if (worldElement && !reducedMotion) {
+        worldElement.classList.remove('is-bazooka-shaking');
+        void worldElement.offsetWidth;
+        worldElement.classList.add('is-bazooka-shaking');
+        worldElement.addEventListener('animationend', (event) => {
+          if (event.animationName === 'crBazookaScreenShake') {
+            worldElement.classList.remove('is-bazooka-shaking');
+          }
+        }, { once: true });
+      }
+    } else if (effect.type === 'story-warning') setStoryAlert('warn');
     else if (effect.type === 'story-breakdown') setStoryAlert('breakdown');
   }
 
@@ -1177,6 +1196,16 @@ export default function ViceCityRushPage() {
           >
             <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
+            {bazookaImpactPulse > 0 && (
+              <div
+                key={bazookaImpactPulse}
+                className="city-rush-bazooka-blast-vignette"
+                onAnimationEnd={() => setBazookaImpactPulse((current) => (
+                  current === bazookaImpactPulse ? 0 : current
+                ))}
+                aria-hidden="true"
+              />
+            )}
 
             {/* Fenêtre de message des menus (garage, course verrouillée, fin
                 d’histoire). Elle vit hors du HUD de course : la route reste nue
@@ -1353,72 +1382,76 @@ export default function ViceCityRushPage() {
                 </div>
 
                 <div className="city-rush-hud-zone is-bottom-right">
-                {/* Le Sprint n'a pas d'arme : seuls les boosts au sol sont
-                    disponibles, le bouton AK-47 n'a donc pas sa place ici. */}
-                {storyWeaponsOn && !sprintMode && (() => {
-                  const type = CITY_RUSH_POWERS.PISTOL;
-                  const rule = CITY_RUSH_POWER_RULES[type];
-                  const ammo = Math.max(0, Math.min(rule.chargeCost, Number(hud.inventory?.[type]) || 0));
-                  const ready = ammo > 0;
-                  return (
-                    <button
-                      type="button"
-                      className={`city-rush-machine-gun-button${ready ? ' is-ready' : ' is-empty'}${ready && ammo <= 2 ? ' is-low' : ''}`}
-                      onClick={() => actionsRef.current?.(type)}
-                      disabled={!ready}
-                      title={ready ? `AK-47 chargé · ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} · appuie ou maintiens Z pour tirer` : `Ramasse un bonus rouge rare pour obtenir ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles`}
-                      aria-label={ready ? `Tirer à l’AK-47, ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} ; maintiens Z pour vider le chargeur` : `AK-47 : 0/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}, ramasse un bonus rouge rare`}
-                    >
-                      {/* Anneau de munitions : un segment par balle du chargeur. */}
-                      <svg className="city-rush-machine-gun-ammo" viewBox="0 0 100 100" aria-hidden="true">
-                        {Array.from({ length: CITY_RUSH_PISTOL_AMMO_PER_PICKUP }, (_, index) => {
-                          const total = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
-                          const span = 360 / total;
-                          const from = ((index * span) + 4 - 90) * (Math.PI / 180);
-                          const to = (((index + 1) * span) - 4 - 90) * (Math.PI / 180);
-                          const r = 47;
-                          return (
-                            <path
-                              key={index}
-                              className={index < ammo ? 'is-loaded' : ''}
-                              d={`M ${50 + r * Math.cos(from)} ${50 + r * Math.sin(from)} A ${r} ${r} 0 0 1 ${50 + r * Math.cos(to)} ${50 + r * Math.sin(to)}`}
-                            />
-                          );
-                        })}
-                      </svg>
-                      <span className="city-rush-machine-gun-label">AK-47</span>
-                      <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
-                      <span className="city-rush-machine-gun-status">{ready ? `CHARGÉ ${ammo}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}` : `0 / ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}`}</span>
-                    </button>
-                  );
-                })()}
-                {bazookaMode && (() => {
-                  const ammo = Math.max(0, Math.min(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, Number(hud.bazookaAmmo) || 0));
-                  const ready = ammo > 0;
-                  // Épuisé : les deux entrepôts sont ramassés et il ne reste
-                  // aucune roquette ; sinon le prochain entrepôt réapprovisionne.
-                  const exhausted = hud.bazookaPickupTaken && ammo === 0;
-                  const stateLabel = ready ? `${ammo} TIR${ammo > 1 ? 'S' : ''} · X` : exhausted ? 'ÉPUISÉ' : 'À RAMASSER';
-                  const hint = ready
-                    ? `Tirer au bazooka · ${ammo} tir${ammo > 1 ? 's' : ''} restant${ammo > 1 ? 's' : ''} · touche X`
-                    : exhausted
-                      ? 'Bazooka épuisé : les deux entrepôts sont vides et les tirs sont utilisés'
-                      : 'Bazooka verrouillé : ramasse le bonus jaune dans un entrepôt (30 % ou 65 % de la course)';
-                  return (
-                    <button
-                      type="button"
-                      className={`city-rush-bazooka-button${ready ? ' is-ready' : ' is-empty'}`}
-                      onClick={() => actionsRef.current?.('bazooka')}
-                      disabled={!ready}
-                      title={hint}
-                      aria-label={hint}
-                    >
-                      <span className="city-rush-bazooka-label">BAZOOKA</span>
-                      <span className="city-rush-bazooka-icon"><PowerIcon type="bazooka" /></span>
-                      <span className="city-rush-bazooka-status">{stateLabel}</span>
-                    </button>
-                  );
-                })()}
+                {/* Les deux armes sont côte à côte : le bazooka jaune à gauche,
+                    l’AK-47 rouge à droite. Le Sprint ne montre aucun bouton d’arme. */}
+                {storyWeaponsOn && !sprintMode && (
+                  <div className={`city-rush-weapon-controls${bazookaMode ? ' has-bazooka' : ''}`}>
+                    {bazookaMode && (() => {
+                      const ammo = Math.max(0, Math.min(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, Number(hud.bazookaAmmo) || 0));
+                      const ready = ammo > 0;
+                      // Épuisé : les deux entrepôts sont ramassés et il ne reste
+                      // aucune roquette ; sinon le prochain entrepôt réapprovisionne.
+                      const exhausted = hud.bazookaPickupTaken && ammo === 0;
+                      const stateLabel = ready ? `${ammo} TIR${ammo > 1 ? 'S' : ''} · X` : exhausted ? 'ÉPUISÉ' : 'À RAMASSER';
+                      const hint = ready
+                        ? `Tirer au bazooka · ${ammo} tir${ammo > 1 ? 's' : ''} restant${ammo > 1 ? 's' : ''} · touche X`
+                        : exhausted
+                          ? 'Bazooka épuisé : les deux entrepôts sont vides et les tirs sont utilisés'
+                          : 'Bazooka verrouillé : ramasse le bonus jaune dans un entrepôt (30 % ou 65 % de la course)';
+                      return (
+                        <button
+                          type="button"
+                          className={`city-rush-bazooka-button${ready ? ' is-ready' : ' is-empty'}`}
+                          onClick={() => actionsRef.current?.('bazooka')}
+                          disabled={!ready}
+                          title={hint}
+                          aria-label={hint}
+                        >
+                          <span className="city-rush-bazooka-label">BAZOOKA</span>
+                          <span className="city-rush-bazooka-icon"><PowerIcon type="bazooka" /></span>
+                          <span className="city-rush-bazooka-status">{stateLabel}</span>
+                        </button>
+                      );
+                    })()}
+                    {(() => {
+                      const type = CITY_RUSH_POWERS.PISTOL;
+                      const rule = CITY_RUSH_POWER_RULES[type];
+                      const ammo = Math.max(0, Math.min(rule.chargeCost, Number(hud.inventory?.[type]) || 0));
+                      const ready = ammo > 0;
+                      return (
+                        <button
+                          type="button"
+                          className={`city-rush-machine-gun-button${ready ? ' is-ready' : ' is-empty'}${ready && ammo <= 2 ? ' is-low' : ''}`}
+                          onClick={() => actionsRef.current?.(type)}
+                          disabled={!ready}
+                          title={ready ? `AK-47 chargé · ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} · appuie ou maintiens Z pour tirer` : `Ramasse un bonus rouge rare pour obtenir ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles`}
+                          aria-label={ready ? `Tirer à l’AK-47, ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} ; maintiens Z pour vider le chargeur` : `AK-47 : 0/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}, ramasse un bonus rouge rare`}
+                        >
+                          {/* Anneau de munitions : un segment par balle du chargeur. */}
+                          <svg className="city-rush-machine-gun-ammo" viewBox="0 0 100 100" aria-hidden="true">
+                            {Array.from({ length: CITY_RUSH_PISTOL_AMMO_PER_PICKUP }, (_, index) => {
+                              const total = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+                              const span = 360 / total;
+                              const from = ((index * span) + 4 - 90) * (Math.PI / 180);
+                              const to = (((index + 1) * span) - 4 - 90) * (Math.PI / 180);
+                              const r = 47;
+                              return (
+                                <path
+                                  key={index}
+                                  className={index < ammo ? 'is-loaded' : ''}
+                                  d={`M ${50 + r * Math.cos(from)} ${50 + r * Math.sin(from)} A ${r} ${r} 0 0 1 ${50 + r * Math.cos(to)} ${50 + r * Math.sin(to)}`}
+                                />
+                              );
+                            })}
+                          </svg>
+                          <span className="city-rush-machine-gun-label">AK-47</span>
+                          <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
+                          <span className="city-rush-machine-gun-status">{ready ? `CHARGÉ ${ammo}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}` : `0 / ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}`}</span>
+                        </button>
+                      );
+                    })()}
+                  </div>
+                )}
                 </div>
               </div>
             )}

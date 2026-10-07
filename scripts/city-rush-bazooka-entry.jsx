@@ -327,14 +327,51 @@ if (!impact || callbacks.effects.filter((effect) => effect.type === 'bazooka-imp
 }
 // Le balayage du projectile s’arrête sur le premier véhicule de la voie : en
 // pleine poursuite, une patrouille peut se rabattre devant la cible verrouillée
-// pendant le vol. L’impact doit quoi qu’il en soit détruire au moins une
-// patrouille, et chaque destruction du souffle est créditée au bazooka.
-if (!Array.isArray(impact.destroyed) || impact.destroyed.length < 2) {
-  fail('le souffle de la roquette doit aussi détruire les voitures de police situées à côté', { firstFire, impact });
+// pendant le vol. L’impact doit quoi qu’il en soit détruire sa cible, et chaque
+// voiture effectivement dans le rayon du souffle est créditée au bazooka.
+if (!Array.isArray(impact.destroyed) || impact.destroyed.length < 1) {
+  fail('le souffle de la roquette doit détruire la patrouille touchée', { firstFire, impact });
 }
 const bazookaKills = callbacks.effects.filter((effect) => effect.type === 'police-destroyed' && effect.source === 'bazooka');
 if (!impact.destroyed.some((id) => bazookaKills.some((kill) => kill.id === id))) {
   fail('la destruction de police n’est pas créditée au tir bazooka', { firstFire, impact, bazookaKills });
+}
+// L’impact doit dessiner son champignon, graver une marque noire posée sur la
+// chaussée et remplacer les voitures de police détruites par leurs carcasses.
+let bazookaExplosion = null;
+let bazookaWreckCount = 0;
+scene.traverse((object) => {
+  if (object.name === 'city-rush-bazooka-explosion') bazookaExplosion = object;
+  if (object.name === 'police-wreck' && object.visible && object.userData?.taken) bazookaWreckCount += 1;
+});
+const scorchMark = bazookaExplosion?.getObjectByName('bazooka-scorch-mark');
+const mushroomCloud = bazookaExplosion?.getObjectByName('bazooka-mushroom-cloud');
+if (!bazookaExplosion || !scorchMark || !mushroomCloud?.getObjectByName('bazooka-mushroom-stem-smoke')) {
+  fail('l’impact doit créer le champignon nucléaire et sa trace de goudron noir', {
+    explosion: bazookaExplosion?.name,
+    scorch: scorchMark?.name,
+    mushroom: mushroomCloud?.name,
+  });
+}
+if (bazookaWreckCount < impact.destroyed.length) {
+  fail('les voitures de police touchées par le souffle doivent rester sous forme de carcasses', {
+    wrecks: bazookaWreckCount,
+    destroyed: impact.destroyed,
+  });
+}
+const blastPositionBeforeScroll = bazookaExplosion.position.clone();
+runFrames(12, 'persistance de la marque noire');
+if (!(bazookaExplosion.position.z > blastPositionBeforeScroll.z)) {
+  fail('le cratère doit rester ancré à sa position sur la chaussée pendant le défilement', {
+    before: blastPositionBeforeScroll.z,
+    after: bazookaExplosion.position.z,
+  });
+}
+if (!scorchMark.visible || Number(scorchMark.material?.opacity) < 0.5) {
+  fail('la trace noire au sol doit rester visible après le flash initial', {
+    visible: scorchMark.visible,
+    opacity: scorchMark.material?.opacity,
+  });
 }
 
 if (hud()?.bazookaAmmo !== 1) fail('le stock doit rester à un tir après la première roquette', hud());
