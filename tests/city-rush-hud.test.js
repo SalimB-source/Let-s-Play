@@ -310,14 +310,50 @@ test('la police arrive au dernier tour du joueur et réserve une unité par riva
 
   const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
   const retaliation = world.match(/function registerPoliceRetaliation\([\s\S]*?\n  function activatePoliceUnit/)?.[0] || '';
-  assert.match(policeDamage, /if \(attackerId && attackerId !== 'player'\) registerPoliceRetaliation\(attackerId, source\)/,
+  assert.match(policeDamage, /if \(attackerId && attackerId !== 'player'\) \{[\s\S]*?registerPoliceRetaliation\(attackerId, source, \{/,
     'un tir réussi par un rival déclenche la représaille');
+  assert.match(policeDamage, /reason: source === 'collision' \? 'police-contact' : 'police-shot'/,
+    'le motif du dossier distingue le tir du carambolage');
   assert.match(retaliation, /policeCars\.find\(\(police\) => police\.reserveForId === attackerId\)/,
     'chaque rival reçoit son unité pré-réservée');
   assert.match(retaliation, /targetId: attackerId/);
   assert.match(retaliation, /type: 'police-retaliation'/);
   assert.match(retaliation, /policeRetaliationByAttacker\.set\(attackerId, reserve\)/,
     'une seule unité est attribuée par rival');
+});
+
+test('un rival qui percute la police ou mène le dernier tour est chassé lui aussi', () => {
+  // Le carambolage d'un rival avec une berline de ronde : la patrouille sort de
+  // sa ronde pour le chasser, et son dossier s'ouvre — trois étoiles, une unité
+  // dédiée, sans toucher à la recherche du joueur.
+  const trafficImpact = world.match(/function applyTrafficImpact\([\s\S]*?\n  function applyOncomingImpact/)?.[0] || '';
+  assert.match(trafficImpact, /if \(racer && !traffic\.rallied && isCityRushPoliceTrafficType\(traffic\.type\)\)/,
+    'le contact rival/berline de ronde est reconnu dans le choc de trafic');
+  assert.match(trafficImpact, /rallyTrafficPolice\(traffic, racer\.id/,
+    'la berline percutée prend le rival en chasse');
+  assert.match(trafficImpact, /registerPoliceRetaliation\(racer\.id, 'collision', \{ reason: 'police-contact' \}\)/,
+    'le carambolage ouvre le dossier du rival');
+  // Le face-à-face : une patrouille heurtée par un rival se retourne pour lui.
+  const oncoming = world.match(/function applyOncomingImpact\([\s\S]*?\n  function checkOncomingImpacts/)?.[0] || '';
+  assert.match(oncoming, /const policeContact = \(actorId === 'player' \|\| Boolean\(racerActor\)\)/);
+  assert.match(oncoming, /beginOncomingPoliceTurnaround\(oncoming, \{ asBackup: false, targetId: actorId \}\)/);
+  assert.match(oncoming, /registerPoliceRetaliation\(racerActor\.id, 'collision', \{ reason: 'police-contact' \}\)/);
+  // Le carambolage rival/berline de poursuite : même barème que celui du joueur.
+  const rivalCollisions = world.match(/function checkRivalPoliceCollisions\([\s\S]*?\n  function fireAsPolice/)?.[0] || '';
+  assert.ok(rivalCollisions, 'le carambolage des rivaux avec les berlines existe');
+  assert.match(rivalCollisions, /cityRushPoliceCollisionHit\(\{/);
+  assert.match(rivalCollisions, /damagePolice\(police, 'collision', racer\.id/);
+  // Le premier du dernier tour : la règle pure décide, le monde l'applique.
+  assert.match(world, /chaseLastLapLeader\(leader, playerLap\)/);
+  const chase = world.match(/function chaseLastLapLeader\([\s\S]*?\n  function activatePoliceUnit/)?.[0] || '';
+  assert.ok(chase, 'la règle du premier du dernier tour existe');
+  assert.match(chase, /cityRushRivalLeaderWanted\(\{ leader: leaderId, lastLap: playerLap >= effectiveLaps \}\)/);
+  assert.match(chase, /registerPoliceRetaliation\(leaderId, null, \{ reason: 'last-lap-leader' \}\)/);
+  // Le classement publie la poursuite d'un rival, et le HUD la porte au joueur.
+  assert.match(world, /pursued: racer\.id !== 'player' && cityRushRivalPursued\(racer\.wantedLevel \|\| 0\)/);
+  assert.match(raceList, /racer\.pursued/);
+  assert.match(raceList, /city-rush-race-list-pursued/);
+  assert.match(css, /\.city-rush-race-list-copy b em\.city-rush-race-list-pursued\s*\{/);
 });
 
 test('victoire en mode course : le bouton COURSE SUIVANTE doré à texte noir est présent', () => {

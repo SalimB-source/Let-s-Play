@@ -92,7 +92,7 @@ const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
   CITY_RUSH_LAPS, CITY_RUSH_POLICE_AIM_TIME, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceMaxHealth, cityRushPoliceAimHold,
-  cityRushPoliceAimReady, cityRushMiniGarageRepair,
+  cityRushPoliceAimReady, cityRushMiniGarageRepair, cityRushHealthPickupRepair,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -220,14 +220,24 @@ for (let run = 0; run < RUNS; run += 1) {
         tracked = effect.health;
         continue;
       }
+      if (effect.type === 'player-health-pickup') {
+        // Le « + » rouge rend un carré : la barre repart de sa valeur réelle.
+        // Sans ce relèvement, la série du harnais resterait une cellule sous la
+        // coque et le carambolage suivant serait compté comme une entorse.
+        if (effect.healthBefore !== tracked
+          || effect.health !== cityRushHealthPickupRepair(tracked, carMaxHealth)
+          || effect.healthRestored !== effect.health - effect.healthBefore) {
+          violations.push(`[${city.id}#${run}] le plus rouge ne rend pas exactement un carré de vie`, effect);
+        }
+        tracked = effect.health;
+        continue;
+      }
       if (effect.type !== 'player-hit') continue;
       const maximumDamage = effect.source === 'suv-collision' ? 2 : 1;
       const expectedDamage = Math.min(maximumDamage, Math.max(0, Number(tracked) || 0));
       const expectedHealth = Math.max(0, tracked - expectedDamage);
       if (effect.damage !== expectedDamage || effect.health !== expectedHealth) {
-        violations.push(`[${city.id}#${run}] les dégâts de l’impact ne correspondent pas à sa catégorie`, {
-          tracked, expectedDamage, effect,
-        });
+        violations.push(`[${city.id}#${run}] les dégâts de l’impact ne correspondent pas à sa catégorie`, JSON.stringify({ tracked, expectedDamage, effect }));
       }
       tracked = effect.health;
     }

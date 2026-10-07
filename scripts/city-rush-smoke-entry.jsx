@@ -1287,8 +1287,12 @@ for (const [index, city] of courses.entries()) {
     && Number(effect.distance) <= CITY_RUSH_SUV_CHARGE_ALERT_RANGE))) {
     fail('une charge de SUV est annoncée hors de sa portée d’alerte', suvAlerts);
   }
-  if (suvContacts.some((effect) => Number(effect.healthLost) !== 0)) {
-    fail('un SUV d’interception a retiré un carré au pilote alors que le lanceur neutralise ce coût', suvContacts);
+  // Le coût du choc se mesure sur le pilote : un rival qui percute un SUV de
+  // charge ouvre son dossier sans que la barre du joueur bouge (il n'a pas de
+  // `healthLost`, la sienne est publiée à part).
+  const playerSuvContacts = suvContacts.filter((effect) => effect.isPlayer);
+  if (playerSuvContacts.some((effect) => Number(effect.healthLost) !== 0)) {
+    fail('un SUV d’interception a retiré un carré au pilote alors que le lanceur neutralise ce coût', playerSuvContacts);
   }
   const suvPursued = new Set();
   for (const hud of callbacks.huds) {

@@ -939,12 +939,25 @@ et le dernier tour durait 21 s.
   l'accord de « réparée » que si la coque a repris des points (`garageRepair`,
   bande-son).
 
-  **Les rivaux qui touchent la police reçoivent leur propre poursuivant.** Deux
-  voitures supplémentaires sont gardées en réserve, une par rival ; dès qu'un
-  rival réussit un tir sur une voiture de police — escouade ou police du trafic
-  — son unité réservée le chasse exclusivement, sans détourner les trois voitures
-  du joueur. Les voitures de police du trafic sont également vulnérables aux
-  tirs rouges. **L'attaque d'hélicoptère a été retirée** : aucun missile ni
+  **Les rivaux aussi se font pourchasser par la police.** Deux voitures
+  supplémentaires sont gardées en réserve, une par rival ; **trois motifs**
+  ouvrent son dossier : un tir réussi sur une voiture de police — escouade ou
+  police du trafic —, un **carambolage** avec elle — la berline de ronde
+  percutée sort de sa patrouille (`rallyTrafficPolice`), la patrouille du
+  contresens heurtée de face se retourne pour lui (`applyOncomingImpact`), et la
+  berline de poursuite emboutie encaisse le choc (`checkRivalPoliceCollisions`,
+  `cityRushPoliceCollisionHit`) —, et la **tête de course à l'ouverture du
+  dernier tour** (`chaseLastLapLeader`, `cityRushRivalLeaderWanted`). Chaque
+  motif vaut **trois étoiles**, le barème du contact du joueur
+  (`cityRushRivalWantedLevelAfterContact`), et sort l'unité réservée du rival,
+  qui le chasse exclusivement — jamais le joueur, jamais un autre rival — sans
+  détourner les trois voitures du joueur. Une unité dédiée détruite est relevée
+  après le même délai que l'escouade, tant que le dossier reste ouvert
+  (`reason: 'pursuer-renewal'`) ; l'épave d'un rival, elle, referme son dossier
+  et lâche ses poursuivants. Le classement l'annonce : la ligne du rival
+  recherché allume la pastille rouge de poursuite (`wanted`, `pursued`), jamais
+  celle du joueur. Les voitures de police du trafic sont également vulnérables
+  aux tirs rouges. **L'attaque d'hélicoptère a été retirée** : aucun missile ni
   frappe aérienne ne peut toucher qui que ce soit.
 
   L'escouade opère dans les cinq villes et sur les routes de carrière — jamais
@@ -1589,6 +1602,7 @@ npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carr
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:city-rush-police-wreck # destruction d'une berline : deux tours de tête-à-queue en décélérant, explosion à l'arrêt, carcasse laissée en feu tout l'incendie
+npm run check:city-rush-rival-police # les rivaux aussi sont pourchassés : carambolage avec la police et tête de course au dernier tour (deux passes : motifs mêlés, puis motif du premier seul)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```
@@ -1609,8 +1623,9 @@ le prennent pour cible même s'il n'est pas leader, le rejoignent à moins de 30
 et restent dans son sillage (au moins 40 % du dernier tour à moins de 80 m,
 jamais plus de 200 m de retard). Elles sont absentes du classement, disparaissent
 à l'arrivée et font sonner puis éteindre leur sirène. Le smoke valide aussi
-chaque événement de représailles émis : le rival touchant une voiture de police
-reçoit une unité dédiée qui le cible exclusivement. Il suit l'**hélicoptère
+chaque événement de représailles émis — tir, carambolage (`police-contact`) ou
+tête de course du dernier tour (`last-lap-leader`) — : le rival touchant une
+voiture de police reçoit une unité dédiée qui le cible exclusivement. Il suit l'**hélicoptère
 d'observation** (nœud `watch-helicopter` : absent hors du dernier tour, rotor et
 pod animés pendant le suivi, **cadrage vérifié à l'écran** — projeté par la
 vraie caméra, il doit rester dans la bande de ciel entre la route et les cartes
