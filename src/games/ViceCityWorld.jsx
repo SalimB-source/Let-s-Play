@@ -728,8 +728,15 @@ function makeMiniGarageObject(index, materials, garageLanes) {
   return group;
 }
 
-/** Entrepôt de bord de route, ouvert sur la voie extérieure de la carte. */
-function makeBazookaWarehouse(city, pickupLaneX) {
+/**
+ * Entrepôt de bord de route, ouvert sur la voie extérieure du sens de course.
+ *
+ * `side` vaut +1 quand la chaussée se tient à droite — le hangar s'étend alors
+ * vers les abscisses positives — et −1 en conduite à gauche (Londres, Shutō C1),
+ * où tout le bâtiment est reflété : sans ce miroir, il s'étalerait sur les voies
+ * du contresens au lieu de rester sur le bas-côté.
+ */
+function makeBazookaWarehouse(city, pickupLaneX, side = 1) {
   const group = new THREE.Group();
   group.name = 'city-rush-bazooka-warehouse';
   const wall = standard(0xc8b99e, { roughness: 0.88, metalness: 0.04 });
@@ -761,8 +768,10 @@ function makeBazookaWarehouse(city, pickupLaneX) {
     group.add(mesh);
     return mesh;
   };
-  const innerX = pickupLaneX + 4.85;
-  const outerX = pickupLaneX + 11.6;
+  const innerX = pickupLaneX + side * 4.85;
+  const outerX = pickupLaneX + side * 11.6;
+  // Décalage latéral signé : positif vers l'extérieur de la chaussée.
+  const out = (offset) => pickupLaneX + side * offset;
   const doorZ = 8.7;
   const buildingHalfWidth = 13.25 / 2;
 
@@ -772,25 +781,25 @@ function makeBazookaWarehouse(city, pickupLaneX) {
   addBox('bazooka-warehouse-roof', [13.55, 0.3, 23.6], [innerX, 4.45, -0.15], roof);
   addBox('bazooka-warehouse-side-wall', [0.34, 4.3, 22.6], [outerX, 2.15, -0.15], wall);
   addBox('bazooka-warehouse-back-wall', [13.25, 4.3, 0.38], [innerX, 2.15, -11.45], wall);
-  addBox('bazooka-warehouse-front-left-pillar', [0.52, 4.1, 0.62], [pickupLaneX - 2.35, 2.05, doorZ], wallDark);
-  addBox('bazooka-warehouse-front-right-pillar', [0.52, 4.1, 0.62], [pickupLaneX + 2.4, 2.05, doorZ], wallDark);
-  addBox('bazooka-warehouse-front-right-wall', [buildingHalfWidth - 2.6, 3.35, 0.58], [pickupLaneX + 7.75, 1.7, doorZ], wall);
+  addBox('bazooka-warehouse-front-left-pillar', [0.52, 4.1, 0.62], [out(-2.35), 2.05, doorZ], wallDark);
+  addBox('bazooka-warehouse-front-right-pillar', [0.52, 4.1, 0.62], [out(2.4), 2.05, doorZ], wallDark);
+  addBox('bazooka-warehouse-front-right-wall', [buildingHalfWidth - 2.6, 3.35, 0.58], [out(7.75), 1.7, doorZ], wall);
   addBox('bazooka-warehouse-entry-beam', [13.25, 0.44, 0.72], [innerX, 4.1, doorZ], wallDark);
-  addBox('bazooka-warehouse-sign-frame', [5.8, 1.25, 0.3], [pickupLaneX + 2.1, 4.95, doorZ], roof);
+  addBox('bazooka-warehouse-sign-frame', [5.8, 1.25, 0.3], [out(2.1), 4.95, doorZ], roof);
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.55, 1.02), signMaterial);
   sign.name = 'bazooka-warehouse-sign';
-  sign.position.set(pickupLaneX + 2.1, 4.95, doorZ + 0.17);
+  sign.position.set(out(2.1), 4.95, doorZ + 0.17);
   group.add(sign);
 
   // Étagères et caisses lisibles à travers l'entrée ; elles restent hors du
   // couloir de la voiture qui traverse le hangar.
   for (const z of [-5.2, -1.7, 2.0]) {
-    addBox('bazooka-warehouse-shelf', [0.26, 2.1, 2.8], [pickupLaneX + 8.5, 1.05, z], wallDark);
-    addBox('bazooka-warehouse-pallet', [1.3, 0.62, 1.05], [pickupLaneX + 5.4, 0.42, z], crate);
+    addBox('bazooka-warehouse-shelf', [0.26, 2.1, 2.8], [out(8.5), 1.05, z], wallDark);
+    addBox('bazooka-warehouse-pallet', [1.3, 0.62, 1.05], [out(5.4), 0.42, z], crate);
   }
   // Stries jaunes à l'entrée : la porte et le couloir restent visibles au soleil.
   for (let stripe = 0; stripe < 5; stripe += 1) {
-    addBox('bazooka-warehouse-entry-stripe', [0.22, 0.025, 2.4], [pickupLaneX - 1.65 + stripe * 0.92, 0.13, doorZ - 1.35], yellow);
+    addBox('bazooka-warehouse-entry-stripe', [0.22, 0.025, 2.4], [out(-1.65 + stripe * 0.92), 0.13, doorZ - 1.35], yellow);
   }
 
   const pickup = new THREE.Group();
@@ -836,7 +845,7 @@ function makeBazookaWarehouse(city, pickupLaneX) {
   pickupBeam.position.y = 0.98;
   pickup.add(pickupBeam);
   group.add(pickup);
-  group.userData = { pickup, pickupRing, pickupHalo, pickupBeam, rocket, trackDistance: 0 };
+  group.userData = { pickup, pickupRing, pickupHalo, pickupBeam, rocket, trackDistance: 0, side };
   return group;
 }
 
@@ -2301,10 +2310,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   // Deux entrepôts par course, sur toutes les cartes : un à 30 % du parcours
-  // (avant le garage de vie de mi-course), un à 65 % (après).
+  // (avant le garage de vie de mi-course), un à 65 % (après). Le hangar s'ouvre
+  // sur l'**extérieur** de la chaussée : à droite en conduite à droite, à gauche
+  // à Londres et sur la Shutō C1, où tout le bâtiment est reflété.
+  const bazookaOutwardSide = driveSide === 'left' ? -1 : 1;
   const bazookaWarehouses = bazookaWarehouseEnabled
     ? bazookaTrackDistances.map((trackDistance, index) => {
-      const group = makeBazookaWarehouse(city, laneX(bazookaPickupLane));
+      const group = makeBazookaWarehouse(city, laneX(bazookaPickupLane), bazookaOutwardSide);
       group.visible = false;
       scene.add(group);
       return {
