@@ -11,6 +11,10 @@ import {
   CITY_RUSH_BLUE_SHOT_MAX_RANGE,
   CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED,
   CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
+  CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+  CITY_RUSH_BAZOOKA_BLAST_CELLS,
+  CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
+  CITY_RUSH_LANE_WIDTH,
   CITY_RUSH_PISTOL_SPIN_TURNS,
   CITY_RUSH_TRACK_BOOST_DURATION,
   CITY_RUSH_TRACK_BOOST_SPEED_FACTOR,
@@ -157,6 +161,10 @@ import {
   cityRushLapForDistance,
   cityRushLapLength,
   cityRushLapProgress,
+  cityRushBazookaWarehouseDistance,
+  cityRushBazookaPickupCanUse,
+  cityRushBazookaTarget,
+  cityRushBazookaBlastContains,
   cityRushLineKind,
   cityRushPackLeader,
   cityRushPickupBurstShards,
@@ -250,6 +258,8 @@ const PICKUP_ICON_TYPES = [...POWER_TYPES, CITY_RUSH_PICKUPS.HEALTH];
 // Rayon (en unités monde) de la zone d'effet de l'explosion de l'hélicoptère :
 // à peu près une case (une voie) de chaque côté, touchant les adversaires proches.
 const EXPLOSION_RADIUS = 3.4;
+const BAZOOKA_EXPLOSION_RADIUS = CITY_RUSH_LANE_WIDTH * CITY_RUSH_BAZOOKA_BLAST_CELLS;
+const BAZOOKA_PICKUP_LOCAL_Z = 6.1;
 // Un accrochage avec une patrouille provoque une courte glissade visuelle :
 // la berline se décale sur une voie voisine, le pilote part légèrement de l'autre côté.
 const POLICE_RAM_SKID_DURATION = 0.72;
@@ -710,6 +720,118 @@ function makeMiniGarageObject(index, materials, garageLanes) {
   // Une indication large couvre les deux voies centrales du portique.
   addMiniGarageLaneGuidance(group, materials, addBox);
 
+  return group;
+}
+
+/** Entrepôt de bord de route, ouvert sur la voie extérieure de Vice City. */
+function makeBazookaWarehouse(city, pickupLaneX) {
+  const group = new THREE.Group();
+  group.name = 'city-rush-bazooka-warehouse';
+  const wall = standard(0xc8b99e, { roughness: 0.88, metalness: 0.04 });
+  const wallDark = standard(0x6d665b, { roughness: 0.84, metalness: 0.14 });
+  const roof = standard(0x59616a, { roughness: 0.58, metalness: 0.34 });
+  const floor = standard(0x817b70, { roughness: 0.92, metalness: 0.02 });
+  const crate = standard(0x8c672f, { roughness: 0.72, metalness: 0.12 });
+  const yellow = new THREE.MeshBasicMaterial({ color: 0xffd21f, toneMapped: false, fog: false });
+  const warmGlow = new THREE.MeshBasicMaterial({
+    color: 0xffd21f, transparent: true, opacity: 0.7,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false,
+  });
+  const bazookaMetal = standard(0x333840, { roughness: 0.4, metalness: 0.72 });
+  const signTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#191b1e';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = '#ffd21f';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(5, 5, width - 10, height - 10);
+    neonText(ctx, 'ENTREPÔT', width / 2, height * 0.38, '900 62px "Orbitron", Arial, sans-serif', '#fff4c2', 12);
+    neonText(ctx, 'BAZOOKA · 2 TIRS', width / 2, height * 0.76, '900 38px "Orbitron", Arial, sans-serif', '#ffd21f', 9);
+  }, 512, 160, { smooth: true });
+  const signMaterial = new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false, fog: false, side: THREE.DoubleSide });
+
+  const addBox = (name, size, position, material) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    mesh.name = name;
+    mesh.position.set(...position);
+    group.add(mesh);
+    return mesh;
+  };
+  const innerX = pickupLaneX + 4.85;
+  const outerX = pickupLaneX + 11.6;
+  const doorZ = 8.7;
+  const buildingHalfWidth = 13.25 / 2;
+
+  // La travée ouverte mord sur la voie extérieure : on roule sous l'auvent,
+  // entre les palettes, puis on ressort sur la route.
+  addBox('bazooka-warehouse-floor', [13.25, 0.12, 23.4], [innerX, 0.055, 0], floor);
+  addBox('bazooka-warehouse-roof', [13.55, 0.3, 23.6], [innerX, 4.45, -0.15], roof);
+  addBox('bazooka-warehouse-side-wall', [0.34, 4.3, 22.6], [outerX, 2.15, -0.15], wall);
+  addBox('bazooka-warehouse-back-wall', [13.25, 4.3, 0.38], [innerX, 2.15, -11.45], wall);
+  addBox('bazooka-warehouse-front-left-pillar', [0.52, 4.1, 0.62], [pickupLaneX - 2.35, 2.05, doorZ], wallDark);
+  addBox('bazooka-warehouse-front-right-pillar', [0.52, 4.1, 0.62], [pickupLaneX + 2.4, 2.05, doorZ], wallDark);
+  addBox('bazooka-warehouse-front-right-wall', [buildingHalfWidth - 2.6, 3.35, 0.58], [pickupLaneX + 7.75, 1.7, doorZ], wall);
+  addBox('bazooka-warehouse-entry-beam', [13.25, 0.44, 0.72], [innerX, 4.1, doorZ], wallDark);
+  addBox('bazooka-warehouse-sign-frame', [5.8, 1.25, 0.3], [pickupLaneX + 2.1, 4.95, doorZ], roof);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.55, 1.02), signMaterial);
+  sign.name = 'bazooka-warehouse-sign';
+  sign.position.set(pickupLaneX + 2.1, 4.95, doorZ + 0.17);
+  group.add(sign);
+
+  // Étagères et caisses lisibles à travers l'entrée ; elles restent hors du
+  // couloir de la voiture qui traverse le hangar.
+  for (const z of [-5.2, -1.7, 2.0]) {
+    addBox('bazooka-warehouse-shelf', [0.26, 2.1, 2.8], [pickupLaneX + 8.5, 1.05, z], wallDark);
+    addBox('bazooka-warehouse-pallet', [1.3, 0.62, 1.05], [pickupLaneX + 5.4, 0.42, z], crate);
+  }
+  // Stries jaunes à l'entrée : la porte et le couloir restent visibles au soleil.
+  for (let stripe = 0; stripe < 5; stripe += 1) {
+    addBox('bazooka-warehouse-entry-stripe', [0.22, 0.025, 2.4], [pickupLaneX - 1.65 + stripe * 0.92, 0.13, doorZ - 1.35], yellow);
+  }
+
+  const pickup = new THREE.Group();
+  pickup.name = 'city-rush-bazooka-pickup';
+  pickup.position.set(pickupLaneX, 1.22, BAZOOKA_PICKUP_LOCAL_Z);
+  const pickupBase = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.72, 1.02), crate);
+  pickupBase.position.y = -0.57;
+  pickup.add(pickupBase);
+  const baseStripe = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.1, 1.04), yellow);
+  baseStripe.position.y = -0.24;
+  pickup.add(baseStripe);
+
+  const rocket = new THREE.Group();
+  rocket.name = 'bazooka-pickup-rocket';
+  rocket.position.set(0, 0.11, -0.08);
+  rocket.rotation.y = -0.18;
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.08, 8), bazookaMetal);
+  tube.rotation.x = -Math.PI / 2;
+  rocket.add(tube);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 8), yellow);
+  nose.rotation.x = -Math.PI / 2;
+  nose.position.z = -0.68;
+  rocket.add(nose);
+  for (const side of [-1, 1]) {
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.055, 0.28), yellow);
+    fin.position.set(side * 0.18, 0, 0.4);
+    rocket.add(fin);
+  }
+  pickup.add(rocket);
+
+  const pickupRing = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.075, 8, 28), yellow);
+  pickupRing.name = 'bazooka-pickup-ring';
+  pickupRing.rotation.x = Math.PI / 2;
+  pickupRing.position.y = -0.08;
+  pickup.add(pickupRing);
+  const pickupHalo = new THREE.Mesh(new THREE.CircleGeometry(0.88, 24), warmGlow);
+  pickupHalo.name = 'bazooka-pickup-halo';
+  pickupHalo.rotation.x = -Math.PI / 2;
+  pickupHalo.position.y = -0.07;
+  pickup.add(pickupHalo);
+  const pickupBeam = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 3.3), warmGlow);
+  pickupBeam.name = 'bazooka-pickup-beam';
+  pickupBeam.position.y = 0.98;
+  pickup.add(pickupBeam);
+  group.add(pickup);
+  group.userData = { pickup, pickupRing, pickupHalo, pickupBeam, rocket, trackDistance: 0 };
   return group;
 }
 
@@ -1183,24 +1305,25 @@ function makeImpact(shared) {
 
 // Anime un ensemble d'explosion (impact d'hélico comme berline détruite) :
 // éclair bref, boule de feu, noyau chaud, onde de choc et trace au sol.
-function animateExplosion(fx, t) {
+function animateExplosion(fx, t, { radius = EXPLOSION_RADIUS, scale = 1 } = {}) {
   // Éclair initial très bref.
   const flashLife = clamp(t / 0.12, 0, 1);
-  fx.userData.flash.scale.setScalar(1.4 + flashLife * 1.2);
+  fx.userData.flash.scale.setScalar((1.4 + flashLife * 1.2) * scale);
   fx.userData.flash.material.opacity = (1 - flashLife) * 0.95;
   // Boule de feu qui se dilate puis se dissipe.
   const fireLife = clamp(t / 0.5, 0, 1);
-  fx.userData.fireball.scale.setScalar(0.4 + fireLife * 2.1);
+  fx.userData.fireball.scale.setScalar((0.4 + fireLife * 2.1) * scale);
   fx.userData.fireball.material.opacity = (1 - fireLife) * 0.95;
   const innerLife = clamp(t / 0.32, 0, 1);
-  fx.userData.inner.scale.setScalar(0.3 + innerLife * 1.2);
+  fx.userData.inner.scale.setScalar((0.3 + innerLife * 1.2) * scale);
   fx.userData.inner.material.opacity = (1 - innerLife);
   // Onde de choc au sol, qui se propage jusqu'au rayon de la zone d'effet.
   const ringLife = clamp(t / 0.55, 0, 1);
-  fx.userData.ring.scale.setScalar(0.4 + ringLife * (EXPLOSION_RADIUS / 0.6 - 0.4));
+  fx.userData.ring.scale.setScalar(0.4 + ringLife * (radius / 0.6 - 0.4));
   fx.userData.ring.material.opacity = (1 - ringLife) * 0.9;
   // Trace noire laissée sur la route : apparaît vite, puis s'estompe.
   const scorchLife = clamp(t / 0.6, 0, 1);
+  fx.userData.scorch.scale.setScalar(scale);
   fx.userData.scorch.material.opacity = Math.sin(Math.min(1, scorchLife * 1.6) * Math.PI) * 0.7;
 }
 
@@ -1287,6 +1410,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // panne scriptée (prologue). `null` en mode libre : rien ne change.
   const storyWeaponsEnabled = storyRules?.weaponsEnabled !== false;
   const storyPoliceEnabled = storyRules?.policeEnabled !== false;
+  const bazookaWarehouseEnabled = city.id === 'vice-city' && !sprint && storyWeaponsEnabled && storyPoliceEnabled && storyRules?.bazookaEnabled !== false;
   const storyHealthOverride = Number.isFinite(Number(storyRules?.playerHealthOverride)) && Number(storyRules.playerHealthOverride) > 0
     ? Math.floor(Number(storyRules.playerHealthOverride))
     : null;
@@ -1294,6 +1418,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const storyRivalPace = storyRules?.rivalPace && typeof storyRules.rivalPace === 'object' ? storyRules.rivalPace : null;
   const storyBreakdown = storyRules?.breakdown && typeof storyRules.breakdown === 'object' ? storyRules.breakdown : null;
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
+  const bazookaWarehouseDistance = cityRushBazookaWarehouseDistance({ laps: effectiveLaps });
   // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
   // `laps` × la boucle. Le décor, lui, reste une boucle de 1 200 m qui se répète.
   const effectiveDistance = sprint ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(effectiveLaps);
@@ -1318,6 +1443,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const oncomingLaneSet = new Set(oncomingLanes);
   const driveSide = courseLanes.driveSide;
   const policeLanes = courseLanes.policeLanes;
+  const bazookaPickupLane = driveSide === 'left'
+    ? forwardLanes[0]
+    : forwardLanes[forwardLanes.length - 1];
   const defaultLanes = courseLanes.defaultLanes;
   const playerStartLane = defaultLanes[0];
   // Le tracé de rendu du parcours : deux S très doux pour les villes et les
@@ -2159,6 +2287,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       used: false,
     };
   });
+  const bazookaWarehouse = bazookaWarehouseEnabled ? makeBazookaWarehouse(city, laneX(bazookaPickupLane)) : null;
+  if (bazookaWarehouse) {
+    bazookaWarehouse.visible = false;
+    scene.add(bazookaWarehouse);
+  }
+  let bazookaAmmo = 0;
+  let bazookaPickupTaken = false;
   let lap = 1;
   // Dernière ligne annoncée (1 = fin du tour 1 …) : un choc frontal peut recaler
   // le joueur derrière une ligne qu'il vient de franchir ; en la repassant il ne
@@ -2419,6 +2554,71 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     );
     garage.group.rotation.set(trackPitch(garage.trackDistance), trackYaw(garage.trackDistance), 0);
     garage.group.visible = gap > -25 && gap * SCALE < theme.fogFar + 20;
+  }
+
+  function placeBazookaWarehouse() {
+    if (!bazookaWarehouse) return;
+    const group = bazookaWarehouse;
+    const warehouseTrackDistance = bazookaWarehouseDistance + BAZOOKA_PICKUP_LOCAL_Z / SCALE;
+    group.userData.trackDistance = warehouseTrackDistance;
+    const gap = bazookaWarehouseDistance - distance;
+    const finalLapStarted = lap >= effectiveLaps && distance >= (effectiveLaps - 1) * CITY_RUSH_LAP_LENGTH;
+    const available = phase === 'playing' && !finished && !playerWrecked && finalLapStarted;
+    group.position.set(
+      trackRelativeX(warehouseTrackDistance),
+      trackRelativeY(warehouseTrackDistance),
+      PLAYER_Z - (warehouseTrackDistance - distance) * SCALE,
+    );
+    group.rotation.set(trackPitch(warehouseTrackDistance), trackYaw(warehouseTrackDistance), 0);
+    group.visible = available && gap > -24 && gap * SCALE < theme.fogFar + 28;
+    group.userData.pickup.visible = !bazookaPickupTaken;
+  }
+
+  function collectBazookaWarehouse() {
+    if (!bazookaWarehouse || bazookaPickupTaken) return false;
+    bazookaPickupTaken = true;
+    bazookaAmmo = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP;
+    bazookaWarehouse.userData.pickup.visible = false;
+    score += 250;
+    pickedUp += 1;
+    audioRef?.current?.pickup?.('bazooka', { ready: true });
+    getCallbacks().pickup?.({
+      type: 'bazooka',
+      ammo: bazookaAmmo,
+      progress: bazookaAmmo,
+      chargeCost: CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
+      ready: true,
+      newlyReady: true,
+      autoActivated: false,
+      lane: bazookaPickupLane,
+    });
+    getCallbacks().effect?.({ type: 'bazooka-pickup', ammo: bazookaAmmo, lane: bazookaPickupLane });
+    emitHud(true);
+    return true;
+  }
+
+  function updateBazookaWarehouse(previousDistance, dt = 0) {
+    if (!bazookaWarehouse) return;
+    placeBazookaWarehouse();
+    if (bazookaWarehouse.visible) {
+      const { pickup, pickupRing, pickupHalo, pickupBeam, rocket } = bazookaWarehouse.userData;
+      pickup.rotation.y += Math.max(0, dt) * 0.65;
+      rocket.rotation.z = Math.sin(clockTime * 1.8) * 0.05;
+      pickupRing.rotation.z += Math.max(0, dt) * 0.82;
+      pickupHalo.material.opacity = 0.28 + (Math.sin(clockTime * 3.2) + 1) * 0.14;
+      pickupBeam.material.opacity = 0.2 + (Math.sin(clockTime * 4.1) + 1) * 0.18;
+    }
+    if (bazookaWarehouse.visible && cityRushBazookaPickupCanUse({
+      previousDistance,
+      nextDistance: distance,
+      pickupDistance: bazookaWarehouseDistance,
+      playerLane,
+      pickupLane: bazookaPickupLane,
+      used: bazookaPickupTaken,
+    })) {
+      collectBazookaWarehouse();
+      placeBazookaWarehouse();
+    }
   }
 
   function setMiniGaragesToStart() {
@@ -2699,6 +2899,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         wrecked: Boolean(racer.wrecked),
       })),
       inventory: { ...inventory },
+      bazookaAmmo,
+      bazookaPickupTaken,
+      bazookaEnabled: bazookaWarehouseEnabled,
+      bazookaWarehouseGap: bazookaWarehouseEnabled ? Math.round(bazookaWarehouseDistance - distance) : null,
       playerLane,
       slowLeft: Math.max(playerSlowLeft, playerBlueShotSlowLeft),
       trafficImpactLeft: playerTrafficImpactLeft,
@@ -2911,6 +3115,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     score = 0;
     pickedUp = 0;
     inventory = createCityRushInventory();
+    bazookaAmmo = 0;
+    bazookaPickupTaken = false;
     finished = false;
     currentSpeed = 0;
     playerCurrentSpeed = 0;
@@ -3124,6 +3330,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     startLine.setBoard(`TOUR 1/${effectiveLaps}`, lapBoardSubtitle(1));
     syncSprintCheckpointDisplay();
     placeTrack();
+    placeBazookaWarehouse();
     emitHud(true);
   }
 
@@ -3163,6 +3370,34 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
+  function bazookaPoliceCandidates({ includeHidden = false } = {}) {
+    const vehicles = [
+      ...activePursuers(),
+      ...trafficCars.filter((car) => isCityRushPoliceTrafficType(car.type) && !car.rallied && !car.destroyed),
+      ...oncomingCars.filter((car) => isCityRushPoliceTrafficType(car.type) && !car.rallied && !car.destroyed),
+    ];
+    const seen = new Set();
+    return vehicles
+      .filter((vehicle) => {
+        if (!vehicle?.id || seen.has(vehicle.id)) return false;
+        seen.add(vehicle.id);
+        return true;
+      })
+      .map((vehicle) => getRaceVehicleState(vehicle.id))
+      .filter((vehicle) => vehicle?.isPolice && vehicle.racer && (includeHidden || vehicle.visible !== false));
+  }
+
+  function firstPoliceOnLane(attackerId = 'player') {
+    const attacker = getRaceVehicleState(attackerId);
+    if (!attacker) return null;
+    return cityRushBazookaTarget({
+      attackerDistance: attacker.distance,
+      attackerLane: attacker.lane,
+      police: bazookaPoliceCandidates(),
+      maxDistance: CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+    });
+  }
+
   function getVehicleMesh(vehicleId) {
     if (vehicleId === 'player') return playerCar;
     const racer = racers.find((item) => item.id === vehicleId);
@@ -3189,7 +3424,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Une berline détruite n'est plus un état de course : les tirs en vol
     // continuent tout droit à travers l'emplacement de l'épave.
     if (police && police.health > 0) {
-      return { id: police.id, name: police.name, distance: police.distance, lane: police.lane, x: police.currentX, mesh: police.mesh, racer: police, isPolice: true };
+      return { id: police.id, name: police.name, distance: police.distance, lane: police.lane, x: police.currentX, mesh: police.mesh, visible: police.mesh.visible, racer: police, isPolice: true };
     }
     const trafficVehicle = [...trafficCars, ...oncomingCars].find((item) => item.id === vehicleId);
     if (trafficVehicle && !trafficVehicle.rallied && !trafficVehicle.destroyed
@@ -3202,6 +3437,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lane: trafficVehicle.lane,
         x: trafficVehicle.currentX,
         mesh: trafficVehicle.mesh,
+        visible: trafficVehicle.mesh.visible,
         racer: trafficVehicle,
         isPolice,
         isTrafficPolice: isPolice,
@@ -3299,8 +3535,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function spawnActionPulse(sourceId, type) {
     const source = getVehicleMesh(sourceId);
     const rule = CITY_RUSH_POWER_RULES[type];
-    if (!source || !rule) return;
-    const color = Number.parseInt(rule.color.slice(1), 16);
+    if (!source || (!rule && type !== 'bazooka')) return;
+    const color = type === 'bazooka' ? 0xffd21f : Number.parseInt(rule.color.slice(1), 16);
     const mesh = makeActionPulse(color);
     mesh.position.copy(source.position).add(new THREE.Vector3(0, 1.1, 0));
     mesh.scale.setScalar(0.18);
@@ -3512,31 +3748,82 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return group;
   }
 
+  function makeBazookaTracer() {
+    const group = new THREE.Group();
+    group.name = 'city-rush-bazooka-projectile';
+    const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x343a43, toneMapped: false });
+    const noseMaterial = new THREE.MeshBasicMaterial({ color: 0xffd21f, toneMapped: false });
+    const finMaterial = new THREE.MeshBasicMaterial({ color: 0xffa91f, toneMapped: false });
+    const flameMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff7a1f, transparent: true, opacity: 0.92, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+    });
+    const burstMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffdf69, transparent: true, opacity: 1, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+    });
+    const core = new THREE.Group();
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.82, 8), bodyMaterial);
+    tube.rotation.x = -Math.PI / 2;
+    core.add(tube);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.34, 8), noseMaterial);
+    nose.rotation.x = -Math.PI / 2;
+    nose.position.z = -0.57;
+    core.add(nose);
+    for (const side of [-1, 1]) {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.065, 0.29), finMaterial);
+      fin.position.set(side * 0.18, 0, 0.34);
+      core.add(fin);
+    }
+    const trail = new THREE.Group();
+    const exhaust = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.05, 8), flameMaterial);
+    exhaust.rotation.x = Math.PI / 2;
+    exhaust.position.z = 0.78;
+    trail.add(exhaust);
+    const hotCore = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.7, 7), noseMaterial);
+    hotCore.rotation.x = Math.PI / 2;
+    hotCore.position.z = 0.72;
+    trail.add(hotCore);
+    const burst = new THREE.Group();
+    const flash = new THREE.Mesh(new THREE.SphereGeometry(0.36, 10, 8), burstMaterial);
+    burst.add(flash);
+    burst.visible = false;
+    group.add(core, trail, burst);
+    group.userData = { core, trail, burst, burstMaterial };
+    return group;
+  }
+
   function fireStraightShot(attackerId, target, kind = CITY_RUSH_POWERS.BLUE_SHOT) {
     const attacker = getRaceVehicleState(attackerId);
     if (!attacker) return false;
     const muzzleOffset = 1.12;
     const isPistol = kind === CITY_RUSH_POWERS.PISTOL;
-    // Le tir rouge part toujours tout droit, sans viser : pas de riposte
-    // guidée vers l'arrière. Le tir bleu peut encore inverser le sens.
-    const direction = isPistol
+    const isBazooka = kind === 'bazooka';
+    // Mitrailleuse et bazooka : toujours vers l'avant. Le tir bleu peut encore
+    // inverser le sens lorsqu'il riposte à une voiture déjà dépassée.
+    const direction = isPistol || isBazooka
       ? 1
       : (Number.isFinite(Number(target?.distance)) && Number(target.distance) < attacker.distance ? -1 : 1);
     const startTrackDistance = attacker.distance + (direction * muzzleOffset) / SCALE;
-    const mesh = isPistol
-      ? makeBulletTracer({ coreColor: 0xffe08a, trailColor: 0xff526e, burstColor: 0xff9aa8 })
-      : makeBulletTracer({ coreColor: 0xe7faff, trailColor: 0x48b9ff, burstColor: 0x9be5ff });
+    const mesh = isBazooka
+      ? makeBazookaTracer()
+      : isPistol
+        ? makeBulletTracer({ coreColor: 0xffe08a, trailColor: 0xff526e, burstColor: 0xff9aa8 })
+        : makeBulletTracer({ coreColor: 0xe7faff, trailColor: 0x48b9ff, burstColor: 0x9be5ff });
     mesh.rotation.y = direction > 0 ? 0 : Math.PI;
     scene.add(mesh);
+    const shotSpeed = isBazooka ? CITY_RUSH_BAZOOKA_PROJECTILE_SPEED : CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED;
     straightShots.push({
       mesh,
       attackerId,
       kind,
-      unguided: isPistol,
+      bazooka: isBazooka,
+      unguided: isPistol || isBazooka,
       targetId: isPistol ? null : (target?.id || null),
       lane: attacker.lane,
       x: laneX(attacker.lane),
       direction,
+      speed: shotSpeed,
       startTrackDistance,
       previousTrackDistance: startTrackDistance,
       trackDistance: startTrackDistance,
@@ -3547,6 +3834,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       hitPoint: new THREE.Vector3(),
     });
     if (isPistol) audioRef?.current?.machineGun({ pan: vehiclePan(attackerId) });
+    else if (isBazooka) audioRef?.current?.missileLaunch?.({ pan: vehiclePan(attackerId) });
     else audioRef?.current?.gunshot({ pan: vehiclePan(attackerId) });
     return true;
   }
@@ -3664,10 +3952,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     policeExplosions.push(mesh);
   }
 
-  function spawnPoliceExplosion(worldPosition, pan = 0) {
+  function spawnPoliceExplosion(worldPosition, pan = 0, { sound = true } = {}) {
     const mesh = makeImpact(shared);
     poseExplosion(mesh, worldPosition);
-    audioRef?.current?.explosion({ pan });
+    if (sound) audioRef?.current?.explosion({ pan });
     cameraKick = Math.max(cameraKick, 0.32);
     // Fumée noire, braises et débris : l'épave brûle au milieu de la voie.
     for (let puff = 0; puff < 5; puff += 1) {
@@ -3875,7 +4163,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Fin du tête-à-queue : la berline explose et sa carcasse calcinée prend sa
   // place, au même endroit et dans le même sens. C'est elle qui reste visible,
   // en feu, jusqu'à sortir du cadre.
-  function explodePoliceWreck(wreck) {
+  function explodePoliceWreck(wreck, { sound = true } = {}) {
     if (!wreck || wreck.exploded) return;
     wreck.exploded = true;
     wreck.spinLeft = 0;
@@ -3897,7 +4185,64 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     husk.visible = true;
     animatePoliceWreckHusk(husk, 1, clockTime);
     wreck.husk = husk;
-    spawnPoliceExplosion(worldPosition, wreck.pan);
+    spawnPoliceExplosion(worldPosition, wreck.pan, { sound });
+  }
+
+  function spawnBazookaImpact(worldPosition, pan = 0) {
+    const mesh = makeImpact(shared);
+    mesh.userData.bazooka = true;
+    poseExplosion(mesh, worldPosition);
+    audioRef?.current?.explosion?.({ pan });
+    cameraKick = Math.max(cameraKick, 0.78);
+    for (let puff = 0; puff < 12; puff += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const reach = 2.8 + Math.random() * BAZOOKA_EXPLOSION_RADIUS;
+      smoke.emit(worldPosition, {
+        color: puff % 3 === 0 ? 0xffb036 : 0x37333c,
+        opacity: puff % 3 === 0 ? 0.86 : 0.56,
+        scale: 0.6 + Math.random() * 0.55,
+        grow: 2.5,
+        life: 0.95 + Math.random() * 0.35,
+        velocity: [Math.cos(angle) * reach, 1.6 + Math.random() * 2.2, Math.sin(angle) * reach],
+      });
+    }
+  }
+
+  function applyBazookaImpact(target, attackerId = 'player') {
+    if (attackerId !== 'player' || !target?.isPolice || !target.racer) return false;
+    const centerDistance = Number(target.distance);
+    const centerX = Number.isFinite(Number(target.x)) ? Number(target.x) : laneX(target.lane);
+    const blastPosition = target.mesh.position.clone().add(new THREE.Vector3(0, 0.38, 0));
+    const blastPan = vehiclePan(target.id);
+    const victims = bazookaPoliceCandidates({ includeHidden: true }).filter((candidate) => cityRushBazookaBlastContains({
+      centerDistance,
+      centerX,
+      vehicleDistance: candidate.distance,
+      vehicleX: Number.isFinite(Number(candidate.x)) ? Number(candidate.x) : laneX(candidate.lane),
+      radiusCells: CITY_RUSH_BAZOOKA_BLAST_CELLS,
+    }));
+    if (!victims.some((candidate) => candidate.id === target.id)) victims.unshift(target);
+
+    const destroyed = [];
+    for (const candidate of victims) {
+      const police = candidate.racer;
+      if (!police || police.destroyed || police.health <= 0) continue;
+      if (police.active === false && !trafficCars.includes(police) && !oncomingCars.includes(police)) continue;
+      destroyPolice(police, 'bazooka', attackerId);
+      const wreck = policeWrecks.find((item) => item.police === police && !item.exploded);
+      if (wreck) explodePoliceWreck(wreck, { sound: false });
+      destroyed.push(candidate.id);
+    }
+
+    spawnBazookaImpact(blastPosition, blastPan);
+    getCallbacks().effect?.({
+      type: 'bazooka-impact',
+      targetId: target.id,
+      radiusCells: CITY_RUSH_BAZOOKA_BLAST_CELLS,
+      destroyed,
+      count: destroyed.length,
+    });
+    return destroyed.length > 0;
   }
 
   // Le drapeau à damier n'interrompt pas une agonie : une berline encore en
@@ -4086,7 +4431,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         shot.trackDistance = direction > 0
           ? Math.min(
             shot.maxTrackDistance,
-            shot.startTrackDistance + paced(CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED) * shot.age,
+            shot.startTrackDistance + paced(shot.speed || CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED) * shot.age,
           )
           : Math.max(
             shot.maxTrackDistance,
@@ -4109,20 +4454,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           lane: shot.lane,
           fromDistance,
           toDistance,
-          targets: shot.unguided
-            ? laneShotCandidates(shot.attackerId)
-            : activePursuers()
-              .filter((police) => police.id !== shot.attackerId && police.id !== target?.id)
-              .map((police) => getRaceVehicleState(police.id))
-              .filter(Boolean),
+          targets: shot.bazooka
+            ? bazookaPoliceCandidates()
+            : shot.unguided
+              ? laneShotCandidates(shot.attackerId)
+              : activePursuers()
+                .filter((police) => police.id !== shot.attackerId && police.id !== target?.id)
+                .map((police) => getRaceVehicleState(police.id))
+                .filter(Boolean),
         });
         const hitBySweep = Boolean(swept)
-          && (shot.unguided
+          && (shot.bazooka
+            || shot.unguided
             || !crossedTarget
             || Math.abs(Number(swept.distance) - previousProjectileDistance)
               <= Math.abs(Number(target.distance) - previousProjectileDistance));
         const resolveImpact = (hitTarget) => {
-          applyStraightShotHit(hitTarget, shot.attackerId, shot.kind);
+          if (shot.bazooka) applyBazookaImpact(hitTarget, shot.attackerId);
+          else applyStraightShotHit(hitTarget, shot.attackerId, shot.kind);
           shot.phase = 'impact';
           shot.age = 0;
           shot.hitPoint.copy(hitTarget.mesh.position).add(new THREE.Vector3(0, 0.85, 0));
@@ -4147,7 +4496,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
         if (shot.phase === 'flight') {
           shot.previousTargetDistance = target ? target.distance : null;
-          shot.mesh.position.set(shot.x + trackRelativeX(shot.trackDistance), 0.82 + trackRelativeY(shot.trackDistance), PLAYER_Z - (shot.trackDistance - distance) * SCALE);
+          const shotHeight = shot.bazooka ? 1.1 : 0.82;
+          shot.mesh.position.set(shot.x + trackRelativeX(shot.trackDistance), shotHeight + trackRelativeY(shot.trackDistance), PLAYER_Z - (shot.trackDistance - distance) * SCALE);
           // La traînée reste derrière la balle, y compris en riposte, et suit
           // l'axe local du virage et du relief.
           shot.mesh.rotation.set(trackPitch(shot.trackDistance), trackYaw(shot.trackDistance) + (direction > 0 ? 0 : Math.PI), 0);
@@ -4179,7 +4529,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     for (let index = policeExplosions.length - 1; index >= 0; index -= 1) {
       const explosion = policeExplosions[index];
       explosion.userData.age += dt;
-      animateExplosion(explosion, explosion.userData.age);
+      animateExplosion(explosion, explosion.userData.age, explosion.userData.bazooka
+        ? { radius: BAZOOKA_EXPLOSION_RADIUS, scale: 2.05 }
+        : {});
       if (explosion.userData.age > 0.62) {
         explosion.visible = false;
         policeExplosions.splice(index, 1);
@@ -4210,6 +4562,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     spawnActionPulse('player', CITY_RUSH_POWERS.PISTOL);
     // Tout droit, sans viser : le projectile part même si la voie est vide.
     fireStraightShot('player', null, CITY_RUSH_POWERS.PISTOL);
+    emitHud(true);
+    return true;
+  }
+
+  function useBazooka() {
+    if (sprint || !active || finished || !storyWeaponsEnabled || !bazookaWarehouseEnabled || bazookaAmmo <= 0) return false;
+    const target = firstPoliceOnLane('player');
+    bazookaAmmo -= 1;
+    playerShotsFired += 1;
+    spawnActionPulse('player', 'bazooka');
+    // La roquette part toujours droit devant : elle verrouille uniquement la
+    // première patrouille de la voie, puis son explosion balaie deux cases.
+    fireStraightShot('player', target, 'bazooka');
+    getCallbacks().effect?.({ type: 'bazooka-fired', ammo: bazookaAmmo, targetId: target?.id || null });
     emitHud(true);
     return true;
   }
@@ -6384,6 +6750,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       return;
     }
+    if (name === 'bazooka' || name === 'use_bazooka') return useBazooka();
     const aliases = {
       use_pistol: CITY_RUSH_POWERS.PISTOL,
       pistol: CITY_RUSH_POWERS.PISTOL,
@@ -7754,6 +8121,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       updateRows(dt);
       updateRamps(dt);
       updateMiniGarages(priorDistance);
+      updateBazookaWarehouse(priorDistance, dt);
       racers.forEach((racer) => useRacerPower(racer));
       updateVisualEffects(dt);
       updateTrafficImpacts(dt);
@@ -7899,7 +8267,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const target = event.target?.tagName;
     if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
     const key = event.key.toLowerCase();
-    if (['arrowleft', 'arrowright', 'q', 'd', 'z'].includes(key)) event.preventDefault();
+    if (['arrowleft', 'arrowright', 'q', 'd', 'z', 'x'].includes(key)) event.preventDefault();
     if (!active || finished || event.repeat) return;
     const steerDirection = STEER_KEY_DIRECTIONS[key];
     if (steerDirection) {
@@ -7913,6 +8281,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Le premier tir part immédiatement ; les suivants sont cadencés dans
       // la boucle de rendu tant que la touche reste enfoncée.
       pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
+    } else if (key === 'x') {
+      action('bazooka');
     }
   }
   function onKeyUp(event) {
