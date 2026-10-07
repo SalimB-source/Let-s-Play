@@ -262,6 +262,18 @@
 .community-feature-tags i { width: 3px; height: 3px; border-radius: 50%; background: var(--yellow); }
 .community-feature-bottom a { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid rgba(34,211,238,.35); color: #74e7f5; transition: background .2s, color .2s; }
 .community-feature-bottom a:hover { background: var(--cyan); color: #07101b; }
+/* La carte du hero reprend un vrai groupe : son nom et sa description venant
+   de la communauté, ils sont bornés à trois lignes pour que la carte garde sa
+   hauteur, et les mots-clés se coupent au lieu de déborder. */
+.community-feature-card:not(.is-empty) h2 { font-size: clamp(22px, 2.4vw, 29px); line-height: 1.08; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.community-feature-card:not(.is-empty) .community-feature-note { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.community-feature-card:not(.is-empty) .community-feature-tags { min-width: 0; overflow: hidden; white-space: nowrap; }
+/* Sans groupe ouvert, la carte du hero garde sa place mais passe en pointillés :
+   elle annonce ce qui viendra plutôt que d'afficher un groupe qui n'existe pas. */
+.community-feature-card.is-empty { border-style: dashed; border-color: rgba(184, 173, 255, .46); }
+.community-feature-card.is-empty .community-feature-live { display: none; }
+.community-feature-card.is-empty .community-feature-sigil { top: 74px; right: 34px; color: rgba(255, 214, 25, .5); font-size: 78px; }
+.community-feature-card.is-empty h2 em { color: var(--yellow); }
 .community-hero-coordinate { position: absolute; color: rgba(217,222,255,.4); font: 600 7px var(--mono); letter-spacing: .16em; }
 .community-hero-coordinate-top { top: 8px; right: 0; }
 .community-hero-coordinate-bottom { bottom: 10px; left: 3px; }
@@ -453,6 +465,14 @@
 .community-discussion-about > p { max-width: 750px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
 .community-discussion-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .community-discussion-tags span { padding: 4px 7px; border: 1px solid var(--community-edge); background: var(--community-surface-raised); color: var(--cyan); font: 700 8px var(--mono); letter-spacing: .06em; }
+/* Aucun groupe ouvert : le panneau de droite devient l'écran de départ. */
+.community-empty-discussion { flex: 1; min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 42px 26px; text-align: center; }
+.community-empty-discussion-icon { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 4px; border: 1px dashed var(--community-edge-strong); color: var(--cyan); font: 400 24px var(--display); }
+.community-empty-discussion h3 { margin: 0; color: var(--community-text-strong); font: 800 clamp(24px, 3.2vw, 36px)/1.05 var(--display); letter-spacing: -.03em; }
+.community-empty-discussion h3 em { color: var(--cyan-bright, var(--cyan)); font-style: normal; }
+:root[data-theme='light'] .community-empty-discussion h3 em { color: var(--cyan); }
+.community-empty-discussion-text { max-width: 400px; margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.community-empty-discussion .community-button { margin-top: 10px; }
 .community-thread-head { display: flex; align-items: center; gap: 18px; padding: 14px 24px 7px; }
 .community-thread-head > div { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
 .community-thread-head strong { display: inline-flex; align-items: center; gap: 6px; color: var(--community-text-strong); font: 700 11px var(--mono); }
