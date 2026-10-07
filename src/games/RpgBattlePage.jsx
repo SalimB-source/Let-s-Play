@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import RpgBattleScene from './RpgBattleScene.jsx';
 import {
   RPG_BARRAGE_SABLE,
   RPG_CRISTALLISATION_COST,
@@ -199,6 +200,8 @@ export default function RpgBattlePage() {
 
   const battleRef = useRef(null);
   const timersRef = useRef([]);
+  // Événements éphémères pour la scène 3D (ruées, zones, soins, souffles).
+  const sceneQueueRef = useRef([]);
   const battle = battleRef.current;
 
   const later = useCallback((fn, delay) => {
@@ -238,6 +241,16 @@ export default function RpgBattlePage() {
     }
     if (actor.side === 'ennemi') {
       later(() => {
+        const intent = actor.intent;
+        if (intent) {
+          sceneQueueRef.current.push(
+            intent.family === 'zone'
+              ? { t: 'zone', from: actor.id }
+              : intent.family === 'soutien'
+                ? { t: 'soin', from: actor.id, to: actor.id }
+                : { t: 'strike', from: actor.id, to: intent.targetId },
+          );
+        }
         rpgEnemyTurn(state);
         force();
         later(pump, 340);
@@ -278,6 +291,11 @@ export default function RpgBattlePage() {
       refuse(result, skill.name);
       return;
     }
+    sceneQueueRef.current.push(
+      skill.kind === 'soin'
+        ? { t: 'soin', from: actor.id, to: skill.target === 'allie' ? ally.id : actor.id }
+        : { t: 'strike', from: actor.id, to: skill.target === 'tous-ennemis' ? null : foe?.id ?? null },
+    );
     setCrystallize(false);
     force();
     if (state.over) {
@@ -302,7 +320,11 @@ export default function RpgBattlePage() {
       refuse(result, kind);
       return;
     }
-    if (kind === 'recolte') showFlash(`+${result.heal} PV récoltés`, 'soin');
+    if (kind === 'recolte') {
+      sceneQueueRef.current.push({ t: 'soin', from: actor.id, to: actor.id });
+      showFlash(`+${result.heal} PV récoltés`, 'soin');
+    }
+    if (kind === 'souffle') sceneQueueRef.current.push({ t: 'souffle', from: actor.id });
     if (kind === 'reposition') showFlash(`${ally.name} monte à l’étage ${result.tier}`, 'info');
     force();
     if (actor.pa < 1) later(pump, 620);
@@ -488,6 +510,7 @@ export default function RpgBattlePage() {
 
       {battle && screen !== 'intro' && screen !== 'fin' && (
         <section className="rpg-battle" data-strike={battle.clockStrike > 0 ? 'on' : 'off'}>
+          <RpgBattleScene battleRef={battleRef} queueRef={sceneQueueRef} />
           <div className="rpg-battle__top">
             <p className="rpg-wave">
               <strong>{wave.title}</strong>

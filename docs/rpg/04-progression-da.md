@@ -68,9 +68,12 @@ lore et un comportement distinct. Pas d'empilement d'armures.
   dans l'identité du site Let's Play. Les barres de vie ressemblent à des
   colonnes de sable qui descendent.
 
-**Alternative low-cost (celle du prototype actuel)** : tout en SVG/Canvas
-vectoriel, ce qui permet de sortir le jeu **dans le navigateur** — c'est la
-voie recommandée pour la version Let's Play.
+**Alternative low-cost (celle du prototype actuel)** : une scène **3D procédurale
+Three.js** (`src/games/RpgBattleScene.jsx`) — figurines en boîtes et cylindres,
+escalier de trois étages, dômes de sable qui gonflent avec le sable tombé,
+Astrolabe dans le ciel. C'est la voie recommandée pour la version navigateur :
+lisible, légère, et sans aucun asset modèle à produire. Sans WebGL, la page
+bascule sur un encart sobre et le combat reste jouable.
 
 **Ce qu'on évite** : la fantasy générique, le cyberpunk, et le steampunk
 cuivré à l'européenne. Bab El est une ville du Maghreb : les motifs, les

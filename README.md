@@ -2250,6 +2250,9 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
 - `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
   Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
   jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
+- `src/games/RpgBattleScene.jsx` — la vitrine 3D (Three.js) : l'équipe fait
+  face aux ennemis sur l'escalier d'étages, figurines procédurales, sable qui
+  gonfle au sol, Astrolabe au ciel. Sans WebGL, repli sobre, combat jouable.
 - `src/games/rpg-battle.css` — la palette laiton / indigo / ocre du concept,
   sur les variables de couleur du site (donc compatible thème clair).
 - `public/sablier-de-bab-el-thumb.svg` — vignette vectorielle (une démo

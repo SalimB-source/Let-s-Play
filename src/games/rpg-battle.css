@@ -229,6 +229,29 @@
 }
 
 /* ── Combat ──────────────────────────────────────────────────────────────── */
+/* ── Scène 3D : l'équipe face aux ennemis ────────────────────────────────── */
+.rpg-scene {
+  position: relative;
+  height: 320px;
+  margin: 0 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0a0a16;
+}
+
+.rpg-scene canvas { display: block; }
+
+.rpg-scene--flat { display: grid; place-items: center; }
+
+.rpg-scene__fallback {
+  margin: 0;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 13.5px;
+  text-align: center;
+}
+
 .rpg-battle {
   position: relative;
   margin-top: 20px;
