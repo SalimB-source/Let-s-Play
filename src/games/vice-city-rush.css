@@ -940,6 +940,13 @@
   font-style: normal;
 }
 
+/* Un rival que la police chasse : la pastille prend le rouge des poursuites,
+   à côté de son nom — le classement se lit d'un coup d'œil. */
+.city-rush-race-list-copy b em.city-rush-race-list-pursued {
+  color: #ff9aa8;
+  text-shadow: 0 0 6px rgba(255, 43, 69, 0.5);
+}
+
 .city-rush-race-list-copy small {
   overflow: hidden;
   color: var(--cr-faint);

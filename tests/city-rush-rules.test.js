@@ -92,6 +92,12 @@ import {
   isCityRushPoliceTrafficType,
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
+  CITY_RUSH_RIVAL_CONTACT_STARS,
+  CITY_RUSH_RIVAL_PURSUER_COUNT,
+  cityRushRivalWantedLevelAfterContact,
+  cityRushRivalPursued,
+  cityRushRivalPursuerCount,
+  cityRushRivalLeaderWanted,
   cityRushMiniGarageLane,
   cityRushMiniGarageLanes,
   cityRushMiniGarageAvailable,
@@ -1253,6 +1259,44 @@ test('tirer sur la police donne trois étoiles, puis les destructions font monte
   assert.ok(CITY_RUSH_POLICE_VEHICLE_TYPES.includes('police-suv'), 'l’escouade comprend bien un SUV');
   // Les patrouilles croisées sur la route chassent à vue : la portée existe.
   assert.ok(Number.isFinite(CITY_RUSH_POLICE_SIGHT_RANGE) && CITY_RUSH_POLICE_SIGHT_RANGE > 0, 'portée de vue positive');
+});
+
+test('un rival aussi est recherché : le contact avec la police vaut trois étoiles et une berline dédiée', () => {
+  // Même barème que le tir : toucher une voiture de police (carambolage comme
+  // rafale) monte à trois étoiles, sans jamais redescendre un niveau plus haut.
+  assert.equal(CITY_RUSH_RIVAL_CONTACT_STARS, 3);
+  assert.equal(cityRushRivalWantedLevelAfterContact(0), 3, 'un carambolage avec une berline vaut trois étoiles');
+  assert.equal(cityRushRivalWantedLevelAfterContact(1), 3, 'le contact rattrape une étoile déjà gagnée');
+  assert.equal(cityRushRivalWantedLevelAfterContact(3), 3, 'les contacts suivants ne montent pas seuls');
+  assert.equal(cityRushRivalWantedLevelAfterContact(5), 5, 'un niveau déjà plus haut est conservé');
+  assert.equal(cityRushRivalWantedLevelAfterContact(4), 4);
+  // Le seuil de poursuite : trois étoiles, pas moins.
+  assert.equal(cityRushRivalPursued(0), false);
+  assert.equal(cityRushRivalPursued(2), false, 'deux étoiles ne suffisent pas à envoyer une berline');
+  assert.equal(cityRushRivalPursued(3), true);
+  assert.equal(cityRushRivalPursued(5), true);
+  assert.equal(cityRushRivalPursued(NaN), false);
+  // Une seule berline par rival : celle de sa réserve, jamais l'escouade du joueur.
+  assert.equal(CITY_RUSH_RIVAL_PURSUER_COUNT, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
+    'un rival reçoit exactement l’unité qui lui est réservée');
+  assert.equal(cityRushRivalPursuerCount(0), 0);
+  assert.equal(cityRushRivalPursuerCount(3), 1);
+  assert.equal(cityRushRivalPursuerCount(5), 1, 'même à cinq étoiles, un rival n’a qu’une berline dédiée');
+});
+
+test('le premier du dernier tour est chassé comme le pilote', () => {
+  // Le joueur a déjà son escouade : la règle ne rattrape qu'un rival.
+  assert.equal(cityRushRivalLeaderWanted({ leader: 'nova', lastLap: true }), true);
+  assert.equal(cityRushRivalLeaderWanted({ leader: { id: 'juno' }, lastLap: true }), true);
+  assert.equal(cityRushRivalLeaderWanted({ leader: 'player', lastLap: true }), false,
+    'le joueur n’a pas besoin de la règle : son escouade entre au même moment');
+  assert.equal(cityRushRivalLeaderWanted({ leader: 'nova', lastLap: false }), false,
+    'aucune poursuite avant l’ouverture du dernier tour');
+  assert.equal(cityRushRivalLeaderWanted({ leader: null, lastLap: true }), false);
+  assert.equal(cityRushRivalLeaderWanted({ leader: '', lastLap: true }), false);
+  assert.equal(cityRushRivalLeaderWanted({ leader: { id: 'nova' }, lastLap: true, playerId: 'nova' }), false,
+    'l’identifiant du joueur reste paramétrable');
+  assert.equal(cityRushRivalLeaderWanted(), false);
 });
 
 test('chaque carte a un mini-garage élargi au centre des deux voies centrales', () => {

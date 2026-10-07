@@ -63,7 +63,8 @@
     "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write",
     "check:city-rush-wreck": "node scripts/city-rush-wreck-check.mjs --all",
     "check:city-rush-police-fire": "node scripts/city-rush-police-fire-check.mjs --all",
-    "check:city-rush-police-wreck": "node scripts/city-rush-police-wreck-check.mjs --all"
+    "check:city-rush-police-wreck": "node scripts/city-rush-police-wreck-check.mjs --all",
+    "check:city-rush-rival-police": "node scripts/city-rush-rival-police-check.mjs --all && node scripts/city-rush-rival-police-check.mjs --all --leader-only"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",

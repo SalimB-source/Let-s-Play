@@ -86,7 +86,7 @@ const {
   CITY_RUSH_WANTED_MAX_STARS, CITY_RUSH_SPIKE_BLOCK_STARS, CITY_RUSH_SPIKE_BLOCK_LEAD, CITY_RUSH_SPIKE_BLOCK_COOLDOWN,
   CITY_RUSH_SPIKE_LANES, CITY_RUSH_SPIKE_SLOW_DURATION, CITY_RUSH_SPIKE_SLOW_FACTOR, cityRushSpikeLanes,
   CITY_RUSH_SUV_CHARGE_COUNT, CITY_RUSH_SUV_CHARGE_TYPE, CITY_RUSH_SUV_CHARGE_ALERT_RANGE,
-  CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
+  CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
   CITY_RUSH_ONCOMING_BONUS_MAX,
   CITY_RUSH_PLAYER_SPEED, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, CITY_RUSH_CLEAN_LINE_MAX_BONUS,
@@ -1277,8 +1277,35 @@ for (const [index, city] of courses.entries()) {
   const suvAlerts = callbacks.effects.filter((effect) => effect.type === 'police-suv-charge');
   const suvContacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.isSuv && effect.policeContact);
   const suvFiveStars = wantedEffects.some((effect) => Number(effect.stars) >= CITY_RUSH_WANTED_MAX_STARS);
-  if (oncomingLanes > 0 && suvFiveStars && !suvAlerts.length) {
+  // La roquette du dernier tour peut descendre une charge **de loin** : le SUV
+  // n'a alors jamais atteint la portée d'alerte, et l'annonce n'a jamais eu à
+  // partir. On relève donc la plus petite distance vue **en charge** sur les
+  // HUD : c'est elle qui dit si l'annonce était due.
+  const suvChargingGaps = new Map();
+  for (const hud of callbacks.huds) {
+    for (const charge of hud.suvCharges || []) {
+      if (charge.state !== 'charging') continue;
+      // Un SUV retourné après un contact n'est plus une charge : il fait
+      // demi-tour (`turnedAround`), puis chasse (`rallied`) — `updateSuvCharges`
+      // saute l'annonce pendant tout ce temps. Le monde le dit : un rival peut
+      // très bien le percuter loin devant le pilote. Idem pour une charge
+      // dépassée, que le monde recycle (`CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND`).
+      if (charge.rallied || charge.turnedAround) continue;
+      const gap = Number(charge.gap);
+      if (!Number.isFinite(gap) || gap < 0) continue;
+      suvChargingGaps.set(charge.id, Math.min(suvChargingGaps.get(charge.id) ?? Infinity, gap));
+    }
+  }
+  // Cinq étoiles sans aucune charge : les deux SUV devaient au moins se mettre
+  // en route (voir `updateSuvCharges`).
+  if (oncomingLanes > 0 && suvFiveStars && !suvAlerts.length && !suvChargingGaps.size) {
     fail('cinq étoiles sans aucune charge de SUV annoncée', wantedEffects);
+  }
+  const announcedSuvs = new Set(suvAlerts.map((effect) => effect.id));
+  const missedSuvAlerts = [...suvChargingGaps]
+    .filter(([id, gap]) => gap <= CITY_RUSH_SUV_CHARGE_ALERT_RANGE && !announcedSuvs.has(id));
+  if (missedSuvAlerts.length) {
+    fail('un SUV de charge arrivé à portée d’alerte n’a pas été annoncé', missedSuvAlerts);
   }
   if (oncomingLanes === 0 && (suvAlerts.length || suvContacts.length)) {
     fail('un parcours en sens unique a subi une charge de SUV', suvAlerts);
@@ -1287,8 +1314,12 @@ for (const [index, city] of courses.entries()) {
     && Number(effect.distance) <= CITY_RUSH_SUV_CHARGE_ALERT_RANGE))) {
     fail('une charge de SUV est annoncée hors de sa portée d’alerte', suvAlerts);
   }
-  if (suvContacts.some((effect) => Number(effect.healthLost) !== 0)) {
-    fail('un SUV d’interception a retiré un carré au pilote alors que le lanceur neutralise ce coût', suvContacts);
+  // Le coût du choc se mesure sur le pilote : un rival qui percute un SUV de
+  // charge ouvre son dossier sans que la barre du joueur bouge (il n'a pas de
+  // `healthLost`, la sienne est publiée à part).
+  const playerSuvContacts = suvContacts.filter((effect) => effect.isPlayer);
+  if (playerSuvContacts.some((effect) => Number(effect.healthLost) !== 0)) {
+    fail('un SUV d’interception a retiré un carré au pilote alors que le lanceur neutralise ce coût', playerSuvContacts);
   }
   const suvPursued = new Set();
   for (const hud of callbacks.huds) {
@@ -1911,8 +1942,17 @@ for (const [index, city] of courses.entries()) {
     || pickup.health > pickup.maxHealth)) {
     fail('un plus rouge ne rend pas exactement un carré de vie', healthPickups);
   }
+  // Le bazooka du dernier tour (Vice City seulement) : deux roquettes, une
+  // seule traversée de l'entrepôt, jamais d'activation automatique.
+  const bazookaPickups = callbacks.pickups.filter((pickup) => pickup.type === 'bazooka');
+  if (bazookaPickups.some((pickup) => pickup.ammo !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
+    || pickup.progress !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
+    || pickup.chargeCost !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
+    || pickup.autoActivated)) {
+    fail('le ramassage du bazooka ne donne pas ses deux roquettes', bazookaPickups);
+  }
   const unsupportedPickups = callbacks.pickups.filter((pickup) => ![
-    CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL,
+    CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL, 'bazooka',
   ].includes(pickup.type));
   if (unsupportedPickups.length) fail('un bonus bleu ou jaune est encore collecté sur la route', unsupportedPickups);
   if (callbacks.pickups.some((pickup) => pickup.autoActivated
