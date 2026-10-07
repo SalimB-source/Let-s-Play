@@ -20,6 +20,9 @@ import '../games/games.css';
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
 // Miniature de Vice City Rush.
 const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-keyart.jpg`;
+// Miniature du prototype de RPG tour par tour : key art peinte
+// (ville verticale, Astrolabe, désert qui monte), déclinée en 640×360.
+const RPG_THUMB = `${import.meta.env.BASE_URL}sablier-de-bab-el-thumb.jpg`;
 
 const GAMES = [
   {
@@ -49,6 +52,19 @@ const GAMES = [
     tags: ['ARCADE', 'COURSE', '5 VILLES', 'SOLO'],
   },
   {
+    id: 'sablier-de-bab-el',
+    title: 'LE SABLIER DE BAB EL',
+    subtitle: 'RPG TOUR PAR TOUR · PROTOTYPE',
+    description: 'Une ville de neuf étages au-dessus d’un désert qui monte, et une horloge qui égrène les cycles. La démo ne contient qu’un combat — mais c’est le combat du jeu complet : tout est annoncé, rien ne dépend des réflexes. Garde, barrage, contre-élément, sable et étages.',
+    thumb: RPG_THUMB,
+    alt: 'Le Sablier de Bab El — ville verticale de nuit sous un astrolabe doré, quatre silhouettes sur une passerelle face au sable qui monte',
+    route: '/jeu/sablier-de-bab-el',
+    badge: 'PROTOTYPE',
+    tone: 'desert',
+    featured: false,
+    tags: ['RPG', 'TOUR PAR TOUR', 'SOLO', 'DÉMO'],
+  },
+  {
     id: 'projet-03',
     title: 'PROJET 03',
     subtitle: 'PISTE À CREUSER',
@@ -68,7 +84,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'LES JEUX',
     h2b: 'DE LA MAISON.',
-    intro: 'Deux jeux jouables dans la page : le western nerveux de Mirage Rush et les courses néon de Vice City Rush.',
+    intro: 'Trois jeux dans la page : le western nerveux de Mirage Rush, les courses néon de Vice City Rush, et le prototype de RPG tour par tour du Sablier de Bab El.',
     play: 'JOUER',
     soon: 'BIENTÔT',
   },
@@ -76,7 +92,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'THE GAMES',
     h2b: 'WE BUILD.',
-    intro: 'Two games playable right on the page: Mirage Rush and Vice City Rush’s neon city races.',
+    intro: 'Three games on the page: Mirage Rush’s nervous western, Vice City Rush’s neon races, and the turn-based RPG prototype of Le Sablier de Bab El.',
     play: 'PLAY',
     soon: 'SOON',
   },
@@ -84,7 +100,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'ألعاب',
     h2b: 'المنصة.',
-    intro: 'لعبتان داخل الصفحة: أجواء الغرب في Mirage Rush، وسباقات Vice City Rush الليلية بين المدن.',
+    intro: 'ثلاث ألعاب داخل الصفحة: أجواء الغرب في Mirage Rush، سباقات Vice City Rush الليلية، والنموذج الأولي للعب الأدوار Le Sablier de Bab El.',
     play: 'العب',
     soon: 'قريباً',
   },
