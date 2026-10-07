@@ -2715,10 +2715,9 @@ export function cityRushTrackProfile(course) {
 // il est nul sous 6° (lignes droites, et les S doux des autres villes), tombe
 // à `CITY_RUSH_CORNER_PACE_SWEEP` au cœur d'un grand virage (~14°, l'appui que
 // le Ring tient sur des dizaines de mètres), puis jusqu'à
-// `CITY_RUSH_CORNER_PACE_MIN` dans une cassure. L'entrée et la sortie restent
-// progressives — le cap lui-même monte et redescend sans cassure — si bien que
-// la voiture freine dans le virage et réaccélère en sortie, au lieu de subir
-// un coup de frein au franchissement d'une borne.
+// `CITY_RUSH_CORNER_PACE_MIN` dans une cassure. À Vice City, le même facteur
+// regarde aussi 40 m devant : les voitures commencent à freiner avant le
+// virage, puis gardent le rythme adapté jusqu'à la sortie.
 //
 // Le même facteur s'applique à tout ce qui roule (pilote, rivaux, trafic,
 // contresens, police). Deux voitures dans le même virage gardent leur écart ;
@@ -2730,6 +2729,7 @@ export const CITY_RUSH_CORNER_PACE_YAW_SWEEP = (14 * Math.PI) / 180; // cœur d'
 export const CITY_RUSH_CORNER_PACE_YAW_TIGHT = (34 * Math.PI) / 180; // cassure : plancher atteint
 export const CITY_RUSH_CORNER_PACE_SWEEP = 0.72; // × vitesse au cœur d'un grand virage
 export const CITY_RUSH_CORNER_PACE_MIN = 0.58; // × vitesse dans une cassure
+export const CITY_RUSH_CORNER_PACE_PREBRAKE_METERS = 40; // anticipation pour freiner avant les virages de Vice City
 
 function cityRushCornerEase(progress) {
   const t = Math.max(0, Math.min(1, Number(progress) || 0));
@@ -2767,15 +2767,23 @@ export function cityRushCornerPaceFromYaw(yaw = 0) {
 
 /**
  * Part de la vitesse visée conservée à `distance` mètres sur `course`.
- * `1` partout sauf à Vice City et sur le Nordschleife, et `1` aussi sur leurs
- * lignes droites. `profile` permet de réutiliser le tracé déjà résolu par le
- * monde ; à défaut, il est déduit du parcours.
+ * `1` partout sauf à Vice City et sur le Nordschleife. Vice City anticipe
+ * aussi le cap 40 m devant et retient le facteur le plus bas entre les deux :
+ * cela déclenche le freinage avant la cassure sans relâcher les freins au milieu
+ * du virage. `profile` permet de réutiliser le tracé déjà résolu par le monde.
  */
 export function cityRushCornerPace(course = null, distance = 0, profile = null) {
   if (!cityRushUsesCornerPace(course)) return 1;
   const resolved = profile || cityRushTrackProfile(course);
-  const yaw = resolved?.yaw?.(distance);
-  return cityRushCornerPaceFromYaw(yaw);
+  const safeDistance = Number.isFinite(Number(distance)) ? Number(distance) : 0;
+  const currentPace = cityRushCornerPaceFromYaw(resolved?.yaw?.(safeDistance));
+  const courseId = typeof course === 'string' ? course : course?.id;
+  if (courseId !== 'vice-city' && resolved?.id !== 'vice-city') return currentPace;
+
+  const upcomingPace = cityRushCornerPaceFromYaw(
+    resolved?.yaw?.(safeDistance + CITY_RUSH_CORNER_PACE_PREBRAKE_METERS),
+  );
+  return Math.min(currentPace, upcomingPace);
 }
 
 function nordschleifeTrackSample(values, distance) {

@@ -1759,9 +1759,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // de trajet) et la difficulté ne changent pas, seul le rythme baisse.
   const coursePace = cityRushCoursePace(city);
   const paced = (speed) => speed * coursePace;
-  // Grands virages de Vice City et du Ring : la vitesse visée baisse tant que
-  // le cap est braqué, pour tout ce qui roule. Ailleurs le facteur reste 1, y
-  // compris sur les lignes droites de ces deux parcours.
+  // Grands virages de Vice City et du Ring : tout ce qui roule lève le pied
+  // dans les courbes. À Vice City, l'anticipation de 40 m commence le freinage
+  // avant les virages secs ; les longues droites sans courbe à venir restent à 1.
   const cornerPaceAt = (trackDistance) => cityRushCornerPace(city, trackDistance, trackProfile);
 
   const scene = new THREE.Scene();
@@ -8629,9 +8629,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
       const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
       const breakdownScale = storyBreakdownActive ? 0 : 1;
-      // Grand virage : la vitesse visée suit le cap de la piste. Le freinage
-      // habituel (`approachCityRushSpeed`) fait le reste — on lève le pied dans
-      // le virage, on réaccélère dès que la ligne se redresse.
+      // Le cap de la piste fixe la vitesse du virage ; à Vice City, il est lu
+      // 40 m en avance pour que le freinage ait déjà commencé à l'entrée. Le
+      // freinage habituel (`approachCityRushSpeed`) accompagne ensuite la sortie.
       const cornerScale = cornerPaceAt(distance);
       const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
