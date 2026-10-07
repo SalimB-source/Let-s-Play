@@ -51,6 +51,16 @@ export async function checkRpgBattle(assert) {
   assert.match(container.textContent, /leur sol/);
   assert.match(container.textContent, /Astrolabe/);
   assert.ok(container.querySelectorAll('.rpg-ring__item').length >= 4, 'ordre des tours vide');
+  // Les personnages sont visibles en combat : un portrait peint par acteur,
+  // dans l'équipe, face à chaque ennemi et dans l'ordre des tours.
+  const allyPortraits = [...container.querySelectorAll('.rpg-ally__portrait')];
+  assert.equal(allyPortraits.length, 4, 'chaque compagnon doit afficher son portrait');
+  assert.ok(allyPortraits.every((img) => /portraits\/.+\.(jpg|png)$/.test(img.getAttribute('src') ?? '')),
+    'un portrait d’allié pointe vers un fichier manquant');
+  assert.equal(container.querySelectorAll('.rpg-foe__portrait').length, foeCards.length,
+    'chaque ennemi doit afficher son portrait');
+  assert.ok(container.querySelectorAll('img.rpg-ring__dot').length >= 4,
+    'l’ordre des tours doit montrer les visages');
   // Aucune réaction en temps réel : l'écran ne propose ni parade ni esquive.
   assert.equal(container.textContent.includes('Parade'), false, 'le prototype ne doit plus proposer de parade');
 

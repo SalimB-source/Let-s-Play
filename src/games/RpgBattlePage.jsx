@@ -46,7 +46,9 @@ import './rpg-battle.css';
  * au bon moment.
  */
 
-const initial = (name) => (name || '?').slice(0, 1).toUpperCase();
+/** Chaque acteur porte un champ `portrait` ; le fichier vit dans /public/portraits. */
+const portraitSrc = (actor) =>
+  `${import.meta.env.BASE_URL}portraits/${actor.portrait ?? actor.id}.jpg`;
 
 function Bar({ value, max, tone = 'hp' }) {
   const ratio = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
@@ -115,7 +117,10 @@ function EnemyCard({ battle, actor, selected, onPick }) {
   return (
     <article className={`rpg-foe ${selected ? 'is-selected' : ''} ${actor.alive ? '' : 'is-down'}`}>
       <header>
-        <span className="rpg-foe__glyph" aria-hidden="true">{RPG_ELEMENT_ICONS[actor.element] ?? '❖'}</span>
+        <span className="rpg-foe__face">
+          <img className="rpg-foe__portrait" src={portraitSrc(actor)} alt={`Portrait de ${actor.name}`} />
+          <span className="rpg-foe__glyph" aria-hidden="true">{RPG_ELEMENT_ICONS[actor.element] ?? '❖'}</span>
+        </span>
         <span className="rpg-foe__id">
           <strong>{actor.name}</strong>
           <small>{actor.role}</small>
@@ -141,7 +146,7 @@ function AllyRow({ battle, actor, active, selected, onPick }) {
       className={`rpg-ally ${active ? 'is-active' : ''} ${selected ? 'is-selected' : ''} ${actor.alive ? '' : 'is-down'}`}
       onClick={() => onPick(actor.id)}
     >
-      <span className="rpg-ally__portrait" data-portrait={actor.id} aria-hidden="true">{initial(actor.name)}</span>
+      <img className="rpg-ally__portrait" src={portraitSrc(actor)} alt={`Portrait de ${actor.name}`} />
       <span className="rpg-ally__id">
         <strong>{actor.name}</strong>
         <small>{actor.role}</small>
@@ -174,7 +179,7 @@ function RingList({ ring, currentId }) {
           key={`${actor.id}-${index}`}
           className={`rpg-ring__item ${actor.side === 'ennemi' ? 'is-foe' : 'is-team'} ${index === 0 && actor.id === currentId ? 'is-now' : ''}`}
         >
-          <span className="rpg-ring__dot" aria-hidden="true">{initial(actor.name)}</span>
+          <img className="rpg-ring__dot" src={portraitSrc(actor)} alt="" aria-hidden="true" />
           <span>{actor.name}</span>
         </li>
       ))}
@@ -620,7 +625,8 @@ export default function RpgBattlePage() {
                       ▲ Reposition <small>monte d’un étage</small>
                     </button>
                     {reserve.map((actor) => (
-                      <button key={actor.id} type="button" className="rpg-btn" onClick={() => swapIn(actor)}>
+                      <button key={actor.id} type="button" className="rpg-btn rpg-btn--swap" onClick={() => swapIn(actor)}>
+                        <img className="rpg-btn__portrait" src={portraitSrc(actor)} alt="" aria-hidden="true" />
                         ⇄ {actor.name}
                       </button>
                     ))}

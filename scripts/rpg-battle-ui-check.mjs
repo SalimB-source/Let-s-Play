@@ -34,8 +34,8 @@ try {
 }
 console.log(
   'check:rpg-ui ✓ — écran de combat : les trois difficultés (de l’information, pas des réflexes), '
-  + 'ouverture du combat (4 compagnons, étages, segments de Nom, sable au sol, Astrolabe, ordre des tours), '
-  + 'intention annoncée sur chaque ennemi, aucune option de parade ni d’esquive, coup joué et tracé au journal, '
+  + 'ouverture du combat (4 compagnons avec portrait peint, étages, segments de Nom, sable au sol, Astrolabe, ordre des tours en visages), '
+  + 'intention annoncée sur chaque ennemi avec portrait, aucune option de parade ni d’esquive, coup joué et tracé au journal, '
   + 'les cinq réponses proposées (garde, barrage, récolte, souffle, reposition), première vague gagnée en jouant '
   + 'pour de vrai, palier suivant enchaîné et permutation avec la réserve présente.',
 );

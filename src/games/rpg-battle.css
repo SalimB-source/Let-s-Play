@@ -167,6 +167,17 @@
 .rpg-btn--primary { background: var(--yellow); border-color: var(--yellow); color: #161005; font-weight: 800; }
 .rpg-btn--ghost { background: transparent; }
 
+/* Bouton de permutation avec la réserve : le visage accompagne le nom. */
+.rpg-btn--swap { display: inline-flex; align-items: center; gap: 8px; }
+.rpg-btn__portrait {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  background: #0b0b16;
+}
+
 /* ── Combat ──────────────────────────────────────────────────────────────── */
 .rpg-battle {
   position: relative;
@@ -294,16 +305,16 @@
 
 .rpg-ring__item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); opacity: .8; }
 .rpg-ring__item.is-now { opacity: 1; color: var(--ink); font-weight: 700; }
-.rpg-ring__item.is-foe .rpg-ring__dot { background: rgba(255, 110, 90, .22); color: #ffb3a6; }
-.rpg-ring__item.is-team .rpg-ring__dot { background: rgba(34, 211, 238, .18); color: #a6ecf7; }
+.rpg-ring__item.is-foe .rpg-ring__dot { box-shadow: 0 0 0 2px rgba(255, 110, 90, .6); }
+.rpg-ring__item.is-team .rpg-ring__dot { box-shadow: 0 0 0 2px rgba(34, 211, 238, .55); }
 
 .rpg-ring__dot {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font: 700 10px var(--display);
+  object-fit: cover;
+  object-position: 50% 30%;
+  background: #0b0b16;
 }
 
 .rpg-field__hint { margin: 0 0 12px; font-size: 13px; color: var(--dim); }
@@ -326,7 +337,30 @@
 .rpg-foe.is-down { opacity: .3; filter: grayscale(1); }
 
 .rpg-foe header { display: flex; align-items: center; gap: 8px; }
-.rpg-foe__glyph { font-size: 20px; }
+
+/* Visage de l'ennemi, avec son élément en pastille d'angle. */
+.rpg-foe__face { position: relative; flex: none; }
+.rpg-foe__portrait {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .35);
+  background: #0b0b16;
+}
+.rpg-foe__glyph {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  font-size: 12px;
+  line-height: 1;
+  background: #101020;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 2px 3px;
+}
 .rpg-foe__id { display: grid; gap: 2px; flex: 1; min-width: 0; }
 .rpg-foe__id strong { font-family: var(--font-gaming); font-size: 12px; letter-spacing: .04em; }
 .rpg-foe__id small { font-size: 10px; color: var(--dim); }
@@ -400,22 +434,17 @@
 .rpg-ally.is-selected { border-color: var(--yellow); }
 .rpg-ally.is-down { opacity: .35; filter: grayscale(1); }
 
+/* Portraits peints (public/portraits/) : les personnages existent en combat. */
 .rpg-ally__portrait {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-family: var(--font-gaming);
-  font-size: 15px;
-  color: #0b0a1a;
-  background: linear-gradient(150deg, #ffd619, #c98b3d);
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .35);
+  background: #0b0b16;
 }
-
-.rpg-ally__portrait[data-portrait="yamina"] { background: linear-gradient(150deg, #a5f3fc, #0e7490); color: #fff; }
-.rpg-ally__portrait[data-portrait="boualem"] { background: linear-gradient(150deg, #93c5fd, #1d4ed8); color: #fff; }
-.rpg-ally__portrait[data-portrait="feriel"] { background: linear-gradient(150deg, #fda4af, #b91c1c); color: #fff; }
-.rpg-ally__portrait[data-portrait="tarek"] { background: linear-gradient(150deg, #d6d3d1, #57534e); color: #fff; }
 
 .rpg-ally__id { display: grid; gap: 2px; min-width: 0; }
 .rpg-ally__id strong { font-family: var(--font-gaming); font-size: 12px; letter-spacing: .04em; }
