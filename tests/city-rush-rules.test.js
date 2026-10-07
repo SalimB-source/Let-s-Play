@@ -111,6 +111,8 @@ import {
   cityRushPoliceTurnaroundProgress,
   CITY_RUSH_POLICE_DAMAGE,
   CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE,
+  CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
   CITY_RUSH_POLICE_SUV_HEALTH,
   cityRushPoliceMaxHealth,
   CITY_RUSH_SPIKE_BLOCK_COUNT,
@@ -1982,11 +1984,65 @@ test('barre de vie des berlines : six carrés, un seul emporté par tir rouge, u
     'trois carambolages supplémentaires laissent encore deux carrés à une berline touchée par un tir rouge');
   assert.equal(cityRushPoliceDamage(1, 'collision'), 0);
   assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.BLUE_SHOT), 0);
+  // Un saut de tremplin ne détruit plus la berline qui retombe : il lui coûte
+  // deux carrés, et la casse n'arrive qu'à la barre vidée.
+  assert.equal(CITY_RUSH_POLICE_RAMP_LANDING_SOURCE, 'ramp-landing');
+  assert.equal(CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE, 2);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POLICE_RAMP_LANDING_SOURCE],
+    CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), CITY_RUSH_POLICE_HEALTH,
     'une attaque d’hélicoptère est désactivée');
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_PICKUPS.BOOST), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, null), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
+});
+
+test('une berline qui retombe d’un saut perd deux carrés et survit jusqu’à la barre vide', () => {
+  // L’atterrissage n’est plus une exécution : c’est un dégât comme un autre,
+  // au prix d’un tir bleu. La casse n’arrive que lorsque la barre tombe à zéro.
+  const landing = CITY_RUSH_POLICE_RAMP_LANDING_SOURCE;
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[landing], CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE);
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[landing], CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT],
+    'un atterrissage coûte le même prix qu’un tir bleu');
+
+  // Berline : six carrés, donc deux sauts encaissés et la casse au troisième.
+  const sedan = cityRushPoliceMaxHealth('police');
+  assert.equal(sedan, CITY_RUSH_POLICE_HEALTH);
+  const firstLanding = cityRushPoliceDamage(sedan, landing);
+  assert.equal(firstLanding, 4, 'le premier atterrissage laisse quatre carrés sur six');
+  assert.ok(firstLanding > 0, 'la berline n’est pas détruite au premier saut');
+  const secondLanding = cityRushPoliceDamage(firstLanding, landing);
+  assert.equal(secondLanding, 2, 'le deuxième atterrissage laisse deux carrés');
+  assert.ok(secondLanding > 0, 'la berline tient encore sur ses roues');
+  assert.equal(cityRushPoliceDamage(secondLanding, landing), 0,
+    'le troisième atterrissage vide la barre : c’est lui qui détruit la berline');
+  assert.equal(cityRushPoliceShotsLeft(sedan, landing), 3, 'trois tremplins pour une berline neuve');
+  assert.equal(cityRushPoliceShotsLeft(secondLanding, landing), 1, 'plus qu’un tremplin avant la casse');
+
+  // SUV blindé : dix carrés, quatre sauts encaissés et la casse au cinquième.
+  let suv = cityRushPoliceMaxHealth('police-suv');
+  assert.equal(suv, CITY_RUSH_POLICE_SUV_HEALTH);
+  assert.equal(cityRushPoliceShotsLeft(suv, landing), 5, 'cinq tremplins pour un SUV blindé');
+  for (let jump = 1; jump <= 4; jump += 1) {
+    suv = cityRushPoliceDamage(suv, landing);
+    assert.equal(suv, CITY_RUSH_POLICE_SUV_HEALTH - jump * CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE,
+      `le saut ${jump} retire deux carrés au SUV`);
+    assert.ok(suv > 0, `le SUV survit au saut ${jump}`);
+  }
+  assert.equal(cityRushPoliceDamage(suv, landing), 0, 'le cinquième atterrissage détruit le SUV');
+
+  // Un saut pris sur une coque déjà entamée par les balles peut achever la
+  // berline : les dégâts se cumulent, sans jamais passer sous zéro.
+  const shotSedan = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL);
+  assert.equal(cityRushPoliceDamage(shotSedan, landing), 3,
+    'une balle rouge puis un atterrissage laissent trois carrés');
+  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(shotSedan, landing), landing), 1,
+    'deux atterrissages après la balle rouge laissent encore un carré : la berline roule');
+  assert.equal(cityRushPoliceDamage(cityRushPoliceDamage(cityRushPoliceDamage(shotSedan, landing), landing), landing), 0,
+    'le troisième atterrissage achève la berline déjà touchée d’une balle');
+  assert.equal(cityRushPoliceDamage(1, landing), 0, 'le dernier carré part d’un coup');
+  assert.equal(cityRushPoliceDamage(0, landing), 0, 'une épave n’a plus rien à perdre');
+  assert.equal(cityRushPoliceShotsLeft(0, landing), 0);
 });
 
 test('un tir rouge ne retire jamais qu’un seul carré — berline de police comme adversaire', () => {

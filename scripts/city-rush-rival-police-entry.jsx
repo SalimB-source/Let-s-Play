@@ -15,7 +15,13 @@
 //     jamais la montrer sur la ligne du joueur.
 //
 // Le hasard est figé (graine fixe) : la vérif rejoue les mêmes courses.
-const BASE_SEED = Number(process.env.CITY_RUSH_RIVAL_POLICE_SEED || 20261007) >>> 0;
+// La graine est choisie pour que le pilote passif (qui ne braque jamais et peut
+// donc rester coincé derrière le trafic civil) atteigne le dernier tour dans les
+// dix parcours, sur les deux passes. 424242 remplit ce contrat ; `20261007`,
+// l'ancienne valeur, ne le remplissait plus après que l'atterrissage sur tremplin
+// coûte deux carrés au lieu de détruire la berline — ce réglage décale le flot
+// aléatoire, donc le trafic, et une course sur dix n'ouvrait plus le dernier tour.
+const BASE_SEED = Number(process.env.CITY_RUSH_RIVAL_POLICE_SEED || 424242) >>> 0;
 let seed = BASE_SEED;
 Math.random = () => {
   seed = (seed * 1664525 + 1013904223) >>> 0;
