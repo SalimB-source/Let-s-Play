@@ -2,14 +2,6 @@
 
 /* Accueil : une une plus compacte, avec le trailer officiel jouable en ligne. */
 .featured-dossiers--news{padding:64px 0 52px}
-/* La une de l'accueil est un peu plus large que le reste de la page : elle
-   déborde de 40 px de chaque côté du conteneur (80 px au total) pour marquer la
-   hiérarchie. Elle suit `--lp-shell`, donc elle s'élargit avec les paliers grand
-   écran au lieu d'être figée sur une valeur propre ; le repli de la variable
-   reprend la largeur de `.wrap` sous 1440 px, où la surcouche n'existe pas.
-   Le plafond `100% - 32px` évite d'aller mordre les bords de la fenêtre quand
-   la place manque : elle garde alors 16 px de marge de part et d'autre. */
-#actu-une{width:min(calc(var(--lp-shell,min(1240px,calc(100% - 56px))) + 80px),calc(100% - 32px))}
 .featured-dossiers--news .featured-dossiers-head{padding-top:24px}
 .featured-dossiers--news .featured-dossiers-head h2{font-size:clamp(28px,3.6vw,44px);line-height:1.04;margin:10px 0 0}
 .featured-dossiers--news .featured-dossiers-head>.arrow-link{margin-bottom:5px}
@@ -17,11 +9,14 @@
    marge basse de la une « à la une » des pages Gaming / Cinéma / Tech). */
 .featured-dossiers--news .news-carousel.is-grid{margin-top:38px}
 /* La une occupe toute la largeur de la section (plus de plafond à 1040px qui
-   la laissait centrée avec des marges mortes) et gagne un peu de hauteur : la
-   colonne vidéo passe de 16/9 à 16/10, ce qui allonge la carte à toutes les
-   largeurs — la colonne de texte, alignée à côté, suit la même hauteur. */
+   la laissait centrée avec des marges mortes) et gagne en hauteur par son
+   cadre vidéo : en 3/2 (et non plus 16/10), il allonge la carte à toutes les
+   largeurs — la colonne de texte, alignée à côté, suit la même hauteur. Un
+   lecteur YouTube est en 16/9 : plus le cadre est haut, plus il laisse de
+   bandes noires autour de la vidéo (une vingtaine de pixels de chaque côté en
+   16/10, une trentaine en 3/2 sur un conteneur de 1240 px). */
 .featured-dossiers--news .home-news-card{width:100%;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:0;margin:32px 0 0}
-.featured-dossiers--news .home-news-video{min-width:0;min-height:0;aspect-ratio:16/10;background:#05060f}
+.featured-dossiers--news .home-news-video{min-width:0;min-height:0;aspect-ratio:3/2;background:#05060f}
 .featured-dossiers--news .home-news-video iframe{position:absolute;inset:0;width:100%;height:100%;min-height:0}
 .featured-dossiers--news .home-news-card .daily-news-copy{min-width:0;padding:clamp(20px,3vw,36px);color:inherit;text-decoration:none}
 .featured-dossiers--news .home-news-card .daily-news-copy .news-kicker{display:block;margin-top:12px;font-size:9px;letter-spacing:.14em}
