@@ -113,7 +113,6 @@ export default function News() {
       eyebrow: 'Choose your world',
       h1a: 'NEWS',
       h1b: 'HUB.',
-      intro: 'Pick a lane — every story, every trailer, every drop, in its own zone.',
       updated: 'Updated daily · 07.10.2026',
       gaming: {
         num: '01',
@@ -150,7 +149,6 @@ export default function News() {
       eyebrow: 'Choisis ton univers',
       h1a: 'ACTUS,',
       h1b: 'À TOI DE JOUER.',
-      intro: 'Choisis ta voie — chaque actu, chaque trailer, chaque sortie, regroupé dans son propre univers.',
       updated: 'Mis à jour quotidiennement · 07.10.2026',
       gaming: {
         num: '01',
@@ -187,7 +185,6 @@ export default function News() {
       eyebrow: 'اختر عالمك',
       h1a: 'الأخبار',
       h1b: 'بين يديك.',
-      intro: 'اختر مسارك — كل خبر، كل إعلان تشويقي، كل إصدار، في مكانه الخاص.',
       updated: 'تحديث يومي · 07.10.2026',
       gaming: {
         num: '01',
@@ -224,7 +221,6 @@ export default function News() {
     eyebrow: 'Choisis ton univers',
     h1a: 'ACTUS,',
     h1b: 'À TOI DE JOUER.',
-    intro: 'Choisis ta voie.',
     updated: 'Mis à jour quotidiennement · 07.10.2026',
     gaming: { num: '01', kicker: 'ZONE GAMING', title: 'ACTUS', titleAccent: 'GAMING.', desc: 'Les actus gaming.', btn: 'ENTRER', badge: '🎮 GAMING', meta: 'PC · PS5 · XBOX · SWITCH 2' },
     cinema: { num: '02', kicker: 'CINÉMA & SÉRIES', title: 'ACTUS', titleAccent: 'CINÉMA.', desc: 'Les actus cinéma.', btn: 'ENTRER', badge: '🎬 CINÉMA', meta: 'FILMS · SÉRIES' },
@@ -297,7 +293,6 @@ export default function News() {
       <div className="news-hub-head wrap">
         <div className="section-label"><span>02 / NEWS HUB</span><span>{copy.updated}</span></div>
         <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
-        <p className="news-hub-intro">{copy.intro}</p>
       </div>
 
       <div className="news-hub-grid wrap">
