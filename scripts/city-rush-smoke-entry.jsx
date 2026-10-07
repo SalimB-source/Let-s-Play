@@ -1942,19 +1942,20 @@ for (const [index, city] of courses.entries()) {
     || pickup.health > pickup.maxHealth)) {
     fail('un plus rouge ne rend pas exactement un carré de vie', healthPickups);
   }
-  // Le bazooka du dernier tour (Vice City seulement) : deux roquettes, une
-  // seule traversée de l'entrepôt, jamais d'activation automatique.
+  // Le bazooka est un bonus de route à part entière : deux entrepôts par course
+  // (30 % puis 65 %), chacun rechargeant les deux roquettes, sans activation
+  // automatique.
   const bazookaPickups = callbacks.pickups.filter((pickup) => pickup.type === 'bazooka');
   if (bazookaPickups.some((pickup) => pickup.ammo !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
     || pickup.progress !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
     || pickup.chargeCost !== CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
     || pickup.autoActivated)) {
-    fail('le ramassage du bazooka ne donne pas ses deux roquettes', bazookaPickups);
+    fail('un entrepôt de bazooka ramassé ne recharge pas les deux roquettes', bazookaPickups);
   }
   const unsupportedPickups = callbacks.pickups.filter((pickup) => ![
     CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL, 'bazooka',
   ].includes(pickup.type));
-  if (unsupportedPickups.length) fail('un bonus bleu ou jaune est encore collecté sur la route', unsupportedPickups);
+  if (unsupportedPickups.length) fail('un bonus bleu est encore collecté sur la route', unsupportedPickups);
   if (callbacks.pickups.some((pickup) => pickup.autoActivated
     && ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH].includes(pickup.type)
     && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {

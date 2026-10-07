@@ -123,13 +123,16 @@ export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
 export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de pads turbo au sol
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
-// Le bazooka du dernier tour est un ramassage unique : deux roquettes, puis
-// plus aucun réapprovisionnement pendant la course.
+// Le bazooka apparaît deux fois sur chaque carte : deux entrepôts, un avant
+// le garage de vie de mi-course (30 % du parcours), un après (65 %). Chaque
+// traversée donne deux roquettes ; il n'y a pas d'autre réapprovisionnement.
 export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 2;
 export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 2;
 export const CITY_RUSH_BAZOOKA_PROJECTILE_SPEED = 180; // roquette visible, tirée droit devant
 export const CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH = CITY_RUSH_LANE_WIDTH * 1.35;
-export const CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS = 0.62; // dans la première boucle du dernier tour
+// Parts de la distance totale de la course où se dressent les deux entrepôts :
+// le premier avant le garage de vie (50 %), le second après.
+export const CITY_RUSH_BAZOOKA_PICKUP_SHARES = Object.freeze([0.3, 0.65]);
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
 
 // ── Le rythme des rivaux : ils courent pour gagner ──────────────────────────
@@ -2177,15 +2180,20 @@ export function cityRushLapLength(lap, laps = CITY_RUSH_LAPS, lapLength = CITY_R
   return (Number(lap) || 1) >= safeLapCount(laps) ? safeLap * safeFinalLapLoops(finalLapLoops) : safeLap;
 }
 
-/** Repère unique de l'entrepôt, dans le dernier tour uniquement. */
-export function cityRushBazookaWarehouseDistance({
+/**
+ * Repères des deux entrepôts de bazooka, sur toutes les cartes : 30 % puis
+ * 65 % de la distance totale de la course. Le premier précède le garage de
+ * vie de mi-course (50 %), le second le suit. Les distances sont absolues —
+ * le décor se répète tous les `lapLength` mètres, si bien que chaque entrepôt
+ * se pose n'importe où dans le parcours.
+ */
+export function cityRushBazookaTrackDistances({
   laps = CITY_RUSH_LAPS,
   lapLength = CITY_RUSH_LAP_LENGTH,
-  progress = CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS,
+  finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS,
 } = {}) {
-  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
-  const safeProgress = clamp01(Number.isFinite(Number(progress)) ? Number(progress) : CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS);
-  return (safeLapCount(laps) - 1 + safeProgress) * safeLap;
+  const total = cityRushRaceDistance(laps, lapLength, finalLapLoops);
+  return Object.freeze(CITY_RUSH_BAZOOKA_PICKUP_SHARES.map((share) => total * share));
 }
 
 // Tour en cours (1 à `laps`) pour une distance parcourue. Le dernier tour court
@@ -3762,8 +3770,8 @@ export function cityRushMiniGarageAvailable({ sprint = false } = {}) {
 }
 
 /**
- * Ramassage du bazooka à l'entrée de l'entrepôt : une seule traversée sur la
- * voie extérieure, puis le bonus est définitivement consommé pour cette course.
+ * Ramassage du bazooka à l'entrée d'un entrepôt : une seule traversée par
+ * entrepôt, sur la voie extérieure.
  */
 export function cityRushBazookaPickupCanUse({
   previousDistance,

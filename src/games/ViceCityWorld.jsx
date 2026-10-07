@@ -13,6 +13,7 @@ import {
   CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
   CITY_RUSH_BAZOOKA_BLAST_CELLS,
+  CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH,
   CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
   CITY_RUSH_LANE_WIDTH,
   CITY_RUSH_PISTOL_SPIN_TURNS,
@@ -161,7 +162,7 @@ import {
   cityRushLapForDistance,
   cityRushLapLength,
   cityRushLapProgress,
-  cityRushBazookaWarehouseDistance,
+  cityRushBazookaTrackDistances,
   cityRushBazookaPickupCanUse,
   cityRushBazookaTarget,
   cityRushBazookaBlastContains,
@@ -727,7 +728,7 @@ function makeMiniGarageObject(index, materials, garageLanes) {
   return group;
 }
 
-/** Entrepôt de bord de route, ouvert sur la voie extérieure de Vice City. */
+/** Entrepôt de bord de route, ouvert sur la voie extérieure de la carte. */
 function makeBazookaWarehouse(city, pickupLaneX) {
   const group = new THREE.Group();
   group.name = 'city-rush-bazooka-warehouse';
@@ -1414,7 +1415,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // panne scriptée (prologue). `null` en mode libre : rien ne change.
   const storyWeaponsEnabled = storyRules?.weaponsEnabled !== false;
   const storyPoliceEnabled = storyRules?.policeEnabled !== false;
-  const bazookaWarehouseEnabled = city.id === 'vice-city' && !sprint && storyWeaponsEnabled && storyPoliceEnabled && storyRules?.bazookaEnabled !== false;
+  // Le bazooka est sur toutes les cartes : deux entrepôts par course, à 30 %
+  // puis 65 % du parcours — seul le Sprint et les chapitres sans arme/police
+  // le retirent.
+  const bazookaWarehouseEnabled = !sprint && storyWeaponsEnabled && storyPoliceEnabled && storyRules?.bazookaEnabled !== false;
   const storyHealthOverride = Number.isFinite(Number(storyRules?.playerHealthOverride)) && Number(storyRules.playerHealthOverride) > 0
     ? Math.floor(Number(storyRules.playerHealthOverride))
     : null;
@@ -1422,7 +1426,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const storyRivalPace = storyRules?.rivalPace && typeof storyRules.rivalPace === 'object' ? storyRules.rivalPace : null;
   const storyBreakdown = storyRules?.breakdown && typeof storyRules.breakdown === 'object' ? storyRules.breakdown : null;
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
-  const bazookaWarehouseDistance = cityRushBazookaWarehouseDistance({ laps: effectiveLaps });
+  const bazookaTrackDistances = cityRushBazookaTrackDistances({ laps: effectiveLaps });
   // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
   // `laps` × la boucle. Le décor, lui, reste une boucle de 1 200 m qui se répète.
   const effectiveDistance = sprint ? CITY_RUSH_SPRINT_DISTANCE : cityRushRaceDistance(effectiveLaps);
@@ -2296,11 +2300,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       used: false,
     };
   });
-  const bazookaWarehouse = bazookaWarehouseEnabled ? makeBazookaWarehouse(city, laneX(bazookaPickupLane)) : null;
-  if (bazookaWarehouse) {
-    bazookaWarehouse.visible = false;
-    scene.add(bazookaWarehouse);
-  }
+  // Deux entrepôts par course, sur toutes les cartes : un à 30 % du parcours
+  // (avant le garage de vie de mi-course), un à 65 % (après).
+  const bazookaWarehouses = bazookaWarehouseEnabled
+    ? bazookaTrackDistances.map((trackDistance, index) => {
+      const group = makeBazookaWarehouse(city, laneX(bazookaPickupLane));
+      group.visible = false;
+      scene.add(group);
+      return {
+        index: index + 1,
+        group,
+        trackDistance,
+        taken: false,
+      };
+    })
+    : [];
   let bazookaAmmo = 0;
   let bazookaPickupTaken = false;
   let lap = 1;
@@ -2551,6 +2565,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return best;
   }
 
+  // Entrepôt de bazooka le plus proche encore à traverser — sert au compteur
+  // du HUD. `null` quand les deux entrepôts de la course sont derrière (ou
+  // déjà ramassés).
+  function nextBazookaWarehouseGap() {
+    let best = null;
+    for (const warehouse of bazookaWarehouses) {
+      if (warehouse.taken) continue;
+      const gap = warehouse.trackDistance - distance;
+      if (gap < -CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH) continue;
+      if (best === null || gap < best) best = gap;
+    }
+    return best === null ? null : Math.round(best);
+  }
+
   function placeMiniGarage(garage) {
     if (!garage) return;
     garage.group.userData.trackDistance = garage.trackDistance;
@@ -2569,14 +2597,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     garage.group.visible = gap > -25 && gap * SCALE < theme.fogFar + 20;
   }
 
-  function placeBazookaWarehouse() {
-    if (!bazookaWarehouse) return;
-    const group = bazookaWarehouse;
-    const warehouseTrackDistance = bazookaWarehouseDistance + BAZOOKA_PICKUP_LOCAL_Z / SCALE;
+  // Chaque entrepôt est ancré à son repère (30 % puis 65 % de la course) dès
+  // le départ : il n'attend plus le dernier tour, et le marqueur jaune disparaît
+  // après la traversée tandis que le bâtiment reste en bord de route.
+  function placeBazookaWarehouse(warehouse) {
+    if (!warehouse) return;
+    const group = warehouse.group;
+    const warehouseTrackDistance = warehouse.trackDistance + BAZOOKA_PICKUP_LOCAL_Z / SCALE;
     group.userData.trackDistance = warehouseTrackDistance;
-    const gap = bazookaWarehouseDistance - distance;
-    const finalLapStarted = lap >= effectiveLaps && distance >= (effectiveLaps - 1) * CITY_RUSH_LAP_LENGTH;
-    const available = phase === 'playing' && !finished && !playerWrecked && finalLapStarted;
+    const gap = warehouse.trackDistance - distance;
+    const available = phase === 'playing' && !finished && !playerWrecked;
     group.position.set(
       trackRelativeX(warehouseTrackDistance),
       trackRelativeY(warehouseTrackDistance),
@@ -2584,14 +2614,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     );
     group.rotation.set(trackPitch(warehouseTrackDistance), trackYaw(warehouseTrackDistance), 0);
     group.visible = available && gap > -24 && gap * SCALE < theme.fogFar + 28;
-    group.userData.pickup.visible = !bazookaPickupTaken;
+    group.userData.pickup.visible = !warehouse.taken;
   }
 
-  function collectBazookaWarehouse() {
-    if (!bazookaWarehouse || bazookaPickupTaken) return false;
-    bazookaPickupTaken = true;
+  function collectBazookaWarehouse(warehouse) {
+    if (!warehouse || warehouse.taken) return false;
+    warehouse.taken = true;
     bazookaAmmo = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP;
-    bazookaWarehouse.userData.pickup.visible = false;
+    warehouse.group.userData.pickup.visible = false;
+    // Le ramassage n'est définitivement consommé que lorsque les deux
+    // entrepôts de la course ont été traversés.
+    bazookaPickupTaken = bazookaWarehouses.every((item) => item.taken);
     score += 250;
     pickedUp += 1;
     audioRef?.current?.pickup?.('bazooka', { ready: true });
@@ -2604,33 +2637,34 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       newlyReady: true,
       autoActivated: false,
       lane: bazookaPickupLane,
+      warehouse: warehouse.index,
     });
-    getCallbacks().effect?.({ type: 'bazooka-pickup', ammo: bazookaAmmo, lane: bazookaPickupLane });
+    getCallbacks().effect?.({ type: 'bazooka-pickup', ammo: bazookaAmmo, lane: bazookaPickupLane, warehouse: warehouse.index });
     emitHud(true);
     return true;
   }
 
-  function updateBazookaWarehouse(previousDistance, dt = 0) {
-    if (!bazookaWarehouse) return;
-    placeBazookaWarehouse();
-    if (bazookaWarehouse.visible) {
-      const { pickup, pickupRing, pickupHalo, pickupBeam, rocket } = bazookaWarehouse.userData;
+  function updateBazookaWarehouses(previousDistance, dt = 0) {
+    for (const warehouse of bazookaWarehouses) {
+      placeBazookaWarehouse(warehouse);
+      if (!warehouse.group.visible || warehouse.taken) continue;
+      const { pickup, pickupRing, pickupHalo, pickupBeam, rocket } = warehouse.group.userData;
       pickup.rotation.y += Math.max(0, dt) * 0.65;
       rocket.rotation.z = Math.sin(clockTime * 1.8) * 0.05;
       pickupRing.rotation.z += Math.max(0, dt) * 0.82;
       pickupHalo.material.opacity = 0.28 + (Math.sin(clockTime * 3.2) + 1) * 0.14;
       pickupBeam.material.opacity = 0.2 + (Math.sin(clockTime * 4.1) + 1) * 0.18;
-    }
-    if (bazookaWarehouse.visible && cityRushBazookaPickupCanUse({
-      previousDistance,
-      nextDistance: distance,
-      pickupDistance: bazookaWarehouseDistance,
-      playerLane,
-      pickupLane: bazookaPickupLane,
-      used: bazookaPickupTaken,
-    })) {
-      collectBazookaWarehouse();
-      placeBazookaWarehouse();
+      if (cityRushBazookaPickupCanUse({
+        previousDistance,
+        nextDistance: distance,
+        pickupDistance: warehouse.trackDistance,
+        playerLane,
+        pickupLane: bazookaPickupLane,
+        used: warehouse.taken,
+      })) {
+        collectBazookaWarehouse(warehouse);
+        placeBazookaWarehouse(warehouse);
+      }
     }
   }
 
@@ -2919,8 +2953,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       inventory: { ...inventory },
       bazookaAmmo,
       bazookaPickupTaken,
+      bazookaPickupsTaken: bazookaWarehouses.filter((warehouse) => warehouse.taken).length,
+      bazookaPickupsTotal: bazookaWarehouses.length,
       bazookaEnabled: bazookaWarehouseEnabled,
-      bazookaWarehouseGap: bazookaWarehouseEnabled ? Math.round(bazookaWarehouseDistance - distance) : null,
+      // Distance du prochain entrepôt à traverser (30 % puis 65 % de la
+      // course) ; `bazookaWarehouseGap` garde le même repère pour les
+      // consommateurs historiques.
+      bazookaNextDistance: bazookaWarehouseEnabled ? nextBazookaWarehouseGap() : null,
+      bazookaWarehouseGap: bazookaWarehouseEnabled ? nextBazookaWarehouseGap() : null,
       playerLane,
       slowLeft: Math.max(playerSlowLeft, playerBlueShotSlowLeft),
       trafficImpactLeft: playerTrafficImpactLeft,
@@ -3135,6 +3175,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     inventory = createCityRushInventory();
     bazookaAmmo = 0;
     bazookaPickupTaken = false;
+    // Les deux entrepôts repartent à leur repère (30 % et 65 % de la course)
+    // et leur marqueur jaune redevient visible.
+    bazookaWarehouses.forEach((warehouse, index) => {
+      warehouse.trackDistance = bazookaTrackDistances[index];
+      warehouse.taken = false;
+    });
     finished = false;
     currentSpeed = 0;
     playerCurrentSpeed = 0;
@@ -3350,7 +3396,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     startLine.setBoard(`TOUR 1/${effectiveLaps}`, lapBoardSubtitle(1));
     syncSprintCheckpointDisplay();
     placeTrack();
-    placeBazookaWarehouse();
+    bazookaWarehouses.forEach(placeBazookaWarehouse);
     emitHud(true);
   }
 
@@ -8297,7 +8343,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       updateRows(dt);
       updateRamps(dt);
       updateMiniGarages(priorDistance);
-      updateBazookaWarehouse(priorDistance, dt);
+      updateBazookaWarehouses(priorDistance, dt);
       racers.forEach((racer) => useRacerPower(racer));
       updateVisualEffects(dt);
       updateTrafficImpacts(dt);

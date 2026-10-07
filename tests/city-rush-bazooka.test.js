@@ -4,14 +4,15 @@ import { readFileSync } from 'node:fs';
 import {
   CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
   CITY_RUSH_BAZOOKA_BLAST_CELLS,
+  CITY_RUSH_BAZOOKA_PICKUP_SHARES,
   CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
-  CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS,
   CITY_RUSH_LANE_WIDTH,
-  CITY_RUSH_LAP_LENGTH,
   cityRushBazookaBlastContains,
   cityRushBazookaPickupCanUse,
   cityRushBazookaTarget,
-  cityRushBazookaWarehouseDistance,
+  cityRushBazookaTrackDistances,
+  cityRushMiniGarageMidRaceDistance,
+  cityRushRaceDistance,
 } from '../src/games/cityRushRules.js';
 
 const rulesSource = readFileSync(new URL('../src/games/cityRushRules.js', import.meta.url), 'utf8');
@@ -27,14 +28,20 @@ test('le bonus jaune donne deux roquettes et la portée du souffle vaut deux cas
   assert.equal(CITY_RUSH_BAZOOKA_BLAST_CELLS * CITY_RUSH_LANE_WIDTH, 4.2);
 });
 
-test('l’entrepôt est posé dans la première boucle du dernier tour, jamais dans les tours précédents', () => {
+test('deux entrepôts par course, à 30 % et 65 % du parcours — le premier avant le garage de vie', () => {
+  assert.deepEqual([...CITY_RUSH_BAZOOKA_PICKUP_SHARES], [0.3, 0.65]);
   for (const laps of [1, 3, 6]) {
-    const distance = cityRushBazookaWarehouseDistance({ laps });
-    const lastLapStart = (laps - 1) * CITY_RUSH_LAP_LENGTH;
-    const nextLapLine = laps * CITY_RUSH_LAP_LENGTH;
-    assert.equal(distance, (laps - 1 + CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS) * CITY_RUSH_LAP_LENGTH);
-    assert.ok(distance > lastLapStart);
-    assert.ok(distance < nextLapLine);
+    const distances = cityRushBazookaTrackDistances({ laps });
+    const total = cityRushRaceDistance(laps);
+    const garage = cityRushMiniGarageMidRaceDistance({ laps });
+    assert.equal(distances.length, 2);
+    assert.equal(distances[0], total * 0.3);
+    assert.equal(distances[1], total * 0.65);
+    // Le premier entrepôt précède le garage de vie de mi-course (50 %),
+    // le second le suit.
+    assert.ok(distances[0] < garage);
+    assert.ok(distances[1] > garage);
+    assert.ok(distances.every((distance) => distance > 0 && distance < total));
   }
 });
 
@@ -69,7 +76,7 @@ test('le souffle circulaire atteint deux cases autour de la voiture visée, pas 
   assert.equal(cityRushBazookaBlastContains({ centerDistance: NaN, vehicleDistance: 0 }), false);
 });
 
-test('le ramassage demande une traversée de l’entrée sur la voie extérieure, une fois par course', () => {
+test('le ramassage demande une traversée de l’entrée sur la voie extérieure, une fois par entrepôt', () => {
   const crossing = {
     previousDistance: 96,
     nextDistance: 103,
@@ -85,9 +92,13 @@ test('le ramassage demande une traversée de l’entrée sur la voie extérieure
   assert.equal(cityRushBazookaPickupCanUse({ ...crossing, previousDistance: 90, nextDistance: 94 }), false);
 });
 
-test('Vice City relie l’inventaire, les helpers de tir direct et le bouton tactile jaune', () => {
-  assert.match(worldSource, /cityRushBazookaWarehouseDistance\(\{\s*laps: effectiveLaps\s*\}\)/);
-  assert.match(worldSource, /city\.id === 'vice-city' && !sprint && storyWeaponsEnabled && storyPoliceEnabled/);
+test('deux entrepôts sur toutes les cartes, reliés à l’inventaire, au tir direct et au bouton tactile jaune', () => {
+  assert.match(worldSource, /cityRushBazookaTrackDistances\(\{\s*laps: effectiveLaps\s*\}\)/);
+  assert.match(worldSource, /const bazookaWarehouseEnabled = !sprint && storyWeaponsEnabled && storyPoliceEnabled/);
+  assert.doesNotMatch(worldSource, /city\.id === 'vice-city' && !sprint && storyWeaponsEnabled/);
+  assert.match(worldSource, /const bazookaWarehouses = bazookaWarehouseEnabled\s*\?\s*bazookaTrackDistances\.map/);
+  assert.match(worldSource, /bazookaWarehouses\.forEach\(placeBazookaWarehouse\)/);
+  assert.match(worldSource, /updateBazookaWarehouses\(priorDistance, dt\)/);
   assert.match(worldSource, /cityRushBazookaPickupCanUse\(\{/);
   assert.match(worldSource, /function firstPoliceOnLane[\s\S]*?cityRushBazookaTarget\(/);
   assert.match(rulesSource, /function cityRushBazookaTarget\([\s\S]*?return cityRushStraightShotTarget\(/);
@@ -100,6 +111,8 @@ test('Vice City relie l’inventaire, les helpers de tir direct et le bouton tac
   assert.match(pageSource, /X : BAZOOKA/);
   assert.match(pageSource, /city-rush-guide-item is-bazooka/);
   assert.match(pageSource, /city-rush-mode-bazooka-hint/);
+  assert.match(pageSource, /const bazookaMode = !sprintMode && storyWeaponsOn && storyPoliceOn/);
+  assert.doesNotMatch(pageSource, /const bazookaMode = cityId === 'vice-city'/);
   assert.match(baseCss, /\.city-rush-mode-bazooka-hint[\s\S]*?color: #ffd21f/);
   assert.match(baseCss, /\.city-rush-bazooka-button\.is-empty[\s\S]*?color: #9ca3ad/);
   assert.match(baseCss, /\.city-rush-bazooka-button\.is-ready[\s\S]*?border-color: #ffe35b/);
