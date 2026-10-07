@@ -315,6 +315,15 @@ import {
   CITY_RUSH_TRACK_PROFILE_DEFAULT,
   CITY_RUSH_TRACK_PROFILE_VICE_CITY,
   CITY_RUSH_VICE_CITY_TURNS,
+  CITY_RUSH_CORNER_PACE_COURSES,
+  CITY_RUSH_CORNER_PACE_MIN,
+  CITY_RUSH_CORNER_PACE_SWEEP,
+  CITY_RUSH_CORNER_PACE_YAW_START,
+  CITY_RUSH_CORNER_PACE_YAW_SWEEP,
+  CITY_RUSH_CORNER_PACE_YAW_TIGHT,
+  cityRushCornerPace,
+  cityRushCornerPaceFromYaw,
+  cityRushUsesCornerPace,
   nordschleifeCornerCurve,
   nordschleifeTrackOffset,
   nordschleifeTrackTangent,
@@ -2420,6 +2429,115 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   // Sans le facteur, l'appel historique ne change pas d'un poil.
   assert.equal(approachCityRushSpeed(30, 10, 6, 1, 1), brakingFlat);
   assert.equal(approachCityRushSpeed(30, 10, 6, 1, 0), brakingFlat, 'un facteur invalide retombe sur 1');
+});
+
+test('Vice City et le Ring ralentissent les voitures dans les grands virages', () => {
+  // Seuls ces deux parcours tournent vraiment. Les autres gardent leur vitesse,
+  // y compris au cœur de leurs S doux : un facteur oublié sur Tokyo ou la
+  // Route 66 se lirait ici.
+  assert.deepEqual([...CITY_RUSH_CORNER_PACE_COURSES], ['vice-city', 'nordschleife']);
+  assert.equal(CITY_RUSH_CORNER_PACE_SWEEP, 0.72);
+  assert.equal(CITY_RUSH_CORNER_PACE_MIN, 0.58);
+  assert.ok(CITY_RUSH_CORNER_PACE_MIN < CITY_RUSH_CORNER_PACE_SWEEP && CITY_RUSH_CORNER_PACE_SWEEP < 1);
+  assert.ok(CITY_RUSH_CORNER_PACE_YAW_START < CITY_RUSH_CORNER_PACE_YAW_SWEEP);
+  assert.ok(CITY_RUSH_CORNER_PACE_YAW_SWEEP < CITY_RUSH_CORNER_PACE_YAW_TIGHT);
+
+  for (const course of CITY_RUSH_COURSES) {
+    const uses = cityRushUsesCornerPace(course) && cityRushUsesCornerPace(course.id);
+    assert.equal(uses, course.id === 'vice-city' || course.id === 'nordschleife', course.id);
+    let slowest = 1;
+    for (let index = 0; index < 240; index += 1) {
+      slowest = Math.min(slowest, cityRushCornerPace(course, index * CITY_RUSH_LAP_LENGTH / 240));
+    }
+    if (!uses) {
+      assert.equal(slowest, 1, `${course.id} ne lève pas le pied dans ses courbes`);
+      assert.equal(cityRushCornerPace(course.id, CITY_RUSH_LAP_LENGTH * 0.18), 1);
+    } else {
+      assert.ok(slowest <= CITY_RUSH_CORNER_PACE_SWEEP, `${course.id} ralentit vraiment (${slowest.toFixed(2)})`);
+    }
+  }
+  assert.equal(cityRushUsesCornerPace(null), false);
+  assert.equal(cityRushUsesCornerPace('inconnu'), false);
+  assert.equal(cityRushCornerPace(null, 400), 1);
+  assert.equal(cityRushCornerPace('paris', 400), 1);
+  assert.equal(cityRushCornerPaceFromYaw(Number.NaN), 1);
+  assert.equal(cityRushCornerPaceFromYaw(0), 1);
+  assert.equal(cityRushCornerPaceFromYaw(CITY_RUSH_CORNER_PACE_YAW_START), 1);
+  assert.equal(cityRushCornerPaceFromYaw(-CITY_RUSH_CORNER_PACE_YAW_SWEEP), CITY_RUSH_CORNER_PACE_SWEEP);
+  assert.equal(cityRushCornerPaceFromYaw(CITY_RUSH_CORNER_PACE_YAW_TIGHT), CITY_RUSH_CORNER_PACE_MIN);
+  assert.equal(cityRushCornerPaceFromYaw(Math.PI / 2), CITY_RUSH_CORNER_PACE_MIN, 'au-delà de la cassure, le plancher tient');
+  // La descente est lisse : pas de marche entre la ligne droite et le virage.
+  const midYaw = (CITY_RUSH_CORNER_PACE_YAW_START + CITY_RUSH_CORNER_PACE_YAW_SWEEP) / 2;
+  const midPace = cityRushCornerPaceFromYaw(midYaw);
+  assert.ok(midPace < 1 && midPace > CITY_RUSH_CORNER_PACE_SWEEP, 'le grand virage se prend en levant le pied, pas d’un bloc');
+
+  // Vice City : pleine vitesse sur les droites, ralentissement net au cœur des
+  // longues courbes, et freinage plus fort dans les virages secs.
+  assert.equal(cityRushCornerPace('vice-city', 0), 1, 'la ligne de départ reste à fond');
+  assert.equal(cityRushCornerPace('vice-city', 270), 1, 'la droite entre Ocean Drive et le pont ne ralentit pas');
+  assert.equal(cityRushCornerPace('vice-city', 270 + CITY_RUSH_LAP_LENGTH), 1, 'le tour suivant non plus');
+  const longTurns = CITY_RUSH_VICE_CITY_TURNS.filter((turn) => turn.kind === 'long');
+  const sharpTurns = CITY_RUSH_VICE_CITY_TURNS.filter((turn) => turn.kind === 'sharp');
+  const slowestIn = (turn) => {
+    let pace = 1;
+    for (let index = 0; index <= 80; index += 1) {
+      const distance = turn.start + ((turn.end - turn.start) * index) / 80;
+      pace = Math.min(pace, cityRushCornerPace('vice-city', distance));
+    }
+    return pace;
+  };
+  for (const turn of CITY_RUSH_VICE_CITY_TURNS) {
+    assert.equal(cityRushCornerPace('vice-city', turn.start), 1, `${turn.name} commence à fond`);
+    assert.equal(cityRushCornerPace('vice-city', turn.end), 1, `${turn.name} se réaccélère à la sortie`);
+    assert.equal(
+      cityRushCornerPace('vice-city', (turn.start + turn.end) / 2),
+      cityRushCornerPace('vice-city', (turn.start + turn.end) / 2 + CITY_RUSH_LAP_LENGTH),
+      `${turn.name} se répète à chaque tour`,
+    );
+  }
+  for (const turn of longTurns) {
+    const pace = slowestIn(turn);
+    assert.ok(pace <= CITY_RUSH_CORNER_PACE_SWEEP + 0.02, `${turn.name} ralentit dans le grand virage (${pace.toFixed(3)})`);
+    assert.ok(pace > CITY_RUSH_CORNER_PACE_MIN, `${turn.name} reste une courbe rapide, pas une épingle`);
+    // 126 km/h → environ 91 km/h : le compteur doit bouger, pas seulement frémir.
+    const apexKmh = CITY_RUSH_PLAYER_SPEED * pace * 3.6;
+    assert.ok(apexKmh < 100, `${turn.name} tombe à ${apexKmh.toFixed(0)} km/h`);
+  }
+  for (const turn of sharpTurns) {
+    const pace = slowestIn(turn);
+    assert.equal(pace, CITY_RUSH_CORNER_PACE_MIN, `${turn.name} freine jusqu'au plancher`);
+    assert.ok(pace < slowestIn(longTurns[0]), 'un virage sec se prend plus lentement qu’une longue courbe');
+  }
+
+  // Ring : la Döttinger Höhe et le portique filent droit ; un appui tenu lève
+  // le pied, et la virole du Karussell freine plus fort que Hatzenbach.
+  assert.equal(cityRushCornerPace('nordschleife', 0), 1, 'le portique du Ring est droit');
+  const dottinger = (20 / 20.832) * CITY_RUSH_LAP_LENGTH;
+  assert.equal(cityRushCornerPace(CITY_RUSH_NORDSCHLEIFE_COURSE, dottinger), 1, 'la Döttinger Höhe reste à fond');
+  const atKm = (km) => {
+    const centre = (km / 20.832) * CITY_RUSH_LAP_LENGTH;
+    let pace = 1;
+    for (let distance = centre - 30; distance <= centre + 30; distance += 0.5) {
+      pace = Math.min(pace, cityRushCornerPace('nordschleife', distance));
+    }
+    return pace;
+  };
+  const hatzenbach = atKm(2.62);
+  const kesselchen = atKm(11.8);
+  const karussell = atKm(13.5);
+  assert.ok(hatzenbach <= 0.8, `Hatzenbach lève le pied (${hatzenbach.toFixed(3)})`);
+  assert.ok(kesselchen <= CITY_RUSH_CORNER_PACE_SWEEP, `Kesselchen tient son appui ralenti (${kesselchen.toFixed(3)})`);
+  assert.ok(karussell < hatzenbach, 'la virole se prend plus lentement qu’un grand virage rapide');
+  assert.ok(karussell <= 0.62, `Karussell freine franchement (${karussell.toFixed(3)})`);
+  assert.ok(karussell >= CITY_RUSH_CORNER_PACE_MIN);
+
+  // Le freinage habituel suffit à rejoindre la vitesse du virage : une voiture
+  // lancée à 35 m/s est à la vitesse du grand virage en moins d'une seconde,
+  // sans passer en dessous.
+  const cornerTarget = CITY_RUSH_PLAYER_SPEED * CITY_RUSH_CORNER_PACE_SWEEP;
+  const afterOneSecond = approachCityRushSpeed(CITY_RUSH_PLAYER_SPEED, cornerTarget, 8, 1);
+  assert.equal(afterOneSecond, cornerTarget, 'le frein rejoint la cible du grand virage');
+  assert.ok(afterOneSecond < CITY_RUSH_PLAYER_SPEED - 8, 'le compteur baisse de façon lisible');
 });
 
 test('the oncoming bonus ramps up in the wrong-way lanes and drains on the way back', () => {
