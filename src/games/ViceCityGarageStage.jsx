@@ -44,7 +44,8 @@ const FRAME_MAX_DISTANCE = 13;
 // Décalage de caméra offert par la page : à l'étape MODE, la bannière Histoire
 // occupe la colonne de droite (fond opaque), donc la caméra se range à droite
 // et la voiture se lit à gauche du cadre, dans le prolongement du chapeau.
-const CAMERA_SHIFT_MODE = 1.6;
+// Exporté pour que la page et la scène partagent le même réglage.
+export const CAMERA_SHIFT_MODE = 1.6;
 const TURNTABLE_SPEED = 0.17; // rad/s : un tour en ~37 secondes
 const POINTER_YAW = 0.14; // rad : léger déport du regard à la souris
 const POINTER_PITCH = 0.26; // m : idem à la verticale
