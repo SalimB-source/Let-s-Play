@@ -123,9 +123,10 @@ export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
 export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de bonus turbo verts
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
-// Le bazooka apparaît deux fois sur chaque carte : deux entrepôts, un avant
-// le garage de vie de mi-course (30 % du parcours), un après (65 %). Chaque
-// traversée donne deux roquettes ; il n'y a pas d'autre réapprovisionnement.
+// Le bazooka apparaît deux fois sur chaque carte : deux **conteneurs** de deux
+// voies, un avant le garage de vie de mi-course (30 % du parcours), un après
+// (65 %). Chaque traversée donne deux roquettes ; il n'y a pas d'autre
+// réapprovisionnement.
 export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 2;
 export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 8;
 export const CITY_RUSH_BAZOOKA_PROJECTILE_SPEED = 180; // roquette visible, tirée droit devant
