@@ -395,8 +395,8 @@ export function trailerFlagTitle(routeOrKey) {
 /**
  * Vidéo de tête d'un article — la première déclarée, celle dont la pastille
  * du hub reprend la nature — ou null si l'article n'a aucune vidéo officielle.
- * C'est elle que la bannière « actu gaming du jour » du hub `/news` projette
- * dans sa carte (src/pages/News.jsx), à la place du visuel de l'actu.
+ * C'est elle que la carte de tête du flux `/news/gaming` projette dans son
+ * cadre (src/pages/GamingNews.jsx), à la place du visuel de l'actu.
  *
  * @param {string} routeOrKey route de la carte (ex. `/news/gta-6-satire-monde-invente`)
  *   ou identifiant d'article

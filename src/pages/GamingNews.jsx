@@ -51,8 +51,8 @@ const FEATURED_COPY = {
 // Actus récentes rédigées à la main par la rédaction, les plus fraîches en
 // tête. LA PREMIÈRE ENTRÉE EST « L'ACTU GAMING DU JOUR » : elle ouvre /news/gaming
 // dans un bandeau vidéo + texte (sa première vidéo officielle est déclarée dans
-// src/articleTrailers.js) et alimente aussi la une du hub /news. Pour changer la
-// une, il suffit d'insérer la nouvelle actu ici, en tête de liste.
+// src/articleTrailers.js). Pour changer la une, il suffit d'insérer la nouvelle
+// actu ici, en tête de liste.
 //
 // Actus du mercredi 07.10.2026 : le démenti de Xbox sur le streaming PC
 // de GTA VI ouvre la page ; suivent l'actu du mardi 06.10.2026 (satire
@@ -77,9 +77,6 @@ export const latestGamingStories = [
   { to: '/news/xbox-nadella-restructuration', image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', fallbackImage: 'xbox-nadella-news.svg', alt: 'Portrait officiel de Satya Nadella, PDG de Microsoft', badge: 'XBOX · MICROSOFT', kicker: '28.09.2026 · VGC', title: 'NADELLA DÉFEND LA CURE XBOX.', excerpt: 'Le PDG de Microsoft juge « formidable » la rationalisation menée par Asha Sharma et promet un retour à la croissance de Xbox, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
   { to: '/news/halo-activision', image: 'masterchief-activision.webp', alt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', badge: 'HALO · ACTIVISION', kicker: '26.09.2026 · XBOX', title: 'HALO PASSE CHEZ ACTIVISION.', excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
 ];
-
-// L'actu gaming du jour (voir ci-dessus).
-export const gamingTopStory = latestGamingStories[0];
 
 // La section calendrier + compte à rebours (01) a été déplacée sur la page
 // d'accueil, juste après le hero — la frise complète vit sur /calendrier.

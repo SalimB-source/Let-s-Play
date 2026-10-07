@@ -3,14 +3,8 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
-import { youTubeEmbedUrl } from '../lib/videoPlayback';
-import { leadTrailer, trailerBadgeLabel } from '../articleTrailers';
-// L'actu gaming du jour est celle qui ouvre /news/gaming : la bannière du hub
-// la reprend telle quelle, sans seconde copie à tenir à jour.
-import { gamingTopStory } from './GamingNews';
-
-// Visuel de repli de la bannière (actu sans vidéo officielle) : même règle que
-// les cartes du hub gaming — URL absolue telle quelle, fichier local préfixé.
+// Visuel des cartes actus du jour : URL absolue telle quelle, fichier local
+// préfixé (même règle que les cartes des hubs d'univers).
 const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 // Sélection des actualités du jour (07.10.2026) avec leurs miniatures locales dédiées.
@@ -50,29 +44,11 @@ const todayStories = [
   },
 ];
 
-// Page intermédiaire : choix entre actus GAMING, actus CINÉMA / SÉRIES et
-// actus TECH. Les trois grandes cartes redirigent vers les hubs dédiés ; sous
-// les cartes, une bannière reprend l'actu gaming du jour au gabarit de la une
-// de l'accueil (vidéo officielle jouable sur place + texte).
+// Page intermédiaire : elle ouvre sur les actus du jour, puis laisse choisir
+// son univers — les trois grandes cartes mènent aux hubs GAMING, CINÉMA /
+// SÉRIES et TECH.
 export default function News() {
   const { lang } = useLanguage();
-
-  // Bannière « actu gaming du jour » : la première vidéo officielle déclarée
-  // pour l'article (src/articleTrailers.js) se lit dans la carte ; à défaut,
-  // le visuel de l'actu prend la place du lecteur.
-  const todayStory = gamingTopStory;
-  const todayVideo = todayStory ? leadTrailer(todayStory.to) : null;
-  // À droite du libellé de section : ce que montre le cadre — la vidéo
-  // officielle et sa chaîne (« BANDE-ANNONCE OFFICIELLE · ROCKSTAR GAMES »),
-  // ou la pastille de l'actu quand c'est son visuel qui est affiché.
-  const todayMedia = todayVideo
-    ? `${trailerBadgeLabel(todayVideo.kind)} · ${todayVideo.channel.toUpperCase()}`
-    : todayStory?.badge;
-  const todayCopy = {
-    en: { label: 'GAMING NEWS OF THE DAY', eyebrow: 'Gaming news of the day', today: 'News of the day', read: 'Read the story', seeAll: 'All gaming news' },
-    fr: { label: 'ACTU GAMING DU JOUR', eyebrow: 'Actu gaming du jour', today: 'Actu du jour', read: 'Lire l’article', seeAll: 'Toutes les actus gaming' },
-    ar: { label: 'خبر الألعاب اليوم', eyebrow: 'خبر الألعاب اليوم', today: 'خبر اليوم', read: 'اقرأ المقال', seeAll: 'كل أخبار الألعاب' },
-  }[lang] || { label: 'ACTU GAMING DU JOUR', eyebrow: 'Actu gaming du jour', today: 'Actu du jour', read: 'Lire l’article', seeAll: 'Toutes les actus gaming' };
 
   const todaySectionCopy = {
     en: {
@@ -353,58 +329,6 @@ export default function News() {
           </div>
         </Link>
       </div>
-
-      {/* ACTU GAMING DU JOUR — même carte que la une de l'accueil (Home.jsx) :
-          lecteur YouTube du site à gauche, texte cliquable à droite. Les
-          classes `featured-dossiers--news` / `home-news-card` sont celles de
-          l'accueil (daily-news.css) ; `news-hub-today` n'ajuste que
-          l'espacement et le visuel de repli (news-carousel.css). */}
-      {todayStory && (
-        <section className="featured-dossiers featured-dossiers--news news-hub-today wrap" id="actu-gaming-du-jour">
-          <div className="section-label"><span>{todayCopy.label}</span><span>{todayMedia}</span></div>
-          <div className="featured-dossiers-head">
-            <p className="eyebrow"><span className="live-dot" /> {todayCopy.eyebrow}</p>
-            <Link className="arrow-link" to="/news/gaming">{todayCopy.seeAll} <Arrow /></Link>
-          </div>
-          <article className="daily-news-card home-news-card">
-            <div className="daily-news-image home-news-video">
-              {todayVideo ? (
-                <iframe
-                  src={youTubeEmbedUrl(todayVideo.id)}
-                  title={`${todayVideo.title} — ${todayVideo.channel}`}
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              ) : (
-                <img
-                  src={imageUrl(todayStory.image)}
-                  alt={todayStory.alt}
-                  loading="lazy"
-                  onError={(event) => {
-                    if (todayStory.fallbackImage && event.currentTarget.dataset.fallback !== 'true') {
-                      event.currentTarget.dataset.fallback = 'true';
-                      event.currentTarget.src = imageUrl(todayStory.fallbackImage);
-                    }
-                  }}
-                />
-              )}
-              <span className="news-feature-badge">{todayStory.badge}</span>
-            </div>
-            <Link
-              className="daily-news-copy"
-              to={todayStory.to}
-              aria-label={`${todayCopy.read} : ${todayStory.title}`}
-            >
-              <p className="eyebrow"><span className="live-dot" /> {todayCopy.today}</p>
-              <span className="news-kicker">{todayStory.kicker}</span>
-              <h3>{todayStory.title}</h3>
-              <p>{todayStory.excerpt}</p>
-              <span className="read-link">{todayCopy.read} <Arrow /></span>
-            </Link>
-          </article>
-        </section>
-      )}
 
       <section className="cta wrap">
         <div>
