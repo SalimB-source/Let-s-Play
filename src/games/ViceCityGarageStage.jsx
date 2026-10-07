@@ -254,7 +254,7 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x04060a);
-    scene.fog = new THREE.Fog(0x04060a, 12, 34);
+    scene.fog = new THREE.Fog(0x04060a, 14, 38);
 
     const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.1, 60);
     // Distance de cadrage : réglée à chaque changement de taille pour que le
@@ -347,12 +347,19 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
     }
 
     /* ── Enseigne et halo, fond de cabine ─────────────────────────────────── */
-    const signGlow = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(10, 3.3)), materials.glow);
-    signGlow.position.set(0, 3.0, BACK_WALL_Z + 0.05);
+    // La caméra est en trois-quarts : le mur qu'elle regarde est le mur de
+    // gauche. L'enseigne y est donc posée de face, comme dans une vraie baie
+    // d'atelier, et non sur le mur du fond que le cadrage ne montre plus.
+    const SIGN_WALL_X = -ROOM_WIDTH / 2 + 0.06;
+    const SIGN_WALL_Z = -6.5;
+    const signGlow = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(10, 3.6)), materials.glow);
+    signGlow.position.set(SIGN_WALL_X - 0.02, 3.0, SIGN_WALL_Z + 0.5);
+    signGlow.rotation.y = Math.PI / 2;
     room.add(signGlow);
 
-    const sign = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(7.2, 1.8)), materials.sign);
-    sign.position.set(0, 3.0, BACK_WALL_Z + 0.08);
+    const sign = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(8.4, 2.1)), materials.sign);
+    sign.position.set(SIGN_WALL_X, 3.0, SIGN_WALL_Z);
+    sign.rotation.y = Math.PI / 2;
     room.add(sign);
 
     // Plaque d'immatriculation du mur : la date d'ouverture du garage.
@@ -369,7 +376,8 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
     const wallPlate = new THREE.Mesh(geometry(() => new THREE.PlaneGeometry(1.5, 0.58)), material(() => new THREE.MeshBasicMaterial({
       map: plateTexture, transparent: true, toneMapped: false,
     })));
-    wallPlate.position.set(-7.6, 3.5, BACK_WALL_Z + 0.1);
+    wallPlate.position.set(SIGN_WALL_X, 3.5, -3.0);
+    wallPlate.rotation.y = Math.PI / 2;
     room.add(wallPlate);
 
     /* ── Plateau tournant ─────────────────────────────────────────────────── */
@@ -479,8 +487,8 @@ export default function ViceCityGarageStage({ carId, carName, accent = '#48edc2'
     rim.target.position.set(0, 0.7, 0.3);
     scene.add(rim, rim.target);
 
-    const signLight = new THREE.PointLight(accentColor.getHex(), 40, 14, 2);
-    signLight.position.set(0, 2.8, BACK_WALL_Z + 1.6);
+    const signLight = new THREE.PointLight(accentColor.getHex(), 34, 12, 2);
+    signLight.position.set(SIGN_WALL_X + 1.2, 2.8, SIGN_WALL_Z);
     scene.add(signLight);
 
     /* ── La voiture, sur le plateau ───────────────────────────────────────── */
