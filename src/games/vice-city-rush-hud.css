@@ -340,6 +340,15 @@
 .city-rush-viewport .city-rush-hud .city-rush-machine-gun-status { font-size: 12px; }
 .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon { width: 50px; height: 50px; }
 .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon svg { width: 52px; height: 52px; }
+.city-rush-viewport .city-rush-hud .city-rush-bazooka-button {
+  pointer-events: auto;
+  width: 116px;
+  height: 82px;
+  min-width: 44px;
+  min-height: 56px;
+}
+.city-rush-viewport .city-rush-hud .city-rush-bazooka-icon,
+.city-rush-viewport .city-rush-hud .city-rush-bazooka-icon svg { width: 34px; height: 34px; }
 
 /* ── Écrans moyens : colonnes plus serrées ── */
 @media (max-width: 900px) {
@@ -736,6 +745,11 @@
     min-width: 44px;
     min-height: 44px;
   }
+  .city-rush-viewport .city-rush-hud .city-rush-bazooka-button {
+    width: 100px;
+    height: 72px;
+    padding: 6px 8px;
+  }
 }
 
 /* En paysage mobile, la route doit primer sur le classement : on retire les
@@ -769,6 +783,11 @@
   .city-rush-viewport .city-rush-hud .city-rush-gta-cash { padding: 3px 6px; }
   .city-rush-viewport .city-rush-hud .city-rush-health { padding: 3px 7px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 80px; height: 80px; padding: 8px; }
+  .city-rush-viewport .city-rush-hud .city-rush-bazooka-button { width: 80px; height: 58px; padding: 4px 6px; }
+  .city-rush-viewport .city-rush-hud .city-rush-bazooka-label { font-size: 6px; }
+  .city-rush-viewport .city-rush-hud .city-rush-bazooka-status { font-size: 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-bazooka-icon,
+  .city-rush-viewport .city-rush-hud .city-rush-bazooka-icon svg { width: 26px; height: 26px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-label { font-size: 7px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-status { font-size: 9px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon,
@@ -784,4 +803,5 @@
   .city-rush-viewport .city-rush-hud .city-rush-hud-card { padding: 5px 7px; }
   .city-rush-viewport .city-rush-hud .city-rush-lap-card { flex-basis: 94px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 88px; height: 88px; }
+  .city-rush-viewport .city-rush-hud .city-rush-bazooka-button { width: 88px; height: 64px; }
 }

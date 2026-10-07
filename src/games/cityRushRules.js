@@ -123,6 +123,13 @@ export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
 export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de pads turbo au sol
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+// Le bazooka du dernier tour est un ramassage unique : deux roquettes, puis
+// plus aucun réapprovisionnement pendant la course.
+export const CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP = 2;
+export const CITY_RUSH_BAZOOKA_BLAST_CELLS = 2;
+export const CITY_RUSH_BAZOOKA_PROJECTILE_SPEED = 180; // roquette visible, tirée droit devant
+export const CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH = CITY_RUSH_LANE_WIDTH * 1.35;
+export const CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS = 0.62; // dans la première boucle du dernier tour
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un pad turbo pèse trois bonus d'inventaire pour les rivaux
 
 // ── Le rythme des rivaux : ils courent pour gagner ──────────────────────────
@@ -2170,6 +2177,17 @@ export function cityRushLapLength(lap, laps = CITY_RUSH_LAPS, lapLength = CITY_R
   return (Number(lap) || 1) >= safeLapCount(laps) ? safeLap * safeFinalLapLoops(finalLapLoops) : safeLap;
 }
 
+/** Repère unique de l'entrepôt, dans le dernier tour uniquement. */
+export function cityRushBazookaWarehouseDistance({
+  laps = CITY_RUSH_LAPS,
+  lapLength = CITY_RUSH_LAP_LENGTH,
+  progress = CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS,
+} = {}) {
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  const safeProgress = clamp01(Number.isFinite(Number(progress)) ? Number(progress) : CITY_RUSH_BAZOOKA_WAREHOUSE_PROGRESS);
+  return (safeLapCount(laps) - 1 + safeProgress) * safeLap;
+}
+
 // Tour en cours (1 à `laps`) pour une distance parcourue. Le dernier tour court
 // jusqu'à l'arrivée, même s'il compte plusieurs boucles : le compteur y reste
 // plafonné et ne passe pas à « laps + 1 » quand on recroise le portique.
@@ -2758,6 +2776,42 @@ export function cityRushStraightShotTarget({
 // touchée. Quand plusieurs voitures sont balayées sur la même image, c'est la
 // plus proche du canon qui prend — le projectile s'arrête sur le premier
 // obstacle.
+/** Le bazooka verrouille la première voiture de police devant le joueur. */
+export function cityRushBazookaTarget({
+  attackerDistance = 0,
+  attackerLane = 0,
+  police = [],
+  maxDistance = CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+} = {}) {
+  const policeTargets = (Array.isArray(police) ? police : []).filter((vehicle) => (
+    vehicle
+    && vehicle.isPolice === true
+    && vehicle.active !== false
+    && vehicle.destroyed !== true
+    && (!Number.isFinite(Number(vehicle.health)) || Number(vehicle.health) > 0)
+  ));
+  return cityRushStraightShotTarget({ attackerDistance, attackerLane, targets: policeTargets, maxDistance });
+}
+
+/** Zone circulaire du bazooka, mesurée en « cases » de voie (2,1 m). */
+export function cityRushBazookaBlastContains({
+  centerDistance = 0,
+  centerX = 0,
+  vehicleDistance = 0,
+  vehicleX = 0,
+  radiusCells = CITY_RUSH_BAZOOKA_BLAST_CELLS,
+} = {}) {
+  const centerD = Number(centerDistance);
+  const centerLateral = Number(centerX);
+  const vehicleD = Number(vehicleDistance);
+  const vehicleLateral = Number(vehicleX);
+  const radius = Math.max(0, Number(radiusCells) || 0);
+  if (![centerD, centerLateral, vehicleD, vehicleLateral].every(Number.isFinite)) return false;
+  const longitudinalCells = Math.abs(vehicleD - centerD) / CITY_RUSH_LANE_WIDTH;
+  const lateralCells = Math.abs(vehicleLateral - centerLateral) / CITY_RUSH_LANE_WIDTH;
+  return Math.hypot(longitudinalCells, lateralCells) <= radius;
+}
+
 export function cityRushStraightShotSweptHit({
   lane,
   fromDistance = 0,
@@ -3705,6 +3759,34 @@ export function cityRushMiniGarageTrackDistances({
  */
 export function cityRushMiniGarageAvailable({ sprint = false } = {}) {
   return !sprint;
+}
+
+/**
+ * Ramassage du bazooka à l'entrée de l'entrepôt : une seule traversée sur la
+ * voie extérieure, puis le bonus est définitivement consommé pour cette course.
+ */
+export function cityRushBazookaPickupCanUse({
+  previousDistance,
+  nextDistance,
+  pickupDistance,
+  playerLane,
+  pickupLane,
+  halfLength = CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH,
+  used = false,
+} = {}) {
+  const previous = Number(previousDistance);
+  const next = Number(nextDistance);
+  const target = Number(pickupDistance);
+  const parsedHalf = Number(halfLength);
+  const half = Math.max(0, Number.isFinite(parsedHalf) ? parsedHalf : CITY_RUSH_BAZOOKA_PICKUP_HALF_LENGTH);
+  return !used
+    && Number.isFinite(previous)
+    && Number.isFinite(next)
+    && next >= previous
+    && Number.isFinite(target)
+    && Number(playerLane) === Number(pickupLane)
+    && previous <= target + half
+    && next >= target - half;
 }
 
 /**

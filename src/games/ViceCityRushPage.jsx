@@ -31,6 +31,7 @@ import { fetchViceCityProgress, saveViceCityProgress, viceCityApiEnabled } from 
 import {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
+  CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
   CITY_RUSH_DISTANCE,
   CITY_RUSH_DRIVERS,
   CITY_RUSH_FINAL_LAP_LOOPS,
@@ -226,6 +227,9 @@ const EMPTY_HUD = {
   rank: 3,
   racers: [],
   inventory: createCityRushInventory(),
+  bazookaAmmo: 0,
+  bazookaPickupTaken: false,
+  bazookaEnabled: false,
   score: 0,
   pickups: 0,
   slowLeft: 0,
@@ -295,6 +299,18 @@ function cashRewardReason(result) {
   return `RÉCOMPENSE · ${ordinal(result?.rank).toUpperCase()} PLACE`;
 }
 function PowerIcon({ type, className = '' }) {
+  if (type === 'bazooka') {
+    return (
+      <svg className={className} viewBox="0 0 32 32" aria-hidden="true" fill="currentColor">
+        <path d="M3 12.2h17.2l5.3-3.6v14.8l-5.3-3.6H3z" />
+        <path d="M20 11.7 27.8 7v18L20 20.3z" />
+        <path d="M6 12.2 2.4 9.7v12.6L6 19.8z" />
+        <rect x="10" y="19.4" width="2.4" height="6.4" rx="0.6" />
+        <rect x="16" y="19.4" width="2.4" height="4.6" rx="0.6" />
+        <path d="m29 13 2.8 3-2.8 3z" />
+      </svg>
+    );
+  }
   if (type === 'pistol') {
     return (
       <svg className={className} viewBox="0 0 32 32" aria-hidden="true" fill="currentColor">
@@ -544,6 +560,7 @@ export default function ViceCityRushPage() {
     return {
       weaponsEnabled: rules.weaponsEnabled !== false,
       policeEnabled: rules.policeEnabled !== false,
+      bazookaEnabled: rules.bazookaEnabled !== false,
       playerHealthOverride: rules.playerHealthOverride ?? null,
       rivalCarIds: rules.rivalCarIds || null,
       rivalPace: rules.rivalPace || null,
@@ -552,6 +569,7 @@ export default function ViceCityRushPage() {
   }, [storyMode, currentStoryRace]);
   const storyWeaponsOn = !storyMode || storyRules?.weaponsEnabled !== false;
   const storyPoliceOn = !storyMode || storyRules?.policeEnabled !== false;
+  const bazookaMode = cityId === 'vice-city' && !sprintMode && storyWeaponsOn && storyPoliceOn && storyRules?.bazookaEnabled !== false;
   // Chronos de référence des chapitres contre-la-montre : cible fixe de la
   // TEMPESTA prêtée sur le Ring, par calculé sur la voiture engagée en Sprint.
   const storyTargetTime = useMemo(
@@ -1347,6 +1365,31 @@ export default function ViceCityRushPage() {
                     </button>
                   );
                 })()}
+                {bazookaMode && (() => {
+                  const ammo = Math.max(0, Math.min(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, Number(hud.bazookaAmmo) || 0));
+                  const ready = ammo > 0;
+                  const exhausted = hud.bazookaPickupTaken && ammo === 0;
+                  const stateLabel = ready ? `${ammo} TIR${ammo > 1 ? 'S' : ''} · X` : exhausted ? 'ÉPUISÉ' : 'À RAMASSER';
+                  const hint = ready
+                    ? `Tirer au bazooka · ${ammo} tir${ammo > 1 ? 's' : ''} restant${ammo > 1 ? 's' : ''} · touche X`
+                    : exhausted
+                      ? 'Bazooka épuisé : les deux tirs ont été utilisés'
+                      : 'Bazooka verrouillé : ramasse le bonus jaune dans l’entrepôt au dernier tour';
+                  return (
+                    <button
+                      type="button"
+                      className={`city-rush-bazooka-button${ready ? ' is-ready' : ' is-empty'}`}
+                      onClick={() => actionsRef.current?.('bazooka')}
+                      disabled={!ready}
+                      title={hint}
+                      aria-label={hint}
+                    >
+                      <span className="city-rush-bazooka-label">BAZOOKA</span>
+                      <span className="city-rush-bazooka-icon"><PowerIcon type="bazooka" /></span>
+                      <span className="city-rush-bazooka-status">{stateLabel}</span>
+                    </button>
+                  );
+                })()}
                 </div>
               </div>
             )}
@@ -1492,6 +1535,7 @@ export default function ViceCityRushPage() {
                           <b>{m.name}</b>
                           <small>{m.label}</small>
                           <span className="city-rush-mode-description">{m.desc}</span>
+                          {cityId === 'vice-city' && m.format !== 'sprint' && <span className="city-rush-mode-bazooka-hint">BAZOOKA · 2 TIRS · ENTREPÔT JAUNE AU DERNIER TOUR</span>}
                           <span className="city-rush-mode-card-footer">
                             <span className="city-rush-mode-laps"><i />{m.format === 'sprint' ? `${m.checkpoints} CHECKPOINTS · ${CITY_RUSH_SPRINT_DISTANCE} M` : `${m.laps} TOUR${m.laps > 1 ? 'S' : ''} · ${cityRushRaceDistance(m.laps)} M`}</span>
                             <span className="city-rush-card-action">VILLE <i aria-hidden="true">↗</i></span>
@@ -1920,8 +1964,8 @@ export default function ViceCityRushPage() {
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOUR${currentLaps > 1 ? 'S' : ''}`} · {currentDistance} M</span>
-            <span className="city-rush-desktop-hint">← → / Q D : VOIES (MAINTENIR) {sprintMode || !storyWeaponsOn ? '' : <><b>·</b> Z : MITRAILLEUSE </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
-            <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE{sprintMode ? ' · SOLO CONTRE LA MONTRE' : !storyWeaponsOn ? ' · COURSE PURE, SANS ARME' : ' · OBJETS EN BAS'}</span>
+            <span className="city-rush-desktop-hint">← → / Q D : VOIES (MAINTENIR) {sprintMode || !storyWeaponsOn ? '' : <><b>·</b> Z : MITRAILLEUSE {bazookaMode && <><b>·</b> X : BAZOOKA</>} </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
+            <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE{sprintMode ? ' · SOLO CONTRE LA MONTRE' : !storyWeaponsOn ? ' · COURSE PURE, SANS ARME' : bazookaMode ? ' · OBJETS EN BAS · X : BAZOOKA' : ' · OBJETS EN BAS'}</span>
           </div>
         </section>
 
@@ -1979,7 +2023,7 @@ export default function ViceCityRushPage() {
           </section>
           ) : (
           <section className="city-rush-side-card city-rush-item-guide">
-            <div className="city-rush-side-heading"><span>OBJETS</span><i>{storyMode && !storyWeaponsOn ? 'SANS ARME · TURBO' : '1 ARME + TURBO'}</i></div>
+            <div className="city-rush-side-heading"><span>OBJETS</span><i>{storyMode && !storyWeaponsOn ? 'SANS ARME · TURBO' : bazookaMode ? '2 ARMES + TURBO' : '1 ARME + TURBO'}</i></div>
             <h3>{storyMode && !storyWeaponsOn ? <>Course pure.<br /><em>Pilotage seul.</em></> : <>Ramasse.<br /><em>Déclenche.</em></>}</h3>
             <div className="city-rush-guide-list">
               {storyWeaponsOn && POWER_ORDER.map((type) => {
@@ -1992,6 +2036,13 @@ export default function ViceCityRushPage() {
                   </div>
                 );
               })}
+              {bazookaMode && (
+                <div className="city-rush-guide-item is-bazooka">
+                  <span><PowerIcon type="bazooka" /></span>
+                  <div><b>BAZOOKA · {CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP} TIRS · DERNIER TOUR</b><small>À Vice City, traverse l’entrepôt jaune sur le bas-côté au dernier tour. X ou le bouton jaune tire droit : la première voiture de police touchée explose, ainsi que toute patrouille dans un rayon de deux cases. Chaque tir compte.</small></div>
+                  <kbd>X · 2</kbd>
+                </div>
+              )}
               {storyMode && !storyWeaponsOn && (
                 <div className="city-rush-guide-item is-solo">
                   <span className="city-rush-guide-glyph" aria-hidden="true">◎</span>

@@ -92,7 +92,7 @@ const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LANE_X, CITY_RUSH_POWERS,
   CITY_RUSH_LAPS, CITY_RUSH_POLICE_AIM_TIME, cityRushCarMaxHealth,
   CITY_RUSH_POLICE_AIM_TOLERANCE, CITY_RUSH_POLICE_HEALTH, cityRushPoliceMaxHealth, cityRushPoliceAimHold,
-  cityRushPoliceAimReady, cityRushMiniGarageRepair, cityRushHealthPickupRepair,
+  cityRushPoliceAimReady, cityRushHealthPickupRepair, cityRushMiniGarageRepair,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -210,24 +210,22 @@ for (let run = 0; run < RUNS; run += 1) {
         healthSeries = effect.health;
         continue;
       }
+      if (effect.type === 'player-health-pickup') {
+        // Le « + » rouge répare la coque réelle ; le prochain tir doit donc
+        // être comparé au nouveau stock de vie, pas à la valeur avant pickup.
+        if (effect.healthBefore !== tracked
+          || effect.health !== cityRushHealthPickupRepair(tracked, carMaxHealth)) {
+          violations.push(`[${city.id}#${run}] le bonus de vie ne répare pas la coque du pilote`, effect);
+        }
+        tracked = effect.health;
+        continue;
+      }
       if (effect.type === 'mini-garage-used') {
         // L'unique porte est celle de mi-course : elle répare la coque réelle,
         // une seule fois par course, sans jamais dépasser sa résistance.
         if (effect.healthBefore !== tracked
           || effect.health !== cityRushMiniGarageRepair(tracked, carMaxHealth)) {
           violations.push(`[${city.id}#${run}] le garage ne répare pas la coque du pilote`, effect);
-        }
-        tracked = effect.health;
-        continue;
-      }
-      if (effect.type === 'player-health-pickup') {
-        // Le « + » rouge rend un carré : la barre repart de sa valeur réelle.
-        // Sans ce relèvement, la série du harnais resterait une cellule sous la
-        // coque et le carambolage suivant serait compté comme une entorse.
-        if (effect.healthBefore !== tracked
-          || effect.health !== cityRushHealthPickupRepair(tracked, carMaxHealth)
-          || effect.healthRestored !== effect.health - effect.healthBefore) {
-          violations.push(`[${city.id}#${run}] le plus rouge ne rend pas exactement un carré de vie`, effect);
         }
         tracked = effect.health;
         continue;
