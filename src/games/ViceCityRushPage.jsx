@@ -484,6 +484,11 @@ export default function ViceCityRushPage() {
   const [worldError, setWorldError] = useState('');
   const [tutorialMode, setTutorialMode] = useState(false);
   const [tutorialGuideOpen, setTutorialGuideOpen] = useState(false);
+  // Le tour guidé se joue tout seul : la page ne fait que suivre la leçon
+  // publiée par le moteur (`onTutorial`) et compter les tics verts.
+  const [tutorialLive, setTutorialLive] = useState({ index: 0, police: false, complete: false });
+  const [tutorialDoneCount, setTutorialDoneCount] = useState(0);
+  const [tutorialTick, setTutorialTick] = useState(null);
   const [soundOn, setSoundOn] = useState(readSoundPref);
   const audioRef = useRef(null);
   const soundOnRef = useRef(soundOn);
@@ -1026,6 +1031,12 @@ export default function ViceCityRushPage() {
     setResult(null);
     setStoryAlert(null);
     setHud(EMPTY_HUD);
+    // Nouveau tour guidé : la première fiche repart de zéro, sans tic vert.
+    if (tutorial) {
+      setTutorialLive({ index: 0, police: false, complete: false });
+      setTutorialDoneCount(0);
+      setTutorialTick(null);
+    }
     // Le message du garage ne suit pas la voiture en piste : le départ efface
     // le dernier mot des menus, sinon il réapparaîtrait à l'arrivée.
     setToast(null);
@@ -1385,6 +1396,30 @@ export default function ViceCityRushPage() {
   // garde ses propres signaux — fumée, éclats, halo rouge du viseur, sirènes,
   // étoiles de recherche, carte OBJECTIF du HUD — et la page ne retient que ce
   // qui change l'affichage du scénario.
+  // ── Le tour guidé, leçon par leçon ──────────────────────────────────────
+  // Le moteur joue la démonstration : il annonce la leçon qu'il commençait
+  // (`lesson-start`), celle dont l'action vient d'être réussie en piste — le
+  // tic vert — (`lesson-complete`) et la fin du tour (`complete`).
+  function tutorialEvent(event) {
+    if (!event) return;
+    if (event.type === 'lesson-start') {
+      setTutorialLive({ index: event.index || 0, police: Boolean(event.police), complete: false });
+      return;
+    }
+    if (event.type === 'lesson-complete') {
+      setTutorialDoneCount((count) => Math.max(count, (Number(event.index) || 0) + 1));
+      setTutorialTick({
+        index: Number(event.index) || 0,
+        label: event.success || null,
+        nonce: `${event.index}-${Date.now()}`,
+      });
+      return;
+    }
+    if (event.type === 'complete') {
+      setTutorialLive((live) => ({ ...live, index: Math.max(0, (Number(event.total) || 1) - 1), complete: true }));
+    }
+  }
+
   function effectMessage(effect) {
     if (!effect) return;
     if (effect.type === 'bazooka-impact') {
@@ -1540,7 +1575,7 @@ export default function ViceCityRushPage() {
             className={`city-rush-viewport${phase === 'intro' ? ' is-intro' : ''}${phase === 'playing' ? ' is-live' : ''}${tutorialMode ? ' is-tutorial' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}${policeAim > 0 && phase === 'playing' ? ' is-aimed' : ''}`}
             style={policeAim > 0 ? { '--cr-aim': policeAim.toFixed(2) } : undefined}
           >
-            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={tutorialMode || (storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart)} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} tutorialMode={tutorialMode} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} audioRef={audioRef} />
+            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={!tutorialMode && (storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart)} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} tutorialMode={tutorialMode} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} onTutorial={tutorialEvent} audioRef={audioRef} />
             <div className="city-rush-vignette" aria-hidden="true" />
             {bazookaImpactPulse > 0 && (
               <div
@@ -1845,7 +1880,7 @@ export default function ViceCityRushPage() {
 
                     <button type="button" className="city-rush-tutorial-launch" onClick={startTutorialRace}>
                       <span className="city-rush-tutorial-launch-mark" aria-hidden="true">▶</span>
-                      <span><b>APPRENDRE À ROULER</b><small>{CITY_RUSH_TUTORIAL_STEPS.length} mini-tutos · 1 tour guidé · env. {CITY_RUSH_TUTORIAL_DURATION_SECONDS} s de conseils</small></span>
+                      <span><b>APPRENDRE À ROULER</b><small>{CITY_RUSH_TUTORIAL_STEPS.length} mini-tutos joués tout seuls · la voiture conduit, chaque leçon se valide d’un tic vert · env. {CITY_RUSH_TUTORIAL_DURATION_SECONDS} s</small></span>
                       <i aria-hidden="true">↗</i>
                     </button>
 
@@ -2488,6 +2523,11 @@ export default function ViceCityRushPage() {
                 visible={tutorialGuideOpen && (phase === 'playing' || phase === 'paused')}
                 coursePhase={phase}
                 onClose={() => setTutorialGuideOpen(false)}
+                lessonIndex={tutorialLive.index}
+                completedCount={tutorialDoneCount}
+                tick={tutorialTick}
+                police={tutorialLive.police}
+                complete={tutorialLive.complete}
               />
             )}
           </div>

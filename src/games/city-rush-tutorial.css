@@ -127,10 +127,27 @@
 
 .cr-tutorial-progress-segment > span {
   display: block;
+  position: relative;
   height: 3px;
-  overflow: hidden;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Le tic vert de l'étape réussie : une pastille pleine au-dessus de la barre. */
+.cr-tutorial-progress-segment > span > b {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #54ead1;
+  color: #04241d;
+  font: 900 8px/1 system-ui, sans-serif;
+  box-shadow: 0 0 10px rgba(84, 234, 209, 0.55);
 }
 
 .cr-tutorial-progress-segment i {
@@ -144,7 +161,18 @@
 }
 
 .cr-tutorial-progress-segment.is-done i { transform: scaleX(1); }
-.cr-tutorial-progress-segment.is-current i.is-animating { animation: crTutorialProgress linear forwards; }
+/* La démonstration mène le rythme : la leçon en cours garde sa barre pleine et
+   respire doucement, en attendant que l'action soit réussie en piste. */
+.cr-tutorial-progress-segment.is-current i,
+.cr-tutorial-progress-segment.is-current i.is-animating {
+  transform: scaleX(1);
+  animation: crTutorialPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes crTutorialPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.34; }
+}
 
 @keyframes crTutorialProgress {
   to { transform: scaleX(1); }
@@ -769,4 +797,101 @@
   .cr-tutorial-layer.is-in-game .cr-tutorial-panel { max-height: 63vh; }
   .cr-tutorial-layer.is-in-game .cr-tutorial-art { min-height: 92px; max-height: 104px; }
   .cr-tutorial-layer.is-in-game .cr-tutorial-main { gap: 7px; padding-block: 6px; }
+}
+
+/* ── Le tic vert : la leçon vient d'être réussie en piste ─────────────── */
+.cr-tutorial-tick-row {
+  flex: 0 0 auto;
+  padding: 8px 21px 0;
+}
+
+.cr-tutorial-tick {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px;
+  border: 1px solid rgba(84, 234, 209, 0.42);
+  border-radius: 12px;
+  background: linear-gradient(120deg, rgba(84, 234, 209, 0.18), rgba(84, 234, 209, 0.05));
+  color: #d8fff6;
+  font: 800 8px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+  animation: crTutorialTickIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cr-tutorial-tick > span {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #54ead1;
+  color: #04241d;
+  font: 900 11px/1 system-ui, sans-serif;
+  box-shadow: 0 0 14px rgba(84, 234, 209, 0.6);
+}
+
+.cr-tutorial-tick > b { flex: 1 1 auto; min-width: 0; }
+.cr-tutorial-tick > i { color: rgba(216, 255, 246, 0.6); font-style: normal; }
+
+.cr-tutorial-tick.is-idle {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(226, 234, 244, 0.86);
+}
+
+.cr-tutorial-tick.is-idle > span {
+  background: rgba(255, 255, 255, 0.12);
+  color: #cfe6ff;
+  box-shadow: none;
+}
+
+@keyframes crTutorialTickIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── La police dans la démonstration ──────────────────────────────────── */
+.cr-tutorial-police-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 99px;
+  color: rgba(226, 234, 244, 0.72);
+  font: 800 7px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.cr-tutorial-police-chip > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.cr-tutorial-police-chip.is-live {
+  border-color: rgba(255, 84, 110, 0.5);
+  background: rgba(255, 84, 110, 0.12);
+  color: #ffd5dd;
+}
+
+.cr-tutorial-police-chip.is-live > i {
+  background: #ff546e;
+  box-shadow: 0 0 10px rgba(255, 84, 110, 0.75);
+}
+
+@media (max-width: 760px) {
+  .cr-tutorial-police-chip { display: none; }
+  .cr-tutorial-tick-row { padding: 6px 12px 0; }
+  .cr-tutorial-tick { gap: 6px; padding: 6px 8px; font-size: 6px; }
+  .cr-tutorial-tick > span { width: 14px; height: 14px; font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cr-tutorial-tick { animation: none; }
+  .cr-tutorial-progress-segment.is-current i { animation: none; }
 }

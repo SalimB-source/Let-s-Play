@@ -143,6 +143,7 @@ import {
   addCityRushCharge,
   approachCityRushSpeed,
   advanceCityRushOncomingBonus,
+  CITY_RUSH_CLEAN_LINE_RAMP_DURATION,
   cityRushCleanLineFactor,
   cityRushOncomingBonusFactor,
   CITY_RUSH_ONCOMING_BONUS_MAX,
@@ -244,6 +245,15 @@ import {
   shutoC1CoverAt,
   shutoC1Readout,
 } from './cityRushRules';
+import {
+  CITY_RUSH_TUTORIAL_LESSON_TIMEOUT,
+  CITY_RUSH_TUTORIAL_MANUAL_GRACE,
+  CITY_RUSH_TUTORIAL_POLICE_FROM_ID,
+  CITY_RUSH_TUTORIAL_STEPS,
+  CITY_RUSH_TUTORIAL_STEER_INTERVAL,
+  CITY_RUSH_TUTORIAL_STEP_DURATION_MS,
+  CITY_RUSH_TUTORIAL_TICK_MS,
+} from './cityRushTutorial.js';
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
 import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
@@ -1980,8 +1990,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   playerCar.position.set(laneX(playerStartLane), 0, PLAYER_Z);
   scene.add(playerCar);
 
-  // Le Sprint se court en solo, contre le chrono : aucun rival en piste.
-  const racerSpecs = sprint ? [] : [
+  // Le Sprint se court en solo, contre le chrono : aucun rival en piste. Le
+  // tutoriel aussi : la voiture y roule seule, la route reste lisible et les
+  // accessoires de la leçon ne sont jamais raflés par un adversaire.
+  const racerSpecs = (sprint || tutorialMode) ? [] : [
     { id: 'nova', lane: defaultLanes[1], phase: 0.6, changeIn: 1.4, skidSide: 1 },
     { id: 'juno', lane: defaultLanes[2], phase: 2.4, changeIn: 2.1, skidSide: -1 },
   ];
@@ -2040,7 +2052,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   racers.forEach((racer) => scene.add(racer.mesh));
 
   function applyRoster(nextRoster) {
-    if (!Array.isArray(nextRoster) || nextRoster.length < 3) return;
+    // Le tutoriel et le Sprint partent avec un roster solo (le pilote seul) :
+    // les autres courses exigent les trois profils habituels.
+    const minimumRoster = (tutorialMode || sprint) ? 1 : 3;
+    if (!Array.isArray(nextRoster) || nextRoster.length < minimumRoster) return;
     currentRoster = nextRoster;
     playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
     // Le roster actualise l'identité affichée par le HUD ; les voitures restent
@@ -2061,9 +2076,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
-  // Pas une seule voiture de police dans le trafic du Sprint. Certains
-  // parcours (routes de campagne peu fréquentées comme la Mexique) réduisent
-  // fortement le nombre de véhicules grâce à `trafficCount`/`oncomingCount`.
+  // Pas une seule voiture de police dans le trafic du Sprint ni dans celui de
+  // l'entraînement guidé. Certains parcours (routes de campagne peu fréquentées
+  // comme la Mexique) réduisent fortement le nombre de véhicules grâce à
+  // `trafficCount`/`oncomingCount`.
   // Un parcours peut restreindre son trafic (le Ring ne voit ni camion-poubelle
   // ni berline de ville) : `trafficTypes` liste alors les modèles autorisés.
   const courseTrafficTypes = Array.isArray(city.trafficTypes) && city.trafficTypes.length
@@ -2072,14 +2088,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const allowedTrafficTypes = courseTrafficTypes.length ? courseTrafficTypes : CITY_RUSH_TRAFFIC_TYPES;
   const nonPoliceTrafficTypes = allowedTrafficTypes.filter((spec) => !isCityRushPoliceTrafficType(spec.id));
   const sprintTrafficFallback = CITY_RUSH_TRAFFIC_TYPES.filter((spec) => !isCityRushPoliceTrafficType(spec.id));
-  const trafficTypes = sprint
+  // Pas une seule berline de police sur la route du Sprint ni de l'entraînement
+  // guidé : la démonstration démarre sur une route vide de police, et c'est la
+  // leçon des tirs qui fait entrer l'escouade en piste (voir `releaseTutorialPolice`).
+  const trafficTypes = (sprint || tutorialMode)
     ? (nonPoliceTrafficTypes.length ? nonPoliceTrafficTypes : sprintTrafficFallback)
     : allowedTrafficTypes;
   const cityTrafficCount = Math.max(0, Math.min(CITY_RUSH_TRAFFIC_COUNT, Number(city.trafficCount)));
   const effectiveTrafficCount = Number.isFinite(cityTrafficCount) && cityTrafficCount > 0 ? cityTrafficCount : CITY_RUSH_TRAFFIC_COUNT;
+  // Entraînement guidé : la route reste vivante, mais deux fois plus clairsemée.
+  // La démonstration doit pouvoir tenir une voie (ligne propre) et chaque leçon
+  // se lire — le trafic garde de quoi montrer les dépassements et l'évitement.
+  const trafficCount = tutorialMode ? Math.max(2, Math.round(effectiveTrafficCount / 2)) : effectiveTrafficCount;
   const cityOncomingCount = Math.max(0, Math.min(CITY_RUSH_ONCOMING_COUNT, Number(city.oncomingCount)));
   const effectiveOncomingCount = Number.isFinite(cityOncomingCount) && cityOncomingCount >= 0 ? cityOncomingCount : CITY_RUSH_ONCOMING_COUNT;
-  const trafficCars = Array.from({ length: effectiveTrafficCount }, (_, index) => {
+  const trafficCars = Array.from({ length: trafficCount }, (_, index) => {
     const spec = trafficTypes[index % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
     if (isCityRushPoliceTrafficType(spec.id)) {
@@ -2482,7 +2505,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function raiseWantedLevel({ police = false, destroyed = false, reason = 'vehicle-hit' } = {}) {
-    if (sprint || !active || finished || !storyPoliceEnabled) return wantedLevel;
+    // Entraînement guidé : les étoiles ne montent pas. La leçon explique la
+    // herse et les SUV, la démonstration ne les déclenche pas — une herse en
+    // travers de la leçon du mini-garage n'apprendrait rien à personne.
+    if (sprint || tutorialMode || !active || finished || !storyPoliceEnabled) return wantedLevel;
     const previous = wantedLevel;
     if (destroyed) {
       policeDestroyedByPlayer = Math.min(CITY_RUSH_POLICE_DESTROYS_TO_MAX_STARS, policeDestroyedByPlayer + 1);
@@ -2981,6 +3007,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerHealth = cityRushMiniGarageRepair(playerHealth, playerMaxHealth);
     playerHealthFlash = 0;
     garage.used = true;
+    // Leçon mini-garage : la traversée du portique valide la démonstration.
+    noteTutorialAction('garage');
     policeDestroyedByPlayer = 0;
     wantedLevel = cityRushMiniGarageWantedLevel(previousStars);
     garage.group.userData.used = true;
@@ -3021,7 +3049,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         continue;
       }
       const garageExitDistance = garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH;
-      if (cityRushMiniGarageCanUse({
+      // Entraînement guidé : le portique ne compte que pendant sa leçon. Sinon
+      // la voiture le traverserait par hasard en pleine démonstration du turbo,
+      // la poursuite tomberait et le mini-tuto du garage n'aurait plus rien à
+      // franchir — l'escouade non plus, d'ailleurs.
+      const garageLessonLive = !tutorialMode || tutorialLesson()?.id === 'garage';
+      if (garageLessonLive && cityRushMiniGarageCanUse({
         previousDistance,
         nextDistance: distance,
         garageExitDistance,
@@ -3036,9 +3069,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         useMiniGarage(garage);
         continue;
       }
-      // Une porte ratée revient au même repère dans la boucle suivante.
+      // Leçon « Mini-garage » : le portique vient à hauteur de démonstration.
+      // Sans cela, la voiture pouvait laisser la porte de mi-course derrière
+      // elle avant la leçon et attendre la boucle suivante pour la franchir.
+      if (tutorialMode && garageLessonLive && !garage.used && garage.trackDistance - distance > 320) {
+        garage.trackDistance = distance + 170;
+      }
+      // Une porte ratée revient au même repère dans la boucle suivante. Dans
+      // l'entraînement guidé, elle revient bien plus vite : la démonstration
+      // attend son portique, pas 1 200 m de plus.
+      const retryOffset = tutorialMode ? 200 : CITY_RUSH_LAP_LENGTH;
       while (!garage.used && garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance) {
-        garage.trackDistance += CITY_RUSH_LAP_LENGTH;
+        garage.trackDistance += retryOffset;
       }
       placeMiniGarage(garage);
     }
@@ -3071,6 +3113,539 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
     }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ── L'entraînement joué par la voiture elle-même ───────────────────────
+  // En mode tutoriel, le monde ne se contente plus d'afficher des fiches : il
+  // **joue** les dix mini-tutos. La voiture se conduit toute seule (mêmes
+  // capteurs que les rivaux : `chooseCityRushAiLane`), le coach installe devant
+  // elle l'accessoire de la leçon, et chaque étape se termine quand son action
+  // est réellement effectuée en piste — un saut, une esquive, un tour de
+  // mini-garage. Le tic vert est alors publié (`tutorial` → `lesson-complete`),
+  // la fiche suivante se lance, et ainsi de suite.
+  //
+  // La route reste vide de police jusqu'à la leçon des tirs : aucune berline
+  // dans le trafic, aucune patrouille à croiser, aucune étoile — c'est
+  // `releaseTutorialPolice()` qui fait entrer l'escouade, sur la leçon « AK-47 ».
+  // ══════════════════════════════════════════════════════════════════════
+  const tutorialSteps = CITY_RUSH_TUTORIAL_STEPS;
+  const tutorialPoliceFromIndex = Math.max(0, tutorialSteps.findIndex((step) => step.id === CITY_RUSH_TUTORIAL_POLICE_FROM_ID));
+  const tutorialStepSeconds = CITY_RUSH_TUTORIAL_STEP_DURATION_MS / 1000;
+  const tutorialTickSeconds = CITY_RUSH_TUTORIAL_TICK_MS / 1000;
+  // Leçons « à accessoire » : le coach pose et repose le bonus tant que la
+  // démonstration n'a pas réussi son action.
+  const tutorialPropActionByType = {
+    [CITY_RUSH_POWERS.PISTOL]: 'shoot',
+    [CITY_RUSH_PICKUPS.BOOST]: 'boost',
+    [CITY_RUSH_PICKUPS.HEALTH]: 'health',
+  };
+  let tutorialLessonIndex = 0;
+  let tutorialLessonElapsed = 0;
+  let tutorialActionDone = false;
+  let tutorialState = 'lesson'; // lesson | tick | done
+  let tutorialTickLeft = 0;
+  let tutorialComplete = false;
+  let tutorialFinishLeft = 0;
+  let tutorialPoliceReleased = false;
+  let tutorialSteerCooldown = 0;
+  let tutorialManualLeft = 0;
+  let tutorialFireCooldown = 0;
+  let tutorialAimSeen = false;
+  let tutorialPoliceArmLeft = 0;
+  let tutorialPropLeft = 0;
+  let tutorialWatchdogLeft = 0;
+  // Dernière action réellement réussie en piste (publiée dans le HUD) : c'est
+  // la preuve, lisible de l'extérieur, que le tic vert vient bien de la piste.
+  let tutorialLastAction = null;
+
+  const tutorialLesson = () => tutorialSteps[Math.min(tutorialLessonIndex, tutorialSteps.length - 1)];
+
+  /** La police est-elle en piste ? (hors tutoriel : toujours, comme avant) */
+  const tutorialPoliceOn = () => !tutorialMode || tutorialPoliceReleased;
+
+  /** Une berline tient-elle le pilote dans sa mire en ce moment ? */
+  function tutorialAimOnPlayer() {
+    return activePursuers().some((police) => police.aimTargetId === 'player' && police.aimLeft > 0);
+  }
+
+  /**
+   * L'action demandée par la leçon vient d'être effectuée en piste. On la
+   * verrouille : le tic vert tombera dès que la fiche aura été affichée le
+   * temps minimal (`CITY_RUSH_TUTORIAL_STEP_DURATION_MS`).
+   */
+  function noteTutorialAction(action) {
+    if (!tutorialMode || tutorialComplete || tutorialState !== 'lesson') return false;
+    const lesson = tutorialLesson();
+    if (!lesson || lesson.action !== action || tutorialActionDone) return false;
+    tutorialActionDone = true;
+    tutorialLastAction = action;
+    return true;
+  }
+
+  /** Écart de voie de la voiture (pilote ou démonstration), avec ses traces. */
+  function changePlayerLane(nextLane) {
+    if (nextLane === playerLane || !canEnterLane('player', nextLane)) return false;
+    playerLane = nextLane;
+    // Changer de voie ne ralentit pas : la voiture glisse à pleine allure. Seul
+    // le bonus de « ligne propre » retombe à zéro.
+    playerCleanLineTime = 0;
+    if (tutorialMode) {
+      noteTutorialAction('steer');
+      // Une esquive compte quand la mire rouge était déjà sur la voiture.
+      if (tutorialAimSeen && tutorialAimOnPlayer()) noteTutorialAction('dodge');
+    }
+    return true;
+  }
+
+  /** La leçon des tirs : la police entre en piste et prend la voiture en chasse. */
+  function releaseTutorialPolice() {
+    if (!tutorialMode || tutorialPoliceReleased || sprint) return;
+    tutorialPoliceReleased = true;
+    deployPolice();
+    emitHud(true);
+  }
+
+  /**
+   * Une unité de la poursuite est mise à portée de mire pour la leçon « La
+   * police » : sans munitions, personne ne peut viser — le coach charge donc
+   * l'unité la plus proche, comme si elle venait de rafler un chargeur rouge.
+   */
+  function armTutorialPolice() {
+    const pursuers = activePursuers();
+    if (!pursuers.length) return false;
+    if (pursuers.some((police) => isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL))) return true;
+    const closest = pursuers.reduce((best, police) => (
+      !best || Math.abs(police.distance - distance) < Math.abs(best.distance - distance) ? police : best
+    ), null);
+    if (!closest) return false;
+    closest.inventory = addCityRushCharge(closest.inventory, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
+    return true;
+  }
+
+  /**
+   * Le coach installe l'accessoire d'une leçon devant la voiture : il réutilise
+   * la rangée de bonus la plus proche et la remplit du seul objet attendu. La
+   * démonstration ne peut donc jamais rester sans chargeur rouge, sans éclair
+   * vert ni sans trousse de soins — même si la police ou un respawn les a
+   * raflés entre-temps.
+   */
+  function tutorialPlaceProp(type, lane = playerLane) {
+    if (!tutorialMode || !rows.length) return false;
+    const minGap = 48;
+    const maxGap = 220;
+    const already = rows.some((row) => (
+      row.trackDistance > distance + minGap
+      && row.trackDistance < distance + maxGap
+      && row.pickups.some((pickup) => pickup && pickup.type === type && pickup.lane === lane)
+    ));
+    if (already) return true;
+    const ahead = rows
+      .filter((row) => row.trackDistance > distance + 20)
+      .sort((a, b) => a.trackDistance - b.trackDistance);
+    const target = ahead[0];
+    if (!target) return false;
+    target.trackDistance = distance + minGap + randomRange(6, 28);
+    lastDistanceSlot = Math.max(lastDistanceSlot, target.trackDistance);
+    target.pickups = [{ lane, type }];
+    target.pickupClaims.clear();
+    target.crossedRacers.clear();
+    target.slots.forEach((slot, index) => {
+      const pickup = target.pickups[index];
+      if (!pickup) {
+        slot.visible = false;
+        return;
+      }
+      setPickupKind(slot, pickup.type, laneX(pickup.lane), shared);
+    });
+    return true;
+  }
+
+  /**
+   * Leçon « La police » : le coach ramène la berline armée dans le sillage de
+   * la voiture. L'escouade roule plus vite que la démonstration (12 % de plus,
+   * c'est sa règle) : sans ce placement, elle passait devant et la mire — qui
+   * ne se pose que sur une cible devant soi — ne se chargeait jamais.
+   */
+  function tutorialStagePoliceBehind() {
+    const pursuers = activePursuers();
+    if (!pursuers.length) return false;
+    const armed = pursuers.find((police) => isCityRushPowerCharged(police.inventory, CITY_RUSH_POWERS.PISTOL)) || pursuers[0];
+    if (!armed) return false;
+    if (!isCityRushPowerCharged(armed.inventory, CITY_RUSH_POWERS.PISTOL)) {
+      armed.inventory = addCityRushCharge(armed.inventory, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
+    }
+    if (armed.lane !== playerLane) {
+      armed.lane = playerLane;
+      armed.currentX = laneX(armed.lane);
+    }
+    const gap = distance - armed.distance;
+    if (gap < 13 || gap > 34) armed.distance = distance - (15 + randomRange(0, 9));
+    return true;
+  }
+
+  /** L'entrepôt du bazooka doit attendre la démonstration devant la voiture. */
+  function tutorialEnsureBazookaAhead() {
+    if (!bazookaWarehouseEnabled || !bazookaWarehouses.length || bazookaAmmo > 0) return true;
+    const ahead = bazookaWarehouses
+      .filter((warehouse) => !warehouse.taken && warehouse.trackDistance > distance + 30)
+      .sort((a, b) => a.trackDistance - b.trackDistance)[0];
+    // L'entrepôt le plus proche est déjà à portée de démonstration : on n'y
+    // touche pas. Au-delà, le coach le fait glisser à hauteur de leçon.
+    if (ahead && ahead.trackDistance - distance <= 200) return true;
+    const next = ahead || bazookaWarehouses.find((warehouse) => !warehouse.taken) || bazookaWarehouses[0];
+    if (!next) return false;
+    next.trackDistance = distance + 150;
+    next.taken = false;
+    next.group.userData.taken = false;
+    placeBazookaWarehouse(next);
+    return true;
+  }
+
+  /** Voie exigée par la leçon en cours, ou `null` si l'IA peut choisir. */
+  function tutorialForcedLane() {
+    const lesson = tutorialLesson();
+    if (!lesson || tutorialState !== 'lesson') return null;
+    // Leçon « La ligne propre » : la voie se tient. Tant que le bonus n'est pas
+    // chargé, la démonstration garde sa voie — quitte à rester derrière un
+    // véhicule lent, elle le double seulement si la voie se bouche franchement.
+    if (lesson.action === 'clean-line' && playerCleanLineTime < CITY_RUSH_CLEAN_LINE_RAMP_DURATION) {
+      const blocked = rollingTraffic().some((car) => (
+        car.lane === playerLane && car.distance > distance && car.distance - distance < 42
+      ));
+      if (!blocked) return playerLane;
+    }
+    // Leçon « La police » : la démonstration vient se placer dans la voie de la
+    // berline qui la suit, pour que la mire se pose sans attendre.
+    if (lesson.id === 'police' && !tutorialAimSeen) {
+      const pursuer = activePursuers()
+        .filter((police) => police.distance < distance + 10 && police.distance > distance - 160)
+        .sort((a, b) => Math.abs(a.distance - distance) - Math.abs(b.distance - distance))[0];
+      if (pursuer) return pursuer.lane;
+    }
+    if (lesson.id === 'bazooka' && bazookaAmmo <= 0) {
+      const warehouse = bazookaWarehouses.find((item) => !item.taken && item.trackDistance > distance + 20);
+      if (warehouse && warehouse.trackDistance - distance < 320) return bazookaPickupLane;
+    }
+    if (lesson.id === 'garage') {
+      const garage = miniGarages.find((item) => !item.used && item.trackDistance > distance + 20);
+      if (garage && garage.trackDistance - distance < 280) {
+        // La voie centrale la plus proche de la voiture : un écart à la fois.
+        return garage.lanes.reduce((best, lane) => (
+          Math.abs(lane - playerLane) < Math.abs(best - playerLane) ? lane : best
+        ), garage.lanes[0]);
+      }
+    }
+    if (lesson.id === 'ramp') {
+      const ramp = ramps
+        .filter((item) => item.trackDistance > distance + 10 && item.trackDistance - distance < 200)
+        .sort((a, b) => a.trackDistance - b.trackDistance)[0];
+      if (ramp) return ramp.lane;
+    }
+    if (lesson.prop) {
+      const row = rows
+        .filter((item) => item.trackDistance > distance + 18 && item.trackDistance - distance < 230)
+        .sort((a, b) => a.trackDistance - b.trackDistance)
+        .find((item) => item.pickups.some((pickup) => pickup && pickup.type === lesson.prop));
+      if (row) {
+        const pickup = row.pickups.find((item) => item && item.type === lesson.prop);
+        if (pickup && pickup.lane !== playerLane) return pickup.lane;
+      }
+    }
+    return null;
+  }
+
+  /** Voie la plus dégagée devant la voiture : la police peut s'y aligner. */
+  function tutorialCalmLane() {
+    const lookAhead = CITY_RUSH_AI_LOOKAHEAD;
+    const threats = [
+      ...rollingTraffic().map((traffic) => ({ lane: traffic.lane, distance: traffic.distance, speed: traffic.currentSpeed })),
+      ...activePursuers().map((police) => ({ lane: police.lane, distance: police.distance, speed: police.currentSpeed })),
+      ...oncomingCars.filter((car) => !car.rallied && !car.destroyed)
+        .map((car) => ({ lane: car.lane, distance: car.distance, speed: -car.currentSpeed, oncoming: true })),
+    ];
+    const score = (lane) => threats.reduce((total, threat) => {
+      if (threat.lane !== lane) return total;
+      const gap = threat.distance - distance;
+      if (!Number.isFinite(gap) || gap < 0 || gap > lookAhead) return total;
+      return total + (1 - gap / lookAhead) * (threat.oncoming ? 2 : 1);
+    }, 0);
+    let best = playerLane;
+    for (const lane of forwardLanes) {
+      if (Math.abs(lane - playerLane) > 2) continue;
+      const penalty = score(lane);
+      const cost = Math.abs(lane - playerLane) * 0.12 + penalty;
+      const bestCost = Math.abs(best - playerLane) * 0.12 + score(best);
+      if (cost < bestCost - 1e-9) best = lane;
+    }
+    return best;
+  }
+
+  /**
+   * Décision de voie de la démonstration : la contrainte de la leçon d'abord
+   * (conteneur jaune, portique, rampe, accessoire), sinon l'IA de course
+   * habituelle — trafic évité, bonus visés, cibles alignées.
+   */
+  /**
+   * La leçon « Le tremplin » : le coach fait glisser le prochain tremplin juste
+   * devant la voiture, dans sa voie. La démonstration ne peut donc pas rater son
+   * saut, même quand le mobilier de la boucle l'aurait posé trois voies plus
+   * loin — sans quoi la leçon attendrait son tremplin pendant que la course
+   * d'entraînement défile.
+   */
+  function tutorialEnsureRampAhead() {
+    if (!ramps.length) return false;
+    const minGap = 62;
+    const maxGap = 126;
+    // Un tremplin est « déjà en place » tant qu'il est dans la fenêtre de la
+    // leçon, contact compris : sans cette tolérance, le coach déplaçait le
+    // tremplin à l'image même où la voiture allait décoller.
+    const already = ramps.some((ramp) => (
+      ramp.trackDistance > distance - 2
+      && ramp.trackDistance < distance + maxGap
+      && ramp.lane === playerLane
+    ));
+    if (already) return true;
+    const target = ramps.slice().sort((a, b) => {
+      const gapA = a.trackDistance - distance;
+      const gapB = b.trackDistance - distance;
+      return (gapA > 0 ? gapA : Infinity) - (gapB > 0 ? gapB : Infinity);
+    })[0];
+    if (!target) return false;
+    target.trackDistance = distance + minGap + randomRange(4, 22);
+    target.lane = playerLane;
+    lastRampDistanceSlot = Math.max(lastRampDistanceSlot, target.trackDistance);
+    return true;
+  }
+
+  function tutorialTargetLane() {
+    const forced = tutorialForcedLane();
+    if (forced !== null && forced !== undefined) return forced;
+    const lesson = tutorialLesson();
+    // Leçon « La police » : tant que la mire n'est pas là, la voiture tient la
+    // voie la plus dégagée pour laisser une berline s'aligner derrière elle.
+    if (lesson?.id === 'police' && !tutorialAimSeen) return tutorialCalmLane();
+    const traffic = [
+      ...rollingTraffic().map((car) => ({ lane: car.lane, distance: car.distance, speed: car.currentSpeed })),
+      ...activePursuers().map((police) => ({ lane: police.lane, distance: police.distance, speed: police.currentSpeed })),
+      ...oncomingCars.filter((car) => !car.rallied && !car.destroyed)
+        .map((car) => ({ lane: car.lane, distance: car.distance, speed: -car.currentSpeed, oncoming: true })),
+    ];
+    const availableLanes = [playerLane];
+    for (const lane of [playerLane - 1, playerLane + 1]) {
+      if (lane >= 0 && lane < laneCount && canEnterLane('player', lane)) availableLanes.push(lane);
+    }
+    const weaponReady = isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL);
+    const targets = activePursuers()
+      .filter((police) => police.distance > distance + 2)
+      .map((police) => ({ lane: police.lane, distance: police.distance }));
+    return chooseCityRushAiLane({
+      currentLane: playerLane,
+      laneCount,
+      oncomingLanes,
+      distance,
+      speed: currentSpeed,
+      availableLanes,
+      pickups: visiblePickups(inventory, playerHealth, playerMaxHealth),
+      traffic,
+      ramps: ramps.map((ramp) => ({ lane: ramp.lane, distance: ramp.trackDistance })),
+      weaponReady,
+      targets,
+      chasing: false,
+      lookAheadDistance: CITY_RUSH_AI_LOOKAHEAD,
+      brakingRate: cityRushAiBrakingRate(playerProfile.accelerationRate),
+    });
+  }
+
+  /**
+   * Les armes de la démonstration : la rafale de la leçon AK-47, la roquette de
+   * la leçon bazooka. Elle ne tire que lorsque la voie est intéressante (une
+   * berline alignée) ou que la leçon le demande.
+   */
+  function tutorialWeapons(dt, lesson) {
+    tutorialFireCooldown = Math.max(0, tutorialFireCooldown - dt);
+    if (tutorialFireCooldown > 0 || playerStunLeft > 0 || playerWrecked || phase !== 'playing') return;
+    if (lesson?.action === 'shoot' && isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL)) {
+      if (usePower(CITY_RUSH_POWERS.PISTOL)) tutorialFireCooldown = 0.55;
+      return;
+    }
+    if (lesson?.action === 'bazooka' && bazookaAmmo > 0) {
+      if (useBazooka()) tutorialFireCooldown = 1.2;
+    }
+  }
+
+  /** Le tic vert : la fiche suivante se lancera au bout du délai de lecture. */
+  function completeTutorialLesson() {
+    const lesson = tutorialLesson();
+    tutorialState = 'tick';
+    tutorialTickLeft = tutorialTickSeconds;
+    tutorialActionDone = false;
+    getCallbacks().tutorial?.({
+      type: 'lesson-complete',
+      index: tutorialLessonIndex,
+      id: lesson?.id || null,
+      label: lesson?.label || null,
+      success: lesson?.success || null,
+      total: tutorialSteps.length,
+      elapsed,
+    });
+    emitHud(true);
+  }
+
+  /** Démarrage d'une leçon : accessoires posés, police éventuellement lâchée. */
+  function startTutorialLesson(index) {
+    tutorialLessonIndex = Math.max(0, Math.min(tutorialSteps.length - 1, index));
+    tutorialLessonElapsed = 0;
+    tutorialActionDone = false;
+    tutorialState = 'lesson';
+    tutorialAimSeen = false;
+    tutorialPropLeft = 0;
+    tutorialWatchdogLeft = CITY_RUSH_TUTORIAL_LESSON_TIMEOUT;
+    tutorialLastAction = null;
+    const lesson = tutorialLesson();
+    if (tutorialLessonIndex >= tutorialPoliceFromIndex) releaseTutorialPolice();
+    if (lesson?.id === 'police') {
+      // La mire ne peut venir que d'une berline chargée : le coach l'arme.
+      tutorialPoliceArmLeft = 0;
+      armTutorialPolice();
+    }
+    getCallbacks().tutorial?.({
+      type: 'lesson-start',
+      index: tutorialLessonIndex,
+      id: lesson?.id || null,
+      label: lesson?.label || null,
+      total: tutorialSteps.length,
+      police: tutorialPoliceReleased,
+      elapsed,
+    });
+    emitHud(true);
+  }
+
+  /**
+   * Conditions de réussite que la démonstration ne peut pas signaler à la
+   * source : la ligne propre tenue, la mire esquivée, la lecture de la dernière
+   * fiche. Les autres actions (tir, ramassage, saut, garage) sont notées là où
+   * elles se produisent.
+   */
+  function checkTutorialAction(lesson) {
+    if (!lesson) return;
+    if (lesson.action === 'clean-line' && playerCleanLineTime >= CITY_RUSH_CLEAN_LINE_RAMP_DURATION) {
+      noteTutorialAction('clean-line');
+      return;
+    }
+    // L'esquive, elle, est notée dans `changePlayerLane` : elle n'est valable
+    // que si la mire rouge était déjà posée sur la voiture.
+    if (lesson.action === 'debrief' && tutorialLessonElapsed >= tutorialStepSeconds) {
+      noteTutorialAction('debrief');
+    }
+  }
+
+  /**
+   * Une image du tutoriel : pilotage automatique, accessoires de la leçon,
+   * armes de démonstration, détection de la réussite — puis le tic vert et la
+   * leçon suivante.
+   */
+  function updateTutorial(dt) {
+    if (!tutorialMode || finished || phase !== 'playing') return;
+    if (tutorialComplete) {
+      tutorialFinishLeft = Math.max(0, tutorialFinishLeft - dt);
+      // Le tour guidé se clôt sur la ligne : après le dixième tic vert, la
+      // voiture termine sa boucle et la course s'achève sous le portique,
+      // comme une vraie course — jamais au milieu de la route.
+      if (tutorialFinishLeft <= 0 && distance >= effectiveDistance) finishRace({ tutorial: true });
+      return;
+    }
+    tutorialSteerCooldown = Math.max(0, tutorialSteerCooldown - dt);
+    tutorialManualLeft = Math.max(0, tutorialManualLeft - dt);
+    tutorialPoliceArmLeft = Math.max(0, tutorialPoliceArmLeft - dt);
+    const lesson = tutorialLesson();
+    if (tutorialState === 'lesson') {
+      tutorialLessonElapsed += dt;
+      tutorialWatchdogLeft = Math.max(0, tutorialWatchdogLeft - dt);
+      // ── Le pilotage automatique ───────────────────────────────────────
+      // Le pilote garde la main : après une touche, la démonstration s'efface
+      // quelques instants et le laisse conduire.
+      if (tutorialManualLeft <= 0 && tutorialSteerCooldown <= 0 && playerStunLeft <= 0 && !playerWrecked) {
+        const target = tutorialTargetLane();
+        if (Number.isFinite(target) && target !== playerLane && canEnterLane('player', target)) {
+          changePlayerLane(target);
+          tutorialSteerCooldown = CITY_RUSH_TUTORIAL_STEER_INTERVAL;
+        }
+      }
+      // ── Les accessoires de la leçon ───────────────────────────────────
+      tutorialPropLeft = Math.max(0, tutorialPropLeft - dt);
+      if (lesson?.prop && tutorialPropLeft <= 0) {
+        tutorialPlaceProp(lesson.prop, playerLane);
+        // Repose rapprochée : un écart de voie de la démonstration ne doit pas
+        // coûter une dizaine de secondes d'attente avant l'accessoire suivant.
+        tutorialPropLeft = 0.9;
+      }
+      if (lesson?.id === 'bazooka') tutorialEnsureBazookaAhead();
+      if (lesson?.id === 'ramp') tutorialEnsureRampAhead();
+      // ── Les armes de la leçon ─────────────────────────────────────────
+      tutorialWeapons(dt, lesson);
+      // ── La mire de la police, leçon « Poursuite » ─────────────────────
+      if (lesson?.id === 'police') {
+        if (!tutorialAimSeen && tutorialAimOnPlayer()) tutorialAimSeen = true;
+        if (!tutorialAimSeen && tutorialPoliceArmLeft <= 0) {
+          armTutorialPolice();
+          tutorialPoliceArmLeft = 4;
+        }
+        if (!tutorialAimSeen) tutorialStagePoliceBehind();
+        // La mire est là : la voiture se décale sur la voie voisine la plus
+        // dégagée — l'esquive est notée par `changePlayerLane`.
+        if (tutorialAimSeen && tutorialAimOnPlayer() && tutorialSteerCooldown <= 0 && tutorialManualLeft <= 0) {
+          const escape = [playerLane - 1, playerLane + 1]
+            .filter((lane) => lane >= 0 && lane < laneCount && canEnterLane('player', lane))
+            .sort((a, b) => (
+              Math.abs(laneX(a) - playerX) - Math.abs(laneX(b) - playerX)
+            ))[0];
+          if (escape !== undefined && changePlayerLane(escape)) tutorialSteerCooldown = CITY_RUSH_TUTORIAL_STEER_INTERVAL;
+        }
+      }
+      checkTutorialAction(lesson);
+      // ── Le tic vert ───────────────────────────────────────────────────
+      const readEnough = tutorialLessonElapsed >= tutorialStepSeconds;
+      const watchdog = tutorialWatchdogLeft <= 0;
+      if ((tutorialActionDone && readEnough) || watchdog) {
+        if (watchdog && !tutorialActionDone) tutorialActionDone = true;
+        completeTutorialLesson();
+      }
+      return;
+    }
+    if (tutorialState === 'tick') {
+      tutorialTickLeft = Math.max(0, tutorialTickLeft - dt);
+      // Pendant le tic, la voiture continue de rouler (l'IA reprend la main).
+      tutorialSteerCooldown = Math.max(0, tutorialSteerCooldown - dt);
+      if (tutorialManualLeft <= 0 && tutorialSteerCooldown <= 0 && playerStunLeft <= 0 && !playerWrecked) {
+        const target = tutorialTargetLane();
+        if (Number.isFinite(target) && target !== playerLane && canEnterLane('player', target)) {
+          changePlayerLane(target);
+          tutorialSteerCooldown = CITY_RUSH_TUTORIAL_STEER_INTERVAL;
+        }
+      }
+      if (tutorialTickLeft > 0) return;
+      if (tutorialLessonIndex + 1 < tutorialSteps.length) {
+        startTutorialLesson(tutorialLessonIndex + 1);
+        return;
+      }
+      tutorialState = 'done';
+      tutorialComplete = true;
+      tutorialFinishLeft = 2.6;
+      getCallbacks().tutorial?.({
+        type: 'complete',
+        total: tutorialSteps.length,
+        elapsed,
+        score,
+      });
+      emitHud(true);
+    }
+  }
+
+  /** Le pilote a touché une commande : la démo lui laisse la main un instant. */
+  function noteTutorialManualInput() {
+    if (!tutorialMode) return;
+    tutorialManualLeft = CITY_RUSH_TUTORIAL_MANUAL_GRACE;
   }
 
   // ── Environnement de la voie rapide ────────────────────────────────────
@@ -3202,6 +3777,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         nextIn: Math.max(0, Math.round((sprintCheckpoints + 1) * CITY_RUSH_SPRINT_CHECKPOINT_SPACING - distance)),
       } : null,
       progress: clamp(distance / effectiveDistance, 0, 1),
+      // L'entraînement guidé publie sa leçon courante : la page s'y raccroche
+      // pour la fiche du coach, le tic vert et l'état « police en piste ».
+      tutorial: tutorialMode ? {
+        lessonIndex: tutorialLessonIndex,
+        lessonId: tutorialLesson()?.id || null,
+        lessonCount: tutorialSteps.length,
+        actionDone: tutorialActionDone,
+        lastAction: tutorialLastAction,
+        complete: tutorialComplete,
+        police: tutorialPoliceReleased,
+      } : null,
       lap,
       laps: effectiveLaps,
       lapLength: currentLapLength,
@@ -3442,6 +4028,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     releasePistolKey();
     releaseSteerKeys();
     clearVisualEffects();
+    // Le tour guidé repart de sa première leçon ; les autres courses n'ont pas
+    // d'état de tutoriel à remettre à zéro.
+    tutorialLessonIndex = 0;
+    tutorialLessonElapsed = 0;
+    tutorialActionDone = false;
+    tutorialState = 'lesson';
+    tutorialTickLeft = 0;
+    tutorialComplete = false;
+    tutorialFinishLeft = 0;
+    tutorialPoliceReleased = false;
+    tutorialSteerCooldown = 0;
+    tutorialManualLeft = 0;
+    tutorialFireCooldown = 0;
+    tutorialAimSeen = false;
+    tutorialPoliceArmLeft = 0;
+    tutorialPropLeft = 0;
+    tutorialWatchdogLeft = CITY_RUSH_TUTORIAL_LESSON_TIMEOUT;
+    tutorialLastAction = null;
     elapsed = 0;
     distance = 0;
     lap = 1;
@@ -3695,6 +4299,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     syncSprintCheckpointDisplay();
     placeTrack();
     bazookaWarehouses.forEach(placeBazookaWarehouse);
+    // Le tour guidé repart de sa première fiche. La démonstration, elle,
+    // attend le compte à rebours : `active` n'est levé qu'au départ réel.
+    if (tutorialMode) startTutorialLesson(0);
     emitHud(true);
   }
 
@@ -4979,6 +5586,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     spawnActionPulse('player', CITY_RUSH_POWERS.PISTOL);
     // Tout droit, sans viser : le projectile part même si la voie est vide.
     fireStraightShot('player', null, CITY_RUSH_POWERS.PISTOL);
+    // Leçon AK-47 : c'est le tir lui-même qui valide la démonstration.
+    noteTutorialAction('shoot');
     emitHud(true);
     return true;
   }
@@ -4992,6 +5601,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // La roquette part toujours droit devant : elle verrouille uniquement la
     // première patrouille de la voie, puis son explosion balaie deux cases.
     fireStraightShot('player', target, 'bazooka');
+    // Leçon bazooka : la roquette tirée valide la démonstration (l'entrepôt
+    // jaune devait avoir été traversé pour l'obtenir).
+    noteTutorialAction('bazooka');
     getCallbacks().effect?.({ type: 'bazooka-fired', ammo: bazookaAmmo, targetId: target?.id || null });
     emitHud(true);
     return true;
@@ -6192,7 +6804,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function damagePlayer(source, attackerId = null, context = null) {
     if (!playerHealthActive || finished) return 0;
     const before = playerHealth;
-    playerHealth = cityRushPlayerDamage(playerHealth, source);
+    // Entraînement guidé : la démonstration ne peut pas finir en épave. La
+    // coque encaisse les chocs (la jauge bouge, les leçons restent vraies)
+    // mais garde toujours son dernier carré — le tour guidé va au bout.
+    const tutorialFloor = tutorialMode ? 1 : 0;
+    playerHealth = Math.max(tutorialFloor, cityRushPlayerDamage(playerHealth, source));
     const lost = before - playerHealth;
     if (lost <= 0) return 0;
     playerHitsTaken += 1;
@@ -6431,6 +7047,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // la charger. Les voitures déjà chargées ne la ciblent/collectent plus : le
   // bonus reste réservé aux autres participants.
   function redPickupsHiddenForRace() {
+    // Entraînement guidé : le chargeur rouge est l'accessoire de la leçon des
+    // tirs — il reste visible pour la voiture, quel que soit son inventaire.
+    if (tutorialMode) return false;
     const opponentInventories = [
       ...racers.map((racer) => racer.inventory),
       ...activePursuers().map((police) => police.inventory),
@@ -7310,13 +7929,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // En plein saut, la voiture garde la voie de son décollage : une voiture
       // en l'air ne se décale pas (voir `cityRushLaneAfterAction`).
       const nextLane = cityRushLaneAfterAction(playerLane, name, laneCount, { airborne: playerJumpState.active });
-      if (nextLane !== playerLane && canEnterLane('player', nextLane)) {
-        playerLane = nextLane;
-        // Changer de voie ne ralentit pas : la voiture glisse à pleine
-        // allure. Seul le bonus de « ligne propre » retombe à zéro, à charge
-        // pour le pilote de le recharger en tenant sa nouvelle voie.
-        playerCleanLineTime = 0;
-      }
+      // Même chemin pour le pilote et pour la démonstration : `changePlayerLane`
+      // tient le journal du tutoriel (écart de voie, esquive).
+      changePlayerLane(nextLane);
       return;
     }
     if (name === 'bazooka' || name === 'use_bazooka') return useBazooka();
@@ -7335,6 +7950,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       score += 100;
       pickedUp += 1;
       audioRef?.current?.boost();
+      // Leçon turbo : l'éclair vert validé au contact.
+      noteTutorialAction('boost');
       audioRef?.current?.pickup(type, { ready: true });
       getCallbacks().pickup?.({
         type,
@@ -7532,6 +8149,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const crossingWindow = Math.max(1.15, participant.speed * dt * 0.65);
         if (Math.abs(participant.distance - row.trackDistance) > crossingWindow) continue;
         row.crossedRacers.add(participant.id);
+        // Entraînement guidé : le coach valide la leçon sur le **passage**, pas
+        // sur l'effet — une trousse traversée à coque pleine compte comme
+        // démonstration, et un bonus raflé juste avant par la police ne prive
+        // pas la voiture de sa réussite.
+        if (participant.id === 'player' && tutorialMode && tutorialState === 'lesson') {
+          const lesson = tutorialLesson();
+          const crossedProp = lesson?.prop && row.pickups.some((pickup) => (
+            pickup && pickup.type === lesson.prop && pickup.lane === participant.lane
+          ));
+          if (crossedProp) noteTutorialAction(tutorialPropActionByType[lesson.prop] || lesson.action);
+        }
         const participantInventory = participant.id === 'player' ? inventory : participant.racer?.inventory;
         const pickupIndex = row.pickups.findIndex((item, index) => (
           item.lane === participant.lane
@@ -8144,6 +8772,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             cameraKick = Math.max(cameraKick, 0.42);
             emitWheelSmoke(playerCar, { color: 0xffffff, opacity: 0.65, scale: 0.6, grow: 2.2, life: 0.5 });
             getCallbacks().effect?.({ type: 'ramp-jump', speed: takeoffSpeed, distance: jumpDistance, height: jumpHeight, lane: playerLane });
+            // Leçon tremplin : le décollage valide la démonstration.
+            noteTutorialAction('ramp');
             break;
           }
         }
@@ -8661,16 +9291,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // de sa ronde et prend le pilote en chasse (voir `rallyTrafficPolice`).
       // Chapitres « sans police » du mode Histoire : ni ralliement au contact,
       // ni ralliement à vue — les berlines du trafic restent du décor.
-      if (storyPoliceEnabled) checkPoliceRally();
+      if (storyPoliceEnabled && tutorialPoliceOn()) checkPoliceRally();
       // À cinq étoiles, les patrouilles croisées sur la route n'attendent pas
       // le contact : elles prennent le pilote en chasse dès qu'elles le voient.
-      if (storyPoliceEnabled) checkPoliceSightRally();
+      if (storyPoliceEnabled && tutorialPoliceOn()) checkPoliceSightRally();
       // Les trois voitures de base entrent au dernier tour du joueur (ou dès
       // le départ en mode Poursuite) et le prennent toujours pour cible, même
       // si un rival mène la course.
       const leader = refreshPackLeader();
       const playerLap = cityRushLapForDistance(distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
-      if (!policeDeployed && !sprint && storyPoliceEnabled) {
+      // L'escouade entre au dernier tour (ou dès le départ en Poursuite). Dans
+      // l'entraînement guidé, elle n'entre pas toute seule : c'est la leçon des
+      // tirs qui la fait arriver (`releaseTutorialPolice`), si bien que la
+      // route reste vide de police jusqu'à ce moment.
+      if (!policeDeployed && !sprint && storyPoliceEnabled && tutorialPoliceOn()) {
         if (effectivePoliceFromStart && distance > 8) deployPolice();
         else if (playerLap >= effectiveLaps) deployPolice();
       }
@@ -8696,6 +9330,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       updatePoliceReinforcements(dt);
       updateStoryBreakdown(dt);
       updateWreck(dt);
+      // La démonstration guidée : pilotage automatique, accessoires de la
+      // leçon, armes, tic vert et passage à la leçon suivante.
+      updateTutorial(dt);
       updateRows(dt);
       updateRamps(dt);
       updateMiniGarages(priorDistance);
@@ -8709,7 +9346,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // course est déjà perdue (barre à zéro), la toupie va à son terme et
       // `updateWreck` signe la défaite. Sans cette garde, un rival franchissant
       // l'arrivée pendant les 3,2 s coupait la scène de l'épave en plein vol.
-      if (!playerWrecked && allRacers.some((racer) => racer.distance >= effectiveDistance)) finishRace();
+      const lineCrossed = !playerWrecked && allRacers.some((racer) => racer.distance >= effectiveDistance);
+      // L'entraînement guidé ne s'achève pas sur le drapeau mais sur la
+      // dernière fiche : tant que le coach n'a pas posé son dixième tic vert,
+      // la voiture boucle sa route et la course attend. Sans cette garde, une
+      // leçon qui traîne (un tremplin raté, une mire longue à venir) pouvait
+      // se faire couper par la ligne et le tour guidé ne se terminait jamais.
+      if (lineCrossed && (!tutorialMode || tutorialComplete)) finishRace();
       emitHud();
     } else {
       currentSpeed = 0;
@@ -8847,6 +9490,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const key = event.key.toLowerCase();
     if (['arrowleft', 'arrowright', 'q', 'd', 'z', 'x'].includes(key)) event.preventDefault();
     if (!active || finished || event.repeat) return;
+    // Le pilote prend le volant : la démonstration guidée lui laisse la main
+    // quelques instants avant de reprendre la leçon.
+    if (['arrowleft', 'arrowright', 'q', 'd', 'z', 'x'].includes(key)) noteTutorialManualInput();
     const steerDirection = STEER_KEY_DIRECTIONS[key];
     if (steerDirection) {
       // La première pression répond tout de suite ; les écarts suivants sont
@@ -8890,7 +9536,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const onPointerUp = (event) => {
     if (!pointerStart || !active) { pointerStart = null; return; }
     const dx = event.clientX - pointerStart.x;
-    if (Math.abs(dx) > 20) action(dx < 0 ? 'left' : 'right');
+    if (Math.abs(dx) > 20) {
+      noteTutorialManualInput();
+      action(dx < 0 ? 'left' : 'right');
+    }
     pointerStart = null;
   };
   const onPointerCancel = () => { pointerStart = null; };
@@ -8993,11 +9642,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
-  callbacksRef.current = { onReady, onError, onHud, onFinish, onPickup, onEffect, onLap };
+  callbacksRef.current = { onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -9010,6 +9659,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
+        tutorial: (data) => callbacksRef.current.onTutorial?.(data),
       }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
