@@ -230,3 +230,50 @@ saut est la **règle voulue**, pas un bogue à corriger.
   bouger sur les sept parcours à trafic en face, jamais sur le Ring),
   `check:city-rush-nordschleife-lanes`, `check:city-rush-sprint`,
   `check:city-rush-wreck`, `check:vice-city-fullscreen`, `npx vite build`.
+
+## Suite — les rivaux aussi se font pourchasser par la police
+
+### Objectif
+
+Le joueur n'est plus la seule cible : dans Vice City Rush, un **adversaire** est
+pourchassé par la police quand il **touche** une voiture de police (carambolage
+comme tir) ou quand il **mène la course au dernier tour**.
+
+### Ce qui change
+
+- **Règles pures** (`src/games/cityRushRules.js`) :
+  `cityRushRivalWantedLevelAfterContact` (trois étoiles, le barème du contact du
+  joueur), `cityRushRivalPursued` (≥ trois étoiles), `cityRushRivalPursuerCount`
+  (**une** berline — celle de la réserve du rival, jamais l'escouade du joueur) et
+  `cityRushRivalLeaderWanted({ leader, lastLap, playerId })` (seul un rival mène
+  sans escouade ; le joueur a la sienne).
+- **Le monde** (`ViceCityWorld.jsx`) : chaque rival porte son `wantedLevel` ;
+  `registerPoliceRetaliation(attackerId, source, { reason })` reçoit les motifs
+  `police-shot`, `police-contact`, `last-lap-leader` et `pursuer-renewal` (relève
+  d'une unité dédiée détruite, après le délai de l'escouade) ;
+  `checkRivalPoliceCollisions` (carambolage rival/berline, `cityRushPoliceCollisionHit`) ;
+  le face-à-face d'un rival retourne la patrouille pour lui (`applyOncomingImpact`) ;
+  la berline de ronde percutée sort de sa patrouille (`rallyTrafficPolice`) ;
+  `chaseLastLapLeader(leader, playerLap)` ouvre le dossier du premier du dernier
+  tour ; l'épave d'un rival referme son dossier et lâche ses poursuivants
+  (`releasePolicePursuit`).
+- **HUD** : le classement publie `wanted` / `pursued` par pilote
+  (`CityRushRaceList.jsx`, pastille 🚨 `.city-rush-race-list-pursued`), jamais sur
+  la ligne du joueur ; les textes de mode et du guide de `ViceCityRushPage.jsx`
+  annoncent les deux motifs.
+
+### Vérifications
+
+- `tests/city-rush-rules.test.js` : le barème du contact d'un rival (trois
+  étoiles, jamais de baisse, une seule unité) et la règle du premier du dernier
+  tour (joueur exclu, avant-dernier tour exclu).
+- `tests/city-rush-hud.test.js` : le motif du dossier dans `damagePolice`, les
+  deux carambolages (ronde et contresens), le carambolage des berlines de
+  poursuite, `chaseLastLapLeader`, la pastille du classement et sa CSS.
+- `npm run check:city-rush-rival-police` : le nouveau harnais, joué sur les dix
+  parcours à graine fixe, en deux passes — motifs mêlés (dix poursuites par
+  carambolage) puis `--leader-only` (le flot sans berline de police : dix
+  poursuites du premier du dernier tour).
+- `npm run check:city-rush`, `check:city-rush-smoke`, `check:city-rush-weapons`,
+  `check:city-rush-police-fire`, `check:city-rush-police-wreck`,
+  `check:city-rush-wreck`, `npx vite build`.

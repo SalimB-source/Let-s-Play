@@ -41,7 +41,16 @@ export default function CityRushRaceList({ racers = [], pursuers = [], laps = 1 
             <span className="city-rush-race-list-rank">{racer.rank || '—'}</span>
             <span className="city-rush-race-list-avatar"><CityRushDriverAvatar driver={racer} decorative /></span>
             <span className="city-rush-race-list-copy">
-              <b>{racer.name}{racer.isPlayer && <em>TOI</em>}</b>
+              <b>
+                {racer.name}
+                {racer.isPlayer && <em>TOI</em>}
+                {/* Un adversaire recherché : la police le chasse (contact ou
+                    tête de course au dernier tour) — la pastille le dit sans
+                    occuper la route. */}
+                {!racer.isPlayer && racer.pursued && (
+                  <em className="city-rush-race-list-pursued" title="La police le chasse">🚨</em>
+                )}
+              </b>
               <small>{racer.flag} {racer.country}</small>
               <CityRushHealthBar
                 health={racer.health}

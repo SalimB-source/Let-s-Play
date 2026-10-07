@@ -235,9 +235,7 @@ for (let run = 0; run < RUNS; run += 1) {
       const expectedDamage = Math.min(maximumDamage, Math.max(0, Number(tracked) || 0));
       const expectedHealth = Math.max(0, tracked - expectedDamage);
       if (effect.damage !== expectedDamage || effect.health !== expectedHealth) {
-        violations.push(`[${city.id}#${run}] les dégâts de l’impact ne correspondent pas à sa catégorie`, {
-          tracked, expectedDamage, effect,
-        });
+        violations.push(`[${city.id}#${run}] les dégâts de l’impact ne correspondent pas à sa catégorie`, JSON.stringify({ tracked, expectedDamage, effect }));
       }
       tracked = effect.health;
     }

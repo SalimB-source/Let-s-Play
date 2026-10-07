@@ -3859,6 +3859,49 @@ export function cityRushPoliceCountForWantedLevel(level = 0) {
   return CITY_RUSH_POLICE_COUNT;
 }
 
+// ── Les rivaux aussi sont pourchassés ───────────────────────────────────────
+// La police ne s'occupe plus seulement du pilote. Un adversaire qui **touche**
+// une voiture de police — berline de ronde emboutie, patrouille du contresens
+// heurtée de face, berline de poursuite carambolée — ouvre un dossier comme le
+// joueur : le contact vaut trois étoiles, exactement le barème d'un tir réussi
+// (`cityRushWantedLevelAfterHit` avec `police`), et lui vaut la berline qui lui
+// est réservée. Le premier du classement quand le dernier tour s'ouvre est
+// chassé de la même façon, sans avoir rien fait : la police ne laisse pas un
+// adversaire filer seul vers la victoire.
+//
+// Une seule berline est dédiée à un rival — celle de sa réserve (`reserveForId`)
+// — et les trois voitures du joueur ne détournent jamais leur chasse : le
+// dernier tour reste le duel du pilote avec son escouade.
+export const CITY_RUSH_RIVAL_CONTACT_STARS = 3;
+export const CITY_RUSH_RIVAL_PURSUER_COUNT = 1;
+
+/** Niveau de recherche d'un rival après un contact avec la police. */
+export function cityRushRivalWantedLevelAfterContact(level = 0) {
+  return cityRushWantedLevelAfterHit(level, { hit: true, police: true });
+}
+
+/** Le rival est-il assez recherché pour être chassé ? (trois étoiles) */
+export function cityRushRivalPursued(level = 0) {
+  const stars = Math.max(0, Math.min(CITY_RUSH_WANTED_MAX_STARS, Math.floor(Number(level) || 0)));
+  return stars >= CITY_RUSH_RIVAL_CONTACT_STARS;
+}
+
+/** Combien de berlines dédiées un rival recherché reçoit-il ? */
+export function cityRushRivalPursuerCount(level = 0) {
+  return cityRushRivalPursued(level) ? CITY_RUSH_RIVAL_PURSUER_COUNT : 0;
+}
+
+/**
+ * Le premier du classement quand le dernier tour s'ouvre a droit à la police.
+ * Le joueur, lui, a déjà son escouade : seul un rival peut mener la course sans
+ * être chassé, et c'est celui-là que la règle rattrape.
+ */
+export function cityRushRivalLeaderWanted({ leader = null, lastLap = false, playerId = 'player' } = {}) {
+  if (!lastLap) return false;
+  const id = typeof leader === 'string' ? leader : leader?.id;
+  return typeof id === 'string' && id.length > 0 && id !== playerId;
+}
+
 /** Progression bornée de l'animation de demi-tour (0 → 1 en 1,5 seconde). */
 export function cityRushPoliceTurnaroundProgress(elapsed = 0, duration = CITY_RUSH_POLICE_TURNAROUND_DURATION) {
   const safeDuration = Math.max(0.001, Number(duration) || CITY_RUSH_POLICE_TURNAROUND_DURATION);

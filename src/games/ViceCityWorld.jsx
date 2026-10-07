@@ -184,6 +184,10 @@ import {
   cityRushTrafficHitboxWidth,
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
+  // Les rivaux aussi : contact avec la police ou tête de course au dernier tour.
+  cityRushRivalWantedLevelAfterContact,
+  cityRushRivalPursued,
+  cityRushRivalLeaderWanted,
   cityRushMiniGarageLanes,
   cityRushMiniGarageAvailable,
   cityRushMiniGarageCanUse,
@@ -1745,6 +1749,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       powerCooldown: 0,
       smokeTimer: 0,
       finalLapAnnounced: false,
+      // Niveau de recherche du rival : il monte à trois étoiles quand il touche
+      // une voiture de police (carambolage comme tir) et quand il mène la course
+      // au dernier tour. Zéro tant qu'il n'a rien fait — et une seule berline lui
+      // est alors dédiée (voir `registerPoliceRetaliation`).
+      wantedLevel: 0,
     };
   });
   racers.forEach((racer) => scene.add(racer.mesh));
@@ -2446,6 +2455,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       maxHealth: playerMaxHealth,
       healthFlash: playerHealthFlash,
       wrecked: playerWrecked,
+      // Niveau de recherche de la course : le HUD du classement s'y raccroche.
+      wantedLevel,
     },
     ...racers.map((racer) => ({
       id: racer.id,
@@ -2469,6 +2480,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
       healthFlash: racer.healthFlash,
       wrecked: racer.wrecked,
+      // Recherche propre au rival : le classement affiche sa poursuite.
+      wantedLevel: racer.wantedLevel || 0,
     })),
   ];
 
@@ -2931,6 +2944,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         maxHealth: racer.maxHealth || cityRushCarMaxHealth(racer.profile),
         healthFlash: racer.healthFlash || 0,
         wrecked: Boolean(racer.wrecked),
+        // Recherche propre à chaque pilote : celle de la course pour le joueur,
+        // celle de son dossier pour un rival. `pursued` allume la pastille de
+        // poursuite du classement.
+        wanted: Math.max(0, Math.floor(Number(racer.wantedLevel) || 0)),
+        pursued: racer.id !== 'player' && cityRushRivalPursued(racer.wantedLevel || 0),
       })),
       inventory: { ...inventory },
       bazookaAmmo,
@@ -3203,6 +3221,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.healthFlash = 0;
       racer.wrecked = false;
       racer.finalLapAnnounced = false;
+      // Nouvelle course, nouveau casier : aucun rival n'est recherché.
+      racer.wantedLevel = 0;
       racer.currentSpeed = 0;
       racer.lane = defaultLanes[index + 1];
       racer.currentX = laneX(racer.lane);
@@ -3910,6 +3930,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.stunLeft = CITY_RUSH_WRECK_SECONDS;
       racer.stunTotal = CITY_RUSH_WRECK_SECONDS;
       racer.boostLeft = 0;
+      // La police renonce à un adversaire à terre : le dossier se referme
+      // (plus de pastille de poursuite au classement) et ses poursuivants —
+      // l'unité réservée comme la berline du trafic rappelée par un carambolage
+      // — reprennent une conduite normale au lieu de tourner autour d'une épave.
+      if (racer.wantedLevel > 0) {
+        racer.wantedLevel = 0;
+        releasePolicePursuit({ targetId: racer.id });
+      }
       getCallbacks().effect?.({ type: 'racer-wrecked', target: racer.name, targetId: racer.id, attackerId, health: 0 });
     }
     emitHud(true);
@@ -4064,6 +4092,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const needsReplacement = activePlayerPursuerSlots() + policeReinforcementQueue.length < requiredPlayerPursuerSlots();
     const reinforcementScheduled = Boolean(police.squad && needsReplacement && !playerWrecked
       && queuePoliceReinforcement(police));
+    // Une unité réservée à un rival se relève tant que le dossier du rival
+    // reste ouvert : un rival recherché n'échappe pas à la police parce qu'une
+    // berline a brûlé sur un tremplin. La relève est demandée par
+    // `registerPoliceRetaliation`, qui repasse à chaque contact — et à chaque
+    // image du dernier tour si le rival mène la course (`chaseLastLapLeader`).
+    if (!police.squad && police.reserveForId
+      && policeRetaliationByAttacker.get(police.reserveForId) === police) {
+      police.reinforcementAt = elapsed + CITY_RUSH_POLICE_REINFORCEMENT_DELAY;
+    }
     // Tête-à-queue de deux tours en ralentissant, explosion à la fin de la
     // glissade, puis carcasse calcinée laissée en piste, en feu. L'explosion
     // (et son boum) arrive donc au terme du tête-à-queue, pas ici.
@@ -4400,9 +4437,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const isShot = source !== 'collision';
       raiseWantedLevel({ police: true, reason: isShot ? 'police-shot' : 'police-contact' });
     }
-    // Chaque rival reçoit son unité réservée dès son premier tir réussi sur
-    // une voiture de police, même si ce tir détruit sa cible.
-    if (attackerId && attackerId !== 'player') registerPoliceRetaliation(attackerId, source);
+    // Chaque rival reçoit son unité réservée dès son premier tir réussi — ou
+    // son premier carambolage — sur une voiture de police, même si ce tir
+    // détruit sa cible. Le motif distingue le tir du carambolage.
+    if (attackerId && attackerId !== 'player') {
+      registerPoliceRetaliation(attackerId, source, {
+        reason: source === 'collision' ? 'police-contact' : 'police-shot',
+      });
+    }
     police.health = cityRushPoliceDamage(healthBeforeHit, source);
     const maxHealth = Number(police.maxHealth)
       || cityRushPoliceMaxHealth(police.vehicleType || police.type)
@@ -4687,15 +4729,62 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return packLeader;
   }
 
-  function registerPoliceRetaliation(attackerId, source = CITY_RUSH_POWERS.PISTOL) {
-    if (!attackerId || attackerId === 'player' || !storyPoliceEnabled) return null;
+  // ── Le dossier d'un rival ───────────────────────────────────────────────
+  // Trois motifs ouvrent un dossier contre un adversaire : un tir réussi, un
+  // carambolage avec une berline, et la tête de course à l'ouverture du dernier
+  // tour. Le premier des trois monte son niveau de recherche à trois étoiles —
+  // le barème du contact policier — et sort la berline qui lui est réservée
+  // (`reserveForId`) ; les suivants n'ajoutent pas d'unité, et l'escouade du
+  // joueur ne détourne jamais sa chasse. Une berline détruite n'est pas
+  // remplacée : un rival garde son poursuivant, ou n'en a plus.
+  function registerPoliceRetaliation(attackerId, source = CITY_RUSH_POWERS.PISTOL, { reason = 'police-shot' } = {}) {
+    if (sprint || !attackerId || attackerId === 'player' || !storyPoliceEnabled || finished) return null;
     const attacker = racers.find((racer) => racer.id === attackerId);
-    if (!attacker || attacker.wrecked || policeRetaliationByAttacker.has(attackerId)) {
-      return policeRetaliationByAttacker.get(attackerId) || null;
+    if (!attacker || attacker.wrecked) return null;
+    const previousStars = attacker.wantedLevel || 0;
+    const stars = cityRushRivalWantedLevelAfterContact(previousStars);
+    if (stars !== previousStars) {
+      attacker.wantedLevel = stars;
+      emitHud(true);
+    }
+    const assigned = policeRetaliationByAttacker.get(attackerId);
+    if (assigned) {
+      // Le poursuivant d'un rival se relève comme l'escouade du joueur : une
+      // berline détruite repart derrière le même rival tant que le dossier
+      // reste ouvert (trois étoiles), après le même délai de relève. La relève
+      // repart derrière **son** rival, jamais derrière le joueur.
+      if (!assigned.active && !assigned.wreckPending && Number(assigned.health) <= 0
+        && elapsed >= (Number(assigned.reinforcementAt) || 0)) {
+        const target = raceEntries().find((entry) => entry.id === attackerId);
+        if (target) {
+          activatePoliceUnit(assigned, target, {
+            reinforcement: true,
+            unitNumber: assigned.unitNumber,
+            targetId: attackerId,
+          });
+          audioRef?.current?.policeSiren?.({ level: 0.5 });
+          getCallbacks().effect?.({
+            type: 'police-retaliation',
+            id: assigned.id,
+            police: assigned.name,
+            target: attacker.name,
+            targetId: attackerId,
+            source,
+            // La relève du poursuivant d'un rival : même unité, même dossier.
+            reason: 'pursuer-renewal',
+            stars,
+            count: CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
+            lap,
+          });
+          emitHud(true);
+        }
+      }
+      return assigned;
     }
     const reserve = policeCars.find((police) => police.reserveForId === attackerId);
     if (!reserve || reserve.everDeployed) return null;
     const target = raceEntries().find((entry) => entry.id === attackerId);
+    if (!target) return null;
     activatePoliceUnit(reserve, target, {
       reinforcement: true,
       unitNumber: reserve.unitNumber,
@@ -4710,11 +4799,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       target: attacker.name,
       targetId: attackerId,
       source,
+      // Le motif du dossier : `police-shot`, `police-contact` ou
+      // `last-lap-leader`. Les vérifications s'y raccrochent.
+      reason,
+      stars,
       count: CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
       lap,
     });
     emitHud(true);
     return reserve;
+  }
+
+  // Le premier du dernier tour est chassé comme le pilote : le contrôle repasse
+  // à chaque image, sans jamais redonner d'unité au même rival, et il attend que
+  // le dernier tour du pilote soit ouvert — l'escouade du joueur, elle, entre au
+  // même moment.
+  function chaseLastLapLeader(leader, playerLap) {
+    if (sprint || !storyPoliceEnabled || finished) return null;
+    const leaderId = typeof leader?.id === 'string' ? leader.id : null;
+    if (!cityRushRivalLeaderWanted({ leader: leaderId, lastLap: playerLap >= effectiveLaps })) return null;
+    return registerPoliceRetaliation(leaderId, null, { reason: 'last-lap-leader' });
   }
 
   function activatePoliceUnit(police, target, { reinforcement = false, unitNumber = null, targetId = 'player' } = {}) {
@@ -5938,6 +6042,51 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
+  // Les adversaires carambolent les berlines exactement comme le joueur : le
+  // rival doit **arriver sur** la berline plus vite qu'elle ne roule
+  // (`cityRushPoliceCollisionHit`), la coque de la berline perd un point, les
+  // deux voitures dérapent, et le dossier du rival s'ouvre. La berline qui
+  // chasse déjà ce rival ne relance pas son dossier, et le répit de choc
+  // (`collisionCooldownLeft`) empêche un carambolage collé au pare-chocs d'être
+  // facturé à chaque image. Le contrôle passe après le déplacement des berlines :
+  // c'est le freinage du barrage qui crée le choc, décrit à la position du jour.
+  function checkRivalPoliceCollisions() {
+    if (sprint || !active || finished) return;
+    for (const racer of racers) {
+      if (racer.wrecked || racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 || racer.jumpState?.active) continue;
+      for (const police of activePursuers()) {
+        if (police.health <= 0 || police.collisionCooldownLeft > 0 || police.jumpState?.active) continue;
+        if (!cityRushPoliceCollisionHit({
+          gap: police.distance - racer.distance,
+          closing: (racer.currentSpeed || 0) - (Number(police.currentSpeed) || 0),
+          x: police.currentX,
+          targetX: racer.currentX,
+          width: police.width,
+          targetWidth: racerCollisionWidth(racer),
+        })) continue;
+        const isSuv = police.vehicleType === CITY_RUSH_SUV_CHARGE_TYPE;
+        const side = Math.sign(racer.currentX - police.currentX) || 1;
+        police.collisionCooldownLeft = CITY_RUSH_POLICE_COLLISION_COOLDOWN;
+        police.skidLeft = Math.max(police.skidLeft, isSuv ? POLICE_SUV_RAM_SKID_DURATION : POLICE_RAM_SKID_DURATION);
+        police.skidDuration = police.skidLeft;
+        police.skidSide = -side;
+        police.skidSmokeTimer = 0;
+        racer.trafficImpactLeft = Math.max(racer.trafficImpactLeft, CITY_RUSH_TRAFFIC_IMPACT_DURATION * 1.25);
+        racer.skidLeft = Math.max(racer.skidLeft, 1.1);
+        racer.skidDuration = 1.1;
+        racer.skidSide = side;
+        racer.boostLeft = 0;
+        if (police.mesh.visible) {
+          spawnTrafficImpact(racer.id, police.id, isSuv ? POLICE_SUV_RAM_VFX_INTENSITY : 1);
+          audioRef?.current?.skid({ pan: vehiclePan(police.id), intensity: isSuv ? 1.3 : 1.05, duration: 0.82 });
+        }
+        // `damagePolice` ouvre aussi le dossier du rival (`registerPoliceRetaliation`) :
+        // le carambolage vaut trois étoiles, comme un tir.
+        damagePolice(police, 'collision', racer.id, { victim: 'police', racer: racer.name });
+      }
+    }
+  }
+
   // Un tir droit de l'escouade : même AK-47 que les rivaux, sans viser.
   function fireAsPolice(police) {
     const consumed = consumeCityRushCharge(police.inventory, CITY_RUSH_POWERS.PISTOL);
@@ -6505,8 +6654,22 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!traffic || traffic.impactCooldownLeft > 0 || traffic.impactChanging) return false;
     const racer = racerId === 'player' ? null : racers.find((item) => item.id === racerId);
     const squadCar = racerId === 'player' || racer ? null : policeCars.find((item) => item.id === racerId);
+    // Un rival qui emboutit une berline de ronde la sort de sa patrouille :
+    // exactement le réflexe du pilote (`checkPoliceRally`), mais le contact
+    // ouvre en plus son dossier — trois étoiles et sa berline dédiée. Le
+    // contrôle passe **avant** le rabattement : un choc refusé faute de voie
+    // libre reste un choc, et le dossier du rival ne dépend pas de la place que
+    // la berline heurtée peut se faire dans le flot.
+    let rivalPoliceContact = false;
+    if (racer && !traffic.rallied && isCityRushPoliceTrafficType(traffic.type)) {
+      rivalPoliceContact = Boolean(rallyTrafficPolice(traffic, racer.id, {
+        victim: 'police',
+        racer: racer.name,
+      }));
+      registerPoliceRetaliation(racer.id, 'collision', { reason: 'police-contact' });
+    }
     const escapeLane = trafficImpactEscapeLane(traffic);
-    if (escapeLane === traffic.lane) return false;
+    if (escapeLane === traffic.lane) return rivalPoliceContact;
 
     traffic.impactLeft = CITY_RUSH_TRAFFIC_IMPACT_DURATION;
     traffic.impactCooldownLeft = CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN;
@@ -6576,12 +6739,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Collision solide : le pilote est ralenti et la voiture adverse dévie d'une
   // voie au plus, en restant sur la chaussée.
   function applyOncomingImpact(actorId, oncoming) {
-    const policeContact = actorId === 'player' && isCityRushPoliceTrafficType(oncoming.type);
+    const racerActor = actorId === 'player' ? null : racers.find((item) => item.id === actorId) || null;
+    // Un rival heurte une patrouille de face : elle se retourne pour lui comme
+    // elle le ferait pour le pilote, et l'adversaire ouvre son dossier — son
+    // contact vaut trois étoiles, sans toucher à la recherche du joueur.
+    const policeContact = (actorId === 'player' || Boolean(racerActor))
+      && isCityRushPoliceTrafficType(oncoming.type);
     if (policeContact) {
       // Une patrouille (y compris banalisée) heurtée de face se retourne, puis
       // occupe l'une des places de la poursuite déclenchée à trois étoiles.
-      beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: 'player' });
-      raiseWantedLevel({ police: true, reason: 'police-contact' });
+      beginOncomingPoliceTurnaround(oncoming, { asBackup: false, targetId: actorId });
+      if (racerActor) registerPoliceRetaliation(racerActor.id, 'collision', { reason: 'police-contact' });
+      else raiseWantedLevel({ police: true, reason: 'police-contact' });
     }
     oncoming.impactCooldownLeft = CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN * 1.15;
     if (!policeContact && !oncoming.pushedAside) {
@@ -8150,9 +8319,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         else if (playerLap >= effectiveLaps) deployPolice();
       }
       updatePolice(dt, leader);
+      // Le premier du dernier tour est chassé comme le pilote : un adversaire
+      // qui mène la course à l'ouverture du dernier tour reçoit la berline qui
+      // lui est réservée (voir `chaseLastLapLeader`).
+      chaseLastLapLeader(leader, playerLap);
       // Le carambolage avec une berline se juge après le déplacement des
       // berlines : le contact est alors décrit à la position du jour.
       checkPoliceCollisions();
+      // Les adversaires carambolent les berlines de la même façon : le rival qui
+      // arrive sur une berline ouvre son dossier et abîme sa coque.
+      checkRivalPoliceCollisions();
       // La herse des quatre étoiles : montage, pose voie par voie, franchissement
       // (détection balayée sur `priorDistance`), puis rangement.
       updateSpikeBlock(dt, priorDistance);
