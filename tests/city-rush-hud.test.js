@@ -13,6 +13,14 @@ const mobileHealthDeclarations = Object.fromEntries(
     .map((match) => [match[1], match[2].trim()]),
 );
 
+test('route bonuses use the generated lane offset instead of stacking at the road center', () => {
+  const setPickupKind = world.match(/function setPickupKind\(pickup, type, laneX, shared\) \{[\s\S]*?\n\}/)?.[0] || '';
+  assert.match(world, /setPickupKind\(slot, pickup\.type, laneX\(pickup\.lane\), shared\)/,
+    'la voie tirée par la rangée est transmise à l’objet 3D');
+  assert.match(setPickupKind, /pickup\.position\.x\s*=\s*laneX/,
+    'le bonus est décalé latéralement depuis le groupe centré sur la route');
+});
+
 test('the race exposes one large, round red machine-gun button and no legacy shot buttons', () => {
   assert.match(page, /const POWER_ORDER = \[CITY_RUSH_POWERS\.PISTOL\]/);
   assert.match(page, /city-rush-machine-gun-button/);

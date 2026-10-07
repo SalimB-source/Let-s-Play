@@ -887,6 +887,9 @@ function setPickupKind(pickup, type, laneX, shared) {
   // autour de son éclair ; les autres gardent leur icône seule.
   orbit.visible = type === CITY_RUSH_PICKUPS.BOOST;
   orbit.rotation.set(PICKUP_ORBIT_TILT, 0, 0);
+  // La rangée est centrée sur l'axe de la route : le bonus doit garder son
+  // décalage local pour apparaître sur la voie tirée par la génération.
+  pickup.position.x = laneX;
   // Tous les bonus flottent à la même hauteur : le turbo ne se plaque plus sur
   // la chaussée, il lévite au-dessus comme les autres.
   pickup.position.y = PICKUP_FLOAT_HEIGHT;
