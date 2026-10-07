@@ -1467,7 +1467,7 @@ export class CityRushAudio {
   pickup(type = 'boost', { ready = false } = {}) {
     if (!this.ready()) return;
     if (type === 'pistol') this.pistolReload();
-    const root = { 'blue-shot': 60, pistol: 64, boost: 69, radio: 74, health: 76 }[type] ?? 69;
+    const root = { 'blue-shot': 60, pistol: 64, bazooka: 55, boost: 69, radio: 74, health: 76 }[type] ?? 69;
     const time = this.context.currentTime + 0.005;
     const out = this.sfxBus;
     this.tone(midiToFrequency(root + 12), time, 0.1, 'triangle', 0.14, { destination: out });

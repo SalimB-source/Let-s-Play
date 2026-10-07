@@ -122,6 +122,37 @@ export async function checkViceCityQuietRace(assert) {
     assert.equal(worldProbe.props?.onPickup, undefined, 'la page n’écoute plus les ramassages');
     assert.equal(worldProbe.props?.onLap, undefined, 'la page n’écoute plus les passages de ligne');
 
+    // Le bouton jaune est empilé sous l'AK-47 et reste grisé tant que le HUD
+    // n'annonce pas la traversée de l'entrepôt du dernier tour.
+    const gunButton = mustFind(node, '.city-rush-machine-gun-button', 'commande rouge');
+    const bazookaButton = mustFind(node, '.city-rush-bazooka-button', 'commande bazooka');
+    assert.ok(gunButton.nextElementSibling === bazookaButton, 'le bouton bazooka se place directement sous le bouton rouge');
+    assert.equal(bazookaButton.disabled, true, 'le bazooka reste verrouillé avant le pickup');
+    assert.match(bazookaButton.className, /is-empty/, 'le bouton de bazooka est grisé avant le pickup');
+    await click(bazookaButton);
+    assert.deepEqual(worldProbe.actions, [], 'un bouton verrouillé ne déclenche aucun tir');
+
+    const fakeHud = {
+      distance: 3000, totalDistance: 7200, progress: 0.41, lap: 3, laps: 3,
+      lapLength: 4800, lapProgress: 0.1, lapDistance: 480, elapsed: 80, speed: 114,
+      rank: 3, racers: [], inventory: { 'blue-shot': 0, pistol: 0, radio: 0 },
+      score: 250, pickups: 1, slowLeft: 0, trafficImpactLeft: 0, boostLeft: 0, stunLeft: 0,
+      sprint: null, route: null, playerHealth: 15, playerHealthMax: 15, playerHealthActive: true,
+      playerHealthFlash: 0, police: [], wantedLevel: 0, wantedMaxStars: 5,
+      miniGaragesActive: false, miniGaragesRemaining: 1, miniGaragesTotal: 1,
+      miniGarageNextDistance: null, oncomingPoliceTurnarounds: [], spikeBlock: null, suvCharges: [],
+      bazookaAmmo: 2, bazookaPickupTaken: true,
+    };
+    await act(async () => worldProbe.props?.onHud?.(fakeHud));
+    assert.equal(bazookaButton.disabled, false, 'le bouton devient disponible après le pickup');
+    assert.match(bazookaButton.className, /is-ready/, 'le bouton prêt prend l’accent jaune');
+    assert.match(bazookaButton.textContent, /2 TIRS · X/, 'le HUD montre les deux tirs et le raccourci');
+    await click(bazookaButton);
+    assert.deepEqual(worldProbe.actions, ['bazooka'], 'le bouton transmet bien l’action bazooka au monde');
+    await act(async () => worldProbe.props?.onHud?.({ ...fakeHud, bazookaAmmo: 0 }));
+    assert.equal(bazookaButton.disabled, true, 'le bouton se reverrouille une fois les deux tirs utilisés');
+    assert.match(bazookaButton.textContent, /ÉPUISÉ/, 'le HUD signale le stock épuisé');
+
     // Une volée d'événements de course : ceux qui ouvraient autrefois une
     // fenêtre de message, un bandeau de tour ou une pastille d'état.
     const volley = [
