@@ -1,18 +1,71 @@
-const PARALLAX_SELECTOR = '[data-parallax]';
+const PARALLAX_ATTRIBUTE_SELECTOR = '[data-parallax]';
+
+// Les cartes et blocs sémantiques des pages sont animés sans devoir ajouter
+// un attribut dans chacune des dizaines de routes. Les attributs explicites
+// restent prioritaires pour régler la vitesse et l'amplitude au cas par cas.
+export const AUTO_PARALLAX_SELECTOR = [
+  'main section',
+  'main article',
+  'main header',
+  'main aside',
+  'main figure',
+  'main .wrap',
+  'main [class*="card"]',
+  'main [class*="panel"]',
+  'main [class*="tile"]',
+  'main [class*="banner"]',
+  'main [class*="feature"]',
+  'main [class*="hero"]',
+  'main [class*="grid"]',
+  'main [class*="head"]',
+  'main [class*="cover"]',
+  'main [class*="quote"]',
+  'main [class*="carousel"]',
+  'footer.footer',
+].join(', ');
+
+const PARALLAX_TARGET_SELECTOR = `${PARALLAX_ATTRIBUTE_SELECTOR}, [data-scroll-parallax], ${AUTO_PARALLAX_SELECTOR}`;
+const PARALLAX_OPT_OUT_SELECTOR = '[data-no-parallax], .mirage-page, .city-rush-page';
+const AUTO_PARALLAX_ATTRIBUTE = 'data-scroll-parallax';
+const DEFAULT_SPEED = 0.025;
+const DEFAULT_LIMIT = 12;
+
+function hasAttribute(element, name) {
+  if (typeof element?.hasAttribute === 'function') return element.hasAttribute(name);
+  if (name === 'data-parallax') return element?.dataset?.parallax !== undefined;
+  return false;
+}
+
+function isOptedOut(element) {
+  const speed = element?.getAttribute?.('data-parallax') ?? element?.dataset?.parallax;
+  return speed === 'off'
+    || speed === 'false'
+    || hasAttribute(element, 'data-no-parallax')
+    || Boolean(element?.closest?.(PARALLAX_OPT_OUT_SELECTOR));
+}
+
+function isParallaxTarget(element) {
+  if (!element || element.nodeType !== 1 || isOptedOut(element)) return false;
+  return hasAttribute(element, 'data-parallax')
+    || hasAttribute(element, AUTO_PARALLAX_ATTRIBUTE)
+    || Boolean(element.matches?.(AUTO_PARALLAX_SELECTOR));
+}
 
 /**
- * Anime les éléments marqués data-parallax au rythme du défilement, sans
- * déclencher de rendu React à chaque frame. `data-parallax` est le facteur
- * de déplacement et `data-parallax-limit` borne l'effet en pixels.
+ * Anime les blocs marqués data-parallax et les cartes/sections de toutes les
+ * pages, sans déclencher de rendu React à chaque frame. `data-parallax` règle
+ * le facteur de déplacement et `data-parallax-limit` le borne en pixels ; les
+ * blocs détectés automatiquement reçoivent un mouvement plus discret.
  *
- * Le déplacement est appliqué via la propriété CSS `translate`, qui se
- * compose avec les transforms de survol et les animations déjà présentes.
+ * Le déplacement utilise la propriété CSS `translate`, qui se compose avec
+ * les transforms de survol et les animations déjà présentes. Les zones de jeu
+ * plein écran restent exclues pour ne pas déplacer leurs commandes ou canvas.
  */
 export function initScrollParallax(root = typeof document !== 'undefined' ? document : null) {
   if (typeof window === 'undefined' || !root?.querySelectorAll) return () => {};
 
-  const elements = new Set(root.querySelectorAll(PARALLAX_SELECTOR));
-
+  const elements = new Set();
+  const markedByInitializer = new WeakSet();
   const motionPreference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   let frame = null;
   const lastOffsets = new WeakMap();
@@ -23,11 +76,51 @@ export function initScrollParallax(root = typeof document !== 'undefined' ? docu
     ? window.cancelAnimationFrame.bind(window)
     : window.clearTimeout.bind(window);
 
+  const removeTarget = (element) => {
+    const wasTracked = elements.delete(element);
+    if (wasTracked || markedByInitializer.has(element)) {
+      element.style?.removeProperty('--parallax-y');
+      lastOffsets.delete(element);
+    }
+    if (markedByInitializer.has(element)) {
+      element.removeAttribute?.(AUTO_PARALLAX_ATTRIBUTE);
+      markedByInitializer.delete(element);
+    }
+    return wasTracked;
+  };
+
+  const registerTarget = (element) => {
+    if (!element || element.nodeType !== 1) return false;
+    if (!isParallaxTarget(element)) return removeTarget(element);
+
+    const wasTracked = elements.has(element);
+    elements.add(element);
+    if (
+      !hasAttribute(element, 'data-parallax')
+      && !hasAttribute(element, AUTO_PARALLAX_ATTRIBUTE)
+      && typeof element.setAttribute === 'function'
+    ) {
+      // Le marqueur sert uniquement à appliquer la même règle CSS que les
+      // éléments réglés à la main ; il n'est pas observé par le MutationObserver.
+      element.setAttribute(AUTO_PARALLAX_ATTRIBUTE, '');
+      markedByInitializer.add(element);
+    }
+    return !wasTracked;
+  };
+
   const clearOffsets = () => {
     elements.forEach((element) => {
       element.style?.removeProperty('--parallax-y');
       lastOffsets.set(element, 0);
     });
+  };
+
+  const inheritedOffsetOf = (element) => {
+    let offset = 0;
+    for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      offset += lastOffsets.get(ancestor) || 0;
+    }
+    return offset;
   };
 
   const update = () => {
@@ -41,7 +134,7 @@ export function initScrollParallax(root = typeof document !== 'undefined' ? docu
     const viewportHeight = window.innerHeight || documentHeight || 1;
     const offsets = Array.from(elements).map((element) => {
       if (element.isConnected === false) {
-        elements.delete(element);
+        removeTarget(element);
         return [element, 0];
       }
 
@@ -49,14 +142,23 @@ export function initScrollParallax(root = typeof document !== 'undefined' ? docu
       const previousOffset = lastOffsets.get(element) || 0;
       if (rect.bottom <= 0 || rect.top >= viewportHeight) return [element, 0];
 
-      const speed = Number.parseFloat(element.dataset?.parallax);
+      const explicitSpeed = hasAttribute(element, 'data-parallax');
+      const speed = explicitSpeed
+        ? Number.parseFloat(element.dataset?.parallax)
+        : DEFAULT_SPEED;
       const rawLimit = Number.parseFloat(element.dataset?.parallaxLimit);
-      const limit = Number.isFinite(rawLimit) && rawLimit >= 0 ? rawLimit : 24;
+      const fallbackLimit = explicitSpeed ? 24 : DEFAULT_LIMIT;
+      const limit = Number.isFinite(rawLimit) && rawLimit >= 0 ? rawLimit : fallbackLimit;
       if (!Number.isFinite(speed)) return [element, 0];
 
-      // getBoundingClientRect inclut le décalage appliqué à la frame précédente :
-      // on le soustrait pour éviter que le mouvement ne se corrige lui-même.
-      const distanceFromCenter = rect.top - previousOffset + rect.height / 2 - viewportHeight / 2;
+      // getBoundingClientRect inclut les décalages déjà appliqués à l'élément
+      // et à ses parents ; on les soustrait pour éviter qu'ils n'influencent le
+      // calcul du prochain mouvement.
+      const distanceFromCenter = rect.top
+        - previousOffset
+        - inheritedOffsetOf(element)
+        + rect.height / 2
+        - viewportHeight / 2;
       const offset = Math.max(-limit, Math.min(limit, -distanceFromCenter * speed));
       return [element, offset];
     });
@@ -87,11 +189,15 @@ export function initScrollParallax(root = typeof document !== 'undefined' ? docu
 
   const collectParallaxElements = (node) => {
     if (node?.nodeType !== 1) return false;
-    const previousSize = elements.size;
-    if (node.matches?.(PARALLAX_SELECTOR)) elements.add(node);
-    node.querySelectorAll?.(PARALLAX_SELECTOR).forEach((element) => elements.add(element));
-    return elements.size !== previousSize;
+    let changed = registerTarget(node);
+    node.querySelectorAll?.(PARALLAX_TARGET_SELECTOR).forEach((element) => {
+      if (registerTarget(element)) changed = true;
+    });
+    return changed;
   };
+
+  root.querySelectorAll(PARALLAX_TARGET_SELECTOR).forEach(registerTarget);
+
   const mutationObserver = typeof MutationObserver === 'undefined'
     ? null
     : new MutationObserver((mutations) => {
@@ -99,14 +205,9 @@ export function initScrollParallax(root = typeof document !== 'undefined' ? docu
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes') {
           const element = mutation.target;
-          if (element.matches?.(PARALLAX_SELECTOR)) {
-            elements.add(element);
-            changed = true;
-          } else if (elements.delete(element)) {
-            element.style?.removeProperty('--parallax-y');
-            lastOffsets.delete(element);
-            changed = true;
-          }
+          const wasTracked = elements.has(element);
+          registerTarget(element);
+          if (wasTracked || elements.has(element)) changed = true;
           return;
         }
         mutation.addedNodes.forEach((node) => {
@@ -120,7 +221,7 @@ export function initScrollParallax(root = typeof document !== 'undefined' ? docu
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['data-parallax', 'data-parallax-limit'],
+    attributeFilter: ['data-parallax', 'data-parallax-limit', 'data-no-parallax', 'class'],
   });
   window.addEventListener('scroll', schedule, { passive: true });
   window.addEventListener('resize', schedule, { passive: true });
@@ -141,6 +242,6 @@ export function initScrollParallax(root = typeof document !== 'undefined' ? docu
       motionPreference?.removeListener?.(onMotionPreferenceChange);
     }
     if (frame !== null) cancelFrame(frame);
-    clearOffsets();
+    elements.forEach(removeTarget);
   };
 }

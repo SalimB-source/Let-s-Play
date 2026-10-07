@@ -17,8 +17,8 @@ function isEnoughInView(element) {
 
 /**
  * Affiche d'abord la miniature, puis charge le lecteur YouTube muet quand au
- * moins 42 % de son cadre entre dans la fenêtre. L'autoplay est ainsi déclenché
- * à l'arrivée sur la une, plutôt qu'au chargement initial de toute la page.
+ * moins 42 % de son cadre entre dans la fenêtre. L'autoplay démarre ainsi au
+ * défilement vers le bloc vidéo, sans charger le lecteur dès l'ouverture.
  */
 export default function ScrollAutoplayVideo({ id, title, posterAlt }) {
   const containerRef = useRef(null);
