@@ -41,5 +41,3 @@
 .featured-dossiers--news .home-news-video .scroll-autoplay-video-poster{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;background:#05060f}
 .featured-dossiers--news .home-news-video .scroll-autoplay-video iframe{position:absolute;inset:0;width:100%;height:100%;min-height:0;display:block;border:0;background:#05060f}
 .featured-dossier-player{overflow:hidden}
-.featured-dossier-thumb[data-parallax],
-.featured-dossier-player .video-thumb-fallback[data-parallax]{transform:scale(1.06)}

@@ -196,7 +196,7 @@ export default function News(){
         {/* Chaque article est dans une cellule : la carte porte le coin biseauté,
             et la cellule son ombre portée pour qu'elle ne soit pas rognée. */}
         <div className="news-carousel is-grid">
-          {gridArticles.map((article, index) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
+          {gridArticles.map((article) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to}>
             <div className="news-carousel-image">{renderStoryImage(article)}{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link></div>)}

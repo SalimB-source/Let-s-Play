@@ -244,7 +244,7 @@ export default function News() {
 
       <div className="news-hub-grid wrap">
         {/* Carte GAMING */}
-        <Link to="/news/gaming" className="news-hub-card news-hub-card--gaming" data-parallax="0.035" data-parallax-limit="17">
+        <Link to="/news/gaming" className="news-hub-card news-hub-card--gaming">
           <div className="news-hub-card-image">
             <img src={`${base}category-gaming-thumb.jpg`} alt="Actus Gaming — manette néon sur fond cyberpunk" />
             <div className="news-hub-card-overlay" />
@@ -263,7 +263,7 @@ export default function News() {
         </Link>
 
         {/* Carte CINÉMA / SÉRIES */}
-        <Link to="/news/cinema" className="news-hub-card news-hub-card--cinema" data-parallax="0.05" data-parallax-limit="22">
+        <Link to="/news/cinema" className="news-hub-card news-hub-card--cinema">
           <div className="news-hub-card-image">
             <img src={`${base}category-cinema-thumb.jpg`} alt="Actus Cinéma & Séries — clap et bobine de film sous un projecteur" />
             <div className="news-hub-card-overlay" />
@@ -282,7 +282,7 @@ export default function News() {
         </Link>
 
         {/* Carte TECH */}
-        <Link to="/news/tech" className="news-hub-card news-hub-card--tech" data-parallax="0.04" data-parallax-limit="19">
+        <Link to="/news/tech" className="news-hub-card news-hub-card--tech">
           <div className="news-hub-card-image">
             <img src={`${base}category-tech-thumb.jpg`} alt="Actus Tech — puce et interface holographique sous les néons, main robotisée" />
             <div className="news-hub-card-overlay" />
@@ -307,7 +307,7 @@ export default function News() {
           <span>{todaySectionCopy.label}</span>
           <span>{todaySectionCopy.date}</span>
         </div>
-        <div className="featured-dossiers-head" data-parallax="0.025" data-parallax-limit="11">
+        <div className="featured-dossiers-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> {todaySectionCopy.eyebrow}</p>
             <h2>{todaySectionCopy.headingA}<br /><em>{todaySectionCopy.headingB}</em></h2>
@@ -315,13 +315,11 @@ export default function News() {
         </div>
 
         <div className="news-carousel is-grid">
-          {todayStories.map((story, index) => (
+          {todayStories.map((story) => (
             <div className="news-grid-cell" key={story.to}>
               <Link
                 className="news-carousel-card"
                 to={story.to}
-                data-parallax={index % 2 ? '0.055' : '0.035'}
-                data-parallax-limit={index % 2 ? '22' : '16'}
               >
                 <div className="news-carousel-image">
                   <img
@@ -369,7 +367,7 @@ export default function News() {
             <p className="eyebrow"><span className="live-dot" /> {todayCopy.eyebrow}</p>
             <Link className="arrow-link" to="/news/gaming">{todayCopy.seeAll} <Arrow /></Link>
           </div>
-          <article className="daily-news-card home-news-card" data-parallax="0.04" data-parallax-limit="20">
+          <article className="daily-news-card home-news-card">
             <div className="daily-news-image home-news-video">
               {todayVideo ? (
                 <iframe
