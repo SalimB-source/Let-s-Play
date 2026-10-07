@@ -20,6 +20,10 @@ import '../games/games.css';
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
 // Miniature de Vice City Rush.
 const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-keyart.jpg`;
+// Miniature de L'Arcade Éternelle : une image réellement peinte par le moteur du
+// prototype (`src/games/arcadeFeelArt.js`), pas une illustration séparée — ce
+// qu'on voit dans la vignette est ce qu'on joue.
+const ARCADE_THUMB = `${import.meta.env.BASE_URL}arcade-eternelle-thumb.png`;
 
 const GAMES = [
   {
@@ -49,8 +53,21 @@ const GAMES = [
     tags: ['ARCADE', 'COURSE', '5 VILLES', 'SOLO'],
   },
   {
-    id: 'projet-03',
-    title: 'PROJET 03',
+    id: 'arcade-eternelle',
+    title: 'L’ARCADE ÉTERNELLE',
+    subtitle: 'PLATEFORME 2D · DÉSERT & CARTOMANCE',
+    description: 'Le prototype de la salle « Le Puits Sec » : cours, saute, saute aux murs, esquive, dash et enchaîne trois coups — dans une salle d’essai où l’on juge d’abord la prise en main. Le décor, les ennemis et le HUD sont peints par le moteur du jeu, sans une seule image externe.',
+    thumb: ARCADE_THUMB,
+    alt: 'L’Arcade Éternelle — le héros au pinceau devant un bac à sable, un scarabée et une statue dans un puits sec du désert',
+    route: '/jeu/arcade-eternelle',
+    badge: 'PROTOTYPE',
+    tone: 'desert',
+    featured: false,
+    tags: ['PROTOTYPE', 'SOLO', 'PLATEFORME', '60 FPS'],
+  },
+  {
+    id: 'projet-04',
+    title: 'PROJET 04',
     subtitle: 'PISTE À CREUSER',
     description: 'L’arcade va grandir. D’autres idées de formats courts mijotent — elles apparaîtront ici le jour où elles seront jouables.',
     thumb: null,
@@ -68,7 +85,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'LES JEUX',
     h2b: 'DE LA MAISON.',
-    intro: 'Deux jeux jouables dans la page : le western nerveux de Mirage Rush et les courses néon de Vice City Rush.',
+    intro: 'Deux jeux jouables dans la page : le western nerveux de Mirage Rush et les courses néon de Vice City Rush — plus le prototype de L’Arcade Éternelle, ouvert pour juger sa prise en main.',
     play: 'JOUER',
     soon: 'BIENTÔT',
   },
@@ -76,7 +93,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'THE GAMES',
     h2b: 'WE BUILD.',
-    intro: 'Two games playable right on the page: Mirage Rush and Vice City Rush’s neon city races.',
+    intro: 'Two games playable right on the page: Mirage Rush and Vice City Rush’s neon city races — plus the L’Arcade Éternelle prototype, open for a feel test.',
     play: 'PLAY',
     soon: 'SOON',
   },
@@ -84,7 +101,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'ألعاب',
     h2b: 'المنصة.',
-    intro: 'لعبتان داخل الصفحة: أجواء الغرب في Mirage Rush، وسباقات Vice City Rush الليلية بين المدن.',
+    intro: 'لعبتان داخل الصفحة: أجواء الغرب في Mirage Rush، وسباقات Vice City Rush الليلية بين المدن — مع نموذج L’Arcade Éternelle لتجربة الإحساس باللعب.',
     play: 'العب',
     soon: 'قريباً',
   },
