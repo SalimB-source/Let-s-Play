@@ -1667,6 +1667,7 @@ npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix
 npm run check:city-rush-story-cars # les voitures du mode Histoire dans la vraie page (jsdom) : les dix chapitres parcourent le monde avec la bonne voiture — MISTRAL 1.4 prêtée au prologue, TEMPESTA LP-780 prêtée sur le Ring, voiture choisie au garage partout ailleurs (y compris juste après un prêt), briefing conforme et sélection du garage conservée après la campagne
+npm run check:city-rush-tournament # la Coupe Sunset de bout en bout dans la vraie page (jsdom) : 3 manches sans police ni armes, sacre à 26 pts, prime +100 billets, Coupe d'Europe débloquée, sauvegarde à jour
 npm run check:city-rush-smoke    # les huit parcours (cinq villes + Route 66 + campagne mexicaine + Nordschleife) : course complète de 6 tours (8 400 m, dernier tour de 2 400 m), sans exception, éclatements visibles, jauge de contresens chargée (jamais sur le Ring), herse et SUV d'interception vérifiés sans leurs dégâts
 npm run check:city-rush-steer-hold # le maintien des flèches : une pression = un écart, le maintien enchaîne (délai 0,26 s puis 0,18 s) jusqu'au bord de la chaussée, la relâche / la pause / la perte de la fenêtre arrêtent tout, Q et D alignés, répétition native ignorée
 npm run check:city-rush-quiet    # le choix du mode au doigt (empilé, sans carrousel, avant l'Histoire) et la course muette (la vraie page en jsdom, moteur doublé)
@@ -1994,6 +1995,55 @@ produit bien un) : une voiture à contresens sur un circuit serait un vrai bogue
 Comme le hasard décide du trafic et des bonus,
 `CITY_RUSH_SMOKE_SEED=31 npm run check:city-rush-smoke -- --city=nordschleife`
 rejoue exactement le même scénario.
+
+## Vice City Rush : les tournois
+
+Le jeu (`/jeu/vice-city-rush`) propose quatre **tournois** — la **Coupe Sunset**
+(Vice City, Route 66, New York), la **Coupe d'Europe** (Paris, Londres,
+Nordschleife), la **Coupe Pacifique** (Tokyo, Route 66, Mexique) et la **Coupe
+des Légendes** (New York, Nordschleife, Vice City). Chaque tournoi se joue en
+**3 courses de 3 tours**, avec la même voiture et les mêmes rivaux du début à
+la fin, **sans police ni armes** : la grille et les règles sont imposées, seul
+le pilotage compte.
+
+Le hub des tournois (l'étape « mode » de l'accueil) les affiche en ordre : le
+suivant se débloque en terminant le précédent, qu'on soit champion ou non. Une
+manche courue **ne se rejoue pas** — le bouton propose la suivante, et la
+touche Entrée l'enchaîne aussi. Les points suivent le barème 10 · 6 · 3, et les
+égalités se départagent aux points, puis aux victoires, puis à la dernière
+place (l'ordre de la grille tranche les égalités parfaites). Chaque manche
+paie le tarif du circuit (50 / 30 / 10 billets verts), et seul le champion
+touche la prime du tournoi (100, 150, 200 puis 300 billets) — les tournois ne
+débloquent jamais les parcours du mode libre. Deux succès récompensent les
+champions : un premier titre, puis les quatre titres.
+
+### Où vit le code
+
+- `src/games/cityRushTournaments.js` — le catalogue pur : les 4 tournois, le
+  déblocage, le barème, les rivaux, les grilles et le classement général ;
+- `src/games/ViceCityRushPage.jsx` — le hub, le garage imposé (ville et rivaux
+  du tournoi) et les écrans de manche (classement, sacre, prime) ;
+- `src/games/cityRushProgress.js` — la sauvegarde : `completedTournamentIds`
+  et `tournamentTitles` (JSONB, aucune migration SQL) ;
+- `src/games/city-rush-tournament.css` — le hub, les cartes et le classement
+  (requêtes téléphone gardées, comme partout) ;
+- `src/achievements/catalog.js` et `src/achievements/engine.js` — les succès
+  `vice-tournament-title` et `vice-tournament-slam`, nourris par l'action
+  `vice_city_tournament_won` (un tournoi n'est pas un « mode de course » : il
+  ne valide pas « trois styles »).
+
+### Vérifications
+
+```bash
+npm run check:city-rush-tournament
+```
+
+La vraie page est montée dans jsdom (moteur 3D doublé, comme le garage) et la
+Coupe Sunset est jouée pour de vrai : hub (Sunset ouvert, les trois autres
+verrouillés), règles « pures » reçues par le monde (3 tours, ni police ni
+armes, rivaux attitrés), victoire puis 2e place puis victoire (sacre à
+26 pts), prime +100, déblocage de la Coupe d'Europe, sauvegarde (230 billets)
+et abandon propre depuis le garage.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 
@@ -3142,17 +3192,19 @@ débloquent le nouvel objectif sans être rejouées.
 
 ### Trophées des jeux d'arcade : Mirage Rush et Vice City Rush
 
-Dix-huit trophées (neuf par jeu) se gagnent **manette en main**, sur le site :
+Vingt trophées (neuf pour Mirage Rush, onze pour Vice City Rush) se gagnent
+**manette en main**, sur le site :
 
 | Jeu | Ce qui se gagne | Trophées |
 | --- | --- | --- |
 | Mirage Rush (`/jeu/mirage-rush`) | première course, trois puis dix terrains, 15 cristaux sur une course, 1 000 puis 3 000 points, cinq victoires, première coupe, les cinq coupes | premier galop, trois horizons, mains de cristal, mille éclats, premier trophée, cinq victoires, tempête d'or, carte complète, vitrine complète |
-| Vice City Rush (`/jeu/vice-city-rush`) | première course, premier puis sixième chapitre d'histoire, première victoire, les trois modes, 1 500 puis 4 000 points de butin, les cinq villes, une victoire par ville | premier départ, chapitre un, première place, trois styles, butin de rue, tour du monde, coffre plein, fin de l'histoire, grand chelem |
+| Vice City Rush (`/jeu/vice-city-rush`) | première course, premier puis sixième chapitre d'histoire, première victoire, les trois modes, 1 500 puis 4 000 points de butin, les cinq villes, une victoire par ville, premier titre de champion, les quatre titres | premier départ, chapitre un, première place, trois styles, butin de rue, tour du monde, coffre plein, fin de l'histoire, grand chelem, premier titre, quatre titres |
 
 Chaque course terminée envoie une action au moteur — `mirage_run` (terrain,
 mode, score, cristaux, première place) depuis `MirageRushPage.jsx`,
-`vice_city_run` (ville, mode, place, butin, chapitre d'histoire gagné) depuis
-`ViceCityRushPage.jsx`. Le moteur ne garde que ce qui doit durer : les
+`vice_city_run` (ville, mode, place, butin, chapitre d'histoire gagné) et
+`vice_city_tournament_won` (tournoi gagné) depuis `ViceCityRushPage.jsx`. Le
+moteur ne garde que ce qui doit durer : les
 **records** (score, cristaux) au maximum — une fusion entre appareils prend le
 meilleur —, les choses **distinctes** en ensembles (un terrain rejoué, une
 ville recorourue ou un chapitre revécu ne comptent pas deux fois), et un

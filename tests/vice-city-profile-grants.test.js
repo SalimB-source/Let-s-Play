@@ -92,6 +92,8 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
     storyEnding: '',
     storyVersion: CITY_RUSH_STORY_VERSION,
     storyStars: {},
+    completedTournamentIds: [],
+    tournamentTitles: {},
   });
   assert.deepEqual(readCityRushSave(storage), saved);
   // Données hostiles : chapitre hors bornes, identifiants inconnus, fin inconnue.
@@ -103,6 +105,8 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
     storyEnding: '',
     storyVersion: CITY_RUSH_STORY_VERSION,
     storyStars: {},
+    completedTournamentIds: [],
+    tournamentTitles: {},
   });
 });
 
