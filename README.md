@@ -185,8 +185,10 @@ passe à 18 px au palier 3 **sans allonger la mesure de lecture** (68 caractère
 
 1. **N'ajouter une colonne qu'aux grilles alimentées par des données** (tests,
    flux d'articles, recherche, calendrier des sorties). Une grille à nombre
-   d'éléments fixe — les 4 reels, les 3 cartes du hub d'actu, les 3 formats, les
-   3 statistiques — laisserait un trou béant dans sa dernière rangée. Celles-là
+   d'éléments fixe — les 4 reels, les 3 cartes du hub d'actu, les 3 actus du
+   jour du hub (verrouillées à trois colonnes dans `src/news-carousel.css`), les
+   3 formats, les 3 statistiques — laisserait un trou béant dans sa dernière
+   rangée. Celles-là
    grandissent avec le conteneur, ce qui est voulu.
 2. **Les grilles remplissent la largeur, la prose ne la remplit jamais.** Une
    ligne de 150 caractères est illisible, même si elle « occupe la place ». Les

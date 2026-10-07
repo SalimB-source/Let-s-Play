@@ -56,12 +56,20 @@
    tout en haut (d'où l'espacement haut à zéro) et c'est elle qui laisse
    respirer le bandeau du hub — puis les trois univers — qui suivent. */
 .news-hub-section .news-hub-headlines{padding:0 0 72px}
+/* Les actus du jour sont trois : elles tiennent toute la rangée, comme les
+   trois univers juste en dessous. La grille générique des actus en prévoit
+   quatre (cinq puis six sur très grand écran) — la quatrième colonne resterait
+   vide sous les trois cartes. La règle l'emporte par sa spécificité sur
+   `.news-carousel.is-grid` (news-view-toggle.css et les paliers de
+   large-screen.css), d'où le rappel en deux colonnes dans le palier téléphone. */
+.news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 /* Bandeau du hub réduit à son libellé et à l'œil « Choisis ton univers » : les
    trois cartes d'univers remontent donc juste sous lui. */
 .news-hub-section .news-hub-head{padding-bottom:20px}
 .news-hub-section .news-hub-head + .news-hub-grid{margin-top:24px}
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-hub-section .news-hub-headlines{padding-bottom:52px}
+  .news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 /* Trois univers sur desktop ; sous 1100 px la grille repasse à deux colonnes
    (la troisième carte ouvre la ligne suivante) et les titres remontent d’un
