@@ -317,6 +317,7 @@ import {
   CITY_RUSH_VICE_CITY_TURNS,
   CITY_RUSH_CORNER_PACE_COURSES,
   CITY_RUSH_CORNER_PACE_MIN,
+  CITY_RUSH_CORNER_PACE_PREBRAKE_METERS,
   CITY_RUSH_CORNER_PACE_SWEEP,
   CITY_RUSH_CORNER_PACE_YAW_START,
   CITY_RUSH_CORNER_PACE_YAW_SWEEP,
@@ -2438,6 +2439,7 @@ test('Vice City et le Ring ralentissent les voitures dans les grands virages', (
   assert.deepEqual([...CITY_RUSH_CORNER_PACE_COURSES], ['vice-city', 'nordschleife']);
   assert.equal(CITY_RUSH_CORNER_PACE_SWEEP, 0.72);
   assert.equal(CITY_RUSH_CORNER_PACE_MIN, 0.58);
+  assert.equal(CITY_RUSH_CORNER_PACE_PREBRAKE_METERS, 40);
   assert.ok(CITY_RUSH_CORNER_PACE_MIN < CITY_RUSH_CORNER_PACE_SWEEP && CITY_RUSH_CORNER_PACE_SWEEP < 1);
   assert.ok(CITY_RUSH_CORNER_PACE_YAW_START < CITY_RUSH_CORNER_PACE_YAW_SWEEP);
   assert.ok(CITY_RUSH_CORNER_PACE_YAW_SWEEP < CITY_RUSH_CORNER_PACE_YAW_TIGHT);
@@ -2471,11 +2473,17 @@ test('Vice City et le Ring ralentissent les voitures dans les grands virages', (
   const midPace = cityRushCornerPaceFromYaw(midYaw);
   assert.ok(midPace < 1 && midPace > CITY_RUSH_CORNER_PACE_SWEEP, 'le grand virage se prend en levant le pied, pas d’un bloc');
 
-  // Vice City : pleine vitesse sur les droites, ralentissement net au cœur des
-  // longues courbes, et freinage plus fort dans les virages secs.
+  // Vice City : pleine vitesse sur les longues droites, freinage anticipé à
+  // l'approche, ralentissement net dans les courbes et plus fort dans les
+  // virages secs.
   assert.equal(cityRushCornerPace('vice-city', 0), 1, 'la ligne de départ reste à fond');
-  assert.equal(cityRushCornerPace('vice-city', 270), 1, 'la droite entre Ocean Drive et le pont ne ralentit pas');
-  assert.equal(cityRushCornerPace('vice-city', 270 + CITY_RUSH_LAP_LENGTH), 1, 'le tour suivant non plus');
+  assert.equal(cityRushCornerPace('vice-city', 240), 1, 'la longue droite garde sa vitesse');
+  assert.ok(cityRushCornerPace('vice-city', 270) < 1, 'le freinage commence avant le virage de MacArthur');
+  assert.equal(
+    cityRushCornerPace('vice-city', 270),
+    cityRushCornerPace('vice-city', 270 + CITY_RUSH_LAP_LENGTH),
+    'le freinage anticipé se répète au tour suivant',
+  );
   const longTurns = CITY_RUSH_VICE_CITY_TURNS.filter((turn) => turn.kind === 'long');
   const sharpTurns = CITY_RUSH_VICE_CITY_TURNS.filter((turn) => turn.kind === 'sharp');
   const slowestIn = (turn) => {
@@ -2487,7 +2495,13 @@ test('Vice City et le Ring ralentissent les voitures dans les grands virages', (
     return pace;
   };
   for (const turn of CITY_RUSH_VICE_CITY_TURNS) {
-    assert.equal(cityRushCornerPace('vice-city', turn.start), 1, `${turn.name} commence à fond`);
+    assert.equal(
+      cityRushCornerPace('vice-city', turn.start - CITY_RUSH_CORNER_PACE_PREBRAKE_METERS),
+      1,
+      `${turn.name} conserve sa vitesse avant la zone de freinage`,
+    );
+    assert.ok(cityRushCornerPace('vice-city', turn.start - 10) < 1, `${turn.name} commence à ralentir avant son entrée`);
+    assert.ok(cityRushCornerPace('vice-city', turn.start) < 1, `${turn.name} est déjà ralenti à l'entrée`);
     assert.equal(cityRushCornerPace('vice-city', turn.end), 1, `${turn.name} se réaccélère à la sortie`);
     assert.equal(
       cityRushCornerPace('vice-city', (turn.start + turn.end) / 2),
@@ -2531,13 +2545,26 @@ test('Vice City et le Ring ralentissent les voitures dans les grands virages', (
   assert.ok(karussell <= 0.62, `Karussell freine franchement (${karussell.toFixed(3)})`);
   assert.ok(karussell >= CITY_RUSH_CORNER_PACE_MIN);
 
-  // Le freinage habituel suffit à rejoindre la vitesse du virage : une voiture
-  // lancée à 35 m/s est à la vitesse du grand virage en moins d'une seconde,
-  // sans passer en dessous.
-  const cornerTarget = CITY_RUSH_PLAYER_SPEED * CITY_RUSH_CORNER_PACE_SWEEP;
-  const afterOneSecond = approachCityRushSpeed(CITY_RUSH_PLAYER_SPEED, cornerTarget, 8, 1);
-  assert.equal(afterOneSecond, cornerTarget, 'le frein rejoint la cible du grand virage');
-  assert.ok(afterOneSecond < CITY_RUSH_PLAYER_SPEED - 8, 'le compteur baisse de façon lisible');
+  // Le joueur commence effectivement à perdre de la vitesse avant le début
+  // d'une épingle, puis arrive déjà ralenti à l'entrée.
+  const sharpTurn = sharpTurns[0];
+  let approachDistance = sharpTurn.start - CITY_RUSH_CORNER_PACE_PREBRAKE_METERS;
+  let approachSpeed = CITY_RUSH_PLAYER_SPEED;
+  let firstBrakeDistance = null;
+  const frame = 1 / 60;
+  while (approachDistance < sharpTurn.start) {
+    const pace = cityRushCornerPace('vice-city', approachDistance);
+    if (pace < 1 && firstBrakeDistance === null) firstBrakeDistance = approachDistance;
+    approachSpeed = approachCityRushSpeed(
+      approachSpeed,
+      CITY_RUSH_PLAYER_SPEED * pace,
+      8,
+      frame,
+    );
+    approachDistance += approachSpeed * frame;
+  }
+  assert.ok(Number.isFinite(firstBrakeDistance) && firstBrakeDistance < sharpTurn.start, 'la cible baisse avant le repère de début du virage');
+  assert.ok(approachSpeed < CITY_RUSH_PLAYER_SPEED - 8, 'la voiture arrive déjà visiblement ralentie');
 });
 
 test('the oncoming bonus ramps up in the wrong-way lanes and drains on the way back', () => {
