@@ -10,6 +10,10 @@
   --community-text-strong: #f5f6ff;
   --community-edge: rgba(148, 130, 255, .2);
   --community-edge-strong: rgba(148, 130, 255, .38);
+  /* Ton « supprimer » : le rose du site, réservé aux actions destructives. */
+  --community-danger: #ff8c9d;
+  --community-danger-edge: rgba(255, 140, 157, .45);
+  --community-danger-soft: rgba(255, 140, 157, .12);
   min-height: 70vh;
   color: var(--community-text);
 }
@@ -21,6 +25,9 @@
   --community-text-strong: #17152f;
   --community-edge: rgba(86, 70, 190, .16);
   --community-edge-strong: rgba(86, 70, 190, .32);
+  --community-danger: var(--danger);
+  --community-danger-edge: rgba(190, 18, 60, .42);
+  --community-danger-soft: rgba(190, 18, 60, .08);
 }
 
 .community-hero {
@@ -378,6 +385,17 @@
 .community-group-card:hover .community-group-card-arrow,
 .community-group-card.is-active .community-group-card-arrow { opacity: 1; transform: translate(2px,-2px); }
 .community-group-index { align-self: start; padding-top: 1px; color: var(--dim); font: 600 8px var(--mono); }
+/* Suppression d'un groupe : l'action n'existe que pour son créateur. La carte
+   et le bouton cohabitent dans la rangée — la colonne d'action reste à 0 tant
+   qu'aucun bouton n'est rendu, la carte garde donc toute la largeur pour les
+   autres groupes. Le bouton fait 24 px, en icône seule, et se découvre au
+   survol (ou au focus clavier) comme celui des messages. */
+.community-group-card-wrapper { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px; }
+.community-group-card-delete { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 1px solid var(--community-edge); background: var(--community-surface-raised); color: var(--dim); cursor: pointer; opacity: 0; transition: opacity .18s, color .18s, border-color .18s, background .18s; }
+.community-group-card-delete svg { width: 14px; height: 14px; display: block; }
+.community-group-card-wrapper:hover .community-group-card-delete,
+.community-group-card-delete:focus-visible { opacity: 1; }
+.community-group-card-delete:hover { border-color: var(--community-danger-edge); background: var(--community-danger-soft); color: var(--community-danger); }
 .community-empty-groups { display: grid; min-height: 155px; place-items: center; padding: 22px; border: 1px dashed var(--community-edge-strong); color: var(--muted); text-align: center; }
 .community-empty-groups > span { color: var(--cyan); font-size: 26px; }
 .community-empty-groups p { max-width: 220px; margin: 9px 0 0; font-size: 11px; line-height: 1.6; }
@@ -421,6 +439,15 @@
 .community-refresh:hover { border-color: var(--cyan); background: rgba(34,211,238,.07); color: var(--cyan); }
 .community-refresh:disabled { opacity: .6; cursor: default; }
 .community-refresh.is-spinning svg { animation: community-spin .7s linear infinite; }
+/* Le bouton « supprimer » de l'en-tête reprend exactement le gabarit carré du
+   bouton d'actualisation (34 px, icône seule) : aligné dans la barre d'actions,
+   en rose pour dire l'action destructive, il ne déborde plus comme un bouton
+   natif. Il est calé sur le même carré que l'actualisation à toutes les
+   largeurs (voir les paliers ci-dessous). */
+.community-discussion-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.community-delete-group-btn { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; padding: 0; border: 1px solid var(--community-edge); background: var(--community-surface-raised); color: var(--community-danger); cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+.community-delete-group-btn svg { display: block; }
+.community-delete-group-btn:hover { border-color: var(--community-danger); background: var(--community-danger-soft); }
 @keyframes community-spin { to { transform: rotate(360deg); } }
 .community-discussion-about { padding: 14px 24px 13px; border-bottom: 1px solid var(--community-edge); }
 .community-discussion-about > p { max-width: 750px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
@@ -445,6 +472,15 @@
 .community-comment-meta time { color: var(--dim); font: 500 9px var(--mono); }
 .community-comment-local { color: var(--yellow-ink); font: 700 7px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
 .community-comment-main p { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Même bouton natif oublié pour la modération d'un message : le créateur du
+   groupe peut supprimer n'importe quel commentaire. Le bouton reprend le
+   gabarit 24 px du bouton de groupe et se découvre au survol du message (ou au
+   focus clavier, ou en permanence sur un écran tactile). */
+.community-comment-moderate { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; margin: 7px 0 0; margin-inline-start: auto; border: 1px solid var(--community-edge); background: var(--community-surface-raised); color: var(--dim); cursor: pointer; opacity: 0; transition: opacity .18s, color .18s, border-color .18s, background .18s; }
+.community-comment-moderate svg { width: 14px; height: 14px; display: block; }
+.community-comment:hover .community-comment-moderate,
+.community-comment-moderate:focus-visible { opacity: 1; }
+.community-comment-moderate:hover { border-color: var(--community-danger-edge); background: var(--community-danger-soft); color: var(--community-danger); }
 .community-empty-thread { display: flex; flex: 1; min-height: 140px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; color: var(--muted); text-align: center; }
 .community-empty-thread-icon { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--community-edge-strong); border-radius: 50%; background: var(--community-surface-raised); color: var(--cyan); }
 .community-empty-thread p { max-width: 300px; margin: 0; font-size: 12px; line-height: 1.6; }
@@ -590,6 +626,9 @@
   .community-live-indicator { font-size: 7px; }
   .community-discussion-meta { flex-wrap: wrap; font-size: 7px; letter-spacing: .08em; }
   .community-refresh { width: 30px; height: 30px; flex-basis: 30px; }
+  .community-delete-group-btn { width: 30px; height: 30px; flex-basis: 30px; }
+  .community-group-card-delete { opacity: 1; }
+  .community-comment-moderate { opacity: 1; }
   .community-discussion-about { padding: 12px 14px; }
   .community-discussion-about > p { font-size: 11px; }
   .community-thread-head { gap: 9px; padding: 12px 14px 5px; }
@@ -628,6 +667,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .community-group-card-delete,
+  .community-delete-group-btn,
+  .community-comment-moderate { transition: none; }
   .community-feature-card,
   .community-directory-signal i,
   .community-comment,
