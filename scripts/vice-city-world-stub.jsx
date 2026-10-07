@@ -26,5 +26,5 @@ export default function ViceCityWorldStub(props) {
   // Le vrai moteur se reconstruit (et se redéclare prêt) à chaque course :
   // `runId` change à chaque lancement.
   useEffect(() => { props.onReady?.(); }, [props.runId]);
-  return <div className="city-rush-world-stub" data-phase={props.phase} />;
+  return <div className="city-rush-world city-rush-world-stub" data-phase={props.phase} />;
 }

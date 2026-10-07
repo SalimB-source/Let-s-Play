@@ -299,7 +299,17 @@
 
 .city-rush-viewport .city-rush-hud .city-rush-route-sector { flex: 1 1 auto; }
 
-/* ── Pied : direction, vie, arme ── */
+/* ── Pied : direction, vie, armes ── */
+.city-rush-viewport .city-rush-hud .city-rush-weapon-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+  width: max-content;
+  max-width: 100%;
+}
+
 .city-rush-viewport .city-rush-hud .city-rush-steering {
   pointer-events: auto;
   border: 1px solid var(--hud-line);
@@ -439,7 +449,26 @@
   .city-rush-viewport .city-rush-hud .city-rush-steering { padding: 5px; gap: 6px; border-radius: 14px; }
   .city-rush-viewport .city-rush-hud .city-rush-steering > span { display: none; }
   .city-rush-viewport .city-rush-hud .city-rush-steering button { width: 56px; height: 56px; border-radius: 12px; touch-action: none; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls { gap: 7px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 104px; height: 104px; padding: 11px; }
+  /* Les deux boutons restent dans la colonne droite, sans recouvrir le compteur
+     de vitesse sur les téléphones étroits. Le diamètre reste tactile. */
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-button {
+    width: 80px;
+    height: 80px;
+    padding: 6px;
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-button {
+    width: 80px;
+    height: 62px;
+    padding: 5px;
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-icon,
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-icon svg { width: 31px; height: 31px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-label { font-size: 7px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-status { font-size: 8px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-icon,
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-icon svg { width: 27px; height: 27px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon { width: 40px; height: 40px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-icon svg { width: 42px; height: 42px; }
 }
@@ -802,6 +831,26 @@
   .city-rush-viewport .city-rush-hud { --hud-pad: 7px; --hud-gap: 5px; }
   .city-rush-viewport .city-rush-hud .city-rush-hud-card { padding: 5px 7px; }
   .city-rush-viewport .city-rush-hud .city-rush-lap-card { flex-basis: 94px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls { gap: 5px; }
   .city-rush-viewport .city-rush-hud .city-rush-machine-gun-button { width: 88px; height: 88px; }
   .city-rush-viewport .city-rush-hud .city-rush-bazooka-button { width: 88px; height: 64px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-button {
+    width: 70px;
+    height: 70px;
+    padding: 4px;
+    grid-template-rows: 8px 1fr 9px;
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-button {
+    width: 70px;
+    height: 56px;
+    padding: 3px;
+  }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-icon,
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-icon svg { width: 24px; height: 24px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-label { font-size: 5px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-machine-gun-status { font-size: 6px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-icon,
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-icon svg { width: 20px; height: 20px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-label { font-size: 5px; }
+  .city-rush-viewport .city-rush-hud .city-rush-weapon-controls.has-bazooka .city-rush-bazooka-status { font-size: 6px; }
 }

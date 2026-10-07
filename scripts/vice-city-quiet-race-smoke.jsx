@@ -122,11 +122,12 @@ export async function checkViceCityQuietRace(assert) {
     assert.equal(worldProbe.props?.onPickup, undefined, 'la page n’écoute plus les ramassages');
     assert.equal(worldProbe.props?.onLap, undefined, 'la page n’écoute plus les passages de ligne');
 
-    // Le bouton jaune est empilé sous l'AK-47 et reste grisé tant que le HUD
-    // n'annonce pas la traversée d'un des deux entrepôts (30 % / 65 %).
+    // Le bouton jaune est à gauche de l'AK-47 rouge, et reste grisé tant que
+    // le HUD n'annonce pas la traversée d'un des deux entrepôts (30 % / 65 %).
     const gunButton = mustFind(node, '.city-rush-machine-gun-button', 'commande rouge');
     const bazookaButton = mustFind(node, '.city-rush-bazooka-button', 'commande bazooka');
-    assert.ok(gunButton.nextElementSibling === bazookaButton, 'le bouton bazooka se place directement sous le bouton rouge');
+    assert.ok(bazookaButton.parentElement === gunButton.parentElement, 'les deux armes partagent le dock tactile');
+    assert.ok(bazookaButton.nextElementSibling === gunButton, 'le bouton bazooka précède le bouton rouge dans l’ordre gauche-droite');
     assert.equal(bazookaButton.disabled, true, 'le bazooka reste verrouillé avant le pickup');
     assert.match(bazookaButton.className, /is-empty/, 'le bouton de bazooka est grisé avant le pickup');
     await click(bazookaButton);
@@ -169,6 +170,7 @@ export async function checkViceCityQuietRace(assert) {
       { type: 'jump-overpass' },
       { type: 'rival-boost', rival: 'DANTE' },
       { type: 'police-destroyed', police: 'BERLINE 07', byPlayer: true, wantedLevel: 3 },
+      { type: 'bazooka-impact', targetId: 'police-08', count: 2 },
       { type: 'tunnel-enter', name: 'TUNNEL', closed: 2, open: 2, walls: 1, side: 'left' },
       { type: 'sprint-timeout', checkpoints: 4 },
       { type: 'story-warning' },
@@ -180,6 +182,8 @@ export async function checkViceCityQuietRace(assert) {
       assert.equal(node.querySelectorAll(selector).length, 0, `aucun « ${selector} » ne se pose sur la course`);
     }
     assert.ok(hud.contains(node.querySelector('.city-rush-hud-zone.is-top-center')), 'la zone haute du HUD reste en place, sans message dedans');
+    assert.ok(node.querySelector('.city-rush-bazooka-blast-vignette'), 'un impact de bazooka déclenche sa vignette rouge');
+    assert.ok(node.querySelector('.city-rush-world.is-bazooka-shaking'), 'la scène 3D tremble à l’impact, sans déplacer le HUD');
 
     // Le HUD de course, lui, garde tout ce qui se lit d'un coup d'œil.
     assert.ok(node.querySelector('.city-rush-position-card'), 'la carte POSITION reste affichée');

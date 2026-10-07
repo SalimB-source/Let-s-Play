@@ -1436,8 +1436,101 @@ function animatePoliceWreckHusk(husk, intensity, clockTime) {
   wreck.ember.material.opacity = clamp(0.08 + 0.2 * level * (0.7 + 0.3 * Math.sin(clockTime * 5.3)), 0, 1);
 }
 
-function makeImpact(shared) {
+const BAZOOKA_EXPLOSION_SECONDS = 1.85;
+const BAZOOKA_SCORCH_SECONDS = 4.8;
+
+// Panache en champignon : un fût incandescent pousse un chapeau de fumée
+// charbonneuse, découpé en bourrelets pour garder une silhouette lisible en 3D.
+// Ses matériaux sont propres à l'impact (aucun partage avec les carcasses).
+function makeBazookaMushroomCloud() {
   const group = new THREE.Group();
+  group.name = 'bazooka-mushroom-cloud';
+  const sootMaterial = new THREE.MeshBasicMaterial({
+    color: 0x453438, transparent: true, opacity: 0, depthWrite: false,
+    side: THREE.DoubleSide, toneMapped: false,
+  });
+  const fireMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff6127, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+  });
+  const coreMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffd15a, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+  });
+  const stemSmoke = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.78, 0.22, 3.3, 14, 4, true), sootMaterial,
+  );
+  stemSmoke.name = 'bazooka-mushroom-stem-smoke';
+  stemSmoke.position.y = 1.72;
+  const stemFire = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.48, 0.12, 2.9, 12, 4, true), fireMaterial,
+  );
+  stemFire.name = 'bazooka-mushroom-stem-fire';
+  stemFire.position.y = 1.52;
+  const stemCore = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.06, 2.45, 10, 4, true), coreMaterial,
+  );
+  stemCore.name = 'bazooka-mushroom-stem-core';
+  stemCore.position.y = 1.32;
+
+  const puffGeometry = new THREE.SphereGeometry(1, 16, 12);
+  const puffs = [
+    [0, 3.45, 0, 1.65, 0.76, 1.45],
+    [-1.12, 3.25, 0.02, 0.98, 0.66, 0.96],
+    [1.12, 3.25, 0.02, 0.98, 0.66, 0.96],
+    [0, 3.22, -1.04, 1.05, 0.64, 0.92],
+    [0, 3.22, 1.04, 1.05, 0.64, 0.92],
+    [0, 4.02, 0, 1.02, 0.58, 0.98],
+  ];
+  for (const [x, y, z, sx, sy, sz] of puffs) {
+    const soot = new THREE.Mesh(puffGeometry, sootMaterial);
+    soot.position.set(x, y, z);
+    soot.scale.set(sx, sy, sz);
+    group.add(soot);
+    // Les langues de feu sont plus petites : elles s'éteignent pendant que le
+    // bourrelet sombre continue de monter, comme un vrai panache de souffle.
+    const flame = new THREE.Mesh(puffGeometry, fireMaterial);
+    flame.position.set(x * 0.82, y - 0.08, z * 0.82);
+    flame.scale.set(sx * 0.62, sy * 0.58, sz * 0.62);
+    group.add(flame);
+  }
+  group.add(stemSmoke, stemFire, stemCore);
+  return {
+    group,
+    sootMaterial,
+    fireMaterial,
+    coreMaterial,
+    stemSmoke,
+    stemFire,
+    stemCore,
+  };
+}
+
+function animateBazookaMushroomCloud(cloud, t, scale) {
+  if (!cloud) return;
+  const appear = smoothstep(t / 0.12);
+  const rise = smoothstep(t / 0.68);
+  const dissolve = 1 - smoothstep((t - 1.12) / 0.68);
+  const fireFade = 1 - smoothstep((t - 0.18) / 0.64);
+  cloud.group.visible = t < BAZOOKA_EXPLOSION_SECONDS;
+  cloud.group.position.y = 0.12 + rise * 1.35;
+  cloud.group.scale.set(
+    scale * (0.5 + rise * 0.58),
+    scale * (0.55 + rise * 0.5),
+    scale * (0.5 + rise * 0.58),
+  );
+  cloud.group.rotation.y = Math.sin(t * 1.8) * 0.075;
+  cloud.sootMaterial.opacity = 0.76 * appear * dissolve;
+  cloud.fireMaterial.opacity = 0.84 * appear * fireFade * dissolve;
+  cloud.coreMaterial.opacity = 0.96 * appear * (1 - smoothstep(t / 0.5)) * dissolve;
+  cloud.stemSmoke.scale.y = 0.78 + rise * 0.3;
+  cloud.stemFire.scale.y = 0.78 + rise * 0.3;
+  cloud.stemCore.scale.y = 0.8 + rise * 0.25;
+}
+
+function makeImpact(shared, { bazooka = false } = {}) {
+  const group = new THREE.Group();
+  group.name = bazooka ? 'city-rush-bazooka-explosion' : 'police-explosion';
   // Éclair initial : une sphère additive très brillante qui jaillit à l'impact.
   const flash = new THREE.Mesh(
     new THREE.SphereGeometry(0.7, 14, 12),
@@ -1463,22 +1556,26 @@ function makeImpact(shared) {
   );
   ring.rotation.x = Math.PI / 2;
   ring.position.y = 0.06;
-  // Trace noire laissée sur la route (décalage goudronné) qui s'estompe lentement.
+  // La roquette grave un vrai rond de goudron noir qui reste visible après le
+  // flash et la fumée, puis se dissipe doucement au fil des secondes.
   const scorch = new THREE.Mesh(
-    new THREE.CircleGeometry(1.5, 22),
-    new THREE.MeshBasicMaterial({ color: 0x140d0a, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
+    new THREE.CircleGeometry(bazooka ? 2.35 : 1.5, bazooka ? 28 : 22),
+    new THREE.MeshBasicMaterial({ color: 0x0a0808, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
   );
+  scorch.name = bazooka ? 'bazooka-scorch-mark' : 'police-explosion-scorch';
   scorch.rotation.x = -Math.PI / 2;
   scorch.position.y = 0.02;
+  const mushroomCloud = bazooka ? makeBazookaMushroomCloud() : null;
   group.add(flash, fireball, inner, ring, scorch);
-  group.userData = { flash, fireball, inner, ring, scorch, age: 0 };
+  if (mushroomCloud) group.add(mushroomCloud.group);
+  group.userData = { flash, fireball, inner, ring, scorch, mushroomCloud, age: 0 };
   group.visible = false;
   return group;
 }
 
-// Anime un ensemble d'explosion (impact d'hélico comme berline détruite) :
-// éclair bref, boule de feu, noyau chaud, onde de choc et trace au sol.
-function animateExplosion(fx, t, { radius = EXPLOSION_RADIUS, scale = 1 } = {}) {
+// Anime un impact de berline ou le champignon de la roquette : flash bref,
+// boule de feu, onde de choc et, pour le bazooka, panache ascendant + brûlure.
+function animateExplosion(fx, t, { radius = EXPLOSION_RADIUS, scale = 1, bazooka = false } = {}) {
   // Éclair initial très bref.
   const flashLife = clamp(t / 0.12, 0, 1);
   fx.userData.flash.scale.setScalar((1.4 + flashLife * 1.2) * scale);
@@ -1494,10 +1591,18 @@ function animateExplosion(fx, t, { radius = EXPLOSION_RADIUS, scale = 1 } = {}) 
   const ringLife = clamp(t / 0.55, 0, 1);
   fx.userData.ring.scale.setScalar(0.4 + ringLife * (radius / 0.6 - 0.4));
   fx.userData.ring.material.opacity = (1 - ringLife) * 0.9;
-  // Trace noire laissée sur la route : apparaît vite, puis s'estompe.
-  const scorchLife = clamp(t / 0.6, 0, 1);
-  fx.userData.scorch.scale.setScalar(scale);
-  fx.userData.scorch.material.opacity = Math.sin(Math.min(1, scorchLife * 1.6) * Math.PI) * 0.7;
+  if (bazooka) {
+    animateBazookaMushroomCloud(fx.userData.mushroomCloud, t, scale);
+    const scorchAppear = smoothstep(t / 0.14);
+    const scorchFade = 1 - smoothstep((t - 3.0) / (BAZOOKA_SCORCH_SECONDS - 3.0));
+    fx.userData.scorch.scale.setScalar(scale * (0.94 + smoothstep(t / 0.32) * 0.06));
+    fx.userData.scorch.material.opacity = 0.86 * scorchAppear * scorchFade;
+  } else {
+    // La trace d'une explosion ordinaire garde sa durée historique.
+    const scorchLife = clamp(t / 0.6, 0, 1);
+    fx.userData.scorch.scale.setScalar(scale);
+    fx.userData.scorch.material.opacity = Math.sin(Math.min(1, scorchLife * 1.6) * Math.PI) * 0.7;
+  }
 }
 
 // Choc voiture / trafic : flash blanc, étincelles et onde de choc orange.
@@ -4440,12 +4545,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     spawnPoliceExplosion(worldPosition, wreck.pan, { sound });
   }
 
-  function spawnBazookaImpact(worldPosition, pan = 0) {
-    const mesh = makeImpact(shared);
+  function spawnBazookaImpact(worldPosition, pan = 0, { trackDistance = distance, trackX = 0 } = {}) {
+    const mesh = makeImpact(shared, { bazooka: true });
     mesh.userData.bazooka = true;
+    mesh.userData.trackDistance = Number(trackDistance);
+    mesh.userData.trackX = Number(trackX) || 0;
     poseExplosion(mesh, worldPosition);
     audioRef?.current?.explosion?.({ pan });
-    cameraKick = Math.max(cameraKick, 0.78);
+    cameraKick = Math.max(cameraKick, reduceMotion ? 0.35 : 1.45);
     for (let puff = 0; puff < 12; puff += 1) {
       const angle = Math.random() * Math.PI * 2;
       const reach = 2.8 + Math.random() * BAZOOKA_EXPLOSION_RADIUS;
@@ -4464,7 +4571,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (attackerId !== 'player' || !target?.isPolice || !target.racer) return false;
     const centerDistance = Number(target.distance);
     const centerX = Number.isFinite(Number(target.x)) ? Number(target.x) : laneX(target.lane);
-    const blastPosition = target.mesh.position.clone().add(new THREE.Vector3(0, 0.38, 0));
+    // Le groupe d'explosion est ancré au niveau de la chaussée : le flash et
+    // le panache montent depuis ce point, tandis que la trace noire reste posée
+    // sur le goudron (elle ne flotte pas à la hauteur du centre de la voiture).
+    const blastPosition = target.mesh.position.clone();
     const blastPan = vehiclePan(target.id);
     const victims = bazookaPoliceCandidates({ includeHidden: true }).filter((candidate) => cityRushBazookaBlastContains({
       centerDistance,
@@ -4486,7 +4596,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       destroyed.push(candidate.id);
     }
 
-    spawnBazookaImpact(blastPosition, blastPan);
+    spawnBazookaImpact(blastPosition, blastPan, { trackDistance: centerDistance, trackX: centerX });
     getCallbacks().effect?.({
       type: 'bazooka-impact',
       targetId: target.id,
@@ -4804,11 +4914,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Explosions des berlines détruites : l'effet s'éteint après sa courte animation.
     for (let index = policeExplosions.length - 1; index >= 0; index -= 1) {
       const explosion = policeExplosions[index];
+      if (explosion.userData.bazooka && Number.isFinite(explosion.userData.trackDistance)) {
+        const trackDistance = explosion.userData.trackDistance;
+        explosion.position.set(
+          explosion.userData.trackX + trackRelativeX(trackDistance),
+          trackRelativeY(trackDistance),
+          PLAYER_Z - (trackDistance - distance) * SCALE,
+        );
+        explosion.rotation.set(trackPitch(trackDistance), trackYaw(trackDistance), 0);
+      }
       explosion.userData.age += dt;
       animateExplosion(explosion, explosion.userData.age, explosion.userData.bazooka
-        ? { radius: BAZOOKA_EXPLOSION_RADIUS, scale: 2.05 }
+        ? { radius: BAZOOKA_EXPLOSION_RADIUS, scale: 2.05, bazooka: true }
         : {});
-      if (explosion.userData.age > 0.62) {
+      const lifetime = explosion.userData.bazooka ? BAZOOKA_SCORCH_SECONDS : 0.62;
+      if (explosion.userData.age > lifetime) {
         explosion.visible = false;
         policeExplosions.splice(index, 1);
       }

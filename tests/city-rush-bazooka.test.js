@@ -174,3 +174,26 @@ test('deux entrepôts sur toutes les cartes, reliés à l’inventaire, au tir d
   assert.match(baseCss, /\.city-rush-bazooka-button\.is-ready[\s\S]*?border-color: #ffe35b/);
   assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \.city-rush-bazooka-button\s*\{\s*pointer-events: auto/);
 });
+
+test('le tir laisse un cratère noir durable et une explosion en champignon, avec secousse et vignette rouge', () => {
+  assert.match(worldSource, /const BAZOOKA_EXPLOSION_SECONDS = 1\.85/);
+  assert.match(worldSource, /const BAZOOKA_SCORCH_SECONDS = 4\.8/);
+  assert.match(worldSource, /group\.name = 'bazooka-mushroom-cloud'/);
+  assert.match(worldSource, /bazooka-mushroom-stem-smoke/);
+  assert.match(worldSource, /new THREE\.CircleGeometry\(bazooka \? 2\.35 : 1\.5/);
+  assert.match(worldSource, /scorch\.name = bazooka \? 'bazooka-scorch-mark'/);
+  assert.match(worldSource, /cameraKick = Math\.max\(cameraKick, reduceMotion \? 0\.35 : 1\.45\)/);
+  assert.match(pageSource, /effect\.type === 'bazooka-impact'[\s\S]*?setBazookaImpactPulse/);
+  assert.match(pageSource, /worldElement\.classList\.add\('is-bazooka-shaking'\)/);
+  assert.match(pageSource, /bazookaImpactPulse > 0 && \([\s\S]*?city-rush-bazooka-blast-vignette[\s\S]*?onAnimationEnd=\{\(\) => setBazookaImpactPulse/);
+  assert.match(baseCss, /@keyframes crBazookaScreenShake/);
+  assert.match(baseCss, /@keyframes crBazookaBlastVignette/);
+  assert.match(baseCss, /rgba\(255, 22, 48, 0\.78\)/);
+});
+
+test('le bouton jaune du bazooka est placé à gauche du bouton rouge dans un dock horizontal', () => {
+  const weaponDock = pageSource.match(/city-rush-weapon-controls[\s\S]*?city-rush-machine-gun-button/)?.[0] || '';
+  assert.ok(weaponDock, 'les deux boutons sont regroupés dans le dock d’armes');
+  assert.ok(weaponDock.indexOf('city-rush-bazooka-button') < weaponDock.indexOf('city-rush-machine-gun-button'));
+  assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \.city-rush-weapon-controls\s*\{[^}]*display: flex;[^}]*flex-direction: row;/);
+});
