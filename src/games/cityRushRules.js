@@ -2707,6 +2707,77 @@ export function cityRushTrackProfile(course) {
   return resolved?.style === 'nordschleife' ? CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE : CITY_RUSH_TRACK_PROFILE_DEFAULT;
 }
 
+// ── Ralentissement dans les grands virages ──────────────────────────────────
+// Vice City et le Nordschleife sont les deux parcours dont le tracé tourne
+// vraiment : longues courbes puis virages secs à Vice City, appuis tenus et
+// cassures sur le Ring. Tant que le volant est braqué, la vitesse visée baisse.
+// Le facteur suit le cap rendu (`trackProfile.yaw`), pas une liste de noms :
+// il est nul sous 6° (lignes droites, et les S doux des autres villes), tombe
+// à `CITY_RUSH_CORNER_PACE_SWEEP` au cœur d'un grand virage (~14°, l'appui que
+// le Ring tient sur des dizaines de mètres), puis jusqu'à
+// `CITY_RUSH_CORNER_PACE_MIN` dans une cassure. L'entrée et la sortie restent
+// progressives — le cap lui-même monte et redescend sans cassure — si bien que
+// la voiture freine dans le virage et réaccélère en sortie, au lieu de subir
+// un coup de frein au franchissement d'une borne.
+//
+// Le même facteur s'applique à tout ce qui roule (pilote, rivaux, trafic,
+// contresens, police). Deux voitures dans le même virage gardent leur écart ;
+// celle qui est déjà sur la ligne droite suivante reprend l'avantage, comme
+// sur un circuit.
+export const CITY_RUSH_CORNER_PACE_COURSES = Object.freeze(['vice-city', 'nordschleife']);
+export const CITY_RUSH_CORNER_PACE_YAW_START = (6 * Math.PI) / 180; // sous ce cap, pleine vitesse
+export const CITY_RUSH_CORNER_PACE_YAW_SWEEP = (14 * Math.PI) / 180; // cœur d'un grand virage
+export const CITY_RUSH_CORNER_PACE_YAW_TIGHT = (34 * Math.PI) / 180; // cassure : plancher atteint
+export const CITY_RUSH_CORNER_PACE_SWEEP = 0.72; // × vitesse au cœur d'un grand virage
+export const CITY_RUSH_CORNER_PACE_MIN = 0.58; // × vitesse dans une cassure
+
+function cityRushCornerEase(progress) {
+  const t = Math.max(0, Math.min(1, Number(progress) || 0));
+  return t * t * (3 - 2 * t);
+}
+
+/** Le parcours ralentit-il ses voitures dans les grands virages ? */
+export function cityRushUsesCornerPace(course = null) {
+  const resolved = typeof course === 'string'
+    ? CITY_RUSH_COURSES.find((entry) => entry.id === course) || null
+    : course;
+  if (!resolved) return CITY_RUSH_CORNER_PACE_COURSES.includes(course);
+  return resolved.id === 'vice-city' || resolved.id === 'nordschleife' || resolved.style === 'nordschleife';
+}
+
+/**
+ * Part de la vitesse visée conservée pour un cap rendu (radians, signe
+ * indifférent). `1` en ligne droite, `CITY_RUSH_CORNER_PACE_SWEEP` dans un
+ * grand virage, `CITY_RUSH_CORNER_PACE_MIN` dans une cassure. Un cap illisible
+ * ne ralentit personne.
+ */
+export function cityRushCornerPaceFromYaw(yaw = 0) {
+  const radians = Math.abs(Number(yaw));
+  if (!Number.isFinite(radians) || radians <= CITY_RUSH_CORNER_PACE_YAW_START) return 1;
+  if (radians <= CITY_RUSH_CORNER_PACE_YAW_SWEEP) {
+    const t = (radians - CITY_RUSH_CORNER_PACE_YAW_START)
+      / (CITY_RUSH_CORNER_PACE_YAW_SWEEP - CITY_RUSH_CORNER_PACE_YAW_START);
+    return 1 - cityRushCornerEase(t) * (1 - CITY_RUSH_CORNER_PACE_SWEEP);
+  }
+  const t = (radians - CITY_RUSH_CORNER_PACE_YAW_SWEEP)
+    / (CITY_RUSH_CORNER_PACE_YAW_TIGHT - CITY_RUSH_CORNER_PACE_YAW_SWEEP);
+  const eased = cityRushCornerEase(Math.min(1, t));
+  return CITY_RUSH_CORNER_PACE_SWEEP - eased * (CITY_RUSH_CORNER_PACE_SWEEP - CITY_RUSH_CORNER_PACE_MIN);
+}
+
+/**
+ * Part de la vitesse visée conservée à `distance` mètres sur `course`.
+ * `1` partout sauf à Vice City et sur le Nordschleife, et `1` aussi sur leurs
+ * lignes droites. `profile` permet de réutiliser le tracé déjà résolu par le
+ * monde ; à défaut, il est déduit du parcours.
+ */
+export function cityRushCornerPace(course = null, distance = 0, profile = null) {
+  if (!cityRushUsesCornerPace(course)) return 1;
+  const resolved = profile || cityRushTrackProfile(course);
+  const yaw = resolved?.yaw?.(distance);
+  return cityRushCornerPaceFromYaw(yaw);
+}
+
 function nordschleifeTrackSample(values, distance) {
   const steps = values.length;
   const lapLength = CITY_RUSH_LAP_LENGTH;

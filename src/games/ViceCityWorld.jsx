@@ -31,6 +31,7 @@ import {
   CITY_RUSH_RACER_VIEW_DISTANCE,
   cityRushLaneConfig,
   cityRushCoursePace,
+  cityRushCornerPace,
   nordschleifeReadout,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
@@ -1758,6 +1759,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // de trajet) et la difficulté ne changent pas, seul le rythme baisse.
   const coursePace = cityRushCoursePace(city);
   const paced = (speed) => speed * coursePace;
+  // Grands virages de Vice City et du Ring : la vitesse visée baisse tant que
+  // le cap est braqué, pour tout ce qui roule. Ailleurs le facteur reste 1, y
+  // compris sur les lignes droites de ces deux parcours.
+  const cornerPaceAt = (trackDistance) => cityRushCornerPace(city, trackDistance, trackProfile);
 
   const scene = new THREE.Scene();
   // Three.js crée des UUID avec Math.random(). Isole ces appels visuels pour
@@ -6257,7 +6262,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const targetSpeed = Math.max(
         paced(3.4),
         patrol.baseSpeed + paced(Math.sin(elapsed * 0.5 + patrol.phase) * 0.18),
-      );
+      ) * cornerPaceAt(patrol.distance);
       patrol.currentSpeed = approachCityRushSpeed(
         patrol.currentSpeed,
         targetSpeed,
@@ -7334,6 +7339,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (police.slowLeft > 0 || police.trafficImpactLeft > 0) targetSpeed *= 0.6;
         if (police.blueShotSlowLeft > 0) targetSpeed *= CITY_RUSH_BLUE_SHOT_SPEED_FACTOR;
         if (police.boostLeft > 0) targetSpeed *= CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR;
+        // Même virage que le pilote : l'escouade lève le pied elle aussi, sinon
+        // elle traverserait la cassure à la vitesse de la ligne droite.
+        targetSpeed *= cornerPaceAt(police.distance);
       }
       // Engluée derrière un véhicule lent ou un pilote, ou sonnée par un choc :
       // elle relance tout de suite son choix de voie au lieu d'attendre la fin
@@ -8621,7 +8629,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
       const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
       const breakdownScale = storyBreakdownActive ? 0 : 1;
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale;
+      // Grand virage : la vitesse visée suit le cap de la piste. Le freinage
+      // habituel (`approachCityRushSpeed`) fait le reste — on lève le pied dans
+      // le virage, on réaccélère dès que la ligne se redresse.
+      const cornerScale = cornerPaceAt(distance);
+      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
       // pointe est plus basse, la montée en régime garde sa durée.
       const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
@@ -8739,9 +8751,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         // Boss du mode Histoire (Dante) : un multiplicateur propre au rival,
         // par-dessus le rythme de course habituel.
         const storyPaceBoost = Number(storyRivalPace?.[racer.id]) > 0 ? Number(storyRivalPace[racer.id]) : 1;
-        const speedTarget = racer.wrecked || racer.stunLeft > 0
+        const speedTarget = (racer.wrecked || racer.stunLeft > 0
           ? 0
-          : racer.baseSpeed * racerPace * storyPaceBoost * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38);
+          : racer.baseSpeed * racerPace * storyPaceBoost * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))
+          * cornerPaceAt(racer.distance);
         const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt, coursePace);
         requestedRacerSpeeds.set(racer.id, requestedSpeed);
         priorRacerXs.set(racer.id, racer.currentX);
@@ -8751,7 +8764,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const priorTrafficDistances = new Map(trafficCars.map((traffic) => [traffic.id, traffic.distance]));
       const requestedTrafficSpeeds = new Map(trafficCars.map((traffic) => [
         traffic.id,
-        Math.max(paced(3.8), traffic.baseSpeed + paced(Math.sin(elapsed * 0.5 + traffic.phase) * 0.18)),
+        Math.max(paced(3.8), traffic.baseSpeed + paced(Math.sin(elapsed * 0.5 + traffic.phase) * 0.18))
+          * cornerPaceAt(traffic.distance),
       ]));
 
       // Détection de tremplin pour le joueur
@@ -9174,7 +9188,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const requestedOncomingSpeed = Math.max(
           paced(oncoming.pushedAside ? 2.6 : 3.8),
           oncoming.baseSpeed * shoveSpeedScale * turnSpeedScale + paced(Math.sin(elapsed * 0.5 + oncoming.phase) * 0.18),
-        );
+        ) * cornerPaceAt(oncoming.distance);
         // Un SUV de charge ne se contente pas de ralentir dans son demi-tour :
         // il freine, s'arrête face au pilote, puis repart dans l'autre sens. Le
         // signe suit le cosinus de la manœuvre (1 → 0 → −1), sans quoi la
