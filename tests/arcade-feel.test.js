@@ -17,9 +17,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  ATTACK_STRIKE_FROM,
+  ATTACK_STRIKE_TO,
   TUNE,
   SIM_DT,
   ROOMS,
+  attackBox,
   createState,
   step,
   heldInput,
@@ -256,6 +259,55 @@ test('l’enchaînement des trois coups monte en puissance', () => {
   run(state, 40, {});
   assert.equal(state.hero.attack, null, 'l’attaque doit se terminer');
   assert.equal(state.stats.attacks, 3);
+});
+
+test('frapper en courant ne casse pas l’élan', () => {
+  const state = cleanState(50, 15);
+  run(state, 60, { right: true, sprint: true });
+  const before = state.hero.vx;
+  run(state, 1, { right: true, sprint: true, attackPressed: true, attack: true });
+  assert.ok(before > 8.5, `le sprint doit être lancé (vx ${before.toFixed(2)})`);
+  assert.ok(
+    state.hero.vx >= before * TUNE.attackSpeedKeep - 0.05,
+    `frapper en courant conservait mal l’élan (${before.toFixed(2)} → ${state.hero.vx.toFixed(2)})`,
+  );
+  assert.ok(state.hero.vx > TUNE.attackLunge, 'l’élan d’estoc ne doit pas remplacer la course');
+});
+
+test('matraquer la touche ne donne pas des coups lourds à l’infini', () => {
+  const state = cleanState(50, 15);
+  const stages = [];
+  let last = null;
+  for (let i = 0; i < 120 && stages.length < 4; i += 1) {
+    run(state, 1, { attackPressed: true, attack: true });
+    const a = state.hero.attack;
+    if (a && a !== last && a.timer > TUNE.attackTime * 0.9) stages.push(a.stage);
+    if (a) last = a;
+  }
+  assert.deepEqual(stages, [1, 2, 3, 1], 'après le coup lourd, la chaîne doit repartir au premier');
+});
+
+test('la boîte d’impact s’ouvre au milieu du geste, pas pendant la préparation', () => {
+  const state = cleanState(50, 15);
+  run(state, 1, { attackPressed: true, attack: true });
+  const opens = [];
+  for (let i = 0; i < 20 && state.hero.attack; i += 1) {
+    const t = 1 - state.hero.attack.timer / TUNE.attackTime;
+    if (attackBox(state.hero)) opens.push(t);
+    run(state, 1, { attack: true });
+  }
+  assert.ok(opens.length >= 4, `la fenêtre d’impact doit durer quelques images (${opens.length})`);
+  assert.ok(
+    opens[0] >= ATTACK_STRIKE_FROM - 0.03 && opens[0] <= ATTACK_STRIKE_FROM + 0.1,
+    `la boîte s’ouvre à t ${opens[0].toFixed(2)} au lieu de ${ATTACK_STRIKE_FROM}`,
+  );
+  assert.ok(
+    opens[opens.length - 1] <= ATTACK_STRIKE_TO + 0.05,
+    `la boîte reste ouverte après la fin du geste (t ${opens[opens.length - 1].toFixed(2)})`,
+  );
+  // le dessin du bras lit ces mêmes bornes : si elles bougent, la planche de
+  // contrôle (mockups/05) doit être refaite
+  assert.ok(ATTACK_STRIKE_FROM < ATTACK_STRIKE_TO);
 });
 
 test('la coque du golem ricoche, l’attaque plongeante le casse', () => {

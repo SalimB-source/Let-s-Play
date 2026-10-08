@@ -21,6 +21,17 @@
 // Constantes
 // ---------------------------------------------------------------------------
 
+/**
+ * Fenêtre d'impact d'un coup, en part de l'animation (0 → 1).
+ *
+ * Elle est **exportée exprès** : le dessin du bras dans `arcadeFeelArt.js`
+ * utilise les mêmes bornes pour que le coup parte visiblement au moment où il
+ * touche. Avant, le bras finissait son geste alors que la boîte était déjà
+ * fermée — l'attaque se sentait « bizarre », décalée de ce qu'on voyait.
+ */
+export const ATTACK_STRIKE_FROM = 0.22;
+export const ATTACK_STRIKE_TO = 0.62;
+
 export const SIM_HZ = 60;
 export const SIM_DT = 1 / SIM_HZ;
 export const TILE = 32;
@@ -55,14 +66,15 @@ export const TUNE = {
   wallStickGrace: 0.12,
 
   // --- Attaque ------------------------------------------------------------
-  attackTime: 0.3,
-  attackChainWindow: 0.42, // part de l'animation à partir de laquelle on enchaîne
+  attackTime: 0.26,
+  attackChainWindow: 0.52, // part de l'animation à partir de laquelle on enchaîne
   attackBuffer: 0.18,
   attackReach: 1.35,
   attackSideY: -0.25,
   attackUpY: -1.0,
   attackDownY: 1.05,
   attackLunge: 2.6, // élan vers l'avant au moment de la frappe
+  attackSpeedKeep: 0.9, // part de l'élan conservée quand on frappe en courant
   dmgStage: [1, 1, 2], // le 3e coup est lourd
   hitPause: [0.06, 0.07, 0.09],
   knockback: [3.2, 3.6, 6.0],
@@ -532,7 +544,10 @@ function stepHero(state, hero, input) {
     if (remaining <= 0) {
       hero.attack = null;
     } else if (hero.attackBuffer > 0 && TUNE.attackTime - remaining >= TUNE.attackTime * TUNE.attackChainWindow) {
-      startAttack(state, hero, input, hero.attack.stage + 1);
+      // Le 3e coup est un finisseur : après lui, la chaîne repart au premier.
+      // Sans ça, matraquer la touche donnait des coups lourds à l'infini.
+      const next = hero.attack.stage >= 3 ? 1 : hero.attack.stage + 1;
+      startAttack(state, hero, input, next);
     }
   } else if (hero.attackBuffer > 0 && !wantsToDrop) {
     startAttack(state, hero, input, 1);
@@ -673,7 +688,12 @@ function startAttack(state, hero, input, stage) {
   hero.attack = { kind, stage: clampedStage, timer: TUNE.attackTime, hits: [] };
   hero.attackBuffer = 0;
   state.stats.attacks += 1;
-  if (kind === 'side' && hero.grounded) hero.vx = hero.facing * TUNE.attackLunge;
+  // Frapper en courant doit rester courir : on garde l'essentiel de l'élan et on
+  // n'ajoute l'élan d'estoc que si l'on part de l'arrêt (ou presque).
+  if (kind === 'side' && hero.grounded) {
+    const kept = Math.abs(hero.vx) * TUNE.attackSpeedKeep;
+    hero.vx = hero.facing * Math.max(TUNE.attackLunge, kept);
+  }
   pushEvent(state, { type: 'swing', x: hero.x, y: hero.y - 0.8, stage: clampedStage, kind, facing: hero.facing });
 }
 
@@ -681,7 +701,7 @@ function startAttack(state, hero, input, stage) {
 export function attackBox(hero) {
   if (!hero.attack) return null;
   const t = 1 - hero.attack.timer / TUNE.attackTime; // 0 → 1
-  if (t < 0.12 || t > 0.72) return null; // fenêtre active de l'animation
+  if (t < ATTACK_STRIKE_FROM || t > ATTACK_STRIKE_TO) return null;
   const r = TUNE.attackReach;
   if (hero.attack.kind === 'up') {
     return { left: hero.x - r * 0.6, right: hero.x + r * 0.6, top: hero.y - 1.6 + TUNE.attackUpY, bottom: hero.y - 0.5 };

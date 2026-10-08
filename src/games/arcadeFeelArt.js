@@ -17,7 +17,7 @@
  * vérifiable sans navigateur (voir `scripts/arcade-feel-ui-check.mjs`).
  */
 
-import { TILE, TUNE } from './arcadeFeel.js';
+import { ATTACK_STRIKE_FROM, ATTACK_STRIKE_TO, TILE, TUNE, attackBox } from './arcadeFeel.js';
 
 export const VIEW_W = 640;
 export const VIEW_H = 360;
@@ -511,8 +511,10 @@ function drawHero(ctx, state, painter, cam) {
   const HY = -43.5; // centre de la tête
 
   // --- jambes ---
-  const legA = pose === 'run' ? Math.sin(runCycle) * 9 : pose === 'dodge' ? 11 : 0;
-  const legB = pose === 'run' ? Math.sin(runCycle + Math.PI) * 9 : pose === 'dodge' ? -8 : 0;
+  // courir en attaquant garde la foulée : sinon le héros glisse, jambes figées
+  const legsRun = pose === 'run' || (pose === 'attack' && hero.grounded && speed > 1.2);
+  const legA = legsRun ? Math.sin(runCycle) * 9 : pose === 'dodge' ? 11 : 0;
+  const legB = legsRun ? Math.sin(runCycle + Math.PI) * 9 : pose === 'dodge' ? -8 : 0;
   ctx.strokeStyle = ART.heroJacket;
   ctx.lineWidth = 7;
   ctx.beginPath();
@@ -580,12 +582,17 @@ function drawHero(ctx, state, painter, cam) {
   ctx.fillRect(3, HY - 1.6, 2.4, 3.4);
 
   // --- bras + pinceau à encre ---
+  // Le geste suit la même fenêtre que la boîte d'impact : préparation courte,
+  // frappe rapide (courbe en S), puis bras tendu jusqu'à la fin. Le coup part
+  // donc visiblement **au moment** où il touche.
   let armAngle;
   const swing = hero.attack ? 1 - hero.attack.timer / TUNE.attackTime : 0;
+  const s = clamp((swing - ATTACK_STRIKE_FROM) / (ATTACK_STRIKE_TO - ATTACK_STRIKE_FROM), 0, 1);
+  const strike = s * s * (3 - 2 * s);
   if (pose === 'attack') {
-    if (hero.attack.kind === 'up') armAngle = lerp(-1.1, -2.6, swing);
-    else if (hero.attack.kind === 'down') armAngle = lerp(1.1, 1.9, swing);
-    else armAngle = lerp(-2.2, 0.45, swing);
+    if (hero.attack.kind === 'up') armAngle = lerp(-0.45, -1.62, strike);
+    else if (hero.attack.kind === 'down') armAngle = lerp(0.8, 1.55, strike);
+    else armAngle = lerp(-1.95, 0.42, strike);
   } else if (pose === 'jump') armAngle = -0.5;
   else if (pose === 'fall') armAngle = 0.1;
   else if (pose === 'wall') armAngle = -1.4;
@@ -616,12 +623,15 @@ function drawHero(ctx, state, painter, cam) {
   ctx.quadraticCurveTo(27, 4.8, 18.5, 2.4);
   ctx.closePath();
   inked(ctx, ART.inkHard, ART.ink, 1.8);
-  if (pose === 'attack' && swing > 0.1 && swing < 0.92) {
-    ctx.globalAlpha = 0.62;
+  const inStrike = swing >= ATTACK_STRIKE_FROM && swing <= ATTACK_STRIKE_TO + 0.08;
+  if (pose === 'attack' && inStrike) {
+    // le croissant est le plus opaque juste après l'impact, puis s'efface
+    const glow = 1 - Math.min(1, Math.abs(swing - (ATTACK_STRIKE_FROM + 0.06)) / 0.34);
+    ctx.globalAlpha = 0.28 + 0.5 * glow;
     ctx.beginPath();
     ctx.moveTo(17, -2);
-    ctx.quadraticCurveTo(38, -24 + swing * 18, 52, 4 + swing * 22);
-    ctx.quadraticCurveTo(36, 12 + swing * 10, 17, 3);
+    ctx.quadraticCurveTo(38, -24 + strike * 18, 52, 4 + strike * 22);
+    ctx.quadraticCurveTo(36, 12 + strike * 10, 17, 3);
     ctx.closePath();
     inked(ctx, ART.inkHard, null, 0);
     ctx.globalAlpha = 1;
@@ -838,11 +848,13 @@ function collectEvents(painter, state) {
           const a = (Math.PI * 2 * i) / 10;
           painter.particles.push({ x, y, vx: Math.cos(a) * 90, vy: Math.sin(a) * 70, life: 0.28, max: 0.28, r: 3.5, color: i % 3 === 0 ? ART.paper : ART.inkHard });
         }
-        pop(painter, ev.stage >= 3 ? 'DOON!' : 'ZAN!', x + 8 * dir, y - 12, 6 * dir);
+        // L'onomatopée se pose **au-dessus** de la cible : collée à l'impact, elle
+        // cachait l'ennemi touché et son clignotement blanc, donc le coup.
+        pop(painter, ev.stage >= 3 ? 'DOON!' : 'ZAN!', x + 10 * dir, y - 30, 5 * dir);
         break;
       case 'ricochet':
         burst(painter, x, y, 6, ART.paper, -dir, 2.2);
-        pop(painter, 'TIK!', x, y - 10, -5 * dir);
+        pop(painter, 'TIK!', x, y - 28, -5 * dir);
         break;
       case 'poof':
         for (let i = 0; i < 12; i += 1) {
@@ -1125,21 +1137,10 @@ function drawDebug(ctx, state, room, cam) {
   const h = state.hero;
   box({ left: h.x - h.w / 2, top: h.y - h.h, right: h.x + h.w / 2, bottom: h.y }, 'rgba(255,80,255,0.95)', 2);
 
-  // boîte d'impact de l'attaque en cours
-  if (h.attack) {
-    const t = 1 - h.attack.timer / TUNE.attackTime;
-    if (t >= 0.12 && t <= 0.72) {
-      const r = TUNE.attackReach;
-      let b;
-      if (h.attack.kind === 'up') b = { left: h.x - r * 0.6, right: h.x + r * 0.6, top: h.y - 1.6 + TUNE.attackUpY, bottom: h.y - 0.5 };
-      else if (h.attack.kind === 'down') b = { left: h.x - r * 0.6, right: h.x + r * 0.6, top: h.y + TUNE.attackDownY - 0.9, bottom: h.y + TUNE.attackDownY + 0.2 };
-      else {
-        const left = h.facing > 0 ? h.x + 0.2 : h.x - 0.2 - r;
-        b = { left, right: left + r, top: h.y - 1.6 + TUNE.attackSideY, bottom: h.y - 0.25 };
-      }
-      box(b, 'rgba(255,255,0,0.95)', 2);
-    }
-  }
+  // boîte d'impact de l'attaque en cours — celle du moteur, jamais une copie :
+  // la version recopiée ici avait déjà dérivé (ancienne fenêtre d'impact)
+  const strike = attackBox(h);
+  if (strike) box(strike, 'rgba(255,255,0,0.95)', 2);
 
   // vecteur vitesse
   ctx.strokeStyle = 'rgba(255,255,255,0.9)';
