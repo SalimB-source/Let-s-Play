@@ -239,6 +239,9 @@ create index if not exists comments_article_created_idx
 create index if not exists comments_user_idx
   on public.comments (user_id);
 
+-- Masquage automatique après plusieurs signalements (voir section 3f).
+alter table public.comments add column if not exists hidden_at timestamptz;
+
 -- ----------------------------------------------------------------------------
 -- 3b. Niveaux XP : colonnes dénormalisées pour l'affichage dans les commentaires
 -- ----------------------------------------------------------------------------
@@ -363,9 +366,11 @@ for each row execute procedure public.sync_profile_progress();
 alter table public.comments enable row level security;
 
 -- La conversation est publique, y compris pour les visiteurs déconnectés.
+-- Un commentaire masqué (signalements, section 3f) disparaît pour tout le monde,
+-- son auteur compris.
 drop policy if exists "Comments are publicly readable" on public.comments;
 create policy "Comments are publicly readable"
-on public.comments for select using (true);
+on public.comments for select using (hidden_at is null);
 
 -- Seul un joueur connecté peut publier, et uniquement en son nom.
 drop policy if exists "Users can post comments as themselves" on public.comments;
@@ -1251,6 +1256,380 @@ end $$;
 
 
 -- ----------------------------------------------------------------------------
+-- 3f. Modération des commentaires : mots interdits, signalements, masquage
+-- ----------------------------------------------------------------------------
+-- Garde-fous côté base : l'application ne peut pas les contourner.
+--   1. Mots interdits (comment_blocked_terms), contrôlés à l'insertion et à la
+--      modification du texte des commentaires d'articles (public.comments) et
+--      des fils communautaires (public.community_comments). Le texte est
+--      normalisé avant comparaison : casse, accents, leet speak (c0nnard),
+--      lettres répétées (connnard), lettres séparées (p.u.t.e). Par défaut, seuls
+--      les mots entiers comptent : « Puteaux » reste autorisé (voir les modes
+--      'stem' et 'phrase' ci-dessous).
+--   2. Signalements (comment_reports) : un par compte et par commentaire. Un
+--      commentaire d'article signalé par 3 comptes différents est masqué pour
+--      tout le monde (hidden_at), en attendant une revue (étape 3 : modérateurs).
+--   3. Les joueurs ne peuvent pas modifier hidden_at eux-mêmes.
+--
+-- Administration (SQL Editor, rôle postgres) :
+--   -- ajouter un mot : 'word' (mot entier), 'stem' (début de mot, 4 lettres
+--   -- minimum) ou 'phrase' (plusieurs mots : détecté automatiquement)
+--   insert into public.comment_blocked_terms (term, match_mode, note)
+--     values ('exemple', 'word', 'raison') on conflict (term) do nothing;
+--   -- désactiver un mot sans le supprimer
+--   update public.comment_blocked_terms set enabled = false where term = 'exemple';
+--   -- lire les signalements d'un commentaire, puis le rétablir si besoin
+--   select reason, reporter_id, created_at from public.comment_reports
+--     where comment_id = '<uuid du commentaire>';
+--   update public.comments set hidden_at = null where id = '<uuid du commentaire>';
+-- Les mots sont stockés sous leur forme normalisée (minuscules, sans accents,
+-- lettres doubles réduites) : « connard » apparaît comme « conard ». C'est
+-- normal : la comparaison se fait toujours entre formes normalisées.
+-- La liste de départ n'est insérée que si la table est vide : ré-exécuter ce
+-- fichier ne réactive donc pas les mots que vous avez désactivés.
+-- ----------------------------------------------------------------------------
+
+-- Normalisation : appliquée à la liste ET aux textes, donc les deux se comparent.
+create or replace function public.moderation_normalize(p_text text)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v text := coalesce(p_text, '');
+begin
+  -- Formes compatibles (pleine chasse, ligatures arabes), puis minuscules.
+  v := lower(normalize(v, NFKC));
+  -- Caractères invisibles : ils ne doivent pas couper un mot.
+  v := regexp_replace(v, '[\u00ad\u200b-\u200f\u2060\ufeff]', '', 'g');
+  -- Lettres que la décomposition Unicode ne couvre pas.
+  v := replace(replace(replace(v, 'œ', 'oe'), 'æ', 'ae'), 'ß', 'ss');
+  v := translate(v, 'øđł', 'odl');
+  -- Accents latins : décomposition puis suppression des signes diacritiques.
+  v := regexp_replace(normalize(v, NFD), '[\u0300-\u036f]', '', 'g');
+  -- Arabe : tachkil et tatwil, variantes de alif, lettres maghrébines.
+  v := regexp_replace(v, '[\u064b-\u065f\u0670\u0640]', '', 'g');
+  v := translate(v, 'ةىڤڨگڭپچکیٱ', 'هيفقككبجكيا');
+  -- Leet speak courant : 0→o 1→i 3→e 4→a 5→s 7→h 9→q @→a $→s.
+  v := translate(v, '0134579@$', 'oieashqas');
+  -- Tout ce qui n'est pas une lettre sépare les mots.
+  v := regexp_replace(v, '[^a-z\u0621-\u064a]+', ' ', 'g');
+  -- Lettres répétées : « connnard » et « connard » deviennent identiques.
+  v := regexp_replace(v, '([a-z\u0621-\u064a])\1+', '\1', 'g');
+  return btrim(v);
+end;
+$$;
+
+-- Jetons à comparer : chaque mot, plus les suites de lettres isolées
+-- (« p u t e » → « pute »).
+create or replace function public.moderation_candidates(p_text text)
+returns text[]
+language sql
+immutable
+set search_path = ''
+as $$
+  with toks as (
+    select t.tok, t.ord, char_length(t.tok) = 1 as is_single
+    from regexp_split_to_table(public.moderation_normalize(p_text), ' ')
+      with ordinality as t(tok, ord)
+    where t.tok <> ''
+  ),
+  islands as (
+    select tok, ord, is_single,
+           ord - row_number() over (partition by is_single order by ord) as grp
+    from toks
+  ),
+  merged as (
+    -- Les lettres réunies peuvent être doubles (« c.o.n.n.a.r.d ») : même réduction.
+    select regexp_replace(string_agg(tok, '' order by ord), '([a-z\u0621-\u064a])\1+', '\1', 'g') as joined,
+           count(*) as n
+    from islands
+    where is_single
+    group by grp
+  )
+  select coalesce(
+    (select array_agg(distinct j.tok) from (
+       select tok from toks
+       union all
+       select joined from merged where n >= 2
+     ) as j(tok)),
+    '{}'::text[]
+  );
+$$;
+
+-- Mots interdits. Lecture interdite aux visiteurs et aux joueurs : seule la
+-- fonction ci-dessous (droits de son propriétaire) la consulte.
+create table if not exists public.comment_blocked_terms (
+  term text primary key check (char_length(term) between 2 and 60),
+  match_mode text not null default 'word' check (match_mode in ('word', 'stem', 'phrase')),
+  note text not null default '' check (char_length(note) <= 200),
+  enabled boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table public.comment_blocked_terms enable row level security;
+revoke all on public.comment_blocked_terms from public, anon, authenticated;
+
+create or replace function public.prepare_comment_blocked_term()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.term := public.moderation_normalize(new.term);
+  if position(' ' in new.term) > 0 then
+    new.match_mode := 'phrase';
+  end if;
+  if new.match_mode = 'stem' and char_length(new.term) < 4 then
+    raise exception 'comment_blocked_term_too_short' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists comment_blocked_terms_prepare on public.comment_blocked_terms;
+create trigger comment_blocked_terms_prepare
+before insert or update on public.comment_blocked_terms
+for each row execute procedure public.prepare_comment_blocked_term();
+
+-- Renvoie le mot interdit trouvé dans le texte, ou null.
+create or replace function public.find_blocked_comment_term(p_text text)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_norm text := public.moderation_normalize(p_text);
+  v_tokens text[];
+  v_term text;
+begin
+  if v_norm = '' then
+    return null;
+  end if;
+  v_tokens := public.moderation_candidates(p_text);
+  select b.term into v_term
+  from public.comment_blocked_terms b
+  where b.enabled
+    and (
+      (b.match_mode = 'word' and b.term = any (v_tokens))
+      or (b.match_mode = 'stem' and exists (
+        select 1 from unnest(v_tokens) as c(tok)
+        where left(c.tok, char_length(b.term)) = b.term
+      ))
+      or (b.match_mode = 'phrase'
+          and position(' ' || b.term || ' ' in ' ' || v_norm || ' ') > 0)
+    )
+  order by char_length(b.term) desc, b.term
+  limit 1;
+  return v_term;
+end;
+$$;
+
+create or replace function public.reject_blocked_comment_terms()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if public.find_blocked_comment_term(new.body) is not null then
+    -- Message volontairement générique : le joueur ne doit pas deviner la liste.
+    raise exception 'comment_blocked_terms' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists comments_blocked_terms_guard on public.comments;
+create trigger comments_blocked_terms_guard
+before insert or update of body on public.comments
+for each row execute procedure public.reject_blocked_comment_terms();
+
+drop trigger if exists community_comments_blocked_terms_guard on public.community_comments;
+create trigger community_comments_blocked_terms_guard
+before insert or update of body on public.community_comments
+for each row execute procedure public.reject_blocked_comment_terms();
+
+-- Liste de départ : insultes, propos sexuels et haineux courants, en français,
+-- anglais, arabe et darija (translittérée). Volontairement modeste : à relire et
+-- à compléter via SQL (voir l'administration ci-dessus). Mots exclus pour éviter
+-- les faux positifs : « retard » et « pédale » sont des mots français courants,
+-- et l'insulte raciste anglaise n'est pas incluse car sa forme normalisée est
+-- celle du pays « Niger ».
+do $$
+begin
+  if not exists (select 1 from public.comment_blocked_terms) then
+    insert into public.comment_blocked_terms (term, match_mode, note) values
+      ('pute', 'word', 'insulte sexuelle (fr)'),
+      ('putes', 'word', 'insulte sexuelle (fr)'),
+      ('salope', 'word', 'insulte sexuelle (fr)'),
+      ('salopes', 'word', 'insulte sexuelle (fr)'),
+      ('salopard', 'word', 'insulte (fr)'),
+      ('salopards', 'word', 'insulte (fr)'),
+      ('connard', 'word', 'insulte (fr)'),
+      ('connards', 'word', 'insulte (fr)'),
+      ('connasse', 'word', 'insulte (fr)'),
+      ('connasses', 'word', 'insulte (fr)'),
+      ('conne', 'word', 'insulte (fr)'),
+      ('encul', 'stem', 'insulte sexuelle (fr), formes verbales comprises'),
+      ('enfoir', 'stem', 'insulte (fr)'),
+      ('fdp', 'word', 'abréviation de fils de pute (fr)'),
+      ('ntm', 'word', 'abréviation de nique ta mère (fr)'),
+      ('fils de pute', 'phrase', 'insulte (fr)'),
+      ('nique ta mère', 'phrase', 'insulte sexuelle (fr)'),
+      ('tue toi', 'phrase', 'incitation au suicide (fr)'),
+      ('nègre', 'word', 'insulte raciste (fr)'),
+      ('bougnoul', 'word', 'insulte raciste (fr)'),
+      ('bicot', 'word', 'insulte raciste (fr)'),
+      ('bicots', 'word', 'insulte raciste (fr)'),
+      ('youpin', 'word', 'insulte antisémite (fr)'),
+      ('youpins', 'word', 'insulte antisémite (fr)'),
+      ('pédé', 'word', 'insulte homophobe (fr)'),
+      ('fuck', 'word', 'grossièreté (en)'),
+      ('fucking', 'word', 'grossièreté (en)'),
+      ('motherfucker', 'word', 'insulte (en)'),
+      ('bitch', 'word', 'insulte (en)'),
+      ('cunt', 'word', 'insulte sexuelle (en)'),
+      ('faggot', 'word', 'insulte homophobe (en)'),
+      ('retarded', 'word', 'insulte capacitiste (en)'),
+      ('nigga', 'word', 'insulte raciste (en)'),
+      ('kys', 'word', 'incitation au suicide (en)'),
+      ('kill yourself', 'phrase', 'incitation au suicide (en)'),
+      ('nikmok', 'word', 'insulte sexuelle (darija)'),
+      ('nikomok', 'word', 'insulte sexuelle (darija)'),
+      ('sharmo', 'stem', 'insulte sexuelle (darija)'),
+      ('charmo', 'stem', 'insulte sexuelle (darija)'),
+      ('qahb', 'stem', 'insulte sexuelle (darija, 9a7ba)'),
+      ('kahb', 'stem', 'insulte sexuelle (darija, kahba)'),
+      ('كس', 'word', 'insulte sexuelle (ar)'),
+      ('عرص', 'word', 'insulte (ar)'),
+      ('منيوك', 'word', 'insulte (ar)'),
+      ('قحبة', 'stem', 'insulte sexuelle (ar)'),
+      ('شرموطة', 'stem', 'insulte sexuelle (ar)')
+    on conflict (term) do nothing;
+  end if;
+end $$;
+
+-- Signalements : un par compte et par commentaire.
+create table if not exists public.comment_reports (
+  id uuid primary key default gen_random_uuid(),
+  comment_id uuid not null references public.comments(id) on delete cascade,
+  reporter_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  reason text not null check (reason in ('harassment', 'hate', 'sexual', 'violence', 'spam', 'other')),
+  created_at timestamptz not null default now(),
+  unique (comment_id, reporter_id)
+);
+
+create index if not exists comment_reports_reporter_idx
+  on public.comment_reports (reporter_id, created_at desc);
+
+alter table public.comment_reports enable row level security;
+
+drop policy if exists "Players see their own comment reports" on public.comment_reports;
+create policy "Players see their own comment reports"
+on public.comment_reports for select to authenticated using (auth.uid() = reporter_id);
+
+drop policy if exists "Players report comments as themselves" on public.comment_reports;
+create policy "Players report comments as themselves"
+on public.comment_reports for insert to authenticated with check (auth.uid() = reporter_id);
+
+revoke all on public.comment_reports from public, anon, authenticated;
+grant select, insert on public.comment_reports to authenticated;
+
+create or replace function public.prepare_comment_report()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_author uuid;
+begin
+  if v_uid is null then
+    raise exception 'comment_report_requires_auth' using errcode = '42501';
+  end if;
+  -- Anti-rafale : 5 signalements par minute et par compte au maximum.
+  if (select count(*) from public.comment_reports r
+      where r.reporter_id = v_uid
+        and r.created_at > now() - interval '1 minute') >= 5 then
+    raise exception 'comment_report_rate_limited' using errcode = 'P0001';
+  end if;
+  select c.user_id into v_author from public.comments c where c.id = new.comment_id;
+  if not found then
+    raise exception 'comment_report_not_found' using errcode = 'P0002';
+  end if;
+  if v_author = v_uid then
+    raise exception 'comment_report_own_comment' using errcode = 'P0001';
+  end if;
+  -- Le compte qui signale est toujours celui de la session, jamais une valeur envoyée.
+  new.reporter_id := v_uid;
+  new.created_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.hide_reported_comment()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- Seuil : 3 comptes distincts (unicité comment_id + reporter_id).
+  if (select count(*) from public.comment_reports r where r.comment_id = new.comment_id) >= 3 then
+    update public.comments
+    set hidden_at = now()
+    where id = new.comment_id and hidden_at is null;
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists comment_reports_prepare on public.comment_reports;
+create trigger comment_reports_prepare
+before insert on public.comment_reports
+for each row execute procedure public.prepare_comment_report();
+
+drop trigger if exists comment_reports_hide_reported on public.comment_reports;
+create trigger comment_reports_hide_reported
+after insert on public.comment_reports
+for each row execute procedure public.hide_reported_comment();
+
+-- Les joueurs ne peuvent pas (dé)masquer un commentaire : seul le serveur ou
+-- l'administrateur (SQL Editor) modifie hidden_at.
+create or replace function public.protect_comment_hidden_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.hidden_at is distinct from old.hidden_at and current_user in ('anon', 'authenticated') then
+    raise exception 'comment_moderation_forbidden' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists comments_protect_hidden_at on public.comments;
+create trigger comments_protect_hidden_at
+before update of hidden_at on public.comments
+for each row execute procedure public.protect_comment_hidden_at();
+
+-- Fonctions internes : jamais appelables directement depuis l'API.
+revoke all on function public.moderation_normalize(text) from public, anon, authenticated;
+revoke all on function public.moderation_candidates(text) from public, anon, authenticated;
+revoke all on function public.find_blocked_comment_term(text) from public, anon, authenticated;
+revoke all on function public.prepare_comment_blocked_term() from public, anon, authenticated;
+revoke all on function public.reject_blocked_comment_terms() from public, anon, authenticated;
+revoke all on function public.prepare_comment_report() from public, anon, authenticated;
+revoke all on function public.hide_reported_comment() from public, anon, authenticated;
+revoke all on function public.protect_comment_hidden_at() from public, anon, authenticated;
+
+-- ----------------------------------------------------------------------------
 -- 4. Suppression du compte (ré-authentification requise côté application)
 -- ----------------------------------------------------------------------------
 -- L'application vérifie d'abord le mot de passe avec
@@ -1896,6 +2275,32 @@ from (
                                       'Players update their own Vice City Rush progress')) = 3
             and to_regrole('anon') is not null
             and not has_table_privilege('anon', 'public.vice_city_rush_progress', 'select')
+           then 'OK' else 'MANQUANT' end)
+ , (46, 'table public.comment_reports (signalements, RLS, pas de lecture pour anon)',
+      case when to_regclass('public.comment_reports') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.comment_reports'))
+            and not has_table_privilege('anon', 'public.comment_reports', 'select')
+           then 'OK' else 'MANQUANT' end)
+ , (47, 'table public.comment_blocked_terms (liste privée, aucun accès API)',
+      case when to_regclass('public.comment_blocked_terms') is not null
+            and not has_table_privilege('anon', 'public.comment_blocked_terms', 'select')
+            and not has_table_privilege('authenticated', 'public.comment_blocked_terms', 'select')
+           then 'OK' else 'MANQUANT' end)
+ , (48, 'mots interdits : liste de départ présente (10 mots actifs au moins)',
+      case when (select count(*) from public.comment_blocked_terms where enabled) >= 10
+           then 'OK' else 'MANQUANT' end)
+ , (49, 'filtre de mots sur comments et community_comments',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.comments')
+                          and t.tgname = 'comments_blocked_terms_guard')
+            and exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.community_comments')
+                          and t.tgname = 'community_comments_blocked_terms_guard')
+           then 'OK' else 'MANQUANT' end)
+ , (50, 'masquage automatique après signalements (trigger)',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.comment_reports')
+                          and t.tgname = 'comment_reports_hide_reported')
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

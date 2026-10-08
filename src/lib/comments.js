@@ -1,4 +1,5 @@
 import { supabase, supabaseHost } from './supabase';
+import { COMMENT_REPORT_REASONS, commentModerationCopyKey } from './commentModeration';
 
 // Data layer for the article comment section.
 //
@@ -59,6 +60,12 @@ export function describeCommentsError(error, copy, fallback) {
   }
   if (isMissingTableError(error)) {
     return `${copy.errUnavailable}${details}`;
+  }
+  // Mots interdits, signalements : messages des triggers de supabase/schema.sql (3f).
+  // Doit passer avant la branche 23514 : ces erreurs n'ont rien à voir avec la longueur.
+  const moderationKey = commentModerationCopyKey(error);
+  if (moderationKey && copy[moderationKey]) {
+    return copy[moderationKey];
   }
   if (/comment_rate_limited/i.test(message)) {
     return copy.errRateLimited;
@@ -153,6 +160,30 @@ export async function deleteComment(id) {
   if (!supabase) throw new Error('Supabase is not configured');
   const { error } = await supabase.from('comments').delete().eq('id', id);
   if (error) throw error;
+}
+
+// Signalement d'un commentaire d'article. Le compte signalant est fixé côté
+// serveur (trigger prepare_comment_report) : le client n'envoie que le motif.
+export async function reportComment(commentId, reason) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  if (!COMMENT_REPORT_REASONS.includes(reason)) throw new Error('comment_report_invalid_reason');
+  const { error } = await supabase
+    .from('comment_reports')
+    .insert({ comment_id: commentId, reason });
+  if (error) throw error;
+}
+
+// Identifiants des commentaires déjà signalés par le joueur connecté (la
+// politique RLS ne renvoie que ses propres signalements).
+export async function fetchOwnCommentReportIds() {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('comment_reports')
+    .select('comment_id')
+    .order('created_at', { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return (data || []).map((row) => row.comment_id);
 }
 
 // ---------------------------------------------------------------------------
