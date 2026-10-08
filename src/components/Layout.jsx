@@ -19,7 +19,6 @@ import { avatarFor, displayNameFor } from '../lib/comments';
 import { isPhoneLayout } from '../lib/phoneLayout';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
-import { initScrollParallax } from '../lib/scrollParallax';
 import ArticleReadingTools from './ArticleReadingTools';
 import NeonBackdrop from './NeonBackdrop';
 import { socialText } from '../social/socialCopy';
@@ -127,10 +126,6 @@ export default function Layout({ children }) {
       }
     };
   }, []);
-
-  // Parallax léger sur les sections, cartes et blocs éditoriaux du site.
-  // Le coordinateur observe aussi les éléments montés plus tard par les routes lazy.
-  useEffect(() => initScrollParallax(), []);
 
   // scrolled shrink
   useEffect(() => {

@@ -512,22 +512,12 @@ create index if not exists community_comments_group_created_idx
 create index if not exists community_comments_user_idx
   on public.community_comments (user_id);
 
--- Groupe de démonstration toujours présent, y compris sur une nouvelle base.
--- Le test EXISTS évite de déclencher le trigger auteur (et son exigence de
--- session) sur une tentative d'INSERT déjà présente lors d'une relance du schéma.
-do $$
-begin
-  if not exists (select 1 from public.community_groups
-                 where id = 'e4d52bd0-0922-4be4-a880-000000000001') then
-    insert into public.community_groups
-      (id, name, description, category, tags, created_by, created_by_name, created_by_avatar)
-    values
-      ('e4d52bd0-0922-4be4-a880-000000000001',
-       'Les joueurs de soulslike',
-       'Boss impossibles, builds improbables et lore à décrypter : un espace pour parler des Souls, d’Elden Ring, de Sekiro et de tous les jeux qui nous font recommencer.',
-       'Soulslike', array['Elden Ring', 'Dark Souls', 'Sekiro'], null, 'La communauté', null);
-  end if;
-end $$;
+-- Aucun groupe de démonstration : la page Communauté ouvre sur une invitation à
+-- créer le premier groupe (choix du thème au passage). Le groupe d'exemple
+-- « Les joueurs de soulslike » livré par les versions précédentes du schéma est
+-- retiré ici, avec ses messages (cascade), pour qu'il ne réapparaisse pas.
+delete from public.community_groups
+where id = 'e4d52bd0-0922-4be4-a880-000000000001';
 
 alter table public.community_groups enable row level security;
 alter table public.community_comments enable row level security;

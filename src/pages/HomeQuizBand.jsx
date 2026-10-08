@@ -35,8 +35,6 @@ export default function HomeQuizBand({ today }) {
     <section className="wrap" id="quizz-du-jour">
       <div
         className={`home-quiz-band${dailyQuizFinished ? ' is-finished' : ''}`}
-        data-parallax="0.04"
-        data-parallax-limit="18"
       >
         <div className="home-quiz-band-copy">
           <p className="eyebrow">

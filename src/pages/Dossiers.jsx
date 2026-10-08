@@ -9,7 +9,7 @@ export default function Dossiers(){
   const { t } = useLanguage();
   return (
     <div className="dossiers-page">
-      <section className="dossier-feature-card wrap" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LA PS2,<br/><em>LA REINE.</em></h2>
@@ -22,7 +22,7 @@ export default function Dossiers(){
         </Link>
       </section>
 
-      <section className="dossier-feature-card wrap" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>XBOX 360,<br/><em>UNE GÉNÉRATION.</em></h2>
@@ -35,7 +35,7 @@ export default function Dossiers(){
         </Link>
       </section>
 
-      <section className="dossier-feature-card wrap" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LE CHOC<br/><em>DES GÉNÉRATIONS.</em></h2>
@@ -48,7 +48,7 @@ export default function Dossiers(){
         </Link>
       </section>
 
-      <section className="dossier-feature-card wrap" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>PLAYSTATION,<br/><em>LA RÉVOLUTION.</em></h2>
@@ -61,7 +61,7 @@ export default function Dossiers(){
         </Link>
       </section>
 
-      <section className="dossier-feature-card wrap" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LES JEUX<br/><em>DE L’ANNÉE.</em></h2>
@@ -74,7 +74,7 @@ export default function Dossiers(){
         </Link>
       </section>
 
-      <section className="dossier-feature-card wrap" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>GOYA,<br/><em>LE MONDE D’APRÈS.</em></h2>
@@ -87,7 +87,7 @@ export default function Dossiers(){
         </Link>
       </section>
 
-      <section className="dossier-feature-card wrap dossier-feature-card-secondary" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap dossier-feature-card-secondary">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LA CULTURE<br/><em>SE RÉUNIT.</em></h2>
@@ -109,7 +109,7 @@ export default function Dossiers(){
         </div>
       </section>
 
-      <section className="dossier-feature-card wrap dossier-feature-card-secondary" data-parallax="0.04" data-parallax-limit="18">
+      <section className="dossier-feature-card wrap dossier-feature-card-secondary">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Dossier précédent</p>
           <h2>POURQUOI<br/><em>LES SOULS ?</em></h2>
