@@ -1810,6 +1810,22 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const missionTargetStartDistance = Number.isFinite(Number(storyRules?.missionTargetStartDistance))
     ? Math.max(0, Number(storyRules.missionTargetStartDistance))
     : null;
+  const missionTargetLeadMin = Number(storyRules?.missionTargetLeadMin) || 0;
+  const missionTargetLeadMax = Number(storyRules?.missionTargetLeadMax) || 0;
+  // Mission d'interception en deux temps : le second fugitif reste hors piste
+  // jusqu'à ce que la première cible soit détruite, puis surgit avec une avance
+  // suffisante pour lancer une vraie deuxième poursuite.
+  const missionEscapeTriggerId = typeof storyRules?.missionEscapeTriggerId === 'string'
+    ? storyRules.missionEscapeTriggerId
+    : null;
+  const missionEscapeTargetId = typeof storyRules?.missionEscapeTargetId === 'string'
+    ? storyRules.missionEscapeTargetId
+    : null;
+  const missionEscapeStartLead = Number.isFinite(Number(storyRules?.missionEscapeStartLead))
+    ? Math.max(1, Number(storyRules.missionEscapeStartLead))
+    : 40;
+  const missionFugitiveIds = new Set([missionTargetId, missionEscapeTargetId].filter(Boolean));
+  const startingPistolAmmo = Math.max(0, Math.floor(Number(storyRules?.startingPistolAmmo) || 0));
   const missionPistolPickupRowInterval = Math.max(0, Math.floor(Number(storyRules?.pistolPickupRowInterval) || 0));
   const storyBreakdown = storyRules?.breakdown && typeof storyRules.breakdown === 'object' ? storyRules.breakdown : null;
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
@@ -2127,6 +2143,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         startDistance: entry.id === missionTargetId && missionTargetStartDistance !== null
           ? missionTargetStartDistance
           : Number.isFinite(Number(entry.gridDistance)) ? Number(entry.gridDistance) : 0,
+        // Le complice est construit avec le plateau pour garder son modèle et
+        // son pilote, mais attend hors piste. `activateMissionEscapeRacer` le
+        // place devant l'officier au moment exact où le dealer tombe à zéro.
+        missionStaged: entry.id === missionEscapeTargetId,
         // Le premier rival se décale très tôt, les suivants plus tard : la
         // meute ne s'ébranle pas d'un seul bloc.
         phase: 0.6 + index * 1.8,
@@ -2157,7 +2177,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       maxHealth: Math.max(1, Math.floor(Number(storyRivalHealth?.[spec.id]) || cityRushCarMaxHealth(profile))),
       health: Math.max(1, Math.floor(Number(storyRivalHealth?.[spec.id]) || cityRushCarMaxHealth(profile))),
       healthFlash: 0,
-      wrecked: false,
+      raceActive: !spec.missionStaged,
+      wrecked: Boolean(spec.missionStaged),
       // Pointe de référence du modèle. Le plancher lié à la voiture du joueur,
       // le rythme de course et l'éventuel bonus de scénario sont appliqués à
       // chaque frame pour que les rivaux ne soient pas distancés par le garage.
@@ -2188,11 +2209,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   racers.forEach((racer) => scene.add(racer.mesh));
+  const activeRacers = () => racers.filter((racer) => racer.raceActive !== false);
 
   function applyRoster(nextRoster) {
     // Le tutoriel et le Sprint partent avec un roster solo (le pilote seul) :
-    // les autres courses exigent les trois profils habituels.
-    const minimumRoster = (tutorialMode || sprint) ? 1 : 3;
+    // une interception est un duel, les autres courses ont au moins trois profils.
+    const minimumRoster = (tutorialMode || sprint) ? 1 : missionEscapeTargetId ? 3 : missionTargetId ? 2 : 3;
     if (!Array.isArray(nextRoster) || nextRoster.length < minimumRoster) return;
     currentRoster = nextRoster;
     playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
@@ -2930,7 +2952,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Niveau de recherche de la course : le HUD du classement s'y raccroche.
       wantedLevel,
     },
-    ...racers.map((racer) => ({
+    ...activeRacers().map((racer) => ({
       id: racer.id,
       isPlayer: false,
       carId: racer.profile.id,
@@ -4266,6 +4288,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerPistolPickups = 0;
     inventory = createCityRushInventory();
     pistolHoldCooldown = 0;
+    // Mission d'interception : le pilote part déjà armé. L'arme de départ passe
+    // par l'emplacement unique, pour qu'aucune course ne commence avec deux
+    // armes en main.
+    if (!sprint && storyWeaponsEnabled && startingPistolAmmo > 0) {
+      inventory = cityRushEquipWeapon(inventory, CITY_RUSH_POWERS.PISTOL, startingPistolAmmo);
+    }
     bazookaAmmo = 0;
     bazookaPickupTaken = false;
     // Les deux entrepôts repartent à leur repère (30 % et 65 % de la course)
@@ -4315,7 +4343,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.lap = 1;
       racer.health = racer.maxHealth || cityRushCarMaxHealth(racer.profile);
       racer.healthFlash = 0;
-      racer.wrecked = false;
+      racer.raceActive = !racer.missionStaged;
+      racer.wrecked = Boolean(racer.missionStaged);
       racer.finalLapAnnounced = false;
       // Nouvelle course, nouveau casier : aucun rival n'est recherché.
       racer.wantedLevel = 0;
@@ -4345,7 +4374,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // le pilote, à l'écart de la ligne — le rendu suit la même règle que la
       // simulation (`PLAYER_Z − écart × SCALE`).
       racer.mesh.position.set(racer.currentX, 0, PLAYER_Z - (racer.distance - distance) * SCALE);
-      racer.mesh.visible = true;
+      racer.mesh.visible = racer.raceActive;
       racer.mesh.rotation.set(0, 0, 0);
       resetCarAnimation(racer.mesh);
     });
@@ -4502,6 +4531,67 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     emitHud(true);
   }
 
+  /**
+   * Fait surgir le deuxième fugitif de la Mission 1. Il n'est ni classé, ni
+   * ciblable avant ce moment ; la destruction du dealer le place devant
+   * l'intercepteur, dans sa propre voie, avec sa coque intacte.
+   */
+  function activateMissionEscapeRacer(triggerRacer = null) {
+    if (!missionEscapeTargetId) return null;
+    const escapeRacer = racers.find((racer) => racer.id === missionEscapeTargetId);
+    if (!escapeRacer || escapeRacer.raceActive !== false) return escapeRacer || null;
+    const triggerDistance = Number.isFinite(Number(triggerRacer?.distance))
+      ? Number(triggerRacer.distance)
+      : distance;
+    escapeRacer.raceActive = true;
+    escapeRacer.wrecked = false;
+    escapeRacer.health = escapeRacer.maxHealth || cityRushCarMaxHealth(escapeRacer.profile);
+    escapeRacer.healthFlash = 0;
+    escapeRacer.distance = Math.min(
+      Math.max(0, effectiveDistance - 1),
+      Math.max(distance, triggerDistance) + missionEscapeStartLead,
+    );
+    escapeRacer.lap = cityRushLapForDistance(escapeRacer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
+    escapeRacer.lane = Number.isFinite(Number(escapeRacer.startLane))
+      ? Number(escapeRacer.startLane)
+      : forwardLanes[forwardLanes.length - 1];
+    escapeRacer.currentX = laneX(escapeRacer.lane);
+    escapeRacer.currentSpeed = Math.max(playerCurrentSpeed, escapeRacer.baseSpeed * 0.88);
+    escapeRacer.changeIn = 0.18;
+    escapeRacer.slowLeft = 0;
+    escapeRacer.blueShotSlowLeft = 0;
+    escapeRacer.trafficRecoverLeft = 0;
+    escapeRacer.trafficImpactLeft = 0;
+    escapeRacer.boostLeft = 0;
+    escapeRacer.stunLeft = 0;
+    escapeRacer.stunTotal = 0;
+    escapeRacer.spinLeft = 0;
+    escapeRacer.spinTotal = 0;
+    escapeRacer.skidLeft = 0;
+    escapeRacer.jumpState = { active: false, startDistance: 0, totalDistance: 0, maxHeight: 0, takeoffSpeed: 0, progress: 0 };
+    escapeRacer.currentJumpY = 0;
+    escapeRacer.currentJumpPitch = 0;
+    escapeRacer.mesh.position.set(
+      escapeRacer.currentX + trackRelativeX(escapeRacer.distance),
+      trackRelativeY(escapeRacer.distance),
+      PLAYER_Z - (escapeRacer.distance - distance) * SCALE,
+    );
+    escapeRacer.mesh.rotation.set(trackPitch(escapeRacer.distance), trackYaw(escapeRacer.distance), 0);
+    escapeRacer.mesh.visible = true;
+    getCallbacks().effect?.({
+      type: 'mission-escape-start',
+      triggerId: triggerRacer?.id || missionEscapeTriggerId,
+      targetId: escapeRacer.id,
+      target: escapeRacer.name,
+      health: escapeRacer.health,
+      maxHealth: escapeRacer.maxHealth,
+      lead: Math.round(escapeRacer.distance - distance),
+      lane: escapeRacer.lane,
+    });
+    emitHud(true);
+    return escapeRacer;
+  }
+
   // Ennemis que le projectile droit peut croiser : rivaux, pilote, berlines.
   // Le tir rouge n'est pas guidé — cette liste sert au balayage en vol et à
   // l'IA, qui ne dépense sa charge que s'il y a déjà quelqu'un sur la voie.
@@ -4584,7 +4674,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     const racer = racers.find((item) => item.id === vehicleId);
     if (racer) {
-      return racer.wrecked || racer.health <= 0 ? null : {
+      return racer.raceActive === false || racer.wrecked || racer.health <= 0 ? null : {
         id: racer.id, name: racer.name, distance: racer.distance, lane: racer.lane, x: racer.currentX, mesh: racer.mesh, racer,
       };
     }
@@ -5050,6 +5140,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         releasePolicePursuit({ targetId: racer.id });
       }
       getCallbacks().effect?.({ type: 'racer-wrecked', target: racer.name, targetId: racer.id, attackerId, health: 0 });
+      if (racer.id === missionEscapeTriggerId) activateMissionEscapeRacer(racer);
     }
     emitHud(true);
     return lost;
@@ -5892,7 +5983,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         x: playerX, width: playerCollisionWidth(), speed: currentSpeed, racer: null,
         jumping: Boolean(playerJumpState.active),
       },
-      ...racers.map((racer) => ({
+      ...activeRacers().map((racer) => ({
         id: racer.id,
         name: racer.name,
         isPlayer: false,
@@ -7241,7 +7332,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // c'est le freinage du barrage qui crée le choc, décrit à la position du jour.
   function checkRivalPoliceCollisions() {
     if (sprint || !active || finished) return;
-    for (const racer of racers) {
+    for (const racer of activeRacers()) {
       if (racer.wrecked || racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 || racer.jumpState?.active) continue;
       for (const police of activePursuers()) {
         if (police.health <= 0 || police.collisionCooldownLeft > 0 || police.jumpState?.active) continue;
@@ -7295,7 +7386,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // tirs — il reste visible pour la voiture, quel que soit son inventaire.
     if (tutorialMode) return false;
     const opponentInventories = [
-      ...racers.map((racer) => racer.inventory),
+      ...activeRacers().map((racer) => racer.inventory),
       ...activePursuers().map((police) => police.inventory),
     ];
     return shouldHideCityRushPistolPickup(inventory, opponentInventories);
@@ -7840,7 +7931,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // elle se percuterait au lieu de bloquer.
       ...(policeActor ? [
         { lane: playerLane, x: playerCar.position.x, width: playerCollisionWidth(), distance },
-        ...racers.map((racer) => ({ lane: racer.lane, x: racer.mesh.position.x, width: racerCollisionWidth(racer), distance: racer.distance })),
+        ...activeRacers().map((racer) => ({ lane: racer.lane, x: racer.mesh.position.x, width: racerCollisionWidth(racer), distance: racer.distance })),
       ] : []),
     ];
     return obstacles.every((other) => {
@@ -7851,7 +7942,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function trafficImpactEscapeLane(traffic) {
     const nearby = [
-      ...racers.map((racer) => ({ lane: racer.lane, distance: racer.distance, x: racer.currentX, width: 1.9 * 0.92 * racer.profile.widthScale })),
+      ...activeRacers().map((racer) => ({ lane: racer.lane, distance: racer.distance, x: racer.currentX, width: 1.9 * 0.92 * racer.profile.widthScale })),
       { lane: playerLane, distance, x: playerX, width: 1.9 * playerProfile.widthScale },
       // L'escouade compte comme les rivaux : le véhicule touché ne se rabat pas
       // devant la seconde berline, qui s'y engluerait à son tour.
@@ -8102,7 +8193,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     const actors = [
       { id: 'player', x: playerCar.position.x, width: playerCollisionWidth(), distance, priorDistance: priorMap?.get('player') ?? distance, jumping: Boolean(playerJumpState.active) },
-      ...racers.map((racer) => ({
+      ...activeRacers().map((racer) => ({
         id: racer.id,
         x: racer.mesh.position.x,
         width: racerCollisionWidth(racer),
@@ -8369,7 +8460,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const hideRedForRace = redPickupsHiddenForRace();
     const participants = [
       { id: 'player', distance, lane: playerLane, speed: currentSpeed, health: playerHealth, maxHealth: playerMaxHealth },
-      ...racers.map((racer) => ({
+      ...activeRacers().map((racer) => ({
         id: racer.id,
         distance: racer.distance,
         lane: racer.lane,
@@ -8777,7 +8868,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       getCallbacks().lap?.({ lap, laps: effectiveLaps, final: finalLap, remaining, elapsed });
       getCallbacks().effect?.({ type: finalLap ? 'final-lap' : 'lap', lap, laps: effectiveLaps });
     }
-    for (const racer of racers) {
+    for (const racer of activeRacers()) {
       const racerLap = cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
       if (racerLap !== racer.lap) {
         racer.lap = racerLap;
@@ -8928,7 +9019,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       elapsed += dt;
       const priorDistance = distance;
-      const priorRacerDistances = new Map(racers.map((racer) => [racer.id, racer.distance]));
+      // Instantané du plateau actif pour cette image. Le complice déclenché par
+      // un tir rejoint ces calculs à l'image suivante, après avoir été placé et
+      // publié immédiatement au HUD.
+      const racingRacers = activeRacers();
+      const priorRacerDistances = new Map(racingRacers.map((racer) => [racer.id, racer.distance]));
       playerSlowLeft = Math.max(0, playerSlowLeft - dt);
       playerBlueShotSlowLeft = Math.max(0, playerBlueShotSlowLeft - dt);
       playerTrafficRecoverLeft = Math.max(0, playerTrafficRecoverLeft - dt);
@@ -9003,13 +9098,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
       const requestedRacerSpeeds = new Map();
       const priorRacerXs = new Map();
-      const aiPickups = new Map(racers.map((racer) => [
+      const aiPickups = new Map(racingRacers.map((racer) => [
         racer.id,
         visiblePickups(racer.inventory, racer.health, racer.maxHealth || cityRushCarMaxHealth(racer.profile), { player: false }),
       ]));
       // Les rivaux courent pour gagner : distance du leader de la course (le
       // pilote compris), et voie, tremplins et armes sont relus dans ce sens.
-      const raceLeaderDistance = Math.max(distance, ...racers.map((racer) => racer.distance));
+      const raceLeaderDistance = Math.max(distance, ...racingRacers.map((racer) => racer.distance));
       const aiRamps = ramps.map((ramp) => ({ lane: ramp.lane, distance: ramp.trackDistance }));
       const aiTraffic = [
         ...rollingTraffic().map((traffic) => ({ lane: traffic.lane, distance: traffic.distance, speed: traffic.currentSpeed })),
@@ -9024,7 +9119,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         ...oncomingCars.filter((oncoming) => !oncoming.rallied && !oncoming.destroyed)
           .map((oncoming) => ({ lane: oncoming.lane, distance: oncoming.distance, speed: -oncoming.currentSpeed, oncoming: true })),
       ];
-      for (const racer of racers) {
+      for (const racer of racingRacers) {
         racer.healthFlash = Math.max(0, (racer.healthFlash || 0) - dt);
         // Une épave, une cible immobilisée ou une voiture en plein saut ne
         // choisit pas de nouvelle voie : en l'air, personne ne se décale.
@@ -9049,7 +9144,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         })) {
           racer.changeIn = Math.min(racer.changeIn, cityRushAiThinkDelay(Math.random, {
             urgent: true,
-            missionTarget: racer.id === missionTargetId,
+            missionTarget: missionFugitiveIds.has(racer.id),
           }));
         }
         if (racerCanThink && racer.changeIn <= 0) {
@@ -9062,7 +9157,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           // doubler et à se répartir la chaussée.
           const otherRacers = [
             { lane: playerLane, distance, speed: currentSpeed, id: 'player', wrecked: playerWrecked },
-            ...racers.filter((other) => other.id !== racer.id)
+            ...racingRacers.filter((other) => other.id !== racer.id)
               .map((other) => ({ lane: other.lane, distance: other.distance, speed: other.currentSpeed || other.baseSpeed, id: other.id, wrecked: other.wrecked })),
           ];
           const weaponReady = isCityRushPowerCharged(racer.inventory, CITY_RUSH_POWERS.PISTOL);
@@ -9087,7 +9182,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           });
           if (nextLane !== racer.lane) racer.lane = nextLane;
           racer.changeIn = cityRushAiThinkDelay(Math.random, {
-            missionTarget: racer.id === missionTargetId,
+            missionTarget: missionFugitiveIds.has(racer.id),
           });
         }
         racer.slowLeft = Math.max(0, racer.slowLeft - dt);
@@ -9106,10 +9201,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const racerFinalLap = cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps;
         const racerPace = cityRushRivalPaceFactor({ finalLap: racerFinalLap });
         const storyPaceBoost = Number(storyRivalPace?.[racer.id]) > 0 ? Number(storyRivalPace[racer.id]) : 1;
-        const rivalTargetTopSpeed = cityRushRivalTargetSpeed(playerTopSpeed, racer.baseSpeed, {
+        let rivalTargetTopSpeed = cityRushRivalTargetSpeed(playerTopSpeed, racer.baseSpeed, {
           pace: racerPace,
           storyPace: storyPaceBoost,
         });
+        // Une interception reste une poursuite, pas une course perdue au
+        // premier ravitaillement : la cible ajuste son allure, sans téléportation,
+        // pour rester à portée et devant le canon. Les autres modes sont inchangés.
+        if (missionFugitiveIds.has(racer.id) && missionTargetLeadMax > 0) {
+          const lead = racer.distance - distance;
+          if (lead > missionTargetLeadMax) {
+            rivalTargetTopSpeed = Math.min(rivalTargetTopSpeed, playerCurrentSpeed * 0.92);
+          } else if (lead < missionTargetLeadMin) {
+            rivalTargetTopSpeed = Math.max(rivalTargetTopSpeed, playerCurrentSpeed * 1.18);
+          }
+        }
         const speedTarget = (racer.wrecked || racer.stunLeft > 0
           ? 0
           : rivalTargetTopSpeed * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))
@@ -9153,7 +9259,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
 
       // Détection de tremplin pour les rivaux
-      for (const racer of racers) {
+      for (const racer of racingRacers) {
         if (!racer.jumpState?.active && racer.stunLeft <= 0 && (racer.spinLeft || 0) <= 0) {
           for (const ramp of ramps) {
             if (ramp.lane === racer.lane && detectCityRushRampContact(racer.distance, racer.lane, ramp.trackDistance, ramp.lane)) {
@@ -9208,7 +9314,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
 
       // Trajectoire en l'air des rivaux
-      for (const racer of racers) {
+      for (const racer of racingRacers) {
         let racerJumpY = 0;
         let racerJumpPitch = 0;
         racer.landedThisFrame = false;
@@ -9239,7 +9345,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const groundVehicles = [
           ...rollingTraffic(),
           ...activePursuers(),
-          ...racers.filter((r) => (!r.jumpState?.active || (r.currentJumpY || 0) < 0.6)),
+          ...racingRacers.filter((r) => (!r.jumpState?.active || (r.currentJumpY || 0) < 0.6)),
         ];
         for (const vehicle of groundVehicles) {
           if (vehicle.lane === playerLane && Math.abs(distance - vehicle.distance) < 2.2) {
@@ -9263,7 +9369,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           jumping: Boolean(playerJumpState.active),
           landing: playerLandedThisFrame,
         },
-        ...racers.map((racer) => ({
+        ...racingRacers.map((racer) => ({
           id: racer.id,
           collisionGroup: 'racer',
           lane: racer.lane,
@@ -9379,14 +9485,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         engineProfile: playerProfile.archetype,
       });
 
-      for (const racer of racers) {
+      for (const racer of racingRacers) {
         const priorRacerDistance = priorRacerDistances.get(racer.id);
         racer.distance = movementById.get(racer.id) ?? priorRacerDistance;
         if (dt > 0 && racer.distance - priorRacerDistance < requestedRacerSpeeds.get(racer.id) * dt - 1e-6) racer.trafficRecoverLeft = CITY_RUSH_TRAFFIC_RECOVERY_DURATION;
         const priorRacerSpeed = racer.currentSpeed;
         racer.currentSpeed = dt > 0 ? Math.max(0, (racer.distance - priorRacerDistance) / dt) : requestedRacerSpeeds.get(racer.id);
         const gap = racer.distance - distance;
-        const visible = gap > -8 && gap < CITY_RUSH_RACER_VIEW_DISTANCE;
+        const visible = racer.raceActive !== false && gap > -8 && gap < CITY_RUSH_RACER_VIEW_DISTANCE;
         const renderZ = PLAYER_Z - gap * SCALE;
         const skid = skidOffset(racer.skidLeft, racer.skidDuration, racer.skidSide);
         racer.mesh.visible = visible;
@@ -9436,8 +9542,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           }
         }
       }
-      const trafficLeadDistance = Math.max(distance, ...racers.map((racer) => racer.distance));
-      const slowestRaceDistance = Math.min(distance, ...racers.map((racer) => racer.distance));
+      const trafficLeadDistance = Math.max(distance, ...racingRacers.map((racer) => racer.distance));
+      const slowestRaceDistance = Math.min(distance, ...racingRacers.map((racer) => racer.distance));
       for (const [index, traffic] of trafficCars.entries()) {
         // Berline rappelée : elle est pilotée par la chasse, plus par le flot.
         if (traffic.rallied) continue;
@@ -9711,7 +9817,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       updateRamps(dt);
       updateMiniGarages(priorDistance);
       updateBazookaWarehouses(priorDistance, dt);
-      racers.forEach((racer) => useRacerPower(racer));
+      activeRacers().forEach((racer) => useRacerPower(racer));
       updateVisualEffects(dt);
       updateTrafficImpacts(dt);
 
@@ -9735,7 +9841,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         coastSpeed = lerp(coastSpeed, paced(7), Math.min(1, dt * 0.9));
         const step = coastSpeed * dt;
         distance += step;
-        racers.forEach((racer) => { racer.distance += step; });
+        activeRacers().forEach((racer) => { racer.distance += step; });
         worldTravel = step * SCALE;
         currentSpeed = coastSpeed;
         for (const row of rows) {
@@ -9763,10 +9869,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerCar.position.x = lerp(playerCar.position.x, laneX(playerLane), Math.min(1, dt * 4));
       playerCar.rotation.x = trackPitch(distance);
       idleState(playerCar, playerTopSpeed);
-      racers.forEach((racer) => {
+      activeRacers().forEach((racer) => {
         if (phase === 'finished') {
           const gap = racer.distance - distance;
-          racer.mesh.visible = gap > -8 && gap < CITY_RUSH_RACER_VIEW_DISTANCE;
+          racer.mesh.visible = racer.raceActive !== false && gap > -8 && gap < CITY_RUSH_RACER_VIEW_DISTANCE;
           racer.mesh.position.x = racer.currentX + trackRelativeX(racer.distance);
           racer.mesh.position.y = trackRelativeY(racer.distance);
           racer.mesh.position.z = PLAYER_Z - gap * SCALE;
@@ -9824,7 +9930,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         playerSmokeTimer -= dt;
         if (playerSmokeTimer <= 0) {
           emitWheelSmoke(playerCar, { color: 0xe4e4ea, opacity: 0.45, scale: 0.45, grow: 2.2, life: 0.9, velocity: [0, 0.6, 1.4] });
-          racers.forEach((racer) => emitWheelSmoke(racer.mesh, { color: 0xe4e4ea, opacity: 0.35, scale: 0.4, grow: 2.2, life: 0.8, velocity: [0, 0.6, 1.4] }));
+          activeRacers().forEach((racer) => emitWheelSmoke(racer.mesh, { color: 0xe4e4ea, opacity: 0.35, scale: 0.4, grow: 2.2, life: 0.8, velocity: [0, 0.6, 1.4] }));
           playerSmokeTimer = 0.07;
         }
       }

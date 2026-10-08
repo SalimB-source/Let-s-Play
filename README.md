@@ -4762,3 +4762,22 @@ affichée, sans simuler un enregistrement local.ts et l'identité d'écriture es
 Les anciens compteurs locaux ne sont pas importés : ils ne constituent pas des
 votes vérifiables. En cas de panne ou de migration manquante, une erreur est
 affichée, sans simuler un enregistrement local.
+
+### Mission 1 : intercepteur et tir sur le dealer
+
+La livrée de police porte une rampe rouge/bleue **au-dessus du toit** (hauteur
+calculée sur le modèle, plutôt que noyée dans la coque) et un marquage POLICE
+arrière visible en caméra de poursuite. Elle suit les mouvements de caisse.
+
+L’opération Filet rouge prête désormais un premier chargeur de **7 balles**,
+remis à chaque tentative. Il ne compte pas comme un bonus ramassé : il faut
+toujours récupérer au moins un chargeur rouge, neutraliser le dealer et finir
+les trois tours. La cible ajuste son allure lorsqu’elle sort de la fenêtre de
+poursuite (24–80 m), sans téléportation ; le trafic, les collisions et les tirs
+restent réels. Ces réglages ne s’appliquent qu’à cette mission.
+
+`npm run check:city-rush-missions` vérifie les règles, le parcours de la vraie
+page (menu → briefing → départ → bouton tactile → replay) et deux courses
+complètes du vrai moteur avec rendu GPU factice, tirs tactiles puis touche Z.
+Aucun dégât ni trafic n’est désactivé. Pour varier la simulation :
+`CITY_RUSH_MISSION_SEED=42 node scripts/city-rush-mission-run-check.mjs`.

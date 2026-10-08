@@ -83,7 +83,16 @@ test('la première voiture de mission devient un véritable intercepteur reconna
   livery.traverse((object) => {
     if (object.isMesh && object.geometry.type === 'PlaneGeometry' && object.material.map) labels.push(object);
   });
-  assert.equal(labels.length, 2, 'POLICE est marqué sur les deux portières');
+  assert.equal(labels.length, 3, 'POLICE est marqué sur les deux portières et à l’arrière');
+  assert.ok(labels.some(label => label.name === 'police-rear-marking'));
+  assert.equal(livery.parent, car.userData.body, 'la livrée suit les mouvements de caisse');
+  const shell = shellOf(car);
+  shell.geometry.computeBoundingBox();
+  for (const light of livery.children.filter(object => object.position.y > 1.4 && object.material !== undefined)) {
+    light.geometry.computeBoundingBox();
+    assert.ok(light.position.y + light.geometry.boundingBox.min.y > shell.geometry.boundingBox.max.y,
+      'la rampe et les gyrophares ne sont pas enfouis dans le toit');
+  }
   assert.equal(labels[0].material.map.colorSpace, THREE.SRGBColorSpace, 'le marquage canvas utilise le bon espace couleur');
   const beacon = livery.userData.beacons;
   animateRacerCar(car, { speed: 0 }, 1 / 30, 0.1);
