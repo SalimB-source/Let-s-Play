@@ -76,24 +76,26 @@ export async function checkRpgBattle(assert) {
   // Aucune réaction en temps réel : l'écran ne propose ni parade ni esquive.
   assert.equal(container.textContent.includes('Parade'), false, 'le prototype ne doit plus proposer de parade');
 
-  const enemyHp = () => [...container.querySelectorAll('.rpg-foe__hp')]
+  const enemyHp = () => [...container.querySelectorAll('.rpg-card--ennemi .rpg-card__pt')]
     .map((node) => Number(node.textContent.split('/')[0].trim()))
     .reduce((sum, value) => sum + value, 0);
   const hpBefore = enemyHp();
   assert.ok(hpBefore > 500, `PV ennemis inattendus : ${hpBefore}`);
 
-  // ── Le joueur joue un coup ──────────────────────────────────────────────
-  let skillButton = null;
-  for (let attempt = 0; attempt < 16 && !skillButton; attempt += 1) {
+  // ── Le joueur pose une carte ────────────────────────────────────────────
+  let handCard = null;
+  for (let attempt = 0; attempt < 24 && !handCard; attempt += 1) {
     await act(async () => { await wait(250); });
-    skillButton = buttons().find((button) => button.className.includes('rpg-skill') && !button.disabled);
+    // La carte de base (attaque gratuite) dès que c'est notre tour.
+    handCard = buttons().find((button) =>
+      button.className.includes('rpg-hand__card') && !button.disabled
+      && /Sonde|Aiguille|Puisage|Éclat|Palette/.test(button.textContent));
   }
-  assert.ok(skillButton, 'aucune compétence jouable proposée au joueur');
-  const skillName = skillButton.querySelector('.rpg-skill__name').textContent;
-  await act(async () => { skillButton.click(); });
+  assert.ok(handCard, 'aucune carte de base jouable proposée au joueur');
+  await act(async () => { handCard.click(); });
   await act(async () => { await wait(400); });
 
-  assert.match(container.querySelector('.rpg-log').textContent, /dégâts|soigne|interrompt|monte/,
+  assert.match(container.querySelector('.rpg-log').textContent, /pose la carte|dégâts|soigne|interrompt/,
     'le journal ne trace aucune action');
   assert.ok(enemyHp() < hpBefore, `les PV ennemis n’ont pas baissé (${hpBefore} → ${enemyHp()})`);
 
@@ -102,14 +104,12 @@ export async function checkRpgBattle(assert) {
   const msg = container.querySelector('.rpg-scene__msg span');
   assert.ok(msg && msg.textContent.length > 0, 'la boîte de message doit taper le journal');
 
-  // ── Les quatre réponses sont proposées ──────────────────────────────────
-  for (const response of ['Garde', 'Barrage', 'Récolte', 'Souffle', 'Reposition']) {
-    assert.ok(findButton(response), `réponse « ${response} » absente de la barre d'actions`);
-  }
-  // Le barrage et la récolte exigent du sable : sans sable au sol, ils sont grisés.
-  if (container.textContent.includes('notre sol 0')) {
-    assert.equal(findButton('Barrage').disabled, true, 'le barrage doit être grisé sans sable');
-  }
+  // ── Tout est carte : base gratuite, sonde le sol, pouvoirs en main ──────
+  assert.match(container.textContent, /Sonder le sol/, 'l’action de base doit être proposée');
+  assert.ok(buttons().some((b) => b.className.includes('rpg-hand__card')),
+    'la main de pouvoirs collectionnables doit être proposée');
+  // Rien ne dépend des réflexes : aucune parade nulle part.
+  assert.equal(container.textContent.includes('Parade'), false);
 
   // ── Le tour ennemi se joue seul, sans rien demander au joueur ───────────
   let waveDone = false;
@@ -118,10 +118,10 @@ export async function checkRpgBattle(assert) {
       waveDone = true;
       break;
     }
-    // On joue pour de vrai : une compétence dès qu'il y en a une, sinon on passe.
-    const skill = buttons().find((button) => button.className.includes('rpg-skill') && !button.disabled);
-    if (skill) {
-      await act(async () => { skill.click(); });
+    // On joue pour de vrai : une carte dès qu'il y en a une, sinon on passe.
+    const card = buttons().find((button) => button.className.includes('rpg-hand__card') && !button.disabled);
+    if (card) {
+      await act(async () => { card.click(); });
     } else {
       const endTurn = findButton('Fin du tour');
       if (endTurn) await act(async () => { endTurn.click(); });
@@ -131,6 +131,14 @@ export async function checkRpgBattle(assert) {
   assert.ok(waveDone, 'la première vague ne s’est pas terminée');
   assert.match(container.querySelector('.rpg-overlay').textContent, /Vague repoussée/);
   assert.match(container.querySelector('.rpg-log').textContent, /Balayeur|raclette|Tourbillon|Sac de sable/i);
+
+  // ── Le draft d'après vague : trois cartes, on en choisit une ────────────
+  const draftCards = container.querySelectorAll('.rpg-draft__row .rpg-hand__card');
+  assert.equal(draftCards.length, 3, 'le draft doit proposer trois cartes');
+  await act(async () => { draftCards[0].click(); });
+  await act(async () => { await wait(120); });
+  assert.equal(container.querySelectorAll('.rpg-draft__row .rpg-hand__card').length, 0,
+    'une fois choisie, l’offre se referme');
 
   // ── Entre les vagues : le palier se visite avant de redescendre ─────────
   await act(async () => { findButton('Monter au palier').click(); });

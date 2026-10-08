@@ -2254,15 +2254,20 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
 - `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
   Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
   jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
-- `src/games/CardTable.jsx` — la table de jeu, 100 % DOM (donc visible
-  partout, sans WebGL) : chaque acteur est une carte à jouer posée sur une
-  table en bois, façon Magic / Yu-Gi-Oh — le portrait peint en illustration,
-  cadre doré pour l'équipe, ferronné pour l'ennemi, intention annoncée dans le
-  texte de carte, PV et Fêlure en pied de carte. L'adversaire en haut,
-  l'équipe en bas, cartes légèrement de travers comme posées à la main.
-  Mise en scène : carte qui bondit vers sa cible, clignement blanc à l'impact,
-  chiffres flottants, carte détruite grisée sur la table, boîte de message à
-  texte tapé lettre à lettre, bannière « des ennemis apparaissent ! ».
+- `src/games/rpgCards.js` — le concept cartes : anatomie façon Magic (bannière
+  de titre avec coût en pastilles, ligne de type, encadré de règle beige,
+  badge doré de PV, raretés), le catalogue des pouvoirs **collectionnables**,
+  les cartes de base (une seule attaque par personnage au départ), l'action
+  gratuite « Sonder le sol » et le **draft** d'après vague (trois cartes, une
+  choisie). Le sable est le mana.
+- `src/games/CardTable.jsx` — la table de jeu en bois, 100 % DOM (donc visible
+  partout, sans WebGL) : chaque acteur est sa carte, l'adversaire en haut,
+  l'équipe en bas, légèrement de travers comme posées à la main ; l'intention
+  ennemie est la carte annoncée face visible. Mise en scène : carte qui bondit
+  vers sa cible, clignement blanc à l'impact, chiffres flottants, carte
+  détruite grisée sur la table, boîte de message à texte tapé lettre à lettre,
+  bannière « des ennemis apparaissent ! ». La main se tient en éventail dans
+  la barre du bas ; les éphémères répondent pendant le tour ennemi.
 - `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
   jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
   souffle de sable. La partie pure est testée ; le lecteur s'éveille au

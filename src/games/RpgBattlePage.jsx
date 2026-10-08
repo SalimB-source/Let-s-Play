@@ -2,29 +2,25 @@ import React, { useCallback, useEffect, useReducer, useRef, useState } from 'rea
 import { Link } from 'react-router-dom';
 import CardTable from './CardTable.jsx';
 import {
-  RPG_BARRAGE_SABLE,
   RPG_CRISTALLISATION_COST,
   RPG_DIFFICULTIES,
   RPG_SABLE_MAX,
   RPG_VERRE_MAX,
   rpgAddFoes,
-  rpgBarrage,
   rpgCreateBattle,
   rpgCurrentActor,
+  rpgDraftPick,
   rpgElementMultiplier,
   rpgEndTurn,
   rpgEnemyTurn,
   rpgFelureRatio,
-  rpgGuard,
-  rpgRecolte,
-  rpgReposition,
+  rpgPlayCard,
+  rpgPlayableCards,
   rpgRewards,
-  rpgSouffle,
   rpgSwap,
   rpgTurnRing,
-  rpgUsableSkills,
-  rpgUseSkill,
 } from './rpgCombat';
+import { cardById, CARD_RARITIES } from './rpgCards';
 import {
   RPG_DEMO_HELP,
   RPG_DEMO_PARTY,
@@ -258,68 +254,49 @@ export default function RpgBattlePage() {
     showFlash(reasons[result?.reason] ?? `${action} impossible.`, 'refus');
   }, [showFlash]);
 
-  const cast = useCallback((skill) => {
+  /** Pose une carte : sur son tour, ou en réponse (éphémère) pendant le tour ennemi. */
+  const cast = useCallback((card) => {
     const state = battleRef.current;
-    const actor = rpgCurrentActor(state);
-    if (!actor || actor.side !== 'equipe') return;
+    const acting = rpgCurrentActor(state);
+    if (!acting) return;
+    const teamAlive = state.actors.filter((a) => a.alive && a.side === 'equipe');
+    // Pendant le tour ennemi, c'est un allié (choisi ou ciblé) qui répond.
+    const actorId = acting.side === 'equipe'
+      ? acting.id
+      : (state.actors.find((a) => a.id === allyId && a.alive)
+          ?? teamAlive.find((a) => a.id === acting.intent?.targetId)
+          ?? teamAlive[0])?.id;
+    if (!actorId) return;
     const foes = state.actors.filter((a) => a.alive && a.side === 'ennemi');
     const foe = state.actors.find((a) => a.id === targetId && a.alive) ?? foes[0];
-    const ally = state.actors.find((a) => a.id === allyId && a.alive) ?? actor;
-    const targetId2 = ['soi', 'tous-ennemis', 'tous-allies'].includes(skill.target ?? 'ennemi')
-      ? (skill.target === 'allie' ? ally.id : null)
-      : foe?.id ?? null;
+    const ally = state.actors.find((a) => a.id === allyId && a.alive)
+      ?? state.actors.find((a) => a.id === actorId);
     const before = new Map(state.actors.map((a) => [a.id, a.hp]));
-    const result = rpgUseSkill(state, {
-      actorId: actor.id,
-      skillId: skill.id,
-      targetId: skill.target === 'allie' ? ally.id : targetId2,
+    const result = rpgPlayCard(state, {
+      actorId,
+      cardId: card.id,
+      targetId: card.target === 'allie' ? ally.id : card.target === 'ennemi' ? foe?.id ?? null : null,
       crystallize: crystallize && state.verre >= RPG_CRISTALLISATION_COST,
     });
     if (!result.ok) {
-      refuse(result, skill.name);
+      refuse(result, card.name);
       return;
     }
     pushPops(state, before);
-    if (skill.kind === 'soin') {
-      cine({ t: 'soin', from: actor.id, to: skill.target === 'allie' ? ally.id : actor.id }, 'heal');
-    } else {
-      cine({ t: 'strike', from: actor.id, to: skill.target === 'tous-ennemis' ? null : foe?.id ?? null }, 'whoosh');
+    if (card.kind === 'soin' || card.effect === 'recolte') {
+      cine({ t: 'soin', from: actorId, to: card.target === 'allie' ? ally.id : actorId }, 'heal');
+    } else if (card.effect === 'souffle') {
+      cine({ t: 'souffle', from: actorId }, 'souffle');
+    } else if (card.power) {
+      cine({ t: 'strike', from: actorId, to: card.target === 'tous-ennemis' ? null : foe?.id ?? null }, 'whoosh');
       audioRef.current.play('hit', 0.28);
+    } else {
+      audioRef.current.play('blip');
     }
     setCrystallize(false);
     force();
-    if (state.over) {
-      later(() => setScreen('vague-finie'), 800);
-      return;
-    }
-    if (actor.pa < 1) later(pump, 620);
-  }, [allyId, crystallize, later, pump, refuse, targetId]);
-
-  const respond = useCallback((kind) => {
-    const state = battleRef.current;
-    const actor = rpgCurrentActor(state);
-    if (!actor || actor.side !== 'equipe') return;
-    const ally = state.actors.find((a) => a.id === allyId && a.alive) ?? actor;
-    let result;
-    if (kind === 'garde') result = rpgGuard(state, actor.id);
-    if (kind === 'barrage') result = rpgBarrage(state, actor.id, ally.id);
-    if (kind === 'recolte') result = rpgRecolte(state, actor.id, ally.id);
-    if (kind === 'souffle') result = rpgSouffle(state, actor.id);
-    if (kind === 'reposition') result = rpgReposition(state, actor.id, ally.id);
-    if (!result?.ok) {
-      refuse(result, kind);
-      return;
-    }
-    if (kind === 'recolte') {
-      cine({ t: 'soin', from: actor.id, to: actor.id }, 'heal');
-      showFlash(`+${result.heal} PV récoltés`, 'soin');
-    }
-    if (kind === 'souffle') cine({ t: 'souffle', from: actor.id }, 'souffle');
-    if (kind === 'garde' || kind === 'barrage' || kind === 'reposition') audioRef.current.play('blip');
-    if (kind === 'reposition') showFlash(`${ally.name} monte à l’étage ${result.tier}`, 'info');
-    force();
-    if (actor.pa < 1) later(pump, 620);
-  }, [allyId, later, pump, refuse, showFlash]);
+    if (state.over) later(() => setScreen('vague-finie'), 800);
+  }, [allyId, crystallize, later, refuse, targetId]);
 
   const endTurn = useCallback(() => {
     const state = battleRef.current;
@@ -463,7 +440,10 @@ export default function RpgBattlePage() {
   const reserve = battle ? battle.actors.filter((a) => a.side === 'reserve') : [];
   const ring = battle ? rpgTurnRing(battle, 6) : [];
   const isPlayerTurn = Boolean(current && current.side === 'equipe' && screen === 'combat');
-  const usable = current && current.side === 'equipe' ? rpgUsableSkills(current) : [];
+  const playable = isPlayerTurn ? rpgPlayableCards(battle, current) : [];
+  const instants = battle
+    ? battle.hand.map((id) => cardById(id)).filter((card) => card?.instant)
+    : [];
   const wave = RPG_DEMO_WAVES[waveIndex];
   const rewards = battle ? rpgRewards(battle) : null;
 
@@ -479,8 +459,9 @@ export default function RpgBattlePage() {
         <p className="rpg-head__eyebrow">LET’S PLAY · PROTOTYPE</p>
         <h1 className="rpg-head__title">LE SABLIER <span>DE BAB EL</span></h1>
         <p className="rpg-head__lede">
-          Tour par tour <strong>sans réflexes</strong> : chaque ennemi annonce son coup un round à
-          l’avance, et l’on répond en choisissant — garde, barrage, contre-élément, reposition.
+          Tour par tour <strong>sans réflexes</strong> : tout est carte. Chaque ennemi annonce la
+          carte qu’il posera un round à l’avance, et l’on répond en choisissant — éphémères,
+          contre-élément, étages. Collectionnez des pouvoirs entre les vagues.
           Prototype technique du dossier <code>docs/rpg/</code>.
         </p>
         <nav className="rpg-head__nav">
@@ -733,38 +714,36 @@ export default function RpgBattlePage() {
               {isPlayerTurn ? (
                 <>
                   <p className="rpg-actions__who">
-                    Au tour de <strong>{current.name}</strong> — {current.pa} PA
+                    Au tour de <strong>{current.name}</strong> — posez vos cartes (le sable paie)
                     {targetId && <> · cible : {battle.actors.find((a) => a.id === targetId)?.name}</>}
                   </p>
-                  <div className="rpg-skills">
-                    {usable.map((skill) => {
-                      const disabled = skill.locked || skill.pa > current.pa
-                        || (skill.sandCost ?? 0) > battle.ground.equipe;
+                  <div className="rpg-hand" aria-label="Votre main et vos cartes de base">
+                    {playable.map((card) => {
+                      const disabled = card.locked || card.used || !card.affordable;
                       const foe = battle.actors.find((a) => a.id === targetId);
-                      const advantage = foe && skill.element
-                        ? rpgElementMultiplier(skill.element, foe.element) : 1;
-                      const counters = skill.power > 0 && foes.some(
-                        (f) => f.intent?.power > 0 && skill.element
-                          && rpgElementMultiplier(skill.element, f.intent.element) > 1,
-                      );
+                      const advantage = foe && card.element
+                        ? rpgElementMultiplier(card.element, foe.element) : 1;
                       return (
                         <button
-                          key={skill.id}
+                          key={`${card.source}-${card.id}`}
                           type="button"
-                          className="rpg-skill"
+                          className={`rpg-hand__card rpg-hand__card--elem-${card.element ?? 'sable'} ${card.source === 'base' ? 'rpg-hand__card--base' : ''} ${card.instant ? 'is-instant' : ''}`}
                           disabled={disabled}
-                          onClick={() => cast(skill)}
-                          title={skill.locked ? `Verrouillé : il manque ${skill.missing} segment(s) de Nom` : skill.text}
+                          onClick={() => cast(card)}
+                          title={card.locked ? 'Verrouillé : le Nom complet manque' : card.text}
                         >
-                          <span className="rpg-skill__cost">
-                            {skill.pa} PA{skill.sandCost ? ` + ${skill.sandCost} sable` : ''}
+                          <span className="rpg-hand__title">
+                            <strong>{card.name}</strong>
+                            <span className="rpg-hand__cost">{card.basic ? 'base' : `${card.cost} ⛃`}</span>
                           </span>
-                          <span className="rpg-skill__name">
-                            {RPG_ELEMENT_ICONS[skill.element] ?? '◇'} {skill.name}
-                            {advantage > 1 && <em className="rpg-skill__adv">avantage</em>}
-                            {counters && <em className="rpg-skill__adv rpg-skill__adv--contre">contre-élément</em>}
+                          <span className="rpg-hand__art" aria-hidden="true">
+                            {RPG_ELEMENT_ICONS[card.element] ?? '◇'}
+                            {card.power ? <b>{card.power}</b> : null}
                           </span>
-                          <small>{skill.locked ? 'Nom verrouillé' : skill.text}</small>
+                          <span className="rpg-hand__text">
+                            {card.locked ? 'Exige le Nom complet (3 segments).' : card.text}
+                            {card.used && <em> — déjà jouée ce tour.</em>}
+                          </span>
                         </button>
                       );
                     })}
@@ -779,41 +758,6 @@ export default function RpgBattlePage() {
                       />
                       Cristalliser ({RPG_CRISTALLISATION_COST} Verres)
                     </label>
-                    <button type="button" className="rpg-btn" onClick={() => respond('garde')} disabled={current.pa < 1}>
-                      🛡 Garde <small>−60 %, +1 Verre</small>
-                    </button>
-                    <button
-                      type="button"
-                      className="rpg-btn"
-                      onClick={() => respond('barrage')}
-                      disabled={current.pa < 1 || battle.ground.equipe < RPG_BARRAGE_SABLE}
-                    >
-                      ◇ Barrage <small>1 PA + {RPG_BARRAGE_SABLE} sable</small>
-                    </button>
-                    <button
-                      type="button"
-                      className="rpg-btn"
-                      onClick={() => respond('recolte')}
-                      disabled={current.pa < 1 || battle.ground.equipe < 1}
-                    >
-                      ⛃ Récolte <small>soigne</small>
-                    </button>
-                    <button
-                      type="button"
-                      className="rpg-btn"
-                      onClick={() => respond('souffle')}
-                      disabled={current.pa < 1 || battle.ground.ennemi < 1}
-                    >
-                      🌀 Souffle <small>vole leur sable</small>
-                    </button>
-                    <button
-                      type="button"
-                      className="rpg-btn"
-                      onClick={() => respond('reposition')}
-                      disabled={current.pa < 1}
-                    >
-                      ▲ Reposition <small>monte d’un étage</small>
-                    </button>
                     {reserve.map((actor) => (
                       <button key={actor.id} type="button" className="rpg-btn rpg-btn--swap" onClick={() => swapIn(actor)}>
                         <img className="rpg-btn__portrait" src={portraitSrc(actor)} alt="" aria-hidden="true" />
@@ -826,7 +770,31 @@ export default function RpgBattlePage() {
                   </div>
                 </>
               ) : (
-                <p className="rpg-actions__wait">L’ennemi exécute ce qu’il avait annoncé…</p>
+                <div className="rpg-actions__wait">
+                  <p>L’ennemi pose et exécute ses cartes…</p>
+                  {instants.length > 0 && (
+                    <div className="rpg-hand rpg-hand--reponse" aria-label="Répondre avec un éphémère">
+                      <span className="rpg-hand__hint">Répondre :</span>
+                      {instants.map((card) => (
+                        <button
+                          key={card.id}
+                          type="button"
+                          className={`rpg-hand__card is-instant rpg-hand__card--elem-${card.element ?? 'sable'}`}
+                          disabled={card.cost > battle.ground.equipe}
+                          onClick={() => cast(card)}
+                          title={card.text}
+                        >
+                          <span className="rpg-hand__title">
+                            <strong>{card.name}</strong>
+                            <span className="rpg-hand__cost">{card.cost} ⛃</span>
+                          </span>
+                          <span className="rpg-hand__art" aria-hidden="true">{RPG_ELEMENT_ICONS[card.element] ?? '◇'}</span>
+                          <span className="rpg-hand__text">{card.text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -842,6 +810,37 @@ export default function RpgBattlePage() {
                   ? `${RPG_DEMO_WAVES[waveIndex + 1].title} — ${RPG_DEMO_WAVES[waveIndex + 1].intro}`
                   : 'Le Prototype retombe en pièces de laiton. Le cycle est tenu.'}
               </p>
+              {battle?.draft?.length > 0 && (
+                <div className="rpg-draft">
+                  <h3>Draft — une carte rejoint votre classeur</h3>
+                  <div className="rpg-draft__row">
+                    {battle.draft.map((id) => {
+                      const card = cardById(id);
+                      if (!card) return null;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          className={`rpg-hand__card rpg-hand__card--big rpg-hand__card--elem-${card.element ?? 'sable'}`}
+                          onClick={() => { rpgDraftPick(battle, id); force(); }}
+                          title={card.text}
+                        >
+                          <span className="rpg-hand__title">
+                            <strong>{card.name}</strong>
+                            <span className="rpg-hand__cost">{card.cost} ⛃</span>
+                          </span>
+                          <span className="rpg-hand__art" aria-hidden="true">
+                            {RPG_ELEMENT_ICONS[card.element] ?? '◇'}
+                            {card.power ? <b>{card.power}</b> : null}
+                          </span>
+                          <span className="rpg-hand__text">{card.text}</span>
+                          <span className="rpg-hand__rarity">{CARD_RARITIES[card.rarity]?.label ?? card.rarity}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <button type="button" className="rpg-btn rpg-btn--primary" onClick={nextWave}>
                 {waveIndex + 1 < RPG_DEMO_WAVES.length
                   ? (RPG_EXPLORE_PALIERS[waveIndex + 1] ? 'Monter au palier et souffler' : 'Changer de palier, puis continuer')

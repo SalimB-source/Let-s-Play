@@ -22,7 +22,7 @@
 //      étage à chaque round. La hauteur est une ressource qui fond.
 
 // ── Constantes de réglage ──────────────────────────────────────────────────
-export const RPG_PA_PER_TURN = 3;
+import { cardById, cardCost, rpgDraftOffer, RPG_BASIC_ATTACKS, RPG_BASIC_CARDS, RPG_STARTING_COLLECTION } from './rpgCards.js';
 export const RPG_VERRE_MAX = 5;
 export const RPG_CRISTALLISATION_COST = 3;
 export const RPG_CRISTALLISATION_POWER = 2;
@@ -242,7 +242,8 @@ function makeActor(def, side) {
     agi: def.agi ?? 40,
     backline: Boolean(def.backline),
     tier: def.tier ?? 1,          // étage de départ (1 = en bas)
-    pa: RPG_PA_PER_TURN,
+    basicUsed: false,
+    harvested: false,
     guarding: false,
     shield: 0,                    // barrage de verre en cours
     blind: 0,
@@ -283,11 +284,16 @@ export function rpgCreateBattle({
   difficulty = 'normale',
   ambush = false,
   clockInterval = RPG_CLOCK_INTERVAL,
+  collection = [...RPG_STARTING_COLLECTION],
 } = {}) {
   const battle = {
     difficulty,
     seed,
     rng: rpgRng(seed),
+    collection,             // le classeur : les cartes possédées
+    hand: [],               // la main en combat
+    graveyard: [],          // jouées ce combat
+    draft: null,            // offre de draft entre les vagues
     actors: [
       ...party.map((def) => makeActor(def, 'equipe')),
       ...foes.map((def) => makeActor(def, 'ennemi')),
@@ -317,8 +323,62 @@ export function rpgCreateBattle({
   for (const foe of battle.actors) {
     if (foe.side === 'ennemi') computeIntent(battle, foe);
   }
+  rpgDrawCards(battle, 4);
   rpgLog(battle, 'Le cycle commence. L’Astrolabe tourne.', 'systeme');
   return battle;
+}
+
+// ── La main : piocher, lire ses cartes, drafter ────────────────────────────
+/** Pioche n cartes de la collection (ni dans la main ni au cimetière). */
+export function rpgDrawCards(battle, count = 1) {
+  const drawn = [];
+  for (let i = 0; i < count; i += 1) {
+    if (battle.hand.length >= 7) break;
+    const pool = battle.collection.filter((id) => !battle.hand.includes(id) && !battle.graveyard.includes(id));
+    if (!pool.length) break;
+    const cardId = pool[Math.floor(battle.rng() * pool.length)];
+    battle.hand.push(cardId);
+    drawn.push(cardId);
+    rpgLog(battle, `L’équipe pioche « ${cardById(cardId)?.name ?? cardId} ».`, 'systeme');
+  }
+  return drawn;
+}
+
+/**
+ * Ce que peut jouer un compagnon : sa carte de base (une fois par tour),
+ * l'action de base « Sonder le sol » (une fois par tour), et sa main —
+ * chaque carte avec son verrou de Nom et son accessibilité en sable.
+ */
+export function rpgPlayableCards(battle, actor) {
+  if (!actor?.alive) return [];
+  const cards = [];
+  const basic = RPG_BASIC_ATTACKS[actor.id];
+  if (basic) cards.push({ ...basic, source: 'base', used: actor.basicUsed, locked: false, affordable: !actor.basicUsed });
+  for (const card of RPG_BASIC_CARDS) {
+    cards.push({ ...card, source: 'base', used: actor.harvested, locked: false, affordable: !actor.harvested });
+  }
+  for (const id of battle.hand) {
+    const card = cardById(id);
+    if (!card) continue;
+    const locked = (card.requiresName || 0) > (actor.nameSegments ?? 3);
+    cards.push({
+      ...card,
+      source: 'main',
+      used: false,
+      locked,
+      affordable: !locked && cardCost(card) <= battle.ground[actor.side],
+    });
+  }
+  return cards;
+}
+
+/** Draft d'après vague : choisit une des trois cartes proposées. */
+export function rpgDraftPick(battle, cardId) {
+  if (!battle.draft?.includes(cardId) || battle.collection.includes(cardId)) return { ok: false };
+  battle.collection.push(cardId);
+  battle.draft = null;
+  rpgLog(battle, `La collection s’enrichit de « ${cardById(cardId)?.name} ».`, 'systeme');
+  return { ok: true };
 }
 
 export function actorById(battle, id) {
@@ -374,7 +434,6 @@ function nextRound(battle) {
   battle.consonance = false;
   for (const actor of battle.actors) {
     if (!actor.alive) continue;
-    actor.pa = RPG_PA_PER_TURN;
     actor.guarding = false;
     actor.contred = false;
     if (actor.blind > 0) actor.blind -= 1;
@@ -420,9 +479,16 @@ function nextRound(battle) {
 
 /** Clôt le tour de l'acteur courant. */
 export function rpgEndTurn(battle) {
+  const done = rpgCurrentActor(battle);
+  if (done?.side === 'equipe') {
+    done.basicUsed = false;
+    done.harvested = false;
+  }
   battle.ringIndex += 1;
   if (battle.ringIndex >= battle.ring.length) nextRound(battle);
-  return rpgCurrentActor(battle);
+  const next = rpgCurrentActor(battle);
+  if (next?.side === 'equipe') rpgDrawCards(battle, 1);
+  return next;
 }
 
 // ── Intention ennemie ──────────────────────────────────────────────────────
@@ -487,21 +553,7 @@ export function rpgEstimateIntent(battle, actor, target) {
 
 // ── Compétences ────────────────────────────────────────────────────────────
 /** Compétences utilisables, avec l'état de verrouillage par le Nom. */
-export function rpgUsableSkills(actor) {
-  return (actor.skills || []).map((skill) => {
-    const locked = (skill.requiresName || 0) > (actor.nameSegments ?? 3);
-    return {
-      ...skill,
-      locked,
-      missing: locked ? (skill.requiresName || 0) - (actor.nameSegments ?? 3) : 0,
-      affordable: !locked && actor.pa >= (skill.pa || 0),
-    };
-  });
-}
 
-export function skillCost(skill) {
-  return Number(skill?.pa) || 0;
-}
 
 function spendVerre(battle, amount) {
   battle.verre = Math.max(0, Math.min(RPG_VERRE_MAX, battle.verre - amount));
@@ -588,22 +640,57 @@ export function resolveTargets(battle, actor, skill, targetId) {
  * Fait agir un acteur. Retourne `{ ok, events }` ; refuse sans effet si
  * l'action est illégale (PA, sable, Nom verrouillé).
  */
-export function rpgUseSkill(battle, { actorId, skillId, targetId = null, crystallize = false } = {}) {
+/**
+ * Joue une carte : carte de base (une fois par tour), « Sonder le sol »
+ * (une fois par tour), ou pouvoir depuis la main (payé en sable, puis au
+ * cimetière). Les éphémères peuvent aussi répondre pendant le tour ennemi.
+ */
+export function rpgPlayCard(battle, { actorId, cardId, targetId = null, crystallize = false } = {}) {
   const actor = actorById(battle, actorId);
-  const skill = (actor?.skills || []).find((item) => item.id === skillId);
-  if (!actor?.alive || !skill) return { ok: false, reason: 'introuvable', events: [] };
-  if ((skill.requiresName || 0) > (actor.nameSegments ?? 3)) return { ok: false, reason: 'nom-verrouille', events: [] };
+  const card = cardById(cardId);
+  if (!actor?.alive || !card) return { ok: false, reason: 'introuvable', events: [] };
+  const current = rpgCurrentActor(battle);
+  const ownTurn = current?.id === actor.id && current.side === 'equipe';
 
-  const free = battle.freeSkillFor && targetId === battle.freeSkillFor;
-  const cost = free ? 0 : skillCost(skill);
-  if (actor.pa < cost) return { ok: false, reason: 'pa-insuffisant', events: [] };
+  if ((card.requiresName || 0) > (actor.nameSegments ?? 3)) return { ok: false, reason: 'nom-verrouille', events: [] };
+
+  if (card.basic) {
+    if (!ownTurn || actor.basicUsed) return { ok: false, reason: 'deja-jouee', events: [] };
+    actor.basicUsed = true;
+    return applyCardEffect(battle, actor, card, targetId, crystallize);
+  }
+  if (card.effect === 'sonder') {
+    if (!ownTurn || actor.harvested) return { ok: false, reason: 'deja-jouee', events: [] };
+    actor.harvested = true;
+    addGround(battle, 'equipe', 20);
+    rpgLog(battle, `${actor.name} sonde le sol : +20 sable sur notre sol.`, 'sable');
+    return { ok: true, events: [{ type: 'sable', amount: 20 }] };
+  }
+
+  if (!battle.hand.includes(card.id)) return { ok: false, reason: 'pas-en-main', events: [] };
+  if (!ownTurn && !card.instant) return { ok: false, reason: 'pas-instant', events: [] };
+
+  const cost = cardCost(card);
+  if (cost > battle.ground[actor.side]) return { ok: false, reason: 'sable-insuffisant', events: [] };
   if (crystallize && battle.verre < RPG_CRISTALLISATION_COST) return { ok: false, reason: 'verre-insuffisant', events: [] };
-  const sand = skill.sandCost ?? 0;
-  if (sand > battle.ground[actor.side]) return { ok: false, reason: 'sable-insuffisant', events: [] };
 
-  actor.pa -= cost;
+  battle.hand.splice(battle.hand.indexOf(card.id), 1);
+  battle.graveyard.push(card.id);
+  if (cost) addGround(battle, actor.side, -cost);
   if (crystallize) spendVerre(battle, RPG_CRISTALLISATION_COST);
-  if (sand) addGround(battle, actor.side, -sand);
+  rpgLog(battle, `${actor.name} pose la carte « ${card.name} »${cost ? ` — ${cost} sable` : ''}.`, 'systeme');
+
+  if (card.effect === 'garde') return rpgGuard(battle, actor.id);
+  if (card.effect === 'barrage') return rpgBarrage(battle, actor.id, targetId);
+  if (card.effect === 'recolte') return rpgRecolte(battle, actor.id, targetId);
+  if (card.effect === 'souffle') return rpgSouffle(battle, actor.id);
+  if (card.effect === 'reposition') return rpgReposition(battle, actor.id, targetId);
+  return applyCardEffect(battle, actor, card, targetId, crystallize);
+}
+
+/** Résout l'effet d'une carte d'attaque / soin / statut une fois payée. */
+function applyCardEffect(battle, actor, skill, targetId, crystallize = false) {
+  const free = battle.freeSkillFor && targetId === battle.freeSkillFor;
   if (free) {
     battle.freeSkillFor = null;
     rpgLog(battle, `La Fêlure rend le coup gratuit.`, 'felure');
@@ -710,11 +797,9 @@ export function rpgUseSkill(battle, { actorId, skillId, targetId = null, crystal
     targets[0].shield += shield;
     rpgLog(battle, `${targets[0].name} reçoit un barrage de ${shield}.`, 'barrage');
   }
-  if (skill.gainPa) {
-    for (const ally of battle.actors.filter((a) => a.alive && a.side === 'equipe')) {
-      ally.pa = Math.min(RPG_PA_PER_TURN, ally.pa + skill.gainPa);
-    }
-    rpgLog(battle, `${actor.name} rend ${skill.gainPa} PA à l’équipe.`, 'statut');
+  if (skill.draw) {
+    const drawn = rpgDrawCards(battle, skill.draw);
+    rpgLog(battle, `${actor.name} pioche ${drawn.length} carte(s).`, 'statut');
   }
   if (skill.delay) {
     const foe = targets.find((t) => t.side === 'ennemi');
@@ -725,15 +810,14 @@ export function rpgUseSkill(battle, { actorId, skillId, targetId = null, crystal
       rpgLog(battle, `${foe.name} est retardé d’un round : ${saved.label} attendra.`, 'statut');
     }
   }
-  return { ok: true, events, crystallize, cost };
+  return { ok: true, events, crystallize };
 }
 
 // ── Les quatre réponses ────────────────────────────────────────────────────
-/** Garde : 1 PA, −60 % sur le prochain coup, +1 Verre si on est la cible annoncée. */
+/** Garde (carte éphémère) : −60 % sur le prochain coup, +1 Verre si cible annoncée. */
 export function rpgGuard(battle, actorId) {
   const actor = actorById(battle, actorId);
-  if (!actor?.alive || actor.pa < 1) return { ok: false };
-  actor.pa -= 1;
+  if (!actor?.alive) return { ok: false };
   actor.guarding = true;
   const vise = battle.actors.some(
     (foe) => foe.side === 'ennemi' && foe.alive && foe.intent?.targetId === actor.id,
@@ -747,60 +831,54 @@ export function rpgGuard(battle, actorId) {
   return { ok: true, vise };
 }
 
-/** Barrage de verre : 1 PA + 20 sable du sol, absorbe avant les PV. */
+/** Barrage de verre (carte) : absorbe avant les PV. Le sable est le coût de la carte. */
 export function rpgBarrage(battle, actorId, targetId = null) {
   const actor = actorById(battle, actorId);
-  if (!actor?.alive || actor.pa < 1) return { ok: false, reason: 'pa-insuffisant' };
-  if (battle.ground[actor.side] < RPG_BARRAGE_SABLE) return { ok: false, reason: 'sable-insuffisant' };
+  if (!actor?.alive) return { ok: false };
   const ally = actorById(battle, targetId);
   const target = ally?.alive && ally.side === 'equipe' ? ally : actor;
-  actor.pa -= 1;
-  addGround(battle, actor.side, -RPG_BARRAGE_SABLE);
   target.shield += rpgComputeShield(actor);
   rpgLog(battle, `${actor.name} souffle un barrage de verre pour ${target.name} (${target.shield}).`, 'barrage');
   return { ok: true, target: target.id };
 }
 
-/** Récolte : 1 PA, puise jusqu'à 40 sable du sol et soigne. */
+/** Récolte (carte) : convertit jusqu'à 40 sable du sol en soins. */
 export function rpgRecolte(battle, actorId, targetId = null) {
   const actor = actorById(battle, actorId);
-  if (!actor?.alive || actor.pa < 1) return { ok: false, reason: 'pa-insuffisant' };
+  if (!actor?.alive) return { ok: false };
   if (battle.ground[actor.side] < 1) return { ok: false, reason: 'sable-insuffisant' };
   const ally = actorById(battle, targetId);
   const target = ally?.alive && ally.side === 'equipe' ? ally : actor;
   const taken = Math.min(RPG_SABLE_POCKET, battle.ground[actor.side]);
   const heal = Math.min(target.maxHp - target.hp, rpgComputeRecolte(taken));
-  actor.pa -= 1;
   addGround(battle, actor.side, -taken);
   target.hp += heal;
   rpgLog(battle, `${actor.name} récolte ${taken} sable et rend ${heal} PV à ${target.name}.`, 'soin');
   return { ok: true, heal, taken };
 }
 
-/** Souffle : 1 PA, retire du sable du sol ennemi et en récupère la moitié. */
+/** Souffle (carte) : retire du sable du sol ennemi et en récupère la moitié. */
 export function rpgSouffle(battle, actorId) {
   const actor = actorById(battle, actorId);
-  if (!actor?.alive || actor.pa < 1) return { ok: false, reason: 'pa-insuffisant' };
+  if (!actor?.alive) return { ok: false };
   const ennemi = battle.ground.ennemi;
   const equipe = battle.ground.equipe;
   const other = actor.side === 'ennemi' ? 'equipe' : 'ennemi';
   const taken = Math.min(RPG_SABLE_POCKET, battle.ground[other]);
   if (taken < 1) return { ok: false, reason: 'sable-insuffisant' };
-  actor.pa -= 1;
   addGround(battle, other, -taken);
   addGround(battle, actor.side, Math.floor(taken / 2));
   rpgLog(battle, `${actor.name} souffle ${taken} sable du sol adverse (avant : ${ennemi} / ${equipe}).`, 'sable');
   return { ok: true, taken };
 }
 
-/** Reposition : 1 PA, fait monter d'un étage (soi ou un allié). */
+/** Reposition (carte) : fait monter d'un étage (soi ou un allié). */
 export function rpgReposition(battle, actorId, targetId = null) {
   const actor = actorById(battle, actorId);
-  if (!actor?.alive || actor.pa < 1) return { ok: false, reason: 'pa-insuffisant' };
+  if (!actor?.alive) return { ok: false };
   const ally = actorById(battle, targetId);
   const target = ally?.alive && ally.side === 'equipe' ? ally : actor;
   if (target.tier >= RPG_TIERS) return { ok: false, reason: 'etage-max' };
-  actor.pa -= 1;
   target.tier += 1;
   rpgLog(battle, `${target.name} monte à l’étage ${target.tier}.`, 'statut');
   return { ok: true, tier: target.tier };
@@ -813,7 +891,6 @@ export function rpgSwap(battle, outId, inId) {
   if (!out?.alive || !incoming || incoming.side !== 'reserve') return { ok: false };
   out.side = 'reserve';
   incoming.side = 'equipe';
-  incoming.pa = 0;
   battle.ring = rpgBuildRing(battle.actors);
   rpgLog(battle, `${incoming.name} prend la place de ${out.name}.`, 'systeme');
   return { ok: true };
@@ -852,6 +929,7 @@ export function rpgEnemyTurn(battle) {
     return { acted: true, skipped: true };
   }
   actor.intent = null;
+  rpgLog(battle, `${actor.name} pose la carte « ${intent.label} ».`, 'ennemi');
 
   const team = battle.actors.filter((a) => a.alive && a.side === 'equipe');
   const strike = battle.clockStrike > 0 ? 1 + RPG_CLOCK_BUFF : 1;
@@ -930,13 +1008,21 @@ export function rpgCheckEnd(battle) {
 
 /** Récompenses des ennemis du combat. */
 export function rpgRewards(battle) {
-  return battle.actors
+  const gains = battle.actors
     .filter((a) => a.side === 'ennemi')
     .reduce((acc, foe) => ({
       xp: acc.xp + (foe.rewards?.xp ?? 40),
       sable: acc.sable + (foe.rewards?.sable ?? 25),
       registres: acc.registres + (foe.rewards?.registres ?? 0),
     }), { xp: 0, sable: 0, registres: 0 });
+  // La progression passe par le classeur : chaque vague offre un draft
+  // (tiré une seule fois, puis conservé tant qu'on n'a pas choisi).
+  if (!battle.draftOffered) {
+    battle.draftOffered = true;
+    battle.draft = rpgDraftOffer(battle.rng, battle.collection);
+  }
+  gains.draft = battle.draft;
+  return gains;
 }
 
 /** Barre de Fêlure normalisée (0 → 1) pour l'affichage. */

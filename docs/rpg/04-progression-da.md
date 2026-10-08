@@ -124,7 +124,8 @@ est en DOM, aucune WebGL requise, la table s'affiche sur chaque machine :
 L'écran de combat occupe **tout le viewport** : la table en bois est le fond,
 et tout le reste est du HUD translucide posé dessus — compteurs et ordre des
 tours en haut, et en bas, sur la table, le journal, la boîte de message et la
-fenêtre de commandes.
+main tenue en éventail. Le concept cartes complet (anatomie, boucle de tour,
+collection, draft) est décrit dans `05-concept-cartes.md`.
 
 Règle : les effets *soulignent* l'information déjà présente dans
 les cartes (intention, PV, étages). Jamais l'inverse : un effet qui annonce
