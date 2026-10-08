@@ -123,7 +123,7 @@ function FoeCard({ battle, actor, selected, onPick, tilt, fx, pop }) {
         )}
       </span>
       <span className="rpg-card__type">
-        Créature — {actor.role}
+        {actor.role}
         <em className="rpg-card__set" title="Commune" aria-hidden="true">●</em>
       </span>
       <span className="rpg-card__text">
@@ -174,7 +174,7 @@ function AllyCard({ battle, actor, active, selected, onPick, tilt, fx, pop }) {
         )}
       </span>
       <span className="rpg-card__type">
-        Créature légendaire — {actor.role}
+        {actor.role}
         <em className="rpg-card__set rpg-card__set--mythique" title="Mythique" aria-hidden="true">✦</em>
       </span>
       <span className="rpg-card__text rpg-card__text--ally">
