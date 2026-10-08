@@ -228,6 +228,7 @@ function makeActor(def, side) {
     id: def.id,
     side,
     name: def.name,
+    portrait: def.portrait ?? def.id,
     role: def.role || '',
     element: def.element || null,
     level: def.level || 1,

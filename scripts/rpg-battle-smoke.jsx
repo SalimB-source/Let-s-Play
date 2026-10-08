@@ -45,6 +45,10 @@ export async function checkRpgBattle(assert) {
   assert.equal(container.querySelectorAll('.rpg-fig--equipe').length, 4, 'l’équipe doit être visible en scène');
   assert.ok(container.querySelectorAll('.rpg-fig--ennemi').length >= 2, 'les ennemis doivent être visibles en scène');
   assert.ok(container.querySelectorAll('.rpg-fig img').length >= 6, 'chaque acteur doit montrer son portrait');
+  // Les ennemis instanciés (id suffixés) doivent tout de même pointer vers le
+  // fichier de portrait de leur définition — régression du 2026-10-08.
+  const foeSrcs = [...container.querySelectorAll('.rpg-fig--ennemi img')].map((img) => img.getAttribute('src'));
+  assert.ok(foeSrcs.length >= 2 && foeSrcs.every((s) => /portraits\/balayeur\.jpg$/.test(s)), `les ennemis doivent charger balayeur.jpg (${foeSrcs.join(', ')})`);
   assert.equal(container.querySelectorAll('.rpg-ally').length, 4, 'l’équipe doit compter 4 compagnons');
   const foeCards = container.querySelectorAll('.rpg-foe');
   assert.ok(foeCards.length >= 2, `ennemis absents (${foeCards.length})`);
