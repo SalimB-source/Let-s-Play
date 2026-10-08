@@ -1852,7 +1852,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   camera.lookAt(CHASE_LOOK);
 
   const renderer = new THREE.WebGLRenderer({ antialias: !lite, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lite ? 1.25 : 1.5));
+  // Résolution adaptative : le plafond dépend de l'écran, le palier courant
+  // baisse si la machine ne tient plus la cadence (voir `adaptResolution`).
+  const pixelRatioCap = Math.min(window.devicePixelRatio || 1, lite ? 1.25 : 1.5);
+  renderer.setPixelRatio(pixelRatioCap);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = lightRig.exposure;
@@ -8696,10 +8699,62 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
+  // Résolution adaptative. Pendant une course, on mesure le temps moyen d'image
+  // par fenêtre d'une seconde. Deux fenêtres lentes de suite → on descend d'un
+  // palier de résolution ; quatre fenêtres rapides de suite → on remonte. Les
+  // premières secondes (compilation des shaders, chargement) sont ignorées et
+  // l'hystérésis évite les allers-retours visibles.
+  const RESOLUTION_STEPS = [1, 0.85, 0.7, 0.6];
+  const SLOW_FRAME_SECONDS = 1 / 45;
+  const FAST_FRAME_SECONDS = 1 / 57;
+  let resolutionStep = 0;
+  let resolutionWindowTime = 0;
+  let resolutionWindowFrames = 0;
+  let resolutionSlowWindows = 0;
+  let resolutionFastWindows = 0;
+  let resolutionWarmup = 1.5;
+  function applyResolutionStep(step) {
+    resolutionStep = step;
+    renderer.setPixelRatio(Math.max(0.6, pixelRatioCap * RESOLUTION_STEPS[step]));
+    resize();
+  }
+  function adaptResolution(dt) {
+    if (!active || finished || dt <= 0) return;
+    if (resolutionWarmup > 0) {
+      resolutionWarmup -= dt;
+      return;
+    }
+    resolutionWindowTime += dt;
+    resolutionWindowFrames += 1;
+    if (resolutionWindowTime < 1) return;
+    const averageFrame = resolutionWindowTime / resolutionWindowFrames;
+    resolutionWindowTime = 0;
+    resolutionWindowFrames = 0;
+    if (averageFrame > SLOW_FRAME_SECONDS) {
+      resolutionFastWindows = 0;
+      resolutionSlowWindows += 1;
+      if (resolutionSlowWindows >= 2 && resolutionStep < RESOLUTION_STEPS.length - 1) {
+        resolutionSlowWindows = 0;
+        applyResolutionStep(resolutionStep + 1);
+      }
+    } else if (averageFrame < FAST_FRAME_SECONDS) {
+      resolutionSlowWindows = 0;
+      resolutionFastWindows += 1;
+      if (resolutionFastWindows >= 4 && resolutionStep > 0) {
+        resolutionFastWindows = 0;
+        applyResolutionStep(resolutionStep - 1);
+      }
+    } else {
+      resolutionSlowWindows = 0;
+      resolutionFastWindows = 0;
+    }
+  }
+
   function update(time) {
     raf = requestAnimationFrame(update);
     const dt = Math.min(MAX_FRAME, Math.max(0, (time - lastFrame) / 1000));
     lastFrame = time;
+    adaptResolution(dt);
     clockTime += dt;
     let worldTravel = 0;
     if (active && !finished) {
