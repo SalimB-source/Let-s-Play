@@ -1044,8 +1044,8 @@ et le dernier tour durait 21 s.
   descend jusqu'à `createCityRushWorld`, qui ne crée **aucun rival**
   (`racerSpecs = []`), **aucune police** (escouade jamais déployée, berline
   retirée du trafic — `CITY_RUSH_TRAFFIC_TYPES` filtré sur `id !== 'police'` —,
-  hélicoptère d'observation laissé au sol), **aucune arme** (l'AK-47 est
-  ignoré, la barre de coque ne s'arme pas). Seuls les bonus turbo verts — des
+  hélicoptère d'observation laissé au sol), **aucune arme** (l'AK-47 comme le
+  fusil à pompe sont ignorés, la barre de coque ne s'arme pas). Seuls les bonus turbo verts — des
   ronds peints sur le bitume, posés une rangée sur huit
   (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 8`) — sont
   placés périodiquement ;
@@ -1058,7 +1058,7 @@ et le dernier tour durait 21 s.
   exactes : la dernière tombe pile sous le portique. Chrono à zéro : effet
   `sprint-timeout`, course perdue, ni record ni victoire enregistrés.
   **L'interface suit le solo.** Carte HUD « SOLO » et jauge des checkpoints à
-  la place de la position et du tour, radar et bouton AK-47 absents,
+  la place de la position et du tour, radar et bouton de tir absents,
   compte à rebours et pied de coque en « 16 CHECKPOINTS » plutôt qu'en
   « 1 TOURS ». La colonne latérale remplace le classement à trois par un
   chrono solo — `buildCityRushMinimapState({ solo: true })` ne garde que le
@@ -1078,9 +1078,13 @@ et le dernier tour durait 21 s.
   `rankCityRushRacers` ne les voit jamais, la grille garde trois pilotes, et le
   HUD les affiche à part (`hud.police`, marqueurs rouge et bleu de la mini-carte).
   Elles convoitent les bonus rouges d'AK-47 ; un bonus rouge ne représente que
-  **8 % des objets tirés** sur la route, contre 6 % de trousses de soin et
-  86 % de bonus turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`) — mais un turbo
+  **8 % des objets tirés** sur la route, contre 6 % de trousses de soin,
+  3 % de fusils à pompe bleus (`CITY_RUSH_BLUE_PICKUP_CHANCE`) et
+  83 % de bonus turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`) — mais un turbo
   tiré sur quatre n'est jamais posé (`CITY_RUSH_BOOST_SPAWN_CHANCE = 0.75`).
+  Le fusil à pompe bleu, près de trois fois plus rare que l'AK-47, **n'appartient
+  qu'au pilote** : ni les rivaux ni la police ne peuvent le ramasser, il leur est
+  invisible dans leur choix de voie (`canCollectCityRushPickup(..., { player: false })`).
   Un bonus de tir vaut cinq bonus
   ordinaires dans leur choix de voie (`CITY_RUSH_POLICE_HUNT_TYPES`,
   `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
@@ -1205,7 +1209,8 @@ et le dernier tour durait 21 s.
   répit de choc. Une berline a six carrés de vie : **un tir rouge d'AK-47 lui
   retire un seul carré** — le même prix qu'contre un pilote — ; trois tirs
   bleus (2 points chacun), six carambolages (1 point chacun), six balles
-  rouges, ou une combinaison équivalente la détruisent
+  rouges, **une seule cartouche de fusil à pompe** (`CITY_RUSH_SHOTGUN_DAMAGE`,
+  six carrés d'un coup), ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
   barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
   **Un saut de tremplin ne la détruit plus à la retombée.** Chaque
@@ -1423,7 +1428,9 @@ et le dernier tour durait 21 s.
   cadence est calée sur le glissement latéral (`playerX` rejoint
   `laneX(playerLane)` à raison de `dt * 12`) : chaque écart est presque terminé
   quand le suivant démarre, la dérive reste lisible et continue. C'est le même
-  schéma que le maintien de `Z` à l'AK-47 (`PISTOL_HOLD_FIRE_INTERVAL`), et la
+  schéma que le maintien de `Z` à l'AK-47 (`PISTOL_HOLD_FIRE_INTERVAL` — le
+  fusil à pompe, lui, se réarme en `CITY_RUSH_SHOTGUN_FIRE_COOLDOWN` = 1,5 s
+  par cartouche), et la
   **répétition native du clavier est ignorée** (`event.repeat`) : trop lente au
   premier cran puis incontrôlable, elle ne donnait ni fluidité ni précision.
   Une voie fermée (trafic, contresens, berline) ne déclenche rien sur le coup ;
@@ -1499,8 +1506,13 @@ et le dernier tour durait 21 s.
   left… » (`tests/city-rush-rules.test.js`), « the driving side is painted by
   the theme… » (`tests/city-rush-themes.test.js`) et « Londres et Tokyo roulent
   à gauche jusque dans le décor et la page » (`tests/city-rush-hud.test.js`).
-- **Les bonus.** En course, seuls deux objets apparaissent sur la route :
-  le **bonus turbo vert** et le bonus **rouge d'AK-47**. Les pouvoirs et les
+- **Les bonus.** En course, trois objets d'équipement ou de soin apparaissent
+  sur la route : le **bonus turbo vert**, le bonus **rouge d'AK-47** et le bonus
+  **bleu de fusil à pompe**. Les deux armes partagent un **emplacement unique** :
+  `cityRushActiveWeapon` lit l'arme en main, `cityRushEquipWeapon` la remplace —
+  ramasser l'une vide l'autre. Le bouton de tir (et la touche Z) reste donc
+  **vide** tant qu'aucune arme n'a été ramassée, et tire ensuite avec celle en
+  main : sept balles d'un chargeur rouge, trois cartouches d'un pompe bleu. Les pouvoirs et les
   trousses de soin **flottent** au-dessus de la chaussée
   (`PICKUP_FLOAT_HEIGHT` = 1,3 m dans `ViceCityWorld.jsx`) ; le turbo, lui, est
   un **cercle peint au sol** (`PICKUP_GROUND_TYPES`, `PICKUP_GROUND_HEIGHT` =

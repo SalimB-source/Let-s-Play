@@ -1050,6 +1050,57 @@ export function makePickupMaterial(type, color) {
       // Cache-flamme
       ctx.fillRect(234, 120, 16, 20);
       ctx.restore();
+    } else if (type === 'shotgun') {
+      // Fusil à pompe de profil : crosse, boîtier, pompe sous le canon, bouche
+      // évasée. Silhouette plus courte et plus massive que l'AK-47, pour qu'on
+      // reconnaissance le bonus bleu au premier coup d'œil.
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(-0.14);
+      ctx.translate(-centerX, -centerY);
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      // Crosse
+      ctx.moveTo(34, 112);
+      ctx.lineTo(88, 124);
+      ctx.lineTo(88, 152);
+      ctx.lineTo(38, 168);
+      ctx.closePath();
+      // Boîtier
+      ctx.moveTo(86, 118);
+      ctx.lineTo(150, 118);
+      ctx.lineTo(150, 152);
+      ctx.lineTo(86, 152);
+      ctx.closePath();
+      // Pompe (garde-main coulissant sous le canon)
+      ctx.moveTo(148, 126);
+      ctx.lineTo(194, 126);
+      ctx.lineTo(194, 152);
+      ctx.lineTo(148, 152);
+      ctx.closePath();
+      // Canon
+      ctx.moveTo(150, 120);
+      ctx.lineTo(236, 120);
+      ctx.lineTo(236, 134);
+      ctx.lineTo(150, 134);
+      ctx.closePath();
+      // Poignée pistolet
+      ctx.moveTo(104, 150);
+      ctx.lineTo(94, 200);
+      ctx.lineTo(120, 200);
+      ctx.lineTo(128, 150);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // Tube magasin sous le canon
+      ctx.fillRect(152, 136, 78, 10);
+      // Pontet
+      ctx.fillRect(126, 152, 26, 8);
+      // Guidon et bouche évasée : la signature du pompe
+      ctx.fillRect(210, 104, 9, 18);
+      ctx.fillRect(230, 112, 18, 30);
+      ctx.restore();
     } else if (type === 'boost') {
       // Turbo : l'éclair blanc, désormais réservé aux légendes du HUD et du
       // guide. Sur la piste, le bonus est un cercle peint au sol (voir

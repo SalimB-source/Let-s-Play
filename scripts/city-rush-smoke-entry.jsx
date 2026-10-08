@@ -86,7 +86,8 @@ const {
   CITY_RUSH_WANTED_MAX_STARS, CITY_RUSH_SPIKE_BLOCK_STARS, CITY_RUSH_SPIKE_BLOCK_LEAD, CITY_RUSH_SPIKE_BLOCK_COOLDOWN,
   CITY_RUSH_SPIKE_LANES, CITY_RUSH_SPIKE_SLOW_DURATION, CITY_RUSH_SPIKE_SLOW_FACTOR, cityRushSpikeLanes,
   CITY_RUSH_SUV_CHARGE_COUNT, CITY_RUSH_SUV_CHARGE_TYPE, CITY_RUSH_SUV_CHARGE_ALERT_RANGE,
-  CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
+  CITY_RUSH_PISTOL_AMMO_PER_PICKUP, CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP, cityRushActiveWeapon,
+  CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, CITY_RUSH_POLICE_EXTRA_PER_ATTACKER,
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
   CITY_RUSH_ONCOMING_BONUS_MAX,
   CITY_RUSH_PLAYER_SPEED, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, CITY_RUSH_CLEAN_LINE_MAX_BONUS,
@@ -189,7 +190,7 @@ const smokeCarIds = ['nova-18-gt', 'vice-roadster', 'turbo-gt', 'muscle-86', 'ni
 // de Web Audio ici, mais la certitude qu'une course complète déclenche bien
 // moteur, feux, tours, tirs et arrivée ; aucun rotor d'attaque ni missile ne part.
 const AUDIO_METHODS = [
-  'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
+  'engine', 'gunshot', 'machineGun', 'shotgun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
   'policeSiren', 'policeSirenOff', 'garageRepair',
 ];
@@ -820,8 +821,10 @@ for (const [index, city] of courses.entries()) {
       watchHeliPodLast = podNow;
     }
     if (hud && frames % 15 === 0) {
-      const type = CITY_RUSH_POWERS.PISTOL;
-      if ((hud.inventory?.[type] || 0) > 0) world.action(type);
+      // Le pilote automatique vide l'arme en main — AK-47 rouge ou fusil à
+      // pompe bleu —, jamais les deux à la fois : c'est le même bouton.
+      const weapon = cityRushActiveWeapon(hud.inventory);
+      if (weapon) world.action(weapon.type);
     }
     const civilStatsBefore = { distance: world.distance, byNode: new Map() };
     for (const node of civilTrafficNodes) {
@@ -1965,10 +1968,20 @@ for (const [index, city] of courses.entries()) {
     || pickup.autoActivated)) {
     fail('un entrepôt de bazooka ramassé ne recharge pas son unique roquette', bazookaPickups);
   }
+  // Le fusil à pompe bleu est une arme de route comme l'AK-47 : trois
+  // cartouches par bonus, sans activation automatique.
+  const bluePickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.SHOTGUN);
+  if (bluePickups.some((pickup) => pickup.ammo !== CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP
+    || pickup.progress !== CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP
+    || pickup.chargeCost !== CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP
+    || pickup.autoActivated)) {
+    fail('un bonus bleu ramassé ne charge pas les trois cartouches du pompe', bluePickups);
+  }
   const unsupportedPickups = callbacks.pickups.filter((pickup) => ![
-    CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL, 'bazooka',
+    CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH,
+    CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.SHOTGUN, 'bazooka',
   ].includes(pickup.type));
-  if (unsupportedPickups.length) fail('un bonus bleu est encore collecté sur la route', unsupportedPickups);
+  if (unsupportedPickups.length) fail('un bonus hérité (tir bleu, hélico) est encore collecté sur la route', unsupportedPickups);
   if (callbacks.pickups.some((pickup) => pickup.autoActivated
     && ![CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH].includes(pickup.type)
     && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
@@ -1983,6 +1996,15 @@ for (const [index, city] of courses.entries()) {
   if (redPickups.length && !audioCalls.machineGun) {
     fail('une mitrailleuse chargée n’a pas déclenché son tir sonore', { redPickups, audioCalls });
   }
+  if (bluePickups.length && !audioCalls.shotgun) {
+    fail('un fusil à pompe chargé n’a pas déclenché son coup de tonnerre', { bluePickups, audioCalls });
+  }
+  // L'emplacement d'arme est unique : jamais deux armes chargées en même temps.
+  const bothArmed = callbacks.huds.filter((hud) => (
+    (hud.inventory?.[CITY_RUSH_POWERS.PISTOL] || 0) > 0
+    && (hud.inventory?.[CITY_RUSH_POWERS.SHOTGUN] || 0) > 0
+  ));
+  if (bothArmed.length) fail('deux armes sont chargées en même temps', bothArmed.slice(0, 3).map((hud) => hud.inventory));
 
 
   // Fin de course : la caméra tourne, le départ fait la fête, pas d’exception.

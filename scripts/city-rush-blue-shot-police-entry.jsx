@@ -252,10 +252,12 @@ for (let run = 0; run < RUNS; run += 1) {
     // Le bazooka garde ses deux entrepôts de bord de piste (30 % puis 65 % de
     // la course) : les traverser est légitime, les autres bonus bleu/jaune ne
     // le sont pas.
+    // Le fusil à pompe bleu est une arme de route légitime : seuls les pouvoirs
+    // retirés (tir bleu, hélico) restent interdits.
     const unexpectedPickups = callbacks.pickups.filter((pickup) => ![
-      CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, redType, 'bazooka',
+      CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, redType, CITY_RUSH_POWERS.SHOTGUN, 'bazooka',
     ].includes(pickup.type));
-    if (unexpectedPickups.length) fail(`[${city.id}] un pickup bleu/jaune a été collecté`, unexpectedPickups);
+    if (unexpectedPickups.length) fail(`[${city.id}] un pickup hérité (tir bleu, hélico) a été collecté`, unexpectedPickups);
     const redPickups = callbacks.pickups.filter((pickup) => pickup.type === redType);
     if (redPickups.some((pickup) => pickup.chargeCost !== 7 || pickup.progress !== 7 || pickup.ammo !== 7)) {
       fail(`[${city.id}] un bonus rouge ne recharge pas les sept balles de la mitrailleuse`, redPickups);

@@ -37,6 +37,14 @@ import {
   nordschleifeReadout,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_DAMAGE,
+  CITY_RUSH_SHOTGUN_FIRE_COOLDOWN,
+  cityRushActiveWeapon,
+  cityRushEquipWeapon,
+  cityRushIsWeaponType,
+  cityRushWeaponAmmoPerPickup,
+  cityRushWeaponFireInterval,
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
   CITY_RUSH_TRAFFIC_IMPACT_DURATION,
@@ -277,7 +285,14 @@ const SCALE = CITY_RUSH_SCROLL_SCALE;
 const LAP_UNITS = CITY_RUSH_LAP_LENGTH * SCALE;
 const CAMERA_BASE_FOV = 44;
 const MAX_FRAME = 0.04;
-const POWER_TYPES = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO];
+// Le fusil à pompe rejoint l'AK-47 : même emplacement d'arme, même bouton,
+// mais un bonus bleu bien plus rare et six carrés arrachés par cartouche.
+const POWER_TYPES = [
+  CITY_RUSH_POWERS.BLUE_SHOT,
+  CITY_RUSH_POWERS.PISTOL,
+  CITY_RUSH_POWERS.SHOTGUN,
+  CITY_RUSH_POWERS.RADIO,
+];
 // Les pouvoirs et les soins portent une icône flottante. Le bonus de vitesse,
 // lui, est un simple cercle peint sur la chaussée : rien ne vole au-dessus du
 // bitume, on le lit du premier coup d'œil et on le traverse.
@@ -327,6 +342,14 @@ const POLICE_SKID_SMOKE_INTERVAL = 0.075;
 // Maintien de Z : une balle part à intervalle régulier jusqu'à la relâche ou
 // l'épuisement du chargeur, indépendamment de la répétition native du clavier.
 const PISTOL_HOLD_FIRE_INTERVAL = 0.12;
+// Le fusil à pompe partage le même bouton, mais pas la même cadence : une
+// cartouche toutes les 1,5 s, le temps de réarmer — maintenir ne sert qu'à
+// enchaîner les trois coups sans réappuyer.
+const SHOTGUN_HOLD_FIRE_INTERVAL = CITY_RUSH_SHOTGUN_FIRE_COOLDOWN;
+// Les deux armes se tirent avec la même touche : la cadence suit l'arme en main.
+function weaponFireInterval(type) {
+  return cityRushWeaponFireInterval(type) || PISTOL_HOLD_FIRE_INTERVAL;
+}
 // Maintien des flèches : garder ← (ou Q) / → (ou D) enfoncé enchaîne les
 // changements de voie tout seul, un écart par cran, jusqu'à la relâche. Le
 // pilote n'a plus à marteler la touche pour traverser la chaussée : la cadence
@@ -3308,6 +3331,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // démonstration n'a pas réussi son action.
   const tutorialPropActionByType = {
     [CITY_RUSH_POWERS.PISTOL]: 'shoot',
+    [CITY_RUSH_POWERS.SHOTGUN]: 'shoot',
     [CITY_RUSH_PICKUPS.BOOST]: 'boost',
     [CITY_RUSH_PICKUPS.HEALTH]: 'health',
   };
@@ -3606,7 +3630,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     for (const lane of [playerLane - 1, playerLane + 1]) {
       if (lane >= 0 && lane < laneCount && canEnterLane('player', lane)) availableLanes.push(lane);
     }
-    const weaponReady = isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL);
+    // L'autopilote de la démonstration sait qu'il est armé dès qu'une arme est
+    // en main — AK-47 rouge ou fusil à pompe bleu.
+    const weaponReady = Boolean(heldWeapon());
     const targets = activePursuers()
       .filter((police) => police.distance > distance + 2)
       .map((police) => ({ lane: police.lane, distance: police.distance }));
@@ -3636,8 +3662,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function tutorialWeapons(dt, lesson) {
     tutorialFireCooldown = Math.max(0, tutorialFireCooldown - dt);
     if (tutorialFireCooldown > 0 || playerStunLeft > 0 || playerWrecked || phase !== 'playing') return;
-    if (lesson?.action === 'shoot' && isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL)) {
-      if (usePower(CITY_RUSH_POWERS.PISTOL)) tutorialFireCooldown = 0.55;
+    // Leçon de tir : le coach tire avec l'arme en main — le pompe bleu
+    // compris, s'il a été ramassé à la place du chargeur rouge.
+    if (lesson?.action === 'shoot') {
+      const weapon = heldWeapon();
+      if (weapon && usePower(weapon.type)) tutorialFireCooldown = 0.55;
       return;
     }
     if (lesson?.action === 'bazooka' && bazookaAmmo > 0) {
@@ -4006,6 +4035,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         pursued: racer.id !== 'player' && cityRushRivalPursued(racer.wantedLevel || 0),
       })),
       inventory: { ...inventory },
+      // L'arme en main — AK-47 rouge, fusil à pompe bleu, ou rien du tout — et
+      // son réarmement : le bouton de tir reste vide tant qu'aucun bonus
+      // d'arme n'a été ramassé.
+      weapon: heldWeapon(),
+      weaponCooldown: Math.max(0, pistolHoldCooldown),
       bazookaAmmo,
       bazookaPickupTaken,
       bazookaPickupsTaken: bazookaWarehouses.filter((warehouse) => warehouse.taken).length,
@@ -4253,8 +4287,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     pickedUp = 0;
     playerPistolPickups = 0;
     inventory = createCityRushInventory();
+    pistolHoldCooldown = 0;
+    // Mission d'interception : le pilote part déjà armé. L'arme de départ passe
+    // par l'emplacement unique, pour qu'aucune course ne commence avec deux
+    // armes en main.
     if (!sprint && storyWeaponsEnabled && startingPistolAmmo > 0) {
-      inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL, startingPistolAmmo);
+      inventory = cityRushEquipWeapon(inventory, CITY_RUSH_POWERS.PISTOL, startingPistolAmmo);
     }
     bazookaAmmo = 0;
     bazookaPickupTaken = false;
@@ -5015,19 +5053,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!attacker) return false;
     const muzzleOffset = 1.12;
     const isPistol = kind === CITY_RUSH_POWERS.PISTOL;
+    const isShotgun = kind === CITY_RUSH_POWERS.SHOTGUN;
+    const isWeapon = isPistol || isShotgun;
     const isBazooka = kind === 'bazooka';
-    // Mitrailleuse et bazooka : toujours vers l'avant. Le tir bleu peut encore
-    // inverser le sens lorsqu'il riposte à une voiture déjà dépassée.
-    const direction = isPistol || isBazooka
+    // Les deux armes et le bazooka tirent toujours vers l'avant. Le tir bleu
+    // peut encore inverser le sens lorsqu'il riposte à une voiture dépassée.
+    const direction = isWeapon || isBazooka
       ? 1
       : (Number.isFinite(Number(target?.distance)) && Number(target.distance) < attacker.distance ? -1 : 1);
     const startTrackDistance = attacker.distance + (direction * muzzleOffset) / SCALE;
     const mesh = isBazooka
       ? makeBazookaTracer()
-      : isPistol
-        ? makeBulletTracer({ coreColor: 0xffe08a, trailColor: 0xff526e, burstColor: 0xff9aa8 })
-        : makeBulletTracer({ coreColor: 0xe7faff, trailColor: 0x48b9ff, burstColor: 0x9be5ff });
+      : isShotgun
+        // Une giclée bleue, plus large et plus lente qu'une balle rouge.
+        ? makeBulletTracer({ coreColor: 0xdcefff, trailColor: 0x4da3ff, burstColor: 0xa9d6ff })
+        : isPistol
+          ? makeBulletTracer({ coreColor: 0xffe08a, trailColor: 0xff526e, burstColor: 0xff9aa8 })
+          : makeBulletTracer({ coreColor: 0xe7faff, trailColor: 0x48b9ff, burstColor: 0x9be5ff });
     mesh.rotation.y = direction > 0 ? 0 : Math.PI;
+    // Le pompe crache plus gros : la gerbe se voit de loin.
+    if (isShotgun) mesh.scale.set(1.5, 1.5, 1.5);
     scene.add(mesh);
     const shotSpeed = isBazooka ? CITY_RUSH_BAZOOKA_PROJECTILE_SPEED : CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED;
     straightShots.push({
@@ -5035,8 +5080,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       attackerId,
       kind,
       bazooka: isBazooka,
-      unguided: isPistol || isBazooka,
-      targetId: isPistol ? null : (target?.id || null),
+      unguided: isWeapon || isBazooka,
+      targetId: isWeapon ? null : (target?.id || null),
       lane: attacker.lane,
       x: laneX(attacker.lane),
       direction,
@@ -5045,12 +5090,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       previousTrackDistance: startTrackDistance,
       trackDistance: startTrackDistance,
       maxTrackDistance: startTrackDistance + direction * CITY_RUSH_BLUE_SHOT_MAX_RANGE,
-      previousTargetDistance: isPistol || !Number.isFinite(Number(target?.distance)) ? null : Number(target.distance),
+      previousTargetDistance: isWeapon || !Number.isFinite(Number(target?.distance)) ? null : Number(target.distance),
       age: 0,
       phase: 'flight',
       hitPoint: new THREE.Vector3(),
     });
-    if (isPistol) audioRef?.current?.machineGun({ pan: vehiclePan(attackerId) });
+    if (isShotgun) audioRef?.current?.shotgun({ pan: vehiclePan(attackerId) });
+    else if (isPistol) audioRef?.current?.machineGun({ pan: vehiclePan(attackerId) });
     else if (isBazooka) audioRef?.current?.missileLaunch?.({ pan: vehiclePan(attackerId) });
     else audioRef?.current?.gunshot({ pan: vehiclePan(attackerId) });
     return true;
@@ -5063,7 +5109,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const lost = before - racer.health;
     if (lost <= 0) return 0;
     racer.healthFlash = CITY_RUSH_PLAYER_HEALTH_FLASH;
-    const hitType = source === CITY_RUSH_POWERS.PISTOL ? 'pistol' : 'blue-shot-hit';
+    // Une cartouche de pompe s'annonce à part : six carrés d'un coup, ce n'est
+    // pas le grignotage d'une balle rouge.
+    const hitType = cityRushIsWeaponType(source)
+      ? (source === CITY_RUSH_POWERS.SHOTGUN ? 'shotgun' : 'pistol')
+      : 'blue-shot-hit';
     getCallbacks().effect?.({
       type: hitType,
       target: racer.name,
@@ -5096,16 +5146,22 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return lost;
   }
 
-  function applyPistolHit(target, attackerId) {
+  /**
+   * Impact d'une arme à feu : AK-47 rouge ou fusil à pompe bleu. La source
+   * voyage jusqu'aux barèmes (`CITY_RUSH_POLICE_DAMAGE`, `CITY_RUSH_PLAYER_DAMAGE`)
+   * — une balle rouge retire un carré, une cartouche de pompe en retire six —
+   * et ni l'une ni l'autre ne fait déraper la voiture touchée.
+   */
+  function applyWeaponHit(target, attackerId, kind = CITY_RUSH_POWERS.PISTOL) {
     const attacker = getRaceVehicleState(attackerId);
     if (attackerId === 'player' && target.id !== 'player' && !target.isPolice) {
       raiseWantedLevel({ reason: 'vehicle-hit' });
     }
     if (target.id === 'player') {
-      cameraKick = Math.max(cameraKick, 0.12);
-      damagePlayer(CITY_RUSH_POWERS.PISTOL, attackerId);
+      cameraKick = Math.max(cameraKick, kind === CITY_RUSH_POWERS.SHOTGUN ? 0.3 : 0.12);
+      damagePlayer(kind, attackerId);
       getCallbacks().effect?.({
-        type: 'pistol-hit-player',
+        type: kind === CITY_RUSH_POWERS.SHOTGUN ? 'shotgun-hit-player' : 'pistol-hit-player',
         attacker: attacker?.name || 'RIVAL',
         health: playerHealth,
         maxHealth: playerMaxHealth,
@@ -5113,17 +5169,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     } else if (target.isPolice) {
       // Police marquée ou banalisée : un tir réussi monte à trois étoiles ;
       // les destructions font ensuite passer à quatre puis cinq.
-      damagePolice(target.racer, CITY_RUSH_POWERS.PISTOL, attackerId);
+      damagePolice(target.racer, kind, attackerId);
     } else if (target.isCivilianTraffic) {
       // Une voiture civile touchée déclenche la recherche, sans barre de vie.
     } else if (target.racer) {
-      damageRacer(target.racer, CITY_RUSH_POWERS.PISTOL, attackerId);
+      damageRacer(target.racer, kind, attackerId);
     }
   }
 
   function applyStraightShotHit(target, attackerId, kind = CITY_RUSH_POWERS.BLUE_SHOT) {
-    if (kind === CITY_RUSH_POWERS.PISTOL) {
-      applyPistolHit(target, attackerId);
+    if (cityRushIsWeaponType(kind)) {
+      applyWeaponHit(target, attackerId, kind);
       return;
     }
     if (attackerId === 'player' && target.id !== 'player' && !target.isPolice) {
@@ -5824,22 +5880,50 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     clearTrafficImpacts();
   }
 
+  /**
+   * Tir du pilote : **l'arme en main**, AK-47 rouge ou fusil à pompe bleu.
+   * Les deux partagent le même bouton et la même touche — le bouton reste sans
+   * effet tant qu'aucun bonus d'arme n'a été ramassé (chargeurs vides).
+   */
   function usePower(type) {
-    if (sprint || !active || finished || !storyWeaponsEnabled || type !== CITY_RUSH_POWERS.PISTOL) return false;
-    const consumed = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL);
+    if (sprint || !active || finished || !storyWeaponsEnabled || !cityRushIsWeaponType(type)) return false;
+    const consumed = consumeCityRushCharge(inventory, type);
     if (!consumed.consumed) {
-      getCallbacks().effect?.({ type: 'empty', item: CITY_RUSH_POWERS.PISTOL });
+      getCallbacks().effect?.({ type: 'empty', item: type });
       return false;
     }
     inventory = consumed.inventory;
     playerShotsFired += 1;
-    spawnActionPulse('player', CITY_RUSH_POWERS.PISTOL);
+    spawnActionPulse('player', type);
     // Tout droit, sans viser : le projectile part même si la voie est vide.
-    fireStraightShot('player', null, CITY_RUSH_POWERS.PISTOL);
+    fireStraightShot('player', null, type);
     // Leçon AK-47 : c'est le tir lui-même qui valide la démonstration.
     noteTutorialAction('shoot');
     emitHud(true);
     return true;
+  }
+
+  /** L'arme en main, ou `null` quand le pilote n'a encore rien ramassé. */
+  function heldWeapon() {
+    return cityRushActiveWeapon(inventory);
+  }
+
+  /**
+   * Le bouton de tir — tactile ou touche Z — arme l'arme en main et respecte
+   * sa cadence : une cartouche toutes les 1,5 s pour le fusil à pompe, ce que
+   * ni un martèlement du doigt ni un nouveau maintien ne peut forcer. Sans
+   * arme ramassée, le bouton reste sans effet.
+   */
+  function fireHeldWeapon({ hold = true } = {}) {
+    // `hold` : le geste est un maintien (doigt posé, touche enfoncée) — la
+    // boucle de rendu enchaîne alors les tirs. Un simple coup n'arme pas le
+    // maintien, sinon un clavier viderait le chargeur d'un seul appui.
+    if (hold) pistolKeyHeld = true;
+    const weapon = heldWeapon();
+    if (!weapon || pistolHoldCooldown > 0) return false;
+    const fired = usePower(weapon.type);
+    if (fired) pistolHoldCooldown = weaponFireInterval(weapon.type);
+    return fired;
   }
 
   function useBazooka() {
@@ -7310,7 +7394,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   // Les choix de voie des rivaux et de la police partagent ces bonus visibles,
   // avec un filtre propre à l'inventaire de chaque voiture.
-  function visiblePickups(actorInventory = null, actorHealth = 0, actorMaxHealth = 0) {
+  function visiblePickups(actorInventory = null, actorHealth = 0, actorMaxHealth = 0, { player = true } = {}) {
     const hideRedForRace = redPickupsHiddenForRace();
     return rows.flatMap((row) => row.pickups
       .map((pickup, index) => ({
@@ -7324,6 +7408,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         redPickupsHidden: hideRedForRace,
         health: actorHealth,
         maxHealth: actorMaxHealth,
+        player,
       })));
   }
 
@@ -7539,7 +7624,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             distance: police.distance,
             speed: police.currentSpeed || police.baseSpeed,
             availableLanes,
-            pickups: visiblePickups(police.inventory, police.health, police.maxHealth),
+            pickups: visiblePickups(police.inventory, police.health, police.maxHealth, { player: false }),
             traffic: [...traffic, ...oncomingForLanes],
             racers: raceCars,
             targetLane: leader.lane,
@@ -8195,17 +8280,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       changePlayerLane(nextLane);
       return;
     }
-    if (name === 'pistol-down') {
-      pistolKeyHeld = true;
-      pistolHoldCooldown = 0;
-      const fired = usePower(CITY_RUSH_POWERS.PISTOL);
-      if (fired) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
-      return fired;
-    }
+    if (name === 'pistol-down') return fireHeldWeapon();
+    // Un coup sec (clavier Entrée/Espace, clic sans maintien) : un seul départ
+    // de coup, sans armer la rafale.
+    if (name === 'pistol-tap') return fireHeldWeapon({ hold: false });
     if (name === 'bazooka' || name === 'use_bazooka') return useBazooka();
     const aliases = {
       use_pistol: CITY_RUSH_POWERS.PISTOL,
       pistol: CITY_RUSH_POWERS.PISTOL,
+      use_shotgun: CITY_RUSH_POWERS.SHOTGUN,
+      shotgun: CITY_RUSH_POWERS.SHOTGUN,
     };
     const type = aliases[name];
     if (type && !CITY_RUSH_POWER_RULES[type]?.automatic) return usePower(type);
@@ -8268,21 +8352,43 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
 
     const before = inventory[type] || 0;
-    const pickupAmount = type === CITY_RUSH_POWERS.PISTOL ? CITY_RUSH_PISTOL_AMMO_PER_PICKUP : 1;
-    inventory = addCityRushCharge(inventory, type, pickupAmount);
-    if (type === CITY_RUSH_POWERS.PISTOL) playerPistolPickups += 1;
+    const weapon = cityRushIsWeaponType(type);
+    const pickupAmount = weapon ? cityRushWeaponAmmoPerPickup(type) : 1;
+    const previousWeapon = heldWeapon();
+    if (weapon) {
+      // Un seul emplacement d'arme : le bonus pris occupe la place et **vide
+      // l'autre**. La cadence repart de zéro — une arme fraîchement ramassée
+      // ne doit pas hériter du réarmement de celle qu'elle remplace.
+      inventory = cityRushEquipWeapon(inventory, type, pickupAmount);
+      pistolHoldCooldown = 0;
+      if (type === CITY_RUSH_POWERS.PISTOL) playerPistolPickups += 1;
+    } else {
+      inventory = addCityRushCharge(inventory, type, pickupAmount);
+    }
     const chargeCost = CITY_RUSH_POWER_RULES[type].chargeCost;
     const progress = inventory[type];
-    const ready = type === CITY_RUSH_POWERS.PISTOL ? progress > 0 : progress >= chargeCost;
-    const wasReady = type === CITY_RUSH_POWERS.PISTOL ? before > 0 : before >= chargeCost;
+    const ready = weapon ? progress > 0 : progress >= chargeCost;
+    const wasReady = weapon ? before > 0 : before >= chargeCost;
     const newlyReady = !wasReady && ready;
     const autoActivated = ready && CITY_RUSH_POWER_RULES[type].automatic;
-    score += type === 'radio' ? 180 : type === 'pistol' ? 150 : type === CITY_RUSH_POWERS.BLUE_SHOT ? 125 : 100;
+    score += type === 'radio' ? 180 : type === 'shotgun' ? 165 : type === 'pistol' ? 150 : type === CITY_RUSH_POWERS.BLUE_SHOT ? 125 : 100;
     pickedUp += 1;
     // Bip de ramassage (aigu quand la jauge vient de se remplir) : seul le
     // joueur en bénéficie, les rivaux remplissent leur inventaire en silence.
     audioRef?.current?.pickup(type, { ready: newlyReady });
-    getCallbacks().pickup?.({ type, progress, chargeCost, ammo: type === CITY_RUSH_POWERS.PISTOL ? pickupAmount : null, ready, newlyReady, autoActivated, lane });
+    getCallbacks().pickup?.({
+      type,
+      progress,
+      chargeCost,
+      ammo: weapon ? pickupAmount : null,
+      ready,
+      newlyReady,
+      autoActivated,
+      lane,
+      // Le HUD raconte l'échange : quelle arme est tombée, quelle arme est en main.
+      swapped: weapon && Boolean(previousWeapon) && previousWeapon.type !== type,
+      dropped: previousWeapon?.type || null,
+    });
     if (autoActivated) usePower(type);
     else emitHud(true);
   }
@@ -8298,6 +8404,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       getCallbacks().effect?.({ type: 'rival-boost', rival: racer.name });
       return;
     }
+    // Filet de sécurité : le fusil à pompe bleu est réservé au pilote. Un rival
+    // ne le voit déjà plus dans son choix de voie (`canCollectCityRushPickup`
+    // avec `player: false`), mais il ne doit jamais l'empocher non plus.
+    if (type === CITY_RUSH_POWERS.SHOTGUN) return;
     racer.inventory = addCityRushCharge(
       racer.inventory,
       type,
@@ -8320,6 +8430,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.boostLeft = Math.max(police.boostLeft || 0, CITY_RUSH_TRACK_BOOST_DURATION);
       return;
     }
+    // Même filet que pour les rivaux : la police ne porte jamais le pompe.
+    if (type === CITY_RUSH_POWERS.SHOTGUN) return;
     police.inventory = addCityRushCharge(
       police.inventory,
       type,
@@ -8444,6 +8556,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             redPickupsHidden: hideRedForRace,
             health: participant.health,
             maxHealth: participant.maxHealth,
+            player: participant.id === 'player',
           })
         ));
         if (pickupIndex < 0) continue;
@@ -8891,9 +9004,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     let worldTravel = 0;
     if (active && !finished) {
       pistolHoldCooldown = Math.max(0, pistolHoldCooldown - dt);
-      if (pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.PISTOL)) {
-        if (usePower(CITY_RUSH_POWERS.PISTOL)) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
-      }
+      // Le maintien du bouton enchaîne les tirs à la cadence de l'arme en main :
+      // rafale pour l'AK-47, trois coups espacés pour le fusil à pompe.
+      if (pistolKeyHeld && pistolHoldCooldown <= 0 && heldWeapon()) fireHeldWeapon();
       // Maintien des flèches : tant que ← / → (ou Q / D) reste enfoncé, un écart
       // repart à cadence régulière, sans attendre une nouvelle pression. Une
       // voie fermée (trafic, saut en cours, toupie) ne fait rien sur le coup :
@@ -8987,7 +9100,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const priorRacerXs = new Map();
       const aiPickups = new Map(racingRacers.map((racer) => [
         racer.id,
-        visiblePickups(racer.inventory, racer.health, racer.maxHealth || cityRushCarMaxHealth(racer.profile)),
+        visiblePickups(racer.inventory, racer.health, racer.maxHealth || cityRushCarMaxHealth(racer.profile), { player: false }),
       ]));
       // Les rivaux courent pour gagner : distance du leader de la course (le
       // pilote compris), et voie, tremplins et armes sont relus dans ce sens.
@@ -9866,12 +9979,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // cadencés par la boucle de rendu tant que la touche reste enfoncée.
       if (pressSteerKey(key)) action(steerDirection);
     } else if (key === 'z') {
-      pistolKeyHeld = true;
-      pistolHoldCooldown = 0;
-      action(CITY_RUSH_POWERS.PISTOL);
-      // Le premier tir part immédiatement ; les suivants sont cadencés dans
-      // la boucle de rendu tant que la touche reste enfoncée.
-      pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
+      // Une seule touche pour les deux armes : le premier tir part tout de
+      // suite, les suivants sont cadencés dans la boucle de rendu tant que la
+      // touche reste enfoncée.
+      fireHeldWeapon();
     } else if (key === 'x') {
       action('bazooka');
     }

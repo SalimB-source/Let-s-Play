@@ -100,7 +100,7 @@ const {
   CITY_RUSH_POLICE_COUNT, CITY_RUSH_RIVAL_CONTACT_STARS,
 } = await import('../src/games/cityRushRules.js');
 
-const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
+const fail = (msg, extra) => { console.error('ÉCHEC :', msg, JSON.stringify(extra ?? '', null, 2)); process.exit(3); };
 const FRAME_MS = 1000 / 30;
 const stepFrame = () => {
   const q = [...rafQueue.values()];
@@ -131,6 +131,7 @@ const TEST_LAPS = Math.min(CITY_RUSH_LAPS, 3);
 const RETALIATION_REASONS = ['police-shot', 'police-contact', 'last-lap-leader', 'pursuer-renewal'];
 let races = 0;
 let leaderRaces = 0;
+let finalLapRaces = 0;
 let lastLapLeaderPursuits = 0;
 let contactPursuits = 0;
 let dedicatedFrames = 0;
@@ -256,7 +257,14 @@ for (let run = 0; run < RUNS; run += 1) {
         }
       }
     }
-    if (!sawFinalLap) violations.push(`${prefix} la course n’atteint pas le dernier tour du joueur`);
+    // Précondition de la règle du « premier du dernier tour » : le pilote doit
+    // atteindre son propre dernier tour avant qu'un rival ne franchisse la
+    // ligne. Le pilote automatique garde sa voie avec la voiture la plus lente
+    // du garage : il lui arrive de rester bloqué dans le trafic et de ne jamais
+    // y arriver. La course est alors retirée de **cette** mesure — jamais des
+    // autres contrats (carambolage, escouade du joueur intacte…).
+    if (sawFinalLap) finalLapRaces += 1;
+    else if (VERBOSE) console.log(`${prefix} dernier tour non atteint (${(frames / 30).toFixed(0)} s · tour ${callbacks.huds.at(-1)?.lap ?? '?'}/${TEST_LAPS})`);
     if (firstFinalLapLeader && !firstFinalLapLeaderPursued) {
       violations.push(`${prefix} le premier du dernier tour (${firstFinalLapLeader.id}) n’est pas pris en chasse dans les 15 images`, {
         frame: firstFinalLapLeader.frame,
@@ -308,6 +316,11 @@ for (let run = 0; run < RUNS; run += 1) {
 }
 
 if (!races) violations.push('aucune course jouée');
+// La moitié des courses au moins doivent ouvrir le dernier tour du joueur,
+// sinon la règle du premier n'est pas mesurée.
+if (finalLapRaces * 2 < races) {
+  violations.push(`trop de courses sans dernier tour du joueur : ${finalLapRaces}/${races}`);
+}
 // Le premier du dernier tour : au moins une course où un rival mène le dernier
 // tour du joueur, et dans toutes celles-là son dossier s'est ouvert.
 if (!leaderRaces) violations.push('aucun rival n’a mené le dernier tour du joueur : la règle du premier n’a pas été mesurée');
@@ -322,5 +335,5 @@ if (dedicatedFrames && dedicatedCloseFrames * 2 < dedicatedFrames) {
 if (violations.length) fail(`${violations.length} entorse(s) au contrat de la poursuite des rivaux`, {
   races, leaderRaces, lastLapLeaderPursuits, contactPursuits, violations: violations.slice(0, 8),
 });
-console.log(`VÉRIF POURSUITE DES RIVAUX OK${LEADER_ONLY ? ' (motif du premier)' : ''} — ${races} course(s), ${leaderRaces} avec un rival en tête au dernier tour, ${lastLapLeaderPursuits} poursuite(s) du premier, ${contactPursuits} poursuite(s) par carambolage (trois étoiles, une berline dédiée par rival, escouade du joueur intacte · graine ${BASE_SEED}).`);
+console.log(`VÉRIF POURSUITE DES RIVAUX OK${LEADER_ONLY ? ' (motif du premier)' : ''} — ${races} course(s), ${finalLapRaces} avec le dernier tour du joueur, ${leaderRaces} avec un rival en tête au dernier tour, ${lastLapLeaderPursuits} poursuite(s) du premier, ${contactPursuits} poursuite(s) par carambolage (trois étoiles, une berline dédiée par rival, escouade du joueur intacte · graine ${BASE_SEED}).`);
 process.exit(0);

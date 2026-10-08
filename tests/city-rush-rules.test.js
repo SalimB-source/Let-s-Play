@@ -18,11 +18,21 @@ import {
   CITY_RUSH_AI_TRACK_BOOST_WEIGHT,
   CITY_RUSH_AI_LANE_COOLDOWN_MIN,
   CITY_RUSH_AI_LANE_COOLDOWN_MAX,
+  CITY_RUSH_BLUE_PICKUP_CHANCE,
   CITY_RUSH_RED_PICKUP_CHANCE,
   CITY_RUSH_HEALTH_PICKUP_CHANCE,
   CITY_RUSH_HEALTH_PICKUP_RESTORE,
   CITY_RUSH_HEALTH_PICKUP_COLOR,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_DAMAGE,
+  CITY_RUSH_SHOTGUN_FIRE_COOLDOWN,
+  CITY_RUSH_WEAPON_TYPES,
+  cityRushActiveWeapon,
+  cityRushEquipWeapon,
+  cityRushWeaponFireInterval,
+  cityRushWeaponMaxAmmo,
+  cityRushWeaponDamage,
   CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE,
   CITY_RUSH_BOOST_SPAWN_CHANCE,
   CITY_RUSH_BLUE_SHOT_DURATION,
@@ -301,6 +311,7 @@ import {
   canCollectCityRushPickup,
   isCityRushPowerCharged,
   shouldHideCityRushPistolPickup,
+  shouldHideCityRushWeaponPickup,
   createCityRushEncounter,
   createCityRushBoostEncounter,
   keepsCityRushBoostPickup,
@@ -1084,14 +1095,18 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
 test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 8400); // 6 tours : 5 boucles de 1 200 m + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
+  assert.equal(CITY_RUSH_BLUE_PICKUP_CHANCE, 0.03, 'le fusil à pompe bleu apparaît dans 3 % des objets');
+  assert.ok(CITY_RUSH_BLUE_PICKUP_CHANCE < CITY_RUSH_RED_PICKUP_CHANCE, 'le pompe est plus rare que l’AK-47');
   assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.08, 'le chargeur rouge apparaît dans 8 % des objets');
   assert.equal(CITY_RUSH_HEALTH_PICKUP_CHANCE, 0.06, 'le plus de soin apparaît dans 6 % des objets');
   assert.equal(CITY_RUSH_HEALTH_PICKUP_RESTORE, 1);
   assert.equal(CITY_RUSH_HEALTH_PICKUP_COLOR, '#ff4055');
   assert.equal(CITY_RUSH_PISTOL_AMMO_PER_PICKUP, 7);
-  assert.ok(Math.abs(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE - 0.86) < 1e-12);
+  assert.equal(CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP, 3);
+  assert.equal(CITY_RUSH_SHOTGUN_DAMAGE, 6);
+  assert.ok(Math.abs(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE - 0.83) < 1e-12);
   assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
-  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, radio: 4 });
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, shotgun: 3, radio: 4 });
   assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 7);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.ammoPerPickup, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
@@ -1108,9 +1123,9 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /six balles pour une berline/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, et un carré au pilote/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
-    'blue-shot': 'A', pistol: 'Z', radio: 'R',
+    'blue-shot': 'A', pistol: 'Z', shotgun: 'Z', radio: 'R',
   });
-  assert.deepEqual(Object.keys(CITY_RUSH_POWER_RULES), ['blue-shot', 'pistol', 'radio']);
+  assert.deepEqual(Object.keys(CITY_RUSH_POWER_RULES), ['blue-shot', 'pistol', 'shotgun', 'radio']);
   for (const [type, cost] of Object.entries(CITY_RUSH_POWER_CHARGE_COST)) {
     assert.equal(CITY_RUSH_POWER_RULES[type].chargeCost, cost);
   }
@@ -1131,6 +1146,16 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.automatic, false);
+  // Le fusil à pompe : trois cartouches, six carrés par tir, bonus bleu.
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.key, 'Z', 'le pompe se tire avec le même bouton que l’AK-47');
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.chargeCost, 3);
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.ammoPerPickup, CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP);
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.damageCells, CITY_RUSH_SHOTGUN_DAMAGE);
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.automatic, false);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.name, /fusil à pompe/i);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.description, /3 cartouches/i);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.description, /6 carrés de vie/i);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.description, /même bouton/i);
   assert.equal(CITY_RUSH_POWER_RULES.radio.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
   assert.equal(CITY_RUSH_POWER_RULES.radio.automatic, false);
@@ -1268,7 +1293,7 @@ test('le tir droit bleu riposte sur la berline la plus proche de sa voie, même 
 
 test('one red pickup grants seven bullets while inventory tracks remain independent', () => {
   let inventory = createCityRushInventory();
-  assert.deepEqual(Object.keys(inventory), ['blue-shot', 'pistol', 'radio']);
+  assert.deepEqual(Object.keys(inventory), ['blue-shot', 'pistol', 'shotgun', 'radio']);
   inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
   inventory = addCityRushCharge(inventory, 'pistol');
   assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1);
@@ -2812,6 +2837,7 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
     [CITY_RUSH_PICKUPS.BOOST]: 0,
     [CITY_RUSH_PICKUPS.HEALTH]: 0,
     [CITY_RUSH_POWERS.PISTOL]: 0,
+    [CITY_RUSH_POWERS.SHOTGUN]: 0,
   };
   for (let index = 0; index < 10000; index += 1) {
     // `chance = 1` : le mélange des types est mesuré hors baisse de densité des
@@ -2825,18 +2851,26 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
     const pickupLanes = new Set();
     for (const pickup of encounter.pickups) {
       assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
-      assert.ok([CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
+      assert.ok([
+        CITY_RUSH_PICKUPS.BOOST,
+        CITY_RUSH_PICKUPS.HEALTH,
+        CITY_RUSH_POWERS.PISTOL,
+        CITY_RUSH_POWERS.SHOTGUN,
+      ].includes(pickup.type));
       assert.ok(!pickupLanes.has(pickup.lane));
       pickupLanes.add(pickup.lane);
     }
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
+  const blueRate = pickupCounts[CITY_RUSH_POWERS.SHOTGUN] / totalPickups;
   const redRate = pickupCounts[CITY_RUSH_POWERS.PISTOL] / totalPickups;
   const healthRate = pickupCounts[CITY_RUSH_PICKUPS.HEALTH] / totalPickups;
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
+  assert.ok(blueRate >= 0.02 && blueRate <= 0.045, `le fusil à pompe bleu apparaît environ 3 % du temps (${(blueRate * 100).toFixed(1)} %)`);
   assert.ok(redRate >= 0.06 && redRate <= 0.10, `le chargeur rouge apparaît environ 8 % du temps (${(redRate * 100).toFixed(1)} %)`);
+  assert.ok(blueRate < redRate, 'le pompe reste plus rare que l’AK-47 sur la route');
   assert.ok(healthRate >= 0.04 && healthRate <= 0.08, `le plus de soin apparaît environ 6 % du temps (${(healthRate * 100).toFixed(1)} %)`);
-  assert.ok(boostRate >= 0.82 && boostRate <= 0.90, `les cercles turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.79 && boostRate <= 0.90, `les cercles turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
   assert.equal(pickupCounts['blue-shot'], undefined);
   assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
@@ -3765,6 +3799,94 @@ test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () 
   assert.equal(cityRushPlayerDamage(1, 'suv-collision'), 0, 'pas de vie négative au dernier carré');
   assert.equal(cityRushPlayerDamage(0, 'suv-collision'), 0);
   assert.equal(cityRushPlayerDamage(15, 'collision'), 14, 'les autres collisions ne changent pas');
+});
+
+test('le fusil à pompe partage l’emplacement d’arme de l’AK-47 : ramasser l’un vide l’autre', () => {
+  assert.deepEqual([...CITY_RUSH_WEAPON_TYPES], ['pistol', 'shotgun']);
+  const empty = createCityRushInventory();
+  assert.equal(cityRushActiveWeapon(empty), null, 'le bouton de tir reste vide sans rien ramasser');
+  assert.equal(isCityRushPowerCharged(empty, CITY_RUSH_POWERS.PISTOL), false);
+  assert.equal(isCityRushPowerCharged(empty, CITY_RUSH_POWERS.SHOTGUN), false);
+
+  const ak = cityRushEquipWeapon(empty, CITY_RUSH_POWERS.PISTOL);
+  assert.deepEqual(cityRushActiveWeapon(ak), { type: 'pistol', ammo: 7, max: 7 });
+  assert.equal(ak[CITY_RUSH_POWERS.SHOTGUN], 0);
+
+  // Le bonus bleu remplace l'AK-47, même chargé à bloc : les balles sont perdues.
+  const pump = cityRushEquipWeapon(ak, CITY_RUSH_POWERS.SHOTGUN);
+  assert.equal(pump[CITY_RUSH_POWERS.PISTOL], 0, 'l’AK-47 est vidé par le fusil à pompe');
+  assert.equal(pump[CITY_RUSH_POWERS.SHOTGUN], CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP);
+  assert.deepEqual(cityRushActiveWeapon(pump), { type: 'shotgun', ammo: 3, max: 3 });
+
+  // Et l'inverse : un chargeur rouge repris fait disparaître le pompe.
+  const back = cityRushEquipWeapon(pump, CITY_RUSH_POWERS.PISTOL);
+  assert.equal(back[CITY_RUSH_POWERS.SHOTGUN], 0);
+  assert.deepEqual(cityRushActiveWeapon(back), { type: 'pistol', ammo: 7, max: 7 });
+
+  // Reprendre la même arme complète son chargeur, sans jamais le dépasser.
+  const halfPump = { ...pump, [CITY_RUSH_POWERS.SHOTGUN]: 1 };
+  assert.equal(cityRushEquipWeapon(halfPump, CITY_RUSH_POWERS.SHOTGUN)[CITY_RUSH_POWERS.SHOTGUN], 3);
+  assert.equal(cityRushEquipWeapon(pump, CITY_RUSH_POWERS.SHOTGUN, 99)[CITY_RUSH_POWERS.SHOTGUN], 3,
+    'le chargeur de pompe ne dépasse jamais trois cartouches');
+  // Un type inconnu ne touche à rien.
+  assert.deepEqual(cityRushEquipWeapon(pump, 'radio', 4), pump);
+});
+
+test('une cartouche de pompe arrache six carrés de vie à la voiture touchée', () => {
+  assert.equal(cityRushWeaponDamage(CITY_RUSH_POWERS.SHOTGUN), 6);
+  assert.equal(cityRushWeaponDamage(CITY_RUSH_POWERS.PISTOL), 1);
+  // Une berline de police (six carrés) tombe d'une seule cartouche.
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.SHOTGUN), 1);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.SHOTGUN), 0);
+  // Un SUV blindé (dix carrés) en demande deux.
+  assert.equal(cityRushPoliceShotsLeft(10, CITY_RUSH_POWERS.SHOTGUN), 2);
+  assert.equal(cityRushPoliceDamage(10, CITY_RUSH_POWERS.SHOTGUN), 4);
+  assert.equal(cityRushPoliceDamage(4, CITY_RUSH_POWERS.SHOTGUN), 0);
+  // Un pilote paie le même prix : six carrés d'un coup.
+  assert.equal(cityRushPlayerDamage(15, CITY_RUSH_POWERS.SHOTGUN), 9);
+  assert.equal(cityRushPlayerDamage(4, CITY_RUSH_POWERS.SHOTGUN), 0, 'jamais de vie négative');
+  // Barème et cadence : le pompe se réarme bien plus lentement que l'AK-47.
+  assert.equal(CITY_RUSH_SHOTGUN_FIRE_COOLDOWN, 1.5);
+  assert.equal(cityRushWeaponFireInterval(CITY_RUSH_POWERS.SHOTGUN), CITY_RUSH_SHOTGUN_FIRE_COOLDOWN);
+  assert.ok(cityRushWeaponFireInterval(CITY_RUSH_POWERS.PISTOL) < CITY_RUSH_SHOTGUN_FIRE_COOLDOWN);
+  assert.equal(cityRushWeaponMaxAmmo(CITY_RUSH_POWERS.SHOTGUN), 3);
+  assert.equal(cityRushWeaponMaxAmmo(CITY_RUSH_POWERS.PISTOL), 7);
+});
+
+test('les cartouches de pompe se consomment une par une, et le bonus bleu se ramasse par-dessus un AK-47 plein', () => {
+  let inventory = cityRushEquipWeapon(createCityRushInventory(), CITY_RUSH_POWERS.SHOTGUN);
+  for (const left of [3, 2, 1]) {
+    assert.equal(inventory[CITY_RUSH_POWERS.SHOTGUN], left);
+    assert.equal(isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.SHOTGUN), true);
+    const shot = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.SHOTGUN);
+    assert.equal(shot.consumed, true, `la cartouche n°${left} part`);
+    assert.equal(shot.inventory[CITY_RUSH_POWERS.SHOTGUN], left - 1);
+    inventory = shot.inventory;
+  }
+  assert.equal(isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.SHOTGUN), false, 'le pompe est vide');
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.SHOTGUN).consumed, false, 'un pompe vide ne tire plus');
+  assert.equal(cityRushActiveWeapon(inventory), null, 'le bouton redevient vide');
+
+  const fullAk = cityRushEquipWeapon(createCityRushInventory(), CITY_RUSH_POWERS.PISTOL);
+  assert.equal(canCollectCityRushPickup(fullAk, CITY_RUSH_POWERS.SHOTGUN), true,
+    'le bonus bleu remplace l’AK-47, même plein');
+  assert.equal(canCollectCityRushPickup(fullAk, CITY_RUSH_POWERS.PISTOL), false,
+    'un chargeur rouge déjà plein n’est pas gaspillé');
+
+  const fullPump = cityRushEquipWeapon(createCityRushInventory(), CITY_RUSH_POWERS.SHOTGUN);
+  assert.equal(canCollectCityRushPickup(fullPump, CITY_RUSH_POWERS.SHOTGUN), false,
+    'un pompe plein ne reprend pas de cartouches');
+  assert.equal(canCollectCityRushPickup(fullPump, CITY_RUSH_POWERS.PISTOL), true,
+    'l’AK-47 remplace le pompe, même plein');
+  assert.equal(canCollectCityRushPickup({ shotgun: 1 }, CITY_RUSH_POWERS.SHOTGUN), true,
+    'un pompe entamé se complète');
+
+  // Le masquage suit l'arme : un peloton entièrement rechargé en pompe cache
+  // le bonus bleu, mais un concurrent qui n'a que l'AK-47 le laisse au sol.
+  assert.equal(shouldHideCityRushWeaponPickup(fullPump, CITY_RUSH_POWERS.SHOTGUN, [fullPump]), true);
+  assert.equal(shouldHideCityRushWeaponPickup(fullPump, CITY_RUSH_POWERS.SHOTGUN, [fullAk]), false);
+  assert.equal(shouldHideCityRushWeaponPickup(fullAk, CITY_RUSH_POWERS.SHOTGUN, [fullAk]), false);
+  assert.equal(shouldHideCityRushPistolPickup(fullAk, [fullAk]), true, 'le raccourci rouge est conservé');
 });
 
 test('la cible d’une mission garde une voie plus longtemps, sauf en cas de danger urgent', () => {

@@ -63,11 +63,16 @@ import {
   cityRushCarMaxHealth,
   CITY_RUSH_WANTED_MAX_STARS,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_DAMAGE,
+  CITY_RUSH_SHOTGUN_FIRE_COOLDOWN,
   CITY_RUSH_POLICE_AIM_TIME,
   CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   CITY_RUSH_PICKUPS,
+  CITY_RUSH_WEAPON_TYPES,
+  cityRushActiveWeapon,
   CITY_RUSH_TRACK_BOOST_DURATION,
   buildCityRushMinimapState,
   cityRushPacedSpeed,
@@ -136,7 +141,9 @@ import './vice-city-rush-garage.css';
 // suit le compte connecté via sa ligne privée (voir cityRushProgress.js).
 const BEST_KEY = 'letsplay_vice_city_rush_bests_v4';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
-const POWER_ORDER = [CITY_RUSH_POWERS.PISTOL];
+// Les deux armes du guide, dans l'ordre de rareté croissante : l'AK-47 rouge
+// d'abord, le fusil à pompe bleu ensuite. Elles partagent le même bouton.
+const POWER_ORDER = [...CITY_RUSH_WEAPON_TYPES];
 const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
@@ -279,6 +286,10 @@ const EMPTY_HUD = {
   rank: 3,
   racers: [],
   inventory: createCityRushInventory(),
+  // L'arme en main : `null` tant qu'aucun bonus d'arme n'a été ramassé — le
+  // bouton de tir reste alors vide.
+  weapon: null,
+  weaponCooldown: 0,
   bazookaAmmo: 0,
   bazookaPickupTaken: false,
   bazookaPickupsTaken: 0,
@@ -427,6 +438,22 @@ function PowerIcon({ type, className = '' }) {
         <rect x="27.1" y="10.1" width="1.5" height="5.2" rx="0.4" />
         <rect x="16.4" y="11.1" width="1.4" height="2.4" rx="0.3" />
         <rect x="29.6" y="14.2" width="1.6" height="3.1" rx="0.35" />
+      </svg>
+    );
+  }
+  if (type === 'shotgun') {
+    return (
+      <svg className={className} viewBox="0 0 32 32" aria-hidden="true" fill="currentColor">
+        {/* Fusil à pompe de profil : crosse, boîtier, pompe, canon et bouche évasée. */}
+        <path d="M1.9 13.4 8.2 14.9v4.5L2 20.9z" />
+        <path d="M8 13.4h6.6v5.4H8z" />
+        <path d="M14.4 14.6h5.1v3.2h-5.1z" />
+        <path d="M14.6 12.6h11.4v1.9H14.6z" />
+        <path d="M25.9 12.4h4.2v2.3h-4.2z" />
+        <path d="M10.6 18.6 9 25.4h3l1.5-6.8z" />
+        <path d="M14.6 18.8h1.7v7h-1.7z" />
+        <rect x="19.9" y="15.4" width="8.6" height="1.5" rx="0.5" />
+        <rect x="24.6" y="10.1" width="1.4" height="2.2" rx="0.4" />
       </svg>
     );
   }
@@ -2230,14 +2257,30 @@ export default function ViceCityRushPage() {
                       );
                     })()}
                     {(() => {
-                      const type = CITY_RUSH_POWERS.PISTOL;
-                      const rule = CITY_RUSH_POWER_RULES[type];
-                      const ammo = Math.max(0, Math.min(rule.chargeCost, Number(hud.inventory?.[type]) || 0));
+                      // Un seul bouton pour les deux armes : il affiche
+                      // l'arme en main et reste **vide** — icône éteinte,
+                      // anneau à zéro, geste sans effet — tant que le pilote
+                      // n'a ramassé aucun bonus rouge ni bonus bleu. Ramasser
+                      // l'une remplace l'autre, munitions comprises.
+                      const weapon = cityRushActiveWeapon(hud.inventory);
+                      const type = weapon?.type || null;
+                      const rule = type ? CITY_RUSH_POWER_RULES[type] : null;
+                      const max = weapon?.max || CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+                      const ammo = weapon?.ammo || 0;
                       const ready = ammo > 0;
+                      const reloading = ready && Number(hud.weaponCooldown) > 0;
+                      const isShotgun = type === CITY_RUSH_POWERS.SHOTGUN;
+                      const unit = isShotgun ? 'cartouche' : 'balle';
+                      const label = isShotgun ? 'POMPE' : type === CITY_RUSH_POWERS.PISTOL ? 'AK-47' : 'ARME';
+                      const hint = ready
+                        ? (reloading
+                          ? `${rule.name} · réarmement, ${unit} suivante dans un instant`
+                          : `${rule.name} chargé · ${ammo} ${unit}${ammo > 1 ? 's' : ''} · maintiens le bouton ou Z pour tirer`)
+                        : 'Aucune arme : ramasse un bonus rouge (AK-47, 7 balles) ou un bonus bleu (fusil à pompe, 3 cartouches)';
                       return (
                         <button
                           type="button"
-                          className={`city-rush-machine-gun-button${ready ? ' is-ready' : ' is-empty'}${ready && ammo <= 2 ? ' is-low' : ''}`}
+                          className={`city-rush-machine-gun-button${ready ? ' is-ready' : ' is-empty'}${ready && ammo <= 2 ? ' is-low' : ''}${isShotgun ? ' is-shotgun' : ''}${reloading ? ' is-reloading' : ''}`}
                           onPointerDown={(event) => {
                             if (event.button !== undefined && event.button !== 0) return;
                             event.preventDefault();
@@ -2254,19 +2297,20 @@ export default function ViceCityRushPage() {
                           onLostPointerCapture={() => actionsRef.current?.('pistol-up')}
                           onBlur={() => actionsRef.current?.('pistol-up')}
                           onClick={(event) => {
-                            // Clic clavier (Entrée/Espace) : le pointerdown a
-                            // déjà tiré pour la souris ou le doigt.
-                            if (event.detail === 0) actionsRef.current?.(type);
+                            // Clic clavier (Entrée/Espace) : un coup sec, sans
+                            // armer le maintien — le pointerdown a déjà tiré
+                            // pour la souris ou le doigt.
+                            if (event.detail === 0) actionsRef.current?.('pistol-tap');
                           }}
                           disabled={!ready}
-                          title={ready ? `AK-47 chargé · ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} · maintiens le bouton ou Z pour tirer` : `Ramasse un bonus rouge rare pour obtenir ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles`}
-                          aria-label={ready ? `Tirer à l’AK-47, ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} ; maintiens le bouton ou Z pour vider le chargeur` : `AK-47 : 0/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}, ramasse un bonus rouge rare`}
+                          title={hint}
+                          aria-label={hint}
                         >
-                          {/* Anneau de munitions : un segment par balle du chargeur. */}
+                          {/* Anneau de munitions : un segment par cartouche du
+                              chargeur — sept pour l'AK-47, trois pour le pompe. */}
                           <svg className="city-rush-machine-gun-ammo" viewBox="0 0 100 100" aria-hidden="true">
-                            {Array.from({ length: CITY_RUSH_PISTOL_AMMO_PER_PICKUP }, (_, index) => {
-                              const total = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
-                              const span = 360 / total;
+                            {Array.from({ length: max }, (_, index) => {
+                              const span = 360 / max;
                               const from = ((index * span) + 4 - 90) * (Math.PI / 180);
                               const to = (((index + 1) * span) - 4 - 90) * (Math.PI / 180);
                               const r = 47;
@@ -2279,9 +2323,9 @@ export default function ViceCityRushPage() {
                               );
                             })}
                           </svg>
-                          <span className="city-rush-machine-gun-label">AK-47</span>
-                          <span className="city-rush-machine-gun-icon"><PowerIcon type={type} /></span>
-                          <span className="city-rush-machine-gun-status">{ready ? `CHARGÉ ${ammo}/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}` : `0 / ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}`}</span>
+                          <span className="city-rush-machine-gun-label">{label}</span>
+                          <span className="city-rush-machine-gun-icon"><PowerIcon type={type || CITY_RUSH_POWERS.PISTOL} /></span>
+                          <span className="city-rush-machine-gun-status">{ready ? (reloading ? `RECHARGE ${ammo}/${max}` : `CHARGÉ ${ammo}/${max}`) : 'À RAMASSER'}</span>
                         </button>
                       );
                     })()}
@@ -2919,8 +2963,8 @@ export default function ViceCityRushPage() {
                   <span className="is-touch-hint">GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE</span>
                   <span className="is-key-hint">SOURIS SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
                   <span className="is-touch-hint">GLISSE SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
-                  <span className="is-key-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : 'A / Z / R · POUVOIRS · BONUS VERT : TURBO'}</span>
-                  <span className="is-touch-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : 'BOUTON ROUGE · AK-47 · BONUS VERT : TURBO'}</span>
+                  <span className="is-key-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : `Z · TIR (AK-47 ROUGE · POMPE BLEU) · ${CITY_RUSH_SHOTGUN_FIRE_COOLDOWN} S PAR CARTOUCHE`}</span>
+                  <span className="is-touch-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : 'BOUTON DE TIR · ROUGE : AK-47 · BLEU : POMPE · VERT : TURBO'}</span>
                   <span>{currentLaps} TOURS · {currentDistance} M</span>
                   <span className="is-key-hint">M · SON</span>
                   <span className="is-key-hint">F · PLEIN ÉCRAN</span>
@@ -3358,10 +3402,11 @@ export default function ViceCityRushPage() {
             <div className="city-rush-guide-list">
               {storyWeaponsOn && POWER_ORDER.map((type) => {
                 const rule = CITY_RUSH_POWER_RULES[type];
+                const isShotgun = type === CITY_RUSH_POWERS.SHOTGUN;
                 return (
                   <div className={`city-rush-guide-item is-${type}${rule.automatic ? ' is-automatic' : ''}`} key={type}>
                     <span><PowerIcon type={type} /></span>
-                    <div><b>{rule.name} · {CITY_RUSH_PISTOL_AMMO_PER_PICKUP} BALLES PAR BONUS</b><small>{rule.description}</small></div>
+                    <div><b>{rule.name} · {rule.ammoPerPickup} {isShotgun ? 'CARTOUCHES' : 'BALLES'} PAR BONUS{isShotgun ? ` · ${CITY_RUSH_SHOTGUN_DAMAGE} CARRÉS PAR TIR` : ''}</b><small>{rule.description}</small></div>
                     <kbd>{rule.automatic ? 'AUTO' : rule.key}</kbd>
                   </div>
                 );
@@ -3382,7 +3427,7 @@ export default function ViceCityRushPage() {
               )}
               <div className="city-rush-guide-item is-boost">
                 <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
-                <div><b>BONUS VERT AU SOL · AUTOMATIQUE</b><small>Traverse un rond vert peint sur la chaussée — plus aucune icône ne flotte au-dessus du bitume — pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Un quart des turbos tirés n'est même pas posé : les chargeurs rouges de l’AK-47 restent distincts des soins.</small></div>
+                <div><b>BONUS VERT AU SOL · AUTOMATIQUE</b><small>Traverse un rond vert peint sur la chaussée — plus aucune icône ne flotte au-dessus du bitume — pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Un quart des turbos tirés n'est même pas posé : les bonus d'arme — chargeur rouge d’AK-47 ou fusil à pompe bleu — restent distincts des soins.</small></div>
                 <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
               </div>
               <div className="city-rush-guide-item is-health">
