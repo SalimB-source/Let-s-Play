@@ -854,46 +854,70 @@ grand écran.
 
 ## Vice City Rush : le garage 3D, façon Need for Speed
 
-L'écran de préparation — **MODE → VILLE → GARAGE** — est devenu un garage. La
-voiture du moment est **modélisée en 3D** (`three.js`), posée sur un plateau
-tournant au milieu d'une cabine d'atelier éclairée comme un studio, et **tous
-les menus restent au-dessus, sur la même page** : rien ne change de route, rien
-ne s'ouvre par-dessus, on prépare sa course en regardant sa voiture.
+L'écran de préparation — **MODE → VILLE → GARAGE** pour une course libre — est
+devenu un garage. La voiture du moment est **modélisée en 3D** (`three.js`),
+posée sur un plateau tournant au milieu de la salle d'exposition du
+concessionnaire, éclairée comme un studio, et **tous les menus restent au-dessus,
+sur la même page** : rien ne change de route, rien ne s'ouvre par-dessus, on
+prépare sa course en regardant sa voiture.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ [1 MODE] [2 VILLE] [3 GARAGE]      MISTRAL 1.4 · DÉPART  │ ← barre d'étapes + plaque
+│ ✦ HISTOIRE  🏆 TOURNOIS  ⚑ COURSE RAPIDE  ⌂ GARAGE  3/11 │ ← barre des pages
+│                        MISTRAL 1.4 · DÉPART                │   + plaque du plateau
 ├───────────────────────────────────────────────────╥──────┤
-│  VICE CITY                                        ║ ▓▓▓ │
-│  RUSH.                                            ║ ▓▓▓ │
-│  Choisis un mode, une ville…                      ║ ▓▓▓ │ ← la scène, en fond
-├───────────────────────────────────────────────────╣ ▓▓▓ │
-│  [CIRCUIT]  [POURSUITE]  [SPRINT]   · bannière Histoire  │ ← les menus, au-dessus
-└──────────────────────────────────────────────────────────┘
+│  UNE PISTE,                                       ║ ▓▓▓ │
+│  UN MOTEUR.                    [1 MODE][2 VILLE]  ║ ▓▓▓ │ ← la salle, en fond
+│  Choisis un mode libre, une   [3 GARAGE]         ║ ▓▓▓ │   (les étapes : parcours seul)
+│  ville…  [CIRCUIT] [SPRINT]   [POURSUITE]         ║ ▓▓▓ │
+│  + tour guidé · plus de bannière Histoire ici     ║ ▓▓▓ │
+└───────────────────────────────────────────────────╨──────┴─┘
 ```
 
-- **La scène.** `ViceCityGarageStage.jsx` monte sa propre scène three.js : dalle
-  de béton (bruit, joints et taches d'huile dessinés au canvas), tôles peintes,
-  plateau tournant cerclé d'un néon à la couleur de la voiture, marquage au sol,
-  enseignes au néon (« VICE CITY RUSH » + le nom du modèle monté, « EST. 1986 »),
-  rampes de lumières au plafond, projecteurs qui découpent la carrosserie,
-  poussières dans les faisceaux, piles de pneus, établi à rouleaux, bidons et
-  étagères. La voiture, elle, sort du même constructeur que la course
-  (`makeRacerCar`, phares allumés) : pas un deuxième modèle à maintenir.
-- **Le cadre est réglé sur le plateau.** La caméra se place à la distance qui
-  fait occuper au plateau ~92 % de la largeur visible, quelle que soit la forme
-  de la fenêtre : elle se rapproche sur un écran large (gros plan) et recule
-  jusqu'à 13 m sur un téléphone pour qu'une voiture entière — diagonale
-  comprise, puisque le plateau tourne — passe dans le cadre. La voiture occupe
-  alors ~55 % de la largeur sur un écran de préparation, ~85 % sur un téléphone.
-  Le dégradé du voile de contraste dégage justement la bande du milieu, là où la
+La barre d'étapes ne se montre que sur un **parcours** (mode → ville → garage) :
+les pages de liste — la campagne, les plateaux, le concessionnaire — n'ont rien
+à numéroter. La plaque du plateau, elle, est restée dans la barre du haut et
+non dans les étapes, pour qu'une page sans étapes sache quand même ce qui tourne
+derrière elle.
+
+- **La scène.** `ViceCityGarageStage.jsx` monte sa propre scène three.js : une
+  **salle d'exposition de concessionnaire**, pas un atelier. Dalles polies qui
+  renvoient le néon (le sol est écrit au canvas, sans une tache d'huile), façade
+  vitrée à menuiseries noires sur une ville de 1986 dessinée derrière la vitre,
+  mur de marque à lames sombres avec l'enseigne rétroéclairée (« VICE CITY RUSH
+  MOTORS · CONCESSION 1986 » + le nom du modèle au plateau), damier de dalles
+  lumineuses au plafond, tapis cerise bordé d'un liseré et quatre poteaux à
+  cordon autour du plateau, comptoir d'accueil et ses tabourets, présentoir de
+  jantes, palmiers en pot, tablette des coupes, caillebotis du service. Au fond,
+  **le lot** : les trois modèles les plus chers du catalogue, garés sur leur
+  tapis, étiquette de prix au poteau — et sur la voiture du plateau, le nœud de
+  livraison posé sur le capot. La voiture, elle, sort du même constructeur que la
+  course (`makeRacerCar`, phares allumés) : pas un deuxième modèle à maintenir,
+  et le lot non plus. Sur un appareil tactile (`pointer: coarse`), le lot rentre
+  au garage — la salle garde son architecture, le titre économise trois voitures
+  de matériaux clairs.
+- **Le cadre est réglé sur le plateau, et sur l'écran.** La table
+  `GARAGE_FRAMINGS` de `ViceCityGarageStage.jsx` connaît deux cadrages de la
+  même salle : **`garage`** (l'écran de préparation — le plateau remplit ~92 %
+  de la largeur visible) et **`vitrine`** (l'écran-titre — plan large, plateau à
+  ~50 % du cadre, objectif ouvert à 50°, brume de studio repoussée pour que la
+  salle reste lisible de loin, résolution bornée à 1,5 : un décor ne paie pas le
+  même pixel qu'un écran qu'on choisit). À l'intérieur d'un cadrage, la caméra se
+  place à la distance qui fait remplir le cadre selon la forme de la fenêtre :
+  elle se rapproche sur un écran large (gros plan) et recule jusqu'à 13 m, sur un
+  téléphone en tout cas, pour qu'une voiture entière, diagonale comprise puisque
+  le plateau tourne, passe dans le champ. La voiture occupe alors ~63 % de la
+  largeur au garage, ~93 % sur un téléphone, et ~39 % à l'écran-titre : elle y
+  est un sujet dans un décor, plus un nez à nez. Le
+  dégradé du voile de contraste dégage justement la bande du milieu, là où la
   voiture se lit.
 - **Le plateau tourne.** Un tour en ~37 secondes. Glisser le regard (souris ou
   doigt) décale légèrement la caméra autour de la voiture ; au doigt, seul le
   geste horizontal regarde la voiture (`touch-action: pan-y`), le vertical
   continue de faire défiler la page. `prefers-reduced-motion` arrête la rotation.
-- **La plaque du garage**, en bout de barre d'étapes, annonce le modèle monté sur
-  le plateau et son état (DÉPART / OFFERTE / ACHETÉE / prix). Survoler une carte
+- **La plaque du garage**, en bout de la **barre des pages** (et non des étapes,
+  pour qu'elle survive aux pages qui n'ont pas de parcours), annonce le modèle
+  monté sur le plateau et son état (DÉPART / OFFERTE / ACHETÉE / prix). Survoler une carte
   du garage — ou la prendre au clavier — fait tourner le modèle au plateau et
   passe la plaque en **APERÇU** : on admire, la course ne part qu'au lancer.
 - **Un décor, jamais un obstacle.** La scène est posée en couche de fond
@@ -1830,6 +1854,7 @@ npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le jo
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:city-rush-police-wreck # destruction d'une berline : deux tours de tête-à-queue en décélérant, explosion à l'arrêt, carcasse laissée en feu tout l'incendie
 npm run check:city-rush-rival-police # les rivaux aussi sont pourchassés : carambolage avec la police et tête de course au dernier tour (deux passes : motifs mêlés, puis motif du premier seul)
+npm run check:city-rush-ink  # la langue du hub sur toute la console (jetons, équerres, polices, ordre d'import)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```
@@ -1887,6 +1912,82 @@ Aucun son de missile, de frappe ou de rotor d'attaque ne doit se déclencher ;
 l'hélicoptère d'observation reste silencieux. Les compteurs sont imprimés à la
 fin de chaque parcours.
 
+## Vice City Rush : toute la console parle la langue du hub
+
+L'écran-titre de Vice City Rush (`ViceCityRushMainMenu`, dessiné dans
+`src/games/vice-city-rush-menu.css`) a été repensé le premier : encre
+d'imprimerie, angles coupés au cutter, filets d'un cheveu, équerres jaunes de
+cerise sur l'entrée choisie, grain de pellicule, « Pirata One » pour les titres
+et « Permanent Marker » pour les tags. Le reste du jeu parlait encore la langue
+d'avant — néons violets, cartons arrondis, Orbitron.
+
+Deux choses ont suivi ce désaccord :
+
+- **le plein écran revenait « comme avant »** : la cible native était
+  `.city-rush-shell` (`#vice-city-rush-console`), promue dans la couche
+  supérieure du navigateur, alors que le hub est son **frère** sous
+  `.city-rush-page`. L'écran-titre, hors de la cible, restait donc peint par la
+  page en dessous — l'ancienne peau gagnait à l'œil. La cible est maintenant
+  `.city-rush-page` (`pageRef`), le hub est dans le plein écran, et
+  `.city-rush-page.is-immersive` lui rend un cadre entier (100 vh, `padding: 0`,
+  `overflow: hidden`, fond d'encre). Le `upgrade` de la permission de premier
+  geste n'est plus sauté pendant que le hub est ouvert.
+- **le jeu est descendu sous la barre du site** : la navigation flotte en
+  `position: fixed` (16 px du bord haut, 64 px de haut, resserrée à 58 px au
+  scroll — bord bas à 80 px), alors que la page de jeu ne réservait que 96 px :
+  le bandeau supérieur de la console — titre, plein écran, son — frôlait l'île.
+  La réserve passe par un jeton, `--cr-nav-clear: 124px`, relu et mesuré par
+  `npm run check:vice-city-fullscreen` (96 px sur téléphone, où la barre plaque
+  `top: 0` sur 68 px) ; `is-immersive` la remet à zéro, puisqu’en plein écran il
+  n’y a plus de barre du tout.
+- **l’écran-titre n’a plus de nuage noir** : les deux éclats d’encre grunge —
+  celui du carrousel d’icônes, puis celui du logo — avaient été dessinés pour
+  une photo figée. Posés sur la vitrine 3D, ils ne protégeaient plus rien et
+  mangeaient la salle. `InkSplat` est sorti de `ViceCityRushMainMenu`, et la
+  règle vaut pour tout ce qui se poserait sur la scène : pas d’encre par-dessus,
+  des ombres portées et un dégradé.
+- **la peau du hub a été passée sur les neuf feuilles du jeu** : les jetons
+  `--cr-*` de `vice-city-rush.css` portent les encres et les rayons,
+  `vice-city-rush-hub-skin.css` retouche surface par surface (filets, équerres,
+  grain, puces de raccourcis — jamais la mise en page : `grid-template-areas`, zones
+  et points de rupture sont intacts), et le bloc 8 de `src/typography.css` rend
+  au hub ses polices, que le `body * !important` du bloc 1 écrasait.
+
+### Retoucher la peau
+
+```bash
+npm run theme:city-rush-ink   # codemod : rabat les encres, rayons, polices et penchants du jeu sur ceux du hub
+npm run check:city-rush-ink   # le contrat : aucune couleur ni aucun rayon de l'ancienne peau ne revient
+```
+
+Le décor de l'écran-titre est la scène de garage elle-même, remontée dans son
+cadrage « vitrine » : le plateau tournant, la baie d'atelier, la voiture — mais
+`pointer-events: none` de bout en bout (la feuille du garage rend le canvas
+réactif au regard ; `vice-city-rush-menu.css` le lui reprend), et la photo du
+modèle posée dessous en socle : sans WebGL, comme pendant le premier rendu, c'est
+elle qui tient le cadre. La voiture montrée n'est pas celle du joueur :
+`cityRushShowcaseCar()` (`src/games/cityRushRules.js`) désigne la pièce la plus
+chère du catalogue — aujourd'hui la PULSE RS — parce qu'un écran-titre vend une
+campagne, il n'en dresse pas l'inventaire. Derrière elle, au fond de la salle,
+les trois modèles les plus chers **qui ne sont pas au plateau** sont garés sur
+leur tapis, étiquette de prix au poteau : c'est le lot du vendeur, et il se
+renouvelle tout seul quand le catalogue change. Enfin, la page de préparation ne monte
+sa propre baie que hub refermé : deux scènes simultanées, ce seraient deux
+contextes WebGL et deux boucles de rendu pour un seul écran.
+
+Le codemod (`scripts/vice-city-rush-ink-sweep.mjs`) est un outil d'atelier, pas
+un générateur idempotent : il réécrit les feuilles à partir du vocabulaire
+d'avant, et se relance donc sur une peau neuve, avant les retouches à la main.
+La vérification, elle, est mécanique et rapide : elle lit la feuille de base, la
+peau, la typographie du site et l'ordre des `import` de la page.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-ink          # la langue du hub : jetons, équerres, thème clair, polices, ordre d'import
+npm run check:vice-city-fullscreen   # la page (et donc le hub) en plein écran, hub ouvert qui survit au passage
+```
+
 ## Vice City Rush : le mode au doigt et la course muette
 
 Deux promesses d'écran que `npm run check:city-rush-quiet` vérifie ensemble,
@@ -1898,8 +1999,9 @@ parce qu'elles font la même chose : laisser la route au pilote.
   glissement l'emportait sur le clic, et le mode restait dur à ouvrir. Elles
   sont maintenant **empilées en rangées pleine largeur** — icône à gauche,
   titre et détails à droite, `touch-action: manipulation` (pas de double tape,
-  pas de délai), aucun défilement latéral nulle part —, et passent **avant la
-  bannière Histoire** : une rangée, un doigt, la course. La grille s'adapte
+  pas de délai), aucun défilement latéral nulle part —, et **remplissent la
+  page COURSE RAPIDE** (la campagne a quitté cet écran pour la sienne) : une
+  rangée, un doigt, la course. La grille s'adapte
   d'elle-même : trois rangées sur un téléphone tenu droit, deux ou trois
   vignettes côte à côte dès que l'écran s'élargit (tablette, téléphone couché),
   et sur une fenêtre basse le chapeau d'étape, le libellé « cours libres » et la
@@ -1923,7 +2025,7 @@ parce qu'elles font la même chose : laisser la route au pilote.
 - `src/games/ViceCityRushPage.jsx` — `showToast` (sourd pendant la course),
   `startRace` (qui vide la fenêtre des menus), et plus aucun message branché
   sur les effets du moteur ;
-- `src/games/vice-city-rush-comic.css` — la section « Choix du mode au doigt »
+- `src/games/vice-city-rush-hub-skin.css` — la section « Choix du mode au doigt »
   (grille empilée, `touch-action`, rappels de gestes au lieu du clavier) et les
   paliers « tablette » et « écrans bas » ;
 - `tests/city-rush-hud.test.js` — le contrat muet (aucune surface de message
@@ -2147,6 +2249,58 @@ Comme le hasard décide du trafic et des bonus,
 `CITY_RUSH_SMOKE_SEED=31 npm run check:city-rush-smoke -- --city=nordschleife`
 rejoue exactement le même scénario.
 
+## Vice City Rush : une page par famille de courses
+
+L'écran de préparation de Vice City Rush empilait tout sur un seul écran
+« modes » : la campagne, les tournois, les trois modes libres et le tour
+guidé. Il est découpé en **pages**, et une page ne contient que ce qu'elle
+vend. L'entrée choisie dans le hub de lancement (`ViceCityRushMainMenu`) est
+la page ouverte ; une barre d'onglets (`.city-rush-hub-bar` >
+`.city-rush-pages`, en tête de l'écran de préparation) permet d'en changer sans
+repasser par le logo.
+
+| Page | Ce qu'elle tient | Ce qu'elle ne ressert plus |
+| --- | --- | --- |
+| **HISTOIRE** | la bannière du chapitre en cours, la liste des chapitres atteints, le compteur d'étoiles | les modes libres, les tournois |
+| **TOURNOIS** | les quatre plateaux, leur barème, leurs titres gagnés | les modes libres, la campagne |
+| **COURSE RAPIDE** | les trois modes libres (`circuit`, `sprint`, `poursuite`) et le tour guidé | **le mode histoire**, les tournois |
+| **GARAGE** | le catalogue du concessionnaire, prix et billets verts | un départ de course |
+
+Deux choses suivent ce découpage, et elles tiennent dans l'état de la page :
+
+- `introStep` prend les identifiants des pages (`story`, `tournament`, `mode`,
+  `garage`) ; le parcours d'une course reste `mode → city → garage`, et le
+  **stepper** ne se montre que là — une page de liste n'a pas d'étapes à
+  numéroter, et le garage ouvert en concession n'est pas « l'étape 3 sur 3 » ;
+- la surimpression de préparation reprend ce même identifiant en classe
+  (`is-step-mode`, `is-step-story`, …), et **c'est elle qui décide de la grille**
+  dans `vice-city-rush-hub-skin.css` : une page ne s'y reconnaît plus à la
+  présence d'un bloc (`:has(.cr-story-hub)` avait ce défaut : la campagne tenant
+  deux pages, la règle aurait habillé la mauvaise) ;
+- le garage a **deux vies**, tenues par `garageVisit`. En `'flow'`, il ferme un
+  parcours : le tap sur une voiture possédée lance la course (le pilote se
+  choisit juste au-dessus, et c'est ce dernier geste qui demande le plein écran
+  sur téléphone). En `'shop'` — l'entrée GARAGE du menu, ou l'onglet — il est
+  le **concessionnaire** : la carte d'un modèle qui n'est pas à toi
+  l'**achète** (`purchaseCityRushCar`, billets débités, sauvegarde écrite,
+  pastille qui passe à « ACHETÉE »), la carte d'un modèle possédé le **monte au
+  plateau** et le choisit, et **rien ne démarre**. Le pilote n'y a rien à faire
+  — ce n'est pas un départ — et un bouton « PRENDRE LA PISTE » ramène à la page
+  des courses libres, qui déroulera mode → ville → voiture.
+
+La page HISTOIRE ne plonge plus directement dans le chapitre en cours : elle
+l'ouvre en le montrant, parce que reprendre un chapitre déjà atteint est un
+choix fréquent et que le menu du jeu ne doit pas décider à la place du joueur.
+Un tournoi abandonné ou sacré (« ← » du garage, bouton « AUTRES TOURNOIS » de
+l'arrivée) ramène à la page TOURNOIS, pas au sélecteur de modes.
+
+```bash
+npm run check:city-rush-menu         # chaque entrée ouvre sa page, aucune ne ressert le contenu d'une autre
+npm run check:city-rush-garage       # les voitures offertes, et l'achat au concessionnaire (portefeuille, sauvegarde, aucun départ)
+npm run check:city-rush-tournament   # le plateau se choisit page TOURNOIS et s'abandonne en y revenant
+npm run check:city-rush-quiet        # chaque page a sa grille, lue dans « is-step-* » — et la course reste muette
+```
+
 ## Vice City Rush : les tournois
 
 Le jeu (`/jeu/vice-city-rush`) propose quatre **tournois** — la **Coupe Sunset**
@@ -2157,7 +2311,8 @@ des Légendes** (New York, Nordschleife, Vice City). Chaque tournoi se joue en
 la fin, **sans police ni armes** : la grille et les règles sont imposées, seul
 le pilotage compte.
 
-Le hub des tournois (l'étape « mode » de l'accueil) les affiche en ordre : le
+La page TOURNOIS — c'est elle qui tient la liste des plateaux, voir la section
+« une page par famille de courses » — les affiche en ordre : le
 suivant se débloque en terminant le précédent, qu'on soit champion ou non. Une
 manche courue **ne se rejoue pas** — le bouton propose la suivante, et la
 touche Entrée l'enchaîne aussi. Les points suivent le barème 10 · 6 · 3, et les

@@ -14,6 +14,12 @@
  *   · toucher une voiture offerte part en course (le monde reçoit bien son
  *     identifiant) au lieu d'afficher « IL TE MANQUE … BILLETS VERTS ».
  *
+ * La seconde moitié du fichier regarde l'autre vie du garage : ouverte par
+ * l'entrée GARAGE de l'écran-titre, la page est un concessionnaire. Avec un
+ * portefeuille de 900 billets, on y achète un modèle payant — l'argent baisse,
+ * la pastille passe à « ACHETÉE », la voiture se choisit — et rien ne part en
+ * course, parce qu'acheter n'est pas démarrer.
+ *
  * La vraie page est montée dans jsdom ; seul le moteur 3D est remplacé par la
  * doublure `scripts/vice-city-world-stub.jsx`, qui expose les props reçues
  * (`worldProbe.props`).
@@ -23,8 +29,9 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
-import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
+import { dismissTitleMenu, openHubPage } from './vice-city-title-menu-dismiss.jsx';
 import { CITY_RUSH_CARS, CITY_RUSH_FREE_CAR_IDS } from '../src/games/cityRushRules.js';
+import { CITY_RUSH_PROGRESS_KEY } from '../src/games/cityRushProgress.js';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -198,6 +205,115 @@ export async function checkViceCityGarage(assert) {
   );
 
   await page.unmount();
+
+  // ── Le garage, page d'achat : le prix devient un geste, pas un départ ─────
+  window.localStorage.setItem(CITY_RUSH_PROGRESS_KEY, JSON.stringify({
+    cash: 900,
+    ownedCarIds: [],
+    completedCourseIds: [],
+    storyChapter: 0,
+    storyEnding: '',
+    storyVersion: 2,
+    storyStars: {},
+  }));
+  const shop = await mountPage();
+  const shopNode = shop.node;
+  await openHubPage(shopNode, 'GARAGE');
+  await settle(30);
+
+  const shopCards = [...shopNode.querySelectorAll('.city-rush-car-card')];
+  const firstPaidId = CITY_RUSH_CARS.find((car) => !CITY_RUSH_FREE_CAR_IDS.includes(car.id))?.id;
+  const firstPaid = CITY_RUSH_CARS.find((car) => car.id === firstPaidId);
+  const indexOfPaid = CITY_RUSH_CARS.findIndex((car) => car.id === firstPaidId);
+  const paidCard = shopCards[indexOfPaid];
+  check('le concessionnaire a bien sa carte payante', Boolean(paidCard), `carte ${indexOfPaid}`);
+  check(
+    'la carte payante annonce son prix et le geste « acheter »',
+    /ACHETER ·/.test(squash(paidCard?.querySelector('.city-rush-card-action')?.textContent))
+      && squash(paidCard?.textContent).includes(cash(firstPaid.price)),
+    `action « ${squash(paidCard?.querySelector('.city-rush-card-action')?.textContent)} »`,
+  );
+  check(
+    'une carte hors de prix reste au mur, prix et manque écrits',
+    shopCards.some((card) => card.disabled === true && /MANQUE /.test(squash(card.querySelector('.city-rush-card-action')?.textContent))),
+  );
+  check(
+    'la page d’achat ne choisit pas le pilote',
+    !shopNode.querySelector('.city-rush-driver-select'),
+  );
+  check(
+    'la plaque du plateau nomme la voiture qui tourne, même sans étapes',
+    squash(shopNode.querySelector('.city-rush-hub-plate')?.textContent).length > 0
+      && !shopNode.querySelector('.city-rush-stepper'),
+    `plaque « ${squash(shopNode.querySelector('.city-rush-hub-plate')?.textContent)} »`,
+  );
+  check(
+    'aucune étape de parcours n’est ouverte sur la page d’achat',
+    !shopNode.querySelector('.city-rush-stepper'),
+    'le stepper doit rester au parcours mode → ville → garage',
+  );
+
+  // L'onglet GARAGE porte un compteur de collection, pas un numéro d'étape : il
+  // doit dire exactement autant de voitures possédées que la grille en montre
+  // sans cadenas — et c'est ce compteur que l'achat fait bouger.
+  const ownedInGrid = () => shopNode.querySelectorAll('.city-rush-car-card:not(.is-locked)').length;
+  const tabCount = () => squash(shopNode.querySelector('.city-rush-page-tab.is-active')?.textContent);
+  const shownCounter = () => (tabCount().match(/(\d+)\s*\/\s*(\d+)/) ?? []).slice(1).map(Number);
+  const counterBefore = shownCounter()[0];
+  await click(paidCard);
+  await settle(40);
+  check(
+    `l’achat de la ${firstPaid?.name} débite ${cash(firstPaid.price)} billets`,
+    /-/.test('') === false && squash(shopNode.querySelector('.city-rush-wallet')?.textContent).includes(cash(900 - (Number(firstPaid?.price) || 0))),
+    `porte-monnaie lu « ${squash(shopNode.querySelector('.city-rush-wallet')?.textContent)} »`,
+  );
+  check(
+    'la carte achetée change de pastille',
+    /ACHETÉE/.test(squash(paidCard.querySelector('.city-rush-car-lock-badge')?.textContent)),
+    `pastille « ${squash(paidCard.querySelector('.city-rush-car-lock-badge')?.textContent)} »`,
+  );
+  check(
+    'acheter ne lance aucune course',
+    !shopNode.querySelector('.city-rush-countdown') && !shopNode.querySelector('.city-rush-hud'),
+  );
+  check(
+    'l’onglet GARAGE compte les voitures du client, pas les étapes',
+    shownCounter()[0] === ownedInGrid(),
+    `onglet « ${tabCount()} » pour ${ownedInGrid()} cartes sans cadenas`,
+  );
+
+  check(
+    'l’onglet a suivi l’achat',
+    shownCounter()[0] === counterBefore + 1 && shownCounter()[0] === ownedInGrid(),
+    `onglet « ${tabCount()} », ${ownedInGrid()} voitures sans cadenas`,
+  );
+
+  // La voiture payée est à toi : la retoucher la monte au plateau, et c'est
+  // encore le CTA qui mène au départ — pas la carte.
+  await click(paidCard);
+  await settle(30);
+  check(
+    'la voiture achetée se choisit au plateau',
+    paidCard.classList.contains('is-selected') && /AU PLATEAU/.test(squash(paidCard.querySelector('.city-rush-card-action')?.textContent)),
+    `action « ${squash(paidCard.querySelector('.city-rush-card-action')?.textContent)} »`,
+  );
+  const savedShop = JSON.parse(window.localStorage.getItem(CITY_RUSH_PROGRESS_KEY) || '{}');
+  check(
+    'l’achat est écrit dans la sauvegarde',
+    (savedShop.ownedCarIds || []).includes(firstPaidId) && savedShop.cash === 900 - (Number(firstPaid.price) || 0),
+    JSON.stringify({ cash: savedShop.cash, ownedCarIds: savedShop.ownedCarIds }),
+  );
+  check(
+    'la plaque dit la voiture achetée, plus un aperçu survolé',
+    /ACHETÉE/.test(squash(shopNode.querySelector('.city-rush-hub-plate')?.textContent)),
+    `plaque « ${squash(shopNode.querySelector('.city-rush-hub-plate')?.textContent)} »`,
+  );
+  await click(mustFind(shopNode, '.city-rush-dealer-cta', 'le bouton « prendre la piste »'));
+  await settle(30);
+  check('le CTA du concessionnaire rend la page des courses libres', Boolean(shopNode.querySelector('.city-rush-mode-card')));
+  check('le départ n’a pas été volé au passage', !shopNode.querySelector('.city-rush-countdown'));
+
+  await shop.unmount();
   timers.restore();
 
   if (failures.length) {

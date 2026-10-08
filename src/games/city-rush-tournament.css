@@ -70,7 +70,7 @@
   gap: 7px;
   min-height: 250px;
   padding: 18px 14px 14px;
-  border-radius: 16px;
+  border-radius: 2px;
   background: rgba(255,255,255,0.04);
   border: 1px solid var(--cr-border);
   color: var(--cr-text);
@@ -144,7 +144,7 @@
   width: 42px;
   height: 42px;
   margin-top: 4px;
-  border-radius: 12px;
+  border-radius: 2px;
   background: color-mix(in srgb, var(--tournament-accent) 14%, rgba(255,255,255,0.04));
   border: 1px solid color-mix(in srgb, var(--tournament-accent) 18%, transparent);
   font-size: 20px;
@@ -200,7 +200,7 @@
   gap: 6px;
   width: min(560px, 100%);
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 2px;
   background: rgba(0, 0, 0, 0.42);
   border: 1px solid var(--cr-border);
 }
@@ -233,7 +233,7 @@
   align-items: center;
   gap: 10px;
   padding: 5px 8px;
-  border-radius: 8px;
+  border-radius: 2px;
   border: 1px solid transparent;
 }
 
