@@ -59,9 +59,15 @@ test('les missions racontent des objectifs lisibles et utilisent des villes/parc
   assert.equal(firstMission?.rules.playerRole, 'police');
   assert.match(firstMission?.briefing || '', /tu incarnes un officier de police/i);
   assert.equal(firstMission?.rules.playerCarId, 'city-hatch');
-  assert.equal(firstMission?.rules.rivalHealth.dealer, 15);
-  assert.equal(firstMission?.targetHealth, 15);
-  assert.match(firstMission?.checklist.join(' ') || '', /quinze impacts/i);
+  assert.deepEqual(firstMission?.targetIds, ['dealer', 'accomplice']);
+  assert.equal(firstMission?.rules.missionEscapeTriggerId, 'dealer');
+  assert.equal(firstMission?.rules.missionEscapeTargetId, 'accomplice');
+  assert.ok(firstMission?.rules.missionEscapeStartLead > 0);
+  assert.equal(firstMission?.rules.rivalHealth.dealer, 25);
+  assert.equal(firstMission?.rules.rivalHealth.accomplice, 25);
+  assert.equal(firstMission?.targetHealth, 25);
+  assert.match(firstMission?.checklist.join(' ') || '', /25 PV/i);
+  assert.match(firstMission?.checklist.join(' ') || '', /complice/i);
   assert.equal(firstMission?.rules.pistolPickupRowInterval, 12);
   assert.equal(firstMission.rules.startingPistolAmmo, CITY_RUSH_PISTOL_MAX_AMMO);
   assert.ok(firstMission.rules.missionTargetLeadMin > 2);
@@ -129,14 +135,17 @@ test('la sauvegarde persiste les missions sans toucher à la carrière, au garag
   assert.ok(CITY_RUSH_CARS.some((car) => car.id === CITY_RUSH_STARTER_CAR_ID));
 });
 
-test('la Mission 1 exige le dealer neutralisé et une vraie arrivée', () => {
+test('la Mission 1 exige le dealer et son complice neutralisés avant une vraie arrivée', () => {
   const mission = getCityRushMission('dealer-pursuit');
+  const dealerDown = [{ id: 'dealer', health: 0 }, { id: 'accomplice', health: 25 }];
+  const bothDown = [{ id: 'dealer', health: 0 }, { id: 'accomplice', health: 0 }];
   assert.equal(evaluateCityRushMission(mission, cleanFinish({ racers: [{ id: 'dealer', health: 1 }], pistolPickups: 1 })), false);
-  assert.equal(evaluateCityRushMission(mission, cleanFinish({ racers: [{ id: 'dealer', health: 0 }] })), false, 'la collision seule ne remplace pas le chargeur ramassé');
-  assert.equal(evaluateCityRushMission(mission, cleanFinish({ racers: [{ id: 'dealer', health: 0 }], pistolPickups: 1 })), true);
-  assert.equal(evaluateCityRushMission(mission, cleanFinish({ destroyed: true, racers: [{ id: 'dealer', health: 0 }], pistolPickups: 1 })), false);
-  assert.equal(evaluateCityRushMission(mission, cleanFinish({ timedOut: true, racers: [{ id: 'dealer', health: 0 }], pistolPickups: 1 })), false);
-  assert.match(cityRushMissionResultText(mission, cleanFinish({ racers: [{ id: 'dealer', health: 1 }] }), false), /dealer doit être neutralisé/);
+  assert.equal(evaluateCityRushMission(mission, cleanFinish({ racers: dealerDown, pistolPickups: 1 })), false, 'le complice doit aussi être rattrapé');
+  assert.equal(evaluateCityRushMission(mission, cleanFinish({ racers: bothDown })), false, 'la collision seule ne remplace pas le chargeur ramassé');
+  assert.equal(evaluateCityRushMission(mission, cleanFinish({ racers: bothDown, pistolPickups: 1 })), true);
+  assert.equal(evaluateCityRushMission(mission, cleanFinish({ destroyed: true, racers: bothDown, pistolPickups: 1 })), false);
+  assert.equal(evaluateCityRushMission(mission, cleanFinish({ timedOut: true, racers: bothDown, pistolPickups: 1 })), false);
+  assert.match(cityRushMissionResultText(mission, cleanFinish({ racers: dealerDown }), false), /dealer et son complice doivent être neutralisés/);
 });
 
 test('la Mission 2 compte les contacts, la Mission 3 les voitures de police détruites', () => {

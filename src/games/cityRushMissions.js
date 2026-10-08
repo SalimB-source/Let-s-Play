@@ -11,18 +11,20 @@ export const CITY_RUSH_MISSIONS = Object.freeze([
     subtitle: 'INTERCEPTION · OCEAN DRIVE',
     cityId: 'vice-city',
     laps: 3,
-    briefing: 'Tu incarnes un officier de police de Vice City. Un dealer vient de forcer un barrage et fonce vers la sortie : prends le volant de ton intercepteur, utilise ton premier chargeur, reste dans sa voie, récupère les chargeurs rouges et neutralise sa compacte préparée, un peu plus rapide que ton intercepteur. Quinze tirs suffisent à percer sa coque.',
-    objective: 'Ramasse au moins un chargeur rouge, neutralise le dealer et termine les 3 tours.',
-    shortObjective: 'CHARGEURS ROUGES · DEALER IMMOBILISÉ · 3 TOURS',
+    briefing: 'Tu incarnes un officier de police de Vice City. Un dealer vient de forcer un barrage et fonce vers la sortie : prends le volant de ton intercepteur, utilise ton premier chargeur, reste dans sa voie et récupère les chargeurs rouges. Sa compacte préparée, un peu plus rapide que ton intercepteur, encaisse 25 impacts. Dès qu’elle est neutralisée, la voiture de son complice surgit et prend la fuite : rattrape-la et perce aussi ses 25 PV avant de terminer les trois tours.',
+    objective: 'Ramasse au moins un chargeur rouge, neutralise le dealer puis son complice, et termine les 3 tours.',
+    shortObjective: 'DEALER 25 PV · COMPLICE 25 PV · 3 TOURS',
     checklist: Object.freeze([
       'Tu pars avec 7 balles. Récupère ensuite les chargeurs rouges d’AK-47 dans ta voie de départ.',
-      'Le dealer démarre dans ta voie : garde-le dans ta mire et maintiens le bouton de tir ou Z.',
-      'Tire dans sa coque vulnérable : quinze impacts la neutralisent. Termine ensuite les 3 tours.',
+      'Le dealer démarre dans ta voie : garde-le dans ta mire et vide ses 25 PV.',
+      'À la destruction du dealer, son complice surgit et s’enfuit : rattrape-le, neutralise ses 25 PV, puis termine les 3 tours.',
     ]),
-    successText: 'Le dealer est immobilisé et la ligne d’arrivée est franchie. L’interception est validée.',
-    failureText: 'Le dealer doit être neutralisé avant que tu franchisses la ligne.',
+    successText: 'Le dealer et son complice sont immobilisés, puis la ligne d’arrivée est franchie. L’interception est validée.',
+    failureText: 'Le dealer et son complice doivent être neutralisés avant que tu franchisses la ligne.',
     targetId: 'dealer',
-    targetHealth: 15,
+    targetIds: Object.freeze(['dealer', 'accomplice']),
+    escapeTargetId: 'accomplice',
+    targetHealth: 25,
     requiredPistolPickups: 1,
     rules: Object.freeze({
       weaponsEnabled: true,
@@ -36,19 +38,22 @@ export const CITY_RUSH_MISSIONS = Object.freeze([
       missionTargetStartDistance: 34,
       missionTargetLeadMin: 24,
       missionTargetLeadMax: 80,
+      missionEscapeTriggerId: 'dealer',
+      missionEscapeTargetId: 'accomplice',
+      missionEscapeStartLead: 40,
       startingPistolAmmo: 7,
-      rivalCarIds: Object.freeze({ dealer: 'nova-18-gt' }),
-      rivalPace: Object.freeze({ dealer: 0.92 }),
-      rivalHealth: Object.freeze({ dealer: 15 }),
+      rivalCarIds: Object.freeze({ dealer: 'nova-18-gt', accomplice: 'night-comet' }),
+      rivalPace: Object.freeze({ dealer: 0.92, accomplice: 0.96 }),
+      rivalHealth: Object.freeze({ dealer: 25, accomplice: 25 }),
       pistolPickupRowInterval: 12,
     }),
     evaluate(result) {
-      const dealer = Array.isArray(result?.racers)
-        ? result.racers.find((racer) => racer?.id === 'dealer')
-        : null;
-      return Number.isFinite(Number(dealer?.health))
-        && Number(dealer.health) <= 0
-        && Number(result?.pistolPickups) >= 1;
+      const racers = Array.isArray(result?.racers) ? result.racers : [];
+      const targetsNeutralized = ['dealer', 'accomplice'].every((targetId) => {
+        const target = racers.find((racer) => racer?.id === targetId);
+        return Number.isFinite(Number(target?.health)) && Number(target.health) <= 0;
+      });
+      return targetsNeutralized && Number(result?.pistolPickups) >= 1;
     },
   }),
   Object.freeze({
