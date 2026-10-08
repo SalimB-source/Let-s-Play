@@ -1,7 +1,20 @@
 /* ── Tournois de Vice City Rush : hub des 4 coupes et classement général ─────
    Trois courses imposées, sans police ni armes, avec les mêmes rivaux : le hub
    vit sur l'étape « mode » de l'intro (sous la campagne Histoire), le
-   classement sur l'écran d'arrivée de chaque manche. */
+   classement sur l'écran d'arrivée de chaque manche.
+
+   Un tournoi aligne **huit** voitures de course (voir
+   `CITY_RUSH_TOURNAMENT_RACER_SLOTS`) : le classement général passe donc de
+   trois à huit lignes. Il défile plutôt que de pousser l'écran d'arrivée hors
+   du cadre — la liste des positions du HUD, elle, défile dans la feuille du
+   HUD (voir `vice-city-rush-hud.css`). */
+
+.cr-tournament-standings {
+  max-height: min(52vh, 430px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
 
 /* Hub : même gabarit que la campagne Histoire, en doré plutôt qu'en rose. */
 .city-rush-page .cr-tournament-hub {
