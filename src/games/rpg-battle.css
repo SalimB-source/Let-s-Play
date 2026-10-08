@@ -547,9 +547,9 @@
 .rpg-card__text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  min-height: 28%;
-  padding: 5px 7px;
+  gap: 2px;
+  min-height: 0;
+  padding: 3px 6px;
   border-radius: 4px;
   border: 1px solid #9a8f74;
   background:
@@ -597,7 +597,18 @@
 .rpg-card__tags { display: flex; gap: 4px; flex-wrap: wrap; }
 .rpg-card__text .rpg-tag { border-color: #9a8f74; color: #4a4132; background: rgba(0, 0, 0, .05); }
 
-/* Pied de carte : ligne de collection à gauche, badge doré de PV à droite. */
+/* Pied de carte : ⚔ attaque (doré) · étage · 🛡 défense (acier). */
+.rpg-card__stat--atk {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1.5px solid #000;
+  background: linear-gradient(180deg, #ffe9a0, #d9a520);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .45) inset, 0 1px 2px rgba(0, 0, 0, .5);
+  font: 800 11px/1.5 Georgia, serif;
+  letter-spacing: .02em;
+  color: #241a04;
+}
 .rpg-card__foot {
   display: flex;
   justify-content: space-between;
@@ -620,15 +631,11 @@
   padding: 1px 8px;
   border-radius: 6px;
   border: 1.5px solid #000;
-  background: linear-gradient(180deg, #f3e6bb, #cbb277);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .4) inset, 0 1px 2px rgba(0, 0, 0, .5);
+  background: linear-gradient(180deg, #eef2f5, #9db0be);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 1px 2px rgba(0, 0, 0, .5);
   font: 800 11px/1.5 Georgia, serif;
   letter-spacing: .02em;
-  color: #1c1710;
-}
-
-.rpg-card--ennemi .rpg-card__pt {
-  background: linear-gradient(180deg, #e8d3c2, #b98d74);
+  color: #10161c;
 }
 
 /* États de la carte posée. */

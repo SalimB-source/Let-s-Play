@@ -77,7 +77,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(container.textContent.includes('Parade'), false, 'le prototype ne doit plus proposer de parade');
 
   const enemyHp = () => [...container.querySelectorAll('.rpg-card--ennemi .rpg-card__pt')]
-    .map((node) => Number(node.textContent.split('/')[1]?.trim()))
+    .map((node) => Number(node.textContent.replace(/\D/g, '')))
     .reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
   const hpBefore = enemyHp();
   assert.ok(hpBefore > 500, `PV ennemis inattendus : ${hpBefore}`);

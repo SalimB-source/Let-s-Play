@@ -1,56 +1,82 @@
-# 05 — Le concept cartes
+# 05 — Le concept cartes (v2 : le duel de sorciers)
 
-Le combat du Sablier de Bab El est un **jeu de cartes** posé sur une table en
-bois. Tout ce qui existe dans le combat est une carte ; rien d'autre ne se
-clique. Implémenté dans `src/games/rpgCards.js` (catalogue), `rpgCombat.js`
-(règles) et `CardTable.jsx` (la table, 100 % DOM).
+Le combat du Sablier de Bab El est un **duel de cartes** posé sur une table
+en bois : deux sorciers face à face, chacun avec son paquet, sa main et ses
+terrains. Tout ce qui existe dans le combat est une carte ; rien d'autre ne
+se clique. Implémenté dans `src/games/rpgCards.js` (catalogue),
+`rpgCombat.js` (règles) et `CardTable.jsx` (la table, 100 % DOM).
 
-## 1. Anatomie d'une carte (référence : Magic)
+## 1. Les quatre types de cartes
 
-- **Liseré noir** extérieur, **cadre intérieur teinté par l'élément**
-  (sable = ocre, eau = bleu, braise = rouge, verre = cyan, souffle = gris,
-  encre = violet) ;
-- **Bannière de titre** parchemin doré : nom à gauche, **coût en pastilles**
-  rondes à droite (symboles d'élément pour les créatures, sable ⛃ pour les
-  sorts) ;
-- **Fenêtre d'illustration** : le portrait peint du personnage ;
-- **Ligne de type** sur bandeau sombre : « Créature légendaire — … » +
-  symbole d'édition ;
-- **Encadré de texte beige, encre noire** : la règle de la carte, puis la
-  saveur en italique ;
-- **Badge doré** en bas à droite : les PV ; ligne de collection en bas à
-  gauche (étage, édition).
+Chaque carte porte **deux chiffres** : **⚔ attaque** (badge doré) et
+**🛡 défense** (badge acier). La pioche : **1 carte par tour**, main
+limitée à 7.
 
-## 2. Trois familles
+### Terrain
 
-1. **Créatures** — les personnages. Au départ, UNE seule attaque de base
-   (gratuite, une fois par tour). Ils gagnent des capacités en avançant :
-   ce sont les pouvoirs qui entrent dans la collection.
-2. **Pouvoirs** — les sorts collectionnables. Payés en **sable** (le mana),
-   joués depuis la main, puis au cimetière. Les **éphémères** (Garde, Bulle,
-   Rempart) se posent pendant le tour ennemi, en réponse à la carte annoncée :
-   de l'information, jamais des réflexes.
-3. **Cartes ennemies** — chaque ennemi a son paquet ; son intention est la
-   carte qu'il posera à son tour, annoncée face visible.
+- Comme les terrains de Magic : joué **gratuit, une fois par tour**, il
+  reste sur la table et produit du **sable** (le mana) de son élément
+  chaque tour (sable, eau, braise, verre, souffle, encre).
+- Pas d'attaque, une petite défense : l'adversaire peut s'en prendre aux
+  terrains pour couper le sable.
 
-## 3. La boucle de tour
+### Créature
 
-- À son tour, un compagnon **pioche 1** (main max 7) ;
-- il joue : sa **carte de base** (une fois), **« Sonder le sol »** (une fois,
-  +20 sable), et les pouvoirs qu'il peut **payer en sable** de « notre sol » ;
-- « Fin du tour » passe la main ; l'ennemi pose alors ce qu'il avait annoncé.
+- Le nerf du combat. Payée en sable, elle arrive sur la table, attaque les
+  créatures adverses ou le sorcier adverse, et encaisse sur sa défense.
+- Une créature qui arrive ne frappe pas le tour même (elle observe).
+- Capacités imprimées (vol, ruée, barrage…) selon la carte.
 
-Le sable tombe de moitié des PV perdus, se vole (Souffle), se convertit en
-soins (Récolte) : c'est à la fois le mana et le territoire.
+### Magie
 
-## 4. Collection & draft
+- Les sorts : dégâts, soins, barrages, altérations. Payés en sable,
+  résolus, puis au cimetière.
+- Les **éphémères** se jouent pendant le tour de l'adversaire, en réponse
+  à la carte annoncée : de l'information, jamais des réflexes.
+- Le chiffre d'attaque est sa puissance ; la défense, sa résistance à
+  l'interruption.
 
-On commence avec un petit classeur (`RPG_STARTING_COLLECTION`). Après chaque
-vague, un **draft** propose trois cartes hors collection ; on en choisit une.
-C'est la progression : les personnages « gagnent des capacités en avançant ».
+### Héros (façon arpenteurs)
 
-## 5. Raretés
+- **Salem, Yamina, Boualem, Fériel, Tarek.** Les héros **ne sont pas dans
+  la main ni le paquet de départ** : ce sont des cartes rares qui
+  s'obtiennent en exploration et par le draft, et qui arrivent comme les
+  **arpenteurs de Magic** (copié pour l'instant — on ajustera ensuite) :
+  - ils entrent en jeu avec **3 compteurs de loyauté** ;
+  - leurs capacités coûtent de la loyauté (une par tour) ;
+  - l'adversaire peut les attaquer directement pour retirer des compteurs ;
+  - à **0 loyauté**, le héros quitte la table (il n'est pas perdu : il
+    revient au palier suivant, plus fort).
+- Eux aussi ont ⚔ et 🛡 imprimés.
 
-Commune / Rare / Mythique. Les mythiques exigent le **Nom complet**
-(3 segments) — la même serrure que le prototype précédent, devenue une
-exigence de deckbuilding.
+## 2. La boucle de tour
+
+1. **Piocher 1** ;
+2. poser **un terrain** (gratuit) ;
+3. jouer des **créatures** et des **magies** en payant le sable ;
+4. **attaquer** avec les créatures prêtes — l'adversaire annonce ses
+   bloqueurs ;
+5. **Fin du tour** (la grande pastille dorée ⧗).
+
+## 3. L'adversaire : un sorcier
+
+L'adversaire n'est pas un monstre passif : c'est un **sorcier** avec son
+propre paquet, sa propre main (face cachée) et ses propres terrains.
+Chaque tour, il pioche une carte et la joue comme nous — la carte qu'il
+pose est annoncée face visible avant de se résoudre. Les vagues sont ses
+créatures qui arrivent les unes après les autres.
+
+## 4. Anatomie d'une carte (compacte)
+
+Les cartes posées sont **courtes** — la table reste lisible :
+
+- **Bannière de titre** : nom + pastilles d'élément ;
+- **Fenêtre d'illustration** : le portrait peint ;
+- **Ligne de type** : le titre direct (petites capitales) + rareté
+  (✦ mythique / ● commune) ;
+- **Filet central** (une ligne) : segments de Nom et états (alliés),
+  intention annoncée (ennemis) ;
+- **Pied** : ⚔ attaque · étage · 🛡 défense.
+
+Plus de grand encadré de règles ni de saveur sur les cartes posées : la
+règle détaillée vit dans la carte en main et dans le journal.

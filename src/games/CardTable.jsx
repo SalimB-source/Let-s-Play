@@ -2,13 +2,12 @@
  * La table de jeu — « Le Sablier de Bab El ».
  *
  * Le combat est une partie de cartes posée sur une table en bois : chaque
- * acteur EST sa carte, dans l'anatomie d'une carte Magic — liseré noir
- * extérieur, cadre intérieur teinté par l'élément, bannière de titre avec le
- * coût en pastilles à droite, fenêtre d'illustration (le portrait peint),
- * ligne de type sur bandeau sombre, encadré de texte beige à texte noir
- * (règle + saveur en italique), et le badge doré de puissance/PV en bas à
- * droite. L'adversaire en haut, l'équipe en bas, cartes légèrement de
- * travers comme posées à la main.
+ * acteur EST sa carte, dans l'anatomie d'une carte Magic compacte — liseré
+ * noir extérieur, cadre teinté par l'élément, bannière de titre, fenêtre
+ * d'illustration (le portrait peint), ligne de type (le titre direct), un
+ * fin filet central (Nom et états, intention annoncée côté ennemi), et le
+ * pied : ⚔ attaque · étage · 🛡 défense. L'adversaire en haut, l'équipe en
+ * bas, cartes légèrement de travers comme posées à la main.
  *
  * Pur DOM : aucune WebGL requise, la table s'affiche partout. Comme avant,
  * ce composant ne calcule aucune règle : il lit `battle` et consomme
@@ -25,21 +24,12 @@ import {
   rpgEstimateIntent,
 } from './rpgCombat';
 import { RPG_ELEMENT_ICONS } from './rpgContent';
-import { RPG_BASIC_ATTACKS } from './rpgCards';
 
 const portraitSrc = (actor) =>
   `${import.meta.env.BASE_URL}portraits/${actor.portrait ?? actor.id}.jpg`;
 
 /** Légères rotations : des cartes posées à la main, pas alignées au cordeau. */
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
-
-/** Saveur imprimée sous la règle des cartes ennemies. */
-const ENEMY_FLAVOR = {
-  balayeur: 'Il balaie. Quelqu’un doit bien le faire.',
-  greffier: 'Votre nom est déjà couché. Reste le tampon.',
-  sonnier: 'Le tocsin n’avertit pas. Il conclut.',
-  prototype: 'Construit pour descendre à la place des hommes. On l’a laissé monter.',
-};
 
 /** Pastilles de coût rondes, façon symboles de mana. */
 function CostPips({ element, count = 2 }) {
@@ -97,8 +87,10 @@ function IntentCard({ battle, actor, onPick }) {
   );
 }
 
-/** Carte ennemie, posée en haut de la table. */
+/** Carte ennemie, posée en haut de la table. Version courte : bannière,
+ *  portrait, titre, intention annoncée, puis ⚔ attaque / 🛡 défense. */
 function FoeCard({ battle, actor, selected, onPick, tilt, fx, pop }) {
+  const hasText = actor.alive || actor.fele || actor.blind > 0 || actor.weaken > 0;
   return (
     <article
       className={[
@@ -126,29 +118,28 @@ function FoeCard({ battle, actor, selected, onPick, tilt, fx, pop }) {
         {actor.role}
         <em className="rpg-card__set" title="Commune" aria-hidden="true">●</em>
       </span>
-      <span className="rpg-card__text">
-        {actor.alive && <IntentCard battle={battle} actor={actor} onPick={onPick} />}
-        <span className="rpg-card__tags">
-          {actor.fele && <em className="rpg-tag rpg-tag--felure">FÊLÉ ×2</em>}
-          {actor.blind > 0 && <em className="rpg-tag">aveuglé</em>}
-          {actor.weaken > 0 && <em className="rpg-tag">affaibli</em>}
+      {hasText && (
+        <span className="rpg-card__text">
+          {actor.alive && <IntentCard battle={battle} actor={actor} onPick={onPick} />}
+          <span className="rpg-card__tags">
+            {actor.fele && <em className="rpg-tag rpg-tag--felure">FÊLÉ ×2</em>}
+            {actor.blind > 0 && <em className="rpg-tag">aveuglé</em>}
+            {actor.weaken > 0 && <em className="rpg-tag">affaibli</em>}
+          </span>
         </span>
-        <i className="rpg-card__flavor">« {ENEMY_FLAVOR[actor.id.split('-')[0]] ?? actor.role} »</i>
-      </span>
+      )}
       <footer className="rpg-card__foot">
-        <span className="rpg-card__col">
-          V·{String(battle.round).padStart(2, '0')} · BAB EL
-          <TierBadge tier={actor.tier} />
-        </span>
-        <span className="rpg-card__pt" title="Attaque / PV restants">{actor.atk}/{actor.hp}</span>
+        <span className="rpg-card__stat rpg-card__stat--atk" title="Attaque">⚔ {actor.atk}</span>
+        <TierBadge tier={actor.tier} />
+        <span className="rpg-card__pt" title="Défense (PV restants)">🛡 {actor.hp}</span>
       </footer>
     </article>
   );
 }
 
-/** Carte légendaire de l'équipe, posée en bas de la table. */
+/** Carte de héros, posée en bas de la table. Version courte : bannière,
+ *  portrait, titre, une ligne de Nom/états, puis ⚔ attaque / 🛡 défense. */
 function AllyCard({ battle, actor, active, selected, onPick, tilt, fx, pop }) {
-  const base = RPG_BASIC_ATTACKS[actor.id];
   return (
     <article
       className={[
@@ -178,11 +169,6 @@ function AllyCard({ battle, actor, active, selected, onPick, tilt, fx, pop }) {
         <em className="rpg-card__set rpg-card__set--mythique" title="Mythique" aria-hidden="true">✦</em>
       </span>
       <span className="rpg-card__text rpg-card__text--ally">
-        {base && (
-          <span className="rpg-card__rules">
-            <b>{base.name}.</b> {base.text} <small>(base : gratuite, une fois par tour)</small>
-          </span>
-        )}
         <span className="rpg-card__rules rpg-card__rules--meta">
           Nom
           <span className="rpg-name-segments" title={`${actor.nameSegments}/3 segments de Nom`}>
@@ -193,14 +179,11 @@ function AllyCard({ battle, actor, active, selected, onPick, tilt, fx, pop }) {
             {actor.guarding && <em className="rpg-tag">en garde</em>}
           </span>
         </span>
-        <i className="rpg-card__flavor">« {actor.line} »</i>
       </span>
       <footer className="rpg-card__foot">
-        <span className="rpg-card__col">
-          {String(actor.level).padStart(2, '0')} · BAB EL
-          <TierBadge tier={actor.tier} />
-        </span>
-        <span className="rpg-card__pt" title="Attaque / PV restants">{actor.atk}/{actor.hp}</span>
+        <span className="rpg-card__stat rpg-card__stat--atk" title="Attaque">⚔ {actor.atk}</span>
+        <TierBadge tier={actor.tier} />
+        <span className="rpg-card__pt" title="Défense (PV restants)">🛡 {actor.hp}</span>
       </footer>
     </article>
   );
