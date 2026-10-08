@@ -166,14 +166,15 @@ export async function checkRpgBattle(assert) {
   const notreSol = Number((container.textContent.match(/notre sol (\d+)/) ?? [null, NaN])[1]);
   assert.ok(notreSol >= 30, `le sable de poche doit être versé sur notre sol (lu : ${notreSol})`);
   assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit être au complet après le palier');
-  // La permutation n'est proposée que pendant le tour d'un compagnon.
-  let swapButton = null;
-  for (let attempt = 0; attempt < 40 && !swapButton; attempt += 1) {
+  // La permutation a été retirée de l'UI : on vérifie à la place que le gros
+  // bouton doré « Fin du tour » revient bien pendant le tour d'un allié.
+  let endTurnButton = null;
+  for (let attempt = 0; attempt < 40 && !endTurnButton; attempt += 1) {
     await act(async () => { await wait(300); });
-    swapButton = buttons().find((button) => button.textContent.includes('TAREK'));
+    endTurnButton = buttons().find((button) => button.textContent.includes('Fin du tour'));
     if (container.querySelector('.rpg-overlay')) break;
   }
-  assert.ok(swapButton, 'le bouton de permutation avec la réserve est absent');
+  assert.ok(endTurnButton, 'le bouton « Fin du tour » doit revenir pendant le tour d’un allié');
 
   await act(async () => { root.unmount(); });
 }

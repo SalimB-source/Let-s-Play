@@ -17,7 +17,7 @@ import {
   rpgPlayCard,
   rpgPlayableCards,
   rpgRewards,
-  rpgSwap,
+
   rpgTurnRing,
 } from './rpgCombat';
 import { cardById, CARD_RARITIES } from './rpgCards';
@@ -307,16 +307,6 @@ export default function RpgBattlePage() {
     later(pump, 260);
   }, [later, pump]);
 
-  const swapIn = useCallback((reserveActor) => {
-    const state = battleRef.current;
-    const actor = rpgCurrentActor(state);
-    if (!actor || actor.side !== 'equipe') return;
-    if (!rpgSwap(state, actor.id, reserveActor.id).ok) return;
-    audioRef.current.play('blip');
-    force();
-    later(pump, 520);
-  }, [later, pump]);
-
   // ── Ponctuations sonores d'état : cloche, fanfares, arpèges ─────────────
   const prevStrikeRef = useRef(0);
   useEffect(() => {
@@ -437,7 +427,7 @@ export default function RpgBattlePage() {
   const explore = exploreRef.current;
   const team = battle ? battle.actors.filter((a) => a.side === 'equipe') : [];
   const foes = battle ? battle.actors.filter((a) => a.side === 'ennemi') : [];
-  const reserve = battle ? battle.actors.filter((a) => a.side === 'reserve') : [];
+
   const ring = battle ? rpgTurnRing(battle, 6) : [];
   const isPlayerTurn = Boolean(current && current.side === 'equipe' && screen === 'combat');
   const playable = isPlayerTurn ? rpgPlayableCards(battle, current) : [];
@@ -722,14 +712,8 @@ export default function RpgBattlePage() {
                       />
                       Cristalliser ({RPG_CRISTALLISATION_COST} Verres)
                     </label>
-                    {reserve.map((actor) => (
-                      <button key={actor.id} type="button" className="rpg-btn rpg-btn--swap" onClick={() => swapIn(actor)}>
-                        <img className="rpg-btn__portrait" src={portraitSrc(actor)} alt="" aria-hidden="true" />
-                        ⇄ {actor.name}
-                      </button>
-                    ))}
-                    <button type="button" className="rpg-btn rpg-btn--ghost" onClick={endTurn}>
-                      Fin du tour →
+                    <button type="button" className="rpg-btn rpg-btn--endturn" onClick={endTurn}>
+                      ⧗ Fin du tour
                     </button>
                   </div>
               ) : (

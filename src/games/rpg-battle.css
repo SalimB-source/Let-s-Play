@@ -234,6 +234,30 @@
 .rpg-btn--primary { background: var(--yellow); border-color: var(--yellow); color: #161005; font-weight: 800; }
 .rpg-btn--ghost { background: transparent; }
 
+/* Fin du tour : la grande pastille dorée du Sablier, bien visible sur la table. */
+.rpg-btn--endturn {
+  min-height: 48px;
+  padding: 0 30px;
+  border-radius: 999px;
+  border: 2px solid #ffd619;
+  background: linear-gradient(180deg, #ffeeb0 0%, #f2c43d 55%, #d9a520 100%);
+  color: #2c2106;
+  font: 800 15px/1 var(--display);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 18px rgba(255, 214, 25, .35), inset 0 1px 0 rgba(255, 255, 255, .55);
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+.rpg-btn--endturn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.07);
+  box-shadow: 0 10px 26px rgba(255, 214, 25, .5), inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+
+.rpg-btn--endturn:active { transform: translateY(1px); filter: brightness(.95); }
+
 /* Bouton de permutation avec la réserve : le visage accompagne le nom. */
 .rpg-btn--swap { display: inline-flex; align-items: center; gap: 8px; }
 .rpg-btn__portrait {
