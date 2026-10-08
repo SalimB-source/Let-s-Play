@@ -14,22 +14,30 @@ limitée à 7.
 
 ### Terrain
 
-- Comme les terrains de Magic : joué **gratuit, une fois par tour**, il
-  reste sur la table et produit du **sable** (le mana) de son élément
-  chaque tour (sable, eau, braise, verre, souffle, encre).
-- Pas d'attaque, une petite défense : l'adversaire peut s'en prendre aux
-  terrains pour couper le sable.
+- Comme les terrains de Magic : **piochés**, posés **UN par tour**,
+  **engagés** pour produire un mana de leur couleur. Ils dégagent au
+  début de votre tour ; le mana non dépensé s'évapore.
+- Trois terrains pour commencer : **Montagne** (→ mana braise),
+  **Mer** (→ mana eau), **Plaines** (→ mana sable).
+- Les terrains restent sur la table : une petite défense, pas d'attaque.
+
+### Couleurs et paiement (façon Magic)
+
+- Chaque carte (créature, magie, héros) a un **type** : braise, eau ou
+  sable — les trois couleurs du set.
+- Payer un coût de N exige **N mana au total, dont au moins un de la
+  couleur de la carte** (comme « 2R » à Magic).
 
 ### Créature
 
-- Le nerf du combat. Payée en sable, elle arrive sur la table, attaque les
+- Le nerf du combat. Payée en mana, elle arrive sur la table, attaque les
   créatures adverses ou le sorcier adverse, et encaisse sur sa défense.
 - Une créature qui arrive ne frappe pas le tour même (elle observe).
 - Capacités imprimées (vol, ruée, barrage…) selon la carte.
 
 ### Magie
 
-- Les sorts : dégâts, soins, barrages, altérations. Payés en sable,
+- Les sorts : dégâts, soins, barrages, altérations. Payées en mana,
   résolus, puis au cimetière.
 - Les **éphémères** se jouent pendant le tour de l'adversaire, en réponse
   à la carte annoncée : de l'information, jamais des réflexes.
@@ -69,8 +77,8 @@ Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 ## 3. La boucle de tour
 
 1. **Piocher 1** ;
-2. poser **un terrain** (gratuit) ;
-3. jouer des **créatures** et des **magies** en payant le sable ;
+2. poser **un terrain** (un par tour), engager ses terrains ;
+3. jouer des **créatures** et des **magies** en payant le mana ;
 4. **attaquer** avec les créatures prêtes — l'adversaire annonce ses
    bloqueurs ;
 5. **Fin du tour** (la grande pastille dorée ⧗).

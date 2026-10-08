@@ -9,13 +9,16 @@
  * à l'arrivée ou quand elles sont détruites.
  */
 
-import { duelCardById } from './rpgCards.js';
+import { duelCardById, terrainById } from './rpgCards.js';
 
 export const RPG_PV_JOUEUR = 50;
 export const RPG_PV_SORCIER_BASE = 50;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 5;
 export const RPG_MAIN_DEPART = 5;
-export const RPG_SABLE_TOUR = 2;   // revenu provisoire en attendant les terrains
+export const RPG_COULEURS = ['braise', 'eau', 'sable'];
+
+const manaVide = () => ({ braise: 0, eau: 0, sable: 0 });
+const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[c], 0);
 
 /** PV d'un sorcier adverse selon sa puissance. */
 export const rpgSorcierPv = (puissance = 0) =>
@@ -36,12 +39,13 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   };
   const duel = {
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, sable: 0, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
       puissance: sorcierPuissance,
-      sable: 0,
+      mana: manaVide(),
+      terrainPose: false,
       deck: melanger(sorcierDeck),
       main: [],
       creatures: [],
@@ -53,8 +57,6 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     rpgPiocher(duel, 'joueur');
     rpgPiocher(duel, 'sorcier');
   }
-  // Le joueur commence : son premier tour compte aussi comme début de tour.
-  duel.joueur.sable += RPG_SABLE_TOUR;
   return duel;
 }
 
@@ -66,6 +68,56 @@ export function rpgPiocher(duel, cote) {
   camp.main.push(carte);
   return carte;
 }
+
+/** Comme à Magic : le prix se paie en mana des terrains engagés, et une
+ *  carte colorée exige au moins un mana de sa couleur. */
+export function rpgPeutPayer(camp, carte) {
+  if (totalMana(camp) < (carte.cost ?? 0)) return false;
+  if ((carte.cost ?? 0) > 0 && RPG_COULEURS.includes(carte.element)) {
+    return camp.mana[carte.element] >= 1;
+  }
+  return true;
+}
+
+function payer(camp, carte) {
+  let reste = carte.cost ?? 0;
+  if (reste > 0 && RPG_COULEURS.includes(carte.element)) {
+    camp.mana[carte.element] -= 1;
+    reste -= 1;
+  }
+  for (const couleur of RPG_COULEURS) {
+    const pris = Math.min(camp.mana[couleur], reste);
+    camp.mana[couleur] -= pris;
+    reste -= pris;
+    if (!reste) break;
+  }
+}
+
+/** Pose UN terrain par tour, comme à Magic. */
+export function rpgPoserTerrain(duel, cote, carteId) {
+  const camp = duel[cote];
+  const carte = terrainById(carteId);
+  if (!carte) return { ok: false, raison: 'inconnue' };
+  if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  if (camp.terrainPose) return { ok: false, raison: 'deja-pose' };
+  camp.main.splice(camp.main.indexOf(carteId), 1);
+  camp.terrains.push({ id: `${carteId}-${camp.terrains.length}-${Math.floor(Math.random() * 1e6)}`, carteId, tapped: false });
+  camp.terrainPose = true;
+  duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} le terrain ${carte.name}.`);
+  return { ok: true };
+}
+
+/** Engager un terrain dégagé : +1 mana de sa couleur. */
+export function rpgEngagerTerrain(duel, cote, terrainId) {
+  const terrain = duel[cote].terrains.find((t) => t.id === terrainId);
+  if (!terrain) return { ok: false, raison: 'absent' };
+  if (terrain.tapped) return { ok: false, raison: 'deja-engage' };
+  terrain.tapped = true;
+  duel[cote].mana[terrainById(terrain.carteId).element] += 1;
+  return { ok: true };
+}
+
+export const rpgMana = (camp) => ({ ...camp.mana, total: totalMana(camp) });
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
 
@@ -134,8 +186,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
-  if (camp.sable < carte.cost) return { ok: false, raison: 'sable' };
-  camp.sable -= carte.cost;
+  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  payer(camp, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
   const entite = { id: nextId(), carteId, kind: carte.kind ?? 'creature', name: carte.name, atk: carte.atk, def: carte.def, pv: carte.def, ready: false, attaquee: false };
   camp.creatures.push(entite);
@@ -175,7 +227,9 @@ export function rpgAttaquerSorcier(duel, cote, entiteId) {
 export function rpgFinDeTour(duel) {
   duel.tour = autre(duel.tour);
   const camp = duel[duel.tour];
-  camp.sable += RPG_SABLE_TOUR;
+  camp.mana = manaVide();           // le mana non dépensé s'évapore
+  camp.terrainPose = false;         // un nouveau terrain peut être posé
+  for (const terrain of camp.terrains) terrain.tapped = false; // on dégage
   rpgPiocher(duel, duel.tour);
   for (const entite of camp.creatures) {
     entite.ready = true;
@@ -189,11 +243,17 @@ export function rpgFinDeTour(duel) {
  *  attaque (les créatures d'abord s'il y en a, sinon le joueur). */
 export function rpgTourSorcierIA(duel, rng = Math.random) {
   const joue = [];
+  // Le sorcier pose son terrain du tour puis engage tout ce qui peut l'être.
+  const terrainEnMain = duel.sorcier.main.find((id) => terrainById(id));
+  if (terrainEnMain) rpgPoserTerrain(duel, 'sorcier', terrainEnMain);
+  for (const terrain of duel.sorcier.terrains) {
+    if (!terrain.tapped) rpgEngagerTerrain(duel, 'sorcier', terrain.id);
+  }
   let garde = 8;
   while (garde-- > 0) {
     const jouables = duel.sorcier.main
       .map((id) => duelCardById(id))
-      .filter((carte) => carte && carte.cost <= duel.sorcier.sable)
+      .filter((carte) => carte && carte.kind !== 'terrain' && rpgPeutPayer(duel.sorcier, carte))
       .sort((a, b) => b.cost - a.cost);
     if (!jouables.length) break;
     const res = rpgJouerCreature(duel, 'sorcier', jouables[0].id);

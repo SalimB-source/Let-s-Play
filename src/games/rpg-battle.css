@@ -667,6 +667,57 @@
   box-shadow: 0 0 0 2px rgba(255, 214, 25, .8), 0 6px 16px rgba(0, 0, 0, .5);
 }
 
+/* ── Les terrains posés : mini-cartes 4:5, engagées = couchées/grisées ── */
+.rpg-terrains {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+}
+
+.rpg-terrains--ennemi { top: 64px; right: 12px; }
+.rpg-terrains--joueur { bottom: 118px; left: 12px; }
+
+.rpg-terrain {
+  width: 54px;
+  aspect-ratio: 4 / 5;
+  padding: 0;
+  border: 2px solid #000;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0c0c0e;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+  cursor: pointer;
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.rpg-terrain img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.rpg-terrain.is-tapped {
+  transform: rotate(14deg) translateY(3px);
+  filter: grayscale(.75) brightness(.65);
+  cursor: default;
+}
+
+.rpg-terrain--joueur:not(.is-tapped):hover { transform: translateY(-4px); }
+
+/* Pastilles de mana sur les plaques de sorcier. */
+.mana {
+  display: inline-block;
+  min-width: 14px;
+  margin-right: 4px;
+  padding: 1px 3px;
+  border-radius: 50%;
+  border: 1px solid #000;
+  font: 800 9px/1.4 var(--mono);
+  text-align: center;
+  font-style: normal;
+}
+
+.mana--braise { background: #a3341f; color: #ffe1d6; }
+.mana--eau { background: #1f4fa3; color: #dcecff; }
+.mana--sable { background: #c9a13b; color: #241a04; }
+
 /* ── Carte à image 4:5 (héros) : l'image est le visage, le texte en ────
    bandeaux translucides par-dessus. */
 .rpg-card--img { padding: 0; overflow: hidden; }

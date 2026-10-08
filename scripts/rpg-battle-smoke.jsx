@@ -1,9 +1,9 @@
 // Rendu réel de la nouvelle partie (le duel de sorciers) dans jsdom :
 // la table démarre vide, chaque camp pioche 5 cartes en images 4:5, on pose
-// une créature, on vérifie le mal d'invocation, le mur de créatures et le
-// tour du sorcier adverse qui joue tout seul. Les règles viennent du moteur
-// (testé par ailleurs) ; ce qui est vérifié ici, c'est que la page les
-// affiche et réagit — le seul endroit où React et les timers se rencontrent.
+// un terrain (un par tour), on l'engage pour son mana, on paie une créature,
+// puis le sorcier adverse joue tout seul (terrain + créatures). Les règles
+// viennent du moteur (testé par ailleurs) ; ce qui est vérifié ici, c'est
+// que la page les affiche et réagit — React et les timers se rencontrent.
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
@@ -16,8 +16,12 @@ export async function checkRpgBattle(assert) {
   document.body.appendChild(container);
   const root = createRoot(container);
 
+  // Decks déterministes : 5 cartes chacun, tout part dans la main de départ.
   await act(async () => {
-    root.render(<RpgDuelPage />);
+    root.render(<RpgDuelPage
+      joueurDeck={['plaines', 'plaines', 'rat-des-decombres', 'chien-du-guet', 'porteuse-de-cruches']}
+      sorcierDeck={['plaines', 'plaines', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet']}
+    />);
   });
 
   const buttons = () => [...container.querySelectorAll('button')];
@@ -31,39 +35,52 @@ export async function checkRpgBattle(assert) {
   assert.match(container.textContent, /🛡 50/, 'le joueur démarre à 50 PV');
   assert.match(container.textContent, /🛡 60/, 'le sorcier (puissance 2) démarre à 60 PV');
 
-  // ── Toutes les cartes sont les images 4:5 générées ─────────────────────
+  // ── Toutes les cartes de la main sont les images 4:5 générées ──────────
   const srcs = [...container.querySelectorAll('.rpg-hand__card--img img')].map((i) => i.getAttribute('src'));
   assert.equal(srcs.length, 5, 'chaque carte de la main est une image');
   assert.ok(srcs.every((s) => /cards\/.+\.jpg$/.test(s)), `les cartes pointent vers /cards/ (${srcs.join(', ')})`);
 
-  // ── Poser une créature (2 ⛃ de revenu au premier tour) ─────────────────
-  let pose = 0;
-  for (let essai = 0; essai < 4 && !pose; essai += 1) {
-    const jouable = handCards().find((b) => !b.disabled);
-    if (jouable) {
-      await act(async () => { jouable.click(); });
-      pose = container.querySelectorAll('.rpg-card--equipe').length;
-      break;
+  // ── Un tour de jeu : terrain (1/tour), engager, payer une créature ─────
+  const jouerUnTour = async () => {
+    const terrainMain = handCards().find((b) => b.className.includes('rpg-hand__card--terrain') && !b.disabled);
+    if (terrainMain) await act(async () => { terrainMain.click(); });
+    const monTerrain = container.querySelector('.rpg-terrain--joueur:not(.is-tapped)');
+    if (monTerrain) await act(async () => { monTerrain.click(); });
+    const jouable = handCards().find((b) => !b.disabled && !b.className.includes('rpg-hand__card--terrain'));
+    if (jouable) await act(async () => { jouable.click(); });
+  };
+
+  let poses = 0;
+  for (let tour = 0; tour < 4 && !poses; tour += 1) {
+    await jouerUnTour();
+    poses = container.querySelectorAll('.rpg-card--equipe').length;
+    if (!poses) {
+      await act(async () => { findButton('Fin du tour').click(); });
+      await act(async () => { await wait(1800); });
     }
-    await act(async () => { findButton('Fin du tour').click(); });
-    await act(async () => { await wait(1800); });
   }
-  assert.equal(pose, 1, 'une créature doit être posée sur la table');
+  assert.ok(poses >= 1, 'une créature payée au mana doit entrer en jeu');
   assert.match(container.textContent, /⚔/, 'la carte posée montre son attaque');
+  assert.ok(container.querySelectorAll('.rpg-terrain--joueur').length >= 1, 'le terrain posé est visible');
+  assert.ok(container.querySelector('.rpg-terrain--joueur.is-tapped'), 'le terrain a été engagé pour son mana');
 
   // ── Mal d'invocation : la créature qui arrive observe ──────────────────
   await act(async () => { container.querySelector('.rpg-card--equipe').click(); });
   assert.match(container.textContent, /observe encore|déjà frappé/, 'le mal d’invocation doit être expliqué');
 
-  // ── Le sorcier adverse joue son tour tout seul ─────────────────────────
-  await act(async () => { findButton('Fin du tour').click(); });
-  await act(async () => { await wait(1800); });
-  assert.ok(container.querySelectorAll('.rpg-card--ennemi').length >= 1,
-    'le sorcier adverse doit poser ses cartes');
+  // ── Le sorcier adverse joue tout seul : terrain puis créatures ─────────
+  let ennemiJoue = 0;
+  for (let tour = 0; tour < 3 && !ennemiJoue; tour += 1) {
+    await act(async () => { findButton('Fin du tour').click(); });
+    await act(async () => { await wait(1800); });
+    ennemiJoue = container.querySelectorAll('.rpg-card--ennemi').length
+      + container.querySelectorAll('.rpg-terrains--ennemi .rpg-terrain').length;
+  }
+  assert.ok(ennemiJoue >= 1, 'le sorcier adverse doit poser terrains et cartes');
 
   // ── Mur de créatures : pas de frappe directe tant qu'elles font face ───
   await act(async () => { container.querySelector('.rpg-wizard-plate--ennemi').click(); });
-  assert.match(container.textContent, /fait face|d’abord|Choisissez/, 'le mur de créatures doit bloquer la frappe directe');
+  assert.match(container.textContent, /fait face|d’abord|Choisissez|prête/, 'le mur de créatures doit bloquer la frappe directe');
 
   // ── Au tour suivant, notre créature devient prête (liseré doré) ────────
   await act(async () => { findButton('Fin du tour').click(); });

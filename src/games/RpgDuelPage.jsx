@@ -11,22 +11,25 @@
 import { useEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import {
-  RPG_SABLE_TOUR,
   rpgAttaquerCreature,
   rpgAttaquerSorcier,
+  rpgEngagerTerrain,
   rpgFinDeTour,
   rpgJouerCreature,
   rpgNouveauDuel,
+  rpgPeutPayer,
+  rpgPoserTerrain,
   rpgTourSorcierIA,
   rpgVainqueur,
 } from './rpgDuel.js';
-import { CARD_RARITIES, duelCardById } from './rpgCards.js';
+import { CARD_RARITIES, cardById } from './rpgCards.js';
 
 const JOUEUR_DECK = [
   'rat-des-decombres', 'chien-du-guet', 'chien-du-guet', 'porteuse-de-cruches',
   'guetteur-du-beffroi', 'vipere-de-verre', 'dune-marchante', 'dune-marchante',
   'scribe-de-la-liste', 'sonneur-fele', 'colosse-de-sel', 'djinn-du-souk',
   'salem', 'yamina', 'boualem', 'feriel', 'tarek',
+  'plaines', 'plaines', 'plaines', 'plaines', 'mer', 'mer', 'mer', 'montagne', 'montagne', 'montagne',
 ];
 const SORCIER_DECK = [
   'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet',
@@ -34,6 +37,7 @@ const SORCIER_DECK = [
   'rat-des-decombres', 'rat-des-decombres', 'porteuse-de-cruches', 'porteuse-de-cruches',
   'guetteur-du-beffroi', 'guetteur-du-beffroi', 'sonneur-fele', 'sonneur-fele',
   'vipere-de-verre', 'vipere-de-verre',
+  'plaines', 'plaines', 'plaines', 'plaines', 'mer', 'mer', 'montagne', 'montagne',
 ];
 
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
@@ -41,7 +45,7 @@ const cardArt = (id) => `${import.meta.env.BASE_URL}cards/${id}.jpg`;
 
 /** Carte posée sur la table : l'image 4:5, nom et ⚔/ en bandeaux. */
 function TableCard({ entite, cote, active, selected, onClick, tilt }) {
-  const carte = duelCardById(entite.carteId);
+  const carte = cardById(entite.carteId);
   return (
     <article
       className={[
@@ -69,7 +73,7 @@ function TableCard({ entite, cote, active, selected, onClick, tilt }) {
   );
 }
 
-export default function RpgDuelPage() {
+export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SORCIER_DECK, sorcierPuissance = 2 } = {}) {
   const duelRef = useRef(null);
   const [, setVersion] = useState(0);
   const force = () => setVersion((v) => v + 1);
@@ -83,11 +87,7 @@ export default function RpgDuelPage() {
   useEffect(() => () => timersRef.current.forEach((id) => window.clearTimeout(id)), []);
 
   const nouvellePartie = () => {
-    duelRef.current = rpgNouveauDuel({
-      joueurDeck: JOUEUR_DECK,
-      sorcierDeck: SORCIER_DECK,
-      sorcierPuissance: 2,
-    });
+    duelRef.current = rpgNouveauDuel({ joueurDeck, sorcierDeck, sorcierPuissance });
     setAttaquantId(null);
     setMessage('À vous : posez des cartes (le sable tombe chaque tour), puis Fin du tour.');
     force();
@@ -99,13 +99,27 @@ export default function RpgDuelPage() {
   const vainqueur = rpgVainqueur(duel);
   const monTour = duel.tour === 'joueur' && !vainqueur;
 
+  const poserTerrain = (carteId) => {
+    if (!monTour) return;
+    const res = rpgPoserTerrain(duel, 'joueur', carteId);
+    setMessage(res.ok ? `Terrain posé : ${cardById(carteId).name}. Engagez-le pour son mana.` : 'Un seul terrain par tour.');
+    force();
+  };
+
+  const engager = (terrainId) => {
+    if (!monTour) return;
+    const res = rpgEngagerTerrain(duel, 'joueur', terrainId);
+    setMessage(res.ok ? 'Terrain engagé : +1 mana.' : 'Déjà engagé.');
+    force();
+  };
+
   const poserCarte = (carteId) => {
     if (!monTour) return;
-    const carte = duelCardById(carteId);
+    const carte = cardById(carteId);
     const cibleAuto = duel.sorcier.creatures[0]?.id ?? null;
     const res = rpgJouerCreature(duel, 'joueur', carteId, cibleAuto);
     if (!res.ok) {
-      setMessage(res.raison === 'sable' ? `Pas assez de sable pour ${carte?.name} (${carte.cost} ⛃).` : 'Impossible.');
+      setMessage(res.raison === 'mana' ? `Pas le bon mana pour ${carte?.name} (${carte.cost}, dont 1 ${carte.element}).` : 'Impossible.');
     } else {
       setMessage(`Vous posez ${carte.name} (⚔${carte.atk} 🛡${carte.def}).`);
     }
@@ -127,7 +141,7 @@ export default function RpgDuelPage() {
   const cliquerCreatureEnnemie = (entite) => {
     if (!monTour || !attaquantId) return;
     const res = rpgAttaquerCreature(duel, 'joueur', attaquantId, entite.id);
-    setMessage(res.ok ? `${duelCardById(duel.joueur.creatures.find((e) => e.id === attaquantId)?.carteId ?? '')?.name ?? 'Votre créature'} attaque ${entite.name}.` : 'Attaque impossible.');
+    setMessage(res.ok ? `${cardById(duel.joueur.creatures.find((e) => e.id === attaquantId)?.carteId ?? '')?.name ?? 'Votre créature'} attaque ${entite.name}.` : 'Attaque impossible.');
     setAttaquantId(null);
     force();
   };
@@ -172,12 +186,42 @@ export default function RpgDuelPage() {
           title={attaquantId ? 'Frapper le sorcier adverse' : 'Le sorcier adverse'}>
           <strong>LE SORCIER</strong>
           <span className="rpg-wizard-plate__pv">🛡 {duel.sorcier.pv}</span>
-          <span className="rpg-wizard-plate__sable">⛃ {duel.sorcier.sable} · 🂠 {duel.sorcier.deck.length}</span>
+          <span className="rpg-wizard-plate__sable">
+            <i className="mana mana--braise" title="Mana braise">{duel.sorcier.mana.braise}</i>
+            <i className="mana mana--eau" title="Mana eau">{duel.sorcier.mana.eau}</i>
+            <i className="mana mana--sable" title="Mana sable">{duel.sorcier.mana.sable}</i>
+            · 🂠 {duel.sorcier.deck.length}
+          </span>
         </button>
         <div className="rpg-wizard-plate rpg-wizard-plate--joueur" title="Vous">
           <strong>VOUS</strong>
           <span className="rpg-wizard-plate__pv">🛡 {duel.joueur.pv}</span>
-          <span className="rpg-wizard-plate__sable">⛃ {duel.joueur.sable} · 🂠 {duel.joueur.deck.length}</span>
+          <span className="rpg-wizard-plate__sable">
+            <i className="mana mana--braise" title="Mana braise">{duel.joueur.mana.braise}</i>
+            <i className="mana mana--eau" title="Mana eau">{duel.joueur.mana.eau}</i>
+            <i className="mana mana--sable" title="Mana sable">{duel.joueur.mana.sable}</i>
+            · 🂠 {duel.joueur.deck.length}
+          </span>
+        </div>
+
+        <div className="rpg-terrains rpg-terrains--ennemi" aria-label="Terrains du sorcier">
+          {duel.sorcier.terrains.map((terrain) => (
+            <span key={terrain.id} className={`rpg-terrain ${terrain.tapped ? 'is-tapped' : ''}`}
+              title={`${cardById(terrain.carteId)?.name}${terrain.tapped ? ' (engagé)' : ''}`}>
+              <img src={cardArt(terrain.carteId)} alt="" />
+            </span>
+          ))}
+        </div>
+        <div className="rpg-terrains rpg-terrains--joueur" aria-label="Vos terrains, cliquez pour engager">
+          {duel.joueur.terrains.map((terrain) => (
+            <button key={terrain.id} type="button"
+              className={`rpg-terrain rpg-terrain--joueur ${terrain.tapped ? 'is-tapped' : ''}`}
+              disabled={!monTour || terrain.tapped}
+              onClick={() => engager(terrain.id)}
+              title={`${cardById(terrain.carteId)?.name} — cliquer pour engager (+1 mana)`}>
+              <img src={cardArt(terrain.carteId)} alt="" />
+            </button>
+          ))}
         </div>
 
         <div className="card-row card-row--ennemi">
@@ -225,16 +269,21 @@ export default function RpgDuelPage() {
         <div className="rpg-hand-dock" aria-label="Votre main, à moitié glissée sous la table">
           <div className="rpg-hand">
             {duel.joueur.main.map((carteId, i) => {
-              const carte = duelCardById(carteId);
-              const jouable = monTour && carte.cost <= duel.joueur.sable;
+              const carte = cardById(carteId);
+              const estTerrain = carte.kind === 'terrain';
+              const jouable = monTour && (estTerrain ? !duel.joueur.terrainPose : rpgPeutPayer(duel.joueur, carte));
               return (
                 <button
                   key={`${carteId}-${i}`}
                   type="button"
                   disabled={!jouable}
-                  className={`rpg-hand__card rpg-hand__card--img rpg-hand__card--elem-${carte.element}`}
+                  onClick={estTerrain ? () => poserTerrain(carteId) : () => poserCarte(carteId)}
+                  className={[
+                    'rpg-hand__card rpg-hand__card--img',
+                    estTerrain ? 'rpg-hand__card--terrain' : '',
+                    `rpg-hand__card--elem-${carte.element}`,
+                  ].join(' ')}
                   style={{ '--tilt': `${TILTS[i % TILTS.length]}deg` }}
-                  onClick={() => poserCarte(carteId)}
                   title={carte.text}
                 >
                   <img className="rpg-hand__img" src={cardArt(carteId)} alt={`Carte ${carte.name}`} />

@@ -109,7 +109,7 @@ export const RPG_POWER_CARDS = [
   {
     id: 'retard',
     name: 'Retard',
-    element: 'verre',
+    element: 'eau',
     kind: 'statut',
     cost: 10,
     delay: true,
@@ -121,7 +121,7 @@ export const RPG_POWER_CARDS = [
   {
     id: 'avance',
     name: 'Avance',
-    element: 'verre',
+    element: 'eau',
     kind: 'statut',
     cost: 10,
     draw: 1,
@@ -133,7 +133,7 @@ export const RPG_POWER_CARDS = [
   {
     id: 'heure-pleine',
     name: 'Heure pleine',
-    element: 'verre',
+    element: 'eau',
     kind: 'magie',
     cost: 40,
     power: 300,
@@ -200,7 +200,7 @@ export const RPG_POWER_CARDS = [
   {
     id: 'bulle',
     name: 'Bulle',
-    element: 'verre',
+    element: 'eau',
     kind: 'statut',
     cost: 20,
     effect: 'barrage',
@@ -280,7 +280,7 @@ export const RPG_POWER_CARDS = [
   {
     id: 'souffle',
     name: 'Souffle',
-    element: 'souffle',
+    element: 'sable',
     kind: 'statut',
     cost: 0,
     effect: 'souffle',
@@ -325,7 +325,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'chien-du-guet',
     name: 'Chien du guet',
-    element: 'souffle',
+    element: 'sable',
     cost: 2,
     atk: 2,
     def: 2,
@@ -348,7 +348,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'guetteur-du-beffroi',
     name: 'Guetteur du beffroi',
-    element: 'souffle',
+    element: 'sable',
     cost: 3,
     atk: 2,
     def: 2,
@@ -360,7 +360,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'vipere-de-verre',
     name: 'Vipère de verre',
-    element: 'verre',
+    element: 'eau',
     cost: 3,
     atk: 3,
     def: 1,
@@ -383,7 +383,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'scribe-de-la-liste',
     name: 'Scribe de la Liste',
-    element: 'encre',
+    element: 'sable',
     cost: 3,
     atk: 2,
     def: 2,
@@ -395,7 +395,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'sonneur-fele',
     name: 'Sonneur fêlé',
-    element: 'verre',
+    element: 'eau',
     cost: 4,
     atk: 2,
     def: 3,
@@ -458,7 +458,7 @@ export const RPG_HERO_CARDS = [
     id: 'yamina',
     name: 'YAMINA',
     role: 'L’Horlogère',
-    element: 'verre',
+    element: 'eau',
     cost: 3,
     atk: 2,
     def: 4,
@@ -521,6 +521,48 @@ export function duelCardById(id) {
   return creatureById(id) ?? heroById(id);
 }
 
+/**
+ * Les terrains — façon Magic : piochés, posés (UN par tour), engagés pour
+ * produire un mana de leur couleur. Montagne → braise, Mer → eau,
+ * Plaines → sable.
+ */
+export const RPG_TERRAIN_CARDS = [
+  {
+    id: 'montagne',
+    name: 'Montagne',
+    element: 'braise',
+    kind: 'terrain',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana braise {R}.',
+    flavor: 'La braise dort sous la roche.',
+  },
+  {
+    id: 'mer',
+    name: 'Mer',
+    element: 'eau',
+    kind: 'terrain',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana eau {U}.',
+    flavor: 'Derrière la dune, elle attend encore.',
+  },
+  {
+    id: 'plaines',
+    name: 'Plaines',
+    element: 'sable',
+    kind: 'terrain',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana sable {W}.',
+    flavor: 'L’herbe sèche s’y couche en vagues.',
+  },
+];
+
+export function terrainById(id) {
+  return RPG_TERRAIN_CARDS.find((card) => card.id === id) ?? null;
+}
+
 export const RPG_STARTING_COLLECTION = ['garde', 'bulle', 'nappe', 'vague', 'recolte'];
 
 /** Cartes de base des compagnons : leur seule attaque au début. */
@@ -539,7 +581,7 @@ export const RPG_BASIC_ATTACKS = {
   yamina: {
     id: 'aiguille',
     name: 'Aiguille',
-    element: 'verre',
+    element: 'eau',
     kind: 'magie',
     power: 190,
     interrupt: true,
@@ -560,7 +602,7 @@ export const RPG_BASIC_ATTACKS = {
   feriel: {
     id: 'eclat-de-verre',
     name: 'Éclat de verre',
-    element: 'verre',
+    element: 'eau',
     kind: 'physique',
     power: 100,
     interrupt: true,
@@ -584,7 +626,7 @@ export const RPG_BASIC_ATTACKS = {
 const CATALOG = new Map(
   [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS),
     ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
-    ...RPG_HERO_CARDS].map((card) => [card.id, card]),
+    ...RPG_HERO_CARDS, ...RPG_TERRAIN_CARDS].map((card) => [card.id, card]),
 );
 
 /** Retrouve une carte du catalogue par son id. */
