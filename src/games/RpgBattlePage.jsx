@@ -801,22 +801,33 @@ export default function RpgBattlePage() {
                     {battle.draft.map((id) => {
                       const card = cardById(id);
                       if (!card) return null;
+                      const art = card.kind === 'creature'
+                        ? `${import.meta.env.BASE_URL}cards/${card.id}.jpg` : null;
                       return (
                         <button
                           key={id}
                           type="button"
-                          className={`rpg-hand__card rpg-hand__card--big rpg-hand__card--elem-${card.element ?? 'sable'}`}
+                          className={[
+                            'rpg-hand__card rpg-hand__card--big',
+                            art ? 'rpg-hand__card--img' : '',
+                            `rpg-hand__card--elem-${card.element ?? 'sable'}`,
+                          ].join(' ')}
                           onClick={() => { rpgDraftPick(battle, id); force(); }}
                           title={card.text}
                         >
+                          {art && <img className="rpg-hand__img" src={art} alt={`Illustration de ${card.name}`} />}
                           <span className="rpg-hand__title">
                             <strong>{card.name}</strong>
                             <span className="rpg-hand__cost">{card.cost} ⛃</span>
                           </span>
-                          <span className="rpg-hand__art" aria-hidden="true">
-                            {RPG_ELEMENT_ICONS[card.element] ?? '◇'}
-                            {card.power ? <b>{card.power}</b> : null}
-                          </span>
+                          {card.kind === 'creature' ? (
+                            <span className="rpg-hand__stats" title="Attaque / Défense">⚔ {card.atk} · 🛡 {card.def}</span>
+                          ) : (
+                            <span className="rpg-hand__art" aria-hidden="true">
+                              {RPG_ELEMENT_ICONS[card.element] ?? '◇'}
+                              {card.power ? <b>{card.power}</b> : null}
+                            </span>
+                          )}
                           <span className="rpg-hand__text">{card.text}</span>
                           <span className="rpg-hand__rarity">{CARD_RARITIES[card.rarity]?.label ?? card.rarity}</span>
                         </button>

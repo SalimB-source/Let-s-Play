@@ -839,6 +839,64 @@
 .rpg-draft__row .rpg-hand__card { width: 176px; }
 .rpg-draft__row .rpg-hand__art { padding: 14px 0; font-size: 30px; }
 .rpg-draft__row .rpg-hand__text { -webkit-line-clamp: 7; font-size: 9px; }
+
+/* ── Carte à image générée 4:5 : l'image EST le visage de la carte, ──────
+   le texte (nom, ⚔/🛡, règle) se pose en bandeaux lisibles par-dessus. */
+.rpg-hand__card--img { padding: 0; overflow: hidden; }
+
+.rpg-hand__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rpg-hand__card--img .rpg-hand__title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  padding: 4px 6px;
+  background: linear-gradient(180deg, rgba(16, 11, 4, .88), rgba(16, 11, 4, .45));
+}
+
+.rpg-hand__card--img .rpg-hand__title strong { color: #ffe9a0; }
+.rpg-hand__card--img .rpg-hand__cost { color: #ffd619; }
+
+.rpg-hand__stats {
+  position: absolute;
+  top: 22px;
+  right: 4px;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid #000;
+  background: rgba(12, 10, 6, .78);
+  font: 800 9px/1.5 Georgia, serif;
+  color: #ffe9a0;
+}
+
+.rpg-hand__card--img .rpg-hand__text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  border-radius: 0;
+  border-top: 1px solid #9a8f74;
+  background: rgba(242, 235, 216, .94);
+  color: #191410;
+  -webkit-line-clamp: 4;
+}
+
+.rpg-hand__card--img .rpg-hand__rarity {
+  position: absolute;
+  top: 22px;
+  left: 4px;
+  z-index: 1;
+}
 .rpg-draft__row .rpg-hand__card:hover { transform: translateY(-10px) scale(1.03); }
 
 @media (max-width: 900px) {

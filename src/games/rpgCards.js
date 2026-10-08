@@ -495,7 +495,8 @@ export const RPG_BASIC_ATTACKS = {
 };
 
 const CATALOG = new Map(
-  [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS)].map((card) => [card.id, card]),
+  [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS),
+    ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' }))].map((card) => [card.id, card]),
 );
 
 /** Retrouve une carte du catalogue par son id. */
@@ -513,7 +514,7 @@ export function cardCost(card) {
  * l'équipe, dont on en choisira une. Même graine, même offre.
  */
 export function rpgDraftOffer(rng, collection = []) {
-  const pool = RPG_POWER_CARDS.filter((card) => !collection.includes(card.id));
+  const pool = [...RPG_POWER_CARDS, ...RPG_CREATURE_CARDS].filter((card) => !collection.includes(card.id));
   const offer = [];
   while (offer.length < 3 && pool.length) {
     const index = Math.floor(rng() * pool.length);

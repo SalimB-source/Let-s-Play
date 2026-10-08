@@ -334,7 +334,8 @@ export function rpgDrawCards(battle, count = 1) {
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
     if (battle.hand.length >= 7) break;
-    const pool = battle.collection.filter((id) => !battle.hand.includes(id) && !battle.graveyard.includes(id));
+    const pool = battle.collection.filter((id) => !battle.hand.includes(id) && !battle.graveyard.includes(id)
+      && cardById(id)?.kind !== 'creature'); // les créatures attendent le duel
     if (!pool.length) break;
     const cardId = pool[Math.floor(battle.rng() * pool.length)];
     battle.hand.push(cardId);
