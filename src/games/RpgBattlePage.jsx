@@ -269,7 +269,9 @@ export default function RpgBattlePage() {
                 : { t: 'strike', from: actor.id, to: intent.targetId },
           );
         }
+        const before = new Map(state.actors.map((a) => [a.id, a.hp]));
         rpgEnemyTurn(state);
+        pushPops(state, before);
         force();
         later(pump, 340);
       }, 620);
@@ -277,6 +279,16 @@ export default function RpgBattlePage() {
     }
     force();
   }, [later]);
+
+  // Les deltas de PV deviennent des chiffres flottants dans la scène.
+  const pushPops = useCallback((state, before) => {
+    for (const a of state.actors) {
+      const prev = before.get(a.id);
+      if (prev == null) continue;
+      const delta = a.hp - prev;
+      if (delta !== 0) sceneQueueRef.current.push({ t: 'pop', to: a.id, amount: delta });
+    }
+  }, []);
 
   const refuse = useCallback((result, action) => {
     const reasons = {
@@ -299,6 +311,7 @@ export default function RpgBattlePage() {
     const targetId2 = ['soi', 'tous-ennemis', 'tous-allies'].includes(skill.target ?? 'ennemi')
       ? (skill.target === 'allie' ? ally.id : null)
       : foe?.id ?? null;
+    const before = new Map(state.actors.map((a) => [a.id, a.hp]));
     const result = rpgUseSkill(state, {
       actorId: actor.id,
       skillId: skill.id,
@@ -309,6 +322,7 @@ export default function RpgBattlePage() {
       refuse(result, skill.name);
       return;
     }
+    pushPops(state, before);
     sceneQueueRef.current.push(
       skill.kind === 'soin'
         ? { t: 'soin', from: actor.id, to: skill.target === 'allie' ? ally.id : actor.id }
@@ -666,7 +680,7 @@ export default function RpgBattlePage() {
 
       {battle && screen !== 'intro' && screen !== 'fin' && screen !== 'exploration' && (
         <section className="rpg-battle" data-strike={battle.clockStrike > 0 ? 'on' : 'off'}>
-          <RpgBattleScene battleRef={battleRef} queueRef={sceneQueueRef} />
+          <RpgBattleScene battleRef={battleRef} queueRef={sceneQueueRef} waveTitle={wave.title} />
           <div className="rpg-battle__top">
             <p className="rpg-wave">
               <strong>{wave.title}</strong>

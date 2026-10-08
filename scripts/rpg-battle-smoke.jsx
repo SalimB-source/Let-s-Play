@@ -88,6 +88,11 @@ export async function checkRpgBattle(assert) {
     'le journal ne trace aucune action');
   assert.ok(enemyHp() < hpBefore, `les PV ennemis n’ont pas baissé (${hpBefore} → ${enemyHp()})`);
 
+  // La boîte de message tape le journal lettre à lettre, façon Dragon Quest.
+  await act(async () => { await wait(300); });
+  const msg = container.querySelector('.rpg-scene__msg span');
+  assert.ok(msg && msg.textContent.length > 0, 'la boîte de message doit taper le journal');
+
   // ── Les quatre réponses sont proposées ──────────────────────────────────
   for (const response of ['Garde', 'Barrage', 'Récolte', 'Souffle', 'Reposition']) {
     assert.ok(findButton(response), `réponse « ${response} » absente de la barre d'actions`);

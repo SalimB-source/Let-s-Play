@@ -103,6 +103,27 @@ Ces deux images servent de référence pour tout asset futur : palette (ocre,
 laiton, indigo), lumière (ambre de l'Astrolabe), et règle de lisibilité
 (une information = un glyphe).
 
+### 4.2 Mise en scène des combats (grammaire Dragon Quest)
+
+La scène 3D du prototype (`RpgBattleScene.jsx`) emprunte la grammaire du JRPG
+classique, celle qui rend un tour par tour *lisible* sans jamais presser :
+
+- **Boîte de message** noire en bas, double liseré clair, texte tapé lettre à
+  lettre, curseur ▼ clignotant — c'est elle qui raconte le combat ;
+- **Bannière d'apparition** à chaque vague : « … — des ennemis apparaissent ! » ;
+- **Caméra cinématique** : plan large par défaut, puis cadre serré sur
+  l'attaquant et sa cible pendant la ruée, retour calme ensuite ;
+- **Chiffres flottants** de dégâts (blancs) et de soins (verts), clignement
+  blanc à l'impact, secousse d'écran sur les zones et quand l'Astrolabe sonne ;
+- **Morts de sprites** : l'ennemi scintille puis s'enfonce et disparaît ;
+  l'équipe, elle, tombe à terre ;
+- **Fenêtre de commandes** à double liseré avec curseur ▶ au survol, comme un
+  menu de Dragon Quest.
+
+Règle : la caméra et les effets *soulignent* l'information déjà présente dans
+les cartes (intention, PV, étages). Jamais l'inverse : un effet qui annonce
+quelque chose que l'interface ne dit pas est un effet de trop.
+
 ## 5. Son
 
 - **Instruments** : oud, qanoun, bendir, derbouka, ney, plus un lit de

@@ -2256,7 +2256,11 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
   jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
 - `src/games/RpgBattleScene.jsx` — la vitrine 3D (Three.js) : l'équipe fait
   face aux ennemis sur l'escalier d'étages, figurines procédurales, sable qui
-  gonfle au sol, Astrolabe au ciel. Sans WebGL, repli sobre, combat jouable.
+  gonfle au sol, Astrolabe au ciel. Mise en scène façon Dragon Quest : caméra
+  qui cadre l'attaquant et sa cible, chiffres de dégâts flottants, clignement
+  blanc à l'impact, ennemis qui meurent en scintillant, boîte de message à
+  texte tapé lettre à lettre, bannière « des ennemis apparaissent ! ». Sans
+  WebGL, repli sobre, combat jouable.
 - `src/games/rpg-battle.css` — la palette laiton / indigo / ocre du concept,
   sur les variables de couleur du site (donc compatible thème clair).
 - `public/sablier-de-bab-el-thumb.svg` — vignette vectorielle (une démo
