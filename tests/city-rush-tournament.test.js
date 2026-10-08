@@ -13,6 +13,9 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
@@ -314,4 +317,16 @@ test('la sauvegarde garde les tournois terminés et les titres de champion', () 
   assert.equal(saved.cash, 120);
   assert.deepEqual(saved.completedTournamentIds, ['sunset']);
   assert.deepEqual(saved.tournamentTitles, { sunset: 1 });
+});
+
+test('chaque tournoi a sa propre miniature, présente dans public/', () => {
+  const publicDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+  const seen = new Set();
+  for (const tournament of CITY_RUSH_TOURNAMENTS) {
+    assert.ok(typeof tournament.thumb === 'string' && /\.(jpe?g|webp|png)$/.test(tournament.thumb),
+      `${tournament.id} : miniature image (${tournament.thumb})`);
+    assert.ok(!seen.has(tournament.thumb), `${tournament.id} : miniature propre à ce tournoi`);
+    seen.add(tournament.thumb);
+    assert.ok(existsSync(join(publicDir, tournament.thumb)), `${tournament.id} : fichier présent (${tournament.thumb})`);
+  }
 });
