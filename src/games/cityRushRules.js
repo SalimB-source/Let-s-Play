@@ -328,74 +328,131 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
 // fragilité, les lentes se consolent en encaissant. Moyenne du catalogue :
 // ~14,5 carrés, soit la barre historique de quinze — la difficulté d'ensemble
 // ne bouge pas, c'est sa répartition qui change.
+// `category` est la classe de matchmaking, plus large que le descriptif
+// individuel `className` : citadines et compactes, voitures de sport (berlinetta,
+// coupé, GT, roadster), supercars (Vortex/Tempesta) et crossover. Cette donnée
+// garde les rivaux dans la même famille que le pilote, en course libre comme
+// dans les plateaux scénarisés.
 export const CITY_RUSH_CARS = Object.freeze([
   Object.freeze({
-    id: 'city-hatch', archetype: 'city-hatch', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
+    id: 'city-hatch', archetype: 'city-hatch', category: 'compact', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
     power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 6.2, recovery: 44, hitRecoveryMultiplier: 1.22, durability: 100, durabilityMultiplier: 1.52,
     widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
   }),
   Object.freeze({
-    id: 'nova-18-gt', archetype: 'nova-hatch', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
+    id: 'nova-18-gt', archetype: 'nova-hatch', category: 'compact', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
     bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
     power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 7.4, recovery: 64, hitRecoveryMultiplier: 1.12, durability: 89, durabilityMultiplier: 1.36,
     widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
   }),
   Object.freeze({
-    id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
+    id: 'night-comet', archetype: 'volkswagen', category: 'compact', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
     bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
     power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82, durability: 79, durabilityMultiplier: 1.2,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
   }),
   Object.freeze({
-    id: 'vice-roadster', archetype: 'ferrari', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
+    id: 'vice-roadster', archetype: 'ferrari', category: 'sport', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
     bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c', price: 400,
     power: 72, powerMultiplier: 1.02, acceleration: 82, accelerationRate: 9.1, recovery: 84, hitRecoveryMultiplier: 0.94, durability: 62, durabilityMultiplier: 0.94,
     widthScale: 1, heightScale: 1, lengthScale: 1,
   }),
   Object.freeze({
-    id: 'turbo-gt', archetype: 'porsche', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
+    id: 'turbo-gt', archetype: 'porsche', category: 'sport', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
     bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8', price: 550,
     power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 8.4, recovery: 74, hitRecoveryMultiplier: 1.06, durability: 57, durabilityMultiplier: 0.86,
     widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'muscle-86', archetype: 'audi', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
+    id: 'muscle-86', archetype: 'audi', category: 'supercar', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
     bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa', price: 650,
     power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 10.6, recovery: 66, hitRecoveryMultiplier: 1.18, durability: 53, durabilityMultiplier: 0.8,
     widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
+    id: 'vega-gt-67', archetype: 'bmw', category: 'sport', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
     bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455', price: 800,
     power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 9.6, recovery: 76, hitRecoveryMultiplier: 1.02, durability: 49, durabilityMultiplier: 0.74,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
   }),
   Object.freeze({
-    id: 'toro-v12', archetype: 'lamborghini', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
+    id: 'toro-v12', archetype: 'lamborghini', category: 'supercar', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
     bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703', price: 1000,
     power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16, durability: 39, durabilityMultiplier: 0.6,
     widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),
   Object.freeze({
-    id: 'volt-aero', archetype: 'electric-gt', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
+    id: 'volt-aero', archetype: 'electric-gt', category: 'sport', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
     bodyColor: 0x35d7d0, trimColor: 0xd9ffff, driverColor: 0x15212d, accent: '#42f5dc', price: 600,
     power: 86, powerMultiplier: 1.18, acceleration: 100, accelerationRate: 11.4, recovery: 85, hitRecoveryMultiplier: 0.94, durability: 66, durabilityMultiplier: 1.0,
     widthScale: 1.02, heightScale: 0.96, lengthScale: 1.04,
   }),
   Object.freeze({
-    id: 'atlas-xr', archetype: 'sport-crossover', name: 'ATLAS XR', className: 'CROSSOVER SPORT · HYBRIDE INTÉGRALE',
+    id: 'atlas-xr', archetype: 'sport-crossover', category: 'crossover', name: 'ATLAS XR', className: 'CROSSOVER SPORT · HYBRIDE INTÉGRALE',
     bodyColor: 0x7848e8, trimColor: 0xffc857, driverColor: 0x1b2030, accent: '#a78bfa', price: 750,
     power: 90, powerMultiplier: 1.27, acceleration: 91, accelerationRate: 10.1, recovery: 100, hitRecoveryMultiplier: 0.79, durability: 75, durabilityMultiplier: 1.14,
     widthScale: 1.08, heightScale: 1.10, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'pulse-rs', archetype: 'neo-roadster', name: 'PULSE RS', className: 'ROADSTER ÉLECTRIQUE · PERFORMANCE SILENCIEUSE',
+    id: 'pulse-rs', archetype: 'neo-roadster', category: 'sport', name: 'PULSE RS', className: 'ROADSTER ÉLECTRIQUE · PERFORMANCE SILENCIEUSE',
     bodyColor: 0xf05a8a, trimColor: 0xffedf5, driverColor: 0x202331, accent: '#ff72ac', price: 1150,
     power: 99, powerMultiplier: 1.44, acceleration: 100, accelerationRate: 12.2, recovery: 78, hitRecoveryMultiplier: 1.02, durability: 31, durabilityMultiplier: 0.47,
     widthScale: 1.04, heightScale: 0.91, lengthScale: 1.06,
   }),
 ]);
+
+/** Classe de course d'une fiche de voiture ou d'un identifiant de catalogue. */
+export function cityRushCarCategory(carOrId, cars = CITY_RUSH_CARS) {
+  const car = typeof carOrId === 'string'
+    ? (Array.isArray(cars) ? cars.find((entry) => entry?.id === carOrId) : null)
+    : carOrId;
+  const category = typeof car?.category === 'string' ? car.category.trim() : '';
+  return category || null;
+}
+
+/**
+ * Profil de voiture attribué à un rival. Un modèle scénarisé (`preferredCarId`)
+ * est gardé s'il appartient à la classe du pilote ; sinon, on prend le modèle
+ * de même classe le plus proche en vitesse. Quand cette classe ne contient
+ * qu'une seule voiture, les rivaux roulent avec le modèle du pilote plutôt que
+ * de sortir de catégorie.
+ */
+export function cityRushRivalCarProfile({
+  playerCarId = CITY_RUSH_CARS[0]?.id,
+  rivalIndex = 0,
+  preferredCarId = null,
+  cars = CITY_RUSH_CARS,
+} = {}) {
+  const catalog = Array.isArray(cars) ? cars.filter((car) => car?.id) : [];
+  if (!catalog.length) return null;
+
+  const playerProfile = catalog.find((car) => car.id === playerCarId) || catalog[0];
+  const playerCategory = cityRushCarCategory(playerProfile);
+  const preferredProfile = preferredCarId
+    ? catalog.find((car) => car.id === preferredCarId) || null
+    : null;
+  if (playerCategory && preferredProfile && cityRushCarCategory(preferredProfile) === playerCategory) {
+    return preferredProfile;
+  }
+
+  // Ne pas traiter les fiches sans classe comme une même catégorie implicite.
+  const playerPower = Number(playerProfile.powerMultiplier) || 0;
+  const rivalProfiles = playerCategory
+    ? catalog
+      .filter((car) => car.id !== playerProfile.id && cityRushCarCategory(car) === playerCategory)
+      .sort((a, b) => {
+        const aPower = Number(a.powerMultiplier) || 0;
+        const bPower = Number(b.powerMultiplier) || 0;
+        return Math.abs(aPower - playerPower) - Math.abs(bPower - playerPower)
+          || aPower - bPower;
+      })
+    : [];
+  if (!rivalProfiles.length) return playerProfile;
+
+  const index = Math.max(0, Math.trunc(Number(rivalIndex) || 0));
+  return rivalProfiles[index % rivalProfiles.length];
+}
 
 // ── Garage : les trois voitures les moins puissantes sont offertes ─────────
 // Tout le monde démarre avec les trois voitures les moins puissantes du

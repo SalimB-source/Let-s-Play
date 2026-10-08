@@ -1625,11 +1625,14 @@ Un prêt ne vaut **que pour son chapitre** : il est appliqué à la course engag
 garage (`carId`). Autrement la voiture prêtée suivait le pilote — la MISTRAL du
 prologue remplaçait la voiture achetée pour les neuf chapitres suivants, la
 TEMPESTA du Ring retombait sur la citadine de départ une fois rendue, et le
-garage affichait la voiture prêtée comme sélectionnée après la campagne. Les
-rivaux, eux, gardent leur matchmaking habituel (les deux profils les plus
-proches de la voiture engagée), sauf quand le chapitre impose un modèle
-(`rules.rivalCarIds`) ou une allure (`rules.rivalPace` : Dante roule à +5 % au
-duel de Paris, +6 % à la finale).
+garage affichait la voiture prêtée comme sélectionnée après la campagne.
+Les rivaux sont eux aussi adaptés à la voiture engagée : chaque profil est
+choisi dans la même catégorie (`category` dans `cityRushRules.js`), puis départagé
+par la proximité de vitesse. Un modèle imposé par un chapitre ou un tournoi est
+conservé seulement s'il appartient à cette catégorie ; quand une catégorie n'a
+qu'un modèle, les rivaux reprennent ce modèle plutôt que de changer de classe.
+Les allures scénarisées restent appliquées (`rules.rivalPace` : Dante roule à
++5 % au duel de Paris, +6 % à la finale).
 
 ### Où vit le code
 

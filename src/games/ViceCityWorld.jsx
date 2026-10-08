@@ -231,6 +231,7 @@ import {
   isCityRushPickupHidden,
   markCityRushPickupTaken,
   rankCityRushRacers,
+  cityRushRivalCarProfile,
   resolveCityRushCarMovement,
   resolveCityRushPoliceMovement,
   selectCityRushRacers,
@@ -1994,16 +1995,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // toujours les 15 s historiques, mais la citadine (83 km/h) a besoin de plus
   // de temps et la supercar de moins pour garder la même pression.
   const sprintTimeBonus = cityRushSprintCheckpointTime(playerTopSpeed);
-  // Matchmaking garage : les deux adversaires prennent les profils les plus
-  // proches de la voiture choisie. Une citadine rencontre ainsi des compactes,
-  // une supercar des sportives voisines ; les écarts restent lisibles sans
-  // supprimer la progression ni fabriquer un adversaire identique au joueur.
-  const rivalProfiles = CITY_RUSH_CARS
-    .filter((car) => car.id !== playerProfile.id)
-    .sort((a, b) => {
-      const delta = Math.abs(a.powerMultiplier - playerProfile.powerMultiplier) - Math.abs(b.powerMultiplier - playerProfile.powerMultiplier);
-      return delta || a.powerMultiplier - b.powerMultiplier;
-    });
+  // Matchmaking par catégorie : les rivaux restent dans la même famille que
+  // la voiture engagée. Les modèles imposés par un chapitre ou un tournoi sont
+  // conservés s'ils sont compatibles ; sinon le sélecteur choisit une voiture
+  // de la même catégorie, au plus près en vitesse.
   const playerCar = makeRacerCar(playerProfile, {
     player: true,
     number: CITY_RUSH_CARS.indexOf(playerProfile) + 1,
@@ -2035,10 +2030,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         skidSide: index % 2 === 0 ? 1 : -1,
       }));
   const racers = racerSpecs.map((spec, index) => {
-    const storyProfile = storyRivalCarIds?.[spec.id]
-      ? CITY_RUSH_CARS.find((car) => car.id === storyRivalCarIds[spec.id]) || null
-      : null;
-    const profile = storyProfile || rivalProfiles[index % rivalProfiles.length];
+    const profile = cityRushRivalCarProfile({
+      playerCarId: playerProfile.id,
+      rivalIndex: index,
+      preferredCarId: storyRivalCarIds?.[spec.id] || null,
+    }) || playerProfile;
     const driver = currentRoster.find((item) => item.id === spec.id) || currentRoster[index + 1];
     return {
       ...spec,
