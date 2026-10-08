@@ -44,7 +44,7 @@ export async function checkRpgBattle(assert) {
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée');
   assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit être posée en cartes');
   assert.ok(container.querySelectorAll('.rpg-card--ennemi').length >= 2, 'les ennemis doivent être posés en cartes');
-  assert.ok(container.querySelectorAll('.rpg-card__art img').length >= 6, 'chaque carte doit montrer son portrait');
+  assert.ok(container.querySelectorAll('.rpg-card img').length >= 6, 'chaque carte doit montrer son illustration');
   // Les ennemis instanciés (id suffixés) doivent tout de même pointer vers le
   // fichier de portrait de leur définition — régression du 2026-10-08.
   const foeSrcs = [...container.querySelectorAll('.rpg-card--ennemi img')].map((img) => img.getAttribute('src'));
@@ -65,10 +65,10 @@ export async function checkRpgBattle(assert) {
   assert.ok(container.querySelectorAll('.rpg-ring__item').length >= 4, 'ordre des tours vide');
   // Les personnages sont visibles en combat : un portrait peint par acteur,
   // dans l'équipe, face à chaque ennemi et dans l'ordre des tours.
-  const allyPortraits = [...container.querySelectorAll('.rpg-ally__portrait')];
-  assert.equal(allyPortraits.length, 4, 'chaque compagnon doit afficher son portrait');
-  assert.ok(allyPortraits.every((img) => /portraits\/.+\.(jpg|png)$/.test(img.getAttribute('src') ?? '')),
-    'un portrait d’allié pointe vers un fichier manquant');
+  const allyPortraits = [...container.querySelectorAll('.rpg-card--equipe img')];
+  assert.equal(allyPortraits.length, 4, 'chaque compagnon doit afficher sa carte 4:5');
+  assert.ok(allyPortraits.every((img) => /cards\/.+\.(jpg|png)$/.test(img.getAttribute('src') ?? '')),
+    'une carte d’allié doit pointer vers son image 4:5 générée');
   assert.equal(container.querySelectorAll('.rpg-foe__portrait').length, foeCards.length,
     'chaque ennemi doit afficher son portrait');
   assert.ok(container.querySelectorAll('img.rpg-ring__dot').length >= 4,

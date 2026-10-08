@@ -137,13 +137,13 @@ function FoeCard({ battle, actor, selected, onPick, tilt, fx, pop }) {
   );
 }
 
-/** Carte de héros, posée en bas de la table. Version courte : bannière,
- *  portrait, titre, une ligne de Nom/états, puis ⚔ attaque / 🛡 défense. */
-function AllyCard({ battle, actor, active, selected, onPick, tilt, fx, pop }) {
+/** Carte de héros, posée en bas de la table : l'image 4:5 générée EST le
+ *  visage de la carte, le texte (nom, titre, Nom/états, ⚔/) en bandeaux. */
+function AllyCard({ actor, active, selected, onPick, tilt, fx, pop }) {
   return (
     <article
       className={[
-        `rpg-card rpg-card--equipe rpg-card--legendaire rpg-card--elem-${actor.element}`,
+        `rpg-card rpg-card--equipe rpg-card--legendaire rpg-card--img rpg-card--elem-${actor.element}`,
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
         actor.alive ? '' : 'is-down',
@@ -152,18 +152,20 @@ function AllyCard({ battle, actor, active, selected, onPick, tilt, fx, pop }) {
       style={{ '--tilt': `${tilt}deg` }}
       onClick={() => onPick(actor.id)}
     >
+      <img
+        className="rpg-card__img"
+        src={`${import.meta.env.BASE_URL}cards/${actor.id}.jpg`}
+        alt={`Carte de ${actor.name}`}
+      />
+      {pop != null && (
+        <span className={`rpg-pop ${pop < 0 ? 'rpg-pop--dmg' : 'rpg-pop--heal'}`} aria-hidden="true">
+          {pop < 0 ? String(-pop) : `+${pop}`}
+        </span>
+      )}
       <header className="rpg-card__title">
         <strong>{actor.name}</strong>
         <CostPips element={actor.element} />
       </header>
-      <span className="rpg-card__art">
-        <img className="rpg-ally__portrait" src={portraitSrc(actor)} alt={`Portrait de ${actor.name}`} />
-        {pop != null && (
-          <span className={`rpg-pop ${pop < 0 ? 'rpg-pop--dmg' : 'rpg-pop--heal'}`} aria-hidden="true">
-            {pop < 0 ? String(-pop) : `+${pop}`}
-          </span>
-        )}
-      </span>
       <span className="rpg-card__type">
         {actor.role}
         <em className="rpg-card__set rpg-card__set--mythique" title="Mythique" aria-hidden="true">✦</em>
