@@ -9,6 +9,7 @@ import NotFound from './NotFound';
 // Les actus du jour générées par le robot (src/news/autoIndex.js, vide au
 // départ) cohabitent avec les articles manuels ci-dessous : même gabarit.
 import { autoStories } from '../news/autoIndex';
+import { dailyStories } from '../news/daily/2026-10-08';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 import SpoilerAlert from '../components/SpoilerAlert';
@@ -24,6 +25,8 @@ import { getArticleTrailerEntry } from '../articleTrailers';
 const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 const stories = {
+  // Édition du 08.10.2026 : données communes aux articles, cartes et SEO.
+  ...dailyStories,
 
   // ── Actus du mercredi 07.10.2026 ───────────────────────────────────────
   // Gaming, cinéma & séries et tech : les trois catégories de la page Actus

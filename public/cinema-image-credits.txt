@@ -135,3 +135,7 @@ tesla-byd-livraisons/ — 01 : capture de la vidéo Tesla de la première livrai
 https://teslaoracle.com/2025/06/28/tesla-shares-video-of-the-first-fully-autonomous-model-y-delivery-to-the-customer-using-robotaxi-fsd
 https://scmp.com/topics/byd
 https://electrek.co/2025/01/27/byd-first-china-car-sales-revenue-even-with-prices-under-17k/
+
+news/2026-10-08/below-netflix.jpg — photo de presse © Netflix (2026), Josh Hartnett dans le rôle de Calvin Penney, relayée par Variety. Recadrage 16:9 et compression ; crédit affiché dans l’article. La bande-annonce intégrée vient de la chaîne principale Netflix (U57CNxSgoss, contrôle oEmbed du 08.10.2026).
+https://variety.com/2026/tv/news/josh-hartnett-netflix-series-below-teaser-1236822698/
+Crédits complets de l’édition : news/2026-10-08/credits.md

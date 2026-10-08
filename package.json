@@ -20,6 +20,7 @@
     "check:community": "node scripts/community-check.mjs",
     "check:messages": "node scripts/messages-check.mjs",
     "check:newsbot": "node scripts/news-bot/check.mjs",
+    "check:daily-news": "node scripts/daily-news-check.mjs",
     "check:light-news": "node scripts/light-news-check.mjs",
     "check:headlines": "node scripts/headlines-check.mjs",
     "check:phone-css": "node scripts/phone-css-check.mjs",

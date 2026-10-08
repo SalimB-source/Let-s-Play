@@ -32,6 +32,8 @@ export const TRAILER_KINDS = {
   trailer: 'BANDE-ANNONCE',
   teaser: 'TEASER',
   extrait: 'EXTRAIT',
+  coulisses: 'COULISSES',
+  replay: 'REPLAY',
 };
 
 /** Libellé d'une nature de vidéo (« BANDE-ANNONCE », « TEASER », « EXTRAIT »). */
@@ -47,6 +49,8 @@ const KIND_BADGES = {
   trailer: 'BANDE-ANNONCE OFFICIELLE',
   teaser: 'TEASER OFFICIEL',
   extrait: 'EXTRAIT OFFICIEL',
+  coulisses: 'COULISSES OFFICIELLES',
+  replay: 'REPLAY OFFICIEL',
 };
 
 /** Pastille affichée sous le lecteur d'une vidéo. */
@@ -59,6 +63,8 @@ const KIND_HINTS = {
   trailer: 'Bande-annonce officielle intégrée à l’article',
   teaser: 'Teaser officiel intégré à l’article',
   extrait: 'Extrait officiel intégré à l’article',
+  coulisses: 'Coulisses officielles intégrées à l’article',
+  replay: 'Replay officiel intégré à l’article',
 };
 
 /** Lien public d'une vidéo YouTube (aucun embed codé en dur hors de lib/). */
@@ -67,6 +73,34 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // ---- Édition du jeudi 08.10.2026 -----------------------------------------
+  // Titres et chaînes contrôlés via YouTube oEmbed le 08.10.2026.
+  // Les coulisses de Hellraiser datent de juillet : la note ne les présente
+  // pas comme une nouvelle vidéo de lancement. Les images KARI sont bien
+  // celles du cinquième vol, et non un ancien décollage de Nuri.
+  'hellraiser-revival-sortie': {
+    label: 'HELLRAISER: REVIVAL', meta: 'SABER INTERACTIVE · PLAYSTATION',
+    items: [
+      { id: '2e5lR5c4dEo', kind: 'coulisses', title: 'Clive Barker’s Hellraiser: Revival - "Horror" Developer Diary | PS5 Games', channel: 'PlayStation', verified: '08.10.2026', note: 'À titre d’illustration : le carnet de développement publié avec le PlayStation Blog du 16 juillet 2026. Il présente la conception de l’horreur du jeu, pas une nouvelle bande-annonce du jour. Images horrifiques : public sensible averti.' },
+    ],
+    credit: 'Vidéo officielle : chaîne principale PlayStation, carnet de développement de Saber Interactive.',
+  },
+  'cinema/below-netflix-sortie': {
+    label: 'BELOW', meta: 'NETFLIX · MINI-SÉRIE',
+    items: [
+      { id: 'U57CNxSgoss', kind: 'trailer', title: 'BELOW | Official Trailer | Netflix', channel: 'Netflix', verified: '08.10.2026' },
+    ],
+    credit: 'Bande-annonce officielle : chaîne principale Netflix, publiée le 10 septembre 2026.',
+  },
+  'tech/nuri-cinquieme-vol-satellites': {
+    label: 'NURI · CINQUIÈME VOL', meta: 'CORÉE DU SUD · KARI',
+    items: [
+      { id: 'YeM0G_BEBzY', kind: 'extrait', title: '누리호 5차 발사 성공! 탑재 위성 분리의 순간 공개!', channel: '한국항공우주연구원 KARI TV', verified: '08.10.2026', note: 'Images embarquées du cinquième vol, le 7 octobre 2026 : KARI montre la séparation des satellites. Le titre coréen annonce la réussite du vol et ces images de séparation ; la vidéo est en coréen.' },
+      { id: 'v9gY7VkVT0w', kind: 'replay', title: '[LIVE] 누리호 5차 발사 공식 생중계 🚀 2026.10.07.', channel: '한국항공우주연구원 KARI TV', verified: '08.10.2026', note: 'Replay de la retransmission officielle du lancement du 7 octobre 2026, en coréen. Malgré le mot « LIVE » conservé dans le titre d’origine, il ne s’agit pas d’un direct en cours.' },
+    ],
+    credit: 'Vidéos officielles : Korea Aerospace Research Institute, chaîne 한국항공우주연구원 KARI TV.',
+  },
+
   // ---- Fournée du mercredi 07.10.2026 ---------------------------------------
   // GTA VI (gaming) : les bandes-annonces officielles de Rockstar Games
   // présentent Leonida et Vice City, où se déroulera GTA VI.

@@ -56,6 +56,15 @@
    tout en haut (d'où l'espacement haut à zéro) et c'est elle qui laisse
    respirer le bandeau du hub — puis les trois univers — qui suivent. */
 .news-hub-section .news-hub-headlines{padding:0 0 72px}
+/* L'accès aux archives reste en haut à droite du titre, sans toucher aux
+   autres en-têtes featured-dossiers de l'accueil ou des hubs d'univers. */
+.news-hub-section .news-hub-headlines .news-headlines-head{align-items:flex-start}
+.news-hub-section .news-hub-headlines .news-headlines-head>div{min-width:0}
+.news-hub-section .news-hub-headlines .news-headlines-all{
+  flex-shrink:0;align-self:flex-start;min-height:44px;padding:10px 14px;
+  gap:8px;margin:0;font-size:10px;letter-spacing:.06em;white-space:nowrap;
+}
+.news-hub-section .news-hub-headlines .news-headlines-all:focus-visible{outline:2px solid var(--cyan);outline-offset:-4px}
 /* Les actus du jour sont trois : elles tiennent toute la rangée, comme les
    trois univers juste en dessous. La grille générique des actus en prévoit
    quatre (cinq puis six sur très grand écran) — la quatrième colonne resterait
@@ -69,6 +78,13 @@
 .news-hub-section .news-hub-head + .news-hub-grid{margin-top:24px}
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .news-hub-section .news-hub-headlines{padding-bottom:52px}
+  /* L'action reste en haut à droite ; le grand titre occupe ensuite toute
+     la largeur, pour ne pas être comprimé par le bouton sur téléphone. */
+  .news-hub-section .news-hub-headlines .news-headlines-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px}
+  .news-hub-section .news-hub-headlines .news-headlines-head>div{display:contents}
+  .news-hub-section .news-hub-headlines .news-headlines-head .eyebrow{grid-column:1;grid-row:1;align-self:center;margin:0}
+  .news-hub-section .news-hub-headlines .news-headlines-head h2{grid-column:1/-1;grid-row:2;margin-top:0}
+  .news-hub-section .news-hub-headlines .news-headlines-all{grid-column:2;grid-row:1;justify-self:end}
   .news-hub-section .news-hub-headlines .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 /* Trois univers sur desktop ; sous 1100 px la grille repasse à deux colonnes

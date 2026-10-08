@@ -4302,6 +4302,33 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
 - `npm run check:light-news` : le thème clair des pages Actus, galeries
   comprises.
 
+## Édition du 08.10.2026 : articles, miniatures et vidéos
+
+Les trois actualités de cette édition partagent une seule source de données,
+`src/news/daily/2026-10-08.js`, utilisée par les articles, les cartes des hubs,
+la une gaming de l’accueil, la recherche et les métadonnées SEO :
+
+- `/news/hellraiser-revival-sortie` — gaming, avec les coulisses officielles
+  publiées par PlayStation ; la vidéo de juillet est explicitement signalée
+  comme illustration, et non comme une nouvelle bande-annonce du jour.
+- `/news/cinema/below-netflix-sortie` — cinéma & séries, avec la bande-annonce
+  de la chaîne principale Netflix.
+- `/news/tech/nuri-cinquieme-vol-satellites` — tech & espace, avec les images
+  embarquées KARI et le replay du lancement. La date du vol (7 octobre) reste
+  distincte de celle du bilan publié le 8 ; le satellite non séparé est signalé.
+
+Les trois miniatures sont livrées en JPEG compressé dans
+`public/news/2026-10-08/`, avec leurs crédits et URLs d’origine dans
+`credits.md`. Elles s’affichent aussi avant le démarrage des vidéos à la une ;
+les miniatures YouTube restent le repli. Les genres « COULISSES » et « REPLAY »
+complètent les libellés du lecteur sans présenter toutes les vidéos comme des
+bandes-annonces. Aucun sujet Mistral AI n’est inclus dans cette édition.
+
+`npm run check:daily-news` vérifie les fichiers image, les routes réelles,
+les trois cartes du jour, les mises en avant, la recherche, le SEO et le
+changement de vidéo Nuri. `npm run check:trailers` couvre désormais aussi
+les articles et les pastilles du hub tech, en plus du gaming et du cinéma.
+
 ## Actus cinéma du jour
 
 Le hub Actus (`/news`) ouvre sur trois zones — gaming, cinéma & séries et

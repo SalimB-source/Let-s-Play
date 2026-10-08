@@ -15,6 +15,8 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
 import BlizzardNews from '../src/pages/BlizzardNews';
 import CinemaNews from '../src/pages/CinemaNews';
+import GamingNews from '../src/pages/GamingNews';
+import TechNews from '../src/pages/TechNews';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails';
 
 // L'hôte des miniatures n'est pas écrit en dur ici : il est relu depuis la
@@ -80,7 +82,7 @@ function textOf(html, className) {
 }
 
 /**
- * Rendu du bloc bande-annonce d'une actu du hub cinéma.
+ * Rendu du bloc vidéo d’une actu cinéma, gaming ou tech.
  *
  * Les actus cinéma vivent dans `src/pages/CurrentNews.jsx` (clé préfixée
  * `cinema/`, route `/news/cinema/:slug`) ; la carte « série animée Diablo » est
@@ -90,12 +92,12 @@ function textOf(html, className) {
  * @param {string} key clé d'article (ex. `cinema/werwulf-trailer-eggers`)
  */
 export function renderArticle(key) {
-  const cinema = String(key).startsWith('cinema/');
-  const prefix = cinema ? 'cinema/' : '';
-  const slug = String(key).slice(prefix.length);
+  const prefix = key.startsWith('cinema/') ? 'cinema/' : key.startsWith('tech/') ? 'tech/' : '';
+  const slug = key.slice(prefix.length);
+  const blizzard = ['starcraft-fps', 'diablo-v', 'diablo-switch-2', 'diablo-netflix'].includes(key);
   const html = render(
     `/news/${prefix}${slug}`,
-    cinema ? CurrentNews : BlizzardNews,
+    blizzard ? BlizzardNews : CurrentNews,
     `/news/${prefix}:slug`,
     { slug: key }
   );
@@ -128,12 +130,14 @@ export function renderArticle(key) {
 }
 
 /**
- * Cartes du hub cinéma : `{ to, flag }`, dans l'ordre d'affichage (l'actu à la
+ * Cartes d’un hub : `{ to, flag }`, dans l’ordre d’affichage (l’actu à la
  * une d'abord, puis la grille). `flag` est le libellé de la pastille
  * « BANDE-ANNONCE » posée sur la vignette, ou null quand la carte n'en a pas.
  */
-export function renderHub() {
-  const html = render('/news/cinema', CinemaNews, '/news/cinema');
+export function renderHub(category = 'cinema') {
+  const Page = { cinema: CinemaNews, gaming: GamingNews, tech: TechNews }[category];
+  if (!Page) throw new Error(`Univers inconnu : ${category}`);
+  const html = render(`/news/${category}`, Page, `/news/${category}`);
   // La une est désormais une bannière <article> (vidéo + lien texte) au-dessus
   // de la grille : on la compte comme première carte du flux.
   const featured = [...html.matchAll(/<article\b[^>]*class="[^"]*news-featured-story[^"]*"[^>]*>/g)]
