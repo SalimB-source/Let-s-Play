@@ -25,12 +25,21 @@ import {
   rpgEstimateIntent,
 } from './rpgCombat';
 import { RPG_ELEMENT_ICONS } from './rpgContent';
+import { RPG_BASIC_ATTACKS } from './rpgCards';
 
 const portraitSrc = (actor) =>
   `${import.meta.env.BASE_URL}portraits/${actor.portrait ?? actor.id}.jpg`;
 
 /** Légères rotations : des cartes posées à la main, pas alignées au cordeau. */
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
+
+/** Saveur imprimée sous la règle des cartes ennemies. */
+const ENEMY_FLAVOR = {
+  balayeur: 'Il balaie. Quelqu’un doit bien le faire.',
+  greffier: 'Votre nom est déjà couché. Reste le tampon.',
+  sonnier: 'Le tocsin n’avertit pas. Il conclut.',
+  prototype: 'Construit pour descendre à la place des hommes. On l’a laissé monter.',
+};
 
 /** Pastilles de coût rondes, façon symboles de mana. */
 function CostPips({ element, count = 2 }) {
@@ -115,7 +124,7 @@ function FoeCard({ battle, actor, selected, onPick, tilt, fx, pop }) {
       </span>
       <span className="rpg-card__type">
         Créature — {actor.role}
-        <em className="rpg-card__set" aria-hidden="true">⌖</em>
+        <em className="rpg-card__set" title="Commune" aria-hidden="true">●</em>
       </span>
       <span className="rpg-card__text">
         {actor.alive && <IntentCard battle={battle} actor={actor} onPick={onPick} />}
@@ -124,24 +133,26 @@ function FoeCard({ battle, actor, selected, onPick, tilt, fx, pop }) {
           {actor.blind > 0 && <em className="rpg-tag">aveuglé</em>}
           {actor.weaken > 0 && <em className="rpg-tag">affaibli</em>}
         </span>
+        <i className="rpg-card__flavor">« {ENEMY_FLAVOR[actor.id.split('-')[0]] ?? actor.role} »</i>
       </span>
       <footer className="rpg-card__foot">
         <span className="rpg-card__col">
           V·{String(battle.round).padStart(2, '0')} · BAB EL
           <TierBadge tier={actor.tier} />
         </span>
-        <span className="rpg-card__pt">{actor.hp}/{actor.maxHp}</span>
+        <span className="rpg-card__pt" title="Attaque / PV restants">{actor.atk}/{actor.hp}</span>
       </footer>
     </article>
   );
 }
 
-/** Carte de l'équipe, posée en bas de la table. */
-function AllyCard({ actor, active, selected, onPick, tilt, fx, pop }) {
+/** Carte légendaire de l'équipe, posée en bas de la table. */
+function AllyCard({ battle, actor, active, selected, onPick, tilt, fx, pop }) {
+  const base = RPG_BASIC_ATTACKS[actor.id];
   return (
     <article
       className={[
-        `rpg-card rpg-card--equipe rpg-card--elem-${actor.element}`,
+        `rpg-card rpg-card--equipe rpg-card--legendaire rpg-card--elem-${actor.element}`,
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
         actor.alive ? '' : 'is-down',
@@ -164,10 +175,16 @@ function AllyCard({ actor, active, selected, onPick, tilt, fx, pop }) {
       </span>
       <span className="rpg-card__type">
         Créature légendaire — {actor.role}
-        <em className="rpg-card__set" aria-hidden="true">⌖</em>
+        <em className="rpg-card__set rpg-card__set--mythique" title="Mythique" aria-hidden="true">✦</em>
       </span>
       <span className="rpg-card__text rpg-card__text--ally">
-        <span className="rpg-card__rules">
+        {base && (
+          <span className="rpg-card__rules">
+            <b>{base.name}.</b> {base.text} <small>(base : gratuite, une fois par tour)</small>
+          </span>
+        )}
+        <span className="rpg-card__rules rpg-card__rules--meta">
+          Nom
           <span className="rpg-name-segments" title={`${actor.nameSegments}/3 segments de Nom`}>
             {[0, 1, 2].map((i) => <span key={i} className={i < actor.nameSegments ? 'is-on' : 'is-off'} />)}
           </span>
@@ -180,10 +197,10 @@ function AllyCard({ actor, active, selected, onPick, tilt, fx, pop }) {
       </span>
       <footer className="rpg-card__foot">
         <span className="rpg-card__col">
-          L·{actor.level} · BAB EL
+          {String(actor.level).padStart(2, '0')} · BAB EL
           <TierBadge tier={actor.tier} />
         </span>
-        <span className="rpg-card__pt">{actor.hp}/{actor.maxHp}</span>
+        <span className="rpg-card__pt" title="Attaque / PV restants">{actor.atk}/{actor.hp}</span>
       </footer>
     </article>
   );
@@ -280,6 +297,7 @@ export default function CardTable({ battle, queueRef, waveTitle, targetId, allyI
         {team.map((actor, i) => (
           <AllyCard
             key={actor.id}
+            battle={battle}
             actor={actor}
             active={current?.id === actor.id && actor.alive}
             selected={allyId === actor.id}
