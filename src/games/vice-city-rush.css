@@ -3551,58 +3551,59 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 
 /* ── Thème clair ──────────────────────────────────────────────────────────
-   Règle 2 de theme.css — « les médias restent sombres » : la console edition
-   est un écran. Le panneau titre et la coque de jeu (barre supérieure,
-   viewport 3D, HUD, intro, compte à rebours, pause, arrivée, histoire)
-   restent sombres dans les deux thèmes ; la sidebar, le fond de page et le
-   pied de page, eux, sont des surfaces d'interface et suivent le thème clair.
+   Règle 2 de theme.css — « les médias restent sombres » : la console Vice
+   City Rush est un écran de jeu, pas une surface d'interface. Elle garde donc
+   son encre nocturne dans les deux thèmes, et de haut en bas : le fond de
+   page, la coque, la barre supérieure, le viewport 3D, le HUD, la sidebar, le
+   panneau titre, les overlays (intro, compte à rebours, pause, arrivée,
+   histoire) et le pied de page. Aucun bloc du jeu ne passe au blanc.
 
-   L'ancienne conversion passait la coque et ses écrans à moitié au clair :
-   la barre supérieure et les cartes de HUD devenaient blanches alors que la
-   console edition y posait encore une encre claire (titre de la barre et
-   classement illisibles), et les écrans sombres (intro sur key art, compte à
-   rebours, pause, arrivée) recevaient l'encre sombre des jetons clairs
-   (titres et stepper invisibles). On :
-   - réancre l'encre sombre sur la coque : les jetons de la console edition
-     sont redéfinis sur `.city-rush-shell`, qui contient tous les écrans ;
-   - convertit la sidebar (hors coque) en surfaces claires à accents
-     assombris (règle 1 de theme.css) ;
-   - garde le fond de page et le pied de page clairs. */
+   L'ancienne conversion faisait la moitié du chemin : la coque restait sombre,
+   mais la page, les cartes de la sidebar, les lignes du classement, le bloc
+   « sans collision », les pastilles du guide et le pied de page partaient en
+   papier (fond `#f6f7fb`, cartes `rgba(255, 255, 255, 0.92)`, jetons `--cr-*`
+   retournés). Or la peau du hub — `vice-city-rush-hub-skin.css`, importée
+   APRÈS cette feuille et donc prioritaire à spécificité égale — écrit sur ces
+   mêmes blocs une encre blanche littérale (`.city-rush-side-card h3`,
+   `.city-rush-racer-info b`, `.city-rush-guide-item > div b`,
+   `.city-rush-no-collision-note p`, `.city-rush-page-footer > span`) : blanc
+   sur blanc, illisible. Deux feuilles se battaient pour la même surface ; on
+   ne repeint plus rien et on réancre au contraire l'encre de la console,
+   pour qu'aucune règle claire du site ne puisse la faire basculer. */
 :root[data-theme='light'] .city-rush-page {
-  --cr-bg: #f6f7fb;
-  --cr-bg-2: #eef0f8;
-  --cr-panel: rgba(255, 255, 255, 0.92);
-  --cr-panel-2: rgba(255, 255, 255, 0.98);
-  --cr-panel-solid: #ffffff;
-  --cr-border: rgba(20, 18, 50, 0.1);
-  --cr-border-strong: rgba(20, 18, 50, 0.18);
-  --cr-text: #0d1017;
-  --cr-muted: rgba(20, 18, 50, 0.68);
-  --cr-faint: rgba(20, 18, 50, 0.46);
-  --cr-dim: rgba(20, 18, 50, 0.12);
+  --cr-bg: #07080d;
+  --cr-bg-2: #0b0d13;
+  --cr-panel: rgba(8, 10, 16, 0.92);
+  --cr-panel-2: rgba(11, 13, 19, 0.96);
+  --cr-panel-solid: #0b0d13;
+  --cr-border: rgba(255, 255, 255, 0.18);
+  --cr-border-strong: rgba(255, 255, 255, 0.34);
+  --cr-text: #ffffff;
+  --cr-muted: #dfe6f2;
+  --cr-faint: rgba(223, 230, 242, 0.62);
+  --cr-dim: rgba(223, 230, 242, 0.34);
 
   /* Les trois ingrédients de la peau du hub (vice-city-rush-hub-skin.css) sont
-     posés sur l'encre : sur une feuille claire, ils se retournent — le grain
-     marque le papier au lieu de l'éclaircir, et la puce de raccourci devient un
-     tampon d'encre bordé d'un cheveu d'encre. La coque de jeu, elle, reste
-     sombre et les retrouve tels quels plus bas. */
-  --cr-grain: radial-gradient(rgba(13, 16, 23, 0.07) 1px, transparent 1px);
-  --cr-chip-bg: rgba(13, 16, 23, 0.05);
-  --cr-chip-ink: #0d1017;
-  --cr-chip-edge: rgba(20, 18, 50, 0.18);
+     écrits pour l'encre : le grain éclaircit l'écran au lieu de marquer le
+     papier, et la puce de raccourci reste un tampon nocturne bordé d'un cheveu
+     clair. Tels quels dans les deux thèmes. */
+  --cr-grain: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  --cr-chip-bg: rgba(8, 10, 16, 0.74);
+  --cr-chip-ink: #dfe6f2;
+  --cr-chip-edge: rgba(255, 255, 255, 0.18);
 
+  /* Le fond de page suit l'écran : la teinte de la ville sur l'encre du hub,
+     jamais sur du papier. */
   background:
-    radial-gradient(900px 500px at 18% 8%, color-mix(in srgb, var(--city-accent) 10%, transparent), transparent 70%),
-    radial-gradient(700px 400px at 92% 18%, color-mix(in srgb, var(--city-secondary) 8%, transparent), transparent 68%),
-    #f6f7fb;
+    radial-gradient(1100px 520px at 50% -8%, color-mix(in srgb, var(--city-accent) 12%, transparent), transparent 68%),
+    radial-gradient(760px 420px at 96% 104%, color-mix(in srgb, var(--city-secondary) 8%, transparent), transparent 60%),
+    linear-gradient(180deg, #0a0c12 0%, #07080d 58%, #05060a 100%);
+  color-scheme: dark;
 }
 
-/* La coque est l'écran du jeu : on y réancre les jetons sombres de la
-   console edition. La barre supérieure, le viewport, le HUD et tous les
-   overlays (intro, compte à rebours, pause, arrivée, cinématiques d'histoire)
-   vivent dedans et retrouvent leur encre claire d'origine, posée sur leurs
-   surfaces sombres — la coque entière y reste donc lisible, y compris en
-   plein écran (`is-immersive`). */
+/* La coque porte tous les écrans (barre supérieure, viewport, HUD, overlays) :
+   on y réancre les mêmes jetons, pour que le plein écran (`is-immersive`)
+   comme la fenêtre gardent leur encre claire sur surfaces sombres. */
 :root[data-theme='light'] .city-rush-shell {
   --cr-panel: #0b0d13;
   --cr-panel-2: #10131a;
@@ -3623,74 +3624,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   --cr-chip-edge: rgba(255, 255, 255, 0.18);
   color-scheme: dark;
 }
-
-/* Sidebar (hors coque) : surfaces claires, accents assombris. */
-:root[data-theme='light'] .city-rush-side-card {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(20, 18, 50, 0.1);
-}
-:root[data-theme='light'] .city-rush-side-heading { color: rgba(20, 18, 50, 0.55); }
-:root[data-theme='light'] .city-rush-side-heading i {
-  background: rgba(22, 163, 74, 0.1);
-  border-color: rgba(22, 163, 74, 0.28);
-  color: #15803d;
-}
-:root[data-theme='light'] .city-rush-side-card h3 { color: #0d1017; }
-:root[data-theme='light'] .city-rush-side-card h3 em {
-  color: color-mix(in srgb, var(--city-accent) 45%, #0d1017);
-}
-:root[data-theme='light'] .city-rush-racer-card { background: rgba(20, 18, 50, 0.04); }
-:root[data-theme='light'] .city-rush-racer-card.is-player {
-  background: rgba(67, 234, 213, 0.1);
-  border-color: rgba(13, 148, 136, 0.35);
-}
-:root[data-theme='light'] .city-rush-racer-rank { background: rgba(20, 18, 50, 0.06); }
-:root[data-theme='light'] .city-rush-racer-card.is-player .city-rush-racer-rank {
-  background: rgba(13, 148, 136, 0.12);
-  border-color: rgba(13, 148, 136, 0.3);
-  color: #0f766e;
-}
-:root[data-theme='light'] .city-rush-racer-meter { background: rgba(20, 18, 50, 0.1); }
-:root[data-theme='light'] .city-rush-racer-info small i,
-:root[data-theme='light'] .city-rush-leader-foot b i {
-  color: color-mix(in srgb, var(--city-accent) 45%, #0d1017);
-}
-:root[data-theme='light'] .city-rush-guide-item {
-  background: transparent;
-  border-color: rgba(20, 18, 50, 0.08);
-}
-:root[data-theme='light'] .city-rush-guide-item > span {
-  color: color-mix(in srgb, var(--power-color) 45%, #0d1017);
-}
-:root[data-theme='light'] .city-rush-guide-item kbd {
-  background: rgba(20, 18, 50, 0.05);
-  border-color: rgba(20, 18, 50, 0.12);
-}
-:root[data-theme='light'] .city-rush-leader-foot b { color: #8a5a00; }
-:root[data-theme='light'] .city-rush-no-collision-note {
-  background: rgba(72, 185, 255, 0.08);
-  border-color: rgba(72, 185, 255, 0.28);
-}
-:root[data-theme='light'] .city-rush-no-collision-icon { color: #125e8f; }
-:root[data-theme='light'] .city-rush-no-collision-note b { color: #125e8f; }
-:root[data-theme='light'] .city-rush-no-collision-note.is-police {
-  background: rgba(255, 82, 110, 0.07);
-  border-color: rgba(255, 82, 110, 0.24);
-}
-:root[data-theme='light'] .city-rush-no-collision-note.is-police .city-rush-no-collision-icon { color: #c22848; }
-:root[data-theme='light'] .city-rush-no-collision-note.is-police b { color: #c22848; }
-:root[data-theme='light'] .city-rush-no-collision-note.is-solo {
-  background: rgba(255, 93, 184, 0.07);
-  border-color: rgba(214, 40, 140, 0.24);
-}
-:root[data-theme='light'] .city-rush-no-collision-note.is-solo .city-rush-no-collision-icon { color: #b3126f; }
-:root[data-theme='light'] .city-rush-no-collision-note.is-solo b { color: #b3126f; }
-:root[data-theme='light'] .city-rush-page-footer { border-color: rgba(20, 18, 50, 0.12); }
-:root[data-theme='light'] .city-rush-page-footer a {
-  background: rgba(20, 18, 50, 0.05);
-  border-color: rgba(20, 18, 50, 0.12);
-}
-:root[data-theme='light'] .city-rush-page-footer a:hover { background: rgba(20, 18, 50, 0.09); }
 
 /* ── Mode Histoire · Nico Vega — intégration interface ── */
 .city-rush-stepper-item.is-story {

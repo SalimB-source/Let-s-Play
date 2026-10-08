@@ -1141,7 +1141,17 @@
 
 .city-rush-page.city-rush-page .city-rush-page-footer > span { color: #dfe6f2; font-weight: 800 !important; }
 
-/* Comic ink HUD: dark paper panels, bright chips, crisp outline instead of glass. */
+/* HUD d'encre : panneaux nocturnes, puces vives, filet net — ni verre, ni
+   papier blanc. Cette règle posait `background-color: #fff` sur les cartes
+   (position, tour, vitesse), le score, le classement, la barre de vie et le
+   portique de route, alors que toute la peau écrit dessus en encre claire
+   (`color: #f4f6fb`, `> strong { color: #fff }`, `.city-rush-gta-cash > small`)
+   : blanc sur blanc, illisible en pleine course. Le classement et la barre de
+   vie s'en sortaient par une règle plus bas, les cartes et le portique non —
+   la feuille de base leur donnait d'ailleurs déjà un aplat sombre
+   (`--hud-bg`) et un vert autoroutier. On ne pose donc ici que le filet et
+   l'ombre ; l'encre des panneaux est explicite juste en dessous, et le
+   portique garde son vert. */
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-hud-card,
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-gta-cash,
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list,
@@ -1149,10 +1159,17 @@
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-route-sign {
   border: 1px solid rgba(255, 255, 255, .22);
   border-radius: 2px;
-  background-color: #fff;
   box-shadow: 0 3px 0 rgba(0, 0, 0, .6);
   color: #f4f6fb;
   backdrop-filter: none;
+}
+
+/* L'encre des panneaux du HUD : le même aplat nocturne que le classement et la
+   barre de vie, assez opaque pour tenir au-dessus du bitume et du ciel. */
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-hud-card,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-gta-cash,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-health {
+  background: rgba(4, 5, 9, .82);
 }
 
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-position-card,
@@ -1172,7 +1189,9 @@
 .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-position-card > strong {
   color: var(--cr-cherry);
   -webkit-text-fill-color: currentColor;
-  text-shadow: 0 0 2px #fff, 0 2px 0 #0a0c12;
+  /* Le liseré blanc n'avait de sens que sur le papier : sur l'encre du panneau,
+     il bavait autour du chiffre. On garde l'ombre dure du hub. */
+  text-shadow: 0 2px 0 #0a0c12;
   font-family: var(--cr-display);
 }
 
