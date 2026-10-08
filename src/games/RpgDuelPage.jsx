@@ -252,7 +252,7 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
 
         <div className="rpg-bottombar">
           <ol className="rpg-log" aria-live="polite">
-            {duel.log.slice(-5).map((line, index) => (
+            {duel.log.slice(-7).map((line, index) => (
               <li key={`${duel.log.length}-${index}-${line}`} className="rpg-log__line">{line}</li>
             ))}
           </ol>
