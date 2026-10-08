@@ -26,7 +26,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
-import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
+import { dismissTitleMenu, openHubPage } from './vice-city-title-menu-dismiss.jsx';
 import { CITY_RUSH_TOURNAMENTS } from '../src/games/cityRushTournaments.js';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
@@ -99,6 +99,9 @@ async function mountPage(entry = '/jeu/vice-city-rush') {
   ));
   await settle(30);
   await dismissTitleMenu(node);
+  // Les tournois ont leur page : c'est là que le hub les mène, et c'est là
+  // qu'ils doivent être listés — plus dans le sélecteur de modes libres.
+  await openHubPage(node, 'TOURNOIS');
   return { node, unmount: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 

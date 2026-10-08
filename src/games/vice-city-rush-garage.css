@@ -6,7 +6,7 @@
 
    La scène est une couche de fond posée derrière le hub existant :
    `position: absolute; inset: 0` la sort du flux, donc les grilles à zones
-   nommées de `vice-city-rush-comic.css` (`stepper / copy / modes / story…`)
+   nommées de `vice-city-rush-hub-skin.css` (`stepper / copy / modes / story…`)
    continuent de gouverner les menus sans une ligne de modifia. Seul le contenu
    du hub reçoit un `z-index` pour passer devant le décor.
 
@@ -28,7 +28,7 @@
    au garage ne transparaît. */
 .city-rush-page .city-rush-intro:not(.city-rush-story-cinematic),
 .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
-  background-color: #05070b;
+  background-color: #05060a;
   background-image:
     linear-gradient(180deg, rgba(5, 7, 11, .96) 0%, rgba(6, 9, 14, .82) 22%, rgba(8, 12, 18, .5) 50%, rgba(6, 9, 14, .86) 78%, rgba(5, 7, 11, .97) 100%),
     radial-gradient(130% 88% at 50% 34%, rgba(28, 40, 58, .55) 0%, rgba(8, 12, 18, .2) 46%, rgba(4, 6, 10, 0) 72%);
@@ -48,7 +48,7 @@
      menus (qui sont, eux, juste au-dessus). */
   pointer-events: none;
   background:
-    radial-gradient(120% 90% at 50% 30%, #151d2b 0%, #0a0e15 55%, #05070b 100%);
+    radial-gradient(120% 90% at 50% 30%, #151d2b 0%, #0a0e15 55%, #05060a 100%);
 }
 
 /* Le canvas, lui, répond au regard : glisser dessus décale légèrement le
@@ -93,7 +93,7 @@
   inset: clamp(7px, 1.3vh, 15px);
   pointer-events: none;
   border: 1px solid rgba(140, 170, 220, .13);
-  border-radius: 16px;
+  border-radius: 2px;
 }
 
 .city-rush-page .city-rush-hub-stage-frame::before,
@@ -136,7 +136,7 @@
 .city-rush-hub-stage-fallback img {
   width: min(52%, 340px);
   border: 1px solid rgba(140, 170, 220, .18);
-  border-radius: 14px;
+  border-radius: 2px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
 }
 
@@ -146,7 +146,9 @@
   letter-spacing: .2em;
 }
 
-/* ── Plaque du garage, en bout de barre d'étapes ─────────────────────────── */
+/* ── Plaque du garage, en bout de barre des pages ──────────────────────────
+   Elle est sœur des onglets, pas fille du stepper : une page sans étapes
+   (concessionnaire, plateaux, campagne) montre quand même sa voiture. */
 .city-rush-page .city-rush-hub-plate {
   display: flex;
   align-items: center;
@@ -154,7 +156,7 @@
   margin-left: auto;
   padding: 5px 12px 5px 9px;
   border: 1px solid rgba(140, 170, 220, .22);
-  border-radius: 9px;
+  border-radius: 2px;
   background: linear-gradient(180deg, rgba(14, 20, 30, .94), rgba(8, 11, 17, .94));
   box-shadow: 0 8px 22px rgba(0, 0, 0, .4);
   white-space: nowrap;
@@ -217,7 +219,7 @@
 @media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .city-rush-page .city-rush-hub-plate { flex-basis: 100%; margin-left: 0; justify-content: flex-end; }
   .city-rush-page .city-rush-hub-plate small { display: none; }
-  .city-rush-page .city-rush-hub-stage-frame { inset: 6px; border-radius: 12px; }
+  .city-rush-page .city-rush-hub-stage-frame { inset: 6px; border-radius: 2px; }
 }
 
 /* Mouvement réduit : la scène reste, mais rien ne clignote. */

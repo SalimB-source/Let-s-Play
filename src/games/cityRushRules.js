@@ -442,6 +442,24 @@ export function isCityRushFreeCar(carId, cars = CITY_RUSH_CARS) {
   return cityRushFreeCarIds(cars).includes(carId);
 }
 
+/* ── La voiture de la vitrine ───────────────────────────────────────────────
+   L'écran-titre ne montre pas la voiture que le joueur a au garage : il montre
+   ce à quoi on aspire. La règle est la même famille que l'offre du garage —
+   elle se calcule sur le catalogue — et dit : la pièce la plus chère, la
+   puissance en départage. Ajouter une voiture plus onéreuse la fait monter
+   d'elle-même au plateau de l'écran-titre, sans rien retoucher d'autre. */
+export function cityRushShowcaseCar(cars = CITY_RUSH_CARS) {
+  return [...(Array.isArray(cars) ? cars : [])]
+    .filter((car) => car?.id)
+    .sort((a, b) => (
+      ((Number(b?.price) || 0) - (Number(a?.price) || 0)) || cityRushPowerRank(b, a)
+    ))
+    .at(0) || null;
+}
+
+/** La pièce du catalogue posée sur le plateau tournant de l'écran-titre. */
+export const CITY_RUSH_SHOWCASE_CAR = Object.freeze(cityRushShowcaseCar());
+
 // Le trafic d'obstacle roule nettement moins vite que les voitures de course.
 // La route est à double sens : trois voies vont dans le sens de la course, les
 // trois autres accueillent le trafic venant en face — à droite de l'axe par

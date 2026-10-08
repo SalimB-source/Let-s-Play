@@ -1,0 +1,2075 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   VICE CITY RUSH — LA PEAU CALÉE SUR LE HUB DE LANCEMENT
+   Couche de finition posée après toutes les feuilles générales de la console
+   (base, cinématiques, HUD, histoire) et avant les deux sur-couches d'écran
+   que sont le tournoi et le garage : le jeu prend les
+   encres, les angles droits, les filets d'un cheveu, les polices et les
+   marques de sélection de `vice-city-rush-menu.css` (l'écran-titre façon
+   Need for Speed : Most Wanted). La mise en page — grilles, zones du HUD,
+   `grid-template-areas`, points de rupture — n'est pas touchée ici : seule la
+   peau change, et elle se retoupe d'un geste : `npm run theme:city-rush-ink`
+   (scripts/vice-city-rush-ink-sweep.mjs — un outil d'atelier, pas un
+   générateur idempotent : il repart des feuilles dans leur vocabulaire
+   d'avant, et se relance donc avant les retouches à la main).
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Vocabulaire de la peau. Les encres, les rayons, les ombres et les polices
+   du jeu vivent dans `vice-city-rush.css` (les jetons `--cr-*`) : ce bloc ne
+   fait que rappeler les noms courts hérités de l'ancienne peau et poser les
+   trois ingrédients propres au hub — la puce de raccourci, le grain de
+   pellicule, l'équerre de sélection.
+   `color-scheme: dark` : la console est un écran, sombre dans les deux thèmes
+   (règle 2 de `src/theme.css`) — ses contrôles natifs le suivent. */
+:root .city-rush-page.city-rush-page {
+  --cr-ink: var(--cr-bg);
+  --cr-paper: #f4f6fb;
+  --cr-pink: var(--cr-tag);
+  --cr-cyan: #8fd8ff;
+  --cr-yellow: var(--cr-cherry);
+  --cr-lime: #8fd8ff;
+  --cr-violet: var(--cr-tag);
+  --cr-chip-bg: rgba(8, 10, 16, .74);
+  --cr-chip-ink: #dfe6f2;
+  --cr-chip-edge: rgba(255, 255, 255, .18);
+  --cr-grain: radial-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px);
+  --cr-corner: linear-gradient(var(--cr-cherry), var(--cr-cherry));
+  /* Les huit aplats qui cerisent une entrée du hub, réutilisés tels quels. */
+  --cr-corner-image: var(--cr-corner), var(--cr-corner), var(--cr-corner), var(--cr-corner),
+    var(--cr-corner), var(--cr-corner), var(--cr-corner), var(--cr-corner);
+  --cr-corner-size: 14px 3px, 3px 14px, 14px 3px, 3px 14px, 14px 3px, 3px 14px, 14px 3px, 3px 14px;
+  --cr-corner-position: left top, left top, right top, right top, left bottom, left bottom, right bottom, right bottom;
+  color: var(--cr-text);
+  color-scheme: dark;
+}
+
+/* Le grain de l'écran-titre, à plat sur toute la page : trame de 3 px posée
+   en `overlay`, sans masque ni trame de couleur. */
+:root .city-rush-page.city-rush-page::before {
+  z-index: 0;
+  opacity: .3;
+  background-image: var(--cr-grain);
+  background-position: 0 0;
+  background-size: 3px 3px;
+  mix-blend-mode: overlay;
+}
+
+.city-rush-page.city-rush-page .city-rush-layout,
+.city-rush-page.city-rush-page .city-rush-page-footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* La fenêtre de jeu est une planche d'encre bordée d'un cheveu — plus un
+   carton cerclé de trois anneaux. En plein écran, comme sur l'écran-titre, le
+   cadre tombe : l'écran EST le cadre. */
+.city-rush-page.city-rush-page .city-rush-shell {
+  border: 1px solid var(--cr-border);
+  border-radius: 0;
+  background: var(--cr-bg);
+  box-shadow: var(--cr-shadow-hard);
+  isolation: isolate;
+}
+
+.city-rush-page.city-rush-page .city-rush-shell.is-running {
+  border-color: var(--cr-border-strong);
+  box-shadow: var(--cr-shadow-hard), 0 0 0 1px rgba(255, 210, 62, .16);
+}
+
+.city-rush-page.city-rush-page .city-rush-shell.is-immersive {
+  border: 0;
+  border-radius: 0;
+  background: var(--cr-bg);
+  box-shadow: none;
+}
+
+.city-rush-page.city-rush-page .city-rush-shell.is-immersive::before {
+  display: none;
+}
+
+/* La barre du jeu tient le rôle de l'entête de l'écran-titre : une latte
+   d'encre, un trait, le nom du modèle tagué à droite. */
+.city-rush-page.city-rush-page .city-rush-topbar {
+  position: relative;
+  height: 66px;
+  padding-inline: clamp(14px, 2.2vw, 30px);
+  border-bottom: 1px solid var(--cr-border);
+  background: linear-gradient(180deg, rgba(4, 5, 9, .94), rgba(7, 8, 13, .84));
+  box-shadow: none;
+}
+
+.city-rush-page.city-rush-page .city-rush-topbar::after {
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+  height: 7px;
+  content: '';
+  pointer-events: none;
+  background: repeating-linear-gradient(100deg, rgba(255, 255, 255, .8) 0 16px, transparent 16px 22px, rgba(255, 255, 255, .55) 22px 30px, transparent 30px 40px);
+  transform: skewY(-1.2deg);
+  opacity: .6;
+}
+
+.city-rush-page.city-rush-page .city-rush-location { gap: 12px; }
+
+.city-rush-page.city-rush-page .city-rush-location-mark {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 2px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  color: var(--cr-cherry);
+  font-size: 21px;
+  font-weight: 900 !important;
+  transform: rotate(-2deg);
+  font-family: var(--cr-display);
+}
+
+.city-rush-page.city-rush-page .city-rush-location b {
+  color: #fff;
+  font-family: var(--cr-display) !important;
+  font-size: 21px;
+  font-weight: 900 !important;
+  letter-spacing: .05em;
+  text-shadow: 0 2px 0 #0a0c12, 0 0 18px rgba(0, 0, 0, .85);
+}
+
+.city-rush-page.city-rush-page .city-rush-location b em {
+  color: var(--cr-cherry);
+  font-style: normal;
+  -webkit-text-fill-color: currentColor;
+}
+
+.city-rush-page.city-rush-page .city-rush-location small {
+  color: var(--cr-muted);
+  font-size: 11px;
+  letter-spacing: .04em;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-location small i { color: var(--cr-tag); }
+
+.city-rush-page.city-rush-page .city-rush-top-actions { gap: 8px; }
+
+.city-rush-page.city-rush-page .city-rush-wallet {
+  min-height: 38px;
+  padding: 5px 12px;
+  border: 1px solid rgba(126, 240, 170, .34);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: #9ef0bd;
+}
+
+.city-rush-page.city-rush-page .city-rush-wallet-icon { color: currentColor; }
+.city-rush-page.city-rush-page .city-rush-wallet span b { color: #c8ffd9; font-weight: 900 !important; }
+.city-rush-page.city-rush-page .city-rush-wallet span small { color: rgba(158, 240, 189, .72); font-weight: 800 !important; }
+
+.city-rush-page.city-rush-page .city-rush-top-button {
+  min-height: 40px;
+  padding-inline: 13px;
+  border: 1px solid var(--cr-border);
+  border-radius: 4px;
+  background: #dfe6f2;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-ink);
+  font-size: 10px;
+  font-weight: 900 !important;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.city-rush-page.city-rush-page .city-rush-top-button:hover {
+  transform: translateY(-3px);
+  border-color: var(--cr-ink);
+  background: var(--cr-cyan);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-ink);
+}
+
+.city-rush-page.city-rush-page .city-rush-top-button.is-on,
+.city-rush-page.city-rush-page .city-rush-top-button.is-resume {
+  border-color: var(--cr-ink);
+  background: var(--cr-pink);
+  color: #fff;
+}
+
+.city-rush-page.city-rush-page .city-rush-fullscreen-button.is-on { background: var(--cr-violet); }
+
+.city-rush-page.city-rush-page .city-rush-live-pill,
+.city-rush-page.city-rush-page .city-rush-live-pill.is-paused {
+  padding: 8px 11px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-live-pill i {
+  background: var(--cr-chip-bg);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.city-rush-page.city-rush-page .city-rush-top-flag {
+  padding: 7px 10px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  color: var(--cr-chip-ink);
+  font-size: 8px;
+  font-weight: 800 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-top-flag i { background: var(--cr-chip-bg); box-shadow: none; }
+
+.city-rush-page.city-rush-page .city-rush-viewport {
+  background: #0a0c12;
+}
+
+.city-rush-page.city-rush-page .city-rush-canvas {
+  filter: saturate(1.06) contrast(1.05);
+}
+
+/* A fine comic-print screen tone over the 3D scene; gameplay remains fully visible. */
+.city-rush-page.city-rush-page .city-rush-vignette {
+  background: radial-gradient(120% 120% at 50% 42%, transparent 46%, rgba(4, 5, 9, .5) 100%), linear-gradient(180deg, rgba(4, 5, 9, .5), transparent 22%, transparent 72%, rgba(4, 5, 9, .62)), var(--cr-grain);
+  opacity: 1;
+  mix-blend-mode: normal;
+  background-size: cover, cover, 3px 3px;
+}
+
+.city-rush-page.city-rush-page .city-rush-shell-footer {
+  min-height: 42px;
+  border-top: 1px solid var(--cr-border);
+  background: rgba(4, 5, 9, .6);
+  color: var(--cr-faint);
+  font-weight: 700 !important;
+}
+
+/* Main menu: a splash page, not a control panel. */
+.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+  position: absolute;
+  inset: 0;
+  gap: clamp(10px, 1.4vh, 16px);
+  padding: clamp(15px, 2vh, 24px) clamp(18px, 4vw, 64px) clamp(14px, 2vh, 22px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: var(--cr-text);
+  background-color: var(--cr-bg);
+  background-image: linear-gradient(180deg, rgba(4, 5, 9, .88) 0%, rgba(4, 5, 9, .2) 30%, rgba(4, 5, 9, .26) 62%, rgba(4, 5, 9, .94) 100%), var(--cr-grain), url('../../public/vice-city-rush-keyart.jpg');
+  background-position: center, 0 0, 62% 50%;
+  background-size: cover, 3px 3px, cover;
+  background-repeat: no-repeat, repeat, no-repeat;
+  scrollbar-color: var(--cr-cherry) #0b0d13;
+}
+
+.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic)::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(100deg, rgba(7, 8, 13, .9) 0%, rgba(7, 8, 13, .55) 34%, transparent 62%), radial-gradient(ellipse at 88% 10%, rgba(255, 93, 184, .18), transparent 42%);
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* The three-step nav reads like issue tabs in a graphic novel. */
+.city-rush-page.city-rush-page .city-rush-stepper {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  padding: 0 0 9px;
+  border: 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, .28);
+  padding-bottom: 10px;
+}
+
+.city-rush-page.city-rush-page .city-rush-stepper-item {
+  min-height: 34px;
+  gap: 8px;
+  padding: 5px 15px 5px 7px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 6px;
+  background: var(--cr-chip-bg);
+  color: var(--cr-chip-ink);
+  font-size: 13px;
+  letter-spacing: .12em;
+  transition: transform .16s ease, background .16s ease, box-shadow .16s ease;
+  font-family: var(--cr-display);
+  box-shadow: none;
+}
+
+.city-rush-page.city-rush-page .city-rush-stepper-item i {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  box-shadow: none;
+  color: var(--cr-chip-ink);
+  font-size: 12px;
+}
+
+.city-rush-page.city-rush-page .city-rush-stepper-item.is-active {
+  transform: translateY(-2px);
+  border-color: #fff;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 14px rgba(255, 210, 62, .3);
+  color: var(--cr-ink);
+}
+
+.city-rush-page.city-rush-page .city-rush-stepper-item.is-active i {
+  border-color: #07080d;
+  background: var(--cr-cherry);
+  box-shadow: none;
+  color: #fff;
+}
+
+.city-rush-page.city-rush-page .city-rush-stepper-item.is-done i {
+  background: rgba(255, 210, 62, .16);
+  color: var(--cr-cherry);
+  border-color: rgba(255, 210, 62, .5);
+}
+.city-rush-page.city-rush-page .city-rush-stepper-item:hover { transform: translateY(-2px); background: rgba(11, 13, 19, .9); color: #fff; }
+
+.city-rush-page.city-rush-page .city-rush-intro-copy {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  text-align: left;
+}
+
+.city-rush-page.city-rush-page .city-rush-overlay-kicker {
+  padding: 7px 12px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 6px;
+  background: var(--cr-chip-bg);
+  box-shadow: none;
+  color: var(--cr-cyan);
+  font-size: 12px;
+  letter-spacing: .06em;
+  transform: rotate(-1deg);
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-overlay-kicker i {
+  width: 8px;
+  height: 8px;
+  background: var(--cr-tag);
+  box-shadow: 0 0 8px var(--cr-tag);
+}
+
+.city-rush-page.city-rush-page .city-rush-intro h2,
+.city-rush-page.city-rush-page .city-rush-pause-overlay h2,
+.city-rush-page.city-rush-page .city-rush-result-overlay h2 {
+  position: relative;
+  margin: 12px 0 10px;
+  color: #fff;
+  font-family: var(--cr-display) !important;
+  font-size: clamp(44px, 6.4vh, 84px);
+  font-weight: 900 !important;
+  line-height: .92;
+  letter-spacing: .02em;
+  text-shadow: 0 0 2px #fff, 0 3px 0 #0a0c12, 0 6px 18px rgba(0, 0, 0, .9), 0 0 26px rgba(255, 93, 184, .35);
+}
+
+.city-rush-page.city-rush-page .city-rush-intro h2 em,
+.city-rush-page.city-rush-page .city-rush-pause-overlay h2 em,
+.city-rush-page.city-rush-page .city-rush-result-overlay h2 em {
+  color: var(--cr-cherry);
+  background: none;
+  font-style: normal;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: 0 3px 0 #0a0c12, 0 0 22px rgba(255, 210, 62, .55);
+}
+
+.city-rush-page.city-rush-page .city-rush-intro-copy > p {
+  max-width: 470px;
+  margin: 0;
+  color: var(--cr-muted);
+  font-size: 13px;
+  font-weight: 600 !important;
+  line-height: 1.5;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, .8);
+}
+
+/* À la place de l'étoile de BD : le tag griffé de l'écran-titre (« rush ! »),
+   même marqueur rose, même rotation, et l'éclat d'encre en fond d'onglet. */
+.city-rush-page.city-rush-page .city-rush-intro:is(.is-step-mode, .is-step-story, .is-step-tournament) .city-rush-intro-copy::after {
+  position: absolute;
+  top: 8%;
+  right: 2%;
+  display: grid;
+  width: auto;
+  aspect-ratio: auto;
+  content: 'rush !';
+  clip-path: none;
+  background: transparent;
+  color: var(--cr-tag);
+  filter: none;
+  font-family: var(--cr-marker);
+  font-size: clamp(16px, 1.8vw, 24px);
+  letter-spacing: .02em;
+  transform: rotate(-8deg);
+  padding: 4px 10px;
+  text-shadow: 0 0 12px rgba(255, 93, 184, .7);
+}
+
+/* Story arc card: illustrated panel, caption badge and inked edges. */
+.city-rush-page.city-rush-page .cr-story-hub {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(11, 13, 19, .96), rgba(7, 8, 13, .96)), var(--cr-grain);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  background-size: auto, 3px 3px;
+}
+
+.city-rush-page.city-rush-page .cr-story-hub-heading {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+
+.city-rush-page.city-rush-page .cr-story-hub-kicker {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: var(--cr-cyan);
+  font-size: 13px;
+  letter-spacing: .16em;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .cr-story-hub-heading h3 {
+  margin: 0;
+  color: #fff;
+  font-family: var(--cr-display) !important;
+  font-size: clamp(19px, 2vw, 26px);
+  font-weight: 900 !important;
+  letter-spacing: .03em;
+  text-shadow: 0 2px 0 #0a0c12, 0 0 18px rgba(0, 0, 0, .85);
+}
+
+.city-rush-page.city-rush-page .cr-story-hub-progress {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  color: #dfe6f2;
+  font-size: 9px;
+  font-weight: 700 !important;
+}
+
+.city-rush-page.city-rush-page .cr-story-hub-progress b {
+  padding: 5px 9px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-chip-ink);
+  font-size: 10px;
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-story-banner {
+  grid-template-columns: minmax(150px, 31%) minmax(0, 1fr);
+  width: 100%;
+  min-height: 156px;
+  border: 1px solid var(--cr-border);
+  border-left: 2px solid var(--cr-cherry);
+  border-radius: 2px;
+  background: linear-gradient(100deg, rgba(11, 13, 19, .96), rgba(7, 8, 13, .9));
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  color: var(--cr-text);
+}
+
+.city-rush-page.city-rush-page .city-rush-story-banner:hover {
+  transform: translateY(-3px);
+  border-color: var(--cr-cherry);
+  background: rgba(13, 16, 22, .98);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 16px rgba(255, 210, 62, .3);
+}
+
+.city-rush-page.city-rush-page .city-rush-story-banner-visual {
+  min-height: 150px;
+  border-right: 2px solid var(--cr-cherry);
+  background: #0b0d13;
+}
+
+.city-rush-page.city-rush-page .city-rush-story-banner-visual img {
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.city-rush-page.city-rush-page .city-rush-story-banner-badge {
+  padding: 6px 8px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-cyan);
+  font-size: 11px;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-story-banner-body { gap: 7px; padding: 12px 15px; }
+.city-rush-page.city-rush-page .city-rush-story-banner-body > b {
+  color: #fff; font-size: 19px;
+  font-family: var(--cr-display);
+}
+.city-rush-page.city-rush-page .city-rush-story-banner-meta small { color: var(--cr-text); font-weight: 800 !important; }
+.city-rush-page.city-rush-page .city-rush-story-description { color: var(--cr-text); font-size: 10px; font-weight: 600 !important; line-height: 1.45; }
+
+.city-rush-page.city-rush-page .city-rush-story-banner .city-rush-mode-tag {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-story-launch-label {
+  min-height: 33px;
+  padding-inline: 12px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-chip-ink);
+  font-family: var(--cr-display);
+}
+
+.city-rush-page.city-rush-page .cr-story-chapter-select summary {
+  color: #f4f6fb;
+  font-weight: 800 !important;
+}
+
+.city-rush-page.city-rush-page .cr-story-chapter-select-action {
+  color: var(--cr-cyan);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .cr-story-free-mode-heading {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin: 2px 0 -5px;
+  color: var(--cr-cherry);
+  font-size: 14px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .cr-story-free-mode-heading::before {
+  width: 22px;
+  height: 2px;
+  content: '';
+  border-radius: 0;
+  background: var(--cr-cherry);
+  box-shadow: none;
+  transform: skewY(-1.2deg);
+}
+
+.city-rush-page.city-rush-page .cr-story-free-mode-heading small {
+  color: #dfe6f2;
+  font-size: 9px;
+  font-weight: 700 !important;
+  letter-spacing: .05em;
+  text-transform: none;
+}
+
+/* Mode cards: bright title tabs with thick black ink and comic pop. */
+.city-rush-page.city-rush-page .city-rush-mode-picker {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card {
+  min-height: 155px;
+  gap: 6px;
+  padding: 13px 15px 12px;
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(11, 13, 19, .96), rgba(7, 8, 13, .94));
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  color: #f4f6fb;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card::before {
+  display: block;
+  inset: auto 0 0;
+  height: 3px;
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--mode-accent), transparent 70%);
+  opacity: .9;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card::after {
+  height: 3px;
+  background: var(--cr-cherry);
+  opacity: 0;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, .34);
+  background-color: #1a1e28;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 16px rgba(255, 210, 62, .18);
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card.is-selected {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, .34);
+  background: linear-gradient(180deg, rgba(16, 19, 26, .98), rgba(8, 10, 16, .98));
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 18px rgba(255, 210, 62, .28);
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-number {
+  top: 10px;
+  right: 11px;
+  color: var(--cr-faint);
+  font-size: 11px;
+  font-weight: 900 !important;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-tag {
+  padding: 5px 8px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-cyan);
+  font-size: 11px;
+  letter-spacing: .08em;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-icon {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 210, 62, .4);
+  border-radius: 2px;
+  background: rgba(255, 210, 62, .1);
+  box-shadow: none;
+  color: var(--cr-cherry);
+  font-size: 19px;
+  font-weight: 900 !important;
+  transform: none;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card b {
+  color: #fff;
+  font-size: 20px;
+  letter-spacing: .03em;
+  text-shadow: 0 2px 0 #0a0c12;
+  font-family: var(--cr-display);
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card small {
+  color: var(--mode-accent);
+  font-size: 9px;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-description {
+  color: var(--cr-muted);
+  font-size: 10px;
+  font-weight: 600 !important;
+  line-height: 1.42;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-laps {
+  color: #dfe6f2;
+  font-size: 8px;
+  font-weight: 800 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-laps i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mode-accent);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+}
+
+.city-rush-page.city-rush-page .city-rush-card-action {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 210, 62, .45);
+  border-radius: 4px;
+  background: rgba(255, 210, 62, .1);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-cherry);
+  font-size: 12px;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-mode-card:hover .city-rush-card-action,
+.city-rush-page.city-rush-page .city-rush-city-card:hover .city-rush-card-action,
+.city-rush-page.city-rush-page .city-rush-car-card:hover .city-rush-card-action {
+  border-color: #07080d;
+  background: var(--cr-cherry);
+  color: var(--cr-ink);
+}
+
+/* Controls are bold, pill-shaped, and visibly clickable. */
+.city-rush-page.city-rush-page .city-rush-intro-actions {
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 3px 0 0;
+  border-top: 0;
+}
+
+.city-rush-page.city-rush-page .city-rush-selection-hint {
+  color: #dfe6f2;
+  font-size: 9px;
+  font-weight: 800 !important;
+  letter-spacing: .05em;
+}
+
+.city-rush-page.city-rush-page .city-rush-selection-hint i { color: var(--cr-yellow); }
+
+.city-rush-page.city-rush-page .city-rush-best-note {
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 1px dashed rgba(255, 255, 255, .28);
+}
+
+.city-rush-page.city-rush-page .city-rush-best-note span {
+  color: #dfe6f2;
+  font-size: 8px;
+  font-weight: 800 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-best-note b {
+  color: var(--cr-yellow);
+  font-size: 12px;
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-start-button,
+.city-rush-page.city-rush-page .city-rush-text-button {
+  min-height: 44px;
+  padding-inline: 19px;
+  border: 1px solid rgba(255, 210, 62, .55);
+  border-radius: 6px;
+  background: var(--cr-cherry);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  color: #07080d;
+  font-size: 17px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+  font-family: var(--cr-display);
+}
+
+.city-rush-page.city-rush-page .city-rush-start-button:hover,
+.city-rush-page.city-rush-page .city-rush-text-button:hover {
+  transform: translateY(-2px);
+  border-color: #07080d;
+  background: #ffe27a;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 22px rgba(255, 210, 62, .45);
+  color: var(--cr-ink);
+}
+
+.city-rush-page.city-rush-page .city-rush-start-button.is-gold,
+.city-rush-page.city-rush-page .city-rush-next-race-button {
+  border-color: #07080d;
+  background: var(--cr-cherry);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  color: var(--cr-ink);
+}
+
+.city-rush-page.city-rush-page .city-rush-start-button.is-gold:hover,
+.city-rush-page.city-rush-page .city-rush-next-race-button:hover {
+  background: #ffe27a;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 22px rgba(255, 210, 62, .45);
+  color: #07080d;
+}
+
+.city-rush-page.city-rush-page .city-rush-text-button {
+  min-height: 40px;
+  background: var(--cr-chip-bg);
+  color: var(--cr-chip-ink);
+  border: 1px solid var(--cr-chip-edge);
+}
+
+.city-rush-page.city-rush-page .city-rush-intro-foot {
+  justify-content: flex-start;
+  gap: 6px 9px;
+  width: 100%;
+  margin-top: 0;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(255, 255, 255, .28);
+}
+
+.city-rush-page.city-rush-page .city-rush-intro-foot span {
+  padding: 5px 9px;
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 6px;
+  background: var(--cr-chip-bg);
+  color: var(--cr-chip-ink);
+  font-size: 8px;
+  font-weight: 700 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-intro-foot i { color: var(--cr-yellow); }
+
+/* City-select cards become little location posters. */
+.city-rush-page.city-rush-page .city-rush-city-picker,
+.city-rush-page.city-rush-page .city-rush-city-picker.is-large {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.city-rush-page.city-rush-page .city-rush-city-card {
+  min-height: 178px;
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(11, 13, 19, .96), rgba(7, 8, 13, .94));
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  color: #f4f6fb;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.city-rush-page.city-rush-page .city-rush-city-thumb {
+  flex-basis: 90px;
+  height: 90px;
+  border-bottom: 1px solid var(--cr-border);
+  background: #10131a;
+}
+
+.city-rush-page.city-rush-page .city-rush-city-thumb img {
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.city-rush-page.city-rush-page .city-rush-city-thumb::after {
+  background: linear-gradient(180deg, transparent 40%, rgba(14, 6, 37, .48)),
+    radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 3px 3px;
+}
+
+.city-rush-page.city-rush-page .city-rush-city-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, .34);
+  background: #1a1e28;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 16px rgba(255, 210, 62, .18);
+}
+
+.city-rush-page.city-rush-page .city-rush-city-card.is-selected {
+  border-color: rgba(255, 255, 255, .34);
+  background: linear-gradient(180deg, rgba(16, 19, 26, .98), rgba(8, 10, 16, .98));
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 18px rgba(255, 210, 62, .28);
+  transform: translateY(-4px);
+}
+
+.city-rush-page.city-rush-page .city-rush-city-card::after {
+  height: 3px;
+  background: var(--cr-cherry);
+}
+
+.city-rush-page.city-rush-page .city-rush-city-number {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-city-card b {
+  margin-top: 8px;
+  color: var(--card-accent);
+  font-size: 11px;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .8);
+}
+
+.city-rush-page.city-rush-page .city-rush-city-card small {
+  color: #dfe6f2;
+  font-size: 9px;
+  font-weight: 600 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-city-route {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-city-card-footer .city-rush-card-action { min-height: 25px; }
+
+/* Garage cards: saturated, sticker-like vehicle picks. */
+.city-rush-page.city-rush-page .city-rush-car-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.city-rush-page.city-rush-page .city-rush-car-select-heading > span {
+  color: var(--cr-cherry);
+  font-size: 14px;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-car-select-heading > small {
+  color: #dfe6f2;
+  font-size: 9px;
+  font-weight: 700 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-car-card {
+  min-height: 206px;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(11, 13, 19, .96), rgba(7, 8, 13, .94));
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.city-rush-page.city-rush-page .city-rush-car-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, .34);
+  background: #1a1e28;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 16px rgba(255, 210, 62, .18);
+}
+
+.city-rush-page.city-rush-page .city-rush-car-card.is-selected {
+  border-color: rgba(255, 255, 255, .34);
+  background: linear-gradient(180deg, rgba(16, 19, 26, .98), rgba(8, 10, 16, .98));
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 18px rgba(255, 210, 62, .28);
+  transform: translateY(-4px);
+}
+
+.city-rush-page.city-rush-page .city-rush-car-card-top {
+  aspect-ratio: 16 / 8.4;
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.city-rush-page.city-rush-page .city-rush-car-card-top::after { border: 1px solid rgba(255, 255, 255, .18); }
+.city-rush-page.city-rush-page .city-rush-car-image img { filter: saturate(1.06) contrast(1.04); }
+
+.city-rush-page.city-rush-page .city-rush-car-number,
+.city-rush-page.city-rush-page .city-rush-car-match-tag {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-car-name {
+  color: #fff;
+  font-size: 15px;
+  font-family: var(--cr-display);
+}
+
+.city-rush-page.city-rush-page .city-rush-car-class {
+  color: #dfe6f2;
+  font-size: 8px;
+  font-weight: 700 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-car-stat > small {
+  color: #dfe6f2;
+  font-weight: 800 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-car-stat-track {
+  border: 1px solid var(--cr-ink);
+  border-radius: 4px;
+  background: #0b0d13;
+}
+
+.city-rush-page.city-rush-page .city-rush-car-stat-track > i { border-radius: inherit; }
+
+.city-rush-page.city-rush-page .city-rush-car-card .city-rush-card-action.is-launch {
+  min-height: 29px;
+  border: 1px solid var(--cr-cherry);
+  border-radius: 4px;
+  background: var(--cr-cherry);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: #07080d;
+}
+
+.city-rush-page.city-rush-page .city-rush-driver-pill {
+  border: 1px solid var(--cr-border);
+  border-radius: 4px;
+  background: #1a1e28;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: #f4f6fb;
+}
+
+.city-rush-page.city-rush-page .city-rush-driver-pill.is-player {
+  border-color: var(--cr-ink);
+  background: #1a1e28;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+}
+
+.city-rush-page.city-rush-page .city-rush-driver-pill-copy b { color: #f4f6fb; font-weight: 900 !important; }
+.city-rush-page.city-rush-page .city-rush-driver-pill-copy small { color: #dfe6f2; font-weight: 700 !important; }
+
+/* Outside-fullscreen supporting cards. */
+.city-rush-page.city-rush-page .city-rush-sidebar { gap: 15px; }
+
+.city-rush-page.city-rush-page .city-rush-side-card,
+.city-rush-page.city-rush-page .city-rush-no-collision-note {
+  padding: 19px;
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(11, 13, 19, .96), rgba(7, 8, 13, .94)), var(--cr-grain);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  background-size: auto, 3px 3px;
+}
+
+.city-rush-page.city-rush-page .city-rush-side-heading {
+  color: var(--cr-faint);
+  font-size: 12px;
+  font-family: var(--cr-marker);
+}
+
+.city-rush-page.city-rush-page .city-rush-side-heading i {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-side-card h3 {
+  color: #fff;
+  font-family: var(--cr-display) !important;
+  font-size: 30px;
+  font-weight: 900 !important;
+  line-height: .98;
+  letter-spacing: .02em;
+  text-shadow: 0 2px 0 #0a0c12, 0 0 18px rgba(0, 0, 0, .85);
+}
+
+.city-rush-page.city-rush-page .city-rush-side-card h3 em { color: var(--cr-cherry); }
+
+.city-rush-page.city-rush-page .city-rush-racer-card {
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.city-rush-page.city-rush-page .city-rush-racer-card.is-player {
+  border: 1px solid rgba(255, 210, 62, .45);
+  background: rgba(255, 210, 62, .07);
+  box-shadow: none;
+}
+
+.city-rush-page.city-rush-page .city-rush-racer-rank {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 2px;
+  background: var(--cr-chip-bg);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-racer-card.is-player .city-rush-racer-rank { background: var(--cr-cherry); color: #07080d; }
+.city-rush-page.city-rush-page .city-rush-racer-info b {
+  color: #fff;
+  font-family: var(--cr-display);
+  font-size: 15px;
+}
+.city-rush-page.city-rush-page .city-rush-racer-country,
+.city-rush-page.city-rush-page .city-rush-racer-info small { color: #dfe6f2; font-weight: 700 !important; }
+.city-rush-page.city-rush-page .city-rush-racer-avatar { border: 1px solid var(--cr-border); border-radius: 2px; }
+.city-rush-page.city-rush-page .city-rush-racer-meter { height: 5px; border: 1px solid var(--cr-border); border-radius: 4px; background: rgba(255, 255, 255, .08); }
+.city-rush-page.city-rush-page .city-rush-racer-meter i { border-radius: inherit; background: linear-gradient(90deg, var(--cr-cherry), #fff); }
+
+.city-rush-page.city-rush-page .city-rush-guide-item {
+  border-color: var(--cr-chip-edge);
+  background: var(--cr-chip-bg);
+}
+
+.city-rush-page.city-rush-page .city-rush-guide-item > span {
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+}
+
+.city-rush-page.city-rush-page .city-rush-guide-item > div b { color: #f4f6fb; font-weight: 900 !important; }
+.city-rush-page.city-rush-page .city-rush-guide-item > div small { color: #dfe6f2; font-weight: 600 !important; }
+.city-rush-page.city-rush-page .city-rush-guide-item kbd { border: 1px solid rgba(255, 255, 255, .8); border-radius: 4px; background: #fff; box-shadow: none; color: #0b0d13; }
+.city-rush-page.city-rush-page .city-rush-no-collision-note { background-color: rgba(11, 13, 19, .96); }
+.city-rush-page.city-rush-page .city-rush-no-collision-note p { color: #dfe6f2; font-weight: 500 !important; }
+.city-rush-page.city-rush-page .city-rush-no-collision-note b { color: var(--cr-cherry); font-weight: 900 !important; }
+
+.city-rush-page.city-rush-page .city-rush-page-footer {
+  padding-top: 19px;
+  border-color: rgba(255, 255, 255, .18);
+}
+
+.city-rush-page.city-rush-page .city-rush-page-footer a {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-chip-ink);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-page-footer a:hover {
+  transform: translateY(-2px);
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72);
+  color: #fff;
+  border-color: var(--cr-cherry);
+}
+
+.city-rush-page.city-rush-page .city-rush-page-footer > span { color: #dfe6f2; font-weight: 800 !important; }
+
+/* Comic ink HUD: dark paper panels, bright chips, crisp outline instead of glass. */
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-hud-card,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-gta-cash,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-health,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-route-sign {
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 2px;
+  background-color: #fff;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .6);
+  color: #f4f6fb;
+  backdrop-filter: none;
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-position-card,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-speed-card {
+  border-left: 2px solid var(--cr-cherry);
+  border-right: 0;
+  border-bottom: 0;
+  border-top: 0;
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-hud-label {
+  color: var(--cr-cyan);
+  font-family: var(--cr-marker);
+  font-size: 11px;
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-position-card > strong {
+  color: var(--cr-cherry);
+  -webkit-text-fill-color: currentColor;
+  text-shadow: 0 0 2px #fff, 0 2px 0 #0a0c12;
+  font-family: var(--cr-display);
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-speed-card > strong,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-lap-card > strong {
+  color: #fff;
+  text-shadow: 0 2px 0 #0a0c12;
+  font-family: var(--cr-display);
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-gta-cash > b {
+  color: var(--cr-cherry);
+  text-shadow: 0 2px 0 #0a0c12;
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-gta-cash > small { color: #f4f6fb; font-weight: 800 !important; }
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list {
+  background: rgba(4, 5, 9, .82);
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list-head {
+  border-color: rgba(255, 255, 255, .18);
+  background: rgba(255, 255, 255, .05);
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list-row { border-radius: 2px; background: rgba(255, 255, 255, .04); }
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list-row.is-player { border-color: rgba(255, 210, 62, .5); background: rgba(255, 210, 62, .08); }
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-toast,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-status-pill,
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-lap-banner {
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 4px;
+  background: rgba(4, 5, 9, .86);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: #fff;
+  font-family: var(--cr-display);
+  font-size: 18px;
+}
+
+/* Fenêtre de message des menus : la page la pose dans la fenêtre de jeu, hors
+   du HUD de course (garage, course verrouillée, fin d'histoire). Elle passe
+   au-dessus de la surimpression de préparation et garde le jaune de la bande
+   dessinée, arrondie en pilule comme les pastilles. */
+.city-rush-page.city-rush-page .city-rush-viewport > .city-rush-toast {
+  z-index: 7;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 4px;
+  background: rgba(4, 5, 9, .9);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: #fff;
+  font-family: var(--cr-display);
+  font-size: 18px;
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-lap-banner {
+  border-radius: 2px;
+  background: rgba(4, 5, 9, .86);
+  color: #fff;
+}
+
+.city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-lap-banner.is-final { background: var(--cr-cherry); color: #07080d; }
+
+.city-rush-page.city-rush-page .city-rush-health {
+  background: rgba(4, 5, 9, .82);
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 2px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .6);
+}
+
+.city-rush-page.city-rush-page .city-rush-health-head b {
+  color: var(--cr-cyan);
+  font-family: var(--cr-marker);
+}
+.city-rush-page.city-rush-page .city-rush-health-head small { color: #dfe6f2; font-weight: 800 !important; }
+.city-rush-page.city-rush-page .city-rush-machine-gun-button { border: 1px solid var(--cr-border); border-radius: 50%; box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72), 0 0 14px rgba(255, 210, 62, 0.28); }
+
+/* Pause, finish and countdown become full-screen comic panels. */
+.city-rush-page.city-rush-page .city-rush-pause-overlay,
+.city-rush-page.city-rush-page .city-rush-result-overlay,
+.city-rush-page.city-rush-page .city-rush-countdown {
+  color: #fff;
+  background: var(--cr-grain), linear-gradient(180deg, rgba(4, 5, 9, .94), rgba(7, 8, 13, .97));
+  background-size: 3px 3px, auto;
+}
+
+.city-rush-page.city-rush-page .city-rush-pause-overlay .city-rush-overlay-kicker,
+.city-rush-page.city-rush-page .city-rush-result-overlay .city-rush-overlay-kicker,
+.city-rush-page.city-rush-page .city-rush-countdown > span {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 4px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: var(--cr-cyan);
+  font-weight: 900 !important;
+}
+
+.city-rush-page.city-rush-page .city-rush-pause-overlay h2 em,
+.city-rush-page.city-rush-page .city-rush-result-overlay h2 em { color: var(--cr-cherry); }
+
+.city-rush-page.city-rush-page .city-rush-countdown strong {
+  color: var(--cr-cherry);
+  font-family: var(--cr-display) !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 3px #fff, 0 6px 0 #0a0c12, 0 0 44px rgba(255, 210, 62, .5);
+}
+
+.city-rush-page.city-rush-page .city-rush-countdown small {
+  color: var(--cr-cyan);
+  font-family: var(--cr-marker);
+}
+.city-rush-page.city-rush-page .city-rush-pause-overlay > small { color: #dfe6f2; font-weight: 700 !important; }
+
+.city-rush-page.city-rush-page .city-rush-result-grid > div {
+  border: 1px solid var(--cr-border);
+  border-radius: 2px;
+  background: rgba(11, 13, 19, .9);
+  box-shadow: none;
+}
+
+.city-rush-page.city-rush-page .city-rush-result-overlay > p { color: #dfe6f2; font-weight: 600 !important; }
+
+.city-rush-page.city-rush-page .city-rush-ending-choices button {
+  border: 1px solid var(--cr-chip-edge);
+  border-radius: 2px;
+  background: var(--cr-chip-bg);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  color: #fff;
+}
+
+.city-rush-page.city-rush-page .city-rush-ending-choices button:hover {
+  transform: translateY(-3px);
+  border-color: var(--cr-cherry);
+  background: rgba(11, 13, 19, .96);
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72), 0 0 16px rgba(255, 210, 62, .28);
+}
+
+.city-rush-page.city-rush-page .city-rush-story-cinematic {
+  background: var(--cr-grain), linear-gradient(180deg, rgba(4, 5, 9, .96), rgba(7, 8, 13, .98));
+  background-size: 3px 3px, auto;
+}
+
+.city-rush-page.city-rush-page .city-rush-story-caption,
+.city-rush-page.city-rush-page .city-rush-story-race-card {
+  border: 1px solid var(--cr-border) !important;
+  border-radius: 2px !important;
+  background: rgba(11, 13, 19, .94) !important;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+}
+
+.city-rush-page.city-rush-page .cr-comic-stage img { filter: saturate(1.05) contrast(1.04); }
+.city-rush-page.city-rush-page .cr-comic-stage { border-radius: 2px; box-shadow: 0 3px 0 rgba(4, 5, 9, .72); }
+
+/* Keyboard focus stays obvious against the ink-heavy palette. */
+.city-rush-page.city-rush-page :is(button, a):focus-visible {
+  outline: 2px solid var(--cr-cherry);
+  outline-offset: 3px;
+  box-shadow: 0 0 14px rgba(255, 210, 62, .45);
+}
+
+/* === responsive layout ================================================= */
+@media (min-width: 1101px) and (hover:hover), (min-width: 1101px) and (min-device-width:601px) {
+  /* La page COURSE RAPIDE : la barre des pages, le parcours, le propos, le
+     tour guidé en vis-à-vis, puis les trois modes. La campagne et les plateaux
+     ont quitté cet écran — leurs grilles à elles, juste en dessous. */
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode {
+    display: grid;
+    grid-template-columns: minmax(285px, .78fr) minmax(430px, 1.22fr);
+    grid-template-rows: auto auto minmax(160px, 1fr) auto auto auto auto;
+    grid-template-areas:
+      'bar bar'
+      'stepper stepper'
+      'copy tutorial'
+      'free free'
+      'modes modes'
+      'actions actions'
+      'foot foot';
+    align-content: start;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow-y: auto;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-stepper { grid-area: stepper; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-copy { grid-area: copy; align-self: center; padding-right: 12px; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-tutorial-launch { grid-area: tutorial; align-self: center; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .cr-story-free-mode-heading { grid-area: free; align-self: end; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-mode-picker { grid-area: modes; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-foot { grid-area: foot; }
+
+  /* HISTOIRE et TOURNOIS sont des pages de liste : un propos à gauche, ce qu'on
+     choisit à droite, rien d'autre — la barre des pages tient le haut. */
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) {
+    display: grid;
+    grid-template-columns: minmax(285px, .82fr) minmax(430px, 1.18fr);
+    grid-template-rows: auto minmax(200px, 1fr) auto auto;
+    grid-template-areas:
+      'bar bar'
+      'copy list'
+      'actions actions'
+      'foot foot';
+    align-content: start;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow-y: auto;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-copy { grid-area: copy; align-self: center; padding-right: 12px; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > :is(.cr-story-hub, .cr-tournament-hub) { grid-area: list; align-self: center; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-foot { grid-area: foot; }
+}
+
+@media (min-width: 901px) and (hover:hover), (min-width: 901px) and (min-device-width:601px) {
+  .city-rush-page.city-rush-page .city-rush-intro:has(.city-rush-city-picker) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro:has(.city-rush-car-select) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-city-picker,
+  .city-rush-page.city-rush-page .city-rush-city-picker.is-large { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  .city-rush-page.city-rush-page .city-rush-car-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .city-rush-page.city-rush-page .city-rush-city-picker,
+  .city-rush-page.city-rush-page .city-rush-city-picker.is-large { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-height: 820px) and (min-width: 901px) and (hover:hover), (max-height: 820px) and (min-width: 901px) and (min-device-width:601px) {
+  .city-rush-page.city-rush-page .city-rush-topbar { height: 64px; }
+  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) { gap: 8px; padding-top: 10px; padding-bottom: 12px; }
+  .city-rush-page.city-rush-page .city-rush-intro h2 { margin: 7px 0; font-size: clamp(48px, 6.6vh, 78px); }
+  .city-rush-page.city-rush-page .city-rush-intro-copy > p { font-size: 12px; }
+  .city-rush-page.city-rush-page .cr-story-hub { padding: 11px; }
+  .city-rush-page.city-rush-page .city-rush-story-banner { min-height: 132px; }
+  .city-rush-page.city-rush-page .city-rush-story-banner-visual { min-height: 126px; }
+  .city-rush-page.city-rush-page .city-rush-mode-card { min-height: 132px; gap: 4px; padding: 9px 12px; }
+  .city-rush-page.city-rush-page .city-rush-mode-description { -webkit-line-clamp: 1; }
+  .city-rush-page.city-rush-page .city-rush-intro-foot span { padding: 4px 7px; }
+}
+
+@media (max-width: 900px) {
+  .city-rush-page.city-rush-page .city-rush-topbar { height: 64px; padding-inline: 12px; }
+  .city-rush-page.city-rush-page .city-rush-location { gap: 8px; }
+  .city-rush-page.city-rush-page .city-rush-location-mark { width: 37px; height: 37px; }
+  .city-rush-page.city-rush-page .city-rush-location b { font-size: 14px; }
+  .city-rush-page.city-rush-page .city-rush-top-actions { gap: 5px; }
+  .city-rush-page.city-rush-page .city-rush-top-button { min-height: 34px; width: 36px; padding: 0; justify-content: center; }
+  .city-rush-page.city-rush-page .city-rush-fullscreen-label { display: none; }
+  .city-rush-page.city-rush-page .city-rush-wallet { min-width: 0; min-height: 34px; padding: 4px 8px; gap: 4px; }
+  .city-rush-page.city-rush-page .city-rush-wallet-icon { width: 15px; }
+  .city-rush-page.city-rush-page .city-rush-top-flag { display: none; }
+  .city-rush-page.city-rush-page .city-rush-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .city-rush-page.city-rush-page .city-rush-page-footer { flex-wrap: wrap; }
+}
+
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page.city-rush-page .city-rush-shell { border-radius: 2px; }
+  .city-rush-page.city-rush-page .city-rush-shell.is-immersive { border-radius: 0; }
+
+  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+    gap: 12px;
+    padding: 12px 13px calc(16px + env(safe-area-inset-bottom, 0px));
+    background-image: linear-gradient(130deg, rgba(16, 7, 45, .91), rgba(16, 7, 45, .76) 58%, rgba(13, 18, 47, .66)),
+      radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 3px 3px,
+      linear-gradient(0deg, rgba(13, 6, 40, .92), transparent 58%),
+      url('../../public/vice-city-rush-keyart.jpg');
+    background-position: center, 0 0, center, 67% center;
+    background-size: cover, 12px 12px, cover, cover;
+    background-repeat: no-repeat, repeat, no-repeat, no-repeat;
+  }
+
+  /* Sur un écran de téléphone, tout se pile en une colonne : la barre des
+     pages d'abord — c'est elle qui mène aux autres écrans —, le parcours
+     ensuite, et les trois modes avant tout le reste. */
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'bar' 'stepper' 'copy' 'tutorial' 'free' 'modes' 'actions' 'foot';
+    grid-template-rows: auto auto auto auto auto auto auto auto;
+    align-content: start;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-stepper { grid-area: stepper; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-copy { grid-area: copy; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-tutorial-launch { grid-area: tutorial; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .cr-story-free-mode-heading { grid-area: free; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-mode-picker { grid-area: modes; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-foot { grid-area: foot; }
+
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'bar' 'copy' 'list' 'actions' 'foot';
+    align-content: start;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-copy { grid-area: copy; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > :is(.cr-story-hub, .cr-tournament-hub) { grid-area: list; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-foot { grid-area: foot; }
+
+  .city-rush-page.city-rush-page .city-rush-stepper { gap: 5px; padding-bottom: 7px; }
+  .city-rush-page.city-rush-page .city-rush-stepper-item { min-height: 34px; padding: 3px 10px 3px 5px; }
+  .city-rush-page.city-rush-page .city-rush-stepper-item i { width: 23px; height: 23px; }
+  .city-rush-page.city-rush-page .city-rush-overlay-kicker { padding: 6px 9px; font-size: 7px; }
+  .city-rush-page.city-rush-page .city-rush-intro h2 { margin: 8px 0; font-size: clamp(42px, 12vw, 62px); }
+  .city-rush-page.city-rush-page .city-rush-intro-copy > p { font-size: 11px; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-mode, .is-step-story, .is-step-tournament) .city-rush-intro-copy::after { display: none; }
+
+  .city-rush-page.city-rush-page .cr-story-hub { padding: 11px; border-radius: 2px; }
+  .city-rush-page.city-rush-page .cr-story-hub-heading { align-items: flex-start; }
+  .city-rush-page.city-rush-page .cr-story-hub-progress { font-size: 7px; }
+  .city-rush-page.city-rush-page .cr-story-hub-heading h3 { font-size: 19px; }
+  .city-rush-page.city-rush-page .city-rush-story-banner { grid-template-columns: 98px minmax(0, 1fr); min-height: 132px; border-radius: 2px; }
+  .city-rush-page.city-rush-page .city-rush-story-banner-visual { min-height: 126px; }
+  .city-rush-page.city-rush-page .city-rush-story-banner-body { gap: 5px; padding: 8px 9px; }
+  .city-rush-page.city-rush-page .city-rush-story-banner-body > b { font-size: 12px; }
+  .city-rush-page.city-rush-page .city-rush-story-description { font-size: 8px; }
+  .city-rush-page.city-rush-page .city-rush-story-launch-label { min-height: 29px; padding-inline: 8px; font-size: 7px; }
+
+  /* Les trois modes restent empilés, pleine largeur, sans défilement latéral
+     (voir la section « choix du mode au doigt » plus bas). */
+  .city-rush-page.city-rush-page .city-rush-mode-picker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+    padding: 0;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    overscroll-behavior-inline: auto;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card { min-height: 0; }
+  .city-rush-page.city-rush-page .city-rush-intro-actions { align-items: flex-start; flex-direction: column; }
+  .city-rush-page.city-rush-page .city-rush-best-note { margin-left: 0; text-align: left; }
+  .city-rush-page.city-rush-page .city-rush-intro-foot { gap: 5px; }
+  .city-rush-page.city-rush-page .city-rush-intro-foot span { font-size: 7px; }
+
+  .city-rush-page.city-rush-page .city-rush-city-picker,
+  .city-rush-page.city-rush-page .city-rush-city-picker.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .city-rush-page.city-rush-page .city-rush-city-card { min-height: 164px; }
+  .city-rush-page.city-rush-page .city-rush-city-thumb { flex-basis: 79px; height: 79px; }
+
+  .city-rush-page.city-rush-page .city-rush-car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .city-rush-page.city-rush-page .city-rush-car-card { min-height: 198px; padding: 8px; }
+  .city-rush-page.city-rush-page .city-rush-car-card-top { aspect-ratio: 16 / 9; }
+  .city-rush-page.city-rush-page .city-rush-car-select-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .city-rush-page.city-rush-page .city-rush-car-select-heading > small { text-align: left; }
+  .city-rush-page.city-rush-page .city-rush-driver-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .city-rush-page.city-rush-page .city-rush-driver-pill { gap: 7px; padding: 8px; }
+  .city-rush-page.city-rush-page .city-rush-driver-pill-avatar { width: 30px; height: 30px; }
+
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud { --hud-gap: 7px; --hud-pad: 9px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-hud-card { padding: 8px 9px; border-radius: 2px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-position-card { min-width: 78px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-hud-card > strong { font-size: 21px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-hud-label { font-size: 7px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-gta-cash { padding: 7px 9px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-gta-cash > b { font-size: 11px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-toast { max-width: min(92vw, 440px); white-space: normal; text-align: center; font-size: 9px; }
+  .city-rush-page.city-rush-page .city-rush-viewport .city-rush-hud .city-rush-race-list { max-width: min(205px, 43vw); }
+  .city-rush-page.city-rush-page .city-rush-health { width: min(230px, 54vw); }
+
+  .city-rush-page.city-rush-page .city-rush-sidebar { grid-template-columns: 1fr; }
+  .city-rush-page.city-rush-page .city-rush-page-footer { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 440px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page.city-rush-page .city-rush-location small { max-width: 42vw; font-size: 6px; }
+  .city-rush-page.city-rush-page .city-rush-topbar { padding-inline: 9px; }
+  .city-rush-page.city-rush-page .city-rush-location b { font-size: 12px; }
+  .city-rush-page.city-rush-page .city-rush-location-mark { width: 32px; height: 32px; font-size: 16px; }
+  .city-rush-page.city-rush-page .city-rush-top-button { width: 31px; min-height: 31px; }
+  .city-rush-page.city-rush-page .city-rush-wallet { padding: 3px 6px; }
+  .city-rush-page.city-rush-page .city-rush-wallet span small { display: none; }
+  .city-rush-page.city-rush-page .city-rush-car-grid { grid-template-columns: 1fr 1fr; }
+  .city-rush-page.city-rush-page .city-rush-city-card b { margin-inline: 7px; font-size: 9px; }
+  .city-rush-page.city-rush-page .city-rush-city-card small { margin-inline: 7px; font-size: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-rush-page.city-rush-page *,
+  .city-rush-page.city-rush-page *::before,
+  .city-rush-page.city-rush-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* === Choix du mode au doigt =============================================
+   Sur téléphone et sur tablette, les trois vignettes se rangèrent un temps
+   dans une bande horizontale à défilement aimanté : au moindre mouvement du
+   doigt le glissement l'emportait sur le clic, et le mode restait dur à
+   ouvrir. Elles sont maintenant empilées en rangées pleine largeur — icône à
+   gauche, titre et détails à droite — sans le moindre défilement latéral :
+   une rangée, un doigt, la course. */
+@media (max-width: 760px), (hover: none) and (pointer: coarse), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page.city-rush-page .city-rush-mode-picker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    gap: 9px;
+    width: 100%;
+    padding: 0;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card {
+    display: grid;
+    grid-template-columns: 50px minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto auto;
+    align-items: center;
+    gap: 2px 12px;
+    min-height: 0;
+    padding: 11px 13px 12px;
+    border-radius: 2px;
+    /* Le doigt garde le clic : pas de zoom à double tape, pas d'attente. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Le doigt n'a pas de survol : ni bascule de carte, ni ombre qui déborde sur
+     la rangée suivante. La sélection reste marquée par le liseré coloré. */
+  .city-rush-page.city-rush-page .city-rush-mode-card,
+  .city-rush-page.city-rush-page .city-rush-mode-card:hover,
+  .city-rush-page.city-rush-page .city-rush-mode-card.is-selected {
+    transform: none;
+    box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72);
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card.is-selected {
+    box-shadow: 0 3px 0 rgba(4, 5, 9, 0.72), 0 0 14px rgba(255, 210, 62, 0.28);
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-icon {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    align-self: center;
+    width: 46px;
+    height: 46px;
+    margin: 0;
+    border-radius: 2px;
+    font-size: 21px;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-tag {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card > b {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0;
+    font-size: 16px;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card > small {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-description {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin-top: 7px;
+    -webkit-line-clamp: 2;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-card-footer {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    margin-top: 7px;
+  }
+
+  /* La préparation tient dans l'écran : titre et chapeau plus courts, et les
+     rappels de clavier (sans objet au doigt) remplacés par les gestes. */
+  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+    gap: 9px;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro h2 {
+    margin: 8px 0 7px;
+    font-size: clamp(32px, 8.6vw, 46px);
+    text-shadow: 0 2px 0 #0a0c12, 0 0 18px rgba(0, 0, 0, 0.85);
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro-copy > p { font-size: 11px; }
+}
+
+/* Rappels d'écran : clavier d'un côté, gestes de l'autre. */
+.city-rush-page.city-rush-page .city-rush-intro-foot .is-touch-hint { display: none; }
+
+@media (hover: none) and (pointer: coarse) {
+  .city-rush-page.city-rush-page .city-rush-intro-foot .is-key-hint { display: none; }
+  .city-rush-page.city-rush-page .city-rush-intro-foot .is-touch-hint { display: inline-flex; }
+}
+
+/* === Tablette et écrans bas ============================================
+   Au doigt, la pile pleine largeur est parfaite sur un téléphone tenu droit,
+   mais elle s'étire en une colonne très haute dès que l'écran s'élargit
+   (tablette, téléphone couché) ou se fait court : les trois modes passaient
+   alors sous la ligne de flottaison. On élargit la grille — deux ou trois
+   vignettes côte à côte — et, quand la fenêtre est basse, on resserre la
+   préparation (chapeau masqué, titre court, vignettes d'une ligne de
+   description) pour que le choix du mode tienne entier dans l'écran. */
+@media (hover: none) and (pointer: coarse) and (min-width: 761px) {
+  .city-rush-page.city-rush-page .city-rush-mode-picker {
+    grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+  }
+
+  /* L'ordre du téléphone vaut aussi pour la tablette : les trois modes
+     d'abord, la campagne ensuite. (Les très grands écrans tactiles gardent
+     leur mise en page en deux colonnes.) */
+
+  .city-rush-page.city-rush-page .city-rush-mode-card {
+    min-height: 170px;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-description {
+    -webkit-line-clamp: 3;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) and (min-width: 761px) and (max-width: 1100px) {
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'bar'
+      'stepper'
+      'copy'
+      'tutorial'
+      'free'
+      'modes'
+      'actions'
+      'foot';
+    align-content: start;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-stepper { grid-area: stepper; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-copy { grid-area: copy; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-tutorial-launch { grid-area: tutorial; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .cr-story-free-mode-heading { grid-area: free; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-mode-picker { grid-area: modes; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-foot { grid-area: foot; }
+
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'bar'
+      'copy'
+      'list'
+      'actions'
+      'foot';
+    align-content: start;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-copy { grid-area: copy; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > :is(.cr-story-hub, .cr-tournament-hub) { grid-area: list; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-foot { grid-area: foot; }
+}
+
+@media (hover: none) and (pointer: coarse) and (max-height: 780px) {
+  .city-rush-page.city-rush-page .city-rush-intro-copy > p { display: none; }
+
+  .city-rush-page.city-rush-page .city-rush-intro h2 {
+    margin: 5px 0 4px;
+    font-size: clamp(24px, 6.2vw, 34px);
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card {
+    gap: 2px 10px;
+    min-height: 0;
+    padding: 8px 11px 9px;
+  }
+
+  /* Le détail du mode (petite ligne grise) laisse la place : la description
+     d'une ligne suffit à lire le défi, et le pied garde ses repères. */
+  .city-rush-page.city-rush-page .city-rush-mode-card > small { display: none; }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-description {
+    grid-row: 3 / span 2;
+    margin-top: 4px;
+    -webkit-line-clamp: 1;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-icon {
+    grid-row: 1 / span 2;
+    width: 40px;
+    height: 40px;
+    border-radius: 2px;
+    font-size: 18px;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-card-footer {
+    margin-top: 4px;
+  }
+}
+
+/* Téléphone couché : la fenêtre est très basse et très large. Les trois
+   vignettes se rangent côte à côte plutôt que l'une sous l'autre, et le peu de
+   place qui reste va aux modes : l'en-tête d'étape, le libellé « cours libres »
+   et le chapeau s'effacent au profit de la grille (jamais sur un écran étroit,
+   où les trois colonnes seraient illisibles). */
+@media (hover: none) and (pointer: coarse) and (max-height: 620px) and (min-width: 560px) {
+  .city-rush-page.city-rush-page .city-rush-mode-picker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .city-rush-page.city-rush-page .city-rush-intro-copy,
+  .city-rush-page.city-rush-page .city-rush-stepper,
+  .city-rush-page.city-rush-page .cr-story-free-mode-heading { display: none; }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card {
+    gap: 1px 8px;
+    padding: 7px 9px 8px;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+
+  .city-rush-page.city-rush-page .city-rush-mode-card > b { font-size: 14px; }
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-tag { padding: 2px 6px; font-size: 7px; }
+  .city-rush-page.city-rush-page .city-rush-mode-card .city-rush-mode-description { -webkit-line-clamp: 2; }
+}
+
+/* Écran étroit et très bas (petit téléphone) : même sacrifice qu'en paysage —
+   le chapeau d'étape et le libellé « cours libres » s'effacent pour que les
+   trois modes tiennent dans la fenêtre. */
+@media (hover: none) and (pointer: coarse) and (max-height: 620px) and (max-width: 559px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page.city-rush-page .city-rush-intro-copy > .city-rush-overlay-kicker,
+  .city-rush-page.city-rush-page .cr-story-free-mode-heading { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SIGNATURES DU HUB — LE MÊME GESTE SUR TOUTE LA CONSOLE
+   Quatre gestes, repris de l'écran-titre, posés ici sur les écrans que la
+   peau n'aurait pas croisés d'elle-même :
+     1. la cerise — quatre équerres jaunes sur ce qui est choisi, comme sur
+        le carrousel `.vcr-entry.is-selected` ;
+     2. la lettrine — « Pirata One » sur les titres, les chiffres et les
+        commandess, « Permanent Marker » sur les tags et les kickers ;
+     3. le grain — la trame de 3 px en `overlay` sur tous les plans pleins ;
+     4. la puce — filet d'un cheveu sur fond d'encre, `kbd` blanc sur encre
+        sombre, et le jaune réservé aux états (survol, actif, « GO »).
+   Ces règles sont les dernières de la dernière feuille : elles tiennent
+   face aux neuf feuilles de la console comme aux règles de la peau.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1 · Les équerres de sélection : le mode, la ville et le modèle choisis
+   portent la même marque que l'entrée du carrousel. */
+:root .city-rush-page.city-rush-page :is(
+  .city-rush-mode-card,
+  .city-rush-city-card,
+  .city-rush-car-card,
+  .city-rush-story-banner,
+  .cr-story-mission-card
+).is-selected {
+  background-color: #0d1017;
+  background-image: var(--cr-corner-image);
+  background-position: var(--cr-corner-position);
+  background-size: var(--cr-corner-size);
+  background-repeat: no-repeat;
+}
+
+/* Le même cerisage, en négatif, sur les vignettes verrouillées : rien ne
+   brille, l'équerre passe au gris d'encre. */
+:root .city-rush-page.city-rush-page .city-rush-car-card.is-locked {
+  --cr-corner: linear-gradient(rgba(255, 255, 255, .22), rgba(255, 255, 255, .22));
+}
+
+/* 2 · La lettrine du hub sur les titres et les chiffres que la peau n'avait
+   pas repris : en-têtes de page, chapitres, tournois, tutoriel, plaques. */
+:root .city-rush-page.city-rush-page :is(
+  .city-rush-heading h1,
+  .city-rush-heading h1 em,
+  .city-rush-intro h2,
+  .city-rush-pause-overlay h2,
+  .city-rush-result-overlay h2,
+  .city-rush-countdown strong,
+  .city-rush-car-title,
+  .city-rush-driver-title,
+  .city-rush-story-title,
+  .cr-story-hub-title,
+  .cr-story-mission-title,
+  .cr-tournament-hub-title,
+  .cr-tournament-hub-heading h3,
+  .cr-story-chapter-name,
+  .cr-story-recap b,
+  .city-rush-hub-plate,
+  .city-rush-race-list-title,
+  .cr-tutorial-copy h2,
+  .city-rush-guide-title,
+  .city-rush-result-grid b,
+  .city-rush-hud-card > strong,
+  .city-rush-time,
+  .city-rush-speedometer-readout,
+  .city-rush-route-sign,
+  .vcr-menu-selected,
+  .vcr-menu-logo-title,
+  .vcr-menu-logo-kicker,
+  .vcr-menu-main-text,
+  .vcr-menu-tag,
+  .vcr-menu-car-name,
+  .vcr-key-chip,
+  .vcr-menu-panel h2,
+  .vcr-menu-panel li,
+  .vcr-menu-panel button
+) {
+  font-family: var(--cr-display) !important;
+  letter-spacing: .02em;
+}
+
+:root .city-rush-page.city-rush-page :is(
+  .city-rush-eyebrow,
+  .city-rush-intro h2 em,
+  .city-rush-story-banner-body > b,
+  .cr-story-hub-kicker,
+  .cr-tournament-hub-kicker,
+  .cr-story-mission-kicker,
+  .cr-tutorial-brand b,
+  .city-rush-driver-title em,
+  .vcr-menu-tag
+) {
+  font-family: var(--cr-marker) !important;
+  letter-spacing: .04em;
+}
+
+/* Les gros titres du jeu sur trois lignes maximum, comme ceux du hub : la
+   lettrine gothique est large, elle cède la place plutôt que de déborder. */
+:root .city-rush-page.city-rush-page :is(.city-rush-mode-card b, .city-rush-car-name, .cr-tournament-card b) {
+  overflow-wrap: break-word;
+}
+
+/* 3 · Le grain sur tous les plans pleins : fenêtre de jeu, écrans de
+   préparation, bandeaux d'erreur et de récompense. */
+:root .city-rush-page.city-rush-page :is(
+  .city-rush-error,
+  .city-rush-toast,
+  .city-rush-cash-reward,
+  .city-rush-course-unlocked-notice,
+  .city-rush-intro-foot span,
+  .cr-story-chapter-select
+) {
+  background-image: var(--cr-grain);
+  background-size: 3px 3px;
+  background-repeat: repeat;
+}
+
+/* 4 · Les puces : même squelette que `.vcr-key-chip` partout où le jeu pose
+   un compteur, une étiquette ou un raccourci. */
+:root .city-rush-page.city-rush-page :is(
+  .city-rush-top-button,
+  .city-rush-wallet,
+  .city-rush-live-pill,
+  .city-rush-top-flag,
+  .city-rush-overlay-kicker,
+  .city-rush-stepper-item,
+  .city-rush-mode-tag,
+  .city-rush-city-route,
+  .city-rush-car-number,
+  .city-rush-car-match-tag,
+  .city-rush-driver-pill,
+  .city-rush-intro-foot span,
+  .city-rush-card-action,
+  .city-rush-text-button,
+  .cr-tournament-status,
+  .cr-story-chapter-status,
+  .vcr-key-chip
+) {
+  border: 1px solid var(--cr-chip-edge) !important;
+  border-radius: 6px !important;
+  background-color: var(--cr-chip-bg) !important;
+  color: var(--cr-chip-ink) !important;
+  box-shadow: 0 3px 0 rgba(4, 5, 9, .72) !important;
+}
+
+:root .city-rush-page.city-rush-page :is(
+  .city-rush-top-button:hover,
+  .city-rush-stepper-item.is-active,
+  .city-rush-text-button:hover
+) {
+  border-color: var(--cr-cherry) !important;
+  color: #fff !important;
+}
+
+/* Le jaune de cerise reste la couleur de l'action : lancement, reprise,
+   tournoi en cours, récompense. Le vert de la caisse, lui, dit l'argent. */
+:root .city-rush-page.city-rush-page :is(
+  .city-rush-start-button,
+  .city-rush-next-race-button,
+  .city-rush-start-button.is-gold
+) {
+  background: var(--cr-cherry) !important;
+  border: 1px solid rgba(255, 235, 120, .7) !important;
+  color: #07080d !important;
+  font-family: var(--cr-display) !important;
+  letter-spacing: .06em;
+}
+
+:root .city-rush-page.city-rush-page .city-rush-cash-reward,
+:root .city-rush-page.city-rush-page .city-rush-course-unlocked-notice {
+  border: 1px solid rgba(126, 240, 170, .34) !important;
+  background-color: rgba(8, 16, 12, .9) !important;
+  color: #c8ffd9 !important;
+}
+
+/* Le compteur de tours et la file des pilotes gardent un seul filet, celui
+   du hub : pas de halo neon autour des chiffres. */
+:root .city-rush-page.city-rush-page .city-rush-lap-track > span {
+  border: 1px solid rgba(255, 255, 255, .28) !important;
+  background: rgba(255, 255, 255, .06) !important;
+  box-shadow: none !important;
+}
+
+:root .city-rush-page.city-rush-page .city-rush-lap-track > span.is-done i,
+:root .city-rush-page.city-rush-page .city-rush-lap-track > span.is-current i {
+  background: var(--cr-cherry) !important;
+  box-shadow: 0 0 8px rgba(255, 210, 62, .5) !important;
+}
+
+/* ── Le hub reste lisible en plein écran ────────────────────────────────
+   La coque passe en surimpression et l'écran-titre vit avec elle : la barre
+   du jeu, elle, ne doit pas remonter au-dessus du menu. */
+:root .city-rush-page.city-rush-page .city-rush-shell.is-immersive .city-rush-topbar {
+  flex-basis: 60px;
+}
+
+/* ── Téléphone : les puces se resserrent, jamais ne s'empilent ───────── */
+@media (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
+  :root .city-rush-page.city-rush-page :is(
+    .city-rush-top-button,
+    .city-rush-wallet,
+    .city-rush-live-pill,
+    .city-rush-top-flag
+  ) {
+    min-height: 34px;
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  :root .city-rush-page.city-rush-page .city-rush-location b { font-size: 18px; }
+  :root .city-rush-page.city-rush-page .city-rush-location small { font-size: 10px; }
+}
+
+/* ── Mouvement réduit : le cerisage reste, la bascule s'efface ───────── */
+@media (prefers-reduced-motion: reduce) {
+  :root .city-rush-page.city-rush-page :is(
+    .city-rush-mode-card,
+    .city-rush-city-card,
+    .city-rush-car-card,
+    .city-rush-stepper-item,
+    .city-rush-top-button,
+    .city-rush-text-button,
+    .city-rush-page-footer a
+  ),
+  :root .city-rush-page.city-rush-page :is(
+    .city-rush-mode-card,
+    .city-rush-city-card,
+    .city-rush-car-card,
+    .city-rush-stepper-item,
+    .city-rush-top-button,
+    .city-rush-text-button,
+    .city-rush-page-footer a
+  ):hover {
+    transform: none !important;
+  }
+
+  :root .city-rush-page.city-rush-page .city-rush-countdown strong { animation: none !important; }
+}

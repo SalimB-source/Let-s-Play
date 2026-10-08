@@ -9,8 +9,8 @@
   background:
     radial-gradient(ellipse at 50% 8%, rgba(40, 70, 107, 0.3), transparent 58%),
     rgba(4, 7, 14, 0.9);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   animation: crTutorialLayerIn 0.22s ease-out both;
 }
 
@@ -26,7 +26,7 @@
   max-height: 100%;
   overflow: hidden;
   border: 1px solid rgba(198, 222, 255, 0.2);
-  border-radius: 23px;
+  border-radius: 2px;
   background:
     radial-gradient(ellipse at 12% 0%, rgba(67, 234, 213, 0.08), transparent 38%),
     linear-gradient(145deg, rgba(14, 20, 34, 0.99), rgba(7, 10, 19, 0.99));
@@ -67,7 +67,7 @@
   height: 35px;
   padding-left: 2px;
   border: 1px solid rgba(67, 234, 213, 0.35);
-  border-radius: 11px;
+  border-radius: 2px;
   background: rgba(67, 234, 213, 0.12);
   color: #6ff4dc;
   font-size: 12px;
@@ -98,7 +98,7 @@
   width: 38px;
   height: 38px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  border-radius: 2px;
   background: rgba(255, 255, 255, 0.055);
   color: #cad3df;
   cursor: pointer;
@@ -129,7 +129,7 @@
   display: block;
   position: relative;
   height: 3px;
-  border-radius: 99px;
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -243,7 +243,7 @@
   padding: 10px 11px;
   border: 1px solid rgba(84, 234, 209, 0.16);
   border-left: 2px solid #54ead1;
-  border-radius: 8px 12px 12px 8px;
+  border-radius: 2px 2px 2px 2px;
   background: rgba(84, 234, 209, 0.055);
   color: #d3f5ee;
   font: 800 8px/1.5 var(--mono, ui-monospace, monospace);
@@ -271,7 +271,7 @@
   min-height: 25px;
   padding: 4px 8px;
   border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 7px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.065);
   color: #f5f8fe;
   font: 800 9px/1.2 var(--mono, ui-monospace, monospace);
@@ -296,7 +296,7 @@
   min-height: 250px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 17px;
+  border-radius: 2px;
   background:
     radial-gradient(ellipse at 50% 47%, color-mix(in srgb, var(--tutorial-accent) 14%, transparent), transparent 48%),
     linear-gradient(180deg, #182134 0%, #121928 47%, #090f18 100%);
@@ -560,10 +560,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 7px;
+  border-radius: 6px;
   background: rgba(5, 9, 16, 0.7);
-  -webkit-backdrop-filter: blur(7px);
-  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   font: 800 8px/1 var(--mono, ui-monospace, monospace);
   letter-spacing: 0.09em;
 }
@@ -619,7 +619,7 @@
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 10px;
+  border-radius: 2px;
   background: rgba(255, 255, 255, 0.06);
   color: #e9f0f7;
   font: 800 8px/1 var(--mono, ui-monospace, monospace);
@@ -637,17 +637,17 @@
 
 .cr-tutorial-panel button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .cr-tutorial-layer { padding: 8px; }
-  .cr-tutorial-panel { border-radius: 17px; }
+  .cr-tutorial-panel { border-radius: 2px; }
   .cr-tutorial-header { min-height: 55px; padding: 9px 12px; }
-  .cr-tutorial-brand-mark { width: 31px; height: 31px; border-radius: 9px; }
+  .cr-tutorial-brand-mark { width: 31px; height: 31px; border-radius: 2px; }
   .cr-tutorial-brand b { font-size: 9px; }
   .cr-tutorial-brand small { font-size: 7px; }
   .cr-tutorial-close { width: 34px; height: 34px; }
   .cr-tutorial-progress { gap: 3px; padding: 9px 13px 1px; }
   .cr-tutorial-main { grid-template-columns: minmax(0, 1fr); gap: 9px; min-height: 0; padding: 10px 13px 11px; overflow-y: auto; }
-  .cr-tutorial-art { order: -1; min-height: 160px; max-height: 27vh; border-radius: 13px; }
+  .cr-tutorial-art { order: -1; min-height: 160px; max-height: 27vh; border-radius: 2px; }
   .cr-tutorial-art-label { top: 8px; left: 8px; padding: 7px 8px; font-size: 7px; }
   .cr-tutorial-art-corner { right: 7px; bottom: 7px; font-size: 6px; }
   .cr-tutorial-step-meta { margin-bottom: 8px; font-size: 8px; }
@@ -710,11 +710,11 @@
   max-height: min(68vh, 500px);
   overflow-x: hidden;
   overflow-y: auto;
-  border-radius: 15px;
+  border-radius: 2px;
   background: linear-gradient(145deg, rgba(10, 16, 28, 0.94), rgba(5, 9, 17, 0.91));
   box-shadow: 0 12px 42px rgba(0, 0, 0, 0.43), 0 0 28px rgba(67, 234, 213, 0.09), inset 0 1px rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   pointer-events: auto;
   animation: crTutorialPanelIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -726,10 +726,10 @@
 }
 
 .cr-tutorial-layer.is-in-game .cr-tutorial-brand { gap: 8px; }
-.cr-tutorial-layer.is-in-game .cr-tutorial-brand-mark { width: 28px; height: 28px; border-radius: 8px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-brand-mark { width: 28px; height: 28px; border-radius: 2px; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-brand b { font-size: 8px; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-brand small { font-size: 6px; }
-.cr-tutorial-layer.is-in-game .cr-tutorial-close { width: 29px; height: 29px; border-radius: 8px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-close { width: 29px; height: 29px; border-radius: 2px; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-close span { font-size: 22px; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-progress { gap: 3px; padding: 7px 11px 0; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-progress-segment { height: 10px; }
@@ -753,7 +753,7 @@
 .cr-tutorial-layer.is-in-game .cr-tutorial-key-list kbd,
 .cr-tutorial-layer.is-in-game .cr-tutorial-action-chip,
 .cr-tutorial-layer.is-in-game .cr-tutorial-touch-chip { min-height: 20px; padding: 3px 6px; font-size: 7px; }
-.cr-tutorial-layer.is-in-game .cr-tutorial-art { min-height: 118px; max-height: 142px; border-radius: 10px; }
+.cr-tutorial-layer.is-in-game .cr-tutorial-art { min-height: 118px; max-height: 142px; border-radius: 2px; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-art-label { top: 6px; left: 6px; padding: 5px 6px; font-size: 6px; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-art-corner { right: 5px; bottom: 5px; padding: 4px 5px; font-size: 5px; }
 
@@ -769,13 +769,13 @@
 .cr-tutorial-layer.is-in-game .cr-tutorial-nav-button { min-height: 30px; gap: 4px; padding-inline: 8px; font-size: 6px; }
 .cr-tutorial-layer.is-in-game .cr-tutorial-nav-button > span { font-size: 11px; }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .cr-tutorial-layer.is-in-game .cr-tutorial-panel {
     top: 8px;
     right: 8px;
     width: min(360px, calc(100% - 16px));
     max-height: min(56vh, 390px);
-    border-radius: 13px;
+    border-radius: 2px;
   }
 
   .cr-tutorial-layer.is-in-game .cr-tutorial-header { min-height: 42px; padding: 6px 8px; }
@@ -811,7 +811,7 @@
   gap: 9px;
   padding: 7px 12px;
   border: 1px solid rgba(84, 234, 209, 0.42);
-  border-radius: 12px;
+  border-radius: 2px;
   background: linear-gradient(120deg, rgba(84, 234, 209, 0.18), rgba(84, 234, 209, 0.05));
   color: #d8fff6;
   font: 800 8px/1 var(--mono, ui-monospace, monospace);
@@ -859,7 +859,7 @@
   gap: 6px;
   padding: 5px 9px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 99px;
+  border-radius: 4px;
   color: rgba(226, 234, 244, 0.72);
   font: 800 7px/1 var(--mono, ui-monospace, monospace);
   letter-spacing: 0.08em;
@@ -884,7 +884,7 @@
   box-shadow: 0 0 10px rgba(255, 84, 110, 0.75);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .cr-tutorial-police-chip { display: none; }
   .cr-tutorial-tick-row { padding: 6px 12px 0; }
   .cr-tutorial-tick { gap: 6px; padding: 6px 8px; font-size: 6px; }

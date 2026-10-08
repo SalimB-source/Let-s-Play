@@ -36,6 +36,7 @@ import {
 import { fetchViceCityProgress, saveViceCityProgress, viceCityApiEnabled } from './viceCityApi';
 import {
   CITY_RUSH_CARS,
+  CITY_RUSH_SHOWCASE_CAR,
   CITY_RUSH_COURSES,
   CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP,
   CITY_RUSH_BAZOOKA_AMMO_PER_RACE,
@@ -109,7 +110,7 @@ import {
 } from './cityRushStory';
 import './vice-city-rush-hud.css';
 import './city-rush-story.css';
-import './vice-city-rush-comic.css';
+import './vice-city-rush-hub-skin.css';
 import './city-rush-tournament.css';
 // Le garage 3D (hub type Need for Speed) est posé en dernier : il surcharge
 // la mise en page de préparation sans toucher aux feuilles déjà vérifiées.
@@ -239,6 +240,16 @@ const RACE_MODES = [
     icon: '🚨',
     tag: 'HARDCORE',
   },
+];
+
+/* Les quatre pages du jeu, dans l'ordre de l'écran-titre. L'`id` est l'étape
+   d'intro que la page occupe — « course rapide » s'appelle `mode` parce que son
+   écran est le sélecteur des modes libres. */
+const HUB_PAGES = [
+  { id: 'story', icon: '✦', label: 'HISTOIRE', note: 'la campagne de Nico Vega' },
+  { id: 'tournament', icon: '🏆', label: 'TOURNOIS', note: 'trois courses, un titre' },
+  { id: 'mode', icon: '⚑', label: 'COURSE RAPIDE', note: 'les modes libres' },
+  { id: 'garage', icon: '⌂', label: 'GARAGE', note: 'acheter une voiture' },
 ];
 
 const EMPTY_HUD = {
@@ -472,7 +483,15 @@ export default function ViceCityRushPage() {
   const [tournamentHistory, setTournamentHistory] = useState(() => normalizeCityRushTournaments(initialSave));
   const [playerDriverId, setPlayerDriverId] = useState(CITY_RUSH_DRIVERS[0].id);
   const [modeId, setModeId] = useState(RACE_MODES[0].id);
-  const [introStep, setIntroStep] = useState('mode'); // mode -> city -> garage
+  // Les pages du jeu, telles que les nomme l'écran-titre : HISTOIRE, TOURNOIS,
+  // COURSE RAPIDE et le GARAGE. « mode -> city -> garage » reste le parcours
+  // d'une course rapide ; les deux autres pages n'ont pas de parcours — elles se
+  // suffisent d'une liste. Le garage, lui, a deux vies : `garageVisit ===
+  // 'flow'`, il est la dernière étape d'un parcours et le tap sur une voiture
+  // possédée part en course ; `'shop'` (entrée GARAGE du menu), c'est le
+  // concessionnaire — on y achète le catalogue et on n'y part pas.
+  const [introStep, setIntroStep] = useState('mode'); // story | tournament | mode -> city -> garage
+  const [garageVisit, setGarageVisit] = useState('flow'); // 'flow' | 'shop'
   const [phase, setPhase] = useState('intro');
   const [countdown, setCountdown] = useState(3);
   const [runId, setRunId] = useState(0);
@@ -515,6 +534,11 @@ export default function ViceCityRushPage() {
   const finishedRaceSessionRef = useRef(-1);
   const actionsRef = useRef(null);
   const shellRef = useRef(null);
+  // La cible du plein écran est la PAGE, pas la seule coque : l'écran-titre
+  // (`ViceCityRushMainMenu`) vit au-dessus d'elle et doit y entrer avec elle —
+  // un élément hors du sous-arbre en plein écran natif est relégué derrière
+  // l'élément plein écran, et le hub disparaissait au premier « F ».
+  const pageRef = useRef(null);
   const phaseRef = useRef(phase);
   const toastTimerRef = useRef(null);
   const startRaceRef = useRef(null);
@@ -526,14 +550,15 @@ export default function ViceCityRushPage() {
   // La sortie « native » (Échap, geste retour) est branchée sur la pause plus
   // loin, une fois `pauseRace` défini : d'où la référence.
   const nativeExitRef = useRef(null);
-  // Plein écran de la coque du jeu (voir la section « Plein écran » plus bas).
+  // Plein écran de la page de jeu : coque ET écran-titre (voir la section
+  // « Plein écran » plus bas).
   const {
     active: immersive,
     enter: enterImmersive,
     exit: exitImmersive,
     toggle: toggleImmersive,
     isPinned: immersivePinned,
-  } = useGameFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
+  } = useGameFullscreen(pageRef, { onNativeExit: () => nativeExitRef.current?.() });
   // Trophées de jeu : les courses terminées nourrissent les succès Vice City
   // Rush du joueur (ville, mode, place, butin, chapitre d'histoire).
   const trackAchievement = useAchievementAction();
@@ -661,6 +686,28 @@ export default function ViceCityRushPage() {
     : tournamentMode ? `COURSE ${tournamentLeg + 1} / ${tournament.legs.length} · ${tournament.name}` : mode.label;
   const cashRewardsEnabled = !tutorialMode && (storyMode || tournamentMode || mode.cashRewards !== false);
   const tournamentTitlesWon = Object.values(tournamentHistory.tournamentTitles || {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
+  // ── Les pages du jeu ──────────────────────────────────────────────────────
+  // Le sélecteur de modes n'est plus un écran fourre-tout : chaque entrée de
+  // l'écran-titre est une page, et une page ne montre que ce qu'elle vend.
+  // `hubPage` désigne l'onglet allumé : le parcours mode → ville → garage reste
+  // sous « COURSE RAPIDE » (il n'a pas quitté sa page, il en déroule les
+  // étapes), un tournoi en cours reste sous « TOURNOIS » même quand il atterrit
+  // au garage, et le garage ouvert par le menu s'allume pour lui-même.
+  const raceFlowStep = introStep === 'mode' || introStep === 'city' || introStep === 'garage';
+  const garageIsShop = introStep === 'garage' && garageVisit === 'shop';
+  // Le nombre d'étapes ne se montre que sur un parcours : le garage ouvert en
+  // concession n'est pas « l'étape 3 sur 3 », c'est une page à part, et ses
+  // étapes à lui sont les onglets.
+  const flowStepperVisible = raceFlowStep && !garageIsShop;
+  const hubPage = storyMode
+    ? 'story'
+    : tournamentMode && raceFlowStep
+      ? 'tournament'
+      : garageIsShop
+        ? 'garage'
+        : raceFlowStep ? 'mode' : introStep;
+  const ownedCarCount = CITY_RUSH_CARS.filter((car) => isCityRushCarOwned(careerProgress, car.id)).length;
+  const storyStarsCount = Object.values(storyStars).reduce((total, value) => total + (Number(value) || 0), 0);
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   // Voiture du garage vraiment disponible : le choix du pilote, ou — s'il ne
   // fait plus partie de son garage (instantané d'un autre compte appliqué en
@@ -845,7 +892,11 @@ export default function ViceCityRushPage() {
   // ── Plein écran ────────────────────────────────────────────────────────
   // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
   // vit dans useGameFullscreen / gameFullscreen.js, partagé avec Mirage Rush.
-  // Ici, les règles du jeu :
+  // La cible est ici la page entière (`.city-rush-page`), et non la seule coque
+  // comme côté Mirage : l'écran-titre est posé au-dessus de la page, donc hors
+  // de la coque — cibler la coque seule l'aurait fait disparaître dès que le
+  // navigateur passe en plein écran natif (le sous-arbre de l'élément
+  // plein écran est seul rendu). Les règles du jeu :
   //   - l'interface SE LANCE EN PLEIN ÉCRAN DE BASE : la couche fixe (classe
   //     `is-immersive`), qui couvre tout le viewport, est posée dès le montage
   //     de la page ; le plein écran natif — que le navigateur refuse hors d'un
@@ -871,9 +922,9 @@ export default function ViceCityRushPage() {
   useEffect(() => {
     if (!immersive) return undefined;
     const upgrade = (event) => {
-      // L'écran-titre reste dans la page : le natif ne part qu'une fois le
-      // mode choisi (le geste de lancement le demande lui-même).
-      if (titleMenuOpenRef.current) return;
+      // L'écran-titre est dans la cible du plein écran : le natif peut partir
+      // dès le premier geste, hub compris — c'est même voulu, l'écran-titre se
+      // regarde plein écran (le geste de lancement le redemande aussi).
       if (nativeFullscreenElement()) return;
       const tag = event.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -1139,6 +1190,7 @@ export default function ViceCityRushPage() {
     setTournamentRun(createCityRushTournamentRun(entry.id));
     setCityId(entry.legs[0]);
     setResult(null);
+    setGarageVisit('flow'); // le tournoi impose sa voiture : le garage lance
     setIntroStep('garage');
     setPhase('intro');
   }
@@ -1194,14 +1246,28 @@ export default function ViceCityRushPage() {
     setPhase('cinematic');
   }
 
+  /** Page « course rapide » : les modes libres, rien d'autre. */
   function returnToModePicker() {
+    openHubPage('mode');
+  }
+
+  /**
+   * Ouvre une page du jeu. Une page se prend toujours à froid : la préparation
+   * en cours (mode choisi, ville, tournoi, histoire, tutoriel) est reposée,
+   * sinon un « retour aux modes » hériterait d'un état à moitié engagé. Seule
+   * l'entrée GARAGE choisit sa vie : `visit === 'shop'` la donne en
+   * concession, le reste du temps elle ferme un parcours.
+   */
+  function openHubPage(pageId, visit = 'flow') {
     setResult(null);
     setTutorialMode(false);
     setTutorialGuideOpen(false);
     setStoryMode(false);
     resetTournament();
+    setPreviewCarId(null);
+    setGarageVisit(pageId === 'garage' ? visit : 'flow');
     setPhase('intro');
-    setIntroStep('mode');
+    setIntroStep(pageId);
   }
 
   /** Rouvre l'écran-titre (boutons « ↶ MENU » et « MENU PRINCIPAL »). */
@@ -1210,25 +1276,21 @@ export default function ViceCityRushPage() {
     setTitleMenuOpen(true);
   }
 
-  /** Carrousel de l'écran-titre : chaque entrée route vers l'existant. */
+  /**
+   * Carrousel de l'écran-titre : chaque entrée ouvre SA page. Le menu ne fait
+   * plus le tri lui-même — HISTOIRE ne plonge pas dans le chapitre en cours (le
+   * joueur veut parfois reprendre un chapitre déjà atteint), GARAGE n'est plus
+   * une étape de lancement mais l'achat du catalogue, et TOURNOIS comme COURSE
+   * RAPIDE ont chacune leur écran : les tournois d'un côté, les modes libres de
+   * l'autre, sans mode histoire mêlé aux courses rapides.
+   */
   function handleTitlePick(entryId) {
     setTitleMenuOpen(false);
-    if (entryId === 'story') {
-      beginStory();
-      return;
-    }
     if (entryId === 'garage') {
-      setTutorialMode(false);
-      setTutorialGuideOpen(false);
-      setStoryMode(false);
-      resetTournament();
-      setResult(null);
-      setPhase('intro');
-      setIntroStep('garage');
+      openHubPage('garage', 'shop');
       return;
     }
-    // Tournois et course rapide : leurs listes vivent à l'étape « modes ».
-    returnToModePicker();
+    openHubPage(entryId === 'race' ? 'mode' : entryId);
   }
 
   function handleTitleTutorial() {
@@ -1528,6 +1590,7 @@ export default function ViceCityRushPage() {
     }
     setStoryMode(false);
     setCityId(nextCityId);
+    setGarageVisit('flow');
     setIntroStep('garage');
   };
   const chooseCarAndStart = (nextCarId) => {
@@ -1551,12 +1614,46 @@ export default function ViceCityRushPage() {
     setCarId(nextCarId);
     startRace({ carId: nextCarId });
   };
+  /**
+   * Le geste du concessionnaire : un modèle qui n'est pas à toi s'achète, un
+   * modèle possédé se choisit. Rien ne part en course ici — c'est ce qui
+   * distingue la page d'achat de la dernière étape d'un parcours, où la même
+   * carte lance la course.
+   */
+  const buyOrTakeCar = (nextCarId) => {
+    const car = CITY_RUSH_CARS.find((item) => item.id === nextCarId);
+    if (!car) return;
+    const savedProgress = careerProgressRef.current;
+    if (isCityRushCarOwned(savedProgress, nextCarId)) {
+      setCarId(nextCarId);
+      showToast(`${car.name} EST À TOI · ELLE MONTE AU PLATEAU.`, 'boost');
+      return;
+    }
+    const purchase = purchaseCityRushCar(savedProgress, nextCarId);
+    if (!purchase.purchased) {
+      if (purchase.reason === 'insufficient-funds') {
+        showToast(`IL TE MANQUE ${formatCash(car.price - savedProgress.cash)} BILLETS VERTS.`, 'locked');
+      }
+      return;
+    }
+    saveCareerProgress(purchase.progress);
+    setCarId(nextCarId);
+    showToast(`${car.name} ACHETÉE · ${formatCash(car.price)} BILLETS DÉPENSÉS · PRENDS LA PISTE QUAND TU VEUX.`, 'boost');
+  };
+
   const goBack = () => {
     setPreviewCarId(null);
-    // En tournoi, pas d'étape ville : retour aux modes, tournoi abandonné.
+    // Le garage ouvert par le menu n'est pas une étape : c'est la page d'achat.
+    // Le « ← » y ramène aux courses libres plutôt que de remonter un parcours
+    // qui n'a jamais été commencé.
+    if (introStep === 'garage' && garageVisit === 'shop') {
+      openHubPage('mode');
+      return;
+    }
+    // En tournoi, pas d'étape ville : le « ← » ramène à la page des plateaux,
+    // tournoi abandonné au passage — c'est là qu'on en choisit un autre.
     if (tournamentMode) {
-      resetTournament();
-      setIntroStep('mode');
+      openHubPage('tournament');
       return;
     }
     if (introStep === 'garage') setIntroStep('city');
@@ -1564,15 +1661,22 @@ export default function ViceCityRushPage() {
   };
 
   return (
-    <div className={`city-rush-page${immersive ? ' is-immersive' : ''}${tutorialMode ? ' is-tutorial' : ''}`} style={{ '--city-accent': city.accent, '--city-secondary': city.secondary, '--mode-accent': mode.accent, '--mode-secondary': mode.secondary }}>
+    <div
+      ref={pageRef}
+      className={`city-rush-page${immersive ? ' is-immersive' : ''}${tutorialMode ? ' is-tutorial' : ''}`}
+      style={{ '--city-accent': city.accent, '--city-secondary': city.secondary, '--mode-accent': mode.accent, '--mode-secondary': mode.secondary }}
+    >
       <h1 className="sr-only">Vice City Rush — Course arcade 3D</h1>
 
       {titleMenuOpen && (
         <ViceCityRushMainMenu
-          car={CITY_RUSH_CARS.find((item) => item.id === garageCarId) || CITY_RUSH_CARS[0]}
-          carThumb={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[garageCarId] || CAR_THUMBNAILS['vice-roadster']}`}
+          // L'écran-titre ne résume pas la sauvegarde : il vend la campagne. Le
+          // plateau tournant du hub porte donc la pièce du catalogue (règle
+          // calculée dans `cityRushRules.js`), quel que soit le garage du joueur.
+          car={CITY_RUSH_SHOWCASE_CAR}
+          carThumb={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[CITY_RUSH_SHOWCASE_CAR.id] || CAR_THUMBNAILS['vice-roadster']}`}
           cashLabel={formatCash(careerProgress.cash)}
-          stars={Object.values(storyStars).reduce((total, value) => total + (Number(value) || 0), 0)}
+          stars={storyStarsCount}
           starsTotal={storyTotal}
           tournamentsDone={tournamentHistory.completedTournamentIds.length}
           bestsCount={Object.keys(bests).length}
@@ -1588,7 +1692,7 @@ export default function ViceCityRushPage() {
         <section id="vice-city-rush-console" className={`city-rush-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`} ref={shellRef} aria-label="Partie de Vice City Rush">
           <div className="city-rush-topbar">
             <div className="city-rush-location">
-              <span className="city-rush-location-mark" aria-hidden="true">{storyMode ? '★' : introStep === 'mode' ? mode.icon : '⌖'}</span>
+              <span className="city-rush-location-mark" aria-hidden="true">{storyMode ? '★' : introStep === 'tournament' ? '🏆' : introStep === 'story' ? '✦' : introStep === 'mode' ? mode.icon : '⌖'}</span>
               <span>
                 <b>VICE CITY <em>RUSH</em></b>
                 <small>
@@ -1598,11 +1702,17 @@ export default function ViceCityRushPage() {
                       ? <>{currentStoryRace?.race?.name || city.district} <i>·</i> {currentStoryRace?.race?.type || city.label} · {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOURS`}</>
                       : tournamentMode
                         ? `${tournament.name} · COURSE ${tournamentLeg + 1}/${tournament.legs.length} · ${selectedCar.name}`
-                      : introStep === 'mode'
-                        ? `${city.name} · ${mode.label}`
-                        : introStep === 'city'
-                          ? `${city.district} · ${city.tagline}`
-                          : `${city.district} · ${mode.name} · ${selectedCar.name}`}
+                      : introStep === 'tournament'
+                        ? `TOURNOIS · ${CITY_RUSH_TOURNAMENTS.length} PLATEAUX · ${tournamentHistory.completedTournamentIds.length} TERMINÉ${tournamentHistory.completedTournamentIds.length > 1 ? 'S' : ''}`
+                        : introStep === 'story'
+                          ? `MODE HISTOIRE · CHAPITRE ${String(nextStoryIndex + 1).padStart(2, '0')}/${String(CITY_RUSH_STORY_CHAPTER_COUNT).padStart(2, '0')} ★ ${storyStarsCount}/${storyTotal}`
+                          : introStep === 'mode'
+                            ? `${city.name} · ${mode.label}`
+                            : introStep === 'city'
+                              ? `${city.district} · ${city.tagline}`
+                              : garageVisit === 'shop'
+                                ? `CONCESSION · ${city.district} · ${formatCash(careerProgress.cash)} BILLETS`
+                                : `${city.district} · ${mode.name} · ${selectedCar.name}`}
                 </small>
               </span>
             </div>
@@ -1920,9 +2030,47 @@ export default function ViceCityRushPage() {
               </div>
             )}
 
+            {/* La page ouverte est écrite dans le nom de classe : la peau du hub
+                s'en sert pour poser sa grille — une page de liste n'a rien à voir
+                avec le parcours à trois étapes. */}
             {phase === 'intro' && (
-              <div className="city-rush-overlay city-rush-intro">
+              <div className={`city-rush-overlay city-rush-intro is-step-${introStep}`}>
+                {/* Une barre pour deux usages : les pages du jeu — l'écran-titre
+                    n'est pas le seul chemin, une page ouverte doit pouvoir se
+                    quitter sans refaire le tour du logo — et la plaque du
+                    plateau, qui dit ce que le joueur regarde derrière. */}
+                <div className="city-rush-hub-bar">
+                  <nav className="city-rush-pages" aria-label="Pages de Vice City Rush">
+                    {HUB_PAGES.map((page) => {
+                      const active = hubPage === page.id;
+                      return (
+                        <button
+                          key={page.id}
+                          type="button"
+                          className={`city-rush-page-tab${active ? ' is-active' : ''}`}
+                          onClick={() => openHubPage(page.id, page.id === 'garage' ? 'shop' : 'flow')}
+                          aria-current={active ? 'page' : undefined}
+                          title={page.note}
+                        >
+                          <i aria-hidden="true">{page.icon}</i>
+                          <b>{page.label}</b>
+                          {page.id === 'garage' && <em>{ownedCarCount}/{CITY_RUSH_CARS.length}</em>}
+                          {page.id === 'mode' && <em>{RACE_MODES.length}</em>}
+                          {page.id === 'tournament' && <em>{CITY_RUSH_TOURNAMENTS.length}</em>}
+                          {page.id === 'story' && <em>★ {storyStarsCount}/{storyTotal}</em>}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                  {/* Plaque du garage : la voiture montée sur le plateau 3D,                        avec son état. Elle suit le curseur dans la grille des                        modèles sans jamais lancer la course. */}                    <span className="city-rush-hub-plate">                      <i aria-hidden="true" />                      <b>{stageCar.name}</b>                      <small>{stageCar.className}</small>                      <em className={stagePreviewing ? 'is-preview' : ''}>                        {stagePreviewing ? 'APERÇU' : carGarageBadge(stageCar, isCityRushCarOwned(careerProgress, stageCar.id))}                      </em>                    </span>                </div>
+
+
                 {/* Stepper */}
+                {/* Le parcours — mode → ville → garage — n'existe que pour la
+                    course rapide (et le tournoi, qui saute la ville). Les pages
+                    HISTOIRE et TOURNOIS ouvrent une liste, pas une suite
+                    d'étapes : rien à numéroter. */}
+                {flowStepperVisible && (
                 <div className="city-rush-stepper" aria-label="Étapes de préparation des courses libres">
                   {[
                     { id: 'mode', label: 'MODE' },
@@ -1952,24 +2100,19 @@ export default function ViceCityRushPage() {
                       <i>{idx + 1}</i><b>{step.label}</b>
                     </button>
                   ))}
-                  {/* Plaque du garage : la voiture montée sur le plateau 3D,
-                      avec son état. Elle suit le curseur dans la grille des
-                      modèles sans jamais lancer la course. */}
-                  <span className="city-rush-hub-plate">
-                    <i aria-hidden="true" />
-                    <b>{stageCar.name}</b>
-                    <small>{stageCar.className}</small>
-                    <em className={stagePreviewing ? 'is-preview' : ''}>
-                      {stagePreviewing ? 'APERÇU' : carGarageBadge(stageCar, isCityRushCarOwned(careerProgress, stageCar.id))}
-                    </em>
-                  </span>
-                </div>
+                  </div>
+                )}
 
                 {/* Garage 3D : la voiture modélisée tourne sur son plateau
                     derrière les menus. Le tap sur un modèle la met au plateau
                     (survol ou focus clavier) ; la course, elle, ne part qu'au
                     lancer. Sans WebGL, la scène laisse la photo du modèle. */}
                 <div className="city-rush-hub-stage" aria-hidden="true">
+                  {/* Tant que l'écran-titre est ouvert, c'est LUI qui monte la
+                      scène : deux baies d'atelier simultanées, ce sont deux
+                      contextes WebGL et deux boucles de rendu pour un seul
+                      écran. Le hub referme la sienne en se refermant. */}
+                  {!titleMenuOpen && (
                   <ViceCityGarageStage
                     carId={stageCar.id}
                     carName={stageCar.name}
@@ -1980,23 +2123,18 @@ export default function ViceCityRushPage() {
                     cameraShift={introStep === 'mode' ? CAMERA_SHIFT_MODE : 0}
                     fallbackSrc={`${import.meta.env.BASE_URL || '/'}${CAR_THUMBNAILS[stageCar.id] || CAR_THUMBNAILS['vice-roadster']}`}
                   />
+                  )}
                   <span className="city-rush-hub-stage-scrim" aria-hidden="true" />
                   <span className="city-rush-hub-stage-frame" aria-hidden="true" />
                 </div>
 
-                {introStep === 'mode' && (
+                {introStep === 'story' && (
                   <>
                     <div className="city-rush-intro-copy">
-                      <span className="city-rush-overlay-kicker"><i /> VICE CITY · 1986 · ARCADE RACING</span>
-                      <h2>VICE CITY<br /><em>RUSH.</em></h2>
-                      <p>Choisis un mode, une ville et une voiture. Pour suivre l’histoire de Nico Vega, reprends la campagne ci-dessous — ou vise un titre en tournoi : trois courses sans police ni armes.</p>
+                      <span className="city-rush-overlay-kicker"><i /> MODE HISTOIRE · MIDNIGHT REVANCHE · {CITY_RUSH_STORY_CHAPTER_COUNT} CHAPITRES</span>
+                      <h2>LA DETTE<br /><em>DE NICO VEGA.</em></h2>
+                      <p>Dix chapitres, un acte par dette, et des voitures prêtées par le scénario : le chapitre impose parfois sa voiture et son parcours. Reprends la campagne où tu l’as laissée, ou rejoue un chapitre déjà atteint pour gratter les étoiles qui manquent. Ce sont les seules courses qui racontent quelque chose — elles ne se mélangent plus aux courses libres.</p>
                     </div>
-
-                    <button type="button" className="city-rush-tutorial-launch" onClick={startTutorialRace}>
-                      <span className="city-rush-tutorial-launch-mark" aria-hidden="true">▶</span>
-                      <span><b>APPRENDRE À ROULER</b><small>{CITY_RUSH_TUTORIAL_STEPS.length} mini-tutos joués tout seuls · la voiture conduit, chaque leçon se valide d’un tic vert · env. {CITY_RUSH_TUTORIAL_DURATION_SECONDS} s</small></span>
-                      <i aria-hidden="true">↗</i>
-                    </button>
 
                     <section className="cr-story-hub" aria-labelledby="cr-story-hub-title">
                       <div className="cr-story-hub-heading">
@@ -2090,6 +2228,21 @@ export default function ViceCityRushPage() {
                       )}
                     </section>
 
+                    <div className="city-rush-intro-actions">
+                      <span className="city-rush-selection-hint">Choisis le chapitre à reprendre <i aria-hidden="true">↗</i></span>
+                      <div className="city-rush-best-note"><span>HISTOIRE</span><b>★ {storyStarsCount}/{storyTotal}</b></div>
+                    </div>
+                  </>
+                )}
+
+                {introStep === 'tournament' && (
+                  <>
+                    <div className="city-rush-intro-copy">
+                      <span className="city-rush-overlay-kicker"><i /> TOURNOIS · {CITY_RUSH_TOURNAMENT_LEGS} COURSES PAR PLATEAU · SANS POLICE NI ARMES</span>
+                      <h2>UN TITRE<br /><em>EN TROIS MANCHES.</em></h2>
+                      <p>Un plateau, trois villes imposées, la même voiture et les mêmes rivaux du premier feu vert au dernier : les points de chaque manche font un champion, et le champion gagne des billets verts. Aucun mode libre ici — les courses sans lendemain se jouent page COURSE RAPIDE.</p>
+                    </div>
+
                     <section className="cr-tournament-hub" aria-labelledby="cr-tournament-hub-title">
                       <div className="cr-tournament-hub-heading">
                         <div>
@@ -2142,6 +2295,32 @@ export default function ViceCityRushPage() {
                       </div>
                     </section>
 
+                    <div className="city-rush-intro-actions">
+                      <span className="city-rush-selection-hint">Choisis un plateau pour entrer en piste <i aria-hidden="true">↗</i></span>
+                      <div className="city-rush-best-note"><span>TITRES</span><b>🏆 {tournamentTitlesWon}</b></div>
+                    </div>
+                  </>
+                )}
+
+                {introStep === 'mode' && (
+                  <>
+                    <div className="city-rush-intro-copy">
+                      <span className="city-rush-overlay-kicker"><i /> COURSE RAPIDE · {RACE_MODES.length} MODES LIBRES · VICE CITY 1986</span>
+                      <h2>UNE PISTE,<br /><em>UN MOTEUR.</em></h2>
+                      <p>Choisis un mode libre, une ville, une voiture — et le compte à rebours part. La campagne de Nico Vega et les plateaux de tournoi ont chacun leur page : ici, on ne fait pas d’histoire, on roule.</p>
+                    </div>
+
+                    <button type="button" className="city-rush-tutorial-launch" onClick={startTutorialRace}>
+                      <span className="city-rush-tutorial-launch-mark" aria-hidden="true">▶</span>
+                      <span><b>APPRENDRE À ROULER</b><small>{CITY_RUSH_TUTORIAL_STEPS.length} mini-tutos joués tout seuls · la voiture conduit, chaque leçon se valide d’un tic vert · env. {CITY_RUSH_TUTORIAL_DURATION_SECONDS} s</small></span>
+                      <i aria-hidden="true">↗</i>
+                    </button>
+
+
+
+                    {/* Le titre « COURSES LIBRES » reste : sur cette page, il ne
+                        sépare plus les modes d'un bloc histoire tout proche — il
+                        ferme la page, et le tutoriel au-dessus n'est pas un mode. */}
                     <div className="cr-story-free-mode-heading">
                       <span>COURSES LIBRES</span>
                       <small>Choisis ton défi</small>
@@ -2247,48 +2426,55 @@ export default function ViceCityRushPage() {
                 {introStep === 'garage' && (
                   <>
                     <div className="city-rush-intro-copy">
-                      <span className="city-rush-overlay-kicker"><i /> {tournamentMode ? `TOURNOI · ${tournament.name} · COURSE ${tournamentLeg + 1}/${tournament.legs.length}` : `03 / GARAGE · ${city.district} · ${mode.name}`}</span>
-                      <h2>{tournamentMode ? <>EN PISTE<br /><em>POUR LE TITRE.</em></> : <>PRÊT À<br /><em>ROULER.</em></>}</h2>
+                      <span className="city-rush-overlay-kicker"><i /> {tournamentMode ? `TOURNOI · ${tournament.name} · COURSE ${tournamentLeg + 1}/${tournament.legs.length}` : garageIsShop ? `GARAGE · CONCESSION · ${city.district} · ${ownedCarCount}/${CITY_RUSH_CARS.length} MODÈLES À TOI` : `03 / GARAGE · ${city.district} · ${mode.name}`}</span>
+                      <h2>{tournamentMode ? <>EN PISTE<br /><em>POUR LE TITRE.</em></> : garageIsShop ? <>ACHÈTE<br /><em>TA VOITURE.</em></> : <>PRÊT À<br /><em>ROULER.</em></>}</h2>
                       {tournamentMode ? (
                         <p>{tournament.desc} {tournamentLeg === 0 ? `${city.name} ouvre le bal` : `Manche ${tournamentLeg + 1} : ${city.name}`} : {tournament.laps} tours ({currentDistance} m), sans police ni armes, avec la même voiture et les mêmes rivaux sur les {tournament.legs.length} courses. {CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche, et +{formatCash(tournament.championBonus)} billets verts pour le champion.</p>
+                      ) : garageIsShop ? (
+                        <p>Le garage est un concessionnaire : {CITY_RUSH_CARS.length} modèles au catalogue, {CITY_RUSH_FREE_CAR_COUNT} offerts dès le premier jour, les autres contre des billets verts — {formatCash(careerProgress.cash)} en poche. {ownedCarCount === CITY_RUSH_CARS.length ? 'Tu possèdes déjà toute la garde-robe : touche un modèle pour le monter au plateau et le choisir.' : 'Touche un modèle pour l’acheter, ou pour monter au plateau une voiture qui est déjà à toi.'} Rien ne démarre ici : une voiture achetée attend ton prochain départ, page après page, tournoi après tournoi.</p>
                       ) : (
                         <p>La Mistral 1.4, citadine 5 portes inspirée d’une petite française des années 90 (sans badge ni logo), est ta voiture de départ. {cashRewardsEnabled ? '50 billets verts pour la victoire, 30 pour la 2e place et 10 pour la 3e : cours pour acheter les sept autres modèles.' : `${mode.name} est un mode défi : il ne rapporte aucun billet vert, même à l’arrivée.`}</p>
                       )}
                     </div>
 
-                    <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
-                      <div className="city-rush-car-select-heading">
-                        <span id="city-rush-driver-title">{tournamentMode ? `PILOTE · ${tournament.name} · MÊMES RIVAUX SUR ${tournament.legs.length} COURSES` : `PILOTE · FACULTATIF · ${mode.name}`}</span>
-                        {/* En Sprint, les trois visages sont des identités au
-                            choix, pas une grille de départ : on le dit, sinon
-                            ils ressemblent à des adversaires. */}
-                        {sprintMode && <small>SPRINT SOLO · AUCUN ADVERSAIRE EN PISTE</small>}
-                      </div>
-                      <div className="city-rush-driver-grid" role="group" aria-label="Choisir un pilote">
-                        {roster.map((driver) => (
-                          <button
-                            type="button"
-                            key={driver.id}
-                            className={`city-rush-driver-pill${driver.isPlayer ? ' is-player' : ''}`}
-                            style={{ '--driver-accent': driver.isPlayer ? '#43ead5' : driver.accent }}
-                            onClick={() => setPlayerDriverId(driver.driverId)}
-                            aria-pressed={driver.isPlayer}
-                            aria-label={`Choisir ${driver.displayName}, ${driver.country}`}
-                          >
-                            <span className="city-rush-driver-pill-avatar"><CityRushDriverAvatar driver={driver} decorative /></span>
-                            <span className="city-rush-driver-pill-copy">
-                              <b>{driver.name}{driver.isPlayer && <em className="city-rush-you-badge">TOI</em>}</b>
-                              <small>{driver.flag} {driver.country}</small>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </section>
+                    {/* Le pilote se choisit avant un départ, pas avant un
+                        achat : la page concession n'en parle pas. */}
+                    {!garageIsShop && (
+                      <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
+                        <div className="city-rush-car-select-heading">
+                          <span id="city-rush-driver-title">{tournamentMode ? `PILOTE · ${tournament.name} · MÊMES RIVAUX SUR ${tournament.legs.length} COURSES` : `PILOTE · FACULTATIF · ${mode.name}`}</span>
+                          {/* En Sprint, les trois visages sont des identités au
+                              choix, pas une grille de départ : on le dit, sinon
+                              ils ressemblent à des adversaires. */}
+                          {sprintMode && <small>SPRINT SOLO · AUCUN ADVERSAIRE EN PISTE</small>}
+                        </div>
+                        <div className="city-rush-driver-grid" role="group" aria-label="Choisir un pilote">
+                          {roster.map((driver) => (
+                            <button
+                              type="button"
+                              key={driver.id}
+                              className={`city-rush-driver-pill${driver.isPlayer ? ' is-player' : ''}`}
+                              style={{ '--driver-accent': driver.isPlayer ? '#43ead5' : driver.accent }}
+                              onClick={() => setPlayerDriverId(driver.driverId)}
+                              aria-pressed={driver.isPlayer}
+                              aria-label={`Choisir ${driver.displayName}, ${driver.country}`}
+                            >
+                              <span className="city-rush-driver-pill-avatar"><CityRushDriverAvatar driver={driver} decorative /></span>
+                              <span className="city-rush-driver-pill-copy">
+                                <b>{driver.name}{driver.isPlayer && <em className="city-rush-you-badge">TOI</em>}</b>
+                                <small>{driver.flag} {driver.country}</small>
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
 
                     <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-car-title">GARAGE · {CITY_RUSH_CARS.length} MODÈLES</span>
-                        <small>{CITY_RUSH_FREE_CAR_COUNT} VOITURES OFFERTES · {formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name}{tournamentMode ? ` · MÊME VOITURE SUR LES ${tournament.legs.length} COURSES` : ''} · TOUCHE POUR PARTIR</small>
+                        <span id="city-rush-car-title">{garageIsShop ? `CONCESSION · ${CITY_RUSH_CARS.length} MODÈLES · ${ownedCarCount} POSSÉDÉS` : `GARAGE · ${CITY_RUSH_CARS.length} MODÈLES`}</span>
+                        <small>{CITY_RUSH_FREE_CAR_COUNT} VOITURES OFFERTES · {formatCash(careerProgress.cash)} BILLETS VERTS · {selectedCar.name}{tournamentMode ? ` · MÊME VOITURE SUR LES ${tournament.legs.length} COURSES` : ''} · {garageIsShop ? 'TOUCHE POUR ACHETER' : 'TOUCHE POUR PARTIR'}</small>
                       </div>
                       <div className="city-rush-car-grid" role="group" aria-label="Lancer une course avec une voiture">
                         {CITY_RUSH_CARS.map((car, index) => {
@@ -2304,7 +2490,7 @@ export default function ViceCityRushPage() {
                               type="button"
                               className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}${owned ? '' : ' is-locked'}${!owned && !canAfford ? ' is-unaffordable' : ''}${previewCarId === car.id ? ' is-previewed' : ''}`}
                               style={{ '--car-accent': car.accent }}
-                              onClick={() => chooseCarAndStart(car.id)}
+                              onClick={() => (garageIsShop ? buyOrTakeCar(car.id) : chooseCarAndStart(car.id))}
                               // Le curseur (souris) et le focus (clavier) montent
                               // le modèle sur le plateau du garage : on admire la
                               // voiture avant de la lancer. Rien ne part au
@@ -2315,9 +2501,13 @@ export default function ViceCityRushPage() {
                               onBlur={() => setPreviewCarId((current) => (current === car.id ? null : current))}
                               disabled={!owned && !canAfford}
                               aria-label={owned
-                                ? tournamentMode
-                                  ? `Lancer la course ${tournamentLeg + 1} sur ${tournament.legs.length} du ${tournament.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
-                                  : `Lancer le mode ${mode.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
+                                ? garageIsShop
+                                  ? carId === car.id
+                                    ? `${car.name} est à toi et au plateau${offered ? ', offerte à tous' : ''}`
+                                    : `Choisir ${car.name} au plateau${offered ? ', offerte à tous' : ''} — sans lancer de course`
+                                  : tournamentMode
+                                    ? `Lancer la course ${tournamentLeg + 1} sur ${tournament.legs.length} du ${tournament.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
+                                    : `Lancer le mode ${mode.name} à ${city.name} avec ${car.name}${offered ? ', offerte à tous' : ''}`
                                 : canAfford
                                   ? `Acheter ${car.name} pour ${formatCash(car.price)} billets verts`
                                   : `${car.name} verrouillée, il manque ${formatCash(shortfall)} billets verts`}
@@ -2354,8 +2544,16 @@ export default function ViceCityRushPage() {
                                   </span>
                                 ))}
                               </span>
-                              <span className={`city-rush-card-action${owned ? ' is-launch' : ' is-purchase'}`}>
-                                {owned ? <>LANCER LA COURSE <i aria-hidden="true">↗</i></> : canAfford ? `ACHETER · ${formatCash(car.price)} BILLETS` : `MANQUE ${formatCash(shortfall)} · COÛT ${formatCash(car.price)}`}
+                              <span className={`city-rush-card-action${owned ? (garageIsShop ? ' is-select' : ' is-launch') : ' is-purchase'}`}>
+                                {owned
+                                  ? garageIsShop
+                                    ? carId === car.id
+                                      ? <>AU PLATEAU <i aria-hidden="true">✓</i></>
+                                      : <>MONTER AU PLATEAU <i aria-hidden="true">↗</i></>
+                                    : <>LANCER LA COURSE <i aria-hidden="true">↗</i></>
+                                  : canAfford
+                                    ? `ACHETER · ${formatCash(car.price)} BILLETS`
+                                    : `MANQUE ${formatCash(shortfall)} · COÛT ${formatCash(car.price)}`}
                               </span>
                             </button>
                           );
@@ -2365,9 +2563,27 @@ export default function ViceCityRushPage() {
 
                     {worldError && <p className="city-rush-error" role="alert">Le moteur 3D n’a pas pu démarrer : {worldError}</p>}
 
+                    {garageIsShop && (
+                      <button
+                        type="button"
+                        className="city-rush-tutorial-launch city-rush-dealer-cta"
+                        onClick={() => openHubPage('mode')}
+                      >
+                        <span className="city-rush-tutorial-launch-mark" aria-hidden="true">↗</span>
+                        <span>
+                          <b>PRENDRE LA PISTE AVEC {selectedCar.name.toUpperCase()}</b>
+                          <small>
+                            {ownedCarCount}/{CITY_RUSH_CARS.length} modèles au garage · {formatCash(careerProgress.cash)} billets en poche
+                            {' · '}un mode libre, une ville, et le compte à rebours part
+                          </small>
+                        </span>
+                        <i aria-hidden="true">›</i>
+                      </button>
+                    )}
+
                     <div className="city-rush-intro-actions">
-                      <button type="button" className="city-rush-text-button" onClick={goBack}>{tournamentMode ? '← TOURNOIS' : '← VILLE'}</button>
-                      <span className="city-rush-selection-hint">Touche une voiture pour lancer · {tournamentMode ? `COURSE ${tournamentLeg + 1}/${tournament.legs.length}` : mode.name}</span>
+                      <button type="button" className="city-rush-text-button" onClick={goBack}>{garageIsShop ? '← COURSE RAPIDE' : tournamentMode ? '← TOURNOIS' : '← VILLE'}</button>
+                      <span className="city-rush-selection-hint">{garageIsShop ? 'Touche un modèle pour l’acheter ou le monter au plateau' : `Touche une voiture pour lancer · ${tournamentMode ? `COURSE ${tournamentLeg + 1}/${tournament.legs.length}` : mode.name}`}</span>
                       <div className="city-rush-best-note"><span>{city.name} · {tournamentMode ? tournament.name : mode.label}</span><b>{bestTime ? formatTime(bestTime) : '— : —'}</b></div>
                     </div>
                   </>
@@ -2633,7 +2849,14 @@ export default function ViceCityRushPage() {
                       <button type="button" className="city-rush-start-button" onClick={() => startRace()}>REJOUER <span>↻</span></button>
                     </>
                   )}
-                  <button type="button" className="city-rush-text-button" onClick={returnToModePicker}>
+                  {/* Le bouton promet exactement la page qu'il ouvre : un tournoi
+                      fini ou abandonné se reprend page TOURNOIS, une course libre
+                      se reprend page COURSE RAPIDE. */}
+                  <button
+                    type="button"
+                    className="city-rush-text-button"
+                    onClick={() => (result.tournament ? openHubPage('tournament') : returnToModePicker())}
+                  >
                     {result.tournament
                       ? (result.tournament.complete ? 'AUTRES TOURNOIS' : 'ABANDONNER LE TOURNOI')
                       : storyMode ? 'MODE LIBRE / VILLE' : 'CHANGER DE MODE'}

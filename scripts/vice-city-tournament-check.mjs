@@ -41,7 +41,7 @@ const { checkViceCityTournament } = await import('../node_modules/.cache/vice-ci
 let code = 0;
 try {
   await checkViceCityTournament(assert);
-  console.log('check:city-rush-tournament ✓ — la Coupe Sunset se joue de bout en bout : 3 manches sans police ni armes, sacre à 26 pts, prime +100, Coupe d’Europe débloquée, sauvegarde à jour.');
+  console.log('check:city-rush-tournament ✓ — la Coupe Sunset se joue de bout en bout : 3 manches sans police ni armes, sacre à 26 pts, prime +100, Coupe d’Europe débloquée, sauvegarde à jour ; le tout s’ouvre page TOURNOIS — seule page des plateaux — et le « ← » du garage y ramène en abandonnant la coupe.');
 } catch (error) {
   console.error(error?.message || error);
   code = 1;

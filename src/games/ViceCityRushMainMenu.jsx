@@ -1,11 +1,22 @@
 // Écran-titre de Vice City Rush — le menu principal inspiré de celui de
-// Need for Speed : Most Wanted (2005) : la voiture du joueur en décor plein
-// cadre (photo statique, aucune scène 3D), logo griffé en haut, carrousel de
-// modes cerisé de jaune en bas, éclats d'encre grunge et barre de raccourcis
-// clavier. Toute la navigation existe au clavier, à la souris et au tactile.
+// Need for Speed : Most Wanted (2005) : la pièce du catalogue qui tourne au
+// plateau, en décor plein cadre, logo griffé en haut, carrousel de modes cerisé
+// de jaune en bas et barre de raccourcis clavier — sans un nuage d'encre
+// devant la vitrine : c'est la salle qui fait le fond. Toute
+// la navigation existe au clavier, à la souris et au tactile.
+//
+// Le décor est la scène de garage elle-même (`ViceCityGarageStage`), réglée sur
+// son cadrage « vitrine » : plan large dézoomé, plateau qui tourne, cabine
+// entière dans le champ — mais `pointer-events: none` de bout en bout, ici le
+// décor ne se manipule pas. La photo du modèle reste posée dessous : c'est elle
+// que voit un appareil sans WebGL (et elle évite un cadre noir le temps que le
+// premier rendu sorte). La voiture montrée n'est pas celle du garage du joueur :
+// c'est `cityRushShowcaseCar()`, la plus désirable du catalogue — l'écran-titre
+// vend la campagne, il ne la résume pas.
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isFullscreenShortcut } from './gameFullscreen';
+import ViceCityGarageStage from './ViceCityGarageStage';
 import './vice-city-rush-menu.css';
 
 const MENU_ENTRIES = [
@@ -73,23 +84,6 @@ function MenuIcon({ id }) {
         </svg>
       );
   }
-}
-
-/** Éclat d'encre grunge, posé derrière les blocs du menu. */
-function InkSplat({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 400 200" aria-hidden="true" preserveAspectRatio="none">
-      <path
-        d="M18 96c-14-30 22-58 58-52 12-24 52-30 74-16 20-18 62-16 78 4 30-10 66 6 70 32 26 6 40 34 28 54 10 22-14 44-44 40-10 20-48 26-70 14-18 14-56 12-70-4-26 10-60-2-66-24-28 2-52-22-58-48z"
-        fill="currentColor"
-      />
-      <circle cx="352" cy="42" r="10" fill="currentColor" />
-      <circle cx="378" cy="70" r="5" fill="currentColor" />
-      <circle cx="30" cy="150" r="7" fill="currentColor" />
-      <circle cx="58" cy="170" r="4" fill="currentColor" />
-      <circle cx="330" cy="160" r="6" fill="currentColor" />
-    </svg>
-  );
 }
 
 export default function ViceCityRushMainMenu({
@@ -164,16 +158,26 @@ export default function ViceCityRushMainMenu({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {/* Décor : la photo du modèle engagé, plein cadre, assombrie en haut et
-          en bas pour la lisibilité du logo et du carrousel. */}
+      {/* Décor : le modèle en trois dimensions sur son plateau tournant, posé
+          derrière le menu — assombri en haut et en bas pour la lisibilité du
+          logo et du carrousel. La photo vient en dessous, en socle : elle tient
+          le cadre sans WebGL comme pendant le premier rendu. */}
       <div className="vcr-menu-scene" aria-hidden="true">
         <img className="vcr-menu-bg" src={carThumb} alt="" loading="eager" decoding="async" />
+        <div className="vcr-menu-stage">
+          <ViceCityGarageStage
+            carId={car?.id}
+            carName={car?.name}
+            accent={car?.accent}
+            framing="vitrine"
+            // Pas de légende de repli ici : la photo du dessus EST le décor, il
+            // n'y a rien à expliquer au joueur.
+            fallbackLabel=""
+          />
+        </div>
         <div className="vcr-menu-shade" />
         <div className="vcr-menu-grain" />
       </div>
-
-      <InkSplat className="vcr-splat vcr-splat-logo" />
-      <InkSplat className="vcr-splat vcr-splat-bar" />
 
       <header className="vcr-menu-logo">
         <span className="vcr-menu-logo-kicker">LET’S PLAY ARCADE PRÉSENTE</span>
@@ -254,7 +258,16 @@ export default function ViceCityRushMainMenu({
         </div>
       )}
 
-      <span className="vcr-menu-car-name" aria-hidden="true">{car?.name || ''}</span>
+      {/* Plaque du plateau : ce qui tourne derrière le menu, et le fait que ce
+          n'est pas une image. Le nom reste griffé au feutre, comme une dédicace
+          posée sur la carrosserie. */}
+      <div className="vcr-menu-car" aria-hidden="true">
+        <span className="vcr-menu-car-live">
+          <i />PLATEAU 3D · EN DIRECT
+        </span>
+        <small className="vcr-menu-car-class">{car?.className || 'VICE CITY · 1986'}</small>
+        <span className="vcr-menu-car-name">{car?.name || ''}</span>
+      </div>
     </div>
   );
 }

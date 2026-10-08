@@ -32,14 +32,17 @@
  *   7. Téléphone (pointeur grossier) et application Android : le lancement d'une
  *      course demande le plein écran natif dans le geste, et cette ouverture
  *      automatique se referme à l'arrivée (retour à la page).
- *   8. Quitter la page en plein écran rend le navigateur et le verrou.
+ *   8. Quitter la page en plein écran rend le navigateur et le verrou ;
+ *   9. le hub de lancement (l'écran-titre) est dans la cible du plein écran :
+ *      puce « PLEIN ÉCRAN » et touche F le basculent sans le faire tomber sur
+ *      l'interface de préparation.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
-import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
+import { dismissTitleMenu, openHubPage } from './vice-city-title-menu-dismiss.jsx';
 import { CITY_RUSH_FREE_CAR_COUNT } from '../src/games/cityRushRules.js';
 import { CITY_RUSH_STORY_CHAPTER_COUNT } from '../src/games/cityRushStory.js';
 import { CITY_RUSH_PROGRESS_KEY } from '../src/games/cityRushProgress.js';
@@ -152,9 +155,16 @@ const resumeOf = (node) => node.querySelector('.city-rush-pause-overlay .city-ru
 const viewportOf = (node) => node.querySelector('.city-rush-viewport');
 const introHubOf = (node) => node.querySelector('.city-rush-intro:not(.city-rush-story-cinematic)');
 
-/** Plein écran de la coque du jeu : natif, couche fixe, verrou, bouton de la barre. */
+/**
+ * Plein écran de la PAGE de jeu (la cible demandée au navigateur est
+ * `.city-rush-page`, pas la coque : l'écran-titre vit au-dessus de la page et
+ * doit entrer en plein écran avec elle). `native` lit donc la page ; `layer`,
+ * la couche fixe de la coque ; `hub`, la présence de l'écran-titre dans le
+ * sous-arbre plein écran.
+ */
+const pageOf = (node) => node.querySelector('.city-rush-page');
 const shellState = (node, api) => ({
-  native: api.element !== null && api.element === shellOf(node),
+  native: api.element !== null && api.element === pageOf(node),
   layer: shellOf(node).classList.contains('is-immersive'),
   locked: locked(),
   pressed: toggleOf(node).getAttribute('aria-pressed'),
@@ -216,6 +226,7 @@ export async function checkViceCityFullscreen(assert) {
       assert.deepEqual(shellState(node, api), LAYER_ONLY, 'l’interface se lance en plein écran de base (couche fixe)');
       assert.equal(api.requests, 0, 'aucune demande native avant un geste du joueur');
       assert.equal(shellOf(node).id, 'vice-city-rush-console', 'c’est la coque du jeu qui occupe l’écran');
+      assert.equal(pageOf(node).classList.contains('is-immersive'), true, 'la page porte aussi la couche fixe (c’est elle qui est plein écran)');
       const toggle = toggleOf(node);
       assert.ok(toggle, 'le bouton « Plein écran » est dans la barre du jeu dès l’intro');
       assert.equal(toggle.getAttribute('aria-pressed'), 'true', 'le bouton de la barre reflète le plein écran de base');
@@ -234,7 +245,39 @@ export async function checkViceCityFullscreen(assert) {
       await settle();
       assert.deepEqual(shellState(node, api), OPEN, 'le premier geste ouvre le plein écran natif');
       assert.equal(api.requests, 1, 'une demande native au premier geste');
+      assert.equal(api.element, pageOf(node), 'la cible du plein écran est la page de jeu, pas la seule coque');
 
+      // ── Le hub de lancement survit au plein écran ─────────────────────────
+      // L'écran-titre est posé au-dessus de la page, hors de la coque : s'il
+      // restait hors du sous-arbre plein écran, le navigateur le relègue
+      // derrière la coque et le joueur retombe sur l'ancienne interface dès
+      // qu'il appuie sur F ou clique la puce « PLEIN ÉCRAN » du hub.
+      await click(node.querySelector('.city-rush-top-button.is-quiet'));
+      await settle();
+      const hub = node.querySelector('.vcr-menu');
+      assert.ok(hub, '« ↶ MENU » rouvre l’écran-titre');
+      assert.ok(pageOf(node).contains(hub), 'l’écran-titre est dans le sous-arbre mis en plein écran');
+      const hubFullscreen = [...hub.querySelectorAll('.vcr-key-chip')].find((chip) => /PLEIN ÉCRAN/.test(chip.textContent));
+      assert.ok(hubFullscreen, 'la puce « PLEIN ÉCRAN » existe dans la barre de raccourcis du hub');
+      await click(hubFullscreen);
+      await settle();
+      assert.deepEqual(shellState(node, api), CLOSED, 'la puce du hub est un bascule : elle referme le plein écran de base');
+      assert.ok(node.querySelector('.vcr-menu'), 'le hub reste affiché, plein écran refermé');
+      await click(hubFullscreen);
+      await settle();
+      assert.deepEqual(shellState(node, api), OPEN, 'la puce le rouvre, en natif comme en couche fixe');
+      assert.ok(node.querySelector('.vcr-menu'), 'le hub reste affiché une fois en plein écran');
+      await press('f');
+      assert.deepEqual(shellState(node, api), CLOSED, 'F referme le plein écran depuis le hub');
+      assert.ok(node.querySelector('.vcr-menu'), 'le hub est toujours là après la fermeture');
+      await press('f');
+      assert.deepEqual(shellState(node, api), OPEN, 'F le rouvre, hub en place');
+      assert.ok(node.querySelector('.vcr-menu'), 'le hub survit à la réouverture');
+      await dismissTitleMenu(node);
+
+      // La campagne a sa page : l'onglet HISTOIRE l'ouvre, et la bannière n'y
+      // vit plus dans le sélecteur de courses rapides.
+      await openHubPage(node, 'HISTOIRE');
       await click(node.querySelector('.city-rush-story-banner'));
       const storyChapterPage = node.querySelector('.city-rush-story-cinematic');
       assert.ok(storyChapterPage, 'la bannière histoire entière est cliquable');
@@ -407,6 +450,7 @@ export async function checkViceCityFullscreen(assert) {
     }));
     {
       const { node, unmount } = await mountPage('/jeu/vice-city-rush');
+      await openHubPage(node, 'HISTOIRE');
       const selector = node.querySelector('.cr-story-chapter-select');
       assert.ok(selector, 'une campagne commencée expose le sélecteur de chapitres');
       assert.equal(selector.open, false, 'la liste reste repliée pour ne pas encombrer le menu');

@@ -14,10 +14,13 @@ import {
 const EXIT_FALLBACK_MS = 1000;
 
 /**
- * Plein écran d'un bloc de la page (`targetRef`) : la coque d'un jeu d'arcade —
- * Mirage Rush (`<section>` du jeu, fenêtre de course en ligne) et Vice City Rush
- * (`<section id="vice-city-rush-console">`). Le gros des gestes est dans
- * `gameFullscreen.js` ; ici, l'état React et le cycle de vie.
+ * Plein écran d'un bloc de la page (`targetRef`) : la coque d'un jeu d'arcade.
+ * Mirage Rush cible la `<section>` du jeu (et la fenêtre de course en ligne) ;
+ * Vice City Rush cible sa PAGE entière (`.city-rush-page`), parce que son
+ * écran-titre est posé par-dessus la page et non dans la coque : ce qui reste
+ * hors du sous-arbre plein écran est relégué derrière lui par le navigateur.
+ * Le gros des gestes est dans `gameFullscreen.js` ; ici, l'état React et le
+ * cycle de vie.
  *
  * - `active` : vrai tant que le bloc doit occuper tout l'écran (plein écran
  *   natif **ou** couche fixe) — c'est lui qui pose la classe `is-immersive`.
