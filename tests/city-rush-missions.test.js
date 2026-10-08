@@ -54,9 +54,12 @@ test('les missions racontent des objectifs lisibles et utilisent des villes/parc
   }
   const firstMission = getCityRushMission('dealer-pursuit');
   assert.equal(firstMission?.rules.policePlayerLook, true);
+  assert.equal(firstMission?.rules.playerRole, 'police');
+  assert.match(firstMission?.briefing || '', /tu incarnes un officier de police/i);
   assert.equal(firstMission?.rules.playerCarId, 'city-hatch');
-  assert.equal(firstMission?.rules.rivalHealth.dealer, 36);
-  assert.equal(firstMission?.targetHealth, 36);
+  assert.equal(firstMission?.rules.rivalHealth.dealer, 15);
+  assert.equal(firstMission?.targetHealth, 15);
+  assert.match(firstMission?.checklist.join(' ') || '', /quinze impacts/i);
   assert.equal(firstMission?.rules.pistolPickupRowInterval, 12);
   assert.match(firstMission?.briefing || '', /un peu plus rapide/i);
   const playerCar = CITY_RUSH_CARS.find((car) => car.id === firstMission?.rules.playerCarId);

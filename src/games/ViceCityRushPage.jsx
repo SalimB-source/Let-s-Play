@@ -809,8 +809,8 @@ export default function ViceCityRushPage() {
             // Le duel démarre dans la même voie : le joueur peut réellement
             // essayer son chargeur avant que la cible ne s'échappe.
             lane: player?.lane ?? opponent?.lane,
-            health: currentMission.targetHealth || 36,
-            maxHealth: currentMission.targetHealth || 36,
+            health: currentMission.targetHealth || 15,
+            maxHealth: currentMission.targetHealth || 15,
             driverId: targetId,
             name: 'DEALER',
             displayName: 'Le dealer',
@@ -865,6 +865,7 @@ export default function ViceCityRushPage() {
         policeTrafficEnabled: rules.policeTrafficEnabled !== false,
         bazookaEnabled: rules.bazookaEnabled !== false,
         policePlayerLook: rules.policePlayerLook === true,
+        playerRole: rules.playerRole || null,
         playerHealthOverride: rules.playerHealthOverride ?? null,
         missionTargetId: rules.missionTargetId || currentMission.targetId || null,
         missionTargetStartDistance: rules.missionTargetStartDistance ?? null,
@@ -942,7 +943,7 @@ export default function ViceCityRushPage() {
   const missionLiveStatus = !missionMode || !currentMission
     ? ''
     : currentMission.targetId
-      ? `CHARGEURS · ${Number(hud.pistolPickups) || 0}/${currentMission.requiredPistolPickups || 1} · DEALER ${Math.max(0, Number(missionTargetHud?.health) || 0)}/${currentMission.targetHealth || 36} PV · AK ${Number(hud.inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0}`
+      ? `CHARGEURS · ${Number(hud.pistolPickups) || 0}/${currentMission.requiredPistolPickups || 1} · DEALER ${Math.max(0, Number(missionTargetHud?.health) || 0)}/${currentMission.targetHealth || 15} PV · AK ${Number(hud.inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0}`
       : currentMission.requiredPoliceDestroyed
         ? `POLICES · ${Number(hud.policeDestroyed) || 0}/${currentMission.requiredPoliceDestroyed} · AK ${Number(hud.inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0} · ROQUETTES ${Number(hud.bazookaAmmo) || 0}`
         : currentMission.requiredPickups
@@ -2049,7 +2050,8 @@ export default function ViceCityRushPage() {
                 </div>
               )}
               {missionMode && currentMission && (
-                <div className="cr-mission-live-objective" role="status">
+                <div className={`cr-mission-live-objective${storyRules?.playerRole === 'police' ? ' is-police-role' : ''}`} role="status">
+                  {storyRules?.playerRole === 'police' && <strong className="cr-mission-player-role">🚨 OFFICIER DE POLICE · INTERCEPTEUR</strong>}
                   <b>MISSION {currentMission.number} · {currentMission.shortObjective}</b>
                   <small>{missionLiveStatus}</small>
                 </div>
@@ -3078,7 +3080,7 @@ export default function ViceCityRushPage() {
                       {currentMission.requiredPoliceDestroyed && <span><small>POLICES</small><b>{result.policeDestroyed || 0}/{currentMission.requiredPoliceDestroyed}</b></span>}
                       {currentMission.targetId && (() => {
                         const target = result.racers?.find((racer) => racer.id === currentMission.targetId);
-                        return <span><small>COQUE DEALER</small><b>{Math.max(0, Number(target?.health) || 0)}/{currentMission.targetHealth || 36} PV</b></span>;
+                        return <span><small>COQUE DEALER</small><b>{Math.max(0, Number(target?.health) || 0)}/{currentMission.targetHealth || 15} PV</b></span>;
                       })()}
                       <span><small>CONTACTS</small><b>{result.vehicleContacts || 0}</b></span>
                       <span><small>TIRS</small><b>{result.shotsFired || 0}</b></span>
