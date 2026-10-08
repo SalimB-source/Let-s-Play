@@ -714,40 +714,9 @@ export default function RpgBattlePage() {
               {isPlayerTurn ? (
                 <>
                   <p className="rpg-actions__who">
-                    Au tour de <strong>{current.name}</strong> — posez vos cartes (le sable paie)
+                    Au tour de <strong>{current.name}</strong> — le sable paie les cartes
                     {targetId && <> · cible : {battle.actors.find((a) => a.id === targetId)?.name}</>}
                   </p>
-                  <div className="rpg-hand" aria-label="Votre main et vos cartes de base">
-                    {playable.map((card) => {
-                      const disabled = card.locked || card.used || !card.affordable;
-                      const foe = battle.actors.find((a) => a.id === targetId);
-                      const advantage = foe && card.element
-                        ? rpgElementMultiplier(card.element, foe.element) : 1;
-                      return (
-                        <button
-                          key={`${card.source}-${card.id}`}
-                          type="button"
-                          className={`rpg-hand__card rpg-hand__card--elem-${card.element ?? 'sable'} ${card.source === 'base' ? 'rpg-hand__card--base' : ''} ${card.instant ? 'is-instant' : ''}`}
-                          disabled={disabled}
-                          onClick={() => cast(card)}
-                          title={card.locked ? 'Verrouillé : le Nom complet manque' : card.text}
-                        >
-                          <span className="rpg-hand__title">
-                            <strong>{card.name}</strong>
-                            <span className="rpg-hand__cost">{card.basic ? 'base' : `${card.cost} ⛃`}</span>
-                          </span>
-                          <span className="rpg-hand__art" aria-hidden="true">
-                            {RPG_ELEMENT_ICONS[card.element] ?? '◇'}
-                            {card.power ? <b>{card.power}</b> : null}
-                          </span>
-                          <span className="rpg-hand__text">
-                            {card.locked ? 'Exige le Nom complet (3 segments).' : card.text}
-                            {card.used && <em> — déjà jouée ce tour.</em>}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
                   <div className="rpg-actions__row">
                     <label className={`rpg-crystallize ${crystallize ? 'is-on' : ''} ${battle.verre < RPG_CRISTALLISATION_COST ? 'is-off' : ''}`}>
                       <input
@@ -770,35 +739,72 @@ export default function RpgBattlePage() {
                   </div>
                 </>
               ) : (
-                <div className="rpg-actions__wait">
-                  <p>L’ennemi pose et exécute ses cartes…</p>
-                  {instants.length > 0 && (
-                    <div className="rpg-hand rpg-hand--reponse" aria-label="Répondre avec un éphémère">
-                      <span className="rpg-hand__hint">Répondre :</span>
-                      {instants.map((card) => (
-                        <button
-                          key={card.id}
-                          type="button"
-                          className={`rpg-hand__card is-instant rpg-hand__card--elem-${card.element ?? 'sable'}`}
-                          disabled={card.cost > battle.ground.equipe}
-                          onClick={() => cast(card)}
-                          title={card.text}
-                        >
-                          <span className="rpg-hand__title">
-                            <strong>{card.name}</strong>
-                            <span className="rpg-hand__cost">{card.cost} ⛃</span>
-                          </span>
-                          <span className="rpg-hand__art" aria-hidden="true">{RPG_ELEMENT_ICONS[card.element] ?? '◇'}</span>
-                          <span className="rpg-hand__text">{card.text}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <p className="rpg-actions__wait">
+                  L’ennemi pose et exécute ses cartes…
+                  {instants.length > 0 && <em> un éphémère de la main peut répondre.</em>}
+                </p>
               )}
             </div>
           )}
           </div>
+
+          {screen === 'combat' && (
+            <div className="rpg-hand-dock" aria-label="Votre main, à moitié glissée sous la table">
+              {isPlayerTurn ? (
+                <div className="rpg-hand">
+                  {playable.map((card) => {
+                    const disabled = card.locked || card.used || !card.affordable;
+                    const foe = battle.actors.find((a) => a.id === targetId);
+                    const advantage = foe && card.element
+                      ? rpgElementMultiplier(card.element, foe.element) : 1;
+                    return (
+                      <button
+                        key={`${card.source}-${card.id}`}
+                        type="button"
+                        className={`rpg-hand__card rpg-hand__card--elem-${card.element ?? 'sable'} ${card.source === 'base' ? 'rpg-hand__card--base' : ''} ${card.instant ? 'is-instant' : ''} ${advantage > 1 ? 'is-avantage' : ''}`}
+                        disabled={disabled}
+                        onClick={() => cast(card)}
+                        title={card.locked ? 'Verrouillé : le Nom complet manque' : card.text}
+                      >
+                        <span className="rpg-hand__title">
+                          <strong>{card.name}</strong>
+                          <span className="rpg-hand__cost">{card.basic ? 'base' : `${card.cost} ⛃`}</span>
+                        </span>
+                        <span className="rpg-hand__art" aria-hidden="true">
+                          {RPG_ELEMENT_ICONS[card.element] ?? '◇'}
+                          {card.power ? <b>{card.power}</b> : null}
+                        </span>
+                        <span className="rpg-hand__text">
+                          {card.locked ? 'Exige le Nom complet (3 segments).' : card.text}
+                          {card.used && <em> — déjà jouée ce tour.</em>}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : instants.length > 0 ? (
+                <div className="rpg-hand rpg-hand--reponse">
+                  {instants.map((card) => (
+                    <button
+                      key={card.id}
+                      type="button"
+                      className={`rpg-hand__card is-instant rpg-hand__card--elem-${card.element ?? 'sable'}`}
+                      disabled={card.cost > battle.ground.equipe}
+                      onClick={() => cast(card)}
+                      title={card.text}
+                    >
+                      <span className="rpg-hand__title">
+                        <strong>{card.name}</strong>
+                        <span className="rpg-hand__cost">{card.cost} ⛃</span>
+                      </span>
+                      <span className="rpg-hand__art" aria-hidden="true">{RPG_ELEMENT_ICONS[card.element] ?? '◇'}</span>
+                      <span className="rpg-hand__text">{card.text}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )}
 
           {flash && <p className={`rpg-flash rpg-flash--${flash.tone}`} role="status">{flash.text}</p>}
 
