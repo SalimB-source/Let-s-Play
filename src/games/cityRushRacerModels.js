@@ -1335,9 +1335,12 @@ export function applyPoliceRacerLivery(car) {
 
   // Barre lumineuse posée au-dessus du pavillon : les deux couleurs alternent
   // pour être identifiables même depuis la caméra de poursuite.
-  box(dark, [0, 1.43, -0.06], [0.78, 0.07, 0.2]);
-  box(red, [-0.21, 1.49, -0.06], [0.32, 0.07, 0.19]);
-  box(blue, [0.21, 1.49, -0.06], [0.32, 0.07, 0.19]);
+  const shell = car.userData.body.getObjectByName(`${car.userData.profileId}-coachwork-shell`);
+  shell.geometry.computeBoundingBox();
+  const roofHeight = shell.geometry.boundingBox.max.y;
+  box(dark, [0, roofHeight + 0.07, -0.06], [0.98, 0.09, 0.28]);
+  box(red, [-0.25, roofHeight + 0.16, -0.06], [0.4, 0.12, 0.27]);
+  box(blue, [0.25, roofHeight + 0.16, -0.06], [0.4, 0.12, 0.27]);
   for (const side of [-1, 1]) {
     // Bandeau bleu nuit, liseré blanc et marquage POLICE de chaque côté :
     // même de profil, la voiture se lit comme un intercepteur et non une GT.
@@ -1360,8 +1363,24 @@ export function applyPoliceRacerLivery(car) {
     label.rotation.y = side * Math.PI / 2;
     livery.add(label);
   }
+  // Marquage arrière visible depuis la caméra de poursuite.
+  const rearTexture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = '#142947';
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 86px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('POLICE', width / 2, height / 2);
+  }, 512, 128, { smooth: true });
+  const rearLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.94, 0.23),
+    new THREE.MeshBasicMaterial({ map: rearTexture, toneMapped: false }));
+  rearLabel.name = 'police-rear-marking';
+  rearLabel.position.set(0, 0.58, 2.03);
+  livery.add(rearLabel);
   livery.userData.beacons = { red, blue };
-  car.add(livery);
+  // Les accessoires suivent le roulis et le tangage de la carrosserie.
+  car.userData.body.add(livery);
   car.userData.policeLivery = livery;
   return car;
 }
