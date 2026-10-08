@@ -67,8 +67,25 @@
 .rpg-outro code,
 .rpg-docs code { font-size: .92em; color: var(--yellow); }
 
+.rpg-head__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .rpg-head__nav a { color: var(--cyan); text-decoration: none; font-size: 14px; }
 .rpg-head__nav a:hover { text-decoration: underline; }
+
+.rpg-mute {
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, .06);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.rpg-mute:hover { border-color: var(--cyan); }
 
 /* ── Intro ───────────────────────────────────────────────────────────────── */
 .rpg-intro {

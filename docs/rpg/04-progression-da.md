@@ -139,6 +139,21 @@ quelque chose que l'interface ne dit pas est un effet de trop.
   mixé différemment. Après dix heures de jeu, le joueur doit le reconnaître
   avant de le voir.
 
+### 5.1 Ce que le prototype sait déjà faire (WebAudio procédural)
+
+En attendant oud et qanoun, `src/games/rpgAudio.js` synthétise tout, sans un
+seul asset : carrés nets pour les jingles, sinus pour les soins, thud sinusoïdal
+pour les impacts, bruit filtré pour le sable, et une **cloche à partiels**
+(fondamental + deux harmoniques légèrement désaccordés) pour l'Astrolabe —
+toujours la même, comme exigé ci-dessus.
+
+Chaque événement du jeu a sa séquence : apparition d'une vague (arpège
+montant), victoire (fanfare), défaite (descente), frappe, soin, zone, souffle,
+heure dépensée en exploration. La couche « qui joue quoi » est pure et testée
+(`tests/rpg-audio.test.js`) ; le lecteur WebAudio ne s'éveille qu'au premier
+geste joueur (politique autoplay des navigateurs), reste muet si l'audio
+manque, et un bouton 🔊/🔇 dans l'en-tête mémorise le choix.
+
 ## 6. Accessibilité
 
 - Vitesses de combat réglables (×1 / ×2 / ×4) et **pilotage automatique**

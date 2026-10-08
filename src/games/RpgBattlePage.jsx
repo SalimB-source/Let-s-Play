@@ -42,6 +42,7 @@ import {
   rpgExploreAct,
   RPG_EXPLORE_HOURS,
 } from './rpgExplore';
+import { RpgAudioPlayer } from './rpgAudio';
 import './rpg-battle.css';
 
 /**
@@ -220,7 +221,32 @@ export default function RpgBattlePage() {
   // L'exploration en cours entre deux vagues (null pendant les combats).
   const exploreRef = useRef(null);
   const [choice, setChoice] = useState(null);
+  // Son synthétisé : muet tant qu'aucun geste joueur n'a éveillé l'AudioContext.
+  const audioRef = useRef(null);
+  if (!audioRef.current) audioRef.current = new RpgAudioPlayer();
+  const [muted, setMuted] = useState(() => {
+    try {
+      return window.localStorage.getItem('rpg-mute') === '1';
+    } catch {
+      return false;
+    }
+  });
   const battle = battleRef.current;
+
+  useEffect(() => {
+    const unlock = () => audioRef.current.unlock();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
+
+  useEffect(() => {
+    audioRef.current.setMuted(muted);
+    try {
+      window.localStorage.setItem('rpg-mute', muted ? '1' : '0');
+    } catch {
+      // navigation privée : le réglage vivra juste le temps de la session
+    }
+  }, [muted]);
 
   const later = useCallback((fn, delay) => {
     const id = window.setTimeout(() => {
@@ -261,13 +287,12 @@ export default function RpgBattlePage() {
       later(() => {
         const intent = actor.intent;
         if (intent) {
-          sceneQueueRef.current.push(
-            intent.family === 'zone'
-              ? { t: 'zone', from: actor.id }
-              : intent.family === 'soutien'
-                ? { t: 'soin', from: actor.id, to: actor.id }
-                : { t: 'strike', from: actor.id, to: intent.targetId },
-          );
+          if (intent.family === 'zone') cine({ t: 'zone', from: actor.id }, 'zone');
+          else if (intent.family === 'soutien') cine({ t: 'soin', from: actor.id, to: actor.id }, 'heal');
+          else {
+            cine({ t: 'strike', from: actor.id, to: intent.targetId }, 'whoosh');
+            audioRef.current.play('hit', 0.28);
+          }
         }
         const before = new Map(state.actors.map((a) => [a.id, a.hp]));
         rpgEnemyTurn(state);
@@ -286,8 +311,17 @@ export default function RpgBattlePage() {
       const prev = before.get(a.id);
       if (prev == null) continue;
       const delta = a.hp - prev;
-      if (delta !== 0) sceneQueueRef.current.push({ t: 'pop', to: a.id, amount: delta });
+      if (delta !== 0) {
+        sceneQueueRef.current.push({ t: 'pop', to: a.id, amount: delta });
+        audioRef.current.play(delta < 0 ? 'hit' : 'heal');
+      }
     }
+  }, []);
+
+  // Un événement de scène + son geste sonore, d'un seul geste.
+  const cine = useCallback((event, sfx = null, delay = 0) => {
+    sceneQueueRef.current.push(event);
+    if (sfx) audioRef.current.play(sfx, delay);
   }, []);
 
   const refuse = useCallback((result, action) => {
@@ -323,11 +357,12 @@ export default function RpgBattlePage() {
       return;
     }
     pushPops(state, before);
-    sceneQueueRef.current.push(
-      skill.kind === 'soin'
-        ? { t: 'soin', from: actor.id, to: skill.target === 'allie' ? ally.id : actor.id }
-        : { t: 'strike', from: actor.id, to: skill.target === 'tous-ennemis' ? null : foe?.id ?? null },
-    );
+    if (skill.kind === 'soin') {
+      cine({ t: 'soin', from: actor.id, to: skill.target === 'allie' ? ally.id : actor.id }, 'heal');
+    } else {
+      cine({ t: 'strike', from: actor.id, to: skill.target === 'tous-ennemis' ? null : foe?.id ?? null }, 'whoosh');
+      audioRef.current.play('hit', 0.28);
+    }
     setCrystallize(false);
     force();
     if (state.over) {
@@ -353,10 +388,11 @@ export default function RpgBattlePage() {
       return;
     }
     if (kind === 'recolte') {
-      sceneQueueRef.current.push({ t: 'soin', from: actor.id, to: actor.id });
+      cine({ t: 'soin', from: actor.id, to: actor.id }, 'heal');
       showFlash(`+${result.heal} PV récoltés`, 'soin');
     }
-    if (kind === 'souffle') sceneQueueRef.current.push({ t: 'souffle', from: actor.id });
+    if (kind === 'souffle') cine({ t: 'souffle', from: actor.id }, 'souffle');
+    if (kind === 'garde' || kind === 'barrage' || kind === 'reposition') audioRef.current.play('blip');
     if (kind === 'reposition') showFlash(`${ally.name} monte à l’étage ${result.tier}`, 'info');
     force();
     if (actor.pa < 1) later(pump, 620);
@@ -366,6 +402,7 @@ export default function RpgBattlePage() {
     const state = battleRef.current;
     if (!state || state.over) return;
     rpgEndTurn(state);
+    audioRef.current.play('blip');
     force();
     later(pump, 260);
   }, [later, pump]);
@@ -375,9 +412,25 @@ export default function RpgBattlePage() {
     const actor = rpgCurrentActor(state);
     if (!actor || actor.side !== 'equipe') return;
     if (!rpgSwap(state, actor.id, reserveActor.id).ok) return;
+    audioRef.current.play('blip');
     force();
     later(pump, 520);
   }, [later, pump]);
+
+  // ── Ponctuations sonores d'état : cloche, fanfares, arpèges ─────────────
+  const prevStrikeRef = useRef(0);
+  useEffect(() => {
+    const strike = battle?.clockStrike ?? 0;
+    if (strike > 0 && prevStrikeRef.current === 0) audioRef.current.play('bell');
+    prevStrikeRef.current = strike;
+  }, [battle?.clockStrike]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (screen === 'vague-finie') audioRef.current.play('victoire');
+    if (screen === 'defaite') audioRef.current.play('defaite');
+    if (screen === 'exploration') audioRef.current.play('explore');
+    if (screen === 'combat') audioRef.current.play('apparition');
+  }, [screen, waveIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startRun = useCallback(() => {
     clearTimers();
@@ -507,7 +560,18 @@ export default function RpgBattlePage() {
           l’avance, et l’on répond en choisissant — garde, barrage, contre-élément, reposition.
           Prototype technique du dossier <code>docs/rpg/</code>.
         </p>
-        <nav className="rpg-head__nav"><Link to="/jeu">← Tous les jeux</Link></nav>
+        <nav className="rpg-head__nav">
+          <Link to="/jeu">← Tous les jeux</Link>
+          <button
+            type="button"
+            className="rpg-mute"
+            onClick={() => setMuted((m) => !m)}
+            aria-pressed={muted}
+            title={muted ? 'Rétablir le son' : 'Couper le son'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+        </nav>
       </header>
 
       {screen === 'intro' && (

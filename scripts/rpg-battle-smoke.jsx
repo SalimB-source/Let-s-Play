@@ -26,6 +26,8 @@ export async function checkRpgBattle(assert) {
   // ── L'écran d'accueil explique le contrat : rien ne dépend des réflexes ──
   assert.match(container.textContent, /SABLIER/);
   assert.match(container.textContent, /sans réflexes/);
+  assert.ok(buttons().some((b) => b.className.includes('rpg-mute')),
+    'le bouton son 🔊/🔇 doit exister dans l’en-tête');
   for (const level of ['Récit', 'Normale', 'Veilleur']) {
     assert.ok(findButton(level), `difficulté « ${level} » absente`);
   }

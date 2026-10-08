@@ -2261,6 +2261,10 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
   blanc à l'impact, ennemis qui meurent en scintillant, boîte de message à
   texte tapé lettre à lettre, bannière « des ennemis apparaissent ! ». Sans
   WebGL, repli sobre, combat jouable.
+- `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
+  jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
+  souffle de sable. La partie pure est testée ; le lecteur s'éveille au
+  premier geste joueur, bouton 🔊/🔇 mémorisé.
 - `src/games/rpg-battle.css` — la palette laiton / indigo / ocre du concept,
   sur les variables de couleur du site (donc compatible thème clair).
 - `public/sablier-de-bab-el-thumb.svg` — vignette vectorielle (une démo
