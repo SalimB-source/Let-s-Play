@@ -150,7 +150,7 @@ test('chaque conteneur prend les deux voies extérieures du sens de course, sans
   );
 });
 
-test('deux entrepôts sur toutes les cartes, reliés à l’inventaire, au tir direct et au bouton tactile jaune', () => {
+test('deux entrepôts sur toutes les cartes, reliés à l’inventaire, au tir direct et au bouton de tir unique', () => {
   assert.match(worldSource, /cityRushBazookaTrackDistances\(\{\s*laps: effectiveLaps\s*\}\)/);
   assert.match(worldSource, /const bazookaWarehouseEnabled = !sprint && storyWeaponsEnabled && storyPoliceEnabled/);
   assert.doesNotMatch(worldSource, /city\.id === 'vice-city' && !sprint && storyWeaponsEnabled/);
@@ -162,19 +162,30 @@ test('deux entrepôts sur toutes les cartes, reliés à l’inventaire, au tir d
   assert.match(rulesSource, /function cityRushBazookaTarget\([\s\S]*?return cityRushStraightShotTarget\(/);
   assert.match(worldSource, /cityRushStraightShotSweptHit\(\{[\s\S]*?shot\.bazooka[\s\S]*?bazookaPoliceCandidates\(\)/);
   assert.match(worldSource, /const isBazooka = kind === 'bazooka'[\s\S]*?\? 1/);
-  assert.match(worldSource, /function useBazooka\(\)[\s\S]*?bazookaAmmo -= 1[\s\S]*?fireStraightShot\('player', target, 'bazooka'\)/);
+  assert.match(worldSource, /function useBazooka\([\s\S]*?bazookaAmmo -= 1[\s\S]*?fireStraightShot\('player', target, 'bazooka'\)/);
   assert.match(worldSource, /bazookaAmmo = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP/);
-  assert.match(pageSource, /city-rush-bazooka-button/);
-  assert.match(pageSource, /onClick=\{\(\) => actionsRef\.current\?\.\('bazooka'\)\}/);
-  assert.match(pageSource, /X : BAZOOKA/);
+  // La roquette occupe l'emplacement d'arme unique, comme le tir rouge ou
+  // bleu : traverser un conteneur jaune vide l'AK-47 et le pompe, ramasser
+  // un bonus rouge ou bleu vide la roquette.
+  assert.match(worldSource, /bazookaAmmo = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP;[\s\S]*?inventory = cityRushEquipWeapon\(inventory, CITY_RUSH_POWERS\.PISTOL, 0\)/);
+  assert.match(worldSource, /inventory = cityRushEquipWeapon\(inventory, type, pickupAmount\);\s*\n\s*bazookaAmmo = 0;/);
+  assert.match(worldSource, /if \(bazookaAmmo > 0\) \{\s*\n\s*return Object\.freeze\(\{ type: 'bazooka', ammo: bazookaAmmo, max: CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP \}\);/);
+  // Le bouton de tir (et la touche Z) tire l'arme en main — roquette comprise.
+  assert.match(worldSource, /weapon\.type === 'bazooka' \? useBazooka\(\) : usePower\(weapon\.type\)/);
+  // Le bouton de bazooka séparé a disparu : la roquette remplace l'arme en
+  // main sur le bouton de tir unique, avec sa livrée jaune.
+  assert.doesNotMatch(pageSource, /city-rush-bazooka-button/);
+  assert.doesNotMatch(hudCss, /city-rush-bazooka-button/);
+  assert.match(pageSource, /bazookaRockets > 0[\s\S]*?\{ type: 'bazooka', ammo: bazookaRockets, max: CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP \}/);
+  assert.match(pageSource, /isBazooka \|\| bazookaExhausted \? ' is-bazooka' : ''/);
+  assert.match(pageSource, /Z : TIR \(AK-47 · POMPE · BAZOOKA\)/);
   assert.match(pageSource, /city-rush-guide-item is-bazooka/);
   assert.match(pageSource, /city-rush-mode-bazooka-hint/);
   assert.match(pageSource, /const bazookaMode = !sprintMode && storyWeaponsOn && storyPoliceOn/);
   assert.doesNotMatch(pageSource, /const bazookaMode = cityId === 'vice-city'/);
   assert.match(baseCss, /\.city-rush-mode-bazooka-hint[\s\S]*?color: #ffd21f/);
-  assert.match(baseCss, /\.city-rush-bazooka-button\.is-empty[\s\S]*?color: #9ca3ad/);
-  assert.match(baseCss, /\.city-rush-bazooka-button\.is-ready[\s\S]*?border-color: #ffe35b/);
-  assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \.city-rush-bazooka-button\s*\{\s*pointer-events: auto/);
+  assert.match(baseCss, /\.city-rush-machine-gun-button\.is-bazooka\.is-ready[\s\S]*?#ffc61b 48%/);
+  assert.match(baseCss, /\.city-rush-machine-gun-button\.is-bazooka \.city-rush-machine-gun-ammo path\.is-loaded[\s\S]*?stroke: #ffd21f/);
 });
 
 test('le tir laisse un cratère noir durable et une explosion en champignon, avec secousse et vignette rouge', () => {
@@ -193,9 +204,10 @@ test('le tir laisse un cratère noir durable et une explosion en champignon, ave
   assert.match(baseCss, /rgba\(255, 22, 48, 0\.78\)/);
 });
 
-test('le bouton jaune du bazooka est placé à gauche du bouton rouge dans un dock horizontal', () => {
-  const weaponDock = pageSource.match(/city-rush-weapon-controls[\s\S]*?city-rush-machine-gun-button/)?.[0] || '';
-  assert.ok(weaponDock, 'les deux boutons sont regroupés dans le dock d’armes');
-  assert.ok(weaponDock.indexOf('city-rush-bazooka-button') < weaponDock.indexOf('city-rush-machine-gun-button'));
+test('le bazooka remplace l’arme en main sur le bouton de tir unique — plus de bouton jaune séparé', () => {
+  const weaponDock = pageSource.match(/city-rush-weapon-controls[\s\S]*?<\/button>/)?.[0] || '';
+  assert.ok(weaponDock, 'le dock d’armes porte le bouton de tir unique');
+  assert.doesNotMatch(weaponDock, /city-rush-bazooka-button/, 'le bazooka n’a plus son propre bouton');
+  assert.match(weaponDock, /is-bazooka/, 'le bouton unique prend la livrée jaune quand la roquette est en main');
   assert.match(hudCss, /\.city-rush-viewport \.city-rush-hud \.city-rush-weapon-controls\s*\{[^}]*display: flex;[^}]*flex-direction: row;/);
 });

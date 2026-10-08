@@ -149,7 +149,7 @@ for (const [nom, entete, zones] of contexts) {
   }
   assert.doesNotMatch(parPage, /grid-area:\s*story/, `la course rapide n’a plus de zone pour la campagne (${nom})`);
 
-  const liste = ruleText(bloc, '.city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament)');
+  const liste = ruleText(bloc, '.city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions)');
   assert.ok(liste, `les pages HISTOIRE et TOURNOIS ont leur grille (${nom})`);
   const enListe = liste.split('\n').join(' ');
   assert.match(enListe, zones, `la barre des pages commande aussi les pages de liste (${nom})`);

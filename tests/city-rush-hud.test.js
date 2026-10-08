@@ -22,17 +22,20 @@ test('route bonuses use the generated lane offset instead of stacking at the roa
 });
 
 test('the race exposes one large, round red machine-gun button and no legacy shot buttons', () => {
-  // Un seul bouton de tir pour les deux armes : l'AK-47 rouge et le fusil à
-  // pompe bleu se partagent l'emplacement, jamais les deux à la fois.
+  // Un seul bouton de tir pour les trois armes : l'AK-47 rouge, le fusil à
+  // pompe bleu et le bazooka jaune se partagent l'emplacement — jamais plus
+  // d'une arme en main à la fois.
   assert.match(page, /const POWER_ORDER = \[...CITY_RUSH_WEAPON_TYPES\]/);
   assert.match(page, /city-rush-machine-gun-button/);
-  assert.match(page, /ramasse un bonus rouge \(AK-47, 7 balles\) ou un bonus bleu/);
+  assert.match(page, /ramasse un bonus rouge \(AK-47, \$\{CITY_RUSH_PISTOL_AMMO_PER_PICKUP\} balles\) ou un bonus bleu \(fusil à pompe, \$\{CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP\} cartouches\)/);
+  assert.match(page, /ou traverse un conteneur jaune pour le bazooka/);
   assert.match(page, /chargeur recourbé/);
   assert.match(page, /bouche évasée/);
   assert.match(world, /unguided: isWeapon/);
   assert.match(world, /fireStraightShot\('player', null, type\)/);
   assert.match(world, /CITY_RUSH_PISTOL_SPIN_TURNS/);
   assert.doesNotMatch(page, /city-rush-power-button/);
+  assert.doesNotMatch(page, /city-rush-bazooka-button/, 'le bouton de bazooka séparé a disparu');
   assert.doesNotMatch(page, /A : TIR BLEU|R : HÉLICO/);
 
   const buttonRule = css.match(/\.city-rush-machine-gun-button\s*\{([^}]*)\}/)?.[1] || '';
@@ -40,8 +43,8 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
     [...buttonRule.matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)]
       .map((match) => [match[1], match[2].trim()]),
   );
-  assert.equal(declarations.width, '102px');
-  assert.equal(declarations.height, '102px');
+  assert.equal(declarations.width, '120px');
+  assert.equal(declarations.height, '120px');
   assert.equal(declarations['border-radius'], '50%');
 
   const readyRule = css.match(/\.city-rush-machine-gun-button\.is-ready\s*\{([^}]*)\}/)?.[1] || '';
@@ -49,12 +52,18 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   assert.match(readyRule, /animation:\s*crMachineGunReadyGlow/);
   assert.match(css, /@keyframes crMachineGunReadyGlow/);
   assert.match(css, /\.city-rush-machine-gun-button\.is-ready,\s*\n\s*\.city-rush-machine-gun-button\.is-ready::after/);
-  assert.match(page, /ready \? \(reloading \? `RECHARGE \${ammo}\/\${max}` : `CHARGÉ \${ammo}\/\${max}`\) : 'À RAMASSER'/,
+  assert.match(page, /ready\s*\? \(reloading \? `RECHARGE \${ammo}\/\${max}` : `CHARGÉ \${ammo}\/\${max}`\)\s*\s*: bazookaExhausted \? 'ÉPUISÉ' : 'À RAMASSER'/,
     'le bouton annonce la cartouche restante, le réarmement, ou reste vide');
   // Le pompe repeint le même bouton en bleu.
   assert.match(css, /\.city-rush-machine-gun-button\.is-shotgun\s*\{/);
   assert.match(css, /\.city-rush-machine-gun-button\.is-reloading\s*\{/);
   assert.match(css, /\.city-rush-guide-item\.is-shotgun/);
+  // Le bazooka repeint encore le même bouton en jaune — il n'a pas de bouton
+  // à part : ramassée, la roquette remplace l'arme en main.
+  assert.match(css, /\.city-rush-machine-gun-button\.is-bazooka\s*\{/);
+  assert.match(css, /\.city-rush-machine-gun-button\.is-bazooka\.is-ready\s*\{/);
+  assert.match(css, /@keyframes crBazookaReadyGlow/);
+  assert.match(css, /\.city-rush-machine-gun-button\.is-bazooka \.city-rush-machine-gun-ammo path\.is-loaded/);
 });
 
 test('la première mission identifie le joueur comme policier jusque dans le HUD et la voiture 3D', () => {
@@ -688,29 +697,36 @@ test('le choc du SUV coûte deux carrés sans contourner le répit partagé', ()
   assert.doesNotMatch(page, /TA COQUE PERD \$\{effect\.playerHealthLost\}/);
 });
 
-test('le bouton de tir affiche l’arme en main et reste vide sans ramassage', () => {
-  const button = page.match(/\{\(\(\) => \{\s*\/\/ Un seul bouton pour les deux armes[\s\S]*?\)\(\)\}/)?.[0] || '';
+test('le bouton de tir affiche l’arme en main — rouge, bleue ou roquette — et reste vide sans ramassage', () => {
+  const button = page.match(/\{\(\(\) => \{\s*\/\/ Un seul bouton pour les trois armes[\s\S]*?\)\(\)\}/)?.[0] || '';
   assert.ok(button, 'le bloc du bouton de tir existe');
-  // Une seule arme à la fois, lue depuis l'inventaire : rien de ramassé, rien d'affiché.
-  assert.match(button, /const weapon = cityRushActiveWeapon\(hud\.inventory\)/);
+  // Une seule arme à la fois : la roquette en main passe devant, sinon l'arme
+  // de l'inventaire. Rien de ramassé, rien d'affiché.
+  assert.match(button, /const bazookaRockets = Math\.max\(0, Math\.min\(CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP, Number\(hud\.bazookaAmmo\) \|\| 0\)\)/);
+  assert.match(button, /bazookaRockets > 0\s*\? \{ type: 'bazooka', ammo: bazookaRockets, max: CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP \}\s*: cityRushActiveWeapon\(hud\.inventory\)/);
   assert.match(button, /const max = weapon\?\.max \|\| CITY_RUSH_PISTOL_AMMO_PER_PICKUP/);
   assert.match(button, /disabled=\{!ready\}/, `le bouton est inerte tant qu'il n'y a rien à tirer`);
-  assert.match(button, /: 'À RAMASSER'/, `vide : le bouton invite à ramasser au lieu d'annoncer un chargeur`);
-  // L'étiquette suit l'arme : POMPE pour le bleu, AK-47 pour le rouge, ARME sinon.
-  assert.match(button, /const label = isShotgun \? 'POMPE' : type === CITY_RUSH_POWERS\.PISTOL \? 'AK-47' : 'ARME'/);
+  assert.match(button, /bazookaExhausted \? 'ÉPUISÉ' : 'À RAMASSER'/, `vide : le bouton invite à ramasser au lieu d'annoncer un chargeur`);
+  // L'étiquette suit l'arme : BAZOOKA pour la roquette, POMPE pour le bleu,
+  // AK-47 pour le rouge, ARME sinon.
+  assert.match(button, /const label = isBazooka \|\| bazookaExhausted\s*\? 'BAZOOKA'\s*: isShotgun \? 'POMPE' : type === CITY_RUSH_POWERS\.PISTOL \? 'AK-47' : 'ARME'/);
   assert.match(button, /isShotgun \? ' is-shotgun' : ''/);
+  assert.match(button, /isBazooka \|\| bazookaExhausted \? ' is-bazooka' : ''/);
   // Réarmement du pompe : le HUD publie la cadence, le bouton se met en pause.
   assert.match(button, /const reloading = ready && Number\(hud\.weaponCooldown\) > 0/);
   assert.match(button, /reloading \? ' is-reloading' : ''/);
   assert.match(button, /RECHARGE \$\{ammo\}\/\$\{max\}/);
   // L'anneau de munitions se redessine sur la capacité de l'arme : trois
-  // cartouches pour le pompe au lieu des sept balles de l'AK-47.
+  // cartouches pour le pompe, un seul grand segment pour l'unique roquette.
   assert.match(button, /Array\.from\(\{ length: max \}/);
   assert.match(button, /const span = 360 \/ max/);
-  // Le même geste pour les deux armes, et un coup sec au clavier.
+  assert.match(button, /const largeArc = span - 8 > 180 \? 1 : 0/);
+  // Le même geste pour les trois armes, et un coup sec au clavier.
   assert.match(button, /actionsRef\.current\?\.\('pistol-down'\)/);
   assert.match(button, /actionsRef\.current\?\.\('pistol-tap'\)/);
-  // Le guide présente les deux armes, dans l'ordre de rareté croissante.
+  // L'icône suit l'arme en main — roquette comprise.
+  assert.match(button, /<PowerIcon type=\{type \|\| \(bazookaExhausted \? 'bazooka' : CITY_RUSH_POWERS\.PISTOL\)\} \/>/);
+  // Le guide présente les armes de l'inventaire, dans l'ordre de rareté croissante.
   assert.match(page, /POWER_ORDER\.map\(\(type\) =>/);
   assert.match(page, /isShotgun \? ` · \$\{CITY_RUSH_SHOTGUN_DAMAGE\} CARRÉS PAR TIR` : ''/);
 });
