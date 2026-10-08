@@ -1787,6 +1787,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const missionTargetStartDistance = Number.isFinite(Number(storyRules?.missionTargetStartDistance))
     ? Math.max(0, Number(storyRules.missionTargetStartDistance))
     : null;
+  const missionTargetLeadMin = Number(storyRules?.missionTargetLeadMin) || 0;
+  const missionTargetLeadMax = Number(storyRules?.missionTargetLeadMax) || 0;
+  const startingPistolAmmo = Math.max(0, Math.floor(Number(storyRules?.startingPistolAmmo) || 0));
   const missionPistolPickupRowInterval = Math.max(0, Math.floor(Number(storyRules?.pistolPickupRowInterval) || 0));
   const storyBreakdown = storyRules?.breakdown && typeof storyRules.breakdown === 'object' ? storyRules.breakdown : null;
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
@@ -2168,8 +2171,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function applyRoster(nextRoster) {
     // Le tutoriel et le Sprint partent avec un roster solo (le pilote seul) :
-    // les autres courses exigent les trois profils habituels.
-    const minimumRoster = (tutorialMode || sprint) ? 1 : 3;
+    // une interception est un duel, les autres courses ont au moins trois profils.
+    const minimumRoster = (tutorialMode || sprint) ? 1 : missionTargetId ? 2 : 3;
     if (!Array.isArray(nextRoster) || nextRoster.length < minimumRoster) return;
     currentRoster = nextRoster;
     playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
@@ -4231,6 +4234,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     pickedUp = 0;
     playerPistolPickups = 0;
     inventory = createCityRushInventory();
+    if (!sprint && storyWeaponsEnabled && startingPistolAmmo > 0) {
+      inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL, startingPistolAmmo);
+    }
     bazookaAmmo = 0;
     bazookaPickupTaken = false;
     // Les deux entrepôts repartent à leur repère (30 % et 65 % de la course)
@@ -8996,10 +9002,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const racerFinalLap = cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps;
         const racerPace = cityRushRivalPaceFactor({ finalLap: racerFinalLap });
         const storyPaceBoost = Number(storyRivalPace?.[racer.id]) > 0 ? Number(storyRivalPace[racer.id]) : 1;
-        const rivalTargetTopSpeed = cityRushRivalTargetSpeed(playerTopSpeed, racer.baseSpeed, {
+        let rivalTargetTopSpeed = cityRushRivalTargetSpeed(playerTopSpeed, racer.baseSpeed, {
           pace: racerPace,
           storyPace: storyPaceBoost,
         });
+        // Une interception reste une poursuite, pas une course perdue au
+        // premier ravitaillement : la cible ajuste son allure, sans téléportation,
+        // pour rester à portée et devant le canon. Les autres modes sont inchangés.
+        if (racer.id === missionTargetId && missionTargetLeadMax > 0) {
+          const lead = racer.distance - distance;
+          if (lead > missionTargetLeadMax) {
+            rivalTargetTopSpeed = Math.min(rivalTargetTopSpeed, playerCurrentSpeed * 0.92);
+          } else if (lead < missionTargetLeadMin) {
+            rivalTargetTopSpeed = Math.max(rivalTargetTopSpeed, playerCurrentSpeed * 1.18);
+          }
+        }
         const speedTarget = (racer.wrecked || racer.stunLeft > 0
           ? 0
           : rivalTargetTopSpeed * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))

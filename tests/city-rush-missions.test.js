@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CITY_RUSH_CARS,
+  CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+  CITY_RUSH_PISTOL_MAX_AMMO,
   CITY_RUSH_COURSES,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_RIVAL_PACE,
@@ -61,6 +63,10 @@ test('les missions racontent des objectifs lisibles et utilisent des villes/parc
   assert.equal(firstMission?.targetHealth, 15);
   assert.match(firstMission?.checklist.join(' ') || '', /quinze impacts/i);
   assert.equal(firstMission?.rules.pistolPickupRowInterval, 12);
+  assert.equal(firstMission.rules.startingPistolAmmo, CITY_RUSH_PISTOL_MAX_AMMO);
+  assert.ok(firstMission.rules.missionTargetLeadMin > 2);
+  assert.ok(firstMission.rules.missionTargetLeadMin < firstMission.rules.missionTargetLeadMax);
+  assert.ok(firstMission.rules.missionTargetLeadMax < CITY_RUSH_BLUE_SHOT_MAX_RANGE);
   assert.match(firstMission?.briefing || '', /un peu plus rapide/i);
   const playerCar = CITY_RUSH_CARS.find((car) => car.id === firstMission?.rules.playerCarId);
   const dealerCar = CITY_RUSH_CARS.find((car) => car.id === firstMission?.rules.rivalCarIds?.dealer);
