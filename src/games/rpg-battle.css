@@ -258,6 +258,25 @@
 
 .rpg-btn--endturn:active { transform: translateY(1px); filter: brightness(.95); }
 
+/* Phase d'attaque : pastille rouge sang, bien distincte du fin de tour. */
+.rpg-btn--attaque {
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: 2px solid #7a1408;
+  background: linear-gradient(180deg, #e05a3a 0%, #a3271a 60%, #7a1408 100%);
+  color: #ffe1d6;
+  font: 800 14px/1 var(--display);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 16px rgba(163, 39, 26, .4), inset 0 1px 0 rgba(255, 255, 255, .3);
+  cursor: pointer;
+  transition: transform .15s ease, filter .15s ease;
+}
+
+.rpg-btn--attaque:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+.rpg-btn--attaque:disabled { opacity: .45; cursor: default; }
+
 /* Bouton de permutation avec la réserve : le visage accompagne le nom. */
 .rpg-btn--swap { display: inline-flex; align-items: center; gap: 8px; }
 .rpg-btn__portrait {

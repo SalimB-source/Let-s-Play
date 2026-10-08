@@ -210,6 +210,49 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   return { ok: true };
 }
 
+/**
+ * Phase d'attaque, façon Magic : on déclare TOUS les attaquants d'un coup,
+ * puis l'attaque se résout en dégâts simultanés.
+ * - sans créature en face : chaque attaquant frappe le sorcier adverse ;
+ * - avec un mur : les attaquants se répartissent sur les créatures ennemies
+ *   (round-robin), chaque attaquant encaisse la riposte de sa cible — même
+ *   si elle meurt, les dégâts sont simultanés.
+ */
+export function rpgLancerAttaque(duel, cote, attaquantIds) {
+  const adv = autre(cote);
+  const attaquants = duel[cote].creatures.filter((e) => attaquantIds.includes(e.id));
+  if (!attaquants.length) return { ok: false, raison: 'personne' };
+  for (const entite of attaquants) {
+    if (!pret(entite)) return { ok: false, raison: 'pas-pret' };
+  }
+  const mur = duel[adv].creatures;
+  const resume = { frappeSorcier: 0, paires: [] };
+  if (!mur.length) {
+    for (const attaquant of attaquants) {
+      attaquant.attaquee = true;
+      duel[adv].pv -= attaquant.atk;
+      resume.frappeSorcier += attaquant.atk;
+    }
+    duel.log.push(`${attaquants.length} attaquant(s) frappent le sorcier (${resume.frappeSorcier}).`);
+    return { ok: true, resume };
+  }
+  // Dégâts simultanés : on cumule d'abord, on blesse ensuite.
+  const degats = new Map();
+  for (const [i, attaquant] of attaquants.entries()) {
+    const cible = mur[i % mur.length];
+    attaquant.attaquee = true;
+    degats.set(cible.id, (degats.get(cible.id) ?? 0) + attaquant.atk);
+    degats.set(attaquant.id, (degats.get(attaquant.id) ?? 0) + cible.atk);
+    resume.paires.push([attaquant.name, cible.name]);
+  }
+  for (const [entiteId, montant] of degats) {
+    const coteEntite = duel[cote].creatures.some((e) => e.id === entiteId) ? cote : adv;
+    rpgBlesserCreature(duel, coteEntite, entiteId, montant);
+  }
+  duel.log.push(`Attaque : ${attaquants.length} créature(s) contre le mur.`);
+  return { ok: true, resume };
+}
+
 /** Attaque directe du sorcier adverse : interdite si des créatures bloquent. */
 export function rpgAttaquerSorcier(duel, cote, entiteId) {
   const attaquant = duel[cote].creatures.find((e) => e.id === entiteId);
@@ -260,15 +303,9 @@ export function rpgTourSorcierIA(duel, rng = Math.random) {
     if (!res.ok) break;
     joue.push(res.entite);
   }
-  for (const entite of [...duel.sorcier.creatures]) {
-    if (!pret(entite)) continue;
-    if (duel.joueur.creatures.length) {
-      const cible = duel.joueur.creatures[Math.floor(rng() * duel.joueur.creatures.length)];
-      rpgAttaquerCreature(duel, 'sorcier', entite.id, cible.id);
-    } else {
-      rpgAttaquerSorcier(duel, 'sorcier', entite.id);
-    }
-  }
+  // Le sorcier déclare tous ses attaquants d'un coup, comme le joueur.
+  const pretsIds = duel.sorcier.creatures.filter((e) => pret(e)).map((e) => e.id);
+  if (pretsIds.length) rpgLancerAttaque(duel, 'sorcier', pretsIds);
   return joue;
 }
 

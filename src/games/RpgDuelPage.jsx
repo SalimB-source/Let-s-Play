@@ -11,11 +11,10 @@
 import { useEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import {
-  rpgAttaquerCreature,
-  rpgAttaquerSorcier,
   rpgEngagerTerrain,
   rpgFinDeTour,
   rpgJouerCreature,
+  rpgLancerAttaque,
   rpgNouveauDuel,
   rpgPeutPayer,
   rpgPoserTerrain,
@@ -77,7 +76,8 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
   const duelRef = useRef(null);
   const [, setVersion] = useState(0);
   const force = () => setVersion((v) => v + 1);
-  const [attaquantId, setAttaquantId] = useState(null);
+  const [phase, setPhase] = useState(false);
+  const [attaquants, setAttaquants] = useState([]);
   const [message, setMessage] = useState('Posez vos cartes, puis attaquez. Fin du tour quand vous voulez.');
   const timersRef = useRef([]);
   const later = (fn, ms) => {
@@ -88,8 +88,9 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
 
   const nouvellePartie = () => {
     duelRef.current = rpgNouveauDuel({ joueurDeck, sorcierDeck, sorcierPuissance });
-    setAttaquantId(null);
-    setMessage('À vous : posez des cartes (le sable tombe chaque tour), puis Fin du tour.');
+    setPhase(false);
+    setAttaquants([]);
+    setMessage('À vous : posez un terrain, engagez-le, payez vos cartes, puis phase d’attaque.');
     force();
   };
   useEffect(() => { nouvellePartie(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
@@ -126,41 +127,78 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
     force();
   };
 
-  const cliquerCreatureJoueur = (entite) => {
-    if (!monTour) return;
+  const prets = duel.joueur.creatures.filter((e) => e.ready && !e.attaquee);
+
+  const basculerAttaquant = (entite) => {
     if (!entite.ready || entite.attaquee) {
       setMessage(entite.ready ? `${entite.name} a déjà frappé ce tour.` : `${entite.name} observe encore (mal d'invocation).`);
       force();
       return;
     }
-    setAttaquantId(attaquantId === entite.id ? null : entite.id);
-    setMessage(attaquantId === entite.id ? 'Attaque annulée.' : `${entite.name} prêt à frapper : choisissez une cible.`);
+    setAttaquants((prev) => (prev.includes(entite.id) ? prev.filter((id) => id !== entite.id) : [...prev, entite.id]));
     force();
   };
 
-  const cliquerCreatureEnnemie = (entite) => {
-    if (!monTour || !attaquantId) return;
-    const res = rpgAttaquerCreature(duel, 'joueur', attaquantId, entite.id);
-    setMessage(res.ok ? `${cardById(duel.joueur.creatures.find((e) => e.id === attaquantId)?.carteId ?? '')?.name ?? 'Votre créature'} attaque ${entite.name}.` : 'Attaque impossible.');
-    setAttaquantId(null);
+  const cliquerCreatureJoueur = (entite) => {
+    if (!monTour) return;
+    if (!phase) {
+      setPhase(true);
+      if (entite.ready && !entite.attaquee) {
+        setAttaquants([entite.id]);
+        setMessage('Phase d’attaque : choisissez toutes vos créatures attaquantes, puis lancez l’attaque.');
+      } else {
+        setAttaquants([]);
+        setMessage(entite.ready ? `${entite.name} a déjà frappé ce tour.` : `${entite.name} observe encore (mal d'invocation).`);
+      }
+      force();
+      return;
+    }
+    basculerAttaquant(entite);
+  };
+
+  const lancerAttaque = () => {
+    const murAvant = duel.sorcier.creatures.length;
+    const res = rpgLancerAttaque(duel, 'joueur', attaquants);
+    if (!res.ok) {
+      setMessage('Personne n’est prêt à attaquer.');
+    } else if (res.resume.frappeSorcier) {
+      setMessage(`Vos créatures frappent le sorcier : ${res.resume.frappeSorcier} dégâts !`);
+    } else {
+      setMessage(`Attaque résolue contre le mur (${res.resume.paires.map(([a, c]) => `${a}→${c}`).join(', ')}).`);
+    }
+    void murAvant;
+    setPhase(false);
+    setAttaquants([]);
+    force();
+  };
+
+  const annulerAttaque = () => {
+    setPhase(false);
+    setAttaquants([]);
+    setMessage('Attaque annulée.');
+    force();
+  };
+
+  const cliquerCreatureEnnemie = () => {
+    if (!monTour) return;
+    setMessage(phase
+      ? 'Vos attaquants seront répartis automatiquement sur le mur au lancement.'
+      : 'Entrez en phase d’attaque (⚔) pour choisir vos attaquants.');
     force();
   };
 
   const cliquerSorcier = () => {
-    if (!monTour || !attaquantId) {
-      if (monTour) setMessage(duel.sorcier.creatures.length ? 'Des créatures vous font face : tuez-les d’abord.' : 'Choisissez d’abord une créature prête.');
-      force();
-      return;
-    }
-    const res = rpgAttaquerSorcier(duel, 'joueur', attaquantId);
-    setMessage(res.ok ? 'Votre créature frappe le sorcier adverse !' : 'Le mur de créatures vous bloque.');
-    setAttaquantId(null);
+    if (!monTour) return;
+    setMessage(duel.sorcier.creatures.length
+      ? 'Des créatures vous font face : tuez-les d’abord — la phase d’attaque s’en chargera.'
+      : 'Lancez la phase d’attaque (⚔) pour frapper le sorcier.');
     force();
   };
 
   const finDuTour = () => {
     if (!monTour) return;
-    setAttaquantId(null);
+    setPhase(false);
+    setAttaquants([]);
     rpgFinDeTour(duel);
     setMessage('Le sorcier adverse joue…');
     force();
@@ -183,7 +221,7 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
         aria-label="Table de jeu du duel de sorciers"
       >
         <button type="button" className="rpg-wizard-plate rpg-wizard-plate--ennemi" onClick={cliquerSorcier}
-          title={attaquantId ? 'Frapper le sorcier adverse' : 'Le sorcier adverse'}>
+          title="Le sorcier adverse">
           <strong>LE SORCIER</strong>
           <span className="rpg-wizard-plate__pv">🛡 {duel.sorcier.pv}</span>
           <span className="rpg-wizard-plate__sable">
@@ -242,8 +280,8 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
               key={entite.id}
               entite={entite}
               cote="joueur"
-              active={attaquantId === entite.id}
-              selected={attaquantId === entite.id}
+              active={attaquants.includes(entite.id)}
+              selected={attaquants.includes(entite.id)}
               tilt={TILTS[(i + 2) % TILTS.length]}
               onClick={() => cliquerCreatureJoueur(entite)}
             />
@@ -259,6 +297,21 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
           <p className="rpg-actions__wait" aria-live="polite">{message}</p>
           <div className="rpg-actions">
             <div className="rpg-actions__row">
+              {!phase ? (
+                <button type="button" className="rpg-btn rpg-btn--attaque" disabled={!monTour || !prets.length}
+                  onClick={() => { setPhase(true); setAttaquants([]); setMessage('Phase d’attaque : cliquez vos créatures prêtes, puis lancez.'); force(); }}>
+                  ⚔ Attaquer
+                </button>
+              ) : (
+                <>
+                  <button type="button" className="rpg-btn rpg-btn--attaque" disabled={!attaquants.length} onClick={lancerAttaque}>
+                    ⚔ Lancer l’attaque ({attaquants.length})
+                  </button>
+                  <button type="button" className="rpg-btn rpg-btn--ghost" onClick={annulerAttaque}>
+                    Annuler
+                  </button>
+                </>
+              )}
               <button type="button" className="rpg-btn rpg-btn--endturn" onClick={finDuTour} disabled={!monTour}>
                 ⧗ Fin du tour
               </button>
@@ -291,7 +344,9 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
                     <strong>{carte.name}</strong>
                     <span className="rpg-hand__cost">{carte.cost} ⛃</span>
                   </span>
-                  <span className="rpg-hand__stats" title="Attaque / Défense">⚔ {carte.atk} · 🛡 {carte.def}</span>
+                  {carte.kind !== 'terrain' && (
+                    <span className="rpg-hand__stats" title="Attaque / Défense">⚔ {carte.atk} · 🛡 {carte.def}</span>
+                  )}
                   <span className="rpg-hand__text">{carte.text}</span>
                   <span className="rpg-hand__rarity">{CARD_RARITIES[carte.rarity]?.label ?? carte.rarity}</span>
                 </button>

@@ -70,6 +70,11 @@ limitée à 7.
 - Les créatures peuvent avoir une capacité **à l'arrivée** ou **quand
   elles sont détruites** (pioche, dégâts, soin, buff…).
 - Le combat entre créatures est à dégâts mutuels, façon Magic.
+- **Phase d'attaque** : on déclare TOUS les attaquants d'un coup, puis
+  l'attaque se résout en dégâts simultanés — sans mur, tout le monde
+  frappe le sorcier ; avec un mur, les attaquants se répartissent sur
+  les créatures ennemies et encaissent la riposte même si leur cible
+  meurt.
 
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
@@ -79,8 +84,8 @@ Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 1. **Piocher 1** ;
 2. poser **un terrain** (un par tour), engager ses terrains ;
 3. jouer des **créatures** et des **magies** en payant le mana ;
-4. **attaquer** avec les créatures prêtes — l'adversaire annonce ses
-   bloqueurs ;
+4. **phase d'attaque** (⚔) : déclarer toutes les créatures attaquantes,
+   puis lancer l'attaque ;
 5. **Fin du tour** (la grande pastille dorée ⧗).
 
 ## 4. L’adversaire : un sorcier

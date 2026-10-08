@@ -80,13 +80,24 @@ export async function checkRpgBattle(assert) {
 
   // ── Mur de créatures : pas de frappe directe tant qu'elles font face ───
   await act(async () => { container.querySelector('.rpg-wizard-plate--ennemi').click(); });
-  assert.match(container.textContent, /fait face|d’abord|Choisissez|prête/, 'le mur de créatures doit bloquer la frappe directe');
+  assert.match(container.textContent, /fait face|d’abord|Lancez la phase/, 'la frappe du sorcier passe par la phase d’attaque');
 
   // ── Au tour suivant, notre créature devient prête (liseré doré) ────────
   await act(async () => { findButton('Fin du tour').click(); });
   await act(async () => { await wait(1800); });
   assert.ok(container.querySelector('.rpg-card--equipe.is-pret'),
     'notre créature doit être prête à attaquer à notre tour');
+
+  // ── Phase d'attaque : on déclare tous les attaquants, puis on lance ───
+  await act(async () => { findButton('⚔ Attaquer').click(); });
+  assert.ok(findButton('Lancer l’attaque'), 'la phase d’attaque propose de lancer');
+  await act(async () => { container.querySelector('.rpg-card--equipe').click(); });
+  const lancer = findButton('Lancer l’attaque');
+  assert.match(lancer.textContent, /\(1\)/, 'un attaquant déclaré');
+  await act(async () => { lancer.click(); });
+  assert.match(container.textContent, /Attaque résolue|frappent le sorcier/, 'l’attaque se résout');
+  assert.ok(!container.querySelector('.rpg-card--equipe.is-pret'),
+    'les attaquants ont frappé : plus personne n’est prêt');
 
   await act(async () => { root.unmount(); });
 }

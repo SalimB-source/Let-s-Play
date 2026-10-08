@@ -8,6 +8,7 @@ import {
   rpgEngagerTerrain,
   rpgFinDeTour,
   rpgJouerCreature,
+  rpgLancerAttaque,
   rpgMana,
   rpgNouveauDuel,
   rpgPiocher,
@@ -292,6 +293,48 @@ test('les héros sont des cartes du paquet, pas de la main de départ', () => {
     assert.equal(duel.joueur.creatures[0].kind, 'hero');
   }
   assert.ok(true);
+});
+
+test('phase d’attaque sans mur : tous les attaquants frappent le sorcier', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  donner(duel, 'joueur', 'dune-marchante');
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  rpgJouerCreature(duel, 'joueur', 'dune-marchante');
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  const ids = duel.joueur.creatures.map((e) => e.id);
+  const res = rpgLancerAttaque(duel, 'joueur', ids);
+  assert.equal(res.ok, true);
+  assert.equal(res.resume.frappeSorcier, 2 + 2, 'chien 2 + dune 2');
+  assert.equal(duel.sorcier.pv, 50 - 4);
+  assert.ok(duel.joueur.creatures.every((e) => e.attaquee), 'tout le monde a frappé');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', ids).raison, 'pas-pret', 'une seule attaque par tour');
+});
+
+test('phase d’attaque contre le mur : dégâts simultanés, répartition round-robin', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'chien-du-guet');   // 2/2
+  donner(duel, 'joueur', 'vipere-de-verre'); // 3/1
+  donner(duel, 'sorcier', 'dune-marchante'); // 2/5
+  donner(duel, 'sorcier', 'dune-marchante'); // 2/5
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  const vipere = rpgJouerCreature(duel, 'joueur', 'vipere-de-verre').entite;
+  rpgJouerCreature(duel, 'sorcier', 'dune-marchante');
+  rpgJouerCreature(duel, 'sorcier', 'dune-marchante');
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  const chien = duel.joueur.creatures.find((e) => e.carteId === 'chien-du-guet');
+  const res = rpgLancerAttaque(duel, 'joueur', [chien.id, vipere.id]);
+  assert.equal(res.ok, true);
+  // chien → dune 1 (2 dégâts), vipère → dune 2 (3 dégâts) ; chaque attaquant
+  // encaisse la riposte (2) même si sa cible meurt : dégâts simultanés.
+  assert.equal(duel.sorcier.creatures.length, 2, 'les dunes 2/5 encaissent sans mourir');
+  assert.deepEqual(duel.sorcier.creatures.map((d) => d.pv).sort(), [2, 3]);
+  assert.equal(duel.joueur.creatures.length, 0, 'chien 2/2 et vipère 3/1 meurent à la riposte');
 });
 
 test('vainqueur : nul tant que les deux sorciers sont debout', () => {
