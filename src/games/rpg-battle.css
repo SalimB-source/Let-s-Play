@@ -390,8 +390,8 @@
 /* ── La carte : liseré noir, cadre teinté par l'élément, zones imprimées ── */
 .rpg-card {
   position: relative;
-  width: clamp(160px, 13.5vw, 192px);
-  aspect-ratio: 4 / 5;
+  width: clamp(150px, 12.5vw, 180px);
+  aspect-ratio: 5 / 6;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -792,7 +792,7 @@
 
 @media (max-width: 900px) {
   .card-row { gap: 8px; }
-  .rpg-card { width: clamp(112px, 22vw, 148px); }
+  .rpg-card { width: clamp(104px, 20vw, 140px); }
   .card-row--equipe { bottom: 44%; }
   .rpg-card__text { font-size: 8px; }
   .rpg-hand__card { width: 104px; min-height: 120px; }
