@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
@@ -7,6 +8,8 @@ import VideoThumb from '../components/VideoThumb';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
+import { leadTrailer } from '../articleTrailers';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -53,17 +56,13 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Actu mise en avant sur l'accueil : le trailer officiel de God of War Laufey
-// se lit directement dans la carte, sans quitter la page. Le lien éditorial
-// ouvre l'article complet consacré aux précommandes et à l'arc-serpent de Faye.
+// La une de l'accueil suit l'actu gaming de l'édition du jour.
+const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/'));
+const featuredVideo = leadTrailer(featuredStory.to);
 const featuredNews = {
-  to: '/news/god-of-war-laufey-precommandes-arc-serpent',
-  video: 'CQve7-PraCM',
-  videoTitle: 'God of War Laufey - Pre-Orders Open Now | PS5 Games',
-  badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES',
-  kicker: '29.09.2026 · SANTA MONICA STUDIO',
-  title: 'FAYE DÉGAINE L’ARC-SERPENT.',
-  excerpt: 'Le trailer officiel dévoile l’arc-serpent de Faye et ses deux modes de tir. God of War Laufey est attendu le 16 février 2027, en exclusivité sur PS5.',
+  ...featuredStory,
+  video: featuredVideo.id,
+  videoTitle: featuredVideo.title,
 };
 
 // YouTube resolves this permanent channel URL to the channel's active live
@@ -139,7 +138,7 @@ export default function Home() {
   const newsHeadMap = {
     fr: {
       label1: 'ACTU À LA UNE',
-      label2: 'GOD OF WAR LAUFEY · PS5',
+      label2: `${editionDate} · ${featuredNews.badge}`,
       eyebrow: 'Actu à la une',
       h2a: 'L’ACTU',
       h2b: 'À LA UNE.',
@@ -149,7 +148,7 @@ export default function Home() {
     },
     en: {
       label1: 'FEATURED NEWS',
-      label2: 'GOD OF WAR LAUFEY · PS5',
+      label2: `${editionDate} · ${featuredNews.badge}`,
       eyebrow: 'Featured news',
       h2a: 'TOP STORY,',
       h2b: 'RIGHT NOW.',
@@ -159,7 +158,7 @@ export default function Home() {
     },
     ar: {
       label1: 'أبرز الأخبار',
-      label2: 'GOD OF WAR LAUFEY · PS5',
+      label2: `${editionDate} · ${featuredNews.badge}`,
       eyebrow: 'خبر مميز',
       h2a: 'الخبر',
       h2b: 'المميز.',
@@ -249,6 +248,7 @@ export default function Home() {
             <ScrollAutoplayVideo
               id={featuredNews.video}
               title={featuredNews.videoTitle}
+              poster={`${base}${featuredNews.poster}`}
             />
             <span className="news-feature-badge">{featuredNews.badge}</span>
           </div>

@@ -42,6 +42,7 @@ import {
 } from '../src/articleTrailers.js';
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
+import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-08.js';
 
 // Hôte et chemin des miniatures relus depuis la fabrique du site, jamais
 // recopiés ici : `npm run check:thumbs` interdit toute URL de miniature codée
@@ -115,6 +116,11 @@ const OFFICIAL_CHANNELS = new Set([
   // et sur l'archive publique des deux trailers. Les reprises (chaînes de
   // compilation, ré-uploads, versions doublées) restent écartées.
   'Rockstar Games',
+  // Édition du 08.10.2026 : chaînes principales contrôlées via oEmbed.
+  // PlayStation publie les coulisses de Hellraiser (2e5lR5c4dEo) ; KARI
+  // publie les images embarquées et le replay du cinquième vol de Nuri.
+  'PlayStation',
+  '한국항공우주연구원 KARI TV',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
@@ -133,7 +139,7 @@ const items = keys.flatMap((key) => (articleTrailers[key].items || []).map((item
 console.log(`\n  ${items.length} vidéo(s) officielle(s) référencée(s)\n`);
 
 check('identifiant YouTube au format (11 caractères)', items.filter(({ item }) => !VIDEO_ID.test(item.id || '')).map(({ item }) => item.id).join(', ') || 'aucun', 'aucun');
-check('nature de vidéo connue (trailer / teaser / extrait)', items.filter(({ item }) => !(item.kind in TRAILER_KINDS)).map(({ item }) => item.kind).join(', ') || 'aucune', 'aucune');
+check('nature de vidéo connue (trailer / teaser / extrait / coulisses / replay)', items.filter(({ item }) => !(item.kind in TRAILER_KINDS)).map(({ item }) => item.kind).join(', ') || 'aucune', 'aucune');
 check('titre de la vidéo renseigné', items.every(({ item }) => Boolean(item.title)), true);
 check('chaîne officielle déclarée', items.filter(({ item }) => !OFFICIAL_CHANNELS.has(item.channel)).map(({ item }) => `${item.id} → ${item.channel}`).join(', ') || 'aucune', 'aucune');
 check('contrôle de la vidéo daté (JJ.MM.AAAA)', items.filter(({ item }) => !VERIFIED.test(item.verified || '')).map(({ item }) => item.id).join(', ') || 'aucun', 'aucun');
@@ -143,6 +149,10 @@ check('aucune mention d’absence sur un article qui a une vidéo', withVideos.f
 check('libellé de nature (BANDE-ANNONCE)', trailerKindLabel('trailer'), 'BANDE-ANNONCE');
 check('libellé de nature (TEASER)', trailerKindLabel('teaser'), 'TEASER');
 check('libellé de nature (EXTRAIT)', trailerKindLabel('extrait'), 'EXTRAIT');
+check('nature de vidéo (COULISSES)', trailerKindLabel('coulisses'), 'COULISSES');
+check('nature de vidéo (REPLAY)', trailerKindLabel('replay'), 'REPLAY');
+check('coulisses au féminin pluriel', trailerBadgeLabel('coulisses'), 'COULISSES OFFICIELLES');
+check('replay au masculin', trailerBadgeLabel('replay'), 'REPLAY OFFICIEL');
 check('nature inconnue : repli sur bande-annonce', trailerKindLabel('making-of'), 'BANDE-ANNONCE');
 
 // Une vidéo d'illustration (saison ou film précédent) doit le dire : c'est la
@@ -164,25 +174,33 @@ const read = (file) => readFileSync(path.join(root, file), 'utf8');
 // Les actus cinéma sont les clés « cinema/<slug> » du dictionnaire de
 // CurrentNews.jsx ; les cartes du hub donnent les routes réellement publiées
 // (dont la série animée Diablo, servie par le gabarit Blizzard).
-const cinemaKeys = [...new Set([...read('src/pages/CurrentNews.jsx').matchAll(/'(cinema\/[a-z0-9-]+)'\s*:/g)].map((m) => m[1]))];
+const cinemaKeys = [...new Set([
+  ...[...read('src/pages/CurrentNews.jsx').matchAll(/'(cinema\/[a-z0-9-]+)'\s*:/g)].map((m) => m[1]),
+  ...Object.keys(dailyStories).filter((key) => key.startsWith('cinema/')),
+])];
 const hubRoutes = [...new Set([...read('src/pages/CinemaNews.jsx').matchAll(/to:\s*'(\/news\/[a-z0-9-]+(?:\/[a-z0-9-]+)?)'/g)].map((m) => m[1]))];
+hubRoutes.push(...dailyNewsListing.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => story.to));
 const hubKeys = hubRoutes.map((route) => route.replace(/^\/news\//, ''));
 const covered = [...new Set([...cinemaKeys, ...hubKeys])];
 
-// Les actus gaming publiées par le hub /news/gaming peuvent, elles aussi,
+// Les actus gaming et tech publiées par leurs hubs peuvent, elles aussi,
 // déclarer leurs vidéos officielles (trailers de studio) : ces clés sont
 // contrôlées quand elles existent, sans obligation d'entrée — une actu gaming
 // sans vidéo officielle reste valide, contrairement au cinéma.
 const gamingRoutes = [...new Set([...read('src/pages/GamingNews.jsx').matchAll(/to:\s*'(\/news\/[a-z0-9-]+(?:\/[a-z0-9-]+)?)'/g)].map((m) => m[1]))];
+gamingRoutes.push(...dailyNewsListing.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')).map((story) => story.to));
 const gamingKeys = [...new Set(gamingRoutes.map((route) => route.replace(/^\/news\//, '')))];
-const published = [...new Set([...covered, ...gamingKeys])];
-// SSR : les actus cinéma, plus les actus gaming qui portent réellement une
+const techRoutes = [...read('src/pages/TechNews.jsx').matchAll(/to:\s*'(\/news\/tech\/[a-z0-9-]+)'/g)].map((m) => m[1]);
+techRoutes.push(...dailyNewsListing.filter((story) => story.to.startsWith('/news/tech/')).map((story) => story.to));
+const techKeys = [...new Set(techRoutes.map((route) => route.replace(/^\/news\//, '')))];
+const published = [...new Set([...covered, ...gamingKeys, ...techKeys])];
+// SSR : les actus cinéma, plus les actus gaming et tech qui déclarent une
 // entrée (vidéos ou mention) dans le fichier.
-const rendered = [...new Set([...covered, ...keys.filter((key) => gamingKeys.includes(key))])];
+const rendered = [...new Set([...covered, ...keys.filter((key) => gamingKeys.includes(key) || techKeys.includes(key))])];
 
-console.log(`  ${cinemaKeys.length} actus cinéma, ${hubRoutes.length} cartes du hub, ${gamingKeys.length} actus gaming publiées, ${keys.length} entrées\n`);
+console.log(`  ${cinemaKeys.length} actus cinéma, ${hubRoutes.length} cartes du hub, ${gamingKeys.length} actus gaming et ${techKeys.length} actus tech publiées, ${keys.length} entrées\n`);
 
-check('toutes les clés du fichier correspondent à une actu publiée (cinéma ou gaming)', keys.filter((key) => !published.includes(key)).join(', ') || 'aucune', 'aucune');
+check('toutes les clés du fichier correspondent à une actu publiée (cinéma, gaming ou tech)', keys.filter((key) => !published.includes(key)).join(', ') || 'aucune', 'aucune');
 check('toutes les actus cinéma ont une entrée (vidéo ou mention)', covered.filter((key) => !getArticleTrailerEntry(key)).join(', ') || 'aucune', 'aucune');
 check('toutes les cartes du hub ont une entrée', hubKeys.filter((key) => !getArticleTrailerEntry(key)).join(', ') || 'aucune', 'aucune');
 
@@ -258,7 +276,15 @@ for (const key of rendered) {
   }
 }
 
-console.log('\n  pastilles rendues sur les cartes du hub /news/cinema\n');
+console.log('\n  pastilles rendues sur les cartes des trois hubs\n');
+for (const category of ['gaming', 'tech']) {
+  const cards = renderHub(category);
+  check(`le hub ${category} rend ses cartes`, cards.length > 0, true);
+  for (const card of cards) {
+    check(`carte ${category} ${card.to} : pastille`, card.flag, trailerFlagLabel(card.to));
+    check(`carte ${category} ${card.to} : annonce au survol`, card.flagTitle, trailerFlagTitle(card.to));
+  }
+}
 const hub = renderHub();
 check('le hub rend ses cartes', hub.length >= 12, true);
 for (const card of hub) {
@@ -288,6 +314,7 @@ const data = read('src/articleTrailers.js');
 const component = read('src/components/ArticleTrailer.jsx');
 const cinemaHub = read('src/pages/CinemaNews.jsx');
 const gamingHub = read('src/pages/GamingNews.jsx');
+const techHub = read('src/pages/TechNews.jsx');
 const articlePage = read('src/pages/CurrentNews.jsx');
 
 check('les données ne codent aucune URL d’embed', /youtube\.com\/embed|youtube-nocookie\.com\/embed/.test(data), false);
@@ -301,6 +328,7 @@ check('la page actu rend le bloc bande-annonce', /<ArticleTrailer \{\.\.\.traile
 check('la page actu lit les vidéos du fichier de données', /getArticleTrailerEntry\(key\)/.test(articlePage), true);
 check('le hub cinéma calcule ses pastilles depuis les données', /trailerFlagLabel\(article\.to\)/.test(cinemaHub), true);
 check('le hub gaming calcule ses pastilles depuis les données', /trailerFlagLabel\(article\.to\)/.test(gamingHub), true);
+check('le hub tech calcule ses pastilles depuis les données', /trailerFlagLabel\(article\.to\)/.test(techHub), true);
 
 // Le coordinateur « une seule vidéo à la fois » repose sur `enablejsapi=1`,
 // ajouté par la fabrique : aucun lecteur du bloc ne doit s'en passer.
@@ -319,4 +347,4 @@ if (failures) {
   console.log(`\nBandes-annonces des actus : ${failures} contrôle(s) en échec\n`);
   process.exit(1);
 }
-console.log(`\nBandes-annonces des actus (cinéma et gaming) : OK (${withVideos.length} actu(s) avec vidéo, ${waiting.length} en attente, ${items.length} vidéo(s) officielle(s))\n`);
+console.log(`\nVidéos des actus (cinéma, gaming et tech) : OK (${withVideos.length} actu(s) avec vidéo, ${waiting.length} en attente, ${items.length} vidéo(s) officielle(s))\n`);

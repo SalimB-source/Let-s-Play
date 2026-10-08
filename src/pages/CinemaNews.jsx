@@ -11,6 +11,7 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
 
 // Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
 // Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
@@ -27,7 +28,7 @@ export default function CinemaNews() {
   const copy = {
     en: {
       section: 'CINEMA & SERIES NEWS',
-      updated: 'Updated 07.10.2026',
+      updated: `Updated ${editionDate}`,
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -40,7 +41,7 @@ export default function CinemaNews() {
     },
     fr: {
       section: 'ACTUS CINÉMA & SÉRIES',
-      updated: 'Mis à jour le 07.10.2026',
+      updated: `Mis à jour le ${editionDate}`,
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -53,7 +54,7 @@ export default function CinemaNews() {
     },
     ar: {
       section: 'أخبار السينما والمسلسلات',
-      updated: 'آخر تحديث 07.10.2026',
+      updated: `آخر تحديث ${editionDate}`,
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -66,7 +67,7 @@ export default function CinemaNews() {
     },
   }[lang] || {
     section: 'ACTUS CINÉMA & SÉRIES',
-    updated: 'Mis à jour le 07.10.2026',
+    updated: `Mis à jour le ${editionDate}`,
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -81,6 +82,7 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
+  // L’édition du 08.10.2026 ouvre la page, avant les archives ci-dessous.
   // Actus cinéma du mercredi 07.10.2026 : l'officialisation de Destin Daniel
   // Cretton à la réalisation de Spider-Man 4 ouvre la page ; suivent l'actu du
   // mardi 06.10.2026 (pause de tournage de The Batman Part II), celles du lundi
@@ -88,6 +90,7 @@ export default function CinemaNews() {
   // du week-end des 03-04.10.2026 — Verity vs Digger, Dexter Resurrection S2
   // et Beware Boiúna —, puis celles du 26-29.09.2026.
   const articles = useMemo(() => [
+    ...dailyNewsListing.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     { to: '/news/cinema/spider-man-4-destin-daniel-cretton', image: 'spider-man-4-cretton-news.jpg', fallbackImage: 'spider-man-4-cretton-news.svg', imageCredit: 'PHOTO DE PRESSE · SONY PICTURES / MARVEL STUDIOS', alt: 'Tom Holland dans le rôle de Peter Parker / Spider-Man — photo officielle Sony Pictures / Marvel Studios', badge: 'MARVEL · SONY PICTURES', kicker: '07.10.2026 · VARIETY', title: 'SPIDER-MAN 4 : LE CAP EST FIXÉ.', excerpt: 'Destin Daniel Cretton réalisera Spider-Man 4 avec Tom Holland et Zendaya. Sony Pictures et Marvel Studios arrêtent un tournage pour l’été et visent une sortie mondiale en salles en juillet 2027, intercalée entre les prochains Avengers.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/the-batman-part-ii-tournage-suspendu', image: youTubeThumbUrl('mqqft2x_Aa4'), fallbackImage: 'the-batman-part-ii-tournage-suspendu-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · WARNER BROS. PICTURES', alt: 'The Batman de Matt Reeves — miniature de la bande-annonce officielle Warner Bros. Pictures (2022)', badge: 'DC STUDIOS · TOURNAGE', kicker: '06.10.2026 · DC STUDIOS', title: 'GOTHAM RETIENT SON SOUFFLE.', excerpt: 'Warner Bros. et DC Studios ont suspendu temporairement le tournage de The Batman Part II : Matt Reeves s’éloigne de la production pour une affaire familiale, sans date de reprise. La sortie américaine reste fixée au 18 février 2028, avec Robert Pattinson, Jeffrey Wright, Andy Serkis et Colin Farrell.', read: copy.read, sentiment: 'negative' },
     { to: '/news/cinema/les-miserables-cavaye-14-octobre', image: youTubeThumbUrl('ZZRo2fIbomE'), fallbackImage: 'les-miserables-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · PATHÉ CINÉMAS', alt: 'Les Misérables de Fred Cavayé — Vincent Lindon en Jean Valjean dans la bande-annonce française de Pathé Cinémas', badge: 'CINÉMA · FRED CAVAYÉ', kicker: '05.10.2026 · PATHÉ', title: 'VALJEAN ET JAVERT SORTENT.', excerpt: 'Vincent Lindon et Tahar Rahim s’affrontent dans l’adaptation de Victor Hugo signée Fred Cavayé, avec Noémie Merlant, Camille Cottin et Benjamin Lavernhe. La bande-annonce est en ligne, le film sort le 14 octobre dans les salles françaises.', read: copy.read, sentiment: 'positive' },

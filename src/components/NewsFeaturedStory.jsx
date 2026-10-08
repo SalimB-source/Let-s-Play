@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { Arrow } from './ReleasesCalendar';
 import ScrollAutoplayVideo from './ScrollAutoplayVideo';
 import { leadTrailer } from '../articleTrailers';
+import { baseUrl as base } from '../data';
+
+const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 /**
  * Bandeau de la première actu d'un flux : vidéo officielle si l'article en
@@ -21,6 +24,7 @@ export default function NewsFeaturedStory({ story, todayLabel, renderStoryImage,
             id={trailer.id}
             title={`${trailer.title} — ${trailer.channel}`}
             posterAlt={story.alt}
+            poster={story.poster ? imageUrl(story.poster) : undefined}
           />
         ) : renderStoryImage(story, 'eager')}
         {renderBadges?.(story)}

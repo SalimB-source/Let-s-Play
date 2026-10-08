@@ -5,8 +5,11 @@ import { baseUrl as base } from '../data';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 // Les actus du jour générées par le robot rejoignent l’index de recherche.
 import { autoSearchEntries } from '../lib/autoNews';
+import { dailyNewsListing } from '../news/daily/2026-10-08';
 
 const news = [
+  // Édition du 08.10.2026 : les mêmes titres et miniatures que les articles.
+  ...dailyNewsListing.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   // Actus du mercredi 07.10.2026 — gaming, cinéma & séries, tech.
   ['GTA 6 sur PC : le démenti tombe sur le cloud', 'Après une nuit de rumeurs sur le Xbox Cloud Gaming, Matthew Ball (Xbox) dément formellement : GTA VI ne sera pas jouable sur PC via le cloud et reste exclusif aux consoles au lancement.', '/news/gta-6-cloud-pc-dementi-xbox', 'gaming rockstar gta 6 gta vi xbox cloud gaming pc streaming matthew ball asha sharma tom warren the verge ps5 series x', 'gta-6-cloud-pc-dementi-news.jpg'],
   ['Spider-Man 4 fixe son cap avec Cretton', 'Destin Daniel Cretton réalisera Spider-Man 4 avec Tom Holland et Zendaya : tournage calé pour l’été et sortie cinéma annoncée pour juillet 2027.', '/news/cinema/spider-man-4-destin-daniel-cretton', 'cinéma spider man 4 peter parker tom holland zendaya destin daniel cretton marvel studios sony pictures mcu avengers doomsday', 'spider-man-4-cretton-news.jpg'],

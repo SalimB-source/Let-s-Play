@@ -54,6 +54,7 @@ import { applyLaneCountForDevice } from './games/mirageLanes';
  * allure partout.
  */
 const News = lazy(() => import('./pages/News'));
+const AllNews = lazy(() => import('./pages/AllNews'));
 const GamingNews = lazy(() => import('./pages/GamingNews'));
 const CinemaNews = lazy(() => import('./pages/CinemaNews'));
 const TechNews = lazy(() => import('./pages/TechNews'));
@@ -130,6 +131,7 @@ function App() {
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
+            <Route path="/news/articles" element={<AllNews />} />
             <Route path="/news/gaming" element={<GamingNews />} />
             <Route path="/news/cinema" element={<CinemaNews />} />
             {/* Actus cinéma : les cartes du hub `/news/cinema` pointent vers
@@ -173,6 +175,7 @@ function App() {
             <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
+            <Route path="/news/hellraiser-revival-sortie" element={<CurrentNews slug="hellraiser-revival-sortie" />} />
             <Route path="/news/gta-6-cloud-pc-dementi-xbox" element={<CurrentNews slug="gta-6-cloud-pc-dementi-xbox" />} />
             <Route path="/news/gta-6-satire-monde-invente" element={<CurrentNews slug="gta-6-satire-monde-invente" />} />
             <Route path="/news/physint-budget-400-millions-xbox" element={<CurrentNews slug="physint-budget-400-millions-xbox" />} />

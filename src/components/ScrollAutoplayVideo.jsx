@@ -19,8 +19,9 @@ function isEnoughInView(element) {
  * Affiche d'abord la miniature, puis charge le lecteur YouTube muet quand au
  * moins 42 % de son cadre entre dans la fenêtre. L'autoplay démarre ainsi au
  * défilement vers le bloc vidéo, sans charger le lecteur dès l'ouverture.
+ * `poster` permet de servir une miniature locale avant le repli YouTube.
  */
-export default function ScrollAutoplayVideo({ id, title, posterAlt }) {
+export default function ScrollAutoplayVideo({ id, title, posterAlt, poster }) {
   const containerRef = useRef(null);
   const [started, setStarted] = useState(false);
 
@@ -80,6 +81,7 @@ export default function ScrollAutoplayVideo({ id, title, posterAlt }) {
       <VideoThumb
         className="scroll-autoplay-video-poster"
         id={id}
+        lead={poster}
         alt={posterAlt || title}
         aria-hidden={started ? 'true' : undefined}
       />

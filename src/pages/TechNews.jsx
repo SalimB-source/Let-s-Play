@@ -6,7 +6,9 @@ import { Arrow } from '../components/ReleasesCalendar';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
+import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
 
 // Les URLs absolues (visuels officiels) passent telles quelles, les fichiers
 // locaux du site prennent le préfixe du baseUrl ; une carte éditoriale SVG de
@@ -26,7 +28,7 @@ export default function TechNews() {
   const copy = {
     en: {
       section: 'TECH NEWS',
-      updated: 'Updated 07.10.2026',
+      updated: `Updated ${editionDate}`,
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -39,7 +41,7 @@ export default function TechNews() {
     },
     fr: {
       section: 'ACTUS TECH',
-      updated: 'Mis à jour le 07.10.2026',
+      updated: `Mis à jour le ${editionDate}`,
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -52,7 +54,7 @@ export default function TechNews() {
     },
     ar: {
       section: 'أخبار التقنية',
-      updated: 'آخر تحديث 07.10.2026',
+      updated: `آخر تحديث ${editionDate}`,
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -65,7 +67,7 @@ export default function TechNews() {
     },
   }[lang] || {
     section: 'ACTUS TECH',
-    updated: 'Mis à jour le 07.10.2026',
+    updated: `Mis à jour le ${editionDate}`,
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -77,6 +79,7 @@ export default function TechNews() {
     back: 'Retour au hub',
   };
 
+  // L’édition du 08.10.2026 ouvre la page, avant les archives ci-dessous.
   // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
   // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic) ;
   // suivent l'actu du mardi 06.10.2026 (interdiction partielle des lunettes
@@ -87,6 +90,7 @@ export default function TechNews() {
   // Blanche. Les plus récentes ouvrent la page ; chaque carte affiche le
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   const articles = useMemo(() => [
+    ...dailyNewsListing.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
     // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic).
     { to: '/news/tech/ai-act-europe-premiers-controles', image: 'ai-act-europe-regulation-news.jpg', fallbackImage: 'ai-act-europe-controles-news.svg', alt: 'Régulation européenne de l’intelligence artificielle — illustration éditoriale originale Let’s Play', badge: 'EUROPE · RÉGULATION IA', kicker: '07.10.2026 · REUTERS', title: 'L’AI ACT : L’EUROPE S’ACTIVE.', excerpt: 'Le Bureau européen de l’IA adresse ses premières demandes de conformité aux concepteurs de modèles frontières dépassant 10^25 FLOPs. Les laboratoires ont 30 jours pour documenter leurs systèmes, sous peine d’amendes allant jusqu’à 7 % du chiffre d’affaires mondial.', read: copy.read, sentiment: 'mixed' },
@@ -126,9 +130,16 @@ export default function TechNews() {
     const sentimentId = getArticleSentiment(article);
     const meta = sentimentMeta(sentimentId);
     const views = viewsMap[normalizeArticleId(article.to)] ?? null;
+    const trailerFlag = trailerFlagLabel(article.to);
     return (
       <>
         <span className="news-feature-badge">{article.badge}</span>
+        {trailerFlag ? (
+          <span className="news-trailer-flag" title={trailerFlagTitle(article.to)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            {trailerFlag}
+          </span>
+        ) : null}
         <span className="news-feature-arrow">↗</span>
         <span className={`news-sentiment ${meta.color}`} title={meta.label} aria-label={meta.label}>{meta.emoji}</span>
         {views != null && (
