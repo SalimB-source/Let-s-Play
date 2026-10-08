@@ -272,10 +272,17 @@
   100% { opacity: 0; transform: translateY(-4px); }
 }
 
-/* ── Classement (colonne gauche) ── */
+/* ── Classement (colonne gauche) ──
+   Un tournoi aligne huit voitures de course, deux de plus qu'une course libre :
+   la liste garde la hauteur de sa zone et **défile à l'intérieur** au lieu de
+   pousser les dernières places hors du panneau. L'en-tête reste au-dessus du
+   défilement, la liste devient une colonne souple pour lui laisser la place. */
 .city-rush-viewport .city-rush-hud .city-rush-race-list {
+  display: flex;
+  flex-direction: column;
   width: min(250px, 100%);
   max-height: 100%;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius);
@@ -283,8 +290,16 @@
   box-shadow: var(--hud-shadow);
 }
 
-.city-rush-viewport .city-rush-hud .city-rush-race-list-head { background: rgba(255, 255, 255, 0.04); }
-.city-rush-viewport .city-rush-hud .city-rush-race-list-rows { background: transparent; gap: 3px; }
+.city-rush-viewport .city-rush-hud .city-rush-race-list-head { flex: 0 0 auto; background: rgba(255, 255, 255, 0.04); }
+.city-rush-viewport .city-rush-hud .city-rush-race-list-rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: transparent;
+  gap: 3px;
+}
 .city-rush-viewport .city-rush-hud .city-rush-race-list-row { border-radius: 2px; background: rgba(255, 255, 255, 0.035); }
 .city-rush-viewport .city-rush-hud .city-rush-race-list-row.is-player {
   border-color: color-mix(in srgb, var(--city-secondary, #43ead5) 45%, transparent);

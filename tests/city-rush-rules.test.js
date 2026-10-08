@@ -175,6 +175,11 @@ import {
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_LANES,
   CITY_RUSH_TRAFFIC_TYPES,
+  CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT,
+  CITY_RUSH_TOURNAMENT_ONCOMING_COUNT,
+  CITY_RUSH_TOURNAMENT_RACER_SLOTS,
+  CITY_RUSH_TOURNAMENT_RACER_COUNT,
+  cityRushRaceGrid,
   CITY_RUSH_ONCOMING_COUNT,
   CITY_RUSH_ONCOMING_LANES,
   CITY_RUSH_DRIVERS,
@@ -559,6 +564,49 @@ test('eight slow traffic cars span three forward lanes and safely block racers (
   const byId = Object.fromEntries(moved.map((car) => [car.id, car.nextDistance]));
   assert.ok(byId.player >= 35, 'le contact ne provoque pas de recul ni de pénalité');
   assert.ok(byId['slow-traffic'] - byId.player >= CITY_RUSH_CAR_GAP - 1e-9);
+});
+
+test('un tournoi aligne huit voitures de course, le pilote en dernière rangée', () => {
+  assert.equal(CITY_RUSH_TOURNAMENT_RACER_COUNT, 8);
+  assert.deepEqual([...CITY_RUSH_TOURNAMENT_RACER_SLOTS], [
+    'player', 'nova', 'juno', 'lyra', 'orion', 'altair', 'polaris', 'castor',
+  ]);
+  const slots = CITY_RUSH_TOURNAMENT_RACER_SLOTS.map((id, index) => ({ id, slot: index, isPlayer: id === 'player' }));
+  // Sur une artère à six voies, la grille se remplit sur les trois voies du sens
+  // de course : trois rangées, le pilote tout derrière.
+  const grid = cityRushRaceGrid(slots, null);
+  assert.equal(grid.length, CITY_RUSH_TOURNAMENT_RACER_COUNT);
+  assert.deepEqual(grid.map((place) => place.lane), [3, 4, 5, 3, 4, 5, 3, 4]);
+  assert.deepEqual(grid.map((place) => place.row), [0, 0, 0, 1, 1, 1, 2, 2]);
+  assert.deepEqual(grid.map((place) => place.distance), [0, 0, 0, -5.4, -5.4, -5.4, -10.8, -10.8]);
+  assert.equal(grid.at(-1).id, 'player', 'le pilote ferme la marche');
+  assert.ok(grid.filter((place) => place.id !== 'player').every((place) => place.distance >= grid.at(-1).distance));
+  // Aucune place n'est partagée : une voiture par voie et par rangée.
+  assert.equal(new Set(grid.map((place) => `${place.lane}/${place.row}`)).size, grid.length);
+  // Sur le Ring (quatre voies, sens unique), la même grille tient en deux rangées.
+  const ring = cityRushRaceGrid(slots, CITY_RUSH_COURSES.find((course) => course.id === 'nordschleife'));
+  assert.deepEqual(ring.map((place) => place.lane), [0, 1, 2, 3, 0, 1, 2, 3]);
+  assert.deepEqual(ring.map((place) => place.row), [0, 0, 0, 0, 1, 1, 1, 1]);
+  assert.deepEqual(ring.map((place) => place.distance), [0, 0, 0, 0, -5.4, -5.4, -5.4, -5.4]);
+  // Les cases peintes au sol suivent les voies du sens de course.
+  assert.deepEqual([...cityRushLaneConfig(null).gridLanes], [...CITY_RUSH_FORWARD_LANES]);
+  assert.deepEqual(
+    [...cityRushLaneConfig(CITY_RUSH_COURSES.find((course) => course.id === 'london')).gridLanes],
+    [...CITY_RUSH_LEFT_HALF_LANES],
+    'en conduite à gauche, la grille peinte passe de l’autre côté de l’axe',
+  );
+});
+
+test('le trafic d’un tournoi est clairsemé et sans une seule berline de police', () => {
+  assert.equal(CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT, 4);
+  assert.ok(CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT < CITY_RUSH_TRAFFIC_COUNT, 'moins de civiles que la course libre');
+  assert.equal(CITY_RUSH_TOURNAMENT_ONCOMING_COUNT, 1);
+  assert.ok(CITY_RUSH_TOURNAMENT_ONCOMING_COUNT < CITY_RUSH_ONCOMING_COUNT);
+  // Le trafic reste celui de la ville, police en moins : les modèles civils
+  // (taxi, ambulance, camion, GT) sont toujours là.
+  const civilians = CITY_RUSH_TRAFFIC_TYPES.filter((spec) => !isCityRushPoliceTrafficType(spec.id));
+  assert.ok(civilians.length >= CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT, 'assez de modèles civils pour la flotte de tournoi');
+  assert.equal(civilians.some((spec) => spec.id === 'taxi'), true, 'la voiture civile de la ville reste sur la route');
 });
 
 test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) et libère une voie', () => {

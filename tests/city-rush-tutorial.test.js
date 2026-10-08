@@ -91,7 +91,9 @@ test('le moteur joue la démonstration tout seul et le coach suit la leçon en c
   assert.match(worldSource, /function tutorialTargetLane\(\)/);
   assert.match(worldSource, /function tutorialPlaceProp\(type, lane = playerLane\)/);
   assert.match(worldSource, /function releaseTutorialPolice\(\)/);
-  assert.match(worldSource, /const racerSpecs = \(sprint \|\| tutorialMode\) \? \[\]/);
+  // Le tutoriel (comme le Sprint) ne pose aucun rival : la grille vide est la
+  // première branche du plateau, le roster ne sert qu'aux courses à adversaires.
+  assert.match(worldSource, /const racerSpecs = \(sprint \|\| tutorialMode\)\s*\n?\s*\? \[\]/);
   assert.match(worldSource, /if \(!policeDeployed && !sprint && storyPoliceEnabled && tutorialPoliceOn\(\)\)/);
   assert.match(worldSource, /noteTutorialAction\('shoot'\)/);
   assert.match(worldSource, /noteTutorialAction\('bazooka'\)/);

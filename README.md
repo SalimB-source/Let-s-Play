@@ -1144,8 +1144,10 @@ et le dernier tour durait 21 s.
   (`weaponsEnabled: false`), la police (`policeEnabled: false`) ou le bazooka
   (`bazookaEnabled: false`) n'ont aucun entrepôt.
 
-  **Les rivaux aussi se font pourchasser par la police.** Deux voitures
-  supplémentaires sont gardées en réserve, une par rival ; **trois motifs**
+  **Les rivaux aussi se font pourchasser par la police.** Une voiture
+  supplémentaire par rival est gardée en réserve — deux en course libre — et
+  **aucune** quand la police est coupée (Sprint, tutoriel, tournoi, chapitre
+  « course pure ») ; **trois motifs**
   ouvrent son dossier : un tir réussi sur une voiture de police — escouade ou
   police du trafic —, un **carambolage** avec elle — la berline de ronde
   percutée sort de sa patrouille (`rallyTrafficPolice`), la patrouille du
@@ -2307,20 +2309,44 @@ Le jeu (`/jeu/vice-city-rush`) propose quatre **tournois** — la **Coupe Sunset
 (Vice City, Route 66, New York), la **Coupe d'Europe** (Paris, Londres,
 Nordschleife), la **Coupe Pacifique** (Tokyo, Route 66, Mexique) et la **Coupe
 des Légendes** (New York, Nordschleife, Vice City). Chaque tournoi se joue en
-**3 courses de 3 tours**, avec la même voiture et les mêmes rivaux du début à
-la fin, **sans police ni armes** : la grille et les règles sont imposées, seul
-le pilotage compte.
+**3 courses de 3 tours**, avec la même voiture et le **même plateau de huit
+voitures de course** du début à la fin, **sans police ni armes** : la grille et
+les règles sont imposées, seul le pilotage compte.
+
+**La grille** (`CITY_RUSH_TOURNAMENT_RACER_SLOTS` dans `cityRushRules.js`)
+aligne le pilote et **sept rivaux** — les places `nova`, `juno`, `lyra`,
+`orion`, `altair`, `polaris`, `castor`, chacune tenue par un pilote du
+catalogue (`CITY_RUSH_DRIVERS`, voiture et rythme propres au tournoi, qui
+montent d'une coupe à l'autre). `cityRushRaceGrid` les répartit sur les voies
+du sens de course, une rangée par groupe de voies (`CITY_RUSH_GRID_ROW_GAP` =
+**5,4 m**) : **le pilote ferme la marche** et doit remonter le peloton, du
+premier au dernier tour. Les mêmes sept visages se retrouvent aux trois
+manches — même si le pilote prend l'identité de l'un d'eux, qui est alors
+remplacé.
+
+**Le trafic du tournoi** est celui d'une course à huit :
+`CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT` = **4 civiles** au lieu de 8 et
+`CITY_RUSH_TOURNAMENT_ONCOMING_COUNT` = **1 voiture** en contresens, et
+**aucune berline de police** — la course est annoncée « sans police », une
+patrouille percutée partirait en chasse même au dernier tour, et
+`chaseLastLapLeader` reste donc muet. Les respawns du trafic (et du contresens)
+suivent la même règle « route dégagée » que les parcours déserts. Le mode libre
+et l'Histoire gardent, eux, leur trafic complet.
 
 La page TOURNOIS — c'est elle qui tient la liste des plateaux, voir la section
 « une page par famille de courses » — les affiche en ordre : le
 suivant se débloque en terminant le précédent, qu'on soit champion ou non. Une
 manche courue **ne se rejoue pas** — le bouton propose la suivante, et la
-touche Entrée l'enchaîne aussi. Les points suivent le barème 10 · 6 · 3, et les
-égalités se départagent aux points, puis aux victoires, puis à la dernière
-place (l'ordre de la grille tranche les égalités parfaites). Chaque manche
+touche Entrée l'enchaîne aussi. Les points suivent le barème **25 · 18 · 15 ·
+12 · 10 · 8 · 6 · 4** (`CITY_RUSH_TOURNAMENT_POINTS`), et les égalités se
+départagent aux points, puis aux victoires, puis à la dernière place (l'ordre
+de la grille tranche les égalités parfaites). Chaque manche
 paie le tarif du circuit (50 / 30 / 10 billets verts), et seul le champion
 touche la prime du tournoi (100, 150, 200 puis 300 billets) — les tournois ne
-débloquent jamais les parcours du mode libre. Deux succès récompensent les
+débloquent jamais les parcours du mode libre. Huit lignes de classement
+tiennent dans l'écran d'arrivée comme dans le HUD : les deux listes
+**défilent** (`.cr-tournament-standings`, `.city-rush-race-list-rows`) au lieu
+de pousser le reste de l'écran hors du cadre. Deux succès récompensent les
 champions : un premier titre, puis les quatre titres.
 
 ### Où vit le code

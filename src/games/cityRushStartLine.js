@@ -10,7 +10,13 @@
 // drapeaux et confettis.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { CITY_RUSH_LAPS, CITY_RUSH_SCROLL_SCALE, cityRushLaneConfig } from './cityRushRules.js';
+import {
+  CITY_RUSH_GRID_ROW_GAP,
+  CITY_RUSH_LAPS,
+  CITY_RUSH_SCROLL_SCALE,
+  CITY_RUSH_TOURNAMENT_RACER_COUNT,
+  cityRushLaneConfig,
+} from './cityRushRules.js';
 import { SignAtlas, drawBannerCell, seededRandom } from './cityRushBuilder.js';
 import { makeCheckerTexture, makeGantrySignTexture, makeStartGroundTexture, makeLapBoard } from './cityRushTextures.js';
 import { START_ZONE_HALF } from './cityRushStage.js';
@@ -111,10 +117,20 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
 
   // ── Texte DÉPART au sol et cases de grille ────────────────────────────
   batch.plane(s.groundText, [0, 0.04, lineZ + 5.6], 9, 1.76, [-Math.PI / 2, 0, 0]);
-  const gridRows = [0.6, 5.4];
+  // Les rangées peintes suivent la grille de course (au pas de `ROW_GAP`, la
+  // même que celle des voitures) : un tournoi aligne huit voitures de course sur
+  // les voies du sens de course, une rangée par groupe de voies. La dernière
+  // rangée ne peint que les places réellement occupées — huit voitures sur trois
+  // voies laissent deux cases vides, pas trois.
+  const gridRowCount = Math.max(1, Math.ceil(CITY_RUSH_TOURNAMENT_RACER_COUNT / layout.gridLanes.length));
+  const lastRowCars = CITY_RUSH_TOURNAMENT_RACER_COUNT - (gridRowCount - 1) * layout.gridLanes.length;
+  const gridRows = Array.from(
+    { length: gridRowCount },
+    (_, row) => 0.6 + row * CITY_RUSH_GRID_ROW_GAP * SCALE,
+  );
   gridRows.forEach((rowZ, rowIndex) => {
     layout.gridLanes.forEach((laneX, laneIndex) => {
-      if (rowIndex === 1 && laneIndex % 2 === 0) return;
+      if (rowIndex === gridRowCount - 1 && laneIndex >= lastRowCars) return;
       const length = 3.4;
       batch.plane(s.gridPaint, [laneX - 0.78, 0.035, rowZ + length / 2], 0.08, length, [-Math.PI / 2, 0, 0]);
       batch.plane(s.gridPaint, [laneX + 0.78, 0.035, rowZ + length / 2], 0.08, length, [-Math.PI / 2, 0, 0]);

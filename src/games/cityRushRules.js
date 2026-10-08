@@ -475,6 +475,17 @@ export const CITY_RUSH_TRAFFIC_LANES = Object.freeze(
 // de la chaussée en conduite à droite, moitié droite à Londres et à Tokyo).
 // Réduit aussi pour éviter l'effet embouteillage, mais avec collision solide.
 export const CITY_RUSH_ONCOMING_COUNT = 3;
+
+// ── Le trafic d'un tournoi ──────────────────────────────────────────────────
+// Le plateau d'un tournoi aligne huit voitures de course : la route leur est
+// laissée. Le trafic civil y est donc **deux fois plus clairsemé** (quatre
+// voitures) et le contresens se réduit à une seule voiture. Surtout, **aucune
+// berline de police** n'y circule : la course est annoncée « sans police », et
+// une patrouille percutée partirait en chasse même au dernier tour — le dernier
+// tour d'un tournoi se gagne à la régulière ou pas du tout.
+export const CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT = 4;
+export const CITY_RUSH_TOURNAMENT_ONCOMING_COUNT = 1;
+
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
   // Plus une seule berline « en civil » sur la route : l'ancienne banalisée
@@ -2127,7 +2138,10 @@ export function cityRushLaneConfig(course) {
       // sur les voies du contresens.
       policeLanes: leftHand ? CITY_RUSH_LEFT_HALF_LANES : CITY_RUSH_POLICE_LANES,
       defaultLanes: leftHand ? CITY_RUSH_DEFAULT_LANES_LEFT_HAND : CITY_RUSH_DEFAULT_LANES,
-      gridLanes: CITY_RUSH_LANE_X,
+      // Les cases peintes au sol suivent les voies du **sens de course** : une
+      // grille de départ ne se dessine pas sur la moitié du contresens, et
+      // c'est là que se placent les voitures, du mode libre au tournoi.
+      gridLanes: forwardLanes,
     };
   }
   const lanes = Object.freeze(Array.from({ length: laneCount }, (_, lane) => lane));
@@ -3658,6 +3672,52 @@ export function detectCityRushRampContact(carDistance, carLane, rampDistance, ra
 // avatar et un prénom issus d'un pays différent autour du monde.
 export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno']);
 
+// ── La grille d'un tournoi : huit voitures de course ────────────────────────
+// Un tournoi ne se court pas à trois : le plateau aligne **huit voitures de
+// course** — le pilote et sept rivaux, les mêmes du premier au dernier tour —
+// pour que le titre se gagne à la remontée. Les sept places de rivaux suivent
+// les noms célestes des deux historiques (`nova`, `juno`) : ce sont des places
+// de grille, pas des personnes — le pilote de chaque place vient du catalogue
+// (`CITY_RUSH_DRIVERS`) et change d'un tournoi à l'autre.
+export const CITY_RUSH_TOURNAMENT_RACER_SLOTS = Object.freeze([
+  'player', 'nova', 'juno', 'lyra', 'orion', 'altair', 'polaris', 'castor',
+]);
+/** Nombre de voitures de course alignées dans un tournoi (huit). */
+export const CITY_RUSH_TOURNAMENT_RACER_COUNT = CITY_RUSH_TOURNAMENT_RACER_SLOTS.length;
+/** Écart entre deux rangées de la grille de départ, en mètres. */
+export const CITY_RUSH_GRID_ROW_GAP = 5.4;
+
+/**
+ * Grille de départ d'une course à plusieurs voitures : chaque place reçoit sa
+ * voie (`lane`) et sa **rangée** (`row`, 0 = première rangée, sur la ligne),
+ * donc son décalage de distance (`distance`).
+ *
+ * La distance de course se compte depuis la ligne : la première rangée part à
+ * 0 m, les suivantes à −5,40 m, −10,80 m… Le pilote ferme la marche — dans un
+ * tournoi, les sept rivaux partent devant lui et il doit remonter le peloton.
+ * Les voitures se répartissent sur les voies du **sens de course** du parcours
+ * (trois voies sur les artères, quatre sur un circuit permanent).
+ */
+export function cityRushRaceGrid(slots = [], course = null) {
+  const { forwardLanes } = cityRushLaneConfig(course);
+  const lanes = forwardLanes.length ? forwardLanes : Object.freeze([0]);
+  const entries = (Array.isArray(slots) ? slots : []).filter(Boolean);
+  const ordered = [
+    ...entries.filter((slot) => !slot.isPlayer),
+    ...entries.filter((slot) => slot.isPlayer),
+  ];
+  return ordered.map((slot, index) => {
+    const row = Math.floor(index / lanes.length);
+    return {
+      id: slot.id,
+      lane: lanes[index % lanes.length],
+      row,
+      // Positif devant la ligne, jamais `-0` : la première rangée part de 0 m.
+      distance: row === 0 ? 0 : -row * CITY_RUSH_GRID_ROW_GAP,
+    };
+  });
+}
+
 // Les avatars décrivent leurs couleurs en CSS (`#f3c8a6`) ; ces fonctions
 // utilitaires convertissent les teintes en entiers 0xRRGGBB pour les éléments
 // Three.js qui en auraient besoin (les voitures, elles, restent sans pilote visible).
@@ -5156,10 +5216,12 @@ export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP
   return commands.join(' ');
 }
 
-// Construit l'état complet de la mini-carte : position des 3 pilotes sur le
-// circuit, avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
+// Construit l'état complet de la mini-carte : position des pilotes en piste,
+// avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
 // `solo` (Sprint) réduit la grille au seul pilote : la mini-carte et le
 // classement ne réinventent pas les deux rivaux d'une course à trois.
+// `roster` remplace la grille calculée : un tournoi aligne huit voitures de
+// course, la page passe donc la sienne pour que le classement les compte tous.
 export function buildCityRushMinimapState(
   racers = [],
   {
@@ -5174,9 +5236,12 @@ export function buildCityRushMinimapState(
     totalDistance = cityRushRaceDistance(laps, lapLength, finalLapLoops),
     pursuers = [],
     solo = false,
+    roster = null,
   } = {},
 ) {
-  const fullRoster = selectCityRushRacers({ cityId, carId, runId, playerDriverId });
+  const fullRoster = Array.isArray(roster) && roster.length
+    ? roster
+    : selectCityRushRacers({ cityId, carId, runId, playerDriverId });
   const playerSlots = fullRoster.filter((slot) => slot.id === playerId);
   // Garde-fou : une grille solo sans pilote n'aurait plus rien à projeter — on
   // retombe alors sur la première place de la grille.

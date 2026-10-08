@@ -43,6 +43,10 @@ import {
   CITY_RUSH_TRAFFIC_LANES,
   CITY_RUSH_TRAFFIC_TYPES,
   isCityRushPoliceTrafficType,
+  // Trafic d'un tournoi : quatre civiles au lieu de huit, une seule voiture en
+  // contresens, et pas une berline de police (voir `tournamentMode`).
+  CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT,
+  CITY_RUSH_TOURNAMENT_ONCOMING_COUNT,
   CITY_RUSH_ONCOMING_COUNT,
   CITY_RUSH_ONCOMING_LANES,
   CITY_RUSH_SCROLL_SCALE,
@@ -1714,6 +1718,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const storyHealthOverride = Number.isFinite(Number(storyRules?.playerHealthOverride)) && Number(storyRules.playerHealthOverride) > 0
     ? Math.floor(Number(storyRules.playerHealthOverride))
     : null;
+  // Le drapeau de tournoi ne dit pas « course pure » (un chapitre d'histoire
+  // l'est aussi) : il dit « plateau de huit voitures ». C'est lui qui donne au
+  // parcours son trafic de tournoi — clairsemé et sans une seule berline de
+  // police, même au dernier tour (voir `CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT`).
+  const tournamentMode = storyRules?.tournament === true;
   const storyRivalCarIds = storyRules?.rivalCarIds && typeof storyRules.rivalCarIds === 'object' ? storyRules.rivalCarIds : null;
   const storyRivalPace = storyRules?.rivalPace && typeof storyRules.rivalPace === 'object' ? storyRules.rivalPace : null;
   const storyBreakdown = storyRules?.breakdown && typeof storyRules.breakdown === 'object' ? storyRules.breakdown : null;
@@ -1953,10 +1962,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // ── Voitures ─────────────────────────────────────────────────────────
   // Le roster reste attaché aux voitures pour les noms, drapeaux et avatars du
   // classement ; les coupés de course sont fermés et sans personnage visible.
-  let currentRoster = Array.isArray(initialRoster) && initialRoster.length === 3
+  // Il porte aussi la **grille** : chaque entrée peut donner sa voie, sa rangée
+  // et son décalage de départ (`lane`, `row`, `gridDistance`). Un tournoi en
+  // aligne huit — le pilote ferme la marche — là où le mode libre en aligne
+  // trois sur la même rangée.
+  let currentRoster = Array.isArray(initialRoster) && initialRoster.length
     ? initialRoster
     : selectCityRushRacers({ cityId: city.id, carId: selectedCarId });
   let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
+  // Décalage de départ du pilote, en mètres : négatif quand il part derrière la
+  // ligne (dernière rangée d'une grille), zéro en course libre.
+  const playerGridDistance = Number.isFinite(Number(playerDriver?.gridDistance))
+    ? Number(playerDriver.gridDistance)
+    : 0;
 
   const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
   // Chaque voiture encaisse selon sa propre coque (`durabilityMultiplier`) :
@@ -1998,18 +2016,33 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Le Sprint se court en solo, contre le chrono : aucun rival en piste. Le
   // tutoriel aussi : la voiture y roule seule, la route reste lisible et les
   // accessoires de la leçon ne sont jamais raflés par un adversaire.
-  const racerSpecs = (sprint || tutorialMode) ? [] : [
-    { id: 'nova', lane: defaultLanes[1], phase: 0.6, changeIn: 1.4, skidSide: 1 },
-    { id: 'juno', lane: defaultLanes[2], phase: 2.4, changeIn: 2.1, skidSide: -1 },
-  ];
+  // Partout ailleurs, le plateau vient du roster : deux rivaux en course libre,
+  // sept dans un tournoi — chacun à sa place de grille.
+  const racerSpecs = (sprint || tutorialMode)
+    ? []
+    : currentRoster
+      .filter((entry) => entry?.id && entry.id !== 'player')
+      .map((entry, index) => ({
+        id: entry.id,
+        // La place du roster fait foi ; à défaut, la grille historique (une
+        // voie par rival, tous sur la ligne).
+        lane: Number.isFinite(Number(entry.lane)) ? Number(entry.lane) : defaultLanes[(index + 1) % defaultLanes.length],
+        startDistance: Number.isFinite(Number(entry.gridDistance)) ? Number(entry.gridDistance) : 0,
+        // Le premier rival se décale très tôt, les suivants plus tard : la
+        // meute ne s'ébranle pas d'un seul bloc.
+        phase: 0.6 + index * 1.8,
+        changeIn: 1.4 + index * 0.7,
+        skidSide: index % 2 === 0 ? 1 : -1,
+      }));
   const racers = racerSpecs.map((spec, index) => {
     const storyProfile = storyRivalCarIds?.[spec.id]
       ? CITY_RUSH_CARS.find((car) => car.id === storyRivalCarIds[spec.id]) || null
       : null;
-    const profile = storyProfile || rivalProfiles[index];
+    const profile = storyProfile || rivalProfiles[index % rivalProfiles.length];
     const driver = currentRoster.find((item) => item.id === spec.id) || currentRoster[index + 1];
     return {
       ...spec,
+      startLane: spec.lane,
       driverId: driver.driverId,
       name: driver.name,
       displayName: driver.displayName,
@@ -2019,7 +2052,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       avatar: driver.avatar,
       accent: driver.accent,
       profile,
-      distance: 0,
+      distance: spec.startDistance,
       lap: 1,
       maxHealth: cityRushCarMaxHealth(profile),
       health: cityRushCarMaxHealth(profile),
@@ -2081,9 +2114,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     });
   }
 
-  // Pas une seule voiture de police dans le trafic du Sprint ni dans celui de
-  // l'entraînement guidé. Certains parcours (routes de campagne peu fréquentées
-  // comme la Mexique) réduisent fortement le nombre de véhicules grâce à
+  // Pas une seule voiture de police dans le trafic du Sprint, de l'entraînement
+  // guidé **ni d'un tournoi** — la course y est annoncée « sans police », et une
+  // patrouille percutée partirait en chasse, y compris au dernier tour.
+  // Certains parcours (routes de campagne peu fréquentées comme la Mexique)
+  // réduisent fortement le nombre de véhicules grâce à
   // `trafficCount`/`oncomingCount`.
   // Un parcours peut restreindre son trafic (le Ring ne voit ni camion-poubelle
   // ni berline de ville) : `trafficTypes` liste alors les modèles autorisés.
@@ -2093,10 +2128,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const allowedTrafficTypes = courseTrafficTypes.length ? courseTrafficTypes : CITY_RUSH_TRAFFIC_TYPES;
   const nonPoliceTrafficTypes = allowedTrafficTypes.filter((spec) => !isCityRushPoliceTrafficType(spec.id));
   const sprintTrafficFallback = CITY_RUSH_TRAFFIC_TYPES.filter((spec) => !isCityRushPoliceTrafficType(spec.id));
-  // Pas une seule berline de police sur la route du Sprint ni de l'entraînement
-  // guidé : la démonstration démarre sur une route vide de police, et c'est la
-  // leçon des tirs qui fait entrer l'escouade en piste (voir `releaseTutorialPolice`).
-  const trafficTypes = (sprint || tutorialMode)
+  // Pas une seule berline de police sur la route du Sprint, du tournoi ni de
+  // l'entraînement guidé : la démonstration démarre sur une route vide de
+  // police, et c'est la leçon des tirs qui fait entrer l'escouade en piste (voir
+  // `releaseTutorialPolice`).
+  const policeFreeTraffic = sprint || tutorialMode || tournamentMode;
+  const trafficTypes = policeFreeTraffic
     ? (nonPoliceTrafficTypes.length ? nonPoliceTrafficTypes : sprintTrafficFallback)
     : allowedTrafficTypes;
   const cityTrafficCount = Math.max(0, Math.min(CITY_RUSH_TRAFFIC_COUNT, Number(city.trafficCount)));
@@ -2104,9 +2141,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Entraînement guidé : la route reste vivante, mais deux fois plus clairsemée.
   // La démonstration doit pouvoir tenir une voie (ligne propre) et chaque leçon
   // se lire — le trafic garde de quoi montrer les dépassements et l'évitement.
-  const trafficCount = tutorialMode ? Math.max(2, Math.round(effectiveTrafficCount / 2)) : effectiveTrafficCount;
+  // Tournoi : le plateau de huit voitures a la route pour lui — moins de
+  // civiles, jamais plus que le parcours n'en autorise.
+  const trafficCount = tournamentMode
+    ? Math.max(1, Math.min(effectiveTrafficCount, CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT))
+    : tutorialMode ? Math.max(2, Math.round(effectiveTrafficCount / 2)) : effectiveTrafficCount;
   const cityOncomingCount = Math.max(0, Math.min(CITY_RUSH_ONCOMING_COUNT, Number(city.oncomingCount)));
   const effectiveOncomingCount = Number.isFinite(cityOncomingCount) && cityOncomingCount >= 0 ? cityOncomingCount : CITY_RUSH_ONCOMING_COUNT;
+  // Le contresens se réduit à une seule voiture en tournoi — et reste vide sur
+  // un circuit à sens unique, où `oncomingLanes` n'a aucune voie.
+  const oncomingCount = tournamentMode
+    ? Math.min(effectiveOncomingCount, CITY_RUSH_TOURNAMENT_ONCOMING_COUNT)
+    : effectiveOncomingCount;
   const trafficCars = Array.from({ length: trafficCount }, (_, index) => {
     const spec = trafficTypes[index % trafficTypes.length];
     const mesh = makeTrafficVehicle(spec.id);
@@ -2143,12 +2189,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   });
 
   // ── Trafic venant en face ─────────────────────────────────────────────
-  // Les trois voies en sens inverse — à gauche de l'axe jaune par défaut, à
-  // droite à Londres et sur la Shuto de Tokyo — voient arriver ces véhicules
-  // face à la course ; ils reparaissent au loin une fois passés derrière les
-  // pilotes. Un véhicule percuté dévie vers le bord sans quitter la chaussée.
+  // Les voies en sens inverse — à gauche de l'axe jaune par défaut, à droite à
+  // Londres et sur la Shuto de Tokyo — voient arriver ces véhicules face à la
+  // course ; ils reparaissent au loin une fois passés derrière les pilotes. Un
+  // véhicule percuté dévie vers le bord sans quitter la chaussée. Un tournoi
+  // n'en garde qu'un seul : le peloton se répartit la chaussée, pas le contresens.
   const oncomingPoliceSpecs = trafficTypes.filter((spec) => isCityRushPoliceTrafficType(spec.id));
-  const oncomingCars = Array.from({ length: effectiveOncomingCount }, (_, index) => {
+  const oncomingCars = Array.from({ length: oncomingCount }, (_, index) => {
     // Les patrouilles marquée et banalisée sont placées dans le contresens
     // lorsque la route autorise les deux types ; les autres voies gardent leur
     // tirage de trafic habituel.
@@ -2186,6 +2233,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       turnaroundTargetLane: null,
     };
   });
+  // Trafic clairsemé : les parcours déserts (campagne mexicaine, Ring) et les
+  // tournois — quatre civiles au lieu de huit — respirent la même règle. Les
+  // voitures y reparaissent avec de grands écarts : la route appartient au
+  // plateau, pas au flot.
+  const sparseTraffic = tournamentMode || trafficCount <= 3;
 
   // ── Les SUV de charge du contresens ────────────────────────────────────
   // Cinq étoiles ne se contentent plus d'attendre le pilote : deux SUV
@@ -2262,10 +2314,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 
   // ── L'escouade de police et ses renforts ciblés ────────────────────────
-  // Trois voitures poursuivent le joueur. Deux unités supplémentaires sont
-  // gardées en réserve, une par rival ; elles ne sortent que si ce rival tire
-  // sur une voiture de police, puis ne le lâchent plus lui.
-  const policeCars = Array.from({ length: CITY_RUSH_POLICE_COUNT + racers.length }, (_, index) => {
+  // Trois voitures poursuivent le joueur. Une unité supplémentaire par rival
+  // est gardée en réserve ; elle ne sort que si ce rival touche une voiture de
+  // police, puis ne le lâche plus lui. Sans police du tout — Sprint, tournoi,
+  // chapitre « course pure » —, aucune réserve n'est construite : la meute a la
+  // route pour elle, et sept berlines invisibles ne coûtent rien.
+  const rivalReserveCount = storyPoliceEnabled ? racers.length : 0;
+  const policeCars = Array.from({ length: CITY_RUSH_POLICE_COUNT + rivalReserveCount }, (_, index) => {
     const squad = index < CITY_RUSH_POLICE_COUNT;
     const rivalIndex = index - CITY_RUSH_POLICE_COUNT;
     const lane = policeLanes[index % policeLanes.length];
@@ -4052,7 +4107,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     tutorialWatchdogLeft = CITY_RUSH_TUTORIAL_LESSON_TIMEOUT;
     tutorialLastAction = null;
     elapsed = 0;
-    distance = 0;
+    // Le pilote repart de sa place de grille : zéro en course libre, la dernière
+    // rangée (distance négative, derrière la ligne) dans un tournoi.
+    distance = playerGridDistance;
     lap = 1;
     lastLineCrossed = 0;
     sprintCheckpoints = 0;
@@ -4122,7 +4179,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerCar.rotation.set(0, 0, 0);
     resetCarAnimation(playerCar);
     racers.forEach((racer, index) => {
-      racer.distance = 0;
+      // Retour à sa place de grille : les rivaux d'un tournoi repartent de leur
+      // rangée, décalée derrière la ligne du pilote.
+      racer.distance = Number.isFinite(Number(racer.startDistance)) ? Number(racer.startDistance) : 0;
       racer.lap = 1;
       racer.health = racer.maxHealth || cityRushCarMaxHealth(racer.profile);
       racer.healthFlash = 0;
@@ -4131,7 +4190,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Nouvelle course, nouveau casier : aucun rival n'est recherché.
       racer.wantedLevel = 0;
       racer.currentSpeed = 0;
-      racer.lane = defaultLanes[index + 1];
+      racer.lane = Number.isFinite(Number(racer.startLane)) ? Number(racer.startLane) : defaultLanes[(index + 1) % defaultLanes.length];
       racer.currentX = laneX(racer.lane);
       racer.changeIn = 0.22 + index * 0.08;
       racer.slowLeft = 0;
@@ -4152,7 +4211,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.inventory = createCityRushInventory();
       racer.powerCooldown = 0;
       racer.smokeTimer = 0;
-      racer.mesh.position.set(racer.currentX, 0, PLAYER_Z);
+      // Place de grille en z : un rival d'une rangée arrière se dessine derrière
+      // le pilote, à l'écart de la ligne — le rendu suit la même règle que la
+      // simulation (`PLAYER_Z − écart × SCALE`).
+      racer.mesh.position.set(racer.currentX, 0, PLAYER_Z - (racer.distance - distance) * SCALE);
       racer.mesh.visible = true;
       racer.mesh.rotation.set(0, 0, 0);
       resetCarAnimation(racer.mesh);
@@ -4169,7 +4231,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.health = isCityRushPoliceTrafficType(traffic.type) ? CITY_RUSH_POLICE_HEALTH : null;
       traffic.damageSmokeTimer = 0;
       animatePoliceDamageFire(traffic.mesh, 0, 0);
-      traffic.distance = 82 + index * (trafficCars.length > 3 ? 68 : 180) + randomRange(-7, 7);
+      traffic.distance = 82 + index * (sparseTraffic ? 180 : 68) + randomRange(-7, 7);
       traffic.lane = forwardLanes[index % forwardLanes.length];
       traffic.currentX = laneX(traffic.lane);
       traffic.currentSpeed = traffic.baseSpeed;
@@ -4184,7 +4246,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
       traffic.mesh.userData.beacons.forEach((beacon) => { beacon.material.opacity = 1; });
     });
-    lastTrafficDistanceSlot = trafficCars[trafficCars.length - 1].distance + randomRange(trafficCars.length <= 3 ? 180 : 60, trafficCars.length <= 3 ? 260 : 78);
+    lastTrafficDistanceSlot = trafficCars[trafficCars.length - 1].distance + randomRange(sparseTraffic ? 180 : 60, sparseTraffic ? 260 : 78);
     // Le trafic venant en face reprend sa place, réparti loin devant la grille.
     oncomingCars.forEach((oncoming, index) => {
       const lightOncoming = oncomingCars.length <= 1;
@@ -9107,9 +9169,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const roomForAnotherEncounter = trafficLeadDistance < effectiveDistance - 230;
         if (clearedByEveryone && roomForAnotherEncounter) {
           traffic.spawnCount += 1;
-          // Sur route à très faible trafic (campagne), les voitures sont
-          // bien plus espacées : on augmente les écarts de respawn.
-          const lightTraffic = trafficCars.length <= 3;
+          // Sur route à très faible trafic (campagne, tournoi), les voitures
+          // sont bien plus espacées : on augmente les écarts de respawn.
+          const lightTraffic = sparseTraffic;
           const nextSlot = lastTrafficDistanceSlot + randomRange(lightTraffic ? 180 : 58, lightTraffic ? 260 : 78);
           const nextAhead = trafficLeadDistance + randomRange(lightTraffic ? 230 : 132, lightTraffic ? 320 : 160);
           traffic.distance = Math.max(nextSlot, nextAhead);

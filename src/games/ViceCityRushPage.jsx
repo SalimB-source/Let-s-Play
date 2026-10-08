@@ -50,6 +50,7 @@ import {
   CITY_RUSH_SPRINT_CHECKPOINTS,
   CITY_RUSH_SPRINT_CHECKPOINT_SPACING,
   CITY_RUSH_SPRINT_DISTANCE,
+  CITY_RUSH_TOURNAMENT_RACER_COUNT,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_ONCOMING_BONUS_MAX,
@@ -448,7 +449,7 @@ function tournamentResultText({ result, tournament, roster }) {
     return `Tu soulèves ${tournament.name} avec ${playerRow.points ?? 0} points en ${tournament.legs.length} courses ! La prime de ${formatCash(table.bonus)} billets verts rejoint ton portefeuille.`;
   }
   if (table.complete) {
-    return `${winnerDriver?.displayName || 'Ton rival'} soulève ${tournament.name} avec ${leaderRow.points ?? 0} points. Tu termines ${ordinal(playerRow.rank || 3)} du général avec ${playerRow.points ?? 0} points — la revanche t’attend.`;
+    return `${winnerDriver?.displayName || 'Ton rival'} soulève ${tournament.name} avec ${leaderRow.points ?? 0} points. Tu termines ${ordinal(playerRow.rank || table.standings.length)} du général avec ${playerRow.points ?? 0} points — la revanche t’attend.`;
   }
   const legCity = CITY_RUSH_COURSES.find((course) => course.id === result.city);
   const nextCity = CITY_RUSH_COURSES.find((course) => course.id === tournament.legs[table.raceIndex + 1]);
@@ -752,8 +753,9 @@ export default function ViceCityRushPage() {
   );
   const sprintCheckpointSeconds = Math.max(0, Number(hud.sprint?.timeTotal) || sprintCheckpointBonus);
   const roster = useMemo(() => {
-    // Tournoi : les deux rivaux attitrés, les mêmes sur les trois courses (ni
-    // `runId` ni tirage : la grille ne change pas en route).
+    // Tournoi : les sept rivaux attitrés, les mêmes sur les trois courses (ni
+    // `runId` ni tirage : la grille ne change pas en route). Chaque place porte
+    // sa voie, sa rangée et son décalage — le pilote ferme la marche.
     if (tournamentMode && tournament) {
       return selectCityRushTournamentRacers({ tournamentId: tournament.id, cityId, playerDriverId });
     }
@@ -780,6 +782,11 @@ export default function ViceCityRushPage() {
     if (tournamentMode && tournament) {
       const rivals = cityRushTournamentRivalRules(tournament);
       return {
+        // Le drapeau de tournoi dit au monde 3D qui court : un plateau de huit
+        // voitures de course (le pilote et sept rivaux) et le trafic de
+        // tournoi — clairsemé, sans une seule berline de police, même au
+        // dernier tour.
+        tournament: true,
         weaponsEnabled: false,
         policeEnabled: false,
         bazookaEnabled: false,
@@ -830,9 +837,14 @@ export default function ViceCityRushPage() {
       laps: currentLaps,
       totalDistance: currentDistance,
       // Sprint : un seul pilote en piste. Sans ça, le classement latéral
-      // reprend la grille de départ à trois tant que le monde n'a pas envoyé
-      // son premier HUD — les « adversaires » restent affichés en solo.
+      // reprend la grille de départ (3 places en course libre, 8 en tournoi)
+      // tant que le monde n'a pas envoyé son premier HUD — les « adversaires »
+      // restent affichés en solo.
       solo: soloMode,
+      // La grille de la course sert de référence au classement : le HUD du monde
+      // n'en connaît que ce que le roster lui a donné. Le monde la reçoit par
+      // le prop `roster`, donc les deux classements comptent les mêmes voitures.
+      roster,
     }),
     [hud.racers, roster, cityId, selectedCar.id, runId, playerDriverId, currentLaps, currentDistance, soloMode],
   );
@@ -2238,15 +2250,15 @@ export default function ViceCityRushPage() {
                 {introStep === 'tournament' && (
                   <>
                     <div className="city-rush-intro-copy">
-                      <span className="city-rush-overlay-kicker"><i /> TOURNOIS · {CITY_RUSH_TOURNAMENT_LEGS} COURSES PAR PLATEAU · SANS POLICE NI ARMES</span>
+                      <span className="city-rush-overlay-kicker"><i /> TOURNOIS · {CITY_RUSH_TOURNAMENT_RACER_COUNT} VOITURES DE COURSE · {CITY_RUSH_TOURNAMENT_LEGS} COURSES PAR PLATEAU · SANS POLICE NI ARMES</span>
                       <h2>UN TITRE<br /><em>EN TROIS MANCHES.</em></h2>
-                      <p>Un plateau, trois villes imposées, la même voiture et les mêmes rivaux du premier feu vert au dernier : les points de chaque manche font un champion, et le champion gagne des billets verts. Aucun mode libre ici — les courses sans lendemain se jouent page COURSE RAPIDE.</p>
+                      <p>Un plateau de {CITY_RUSH_TOURNAMENT_RACER_COUNT} voitures de course, trois villes imposées, la même voiture et les mêmes rivaux du premier feu vert au dernier : tu t’élances de la dernière rangée et les points de chaque manche font un champion — le champion gagne des billets verts. La route leur est laissée : trafic civil clairsemé et pas une seule berline de police, même au dernier tour. Aucun mode libre ici — les courses sans lendemain se jouent page COURSE RAPIDE.</p>
                     </div>
 
                     <section className="cr-tournament-hub" aria-labelledby="cr-tournament-hub-title">
                       <div className="cr-tournament-hub-heading">
                         <div>
-                          <span className="cr-tournament-hub-kicker">TOURNOIS · {CITY_RUSH_TOURNAMENT_LEGS} COURSES · SANS POLICE NI ARMES</span>
+                          <span className="cr-tournament-hub-kicker">TOURNOIS · {CITY_RUSH_TOURNAMENT_LEGS} COURSES · {CITY_RUSH_TOURNAMENT_RACER_COUNT} VOITURES · SANS POLICE NI ARMES</span>
                           <h3 id="cr-tournament-hub-title">TROIS COURSES, UN TITRE</h3>
                         </div>
                         <span className="cr-tournament-hub-progress">
@@ -2429,7 +2441,7 @@ export default function ViceCityRushPage() {
                       <span className="city-rush-overlay-kicker"><i /> {tournamentMode ? `TOURNOI · ${tournament.name} · COURSE ${tournamentLeg + 1}/${tournament.legs.length}` : garageIsShop ? `GARAGE · CONCESSION · ${city.district} · ${ownedCarCount}/${CITY_RUSH_CARS.length} MODÈLES À TOI` : `03 / GARAGE · ${city.district} · ${mode.name}`}</span>
                       <h2>{tournamentMode ? <>EN PISTE<br /><em>POUR LE TITRE.</em></> : garageIsShop ? <>ACHÈTE<br /><em>TA VOITURE.</em></> : <>PRÊT À<br /><em>ROULER.</em></>}</h2>
                       {tournamentMode ? (
-                        <p>{tournament.desc} {tournamentLeg === 0 ? `${city.name} ouvre le bal` : `Manche ${tournamentLeg + 1} : ${city.name}`} : {tournament.laps} tours ({currentDistance} m), sans police ni armes, avec la même voiture et les mêmes rivaux sur les {tournament.legs.length} courses. {CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche, et +{formatCash(tournament.championBonus)} billets verts pour le champion.</p>
+                        <p>{tournament.desc} {tournamentLeg === 0 ? `${city.name} ouvre le bal` : `Manche ${tournamentLeg + 1} : ${city.name}`} : {tournament.laps} tours ({currentDistance} m), sans police ni armes, avec la même voiture et le même plateau de {CITY_RUSH_TOURNAMENT_RACER_COUNT} voitures sur les {tournament.legs.length} courses — tu t’élances de la dernière rangée. {CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche, et +{formatCash(tournament.championBonus)} billets verts pour le champion.</p>
                       ) : garageIsShop ? (
                         <p>Le garage est un concessionnaire : {CITY_RUSH_CARS.length} modèles au catalogue, {CITY_RUSH_FREE_CAR_COUNT} offerts dès le premier jour, les autres contre des billets verts — {formatCash(careerProgress.cash)} en poche. {ownedCarCount === CITY_RUSH_CARS.length ? 'Tu possèdes déjà toute la garde-robe : touche un modèle pour le monter au plateau et le choisir.' : 'Touche un modèle pour l’acheter, ou pour monter au plateau une voiture qui est déjà à toi.'} Rien ne démarre ici : une voiture achetée attend ton prochain départ, page après page, tournoi après tournoi.</p>
                       ) : (
@@ -2988,7 +3000,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{tournamentMode ? `${tournament.name}, manche ${tournamentLeg + 1}/${tournament.legs.length} : ${tournament.legs.length} courses de ${tournament.laps} tours sans police ni armes, ${CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche.` : storyMode ? `${currentStoryRace?.race?.name || city.name} : objectif — ${currentStoryRace?.objective?.label || ''}. ${currentStoryRace?.objective?.detail || ''} ${currentStoryRace?.tip || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, ou deux contre un SUV de police. Un répit après chaque choc empêche les dégâts répétés tant que les voitures restent collées. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Maintenir ← ou → (Q / D) enchaîne les écarts tout seul, sans marteler la touche : la voiture glisse de voie en voie jusqu’à la relâche. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{tournamentMode ? `${tournament.name}, manche ${tournamentLeg + 1}/${tournament.legs.length} : ${tournament.legs.length} courses de ${tournament.laps} tours sans police ni armes, ${CITY_RUSH_TOURNAMENT_POINTS.join(', ')} points par manche. Le plateau aligne ${CITY_RUSH_TOURNAMENT_RACER_COUNT} voitures de course, le trafic civil est clairsemé et aucune berline de police ne circule.` : storyMode ? `${currentStoryRace?.race?.name || city.name} : objectif — ${currentStoryRace?.objective?.label || ''}. ${currentStoryRace?.objective?.detail || ''} ${currentStoryRace?.tip || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque, et chaque choc contre une voiture — civile, en face ou berline de police — retire un carré de vie, ou deux contre un SUV de police. Un répit après chaque choc empêche les dégâts répétés tant que les voitures restent collées. Conduite libre : changer de voie ne ralentit plus du tout — double et évite le trafic à pleine allure. Maintenir ← ou → (Q / D) enchaîne les écarts tout seul, sans marteler la touche : la voiture glisse de voie en voie jusqu’à la relâche. Tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse), et c’est le seul prix d’un écart : le bonus retombe à zéro. Rouler à contresens, dans les trois voies en sens inverse, charge un second bonus cumulatif — jusqu’à +{Math.round((CITY_RUSH_ONCOMING_BONUS_MAX - 1) * 100)} % de vitesse — mais un choc frontal l’annule net et te recale derrière la voiture en face. Un tremplin se prend dans la voie où tu arrives : en l’air, la voiture garde sa voie jusqu’à l’atterrissage.{city.driveSide === 'left' ? ' Ici on roule à gauche, comme dans le pays : ta course tient la moitié gauche de la chaussée et le trafic venant en face arrive par la droite.' : ''}</p></div>
           </section>
 
           {/* En Sprint comme en tournoi, la carte de l'escouade disparaît : titre,
@@ -3004,7 +3016,7 @@ export default function ViceCityRushPage() {
                 ) : storyMode && !storyPoliceOn ? (
                   <>Aucune poursuite dans ce chapitre : ni escouade, ni niveau de recherche, ni herse. Les berlines croisées restent du décor — concentre-toi sur l’objectif.</>
                 ) : tournamentMode ? (
-                  <>Aucune poursuite en tournoi : ni escouade, ni niveau de recherche, ni herse — les {tournament.legs.length} manches se jouent à la régulière, sans police ni armes. Le trafic civil bloque toujours la voie, et chaque choc te coûte un carré de vie.</>
+                  <>Aucune poursuite en tournoi : ni escouade, ni niveau de recherche, ni herse, et pas une seule berline de police dans le trafic — même au dernier tour. Le plateau aligne {CITY_RUSH_TOURNAMENT_RACER_COUNT} voitures de course ; tu pars de la dernière rangée. Le trafic civil, deux fois plus clairsemé, bloque toujours la voie : chaque choc te coûte un carré de vie.</>
                 ) : (
                   <>
                     {!storyMode && mode.policeFromStart
