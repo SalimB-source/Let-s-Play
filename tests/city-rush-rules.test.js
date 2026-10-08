@@ -247,6 +247,7 @@ import {
   CITY_RUSH_RIVAL_PACE,
   CITY_RUSH_RIVAL_FINAL_LAP_PUSH,
   cityRushRivalPaceFactor,
+  cityRushRivalTargetSpeed,
   cityRushAiBrakingRate,
   cityRushAiBrakingDistance,
   cityRushAiLaneBlocked,
@@ -3768,6 +3769,37 @@ test('chaque rival freine à la distance d’arrêt de son propre modèle', () =
   });
   assert.equal(laneFor(citadine), 0, 'la citadine se décale au lieu de plonger sur le camion');
   assert.equal(laneFor(supercar), 1, 'la supercar prend le bonus, elle freine assez court');
+});
+
+test('la consigne des rivaux garde au moins la pointe du joueur, même si le scénario les ralentit', () => {
+  const playerTopSpeed = 50;
+  const slowerRivalSpeed = 35;
+  const regularPace = cityRushRivalPaceFactor();
+
+  assert.equal(cityRushRivalTargetSpeed(playerTopSpeed, slowerRivalSpeed, {
+    pace: regularPace,
+    storyPace: 0.94,
+  }), playerTopSpeed * regularPace, 'un modèle plus lent ou un handicap ne rend pas le joueur imbattable');
+  assert.ok(Math.abs(cityRushRivalTargetSpeed(playerTopSpeed, slowerRivalSpeed, {
+    pace: regularPace,
+    storyPace: 1.1,
+  }) - playerTopSpeed * regularPace * 1.1) < 1e-9,
+  'un bonus de scénario continue de renforcer un boss, même dans une voiture moins puissante');
+  assert.ok(Math.abs(cityRushRivalTargetSpeed(playerTopSpeed, 60, {
+    pace: regularPace,
+    storyPace: 1.1,
+  }) - 69.3) < 1e-9, 'un modèle plus rapide et un bonus de scénario gardent leur avance');
+
+  for (const playerCar of CITY_RUSH_CARS) {
+    const playerSpeed = CITY_RUSH_PLAYER_SPEED * playerCar.powerMultiplier;
+    for (const rivalCar of CITY_RUSH_CARS) {
+      const rivalSpeed = CITY_RUSH_PLAYER_SPEED * rivalCar.powerMultiplier;
+      assert.ok(
+        cityRushRivalTargetSpeed(playerSpeed, rivalSpeed) >= playerSpeed * CITY_RUSH_RIVAL_PACE - 1e-9,
+        `${rivalCar.id} ne laisse pas ${playerCar.id} s'échapper par la seule pointe moteur`,
+      );
+    }
+  }
 });
 
 test('le rythme de course des rivaux est un vrai cran au-dessus, dernier tour compris', () => {

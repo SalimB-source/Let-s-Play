@@ -141,25 +141,44 @@ export const CITY_RUSH_BAZOOKA_AMMO_PER_RACE = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un bonus turbo pèse trois bonus d'inventaire pour les rivaux
 
 // ── Le rythme des rivaux : ils courent pour gagner ──────────────────────────
-// Nova et Juno ne se contentaient plus de suivre la voiture du joueur : leur
-// mécanique donne désormais 5 % de plus que la fiche de leur modèle, et ils
-// lâchent tout au dernier tour (+2 %). La contrepartie reste entièrement dans
-// les mains du joueur : le bonus de ligne propre (jusqu'à 1,12 ×), le contresens
-// (jusqu'à 1,35 ×, multiplié au précédent) et le turbo des pads (1,46 × contre
-// 1,38 × pour les rivaux) valent plus que cet écart — à condition de rouler
-// proprement, ce que l'IA ne fait plus à leur place.
+// La pointe d'un rival ne peut pas être inférieure à celle de la voiture du
+// joueur : si son modèle est moins puissant, il compense sur le rythme de course
+// (+5 %), puis pousse encore au dernier tour (+2 %). Un modèle plus rapide
+// conserve évidemment son avantage. La contrepartie reste dans les mains du
+// joueur : la ligne propre (jusqu'à 1,12 ×), le contresens (jusqu'à 1,35 ×) et
+// le turbo des pads (1,46 × contre 1,38 × pour les rivaux) restent des moyens
+// de reprendre l'avantage — à condition de rouler proprement.
 //
 // Un rival coincé entre le trafic garde aussi un peu plus de vitesse qu'avant
 // (`CITY_RUSH_RIVAL_SLOW_FACTOR`, contre 0,63 pour le joueur) : un choc évité
 // vaut mieux qu'un choc encaissé, et ils les évitent maintenant.
-export const CITY_RUSH_RIVAL_PACE = 1.05; // × la pointe de leur fiche de modèle
+export const CITY_RUSH_RIVAL_PACE = 1.05; // × la pointe de référence du joueur (ou du modèle rival s'il va plus vite)
 export const CITY_RUSH_RIVAL_FINAL_LAP_PUSH = 1.02; // × le rythme, au dernier tour de ce rival
 export const CITY_RUSH_RIVAL_SLOW_FACTOR = 0.62; // part de vitesse conservée après un carambolage
 
 /**
- * Rythme d'un rival : sa fiche de modèle, plus la surcharge de course, plus le
- * tout dernier tour où il ne retient plus rien. Le facteur s'applique à la
- * vitesse de pointe comme aux accélérations (elles suivent le même modèle).
+ * Rythme d'un rival : son modèle est comparé à la pointe du joueur, puis le
+ * rythme propre au rival s'applique. Un bonus de scénario peut pousser cette
+ * base commune plus haut ; un malus ne peut pas la faire passer sous le joueur.
+ */
+export function cityRushRivalTargetSpeed(
+  playerTopSpeed = CITY_RUSH_PLAYER_SPEED,
+  rivalTopSpeed = CITY_RUSH_PLAYER_SPEED,
+  { pace = CITY_RUSH_RIVAL_PACE, storyPace = 1 } = {},
+) {
+  const playerSpeed = Math.max(0, Number(playerTopSpeed) || 0);
+  const rivalSpeed = Math.max(0, Number(rivalTopSpeed) || 0);
+  const racePaceValue = Number(pace);
+  const racePace = Number.isFinite(racePaceValue) ? Math.max(0, racePaceValue) : CITY_RUSH_RIVAL_PACE;
+  const storyPaceValue = Number(storyPace);
+  const scenarioPace = Number.isFinite(storyPaceValue) && storyPaceValue > 0 ? storyPaceValue : 1;
+  const matchedTopSpeed = Math.max(playerSpeed, rivalSpeed);
+  return Math.max(playerSpeed, matchedTopSpeed * scenarioPace) * racePace;
+}
+
+/**
+ * Rythme d'un rival sur la course : surcharge standard, puis cran du dernier
+ * tour où il ne retient plus rien.
  */
 export function cityRushRivalPaceFactor({ finalLap = false } = {}) {
   return CITY_RUSH_RIVAL_PACE * (finalLap ? CITY_RUSH_RIVAL_FINAL_LAP_PUSH : 1);
@@ -291,12 +310,11 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
 //
 // Échelle volontairement large : 0,66 pour la citadine offerte (~83 km/h)
 // jusqu'à 1,42 pour la supercar la plus chère (~179 km/h), soit plus du double
-// de vitesse de pointe entre l'entrée et le haut du garage. L'écart se paie
-// comptant : `ViceCityWorld.jsx` donne aux deux rivaux les profils les plus
-// lents du catalogue hors voiture du joueur, donc une voiture chère rend la
-// course nettement plus facile et la citadine de départ très difficile — c'est
-// le sens de la progression du garage.
-// Pour accentuer (ou réduire) l'écart, il n'y a que trois curseurs à toucher :
+// de vitesse de pointe entre l'entrée et le haut du garage. Les rivaux gardent
+// des modèles visuellement distincts de la même catégorie, mais leur rythme de
+// course ne passe jamais sous la pointe du joueur : acheter une voiture rapide
+// ne transforme donc pas chaque course en promenade.
+// Pour accentuer (ou réduire) l'écart entre les modèles, il n'y a que trois curseurs :
 //   1. `powerMultiplier`       → vitesse de pointe ;
 //   2. `accelerationRate`      → temps de montée en vitesse (et freinage, voir
 //                                `cityRushBrakingRate`) ;

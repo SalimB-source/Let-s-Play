@@ -453,11 +453,12 @@ test('en plein saut, personne ne change de voie : ni le joueur, ni les rivaux', 
   assert.match(page, /en l’air, la voiture garde sa voie/);
 });
 
-test('les rivaux courent à leur rythme et lisent la route à leur distance d’arrêt', () => {
-  // Le rythme des rivaux part de la fiche de leur modèle, plus le cran de
-  // `CITY_RUSH_RIVAL_PACE` : la difficulté est un choix de conception, pas un
-  // hasard de construction.
-  assert.match(world, /baseSpeed: paced\(PLAYER_SPEED \* profile\.powerMultiplier \* cityRushRivalPaceFactor\(\)\)/);
+test('les rivaux ne sont pas limités à une vitesse inférieure à celle du joueur', () => {
+  // La pointe propre au modèle reste visible, mais la consigne de course prend
+  // au moins la pointe du joueur avant d'appliquer le rythme du rival.
+  assert.match(world, /baseSpeed: paced\(PLAYER_SPEED \* profile\.powerMultiplier\)/);
+  assert.match(world, /cityRushRivalTargetSpeed\(playerTopSpeed, racer\.baseSpeed, \{\s*pace: racerPace,\s*storyPace: storyPaceBoost,\s*\}\)/);
+  assert.match(world, /: rivalTargetTopSpeed \* \(racerSlowed \?/);
   // Le réflexe comme le choix de voie jugent la scène à la distance d'arrêt du
   // rival (voir `cityRushAiBrakingRate`) : une supercar freine plus court
   // qu'une citadine, et chaque voie est lue avec le bon modèle.
