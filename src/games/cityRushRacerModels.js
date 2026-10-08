@@ -1301,6 +1301,41 @@ export function makeRacerCar(profile, options = {}) {
   return group;
 }
 
+/** Ajoute une livrée d'interception à une voiture de course sans changer son modèle animé. */
+export function applyPoliceRacerLivery(car) {
+  if (!car || car.userData?.kind !== 'racer' || car.userData.policeLivery) return car;
+
+  const livery = new THREE.Group();
+  livery.name = 'police-interceptor-livery';
+  const dark = new THREE.MeshStandardMaterial({ color: 0x142947, roughness: 0.52, metalness: 0.16 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf4f3ec, roughness: 0.48, metalness: 0.1 });
+  const red = new THREE.MeshBasicMaterial({ color: 0xff304f, toneMapped: false });
+  const blue = new THREE.MeshBasicMaterial({ color: 0x39bfff, toneMapped: false });
+  const box = (material, position, size) => {
+    const object = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    object.position.set(...position);
+    object.castShadow = true;
+    livery.add(object);
+    return object;
+  };
+
+  // Barre lumineuse posée au-dessus du pavillon : les deux couleurs se lisent
+  // depuis la caméra de poursuite sans remplacer la carrosserie du modèle.
+  box(dark, [0, 1.43, -0.06], [0.78, 0.07, 0.2]);
+  box(red, [-0.21, 1.49, -0.06], [0.32, 0.07, 0.19]);
+  box(blue, [0.21, 1.49, -0.06], [0.32, 0.07, 0.19]);
+  for (const side of [-1, 1]) {
+    // Bandeau bleu nuit et liseré blanc sur chaque porte : silhouette
+    // d'intercepteur immédiatement reconnaissable, même à distance.
+    box(dark, [side * 0.93, 0.63, 0.05], [0.035, 0.2, 1.08]);
+    box(white, [side * 0.952, 0.72, 0.05], [0.018, 0.035, 0.74]);
+    box(red, [side * 0.98, 0.65, -0.07], [0.016, 0.12, 0.13]);
+  }
+  car.add(livery);
+  car.userData.policeLivery = livery;
+  return car;
+}
+
 /** Animation de caisse, pneus, feux et flammes ; aucun mouvement de personnage. */
 export function animateRacerCar(car, state, dt, elapsed) {
   const data = car.userData;

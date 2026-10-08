@@ -40,7 +40,7 @@ const { checkViceCityRushMenu } = await import('../node_modules/.cache/city-rush
 let exitCode = 0;
 try {
   await checkViceCityRushMenu(assert);
-  console.log('check:city-rush-menu ✓ — l’écran-titre s’ouvre à l’arrivée, se pilote au clavier et ouvre SA page : HISTOIRE tient la campagne, TOURNOIS les plateaux, COURSE RAPIDE les seuls modes libres, GARAGE le concessionnaire — la barre d’onglets change de page sans rappeler le logo, et aucune page ne ressert le contenu d’une autre.');
+  console.log('check:city-rush-menu ✓ — le carrousel s’ouvre et se pilote au clavier ; HISTOIRE, MISSIONS (avec briefing avant départ), TOURNOIS, COURSE RAPIDE et GARAGE ouvrent chacun leur page, et les onglets changent de page sans rappeler le logo.');
 } catch (error) {
   console.error(error?.stack || error?.message || error);
   exitCode = 1;

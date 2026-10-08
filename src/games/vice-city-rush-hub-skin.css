@@ -249,7 +249,7 @@
 }
 
 /* Main menu: a splash page, not a control panel. */
-.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic) {
   position: absolute;
   inset: 0;
   gap: clamp(10px, 1.4vh, 16px);
@@ -265,7 +265,7 @@
   scrollbar-color: var(--cr-cherry) #0b0d13;
 }
 
-.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic)::before {
+.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic)::before {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -276,7 +276,7 @@
   opacity: 1;
 }
 
-.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) > * {
+.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic) > * {
   position: relative;
   z-index: 1;
 }
@@ -403,7 +403,7 @@
 
 /* À la place de l'étoile de BD : le tag griffé de l'écran-titre (« rush ! »),
    même marqueur rose, même rotation, et l'éclat d'encre en fond d'onglet. */
-.city-rush-page.city-rush-page .city-rush-intro:is(.is-step-mode, .is-step-story, .is-step-tournament) .city-rush-intro-copy::after {
+.city-rush-page.city-rush-page .city-rush-intro:is(.is-step-mode, .is-step-story, .is-step-tournament, .is-step-missions) .city-rush-intro-copy::after {
   position: absolute;
   top: 8%;
   right: 2%;
@@ -1387,7 +1387,7 @@
 
   /* HISTOIRE et TOURNOIS sont des pages de liste : un propos à gauche, ce qu'on
      choisit à droite, rien d'autre — la barre des pages tient le haut. */
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) {
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) {
     display: grid;
     grid-template-columns: minmax(285px, .82fr) minmax(430px, 1.18fr);
     grid-template-rows: auto minmax(200px, 1fr) auto auto;
@@ -1402,11 +1402,11 @@
     overflow-y: auto;
   }
 
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-hub-bar { grid-area: bar; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-copy { grid-area: copy; align-self: center; padding-right: 12px; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > :is(.cr-story-hub, .cr-tournament-hub) { grid-area: list; align-self: center; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-actions { grid-area: actions; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-foot { grid-area: foot; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-copy { grid-area: copy; align-self: center; padding-right: 12px; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > :is(.cr-story-hub, .cr-tournament-hub, .cr-mission-hub) { grid-area: list; align-self: center; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-foot { grid-area: foot; }
 }
 
 @media (min-width: 901px) and (hover:hover), (min-width: 901px) and (min-device-width:601px) {
@@ -1434,7 +1434,7 @@
 
 @media (max-height: 820px) and (min-width: 901px) and (hover:hover), (max-height: 820px) and (min-width: 901px) and (min-device-width:601px) {
   .city-rush-page.city-rush-page .city-rush-topbar { height: 64px; }
-  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) { gap: 8px; padding-top: 10px; padding-bottom: 12px; }
+  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic) { gap: 8px; padding-top: 10px; padding-bottom: 12px; }
   .city-rush-page.city-rush-page .city-rush-intro h2 { margin: 7px 0; font-size: clamp(48px, 6.6vh, 78px); }
   .city-rush-page.city-rush-page .city-rush-intro-copy > p { font-size: 12px; }
   .city-rush-page.city-rush-page .cr-story-hub { padding: 11px; }
@@ -1464,7 +1464,7 @@
   .city-rush-page.city-rush-page .city-rush-shell { border-radius: 2px; }
   .city-rush-page.city-rush-page .city-rush-shell.is-immersive { border-radius: 0; }
 
-  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic) {
     gap: 12px;
     padding: 12px 13px calc(16px + env(safe-area-inset-bottom, 0px));
     background-image: linear-gradient(130deg, rgba(16, 7, 45, .91), rgba(16, 7, 45, .76) 58%, rgba(13, 18, 47, .66)),
@@ -1496,18 +1496,18 @@
   .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-actions { grid-area: actions; }
   .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-foot { grid-area: foot; }
 
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) {
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'bar' 'copy' 'list' 'actions' 'foot';
     align-content: start;
   }
 
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-hub-bar { grid-area: bar; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-copy { grid-area: copy; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > :is(.cr-story-hub, .cr-tournament-hub) { grid-area: list; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-actions { grid-area: actions; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-foot { grid-area: foot; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-copy { grid-area: copy; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > :is(.cr-story-hub, .cr-tournament-hub, .cr-mission-hub) { grid-area: list; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-foot { grid-area: foot; }
 
   .city-rush-page.city-rush-page .city-rush-stepper { gap: 5px; padding-bottom: 7px; }
   .city-rush-page.city-rush-page .city-rush-stepper-item { min-height: 34px; padding: 3px 10px 3px 5px; }
@@ -1515,7 +1515,7 @@
   .city-rush-page.city-rush-page .city-rush-overlay-kicker { padding: 6px 9px; font-size: 7px; }
   .city-rush-page.city-rush-page .city-rush-intro h2 { margin: 8px 0; font-size: clamp(42px, 12vw, 62px); }
   .city-rush-page.city-rush-page .city-rush-intro-copy > p { font-size: 11px; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-mode, .is-step-story, .is-step-tournament) .city-rush-intro-copy::after { display: none; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-mode, .is-step-story, .is-step-tournament, .is-step-missions) .city-rush-intro-copy::after { display: none; }
 
   .city-rush-page.city-rush-page .cr-story-hub { padding: 11px; border-radius: 2px; }
   .city-rush-page.city-rush-page .cr-story-hub-heading { align-items: flex-start; }
@@ -1690,7 +1690,7 @@
 
   /* La préparation tient dans l'écran : titre et chapeau plus courts, et les
      rappels de clavier (sans objet au doigt) remplacés par les gestes. */
-  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+  .city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic) {
     gap: 9px;
   }
 
@@ -1762,7 +1762,7 @@
   .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-actions { grid-area: actions; }
   .city-rush-page.city-rush-page .city-rush-intro.is-step-mode > .city-rush-intro-foot { grid-area: foot; }
 
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) {
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -1774,11 +1774,11 @@
     align-content: start;
   }
 
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-hub-bar { grid-area: bar; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-copy { grid-area: copy; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > :is(.cr-story-hub, .cr-tournament-hub) { grid-area: list; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-actions { grid-area: actions; }
-  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament) > .city-rush-intro-foot { grid-area: foot; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-hub-bar { grid-area: bar; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-copy { grid-area: copy; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > :is(.cr-story-hub, .cr-tournament-hub, .cr-mission-hub) { grid-area: list; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-actions { grid-area: actions; }
+  .city-rush-page.city-rush-page .city-rush-intro:is(.is-step-story, .is-step-tournament, .is-step-missions) > .city-rush-intro-foot { grid-area: foot; }
 }
 
 @media (hover: none) and (pointer: coarse) and (max-height: 780px) {

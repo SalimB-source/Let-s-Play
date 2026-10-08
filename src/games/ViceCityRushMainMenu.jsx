@@ -21,6 +21,7 @@ import './vice-city-rush-menu.css';
 
 const MENU_ENTRIES = [
   { id: 'story', label: 'HISTOIRE' },
+  { id: 'missions', label: 'MISSIONS' },
   { id: 'tournament', label: 'TOURNOIS' },
   { id: 'race', label: 'COURSE RAPIDE' },
   { id: 'garage', label: 'GARAGE' },
@@ -48,6 +49,14 @@ function MenuIcon({ id }) {
           <path d="M8 34c0-3 2-5 5-5h3l4-6h8l4 6h3c3 0 5 2 5 5v3H8z" />
           <circle cx="16" cy="38" r="3.4" />
           <circle cx="32" cy="38" r="3.4" />
+        </svg>
+      );
+    case 'missions':
+      return (
+        <svg {...common}>
+          <circle cx="24" cy="24" r="14" />
+          <circle cx="24" cy="24" r="6" />
+          <path d="M24 3v8M24 37v8M3 24h8M37 24h8M10 10l5.5 5.5M32.5 32.5L38 38M38 10l-5.5 5.5M15.5 32.5L10 38" />
         </svg>
       );
     case 'tournament':
