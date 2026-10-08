@@ -4,6 +4,8 @@ import {
   CITY_RUSH_CITIES,
   CITY_RUSH_CARS,
   CITY_RUSH_CARS_BY_POWER,
+  cityRushCarCategory,
+  cityRushRivalCarProfile,
   CITY_RUSH_FREE_CAR_COUNT,
   CITY_RUSH_FREE_CAR_IDS,
   CITY_RUSH_DISTANCE,
@@ -389,6 +391,55 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.widthScale)).size > 1);
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.powerMultiplier)).size > 1);
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.hitRecoveryMultiplier)).size > 1);
+});
+
+test('les rivaux choisissent toujours une voiture de la catégorie du pilote', () => {
+  const expectedCategories = {
+    'city-hatch': 'compact',
+    'nova-18-gt': 'compact',
+    'night-comet': 'compact',
+    'vice-roadster': 'sport',
+    'turbo-gt': 'sport',
+    'muscle-86': 'supercar',
+    'vega-gt-67': 'sport',
+    'toro-v12': 'supercar',
+    'volt-aero': 'sport',
+    'atlas-xr': 'crossover',
+    'pulse-rs': 'sport',
+  };
+
+  for (const car of CITY_RUSH_CARS) {
+    assert.equal(cityRushCarCategory(car), expectedCategories[car.id], `${car.name} a une classe de course explicite`);
+    assert.equal(cityRushCarCategory(car.id), expectedCategories[car.id], `${car.id} se résout depuis le catalogue`);
+    const peers = CITY_RUSH_CARS.filter((candidate) => candidate.category === car.category);
+    for (const rivalIndex of [0, 1, 6]) {
+      const rival = cityRushRivalCarProfile({ playerCarId: car.id, rivalIndex });
+      assert.ok(rival, `${car.name} reçoit un profil de rival`);
+      assert.equal(rival.category, car.category, `${car.name} / rival ${rivalIndex} restent dans la même classe`);
+      if (peers.length > 1) {
+        assert.notEqual(rival.id, car.id, `${car.name} affronte un autre modèle quand la classe le permet`);
+      }
+    }
+  }
+
+  assert.equal(cityRushRivalCarProfile({ playerCarId: 'city-hatch' }).id, 'nova-18-gt',
+    'le rival compact le plus proche en vitesse est choisi en premier');
+  assert.equal(cityRushRivalCarProfile({ playerCarId: 'city-hatch', rivalIndex: 1 }).id, 'night-comet',
+    'les autres places utilisent ensuite le reste de la catégorie');
+
+  const scriptedSameClass = cityRushRivalCarProfile({
+    playerCarId: 'city-hatch',
+    preferredCarId: 'night-comet',
+  });
+  assert.equal(scriptedSameClass.id, 'night-comet', 'un modèle de scénario est gardé s’il respecte la classe');
+  const scriptedWrongClass = cityRushRivalCarProfile({
+    playerCarId: 'city-hatch',
+    preferredCarId: 'toro-v12',
+  });
+  assert.equal(scriptedWrongClass.category, 'compact', 'un modèle imposé hors classe est remplacé');
+  assert.equal(cityRushRivalCarProfile({ playerCarId: 'atlas-xr' }).id, 'atlas-xr',
+    'une catégorie sans autre modèle préfère un doublon au changement de classe');
+  assert.equal(cityRushCarCategory('unknown-car'), null);
 });
 
 test('les trois voitures les moins puissantes sont débloquées pour tout le monde', () => {
@@ -967,9 +1018,8 @@ test('l’écart de puissance entre la citadine de départ et la supercar est fr
   const idsSortedBy = (stat) => [...CITY_RUSH_CARS].sort((a, b) => a[stat] - b[stat]).map((car) => car.id);
   assert.deepEqual(idsSortedBy('power'), idsSortedBy('powerMultiplier'));
   assert.deepEqual(idsSortedBy('price'), idsSortedBy('powerMultiplier'));
-  // Les deux rivaux reçoivent les profils les plus lents hors voiture du joueur
-  // (`rivalProfiles` dans `ViceCityWorld.jsx`) : l'écart en piste est donc réel
-  // dans les deux sens, du départ difficile à la course dominée.
+  // Le garage conserve des écarts de puissance francs ; en course, les rivaux
+  // sont désormais choisis dans la catégorie de la voiture engagée.
   const slowestRivals = CITY_RUSH_CARS.slice(0, 2);
   assert.ok(top.powerMultiplier / slowestRivals[1].powerMultiplier >= 1.6);
 });
