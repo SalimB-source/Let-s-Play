@@ -49,15 +49,36 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   assert.match(page, /ready \? `CHARGÉ \${ammo}\/\$\{CITY_RUSH_PISTOL_AMMO_PER_PICKUP\}`/);
 });
 
-test('le HUD de la première mission affiche la coque du dealer et son intercepteur démarre dans la voie du joueur', () => {
+test('la première mission identifie le joueur comme policier jusque dans le HUD et la voiture 3D', () => {
   const missions = readFileSync(new URL('../src/games/cityRushMissions.js', import.meta.url), 'utf8');
-  assert.match(missions, /targetHealth:\s*36/);
-  assert.match(missions, /rivalHealth:\s*Object\.freeze\(\{ dealer: 36 \}\)/);
+  const racerModels = readFileSync(new URL('../src/games/cityRushRacerModels.js', import.meta.url), 'utf8');
+  assert.match(missions, /playerRole:\s*'police'/);
+  assert.match(page, /playerRole:\s*rules\.playerRole \|\| null/);
+  assert.match(page, /storyRules\?\.playerRole === 'police'[\s\S]*?OFFICIER DE POLICE · INTERCEPTEUR/);
+  assert.match(world, /if \(storyRules\?\.policePlayerLook === true\) applyPoliceRacerLivery\(playerCar\)/);
+  assert.match(racerModels, /livery\.name = 'police-interceptor-livery'/);
+  assert.match(racerModels, /ctx\.fillText\('POLICE'/);
+});
+
+test('la cible de la première mission encaisse les tirs et son intercepteur démarre dans la voie du joueur', () => {
+  const missions = readFileSync(new URL('../src/games/cityRushMissions.js', import.meta.url), 'utf8');
+  assert.match(missions, /targetHealth:\s*15/);
+  assert.match(missions, /rivalHealth:\s*Object\.freeze\(\{ dealer: 15 \}\)/);
   assert.match(page, /lane:\s*player\?\.lane \?\? opponent\?\.lane/);
-  assert.match(page, /health:\s*currentMission\.targetHealth \|\| 36/);
-  assert.match(page, /hud\.racers\?\.find\([\s\S]*?\|\|\s*roster\.find\(/, 'la jauge affiche déjà les 36 PV avant la première mise à jour du monde');
-  assert.match(page, /DEALER \$\{Math\.max\(0, Number\(missionTargetHud\?\.health\) \|\| 0\)\}\/\$\{currentMission\.targetHealth \|\| 36\} PV/);
+  assert.match(page, /health:\s*currentMission\.targetHealth \|\| 15/);
+  assert.match(page, /hud\.racers\?\.find\([\s\S]*?\|\|\s*roster\.find\(/, 'la jauge affiche les PV de la cible avant la première mise à jour du monde');
+  assert.match(page, /DEALER \$\{Math\.max\(0, Number\(missionTargetHud\?\.health\) \|\| 0\)\}\/\$\{currentMission\.targetHealth \|\| 15\} PV/);
   assert.match(raceList, /<CityRushHealthBar[\s\S]*?health=\{racer\.health\}[\s\S]*?maxHealth=\{racer\.maxHealth\}/);
+
+  const candidates = world.match(/function laneShotCandidates\([\s\S]*?\n  function firstEnemyOnLane/)?.[0] || '';
+  const damageRacer = world.match(/function damageRacer\([\s\S]*?\n  function applyPistolHit/)?.[0] || '';
+  const pistolHit = world.match(/function applyPistolHit\([\s\S]*?\n  function applyStraightShotHit/)?.[0] || '';
+  assert.match(candidates, /racers\.filter\(\(racer\) => racer\.id !== attackerId\)\.map\(\(racer\) => getRaceVehicleState\(racer\.id\)\)/,
+    'le dealer fait partie des cibles balayées par les tirs rouges');
+  assert.match(pistolHit, /damageRacer\(target\.racer, CITY_RUSH_POWERS\.PISTOL, attackerId\)/,
+    'un impact rouge applique bien les dégâts à la cible');
+  assert.match(damageRacer, /racer\.health = cityRushPlayerDamage\(racer\.health, source\)/,
+    'chaque impact retire de la coque au dealer');
 });
 
 test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la relâche', () => {
