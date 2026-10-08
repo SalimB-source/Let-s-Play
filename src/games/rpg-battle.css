@@ -372,19 +372,20 @@
   background-position: center;
 }
 
-/* L'adversaire en face (haut de table), l'équipe en main (bas de table). */
+/* L'adversaire en face (haut de table), l'équipe en main (bas de table),
+   étalés sur toute la largeur de l'écran : le centre reste le champ de bataille. */
 .card-row {
   position: absolute;
   left: 0;
   right: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: flex-end;
-  gap: 18px;
-  padding: 0 12px;
+  gap: 12px;
+  padding: 0 2%;
 }
 
-.card-row--ennemi { top: 2%; }
+.card-row--ennemi { top: 2.5%; }
 .card-row--equipe { bottom: 27%; }
 
 /* ── La carte : liseré noir, cadre teinté par l'élément, zones imprimées ── */
