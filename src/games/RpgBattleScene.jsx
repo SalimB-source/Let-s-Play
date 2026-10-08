@@ -23,8 +23,8 @@ import { rpgCurrentActor } from './rpgCombat.js';
 const TIER_H = 0.62;
 const TEAM_X = -2.9;
 const FOE_X = 2.9;
-const WIDE_CAM = [0, 4.6, 11.2];
-const WIDE_LOOK = [0, 1.4, 0];
+const WIDE_CAM = [0, 3.9, 9.8];
+const WIDE_LOOK = [0, 1.5, 0];
 
 const LOOK = {
   salem: { coat: 0xc8963c, skin: 0x8a5a3b },
@@ -80,6 +80,9 @@ function buildFigure(id) {
   box(pivot, 0.16 * s, 0.42, 0.16 * s, 0x2b2620, -0.11 * s, 0.21, 0);
   box(pivot, 0.16 * s, 0.42, 0.16 * s, 0x2b2620, 0.11 * s, 0.21, 0);
   box(pivot, 0.42 * s, 0.5, 0.26 * s, look.coat, 0, 0.66, 0);
+  // Bras : la silhouette cesse d'être un frigo.
+  box(pivot, 0.1 * s, 0.44, 0.12 * s, look.coat, -0.27 * s, 0.66, 0);
+  box(pivot, 0.1 * s, 0.44, 0.12 * s, look.coat, 0.27 * s, 0.66, 0);
   box(pivot, 0.26 * s, 0.26 * s, 0.26 * s, look.skin, 0, 1.06, 0);
 
   if (id === 'salem') {
@@ -163,6 +166,10 @@ function buildFigure(id) {
   bubble.visible = false;
   pivot.add(bubble);
 
+  root.traverse((node) => {
+    if (node.isMesh) node.castShadow = true;
+  });
+
   root.userData = {
     id,
     pivot,
@@ -214,11 +221,16 @@ export default function RpgBattleScene({ battleRef, queueRef, waveTitle }) {
 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
+    // Rendu cinématique : tons filmiques, ombres douces.
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a16);
-    scene.fog = new THREE.Fog(0x0a0a16, 12, 26);
+    scene.fog = new THREE.Fog(0x0a0a16, 16, 42);
 
     const camera = new THREE.PerspectiveCamera(38, mount.clientWidth / mount.clientHeight, 0.1, 60);
     camera.position.set(...WIDE_CAM);
@@ -227,10 +239,25 @@ export default function RpgBattleScene({ battleRef, queueRef, waveTitle }) {
     const lookGoal = new THREE.Vector3(...WIDE_LOOK);
     let shake = 0;
 
-    scene.add(new THREE.HemisphereLight(0x8899ff, 0x3a2a10, 0.85));
-    const light = new THREE.DirectionalLight(0xffc060, 1.6);
-    light.position.set(5, 8, 4);
+    // Nuit indigo au-dessus, sable chaud dessous ; une lune rousse côté équipe,
+    // une braise côté ennemis, pour lire les deux camps d'un coup d'œil.
+    scene.add(new THREE.HemisphereLight(0x3550a0, 0x4a2f14, 1.0));
+    const light = new THREE.DirectionalLight(0xffc060, 2.4);
+    light.position.set(6, 9, 5);
+    light.castShadow = true;
+    light.shadow.mapSize.set(1024, 1024);
+    light.shadow.camera.left = -9;
+    light.shadow.camera.right = 9;
+    light.shadow.camera.top = 9;
+    light.shadow.camera.bottom = -9;
+    light.shadow.camera.far = 30;
     scene.add(light);
+    const cool = new THREE.PointLight(0x22d3ee, 26, 16);
+    cool.position.set(-5, 3.2, 3);
+    scene.add(cool);
+    const warm = new THREE.PointLight(0xff6a3d, 26, 16);
+    warm.position.set(5, 3.2, 3);
+    scene.add(warm);
 
     const astro = new THREE.Group();
     const ringMat = new THREE.MeshStandardMaterial({
@@ -247,8 +274,86 @@ export default function RpgBattleScene({ battleRef, queueRef, waveTitle }) {
     astro.position.set(0, 6.4, -8);
     scene.add(astro);
 
+    // ── Le décor : Bab El existe derrière l'arène ─────────────────────────
+    // Étoiles (hors brouillard).
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(320 * 3);
+    for (let i = 0; i < 320; i += 1) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 26 + Math.random() * 12;
+      starPos[i * 3] = Math.cos(a) * r;
+      starPos[i * 3 + 1] = 5 + Math.random() * 22;
+      starPos[i * 3 + 2] = Math.sin(a) * r - 8;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const stars = new THREE.Points(
+      starGeo,
+      new THREE.PointsMaterial({ color: 0xbfd4ff, size: 0.09, transparent: true, opacity: 0.85, fog: false }),
+    );
+    scene.add(stars);
+
+    // Silhouette de la ville : tours sombres, fenêtres ambrées, deux minarets.
+    const city = new THREE.Group();
+    const towerMat = mat(0x141228, { roughness: 1 });
+    const windowMat = new THREE.MeshStandardMaterial({ color: 0xffb45e, emissive: 0xd97a1e, emissiveIntensity: 1.1 });
+    for (let i = 0; i < 11; i += 1) {
+      const h = 3 + ((i * 37) % 5);
+      const tower = new THREE.Mesh(new THREE.BoxGeometry(1.6 + (i % 3) * 0.7, h, 1.6), towerMat);
+      tower.position.set(-11 + i * 2.2, h / 2 - 0.6, -14 - (i % 4));
+      city.add(tower);
+      if (i % 2 === 0) {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.06), windowMat);
+        win.position.set(tower.position.x + 0.4, h - 1.2, tower.position.z + 0.85);
+        city.add(win);
+      }
+      if (i === 2 || i === 8) {
+        const dome = new THREE.Mesh(
+          new THREE.SphereGeometry(0.5, 12, 10),
+          new THREE.MeshStandardMaterial({ color: 0xd8a531, emissive: 0x8a5a10, emissiveIntensity: 0.8, metalness: 0.5 }),
+        );
+        dome.position.set(tower.position.x, h + 0.1, tower.position.z);
+        city.add(dome);
+      }
+    }
+    scene.add(city);
+
+    // Dunes à l'horizon.
+    for (const [x, z, s] of [[-9, -12, 9], [8, -13, 11], [0, -16, 14]]) {
+      const dune = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), mat(0x6a4a24, { roughness: 1 }));
+      dune.position.set(x, -1.4, z);
+      dune.scale.set(s, s * 0.28, s * 0.6);
+      scene.add(dune);
+    }
+
+    // Poussière dorée qui flotte dans l'arène.
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPos = new Float32Array(140 * 3);
+    for (let i = 0; i < 140; i += 1) {
+      dustPos[i * 3] = (Math.random() - 0.5) * 13;
+      dustPos[i * 3 + 1] = Math.random() * 4.5;
+      dustPos[i * 3 + 2] = (Math.random() - 0.5) * 8;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    const dust = new THREE.Points(
+      dustGeo,
+      new THREE.PointsMaterial({ color: 0xd8a531, size: 0.035, transparent: true, opacity: 0.5 }),
+    );
+    scene.add(dust);
+
+    // Deux anneaux au sol, comme un parquet de cérémonie.
+    for (const [rIn, rOut, op] of [[2.7, 2.82, 0.28], [4.3, 4.38, 0.14]]) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(rIn, rOut, 64),
+        new THREE.MeshBasicMaterial({ color: 0xd8a531, transparent: true, opacity: op, side: THREE.DoubleSide }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.02;
+      scene.add(ring);
+    }
+
     const floor = new THREE.Mesh(new THREE.BoxGeometry(16, 0.3, 9), mat(0x1a1626));
     floor.position.set(0, -0.15, 0);
+    floor.receiveShadow = true;
     scene.add(floor);
 
     const stepMat = mat(0x2b2436);
@@ -256,6 +361,7 @@ export default function RpgBattleScene({ battleRef, queueRef, waveTitle }) {
       for (let t = 1; t <= 3; t += 1) {
         const step = new THREE.Mesh(new THREE.BoxGeometry(2.3, TIER_H, 6.4), stepMat);
         step.position.set(sideX, (t - 0.5) * TIER_H, 0);
+        step.receiveShadow = true;
         scene.add(step);
         const edge = new THREE.Mesh(
           new THREE.BoxGeometry(2.3, 0.04, 6.4),
@@ -455,6 +561,9 @@ export default function RpgBattleScene({ battleRef, queueRef, waveTitle }) {
 
       astro.rotation.z += 0.0016;
       ring2.rotation.y += 0.004;
+      dust.rotation.y = now * 0.02;
+      dust.position.y = Math.sin(now * 0.4) * 0.12;
+      stars.rotation.y = now * 0.004;
       ringMat.emissiveIntensity = battle.clockStrike > 0 ? 1.6 + Math.sin(now * 10) * 0.6 : 0.7;
       const astroScale = battle.clockStrike > 0 ? 1.06 : 1;
       astro.scale.setScalar(astro.scale.x + (astroScale - astro.scale.x) * 0.1);

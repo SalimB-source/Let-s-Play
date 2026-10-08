@@ -825,8 +825,7 @@ export default function RpgBattlePage() {
             </div>
           </header>
 
-          <div className="rpg-mid">
-          <aside className="rpg-hud-right">
+          <div className="rpg-hud-foes">
               <p className="rpg-field__hint">{wave.intro}</p>
               <div className="rpg-foes">
                 {foes.map((actor) => (
@@ -839,10 +838,10 @@ export default function RpgBattlePage() {
                   />
                 ))}
               </div>
-          </aside>
+          </div>
 
-          <aside className="rpg-hud-left">
-            <ul className="rpg-allies">
+          <div className="rpg-bottombar">
+            <ul className="rpg-allies rpg-allies--hud">
                 {team.map((actor) => (
                   <AllyRow
                     key={actor.id}
@@ -854,10 +853,6 @@ export default function RpgBattlePage() {
                   />
               ))}
             </ul>
-          </aside>
-          </div>
-
-          <div className="rpg-bottombar">
             <ol className="rpg-log" aria-live="polite">
               {battle.log.slice(-6).map((line, index) => (
                 <li key={`${battle.log.length}-${index}-${line.text}`} className={`rpg-log__line rpg-log--${line.tone}`}>{line.text}</li>
