@@ -179,33 +179,8 @@ function buildFigure(id) {
 
 export default function RpgBattleScene({ battleRef, queueRef, waveTitle }) {
   const mountRef = useRef(null);
-  const msgTextRef = useRef(null);
   const bannerRef = useRef(null);
   const [fallback, setFallback] = useState(false);
-
-  // ── Boîte de message : le texte se tape lettre à lettre (pur DOM) ───────
-  useEffect(() => {
-    let raf = 0;
-    let last = 0;
-    let lastLen = -1;
-    let shown = 0;
-    const loop = (t) => {
-      raf = requestAnimationFrame(loop);
-      const dt = Math.min(0.05, (t - last) / 1000 || 0);
-      last = t;
-      const log = battleRef.current?.log;
-      if (!log || !msgTextRef.current) return;
-      if (log.length !== lastLen) {
-        lastLen = log.length;
-        shown = 0;
-      }
-      const line = log.length ? log[log.length - 1].text : '';
-      shown = Math.min(line.length, shown + dt * 50);
-      msgTextRef.current.textContent = line.slice(0, Math.floor(shown));
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [battleRef]);
 
   // ── Bannière de vague : « des ennemis apparaissent ! » ──────────────────
   const prevWaveRef = useRef(null);
@@ -551,10 +526,6 @@ export default function RpgBattleScene({ battleRef, queueRef, waveTitle }) {
       aria-label="Scène de combat en trois dimensions : l’équipe fait face aux ennemis sur les étages"
     >
       <p className="rpg-scene__banner" ref={bannerRef} aria-hidden="true" />
-      <div className="rpg-scene__msg" aria-live="polite">
-        <span ref={msgTextRef} />
-        <span className="rpg-scene__caret" aria-hidden="true">▼</span>
-      </div>
       {fallback && (
         <p className="rpg-scene__fallback">
           La vitrine 3D n’est pas disponible ici — le combat se joue ci-dessous.

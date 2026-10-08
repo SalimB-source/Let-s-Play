@@ -84,7 +84,43 @@ function NameSegments({ count }) {
   );
 }
 
-/** L'étage : on frappe mieux de haut, et tout le monde descend chaque round. */
+/**
+ * Boîte de message façon Dragon Quest : le journal se tape lettre à lettre.
+ * Pur DOM — elle vit aussi bien posée sur la scène que dans la barre du bas.
+ */
+function MessageBox({ battleRef }) {
+  const textRef = useRef(null);
+  useEffect(() => {
+    let raf = 0;
+    let last = 0;
+    let lastLen = -1;
+    let shown = 0;
+    const loop = (t) => {
+      raf = requestAnimationFrame(loop);
+      const dt = Math.min(0.05, (t - last) / 1000 || 0);
+      last = t;
+      const log = battleRef.current?.log;
+      if (!log || !textRef.current) return;
+      if (log.length !== lastLen) {
+        lastLen = log.length;
+        shown = 0;
+      }
+      const line = log.length ? log[log.length - 1].text : '';
+      shown = Math.min(line.length, shown + dt * 50);
+      textRef.current.textContent = line.slice(0, Math.floor(shown));
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [battleRef]);
+  return (
+    <div className="rpg-scene__msg" aria-live="polite">
+      <span ref={textRef} />
+      <span className="rpg-scene__caret" aria-hidden="true">▼</span>
+    </div>
+  );
+}
+
+
 function TierBadge({ tier }) {
   return (
     <span className="rpg-tier" title={`Étage ${tier} sur ${RPG_TIERS}`}>
@@ -744,8 +780,25 @@ export default function RpgBattlePage() {
 
       {battle && screen !== 'intro' && screen !== 'fin' && screen !== 'exploration' && (
         <section className="rpg-battle" data-strike={battle.clockStrike > 0 ? 'on' : 'off'}>
-          <RpgBattleScene battleRef={battleRef} queueRef={sceneQueueRef} waveTitle={wave.title} />
-          <div className="rpg-battle__top">
+          <div className="rpg-stage">
+            <RpgBattleScene battleRef={battleRef} queueRef={sceneQueueRef} waveTitle={wave.title} />
+          </div>
+
+          <header className="rpg-hud-top">
+            <nav className="rpg-head__nav">
+              <Link to="/jeu">← Tous les jeux</Link>
+              <button
+                type="button"
+                className="rpg-mute"
+                onClick={() => setMuted((m) => !m)}
+                aria-pressed={muted}
+                title={muted ? 'Rétablir le son' : 'Couper le son'}
+              >
+                {muted ? '🔇' : '🔊'}
+              </button>
+            </nav>
+            <RingList ring={ring} currentId={current?.id} />
+            <div className="rpg-battle__top">
             <p className="rpg-wave">
               <strong>{wave.title}</strong>
               <span>round {battle.round}</span>
@@ -769,12 +822,11 @@ export default function RpgBattlePage() {
               <span title="Sable tombé du côté ennemi">leur sol <strong>{battle.ground.ennemi}</strong></span>
               <Bar value={Math.max(battle.ground.equipe, battle.ground.ennemi)} max={RPG_SABLE_MAX} tone="sable" />
             </p>
-          </div>
+            </div>
+          </header>
 
-          <div className="rpg-battle__grid">
-            <RingList ring={ring} currentId={current?.id} />
-
-            <div className="rpg-battle__field">
+          <div className="rpg-mid">
+          <aside className="rpg-hud-right">
               <p className="rpg-field__hint">{wave.intro}</p>
               <div className="rpg-foes">
                 {foes.map((actor) => (
@@ -787,7 +839,10 @@ export default function RpgBattlePage() {
                   />
                 ))}
               </div>
-              <ul className="rpg-allies">
+          </aside>
+
+          <aside className="rpg-hud-left">
+            <ul className="rpg-allies">
                 {team.map((actor) => (
                   <AllyRow
                     key={actor.id}
@@ -797,16 +852,18 @@ export default function RpgBattlePage() {
                     selected={allyId === actor.id}
                     onPick={setAllyId}
                   />
-                ))}
-              </ul>
-            </div>
+              ))}
+            </ul>
+          </aside>
+          </div>
 
+          <div className="rpg-bottombar">
             <ol className="rpg-log" aria-live="polite">
-              {battle.log.slice(-30).map((line, index) => (
-                <li key={`${index}-${line.text}`} className={`rpg-log__line rpg-log--${line.tone}`}>{line.text}</li>
+              {battle.log.slice(-6).map((line, index) => (
+                <li key={`${battle.log.length}-${index}-${line.text}`} className={`rpg-log__line rpg-log--${line.tone}`}>{line.text}</li>
               ))}
             </ol>
-          </div>
+            <MessageBox battleRef={battleRef} />
 
           {screen === 'combat' && (
             <div className="rpg-actions">
@@ -910,6 +967,7 @@ export default function RpgBattlePage() {
               )}
             </div>
           )}
+          </div>
 
           {flash && <p className={`rpg-flash rpg-flash--${flash.tone}`} role="status">{flash.text}</p>}
 

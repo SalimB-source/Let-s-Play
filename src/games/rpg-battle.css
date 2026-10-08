@@ -412,6 +412,9 @@
 
 .rpg-scene__banner.is-on { opacity: 1; }
 
+/* En plein écran, l'apparition se annonce au centre de la scène. */
+.rpg-battle .rpg-scene__banner { top: 30%; }
+
 /* Boîte de message Dragon Quest : fond noir, double liseré, texte tapé. */
 .rpg-scene__msg {
   position: absolute;
@@ -442,16 +445,127 @@
 
 @keyframes rpg-caret { to { visibility: hidden; } }
 
+/* Le combat prend tout l'écran : la scène est le fond, le reste est du HUD. */
 .rpg-battle {
-  position: relative;
-  margin-top: 20px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
   overflow: hidden;
-  background:
-    radial-gradient(120% 80% at 50% -10%, rgba(214, 141, 60, .18), transparent 60%),
-    radial-gradient(90% 60% at 15% 110%, rgba(20, 60, 90, .3), transparent 65%),
-    linear-gradient(180deg, #0d0b16, #07070f);
+  background: #07070f;
+}
+
+.rpg-stage { position: absolute; inset: 0; }
+
+.rpg-battle .rpg-scene {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+/* La section est une colonne : HUD haut / milieu / barre du bas, la scène
+   restant tendue derrière, en absolu. */
+.rpg-battle { display: flex; flex-direction: column; }
+
+/* HUD haut : navigation, ordre des tours, compteurs — translucide sur la scène. */
+.rpg-hud-top {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(4, 4, 10, .88), rgba(4, 4, 10, .4) 78%, transparent);
+}
+
+.rpg-hud-top .rpg-battle__top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 0;
+  border: 0;
+}
+
+.rpg-hud-top .rpg-ring {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+.rpg-hud-top .rpg-ring__title { display: none; }
+.rpg-hud-top .rpg-ring__item { font-size: 11px; }
+
+@media (max-width: 1100px) {
+  .rpg-hud-top .rpg-ring__item > span:last-child { display: none; }
+}
+
+/* Milieu : deux panneaux translucides, la scène entre eux. */
+.rpg-mid {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  position: relative;
+  z-index: 4;
+  pointer-events: none; /* la scène reste vivante entre les panneaux */
+}
+
+.rpg-hud-left,
+.rpg-hud-right {
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(6, 6, 14, .58);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  max-height: 100%;
+}
+
+.rpg-hud-left { width: 252px; }
+.rpg-hud-right { width: 302px; }
+
+@media (max-width: 900px) {
+  .rpg-hud-left { width: 200px; }
+  .rpg-hud-right { width: 240px; }
+}
+
+/* Barre du bas : journal, boîte de message, fenêtre de commandes. */
+.rpg-bottombar {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: linear-gradient(0deg, rgba(4, 4, 10, .95) 72%, rgba(4, 4, 10, .55) 92%, transparent);
+}
+
+.rpg-bottombar .rpg-log {
+  max-height: 62px;
+  overflow: hidden;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(6, 6, 14, .5);
+  font-size: 11px;
+}
+
+.rpg-bottombar .rpg-scene__msg { position: static; }
+
+.rpg-bottombar .rpg-actions {
+  margin: 0;
+  min-height: 0;
+  max-height: 34vh;
+  overflow-y: auto;
 }
 
 /* Quand l'Astrolabe sonne, l'arène vire au cuivre chaud. */

@@ -120,6 +120,11 @@ classique, celle qui rend un tour par tour *lisible* sans jamais presser :
 - **Fenêtre de commandes** à double liseré avec curseur ▶ au survol, comme un
   menu de Dragon Quest.
 
+L'écran de combat occupe **tout le viewport** : la scène 3D est le fond, et
+tout le reste est du HUD translucide posé dessus — compteurs et ordre des
+tours en haut, équipe à gauche, ennemis annoncés à droite, et en bas, dans
+l'image, le journal, la boîte de message et la fenêtre de commandes.
+
 Règle : la caméra et les effets *soulignent* l'information déjà présente dans
 les cartes (intention, PV, étages). Jamais l'inverse : un effet qui annonce
 quelque chose que l'interface ne dit pas est un effet de trop.
