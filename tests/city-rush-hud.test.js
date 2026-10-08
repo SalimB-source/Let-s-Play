@@ -22,12 +22,15 @@ test('route bonuses use the generated lane offset instead of stacking at the roa
 });
 
 test('the race exposes one large, round red machine-gun button and no legacy shot buttons', () => {
-  assert.match(page, /const POWER_ORDER = \[CITY_RUSH_POWERS\.PISTOL\]/);
+  // Un seul bouton de tir pour les deux armes : l'AK-47 rouge et le fusil à
+  // pompe bleu se partagent l'emplacement, jamais les deux à la fois.
+  assert.match(page, /const POWER_ORDER = \[...CITY_RUSH_WEAPON_TYPES\]/);
   assert.match(page, /city-rush-machine-gun-button/);
-  assert.match(page, /Tirer à l’AK-47/);
+  assert.match(page, /ramasse un bonus rouge \(AK-47, 7 balles\) ou un bonus bleu/);
   assert.match(page, /chargeur recourbé/);
-  assert.match(world, /unguided: isPistol/);
-  assert.match(world, /fireStraightShot\('player', null, CITY_RUSH_POWERS.PISTOL\)/);
+  assert.match(page, /bouche évasée/);
+  assert.match(world, /unguided: isWeapon/);
+  assert.match(world, /fireStraightShot\('player', null, type\)/);
   assert.match(world, /CITY_RUSH_PISTOL_SPIN_TURNS/);
   assert.doesNotMatch(page, /city-rush-power-button/);
   assert.doesNotMatch(page, /A : TIR BLEU|R : HÉLICO/);
@@ -46,7 +49,12 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   assert.match(readyRule, /animation:\s*crMachineGunReadyGlow/);
   assert.match(css, /@keyframes crMachineGunReadyGlow/);
   assert.match(css, /\.city-rush-machine-gun-button\.is-ready,\s*\n\s*\.city-rush-machine-gun-button\.is-ready::after/);
-  assert.match(page, /ready \? `CHARGÉ \${ammo}\/\$\{CITY_RUSH_PISTOL_AMMO_PER_PICKUP\}`/);
+  assert.match(page, /ready \? \(reloading \? `RECHARGE \${ammo}\/\${max}` : `CHARGÉ \${ammo}\/\${max}`\) : 'À RAMASSER'/,
+    'le bouton annonce la cartouche restante, le réarmement, ou reste vide');
+  // Le pompe repeint le même bouton en bleu.
+  assert.match(css, /\.city-rush-machine-gun-button\.is-shotgun\s*\{/);
+  assert.match(css, /\.city-rush-machine-gun-button\.is-reloading\s*\{/);
+  assert.match(css, /\.city-rush-guide-item\.is-shotgun/);
 });
 
 test('le HUD de la première mission affiche la coque du dealer et son intercepteur démarre dans la voie du joueur', () => {
@@ -62,15 +70,19 @@ test('le HUD de la première mission affiche la coque du dealer et son intercept
 
 test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la relâche', () => {
   assert.match(world, /const PISTOL_HOLD_FIRE_INTERVAL = 0\.12/);
+  // Le fusil à pompe partage le bouton, pas la cadence : 1,5 s par cartouche.
+  assert.match(world, /const SHOTGUN_HOLD_FIRE_INTERVAL = CITY_RUSH_SHOTGUN_FIRE_COOLDOWN/);
+  assert.match(world, /function weaponFireInterval\(type\)/);
   assert.match(world, /let pistolKeyHeld = false/);
   assert.match(world, /pistolKeyHeld && pistolHoldCooldown <= 0/);
   assert.match(world, /window\.addEventListener\('keyup', onKeyUp\)/);
   assert.match(world, /const onWindowBlur = \(\) => \{/);
-  assert.match(world, /if \(pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged/);
-  assert.match(world, /if \(usePower\(CITY_RUSH_POWERS\.PISTOL\)\) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL/);
+  assert.match(world, /if \(pistolKeyHeld && pistolHoldCooldown <= 0 && heldWeapon\(\)\) fireHeldWeapon\(\)/);
+  assert.match(world, /if \(fired\) pistolHoldCooldown = weaponFireInterval\(weapon\.type\)/);
   assert.match(page, /actionsRef\.current\?\.\('pistol-down'\)/, 'le bouton tactile déclenche immédiatement le premier tir');
   assert.match(page, /actionsRef\.current\?\.\('pistol-up'\)/, 'le relâchement tactile arrête la rafale');
   assert.match(world, /if \(name === 'pistol-down'\)/);
+  assert.match(world, /if \(name === 'pistol-tap'\)/, 'un clic clavier tire un seul coup sans armer la rafale');
   assert.match(world, /if \(name === 'pistol-up'\)/);
   assert.match(css, /\.city-rush-machine-gun-button\s*\{[^}]*touch-action:\s*none;/);
 });
@@ -298,12 +310,14 @@ test('sortir d’un mini-garage fait reprendre une conduite normale aux poursuiv
 test('les berlines de police du trafic sont ciblables par un tir rouge', () => {
   const candidates = world.match(/function laneShotCandidates\([\s\S]*?\n  function firstEnemyOnLane/)?.[0] || '';
   const vehicleState = world.match(/function getRaceVehicleState\([\s\S]*?\n  function isVisibleInPlayerCamera/)?.[0] || '';
-  const pistolHit = world.match(/function applyPistolHit\([\s\S]*?\n  function applyStraightShotHit/)?.[0] || '';
+  const pistolHit = world.match(/function applyWeaponHit\([\s\S]*?\n  function applyStraightShotHit/)?.[0] || '';
   const policeDamage = world.match(/function damagePolice\([\s\S]*?\n  function updateVisualEffects/)?.[0] || '';
   assert.match(candidates, /trafficCars[\s\S]*?isCityRushPoliceTrafficType\(traffic\.type\)/, 'les véhicules de police civils et banalisés entrent dans les cibles IA');
   assert.match(vehicleState, /const isPolice = isCityRushPoliceTrafficType\(trafficVehicle\.type\)/, 'un véhicule policier du trafic reçoit un état avec sa santé');
-  assert.match(pistolHit, /damagePolice\(target\.racer, CITY_RUSH_POWERS\.PISTOL, attackerId\)/);
+  assert.match(pistolHit, /damagePolice\(target\.racer, kind, attackerId\)/);
   assert.match(pistolHit, /raiseWantedLevel\(\{ reason: 'vehicle-hit' \}\)/, 'un véhicule touché par le joueur augmente sa recherche');
+  assert.match(pistolHit, /cameraKick = Math\.max\(cameraKick, kind === CITY_RUSH_POWERS\.SHOTGUN \? 0\.3 : 0\.12\)/,
+    'une cartouche de pompe secoue davantage la caméra');
   assert.match(policeDamage, /const healthBeforeHit = hasHealth \? Number\(police\.health\) : CITY_RUSH_POLICE_HEALTH/,
     'les berlines civiles reçoivent leur santé complète au premier impact');
   assert.match(policeDamage, /cityRushPoliceDamage\(healthBeforeHit, source\)/);
@@ -328,10 +342,10 @@ test('un choc avec la police fait déraper les deux voitures et rabat la patroui
 });
 
 test('un tir rouge retire de la vie sans ralentir ni faire déraper sa cible', () => {
-  const pistolHit = world.match(/function applyPistolHit\([\s\S]*?\n  function applyStraightShotHit/)?.[0] || '';
-  assert.ok(pistolHit, 'le gestionnaire de tir rouge existe');
-  assert.match(pistolHit, /damageRacer\(target\.racer, CITY_RUSH_POWERS\.PISTOL, attackerId\)/);
-  assert.match(pistolHit, /damagePolice\(target\.racer, CITY_RUSH_POWERS\.PISTOL, attackerId\)/);
+  const pistolHit = world.match(/function applyWeaponHit\([\s\S]*?\n  function applyStraightShotHit/)?.[0] || '';
+  assert.ok(pistolHit, 'le gestionnaire d’impact des armes existe');
+  assert.match(pistolHit, /damageRacer\(target\.racer, kind, attackerId\)/);
+  assert.match(pistolHit, /damagePolice\(target\.racer, kind, attackerId\)/);
   assert.doesNotMatch(pistolHit, /playerSlowLeft|playerSkidLeft|slowLeft\s*=|skidLeft\s*=|spinLeft\s*=/);
   assert.match(world, /start\(\)\s*\{[\s\S]*?activatePlayerHealth\(\)/, 'la santé est activée au départ, pas au dernier tour');
   assert.match(world, /police\.targetId = targetId/);
@@ -639,4 +653,45 @@ test('le choc du SUV coûte deux carrés sans contourner le répit partagé', ()
   // n’en fait plus un message, la coque du pilote s’allume un instant.
   assert.match(collision, /playerHealthLost,[\s\S]*?playerHealthMax: playerMaxHealth/);
   assert.doesNotMatch(page, /TA COQUE PERD \$\{effect\.playerHealthLost\}/);
+});
+
+test('le bouton de tir affiche l’arme en main et reste vide sans ramassage', () => {
+  const button = page.match(/\{\(\(\) => \{\s*\/\/ Un seul bouton pour les deux armes[\s\S]*?\)\(\)\}/)?.[0] || '';
+  assert.ok(button, 'le bloc du bouton de tir existe');
+  // Une seule arme à la fois, lue depuis l'inventaire : rien de ramassé, rien d'affiché.
+  assert.match(button, /const weapon = cityRushActiveWeapon\(hud\.inventory\)/);
+  assert.match(button, /const max = weapon\?\.max \|\| CITY_RUSH_PISTOL_AMMO_PER_PICKUP/);
+  assert.match(button, /disabled=\{!ready\}/, `le bouton est inerte tant qu'il n'y a rien à tirer`);
+  assert.match(button, /: 'À RAMASSER'/, `vide : le bouton invite à ramasser au lieu d'annoncer un chargeur`);
+  // L'étiquette suit l'arme : POMPE pour le bleu, AK-47 pour le rouge, ARME sinon.
+  assert.match(button, /const label = isShotgun \? 'POMPE' : type === CITY_RUSH_POWERS\.PISTOL \? 'AK-47' : 'ARME'/);
+  assert.match(button, /isShotgun \? ' is-shotgun' : ''/);
+  // Réarmement du pompe : le HUD publie la cadence, le bouton se met en pause.
+  assert.match(button, /const reloading = ready && Number\(hud\.weaponCooldown\) > 0/);
+  assert.match(button, /reloading \? ' is-reloading' : ''/);
+  assert.match(button, /RECHARGE \$\{ammo\}\/\$\{max\}/);
+  // L'anneau de munitions se redessine sur la capacité de l'arme : trois
+  // cartouches pour le pompe au lieu des sept balles de l'AK-47.
+  assert.match(button, /Array\.from\(\{ length: max \}/);
+  assert.match(button, /const span = 360 \/ max/);
+  // Le même geste pour les deux armes, et un coup sec au clavier.
+  assert.match(button, /actionsRef\.current\?\.\('pistol-down'\)/);
+  assert.match(button, /actionsRef\.current\?\.\('pistol-tap'\)/);
+  // Le guide présente les deux armes, dans l'ordre de rareté croissante.
+  assert.match(page, /POWER_ORDER\.map\(\(type\) =>/);
+  assert.match(page, /isShotgun \? ` · \$\{CITY_RUSH_SHOTGUN_DAMAGE\} CARRÉS PAR TIR` : ''/);
+});
+
+test('le fusil à pompe bleu reste l’arme du pilote : rivaux et police passent au travers', () => {
+  const rivalPickup = world.match(/function collectRacerPickup\([\s\S]*?\n  \}/)?.[0] || '';
+  const policePickup = world.match(/function collectPolicePickup\([\s\S]*?\n  \}/)?.[0] || '';
+  assert.match(rivalPickup, /if \(type === CITY_RUSH_POWERS\.SHOTGUN\) return;/,
+    'un rival ne ramasse jamais le pompe');
+  assert.match(policePickup, /if \(type === CITY_RUSH_POWERS\.SHOTGUN\) return;/,
+    'la police non plus');
+  // Le ramassage du joueur passe par l'emplacement unique : l'autre arme est vidée.
+  const collect = world.match(/if \(weapon\) \{[\s\S]*?\n    \} else \{/)?.[0] || '';
+  assert.match(collect, /inventory = cityRushEquipWeapon\(inventory, type, pickupAmount\)/);
+  assert.match(collect, /pistolHoldCooldown = 0/, `l'arme fraîche n'hérite pas du réarmement`);
+  assert.match(world, /swapped: weapon && Boolean\(previousWeapon\) && previousWeapon\.type !== type/);
 });

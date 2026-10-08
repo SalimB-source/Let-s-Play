@@ -1108,6 +1108,35 @@ export class CityRushAudio {
   }
 
   /**
+   * Fusil à pompe : un coup de tonnerre court et gras — le grave qui vide les
+   * enceintes, le claquement sec de la gerbe, l'écho entre les façades — puis
+   * le **réarmement**, deux claquements métalliques de pompe qui annoncent
+   * que l'arme est de nouveau prête. Panoramiqué sur la voie du tireur.
+   */
+  shotgun({ pan = 0, delay = 0 } = {}) {
+    if (!this.ready()) return;
+    const time = this.context.currentTime + 0.005 + Math.max(0, delay);
+    const out = this.panned(pan);
+    // Le souffle : une grosse bourre de bruit qui descend très vite du médium
+    // vers le grave, plus longue et plus ronde qu'une balle d'AK-47.
+    this.noise(time, 0.44, 0.62, { type: 'lowpass', frequency: 2400, frequencyTo: 220, destination: out });
+    // Le claquement : l'attaque sèche qui claque au-dessus du grave.
+    this.noise(time, 0.13, 0.5, { type: 'highpass', frequency: 1900, destination: out });
+    // La caisse : le corps de la détonation, une descente de 120 à 45 Hz.
+    this.tone(120, time, 0.34, 'sine', 0.46, { filter: 900, filterTo: 140, destination: out });
+    this.tone(64, time + 0.015, 0.42, 'sine', 0.34, { destination: out });
+    // L'écho entre les immeubles, un peu plus large que celui du pistolet.
+    this.noise(time + 0.19, 0.5, 0.11, { type: 'lowpass', frequency: 800, destination: out });
+    this.noise(time + 0.38, 0.36, 0.05, { type: 'lowpass', frequency: 520, destination: out });
+    // Le réarmement : la pompe tirée puis repoussée, deux clics métalliques
+    // brefs et très sélectifs (Q élevé), assez tard pour s'entendre.
+    for (const [offset, frequency] of [[0.46, 2600], [0.62, 3400]]) {
+      this.noise(time + offset, 0.07, 0.2, { type: 'bandpass', frequency, q: 9, destination: out });
+      this.tone(frequency / 12, time + offset, 0.06, 'square', 0.06, { filter: 4200, destination: out });
+    }
+  }
+
+  /**
    * Dérapage : pneus qui hurlent. `intensity` va de 0,48 (tir bleu léger) à
    * 1 (Voiture touchée par une rafale). Le son est décalé de `delay` pour
    * tomber sur l'impact, pas sur le coup de feu.

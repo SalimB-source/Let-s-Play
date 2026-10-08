@@ -1418,6 +1418,42 @@
   animation: crMachineGunReadyPulse 1.35s ease-out infinite;
 }
 
+/* Le même bouton, arme bleue : le fusil à pompe prend toute la livrée —
+   bord, dégradé, anneau de munitions et lueur — pour qu'on voie du premier
+   coup d'œil quelle arme est en main. */
+.city-rush-machine-gun-button.is-shotgun {
+  border-color: rgba(77, 163, 255, 0.86);
+  background: radial-gradient(circle at 50% 34%, rgba(77, 163, 255, 0.21), rgba(6, 20, 37, 0.96) 72%);
+  box-shadow: inset 0 0 0 4px rgba(77, 163, 255, 0.09), 0 8px 24px rgba(0, 0, 0, 0.42), 0 0 18px rgba(38, 132, 255, 0.2);
+  color: #a9d6ff;
+}
+.city-rush-machine-gun-button.is-shotgun.is-ready {
+  background: radial-gradient(circle at 42% 28%, #b6daff, #2f8dff 48%, #0a3f8f 100%);
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.2), 0 0 0 3px rgba(77, 163, 255, 0.4), 0 0 34px 8px rgba(46, 133, 255, 0.78), 0 8px 24px rgba(0, 0, 0, 0.48);
+  animation-name: crShotgunReadyGlow;
+}
+.city-rush-machine-gun-button.is-shotgun.is-ready::after { border-color: rgba(150, 200, 255, 0.76); }
+.city-rush-machine-gun-button.is-shotgun .city-rush-machine-gun-icon { color: #6fb4ff; }
+
+@keyframes crShotgunReadyGlow {
+  from { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.16), 0 0 0 2px rgba(77, 163, 255, 0.32), 0 0 24px 5px rgba(46, 133, 255, 0.62), 0 8px 24px rgba(0, 0, 0, 0.48); }
+  to { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.28), 0 0 0 4px rgba(77, 163, 255, 0.52), 0 0 40px 11px rgba(46, 133, 255, 0.9), 0 8px 24px rgba(0, 0, 0, 0.48); }
+}
+
+/* L'anneau de munitions suit l'arme : bleu pour les trois cartouches du pompe. */
+.city-rush-machine-gun-button.is-shotgun .city-rush-machine-gun-ammo path.is-loaded {
+  stroke: #4da3ff;
+  filter: drop-shadow(0 0 3px rgba(77, 163, 255, 0.9));
+}
+
+/* Réarmement : le pompe se recharge entre deux cartouches — le bouton se
+   calme au lieu d'inviter à marteler. */
+.city-rush-machine-gun-button.is-reloading {
+  filter: saturate(0.7) brightness(0.86);
+  animation: none;
+}
+.city-rush-machine-gun-button.is-reloading::after { animation: none; opacity: 0.35; }
+
 @keyframes crMachineGunReadyPulse {
   0% { transform: scale(0.94); opacity: 0.75; }
   100% { transform: scale(1.16); opacity: 0; }
@@ -2708,6 +2744,7 @@
 
 .city-rush-guide-item.is-blue-shot { --power-color: #48b9ff; }
 .city-rush-guide-item.is-pistol { --power-color: #ff526e; }
+.city-rush-guide-item.is-shotgun { --power-color: #4da3ff; }
 .city-rush-guide-item.is-bazooka { --power-color: #ffd21f; }
 .city-rush-guide-item.is-health { --power-color: #ff4055; }
 .city-rush-guide-item.is-radio { --power-color: #ffd44f; }

@@ -116,12 +116,22 @@ export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 5
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du bonus turbo vert ramassé en vol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un bonus turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un bonus turbo
-// Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de l'AK-47
-// et les trousses de soin « + » rouges. Les soins restent assez espacés pour
-// garder les chocs dangereux, sans laisser une coque abîmée sans solution.
+// Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de
+// l'AK-47, les fusils à pompe bleus et les trousses de soin « + » rouges. Les
+// soins restent assez espacés pour garder les chocs dangereux, sans laisser une
+// coque abîmée sans solution.
+//
+// L'ordre de tirage va du plus rare au plus courant : le fusil à pompe bleu
+// d'abord (3 %), puis le chargeur rouge d'AK-47 (8 %) — le pompe est donc près
+// de trois fois plus rare que la mitrailleuse, à laquelle il succède ou qu'il
+// remplace dans le même emplacement d'arme.
+export const CITY_RUSH_BLUE_PICKUP_CHANCE = 0.03; // fusil à pompe
 export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08; // chargeur d'AK-47
 export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
-export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de bonus turbo verts
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1
+  - CITY_RUSH_BLUE_PICKUP_CHANCE
+  - CITY_RUSH_RED_PICKUP_CHANCE
+  - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 83 % de bonus turbo verts
 // Le turbo est devenu un cercle peint sur la chaussée : on le traverse sans
 // lever les yeux, donc il se voit moins qu'une icône qui flottait. Pour qu'il
 // reste une aubaine et non un régime, chaque emplacement tiré « turbo » n'est
@@ -131,6 +141,18 @@ export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHAN
 export const CITY_RUSH_BOOST_SPAWN_CHANCE = 0.75; // 25 % des turbos ne sont pas posés du tout
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+// Le fusil à pompe est l'arme rare de Vice City : bonus bleu, trois cartouches
+// seulement, mais six carrés de vie arrachés à la voiture touchée — de quoi
+// coucher une berline de police d'un seul coup. Il occupe le **même
+// emplacement** que l'AK-47 : ramasser l'une vide l'autre, et les deux se
+// tirent avec le même bouton (ou la même touche Z).
+export const CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP = 3;
+export const CITY_RUSH_SHOTGUN_MAX_AMMO = CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP;
+// Dégâts d'une cartouche de pompe, en carrés de vie : six d'un coup.
+export const CITY_RUSH_SHOTGUN_DAMAGE = 6;
+// Le pompe se réarme entre deux tirs : une cartouche toutes les 1,5 s au
+// mieux, même en laissant le doigt sur le bouton.
+export const CITY_RUSH_SHOTGUN_FIRE_COOLDOWN = 1.5; // s
 // Le bazooka apparaît deux fois sur chaque carte : deux **conteneurs** de deux
 // voies, un avant le garage de vie de mi-course (30 % du parcours), un après
 // (65 %). Chaque traversée donne **une seule roquette** ; il n'y a pas d'autre
@@ -832,8 +854,69 @@ export function cityRushStunSpin(stunLeft, stunTotal, turns = CITY_RUSH_STUN_SPI
 export const CITY_RUSH_POWERS = Object.freeze({
   BLUE_SHOT: 'blue-shot',
   PISTOL: 'pistol',
+  SHOTGUN: 'shotgun',
   RADIO: 'radio',
 });
+
+// ── L'emplacement d'arme : une seule arme en main ───────────────────────────
+// Le pilote ne porte qu'une arme à la fois. Le bouton de tir (et la touche Z)
+// reste **vide** tant qu'aucun bonus d'arme n'a été ramassé ; il tire ensuite
+// avec l'arme en main — AK-47 rouge ou fusil à pompe bleu — et ramasser l'une
+// remplace l'autre, munitions comprises.
+export const CITY_RUSH_WEAPON_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.SHOTGUN]);
+
+export function cityRushIsWeaponType(type) {
+  return CITY_RUSH_WEAPON_TYPES.includes(type);
+}
+
+/** Cartouches rendues par un bonus de cette arme. */
+export function cityRushWeaponAmmoPerPickup(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP : CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+}
+
+/** Capacité du chargeur de cette arme. */
+export function cityRushWeaponMaxAmmo(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_MAX_AMMO : CITY_RUSH_PISTOL_MAX_AMMO;
+}
+
+/** Cadence de tir de cette arme quand le bouton reste enfoncé (secondes). */
+export function cityRushWeaponFireInterval(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_FIRE_COOLDOWN : 0.12;
+}
+
+/** Dégâts d'un tir de cette arme, en carrés de vie. */
+export function cityRushWeaponDamage(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_DAMAGE : 1;
+}
+
+/**
+ * L'arme portée : la première dont le chargeur n'est pas vide, ou `null` quand
+ * le pilote n'a encore rien ramassé. Les deux armes ne peuvent jamais être
+ * chargées en même temps (voir `cityRushEquipWeapon`).
+ */
+export function cityRushActiveWeapon(inventory) {
+  for (const type of CITY_RUSH_WEAPON_TYPES) {
+    const ammo = Math.max(0, Math.trunc(Number(inventory?.[type]) || 0));
+    if (ammo > 0) {
+      return Object.freeze({ type, ammo, max: cityRushWeaponMaxAmmo(type) });
+    }
+  }
+  return null;
+}
+
+/**
+ * Ramasser une arme : elle prend l'emplacement et **vide l'autre**. Reprendre
+ * la même arme complète simplement son chargeur, comme avant.
+ */
+export function cityRushEquipWeapon(inventory, type, amount = cityRushWeaponAmmoPerPickup(type)) {
+  const normalized = { ...createCityRushInventory(), ...inventory };
+  if (!cityRushIsWeaponType(type)) return normalized;
+  const ammo = Math.min(cityRushWeaponMaxAmmo(type), Math.max(0, Math.trunc(Number(amount) || 0)));
+  for (const other of CITY_RUSH_WEAPON_TYPES) {
+    normalized[other] = other === type ? ammo : 0;
+  }
+  return normalized;
+}
 
 // Le turbo et les soins sont des bonus instantanés au sol, pas des pouvoirs
 // à charger dans l'inventaire.
@@ -848,6 +931,7 @@ export const CITY_RUSH_HEALTH_PICKUP_COLOR = '#ff4055';
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
   [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_PISTOL_MAX_AMMO, // rouge · 7 balles par bonus
+  [CITY_RUSH_POWERS.SHOTGUN]: CITY_RUSH_SHOTGUN_MAX_AMMO, // bleu · 3 cartouches par bonus
   [CITY_RUSH_POWERS.RADIO]: 4,
 });
 
@@ -873,7 +957,20 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les chargeurs d'AK-47 restent rares : chacun remplit le chargeur de l'arme à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule, ou deux contre un SUV de police blindé. Un SUV a dix carrés de vie : dix balles rouges pour le détruire.`,
+    description: `Les chargeurs d'AK-47 restent rares : chacun remplit le chargeur de l'arme à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule, ou deux contre un SUV de police blindé. Un SUV a dix carrés de vie : dix balles rouges pour le détruire. Le fusil à pompe bleu, plus rare encore, prend sa place : ramasser l'un vide l'autre, et les deux se tirent avec le même bouton.`,
+    duration: 2,
+  }),
+  [CITY_RUSH_POWERS.SHOTGUN]: Object.freeze({
+    id: CITY_RUSH_POWERS.SHOTGUN,
+    name: 'Fusil à pompe',
+    shortName: 'POMPE',
+    chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.SHOTGUN],
+    ammoPerPickup: CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP,
+    damageCells: CITY_RUSH_SHOTGUN_DAMAGE,
+    color: '#4da3ff',
+    key: 'Z',
+    automatic: false,
+    description: `Le fusil à pompe est l'arme rare de Vice City : un bonus bleu, près de trois fois plus rare qu'un chargeur d'AK-47, donne ${CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP} cartouches. Chaque tir part tout droit, sans viser, et arrache ${CITY_RUSH_SHOTGUN_DAMAGE} carrés de vie d'un coup à la première voiture touchée sur ta voie : une cartouche couche une berline de police (six carrés), deux viennent à bout d'un SUV blindé (dix). Le pompe se réarme lentement — une cartouche toutes les ${CITY_RUSH_SHOTGUN_FIRE_COOLDOWN} secondes — et il prend la place de l'AK-47 : ramasser l'un vide l'autre, les deux se tirent avec le même bouton.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -2917,8 +3014,8 @@ export function createCityRushInventory() {
   return Object.fromEntries(Object.keys(CITY_RUSH_POWER_RULES).map((key) => [CITY_RUSH_POWER_RULES[key].id, 0]));
 }
 
-export function addCityRushCharge(inventory, type, amount = type === CITY_RUSH_POWERS.PISTOL
-  ? CITY_RUSH_PISTOL_AMMO_PER_PICKUP
+export function addCityRushCharge(inventory, type, amount = cityRushIsWeaponType(type)
+  ? cityRushWeaponAmmoPerPickup(type)
   : 1) {
   if (!CITY_RUSH_POWER_RULES[type]) return { ...createCityRushInventory(), ...inventory };
   const cost = CITY_RUSH_POWER_CHARGE_COST[type];
@@ -2931,10 +3028,10 @@ export function consumeCityRushCharge(inventory, type) {
   const normalized = { ...createCityRushInventory(), ...inventory };
   const current = Math.max(0, Math.trunc(Number(normalized[type]) || 0));
   if (!CITY_RUSH_POWER_RULES[type]) return { inventory: normalized, consumed: false };
-  // Le tir rouge est un stock de balles : une pression ne vide plus le
-  // chargeur, elle retire exactement une balle. Les autres pouvoirs gardent
-  // leur ancienne logique de jauge unique.
-  if (type === CITY_RUSH_POWERS.PISTOL) {
+  // Les armes sont un stock de cartouches : une pression ne vide plus le
+  // chargeur, elle retire exactement une balle (ou une cartouche de pompe).
+  // Les autres pouvoirs gardent leur ancienne logique de jauge unique.
+  if (cityRushIsWeaponType(type)) {
     if (current <= 0) return { inventory: normalized, consumed: false };
     normalized[type] = current - 1;
     return { inventory: normalized, consumed: true };
@@ -2948,31 +3045,41 @@ export function isCityRushPowerCharged(inventory, type) {
   const cost = CITY_RUSH_POWER_CHARGE_COST[type];
   if (!Number.isFinite(cost) || cost <= 0) return false;
   const current = Math.max(0, Math.trunc(Number(inventory?.[type]) || 0));
-  // Pour l'AK-47, « chargé » signifie qu'il reste au moins une balle : le
-  // bouton doit rester utilisable de 7 jusqu'à la dernière balle.
-  return type === CITY_RUSH_POWERS.PISTOL ? current > 0 : current >= cost;
+  // Pour une arme, « chargé » signifie qu'il reste au moins une cartouche : le
+  // bouton doit rester utilisable de 7 balles (ou 3 cartouches) jusqu'à la
+  // dernière.
+  return cityRushIsWeaponType(type) ? current > 0 : current >= cost;
 }
 
 /**
- * Les bonus rouges restent visibles tant qu'un participant peut compléter
+ * Les bonus d'arme restent visibles tant qu'un participant peut compléter
  * son chargeur. Un chargeur plein laisse le bonus à ceux qui ont déjà tiré ;
  * seul un peloton entièrement rechargé le masque sur toute la route.
  */
-function hasFullCityRushPistolMagazine(inventory) {
-  const ammo = Math.max(0, Math.trunc(Number(inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0));
-  return ammo >= CITY_RUSH_PISTOL_MAX_AMMO;
+function hasFullCityRushWeaponMagazine(inventory, type) {
+  const ammo = Math.max(0, Math.trunc(Number(inventory?.[type]) || 0));
+  return ammo >= cityRushWeaponMaxAmmo(type);
 }
 
-export function shouldHideCityRushPistolPickup(playerInventory, opponentInventories = []) {
-  if (!hasFullCityRushPistolMagazine(playerInventory)) return false;
+export function shouldHideCityRushWeaponPickup(playerInventory, type, opponentInventories = []) {
+  if (!hasFullCityRushWeaponMagazine(playerInventory, type)) return false;
   const opponents = Array.isArray(opponentInventories) ? opponentInventories : [];
-  return opponents.every(hasFullCityRushPistolMagazine);
+  return opponents.every((inventory) => hasFullCityRushWeaponMagazine(inventory, type));
+}
+
+/** Raccourci historique : le masquage des chargeurs rouges d'AK-47. */
+export function shouldHideCityRushPistolPickup(playerInventory, opponentInventories = []) {
+  return shouldHideCityRushWeaponPickup(playerInventory, CITY_RUSH_POWERS.PISTOL, opponentInventories);
 }
 
 export function canCollectCityRushPickup(inventory, type, {
   redPickupsHidden = false,
   health = 0,
   maxHealth = 0,
+  // `player` : l'acteur qui croise le bonus est le pilote. Le fusil à pompe
+  // bleu n'appartient qu'à lui — rivaux et police n'y touchent pas, ils le
+  // laissent au sol et ne le visent même pas dans leur choix de voie.
+  player = true,
 } = {}) {
   if (type === CITY_RUSH_PICKUPS.BOOST) return true;
   if (type === CITY_RUSH_PICKUPS.HEALTH) {
@@ -2981,10 +3088,15 @@ export function canCollectCityRushPickup(inventory, type, {
     // Un soin ne ressuscite pas une épave et n'est pas gaspillé sur une coque pleine.
     return currentHealth > 0 && currentHealth < safeMaxHealth;
   }
-  if (type !== CITY_RUSH_POWERS.PISTOL || redPickupsHidden) return false;
-  // Un chargeur rouge complète les balles jusqu'à sept : on peut le ramasser
-  // même avec quelques balles, mais pas gaspiller un chargeur déjà plein.
-  return !hasFullCityRushPistolMagazine(inventory);
+  if (!cityRushIsWeaponType(type)) return false;
+  if (type === CITY_RUSH_POWERS.SHOTGUN && !player) return false;
+  if (type === CITY_RUSH_POWERS.PISTOL && redPickupsHidden) return false;
+  // Un bonus d'arme de l'autre modèle se ramasse toujours : il prend
+  // l'emplacement et vide celui qu'on portait. Celui qu'on porte déjà ne se
+  // ramasse que pour compléter son chargeur — sept balles pour l'AK-47, trois
+  // cartouches pour le pompe —, jamais pour le gaspiller plein.
+  const held = cityRushActiveWeapon(inventory);
+  return held?.type !== type || !hasFullCityRushWeaponMagazine(inventory, type);
 }
 
 export function rankCityRushRacers(racers, playerId = 'player') {
@@ -3403,13 +3515,16 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // Les bonus turbo restent fréquents, mais le chargeur rouge garde une faible
-    // probabilité d'apparition sur chaque emplacement.
-    const type = roll < CITY_RUSH_RED_PICKUP_CHANCE
-      ? CITY_RUSH_POWERS.PISTOL
-      : roll < CITY_RUSH_RED_PICKUP_CHANCE + CITY_RUSH_HEALTH_PICKUP_CHANCE
-        ? CITY_RUSH_PICKUPS.HEALTH
-        : CITY_RUSH_PICKUPS.BOOST;
+    // Les bonus turbo restent fréquents, mais les armes gardent une faible
+    // probabilité d'apparition sur chaque emplacement : le fusil à pompe bleu
+    // d'abord (le plus rare), puis le chargeur rouge d'AK-47.
+    const type = roll < CITY_RUSH_BLUE_PICKUP_CHANCE
+      ? CITY_RUSH_POWERS.SHOTGUN
+      : roll < CITY_RUSH_BLUE_PICKUP_CHANCE + CITY_RUSH_RED_PICKUP_CHANCE
+        ? CITY_RUSH_POWERS.PISTOL
+        : roll < CITY_RUSH_BLUE_PICKUP_CHANCE + CITY_RUSH_RED_PICKUP_CHANCE + CITY_RUSH_HEALTH_PICKUP_CHANCE
+          ? CITY_RUSH_PICKUPS.HEALTH
+          : CITY_RUSH_PICKUPS.BOOST;
     // Un turbo écarté laisse sa voie vide — la voie reste comptée comme prise,
     // pour que le second emplacement de la rangée ne vienne pas se poser dessus
     // et repasser un tirage. La rangée rend donc simplement un bonus de moins.
@@ -4330,6 +4445,8 @@ export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2,
   // Un tir rouge ne retire qu’un carré, à une berline comme à un adversaire.
   [CITY_RUSH_POWERS.PISTOL]: 1,
+  // Une cartouche de pompe en retire six : une berline tombe d'un coup.
+  [CITY_RUSH_POWERS.SHOTGUN]: CITY_RUSH_SHOTGUN_DAMAGE,
   [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
   collision: 1, // la police perd un point, le pilote un carré (deux contre un SUV)
   // L'atterrissage d'un saut de tremplin : deux carrés, comme un tir bleu.
@@ -5065,6 +5182,10 @@ export function cityRushBaseMaxHealth() {
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
   [CITY_RUSH_POWERS.PISTOL]: 1,
+  // Une cartouche de pompe : six carrés d'un coup. Seul le pilote en porte
+  // une — rivaux et police restent à l'AK-47 —, le barème est donc surtout
+  // là pour que la page raconte le coup.
+  [CITY_RUSH_POWERS.SHOTGUN]: CITY_RUSH_SHOTGUN_DAMAGE,
   // Ancre de patch des harnais de course longue ; la ligne du dessous est
   // remplacée par le lanceur du smoke de course (voir `city-rush-smoke.mjs`).
   collision: 1, // choc contre une voiture : un carré pour le pilote
