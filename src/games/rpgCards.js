@@ -304,6 +304,136 @@ export const RPG_POWER_CARDS = [
 ];
 
 /** Le classeur de départ de la démo : de quoi tenir la première vague. */
+/**
+ * Les créatures du duel — façon Magic : un coût en sable, ⚔ l'attaque,
+ * 🛡 la défense, et parfois une capacité À L'ARRIVÉE ou QUAND ELLES
+ * MEURENT. Première vague du set ; les magies puis les terrains suivront.
+ */
+export const RPG_CREATURE_CARDS = [
+  {
+    id: 'rat-des-decombres',
+    name: 'Rat des décombres',
+    element: 'sable',
+    cost: 1,
+    atk: 1,
+    def: 1,
+    rarity: 'commune',
+    destruction: { type: 'pioche', amount: 1 },
+    text: 'Quand le Rat meurt : piochez une carte.',
+    flavor: 'Il vivait là avant l’effondrement. Il restera après.',
+  },
+  {
+    id: 'chien-du-guet',
+    name: 'Chien du guet',
+    element: 'souffle',
+    cost: 2,
+    atk: 2,
+    def: 2,
+    rarity: 'commune',
+    text: '—',
+    flavor: 'Il n’aboie pas. Il compte.',
+  },
+  {
+    id: 'porteuse-de-cruches',
+    name: 'Porteuse de cruches',
+    element: 'eau',
+    cost: 2,
+    atk: 1,
+    def: 3,
+    rarity: 'commune',
+    arrivee: { type: 'soin', amount: 3 },
+    text: 'Quand la Porteuse arrive : vous récupérez 3 points de vie.',
+    flavor: 'Deux cruches pleines, une pour la soif, une pour la plaie.',
+  },
+  {
+    id: 'guetteur-du-beffroi',
+    name: 'Guetteur du beffroi',
+    element: 'souffle',
+    cost: 3,
+    atk: 2,
+    def: 2,
+    rarity: 'commune',
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Quand le Guetteur arrive : piochez une carte.',
+    flavor: 'D’en haut, il voit la vague avant qu’elle ne se nomme.',
+  },
+  {
+    id: 'vipere-de-verre',
+    name: 'Vipère de verre',
+    element: 'verre',
+    cost: 3,
+    atk: 3,
+    def: 1,
+    rarity: 'rare',
+    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Quand la Vipère arrive : elle mord une créature adverse (2 dégâts).',
+    flavor: 'Elle se brise, mais d’abord elle tranche.',
+  },
+  {
+    id: 'dune-marchante',
+    name: 'Dune marchante',
+    element: 'sable',
+    cost: 4,
+    atk: 2,
+    def: 5,
+    rarity: 'commune',
+    text: '—',
+    flavor: 'Le vent la déplace. Elle revient toujours devant la porte.',
+  },
+  {
+    id: 'scribe-de-la-liste',
+    name: 'Scribe de la Liste',
+    element: 'encre',
+    cost: 3,
+    atk: 2,
+    def: 2,
+    rarity: 'rare',
+    destruction: { type: 'pioche', amount: 2 },
+    text: 'Quand le Scribe meurt : piochez deux cartes.',
+    flavor: 'Sa mort est déjà notée. En double exemplaire.',
+  },
+  {
+    id: 'sonneur-fele',
+    name: 'Sonneur fêlé',
+    element: 'verre',
+    cost: 4,
+    atk: 2,
+    def: 3,
+    rarity: 'rare',
+    destruction: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Quand le Sonneur meurt : son dernier tocsin blesse toutes les créatures adverses (2).',
+    flavor: 'Fêlé, il sonne encore. Surtout en tombant.',
+  },
+  {
+    id: 'colosse-de-sel',
+    name: 'Colosse de sel',
+    element: 'eau',
+    cost: 6,
+    atk: 5,
+    def: 5,
+    rarity: 'rare',
+    arrivee: { type: 'buff', atk: 1, def: 1 },
+    text: 'Quand le Colosse arrive : vos autres créatures gagnent +1/+1.',
+    flavor: 'La mer est partie. Son sel est resté debout.',
+  },
+  {
+    id: 'djinn-du-souk',
+    name: 'Djinn du souk',
+    element: 'braise',
+    cost: 7,
+    atk: 6,
+    def: 6,
+    rarity: 'mythique',
+    arrivee: { type: 'degats', amount: 3, cible: 'sorcier' },
+    text: 'Quand le Djinn arrive : 3 dégâts au sorcier adverse.',
+    flavor: 'Il vendait des épices. Il a gardé le feu.',
+  },
+];
+
+export function creatureById(id) {
+  return RPG_CREATURE_CARDS.find((card) => card.id === id) ?? null;
+}
+
 export const RPG_STARTING_COLLECTION = ['garde', 'bulle', 'nappe', 'vague', 'recolte'];
 
 /** Cartes de base des compagnons : leur seule attaque au début. */

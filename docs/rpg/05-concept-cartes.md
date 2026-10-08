@@ -49,7 +49,24 @@ limitée à 7.
     revient au palier suivant, plus fort).
 - Eux aussi ont ⚔ et 🛡 imprimés.
 
-## 2. La boucle de tour
+## 2. Les règles du duel (v3)
+
+- La partie commence avec **0 carte sur la table** ; chaque joueur **pioche
+  5 cartes**.
+- Chaque joueur a **50 points de vie** ; les **sorciers ennemis peuvent en
+  avoir davantage selon leur puissance** (50 + 5 × puissance).
+- **Tant qu'il y a des créatures en face, on ne peut pas attaquer le
+  sorcier directement** : il faut tuer les créatures d'abord.
+- Les **magies** peuvent cibler les créatures, et **parfois les joueurs**
+  (selon la carte).
+- Les créatures peuvent avoir une capacité **à l'arrivée** ou **quand
+  elles sont détruites** (pioche, dégâts, soin, buff…).
+- Le combat entre créatures est à dégâts mutuels, façon Magic.
+
+Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
+`src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
+
+## 3. La boucle de tour
 
 1. **Piocher 1** ;
 2. poser **un terrain** (gratuit) ;
@@ -58,7 +75,7 @@ limitée à 7.
    bloqueurs ;
 5. **Fin du tour** (la grande pastille dorée ⧗).
 
-## 3. L'adversaire : un sorcier
+## 4. L’adversaire : un sorcier
 
 L'adversaire n'est pas un monstre passif : c'est un **sorcier** avec son
 propre paquet, sa propre main (face cachée) et ses propres terrains.
@@ -66,7 +83,7 @@ Chaque tour, il pioche une carte et la joue comme nous — la carte qu'il
 pose est annoncée face visible avant de se résoudre. Les vagues sont ses
 créatures qui arrivent les unes après les autres.
 
-## 4. Anatomie d'une carte (compacte)
+## 5. Anatomie d’une carte (compacte)
 
 Les cartes posées sont **courtes** — la table reste lisible :
 
