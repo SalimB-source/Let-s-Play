@@ -16,6 +16,8 @@ import {
   CITY_RUSH_TRACK_BEHIND,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_AI_TRACK_BOOST_WEIGHT,
+  CITY_RUSH_AI_LANE_COOLDOWN_MIN,
+  CITY_RUSH_AI_LANE_COOLDOWN_MAX,
   CITY_RUSH_RED_PICKUP_CHANCE,
   CITY_RUSH_HEALTH_PICKUP_CHANCE,
   CITY_RUSH_HEALTH_PICKUP_RESTORE,
@@ -251,6 +253,9 @@ import {
   cityRushRivalTargetSpeed,
   cityRushAiBrakingRate,
   cityRushAiBrakingDistance,
+  cityRushAiThinkDelay,
+  CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN,
+  CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX,
   cityRushAiLaneBlocked,
   CITY_RUSH_AI_BRAKING_MARGIN,
   chooseCityRushAiLane,
@@ -3760,6 +3765,17 @@ test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () 
   assert.equal(cityRushPlayerDamage(1, 'suv-collision'), 0, 'pas de vie négative au dernier carré');
   assert.equal(cityRushPlayerDamage(0, 'suv-collision'), 0);
   assert.equal(cityRushPlayerDamage(15, 'collision'), 14, 'les autres collisions ne changent pas');
+});
+
+test('la cible d’une mission garde une voie plus longtemps, sauf en cas de danger urgent', () => {
+  assert.equal(cityRushAiThinkDelay(0), CITY_RUSH_AI_LANE_COOLDOWN_MIN);
+  assert.equal(cityRushAiThinkDelay(1), CITY_RUSH_AI_LANE_COOLDOWN_MAX);
+  assert.equal(cityRushAiThinkDelay(0, { missionTarget: true }), CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN);
+  assert.equal(cityRushAiThinkDelay(1, { missionTarget: true }), CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX);
+  assert.ok(
+    cityRushAiThinkDelay(0, { urgent: true, missionTarget: true }) < CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN,
+    'la cible conserve son réflexe de freinage lorsqu’un obstacle bouche la voie',
+  );
 });
 
 test('chaque rival freine à la distance d’arrêt de son propre modèle', () => {

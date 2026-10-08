@@ -4,7 +4,7 @@
 // L'habitacle reste sombre et vide pour ne pas afficher de personnage.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createBatch } from './cityRushBuilder.js';
+import { createBatch, makeCanvasTexture } from './cityRushBuilder.js';
 import { makeCarPlateTexture } from './cityRushTextures.js';
 
 // ── Reflets studio ──────────────────────────────────────────────────────────
@@ -1309,8 +1309,22 @@ export function applyPoliceRacerLivery(car) {
   livery.name = 'police-interceptor-livery';
   const dark = new THREE.MeshStandardMaterial({ color: 0x142947, roughness: 0.52, metalness: 0.16 });
   const white = new THREE.MeshStandardMaterial({ color: 0xf4f3ec, roughness: 0.48, metalness: 0.1 });
-  const red = new THREE.MeshBasicMaterial({ color: 0xff304f, toneMapped: false });
-  const blue = new THREE.MeshBasicMaterial({ color: 0x39bfff, toneMapped: false });
+  const red = new THREE.MeshBasicMaterial({
+    color: 0xff304f, transparent: true, opacity: 1, depthWrite: false, toneMapped: false,
+  });
+  const blue = new THREE.MeshBasicMaterial({
+    color: 0x39bfff, transparent: true, opacity: 0.14, depthWrite: false, toneMapped: false,
+  });
+  const bodyPaint = car.userData.materials?.body;
+  if (bodyPaint?.color?.setHex) {
+    bodyPaint.color.setHex(0xf3f2eb);
+    bodyPaint.emissive?.setHex(0x17202d);
+    bodyPaint.needsUpdate = true;
+  }
+  // Le liseré d'origine est accordé à la peinture verte de la citadine ; le
+  // bleu nuit le transforme avec la bande des portes en livrée de patrouille.
+  car.userData.materials?.trim?.color?.setHex?.(0x243b5a);
+
   const box = (material, position, size) => {
     const object = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
     object.position.set(...position);
@@ -1319,18 +1333,34 @@ export function applyPoliceRacerLivery(car) {
     return object;
   };
 
-  // Barre lumineuse posée au-dessus du pavillon : les deux couleurs se lisent
-  // depuis la caméra de poursuite sans remplacer la carrosserie du modèle.
+  // Barre lumineuse posée au-dessus du pavillon : les deux couleurs alternent
+  // pour être identifiables même depuis la caméra de poursuite.
   box(dark, [0, 1.43, -0.06], [0.78, 0.07, 0.2]);
   box(red, [-0.21, 1.49, -0.06], [0.32, 0.07, 0.19]);
   box(blue, [0.21, 1.49, -0.06], [0.32, 0.07, 0.19]);
   for (const side of [-1, 1]) {
-    // Bandeau bleu nuit et liseré blanc sur chaque porte : silhouette
-    // d'intercepteur immédiatement reconnaissable, même à distance.
+    // Bandeau bleu nuit, liseré blanc et marquage POLICE de chaque côté :
+    // même de profil, la voiture se lit comme un intercepteur et non une GT.
     box(dark, [side * 0.93, 0.63, 0.05], [0.035, 0.2, 1.08]);
     box(white, [side * 0.952, 0.72, 0.05], [0.018, 0.035, 0.74]);
     box(red, [side * 0.98, 0.65, -0.07], [0.016, 0.12, 0.13]);
+    const labelTexture = makeCanvasTexture((ctx, width, height) => {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 86px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('POLICE', width / 2, height / 2);
+    }, 512, 128, { smooth: true });
+    const labelMaterial = new THREE.MeshBasicMaterial({
+      map: labelTexture, transparent: true, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.15), labelMaterial);
+    label.position.set(side * 0.965, 0.63, 0.05);
+    label.rotation.y = side * Math.PI / 2;
+    livery.add(label);
   }
+  livery.userData.beacons = { red, blue };
   car.add(livery);
   car.userData.policeLivery = livery;
   return car;
@@ -1358,6 +1388,13 @@ export function animateRacerCar(car, state, dt, elapsed) {
   const impactForce = clamp(Number(violentImpact) || 0, 0, 1);
   const acceleration = dt > 0 ? (speed - anim.lastSpeed) / dt : 0;
   anim.lastSpeed = speed;
+
+  const beacons = data.policeLivery?.userData?.beacons;
+  if (beacons) {
+    const redFirst = Math.floor(elapsed * 4) % 2 === 0;
+    beacons.red.opacity = redFirst ? 1 : 0.14;
+    beacons.blue.opacity = redFirst ? 0.14 : 1;
+  }
 
   data.wheels.forEach((wheel) => { wheel.rotation.x += speed * dt * 0.95; });
   data.frontWheels.forEach((pivot) => { pivot.rotation.y = steer; });

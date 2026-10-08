@@ -13,7 +13,7 @@ globalThis.document = {
   createElement: (tag) => (tag === 'canvas' ? { width: 0, height: 0, getContext: () => mute, style: {} } : {}),
 };
 
-const { animateRacerCar, makeRacerCar, makeTrafficVehicle, setRacerDriver } = await import('../src/games/cityRushCars.js');
+const { animateRacerCar, applyPoliceRacerLivery, makeRacerCar, makeTrafficVehicle, setRacerDriver } = await import('../src/games/cityRushCars.js');
 const { CITY_RUSH_CARS, CITY_RUSH_DRIVERS, selectCityRushRacers } = await import('../src/games/cityRushRules.js');
 const ROSTER = selectCityRushRacers({ cityId: 'vice-city', carId: CITY_RUSH_CARS[0].id, runId: 0 });
 
@@ -70,6 +70,31 @@ test('les voitures ont des coques fermées distinctes et des vitrages opaques', 
   });
 
   assert.equal(signatures.size, CITY_RUSH_CARS.length, 'chaque miniature correspond à une forme 3D différente');
+});
+
+test('la première voiture de mission devient un véritable intercepteur reconnaissable', () => {
+  const car = makeRacerCar(CITY_RUSH_CARS.find((profile) => profile.id === 'city-hatch'), { player: true });
+  assert.equal(applyPoliceRacerLivery(car), car);
+  const livery = car.userData.policeLivery;
+  assert.equal(livery.name, 'police-interceptor-livery');
+  assert.equal(car.userData.materials.body.color.getHex(), 0xf3f2eb, 'la carrosserie passe en blanc police');
+  assert.equal(car.userData.materials.trim.color.getHex(), 0x243b5a, 'les détails d’origine sont assortis au bleu marine');
+  const labels = [];
+  livery.traverse((object) => {
+    if (object.isMesh && object.geometry.type === 'PlaneGeometry' && object.material.map) labels.push(object);
+  });
+  assert.equal(labels.length, 2, 'POLICE est marqué sur les deux portières');
+  assert.equal(labels[0].material.map.colorSpace, THREE.SRGBColorSpace, 'le marquage canvas utilise le bon espace couleur');
+  const beacon = livery.userData.beacons;
+  animateRacerCar(car, { speed: 0 }, 1 / 30, 0.1);
+  assert.equal(beacon.red.opacity, 1);
+  assert.equal(beacon.blue.opacity, 0.14);
+  animateRacerCar(car, { speed: 0 }, 1 / 30, 0.3);
+  assert.equal(beacon.red.opacity, 0.14);
+  assert.equal(beacon.blue.opacity, 1, 'les gyrophares alternent pendant la course');
+  const childCount = livery.children.length;
+  applyPoliceRacerLivery(car);
+  assert.equal(livery.children.length, childCount, 'appliquer la livrée deux fois ne duplique pas ses pièces');
 });
 
 test('la flotte de police comprend une berline et un SUV haut perché', () => {

@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CITY_RUSH_CARS, CITY_RUSH_COURSES } from '../src/games/cityRushRules.js';
+import {
+  CITY_RUSH_CARS,
+  CITY_RUSH_COURSES,
+  CITY_RUSH_PLAYER_SPEED,
+  CITY_RUSH_RIVAL_PACE,
+  cityRushRivalTargetSpeed,
+} from '../src/games/cityRushRules.js';
 import {
   CITY_RUSH_CASH_PER_RACE,
   CITY_RUSH_STARTER_CAR_ID,
@@ -46,8 +52,22 @@ test('les missions racontent des objectifs lisibles et utilisent des villes/parc
     assert.ok(CITY_RUSH_COURSES.some((course) => course.id === mission.cityId), `${mission.id} utilise un parcours connu`);
     assert.ok(mission.rules && typeof mission.rules === 'object', `${mission.id} porte ses règles de course`);
   }
-  assert.equal(getCityRushMission('dealer-pursuit')?.rules.policePlayerLook, true);
-  assert.equal(getCityRushMission('dealer-pursuit')?.rules.rivalHealth.dealer, 36);
+  const firstMission = getCityRushMission('dealer-pursuit');
+  assert.equal(firstMission?.rules.policePlayerLook, true);
+  assert.equal(firstMission?.rules.playerCarId, 'city-hatch');
+  assert.equal(firstMission?.rules.rivalHealth.dealer, 36);
+  assert.equal(firstMission?.targetHealth, 36);
+  assert.equal(firstMission?.rules.pistolPickupRowInterval, 12);
+  assert.match(firstMission?.briefing || '', /un peu plus rapide/i);
+  const playerCar = CITY_RUSH_CARS.find((car) => car.id === firstMission?.rules.playerCarId);
+  const dealerCar = CITY_RUSH_CARS.find((car) => car.id === firstMission?.rules.rivalCarIds?.dealer);
+  const dealerSpeed = cityRushRivalTargetSpeed(
+    CITY_RUSH_PLAYER_SPEED * playerCar.powerMultiplier,
+    CITY_RUSH_PLAYER_SPEED * dealerCar.powerMultiplier,
+    { pace: CITY_RUSH_RIVAL_PACE, storyPace: firstMission.rules.rivalPace.dealer },
+  );
+  assert.ok(dealerSpeed > CITY_RUSH_PLAYER_SPEED * playerCar.powerMultiplier, 'le dealer garde une petite avance de vitesse');
+  assert.ok(dealerSpeed < CITY_RUSH_PLAYER_SPEED * playerCar.powerMultiplier * 1.2, 'le dealer reste rattrapable');
   assert.equal(getCityRushMission('six-police-cars')?.requiredPoliceDestroyed, 6);
   assert.equal(getCityRushMission('clean-laps')?.rules.policeEnabled, false);
 });

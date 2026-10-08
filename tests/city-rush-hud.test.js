@@ -49,6 +49,17 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   assert.match(page, /ready \? `CHARGÉ \${ammo}\/\$\{CITY_RUSH_PISTOL_AMMO_PER_PICKUP\}`/);
 });
 
+test('le HUD de la première mission affiche la coque du dealer et son intercepteur démarre dans la voie du joueur', () => {
+  const missions = readFileSync(new URL('../src/games/cityRushMissions.js', import.meta.url), 'utf8');
+  assert.match(missions, /targetHealth:\s*36/);
+  assert.match(missions, /rivalHealth:\s*Object\.freeze\(\{ dealer: 36 \}\)/);
+  assert.match(page, /lane:\s*player\?\.lane \?\? opponent\?\.lane/);
+  assert.match(page, /health:\s*currentMission\.targetHealth \|\| 36/);
+  assert.match(page, /hud\.racers\?\.find\([\s\S]*?\|\|\s*roster\.find\(/, 'la jauge affiche déjà les 36 PV avant la première mise à jour du monde');
+  assert.match(page, /DEALER \$\{Math\.max\(0, Number\(missionTargetHud\?\.health\) \|\| 0\)\}\/\$\{currentMission\.targetHealth \|\| 36\} PV/);
+  assert.match(raceList, /<CityRushHealthBar[\s\S]*?health=\{racer\.health\}[\s\S]*?maxHealth=\{racer\.maxHealth\}/);
+});
+
 test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la relâche', () => {
   assert.match(world, /const PISTOL_HOLD_FIRE_INTERVAL = 0\.12/);
   assert.match(world, /let pistolKeyHeld = false/);
@@ -57,6 +68,11 @@ test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la r
   assert.match(world, /const onWindowBlur = \(\) => \{/);
   assert.match(world, /if \(pistolKeyHeld && pistolHoldCooldown <= 0 && isCityRushPowerCharged/);
   assert.match(world, /if \(usePower\(CITY_RUSH_POWERS\.PISTOL\)\) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL/);
+  assert.match(page, /actionsRef\.current\?\.\('pistol-down'\)/, 'le bouton tactile déclenche immédiatement le premier tir');
+  assert.match(page, /actionsRef\.current\?\.\('pistol-up'\)/, 'le relâchement tactile arrête la rafale');
+  assert.match(world, /if \(name === 'pistol-down'\)/);
+  assert.match(world, /if \(name === 'pistol-up'\)/);
+  assert.match(css, /\.city-rush-machine-gun-button\s*\{[^}]*touch-action:\s*none;/);
 });
 
 test('maintenir une flèche enchaîne les changements de voie jusqu’à la relâche', () => {
