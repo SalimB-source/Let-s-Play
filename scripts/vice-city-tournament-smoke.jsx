@@ -94,6 +94,49 @@ function finishPayload(city, order) {
   };
 }
 
+/**
+ * Trame de HUD au format de `ViceCityWorld` : le pilote est classé `rank` sur
+ * le plateau entier, les autres voitures suivent dans l'ordre de la grille.
+ */
+function worldHud(rank) {
+  const roster = worldProbe.props?.roster || [];
+  const player = roster.find((racer) => racer.isPlayer);
+  const rivals = roster.filter((racer) => !racer.isPlayer);
+  const ordered = [...rivals.slice(0, rank - 1), player, ...rivals.slice(rank - 1)];
+  const racers = ordered.map((racer, index) => ({
+    id: racer.id,
+    isPlayer: racer.isPlayer,
+    driverId: racer.driverId,
+    name: racer.name,
+    displayName: racer.displayName,
+    country: racer.country,
+    countryCode: racer.countryCode,
+    flag: racer.flag,
+    avatar: racer.avatar,
+    accent: racer.accent,
+    distance: 800 - index * 20,
+    rawDistance: 800 - index * 20,
+    lane: racer.lane,
+    lap: 1,
+    rank: index + 1,
+    health: 15,
+    maxHealth: 15,
+    wanted: 0,
+    pursued: false,
+    wrecked: false,
+  }));
+  return {
+    distance: 800, totalDistance: 4800, progress: 0.17, lap: 1, laps: 3,
+    lapLength: 1600, lapProgress: 0.5, lapDistance: 800, elapsed: 30, speed: 120,
+    rank, racers, inventory: { 'blue-shot': 0, pistol: 0, radio: 0 },
+    score: 0, pickups: 0, slowLeft: 0, trafficImpactLeft: 0, boostLeft: 0, stunLeft: 0,
+    sprint: null, route: null, playerHealth: 15, playerHealthMax: 15, playerHealthActive: false,
+    playerHealthFlash: 0, police: [], wantedLevel: 0, wantedMaxStars: 5,
+    miniGaragesActive: false, miniGaragesRemaining: 0, miniGaragesTotal: 0, miniGarageNextDistance: null,
+    oncomingPoliceTurnarounds: [], spikeBlock: null, suvCharges: [], bazookaAmmo: 0, bazookaPickupTaken: false,
+  };
+}
+
 /** Termine la manche en cours par le podium `order` (le monde est une doublure). */
 async function finishLeg(node, city, order) {
   await act(async () => { worldProbe.props?.onFinish?.(finishPayload(city, order)); });
@@ -203,6 +246,13 @@ export async function checkViceCityTournament(assert) {
       && Object.keys(worldProbe.props?.storyRules?.rivalCarIds || {}).length === CITY_RUSH_TOURNAMENT_RACER_COUNT - 1,
   );
   check('la course démarre (HUD affiché)', Boolean(node.querySelector('.city-rush-hud')));
+  // Le monde publie son classement à chaque image : le pilote, dernier de la
+  // grille, est 8ᵉ sur les huit voitures — la carte POSITION doit le dire
+  // (« 8e / 8 », et non « 8e / 3 » comme en course libre).
+  await act(async () => { worldProbe.props?.onHud?.(worldHud(8)); });
+  await settle(10);
+  const positionCard = textOf(node, '.city-rush-position-card > strong');
+  check('la carte POSITION compte les huit voitures du plateau (8e / 8)', positionCard === '8e / 8', `"${positionCard}"`);
   check('aucun bouton d’arme pendant la manche', !node.querySelector('.city-rush-weapon-controls'));
 
   // ── 3. Manche 1 (victoire) : 10 pts, +50 billets, manche suivante ────────
@@ -235,6 +285,8 @@ export async function checkViceCityTournament(assert) {
     (worldProbe.props?.roster || []).map((racer) => racer.driverId).join('/') === gridDrivers.join('/'),
   );
   await finishLeg(node, 'route-66', ['nova', 'player', 'juno']);
+  const placeLeg2 = textOf(node, '.city-rush-result-grid b');
+  check('l’écran d’arrivée annonce la 2e place sur huit (2e / 8)', placeLeg2 === '2e / 8', `"${placeLeg2}"`);
   const leaderLeg2 = textOf(node, '.cr-tournament-row.is-leader');
   check(
     'à 43-43, le vainqueur de la manche (Maya) mène le général',
