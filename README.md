@@ -2782,6 +2782,63 @@ the SQL has been run; the section explains itself when something is off:
 | “Easy there — wait a moment before posting again.” | More than 5 comments in one minute | Wait a minute |
 | Sign-in gate although the site is deployed | Supabase variables missing at build time | See the environment-variable table above |
 
+### Modération des commentaires (mots interdits et signalements)
+
+Première étape, sans IA ni modérateurs : elle s'appuie sur `supabase/schema.sql`
+(section 3f) et sur `src/lib/commentModeration.js`.
+
+- **Mots interdits** : un message qui contient un mot de la liste est refusé
+  par la base, avant d'être enregistré, dans les commentaires d'articles comme
+  dans les commentaires de groupes communautaires. Le texte reste dans le champ
+  et le message d'erreur (fr/en/ar) ne révèle pas la liste. La normalisation
+  ignore la casse, les accents, les lettres répétées, les lettres séparées
+  (`c.o.n`), l'écriture « leet » (`3`→e, `4`→a, `5`→s, etc.), les signes
+  diacritiques de l'arabe (tachkil) et l'élongation (tatwil).
+- **Signaler** : chaque commentaire d'un autre joueur a un bouton « Signaler »
+  (motifs : harcèlement, haine, contenu sexuel, violence, spam, autre). Un
+  joueur ne signale qu'une fois un commentaire, et 5 signalements par minute au
+  maximum. Les visiteurs ne voient pas le bouton.
+- **Masquage automatique** : à partir de **3 signalements distincts**, le
+  commentaire est masqué pour tout le monde, auteur compris (`hidden_at`). Le
+  champ n'est modifiable que depuis l'éditeur SQL (un joueur ne peut pas le
+  changer).
+
+Le filtre de mots s'applique aussi aux commentaires des groupes communautaires,
+mais ceux-ci n'ont pas de bouton « Signaler » (l'auteur du groupe peut déjà les
+supprimer). Les **photos et avatars** ne sont pas couverts par cette étape.
+
+Gérer la liste (éditeur SQL, en tant que `postgres`) :
+
+```sql
+-- Ajouter un mot (la forme stockée est normalisée automatiquement)
+insert into public.comment_blocked_terms (term, match_mode, note)
+values ('mot', 'word', 'raison')
+on conflict (term) do update set enabled = true;
+
+-- Désactiver un mot : utiliser la forme normalisée (« connard » est stocké « conard »)
+update public.comment_blocked_terms
+   set enabled = false
+ where term = public.moderation_normalize('connard');
+
+-- Rétablir un commentaire masqué à tort
+update public.comments set hidden_at = null where id = '<uuid>';
+```
+
+Modes de correspondance : `word` (le mot entier), `stem` (le début d'un mot,
+4 lettres minimum) et `phrase` (automatique quand le terme contient un espace).
+La liste de départ est volontairement modeste ; « retard » ou « pédale » n'y
+figurent pas, car ce sont des mots français courants.
+
+Tests : `npm run check:comment-moderation` (normalisation, règles de la base
+sur PostgreSQL en mémoire via `@electric-sql/pglite`, et parcours du formulaire
+de signalement dans JSDOM). Cette commande n'est pas lancée par la CI (qui ne
+fait que le build).
+
+Limites : les règles ont été vérifiées sur PostgreSQL 18 (via PGlite), pas encore
+sur le projet Supabase réel ; le format des erreurs PostgREST reste à confirmer
+après exécution du SQL. La modération automatique par IA et la page des
+modérateurs ne sont pas encore faites.
+
 ## Amis : demandes, liste et présence
 
 Tout joueur connecté (compte Supabase — ou persona de démonstration dans les
