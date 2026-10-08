@@ -2254,11 +2254,14 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
 - `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
   Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
   jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
-- `src/games/BattleStage2D.jsx` — la scène de combat peinte, 100 % DOM (donc
-  visible partout, sans WebGL) : les portraits font office de sprites, équipe
-  à gauche, ennemis à droite, chacun sur son étage, sous le ciel de Bab El.
-  Mise en scène façon Dragon Quest : ruées, clignement blanc à l'impact,
-  chiffres flottants, ennemis qui meurent en scintillant, boîte de message à
+- `src/games/CardTable.jsx` — la table de jeu, 100 % DOM (donc visible
+  partout, sans WebGL) : chaque acteur est une carte à jouer posée sur une
+  table en bois, façon Magic / Yu-Gi-Oh — le portrait peint en illustration,
+  cadre doré pour l'équipe, ferronné pour l'ennemi, intention annoncée dans le
+  texte de carte, PV et Fêlure en pied de carte. L'adversaire en haut,
+  l'équipe en bas, cartes légèrement de travers comme posées à la main.
+  Mise en scène : carte qui bondit vers sa cible, clignement blanc à l'impact,
+  chiffres flottants, carte détruite grisée sur la table, boîte de message à
   texte tapé lettre à lettre, bannière « des ennemis apparaissent ! ».
 - `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
   jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,

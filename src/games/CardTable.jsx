@@ -1,0 +1,292 @@
+/**
+ * La table de jeu — « Le Sablier de Bab El ».
+ *
+ * Fini les sprites et la 3D : le combat se joue comme une partie de cartes
+ * (Magic / Yu-Gi-Oh) posée sur une table en bois. Chaque acteur EST sa carte :
+ * le portrait peint en illustration, un cadre doré pour l'équipe, ferronné
+ * pour l'ennemi, une ligne de type, l'intention annoncée en texte de carte,
+ * les PV et la Fêlure en pied de carte. L'adversaire en face (en haut),
+ * l'équipe en main (en bas), chacune légèrement de travers comme de vraies
+ * cartes posées.
+ *
+ * Comme la scène avant elle, ce composant ne calcule aucune règle : il lit
+ * `battle` et consomme `queueRef` pour les cinématiques éphémères (la carte
+ * qui bondit vers sa cible, le clignement d'impact, les chiffres flottants).
+ * Pur DOM : aucune WebGL requise, ça s'affiche partout.
+ */
+
+import { useEffect, useRef, useState } from 'react';
+import {
+  RPG_DIFFICULTIES,
+  RPG_INTENT_FAMILIES,
+  RPG_TIERS,
+  rpgCurrentActor,
+  rpgEstimateIntent,
+} from './rpgCombat';
+import { RPG_ELEMENT_ICONS } from './rpgContent';
+
+const portraitSrc = (actor) =>
+  `${import.meta.env.BASE_URL}portraits/${actor.portrait ?? actor.id}.jpg`;
+
+/** Légères rotations : des cartes posées à la main, pas alignées au cordeau. */
+const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
+
+function Bar({ value, max, tone = 'hp' }) {
+  const ratio = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+  return (
+    <span className={`rpg-bar rpg-bar--${tone}`}>
+      <span className="rpg-bar__fill" style={{ width: `${ratio * 100}%` }} />
+    </span>
+  );
+}
+
+function NameSegments({ count }) {
+  return (
+    <span className="rpg-name-segments" title={`${count}/3 segments de Nom`}>
+      {[0, 1, 2].map((i) => <span key={i} className={i < count ? 'is-on' : 'is-off'} />)}
+    </span>
+  );
+}
+
+function TierBadge({ tier }) {
+  return (
+    <span className="rpg-tier" title={`Étage ${tier} sur ${RPG_TIERS}`}>
+      {Array.from({ length: RPG_TIERS }, (_, i) => (
+        <span key={i} className={i < tier ? 'is-on' : ''} />
+      ))}
+    </span>
+  );
+}
+
+/** Ce que l'ennemi a annoncé, imprimé dans le texte de sa carte. */
+function IntentCard({ battle, actor, onPick }) {
+  const intent = actor.intent;
+  const family = intent ? RPG_INTENT_FAMILIES[intent.family] : null;
+  const target = intent?.targetId ? battle.actors.find((a) => a.id === intent.targetId) : null;
+  const estimated = intent && target ? Math.round(rpgEstimateIntent(battle, actor, target)) : 0;
+  const hidden = intent?.family === 'zone' && RPG_DIFFICULTIES[battle.difficulty]?.hidden;
+  return (
+    <div className="rpg-intent">
+      {intent ? (
+        <>
+          <span className="rpg-intent__icon" aria-hidden="true">{family.icon}</span>
+          <span className="rpg-intent__body">
+            <strong>{intent.label}</strong>
+            <small>
+              {family.label}
+              {intent.family === 'zone'
+                ? (hidden ? ' · cible cachée' : ' · toute l’équipe')
+                : ` → ${target?.name ?? '—'}`}
+              {estimated > 0 && intent.family !== 'zone' ? ` · ≈${estimated}` : ''}
+              {intent.family === 'incantation' ? ` · s’interrompt : ${intent.counterElement}` : ''}
+            </small>
+          </span>
+          {actor.contred && <em className="rpg-tag rpg-tag--contre">élan cassé</em>}
+        </>
+      ) : (
+        <span className="rpg-intent__body"><small>aucune action annoncée</small></span>
+      )}
+      <button type="button" className="rpg-intent__pick" onClick={() => onPick(actor.id)} title="Cibler cet ennemi">
+        cibler
+      </button>
+    </div>
+  );
+}
+
+/** Carte ennemie, cadre ferronné, posée en haut de la table. */
+function FoeCard({ battle, actor, selected, onPick, tilt, fx, pop }) {
+  return (
+    <article
+      className={[
+        'rpg-card rpg-card--ennemi',
+        selected ? 'is-selected' : '',
+        actor.alive ? '' : 'is-down',
+        fx ?? '',
+      ].join(' ')}
+      style={{ '--tilt': `${tilt}deg` }}
+      onClick={() => actor.alive && onPick(actor.id)}
+    >
+      <header className="rpg-card__title">
+        <strong>{actor.name}</strong>
+        <span className="rpg-card__glyph" aria-hidden="true">{RPG_ELEMENT_ICONS[actor.element] ?? '❖'}</span>
+      </header>
+      <span className="rpg-card__art">
+        <img className="rpg-foe__portrait" src={portraitSrc(actor)} alt={`Portrait de ${actor.name}`} />
+        {pop != null && (
+          <span className={`rpg-pop ${pop < 0 ? 'rpg-pop--dmg' : 'rpg-pop--heal'}`} aria-hidden="true">
+            {pop < 0 ? String(-pop) : `+${pop}`}
+          </span>
+        )}
+      </span>
+      <span className="rpg-card__type">{actor.role}</span>
+      <span className="rpg-card__text">
+        {actor.alive && <IntentCard battle={battle} actor={actor} onPick={onPick} />}
+        <span className="rpg-card__tags">
+          {actor.fele && <em className="rpg-tag rpg-tag--felure">FÊLÉ ×2</em>}
+          {actor.blind > 0 && <em className="rpg-tag">aveuglé</em>}
+          {actor.weaken > 0 && <em className="rpg-tag">affaibli</em>}
+        </span>
+      </span>
+      <footer className="rpg-card__foot">
+        <Bar value={actor.hp} max={actor.maxHp} tone={actor.hp / actor.maxHp < 0.35 ? 'low' : 'hp'} />
+        <span className="rpg-foe__hp">{actor.hp} / {actor.maxHp} PV</span>
+        <Bar value={actor.felure} max={100} tone="felure" />
+        <TierBadge tier={actor.tier} />
+      </footer>
+    </article>
+  );
+}
+
+/** Carte de l'équipe, cadre doré, posée en bas de la table. */
+function AllyCard({ actor, active, selected, onPick, tilt, fx, pop }) {
+  return (
+    <article
+      className={[
+        'rpg-card rpg-card--equipe',
+        active ? 'is-active' : '',
+        selected ? 'is-selected' : '',
+        actor.alive ? '' : 'is-down',
+        fx ?? '',
+      ].join(' ')}
+      style={{ '--tilt': `${tilt}deg` }}
+      onClick={() => onPick(actor.id)}
+    >
+      <header className="rpg-card__title">
+        <strong>{actor.name}</strong>
+        <span className="rpg-card__glyph" aria-hidden="true">{RPG_ELEMENT_ICONS[actor.element] ?? '❖'}</span>
+      </header>
+      <span className="rpg-card__art">
+        <img className="rpg-ally__portrait" src={portraitSrc(actor)} alt={`Portrait de ${actor.name}`} />
+        {pop != null && (
+          <span className={`rpg-pop ${pop < 0 ? 'rpg-pop--dmg' : 'rpg-pop--heal'}`} aria-hidden="true">
+            {pop < 0 ? String(-pop) : `+${pop}`}
+          </span>
+        )}
+      </span>
+      <span className="rpg-card__type">{actor.role}</span>
+      <span className="rpg-card__text rpg-card__text--ally">
+        <NameSegments count={actor.nameSegments} />
+        <span className="rpg-pa" title={`${actor.pa} PA`}>
+          {[0, 1, 2].map((i) => <span key={i} className={i < actor.pa ? 'is-on' : 'is-off'} />)}
+        </span>
+        <span className="rpg-card__tags">
+          {actor.shield > 0 && <em className="rpg-tag">barrage {actor.shield}</em>}
+          {actor.guarding && <em className="rpg-tag">en garde</em>}
+        </span>
+      </span>
+      <footer className="rpg-card__foot">
+        <Bar value={actor.hp} max={actor.maxHp} tone={actor.hp / actor.maxHp < 0.35 ? 'low' : 'hp'} />
+        <span className="rpg-ally__hp">{actor.hp} / {actor.maxHp} PV</span>
+        <TierBadge tier={actor.tier} />
+      </footer>
+    </article>
+  );
+}
+
+export default function CardTable({ battle, queueRef, waveTitle, targetId, allyId, onPickFoe, onPickAlly }) {
+  const [anims, setAnims] = useState({});
+  const [pops, setPops] = useState({});
+  const bannerRef = useRef(null);
+  const popKey = useRef(0);
+  const timersRef = useRef([]);
+
+  const later = (fn, ms) => {
+    const id = window.setTimeout(fn, ms);
+    timersRef.current.push(id);
+  };
+  useEffect(() => () => timersRef.current.forEach((id) => window.clearTimeout(id)), []);
+
+  const flash = (id, cls, ms = 620) => {
+    setAnims((prev) => ({ ...prev, [id]: cls }));
+    later(() => setAnims((prev) => (prev[id] === cls ? { ...prev, [id]: null } : prev)), ms);
+  };
+
+  // Consomme les événements cinématiques poussés par la page.
+  useEffect(() => {
+    const queue = queueRef.current;
+    while (queue.length) {
+      const evt = queue.shift();
+      if (evt.t === 'strike') {
+        flash(evt.from, 'fx-lunge');
+        if (evt.to) later(() => flash(evt.to, 'fx-hit', 480), 240);
+      }
+      if (evt.t === 'zone') {
+        later(() => {
+          for (const a of battle?.actors ?? []) {
+            if (a.side === 'equipe') flash(a.id, 'fx-hit', 480);
+          }
+        }, 240);
+      }
+      if (evt.t === 'souffle') flash(evt.from, 'fx-lunge');
+      if (evt.t === 'soin') flash(evt.to ?? evt.from, 'fx-glow', 700);
+      if (evt.t === 'pop') {
+        flash(evt.to, evt.amount < 0 ? 'fx-hit' : 'fx-glow', 480);
+        const key = (popKey.current += 1);
+        setPops((prev) => ({ ...prev, [evt.to]: evt.amount }));
+        later(() => setPops((prev) => {
+          const next = { ...prev };
+          delete next[evt.to];
+          return next;
+        }), 1000);
+        void key;
+      }
+    }
+  });
+
+  // Bannière d'apparition.
+  const prevWaveRef = useRef(null);
+  useEffect(() => {
+    if (!waveTitle || prevWaveRef.current === waveTitle) return;
+    prevWaveRef.current = waveTitle;
+    const el = bannerRef.current;
+    if (!el) return;
+    el.textContent = `${waveTitle} — des ennemis apparaissent !`;
+    el.classList.add('is-on');
+    const id = window.setTimeout(() => el.classList.remove('is-on'), 2400);
+    return () => window.clearTimeout(id);
+  }, [waveTitle]);
+
+  if (!battle) return null;
+  const current = rpgCurrentActor(battle);
+  const team = battle.actors.filter((a) => a.side === 'equipe');
+  const foes = battle.actors.filter((a) => a.side === 'ennemi');
+
+  return (
+    <div
+      className="card-table"
+      data-scene="cards"
+      style={{ backgroundImage: `url(${import.meta.env.BASE_URL}card-table.jpg)` }}
+      aria-label="Table de jeu : les cartes de l’équipe font face aux cartes ennemies"
+    >
+      <p className="rpg-scene__banner" ref={bannerRef} aria-hidden="true" />
+      <div className="card-row card-row--ennemi">
+        {foes.map((actor, i) => (
+          <FoeCard
+            key={actor.id}
+            battle={battle}
+            actor={actor}
+            selected={targetId === actor.id}
+            onPick={onPickFoe}
+            tilt={TILTS[i % TILTS.length]}
+            fx={anims[actor.id]}
+            pop={pops[actor.id]}
+          />
+        ))}
+      </div>
+      <div className="card-row card-row--equipe">
+        {team.map((actor, i) => (
+          <AllyCard
+            key={actor.id}
+            actor={actor}
+            active={current?.id === actor.id && actor.alive}
+            selected={allyId === actor.id}
+            onPick={onPickAlly}
+            tilt={TILTS[(i + 2) % TILTS.length]}
+            fx={anims[actor.id]}
+            pop={pops[actor.id]}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}

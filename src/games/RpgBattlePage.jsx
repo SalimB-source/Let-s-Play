@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import BattleStage2D from './BattleStage2D.jsx';
+import CardTable from './CardTable.jsx';
 import {
   RPG_BARRAGE_SABLE,
   RPG_CRISTALLISATION_COST,
   RPG_DIFFICULTIES,
-  RPG_INTENT_FAMILIES,
   RPG_SABLE_MAX,
-  RPG_TIERS,
   RPG_VERRE_MAX,
   rpgAddFoes,
   rpgBarrage,
@@ -16,7 +14,6 @@ import {
   rpgElementMultiplier,
   rpgEndTurn,
   rpgEnemyTurn,
-  rpgEstimateIntent,
   rpgFelureRatio,
   rpgGuard,
   rpgRecolte,
@@ -76,14 +73,6 @@ function Bar({ value, max, tone = 'hp' }) {
   );
 }
 
-function NameSegments({ count }) {
-  return (
-    <span className="rpg-name-segments" title={`${count}/3 segments de Nom`}>
-      {[0, 1, 2].map((i) => <span key={i} className={i < count ? 'is-on' : 'is-off'} />)}
-    </span>
-  );
-}
-
 /**
  * Boîte de message façon Dragon Quest : le journal se tape lettre à lettre.
  * Pur DOM — elle vit aussi bien posée sur la scène que dans la barre du bas.
@@ -120,108 +109,6 @@ function MessageBox({ battleRef }) {
   );
 }
 
-
-function TierBadge({ tier }) {
-  return (
-    <span className="rpg-tier" title={`Étage ${tier} sur ${RPG_TIERS}`}>
-      {Array.from({ length: RPG_TIERS }, (_, i) => (
-        <span key={i} className={i < tier ? 'is-on' : ''} />
-      ))}
-    </span>
-  );
-}
-
-/** Ce que l'ennemi a annoncé : la pièce maîtresse de l'écran. */
-function IntentCard({ battle, actor, onPick }) {
-  const intent = actor.intent;
-  const family = intent ? RPG_INTENT_FAMILIES[intent.family] : null;
-  const target = intent?.targetId ? battle.actors.find((a) => a.id === intent.targetId) : null;
-  const estimated = intent && target ? Math.round(rpgEstimateIntent(battle, actor, target)) : 0;
-  const hidden = intent?.family === 'zone' && RPG_DIFFICULTIES[battle.difficulty]?.hidden;
-  return (
-    <div className="rpg-intent">
-      {intent ? (
-        <>
-          <span className="rpg-intent__icon" aria-hidden="true">{family.icon}</span>
-          <span className="rpg-intent__body">
-            <strong>{intent.label}</strong>
-            <small>
-              {family.label}
-              {intent.family === 'zone'
-                ? (hidden ? ' · cible cachée' : ' · toute l’équipe')
-                : ` → ${target?.name ?? '—'}`}
-              {estimated > 0 && intent.family !== 'zone' ? ` · ≈${estimated}` : ''}
-              {intent.family === 'incantation' ? ` · s’interrompt : ${intent.counterElement}` : ''}
-            </small>
-          </span>
-          {actor.contred && <em className="rpg-tag rpg-tag--contre">élan cassé</em>}
-        </>
-      ) : (
-        <span className="rpg-intent__body"><small>aucune action annoncée</small></span>
-      )}
-      <button type="button" className="rpg-intent__pick" onClick={() => onPick(actor.id)} title="Cibler cet ennemi">
-        cibler
-      </button>
-    </div>
-  );
-}
-
-function EnemyCard({ battle, actor, selected, onPick }) {
-  return (
-    <article className={`rpg-foe ${selected ? 'is-selected' : ''} ${actor.alive ? '' : 'is-down'}`}>
-      <header>
-        <span className="rpg-foe__face">
-          <img className="rpg-foe__portrait" src={portraitSrc(actor)} alt={`Portrait de ${actor.name}`} />
-          <span className="rpg-foe__glyph" aria-hidden="true">{RPG_ELEMENT_ICONS[actor.element] ?? '❖'}</span>
-        </span>
-        <span className="rpg-foe__id">
-          <strong>{actor.name}</strong>
-          <small>{actor.role}</small>
-        </span>
-        <TierBadge tier={actor.tier} />
-      </header>
-      <Bar value={actor.hp} max={actor.maxHp} tone={actor.hp / actor.maxHp < 0.35 ? 'low' : 'hp'} />
-      <span className="rpg-foe__hp">{actor.hp} / {actor.maxHp} PV</span>
-      <Bar value={actor.felure} max={100} tone="felure" />
-      <span className="rpg-foe__tags">
-        {actor.fele && <em className="rpg-tag rpg-tag--felure">FÊLÉ ×2</em>}
-        {actor.blind > 0 && <em className="rpg-tag">aveuglé</em>}
-        {actor.weaken > 0 && <em className="rpg-tag">affaibli</em>}
-      </span>
-      {actor.alive && <IntentCard battle={battle} actor={actor} onPick={onPick} />}
-    </article>
-  );
-}
-
-function AllyRow({ battle, actor, active, selected, onPick }) {
-  return (
-    <li
-      className={`rpg-ally ${active ? 'is-active' : ''} ${selected ? 'is-selected' : ''} ${actor.alive ? '' : 'is-down'}`}
-      onClick={() => onPick(actor.id)}
-    >
-      <img className="rpg-ally__portrait" src={portraitSrc(actor)} alt={`Portrait de ${actor.name}`} />
-      <span className="rpg-ally__id">
-        <strong>{actor.name}</strong>
-        <small>{actor.role}</small>
-        <span className="rpg-ally__meta">
-          <TierBadge tier={actor.tier} />
-          <NameSegments count={actor.nameSegments} />
-        </span>
-      </span>
-      <span className="rpg-ally__bars">
-        <Bar value={actor.hp} max={actor.maxHp} tone={actor.hp / actor.maxHp < 0.35 ? 'low' : 'hp'} />
-        <small>
-          {actor.hp} / {actor.maxHp} PV
-          {actor.shield > 0 && <> · barrage {actor.shield}</>}
-          {actor.guarding && <> · en garde</>}
-        </small>
-        <span className="rpg-pa" title={`${actor.pa} PA`}>
-          {[0, 1, 2].map((i) => <span key={i} className={i < actor.pa ? 'is-on' : 'is-off'} />)}
-        </span>
-      </span>
-    </li>
-  );
-}
 
 function RingList({ ring, currentId }) {
   return (
@@ -781,7 +668,15 @@ export default function RpgBattlePage() {
       {battle && screen !== 'intro' && screen !== 'fin' && screen !== 'exploration' && (
         <section className="rpg-battle" data-strike={battle.clockStrike > 0 ? 'on' : 'off'}>
           <div className="rpg-stage">
-            <BattleStage2D battle={battle} queueRef={sceneQueueRef} waveTitle={wave.title} />
+            <CardTable
+              battle={battle}
+              queueRef={sceneQueueRef}
+              waveTitle={wave.title}
+              targetId={targetId}
+              allyId={allyId}
+              onPickFoe={setTargetId}
+              onPickAlly={setAllyId}
+            />
           </div>
 
           <header className="rpg-hud-top">
@@ -825,34 +720,7 @@ export default function RpgBattlePage() {
             </div>
           </header>
 
-          <div className="rpg-hud-foes">
-              <p className="rpg-field__hint">{wave.intro}</p>
-              <div className="rpg-foes">
-                {foes.map((actor) => (
-                  <EnemyCard
-                    key={actor.id}
-                    battle={battle}
-                    actor={actor}
-                    selected={targetId === actor.id}
-                    onPick={setTargetId}
-                  />
-                ))}
-              </div>
-          </div>
-
           <div className="rpg-bottombar">
-            <ul className="rpg-allies rpg-allies--hud">
-                {team.map((actor) => (
-                  <AllyRow
-                    key={actor.id}
-                    battle={battle}
-                    actor={actor}
-                    active={current?.id === actor.id}
-                    selected={allyId === actor.id}
-                    onPick={setAllyId}
-                  />
-              ))}
-            </ul>
             <ol className="rpg-log" aria-live="polite">
               {battle.log.slice(-6).map((line, index) => (
                 <li key={`${battle.log.length}-${index}-${line.text}`} className={`rpg-log__line rpg-log--${line.tone}`}>{line.text}</li>

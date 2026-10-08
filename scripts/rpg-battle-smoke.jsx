@@ -39,18 +39,18 @@ export async function checkRpgBattle(assert) {
   await act(async () => { await wait(900); });
 
   assert.match(container.textContent, /Vague 1/);
-  // La scène peinte (équipe face aux ennemis) est montée, avec les visages :
-  // quatre compagnons à gauche, au moins deux ennemis à droite.
-  assert.ok(container.querySelector('.rpg-stage2d'), 'la scène de combat doit être montée');
-  assert.equal(container.querySelectorAll('.rpg-fig--equipe').length, 4, 'l’équipe doit être visible en scène');
-  assert.ok(container.querySelectorAll('.rpg-fig--ennemi').length >= 2, 'les ennemis doivent être visibles en scène');
-  assert.ok(container.querySelectorAll('.rpg-fig img').length >= 6, 'chaque acteur doit montrer son portrait');
+  // La table de jeu est montée, cartes posées : quatre compagnons en bas,
+  // au moins deux ennemis en face, chacun avec son portrait en illustration.
+  assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée');
+  assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit être posée en cartes');
+  assert.ok(container.querySelectorAll('.rpg-card--ennemi').length >= 2, 'les ennemis doivent être posés en cartes');
+  assert.ok(container.querySelectorAll('.rpg-card__art img').length >= 6, 'chaque carte doit montrer son portrait');
   // Les ennemis instanciés (id suffixés) doivent tout de même pointer vers le
   // fichier de portrait de leur définition — régression du 2026-10-08.
-  const foeSrcs = [...container.querySelectorAll('.rpg-fig--ennemi img')].map((img) => img.getAttribute('src'));
+  const foeSrcs = [...container.querySelectorAll('.rpg-card--ennemi img')].map((img) => img.getAttribute('src'));
   assert.ok(foeSrcs.length >= 2 && foeSrcs.every((s) => /portraits\/balayeur\.jpg$/.test(s)), `les ennemis doivent charger balayeur.jpg (${foeSrcs.join(', ')})`);
-  assert.equal(container.querySelectorAll('.rpg-ally').length, 4, 'l’équipe doit compter 4 compagnons');
-  const foeCards = container.querySelectorAll('.rpg-foe');
+  assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit compter 4 compagnons');
+  const foeCards = container.querySelectorAll('.rpg-card--ennemi');
   assert.ok(foeCards.length >= 2, `ennemis absents (${foeCards.length})`);
   // Chaque ennemi vivant annonce son prochain coup.
   assert.equal(container.querySelectorAll('.rpg-intent').length, foeCards.length,
@@ -157,7 +157,7 @@ export async function checkRpgBattle(assert) {
   assert.match(container.textContent, /Vague 2/);
   const notreSol = Number((container.textContent.match(/notre sol (\d+)/) ?? [null, NaN])[1]);
   assert.ok(notreSol >= 30, `le sable de poche doit être versé sur notre sol (lu : ${notreSol})`);
-  assert.equal(container.querySelectorAll('.rpg-ally').length, 4, 'l’équipe doit être au complet après le palier');
+  assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit être au complet après le palier');
   // La permutation n'est proposée que pendant le tour d'un compagnon.
   let swapButton = null;
   for (let attempt = 0; attempt < 40 && !swapButton; attempt += 1) {

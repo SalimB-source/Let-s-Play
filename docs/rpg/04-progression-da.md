@@ -68,12 +68,13 @@ lore et un comportement distinct. Pas d'empilement d'armures.
   dans l'identité du site Let's Play. Les barres de vie ressemblent à des
   colonnes de sable qui descendent.
 
-**Voie du prototype actuel** : une scène **2D peinte, 100 % DOM**
-(`BattleStage2D.jsx`) — les portraits font office de sprites face à face sur
-le ciel de Bab El (SVG : étoiles, Astrolabe, ville, dunes), chacun sur son
-étage. C'est la voie recommandée pour la version navigateur : c'est le langage
-natif de Dragon Quest, lisible, léger, visible sur chaque machine sans WebGL
-ni asset 3D.
+**Voie du prototype actuel** : une **table de jeu en bois, 100 % DOM**
+(`CardTable.jsx`) — chaque acteur est une carte à jouer posée sur la table,
+façon Magic / Yu-Gi-Oh : le portrait peint en illustration, cadre doré pour
+l'équipe, ferronné pour l'ennemi, l'intention annoncée imprimée dans le texte
+de carte. L'adversaire en haut, l'équipe en bas, cartes légèrement de travers
+comme posées à la main. C'est la voie recommandée pour la version navigateur :
+lisible, légère, visible sur chaque machine sans WebGL ni asset 3D.
 
 **Ce qu'on évite** : la fantasy générique, le cyberpunk, et le steampunk
 cuivré à l'européenne. Bab El est une ville du Maghreb : les motifs, les
@@ -105,27 +106,25 @@ laiton, indigo), lumière (ambre de l'Astrolabe), et règle de lisibilité
 
 ### 4.2 Mise en scène des combats (grammaire Dragon Quest)
 
-La scène du prototype (`BattleStage2D.jsx`) emprunte la grammaire du JRPG
-classique — celle des *sprites* 2D, le langage natif de Dragon Quest —, celle
-qui rend un tour par tour lisible sans jamais presser. Tout y est en DOM :
-aucune WebGL requise, la scène s'affiche sur chaque machine :
+La table du prototype (`CardTable.jsx`) emprunte la grammaire des jeux de
+cartes — Magic, Yu-Gi-Oh — et celle du JRPG classique pour le rythme : tout y
+est en DOM, aucune WebGL requise, la table s'affiche sur chaque machine :
 
 - **Boîte de message** noire en bas, double liseré clair, texte tapé lettre à
   lettre, curseur ▼ clignotant — c'est elle qui raconte le combat ;
 - **Bannière d'apparition** à chaque vague : « … — des ennemis apparaissent ! » ;
-- **Ruées de sprites** : l'attaquant bondit vers sa cible pendant la frappe,
-  puis regagne son étage ;
+- **Ruées de cartes** : la carte de l'attaquant bondit vers sa cible pendant
+  la frappe, puis regagne sa place ;
 - **Chiffres flottants** de dégâts (blancs) et de soins (verts), clignement
   blanc à l'impact, secousse d'écran sur les zones et quand l'Astrolabe sonne ;
-- **Morts de sprites** : l'ennemi scintille puis s'enfonce et disparaît ;
-  l'équipe, elle, tombe à terre ;
+- **Morts de cartes** : la carte détruite grise et s'avachit sur la table ;
 - **Fenêtre de commandes** à double liseré avec curseur ▶ au survol, comme un
   menu de Dragon Quest.
 
-L'écran de combat occupe **tout le viewport** : la scène 3D est le fond, et
-tout le reste est du HUD translucide posé dessus — compteurs et ordre des
-tours en haut, équipe à gauche, ennemis annoncés à droite, et en bas, dans
-l'image, le journal, la boîte de message et la fenêtre de commandes.
+L'écran de combat occupe **tout le viewport** : la table en bois est le fond,
+et tout le reste est du HUD translucide posé dessus — compteurs et ordre des
+tours en haut, et en bas, sur la table, le journal, la boîte de message et la
+fenêtre de commandes.
 
 Règle : les effets *soulignent* l'information déjà présente dans
 les cartes (intention, PV, étages). Jamais l'inverse : un effet qui annonce
