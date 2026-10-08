@@ -22,6 +22,7 @@ import {
   CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR,
   CITY_RUSH_RIVAL_SLOW_FACTOR,
   cityRushRivalPaceFactor,
+  cityRushRivalTargetSpeed,
   CITY_RUSH_AI_LOOKAHEAD,
   CITY_RUSH_AI_REFLEX,
   cityRushAiLaneBlocked,
@@ -2054,10 +2055,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       health: cityRushCarMaxHealth(profile),
       healthFlash: 0,
       wrecked: false,
-      // Le rythme de course des rivaux (voir `CITY_RUSH_RIVAL_PACE`) : la fiche
-      // de leur modèle, plus 5 %. C'est la base sur laquelle s'ajoutent le
-      // dernier tour, les bonus turbo et les ralentissements.
-      baseSpeed: paced(PLAYER_SPEED * profile.powerMultiplier * cityRushRivalPaceFactor()),
+      // Pointe de référence du modèle. Le plancher lié à la voiture du joueur,
+      // le rythme de course et l'éventuel bonus de scénario sont appliqués à
+      // chaque frame pour que les rivaux ne soient pas distancés par le garage.
+      baseSpeed: paced(PLAYER_SPEED * profile.powerMultiplier),
       currentSpeed: 0,
       mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight, driver }),
       currentX: laneX(spec.lane),
@@ -8802,16 +8803,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer.skidLeft = Math.max(0, racer.skidLeft - dt);
         racer.powerCooldown = Math.max(0, racer.powerCooldown - dt);
         const racerSlowed = racer.slowLeft > 0 || racer.trafficImpactLeft > 0;
-        // Le rythme de course : la fiche du modèle, la surcharge des rivaux, et
-        // le tout dernier tour de ce rival, où il ne retient plus rien.
+        // Le rythme de course s'applique une seule fois. Un rival reçoit au
+        // minimum la pointe du joueur, même si son modèle ou le réglage du
+        // scénario est plus lent ; les modèles plus rapides gardent leur avance.
         const racerFinalLap = cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps;
         const racerPace = cityRushRivalPaceFactor({ finalLap: racerFinalLap });
-        // Boss du mode Histoire (Dante) : un multiplicateur propre au rival,
-        // par-dessus le rythme de course habituel.
         const storyPaceBoost = Number(storyRivalPace?.[racer.id]) > 0 ? Number(storyRivalPace[racer.id]) : 1;
+        const rivalTargetTopSpeed = cityRushRivalTargetSpeed(playerTopSpeed, racer.baseSpeed, {
+          pace: racerPace,
+          storyPace: storyPaceBoost,
+        });
         const speedTarget = (racer.wrecked || racer.stunLeft > 0
           ? 0
-          : racer.baseSpeed * racerPace * storyPaceBoost * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))
+          : rivalTargetTopSpeed * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))
           * cornerPaceAt(racer.distance);
         const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt, coursePace);
         requestedRacerSpeeds.set(racer.id, requestedSpeed);
