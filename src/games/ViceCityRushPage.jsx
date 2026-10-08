@@ -2285,6 +2285,10 @@ export default function ViceCityRushPage() {
                                 ? `${entry.name}, ${entry.tagline} : ${legNames.join(', ')}. ${done ? 'Terminé' : 'À jouer'}${titles > 0 ? `, ${titles} titre${titles > 1 ? 's' : ''} de champion` : ''}`
                                 : `${entry.name}, verrouillé. Termine ${requirement?.name || 'le tournoi précédent'} pour le débloquer`}
                             >
+                              <span className="cr-tournament-thumb" aria-hidden="true">
+                                <img src={`${import.meta.env.BASE_URL || '/'}${entry.thumb}`} alt="" loading="lazy" decoding="async" />
+                                <span className="cr-tournament-thumb-legs">{legNames.join(' · ')}</span>
+                              </span>
                               <span className="cr-tournament-number">0{index + 1}</span>
                               <span className="cr-tournament-icon" aria-hidden="true">{entry.icon}</span>
                               <b>{entry.name}</b>
