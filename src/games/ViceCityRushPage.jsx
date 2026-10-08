@@ -497,6 +497,7 @@ export default function ViceCityRushPage() {
   const [storyStars, setStoryStars] = useState(() => initialSave.storyStars || {});
   const [briefingDone, setBriefingDone] = useState(false);
   const [storyAlert, setStoryAlert] = useState(null);
+  const [missionEscapeAlert, setMissionEscapeAlert] = useState(false);
   // Tournoi en cours : identifiant, manche (0 = 1ʳᵉ course) et courses courues.
   // Tout est remis à zéro en quittant vers les menus (abandon du tournoi).
   const [tournamentId, setTournamentId] = useState(null);
@@ -799,18 +800,22 @@ export default function ViceCityRushPage() {
       const targetId = currentMission.rules?.missionTargetId || currentMission.targetId;
       if (targetId) {
         const player = racers.find((racer) => racer.isPlayer);
-        const opponent = racers.find((racer) => !racer.isPlayer);
+        const opponents = racers.filter((racer) => !racer.isPlayer);
+        const opponent = opponents[0];
+        const escapeOpponent = opponents[1] || opponent;
+        const escapeTargetId = currentMission.rules?.missionEscapeTargetId || currentMission.escapeTargetId;
+        const targetHealth = currentMission.targetHealth || 25;
         return [
           player,
           {
             ...opponent,
             id: targetId,
             slot: 1,
-            // Le duel démarre dans la même voie : le joueur peut réellement
+            // Le dealer démarre dans la même voie : le joueur peut réellement
             // essayer son chargeur avant que la cible ne s'échappe.
             lane: player?.lane ?? opponent?.lane,
-            health: currentMission.targetHealth || 15,
-            maxHealth: currentMission.targetHealth || 15,
+            health: targetHealth,
+            maxHealth: targetHealth,
             driverId: targetId,
             name: 'DEALER',
             displayName: 'Le dealer',
@@ -819,6 +824,23 @@ export default function ViceCityRushPage() {
             flag: '🚨',
             accent: '#ff526e',
           },
+          escapeTargetId ? {
+            ...escapeOpponent,
+            id: escapeTargetId,
+            slot: 2,
+            // Le complice existe dans le monde dès le départ, mais le moteur le
+            // garde hors piste jusqu'à la destruction du dealer. Sa voie propre
+            // oblige ensuite l'officier à le reprendre en chasse.
+            health: targetHealth,
+            maxHealth: targetHealth,
+            driverId: escapeTargetId,
+            name: 'COMPLICE',
+            displayName: 'Le complice',
+            country: 'Vice City',
+            countryCode: 'US',
+            flag: '⚠️',
+            accent: '#ffd44f',
+          } : null,
         ].filter(Boolean);
       }
     }
@@ -871,6 +893,9 @@ export default function ViceCityRushPage() {
         missionTargetStartDistance: rules.missionTargetStartDistance ?? null,
         missionTargetLeadMin: rules.missionTargetLeadMin ?? null,
         missionTargetLeadMax: rules.missionTargetLeadMax ?? null,
+        missionEscapeTriggerId: rules.missionEscapeTriggerId || null,
+        missionEscapeTargetId: rules.missionEscapeTargetId || currentMission.escapeTargetId || null,
+        missionEscapeStartLead: rules.missionEscapeStartLead ?? null,
         startingPistolAmmo: rules.startingPistolAmmo || 0,
         rivalCarIds: rules.rivalCarIds || null,
         rivalPace: rules.rivalPace || null,
@@ -943,10 +968,13 @@ export default function ViceCityRushPage() {
     ? hud.racers?.find((racer) => racer.id === currentMission.targetId)
       || roster.find((racer) => racer.id === currentMission.targetId)
     : null;
+  const missionEscapeTargetHud = currentMission?.escapeTargetId
+    ? hud.racers?.find((racer) => racer.id === currentMission.escapeTargetId) || null
+    : null;
   const missionLiveStatus = !missionMode || !currentMission
     ? ''
     : currentMission.targetId
-      ? `CHARGEURS · ${Number(hud.pistolPickups) || 0}/${currentMission.requiredPistolPickups || 1} · DEALER ${Math.max(0, Number(missionTargetHud?.health) || 0)}/${currentMission.targetHealth || 15} PV · AK ${Number(hud.inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0}`
+      ? `CHARGEURS · ${Number(hud.pistolPickups) || 0}/${currentMission.requiredPistolPickups || 1} · DEALER ${Math.max(0, Number(missionTargetHud?.health) || 0)}/${currentMission.targetHealth || 25} PV · COMPLICE ${missionEscapeTargetHud ? `${Math.max(0, Number(missionEscapeTargetHud.health) || 0)}/${currentMission.targetHealth || 25} PV` : 'EN ATTENTE'} · AK ${Number(hud.inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0}`
       : currentMission.requiredPoliceDestroyed
         ? `POLICES · ${Number(hud.policeDestroyed) || 0}/${currentMission.requiredPoliceDestroyed} · AK ${Number(hud.inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0} · ROQUETTES ${Number(hud.bazookaAmmo) || 0}`
         : currentMission.requiredPickups
@@ -1226,6 +1254,7 @@ export default function ViceCityRushPage() {
     setWorldError('');
     setResult(null);
     setStoryAlert(null);
+    setMissionEscapeAlert(false);
     setHud(EMPTY_HUD);
     // Nouveau tour guidé : la première fiche repart de zéro, sans tic vert.
     if (tutorial) {
@@ -1763,7 +1792,8 @@ export default function ViceCityRushPage() {
           }
         }, { once: true });
       }
-    } else if (effect.type === 'story-warning') setStoryAlert('warn');
+    } else if (effect.type === 'mission-escape-start') setMissionEscapeAlert(true);
+    else if (effect.type === 'story-warning') setStoryAlert('warn');
     else if (effect.type === 'story-breakdown') setStoryAlert('breakdown');
   }
 
@@ -2055,6 +2085,7 @@ export default function ViceCityRushPage() {
               {missionMode && currentMission && (
                 <div className={`cr-mission-live-objective${storyRules?.playerRole === 'police' ? ' is-police-role' : ''}`} role="status">
                   {storyRules?.playerRole === 'police' && <strong className="cr-mission-player-role">🚨 OFFICIER DE POLICE · INTERCEPTEUR</strong>}
+                  {missionEscapeAlert && <strong className="cr-mission-escape-alert">⚠ COMPLICE EN FUITE · RATTRAPE-LE !</strong>}
                   <b>MISSION {currentMission.number} · {currentMission.shortObjective}</b>
                   <small>{missionLiveStatus}</small>
                 </div>
@@ -3081,10 +3112,19 @@ export default function ViceCityRushPage() {
                       {currentMission.requiredPickups && <span><small>BONUS</small><b>{result.pickups || 0}/{currentMission.requiredPickups}</b></span>}
                       {currentMission.requiredPistolPickups && <span><small>CHARGEURS</small><b>{result.pistolPickups || 0}/{currentMission.requiredPistolPickups}</b></span>}
                       {currentMission.requiredPoliceDestroyed && <span><small>POLICES</small><b>{result.policeDestroyed || 0}/{currentMission.requiredPoliceDestroyed}</b></span>}
-                      {currentMission.targetId && (() => {
-                        const target = result.racers?.find((racer) => racer.id === currentMission.targetId);
-                        return <span><small>COQUE DEALER</small><b>{Math.max(0, Number(target?.health) || 0)}/{currentMission.targetHealth || 15} PV</b></span>;
-                      })()}
+                      {currentMission.targetIds?.map((targetId) => {
+                        const target = result.racers?.find((racer) => racer.id === targetId);
+                        const primary = targetId === currentMission.targetId;
+                        const label = primary ? 'COQUE DEALER' : 'COQUE COMPLICE';
+                        return (
+                          <span key={targetId}>
+                            <small>{label}</small>
+                            <b>{target
+                              ? `${Math.max(0, Number(target.health) || 0)}/${currentMission.targetHealth || 25} PV`
+                              : 'PAS ENCORE EN FUITE'}</b>
+                          </span>
+                        );
+                      })}
                       <span><small>CONTACTS</small><b>{result.vehicleContacts || 0}</b></span>
                       <span><small>TIRS</small><b>{result.shotsFired || 0}</b></span>
                     </div>

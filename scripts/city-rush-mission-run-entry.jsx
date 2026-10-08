@@ -95,7 +95,9 @@ const mission = getCityRushMission('dealer-pursuit');
 const city = CITY_RUSH_CITIES.find(city => city.id === mission.cityId);
 const roster = selectCityRushRacers({ cityId: city.id, carId: mission.rules.playerCarId });
 const player = roster.find(racer => racer.isPlayer);
-const dealer = { ...roster.find(racer => !racer.isPlayer), id: 'dealer', name: 'DEALER', lane: player.lane };
+const opponents = roster.filter(racer => !racer.isPlayer);
+const dealer = { ...opponents[0], id: 'dealer', name: 'DEALER', lane: player.lane, health: 25, maxHealth: 25 };
+const accomplice = { ...opponents[1], id: 'accomplice', name: 'COMPLICE', health: 25, maxHealth: 25 };
 const mount = {
   clientWidth: 1280, clientHeight: 720,
   getBoundingClientRect: () => ({ width: 1280, height: 720, top: 0, left: 0 }),
@@ -108,7 +110,7 @@ const effects = [];
 const world = createCityRushWorld(mount, city, () => ({
   hud: data => { hud = data; }, finish: data => { result = data; },
   effect: data => effects.push(data),
-}), mission.rules.playerCarId, null, [player, dealer], mission.laps, false, 'laps', mission.rules);
+}), mission.rules.playerCarId, null, [player, dealer, accomplice], mission.laps, false, 'laps', mission.rules);
 try {
   const policeCar = world.scene.children.find(object => object.userData?.player && object.userData?.kind === 'racer');
   assert.ok(policeCar?.userData.policeLivery, 'le joueur conduit une voiture de police');
@@ -126,33 +128,46 @@ try {
     result = null;
     assert.equal(hud.inventory.pistol, 7, 'un premier chargeur est disponible au départ, y compris au replay');
     assert.equal(hud.pistolPickups, 0, 'le chargeur de départ ne valide pas la collecte de mission');
-    assert.equal(hud.racers.find(r => r.id === 'dealer')?.health, 15);
-    world.setRoster([player, { ...dealer, displayName: 'Dealer de mission' }]);
-    assert.equal(hud.racers.find(r => r.id === 'dealer')?.displayName, 'Dealer de mission', 'le roster du duel est actualisable');
+    assert.equal(hud.racers.find(r => r.id === 'dealer')?.health, 25);
+    assert.equal(hud.racers.some(r => r.id === 'accomplice'), false, 'le complice attend hors piste tant que le dealer roule');
+    world.setRoster([
+      player,
+      { ...dealer, displayName: 'Dealer de mission' },
+      { ...accomplice, displayName: 'Complice de mission' },
+    ]);
+    assert.equal(hud.racers.find(r => r.id === 'dealer')?.displayName, 'Dealer de mission', 'le roster de la poursuite est actualisable');
     world.setPhase('playing');
     world.start();
     // La vraie commande tactile en maintien, identique au bouton du HUD.
     if (run === 0) world.action('pistol-down');
     else listeners.window.keydown.forEach(handler => handler({ key: 'z', preventDefault() {} }));
     for (let frame = 0; frame < 30 * 360 && !result; frame++) {
-      const target = hud.racers.find(r => r.id === 'dealer');
-      // Garder le dealer dans la mire avec des munitions. À vide, revenir
-      // chercher les chargeurs garantis dans la voie de départ.
-      const lane = hud.inventory.pistol > 0 && target?.health > 0 ? target.lane : player.lane;
+      const dealerTarget = hud.racers.find(r => r.id === 'dealer');
+      const accompliceTarget = hud.racers.find(r => r.id === 'accomplice');
+      const target = dealerTarget?.health > 0 ? dealerTarget : accompliceTarget?.health > 0 ? accompliceTarget : null;
+      // Garder le fugitif actif dans la mire avec des munitions. À vide,
+      // revenir chercher les chargeurs garantis dans la voie de départ.
+      const lane = hud.inventory.pistol > 0 && target ? target.lane : player.lane;
       if (lane !== hud.playerLane && frame % 8 === 0) world.action(lane < hud.playerLane ? 'left' : 'right');
       stepFrame();
     }
-    const hits = effects.filter(e => e.type === 'pistol' && e.targetId === 'dealer');
+    const dealerHits = effects.filter(e => e.type === 'pistol' && e.targetId === 'dealer');
+    const accompliceHits = effects.filter(e => e.type === 'pistol' && e.targetId === 'accomplice');
+    const escape = effects.find(e => e.type === 'mission-escape-start');
 
     assert.ok(result && !result.destroyed, 'le joueur termine les trois tours sans être détruit');
     assert.ok(result.pistolPickups >= 1, 'le joueur a vraiment ramassé les chargeurs');
     assert.equal(result.racers.find(r => r.id === 'dealer')?.health, 0, 'le dealer peut être neutralisé par les tirs');
-    assert.ok(hits.length >= 15 && hits.every(e => e.damage === 1), 'quinze impacts rouges retirent quinze PV');
+    assert.equal(result.racers.find(r => r.id === 'accomplice')?.health, 0, 'le complice apparu ensuite peut être rattrapé et neutralisé');
+    assert.equal(escape?.triggerId, 'dealer', 'la destruction du dealer déclenche la deuxième fuite');
+    assert.equal(escape?.targetId, 'accomplice');
+    assert.ok(dealerHits.length >= 25 && dealerHits.every(e => e.damage === 1), 'vingt-cinq impacts rouges retirent les 25 PV du dealer');
+    assert.ok(accompliceHits.length >= 25 && accompliceHits.every(e => e.damage === 1), 'vingt-cinq impacts rouges retirent les 25 PV du complice');
     assert.equal(hud.wantedLevel, 0, 'aucune poursuite policière contre l’officier');
     assert.equal(hud.police.length, 0);
     assert.equal(evaluateCityRushMission(mission, result), true);
     world.action('pistol-up');
     listeners.window.keyup.forEach(handler => handler({ key: 'z', preventDefault() {} }));
   }
-  console.log('check:city-rush-mission-run ✓ — intercepteur visible, tirs tactile et clavier, dealer neutralisé, trois tours et replay');
+  console.log('check:city-rush-mission-run ✓ — intercepteur visible, dealer à 25 PV, complice à 25 PV déclenché puis rattrapé, trois tours et replay');
 } finally { world.destroy(); }

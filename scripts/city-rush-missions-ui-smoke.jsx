@@ -62,15 +62,19 @@ export async function checkCityRushMissionsUi(assert) {
       assert.equal(props.active, true);
       assert.equal(props.carId, rules.playerCarId);
       assert.equal(props.raceFormat, 'laps');
-      for (const key of ['policePlayerLook', 'playerRole', 'weaponsEnabled', 'policeEnabled', 'startingPistolAmmo', 'missionTargetId', 'missionTargetLeadMin', 'missionTargetLeadMax']) {
+      for (const key of ['policePlayerLook', 'playerRole', 'weaponsEnabled', 'policeEnabled', 'startingPistolAmmo', 'missionTargetId', 'missionTargetLeadMin', 'missionTargetLeadMax', 'missionEscapeTriggerId', 'missionEscapeTargetId', 'missionEscapeStartLead']) {
         assert.equal(props.storyRules[key], rules[key], key + ' arrive jusqu’au monde');
       }
-      assert.deepEqual(props.roster.map(r => r.id), ['player', 'dealer']);
+      assert.deepEqual(props.roster.map(r => r.id), ['player', 'dealer', 'accomplice']);
       assert.equal(props.roster[0].lane, props.roster[1].lane);
+      assert.equal(props.roster[1].health, 25);
+      assert.equal(props.roster[2].health, 25);
       await act(async () => props.onHud({
-        inventory: { pistol: 7 }, racers: [{ id: 'dealer', health: 15 }],
+        inventory: { pistol: 7 }, racers: [{ id: 'dealer', health: 25 }],
         playerHealth: 23, playerHealthMax: 23, police: [],
       }));
+      await act(async () => props.onEffect({ type: 'mission-escape-start', triggerId: 'dealer', targetId: 'accomplice' }));
+      assert.match(node.querySelector('.cr-mission-escape-alert')?.textContent || '', /COMPLICE EN FUITE/);
       const trigger = mustFind(node, '.city-rush-machine-gun-button', 'bouton de tir');
       assert.equal(trigger.disabled, false, 'le tir est accessible avec le chargeur de départ');
       worldProbe.actions.length = 0;
@@ -81,7 +85,7 @@ export async function checkCityRushMissionsUi(assert) {
       // Échec volontaire pour vérifier le même parcours lors d’un nouvel essai.
       await act(async () => props.onFinish({
         city: 'vice-city', laps: 3, distance: 4800, rank: 2, score: 0,
-        racers: [{ id: 'player', health: 23 }, { id: 'dealer', health: 15 }],
+        racers: [{ id: 'player', health: 23 }, { id: 'dealer', health: 25 }, { id: 'accomplice', health: 25 }],
       }));
       if (run === 0) {
         const retry = findByText(node, 'button', /REJOUER LE BRIEFING/);

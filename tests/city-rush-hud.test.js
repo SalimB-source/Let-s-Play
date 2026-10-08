@@ -60,25 +60,35 @@ test('la première mission identifie le joueur comme policier jusque dans le HUD
   assert.match(racerModels, /ctx\.fillText\('POLICE'/);
 });
 
-test('la cible de la première mission encaisse les tirs et son intercepteur démarre dans la voie du joueur', () => {
+test('les deux cibles à 25 PV de la première mission encaissent les tirs et le complice surgit après le dealer', () => {
   const missions = readFileSync(new URL('../src/games/cityRushMissions.js', import.meta.url), 'utf8');
-  assert.match(missions, /targetHealth:\s*15/);
-  assert.match(missions, /rivalHealth:\s*Object\.freeze\(\{ dealer: 15 \}\)/);
+  assert.match(missions, /targetHealth:\s*25/);
+  assert.match(missions, /rivalHealth:\s*Object\.freeze\(\{ dealer: 25, accomplice: 25 \}\)/);
   assert.match(page, /lane:\s*player\?\.lane \?\? opponent\?\.lane/);
-  assert.match(page, /health:\s*currentMission\.targetHealth \|\| 15/);
-  assert.match(page, /hud\.racers\?\.find\([\s\S]*?\|\|\s*roster\.find\(/, 'la jauge affiche les PV de la cible avant la première mise à jour du monde');
-  assert.match(page, /DEALER \$\{Math\.max\(0, Number\(missionTargetHud\?\.health\) \|\| 0\)\}\/\$\{currentMission\.targetHealth \|\| 15\} PV/);
+  assert.match(page, /const targetHealth = currentMission\.targetHealth \|\| 25/);
+  assert.match(page, /id:\s*escapeTargetId/);
+  assert.match(page, /name:\s*'COMPLICE'/);
+  assert.match(page, /hud\.racers\?\.find\([\s\S]*?\|\|\s*roster\.find\(/, 'la jauge affiche les PV du dealer avant la première mise à jour du monde');
+  assert.match(page, /DEALER \$\{Math\.max\(0, Number\(missionTargetHud\?\.health\) \|\| 0\)\}\/\$\{currentMission\.targetHealth \|\| 25\} PV/);
+  assert.match(page, /COMPLICE \$\{missionEscapeTargetHud \?/, 'le HUD suit la deuxième cible lorsqu’elle surgit');
+  assert.match(page, /effect\.type === 'mission-escape-start'\) setMissionEscapeAlert\(true\)/, 'le départ du complice déclenche une alerte de poursuite');
+  assert.match(page, /COMPLICE EN FUITE · RATTRAPE-LE !/);
   assert.match(raceList, /<CityRushHealthBar[\s\S]*?health=\{racer\.health\}[\s\S]*?maxHealth=\{racer\.maxHealth\}/);
 
   const candidates = world.match(/function laneShotCandidates\([\s\S]*?\n  function firstEnemyOnLane/)?.[0] || '';
   const damageRacer = world.match(/function damageRacer\([\s\S]*?\n  function applyPistolHit/)?.[0] || '';
   const pistolHit = world.match(/function applyPistolHit\([\s\S]*?\n  function applyStraightShotHit/)?.[0] || '';
+  const escapeActivation = world.match(/function activateMissionEscapeRacer\([\s\S]*?\n  \/\/ Ennemis/)?.[0] || '';
   assert.match(candidates, /racers\.filter\(\(racer\) => racer\.id !== attackerId\)\.map\(\(racer\) => getRaceVehicleState\(racer\.id\)\)/,
-    'le dealer fait partie des cibles balayées par les tirs rouges');
+    'les fugitifs font partie des cibles balayées par les tirs rouges');
   assert.match(pistolHit, /damageRacer\(target\.racer, CITY_RUSH_POWERS\.PISTOL, attackerId\)/,
     'un impact rouge applique bien les dégâts à la cible');
   assert.match(damageRacer, /racer\.health = cityRushPlayerDamage\(racer\.health, source\)/,
-    'chaque impact retire de la coque au dealer');
+    'chaque impact retire de la coque aux deux fugitifs');
+  assert.match(damageRacer, /racer\.id === missionEscapeTriggerId[\s\S]*?activateMissionEscapeRacer\(racer\)/,
+    'la destruction du dealer déclenche la fuite du complice');
+  assert.match(escapeActivation, /escapeRacer\.raceActive = true/);
+  assert.match(escapeActivation, /type: 'mission-escape-start'/);
 });
 
 test('maintenir Z vide le chargeur à cadence régulière et s’arrête à la relâche', () => {
