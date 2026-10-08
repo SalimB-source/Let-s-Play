@@ -189,6 +189,13 @@ export async function checkViceCityQuietRace(assert) {
 
     // Le HUD de course, lui, garde tout ce qui se lit d'un coup d'œil.
     assert.ok(node.querySelector('.city-rush-position-card'), 'la carte POSITION reste affichée');
+    // Course libre : trois voitures sur la grille, donc « 3e / 3 ». Le total
+    // suit le plateau (huit en tournoi) au lieu d'être figé à trois.
+    assert.equal(
+      node.querySelector('.city-rush-position-card > strong')?.textContent.replace(/\s+/g, ' ').trim(),
+      '3e / 3',
+      'la carte POSITION compte les trois pilotes de la course libre',
+    );
     assert.ok(node.querySelector('.city-rush-lap-card'), 'la carte TOUR / CHECKPOINT reste affichée');
     assert.ok(node.querySelector('.city-rush-gta-cash'), 'la carte BUTIN et chrono reste affichée');
     assert.ok(node.querySelector('.city-rush-speedometer'), 'le compteur de vitesse reste affiché');

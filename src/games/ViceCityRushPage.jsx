@@ -849,6 +849,11 @@ export default function ViceCityRushPage() {
     [hud.racers, roster, cityId, selectedCar.id, runId, playerDriverId, currentLaps, currentDistance, soloMode],
   );
   const standings = minimapState.racers;
+  // Taille du plateau de la course en cours : huit voitures de course en
+  // tournoi, trois en course libre et en histoire. Le monde classe toute la
+  // grille dans `hud.racers` ; avant sa première image, le roster en donne le
+  // même nombre. La place affichée se lit sur ce total, jamais sur un 3 fixe.
+  const raceFieldSize = hud.racers?.length || roster.length;
   // Checkpoint visé : en Sprint il remplace la place au classement,
   // puisqu'il n'y a personne d'autre en piste.
   const sprintCheckpoint = Math.min((Number(hud.sprint?.checkpoints) || 0) + 1, CITY_RUSH_SPRINT_CHECKPOINTS);
@@ -1814,7 +1819,7 @@ export default function ViceCityRushPage() {
                 ) : (
                 <div className="city-rush-hud-card city-rush-position-card">
                   <span className="city-rush-hud-label">POSITION</span>
-                  <strong>{ordinal(hud.rank)}<small> / 3</small></strong>
+                  <strong>{ordinal(hud.rank)}<small> / {raceFieldSize}</small></strong>
                   <div className="city-rush-mini-lights"><i className={hud.rank === 1 ? 'is-lit' : ''} /><i className={hud.rank === 2 ? 'is-lit' : ''} /><i className={hud.rank === 3 ? 'is-lit' : ''} /></div>
                 </div>
                 )}
@@ -2737,7 +2742,7 @@ export default function ViceCityRushPage() {
                     ? <div><small>PARCOURS</small><b>1 TOUR</b></div>
                     : result.sprint
                       ? <div><small>CHECKPOINTS</small><b>{result.checkpoints ?? 0}<i> / {CITY_RUSH_SPRINT_CHECKPOINTS}</i></b></div>
-                      : <div><small>PLACE</small><b>{result.destroyed ? 'DERNIER' : ordinal(result.rank)}<i> / 3</i></b></div>}
+                      : <div><small>PLACE</small><b>{result.destroyed ? 'DERNIER' : ordinal(result.rank)}<i> / {result.racers?.length || raceFieldSize}</i></b></div>}
                   <div><small>CHRONO</small><b>{formatTime(result.duration)}</b></div>
                   <div><small>{result.sprint ? 'CHECKPOINT MOYEN' : 'TOUR MOYEN'}</small><b>{formatTime((result.duration || 0) / (result.sprint ? CITY_RUSH_SPRINT_CHECKPOINTS : (result.laps || currentLaps || CITY_RUSH_LAPS)))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
