@@ -48,6 +48,7 @@
     "check:city-rush-tournament": "node scripts/vice-city-tournament-check.mjs",
     "check:city-rush-quiet": "node scripts/vice-city-quiet-race-check.mjs",
     "check:city-rush-ink": "node scripts/vice-city-rush-ink-check.mjs",
+    "check:city-rush-white-ink": "node scripts/vice-city-white-ink-check.mjs",
     "check:city-rush-smoke": "node scripts/city-rush-smoke.mjs --all",
     "check:city-rush-sprint": "node scripts/city-rush-sprint-smoke.mjs",
     "check:city-rush-sprint-ui": "node scripts/vice-city-sprint-ui-check.mjs",
