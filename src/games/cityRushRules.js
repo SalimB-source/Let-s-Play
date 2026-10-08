@@ -3457,6 +3457,8 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
 export const CITY_RUSH_AI_LANE_CHANGE_COST = 1.25; // marge de confort : on ne zigzague pas sans raison
 export const CITY_RUSH_AI_LANE_COOLDOWN_MIN = 0.3; // s : relecture de la route, au plus vite
 export const CITY_RUSH_AI_LANE_COOLDOWN_MAX = 0.5; // s : relecture de la route, au plus lent
+export const CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN = 1.1; // s : cible de mission, plus simple à garder dans la mire
+export const CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX = 1.6; // s : elle esquive toujours les dangers urgents
 export const CITY_RUSH_AI_REFLEX = 0.12; // s : un obstacle imminent rappelle le cerveau — sans télépathie
 export const CITY_RUSH_AI_BRAKING_MARGIN = 1.35; // × la distance de freinage : au-delà, la voie est bouchée
 export const CITY_RUSH_AI_WEAPON_LANE_WEIGHT = 2.2; // aligner une mitrailleuse chargée vaut deux bonus turbo
@@ -3544,14 +3546,18 @@ export function cityRushAiLaneBlocked({
 /**
  * Délai avant la prochaine décision de voie d'un rival. Court quand un danger
  * est déjà là (freinage d'urgence), plus long quand la route est libre : c'est
- * ce qui évite le zigzag permanent sans rendre l'IA myope. Le tirage garde une
- * part d'aléatoire pour que deux rivaux ne réagissent pas à la même image.
+ * ce qui évite le zigzag permanent sans rendre l'IA myope. La cible d'une
+ * mission garde sa voie 1,1 à 1,6 s pour laisser le temps de viser ; son réflexe
+ * face à un obstacle reste immédiat. Le tirage garde une part d'aléatoire pour
+ * que deux rivaux ne réagissent pas à la même image.
  */
-export function cityRushAiThinkDelay(random = Math.random, { urgent = false } = {}) {
+export function cityRushAiThinkDelay(random = Math.random, { urgent = false, missionTarget = false } = {}) {
   const sample = Number(typeof random === 'function' ? random() : random);
   const t = Number.isFinite(sample) ? Math.min(1, Math.max(0, sample)) : 0.5;
   if (urgent) return CITY_RUSH_AI_REFLEX * (0.7 + t * 0.6);
-  return CITY_RUSH_AI_LANE_COOLDOWN_MIN + t * (CITY_RUSH_AI_LANE_COOLDOWN_MAX - CITY_RUSH_AI_LANE_COOLDOWN_MIN);
+  const min = missionTarget ? CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN : CITY_RUSH_AI_LANE_COOLDOWN_MIN;
+  const max = missionTarget ? CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX : CITY_RUSH_AI_LANE_COOLDOWN_MAX;
+  return min + t * (max - min);
 }
 
 // Choisit une prochaine voie en équilibrant les bonus à portée et les menaces

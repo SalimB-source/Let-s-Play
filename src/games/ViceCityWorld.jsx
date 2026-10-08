@@ -8088,7 +8088,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function action(name) {
-    if (!active || finished) return;
+    // Le relâchement de la gâchette doit être accepté même en pause ou après
+    // l'arrivée, sinon un bouton tactile capturé pourrait rester en maintien.
+    if (name === 'pistol-up') {
+      releasePistolKey();
+      return true;
+    }
+    if (!active || finished) return false;
     if (name === 'left' || name === 'right') {
       // Immobilisée après l'épave : la voiture part en toupie et le volant ne
       // répond plus jusqu'à la fin de l'animation.
@@ -8100,6 +8106,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // tient le journal du tutoriel (écart de voie, esquive).
       changePlayerLane(nextLane);
       return;
+    }
+    if (name === 'pistol-down') {
+      pistolKeyHeld = true;
+      pistolHoldCooldown = 0;
+      const fired = usePower(CITY_RUSH_POWERS.PISTOL);
+      if (fired) pistolHoldCooldown = PISTOL_HOLD_FIRE_INTERVAL;
+      return fired;
     }
     if (name === 'bazooka' || name === 'use_bazooka') return useBazooka();
     const aliases = {
@@ -8924,7 +8937,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           // joueur au volant de la même voiture.
           brakingRate: cityRushAiBrakingRate(racer.profile.accelerationRate),
         })) {
-          racer.changeIn = Math.min(racer.changeIn, cityRushAiThinkDelay(Math.random, { urgent: true }));
+          racer.changeIn = Math.min(racer.changeIn, cityRushAiThinkDelay(Math.random, {
+            urgent: true,
+            missionTarget: racer.id === missionTargetId,
+          }));
         }
         if (racerCanThink && racer.changeIn <= 0) {
           const availableLanes = [racer.lane];
@@ -8960,7 +8976,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             brakingRate: cityRushAiBrakingRate(racer.profile.accelerationRate),
           });
           if (nextLane !== racer.lane) racer.lane = nextLane;
-          racer.changeIn = cityRushAiThinkDelay();
+          racer.changeIn = cityRushAiThinkDelay(Math.random, {
+            missionTarget: racer.id === missionTargetId,
+          });
         }
         racer.slowLeft = Math.max(0, racer.slowLeft - dt);
         racer.blueShotSlowLeft = Math.max(0, racer.blueShotSlowLeft - dt);

@@ -806,6 +806,11 @@ export default function ViceCityRushPage() {
             ...opponent,
             id: targetId,
             slot: 1,
+            // Le duel démarre dans la même voie : le joueur peut réellement
+            // essayer son chargeur avant que la cible ne s'échappe.
+            lane: player?.lane ?? opponent?.lane,
+            health: currentMission.targetHealth || 36,
+            maxHealth: currentMission.targetHealth || 36,
             driverId: targetId,
             name: 'DEALER',
             displayName: 'Le dealer',
@@ -932,6 +937,7 @@ export default function ViceCityRushPage() {
   const raceFieldSize = hud.racers?.length || roster.length;
   const missionTargetHud = currentMission?.targetId
     ? hud.racers?.find((racer) => racer.id === currentMission.targetId)
+      || roster.find((racer) => racer.id === currentMission.targetId)
     : null;
   const missionLiveStatus = !missionMode || !currentMission
     ? ''
@@ -2196,10 +2202,29 @@ export default function ViceCityRushPage() {
                         <button
                           type="button"
                           className={`city-rush-machine-gun-button${ready ? ' is-ready' : ' is-empty'}${ready && ammo <= 2 ? ' is-low' : ''}`}
-                          onClick={() => actionsRef.current?.(type)}
+                          onPointerDown={(event) => {
+                            if (event.button !== undefined && event.button !== 0) return;
+                            event.preventDefault();
+                            event.currentTarget.setPointerCapture?.(event.pointerId);
+                            actionsRef.current?.('pistol-down');
+                          }}
+                          onPointerUp={(event) => {
+                            if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                              event.currentTarget.releasePointerCapture?.(event.pointerId);
+                            }
+                            actionsRef.current?.('pistol-up');
+                          }}
+                          onPointerCancel={() => actionsRef.current?.('pistol-up')}
+                          onLostPointerCapture={() => actionsRef.current?.('pistol-up')}
+                          onBlur={() => actionsRef.current?.('pistol-up')}
+                          onClick={(event) => {
+                            // Clic clavier (Entrée/Espace) : le pointerdown a
+                            // déjà tiré pour la souris ou le doigt.
+                            if (event.detail === 0) actionsRef.current?.(type);
+                          }}
                           disabled={!ready}
-                          title={ready ? `AK-47 chargé · ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} · appuie ou maintiens Z pour tirer` : `Ramasse un bonus rouge rare pour obtenir ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles`}
-                          aria-label={ready ? `Tirer à l’AK-47, ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} ; maintiens Z pour vider le chargeur` : `AK-47 : 0/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}, ramasse un bonus rouge rare`}
+                          title={ready ? `AK-47 chargé · ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} · maintiens le bouton ou Z pour tirer` : `Ramasse un bonus rouge rare pour obtenir ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles`}
+                          aria-label={ready ? `Tirer à l’AK-47, ${ammo} balle${ammo > 1 ? 's' : ''} restante${ammo > 1 ? 's' : ''} ; maintiens le bouton ou Z pour vider le chargeur` : `AK-47 : 0/${CITY_RUSH_PISTOL_AMMO_PER_PICKUP}, ramasse un bonus rouge rare`}
                         >
                           {/* Anneau de munitions : un segment par balle du chargeur. */}
                           <svg className="city-rush-machine-gun-ammo" viewBox="0 0 100 100" aria-hidden="true">
