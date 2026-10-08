@@ -712,12 +712,7 @@ export default function RpgBattlePage() {
           {screen === 'combat' && (
             <div className="rpg-actions">
               {isPlayerTurn ? (
-                <>
-                  <p className="rpg-actions__who">
-                    Au tour de <strong>{current.name}</strong> — le sable paie les cartes
-                    {targetId && <> · cible : {battle.actors.find((a) => a.id === targetId)?.name}</>}
-                  </p>
-                  <div className="rpg-actions__row">
+                <div className="rpg-actions__row">
                     <label className={`rpg-crystallize ${crystallize ? 'is-on' : ''} ${battle.verre < RPG_CRISTALLISATION_COST ? 'is-off' : ''}`}>
                       <input
                         type="checkbox"
@@ -737,7 +732,6 @@ export default function RpgBattlePage() {
                       Fin du tour →
                     </button>
                   </div>
-                </>
               ) : (
                 <p className="rpg-actions__wait">
                   L’ennemi pose et exécute ses cartes…

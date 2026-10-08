@@ -939,7 +939,7 @@
   display: grid;
   gap: 6px;
   padding: 8px 12px 96px;
-  background: linear-gradient(0deg, rgba(4, 4, 10, .82) 60%, rgba(4, 4, 10, .45) 88%, transparent);
+  background: transparent; /* plus de bande noire : tout flotte sur la table */
 }
 
 .rpg-bottombar .rpg-log {
@@ -1175,12 +1175,14 @@
 /* ── Barre d'actions ─────────────────────────────────────────────────────── */
 /* Fenêtre de commandes façon Dragon Quest : double liseré, curseur ▶. */
 .rpg-actions {
-  margin: 0 12px 12px;
-  background: rgba(5, 5, 12, .92);
-  border: 2px solid #e8e2d0;
-  outline: 2px solid #0b0a14;
+  /* Fenêtre de commandes flottante, posée sur la table — plus de bloc noir. */
+  justify-self: end;
+  margin: 0 4px 6px;
+  background: transparent;
+  border: none;
+  outline: none;
   border-radius: 8px;
-  padding: 14px 18px 18px;
+  padding: 0;
   min-height: 120px;
 }
 
@@ -1203,7 +1205,15 @@
 }
 
 .rpg-actions__who strong { color: var(--cyan); }
-.rpg-actions__wait { margin: 0; color: var(--dim); font-size: 13px; }
+.rpg-actions__wait {
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(6, 6, 14, .7);
+  color: #f2eddc;
+  font-size: 13px;
+}
 
 .rpg-skills {
   display: grid;
