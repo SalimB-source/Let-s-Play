@@ -434,6 +434,93 @@ export function creatureById(id) {
   return RPG_CREATURE_CARDS.find((card) => card.id === id) ?? null;
 }
 
+/**
+ * Les héros en cartes jouables (façon arpenteurs) : mêmes images 4:5 que
+ * sur la table, stats à l'échelle du duel, une capacité d'arrivée chacun.
+ * Ils ne sont pas dans la main de départ — ils vivent dans le paquet.
+ */
+export const RPG_HERO_CARDS = [
+  {
+    id: 'salem',
+    name: 'SALEM',
+    role: 'Le Sondeur',
+    element: 'sable',
+    cost: 4,
+    atk: 4,
+    def: 3,
+    rarity: 'mythique',
+    kind: 'hero',
+    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Quand Salem arrive : son crochet fauche une créature adverse (2 dégâts).',
+    flavor: 'On ne monte pas un étage condamné sans redescendre.',
+  },
+  {
+    id: 'yamina',
+    name: 'YAMINA',
+    role: 'L’Horlogère',
+    element: 'verre',
+    cost: 3,
+    atk: 2,
+    def: 4,
+    rarity: 'mythique',
+    kind: 'hero',
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Quand Yamina arrive : piochez une carte.',
+    flavor: 'Je compte avant de signer.',
+  },
+  {
+    id: 'boualem',
+    name: 'BOUALEM',
+    role: 'Le Puisatier',
+    element: 'eau',
+    cost: 3,
+    atk: 2,
+    def: 4,
+    rarity: 'mythique',
+    kind: 'hero',
+    arrivee: { type: 'soin', amount: 4 },
+    text: 'Quand Boualem arrive : vous récupérez 4 points de vie.',
+    flavor: 'Moi je fais monter ce qui aide.',
+  },
+  {
+    id: 'feriel',
+    name: 'FÉRIEL',
+    role: 'La Souffleuse de verre',
+    element: 'braise',
+    cost: 5,
+    atk: 3,
+    def: 3,
+    rarity: 'mythique',
+    kind: 'hero',
+    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
+    text: 'Quand Fériel arrive : son souffle brûle toutes les créatures adverses (1).',
+    flavor: 'Le verre se souvient du feu.',
+  },
+  {
+    id: 'tarek',
+    name: 'TAREK',
+    role: 'Le Porteur',
+    element: 'sable',
+    cost: 5,
+    atk: 4,
+    def: 5,
+    rarity: 'mythique',
+    kind: 'hero',
+    arrivee: { type: 'buff', atk: 1, def: 1 },
+    text: 'Quand Tarek arrive : vos autres créatures gagnent +1/+1.',
+    flavor: 'Il frappe avec ce qu’il porte.',
+  },
+];
+
+export function heroById(id) {
+  return RPG_HERO_CARDS.find((card) => card.id === id) ?? null;
+}
+
+/** Toute carte jouable du duel : créature ou héros. */
+export function duelCardById(id) {
+  return creatureById(id) ?? heroById(id);
+}
+
 export const RPG_STARTING_COLLECTION = ['garde', 'bulle', 'nappe', 'vague', 'recolte'];
 
 /** Cartes de base des compagnons : leur seule attaque au début. */
@@ -496,7 +583,8 @@ export const RPG_BASIC_ATTACKS = {
 
 const CATALOG = new Map(
   [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS),
-    ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' }))].map((card) => [card.id, card]),
+    ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
+    ...RPG_HERO_CARDS].map((card) => [card.id, card]),
 );
 
 /** Retrouve une carte du catalogue par son id. */

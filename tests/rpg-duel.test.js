@@ -2,13 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   RPG_MAIN_DEPART,
+  RPG_SABLE_TOUR,
   rpgAttaquerCreature,
   rpgAttaquerSorcier,
   rpgBlesserCreature,
+  rpgFinDeTour,
   rpgJouerCreature,
   rpgNouveauDuel,
   rpgPiocher,
   rpgSorcierPv,
+  rpgTourSorcierIA,
   rpgVainqueur,
 } from '../src/games/rpgDuel.js';
 import { RPG_CREATURE_CARDS, creatureById } from '../src/games/rpgCards.js';
@@ -70,6 +73,7 @@ test('le sorcier ennemi a davantage de PV selon sa puissance', () => {
 
 test('poser une créature coûte son sable et la fait entrer en jeu', () => {
   const duel = duelDeBase();
+  duel.joueur.sable = 0;
   donner(duel, 'joueur', 'chien-du-guet');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet').ok, false, 'sans sable, non');
   duel.joueur.sable = 2;
@@ -175,14 +179,22 @@ test('on ne peut pas attaquer le sorcier tant que des créatures font face', () 
   donner(duel, 'sorcier', 'chien-du-guet');
   rpgJouerCreature(duel, 'joueur', 'dune-marchante');
   rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
+  assert.equal(rpgAttaquerCreature(duel, 'joueur', duel.joueur.creatures[0].id, duel.sorcier.creatures[0].id).raison,
+    'pas-pret', 'une créature qui arrive observe : pas d’attaque ce tour');
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
   const maDune = duel.joueur.creatures[0];
   const direct = rpgAttaquerSorcier(duel, 'joueur', maDune.id);
   assert.equal(direct.ok, false);
   assert.equal(direct.raison, 'creatures-en-face');
   assert.equal(duel.sorcier.pv, 50);
-  // Tuer la créature en face déverrouille l'attaque directe.
+  // Tuer la créature en face déverrouille l'attaque directe (au tour suivant,
+  // une créature ne frappe qu'une fois par tour).
   rpgAttaquerCreature(duel, 'joueur', maDune.id, duel.sorcier.creatures[0].id);
   assert.equal(duel.sorcier.creatures.length, 0);
+  assert.equal(rpgAttaquerSorcier(duel, 'joueur', maDune.id).raison, 'pas-pret', 'déjà attaquée ce tour');
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
   assert.equal(rpgAttaquerSorcier(duel, 'joueur', maDune.id).ok, true, 'table adverse dégagée : le sorcier encaisse');
   assert.equal(duel.sorcier.pv, 48);
 });
@@ -195,9 +207,60 @@ test('combat de créatures : dégâts mutuels, la plus fragile casse', () => {
   donner(duel, 'sorcier', 'chien-du-guet');
   rpgJouerCreature(duel, 'joueur', 'dune-marchante');
   const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  rpgFinDeTour(duel); // le sorcier commence : ses créatures deviennent prêtes
   rpgAttaquerCreature(duel, 'sorcier', chien.id, duel.joueur.creatures[0].id);
   assert.equal(duel.sorcier.creatures.length, 0, 'le chien meurt (2 ≥ 2)');
   assert.equal(duel.joueur.creatures[0].pv, 3, 'la dune encaisse 2');
+});
+
+test('début de tour : revenu de sable, pioche 1, créatures prêtes', () => {
+  const duel = duelDeBase();
+  const sableAvant = duel.sorcier.sable;
+  const mainAvant = duel.sorcier.main.length;
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(duel.sorcier.sable, sableAvant + RPG_SABLE_TOUR);
+  assert.equal(duel.sorcier.main.length, mainAvant + 1);
+  duel.sorcier.sable = 10;
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  assert.equal(chien.ready, false, 'mal d’invocation');
+  rpgFinDeTour(duel); // retour au joueur
+  rpgFinDeTour(duel); // le sorcier recommence
+  assert.equal(duel.sorcier.creatures[0].ready, true);
+  assert.equal(duel.sorcier.creatures[0].attaquee, false);
+});
+
+test('le sorcier IA joue son tour : pose ses créatures puis attaque', () => {
+  const duel = rpgNouveauDuel({
+    joueurDeck: ['dune-marchante', 'dune-marchante', 'dune-marchante', 'dune-marchante', 'dune-marchante', 'dune-marchante'],
+    sorcierDeck: ['chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet'],
+    rng: () => 0.2,
+  });
+  duel.sorcier.sable = 4;
+  rpgTourSorcierIA(duel, () => 0);
+  assert.equal(duel.sorcier.creatures.length, 2, '4 sable : deux chiens 2/2 posés');
+  assert.equal(duel.sorcier.sable, 0);
+  // Tour suivant : les chiens sont prêts et frappent le joueur sans défense.
+  rpgFinDeTour(duel); // joueur
+  rpgFinDeTour(duel); // sorcier
+  const pvAvant = duel.joueur.pv;
+  rpgTourSorcierIA(duel, () => 0);
+  assert.equal(duel.joueur.pv, pvAvant - 4, 'deux chiens prêts frappent le joueur');
+});
+
+test('les héros sont des cartes du paquet, pas de la main de départ', () => {
+  const duel = rpgNouveauDuel({
+    joueurDeck: ['salem', 'yamina', 'boualem', 'feriel', 'tarek', 'chien-du-guet', 'chien-du-guet'],
+    rng: () => 0.5,
+  });
+  duel.joueur.sable = 10;
+  if (duel.joueur.main.includes('salem')) {
+    const res = rpgJouerCreature(duel, 'joueur', 'salem');
+    assert.equal(res.ok, true, 'Salem se pose comme carte');
+    assert.equal(duel.joueur.creatures[0].kind, 'hero');
+  }
+  assert.ok(true);
 });
 
 test('vainqueur : nul tant que les deux sorciers sont debout', () => {

@@ -33,11 +33,9 @@ try {
   dom.window.close();
 }
 console.log(
-  'check:rpg-ui ✓ — écran de combat : table de jeu en bois montée (cartes équipe et ennemies posées, sans WebGL nécessaire) avec boîte de message qui tape le journal, les trois difficultés (de l’information, pas des réflexes), '
-  + 'ouverture du combat (4 cartes compagnons avec portrait peint, étages, segments de Nom, sable au sol, Astrolabe, ordre des tours en visages), '
-  + 'intention annoncée sur chaque carte ennemie avec portrait, aucune option de parade ni d’esquive, carte de base posée et tracée au journal, '
-  + 'main de pouvoirs collectionnables avec cartes de base gratuites et action « Sonder le sol », première vague gagnée en jouant '
-  + 'pour de vrai, draft d’après vague (trois cartes, une choisie), palier exploré entre les vagues (heures, sable de poche versé au sol, choix moral) puis vague 2 '
-  + 'enchaînée et permutation avec la réserve présente.',
+  'check:rpg-ui ✓ — nouvelle partie : duel de sorciers sur la table en bois, table vide au départ et 5 cartes piochées en images 4:5, '
+  + 'joueur à 50 PV face au sorcier à 60 (puissance 2), créature posée en payant le sable, mal d’invocation expliqué, '
+  + 'tour du sorcier adverse joué tout seul (il pose ses cartes), mur de créatures qui bloque la frappe directe, '
+  + 'et créature prête (liseré doré) au tour suivant.',
 );
 process.exit(0);

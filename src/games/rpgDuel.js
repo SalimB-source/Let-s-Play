@@ -9,12 +9,13 @@
  * à l'arrivée ou quand elles sont détruites.
  */
 
-import { creatureById } from './rpgCards.js';
+import { duelCardById } from './rpgCards.js';
 
 export const RPG_PV_JOUEUR = 50;
 export const RPG_PV_SORCIER_BASE = 50;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 5;
 export const RPG_MAIN_DEPART = 5;
+export const RPG_SABLE_TOUR = 2;   // revenu provisoire en attendant les terrains
 
 /** PV d'un sorcier adverse selon sa puissance. */
 export const rpgSorcierPv = (puissance = 0) =>
@@ -52,6 +53,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     rpgPiocher(duel, 'joueur');
     rpgPiocher(duel, 'sorcier');
   }
+  // Le joueur commence : son premier tour compte aussi comme début de tour.
+  duel.joueur.sable += RPG_SABLE_TOUR;
   return duel;
 }
 
@@ -111,7 +114,7 @@ function enterrer(duel, cote, entite) {
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
   duel.log.push(`${entite.name} est détruite.`);
-  const carte = creatureById(entite.carteId);
+  const carte = duelCardById(entite.carteId);
   if (carte?.destruction) appliquer(duel, cote, carte.destruction, null);
 }
 
@@ -128,24 +131,28 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount) {
 /** Pose une créature : paie le sable, arrive en jeu, capacité d'arrivée. */
 export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   const camp = duel[cote];
-  const carte = creatureById(carteId);
+  const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
   if (camp.sable < carte.cost) return { ok: false, raison: 'sable' };
   camp.sable -= carte.cost;
   camp.main.splice(camp.main.indexOf(carteId), 1);
-  const entite = { id: nextId(), carteId, name: carte.name, atk: carte.atk, def: carte.def, pv: carte.def };
+  const entite = { id: nextId(), carteId, kind: carte.kind ?? 'creature', name: carte.name, atk: carte.atk, def: carte.def, pv: carte.def, ready: false, attaquee: false };
   camp.creatures.push(entite);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   if (carte.arrivee) appliquer(duel, cote, carte.arrivee, cibleId, entite.id);
   return { ok: true, entite };
 }
 
+const pret = (entite) => entite && entite.ready && !entite.attaquee;
+
 /** Combat entre créatures : dégâts mutuels, façon Magic. */
 export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const attaquant = duel[cote].creatures.find((e) => e.id === entiteId);
   const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
   if (!attaquant || !cible) return { ok: false, raison: 'absente' };
+  if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
+  attaquant.attaquee = true;
   rpgBlesserCreature(duel, autre(cote), cibleId, attaquant.atk);
   rpgBlesserCreature(duel, cote, entiteId, cible.atk);
   return { ok: true };
@@ -156,9 +163,53 @@ export function rpgAttaquerSorcier(duel, cote, entiteId) {
   const attaquant = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!attaquant) return { ok: false, raison: 'absente' };
   if (duel[autre(cote)].creatures.length > 0) return { ok: false, raison: 'creatures-en-face' };
+  if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
+  attaquant.attaquee = true;
   duel[autre(cote)].pv -= attaquant.atk;
   duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
   return { ok: true };
+}
+
+/** Fin du tour : l'autre camp commence — revenu de sable, pioche 1,
+ *  ses créatures deviennent prêtes (le mal d'invocation tombe). */
+export function rpgFinDeTour(duel) {
+  duel.tour = autre(duel.tour);
+  const camp = duel[duel.tour];
+  camp.sable += RPG_SABLE_TOUR;
+  rpgPiocher(duel, duel.tour);
+  for (const entite of camp.creatures) {
+    entite.ready = true;
+    entite.attaquee = false;
+  }
+  duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
+  return duel;
+}
+
+/** Le sorcier adverse joue son tour : pose ce qu'il peut payer, puis
+ *  attaque (les créatures d'abord s'il y en a, sinon le joueur). */
+export function rpgTourSorcierIA(duel, rng = Math.random) {
+  const joue = [];
+  let garde = 8;
+  while (garde-- > 0) {
+    const jouables = duel.sorcier.main
+      .map((id) => duelCardById(id))
+      .filter((carte) => carte && carte.cost <= duel.sorcier.sable)
+      .sort((a, b) => b.cost - a.cost);
+    if (!jouables.length) break;
+    const res = rpgJouerCreature(duel, 'sorcier', jouables[0].id);
+    if (!res.ok) break;
+    joue.push(res.entite);
+  }
+  for (const entite of [...duel.sorcier.creatures]) {
+    if (!pret(entite)) continue;
+    if (duel.joueur.creatures.length) {
+      const cible = duel.joueur.creatures[Math.floor(rng() * duel.joueur.creatures.length)];
+      rpgAttaquerCreature(duel, 'sorcier', entite.id, cible.id);
+    } else {
+      rpgAttaquerSorcier(duel, 'sorcier', entite.id);
+    }
+  }
+  return joue;
 }
 
 /** Qui a gagné ? null tant que les deux sorciers tiennent debout. */

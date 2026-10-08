@@ -1,13 +1,13 @@
-// Rendu réel de l'écran de combat dans jsdom : on ouvre la page, on lance le
-// combat, on lit les intentions annoncées, on joue un coup et une réponse,
-// puis on laisse le tour ennemi se dérouler tout seul. Les règles viennent du
-// moteur (testé par ailleurs) ; ce qui est vérifié ici, c'est que la page les
+// Rendu réel de la nouvelle partie (le duel de sorciers) dans jsdom :
+// la table démarre vide, chaque camp pioche 5 cartes en images 4:5, on pose
+// une créature, on vérifie le mal d'invocation, le mur de créatures et le
+// tour du sorcier adverse qui joue tout seul. Les règles viennent du moteur
+// (testé par ailleurs) ; ce qui est vérifié ici, c'est que la page les
 // affiche et réagit — le seul endroit où React et les timers se rencontrent.
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
 import { act } from 'react';
-import RpgBattlePage from '../src/games/RpgBattlePage.jsx';
+import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -17,164 +17,59 @@ export async function checkRpgBattle(assert) {
   const root = createRoot(container);
 
   await act(async () => {
-    root.render(<MemoryRouter><RpgBattlePage /></MemoryRouter>);
+    root.render(<RpgDuelPage />);
   });
 
   const buttons = () => [...container.querySelectorAll('button')];
   const findButton = (label) => buttons().find((button) => button.textContent.includes(label));
+  const handCards = () => buttons().filter((b) => b.className.includes('rpg-hand__card'));
 
-  // ── L'écran d'accueil explique le contrat : rien ne dépend des réflexes ──
-  assert.match(container.textContent, /SABLIER/);
-  assert.match(container.textContent, /sans réflexes/);
-  assert.ok(buttons().some((b) => b.className.includes('rpg-mute')),
-    'le bouton son 🔊/🔇 doit exister dans l’en-tête');
-  for (const level of ['Récit', 'Normale', 'Veilleur']) {
-    assert.ok(findButton(level), `difficulté « ${level} » absente`);
-  }
-  await act(async () => { findButton('Veilleur').click(); });
-  await act(async () => { findButton('Normale').click(); });
-
-  // ── Ouverture du combat ─────────────────────────────────────────────────
-  await act(async () => { findButton('Ouvrir le combat').click(); });
-  await act(async () => { await wait(900); });
-
-  assert.match(container.textContent, /Vague 1/);
-  // La table de jeu est montée, cartes posées : quatre compagnons en bas,
-  // au moins deux ennemis en face, chacun avec son portrait en illustration.
+  // ── Nouvelle partie : table vide, 5 cartes, 50 PV face à un sorcier à 60 ─
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée');
-  assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit être posée en cartes');
-  assert.ok(container.querySelectorAll('.rpg-card--ennemi').length >= 2, 'les ennemis doivent être posés en cartes');
-  assert.ok(container.querySelectorAll('.rpg-card img').length >= 6, 'chaque carte doit montrer son illustration');
-  // Les ennemis instanciés (id suffixés) doivent tout de même pointer vers le
-  // fichier de portrait de leur définition — régression du 2026-10-08.
-  const foeSrcs = [...container.querySelectorAll('.rpg-card--ennemi img')].map((img) => img.getAttribute('src'));
-  assert.ok(foeSrcs.length >= 2 && foeSrcs.every((s) => /portraits\/balayeur\.jpg$/.test(s)), `les ennemis doivent charger balayeur.jpg (${foeSrcs.join(', ')})`);
-  assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit compter 4 compagnons');
-  const foeCards = container.querySelectorAll('.rpg-card--ennemi');
-  assert.ok(foeCards.length >= 2, `ennemis absents (${foeCards.length})`);
-  // Chaque ennemi vivant annonce son prochain coup.
-  assert.equal(container.querySelectorAll('.rpg-intent').length, foeCards.length,
-    'chaque ennemi doit afficher son intention');
-  assert.match(container.querySelector('.rpg-intent').textContent, /lourd|zone|sablier|soutien|incantation/i);
-  // Étages, segments de Nom, sable au sol, Astrolabe : tout est affiché.
-  assert.equal(container.querySelectorAll('.rpg-tier').length >= 6, true);
-  assert.equal(container.querySelectorAll('.rpg-name-segments').length, 4);
-  assert.match(container.textContent, /notre sol/);
-  assert.match(container.textContent, /leur sol/);
-  assert.match(container.textContent, /Astrolabe/);
-  assert.ok(container.querySelectorAll('.rpg-ring__item').length >= 4, 'ordre des tours vide');
-  // Les personnages sont visibles en combat : un portrait peint par acteur,
-  // dans l'équipe, face à chaque ennemi et dans l'ordre des tours.
-  const allyPortraits = [...container.querySelectorAll('.rpg-card--equipe img')];
-  assert.equal(allyPortraits.length, 4, 'chaque compagnon doit afficher sa carte 4:5');
-  assert.ok(allyPortraits.every((img) => /cards\/.+\.(jpg|png)$/.test(img.getAttribute('src') ?? '')),
-    'une carte d’allié doit pointer vers son image 4:5 générée');
-  assert.equal(container.querySelectorAll('.rpg-foe__portrait').length, foeCards.length,
-    'chaque ennemi doit afficher son portrait');
-  assert.ok(container.querySelectorAll('img.rpg-ring__dot').length >= 4,
-    'l’ordre des tours doit montrer les visages');
-  // Aucune réaction en temps réel : l'écran ne propose ni parade ni esquive.
-  assert.equal(container.textContent.includes('Parade'), false, 'le prototype ne doit plus proposer de parade');
+  assert.equal(container.querySelectorAll('.rpg-card').length, 0, 'la table démarre sans aucune carte');
+  assert.equal(handCards().length, 5, 'chaque camp pioche 5 cartes');
+  assert.match(container.textContent, /🛡 50/, 'le joueur démarre à 50 PV');
+  assert.match(container.textContent, /🛡 60/, 'le sorcier (puissance 2) démarre à 60 PV');
 
-  const enemyHp = () => [...container.querySelectorAll('.rpg-card--ennemi .rpg-card__pt')]
-    .map((node) => Number(node.textContent.replace(/\D/g, '')))
-    .reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
-  const hpBefore = enemyHp();
-  assert.ok(hpBefore > 500, `PV ennemis inattendus : ${hpBefore}`);
+  // ── Toutes les cartes sont les images 4:5 générées ─────────────────────
+  const srcs = [...container.querySelectorAll('.rpg-hand__card--img img')].map((i) => i.getAttribute('src'));
+  assert.equal(srcs.length, 5, 'chaque carte de la main est une image');
+  assert.ok(srcs.every((s) => /cards\/.+\.jpg$/.test(s)), `les cartes pointent vers /cards/ (${srcs.join(', ')})`);
 
-  // ── Le joueur pose une carte ────────────────────────────────────────────
-  let handCard = null;
-  for (let attempt = 0; attempt < 24 && !handCard; attempt += 1) {
-    await act(async () => { await wait(250); });
-    // La carte de base (attaque gratuite) dès que c'est notre tour.
-    handCard = buttons().find((button) =>
-      button.className.includes('rpg-hand__card') && !button.disabled
-      && /Sonde|Aiguille|Puisage|Éclat|Palette/.test(button.textContent));
-  }
-  assert.ok(handCard, 'aucune carte de base jouable proposée au joueur');
-  await act(async () => { handCard.click(); });
-  await act(async () => { await wait(400); });
-
-  assert.match(container.querySelector('.rpg-log').textContent, /pose la carte|dégâts|soigne|interrompt/,
-    'le journal ne trace aucune action');
-  assert.ok(enemyHp() < hpBefore, `les PV ennemis n’ont pas baissé (${hpBefore} → ${enemyHp()})`);
-
-  // La boîte de message tape le journal lettre à lettre, façon Dragon Quest.
-  await act(async () => { await wait(300); });
-  const msg = container.querySelector('.rpg-scene__msg span');
-  assert.ok(msg && msg.textContent.length > 0, 'la boîte de message doit taper le journal');
-
-  // ── Tout est carte : base gratuite, sonde le sol, pouvoirs en main ──────
-  assert.match(container.textContent, /Sonder le sol/, 'l’action de base doit être proposée');
-  assert.ok(buttons().some((b) => b.className.includes('rpg-hand__card')),
-    'la main de pouvoirs collectionnables doit être proposée');
-  // Rien ne dépend des réflexes : aucune parade nulle part.
-  assert.equal(container.textContent.includes('Parade'), false);
-
-  // ── Le tour ennemi se joue seul, sans rien demander au joueur ───────────
-  let waveDone = false;
-  for (let attempt = 0; attempt < 220 && !waveDone; attempt += 1) {
-    if (container.querySelector('.rpg-overlay')) {
-      waveDone = true;
+  // ── Poser une créature (2 ⛃ de revenu au premier tour) ─────────────────
+  let pose = 0;
+  for (let essai = 0; essai < 4 && !pose; essai += 1) {
+    const jouable = handCards().find((b) => !b.disabled);
+    if (jouable) {
+      await act(async () => { jouable.click(); });
+      pose = container.querySelectorAll('.rpg-card--equipe').length;
       break;
     }
-    // On joue pour de vrai : une carte dès qu'il y en a une, sinon on passe.
-    const card = buttons().find((button) => button.className.includes('rpg-hand__card') && !button.disabled);
-    if (card) {
-      await act(async () => { card.click(); });
-    } else {
-      const endTurn = findButton('Fin du tour');
-      if (endTurn) await act(async () => { endTurn.click(); });
-    }
-    await act(async () => { await wait(180); });
+    await act(async () => { findButton('Fin du tour').click(); });
+    await act(async () => { await wait(1800); });
   }
-  assert.ok(waveDone, 'la première vague ne s’est pas terminée');
-  assert.match(container.querySelector('.rpg-overlay').textContent, /Vague repoussée/);
-  assert.match(container.querySelector('.rpg-log').textContent, /Balayeur|raclette|Tourbillon|Sac de sable/i);
+  assert.equal(pose, 1, 'une créature doit être posée sur la table');
+  assert.match(container.textContent, /⚔/, 'la carte posée montre son attaque');
 
-  // ── Le draft d'après vague : trois cartes, on en choisit une ────────────
-  const draftCards = container.querySelectorAll('.rpg-draft__row .rpg-hand__card');
-  assert.equal(draftCards.length, 3, 'le draft doit proposer trois cartes');
-  await act(async () => { draftCards[0].click(); });
-  await act(async () => { await wait(120); });
-  assert.equal(container.querySelectorAll('.rpg-draft__row .rpg-hand__card').length, 0,
-    'une fois choisie, l’offre se referme');
+  // ── Mal d'invocation : la créature qui arrive observe ──────────────────
+  await act(async () => { container.querySelector('.rpg-card--equipe').click(); });
+  assert.match(container.textContent, /observe encore|déjà frappé/, 'le mal d’invocation doit être expliqué');
 
-  // ── Entre les vagues : le palier se visite avant de redescendre ─────────
-  await act(async () => { findButton('Monter au palier').click(); });
-  await act(async () => { await wait(400); });
-  assert.ok(container.querySelector('.rpg-explore'), 'l’exploration du palier doit s’ouvrir après la vague 1');
-  assert.match(container.textContent, /Heures avant le cycle/);
-  assert.equal(container.querySelectorAll('.rpg-place').length >= 4, true, 'le palier doit offrir plusieurs lieux');
-  // On vend la ferraille : +30 sable de poche, une heure en moins.
-  await act(async () => { findButton('ferraille').click(); });
-  await act(async () => { await wait(120); });
-  assert.match(container.textContent, /Sable de poche 30/, 'le sable de poche doit être affiché');
-  assert.match(container.querySelector('.rpg-explore__hours').textContent, /Heures avant le cycle/);
-  // L'action faite est cochée et rejouable nulle part.
-  const doneButton = findButton('ferraille');
-  assert.equal(doneButton.disabled, true, 'une action faite ne se rejoue pas');
-  // Un choix moral s'ouvre sans se trancher tant qu'on n'a pas choisi.
-  await act(async () => { findButton('Affronter la Liste').click(); });
-  await act(async () => { await wait(120); });
-  assert.ok(findButton('Arracher la page de Salem'), 'le choix moral doit proposer ses deux options');
+  // ── Le sorcier adverse joue son tour tout seul ─────────────────────────
+  await act(async () => { findButton('Fin du tour').click(); });
+  await act(async () => { await wait(1800); });
+  assert.ok(container.querySelectorAll('.rpg-card--ennemi').length >= 1,
+    'le sorcier adverse doit poser ses cartes');
 
-  // ── On descend : le sable de poche se verse au sol, la vague 2 commence ─
-  await act(async () => { findButton('Descendre').click(); });
-  await act(async () => { await wait(900); });
-  assert.match(container.textContent, /Vague 2/);
-  const notreSol = Number((container.textContent.match(/notre sol (\d+)/) ?? [null, NaN])[1]);
-  assert.ok(notreSol >= 30, `le sable de poche doit être versé sur notre sol (lu : ${notreSol})`);
-  assert.equal(container.querySelectorAll('.rpg-card--equipe').length, 4, 'l’équipe doit être au complet après le palier');
-  // La permutation a été retirée de l'UI : on vérifie à la place que le gros
-  // bouton doré « Fin du tour » revient bien pendant le tour d'un allié.
-  let endTurnButton = null;
-  for (let attempt = 0; attempt < 40 && !endTurnButton; attempt += 1) {
-    await act(async () => { await wait(300); });
-    endTurnButton = buttons().find((button) => button.textContent.includes('Fin du tour'));
-    if (container.querySelector('.rpg-overlay')) break;
-  }
-  assert.ok(endTurnButton, 'le bouton « Fin du tour » doit revenir pendant le tour d’un allié');
+  // ── Mur de créatures : pas de frappe directe tant qu'elles font face ───
+  await act(async () => { container.querySelector('.rpg-wizard-plate--ennemi').click(); });
+  assert.match(container.textContent, /fait face|d’abord|Choisissez/, 'le mur de créatures doit bloquer la frappe directe');
+
+  // ── Au tour suivant, notre créature devient prête (liseré doré) ────────
+  await act(async () => { findButton('Fin du tour').click(); });
+  await act(async () => { await wait(1800); });
+  assert.ok(container.querySelector('.rpg-card--equipe.is-pret'),
+    'notre créature doit être prête à attaquer à notre tour');
 
   await act(async () => { root.unmount(); });
 }

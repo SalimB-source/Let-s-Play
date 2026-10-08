@@ -638,6 +638,35 @@
   color: #10161c;
 }
 
+/* Plaques de PV des deux sorciers, dans les coins de la table. */
+.rpg-wizard-plate {
+  position: absolute;
+  top: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 2px solid #000;
+  background: rgba(10, 8, 4, .78);
+  color: #f2eddc;
+  font: 700 11px/1.2 var(--display);
+  letter-spacing: .08em;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rpg-wizard-plate--ennemi { right: 10px; border-color: #7a2e1d; }
+.rpg-wizard-plate--joueur { left: 10px; border-color: #d9b45b; }
+.rpg-wizard-plate__pv { font-size: 13px; color: #ffe9a0; }
+.rpg-wizard-plate__sable { font: 600 9px/1.2 var(--mono); color: #c9c2ae; }
+
+/* Créature prête à attaquer : liseré doré. */
+.rpg-card.is-pret {
+  box-shadow: 0 0 0 2px rgba(255, 214, 25, .8), 0 6px 16px rgba(0, 0, 0, .5);
+}
+
 /* ── Carte à image 4:5 (héros) : l'image est le visage, le texte en ────
    bandeaux translucides par-dessus. */
 .rpg-card--img { padding: 0; overflow: hidden; }
