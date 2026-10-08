@@ -2254,13 +2254,12 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
 - `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
   Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
   jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
-- `src/games/RpgBattleScene.jsx` — la vitrine 3D (Three.js) : l'équipe fait
-  face aux ennemis sur l'escalier d'étages, figurines procédurales, sable qui
-  gonfle au sol, Astrolabe au ciel. Mise en scène façon Dragon Quest : caméra
-  qui cadre l'attaquant et sa cible, chiffres de dégâts flottants, clignement
-  blanc à l'impact, ennemis qui meurent en scintillant, boîte de message à
-  texte tapé lettre à lettre, bannière « des ennemis apparaissent ! ». Sans
-  WebGL, repli sobre, combat jouable.
+- `src/games/BattleStage2D.jsx` — la scène de combat peinte, 100 % DOM (donc
+  visible partout, sans WebGL) : les portraits font office de sprites, équipe
+  à gauche, ennemis à droite, chacun sur son étage, sous le ciel de Bab El.
+  Mise en scène façon Dragon Quest : ruées, clignement blanc à l'impact,
+  chiffres flottants, ennemis qui meurent en scintillant, boîte de message à
+  texte tapé lettre à lettre, bannière « des ennemis apparaissent ! ».
 - `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
   jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
   souffle de sable. La partie pure est testée ; le lecteur s'éveille au

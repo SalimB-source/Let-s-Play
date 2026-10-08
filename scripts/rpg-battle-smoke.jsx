@@ -39,9 +39,12 @@ export async function checkRpgBattle(assert) {
   await act(async () => { await wait(900); });
 
   assert.match(container.textContent, /Vague 1/);
-  // La scène 3D (équipe face aux ennemis) est montée ; sans WebGL elle se
-  // déclare en repli, mais elle doit toujours être là.
-  assert.ok(container.querySelector('.rpg-scene'), 'la scène 3D doit être montée pendant le combat');
+  // La scène peinte (équipe face aux ennemis) est montée, avec les visages :
+  // quatre compagnons à gauche, au moins deux ennemis à droite.
+  assert.ok(container.querySelector('.rpg-stage2d'), 'la scène de combat doit être montée');
+  assert.equal(container.querySelectorAll('.rpg-fig--equipe').length, 4, 'l’équipe doit être visible en scène');
+  assert.ok(container.querySelectorAll('.rpg-fig--ennemi').length >= 2, 'les ennemis doivent être visibles en scène');
+  assert.ok(container.querySelectorAll('.rpg-fig img').length >= 6, 'chaque acteur doit montrer son portrait');
   assert.equal(container.querySelectorAll('.rpg-ally').length, 4, 'l’équipe doit compter 4 compagnons');
   const foeCards = container.querySelectorAll('.rpg-foe');
   assert.ok(foeCards.length >= 2, `ennemis absents (${foeCards.length})`);

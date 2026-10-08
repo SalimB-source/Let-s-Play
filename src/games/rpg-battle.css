@@ -363,26 +363,152 @@
 .rpg-explore__foot p { margin: 0; color: var(--muted); font-size: 13px; }
 
 /* ── Scène 3D : l'équipe face aux ennemis ────────────────────────────────── */
-.rpg-scene {
-  position: relative;
-  height: 320px;
-  margin: 0 0 16px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
+/* ── Scène peinte 2D : le langage natif de Dragon Quest ─────────────────── */
+.rpg-stage2d {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  background: #0a0a16;
+  background-color: #0a0a16;
+  background-size: cover;
+  background-position: center 42%;
 }
 
-.rpg-scene canvas { display: block; position: absolute; inset: 0; }
+.rpg-fig {
+  position: absolute;
+  width: 118px;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  transition: left .5s ease, right .5s ease, bottom .5s ease;
+}
 
-.rpg-scene--flat { display: grid; place-items: center; }
+.rpg-fig img {
+  width: 92px;
+  height: 92px;
+  border-radius: 14px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border: 2px solid rgba(216, 165, 49, .55);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .55);
+  background: #0b0b16;
+}
 
-.rpg-scene__fallback {
-  margin: 0;
-  padding: 16px;
-  color: var(--muted);
-  font-size: 13.5px;
+.rpg-fig--ennemi img { border-color: rgba(255, 110, 90, .55); }
+
+.rpg-fig__shadow {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 86px;
+  height: 16px;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, .55), transparent 72%);
+}
+
+.rpg-fig__name {
+  font: 700 10px/1 var(--display);
+  letter-spacing: .08em;
+  color: #f3ecd9;
+  text-shadow: 0 1px 3px #000;
+}
+
+.rpg-fig__hp {
+  width: 74px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .14);
+  overflow: hidden;
+}
+
+.rpg-fig__hp i { display: block; height: 100%; background: linear-gradient(90deg, #34d399, #a7f3d0); }
+.rpg-fig--ennemi .rpg-fig__hp i { background: linear-gradient(90deg, #ef4444, #fca5a5); }
+
+.rpg-fig__halo {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 98px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--yellow);
+  box-shadow: 0 0 14px rgba(255, 214, 25, .5);
+  animation: rpg-halo 1s ease-in-out infinite;
+}
+
+@keyframes rpg-halo { 50% { opacity: .4; } }
+
+.rpg-fig__guard {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px solid rgba(34, 211, 238, .8);
+  background: rgba(34, 211, 238, .12);
+}
+
+.rpg-fig__bubble {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid rgba(125, 211, 252, .6);
+  background: rgba(125, 211, 252, .1);
+}
+
+/* Cinématiques de sprites : ruée, clignement d'impact, lueur de soin, mort. */
+.rpg-fig--equipe.fx-lunge { animation: rpg-lunge-team .55s ease; }
+.rpg-fig--ennemi.fx-lunge { animation: rpg-lunge-foe .55s ease; }
+
+@keyframes rpg-lunge-team { 40% { transform: translate(54px, -8px); } }
+@keyframes rpg-lunge-foe { 40% { transform: translate(-54px, -8px); } }
+
+.fx-hit { animation: rpg-hit .45s steps(2, start); }
+
+@keyframes rpg-hit {
+  25%, 75% { filter: brightness(2.8) saturate(0); opacity: .35; }
+  50% { opacity: 1; }
+}
+
+.fx-glow { animation: rpg-glow .7s ease; }
+
+@keyframes rpg-glow { 30% { filter: drop-shadow(0 0 16px #ffd619) brightness(1.6); } }
+
+.is-down { animation: rpg-die .9s ease forwards; }
+
+@keyframes rpg-die {
+  0% { opacity: 1; }
+  20% { opacity: .2; }
+  40% { opacity: 1; }
+  60% { opacity: .2; }
+  100% { opacity: 0; transform: translateY(14px); }
+}
+
+/* Chiffres flottants, cerclés de noir comme au bon vieux temps. */
+.rpg-pop {
+  position: absolute;
+  width: 118px;
   text-align: center;
+  font: 700 26px/1 "Courier New", monospace;
+  color: #fff;
+  text-shadow: 2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000;
+  animation: rpg-popfloat 1s ease forwards;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.rpg-pop--heal { color: #7cfc9a; }
+
+@keyframes rpg-popfloat {
+  from { opacity: 0; translate: 0 -100px; }
+  15% { opacity: 1; }
+  to { opacity: 0; translate: 0 -160px; }
 }
 
 /* Bannière d'apparition, façon JRPG : « des ennemis apparaissent ! » */
@@ -456,14 +582,7 @@
 
 .rpg-stage { position: absolute; inset: 0; }
 
-.rpg-battle .rpg-scene {
-  position: absolute;
-  inset: 0;
-  height: auto;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-}
+.rpg-battle .rpg-stage2d { border: 0; border-radius: 0; }
 
 /* La section est une colonne : HUD haut / milieu / barre du bas, la scène
    restant tendue derrière, en absolu. */

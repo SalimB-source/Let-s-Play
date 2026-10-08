@@ -68,12 +68,12 @@ lore et un comportement distinct. Pas d'empilement d'armures.
   dans l'identité du site Let's Play. Les barres de vie ressemblent à des
   colonnes de sable qui descendent.
 
-**Alternative low-cost (celle du prototype actuel)** : une scène **3D procédurale
-Three.js** (`src/games/RpgBattleScene.jsx`) — figurines en boîtes et cylindres,
-escalier de trois étages, dômes de sable qui gonflent avec le sable tombé,
-Astrolabe dans le ciel. C'est la voie recommandée pour la version navigateur :
-lisible, légère, et sans aucun asset modèle à produire. Sans WebGL, la page
-bascule sur un encart sobre et le combat reste jouable.
+**Voie du prototype actuel** : une scène **2D peinte, 100 % DOM**
+(`BattleStage2D.jsx`) — les portraits font office de sprites face à face sur
+le ciel de Bab El (SVG : étoiles, Astrolabe, ville, dunes), chacun sur son
+étage. C'est la voie recommandée pour la version navigateur : c'est le langage
+natif de Dragon Quest, lisible, léger, visible sur chaque machine sans WebGL
+ni asset 3D.
 
 **Ce qu'on évite** : la fantasy générique, le cyberpunk, et le steampunk
 cuivré à l'européenne. Bab El est une ville du Maghreb : les motifs, les
@@ -105,14 +105,16 @@ laiton, indigo), lumière (ambre de l'Astrolabe), et règle de lisibilité
 
 ### 4.2 Mise en scène des combats (grammaire Dragon Quest)
 
-La scène 3D du prototype (`RpgBattleScene.jsx`) emprunte la grammaire du JRPG
-classique, celle qui rend un tour par tour *lisible* sans jamais presser :
+La scène du prototype (`BattleStage2D.jsx`) emprunte la grammaire du JRPG
+classique — celle des *sprites* 2D, le langage natif de Dragon Quest —, celle
+qui rend un tour par tour lisible sans jamais presser. Tout y est en DOM :
+aucune WebGL requise, la scène s'affiche sur chaque machine :
 
 - **Boîte de message** noire en bas, double liseré clair, texte tapé lettre à
   lettre, curseur ▼ clignotant — c'est elle qui raconte le combat ;
 - **Bannière d'apparition** à chaque vague : « … — des ennemis apparaissent ! » ;
-- **Caméra cinématique** : plan large par défaut, puis cadre serré sur
-  l'attaquant et sa cible pendant la ruée, retour calme ensuite ;
+- **Ruées de sprites** : l'attaquant bondit vers sa cible pendant la frappe,
+  puis regagne son étage ;
 - **Chiffres flottants** de dégâts (blancs) et de soins (verts), clignement
   blanc à l'impact, secousse d'écran sur les zones et quand l'Astrolabe sonne ;
 - **Morts de sprites** : l'ennemi scintille puis s'enfonce et disparaît ;
@@ -125,7 +127,7 @@ tout le reste est du HUD translucide posé dessus — compteurs et ordre des
 tours en haut, équipe à gauche, ennemis annoncés à droite, et en bas, dans
 l'image, le journal, la boîte de message et la fenêtre de commandes.
 
-Règle : la caméra et les effets *soulignent* l'information déjà présente dans
+Règle : les effets *soulignent* l'information déjà présente dans
 les cartes (intention, PV, étages). Jamais l'inverse : un effet qui annonce
 quelque chose que l'interface ne dit pas est un effet de trop.
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import RpgBattleScene from './RpgBattleScene.jsx';
+import BattleStage2D from './BattleStage2D.jsx';
 import {
   RPG_BARRAGE_SABLE,
   RPG_CRISTALLISATION_COST,
@@ -781,7 +781,7 @@ export default function RpgBattlePage() {
       {battle && screen !== 'intro' && screen !== 'fin' && screen !== 'exploration' && (
         <section className="rpg-battle" data-strike={battle.clockStrike > 0 ? 'on' : 'off'}>
           <div className="rpg-stage">
-            <RpgBattleScene battleRef={battleRef} queueRef={sceneQueueRef} waveTitle={wave.title} />
+            <BattleStage2D battle={battle} queueRef={sceneQueueRef} waveTitle={wave.title} />
           </div>
 
           <header className="rpg-hud-top">
