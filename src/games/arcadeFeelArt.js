@@ -38,9 +38,10 @@ export const ART = {
   inkHard: '#2B2721',
   gold: '#DDB869',
   goldDeep: '#A9793A',
-  heroJacket: '#232324',
-  heroJacketLight: '#3A3A3C',
-  heroScarf: '#885A3B',
+  heroJacket: '#2B2C31',
+  heroJacketLight: '#43454C',
+  heroScarf: '#9C4E2E', // brique franche : celle de la charte (#885A3B) se
+  // fondait dans le sable du désert, on ne voyait plus l'écharpe bouger
   heroBoot: '#634635',
   heroSkin: '#CCB8A1',
   heroShirt: '#EDE2D2',
@@ -479,181 +480,477 @@ function heroPose(state) {
   return 'idle';
 }
 
+// ---------------------------------------------------------------------------
+// Le héros — dessiné d'après la planche de production (mockups/02)
+// ---------------------------------------------------------------------------
+//
+// Le personnage est un **squelette d'articulations en pixels** (pieds à 0,0,
+// y vers le haut négatif), puis on trace par-dessus : le squelette porte la
+// pose, le tracé porte le style. Trois choses viennent de la planche validée :
+//
+//   - la **veste ouverte sur le tee-shirt clair**, avec la capuche dans le dos
+//     (avant, c'était un bloc noir : le héros n'avait plus de silhouette) ;
+//   - **les yeux et la bouche** — à cette taille, c'est ce qui fait lire un
+//     visage plutôt qu'une tache ;
+//   - l'**écharpe** qui flotte dans le dos : sa longueur dit la vitesse.
+//
+// Le cycle de course est une table de quatre poses-clés (appui, passage,
+// poussée, genou relevé) échantillonnée à 12 img/s : les jambes plient, le
+// corps rebondit deux fois par cycle et les bras pompent à contretemps.
+
+const LIMB_INK = 2.6;
+
+/**
+ * Cycle de course d'une jambe. Repères : origine aux **pieds**, `y` positif vers
+ * le bas, hanche à -22. Le genou et la cheville sont donnés **relatifs à la
+ * hanche** (donc `ky` ≈ +10 signifie « sous la hanche », `ay` ≈ +11 « sous le
+ * genou »). La cheville retombe sur y ≈ 0 quand la jambe porte.
+ */
+const RUN_LEG = [
+  { kx: 3.8, ky: 10.0, ax: 3.4, ay: 10.5 }, // appui avant : le pied touche devant
+  { kx: -0.4, ky: 10.6, ax: -0.6, ay: 10.0 }, // passage sous le corps
+  { kx: -4.8, ky: 10.0, ax: -7.0, ay: 10.5 }, // poussée arrière
+  { kx: 3.0, ky: 8.2, ax: -1.0, ay: 8.2 }, // genou relevé
+];/** Échantillonne la table en boucle (`t` en tours de cycle). */
+function sampleRun(t) {
+  const n = RUN_LEG.length;
+  const f = (((t % 1) + 1) % 1) * n;
+  const i = Math.floor(f);
+  const j = (i + 1) % n;
+  const u = f - i;
+  const a = RUN_LEG[i];
+  const b = RUN_LEG[j];
+  return {
+    kx: lerp(a.kx, b.kx, u),
+    ky: lerp(a.ky, b.ky, u),
+    ax: lerp(a.ax, b.ax, u),
+    ay: lerp(a.ay, b.ay, u),
+  };
+}
+
+/**
+ * Squelette de la pose. Origine aux pieds, `y` négatif vers le haut :
+ * hanche -22, épaule -36, centre de tête -45. Le tronc fait 14 px, la jambe 22
+ * (cuisse 10,5 + tibia 11), le bras 11,6 : proportions de la planche.
+ *
+ * Angulations des bras : **angles absolus** — 0 = vers l'avant (droite de
+ * l'écran), +π/2 = vers le bas, −π/2 = vers le haut. `a1` est le bras, `a2`
+ * l'avant-bras, et c'est l'angle de l'avant-bras qui décide où pointe le
+ * pinceau. Un bras replié de course, c'est `a1` vers le bas (1,4) et `a2`
+ * ramené vers l'avant (0,6) — pas un avant-bras qui tombe.
+ */
+function heroRig(hero, pose, cycle) {
+  const speed = Math.abs(hero.vx);
+  const rig = {
+    lift: 0,
+    lean: 0,
+    head: 0,
+    legFront: { kx: 1.4, ky: 10.2, ax: 0.4, ay: 10.3 },
+    legBack: { kx: -1.4, ky: 10.2, ax: -0.4, ay: 10.3 },
+    armFront: { a1: 1.3, a2: 2.6 }, // bras pendant, pinceau relevé vers l'arrière
+    armBack: { a1: 1.15, a2: 0.85 },
+  };
+
+  if (pose === 'run') {
+    rig.legFront = sampleRun(cycle);
+    rig.legBack = sampleRun(cycle + 0.5);
+    rig.lift = -1.6 * Math.cos(cycle * Math.PI * 4); // deux rebonds par cycle
+    rig.lean = 0.06 + Math.min(0.06, speed * 0.006);
+    const swing = Math.sin(cycle * Math.PI * 2);
+    // bras opposés aux jambes, coudes repliés
+    rig.armFront = { a1: 1.5 - swing * 0.5, a2: 2.5 - swing * 0.9 };
+    rig.armBack = { a1: 1.2 + swing * 0.5, a2: 0.5 + swing * 0.95 };
+    rig.head = Math.sin(cycle * Math.PI * 4) * 0.7;
+  } else if (pose === 'jump') {
+    rig.legFront = { kx: 3.2, ky: 8.6, ax: 2.0, ay: 7.0 };
+    rig.legBack = { kx: -3.0, ky: 9.6, ax: -2.0, ay: 9.4 };
+    rig.armFront = { a1: -0.55, a2: -1.1 };
+    rig.armBack = { a1: -0.35, a2: -1.55 };
+    rig.lift = -1.4;
+  } else if (pose === 'fall') {
+    rig.legFront = { kx: 4.2, ky: 9.2, ax: 2.0, ay: 9.6 };
+    rig.legBack = { kx: -4.4, ky: 9.6, ax: -3.0, ay: 10.0 };
+    rig.armFront = { a1: 0.5, a2: 0.15 };
+    rig.armBack = { a1: 0.3, a2: -0.35 };
+  } else if (pose === 'wall') {
+    rig.legFront = { kx: 3.4, ky: 9.6, ax: 1.5, ay: 9.4 };
+    rig.legBack = { kx: -2.4, ky: 10.2, ax: -1.5, ay: 10.0 };
+    rig.armFront = { a1: -0.9, a2: -1.25 };
+    rig.armBack = { a1: -0.5, a2: -0.2 };
+  } else if (pose === 'dodge') {
+    rig.lift = 4.5;
+    rig.lean = -0.2;
+    rig.legFront = { kx: 5.0, ky: 9.2, ax: 3.0, ay: 9.2 };
+    rig.legBack = { kx: -4.2, ky: 9.4, ax: -2.6, ay: 9.2 };
+    rig.armFront = { a1: 0.9, a2: 0.1 };
+    rig.armBack = { a1: 1.9, a2: 2.4 };
+  } else if (pose === 'dash') {
+    rig.lean = 0.42;
+    rig.lift = 1.4;
+    rig.legFront = { kx: 5.0, ky: 8.8, ax: 3.4, ay: 10.0 };
+    rig.legBack = { kx: -6.0, ky: 9.2, ax: -4.0, ay: 10.0 };
+    rig.armFront = { a1: 0.15, a2: 0.05 };
+    rig.armBack = { a1: 0.4, a2: 2.9 };
+  } else if (pose === 'hurt') {
+    rig.lean = -0.3;
+    rig.lift = 1.6;
+    rig.legFront = { kx: 3.4, ky: 9.8, ax: 2.0, ay: 10.0 };
+    rig.legBack = { kx: -4.0, ky: 9.8, ax: -2.4, ay: 10.2 };
+    rig.armFront = { a1: -0.6, a2: -1.5 };
+    rig.armBack = { a1: -0.3, a2: -2.2 };
+  }
+  return rig;
+}
+
+/** Trace un membre en deux segments : contour d'encre épais, puis aplat. */
+function limb(ctx, x0, y0, x1, y1, x2, y2, width, color) {
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const pass of [
+    [width + LIMB_INK, ART.ink],
+    [width, color],
+  ]) {
+    ctx.lineWidth = pass[0];
+    ctx.strokeStyle = pass[1];
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+}
+
+// Proportions de la planche (mockups/02) ramenées à la boîte de collision de
+// 1,6 tuile : **trois têtes et demie** de haut. La version précédente était un
+// chibi de 2,6 têtes — c'est ce qui donnait l'air pataud, pas l'animation.
+const HIP_Y = -20.5;
+const SHOULDER_Y = -35.5;
+const HEAD_Y = -44.5;
+const HEAD_SCALE = 0.75;
+
 function drawHero(ctx, state, painter, cam) {
   const hero = state.hero;
-  // clignotement d'invincibilité (et disparition à la mort)
   if (hero.invuln > 0 && state.phase === 'play' && Math.floor(state.frame / 4) % 2 === 0) return;
   const px = Math.round(hero.x * TILE) - camX(cam);
   const py = Math.round(hero.y * TILE) - camY(cam);
   if (px < -90 || px > VIEW_W + 90) return;
 
   const pose = heroPose(state);
-  const anim = Math.floor(state.frame / 5); // 12 img/s : ce « stop » fait dessin animé
-  const runCycle = anim * 0.9;
-  const squash = hero.landed > 0 ? -0.14 : 0;
-  const stretch = pose === 'jump' ? 0.1 : pose === 'fall' ? 0.06 : 0;
-  const sy = 1 + squash + stretch;
-  const sx = 1 / sy;
+  const anim = Math.floor(state.frame / 5); // 12 img/s
+  const cycle = (anim * 0.9) / (Math.PI * 2);
   const face = hero.facing >= 0 ? 1 : -1;
   const sink = (hero.sandDepth || 0) * 16;
-  const speed = Math.abs(hero.vx);
+
+  const rig = heroRig(hero, pose, cycle);
+  const squash = hero.landed > 0 ? -0.12 : 0;
+  const stretch = pose === 'jump' ? 0.09 : pose === 'fall' ? 0.05 : 0;
+  const sy = 1 + squash + stretch;
+
+  const hipY = HIP_Y + rig.lift;
+  const shoulderY = SHOULDER_Y + rig.lift;
+  const headY = HEAD_Y + rig.lift + rig.head;
+
+  // --- jambes (hors de l'inclinaison du buste : elles restent sous la hanche)
+  const drawLeg = (leg, back) => {
+    const kx = leg.kx + (back ? -1.6 : 1.6);
+    const kneeX = kx;
+    const kneeY = hipY + leg.ky;
+    const ankleX = kneeX + leg.ax;
+    const ankleY = kneeY + leg.ay;
+    limb(ctx, back ? -2.4 : 2.4, hipY, kneeX, kneeY, ankleX, ankleY, back ? 4.2 : 4.6, back ? ART.heroJacketLight : ART.heroJacket);
+    // botte
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(ankleX - 3.6, ankleY - 5.6);
+    ctx.lineTo(ankleX + 2.4, ankleY - 5.6);
+    ctx.quadraticCurveTo(ankleX + 6.6, ankleY - 3.6, ankleX + 5.8, ankleY - 0.2);
+    ctx.lineTo(ankleX - 3.8, ankleY - 0.2);
+    ctx.closePath();
+    inked(ctx, ART.heroBoot, ART.ink, 2);
+    ctx.strokeStyle = ART.ink;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(ankleX - 3.4, ankleY - 1.8);
+    ctx.lineTo(ankleX + 5.6, ankleY - 1.8);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const drawArm = (arm, back) => {
+    const ax = back ? -4 : 4.6;
+    const ay = shoulderY + 1;
+    const ex = ax + Math.cos(arm.a1) * 5.6;
+    const ey = ay + Math.sin(arm.a1) * 5.6;
+    const hx = ex + Math.cos(arm.a2) * 6;
+    const hy = ey + Math.sin(arm.a2) * 6;
+    limb(ctx, ax, ay, ex, ey, hx, hy, back ? 3.6 : 4, back ? ART.heroJacketLight : ART.heroJacket);
+    ellipseFill(ctx, hx, hy, 2.7, 2.7, ART.heroBoot, ART.ink, 1.8); // gant
+    return { hx, hy };
+  };
 
   ctx.save();
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  ctx.translate(px, py);
-  ctx.scale(face * sx, sy);
-  ctx.translate(0, sink);
+  ctx.translate(px, py + sink);
+  ctx.scale(face / sy, sy);
 
-  // Proportions : 52 px du pied au sommet du crâne, soit exactement la boîte
-  // de collision (1,6 tuile). Le dessin ne ment donc pas sur la hitbox, ce qui
-  // rend le mode mesures lisible.
-  const HY = -43.5; // centre de la tête
+  // jambe + bras arrière
+  drawLeg(rig.legBack, true);
+  drawArm(rig.armBack, true);
 
-  // --- jambes ---
-  // courir en attaquant garde la foulée : sinon le héros glisse, jambes figées
-  const legsRun = pose === 'run' || (pose === 'attack' && hero.grounded && speed > 1.2);
-  const legA = legsRun ? Math.sin(runCycle) * 9 : pose === 'dodge' ? 11 : 0;
-  const legB = legsRun ? Math.sin(runCycle + Math.PI) * 9 : pose === 'dodge' ? -8 : 0;
-  ctx.strokeStyle = ART.heroJacket;
-  ctx.lineWidth = 7;
-  ctx.beginPath();
-  ctx.moveTo(-2.6, -16);
-  ctx.lineTo(-2.6 + legA, -4.5);
-  ctx.moveTo(2.6, -16);
-  ctx.lineTo(2.6 + legB, -4.5);
-  ctx.stroke();
-  ctx.strokeStyle = ART.heroBoot;
-  ctx.lineWidth = 6.5;
-  ctx.beginPath();
-  ctx.moveTo(-2.6 + legA, -7);
-  ctx.lineTo(-2.6 + legA, -3.2);
-  ctx.moveTo(2.6 + legB, -7);
-  ctx.lineTo(2.6 + legB, -3.2);
-  ctx.stroke();
+  // --- buste incliné (rotation autour de la hanche) ---
+  ctx.save();
+  ctx.translate(0, hipY);
+  ctx.rotate(-rig.lean);
+  ctx.translate(0, -hipY);
 
-  // --- écharpe : sa longueur dit la vitesse ---
-  const scarfLen = 8 + Math.min(22, speed * 2.8);
-  ctx.beginPath();
-  ctx.moveTo(-1, -34);
-  ctx.quadraticCurveTo(-6 - scarfLen * 0.4, -37 + Math.sin(anim) * 3, -6 - scarfLen, -31.5 + Math.sin(anim * 1.3) * 4);
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = ART.ink;
-  ctx.stroke();
-  ctx.lineWidth = 5.5;
-  ctx.strokeStyle = ART.heroScarf;
-  ctx.stroke();
+  // écharpe : deux rubans effilés. Le point clé, c'est la **flèche** : au repos
+  // le bout pend (drop positif), en course il se relève et flotte derrière.
+  // Un tracé droit donnait un bâton brun en travers du dos.
+  const ribbon = (len, rootY, phase, width) => {
+    const v = Math.abs(hero.vx);
+    // Presque à plat : c'est ce qui distingue une écharpe qui traîne d'une faux
+    // plantée au-dessus de la tête (deux essais ratés avant celui-ci).
+    const rise = 1.5 + Math.min(2.5, v * 0.35); // elle se tend avec la vitesse
+    const sag = Math.max(0, 4 - v * 0.9); // et retombe quand on s'arrête
+    const amp = 1.1 + Math.min(2, v * 0.35); // ondulation
+    const N = 7;
+    const pts = [];
+    for (let i = 0; i <= N; i += 1) {
+      const u = i / N;
+      const x = -3 - len * u;
+      const y =
+        rootY
+        - rise * Math.sin(u * Math.PI * 0.85)
+        + sag * u * u
+        + Math.sin(u * 6 - cycle * Math.PI * 4 + phase) * amp * u;
+      pts.push([x, y]);
+    }
+    // contour : bord supérieur, pointe **fourchue** (deux dents, comme une
+    // écharpe déchirée), puis bord inférieur. À 12 img/s, c'est la fourche qui
+    // fait lire du tissu — une pointe unique donnait une faux.
+    const tip = pts[N];
+    const prev = pts[N - 1];
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1] - width * 0.5);
+    for (let i = 1; i <= N; i += 1) {
+      const w = width * 0.5 * (1 - 0.55 * (i / N));
+      ctx.lineTo(pts[i][0], pts[i][1] - w);
+    }
+    const dx = tip[0] - prev[0];
+    const dy = tip[1] - prev[1];
+    const dl = Math.hypot(dx, dy) || 1;
+    const nx = -dy / dl;
+    const ny = dx / dl;
+    ctx.lineTo(tip[0] + dx * 1.6, tip[1] + dy * 1.6); // dent centrale
+    ctx.lineTo(tip[0] + nx * width * 0.35, tip[1] + ny * width * 0.35);
+    ctx.lineTo(tip[0] - nx * width * 0.3 - dx * 0.6, tip[1] - ny * width * 0.3 - dy * 0.6);
+    for (let i = N; i >= 0; i -= 1) {
+      const w = width * 0.5 * (1 - 0.55 * (i / N));
+      ctx.lineTo(pts[i][0], pts[i][1] + w);
+    }
+    ctx.closePath();
+    inked(ctx, ART.heroScarf, ART.ink, 1.7);
+  };
+  // court et épais : une écharpe de la planche fait à peine un tiers du corps
+  const scarfLen = 11 + Math.min(6, Math.abs(hero.vx) * 1.2);
+  ribbon(scarfLen, shoulderY - 0.5, 0, 6.4);
+  ribbon(scarfLen * 0.7, shoulderY + 3.6, 2.1, 5.2);
 
-  // --- torse : le héros est une tache sombre, lisible sur tout fond chaud ---
+  // capuche dans le dos
   ctx.beginPath();
-  ctx.moveTo(-7.6, -16);
-  ctx.lineTo(-8.6, -35);
-  ctx.quadraticCurveTo(0, -38.5, 8.6, -35);
-  ctx.lineTo(7.6, -16);
+  ctx.moveTo(-6.2, shoulderY - 0.6);
+  ctx.quadraticCurveTo(-11.6, shoulderY + 2.6, -8.6, shoulderY + 7.4);
+  ctx.quadraticCurveTo(-7.2, shoulderY + 4.4, -5.4, shoulderY + 2.8);
   ctx.closePath();
-  inked(ctx, ART.heroJacket, ART.ink, 2.5);
-  // col de chemise clair, puis ceinture d'écharpe
+  inked(ctx, ART.heroJacketLight, ART.ink, 2);
+
+  // torse : veste ouverte sur le tee-shirt clair
   ctx.beginPath();
-  ctx.moveTo(-2.4, -35.6);
-  ctx.lineTo(0.6, -28);
-  ctx.lineTo(3.6, -35.6);
+  ctx.moveTo(-7.6, shoulderY - 0.5);
+  ctx.quadraticCurveTo(-8.6, hipY - 8, -6.8, hipY - 1);
+  ctx.lineTo(6.6, hipY - 1);
+  ctx.quadraticCurveTo(8.4, hipY - 8, 7.6, shoulderY - 0.5);
+  ctx.quadraticCurveTo(0, shoulderY - 3.6, -7.6, shoulderY - 0.5);
+  ctx.closePath();
+  inked(ctx, ART.heroJacket, ART.ink, 2);
+  // le tee-shirt : panneau clair, c'est lui qui donne la silhouette
+  ctx.beginPath();
+  ctx.moveTo(-3.4, shoulderY - 2.4);
+  ctx.lineTo(-2.4, hipY - 1.6);
+  ctx.lineTo(3.6, hipY - 1.6);
+  ctx.lineTo(5, shoulderY - 2.4);
   ctx.closePath();
   inked(ctx, ART.heroShirt, null, 0);
-  ctx.fillStyle = ART.heroScarf;
-  ctx.fillRect(-7.6, -20, 15.2, 3.4);
+  ctx.strokeStyle = ART.ink;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-2.6, shoulderY - 1.8);
+  ctx.lineTo(-1.9, hipY - 2);
+  ctx.moveTo(4, shoulderY - 1.8);
+  ctx.lineTo(3.1, hipY - 2);
+  ctx.stroke();
+  // ceinture
+  ctx.fillStyle = ART.heroBoot;
+  ctx.fillRect(-6.6, hipY - 3.6, 13.2, 3.4);
+  ctx.strokeStyle = ART.ink;
+  ctx.lineWidth = 1.4;
+  ctx.strokeRect(-6.6, hipY - 3.6, 13.2, 3.4);
 
   // --- tête ---
-  ellipseFill(ctx, 0, HY, 8.6, 9.2, ART.heroSkin, ART.ink, 2.5);
-  // les cheveux sont une calotte, pas un casque : le visage doit rester lisible
-  // à 22 px de large, sinon la tête se lit comme un bloc sombre
-  ctx.beginPath();
-  ctx.moveTo(-8.8, HY - 4.6);
-  ctx.quadraticCurveTo(-9.2, HY - 11, 0, HY - 10.6);
-  ctx.quadraticCurveTo(9.2, HY - 11, 8.8, HY - 4.6);
-  ctx.lineTo(6.6, HY - 3.4);
-  ctx.lineTo(4.4, HY - 5.4);
-  ctx.lineTo(1.6, HY - 3.2);
-  ctx.lineTo(-1.6, HY - 5.6);
-  ctx.lineTo(-4.6, HY - 3.4);
-  ctx.lineTo(-6.8, HY - 5.2);
+  ctx.save();
+  ctx.translate(0, headY - 0);
+  ctx.scale(HEAD_SCALE, HEAD_SCALE);
+  ellipseFill(ctx, -3.2, -5.6, 8.4, 6.6, ART.heroHair, ART.ink, 2); // masse arrière
+  ctx.beginPath(); // visage, menton resserré
+  ctx.moveTo(-7.6, -4.6);
+  ctx.quadraticCurveTo(-7.8, 3.2, -1.4, 4.4);
+  ctx.quadraticCurveTo(6, 4, 7.6, -3.6);
+  ctx.quadraticCurveTo(8, -8.4, 0, -8.6);
+  ctx.quadraticCurveTo(-7.8, -8.4, -7.6, -4.6);
   ctx.closePath();
-  inked(ctx, ART.heroHair, ART.ink, 2.2);
-  ctx.fillStyle = ART.inkHard;
-  ctx.fillRect(3, HY - 1.6, 2.4, 3.4);
+  inked(ctx, ART.heroSkin, ART.ink, 2);
+  ellipseFill(ctx, -6, -2.4, 1.7, 2.3, ART.heroSkin, ART.ink, 1.4); // oreille
+  // yeux : grands, avec un blanc franc — c'est ce qui fait lire un visage à
+  // 32 px de haut ; les iris regardent devant
+  for (const ex of [2.4, 6.4]) {
+    ellipseFill(ctx, ex, -2.6, 1.7, 2.1, ART.paper, ART.ink, 1.3);
+    ctx.fillStyle = ART.inkHard;
+    ctx.beginPath();
+    ctx.ellipse(ex + 0.7, -2.4, 0.9, 1.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = ART.inkHard;
+  ctx.lineWidth = 1.6; // sourcils
+  ctx.beginPath();
+  ctx.moveTo(0.8, -6.4);
+  ctx.lineTo(4.2, -6.8);
+  ctx.moveTo(5.4, -6);
+  ctx.lineTo(8.2, -5.4);
+  ctx.stroke();
+  ctx.strokeStyle = ART.heroHair; // bouche
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(4.2, 2.2);
+  ctx.lineTo(7, 1.6);
+  ctx.stroke();
+  ctx.fillStyle = ART.inkHard; // joue marquée d'un point de la planche
+  ctx.fillRect(-0.6, 0.6, 1.6, 1.6);
+  // cheveux : calotte + pointes (comme la planche, sans dépasser la boîte)
+  // frange : elle s'arrête au-dessus des yeux, sinon le visage disparaît
+  ctx.beginPath();
+  ctx.moveTo(-9.2, -5.4);
+  ctx.lineTo(-11.4, -8.6);
+  ctx.lineTo(-7, -8.2);
+  ctx.lineTo(-5.4, -11.4);
+  ctx.lineTo(-1.8, -8.6);
+  ctx.lineTo(1.2, -11.8);
+  ctx.lineTo(4, -8.4);
+  ctx.lineTo(7.8, -10.6);
+  ctx.lineTo(8.4, -7.6);
+  ctx.lineTo(9.6, -5.8);
+  ctx.lineTo(6.4, -6.8);
+  ctx.lineTo(3.4, -6);
+  ctx.lineTo(0.4, -7.4);
+  ctx.lineTo(-3, -6.2);
+  ctx.lineTo(-6, -7.2);
+  ctx.closePath();
+  inked(ctx, ART.heroHair, ART.ink, 2);
+  ctx.restore(); // tête
 
-  // --- bras + pinceau à encre ---
-  // Le geste suit la même fenêtre que la boîte d'impact : préparation courte,
-  // frappe rapide (courbe en S), puis bras tendu jusqu'à la fin. Le coup part
-  // donc visiblement **au moment** où il touche.
-  let armAngle;
+  // bras avant + pinceau
   const swing = hero.attack ? 1 - hero.attack.timer / TUNE.attackTime : 0;
   const s = clamp((swing - ATTACK_STRIKE_FROM) / (ATTACK_STRIKE_TO - ATTACK_STRIKE_FROM), 0, 1);
   const strike = s * s * (3 - 2 * s);
+  let armF = rig.armFront;
   if (pose === 'attack') {
-    if (hero.attack.kind === 'up') armAngle = lerp(-0.45, -1.62, strike);
-    else if (hero.attack.kind === 'down') armAngle = lerp(0.8, 1.55, strike);
-    else armAngle = lerp(-1.95, 0.42, strike);
-  } else if (pose === 'jump') armAngle = -0.5;
-  else if (pose === 'fall') armAngle = 0.1;
-  else if (pose === 'wall') armAngle = -1.4;
-  else if (pose === 'run') armAngle = 0.55 + Math.sin(runCycle + 1) * 0.28;
-  else armAngle = 0.72 + Math.sin(anim) * 0.06;
+    const kind = hero.attack.kind;
+    if (kind === 'up') armF = { a1: lerp(-0.75, -1.5, strike), a2: lerp(-1.1, -1.62, strike) };
+    else if (kind === 'down') armF = { a1: lerp(0.75, 1.35, strike), a2: lerp(1.2, 1.55, strike) };
+    else armF = { a1: lerp(-1.5, 0.2, strike), a2: lerp(-1.9, 0.35, strike) };
+  }
+  const hand = drawArm(armF, false);
+  if (pose === 'attack') {
+    // Le pinceau n'existe que pendant le coup : le porter en permanence le
+    // faisait lire comme un fusil au bout du bras (et masquait la jambe au
+    // repos). Il « sort » pour peindre, comme dans la planche.
+    ctx.save();
+    ctx.translate(hand.hx, hand.hy);
+    ctx.rotate(armF.a2);
+    ctx.fillStyle = ART.rockDark;
+    ctx.fillRect(1, -1.6, 12.5, 3.2);
+    ctx.strokeStyle = ART.ink;
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(1, -1.6, 12.5, 3.2);
+    // la soie : goutte allongée, large à la virole et effilée au bout
+    ctx.beginPath();
+    ctx.moveTo(12.5, -2.8);
+    ctx.quadraticCurveTo(18, -5.6, 24.5, -1.6);
+    ctx.quadraticCurveTo(27, 0, 24.5, 1.6);
+    ctx.quadraticCurveTo(18, 5.6, 12.5, 2.8);
+    ctx.closePath();
+    inked(ctx, ART.inkHard, ART.ink, 1.8);
+    ctx.fillStyle = 'rgba(242,231,213,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(14, -1.4);
+    ctx.quadraticCurveTo(19, -3.4, 23, -0.6);
+    ctx.quadraticCurveTo(19, 0.2, 14, 0.4);
+    ctx.closePath();
+    ctx.fill();
+    const swing = 1 - hero.attack.timer / TUNE.attackTime;
+    const inStrike = swing >= ATTACK_STRIKE_FROM && swing <= ATTACK_STRIKE_TO + 0.1;
+    if (inStrike) {
+      const st = clamp((swing - ATTACK_STRIKE_FROM) / (ATTACK_STRIKE_TO - ATTACK_STRIKE_FROM), 0, 1);
+      const strike = st * st * (3 - 2 * st);
+      const glow = 1 - Math.min(1, Math.abs(swing - (ATTACK_STRIKE_FROM + 0.06)) / 0.34);
+      // trait d'encre : plus court et plus fin qu'au premier jet — à 58 px il
+      // couvrait la tête du héros au milieu du geste
+      ctx.globalAlpha = 0.22 + 0.42 * glow;
+      ctx.beginPath();
+      ctx.moveTo(19, -1.6);
+      ctx.quadraticCurveTo(30, -18 + strike * 16, 40, 4 + strike * 20);
+      ctx.quadraticCurveTo(29, 10 + strike * 9, 19, 3);
+      ctx.closePath();
+      inked(ctx, ART.inkHard, null, 0);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = ART.inkHard;
+      for (let i = 0; i < 4; i += 1) ctx.fillRect(22 + i * 5, -6 + i * 4, 2.6, 2.6);
+    }
+    ctx.restore();
+  }
 
+  ctx.restore(); // buste incliné
+
+  drawLeg(rig.legFront, false);
+
+  // écharpe nouée devant le cou
   ctx.save();
-  ctx.translate(1.5, -30);
-  ctx.rotate(armAngle);
-  ctx.strokeStyle = ART.ink;
-  ctx.lineWidth = 6.5;
+  ctx.translate(0, hipY);
+  ctx.rotate(-rig.lean);
+  ctx.translate(0, -hipY);
+  // le nœud : petit, collé à la clavicule (au-dessus, il masquait le menton)
   ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(8.5, 0);
-  ctx.stroke();
-  ctx.strokeStyle = ART.heroJacket;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(8, 0);
-  ctx.stroke();
-  // manche, puis le pinceau lui-même (atteint ~1 tuile : la portée du coup)
-  ctx.fillStyle = ART.rockDark;
-  ctx.fillRect(7, -1.8, 12, 3.6);
-  ctx.beginPath();
-  ctx.moveTo(18.5, -2.4);
-  ctx.quadraticCurveTo(27, -4.8, 28.5, 0);
-  ctx.quadraticCurveTo(27, 4.8, 18.5, 2.4);
+  ctx.moveTo(-3.4, shoulderY - 1.6);
+  ctx.quadraticCurveTo(1, shoulderY + 2.6, 5.2, shoulderY - 1);
+  ctx.quadraticCurveTo(1, shoulderY + 0.4, -3.4, shoulderY - 1.6);
   ctx.closePath();
-  inked(ctx, ART.inkHard, ART.ink, 1.8);
-  const inStrike = swing >= ATTACK_STRIKE_FROM && swing <= ATTACK_STRIKE_TO + 0.08;
-  if (pose === 'attack' && inStrike) {
-    // le croissant est le plus opaque juste après l'impact, puis s'efface
-    const glow = 1 - Math.min(1, Math.abs(swing - (ATTACK_STRIKE_FROM + 0.06)) / 0.34);
-    ctx.globalAlpha = 0.28 + 0.5 * glow;
+  inked(ctx, ART.heroScarf, ART.ink, 1.6);
+  ctx.restore();
+
+  if (pose === 'dash') { // smear
+    ctx.globalAlpha = 0.3;
     ctx.beginPath();
-    ctx.moveTo(17, -2);
-    ctx.quadraticCurveTo(38, -24 + strike * 18, 52, 4 + strike * 22);
-    ctx.quadraticCurveTo(36, 12 + strike * 10, 17, 3);
+    ctx.moveTo(-12, -46);
+    ctx.lineTo(-50, -30);
+    ctx.lineTo(-48, -12);
+    ctx.lineTo(-10, -12);
     ctx.closePath();
     inked(ctx, ART.inkHard, null, 0);
     ctx.globalAlpha = 1;
   }
   ctx.restore();
 
-  // --- smear de dash ---
-  if (pose === 'dash') {
-    ctx.globalAlpha = 0.32;
-    ctx.beginPath();
-    ctx.moveTo(-12, -47);
-    ctx.lineTo(-48, -31);
-    ctx.lineTo(-46, -13);
-    ctx.lineTo(-10, -13);
-    ctx.closePath();
-    inked(ctx, ART.inkHard, null, 0);
-    ctx.globalAlpha = 1;
-  }
-  ctx.restore();
-
-  // le sable recouvre les jambes : petite bande devant le bas du corps
-  if (sink > 0.5) {
+  if (sink > 0.5) { // le sable recouvre les jambes
     ctx.fillStyle = ART.sandDark;
     ctx.fillRect(px - 14, py + sink - 3, 28, 6);
     ctx.fillStyle = 'rgba(110,82,56,0.35)';

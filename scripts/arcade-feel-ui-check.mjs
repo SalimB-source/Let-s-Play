@@ -209,7 +209,13 @@ assert.ok(tuning.jumpHeld > 3 && tuning.jumpHeld < 3.6, `hauteur de saut tenue =
 assert.ok(tuning.jumpTap < tuning.jumpHeld * 0.75, 'le saut relâché doit être nettement plus court');
 assert.ok(tuning.run1s > 5.5 && tuning.run1s < 6.7, `course en 1 s = ${tuning.run1s}`);
 assert.ok(tuning.sprint1s > tuning.run1s + 1.5, 'le sprint doit aller plus vite que la course');
-assert.ok(ART.ink === '#50493D' && ART.heroJacket === '#232324', 'la palette suit la charte');
+// Palette du héros : deux nuances ajustées au rendu, documentées en charte §9 bis
+// (le noir plein faisait un trou sans silhouette, le rouille se fondait dans le
+// sable). L'encre, elle, ne bouge pas : c'est la règle non négociable n° 1.
+assert.equal(ART.ink, '#50493D', 'l’encre chaude de la charte, sans exception');
+assert.equal(ART.heroJacket, '#2B2C31', 'veste : charte #232324 éclaircie d’un cran (charte §9 bis)');
+assert.equal(ART.heroScarf, '#9C4E2E', 'écharpe : brique franche (charte §9 bis)');
+assert.equal(ART.heroShirt, '#EDE2D2', 'tee-shirt clair : la réserve de lumière, inchangée');
 
 console.log('prototype du feel — rendu vérifié :');
 console.log(`  images peintes      ${drawCalls.byName.drawImage}`);

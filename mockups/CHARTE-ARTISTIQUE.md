@@ -62,8 +62,8 @@ sur les images**, pas inventées.
 ### Héros — la seule tache froide du désert (lisibilité)
 | Rôle | Hex | Remarque |
 | --- | --- | --- |
-| Veste | `#232324` | Presque noire : le héros se détache de tout fond chaud |
-| Écharpe | `#885A3B` (+ pli `#A18C70`) | Le seul accent chaud du personnage, c'est lui qui « bouge » à l'écran |
+| Veste | `#232324` → **`#2B2C31`** au rendu | Presque noire : le héros se détache de tout fond chaud. Éclaircie d'un cran dans le prototype : à 12 img/s en 640×360, le noir plein faisait un trou sans silhouette (voir §9 bis) |
+| Écharpe | `#885A3B` → **`#9C4E2E`** au rendu | Le seul accent chaud du personnage, c'est lui qui « bouge » à l'écran. Brique plus franche dans le prototype : `#885A3B` se confondait avec le sable `#D1A667` |
 | Bottes / lanières | `#634635` | |
 | Peau et chemise | `#CCB8A1` / `#EDE2D2` | La réserve de lumière |
 | Cheveux | Encre `#1A1613` | Masse pleine, sans détail : un manga lit par la silhouette |
@@ -242,6 +242,29 @@ l'entrée de l'arène, pendant 1,5 s, avec le thème qui coupe net.
    pas un élément du jeu : la carte doit rester lisible sur fond uni.
 5. **Contours** : garder l'encre **chaude** (`#50493D`) dans le désert et
    **froide** (`#0F1414`) dans la Salle. Ne pas mélanger dans un même plan.
+
+---
+
+## 9 bis. Écarts mesurés dans le prototype jouable
+
+Écrire la charte puis la **peindre** a montré six choses que la maquette, plus
+grande et plus lente, ne pouvait pas dire. Elles sont appliquées dans
+`src/games/arcadeFeelArt.js` :
+
+1. **Tête plus petite que la planche.** À 32 px de haut, garder les proportions
+   de la planche exige une tête de 11 px : elle était chibi (2,6 têtes de haut)
+   et pataude. Le prototype tient **3,5 têtes**, tête réduite d'un quart.
+2. **Les yeux font le visage.** Sans iris ni sourcils lisibles, le personnage
+   est une tache. Deux yeux à blanc franc et une bouche courte suffisent.
+3. **Le pinceau ne se porte pas en permanence.** Au bout du bras au repos, il se
+   lit comme un fusil et masque la jambe. Il n'apparaît que pendant le coup.
+4. **L'écharpe est un ruban, pas un trait.** Il lui faut de la longueur
+   (≈1,5 tuile), un effilement, une pointe **fourchue** et une ondulation ; un
+   trait épais se lit comme une pagaie.
+5. **Veste ouverte sur le tee-shirt clair.** C'est le panneau clair qui donne la
+   silhouette ; la veste seule faisait un bloc noir.
+6. **Pas de dégradé, jamais** — la règle tient, y compris pour la profondeur du
+   grand trou (un aplat sombre plutôt qu'un fondu).
 
 ---
 
