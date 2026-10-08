@@ -469,16 +469,21 @@ for (const [index, city] of courses.entries()) {
     fail('les mini-garages ou leur compteur apparaissent avant la course');
   }
   if (slowZoneNodes) fail('une zone d’huile ou de ralentissement est encore rendue', slowZoneNodes);
-  // Le turbo vert est un bonus flottant : icône au-dessus de la chaussée et
-  // anneau incliné qui tourne autour d'elle, plus aucune dalle sur le bitume.
+  // Le turbo vert est un cercle peint sur la chaussée : rien ne flotte au-dessus
+  // du bitume, le disque est posé à plat sur sa voie et son anneau respire.
   const boostSlots = pickupSlots.filter((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST);
-  if (!boostSlots.length) fail('aucun bonus turbo vert n’est placé sur la piste');
-  if (boostSlots.some((slot) => !slot.userData.icon?.visible || slot.position.y < 1)) {
-    fail('le bonus turbo vert doit flotter au-dessus de la chaussée', boostSlots.map((slot) => ({ y: slot.position.y, type: slot.userData.type })));
+  if (!boostSlots.length) fail('aucun cercle turbo vert n’est placé sur la piste');
+  if (boostSlots.some((slot) => !slot.userData.pad?.visible || slot.userData.icon?.visible || slot.position.y > 0.5)) {
+    fail('le bonus turbo vert doit être posé au sol, sans icône flottante', boostSlots.map((slot) => ({
+      y: slot.position.y,
+      icon: slot.userData.icon?.visible,
+      pad: slot.userData.pad?.visible,
+      type: slot.userData.type,
+    })));
   }
-  const floatingSlots = pickupSlots.filter((slot) => slot.userData.orbit?.visible);
-  if (floatingSlots.some((slot) => slot.userData.type !== CITY_RUSH_PICKUPS.BOOST)) {
-    fail('seul le bonus turbo vert porte l’anneau flottant', floatingSlots.map((slot) => slot.userData.type));
+  const floatingSlots = pickupSlots.filter((slot) => slot.userData.icon?.visible);
+  if (floatingSlots.some((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST)) {
+    fail('un bonus turbo vert flotte encore au-dessus de la chaussée', floatingSlots.map((slot) => slot.userData.type));
   }
   const introStats = scene ? countVisible(scene) : null;
 

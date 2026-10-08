@@ -9,7 +9,7 @@
  *
  * Complément de `npm run check:city-rush-sprint`, qui joue une vraie course
  * sprint dans le moteur 3D et y refuse police, rivaux et armes tout en vérifiant
- * les portes 3D et le bonus turbo vert flottant.
+ * les portes 3D et le cercle turbo vert posé au sol.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,7 +45,7 @@ const { checkViceCitySprintUi } = await import('../node_modules/.cache/vice-city
 let code = 0;
 try {
   await checkViceCitySprintUi(assert);
-  console.log('check:city-rush-sprint-ui ✓ — le mode SPRINT affiche les checkpoints et le bonus turbo flottant, sans rival au classement, carte police, guide des armes, raccourci mitrailleuse ni « 1 TOURS ».');
+  console.log('check:city-rush-sprint-ui ✓ — le mode SPRINT affiche les checkpoints et le cercle turbo au sol, sans rival au classement, carte police, guide des armes, raccourci mitrailleuse ni « 1 TOURS ».');
 } catch (error) {
   console.error(error?.message || error);
   code = 1;

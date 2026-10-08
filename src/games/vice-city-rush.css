@@ -2719,7 +2719,7 @@
 .city-rush-guide-item.is-solo { --power-color: #43ead5; }
 
 /* Les glyphes des checkpoints et de la carte solo tiennent seuls la case ;
-   le pad turbo garde son icône SVG. */
+   le cercle turbo au sol garde son icône SVG. */
 .city-rush-guide-item .city-rush-guide-glyph {
   font-size: 18px;
   line-height: 1;

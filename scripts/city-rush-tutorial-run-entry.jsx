@@ -209,7 +209,7 @@ function runTour(seed) {
     if (!effectsByType('mini-garage-used').length) fail('la démonstration n’a pas traversé le mini-garage');
     if (callbacks.pickups.length < 2) fail('la démonstration n’a rien ramassé', callbacks.pickups.length);
     const boostSeen = callbacks.pickups.some((pickup) => pickup.type === 'boost');
-    if (!boostSeen) fail('la démonstration n’a pas ramassé l’éclair vert');
+    if (!boostSeen) fail('la démonstration n’a pas franchi le rond vert');
     if (!effectsByType('bazooka-fired').length) fail('la démonstration n’a pas tiré de roquette');
     // La mitrailleuse : le chargeur rouge est ramassé, puis consommé par le tir
     // automatique de la démonstration — l'inventaire du HUD en porte la trace.

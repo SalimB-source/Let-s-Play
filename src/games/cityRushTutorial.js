@@ -53,7 +53,7 @@ const bazookaPickupPercentages = CITY_RUSH_BAZOOKA_PICKUP_SHARES
  * annonce l'action que la démo doit accomplir pour de vrai en piste
  * (`action`), le libellé du tic vert (`success`) et, pour les leçons qui
  * reposent sur un bonus, la nature de l'accessoire que le coach pose devant la
- * voiture (`prop` : chargeur rouge, éclair vert, trousse de soins).
+ * voiture (`prop` : chargeur rouge, cercle vert au sol, trousse de soins).
  */
 export const CITY_RUSH_TUTORIAL_STEPS = Object.freeze([
   {
@@ -106,11 +106,11 @@ export const CITY_RUSH_TUTORIAL_STEPS = Object.freeze([
     id: 'boost',
     label: 'Boost de vitesse',
     chapter: '04 · TURBO VERT',
-    title: 'L’éclair vert se déclenche tout seul.',
-    description: `Passe sur un éclair vert flottant : le bonus est automatique et te propulse pendant ${CITY_RUSH_TRACK_BOOST_DURATION} secondes. Aligne ta voiture avec celui que tu veux ramasser.`,
+    title: 'Le rond vert se déclenche tout seul.',
+    description: `Passe sur un rond vert peint sur la chaussée : le bonus est automatique et te propulse pendant ${CITY_RUSH_TRACK_BOOST_DURATION} secondes. Plus aucune icône ne flotte au-dessus du bitume — aligne ta voiture avec le cercle que tu veux traverser.`,
     tip: 'AUCUNE TOUCHE À PRESSER · LE TURBO PART AU CONTACT.',
     controls: ['RAMASSAGE AUTO'],
-    touch: 'VISE L’ÉCLAIR',
+    touch: 'VISE LE ROND',
     scene: 'boost',
     visual: `TURBO · ${CITY_RUSH_TRACK_BOOST_DURATION} S`,
     accent: '#55f5a7',

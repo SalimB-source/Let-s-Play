@@ -393,9 +393,15 @@ for (let run = 0; run < RUNS; run += 1) {
           const gapAtDeath = lastRow
             ? (Number(lastRow.rawDistance) || 0) - (Number(world.distance) || 0)
             : null;
-          // Berline hors cadre, ou trop près du pilote au moment de la
+          // Berline hors cadre, trop près ou trop loin du pilote au moment de la
           // destruction : son agonie ne se voit pas, la vérif attend la suivante.
-          if (!inFrame || !(gapAtDeath > OBSERVABLE_GAP_MIN)) {
+          // La borne haute n'est pas un caprice de ciblage : le monde ne dessine
+          // un tête-à-queue que jusqu'à 150 m (`spinGap < 150` dans
+          // `updatePoliceWrecks`), et l'épave avance encore pendant sa glissade.
+          // Une destruction que la vérif n'a pas provoquée elle-même — un rival
+          // qui pulvérise une berline loin devant, une herse, un tremplin — tombe
+          // donc souvent hors de la fenêtre : rien à juger ici.
+          if (!inFrame || !(gapAtDeath > OBSERVABLE_GAP_MIN) || !(gapAtDeath <= TARGET_GAP_MAX)) {
             if (VERBOSE) {
               console.log(`[${city.id}#${run + 1}] ${effect.police} détruite à ${gapAtDeath === null ? '?' : gapAtDeath.toFixed(0)} m par ${effect.attackerId} : agonie non observable`);
             }

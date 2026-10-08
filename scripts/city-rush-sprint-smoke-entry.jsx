@@ -159,17 +159,17 @@ for (const [cityIndex, city] of CITY_RUSH_CITIES.entries()) {
     }
   }
   if (!screenVisible) fail('le panneau du prochain checkpoint est hors champ caméra au départ');
-  // Le turbo du Sprint est un bonus vert flottant : icône au-dessus de la
-  // chaussée, anneau incliné qui tourne — plus aucune dalle au sol.
-  if (boostPads.length < 2 || boostPads.some((slot) => !slot.userData.icon?.visible || !slot.userData.orbit?.visible || slot.position.y < 1)) {
-    fail('les bonus turbo verts ne flottent pas en Sprint', boostPads.map((slot) => ({
+  // Le turbo du Sprint est un cercle vert posé sur la chaussée : pas d'icône,
+  // pas de faisceau — le disque est plaqué sur la voie que l'on traverse.
+  if (boostPads.length < 2 || boostPads.some((slot) => !slot.userData.pad?.visible || slot.userData.icon?.visible || slot.position.y > 0.5)) {
+    fail('les bonus turbo verts ne sont pas posés au sol en Sprint', boostPads.map((slot) => ({
       type: slot.userData.type,
       y: slot.position.y,
       icon: slot.userData.icon?.visible,
-      orbit: slot.userData.orbit?.visible,
+      pad: slot.userData.pad?.visible,
     })));
   }
-  if (!cb.pickups.length) fail('aucun bonus turbo flottant ramassé en Sprint');
+  if (!cb.pickups.length) fail('aucun cercle turbo ramassé en Sprint');
   const nonBoostPickups = cb.pickups.filter((pickup) => pickup.type !== CITY_RUSH_PICKUPS.BOOST);
   if (nonBoostPickups.length) fail('un bonus autre que turbo est ramassable en Sprint', nonBoostPickups);
   if (cb.pickups.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
