@@ -22,12 +22,13 @@ export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la
 // Mode Sprint : course solo à checkpoints, sans police ni arme. Seize checkpoints
 // tous les 300 m (un quart de boucle) : le dernier est l'arrivée, pile sous le
 // portique (16 × 300 m = 4 800 m = 4 boucles exactes). Chaque checkpoint
-// recharge le chrono à 15 s ; des bonus turbo verts flottent au-dessus de la
-// piste pour aider le pilote à les atteindre.
+// recharge le chrono à 15 s ; des ronds turbo verts peints sur la piste aident le
+// pilote à les atteindre — à une rangée sur huit, pas davantage : le Sprint se
+// court d'abord sur sa vitesse de base, la marge de chrono est calculée pour.
 export const CITY_RUSH_SPRINT_CHECKPOINTS = 16;
 export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
-export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 6;
+export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 8;
 export const CITY_RUSH_SPRINT_DISTANCE = CITY_RUSH_SPRINT_CHECKPOINTS * CITY_RUSH_SPRINT_CHECKPOINT_SPACING;
 // Nombre de checkpoints franchis pour une distance parcourue (0 … 14).
 export function cityRushSprintCheckpointsPassed(distance, spacing = CITY_RUSH_SPRINT_CHECKPOINT_SPACING, count = CITY_RUSH_SPRINT_CHECKPOINTS) {
@@ -121,6 +122,13 @@ export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux
 export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08; // chargeur d'AK-47
 export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
 export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de bonus turbo verts
+// Le turbo est devenu un cercle peint sur la chaussée : on le traverse sans
+// lever les yeux, donc il se voit moins qu'une icône qui flottait. Pour qu'il
+// reste une aubaine et non un régime, chaque emplacement tiré « turbo » n'est
+// réellement posé qu'avec cette probabilité — les trois quarts aujourd'hui. Les
+// chargeurs rouges et les trousses de soin ne sont pas touchés : leur rareté est
+// déjà réglée par leur propre tirage, et les rangées gardent leur cadence.
+export const CITY_RUSH_BOOST_SPAWN_CHANCE = 0.75; // 25 % des turbos ne sont pas posés du tout
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
 // Le bazooka apparaît deux fois sur chaque carte : deux **conteneurs** de deux
@@ -3290,10 +3298,24 @@ export function chooseCityRushTrafficEscapeLane({
 }
 
 /**
- * Génère une rangée de bonus sans flaques ni zones de ralentissement.
- * Le turbo apparaît sous forme de bonus vert flottant au-dessus de la chaussée.
+ * Un emplacement tiré « bonus turbo » est-il réellement peint sur la chaussée ?
+ * Le cercle vert se baisse (voir `CITY_RUSH_BOOST_SPAWN_CHANCE`) parce qu'au sol
+ * il se lit moins qu'une icône flottante et qu'un turbo permanent viderait les
+ * courses de leur pilotage. Un `chance` à 1 pose tous les turbos tirés : c'est la
+ * cadence d'avant, rangée pour rangée.
  */
-export function createCityRushEncounter(random = Math.random, laneCount = CITY_RUSH_LANE_X.length) {
+export function keepsCityRushBoostPickup(random = Math.random, chance = CITY_RUSH_BOOST_SPAWN_CHANCE) {
+  const safeChance = Math.max(0, Math.min(1, Number(chance)));
+  if (!(safeChance < 1)) return true; // pas de tirage inutile quand tout est posé
+  const roll = Number(random());
+  return (Number.isFinite(roll) ? roll : 1) < safeChance;
+}
+
+/**
+ * Génère une rangée de bonus sans flaques ni zones de ralentissement.
+ * Le turbo est un cercle vert peint sur la chaussée ; les autres bonus flottent.
+ */
+export function createCityRushEncounter(random = Math.random, laneCount = CITY_RUSH_LANE_X.length, boostChance = CITY_RUSH_BOOST_SPAWN_CHANCE) {
   const count = Math.max(1, Math.min(CITY_RUSH_LANE_X.length, Math.trunc(Number(laneCount)) || CITY_RUSH_LANE_X.length));
   const available = Array.from({ length: count }, (_, lane) => lane);
   // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
@@ -3313,6 +3335,10 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
       : roll < CITY_RUSH_RED_PICKUP_CHANCE + CITY_RUSH_HEALTH_PICKUP_CHANCE
         ? CITY_RUSH_PICKUPS.HEALTH
         : CITY_RUSH_PICKUPS.BOOST;
+    // Un turbo écarté laisse sa voie vide — la voie reste comptée comme prise,
+    // pour que le second emplacement de la rangée ne vienne pas se poser dessus
+    // et repasser un tirage. La rangée rend donc simplement un bonus de moins.
+    if (type === CITY_RUSH_PICKUPS.BOOST && !keepsCityRushBoostPickup(random, boostChance)) continue;
     pickups.push({ lane, type });
   }
 
@@ -3320,9 +3346,10 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
 }
 
 /**
- * Sprint : un bonus turbo vert flottant, placé uniquement sur une voie du sens de
- * course. La cadence est réglée par `CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL` dans
- * le monde 3D ; aucune arme ni autre bonus ne peut apparaître dans ce mode.
+ * Sprint : un cercle turbo vert posé sur la chaussée, placé uniquement sur une
+ * voie du sens de course. La cadence est réglée par
+ * `CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL` dans le monde 3D ; aucune arme ni autre
+ * bonus ne peut apparaître dans ce mode.
  */
 export function createCityRushBoostEncounter(random = Math.random, course = null) {
   const lanes = course ? cityRushLaneConfig(course).forwardLanes : CITY_RUSH_FORWARD_LANES;

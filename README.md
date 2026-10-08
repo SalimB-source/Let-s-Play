@@ -1046,8 +1046,9 @@ et le dernier tour durait 21 s.
   retirée du trafic — `CITY_RUSH_TRAFFIC_TYPES` filtré sur `id !== 'police'` —,
   hélicoptère d'observation laissé au sol), **aucune arme** (l'AK-47 est
   ignoré, la barre de coque ne s'arme pas). Seuls les bonus turbo verts — des
-  éclairs flottant au-dessus de la chaussée — sont
-  placés périodiquement (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL`) ;
+  ronds peints sur le bitume, posés une rangée sur huit
+  (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 8`) — sont
+  placés périodiquement ;
   aucun bonus rouge ni pouvoir d'hélicoptère n'apparaît. À la place :
   **16 checkpoints**
   espacés de `CITY_RUSH_SPRINT_CHECKPOINT_SPACING` = **300 m**
@@ -1077,8 +1078,10 @@ et le dernier tour durait 21 s.
   `rankCityRushRacers` ne les voit jamais, la grille garde trois pilotes, et le
   HUD les affiche à part (`hud.police`, marqueurs rouge et bleu de la mini-carte).
   Elles convoitent les bonus rouges d'AK-47 ; un bonus rouge ne représente que
-  **5 % des objets** sur la route, contre 95 % de bonus turbo
-  (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de tir vaut cinq bonus
+  **8 % des objets tirés** sur la route, contre 6 % de trousses de soin et
+  86 % de bonus turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`) — mais un turbo
+  tiré sur quatre n'est jamais posé (`CITY_RUSH_BOOST_SPAWN_CHANCE = 0.75`).
+  Un bonus de tir vaut cinq bonus
   ordinaires dans leur choix de voie (`CITY_RUSH_POLICE_HUNT_TYPES`,
   `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
   sept balles avec chaque bonus rouge.
@@ -1242,7 +1245,11 @@ et le dernier tour durait 21 s.
   moment de l'explosion et la durée du feu ; une agonie que le pilote **dépasse
   pendant le tête-à-queue** (la carcasse naît alors derrière lui, hors de la
   fenêtre de dessin de 22 m, et le monde a raison de ne pas la dessiner) est
-  écartée, la vérif attendant la destruction suivante. La berline du trafic
+  écartée, la vérif attendant la destruction suivante. Elle écarte de même une
+  agonie qui **commence trop loin** — au-delà de `TARGET_GAP_MAX` (110 m), alors
+  que l'épave n'est dessinée que jusqu'à 150 m et roule encore pendant sa
+  glissade : une berline abattue par un rival loin devant le pilote n'offre
+  rien à mesurer, et la vérif échouait sur ce seul hasard de la simulation. La berline du trafic
   rappelée par un contact est destructible comme l'escouade ; à la course
   suivante, le trafic repart au complet.
 - **Quatre étoiles : la herse.** À partir de la quatrième étoile, deux voitures
@@ -1493,20 +1500,33 @@ et le dernier tour durait 21 s.
   the theme… » (`tests/city-rush-themes.test.js`) et « Londres et Tokyo roulent
   à gauche jusque dans le décor et la page » (`tests/city-rush-hud.test.js`).
 - **Les bonus.** En course, seuls deux objets apparaissent sur la route :
-  le **bonus turbo vert** et le bonus **rouge d'AK-47**. Tous deux **flottent**
-  au-dessus de la chaussée (`PICKUP_FLOAT_HEIGHT` = 1,3 m dans
-  `ViceCityWorld.jsx`) : plus aucune dalle posée sur le bitume. Le turbo est
-  l'éclair blanc du disque vert (`makePickupMaterial('boost', …)` dans
-  `cityRushTextures.js`), le seul bonus à porter l'anneau incliné qui tourne
-  autour de son éclair (`userData.orbit`) ; la couleur vient de `pickupColor()`
+  le **bonus turbo vert** et le bonus **rouge d'AK-47**. Les pouvoirs et les
+  trousses de soin **flottent** au-dessus de la chaussée
+  (`PICKUP_FLOAT_HEIGHT` = 1,3 m dans `ViceCityWorld.jsx`) ; le turbo, lui, est
+  un **cercle peint au sol** (`PICKUP_GROUND_TYPES`, `PICKUP_GROUND_HEIGHT` =
+  0,05 m) : aucune icône ne vole au-dessus du bitume, on lit le rond et on le
+  traverse. Le disque est un plan de 2 m posé à plat dans le repère déjà incliné
+  de la rangée — il suit donc les côtes et les descentes —, texturé par
+  `makeBoostPadMaterial()` (`cityRushTextures.js`) : halo diffus, anneau vert,
+  cercle pointillé et deux chevrons vers l'avant. Son anneau `userData.pulse`
+  respire (échelle et opacité, matière privée par slot car chaque cercle garde
+  son rythme) et c'est la seule animation du bonus ; l'anneau incliné
+  `userData.orbit` de l'ancienne icône flottante a disparu. L'éclair blanc de
+  `makePickupMaterial('boost', …)` ne sert plus qu'aux légendes du guide et du
+  HUD. La couleur vient de `pickupColor()`
   — vert `CITY_RUSH_TRACK_BOOST_COLOR`, rouge des soins, ou la teinte du
-  pouvoir. Le rouge est **très
-  rare** : seulement **5 % des objets** générés sont rouges, contre 95 % de pads
-  turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.95`,
-  `CITY_RUSH_RED_PICKUP_CHANCE = 0.05`). Chaque bonus rouge rare recharge les
+  pouvoir. Le rouge reste **très
+  rare** : **8 % des emplacements** tirés sont des chargeurs, contre 6 % de
+  soins et 86 % de ronds turbo (`CITY_RUSH_RED_PICKUP_CHANCE = 0.08`,
+  `CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.86`). Chaque bonus rouge rare recharge les
   **sept balles** du chargeur ; chaque pression en tire une, et maintenir `Z`
   tire à cadence régulière. Le bonus vert s'active automatiquement et accélère
-  pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Les anciens pouvoirs bleu et jaune
+  pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Comme il se voit moins qu'une
+  icône suspendue, il se fait aussi plus rare : `keepsCityRushBoostPickup()`
+  écarte un quart des emplacements tirés « turbo », en course ; le tutoriel
+  garde tous les siens, pour que chaque leçon croise son exemple. Un cercle
+  ramassé éclate malgré tout à hauteur de capot (`PICKUP_GROUND_BURST_LIFT`),
+  sinon la voiture passerait dessus sans rien voir. Les anciens pouvoirs bleu et jaune
   restent dans les règles internes mais ne sont ni générés ni proposés au
   joueur : **aucune attaque d'hélicoptère** n'est disponible. L'appareil visible
   au dernier tour est un hélicoptère d'observation sans armement.

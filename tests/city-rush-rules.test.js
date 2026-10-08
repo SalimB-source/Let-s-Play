@@ -20,6 +20,7 @@ import {
   CITY_RUSH_HEALTH_PICKUP_COLOR,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE,
+  CITY_RUSH_BOOST_SPAWN_CHANCE,
   CITY_RUSH_BLUE_SHOT_DURATION,
   CITY_RUSH_BLUE_SHOT_MAX_RANGE,
   CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
@@ -294,6 +295,7 @@ import {
   shouldHideCityRushPistolPickup,
   createCityRushEncounter,
   createCityRushBoostEncounter,
+  keepsCityRushBoostPickup,
   createCityRushInventory,
   createCityRushPoliceInventory,
   detectCityRushTrafficImpacts,
@@ -2756,7 +2758,9 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
     [CITY_RUSH_POWERS.PISTOL]: 0,
   };
   for (let index = 0; index < 10000; index += 1) {
-    const encounter = createCityRushEncounter(random);
+    // `chance = 1` : le mélange des types est mesuré hors baisse de densité des
+    // turbos — un turbo tiré est alors un turbo posé, comme avant le cercle au sol.
+    const encounter = createCityRushEncounter(random, CITY_RUSH_LANE_X.length, 1);
     assert.equal(Object.hasOwn(encounter, 'slowLane'), false);
     assert.ok(encounter.pickups.length <= 2);
     totalPickups += encounter.pickups.length;
@@ -2776,7 +2780,7 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
   assert.ok(redRate >= 0.06 && redRate <= 0.10, `le chargeur rouge apparaît environ 8 % du temps (${(redRate * 100).toFixed(1)} %)`);
   assert.ok(healthRate >= 0.04 && healthRate <= 0.08, `le plus de soin apparaît environ 6 % du temps (${(healthRate * 100).toFixed(1)} %)`);
-  assert.ok(boostRate >= 0.82 && boostRate <= 0.90, `les pads turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.82 && boostRate <= 0.90, `les cercles turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
   assert.equal(pickupCounts['blue-shot'], undefined);
   assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
@@ -2784,13 +2788,45 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
   assert.ok(totalPickups > 12000 && totalPickups < 12800, 'les rangées plus souvent doubles augmentent le nombre de bonus au sol');
 });
 
+test('boost circles are seeded more sparsely on races, without touching the other pickups', () => {
+  assert.equal(CITY_RUSH_BOOST_SPAWN_CHANCE, 0.75, 'un quart des turbos tirés ne sont pas posés du tout');
+  // Le tirage est pur et borné : en dessous de la chance le cercle reste, au-dessus
+  // il saute, et un tirage invalide pose moins plutôt que trop.
+  assert.equal(keepsCityRushBoostPickup(() => 0.74), true);
+  assert.equal(keepsCityRushBoostPickup(() => 0.75), false);
+  assert.equal(keepsCityRushBoostPickup(() => 0.99, 1), true, 'à chance pleine, rien n’est tiré au hasard');
+  assert.equal(keepsCityRushBoostPickup(() => Number.NaN), false);
+  assert.equal(keepsCityRushBoostPickup(() => 0.5, -1), false);
+  assert.equal(keepsCityRushBoostPickup(() => 0.5, 4), true);
+  const countPickups = (chance) => {
+    let seed = 2024;
+    const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+    const counts = { [CITY_RUSH_PICKUPS.BOOST]: 0, [CITY_RUSH_PICKUPS.HEALTH]: 0, [CITY_RUSH_POWERS.PISTOL]: 0 };
+    for (let index = 0; index < 10000; index += 1) {
+      for (const pickup of createCityRushEncounter(random, CITY_RUSH_LANE_X.length, chance).pickups) counts[pickup.type] += 1;
+    }
+    return counts;
+  };
+  const dense = countPickups(1);
+  const race = countPickups(CITY_RUSH_BOOST_SPAWN_CHANCE);
+  assert.ok(race[CITY_RUSH_PICKUPS.BOOST] < dense[CITY_RUSH_PICKUPS.BOOST] * 0.85
+    && race[CITY_RUSH_PICKUPS.BOOST] > dense[CITY_RUSH_PICKUPS.BOOST] * 0.6,
+  `le turbo perd le quart de ses emplacements (${dense[CITY_RUSH_PICKUPS.BOOST]} → ${race[CITY_RUSH_PICKUPS.BOOST]})`);
+  // Les rouges et les soins ne passent pas par ce filtre : leur nombre ne bouge
+  // pas d'un poil, à l'échantillonnage près.
+  for (const type of [CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL]) {
+    assert.ok(Math.abs(race[type] - dense[type]) <= dense[type] * 0.1,
+      `le bonus ${type} garde sa cadence (${dense[type]} → ${race[type]})`);
+  }
+});
+
 test('Sprint encounters place a single ground boost on a forward-facing lane', () => {
-  assert.equal(CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL, 6, 'le Sprint espace les rangées de turbo pour éviter un boost permanent');
+  assert.equal(CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL, 8, 'le Sprint espace les rangées de turbo pour éviter un boost permanent');
   for (const sample of [0, 0.12, 0.34, 0.68, 0.99]) {
     const encounter = createCityRushBoostEncounter(() => sample);
     assert.equal(encounter.pickups.length, 1);
     assert.equal(encounter.pickups[0].type, CITY_RUSH_PICKUPS.BOOST);
-    assert.ok(CITY_RUSH_FORWARD_LANES.includes(encounter.pickups[0].lane), 'un pad ne doit pas se trouver sur la voie inverse');
+    assert.ok(CITY_RUSH_FORWARD_LANES.includes(encounter.pickups[0].lane), 'un cercle au sol ne doit pas se trouver sur la voie inverse');
   }
 });
 
