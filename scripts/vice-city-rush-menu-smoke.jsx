@@ -38,7 +38,7 @@ export async function checkViceCityRushMenu(assert) {
     let menu = node.querySelector('.vcr-menu');
     assert.ok(menu, 'l’écran-titre s’ouvre à l’arrivée');
     const entries = [...menu.querySelectorAll('.vcr-entry')];
-    assert.equal(entries.length, 5, 'cinq entrées au carrousel');
+    assert.equal(entries.length, 6, 'six entrées au carrousel');
     assert.match(squash(menu.querySelector('.vcr-menu-selected').textContent), /HISTOIRE/, 'HISTOIRE présélectionné');
     assert.ok(menu.querySelector('.vcr-menu-bg[src*="car-"]'), 'la photo du modèle engagé sert de décor');
     assert.ok(menu.querySelector('.vcr-menu-logo-title'), 'le logo est posé');
@@ -72,7 +72,11 @@ export async function checkViceCityRushMenu(assert) {
 
     // 2. Les flèches déplacent la sélection du carrousel.
     await key('ArrowRight');
+    assert.match(squash(menu.querySelector('.vcr-menu-selected').textContent), /MISSIONS/);
+    await key('ArrowRight');
     assert.match(squash(menu.querySelector('.vcr-menu-selected').textContent), /TOURNOIS/);
+    await key('ArrowLeft');
+    assert.match(squash(menu.querySelector('.vcr-menu-selected').textContent), /MISSIONS/);
     await key('ArrowLeft');
     assert.match(squash(menu.querySelector('.vcr-menu-selected').textContent), /HISTOIRE/);
 
@@ -102,9 +106,33 @@ export async function checkViceCityRushMenu(assert) {
     menu = node.querySelector('.vcr-menu');
     assert.ok(menu, '↶ MENU rouvre l’écran-titre');
 
-    // 6. L'entrée GARAGE est la page d'achat du catalogue : on y paie les
+    // 6. MISSIONS est une page dédiée : elle présente la chaîne puis ouvre
+    //    le briefing avant de demander le départ.
+    await click([...menu.querySelectorAll('.vcr-entry')][1]);
+    await settle(30);
+    assert.equal(node.querySelector('.vcr-menu'), null, 'MISSIONS referme l’écran-titre');
+    assert.ok(node.querySelector('.cr-mission-hub'), 'MISSIONS ouvre le dossier des opérations');
+    assert.equal(node.querySelector('.cr-story-hub'), null, 'la page MISSIONS ne ressert pas l’histoire');
+    assert.equal(node.querySelector('.cr-tournament-card'), null, 'la page MISSIONS ne ressert pas les tournois');
+    const firstMission = node.querySelector('.cr-mission-card:not(:disabled)');
+    assert.ok(firstMission, 'la première mission est ouverte');
+    await click(firstMission);
+    await settle(30);
+    assert.ok(node.querySelector('.city-rush-mission-cinematic'), 'choisir une mission ouvre son briefing');
+    assert.match(squash(node.querySelector('.cr-mission-briefing-goal')?.textContent ?? ''), /dealer|chargeurs|3 tours/i, 'le briefing annonce un objectif vérifiable');
+    await click([...node.querySelectorAll('.city-rush-start-button')].find((button) => /LANCER LA MISSION/.test(button.textContent)));
+    await settle(30);
+    assert.match(squash(node.querySelector('.city-rush-countdown')?.textContent ?? ''), /MISSION 01/, 'le départ passe au compte à rebours de mission');
+    await key('Escape');
+    await settle(30);
+    await click(titleBackButton(node));
+    await settle(30);
+    menu = node.querySelector('.vcr-menu');
+    assert.ok(menu, '↶ MENU ramène au carrousel depuis le briefing');
+
+    // 7. L'entrée GARAGE est la page d'achat du catalogue : on y paie les
     //    modèles, on n'y part pas en course.
-    await click([...menu.querySelectorAll('.vcr-entry')][3]);
+    await click([...menu.querySelectorAll('.vcr-entry')][4]);
     await settle(30);
     assert.equal(node.querySelector('.vcr-menu'), null, 'GARAGE referme l’écran-titre');
     const dealer = node.querySelector('.city-rush-car-select');
@@ -137,7 +165,7 @@ export async function checkViceCityRushMenu(assert) {
     assert.equal(node.querySelector('.cr-story-hub'), null, 'la course rapide ne ressert pas le mode histoire');
     assert.equal(node.querySelector('.cr-tournament-card'), null, 'la course rapide ne ressert pas les tournois');
     const tabs = [...node.querySelectorAll('.city-rush-page-tab')];
-    assert.equal(tabs.length, 4, 'quatre pages dans la barre d’onglets');
+    assert.equal(tabs.length, 5, 'cinq pages dans la barre d’onglets');
     assert.equal(
       squash(tabs.find((tab) => tab.classList.contains('is-active'))?.textContent ?? ''),
       squash(tabs.find((tab) => /COURSE RAPIDE/.test(tab.textContent))?.textContent ?? ''),
@@ -147,7 +175,7 @@ export async function checkViceCityRushMenu(assert) {
     await settle(30);
     menu = node.querySelector('.vcr-menu');
     assert.ok(menu, '↶ MENU rouvre l’écran-titre depuis la course rapide');
-    await click([...menu.querySelectorAll('.vcr-entry')][1]);
+    await click([...menu.querySelectorAll('.vcr-entry')][2]);
     await settle(30);
     assert.equal(node.querySelector('.vcr-menu'), null, 'TOURNOIS referme l’écran-titre');
     assert.ok(node.querySelector('.cr-tournament-card'), 'TOURNOIS ouvre la page des plateaux');

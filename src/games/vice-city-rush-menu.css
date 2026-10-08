@@ -389,7 +389,9 @@
   .vcr-menu-car-class { display: none; }
   .vcr-menu-car-name { font-size: 13px; }
   .vcr-menu-main-label { bottom: 40%; right: 6%; }
-  .vcr-menu-bar { bottom: clamp(96px, 20vh, 150px); }
+  .vcr-menu-bar { bottom: clamp(96px, 20vh, 150px); gap: 0; }
+  .vcr-entry { width: clamp(39px, 11vw, 58px); padding: 6px; }
+  .vcr-menu-arrow { padding-inline: 2px; font-size: clamp(22px, 7vw, 30px); }
   .vcr-menu-keys { gap: 6px; }
   .vcr-key-chip { font-size: 12px; padding: 5px 8px; }
 }

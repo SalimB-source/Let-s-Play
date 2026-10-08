@@ -5,9 +5,9 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
 import { createBatch } from './cityRushBuilder.js';
 import { makeTrafficDecalAtlas, makeSmokeTexture } from './cityRushTextures.js';
-import { animateRacerCar, configureCarReflections, makeRacerCar, makeWheel, setRacerDriver } from './cityRushRacerModels.js';
+import { animateRacerCar, applyPoliceRacerLivery, configureCarReflections, makeRacerCar, makeWheel, setRacerDriver } from './cityRushRacerModels.js';
 
-export { animateRacerCar, configureCarReflections, makeRacerCar, setRacerDriver };
+export { animateRacerCar, applyPoliceRacerLivery, configureCarReflections, makeRacerCar, setRacerDriver };
 
 const lerp = (a, b, amount) => a + (b - a) * amount;
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);

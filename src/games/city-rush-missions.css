@@ -1,0 +1,390 @@
+/* ── Mode Missions : dossier séquentiel, briefings et bilans ─────────────── */
+
+.city-rush-page .cr-mission-hub {
+  display: grid;
+  gap: 10px;
+  width: min(1080px, 100%);
+}
+
+.city-rush-page .cr-mission-hub-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.city-rush-page .cr-mission-hub-heading > div { display: grid; gap: 3px; }
+
+.cr-mission-hub-kicker {
+  color: #ff829b;
+  font: 800 9px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.city-rush-page .cr-mission-hub-heading h3 {
+  margin: 0;
+  color: #f7f8fa;
+  font: 900 17px/1.15 var(--display, system-ui, sans-serif);
+  letter-spacing: .01em;
+}
+
+.cr-mission-hub-progress {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  color: #aeb7c4;
+  font: 700 9px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  text-align: right;
+}
+
+.cr-mission-hub-progress b { color: #ff9fb5; font-weight: 850; }
+
+.cr-mission-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  width: 100%;
+}
+
+.cr-mission-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 118px;
+  padding: 13px 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-left: 2px solid color-mix(in srgb, var(--mission-accent) 75%, transparent);
+  border-radius: 3px;
+  background:
+    radial-gradient(380px 150px at 0% 0%, color-mix(in srgb, var(--mission-accent) 10%, transparent), transparent 72%),
+    rgba(255, 255, 255, .035);
+  color: #f5f7fb;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+}
+
+.cr-mission-card:hover:not(:disabled),
+.cr-mission-card:focus-visible:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--mission-accent) 58%, rgba(255,255,255,.18));
+  background-color: rgba(255, 255, 255, .07);
+  outline: none;
+}
+
+.cr-mission-card.is-locked { opacity: .47; cursor: not-allowed; filter: saturate(.45); }
+.cr-mission-card.is-complete { border-bottom-color: rgba(67, 234, 213, .55); }
+
+.cr-mission-card-index {
+  align-self: start;
+  justify-self: start;
+  padding: 3px 5px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.34);
+  color: #d7dce5;
+  font: 800 9px/1.1 var(--mono, monospace);
+  letter-spacing: .06em;
+}
+
+.cr-mission-card-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid color-mix(in srgb, var(--mission-accent) 35%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--mission-accent) 15%, #11151d);
+  font-size: 19px;
+}
+
+.cr-mission-card-main { display: grid; gap: 4px; min-width: 0; }
+.cr-mission-card-main > small {
+  overflow: hidden;
+  color: var(--mission-accent);
+  font: 800 8px/1.25 var(--mono, monospace);
+  letter-spacing: .085em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cr-mission-card-main > b {
+  overflow: hidden;
+  color: #f7f8fa;
+  font: 900 12px/1.2 var(--display, system-ui, sans-serif);
+  text-overflow: ellipsis;
+}
+.cr-mission-card-main > span {
+  color: #c1c8d2;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.cr-mission-card-main > em {
+  color: #8f9aa9;
+  font: 750 8px/1.3 var(--mono, monospace);
+  font-style: normal;
+  letter-spacing: .04em;
+}
+
+.cr-mission-card-status {
+  align-self: end;
+  justify-self: end;
+  max-width: 128px;
+  color: #ffb4c5;
+  font: 800 8px/1.35 var(--mono, monospace);
+  letter-spacing: .045em;
+  text-align: right;
+}
+.cr-mission-card-status.is-complete { color: #66ead6; }
+.cr-mission-card-status.is-locked { color: #a0a7b1; }
+
+/* Dernière fiche : s'étend sous les deux colonnes pour fermer le dossier. */
+.cr-mission-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+/* Le briefing est une étape distincte : objectif, consignes et règles précèdent
+   toujours le compte à rebours. */
+.city-rush-page .city-rush-mission-cinematic {
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(12px, 2vh, 18px);
+  padding: clamp(16px, 2.8vh, 28px) clamp(14px, 3vw, 38px);
+  background:
+    radial-gradient(780px 420px at 95% 0%, rgba(255, 82, 110, .09), transparent 62%),
+    linear-gradient(180deg, #090c12 0%, #0b0e14 100%);
+  text-align: left;
+}
+
+.city-rush-page .cr-mission-briefing-header,
+.city-rush-page .cr-mission-briefing-card,
+.city-rush-page .cr-mission-briefing-actions {
+  width: min(820px, 100%);
+  margin-inline: auto;
+}
+
+.cr-mission-briefing-header { display: grid; gap: 9px; }
+.cr-mission-briefing-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cr-mission-briefing-header-top > div { display: grid; gap: 4px; }
+.cr-mission-briefing-count {
+  color: #9ca7b5;
+  font: 750 8px/1.4 var(--mono, monospace);
+  letter-spacing: .08em;
+}
+.city-rush-page .cr-mission-briefing-header h2 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: #f7f8fa;
+  font: 900 clamp(25px, 3.4vw, 42px)/1.08 var(--display, system-ui, sans-serif);
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.cr-mission-briefing-intro {
+  max-width: 760px;
+  margin: 0;
+  color: #c7ced8;
+  font-size: clamp(12px, 1.5vw, 14px);
+  line-height: 1.62;
+}
+
+.cr-mission-briefing-card {
+  display: grid;
+  gap: 13px;
+  padding: clamp(13px, 2.3vw, 19px);
+  border: 1px solid rgba(255,255,255,.13);
+  border-top: 2px solid #ff657f;
+  border-radius: 4px;
+  background: rgba(255,255,255,.035);
+}
+.cr-mission-briefing-goal {
+  display: grid;
+  gap: 6px;
+  padding: 11px 13px;
+  border-left: 3px solid #ffd44f;
+  background: rgba(255,212,79,.075);
+}
+.cr-mission-briefing-goal > span {
+  color: #ffd44f;
+  font: 850 9px/1.3 var(--mono, monospace);
+  letter-spacing: .13em;
+}
+.cr-mission-briefing-goal > b {
+  color: #fff;
+  font: 850 clamp(13px, 1.8vw, 17px)/1.4 var(--display, system-ui, sans-serif);
+}
+.cr-mission-checklist {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0 0 0 23px;
+  color: #c0c8d3;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.cr-mission-checklist li::marker { color: #ff829b; font: 800 10px var(--mono, monospace); }
+
+.cr-mission-briefing-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 7px;
+}
+.cr-mission-briefing-facts > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: rgba(0,0,0,.16);
+}
+.cr-mission-briefing-facts small {
+  color: #8f9aa9;
+  font: 750 8px/1.2 var(--mono, monospace);
+  letter-spacing: .09em;
+}
+.cr-mission-briefing-facts b {
+  color: #eff3f8;
+  font: 800 9px/1.35 var(--mono, monospace);
+}
+.cr-mission-briefing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+.city-rush-page .cr-mission-briefing-actions .city-rush-start-button {
+  min-height: 42px;
+  padding-inline: 16px;
+  border-radius: 4px;
+  font-size: 9px;
+}
+.city-rush-page .cr-mission-briefing-actions .city-rush-text-button { min-height: 38px; font-size: 9px; }
+
+/* Résultat : verdict séparé des stats de course et de la progression du dossier. */
+.city-rush-page .cr-mission-result {
+  display: grid;
+  gap: 9px;
+  width: min(740px, 100%);
+  margin: 10px auto;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-left: 3px solid #ff657f;
+  border-radius: 3px;
+  background: rgba(255,255,255,.035);
+  text-align: left;
+}
+.city-rush-page .cr-mission-result.is-complete { border-left-color: #43ead5; }
+.cr-mission-result-heading { display: flex; align-items: center; gap: 9px; }
+.cr-mission-result-heading > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 27px;
+  width: 27px;
+  height: 27px;
+  border: 1px solid #ff657f;
+  border-radius: 50%;
+  color: #ff829b;
+  font: 900 15px/1 var(--mono, monospace);
+}
+.cr-mission-result.is-complete .cr-mission-result-heading > span { border-color: #43ead5; color: #43ead5; }
+.cr-mission-result-heading > div { display: grid; gap: 3px; }
+.cr-mission-result-heading small {
+  color: #ff9fb5;
+  font: 850 8px/1.3 var(--mono, monospace);
+  letter-spacing: .1em;
+}
+.cr-mission-result.is-complete .cr-mission-result-heading small { color: #65e7d5; }
+.cr-mission-result-heading b { color: #f4f6fa; font-size: 11px; line-height: 1.4; }
+.cr-mission-result > p { margin: 0; color: #bbc4d0; font-size: 11px; line-height: 1.5; }
+.cr-mission-result-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cr-mission-result-stats > span {
+  display: grid;
+  gap: 2px;
+  min-width: 82px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: rgba(0,0,0,.18);
+}
+.cr-mission-result-stats small { color: #8793a2; font: 750 7px/1.2 var(--mono, monospace); letter-spacing: .08em; }
+.cr-mission-result-stats b { color: #eef2f7; font: 850 10px/1.25 var(--mono, monospace); }
+.cr-mission-unlocked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(67,234,213,.23);
+  background: rgba(67,234,213,.065);
+  color: #74ead9;
+  font: 800 8px/1.4 var(--mono, monospace);
+  letter-spacing: .05em;
+}
+.cr-mission-unlocked span { color: #fff; font-weight: 850; }
+
+/* Compteur objectif placé dans la zone centrale supérieure du HUD. */
+.city-rush-viewport .cr-mission-live-objective {
+  display: grid;
+  gap: 3px;
+  width: fit-content;
+  max-width: min(540px, 100%);
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 101, 127, .75);
+  border-radius: 4px;
+  background: rgba(10, 8, 20, .88);
+  box-shadow: 0 4px 18px rgba(0,0,0,.48);
+  color: #fff;
+  text-align: center;
+}
+.cr-mission-live-objective b {
+  overflow: hidden;
+  color: #ffb2c0;
+  font: 850 9px/1.35 var(--mono, monospace);
+  letter-spacing: .06em;
+  text-overflow: ellipsis;
+}
+.cr-mission-live-objective small {
+  color: #f5f6f9;
+  font: 750 8px/1.35 var(--mono, monospace);
+  letter-spacing: .045em;
+}
+
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .city-rush-page .cr-mission-hub-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .cr-mission-hub-progress { justify-content: flex-start; text-align: left; }
+  .cr-mission-list { grid-template-columns: 1fr; }
+  .cr-mission-card:last-child:nth-child(odd) { grid-column: auto; }
+  .cr-mission-card { grid-template-columns: 28px 36px minmax(0, 1fr); min-height: 112px; gap: 7px; padding: 11px 9px; }
+  .cr-mission-card-icon { width: 34px; height: 34px; font-size: 17px; }
+  .cr-mission-card-status { grid-column: 3; justify-self: start; max-width: none; text-align: left; }
+  .cr-mission-briefing-header-top { align-items: flex-start; }
+  .city-rush-page .cr-mission-briefing-header-top .cr-story-chapter-back { flex: 0 0 auto; max-width: 140px; }
+  .cr-mission-briefing-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cr-mission-briefing-actions { justify-content: center; }
+  .cr-mission-briefing-actions .city-rush-text-button { width: 100%; }
+  .city-rush-viewport .cr-mission-live-objective { padding: 5px 7px; }
+  .cr-mission-live-objective b { font-size: 7px; }
+  .cr-mission-live-objective small { font-size: 7px; }
+}
+
+@media (max-width: 390px) {
+  .cr-mission-briefing-header-top { flex-direction: column; }
+  .city-rush-page .cr-mission-briefing-header-top .cr-story-chapter-back { max-width: none; }
+  .cr-mission-briefing-facts { grid-template-columns: 1fr 1fr; }
+  .cr-mission-result-stats > span { flex: 1 1 68px; min-width: 68px; }
+}

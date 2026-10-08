@@ -18,7 +18,7 @@
    les cartes de ville, la grille du garage, les commandes et les rappels
    d'écran gardent leur place dans les grilles : on les hisse simplement
    au-dessus de la scène. */
-.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) > *:not(.city-rush-hub-stage):not(.city-rush-hub-stage-scrim):not(.city-rush-hub-stage-frame) {
+.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic) > *:not(.city-rush-hub-stage):not(.city-rush-hub-stage-scrim):not(.city-rush-hub-stage-frame) {
   position: relative;
   z-index: 1;
 }
@@ -26,8 +26,8 @@
 /* Le fond du hub s'accorde au béton de la cabine : sous la scène (et là où
    elle ne s'étend pas, en plein écran défilant), plus aucune image étrangère
    au garage ne transparaît. */
-.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic),
-.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic) {
+.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic),
+.city-rush-page.city-rush-page .city-rush-intro:not(.city-rush-story-cinematic):not(.city-rush-mission-cinematic) {
   background-color: #05060a;
   background-image:
     linear-gradient(180deg, rgba(5, 7, 11, .96) 0%, rgba(6, 9, 14, .82) 22%, rgba(8, 12, 18, .5) 50%, rgba(6, 9, 14, .86) 78%, rgba(5, 7, 11, .97) 100%),
