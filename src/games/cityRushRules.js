@@ -120,7 +120,7 @@ export const CITY_RUSH_BLUE_SHOT_DURATION = 1.8; // s : ralentissement bien visi
 export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 55 % de sa vitesse
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du bonus turbo vert ramassé en vol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un bonus turbo
-export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un bonus turbo
+export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = CITY_RUSH_TRACK_BOOST_SPEED_FACTOR; // × vitesse des rivaux sous un bonus turbo : le même que le joueur
 // Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de
 // l'AK-47 et les trousses de soin « + » rouges. Les soins restent assez espacés
 // pour garder les chocs dangereux, sans laisser une coque abîmée sans solution.
@@ -180,9 +180,9 @@ export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un bonus turbo pèse trois 
 // joueur : si son modèle est moins puissant, il compense sur le rythme de course
 // (+5 %), puis pousse encore au dernier tour (+2 %). Un modèle plus rapide
 // conserve évidemment son avantage. La contrepartie reste dans les mains du
-// joueur : la ligne propre (jusqu'à 1,12 ×), le contresens (jusqu'à 1,35 ×) et
-// le turbo des pads (1,46 × contre 1,38 × pour les rivaux) restent des moyens
-// de reprendre l'avantage — à condition de rouler proprement.
+// joueur. Ils ont désormais les **mêmes bonus** que lui : la ligne propre
+// (jusqu'à 1,12 ×), le contresens (jusqu'à 1,35 ×) et le turbo des pads (1,46 ×
+// pour tout le monde). La différence se joue au volant, pas dans le réglage.
 //
 // Un rival coincé entre le trafic garde aussi un peu plus de vitesse qu'avant
 // (`CITY_RUSH_RIVAL_SLOW_FACTOR`, contre 0,63 pour le joueur) : un choc évité
@@ -217,6 +217,28 @@ export function cityRushRivalTargetSpeed(
  */
 export function cityRushRivalPaceFactor({ finalLap = false } = {}) {
   return CITY_RUSH_RIVAL_PACE * (finalLap ? CITY_RUSH_RIVAL_FINAL_LAP_PUSH : 1);
+}
+
+// ── Rattrapage des rivaux : un adversaire lâché revient dans la course ──────
+// Un rival qui a pris du retard sur le joueur reçoit un coup de pouce de
+// vitesse qui monte avec l'écart : rien tant qu'il est à la hauteur du joueur
+// ou devant, puis un plafond de +12 % (la ligne propre du joueur) atteint à
+// 150 m de retard. Le plafond reste borné : un rival ne s'envole pas, il
+// revient. Le joueur garde sa maîtrise — turbo, ligne propre et contresens
+// restent ses moyens de creuser l'écart.
+export const CITY_RUSH_RIVAL_CATCHUP_GAP = 150; // m de retard pour atteindre le plafond
+export const CITY_RUSH_RIVAL_CATCHUP_MAX = 1.12; // × vitesse cible d'un rival au plafond
+
+/**
+ * Facteur de rattrapage d'un rival d'après son retard (en mètres) sur le
+ * joueur. Un rival devant ou à égalité reste à 1, un retard nul ou négatif
+ * aussi ; au-delà de `CITY_RUSH_RIVAL_CATCHUP_GAP`, le plafond tient.
+ */
+export function cityRushRivalCatchupFactor(gapBehind = 0) {
+  const gap = Number(gapBehind);
+  if (!Number.isFinite(gap) || gap <= 0) return 1;
+  const progress = Math.min(1, gap / CITY_RUSH_RIVAL_CATCHUP_GAP);
+  return 1 + (CITY_RUSH_RIVAL_CATCHUP_MAX - 1) * progress;
 }
 
 export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';

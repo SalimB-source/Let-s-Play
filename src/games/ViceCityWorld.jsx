@@ -23,6 +23,7 @@ import {
   CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR,
   CITY_RUSH_RIVAL_SLOW_FACTOR,
   cityRushRivalPaceFactor,
+  cityRushRivalCatchupFactor,
   cityRushRivalTargetSpeed,
   CITY_RUSH_AI_LOOKAHEAD,
   CITY_RUSH_AI_REFLEX,
@@ -8417,6 +8418,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // encore armé après un premier carambolage).
     let healthLost = 0;
 
+    if (racerActor && racerActor.oncomingTime > 0) {
+      // Même prix que le joueur : le choc frontal annule la jauge de contresens.
+      racerActor.oncomingTime = 0;
+    }
     if (actorId === 'player') {
       // Choc frontal = plus punitif que le trafic lent : impact + ralenti long + reprise boostée
       // + blocage solide : on recale le joueur derrière la voiture adverse.
@@ -9553,7 +9558,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             lookAheadDistance: CITY_RUSH_AI_LOOKAHEAD,
             brakingRate: cityRushAiBrakingRate(racer.profile.accelerationRate),
           });
-          if (nextLane !== racer.lane) racer.lane = nextLane;
+          if (nextLane !== racer.lane) {
+            racer.lane = nextLane;
+            // Même règle que le joueur : changer de voie fait retomber la ligne propre.
+            racer.cleanLineTime = 0;
+          }
           racer.changeIn = cityRushAiThinkDelay(Math.random, {
             missionTarget: missionFugitiveIds.has(racer.id),
           });
@@ -9589,6 +9598,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             rivalTargetTopSpeed = Math.max(rivalTargetTopSpeed, playerCurrentSpeed * 1.18);
           }
         }
+        // Mêmes bonus que le joueur : ligne propre (voie tenue) et contresens
+        // (jauge cumulative dans les voies inverses), voir `cityRushCleanLineFactor`
+        // et `cityRushOncomingBonusFactor`. Le turbo est déjà dans `speedTarget`.
+        racer.cleanLineTime = (racer.cleanLineTime || 0) + dt;
+        const racerInOncomingLane = !racer.wrecked && racer.stunLeft <= 0 && oncomingLaneSet.has(racer.lane);
+        racer.oncomingTime = advanceCityRushOncomingBonus(racer.oncomingTime || 0, dt, racerInOncomingLane);
+        rivalTargetTopSpeed *= cityRushCleanLineFactor(racer.cleanLineTime) * cityRushOncomingBonusFactor(racer.oncomingTime);
+        // Rattrapage : un rival qui a pris du retard sur le joueur accélère
+        // (voir `cityRushRivalCatchupFactor`) ; un rival devant reste à 1.
+        rivalTargetTopSpeed *= cityRushRivalCatchupFactor(distance - racer.distance);
         const speedTarget = (racer.wrecked || racer.stunLeft > 0
           ? 0
           : rivalTargetTopSpeed * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))

@@ -260,6 +260,9 @@ import {
   CITY_RUSH_RIVAL_PACE,
   CITY_RUSH_RIVAL_FINAL_LAP_PUSH,
   cityRushRivalPaceFactor,
+  cityRushRivalCatchupFactor,
+  CITY_RUSH_RIVAL_CATCHUP_GAP,
+  CITY_RUSH_RIVAL_CATCHUP_MAX,
   cityRushRivalTargetSpeed,
   cityRushAiBrakingRate,
   cityRushAiBrakingDistance,
@@ -1148,7 +1151,7 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_PICKUPS.BOOST], undefined, 'le bonus turbo vert n’est pas un pouvoir stocké');
   assert.equal(CITY_RUSH_TRACK_BOOST_DURATION, 3);
   assert.equal(CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 1.46);
-  assert.equal(CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR, 1.38);
+  assert.equal(CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 'le turbo des rivaux est celui du joueur');
   assert.equal(CITY_RUSH_TRACK_BOOST_COLOR, '#50e48a');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
@@ -4276,4 +4279,19 @@ test('pendant son délai de réaction, la berline ne se rabat pas sur la nouvell
 
   assert.equal(choose(3, 3), 3, 'gelée sur la voie 3, elle y reste');
   assert.equal(choose(1, 3), 2, 'délai écoulé : elle se rabat d’une voie vers le pilote');
+});
+
+test('le rattrapage des rivaux : rien devant le joueur, un plafond de +12 % au-delà de 150 m', () => {
+  assert.equal(cityRushRivalCatchupFactor(), 1, 'sans retard, pas de coup de pouce');
+  assert.equal(cityRushRivalCatchupFactor(0), 1);
+  assert.equal(cityRushRivalCatchupFactor(-80), 1, 'un rival devant le joueur ne reçoit rien');
+  assert.equal(cityRushRivalCatchupFactor(Number.NaN), 1, 'une distance invalide ne change rien');
+  assert.ok(Math.abs(cityRushRivalCatchupFactor(CITY_RUSH_RIVAL_CATCHUP_GAP / 2)
+    - (1 + (CITY_RUSH_RIVAL_CATCHUP_MAX - 1) / 2)) < 1e-9, 'la montée est linéaire');
+  assert.equal(cityRushRivalCatchupFactor(CITY_RUSH_RIVAL_CATCHUP_GAP), CITY_RUSH_RIVAL_CATCHUP_MAX);
+  assert.equal(cityRushRivalCatchupFactor(10_000), CITY_RUSH_RIVAL_CATCHUP_MAX, 'le plafond tient, un rival ne s\'envole pas');
+  assert.equal(CITY_RUSH_RIVAL_CATCHUP_MAX, 1.12, 'plafonné à la ligne propre du joueur');
+  // Un rival rattrapé à plein régime reste sous le turbo du joueur.
+  assert.ok(CITY_RUSH_RIVAL_CATCHUP_MAX * CITY_RUSH_RIVAL_PACE < CITY_RUSH_TRACK_BOOST_SPEED_FACTOR,
+    'le joueur qui prend son turbo garde un avantage à creuser');
 });
