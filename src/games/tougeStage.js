@@ -361,7 +361,7 @@ export function buildTougeSignAtlas(city, theme, route = CITY_RUSH_TOUGE) {
   add('chevrons-left', { draw: drawTougeSignCell, variant: 'chevron', count: 3 });
   add('chevrons-right', { draw: drawTougeSignCell, variant: 'chevron', count: 4 });
   add('mirror', { draw: drawTougeSignCell, variant: 'mirror' });
-  add('tunnel', { draw: drawTougeSignCell, text: 'とうげトンネル', sub: 'TONNEL · 630 M', big: true });
+  add('tunnel', { draw: drawTougeSignCell, text: 'とうげトンネル', sub: 'TUNNEL · 630 M', big: true });
   (theme.sponsors || []).forEach((text, index) => {
     add(`sponsor:${index}`, {
       draw: drawTougeSignCell,
@@ -708,14 +708,20 @@ function addKmStone(batch, m, atlas, side, position, km) {
  */
 function addTunnel(batch, m, atlas, sector, from, to, random) {
   const wallX = TOUGE_ROAD_HALF + 0.9;
-  const ceilingY = 5.6;
+  // La voûte respecte le dégagement caméra (`CAMERA_CLEARANCE`) : la poursuite
+  // culmine à 6,7 m et suit le pilote dans le tunnel — une dalle ou un portique
+  // plus bas serait traversé par la caméra (le toit disparaît ou masque la
+  // voiture). Le dessous de la voûte ne descend donc pas sous 7,4 m.
+  const ceilingY = CAMERA_CLEARANCE;
   for (let position = from; position < to - 1; position += 2) {
     const middle = position + 1;
     const z = toZ(middle);
-    // Parois brutes et bandeau réfléchissant blanc.
-    batch.box(m.rockDark, [-(wallX + 0.9), 2.8, z], [1.8, 5.6, 2.02]);
-    batch.box(m.rockDark, [wallX + 0.9, 2.8, z], [1.8, 5.6, 2.02]);
-    batch.box(m.white, [wallX - 0.02, 1.0, z], [0.05, 0.34, 1.9]);
+    // Parois brutes et bandeau réfléchissant blanc, des deux côtés, posé sur
+    // la face intérieure (et non noyé dans la paroi).
+    batch.box(m.rockDark, [-(wallX + 0.9), ceilingY / 2, z], [1.8, ceilingY, 2.02]);
+    batch.box(m.rockDark, [wallX + 0.9, ceilingY / 2, z], [1.8, ceilingY, 2.02]);
+    batch.box(m.white, [-(wallX - 0.06), 1.0, z], [0.05, 0.34, 1.9]);
+    batch.box(m.white, [wallX - 0.06, 1.0, z], [0.05, 0.34, 1.9]);
     // Voûte aplatie.
     batch.box(m.concreteDark, [0, ceilingY + 0.35, z], [(wallX + 1.8) * 2, 0.7, 2.02]);
     // Sodium : un tube au plafond sur deux.
