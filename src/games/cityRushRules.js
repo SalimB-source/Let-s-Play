@@ -3560,6 +3560,128 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
   return clampCityRushLane(lane, laneCount);
 }
 
+// ── Choc latéral : pousser la voiture qui bloque ───────────────────────────
+// Une voiture à côté du pilote, dans la voie qu'il veut rejoindre, lui ferme
+// cette voie : le changement de voie est refusé (`canEnterLane`). S'il tourne
+// **quand même** vers elle, il y a choc. La voiture bloquante se pousse sur la
+// voie voisine, du côté opposé au pilote, et le pilote comme elle perdent
+// chacun un carré : un PV pour un rival ou une berline de police, rien pour le
+// trafic ordinaire, qui n'a pas de PV.
+//
+// « À côté » = les deux carrosseries sont à la même hauteur : écart
+// longitudinal sous `CITY_RUSH_SIDE_CONTACT_GAP`, le pare-chocs contre
+// pare-chocs du trafic. Entre cette limite et la distance de sécurité du
+// rabattement (`CITY_RUSH_CAR_GAP`), la voie reste fermée sans choc.
+//
+// Une voiture ne se pousse que dans son propre sens de circulation, sur une
+// voie libre. Au bord de la chaussée, ou quand la voie d'à côté est occupée, la
+// voiture ne bouge pas et il n'y a pas de choc, comme avant.
+//
+// Un seul choc par côte-à-côte : tant que la voiture reste à la même hauteur
+// que le pilote, tourner de nouveau vers elle ne refait pas de choc (voir
+// `cityRushSideBumpKeep`). Une voiture qui s'éloigne, ou qui sort de la course,
+// ouvre un nouvel épisode.
+export const CITY_RUSH_SIDE_CONTACT_GAP = CITY_RUSH_TRAFFIC_CAR_GAP; // m : à côté = pare-chocs contre pare-chocs
+// Dérapage court du pilote et de la voiture poussée, et délai avant qu'une
+// voiture poussée (rival ou berline) ne repense sa voie.
+export const CITY_RUSH_SIDE_BUMP_SKID = 0.5; // s
+export const CITY_RUSH_SIDE_BUMP_HOLD = 0.6; // s
+
+/**
+ * La voiture est-elle à la même hauteur que le pilote, à deux voies au plus ?
+ * Sert à garder l'épisode d'un choc tant que les deux voitures restent côte à
+ * côte, même après une voiture poussée d'une voie de plus.
+ */
+export function cityRushIsLevel(playerLane, carLane, gap, contactGap = CITY_RUSH_SIDE_CONTACT_GAP) {
+  const player = Number(playerLane);
+  const car = Number(carLane);
+  const along = Math.abs(Number(gap));
+  if (!Number.isInteger(player) || !Number.isInteger(car) || !Number.isFinite(along)) return false;
+  return Math.abs(car - player) <= 2 && along < contactGap;
+}
+
+/**
+ * La voiture est-elle à côté du pilote, dans la voie voisine ? C'est la seule
+ * configuration qui ferme la voie que le pilote veut rejoindre.
+ */
+export function cityRushIsAlongside(playerLane, carLane, gap, contactGap = CITY_RUSH_SIDE_CONTACT_GAP) {
+  const player = Number(playerLane);
+  const car = Number(carLane);
+  return Number.isInteger(player) && Number.isInteger(car)
+    && Math.abs(car - player) === 1
+    && cityRushIsLevel(player, car, gap, contactGap);
+}
+
+/**
+ * Voie d'arrivée d'une voiture poussée : la voie voisine, du côté opposé au
+ * pilote. `allowedLanes` désigne le sens de circulation de la voiture ; renvoie
+ * `null` quand il n'y a pas de voie là-bas (bord de la chaussée, sens inverse).
+ */
+export function cityRushSideBumpLane(carLane, playerLane, allowedLanes = []) {
+  const car = Number(carLane);
+  const player = Number(playerLane);
+  if (!Number.isInteger(car) || !Number.isInteger(player) || car === player) return null;
+  const target = car + Math.sign(car - player);
+  return Array.isArray(allowedLanes) && allowedLanes.includes(target) ? target : null;
+}
+
+/**
+ * La voie d'arrivée est-elle libre ? Une voiture qui s'y range ne doit pas se
+ * retrouver à moins de `gap` d'une autre voiture de cette voie. La voiture
+ * poussée elle-même est exclue (`id`).
+ */
+export function cityRushSideBumpLaneClear(farLane, distance, cars = [], { id = null, gap = CITY_RUSH_CAR_GAP } = {}) {
+  const along = Number(distance);
+  return !cars.some((car) => car && car.id !== id && car.lane === farLane
+    && Math.abs(Number(car.distance) - along) < gap);
+}
+
+/**
+ * Voiture à pousser pour une tentative de rabattement sur `targetLane` : la plus
+ * proche des voitures à côté du pilote dans cette voie, pas déjà poussée pendant
+ * ce côte-à-côte (`pushedIds`), et qui a une voie libre devant elle. `cars` liste
+ * les voitures en course, pilote exclu, avec `id`, `lane`, `distance` et
+ * `allowedLanes`. Renvoie `{ car, farLane }`, ou `null` quand il n'y a pas de choc.
+ */
+export function cityRushSideBumpChoice({
+  playerLane,
+  playerDistance,
+  targetLane,
+  cars = [],
+  pushedIds = null,
+  contactGap = CITY_RUSH_SIDE_CONTACT_GAP,
+  clearGap = CITY_RUSH_CAR_GAP,
+} = {}) {
+  const along = Number(playerDistance);
+  const blockers = cars
+    .filter((car) => car && car.lane === targetLane
+      && cityRushIsAlongside(playerLane, car.lane, Number(car.distance) - along, contactGap))
+    .sort((a, b) => Math.abs(Number(a.distance) - along) - Math.abs(Number(b.distance) - along));
+  for (const car of blockers) {
+    if (pushedIds?.has?.(car.id)) continue;
+    const farLane = cityRushSideBumpLane(car.lane, playerLane, car.allowedLanes);
+    if (farLane === null) continue;
+    if (!cityRushSideBumpLaneClear(farLane, car.distance, cars, { id: car.id, gap: clearGap })) continue;
+    return { car, farLane };
+  }
+  return null;
+}
+
+/**
+ * Les voitures poussées qui restent à la même hauteur que le pilote gardent leur
+ * épisode : renvoie les identifiants de `previousIds` encore côte à côte. Une
+ * voiture qui s'éloigne, ou qui disparaît de la course, sort de l'ensemble.
+ */
+export function cityRushSideBumpKeep(previousIds, cars = [], playerLane, playerDistance) {
+  const kept = new Set();
+  const along = Number(playerDistance);
+  for (const id of previousIds ?? []) {
+    const car = cars.find((item) => item && item.id === id);
+    if (car && cityRushIsLevel(playerLane, car.lane, Number(car.distance) - along)) kept.add(id);
+  }
+  return kept;
+}
+
 // ── Le cerveau des rivaux ───────────────────────────────────────────────────
 // Un rival ne se contente plus de viser le bonus le plus proche : il court pour
 // gagner. Le choix de voie arbitre maintenant quatre envies, dans cet ordre —
