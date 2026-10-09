@@ -641,6 +641,28 @@ for (const [index, city] of courses.entries()) {
   const WATCH_HELI_BAND_Y_MIN = 0.3;
   const WATCH_HELI_BAND_Y_MAX = 0.72;
   const WATCH_HELI_BAND_X_MAX = 0.85;
+  // La voiture du pilote, elle, doit rester dans le cadre **toute la course** :
+  // c'est le premier signe d'une poursuite qui décroche de l'axe de la caisse.
+  // Sur le tōgé, avant l'ancrage de la caméra, elle sortait de l'image dans les
+  // épingles (|x| jusqu'à 1,7) — la descente devenait illisible. La bande utile
+  // est le bas de l'écran, sous les cartes du HUD et au-dessus du bord.
+  const playerNdc = new THREE.Vector3();
+  const playerWorldPosition = new THREE.Vector3();
+  let playerFramedFrames = 0;
+  let playerJudgedFrames = 0;
+  let playerNdcXMax = 0;
+  let playerNdcYMin = Infinity;
+  let playerNdcYMax = -Infinity;
+  let playerJumpSeen = 0;
+  let playerJumpFrames = 0;
+  // La bande utile est large : un changement de voie laisse la caméra traîner
+  // et la caisse glisse vers le bord du cadre — c'est le cadrage historique des
+  // villes et des routes (|x| jusqu'à 0,93 au Mexique). Ce qui se juge ici,
+  // c'est la sortie de l'image.
+  const PLAYER_CAR_BAND_Y_MIN = -0.97;
+  const PLAYER_CAR_BAND_Y_MAX = 0.2;
+  const PLAYER_CAR_BAND_X_MAX = 0.95;
+  const PLAYER_CAR_IN_FRAME_MAX = 0.98;
   // Barre de vie du pilote : les quinze cellules sont actives au départ ;
   // contrôle de chaque dégât annoncé et de ses bornes HUD.
   let healthHitEffects = 0;
@@ -886,6 +908,29 @@ for (const [index, city] of courses.entries()) {
         if (ndcY >= WATCH_HELI_BAND_Y_MIN && ndcY <= WATCH_HELI_BAND_Y_MAX && Math.abs(watchHeliNdc.x) <= WATCH_HELI_BAND_X_MAX) {
           watchHeliFramedFrames += 1;
         }
+      }
+    }
+    // Cadrage de la voiture du pilote. Hors jeu : l'arrivée (la caméra rend la
+    // main), l'épave (la voiture toupille) et les secondes qui suivent un
+    // tremplin (la caisse est en l'air, la caméra la suit autrement).
+    let jumpEffects = 0;
+    for (const effect of callbacks.effects) if (effect.type === 'ramp-jump') jumpEffects += 1;
+    if (jumpEffects > playerJumpSeen) {
+      playerJumpSeen = jumpEffects;
+      playerJumpFrames = 100;
+    }
+    if (playerJumpFrames > 0) playerJumpFrames -= 1;
+    if (globalThis.__smokeCamera && !callbacks.finish && wreckEffects <= 0
+      && playerJumpFrames === 0 && world.distance > 8) {
+      playerJudgedFrames += 1;
+      playerNode.getWorldPosition(playerWorldPosition);
+      playerNdc.copy(playerWorldPosition).project(globalThis.__smokeCamera);
+      playerNdcXMax = Math.max(playerNdcXMax, Math.abs(playerNdc.x));
+      playerNdcYMin = Math.min(playerNdcYMin, playerNdc.y);
+      playerNdcYMax = Math.max(playerNdcYMax, playerNdc.y);
+      if (Math.abs(playerNdc.x) <= PLAYER_CAR_BAND_X_MAX
+        && playerNdc.y >= PLAYER_CAR_BAND_Y_MIN && playerNdc.y <= PLAYER_CAR_BAND_Y_MAX) {
+        playerFramedFrames += 1;
       }
     }
     // Épave en cours : la toupie, la fumée et la chute de vitesse.
@@ -1766,6 +1811,21 @@ for (const [index, city] of courses.entries()) {
   if (!rallies.length) fail('aucune berline de police du trafic n’a été rappelée par un contact');
   // L'hélico d'observation ne décolle qu'avec le dernier tour ; son cadrage se
   // mesure sur les images du dernier tour (la variable sert aussi au résumé).
+  // La voiture du pilote ne quitte jamais le cadre : une poursuite qui décroche
+  // de l'axe de la caisse se voit d'abord là.
+  if (playerJudgedFrames < 600) {
+    fail(`le cadrage de la voiture du pilote n’est mesurable que sur ${playerJudgedFrames} images`, playerJudgedFrames);
+  }
+  const playerFramedShare = playerFramedFrames / Math.max(1, playerJudgedFrames);
+  if (playerFramedShare < 0.98) {
+    fail(`la voiture du pilote sort de sa bande sur ${((1 - playerFramedShare) * 100).toFixed(1)} % de la course`, {
+      yMin: playerNdcYMin, yMax: playerNdcYMax, xMax: playerNdcXMax,
+      band: [PLAYER_CAR_BAND_Y_MIN, PLAYER_CAR_BAND_Y_MAX, PLAYER_CAR_BAND_X_MAX],
+    });
+  }
+  if (playerNdcXMax > PLAYER_CAR_IN_FRAME_MAX) {
+    fail(`la voiture du pilote quitte le cadre en largeur (|x| ${playerNdcXMax.toFixed(2)})`, { xMax: playerNdcXMax });
+  }
   const watchHeliMeasured = watchHeliMeasuredFrames;
   if (squadRendezvous) {
   // L'hélico d'observation : absent avant le dernier tour, présent pendant
@@ -2057,6 +2117,7 @@ for (const [index, city] of courses.entries()) {
     ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (joueur ${Math.round(firstPoliceHud.distance || 0)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max de la plus proche ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage${policeStunFrames ? ` · ${policeStunFrames} f sonnée` : ''}` : 'jamais entrée'}` +
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
+    ` · voiture du pilote ${playerJudgedFrames} f (cadre y ${playerNdcYMin.toFixed(2)}–${playerNdcYMax.toFixed(2)} · x ≤ ${playerNdcXMax.toFixed(2)} · ${(playerFramedShare * 100).toFixed(1)} % dans la bande)` +
     ` · hélico d’observation ${watchHeliFinalLapFrames} f (${watchHeliReturns} rentrée(s) de tunnel · rotor ${watchHeliRotorTurns} tours · cadre y ${watchHeliNdcYMin.toFixed(2)}–${watchHeliNdcYMax.toFixed(2)}, moy ${(watchHeliNdcYSum / Math.max(1, watchHeliMeasured)).toFixed(2)} · x ≤ ${watchHeliNdcXMax.toFixed(2)} · ${(watchHeliFramedFrames / Math.max(1, watchHeliMeasured) * 100).toFixed(0)} % dans la bande)` +
     ` · mini-garages ${miniGarageVisibleFrames} f en vue · ${miniGarageUses.length} passage(s) · ${garageHealthRestored} cellule(s) rendue(s) · ${garagePursuersReleased} poursuite(s) lâchée(s)` +
     ` · barre de vie du pilote ${healthHuds.length} HUD · ${healthHitEffects} touche(s) subie(s) (rouge ${healthHitsBySource.pistol || 0} · carambolage ${healthHitsBySource.collision || 0}) · ${healthCubes} passage(s) à zéro` +

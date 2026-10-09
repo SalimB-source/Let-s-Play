@@ -17,6 +17,7 @@ import {
   CITY_RUSH_TOUGE,
   CITY_RUSH_TOUGE_ROAD_HALF,
   CITY_RUSH_TRACK_PROFILE_TOUGE,
+  cityRushChasePlacement,
   cityRushLaneSeparators,
 } from './cityRushRules.js';
 import {
@@ -40,6 +41,120 @@ const LOOP_END = LAP - START_ZONE_HALF - 2;
 // Dégagement caméra : la poursuite culmine à 6,7 m, tout ce qui enjambe la
 // route (portique du tunnel, panneau du pont) reste au-dessus de 7,4 m.
 const CAMERA_CLEARANCE = 7.4;
+
+// ── Le couloir de la caméra de poursuite ────────────────────────────────────
+// Dans les épingles, la poursuite ne se pose plus sur la chaussée derrière la
+// voiture — il n'y en a pas, la route tourne de 90° en neuf mètres — mais dans
+// l'axe de la caisse, jusqu'à une dizaine de mètres en dehors du ruban
+// (`cityRushChasePlacement`). Deux choses ne doivent donc jamais se trouver là :
+//
+//   · un arbre devant l'objectif. La forêt noire est plantée à partir de 8,7 m
+//     de la ligne centrale ; sans couloir réservé, un cèdre se retrouve à un
+//     mètre de la caméra et bouche la vue exactement comme le faisait l'ancienne
+//     caméra de trois-quarts. Le dégagement couvre le cône de feuillage le plus
+//     large (1,7 m × l'échelle de l'arbre) plus la marge de lissage.
+//   · un arbre sur la chaussée d'un autre virage. Les épingles se replient les
+//     unes sur les autres — une jambe passe à une vingtaine de mètres de la
+//     précédente — et la bande extérieure de la forêt peut atterrir au milieu
+//     de l'asphalte voisin. Remise dans l'axe, la caméra roule droit dessus.
+//
+// Chaque arbre qui tombe dans le couloir est **repoussé** plus loin sur le
+// bas-côté, jamais supprimé tant qu'il reste de la place : la forêt garde sa
+// densité, la caméra garde son dégagement. Les tirages du décor ne changent
+// pas — seul le déport latéral des arbres gênants est repris.
+export const CAMERA_CORRIDOR_RADIUS = 3.4; // m autour de l'objectif
+// La chaussée, plus la marge d'un couloir échantillonné au mètre.
+export const ROAD_CORRIDOR_RADIUS = TOUGE_ROAD_HALF + 0.6;
+const CAMERA_CORRIDOR_STEP = 1; // m de piste : pas d'échantillonnage du couloir
+const CAMERA_CORRIDOR_CELL = 4; // m : maille du couloir, plus large que son plus grand rayon
+const CAMERA_CORRIDOR_PUSH = 1.5; // m : pas de repousse d'un arbre gênant
+const CAMERA_CORRIDOR_PUSH_MAX = 30; // m : repousse maximale avant d'abandonner l'arbre
+const CAMERA_CORRIDOR_MIN_ANCHOR = 0.02; // ancrage au-delà duquel la caméra quitte la chaussée
+
+/** Position monde (repère de la boucle) d'un point de la ligne centrale. */
+function trackCentre(profile, metre) {
+  return { x: profile.offset(metre), z: -profile.forward(metre) * SCALE };
+}
+
+/**
+ * Position monde d'un décor posé à `metre` et décalé de `lateral` : le même
+ * repère que `bendLoopGeometry` applique aux sommets du décor fusionné.
+ */
+function trackSide(profile, metre, lateral) {
+  const yaw = profile.yaw(metre);
+  const centre = trackCentre(profile, metre);
+  return {
+    x: centre.x + lateral * Math.cos(yaw),
+    z: centre.z - lateral * Math.sin(yaw) * SCALE,
+  };
+}
+
+// Le couloir est rangé dans une grille monde : les épingles se replient les
+// unes sur les autres, un arbre peut donc gêner la caméra d'un virage très
+// éloigné en mètres de piste. Une maille de 4 m dépasse le plus grand rayon du
+// couloir, et la clé `ix * 4096 + iz` reste injective tant que |iz| < 2048.
+const corridorCell = (value) => Math.floor(value / CAMERA_CORRIDOR_CELL);
+const corridorKey = (ix, iz) => ix * 4096 + iz;
+
+/** Range un point du couloir dans la maille monde qui le contient. */
+function corridorAdd(buckets, x, z, radius) {
+  const key = corridorKey(corridorCell(x), corridorCell(z));
+  const point = [x, z, radius];
+  const bucket = buckets.get(key);
+  if (bucket) bucket.push(point);
+  else buckets.set(key, [point]);
+}
+
+/**
+ * Le couloir à garder libre : la ligne centrale de toute la descente — rien sur
+ * l'asphalte — et, pour chaque position de la voiture où la caméra quitte la
+ * chaussée, le point monde où elle se pose — rien devant l'objectif.
+ */
+export function buildCameraCorridor(profile = CITY_RUSH_TRACK_PROFILE_TOUGE) {
+  const buckets = new Map();
+  if (typeof profile.forward !== 'function') return buckets;
+  for (let metre = 0; metre < LAP; metre += CAMERA_CORRIDOR_STEP) {
+    const centre = trackCentre(profile, metre);
+    corridorAdd(buckets, centre.x, centre.z, ROAD_CORRIDOR_RADIUS);
+    const chase = cityRushChasePlacement(metre, profile);
+    if (chase.anchor <= CAMERA_CORRIDOR_MIN_ANCHOR) continue;
+    corridorAdd(buckets, centre.x + chase.cameraX, centre.z + chase.cameraZ, CAMERA_CORRIDOR_RADIUS);
+  }
+  return buckets;
+}
+
+/** Un arbre à ce déport empiète-t-il sur le couloir de la caméra ? */
+export function cameraCorridorBlocked(corridor, profile, metre, lateral) {
+  if (!corridor.size) return false;
+  const tree = trackSide(profile, metre, lateral);
+  const cx = corridorCell(tree.x);
+  const cz = corridorCell(tree.z);
+  for (let ix = cx - 1; ix <= cx + 1; ix += 1) {
+    for (let iz = cz - 1; iz <= cz + 1; iz += 1) {
+      const bucket = corridor.get(corridorKey(ix, iz));
+      if (!bucket) continue;
+      for (const [x, z, radius] of bucket) {
+        if (Math.hypot(x - tree.x, z - tree.z) < radius) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Déport latéral d'un arbre qui laisse le couloir libre : celui demandé s'il
+ * ne gêne pas, sinon le premier déport plus éloigné de la chaussée qui dégage
+ * l'objectif. `null` quand rien ne passe — l'arbre n'est pas planté.
+ */
+export function cameraCorridorLateral(corridor, profile, metre, lateral) {
+  if (!cameraCorridorBlocked(corridor, profile, metre, lateral)) return lateral;
+  const outward = Math.sign(lateral) || 1;
+  for (let push = CAMERA_CORRIDOR_PUSH; push <= CAMERA_CORRIDOR_PUSH_MAX; push += CAMERA_CORRIDOR_PUSH) {
+    const candidate = lateral + outward * push;
+    if (!cameraCorridorBlocked(corridor, profile, metre, candidate)) return candidate;
+  }
+  return null;
+}
 
 const toZ = (trackMeters) => -trackMeters * SCALE;
 // Police japonaise des panneaux, comme sur la Shuto C1.
@@ -969,12 +1084,20 @@ export function buildTougeTrack({ city, theme, materials: m, batch, cityIndex, l
   }
 
   // ── La forêt noire, derrière les glissières ──────────────────────────────
+  // Le couloir de la caméra de poursuite est relevé une fois pour toute la
+  // descente : un arbre qui tomberait devant l'objectif d'une épingle, ou sur
+  // l'asphalte d'un virage voisin, est repoussé plus loin sur le bas-côté, à
+  // feuillage et tirages inchangés.
+  const cameraCorridor = buildCameraCorridor();
   for (let position = LOOP_START - 6; position < LOOP_END + 6; position += 3.1) {
     for (const side of [-1, 1]) {
       if (random() < 0.34) continue;
-      const x = side * (TOUGE_ROAD_HALF + 5.5 + random() * 24);
-      const z = toZ(position + random() * 2.6);
+      const wanted = side * (TOUGE_ROAD_HALF + 5.5 + random() * 24);
+      const metres = position + random() * 2.6;
       const roll = random();
+      const x = cameraCorridorLateral(cameraCorridor, CITY_RUSH_TRACK_PROFILE_TOUGE, metres, wanted);
+      if (x === null) continue; // aucun déport ne dégage le couloir : l'arbre n'est pas planté
+      const z = toZ(metres);
       if (roll < 0.62) addCedar(bend, m, x, z, random, 0.9 + random() * 0.6);
       else if (roll < 0.82) addBamboo(bend, m, x, z, random, 0.9 + random() * 0.5);
       else addBoulder(bend, m, x, z, random, 0.7 + random() * 0.9);
