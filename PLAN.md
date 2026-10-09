@@ -364,16 +364,17 @@ comme avant** : ils ne ferment pas la voie et ne sont pas poussés.
 
 ### Points restés ouverts
 
-- **`check:city-rush-missions` (partie mission-run) ne passe plus sur la graine par
-  défaut.** Ce n'est pas à cause des rivaux (désormais traversables) : c'est le
-  choc latéral lui-même. Preuve : avec `trySideBump` désactivé (les patrouilles
-  restent bloquantes), le contrôle passe. Un choc coûte un carré au pilote et
-  déplace une voiture ; le bot scripté tourne parfois vers une voiture qui est à
-  côté de lui, et sa poursuite change. Mesure sur huit graines
-  (`CITY_RUSH_MISSION_SEED`) : la base passe sur 20261004, 22 et 44 (3 sur 8) ;
-  l'arbre courant passe sur 11 et 44 (2 sur 8). Le contrôle est fragile sur les
-  deux versions. À trancher : adapter le bot (ne pas tourner vers une voiture à
-  côté de lui, comme le ferait un pilote), ou accepter le rouge et le documenter.
+- **`check:city-rush-missions` (partie mission-run) : résolu pour la graine par
+  défaut.** Le choc latéral poussait la voiture qui bloque quand le bot tournait
+  vers une voie occupée à sa hauteur, et sa poursuite changeait. Le bot n'appuie
+  plus sur une voie fermée : il lit la règle de voie du volant (`steerRefused`,
+  exposé par le lanceur `city-rush-mission-run-check.mjs`). Sur la base, un tel
+  appui ne faisait rien, donc le comportement est le même. Sur huit graines
+  (`CITY_RUSH_MISSION_SEED`), les résultats sont identiques à la base : 3 sur 8
+  (20261004, 22 et 44), avec le même message d'échec sur les autres. Le contrôle
+  reste fragile sur ces cinq graines, comme avant ce changement ; ce point est
+  séparé et n'est pas traité ici. Une assertion vérifie qu'aucun choc latéral
+  n'a lieu pendant la course du bot.
 - `check:city-rush-wreck --all` échoue déjà sur la base : la réserve de cellules
   de départ n'est pas celle que le contrôle attend, et les réparations au
   mini-garage (effet `mini-garage-used`, PV relevés sans `player-hit`) ne sont

@@ -61,6 +61,22 @@ class FakeWebGLRenderer {
 
 globalThis.__FakeWebGLRenderer = FakeWebGLRenderer;
 
+// Ancre du retour de `createCityRushWorld` : le harnais du bot s'y greffe.
+const WORLD_RETURN_ANCHOR = '    get distance() { return distance; },\n';
+// Le bot lit la règle de voie du volant au lieu de la recopier : un appui vers
+// une voie fermée (voiture à côté, distance de sécurité) est refusé par action().
+// Le bot s'abstient alors, comme sur la base où un tel appui ne faisait rien.
+const HARNESS_ACCESS = `    // Harnais « mission-run » : la même règle de voie que action().
+    get harness() {
+      return {
+        steerRefused(name) {
+          const next = cityRushLaneAfterAction(playerLane, name, laneCount, { airborne: playerJumpState.active });
+          return next !== playerLane && !canEnterLane('player', next);
+        },
+      };
+    },
+`;
+
 const server = await createServer({
   root,
   logLevel: 'silent',
@@ -72,8 +88,13 @@ const server = await createServer({
       enforce: 'pre',
       transform(code, id) {
         if (id.includes('ViceCityWorld')) {
+          if (!code.includes(WORLD_RETURN_ANCHOR)) {
+            throw new Error('ancre du retour du monde introuvable dans ViceCityWorld — mettre à jour le lanceur de la vérif mission-run');
+          }
           return {
-            code: code.replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)('),
+            code: code
+              .replaceAll('new THREE.WebGLRenderer(', 'new (globalThis.__FakeWebGLRenderer)(')
+              .replace(WORLD_RETURN_ANCHOR, `${WORLD_RETURN_ANCHOR}${HARNESS_ACCESS}`),
             map: null,
           };
         }
