@@ -27,7 +27,7 @@ test('the race exposes one large, round red machine-gun button and no legacy sho
   // d'une arme en main à la fois.
   assert.match(page, /const POWER_ORDER = \[...CITY_RUSH_WEAPON_TYPES\]/);
   assert.match(page, /city-rush-machine-gun-button/);
-  assert.match(page, /ramasse un bonus rouge \(AK-47, \$\{CITY_RUSH_PISTOL_AMMO_PER_PICKUP\} balles\) ou un bonus bleu \(fusil à pompe, \$\{CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP\} cartouches\)/);
+  assert.match(page, /ramasse un bonus rouge \(AK-47, \$\{CITY_RUSH_PISTOL_AMMO_PER_PICKUP\} balles\) ou un bonus bleu sur un tremplin \(fusil à pompe, \$\{CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP\} cartouches\)/);
   assert.match(page, /ou traverse un conteneur jaune pour le bazooka/);
   assert.match(page, /chargeur recourbé/);
   assert.match(page, /bouche évasée/);
@@ -753,4 +753,35 @@ test('le fusil à pompe bleu reste l’arme du pilote : rivaux et police passent
   assert.match(collect, /inventory = cityRushEquipWeapon\(inventory, type, pickupAmount\)/);
   assert.match(collect, /pistolHoldCooldown = 0/, `l'arme fraîche n'hérite pas du réarmement`);
   assert.match(world, /swapped: weapon && Boolean\(previousWeapon\) && previousWeapon\.type !== type/);
+});
+
+test('le fusil à pompe bleu se pose sur les tremplins et se prend en franchissant la rampe', () => {
+  // Chaque rampe porte son propre emplacement de bonus, éteint par défaut : il
+  // suit la pente, la voie et le recyclage de la rampe sans rien recalculer.
+  assert.match(world, /function makeRampObject\(shared, city\) \{[\s\S]*?const pickup = makePickupObject\(shared\);\s*pickup\.visible = false;\s*group\.add\(pickup\);[\s\S]*?return \{ group, chevrons, holo, pickup \};\s*\}/,
+    'chaque rampe porte son bonus, éteint par défaut');
+  assert.match(world, /pickup: rampObj\.pickup,\s*pickupType: null,\s*pickupTaken: false,\s*crossedRacers: new Set\(\),/);
+
+  // Le bleu est tiré à chaque pose après le départ, au recyclage comme ailleurs ;
+  // le départ lui-même n'en pose jamais, et le Sprint, une course sans armes ou
+  // l'entraînement guidé non plus.
+  const setup = world.match(/function setupRampPickup\(ramp, \{ atStart = false \} = \{\}\) \{[\s\S]*?\n  \}\n/)?.[0] || '';
+  assert.match(setup, /const carries = !atStart && !sprint && storyWeaponsEnabled && !tutorialMode\s*&& rollCityRushRampBluePickup\(randomSeed\)/,
+    'le tirage tient compte du mode de course et du départ');
+  assert.match(setup, /setPickupKind\(ramp\.pickup, CITY_RUSH_POWERS\.SHOTGUN, 0, shared\)/);
+  assert.match(world, /ramp\.group\.visible = true;\s*setupRampPickup\(ramp, \{ atStart: true \}\);/, 'posé au départ de la course, sans bleu');
+  assert.match(world, /ramp\.lane = forwardLanes\[\(currentIdx \+ 1\) % forwardLanes\.length\];\s*setupRampPickup\(ramp\);/,
+    'le bleu est retiré au tirage à chaque recyclage de la rampe');
+
+  // Collecte : seul le pilote, dans la voie de la rampe, une fois par passage, et
+  // jamais par un rival ni par la police.
+  const collect = world.match(/function updateRampPickups\(dt\) \{[\s\S]*?\n  \}\n/)?.[0] || '';
+  assert.match(collect, /playerLane !== ramp\.lane \|\| ramp\.crossedRacers\.has\('player'\)/);
+  assert.match(collect, /canCollectCityRushPickup\(inventory, ramp\.pickupType,/);
+  assert.match(collect, /collectPickup\(ramp\.pickupType, playerLane\)/);
+  assert.doesNotMatch(collect, /collectRacerPickup|collectPolicePickup/);
+  assert.match(world, /\n    updateRampPickups\(dt\);\n  \}/, 'la collecte des tremplins tourne à chaque image de course');
+
+  // Le guide des tremplins l'annonce au joueur.
+  assert.match(page, /Certaines rampes portent un bonus bleu de fusil à pompe : on le prend en franchissant la rampe, dans sa voie\./);
 });

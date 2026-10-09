@@ -2278,7 +2278,7 @@ export default function ViceCityRushPage() {
                             : `${rule.name} chargé · ${ammo} ${unit}${ammo > 1 ? 's' : ''} · maintiens le bouton ou Z pour tirer`)
                         : bazookaExhausted
                           ? 'Bazooka épuisé : les deux entrepôts sont vides et les tirs sont utilisés'
-                          : `Aucune arme : ramasse un bonus rouge (AK-47, ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles) ou un bonus bleu (fusil à pompe, ${CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP} cartouches)${bazookaMode ? ', ou traverse un conteneur jaune pour le bazooka' : ''}`;
+                          : `Aucune arme : ramasse un bonus rouge (AK-47, ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles) ou un bonus bleu sur un tremplin (fusil à pompe, ${CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP} cartouches)${bazookaMode ? ', ou traverse un conteneur jaune pour le bazooka' : ''}`;
                       return (
                         <button
                           type="button"
@@ -3449,7 +3449,7 @@ export default function ViceCityRushPage() {
               </div>
               <div className="city-rush-guide-item is-ramp">
                 <span className="city-rush-guide-glyph" aria-hidden="true">▲</span>
-                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour bondir sur plusieurs dizaines de mètres selon ta vitesse et survoler le trafic et les barrages sans collision. En l’air, la voiture garde sa voie : le volant ne répond qu’à l’atterrissage. Une voiture de police qui saute ne part pas en épave à la retombée : chaque atterrissage lui coûte {CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés de vie, et elle n’explose que sa barre vidée.</small></div>
+                <div><b>TREMPLINS & SAUTS</b><small>Prends les rampes pour bondir sur plusieurs dizaines de mètres selon ta vitesse et survoler le trafic et les barrages sans collision. Certaines rampes portent un bonus bleu de fusil à pompe : on le prend en franchissant la rampe, dans sa voie. En l’air, la voiture garde sa voie : le volant ne répond qu’à l’atterrissage. Une voiture de police qui saute ne part pas en épave à la retombée : chaque atterrissage lui coûte {CITY_RUSH_POLICE_RAMP_LANDING_DAMAGE} carrés de vie, et elle n’explose que sa barre vidée.</small></div>
                 <kbd>SAUT</kbd>
               </div>
             </div>
