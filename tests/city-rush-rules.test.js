@@ -375,6 +375,23 @@ import {
   tougeTrackTangent,
   tougeTrackYaw,
   tougeDriftAmount,
+  CITY_RUSH_TRACK_PROFILE_TOUGE,
+  CITY_RUSH_TOUGE_PREBRAKE_METERS,
+  CITY_RUSH_TOUGE_CORNER_ANGLE_START,
+  cityRushTougeCornerFactor,
+  cityRushTougeCornerPace,
+  CITY_RUSH_TOUGE_AI_CORNER_RELIEF,
+  cityRushAiCornerPace,
+  CITY_RUSH_CHASE_BEHIND,
+  CITY_RUSH_CHASE_LOOK_AHEAD,
+  CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD,
+  CITY_RUSH_CHASE_ANCHOR_DRIFT_START,
+  CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL,
+  CITY_RUSH_CHASE_FOLLOW_RATE,
+  CITY_RUSH_CHASE_ANCHOR_FOLLOW_RATE,
+  cityRushChaseAnchorWeight,
+  cityRushChaseFollowRate,
+  cityRushChasePlacement,
 } from '../src/games/cityRushRules.js';
 
 test('the five city routes have a distinct identity and complete palettes', () => {
@@ -2667,6 +2684,215 @@ test('le tōgé dessine douze vrais virages à 90° et ne fait déraper que dans
     assert.equal(tougeDriftAmount(progress), 0, `aucun drift à ${km} km`);
   }
   assert.equal(tougeDriftAmount(5.15 / lengthKm, 'nordschleife'), 0, 'le drift reste exclusif au tōgé');
+});
+
+test('le tōgé freine avant ses épingles, pas une fois dedans', () => {
+  const lengthKm = CITY_RUSH_TOUGE.lengthKm;
+  const atKm = (km) => (km / lengthKm) * CITY_RUSH_LAP_LENGTH;
+  // L'anticipation de la descente est plus longue que celle de Vice City : ses
+  // cassures ne durent que neuf mètres, une avance de 40 m tomberait à côté.
+  assert.equal(CITY_RUSH_TOUGE_PREBRAKE_METERS, 46);
+  assert.ok(CITY_RUSH_TOUGE_PREBRAKE_METERS > CITY_RUSH_CORNER_PACE_PREBRAKE_METERS);
+  assert.equal(CITY_RUSH_TOUGE_CORNER_ANGLE_START, 30);
+
+  // Le plancher d'une cassure à 90° — les douze virages de la descente.
+  assert.equal(cityRushTougeCornerFactor(90), CITY_RUSH_CORNER_PACE_MIN);
+  assert.equal(cityRushTougeCornerFactor(-90), CITY_RUSH_CORNER_PACE_MIN, 'le sens du virage ne change rien');
+  assert.equal(cityRushTougeCornerFactor(120), CITY_RUSH_CORNER_PACE_MIN, 'au-delà de la cassure, le plancher tient');
+  assert.equal(cityRushTougeCornerFactor(0), 1);
+  assert.equal(cityRushTougeCornerFactor(CITY_RUSH_TOUGE_CORNER_ANGLE_START), 1);
+  assert.equal(cityRushTougeCornerFactor(Number.NaN), 1, 'un angle illisible ne ralentit personne');
+  const midFactor = cityRushTougeCornerFactor(55);
+  assert.ok(midFactor < 1 && midFactor > CITY_RUSH_CORNER_PACE_MIN, 'la descente est progressive, pas d’un bloc');
+
+  // Les douze virages s'enchaînent en trois groupes contigus : les six de
+  // 五連ヘアピン, le S de 水沢の森, les quatre du ravin. Le plancher tient d'un
+  // bout à l'autre de chaque groupe et la vitesse revient dès la sortie.
+  const turns = CITY_RUSH_TOUGE_TURNS
+    .map(([km, angle, spanKm]) => ({
+      km, angle,
+      centre: atKm(km),
+      half: ((spanKm / lengthKm) * CITY_RUSH_LAP_LENGTH) / 2,
+    }))
+    .sort((a, b) => a.centre - b.centre);
+  const groups = [];
+  for (const turn of turns) {
+    const last = groups[groups.length - 1];
+    if (last && turn.centre - turn.half <= last.exit + 1e-6) {
+      last.exit = turn.centre + turn.half;
+      last.count += 1;
+    } else {
+      groups.push({ entry: turn.centre - turn.half, exit: turn.centre + turn.half, count: 1 });
+    }
+  }
+  assert.deepEqual(groups.map((group) => group.count), [6, 2, 4], 'les trois enfilades de la descente');
+
+  for (const group of groups) {
+    const label = `enfilade ${group.entry.toFixed(0)}–${group.exit.toFixed(0)} m`;
+    // Avant la zone de freinage : pleine vitesse.
+    assert.equal(
+      cityRushTougeCornerPace(group.entry - CITY_RUSH_TOUGE_PREBRAKE_METERS - 2), 1,
+      `${label} : pleine vitesse avant la zone de freinage`,
+    );
+    // Le freinage commence au repère et descend progressivement jusqu'à l'entrée.
+    const brakeStart = cityRushTougeCornerPace(group.entry - CITY_RUSH_TOUGE_PREBRAKE_METERS + 3);
+    const brakeLate = cityRushTougeCornerPace(group.entry - 3);
+    assert.ok(brakeStart < 1, `${label} : la cible baisse dès le début du freinage`);
+    assert.ok(brakeStart > brakeLate, `${label} : le freinage est progressif (${brakeStart.toFixed(2)} → ${brakeLate.toFixed(2)})`);
+    assert.ok(brakeLate <= CITY_RUSH_CORNER_PACE_MIN + 0.05, `${label} : la voiture arrive au plancher à l'entrée`);
+    // Dans le virage, et jusqu'à la sortie du dernier : le plancher tient.
+    assert.equal(cityRushTougeCornerPace(group.entry), CITY_RUSH_CORNER_PACE_MIN, `${label} : plancher à l'entrée`);
+    assert.equal(cityRushTougeCornerPace((group.entry + group.exit) / 2), CITY_RUSH_CORNER_PACE_MIN, `${label} : plancher au milieu`);
+    assert.equal(cityRushTougeCornerPace(group.exit), CITY_RUSH_CORNER_PACE_MIN, `${label} : plancher à la sortie`);
+    assert.equal(cityRushTougeCornerPace(group.exit + 2), 1, `${label} : on réaccélère dès la sortie`);
+    // Chaque tour rejoue la même descente.
+    assert.equal(
+      cityRushTougeCornerPace(group.entry - 10),
+      cityRushTougeCornerPace(group.entry - 10 + CITY_RUSH_LAP_LENGTH),
+      `${label} : le freinage se répète au tour suivant`,
+    );
+  }
+
+  // Les longues lignes droites de la descente restent à fond.
+  for (const km of [1, 2.6, 4, 7.5, 10, 13, 13.4]) {
+    assert.equal(cityRushTougeCornerPace(atKm(km)), 1, `la ligne droite du km ${km} ne ralentit personne`);
+  }
+  assert.equal(cityRushTougeCornerPace(Number.NaN), 1, 'une distance illisible ne ralentit personne');
+
+  // La règle passe par le même point d'entrée que le reste du moteur, et l'IA
+  // du tōgé garde son relief : elle freine, mais plus tard que le pilote.
+  for (const course of ['touge', CITY_RUSH_TOUGE_COURSE]) {
+    assert.equal(cityRushCornerPace(course, groups[0].entry), CITY_RUSH_CORNER_PACE_MIN);
+    assert.ok(cityRushAiCornerPace(course, groups[0].entry, CITY_RUSH_TRACK_PROFILE_TOUGE) > CITY_RUSH_CORNER_PACE_MIN);
+  }
+  const aiPace = cityRushAiCornerPace('touge', groups[0].entry, CITY_RUSH_TRACK_PROFILE_TOUGE);
+  assert.ok(Math.abs(aiPace - (1 - (1 - CITY_RUSH_CORNER_PACE_MIN) * (1 - CITY_RUSH_TOUGE_AI_CORNER_RELIEF))) < 1e-12,
+    `l'IA écope de ${(aiPace * 100).toFixed(0)} % de la pointe dans l'épingle`);
+  // L'anticipation se voit au compteur : lancée à la pointe du parcours, la
+  // voiture a déjà nettement perdu de la vitesse *avant* l'entrée.
+  const coursePace = cityRushCoursePace(CITY_RUSH_TOUGE_COURSE);
+  const topSpeed = CITY_RUSH_PLAYER_SPEED * coursePace;
+  const frame = 1 / 60;
+  for (const group of groups) {
+    let approach = group.entry - CITY_RUSH_TOUGE_PREBRAKE_METERS - 8;
+    let speed = topSpeed;
+    let firstBrake = null;
+    while (approach < group.entry) {
+      const pace = cityRushTougeCornerPace(approach);
+      if (pace < 1 && firstBrake === null) firstBrake = approach;
+      speed = approachCityRushSpeed(speed, topSpeed * pace, 8, frame, coursePace);
+      approach += speed * frame;
+    }
+    assert.ok(Number.isFinite(firstBrake) && firstBrake < group.entry, 'la cible baisse avant le repère d’entrée');
+    assert.ok(group.entry - firstBrake > 30, `le freinage commence plus de 30 m avant l'entrée (${(group.entry - firstBrake).toFixed(0)} m)`);
+    assert.ok(speed < topSpeed * 0.62, `la voiture arrive déjà ralentie (${(speed * 3.6).toFixed(0)} km/h sur ${(topSpeed * 3.6).toFixed(0)})`);
+  }
+});
+
+test('la poursuite reste derrière la voiture dans les cassures, sans bouger ailleurs', () => {
+  assert.ok(CITY_RUSH_CHASE_ANCHOR_DRIFT_START < CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL);
+  assert.ok(CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD > CITY_RUSH_CHASE_LOOK_AHEAD,
+    'le regard ancré vise plus loin : la plongée reste la même une fois recollé');
+  assert.ok(CITY_RUSH_CHASE_ANCHOR_FOLLOW_RATE > CITY_RUSH_CHASE_FOLLOW_RATE);
+
+  // Le poids d'ancrage : nul tant que les deux placements se confondent, plein
+  // dès que la route décroche, progressif entre les deux.
+  assert.equal(cityRushChaseAnchorWeight(0), 0);
+  assert.equal(cityRushChaseAnchorWeight(CITY_RUSH_CHASE_ANCHOR_DRIFT_START), 0);
+  assert.equal(cityRushChaseAnchorWeight(CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL), 1);
+  assert.equal(cityRushChaseAnchorWeight(CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL * 4), 1, 'le poids est plafonné');
+  assert.equal(cityRushChaseAnchorWeight(-CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL), 1, 'l’écart est signé indifférent');
+  assert.equal(cityRushChaseAnchorWeight(Number.NaN), 0, 'un écart illisible n’ancre rien');
+  const midAnchor = cityRushChaseAnchorWeight((CITY_RUSH_CHASE_ANCHOR_DRIFT_START + CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL) / 2);
+  assert.ok(midAnchor > 0 && midAnchor < 1, 'l’ancrage est progressif');
+  assert.equal(cityRushChaseFollowRate(0), CITY_RUSH_CHASE_FOLLOW_RATE);
+  assert.equal(cityRushChaseFollowRate(1), CITY_RUSH_CHASE_ANCHOR_FOLLOW_RATE);
+
+  // Le cadrage d'origine : la caméra sur le morceau de route derrière la
+  // voiture, le regard sur le morceau de route devant elle. Sert de référence
+  // pour mesurer ce que l'ancrage change, carte par carte.
+  const roadChase = (profile, distance) => {
+    const path2d = typeof profile.forward === 'function';
+    const behind = distance - CITY_RUSH_CHASE_BEHIND / CITY_RUSH_SCROLL_SCALE;
+    const ahead = distance + CITY_RUSH_CHASE_LOOK_AHEAD / CITY_RUSH_SCROLL_SCALE;
+    const advance = (metre) => (path2d ? profile.forward(metre) - profile.forward(distance) : metre - distance);
+    return {
+      cameraX: profile.offset(behind) - profile.offset(distance),
+      cameraZ: -advance(behind) * CITY_RUSH_SCROLL_SCALE,
+      lookX: profile.offset(ahead) - profile.offset(distance),
+      lookZ: -advance(ahead) * CITY_RUSH_SCROLL_SCALE,
+    };
+  };
+  // L'axe arrière de la caisse : ce qui reste derrière elle, et ce qui part sur
+  // son flanc, dans le repère monde (x latéral, z profondeur).
+  const behindOf = (chase) => {
+    const length = Math.hypot(chase.cameraX, chase.cameraZ);
+    return length > 0 ? (chase.cameraX * Math.sin(chase.yaw) + chase.cameraZ * Math.cos(chase.yaw)) / length : 1;
+  };
+  const sideOf = (chase, point) => Math.abs(point.cameraX * Math.cos(chase.yaw) - point.cameraZ * Math.sin(chase.yaw));
+
+  // Hors du tōgé, les deux placements restent confondus : la caméra ne bouge
+  // pas d'un centième de son recul — aucune carte ne change de cadrage.
+  for (const profile of [CITY_RUSH_TRACK_PROFILE_DEFAULT, CITY_RUSH_TRACK_PROFILE_VICE_CITY, CITY_RUSH_TRACK_PROFILE_NORDSCHLEIFE]) {
+    let shift = 0;
+    let anchor = 0;
+    for (let distance = 0; distance < CITY_RUSH_LAP_LENGTH; distance += 0.5) {
+      const chase = cityRushChasePlacement(distance, profile);
+      const road = roadChase(profile, distance);
+      shift = Math.max(shift, Math.hypot(chase.cameraX - road.cameraX, chase.cameraZ - road.cameraZ));
+      anchor = Math.max(anchor, chase.anchor);
+    }
+    assert.ok(shift < CITY_RUSH_CHASE_BEHIND / 100, `${profile.id} garde son cadrage (écart ${shift.toFixed(4)} unité)`);
+    assert.ok(anchor < 0.02, `${profile.id} n'ancre jamais sa poursuite (${anchor.toFixed(3)})`);
+  }
+
+  // En ligne droite, la poursuite du tōgé retombe sur le cadrage d'origine.
+  for (const distance of [0, 200, 700, 1150]) {
+    const chase = cityRushChasePlacement(distance, CITY_RUSH_TRACK_PROFILE_TOUGE);
+    const road = roadChase(CITY_RUSH_TRACK_PROFILE_TOUGE, distance);
+    assert.equal(chase.anchor, 0, `la ligne droite de ${distance} m n'ancre rien`);
+    assert.ok(Math.abs(chase.cameraX - road.cameraX) < 1e-9 && Math.abs(chase.cameraZ - road.cameraZ) < 1e-9);
+    assert.ok(Math.abs(chase.lookZ - road.lookZ) < 1e-9);
+    assert.ok(behindOf(chase) > 0.999, 'la caméra reste derrière la voiture');
+  }
+
+  // Dans les épingles : la route décroche, la poursuite se recolle dans l'axe.
+  let anchored = 0;
+  let behindMin = 1;
+  let sideMax = 0;
+  let worstLook = { drift: -1 };
+  let worstCamera = { side: -1 };
+  for (let distance = 0; distance < CITY_RUSH_LAP_LENGTH; distance += 0.25) {
+    const chase = cityRushChasePlacement(distance, CITY_RUSH_TRACK_PROFILE_TOUGE);
+    // Ce que l'ancien cadrage faisait de la caméra : son déport sur le flanc de
+    // la caisse, mesuré dans le repère de la voiture.
+    const side = sideOf(chase, roadChase(CITY_RUSH_TRACK_PROFILE_TOUGE, distance));
+    if (chase.drift > worstLook.drift) worstLook = { drift: chase.drift, distance, chase };
+    if (side > worstCamera.side) worstCamera = { side, distance, chase };
+    if (chase.anchor <= 0.98) continue;
+    anchored += 1;
+    behindMin = Math.min(behindMin, behindOf(chase));
+    sideMax = Math.max(sideMax, sideOf(chase, chase));
+  }
+  assert.ok(anchored > 200, `le tōgé ancre sa poursuite dans les cassures (${anchored} échantillons sur 4 800)`);
+  assert.ok(behindMin > 0.999, `la caméra reste strictement derrière la voiture (${behindMin.toFixed(4)})`);
+  assert.ok(sideMax < CITY_RUSH_CHASE_BEHIND / 40,
+    `aucun déport sensible sur le flanc une fois ancrée (${sideMax.toFixed(3)} m sur ${CITY_RUSH_CHASE_BEHIND} m de recul)`);
+  // Le défaut que l'ancrage corrige, mesuré des deux bouts : le regard de
+  // l'ancien cadrage décroche de plus de vingt mètres de l'axe de la caisse —
+  // c'est ce qui déclenche l'ancrage — et la caméra elle-même part jusqu'à dix-
+  // huit mètres sur le flanc, hors de la route et hors du cadre.
+  assert.ok(worstLook.drift > 20,
+    `le regard décroche vraiment (${worstLook.drift.toFixed(1)} m à ${worstLook.distance.toFixed(0)} m)`);
+  assert.equal(worstLook.chase.anchor, 1, 'l’ancrage est complet là où le regard décroche le plus');
+  assert.ok(worstCamera.side > 15,
+    `l'ancien cadrage partait sur le flanc (${worstCamera.side.toFixed(1)} m à ${worstCamera.distance.toFixed(0)} m)`);
+  assert.equal(worstCamera.chase.anchor, 1, 'l’ancrage est complet là où la caméra décroche le plus');
+  assert.ok(sideOf(worstCamera.chase, worstCamera.chase) < 0.01, 'le nouveau cadrage reste dans l’axe');
+  // Le relief suivi par la caméra s'efface avec l'ancrage : une fois recollée,
+  // elle se cale sur la hauteur de la voiture, pas sur celle du morceau de
+  // route resté en arrière.
+  assert.ok(Math.abs(worstCamera.chase.cameraHill) < 1e-9 && Math.abs(worstCamera.chase.lookHill) < 1e-9);
 });
 
 test('Vice City, le Ring et le tōgé ralentissent les voitures dans leurs grands virages', () => {

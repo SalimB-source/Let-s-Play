@@ -36,6 +36,10 @@ import {
   cityRushCoursePace,
   cityRushCornerPace,
   cityRushAiCornerPace,
+  CITY_RUSH_CHASE_BEHIND,
+  CITY_RUSH_CHASE_LOOK_AHEAD,
+  cityRushChasePlacement,
+  cityRushChaseFollowRate,
   nordschleifeReadout,
   tougeDriftAmount,
   CITY_RUSH_POWER_RULES,
@@ -396,8 +400,13 @@ const STEER_KEY_DIRECTIONS = Object.freeze({
 // élément qui enjambe la route doit rester au-dessus de 7,1 m.
 // Distance (en mètres) sous laquelle le passage d'un rival s'entend.
 const PASS_BY_RANGE = 11;
-const CHASE_POSITION = new THREE.Vector3(0, 6.6, PLAYER_Z + 13.2);
-const CHASE_LOOK = new THREE.Vector3(0, 1.3, PLAYER_Z - 15);
+// Le recul et l'avance du regard viennent de la règle pure
+// (`cityRushChasePlacement`) : la poursuite en course et les phases
+// d'intro / compte à rebours / arrivée cadrent la même voiture à la même
+// distance. En ligne droite, la poursuite retombe exactement sur ces deux
+// points ; dans une cassure, elle se recolle dans l'axe de la caisse.
+const CHASE_POSITION = new THREE.Vector3(0, 6.6, PLAYER_Z + CITY_RUSH_CHASE_BEHIND);
+const CHASE_LOOK = new THREE.Vector3(0, 1.3, PLAYER_Z - CITY_RUSH_CHASE_LOOK_AHEAD);
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const policeUnitName = (unitNumber, vehicleType = 'police') => (
@@ -1894,13 +1903,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // de trajet) et la difficulté ne changent pas, seul le rythme baisse.
   const coursePace = cityRushCoursePace(city);
   const paced = (speed) => speed * coursePace;
-  // Profil de vitesse en courbe : à Vice City, le joueur anticipe le freinage
-  // de 40 m ; sur le tōgé, il garde sa vitesse pour drifter. Le profil sert
-  // alors à modérer l'allure des rivaux, du trafic et de la police.
+  // Profil de vitesse en courbe : à Vice City, le pilote anticipe le freinage
+  // de 40 m ; sur le tōgé, la table des douze virages déclenche la descente
+  // 46 m avant chaque cassure et la tient jusqu'à la sortie. Le même profil
+  // règle le pilote, les rivaux, le trafic et la police.
   const cornerPaceAt = (trackDistance) => cityRushCornerPace(city, trackDistance, trackProfile);
   // Sur le tōgé, les poursuites, le trafic et les rivaux reçoivent une pénalité
-  // de virage allégée, tandis que le pilote ne ralentit pas. Ailleurs, l'IA
-  // suit le même profil de courbe que le joueur.
+  // de virage allégée : les locaux connaissent la montagne et freinent plus
+  // tard. Ailleurs, l'IA suit exactement le profil du pilote.
   const aiCornerPaceAt = (trackDistance) => cityRushAiCornerPace(city, trackDistance, trackProfile, cornerPaceAt(trackDistance));
   // ── Dérapage contrôlé du tōgé ────────────────────────────────────────────
   // Le dérapage ne se déclenche que dans les virages francs à 90° marqués dans
@@ -9296,26 +9306,30 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // La caméra regarde quelques mètres plus loin sur l'axe courbe et se
       // place elle-même sur le morceau de route derrière la voiture. Le résultat
       // reste très doux : la route tourne, pas la tête du joueur.
-      const behindMeters = -(CHASE_POSITION.z - PLAYER_Z) / SCALE;
-      const aheadMeters = (PLAYER_Z - CHASE_LOOK.z) / SCALE;
-      const behindDistance = distance + behindMeters;
-      const aheadDistance = distance + aheadMeters;
-      const curveBehind = trackRelativeX(behindDistance);
-      const curveAhead = trackRelativeX(aheadDistance);
-      const cameraZ = trackRelativeZ(behindDistance);
-      const lookZ = trackRelativeZ(aheadDistance);
-      const hillBehind = trackRelativeY(behindDistance);
-      const hillAhead = trackRelativeY(aheadDistance);
+      //
+      // Sauf quand la route tourne plus court que le recul de la poursuite :
+      // dans les épingles à 90° du tōgé, le morceau de chaussée placé à 13,2 m
+      // derrière n'est plus derrière la voiture mais sur son flanc (jusqu'à
+      // dix-sept mètres de côté) — la voiture sortait du cadre et la descente
+      // devenait illisible. `cityRushChasePlacement` mesure l'écart entre les
+      // deux placements et recolle la poursuite dans l'axe de la caisse,
+      // position et regard, dès que l'écart dépasse 7,5 m. Sur une courbe douce
+      // les deux se confondent et rien ne change : les cinq villes, la Route 66,
+      // le Mexique et le Ring gardent exactement leur cadrage actuel.
+      const chase = cityRushChasePlacement(distance, trackProfile);
       const jumpCamY = (playerJumpState.active || playerLandingBounce > 0) ? (playerCar.position.y || 0) * 0.42 : 0;
       const jumpLookY = (playerJumpState.active || playerLandingBounce > 0) ? (playerCar.position.y || 0) * 0.35 : 0;
       cameraTarget.set(
-        px * 0.16 + curveBehind + Math.sin(clockTime * 47) * shake,
-        CHASE_POSITION.y + hillBehind + Math.cos(clockTime * 39) * shake * 0.6 - speedRatio * 0.5 + jumpCamY,
-        cameraZ + speedRatio * 0.6,
+        px * 0.16 + chase.cameraX + Math.sin(clockTime * 47) * shake,
+        CHASE_POSITION.y + chase.cameraHill + Math.cos(clockTime * 39) * shake * 0.6 - speedRatio * 0.5 + jumpCamY,
+        PLAYER_Z + chase.cameraZ + speedRatio * 0.6,
       );
-      lookTarget.set(px * 0.09 + curveAhead, CHASE_LOOK.y + hillAhead + jumpLookY, lookZ);
+      lookTarget.set(px * 0.09 + chase.lookX, CHASE_LOOK.y + chase.lookHill + jumpLookY, PLAYER_Z + chase.lookZ);
       targetFovOffset = (playerBoostLeft > 0 ? 6 : 0) + speedRatio * 2.5;
-      followRate = 4.5;
+      // Une poursuite ancrée suit plus ferme : dans une cassure, l'axe tourne
+      // de 90° en un quart de seconde et le retard de lissage ferait couper le
+      // virage à la caméra, donc ressortir la voiture du cadre.
+      followRate = cityRushChaseFollowRate(chase.anchor);
     }
     cameraKick = Math.max(0, cameraKick - dt * 2.2);
     const amount = 1 - Math.exp(-dt * followRate);
@@ -9461,13 +9475,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const cleanLineScale = cityRushCleanLineFactor(playerCleanLineTime);
       const oncomingScale = cityRushOncomingBonusFactor(playerOncomingTime);
       const breakdownScale = storyBreakdownActive ? 0 : 1;
-      // Le cap de la piste fixe la vitesse du virage ; à Vice City, il est lu
-      // 40 m en avance pour que le freinage ait déjà commencé à l'entrée. Le
-      // freinage habituel (`approachCityRushSpeed`) accompagne ensuite la sortie.
-      // Sur le tōgé du Mont Haruna, le joueur ne ralentit pas automatiquement
-      // dans les virages : le drift visuel et le contre-braquage signalent les
-      // cassures, tandis que l'IA lève légèrement le pied.
-      const cornerScale = touge ? 1 : cornerPaceAt(distance);
+      // La piste fixe la vitesse du virage, et le freinage commence **avant**
+      // l'entrée : à Vice City le cap est lu 40 m en avance, sur le tōgé du
+      // Mont Haruna la table des virages déclenche la descente 46 m avant
+      // chaque cassure (`cityRushTougeCornerPace`). Le freinage habituel
+      // (`approachCityRushSpeed`) accompagne ensuite la sortie.
+      //
+      // Le pilote suit la même règle que tout ce qui roule : une épingle prise
+      // à fond ne se lit pas — la voiture reste en travers du cadre et la
+      // descente devient illisible. Le drift visuel et le contre-braquage
+      // restent, eux : `driftFor` suit la vitesse, et une voiture arrivée au
+      // plancher du virage dérape toujours autant.
+      const cornerScale = cornerPaceAt(distance);
       const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
       // pointe est plus basse, la montée en régime garde sa durée.

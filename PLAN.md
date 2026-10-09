@@ -382,3 +382,87 @@ comme avant** : ils ne ferment pas la voie et ne sont pas poussés.
 - Les vérifications d'interface (`check:city-rush-mexico`, `check:city-rush-sprint-ui`,
   `check:city-rush-tutorial-ui`, `check:city-rush-quiet`) dépendent d'un canevas et
   d'un WebGL absents du bac à sable : elles échouent aussi sur la base.
+
+## Suite — le tōgé freine avant le virage, la poursuite reste derrière
+
+### Objectif
+
+Sur le mont Haruna, la caméra de poursuite doit **rester derrière la voiture**
+dans les épingles (elle partait sur le flanc, la caisse sortait du cadre) et
+**toutes les voitures doivent freiner avant les virages**, pilote compris.
+
+### Ce qui change
+
+- **Règles pures** (`src/games/cityRushRules.js`) :
+  - `cityRushTougeCornerFactor(angle)` (plancher 0,58 à 90°, 1 au-delà de
+    `CITY_RUSH_TOUGE_CORNER_ANGLE_START` = 30°, lissé entre les deux) et
+    `cityRushTougeCornerPace(distance)` qui lit `CITY_RUSH_TOUGE_TURNS` et
+    anticipe de `CITY_RUSH_TOUGE_PREBRAKE_METERS` = 46 m avant chaque cassure,
+    plancher tenu jusqu'à la sortie. `cityRushCornerPace` délègue sa branche
+    tōgé ; l'anticipation précédente (40 m sur le cap rendu) ne se déclenchait
+    jamais, une cassure ne durant que neuf mètres.
+  - `cityRushChasePlacement(distance, profile)` : le cadrage historique (caméra
+    sur la route 13,2 m derrière, regard 15 m devant) et le cadrage **ancré**
+    (caméra dans l'axe de la caisse, regard à
+    `CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD` = 21 m), départagés par l'écart des deux
+    regards mesuré à recul égal — `cityRushChaseAnchorWeight`, nul sous 7,5 m,
+    plein à 15 m. `cityRushChaseFollowRate` monte le lissage de 4,5 à 7 pendant
+    l'ancrage, et les reliefs (`cameraHill`, `lookHill`) s'effacent avec lui.
+- **Le monde** (`src/games/ViceCityWorld.jsx`) : `updateCamera` appelle
+  `cityRushChasePlacement` et `cityRushChaseFollowRate` ; `CHASE_POSITION` et
+  `CHASE_LOOK` sont repris des constantes ; le `cornerScale` du pilote perd
+  l'exemption `touge ? 1 : …` et suit `cornerPaceAt` comme partout ailleurs.
+- **Le décor** (`src/games/tougeStage.js`) : `buildCameraCorridor` relève la
+  ligne centrale du tour (rayon `ROAD_CORRIDOR_RADIUS` = 3,8 m) et chaque
+  position de caméra ancrée (rayon `CAMERA_CORRIDOR_RADIUS` = 3,4 m) dans une
+  grille monde de 4 m ; la forêt noire repousse ses arbres gênants de 1,5 m en
+  1,5 m vers l'extérieur (`cameraCorridorLateral`), sans rien changer aux
+  tirages, et n'abandonne un arbre que si aucun déport ne dégage le couloir.
+
+### Décisions prises
+
+- **Toutes les voitures freinent, joueur compris** (choix explicite : l'exemption
+  du pilote sur le tōgé est supprimée). L'IA garde son relief
+  (`CITY_RUSH_TOUGE_AI_CORNER_RELIEF` = 0,35) pour rester rattrapable.
+- **La correction de caméra est générale**, calée sur la géométrie (l'écart des
+  deux cadrages) et non sur le nom du parcours ; les seuils 7,5 m / 15 m sont
+  choisis au-dessus des écarts maximaux des trois autres profils (0,04 / 7,23 /
+  7,06 m), qui gardent un poids exactement nul et un cadrage inchangé.
+- Le recul de la caméra reste 13,2 m : le raccourcir faisait sortir l'hélico
+  d'observation du haut du cadre (y > 0,8) et coupait la voiture en bas.
+
+### Vérifications
+
+- `tests/city-rush-rules.test.js` (deux tests ajoutés, dans `check:city-rush`) :
+  le freinage du tōgé (facteur, enfilades retrouvées depuis la table, cible avant
+  / pendant / après, lignes droites, tour suivant, relief de l'IA, et la voiture
+  qui touche les freins plus de 30 m avant l'entrée et arrive sous 62 % de la
+  pointe) ; l'ancrage de la poursuite (bornes et lissage du poids, les trois
+  autres profils inchangés, la ligne droite du tōgé au millième, la caméra
+  strictement derrière la caisse dans les épingles).
+- `tests/city-rush-touge-camera.test.js` (nouveau, dans `check:city-rush-touge`) :
+  le couloir couvre toute la chaussée et 150 à 400 m de caméra décrochée, qui
+  entre bien dans la bande plantée ; sur toute la bande de la forêt, aucun arbre
+  repoussé ne gêne, ne traverse la route ni n'est rapproché, moins de 15 %
+  bougent, moins de 1 % sont abandonnés.
+- `scripts/city-rush-smoke-entry.jsx` : le smoke juge maintenant le cadrage de la
+  voiture du pilote sur les neuf parcours (jamais hors de l'image, |x| ≤ 0,98 ;
+  dans sa bande sur 98 % des images ; arrivée, épave et tremplin écartés). Sur le
+  tōgé non corrigé il échoue avec |x| = 1,52 — c'est le filet du défaut.
+- `npm run check:city-rush`, `npm run check:city-rush-touge` et
+  `npm run check:city-rush-smoke -- --all` : verts. Sur le tōgé : la voiture du
+  pilote tient |x| ≤ 0,63 et y −0,89…−0,45 sur 8 078 images, l'hélico
+  d'observation reste dans sa bande de ciel.
+- Forêt réellement plantée : 499 arbres, 24 repoussés (4,8 %), 1 abandonné, 0
+  dans le couloir, et 0 cèdre sur l'asphalte d'un virage voisin (3 avant).
+
+### Points restés ouverts
+
+- Le couloir de la route écarte les arbres de l'asphalte **au moment de la
+  construction du tōgé** ; les autres décors (villes, Mexique, Ring) n'ont pas ce
+  contrôle et peuvent encore poser un arbre près d'une chaussée qui se replie.
+- Le smoke ne juge pas l'occlusion : un arbre repoussé hors du couloir reste
+  vérifié géométriquement, pas pixel par pixel.
+- `check:city-rush-wreck --all` et les contrôles d'interface qui demandent un
+  canevas ou WebGL (`check:city-rush-mexico`, `-sprint-ui`, `-tutorial-ui`,
+  `-quiet`) échouent déjà sur la base, dans ce bac à sable.

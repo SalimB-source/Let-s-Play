@@ -2464,6 +2464,123 @@ armes, rivaux attitrés), victoire puis 2e place puis victoire (sacre à
 26 pts), prime +100, déblocage de la Coupe d'Europe, sauvegarde (230 billets)
 et abandon propre depuis le garage.
 
+## Vice City Rush : le tōgé freine avant le virage, la poursuite reste derrière
+
+Le **mont Haruna** (neuvième parcours, `touge`) est la seule route de montagne du
+jeu : 13,8 km de descente de nuit, chaussée de 6,40 m, douze virages dont huit
+épingles à 90° groupées en trois enfilades — 五連ヘアピン, 水沢の森, le ravin.
+Deux défauts la rendaient illisible : la caméra de poursuite partait sur le flanc
+dans les épingles, et personne ne freinait avant de tourner.
+
+### La poursuite reste derrière la voiture
+
+La caméra se posait sur le morceau de route *derrière* la caisse et regardait le
+morceau *devant*. Or une épingle tourne de 90° en neuf mètres : quinze mètres
+plus loin, la route n'est plus devant, elle est à côté. Mesuré sur le profil
+rendu, l'ancien cadrage déportait la caméra jusqu'à **18,3 m sur le flanc** de la
+voiture, son regard jusqu'à **23,4 m** hors de l'axe, et la caisse sortait de
+l'image (**|x| = 1,52** en coordonnée écran).
+
+`cityRushChasePlacement(distance, profile)` calcule désormais les deux cadrages
+et les départage : le cadrage historique, et le cadrage **ancré** — la caméra à
+`CITY_RUSH_CHASE_BEHIND` (13,2 m) derrière la voiture *dans l'axe de la caisse*,
+le regard à `CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD` (21 m) pour garder la même
+plongée. L'écart entre les deux regards, mesuré à recul égal, donne le poids
+d'ancrage (`cityRushChaseAnchorWeight`) : nul jusqu'à **7,5 m**
+(`CITY_RUSH_CHASE_ANCHOR_DRIFT_START`), plein à **15 m**
+(`CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL`), lissé entre les deux. `cityRushChaseFollowRate`
+monte le lissage de 4,5 à 7 pendant l'ancrage, et le relief suivi par la caméra
+s'efface avec lui.
+
+La règle est **géométrique** : elle ne connaît pas le tōgé, elle répond à « la
+route décroche-t-elle de l'axe de la caisse ? ». Écart maximal relevé sur les
+quatre profils : 0,04 m par défaut, 7,23 m à Vice City, 7,06 m sur le Ring — tous
+sous le seuil, **poids exactement nul**, cadrage inchangé — et 23,44 m au tōgé,
+où l'ancrage devient complet dans les trois enfilades. Mesuré dans le monde
+(caméra réelle du smoke) : la voiture du pilote tient le tiers bas du cadre,
+**|x| ≤ 0,63**, y de −0,89 à −0,45, sur 8 078 images.
+
+### Le freinage commence avant le virage
+
+`cityRushTougeCornerPace(distance)` lit la **table des virages** du tōgé (angle
+et étendue réels) au lieu du cap rendu — une cassure de neuf mètres est trop
+courte pour que la courbure lissée la voie. `cityRushTougeCornerFactor` tient le
+plancher `CITY_RUSH_CORNER_PACE_MIN` (0,58) à 90°, 0,790 à 60°, 1 au-delà de
+`CITY_RUSH_TOUGE_CORNER_ANGLE_START` (30°), et `CITY_RUSH_TOUGE_PREBRAKE_METERS`
+(**46 m**, contre 40 m à Vice City) fait descendre la cible *avant* l'entrée et
+la tient jusqu'à la sortie. Les trois enfilades deviennent trois zones de
+freinage de 202 m, 98 m et 150 m — 37 % du tour, rythme moyen 0,866 — et les
+longues lignes droites restent à 1,000.
+
+**Toutes les voitures freinent, pilote compris.** Le tōgé était le seul parcours
+où le pilote ne ralentissait pas dans les virages : l'exemption `touge ? 1 : …`
+est supprimée, et la règle passe par `cityRushCornerPace`, donc par les cinq
+points d'appel du monde (patrouille, police, rivaux, trafic, voitures venant en
+face). Lancée à la pointe du parcours (107 km/h), la voiture touche les freins
+46 m avant l'épingle et arrive à **62 km/h** au moment de tourner. L'IA garde son
+relief (`CITY_RUSH_TOUGE_AI_CORNER_RELIEF` = 0,35 : 0,73 là où le pilote est à
+0,58), donc elle reste rattrapable ; le drift visuel et le contre-braquage
+suivent la vitesse et restent.
+
+### La forêt s'écarte de l'objectif
+
+Une caméra qui quitte la chaussée de dix mètres traverse la forêt noire, plantée
+à partir de 8,7 m de l'axe. `buildCameraCorridor` relève donc deux couloirs à
+garder libres : la ligne centrale de tout le tour (rayon `ROAD_CORRIDOR_RADIUS`
+= 3,8 m, rien sur l'asphalte) et chaque position de caméra ancrée (rayon
+`CAMERA_CORRIDOR_RADIUS` = 3,4 m, le cône de feuillage le plus large plus la
+marge de lissage). Un arbre qui tombe dedans est **repoussé** de 1,5 m en 1,5 m
+vers l'extérieur, jamais supprimé tant qu'un déport libre existe. Sur la forêt
+réellement plantée (499 arbres) : 24 repoussés (4,8 %), 1 abandonné, aucun dans
+le couloir — et plus aucun cèdre sur l'asphalte d'un virage voisin (ils étaient
+trois : les épingles se replient les unes sur les autres, une jambe passe à une
+vingtaine de mètres de la précédente).
+
+### Fichiers
+
+- `src/games/cityRushRules.js` — le freinage du tōgé (`cityRushTougeCornerPace`,
+  `cityRushTougeCornerFactor`, `CITY_RUSH_TOUGE_PREBRAKE_METERS`) et la poursuite
+  (`cityRushChasePlacement`, `cityRushChaseAnchorWeight`, `cityRushChaseFollowRate`).
+- `src/games/ViceCityWorld.jsx` — `updateCamera` appelle le placement de
+  poursuite, `CHASE_POSITION` et `CHASE_LOOK` reprennent ses constantes, et le
+  `cornerScale` du pilote suit `cornerPaceAt` sur tous les parcours.
+- `src/games/tougeStage.js` — le couloir de la caméra et le déport des arbres.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-touge                    # couloir de la caméra + interface de la carte
+npm run check:city-rush                          # règles pures : freinage et ancrage
+npm run check:city-rush-smoke -- --city=touge    # course complète sur le mont Haruna
+npm run check:city-rush-smoke                    # les neuf parcours, cadrage compris
+```
+
+`check:city-rush` porte deux tests. Le freinage (`le tōgé freine avant ses
+épingles, pas une fois dedans`) : le plancher à 90°, la descente progressive à
+45° et 60°, les trois enfilades retrouvées depuis la table des virages, la cible
+à 1 avant la zone de freinage, au plancher de l'entrée à la sortie, à 1 juste
+après, identique au tour suivant, les sept lignes droites à 1, le relief de l'IA,
+et — en déroulant `approachCityRushSpeed` — les freins touchés plus de 30 m avant
+l'entrée et la voiture arrivée sous 62 % de la pointe. L'ancrage (`la poursuite
+reste derrière la voiture dans les cassures, sans bouger ailleurs`) : les bornes
+du poids, son lissage, les trois autres profils dont la caméra ne bouge pas d'un
+centième de son recul, la ligne droite du tōgé qui retombe au millième sur le
+cadrage d'origine, et dans les épingles la caméra strictement derrière la caisse
+(plus de 200 échantillons ancrés, déport latéral sous un quarantième du recul).
+
+`check:city-rush-touge` porte `tests/city-rush-touge-camera.test.js` : le
+couloir couvre les 1 200 m de chaussée et 150 à 400 m de caméra décrochée, cette
+dernière entrant bien dans la bande plantée (jusqu'à 10,5 m de l'axe) ; puis, sur
+toute la bande de la forêt (8,7 à 32,7 m, tous les deux mètres), chaque arbre
+repoussé ne gêne plus rien, n'a pas traversé la route, n'a pas été rapproché de
+la chaussée, moins de 15 % des arbres bougent et moins de 1 % sont abandonnés.
+
+Le smoke juge maintenant le **cadrage de la voiture du pilote** sur les neuf
+parcours : la caisse ne doit jamais sortir de l'image (|x| ≤ 0,98) et rester dans
+sa bande sur 98 % des images. Les images d'arrivée, d'épave et les secondes qui
+suivent un tremplin sont écartées. C'est ce contrôle qui attrape le défaut : sur
+le tōgé non corrigé, il échoue avec |x| = 1,52.
+
 ## Barre de navigation : le logo et le menu « Jeux »
 
 Deux choses à savoir avant de toucher à la barre (`src/components/Layout.jsx`,

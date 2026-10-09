@@ -3569,16 +3569,24 @@ export function cityRushTrackProfile(course) {
 }
 
 // ── Ralentissement dans les grands virages ──────────────────────────────────
-// Vice City et le Nordschleife sont les deux parcours dont le tracé tourne
-// vraiment : longues courbes puis virages secs à Vice City, appuis tenus et
-// cassures sur le Ring. Tant que le volant est braqué, la vitesse visée baisse.
-// Le facteur suit le cap rendu (`trackProfile.yaw`), pas une liste de noms :
-// il est nul sous 6° (lignes droites, et les S doux des autres villes), tombe
-// à `CITY_RUSH_CORNER_PACE_SWEEP` au cœur d'un grand virage (~14°, l'appui que
-// le Ring tient sur des dizaines de mètres), puis jusqu'à
-// `CITY_RUSH_CORNER_PACE_MIN` dans une cassure. À Vice City, le même facteur
-// regarde aussi 40 m devant : les voitures commencent à freiner avant le
-// virage, puis gardent le rythme adapté jusqu'à la sortie.
+// Vice City, le Nordschleife et le tōgé du Mont Haruna sont les trois parcours
+// dont le tracé tourne vraiment : longues courbes puis virages secs à Vice
+// City, appuis tenus et cassures sur le Ring, douze épingles à 90° sur la
+// descente. Tant que la route tourne, la vitesse visée baisse.
+//
+// Sur les deux premiers, le facteur suit le cap rendu (`trackProfile.yaw`), pas
+// une liste de noms : il est nul sous 6° (lignes droites, et les S doux des
+// autres villes), tombe à `CITY_RUSH_CORNER_PACE_SWEEP` au cœur d'un grand
+// virage (~14°, l'appui que le Ring tient sur des dizaines de mètres), puis
+// jusqu'à `CITY_RUSH_CORNER_PACE_MIN` dans une cassure. À Vice City, le même
+// facteur regarde aussi 40 m devant : les voitures commencent à freiner avant
+// le virage, puis gardent le rythme adapté jusqu'à la sortie.
+//
+// Le tōgé a sa propre règle (`cityRushTougeCornerPace`) : son cap rendu reste
+// à 90° sur de longues lignes droites latérales, et ses cassures sont trop
+// courtes (neuf mètres) pour qu'une simple anticipation de 40 m les attrape.
+// Le freinage y est lu dans la table des virages, et il commence **avant**
+// l'entrée — voir la section qui suit.
 //
 // Le même facteur s'applique à tout ce qui roule (pilote, rivaux, trafic,
 // contresens, police). Deux voitures dans le même virage gardent leur écart ;
@@ -3591,15 +3599,15 @@ export const CITY_RUSH_CORNER_PACE_YAW_TIGHT = (34 * Math.PI) / 180; // cassure 
 
 // Part de la peine de virage que l'intelligence artificielle du tōgé n'écope
 // pas. Les locaux connaissent la montagne : ils freinent plus tard, sortent
-// plus fort — l'épingle qui coûte 40 km/h au joueur ne leur en coûte que la
-// moitié environ. C'est ce qui garde la poursuite au contact dans les
-// épingles, là où un IA uniforme décroche à chaque enfilade.
+// plus fort — l'épingle qui fait tomber le pilote de 107 à 62 km/h ne les
+// ralentit que jusqu'à 78 km/h. C'est ce qui garde la poursuite au contact
+// dans les épingles, là où une IA uniforme décroche à chaque enfilade.
 export const CITY_RUSH_TOUGE_AI_CORNER_RELIEF = 0.35;
 
 /**
  * Peine de virage restante pour l'IA d'un parcours : sur le tōgé, la peine du
- * joueur est allégée du relief ci-dessus (pace 0,6 → IA 0,74) ; ailleurs,
- * l'IA et le joueur souffrent exactement des mêmes courbes.
+ * pilote est allégée du relief ci-dessus (pace 0,58 → IA 0,73) ; ailleurs,
+ * l'IA et le pilote souffrent exactement des mêmes courbes.
  */
 export function cityRushAiCornerPace(course, trackDistance, profile, playerPace) {
   const pace = Number.isFinite(Number(playerPace)) ? Number(playerPace) : cityRushCornerPace(course, trackDistance, profile);
@@ -3619,6 +3627,86 @@ export const CITY_RUSH_CORNER_PACE_PREBRAKE_METERS = 40; // anticipation pour fr
 function cityRushCornerEase(progress) {
   const t = Math.max(0, Math.min(1, Number(progress) || 0));
   return t * t * (3 - 2 * t);
+}
+
+// ── Le freinage du tōgé : avant le virage, pas dedans ───────────────────────
+// Les douze virages de la descente du mont Haruna sont des cassures à 90°
+// ramassées sur neuf mètres (`CITY_RUSH_TOUGE_TURN_CORE_FRACTION` de 26 m
+// d'étendue). Cette zone est trop courte pour servir de repère de freinage :
+// une voiture qui attend d'y être est déjà dans le virage, et l'anticipation
+// de 40 m employée à Vice City tombe à côté — elle regarde un point où la
+// route est encore droite.
+//
+// Le ralentissement se lit donc dans la table du tracé
+// (`CITY_RUSH_TOUGE_TURNS`) : la cible descend progressivement à partir de
+// `CITY_RUSH_TOUGE_PREBRAKE_METERS` avant l'entrée, atteint le plancher à
+// l'entrée, le tient sur toute l'étendue du virage et remonte dès la sortie.
+// Les huit épingles s'enchaînant sans ligne droite entre elles, les enfilades
+// (五連ヘアピン, 連続ヘアピン) se prennent d'un bout à l'autre au plancher —
+// ce qu'on attend d'un tōgé — tandis que les longues descentes droites
+// (紅葉坂, 風見坂, 岩垂壁) restent à fond.
+//
+// Tout ce qui roule le suit, pilote compris : c'est le freinage qui rend les
+// épingles lisibles, la caméra de poursuite restant dans l'axe de la voiture
+// (voir `cityRushChasePlacement`). Le dérapage visuel
+// (`tougeDriftAmount`) ne change pas : il suit la vitesse, et une voiture qui
+// arrive au plancher dérape toujours autant.
+export const CITY_RUSH_TOUGE_PREBRAKE_METERS = 46; // m : le freinage commence là, avant l'entrée
+export const CITY_RUSH_TOUGE_CORNER_ANGLE_START = 30; // ° : sous cet angle, le virage se passe à fond
+
+/**
+ * Part de la vitesse visée conservée dans un virage du tōgé, d'après son
+ * angle. `1` sous `CITY_RUSH_TOUGE_CORNER_ANGLE_START`,
+ * `CITY_RUSH_CORNER_PACE_MIN` dans une cassure à 90° — les douze virages de la
+ * descente. Un angle illisible ne ralentit personne.
+ */
+export function cityRushTougeCornerFactor(angleDegrees = 0) {
+  const angle = Math.abs(Number(angleDegrees));
+  if (!Number.isFinite(angle) || angle <= CITY_RUSH_TOUGE_CORNER_ANGLE_START) return 1;
+  const t = (angle - CITY_RUSH_TOUGE_CORNER_ANGLE_START) / (90 - CITY_RUSH_TOUGE_CORNER_ANGLE_START);
+  return 1 - cityRushCornerEase(Math.min(1, t)) * (1 - CITY_RUSH_CORNER_PACE_MIN);
+}
+
+/**
+ * Part de la vitesse visée conservée à `distance` mètres sur la descente du
+ * mont Haruna : `1` sur les longues lignes droites, le plancher du virage sur
+ * toute l'étendue de chaque cassure, et une descente progressive pendant les
+ * `CITY_RUSH_TOUGE_PREBRAKE_METERS` qui la précèdent. La lecture est repliée
+ * sur la boucle : chaque tour freine aux mêmes endroits.
+ */
+export function cityRushTougeCornerPace(distance = 0, turns = CITY_RUSH_TOUGE_TURNS, {
+  prebrake = CITY_RUSH_TOUGE_PREBRAKE_METERS,
+  lengthKm = TOUGE_LENGTH_KM,
+} = {}) {
+  const raw = Number(distance);
+  const lap = CITY_RUSH_LAP_LENGTH;
+  const wrapped = Number.isFinite(raw) ? ((raw % lap) + lap) % lap : 0;
+  const km = Number.isFinite(Number(lengthKm)) && Number(lengthKm) > 0 ? Number(lengthKm) : TOUGE_LENGTH_KM;
+  const unitsPerKm = lap / km;
+  const brake = Math.max(0, Number(prebrake) || 0);
+  let pace = 1;
+  for (const [centreKm, angleDegrees, spanKm] of turns) {
+    const factor = cityRushTougeCornerFactor(angleDegrees);
+    if (factor >= 1) continue;
+    const centre = (Number(centreKm) || 0) * unitsPerKm;
+    const half = (Math.max(0, Number(spanKm) || 0) * unitsPerKm) / 2;
+    // Écart au centre du virage, replié sur le tour : la descente est une
+    // boucle, le dernier virage précède donc le premier.
+    let delta = wrapped - centre;
+    if (delta > lap / 2) delta -= lap;
+    if (delta < -lap / 2) delta += lap;
+    if (Math.abs(delta) <= half) {
+      // Dans le virage : le plancher tient jusqu'à la sortie.
+      pace = Math.min(pace, factor);
+      continue;
+    }
+    if (delta > 0) continue; // sortie passée : on réaccélère
+    const toEntry = -delta - half; // mètres avant l'entrée du virage
+    if (brake <= 0 || toEntry >= brake) continue;
+    const ramp = cityRushCornerEase(1 - toEntry / brake);
+    pace = Math.min(pace, 1 - (1 - factor) * ramp);
+  }
+  return pace;
 }
 
 /** Le parcours ralentit-il ses voitures dans les grands virages ? */
@@ -3655,10 +3743,12 @@ export function cityRushCornerPaceFromYaw(yaw = 0) {
 
 /**
  * Part de la vitesse visée conservée à `distance` mètres sur `course`.
- * `1` partout sauf à Vice City et sur le Nordschleife. Vice City anticipe
- * aussi le cap 40 m devant et retient le facteur le plus bas entre les deux :
- * cela déclenche le freinage avant la cassure sans relâcher les freins au milieu
- * du virage. `profile` permet de réutiliser le tracé déjà résolu par le monde.
+ * `1` partout sauf à Vice City, sur le Nordschleife et sur le tōgé. Vice City
+ * anticipe aussi le cap 40 m devant et retient le facteur le plus bas entre les
+ * deux : cela déclenche le freinage avant la cassure sans relâcher les freins
+ * au milieu du virage. Le tōgé a sa propre anticipation
+ * (`cityRushTougeCornerPace`). `profile` permet de réutiliser le tracé déjà
+ * résolu par le monde.
  */
 export function cityRushCornerPace(course = null, distance = 0, profile = null) {
   if (!cityRushUsesCornerPace(course)) return 1;
@@ -3667,17 +3757,10 @@ export function cityRushCornerPace(course = null, distance = 0, profile = null) 
   const courseId = typeof course === 'string' ? course : course?.id;
   const resolvedId = resolved?.id;
   if (courseId === 'touge' || resolvedId === 'touge') {
-    // Le cap absolu peut rester à 90° sur une ligne droite latérale du tōgé ;
-    // seule la courbure marquée déclenche le ralentissement des IA.
-    const tougePaceAt = (trackDistance) => {
-      const wrapped = ((trackDistance % CITY_RUSH_LAP_LENGTH) + CITY_RUSH_LAP_LENGTH) % CITY_RUSH_LAP_LENGTH;
-      const drift = Math.abs(tougeDriftAmount(wrapped / CITY_RUSH_LAP_LENGTH, 'touge'));
-      return 1 - drift * (1 - CITY_RUSH_CORNER_PACE_MIN);
-    };
-    return Math.min(
-      tougePaceAt(safeDistance),
-      tougePaceAt(safeDistance + CITY_RUSH_CORNER_PACE_PREBRAKE_METERS),
-    );
+    // Le cap rendu peut rester à 90° sur une ligne droite latérale du tōgé, et
+    // sa zone de dérapage ne dure que neuf mètres : la descente freine sur la
+    // table de ses virages, avec une vraie anticipation avant l'entrée.
+    return cityRushTougeCornerPace(safeDistance);
   }
 
   const currentPace = cityRushCornerPaceFromYaw(resolved?.yaw?.(safeDistance));
@@ -3687,6 +3770,128 @@ export function cityRushCornerPace(course = null, distance = 0, profile = null) 
     resolved?.yaw?.(safeDistance + CITY_RUSH_CORNER_PACE_PREBRAKE_METERS),
   );
   return Math.min(currentPace, upcomingPace);
+}
+
+// ── La poursuite reste derrière la voiture ──────────────────────────────────
+// La caméra de course se pose sur le morceau de chaussée situé derrière le
+// pilote et regarde quelques mètres plus loin sur le même axe. Cela suit très
+// bien une courbe douce : la route tourne, pas la tête du joueur.
+//
+// Cela ne suit pas une cassure. Quand la route tourne de 90° en neuf mètres —
+// les épingles du mont Haruna — le point placé à 13,2 m *le long de la route*
+// n'est plus derrière la voiture : il est sur son flanc, à dix-sept mètres. La
+// voiture sortait alors du cadre (jusqu'à 1,7 × le demi-cadre, mesuré sur la
+// descente) pendant que la route à venir passait hors champ — « on ne voit
+// rien » dans les virages du tōgé.
+//
+// `cityRushChasePlacement` renvoie les deux placements — celui qui suit la
+// route, celui qui reste dans l'axe de la caisse — déjà mélangés par le poids
+// d'ancrage, avec l'écart qui a servi à le calculer. `cityRushChaseAnchorWeight`
+// transforme cet écart en poids : nul tant que les deux placements se
+// confondent — les cinq villes et leurs deux S doux (0,04 m d'écart), Vice City
+// et ses virages secs (7,2 m au plus), le Ring et ses appuis (7,1 m) — et plein
+// au-delà de quinze mètres (le tōgé, jusqu'à 23 m). Aucune autre carte ne
+// bouge donc d'une unité : la règle est géométrique, pas une liste de parcours.
+//
+// Les coordonnées sont relatives au point de la ligne centrale où se trouve la
+// voiture — x latéral, z profondeur, derrière la voiture étant positif — en
+// unités monde. Le monde y ajoute sa constante `PLAYER_Z`, l'amortissement
+// latéral de la voie, le tremblement d'impact et le relief des sauts.
+export const CITY_RUSH_CHASE_BEHIND = 13.2; // unités monde : recul de la poursuite
+export const CITY_RUSH_CHASE_LOOK_AHEAD = 15; // unités monde : avance du regard qui suit la route
+export const CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD = 21; // unités monde : avance du regard dans l'axe de la caisse
+export const CITY_RUSH_CHASE_ANCHOR_DRIFT_START = 7.5; // m d'écart entre les deux placements : l'ancrage commence
+export const CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL = 15; // m d'écart : l'ancrage est complet
+export const CITY_RUSH_CHASE_FOLLOW_RATE = 4.5; // suivi habituel de la poursuite
+export const CITY_RUSH_CHASE_ANCHOR_FOLLOW_RATE = 7; // suivi plus ferme une fois ancrée
+
+/**
+ * Poids d'ancrage (0 → 1) de la poursuite pour un écart donné, en mètres,
+ * entre le placement qui suit la route et celui qui reste dans l'axe de la
+ * voiture. Nul sous `CITY_RUSH_CHASE_ANCHOR_DRIFT_START`, plein à partir de
+ * `CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL`, progressif entre les deux : la caméra
+ * ne bascule jamais d'un coup.
+ */
+export function cityRushChaseAnchorWeight(drift = 0) {
+  const meters = Math.abs(Number(drift));
+  if (!Number.isFinite(meters) || meters <= CITY_RUSH_CHASE_ANCHOR_DRIFT_START) return 0;
+  if (meters >= CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL) return 1;
+  return cityRushCornerEase((meters - CITY_RUSH_CHASE_ANCHOR_DRIFT_START)
+    / (CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL - CITY_RUSH_CHASE_ANCHOR_DRIFT_START));
+}
+
+/** Suivi de la poursuite (`followRate`) conseillé pour un poids d'ancrage. */
+export function cityRushChaseFollowRate(anchor = 0) {
+  const weight = clamp01(Number(anchor) || 0);
+  return CITY_RUSH_CHASE_FOLLOW_RATE
+    + (CITY_RUSH_CHASE_ANCHOR_FOLLOW_RATE - CITY_RUSH_CHASE_FOLLOW_RATE) * weight;
+}
+
+/**
+ * Placement de la caméra de poursuite à `distance` mètres sur le parcours.
+ * Renvoie la position (`cameraX`/`cameraZ`) et le point visé
+ * (`lookX`/`lookZ`), mélangés entre le suivi de la route et l'axe de la
+ * voiture selon l'écart des deux (`anchor`, 0 → 1), plus le relief de la
+ * chaussée à reprendre sous chacun (`cameraHill`, `lookHill`) — une fois
+ * ancrée, la caméra se cale sur la hauteur de la voiture et non sur celle du
+ * morceau de route resté en arrière.
+ */
+export function cityRushChasePlacement(distance = 0, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT, {
+  behind = CITY_RUSH_CHASE_BEHIND,
+  lookAhead = CITY_RUSH_CHASE_LOOK_AHEAD,
+  anchorLookAhead = CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD,
+} = {}) {
+  const resolved = profile || CITY_RUSH_TRACK_PROFILE_DEFAULT;
+  const raw = Number(distance);
+  const safeDistance = Number.isFinite(raw) ? raw : 0;
+  const scale = CITY_RUSH_SCROLL_SCALE;
+  const back = Math.max(0, Number(behind) || 0);
+  const ahead = Math.max(0, Number(lookAhead) || 0);
+  const anchoredAhead = Math.max(0, Number(anchorLookAhead) || 0);
+  const path2d = typeof resolved.forward === 'function';
+  const offsetAt = (metre) => (typeof resolved.offset === 'function' ? resolved.offset(metre) : 0);
+  const hillAt = (metre) => (typeof resolved.elevation === 'function' ? resolved.elevation(metre) : 0);
+  // Le morceau de route derrière la caméra et le point visé devant elle sont
+  // lus aux distances de piste qui correspondent à leur avance en unités monde.
+  const behindDistance = safeDistance - back / scale;
+  const aheadDistance = safeDistance + ahead / scale;
+  const advance = (metre) => (path2d
+    ? resolved.forward(metre) - resolved.forward(safeDistance)
+    : metre - safeDistance);
+  const roadX = offsetAt(behindDistance) - offsetAt(safeDistance);
+  const roadZ = -advance(behindDistance) * scale;
+  const roadHill = hillAt(behindDistance) - hillAt(safeDistance);
+  const lookRoadX = offsetAt(aheadDistance) - offsetAt(safeDistance);
+  const lookRoadZ = -advance(aheadDistance) * scale;
+  const lookRoadHill = hillAt(aheadDistance) - hillAt(safeDistance);
+  // L'axe de la caisse : le cap rendu de la route sous la voiture.
+  const yaw = Number(resolved.yaw?.(safeDistance)) || 0;
+  const anchorX = Math.sin(yaw) * back;
+  const anchorZ = Math.cos(yaw) * back;
+  const anchorLookX = -Math.sin(yaw) * anchoredAhead;
+  const anchorLookZ = -Math.cos(yaw) * anchoredAhead;
+  // L'écart se mesure à avance égale : le regard ancré vise un peu plus loin
+  // (`anchorLookAhead`, pour garder la même plongée une fois la poursuite
+  // recollée dans l'axe), mais la sévérité du virage se juge entre deux points
+  // placés à la même distance — sinon une ligne droite mesurerait déjà six
+  // mètres d'écart et ancrerait toutes les cartes.
+  const drift = Math.max(
+    Math.hypot(roadX - anchorX, roadZ - anchorZ),
+    Math.hypot(lookRoadX + Math.sin(yaw) * ahead, lookRoadZ + Math.cos(yaw) * ahead),
+  );
+  const anchor = cityRushChaseAnchorWeight(drift);
+  const mix = (road, anchored) => road + (anchored - road) * anchor;
+  return {
+    cameraX: mix(roadX, anchorX),
+    cameraZ: mix(roadZ, anchorZ),
+    cameraHill: roadHill * (1 - anchor),
+    lookX: mix(lookRoadX, anchorLookX),
+    lookZ: mix(lookRoadZ, anchorLookZ),
+    lookHill: lookRoadHill * (1 - anchor),
+    anchor,
+    drift,
+    yaw,
+  };
 }
 
 function nordschleifeTrackSample(values, distance) {
