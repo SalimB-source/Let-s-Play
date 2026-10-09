@@ -369,7 +369,7 @@ test('the five city routes have a distinct identity and complete palettes', () =
 });
 
 test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
-  assert.equal(CITY_RUSH_CARS.length, 11);
+  assert.equal(CITY_RUSH_CARS.length, 12);
   const starter = CITY_RUSH_CARS[0];
   assert.equal(starter.id, 'city-hatch');
   assert.equal(starter.price, 0);
@@ -385,12 +385,12 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   // Les prix restent dans le catalogue : c'est le garage (la progression) qui
   // offre le trio le moins puissant, pas la fiche de la voiture.
   assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0),
-    'les dix autres voitures gardent un prix catalogue (le trio le moins puissant est offert sans achat)');
+    'les onze autres voitures gardent un prix catalogue (le trio le moins puissant est offert sans achat)');
   assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
   assert.deepEqual(
     new Set(CITY_RUSH_CARS.map((car) => car.archetype)),
-    new Set(['city-hatch', 'nova-hatch', 'ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini', 'electric-gt', 'sport-crossover', 'neo-roadster']),
+    new Set(['city-hatch', 'nova-hatch', 'volkswagen', 'ae86', 'ferrari', 'porsche', 'audi', 'bmw', 'lamborghini', 'electric-gt', 'sport-crossover', 'neo-roadster']),
   );
   const forbiddenBrandNames = /\b(ferrari|porsche|lamborghini|lambo|bmw|audi|volkswagen)\b/i;
   for (const car of CITY_RUSH_CARS) {
@@ -417,6 +417,7 @@ test('les rivaux choisissent toujours une voiture de la catégorie du pilote', (
     'city-hatch': 'compact',
     'nova-18-gt': 'compact',
     'night-comet': 'compact',
+    'ae86': 'compact',
     'vice-roadster': 'sport',
     'turbo-gt': 'sport',
     'muscle-86': 'supercar',
@@ -1683,6 +1684,7 @@ test('chaque voiture a ses propres points de vie, calés à l’envers de sa pui
     'city-hatch': 23,
     'nova-18-gt': 20,
     'night-comet': 18,
+    'ae86': 19,
     'vice-roadster': 14,
     'turbo-gt': 13,
     'muscle-86': 12,

@@ -374,8 +374,8 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
 // mieux que le KRONOS 930 TURBO (1,14, 13 carrés) ou le VORTEX RS-10 (1,22,
 // 12 carrés) qui vont pourtant plus vite : les voitures rapides se paient en
 // fragilité, les lentes se consolent en encaissant. Moyenne du catalogue :
-// ~14,5 carrés, soit la barre historique de quinze — la difficulté d'ensemble
-// ne bouge pas, c'est sa répartition qui change.
+// ~14,8 carrés, voisine de la barre historique de quinze — la difficulté
+// d'ensemble ne bouge pas, c'est sa répartition qui change.
 // `category` est la classe de matchmaking, plus large que le descriptif
 // individuel `className` : citadines et compactes, voitures de sport (berlinetta,
 // coupé, GT, roadster), supercars (Vortex/Tempesta) et crossover. Cette donnée
@@ -399,6 +399,12 @@ export const CITY_RUSH_CARS = Object.freeze([
     bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
     power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82, durability: 79, durabilityMultiplier: 1.2,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
+  }),
+  Object.freeze({
+    id: 'ae86', archetype: 'ae86', category: 'compact', name: 'AE-86 PANDA GT', className: 'COUPÉ LÉGER · 4 CYLINDRES · PROPULSEUR ARRIÈRE',
+    bodyColor: 0xf0eee7, trimColor: 0x12141a, liveryColor: 0x12141a, driverColor: 0x191d26, accent: '#d8b04a', price: 350,
+    power: 64, powerMultiplier: 0.98, acceleration: 84, accelerationRate: 9.4, recovery: 90, hitRecoveryMultiplier: 0.88, durability: 84, durabilityMultiplier: 1.25,
+    widthScale: 0.92, heightScale: 0.98, lengthScale: 0.95,
   }),
   Object.freeze({
     id: 'vice-roadster', archetype: 'ferrari', category: 'sport', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',

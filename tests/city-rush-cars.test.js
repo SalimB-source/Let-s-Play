@@ -36,8 +36,9 @@ function geometrySignature(geometry) {
 test('les voitures ont des coques fermées distinctes et des vitrages opaques', () => {
   const signatures = new Set();
   // Jantes alignées sur les miniatures du garage : cinq branches pour la
-// Kronos, jante filaire pour la Bavaria M-CS, jante aérée pour l'Atlas XR.
-  const expectedWheels = ['aero-five', 'split-five', 'aero-five', 'split-five', 'classic-five', 'split-five', 'wire', 'turbofan', 'split-five', 'split-five', 'turbofan'];
+// Kronos, jante filaire pour la Bavaria M-CS, jante aérée pour l'Atlas XR,
+// huit trous Watanabe pour l'AE-86 PANDA GT.
+  const expectedWheels = ['aero-five', 'split-five', 'aero-five', 'eight-hole', 'split-five', 'classic-five', 'split-five', 'wire', 'turbofan', 'split-five', 'split-five', 'turbofan'];
 
   CITY_RUSH_CARS.forEach((profile, index) => {
     const car = makeRacerCar(profile, { player: index === 0, number: index + 1, driver: ROSTER[0] });
