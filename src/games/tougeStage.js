@@ -16,6 +16,7 @@ import {
   CITY_RUSH_SCROLL_SCALE,
   CITY_RUSH_TOUGE,
   CITY_RUSH_TOUGE_ROAD_HALF,
+  CITY_RUSH_TOUGE_TURNS,
   CITY_RUSH_TRACK_PROFILE_TOUGE,
   cityRushChasePlacement,
   cityRushLaneSeparators,
@@ -44,8 +45,8 @@ const CAMERA_CLEARANCE = 7.4;
 
 // ── Le couloir de la caméra de poursuite ────────────────────────────────────
 // Dans les épingles, la poursuite ne se pose plus sur la chaussée derrière la
-// voiture — il n'y en a pas, la route tourne de 90° en neuf mètres — mais dans
-// l'axe de la caisse, jusqu'à une dizaine de mètres en dehors du ruban
+// voiture — il n'y en a pas, la route tourne de 60° en neuf mètres — mais dans
+// l'axe de la caisse, sur le bas-côté près de la bande plantée
 // (`cityRushChasePlacement`). Deux choses ne doivent donc jamais se trouver là :
 //
 //   · un arbre devant l'objectif. La forêt noire est plantée à partir de 8,7 m
@@ -58,13 +59,38 @@ const CAMERA_CLEARANCE = 7.4;
 //     précédente — et la bande extérieure de la forêt peut atterrir au milieu
 //     de l'asphalte voisin. Remise dans l'axe, la caméra roule droit dessus.
 //
-// Chaque arbre qui tombe dans le couloir est **repoussé** plus loin sur le
-// bas-côté, jamais supprimé tant qu'il reste de la place : la forêt garde sa
-// densité, la caméra garde son dégagement. Les tirages du décor ne changent
-// pas — seul le déport latéral des arbres gênants est repris.
+// Les arbres du couloir caméra sont **repoussés** sur le bas-côté quand il y a
+// de la place ; les arbres hauts sont supprimés dans les zones de visibilité
+// des virages. Le décor garde sa densité ailleurs, sans rien planter devant
+// l'objectif ou sur une chaussée voisine.
 export const CAMERA_CORRIDOR_RADIUS = 3.4; // m autour de l'objectif
 // La chaussée, plus la marge d'un couloir échantillonné au mètre.
 export const ROAD_CORRIDOR_RADIUS = TOUGE_ROAD_HALF + 0.6;
+// La poursuite et le regard portent environ 15–21 m devant la voiture. On
+// ouvre cette marge autour de chaque épingle en supprimant les arbres hauts,
+// plutôt que de les laisser masquer le prochain virage.
+export const TOUGE_TURN_SIGHTLINE_BUFFER_METERS = 18;
+
+/** Le feuillage haut est-il dans la zone de visibilité d'un virage ? */
+export function tougeTurnSightlineClearance(trackDistance, route = CITY_RUSH_TOUGE) {
+  const raw = Number(trackDistance);
+  if (!Number.isFinite(raw)) return false;
+  const distance = ((raw % LAP) + LAP) % LAP;
+  const lengthKm = Number(route?.lengthKm) > 0 ? Number(route.lengthKm) : CITY_RUSH_TOUGE.lengthKm;
+  const km = distance / LAP * lengthKm;
+  const bufferKm = TOUGE_TURN_SIGHTLINE_BUFFER_METERS / LAP * lengthKm;
+  for (const [turnKm, , spanKm] of CITY_RUSH_TOUGE_TURNS) {
+    const centerKm = turnKm / CITY_RUSH_TOUGE.lengthKm * lengthKm;
+    let deltaKm = km - centerKm;
+    if (deltaKm > lengthKm / 2) deltaKm -= lengthKm;
+    if (deltaKm < -lengthKm / 2) deltaKm += lengthKm;
+    const halfSpanKm = (spanKm / CITY_RUSH_TOUGE.lengthKm * lengthKm) / 2;
+    // Une tolérance infime évite qu'une borne exacte soit rejetée par les
+    // conversions km ↔ m, sans agrandir sensiblement la zone dégagée.
+    if (Math.abs(deltaKm) <= halfSpanKm + bufferKm + 1e-9) return true;
+  }
+  return false;
+}
 const CAMERA_CORRIDOR_STEP = 1; // m de piste : pas d'échantillonnage du couloir
 const CAMERA_CORRIDOR_CELL = 4; // m : maille du couloir, plus large que son plus grand rayon
 const CAMERA_CORRIDOR_PUSH = 1.5; // m : pas de repousse d'un arbre gênant
@@ -702,7 +728,7 @@ function addGuardrail(batch, m, side, from, to, random) {
   const railX = side * (TOUGE_ROAD_HALF + 0.55);
   const length = to - from;
   if (length <= 1) return;
-  // Les deux lisses suivent aussi les cassures à 90° : un seul cylindre de
+  // Les deux lisses suivent aussi les cassures à 60° : un seul cylindre de
   // 1 100 m resterait une corde droite après projection de la route 2D.
   for (let segmentFrom = from; segmentFrom < to; segmentFrom += BEND_SEGMENT) {
     const segmentTo = Math.min(to, segmentFrom + BEND_SEGMENT);
@@ -1084,19 +1110,19 @@ export function buildTougeTrack({ city, theme, materials: m, batch, cityIndex, l
   }
 
   // ── La forêt noire, derrière les glissières ──────────────────────────────
-  // Le couloir de la caméra de poursuite est relevé une fois pour toute la
-  // descente : un arbre qui tomberait devant l'objectif d'une épingle, ou sur
-  // l'asphalte d'un virage voisin, est repoussé plus loin sur le bas-côté, à
-  // feuillage et tirages inchangés.
+  // Le couloir de caméra évite les arbres sur la chaussée et devant l'objectif.
+  // Une seconde marge retire aussi les cèdres et bambous qui masqueraient
+  // l'entrée ou la sortie des virages : les rochers bas restent en place.
   const cameraCorridor = buildCameraCorridor();
   for (let position = LOOP_START - 6; position < LOOP_END + 6; position += 3.1) {
     for (const side of [-1, 1]) {
       if (random() < 0.34) continue;
       const wanted = side * (TOUGE_ROAD_HALF + 5.5 + random() * 24);
       const metres = position + random() * 2.6;
-      const roll = random();
       const x = cameraCorridorLateral(cameraCorridor, CITY_RUSH_TRACK_PROFILE_TOUGE, metres, wanted);
       if (x === null) continue; // aucun déport ne dégage le couloir : l'arbre n'est pas planté
+      const roll = random();
+      if (roll < 0.82 && tougeTurnSightlineClearance(metres, route)) continue;
       const z = toZ(metres);
       if (roll < 0.62) addCedar(bend, m, x, z, random, 0.9 + random() * 0.6);
       else if (roll < 0.82) addBamboo(bend, m, x, z, random, 0.9 + random() * 0.5);
