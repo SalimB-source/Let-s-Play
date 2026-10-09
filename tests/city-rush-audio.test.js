@@ -394,6 +394,18 @@ test('le monde déclenche les bruitages au bon endroit', async () => {
   ]);
   // Le moteur est piloté à l’image près par le monde.
   assert.match(world, /audioRef\?\.current\?\.engine\(\{/);
+  // Sur le tōgé seulement, le cri de pneus est déclenché à l'entrée d'une
+  // dérive (ou au changement de sens), jamais répété à chaque image.
+  const driftUpdateStart = world.indexOf('      const playerDrift =');
+  const driftUpdateEnd = world.indexOf('      lastPlayerDrift = playerDrift;', driftUpdateStart);
+  assert.ok(driftUpdateStart >= 0 && driftUpdateEnd > driftUpdateStart, 'la mise à jour du drift du joueur existe');
+  const driftUpdate = world.slice(driftUpdateStart, driftUpdateEnd);
+  assert.match(driftUpdate, /if \(tougeDrift && drifting && \(!wasDrifting \|\| Math\.sign\(playerDrift\) !== Math\.sign\(lastPlayerDrift\)\)\)/,
+    'le son est limité aux débuts de drift et aux changements de sens du tōgé');
+  assert.equal([...driftUpdate.matchAll(/audioRef\?\.current\?\.skid\?\.\(/g)].length, 1,
+    'un seul appel au cri de pneus est fait dans cette transition');
+  assert.match(driftUpdate, /audioRef\?\.current\?\.skid\?\.\(\{[\s\S]*?pan: vehiclePan\('player'\),[\s\S]*?duration: 0\.58,/,
+    'le cri est panoramiqué sur le joueur et accompagne la dérive');
   // Tir rouge d'AK-47 au départ, dérapage de la cible à l'impact. Le fusil à
   // pompe bleu a son propre coup de tonnerre, panoramiqué lui aussi.
   assert.match(world, /audioRef\?\.current\?\.machineGun\(\{ pan: vehiclePan\(attackerId\) \}\)/);

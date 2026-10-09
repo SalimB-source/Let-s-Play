@@ -4,6 +4,7 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_SCROLL_SCALE,
   CITY_RUSH_TOUGE,
+  CITY_RUSH_TOUGE_TURNS,
   CITY_RUSH_TRACK_PROFILE_TOUGE,
   cityRushChasePlacement,
 } from '../src/games/cityRushRules.js';
@@ -27,6 +28,8 @@ const {
   buildCameraCorridor,
   cameraCorridorBlocked,
   cameraCorridorLateral,
+  TOUGE_TURN_SIGHTLINE_BUFFER_METERS,
+  tougeTurnSightlineClearance,
 } = await import('../src/games/tougeStage.js');
 
 const profile = CITY_RUSH_TRACK_PROFILE_TOUGE;
@@ -75,8 +78,8 @@ test('le couloir de la caméra couvre la chaussée et les épingles de la descen
   assert.ok(camera.length > 150 && camera.length < 400,
     `la caméra quitte la chaussée sur ${camera.length} mètres de piste`);
 
-  // La caméra ancrée sort du ruban et entre dans la bande de la forêt : c'est
-  // exactement ce qui oblige à réserver un couloir devant l'objectif.
+  // À 60°, la caméra quitte le ruban mais reste dans le bas-côté, juste avant
+  // la bande plantée : un arbre peut donc encore être à portée de l'objectif.
   let shallowest = Number.POSITIVE_INFINITY;
   let deepest = 0;
   for (const point of camera) {
@@ -84,9 +87,10 @@ test('le couloir de la caméra couvre la chaussée et les épingles de la descen
     shallowest = Math.min(shallowest, off);
     deepest = Math.max(deepest, off);
   }
-  assert.ok(deepest > TOUGE_ROAD_HALF + 5.5,
-    `la caméra entre dans la bande plantée, jusqu'à ${deepest.toFixed(1)} m de l'axe`);
-  assert.ok(deepest < 24, `la caméra reste sur le bas-côté (${deepest.toFixed(1)} m de l'axe)`);
+  assert.ok(deepest > TOUGE_ROAD_HALF + 2.5,
+    `la caméra sort de la chaussée, jusqu'à ${deepest.toFixed(1)} m de l'axe`);
+  assert.ok(deepest < TOUGE_ROAD_HALF + 5.5,
+    `la caméra reste dans le bas-côté, avant la forêt (${deepest.toFixed(1)} m de l'axe)`);
   assert.ok(shallowest >= 0, 'aucun point de caméra illisible');
 });
 
@@ -139,4 +143,28 @@ test('aucun arbre de la forêt noire ne bouche l’objectif ni la chaussée', ()
     assert.equal(cameraCorridorLateral(corridor, profile, metre, 12.5), 12.5,
       'hors des épingles, l’arbre du bord de route reste où il était');
   }
+});
+
+test('les arbres hauts sont retirés des entrées, sommets et sorties des virages', () => {
+  assert.equal(TOUGE_TURN_SIGHTLINE_BUFFER_METERS, 18);
+  for (const [km, , spanKm] of CITY_RUSH_TOUGE_TURNS) {
+    const center = atKm(km);
+    const halfTurn = (spanKm / CITY_RUSH_TOUGE.lengthKm) * CITY_RUSH_LAP_LENGTH / 2;
+    const clear = halfTurn + TOUGE_TURN_SIGHTLINE_BUFFER_METERS;
+    for (const offset of [-clear, -clear / 2, 0, clear / 2, clear]) {
+      assert.equal(tougeTurnSightlineClearance(center + offset), true,
+        `le feuillage est absent près du virage du km ${km} (${offset.toFixed(1)} m)`);
+    }
+    assert.equal(tougeTurnSightlineClearance(center + CITY_RUSH_LAP_LENGTH + clear / 2), true,
+      'le dégagement reste valable quand la boucle se répète');
+  }
+  const isolatedCenter = atKm(6.65);
+  const isolatedHalf = (0.3 / CITY_RUSH_TOUGE.lengthKm) * CITY_RUSH_LAP_LENGTH / 2;
+  assert.equal(tougeTurnSightlineClearance(isolatedCenter + isolatedHalf + TOUGE_TURN_SIGHTLINE_BUFFER_METERS + 1), false,
+    'la forêt reprend après le dégagement du dernier virage de la première enfilade');
+  for (const km of [1, 2.6, 4, 7.5, 10, 13.4]) {
+    assert.equal(tougeTurnSightlineClearance(atKm(km)), false,
+      `la forêt est conservée sur la ligne droite du km ${km}`);
+  }
+  assert.equal(tougeTurnSightlineClearance(Number.NaN), false, 'une distance invalide ne coupe pas la forêt');
 });

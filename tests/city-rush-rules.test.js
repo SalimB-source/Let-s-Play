@@ -368,12 +368,18 @@ import {
   CITY_RUSH_TOUGE_COURSE,
   CITY_RUSH_TOUGE_TURNS,
   CITY_RUSH_TOUGE_MAX_OFFSET,
+  CITY_RUSH_TOUGE_MAX_CORNER_ANGLE,
+  CITY_RUSH_TOUGE_DESCENT_ANGLE,
+  CITY_RUSH_TOUGE_MAX_GRADE,
   CITY_RUSH_TOUGE_TURN_CORE_FRACTION,
   tougeTrackOffset,
   tougeTrackForward,
   tougeTrackHeading,
   tougeTrackTangent,
   tougeTrackYaw,
+  tougeTrackElevation,
+  tougeTrackGrade,
+  tougeTrackPitch,
   tougeDriftAmount,
   CITY_RUSH_TRACK_PROFILE_TOUGE,
   CITY_RUSH_TOUGE_PREBRAKE_METERS,
@@ -2544,7 +2550,7 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   assert.ok(CITY_RUSH_RACEWAY_PACE >= CITY_RUSH_COURSE_PACE_MIN, 'et il reste au-dessus du garde-fou');
   assert.equal(cityRushCoursePace('nordschleife'), CITY_RUSH_RACEWAY_PACE);
   assert.equal(cityRushCoursePace(CITY_RUSH_NORDSCHLEIFE_COURSE), CITY_RUSH_RACEWAY_PACE);
-  // Le tōgé roule au même facteur que le Ring : ses douze virages à 90° sur
+  // Le tōgé roule au même facteur que le Ring : ses douze virages à 60° sur
   // une chaussée de 6,40 m se lisent à ~107 km/h ; l'IA lève le pied dans les
   // cassures, tandis que le joueur garde sa vitesse et gère le drift.
   assert.equal(CITY_RUSH_TOUGE_COURSE.pace, CITY_RUSH_RACEWAY_PACE);
@@ -2607,15 +2613,18 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   assert.equal(approachCityRushSpeed(30, 10, 6, 1, 0), brakingFlat, 'un facteur invalide retombe sur 1');
 });
 
-test('le tōgé dessine douze vrais virages à 90° et ne fait déraper que dans leur courbure', () => {
+test('le tōgé dessine douze virages à 60°, incline la descente et ne dérape que dans les courbes', () => {
   const lengthKm = CITY_RUSH_TOUGE.lengthKm;
   assert.equal(CITY_RUSH_TOUGE.corners, 12);
   assert.equal(CITY_RUSH_TOUGE_TURNS.length, 12, '8 épingles et 4 virages d’enchaînement');
-  assert.equal(CITY_RUSH_TOUGE_MAX_OFFSET, 32, 'le tracé 2D reste dans un déport latéral de 32 m');
+  assert.equal(CITY_RUSH_TOUGE_MAX_CORNER_ANGLE, 60);
+  assert.equal(CITY_RUSH_TOUGE_DESCENT_ANGLE, 20);
+  assert.ok(CITY_RUSH_TOUGE_MAX_GRADE > 0.3, 'la descente de 20° a une pente visible jusque dans les virages');
+  assert.equal(CITY_RUSH_TOUGE_MAX_OFFSET, 22, 'le tracé à 60° reste dans un déport latéral de 22 m');
   assert.equal(CITY_RUSH_TOUGE_TURNS.reduce((sum, turn) => sum + turn[1], 0), 0, 'les virages opposés referment le cap');
   assert.ok(CITY_RUSH_TOUGE_TURNS.every(([, angle, span, shape, drift]) => (
-    Math.abs(angle) === 90 && span === 0.3 && shape === 'snap' && drift === true
-  )), 'chaque zone de drift est une cassure de 90°');
+    Math.abs(angle) === 60 && span === 0.3 && shape === 'snap' && drift === true
+  )), 'chaque zone de drift est une cassure de 60°');
 
   for (let index = 0; index < CITY_RUSH_TOUGE_TURNS.length; index += 2) {
     const first = CITY_RUSH_TOUGE_TURNS[index];
@@ -2636,8 +2645,8 @@ test('le tōgé dessine douze vrais virages à 90° et ne fait déraper que dans
 
   const pathHeadingAt = (distance) => {
     // Mesure la tangente de la route projetée, pas seulement l'angle déclaré
-    // par le profil : c'est ce qui empêchait auparavant les « 90° » d'atteindre
-    // la chaussée réellement rendue.
+    // par le profil : les angles annoncés doivent correspondre au ruban rendu,
+    // pas seulement à la consigne avant projection.
     const sample = 0.1;
     const lateralDelta = tougeTrackOffset(distance + sample) - tougeTrackOffset(distance - sample);
     const forwardDelta = tougeTrackForward(distance + sample) - tougeTrackForward(distance - sample);
@@ -2652,10 +2661,10 @@ test('le tōgé dessine douze vrais virages à 90° et ne fait déraper que dans
     peakProjectedHeading = Math.max(peakProjectedHeading, Math.abs(pathHeadingAt(distance)));
     peakOffset = Math.max(peakOffset, Math.abs(tougeTrackOffset(distance)));
   }
-  assert.ok(peakYaw >= 89 * Math.PI / 180 && peakYaw <= Math.PI / 2 + 1e-6,
-    `le cap atteint réellement 90° (cap max ${(peakYaw * 180 / Math.PI).toFixed(1)}°)`);
-  assert.ok(peakProjectedHeading >= 89 * Math.PI / 180 && peakProjectedHeading <= Math.PI / 2 + 1e-6,
-    `la tangente mesurée sur la route projetée atteint aussi 90° (${(peakProjectedHeading * 180 / Math.PI).toFixed(1)}°)`);
+  assert.ok(peakYaw >= 59.9 * Math.PI / 180 && peakYaw <= 60.1 * Math.PI / 180,
+    `le cap atteint réellement 60° (cap max ${(peakYaw * 180 / Math.PI).toFixed(1)}°)`);
+  assert.ok(peakProjectedHeading >= 59.9 * Math.PI / 180 && peakProjectedHeading <= 60.1 * Math.PI / 180,
+    `la tangente mesurée sur la route atteint aussi 60° (${(peakProjectedHeading * 180 / Math.PI).toFixed(1)}°)`);
   assert.ok(peakOffset < CITY_RUSH_TOUGE_MAX_OFFSET && peakOffset > CITY_RUSH_TOUGE_MAX_OFFSET - 1,
     `la route reste dans son enveloppe de ${CITY_RUSH_TOUGE_MAX_OFFSET} m (${peakOffset.toFixed(2)} m)`);
 
@@ -2676,7 +2685,7 @@ test('le tōgé dessine douze vrais virages à 90° et ne fait déraper que dans
   }
 
   // Les longues lignes droites restent stables ; la route peut aussi être
-  // droite après un virage à 90° tout en conservant son nouveau cap local.
+  // droite après un virage à 60° tout en conservant son nouveau cap local.
   for (const km of [1, 2.6, 4, 4.7, 7.5, 8.2, 10, 11, 13, 13.4]) {
     const progress = km / lengthKm;
     assert.ok(Math.abs(tougeTrackYaw(progress * CITY_RUSH_LAP_LENGTH)) < Math.PI / 180,
@@ -2684,6 +2693,28 @@ test('le tōgé dessine douze vrais virages à 90° et ne fait déraper que dans
     assert.equal(tougeDriftAmount(progress), 0, `aucun drift à ${km} km`);
   }
   assert.equal(tougeDriftAmount(5.15 / lengthKm, 'nordschleife'), 0, 'le drift reste exclusif au tōgé');
+});
+
+test('le tōgé descend à 20° et garde une pente continue entre les tours', () => {
+  const targetPitch = -CITY_RUSH_TOUGE_DESCENT_ANGLE * Math.PI / 180;
+  for (let distance = 0; distance <= CITY_RUSH_LAP_LENGTH * 2; distance += 37) {
+    assert.ok(Math.abs(tougeTrackPitch(distance) - targetPitch) < 1e-12,
+      `la route reste inclinée de 20° vers le bas à ${distance} m`);
+    assert.ok(tougeTrackGrade(distance) < 0, `la pente descend à ${distance} m`);
+    assert.ok(Math.abs(tougeTrackGrade(distance)) <= CITY_RUSH_TOUGE_MAX_GRADE + 1e-12,
+      `la pente reste dans l'enveloppe à ${distance} m`);
+    assert.ok(tougeTrackElevation(distance + 20) < tougeTrackElevation(distance),
+      `la route perd de l'altitude en avançant à ${distance} m`);
+  }
+
+  const firstLapDrop = tougeTrackElevation(CITY_RUSH_LAP_LENGTH) - tougeTrackElevation(0);
+  const secondLapDrop = tougeTrackElevation(CITY_RUSH_LAP_LENGTH * 2) - tougeTrackElevation(CITY_RUSH_LAP_LENGTH);
+  assert.ok(firstLapDrop < -300, `un tour entier descend la montagne (${firstLapDrop.toFixed(1)} m monde)`);
+  assert.ok(Math.abs(firstLapDrop - secondLapDrop) < 1e-9, 'la descente continue au même rythme au tour suivant');
+  const acrossSeam = tougeTrackElevation(CITY_RUSH_LAP_LENGTH + 0.1)
+    - tougeTrackElevation(CITY_RUSH_LAP_LENGTH - 0.1);
+  assert.ok(acrossSeam < 0 && acrossSeam > -0.1,
+    `le passage de la ligne ne crée pas de marche (${acrossSeam.toFixed(3)} m)`);
 });
 
 test('le tōgé freine avant ses épingles, pas une fois dedans', () => {
@@ -2695,9 +2726,9 @@ test('le tōgé freine avant ses épingles, pas une fois dedans', () => {
   assert.ok(CITY_RUSH_TOUGE_PREBRAKE_METERS > CITY_RUSH_CORNER_PACE_PREBRAKE_METERS);
   assert.equal(CITY_RUSH_TOUGE_CORNER_ANGLE_START, 30);
 
-  // Le plancher d'une cassure à 90° — les douze virages de la descente.
-  assert.equal(cityRushTougeCornerFactor(90), CITY_RUSH_CORNER_PACE_MIN);
-  assert.equal(cityRushTougeCornerFactor(-90), CITY_RUSH_CORNER_PACE_MIN, 'le sens du virage ne change rien');
+  // Le plancher d'une cassure à 60° — les douze virages de la descente.
+  assert.equal(cityRushTougeCornerFactor(60), CITY_RUSH_CORNER_PACE_MIN);
+  assert.equal(cityRushTougeCornerFactor(-60), CITY_RUSH_CORNER_PACE_MIN, 'le sens du virage ne change rien');
   assert.equal(cityRushTougeCornerFactor(120), CITY_RUSH_CORNER_PACE_MIN, 'au-delà de la cassure, le plancher tient');
   assert.equal(cityRushTougeCornerFactor(0), 1);
   assert.equal(cityRushTougeCornerFactor(CITY_RUSH_TOUGE_CORNER_ANGLE_START), 1);
@@ -2808,6 +2839,13 @@ test('la poursuite reste derrière la voiture dans les cassures, sans bouger ail
   assert.equal(cityRushChaseFollowRate(0), CITY_RUSH_CHASE_FOLLOW_RATE);
   assert.equal(cityRushChaseFollowRate(1), CITY_RUSH_CHASE_ANCHOR_FOLLOW_RATE);
 
+  // Même quand l'axe horizontal s'ancre dans une épingle, le tōgé conserve
+  // son relief : la caméra remonte derrière et regarde vers la route en bas.
+  const steepAnchor = cityRushChasePlacement(497, CITY_RUSH_TRACK_PROFILE_TOUGE);
+  assert.ok(steepAnchor.anchor > 0.98, 'la poursuite est ancrée dans cette cassure');
+  assert.ok(steepAnchor.cameraHill > 0 && steepAnchor.lookHill < 0,
+    'la pente de 20° reste suivie même pendant l’ancrage');
+
   // Le cadrage d'origine : la caméra sur le morceau de route derrière la
   // voiture, le regard sur le morceau de route devant elle. Sert de référence
   // pour mesurer ce que l'ancrage change, carte par carte.
@@ -2874,25 +2912,24 @@ test('la poursuite reste derrière la voiture dans les cassures, sans bouger ail
     behindMin = Math.min(behindMin, behindOf(chase));
     sideMax = Math.max(sideMax, sideOf(chase, chase));
   }
-  assert.ok(anchored > 200, `le tōgé ancre sa poursuite dans les cassures (${anchored} échantillons sur 4 800)`);
+  assert.ok(anchored > 0, `le tōgé ancre sa poursuite dans les virages les plus serrés (${anchored} échantillons sur 4 800)`);
   assert.ok(behindMin > 0.999, `la caméra reste strictement derrière la voiture (${behindMin.toFixed(4)})`);
   assert.ok(sideMax < CITY_RUSH_CHASE_BEHIND / 40,
     `aucun déport sensible sur le flanc une fois ancrée (${sideMax.toFixed(3)} m sur ${CITY_RUSH_CHASE_BEHIND} m de recul)`);
-  // Le défaut que l'ancrage corrige, mesuré des deux bouts : le regard de
-  // l'ancien cadrage décroche de plus de vingt mètres de l'axe de la caisse —
-  // c'est ce qui déclenche l'ancrage — et la caméra elle-même part jusqu'à dix-
-  // huit mètres sur le flanc, hors de la route et hors du cadre.
-  assert.ok(worstLook.drift > 20,
-    `le regard décroche vraiment (${worstLook.drift.toFixed(1)} m à ${worstLook.distance.toFixed(0)} m)`);
-  assert.equal(worstLook.chase.anchor, 1, 'l’ancrage est complet là où le regard décroche le plus');
-  assert.ok(worstCamera.side > 15,
-    `l'ancien cadrage partait sur le flanc (${worstCamera.side.toFixed(1)} m à ${worstCamera.distance.toFixed(0)} m)`);
-  assert.equal(worstCamera.chase.anchor, 1, 'l’ancrage est complet là où la caméra décroche le plus');
-  assert.ok(sideOf(worstCamera.chase, worstCamera.chase) < 0.01, 'le nouveau cadrage reste dans l’axe');
-  // Le relief suivi par la caméra s'efface avec l'ancrage : une fois recollée,
-  // elle se cale sur la hauteur de la voiture, pas sur celle du morceau de
-  // route resté en arrière.
-  assert.ok(Math.abs(worstCamera.chase.cameraHill) < 1e-9 && Math.abs(worstCamera.chase.lookHill) < 1e-9);
+  // À 60°, la poursuite reste plus proche de la chaussée : le regard décroche
+  // d'une quinzaine de mètres au maximum, sans envoyer la caméra hors du ruban.
+  assert.ok(worstLook.drift > 12,
+    `le regard décroche assez pour justifier un ancrage (${worstLook.drift.toFixed(1)} m à ${worstLook.distance.toFixed(0)} m)`);
+  assert.ok(worstLook.chase.anchor > 0.98, 'l’ancrage est presque complet là où le regard décroche le plus');
+  assert.ok(worstCamera.side > 10,
+    `l'ancien cadrage s'écarte de l'axe (${worstCamera.side.toFixed(1)} m à ${worstCamera.distance.toFixed(0)} m)`);
+  assert.ok(worstCamera.chase.anchor > 0.7, 'l’ancrage corrige aussi le plus grand écart de caméra');
+  assert.ok(sideOf(worstCamera.chase, worstCamera.chase) < CITY_RUSH_CHASE_BEHIND / 4,
+    'le nouveau cadrage réduit nettement le déport sur le flanc');
+  // Le relief suit la route descendante : la caméra reste plus haute derrière
+  // la voiture et le regard descend avec la chaussée devant elle.
+  assert.ok(worstCamera.chase.cameraHill > 0 && worstCamera.chase.lookHill < 0,
+    'la poursuite suit le dénivelé de la route en descente');
 });
 
 test('Vice City, le Ring et le tōgé ralentissent les voitures dans leurs grands virages', () => {

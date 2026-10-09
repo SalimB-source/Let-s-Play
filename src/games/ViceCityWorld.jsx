@@ -1913,7 +1913,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // tard. Ailleurs, l'IA suit exactement le profil du pilote.
   const aiCornerPaceAt = (trackDistance) => cityRushAiCornerPace(city, trackDistance, trackProfile, cornerPaceAt(trackDistance));
   // ── Dérapage contrôlé du tōgé ────────────────────────────────────────────
-  // Le dérapage ne se déclenche que dans les virages francs à 90° marqués dans
+  // Le dérapage ne se déclenche que dans les virages francs à 60° marqués dans
   // CITY_RUSH_TOUGE_TURNS : pilote et rivaux prennent alors un angle de caisse
   // et laissent une fumée de gomme. Entre ces zones — surtout sur les longues
   // lignes droites — la caisse reste droite. L'amplitude suit la vitesse ; le
@@ -2832,6 +2832,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let lastDistanceSlot = 0;
   let lastTrafficDistanceSlot = 0;
   let driftSmokeTimer = 0;
+  let lastPlayerDrift = 0;
   let policeStealNoticeCooldown = 0;
   let policeBlockNoticeCooldown = 0;
   let policeAimNoticeCooldown = 0;
@@ -4314,10 +4315,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const lineZ = trackRelativeZ(distance + lineGap);
     const playerCurve = trackProfile.offset(distance);
     const playerElevation = trackProfile.elevation(distance);
-    loopA.position.set(-playerCurve, -playerElevation, lineZ);
-    loopB.position.set(-playerCurve, -playerElevation, lineZ + LAP_UNITS);
+    // La descente du tōgé ne remonte pas au tour suivant : chaque copie du
+    // décor reprend l'altitude relative de son vrai point de départ.
+    const loopStartDistance = distance + lineGap;
+    const loopAY = tougeDrift ? trackRelativeY(loopStartDistance) : -playerElevation;
+    const loopBY = tougeDrift ? trackRelativeY(loopStartDistance + CITY_RUSH_LAP_LENGTH) : -playerElevation;
+    loopA.position.set(-playerCurve, loopAY, lineZ);
+    loopB.position.set(-playerCurve, loopBY, lineZ + LAP_UNITS);
     loopB.visible = lineZ + START_ZONE_HALF * SCALE < camera.position.z + 4;
-    startLine.group.position.set(-playerCurve, -playerElevation, lineZ);
+    startLine.group.position.set(-playerCurve, loopAY, lineZ);
     startLine.group.rotation.set(trackPitch(0), trackYaw(0), 0);
     if (sprintCheckpointGate) {
       const targetDistance = sprintCheckpointGate.userData.targetDistance;
@@ -4333,11 +4339,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         && checkpointGap * SCALE < theme.fogFar + 20;
     }
     for (const prop of loop.dynamicProps) {
-      const gap = cityRushTrackGap(prop.trackPos, distance) + CITY_RUSH_START_LINE_LEAD;
+      const propGap = cityRushTrackGap(prop.trackPos, distance);
+      const gap = propGap + CITY_RUSH_START_LINE_LEAD;
       prop.group.visible = gap > -40 && gap * SCALE < theme.fogFar + 20;
       if (prop.group.visible) {
-        prop.group.position.set(trackRelativeX(prop.trackPos), trackRelativeY(prop.trackPos), trackRelativeZ(prop.trackPos));
-        prop.group.rotation.set(trackPitch(prop.trackPos), trackYaw(prop.trackPos), 0);
+        const propDistance = tougeDrift ? distance + propGap : prop.trackPos;
+        prop.group.position.set(trackRelativeX(propDistance), trackRelativeY(propDistance), trackRelativeZ(propDistance));
+        prop.group.rotation.set(trackPitch(propDistance), trackYaw(propDistance), 0);
       }
     }
     return lineGap;
@@ -9020,9 +9028,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       watchHeliLeaving = Math.min(1, watchHeliLeaving + dt / 2.8);
       const pose = cityRushWatchHelicopterPose({ playerX: playerCar.position.x, clock: clockTime, leaving: watchHeliLeaving });
       const flightDistance = distance + pose.ahead;
+      const helicopterTrackY = trackRelativeY(flightDistance);
+      // En fin de course, le tōgé continue de descendre sous l'appareil : on
+      // compense ce dénivelé pour que son ascension de départ reste visible.
+      const departureLift = tougeDrift ? Math.max(0, -helicopterTrackY) : 0;
       watchHeliScratch.set(
         trackWorldX(flightDistance, pose.lateral),
-        trackRelativeY(flightDistance) + pose.height,
+        helicopterTrackY + pose.height + departureLift,
         trackWorldZ(flightDistance, pose.lateral),
       );
       watchHelicopter.position.lerp(watchHeliScratch, Math.min(1, dt * 1.2));
@@ -9308,9 +9320,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // reste très doux : la route tourne, pas la tête du joueur.
       //
       // Sauf quand la route tourne plus court que le recul de la poursuite :
-      // dans les épingles à 90° du tōgé, le morceau de chaussée placé à 13,2 m
+      // dans les épingles à 60° du tōgé, le morceau de chaussée placé à 13,2 m
       // derrière n'est plus derrière la voiture mais sur son flanc (jusqu'à
-      // dix-sept mètres de côté) — la voiture sortait du cadre et la descente
+      // douze mètres de côté) — la voiture sortait du cadre et la descente
       // devenait illisible. `cityRushChasePlacement` mesure l'écart entre les
       // deux placements et recolle la poursuite dans l'axe de la caisse,
       // position et regard, dès que l'écart dépasse 7,5 m. Sur une courbe douce
@@ -9327,7 +9339,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       lookTarget.set(px * 0.09 + chase.lookX, CHASE_LOOK.y + chase.lookHill + jumpLookY, PLAYER_Z + chase.lookZ);
       targetFovOffset = (playerBoostLeft > 0 ? 6 : 0) + speedRatio * 2.5;
       // Une poursuite ancrée suit plus ferme : dans une cassure, l'axe tourne
-      // de 90° en un quart de seconde et le retard de lissage ferait couper le
+      // de 60° en un quart de seconde et le retard de lissage ferait couper le
       // virage à la caméra, donc ressortir la voiture du cadre.
       followRate = cityRushChaseFollowRate(chase.anchor);
     }
@@ -9890,6 +9902,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const playerDrift = playerWrecked || playerStunLeft > 0 || playerJumpState.active
         ? 0
         : driftFor(distance, currentSpeed, playerTopSpeed);
+      const drifting = Math.abs(playerDrift) > 0.05;
+      const wasDrifting = Math.abs(lastPlayerDrift) > 0.05;
+      if (tougeDrift && drifting && (!wasDrifting || Math.sign(playerDrift) !== Math.sign(lastPlayerDrift))) {
+        // Un seul cri de pneus au début de chaque angle de drift, pas un
+        // nouveau son par image : le skid synthétisé tient pendant la courbe.
+        audioRef?.current?.skid?.({
+          pan: vehiclePan('player'),
+          intensity: 0.82 + Math.abs(playerDrift) * 0.28,
+          duration: 0.58,
+        });
+      }
+      lastPlayerDrift = playerDrift;
       animateRacerCar(playerCar, {
         speed: currentSpeed,
         maxSpeed: playerTopSpeed,
