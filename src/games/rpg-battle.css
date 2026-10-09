@@ -1,0 +1,1586 @@
+/* Prototype RPG « Le Sablier de Bab El » — écran de combat.
+   Palette du concept B : laiton et cuivre de la ville, indigo de la nuit,
+   ocre du sable qui monte. Les variables viennent du site (src/styles.css),
+   donc le thème clair s'applique aux panneaux sans retouche ici. */
+
+.rpg-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 18px 80px;
+  color: var(--ink);
+}
+
+/* ── En-tête ─────────────────────────────────────────────────────────────── */
+/* Le key art (ville verticale de nuit, Astrolabe) habille l'en-tête ; un
+   voile dégradé garde le texte lisible, y compris en thème clair. */
+.rpg-head {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 28px 26px 24px;
+  color: #f3ecd9;
+}
+
+.rpg-head__keyart {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  opacity: .85;
+}
+
+.rpg-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, rgba(6, 7, 18, .95) 6%, rgba(6, 7, 18, .72) 46%, rgba(6, 7, 18, .28) 100%);
+}
+
+.rpg-head > :not(.rpg-head__keyart) { position: relative; z-index: 1; }
+
+.rpg-head__lede { color: rgba(243, 236, 217, .82); }
+.rpg-head__lede strong { color: #fff8ea; }
+
+.rpg-head__eyebrow {
+  font: 700 11px/1 var(--display);
+  letter-spacing: .22em;
+  color: var(--yellow);
+  margin: 0 0 10px;
+}
+
+.rpg-head__title {
+  font-family: var(--font-gaming);
+  font-size: clamp(30px, 6vw, 54px);
+  line-height: 1.02;
+  margin: 0 0 12px;
+}
+
+.rpg-head__title span { color: var(--cyan); }
+
+.rpg-head__lede { max-width: 66ch; color: var(--muted); margin: 0 0 14px; }
+.rpg-head__lede strong { color: var(--ink); }
+
+.rpg-head__lede code,
+.rpg-outro code,
+.rpg-docs code { font-size: .92em; color: var(--yellow); }
+
+.rpg-head__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rpg-head__nav a { color: var(--cyan); text-decoration: none; font-size: 14px; }
+.rpg-head__nav a:hover { text-decoration: underline; }
+
+.rpg-mute {
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, .06);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.rpg-mute:hover { border-color: var(--cyan); }
+
+/* ── Intro ───────────────────────────────────────────────────────────────── */
+.rpg-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, .8fr);
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.rpg-intro__pitch,
+.rpg-intro__start {
+  background: linear-gradient(160deg, rgba(26, 20, 12, .92), rgba(10, 10, 22, .92));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.rpg-intro h2,
+.rpg-intro h3 {
+  font-family: var(--font-gaming);
+  font-size: 15px;
+  letter-spacing: .12em;
+  margin: 0 0 12px;
+  color: var(--yellow);
+}
+
+.rpg-intro__pitch p { color: var(--muted); margin: 0 0 12px; }
+.rpg-intro__pitch strong { color: var(--ink); }
+
+.rpg-intro__pitch ul { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+
+.rpg-intro__pitch li {
+  border-left: 2px solid var(--line-strong);
+  padding-left: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.rpg-intro__pitch li strong { color: var(--cyan); display: block; margin-bottom: 2px; }
+
+/* L'équipe, visages et voix, avant d'ouvrir le combat. */
+.rpg-intro__team {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(160deg, rgba(26, 20, 12, .92), rgba(10, 10, 22, .92));
+}
+
+.rpg-intro__team h3 {
+  font-family: var(--font-gaming);
+  font-size: 15px;
+  letter-spacing: .12em;
+  margin: 0 0 14px;
+  color: var(--yellow);
+}
+
+.rpg-intro__team ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.rpg-intro__team li {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, .03);
+}
+
+.rpg-intro__team img {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .35);
+}
+
+.rpg-intro__team strong { font-family: var(--font-gaming); font-size: 12px; letter-spacing: .05em; }
+.rpg-intro__team small { color: var(--dim); font-size: 11px; }
+.rpg-intro__team p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; font-style: italic; }
+
+/* La maquette de combat traverse l'intro sur toute la largeur. */
+.rpg-intro__art {
+  grid-column: 1 / -1;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0b0b16;
+}
+
+.rpg-intro__art img { display: block; width: 100%; height: auto; }
+
+.rpg-intro__art figcaption { padding: 12px 16px; color: var(--muted); font-size: 13.5px; }
+.rpg-intro__art figcaption strong { color: var(--yellow); }
+
+.rpg-difficulty { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+
+.rpg-difficulty button {
+  flex: 1 1 auto;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 10px;
+  cursor: pointer;
+  font: 600 13px var(--display);
+}
+
+.rpg-difficulty button.is-on { border-color: var(--yellow); color: #161005; background: var(--yellow); }
+
+.rpg-hint { color: var(--dim); font-size: 13px; margin: 0 0 16px; }
+.rpg-hint em { color: var(--muted); font-style: italic; }
+
+/* ── Boutons ─────────────────────────────────────────────────────────────── */
+.rpg-btn {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, .04);
+  color: var(--ink);
+  border-radius: 11px;
+  padding: 10px 14px;
+  font: 600 13px var(--display);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.2;
+  transition: transform .12s ease, border-color .12s ease;
+}
+
+.rpg-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--cyan); }
+.rpg-btn:disabled { opacity: .35; cursor: not-allowed; }
+.rpg-btn small { font-size: 10px; color: var(--dim); font-weight: 500; }
+.rpg-btn--primary { background: var(--yellow); border-color: var(--yellow); color: #161005; font-weight: 800; }
+.rpg-btn--ghost { background: transparent; }
+
+/* Fin du tour : la grande pastille dorée du Sablier, bien visible sur la table. */
+.rpg-btn--endturn {
+  min-height: 48px;
+  padding: 0 30px;
+  border-radius: 999px;
+  border: 2px solid #ffd619;
+  background: linear-gradient(180deg, #ffeeb0 0%, #f2c43d 55%, #d9a520 100%);
+  color: #2c2106;
+  font: 800 15px/1 var(--display);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 18px rgba(255, 214, 25, .35), inset 0 1px 0 rgba(255, 255, 255, .55);
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+.rpg-btn--endturn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.07);
+  box-shadow: 0 10px 26px rgba(255, 214, 25, .5), inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+
+.rpg-btn--endturn:active { transform: translateY(1px); filter: brightness(.95); }
+
+/* Phase d'attaque : pastille rouge sang, bien distincte du fin de tour. */
+.rpg-btn--attaque {
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: 2px solid #7a1408;
+  background: linear-gradient(180deg, #e05a3a 0%, #a3271a 60%, #7a1408 100%);
+  color: #ffe1d6;
+  font: 800 14px/1 var(--display);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 16px rgba(163, 39, 26, .4), inset 0 1px 0 rgba(255, 255, 255, .3);
+  cursor: pointer;
+  transition: transform .15s ease, filter .15s ease;
+}
+
+.rpg-btn--attaque:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+.rpg-btn--attaque:disabled { opacity: .45; cursor: default; }
+
+/* Bouton de permutation avec la réserve : le visage accompagne le nom. */
+.rpg-btn--swap { display: inline-flex; align-items: center; gap: 8px; }
+.rpg-btn__portrait {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  background: #0b0b16;
+}
+
+/* ── Combat ──────────────────────────────────────────────────────────────── */
+/* ── Exploration d'un palier entre les vagues ────────────────────────────── */
+.rpg-explore { display: grid; gap: 14px; margin-top: 18px; }
+
+.rpg-explore__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rpg-explore__head h2 {
+  font-family: var(--font-gaming);
+  font-size: clamp(20px, 3.4vw, 30px);
+  margin: 0;
+  color: var(--yellow);
+  letter-spacing: .06em;
+}
+
+.rpg-explore__hours { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+
+.rpg-explore__lede { margin: 0; color: var(--muted); max-width: 78ch; font-style: italic; }
+
+.rpg-explore__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.rpg-place {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(26, 20, 12, .92), rgba(10, 10, 22, .92));
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.rpg-place h3 {
+  margin: 0;
+  font-family: var(--font-gaming);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--cyan);
+}
+
+.rpg-place__npc { margin: 0; color: var(--muted); font-size: 12.5px; }
+.rpg-place__npc strong { color: var(--ink); }
+
+.rpg-place__actions { display: grid; gap: 8px; }
+
+.rpg-choice {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.rpg-choice p { margin: 0; color: var(--muted); font-size: 12.5px; font-style: italic; }
+
+.rpg-explore__team {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(26, 20, 12, .92), rgba(10, 10, 22, .92));
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.rpg-explore__team h3 {
+  margin: 0;
+  font-family: var(--font-gaming);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--yellow);
+}
+
+.rpg-explore__team ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+.rpg-explore__team li { display: flex; gap: 10px; align-items: center; }
+
+.rpg-explore__team img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border: 1px solid var(--line-strong);
+}
+
+.rpg-explore__team li span { display: grid; gap: 3px; flex: 1; }
+.rpg-explore__team strong { font-size: 12px; letter-spacing: .04em; }
+.rpg-explore__team small { color: var(--dim); font-size: 11px; }
+
+.rpg-explore__pocket { margin: 0; color: var(--muted); font-size: 12.5px; }
+.rpg-explore__pocket strong { color: var(--yellow); }
+.rpg-explore__buffs { margin: 0; color: var(--cyan); font-size: 12.5px; }
+
+.rpg-explore__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, .03);
+}
+
+.rpg-explore__foot p { margin: 0; color: var(--muted); font-size: 13px; }
+
+/* ── Table de jeu : des cartes posées sur le bois, anatomie Magic ────────── */
+.card-table {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-color: #1c1006;
+  background-size: cover;
+  background-position: center;
+}
+
+/* L'adversaire en face (haut de table), l'équipe en main (bas de table),
+   étalés sur toute la largeur de l'écran : le centre reste le champ de bataille. */
+.card-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 0 2%;
+}
+
+.card-row--ennemi { top: 2.5%; }
+.card-row--equipe { bottom: 27%; }
+
+/* ── La carte : liseré noir, cadre teinté par l'élément, zones imprimées ── */
+.rpg-card {
+  position: relative;
+  width: clamp(138px, 11.5vw, 168px);
+  aspect-ratio: 4 / 5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 6px 5px;
+  border-radius: 12px;
+  background: #0c0c0e;
+  outline: 2px solid #000;                   /* le liseré noir extérieur */
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .65), 0 2px 6px rgba(0, 0, 0, .5);
+  cursor: pointer;
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform .35s ease, box-shadow .35s ease, filter .3s ease, opacity .3s ease;
+}
+
+/* Le cadre intérieur, teinté par l'élément (comme le cadre d'une Magic). */
+.rpg-card--elem-sable   { border: 5px solid #a97e2f; }
+.rpg-card--elem-eau     { border: 5px solid #2e6f9e; }
+.rpg-card--elem-braise  { border: 5px solid #a03a2a; }
+.rpg-card--elem-verre   { border: 5px solid #3f8fa8; }
+.rpg-card--elem-souffle { border: 5px solid #8b93a1; }
+.rpg-card--elem-encre   { border: 5px solid #5a3f8f; }
+
+/* Légendaire : double anneau doré gravé dans le cadre, halo discret. */
+.rpg-card--legendaire {
+  border-width: 6px;
+  border-style: double;
+  box-shadow:
+    0 0 0 1px rgba(255, 214, 25, .35) inset,
+    0 12px 28px rgba(0, 0, 0, .65),
+    0 0 14px rgba(255, 214, 25, .12);
+}
+
+/* Bannière de titre : parchemin doré, nom à gauche, coût en pastilles. */
+.rpg-card__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #14100a;
+  background: linear-gradient(180deg, #f3e6bb, #d9c68c);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset;
+}
+
+.rpg-card__title strong {
+  font: 700 11.5px/1.2 Georgia, 'Times New Roman', serif;
+  letter-spacing: .01em;
+  color: #1c1710;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rpg-card__pips { display: inline-flex; gap: 3px; flex: none; }
+
+.rpg-card__pips i {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid #000;
+  font-style: normal;
+  font-size: 9px;
+  color: #fff;
+  text-shadow: 0 1px 1px #000;
+}
+
+.pip--sable { background: radial-gradient(circle at 35% 30%, #e8c476, #a97e2f); }
+.pip--eau { background: radial-gradient(circle at 35% 30%, #7db6dd, #24577e); }
+.pip--braise { background: radial-gradient(circle at 35% 30%, #e08a72, #7e2417); }
+.pip--verre { background: radial-gradient(circle at 35% 30%, #9fd6e8, #2b6d84); }
+.pip--souffle { background: radial-gradient(circle at 35% 30%, #d9dee6, #6d7480); }
+.pip--encre { background: radial-gradient(circle at 35% 30%, #b39ae0, #432d73); }
+
+/* Fenêtre d'illustration : le portrait peint, vignetté, reflet de vitrine. */
+.rpg-card__art {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid #000;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #111;
+}
+
+.rpg-card__art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, .6);
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 248, 220, .14) 50%, transparent 58%);
+}
+
+.rpg-card--legendaire .rpg-card__art { border-color: #d9b45b; }
+
+.rpg-card__art img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+
+/* Ligne de type : bandeau sombre, petites capitales, symbole de rareté. */
+.rpg-card__type {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #232327, #141417);
+  border: 1px solid #000;
+  font: 600 8.5px/1.3 Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: .05em;
+  color: #e8e2d0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.rpg-card__set { font-style: normal; font-size: 10px; color: #c9c2ae; text-shadow: 0 1px 1px #000; }
+.rpg-card__set--mythique { color: #ffb347; text-shadow: 0 0 6px rgba(255, 179, 71, .6); }
+
+/* Encadré de texte : parchemin beige grainé, encre noire, saveur en italique. */
+.rpg-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid #9a8f74;
+  background:
+    repeating-linear-gradient(0deg, rgba(120, 100, 60, .05) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #f2ebd8, #e7dec6);
+  font: 500 8.5px/1.35 Georgia, serif;
+  color: #191410;
+  overflow: hidden;
+}
+
+.rpg-card__rules b { font-weight: 700; }
+.rpg-card__rules small { color: #6b5f4a; font-size: 7.5px; }
+.rpg-card__rules--meta { align-items: center; gap: 5px; color: #4a4132; }
+
+.rpg-card__flavor {
+  color: #4a4132;
+  font-size: 8.5px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rpg-card__rules { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* L'intention ennemie imprimée dans le parchemin, en encre sombre. */
+.rpg-card__text .rpg-intent {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.rpg-card__text .rpg-intent__body strong { color: #191410; font-size: 9.5px; }
+.rpg-card__text .rpg-intent__body small { color: #4a4132; font-size: 8.5px; }
+.rpg-card__text .rpg-intent__pick {
+  padding: 1px 7px;
+  font-size: 8.5px;
+  color: #4a4132;
+  border-color: #9a8f74;
+}
+
+.rpg-card__tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.rpg-card__text .rpg-tag { border-color: #9a8f74; color: #4a4132; background: rgba(0, 0, 0, .05); }
+
+/* Pied de carte : ⚔ attaque (doré) · étage · 🛡 défense (acier). */
+.rpg-card__stat--atk {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1.5px solid #000;
+  background: linear-gradient(180deg, #ffe9a0, #d9a520);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .45) inset, 0 1px 2px rgba(0, 0, 0, .5);
+  font: 800 11px/1.5 Georgia, serif;
+  letter-spacing: .02em;
+  color: #241a04;
+}
+.rpg-card__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.rpg-card__col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 6.5px/1 var(--mono);
+  letter-spacing: .08em;
+  color: rgba(240, 230, 200, .8);
+}
+
+.rpg-card__pt {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1.5px solid #000;
+  background: linear-gradient(180deg, #eef2f5, #9db0be);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 1px 2px rgba(0, 0, 0, .5);
+  font: 800 11px/1.5 Georgia, serif;
+  letter-spacing: .02em;
+  color: #10161c;
+}
+
+/* Plaques de PV des deux sorciers, dans les coins de la table. */
+.rpg-wizard-plate {
+  position: absolute;
+  top: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 2px solid #000;
+  background: rgba(10, 8, 4, .78);
+  color: #f2eddc;
+  font: 700 11px/1.2 var(--display);
+  letter-spacing: .08em;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rpg-wizard-plate--ennemi { right: 10px; border-color: #7a2e1d; }
+.rpg-wizard-plate--joueur { left: 10px; border-color: #d9b45b; }
+.rpg-wizard-plate__pv { font-size: 13px; color: #ffe9a0; }
+.rpg-wizard-plate__sable { font: 600 9px/1.2 var(--mono); color: #c9c2ae; }
+
+/* Créature prête à attaquer : liseré doré. */
+.rpg-card.is-pret {
+  box-shadow: 0 0 0 2px rgba(255, 214, 25, .8), 0 6px 16px rgba(0, 0, 0, .5);
+}
+
+/* ── Les terrains posés : mini-cartes 4:5, engagées = couchées/grisées ── */
+.rpg-terrains {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+}
+
+.rpg-terrains--ennemi { top: 64px; right: 12px; }
+.rpg-terrains--joueur { bottom: 118px; left: 12px; }
+
+.rpg-terrain {
+  width: 54px;
+  aspect-ratio: 4 / 5;
+  padding: 0;
+  border: 2px solid #000;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0c0c0e;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+  cursor: pointer;
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.rpg-terrain img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.rpg-terrain.is-tapped {
+  transform: rotate(14deg) translateY(3px);
+  filter: grayscale(.75) brightness(.65);
+  cursor: default;
+}
+
+.rpg-terrain--joueur:not(.is-tapped):hover { transform: translateY(-4px); }
+
+/* Pastilles de mana sur les plaques de sorcier. */
+.mana {
+  display: inline-block;
+  min-width: 14px;
+  margin-right: 4px;
+  padding: 1px 3px;
+  border-radius: 50%;
+  border: 1px solid #000;
+  font: 800 9px/1.4 var(--mono);
+  text-align: center;
+  font-style: normal;
+}
+
+.mana--braise { background: #a3341f; color: #ffe1d6; }
+.mana--eau { background: #1f4fa3; color: #dcecff; }
+.mana--sable { background: #c9a13b; color: #241a04; }
+
+/* ── Carte à image 4:5 (héros) : l'image est le visage, le texte en ────
+   bandeaux translucides par-dessus. */
+.rpg-card--img { padding: 0; overflow: hidden; }
+
+.rpg-card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rpg-card--img .rpg-card__title,
+.rpg-card--img .rpg-card__type,
+.rpg-card--img .rpg-card__text,
+.rpg-card--img .rpg-card__foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  margin: 0;
+}
+
+.rpg-card--img .rpg-card__title {
+  top: 0;
+  background: linear-gradient(180deg, rgba(14, 10, 4, .9), rgba(14, 10, 4, .45));
+}
+
+.rpg-card--img .rpg-card__type {
+  top: 17px;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  background: rgba(14, 10, 4, .72);
+}
+
+.rpg-card--img .rpg-card__text {
+  bottom: 19px;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  background: rgba(242, 235, 216, .9);
+}
+
+.rpg-card--img .rpg-card__foot {
+  bottom: 0;
+  padding: 2px 4px;
+  background: rgba(14, 10, 4, .82);
+}
+
+/* États de la carte posée. */
+.rpg-card:hover { transform: rotate(0deg) translateY(-6px); }
+
+.rpg-card.is-active {
+  transform: rotate(0deg) translateY(-10px);
+  box-shadow:
+    0 0 0 2px var(--yellow),
+    0 14px 30px rgba(0, 0, 0, .65),
+    0 0 22px rgba(255, 214, 25, .35);
+}
+
+.rpg-card.is-selected {
+  box-shadow:
+    0 0 0 2px #ff6b5e,
+    0 0 18px rgba(255, 107, 94, .5),
+    0 10px 26px rgba(0, 0, 0, .6);
+}
+
+.rpg-card.is-down {
+  filter: grayscale(1) brightness(.6);
+  opacity: .55;
+  transform: rotate(calc(var(--tilt, 0deg) * 3)) translateY(8px);
+  pointer-events: none;
+}
+
+/* Cinématiques de cartes : bond vers la cible, impact, lueur de soin. */
+.rpg-card--equipe.fx-lunge { animation: card-lunge-team .55s ease; }
+.rpg-card--ennemi.fx-lunge { animation: card-lunge-foe .55s ease; }
+
+@keyframes card-lunge-team { 40% { transform: translateY(-52px) rotate(0deg); } }
+@keyframes card-lunge-foe { 40% { transform: translateY(52px) rotate(0deg); } }
+
+.fx-hit { animation: rpg-hit .45s steps(2, start); }
+
+@keyframes rpg-hit {
+  25%, 75% { filter: brightness(2.8) saturate(0); opacity: .35; }
+  50% { opacity: 1; }
+}
+
+.fx-glow { animation: rpg-glow .7s ease; }
+
+@keyframes rpg-glow { 30% { filter: drop-shadow(0 0 16px #ffd619) brightness(1.6); } }
+
+/* Chiffres flottants au-dessus de la carte touchée, cerclés de noir. */
+.rpg-card .rpg-pop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 16%;
+  width: auto;
+  text-align: center;
+  font: 700 24px/1 "Courier New", monospace;
+  color: #fff;
+  text-shadow: 2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000;
+  animation: rpg-popfloat 1s ease forwards;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.rpg-card .rpg-pop--heal { color: #7cfc9a; }
+
+@keyframes rpg-popfloat {
+  from { opacity: 0; translate: 0 -6px; }
+  15% { opacity: 1; }
+  to { opacity: 0; translate: 0 -64px; }
+}
+
+/* ── La main : demi-cartes glissées sous le bord de l'écran, comme tenues ── */
+.rpg-hand-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transform: translateY(47%);
+  transition: transform .25s ease;
+}
+
+.rpg-hand-dock:hover { transform: translateY(14%); }
+
+.rpg-hand {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: nowrap;
+  pointer-events: auto;
+}
+
+.rpg-hand__card {
+  position: relative;
+  width: 128px;
+  aspect-ratio: 4 / 5;
+  flex: none;
+  transition: transform .2s ease, box-shadow .2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 8px;
+  border: 4px solid #a97e2f;
+  background: #0c0c0e;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .5);
+  cursor: pointer;
+  text-align: left;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.rpg-hand__card--elem-eau { border-color: #2e6f9e; }
+.rpg-hand__card--elem-braise { border-color: #a03a2a; }
+.rpg-hand__card--elem-verre { border-color: #3f8fa8; }
+.rpg-hand__card--elem-souffle { border-color: #8b93a1; }
+.rpg-hand__card--elem-encre { border-color: #5a3f8f; }
+
+.rpg-hand__card:hover:not(:disabled) { transform: translateY(-38px); box-shadow: 0 12px 22px rgba(0, 0, 0, .6); z-index: 2; }
+.rpg-hand__card:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+
+.rpg-hand__card--base { border-style: double; }
+.rpg-hand__card.is-avantage { border-color: #ffd619; }
+
+.rpg-hand__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid #14100a;
+  background: linear-gradient(180deg, #f3e6bb, #d9c68c);
+}
+
+.rpg-hand__title strong {
+  font: 700 9px/1.2 Georgia, serif;
+  color: #1c1710;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rpg-hand__cost { font: 700 8px/1 var(--mono); color: #4a3a10; flex: none; }
+
+.rpg-hand__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 6px 0;
+  border-radius: 3px;
+  border: 1px solid #000;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .16), transparent 70%), #191921;
+  font-size: 20px;
+  color: #e8e2d0;
+  text-shadow: 0 0 10px rgba(255, 214, 25, .35);
+}
+
+.rpg-hand__art b {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  font: 800 10px/1 Georgia, serif;
+  color: #f3e6bb;
+}
+
+.rpg-hand__text {
+  flex: 1;
+  padding: 3px 5px;
+  border-radius: 3px;
+  border: 1px solid #9a8f74;
+  background: #efe7d2;
+  font: 500 7.5px/1.35 Georgia, serif;
+  color: #191410;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rpg-hand__text em { color: #7a2e1d; font-style: italic; }
+
+.rpg-hand__rarity {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #17171a;
+  color: #d9c68c;
+  font: 600 7px/1.4 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.rpg-hand--reponse { margin-top: 6px; }
+.rpg-hand__hint { font: 600 10px var(--mono); color: var(--yellow); letter-spacing: .1em; }
+
+/* Cartes du draft, plus grandes : on lit avant de choisir. */
+.rpg-draft { margin: 10px 0 14px; }
+.rpg-draft h3 { font: 700 13px var(--display); color: var(--yellow); letter-spacing: .06em; margin: 0 0 10px; }
+.rpg-draft__row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.rpg-draft__row .rpg-hand__card { width: 176px; }
+.rpg-draft__row .rpg-hand__art { padding: 14px 0; font-size: 30px; }
+.rpg-draft__row .rpg-hand__text { -webkit-line-clamp: 7; font-size: 9px; }
+
+/* ── Carte à image générée 4:5 : l'image EST le visage de la carte, ──────
+   le texte (nom, ⚔/🛡, règle) se pose en bandeaux lisibles par-dessus. */
+.rpg-hand__card--img { padding: 0; overflow: hidden; }
+
+.rpg-hand__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rpg-hand__card--img .rpg-hand__title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  padding: 4px 6px;
+  background: linear-gradient(180deg, rgba(16, 11, 4, .88), rgba(16, 11, 4, .45));
+}
+
+.rpg-hand__card--img .rpg-hand__title strong { color: #ffe9a0; }
+.rpg-hand__card--img .rpg-hand__cost { color: #ffd619; }
+
+.rpg-hand__stats {
+  position: absolute;
+  top: 22px;
+  right: 4px;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid #000;
+  background: rgba(12, 10, 6, .78);
+  font: 800 9px/1.5 Georgia, serif;
+  color: #ffe9a0;
+}
+
+.rpg-hand__card--img .rpg-hand__text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  border-radius: 0;
+  border-top: 1px solid #9a8f74;
+  background: rgba(242, 235, 216, .94);
+  color: #191410;
+  -webkit-line-clamp: 4;
+}
+
+.rpg-hand__card--img .rpg-hand__rarity {
+  position: absolute;
+  top: 22px;
+  left: 4px;
+  z-index: 1;
+}
+.rpg-draft__row .rpg-hand__card:hover { transform: translateY(-10px) scale(1.03); }
+
+@media (max-width: 900px) {
+  .card-row { gap: 8px; }
+  .rpg-card { width: clamp(104px, 20vw, 140px); }
+  .card-row--equipe { bottom: 44%; }
+  .rpg-card__text { font-size: 8px; }
+  .rpg-hand__card { width: 104px; min-height: 120px; }
+}
+
+/* Bannière d'apparition, façon JRPG : « des ennemis apparaissent ! » */
+.rpg-scene__banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 18px;
+  font-family: var(--font-gaming);
+  font-size: 14px;
+  letter-spacing: .12em;
+  color: #fff8ea;
+  background: rgba(10, 10, 22, .82);
+  border: 1px solid var(--yellow);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease;
+  z-index: 3;
+  white-space: nowrap;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rpg-scene__banner.is-on { opacity: 1; }
+
+/* En plein écran, l'apparition se annonce au centre de la scène. */
+.rpg-battle .rpg-scene__banner { top: 30%; }
+
+/* Boîte de message Dragon Quest : fond noir, double liseré, texte tapé. */
+.rpg-scene__msg {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  min-height: 44px;
+  padding: 10px 34px 10px 14px;
+  background: rgba(4, 4, 10, .9);
+  border: 2px solid #e8e2d0;
+  outline: 2px solid #0b0a14;
+  border-radius: 8px;
+  color: #f3ecd9;
+  font-size: 13.5px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.rpg-scene__caret {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  color: var(--yellow);
+  animation: rpg-caret 1s steps(2, start) infinite;
+}
+
+@keyframes rpg-caret { to { visibility: hidden; } }
+
+/* Le combat prend tout l'écran : la scène est le fond, le reste est du HUD. */
+.rpg-battle {
+  position: fixed;
+  inset: 0;
+  z-index: 1500; /* au-dessus de l'en-tête du site (z-index 1000) : le combat prend vraiment tout l'écran */
+  overflow: hidden;
+  background: #07070f;
+}
+
+.rpg-stage { position: absolute; inset: 0; }
+
+/* La section est une colonne : HUD haut / milieu / barre du bas, la scène
+   restant tendue derrière, en absolu. */
+.rpg-battle { display: flex; flex-direction: column; }
+
+/* HUD haut : navigation, ordre des tours, compteurs — translucide sur la scène. */
+.rpg-hud-top {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(4, 4, 10, .88), rgba(4, 4, 10, .4) 78%, transparent);
+}
+
+.rpg-hud-top .rpg-battle__top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 0;
+  border: 0;
+}
+
+.rpg-hud-top .rpg-ring {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+.rpg-hud-top .rpg-ring__title { display: none; }
+.rpg-hud-top .rpg-ring__item { font-size: 11px; }
+
+@media (max-width: 1100px) {
+  .rpg-hud-top .rpg-ring__item > span:last-child { display: none; }
+}
+
+/* Barre du bas, fine et translucide : la table reste plein écran. Le bas est
+   laissé libre pour la main, qui dépasse à moitié du bord de l'écran. */
+.rpg-bottombar {
+  position: relative;
+  z-index: 6;
+  margin-top: auto; /* la scène occupe tout l'espace libre entre les deux */
+  display: grid;
+  gap: 6px;
+  padding: 8px 12px 96px;
+  background: transparent; /* plus de bande noire : tout flotte sur la table */
+}
+
+.rpg-bottombar .rpg-log {
+  max-height: 62px;
+  overflow: hidden;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(6, 6, 14, .5);
+  font-size: 11px;
+}
+
+.rpg-bottombar .rpg-scene__msg { position: static; }
+
+.rpg-bottombar .rpg-actions {
+  margin: 0;
+  min-height: 0;
+  max-height: 34vh;
+  overflow-y: auto;
+}
+
+/* Quand l'Astrolabe sonne, l'arène vire au cuivre chaud. */
+.rpg-battle[data-strike="on"] {
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255, 170, 60, .3), transparent 62%),
+    linear-gradient(180deg, #1a1108, #08060a);
+}
+
+.rpg-battle__top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.rpg-wave { margin: 0; display: grid; gap: 2px; }
+.rpg-wave strong { font-family: var(--font-gaming); font-size: 14px; letter-spacing: .06em; }
+.rpg-wave span { font-size: 12px; color: var(--dim); }
+
+.rpg-clock,
+.rpg-eclat {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 11px/1 var(--display);
+  letter-spacing: .16em;
+  color: var(--muted);
+}
+
+.rpg-clock__dial {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-gaming);
+  font-size: 12px;
+  color: #161005;
+  background: var(--yellow);
+}
+
+.rpg-ground {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 150px;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.rpg-ground span { display: flex; justify-content: space-between; gap: 8px; }
+.rpg-ground strong { color: var(--muted); }
+
+.rpg-eclat__pips,
+.rpg-pa { display: inline-flex; gap: 4px; }
+
+.rpg-eclat__pips span,
+.rpg-pa span,
+.rpg-name-segments span {
+  width: 12px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .14);
+}
+
+.rpg-eclat__pips span.is-on { background: var(--cyan); box-shadow: 0 0 8px rgba(34, 211, 238, .6); }
+.rpg-pa span.is-on { background: var(--yellow); }
+.rpg-name-segments span.is-on { background: var(--violet); }
+
+.rpg-tag {
+  font: 700 10px/1 var(--display);
+  letter-spacing: .1em;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .1);
+  font-style: normal;
+}
+
+.rpg-tag--felure { background: rgba(255, 214, 25, .9); color: #161005; }
+.rpg-tag--clock { background: rgba(248, 113, 113, .9); color: #2a0707; }
+.rpg-tag--consonance { background: rgba(34, 211, 238, .9); color: #04222a; }
+.rpg-tag--contre { background: rgba(168, 85, 247, .9); color: #fff; }
+
+/* Grille : ordre / champ de bataille / journal */
+.rpg-battle__grid {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) 260px;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.rpg-ring {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(6, 6, 14, .55);
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.rpg-ring__title {
+  font: 700 10px/1 var(--display);
+  letter-spacing: .16em;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+
+.rpg-ring__item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); opacity: .8; }
+.rpg-ring__item.is-now { opacity: 1; color: var(--ink); font-weight: 700; }
+.rpg-ring__item.is-foe .rpg-ring__dot { box-shadow: 0 0 0 2px rgba(255, 110, 90, .6); }
+.rpg-ring__item.is-team .rpg-ring__dot { box-shadow: 0 0 0 2px rgba(34, 211, 238, .55); }
+
+.rpg-ring__dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 30%;
+  background: #0b0b16;
+}
+
+.rpg-field__hint { margin: 0 0 12px; font-size: 13px; color: var(--dim); }
+
+/* L'intention annoncée : c'est ce que le joueur lit avant de choisir */
+.rpg-intent {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 214, 25, .08);
+  border: 1px dashed rgba(255, 214, 25, .4);
+}
+
+.rpg-intent__icon { font-size: 16px; }
+.rpg-intent__body { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.rpg-intent__body strong { font-size: 12px; }
+.rpg-intent__body small { font-size: 10px; color: var(--muted); }
+
+.rpg-intent__pick {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--dim);
+  border-radius: 7px;
+  padding: 4px 7px;
+  font: 600 10px var(--display);
+  cursor: pointer;
+}
+
+.rpg-intent__pick:hover { color: var(--ink); border-color: var(--cyan); }
+
+/* Barres */
+.rpg-bar { display: block; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.rpg-bar__fill { display: block; height: 100%; border-radius: 4px; transition: width .28s ease; }
+.rpg-bar--hp .rpg-bar__fill { background: linear-gradient(90deg, #34d399, #22d3ee); }
+.rpg-bar--low .rpg-bar__fill { background: linear-gradient(90deg, #f87171, #fbbf24); }
+.rpg-bar--felure { height: 4px; }
+.rpg-bar--felure .rpg-bar__fill { background: linear-gradient(90deg, #a855f7, #ffd619); }
+.rpg-bar--sable { height: 4px; }
+.rpg-bar--sable .rpg-bar__fill { background: linear-gradient(90deg, #d6a05a, #f0d3a1); }
+
+/* Étages */
+.rpg-tier { display: inline-flex; gap: 2px; align-items: flex-end; }
+.rpg-tier span { width: 5px; background: rgba(255, 255, 255, .16); border-radius: 1px; }
+.rpg-tier span:nth-child(1) { height: 6px; }
+.rpg-tier span:nth-child(2) { height: 10px; }
+.rpg-tier span:nth-child(3) { height: 14px; }
+.rpg-tier span.is-on { background: var(--yellow); }
+
+/* Segments de Nom, imprimés sur les cartes de l'équipe. */
+.rpg-name-segments { display: inline-flex; gap: 3px; }
+.rpg-name-segments span { width: 9px; }
+
+/* Journal */
+.rpg-log {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(6, 6, 14, .55);
+  max-height: 360px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  font-size: 12px;
+}
+
+.rpg-log__line { color: var(--muted); line-height: 1.45; }
+.rpg-log--systeme { color: var(--dim); font-style: italic; }
+.rpg-log--critique { color: var(--yellow); font-weight: 700; }
+.rpg-log--felure { color: #fca5a5; font-weight: 700; }
+.rpg-log--consonance { color: var(--cyan); font-weight: 700; }
+.rpg-log--contre { color: #d8b4fe; font-weight: 700; }
+.rpg-log--interruption { color: var(--cyan); }
+.rpg-log--barrage { color: #a5f3fc; }
+.rpg-log--sable { color: #f0d3a1; }
+.rpg-log--horloge { color: #f87171; font-weight: 700; }
+.rpg-log--soin { color: #6ee7b7; }
+.rpg-log--perte { color: #f87171; font-weight: 700; }
+.rpg-log--victoire { color: var(--yellow); font-weight: 700; }
+.rpg-log--phase { color: #fff; font-weight: 700; }
+
+/* ── Barre d'actions ─────────────────────────────────────────────────────── */
+/* Fenêtre de commandes façon Dragon Quest : double liseré, curseur ▶. */
+.rpg-actions {
+  /* Fenêtre de commandes flottante, posée sur la table — plus de bloc noir. */
+  justify-self: end;
+  margin: 0 4px 6px;
+  background: transparent;
+  border: none;
+  outline: none;
+  border-radius: 8px;
+  padding: 0;
+  min-height: 120px;
+}
+
+.rpg-actions .rpg-btn::before {
+  content: '▶';
+  color: var(--yellow);
+  opacity: 0;
+  margin-right: 6px;
+  transition: opacity .12s ease;
+}
+
+.rpg-actions .rpg-btn:hover:not(:disabled)::before,
+.rpg-actions .rpg-btn:focus-visible::before { opacity: 1; }
+
+.rpg-actions__who {
+  margin: 0 0 10px;
+  font: 700 11px/1 var(--display);
+  letter-spacing: .14em;
+  color: var(--dim);
+}
+
+.rpg-actions__who strong { color: var(--cyan); }
+.rpg-actions__wait {
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(6, 6, 14, .7);
+  color: #f2eddc;
+  font-size: 13px;
+}
+
+.rpg-skills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.rpg-skill {
+  text-align: left;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px 11px;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  gap: 3px;
+  transition: border-color .12s ease, transform .12s ease;
+}
+
+.rpg-skill:hover:not(:disabled) { border-color: var(--cyan); transform: translateY(-1px); }
+.rpg-skill:disabled { opacity: .35; cursor: not-allowed; }
+
+.rpg-skill__cost { font: 700 10px/1 var(--display); letter-spacing: .1em; color: var(--yellow); }
+.rpg-skill__name { font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.rpg-skill__adv {
+  font: 700 9px/1 var(--display);
+  letter-spacing: .1em;
+  background: rgba(34, 211, 238, .22);
+  color: var(--cyan);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-style: normal;
+}
+
+.rpg-skill__adv--contre { background: rgba(168, 85, 247, .28); color: #d8b4fe; }
+.rpg-skill small { font-size: 11px; color: var(--dim); line-height: 1.4; }
+
+.rpg-actions__row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.rpg-crystallize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.rpg-crystallize.is-on { color: var(--cyan); border-color: var(--cyan); }
+.rpg-crystallize.is-off { opacity: .45; cursor: not-allowed; }
+
+/* ── Retours et overlays ─────────────────────────────────────────────────── */
+.rpg-flash {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: rgba(5, 5, 12, .9);
+  border: 1px solid var(--line-strong);
+  font-family: var(--font-gaming);
+  font-size: 13px;
+  letter-spacing: .04em;
+  text-align: center;
+  pointer-events: none;
+  max-width: 90%;
+}
+
+.rpg-flash--soin { border-color: #6ee7b7; color: #a7f3d0; }
+.rpg-flash--refus { border-color: #f87171; color: #fecaca; }
+
+.rpg-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px;
+  background: rgba(4, 4, 10, .86);
+  backdrop-filter: blur(2px);
+}
+
+.rpg-overlay h2 { font-family: var(--font-gaming); margin: 0; font-size: 22px; color: var(--yellow); }
+.rpg-overlay p { margin: 0; max-width: 56ch; color: var(--muted); }
+.rpg-overlay--loss h2 { color: #fca5a5; }
+
+/* ── Bilan et suite ──────────────────────────────────────────────────────── */
+.rpg-outro,
+.rpg-docs {
+  margin-top: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px 22px;
+  background: rgba(11, 13, 30, .7);
+}
+
+.rpg-outro h2,
+.rpg-docs h2 {
+  font-family: var(--font-gaming);
+  font-size: 15px;
+  letter-spacing: .1em;
+  margin: 0 0 10px;
+  color: var(--cyan);
+}
+
+.rpg-outro p,
+.rpg-docs li { color: var(--muted); font-size: 14px; }
+.rpg-outro__actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.rpg-docs ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.rpg-docs strong { color: var(--ink); }
+
+/* ── Écrans étroits ──────────────────────────────────────────────────────── */
+@media (max-width: 980px) {
+  .rpg-intro { grid-template-columns: 1fr; }
+  .rpg-battle__grid { grid-template-columns: 1fr; }
+  .rpg-ring { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; align-items: center; }
+  .rpg-ring__title { display: none; }
+  .rpg-log { max-height: 180px; order: 3; }
+  .rpg-ally { grid-template-columns: 36px minmax(0, 1fr); }
+  .rpg-ally__bars { grid-column: 1 / -1; }
+  .rpg-foe { width: 100%; }
+}

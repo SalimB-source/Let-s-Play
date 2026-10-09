@@ -4797,3 +4797,124 @@ page (menu → briefing → départ → bouton tactile → replay) et deux cours
 complètes du vrai moteur avec rendu GPU factice, tirs tactiles puis touche Z.
 Aucun dégât ni trafic n’est désactivé. Pour varier la simulation :
 `CITY_RUSH_MISSION_SEED=42 node scripts/city-rush-mission-run-check.mjs`.
+
+## Le Sablier de Bab El : prototype de RPG tour par tour
+
+Troisième jeu de la page (`/jeu/sablier-de-bab-el`) : un **prototype de combat
+tour par tour** dans la lignée de *Final Fantasy* et *Dragon Quest* — et
+volontairement **sans** le système réactif de *Clair Obscur*. Ce n'est pas
+encore un RPG : c'est le morceau qui décide si le RPG existera — **un combat
+complet, jouable**, avec tout le système dedans.
+
+Le dossier de conception vit dans **`docs/rpg/`** : les trois propositions
+d'univers et la décision (`01-concepts.md`), l'histoire de Bab El
+(`02-histoire.md`), le système de combat chiffre par chiffre
+(`03-combat.md`), la progression et la direction artistique
+(`04-progression-da.md`), la route de production (`05-production.md`).
+
+### Le concept en une ligne
+
+Bab El est une ville de neuf étages bâtie autour d'un portail fermé, au-dessus
+d'un désert qui monte. Une horloge céleste — l'**Astrolabe** — égrène les
+cycles ; à chaque cycle, l'étage le plus bas est repris par le sable avec ceux
+qui y vivent. L'étage 1 est déjà perdu, on en est au 4, et la **Chambre des
+Heures** publie la Liste de ceux qui sont « prioritaires ».
+
+### Le combat, en quatre idées
+
+- **Tout est annoncé.** Chaque ennemi montre son prochain coup un round à
+  l'avance, avec sa famille : ⬇ lourd, ⬒ zone, ⧗ incantation, ⛃ sablier,
+  ⚑ soutien. Aucune attaque ne surprend — la tension vient de ce qu'on sait.
+- **Quatre réponses, zéro réflexe** : Garde (−60 %, +1 Verre si l'on était la
+  cible annoncée), Barrage de verre (absorbe avant les PV), **Contre-élément**
+  (frapper l'attaquant avec l'élément qui bat le sien : son coup −50 % et +15
+  Fêlure), Reposition (monter d'un étage).
+- **Le sable est une deuxième barre de vie.** La moitié des PV perdus tombe au
+  sol, du côté de la victime : on le récolte pour se soigner, on souffle celui
+  de l'ennemi pour l'empêcher de se réparer, et les sorts les plus lourds en
+  consomment.
+- **Les étages fondent.** Frapper de haut fait +15 % par étage, être en haut
+  protège, tout le monde descend d'un étage chaque round, et une chute du 3ᵉ au
+  1ᵉ frappe ×1,4. Au-dessus de tout, l'**Astrolabe** sonne tous les 5 rounds
+  (4 sur les boss) : +20 % d'Attaque ennemie et tout le monde descend encore.
+
+S'y ajoutent la **Fêlure** (à 100, l'ennemi n'agit pas, subit ×2 et le premier
+coup qui le touche est gratuit), la **Consonance** (trois éléments dans un
+round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
+
+### Où vit le code
+
+- `src/games/rpgCombat.js` — le moteur : règles pures, sans rendu ni DOM.
+  Intentions, PA, Verre, sable au sol, étages, Fêlure, Consonance, Astrolabe,
+  phases de boss. L'aléa est injectable (`rpgRng`), donc un combat se rejoue à
+  l'identique.
+- `src/games/rpgContent.js` — le seul fichier qui connaît l'univers : les 5
+  compagnons et leurs 19 compétences, les 4 ennemis et leurs 16 actions, les
+  trois vagues, et les deux paliers à explorer entre elles. Changer de concept
+  n'exige qu'un autre fichier comme celui-ci.
+- `src/games/rpgExplore.js` — l'exploration d'un palier : trois heures à
+  dépenser en actions (soins, sable, buffs, choix moraux), versées au combat
+  suivant. Même contrat : décider, jamais réagir.
+- `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
+  Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
+  jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
+- `src/games/rpgCards.js` — le concept cartes : anatomie façon Magic (bannière
+  de titre avec coût en pastilles, ligne de type, encadré de règle beige,
+  badge doré de PV, raretés), le catalogue des pouvoirs **collectionnables**,
+  les cartes de base (une seule attaque par personnage au départ), l'action
+  gratuite « Sonder le sol » et le **draft** d'après vague (trois cartes, une
+  choisie). Le sable est le mana.
+- `src/games/CardTable.jsx` — la table de jeu en bois, 100 % DOM (donc visible
+  partout, sans WebGL) : chaque acteur est sa carte, l'adversaire en haut,
+  l'équipe en bas, légèrement de travers comme posées à la main ; l'intention
+  ennemie est la carte annoncée face visible. Mise en scène : carte qui bondit
+  vers sa cible, clignement blanc à l'impact, chiffres flottants, carte
+  détruite grisée sur la table, boîte de message à texte tapé lettre à lettre,
+  bannière « des ennemis apparaissent ! ». La main se tient en éventail dans
+  la barre du bas ; les éphémères répondent pendant le tour ennemi.
+- `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
+  jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
+  souffle de sable. La partie pure est testée ; le lecteur s'éveille au
+  premier geste joueur, bouton 🔊/🔇 mémorisé.
+- `src/games/rpg-battle.css` — la palette laiton / indigo / ocre du concept,
+  sur les variables de couleur du site (donc compatible thème clair).
+- `public/sablier-de-bab-el-thumb.svg` — vignette vectorielle (une démo
+  technique n'a pas encore de key art).
+- `src/pages/Games.jsx`, `src/main.jsx` — la carte de la vitrine (badge
+  `PROTOTYPE`) et la route `/jeu/sablier-de-bab-el`.
+
+### Vérifications
+
+```bash
+npm run check:rpg      # règles du moteur + simulation des trois vagues
+npm run check:rpg-ui   # la vraie page montée dans jsdom
+```
+
+`check:rpg` fait deux choses. Les **51 tests** de `tests/rpg-combat.test.js`
+vérifient chaque règle du dossier : table des éléments et axe Encre ↔ Verre,
+formule de dégâts et multiplicateur d'étage, intention annoncée et ses cinq
+familles, garde, barrage, contre-élément, interruption, retard d'un round,
+sable (chute au sol, récolte, souffle, sorts à coût de sable), Fêlure,
+Consonance, Cristallisation, Astrolabe, phases de boss, réserve, récompenses,
+difficultés. Les **13 tests** de `tests/rpg-explore.test.js` couvrent
+l'exploration d'un palier : heures dépensées, actions uniques, soins, sable de
+poche, choix moraux et versement des buffs au combat suivant. Puis
+`scripts/rpg-battle-smoke.mjs` contrôle la cohérence du contenu (éléments,
+familles d'intention, et surtout : **chaque incantation ennemie doit pouvoir
+être interrompue par l'équipe**) et **joue vraiment les trois vagues** avec un
+pilote automatique qui emploie les six réponses, jusqu'à la victoire,
+Astrolabe et phase 2 du boss compris.
+
+C'est cette simulation qui a fait corriger le prototype : elle a montré que la
+Chaudière du boss s'annonçait interruptible à l'Eau alors qu'aucune compétence
+d'Eau n'interrompait, que le boss mourait avant que l'horloge ait le temps de
+sonner, et qu'un sort de « retard » ne retardait rien du tout.
+
+`check:rpg-ui` construit la page avec Vite puis la monte dans jsdom : les trois
+difficultés, l'ouverture du combat (étages, segments de Nom, sable au sol,
+Astrolabe, ordre des tours), l'intention affichée sur chaque ennemi,
+**l'absence vérifiée de toute option de parade ou d'esquive**, un coup joué et
+tracé au journal, les cinq réponses proposées, la première vague gagnée en
+jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
+réserve.
+

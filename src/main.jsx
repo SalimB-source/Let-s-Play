@@ -92,6 +92,8 @@ const MessagesPage = lazy(() => import('./messages/MessagesPage'));
 const CommunityPage = lazy(() => import('./community/CommunityPage'));
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 const ViceCityRushPage = lazy(() => import('./games/ViceCityRushPage'));
+// Prototype de RPG tour par tour « Le Sablier de Bab El » (dossier : docs/rpg/).
+const RpgDuelPage = lazy(() => import('./games/RpgDuelPage'));
 
 /** Écran d'attente d'une page à la demande — mêmes marges que les replis des jeux. */
 function RouteLoading({ label = 'Chargement…' }) {
@@ -214,6 +216,7 @@ function App() {
             <Route path="/jeux" element={<Games />} />
             <Route path="/jeu/mirage-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Mirage Rush…" />}><MirageRushPage /></Suspense>} />
             <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Vice City Rush…" />}><ViceCityRushPage /></Suspense>} />
+            <Route path="/jeu/sablier-de-bab-el" element={<Suspense fallback={<RouteLoading label="Chargement du duel…" />}><RpgDuelPage /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />
