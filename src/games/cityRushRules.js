@@ -4522,8 +4522,22 @@ export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 1.9; // s : délai entre deux rafa
 // ligne de tir) : elle relance son choix de voie tout de suite, au lieu de
 // terminer son délai de décision et de tirer dans la voie qu'il vient de
 // quitter. C'est ce qui empêche un joueur de se mettre hors de portée en
-// balayant les six voies toutes les demi-secondes.
+// balayant les six voies toutes les demi-secondes. Ce réflexe n'agit
+// toutefois **qu'une fois le délai de réaction latérale écoulé** (voir
+// `CITY_RUSH_POLICE_LANE_REACTION_DELAY`) : il raccourcit le minuteur de
+// décision, il ne supprime pas le temps que la berline met à comprendre
+// l'écart.
 export const CITY_RUSH_POLICE_PURSUIT_REFLEX = 0.12; // s : temps de réaction après un écart de la cible
+// Délai de réaction **latérale** de l'escouade. Quand le pilote change de
+// voie, la berline garde une seconde entière l'image de la voie qu'elle
+// surveillait : elle continue tout droit, sans se décaler, avant de corriger
+// sa trajectoire. C'est la fenêtre du pilote — le coup de volant qui surprend
+// la poursuite, casse la mire déjà fermée et laisse passer devant une berline
+// qui barrait la route. Le gel ne se prolonge pas : un pilote qui balaie les
+// voies en continu ne gagne qu'une seconde de répit avant que la berline ne
+// voie sa vraie voie (le minuteur n'est pas relancé par un nouvel écart), ce
+// qui garde la contre-mesure du balayage permanent.
+export const CITY_RUSH_POLICE_LANE_REACTION_DELAY = 1; // s : une berline suit l'écart de voie avec une seconde de retard
 // La mitrailleuse est fixée sur l'axe de la voie : la berline garde son viseur
 // sur une cible **immobile dans la voie** pendant un temps d'alignement avant
 // d'ouvrir le feu. Un pilote qui change de voie, ou qui se décale latéralement
@@ -4886,6 +4900,64 @@ export function isCityRushPoliceLaneJammed({
     if (!Number.isFinite(gap) || gap < -3 || gap > range) return false;
     return Math.max(0, Number(vehicle.speed) || 0) < slowThreshold;
   });
+}
+
+// ── La berline suit l'écart de voie avec une seconde de retard ──────────────
+// Une berline ne lit pas la trajectoire de sa cible dans l'instant : quand
+// celle-ci change de voie, elle garde pendant
+// `CITY_RUSH_POLICE_LANE_REACTION_DELAY` la voie qu'elle surveillait
+// (`watchedLane`, la voie de la cible à l'image précédente), et c'est cette
+// voie — `huntingLane` — que son choix de trajectoire continue de viser. Le
+// pilote a donc une seconde pour la surprendre : couper une berline qui lui
+// barrait la route, sortir de l'axe d'une mire déjà fermée, ou se rabattre
+// devant elle. Le minuteur n'est **pas** relancé par un nouvel écart : le
+// retard est borné à une seconde, pour qu'un pilote qui balaie les voies en
+// continu ne gèle pas la poursuite indéfiniment — à l'échéance, la berline
+// voit la vraie voie de sa cible et corrige sa trajectoire.
+// `frozen` dit si la berline chasse encore la voie périmée : le monde s'en
+// sert pour retenir le réflexe de poursuite (`CITY_RUSH_POLICE_PURSUIT_REFLEX`)
+// tant que le délai n'est pas écoulé.
+export function cityRushPoliceLaneReaction({
+  watchedLane = null,
+  leaderLane = null,
+  reactionLeft = 0,
+  reactionLane = null,
+  dt = 0,
+  delay = CITY_RUSH_POLICE_LANE_REACTION_DELAY,
+  laneCount = CITY_RUSH_LANE_X.length,
+} = {}) {
+  const safeDelay = Math.max(0, Number(delay) || 0);
+  const nextLeft = Math.max(0, (Number(reactionLeft) || 0) - Math.max(0, Number(dt) || 0));
+  const leader = Number(leaderLane);
+  if (!Number.isFinite(leader)) {
+    return { reactionLeft: nextLeft, reactionLane: null, huntingLane: null, frozen: nextLeft > 0 };
+  }
+  const safeLeader = clampCityRushLane(leader, laneCount);
+  // Aucun délai configuré : la berline suit l'écart sur-le-champ.
+  if (safeDelay <= 0) {
+    return { reactionLeft: 0, reactionLane: safeLeader, huntingLane: safeLeader, frozen: false };
+  }
+  const watched = Number(watchedLane);
+  const laneChanged = Number.isFinite(watched) && watched !== leader;
+  // Écart de la cible : elle chasse la voie qu'elle surveillait. Un écart qui
+  // tombe pendant un délai déjà ouvert met cette voie à jour (la dernière que
+  // la cible occupait) sans relancer le minuteur.
+  if (laneChanged) {
+    const stale = clampCityRushLane(watched, laneCount);
+    return {
+      reactionLeft: nextLeft > 0 ? nextLeft : safeDelay,
+      reactionLane: stale,
+      huntingLane: stale,
+      frozen: true,
+    };
+  }
+  const stored = Number(reactionLane);
+  if (nextLeft > 0 && Number.isFinite(stored)) {
+    const stale = clampCityRushLane(stored, laneCount);
+    return { reactionLeft: nextLeft, reactionLane: stale, huntingLane: stale, frozen: true };
+  }
+  // Délai écoulé, ou cible restée dans sa voie : la berline voit la vraie voie.
+  return { reactionLeft: 0, reactionLane: safeLeader, huntingLane: safeLeader, frozen: false };
 }
 
 // Choix de voie de l'escouade : même prudence que les rivaux devant le trafic

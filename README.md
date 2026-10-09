@@ -1182,6 +1182,27 @@ et le dernier tour durait 21 s.
   `applyTrafficImpact`). Le changement de voie est calculé à la position de la
   berline, pas à celle du joueur.
 
+  **Elle suit l'écart de voie avec une seconde de retard.** Quand sa cible
+  change de voie, la berline garde **une seconde**
+  (`CITY_RUSH_POLICE_LANE_REACTION_DELAY`, `cityRushPoliceLaneReaction`) la
+  voie qu'elle surveillait : son choix de trajectoire continue de viser cette
+  voie-là (`targetLane`, `interceptLane`, `fireLane`), elle roule droit et ne se
+  décale pas. C'est la fenêtre du pilote — le coup de volant qui surprend la
+  poursuite, casse une mire déjà fermée et laisse passer devant une berline qui
+  barrait la route. Le minuteur n'est **pas** relancé par un nouvel écart : le
+  retard est borné à une seconde, pour qu'un balayage continu des voies ne gèle
+  pas la chasse (à l'échéance, la berline voit la vraie voie). Le réflexe de
+  poursuite (`CITY_RUSH_POLICE_PURSUIT_REFLEX`), lui, ne joue qu'**après** ce
+  délai : il raccourcit le minuteur de décision, il ne supprime pas le temps de
+  réaction. Deux motifs gardent leur verrouillage immédiat, parce qu'ils ne
+  relèvent pas du choix de voie : la charge de face des SUV à cinq étoiles
+  (`cityRushSuvChargeLocked`) et le demi-tour d'une patrouille du contresens
+  après un choc frontal. `npm run check:city-rush-police-reaction` mesure le
+  délai sur de vraies courses : le pilote change de voie, et aucune berline qui
+  tenait sa voie ne se rabat avant la fin de la seconde (médiane relevée sur les
+  cinq villes : ~1,1 s, délai + minuteur de décision), tandis que la poursuite
+  reprend bien sa voie ensuite.
+
   **Ce sont les rafales qui vident la coque du joueur.** La mitrailleuse d'une
   berline part **tout droit dans sa voie** : la berline doit donc se placer
   derrière le pilote, dans sa voie, pour ouvrir le feu. Une seule unité prend

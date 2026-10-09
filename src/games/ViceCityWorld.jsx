@@ -140,6 +140,7 @@ import {
   CITY_RUSH_POLICE_FIRE_LINE_RANGE,
   CITY_RUSH_POLICE_HUNT_TYPES,
   CITY_RUSH_POLICE_INTERCEPT_RANGE,
+  CITY_RUSH_POLICE_LANE_REACTION_DELAY,
   CITY_RUSH_POLICE_LEAD,
   CITY_RUSH_POLICE_LEAD_SLACK,
   CITY_RUSH_POLICE_LOOKAHEAD,
@@ -196,6 +197,7 @@ import {
   cityRushPoliceAimReady,
   cityRushWatchHelicopterPose,
   cityRushPoliceBlocksLeader,
+  cityRushPoliceLaneReaction,
   cityRushPoliceContact,
   cityRushPoliceDamage,
   cityRushSideBumpChoice,
@@ -2477,6 +2479,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       baseSpeed: paced(CITY_RUSH_POLICE_BASE_SPEED * (index % CITY_RUSH_POLICE_COUNT === 0 ? 1 : 0.97)),
       phase: index * 1.7,
       changeIn: 0.25 + index * 0.4,
+      // Réaction latérale : la voie surveillée et le minuteur du délai d'une
+      // seconde avant de suivre un écart de voie de la cible.
+      watchedLane: undefined,
+      actedOnLane: undefined,
+      laneReactionLeft: 0,
+      laneReactionLane: null,
       slowLeft: 0,
       blueShotSlowLeft: 0,
       trafficImpactLeft: 0,
@@ -4530,6 +4538,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.blockArmed = true;
       police.collisionCooldownLeft = 0;
       police.changeIn = 0.25 + police.index * 0.4;
+      police.watchedLane = undefined;
+      police.actedOnLane = undefined;
+      police.laneReactionLeft = 0;
+      police.laneReactionLane = null;
       police.lastPassGap = undefined;
       police.lane = policeLanes[police.index % policeLanes.length];
       police.currentX = laneX(police.lane);
@@ -6168,6 +6180,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.damageSmokeTimer = 0;
     animatePoliceDamageFire(police.mesh, 0, clockTime);
     police.changeIn = 0.3 + police.index * 0.35;
+    // Une berline qui entre en piste découvre sa cible : aucun écart en cours.
+    police.watchedLane = undefined;
+    police.actedOnLane = undefined;
+    police.laneReactionLeft = 0;
+    police.laneReactionLane = null;
     police.mode = 'hunt';
     police.blockLeft = 0;
     police.blockArmed = true;
@@ -6382,6 +6399,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       baseSpeed: paced(CITY_RUSH_POLICE_RALLY_BASE_SPEED * randomRange(0.95, 1.05)),
       phase: vehicle.phase,
       changeIn: 0.12,
+      watchedLane: undefined,
+      actedOnLane: undefined,
+      laneReactionLeft: 0,
+      laneReactionLane: null,
       slowLeft: 0,
       blueShotSlowLeft: 0,
       trafficImpactLeft: 0,
@@ -7633,22 +7654,46 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // ouvrir le feu droit devant son capot (la rafale part toujours vers
       // l'avant). C'est la contrepartie du barrage, réservée à l'arrière.
       const isFireLiner = !police.rallied && fireLiners.get(leader.id)?.police === police;
+      // Réaction latérale : quand sa cible change de voie, la berline garde
+      // `CITY_RUSH_POLICE_LANE_REACTION_DELAY` la voie qu'elle surveillait et
+      // continue tout droit, au lieu de se décaler aussitôt. C'est la fenêtre
+      // du pilote — surprendre l'escouade d'un coup de volant, casser une mire
+      // déjà fermée, ou passer devant la berline qui lui barrait la route. Le
+      // retard est borné : un nouvel écart ne relance pas le minuteur, sinon un
+      // balayage continu des voies gèlerait la poursuite.
+      const laneReaction = cityRushPoliceLaneReaction({
+        watchedLane: police.watchedLane,
+        leaderLane: leader.lane,
+        reactionLeft: police.laneReactionLeft,
+        reactionLane: police.laneReactionLane,
+        dt,
+        laneCount,
+      });
+      police.laneReactionLeft = laneReaction.reactionLeft;
+      police.laneReactionLane = laneReaction.reactionLane;
+      police.watchedLane = leader.lane;
+      // La voie que la berline chasse à cette image : la vraie voie de sa
+      // cible, ou — pendant son délai de réaction — celle qu'elle surveillait.
+      const huntedLane = laneReaction.huntingLane === null ? leader.lane : laneReaction.huntingLane;
       // Le pilote vient de se décaler sous le nez d'une berline élue (barrage
-      // ou ligne de tir) : elle relance son choix de voie tout de suite, au
-      // lieu de finir son délai et de tirer dans la voie qu'il vient de
-      // quitter. Sans ce réflexe, un joueur qui balayait les voies à
-      // 0,4 s d'intervalle restait intouchable.
-      if (police.watchedLane !== undefined && police.watchedLane !== leader.lane
-        && (isInterceptor || isFireLiner)) {
+      // ou ligne de tir) : une fois son délai de réaction écoulé, elle relance
+      // son choix de voie tout de suite, au lieu de finir son délai et de tirer
+      // dans la voie qu'il vient de quitter. Sans ce réflexe, un joueur qui
+      // balayait les voies à 0,4 s d'intervalle restait intouchable — mais il
+      // ne joue qu'après la seconde de réaction latérale, pas pendant.
+      if (!laneReaction.frozen && police.actedOnLane !== undefined
+        && police.actedOnLane !== huntedLane && (isInterceptor || isFireLiner)) {
         police.changeIn = Math.min(police.changeIn, CITY_RUSH_POLICE_PURSUIT_REFLEX);
       }
-      police.watchedLane = leader.lane;
 
       // Sonnée ou fraîchement percutée, la berline garde son choix de voie :
       // le minuteur attend la fin de la toupie ou du répit après le choc.
       let policeAirborne = Boolean(police.jumpState?.active);
       if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0 && !policeAirborne) police.changeIn -= dt;
       if (police.stunLeft <= 0 && police.collisionCooldownLeft <= 0 && !policeAirborne && police.changeIn <= 0) {
+        // La voie visée par cette décision : c'est elle que le réflexe de
+        // poursuite comparera à la suivante, pour savoir si la cible a bougé.
+        police.actedOnLane = huntedLane;
         // Un barrage ne change pas de voie : c'est ce qui le rend lisible.
         if (!barring) {
           const availableLanes = [police.lane];
@@ -7664,17 +7709,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             pickups: visiblePickups(police.inventory, police.health, police.maxHealth, { player: false }),
             traffic: [...traffic, ...oncomingForLanes],
             racers: raceCars,
-            targetLane: leader.lane,
+            // La voie de la cible **telle que la berline la voit** : pendant son
+            // délai de réaction, c'est encore la voie qu'elle surveillait.
+            targetLane: huntedLane,
             homeLane: police.homeLane,
             // La berline désignée se rabat dans la voie du leader : c'est là
-            // qu'elle peut lui couper la route.
-            interceptLane: isInterceptor ? leader.lane : null,
+            // qu'elle peut lui couper la route — une seconde après son écart.
+            interceptLane: isInterceptor ? huntedLane : null,
             interceptGap: gap,
             // Élue pour la ligne de tir : elle seule vise la voie de son client
             // pour ouvrir le feu droit devant son capot (la rafale part toujours
             // vers l'avant). C'est la contrepartie du barrage, réservée à
             // l'arrière.
-            fireLane: isFireLiner ? leader.lane : null,
+            fireLane: isFireLiner ? huntedLane : null,
             fireGap: gap,
             // Engluée derrière une voiture solide : elle s'extrait de la voie
             // avant de penser aux bonus, sinon elle ne verrait jamais le
