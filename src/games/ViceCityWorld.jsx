@@ -35,9 +35,8 @@ import {
   cityRushCoursePace,
   cityRushCornerPace,
   cityRushAiCornerPace,
-  CITY_RUSH_CORNER_PACE_YAW_SWEEP,
-  CITY_RUSH_CORNER_PACE_YAW_TIGHT,
   nordschleifeReadout,
+  tougeDriftAmount,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP,
@@ -1903,19 +1902,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // pilote, lui, paie la courbe plein pot. Ailleurs, aucun écart.
   const aiCornerPaceAt = (trackDistance) => cityRushAiCornerPace(city, trackDistance, trackProfile, cornerPaceAt(trackDistance));
   // ── Dérapage contrôlé du tōgé ────────────────────────────────────────────
-  // Dans les épingles du Mont Haruna, tout ce qui roule vite prend un angle
-  // de dérive. L'amplitude suit le cap local de la route — la même échelle
-  // que le freinage de virage, du cœur de virage au plancher des épingles —
-  // et la vitesse : à l'arrêt, plus rien ne glisse. Le signe du cap donne le
-  // sens de la dérive, donc le contre-braquage. Ailleurs : jamais de dérive.
+  // Le dérapage n'est permis que dans les longs virages serrés de la descente
+  // (les secteurs marqués `drift` du parcours, voir `tougeDriftAmount`) :
+  // c'est là que le pilote et les rivaux prennent un angle de caisse, avec la
+  // fumée de gomme. Ailleurs — les épingles et les enfilades comprises —
+  // aucune dérive, même à pleine vitesse. L'amplitude suit la vitesse : à
+  // l'arrêt, plus rien ne glisse. Le signe vient du secteur : il donne le sens
+  // du virage, donc le contre-braquage.
   const tougeDrift = Boolean(theme.touge);
   const driftFor = (trackDistance, speed, topSpeed) => {
     if (!tougeDrift || speed < paced(7)) return 0;
-    const localYaw = trackYaw(trackDistance);
-    const intensity = clamp((Math.abs(localYaw) - CITY_RUSH_CORNER_PACE_YAW_SWEEP) / (CITY_RUSH_CORNER_PACE_YAW_TIGHT - CITY_RUSH_CORNER_PACE_YAW_SWEEP), 0, 1);
-    if (intensity <= 0) return 0;
-    const amount = intensity * clamp(speed / Math.max(1, topSpeed * 0.55), 0, 1);
-    return amount < 0.05 ? 0 : Math.sign(localYaw) * amount;
+    const loopProgress = (((trackDistance % CITY_RUSH_LAP_LENGTH) + CITY_RUSH_LAP_LENGTH) % CITY_RUSH_LAP_LENGTH) / CITY_RUSH_LAP_LENGTH;
+    const zone = tougeDriftAmount(loopProgress, cityRoute);
+    if (!zone) return 0;
+    const amount = Math.abs(zone) * clamp(speed / Math.max(1, topSpeed * 0.55), 0, 1);
+    return amount < 0.05 ? 0 : Math.sign(zone) * amount;
   };
 
   const scene = new THREE.Scene();
@@ -9448,7 +9449,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // 40 m en avance pour que le freinage ait déjà commencé à l'entrée. Le
       // freinage habituel (`approachCityRushSpeed`) accompagne ensuite la sortie.
       // Sur le tōgé du Mont Haruna, le pilote ne ralentit plus dans les virages :
-      // la vitesse est maintenue et c'est le dérapage (drift) qui gère les courbes.
+      // la vitesse est maintenue et c'est le dérapage (drift) qui gère les longs
+      // virages serrés.
       const cornerScale = touge ? 1 : cornerPaceAt(distance);
       const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la

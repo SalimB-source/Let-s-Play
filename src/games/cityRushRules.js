@@ -2299,7 +2299,7 @@ export const CITY_RUSH_NORDSCHLEIFE_COURSE = Object.freeze({
 // La descente du tōgé : une route de montagne japonaise à deux voies, de nuit,
 // enchaînant les épingles du sommet (1,081 m) au lac en contrebas (345 m).
 // Comme le Ring, le tour du jeu est une boucle de 1 200 m qui rejoue la
-// descente réelle à l'échelle : huit épingles, deux enfilades serrées, un
+// descente réelle à l'échelle : huit épingles, deux longs virages serrés, un
 // tunnel, un pont sur le ravin et une aire de belvédère.
 export const TOUGE_LENGTH_KM = 13.8;
 export const TOUGE_HAIRPINS = 8; // épingles du tour (5 en enfilade d'ouverture, 3 au ravin)
@@ -2373,6 +2373,29 @@ export function tougeReadout(lapProgress, route = CITY_RUSH_TOUGE) {
   };
 }
 
+// Rampe d'entrée/sortie du dérapage, en fraction de la longueur du secteur :
+// l'angle de dérive ne saute pas d'un coup au seuil du long virage serré.
+const TOUGE_DRIFT_EDGE_RAMP = 0.15;
+
+/**
+ * Amplitude signée du dérapage contrôlé à une position de la descente
+ * (0 → 1). Le tōgé ne dérape que dans ses longs virages serrés — les secteurs
+ * marqués `drift` (« right » / « left ») — et nulle part ailleurs, pas même
+ * dans les épingles. Le signe porte le sens du virage : négatif à droite,
+ * positif à gauche (le museau de la caisse part vers la corde, le cul vers
+ * l'extérieur).
+ */
+export function tougeDriftAmount(lapProgress, route = CITY_RUSH_TOUGE) {
+  const progress = clamp01(Number(lapProgress) || 0);
+  const sector = cityRushRouteSectorAt(progress, route);
+  if (!sector?.drift) return 0;
+  const span = sector.to - sector.from;
+  if (!(span > 0)) return 0;
+  const edge = Math.min((progress - sector.from) / span, (sector.to - progress) / span);
+  const ramp = clamp01(edge / TOUGE_DRIFT_EDGE_RAMP);
+  return (sector.drift === 'left' ? 1 : -1) * ramp;
+}
+
 const tougeSector = (id, fromKm, toKm, data) => Object.freeze({
   id,
   km: fromKm,
@@ -2395,7 +2418,7 @@ export const CITY_RUSH_TOUGE = Object.freeze({
   directionRomaji: 'DOWNHILL',
   kmDirection: 'increase',
   lengthKm: TOUGE_LENGTH_KM,
-  corners: 17,
+  corners: 19,
   hairpins: TOUGE_HAIRPINS,
   // Limite de montagne japonaise : 40 km/h, rarement respectée après minuit.
   speedLimit: 40,
@@ -2426,9 +2449,16 @@ export const CITY_RUSH_TOUGE = Object.freeze({
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['急カーブ 5連続', '速度制限 30']), hazard: true }),
       hairpins: 5,
     }),
-    tougeSector('kazamisaka', 6.5, 8.5, {
+    tougeSector('kazami-omawari', 6.5, 7.4, {
+      kind: 'corner', name: '風見大回り', romaji: 'KAZAMI ŌMAWARI', side: 1,
+      note: 'Le long serré droit de la descente : 42° tenus sur 600 m, le volant braqué du début à la fin — le dérapage y est permis.',
+      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['風見大回り', '大カーブ 右 600 m']), hazard: true }),
+      corner: Object.freeze({ direction: 'right', number: 42 }),
+      drift: 'right',
+    }),
+    tougeSector('kazamisaka', 7.4, 8.5, {
       kind: 'descent', name: '風見坂', romaji: 'KAZAMISAKA', side: -1,
-      note: 'La pente de la girouette : longue ligne droite de descente rapide puis grand appui à gauche.',
+      note: 'La pente de la girouette : après le long serré droit, ligne droite de descente rapide puis grand appui à gauche.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['風見坂', '急勾配 下り 10%']) }),
     }),
     tougeSector('mizusawa', 8.5, 9.5, {
@@ -2443,11 +2473,18 @@ export const CITY_RUSH_TOUGE = Object.freeze({
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['岩垂壁', '落下注意']) }),
       rock: true,
     }),
-    tougeSector('mikunizaka', 10.8, 11.8, {
+    tougeSector('mikunizaka', 10.8, 11.3, {
       kind: 'corner', name: '三国坂', romaji: 'MIKUNIZAKA', side: 1,
-      note: 'La pente de Mikuni : le gauche d’approche du ravin, tout en ligne droite avant la tempête.',
+      note: 'La pente de Mikuni : le gauche d’approche du ravin, juste avant le long serré.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['三国坂', 'カーブ注意']), hazard: true }),
       corner: Object.freeze({ direction: 'left', number: 8 }),
+    }),
+    tougeSector('mikuni-omawari', 11.3, 11.8, {
+      kind: 'corner', name: '三国大回り', romaji: 'MIKUNI ŌMAWARI', side: -1,
+      note: 'Le long serré gauche de l’avant-orage : 42° tenus sur 500 m avant la tempête des trois épingles — le dérapage y est permis.',
+      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['三国大回り', '大カーブ 左 500 m']), hazard: true }),
+      corner: Object.freeze({ direction: 'left', number: 42 }),
+      drift: 'left',
     }),
     tougeSector('renzoku-hebirin', 11.8, 12.8, {
       kind: 'hairpins', name: '連続ヘアピン', romaji: 'RENZOKU HEBIRIN', side: 1,
@@ -2480,7 +2517,7 @@ export const CITY_RUSH_TOUGE_COURSE = Object.freeze({
   ...CITY_RUSH_TOUGE,
   label: 'JAPON · GUNMA · MONT HARUNA',
   district: '榛名山 · 峠ダウンヒル',
-  tagline: 'La descente de nuit : 8 épingles, un tunnel, le lac en contrebas.',
+  tagline: 'La descente de nuit : 8 épingles, 2 longs virages serrés, un tunnel, le lac en contrebas.',
   accent: '#8fd8ff',
   secondary: '#ffb46b',
   background: 0x060a18,
@@ -3260,8 +3297,12 @@ export const CITY_RUSH_TOUGE_TURNS = Object.freeze([
   Object.freeze([5.6, 50, 0.3, 'snap']), // épingle 3 · droite
   Object.freeze([5.9, -50, 0.3, 'snap']), // épingle 4 · gauche
   Object.freeze([6.2, 50, 0.3, 'snap']), // épingle 5 · droite
+  // ── 風見大回り · le long serré droit de la descente ────────────────────────
+  // 0,3 km de sortie d'épingle, puis le long virage serré : 42° tenus sur
+  // 600 m, le volant braqué du début à la fin — le dérapage y est permis.
+  Object.freeze([6.9, 42, 0.6, 'sustained']), // long droit serré en descente rapide
   // ── 風見坂 · longue ligne droite de descente rapide ───────────────────────
-  // 1,6 km de pleine vitesse en sortie d'épingles, puis appui tenu.
+  // 0,6 km de pleine vitesse après le long serré, puis appui tenu.
   Object.freeze([7.8, -20, 0.5, 'sustained']), // longue gauche en descente rapide
   // ── Ligne droite intermédiaire · section sous les cèdres ──────────────────
   Object.freeze([9.0, 12, 0.45, 'sustained']), // droite tenue sous les cèdres
@@ -3271,7 +3312,10 @@ export const CITY_RUSH_TOUGE_TURNS = Object.freeze([
   Object.freeze([10.6, 10, 0.3, 'sustained']), // le droit qui s'en détache
   // ── 三国坂 · le resserrement avant le ravin ────────────────────────────────
   Object.freeze([11.1, -20, 0.4, 'sustained']), // gauche sur l'approche du ravin
-  // ── Ligne droite vers les épingles finales ────────────────────────────────
+  // ── 三国大回り · le long serré gauche de l'avant-orage ─────────────────────
+  // Le gauche d'approche se prolonge en long virage serré : 42° tenus sur
+  // 500 m — le dérapage y est permis —, juste avant la tempête des épingles.
+  Object.freeze([11.55, -42, 0.5, 'sustained']), // long gauche serré avant le ravin
   // ── 連続ヘアピン · les trois épingles du ravin, le final ───────────────────
   Object.freeze([12.0, -50, 0.3, 'snap']), // épingle 6 · gauche
   Object.freeze([12.3, 50, 0.3, 'snap']), // épingle 7 · droite
