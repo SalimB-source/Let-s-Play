@@ -277,3 +277,108 @@ comme tir) ou quand il **mène la course au dernier tour**.
 - `npm run check:city-rush`, `check:city-rush-smoke`, `check:city-rush-weapons`,
   `check:city-rush-police-fire`, `check:city-rush-police-wreck`,
   `check:city-rush-wreck`, `npx vite build`.
+
+## Suite — le choc latéral : on pousse la voiture qui bloque
+
+### Objectif
+
+Une voiture **à côté** du pilote, dans la voie qu'il veut rejoindre, lui ferme
+cette voie. S'il tourne quand même vers elle, il y a **choc** : la voiture
+bloquante se pousse sur la voie voisine, **du côté opposé au pilote**, et les
+deux voitures perdent un carré. Le trafic ordinaire n'a pas de PV et ne perd
+rien ; une berline de police qui a des PV en perd un. **Les rivaux se traversent
+comme avant** : ils ne ferment pas la voie et ne sont pas poussés.
+
+### Ce qui change
+
+- **Règles pures** (`src/games/cityRushRules.js`) :
+  `CITY_RUSH_SIDE_CONTACT_GAP` (= `CITY_RUSH_TRAFFIC_CAR_GAP`, 3,6 m : à côté =
+  pare-chocs contre pare-chocs), `cityRushIsLevel` (même hauteur, deux voies au
+  plus), `cityRushIsAlongside` (voie voisine et même hauteur),
+  `cityRushSideBumpLane` (voie d'arrivée : la voie voisine du côté opposé, dans
+  le sens de circulation de la voiture, sinon `null`), `cityRushSideBumpLaneClear`
+  (voie d'arrivée libre, distance de sécurité 4,8 m), `cityRushSideBumpChoice`
+  (la voiture la plus proche, pas déjà poussée, qui a une voie libre) et
+  `cityRushSideBumpKeep` (l'épisode tient tant que la voiture reste à la même
+  hauteur).
+- **Le monde** (`src/games/ViceCityWorld.jsx`) :
+  - `canEnterLane` : pour le **pilote seul**, les berlines de patrouille lâchées
+    ferment la voie comme le trafic. Les rivaux restent traversables, pour le
+    pilote comme entre eux ; la police en chasse garde son verrou.
+  - `action()` (gauche / droite) : si la voie est refusée et que le pilote a
+    tourné (pas en bord de chaussée), `trySideBump(targetLane)` essaie le choc.
+  - `applySideBump` : la voiture part sur sa voie d'arrivée. Trafic, patrouille
+    et ronde reprennent le rabat du trafic (`impactChanging`, 0,5 s). Une berline
+    de l'escouade prend un dérapage court et garde sa voie (`changeIn`,
+    `collisionCooldownLeft`). Le pilote glisse à l'opposé, la
+    caméra secoue, les étincelles et le son du carambolage sont joués
+    (`spawnTrafficImpact`, `skid`). Le contact compte dans `playerVehicleContacts`
+    (missions « zéro contact »).
+  - Le carré du pilote passe par `applyCarCollision` (répit partagé de 1,5 s). Le
+    PV de la voiture bloquante passe par `damagePolice` (berline de l'escouade,
+    berline venant en face, ronde). Une ronde touchée rejoint la poursuite
+    (`rallyTrafficPolice`), puis encaisse son carré. Un choc frontal d'une patrouille venant en face la fait se retourner
+    (`damagePolice` appelle `beginOncomingPoliceTurnaround`).
+  - `pruneSideBumpContacts` (chaque image) : une voiture qui n'est plus à la même
+    hauteur sort de l'épisode ; un nouveau côte-à-côte sera à nouveau un choc.
+  - Les SUV de charge, les voitures en demi-tour, en vol ou en épave ne sont pas
+    touchés. Le choc n'occupe pas la page : `ViceCityRushPage.jsx` ignore
+    l'effet `side-bump`. Le HUD montre le carré perdu (barre de vie) et le
+    compteur de contacts.
+- **Décisions prises** (validées dans la conversation) : le choc concerne le
+  trafic, l'escouade et les rondes, les voitures venant en face et les berlines
+  de patrouille ; **les rivaux se traversent comme avant** (choix explicite : au
+  départ, les rivaux de la grille sont à la même hauteur que le pilote, et les
+  cibles de mission sont des rivaux, elles restent donc traversables) ; le trafic
+  ordinaire ne perd pas de PV ; un seul choc par côte-à-côte ; pas de choc quand
+  la voie d'à côté est occupée ou au bord ; le pilote ne ralentit pas ;
+  le glissement reprend la cinétique existante du rabat du trafic
+  (`CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION` = 0,5 s comme constante : aux deux tiers
+  du chemin à 0,5 s, arrivée complète vers 1,8 s).
+
+### Vérifications
+
+- `tests/city-rush-side-bump.test.js` (14 cas, dans `check:city-rush`) : les seuils
+  (3,6 m pour le contact, 4,8 m pour la voie), la voie d'arrivée selon le sens de
+  circulation et les bords, la voie occupée, le choix de la voiture la plus
+  proche, l'épisode complet (un seul choc tant que les voitures restent côte à
+  côte) et le nouvel épisode après séparation.
+- `npm run check:city-rush-side-bump` : le harnais `scripts/city-rush-side-bump-check.mjs`
+  joue le vrai monde sur les huit parcours (`--all`), avec de vrais événements
+  clavier et des voitures posées par `world.harness` : trafic poussé (un carré
+  pour le pilote, aucun PV pour le trafic), glissement, un seul choc côte à côte
+  même touche tenue (et, sur le Ring à quatre voies, pas de second choc sur la
+  voiture encore côte à côte), bord de chaussée et voie occupée (rien ne bouge),
+  4 m (voie fermée sans choc), rival (traversé, aucun choc), berline de l'escouade
+  (un PV), ronde (rejoint la poursuite, un PV), voiture venant en face (aucun PV).
+  Mutations vérifiées : sans mémoire d'épisode, le harnais échoue sur le Ring ;
+  sans `trySideBump`, il échoue au premier cas ; sans contrôle de la voie
+  d'arrivée, il échoue au bord de la chaussée.
+- `npm run check:city-rush-smoke` (huit parcours), `check:city-rush-rival-police`
+  (deux passes), `check:city-rush-police-wreck`, `check:city-rush-police-fire`,
+  `check:city-rush-blue-shot`, `check:city-rush-bazooka`,
+  `check:city-rush-tutorial-run`, `check:city-rush-sprint`, `check:city-rush-lanes`,
+  `check:city-rush-nordschleife-lanes`, `check:city-rush-steer-hold`,
+  `check:city-rush-tournament`, et la partie interface de `check:city-rush-missions` : verts.
+- `npx vite build` : vert.
+
+### Points restés ouverts
+
+- **`check:city-rush-missions` (partie mission-run) : résolu pour la graine par
+  défaut.** Le choc latéral poussait la voiture qui bloque quand le bot tournait
+  vers une voie occupée à sa hauteur, et sa poursuite changeait. Le bot n'appuie
+  plus sur une voie fermée : il lit la règle de voie du volant (`steerRefused`,
+  exposé par le lanceur `city-rush-mission-run-check.mjs`). Sur la base, un tel
+  appui ne faisait rien, donc le comportement est le même. Sur huit graines
+  (`CITY_RUSH_MISSION_SEED`), les résultats sont identiques à la base : 3 sur 8
+  (20261004, 22 et 44), avec le même message d'échec sur les autres. Le contrôle
+  reste fragile sur ces cinq graines, comme avant ce changement ; ce point est
+  séparé et n'est pas traité ici. Une assertion vérifie qu'aucun choc latéral
+  n'a lieu pendant la course du bot.
+- `check:city-rush-wreck --all` échoue déjà sur la base : la réserve de cellules
+  de départ n'est pas celle que le contrôle attend, et les réparations au
+  mini-garage (effet `mini-garage-used`, PV relevés sans `player-hit`) ne sont
+  probablement pas suivies. Même famille d'erreurs après le changement.
+- Les vérifications d'interface (`check:city-rush-mexico`, `check:city-rush-sprint-ui`,
+  `check:city-rush-tutorial-ui`, `check:city-rush-quiet`) dépendent d'un canevas et
+  d'un WebGL absents du bac à sable : elles échouent aussi sur la base.

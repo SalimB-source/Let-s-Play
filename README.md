@@ -1389,6 +1389,21 @@ et le dernier tour durait 21 s.
   au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
   (`CITY_RUSH_PLAYER_DAMAGE`, `CITY_RUSH_PLAYER_HEALTH_CRITICAL`,
   `CITY_RUSH_POLICE_COLLISION_COOLDOWN`).
+- **Le choc latéral : on pousse la voiture qui bloque.** Une voiture à côté du
+  pilote, dans la voie qu'il veut rejoindre, lui ferme cette voie
+  (`canEnterLane`). S'il tourne quand même vers elle, la voiture se pousse sur la
+  voie voisine, **du côté opposé au pilote**, avec le petit choc du carambolage
+  (flash, étincelles, dérapage) : **le pilote et elle perdent chacun un carré**
+  — un PV pour une berline de police qui en a, rien pour le trafic ordinaire.
+  « À côté » = même hauteur, pare-chocs contre pare-chocs
+  (`CITY_RUSH_SIDE_CONTACT_GAP`, 3,6 m) ; entre 3,6 m et la distance de sécurité
+  de 4,8 m, la voie reste fermée sans choc. Pas de voie libre dans son sens de
+  circulation (bord de la chaussée, voie d'à côté occupée) : la voiture ne bouge
+  pas et il n'y a pas de choc. **Un seul choc par côte-à-côte** : tant que les
+  voitures restent à la même hauteur, tourner de nouveau vers elle ne refait pas
+  de choc (`cityRushSideBumpKeep`). Une ronde touchée rejoint la poursuite. Les
+  **rivaux se traversent comme avant** : ils ne ferment pas la voie et ne sont
+  pas poussés. Règles dans `cityRushSideBumpChoice`, le choc dans `trySideBump`.
 - **Le taxi remplace la berline banalisée.** La voiture de police **en civil**
   noire a quitté la route : `CITY_RUSH_TRAFFIC_TYPES` aligne désormais le
   **taxi** jaune à bandeau damier (`taxi`, `isTaxi` dans `cityRushCars.js`), au
@@ -1891,6 +1906,7 @@ npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le jo
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:city-rush-police-wreck # destruction d'une berline : deux tours de tête-à-queue en décélérant, explosion à l'arrêt, carcasse laissée en feu tout l'incendie
 npm run check:city-rush-rival-police # les rivaux aussi sont pourchassés : carambolage avec la police et tête de course au dernier tour (deux passes : motifs mêlés, puis motif du premier seul)
+npm run check:city-rush-side-bump # choc latéral : la voiture qui bloque se pousse sur la voie d'à côté, un carré pour le pilote, un PV pour un rival ou une berline, aucun PV pour le trafic, un seul choc par côte-à-côte (huit parcours)
 npm run check:city-rush-ink  # la langue du hub sur toute la console (jetons, équerres, polices, ordre d'import)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet

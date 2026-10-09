@@ -1,5 +1,14 @@
-// Mission 1 : vrai monde three.js, seules les sorties GPU sont remplacées.
-// Ni dégâts, ni trafic, ni IA ne sont neutralisés. Deux courses complètes.
+// Lanceur de la vérif « choc latéral » (voir `city-rush-side-bump-entry.jsx`).
+//   node scripts/city-rush-side-bump-check.mjs                 (le parcours Vice City)
+//   node scripts/city-rush-side-bump-check.mjs --all           (les huit parcours)
+//   node scripts/city-rush-side-bump-check.mjs --city=nordschleife
+// Graine : CITY_RUSH_SIDE_BUMP_SEED=… (défaut 20261009).
+//
+// Le monde est le vrai `createCityRushWorld`, avec un faux WebGLRenderer (pas de
+// GPU dans le sandbox). Le lanceur ajoute une seule chose au moteur : un accès
+// `harness` en lecture/écriture sur les voitures et la voie du pilote, pour
+// poser une voiture à côté du pilote et lire le résultat. Les règles jouées
+// restent celles du jeu : aucune voie n'est ouverte de force.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -49,8 +58,7 @@ class FakeWebGLRenderer {
   setClearColor() {}
   clear() {}
   render(scene, camera) {
-    // Pas de GPU : on met tout de même à jour les matrices monde comme le
-    // ferait un vrai rendu, pour que getWorldPosition() des bonus soit juste.
+    // Pas de GPU : les matrices monde sont tout de même mises à jour.
     this.renderCalls += 1;
     scene.updateMatrixWorld();
     camera.updateMatrixWorld();
@@ -61,18 +69,19 @@ class FakeWebGLRenderer {
 
 globalThis.__FakeWebGLRenderer = FakeWebGLRenderer;
 
-// Ancre du retour de `createCityRushWorld` : le harnais du bot s'y greffe.
+// Ancre du retour de `createCityRushWorld` : l'accès `harness` s'y greffe.
 const WORLD_RETURN_ANCHOR = '    get distance() { return distance; },\n';
-// Le bot lit la règle de voie du volant au lieu de la recopier : un appui vers
-// une voie fermée (voiture à côté, distance de sécurité) est refusé par action().
-// Le bot s'abstient alors, comme sur la base où un tel appui ne faisait rien.
-const HARNESS_ACCESS = `    // Harnais « mission-run » : la même règle de voie que action().
+const HARNESS_ACCESS = `    // Harnais « choc latéral » : voitures, voies et pilote, lus et posés à la main.
     get harness() {
       return {
-        steerRefused(name) {
-          const next = cityRushLaneAfterAction(playerLane, name, laneCount, { airborne: playerJumpState.active });
-          return next !== playerLane && !canEnterLane('player', next);
-        },
+        trafficCars, oncomingCars, racers, patrolCars, policeCars, ralliedCars,
+        forwardLanes, oncomingLanes, laneCount,
+        get lane() { return playerLane; },
+        get health() { return playerHealth; },
+        get distance() { return distance; },
+        get wanted() { return wantedLevel; },
+        laneX: (lane) => laneX(lane),
+        placeLane(lane) { playerLane = lane; playerX = laneX(lane); },
       };
     },
 `;
@@ -84,12 +93,12 @@ const server = await createServer({
   server: { middlewareMode: true, hmr: false, fs: { allow: [root] } },
   plugins: [
     {
-      name: 'mission-fake-webgl-renderer',
+      name: 'fake-webgl-renderer',
       enforce: 'pre',
       transform(code, id) {
         if (id.includes('ViceCityWorld')) {
           if (!code.includes(WORLD_RETURN_ANCHOR)) {
-            throw new Error('ancre du retour du monde introuvable dans ViceCityWorld — mettre à jour le lanceur de la vérif mission-run');
+            throw new Error('ancre du retour du monde introuvable dans ViceCityWorld — mettre à jour le lanceur de la vérif choc latéral');
           }
           return {
             code: code
@@ -106,9 +115,9 @@ const server = await createServer({
 
 let code = 0;
 try {
-  await server.ssrLoadModule('/scripts/city-rush-mission-run-entry.jsx');
+  await server.ssrLoadModule('/scripts/city-rush-side-bump-entry.jsx');
 } catch (e) {
-  console.error('VÉRIF ÉCHOUÉE (chargement) :');
+  console.error('VÉRIF CHOC LATÉRAL ÉCHOUÉE (chargement) :');
   console.error(e);
   code = 1;
 } finally {

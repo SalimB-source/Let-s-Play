@@ -148,7 +148,11 @@ try {
       // Garder le fugitif actif dans la mire avec des munitions. À vide,
       // revenir chercher les chargeurs garantis dans la voie de départ.
       const lane = hud.inventory.pistol > 0 && target ? target.lane : player.lane;
-      if (lane !== hud.playerLane && frame % 8 === 0) world.action(lane < hud.playerLane ? 'left' : 'right');
+      // Vers une voie fermée, l'appui ne fait rien sur la base. Avec le choc
+      // latéral, il pousserait la voiture qui bloque : le bot attend que la voie
+      // soit libre, puis tourne.
+      const steer = lane < hud.playerLane ? 'left' : 'right';
+      if (lane !== hud.playerLane && frame % 8 === 0 && !world.harness.steerRefused(steer)) world.action(steer);
       stepFrame();
     }
     const dealerHits = effects.filter(e => e.type === 'pistol' && e.targetId === 'dealer');
@@ -156,6 +160,7 @@ try {
     const escape = effects.find(e => e.type === 'mission-escape-start');
 
     assert.ok(result && !result.destroyed, 'le joueur termine les trois tours sans être détruit');
+    assert.equal(effects.filter(e => e.type === 'side-bump').length, 0, 'le bot ne tourne jamais vers une voie fermée : aucun choc latéral');
     assert.ok(result.pistolPickups >= 1, 'le joueur a vraiment ramassé les chargeurs');
     assert.equal(result.racers.find(r => r.id === 'dealer')?.health, 0, 'le dealer peut être neutralisé par les tirs');
     assert.equal(result.racers.find(r => r.id === 'accomplice')?.health, 0, 'le complice apparu ensuite peut être rattrapé et neutralisé');

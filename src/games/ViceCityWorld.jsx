@@ -198,6 +198,10 @@ import {
   cityRushPoliceBlocksLeader,
   cityRushPoliceContact,
   cityRushPoliceDamage,
+  cityRushSideBumpChoice,
+  cityRushSideBumpKeep,
+  CITY_RUSH_SIDE_BUMP_HOLD,
+  CITY_RUSH_SIDE_BUMP_SKID,
   cityRushTrafficHitboxWidth,
   cityRushWantedLevelAfterHit,
   cityRushWantedLevelAfterPoliceDestroyed,
@@ -2835,6 +2839,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // voiture lente soit facturé une fois — et non à chaque image — sans jamais
   // rester collé au seuil sans rien toucher.
   const trafficContacts = new Set();
+  // Voitures déjà poussées par le choc latéral pendant le côte-à-côte en cours
+  // (voir `trySideBump`) : un seul choc tant qu'elles restent à la même hauteur.
+  const sideBumpContacts = new Set();
   let playerBoostLeft = 0;
   let playerStunLeft = 0;
   let playerStunTotal = 0;
@@ -4285,6 +4292,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerTrafficRecoverLeft = 0;
     playerTrafficImpactLeft = 0;
     trafficContacts.clear();
+    sideBumpContacts.clear();
     playerBoostLeft = 0;
     playerStunLeft = 0;
     playerStunTotal = 0;
@@ -4888,6 +4896,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return trafficCars.find((item) => item.id === vehicleId)?.mesh
       || oncomingCars.find((item) => item.id === vehicleId)?.mesh
       || activePursuerById(vehicleId)?.mesh
+      // Une berline lâchée peut aussi être poussée de côté (`trySideBump`) :
+      // ses étincelles se jouent sur sa carrosserie.
+      || patrolCars.find((item) => item.id === vehicleId)?.mesh
       || null;
   }
 
@@ -7959,6 +7970,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         { lane: playerLane, x: playerCar.position.x, width: playerCollisionWidth(), distance },
         ...activeRacers().map((racer) => ({ lane: racer.lane, x: racer.mesh.position.x, width: racerCollisionWidth(racer), distance: racer.distance })),
       ] : []),
+      // Une berline de patrouille lâchée à côté du pilote ferme la voie comme
+      // le trafic : le choc latéral (`trySideBump`) la pousse. Les rivaux, eux,
+      // restent traversables, comme avant.
+      ...(actorId === 'player'
+        ? patrolCars.map((patrol) => ({ lane: patrol.lane, x: patrol.currentX, width: Number(patrol.width) || 1.94, distance: patrol.distance }))
+        : []),
     ];
     return obstacles.every((other) => {
       const approachingLane = other.lane === targetLane || Math.abs(other.x - targetX) < (actorWidth + other.width) / 2;
@@ -7986,6 +8003,168 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       laneCount,
       blockedLanes,
     });
+  }
+
+  // ── Choc latéral : pousser la voiture qui bloque ───────────────────────
+  // Le pilote tourne vers une voiture à côté de lui, dans la voie voisine : la
+  // voie lui est refusée (`canEnterLane`), et c'est le choc. La voiture
+  // bloquante se pousse sur la voie voisine, du côté opposé au pilote, avec le
+  // petit choc du carambolage (flash, étincelles, dérapage). Le pilote et elle
+  // perdent un carré : un PV pour un rival ou une berline de police, rien pour
+  // le trafic ordinaire. Les règles (voie d'arrivée, un seul choc par
+  // côte-à-côte) sont dans `cityRushSideBumpChoice` et `cityRushSideBumpKeep`.
+
+  // Les voitures que le choc latéral peut toucher, avec ce qu'il faut pour les
+  // pousser : voie, écart au pilote, voies de leur sens de circulation et nature
+  // du choc. Les rivaux se traversent (voir `canEnterLane`) : ils n'en font pas
+  // partie. Les SUV de charge, les voitures en demi-tour ou en vol n'entrent
+  // pas non plus dans ce décompte.
+  function sideBumpRoster() {
+    const directionLanes = (lane) => (oncomingLanes.includes(lane) ? oncomingLanes : forwardLanes);
+    return [
+      ...rollingTraffic().map((traffic) => ({
+        id: traffic.id, name: traffic.name, lane: traffic.lane, distance: traffic.distance,
+        allowedLanes: directionLanes(traffic.lane),
+        kind: isCityRushPoliceTrafficType(traffic.type) ? 'police-traffic' : 'traffic',
+        car: traffic,
+      })),
+      ...patrolCars.map((patrol) => ({
+        id: patrol.id, name: patrol.name, lane: patrol.lane, distance: patrol.distance,
+        allowedLanes: directionLanes(patrol.lane), kind: 'patrol', car: patrol,
+      })),
+      ...oncomingCars
+        .filter((oncoming) => !oncoming.rallied && !oncoming.destroyed && !oncoming.charge && !oncoming.turnaroundState)
+        .map((oncoming) => ({
+          id: oncoming.id, name: oncoming.name, lane: oncoming.lane, distance: oncoming.distance,
+          allowedLanes: directionLanes(oncoming.lane),
+          kind: isCityRushPoliceTrafficType(oncoming.type) ? 'police-oncoming' : 'oncoming',
+          car: oncoming,
+        })),
+      ...activePursuers()
+        .filter((police) => !police.jumpState?.active && (police.health ?? 1) > 0)
+        .map((police) => ({
+          id: police.id, name: police.name, lane: police.lane, distance: police.distance,
+          allowedLanes: directionLanes(police.lane), kind: 'police', car: police,
+        })),
+    ];
+  }
+
+  // Une tentative de rabattement sur une voie occupée à côté du pilote : si une
+  // voiture s'y trouve, qu'elle n'a pas déjà été poussée pendant ce côte-à-côte
+  // et qu'une voie libre l'attend de son côté, elle est poussée. Sinon, rien.
+  function trySideBump(targetLane) {
+    if (!active || finished || playerWrecked || playerStunLeft > 0 || playerJumpState.active) return false;
+    const choice = cityRushSideBumpChoice({
+      playerLane,
+      playerDistance: distance,
+      targetLane,
+      cars: sideBumpRoster(),
+      pushedIds: sideBumpContacts,
+    });
+    if (!choice) return false;
+    const { car: blocker, farLane } = choice;
+    applySideBump(blocker, farLane);
+    sideBumpContacts.add(blocker.id);
+    return true;
+  }
+
+  function applySideBump(blocker, farLane) {
+    const car = blocker.car;
+    const fromLane = blocker.lane;
+    // La voiture part du côté où elle se trouve déjà : le pilote, lui, est
+    // repoussé de l'autre côté.
+    const side = Math.sign(fromLane - playerLane) || 1;
+    car.lane = farLane;
+    if (blocker.kind === 'traffic' || blocker.kind === 'police-traffic' || blocker.kind === 'patrol') {
+      // Même rabat que le trafic heurté (`applyTrafficImpact`) : la voie visée
+      // passe avant le flot pendant le glissement.
+      car.impactLeft = CITY_RUSH_TRAFFIC_IMPACT_DURATION;
+      car.impactCooldownLeft = CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN;
+      car.impactChanging = true;
+      car.impactFromLane = fromLane;
+      car.impactTargetLane = farLane;
+    } else if (blocker.kind === 'oncoming' || blocker.kind === 'police-oncoming') {
+      car.impactCooldownLeft = Math.max(Number(car.impactCooldownLeft) || 0, CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN);
+    } else if (blocker.kind === 'police') {
+      // Berline de l'escouade : dérapage court et voie tenue un instant avant
+      // qu'elle ne repense sa trajectoire.
+      const skid = Math.max(CITY_RUSH_SIDE_BUMP_SKID, Number(car.skidLeft) || 0);
+      car.skidLeft = skid;
+      car.skidDuration = skid;
+      car.skidSide = side;
+      car.skidSmokeTimer = 0;
+      car.changeIn = Math.max(Number(car.changeIn) || 0, CITY_RUSH_SIDE_BUMP_HOLD);
+      car.collisionCooldownLeft = Math.max(Number(car.collisionCooldownLeft) || 0, CITY_RUSH_SIDE_BUMP_HOLD);
+    }
+
+    // Le pilote encaisse le choc : dérapage court, à l'opposé de la voiture.
+    const playerSkid = Math.max(CITY_RUSH_SIDE_BUMP_SKID, Number(playerSkidLeft) || 0);
+    playerSkidLeft = playerSkid;
+    playerSkidDuration = playerSkid;
+    playerSkidSide = -side;
+    cameraKick = Math.max(cameraKick, 0.5);
+    spawnTrafficImpact('player', car.id);
+    audioRef?.current?.skid({ pan: vehiclePan(car.id), intensity: 1.05, duration: 0.82 });
+
+    const victim = blocker.kind.startsWith('police') ? 'police'
+      : blocker.kind === 'oncoming' ? 'oncoming' : 'traffic';
+    // Un contact comme les autres : il compte pour les missions (« zéro contact »)
+    // et pour le compteur de l'écran, même quand le répit empêche la perte de PV.
+    playerVehicleContacts += 1;
+    // Le carré du pilote, s'il en perd un (le répit de choc peut courir encore).
+    // Côte à côte, la voiture peut être très légèrement derrière : c'est l'écart
+    // en valeur absolue qui est annoncé, comme pour un choc frontal.
+    const healthLost = applyCarCollision({
+      victim,
+      name: blocker.name,
+      id: blocker.id,
+      gap: Math.abs(blocker.distance - distance),
+      lane: farLane,
+      source: 'collision',
+      sideBump: true,
+    });
+    // La voiture bloquante paie son carré, comme dans un carambolage : un PV
+    // pour une voiture de police qui en a, rien pour le trafic ordinaire.
+    const hitContext = {
+      victim,
+      sideBump: true,
+      playerHealthLost: healthLost,
+      playerHealth,
+      playerHealthMax: playerMaxHealth,
+    };
+    if (blocker.kind === 'police' || blocker.kind === 'police-oncoming') {
+      damagePolice(car, 'collision', 'player', hitContext);
+    } else if (blocker.kind === 'police-traffic') {
+      // Une ronde touchée rejoint la poursuite (comme `checkPoliceRally`), puis
+      // encaisse son carré.
+      const rallied = rallyTrafficPolice(car, 'player', { victim: 'police', sideBump: true });
+      if (rallied) damagePolice(rallied, 'collision', 'player', hitContext);
+    }
+
+    getCallbacks().effect?.({
+      type: 'side-bump',
+      target: 'TOI',
+      traffic: blocker.name,
+      trafficId: blocker.id,
+      kind: blocker.kind,
+      fromLane,
+      lane: farLane,
+      victim,
+      healthLost,
+      health: playerHealth,
+      maxHealth: playerMaxHealth,
+    });
+    emitHud(true);
+  }
+
+  // Chaque image : une voiture qui n'est plus à la même hauteur que le pilote
+  // sort de son épisode, et un prochain côte-à-côte sera à nouveau un choc.
+  function pruneSideBumpContacts() {
+    if (!sideBumpContacts.size) return;
+    const kept = cityRushSideBumpKeep(sideBumpContacts, sideBumpRoster(), playerLane, distance);
+    if (kept.size === sideBumpContacts.size) return;
+    sideBumpContacts.clear();
+    kept.forEach((id) => sideBumpContacts.add(id));
   }
 
   function applyTrafficImpact(racerId, traffic, contact = null) {
@@ -8303,7 +8482,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const nextLane = cityRushLaneAfterAction(playerLane, name, laneCount, { airborne: playerJumpState.active });
       // Même chemin pour le pilote et pour la démonstration : `changePlayerLane`
       // tient le journal du tutoriel (écart de voie, esquive).
-      changePlayerLane(nextLane);
+      // Voie refusée parce qu'une voiture est à côté : le pilote a tourné vers
+      // elle, c'est le choc latéral qui la pousse (voir `trySideBump`).
+      if (!changePlayerLane(nextLane) && nextLane !== playerLane) trySideBump(nextLane);
       return;
     }
     if (name === 'pistol-down') return fireHeldWeapon();
@@ -9641,6 +9822,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Berlines lâchées par un mini-garage : elles ont quitté la chasse et
       // roulent normalement, à l'allure du trafic, jusqu'à sortir du champ.
       updatePatrolPolice(dt, movementById);
+      // Une voiture qui n'est plus à côté du pilote ouvre un nouvel épisode
+      // (voir `trySideBump`).
+      pruneSideBumpContacts();
 
       // Trafic venant en face : il roule vers la course sur les trois voies de
       // gauche, croise les pilotes, puis reparaît au loin une fois passé.
