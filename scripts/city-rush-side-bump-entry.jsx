@@ -2,7 +2,8 @@
 // de rejoindre, lui ferme la voie (`canEnterLane`). Tourner quand même vers elle
 // déclenche le choc : la voiture se pousse sur la voie voisine, du côté opposé au
 // pilote, avec le petit choc du carambolage. Le pilote et elle perdent un carré :
-// un PV pour un rival ou une berline de police, rien pour le trafic ordinaire.
+// un PV pour une berline de police qui en a, rien pour le trafic ordinaire. Les
+// rivaux se traversent comme avant.
 //
 // Le monde est le vrai `createCityRushWorld` (faux WebGLRenderer, lanceur :
 // `city-rush-side-bump-check.mjs`), les touches passent par de **vrais
@@ -20,10 +21,12 @@
 //     ne bouge pas, rien n'est perdu, et la voie reste fermée au pilote ;
 //   · une voiture à 4 m (au-delà du contact) ferme la voie sans choc ; une voie
 //     libre se prend sans rien ;
-//   · un rival, une berline de l'escouade et une voiture venant en face sont
-//     poussés comme le trafic, et chacun perd son carré ;
+//   · une berline de l'escouade et une voiture venant en face sont poussées comme
+//     le trafic, et perdent un PV (la berline) ou rien (la voiture venant en face,
+//     qui n'a pas de PV) ;
 //   · une voiture de police de la ronde est poussée, rejoint la poursuite et perd
-//     un PV.
+//     un PV ;
+//   · un rival se traverse, comme avant : ni choc, ni PV, ni voie fermée.
 const BASE_SEED = Number(process.env.CITY_RUSH_SIDE_BUMP_SEED || 20261009) >>> 0;
 let seed = BASE_SEED;
 Math.random = () => {
@@ -389,7 +392,7 @@ for (const [cityIndex, city] of cities.entries()) {
     results.push('à 4 m : voie fermée sans choc ; voie libre : rien');
   }
 
-  // ── 7. Rival : même choc, le rival perd un PV et le pilote un carré
+  // ── 7. Rival : il se traverse, comme avant — ni choc, ni PV, ni voie fermée
   {
     fresh(race);
     const H = race.harness;
@@ -401,12 +404,11 @@ for (const [cityIndex, city] of cities.entries()) {
     const before = H.health;
     const rivalBefore = rival.health;
     tap(RIGHT);
-    const [bump] = sideBumps();
-    check(sideBumps().length === 1 && bump.kind === 'racer' && bump.trafficId === rival.id, 'le rival n\'a pas été poussé', effects);
-    check(rival.lane === c && rival.skidLeft > 0, 'le rival ne s\'est pas rabattu avec son dérapage');
-    check(rival.health === rivalBefore - 1, `le rival doit perdre un PV (${rivalBefore} -> ${rival.health})`);
-    check(H.health === before - 1, 'le pilote doit perdre un carré face au rival');
-    results.push('rival : poussé, un PV pour lui, un carré pour le pilote');
+    check(sideBumps().length === 0, 'un rival à côté a déclenché un choc', effects);
+    check(H.lane === b, `le pilote n'a pas traversé le rival à côté de lui (voie ${H.lane})`);
+    check(rival.lane === b && rival.health === rivalBefore, 'le rival a bougé ou perdu un PV');
+    check(H.health === before, 'le pilote a perdu un carré contre un rival');
+    results.push('rival : traversé comme avant (aucun choc, aucun PV)');
   }
 
   // ── 8. Berline de l'escouade : poussée, un PV pour elle, un carré pour le pilote
@@ -494,7 +496,8 @@ for (const [cityIndex, city] of cities.entries()) {
     results.push('contresens absent ou sans trafic sur ce parcours : cas ignoré');
   }
 
-  console.log(`[${city.id}] OK — ${results.length} comportements vérifiés :`);
+  const verified = results.filter((line) => !line.endsWith('cas ignoré')).length;
+  console.log(`[${city.id}] OK — ${verified} comportements vérifiés :`);
   for (const line of results) console.log(`  · ${line}`);
 }
 console.log('VÉRIF CHOC LATÉRAL OK');

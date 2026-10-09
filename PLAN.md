@@ -286,7 +286,8 @@ Une voiture **à côté** du pilote, dans la voie qu'il veut rejoindre, lui ferm
 cette voie. S'il tourne quand même vers elle, il y a **choc** : la voiture
 bloquante se pousse sur la voie voisine, **du côté opposé au pilote**, et les
 deux voitures perdent un carré. Le trafic ordinaire n'a pas de PV et ne perd
-rien ; un rival ou une berline de police perd un PV.
+rien ; une berline de police qui a des PV en perd un. **Les rivaux se traversent
+comme avant** : ils ne ferment pas la voie et ne sont pas poussés.
 
 ### Ce qui change
 
@@ -301,22 +302,22 @@ rien ; un rival ou une berline de police perd un PV.
   `cityRushSideBumpKeep` (l'épisode tient tant que la voiture reste à la même
   hauteur).
 - **Le monde** (`src/games/ViceCityWorld.jsx`) :
-  - `canEnterLane` : pour le **pilote seul**, les rivaux (non en vol, non en
-    épave) et les berlines de patrouille lâchées ferment la voie comme le trafic.
-    Les rivaux restent traversables entre eux, et la police garde son verrou.
+  - `canEnterLane` : pour le **pilote seul**, les berlines de patrouille lâchées
+    ferment la voie comme le trafic. Les rivaux restent traversables, pour le
+    pilote comme entre eux ; la police en chasse garde son verrou.
   - `action()` (gauche / droite) : si la voie est refusée et que le pilote a
     tourné (pas en bord de chaussée), `trySideBump(targetLane)` essaie le choc.
   - `applySideBump` : la voiture part sur sa voie d'arrivée. Trafic, patrouille
-    et ronde reprennent le rabat du trafic (`impactChanging`, 0,5 s). Un rival ou
-    une berline de l'escouade prend un dérapage court et garde sa voie
-    (`changeIn`, `collisionCooldownLeft`). Le pilote glisse à l'opposé, la
+    et ronde reprennent le rabat du trafic (`impactChanging`, 0,5 s). Une berline
+    de l'escouade prend un dérapage court et garde sa voie (`changeIn`,
+    `collisionCooldownLeft`). Le pilote glisse à l'opposé, la
     caméra secoue, les étincelles et le son du carambolage sont joués
     (`spawnTrafficImpact`, `skid`). Le contact compte dans `playerVehicleContacts`
     (missions « zéro contact »).
   - Le carré du pilote passe par `applyCarCollision` (répit partagé de 1,5 s). Le
-    PV de la voiture bloquante passe par `damageRacer` ou `damagePolice`. Une
-    ronde touchée rejoint la poursuite (`rallyTrafficPolice`), puis encaisse son
-    carré. Un choc frontal d'une patrouille venant en face la fait se retourner
+    PV de la voiture bloquante passe par `damagePolice` (berline de l'escouade,
+    berline venant en face, ronde). Une ronde touchée rejoint la poursuite
+    (`rallyTrafficPolice`), puis encaisse son carré. Un choc frontal d'une patrouille venant en face la fait se retourner
     (`damagePolice` appelle `beginOncomingPoliceTurnaround`).
   - `pruneSideBumpContacts` (chaque image) : une voiture qui n'est plus à la même
     hauteur sort de l'épisode ; un nouveau côte-à-côte sera à nouveau un choc.
@@ -324,12 +325,13 @@ rien ; un rival ou une berline de police perd un PV.
     touchés. Le choc n'occupe pas la page : `ViceCityRushPage.jsx` ignore
     l'effet `side-bump`. Le HUD montre le carré perdu (barre de vie) et le
     compteur de contacts.
-- **Dégâts** : un rival touché par un carambolage annonce `collision-hit` au lieu
-  de `blue-shot-hit` (le tir bleu ne se confond plus avec un choc).
-- **Décisions prises** (validées dans la conversation) : toutes les voitures
-  sont concernées (trafic, rivaux, escouade et rondes, voitures venant en face) ;
-  le trafic ordinaire ne perd pas de PV ; un seul choc par côte-à-côte ; pas de
-  choc quand la voie d'à côté est occupée ou au bord ; le pilote ne ralentit pas ;
+- **Décisions prises** (validées dans la conversation) : le choc concerne le
+  trafic, l'escouade et les rondes, les voitures venant en face et les berlines
+  de patrouille ; **les rivaux se traversent comme avant** (choix explicite : au
+  départ, les rivaux de la grille sont à la même hauteur que le pilote, et les
+  cibles de mission sont des rivaux, elles restent donc traversables) ; le trafic
+  ordinaire ne perd pas de PV ; un seul choc par côte-à-côte ; pas de choc quand
+  la voie d'à côté est occupée ou au bord ; le pilote ne ralentit pas ;
   le glissement reprend la cinétique existante du rabat du trafic
   (`CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION` = 0,5 s comme constante : aux deux tiers
   du chemin à 0,5 s, arrivée complète vers 1,8 s).
@@ -347,8 +349,8 @@ rien ; un rival ou une berline de police perd un PV.
   pour le pilote, aucun PV pour le trafic), glissement, un seul choc côte à côte
   même touche tenue (et, sur le Ring à quatre voies, pas de second choc sur la
   voiture encore côte à côte), bord de chaussée et voie occupée (rien ne bouge),
-  4 m (voie fermée sans choc), rival (un PV), berline de l'escouade (un PV), ronde
-  (rejoint la poursuite, un PV), voiture venant en face (aucun PV).
+  4 m (voie fermée sans choc), rival (traversé, aucun choc), berline de l'escouade
+  (un PV), ronde (rejoint la poursuite, un PV), voiture venant en face (aucun PV).
   Mutations vérifiées : sans mémoire d'épisode, le harnais échoue sur le Ring ;
   sans `trySideBump`, il échoue au premier cas ; sans contrôle de la voie
   d'arrivée, il échoue au bord de la chaussée.
@@ -363,13 +365,15 @@ rien ; un rival ou une berline de police perd un PV.
 ### Points restés ouverts
 
 - **`check:city-rush-missions` (partie mission-run) ne passe plus sur la graine par
-  défaut.** Le bot scripté de « Poursuite du dealer » traversait les rivaux ; il
-  tourne maintenant vers une voiture qui est à côté de lui, ce qui la pousse hors
-  de la mire et ferme sa voie. Sur la base, ce même contrôle ne passait déjà que
-  sur 3 graines sur 8 (20261004, 22 et 44) : son issue dépend de la trajectoire
-  exacte des voitures. Ce n'est pas tranché : soit on accepte la poursuite plus difficile
-  et on règle le contrôle (ou la mission), soit les cibles de mission restent
-  traversables (exception à « toutes les voitures »).
+  défaut.** Ce n'est pas à cause des rivaux (désormais traversables) : c'est le
+  choc latéral lui-même. Preuve : avec `trySideBump` désactivé (les patrouilles
+  restent bloquantes), le contrôle passe. Un choc coûte un carré au pilote et
+  déplace une voiture ; le bot scripté tourne parfois vers une voiture qui est à
+  côté de lui, et sa poursuite change. Mesure sur huit graines
+  (`CITY_RUSH_MISSION_SEED`) : la base passe sur 20261004, 22 et 44 (3 sur 8) ;
+  l'arbre courant passe sur 11 et 44 (2 sur 8). Le contrôle est fragile sur les
+  deux versions. À trancher : adapter le bot (ne pas tourner vers une voiture à
+  côté de lui, comme le ferait un pilote), ou accepter le rouge et le documenter.
 - `check:city-rush-wreck --all` échoue déjà sur la base : la réserve de cellules
   de départ n'est pas celle que le contrôle attend, et les réparations au
   mini-garage (effet `mini-garage-used`, PV relevés sans `player-hit`) ne sont

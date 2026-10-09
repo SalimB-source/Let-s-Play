@@ -3565,8 +3565,9 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
 // cette voie : le changement de voie est refusé (`canEnterLane`). S'il tourne
 // **quand même** vers elle, il y a choc. La voiture bloquante se pousse sur la
 // voie voisine, du côté opposé au pilote, et le pilote comme elle perdent
-// chacun un carré : un PV pour un rival ou une berline de police, rien pour le
-// trafic ordinaire, qui n'a pas de PV.
+// chacun un carré. Une voiture de police qui a des PV en perd un ; le trafic
+// ordinaire n'a pas de PV et ne perd rien. Les rivaux se traversent comme avant :
+// ils ne ferment pas la voie et ne sont pas poussés.
 //
 // « À côté » = les deux carrosseries sont à la même hauteur : écart
 // longitudinal sous `CITY_RUSH_SIDE_CONTACT_GAP`, le pare-chocs contre
@@ -3583,7 +3584,7 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
 // ouvre un nouvel épisode.
 export const CITY_RUSH_SIDE_CONTACT_GAP = CITY_RUSH_TRAFFIC_CAR_GAP; // m : à côté = pare-chocs contre pare-chocs
 // Dérapage court du pilote et de la voiture poussée, et délai avant qu'une
-// voiture poussée (rival ou berline) ne repense sa voie.
+// berline de l'escouade poussée ne repense sa voie.
 export const CITY_RUSH_SIDE_BUMP_SKID = 0.5; // s
 export const CITY_RUSH_SIDE_BUMP_HOLD = 0.6; // s
 

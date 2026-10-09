@@ -1394,7 +1394,7 @@ et le dernier tour durait 21 s.
   (`canEnterLane`). S'il tourne quand même vers elle, la voiture se pousse sur la
   voie voisine, **du côté opposé au pilote**, avec le petit choc du carambolage
   (flash, étincelles, dérapage) : **le pilote et elle perdent chacun un carré**
-  — un PV pour un rival ou une berline de police, rien pour le trafic ordinaire.
+  — un PV pour une berline de police qui en a, rien pour le trafic ordinaire.
   « À côté » = même hauteur, pare-chocs contre pare-chocs
   (`CITY_RUSH_SIDE_CONTACT_GAP`, 3,6 m) ; entre 3,6 m et la distance de sécurité
   de 4,8 m, la voie reste fermée sans choc. Pas de voie libre dans son sens de
@@ -1402,8 +1402,8 @@ et le dernier tour durait 21 s.
   pas et il n'y a pas de choc. **Un seul choc par côte-à-côte** : tant que les
   voitures restent à la même hauteur, tourner de nouveau vers elle ne refait pas
   de choc (`cityRushSideBumpKeep`). Une ronde touchée rejoint la poursuite. Les
-  rivaux sont ainsi solides à côté du pilote, et ils se traversent toujours entre
-  eux. Règles dans `cityRushSideBumpChoice`, le choc dans `trySideBump`.
+  **rivaux se traversent comme avant** : ils ne ferment pas la voie et ne sont
+  pas poussés. Règles dans `cityRushSideBumpChoice`, le choc dans `trySideBump`.
 - **Le taxi remplace la berline banalisée.** La voiture de police **en civil**
   noire a quitté la route : `CITY_RUSH_TRAFFIC_TYPES` aligne désormais le
   **taxi** jaune à bandeau damier (`taxi`, `isTaxi` dans `cityRushCars.js`), au

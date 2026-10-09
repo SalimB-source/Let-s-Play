@@ -197,8 +197,8 @@ test('une voiture qui s\'éloigne ouvre un nouvel épisode', () => {
   assert.equal(back.farLane, 5);
 });
 
-test('le choc latéral reprend le coût du carambolage : un carré pour le pilote, un PV pour un rival ou une berline', () => {
-  // Le pilote perd un carré ; un rival ou une berline de police en perd un
+test('le choc latéral reprend le coût du carambolage : un carré pour le pilote, un PV pour une berline de police', () => {
+  // Le pilote perd un carré ; une berline de police qui a des PV en perd un
   // aussi, comme dans un carambolage. Le trafic ordinaire n'a pas de PV.
   assert.equal(cityRushPlayerDamage(15, 'collision'), 14);
   assert.equal(cityRushPoliceDamage(6, 'collision'), 5);
