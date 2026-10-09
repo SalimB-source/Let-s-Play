@@ -341,8 +341,7 @@ export default function CityRushTutorial({
         <footer className="cr-tutorial-footer">
           <div className="cr-tutorial-utility-hint" aria-label="Commandes de course">
             <span>← / → <small>VOIES</small></span>
-            <span>Z <small>MITRAILLEUSE</small></span>
-            <span>X <small>BAZOOKA</small></span>
+            <span>Z <small>TIR</small></span>
             <span>P <small>PAUSE</small></span>
             <span>{paused ? 'PAUSE' : 'AUTO'} <small>{paused ? 'COURSE SUSPENDUE' : 'LA VOITURE CONDUIT'}</small></span>
           </div>

@@ -346,8 +346,13 @@ const PISTOL_HOLD_FIRE_INTERVAL = 0.12;
 // cartouche toutes les 1,5 s, le temps de réarmer — maintenir ne sert qu'à
 // enchaîner les trois coups sans réappuyer.
 const SHOTGUN_HOLD_FIRE_INTERVAL = CITY_RUSH_SHOTGUN_FIRE_COOLDOWN;
-// Les deux armes se tirent avec la même touche : la cadence suit l'arme en main.
+// Le bazooka partage lui aussi le bouton de tir unique : une roquette par
+// conteneur traversé, avec une cadence courte pour qu'un maintien ne double
+// pas le départ de coup.
+const BAZOOKA_HOLD_FIRE_INTERVAL = 0.85;
+// Les trois armes se tirent avec la même touche : la cadence suit l'arme en main.
 function weaponFireInterval(type) {
+  if (type === 'bazooka') return BAZOOKA_HOLD_FIRE_INTERVAL;
   return cityRushWeaponFireInterval(type) || PISTOL_HOLD_FIRE_INTERVAL;
 }
 // Maintien des flèches : garder ← (ou Q) / → (ou D) enfoncé enchaîne les
@@ -3139,6 +3144,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!warehouse || warehouse.taken) return false;
     warehouse.taken = true;
     bazookaAmmo = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP;
+    // Un seul emplacement d'arme : la roquette ramassée remplace l'AK-47 ou
+    // le pompe en main, munitions comprises — le bouton de tir (et la touche
+    // Z) tire désormais la roquette, exactement comme un bonus rouge ou bleu
+    // remplace l'arme précédente.
+    inventory = cityRushEquipWeapon(inventory, CITY_RUSH_POWERS.PISTOL, 0);
+    pistolHoldCooldown = 0;
     warehouse.group.userData.pickup.visible = false;
     // Le ramassage n'est définitivement consommé que lorsque les deux
     // entrepôts de la course ont été traversés.
@@ -3663,10 +3674,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     tutorialFireCooldown = Math.max(0, tutorialFireCooldown - dt);
     if (tutorialFireCooldown > 0 || playerStunLeft > 0 || playerWrecked || phase !== 'playing') return;
     // Leçon de tir : le coach tire avec l'arme en main — le pompe bleu
-    // compris, s'il a été ramassé à la place du chargeur rouge.
+    // compris, s'il a été ramassé à la place du chargeur rouge, et la
+    // roquette du conteneur jaune, qui occupe le même emplacement unique.
     if (lesson?.action === 'shoot') {
       const weapon = heldWeapon();
-      if (weapon && usePower(weapon.type)) tutorialFireCooldown = 0.55;
+      if (weapon && (weapon.type === 'bazooka'
+        ? useBazooka({ tutorialNote: 'shoot' })
+        : usePower(weapon.type))) tutorialFireCooldown = 0.55;
       return;
     }
     if (lesson?.action === 'bazooka' && bazookaAmmo > 0) {
@@ -4035,9 +4049,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         pursued: racer.id !== 'player' && cityRushRivalPursued(racer.wantedLevel || 0),
       })),
       inventory: { ...inventory },
-      // L'arme en main — AK-47 rouge, fusil à pompe bleu, ou rien du tout — et
-      // son réarmement : le bouton de tir reste vide tant qu'aucun bonus
-      // d'arme n'a été ramassé.
+      // L'arme en main — AK-47 rouge, fusil à pompe bleu, bazooka jaune, ou
+      // rien du tout — et son réarmement : le bouton de tir unique reste vide
+      // tant qu'aucun bonus d'arme n'a été ramassé.
       weapon: heldWeapon(),
       weaponCooldown: Math.max(0, pistolHoldCooldown),
       bazookaAmmo,
@@ -5903,8 +5917,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return true;
   }
 
-  /** L'arme en main, ou `null` quand le pilote n'a encore rien ramassé. */
+  /**
+   * L'arme en main, ou `null` quand le pilote n'a encore rien ramassé.
+   * Le bazooka occupe le même emplacement unique que l'AK-47 et le pompe :
+   * traverser un conteneur jaune vide les chargeurs rouges ou bleus, et
+   * ramasser un bonus rouge ou bleu vide la roquette — une seule arme en main.
+   */
   function heldWeapon() {
+    if (bazookaAmmo > 0) {
+      return Object.freeze({ type: 'bazooka', ammo: bazookaAmmo, max: CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP });
+    }
     return cityRushActiveWeapon(inventory);
   }
 
@@ -5921,12 +5943,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (hold) pistolKeyHeld = true;
     const weapon = heldWeapon();
     if (!weapon || pistolHoldCooldown > 0) return false;
-    const fired = usePower(weapon.type);
+    // Le bazooka se tire avec le même bouton que l'AK-47 et le pompe : tant
+    // qu'une roquette est en main, c'est elle qui part.
+    const fired = weapon.type === 'bazooka' ? useBazooka() : usePower(weapon.type);
     if (fired) pistolHoldCooldown = weaponFireInterval(weapon.type);
     return fired;
   }
 
-  function useBazooka() {
+  function useBazooka({ tutorialNote = 'bazooka' } = {}) {
     if (sprint || !active || finished || !storyWeaponsEnabled || !bazookaWarehouseEnabled || bazookaAmmo <= 0) return false;
     const target = firstPoliceOnLane('player');
     bazookaAmmo -= 1;
@@ -5936,8 +5960,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // première patrouille de la voie, puis son explosion balaie deux cases.
     fireStraightShot('player', target, 'bazooka');
     // Leçon bazooka : la roquette tirée valide la démonstration (l'entrepôt
-    // jaune devait avoir été traversé pour l'obtenir).
-    noteTutorialAction('bazooka');
+    // jaune devait avoir été traversé pour l'obtenir). La leçon de tir peut
+    // aussi valider une roquette quand elle a remplacé l'arme en main.
+    if (tutorialNote === 'shoot') noteTutorialAction('shoot');
+    else noteTutorialAction('bazooka');
     getCallbacks().effect?.({ type: 'bazooka-fired', ammo: bazookaAmmo, targetId: target?.id || null });
     emitHud(true);
     return true;
@@ -8357,9 +8383,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const previousWeapon = heldWeapon();
     if (weapon) {
       // Un seul emplacement d'arme : le bonus pris occupe la place et **vide
-      // l'autre**. La cadence repart de zéro — une arme fraîchement ramassée
-      // ne doit pas hériter du réarmement de celle qu'elle remplace.
+      // l'autre** — la roquette du bazooka comprise, qui se tire avec le même
+      // bouton. La cadence repart de zéro — une arme fraîchement ramassée ne
+      // doit pas hériter du réarmement de celle qu'elle remplace.
       inventory = cityRushEquipWeapon(inventory, type, pickupAmount);
+      bazookaAmmo = 0;
       pistolHoldCooldown = 0;
       if (type === CITY_RUSH_POWERS.PISTOL) playerPistolPickups += 1;
     } else {
@@ -9979,9 +10007,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // cadencés par la boucle de rendu tant que la touche reste enfoncée.
       if (pressSteerKey(key)) action(steerDirection);
     } else if (key === 'z') {
-      // Une seule touche pour les deux armes : le premier tir part tout de
-      // suite, les suivants sont cadencés dans la boucle de rendu tant que la
-      // touche reste enfoncée.
+      // Une seule touche pour les trois armes — AK-47, pompe, bazooka : le
+      // premier tir part tout de suite, les suivants sont cadencés dans la
+      // boucle de rendu tant que la touche reste enfoncée.
       fireHeldWeapon();
     } else if (key === 'x') {
       action('bazooka');
