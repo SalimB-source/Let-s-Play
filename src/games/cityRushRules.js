@@ -219,6 +219,28 @@ export function cityRushRivalPaceFactor({ finalLap = false } = {}) {
   return CITY_RUSH_RIVAL_PACE * (finalLap ? CITY_RUSH_RIVAL_FINAL_LAP_PUSH : 1);
 }
 
+// ── Rattrapage des rivaux : un adversaire lâché revient dans la course ──────
+// Un rival qui a pris du retard sur le joueur reçoit un coup de pouce de
+// vitesse qui monte avec l'écart : rien tant qu'il est à la hauteur du joueur
+// ou devant, puis un plafond de +12 % (la ligne propre du joueur) atteint à
+// 150 m de retard. Le plafond reste borné : un rival ne s'envole pas, il
+// revient. Le joueur garde sa maîtrise — turbo, ligne propre et contresens
+// restent ses moyens de creuser l'écart.
+export const CITY_RUSH_RIVAL_CATCHUP_GAP = 150; // m de retard pour atteindre le plafond
+export const CITY_RUSH_RIVAL_CATCHUP_MAX = 1.12; // × vitesse cible d'un rival au plafond
+
+/**
+ * Facteur de rattrapage d'un rival d'après son retard (en mètres) sur le
+ * joueur. Un rival devant ou à égalité reste à 1, un retard nul ou négatif
+ * aussi ; au-delà de `CITY_RUSH_RIVAL_CATCHUP_GAP`, le plafond tient.
+ */
+export function cityRushRivalCatchupFactor(gapBehind = 0) {
+  const gap = Number(gapBehind);
+  if (!Number.isFinite(gap) || gap <= 0) return 1;
+  const progress = Math.min(1, gap / CITY_RUSH_RIVAL_CATCHUP_GAP);
+  return 1 + (CITY_RUSH_RIVAL_CATCHUP_MAX - 1) * progress;
+}
+
 export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';
 export const CITY_RUSH_ONCOMING_MAX_WIDTH = 2.12;
 export const CITY_RUSH_ONCOMING_EDGE_MARGIN = 0.3;

@@ -23,6 +23,7 @@ import {
   CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR,
   CITY_RUSH_RIVAL_SLOW_FACTOR,
   cityRushRivalPaceFactor,
+  cityRushRivalCatchupFactor,
   cityRushRivalTargetSpeed,
   CITY_RUSH_AI_LOOKAHEAD,
   CITY_RUSH_AI_REFLEX,
@@ -9589,6 +9590,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             rivalTargetTopSpeed = Math.max(rivalTargetTopSpeed, playerCurrentSpeed * 1.18);
           }
         }
+        // Rattrapage : un rival qui a pris du retard sur le joueur accélère
+        // (voir `cityRushRivalCatchupFactor`) ; un rival devant reste à 1.
+        rivalTargetTopSpeed *= cityRushRivalCatchupFactor(distance - racer.distance);
         const speedTarget = (racer.wrecked || racer.stunLeft > 0
           ? 0
           : rivalTargetTopSpeed * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))
