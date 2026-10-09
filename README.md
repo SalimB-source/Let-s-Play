@@ -1719,9 +1719,9 @@ Les allures scénarisées restent appliquées (`rules.rivalPace` : Dante roule �
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes (et leurs **pilotes à
   visage découvert**, voir « Les pilotes dans le cockpit »), trafic, fumée ;
-- `src/games/cityRushRacerModels.js` — les onze carrosseries de course, et
+- `src/games/cityRushRacerModels.js` — les douze carrosseries de course, et
   `scripts/city-rush-car-preview.mjs` (ou `npm run preview:city-rush-cars`) —
-  rendu **logiciel** des onze voitures (trois angles + planche de contact) pour
+  rendu **logiciel** des douze voitures (trois angles + planche de contact) pour
   contrôler les formes sans lancer le jeu ; les images vont dans `.cache/`,
   ignoré par git ;
 - `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
@@ -1766,8 +1766,9 @@ donc nécessaire, et `purchaseCityRushCar` ne débite jamais leur prix catalogue
 (motif `'free-car'`). Les prix restent dans la fiche de chaque voiture — c'est
 le garage qui affiche la pastille **« OFFERTE »** (cyan) à la place du cadenas,
 et l'en-tête annonce « 3 VOITURES OFFERTES ». La progression du garage commence
-donc à la quatrième voiture, **CAVALLO F8 GTB** (400 billets) ; les cinq
-suivantes gardent leur prix. Un joueur qui avait déjà acheté la Nova ou la
+donc à la quatrième voiture, l'**AE-86 PANDA GT** (350 billets), le petit coupé
+panda à phares escamotables de la carrosserie `ae86` ; la CAVALLO F8 GTB (400)
+et les suivantes gardent leur prix. Un joueur qui avait déjà acheté la Nova ou la
 Wolfsburg garde sa sauvegarde telle quelle : les billets dépensés ne sont pas
 rendus.
 

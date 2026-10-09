@@ -12,7 +12,11 @@ import { act } from 'react';
 export async function dismissTitleMenu(node) {
   const menu = node.querySelector('.vcr-menu');
   if (!menu) return;
-  const raceEntry = [...menu.querySelectorAll('.vcr-entry')][2];
+  // Par libellé, jamais par position : l'écran-titre peut changer
+  // (« MISSIONS » s'est glissé entre HISTOIRE et TOURNOIS) et une fumée ne
+  // doit pas se tromper de page pour autant.
+  const raceEntry = [...menu.querySelectorAll('.vcr-entry')]
+    .find((entry) => (entry.getAttribute('aria-label') || '').toUpperCase().includes('COURSE RAPIDE'));
   if (!raceEntry) throw new Error('entrée « COURSE RAPIDE » introuvable dans l’écran-titre');
   await act(async () => { raceEntry.click(); });
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
