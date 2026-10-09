@@ -9,7 +9,7 @@
  * à l'arrivée ou quand elles sont détruites.
  */
 
-import { duelCardById, terrainById } from './rpgCards.js';
+import { duelCardById, magieById, terrainById } from './rpgCards.js';
 
 export const RPG_PV_JOUEUR = 50;
 export const RPG_PV_SORCIER_BASE = 50;
@@ -210,6 +210,31 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   return { ok: true };
 }
 
+/** Cible automatique d'une magie : première créature adverse si la magie
+ *  en cible une, sinon rien (les effets « soi » / « toutes » n'en ont pas
+ *  besoin, les magies « sorcier » visent le sorcier sans cible). */
+export function rpgCibleAuto(duel, cote, carte) {
+  if (carte.effet?.type !== 'degats' || carte.effet.cible !== 'creature') return null;
+  return duel[autre(cote)].creatures[0]?.id ?? null;
+}
+
+/** Lancer une magie : paie le mana, résout l'effet, consomme la carte. */
+export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
+  const camp = duel[cote];
+  const carte = magieById(carteId);
+  if (!carte) return { ok: false, raison: 'inconnue' };
+  if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  if (carte.effet.type === 'degats' && carte.effet.cible === 'creature' && !cibleId) {
+    return { ok: false, raison: 'cible' };
+  }
+  payer(camp, carte);
+  camp.main.splice(camp.main.indexOf(carteId), 1);
+  appliquer(duel, cote, carte.effet, cibleId);
+  duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
+  return { ok: true };
+}
+
 /**
  * Phase d'attaque, façon Magic : on déclare TOUS les attaquants d'un coup,
  * puis l'attaque se résout en dégâts simultanés.
@@ -303,7 +328,18 @@ export function rpgTourSorcierIA(duel, rng = Math.random) {
     if (!res.ok) break;
     joue.push(res.entite);
   }
-  // Le sorcier déclare tous ses attaquants d'un coup, comme le joueur.
+  // Le sorcier lâche ses magies payables (cible auto), puis déclare tous
+  // ses attaquants d'un coup, comme le joueur.
+  let gardeMagie = 6;
+  while (gardeMagie-- > 0) {
+    const magie = duel.sorcier.main
+      .map((id) => magieById(id))
+      .find((carte) => carte && rpgPeutPayer(duel.sorcier, carte)
+        && (carte.effet.cible !== 'creature' || duel.joueur.creatures.length));
+    if (!magie) break;
+    const res = rpgLancerMagie(duel, 'sorcier', magie.id, rpgCibleAuto(duel, 'sorcier', magie));
+    if (!res.ok) break;
+  }
   const pretsIds = duel.sorcier.creatures.filter((e) => pret(e)).map((e) => e.id);
   if (pretsIds.length) rpgLancerAttaque(duel, 'sorcier', pretsIds);
   return joue;

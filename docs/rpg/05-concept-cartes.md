@@ -57,7 +57,19 @@ limitée à 7.
     revient au palier suivant, plus fort).
 - Eux aussi ont ⚔ et 🛡 imprimés.
 
-## 2. Les règles du duel (v3)
+## 2. Construction de deck
+
+- Un deck fait **40 cartes**.
+- Répartition de base : **40 % de terrains** (16), **30 % de créatures**
+  (12), **20 % de sorts** (8), **10 % de héros** (4). Les chiffres peuvent
+  changer, mais **toujours au moins 40 % de terrains**.
+- **3 exemplaires max** par carte — sauf les terrains de base
+  (Montagne, Mer, Plaines), illimités comme à Magic : avec seulement
+  trois types de terrains, la règle des 3 ne pourrait jamais atteindre
+  les 40 %.
+- `rpgValiderDeck(deck)` vérifie tout ça.
+
+## 3. Les règles du duel (v3)
 
 - La partie commence avec **0 carte sur la table** ; chaque joueur **pioche
   5 cartes**.
@@ -79,7 +91,7 @@ limitée à 7.
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 
-## 3. La boucle de tour
+## 4. La boucle de tour
 
 1. **Piocher 1** ;
 2. poser **un terrain** (un par tour), engager ses terrains ;
@@ -88,7 +100,7 @@ Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
    puis lancer l'attaque ;
 5. **Fin du tour** (la grande pastille dorée ⧗).
 
-## 4. L’adversaire : un sorcier
+## 5. L’adversaire : un sorcier
 
 L'adversaire n'est pas un monstre passif : c'est un **sorcier** avec son
 propre paquet, sa propre main (face cachée) et ses propres terrains.
@@ -96,7 +108,7 @@ Chaque tour, il pioche une carte et la joue comme nous — la carte qu'il
 pose est annoncée face visible avant de se résoudre. Les vagues sont ses
 créatures qui arrivent les unes après les autres.
 
-## 5. Anatomie d’une carte (compacte)
+## 6. Anatomie d’une carte (compacte)
 
 Les cartes posées sont **courtes** — la table reste lisible :
 

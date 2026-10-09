@@ -17,7 +17,16 @@ import {
   rpgTourSorcierIA,
   rpgVainqueur,
 } from '../src/games/rpgDuel.js';
-import { RPG_CREATURE_CARDS, RPG_TERRAIN_CARDS, creatureById } from '../src/games/rpgCards.js';
+import {
+  RPG_CREATURE_CARDS,
+  RPG_DECK_JOUEUR_BASE,
+  RPG_DECK_SORCIER_BASE,
+  RPG_MAGIE_CARDS,
+  RPG_TERRAIN_CARDS,
+  creatureById,
+  rpgValiderDeck,
+} from '../src/games/rpgCards.js';
+import { rpgLancerMagie } from '../src/games/rpgDuel.js';
 
 /** Main de départ générique, mélangée de façon fixe. */
 const duelDeBase = (opts = {}) => rpgNouveauDuel({
@@ -335,6 +344,63 @@ test('phase d’attaque contre le mur : dégâts simultanés, répartition round
   assert.equal(duel.sorcier.creatures.length, 2, 'les dunes 2/5 encaissent sans mourir');
   assert.deepEqual(duel.sorcier.creatures.map((d) => d.pv).sort(), [2, 3]);
   assert.equal(duel.joueur.creatures.length, 0, 'chien 2/2 et vipère 3/1 meurent à la riposte');
+});
+
+test('huit magies : types, coûts, et cibles créature/sorcier', () => {
+  assert.equal(RPG_MAGIE_CARDS.length, 8);
+  for (const carte of RPG_MAGIE_CARDS) {
+    assert.ok(['braise', 'eau', 'sable'].includes(carte.element), 'type parmi les trois couleurs');
+    assert.ok(carte.kind === 'magie' && carte.cost >= 0);
+    assert.ok(Array.isArray(carte.cibles) && carte.cibles.length >= 1);
+  }
+  assert.ok(RPG_MAGIE_CARDS.some((c) => c.cibles.includes('sorcier')), 'certaines magies ciblent les joueurs');
+  assert.ok(RPG_MAGIE_CARDS.some((c) => c.cibles.includes('creature')), 'certaines magies ciblent les créatures');
+});
+
+test('decks de base : 40 cartes, 40/30/20/10, terrains ≥ 40 %, 3 exemplaires max', () => {
+  for (const deck of [RPG_DECK_JOUEUR_BASE, RPG_DECK_SORCIER_BASE]) {
+    const valide = rpgValiderDeck(deck);
+    assert.equal(valide.ok, true, valide.raison);
+    assert.equal(deck.length, 40);
+    assert.equal(valide.terrains, 16, '40 % de terrains');
+    const comptes = {};
+    for (const id of deck) comptes[id] = (comptes[id] ?? 0) + 1;
+    for (const [id, n] of Object.entries(comptes)) {
+      const carte = creatureById(id) || RPG_MAGIE_CARDS.find((c) => c.id === id) || null;
+      if (carte) assert.ok(n <= 3, `${id} ×${n} (3 max)`);
+    }
+  }
+});
+
+test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de terrains', () => {
+  assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE.slice(0, 39)).ok, false);
+  assert.equal(rpgValiderDeck([...RPG_DECK_JOUEUR_BASE.filter((id) => id !== 'salem'), 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet']).ok, false, '4 chiens = refus');
+  const sansTerrains = RPG_DECK_JOUEUR_BASE.map((id) => (RPG_TERRAIN_CARDS.some((t) => t.id === id) ? 'chien-du-guet' : id));
+  assert.equal(rpgValiderDeck(sansTerrains).ok, false, '0 terrain = refus');
+});
+
+test('magies : dégâts ciblés, soin, pioche, et refus sans cible', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise').ok, false, 'sans créature cible, non');
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', chien.id).ok, true, '2 dégâts au chien 2/2');
+  assert.equal(duel.sorcier.creatures.length, 0);
+  duel.joueur.pv = 40;
+  donner(duel, 'joueur', 'eau-de-la-source');
+  rpgLancerMagie(duel, 'joueur', 'eau-de-la-source');
+  assert.equal(duel.joueur.pv, 44);
+  const mainAvant = duel.joueur.main.length;
+  donner(duel, 'joueur', 'rapport-du-greffier');
+  rpgLancerMagie(duel, 'joueur', 'rapport-du-greffier');
+  assert.equal(duel.joueur.main.length, mainAvant + 2, 'donner +1, lancée −1, piochées +2');
+  donner(duel, 'joueur', 'fureur-du-souk');
+  const pvAvant = duel.sorcier.pv;
+  rpgLancerMagie(duel, 'joueur', 'fureur-du-souk');
+  assert.equal(duel.sorcier.pv, pvAvant - 4, 'Fureur du souk touche le sorcier');
 });
 
 test('vainqueur : nul tant que les deux sorciers sont debout', () => {

@@ -15,29 +15,20 @@ import {
   rpgFinDeTour,
   rpgJouerCreature,
   rpgLancerAttaque,
+  rpgLancerMagie,
   rpgNouveauDuel,
   rpgPeutPayer,
   rpgPoserTerrain,
   rpgTourSorcierIA,
   rpgVainqueur,
 } from './rpgDuel.js';
-import { CARD_RARITIES, cardById } from './rpgCards.js';
-
-const JOUEUR_DECK = [
-  'rat-des-decombres', 'chien-du-guet', 'chien-du-guet', 'porteuse-de-cruches',
-  'guetteur-du-beffroi', 'vipere-de-verre', 'dune-marchante', 'dune-marchante',
-  'scribe-de-la-liste', 'sonneur-fele', 'colosse-de-sel', 'djinn-du-souk',
-  'salem', 'yamina', 'boualem', 'feriel', 'tarek',
-  'plaines', 'plaines', 'plaines', 'plaines', 'mer', 'mer', 'mer', 'montagne', 'montagne', 'montagne',
-];
-const SORCIER_DECK = [
-  'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet',
-  'dune-marchante', 'dune-marchante', 'dune-marchante', 'dune-marchante',
-  'rat-des-decombres', 'rat-des-decombres', 'porteuse-de-cruches', 'porteuse-de-cruches',
-  'guetteur-du-beffroi', 'guetteur-du-beffroi', 'sonneur-fele', 'sonneur-fele',
-  'vipere-de-verre', 'vipere-de-verre',
-  'plaines', 'plaines', 'plaines', 'plaines', 'mer', 'mer', 'montagne', 'montagne',
-];
+import {
+  CARD_RARITIES,
+  RPG_DECK_JOUEUR_BASE,
+  RPG_DECK_SORCIER_BASE,
+  cardById,
+} from './rpgCards.js';
+import { rpgCibleAuto } from './rpgDuel.js';
 
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
 const cardArt = (id) => `${import.meta.env.BASE_URL}cards/${id}.jpg`;
@@ -72,7 +63,7 @@ function TableCard({ entite, cote, active, selected, onClick, tilt }) {
   );
 }
 
-export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SORCIER_DECK, sorcierPuissance = 2 } = {}) {
+export default function RpgDuelPage({ joueurDeck = RPG_DECK_JOUEUR_BASE, sorcierDeck = RPG_DECK_SORCIER_BASE, sorcierPuissance = 2 } = {}) {
   const duelRef = useRef(null);
   const [, setVersion] = useState(0);
   const force = () => setVersion((v) => v + 1);
@@ -117,6 +108,14 @@ export default function RpgDuelPage({ joueurDeck = JOUEUR_DECK, sorcierDeck = SO
   const poserCarte = (carteId) => {
     if (!monTour) return;
     const carte = cardById(carteId);
+    if (carte.kind === 'magie') {
+      const res = rpgLancerMagie(duel, 'joueur', carteId, rpgCibleAuto(duel, 'joueur', carte));
+      setMessage(res.ok ? `Vous lancez ${carte.name}.`
+        : res.raison === 'cible' ? `${carte.name} exige une créature cible — il n'y en a pas.`
+        : `Pas le bon mana pour ${carte.name}.`);
+      force();
+      return;
+    }
     const cibleAuto = duel.sorcier.creatures[0]?.id ?? null;
     const res = rpgJouerCreature(duel, 'joueur', carteId, cibleAuto);
     if (!res.ok) {

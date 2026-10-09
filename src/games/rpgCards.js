@@ -522,6 +522,45 @@ export function duelCardById(id) {
 }
 
 /**
+ * Les decks de base : 40 cartes — 40 % de terrains (16), 30 % de créatures
+ * (12), 20 % de sorts (8), 10 % de héros (4). Règle des 3 exemplaires par
+ * carte, sauf les terrains de base qui, comme à Magic, ne sont pas limités
+ * (sinon 3 types × 3 ne feraient jamais 40 %).
+ */
+export const RPG_DECK_JOUEUR_BASE = [
+  ...Array(6).fill('plaines'), ...Array(5).fill('mer'), ...Array(5).fill('montagne'),
+  ...Array(3).fill('chien-du-guet'), ...Array(3).fill('rat-des-decombres'),
+  ...Array(3).fill('porteuse-de-cruches'), ...Array(3).fill('dune-marchante'),
+  ...Array(3).fill('trait-de-braise'), ...Array(3).fill('eau-de-la-source'), ...Array(2).fill('tempete-de-sable'),
+  'salem', 'yamina', 'boualem', 'tarek',
+];
+
+export const RPG_DECK_SORCIER_BASE = [
+  ...Array(6).fill('plaines'), ...Array(5).fill('montagne'), ...Array(5).fill('mer'),
+  ...Array(3).fill('chien-du-guet'), ...Array(3).fill('dune-marchante'),
+  ...Array(3).fill('sonneur-fele'), ...Array(3).fill('vipere-de-verre'),
+  ...Array(3).fill('trait-de-braise'), ...Array(3).fill('fureur-du-souk'), ...Array(2).fill('tempete-de-sable'),
+  'feriel', 'feriel', 'tarek', 'tarek',
+];
+
+/** Valide un deck : 40 cartes, au moins 40 % de terrains, 3 exemplaires max
+ *  (hors terrains de base). */
+export function rpgValiderDeck(deck) {
+  if (deck.length !== 40) return { ok: false, raison: `40 cartes exigées (${deck.length})` };
+  const comptes = {};
+  let terrains = 0;
+  for (const id of deck) {
+    const carte = cardById(id);
+    if (!carte) return { ok: false, raison: `carte inconnue : ${id}` };
+    comptes[id] = (comptes[id] ?? 0) + 1;
+    if (carte.kind === 'terrain') terrains += 1;
+    else if (comptes[id] > 3) return { ok: false, raison: `${id} en ${comptes[id]} exemplaires (3 max)` };
+  }
+  if (terrains < 0.4 * deck.length) return { ok: false, raison: `terrains ${Math.round((terrains / deck.length) * 100)} % (40 % min)` };
+  return { ok: true, terrains };
+}
+
+/**
  * Les terrains — façon Magic : piochés, posés (UN par tour), engagés pour
  * produire un mana de leur couleur. Montagne → braise, Mer → eau,
  * Plaines → sable.
@@ -561,6 +600,114 @@ export const RPG_TERRAIN_CARDS = [
 
 export function terrainById(id) {
   return RPG_TERRAIN_CARDS.find((card) => card.id === id) ?? null;
+}
+
+/**
+ * Les magies — les sorts du set : payées en mana, résolues puis
+ * consommées. Comme à Magic, certaines ciblent les créatures,
+ * d'autres (parfois) les sorciers.
+ */
+export const RPG_MAGIE_CARDS = [
+  {
+    id: 'trait-de-braise',
+    name: 'Trait de braise',
+    element: 'braise',
+    kind: 'magie',
+    cost: 1,
+    rarity: 'commune',
+    cibles: ['creature', 'sorcier'],
+    effet: { type: 'degats', amount: 2, cible: 'creature' },
+    text: '2 dégâts à une créature ou un sorcier ciblés.',
+    flavor: 'Une étincelle suffit, au souk.',
+  },
+  {
+    id: 'eau-de-la-source',
+    name: 'Eau de la source',
+    element: 'eau',
+    kind: 'magie',
+    cost: 1,
+    rarity: 'commune',
+    cibles: ['soi'],
+    effet: { type: 'soin', amount: 4 },
+    text: 'Vous récupérez 4 points de vie.',
+    flavor: 'Elle a le goût d’avant le sable.',
+  },
+  {
+    id: 'rapport-du-greffier',
+    name: 'Rapport du greffier',
+    element: 'sable',
+    kind: 'magie',
+    cost: 1,
+    rarity: 'commune',
+    cibles: ['soi'],
+    effet: { type: 'pioche', amount: 2 },
+    text: 'Piochez deux cartes.',
+    flavor: 'Toute demande reçoit sa réponse. Écrite deux fois.',
+  },
+  {
+    id: 'lame-de-mer',
+    name: 'Lame de mer',
+    element: 'eau',
+    kind: 'magie',
+    cost: 2,
+    rarity: 'commune',
+    cibles: ['creature'],
+    effet: { type: 'degats', amount: 3, cible: 'creature' },
+    text: '3 dégâts à une créature ciblée.',
+    flavor: 'La vague coupe plus propre que le couteau.',
+  },
+  {
+    id: 'rempart-de-dunes',
+    name: 'Rempart de dunes',
+    element: 'sable',
+    kind: 'magie',
+    cost: 2,
+    rarity: 'commune',
+    cibles: ['soi'],
+    effet: { type: 'buff', atk: 1, def: 1 },
+    text: 'Vos créatures gagnent +1/+1.',
+    flavor: 'Le vent bâtit plus vite que les maçons.',
+  },
+  {
+    id: 'sentence-de-la-liste',
+    name: 'Sentence de la Liste',
+    element: 'sable',
+    kind: 'magie',
+    cost: 3,
+    rarity: 'rare',
+    cibles: ['creature'],
+    effet: { type: 'degats', amount: 4, cible: 'creature' },
+    text: '4 dégâts à une créature ciblée.',
+    flavor: 'Votre nom était barré avant l’aube.',
+  },
+  {
+    id: 'fureur-du-souk',
+    name: 'Fureur du souk',
+    element: 'braise',
+    kind: 'magie',
+    cost: 3,
+    rarity: 'rare',
+    cibles: ['sorcier'],
+    effet: { type: 'degats', amount: 4, cible: 'sorcier' },
+    text: '4 dégâts au sorcier adverse.',
+    flavor: 'On ne négocie pas avec un étal en feu.',
+  },
+  {
+    id: 'tempete-de-sable',
+    name: 'Tempête de sable',
+    element: 'sable',
+    kind: 'magie',
+    cost: 4,
+    rarity: 'rare',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: '2 dégâts à toutes les créatures adverses.',
+    flavor: 'Le ciel se couche. Personne n’est invité.',
+  },
+];
+
+export function magieById(id) {
+  return RPG_MAGIE_CARDS.find((card) => card.id === id) ?? null;
 }
 
 export const RPG_STARTING_COLLECTION = ['garde', 'bulle', 'nappe', 'vague', 'recolte'];
@@ -626,7 +773,7 @@ export const RPG_BASIC_ATTACKS = {
 const CATALOG = new Map(
   [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS),
     ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
-    ...RPG_HERO_CARDS, ...RPG_TERRAIN_CARDS].map((card) => [card.id, card]),
+    ...RPG_HERO_CARDS, ...RPG_TERRAIN_CARDS, ...RPG_MAGIE_CARDS].map((card) => [card.id, card]),
 );
 
 /** Retrouve une carte du catalogue par son id. */
