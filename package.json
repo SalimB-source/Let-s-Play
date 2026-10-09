@@ -61,6 +61,7 @@
     "check:city-rush-side-bump": "node --test tests/city-rush-side-bump.test.js && node scripts/city-rush-side-bump-check.mjs --all",
     "check:city-rush-weapons": "node scripts/city-rush-blue-shot-police-check.mjs --all",
     "check:city-rush-blue-shot": "node scripts/city-rush-blue-shot-police-check.mjs --all",
+    "check:city-rush-ramp-blue": "node scripts/city-rush-ramp-pickup-check.mjs --all",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
     "check:mirage-route": "node --test tests/mirage-route.test.js",
     "check:mirage-cup": "node scripts/mirage-cup-check.mjs",

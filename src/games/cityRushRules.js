@@ -117,15 +117,15 @@ export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du bonus turbo ve
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un bonus turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un bonus turbo
 // Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de
-// l'AK-47, les fusils à pompe bleus et les trousses de soin « + » rouges. Les
-// soins restent assez espacés pour garder les chocs dangereux, sans laisser une
-// coque abîmée sans solution.
+// l'AK-47 et les trousses de soin « + » rouges. Les soins restent assez espacés
+// pour garder les chocs dangereux, sans laisser une coque abîmée sans solution.
 //
-// L'ordre de tirage va du plus rare au plus courant : le fusil à pompe bleu
-// d'abord (3 %), puis le chargeur rouge d'AK-47 (8 %) — le pompe est donc près
-// de trois fois plus rare que la mitrailleuse, à laquelle il succède ou qu'il
-// remplace dans le même emplacement d'arme.
-export const CITY_RUSH_BLUE_PICKUP_CHANCE = 0.03; // fusil à pompe
+// Le fusil à pompe bleu ne traîne plus sur la chaussée : il se pose sur un
+// tremplin (voir `CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE`). Son tirage de 3 % reste
+// donc ici, et l'emplacement qu'il tire reste **vide** : la cadence des autres
+// bonus ne bouge pas d'un poil. Le chargeur rouge d'AK-47 (8 %) reste ainsi
+// l'arme la plus courante de la route.
+export const CITY_RUSH_BLUE_PICKUP_CHANCE = 0.03; // fusil à pompe : emplacement laissé vide, il vit sur les tremplins
 export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08; // chargeur d'AK-47
 export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
 export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1
@@ -970,7 +970,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#4da3ff',
     key: 'Z',
     automatic: false,
-    description: `Le fusil à pompe est l'arme rare de Vice City : un bonus bleu, près de trois fois plus rare qu'un chargeur d'AK-47, donne ${CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP} cartouches. Chaque tir part tout droit, sans viser, et arrache ${CITY_RUSH_SHOTGUN_DAMAGE} carrés de vie d'un coup à la première voiture touchée sur ta voie : une cartouche couche une berline de police (six carrés), deux viennent à bout d'un SUV blindé (dix). Le pompe se réarme lentement — une cartouche toutes les ${CITY_RUSH_SHOTGUN_FIRE_COOLDOWN} secondes — et il prend la place de l'AK-47 : ramasser l'un vide l'autre, les deux se tirent avec le même bouton.`,
+    description: `Le fusil à pompe est l'arme rare de Vice City : un bonus bleu posé sur un tremplin (on le prend en franchissant la rampe, dans sa voie), près de trois fois plus rare qu'un chargeur d'AK-47, donne ${CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP} cartouches. Chaque tir part tout droit, sans viser, et arrache ${CITY_RUSH_SHOTGUN_DAMAGE} carrés de vie d'un coup à la première voiture touchée sur ta voie : une cartouche couche une berline de police (six carrés), deux viennent à bout d'un SUV blindé (dix). Le pompe se réarme lentement — une cartouche toutes les ${CITY_RUSH_SHOTGUN_FIRE_COOLDOWN} secondes — et il prend la place de l'AK-47 : ramasser l'un vide l'autre, les deux se tirent avec le même bouton.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -3501,6 +3501,8 @@ export function keepsCityRushBoostPickup(random = Math.random, chance = CITY_RUS
 /**
  * Génère une rangée de bonus sans flaques ni zones de ralentissement.
  * Le turbo est un cercle vert peint sur la chaussée ; les autres bonus flottent.
+ * Le fusil à pompe bleu n'y apparaît jamais : il se pose sur un tremplin
+ * (voir `rollCityRushRampBluePickup`).
  */
 export function createCityRushEncounter(random = Math.random, laneCount = CITY_RUSH_LANE_X.length, boostChance = CITY_RUSH_BOOST_SPAWN_CHANCE) {
   const count = Math.max(1, Math.min(CITY_RUSH_LANE_X.length, Math.trunc(Number(laneCount)) || CITY_RUSH_LANE_X.length));
@@ -3516,8 +3518,8 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
     const [lane] = available.splice(slot, 1);
     const roll = random();
     // Les bonus turbo restent fréquents, mais les armes gardent une faible
-    // probabilité d'apparition sur chaque emplacement : le fusil à pompe bleu
-    // d'abord (le plus rare), puis le chargeur rouge d'AK-47.
+    // probabilité d'apparition sur chaque emplacement : d'abord le fusil à
+    // pompe bleu (le plus rare), puis le chargeur rouge d'AK-47.
     const type = roll < CITY_RUSH_BLUE_PICKUP_CHANCE
       ? CITY_RUSH_POWERS.SHOTGUN
       : roll < CITY_RUSH_BLUE_PICKUP_CHANCE + CITY_RUSH_RED_PICKUP_CHANCE
@@ -3525,6 +3527,10 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
         : roll < CITY_RUSH_BLUE_PICKUP_CHANCE + CITY_RUSH_RED_PICKUP_CHANCE + CITY_RUSH_HEALTH_PICKUP_CHANCE
           ? CITY_RUSH_PICKUPS.HEALTH
           : CITY_RUSH_PICKUPS.BOOST;
+    // Un bleu tiré ne se pose jamais sur la route : il vit sur les tremplins.
+    // Sa voie reste prise, comme celle d'un turbo écarté ci-dessous, et la
+    // rangée rend simplement un bonus de moins.
+    if (type === CITY_RUSH_POWERS.SHOTGUN) continue;
     // Un turbo écarté laisse sa voie vide — la voie reste comptée comme prise,
     // pour que le second emplacement de la rangée ne vienne pas se poser dessus
     // et repasser un tirage. La rangée rend donc simplement un bonus de moins.
@@ -3964,6 +3970,26 @@ export const CITY_RUSH_RAMP_HEIGHT = 0.85;
 export const CITY_RUSH_RAMP_CONTACT_WINDOW = 2.6;
 export const CITY_RUSH_RAMP_SPACING_MIN = 260;
 export const CITY_RUSH_RAMP_SPACING_MAX = 340;
+
+// Le fusil à pompe bleu flotte sur un tremplin, dans la voie de la rampe, et ne
+// se prend qu'en la franchissant. Une rampe sur `CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE`
+// en porte un, sauf les trois tremplins posés devant la grille (voir
+// `setupRampPickup` dans ViceCityWorld.jsx). Avec une rampe tous les 300 m en
+// moyenne, 0,4 garde la même quantité de bleus qu'avant (un tous les ~750 m) :
+// seul leur lieu change.
+export const CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE = 0.4;
+
+/**
+ * Une rampe qu'on vient de poser porte-t-elle un fusil à pompe bleu ?
+ * Tirage pur et borné : une chance se borne à [0 ; 1], et un tirage invalide ne
+ * pose jamais rien.
+ */
+export function rollCityRushRampBluePickup(random = Math.random, chance = CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE) {
+  const safeChance = Math.max(0, Math.min(1, Number(chance)));
+  if (!(safeChance > 0)) return false;
+  const roll = Number(random());
+  return Number.isFinite(roll) && roll < safeChance;
+}
 
 /**
  * Calcule la distance de saut (en mètres) franchie par la voiture selon la vitesse

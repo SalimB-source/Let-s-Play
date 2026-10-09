@@ -1078,13 +1078,15 @@ et le dernier tour durait 21 s.
   `rankCityRushRacers` ne les voit jamais, la grille garde trois pilotes, et le
   HUD les affiche à part (`hud.police`, marqueurs rouge et bleu de la mini-carte).
   Elles convoitent les bonus rouges d'AK-47 ; un bonus rouge ne représente que
-  **8 % des objets tirés** sur la route, contre 6 % de trousses de soin,
-  3 % de fusils à pompe bleus (`CITY_RUSH_BLUE_PICKUP_CHANCE`) et
+  **8 % des objets tirés** sur la route, contre 6 % de trousses de soin et
   83 % de bonus turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`) — mais un turbo
   tiré sur quatre n'est jamais posé (`CITY_RUSH_BOOST_SPAWN_CHANCE = 0.75`).
-  Le fusil à pompe bleu, près de trois fois plus rare que l'AK-47, **n'appartient
-  qu'au pilote** : ni les rivaux ni la police ne peuvent le ramasser, il leur est
-  invisible dans leur choix de voie (`canCollectCityRushPickup(..., { player: false })`).
+  Les 3 % restants (`CITY_RUSH_BLUE_PICKUP_CHANCE`) laissent un emplacement
+  vide : le fusil à pompe bleu ne se pose plus sur la route, il vit sur les
+  tremplins (voir « Les bonus »). Près de trois fois plus rare que l'AK-47, il
+  **n'appartient qu'au pilote** : ni les rivaux ni la police ne peuvent le
+  ramasser, il leur est invisible dans leur choix de voie
+  (`canCollectCityRushPickup(..., { player: false })`).
   Un bonus de tir vaut cinq bonus
   ordinaires dans leur choix de voie (`CITY_RUSH_POLICE_HUNT_TYPES`,
   `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
@@ -1521,9 +1523,20 @@ et le dernier tour durait 21 s.
   left… » (`tests/city-rush-rules.test.js`), « the driving side is painted by
   the theme… » (`tests/city-rush-themes.test.js`) et « Londres et Tokyo roulent
   à gauche jusque dans le décor et la page » (`tests/city-rush-hud.test.js`).
-- **Les bonus.** En course, trois objets d'équipement ou de soin apparaissent
-  sur la route : le **bonus turbo vert**, le bonus **rouge d'AK-47** et le bonus
-  **bleu de fusil à pompe**. Les deux armes partagent un **emplacement unique** :
+- **Les bonus.** En course, trois objets apparaissent sur la route : le **bonus
+  turbo vert**, le bonus **rouge d'AK-47** et la **trousse de soin**. Le **bonus
+  bleu de fusil à pompe** ne traîne plus sur la chaussée : il se pose **sur un
+  tremplin**, au centre de la rampe et dans sa voie. Chaque tremplin posé après
+  le départ en porte un avec une chance de 40 %
+  (`CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE = 0.4`), tirée à chaque pose, recyclage
+  compris (`setupRampPickup`) ; les trois premiers, devant la grille, n'en
+  portent jamais. Cela garde environ 1,3 bleu par
+  kilomètre, comme avant ; seul leur lieu change. Seul le pilote le ramasse, en
+  franchissant la rampe dans sa voie (`updateRampPickups`, avec la même fenêtre
+  de passage que les bonus de la route) : il ne réapparaît pas, la rampe le
+  reprend à son recyclage. Ni rivaux ni police ne le prennent. Aucun bleu en
+  Sprint, dans le tutoriel, ni dans une course sans armes (`storyRules`
+  `weaponsEnabled` à faux). Les deux armes partagent un **emplacement unique** :
   `cityRushActiveWeapon` lit l'arme en main, `cityRushEquipWeapon` la remplace —
   ramasser l'une vide l'autre. Le bouton de tir (et la touche Z) reste donc
   **vide** tant qu'aucune arme n'a été ramassée, et tire ensuite avec celle en
@@ -1544,8 +1557,8 @@ et le dernier tour durait 21 s.
   — vert `CITY_RUSH_TRACK_BOOST_COLOR`, rouge des soins, ou la teinte du
   pouvoir. Le rouge reste **très
   rare** : **8 % des emplacements** tirés sont des chargeurs, contre 6 % de
-  soins et 86 % de ronds turbo (`CITY_RUSH_RED_PICKUP_CHANCE = 0.08`,
-  `CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.86`). Chaque bonus rouge rare recharge les
+  soins et 83 % de ronds turbo (`CITY_RUSH_RED_PICKUP_CHANCE = 0.08`,
+  `CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.83`). Chaque bonus rouge rare recharge les
   **sept balles** du chargeur ; chaque pression en tire une, et maintenir `Z`
   tire à cadence régulière. Le bonus vert s'active automatiquement et accélère
   pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Comme il se voit moins qu'une
@@ -1902,6 +1915,7 @@ npm run check:city-rush-lanes    # les flèches peintes au sol : une par voie, v
 npm run check:city-rush-bazooka  # les deux conteneurs du bazooka sur les huit cartes : repères à 30 % et 65 % encadrant le garage de vie, ramassages et réapprovisionnement, caisse de deux voies reflétée de son côté de l'axe en conduite à gauche, roquette droite, impact police, reset
 npm run check:city-rush-mexico  # le parcours mexicain dans la vraie page (jsdom) : carte proposée et débloquée, miniature du fichier livré, garage sur la CARRETERA FEDERAL 45, départ sur le bon parcours
 npm run check:city-rush-weapons   # bonus rouges rares, dégâts police, un carré par carambolage, aucune attaque d'hélicoptère (le nom blue-shot reste un alias historique)
+npm run check:city-rush-ramp-blue # le fusil à pompe bleu : posé sur les tremplins seulement, ramassé par le pilote en franchissant la rampe, jamais en Sprint, au tutoriel ni sans armes
 npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le joueur 1 carré (espacés par le répit), l'épave est vérifiée si la coque se vide
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:city-rush-police-wreck # destruction d'une berline : deux tours de tête-à-queue en décélérant, explosion à l'arrêt, carcasse laissée en feu tout l'incendie

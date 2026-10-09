@@ -329,6 +329,8 @@ import {
   CITY_RUSH_RAMP_CONTACT_WINDOW,
   CITY_RUSH_RAMP_SPACING_MIN,
   CITY_RUSH_RAMP_SPACING_MAX,
+  CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE,
+  rollCityRushRampBluePickup,
   computeCityRushJumpDistance,
   computeCityRushJumpHeight,
   computeCityRushJumpElevation,
@@ -1095,7 +1097,7 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
 test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 8400); // 6 tours : 5 boucles de 1 200 m + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
-  assert.equal(CITY_RUSH_BLUE_PICKUP_CHANCE, 0.03, 'le fusil à pompe bleu apparaît dans 3 % des objets');
+  assert.equal(CITY_RUSH_BLUE_PICKUP_CHANCE, 0.03, 'le tirage du bleu reste à 3 % : l’emplacement tiré reste vide, le bleu vit sur les tremplins');
   assert.ok(CITY_RUSH_BLUE_PICKUP_CHANCE < CITY_RUSH_RED_PICKUP_CHANCE, 'le pompe est plus rare que l’AK-47');
   assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.08, 'le chargeur rouge apparaît dans 8 % des objets');
   assert.equal(CITY_RUSH_HEALTH_PICKUP_CHANCE, 0.06, 'le plus de soin apparaît dans 6 % des objets');
@@ -2827,7 +2829,7 @@ test('cars changing lanes still block one another while their body widths overla
   assert.equal(byId['clear-lane'], 30);
 });
 
-test('pickup encounters contain red machine-gun bonuses, red health crosses, and ground boosts', () => {
+test('pickup encounters contain red machine-gun bonuses, red health crosses, and ground boosts — never blue', () => {
   let seed = 112;
   const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
   let sawEmptyRow = false;
@@ -2851,31 +2853,66 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
     const pickupLanes = new Set();
     for (const pickup of encounter.pickups) {
       assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
+      // Le bleu ne se pose plus sur la route : il vit sur les tremplins.
       assert.ok([
         CITY_RUSH_PICKUPS.BOOST,
         CITY_RUSH_PICKUPS.HEALTH,
         CITY_RUSH_POWERS.PISTOL,
-        CITY_RUSH_POWERS.SHOTGUN,
-      ].includes(pickup.type));
+      ].includes(pickup.type), `aucun bonus ${pickup.type} sur la route`);
       assert.ok(!pickupLanes.has(pickup.lane));
       pickupLanes.add(pickup.lane);
     }
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
-  const blueRate = pickupCounts[CITY_RUSH_POWERS.SHOTGUN] / totalPickups;
   const redRate = pickupCounts[CITY_RUSH_POWERS.PISTOL] / totalPickups;
   const healthRate = pickupCounts[CITY_RUSH_PICKUPS.HEALTH] / totalPickups;
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
-  assert.ok(blueRate >= 0.02 && blueRate <= 0.045, `le fusil à pompe bleu apparaît environ 3 % du temps (${(blueRate * 100).toFixed(1)} %)`);
+  assert.equal(pickupCounts[CITY_RUSH_POWERS.SHOTGUN], 0, 'le fusil à pompe bleu ne se trouve jamais sur la route');
   assert.ok(redRate >= 0.06 && redRate <= 0.10, `le chargeur rouge apparaît environ 8 % du temps (${(redRate * 100).toFixed(1)} %)`);
-  assert.ok(blueRate < redRate, 'le pompe reste plus rare que l’AK-47 sur la route');
   assert.ok(healthRate >= 0.04 && healthRate <= 0.08, `le plus de soin apparaît environ 6 % du temps (${(healthRate * 100).toFixed(1)} %)`);
   assert.ok(boostRate >= 0.79 && boostRate <= 0.90, `les cercles turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
   assert.equal(pickupCounts['blue-shot'], undefined);
   assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
   assert.equal(sawTwoPickups, true);
-  assert.ok(totalPickups > 12000 && totalPickups < 12800, 'les rangées plus souvent doubles augmentent le nombre de bonus au sol');
+  // Sans le bleu, une rangée rend un peu moins de bonus qu'avant (son tirage
+  // bleu laisse un emplacement vide) : environ 1,2 objet par rangée.
+  assert.ok(totalPickups > 11700 && totalPickups < 12200, `les rangées plus souvent doubles augmentent le nombre de bonus au sol (${totalPickups})`);
+});
+
+test('le fusil à pompe bleu se pose sur les tremplins : quatre rampes sur dix environ, jamais sur la route', () => {
+  assert.equal(CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE, 0.4, 'quatre tremplins sur dix portent un bonus bleu');
+  // Tirage pur et borné, comme le turbo : une chance hors de [0 ; 1] se borne, un
+  // tirage invalide ne pose jamais rien.
+  assert.equal(rollCityRushRampBluePickup(() => 0.39), true);
+  assert.equal(rollCityRushRampBluePickup(() => 0.4), false);
+  assert.equal(rollCityRushRampBluePickup(() => 0.99, 1), true, 'à chance pleine, chaque rampe porte son bleu');
+  assert.equal(rollCityRushRampBluePickup(() => 0, 0), false, 'à chance nulle, aucune rampe ne porte de bleu');
+  assert.equal(rollCityRushRampBluePickup(() => Number.NaN), false, 'un tirage invalide ne pose rien');
+  assert.equal(rollCityRushRampBluePickup(() => 0.1, Number.NaN), false, 'une chance invalide ne pose rien');
+  assert.equal(rollCityRushRampBluePickup(() => 0.1, 7), true, 'une chance au-delà de 1 se borne à 1');
+
+  let seed = 31;
+  const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  let carriers = 0;
+  for (let index = 0; index < 10000; index += 1) {
+    if (rollCityRushRampBluePickup(random)) carriers += 1;
+  }
+  const share = carriers / 10000;
+  assert.ok(Math.abs(share - CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE) < 0.02, `la part des rampes bleues suit la constante (${(share * 100).toFixed(1)} %)`);
+
+  // Aucune rangée ne tire plus de bleu, même au tirage le plus favorable.
+  for (let index = 0; index < 5000; index += 1) {
+    for (const pickup of createCityRushEncounter(random, CITY_RUSH_LANE_X.length, 1).pickups) {
+      assert.notEqual(pickup.type, CITY_RUSH_POWERS.SHOTGUN);
+    }
+  }
+
+  // La quantité de bleus reste celle d'avant : environ un bleu tous les 750 m
+  // (une rampe tous les 300 m en moyenne, et 40 % d'entre elles en portent un).
+  const meanRampSpacing = (CITY_RUSH_RAMP_SPACING_MIN + CITY_RUSH_RAMP_SPACING_MAX) / 2;
+  const bluePerKm = CITY_RUSH_RAMP_BLUE_PICKUP_CHANCE / meanRampSpacing * 1000;
+  assert.ok(bluePerKm > 1.2 && bluePerKm < 1.45, `environ 1,3 bleu par kilomètre (${bluePerKm.toFixed(2)})`);
 });
 
 test('boost circles are seeded more sparsely on races, without touching the other pickups', () => {

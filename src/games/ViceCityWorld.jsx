@@ -234,6 +234,7 @@ import {
   canCollectCityRushPickup,
   createCityRushEncounter,
   createCityRushBoostEncounter,
+  rollCityRushRampBluePickup,
   createCityRushInventory,
   createCityRushPoliceInventory,
   chooseCityRushTrafficEscapeLane,
@@ -622,13 +623,20 @@ function makeRampObject(shared, city) {
   shadow.rotation.x = -Math.PI / 2;
   group.add(shadow);
 
+  // Le bonus bleu posé sur la rampe : un bonus flottant comme les autres, rangé
+  // dans le repère de la rampe. Il suit donc sa pente, sa voie et son décalage
+  // sans rien recalculer, et reste éteint tant que la rampe n'en porte pas.
+  const pickup = makePickupObject(shared);
+  pickup.visible = false;
+  group.add(pickup);
+
   group.userData = {
     deck,
     chevrons,
     holo,
     phase: Math.random() * Math.PI * 2,
   };
-  return { group, chevrons, holo };
+  return { group, chevrons, holo, pickup };
 }
 
 function makeMiniGarageMaterials(city, garageLanes) {
@@ -2747,6 +2755,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       group: rampObj.group,
       chevrons: rampObj.chevrons,
       holo: rampObj.holo,
+      // Bonus bleu posé sur la rampe : `pickupType` dit s'il y en a un, et
+      // `pickupTaken` s'il a déjà été ramassé pendant ce passage.
+      pickup: rampObj.pickup,
+      pickupType: null,
+      pickupTaken: false,
+      crossedRacers: new Set(),
       trackDistance: 0,
       lane: forwardLanes[index % forwardLanes.length],
       phase: index * 1.3,
@@ -3055,6 +3069,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     lastDistanceSlot = next;
   }
 
+  // Le fusil à pompe bleu d'une rampe est tiré à chaque fois qu'on la repose
+  // (voir `rollCityRushRampBluePickup`). Il n'existe que là où les armes ont leur
+  // place : jamais en Sprint, ni dans une course sans armes (tournoi, chapitre
+  // pur, mission sans armes), ni dans l'entraînement guidé — la même règle que
+  // pour les armes de la route.
+  // Le départ reste sans bleu : les trois premiers tremplins, posés devant la
+  // grille (65 m, puis tous les 260 à 340 m), n'en portent jamais. Un fusil à
+  // pompe à 65 m, pris sur la voie de départ, aurait avancé toute la course.
+  function setupRampPickup(ramp, { atStart = false } = {}) {
+    ramp.pickupTaken = false;
+    ramp.crossedRacers.clear();
+    const carries = !atStart && !sprint && storyWeaponsEnabled && !tutorialMode
+      && rollCityRushRampBluePickup(randomSeed);
+    ramp.pickupType = carries ? CITY_RUSH_POWERS.SHOTGUN : null;
+    if (!carries) {
+      ramp.pickup.visible = false;
+      return;
+    }
+    // Posé au centre de la rampe, sur sa voie : le repère de la rampe porte déjà
+    // la voie, donc le décalage latéral du bonus reste nul.
+    setPickupKind(ramp.pickup, CITY_RUSH_POWERS.SHOTGUN, 0, shared);
+  }
+
   function setRampsToStart() {
     let next = 65;
     for (let i = 0; i < ramps.length; i += 1) {
@@ -3065,6 +3102,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       ramp.group.position.set(laneX(ramp.lane) + trackRelativeX(ramp.trackDistance), trackRelativeY(ramp.trackDistance), z);
       ramp.group.rotation.set(trackPitch(ramp.trackDistance), trackYaw(ramp.trackDistance), 0);
       ramp.group.visible = true;
+      setupRampPickup(ramp, { atStart: true });
       next += randomRange(CITY_RUSH_RAMP_SPACING_MIN, CITY_RUSH_RAMP_SPACING_MAX);
     }
     lastRampDistanceSlot = next;
@@ -3306,6 +3344,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lastRampDistanceSlot = ramp.trackDistance;
         const currentIdx = forwardLanes.indexOf(ramp.lane);
         ramp.lane = forwardLanes[(currentIdx + 1) % forwardLanes.length];
+        setupRampPickup(ramp);
       }
       const gap = ramp.trackDistance - distance;
       const z = PLAYER_Z - gap * SCALE;
@@ -3680,9 +3719,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function tutorialWeapons(dt, lesson) {
     tutorialFireCooldown = Math.max(0, tutorialFireCooldown - dt);
     if (tutorialFireCooldown > 0 || playerStunLeft > 0 || playerWrecked || phase !== 'playing') return;
-    // Leçon de tir : le coach tire avec l'arme en main — le pompe bleu
-    // compris, s'il a été ramassé à la place du chargeur rouge, et la
-    // roquette du conteneur jaune, qui occupe le même emplacement unique.
+    // Leçon de tir : le coach tire avec l'arme en main — l'AK-47, le fusil à
+    // pompe s'il le tient à la place (il ne se pose plus que sur un tremplin),
+    // et la roquette du conteneur jaune, qui occupe le même emplacement unique.
     if (lesson?.action === 'shoot') {
       const weapon = heldWeapon();
       if (weapon && (weapon.type === 'bazooka'
@@ -4995,12 +5034,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // socle avec un léger rebond, hors course comme en course.
   function updatePickupPop(dt) {
     for (const row of rows) {
-      for (const slot of row.slots) {
-        if (!slot.visible || slot.userData.pop >= 1) continue;
-        slot.userData.pop = Math.min(1, slot.userData.pop + dt / CITY_RUSH_PICKUP_RESPAWN_DELAY);
-        slot.scale.setScalar(Math.max(0.001, cityRushPickupPopScale(slot.userData.pop)));
-      }
+      for (const slot of row.slots) popPickupSlot(slot, dt);
     }
+    for (const ramp of ramps) popPickupSlot(ramp.pickup, dt);
+  }
+
+  function popPickupSlot(slot, dt) {
+    if (!slot.visible || slot.userData.pop >= 1) return;
+    slot.userData.pop = Math.min(1, slot.userData.pop + dt / CITY_RUSH_PICKUP_RESPAWN_DELAY);
+    slot.scale.setScalar(Math.max(0.001, cityRushPickupPopScale(slot.userData.pop)));
   }
 
   // Une balle traçante de mitrailleuse : noyau jaune vif, traînée orangée et
@@ -8659,6 +8701,58 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     getCallbacks().effect?.({ type: 'police-steal', item: type, lane, police: police.name, ready });
   }
 
+  // Le mouvement d'un bonus posé, partagé par les rangées et les tremplins.
+  // Un cercle turbo ne flotte pas : il est peint au sol. Il ne tangue et ne
+  // pivote donc pas — un décalque qui tournerait sur lui-même se décollerait de
+  // sa voie à chaque virage. Il respire, c'est tout : l'anneau s'ouvre en
+  // s'éteignant puis se referme en reprenant de l'éclat, sur une simple
+  // sinusoïde, sans à-coup d'un cycle à l'autre. Le disque, lui, reste exactement
+  // où la peinture l'a posé.
+  function animatePickupSlot(slot, dt) {
+    if (slot.userData.ground) {
+      const breath = Math.sin(elapsed * 2.6 + slot.userData.phase);
+      slot.position.y = PICKUP_GROUND_HEIGHT;
+      slot.userData.pulse.scale.set(1 + breath * 0.13, 1 + breath * 0.13, 1);
+      slot.userData.pulseMaterial.opacity = 0.42 + breath * 0.34;
+      return;
+    }
+    // Les bonus flottants, eux, s'animent : léger tangage, balancement de
+    // l'icône, anneau du sol qui tourne et halo qui respire.
+    const bob = Math.sin(elapsed * 4.1 + slot.userData.phase) * 0.12;
+    slot.position.y = PICKUP_FLOAT_HEIGHT + bob;
+    slot.rotation.y = Math.sin(elapsed * 2.5 + slot.userData.phase) * 0.12;
+    slot.userData.ring.rotation.z += dt * 1.4;
+    slot.userData.halo.scale.setScalar(1 + Math.sin(elapsed * 3.2 + slot.userData.phase) * 0.12);
+  }
+
+  // Le bonus bleu d'une rampe ne se prend qu'en la franchissant dans sa voie, et
+  // seul le pilote peut l'emporter : rivaux et police ne le ramassent pas. Même
+  // critère de passage que les bonus de la route (une fenêtre autour de la
+  // distance, un seul essai par passage), mais sans réapparition : il n'a qu'un
+  // preneur, et la rampe le reprend à son recyclage.
+  function updateRampPickups(dt) {
+    const crossingWindow = Math.max(1.15, currentSpeed * dt * 0.65);
+    for (const ramp of ramps) {
+      if (ramp.pickup.visible) animatePickupSlot(ramp.pickup, dt);
+      if (!ramp.pickupType || ramp.pickupTaken) continue;
+      if (Math.abs(distance - ramp.trackDistance) > crossingWindow) continue;
+      // Un passage dans une autre voie ne compte pas : le pilote attend la sienne.
+      if (playerLane !== ramp.lane || ramp.crossedRacers.has('player')) continue;
+      ramp.crossedRacers.add('player');
+      if (!canCollectCityRushPickup(inventory, ramp.pickupType, {
+        health: playerHealth,
+        maxHealth: playerMaxHealth,
+        player: true,
+      })) continue;
+      const slot = ramp.pickup;
+      ramp.pickupTaken = true;
+      spawnPickupBurst(laneX(ramp.lane), slot.position.y, ramp.trackDistance, ramp.pickupType);
+      slot.visible = false;
+      slot.userData.pop = 0;
+      collectPickup(ramp.pickupType, playerLane);
+    }
+  }
+
   function updateRows(dt) {
     // Les rangées se recyclent derrière **le pilote**, pas derrière la voiture
     // la plus lente du peloton. La réserve ne compte que douze rangées — environ
@@ -8716,26 +8810,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           slot.userData.pop = 0;
           slot.scale.setScalar(0.001);
         }
-        // Un cercle turbo ne flotte pas : il est peint au sol. Il ne tangue et ne
-        // pivote donc pas — un décalque qui tournerait sur lui-même se
-        // décollerait de sa voie à chaque virage. Il respire, c'est tout :
-        // l'anneau s'ouvre en s'éteignant puis se referme en reprenant de
-        // l'éclat, sur une simple sinusoïde, sans à-coup d'un cycle à l'autre.
-        // Le disque, lui, reste exactement où la peinture l'a posé.
-        if (slot.userData.ground) {
-          const breath = Math.sin(elapsed * 2.6 + slot.userData.phase);
-          slot.position.y = PICKUP_GROUND_HEIGHT;
-          slot.userData.pulse.scale.set(1 + breath * 0.13, 1 + breath * 0.13, 1);
-          slot.userData.pulseMaterial.opacity = 0.42 + breath * 0.34;
-          return;
-        }
-        // Les bonus flottants, eux, s'animent : léger tangage, balancement de
-        // l'icône, anneau du sol qui tourne et halo qui respire.
-        const bob = Math.sin(elapsed * 4.1 + slot.userData.phase) * 0.12;
-        slot.position.y = PICKUP_FLOAT_HEIGHT + bob;
-        slot.rotation.y = Math.sin(elapsed * 2.5 + slot.userData.phase) * 0.12;
-        slot.userData.ring.rotation.z += dt * 1.4;
-        slot.userData.halo.scale.setScalar(1 + Math.sin(elapsed * 3.2 + slot.userData.phase) * 0.12);
+        animatePickupSlot(slot, dt);
       });
 
       // Un bonus ramassé disparaît 0,1 s puis réapparaît sur sa voie : la
@@ -8789,6 +8864,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
     }
 
+    // Les bonus bleus posés sur les tremplins ont leur propre liste : même
+    // passage de la voiture, autre liste à parcourir.
+    updateRampPickups(dt);
   }
 
   // ── L'hélico d'observation du dernier tour ─────────────────────────────
