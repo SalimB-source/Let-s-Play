@@ -21,7 +21,7 @@ export default function PartnersSection() {
         <span>{copy.label.split(' / ')[1]}</span><span>{copy.meta}</span>
       </div>
 
-      <div className="partners-head" data-parallax="0.025" data-parallax-limit="11">
+      <div className="partners-head">
         <div>
           <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p><h2>{copy.titleA}<br /><em>{copy.titleB}</em></h2>
         </div>

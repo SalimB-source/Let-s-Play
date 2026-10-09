@@ -240,3 +240,52 @@ html body .community-page :is(
 ) * {
   font-weight: 700 !important;
 }
+
+/* ============ 8. VICE CITY RUSH : LE HUB DE LANCEMENT GARDE SES POLICES ============ */
+/* L'écran-titre du jeu (`src/games/vice-city-rush-menu.css`) est écrit avec
+   deux familles d'arcade : « Pirata One » (street gothique) pour le logo, les
+   intitulés de mode et les puces de raccourcis, « Permanent Marker » (feutre)
+   pour les tags. Sans ce bloc, le bloc 1 les efface (`body *` en Google Sans
+   `!important`) et le bloc 2 met Orbitron sur le <h1> du logo : le hub est
+   rendu avec les polices du site, et l'interface du jeu avec les siennes.
+
+   La page de jeu redéfinit `--display`, `--font-gaming` et `--cr-display` sur
+   « Pirata One » (jetons en tête de `src/games/vice-city-rush.css`) : le bloc 2
+   suit automatiquement pour les titres, et ce bloc-ci rend les deux familles là
+   où le hub comptait sur l'héritage (que `body *` coupe). Les rôles surface par
+   surface — HUD, cartes, panneaux — sont arbitrés dans la peau du jeu
+   (`src/games/vice-city-rush-hub-skin.css`, section « signatures du hub »). */
+html body .city-rush-page :is(.vcr-menu, .vcr-menu-logo, .vcr-menu-logo-title) {
+  font-family: 'Pirata One', var(--font-gaming) !important;
+}
+
+html body .city-rush-page :is(
+  .vcr-menu-main-text,
+  .vcr-menu-selected,
+  .vcr-menu-panel h2,
+  .vcr-menu-panel li,
+  .vcr-menu-panel li b,
+  .vcr-menu-panel button,
+  .vcr-key-chip
+) {
+  font-family: 'Pirata One', var(--font-gaming) !important;
+}
+
+html body .city-rush-page :is(.vcr-menu-logo-kicker, .vcr-menu-tag, .vcr-menu-car-name) {
+  font-family: 'Permanent Marker', cursive !important;
+}
+
+/* Les micro-libellés du hub — la désignation du modèle au plateau, le badge du
+   direct — restent en Google Sans, mais à 700 : le poids 400 du bloc 1 les
+   rendait vaporeux à ce corps-là. */
+html body .city-rush-page :is(.vcr-menu-car-live, .vcr-menu-car-class) {
+  font-family: var(--google-sans) !important;
+  font-weight: 700 !important;
+}
+
+/* Le `kbd` des puces reste une lettrine d'interface : Google Sans, mais gras —
+   le poids 400 du bloc 1 écrasait celui que la feuille du hub demandait. */
+html body .city-rush-page .vcr-key-chip kbd {
+  font-family: var(--google-sans) !important;
+  font-weight: 700 !important;
+}

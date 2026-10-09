@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
@@ -7,6 +8,8 @@ import VideoThumb from '../components/VideoThumb';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
+import { leadTrailer } from '../articleTrailers';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -53,17 +56,13 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Actu mise en avant sur l'accueil : le trailer officiel de God of War Laufey
-// se lit directement dans la carte, sans quitter la page. Le lien éditorial
-// ouvre l'article complet consacré aux précommandes et à l'arc-serpent de Faye.
+// La une de l'accueil suit l'actu gaming de l'édition du jour.
+const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/'));
+const featuredVideo = leadTrailer(featuredStory.to);
 const featuredNews = {
-  to: '/news/god-of-war-laufey-precommandes-arc-serpent',
-  video: 'CQve7-PraCM',
-  videoTitle: 'God of War Laufey - Pre-Orders Open Now | PS5 Games',
-  badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES',
-  kicker: '29.09.2026 · SANTA MONICA STUDIO',
-  title: 'FAYE DÉGAINE L’ARC-SERPENT.',
-  excerpt: 'Le trailer officiel dévoile l’arc-serpent de Faye et ses deux modes de tir. God of War Laufey est attendu le 16 février 2027, en exclusivité sur PS5.',
+  ...featuredStory,
+  video: featuredVideo.id,
+  videoTitle: featuredVideo.title,
 };
 
 // YouTube resolves this permanent channel URL to the channel's active live
@@ -139,7 +138,7 @@ export default function Home() {
   const newsHeadMap = {
     fr: {
       label1: 'ACTU À LA UNE',
-      label2: 'GOD OF WAR LAUFEY · PS5',
+      label2: `${editionDate} · ${featuredNews.badge}`,
       eyebrow: 'Actu à la une',
       h2a: 'L’ACTU',
       h2b: 'À LA UNE.',
@@ -149,7 +148,7 @@ export default function Home() {
     },
     en: {
       label1: 'FEATURED NEWS',
-      label2: 'GOD OF WAR LAUFEY · PS5',
+      label2: `${editionDate} · ${featuredNews.badge}`,
       eyebrow: 'Featured news',
       h2a: 'TOP STORY,',
       h2b: 'RIGHT NOW.',
@@ -159,7 +158,7 @@ export default function Home() {
     },
     ar: {
       label1: 'أبرز الأخبار',
-      label2: 'GOD OF WAR LAUFEY · PS5',
+      label2: `${editionDate} · ${featuredNews.badge}`,
       eyebrow: 'خبر مميز',
       h2a: 'الخبر',
       h2b: 'المميز.',
@@ -188,8 +187,6 @@ export default function Home() {
             conserver le contraste du contenu éditorial. */}
         <img
           className="hero-bg hero-bg--keyart"
-          data-parallax="0.055"
-          data-parallax-limit="22"
           src={HERO_IMAGE}
           alt=""
           aria-hidden="true"
@@ -198,7 +195,7 @@ export default function Home() {
         />
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
-        <div className="hero-content" data-parallax="0.018" data-parallax-limit="9">
+        <div className="hero-content">
           <p className="eyebrow"><span className="live-dot" /> {t.home.eyebrow}</p>
           <h1>{t.home.h1a}<br /><em>{t.home.h1b}</em></h1>
           <p className="hero-text">{t.home.heroText}</p>
@@ -239,25 +236,24 @@ export default function Home() {
       {/* ACTU À LA UNE — première mise en avant après le ticker, trailer jouable sur place. */}
       <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une">
         <div className="section-label"><span>{newsHead.label1}</span><span>{newsHead.label2}</span></div>
-        <div className="featured-dossiers-head" data-parallax="0.025" data-parallax-limit="11">
+        <div className="featured-dossiers-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> {newsHead.eyebrow}</p>
             <h2>{newsHead.h2a}<br /><em>{newsHead.h2b}</em></h2>
           </div>
           <Link className="arrow-link" to="/news">{newsHead.seeAll} <Arrow /></Link>
         </div>
-        <article className="daily-news-card home-news-card" data-parallax="0.04" data-parallax-limit="20">
+        <article className="daily-news-card home-news-card">
           <div className="daily-news-image home-news-video">
             <ScrollAutoplayVideo
               id={featuredNews.video}
               title={featuredNews.videoTitle}
+              poster={`${base}${featuredNews.poster}`}
             />
             <span className="news-feature-badge">{featuredNews.badge}</span>
           </div>
           <Link
             className="daily-news-copy"
-            data-parallax="0.022"
-            data-parallax-limit="10"
             to={featuredNews.to}
             aria-label={`${newsHead.read} : ${featuredNews.title}`}
           >
@@ -281,12 +277,10 @@ export default function Home() {
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{head.seeAll} <Arrow /></a>
         </div>
         <div className="featured-dossiers-grid">
-          {episodes.map((ep, index) => (
+          {episodes.map((ep) => (
             <article
               className={`featured-dossier featured-dossier--${ep.tone}`}
               key={ep.id}
-              data-parallax={index === 1 ? '0.05' : '0.035'}
-              data-parallax-limit={index === 1 ? '22' : '17'}
             >
               <div className="featured-dossier-player hud-frame">
                 {/* Vignette statique : aucun lecteur, aucune commande, pas de lecture inline.
@@ -296,8 +290,6 @@ export default function Home() {
                   id={ep.id}
                   alt={ep.title}
                   fallbackLabel={ep.copy.label2 || ep.title}
-                  data-parallax="0.025"
-                  data-parallax-limit="8"
                 />
                 <span className="featured-dossier-badge" aria-hidden="true">▶</span>
               </div>
@@ -336,7 +328,7 @@ export default function Home() {
         </div>
         <div className="reels-grid">
           {reels.map((reel, index) => (
-            <div className="reel-card hud-frame" key={reel.id} data-parallax="0.05" data-parallax-limit="20">
+            <div className="reel-card hud-frame" key={reel.id}>
               {index === 0 ? (
                 <ScrollAutoplayVideo
                   id={reel.id}
@@ -390,9 +382,9 @@ export default function Home() {
       <section className="formats wrap" id="formats">
         <div className="section-label"><span>{t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
-          <article className="format-card card-gaming" data-parallax="0.045" data-parallax-limit="18"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
-          <article className="format-card card-movies" data-parallax="0.06" data-parallax-limit="22"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news/cinema">{t.home.formats.explore} <Arrow /></Link></article>
-          <article className="format-card card-community" data-parallax="0.045" data-parallax-limit="18"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.home.formats.communityText}</p><Link to="/communaute">{t.home.formats.joinUs} <Arrow /></Link></article>
+          <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
+          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news/cinema">{t.home.formats.explore} <Arrow /></Link></article>
+          <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.home.formats.communityText}</p><Link to="/communaute">{t.home.formats.joinUs} <Arrow /></Link></article>
         </div>
       </section>
 

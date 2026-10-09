@@ -4,11 +4,11 @@
  * (grandes images, typographie nette, surfaces pleines), sans verre dépoli.
  */
 .city-rush-page.city-rush-page {
-  --cr-bg: #080a0e;
+  --cr-bg: #07080d;
   --cr-bg-2: #10141b;
-  --cr-panel: #11151d;
-  --cr-panel-2: #171c25;
-  --cr-panel-solid: #11151d;
+  --cr-panel: #0b0d13;
+  --cr-panel-2: #10131a;
+  --cr-panel-solid: #0b0d13;
   --cr-border: #2a303a;
   --cr-border-strong: #424a57;
   --cr-text: #f5f7fb;
@@ -27,12 +27,15 @@
   --cr-ease: cubic-bezier(.2, .75, .25, 1);
   position: relative;
   min-height: 100vh;
-  padding: 96px 0 46px;
+  /* L’air du haut se pilote depuis `vice-city-rush.css` (`--cr-nav-clear`) :
+     cette feuille recharge la règle de la page, donc un chiffre écrit ici
+     écraserait la réserve calculée pour la barre de navigation du site. */
+  padding: var(--cr-nav-clear) 0 46px;
   color: var(--cr-text);
   color-scheme: dark;
   background:
     radial-gradient(ellipse at 82% 3%, rgba(44, 86, 164, .12), transparent 34%),
-    linear-gradient(180deg, #0b0e13 0%, #080a0e 58%, #0b0d12 100%);
+    linear-gradient(180deg, #0b0e13 0%, #07080d 58%, #0b0d12 100%);
 }
 
 .city-rush-page::before {
@@ -66,7 +69,7 @@
   padding: 48px clamp(28px, 5.5vw, 78px) 34px;
   overflow: hidden;
   border: 1px solid #252b35;
-  border-radius: 8px;
+  border-radius: 2px;
   background: #090c12;
   box-shadow: 0 22px 58px rgba(0, 0, 0, .34);
 }
@@ -226,7 +229,7 @@
   padding: 9px 12px;
   border: 1px solid #353b47;
   border-radius: 4px;
-  background: #11151d;
+  background: #0b0d13;
   color: #d3d8e1;
   font: 750 9px/1 var(--mono, ui-monospace, monospace);
   letter-spacing: .08em;
@@ -248,7 +251,7 @@
 
 .city-rush-page .city-rush-shell {
   border: 1px solid #272d37;
-  border-radius: 8px;
+  border-radius: 2px;
   background: #0b0e14;
   box-shadow: 0 22px 60px rgba(0, 0, 0, .38);
   -webkit-backdrop-filter: none;
@@ -341,7 +344,7 @@
 }
 
 .city-rush-page .city-rush-viewport {
-  background: #090d14;
+  background: #07080d;
   scroll-margin-top: 24px;
 }
 
@@ -353,7 +356,7 @@
 .city-rush-shell.is-immersive {
   border: 0;
   border-radius: 0;
-  background: #080a0e;
+  background: #07080d;
   box-shadow: none;
 }
 
@@ -377,15 +380,15 @@
   padding: clamp(18px, 2.8vh, 30px) clamp(22px, 4.2vw, 68px) 18px;
   overflow-x: hidden;
   text-align: left;
-  background-color: #080b11;
+  background-color: #07080d;
   background-image:
-    linear-gradient(90deg, rgba(6, 8, 12, .97) 0%, rgba(6, 8, 12, .91) 25%, rgba(6, 8, 12, .72) 58%, rgba(6, 8, 12, .47) 100%),
-    linear-gradient(0deg, rgba(6, 8, 12, .98) 0%, rgba(6, 8, 12, .62) 24%, transparent 70%),
+    linear-gradient(90deg, rgba(6, 7, 11, .97) 0%, rgba(6, 7, 11, .91) 25%, rgba(6, 7, 11, .72) 58%, rgba(6, 7, 11, .47) 100%),
+    linear-gradient(0deg, rgba(6, 7, 11, .98) 0%, rgba(6, 7, 11, .62) 24%, transparent 70%),
     url('../../public/vice-city-rush-keyart.jpg');
   background-position: center, center, 64% center;
   background-size: cover, cover, cover;
   background-repeat: no-repeat;
-  scrollbar-color: #3b4657 #11151d;
+  scrollbar-color: #3b4657 #0b0d13;
 }
 
 /* Le hub de préparation ne défile plus dans la fenêtre de jeu. Le panneau
@@ -494,7 +497,7 @@
 
 .city-rush-page .city-rush-stepper-item:hover {
   border-color: #485262;
-  background: #171c25;
+  background: #10131a;
   color: #fff;
 }
 
@@ -565,7 +568,7 @@
   border: 1px solid #343943;
   border-left: 3px solid #ef6285;
   border-radius: 6px;
-  background: #11151d;
+  background: #0b0d13;
   box-shadow: 0 12px 28px rgba(0, 0, 0, .22);
   color: inherit;
   font: inherit;
@@ -706,7 +709,7 @@
   overflow: hidden;
   border: 1px solid #333a46;
   border-radius: 6px;
-  background: #11151d;
+  background: #0b0d13;
   box-shadow: none;
   color: #f4f6fa;
   text-align: left;
@@ -845,6 +848,22 @@
   border-color: #7298d4;
   background: #213451;
   color: #d6e5ff;
+}
+
+/* Au concessionnaire, une voiture possédée ne se lance pas : elle se choisit.
+   La pastille le dit à la couleur du hub qui signe ce qui est retenu — la
+   cerise — et non plus au bleu d'action des vignettes de course. */
+.city-rush-page .city-rush-card-action.is-select {
+  border-color: color-mix(in srgb, #ffd23e 46%, transparent);
+  background: color-mix(in srgb, #ffd23e 14%, #17243a);
+  color: #ffd23e;
+}
+
+.city-rush-page .city-rush-car-card:hover .city-rush-card-action.is-select,
+.city-rush-page .city-rush-car-card:focus-visible .city-rush-card-action.is-select {
+  border-color: #ffd23e;
+  background: color-mix(in srgb, #ffd23e 24%, #17243a);
+  color: #fff;
 }
 
 .city-rush-page .city-rush-intro-actions {
@@ -999,7 +1018,7 @@
   padding: 0;
   border: 1px solid #333a45;
   border-radius: 6px;
-  background: #11151d;
+  background: #0b0d13;
   color: #f1f4f8;
   transition: border-color .16s ease, background .16s ease;
 }
@@ -1019,7 +1038,7 @@
   inset: 0;
   content: '';
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(6, 8, 12, .04) 25%, rgba(6, 8, 12, .28));
+  background: linear-gradient(180deg, rgba(6, 7, 11, .04) 25%, rgba(6, 7, 11, .28));
 }
 
 .city-rush-page .city-rush-city-thumb img {
@@ -1039,7 +1058,7 @@
 .city-rush-page .city-rush-city-card:hover {
   transform: none;
   border-color: color-mix(in srgb, var(--card-accent) 60%, #45505e);
-  background: #171c25;
+  background: #10131a;
 }
 
 .city-rush-page .city-rush-city-card.is-selected {
@@ -1139,7 +1158,7 @@
   padding: 10px;
   border: 1px solid #333a45;
   border-radius: 6px;
-  background: #11151d;
+  background: #0b0d13;
   box-shadow: none;
   transition: border-color .16s ease, background .16s ease;
 }
@@ -1147,7 +1166,7 @@
 .city-rush-page .city-rush-car-card:hover {
   transform: none;
   border-color: color-mix(in srgb, var(--car-accent) 58%, #45505e);
-  background: #171c25;
+  background: #10131a;
 }
 
 .city-rush-page .city-rush-car-card.is-selected {
@@ -1273,7 +1292,7 @@
   padding: 10px 12px;
   border: 1px solid #343b46;
   border-radius: 5px;
-  background: #11151d;
+  background: #0b0d13;
   color: #eef1f5;
   font: inherit;
   text-align: left;
@@ -1303,8 +1322,8 @@
 .city-rush-page .city-rush-side-card {
   padding: 18px;
   border: 1px solid #2c323d;
-  border-radius: 7px;
-  background: #11151d;
+  border-radius: 6px;
+  background: #0b0d13;
   box-shadow: none;
 }
 
@@ -1337,7 +1356,7 @@
 .city-rush-page .city-rush-no-collision-note {
   border: 1px solid #2c323d;
   border-radius: 6px;
-  background: #11151d;
+  background: #0b0d13;
 }
 
 .city-rush-page .city-rush-page-footer { border-color: #2a303a; }
@@ -1456,14 +1475,14 @@
 .city-rush-page .city-rush-story-caption {
   border: 1px solid #353b46 !important;
   border-radius: 4px !important;
-  background: #11151d !important;
+  background: #0b0d13 !important;
 }
 
 .city-rush-page .city-rush-story-race-card {
   border: 1px solid #353b46;
   border-left: 3px solid #e45f80;
   border-radius: 4px;
-  background: #11151d;
+  background: #0b0d13;
   box-shadow: none;
 }
 
@@ -1552,7 +1571,9 @@
 
 /* ── Téléphones : le menu des modes devient une rangée défilante ────────── */
 @media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  .city-rush-page { padding: 82px 0 24px; }
+  /* Sur téléphone la barre du site plaque `top: 0` sur 68 px : le jeu descend
+     à 96 px, par le même jeton qu’au-dessus — un seul endroit où décider. */
+  .city-rush-page { --cr-nav-clear: 96px; padding: var(--cr-nav-clear) 0 24px; }
   .city-rush-page .wrap { width: min(100% - 20px, 1440px); }
 
   .city-rush-page .city-rush-heading {
@@ -1605,8 +1626,8 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     background-image:
-      linear-gradient(90deg, rgba(6, 8, 12, .94), rgba(6, 8, 12, .82) 56%, rgba(6, 8, 12, .66)),
-      linear-gradient(0deg, rgba(6, 8, 12, .99), rgba(6, 8, 12, .6) 32%, transparent 78%),
+      linear-gradient(90deg, rgba(6, 7, 11, .94), rgba(6, 7, 11, .82) 56%, rgba(6, 7, 11, .66)),
+      linear-gradient(0deg, rgba(6, 7, 11, .99), rgba(6, 7, 11, .6) 32%, transparent 78%),
       url('../../public/vice-city-rush-keyart.jpg');
     background-position: center, center, 67% center;
   }
@@ -1666,7 +1687,7 @@
     padding-bottom: 4px;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
-    scrollbar-color: #3b4657 #11151d;
+    scrollbar-color: #3b4657 #0b0d13;
   }
 
   .city-rush-page .city-rush-mode-card {
@@ -1707,7 +1728,7 @@
 
   /* HUD de course tactile : blocs plats et commandes assez grandes. */
   .city-rush-page .city-rush-hud-top { top: calc(8px + env(safe-area-inset-top, 0px)); left: 8px; right: auto; gap: 6px; }
-  .city-rush-page .city-rush-hud-card { padding: 7px 8px; border-radius: 4px; background: #080b10; }
+  .city-rush-page .city-rush-hud-card { padding: 7px 8px; border-radius: 4px; background: #07080d; }
   .city-rush-page .city-rush-hud-label { margin-bottom: 3px; font-size: 6px; }
   .city-rush-page .city-rush-hud-card > strong { font-size: 18px; }
   .city-rush-page .city-rush-hud-card > strong small { font-size: 8px; }
@@ -1719,7 +1740,7 @@
   .city-rush-page .city-rush-gta-cash b { font-size: 14px; }
   .city-rush-page .city-rush-gta-cash small { font-size: 8px; }
   .city-rush-page .city-rush-radar { left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); width: 142px; }
-  .city-rush-page .city-rush-radar .city-rush-race-list { border-radius: 4px; background: #080b10; }
+  .city-rush-page .city-rush-radar .city-rush-race-list { border-radius: 4px; background: #07080d; }
   .city-rush-page .city-rush-radar .city-rush-race-list-head { padding: 6px 7px; }
   .city-rush-page .city-rush-radar .city-rush-race-list-rows { padding: 3px; }
   .city-rush-page .city-rush-radar .city-rush-race-list-row { grid-template-columns: 14px 20px minmax(0, 1fr); gap: 4px; min-height: 27px; padding: 3px; }
@@ -1736,10 +1757,10 @@
     gap: 6px;
   }
 
-  .city-rush-page .city-rush-steering { gap: 6px; padding: 5px; border-radius: 4px; background: #080b10; }
+  .city-rush-page .city-rush-steering { gap: 6px; padding: 5px; border-radius: 4px; background: #07080d; }
   .city-rush-page .city-rush-steering > span { display: none; }
   .city-rush-page .city-rush-steering button { width: 52px; height: 52px; border-radius: 4px; background: #171d27; touch-action: none; }
-  .city-rush-page .city-rush-power-bar { width: 124px; gap: 5px; padding: 5px; border-radius: 4px; background: #080b10; }
+  .city-rush-page .city-rush-power-bar { width: 124px; gap: 5px; padding: 5px; border-radius: 4px; background: #07080d; }
   .city-rush-page .city-rush-power-button { height: 46px; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; padding: 4px; }
   .city-rush-page .city-rush-power-icon { width: 22px; height: 22px; border-radius: 4px; }
   .city-rush-page .city-rush-power-icon svg { width: 13px; height: 13px; }

@@ -8,8 +8,9 @@
  *     plateforme l'accepte : Chrome, Edge, Firefox et Safari sur ordinateur,
  *     Chrome Android, et la WebView de l'application (son `onShowCustomView`
  *     pose alors le plein écran immersif du système, masque barres comprises) ;
- *   - une **couche fixe** (classe `is-immersive` sur la coque du jeu, voir
- *     `mirage-rush.css` et `vice-city-rush.css`) qui couvre tout le viewport.
+ *   - une **couche fixe** (classe `is-immersive` sur la coque du jeu — et sur la
+ *     page entière côté Vice City Rush, voir `mirage-rush.css` et
+ *     `vice-city-rush.css`) qui couvre tout le viewport.
  *     C'est elle qui règle la mise en page du jeu en plein écran natif, et c'est
  *     elle qui reste quand l'API manque ou refuse (iPhone, iframe sans
  *     `allowfullscreen`, politique du navigateur).

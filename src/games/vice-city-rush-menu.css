@@ -1,8 +1,11 @@
 /* Écran-titre de Vice City Rush — menu principal façon Need for Speed :
-   Most Wanted (2005). Décor photo statique, logo griffé, carrousel cerisé
-   de jaune, encre grunge et raccourcis clavier. Les polices « Pirata One »
-   (street gothique) et « Permanent Marker » (tag) sont chargées dans
-   index.html avec le reste des Google Fonts. */
+   Most Wanted (2005). Le décor est la vitrine 3D du garage (le même
+   `ViceCityGarageStage` que l'écran de préparation, cadré « vitrine »), le
+   logo est griffé, le carrousel est cerisé de jaune, les raccourcis clavier
+   sont en bas de page. Plus aucun nuage d'encre devant la salle : la
+   lisibilité vient du dégradé `.vcr-menu-shade` et des ombres portées. Les
+   polices « Pirata One » (street gothique) et « Permanent Marker » (tag)
+   sont chargées dans index.html avec le reste des Google Fonts. */
 
 .vcr-menu {
   position: fixed;
@@ -23,6 +26,30 @@
   transform: scale(1.02);
   filter: saturate(1.05) contrast(1.04);
 }
+/* Le plateau tournant de l'écran-titre : la scène de garage (`ViceCityGarageStage`)
+   remontée dans son cadrage « vitrine » — plan large, la cabine entière dans le
+   champ, le modèle au tiers du cadre au lieu du nez à nez du garage. Elle est
+   posée APRÈS la photo dans l'ordre de peinture : dès que WebGL répond, elle la
+   couvre ; sans WebGL, la photo reste le décor et rien ne s'affiche par-dessus.
+
+   Aucun geste n'est captable ici : le hub est une couche de dialogue, son décor
+   se regarde. La feuille du garage rend le canvas réactif au regard (et importée
+   après celle-ci) — on le lui reprend à la main, deux fois le même nom de classe
+   pour la coiffer en spécificité. */
+.vcr-menu-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.vcr-menu .city-rush-hub-stage-canvas.city-rush-hub-stage-canvas,
+.vcr-menu .city-rush-hub-stage-canvas-element.city-rush-hub-stage-canvas-element {
+  pointer-events: none;
+  touch-action: none;
+  cursor: default;
+}
+
 .vcr-menu-shade {
   position: absolute;
   inset: 0;
@@ -44,25 +71,13 @@
   pointer-events: none;
 }
 
-/* ── Encre grunge ──────────────────────────────────────────────────────── */
-.vcr-splat {
-  position: absolute;
-  color: rgba(4, 5, 9, 0.9);
-  pointer-events: none;
-  z-index: 1;
-}
-.vcr-splat-logo {
-  top: -46px;
-  right: 2%;
-  width: min(620px, 78vw);
-  transform: rotate(-4deg);
-}
-.vcr-splat-bar {
-  bottom: -56px;
-  left: 50%;
-  width: min(980px, 118vw);
-  transform: translateX(-50%) rotate(2deg);
-}
+/* ── Encre grunge ────────────────────────────────────────────────────────
+   Elle a disparu de l'écran-titre. Les deux nuages d'encre — celui du logo,
+   celui du carrousel — avaient été dessinés pour une photo de voiture figée :
+   posés sur la vitrine 3D, ils ne protégeaient plus rien et masquaient la
+   salle. La lisibilité se fait maintenant par ce qui doit la faire : le
+   dégradé haut et bas de `.vcr-menu-shade`, l'ombre portée franche du logo
+   (`0 3px 0 #0a0c12`, `0 6px 18px rgba(0,0,0,.9)`) et celle de chaque picto. */
 
 /* ── Logo ──────────────────────────────────────────────────────────────── */
 .vcr-menu-logo {
@@ -259,15 +274,64 @@
   font: 700 12px/1.5 'Google Sans', system-ui, sans-serif;
 }
 
-.vcr-menu-car-name {
+/* Plaque du plateau : ce qui tourne derrière le menu. Un bloc d'angle, collé
+   au carrousel — la désignation du modèle, puis le nom griffé au feutre comme
+   une dédicace posée sur la carrosserie. */
+.vcr-menu-car {
   position: absolute;
   right: 16px;
   bottom: 12px;
-  font-family: 'Permanent Marker', cursive;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.55);
-  transform: rotate(-2deg);
   z-index: 2;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  text-align: right;
+}
+
+.vcr-menu-car-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  background: rgba(8, 10, 16, 0.74);
+  color: #dfe6f2;
+  font: 700 10px/1.4 'Google Sans', system-ui, sans-serif;
+  letter-spacing: 0.14em;
+}
+
+/* Le point rouge du direct : la preuve que la scène est vivante, pas une carte
+   postale. Il bat à deux secondes, et se fige si l'appareil demande moins de
+   mouvement. */
+.vcr-menu-car-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffd23e;
+  box-shadow: 0 0 0 0 rgba(255, 210, 62, 0.7);
+  animation: vcr-live 2s ease-out infinite;
+}
+
+@keyframes vcr-live {
+  0% { box-shadow: 0 0 0 0 rgba(255, 210, 62, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 210, 62, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 210, 62, 0); }
+}
+
+.vcr-menu-car-class {
+  color: rgba(255, 255, 255, 0.42);
+  font: 700 10px/1.4 'Google Sans', system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.vcr-menu-car-name {
+  font-family: 'Permanent Marker', cursive;
+  font-size: 16px;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.62);
+  transform: rotate(-2deg);
 }
 
 /* ── Panneaux stats / options ──────────────────────────────────────────── */
@@ -317,16 +381,25 @@
 .vcr-menu-panel-close { margin-top: 14px; }
 
 /* ── Mobile ────────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  /* Sur un téléphone, le carrousel mange la moitié basse : la plaque ne garde
+     que le nom griffé, la désignation et le badge passent à la trappe. */
+  .vcr-menu-car { right: 10px; bottom: 8px; }
+  .vcr-menu-car-live,
+  .vcr-menu-car-class { display: none; }
+  .vcr-menu-car-name { font-size: 13px; }
   .vcr-menu-main-label { bottom: 40%; right: 6%; }
-  .vcr-menu-bar { bottom: clamp(96px, 20vh, 150px); }
+  .vcr-menu-bar { bottom: clamp(96px, 20vh, 150px); gap: 0; }
+  .vcr-entry { width: clamp(39px, 11vw, 58px); padding: 6px; }
+  .vcr-menu-arrow { padding-inline: 2px; font-size: clamp(22px, 7vw, 30px); }
   .vcr-menu-keys { gap: 6px; }
   .vcr-key-chip { font-size: 12px; padding: 5px 8px; }
-  .vcr-splat-logo { top: -60px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .vcr-menu-logo { animation: none; }
+  /* La scène 3D, elle, coupe déjà son plateau ; le point du direct se fige. */
+  .vcr-menu-car-live i { animation: none; }
   .vcr-entry,
   .vcr-entry.is-selected { transition: none; transform: none; }
 }

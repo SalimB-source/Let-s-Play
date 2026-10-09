@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
+import { dailySeoEntries } from '../news/daily/2026-10-08';
 
 const SITE_URL = 'https://salimb-source.github.io/Let-s-Play';
 const base = import.meta.env.BASE_URL;
@@ -9,6 +10,7 @@ const SITE_NAME = 'Let’s Play';
 const DEFAULT_IMAGE = `${SITE_URL}/hero-lets-play.jpg`;
 
 const pageMeta = {
+  ...dailySeoEntries,
   '/': {
     title: 'Let’s Play — Gaming, tech et pop culture en Algérie',
     description: 'Let’s Play est le média algérien dédié au gaming, à la tech, à l’e-sport, au cinéma et à la pop culture.',
@@ -17,6 +19,11 @@ const pageMeta = {
   '/news': {
     title: 'Actualités gaming — Let’s Play',
     description: 'Les dernières actualités du jeu vidéo, des consoles, du PC, de la tech et de la pop culture par la rédaction Let’s Play.',
+    type: 'website',
+  },
+  '/news/articles': {
+    title: 'Tous les articles — Actualités gaming, cinéma et tech — Let’s Play',
+    description: 'Tous les articles d’actualité de Let’s Play : gaming, cinéma, séries et tech. Retrouvez les nouvelles du jour et les archives de la rédaction.',
     type: 'website',
   },
   '/news/tech': {

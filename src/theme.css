@@ -150,6 +150,7 @@
   [data-theme='light'] .comments h2,
   [data-theme='light'] .comment strong,
   [data-theme='light'] .comment-form-heading strong,
+  [data-theme='light'] .comment-report-title,
   [data-theme='light'] .review-feature-copy h2,
   [data-theme='light'] .review-score-card strong,
   [data-theme='light'] .article-video-title,
@@ -366,6 +367,8 @@
   [data-theme='light'] .messages-inline-error,
   [data-theme='light'] .comment-note-error,
   [data-theme='light'] .comment-delete:hover:not(:disabled),
+  [data-theme='light'] .comment-report:hover,
+  [data-theme='light'] .comment-report[aria-expanded='true'],
   [data-theme='light'] .comment-empty-error,
   [data-theme='light'] .comment-empty-error .comment-empty-icon,
   [data-theme='light'] .quiz-chip--hard,
@@ -445,6 +448,7 @@
 [data-theme='light'] .aside-card,
 [data-theme='light'] .comment-form,
 [data-theme='light'] .comment-identity,
+[data-theme='light'] .comment-report-form,
 [data-theme='light'] .comments-panel,
 [data-theme='light'] .proscons .pc-col,
 [data-theme='light'] .article-engagement,
@@ -554,7 +558,9 @@
 [data-theme='light'] .messages-report-note,
 [data-theme='light'] .comment-form input,
 [data-theme='light'] .comment-form textarea,
+[data-theme='light'] .comment-report-field select,
 [data-theme='light'] .countdown-unit{background:var(--panel)}
+[data-theme='light'] .comment-report-field select{color:var(--ink)}
 [data-theme='light'] .social-page-tabs{
   background-color:#fff;
   background-image:none;

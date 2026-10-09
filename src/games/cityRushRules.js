@@ -22,12 +22,13 @@ export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la
 // Mode Sprint : course solo à checkpoints, sans police ni arme. Seize checkpoints
 // tous les 300 m (un quart de boucle) : le dernier est l'arrivée, pile sous le
 // portique (16 × 300 m = 4 800 m = 4 boucles exactes). Chaque checkpoint
-// recharge le chrono à 15 s ; des bonus turbo verts flottent au-dessus de la
-// piste pour aider le pilote à les atteindre.
+// recharge le chrono à 15 s ; des ronds turbo verts peints sur la piste aident le
+// pilote à les atteindre — à une rangée sur huit, pas davantage : le Sprint se
+// court d'abord sur sa vitesse de base, la marge de chrono est calculée pour.
 export const CITY_RUSH_SPRINT_CHECKPOINTS = 16;
 export const CITY_RUSH_SPRINT_CHECKPOINT_SPACING = 300;
 export const CITY_RUSH_SPRINT_CHECKPOINT_TIME = 15;
-export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 6;
+export const CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 8;
 export const CITY_RUSH_SPRINT_DISTANCE = CITY_RUSH_SPRINT_CHECKPOINTS * CITY_RUSH_SPRINT_CHECKPOINT_SPACING;
 // Nombre de checkpoints franchis pour une distance parcourue (0 … 14).
 export function cityRushSprintCheckpointsPassed(distance, spacing = CITY_RUSH_SPRINT_CHECKPOINT_SPACING, count = CITY_RUSH_SPRINT_CHECKPOINTS) {
@@ -115,14 +116,43 @@ export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 5
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du bonus turbo vert ramassé en vol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un bonus turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un bonus turbo
-// Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de l'AK-47
-// et les trousses de soin « + » rouges. Les soins restent assez espacés pour
-// garder les chocs dangereux, sans laisser une coque abîmée sans solution.
+// Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de
+// l'AK-47, les fusils à pompe bleus et les trousses de soin « + » rouges. Les
+// soins restent assez espacés pour garder les chocs dangereux, sans laisser une
+// coque abîmée sans solution.
+//
+// L'ordre de tirage va du plus rare au plus courant : le fusil à pompe bleu
+// d'abord (3 %), puis le chargeur rouge d'AK-47 (8 %) — le pompe est donc près
+// de trois fois plus rare que la mitrailleuse, à laquelle il succède ou qu'il
+// remplace dans le même emplacement d'arme.
+export const CITY_RUSH_BLUE_PICKUP_CHANCE = 0.03; // fusil à pompe
 export const CITY_RUSH_RED_PICKUP_CHANCE = 0.08; // chargeur d'AK-47
 export const CITY_RUSH_HEALTH_PICKUP_CHANCE = 0.06; // un carré de vie
-export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1 - CITY_RUSH_RED_PICKUP_CHANCE - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 86 % de bonus turbo verts
+export const CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 1
+  - CITY_RUSH_BLUE_PICKUP_CHANCE
+  - CITY_RUSH_RED_PICKUP_CHANCE
+  - CITY_RUSH_HEALTH_PICKUP_CHANCE; // 83 % de bonus turbo verts
+// Le turbo est devenu un cercle peint sur la chaussée : on le traverse sans
+// lever les yeux, donc il se voit moins qu'une icône qui flottait. Pour qu'il
+// reste une aubaine et non un régime, chaque emplacement tiré « turbo » n'est
+// réellement posé qu'avec cette probabilité — les trois quarts aujourd'hui. Les
+// chargeurs rouges et les trousses de soin ne sont pas touchés : leur rareté est
+// déjà réglée par leur propre tirage, et les rangées gardent leur cadence.
+export const CITY_RUSH_BOOST_SPAWN_CHANCE = 0.75; // 25 % des turbos ne sont pas posés du tout
 export const CITY_RUSH_PISTOL_AMMO_PER_PICKUP = 7;
 export const CITY_RUSH_PISTOL_MAX_AMMO = CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+// Le fusil à pompe est l'arme rare de Vice City : bonus bleu, trois cartouches
+// seulement, mais six carrés de vie arrachés à la voiture touchée — de quoi
+// coucher une berline de police d'un seul coup. Il occupe le **même
+// emplacement** que l'AK-47 : ramasser l'une vide l'autre, et les deux se
+// tirent avec le même bouton (ou la même touche Z).
+export const CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP = 3;
+export const CITY_RUSH_SHOTGUN_MAX_AMMO = CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP;
+// Dégâts d'une cartouche de pompe, en carrés de vie : six d'un coup.
+export const CITY_RUSH_SHOTGUN_DAMAGE = 6;
+// Le pompe se réarme entre deux tirs : une cartouche toutes les 1,5 s au
+// mieux, même en laissant le doigt sur le bouton.
+export const CITY_RUSH_SHOTGUN_FIRE_COOLDOWN = 1.5; // s
 // Le bazooka apparaît deux fois sur chaque carte : deux **conteneurs** de deux
 // voies, un avant le garage de vie de mi-course (30 % du parcours), un après
 // (65 %). Chaque traversée donne **une seule roquette** ; il n'y a pas d'autre
@@ -141,25 +171,44 @@ export const CITY_RUSH_BAZOOKA_AMMO_PER_RACE = CITY_RUSH_BAZOOKA_AMMO_PER_PICKUP
 export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un bonus turbo pèse trois bonus d'inventaire pour les rivaux
 
 // ── Le rythme des rivaux : ils courent pour gagner ──────────────────────────
-// Nova et Juno ne se contentaient plus de suivre la voiture du joueur : leur
-// mécanique donne désormais 5 % de plus que la fiche de leur modèle, et ils
-// lâchent tout au dernier tour (+2 %). La contrepartie reste entièrement dans
-// les mains du joueur : le bonus de ligne propre (jusqu'à 1,12 ×), le contresens
-// (jusqu'à 1,35 ×, multiplié au précédent) et le turbo des pads (1,46 × contre
-// 1,38 × pour les rivaux) valent plus que cet écart — à condition de rouler
-// proprement, ce que l'IA ne fait plus à leur place.
+// La pointe d'un rival ne peut pas être inférieure à celle de la voiture du
+// joueur : si son modèle est moins puissant, il compense sur le rythme de course
+// (+5 %), puis pousse encore au dernier tour (+2 %). Un modèle plus rapide
+// conserve évidemment son avantage. La contrepartie reste dans les mains du
+// joueur : la ligne propre (jusqu'à 1,12 ×), le contresens (jusqu'à 1,35 ×) et
+// le turbo des pads (1,46 × contre 1,38 × pour les rivaux) restent des moyens
+// de reprendre l'avantage — à condition de rouler proprement.
 //
 // Un rival coincé entre le trafic garde aussi un peu plus de vitesse qu'avant
 // (`CITY_RUSH_RIVAL_SLOW_FACTOR`, contre 0,63 pour le joueur) : un choc évité
 // vaut mieux qu'un choc encaissé, et ils les évitent maintenant.
-export const CITY_RUSH_RIVAL_PACE = 1.05; // × la pointe de leur fiche de modèle
+export const CITY_RUSH_RIVAL_PACE = 1.05; // × la pointe de référence du joueur (ou du modèle rival s'il va plus vite)
 export const CITY_RUSH_RIVAL_FINAL_LAP_PUSH = 1.02; // × le rythme, au dernier tour de ce rival
 export const CITY_RUSH_RIVAL_SLOW_FACTOR = 0.62; // part de vitesse conservée après un carambolage
 
 /**
- * Rythme d'un rival : sa fiche de modèle, plus la surcharge de course, plus le
- * tout dernier tour où il ne retient plus rien. Le facteur s'applique à la
- * vitesse de pointe comme aux accélérations (elles suivent le même modèle).
+ * Rythme d'un rival : son modèle est comparé à la pointe du joueur, puis le
+ * rythme propre au rival s'applique. Un bonus de scénario peut pousser cette
+ * base commune plus haut ; un malus ne peut pas la faire passer sous le joueur.
+ */
+export function cityRushRivalTargetSpeed(
+  playerTopSpeed = CITY_RUSH_PLAYER_SPEED,
+  rivalTopSpeed = CITY_RUSH_PLAYER_SPEED,
+  { pace = CITY_RUSH_RIVAL_PACE, storyPace = 1 } = {},
+) {
+  const playerSpeed = Math.max(0, Number(playerTopSpeed) || 0);
+  const rivalSpeed = Math.max(0, Number(rivalTopSpeed) || 0);
+  const racePaceValue = Number(pace);
+  const racePace = Number.isFinite(racePaceValue) ? Math.max(0, racePaceValue) : CITY_RUSH_RIVAL_PACE;
+  const storyPaceValue = Number(storyPace);
+  const scenarioPace = Number.isFinite(storyPaceValue) && storyPaceValue > 0 ? storyPaceValue : 1;
+  const matchedTopSpeed = Math.max(playerSpeed, rivalSpeed);
+  return Math.max(playerSpeed, matchedTopSpeed * scenarioPace) * racePace;
+}
+
+/**
+ * Rythme d'un rival sur la course : surcharge standard, puis cran du dernier
+ * tour où il ne retient plus rien.
  */
 export function cityRushRivalPaceFactor({ finalLap = false } = {}) {
   return CITY_RUSH_RIVAL_PACE * (finalLap ? CITY_RUSH_RIVAL_FINAL_LAP_PUSH : 1);
@@ -291,12 +340,11 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
 //
 // Échelle volontairement large : 0,66 pour la citadine offerte (~83 km/h)
 // jusqu'à 1,42 pour la supercar la plus chère (~179 km/h), soit plus du double
-// de vitesse de pointe entre l'entrée et le haut du garage. L'écart se paie
-// comptant : `ViceCityWorld.jsx` donne aux deux rivaux les profils les plus
-// lents du catalogue hors voiture du joueur, donc une voiture chère rend la
-// course nettement plus facile et la citadine de départ très difficile — c'est
-// le sens de la progression du garage.
-// Pour accentuer (ou réduire) l'écart, il n'y a que trois curseurs à toucher :
+// de vitesse de pointe entre l'entrée et le haut du garage. Les rivaux gardent
+// des modèles visuellement distincts de la même catégorie, mais leur rythme de
+// course ne passe jamais sous la pointe du joueur : acheter une voiture rapide
+// ne transforme donc pas chaque course en promenade.
+// Pour accentuer (ou réduire) l'écart entre les modèles, il n'y a que trois curseurs :
 //   1. `powerMultiplier`       → vitesse de pointe ;
 //   2. `accelerationRate`      → temps de montée en vitesse (et freinage, voir
 //                                `cityRushBrakingRate`) ;
@@ -328,74 +376,131 @@ export function cityRushSprintCheckpointTime(topSpeed = CITY_RUSH_PLAYER_SPEED, 
 // fragilité, les lentes se consolent en encaissant. Moyenne du catalogue :
 // ~14,5 carrés, soit la barre historique de quinze — la difficulté d'ensemble
 // ne bouge pas, c'est sa répartition qui change.
+// `category` est la classe de matchmaking, plus large que le descriptif
+// individuel `className` : citadines et compactes, voitures de sport (berlinetta,
+// coupé, GT, roadster), supercars (Vortex/Tempesta) et crossover. Cette donnée
+// garde les rivaux dans la même famille que le pilote, en course libre comme
+// dans les plateaux scénarisés.
 export const CITY_RUSH_CARS = Object.freeze([
   Object.freeze({
-    id: 'city-hatch', archetype: 'city-hatch', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
+    id: 'city-hatch', archetype: 'city-hatch', category: 'compact', name: 'MISTRAL 1.4', className: 'CITADINE 5 PORTES · PREMIER VOLANT',
     bodyColor: 0x21b895, trimColor: 0xd7fff4, driverColor: 0x1e222d, accent: '#48edc2', price: 0,
     power: 18, powerMultiplier: 0.66, acceleration: 40, accelerationRate: 6.2, recovery: 44, hitRecoveryMultiplier: 1.22, durability: 100, durabilityMultiplier: 1.52,
     widthScale: 0.91, heightScale: 0.98, lengthScale: 0.9,
   }),
   Object.freeze({
-    id: 'nova-18-gt', archetype: 'nova-hatch', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
+    id: 'nova-18-gt', archetype: 'nova-hatch', category: 'compact', name: 'NOVA 1.8 GT', className: 'COMPACTE 5 PORTES · GT ROUTIÈRE',
     bodyColor: 0x71899c, trimColor: 0xd4e0e8, driverColor: 0x1d232d, accent: '#9bc7df', price: 120,
     power: 34, powerMultiplier: 0.76, acceleration: 54, accelerationRate: 7.4, recovery: 64, hitRecoveryMultiplier: 1.12, durability: 89, durabilityMultiplier: 1.36,
     widthScale: 0.93, heightScale: 0.98, lengthScale: 0.93,
   }),
   Object.freeze({
-    id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
+    id: 'night-comet', archetype: 'volkswagen', category: 'compact', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
     bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8', price: 250,
     power: 60, powerMultiplier: 0.92, acceleration: 88, accelerationRate: 9.9, recovery: 96, hitRecoveryMultiplier: 0.82, durability: 79, durabilityMultiplier: 1.2,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
   }),
   Object.freeze({
-    id: 'vice-roadster', archetype: 'ferrari', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
+    id: 'vice-roadster', archetype: 'ferrari', category: 'sport', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
     bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c', price: 400,
     power: 72, powerMultiplier: 1.02, acceleration: 82, accelerationRate: 9.1, recovery: 84, hitRecoveryMultiplier: 0.94, durability: 62, durabilityMultiplier: 0.94,
     widthScale: 1, heightScale: 1, lengthScale: 1,
   }),
   Object.freeze({
-    id: 'turbo-gt', archetype: 'porsche', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
+    id: 'turbo-gt', archetype: 'porsche', category: 'sport', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
     bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8', price: 550,
     power: 84, powerMultiplier: 1.14, acceleration: 70, accelerationRate: 8.4, recovery: 74, hitRecoveryMultiplier: 1.06, durability: 57, durabilityMultiplier: 0.86,
     widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'muscle-86', archetype: 'audi', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
+    id: 'muscle-86', archetype: 'audi', category: 'supercar', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
     bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa', price: 650,
     power: 88, powerMultiplier: 1.22, acceleration: 96, accelerationRate: 10.6, recovery: 66, hitRecoveryMultiplier: 1.18, durability: 53, durabilityMultiplier: 0.8,
     widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
+    id: 'vega-gt-67', archetype: 'bmw', category: 'sport', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
     bodyColor: 0x11131a, trimColor: 0x38bdf8, liveryColor: 0xc62232, driverColor: 0x181c26, accent: '#e04455', price: 800,
     power: 94, powerMultiplier: 1.32, acceleration: 86, accelerationRate: 9.6, recovery: 76, hitRecoveryMultiplier: 1.02, durability: 49, durabilityMultiplier: 0.74,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
   }),
   Object.freeze({
-    id: 'toro-v12', archetype: 'lamborghini', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
+    id: 'toro-v12', archetype: 'lamborghini', category: 'supercar', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
     bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703', price: 1000,
     power: 98, powerMultiplier: 1.42, acceleration: 90, accelerationRate: 10.0, recovery: 70, hitRecoveryMultiplier: 1.16, durability: 39, durabilityMultiplier: 0.6,
     widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),
   Object.freeze({
-    id: 'volt-aero', archetype: 'electric-gt', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
+    id: 'volt-aero', archetype: 'electric-gt', category: 'sport', name: 'VOLT AERO GT', className: 'GT ÉLECTRIQUE · COUPÉ AÉRODYNAMIQUE',
     bodyColor: 0x35d7d0, trimColor: 0xd9ffff, driverColor: 0x15212d, accent: '#42f5dc', price: 600,
     power: 86, powerMultiplier: 1.18, acceleration: 100, accelerationRate: 11.4, recovery: 85, hitRecoveryMultiplier: 0.94, durability: 66, durabilityMultiplier: 1.0,
     widthScale: 1.02, heightScale: 0.96, lengthScale: 1.04,
   }),
   Object.freeze({
-    id: 'atlas-xr', archetype: 'sport-crossover', name: 'ATLAS XR', className: 'CROSSOVER SPORT · HYBRIDE INTÉGRALE',
+    id: 'atlas-xr', archetype: 'sport-crossover', category: 'crossover', name: 'ATLAS XR', className: 'CROSSOVER SPORT · HYBRIDE INTÉGRALE',
     bodyColor: 0x7848e8, trimColor: 0xffc857, driverColor: 0x1b2030, accent: '#a78bfa', price: 750,
     power: 90, powerMultiplier: 1.27, acceleration: 91, accelerationRate: 10.1, recovery: 100, hitRecoveryMultiplier: 0.79, durability: 75, durabilityMultiplier: 1.14,
     widthScale: 1.08, heightScale: 1.10, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'pulse-rs', archetype: 'neo-roadster', name: 'PULSE RS', className: 'ROADSTER ÉLECTRIQUE · PERFORMANCE SILENCIEUSE',
+    id: 'pulse-rs', archetype: 'neo-roadster', category: 'sport', name: 'PULSE RS', className: 'ROADSTER ÉLECTRIQUE · PERFORMANCE SILENCIEUSE',
     bodyColor: 0xf05a8a, trimColor: 0xffedf5, driverColor: 0x202331, accent: '#ff72ac', price: 1150,
     power: 99, powerMultiplier: 1.44, acceleration: 100, accelerationRate: 12.2, recovery: 78, hitRecoveryMultiplier: 1.02, durability: 31, durabilityMultiplier: 0.47,
     widthScale: 1.04, heightScale: 0.91, lengthScale: 1.06,
   }),
 ]);
+
+/** Classe de course d'une fiche de voiture ou d'un identifiant de catalogue. */
+export function cityRushCarCategory(carOrId, cars = CITY_RUSH_CARS) {
+  const car = typeof carOrId === 'string'
+    ? (Array.isArray(cars) ? cars.find((entry) => entry?.id === carOrId) : null)
+    : carOrId;
+  const category = typeof car?.category === 'string' ? car.category.trim() : '';
+  return category || null;
+}
+
+/**
+ * Profil de voiture attribué à un rival. Un modèle scénarisé (`preferredCarId`)
+ * est gardé s'il appartient à la classe du pilote ; sinon, on prend le modèle
+ * de même classe le plus proche en vitesse. Quand cette classe ne contient
+ * qu'une seule voiture, les rivaux roulent avec le modèle du pilote plutôt que
+ * de sortir de catégorie.
+ */
+export function cityRushRivalCarProfile({
+  playerCarId = CITY_RUSH_CARS[0]?.id,
+  rivalIndex = 0,
+  preferredCarId = null,
+  cars = CITY_RUSH_CARS,
+} = {}) {
+  const catalog = Array.isArray(cars) ? cars.filter((car) => car?.id) : [];
+  if (!catalog.length) return null;
+
+  const playerProfile = catalog.find((car) => car.id === playerCarId) || catalog[0];
+  const playerCategory = cityRushCarCategory(playerProfile);
+  const preferredProfile = preferredCarId
+    ? catalog.find((car) => car.id === preferredCarId) || null
+    : null;
+  if (playerCategory && preferredProfile && cityRushCarCategory(preferredProfile) === playerCategory) {
+    return preferredProfile;
+  }
+
+  // Ne pas traiter les fiches sans classe comme une même catégorie implicite.
+  const playerPower = Number(playerProfile.powerMultiplier) || 0;
+  const rivalProfiles = playerCategory
+    ? catalog
+      .filter((car) => car.id !== playerProfile.id && cityRushCarCategory(car) === playerCategory)
+      .sort((a, b) => {
+        const aPower = Number(a.powerMultiplier) || 0;
+        const bPower = Number(b.powerMultiplier) || 0;
+        return Math.abs(aPower - playerPower) - Math.abs(bPower - playerPower)
+          || aPower - bPower;
+      })
+    : [];
+  if (!rivalProfiles.length) return playerProfile;
+
+  const index = Math.max(0, Math.trunc(Number(rivalIndex) || 0));
+  return rivalProfiles[index % rivalProfiles.length];
+}
 
 // ── Garage : les trois voitures les moins puissantes sont offertes ─────────
 // Tout le monde démarre avec les trois voitures les moins puissantes du
@@ -442,6 +547,24 @@ export function isCityRushFreeCar(carId, cars = CITY_RUSH_CARS) {
   return cityRushFreeCarIds(cars).includes(carId);
 }
 
+/* ── La voiture de la vitrine ───────────────────────────────────────────────
+   L'écran-titre ne montre pas la voiture que le joueur a au garage : il montre
+   ce à quoi on aspire. La règle est la même famille que l'offre du garage —
+   elle se calcule sur le catalogue — et dit : la pièce la plus chère, la
+   puissance en départage. Ajouter une voiture plus onéreuse la fait monter
+   d'elle-même au plateau de l'écran-titre, sans rien retoucher d'autre. */
+export function cityRushShowcaseCar(cars = CITY_RUSH_CARS) {
+  return [...(Array.isArray(cars) ? cars : [])]
+    .filter((car) => car?.id)
+    .sort((a, b) => (
+      ((Number(b?.price) || 0) - (Number(a?.price) || 0)) || cityRushPowerRank(b, a)
+    ))
+    .at(0) || null;
+}
+
+/** La pièce du catalogue posée sur le plateau tournant de l'écran-titre. */
+export const CITY_RUSH_SHOWCASE_CAR = Object.freeze(cityRushShowcaseCar());
+
 // Le trafic d'obstacle roule nettement moins vite que les voitures de course.
 // La route est à double sens : trois voies vont dans le sens de la course, les
 // trois autres accueillent le trafic venant en face — à droite de l'axe par
@@ -457,6 +580,17 @@ export const CITY_RUSH_TRAFFIC_LANES = Object.freeze(
 // de la chaussée en conduite à droite, moitié droite à Londres et à Tokyo).
 // Réduit aussi pour éviter l'effet embouteillage, mais avec collision solide.
 export const CITY_RUSH_ONCOMING_COUNT = 3;
+
+// ── Le trafic d'un tournoi ──────────────────────────────────────────────────
+// Le plateau d'un tournoi aligne huit voitures de course : la route leur est
+// laissée. Le trafic civil y est donc **deux fois plus clairsemé** (quatre
+// voitures) et le contresens se réduit à une seule voiture. Surtout, **aucune
+// berline de police** n'y circule : la course est annoncée « sans police », et
+// une patrouille percutée partirait en chasse même au dernier tour — le dernier
+// tour d'un tournoi se gagne à la régulière ou pas du tout.
+export const CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT = 4;
+export const CITY_RUSH_TOURNAMENT_ONCOMING_COUNT = 1;
+
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
   // Plus une seule berline « en civil » sur la route : l'ancienne banalisée
@@ -720,8 +854,69 @@ export function cityRushStunSpin(stunLeft, stunTotal, turns = CITY_RUSH_STUN_SPI
 export const CITY_RUSH_POWERS = Object.freeze({
   BLUE_SHOT: 'blue-shot',
   PISTOL: 'pistol',
+  SHOTGUN: 'shotgun',
   RADIO: 'radio',
 });
+
+// ── L'emplacement d'arme : une seule arme en main ───────────────────────────
+// Le pilote ne porte qu'une arme à la fois. Le bouton de tir (et la touche Z)
+// reste **vide** tant qu'aucun bonus d'arme n'a été ramassé ; il tire ensuite
+// avec l'arme en main — AK-47 rouge ou fusil à pompe bleu — et ramasser l'une
+// remplace l'autre, munitions comprises.
+export const CITY_RUSH_WEAPON_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.SHOTGUN]);
+
+export function cityRushIsWeaponType(type) {
+  return CITY_RUSH_WEAPON_TYPES.includes(type);
+}
+
+/** Cartouches rendues par un bonus de cette arme. */
+export function cityRushWeaponAmmoPerPickup(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP : CITY_RUSH_PISTOL_AMMO_PER_PICKUP;
+}
+
+/** Capacité du chargeur de cette arme. */
+export function cityRushWeaponMaxAmmo(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_MAX_AMMO : CITY_RUSH_PISTOL_MAX_AMMO;
+}
+
+/** Cadence de tir de cette arme quand le bouton reste enfoncé (secondes). */
+export function cityRushWeaponFireInterval(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_FIRE_COOLDOWN : 0.12;
+}
+
+/** Dégâts d'un tir de cette arme, en carrés de vie. */
+export function cityRushWeaponDamage(type) {
+  return type === CITY_RUSH_POWERS.SHOTGUN ? CITY_RUSH_SHOTGUN_DAMAGE : 1;
+}
+
+/**
+ * L'arme portée : la première dont le chargeur n'est pas vide, ou `null` quand
+ * le pilote n'a encore rien ramassé. Les deux armes ne peuvent jamais être
+ * chargées en même temps (voir `cityRushEquipWeapon`).
+ */
+export function cityRushActiveWeapon(inventory) {
+  for (const type of CITY_RUSH_WEAPON_TYPES) {
+    const ammo = Math.max(0, Math.trunc(Number(inventory?.[type]) || 0));
+    if (ammo > 0) {
+      return Object.freeze({ type, ammo, max: cityRushWeaponMaxAmmo(type) });
+    }
+  }
+  return null;
+}
+
+/**
+ * Ramasser une arme : elle prend l'emplacement et **vide l'autre**. Reprendre
+ * la même arme complète simplement son chargeur, comme avant.
+ */
+export function cityRushEquipWeapon(inventory, type, amount = cityRushWeaponAmmoPerPickup(type)) {
+  const normalized = { ...createCityRushInventory(), ...inventory };
+  if (!cityRushIsWeaponType(type)) return normalized;
+  const ammo = Math.min(cityRushWeaponMaxAmmo(type), Math.max(0, Math.trunc(Number(amount) || 0)));
+  for (const other of CITY_RUSH_WEAPON_TYPES) {
+    normalized[other] = other === type ? ammo : 0;
+  }
+  return normalized;
+}
 
 // Le turbo et les soins sont des bonus instantanés au sol, pas des pouvoirs
 // à charger dans l'inventaire.
@@ -736,6 +931,7 @@ export const CITY_RUSH_HEALTH_PICKUP_COLOR = '#ff4055';
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
   [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_PISTOL_MAX_AMMO, // rouge · 7 balles par bonus
+  [CITY_RUSH_POWERS.SHOTGUN]: CITY_RUSH_SHOTGUN_MAX_AMMO, // bleu · 3 cartouches par bonus
   [CITY_RUSH_POWERS.RADIO]: 4,
 });
 
@@ -761,7 +957,20 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: `Les chargeurs d'AK-47 restent rares : chacun remplit le chargeur de l'arme à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule, ou deux contre un SUV de police blindé. Un SUV a dix carrés de vie : dix balles rouges pour le détruire.`,
+    description: `Les chargeurs d'AK-47 restent rares : chacun remplit le chargeur de l'arme à ${CITY_RUSH_PISTOL_AMMO_PER_PICKUP} balles, même s'il en reste déjà. Le tir part tout droit, sans viser : il touche le premier adversaire ou la première voiture de police sur ta voie. Contre un pilote comme contre une voiture de police à six carrés de vie, il ne retire jamais qu’un seul carré, sans dérapage ni ralentissement : six balles pour une berline. Un carambolage en accélérant retire un point à la police, et un carré au pilote : percuter une voiture coûte une cellule, ou deux contre un SUV de police blindé. Un SUV a dix carrés de vie : dix balles rouges pour le détruire. Le fusil à pompe bleu, plus rare encore, prend sa place : ramasser l'un vide l'autre, et les deux se tirent avec le même bouton.`,
+    duration: 2,
+  }),
+  [CITY_RUSH_POWERS.SHOTGUN]: Object.freeze({
+    id: CITY_RUSH_POWERS.SHOTGUN,
+    name: 'Fusil à pompe',
+    shortName: 'POMPE',
+    chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.SHOTGUN],
+    ammoPerPickup: CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP,
+    damageCells: CITY_RUSH_SHOTGUN_DAMAGE,
+    color: '#4da3ff',
+    key: 'Z',
+    automatic: false,
+    description: `Le fusil à pompe est l'arme rare de Vice City : un bonus bleu, près de trois fois plus rare qu'un chargeur d'AK-47, donne ${CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP} cartouches. Chaque tir part tout droit, sans viser, et arrache ${CITY_RUSH_SHOTGUN_DAMAGE} carrés de vie d'un coup à la première voiture touchée sur ta voie : une cartouche couche une berline de police (six carrés), deux viennent à bout d'un SUV blindé (dix). Le pompe se réarme lentement — une cartouche toutes les ${CITY_RUSH_SHOTGUN_FIRE_COOLDOWN} secondes — et il prend la place de l'AK-47 : ramasser l'un vide l'autre, les deux se tirent avec le même bouton.`,
     duration: 2,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -2109,7 +2318,10 @@ export function cityRushLaneConfig(course) {
       // sur les voies du contresens.
       policeLanes: leftHand ? CITY_RUSH_LEFT_HALF_LANES : CITY_RUSH_POLICE_LANES,
       defaultLanes: leftHand ? CITY_RUSH_DEFAULT_LANES_LEFT_HAND : CITY_RUSH_DEFAULT_LANES,
-      gridLanes: CITY_RUSH_LANE_X,
+      // Les cases peintes au sol suivent les voies du **sens de course** : une
+      // grille de départ ne se dessine pas sur la moitié du contresens, et
+      // c'est là que se placent les voitures, du mode libre au tournoi.
+      gridLanes: forwardLanes,
     };
   }
   const lanes = Object.freeze(Array.from({ length: laneCount }, (_, lane) => lane));
@@ -2802,8 +3014,8 @@ export function createCityRushInventory() {
   return Object.fromEntries(Object.keys(CITY_RUSH_POWER_RULES).map((key) => [CITY_RUSH_POWER_RULES[key].id, 0]));
 }
 
-export function addCityRushCharge(inventory, type, amount = type === CITY_RUSH_POWERS.PISTOL
-  ? CITY_RUSH_PISTOL_AMMO_PER_PICKUP
+export function addCityRushCharge(inventory, type, amount = cityRushIsWeaponType(type)
+  ? cityRushWeaponAmmoPerPickup(type)
   : 1) {
   if (!CITY_RUSH_POWER_RULES[type]) return { ...createCityRushInventory(), ...inventory };
   const cost = CITY_RUSH_POWER_CHARGE_COST[type];
@@ -2816,10 +3028,10 @@ export function consumeCityRushCharge(inventory, type) {
   const normalized = { ...createCityRushInventory(), ...inventory };
   const current = Math.max(0, Math.trunc(Number(normalized[type]) || 0));
   if (!CITY_RUSH_POWER_RULES[type]) return { inventory: normalized, consumed: false };
-  // Le tir rouge est un stock de balles : une pression ne vide plus le
-  // chargeur, elle retire exactement une balle. Les autres pouvoirs gardent
-  // leur ancienne logique de jauge unique.
-  if (type === CITY_RUSH_POWERS.PISTOL) {
+  // Les armes sont un stock de cartouches : une pression ne vide plus le
+  // chargeur, elle retire exactement une balle (ou une cartouche de pompe).
+  // Les autres pouvoirs gardent leur ancienne logique de jauge unique.
+  if (cityRushIsWeaponType(type)) {
     if (current <= 0) return { inventory: normalized, consumed: false };
     normalized[type] = current - 1;
     return { inventory: normalized, consumed: true };
@@ -2833,31 +3045,41 @@ export function isCityRushPowerCharged(inventory, type) {
   const cost = CITY_RUSH_POWER_CHARGE_COST[type];
   if (!Number.isFinite(cost) || cost <= 0) return false;
   const current = Math.max(0, Math.trunc(Number(inventory?.[type]) || 0));
-  // Pour l'AK-47, « chargé » signifie qu'il reste au moins une balle : le
-  // bouton doit rester utilisable de 7 jusqu'à la dernière balle.
-  return type === CITY_RUSH_POWERS.PISTOL ? current > 0 : current >= cost;
+  // Pour une arme, « chargé » signifie qu'il reste au moins une cartouche : le
+  // bouton doit rester utilisable de 7 balles (ou 3 cartouches) jusqu'à la
+  // dernière.
+  return cityRushIsWeaponType(type) ? current > 0 : current >= cost;
 }
 
 /**
- * Les bonus rouges restent visibles tant qu'un participant peut compléter
+ * Les bonus d'arme restent visibles tant qu'un participant peut compléter
  * son chargeur. Un chargeur plein laisse le bonus à ceux qui ont déjà tiré ;
  * seul un peloton entièrement rechargé le masque sur toute la route.
  */
-function hasFullCityRushPistolMagazine(inventory) {
-  const ammo = Math.max(0, Math.trunc(Number(inventory?.[CITY_RUSH_POWERS.PISTOL]) || 0));
-  return ammo >= CITY_RUSH_PISTOL_MAX_AMMO;
+function hasFullCityRushWeaponMagazine(inventory, type) {
+  const ammo = Math.max(0, Math.trunc(Number(inventory?.[type]) || 0));
+  return ammo >= cityRushWeaponMaxAmmo(type);
 }
 
-export function shouldHideCityRushPistolPickup(playerInventory, opponentInventories = []) {
-  if (!hasFullCityRushPistolMagazine(playerInventory)) return false;
+export function shouldHideCityRushWeaponPickup(playerInventory, type, opponentInventories = []) {
+  if (!hasFullCityRushWeaponMagazine(playerInventory, type)) return false;
   const opponents = Array.isArray(opponentInventories) ? opponentInventories : [];
-  return opponents.every(hasFullCityRushPistolMagazine);
+  return opponents.every((inventory) => hasFullCityRushWeaponMagazine(inventory, type));
+}
+
+/** Raccourci historique : le masquage des chargeurs rouges d'AK-47. */
+export function shouldHideCityRushPistolPickup(playerInventory, opponentInventories = []) {
+  return shouldHideCityRushWeaponPickup(playerInventory, CITY_RUSH_POWERS.PISTOL, opponentInventories);
 }
 
 export function canCollectCityRushPickup(inventory, type, {
   redPickupsHidden = false,
   health = 0,
   maxHealth = 0,
+  // `player` : l'acteur qui croise le bonus est le pilote. Le fusil à pompe
+  // bleu n'appartient qu'à lui — rivaux et police n'y touchent pas, ils le
+  // laissent au sol et ne le visent même pas dans leur choix de voie.
+  player = true,
 } = {}) {
   if (type === CITY_RUSH_PICKUPS.BOOST) return true;
   if (type === CITY_RUSH_PICKUPS.HEALTH) {
@@ -2866,10 +3088,15 @@ export function canCollectCityRushPickup(inventory, type, {
     // Un soin ne ressuscite pas une épave et n'est pas gaspillé sur une coque pleine.
     return currentHealth > 0 && currentHealth < safeMaxHealth;
   }
-  if (type !== CITY_RUSH_POWERS.PISTOL || redPickupsHidden) return false;
-  // Un chargeur rouge complète les balles jusqu'à sept : on peut le ramasser
-  // même avec quelques balles, mais pas gaspiller un chargeur déjà plein.
-  return !hasFullCityRushPistolMagazine(inventory);
+  if (!cityRushIsWeaponType(type)) return false;
+  if (type === CITY_RUSH_POWERS.SHOTGUN && !player) return false;
+  if (type === CITY_RUSH_POWERS.PISTOL && redPickupsHidden) return false;
+  // Un bonus d'arme de l'autre modèle se ramasse toujours : il prend
+  // l'emplacement et vide celui qu'on portait. Celui qu'on porte déjà ne se
+  // ramasse que pour compléter son chargeur — sept balles pour l'AK-47, trois
+  // cartouches pour le pompe —, jamais pour le gaspiller plein.
+  const held = cityRushActiveWeapon(inventory);
+  return held?.type !== type || !hasFullCityRushWeaponMagazine(inventory, type);
 }
 
 export function rankCityRushRacers(racers, playerId = 'player') {
@@ -3258,10 +3485,24 @@ export function chooseCityRushTrafficEscapeLane({
 }
 
 /**
- * Génère une rangée de bonus sans flaques ni zones de ralentissement.
- * Le turbo apparaît sous forme de bonus vert flottant au-dessus de la chaussée.
+ * Un emplacement tiré « bonus turbo » est-il réellement peint sur la chaussée ?
+ * Le cercle vert se baisse (voir `CITY_RUSH_BOOST_SPAWN_CHANCE`) parce qu'au sol
+ * il se lit moins qu'une icône flottante et qu'un turbo permanent viderait les
+ * courses de leur pilotage. Un `chance` à 1 pose tous les turbos tirés : c'est la
+ * cadence d'avant, rangée pour rangée.
  */
-export function createCityRushEncounter(random = Math.random, laneCount = CITY_RUSH_LANE_X.length) {
+export function keepsCityRushBoostPickup(random = Math.random, chance = CITY_RUSH_BOOST_SPAWN_CHANCE) {
+  const safeChance = Math.max(0, Math.min(1, Number(chance)));
+  if (!(safeChance < 1)) return true; // pas de tirage inutile quand tout est posé
+  const roll = Number(random());
+  return (Number.isFinite(roll) ? roll : 1) < safeChance;
+}
+
+/**
+ * Génère une rangée de bonus sans flaques ni zones de ralentissement.
+ * Le turbo est un cercle vert peint sur la chaussée ; les autres bonus flottent.
+ */
+export function createCityRushEncounter(random = Math.random, laneCount = CITY_RUSH_LANE_X.length, boostChance = CITY_RUSH_BOOST_SPAWN_CHANCE) {
   const count = Math.max(1, Math.min(CITY_RUSH_LANE_X.length, Math.trunc(Number(laneCount)) || CITY_RUSH_LANE_X.length));
   const available = Array.from({ length: count }, (_, lane) => lane);
   // Les rangées vides sont plus rares (5 %) et un duo apparaît dans 30 %
@@ -3274,13 +3515,20 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // Les bonus turbo restent fréquents, mais le chargeur rouge garde une faible
-    // probabilité d'apparition sur chaque emplacement.
-    const type = roll < CITY_RUSH_RED_PICKUP_CHANCE
-      ? CITY_RUSH_POWERS.PISTOL
-      : roll < CITY_RUSH_RED_PICKUP_CHANCE + CITY_RUSH_HEALTH_PICKUP_CHANCE
-        ? CITY_RUSH_PICKUPS.HEALTH
-        : CITY_RUSH_PICKUPS.BOOST;
+    // Les bonus turbo restent fréquents, mais les armes gardent une faible
+    // probabilité d'apparition sur chaque emplacement : le fusil à pompe bleu
+    // d'abord (le plus rare), puis le chargeur rouge d'AK-47.
+    const type = roll < CITY_RUSH_BLUE_PICKUP_CHANCE
+      ? CITY_RUSH_POWERS.SHOTGUN
+      : roll < CITY_RUSH_BLUE_PICKUP_CHANCE + CITY_RUSH_RED_PICKUP_CHANCE
+        ? CITY_RUSH_POWERS.PISTOL
+        : roll < CITY_RUSH_BLUE_PICKUP_CHANCE + CITY_RUSH_RED_PICKUP_CHANCE + CITY_RUSH_HEALTH_PICKUP_CHANCE
+          ? CITY_RUSH_PICKUPS.HEALTH
+          : CITY_RUSH_PICKUPS.BOOST;
+    // Un turbo écarté laisse sa voie vide — la voie reste comptée comme prise,
+    // pour que le second emplacement de la rangée ne vienne pas se poser dessus
+    // et repasser un tirage. La rangée rend donc simplement un bonus de moins.
+    if (type === CITY_RUSH_PICKUPS.BOOST && !keepsCityRushBoostPickup(random, boostChance)) continue;
     pickups.push({ lane, type });
   }
 
@@ -3288,9 +3536,10 @@ export function createCityRushEncounter(random = Math.random, laneCount = CITY_R
 }
 
 /**
- * Sprint : un bonus turbo vert flottant, placé uniquement sur une voie du sens de
- * course. La cadence est réglée par `CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL` dans
- * le monde 3D ; aucune arme ni autre bonus ne peut apparaître dans ce mode.
+ * Sprint : un cercle turbo vert posé sur la chaussée, placé uniquement sur une
+ * voie du sens de course. La cadence est réglée par
+ * `CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL` dans le monde 3D ; aucune arme ni autre
+ * bonus ne peut apparaître dans ce mode.
  */
 export function createCityRushBoostEncounter(random = Math.random, course = null) {
   const lanes = course ? cityRushLaneConfig(course).forwardLanes : CITY_RUSH_FORWARD_LANES;
@@ -3311,6 +3560,129 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
   return clampCityRushLane(lane, laneCount);
 }
 
+// ── Choc latéral : pousser la voiture qui bloque ───────────────────────────
+// Une voiture à côté du pilote, dans la voie qu'il veut rejoindre, lui ferme
+// cette voie : le changement de voie est refusé (`canEnterLane`). S'il tourne
+// **quand même** vers elle, il y a choc. La voiture bloquante se pousse sur la
+// voie voisine, du côté opposé au pilote, et le pilote comme elle perdent
+// chacun un carré. Une voiture de police qui a des PV en perd un ; le trafic
+// ordinaire n'a pas de PV et ne perd rien. Les rivaux se traversent comme avant :
+// ils ne ferment pas la voie et ne sont pas poussés.
+//
+// « À côté » = les deux carrosseries sont à la même hauteur : écart
+// longitudinal sous `CITY_RUSH_SIDE_CONTACT_GAP`, le pare-chocs contre
+// pare-chocs du trafic. Entre cette limite et la distance de sécurité du
+// rabattement (`CITY_RUSH_CAR_GAP`), la voie reste fermée sans choc.
+//
+// Une voiture ne se pousse que dans son propre sens de circulation, sur une
+// voie libre. Au bord de la chaussée, ou quand la voie d'à côté est occupée, la
+// voiture ne bouge pas et il n'y a pas de choc, comme avant.
+//
+// Un seul choc par côte-à-côte : tant que la voiture reste à la même hauteur
+// que le pilote, tourner de nouveau vers elle ne refait pas de choc (voir
+// `cityRushSideBumpKeep`). Une voiture qui s'éloigne, ou qui sort de la course,
+// ouvre un nouvel épisode.
+export const CITY_RUSH_SIDE_CONTACT_GAP = CITY_RUSH_TRAFFIC_CAR_GAP; // m : à côté = pare-chocs contre pare-chocs
+// Dérapage court du pilote et de la voiture poussée, et délai avant qu'une
+// berline de l'escouade poussée ne repense sa voie.
+export const CITY_RUSH_SIDE_BUMP_SKID = 0.5; // s
+export const CITY_RUSH_SIDE_BUMP_HOLD = 0.6; // s
+
+/**
+ * La voiture est-elle à la même hauteur que le pilote, à deux voies au plus ?
+ * Sert à garder l'épisode d'un choc tant que les deux voitures restent côte à
+ * côte, même après une voiture poussée d'une voie de plus.
+ */
+export function cityRushIsLevel(playerLane, carLane, gap, contactGap = CITY_RUSH_SIDE_CONTACT_GAP) {
+  const player = Number(playerLane);
+  const car = Number(carLane);
+  const along = Math.abs(Number(gap));
+  if (!Number.isInteger(player) || !Number.isInteger(car) || !Number.isFinite(along)) return false;
+  return Math.abs(car - player) <= 2 && along < contactGap;
+}
+
+/**
+ * La voiture est-elle à côté du pilote, dans la voie voisine ? C'est la seule
+ * configuration qui ferme la voie que le pilote veut rejoindre.
+ */
+export function cityRushIsAlongside(playerLane, carLane, gap, contactGap = CITY_RUSH_SIDE_CONTACT_GAP) {
+  const player = Number(playerLane);
+  const car = Number(carLane);
+  return Number.isInteger(player) && Number.isInteger(car)
+    && Math.abs(car - player) === 1
+    && cityRushIsLevel(player, car, gap, contactGap);
+}
+
+/**
+ * Voie d'arrivée d'une voiture poussée : la voie voisine, du côté opposé au
+ * pilote. `allowedLanes` désigne le sens de circulation de la voiture ; renvoie
+ * `null` quand il n'y a pas de voie là-bas (bord de la chaussée, sens inverse).
+ */
+export function cityRushSideBumpLane(carLane, playerLane, allowedLanes = []) {
+  const car = Number(carLane);
+  const player = Number(playerLane);
+  if (!Number.isInteger(car) || !Number.isInteger(player) || car === player) return null;
+  const target = car + Math.sign(car - player);
+  return Array.isArray(allowedLanes) && allowedLanes.includes(target) ? target : null;
+}
+
+/**
+ * La voie d'arrivée est-elle libre ? Une voiture qui s'y range ne doit pas se
+ * retrouver à moins de `gap` d'une autre voiture de cette voie. La voiture
+ * poussée elle-même est exclue (`id`).
+ */
+export function cityRushSideBumpLaneClear(farLane, distance, cars = [], { id = null, gap = CITY_RUSH_CAR_GAP } = {}) {
+  const along = Number(distance);
+  return !cars.some((car) => car && car.id !== id && car.lane === farLane
+    && Math.abs(Number(car.distance) - along) < gap);
+}
+
+/**
+ * Voiture à pousser pour une tentative de rabattement sur `targetLane` : la plus
+ * proche des voitures à côté du pilote dans cette voie, pas déjà poussée pendant
+ * ce côte-à-côte (`pushedIds`), et qui a une voie libre devant elle. `cars` liste
+ * les voitures en course, pilote exclu, avec `id`, `lane`, `distance` et
+ * `allowedLanes`. Renvoie `{ car, farLane }`, ou `null` quand il n'y a pas de choc.
+ */
+export function cityRushSideBumpChoice({
+  playerLane,
+  playerDistance,
+  targetLane,
+  cars = [],
+  pushedIds = null,
+  contactGap = CITY_RUSH_SIDE_CONTACT_GAP,
+  clearGap = CITY_RUSH_CAR_GAP,
+} = {}) {
+  const along = Number(playerDistance);
+  const blockers = cars
+    .filter((car) => car && car.lane === targetLane
+      && cityRushIsAlongside(playerLane, car.lane, Number(car.distance) - along, contactGap))
+    .sort((a, b) => Math.abs(Number(a.distance) - along) - Math.abs(Number(b.distance) - along));
+  for (const car of blockers) {
+    if (pushedIds?.has?.(car.id)) continue;
+    const farLane = cityRushSideBumpLane(car.lane, playerLane, car.allowedLanes);
+    if (farLane === null) continue;
+    if (!cityRushSideBumpLaneClear(farLane, car.distance, cars, { id: car.id, gap: clearGap })) continue;
+    return { car, farLane };
+  }
+  return null;
+}
+
+/**
+ * Les voitures poussées qui restent à la même hauteur que le pilote gardent leur
+ * épisode : renvoie les identifiants de `previousIds` encore côte à côte. Une
+ * voiture qui s'éloigne, ou qui disparaît de la course, sort de l'ensemble.
+ */
+export function cityRushSideBumpKeep(previousIds, cars = [], playerLane, playerDistance) {
+  const kept = new Set();
+  const along = Number(playerDistance);
+  for (const id of previousIds ?? []) {
+    const car = cars.find((item) => item && item.id === id);
+    if (car && cityRushIsLevel(playerLane, car.lane, Number(car.distance) - along)) kept.add(id);
+  }
+  return kept;
+}
+
 // ── Le cerveau des rivaux ───────────────────────────────────────────────────
 // Un rival ne se contente plus de viser le bonus le plus proche : il court pour
 // gagner. Le choix de voie arbitre maintenant quatre envies, dans cet ordre —
@@ -3323,6 +3695,8 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
 export const CITY_RUSH_AI_LANE_CHANGE_COST = 1.25; // marge de confort : on ne zigzague pas sans raison
 export const CITY_RUSH_AI_LANE_COOLDOWN_MIN = 0.3; // s : relecture de la route, au plus vite
 export const CITY_RUSH_AI_LANE_COOLDOWN_MAX = 0.5; // s : relecture de la route, au plus lent
+export const CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN = 1.1; // s : cible de mission, plus simple à garder dans la mire
+export const CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX = 1.6; // s : elle esquive toujours les dangers urgents
 export const CITY_RUSH_AI_REFLEX = 0.12; // s : un obstacle imminent rappelle le cerveau — sans télépathie
 export const CITY_RUSH_AI_BRAKING_MARGIN = 1.35; // × la distance de freinage : au-delà, la voie est bouchée
 export const CITY_RUSH_AI_WEAPON_LANE_WEIGHT = 2.2; // aligner une mitrailleuse chargée vaut deux bonus turbo
@@ -3410,14 +3784,18 @@ export function cityRushAiLaneBlocked({
 /**
  * Délai avant la prochaine décision de voie d'un rival. Court quand un danger
  * est déjà là (freinage d'urgence), plus long quand la route est libre : c'est
- * ce qui évite le zigzag permanent sans rendre l'IA myope. Le tirage garde une
- * part d'aléatoire pour que deux rivaux ne réagissent pas à la même image.
+ * ce qui évite le zigzag permanent sans rendre l'IA myope. La cible d'une
+ * mission garde sa voie 1,1 à 1,6 s pour laisser le temps de viser ; son réflexe
+ * face à un obstacle reste immédiat. Le tirage garde une part d'aléatoire pour
+ * que deux rivaux ne réagissent pas à la même image.
  */
-export function cityRushAiThinkDelay(random = Math.random, { urgent = false } = {}) {
+export function cityRushAiThinkDelay(random = Math.random, { urgent = false, missionTarget = false } = {}) {
   const sample = Number(typeof random === 'function' ? random() : random);
   const t = Number.isFinite(sample) ? Math.min(1, Math.max(0, sample)) : 0.5;
   if (urgent) return CITY_RUSH_AI_REFLEX * (0.7 + t * 0.6);
-  return CITY_RUSH_AI_LANE_COOLDOWN_MIN + t * (CITY_RUSH_AI_LANE_COOLDOWN_MAX - CITY_RUSH_AI_LANE_COOLDOWN_MIN);
+  const min = missionTarget ? CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN : CITY_RUSH_AI_LANE_COOLDOWN_MIN;
+  const max = missionTarget ? CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX : CITY_RUSH_AI_LANE_COOLDOWN_MAX;
+  return min + t * (max - min);
 }
 
 // Choisit une prochaine voie en équilibrant les bonus à portée et les menaces
@@ -3639,6 +4017,52 @@ export function detectCityRushRampContact(carDistance, carLane, rampDistance, ra
 // Chaque course réunit 3 pilotes : notre joueur et 2 rivaux, chacun avec un
 // avatar et un prénom issus d'un pays différent autour du monde.
 export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno']);
+
+// ── La grille d'un tournoi : huit voitures de course ────────────────────────
+// Un tournoi ne se court pas à trois : le plateau aligne **huit voitures de
+// course** — le pilote et sept rivaux, les mêmes du premier au dernier tour —
+// pour que le titre se gagne à la remontée. Les sept places de rivaux suivent
+// les noms célestes des deux historiques (`nova`, `juno`) : ce sont des places
+// de grille, pas des personnes — le pilote de chaque place vient du catalogue
+// (`CITY_RUSH_DRIVERS`) et change d'un tournoi à l'autre.
+export const CITY_RUSH_TOURNAMENT_RACER_SLOTS = Object.freeze([
+  'player', 'nova', 'juno', 'lyra', 'orion', 'altair', 'polaris', 'castor',
+]);
+/** Nombre de voitures de course alignées dans un tournoi (huit). */
+export const CITY_RUSH_TOURNAMENT_RACER_COUNT = CITY_RUSH_TOURNAMENT_RACER_SLOTS.length;
+/** Écart entre deux rangées de la grille de départ, en mètres. */
+export const CITY_RUSH_GRID_ROW_GAP = 5.4;
+
+/**
+ * Grille de départ d'une course à plusieurs voitures : chaque place reçoit sa
+ * voie (`lane`) et sa **rangée** (`row`, 0 = première rangée, sur la ligne),
+ * donc son décalage de distance (`distance`).
+ *
+ * La distance de course se compte depuis la ligne : la première rangée part à
+ * 0 m, les suivantes à −5,40 m, −10,80 m… Le pilote ferme la marche — dans un
+ * tournoi, les sept rivaux partent devant lui et il doit remonter le peloton.
+ * Les voitures se répartissent sur les voies du **sens de course** du parcours
+ * (trois voies sur les artères, quatre sur un circuit permanent).
+ */
+export function cityRushRaceGrid(slots = [], course = null) {
+  const { forwardLanes } = cityRushLaneConfig(course);
+  const lanes = forwardLanes.length ? forwardLanes : Object.freeze([0]);
+  const entries = (Array.isArray(slots) ? slots : []).filter(Boolean);
+  const ordered = [
+    ...entries.filter((slot) => !slot.isPlayer),
+    ...entries.filter((slot) => slot.isPlayer),
+  ];
+  return ordered.map((slot, index) => {
+    const row = Math.floor(index / lanes.length);
+    return {
+      id: slot.id,
+      lane: lanes[index % lanes.length],
+      row,
+      // Positif devant la ligne, jamais `-0` : la première rangée part de 0 m.
+      distance: row === 0 ? 0 : -row * CITY_RUSH_GRID_ROW_GAP,
+    };
+  });
+}
 
 // Les avatars décrivent leurs couleurs en CSS (`#f3c8a6`) ; ces fonctions
 // utilitaires convertissent les teintes en entiers 0xRRGGBB pour les éléments
@@ -4144,6 +4568,8 @@ export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 2,
   // Un tir rouge ne retire qu’un carré, à une berline comme à un adversaire.
   [CITY_RUSH_POWERS.PISTOL]: 1,
+  // Une cartouche de pompe en retire six : une berline tombe d'un coup.
+  [CITY_RUSH_POWERS.SHOTGUN]: CITY_RUSH_SHOTGUN_DAMAGE,
   [CITY_RUSH_POWERS.RADIO]: 0, // frappe d'hélicoptère supprimée
   collision: 1, // la police perd un point, le pilote un carré (deux contre un SUV)
   // L'atterrissage d'un saut de tremplin : deux carrés, comme un tir bleu.
@@ -4879,6 +5305,10 @@ export function cityRushBaseMaxHealth() {
 export const CITY_RUSH_PLAYER_DAMAGE = Object.freeze({
   [CITY_RUSH_POWERS.BLUE_SHOT]: 1,
   [CITY_RUSH_POWERS.PISTOL]: 1,
+  // Une cartouche de pompe : six carrés d'un coup. Seul le pilote en porte
+  // une — rivaux et police restent à l'AK-47 —, le barème est donc surtout
+  // là pour que la page raconte le coup.
+  [CITY_RUSH_POWERS.SHOTGUN]: CITY_RUSH_SHOTGUN_DAMAGE,
   // Ancre de patch des harnais de course longue ; la ligne du dessous est
   // remplacée par le lanceur du smoke de course (voir `city-rush-smoke.mjs`).
   collision: 1, // choc contre une voiture : un carré pour le pilote
@@ -5138,10 +5568,12 @@ export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP
   return commands.join(' ');
 }
 
-// Construit l'état complet de la mini-carte : position des 3 pilotes sur le
-// circuit, avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
+// Construit l'état complet de la mini-carte : position des pilotes en piste,
+// avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
 // `solo` (Sprint) réduit la grille au seul pilote : la mini-carte et le
 // classement ne réinventent pas les deux rivaux d'une course à trois.
+// `roster` remplace la grille calculée : un tournoi aligne huit voitures de
+// course, la page passe donc la sienne pour que le classement les compte tous.
 export function buildCityRushMinimapState(
   racers = [],
   {
@@ -5156,9 +5588,12 @@ export function buildCityRushMinimapState(
     totalDistance = cityRushRaceDistance(laps, lapLength, finalLapLoops),
     pursuers = [],
     solo = false,
+    roster = null,
   } = {},
 ) {
-  const fullRoster = selectCityRushRacers({ cityId, carId, runId, playerDriverId });
+  const fullRoster = Array.isArray(roster) && roster.length
+    ? roster
+    : selectCityRushRacers({ cityId, carId, runId, playerDriverId });
   const playerSlots = fullRoster.filter((slot) => slot.id === playerId);
   // Garde-fou : une grille solo sans pilote n'aurait plus rien à projeter — on
   // retombe alors sur la première place de la grille.

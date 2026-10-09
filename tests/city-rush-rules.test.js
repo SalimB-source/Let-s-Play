@@ -4,6 +4,8 @@ import {
   CITY_RUSH_CITIES,
   CITY_RUSH_CARS,
   CITY_RUSH_CARS_BY_POWER,
+  cityRushCarCategory,
+  cityRushRivalCarProfile,
   CITY_RUSH_FREE_CAR_COUNT,
   CITY_RUSH_FREE_CAR_IDS,
   CITY_RUSH_DISTANCE,
@@ -14,12 +16,25 @@ import {
   CITY_RUSH_TRACK_BEHIND,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_AI_TRACK_BOOST_WEIGHT,
+  CITY_RUSH_AI_LANE_COOLDOWN_MIN,
+  CITY_RUSH_AI_LANE_COOLDOWN_MAX,
+  CITY_RUSH_BLUE_PICKUP_CHANCE,
   CITY_RUSH_RED_PICKUP_CHANCE,
   CITY_RUSH_HEALTH_PICKUP_CHANCE,
   CITY_RUSH_HEALTH_PICKUP_RESTORE,
   CITY_RUSH_HEALTH_PICKUP_COLOR,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP,
+  CITY_RUSH_SHOTGUN_DAMAGE,
+  CITY_RUSH_SHOTGUN_FIRE_COOLDOWN,
+  CITY_RUSH_WEAPON_TYPES,
+  cityRushActiveWeapon,
+  cityRushEquipWeapon,
+  cityRushWeaponFireInterval,
+  cityRushWeaponMaxAmmo,
+  cityRushWeaponDamage,
   CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE,
+  CITY_RUSH_BOOST_SPAWN_CHANCE,
   CITY_RUSH_BLUE_SHOT_DURATION,
   CITY_RUSH_BLUE_SHOT_MAX_RANGE,
   CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
@@ -175,6 +190,11 @@ import {
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_LANES,
   CITY_RUSH_TRAFFIC_TYPES,
+  CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT,
+  CITY_RUSH_TOURNAMENT_ONCOMING_COUNT,
+  CITY_RUSH_TOURNAMENT_RACER_SLOTS,
+  CITY_RUSH_TOURNAMENT_RACER_COUNT,
+  cityRushRaceGrid,
   CITY_RUSH_ONCOMING_COUNT,
   CITY_RUSH_ONCOMING_LANES,
   CITY_RUSH_DRIVERS,
@@ -240,8 +260,12 @@ import {
   CITY_RUSH_RIVAL_PACE,
   CITY_RUSH_RIVAL_FINAL_LAP_PUSH,
   cityRushRivalPaceFactor,
+  cityRushRivalTargetSpeed,
   cityRushAiBrakingRate,
   cityRushAiBrakingDistance,
+  cityRushAiThinkDelay,
+  CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN,
+  CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX,
   cityRushAiLaneBlocked,
   CITY_RUSH_AI_BRAKING_MARGIN,
   chooseCityRushAiLane,
@@ -287,8 +311,10 @@ import {
   canCollectCityRushPickup,
   isCityRushPowerCharged,
   shouldHideCityRushPistolPickup,
+  shouldHideCityRushWeaponPickup,
   createCityRushEncounter,
   createCityRushBoostEncounter,
+  keepsCityRushBoostPickup,
   createCityRushInventory,
   createCityRushPoliceInventory,
   detectCityRushTrafficImpacts,
@@ -384,6 +410,55 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.widthScale)).size > 1);
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.powerMultiplier)).size > 1);
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.hitRecoveryMultiplier)).size > 1);
+});
+
+test('les rivaux choisissent toujours une voiture de la catégorie du pilote', () => {
+  const expectedCategories = {
+    'city-hatch': 'compact',
+    'nova-18-gt': 'compact',
+    'night-comet': 'compact',
+    'vice-roadster': 'sport',
+    'turbo-gt': 'sport',
+    'muscle-86': 'supercar',
+    'vega-gt-67': 'sport',
+    'toro-v12': 'supercar',
+    'volt-aero': 'sport',
+    'atlas-xr': 'crossover',
+    'pulse-rs': 'sport',
+  };
+
+  for (const car of CITY_RUSH_CARS) {
+    assert.equal(cityRushCarCategory(car), expectedCategories[car.id], `${car.name} a une classe de course explicite`);
+    assert.equal(cityRushCarCategory(car.id), expectedCategories[car.id], `${car.id} se résout depuis le catalogue`);
+    const peers = CITY_RUSH_CARS.filter((candidate) => candidate.category === car.category);
+    for (const rivalIndex of [0, 1, 6]) {
+      const rival = cityRushRivalCarProfile({ playerCarId: car.id, rivalIndex });
+      assert.ok(rival, `${car.name} reçoit un profil de rival`);
+      assert.equal(rival.category, car.category, `${car.name} / rival ${rivalIndex} restent dans la même classe`);
+      if (peers.length > 1) {
+        assert.notEqual(rival.id, car.id, `${car.name} affronte un autre modèle quand la classe le permet`);
+      }
+    }
+  }
+
+  assert.equal(cityRushRivalCarProfile({ playerCarId: 'city-hatch' }).id, 'nova-18-gt',
+    'le rival compact le plus proche en vitesse est choisi en premier');
+  assert.equal(cityRushRivalCarProfile({ playerCarId: 'city-hatch', rivalIndex: 1 }).id, 'night-comet',
+    'les autres places utilisent ensuite le reste de la catégorie');
+
+  const scriptedSameClass = cityRushRivalCarProfile({
+    playerCarId: 'city-hatch',
+    preferredCarId: 'night-comet',
+  });
+  assert.equal(scriptedSameClass.id, 'night-comet', 'un modèle de scénario est gardé s’il respecte la classe');
+  const scriptedWrongClass = cityRushRivalCarProfile({
+    playerCarId: 'city-hatch',
+    preferredCarId: 'toro-v12',
+  });
+  assert.equal(scriptedWrongClass.category, 'compact', 'un modèle imposé hors classe est remplacé');
+  assert.equal(cityRushRivalCarProfile({ playerCarId: 'atlas-xr' }).id, 'atlas-xr',
+    'une catégorie sans autre modèle préfère un doublon au changement de classe');
+  assert.equal(cityRushCarCategory('unknown-car'), null);
 });
 
 test('les trois voitures les moins puissantes sont débloquées pour tout le monde', () => {
@@ -559,6 +634,49 @@ test('eight slow traffic cars span three forward lanes and safely block racers (
   const byId = Object.fromEntries(moved.map((car) => [car.id, car.nextDistance]));
   assert.ok(byId.player >= 35, 'le contact ne provoque pas de recul ni de pénalité');
   assert.ok(byId['slow-traffic'] - byId.player >= CITY_RUSH_CAR_GAP - 1e-9);
+});
+
+test('un tournoi aligne huit voitures de course, le pilote en dernière rangée', () => {
+  assert.equal(CITY_RUSH_TOURNAMENT_RACER_COUNT, 8);
+  assert.deepEqual([...CITY_RUSH_TOURNAMENT_RACER_SLOTS], [
+    'player', 'nova', 'juno', 'lyra', 'orion', 'altair', 'polaris', 'castor',
+  ]);
+  const slots = CITY_RUSH_TOURNAMENT_RACER_SLOTS.map((id, index) => ({ id, slot: index, isPlayer: id === 'player' }));
+  // Sur une artère à six voies, la grille se remplit sur les trois voies du sens
+  // de course : trois rangées, le pilote tout derrière.
+  const grid = cityRushRaceGrid(slots, null);
+  assert.equal(grid.length, CITY_RUSH_TOURNAMENT_RACER_COUNT);
+  assert.deepEqual(grid.map((place) => place.lane), [3, 4, 5, 3, 4, 5, 3, 4]);
+  assert.deepEqual(grid.map((place) => place.row), [0, 0, 0, 1, 1, 1, 2, 2]);
+  assert.deepEqual(grid.map((place) => place.distance), [0, 0, 0, -5.4, -5.4, -5.4, -10.8, -10.8]);
+  assert.equal(grid.at(-1).id, 'player', 'le pilote ferme la marche');
+  assert.ok(grid.filter((place) => place.id !== 'player').every((place) => place.distance >= grid.at(-1).distance));
+  // Aucune place n'est partagée : une voiture par voie et par rangée.
+  assert.equal(new Set(grid.map((place) => `${place.lane}/${place.row}`)).size, grid.length);
+  // Sur le Ring (quatre voies, sens unique), la même grille tient en deux rangées.
+  const ring = cityRushRaceGrid(slots, CITY_RUSH_COURSES.find((course) => course.id === 'nordschleife'));
+  assert.deepEqual(ring.map((place) => place.lane), [0, 1, 2, 3, 0, 1, 2, 3]);
+  assert.deepEqual(ring.map((place) => place.row), [0, 0, 0, 0, 1, 1, 1, 1]);
+  assert.deepEqual(ring.map((place) => place.distance), [0, 0, 0, 0, -5.4, -5.4, -5.4, -5.4]);
+  // Les cases peintes au sol suivent les voies du sens de course.
+  assert.deepEqual([...cityRushLaneConfig(null).gridLanes], [...CITY_RUSH_FORWARD_LANES]);
+  assert.deepEqual(
+    [...cityRushLaneConfig(CITY_RUSH_COURSES.find((course) => course.id === 'london')).gridLanes],
+    [...CITY_RUSH_LEFT_HALF_LANES],
+    'en conduite à gauche, la grille peinte passe de l’autre côté de l’axe',
+  );
+});
+
+test('le trafic d’un tournoi est clairsemé et sans une seule berline de police', () => {
+  assert.equal(CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT, 4);
+  assert.ok(CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT < CITY_RUSH_TRAFFIC_COUNT, 'moins de civiles que la course libre');
+  assert.equal(CITY_RUSH_TOURNAMENT_ONCOMING_COUNT, 1);
+  assert.ok(CITY_RUSH_TOURNAMENT_ONCOMING_COUNT < CITY_RUSH_ONCOMING_COUNT);
+  // Le trafic reste celui de la ville, police en moins : les modèles civils
+  // (taxi, ambulance, camion, GT) sont toujours là.
+  const civilians = CITY_RUSH_TRAFFIC_TYPES.filter((spec) => !isCityRushPoliceTrafficType(spec.id));
+  assert.ok(civilians.length >= CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT, 'assez de modèles civils pour la flotte de tournoi');
+  assert.equal(civilians.some((spec) => spec.id === 'taxi'), true, 'la voiture civile de la ville reste sur la route');
 });
 
 test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) et libère une voie', () => {
@@ -919,9 +1037,8 @@ test('l’écart de puissance entre la citadine de départ et la supercar est fr
   const idsSortedBy = (stat) => [...CITY_RUSH_CARS].sort((a, b) => a[stat] - b[stat]).map((car) => car.id);
   assert.deepEqual(idsSortedBy('power'), idsSortedBy('powerMultiplier'));
   assert.deepEqual(idsSortedBy('price'), idsSortedBy('powerMultiplier'));
-  // Les deux rivaux reçoivent les profils les plus lents hors voiture du joueur
-  // (`rivalProfiles` dans `ViceCityWorld.jsx`) : l'écart en piste est donc réel
-  // dans les deux sens, du départ difficile à la course dominée.
+  // Le garage conserve des écarts de puissance francs ; en course, les rivaux
+  // sont désormais choisis dans la catégorie de la voiture engagée.
   const slowestRivals = CITY_RUSH_CARS.slice(0, 2);
   assert.ok(top.powerMultiplier / slowestRivals[1].powerMultiplier >= 1.6);
 });
@@ -978,14 +1095,18 @@ test('chaque système calibré pour une seule vitesse suit désormais la voiture
 test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic ground boosts', () => {
   assert.equal(CITY_RUSH_DISTANCE, 8400); // 6 tours : 5 boucles de 1 200 m + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 35);
+  assert.equal(CITY_RUSH_BLUE_PICKUP_CHANCE, 0.03, 'le fusil à pompe bleu apparaît dans 3 % des objets');
+  assert.ok(CITY_RUSH_BLUE_PICKUP_CHANCE < CITY_RUSH_RED_PICKUP_CHANCE, 'le pompe est plus rare que l’AK-47');
   assert.equal(CITY_RUSH_RED_PICKUP_CHANCE, 0.08, 'le chargeur rouge apparaît dans 8 % des objets');
   assert.equal(CITY_RUSH_HEALTH_PICKUP_CHANCE, 0.06, 'le plus de soin apparaît dans 6 % des objets');
   assert.equal(CITY_RUSH_HEALTH_PICKUP_RESTORE, 1);
   assert.equal(CITY_RUSH_HEALTH_PICKUP_COLOR, '#ff4055');
   assert.equal(CITY_RUSH_PISTOL_AMMO_PER_PICKUP, 7);
-  assert.ok(Math.abs(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE - 0.86) < 1e-12);
+  assert.equal(CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP, 3);
+  assert.equal(CITY_RUSH_SHOTGUN_DAMAGE, 6);
+  assert.ok(Math.abs(CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE - 0.83) < 1e-12);
   assert.equal(CITY_RUSH_AI_TRACK_BOOST_WEIGHT, 3);
-  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, radio: 4 });
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 7, shotgun: 3, radio: 4 });
   assert.equal(CITY_RUSH_POWER_RULES.pistol.key, 'Z');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.chargeCost, 7);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.ammoPerPickup, CITY_RUSH_PISTOL_AMMO_PER_PICKUP);
@@ -1002,9 +1123,9 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /six balles pour une berline/i);
   assert.match(CITY_RUSH_POWER_RULES.pistol.description, /carambolage en accélérant retire un point à la police, et un carré au pilote/i);
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
-    'blue-shot': 'A', pistol: 'Z', radio: 'R',
+    'blue-shot': 'A', pistol: 'Z', shotgun: 'Z', radio: 'R',
   });
-  assert.deepEqual(Object.keys(CITY_RUSH_POWER_RULES), ['blue-shot', 'pistol', 'radio']);
+  assert.deepEqual(Object.keys(CITY_RUSH_POWER_RULES), ['blue-shot', 'pistol', 'shotgun', 'radio']);
   for (const [type, cost] of Object.entries(CITY_RUSH_POWER_CHARGE_COST)) {
     assert.equal(CITY_RUSH_POWER_RULES[type].chargeCost, cost);
   }
@@ -1025,6 +1146,16 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.automatic, false);
+  // Le fusil à pompe : trois cartouches, six carrés par tir, bonus bleu.
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.key, 'Z', 'le pompe se tire avec le même bouton que l’AK-47');
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.chargeCost, 3);
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.ammoPerPickup, CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP);
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.damageCells, CITY_RUSH_SHOTGUN_DAMAGE);
+  assert.equal(CITY_RUSH_POWER_RULES.shotgun.automatic, false);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.name, /fusil à pompe/i);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.description, /3 cartouches/i);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.description, /6 carrés de vie/i);
+  assert.match(CITY_RUSH_POWER_RULES.shotgun.description, /même bouton/i);
   assert.equal(CITY_RUSH_POWER_RULES.radio.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
   assert.equal(CITY_RUSH_POWER_RULES.radio.automatic, false);
@@ -1162,7 +1293,7 @@ test('le tir droit bleu riposte sur la berline la plus proche de sa voie, même 
 
 test('one red pickup grants seven bullets while inventory tracks remain independent', () => {
   let inventory = createCityRushInventory();
-  assert.deepEqual(Object.keys(inventory), ['blue-shot', 'pistol', 'radio']);
+  assert.deepEqual(Object.keys(inventory), ['blue-shot', 'pistol', 'shotgun', 'radio']);
   inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
   inventory = addCityRushCharge(inventory, 'pistol');
   assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1);
@@ -2706,9 +2837,12 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
     [CITY_RUSH_PICKUPS.BOOST]: 0,
     [CITY_RUSH_PICKUPS.HEALTH]: 0,
     [CITY_RUSH_POWERS.PISTOL]: 0,
+    [CITY_RUSH_POWERS.SHOTGUN]: 0,
   };
   for (let index = 0; index < 10000; index += 1) {
-    const encounter = createCityRushEncounter(random);
+    // `chance = 1` : le mélange des types est mesuré hors baisse de densité des
+    // turbos — un turbo tiré est alors un turbo posé, comme avant le cercle au sol.
+    const encounter = createCityRushEncounter(random, CITY_RUSH_LANE_X.length, 1);
     assert.equal(Object.hasOwn(encounter, 'slowLane'), false);
     assert.ok(encounter.pickups.length <= 2);
     totalPickups += encounter.pickups.length;
@@ -2717,18 +2851,26 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
     const pickupLanes = new Set();
     for (const pickup of encounter.pickups) {
       assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
-      assert.ok([CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL].includes(pickup.type));
+      assert.ok([
+        CITY_RUSH_PICKUPS.BOOST,
+        CITY_RUSH_PICKUPS.HEALTH,
+        CITY_RUSH_POWERS.PISTOL,
+        CITY_RUSH_POWERS.SHOTGUN,
+      ].includes(pickup.type));
       assert.ok(!pickupLanes.has(pickup.lane));
       pickupLanes.add(pickup.lane);
     }
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
+  const blueRate = pickupCounts[CITY_RUSH_POWERS.SHOTGUN] / totalPickups;
   const redRate = pickupCounts[CITY_RUSH_POWERS.PISTOL] / totalPickups;
   const healthRate = pickupCounts[CITY_RUSH_PICKUPS.HEALTH] / totalPickups;
   const boostRate = pickupCounts[CITY_RUSH_PICKUPS.BOOST] / totalPickups;
+  assert.ok(blueRate >= 0.02 && blueRate <= 0.045, `le fusil à pompe bleu apparaît environ 3 % du temps (${(blueRate * 100).toFixed(1)} %)`);
   assert.ok(redRate >= 0.06 && redRate <= 0.10, `le chargeur rouge apparaît environ 8 % du temps (${(redRate * 100).toFixed(1)} %)`);
+  assert.ok(blueRate < redRate, 'le pompe reste plus rare que l’AK-47 sur la route');
   assert.ok(healthRate >= 0.04 && healthRate <= 0.08, `le plus de soin apparaît environ 6 % du temps (${(healthRate * 100).toFixed(1)} %)`);
-  assert.ok(boostRate >= 0.82 && boostRate <= 0.90, `les pads turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
+  assert.ok(boostRate >= 0.79 && boostRate <= 0.90, `les cercles turbo restent majoritaires (${(boostRate * 100).toFixed(1)} %)`);
   assert.equal(pickupCounts['blue-shot'], undefined);
   assert.equal(pickupCounts.radio, undefined);
   assert.equal(sawEmptyRow, true);
@@ -2736,13 +2878,45 @@ test('pickup encounters contain red machine-gun bonuses, red health crosses, and
   assert.ok(totalPickups > 12000 && totalPickups < 12800, 'les rangées plus souvent doubles augmentent le nombre de bonus au sol');
 });
 
+test('boost circles are seeded more sparsely on races, without touching the other pickups', () => {
+  assert.equal(CITY_RUSH_BOOST_SPAWN_CHANCE, 0.75, 'un quart des turbos tirés ne sont pas posés du tout');
+  // Le tirage est pur et borné : en dessous de la chance le cercle reste, au-dessus
+  // il saute, et un tirage invalide pose moins plutôt que trop.
+  assert.equal(keepsCityRushBoostPickup(() => 0.74), true);
+  assert.equal(keepsCityRushBoostPickup(() => 0.75), false);
+  assert.equal(keepsCityRushBoostPickup(() => 0.99, 1), true, 'à chance pleine, rien n’est tiré au hasard');
+  assert.equal(keepsCityRushBoostPickup(() => Number.NaN), false);
+  assert.equal(keepsCityRushBoostPickup(() => 0.5, -1), false);
+  assert.equal(keepsCityRushBoostPickup(() => 0.5, 4), true);
+  const countPickups = (chance) => {
+    let seed = 2024;
+    const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+    const counts = { [CITY_RUSH_PICKUPS.BOOST]: 0, [CITY_RUSH_PICKUPS.HEALTH]: 0, [CITY_RUSH_POWERS.PISTOL]: 0 };
+    for (let index = 0; index < 10000; index += 1) {
+      for (const pickup of createCityRushEncounter(random, CITY_RUSH_LANE_X.length, chance).pickups) counts[pickup.type] += 1;
+    }
+    return counts;
+  };
+  const dense = countPickups(1);
+  const race = countPickups(CITY_RUSH_BOOST_SPAWN_CHANCE);
+  assert.ok(race[CITY_RUSH_PICKUPS.BOOST] < dense[CITY_RUSH_PICKUPS.BOOST] * 0.85
+    && race[CITY_RUSH_PICKUPS.BOOST] > dense[CITY_RUSH_PICKUPS.BOOST] * 0.6,
+  `le turbo perd le quart de ses emplacements (${dense[CITY_RUSH_PICKUPS.BOOST]} → ${race[CITY_RUSH_PICKUPS.BOOST]})`);
+  // Les rouges et les soins ne passent pas par ce filtre : leur nombre ne bouge
+  // pas d'un poil, à l'échantillonnage près.
+  for (const type of [CITY_RUSH_PICKUPS.HEALTH, CITY_RUSH_POWERS.PISTOL]) {
+    assert.ok(Math.abs(race[type] - dense[type]) <= dense[type] * 0.1,
+      `le bonus ${type} garde sa cadence (${dense[type]} → ${race[type]})`);
+  }
+});
+
 test('Sprint encounters place a single ground boost on a forward-facing lane', () => {
-  assert.equal(CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL, 6, 'le Sprint espace les rangées de turbo pour éviter un boost permanent');
+  assert.equal(CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL, 8, 'le Sprint espace les rangées de turbo pour éviter un boost permanent');
   for (const sample of [0, 0.12, 0.34, 0.68, 0.99]) {
     const encounter = createCityRushBoostEncounter(() => sample);
     assert.equal(encounter.pickups.length, 1);
     assert.equal(encounter.pickups[0].type, CITY_RUSH_PICKUPS.BOOST);
-    assert.ok(CITY_RUSH_FORWARD_LANES.includes(encounter.pickups[0].lane), 'un pad ne doit pas se trouver sur la voie inverse');
+    assert.ok(CITY_RUSH_FORWARD_LANES.includes(encounter.pickups[0].lane), 'un cercle au sol ne doit pas se trouver sur la voie inverse');
   }
 });
 
@@ -3627,6 +3801,105 @@ test('les SUV blindés ont dix carrés et coûtent deux carrés au contact', () 
   assert.equal(cityRushPlayerDamage(15, 'collision'), 14, 'les autres collisions ne changent pas');
 });
 
+test('le fusil à pompe partage l’emplacement d’arme de l’AK-47 : ramasser l’un vide l’autre', () => {
+  assert.deepEqual([...CITY_RUSH_WEAPON_TYPES], ['pistol', 'shotgun']);
+  const empty = createCityRushInventory();
+  assert.equal(cityRushActiveWeapon(empty), null, 'le bouton de tir reste vide sans rien ramasser');
+  assert.equal(isCityRushPowerCharged(empty, CITY_RUSH_POWERS.PISTOL), false);
+  assert.equal(isCityRushPowerCharged(empty, CITY_RUSH_POWERS.SHOTGUN), false);
+
+  const ak = cityRushEquipWeapon(empty, CITY_RUSH_POWERS.PISTOL);
+  assert.deepEqual(cityRushActiveWeapon(ak), { type: 'pistol', ammo: 7, max: 7 });
+  assert.equal(ak[CITY_RUSH_POWERS.SHOTGUN], 0);
+
+  // Le bonus bleu remplace l'AK-47, même chargé à bloc : les balles sont perdues.
+  const pump = cityRushEquipWeapon(ak, CITY_RUSH_POWERS.SHOTGUN);
+  assert.equal(pump[CITY_RUSH_POWERS.PISTOL], 0, 'l’AK-47 est vidé par le fusil à pompe');
+  assert.equal(pump[CITY_RUSH_POWERS.SHOTGUN], CITY_RUSH_SHOTGUN_AMMO_PER_PICKUP);
+  assert.deepEqual(cityRushActiveWeapon(pump), { type: 'shotgun', ammo: 3, max: 3 });
+
+  // Et l'inverse : un chargeur rouge repris fait disparaître le pompe.
+  const back = cityRushEquipWeapon(pump, CITY_RUSH_POWERS.PISTOL);
+  assert.equal(back[CITY_RUSH_POWERS.SHOTGUN], 0);
+  assert.deepEqual(cityRushActiveWeapon(back), { type: 'pistol', ammo: 7, max: 7 });
+
+  // Reprendre la même arme complète son chargeur, sans jamais le dépasser.
+  const halfPump = { ...pump, [CITY_RUSH_POWERS.SHOTGUN]: 1 };
+  assert.equal(cityRushEquipWeapon(halfPump, CITY_RUSH_POWERS.SHOTGUN)[CITY_RUSH_POWERS.SHOTGUN], 3);
+  assert.equal(cityRushEquipWeapon(pump, CITY_RUSH_POWERS.SHOTGUN, 99)[CITY_RUSH_POWERS.SHOTGUN], 3,
+    'le chargeur de pompe ne dépasse jamais trois cartouches');
+  // Un type inconnu ne touche à rien.
+  assert.deepEqual(cityRushEquipWeapon(pump, 'radio', 4), pump);
+});
+
+test('une cartouche de pompe arrache six carrés de vie à la voiture touchée', () => {
+  assert.equal(cityRushWeaponDamage(CITY_RUSH_POWERS.SHOTGUN), 6);
+  assert.equal(cityRushWeaponDamage(CITY_RUSH_POWERS.PISTOL), 1);
+  // Une berline de police (six carrés) tombe d'une seule cartouche.
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.SHOTGUN), 1);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.SHOTGUN), 0);
+  // Un SUV blindé (dix carrés) en demande deux.
+  assert.equal(cityRushPoliceShotsLeft(10, CITY_RUSH_POWERS.SHOTGUN), 2);
+  assert.equal(cityRushPoliceDamage(10, CITY_RUSH_POWERS.SHOTGUN), 4);
+  assert.equal(cityRushPoliceDamage(4, CITY_RUSH_POWERS.SHOTGUN), 0);
+  // Un pilote paie le même prix : six carrés d'un coup.
+  assert.equal(cityRushPlayerDamage(15, CITY_RUSH_POWERS.SHOTGUN), 9);
+  assert.equal(cityRushPlayerDamage(4, CITY_RUSH_POWERS.SHOTGUN), 0, 'jamais de vie négative');
+  // Barème et cadence : le pompe se réarme bien plus lentement que l'AK-47.
+  assert.equal(CITY_RUSH_SHOTGUN_FIRE_COOLDOWN, 1.5);
+  assert.equal(cityRushWeaponFireInterval(CITY_RUSH_POWERS.SHOTGUN), CITY_RUSH_SHOTGUN_FIRE_COOLDOWN);
+  assert.ok(cityRushWeaponFireInterval(CITY_RUSH_POWERS.PISTOL) < CITY_RUSH_SHOTGUN_FIRE_COOLDOWN);
+  assert.equal(cityRushWeaponMaxAmmo(CITY_RUSH_POWERS.SHOTGUN), 3);
+  assert.equal(cityRushWeaponMaxAmmo(CITY_RUSH_POWERS.PISTOL), 7);
+});
+
+test('les cartouches de pompe se consomment une par une, et le bonus bleu se ramasse par-dessus un AK-47 plein', () => {
+  let inventory = cityRushEquipWeapon(createCityRushInventory(), CITY_RUSH_POWERS.SHOTGUN);
+  for (const left of [3, 2, 1]) {
+    assert.equal(inventory[CITY_RUSH_POWERS.SHOTGUN], left);
+    assert.equal(isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.SHOTGUN), true);
+    const shot = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.SHOTGUN);
+    assert.equal(shot.consumed, true, `la cartouche n°${left} part`);
+    assert.equal(shot.inventory[CITY_RUSH_POWERS.SHOTGUN], left - 1);
+    inventory = shot.inventory;
+  }
+  assert.equal(isCityRushPowerCharged(inventory, CITY_RUSH_POWERS.SHOTGUN), false, 'le pompe est vide');
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.SHOTGUN).consumed, false, 'un pompe vide ne tire plus');
+  assert.equal(cityRushActiveWeapon(inventory), null, 'le bouton redevient vide');
+
+  const fullAk = cityRushEquipWeapon(createCityRushInventory(), CITY_RUSH_POWERS.PISTOL);
+  assert.equal(canCollectCityRushPickup(fullAk, CITY_RUSH_POWERS.SHOTGUN), true,
+    'le bonus bleu remplace l’AK-47, même plein');
+  assert.equal(canCollectCityRushPickup(fullAk, CITY_RUSH_POWERS.PISTOL), false,
+    'un chargeur rouge déjà plein n’est pas gaspillé');
+
+  const fullPump = cityRushEquipWeapon(createCityRushInventory(), CITY_RUSH_POWERS.SHOTGUN);
+  assert.equal(canCollectCityRushPickup(fullPump, CITY_RUSH_POWERS.SHOTGUN), false,
+    'un pompe plein ne reprend pas de cartouches');
+  assert.equal(canCollectCityRushPickup(fullPump, CITY_RUSH_POWERS.PISTOL), true,
+    'l’AK-47 remplace le pompe, même plein');
+  assert.equal(canCollectCityRushPickup({ shotgun: 1 }, CITY_RUSH_POWERS.SHOTGUN), true,
+    'un pompe entamé se complète');
+
+  // Le masquage suit l'arme : un peloton entièrement rechargé en pompe cache
+  // le bonus bleu, mais un concurrent qui n'a que l'AK-47 le laisse au sol.
+  assert.equal(shouldHideCityRushWeaponPickup(fullPump, CITY_RUSH_POWERS.SHOTGUN, [fullPump]), true);
+  assert.equal(shouldHideCityRushWeaponPickup(fullPump, CITY_RUSH_POWERS.SHOTGUN, [fullAk]), false);
+  assert.equal(shouldHideCityRushWeaponPickup(fullAk, CITY_RUSH_POWERS.SHOTGUN, [fullAk]), false);
+  assert.equal(shouldHideCityRushPistolPickup(fullAk, [fullAk]), true, 'le raccourci rouge est conservé');
+});
+
+test('la cible d’une mission garde une voie plus longtemps, sauf en cas de danger urgent', () => {
+  assert.equal(cityRushAiThinkDelay(0), CITY_RUSH_AI_LANE_COOLDOWN_MIN);
+  assert.equal(cityRushAiThinkDelay(1), CITY_RUSH_AI_LANE_COOLDOWN_MAX);
+  assert.equal(cityRushAiThinkDelay(0, { missionTarget: true }), CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN);
+  assert.equal(cityRushAiThinkDelay(1, { missionTarget: true }), CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MAX);
+  assert.ok(
+    cityRushAiThinkDelay(0, { urgent: true, missionTarget: true }) < CITY_RUSH_MISSION_TARGET_AI_LANE_COOLDOWN_MIN,
+    'la cible conserve son réflexe de freinage lorsqu’un obstacle bouche la voie',
+  );
+});
+
 test('chaque rival freine à la distance d’arrêt de son propre modèle', () => {
   const citadine = CITY_RUSH_CARS.find((car) => car.id === 'city-hatch');
   const supercar = CITY_RUSH_CARS.find((car) => car.id === 'pulse-rs');
@@ -3670,6 +3943,37 @@ test('chaque rival freine à la distance d’arrêt de son propre modèle', () =
   });
   assert.equal(laneFor(citadine), 0, 'la citadine se décale au lieu de plonger sur le camion');
   assert.equal(laneFor(supercar), 1, 'la supercar prend le bonus, elle freine assez court');
+});
+
+test('la consigne des rivaux garde au moins la pointe du joueur, même si le scénario les ralentit', () => {
+  const playerTopSpeed = 50;
+  const slowerRivalSpeed = 35;
+  const regularPace = cityRushRivalPaceFactor();
+
+  assert.equal(cityRushRivalTargetSpeed(playerTopSpeed, slowerRivalSpeed, {
+    pace: regularPace,
+    storyPace: 0.94,
+  }), playerTopSpeed * regularPace, 'un modèle plus lent ou un handicap ne rend pas le joueur imbattable');
+  assert.ok(Math.abs(cityRushRivalTargetSpeed(playerTopSpeed, slowerRivalSpeed, {
+    pace: regularPace,
+    storyPace: 1.1,
+  }) - playerTopSpeed * regularPace * 1.1) < 1e-9,
+  'un bonus de scénario continue de renforcer un boss, même dans une voiture moins puissante');
+  assert.ok(Math.abs(cityRushRivalTargetSpeed(playerTopSpeed, 60, {
+    pace: regularPace,
+    storyPace: 1.1,
+  }) - 69.3) < 1e-9, 'un modèle plus rapide et un bonus de scénario gardent leur avance');
+
+  for (const playerCar of CITY_RUSH_CARS) {
+    const playerSpeed = CITY_RUSH_PLAYER_SPEED * playerCar.powerMultiplier;
+    for (const rivalCar of CITY_RUSH_CARS) {
+      const rivalSpeed = CITY_RUSH_PLAYER_SPEED * rivalCar.powerMultiplier;
+      assert.ok(
+        cityRushRivalTargetSpeed(playerSpeed, rivalSpeed) >= playerSpeed * CITY_RUSH_RIVAL_PACE - 1e-9,
+        `${rivalCar.id} ne laisse pas ${playerCar.id} s'échapper par la seule pointe moteur`,
+      );
+    }
+  }
 });
 
 test('le rythme de course des rivaux est un vrai cran au-dessus, dernier tour compris', () => {

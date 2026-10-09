@@ -124,15 +124,14 @@ export async function checkViceCityQuietRace(assert) {
     assert.equal(worldProbe.props?.onPickup, undefined, 'la page n’écoute plus les ramassages');
     assert.equal(worldProbe.props?.onLap, undefined, 'la page n’écoute plus les passages de ligne');
 
-    // Le bouton jaune est à gauche de l'AK-47 rouge, et reste grisé tant que
-    // le HUD n'annonce pas la traversée d'un des deux entrepôts (30 % / 65 %).
-    const gunButton = mustFind(node, '.city-rush-machine-gun-button', 'commande rouge');
-    const bazookaButton = mustFind(node, '.city-rush-bazooka-button', 'commande bazooka');
-    assert.ok(bazookaButton.parentElement === gunButton.parentElement, 'les deux armes partagent le dock tactile');
-    assert.ok(bazookaButton.nextElementSibling === gunButton, 'le bouton bazooka précède le bouton rouge dans l’ordre gauche-droite');
-    assert.equal(bazookaButton.disabled, true, 'le bazooka reste verrouillé avant le pickup');
-    assert.match(bazookaButton.className, /is-empty/, 'le bouton de bazooka est grisé avant le pickup');
-    await click(bazookaButton);
+    // Le bazooka n'a plus de bouton à part : comme le tir rouge et le tir
+    // bleu, la roquette ramassée remplace l'arme en main sur le bouton de
+    // tir unique — grisé tant que rien n'a été ramassé.
+    const gunButton = mustFind(node, '.city-rush-machine-gun-button', 'bouton de tir');
+    assert.equal(node.querySelectorAll('.city-rush-bazooka-button').length, 0, 'le bouton de bazooka séparé a disparu');
+    assert.equal(gunButton.disabled, true, 'le bouton de tir reste verrouillé sans arme');
+    assert.match(gunButton.className, /is-empty/, 'le bouton de tir est grisé avant tout ramassage');
+    await click(gunButton);
     assert.deepEqual(worldProbe.actions, [], 'un bouton verrouillé ne déclenche aucun tir');
 
     const fakeHud = {
@@ -144,17 +143,19 @@ export async function checkViceCityQuietRace(assert) {
       playerHealthFlash: 0, police: [], wantedLevel: 0, wantedMaxStars: 5,
       miniGaragesActive: false, miniGaragesRemaining: 1, miniGaragesTotal: 1,
       miniGarageNextDistance: null, oncomingPoliceTurnarounds: [], spikeBlock: null, suvCharges: [],
-      bazookaAmmo: 1, bazookaPickupTaken: true,
+      bazookaAmmo: 1, bazookaPickupTaken: false,
     };
     await act(async () => worldProbe.props?.onHud?.(fakeHud));
-    assert.equal(bazookaButton.disabled, false, 'le bouton devient disponible après le pickup');
-    assert.match(bazookaButton.className, /is-ready/, 'le bouton prêt prend l’accent jaune');
-    assert.match(bazookaButton.textContent, /1 TIR · X/, 'le HUD montre l’unique tir et le raccourci');
-    await click(bazookaButton);
-    assert.deepEqual(worldProbe.actions, ['bazooka'], 'le bouton transmet bien l’action bazooka au monde');
-    await act(async () => worldProbe.props?.onHud?.({ ...fakeHud, bazookaAmmo: 0 }));
-    assert.equal(bazookaButton.disabled, true, 'le bouton se reverrouille une fois le tir utilisé');
-    assert.match(bazookaButton.textContent, /ÉPUISÉ/, 'le HUD signale le stock épuisé');
+    assert.equal(gunButton.disabled, false, 'le bouton devient disponible après la traversée du conteneur');
+    assert.match(gunButton.className, /is-ready/, 'le bouton prêt s’allume');
+    assert.match(gunButton.className, /is-bazooka/, 'la roquette en main repeint le bouton de tir en jaune');
+    assert.match(gunButton.textContent, /BAZOOKA/, 'le bouton affiche l’arme en main : le bazooka');
+    assert.match(gunButton.textContent, /CHARGÉ 1\/1/, 'le HUD montre l’unique roquette');
+    await click(gunButton);
+    assert.deepEqual(worldProbe.actions, ['pistol-tap'], 'le bouton de tir transmet le tir — le monde choisit la roquette en main');
+    await act(async () => worldProbe.props?.onHud?.({ ...fakeHud, bazookaAmmo: 0, bazookaPickupTaken: true }));
+    assert.equal(gunButton.disabled, true, 'le bouton se reverrouille une fois la roquette utilisée');
+    assert.match(gunButton.textContent, /ÉPUISÉ/, 'le HUD signale le bazooka épuisé — les deux entrepôts sont vides');
 
     // Une volée d'événements de course : ceux qui ouvraient autrefois une
     // fenêtre de message, un bandeau de tour ou une pastille d'état.
@@ -189,6 +190,13 @@ export async function checkViceCityQuietRace(assert) {
 
     // Le HUD de course, lui, garde tout ce qui se lit d'un coup d'œil.
     assert.ok(node.querySelector('.city-rush-position-card'), 'la carte POSITION reste affichée');
+    // Course libre : trois voitures sur la grille, donc « 3e / 3 ». Le total
+    // suit le plateau (huit en tournoi) au lieu d'être figé à trois.
+    assert.equal(
+      node.querySelector('.city-rush-position-card > strong')?.textContent.replace(/\s+/g, ' ').trim(),
+      '3e / 3',
+      'la carte POSITION compte les trois pilotes de la course libre',
+    );
     assert.ok(node.querySelector('.city-rush-lap-card'), 'la carte TOUR / CHECKPOINT reste affichée');
     assert.ok(node.querySelector('.city-rush-gta-cash'), 'la carte BUTIN et chrono reste affichée');
     assert.ok(node.querySelector('.city-rush-speedometer'), 'le compteur de vitesse reste affiché');

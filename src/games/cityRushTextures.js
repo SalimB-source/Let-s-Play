@@ -1050,9 +1050,61 @@ export function makePickupMaterial(type, color) {
       // Cache-flamme
       ctx.fillRect(234, 120, 16, 20);
       ctx.restore();
+    } else if (type === 'shotgun') {
+      // Fusil à pompe de profil : crosse, boîtier, pompe sous le canon, bouche
+      // évasée. Silhouette plus courte et plus massive que l'AK-47, pour qu'on
+      // reconnaissance le bonus bleu au premier coup d'œil.
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(-0.14);
+      ctx.translate(-centerX, -centerY);
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      // Crosse
+      ctx.moveTo(34, 112);
+      ctx.lineTo(88, 124);
+      ctx.lineTo(88, 152);
+      ctx.lineTo(38, 168);
+      ctx.closePath();
+      // Boîtier
+      ctx.moveTo(86, 118);
+      ctx.lineTo(150, 118);
+      ctx.lineTo(150, 152);
+      ctx.lineTo(86, 152);
+      ctx.closePath();
+      // Pompe (garde-main coulissant sous le canon)
+      ctx.moveTo(148, 126);
+      ctx.lineTo(194, 126);
+      ctx.lineTo(194, 152);
+      ctx.lineTo(148, 152);
+      ctx.closePath();
+      // Canon
+      ctx.moveTo(150, 120);
+      ctx.lineTo(236, 120);
+      ctx.lineTo(236, 134);
+      ctx.lineTo(150, 134);
+      ctx.closePath();
+      // Poignée pistolet
+      ctx.moveTo(104, 150);
+      ctx.lineTo(94, 200);
+      ctx.lineTo(120, 200);
+      ctx.lineTo(128, 150);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // Tube magasin sous le canon
+      ctx.fillRect(152, 136, 78, 10);
+      // Pontet
+      ctx.fillRect(126, 152, 26, 8);
+      // Guidon et bouche évasée : la signature du pompe
+      ctx.fillRect(210, 104, 9, 18);
+      ctx.fillRect(230, 112, 18, 30);
+      ctx.restore();
     } else if (type === 'boost') {
-      // Turbo : l'éclair blanc du bonus vert, celui qui flotte au-dessus de la
-      // chaussée, cerclé de son anneau (l'ancien pad posé au sol a disparu).
+      // Turbo : l'éclair blanc, désormais réservé aux légendes du HUD et du
+      // guide. Sur la piste, le bonus est un cercle peint au sol (voir
+      // `makeBoostPadMaterial`), plus aucune icône ne flotte au-dessus du bitume.
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = color;
       ctx.shadowBlur = 18;
@@ -1089,6 +1141,101 @@ export function makePickupMaterial(type, color) {
     }
   }, 256, 256);
   return new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+}
+
+/**
+ * Cercle turbo posé sur la chaussée : le bonus de vitesse n'est plus une icône
+ * qui flotte, c'est un marquage au sol que la voiture traverse. Le dessin tient
+ * dans un carré de 256 px et se compose de quatre lectures, de la plus large à
+ * la plus fine : un halo diffus qui teinte le bitume, un anneau épais bien
+ * voyant de loin, un cercle intérieur pointillé, et deux chevrons qui indiquent
+ * le sens de la course (le haut du dessin regarde vers l'avant de la voie).
+ * La couleur passée en paramètre est celle du bonus — le vert du turbo.
+ */
+export function makeBoostPadTexture(color, { size = 256 } = {}) {
+  return makeCanvasTexture((ctx, width, height) => {
+    const center = width / 2;
+    const unit = width / size;
+    ctx.clearRect(0, 0, width, height);
+    // 1. Le halo : une tache de lumière floue, peinte avant tout le reste pour
+    // que l'anneau garde un bord net au-dessus d'elle.
+    const halo = ctx.createRadialGradient(center, center, 8 * unit, center, center, 122 * unit);
+    halo.addColorStop(0, hexToRgba(color, 0.3));
+    halo.addColorStop(0.55, hexToRgba(color, 0.14));
+    halo.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(center, center, 122 * unit, 0, Math.PI * 2);
+    ctx.fill();
+    // 2. Le fond du cercle : une peinture teintée, à peine plus claire que le
+    // halo, qui donne au disque une vraie limite au lieu d'un simple fantôme.
+    ctx.fillStyle = hexToRgba(color, 0.16);
+    ctx.beginPath();
+    ctx.arc(center, center, 104 * unit, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    // 3. L'anneau principal, le seul indispensable : c'est lui qui dit « passe
+    // ici ». Le halo d'ombre portée imite le néon qui bave sur le bitume.
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 22 * unit;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 13 * unit;
+    ctx.beginPath();
+    ctx.arc(center, center, 104 * unit, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = hexToRgba('#ffffff', 0.72);
+    ctx.lineWidth = 3 * unit;
+    ctx.beginPath();
+    ctx.arc(center, center, 96 * unit, 0, Math.PI * 2);
+    ctx.stroke();
+    // 4. Le cercle pointillé intérieur : il meuble le disque, qui ne reste pas
+    // un simple anneau vide vu de la caméra de poursuite.
+    ctx.save();
+    ctx.setLineDash([15 * unit, 13 * unit]);
+    ctx.strokeStyle = hexToRgba('#ffffff', 0.5);
+    ctx.lineWidth = 5 * unit;
+    ctx.beginPath();
+    ctx.arc(center, center, 72 * unit, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    // 5. Les deux chevrons vers l'avant : posés de part et d'autre du centre,
+    // ils disent dans quel sens le cercle se traverse. Le haut du dessin regarde
+    // vers l'avant de la voie — le plan est tourné de façon que ce soit aussi
+    // l'avant de la voiture qui arrive, comme les flèches du tremplin.
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 11 * unit;
+    for (const offset of [-30, 26]) {
+      const tipY = center + offset * unit;
+      ctx.beginPath();
+      ctx.moveTo(center - 32 * unit, tipY + 20 * unit);
+      ctx.lineTo(center, tipY);
+      ctx.lineTo(center + 32 * unit, tipY + 20 * unit);
+      ctx.stroke();
+    }
+  }, 256, 256, { smooth: true });
+}
+
+/**
+ * Matériau du cercle turbo. `polygonOffset` repousse très légèrement le bitume
+ * dans le z-buffer : posé à plat sur la chaussée, un décalque transparent
+ * clignote sinon à chaque ondulation de la piste, dès qu'un triangle du
+ * revêtement passe devant lui.
+ */
+export function makeBoostPadMaterial(color) {
+  const texture = makeBoostPadTexture(color);
+  return new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -4,
+    polygonOffsetUnits: -4,
+  });
 }
 
 export function makeSmokeTexture() {

@@ -35,7 +35,9 @@
      grille à nombre d'éléments fixe — les 4 reels (`.reels-grid`), les 3 cartes
      du hub (`.news-hub-grid`), les 3 formats, les 3 statistiques — laisserait
      un trou béant dans sa dernière rangée. Celles-là grandissent avec le
-     conteneur, ce qui est voulu.
+     conteneur, ce qui est voulu. Les 3 actus du jour du hub suivent la même
+     règle, mais leur verrou à trois colonnes vit dans `src/news-carousel.css`
+     (il vaut pour tous les paliers, pas seulement au-delà de 1440 px).
    - **Les grilles remplissent la largeur ; la prose ne la remplit jamais.**
      Les colonnes de texte long gardent une mesure de 60–70 caractères
      (`.article-body` a son propre `max-width:68ch`), et les blocs de lecture

@@ -46,7 +46,7 @@ const { checkViceCityGarage } = await import('../node_modules/.cache/vice-city-g
 let code = 0;
 try {
   await checkViceCityGarage(assert);
-  console.log('check:city-rush-garage ✓ — les trois voitures les moins puissantes (MISTRAL 1.4, NOVA 1.8 GT, WOLFSBURG GT-R) sont offertes à tous : pastille « OFFERTE », aucun prix, départ en course sans billet vert ; les cinq autres restent verrouillées.');
+  console.log('check:city-rush-garage ✓ — les trois voitures les moins puissantes (MISTRAL 1.4, NOVA 1.8 GT, WOLFSBURG GT-R) sont offertes à tous : pastille « OFFERTE », aucun prix, départ en course sans billet vert ; les cinq autres restent verrouillées ; et ouverte par l’entrée GARAGE du menu, la même grille devient une page d’achat — 900 billets paient la CAVALLO F8 GTB, la pastille passe à « ACHETÉE », l’onglet compte la voiture de plus, la sauvegarde suit, et aucun compte à rebours ne démarre.');
 } catch (error) {
   console.error(error?.message || error);
   code = 1;

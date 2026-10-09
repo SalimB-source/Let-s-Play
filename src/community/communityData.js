@@ -5,63 +5,41 @@ export const COMMUNITY_STORAGE_KEY = 'letsplay_community_v1';
 export const COMMUNITY_GROUP_MAX_NAME = 56;
 export const COMMUNITY_GROUP_MAX_DESCRIPTION = 280;
 export const COMMUNITY_COMMENT_MAX_LENGTH = 1000;
-export const SOULSLIKE_GROUP_ID = 'e4d52bd0-0922-4be4-a880-000000000001';
-
-export const COMMUNITY_CATEGORIES = [
-  { id: 'Soulslike', icon: '⚔️' },
-  { id: 'RPG', icon: '🧭' },
-  { id: 'Coop', icon: '🎮' },
-  { id: 'FPS', icon: '🎯' },
-  { id: 'Indé', icon: '✨' },
+/* Thèmes des groupes — la seule liste proposée à la création (« Thème » dans
+   le formulaire). `category` reste le nom du champ côté base (colonne
+   `community_groups.category`) : on ne renomme pas la colonne, seulement le
+   vocabulaire affiché. */
+export const COMMUNITY_THEMES = [
+  { id: 'Gaming', icon: '🎮' },
+  { id: 'Console', icon: '🕹️' },
+  { id: 'Cinéma & séries', icon: '🎬' },
+  { id: 'Tech', icon: '💻' },
+  { id: 'Sorties', icon: '📅' },
+  { id: 'E-sport', icon: '🏆' },
   { id: 'Autre', icon: '💬' },
 ];
 
-const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60_000).toISOString();
+export const DEFAULT_COMMUNITY_THEME = COMMUNITY_THEMES[0].id;
 
-export const FEATURED_COMMUNITY_GROUP = {
-  id: SOULSLIKE_GROUP_ID,
-  name: 'Les joueurs de soulslike',
-  description: 'Boss impossibles, builds improbables et lore à décrypter : un espace pour parler des Souls, d\'Elden Ring, de Sekiro et de tous les jeux qui nous font recommencer.',
-  category: 'Soulslike',
-  tags: ['Elden Ring', 'Dark Souls', 'Sekiro'],
-  created_by_name: 'La communauté',
-  created_by_avatar: null,
-  created_at: minutesAgo(60 * 24 * 3),
-  is_featured: true,
+const COMMUNITY_THEME_IDS = COMMUNITY_THEMES.map((theme) => theme.id);
+
+/* Les groupes créés avant le passage aux thèmes portaient l'ancien vocabulaire
+   (Soulslike, RPG, Coop…). Ils sont relus dans le thème qui les couvre, sans
+   réécriture en base : la liste reste cohérente même avec d'anciens groupes. */
+const LEGACY_COMMUNITY_THEME = {
+  Soulslike: 'Gaming',
+  RPG: 'Gaming',
+  Coop: 'Gaming',
+  FPS: 'Gaming',
+  'Indé': 'Gaming',
 };
 
-export const SOULSLIKE_STARTER_COMMENTS = [
-  {
-    id: 'soulslike-starter-1',
-    group_id: SOULSLIKE_GROUP_ID,
-    user_id: 'community-player-lamegrise',
-    author_name: 'LameGrise',
-    author_avatar: null,
-    body: 'Je repars sur Elden Ring en build force. Vous conseillez quelle arme pour traverser le début du jeu sans trop souffrir ?',
-    created_at: minutesAgo(142),
-    is_seed: true,
-  },
-  {
-    id: 'soulslike-starter-2',
-    group_id: SOULSLIKE_GROUP_ID,
-    user_id: 'community-player-pixelnoir',
-    author_name: 'PixelNoir',
-    author_avatar: null,
-    body: 'La première victoire contre Malenia sans invocation… j\'ai encore les mains qui tremblent. Quel boss vous a demandé le plus de tentatives ?',
-    created_at: minutesAgo(74),
-    is_seed: true,
-  },
-  {
-    id: 'soulslike-starter-3',
-    group_id: SOULSLIKE_GROUP_ID,
-    user_id: 'community-player-paradeparfaite',
-    author_name: 'ParadeParfaite',
-    author_avatar: null,
-    body: 'Sekiro reste mon meilleur entraînement à la patience. Genichiro m\'a appris à parer plutôt qu\'à fuir — et vous, quel jeu vous a fait progresser ?',
-    created_at: minutesAgo(18),
-    is_seed: true,
-  },
-];
+export function normalizeCommunityTheme(value) {
+  const raw = String(value || '').trim();
+  if (COMMUNITY_THEME_IDS.includes(raw)) return raw;
+  if (LEGACY_COMMUNITY_THEME[raw]) return LEGACY_COMMUNITY_THEME[raw];
+  return raw || DEFAULT_COMMUNITY_THEME;
+}
 
 const GROUP_COLUMNS = 'id, name, description, category, tags, created_by, created_by_name, created_by_avatar, created_at';
 const COMMENT_COLUMNS = 'id, group_id, user_id, author_name, author_avatar, body, created_at';
@@ -123,18 +101,16 @@ export function mergeCommunityGroups(...lists) {
   for (const group of lists.flat()) {
     if (!group?.id || !group?.name) continue;
     const current = byId.get(group.id);
-    byId.set(group.id, current ? { ...current, ...group, is_featured: Boolean(current.is_featured || group.is_featured) } : group);
+    byId.set(group.id, current ? { ...current, ...group } : group);
   }
-  return [...byId.values()].sort((a, b) => {
-    if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
-    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-  });
+  // Les plus récents d'abord : la première entrée ouvre la discussion et
+  // alimente la carte « groupe à la une » du hero.
+  return [...byId.values()].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 }
 
 export function mergeCommunityComments(groupId, ...lists) {
-  const candidates = groupId === SOULSLIKE_GROUP_ID ? [SOULSLIKE_STARTER_COMMENTS, ...lists] : lists;
   const byId = new Map();
-  for (const list of candidates.flat()) {
+  for (const list of lists.flat()) {
     if (!list?.id || !list?.body) continue;
     byId.set(list.id, list);
   }
@@ -147,13 +123,12 @@ export function normalizeCommunityGroup(row) {
     id: row.id,
     name: String(row.name),
     description: String(row.description || ''),
-    category: String(row.category || 'Autre'),
+    category: normalizeCommunityTheme(row.category),
     tags: Array.isArray(row.tags) ? row.tags.map(String).slice(0, 4) : [],
     created_by: row.created_by || null,
     created_by_name: row.created_by_name || 'Joueur',
     created_by_avatar: row.created_by_avatar || null,
     created_at: row.created_at || new Date().toISOString(),
-    is_featured: row.id === SOULSLIKE_GROUP_ID,
     is_local: String(row.id).startsWith('local-'),
   };
 }

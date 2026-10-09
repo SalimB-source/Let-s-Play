@@ -11,6 +11,7 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
 
 // Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
 // telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
@@ -28,7 +29,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 07.10.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
+    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: `Updated ${editionDate}`, section: 'FEATURED NEWS', today: 'FEATURED NEWS'
   },
   fr: {
     cards: [
@@ -36,7 +37,7 @@ const FEATURED_COPY = {
       ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 07.10.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
+    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: `Mis à jour le ${editionDate}`, section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
   },
   ar: {
     cards: [
@@ -44,16 +45,17 @@ const FEATURED_COPY = {
       ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
       ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
       ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 07.10.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
+    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: `آخر تحديث ${editionDate}`, section: 'أبرز الأخبار', today: 'أبرز الأخبار'
   }
 };
 
 // Actus récentes rédigées à la main par la rédaction, les plus fraîches en
 // tête. LA PREMIÈRE ENTRÉE EST « L'ACTU GAMING DU JOUR » : elle ouvre /news/gaming
 // dans un bandeau vidéo + texte (sa première vidéo officielle est déclarée dans
-// src/articleTrailers.js) et alimente aussi la une du hub /news. Pour changer la
-// une, il suffit d'insérer la nouvelle actu ici, en tête de liste.
+// src/articleTrailers.js). Pour changer la une, il suffit d'insérer la nouvelle
+// actu ici, en tête de liste.
 //
+// L’édition du 08.10.2026 précède les archives ci-dessous.
 // Actus du mercredi 07.10.2026 : le démenti de Xbox sur le streaming PC
 // de GTA VI ouvre la page ; suivent l'actu du mardi 06.10.2026 (satire
 // Rockstar dans GTA VI), celles du lundi 05.10.2026 (lancement free-to-play
@@ -62,6 +64,8 @@ const FEATURED_COPY = {
 // et la fronde contre le code généré par IA dans l'émulation —, puis celles du
 // 28-29.09.2026, celles du robot et les articles manuels de la rédaction dans l'ordre.
 export const latestGamingStories = [
+  // La nouvelle édition ouvre la liste ; les articles précédents sont conservés.
+  ...dailyNewsListing.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   { to: '/news/gta-6-cloud-pc-dementi-xbox', image: 'gta-6-cloud-pc-dementi-news.jpg', fallbackImage: 'gta-6-cloud-pc-dementi-news.svg', alt: 'GTA VI — plan officiel de Vice City sous les néons, Rockstar Games relayé par Gamekult', badge: 'XBOX · GTA 6', kicker: '07.10.2026 · GAMEKULT', title: 'GTA 6 SUR PC : LE DÉMENTI TOMBE.', excerpt: 'Pendant quatre heures cette nuit, l’espoir d’un GTA VI jouable sur PC via Xbox Cloud Gaming a enflammé les réseaux. Matthew Ball, Chief Strategy Officer de Xbox, a coupé court aux rumeurs : le jeu ne sera pas streamé sur PC et reste strictement sur consoles au lancement.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
   { to: '/news/gta-6-satire-monde-invente', image: 'https://cdn.gamekult.com/optim/images/news/30/3050872331/nous-ne-souhaitons-cibler-aucune-personne-aucun-evenement-ni-aucun-mouvement-en-particulier-gta-vi-ne-visera-pas-la-satire-d-une-actualite-reelle-33b4df1a__930_300__0-7-2548-833.jpg', fallbackImage: 'gta-6-satire-monde-invente-news.svg', alt: 'GTA VI — visuel officiel Rockstar Games relayé par Gamekult', badge: 'ROCKSTAR · GTA 6', kicker: '06.10.2026 · GAMEKULT', title: 'ROCKSTAR INVENTE SON MONDE.', excerpt: 'Rockstar ne vise « aucune personne, aucun événement ni aucun mouvement en particulier » : la satire de GTA VI se jouera dans un État fictif nourri de la Floride, rendu plus grotesque que la réalité. Sortie maintenue au 19 novembre sur PS5 et Xbox Series.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
   { to: '/news/gears-of-war-e-day-sortie-mondiale', image: youTubeThumbUrl('TOEuNKz3XW8'), fallbackImage: 'gears-of-war-e-day-news.svg', alt: 'Gears of War: E-Day — Marcus Fenix dans le trailer de lancement officiel publié par la chaîne Gears of War', badge: 'THE COALITION · XBOX', kicker: '05.10.2026 · METACRITIC', title: 'E-DAY EST ENFIN LÀ.', excerpt: 'Le préquel de Gears of War sort demain sur Xbox Series X|S et PC, dès le premier jour dans le Game Pass. Cinq actes, vingt-six chapitres et un 87 sur Metacritic : le meilleur score de la saga depuis Gears of War 3.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
@@ -77,9 +81,6 @@ export const latestGamingStories = [
   { to: '/news/xbox-nadella-restructuration', image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', fallbackImage: 'xbox-nadella-news.svg', alt: 'Portrait officiel de Satya Nadella, PDG de Microsoft', badge: 'XBOX · MICROSOFT', kicker: '28.09.2026 · VGC', title: 'NADELLA DÉFEND LA CURE XBOX.', excerpt: 'Le PDG de Microsoft juge « formidable » la rationalisation menée par Asha Sharma et promet un retour à la croissance de Xbox, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
   { to: '/news/halo-activision', image: 'masterchief-activision.webp', alt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', badge: 'HALO · ACTIVISION', kicker: '26.09.2026 · XBOX', title: 'HALO PASSE CHEZ ACTIVISION.', excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
 ];
-
-// L'actu gaming du jour (voir ci-dessus).
-export const gamingTopStory = latestGamingStories[0];
 
 // La section calendrier + compte à rebours (01) a été déplacée sur la page
 // d'accueil, juste après le hero — la frise complète vit sur /calendrier.
@@ -196,7 +197,7 @@ export default function News(){
         {/* Chaque article est dans une cellule : la carte porte le coin biseauté,
             et la cellule son ombre portée pour qu'elle ne soit pas rognée. */}
         <div className="news-carousel is-grid">
-          {gridArticles.map((article, index) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to} data-parallax={index % 2 ? '0.055' : '0.035'} data-parallax-limit={index % 2 ? '22' : '16'}>
+          {gridArticles.map((article) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to}>
             <div className="news-carousel-image">{renderStoryImage(article)}{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link></div>)}

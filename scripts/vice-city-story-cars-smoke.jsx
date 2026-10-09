@@ -130,6 +130,12 @@ export async function checkViceCityStoryCars(assert) {
     const backToMenu = findByText(node, '.city-rush-top-button', /^↶ MENU$/);
     assert.ok(backToMenu, 'le bouton MENU est proposé en course');
     await click(backToMenu);
+    // L'écran-titre est le point d'entrée de la campagne : son entrée HISTOIRE
+    // ouvre la page du scénario, où la bannière reprend le fil.
+    const storyEntry = [...node.querySelectorAll('.vcr-entry')][0];
+    assert.ok(storyEntry, "l'écran-titre propose bien son entrée HISTOIRE");
+    await click(storyEntry);
+    await settle(30);
     await waitFor(node, '.city-rush-story-banner', 'la bannière du mode Histoire');
 
     // ── Les dix chapitres ──────────────────────────────────────────────────

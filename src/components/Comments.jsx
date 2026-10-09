@@ -15,13 +15,16 @@ import {
   describeCommentsError,
   displayNameFor,
   fetchComments,
+  fetchOwnCommentReportIds,
   formatCommentDate,
   initialFor,
   normalizeArticleId,
   postComment,
   readDemoComments,
   removeDemoComment,
+  reportComment,
 } from '../lib/comments';
+import { COMMENT_REPORT_REASONS, commentModerationCopyKey } from '../lib/commentModeration';
 import FriendButton from '../friends/FriendButton';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
@@ -112,7 +115,16 @@ export default function Comments({ articleId: articleIdProp }){
   const [postError, setPostError] = useState(null);
   const [notice, setNotice] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  // Signalements : formulaire ouvert sur un commentaire, motif choisi, envoi en cours,
+  // commentaires déjà signalés par ce joueur, message affiché sous un commentaire.
+  const [reportingId, setReportingId] = useState(null);
+  const [reportReason, setReportReason] = useState(COMMENT_REPORT_REASONS[0]);
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportedIds, setReportedIds] = useState(() => new Set());
+  const [reportNote, setReportNote] = useState(null); // { id, ok, text }
   const [profileMeta, setProfileMeta] = useState({}); // user_id -> { level, xp }
+  // Les signalements sont réservés aux comptes connectés (pas aux profils démo).
+  const reportsEnabled = commentsEnabled && Boolean(user) && !isDemo;
 
   // Ignores responses that arrive after the reader moved to another article.
   const requestRef = useRef(0);
@@ -143,6 +155,20 @@ export default function Comments({ articleId: articleIdProp }){
     load();
     return () => { requestRef.current += 1; };
   }, [load]);
+
+  // Signalements déjà faits par ce joueur : le bouton reste « Signalé » après un rechargement.
+  useEffect(() => {
+    if (!reportsEnabled) {
+      setReportedIds(new Set());
+      return undefined;
+    }
+    let cancelled = false;
+    fetchOwnCommentReportIds()
+      // Fusion : un signalement envoyé pendant le chargement ne doit pas disparaître.
+      .then((ids) => { if (!cancelled) setReportedIds((current) => new Set([...current, ...ids])); })
+      .catch(() => { /* non bloquant : le signalement reste possible, un doublon est refusé */ });
+    return () => { cancelled = true; };
+  }, [reportsEnabled, user?.id]);
 
   // Demo profiles keep their comments on this device only.
   useEffect(() => {
@@ -335,6 +361,37 @@ export default function Comments({ articleId: articleIdProp }){
     }
   }
 
+  function toggleReport(comment){
+    setReportNote(null);
+    setReportReason(COMMENT_REPORT_REASONS[0]);
+    setReportingId((current) => (current === comment.id ? null : comment.id));
+  }
+
+  async function submitReport(event, comment){
+    event.preventDefault();
+    if (reportBusy) return;
+    setReportBusy(true);
+    setReportNote(null);
+    try {
+      await reportComment(comment.id, reportReason);
+      setReportedIds((current) => new Set(current).add(comment.id));
+      setReportingId(null);
+      setReportNote({ id: comment.id, ok: true, text: copy.reportSent });
+    } catch (error) {
+      const text = describeCommentsError(error, copy, copy.reportFailed);
+      if (commentModerationCopyKey(error) === 'reportDuplicate') {
+        // Déjà signalé (autre appareil, par exemple) : l'état affiché est juste.
+        setReportedIds((current) => new Set(current).add(comment.id));
+        setReportingId(null);
+        setReportNote({ id: comment.id, ok: true, text });
+      } else {
+        setReportNote({ id: comment.id, ok: false, text });
+      }
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   const countLabel = comments.length === 1 ? copy.countOne : copy.count;
   const loadErrorText = loadError ? describeCommentsError(loadError, copy, copy.errLoad) : '';
   const postErrorText = postError ? describeCommentsError(postError, copy, copy.errPost) : '';
@@ -409,6 +466,8 @@ export default function Comments({ articleId: articleIdProp }){
     feed = <div className="comment-list">
       {comments.map((comment) => {
         const own = isOwn(comment);
+        const canReport = reportsEnabled && !own && !comment.demo;
+        const reportOpen = canReport && reportingId === comment.id;
         const { level, xp, title } = levelFor(comment);
         const lvlLabel = lang === 'fr' ? `NIV. ${level}` : lang === 'ar' ? `المستوى ${level}` : `LVL ${level}`;
         const xpLabel = xp != null ? `${xp.toLocaleString()} XP` : null;
@@ -442,8 +501,50 @@ export default function Comments({ articleId: articleIdProp }){
               >
                 {deletingId === comment.id ? copy.deleting : copy.delete}
               </button>}
+              {canReport && (reportedIds.has(comment.id)
+                ? <span className="comment-report-done">{copy.reported}</span>
+                : <button
+                  type="button"
+                  className="comment-report"
+                  onClick={() => toggleReport(comment)}
+                  aria-expanded={reportOpen}
+                  aria-controls={reportOpen ? `comment-report-${comment.id}` : undefined}
+                >
+                  {copy.report}
+                </button>)}
             </div>
             <p>{comment.body}</p>
+            {reportOpen && (
+              <form
+                id={`comment-report-${comment.id}`}
+                className="comment-report-form"
+                aria-labelledby={`comment-report-title-${comment.id}`}
+                onSubmit={(event) => submitReport(event, comment)}
+              >
+                <strong id={`comment-report-title-${comment.id}`} className="comment-report-title">{copy.reportTitle}</strong>
+                <label className="comment-report-field">
+                  <span>{copy.reportReason}</span>
+                  <select value={reportReason} onChange={(event) => setReportReason(event.target.value)} disabled={reportBusy}>
+                    {COMMENT_REPORT_REASONS.map((reason) => (
+                      <option key={reason} value={reason}>{copy.reportReasons[reason]}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="comment-report-actions">
+                  <button type="submit" className="button button-yellow" disabled={reportBusy}>
+                    {reportBusy ? copy.reportSending : copy.reportSubmit} <Arrow/>
+                  </button>
+                  <button type="button" className="comment-report-cancel" onClick={() => setReportingId(null)} disabled={reportBusy}>
+                    {copy.reportCancel}
+                  </button>
+                </div>
+              </form>
+            )}
+            {reportNote?.id === comment.id && (
+              <p className={`comment-note ${reportNote.ok ? 'comment-note-ok' : 'comment-note-error'}`} role={reportNote.ok ? 'status' : 'alert'}>
+                {reportNote.text}
+              </p>
+            )}
           </div>
         </article>;
       })}

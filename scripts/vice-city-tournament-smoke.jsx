@@ -5,18 +5,22 @@
  * Joue un tournoi complet de Vice City Rush sur la vraie page montée dans
  * jsdom (seul le moteur 3D est remplacé par la doublure
  * `scripts/vice-city-world-stub.jsx`) : la Coupe Sunset, trois courses sans
- * police ni armes, avec les mêmes rivaux — puis vérifie le titre, la prime,
- * le déblocage du tournoi suivant et la sauvegarde.
+ * police ni armes, avec le **même plateau de huit voitures de course** — puis
+ * vérifie le titre, la prime, le déblocage du tournoi suivant et la
+ * sauvegarde.
  *
  * Déroulé :
- *   1. le hub affiche 4 tournois : Sunset ouvert, les 3 autres verrouillés ;
+ *   1. le hub affiche 4 tournois : Sunset ouvert, les 3 autres verrouillés,
+ *      chacun annonçant le barème à huit places (25 · 18 · 15 · 12 · 10 · 8 ·
+ *      6 · 4) ;
  *   2. la Coupe Sunset part au garage (ville imposée : Vice City), le monde
- *      reçoit 3 tours, les règles « pures » (ni police ni armes) et les
- *      rivaux attitrés (Maya, Mateo) ;
- *   3. manche 1 (victoire) : classement général (10 pts), bouton
+ *      reçoit 3 tours, les règles « pures » (ni police ni armes), le drapeau
+ *      de tournoi et la grille de huit voitures — le pilote en dernière
+ *      rangée (Maya, Mateo et cinq autres devant lui) ;
+ *   3. manche 1 (victoire) : classement général à huit lignes (25 pts), bouton
  *      « COURSE SUIVANTE · HISTORIC U.S. 66 », +50 billets ;
- *   4. manche 2 (2e place) : égalité 16-16, le vainqueur de la manche mène ;
- *   5. manche 3 (victoire) : sacre (26 pts), prime +100, notice de déblocage
+ *   4. manche 2 (2e place) : égalité 43-43, le vainqueur de la manche mène ;
+ *   5. manche 3 (victoire) : sacre (68 pts), prime +100, notice de déblocage
  *      de la Coupe d'Europe, sauvegarde (terminé + titre + 230 billets) ;
  *   6. retour aux modes : Sunset dit « TITRE ×1 », l'Europe est ouverte, et
  *      l'entrer puis revenir en arrière abandonne proprement.
@@ -26,8 +30,12 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import ViceCityRushPage from '../src/games/ViceCityRushPage';
-import { dismissTitleMenu } from './vice-city-title-menu-dismiss.jsx';
+import { dismissTitleMenu, openHubPage } from './vice-city-title-menu-dismiss.jsx';
 import { CITY_RUSH_TOURNAMENTS } from '../src/games/cityRushTournaments.js';
+import {
+  CITY_RUSH_TOURNAMENT_RACER_COUNT,
+  CITY_RUSH_TOURNAMENT_RACER_SLOTS,
+} from '../src/games/cityRushRules.js';
 import { worldProbe } from './vice-city-world-stub.jsx';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -60,6 +68,13 @@ const textOf = (node, selector) => squash(node.querySelector(selector)?.textCont
 
 /** Fausse arrivée au format émis par `ViceCityWorld` (`order[0]` gagne). */
 function finishPayload(city, order) {
+  // Le monde classe les **huit** voitures du plateau : les places non citées
+  // suivent dans l'ordre de la grille — sans quoi la manche ne compterait pas
+  // (plateau incomplet, voir `classifyTournamentRace`).
+  const full = [
+    ...order,
+    ...CITY_RUSH_TOURNAMENT_RACER_SLOTS.filter((slot) => !order.includes(slot)),
+  ];
   return {
     city,
     duration: 120,
@@ -70,12 +85,55 @@ function finishPayload(city, order) {
     timedOut: false,
     destroyed: false,
     sabotaged: false,
-    rank: order.indexOf('player') + 1,
+    rank: full.indexOf('player') + 1,
     winner: order[0] === 'player' ? 'KENJI' : 'RIVAL',
     winnerId: order[0],
     score: 900,
     pickups: 4,
-    racers: order.map((slot, index) => ({ id: slot, rank: index + 1 })),
+    racers: full.map((slot, index) => ({ id: slot, rank: index + 1 })),
+  };
+}
+
+/**
+ * Trame de HUD au format de `ViceCityWorld` : le pilote est classé `rank` sur
+ * le plateau entier, les autres voitures suivent dans l'ordre de la grille.
+ */
+function worldHud(rank) {
+  const roster = worldProbe.props?.roster || [];
+  const player = roster.find((racer) => racer.isPlayer);
+  const rivals = roster.filter((racer) => !racer.isPlayer);
+  const ordered = [...rivals.slice(0, rank - 1), player, ...rivals.slice(rank - 1)];
+  const racers = ordered.map((racer, index) => ({
+    id: racer.id,
+    isPlayer: racer.isPlayer,
+    driverId: racer.driverId,
+    name: racer.name,
+    displayName: racer.displayName,
+    country: racer.country,
+    countryCode: racer.countryCode,
+    flag: racer.flag,
+    avatar: racer.avatar,
+    accent: racer.accent,
+    distance: 800 - index * 20,
+    rawDistance: 800 - index * 20,
+    lane: racer.lane,
+    lap: 1,
+    rank: index + 1,
+    health: 15,
+    maxHealth: 15,
+    wanted: 0,
+    pursued: false,
+    wrecked: false,
+  }));
+  return {
+    distance: 800, totalDistance: 4800, progress: 0.17, lap: 1, laps: 3,
+    lapLength: 1600, lapProgress: 0.5, lapDistance: 800, elapsed: 30, speed: 120,
+    rank, racers, inventory: { 'blue-shot': 0, pistol: 0, radio: 0 },
+    score: 0, pickups: 0, slowLeft: 0, trafficImpactLeft: 0, boostLeft: 0, stunLeft: 0,
+    sprint: null, route: null, playerHealth: 15, playerHealthMax: 15, playerHealthActive: false,
+    playerHealthFlash: 0, police: [], wantedLevel: 0, wantedMaxStars: 5,
+    miniGaragesActive: false, miniGaragesRemaining: 0, miniGaragesTotal: 0, miniGarageNextDistance: null,
+    oncomingPoliceTurnarounds: [], spikeBlock: null, suvCharges: [], bazookaAmmo: 0, bazookaPickupTaken: false,
   };
 }
 
@@ -99,6 +157,9 @@ async function mountPage(entry = '/jeu/vice-city-rush') {
   ));
   await settle(30);
   await dismissTitleMenu(node);
+  // Les tournois ont leur page : c'est là que le hub les mène, et c'est là
+  // qu'ils doivent être listés — plus dans le sélecteur de modes libres.
+  await openHubPage(node, 'TOURNOIS');
   return { node, unmount: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 
@@ -123,8 +184,8 @@ export async function checkViceCityTournament(assert) {
     `"${squash(cards[1]?.textContent).slice(0, 120)}"`,
   );
   check(
-    'les cartes annoncent 3 tours, le barème et la prime',
-    cards.every((card) => /3 TOURS\/COURSE · 10 · 6 · 3 PTS · \+/.test(squash(card.textContent))),
+    'les cartes annoncent 3 tours, le barème à huit places et la prime',
+    cards.every((card) => /3 TOURS\/COURSE · 25 · 18 · 15 · 12 · 10 · 8 · 6 · 4 PTS · \+/.test(squash(card.textContent))),
   );
 
   // ── 2. Entrée en tournoi : garage imposé, règles « pures » ───────────────
@@ -153,6 +214,7 @@ export async function checkViceCityTournament(assert) {
   await awaitRaceStart(node);
   check('le monde court 3 tours en tournoi', worldProbe.props?.raceLaps === 3, `raceLaps=${worldProbe.props?.raceLaps}`);
   check('la police est coupée en tournoi', worldProbe.props?.storyRules?.policeEnabled === false);
+  check('le monde sait qu’il court un tournoi', worldProbe.props?.storyRules?.tournament === true);
   check('les armes sont coupées en tournoi', worldProbe.props?.storyRules?.weaponsEnabled === false);
   check('le bazooka est coupé en tournoi', worldProbe.props?.storyRules?.bazookaEnabled === false);
   check('aucune poursuite dès le départ', worldProbe.props?.racePoliceFromStart === false);
@@ -162,19 +224,46 @@ export async function checkViceCityTournament(assert) {
       && worldProbe.props?.storyRules?.rivalCarIds?.juno === 'nova-18-gt',
     JSON.stringify(worldProbe.props?.storyRules?.rivalCarIds),
   );
-  const gridDrivers = (worldProbe.props?.roster || []).map((racer) => racer.driverId);
+  const roster = worldProbe.props?.roster || [];
+  const gridDrivers = roster.map((racer) => racer.driverId);
   check(
-    'la grille aligne le pilote et les rivaux du tournoi (Maya, Mateo)',
-    gridDrivers.length === 3 && gridDrivers[1] === 'maya' && gridDrivers[2] === 'mateo',
+    'la grille aligne huit voitures de course, le pilote et sept rivaux (Maya, Mateo en tête)',
+    gridDrivers.length === CITY_RUSH_TOURNAMENT_RACER_COUNT
+      && gridDrivers[0] === 'kenji' && gridDrivers[1] === 'maya' && gridDrivers[2] === 'mateo'
+      && new Set(gridDrivers).size === CITY_RUSH_TOURNAMENT_RACER_COUNT,
     gridDrivers.join('/'),
   );
+  const playerGrid = roster.find((racer) => racer.isPlayer) || {};
+  check(
+    'le pilote ferme la marche, derrière la ligne',
+    playerGrid.gridDistance < 0
+      && roster.every((racer) => racer.isPlayer || racer.gridDistance >= playerGrid.gridDistance),
+    `player=${playerGrid.gridDistance} rangées=${roster.map((racer) => racer.row).join(',')}`,
+  );
+  check(
+    'les sept rivaux roulent les voitures de leur fiche',
+    worldProbe.props?.storyRules?.rivalCarIds?.castor === 'night-comet'
+      && Object.keys(worldProbe.props?.storyRules?.rivalCarIds || {}).length === CITY_RUSH_TOURNAMENT_RACER_COUNT - 1,
+  );
   check('la course démarre (HUD affiché)', Boolean(node.querySelector('.city-rush-hud')));
+  // Le monde publie son classement à chaque image : le pilote, dernier de la
+  // grille, est 8ᵉ sur les huit voitures — la carte POSITION doit le dire
+  // (« 8e / 8 », et non « 8e / 3 » comme en course libre).
+  await act(async () => { worldProbe.props?.onHud?.(worldHud(8)); });
+  await settle(10);
+  const positionCard = textOf(node, '.city-rush-position-card > strong');
+  check('la carte POSITION compte les huit voitures du plateau (8e / 8)', positionCard === '8e / 8', `"${positionCard}"`);
   check('aucun bouton d’arme pendant la manche', !node.querySelector('.city-rush-weapon-controls'));
 
   // ── 3. Manche 1 (victoire) : 10 pts, +50 billets, manche suivante ────────
   await finishLeg(node, 'vice-city', ['player', 'nova', 'juno']);
   const leaderLeg1 = textOf(node, '.cr-tournament-row.is-leader');
-  check('le classement montre le pilote en tête après sa victoire', /KENJI/.test(leaderLeg1) && /10/.test(leaderLeg1), `"${leaderLeg1}"`);
+  check('le classement montre le pilote en tête après sa victoire', /KENJI/.test(leaderLeg1) && /25/.test(leaderLeg1), `"${leaderLeg1}"`);
+  check(
+    'le classement général compte les huit voitures du plateau',
+    node.querySelectorAll('.cr-tournament-row').length === CITY_RUSH_TOURNAMENT_RACER_COUNT,
+    `${node.querySelectorAll('.cr-tournament-row').length} lignes`,
+  );
   check('le classement compte la manche courue', /1 \/ 3 COURSES/.test(textOf(node, '.cr-tournament-standings')));
   check('la victoire de manche paie 50 billets', /\+50 BILLETS VERTS/.test(textOf(node, '.city-rush-cash-reward')));
   const nextLegButton = mustFind(node, '.city-rush-next-race-button', 'bouton manche suivante');
@@ -185,7 +274,7 @@ export async function checkViceCityTournament(assert) {
   );
   check('une manche courue ne se rejoue pas (aucun bouton REJOUER)', !/REJOUER/.test(squash(node.querySelector('.city-rush-result-overlay')?.textContent ?? '')));
 
-  // ── 4. Manche 2 (2e) : égalité 16-16, le vainqueur de manche mène ────────
+  // ── 4. Manche 2 (2e) : égalité 43-43, le vainqueur de manche mène ────────
   await click(nextLegButton);
   await settle();
   await awaitRaceStart(node);
@@ -196,10 +285,12 @@ export async function checkViceCityTournament(assert) {
     (worldProbe.props?.roster || []).map((racer) => racer.driverId).join('/') === gridDrivers.join('/'),
   );
   await finishLeg(node, 'route-66', ['nova', 'player', 'juno']);
+  const placeLeg2 = textOf(node, '.city-rush-result-grid b');
+  check('l’écran d’arrivée annonce la 2e place sur huit (2e / 8)', placeLeg2 === '2e / 8', `"${placeLeg2}"`);
   const leaderLeg2 = textOf(node, '.cr-tournament-row.is-leader');
   check(
-    'à 16-16, le vainqueur de la manche (Maya) mène le général',
-    /MAYA/.test(leaderLeg2) && /16/.test(leaderLeg2),
+    'à 43-43, le vainqueur de la manche (Maya) mène le général',
+    /MAYA/.test(leaderLeg2) && /43/.test(leaderLeg2),
     `"${leaderLeg2}"`,
   );
   check('la 2e place de manche paie 30 billets', /\+30 BILLETS VERTS/.test(textOf(node, '.city-rush-cash-reward')));
@@ -211,8 +302,8 @@ export async function checkViceCityTournament(assert) {
   await finishLeg(node, 'new-york', ['player', 'juno', 'nova']);
   check('le sacre s’affiche en titre', /CHAMPION/.test(textOf(node, '.city-rush-result-overlay h2')));
   check(
-    'le champion totalise 26 points (10 + 6 + 10)',
-    /KENJI/.test(textOf(node, '.cr-tournament-row.is-leader')) && /26/.test(textOf(node, '.cr-tournament-row.is-leader')),
+    'le champion totalise 68 points (25 + 18 + 25)',
+    /KENJI/.test(textOf(node, '.cr-tournament-row.is-leader')) && /68/.test(textOf(node, '.cr-tournament-row.is-leader')),
   );
   check('la dernière manche paie course (50) + prime (100)', /\+150 BILLETS VERTS/.test(textOf(node, '.city-rush-cash-reward')));
   check(

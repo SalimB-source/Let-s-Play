@@ -129,8 +129,8 @@ export async function checkViceCitySprintUi(assert) {
     `"${sidebarText.slice(0, 160)}…"`,
   );
   check(
-    'le guide SPRINT affiche le bonus turbo flottant',
-    /TURBO FLOTTANT|BONUS VERT/i.test(sidebarText) && has(node, '.city-rush-guide-item.is-boost'),
+    'le guide SPRINT affiche le bonus turbo posé au sol',
+    /BONUS VERT AU SOL/i.test(sidebarText) && has(node, '.city-rush-guide-item.is-boost'),
   );
   check(
     'le guide précise que le turbo est le seul bonus du Sprint',

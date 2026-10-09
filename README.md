@@ -185,8 +185,10 @@ passe à 18 px au palier 3 **sans allonger la mesure de lecture** (68 caractère
 
 1. **N'ajouter une colonne qu'aux grilles alimentées par des données** (tests,
    flux d'articles, recherche, calendrier des sorties). Une grille à nombre
-   d'éléments fixe — les 4 reels, les 3 cartes du hub d'actu, les 3 formats, les
-   3 statistiques — laisserait un trou béant dans sa dernière rangée. Celles-là
+   d'éléments fixe — les 4 reels, les 3 cartes du hub d'actu, les 3 actus du
+   jour du hub (verrouillées à trois colonnes dans `src/news-carousel.css`), les
+   3 formats, les 3 statistiques — laisserait un trou béant dans sa dernière
+   rangée. Celles-là
    grandissent avec le conteneur, ce qui est voulu.
 2. **Les grilles remplissent la largeur, la prose ne la remplit jamais.** Une
    ligne de 150 caractères est illisible, même si elle « occupe la place ». Les
@@ -852,46 +854,70 @@ grand écran.
 
 ## Vice City Rush : le garage 3D, façon Need for Speed
 
-L'écran de préparation — **MODE → VILLE → GARAGE** — est devenu un garage. La
-voiture du moment est **modélisée en 3D** (`three.js`), posée sur un plateau
-tournant au milieu d'une cabine d'atelier éclairée comme un studio, et **tous
-les menus restent au-dessus, sur la même page** : rien ne change de route, rien
-ne s'ouvre par-dessus, on prépare sa course en regardant sa voiture.
+L'écran de préparation — **MODE → VILLE → GARAGE** pour une course libre — est
+devenu un garage. La voiture du moment est **modélisée en 3D** (`three.js`),
+posée sur un plateau tournant au milieu de la salle d'exposition du
+concessionnaire, éclairée comme un studio, et **tous les menus restent au-dessus,
+sur la même page** : rien ne change de route, rien ne s'ouvre par-dessus, on
+prépare sa course en regardant sa voiture.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ [1 MODE] [2 VILLE] [3 GARAGE]      MISTRAL 1.4 · DÉPART  │ ← barre d'étapes + plaque
+│ ✦ HISTOIRE  🏆 TOURNOIS  ⚑ COURSE RAPIDE  ⌂ GARAGE  3/11 │ ← barre des pages
+│                        MISTRAL 1.4 · DÉPART                │   + plaque du plateau
 ├───────────────────────────────────────────────────╥──────┤
-│  VICE CITY                                        ║ ▓▓▓ │
-│  RUSH.                                            ║ ▓▓▓ │
-│  Choisis un mode, une ville…                      ║ ▓▓▓ │ ← la scène, en fond
-├───────────────────────────────────────────────────╣ ▓▓▓ │
-│  [CIRCUIT]  [POURSUITE]  [SPRINT]   · bannière Histoire  │ ← les menus, au-dessus
-└──────────────────────────────────────────────────────────┘
+│  UNE PISTE,                                       ║ ▓▓▓ │
+│  UN MOTEUR.                    [1 MODE][2 VILLE]  ║ ▓▓▓ │ ← la salle, en fond
+│  Choisis un mode libre, une   [3 GARAGE]         ║ ▓▓▓ │   (les étapes : parcours seul)
+│  ville…  [CIRCUIT] [SPRINT]   [POURSUITE]         ║ ▓▓▓ │
+│  + tour guidé · plus de bannière Histoire ici     ║ ▓▓▓ │
+└───────────────────────────────────────────────────╨──────┴─┘
 ```
 
-- **La scène.** `ViceCityGarageStage.jsx` monte sa propre scène three.js : dalle
-  de béton (bruit, joints et taches d'huile dessinés au canvas), tôles peintes,
-  plateau tournant cerclé d'un néon à la couleur de la voiture, marquage au sol,
-  enseignes au néon (« VICE CITY RUSH » + le nom du modèle monté, « EST. 1986 »),
-  rampes de lumières au plafond, projecteurs qui découpent la carrosserie,
-  poussières dans les faisceaux, piles de pneus, établi à rouleaux, bidons et
-  étagères. La voiture, elle, sort du même constructeur que la course
-  (`makeRacerCar`, phares allumés) : pas un deuxième modèle à maintenir.
-- **Le cadre est réglé sur le plateau.** La caméra se place à la distance qui
-  fait occuper au plateau ~92 % de la largeur visible, quelle que soit la forme
-  de la fenêtre : elle se rapproche sur un écran large (gros plan) et recule
-  jusqu'à 13 m sur un téléphone pour qu'une voiture entière — diagonale
-  comprise, puisque le plateau tourne — passe dans le cadre. La voiture occupe
-  alors ~55 % de la largeur sur un écran de préparation, ~85 % sur un téléphone.
-  Le dégradé du voile de contraste dégage justement la bande du milieu, là où la
+La barre d'étapes ne se montre que sur un **parcours** (mode → ville → garage) :
+les pages de liste — la campagne, les plateaux, le concessionnaire — n'ont rien
+à numéroter. La plaque du plateau, elle, est restée dans la barre du haut et
+non dans les étapes, pour qu'une page sans étapes sache quand même ce qui tourne
+derrière elle.
+
+- **La scène.** `ViceCityGarageStage.jsx` monte sa propre scène three.js : une
+  **salle d'exposition de concessionnaire**, pas un atelier. Dalles polies qui
+  renvoient le néon (le sol est écrit au canvas, sans une tache d'huile), façade
+  vitrée à menuiseries noires sur une ville de 1986 dessinée derrière la vitre,
+  mur de marque à lames sombres avec l'enseigne rétroéclairée (« VICE CITY RUSH
+  MOTORS · CONCESSION 1986 » + le nom du modèle au plateau), damier de dalles
+  lumineuses au plafond, tapis cerise bordé d'un liseré et quatre poteaux à
+  cordon autour du plateau, comptoir d'accueil et ses tabourets, présentoir de
+  jantes, palmiers en pot, tablette des coupes, caillebotis du service. Au fond,
+  **le lot** : les trois modèles les plus chers du catalogue, garés sur leur
+  tapis, étiquette de prix au poteau — et sur la voiture du plateau, le nœud de
+  livraison posé sur le capot. La voiture, elle, sort du même constructeur que la
+  course (`makeRacerCar`, phares allumés) : pas un deuxième modèle à maintenir,
+  et le lot non plus. Sur un appareil tactile (`pointer: coarse`), le lot rentre
+  au garage — la salle garde son architecture, le titre économise trois voitures
+  de matériaux clairs.
+- **Le cadre est réglé sur le plateau, et sur l'écran.** La table
+  `GARAGE_FRAMINGS` de `ViceCityGarageStage.jsx` connaît deux cadrages de la
+  même salle : **`garage`** (l'écran de préparation — le plateau remplit ~92 %
+  de la largeur visible) et **`vitrine`** (l'écran-titre — plan large, plateau à
+  ~50 % du cadre, objectif ouvert à 50°, brume de studio repoussée pour que la
+  salle reste lisible de loin, résolution bornée à 1,5 : un décor ne paie pas le
+  même pixel qu'un écran qu'on choisit). À l'intérieur d'un cadrage, la caméra se
+  place à la distance qui fait remplir le cadre selon la forme de la fenêtre :
+  elle se rapproche sur un écran large (gros plan) et recule jusqu'à 13 m, sur un
+  téléphone en tout cas, pour qu'une voiture entière, diagonale comprise puisque
+  le plateau tourne, passe dans le champ. La voiture occupe alors ~63 % de la
+  largeur au garage, ~93 % sur un téléphone, et ~39 % à l'écran-titre : elle y
+  est un sujet dans un décor, plus un nez à nez. Le
+  dégradé du voile de contraste dégage justement la bande du milieu, là où la
   voiture se lit.
 - **Le plateau tourne.** Un tour en ~37 secondes. Glisser le regard (souris ou
   doigt) décale légèrement la caméra autour de la voiture ; au doigt, seul le
   geste horizontal regarde la voiture (`touch-action: pan-y`), le vertical
   continue de faire défiler la page. `prefers-reduced-motion` arrête la rotation.
-- **La plaque du garage**, en bout de barre d'étapes, annonce le modèle monté sur
-  le plateau et son état (DÉPART / OFFERTE / ACHETÉE / prix). Survoler une carte
+- **La plaque du garage**, en bout de la **barre des pages** (et non des étapes,
+  pour qu'elle survive aux pages qui n'ont pas de parcours), annonce le modèle
+  monté sur le plateau et son état (DÉPART / OFFERTE / ACHETÉE / prix). Survoler une carte
   du garage — ou la prendre au clavier — fait tourner le modèle au plateau et
   passe la plaque en **APERÇU** : on admire, la course ne part qu'au lancer.
 - **Un décor, jamais un obstacle.** La scène est posée en couche de fond
@@ -1018,10 +1044,11 @@ et le dernier tour durait 21 s.
   descend jusqu'à `createCityRushWorld`, qui ne crée **aucun rival**
   (`racerSpecs = []`), **aucune police** (escouade jamais déployée, berline
   retirée du trafic — `CITY_RUSH_TRAFFIC_TYPES` filtré sur `id !== 'police'` —,
-  hélicoptère d'observation laissé au sol), **aucune arme** (l'AK-47 est
-  ignoré, la barre de coque ne s'arme pas). Seuls les bonus turbo verts — des
-  éclairs flottant au-dessus de la chaussée — sont
-  placés périodiquement (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL`) ;
+  hélicoptère d'observation laissé au sol), **aucune arme** (l'AK-47 comme le
+  fusil à pompe sont ignorés, la barre de coque ne s'arme pas). Seuls les bonus turbo verts — des
+  ronds peints sur le bitume, posés une rangée sur huit
+  (`CITY_RUSH_SPRINT_BOOST_ROW_INTERVAL = 8`) — sont
+  placés périodiquement ;
   aucun bonus rouge ni pouvoir d'hélicoptère n'apparaît. À la place :
   **16 checkpoints**
   espacés de `CITY_RUSH_SPRINT_CHECKPOINT_SPACING` = **300 m**
@@ -1031,7 +1058,7 @@ et le dernier tour durait 21 s.
   exactes : la dernière tombe pile sous le portique. Chrono à zéro : effet
   `sprint-timeout`, course perdue, ni record ni victoire enregistrés.
   **L'interface suit le solo.** Carte HUD « SOLO » et jauge des checkpoints à
-  la place de la position et du tour, radar et bouton AK-47 absents,
+  la place de la position et du tour, radar et bouton de tir absents,
   compte à rebours et pied de coque en « 16 CHECKPOINTS » plutôt qu'en
   « 1 TOURS ». La colonne latérale remplace le classement à trois par un
   chrono solo — `buildCityRushMinimapState({ solo: true })` ne garde que le
@@ -1051,8 +1078,14 @@ et le dernier tour durait 21 s.
   `rankCityRushRacers` ne les voit jamais, la grille garde trois pilotes, et le
   HUD les affiche à part (`hud.police`, marqueurs rouge et bleu de la mini-carte).
   Elles convoitent les bonus rouges d'AK-47 ; un bonus rouge ne représente que
-  **5 % des objets** sur la route, contre 95 % de bonus turbo
-  (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`). Un bonus de tir vaut cinq bonus
+  **8 % des objets tirés** sur la route, contre 6 % de trousses de soin,
+  3 % de fusils à pompe bleus (`CITY_RUSH_BLUE_PICKUP_CHANCE`) et
+  83 % de bonus turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE`) — mais un turbo
+  tiré sur quatre n'est jamais posé (`CITY_RUSH_BOOST_SPAWN_CHANCE = 0.75`).
+  Le fusil à pompe bleu, près de trois fois plus rare que l'AK-47, **n'appartient
+  qu'au pilote** : ni les rivaux ni la police ne peuvent le ramasser, il leur est
+  invisible dans leur choix de voie (`canCollectCityRushPickup(..., { player: false })`).
+  Un bonus de tir vaut cinq bonus
   ordinaires dans leur choix de voie (`CITY_RUSH_POLICE_HUNT_TYPES`,
   `chooseCityRushPoliceLane`). Elles arrivent sans charge d'arme et rechargent
   sept balles avec chaque bonus rouge.
@@ -1118,8 +1151,10 @@ et le dernier tour durait 21 s.
   (`weaponsEnabled: false`), la police (`policeEnabled: false`) ou le bazooka
   (`bazookaEnabled: false`) n'ont aucun entrepôt.
 
-  **Les rivaux aussi se font pourchasser par la police.** Deux voitures
-  supplémentaires sont gardées en réserve, une par rival ; **trois motifs**
+  **Les rivaux aussi se font pourchasser par la police.** Une voiture
+  supplémentaire par rival est gardée en réserve — deux en course libre — et
+  **aucune** quand la police est coupée (Sprint, tutoriel, tournoi, chapitre
+  « course pure ») ; **trois motifs**
   ouvrent son dossier : un tir réussi sur une voiture de police — escouade ou
   police du trafic —, un **carambolage** avec elle — la berline de ronde
   percutée sort de sa patrouille (`rallyTrafficPolice`), la patrouille du
@@ -1174,7 +1209,8 @@ et le dernier tour durait 21 s.
   répit de choc. Une berline a six carrés de vie : **un tir rouge d'AK-47 lui
   retire un seul carré** — le même prix qu'contre un pilote — ; trois tirs
   bleus (2 points chacun), six carambolages (1 point chacun), six balles
-  rouges, ou une combinaison équivalente la détruisent
+  rouges, **une seule cartouche de fusil à pompe** (`CITY_RUSH_SHOTGUN_DAMAGE`,
+  six carrés d'un coup), ou une combinaison équivalente la détruisent
   (`CITY_RUSH_POLICE_HEALTH`, `CITY_RUSH_POLICE_DAMAGE`, `cityRushPoliceDamage`) ; sa
   barre au-dessus du toit dessine ces six carrés (`attachPoliceHealthBar`).
   **Un saut de tremplin ne la détruit plus à la retombée.** Chaque
@@ -1214,7 +1250,11 @@ et le dernier tour durait 21 s.
   moment de l'explosion et la durée du feu ; une agonie que le pilote **dépasse
   pendant le tête-à-queue** (la carcasse naît alors derrière lui, hors de la
   fenêtre de dessin de 22 m, et le monde a raison de ne pas la dessiner) est
-  écartée, la vérif attendant la destruction suivante. La berline du trafic
+  écartée, la vérif attendant la destruction suivante. Elle écarte de même une
+  agonie qui **commence trop loin** — au-delà de `TARGET_GAP_MAX` (110 m), alors
+  que l'épave n'est dessinée que jusqu'à 150 m et roule encore pendant sa
+  glissade : une berline abattue par un rival loin devant le pilote n'offre
+  rien à mesurer, et la vérif échouait sur ce seul hasard de la simulation. La berline du trafic
   rappelée par un contact est destructible comme l'escouade ; à la course
   suivante, le trafic repart au complet.
 - **Quatre étoiles : la herse.** À partir de la quatrième étoile, deux voitures
@@ -1349,6 +1389,21 @@ et le dernier tour durait 21 s.
   au bout de ses 3,2 s, c'est `updateWreck` qui signe la défaite
   (`CITY_RUSH_PLAYER_DAMAGE`, `CITY_RUSH_PLAYER_HEALTH_CRITICAL`,
   `CITY_RUSH_POLICE_COLLISION_COOLDOWN`).
+- **Le choc latéral : on pousse la voiture qui bloque.** Une voiture à côté du
+  pilote, dans la voie qu'il veut rejoindre, lui ferme cette voie
+  (`canEnterLane`). S'il tourne quand même vers elle, la voiture se pousse sur la
+  voie voisine, **du côté opposé au pilote**, avec le petit choc du carambolage
+  (flash, étincelles, dérapage) : **le pilote et elle perdent chacun un carré**
+  — un PV pour une berline de police qui en a, rien pour le trafic ordinaire.
+  « À côté » = même hauteur, pare-chocs contre pare-chocs
+  (`CITY_RUSH_SIDE_CONTACT_GAP`, 3,6 m) ; entre 3,6 m et la distance de sécurité
+  de 4,8 m, la voie reste fermée sans choc. Pas de voie libre dans son sens de
+  circulation (bord de la chaussée, voie d'à côté occupée) : la voiture ne bouge
+  pas et il n'y a pas de choc. **Un seul choc par côte-à-côte** : tant que les
+  voitures restent à la même hauteur, tourner de nouveau vers elle ne refait pas
+  de choc (`cityRushSideBumpKeep`). Une ronde touchée rejoint la poursuite. Les
+  **rivaux se traversent comme avant** : ils ne ferment pas la voie et ne sont
+  pas poussés. Règles dans `cityRushSideBumpChoice`, le choc dans `trySideBump`.
 - **Le taxi remplace la berline banalisée.** La voiture de police **en civil**
   noire a quitté la route : `CITY_RUSH_TRAFFIC_TYPES` aligne désormais le
   **taxi** jaune à bandeau damier (`taxi`, `isTaxi` dans `cityRushCars.js`), au
@@ -1388,7 +1443,9 @@ et le dernier tour durait 21 s.
   cadence est calée sur le glissement latéral (`playerX` rejoint
   `laneX(playerLane)` à raison de `dt * 12`) : chaque écart est presque terminé
   quand le suivant démarre, la dérive reste lisible et continue. C'est le même
-  schéma que le maintien de `Z` à l'AK-47 (`PISTOL_HOLD_FIRE_INTERVAL`), et la
+  schéma que le maintien de `Z` à l'AK-47 (`PISTOL_HOLD_FIRE_INTERVAL` — le
+  fusil à pompe, lui, se réarme en `CITY_RUSH_SHOTGUN_FIRE_COOLDOWN` = 1,5 s
+  par cartouche), et la
   **répétition native du clavier est ignorée** (`event.repeat`) : trop lente au
   premier cran puis incontrôlable, elle ne donnait ni fluidité ni précision.
   Une voie fermée (trafic, contresens, berline) ne déclenche rien sur le coup ;
@@ -1464,21 +1521,39 @@ et le dernier tour durait 21 s.
   left… » (`tests/city-rush-rules.test.js`), « the driving side is painted by
   the theme… » (`tests/city-rush-themes.test.js`) et « Londres et Tokyo roulent
   à gauche jusque dans le décor et la page » (`tests/city-rush-hud.test.js`).
-- **Les bonus.** En course, seuls deux objets apparaissent sur la route :
-  le **bonus turbo vert** et le bonus **rouge d'AK-47**. Tous deux **flottent**
-  au-dessus de la chaussée (`PICKUP_FLOAT_HEIGHT` = 1,3 m dans
-  `ViceCityWorld.jsx`) : plus aucune dalle posée sur le bitume. Le turbo est
-  l'éclair blanc du disque vert (`makePickupMaterial('boost', …)` dans
-  `cityRushTextures.js`), le seul bonus à porter l'anneau incliné qui tourne
-  autour de son éclair (`userData.orbit`) ; la couleur vient de `pickupColor()`
+- **Les bonus.** En course, trois objets d'équipement ou de soin apparaissent
+  sur la route : le **bonus turbo vert**, le bonus **rouge d'AK-47** et le bonus
+  **bleu de fusil à pompe**. Les deux armes partagent un **emplacement unique** :
+  `cityRushActiveWeapon` lit l'arme en main, `cityRushEquipWeapon` la remplace —
+  ramasser l'une vide l'autre. Le bouton de tir (et la touche Z) reste donc
+  **vide** tant qu'aucune arme n'a été ramassée, et tire ensuite avec celle en
+  main : sept balles d'un chargeur rouge, trois cartouches d'un pompe bleu. Les pouvoirs et les
+  trousses de soin **flottent** au-dessus de la chaussée
+  (`PICKUP_FLOAT_HEIGHT` = 1,3 m dans `ViceCityWorld.jsx`) ; le turbo, lui, est
+  un **cercle peint au sol** (`PICKUP_GROUND_TYPES`, `PICKUP_GROUND_HEIGHT` =
+  0,05 m) : aucune icône ne vole au-dessus du bitume, on lit le rond et on le
+  traverse. Le disque est un plan de 2 m posé à plat dans le repère déjà incliné
+  de la rangée — il suit donc les côtes et les descentes —, texturé par
+  `makeBoostPadMaterial()` (`cityRushTextures.js`) : halo diffus, anneau vert,
+  cercle pointillé et deux chevrons vers l'avant. Son anneau `userData.pulse`
+  respire (échelle et opacité, matière privée par slot car chaque cercle garde
+  son rythme) et c'est la seule animation du bonus ; l'anneau incliné
+  `userData.orbit` de l'ancienne icône flottante a disparu. L'éclair blanc de
+  `makePickupMaterial('boost', …)` ne sert plus qu'aux légendes du guide et du
+  HUD. La couleur vient de `pickupColor()`
   — vert `CITY_RUSH_TRACK_BOOST_COLOR`, rouge des soins, ou la teinte du
-  pouvoir. Le rouge est **très
-  rare** : seulement **5 % des objets** générés sont rouges, contre 95 % de pads
-  turbo (`CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.95`,
-  `CITY_RUSH_RED_PICKUP_CHANCE = 0.05`). Chaque bonus rouge rare recharge les
+  pouvoir. Le rouge reste **très
+  rare** : **8 % des emplacements** tirés sont des chargeurs, contre 6 % de
+  soins et 86 % de ronds turbo (`CITY_RUSH_RED_PICKUP_CHANCE = 0.08`,
+  `CITY_RUSH_TRACK_BOOST_PICKUP_CHANCE = 0.86`). Chaque bonus rouge rare recharge les
   **sept balles** du chargeur ; chaque pression en tire une, et maintenir `Z`
   tire à cadence régulière. Le bonus vert s'active automatiquement et accélère
-  pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Les anciens pouvoirs bleu et jaune
+  pendant `CITY_RUSH_TRACK_BOOST_DURATION` = 3 s. Comme il se voit moins qu'une
+  icône suspendue, il se fait aussi plus rare : `keepsCityRushBoostPickup()`
+  écarte un quart des emplacements tirés « turbo », en course ; le tutoriel
+  garde tous les siens, pour que chaque leçon croise son exemple. Un cercle
+  ramassé éclate malgré tout à hauteur de capot (`PICKUP_GROUND_BURST_LIFT`),
+  sinon la voiture passerait dessus sans rien voir. Les anciens pouvoirs bleu et jaune
   restent dans les règles internes mais ne sont ni générés ni proposés au
   joueur : **aucune attaque d'hélicoptère** n'est disponible. L'appareil visible
   au dernier tour est un hélicoptère d'observation sans armement.
@@ -1597,11 +1672,14 @@ Un prêt ne vaut **que pour son chapitre** : il est appliqué à la course engag
 garage (`carId`). Autrement la voiture prêtée suivait le pilote — la MISTRAL du
 prologue remplaçait la voiture achetée pour les neuf chapitres suivants, la
 TEMPESTA du Ring retombait sur la citadine de départ une fois rendue, et le
-garage affichait la voiture prêtée comme sélectionnée après la campagne. Les
-rivaux, eux, gardent leur matchmaking habituel (les deux profils les plus
-proches de la voiture engagée), sauf quand le chapitre impose un modèle
-(`rules.rivalCarIds`) ou une allure (`rules.rivalPace` : Dante roule à +5 % au
-duel de Paris, +6 % à la finale).
+garage affichait la voiture prêtée comme sélectionnée après la campagne.
+Les rivaux sont eux aussi adaptés à la voiture engagée : chaque profil est
+choisi dans la même catégorie (`category` dans `cityRushRules.js`), puis départagé
+par la proximité de vitesse. Un modèle imposé par un chapitre ou un tournoi est
+conservé seulement s'il appartient à cette catégorie ; quand une catégorie n'a
+qu'un modèle, les rivaux reprennent ce modèle plutôt que de changer de classe.
+Les allures scénarisées restent appliquées (`rules.rivalPace` : Dante roule à
++5 % au duel de Paris, +6 % à la finale).
 
 ### Où vit le code
 
@@ -1828,6 +1906,8 @@ npm run check:city-rush-wreck   # carambolages : la police perd 1 point et le jo
 npm run check:city-rush-police-fire # poursuite : les rafales touchent le pilote (une cellule par impact), la mire est annoncée, aucune berline n'est détruite par une autre
 npm run check:city-rush-police-wreck # destruction d'une berline : deux tours de tête-à-queue en décélérant, explosion à l'arrêt, carcasse laissée en feu tout l'incendie
 npm run check:city-rush-rival-police # les rivaux aussi sont pourchassés : carambolage avec la police et tête de course au dernier tour (deux passes : motifs mêlés, puis motif du premier seul)
+npm run check:city-rush-side-bump # choc latéral : la voiture qui bloque se pousse sur la voie d'à côté, un carré pour le pilote, un PV pour un rival ou une berline, aucun PV pour le trafic, un seul choc par côte-à-côte (huit parcours)
+npm run check:city-rush-ink  # la langue du hub sur toute la console (jetons, équerres, polices, ordre d'import)
 npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 npm run check:vice-city-account-grants # progression de compte : cache isolé par compte, reprise de l'ancienne campagne, grant SQL privé, idempotent et complet
 ```
@@ -1885,6 +1965,82 @@ Aucun son de missile, de frappe ou de rotor d'attaque ne doit se déclencher ;
 l'hélicoptère d'observation reste silencieux. Les compteurs sont imprimés à la
 fin de chaque parcours.
 
+## Vice City Rush : toute la console parle la langue du hub
+
+L'écran-titre de Vice City Rush (`ViceCityRushMainMenu`, dessiné dans
+`src/games/vice-city-rush-menu.css`) a été repensé le premier : encre
+d'imprimerie, angles coupés au cutter, filets d'un cheveu, équerres jaunes de
+cerise sur l'entrée choisie, grain de pellicule, « Pirata One » pour les titres
+et « Permanent Marker » pour les tags. Le reste du jeu parlait encore la langue
+d'avant — néons violets, cartons arrondis, Orbitron.
+
+Deux choses ont suivi ce désaccord :
+
+- **le plein écran revenait « comme avant »** : la cible native était
+  `.city-rush-shell` (`#vice-city-rush-console`), promue dans la couche
+  supérieure du navigateur, alors que le hub est son **frère** sous
+  `.city-rush-page`. L'écran-titre, hors de la cible, restait donc peint par la
+  page en dessous — l'ancienne peau gagnait à l'œil. La cible est maintenant
+  `.city-rush-page` (`pageRef`), le hub est dans le plein écran, et
+  `.city-rush-page.is-immersive` lui rend un cadre entier (100 vh, `padding: 0`,
+  `overflow: hidden`, fond d'encre). Le `upgrade` de la permission de premier
+  geste n'est plus sauté pendant que le hub est ouvert.
+- **le jeu est descendu sous la barre du site** : la navigation flotte en
+  `position: fixed` (16 px du bord haut, 64 px de haut, resserrée à 58 px au
+  scroll — bord bas à 80 px), alors que la page de jeu ne réservait que 96 px :
+  le bandeau supérieur de la console — titre, plein écran, son — frôlait l'île.
+  La réserve passe par un jeton, `--cr-nav-clear: 124px`, relu et mesuré par
+  `npm run check:vice-city-fullscreen` (96 px sur téléphone, où la barre plaque
+  `top: 0` sur 68 px) ; `is-immersive` la remet à zéro, puisqu’en plein écran il
+  n’y a plus de barre du tout.
+- **l’écran-titre n’a plus de nuage noir** : les deux éclats d’encre grunge —
+  celui du carrousel d’icônes, puis celui du logo — avaient été dessinés pour
+  une photo figée. Posés sur la vitrine 3D, ils ne protégeaient plus rien et
+  mangeaient la salle. `InkSplat` est sorti de `ViceCityRushMainMenu`, et la
+  règle vaut pour tout ce qui se poserait sur la scène : pas d’encre par-dessus,
+  des ombres portées et un dégradé.
+- **la peau du hub a été passée sur les neuf feuilles du jeu** : les jetons
+  `--cr-*` de `vice-city-rush.css` portent les encres et les rayons,
+  `vice-city-rush-hub-skin.css` retouche surface par surface (filets, équerres,
+  grain, puces de raccourcis — jamais la mise en page : `grid-template-areas`, zones
+  et points de rupture sont intacts), et le bloc 8 de `src/typography.css` rend
+  au hub ses polices, que le `body * !important` du bloc 1 écrasait.
+
+### Retoucher la peau
+
+```bash
+npm run theme:city-rush-ink   # codemod : rabat les encres, rayons, polices et penchants du jeu sur ceux du hub
+npm run check:city-rush-ink   # le contrat : aucune couleur ni aucun rayon de l'ancienne peau ne revient
+```
+
+Le décor de l'écran-titre est la scène de garage elle-même, remontée dans son
+cadrage « vitrine » : le plateau tournant, la baie d'atelier, la voiture — mais
+`pointer-events: none` de bout en bout (la feuille du garage rend le canvas
+réactif au regard ; `vice-city-rush-menu.css` le lui reprend), et la photo du
+modèle posée dessous en socle : sans WebGL, comme pendant le premier rendu, c'est
+elle qui tient le cadre. La voiture montrée n'est pas celle du joueur :
+`cityRushShowcaseCar()` (`src/games/cityRushRules.js`) désigne la pièce la plus
+chère du catalogue — aujourd'hui la PULSE RS — parce qu'un écran-titre vend une
+campagne, il n'en dresse pas l'inventaire. Derrière elle, au fond de la salle,
+les trois modèles les plus chers **qui ne sont pas au plateau** sont garés sur
+leur tapis, étiquette de prix au poteau : c'est le lot du vendeur, et il se
+renouvelle tout seul quand le catalogue change. Enfin, la page de préparation ne monte
+sa propre baie que hub refermé : deux scènes simultanées, ce seraient deux
+contextes WebGL et deux boucles de rendu pour un seul écran.
+
+Le codemod (`scripts/vice-city-rush-ink-sweep.mjs`) est un outil d'atelier, pas
+un générateur idempotent : il réécrit les feuilles à partir du vocabulaire
+d'avant, et se relance donc sur une peau neuve, avant les retouches à la main.
+La vérification, elle, est mécanique et rapide : elle lit la feuille de base, la
+peau, la typographie du site et l'ordre des `import` de la page.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-ink          # la langue du hub : jetons, équerres, thème clair, polices, ordre d'import
+npm run check:vice-city-fullscreen   # la page (et donc le hub) en plein écran, hub ouvert qui survit au passage
+```
+
 ## Vice City Rush : le mode au doigt et la course muette
 
 Deux promesses d'écran que `npm run check:city-rush-quiet` vérifie ensemble,
@@ -1896,8 +2052,9 @@ parce qu'elles font la même chose : laisser la route au pilote.
   glissement l'emportait sur le clic, et le mode restait dur à ouvrir. Elles
   sont maintenant **empilées en rangées pleine largeur** — icône à gauche,
   titre et détails à droite, `touch-action: manipulation` (pas de double tape,
-  pas de délai), aucun défilement latéral nulle part —, et passent **avant la
-  bannière Histoire** : une rangée, un doigt, la course. La grille s'adapte
+  pas de délai), aucun défilement latéral nulle part —, et **remplissent la
+  page COURSE RAPIDE** (la campagne a quitté cet écran pour la sienne) : une
+  rangée, un doigt, la course. La grille s'adapte
   d'elle-même : trois rangées sur un téléphone tenu droit, deux ou trois
   vignettes côte à côte dès que l'écran s'élargit (tablette, téléphone couché),
   et sur une fenêtre basse le chapeau d'étape, le libellé « cours libres » et la
@@ -1921,7 +2078,7 @@ parce qu'elles font la même chose : laisser la route au pilote.
 - `src/games/ViceCityRushPage.jsx` — `showToast` (sourd pendant la course),
   `startRace` (qui vide la fenêtre des menus), et plus aucun message branché
   sur les effets du moteur ;
-- `src/games/vice-city-rush-comic.css` — la section « Choix du mode au doigt »
+- `src/games/vice-city-rush-hub-skin.css` — la section « Choix du mode au doigt »
   (grille empilée, `touch-action`, rappels de gestes au lieu du clavier) et les
   paliers « tablette » et « écrans bas » ;
 - `tests/city-rush-hud.test.js` — le contrat muet (aucune surface de message
@@ -2145,25 +2302,102 @@ Comme le hasard décide du trafic et des bonus,
 `CITY_RUSH_SMOKE_SEED=31 npm run check:city-rush-smoke -- --city=nordschleife`
 rejoue exactement le même scénario.
 
+## Vice City Rush : une page par famille de courses
+
+L'écran de préparation de Vice City Rush empilait tout sur un seul écran
+« modes » : la campagne, les tournois, les trois modes libres et le tour
+guidé. Il est découpé en **pages**, et une page ne contient que ce qu'elle
+vend. L'entrée choisie dans le hub de lancement (`ViceCityRushMainMenu`) est
+la page ouverte ; une barre d'onglets (`.city-rush-hub-bar` >
+`.city-rush-pages`, en tête de l'écran de préparation) permet d'en changer sans
+repasser par le logo.
+
+| Page | Ce qu'elle tient | Ce qu'elle ne ressert plus |
+| --- | --- | --- |
+| **HISTOIRE** | la bannière du chapitre en cours, la liste des chapitres atteints, le compteur d'étoiles | les modes libres, les tournois |
+| **TOURNOIS** | les quatre plateaux, leur barème, leurs titres gagnés | les modes libres, la campagne |
+| **COURSE RAPIDE** | les trois modes libres (`circuit`, `sprint`, `poursuite`) et le tour guidé | **le mode histoire**, les tournois |
+| **GARAGE** | le catalogue du concessionnaire, prix et billets verts | un départ de course |
+
+Deux choses suivent ce découpage, et elles tiennent dans l'état de la page :
+
+- `introStep` prend les identifiants des pages (`story`, `tournament`, `mode`,
+  `garage`) ; le parcours d'une course reste `mode → city → garage`, et le
+  **stepper** ne se montre que là — une page de liste n'a pas d'étapes à
+  numéroter, et le garage ouvert en concession n'est pas « l'étape 3 sur 3 » ;
+- la surimpression de préparation reprend ce même identifiant en classe
+  (`is-step-mode`, `is-step-story`, …), et **c'est elle qui décide de la grille**
+  dans `vice-city-rush-hub-skin.css` : une page ne s'y reconnaît plus à la
+  présence d'un bloc (`:has(.cr-story-hub)` avait ce défaut : la campagne tenant
+  deux pages, la règle aurait habillé la mauvaise) ;
+- le garage a **deux vies**, tenues par `garageVisit`. En `'flow'`, il ferme un
+  parcours : le tap sur une voiture possédée lance la course (le pilote se
+  choisit juste au-dessus, et c'est ce dernier geste qui demande le plein écran
+  sur téléphone). En `'shop'` — l'entrée GARAGE du menu, ou l'onglet — il est
+  le **concessionnaire** : la carte d'un modèle qui n'est pas à toi
+  l'**achète** (`purchaseCityRushCar`, billets débités, sauvegarde écrite,
+  pastille qui passe à « ACHETÉE »), la carte d'un modèle possédé le **monte au
+  plateau** et le choisit, et **rien ne démarre**. Le pilote n'y a rien à faire
+  — ce n'est pas un départ — et un bouton « PRENDRE LA PISTE » ramène à la page
+  des courses libres, qui déroulera mode → ville → voiture.
+
+La page HISTOIRE ne plonge plus directement dans le chapitre en cours : elle
+l'ouvre en le montrant, parce que reprendre un chapitre déjà atteint est un
+choix fréquent et que le menu du jeu ne doit pas décider à la place du joueur.
+Un tournoi abandonné ou sacré (« ← » du garage, bouton « AUTRES TOURNOIS » de
+l'arrivée) ramène à la page TOURNOIS, pas au sélecteur de modes.
+
+```bash
+npm run check:city-rush-menu         # chaque entrée ouvre sa page, aucune ne ressert le contenu d'une autre
+npm run check:city-rush-garage       # les voitures offertes, et l'achat au concessionnaire (portefeuille, sauvegarde, aucun départ)
+npm run check:city-rush-tournament   # le plateau se choisit page TOURNOIS et s'abandonne en y revenant
+npm run check:city-rush-quiet        # chaque page a sa grille, lue dans « is-step-* » — et la course reste muette
+```
+
 ## Vice City Rush : les tournois
 
 Le jeu (`/jeu/vice-city-rush`) propose quatre **tournois** — la **Coupe Sunset**
 (Vice City, Route 66, New York), la **Coupe d'Europe** (Paris, Londres,
 Nordschleife), la **Coupe Pacifique** (Tokyo, Route 66, Mexique) et la **Coupe
 des Légendes** (New York, Nordschleife, Vice City). Chaque tournoi se joue en
-**3 courses de 3 tours**, avec la même voiture et les mêmes rivaux du début à
-la fin, **sans police ni armes** : la grille et les règles sont imposées, seul
-le pilotage compte.
+**3 courses de 3 tours**, avec la même voiture et le **même plateau de huit
+voitures de course** du début à la fin, **sans police ni armes** : la grille et
+les règles sont imposées, seul le pilotage compte.
 
-Le hub des tournois (l'étape « mode » de l'accueil) les affiche en ordre : le
+**La grille** (`CITY_RUSH_TOURNAMENT_RACER_SLOTS` dans `cityRushRules.js`)
+aligne le pilote et **sept rivaux** — les places `nova`, `juno`, `lyra`,
+`orion`, `altair`, `polaris`, `castor`, chacune tenue par un pilote du
+catalogue (`CITY_RUSH_DRIVERS`, voiture et rythme propres au tournoi, qui
+montent d'une coupe à l'autre). `cityRushRaceGrid` les répartit sur les voies
+du sens de course, une rangée par groupe de voies (`CITY_RUSH_GRID_ROW_GAP` =
+**5,4 m**) : **le pilote ferme la marche** et doit remonter le peloton, du
+premier au dernier tour. Les mêmes sept visages se retrouvent aux trois
+manches — même si le pilote prend l'identité de l'un d'eux, qui est alors
+remplacé.
+
+**Le trafic du tournoi** est celui d'une course à huit :
+`CITY_RUSH_TOURNAMENT_TRAFFIC_COUNT` = **4 civiles** au lieu de 8 et
+`CITY_RUSH_TOURNAMENT_ONCOMING_COUNT` = **1 voiture** en contresens, et
+**aucune berline de police** — la course est annoncée « sans police », une
+patrouille percutée partirait en chasse même au dernier tour, et
+`chaseLastLapLeader` reste donc muet. Les respawns du trafic (et du contresens)
+suivent la même règle « route dégagée » que les parcours déserts. Le mode libre
+et l'Histoire gardent, eux, leur trafic complet.
+
+La page TOURNOIS — c'est elle qui tient la liste des plateaux, voir la section
+« une page par famille de courses » — les affiche en ordre : le
 suivant se débloque en terminant le précédent, qu'on soit champion ou non. Une
 manche courue **ne se rejoue pas** — le bouton propose la suivante, et la
-touche Entrée l'enchaîne aussi. Les points suivent le barème 10 · 6 · 3, et les
-égalités se départagent aux points, puis aux victoires, puis à la dernière
-place (l'ordre de la grille tranche les égalités parfaites). Chaque manche
+touche Entrée l'enchaîne aussi. Les points suivent le barème **25 · 18 · 15 ·
+12 · 10 · 8 · 6 · 4** (`CITY_RUSH_TOURNAMENT_POINTS`), et les égalités se
+départagent aux points, puis aux victoires, puis à la dernière place (l'ordre
+de la grille tranche les égalités parfaites). Chaque manche
 paie le tarif du circuit (50 / 30 / 10 billets verts), et seul le champion
 touche la prime du tournoi (100, 150, 200 puis 300 billets) — les tournois ne
-débloquent jamais les parcours du mode libre. Deux succès récompensent les
+débloquent jamais les parcours du mode libre. Huit lignes de classement
+tiennent dans l'écran d'arrivée comme dans le HUD : les deux listes
+**défilent** (`.cr-tournament-standings`, `.city-rush-race-list-rows`) au lieu
+de pousser le reste de l'écran hors du cadre. Deux succès récompensent les
 champions : un premier titre, puis les quatre titres.
 
 ### Où vit le code
@@ -2193,126 +2427,6 @@ verrouillés), règles « pures » reçues par le monde (3 tours, ni police ni
 armes, rivaux attitrés), victoire puis 2e place puis victoire (sacre à
 26 pts), prime +100, déblocage de la Coupe d'Europe, sauvegarde (230 billets)
 et abandon propre depuis le garage.
-
-## Le Sablier de Bab El : prototype de RPG tour par tour
-
-Troisième jeu de la page (`/jeu/sablier-de-bab-el`) : un **prototype de combat
-tour par tour** dans la lignée de *Final Fantasy* et *Dragon Quest* — et
-volontairement **sans** le système réactif de *Clair Obscur*. Ce n'est pas
-encore un RPG : c'est le morceau qui décide si le RPG existera — **un combat
-complet, jouable**, avec tout le système dedans.
-
-Le dossier de conception vit dans **`docs/rpg/`** : les trois propositions
-d'univers et la décision (`01-concepts.md`), l'histoire de Bab El
-(`02-histoire.md`), le système de combat chiffre par chiffre
-(`03-combat.md`), la progression et la direction artistique
-(`04-progression-da.md`), la route de production (`05-production.md`).
-
-### Le concept en une ligne
-
-Bab El est une ville de neuf étages bâtie autour d'un portail fermé, au-dessus
-d'un désert qui monte. Une horloge céleste — l'**Astrolabe** — égrène les
-cycles ; à chaque cycle, l'étage le plus bas est repris par le sable avec ceux
-qui y vivent. L'étage 1 est déjà perdu, on en est au 4, et la **Chambre des
-Heures** publie la Liste de ceux qui sont « prioritaires ».
-
-### Le combat, en quatre idées
-
-- **Tout est annoncé.** Chaque ennemi montre son prochain coup un round à
-  l'avance, avec sa famille : ⬇ lourd, ⬒ zone, ⧗ incantation, ⛃ sablier,
-  ⚑ soutien. Aucune attaque ne surprend — la tension vient de ce qu'on sait.
-- **Quatre réponses, zéro réflexe** : Garde (−60 %, +1 Verre si l'on était la
-  cible annoncée), Barrage de verre (absorbe avant les PV), **Contre-élément**
-  (frapper l'attaquant avec l'élément qui bat le sien : son coup −50 % et +15
-  Fêlure), Reposition (monter d'un étage).
-- **Le sable est une deuxième barre de vie.** La moitié des PV perdus tombe au
-  sol, du côté de la victime : on le récolte pour se soigner, on souffle celui
-  de l'ennemi pour l'empêcher de se réparer, et les sorts les plus lourds en
-  consomment.
-- **Les étages fondent.** Frapper de haut fait +15 % par étage, être en haut
-  protège, tout le monde descend d'un étage chaque round, et une chute du 3ᵉ au
-  1ᵉ frappe ×1,4. Au-dessus de tout, l'**Astrolabe** sonne tous les 5 rounds
-  (4 sur les boss) : +20 % d'Attaque ennemie et tout le monde descend encore.
-
-S'y ajoutent la **Fêlure** (à 100, l'ennemi n'agit pas, subit ×2 et le premier
-coup qui le touche est gratuit), la **Consonance** (trois éléments dans un
-round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
-
-### Où vit le code
-
-- `src/games/rpgCombat.js` — le moteur : règles pures, sans rendu ni DOM.
-  Intentions, PA, Verre, sable au sol, étages, Fêlure, Consonance, Astrolabe,
-  phases de boss. L'aléa est injectable (`rpgRng`), donc un combat se rejoue à
-  l'identique.
-- `src/games/rpgContent.js` — le seul fichier qui connaît l'univers : les 5
-  compagnons et leurs 19 compétences, les 4 ennemis et leurs 16 actions, les
-  trois vagues, et les deux paliers à explorer entre elles. Changer de concept
-  n'exige qu'un autre fichier comme celui-ci.
-- `src/games/rpgExplore.js` — l'exploration d'un palier : trois heures à
-  dépenser en actions (soins, sable, buffs, choix moraux), versées au combat
-  suivant. Même contrat : décider, jamais réagir.
-- `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
-  Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
-  jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
-- `src/games/rpgCards.js` — le concept cartes : anatomie façon Magic (bannière
-  de titre avec coût en pastilles, ligne de type, encadré de règle beige,
-  badge doré de PV, raretés), le catalogue des pouvoirs **collectionnables**,
-  les cartes de base (une seule attaque par personnage au départ), l'action
-  gratuite « Sonder le sol » et le **draft** d'après vague (trois cartes, une
-  choisie). Le sable est le mana.
-- `src/games/CardTable.jsx` — la table de jeu en bois, 100 % DOM (donc visible
-  partout, sans WebGL) : chaque acteur est sa carte, l'adversaire en haut,
-  l'équipe en bas, légèrement de travers comme posées à la main ; l'intention
-  ennemie est la carte annoncée face visible. Mise en scène : carte qui bondit
-  vers sa cible, clignement blanc à l'impact, chiffres flottants, carte
-  détruite grisée sur la table, boîte de message à texte tapé lettre à lettre,
-  bannière « des ennemis apparaissent ! ». La main se tient en éventail dans
-  la barre du bas ; les éphémères répondent pendant le tour ennemi.
-- `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
-  jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
-  souffle de sable. La partie pure est testée ; le lecteur s'éveille au
-  premier geste joueur, bouton 🔊/🔇 mémorisé.
-- `src/games/rpg-battle.css` — la palette laiton / indigo / ocre du concept,
-  sur les variables de couleur du site (donc compatible thème clair).
-- `public/sablier-de-bab-el-thumb.svg` — vignette vectorielle (une démo
-  technique n'a pas encore de key art).
-- `src/pages/Games.jsx`, `src/main.jsx` — la carte de la vitrine (badge
-  `PROTOTYPE`) et la route `/jeu/sablier-de-bab-el`.
-
-### Vérifications
-
-```bash
-npm run check:rpg      # règles du moteur + simulation des trois vagues
-npm run check:rpg-ui   # la vraie page montée dans jsdom
-```
-
-`check:rpg` fait deux choses. Les **51 tests** de `tests/rpg-combat.test.js`
-vérifient chaque règle du dossier : table des éléments et axe Encre ↔ Verre,
-formule de dégâts et multiplicateur d'étage, intention annoncée et ses cinq
-familles, garde, barrage, contre-élément, interruption, retard d'un round,
-sable (chute au sol, récolte, souffle, sorts à coût de sable), Fêlure,
-Consonance, Cristallisation, Astrolabe, phases de boss, réserve, récompenses,
-difficultés. Les **13 tests** de `tests/rpg-explore.test.js` couvrent
-l'exploration d'un palier : heures dépensées, actions uniques, soins, sable de
-poche, choix moraux et versement des buffs au combat suivant. Puis
-`scripts/rpg-battle-smoke.mjs` contrôle la cohérence du contenu (éléments,
-familles d'intention, et surtout : **chaque incantation ennemie doit pouvoir
-être interrompue par l'équipe**) et **joue vraiment les trois vagues** avec un
-pilote automatique qui emploie les six réponses, jusqu'à la victoire,
-Astrolabe et phase 2 du boss compris.
-
-C'est cette simulation qui a fait corriger le prototype : elle a montré que la
-Chaudière du boss s'annonçait interruptible à l'Eau alors qu'aucune compétence
-d'Eau n'interrompait, que le boss mourait avant que l'horloge ait le temps de
-sonner, et qu'un sort de « retard » ne retardait rien du tout.
-
-`check:rpg-ui` construit la page avec Vite puis la monte dans jsdom : les trois
-difficultés, l'ouverture du combat (étages, segments de Nom, sable au sol,
-Astrolabe, ordre des tours), l'intention affichée sur chaque ennemi,
-**l'absence vérifiée de toute option de parade ou d'esquive**, un coup joué et
-tracé au journal, les cinq réponses proposées, la première vague gagnée en
-jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
-réserve.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 
@@ -2718,6 +2832,63 @@ the SQL has been run; the section explains itself when something is off:
 | “Your session has expired — sign in again to comment.” | The stored session is no longer valid | Sign out / in on `/auth` |
 | “Easy there — wait a moment before posting again.” | More than 5 comments in one minute | Wait a minute |
 | Sign-in gate although the site is deployed | Supabase variables missing at build time | See the environment-variable table above |
+
+### Modération des commentaires (mots interdits et signalements)
+
+Première étape, sans IA ni modérateurs : elle s'appuie sur `supabase/schema.sql`
+(section 3f) et sur `src/lib/commentModeration.js`.
+
+- **Mots interdits** : un message qui contient un mot de la liste est refusé
+  par la base, avant d'être enregistré, dans les commentaires d'articles comme
+  dans les commentaires de groupes communautaires. Le texte reste dans le champ
+  et le message d'erreur (fr/en/ar) ne révèle pas la liste. La normalisation
+  ignore la casse, les accents, les lettres répétées, les lettres séparées
+  (`c.o.n`), l'écriture « leet » (`3`→e, `4`→a, `5`→s, etc.), les signes
+  diacritiques de l'arabe (tachkil) et l'élongation (tatwil).
+- **Signaler** : chaque commentaire d'un autre joueur a un bouton « Signaler »
+  (motifs : harcèlement, haine, contenu sexuel, violence, spam, autre). Un
+  joueur ne signale qu'une fois un commentaire, et 5 signalements par minute au
+  maximum. Les visiteurs ne voient pas le bouton.
+- **Masquage automatique** : à partir de **3 signalements distincts**, le
+  commentaire est masqué pour tout le monde, auteur compris (`hidden_at`). Le
+  champ n'est modifiable que depuis l'éditeur SQL (un joueur ne peut pas le
+  changer).
+
+Le filtre de mots s'applique aussi aux commentaires des groupes communautaires,
+mais ceux-ci n'ont pas de bouton « Signaler » (l'auteur du groupe peut déjà les
+supprimer). Les **photos et avatars** ne sont pas couverts par cette étape.
+
+Gérer la liste (éditeur SQL, en tant que `postgres`) :
+
+```sql
+-- Ajouter un mot (la forme stockée est normalisée automatiquement)
+insert into public.comment_blocked_terms (term, match_mode, note)
+values ('mot', 'word', 'raison')
+on conflict (term) do update set enabled = true;
+
+-- Désactiver un mot : utiliser la forme normalisée (« connard » est stocké « conard »)
+update public.comment_blocked_terms
+   set enabled = false
+ where term = public.moderation_normalize('connard');
+
+-- Rétablir un commentaire masqué à tort
+update public.comments set hidden_at = null where id = '<uuid>';
+```
+
+Modes de correspondance : `word` (le mot entier), `stem` (le début d'un mot,
+4 lettres minimum) et `phrase` (automatique quand le terme contient un espace).
+La liste de départ est volontairement modeste ; « retard » ou « pédale » n'y
+figurent pas, car ce sont des mots français courants.
+
+Tests : `npm run check:comment-moderation` (normalisation, règles de la base
+sur PostgreSQL en mémoire via `@electric-sql/pglite`, et parcours du formulaire
+de signalement dans JSDOM). Cette commande n'est pas lancée par la CI (qui ne
+fait que le build).
+
+Limites : les règles ont été vérifiées sur PostgreSQL 18 (via PGlite), pas encore
+sur le projet Supabase réel ; le format des erreurs PostgREST reste à confirmer
+après exécution du SQL. La modération automatique par IA et la page des
+modérateurs ne sont pas encore faites.
 
 ## Amis : demandes, liste et présence
 
@@ -4265,6 +4436,33 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
 - `npm run check:light-news` : le thème clair des pages Actus, galeries
   comprises.
 
+## Édition du 08.10.2026 : articles, miniatures et vidéos
+
+Les trois actualités de cette édition partagent une seule source de données,
+`src/news/daily/2026-10-08.js`, utilisée par les articles, les cartes des hubs,
+la une gaming de l’accueil, la recherche et les métadonnées SEO :
+
+- `/news/hellraiser-revival-sortie` — gaming, avec les coulisses officielles
+  publiées par PlayStation ; la vidéo de juillet est explicitement signalée
+  comme illustration, et non comme une nouvelle bande-annonce du jour.
+- `/news/cinema/below-netflix-sortie` — cinéma & séries, avec la bande-annonce
+  de la chaîne principale Netflix.
+- `/news/tech/nuri-cinquieme-vol-satellites` — tech & espace, avec les images
+  embarquées KARI et le replay du lancement. La date du vol (7 octobre) reste
+  distincte de celle du bilan publié le 8 ; le satellite non séparé est signalé.
+
+Les trois miniatures sont livrées en JPEG compressé dans
+`public/news/2026-10-08/`, avec leurs crédits et URLs d’origine dans
+`credits.md`. Elles s’affichent aussi avant le démarrage des vidéos à la une ;
+les miniatures YouTube restent le repli. Les genres « COULISSES » et « REPLAY »
+complètent les libellés du lecteur sans présenter toutes les vidéos comme des
+bandes-annonces. Aucun sujet Mistral AI n’est inclus dans cette édition.
+
+`npm run check:daily-news` vérifie les fichiers image, les routes réelles,
+les trois cartes du jour, les mises en avant, la recherche, le SEO et le
+changement de vidéo Nuri. `npm run check:trailers` couvre désormais aussi
+les articles et les pastilles du hub tech, en plus du gaming et du cinéma.
+
 ## Actus cinéma du jour
 
 Le hub Actus (`/news`) ouvre sur trois zones — gaming, cinéma & séries et
@@ -4455,35 +4653,17 @@ sa couleur d’univers (violet #a855f7, #6d28d9 en thème clair) déclinée dans
 `src/news-carousel.css` et `src/theme.css` — la grille passe à trois colonnes
 sur desktop, deux sous 1100 px, une sous 780 px.
 
-## Hub Actus : la bannière « actu gaming du jour »
+## Hub Actus : les actus du jour ouvrent la page
 
-Sous les trois cartes du hub (`/news`), une bannière reprend **l'actu gaming
-du jour** au gabarit de la une de l'accueil : la vidéo officielle de l'article
-se lit sur place dans la colonne de gauche (lecteur du site, `youTubeEmbedUrl`,
-donc soumis à la règle « une seule vidéo à la fois »), la colonne de droite —
-pastille « Actu du jour », date · source, titre, chapô, « Lire l'article » —
-est le lien vers l'article. Le libellé de section annonce ce que montre le
-cadre (« BANDE-ANNONCE OFFICIELLE · ROCKSTAR GAMES ») et un lien renvoie au
-flux `/news/gaming`.
-
-Rien n'est recopié : la bannière lit **la première entrée de
-`latestGamingStories`** dans `src/pages/GamingNews.jsx` (exportée sous le nom
-`gamingTopStory`), c'est-à-dire la carte qui ouvre déjà `/news/gaming` en
-grand. Pour changer la une, on insère la nouvelle actu **en tête de cette
-liste** — le hub et le flux gaming suivent ensemble, rien d'autre à brancher.
-La vidéo vient de `src/articleTrailers.js` : `leadTrailer(route)` renvoie la
-première vidéo officielle déclarée pour l'article (la même dont la pastille des
-cartes reprend la nature). Une actu sans vidéo officielle n'a pas de cadre
-vide : son visuel (`image`, puis `fallbackImage` si l'image distante ne répond
-plus) remplit le cadre 16/10 à la place du lecteur.
-
-Où vit le code : `src/pages/News.jsx` (balisage, textes FR / EN / AR),
-`src/news-carousel.css` (`.news-hub-today` : espacement du hub et visuel de
-repli) — la carte elle-même réutilise les classes de l'accueil
-(`.featured-dossiers--news`, `.home-news-card`, `src/daily-news.css`), thème
-clair compris. Vérifications : `npm run check:light-news` (le hub est rendu
-en thème clair), `npm run check:i18n` (rendu FR / EN / AR, dictionnaire
-partiel), `npm run check:trailers` et `npm run check:videos`.
+Le hub (`/news`) commence par **les actus du jour** (`id="actus-du-jour"` :
+trois cartes, une par univers, avec leurs miniatures dédiées). Viennent ensuite
+le bandeau du hub (« 02 / NEWS HUB » + « Choisis ton univers », qui introduit la
+suite) puis les trois cartes d'univers (`01 / GAMING`, `02 / CINÉMA`,
+`03 / TECH`). Le `h1` reste la première chose écrite
+dans la page, mais il n'est là que pour les lecteurs d'écran. L'ordre vit dans
+`src/pages/News.jsx` ; l'espacement est réglé par `.news-hub-headlines` dans
+`src/news-carousel.css` (section en tête de page : pas de marge haute propre,
+c'est elle qui laisse respirer le bandeau qui suit).
 
 ## Robot actus du jour
 
@@ -4598,3 +4778,143 @@ affichée, sans simuler un enregistrement local.ts et l'identité d'écriture es
 Les anciens compteurs locaux ne sont pas importés : ils ne constituent pas des
 votes vérifiables. En cas de panne ou de migration manquante, une erreur est
 affichée, sans simuler un enregistrement local.
+
+### Mission 1 : intercepteur et tir sur le dealer
+
+La livrée de police porte une rampe rouge/bleue **au-dessus du toit** (hauteur
+calculée sur le modèle, plutôt que noyée dans la coque) et un marquage POLICE
+arrière visible en caméra de poursuite. Elle suit les mouvements de caisse.
+
+L’opération Filet rouge prête désormais un premier chargeur de **7 balles**,
+remis à chaque tentative. Il ne compte pas comme un bonus ramassé : il faut
+toujours récupérer au moins un chargeur rouge, neutraliser le dealer et finir
+les trois tours. La cible ajuste son allure lorsqu’elle sort de la fenêtre de
+poursuite (24–80 m), sans téléportation ; le trafic, les collisions et les tirs
+restent réels. Ces réglages ne s’appliquent qu’à cette mission.
+
+`npm run check:city-rush-missions` vérifie les règles, le parcours de la vraie
+page (menu → briefing → départ → bouton tactile → replay) et deux courses
+complètes du vrai moteur avec rendu GPU factice, tirs tactiles puis touche Z.
+Aucun dégât ni trafic n’est désactivé. Pour varier la simulation :
+`CITY_RUSH_MISSION_SEED=42 node scripts/city-rush-mission-run-check.mjs`.
+
+## Le Sablier de Bab El : prototype de RPG tour par tour
+
+Troisième jeu de la page (`/jeu/sablier-de-bab-el`) : un **prototype de combat
+tour par tour** dans la lignée de *Final Fantasy* et *Dragon Quest* — et
+volontairement **sans** le système réactif de *Clair Obscur*. Ce n'est pas
+encore un RPG : c'est le morceau qui décide si le RPG existera — **un combat
+complet, jouable**, avec tout le système dedans.
+
+Le dossier de conception vit dans **`docs/rpg/`** : les trois propositions
+d'univers et la décision (`01-concepts.md`), l'histoire de Bab El
+(`02-histoire.md`), le système de combat chiffre par chiffre
+(`03-combat.md`), la progression et la direction artistique
+(`04-progression-da.md`), la route de production (`05-production.md`).
+
+### Le concept en une ligne
+
+Bab El est une ville de neuf étages bâtie autour d'un portail fermé, au-dessus
+d'un désert qui monte. Une horloge céleste — l'**Astrolabe** — égrène les
+cycles ; à chaque cycle, l'étage le plus bas est repris par le sable avec ceux
+qui y vivent. L'étage 1 est déjà perdu, on en est au 4, et la **Chambre des
+Heures** publie la Liste de ceux qui sont « prioritaires ».
+
+### Le combat, en quatre idées
+
+- **Tout est annoncé.** Chaque ennemi montre son prochain coup un round à
+  l'avance, avec sa famille : ⬇ lourd, ⬒ zone, ⧗ incantation, ⛃ sablier,
+  ⚑ soutien. Aucune attaque ne surprend — la tension vient de ce qu'on sait.
+- **Quatre réponses, zéro réflexe** : Garde (−60 %, +1 Verre si l'on était la
+  cible annoncée), Barrage de verre (absorbe avant les PV), **Contre-élément**
+  (frapper l'attaquant avec l'élément qui bat le sien : son coup −50 % et +15
+  Fêlure), Reposition (monter d'un étage).
+- **Le sable est une deuxième barre de vie.** La moitié des PV perdus tombe au
+  sol, du côté de la victime : on le récolte pour se soigner, on souffle celui
+  de l'ennemi pour l'empêcher de se réparer, et les sorts les plus lourds en
+  consomment.
+- **Les étages fondent.** Frapper de haut fait +15 % par étage, être en haut
+  protège, tout le monde descend d'un étage chaque round, et une chute du 3ᵉ au
+  1ᵉ frappe ×1,4. Au-dessus de tout, l'**Astrolabe** sonne tous les 5 rounds
+  (4 sur les boss) : +20 % d'Attaque ennemie et tout le monde descend encore.
+
+S'y ajoutent la **Fêlure** (à 100, l'ennemi n'agit pas, subit ×2 et le premier
+coup qui le touche est gratuit), la **Consonance** (trois éléments dans un
+round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
+
+### Où vit le code
+
+- `src/games/rpgCombat.js` — le moteur : règles pures, sans rendu ni DOM.
+  Intentions, PA, Verre, sable au sol, étages, Fêlure, Consonance, Astrolabe,
+  phases de boss. L'aléa est injectable (`rpgRng`), donc un combat se rejoue à
+  l'identique.
+- `src/games/rpgContent.js` — le seul fichier qui connaît l'univers : les 5
+  compagnons et leurs 19 compétences, les 4 ennemis et leurs 16 actions, les
+  trois vagues, et les deux paliers à explorer entre elles. Changer de concept
+  n'exige qu'un autre fichier comme celui-ci.
+- `src/games/rpgExplore.js` — l'exploration d'un palier : trois heures à
+  dépenser en actions (soins, sable, buffs, choix moraux), versées au combat
+  suivant. Même contrat : décider, jamais réagir.
+- `src/games/RpgBattlePage.jsx` — l'écran : il n'affiche et ne pilote que ça.
+  Le pilotage est impératif (`battleRef` + re-render forcé), comme les autres
+  jeux du dépôt. Aucun minuteur côté joueur : la page n'attend jamais un appui.
+- `src/games/rpgCards.js` — le concept cartes : anatomie façon Magic (bannière
+  de titre avec coût en pastilles, ligne de type, encadré de règle beige,
+  badge doré de PV, raretés), le catalogue des pouvoirs **collectionnables**,
+  les cartes de base (une seule attaque par personnage au départ), l'action
+  gratuite « Sonder le sol » et le **draft** d'après vague (trois cartes, une
+  choisie). Le sable est le mana.
+- `src/games/CardTable.jsx` — la table de jeu en bois, 100 % DOM (donc visible
+  partout, sans WebGL) : chaque acteur est sa carte, l'adversaire en haut,
+  l'équipe en bas, légèrement de travers comme posées à la main ; l'intention
+  ennemie est la carte annoncée face visible. Mise en scène : carte qui bondit
+  vers sa cible, clignement blanc à l'impact, chiffres flottants, carte
+  détruite grisée sur la table, boîte de message à texte tapé lettre à lettre,
+  bannière « des ennemis apparaissent ! ». La main se tient en éventail dans
+  la barre du bas ; les éphémères répondent pendant le tour ennemi.
+- `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
+  jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
+  souffle de sable. La partie pure est testée ; le lecteur s'éveille au
+  premier geste joueur, bouton 🔊/🔇 mémorisé.
+- `src/games/rpg-battle.css` — la palette laiton / indigo / ocre du concept,
+  sur les variables de couleur du site (donc compatible thème clair).
+- `public/sablier-de-bab-el-thumb.svg` — vignette vectorielle (une démo
+  technique n'a pas encore de key art).
+- `src/pages/Games.jsx`, `src/main.jsx` — la carte de la vitrine (badge
+  `PROTOTYPE`) et la route `/jeu/sablier-de-bab-el`.
+
+### Vérifications
+
+```bash
+npm run check:rpg      # règles du moteur + simulation des trois vagues
+npm run check:rpg-ui   # la vraie page montée dans jsdom
+```
+
+`check:rpg` fait deux choses. Les **51 tests** de `tests/rpg-combat.test.js`
+vérifient chaque règle du dossier : table des éléments et axe Encre ↔ Verre,
+formule de dégâts et multiplicateur d'étage, intention annoncée et ses cinq
+familles, garde, barrage, contre-élément, interruption, retard d'un round,
+sable (chute au sol, récolte, souffle, sorts à coût de sable), Fêlure,
+Consonance, Cristallisation, Astrolabe, phases de boss, réserve, récompenses,
+difficultés. Les **13 tests** de `tests/rpg-explore.test.js` couvrent
+l'exploration d'un palier : heures dépensées, actions uniques, soins, sable de
+poche, choix moraux et versement des buffs au combat suivant. Puis
+`scripts/rpg-battle-smoke.mjs` contrôle la cohérence du contenu (éléments,
+familles d'intention, et surtout : **chaque incantation ennemie doit pouvoir
+être interrompue par l'équipe**) et **joue vraiment les trois vagues** avec un
+pilote automatique qui emploie les six réponses, jusqu'à la victoire,
+Astrolabe et phase 2 du boss compris.
+
+C'est cette simulation qui a fait corriger le prototype : elle a montré que la
+Chaudière du boss s'annonçait interruptible à l'Eau alors qu'aucune compétence
+d'Eau n'interrompait, que le boss mourait avant que l'horloge ait le temps de
+sonner, et qu'un sort de « retard » ne retardait rien du tout.
+
+`check:rpg-ui` construit la page avec Vite puis la monte dans jsdom : les trois
+difficultés, l'ouverture du combat (étages, segments de Nom, sable au sol,
+Astrolabe, ordre des tours), l'intention affichée sur chaque ennemi,
+**l'absence vérifiée de toute option de parade ou d'esquive**, un coup joué et
+tracé au journal, les cinq réponses proposées, la première vague gagnée en
+jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
+réserve.
+

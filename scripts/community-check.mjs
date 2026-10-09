@@ -1,7 +1,8 @@
 /**
  * Vérification des groupes et commentaires communautaires — npm run check:community.
- * Rendu DOM avec le stockage local : groupe de démonstration, création,
- * commentaire, puis persistance après remontage du composant.
+ * Rendu DOM avec le stockage local : page sans groupe (invitations à créer le
+ * premier), création avec un thème, commentaire, puis persistance après
+ * remontage du composant.
  */
 import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -28,5 +29,5 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const { exerciseCommunity } = await import(path.join(outDir, 'community-smoke.js'));
 await exerciseCommunity(assert);
-console.log('\nCommunauté : exemple, création, commentaire et persistance OK.');
+console.log('\nCommunauté : thèmes, création, commentaire et persistance OK.');
 dom.window.close();

@@ -1,7 +1,20 @@
 /* ── Tournois de Vice City Rush : hub des 4 coupes et classement général ─────
    Trois courses imposées, sans police ni armes, avec les mêmes rivaux : le hub
    vit sur l'étape « mode » de l'intro (sous la campagne Histoire), le
-   classement sur l'écran d'arrivée de chaque manche. */
+   classement sur l'écran d'arrivée de chaque manche.
+
+   Un tournoi aligne **huit** voitures de course (voir
+   `CITY_RUSH_TOURNAMENT_RACER_SLOTS`) : le classement général passe donc de
+   trois à huit lignes. Il défile plutôt que de pousser l'écran d'arrivée hors
+   du cadre — la liste des positions du HUD, elle, défile dans la feuille du
+   HUD (voir `vice-city-rush-hud.css`). */
+
+.cr-tournament-standings {
+  max-height: min(52vh, 430px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
 
 /* Hub : même gabarit que la campagne Histoire, en doré plutôt qu'en rose. */
 .city-rush-page .cr-tournament-hub {
@@ -70,7 +83,7 @@
   gap: 7px;
   min-height: 250px;
   padding: 18px 14px 14px;
-  border-radius: 16px;
+  border-radius: 2px;
   background: rgba(255,255,255,0.04);
   border: 1px solid var(--cr-border);
   color: var(--cr-text);
@@ -129,11 +142,72 @@
 
 .cr-tournament-card.is-champion::after { opacity: 1; }
 
+/* Miniature propre à chaque coupe : photo du plateau (Vice City au coucher du
+   soleil, Paris la nuit, Tokyo sous la pluie, le Ring en or) qui déborde sur
+   les marges de la carte, avec les trois circuits en légende. */
+.cr-tournament-thumb {
+  position: relative;
+  display: block;
+  width: calc(100% + 28px);
+  height: 118px;
+  margin: -18px -14px 0;
+  overflow: hidden;
+  background: #0b0d12;
+  border-bottom: 1px solid color-mix(in srgb, var(--tournament-accent) 30%, transparent);
+}
+
+.cr-tournament-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 55%;
+  transition: transform 0.45s var(--cr-ease);
+}
+
+/* Dégradé : l'image se fond dans le corps de la carte, légende lisible. */
+.cr-tournament-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(8, 9, 14, 0.05) 30%, rgba(8, 9, 14, 0.88) 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--tournament-accent) 22%, transparent), transparent 60%);
+  pointer-events: none;
+}
+
+.cr-tournament-thumb-legs {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  z-index: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #f7f8fa;
+  font: 800 8px/1.4 var(--mono, monospace);
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+.cr-tournament-card:hover:not(:disabled) .cr-tournament-thumb img { transform: scale(1.045); }
+.cr-tournament-card.is-champion .cr-tournament-thumb::after {
+  background:
+    linear-gradient(180deg, rgba(8, 9, 14, 0.05) 30%, rgba(8, 9, 14, 0.88) 100%),
+    linear-gradient(90deg, rgba(255, 212, 79, 0.28), transparent 60%);
+}
+.cr-tournament-card.is-locked .cr-tournament-thumb img { filter: grayscale(0.7) brightness(0.7); }
+
 .cr-tournament-number {
   position: absolute;
-  top: 12px;
-  right: 14px;
-  color: var(--cr-faint);
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #f7f8fa;
   font: 700 10px var(--mono, monospace);
   letter-spacing: 0.08em;
 }
@@ -143,9 +217,9 @@
   place-items: center;
   width: 42px;
   height: 42px;
-  margin-top: 4px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--tournament-accent) 14%, rgba(255,255,255,0.04));
+  margin-top: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--tournament-accent) 22%, #14171f);
   border: 1px solid color-mix(in srgb, var(--tournament-accent) 18%, transparent);
   font-size: 20px;
   box-shadow: 0 0 20px color-mix(in srgb, var(--tournament-accent) 14%, transparent);
@@ -200,7 +274,7 @@
   gap: 6px;
   width: min(560px, 100%);
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 2px;
   background: rgba(0, 0, 0, 0.42);
   border: 1px solid var(--cr-border);
 }
@@ -233,7 +307,7 @@
   align-items: center;
   gap: 10px;
   padding: 5px 8px;
-  border-radius: 8px;
+  border-radius: 2px;
   border: 1px solid transparent;
 }
 
@@ -373,6 +447,8 @@
   }
 
   .cr-tournament-card { min-height: unset; }
+
+  .cr-tournament-thumb { height: 96px; }
 
   /* Classement : le pilote garde sa rangée, les manches passent en dessous. */
   .cr-tournament-row {

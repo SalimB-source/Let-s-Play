@@ -97,10 +97,11 @@ let code = 0;
 try {
   const info = await checkViceCityGarage3dScene(assert);
   console.log(
-    `check:city-rush-garage-3d-scene ✓ — la cabine se construit sans GPU (${info.mesh} maillages, ${info.images} images) : ` +
+    `check:city-rush-garage-3d-scene ✓ — la salle d’exposition se construit sans GPU (${info.mesh} maillages, ${info.images} images) : ` +
     `la ${info.voiture} tourne sur son plateau, le plateau occupe ~92 % de la largeur du cadre et la voiture ` +
     `${(info.partLarge * 100).toFixed(0)} % ; sur un téléphone la caméra recule jusqu'à ${MAX_RECUL_LABEL} m pour qu'une ` +
-    `voiture entière passe (${(info.partTelephone * 100).toFixed(0)} % de la largeur) ; changer de voiture remonte la scène.`,
+    `voiture entière passe (${(info.partTelephone * 100).toFixed(0)} % de la largeur) ; changer de voiture remonte la scène ; ` +
+    `le cadrage « vitrine » de l'écran-titre dézoome la même salle (voiture à ${(info.partVitrine * 100).toFixed(0)} % du cadre).`,
   );
 } catch (error) {
   code = 1;

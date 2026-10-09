@@ -4,8 +4,9 @@
  * Joue la Coupe Sunset de bout en bout sur la vraie page, montée dans jsdom
  * avec le moteur 3D remplacé par une doublure (même harnais que
  * `npm run check:city-rush-garage`) : hub des 4 tournois, règles « pures » (ni
- * police ni armes), 3 manches avec les mêmes rivaux, sacre, prime, déblocage
- * de la Coupe d'Europe et sauvegarde.
+ * police ni armes), le même plateau de huit voitures de course (le pilote en
+ * dernière rangée), sacre, prime, déblocage de la Coupe d'Europe et
+ * sauvegarde.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,7 +42,7 @@ const { checkViceCityTournament } = await import('../node_modules/.cache/vice-ci
 let code = 0;
 try {
   await checkViceCityTournament(assert);
-  console.log('check:city-rush-tournament ✓ — la Coupe Sunset se joue de bout en bout : 3 manches sans police ni armes, sacre à 26 pts, prime +100, Coupe d’Europe débloquée, sauvegarde à jour.');
+  console.log('check:city-rush-tournament ✓ — la Coupe Sunset se joue de bout en bout : 3 manches sans police ni armes, huit voitures de course sur la grille (le pilote en dernière rangée), sacre à 68 pts, prime +100, Coupe d’Europe débloquée, sauvegarde à jour ; le tout s’ouvre page TOURNOIS — seule page des plateaux — et le « ← » du garage y ramène en abandonnant la coupe.');
 } catch (error) {
   console.error(error?.message || error);
   code = 1;

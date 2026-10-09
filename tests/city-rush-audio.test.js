@@ -290,12 +290,16 @@ test('tir, dérapage et explosion programment du son, et se taisent quand le son
     audio.gunshot({ pan: -0.4 });
     const afterShot = audio.context.events.length;
     assert.ok(afterShot > 0, 'un coup de feu fabrique du bruit');
+    const afterShell = audio.context.events.length;
+    audio.shotgun({ pan: 0.2 });
+    assert.ok(audio.context.events.length > afterShell, 'le fusil à pompe ajoute son coup de tonnerre et son réarmement');
     audio.skid({ pan: 0.3, delay: 0.3, intensity: 1 });
     audio.explosion({});
     assert.ok(audio.context.events.length > afterShot, 'le dérapage et l’explosion ajoutent leurs nœuds');
     audio.stop();
     const before = audio.context.events.length;
     audio.gunshot();
+    audio.shotgun();
     audio.skid();
     audio.explosion();
     audio.missileLaunch();
@@ -389,8 +393,10 @@ test('le monde déclenche les bruitages au bon endroit', async () => {
   ]);
   // Le moteur est piloté à l’image près par le monde.
   assert.match(world, /audioRef\?\.current\?\.engine\(\{/);
-  // Tir rouge d'AK-47 au départ, dérapage de la cible à l'impact.
+  // Tir rouge d'AK-47 au départ, dérapage de la cible à l'impact. Le fusil à
+  // pompe bleu a son propre coup de tonnerre, panoramiqué lui aussi.
   assert.match(world, /audioRef\?\.current\?\.machineGun\(\{ pan: vehiclePan\(attackerId\) \}\)/);
+  assert.match(world, /audioRef\?\.current\?\.shotgun\(\{ pan: vehiclePan\(attackerId\) \}\)/);
   assert.match(world, /audioRef\?\.current\?\.skid\(\{\s*pan: vehiclePan\(target\.id\),/);
   // L'attaque d'hélicoptère est retirée du monde ; les explosions restent
   // utilisées pour les voitures de police détruites et l'épave du pilote.

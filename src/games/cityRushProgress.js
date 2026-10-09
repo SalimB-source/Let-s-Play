@@ -13,6 +13,10 @@
 // suit le joueur d'un appareil à l'autre — même principe que Mirage Rush.
 import { CITY_RUSH_CARS, CITY_RUSH_COURSES, cityRushFreeCarIds } from './cityRushRules.js';
 import { CITY_RUSH_STORY_CHAPTER_COUNT, CITY_RUSH_STORY_VERSION, mapLegacyStoryChapter } from './cityRushStory.js';
+import {
+  completeCityRushMission,
+  normalizeCompletedCityRushMissionIds,
+} from './cityRushMissions.js';
 
 export const CITY_RUSH_PROGRESS_KEY = 'letsplay_vice_city_rush_progress_v1';
 export const CITY_RUSH_STARTER_CAR_ID = 'city-hatch';
@@ -87,6 +91,7 @@ export function normalizeCityRushProgress(value, { cars = CITY_RUSH_CARS, course
     cash: safeMoney(value?.cash),
     ownedCarIds: (Array.isArray(cars) ? cars : []).map((car) => car?.id).filter((id) => rawCars.has(id)),
     completedCourseIds,
+    completedMissionIds: normalizeCompletedCityRushMissionIds(value?.completedMissionIds),
   };
 }
 
@@ -168,6 +173,16 @@ export function awardCityRushRace(progress, {
     courseCompleted: Boolean(completed),
     reason: null,
   };
+}
+
+/** Valide une mission sans toucher au portefeuille, au garage ni aux parcours. */
+export function completeCityRushMissionProgress(progress, missionId) {
+  const current = normalizeCityRushProgress(progress);
+  const completion = completeCityRushMission(current, missionId);
+  const nextProgress = completion.completed
+    ? normalizeCityRushProgress({ ...current, completedMissionIds: completion.completedMissionIds })
+    : current;
+  return { ...completion, progress: nextProgress };
 }
 
 function browserStorage() {
