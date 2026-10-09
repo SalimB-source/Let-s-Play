@@ -858,13 +858,20 @@ export function makeWheel({ radius, width, side, material, accent = 0xffffff, ra
     batch.cylinder(material, [side * width * 0.53, 0, 0], rimRadius * 0.17, rimRadius * 0.17, width * 0.13, 12, axle, { tint: [0.92, 0.94, 0.97] });
   } else {
     const modernAero = style === 'aero-five';
-    const spokeCount = !racing ? 4 : modernAero || style === 'classic-five' || style === 'turbofan' ? 5 : style === 'eight-hole' ? 8 : 10;
-    const spokeWidth = modernAero ? rimRadius * 0.17 : style === 'eight-hole' ? 0.064 : style === 'classic-five' ? 0.088 : 0.068;
+    const eightHole = style === 'eight-hole';
+    const spokeCount = !racing ? 4 : modernAero || style === 'classic-five' || style === 'turbofan' ? 5 : eightHole ? 8 : 10;
+    const spokeWidth = modernAero ? rimRadius * 0.17 : eightHole ? 0.072 : style === 'classic-five' ? 0.088 : 0.068;
+    // Jante huit trous (type Watanabe) : anneau poli en bord de jante, fond de
+    // jante sombre pour détacher les branches, moyeu et écrous apparents.
+    if (eightHole) {
+      batch.cylinder(material, [side * width * 0.30, 0, 0], rimRadius * 0.92, rimRadius * 0.92, width * 0.10, 18, axle, { tint: [0.11, 0.12, 0.15] });
+      batch.torus(material, [side * width * 0.575, 0, 0], rimRadius * 0.97, 0.02, 5, 26, [0, Math.PI / 2, 0], { tint: [0.98, 0.99, 1.0] });
+    }
     for (let index = 0; index < spokeCount; index += 1) {
       const angle = (index / spokeCount) * Math.PI * 2;
       const y = Math.cos(angle) * rimRadius * 0.42;
       const z = Math.sin(angle) * rimRadius * 0.42;
-      batch.box(material, [side * width * 0.49, y, z], [0.045, rimRadius * 0.82, spokeWidth], [angle, 0, 0], bright);
+      batch.box(material, [side * width * 0.565, y, z], [0.045, rimRadius * 0.82, spokeWidth], [angle, 0, 0], bright);
       if (racing && (style === 'split-five' || modernAero)) {
         const splitScale = modernAero ? 0.67 : 0.75;
         const splitAngle = angle + (modernAero ? 0.18 : 0.12);
@@ -876,6 +883,18 @@ export function makeWheel({ radius, width, side, material, accent = 0xffffff, ra
     }
     const hubRadius = modernAero ? 0.29 : 0.23;
     batch.cylinder(material, [side * width * 0.53, 0, 0], rimRadius * hubRadius, rimRadius * hubRadius, width * 0.14, 10, axle, { tint: [0.91, 0.93, 0.97] });
+    if (eightHole) {
+      // Quatre écrous autour du moyeu, et un jonc au pourtour du capuchon.
+      for (let index = 0; index < 4; index += 1) {
+        const angle = (index / 4) * Math.PI * 2 + Math.PI / 4;
+        batch.cylinder(material, [
+          side * width * 0.58,
+          Math.cos(angle) * rimRadius * 0.32,
+          Math.sin(angle) * rimRadius * 0.32,
+        ], 0.027, 0.027, 0.022, 6, axle, { tint: [0.72, 0.76, 0.82] });
+      }
+      batch.torus(material, [side * width * 0.56, 0, 0], rimRadius * (hubRadius + 0.05), 0.011, 5, 18, [0, Math.PI / 2, 0], { tint: [0.88, 0.91, 0.95] });
+    }
     if (racing) {
       batch.cylinder(material, [side * width * 0.10, 0, 0], rimRadius * 0.86, rimRadius * 0.86, width * 0.28, 14, axle, { tint: [0.25, 0.27, 0.31] });
       if (style !== 'wire') batch.box(material, [side * width * 0.22, rimRadius * 0.48, 0.03], [width * 0.3, rimRadius * 0.35, rimRadius * 0.42], null, { tint: new THREE.Color(accent).toArray() });
@@ -1187,32 +1206,10 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
   }
 
   if (archetype === 'ae86') {
-    // Bicolore panda : bas de caisse et bas de portes noirs, joint de protection
-    // à filet chromé, montants noirs. Les panneaux suivent le galbe du flanc
-    // (chaque segment reprend la demi-largeur réelle de la coque) et
-    // s'interrompent au droit des passages de roue — la coque y est percée, et
-    // les arcs de roue noirs reprennent le tracé — pour que la ligne de partage
-    // blanc/noir reste droite et continue du nez à la queue.
-    const bandSpans = [[-1.88, -1.62], [-0.82, -0.30], [-0.30, 0.26], [0.26, 0.82], [1.62, 1.88]];
+    // Bicolore panda par les bas : jupes, arches et boucliers noirs, montants
+    // noirs. Le flanc reste blanc et lisse d'une aile à l'autre — pas de bande
+    // rapportée sur les portes.
     for (const side of [-1, 1]) {
-      for (const [z0, z1] of bandSpans) {
-        const w0 = halfWidthAt(spec, z0) * 1.006;
-        const w1 = halfWidthAt(spec, z1) * 1.006;
-        addSidePanel(batch, black, [
-          [w0 * 0.925, 0.352, z0], [w0 * 1.012, 0.572, z0],
-          [w1 * 1.012, 0.572, z1], [w1 * 0.925, 0.352, z1],
-        ], side);
-        // Joint de porte : la bande noire surmontée de son filet chromé, la
-        // ligne de caisse la plus tracée du profil.
-        addSidePanel(batch, black, [
-          [w0 * 1.012, 0.572, z0], [w0 * 1.012, 0.622, z0],
-          [w1 * 1.012, 0.622, z1], [w1 * 1.012, 0.572, z1],
-        ], side);
-        addSidePanel(batch, chrome, [
-          [w0 * 1.022, 0.588, z0], [w0 * 1.022, 0.604, z0],
-          [w1 * 1.022, 0.604, z1], [w1 * 1.022, 0.588, z1],
-        ], side);
-      }
       // Montant B noir, entre la vitre de porte et la custode.
       batch.box(black, [side * (halfWidthAt(spec, 0.36) * 0.665), 1.06, 0.36], [0.022, 0.42, 0.055]);
     }
@@ -1349,7 +1346,21 @@ export function makeRacerCar(profile, options = {}) {
   const mirrorY = Math.min(0.94, sampleCarStation(spec, -0.63)[4] - 0.005);
   for (const side of [-1, 1]) {
     // Le bas de caisse panda de l'AE-86 prolonge la bande noire jusqu'au sol.
-    box(profile.archetype === 'ae86' ? materials.black : materials.carbon, [side * skirtX, 0.385, 0], [0.075, 0.10, 3.38]);
+    // La jupe s'interrompt au droit des passages de roue : continue, elle
+    // couvrirait la face des jantes sur les coques étroites.
+    const skirtMat = profile.archetype === 'ae86' ? materials.black : materials.carbon;
+    const skirtSpans = [];
+    let skirtCursor = -1.69;
+    for (const wheelZ of [...spec.wheelZ].sort((a, b) => a - b)) {
+      const gapStart = wheelZ - 0.40;
+      const gapEnd = wheelZ + 0.40;
+      if (gapStart - skirtCursor >= 0.12) skirtSpans.push([skirtCursor, gapStart]);
+      skirtCursor = Math.max(skirtCursor, gapEnd);
+    }
+    if (1.69 - skirtCursor >= 0.12) skirtSpans.push([skirtCursor, 1.69]);
+    for (const [z0, z1] of skirtSpans) {
+      box(skirtMat, [side * skirtX, 0.385, (z0 + z1) / 2], [0.075, 0.10, z1 - z0]);
+    }
     // Compact, body-coloured mirror pods on a short black mounting stem.
     box(materials.black, [side * mirrorStemX, mirrorY, -0.63], [0.08, 0.045, 0.08]);
     box(materials.body, [side * (mirrorStemX + 0.055), mirrorY + 0.05, -0.63], [0.14, 0.075, 0.14]);
