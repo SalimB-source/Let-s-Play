@@ -2,7 +2,7 @@
  * `node scripts/city-rush-car-preview.mjs [--car id] [--size 720x480] [--out .cache/car-preview]`
  *
  * Rendu **logiciel** (z-buffer + éclairage studio, aucun WebGL, aucune
- * dépendance) des onze voitures de Vice City Rush, vues de trois quarts avant,
+ * dépendance) des douze voitures de Vice City Rush, vues de trois quarts avant,
  * de trois quarts arrière et de profil — les mêmes angles que les miniatures du
  * garage. Sert d'œil de contrôle quand on retouche `cityRushRacerModels.js` :
  * la silhouette, les optiques, les jantes et les appendices se vérifient en une
@@ -374,7 +374,7 @@ const VIEWS = [
 mkdirSync(outDir, { recursive: true });
 const profiles = CITY_RUSH_CARS.filter((car) => !onlyCar || car.id === onlyCar || car.archetype === onlyCar);
 
-// ── Planche de contact : les onze voitures d'un coup, même angle. ───────────
+// ── Planche de contact : les douze voitures d'un coup, même angle. ──────────
 if (args.includes('--sheet')) {
   const columns = 4;
   const rows = Math.ceil(profiles.length / columns);

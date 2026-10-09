@@ -1,4 +1,5 @@
-// Modèles 3D des onze voitures de Vice City Rush. Les silhouettes sont
+// Modèles 3D des douze voitures de Vice City Rush — dont le coupé léger
+// AE-86 PANDA GT aux lignes droites —. Les silhouettes sont
 // échantillonnées en courbes lisses et reçoivent une finition contemporaine :
 // vitrage panoramique, signatures LED, jantes aérodynamiques et détails affleurants.
 // L'habitacle reste sombre et vide pour ne pas afficher de personnage.
@@ -12,7 +13,7 @@ import { makeCarPlateTexture } from './cityRushTextures.js';
 // à charger) donne à la peinture, au chrome et aux optiques les reflets qui
 // font la « vraie » carrosserie : le vernis des miniatures du garage vient de
 // là, et non plus des seuls 4 éclairages de la scène. Le PMREM est calculé une
-// seule fois pour toute la partie, puis partagé par les onze modèles et par le
+// seule fois pour toute la partie, puis partagé par les douze modèles et par le
 // trafic.
 let carEnvironment = null;
 let carRenderer = null;
@@ -201,6 +202,33 @@ const CAR_MODELS = {
       [[0.87, 0.83, 0.89], [0.70, 1.27, 0.78], [0.68, 1.17, 1.18], [0.81, 0.77, 1.48]],
     ],
   },
+  'ae86': {
+    // Coupé léger des années 80, trois volumes, lignes droites et tracées
+    // nettes : long capot plat, pavillon droit, malle de berline (notchback),
+    // ailes à peine évasées et porte unique. Silhouette « hachiroku » — basse,
+    // étroite, à l'empattement long — sans aucun badge constructeur.
+    wheelX: 0.80, wheelZ: [-1.22, 1.22], wheelRadius: 0.33, wheelWidth: 0.245, wheelStyle: 'eight-hole',
+    doorSeams: [0.36], grilleWidth: 0.88, frontStyle: 'popup',
+    stations: [
+      [-2.00, 0.36, 0.355, 0.52, 0.56, 0.18], [-1.93, 0.70, 0.355, 0.60, 0.60, 0.48],
+      [-1.84, 0.79, 0.36, 0.66, 0.72, 0.56], [-1.72, 0.83, 0.36, 0.695, 0.815, 0.62],
+      [-1.50, 0.85, 0.365, 0.71, 0.835, 0.65], [-1.28, 0.855, 0.37, 0.715, 0.85, 0.66],
+      [-1.02, 0.845, 0.37, 0.72, 0.865, 0.67], [-0.80, 0.825, 0.375, 0.72, 0.875, 0.65],
+      [-0.62, 0.815, 0.375, 0.72, 0.895, 0.63], [-0.38, 0.815, 0.38, 0.73, 1.125, 0.59],
+      [-0.14, 0.825, 0.38, 0.74, 1.315, 0.575], [0.12, 0.84, 0.38, 0.75, 1.335, 0.59],
+      [0.38, 0.855, 0.38, 0.75, 1.335, 0.60], [0.58, 0.865, 0.38, 0.75, 1.315, 0.61],
+      [0.86, 0.87, 0.38, 0.75, 1.165, 0.64], [1.12, 0.87, 0.38, 0.745, 1.075, 0.67],
+      [1.40, 0.86, 0.375, 0.73, 1.065, 0.69], [1.66, 0.825, 0.37, 0.71, 1.058, 0.66],
+      [1.82, 0.78, 0.365, 0.68, 1.05, 0.62], [1.91, 0.70, 0.36, 0.63, 0.92, 0.52],
+      [1.97, 0.52, 0.355, 0.56, 0.74, 0.34], [2.00, 0.30, 0.355, 0.50, 0.58, 0.14],
+    ],
+    windshield: [[-0.64, 0.985, -0.72], [0.64, 0.985, -0.72], [0.53, 1.285, -0.26], [-0.53, 1.285, -0.26]],
+    rearGlass: [[-0.52, 1.29, 0.58], [0.52, 1.29, 0.58], [0.62, 1.13, 1.02], [-0.62, 1.13, 1.02]],
+    sideWindows: [
+      [[0.78, 0.93, -0.66], [0.55, 1.27, -0.22], [0.56, 1.275, 0.30], [0.79, 0.92, 0.32]],
+      [[0.79, 0.92, 0.40], [0.57, 1.265, 0.36], [0.60, 1.19, 0.72], [0.76, 1.01, 0.92]],
+    ],
+  },
   bmw: {
     wheelX: 0.94, wheelZ: [-1.20, 1.16], wheelRadius: 0.34, wheelWidth: 0.26, wheelStyle: 'wire',
     doorSeams: [-0.16], grilleWidth: 0.58, frontStyle: 'classic',
@@ -314,7 +342,7 @@ function mesh(parent, geometry, material, position, scale = [1, 1, 1], rotation 
 }
 
 // Le profil de série donne des pavillons hauts et étroits : une fois lissés, ils
-// font « tente ». Ces deux réglages d'échelle ramènent les onze silhouettes vers
+// font « tente ». Ces deux réglages d'échelle ramènent les douze silhouettes vers
 // les proportions d'une carrosserie réelle : habitacle écrasé de 12 % et
 // pavillon élargi, donc épaulements plus larges, vitrage plus tendu et une
 // voiture plus large que haute à l'œil.
@@ -830,13 +858,20 @@ export function makeWheel({ radius, width, side, material, accent = 0xffffff, ra
     batch.cylinder(material, [side * width * 0.53, 0, 0], rimRadius * 0.17, rimRadius * 0.17, width * 0.13, 12, axle, { tint: [0.92, 0.94, 0.97] });
   } else {
     const modernAero = style === 'aero-five';
-    const spokeCount = !racing ? 4 : modernAero || style === 'classic-five' || style === 'turbofan' ? 5 : style === 'eight-hole' ? 8 : 10;
-    const spokeWidth = modernAero ? rimRadius * 0.17 : style === 'eight-hole' ? 0.064 : style === 'classic-five' ? 0.088 : 0.068;
+    const eightHole = style === 'eight-hole';
+    const spokeCount = !racing ? 4 : modernAero || style === 'classic-five' || style === 'turbofan' ? 5 : eightHole ? 8 : 10;
+    const spokeWidth = modernAero ? rimRadius * 0.17 : eightHole ? 0.072 : style === 'classic-five' ? 0.088 : 0.068;
+    // Jante huit trous (type Watanabe) : anneau poli en bord de jante, fond de
+    // jante sombre pour détacher les branches, moyeu et écrous apparents.
+    if (eightHole) {
+      batch.cylinder(material, [side * width * 0.30, 0, 0], rimRadius * 0.92, rimRadius * 0.92, width * 0.10, 18, axle, { tint: [0.11, 0.12, 0.15] });
+      batch.torus(material, [side * width * 0.575, 0, 0], rimRadius * 0.97, 0.02, 5, 26, [0, Math.PI / 2, 0], { tint: [0.98, 0.99, 1.0] });
+    }
     for (let index = 0; index < spokeCount; index += 1) {
       const angle = (index / spokeCount) * Math.PI * 2;
       const y = Math.cos(angle) * rimRadius * 0.42;
       const z = Math.sin(angle) * rimRadius * 0.42;
-      batch.box(material, [side * width * 0.49, y, z], [0.045, rimRadius * 0.82, spokeWidth], [angle, 0, 0], bright);
+      batch.box(material, [side * width * 0.565, y, z], [0.045, rimRadius * 0.82, spokeWidth], [angle, 0, 0], bright);
       if (racing && (style === 'split-five' || modernAero)) {
         const splitScale = modernAero ? 0.67 : 0.75;
         const splitAngle = angle + (modernAero ? 0.18 : 0.12);
@@ -848,6 +883,18 @@ export function makeWheel({ radius, width, side, material, accent = 0xffffff, ra
     }
     const hubRadius = modernAero ? 0.29 : 0.23;
     batch.cylinder(material, [side * width * 0.53, 0, 0], rimRadius * hubRadius, rimRadius * hubRadius, width * 0.14, 10, axle, { tint: [0.91, 0.93, 0.97] });
+    if (eightHole) {
+      // Quatre écrous autour du moyeu, et un jonc au pourtour du capuchon.
+      for (let index = 0; index < 4; index += 1) {
+        const angle = (index / 4) * Math.PI * 2 + Math.PI / 4;
+        batch.cylinder(material, [
+          side * width * 0.58,
+          Math.cos(angle) * rimRadius * 0.32,
+          Math.sin(angle) * rimRadius * 0.32,
+        ], 0.027, 0.027, 0.022, 6, axle, { tint: [0.72, 0.76, 0.82] });
+      }
+      batch.torus(material, [side * width * 0.56, 0, 0], rimRadius * (hubRadius + 0.05), 0.011, 5, 18, [0, Math.PI / 2, 0], { tint: [0.88, 0.91, 0.95] });
+    }
     if (racing) {
       batch.cylinder(material, [side * width * 0.10, 0, 0], rimRadius * 0.86, rimRadius * 0.86, width * 0.28, 14, axle, { tint: [0.25, 0.27, 0.31] });
       if (style !== 'wire') batch.box(material, [side * width * 0.22, rimRadius * 0.48, 0.03], [width * 0.3, rimRadius * 0.35, rimRadius * 0.42], null, { tint: new THREE.Color(accent).toArray() });
@@ -900,6 +947,46 @@ function makeSteeringLights(spec, batch, materials) {
     return;
   }
 
+  if (style === 'popup') {
+    // Coupé des années 80 : phares escamotables levés à l'arête du capot, face
+    // avant plate, calandre à lamelles fines, pare-chocs noir avec bande de
+    // protection, clignotants d'angle et petits ronds de route dans le bouclier.
+    // Les joints des caches se lisent sur le capot plat : lignes fines et nettes.
+    const podZ = -1.64;
+    const podHalfWidth = halfWidthAt(spec, podZ);
+    const podX = podHalfWidth * 0.62;
+
+    // Face avant : bandeau de calandre noir et pare-chocs pleine largeur, posés
+    // sur la face avant effilée de la coque (le nez va jusqu'à z = -2,0).
+    batch.box(black, [0, lampY - 0.035, -1.925], [Math.min(fasciaWidth, halfWidth * 1.52), 0.13, 0.05]);
+    for (let slat = 0; slat < 3; slat += 1) {
+      batch.box(carbon, [0, lampY - 0.005 - slat * 0.045, -1.952], [Math.min(fasciaWidth * 0.92, halfWidth * 1.40), 0.014, 0.018]);
+    }
+    batch.box(black, [0, lampY - 0.225, -1.955], [Math.min(halfWidth * 1.90, 1.80), 0.10, 0.12]);
+    // Bande de protection du pare-chocs : la ligne horizontale la plus lisible de face.
+    batch.box(carbon, [0, lampY - 0.225, -2.008], [Math.min(halfWidth * 1.84, 1.74), 0.026, 0.016]);
+    // Valance avant noire sous le pare-chocs : le menton du bicolore panda.
+    batch.box(black, [0, lampY - 0.375, -1.875], [Math.min(halfWidth * 1.72, 1.52), 0.15, 0.16]);
+
+    for (const side of [-1, 1]) {
+      // Clignotant d'angle, encastré dans l'arête du pare-chocs.
+      batch.box(lightAmber, [side * halfWidth * 0.88, lampY - 0.17, -1.962], [0.085, 0.05, 0.028]);
+      // Rond de route dans le bouclier, couronne sombre et lentille claire.
+      batch.cylinder(black, [side * halfWidth * 0.52, lampY - 0.295, -1.962], 0.068, 0.068, 0.045, 14, [Math.PI / 2, 0, 0]);
+      batch.cylinder(lightWhite, [side * halfWidth * 0.52, lampY - 0.295, -1.985], 0.048, 0.048, 0.018, 14, [Math.PI / 2, 0, 0]);
+
+      // Phare escamotable levé : boîtier plat posé sur l'aile à l'arête du capot,
+      // face éclairante verticale légèrement inclinée, joint arrière du cache.
+      const hoodY = surfaceYAt(spec, podZ, side * podX);
+      batch.box(black, [side * podX, hoodY + 0.038, podZ], [0.295, 0.07, 0.22], [-0.07, 0, 0]);
+      batch.box(lightWhite, [side * podX, hoodY + 0.032, podZ - 0.112], [0.25, 0.05, 0.02], [-0.07, 0, 0]);
+      if (headGlow) batch.plane(headGlow, [side * podX, hoodY + 0.032, podZ - 0.126], 0.32, 0.10, [0, Math.PI, 0]);
+      // Joint du cache de phare : la ligne de charnière qui ferme le rectangle.
+      batch.box(carbon, [side * podX, hoodY + 0.008, podZ + 0.118], [0.305, 0.011, 0.013]);
+    }
+    return;
+  }
+
   if (style === 'retro') {
     // Huitième de siècle : optiques rectangulaires fumées, calandre à lamelles,
     // bandeau de pare-chocs noir et longue prise d'air basse.
@@ -938,12 +1025,49 @@ function makeSteeringLights(spec, batch, materials) {
 }
 
 function addRearDetails(profile, spec, batch, materials) {
-  const { black, carbon, chrome, body, lightWhite, tailLight, tailGlow, plate } = materials;
+  const { black, carbon, chrome, body, lightWhite, lightAmber, tailLight, tailGlow, plate } = materials;
   const rear = sampleCarStation(spec, 1.72);
   const rearWidth = rear[1];
   const lampY = lerp(rear[2], rear[3], 0.78);
   const lampWidth = clamp(rearWidth * 1.78, 0.82, Math.min(1.52, rearWidth * 1.9));
   const lampZ = 1.81;
+
+  if (profile.archetype === 'ae86') {
+    // Arrière 80s « trois volumes » : bandeau noir entre les blocs, feux
+    // horizontaux à trois segments (feux, clignotants, marche arrière), bouclier
+    // noir à bande de protection, plaque encastrée, échappement simple et petit
+    // becquet de malle posé sur la malle. Aucune lame LED moderne : la ligne
+    // vient des joints. Les pièces se posent en relief sur la queue effilée de
+    // la coque — comme un bandeau de feux rapporté sur le panneau arrière.
+    const lampY86 = 0.80;
+    const panelZ = 1.955;
+    // Bandeau de feux noir pleine largeur : le support des deux blocs.
+    batch.box(black, [0, lampY86, panelZ], [1.30, 0.28, 0.06]);
+    for (const side of [-1, 1]) {
+      batch.box(tailLight, [side * 0.365, lampY86 + 0.035, panelZ + 0.038], [0.34, 0.105, 0.018]);
+      batch.box(lightAmber, [side * 0.575, lampY86 + 0.035, panelZ + 0.038], [0.14, 0.105, 0.018]);
+      batch.box(lightWhite, [side * 0.365, lampY86 - 0.065, panelZ + 0.038], [0.17, 0.042, 0.018]);
+    }
+    // Mince catadioptre rouge qui joint les deux blocs : la ligne droite de queue.
+    batch.box(tailLight, [0, lampY86 + 0.075, panelZ + 0.038], [0.36, 0.026, 0.018]);
+    batch.plane(tailGlow, [0, lampY86 + 0.02, panelZ + 0.055], 1.30, 0.22);
+
+    // Valise arrière noire, bouclier et sa bande de protection.
+    batch.box(black, [0, 0.585, 1.935], [1.34, 0.32, 0.10]);
+    batch.box(black, [0, 0.475, 1.965], [1.38, 0.11, 0.115]);
+    batch.box(carbon, [0, 0.475, 2.022], [1.30, 0.026, 0.016]);
+    batch.box(black, [0, 0.655, 1.972], [0.58, 0.215, 0.045]);
+    batch.plane(plate, [0, 0.655, 2.0], 0.52, 0.21);
+
+    // Échappement simple, côté droit, comme sur la voiture d'origine.
+    batch.cylinder(chrome, [0.46, 0.345, 1.96], 0.05, 0.05, 0.12, 10, [Math.PI / 2, 0, 0]);
+    batch.cylinder(black, [0.46, 0.345, 2.015], 0.032, 0.032, 0.018, 10, [Math.PI / 2, 0, 0]);
+
+    // Petit becquet de malle (style GT-APEX), bord de fuite relevé, posé sur
+    // l'arête de la malle au lieu de flotter au-dessus.
+    batch.box(body, [0, rear[4] + 0.028, 1.84], [1.40, 0.05, 0.22], [-0.12, 0, 0]);
+    return;
+  }
 
   // Wide smoked panel and a thin, animated full-width LED blade modernize the
   // rear of every silhouette while preserving its individual body proportions.
@@ -980,7 +1104,7 @@ function addRearDetails(profile, spec, batch, materials) {
 
 function addModelSpecificDetails(profile, spec, batch, materials) {
   const { archetype } = profile;
-  const { black, carbon, body, trim, livery, lightAmber } = materials;
+  const { black, carbon, body, trim, livery, lightAmber, chrome } = materials;
   const sideLineX = spec.wheelX - 0.015;
 
   if (archetype === 'nova-hatch') {
@@ -1081,6 +1205,16 @@ function addModelSpecificDetails(profile, spec, batch, materials) {
     batch.box(carbon, [0, 0.39, -1.96], [1.90, 0.055, 0.14]);
   }
 
+  if (archetype === 'ae86') {
+    // Bicolore panda par les bas : jupes, arches et boucliers noirs, montants
+    // noirs. Le flanc reste blanc et lisse d'une aile à l'autre — pas de bande
+    // rapportée sur les portes.
+    for (const side of [-1, 1]) {
+      // Montant B noir, entre la vitre de porte et la custode.
+      batch.box(black, [side * (halfWidthAt(spec, 0.36) * 0.665), 1.06, 0.36], [0.022, 0.42, 0.055]);
+    }
+  }
+
   // Le vitrage fait partie de la coque (voir buildShellGeometries) : aucune
   // vitre rapportée, donc aucun scintillement ni montant qui bâille.
 }
@@ -1132,6 +1266,16 @@ function addThumbnailSignature(profile, spec, batch, materials) {
   } else if (archetype === 'lamborghini') {
     batch.box(trim, [0, 0.57, -0.08], [0.20, 0.026, 1.72]);
     for (const side of [-1, 1]) batch.box(trim, [side * 0.93, 0.64, 0.58], [0.025, 0.025, 0.72]);
+  } else if (archetype === 'ae86') {
+    // Deux caches de phares noirs posés à plat sur le capot : la signature
+    // immédiatement lisible du coupé 86, même en miniature.
+    const podX = halfWidthAt(spec, -1.64) * 0.62;
+    for (const side of [-1, 1]) {
+      const hoodY = surfaceYAt(spec, -1.64, side * podX);
+      batch.box(black, [side * podX, hoodY + 0.012, -1.64], [0.295, 0.016, 0.22], [-0.07, 0, 0]);
+    }
+    // Bord du becquet de malle : la ligne relevée qui ferme le profil.
+    batch.box(trim, [0, 1.082, 1.86], [1.34, 0.024, 0.15], [-0.12, 0, 0]);
   }
 }
 
@@ -1191,25 +1335,48 @@ export function makeRacerCar(profile, options = {}) {
   shell.castShadow = true;
   body.add(shell);
 
-  // Plancher bas, jupes latérales, poignées et rétroviseurs.
+  // Plancher bas, jupes latérales, poignées et rétroviseurs. Les cotes latérales
+  // suivent la demi-largeur réelle de la coque : aucune pièce ne flotte au-dessus
+  // des flancs, même sur les carrosseries étroites comme le coupé AE-86.
   box(materials.black, [0, 0.285, 0], [1.68, 0.14, 3.78]);
+  const skirtX = Math.min(0.89, halfWidthAt(spec, 0.2) + 0.02);
+  const mirrorStemX = halfWidthAt(spec, -0.63) + 0.045;
+  // Le rétroviseur s'accroche à la base de la vitre : sur les coques basses
+  // (coupé AE-86), la potence descend au ras du bloc phare pour ne pas flotter.
+  const mirrorY = Math.min(0.94, sampleCarStation(spec, -0.63)[4] - 0.005);
   for (const side of [-1, 1]) {
-    box(materials.carbon, [side * 0.89, 0.385, 0], [0.075, 0.10, 3.38]);
+    // Le bas de caisse panda de l'AE-86 prolonge la bande noire jusqu'au sol.
+    // La jupe s'interrompt au droit des passages de roue : continue, elle
+    // couvrirait la face des jantes sur les coques étroites.
+    const skirtMat = profile.archetype === 'ae86' ? materials.black : materials.carbon;
+    const skirtSpans = [];
+    let skirtCursor = -1.69;
+    for (const wheelZ of [...spec.wheelZ].sort((a, b) => a - b)) {
+      const gapStart = wheelZ - 0.40;
+      const gapEnd = wheelZ + 0.40;
+      if (gapStart - skirtCursor >= 0.12) skirtSpans.push([skirtCursor, gapStart]);
+      skirtCursor = Math.max(skirtCursor, gapEnd);
+    }
+    if (1.69 - skirtCursor >= 0.12) skirtSpans.push([skirtCursor, 1.69]);
+    for (const [z0, z1] of skirtSpans) {
+      box(skirtMat, [side * skirtX, 0.385, (z0 + z1) / 2], [0.075, 0.10, z1 - z0]);
+    }
     // Compact, body-coloured mirror pods on a short black mounting stem.
-    box(materials.black, [side * 0.96, 0.94, -0.63], [0.08, 0.045, 0.08]);
-    box(materials.body, [side * 1.015, 0.99, -0.63], [0.14, 0.075, 0.14]);
-    box(materials.lightWhite, [side * 1.086, 0.99, -0.63], [0.012, 0.022, 0.075]);
-    for (const z of spec.doorSeams) box(materials.carbon, [side * (spec.wheelX - 0.055), 0.64, z], [0.018, 0.28, 0.018]);
+    box(materials.black, [side * mirrorStemX, mirrorY, -0.63], [0.08, 0.045, 0.08]);
+    box(materials.body, [side * (mirrorStemX + 0.055), mirrorY + 0.05, -0.63], [0.14, 0.075, 0.14]);
+    box(materials.lightWhite, [side * (mirrorStemX + 0.126), mirrorY + 0.05, -0.63], [0.012, 0.022, 0.075]);
+    for (const z of spec.doorSeams) box(materials.carbon, [side * (halfWidthAt(spec, z) + 0.006), 0.64, z], [0.018, 0.28, 0.018]);
   }
   for (const side of [-1, 1]) {
     for (const z of spec.doorSeams.length > 1 ? [-0.45, 0.40] : [0.38]) {
       // Current flush handles: subtle painted inserts rather than chrome bars.
-      box(materials.body, [side * (spec.wheelX + 0.008), 0.755, z], [0.016, 0.028, 0.13]);
-      box(materials.carbon, [side * (spec.wheelX + 0.017), 0.755, z], [0.018, 0.008, 0.055]);
+      box(materials.body, [side * (halfWidthAt(spec, z) + 0.008), 0.755, z], [0.016, 0.028, 0.13]);
+      box(materials.carbon, [side * (halfWidthAt(spec, z) + 0.017), 0.755, z], [0.018, 0.008, 0.055]);
     }
   }
 
-  addWheelArch(details, materials.body, spec);
+  // L'arc de roue suit la peinture de la carrosserie — noir panda sur l'AE-86.
+  addWheelArch(details, profile.archetype === 'ae86' ? materials.black : materials.body, spec);
   addWheelWells(details, materials.well, spec);
   // Vitrage conforme à la carrosserie, puis détails du modèle.
   addGlazing(spec, details, materials.glass);

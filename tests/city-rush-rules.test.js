@@ -296,6 +296,9 @@ import {
   CITY_RUSH_POLICE_AIM_TIME,
   CITY_RUSH_POLICE_AIM_TOLERANCE,
   CITY_RUSH_POLICE_FIRE_LINE_RANGE,
+  CITY_RUSH_POLICE_LANE_REACTION_DELAY,
+  CITY_RUSH_POLICE_PURSUIT_REFLEX,
+  cityRushPoliceLaneReaction,
   cityRushPoliceBlocksLeader,
   cityRushPoliceContact,
   cityRushPoliceDamage,
@@ -370,7 +373,7 @@ test('the five city routes have a distinct identity and complete palettes', () =
 });
 
 test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
-  assert.equal(CITY_RUSH_CARS.length, 11);
+  assert.equal(CITY_RUSH_CARS.length, 12);
   const starter = CITY_RUSH_CARS[0];
   assert.equal(starter.id, 'city-hatch');
   assert.equal(starter.price, 0);
@@ -386,12 +389,12 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   // Les prix restent dans le catalogue : c'est le garage (la progression) qui
   // offre le trio le moins puissant, pas la fiche de la voiture.
   assert.ok(CITY_RUSH_CARS.slice(1).every((car) => car.price > 0),
-    'les dix autres voitures gardent un prix catalogue (le trio le moins puissant est offert sans achat)');
+    'les onze autres voitures gardent un prix catalogue (le trio le moins puissant est offert sans achat)');
   assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
   assert.deepEqual(
     new Set(CITY_RUSH_CARS.map((car) => car.archetype)),
-    new Set(['city-hatch', 'nova-hatch', 'ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini', 'electric-gt', 'sport-crossover', 'neo-roadster']),
+    new Set(['city-hatch', 'nova-hatch', 'volkswagen', 'ae86', 'ferrari', 'porsche', 'audi', 'bmw', 'lamborghini', 'electric-gt', 'sport-crossover', 'neo-roadster']),
   );
   const forbiddenBrandNames = /\b(ferrari|porsche|lamborghini|lambo|bmw|audi|volkswagen)\b/i;
   for (const car of CITY_RUSH_CARS) {
@@ -418,6 +421,7 @@ test('les rivaux choisissent toujours une voiture de la catégorie du pilote', (
     'city-hatch': 'compact',
     'nova-18-gt': 'compact',
     'night-comet': 'compact',
+    'ae86': 'compact',
     'vice-roadster': 'sport',
     'turbo-gt': 'sport',
     'muscle-86': 'supercar',
@@ -1684,6 +1688,7 @@ test('chaque voiture a ses propres points de vie, calés à l’envers de sa pui
     'city-hatch': 23,
     'nova-18-gt': 20,
     'night-comet': 18,
+    'ae86': 19,
     'vice-roadster': 14,
     'turbo-gt': 13,
     'muscle-86': 12,
@@ -4129,4 +4134,109 @@ test('les SUV de charge arrivent de face à cinq étoiles, plus vite que le pilo
   assert.ok(CITY_RUSH_SUV_CHARGE_ALERT_RANGE > CITY_RUSH_SUV_CHARGE_LOCK_RANGE);
   assert.ok(CITY_RUSH_SUV_CHARGE_LOCK_RANGE > CITY_RUSH_SUV_CHARGE_RECYCLE_BEHIND);
   assert.ok(CITY_RUSH_SUV_CHARGE_RELOAD > 0 && CITY_RUSH_SUV_CHARGE_RELOAD < 10);
+});
+
+test('une berline met une seconde à suivre un écart de voie : la fenêtre pour la surprendre', () => {
+  // Le délai de réaction latérale est la fenêtre du pilote : il doit être
+  // nettement plus long que le réflexe de poursuite, qui ne fait que raccourcir
+  // le minuteur de décision une fois le délai écoulé.
+  assert.equal(CITY_RUSH_POLICE_LANE_REACTION_DELAY, 1);
+  assert.ok(
+    CITY_RUSH_POLICE_LANE_REACTION_DELAY > CITY_RUSH_POLICE_PURSUIT_REFLEX * 4,
+    'le délai de réaction doit ouvrir une vraie fenêtre, pas un simple tick',
+  );
+
+  const DT = 1 / 30;
+  // Boucle d'images telle que le monde 3D la joue : `watchedLane` est la voie
+  // de la cible à l'image précédente, remise à jour après chaque calcul.
+  let state = { watchedLane: 2, leaderLane: 2, reactionLeft: 0, reactionLane: 2 };
+  const step = (leaderLane) => {
+    const frame = cityRushPoliceLaneReaction({ ...state, leaderLane, dt: DT });
+    state = {
+      watchedLane: leaderLane,
+      leaderLane,
+      reactionLeft: frame.reactionLeft,
+      reactionLane: frame.reactionLane,
+    };
+    return frame;
+  };
+
+  // Cible immobile : la berline voit sa vraie voie, rien n'est gelé.
+  let frame = step(2);
+  assert.equal(frame.frozen, false);
+  assert.equal(frame.huntingLane, 2);
+
+  // L'écart : elle garde la voie qu'elle surveillait et roule droit.
+  frame = step(4);
+  assert.equal(frame.frozen, true);
+  assert.equal(frame.huntingLane, 2, 'la berline chasse encore la voie qu’elle surveillait');
+
+  // …pendant une seconde entière, avant de voir la vraie voie.
+  let elapsed = 0;
+  while (frame.frozen && elapsed < 3) {
+    frame = step(4);
+    elapsed += DT;
+  }
+  assert.ok(elapsed >= 0.9 && elapsed <= 1.05, `le gel dure ${elapsed.toFixed(2)} s, pas une seconde`);
+  assert.equal(frame.huntingLane, 4, 'au bout du délai, la berline voit la vraie voie');
+  assert.equal(frame.frozen, false);
+
+  // Un second écart pendant le gel met la voie surveillée à jour — la dernière
+  // que le pilote occupait — mais ne relance pas le minuteur : un balayage
+  // continu des voies ne gèle pas la poursuite indéfiniment.
+  state = { watchedLane: 2, leaderLane: 2, reactionLeft: 0, reactionLane: 2 };
+  step(3);
+  for (let i = 0; i < 15; i += 1) step(3); // une demi-seconde du délai écoulée
+  frame = step(1);
+  assert.equal(frame.frozen, true);
+  assert.equal(frame.huntingLane, 3, 'elle garde la voie que le pilote vient de quitter');
+  let afterSecondChange = 0;
+  while (frame.frozen && afterSecondChange < 3) {
+    frame = step(1);
+    afterSecondChange += DT;
+  }
+  assert.ok(
+    afterSecondChange <= 0.6,
+    `un nouvel écart ne relance pas le minuteur (reste ${afterSecondChange.toFixed(2)} s)`,
+  );
+  assert.equal(frame.huntingLane, 1);
+
+  // Aucun délai réglé : la berline suit l'écart sur-le-champ (ancien réglage).
+  const instant = cityRushPoliceLaneReaction({
+    watchedLane: 2, leaderLane: 3, reactionLeft: 0, reactionLane: 2, dt: DT, delay: 0,
+  });
+  assert.equal(instant.frozen, false);
+  assert.equal(instant.huntingLane, 3);
+  assert.equal(instant.reactionLeft, 0);
+
+  // Une voie surveillée hors piste reste bornée au parcours.
+  const clamped = cityRushPoliceLaneReaction({
+    watchedLane: 99, leaderLane: 0, reactionLeft: 0, reactionLane: 99, dt: DT, laneCount: 6,
+  });
+  assert.equal(clamped.huntingLane, 5);
+});
+
+test('pendant son délai de réaction, la berline ne se rabat pas sur la nouvelle voie du pilote', () => {
+  // Effet mesurable du délai : la berline élue pour la ligne de tir garde sa
+  // voie tant qu'elle chasse la voie périmée, et ne se rabat d'une voie qu'une
+  // fois le délai écoulé. C'est ce qui laisse passer le pilote.
+  const choose = (huntedLane, currentLane) => chooseCityRushPoliceLane({
+    currentLane,
+    laneCount: 6,
+    distance: 0,
+    speed: 20,
+    availableLanes: [currentLane - 1, currentLane, currentLane + 1].filter((lane) => lane >= 0 && lane < 6),
+    pickups: [],
+    traffic: [],
+    racers: [],
+    targetLane: huntedLane,
+    // Élue pour la ligne de tir, huit mètres derrière sa cible : le cas où le
+    // rabattement vers la voie du pilote est le plus direct.
+    fireLane: huntedLane,
+    fireGap: -8,
+    fireRange: CITY_RUSH_POLICE_FIRE_LINE_RANGE,
+  });
+
+  assert.equal(choose(3, 3), 3, 'gelée sur la voie 3, elle y reste');
+  assert.equal(choose(1, 3), 2, 'délai écoulé : elle se rabat d’une voie vers le pilote');
 });

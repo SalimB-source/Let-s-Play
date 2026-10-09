@@ -574,7 +574,17 @@ test('une berline armée se range dans le dos du pilote, avec une mire annoncée
   assert.match(policeUpdate, /if \(police\.rallied\) continue;/);
   assert.match(policeUpdate, /gap >= 0 \|\| gap < -CITY_RUSH_POLICE_FIRE_LINE_RANGE/);
   assert.match(policeUpdate, /const isFireLiner = !police\.rallied && fireLiners\.get\(leader\.id\)\?\.police === police;/);
-  assert.match(policeUpdate, /fireLane: isFireLiner \? leader\.lane : null/);
+  assert.match(policeUpdate, /fireLane: isFireLiner \? huntedLane : null/);
+  // La ligne de tir — comme le barrage et la chasse — vise la voie de la cible
+  // **telle que la berline la voit** : pendant son délai de réaction latérale
+  // (`CITY_RUSH_POLICE_LANE_REACTION_DELAY`), c'est encore la voie qu'elle
+  // surveillait, et c'est ce qui laisse au pilote une seconde pour la doubler.
+  assert.match(policeUpdate, /const laneReaction = cityRushPoliceLaneReaction\(\{/);
+  assert.match(policeUpdate, /const huntedLane = laneReaction\.huntingLane === null \? leader\.lane : laneReaction\.huntingLane;/);
+  assert.match(policeUpdate, /targetLane: huntedLane,/);
+  assert.match(policeUpdate, /interceptLane: isInterceptor \? huntedLane : null,/);
+  // Le réflexe de poursuite ne joue qu'une fois le délai écoulé.
+  assert.match(policeUpdate, /if \(!laneReaction\.frozen && police\.actedOnLane !== undefined/);
   // La rafale attend l'alignement : le temps de mire se cumule et retombe à
   // zéro dès que la cible se décale.
   assert.match(policeUpdate, /const aligned = Boolean\(target\) && cityRushPoliceAimAligned\(/);

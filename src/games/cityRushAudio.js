@@ -237,6 +237,9 @@ export const CITY_RUSH_ENGINE_PROFILES = Object.freeze({
   'city-hatch': Object.freeze({ body: 'triangle', sub: 'sine', edge: 'sawtooth', edgeRatio: 2.35, lowpass: 760, noise: 520, lfo: 17 }),
   'nova-hatch': Object.freeze({ body: 'triangle', sub: 'square', edge: 'sawtooth', edgeRatio: 2.55, lowpass: 860, noise: 600, lfo: 19 }),
   volkswagen: Object.freeze({ body: 'sawtooth', sub: 'triangle', edge: 'sawtooth', edgeRatio: 2.65, lowpass: 1120, noise: 720, lfo: 22 }),
+  // 4 cylindres atmosphérique des années 80 : râpeux, vif au régime, la note
+  // mécanique du coupé léger AE-86 PANDA GT.
+  ae86: Object.freeze({ body: 'square', sub: 'triangle', edge: 'sawtooth', edgeRatio: 2.9, lowpass: 1280, noise: 820, lfo: 23 }),
   porsche: Object.freeze({ body: 'sawtooth', sub: 'sine', edge: 'square', edgeRatio: 2.05, lowpass: 980, noise: 680, lfo: 20 }),
   bmw: Object.freeze({ body: 'sawtooth', sub: 'sine', edge: 'sawtooth', edgeRatio: 2.25, lowpass: 1180, noise: 760, lfo: 21 }),
   audi: Object.freeze({ body: 'sawtooth', sub: 'square', edge: 'sawtooth', edgeRatio: 3.05, lowpass: 1480, noise: 900, lfo: 25 }),

@@ -31,6 +31,8 @@
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
     "check:mirage-engine": "node --test tests/mirage-engine.test.js",
+    "check:rpg": "node --test tests/rpg-duel.test.js tests/rpg-audio.test.js",
+    "check:rpg-ui": "node scripts/rpg-battle-ui-check.mjs",
     "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-bazooka.test.js tests/city-rush-themes.test.js tests/city-rush-hud.test.js tests/city-rush-progression.test.js tests/city-rush-story.test.js tests/city-rush-tournament.test.js tests/city-rush-missions.test.js tests/city-rush-side-bump.test.js",
     "check:city-rush-missions": "node --test tests/city-rush-missions.test.js && node scripts/city-rush-missions-ui-check.mjs && node scripts/city-rush-mission-run-check.mjs",
     "check:city-rush-tutorial": "node --test tests/city-rush-tutorial.test.js",
@@ -79,6 +81,7 @@
     "theme:city-rush-ink": "node scripts/vice-city-rush-ink-sweep.mjs --write",
     "check:city-rush-wreck": "node scripts/city-rush-wreck-check.mjs --all",
     "check:city-rush-police-fire": "node scripts/city-rush-police-fire-check.mjs --all",
+    "check:city-rush-police-reaction": "node scripts/city-rush-police-lane-reaction-check.mjs --all",
     "check:city-rush-police-wreck": "node scripts/city-rush-police-wreck-check.mjs --all",
     "check:city-rush-rival-police": "node scripts/city-rush-rival-police-check.mjs --all && node scripts/city-rush-rival-police-check.mjs --all --leader-only"
   },
