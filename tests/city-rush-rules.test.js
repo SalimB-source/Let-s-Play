@@ -1151,7 +1151,7 @@ test('the loadout keeps seven AK-47 bullets, red health pickups, and automatic g
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_PICKUPS.BOOST], undefined, 'le bonus turbo vert n’est pas un pouvoir stocké');
   assert.equal(CITY_RUSH_TRACK_BOOST_DURATION, 3);
   assert.equal(CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 1.46);
-  assert.equal(CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR, 1.38);
+  assert.equal(CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 'le turbo des rivaux est celui du joueur');
   assert.equal(CITY_RUSH_TRACK_BOOST_COLOR, '#50e48a');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');

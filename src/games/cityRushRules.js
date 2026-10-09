@@ -120,7 +120,7 @@ export const CITY_RUSH_BLUE_SHOT_DURATION = 1.8; // s : ralentissement bien visi
 export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 55 % de sa vitesse
 export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du bonus turbo vert ramassé en vol
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un bonus turbo
-export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un bonus turbo
+export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = CITY_RUSH_TRACK_BOOST_SPEED_FACTOR; // × vitesse des rivaux sous un bonus turbo : le même que le joueur
 // Les objets de la route mêlent les bonus turbo verts, les chargeurs rouges de
 // l'AK-47 et les trousses de soin « + » rouges. Les soins restent assez espacés
 // pour garder les chocs dangereux, sans laisser une coque abîmée sans solution.
@@ -180,9 +180,9 @@ export const CITY_RUSH_AI_TRACK_BOOST_WEIGHT = 3; // un bonus turbo pèse trois 
 // joueur : si son modèle est moins puissant, il compense sur le rythme de course
 // (+5 %), puis pousse encore au dernier tour (+2 %). Un modèle plus rapide
 // conserve évidemment son avantage. La contrepartie reste dans les mains du
-// joueur : la ligne propre (jusqu'à 1,12 ×), le contresens (jusqu'à 1,35 ×) et
-// le turbo des pads (1,46 × contre 1,38 × pour les rivaux) restent des moyens
-// de reprendre l'avantage — à condition de rouler proprement.
+// joueur. Ils ont désormais les **mêmes bonus** que lui : la ligne propre
+// (jusqu'à 1,12 ×), le contresens (jusqu'à 1,35 ×) et le turbo des pads (1,46 ×
+// pour tout le monde). La différence se joue au volant, pas dans le réglage.
 //
 // Un rival coincé entre le trafic garde aussi un peu plus de vitesse qu'avant
 // (`CITY_RUSH_RIVAL_SLOW_FACTOR`, contre 0,63 pour le joueur) : un choc évité
