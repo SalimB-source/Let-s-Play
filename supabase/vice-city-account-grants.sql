@@ -103,7 +103,7 @@ declare
   );
   all_courses jsonb := jsonb_build_array(
     'vice-city', 'new-york', 'tokyo', 'paris', 'london',
-    'route-66', 'mexico-countryside', 'nordschleife'
+    'route-66', 'mexico-countryside', 'nordschleife', 'touge'
   );
   display_name_fallback text;
 begin

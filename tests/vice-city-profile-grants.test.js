@@ -53,7 +53,7 @@ test('le cache local de la progression est isolé par compte', () => {
   assert.notEqual(cityRushStorageKey('user-a'), cityRushStorageKey('user-b'));
 });
 
-test('la sauvegarde accordée ouvre les sept parcours, les huit voitures et la campagne', () => {
+test('la sauvegarde accordée ouvre les huit parcours, les huit voitures et la campagne', () => {
   // Exactement ce que pose la fonction SQL du grant.
   const granted = normalizeCityRushSave({
     cash: 5000,
@@ -192,7 +192,7 @@ test('les listes du SQL ne dérivent pas du catalogue du jeu', () => {
   for (const course of CITY_RUSH_COURSES) assert.ok(course.id.length > 0);
   assert.match(grants, new RegExp(`jsonb_build_array\\([\\s\\S]*?'${CITY_RUSH_CARS.length === 0 ? '' : CITY_RUSH_CARS[0].id}'`));
   assert.equal(CITY_RUSH_CARS.length, 11);
-  assert.equal(CITY_RUSH_COURSES.length, 8);
+  assert.equal(CITY_RUSH_COURSES.length, 9);
 });
 
 /** Contenu brut du document écrit sous une clé (pour vérifier la forme exacte). */

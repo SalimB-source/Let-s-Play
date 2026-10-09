@@ -381,6 +381,92 @@ export const CITY_RUSH_THEMES = Object.freeze({
       exposure: 1.0,
     }),
   }),
+
+  // ──峠道 · route de montagne japonaise (nuit) ─────────────────────────────
+  // Pas de jour ici : la course se joue de nuit, sous la lune, dans la brume
+  // du col. Le ciel est un bleu-noir profond avec une lune nette et des
+  // étoiles ; la brume de montagne (fogNear/fogFar resserrés) avale les
+  // crêtes au-delà de 200 m. Le bitume est sombre et mouillé, la ligne
+  // centrale est **jaune continue** (marquage japonais des routes à double
+  // sens) et les rives sont blanches. Pas de devanture en pleine montagne :
+  // pas de `shops`, comme sur la voie rapide de Tokyo — les seules enseignes
+  // sont les sponsors du portique et les lanternes de pierre du décor. Le
+  // thème porte `touge` — le monde construit alors la route étroite à deux
+  // voies de `tougeStage.js` — et `roadHalf` fixe sa largeur : 6,80 m de
+  // bitume (deux voies centrées sur l'axe jaune). Conduite à gauche, comme
+  // tout le Japon : la voie de course est à gauche de l'axe, le contresens à
+  // droite. Pas de bloc `light` : le rig de nuit par défaut s'applique, avec
+  // les phares allumés (`CITY_RUSH_NIGHT_LIGHT`) — ce sont eux qui découpent
+  // la brume dans les épingles.
+  touge: Object.freeze({
+    touge: true,
+    driveSide: 'left',
+    roadHalf: 3.4,
+    sky: Object.freeze({
+      top: 0x03040c,
+      mid: 0x0d1526,
+      horizon: 0x1c2a4a,
+      haze: 0x14203a,
+      sun: Object.freeze({ color: 0xfff6e0, glow: 0x3a5a9e, elevation: 0.08, radius: 0.035, stripes: 0 }),
+      stars: 0.85,
+      moon: 1,
+    }),
+    weather: 'clear',
+    // Brume de col : elle avale la forêt au-delà de 200 m, si bien que les
+    // épingles apparaissent les unes après les autres, dans les phares.
+    fogNear: 55,
+    fogFar: 200,
+    // Quelques fenêtres éclairées (auberges du col) : `litColors` est requis
+    // par `makeFacadeTextures`, même si le décor de montagne n'utilise pas ces
+    // façades urbaines.
+    facade: Object.freeze({
+      style: 'touge', floor: 1, height: 2.4, litRatio: 0.12,
+      litColors: ['#ffd98a', '#ffe9b8'],
+      wall: '#4a3b32', glass: '#101820', sheen: 'rgba(200, 220, 255, .12)', frame: '#2b2320',
+    }),
+    // Pas de boutique en pleine montagne : `shops` reste absent, comme sur la
+    // voie rapide de Tokyo.
+    verticalSigns: Object.freeze(['峠道', 'ヘアピン', '頂上 760', '霧注意', 'TŌGE PASS']),
+    sponsors: Object.freeze(['峠道 TŌGE PASS', 'MIDNIGHT RIDERS', '峠茶屋', 'HARUNA MOTOR', 'FUJI TYRES']),
+    gate: Object.freeze({ style: 'touge', text: '峠道 · TŌGE PASS' }),
+    gantryText: 'TŌGE PASS · NIGHT RUN · 2 VOIES',
+    // Foule de spectateurs nocturnes, lampions et couleurs de la fête du col.
+    crowdColors: Object.freeze([0xffc94d, 0x6fd3ff, 0xf4f1e8, 0x2a3a5e, 0xff8a5c, 0x9fd8ff]),
+    roadTint: 0x14161d,
+    laneColor: '#f4f1e8',
+    centerLineColor: '#f2c230',
+    edgeColor: '#f4f1e8',
+    sidewalkTint: 0x1c2230,
+    lamp: 'touge',
+    tree: 'cedar',
+    curb: 0x3a4152,
+    ground: 0x0c1220,
+    glow: 1,
+    lampCone: 0.09,
+    accentCone: 0.1,
+    // Crêtes sombres au loin, presque sans fenêtre : des montagnes, pas une ville.
+    skyline: Object.freeze({ base: [10, 16, 32], window: 'rgba(255,240,200,.05)' }),
+    // Roche, cèdre, mousse, béton de garde-corps, acier des lampadaires,
+    // vermillon du torii, lumière chaude des lanternes de pierre.
+    materials: Object.freeze({
+      rock: 0x2a2f3d,
+      rockDark: 0x1d2230,
+      moss: 0x24402c,
+      foliage: 0x1c3a28,
+      foliageLight: 0x2f5a3c,
+      trunk: 0x3a2a20,
+      cedar: 0x16301f,
+      wood: 0x5a3a28,
+      vermillion: 0xc8372f,
+      stone: 0x4a4f5e,
+      concrete: 0x5c6270,
+      steel: 0x3b4352,
+      darkSteel: 0x1c2029,
+      snow: 0xdfe6ee,
+      lanternGlow: 0xffd98a,
+      canopy: 0x1b2030,
+    }),
+  }),
 });
 
 export function cityRushTheme(cityId) {

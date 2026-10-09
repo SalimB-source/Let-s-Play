@@ -7,11 +7,12 @@
 // atteinte.
 //   node scripts/city-rush-smoke.mjs            (ville par défaut : vice-city)
 //   node scripts/city-rush-smoke.mjs --all      (tous les parcours jouables)
-// `--all` joue les sept parcours de CITY_RUSH_COURSES : les cinq villes ET les
-// deux routes (Route 66, campagne mexicaine). Le décor de ces routes est
-// entièrement distinct (ranchos, agaves, chapelles) : les exclure laissait
-// passer des plantages de construction du monde — c'est arrivé sur la
-// chapelle du Mexique, dont l'appel à addTree passait un argument de trop.
+// `--all` joue les huit parcours de CITY_RUSH_COURSES : les cinq villes ET les
+// trois routes (Route 66, campagne mexicaine,峠道 de nuit). Le décor de ces
+// routes est entièrement distinct (ranchos, agaves, chapelles, cèdres, torii) :
+// les exclure laissait passer des plantages de construction du monde — c'est
+// arrivé sur la chapelle du Mexique, dont l'appel à addTree passait un
+// argument de trop.
 // ════════════════════════════════════════════════════════════════════
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

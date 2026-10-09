@@ -139,14 +139,18 @@ test('chaque conteneur prend les deux voies extérieures du sens de course, sans
     assert.ok(Math.abs(containerWidth - CITY_RUSH_LANE_WIDTH * 2) < 1e-9, `largeur du conteneur de ${course.name}`);
     // Le conteneur ne franchit jamais l'axe jaune — sur le Ring, à sens
     // unique, sa paroi intérieure tombe exactement sur l'axe de la piste...
-    assert.ok(side * innerEdge >= -1e-9, `le conteneur de ${course.name} doit rester de son côté de l'axe`);
+    // Sur une route à deux voies (la峠道), la caisse de deux voies couvre les
+    // deux sens : c'est le seul emplacement possible pour une caisse de 4,20 m,
+    // et c'est un obstacle à détruire ou à franchir, comme un vrai conteneur
+    // posé au milieu d'une route de col.
+    assert.ok(laneConfig.twoWay === true || side * innerEdge >= -1e-9, `le conteneur de ${course.name} doit rester de son côté de l'axe`);
     // ...et il ne quitte jamais le bitume de son côté : la paroi extérieure
     // reste en deçà du bord de la chaussée.
     assert.ok(side * outerEdge <= laneConfig.roadHalf + 1e-9, `le conteneur de ${course.name} doit rester sur la chaussée`);
   }
   assert.deepEqual(
     CITY_RUSH_COURSES.filter((course) => cityRushDriveSide(course) === 'left').map((course) => course.id).sort(),
-    ['london', 'tokyo'],
+    ['london', 'tokyo', 'touge'],
   );
 });
 

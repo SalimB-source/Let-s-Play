@@ -244,8 +244,8 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   assert.match(world, /CITY_RUSH_MINI_GARAGE_COUNT/);
   assert.match(world, /const garageExitDistance = garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH/,
     'la remise à zéro attend que la voiture ait traversé toute la longueur du portique');
-  assert.match(world, /while \(!garage\.used && garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance\)/,
-    'le garage reste visible jusqu’à ce que la voiture en sorte');
+  assert.match(world, /while \(!garage\.used[\s\S]*?garage\.trackDistance \+ CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance[\s\S]*?garage\.trackDistance \+ retryOffset < effectiveDistance\)/,
+    'le garage reste visible jusqu’à ce que la voiture en sorte, sans sauter au-delà de la course');
   assert.match(world, /cityRushMiniGarageCanUse\(/);
   assert.match(world, /wantedLevel = cityRushMiniGarageWantedLevel\(previousStars\);[\s\S]*?type: 'mini-garage-used'/,
     'la sortie du mini-garage baisse le niveau selon le nombre d’étoiles et annonce son usage');
@@ -278,7 +278,10 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
   assert.doesNotMatch(world, /cityRushMiniGarageKindAt|CITY_RUSH_MINI_GARAGE_FINAL_LAP_KIND/,
     'le monde ne distingue plus de porte de dernier tour');
   const availability = world.match(/function miniGarageAvailable\(garage\)[\s\S]*?\n  function miniGaragesAvailable/)?.[0] || '';
-  assert.match(availability, /phase === 'playing' && !finished && !playerWrecked/);
+  // La porte reste visible pendant une épave : le pilote à l’arrêt la verra à
+  // son retour sur la piste.
+  assert.match(availability, /phase === 'playing' && !finished/);
+  assert.doesNotMatch(availability, /!playerWrecked/, 'la porte ne disparaît pas sous prétexte d’une épave');
   assert.match(availability, /return cityRushMiniGarageAvailable\(\{ sprint \}\)/,
     'la porte ne s’ouvre que hors Sprint, quel que soit le tour');
   const placement = world.match(/function placeMiniGarage\(garage\)[\s\S]*?\n  function setMiniGaragesToStart/)?.[0] || '';
@@ -484,7 +487,7 @@ test('Londres et Tokyo roulent à gauche jusque dans le décor et la page', () =
   const textures = readFileSync(new URL('../src/games/cityRushTextures.js', import.meta.url), 'utf8');
   assert.match(world, /const driveSide = courseLanes\.driveSide/);
   assert.match(world, /pushDirection: driveSide === 'left' \? 'right' : 'left'/);
-  assert.match(world, /cityRushOncomingImpactX\(oncoming\.pushAsideStartX, oncoming\.pushAsideElapsed, oncoming\.width, driveSide\)/);
+  assert.match(world, /cityRushOncomingImpactX\(oncoming\.pushAsideStartX, oncoming\.pushAsideElapsed, oncoming\.width, driveSide, courseLanes\.roadHalf\)/);
   assert.match(page, /city\.driveSide === 'left'/);
   assert.match(themes, /driveSide: 'left'/);
   assert.match(textures, /const leftHand = cityRushThemeDriveSide\(theme\) === 'left'/);

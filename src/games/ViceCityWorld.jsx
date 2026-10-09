@@ -34,7 +34,9 @@ import {
   cityRushLaneConfig,
   cityRushCoursePace,
   cityRushCornerPace,
+  cityRushCornerDrift,
   nordschleifeReadout,
+  tougeReadout,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
   CITY_RUSH_TRAFFIC_COUNT,
@@ -70,6 +72,8 @@ import {
   CITY_RUSH_WRECK_SPIN_TURNS,
   CITY_RUSH_POLICE_ATTACK_LEAD,
   CITY_RUSH_POLICE_COLLISION_COOLDOWN,
+  CITY_RUSH_POLICE_COLLISION_TOLERANCE,
+  CITY_RUSH_POLICE_COLLISION_CLOSING,
   CITY_RUSH_POLICE_HEALTH,
   CITY_RUSH_POLICE_RAMP_LANDING_SOURCE,
   cityRushPoliceMaxHealth,
@@ -267,6 +271,7 @@ import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRu
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStage';
+import { buildTougeTrack, makeTougeRoad } from './tougeStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
 import { animateRacerCar, applyPoliceRacerLivery, configureCarReflections, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
 import { makeBoostPadMaterial, makeLapBoard, makePickupMaterial } from './cityRushTextures';
@@ -1851,6 +1856,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // dans les courbes. À Vice City, l'anticipation de 40 m commence le freinage
   // avant les virages secs ; les longues droites sans courbe à venir restent à 1.
   const cornerPaceAt = (trackDistance) => cityRushCornerPace(city, trackDistance, trackProfile);
+  // Dérapage contrôlé dans les virages (la峠道) : angle signé de la caisse
+  // vers l'intérieur du virage, nul en ligne droite et à basse vitesse.
+  const driftAt = (trackDistance, speed) => cityRushCornerDrift(city, trackDistance, trackProfile, speed);
 
   const scene = new THREE.Scene();
   // Three.js crée des UUID avec Math.random(). Isole ces appels visuels pour
@@ -1934,13 +1942,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Un thème « piste » (Nürburgring Nordschleife) construit un circuit de
   // campagne : glissières, vibreurs, graviers et repères du Ring.
   const raceway = Boolean(theme.raceway);
-  const cityRoute = expressway || raceway ? cityRushRouteFor(city.id) : null;
+  // Un thème «峠道» (route de montagne japonaise de nuit) construit une route
+  // de col à deux voies : cèdres, garde-corps, torii, lampadaires et brume.
+  const touge = Boolean(theme.touge);
+  const cityRoute = expressway || raceway || touge ? cityRushRouteFor(city.id) : null;
   const expresswayRoute = expressway ? cityRoute : null;
   const loop = expressway
     ? buildShutoExpressway({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite })
     : raceway
       ? buildNordschleifeTrack({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite, route: cityRoute })
-      : buildCityLoop({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite });
+      : touge
+        ? buildTougeTrack({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite, route: cityRoute })
+        : buildCityLoop({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite });
   buildStartComplex({ city, theme, materials: stageMaterials, startMaterials, batch: loopBatch, random: loop.random, lite });
   const [loopA, loopB] = finishLoopGeometry(loopBatch, scene, trackProfile);
   for (const copy of [loopA, loopB]) {
@@ -1957,7 +1970,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     ? makeExpresswayRoad(scene, theme, sceneryRandom, PLAYER_Z)
     : raceway
       ? makeNordschleifeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile)
-      : makeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile);
+      : touge
+        ? makeTougeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile)
+        : makeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile);
   const rain = makeRain(theme, camera.position.z, lite);
   if (rain) scene.add(rain.object);
   const startLine = createStartLineDynamics({ city, theme, materials: stageMaterials, startMaterials, random: loop.random, lite });
@@ -2813,6 +2828,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerSkidLeft = 0;
   let playerSkidDuration = 0.85;
   let playerSkidSide = 1;
+  // Dérapage contrôlé du pilote dans les virages (la峠道) : lacet lissé de la
+  // caisse vers l'intérieur du virage, qui revient à zéro en sortie d'épingle.
+  let playerDrift = 0;
   // Secousse réservée au contact avec le SUV de police : roulis de caisse et
   // lacet oscillant, purement visuels (les règles de vitesse/vie restent les mêmes).
   let playerSuvImpactLeft = 0;
@@ -3036,10 +3054,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   // La porte est ouverte dès que la course bat son plein : elle est posée à
-  // mi-parcours et n'attend aucun tour, seule la Sprint la supprime.
+  // mi-parcours et n'attend aucun tour, seule la Sprint la supprime. Pendant
+  // une épave, elle reste visible : le pilote à l'arrêt la verra à son retour
+  // sur la piste, et elle ne doit pas disparaître sous prétexte qu'il toupie.
   function miniGarageAvailable(garage) {
     if (!garage) return false;
-    if (!(phase === 'playing' && !finished && !playerWrecked)) return false;
+    if (!(phase === 'playing' && !finished)) return false;
     return cityRushMiniGarageAvailable({ sprint });
   }
 
@@ -3212,9 +3232,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function updateMiniGarages(previousDistance) {
     for (const garage of miniGarages) {
-      // Hors course (compte à rebours, épave, arrivée) ou en Sprint, la porte
-      // reste ancrée à son repère et masquée : elle ne dérive pas vers les
-      // tours suivants.
+      // Hors course (compte à rebours, arrivée) ou en Sprint, la porte reste
+      // ancrée à son repère et masquée : elle ne dérive pas vers les tours
+      // suivants. Pendant une épave, elle reste visible (voir
+      // `miniGarageAvailable`).
       if (!miniGarageAvailable(garage)) {
         placeMiniGarage(garage);
         continue;
@@ -3248,9 +3269,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       // Une porte ratée revient au même repère dans la boucle suivante. Dans
       // l'entraînement guidé, elle revient bien plus vite : la démonstration
-      // attend son portique, pas 1 200 m de plus.
+      // attend son portique, pas 1 200 m de plus. Elle ne saute pas au-delà de
+      // la course : une porte hors parcours ne serait jamais revue.
       const retryOffset = tutorialMode ? 200 : CITY_RUSH_LAP_LENGTH;
-      while (!garage.used && garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance) {
+      while (!garage.used
+        && garage.trackDistance + CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH <= distance
+        && garage.trackDistance + retryOffset < effectiveDistance) {
         garage.trackDistance += retryOffset;
       }
       placeMiniGarage(garage);
@@ -3917,10 +3941,34 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   }
 
+  /**
+   * Lecture du tableau de bord de la峠道 : secteur réel, kilomètre officiel,
+   * altitude du col et prochain repère annoncé par les panneaux.
+   */
+  function tougeRouteHud() {
+    const readout = tougeReadout(shutoLoopProgress(), cityRoute);
+    if (!readout.sector) return null;
+    return {
+      marker: readout.marker,
+      direction: readout.direction,
+      directionRomaji: readout.directionRomaji,
+      speedLimit: readout.speedLimit,
+      km: readout.km,
+      altitudeM: readout.altitudeM,
+      sector: readout.sector,
+      tag: readout.sector.kind === 'summit'
+        ? `SOMMET · ${readout.altitudeM} M`
+        : readout.sector.kind === 'start' || readout.sector.kind === 'finish'
+          ? `VILLAGE · ${readout.altitudeM} M`
+          : null,
+      next: readout.next,
+    };
+  }
+
   /** Panneau de route officielle affiché par le HUD, quel que soit le parcours. */
   function courseRouteHud() {
     if (!cityRoute) return null;
-    return expressway ? shutoRouteHud() : raceway ? nordschleifeRouteHud() : null;
+    return expressway ? shutoRouteHud() : raceway ? nordschleifeRouteHud() : touge ? tougeRouteHud() : null;
   }
 
   function emitHud(force = false) {
@@ -4243,6 +4291,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerSkidLeft = 0;
     playerSkidDuration = 0.85;
     playerSkidSide = 1;
+    playerDrift = 0;
     playerSuvImpactLeft = 0;
     playerSuvImpactSide = 1;
     playerSpikeSlowLeft = 0;
@@ -7226,9 +7275,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const playerWidth = playerCollisionWidth();
     for (const police of activePursuers()) {
       if (police.health <= 0 || police.collisionCooldownLeft > 0 || police.jumpState?.active) continue;
+      const gap = police.distance - distance;
+      const rawClosing = currentSpeed - (Number(police.currentSpeed) || 0);
+      // Le joueur qui a pénétré la distance de sécurité d'une berline est en
+      // contact, même s'il ne ferme plus franchement (il roule collé derrière
+      // elle, le résolveur ne recule pas un suiveur déjà engagé) : la berline
+      // est solide, on ne reste pas dans son pare-chocs.
+      const closing = gap > 0 && gap < CITY_RUSH_CAR_GAP - CITY_RUSH_POLICE_COLLISION_TOLERANCE
+        ? Math.max(rawClosing, CITY_RUSH_POLICE_COLLISION_CLOSING + 0.01)
+        : rawClosing;
       if (!cityRushPoliceCollisionHit({
-        gap: police.distance - distance,
-        closing: currentSpeed - (Number(police.currentSpeed) || 0),
+        gap,
+        closing,
         x: police.currentX,
         targetX: playerXNow,
         width: police.width,
@@ -7395,7 +7453,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // Le trafic venant en face rend les voies du contresens infréquentables
     // pour l'escouade (vitesse négative : les voies passent pour bouchées). Il
     // ne bloque en revanche pas le déplacement des berlines — il se croise.
-    const oncomingForLanes = oncomingCars
+    // Sur une route à double sens (la峠道), la voie de face est une voie de
+    // dépassement comme une autre : l'escouade l'emprunte pour doubler un
+    // trafic lent qui bouche la voie de course. Le verrou de rabattement
+    // (`canEnterLane`) garde sa prudence face à un véhicule qui arrive.
+    const oncomingForLanes = courseLanes.twoWay === true ? [] : oncomingCars
       .filter((car) => !car.rallied && !car.destroyed)
       .map((car) => ({
         id: car.id, lane: car.lane, distance: car.distance, x: car.currentX, width: car.width, speed: -car.currentSpeed,
@@ -7565,10 +7627,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
 
+      // Sur une route à double sens (twoWay), l'escouade est plus déterminée :
+      // elle a le droit de doubler par la voie de face, elle vise un peu plus
+      // vite pour tenir la chasse sur une chaussée étroite partagée avec le
+      // contresens.
+      const policeBaseSpeed = courseLanes.twoWay === true ? police.baseSpeed * 1.1 : police.baseSpeed;
       let targetSpeed = cityRushPolicePace({
         gap,
-        baseSpeed: police.baseSpeed,
-        leaderSpeed: leader.speed || police.baseSpeed,
+        baseSpeed: policeBaseSpeed,
+        leaderSpeed: leader.speed || policeBaseSpeed,
         // Décalées de quelques mètres : les deux véhicules côte à côte plutôt
         // qu'une file indienne derrière le leader. Juste après un barrage, la
         // berline vise plus loin pour se dégager avant de revenir à la charge.
@@ -7679,7 +7746,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       );
       police.mesh.rotation.x = trackPitch(police.distance) + (police.currentJumpPitch || 0);
       // Toupie du stun héliporté pour la berline bombardée, comme les rivaux.
-      police.mesh.rotation.y = trackYaw(police.distance) + cityRushStunSpin(police.stunLeft, police.stunTotal) + clamp((police.currentX - priorX) * -3.2 + skid * 0.22, -0.22, 0.22);
+      // La poursuite dérape aussi dans les virages serrés (la峠道).
+      police.drift = lerp(police.drift || 0, driftAt(police.distance, police.currentSpeed), Math.min(1, dt * 7));
+      police.mesh.rotation.y = trackYaw(police.distance) + cityRushStunSpin(police.stunLeft, police.stunTotal) + clamp((police.currentX - priorX) * -3.2 + skid * 0.22, -0.22, 0.22) + (police.drift || 0);
       const policeSkidRoll = police.vehicleType === 'police-suv' ? 0.085 : 0.045;
       const policeSkidFrequency = police.vehicleType === 'police-suv' ? 17 : 13;
       police.mesh.rotation.z = skidOffset(police.skidLeft, police.skidDuration, police.skidSide || 1, policeSkidRoll, policeSkidFrequency);
@@ -7833,12 +7902,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // c'est une règle de rabattement (une distance de sécurité, 4,8 m), plus
     // stricte que le choc qu'elle évite — la boîte resserrée sert au contact
     // facturé, pas à autoriser un rabat sur un pare-chocs.
+    // Sur une route à double sens (twoWay), la voie de face est la seule voie
+    // de dépassement : une berline de poursuite a le droit d'y doubler le
+    // trafic sans attendre que le contresens soit dégagé (esprit Initial D).
+    // Elle ne se laisse pas bloquer par les véhicules arrivant en face.
+    const policeCanUseOncomingLane = Boolean(policeActor) && courseLanes.twoWay === true;
     const obstacles = [
       ...rollingTraffic().map((traffic) => ({ lane: traffic.lane, x: traffic.currentX, width: traffic.width, distance: traffic.distance })),
       // Le trafic venant en face bloque aussi la voie : on ne se rabat pas
-      // sous le capot d'un véhicule qui arrive face à soi.
-      ...oncomingCars.filter((oncoming) => !oncoming.rallied && !oncoming.destroyed)
-        .map((oncoming) => ({ lane: oncoming.lane, x: oncoming.currentX, width: oncoming.width, distance: oncoming.distance })),
+      // sous le capot d'un véhicule qui arrive face à soi — sauf une berline de
+      // poursuite sur un parcours à double sens, qui double par la voie de face.
+      ...(policeCanUseOncomingLane ? [] : oncomingCars.filter((oncoming) => !oncoming.rallied && !oncoming.destroyed)
+        .map((oncoming) => ({ lane: oncoming.lane, x: oncoming.currentX, width: oncoming.width, distance: oncoming.distance }))),
       ...activePursuers().filter((police) => police.id !== actorId)
         .map((police) => ({ lane: police.lane, x: police.currentX, width: police.width, distance: police.distance })),
       // Les pilotes se traversent entre eux, mais pas une berline : celle-ci
@@ -9341,11 +9416,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
 
       const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal, playerWrecked ? playerWreckSpinTurns : undefined);
+      // Dérapage contrôlé : la caisse pivote vers l'intérieur du virage, lissé
+      // pour ne pas à-couper entre deux épingles (la峠道 uniquement).
+      playerDrift = lerp(playerDrift, driftAt(distance, currentSpeed), Math.min(1, dt * 7));
       playerCar.rotation.y = trackYaw(distance)
         + playerSpin
         + playerSuvImpactYaw
         + clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12)
-        + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
+        + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14)
+        + playerDrift;
       const playerSteer = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
       animateRacerCar(playerCar, {
         speed: currentSpeed,
@@ -9397,12 +9476,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer.mesh.position.set(racer.currentX + skid + trackRelativeX(racer.distance), trackRelativeY(racer.distance) + (racer.currentJumpY || 0) + (racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 ? 0.045 : 0), renderZ);
         racer.mesh.rotation.x = trackPitch(racer.distance) + (racer.currentJumpPitch || 0);
         const racerLateralMotion = racer.currentX - priorRacerXs.get(racer.id);
+        // Dérapage contrôlé du rival dans les virages (la峠道) : lacet lissé de
+        // la caisse vers l'intérieur du virage.
+        racer.drift = lerp(racer.drift || 0, driftAt(racer.distance, racer.currentSpeed), Math.min(1, dt * 7));
         // Toupie du stun héliporté ou du tir rouge, ajoutée au léger lacet de
         // conduite et au cap de la courbe locale.
         racer.mesh.rotation.y = trackYaw(racer.distance)
           + cityRushStunSpin(racer.stunLeft, racer.stunTotal)
           + cityRushStunSpin(racer.spinLeft, racer.spinTotal, CITY_RUSH_PISTOL_SPIN_TURNS)
-          + clamp(racerLateralMotion * -0.16 + skid * 0.22, -0.22, 0.22);
+          + clamp(racerLateralMotion * -0.16 + skid * 0.22, -0.22, 0.22)
+          + (racer.drift || 0);
         const racerSteer = clamp(-racerLateralMotion * 1.45, -0.3, 0.3);
         if (visible) {
           animateRacerCar(racer.mesh, {
@@ -9421,6 +9504,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           if (racer.smokeTimer <= 0) {
             if (racer.skidLeft > 0 || ((racer.slowLeft > 0 || racer.blueShotSlowLeft > 0 || racer.trafficImpactLeft > 0) && racer.currentSpeed > 4)) {
               emitWheelSmoke(racer.mesh, { color: 0xcfd0d8, opacity: 0.42, scale: 0.4, grow: 2.2, life: 0.7 });
+              racer.smokeTimer = 0.07;
+            } else if (Math.abs(racer.drift || 0) > 0.03 && racer.currentSpeed > 10) {
+              // Dérapage contrôlé (la峠道) : fumée blanche des pneus arrière.
+              emitWheelSmoke(racer.mesh, { color: 0xe8e8ee, opacity: 0.38, scale: 0.38, grow: 2.2, life: 0.6, velocity: [0, 0.6, 1.2] });
               racer.smokeTimer = 0.07;
             } else if (racer.boostLeft > 0) {
               emitExhaustSmoke(racer.mesh, { color: racer.profile.bodyColor, opacity: 0.35, scale: 0.22, grow: 2.6, life: 0.45, velocity: [0, 0.4, 2.2] });
@@ -9487,7 +9574,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         traffic.mesh.userData.lane = traffic.lane;
         traffic.mesh.userData.trackDistance = traffic.distance;
         traffic.mesh.rotation.x = trackPitch(traffic.distance);
-        traffic.mesh.rotation.y = lerp(traffic.mesh.rotation.y, trackYaw(traffic.distance) + clamp((traffic.currentX - priorTrafficX) * -2.8, -0.26, 0.26), Math.min(1, dt * 12));
+        traffic.mesh.rotation.y = lerp(traffic.mesh.rotation.y, trackYaw(traffic.distance) + clamp((traffic.currentX - priorTrafficX) * -2.8, -0.26, 0.26) + driftAt(traffic.distance, traffic.currentSpeed), Math.min(1, dt * 12));
         if (traffic.mesh.visible) {
           traffic.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += traffic.currentSpeed * dt * 0.95; });
           traffic.mesh.userData.beacons.forEach((beacon, beaconIndex) => {
@@ -9557,7 +9644,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           );
         } else if (oncoming.pushedAside) {
           oncoming.pushAsideElapsed += dt;
-          oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed, oncoming.width, driveSide);
+          // `roadHalf` borne la poussée à la chaussée réelle : sur une route de
+          // montagne étroite (la峠道, 6,80 m), le bord des artères urbaines
+          // (13,40 m) expédierait la voiture dans le décor.
+          oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed, oncoming.width, driveSide, courseLanes.roadHalf);
         } else if (oncoming.charge && oncoming.chargeLocked) {
           // Le SUV de charge vise la voie du pilote : il se rabat à vitesse
           // limitée (`cityRushSuvChargeStep`), donc un changement de voie au
@@ -9586,9 +9676,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         oncoming.mesh.userData.lane = oncoming.lane;
         oncoming.mesh.userData.trackDistance = oncoming.distance;
         oncoming.mesh.rotation.x = lerp(-trackPitch(oncoming.distance), trackPitch(oncoming.distance), turnEase);
+        // Le dérapage est soustrait : roulant en sens inverse, le virage du
+        // contresens est le miroir de celui de la course.
         oncoming.mesh.rotation.y = trackYaw(oncoming.distance)
           + Math.PI * (1 - turnEase)
-          + clamp((oncoming.currentX - priorOncomingX) * 2.8, -0.26, 0.26);
+          + clamp((oncoming.currentX - priorOncomingX) * 2.8, -0.26, 0.26)
+          - driftAt(oncoming.distance, Math.abs(oncoming.currentSpeed));
         if (oncoming.mesh.visible) {
           oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += oncoming.currentSpeed * dt * 0.95; });
           oncoming.mesh.userData.beacons.forEach((beacon, beaconIndex) => {
@@ -9622,6 +9715,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         } else if (playerSkidLeft > 0 || ((playerSlowLeft > 0 || playerBlueShotSlowLeft > 0 || playerSpikeSlowLeft > 0) && currentSpeed > 4)) {
           emitWheelSmoke(playerCar, { color: 0xcfd0d8, opacity: 0.45, scale: 0.42, grow: 2.2, life: 0.7 });
           playerSmokeTimer = 0.06;
+        } else if (Math.abs(playerDrift) > 0.03 && currentSpeed > 10) {
+          // Dérapage contrôlé (la峠道) : fumée blanche des pneus arrière.
+          emitWheelSmoke(playerCar, { color: 0xe8e8ee, opacity: 0.4, scale: 0.4, grow: 2.2, life: 0.6, velocity: [0, 0.6, 1.2] });
+          playerSmokeTimer = 0.07;
         } else if (playerBoostLeft > 0) {
           emitExhaustSmoke(playerCar, { color: playerProfile.bodyColor, opacity: 0.38, scale: 0.24, grow: 2.6, life: 0.45, velocity: [0, 0.4, 2.4] });
           playerSmokeTimer = 0.08;

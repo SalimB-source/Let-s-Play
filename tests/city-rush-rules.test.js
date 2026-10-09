@@ -48,6 +48,7 @@ import {
   CITY_RUSH_ROAD_HALF_WIDTH,
   CITY_RUSH_RACEWAY_ROAD_HALF,
   CITY_RUSH_NORDSCHLEIFE_COURSE,
+  CITY_RUSH_TOUGE_COURSE,
   cityRushLaneCount,
   cityRushLaneConfig,
   cityRushLaneSeparators,
@@ -2480,8 +2481,13 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   assert.ok(CITY_RUSH_RACEWAY_PACE >= CITY_RUSH_COURSE_PACE_MIN, 'et il reste au-dessus du garde-fou');
   assert.equal(cityRushCoursePace('nordschleife'), CITY_RUSH_RACEWAY_PACE);
   assert.equal(cityRushCoursePace(CITY_RUSH_NORDSCHLEIFE_COURSE), CITY_RUSH_RACEWAY_PACE);
+  // La峠道 partage le même rythme posé : vingt-quatre épingles à cheveux se
+  // lisent à ~107 km/h, pas à 126.
+  assert.equal(CITY_RUSH_TOUGE_COURSE.pace, CITY_RUSH_RACEWAY_PACE);
+  assert.equal(cityRushCoursePace('touge'), CITY_RUSH_RACEWAY_PACE);
+  assert.equal(cityRushCoursePace(CITY_RUSH_TOUGE_COURSE), CITY_RUSH_RACEWAY_PACE);
 
-  for (const course of CITY_RUSH_COURSES.filter((entry) => entry.id !== 'nordschleife')) {
+  for (const course of CITY_RUSH_COURSES.filter((entry) => entry.id !== 'nordschleife' && entry.id !== 'touge')) {
     assert.equal(course.pace, undefined, `${course.id} garde le rythme historique`);
     assert.equal(cityRushCoursePace(course), 1);
     assert.equal(cityRushCoursePace(course.id), 1);
@@ -2539,10 +2545,10 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
 });
 
 test('Vice City et le Ring ralentissent les voitures dans les grands virages', () => {
-  // Seuls ces deux parcours tournent vraiment. Les autres gardent leur vitesse,
+  // Seuls ces trois parcours tournent vraiment. Les autres gardent leur vitesse,
   // y compris au cœur de leurs S doux : un facteur oublié sur Tokyo ou la
   // Route 66 se lirait ici.
-  assert.deepEqual([...CITY_RUSH_CORNER_PACE_COURSES], ['vice-city', 'nordschleife']);
+  assert.deepEqual([...CITY_RUSH_CORNER_PACE_COURSES], ['vice-city', 'nordschleife', 'touge']);
   assert.equal(CITY_RUSH_CORNER_PACE_SWEEP, 0.72);
   assert.equal(CITY_RUSH_CORNER_PACE_MIN, 0.58);
   assert.equal(CITY_RUSH_CORNER_PACE_PREBRAKE_METERS, 40);
@@ -2552,7 +2558,7 @@ test('Vice City et le Ring ralentissent les voitures dans les grands virages', (
 
   for (const course of CITY_RUSH_COURSES) {
     const uses = cityRushUsesCornerPace(course) && cityRushUsesCornerPace(course.id);
-    assert.equal(uses, course.id === 'vice-city' || course.id === 'nordschleife', course.id);
+    assert.equal(uses, course.id === 'vice-city' || course.id === 'nordschleife' || course.id === 'touge', course.id);
     let slowest = 1;
     for (let index = 0; index < 240; index += 1) {
       slowest = Math.min(slowest, cityRushCornerPace(course, index * CITY_RUSH_LAP_LENGTH / 240));

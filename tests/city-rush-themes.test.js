@@ -177,11 +177,12 @@ test('the driving side is painted by the theme and mirrored by the course, city 
     assert.equal(city.driveSide || 'right', expected, `${city.id} : parcours`);
     assert.equal(cityRushThemeDriveSide(theme), expected, `${city.id} : helper de texture`);
   }
-  // Les seuls thèmes « à gauche » sont Tokyo et Londres : les autres n'ont pas
-  // le champ (défaut « à droite »), pas un champ contradictoire.
+  // Les seuls thèmes « à gauche » sont Tokyo, Londres et la峠道 (le Japon
+  // roule à gauche) : les autres n'ont pas le champ (défaut « à droite »), pas
+  // un champ contradictoire.
   const leftHand = Object.entries(CITY_RUSH_THEMES)
     .filter(([, theme]) => cityRushThemeDriveSide(theme) === 'left')
     .map(([id]) => id)
     .sort();
-  assert.deepEqual(leftHand, ['london', 'tokyo']);
+  assert.deepEqual(leftHand, ['london', 'tokyo', 'touge']);
 });

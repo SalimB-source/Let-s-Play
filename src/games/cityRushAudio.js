@@ -39,10 +39,14 @@ export const CITY_RUSH_ROUTE_66_BPM = 108;
 // Le Ring : tempo posé, plus proche du rythme d'un tour de 8 minutes que d'une
 // course de rue. Constant à part, comme la 66, pour ne pas toucher aux villes.
 export const CITY_RUSH_NORDSCHLEIFE_BPM = 116;
+// La峠道 : eurobeat de nuit à 130 BPM — le tempo de référence d'Initial D,
+// assez vif pour porter les enchaînements d'épingles sans fermer la boucle.
+export const CITY_RUSH_TOUGE_BPM = 130;
 
 export function cityRushMusicBpm(cityId) {
   if (cityId === 'route-66') return CITY_RUSH_ROUTE_66_BPM;
   if (cityId === 'nordschleife') return CITY_RUSH_NORDSCHLEIFE_BPM;
+  if (cityId === 'touge') return CITY_RUSH_TOUGE_BPM;
   return CITY_RUSH_MUSIC_BPM[cityId] || CITY_RUSH_DEFAULT_BPM;
 }
 
@@ -94,6 +98,22 @@ const TOKYO_LEAD = Object.freeze([
   Object.freeze([77, 76, 74, 72, 74, 76, 74, 72]),
   Object.freeze([79, 77, 76, 74, 76, 79, 81, 79]),
   Object.freeze([76, 74, 72, 71, 69, 71, 72, 69]),
+]);
+
+// ──峠道 · TŌGE PASS (Japon, route de col de nuit) ────────────────────
+// Eurobeat nocturne, plus sombre que la Shutō : progression mineure i–VI–III–VII
+// (Em · C · G · D), la tension d'une montée de col avant l'aube.
+const TOUGE_CHORDS = Object.freeze([
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 3, 7, 12]) }), // Em
+  Object.freeze({ root: 36, intervals: Object.freeze([0, 4, 7, 12]) }), // C
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 4, 7, 12]) }), // G
+  Object.freeze({ root: 38, intervals: Object.freeze([0, 4, 7, 12]) }), // D
+]);
+const TOUGE_LEAD = Object.freeze([
+  Object.freeze([71, 74, 78, 76, 74, 71, 69, 71]),
+  Object.freeze([74, 76, 79, 83, 79, 76, 74, 76]),
+  Object.freeze([78, 76, 74, 71, 69, 71, 74, 78]),
+  Object.freeze([76, 79, 83, 86, 83, 79, 76, 74]),
 ]);
 
 // ── PARIS · RIVE GAUCHE (France) ──────────────────────────────────────
@@ -495,6 +515,7 @@ export class CityRushAudio {
     if (this.cityId === 'route-66') { this.playRoute66(step, time); return; }
     if (this.cityId === 'mexico-countryside') { this.playMexico(step, time); return; }
     if (this.cityId === 'nordschleife') { this.playNordschleife(step, time); return; }
+    if (this.cityId === 'touge') { this.playTouge(step, time); return; }
     this.playViceCity(step, time);
   }
 
@@ -569,6 +590,71 @@ export class CityRushAudio {
     // Lead de course sur la seconde moitié
     if (bar >= 4 && beat % 2 === 0) {
       const note = TOKYO_LEAD[(bar - 4) % TOKYO_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.8, 'sawtooth', 0.12, {
+          filter: 4800, filterTo: 2200, attack: 0.008, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note + 12), time + 0.004, stepLength * 1.2, 'square', 0.035, {
+          filter: 5400, destination: this.musicBus,
+        });
+      }
+    }
+    if (step === 0) this.crash(time);
+  }
+
+  // ── Japon ·峠道 Tōge Pass (Eurobeat de col, nuit) ────────────────────
+  // Même moteur que la Shutō — kick 4-on-the-floor, charleston 16th, basse
+  // eurobeat en doubles croches, stabs super-saw — mais sur la progression
+  // mineure de la montagne (Em · C · G · D) et avec une nappe synthétique
+  // qui monte sur la première moitié : la tension d'une montée de nuit.
+  playTouge(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = TOUGE_CHORDS[bar % TOUGE_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Kick 4-on-the-floor puissant
+    if (beat % 4 === 0) {
+      this.kick(time);
+      this.noise(time, 0.02, 0.09, { type: 'highpass', frequency: 4500, destination: this.musicBus });
+    }
+    // Charleston rapide en doubles croches, accent ouvert sur les contretemps
+    if (beat % 2 === 1) {
+      this.hat(time, false);
+    } else if (beat % 4 === 2) {
+      this.hat(time, true);
+    }
+    // Caisse claire synthé agressive sur temps 2 et 4
+    if (beat === 4 || beat === 12) {
+      this.tone(210, time, 0.08, 'triangle', 0.18, { filter: 1400, destination: this.musicBus });
+      this.noise(time, 0.14, 0.22, { type: 'bandpass', frequency: 1900, q: 1.2, destination: this.musicBus });
+    }
+    // Basse eurobeat en doubles croches (octaves et quintes), ancrée sur la
+    // fondamentale de la montée pour porter la tension.
+    const tougeBassOffsets = [0, 12, 0, 12, 0, 7, 12, 0, 0, 12, 0, 12, 7, 12, 10, 12];
+    const bassOffset = tougeBassOffsets[beat];
+    this.tone(midiToFrequency(chord.root + bassOffset), time, stepLength * 0.75, 'sawtooth', 0.18, {
+      filter: 1100, filterTo: 350, attack: 0.005, destination: this.musicBus,
+    });
+    // Stabs synthé super-saw sur les contretemps, plus denses que la Shutō
+    if ([2, 6, 8, 10, 14].includes(beat)) {
+      chord.intervals.forEach((interval) => {
+        this.tone(midiToFrequency(chord.root + 12 + interval), time, stepLength * 1.1, 'sawtooth', 0.055, {
+          filter: 3600, filterTo: 1200, attack: 0.006, detune: 9, destination: this.musicBus,
+        });
+      });
+    }
+    // Nappe synthétique montante sur la première moitié de la boucle
+    if (bar < 4 && beat === 0) {
+      chord.intervals.forEach((interval) => {
+        this.tone(midiToFrequency(chord.root + 24 + interval), time, stepLength * 16, 'sine', 0.028, {
+          attack: 0.4, destination: this.musicBus,
+        });
+      });
+    }
+    // Lead de course sur la seconde moitié
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = TOUGE_LEAD[(bar - 4) % TOUGE_LEAD.length][beat / 2];
       if (note) {
         this.tone(midiToFrequency(note), time, stepLength * 1.8, 'sawtooth', 0.12, {
           filter: 4800, filterTo: 2200, attack: 0.008, destination: this.musicBus,

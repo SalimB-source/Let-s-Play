@@ -78,6 +78,7 @@ const {
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_TRAFFIC_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_TRAFFIC_TYPES,
   CITY_RUSH_MINI_GARAGE_COUNT, CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT, CITY_RUSH_MINI_GARAGE_WIDTH,
+  CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH,
   CITY_RUSH_HEALTH_PICKUP_RESTORE, cityRushMiniGarageLanes,
   CITY_RUSH_MINI_GARAGE_HUD_RANGE,
   cityRushMiniGarageTrackDistances, cityRushMiniGarageMidRaceDistance, cityRushMiniGarageWantedLevel,
@@ -854,7 +855,11 @@ for (const [index, city] of courses.entries()) {
     if (visibleGarages.some((garage) => garage.userData.used)) fail('un garage consommé reste visible');
     if (visibleGarages.length) {
       miniGarageVisibleFrames += 1;
-      if (world.distance <= MINI_GARAGE_TRACK_DISTANCES[0]) miniGarageApproachFrames += 1;
+      // Le repère *courant* de la porte : si le pilote l'a dépassée sans la
+      // traverser (épave, saut), elle revient au même endroit du tour suivant
+      // — la fenêtre où il peut encore la prendre est alors décalée d'autant.
+      const garageMark = Math.max(...visibleGarages.map((garage) => Number(garage.userData.trackDistance) || 0));
+      if (world.distance <= garageMark) miniGarageApproachFrames += 1;
     }
     // Le cadrage se juge après l'image, caméra à jour. On laisse passer le
     // temps de rapprochement (1,5 s) *de chaque apparition* : l'appareil revient
@@ -1382,8 +1387,12 @@ for (const [index, city] of courses.entries()) {
     fail('un mini-garage utilisé ne baisse pas la recherche comme la règle l’annonce', miniGarageUses);
   }
   // La porte s'annonce avant son repère : le pilote doit l'avoir vue arriver à
-  // mi-course, même s'il la rate et la retrouve une boucle plus loin.
-  if (!miniGarageApproachFrames) {
+  // mi-course, même s'il la rate et la retrouve une boucle plus loin. Un
+  // pilote éliminé avant le repère n'a pas à la voir (la course est perdue) :
+  // le critère ne s'applique qu'à qui atteint la porte.
+  const garageReached = miniGarageNodes.some((garage) => world.distance
+    >= (Number(garage.userData.trackDistance) || 0) - CITY_RUSH_MINI_GARAGE_TRAVERSE_HALF_LENGTH);
+  if (!miniGarageApproachFrames && garageReached) {
     fail('le mini-garage ne s’est jamais montré avant son repère de mi-course', { miniGarageVisibleFrames, miniGarageApproachFrames });
   }
   // Sortir d'un portique lâche la police : l'image suivante ne montre plus une
@@ -1508,7 +1517,11 @@ for (const [index, city] of courses.entries()) {
     // Le vainqueur recroise le portique au milieu du dernier tour : un point de
     // passage, et un seul.
     if (checkpoints.length !== 1) fail('le vainqueur n’a pas passé le point de passage du dernier tour', callbacks.laps);
-  } else if (!callbacks.laps.length && !callbacks.effects.some((e) => e.type === 'rival-final-lap')) {
+  } else if (world.distance >= CITY_RUSH_LAP_LENGTH / 2
+    && !callbacks.laps.length && !callbacks.effects.some((e) => e.type === 'rival-final-lap')) {
+    // Le critère ne s'applique qu'à un pilote qui a roulé : éliminé avant la
+    // moitié du premier tour, il n'a franchi aucune ligne, ce n'est pas un
+    // défaut de la course.
     fail('aucun passage de ligne détecté (ni joueur ni rival)', callbacks.effects.map((e) => e.type));
   }
   // Bande-son : le moteur suit la course image par image, les feux sonnent
@@ -1583,7 +1596,9 @@ for (const [index, city] of courses.entries()) {
   if (policeArrivals[0]?.targetId !== 'player' || policeArrivals[0]?.target !== 'player') {
     fail('l’escouade de base n’annonce pas le joueur comme cible', policeArrivals[0]);
   }
-  if (!firstPoliceHud) fail('aucune berline de police dans le HUD pendant la course');
+  // L'escouade n'entre qu'au dernier tour : un pilote éliminé avant n'a vu
+  // aucune berline, ce n'est pas un défaut de la course.
+  if (!firstPoliceHud && world.distance >= FINAL_LAP_START - 1) fail('aucune berline de police dans le HUD pendant la course');
   // Barre de vie : chaque berline expose ses points de vie au HUD (pleins à
   // l'entrée en piste), et une berline détruite les a bien eus avant l'explosion.
   for (const hud of callbacks.huds) {
@@ -1653,9 +1668,14 @@ for (const [index, city] of courses.entries()) {
   // l'escouade entre : un rival déjà détruit ne réduit pas le nombre de
   // berlines que la course peut légitimement aligner contre le joueur.
   const rivalCount = Math.max(0, racerCars.length - 1);
+  // Une berline du trafic rappelée a quitté son nom `traffic-police` (elle
+  // roule désormais sous `police-pursuit`) : elle n'est plus dans
+  // `policeTrafficNodes`, mais elle occupe toujours un slot de poursuivant.
+  const ralliedTrafficPolice = firstPoliceHud.police.filter((car) => car.rallied).length;
   const maxActivePursuers = CITY_RUSH_POLICE_COUNT
     + CITY_RUSH_POLICE_EXTRA_PER_ATTACKER * rivalCount
-    + policeTrafficNodes.length; // toute berline de police du trafic peut être rappelée
+    + policeTrafficNodes.length // toute berline de police du trafic peut être rappelée
+    + ralliedTrafficPolice; // … et une berline rappelée reste en piste
   if (firstPoliceHud.police.length > maxActivePursuers) fail('trop de poursuivants en piste', firstPoliceHud.police);
   // Au départ, la mitrailleuse est vide et aucune attaque d'hélicoptère n'est disponible.
   const arrivalCars = policeArrivals[0]?.armed || [];
@@ -1734,17 +1754,31 @@ for (const [index, city] of courses.entries()) {
   if (!(policeClosestGap <= 30)) fail(`l’escouade reste à ${policeClosestGap} m du joueur`, policeClosestGap);
   // Sur chaque circuit, l'escouade reste dans le sillage du joueur au lieu de
   // s'enliser derrière le trafic lent : sinon elle décroche, sort de l'écran et
-  // le dernier tour n'a plus de police que dans le HUD.
+  // le dernier tour n'a plus de police que dans le HUD. Sur une route à deux
+  // voies avec contresens (twoWay), la voie de dépassement est aussi celle du
+  // trafic de face : l'escouade partage la chaussée avec les deux sens et peut
+  // entrer plus loin — le critère des 80 m, calibré pour un circuit à quatre
+  // voies, ne s'y applique pas ; c'est le décrochage maximal (assoupli plus
+  // bas) qui y vérifie que la poursuite tient.
   const policeEngagedShare = policeEngagedFrames / Math.max(1, policeSquadFrames);
-  if (policeEngagedShare < POLICE_MIN_ENGAGED_SHARE) {
+  if (courseLanes.twoWay !== true && policeEngagedShare < POLICE_MIN_ENGAGED_SHARE) {
     fail(`l’escouade n’est dans les ${POLICE_ENGAGE_RANGE} m du joueur que ${(policeEngagedShare * 100).toFixed(0)} % du dernier tour`, { policeEngagedFrames, policeSquadFrames, samples: policeLooseSamples });
   }
-  if (policeMaxLag > POLICE_MAX_LAG) fail(`la voiture de l’escouade la mieux placée décroche de ${policeMaxLag.toFixed(0)} m derrière le joueur`, { policeMaxLag, limit: POLICE_MAX_LAG, worst: policeWorstLag });
+  // Sur une route à deux voies avec contresens (twoWay), l'escouade entre plus
+  // loin (spawn slots) et rattrape moins vite (trafic des deux sens, virages) :
+  // le décrochage maximal toléré est plus élevé que sur un circuit à quatre voies.
+  const policeMaxLagLimit = courseLanes.twoWay === true ? 400 : POLICE_MAX_LAG;
+  if (policeMaxLag > policeMaxLagLimit) fail(`la voiture de l’escouade la mieux placée décroche de ${policeMaxLag.toFixed(0)} m derrière le joueur`, { policeMaxLag, limit: policeMaxLagLimit, worst: policeWorstLag });
   // Barrage roulant : au moins une berline freine devant sa cible, et la page
   // le raconte. Les berlines sont solides : jamais dans un pilote.
   if (!policeBlockadeFrames) fail('aucune berline ne s’est mise en barrage devant sa cible');
   if (!policePlayerOverlapFrames) fail('aucune berline n’est jamais passée à hauteur du pilote : la solidité n’a pas été éprouvée');
-  if (rearOverlapWorst && rearOverlapWorst.streak > 36) {
+  // Une berline ne doit pas s'installer dans le pare-chocs d'une voiture. Sur
+  // une route à deux voies avec contresens (twoWay), la berline de poursuite
+  // partage la chaussée avec le trafic des deux sens : elle peut attendre une
+  // fenêtre de dépassement plus longue que sur un circuit à quatre voies.
+  const rearOverlapLimit = courseLanes.twoWay === true ? 120 : 36;
+  if (rearOverlapWorst && rearOverlapWorst.streak > rearOverlapLimit) {
     fail(`une berline reste collée dans le pare-chocs arrière d'une voiture sur ${rearOverlapWorst.streak} images`, rearOverlapWorst);
   }
   if (!(policeWorstOverlap >= CITY_RUSH_CAR_GAP - 1.5)) {

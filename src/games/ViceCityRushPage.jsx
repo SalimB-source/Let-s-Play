@@ -156,6 +156,7 @@ const CITY_THUMBNAILS = {
   london: 'london-thumb.jpg',
   'mexico-countryside': 'mexico-countryside-thumb.jpg',
   nordschleife: 'nordschleife-thumb.jpg',
+  touge: 'touge-thumb.jpg',
 };
 const CAR_THUMBNAILS = {
   'city-hatch': 'car-mistral-14.jpg',
@@ -2683,7 +2684,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : city.raceway ? ` — chaque boucle rejoue un trente-cinquième du tour réel de ${city.route.lengthKm.toLocaleString('fr-FR')} km, du pont d'Antoniusbuche (km 0) à la Start-Ziel-Anlage, ${city.route.corners} virages et ${NORDSCHLEIFE_RELIEF_M} m de dénivelé` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, ${formatSprintSeconds(sprintCheckpointBonus)} s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : city.raceway ? ` — chaque boucle rejoue un trente-cinquième du tour réel de ${city.route.lengthKm.toLocaleString('fr-FR')} km, du pont d'Antoniusbuche (km 0) à la Start-Ziel-Anlage, ${city.route.corners} virages et ${NORDSCHLEIFE_RELIEF_M} m de dénivelé` : city.touge ? ` — chaque boucle rejoue la峠道 de nuit, de la place du village au sommet et retour (${city.route.lengthKm.toLocaleString('fr-FR')} km, ${city.route.corners} épingles à cheveux, ${city.route.speedLimit} km/h, deux voies à double sens)` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, ${formatSprintSeconds(sprintCheckpointBonus)} s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
                       {CITY_RUSH_COURSES.map((option, index) => (
