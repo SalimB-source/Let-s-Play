@@ -34,6 +34,9 @@ import {
   cityRushLaneConfig,
   cityRushCoursePace,
   cityRushCornerPace,
+  cityRushAiCornerPace,
+  CITY_RUSH_CORNER_PACE_YAW_SWEEP,
+  CITY_RUSH_CORNER_PACE_YAW_TIGHT,
   nordschleifeReadout,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_PISTOL_AMMO_PER_PICKUP,
@@ -179,6 +182,7 @@ import {
   cityRushLapForDistance,
   cityRushLapLength,
   cityRushLapProgress,
+  cityRushBazookaAvailable,
   cityRushBazookaTrackDistances,
   cityRushBazookaPickupCanUse,
   cityRushBazookaTarget,
@@ -279,6 +283,7 @@ import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRu
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStage';
+import { buildTougeTrack, makeTougeRoad } from './tougeStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
 import { animateRacerCar, applyPoliceRacerLivery, configureCarReflections, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
 import { makeBoostPadMaterial, makeLapBoard, makePickupMaterial } from './cityRushTextures';
@@ -1801,9 +1806,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const storyPoliceEnabled = storyRules?.policeEnabled !== false;
   const policeTrafficEnabled = storyRules?.policeTrafficEnabled !== false;
   // Le bazooka est sur toutes les cartes : deux entrepôts par course, à 30 %
-  // puis 65 % du parcours — seul le Sprint et les chapitres sans arme/police
-  // le retirent.
-  const bazookaWarehouseEnabled = !sprint && storyWeaponsEnabled && storyPoliceEnabled && storyRules?.bazookaEnabled !== false;
+  // puis 65 % du parcours — seul le Sprint, les chapitres sans arme/police et
+  // les parcours qui ferment l'arsenal (le tōgé du Mont Haruna) le retirent.
+  const bazookaWarehouseEnabled = !sprint && storyWeaponsEnabled && storyPoliceEnabled && storyRules?.bazookaEnabled !== false && cityRushBazookaAvailable(city);
   const storyHealthOverride = Number.isFinite(Number(storyRules?.playerHealthOverride)) && Number(storyRules.playerHealthOverride) > 0
     ? Math.floor(Number(storyRules.playerHealthOverride))
     : null;
@@ -1883,6 +1888,25 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // dans les courbes. À Vice City, l'anticipation de 40 m commence le freinage
   // avant les virages secs ; les longues droites sans courbe à venir restent à 1.
   const cornerPaceAt = (trackDistance) => cityRushCornerPace(city, trackDistance, trackProfile);
+  // L'IA de la montagne : les poursuites, le trafic et les rivaux subissent
+  // une peine de virage allégée (les locaux connaissent les épingles) — le
+  // pilote, lui, paie la courbe plein pot. Ailleurs, aucun écart.
+  const aiCornerPaceAt = (trackDistance) => cityRushAiCornerPace(city, trackDistance, trackProfile, cornerPaceAt(trackDistance));
+  // ── Dérapage contrôlé du tōgé ────────────────────────────────────────────
+  // Dans les épingles du Mont Haruna, tout ce qui roule vite prend un angle
+  // de dérive. L'amplitude suit le cap local de la route — la même échelle
+  // que le freinage de virage, du cœur de virage au plancher des épingles —
+  // et la vitesse : à l'arrêt, plus rien ne glisse. Le signe du cap donne le
+  // sens de la dérive, donc le contre-braquage. Ailleurs : jamais de dérive.
+  const tougeDrift = Boolean(theme.touge);
+  const driftFor = (trackDistance, speed, topSpeed) => {
+    if (!tougeDrift || speed < paced(7)) return 0;
+    const localYaw = trackYaw(trackDistance);
+    const intensity = clamp((Math.abs(localYaw) - CITY_RUSH_CORNER_PACE_YAW_SWEEP) / (CITY_RUSH_CORNER_PACE_YAW_TIGHT - CITY_RUSH_CORNER_PACE_YAW_SWEEP), 0, 1);
+    if (intensity <= 0) return 0;
+    const amount = intensity * clamp(speed / Math.max(1, topSpeed * 0.55), 0, 1);
+    return amount < 0.05 ? 0 : Math.sign(localYaw) * amount;
+  };
 
   const scene = new THREE.Scene();
   // Three.js crée des UUID avec Math.random(). Isole ces appels visuels pour
@@ -1966,13 +1990,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Un thème « piste » (Nürburgring Nordschleife) construit un circuit de
   // campagne : glissières, vibreurs, graviers et repères du Ring.
   const raceway = Boolean(theme.raceway);
-  const cityRoute = expressway || raceway ? cityRushRouteFor(city.id) : null;
+  // Un thème « tōgé » (Mont Haruna) construit la route de montagne de nuit :
+  // chaussée étroite, épingles, tunnel sodium, pont du ravin et lac — ni une
+  // ville, ni un circuit. `cityRoute` suit pour les secteurs et la mini-carte.
+  const touge = Boolean(theme.touge);
+  const cityRoute = expressway || raceway || touge ? cityRushRouteFor(city.id) : null;
   const expresswayRoute = expressway ? cityRoute : null;
   const loop = expressway
     ? buildShutoExpressway({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite })
     : raceway
       ? buildNordschleifeTrack({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite, route: cityRoute })
-      : buildCityLoop({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite });
+      : touge
+        ? buildTougeTrack({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite, route: cityRoute })
+        : buildCityLoop({ city, theme, materials: stageMaterials, batch: loopBatch, cityIndex, lite });
   buildStartComplex({ city, theme, materials: stageMaterials, startMaterials, batch: loopBatch, random: loop.random, lite });
   const [loopA, loopB] = finishLoopGeometry(loopBatch, scene, trackProfile);
   for (const copy of [loopA, loopB]) {
@@ -1989,7 +2019,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     ? makeExpresswayRoad(scene, theme, sceneryRandom, PLAYER_Z)
     : raceway
       ? makeNordschleifeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile)
-      : makeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile);
+      : touge
+        ? makeTougeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile)
+        : makeRoad(scene, theme, sceneryRandom, PLAYER_Z, trackProfile);
   const rain = makeRain(theme, camera.position.z, lite);
   if (rain) scene.add(rain.object);
   const startLine = createStartLineDynamics({ city, theme, materials: stageMaterials, startMaterials, random: loop.random, lite });
@@ -2767,6 +2799,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let trafficImpactCursor = 0;
   let lastDistanceSlot = 0;
   let lastTrafficDistanceSlot = 0;
+  let driftSmokeTimer = 0;
   let policeStealNoticeCooldown = 0;
   let policeBlockNoticeCooldown = 0;
   let policeAimNoticeCooldown = 0;
@@ -2784,10 +2817,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackPitch = (trackDistance) => trackProfile.pitch(trackDistance);
   const trackYaw = (trackDistance) => trackProfile.yaw(trackDistance);
   const miniGarageLanes = cityRushMiniGarageLanes(city);
-  const miniGarageMaterials = sprint ? null : makeMiniGarageMaterials(city, miniGarageLanes);
-  // Une seule porte par course : celle de mi-course, à la moitié du parcours.
+  const miniGarageCourse = cityRushMiniGarageAvailable({ sprint, course: city });
+  const miniGarageMaterials = miniGarageCourse ? makeMiniGarageMaterials(city, miniGarageLanes) : null;
+  // Une seule porte par course : celle de mi-course, à la moitié du parcours —
+  // sauf sur le tōgé, où la montagne n'offre aucun garage.
   const miniGarageTrackDistances = cityRushMiniGarageTrackDistances({ laps: effectiveLaps });
-  const miniGarages = sprint ? [] : miniGarageTrackDistances.map((trackDistance, index) => {
+  const miniGarages = miniGarageCourse ? miniGarageTrackDistances.map((trackDistance, index) => {
     const group = makeMiniGarageObject(index + 1, miniGarageMaterials, miniGarageLanes);
     scene.add(group);
     return {
@@ -2797,7 +2832,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       trackDistance,
       used: false,
     };
-  });
+  }) : [];
   // Deux entrepôts par course, sur toutes les cartes : un à 30 % du parcours
   // (avant le garage de vie de mi-course), un à 65 % (après). Chacun est un
   // conteneur de 40 pieds qui prend les **deux voies extérieures** du sens de
@@ -3075,7 +3110,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function miniGarageAvailable(garage) {
     if (!garage) return false;
     if (!(phase === 'playing' && !finished && !playerWrecked)) return false;
-    return cityRushMiniGarageAvailable({ sprint });
+    return cityRushMiniGarageAvailable({ sprint, course: city });
   }
 
   function miniGaragesAvailable() {
@@ -6628,7 +6663,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const targetSpeed = Math.max(
         paced(3.4),
         patrol.baseSpeed + paced(Math.sin(elapsed * 0.5 + patrol.phase) * 0.18),
-      ) * cornerPaceAt(patrol.distance);
+      ) * aiCornerPaceAt(patrol.distance);
       patrol.currentSpeed = approachCityRushSpeed(
         patrol.currentSpeed,
         targetSpeed,
@@ -7709,7 +7744,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (police.boostLeft > 0) targetSpeed *= CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR;
         // Même virage que le pilote : l'escouade lève le pied elle aussi, sinon
         // elle traverserait la cassure à la vitesse de la ligne droite.
-        targetSpeed *= cornerPaceAt(police.distance);
+        targetSpeed *= aiCornerPaceAt(police.distance);
       }
       // Engluée derrière un véhicule lent ou un pilote, ou sonnée par un choc :
       // elle relance tout de suite son choix de voie au lieu d'attendre la fin
@@ -9428,7 +9463,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const speedTarget = (racer.wrecked || racer.stunLeft > 0
           ? 0
           : rivalTargetTopSpeed * (racerSlowed ? CITY_RUSH_RIVAL_SLOW_FACTOR : 1) * (racer.blueShotSlowLeft > 0 ? CITY_RUSH_BLUE_SHOT_SPEED_FACTOR : 1) * (racer.boostLeft > 0 ? CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR : 1) + paced(Math.sin(elapsed * 0.82 + racer.phase) * 0.38))
-          * cornerPaceAt(racer.distance);
+          * aiCornerPaceAt(racer.distance);
         const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt, coursePace);
         requestedRacerSpeeds.set(racer.id, requestedSpeed);
         priorRacerXs.set(racer.id, racer.currentX);
@@ -9439,7 +9474,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const requestedTrafficSpeeds = new Map(trafficCars.map((traffic) => [
         traffic.id,
         Math.max(paced(3.8), traffic.baseSpeed + paced(Math.sin(elapsed * 0.5 + traffic.phase) * 0.18))
-          * cornerPaceAt(traffic.distance),
+          * aiCornerPaceAt(traffic.distance),
       ]));
 
       // Détection de tremplin pour le joueur
@@ -9669,6 +9704,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         + clamp((laneX(playerLane) - playerX) * -0.06, -0.12, 0.12)
         + skidOffset(playerSkidLeft, playerSkidDuration, playerSkidSide, 0.1, 14);
       const playerSteer = clamp((laneX(playerLane) - playerX) * 0.28, -0.34, 0.34);
+      const playerDrift = playerWrecked || playerStunLeft > 0 || playerJumpState.active
+        ? 0
+        : driftFor(distance, currentSpeed, playerTopSpeed);
       animateRacerCar(playerCar, {
         speed: currentSpeed,
         maxSpeed: playerTopSpeed,
@@ -9681,7 +9719,19 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         violentImpact: playerSuvImpactAmount,
         skidding: playerSkidLeft > 0,
         braking: currentSpeed < priorSpeed - paced(2) * dt && currentSpeed > 1,
+        drift: playerDrift,
       }, dt, clockTime);
+      // Gomme des roues arrière dans la dérive : un léger panache continu
+      // tant que l'angle tient, comme sur les vidéos du tōgé.
+      if (playerDrift) {
+        driftSmokeTimer -= dt;
+        if (driftSmokeTimer <= 0) {
+          emitWheelSmoke(playerCar, { color: 0xd8d8e0, opacity: 0.3, scale: 0.42, grow: 2.3, life: 0.75 });
+          driftSmokeTimer = 0.06;
+        }
+      } else {
+        driftSmokeTimer = 0;
+      }
 
       // Bande-son : le régime moteur suit la vitesse et l'effort demandé
       // (`requestedPlayerSpeed` dépasse `currentSpeed` tant qu'on accélère).
@@ -9726,6 +9776,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           + cityRushStunSpin(racer.spinLeft, racer.spinTotal, CITY_RUSH_PISTOL_SPIN_TURNS)
           + clamp(racerLateralMotion * -0.16 + skid * 0.22, -0.22, 0.22);
         const racerSteer = clamp(-racerLateralMotion * 1.45, -0.3, 0.3);
+        const racerDrift = racer.wrecked || racer.stunLeft > 0 || (racer.spinLeft || 0) > 0
+          ? 0
+          : driftFor(racer.distance, racer.currentSpeed, racer.baseSpeed);
         if (visible) {
           animateRacerCar(racer.mesh, {
             speed: racer.currentSpeed,
@@ -9738,10 +9791,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             stunned: racer.stunLeft > 0 || (racer.spinLeft || 0) > 0,
             skidding: racer.skidLeft > 0,
             braking: racer.currentSpeed < priorRacerSpeed - paced(2) * dt && racer.currentSpeed > 1,
+            drift: racerDrift,
           }, dt, clockTime);
           racer.smokeTimer -= dt;
           if (racer.smokeTimer <= 0) {
-            if (racer.skidLeft > 0 || ((racer.slowLeft > 0 || racer.blueShotSlowLeft > 0 || racer.trafficImpactLeft > 0) && racer.currentSpeed > 4)) {
+            if (racerDrift) {
+              emitWheelSmoke(racer.mesh, { color: 0xd8d8e0, opacity: 0.26, scale: 0.38, grow: 2.3, life: 0.75 });
+              racer.smokeTimer = 0.07;
+            } else if (racer.skidLeft > 0 || ((racer.slowLeft > 0 || racer.blueShotSlowLeft > 0 || racer.trafficImpactLeft > 0) && racer.currentSpeed > 4)) {
               emitWheelSmoke(racer.mesh, { color: 0xcfd0d8, opacity: 0.42, scale: 0.4, grow: 2.2, life: 0.7 });
               racer.smokeTimer = 0.07;
             } else if (racer.boostLeft > 0) {
@@ -9866,7 +9923,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const requestedOncomingSpeed = Math.max(
           paced(oncoming.pushedAside ? 2.6 : 3.8),
           oncoming.baseSpeed * shoveSpeedScale * turnSpeedScale + paced(Math.sin(elapsed * 0.5 + oncoming.phase) * 0.18),
-        ) * cornerPaceAt(oncoming.distance);
+        ) * aiCornerPaceAt(oncoming.distance);
         // Un SUV de charge ne se contente pas de ralentir dans son demi-tour :
         // il freine, s'arrête face au pilote, puis repart dans l'autre sens. Le
         // signe suit le cosinus de la manœuvre (1 → 0 → −1), sans quoi la

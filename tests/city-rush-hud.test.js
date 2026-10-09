@@ -302,8 +302,8 @@ test('les étoiles suivent les tirs/destructions et l’unique mini-garage répa
     'le monde ne distingue plus de porte de dernier tour');
   const availability = world.match(/function miniGarageAvailable\(garage\)[\s\S]*?\n  function miniGaragesAvailable/)?.[0] || '';
   assert.match(availability, /phase === 'playing' && !finished && !playerWrecked/);
-  assert.match(availability, /return cityRushMiniGarageAvailable\(\{ sprint \}\)/,
-    'la porte ne s’ouvre que hors Sprint, quel que soit le tour');
+  assert.match(availability, /return cityRushMiniGarageAvailable\(\{ sprint, course: city \}\)/,
+    'la porte ne s’ouvre que hors Sprint, quel que soit le tour, et sur les parcours qui l’admettent');
   const placement = world.match(/function placeMiniGarage\(garage\)[\s\S]*?\n  function setMiniGaragesToStart/)?.[0] || '';
   assert.match(placement, /!miniGarageAvailable\(garage\)/, 'le rendu applique la même disponibilité que le service');
   assert.match(world, /garage\.trackDistance = miniGarageTrackDistances\[index\]/,

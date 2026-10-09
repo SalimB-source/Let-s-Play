@@ -1418,7 +1418,18 @@ export function animateRacerCar(car, state, dt, elapsed) {
   data.wheels.forEach((wheel) => { wheel.rotation.x += speed * dt * 0.95; });
   data.frontWheels.forEach((pivot) => { pivot.rotation.y = steer; });
 
-  const targetRoll = clamp(-lateral * 0.075 + (skidding ? Math.sin(elapsed * 21) * 0.05 : 0), -0.11, 0.11);
+  // ── Dérapage contrôlé (tōgé) ─────────────────────────────────────────────
+  // `drift` est signé : son signe donne le sens du virage (comme le cap de la
+  // courbe), son amplitude l'intensité du glissement. La caisse prend un angle
+  // de dérive — le cul part vers l'extérieur, le museau pointe la corde — les
+  // roues avants gardent le contre-braquage, la caisse s'appuie et frémit des
+  // petites corrections du pilote. À zéro, aucun changement visuel : les
+  // autres parcours ne voient rien.
+  const driftAmount = clamp(Math.abs(Number(state.drift) || 0), 0, 1);
+  const driftSide = Math.sign(Number(state.drift) || 0);
+  const driftYaw = driftSide * driftAmount * (0.14 + 0.24 * driftAmount);
+  const targetRoll = clamp(-lateral * 0.075 + (skidding ? Math.sin(elapsed * 21) * 0.05 : 0), -0.11, 0.11)
+    + driftYaw * 0.22;
   const targetPitch = clamp(-acceleration * 0.0045 + (boosting ? -0.025 : 0) + (braking ? 0.02 : 0), -0.06, 0.06);
   anim.roll = lerp(anim.roll, targetRoll, Math.min(1, dt * 9));
   anim.pitch = lerp(anim.pitch, targetPitch, Math.min(1, dt * 7));
@@ -1432,7 +1443,17 @@ export function animateRacerCar(car, state, dt, elapsed) {
   const violentBounce = Math.abs(Math.sin(elapsed * 54)) * 0.11 * impactForce;
   data.body.rotation.z = anim.roll + impactRoll + violentRoll + (stunned ? Math.sin(elapsed * 19) * 0.03 : 0);
   data.body.rotation.x = anim.pitch + impactPitch + violentPitch;
-  data.body.position.y = vibration + (slowed ? Math.sin(elapsed * 27) * 0.02 : 0) + (impacting ? Math.abs(Math.sin(elapsed * 22)) * 0.035 : 0) + violentBounce + (idle ? Math.sin(elapsed * 2.2) * 0.006 : 0);
+  // L'angle de dérive vit sur la caisse seule : les roues restent dans l'axe
+  // de la route, le contre-braquage lisible dessous.
+  data.body.rotation.y = (driftYaw + Math.sin(elapsed * 13) * 0.028 * driftAmount);
+  if (driftAmount > 0) {
+    data.frontWheels.forEach((pivot) => {
+      pivot.rotation.y = clamp(steer - driftYaw * 1.5, -0.52, 0.52);
+    });
+  }
+  data.body.position.y = vibration
+    - driftAmount * 0.025
+    + (slowed ? Math.sin(elapsed * 27) * 0.02 : 0) + (impacting ? Math.abs(Math.sin(elapsed * 22)) * 0.035 : 0) + violentBounce + (idle ? Math.sin(elapsed * 2.2) * 0.006 : 0);
 
   const brake = braking || slowed || stunned;
   data.materials.tailLight.color.setHex(stunned ? 0xfff0b0 : brake ? 0xff5a6a : 0xff3449);

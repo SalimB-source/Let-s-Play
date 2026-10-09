@@ -12,7 +12,11 @@ import { act } from 'react';
 export async function dismissTitleMenu(node) {
   const menu = node.querySelector('.vcr-menu');
   if (!menu) return;
-  const raceEntry = [...menu.querySelectorAll('.vcr-entry')][2];
+  // Le repérage se fait au libellé (l'attribut aria-label : les boutons de
+  // l'écran-titre ne portent qu'une icône), pas à l'index : des entrées ont
+  // déjà rejoint l'écran-titre (MISSIONS, OPTIONS) et en rejoindront d'autres.
+  const raceEntry = [...menu.querySelectorAll('.vcr-entry')]
+    .find((entry) => (entry.getAttribute('aria-label') || entry.textContent || '').toUpperCase().includes('COURSE RAPIDE'));
   if (!raceEntry) throw new Error('entrée « COURSE RAPIDE » introuvable dans l’écran-titre');
   await act(async () => { raceEntry.click(); });
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });

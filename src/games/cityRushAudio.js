@@ -39,10 +39,13 @@ export const CITY_RUSH_ROUTE_66_BPM = 108;
 // Le Ring : tempo posé, plus proche du rythme d'un tour de 8 minutes que d'une
 // course de rue. Constant à part, comme la 66, pour ne pas toucher aux villes.
 export const CITY_RUSH_NORDSCHLEIFE_BPM = 116;
+// Le tōgé : eurobeat de montagne, 152 — le tempo des descentes de Initial D.
+export const CITY_RUSH_TOUGE_BPM = 152;
 
 export function cityRushMusicBpm(cityId) {
   if (cityId === 'route-66') return CITY_RUSH_ROUTE_66_BPM;
   if (cityId === 'nordschleife') return CITY_RUSH_NORDSCHLEIFE_BPM;
+  if (cityId === 'touge') return CITY_RUSH_TOUGE_BPM;
   return CITY_RUSH_MUSIC_BPM[cityId] || CITY_RUSH_DEFAULT_BPM;
 }
 
@@ -190,6 +193,23 @@ const NORDSCHLEIFE_LEAD = Object.freeze([
   Object.freeze([77, 77, 82, 77, 86, 82, 77, null]),
   Object.freeze([79, 79, 82, 79, 86, 82, 79, null]),
   Object.freeze([81, 81, 85, 81, 88, 85, 81, 77]),
+]);
+// ── MONT HARUNA (tōgé de nuit) ────────────────────────────────────────
+// Eurobeat de descente : la mineur lancinante qui monte avec la révolution,
+// puis F, G, E — la rondeur harmonique des compilations Super Eurobeat.
+const TOUGE_CHORDS = Object.freeze([
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 3, 7, 12]) }), // Am
+  Object.freeze({ root: 41, intervals: Object.freeze([0, 4, 7, 12]) }), // F
+  Object.freeze({ root: 43, intervals: Object.freeze([0, 4, 7, 12]) }), // G
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 3, 7, 12]) }), // Em
+]);
+// Le thème : des croches qui grimpent la montagne et redescendent en glissant,
+// comme la voiture dans les épingles.
+const TOUGE_LEAD = Object.freeze([
+  Object.freeze([69, 76, 72, 76, 69, 76, 72, 76]),
+  Object.freeze([65, 72, 69, 72, 65, 72, 69, 72]),
+  Object.freeze([67, 74, 71, 74, 67, 74, 71, 79]),
+  Object.freeze([64, 71, 68, 71, 76, 74, 71, 68]),
 ]);
 
 // Hauteur du moteur : cinq rapports, le régime remonte à chaque passage de
@@ -495,6 +515,7 @@ export class CityRushAudio {
     if (this.cityId === 'route-66') { this.playRoute66(step, time); return; }
     if (this.cityId === 'mexico-countryside') { this.playMexico(step, time); return; }
     if (this.cityId === 'nordschleife') { this.playNordschleife(step, time); return; }
+    if (this.cityId === 'touge') { this.playTouge(step, time); return; }
     this.playViceCity(step, time);
   }
 
@@ -893,6 +914,59 @@ export class CityRushAudio {
       }
     }
     if (step === 0) this.crash(time);
+  }
+
+  playTouge(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = TOUGE_CHORDS[bar % TOUGE_CHORDS.length];
+    const stepLength = 60 / cityRushMusicBpm(this.cityId) / 4;
+
+    // Kick eurobeat : quatre au plancher, nerveux.
+    if (beat % 4 === 0) {
+      this.tone(158, time, 0.08, 'sine', 0.5, { destination: this.musicBus });
+      this.tone(52, time + 0.008, 0.12, 'sine', 0.3, { destination: this.musicBus });
+      this.noise(time, 0.02, 0.07, { type: 'highpass', frequency: 3400, destination: this.musicBus });
+    }
+    // Contretemps ouvert : le « un-TCHAK » qui fait tourner les phares.
+    if (beat % 4 === 2) this.hat(time, true);
+    else if (beat % 2 === 1) this.noise(time, 0.02, 0.045, { type: 'highpass', frequency: 9800, destination: this.musicBus });
+    // Clap sur 2 et 4.
+    if (beat === 4 || beat === 12) this.clap(time);
+    // Basse en octaves roulantes : le moteur de la piste de danse.
+    if (beat % 2 === 0) {
+      const octave = (beat / 2) % 2 === 0 ? 0 : 12;
+      this.tone(midiToFrequency(chord.root + octave), time, stepLength * 1.35, 'sawtooth', 0.2, {
+        filter: 900, filterTo: 420, attack: 0.004, destination: this.musicBus,
+      });
+      this.tone(midiToFrequency(chord.root + octave - 12), time, stepLength * 1.35, 'sine', 0.16, {
+        destination: this.musicBus,
+      });
+    }
+    // Stabs de cordes eurobeat sur les contretemps de la mesure.
+    if (beat === 2 || beat === 6 || beat === 10 || beat === 14) {
+      this.stab(chord, time, beat === 14 ? 0.7 : 0.85);
+    }
+    // Le thème n'entre qu'à la moitié de la boucle : d'abord la montée,
+    // ensuite la descente grinçante dans les épingles.
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = TOUGE_LEAD[(bar - 4) % TOUGE_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 1.5, 'sawtooth', 0.085, {
+          filter: 3200, filterTo: 1900, attack: 0.005, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note - 12), time + 0.004, stepLength * 1.2, 'square', 0.03, {
+          filter: 2600, destination: this.musicBus,
+        });
+      }
+    }
+    // La cloche du tunnel : une fois par boucle, haute et lointaine.
+    if (step === 0) {
+      this.crash(time);
+      this.tone(midiToFrequency(93), time + stepLength * 2, 0.5, 'triangle', 0.05, {
+        filter: 5200, attack: 0.002, destination: this.musicBus,
+      });
+    }
   }
 
   kick(time) {
