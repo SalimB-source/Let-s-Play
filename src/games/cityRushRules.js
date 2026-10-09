@@ -2395,7 +2395,7 @@ export const CITY_RUSH_TOUGE = Object.freeze({
   directionRomaji: 'DOWNHILL',
   kmDirection: 'increase',
   lengthKm: TOUGE_LENGTH_KM,
-  corners: 34,
+  corners: 17,
   hairpins: TOUGE_HAIRPINS,
   // Limite de montagne japonaise : 40 km/h, rarement respectée après minuit.
   speedLimit: 40,
@@ -2403,73 +2403,67 @@ export const CITY_RUSH_TOUGE = Object.freeze({
   reliefM: TOUGE_RELIEF_M,
   origin: Object.freeze({ name: '山頂', romaji: 'SANCHŌ · KM 0', note: 'le repère du sommet, au départ de la descente' }),
   sectors: Object.freeze([
-    tougeSector('sancho', 0, 0.69, {
+    tougeSector('sancho', 0, 0.8, {
       kind: 'straight', name: '山頂', romaji: 'SANCHŌ', side: 1,
       note: 'Le repère du sommet : la descente commence ici, phares allumés.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['榛名山 山頂', '標高 1,081m']) }),
     }),
-    tougeSector('daiichi-tonneru', 0.69, 1.66, {
+    tougeSector('daiichi-tonneru', 0.8, 2.2, {
       kind: 'tunnel', name: '第一とうげトンネル', romaji: 'DAI-ICHI TONNERU', side: -1,
-      note: 'Le premier tunnel : sodium orange au plafond, mur de roche brut.',
+      note: 'Le premier tunnel : sodium orange au plafond, mur de roche brut. Longue ligne droite de 1,4 km.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['第一とうげトンネル', '630m']) }),
       tunnel: Object.freeze({ name: '第一とうげトンネル', romaji: 'DAI-ICHI TONNERU', lengthM: 630 }),
     }),
-    tougeSector('momijizaka', 1.66, 2.76, {
+    tougeSector('momijizaka', 2.2, 4.5, {
       kind: 'corner', name: '紅葉坂', romaji: 'MOMIJIZAKA', side: -1,
-      note: 'La pente aux érables : deux courbes rapides sous la canopée noire.',
+      note: 'La pente aux érables : deux courbes rapides séparées par une ligne droite sous la canopée.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['紅葉坂', '連続カーブ 2']), hazard: true }),
       corner: Object.freeze({ direction: 'complex', number: 2 }),
     }),
-    tougeSector('goren-hebirin', 2.76, 4.69, {
+    tougeSector('goren-hebirin', 4.5, 6.5, {
       kind: 'hairpins', name: '五連ヘアピン', romaji: 'GO-REN HEBIRIN', side: 1,
       note: 'Les cinq épingles : la légende de la montagne. Frein tardif, trajectoire large, sortie au fond.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['急カーブ 5連続', '速度制限 30']), hazard: true }),
       hairpins: 5,
     }),
-    tougeSector('kazamisaka', 4.69, 5.8, {
+    tougeSector('kazamisaka', 6.5, 8.5, {
       kind: 'descent', name: '風見坂', romaji: 'KAZAMISAKA', side: -1,
-      note: 'La pente de la girouette : deux grands appuis rapides, 10 % de pente.',
+      note: 'La pente de la girouette : longue ligne droite de descente rapide puis grand appui à gauche.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['風見坂', '急勾配 下り 10%']) }),
     }),
-    tougeSector('mizusawa', 5.8, 6.94, {
+    tougeSector('mizusawa', 8.5, 9.5, {
       kind: 'corner', name: '水沢の森', romaji: 'MIZUSAWA NO MORI', side: 1,
-      note: 'La forêt de Mizusawa : le gauche rapide qui se resserre sous les cèdres.',
+      note: 'La forêt de Mizusawa : appui droit sous les cèdres puis gauche qui se referme.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['水沢の森', 'カーブ注意']), hazard: true }),
       corner: Object.freeze({ direction: 'left', number: 12 }),
     }),
-    tougeSector('iwadarekabe', 6.94, 8.02, {
+    tougeSector('iwadarekabe', 9.5, 10.8, {
       kind: 'cut', name: '岩垂壁', romaji: 'IWADAREKABE', side: -1,
-      note: 'La paroi de roche à gauche : la montagne à un mètre du rétroviseur.',
+      note: 'La paroi de roche à gauche : la montagne à un mètre du rétroviseur, puis le droit qui s’en échappe.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['岩垂壁', '落下注意']) }),
       rock: true,
     }),
-    tougeSector('mikunizaka', 8.02, 9.38, {
+    tougeSector('mikunizaka', 10.8, 11.8, {
       kind: 'corner', name: '三国坂', romaji: 'MIKUNIZAKA', side: 1,
-      note: 'La pente de Mikuni : deux courbes qui se resserrent jusque dans la sortie.',
+      note: 'La pente de Mikuni : le gauche d’approche du ravin, tout en ligne droite avant la tempête.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['三国坂', 'カーブ注意']), hazard: true }),
-      corner: Object.freeze({ direction: 'complex', number: 24 }),
+      corner: Object.freeze({ direction: 'left', number: 8 }),
     }),
-    tougeSector('tanibashi', 9.38, 10.21, {
-      kind: 'bridge', name: '谷橋', romaji: 'TANIBASHI', side: -1,
-      note: 'Le pont du ravin : le vide à droite, un parapet bas comme seule barrière.',
-      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['谷橋', '幅員狭し']) }),
-      bridge: Object.freeze({ name: '谷橋', spanM: 24 }),
-    }),
-    tougeSector('renzoku-hebirin', 10.21, 11.32, {
+    tougeSector('renzoku-hebirin', 11.8, 12.8, {
       kind: 'hairpins', name: '連続ヘアピン', romaji: 'RENZOKU HEBIRIN', side: 1,
       note: 'Les trois épingles du ravin : le final, enchaînées sans ligne droite entre elles.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['連続急カーブ 3', '速度制限 30']), hazard: true }),
       hairpins: 3,
     }),
-    tougeSector('tenbodai', 11.32, 12.42, {
+    tougeSector('tenbodai', 12.8, 13.3, {
       kind: 'viewpoint', name: '展望台', romaji: 'TENBŌDAI', side: -1,
       note: 'L’aire du belvédère : distributeurs allumés, la vallée et ses lumières en dessous.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['展望台', '駐車スペースあり']) }),
       view: true,
     }),
-    tougeSector('harunako', 12.42, 13.8, {
+    tougeSector('harunako', 13.3, 13.8, {
       kind: 'finish', name: '榛名湖', romaji: 'HARUNAKO', side: 1,
-      note: 'La rive du lac : la dernière ligne droite, miroir de lune sur l’eau.',
+      note: 'La rive du lac : dernière courbe puis ligne droite, miroir de lune sur l’eau.',
       sign: Object.freeze({ route: '榛名', lines: Object.freeze(['榛名湖', 'FIN DE LA DESCENTE']) }),
     }),
   ]),
@@ -3254,37 +3248,38 @@ export function nordschleifeTrackPitch(distance, scrollScale = CITY_RUSH_SCROLL_
 // descente revienne au lac sans dériver : la correction de dérive du moteur
 // n'a presque rien à raboter (−30° sur la boucle, comme les 8° du Ring).
 export const CITY_RUSH_TOUGE_TURNS = Object.freeze([
-  // ── 紅葉坂 · la pente aux érables, sous le premier tunnel ─────────────────
-  Object.freeze([1.9, -26, 0.42, 'sustained']), // grande gauche rapide en sortie de tunnel
-  Object.freeze([2.35, 42, 0.4, 'tightening']), // droite qui se resserre sous la canopée
+  // ── 紅葉坂 · longue ligne droite de départ puis première courbe ───────────
+  // 2,6 km de ligne droite pour prendre de la vitesse avant le premier virage.
+  Object.freeze([2.6, -28, 0.42, 'sustained']), // grande gauche en sortie de tunnel
+  // ── Ligne droite vers les épingles · section d'accélération ───────────────
+  Object.freeze([4.0, 38, 0.38, 'sustained']), // droite qui se tient sous la canopée
   // ── 五連ヘアピン · les cinq épingles, la légende ───────────────────────────
-  Object.freeze([2.95, 60, 0.3, 'snap']), // épingle 1 · droite
-  Object.freeze([3.3, -60, 0.3, 'snap']), // épingle 2 · gauche
-  Object.freeze([3.65, 60, 0.3, 'snap']), // épingle 3 · droite
-  Object.freeze([4.0, -60, 0.3, 'snap']), // épingle 4 · gauche
-  Object.freeze([4.35, 60, 0.3, 'snap']), // épingle 5 · droite
-  // ── 風見坂 · les grands appuis de la pente rapide ─────────────────────────
-  Object.freeze([5.1, -16, 0.5, 'sustained']), // longue gauche en descente
-  Object.freeze([5.55, 12, 0.45, 'sustained']), // droite tenue
-  // ── 水沢の森 · la forêt ────────────────────────────────────────────────────
-  Object.freeze([6.1, -20, 0.42, 'tightening']), // le gauche qui se referme
-  Object.freeze([6.6, 16, 0.4, 'sustained']), // le droit sous les cèdres
-  // ── 岩垂壁 · la paroi de roche ─────────────────────────────────────────────
-  Object.freeze([7.3, -24, 0.36, 'tightening']), // le gauche collé à la paroi
-  Object.freeze([7.7, 12, 0.3, 'sustained']), // le droit qui s'en détache
-  // ── 三国坂 · les deux resserrements avant le ravin ─────────────────────────
-  Object.freeze([8.4, -40, 0.36, 'tightening']), // gauche qui se referme
-  Object.freeze([8.9, 30, 0.3, 'tightening']), // droite qui se referme
-  // ── 谷橋 · le pont du ravin ─────────────────────────────────────────────────
-  Object.freeze([9.9, -18, 0.4, 'sustained']), // gauche sur le tablier
+  // 0,6 km de droite après la canopée, puis l'enfilade légendaire.
+  Object.freeze([5.0, 50, 0.3, 'snap']), // épingle 1 · droite
+  Object.freeze([5.3, -50, 0.3, 'snap']), // épingle 2 · gauche
+  Object.freeze([5.6, 50, 0.3, 'snap']), // épingle 3 · droite
+  Object.freeze([5.9, -50, 0.3, 'snap']), // épingle 4 · gauche
+  Object.freeze([6.2, 50, 0.3, 'snap']), // épingle 5 · droite
+  // ── 風見坂 · longue ligne droite de descente rapide ───────────────────────
+  // 1,6 km de pleine vitesse en sortie d'épingles, puis appui tenu.
+  Object.freeze([7.8, -20, 0.5, 'sustained']), // longue gauche en descente rapide
+  // ── Ligne droite intermédiaire · section sous les cèdres ──────────────────
+  Object.freeze([9.0, 12, 0.45, 'sustained']), // droite tenue sous les cèdres
+  // ── 岩垂壁 · la paroi de roche, après une belle ligne droite ──────────────
+  Object.freeze([9.8, -26, 0.36, 'tightening']), // le gauche qui se referme contre la paroi
+  // ── Ligne droite vers le pont · section de relance ────────────────────────
+  Object.freeze([10.6, 10, 0.3, 'sustained']), // le droit qui s'en détache
+  // ── 三国坂 · le resserrement avant le ravin ────────────────────────────────
+  Object.freeze([11.1, -20, 0.4, 'sustained']), // gauche sur l'approche du ravin
+  // ── Ligne droite vers les épingles finales ────────────────────────────────
   // ── 連続ヘアピン · les trois épingles du ravin, le final ───────────────────
-  Object.freeze([10.5, -70, 0.3, 'snap']), // épingle 6 · gauche
-  Object.freeze([10.85, 70, 0.3, 'snap']), // épingle 7 · droite
-  Object.freeze([11.2, -70, 0.3, 'snap']), // épingle 8 · gauche
+  Object.freeze([12.0, -50, 0.3, 'snap']), // épingle 6 · gauche
+  Object.freeze([12.3, 50, 0.3, 'snap']), // épingle 7 · droite
+  Object.freeze([12.6, -50, 0.3, 'snap']), // épingle 8 · gauche
   // ── 展望台 · l'aire du belvédère ───────────────────────────────────────────
-  Object.freeze([11.9, 35, 0.34, 'snap']), // la droite de l'aire
-  // ── 榛名湖 · la rive du lac ────────────────────────────────────────────────
-  Object.freeze([12.9, -22, 0.34, 'sustained']), // le dernier gauche avant la ligne
+  Object.freeze([12.9, 28, 0.28, 'snap']), // la droite de l'aire du belvédère
+  // ── 榛名湖 · la rive du lac, dernière courbe avant la ligne ────────────────
+  Object.freeze([13.35, -24, 0.28, 'sustained']), // le dernier gauche avant la ligne
 ]);
 
 export const CITY_RUSH_TOUGE_PROFILE_STEPS = 2400;

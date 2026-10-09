@@ -9447,7 +9447,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Le cap de la piste fixe la vitesse du virage ; à Vice City, il est lu
       // 40 m en avance pour que le freinage ait déjà commencé à l'entrée. Le
       // freinage habituel (`approachCityRushSpeed`) accompagne ensuite la sortie.
-      const cornerScale = cornerPaceAt(distance);
+      // Sur le tōgé du Mont Haruna, le pilote ne ralentit plus dans les virages :
+      // la vitesse est maintenue et c'est le dérapage (drift) qui gère les courbes.
+      const cornerScale = touge ? 1 : cornerPaceAt(distance);
       const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
       // pointe est plus basse, la montée en régime garde sa durée.
@@ -9846,13 +9848,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         braking: currentSpeed < priorSpeed - paced(2) * dt && currentSpeed > 1,
         drift: playerDrift,
       }, dt, clockTime);
-      // Gomme des roues arrière dans la dérive : un léger panache continu
-      // tant que l'angle tient, comme sur les vidéos du tōgé.
+      // Gomme des roues arrière dans la dérive : épais panache de fumée
+      // continu tant que l'angle tient, comme sur les vidéos du tōgé.
+      // L'effet est dense, visible et persistant pour marquer chaque dérapage.
       if (playerDrift) {
         driftSmokeTimer -= dt;
         if (driftSmokeTimer <= 0) {
-          emitWheelSmoke(playerCar, { color: 0xd8d8e0, opacity: 0.3, scale: 0.42, grow: 2.3, life: 0.75 });
-          driftSmokeTimer = 0.06;
+          // Fumée dense et large des roues arrière en dérive
+          emitWheelSmoke(playerCar, { color: 0xc8c8d4, opacity: 0.6, scale: 0.65, grow: 2.8, life: 1.1, velocity: [(Math.random() - 0.5) * 0.4, 0.6, 1.2] });
+          // Panache secondaire plus volumineux au-dessus des roues
+          emitWheelSmoke(playerCar, { color: 0xdadde6, opacity: 0.4, scale: 0.5, grow: 3.2, life: 1.4, velocity: [(Math.random() - 0.5) * 0.6, 1.0, 0.8] });
+          driftSmokeTimer = 0.04;
         }
       } else {
         driftSmokeTimer = 0;
@@ -9921,8 +9927,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           racer.smokeTimer -= dt;
           if (racer.smokeTimer <= 0) {
             if (racerDrift) {
-              emitWheelSmoke(racer.mesh, { color: 0xd8d8e0, opacity: 0.26, scale: 0.38, grow: 2.3, life: 0.75 });
-              racer.smokeTimer = 0.07;
+              emitWheelSmoke(racer.mesh, { color: 0xc8c8d4, opacity: 0.52, scale: 0.58, grow: 2.8, life: 1.05, velocity: [(Math.random() - 0.5) * 0.4, 0.6, 1.2] });
+              racer.smokeTimer = 0.045;
             } else if (racer.skidLeft > 0 || ((racer.slowLeft > 0 || racer.blueShotSlowLeft > 0 || racer.trafficImpactLeft > 0) && racer.currentSpeed > 4)) {
               emitWheelSmoke(racer.mesh, { color: 0xcfd0d8, opacity: 0.42, scale: 0.4, grow: 2.2, life: 0.7 });
               racer.smokeTimer = 0.07;
