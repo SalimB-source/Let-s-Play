@@ -191,6 +191,35 @@ test('roues, caisse, feux et turbo restent animés sans animation de personnage'
   assert.equal(car.userData.headPivot, undefined, 'aucune animation de tête n’existe');
 });
 
+test('au tōgé, la caisse reste à plat sur la ligne droite et ne roule qu’en drift', () => {
+  const straightCar = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });
+  animateRacerCar(straightCar, {
+    speed: 24,
+    maxSpeed: 35,
+    steer: 0.4,
+    lateral: 1.2,
+    skidding: true,
+    driftOnlyRoll: true,
+  }, 0.2, 1.5);
+  assert.equal(straightCar.userData.body.rotation.z, 0,
+    'les changements de voie et les secousses de pneus ne penchent plus la caisse sur le tōgé');
+
+  const driftingCar = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });
+  animateRacerCar(driftingCar, {
+    speed: 24,
+    maxSpeed: 35,
+    steer: 0.4,
+    lateral: 1.2,
+    skidding: true,
+    drift: 1,
+    driftOnlyRoll: true,
+  }, 0.2, 1.5);
+  assert.ok(Math.abs(driftingCar.userData.body.rotation.z) > 0.05,
+    'le roulis reste visible pendant le vrai dérapage');
+  assert.ok(Math.abs(driftingCar.userData.body.rotation.y) > 0.3,
+    'la caisse prend un angle de drift distinct du roulis');
+});
+
 test('un choc de SUV fait violemment rebondir et tanguer la caisse', () => {
   const car = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });
   const ordinaryImpactCar = makeRacerCar(CITY_RUSH_CARS[0], { player: true, number: 1, driver: ROSTER[0] });

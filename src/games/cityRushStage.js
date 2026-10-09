@@ -257,18 +257,26 @@ export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ,
   const positions = mesh.geometry.attributes.position;
   const segments = positions.count / 2 - 1;
   const playerCurve = profile.offset(playerDistance);
+  const playerForward = typeof profile.forward === 'function' ? profile.forward(playerDistance) : playerDistance;
   const playerElevation = profile.elevation(playerDistance);
+  const path2d = typeof profile.forward === 'function';
   const baseY = mesh.geometry.userData.trackBaseY || 0;
   for (let index = 0; index <= segments; index += 1) {
     const progress = index / segments;
     const gap = ROAD_VIEW_BEHIND + (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * progress;
     const trackDistance = playerDistance + gap;
     const centerX = profile.offset(trackDistance) - playerCurve;
+    const forwardGap = path2d ? profile.forward(trackDistance) - playerForward : gap;
     const y = baseY + profile.elevation(trackDistance) - playerElevation;
-    const z = playerZ - gap * SCALE;
+    const yaw = path2d ? profile.yaw(trackDistance) : 0;
     const first = index * 2;
-    positions.setXYZ(first, centerX + innerX, y, z);
-    positions.setXYZ(first + 1, centerX + outerX, y, z);
+    for (let side = 0; side < 2; side += 1) {
+      const vertex = first + side;
+      const lateral = side ? outerX : innerX;
+      const x = centerX + (path2d ? lateral * Math.cos(yaw) : lateral);
+      const z = playerZ - forwardGap * SCALE - (path2d ? lateral * Math.sin(yaw) * SCALE : 0);
+      positions.setXYZ(vertex, x, y, z);
+    }
   }
   positions.needsUpdate = true;
   // Les variations sont douces, mais mettre les normales à jour permet aux
@@ -1706,14 +1714,20 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
 // lampadaires et portique suivent ainsi les mêmes courbes et montées que la
 // chaussée, sans coût à chaque image. La copie suivante partage cette géométrie.
 function bendLoopGeometry(group, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT) {
+  const path2d = typeof profile.forward === 'function';
   group.traverse((object) => {
     if (!object.isMesh || !object.geometry?.attributes?.position) return;
     const positions = object.geometry.attributes.position;
     for (let index = 0; index < positions.count; index += 1) {
-      const z = positions.getZ(index);
-      const trackMeters = -z / SCALE;
-      positions.setX(index, positions.getX(index) + profile.offset(trackMeters));
-      positions.setY(index, positions.getY(index) + profile.elevation(trackMeters));
+      const baseZ = positions.getZ(index);
+      const trackMeters = -baseZ / SCALE;
+      const localX = positions.getX(index);
+      const yaw = path2d ? profile.yaw(trackMeters) : 0;
+      const x = profile.offset(trackMeters) + (path2d ? localX * Math.cos(yaw) : localX);
+      const z = path2d
+        ? -profile.forward(trackMeters) * SCALE - localX * Math.sin(yaw) * SCALE
+        : baseZ;
+      positions.setXYZ(index, x, positions.getY(index) + profile.elevation(trackMeters), z);
     }
     positions.needsUpdate = true;
     // Les façades et le sol reçoivent toujours la lumière de la bonne
