@@ -1569,6 +1569,7 @@ export function animateRacerCar(car, state, dt, elapsed) {
     skidding = false,
     idle = false,
     braking = false,
+    driftOnlyRoll = false,
   } = state;
   const anim = data.anim;
   const impactForce = clamp(Number(violentImpact) || 0, 0, 1);
@@ -1595,8 +1596,12 @@ export function animateRacerCar(car, state, dt, elapsed) {
   const driftAmount = clamp(Math.abs(Number(state.drift) || 0), 0, 1);
   const driftSide = Math.sign(Number(state.drift) || 0);
   const driftYaw = driftSide * driftAmount * (0.14 + 0.24 * driftAmount);
-  const targetRoll = clamp(-lateral * 0.075 + (skidding ? Math.sin(elapsed * 21) * 0.05 : 0), -0.11, 0.11)
-    + driftYaw * 0.22;
+  // Le tōgé garde sa caisse à plat hors drift : les transferts latéraux de voie
+  // ne font plus pencher la voiture sur les longues lignes droites.
+  const lateralRoll = driftOnlyRoll
+    ? 0
+    : clamp(-lateral * 0.075 + (skidding ? Math.sin(elapsed * 21) * 0.05 : 0), -0.11, 0.11);
+  const targetRoll = lateralRoll + driftYaw * 0.22;
   const targetPitch = clamp(-acceleration * 0.0045 + (boosting ? -0.025 : 0) + (braking ? 0.02 : 0), -0.06, 0.06);
   anim.roll = lerp(anim.roll, targetRoll, Math.min(1, dt * 9));
   anim.pitch = lerp(anim.pitch, targetPitch, Math.min(1, dt * 7));

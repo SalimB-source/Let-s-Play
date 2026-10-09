@@ -13,6 +13,7 @@ import {
   CITY_RUSH_FINAL_LAP_LOOPS,
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
+  CITY_RUSH_SCROLL_SCALE,
   CITY_RUSH_TRACK_BEHIND,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_AI_TRACK_BOOST_WEIGHT,
@@ -363,7 +364,17 @@ import {
   nordschleifeTrackOffset,
   nordschleifeTrackTangent,
   nordschleifeTrackYaw,
+  CITY_RUSH_TOUGE,
   CITY_RUSH_TOUGE_COURSE,
+  CITY_RUSH_TOUGE_TURNS,
+  CITY_RUSH_TOUGE_MAX_OFFSET,
+  CITY_RUSH_TOUGE_TURN_CORE_FRACTION,
+  tougeTrackOffset,
+  tougeTrackForward,
+  tougeTrackHeading,
+  tougeTrackTangent,
+  tougeTrackYaw,
+  tougeDriftAmount,
 } from '../src/games/cityRushRules.js';
 
 test('the five city routes have a distinct identity and complete palettes', () => {
@@ -2516,9 +2527,9 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   assert.ok(CITY_RUSH_RACEWAY_PACE >= CITY_RUSH_COURSE_PACE_MIN, 'et il reste au-dessus du garde-fou');
   assert.equal(cityRushCoursePace('nordschleife'), CITY_RUSH_RACEWAY_PACE);
   assert.equal(cityRushCoursePace(CITY_RUSH_NORDSCHLEIFE_COURSE), CITY_RUSH_RACEWAY_PACE);
-  // Le tōgé roule au même facteur que le Ring : 1582° de virages sur une
-  // chaussée de 6,40 m se lisent à ~107 km/h, et les épingles ajoutent leur
-  // propre freinage par le facteur de virage.
+  // Le tōgé roule au même facteur que le Ring : ses douze virages à 90° sur
+  // une chaussée de 6,40 m se lisent à ~107 km/h ; l'IA lève le pied dans les
+  // cassures, tandis que le joueur garde sa vitesse et gère le drift.
   assert.equal(CITY_RUSH_TOUGE_COURSE.pace, CITY_RUSH_RACEWAY_PACE);
   assert.equal(cityRushCoursePace('touge'), CITY_RUSH_RACEWAY_PACE);
 
@@ -2579,10 +2590,89 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   assert.equal(approachCityRushSpeed(30, 10, 6, 1, 0), brakingFlat, 'un facteur invalide retombe sur 1');
 });
 
-test('Vice City et le Ring ralentissent les voitures dans les grands virages', () => {
-  // Seuls ces deux parcours tournent vraiment. Les autres gardent leur vitesse,
-  // y compris au cœur de leurs S doux : un facteur oublié sur Tokyo ou la
-  // Route 66 se lirait ici.
+test('le tōgé dessine douze vrais virages à 90° et ne fait déraper que dans leur courbure', () => {
+  const lengthKm = CITY_RUSH_TOUGE.lengthKm;
+  assert.equal(CITY_RUSH_TOUGE.corners, 12);
+  assert.equal(CITY_RUSH_TOUGE_TURNS.length, 12, '8 épingles et 4 virages d’enchaînement');
+  assert.equal(CITY_RUSH_TOUGE_MAX_OFFSET, 32, 'le tracé 2D reste dans un déport latéral de 32 m');
+  assert.equal(CITY_RUSH_TOUGE_TURNS.reduce((sum, turn) => sum + turn[1], 0), 0, 'les virages opposés referment le cap');
+  assert.ok(CITY_RUSH_TOUGE_TURNS.every(([, angle, span, shape, drift]) => (
+    Math.abs(angle) === 90 && span === 0.3 && shape === 'snap' && drift === true
+  )), 'chaque zone de drift est une cassure de 90°');
+
+  for (let index = 0; index < CITY_RUSH_TOUGE_TURNS.length; index += 2) {
+    const first = CITY_RUSH_TOUGE_TURNS[index];
+    const second = CITY_RUSH_TOUGE_TURNS[index + 1];
+    assert.equal(second[1], -first[1], `la paire ${index / 2 + 1} remet le cap droit`);
+    assert.ok(Math.abs((second[0] - first[0]) - first[2]) < 1e-9, `la paire ${index / 2 + 1} forme un S continu`);
+  }
+
+  assert.ok(Math.abs(tougeTrackOffset(0)) < 1e-6);
+  assert.ok(Math.abs(tougeTrackForward(0)) < 1e-6);
+  assert.ok(Math.abs(tougeTrackForward(CITY_RUSH_LAP_LENGTH) - CITY_RUSH_LAP_LENGTH) < 1e-6,
+    'l’avancée longitudinale referme exactement la boucle');
+  assert.ok(Math.abs(tougeTrackForward(CITY_RUSH_LAP_LENGTH * 2) - CITY_RUSH_LAP_LENGTH * 2) < 1e-6,
+    'le repère longitudinal reste continu entre les tours');
+  assert.ok(Math.abs(tougeTrackTangent(0)) < 1e-6);
+  assert.ok(Math.abs(tougeTrackYaw(0)) < 1e-6);
+  assert.ok(Math.abs(tougeTrackOffset(CITY_RUSH_LAP_LENGTH)) < 1e-6, 'la route revient à son point de départ');
+
+  const pathHeadingAt = (distance) => {
+    // Mesure la tangente de la route projetée, pas seulement l'angle déclaré
+    // par le profil : c'est ce qui empêchait auparavant les « 90° » d'atteindre
+    // la chaussée réellement rendue.
+    const sample = 0.1;
+    const lateralDelta = tougeTrackOffset(distance + sample) - tougeTrackOffset(distance - sample);
+    const forwardDelta = tougeTrackForward(distance + sample) - tougeTrackForward(distance - sample);
+    return Math.atan2(lateralDelta, forwardDelta * CITY_RUSH_SCROLL_SCALE);
+  };
+  let peakYaw = 0;
+  let peakProjectedHeading = 0;
+  let peakOffset = 0;
+  for (let index = 0; index < 2400; index += 1) {
+    const distance = index * CITY_RUSH_LAP_LENGTH / 2400;
+    peakYaw = Math.max(peakYaw, Math.abs(tougeTrackYaw(distance)));
+    peakProjectedHeading = Math.max(peakProjectedHeading, Math.abs(pathHeadingAt(distance)));
+    peakOffset = Math.max(peakOffset, Math.abs(tougeTrackOffset(distance)));
+  }
+  assert.ok(peakYaw >= 89 * Math.PI / 180 && peakYaw <= Math.PI / 2 + 1e-6,
+    `le cap atteint réellement 90° (cap max ${(peakYaw * 180 / Math.PI).toFixed(1)}°)`);
+  assert.ok(peakProjectedHeading >= 89 * Math.PI / 180 && peakProjectedHeading <= Math.PI / 2 + 1e-6,
+    `la tangente mesurée sur la route projetée atteint aussi 90° (${(peakProjectedHeading * 180 / Math.PI).toFixed(1)}°)`);
+  assert.ok(peakOffset < CITY_RUSH_TOUGE_MAX_OFFSET && peakOffset > CITY_RUSH_TOUGE_MAX_OFFSET - 1,
+    `la route reste dans son enveloppe de ${CITY_RUSH_TOUGE_MAX_OFFSET} m (${peakOffset.toFixed(2)} m)`);
+
+  for (const [km, angle, span] of CITY_RUSH_TOUGE_TURNS) {
+    const center = (km / lengthKm) * CITY_RUSH_LAP_LENGTH;
+    const turnHalf = (span * CITY_RUSH_TOUGE_TURN_CORE_FRACTION / 2 / lengthKm) * CITY_RUSH_LAP_LENGTH;
+    const headingIn = pathHeadingAt(center - turnHalf);
+    const headingOut = pathHeadingAt(center + turnHalf);
+    assert.ok(Math.abs((headingOut - headingIn) - angle * Math.PI / 180) < 1.5 * Math.PI / 180,
+      `la tangente de la chaussée tourne réellement de ${angle}° au km ${km}`);
+    assert.equal(tougeDriftAmount(km / lengthKm), -Math.sign(angle), `drift orienté au km ${km}`);
+    assert.equal(tougeDriftAmount((km - span / 2) / lengthKm), 0, `aucun drift avant le virage du km ${km}`);
+    assert.equal(tougeDriftAmount((km + span / 2) / lengthKm), 0, `aucun drift après le virage du km ${km}`);
+    assert.equal(tougeDriftAmount((km - span * CITY_RUSH_TOUGE_TURN_CORE_FRACTION / 2) / lengthKm), 0,
+      `la rampe commence au vrai bord de courbure du km ${km}`);
+    assert.equal(tougeDriftAmount((km + span * CITY_RUSH_TOUGE_TURN_CORE_FRACTION / 2) / lengthKm), 0,
+      `la rampe s’arrête au vrai bord de courbure du km ${km}`);
+  }
+
+  // Les longues lignes droites restent stables ; la route peut aussi être
+  // droite après un virage à 90° tout en conservant son nouveau cap local.
+  for (const km of [1, 2.6, 4, 4.7, 7.5, 8.2, 10, 11, 13, 13.4]) {
+    const progress = km / lengthKm;
+    assert.ok(Math.abs(tougeTrackYaw(progress * CITY_RUSH_LAP_LENGTH)) < Math.PI / 180,
+      `la route est droite à ${km} km`);
+    assert.equal(tougeDriftAmount(progress), 0, `aucun drift à ${km} km`);
+  }
+  assert.equal(tougeDriftAmount(5.15 / lengthKm, 'nordschleife'), 0, 'le drift reste exclusif au tōgé');
+});
+
+test('Vice City, le Ring et le tōgé ralentissent les voitures dans leurs grands virages', () => {
+  // Seuls ces trois parcours ont de vrais profils de courbure. Les autres
+  // gardent leur vitesse, y compris au cœur de leurs S doux : un facteur oublié
+  // sur Tokyo ou la Route 66 se lirait ici.
   assert.deepEqual([...CITY_RUSH_CORNER_PACE_COURSES], ['vice-city', 'nordschleife', 'touge']);
   assert.equal(CITY_RUSH_CORNER_PACE_SWEEP, 0.72);
   assert.equal(CITY_RUSH_CORNER_PACE_MIN, 0.58);

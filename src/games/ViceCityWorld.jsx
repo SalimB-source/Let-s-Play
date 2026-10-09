@@ -1894,22 +1894,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // de trajet) et la difficulté ne changent pas, seul le rythme baisse.
   const coursePace = cityRushCoursePace(city);
   const paced = (speed) => speed * coursePace;
-  // Grands virages de Vice City et du Ring : tout ce qui roule lève le pied
-  // dans les courbes. À Vice City, l'anticipation de 40 m commence le freinage
-  // avant les virages secs ; les longues droites sans courbe à venir restent à 1.
+  // Profil de vitesse en courbe : à Vice City, le joueur anticipe le freinage
+  // de 40 m ; sur le tōgé, il garde sa vitesse pour drifter. Le profil sert
+  // alors à modérer l'allure des rivaux, du trafic et de la police.
   const cornerPaceAt = (trackDistance) => cityRushCornerPace(city, trackDistance, trackProfile);
-  // L'IA de la montagne : les poursuites, le trafic et les rivaux subissent
-  // une peine de virage allégée (les locaux connaissent les épingles) — le
-  // pilote, lui, paie la courbe plein pot. Ailleurs, aucun écart.
+  // Sur le tōgé, les poursuites, le trafic et les rivaux reçoivent une pénalité
+  // de virage allégée, tandis que le pilote ne ralentit pas. Ailleurs, l'IA
+  // suit le même profil de courbe que le joueur.
   const aiCornerPaceAt = (trackDistance) => cityRushAiCornerPace(city, trackDistance, trackProfile, cornerPaceAt(trackDistance));
   // ── Dérapage contrôlé du tōgé ────────────────────────────────────────────
-  // Le dérapage n'est permis que dans les longs virages serrés de la descente
-  // (les secteurs marqués `drift` du parcours, voir `tougeDriftAmount`) :
-  // c'est là que le pilote et les rivaux prennent un angle de caisse, avec la
-  // fumée de gomme. Ailleurs — les épingles et les enfilades comprises —
-  // aucune dérive, même à pleine vitesse. L'amplitude suit la vitesse : à
-  // l'arrêt, plus rien ne glisse. Le signe vient du secteur : il donne le sens
-  // du virage, donc le contre-braquage.
+  // Le dérapage ne se déclenche que dans les virages francs à 90° marqués dans
+  // CITY_RUSH_TOUGE_TURNS : pilote et rivaux prennent alors un angle de caisse
+  // et laissent une fumée de gomme. Entre ces zones — surtout sur les longues
+  // lignes droites — la caisse reste droite. L'amplitude suit la vitesse ; le
+  // signe indique le contre-braquage selon le sens du virage.
   const tougeDrift = Boolean(theme.touge);
   const driftFor = (trackDistance, speed, topSpeed) => {
     if (!tougeDrift || speed < paced(7)) return 0;
@@ -2833,13 +2831,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let elapsed = 0;
   let clockTime = 0;
   let distance = 0;
-  // La logique de course reste exprimée en mètres et en voies droites. Ces
-  // trois aides ne servent qu'à projeter cette progression sur la route qui
-  // ondule doucement sous la caméra.
+  // La logique de course reste exprimée en mètres et en voies. Le tōgé ajoute
+  // une vraie trajectoire 2D : son avancée longitudinale ralentit dans les
+  // épingles, et les voies tournent avec la chaussée.
+  const path2d = typeof trackProfile.forward === 'function';
   const trackRelativeX = (trackDistance) => trackProfile.offset(trackDistance) - trackProfile.offset(distance);
   const trackRelativeY = (trackDistance) => trackProfile.elevation(trackDistance) - trackProfile.elevation(distance);
   const trackPitch = (trackDistance) => trackProfile.pitch(trackDistance);
   const trackYaw = (trackDistance) => trackProfile.yaw(trackDistance);
+  const trackRelativeZ = (trackDistance) => PLAYER_Z
+    - ((path2d ? trackProfile.forward(trackDistance) - trackProfile.forward(distance) : trackDistance - distance) * SCALE);
+  const trackWorldX = (trackDistance, lateral = 0) => trackRelativeX(trackDistance)
+    + lateral * (path2d ? Math.cos(trackYaw(trackDistance)) : 1);
+  const trackWorldZ = (trackDistance, lateral = 0) => trackRelativeZ(trackDistance)
+    - (path2d ? lateral * Math.sin(trackYaw(trackDistance)) * SCALE : 0);
   const miniGarageLanes = cityRushMiniGarageLanes(city);
   const miniGarageCourse = cityRushMiniGarageAvailable({ sprint, course: city });
   const miniGarageMaterials = miniGarageCourse ? makeMiniGarageMaterials(city, miniGarageLanes) : null;
@@ -3107,8 +3112,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     for (const row of rows) {
       row.trackDistance = next;
       setupEncounter(row);
-      row.group.position.set(trackRelativeX(row.trackDistance), trackRelativeY(row.trackDistance), PLAYER_Z - (row.trackDistance - distance) * SCALE);
-      row.group.rotation.x = trackPitch(row.trackDistance);
+      row.group.position.set(trackRelativeX(row.trackDistance), trackRelativeY(row.trackDistance), trackRelativeZ(row.trackDistance));
+      row.group.rotation.set(trackPitch(row.trackDistance), trackYaw(row.trackDistance), 0);
       next += randomRange(CITY_RUSH_PICKUP_ROW_SPACING_MIN, CITY_RUSH_PICKUP_ROW_SPACING_MAX);
     }
     lastDistanceSlot = next;
@@ -3143,8 +3148,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const ramp = ramps[i];
       ramp.trackDistance = next;
       ramp.lane = forwardLanes[i % forwardLanes.length];
-      const z = PLAYER_Z - (ramp.trackDistance - distance) * SCALE;
-      ramp.group.position.set(laneX(ramp.lane) + trackRelativeX(ramp.trackDistance), trackRelativeY(ramp.trackDistance), z);
+      const z = trackWorldZ(ramp.trackDistance, laneX(ramp.lane));
+      ramp.group.position.set(trackWorldX(ramp.trackDistance, laneX(ramp.lane)), trackRelativeY(ramp.trackDistance), z);
       ramp.group.rotation.set(trackPitch(ramp.trackDistance), trackYaw(ramp.trackDistance), 0);
       ramp.group.visible = true;
       setupRampPickup(ramp, { atStart: true });
@@ -3204,7 +3209,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     garage.group.position.set(
       trackRelativeX(garage.trackDistance),
       trackRelativeY(garage.trackDistance),
-      PLAYER_Z - gap * SCALE,
+      trackRelativeZ(garage.trackDistance),
     );
     garage.group.rotation.set(trackPitch(garage.trackDistance), trackYaw(garage.trackDistance), 0);
     garage.group.visible = gap > -25 && gap * SCALE < theme.fogFar + 20;
@@ -3223,7 +3228,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     group.position.set(
       trackRelativeX(warehouseTrackDistance),
       trackRelativeY(warehouseTrackDistance),
-      PLAYER_Z - (warehouseTrackDistance - distance) * SCALE,
+      trackRelativeZ(warehouseTrackDistance),
     );
     group.rotation.set(trackPitch(warehouseTrackDistance), trackYaw(warehouseTrackDistance), 0);
     group.visible = available && gap > -24 && gap * SCALE < theme.fogFar + 28;
@@ -3392,8 +3397,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         setupRampPickup(ramp);
       }
       const gap = ramp.trackDistance - distance;
-      const z = PLAYER_Z - gap * SCALE;
-      ramp.group.position.set(laneX(ramp.lane) + trackRelativeX(ramp.trackDistance), trackRelativeY(ramp.trackDistance), z);
+      const z = trackWorldZ(ramp.trackDistance, laneX(ramp.lane));
+      ramp.group.position.set(trackWorldX(ramp.trackDistance, laneX(ramp.lane)), trackRelativeY(ramp.trackDistance), z);
       ramp.group.rotation.set(trackPitch(ramp.trackDistance), trackYaw(ramp.trackDistance), 0);
       ramp.group.visible = gap > -25 && gap * SCALE < theme.fogFar + 20;
 
@@ -4296,7 +4301,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // est recentré sur la courbe du joueur, les sommets ayant déjà reçu leur
     // déport propre dans `finishLoopGeometry`.
     const lineGap = cityRushTrackGap(0, distance) + CITY_RUSH_START_LINE_LEAD;
-    const lineZ = PLAYER_Z - lineGap * SCALE;
+    const lineZ = trackRelativeZ(distance + lineGap);
     const playerCurve = trackProfile.offset(distance);
     const playerElevation = trackProfile.elevation(distance);
     loopA.position.set(-playerCurve, -playerElevation, lineZ);
@@ -4310,7 +4315,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       sprintCheckpointGate.position.set(
         trackRelativeX(targetDistance),
         trackRelativeY(targetDistance),
-        PLAYER_Z - checkpointGap * SCALE,
+        trackRelativeZ(targetDistance),
       );
       sprintCheckpointGate.rotation.set(trackPitch(targetDistance), trackYaw(targetDistance), 0);
       sprintCheckpointGate.visible = sprintCheckpointGate.userData.checkpoint % 4 !== 0
@@ -4321,7 +4326,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const gap = cityRushTrackGap(prop.trackPos, distance) + CITY_RUSH_START_LINE_LEAD;
       prop.group.visible = gap > -40 && gap * SCALE < theme.fogFar + 20;
       if (prop.group.visible) {
-        prop.group.position.set(trackRelativeX(prop.trackPos), trackRelativeY(prop.trackPos), PLAYER_Z - gap * SCALE);
+        prop.group.position.set(trackRelativeX(prop.trackPos), trackRelativeY(prop.trackPos), trackRelativeZ(prop.trackPos));
         prop.group.rotation.set(trackPitch(prop.trackPos), trackYaw(prop.trackPos), 0);
       }
     }
@@ -4479,7 +4484,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Place de grille en z : un rival d'une rangée arrière se dessine derrière
       // le pilote, à l'écart de la ligne — le rendu suit la même règle que la
       // simulation (`PLAYER_Z − écart × SCALE`).
-      racer.mesh.position.set(racer.currentX, 0, PLAYER_Z - (racer.distance - distance) * SCALE);
+      racer.mesh.position.set(trackWorldX(racer.distance, racer.currentX), trackRelativeY(racer.distance), trackWorldZ(racer.distance, racer.currentX));
       racer.mesh.visible = racer.raceActive;
       racer.mesh.rotation.set(0, 0, 0);
       resetCarAnimation(racer.mesh);
@@ -4505,7 +4510,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.impactChanging = false;
       traffic.impactFromLane = null;
       traffic.impactTargetLane = null;
-      traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - traffic.distance * SCALE);
+      traffic.mesh.position.set(trackWorldX(traffic.distance, traffic.currentX), trackRelativeY(traffic.distance), trackWorldZ(traffic.distance, traffic.currentX));
       traffic.mesh.visible = true;
       traffic.mesh.rotation.set(trackPitch(traffic.distance), trackYaw(traffic.distance), 0);
       traffic.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
@@ -4558,7 +4563,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming.turnaroundAsBackup = false;
       oncoming.turnaroundTargetLane = null;
       oncoming.mesh.visible = true;
-      oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - oncoming.distance * SCALE);
+      oncoming.mesh.position.set(trackWorldX(oncoming.distance, oncoming.currentX), trackRelativeY(oncoming.distance), trackWorldZ(oncoming.distance, oncoming.currentX));
       oncoming.mesh.rotation.set(-trackPitch(oncoming.distance), trackYaw(oncoming.distance) + Math.PI, 0);
       oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
       oncoming.mesh.userData.beacons.forEach((beacon) => { beacon.material.opacity = 1; });
@@ -4682,9 +4687,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     escapeRacer.currentJumpY = 0;
     escapeRacer.currentJumpPitch = 0;
     escapeRacer.mesh.position.set(
-      escapeRacer.currentX + trackRelativeX(escapeRacer.distance),
+      trackWorldX(escapeRacer.distance, escapeRacer.currentX),
       trackRelativeY(escapeRacer.distance),
-      PLAYER_Z - (escapeRacer.distance - distance) * SCALE,
+      trackWorldZ(escapeRacer.distance, escapeRacer.currentX),
     );
     escapeRacer.mesh.rotation.set(trackPitch(escapeRacer.distance), trackYaw(escapeRacer.distance), 0);
     escapeRacer.mesh.visible = true;
@@ -4780,7 +4785,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // `x` est la position latérale réelle : elle sert à la mire de la police
     // (`cityRushPoliceAimAligned`), pas seulement au choix de voie.
     if (vehicleId === 'player') {
-      return playerWrecked ? null : { id: 'player', name: 'TOI', distance, lane: playerLane, x: playerCar.position.x, mesh: playerCar, racer: null };
+      return playerWrecked ? null : { id: 'player', name: 'TOI', distance, lane: playerLane, x: playerX, mesh: playerCar, racer: null };
     }
     const racer = racers.find((item) => item.id === vehicleId);
     if (racer) {
@@ -4928,7 +4933,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     data.shardMaterial.opacity = 1;
     data.ringMaterial.color.copy(pickupBurstColor);
     data.coreMaterial.color.copy(pickupBurstColor).lerp(BURST_WHITE, 0.65);
-    burst.position.set(x + trackRelativeX(trackDistance), y + trackRelativeY(trackDistance), PLAYER_Z - (trackDistance - distance) * SCALE);
+    burst.position.set(trackWorldX(trackDistance, x), y + trackRelativeY(trackDistance), trackWorldZ(trackDistance, x));
     burst.visible = true;
     updatePickupBurst(burst, 0);
   }
@@ -4960,9 +4965,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function updatePickupBursts(dt) {
     for (const burst of pickupBursts) {
       if (!burst.userData.active) continue;
-      burst.position.x = burst.userData.baseX + trackRelativeX(burst.userData.trackDistance);
+      burst.position.x = trackWorldX(burst.userData.trackDistance, burst.userData.baseX);
       burst.position.y = burst.userData.baseY + trackRelativeY(burst.userData.trackDistance);
-      burst.position.z = PLAYER_Z - (burst.userData.trackDistance - distance) * SCALE;
+      burst.position.z = trackWorldZ(burst.userData.trackDistance, burst.userData.baseX);
       updatePickupBurst(burst, dt);
     }
   }
@@ -5507,9 +5512,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // mouvement (elle ne bouge plus après l'explosion).
   function wreckWorldPosition(wreck, target) {
     return target.set(
-      wreck.x + trackRelativeX(wreck.distance),
+      trackWorldX(wreck.distance, wreck.x),
       trackRelativeY(wreck.distance),
-      PLAYER_Z - (wreck.distance - distance) * SCALE,
+      trackWorldZ(wreck.distance, wreck.x),
     );
   }
 
@@ -5933,7 +5938,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (shot.phase === 'flight') {
           shot.previousTargetDistance = target ? target.distance : null;
           const shotHeight = shot.bazooka ? 1.1 : 0.82;
-          shot.mesh.position.set(shot.x + trackRelativeX(shot.trackDistance), shotHeight + trackRelativeY(shot.trackDistance), PLAYER_Z - (shot.trackDistance - distance) * SCALE);
+          shot.mesh.position.set(trackWorldX(shot.trackDistance, shot.x), shotHeight + trackRelativeY(shot.trackDistance), trackWorldZ(shot.trackDistance, shot.x));
           // La traînée reste derrière la balle, y compris en riposte, et suit
           // l'axe local du virage et du relief.
           shot.mesh.rotation.set(trackPitch(shot.trackDistance), trackYaw(shot.trackDistance) + (direction > 0 ? 0 : Math.PI), 0);
@@ -5967,9 +5972,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (explosion.userData.bazooka && Number.isFinite(explosion.userData.trackDistance)) {
         const trackDistance = explosion.userData.trackDistance;
         explosion.position.set(
-          explosion.userData.trackX + trackRelativeX(trackDistance),
+          trackWorldX(trackDistance, explosion.userData.trackX),
           trackRelativeY(trackDistance),
-          PLAYER_Z - (trackDistance - distance) * SCALE,
+          trackWorldZ(trackDistance, explosion.userData.trackX),
         );
         explosion.rotation.set(trackPitch(trackDistance), trackYaw(trackDistance), 0);
       }
@@ -6325,7 +6330,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     police.lastPassGap = undefined;
     police.phase = police.index * 1.7 + number * 0.37;
     police.mesh.visible = true;
-    police.mesh.position.set(police.currentX + trackRelativeX(police.distance), trackRelativeY(police.distance), PLAYER_Z - (police.distance - distance) * SCALE);
+    police.mesh.position.set(trackWorldX(police.distance, police.currentX), trackRelativeY(police.distance), trackWorldZ(police.distance, police.currentX));
     police.mesh.rotation.set(trackPitch(police.distance), trackYaw(police.distance), 0);
     const healthBar = police.mesh.userData.healthBar;
     if (healthBar) {
@@ -6661,9 +6666,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
     patrol.mesh.name = `patrol-${squadCar.vehicleType}`;
     patrol.mesh.position.set(
-      patrol.currentX + trackRelativeX(patrol.distance),
+      trackWorldX(patrol.distance, patrol.currentX),
       trackRelativeY(patrol.distance),
-      PLAYER_Z - (patrol.distance - distance) * SCALE,
+      trackWorldZ(patrol.distance, patrol.currentX),
     );
     patrol.mesh.rotation.set(trackPitch(patrol.distance), trackYaw(patrol.distance), 0);
     patrol.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
@@ -6755,9 +6760,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       patrol.mesh.visible = visible;
       if (visible) {
         patrol.mesh.position.set(
-          patrol.currentX + trackRelativeX(patrol.distance),
+          trackWorldX(patrol.distance, patrol.currentX),
           trackRelativeY(patrol.distance),
-          PLAYER_Z - gap * SCALE,
+          trackWorldZ(patrol.distance, patrol.currentX),
         );
         patrol.mesh.rotation.x = trackPitch(patrol.distance);
         patrol.mesh.rotation.y = lerp(
@@ -6786,7 +6791,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function startPoliceCollisionAnimation(police) {
     if (!police) return;
     const isSuv = police.vehicleType === 'police-suv';
-    const relativeSide = Math.sign(police.currentX - playerCar.position.x);
+    const relativeSide = Math.sign(police.currentX - playerX);
     const preferredSide = relativeSide || (police.lane === forwardLanes[forwardLanes.length - 1] ? -1 : 1);
     const adjacentLanes = [police.lane + preferredSide, police.lane - preferredSide]
       .filter((lane, index, lanes) => (
@@ -6831,7 +6836,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // voiture rappelée compte comme un poursuivant du quota de recherche.
   function checkPoliceRally() {
     if (sprint || !active || finished || playerJumpState.active) return;
-    const playerXNow = playerCar.position.x;
+    const playerXNow = playerX;
     const playerWidth = playerCollisionWidth();
     for (const traffic of trafficCars) {
       if (traffic.rallied || traffic.destroyed || !isCityRushPoliceTrafficType(traffic.type)) continue;
@@ -7069,10 +7074,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const meshes = spikeBlock.meshes;
     if (!meshes) return;
     const gap = spikeBlock.distance - distance;
-    const baseZ = PLAYER_Z - gap * SCALE;
-    const baseY = trackRelativeY(spikeBlock.distance);
-    const curveX = trackRelativeX(spikeBlock.distance);
-    const yaw = trackYaw(spikeBlock.distance);
+      const baseY = trackRelativeY(spikeBlock.distance);
+      const yaw = trackYaw(spikeBlock.distance);
     const lanes = spikeBlock.lanes;
     const packing = spikeBlock.state === 'packing';
     const deployProgress = packing
@@ -7098,7 +7101,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         : 0;
       laneGroup.visible = reveal > 0.02;
       if (!laneGroup.visible) return;
-      laneGroup.position.set(laneX(lane) + curveX, baseY + 0.02, baseZ);
+      laneGroup.position.set(trackWorldX(spikeBlock.distance, laneX(lane)), baseY + 0.02, trackWorldZ(spikeBlock.distance, laneX(lane)));
       laneGroup.rotation.y = yaw;
       laneGroup.userData.strip.scale.x = Math.max(0.02, spikeBlock.lanePitch * 0.94 * reveal);
       laneGroup.userData.teeth.forEach((tooth, toothIndex) => {
@@ -7114,8 +7117,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         return;
       }
       const parkedX = laneX(lane) + (index === 0 ? -1 : 1) * (spikeBlock.lanePitch * 0.5 + 0.24);
+      const carLocalX = lerp(laneX(lane), parkedX, deployEase);
+      const carDistance = spikeBlock.distance + (index === 0 ? -1.1 : 0.9) / SCALE;
       car.mesh.visible = true;
-      car.mesh.position.set(lerp(laneX(lane), parkedX, deployEase) + curveX, baseY + 0.02, baseZ + (index === 0 ? 1.1 : -0.9));
+      car.mesh.position.set(trackWorldX(carDistance, carLocalX), baseY + 0.02, trackWorldZ(carDistance, carLocalX));
       car.mesh.rotation.set(0, yaw + (index === 0 ? 1 : -1) * 0.52 * deployEase, 0);
       car.mesh.userData.wheels?.forEach((wheel) => { wheel.rotation.x += dt * 5; });
       car.mesh.userData.beacons?.forEach((beacon, beaconIndex) => {
@@ -7443,7 +7448,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function checkPoliceCollisions() {
     if (sprint || !active || finished) return;
     if (playerJumpState.active) return;
-    const playerXNow = playerCar.position.x;
+    const playerXNow = playerX;
     const playerWidth = playerCollisionWidth();
     for (const police of activePursuers()) {
       if (police.health <= 0 || police.collisionCooldownLeft > 0 || police.jumpState?.active) continue;
@@ -7921,9 +7926,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const skid = skidOffset(police.skidLeft, police.skidDuration, police.skidSide || 1);
       police.mesh.visible = visible;
       police.mesh.position.set(
-        police.currentX + skid + trackRelativeX(police.distance),
+        trackWorldX(police.distance, police.currentX + skid),
         trackRelativeY(police.distance) + (police.currentJumpY || 0) + (police.stunLeft > 0 ? 0.05 : 0),
-        PLAYER_Z - gap * SCALE,
+        trackWorldZ(police.distance, police.currentX + skid),
       );
       police.mesh.rotation.x = trackPitch(police.distance) + (police.currentJumpPitch || 0);
       // Toupie du stun héliporté pour la berline bombardée, comme les rivaux.
@@ -8093,8 +8098,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // attend d'être franchement devant (ou derrière) pour se rabattre, sinon
       // elle se percuterait au lieu de bloquer.
       ...(policeActor ? [
-        { lane: playerLane, x: playerCar.position.x, width: playerCollisionWidth(), distance },
-        ...activeRacers().map((racer) => ({ lane: racer.lane, x: racer.mesh.position.x, width: racerCollisionWidth(racer), distance: racer.distance })),
+        { lane: playerLane, x: playerX, width: playerCollisionWidth(), distance },
+        ...activeRacers().map((racer) => ({ lane: racer.lane, x: racer.currentX, width: racerCollisionWidth(racer), distance: racer.distance })),
       ] : []),
       // Une berline de patrouille lâchée à côté du pilote ferme la voie comme
       // le trafic : le choc latéral (`trySideBump`) la pousse. Les rivaux, eux,
@@ -8403,8 +8408,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       oncoming.pushAsideStartX = oncoming.currentX;
     }
     // Le choc écarte le pilote du côté opposé au véhicule adverse.
-    const actorX = actorId === 'player' ? playerCar.position.x
-      : getVehicleMesh(actorId)?.position.x ?? oncoming.currentX;
+    const actorX = actorId === 'player' ? playerX
+      : racers.find((item) => item.id === actorId)?.currentX
+        ?? activePursuerById(actorId)?.currentX
+        ?? oncoming.currentX;
     const side = actorX - oncoming.currentX >= 0 ? 1 : -1;
     const label = actorId === 'player' ? 'TOI'
       : racers.find((item) => item.id === actorId)?.name || 'POLICE';
@@ -8527,10 +8534,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const priorMap = priorActorDistances instanceof Map ? priorActorDistances : null;
 
     const actors = [
-      { id: 'player', x: playerCar.position.x, width: playerCollisionWidth(), distance, priorDistance: priorMap?.get('player') ?? distance, jumping: Boolean(playerJumpState.active) },
+      { id: 'player', x: playerX, width: playerCollisionWidth(), distance, priorDistance: priorMap?.get('player') ?? distance, jumping: Boolean(playerJumpState.active) },
       ...activeRacers().map((racer) => ({
         id: racer.id,
-        x: racer.mesh.position.x,
+        x: racer.currentX,
         width: racerCollisionWidth(racer),
         distance: racer.distance,
         priorDistance: priorMap?.get(racer.id) ?? racer.distance,
@@ -8538,7 +8545,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       })),
       ...activePursuers().map((police) => ({
         id: police.id,
-        x: police.mesh.position.x,
+        x: police.currentX,
         width: police.width,
         distance: police.distance,
         priorDistance: police.distance,
@@ -8879,9 +8886,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lastDistanceSlot = row.trackDistance;
         setupEncounter(row);
       }
-      const z = PLAYER_Z - (row.trackDistance - distance) * SCALE;
+      const z = trackRelativeZ(row.trackDistance);
       row.group.position.set(trackRelativeX(row.trackDistance), trackRelativeY(row.trackDistance), z);
-      row.group.rotation.x = trackPitch(row.trackDistance);
+      row.group.rotation.set(trackPitch(row.trackDistance), trackYaw(row.trackDistance), 0);
       row.slots.forEach((slot, index) => {
         const pickup = row.pickups[index];
         if (!pickup) {
@@ -8991,9 +8998,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const pose = cityRushWatchHelicopterPose({ playerX: playerCar.position.x, clock: clockTime, leaving: 0 });
       const flightDistance = distance + pose.ahead;
       watchHeliScratch.set(
-        trackRelativeX(flightDistance) + pose.lateral,
+        trackWorldX(flightDistance, pose.lateral),
         trackRelativeY(flightDistance) + pose.height,
-        PLAYER_Z - pose.ahead * SCALE,
+        trackWorldZ(flightDistance, pose.lateral),
       );
       // Rapprochement progressif : véloce à l'apparition, posé ensuite.
       watchHelicopter.position.lerp(watchHeliScratch, Math.min(1, dt * (1.1 + (1 - watchHeliAge / WATCH_HELI_FLY_IN) * 2.2)));
@@ -9004,9 +9011,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const pose = cityRushWatchHelicopterPose({ playerX: playerCar.position.x, clock: clockTime, leaving: watchHeliLeaving });
       const flightDistance = distance + pose.ahead;
       watchHeliScratch.set(
-        trackRelativeX(flightDistance) + pose.lateral,
+        trackWorldX(flightDistance, pose.lateral),
         trackRelativeY(flightDistance) + pose.height,
-        PLAYER_Z - pose.ahead * SCALE,
+        trackWorldZ(flightDistance, pose.lateral),
       );
       watchHelicopter.position.lerp(watchHeliScratch, Math.min(1, dt * 1.2));
       watchHelicopter.rotation.set(pose.bank * -0.2, trackYaw(flightDistance) + pose.yaw, pose.bank);
@@ -9291,18 +9298,22 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // reste très doux : la route tourne, pas la tête du joueur.
       const behindMeters = -(CHASE_POSITION.z - PLAYER_Z) / SCALE;
       const aheadMeters = (PLAYER_Z - CHASE_LOOK.z) / SCALE;
-      const curveBehind = trackRelativeX(distance + behindMeters);
-      const curveAhead = trackRelativeX(distance + aheadMeters);
-      const hillBehind = trackRelativeY(distance + behindMeters);
-      const hillAhead = trackRelativeY(distance + aheadMeters);
+      const behindDistance = distance + behindMeters;
+      const aheadDistance = distance + aheadMeters;
+      const curveBehind = trackRelativeX(behindDistance);
+      const curveAhead = trackRelativeX(aheadDistance);
+      const cameraZ = trackRelativeZ(behindDistance);
+      const lookZ = trackRelativeZ(aheadDistance);
+      const hillBehind = trackRelativeY(behindDistance);
+      const hillAhead = trackRelativeY(aheadDistance);
       const jumpCamY = (playerJumpState.active || playerLandingBounce > 0) ? (playerCar.position.y || 0) * 0.42 : 0;
       const jumpLookY = (playerJumpState.active || playerLandingBounce > 0) ? (playerCar.position.y || 0) * 0.35 : 0;
       cameraTarget.set(
         px * 0.16 + curveBehind + Math.sin(clockTime * 47) * shake,
         CHASE_POSITION.y + hillBehind + Math.cos(clockTime * 39) * shake * 0.6 - speedRatio * 0.5 + jumpCamY,
-        CHASE_POSITION.z + speedRatio * 0.6,
+        cameraZ + speedRatio * 0.6,
       );
-      lookTarget.set(px * 0.09 + curveAhead, CHASE_LOOK.y + hillAhead + jumpLookY, CHASE_LOOK.z);
+      lookTarget.set(px * 0.09 + curveAhead, CHASE_LOOK.y + hillAhead + jumpLookY, lookZ);
       targetFovOffset = (playerBoostLeft > 0 ? 6 : 0) + speedRatio * 2.5;
       followRate = 4.5;
     }
@@ -9453,9 +9464,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Le cap de la piste fixe la vitesse du virage ; à Vice City, il est lu
       // 40 m en avance pour que le freinage ait déjà commencé à l'entrée. Le
       // freinage habituel (`approachCityRushSpeed`) accompagne ensuite la sortie.
-      // Sur le tōgé du Mont Haruna, le pilote ne ralentit plus dans les virages :
-      // la vitesse est maintenue et c'est le dérapage (drift) qui gère les longs
-      // virages serrés.
+      // Sur le tōgé du Mont Haruna, le joueur ne ralentit pas automatiquement
+      // dans les virages : le drift visuel et le contre-braquage signalent les
+      // cassures, tandis que l'IA lève légèrement le pied.
       const cornerScale = touge ? 1 : cornerPaceAt(distance);
       const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
       // L'accélération comme le freinage suivent le rythme du parcours : la
@@ -9831,12 +9842,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       currentSpeed = dt > 0 ? Math.max(0, (distance - priorDistance) / dt) : requestedPlayerSpeed;
       playerCurrentSpeed = currentSpeed;
       const playerLateral = dt > 0 ? (playerX - priorPlayerX) / dt : 0;
-      playerCar.position.set(playerX + playerSkid, playerJumpY + (playerStunLeft > 0 ? 0.03 : 0), PLAYER_Z);
+      const playerLocalX = playerX + playerSkid;
+      playerCar.position.set(
+        trackWorldX(distance, playerLocalX),
+        playerJumpY + (playerStunLeft > 0 ? 0.03 : 0),
+        trackWorldZ(distance, playerLocalX),
+      );
       playerCar.rotation.x = trackPitch(distance) + playerJumpPitch;
 
       if (playerJumpState.active && playerJumpY > 0.05) {
         playerDropShadow.visible = true;
-        playerDropShadow.position.set(playerX + playerSkid, 0.02, PLAYER_Z);
+        playerDropShadow.position.set(trackWorldX(distance, playerLocalX), 0.02, trackWorldZ(distance, playerLocalX));
         playerDropShadow.rotation.set(trackPitch(distance) - Math.PI / 2, trackYaw(distance), 0);
         const shadowScale = clamp(1 - (playerJumpY / 9), 0.55, 1.0);
         playerDropShadow.scale.set(shadowScale, shadowScale, 1);
@@ -9868,6 +9884,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         skidding: playerSkidLeft > 0,
         braking: currentSpeed < priorSpeed - paced(2) * dt && currentSpeed > 1,
         drift: playerDrift,
+        driftOnlyRoll: tougeDrift,
       }, dt, clockTime);
       // Gomme des roues arrière dans la dérive : épais panache de fumée
       // continu tant que l'angle tient, comme sur les vidéos du tōgé.
@@ -9904,8 +9921,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer.currentSpeed = dt > 0 ? Math.max(0, (racer.distance - priorRacerDistance) / dt) : requestedRacerSpeeds.get(racer.id);
         const gap = racer.distance - distance;
         const visible = racer.raceActive !== false && gap > -8 && gap < CITY_RUSH_RACER_VIEW_DISTANCE;
-        const renderZ = PLAYER_Z - gap * SCALE;
         const skid = skidOffset(racer.skidLeft, racer.skidDuration, racer.skidSide);
+        const renderZ = trackWorldZ(racer.distance, racer.currentX + skid);
         racer.mesh.visible = visible;
         // Frôlement : un rival qui entre dans la zone proche en roulant à une
         // autre vitesse passe en sifflant (une fois par passage, pas à chaque
@@ -9918,7 +9935,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
         // Keep even off-screen rivals' world positions current so straight shots,
         // pickup interactions, and police locks remain valid before they enter the camera view.
-        racer.mesh.position.set(racer.currentX + skid + trackRelativeX(racer.distance), trackRelativeY(racer.distance) + (racer.currentJumpY || 0) + (racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 ? 0.045 : 0), renderZ);
+        racer.mesh.position.set(trackWorldX(racer.distance, racer.currentX + skid), trackRelativeY(racer.distance) + (racer.currentJumpY || 0) + (racer.stunLeft > 0 || (racer.spinLeft || 0) > 0 ? 0.045 : 0), renderZ);
         racer.mesh.rotation.x = trackPitch(racer.distance) + (racer.currentJumpPitch || 0);
         const racerLateralMotion = racer.currentX - priorRacerXs.get(racer.id);
         // Toupie du stun héliporté ou du tir rouge, ajoutée au léger lacet de
@@ -9944,6 +9961,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             skidding: racer.skidLeft > 0,
             braking: racer.currentSpeed < priorRacerSpeed - paced(2) * dt && racer.currentSpeed > 1,
             drift: racerDrift,
+            driftOnlyRoll: tougeDrift,
           }, dt, clockTime);
           racer.smokeTimer -= dt;
           if (racer.smokeTimer <= 0) {
@@ -10011,7 +10029,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
         const gap = traffic.distance - distance;
         traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
-        traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
+        traffic.mesh.position.set(trackWorldX(traffic.distance, traffic.currentX), trackRelativeY(traffic.distance), trackWorldZ(traffic.distance, traffic.currentX));
         // La voie est publiée à part : sur un circuit courbe, l'abscisse monde
         // mêle le décalage de la courbe et la voie, et un lecteur extérieur (le
         // harnais) ne peut pas la retrouver depuis la position seule.
@@ -10116,7 +10134,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
         if (!turning) checkOncomingImpacts(oncoming, priorOncomingDistance, priorActorDistancesForOncoming);
         oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
-        oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
+        oncoming.mesh.position.set(trackWorldX(oncoming.distance, oncoming.currentX), trackRelativeY(oncoming.distance), trackWorldZ(oncoming.distance, oncoming.currentX));
         oncoming.mesh.userData.lane = oncoming.lane;
         oncoming.mesh.userData.trackDistance = oncoming.distance;
         oncoming.mesh.rotation.x = lerp(-trackPitch(oncoming.distance), trackPitch(oncoming.distance), turnEase);
@@ -10268,12 +10286,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         for (const row of rows) {
           row.group.position.x = trackRelativeX(row.trackDistance);
           row.group.position.y = trackRelativeY(row.trackDistance);
-          row.group.position.z = PLAYER_Z - (row.trackDistance - distance) * SCALE;
-          row.group.rotation.x = trackPitch(row.trackDistance);
+          row.group.position.z = trackRelativeZ(row.trackDistance);
+          row.group.rotation.set(trackPitch(row.trackDistance), trackYaw(row.trackDistance), 0);
         }
         for (const ramp of ramps) {
           const gap = ramp.trackDistance - distance;
-          ramp.group.position.set(laneX(ramp.lane) + trackRelativeX(ramp.trackDistance), trackRelativeY(ramp.trackDistance), PLAYER_Z - gap * SCALE);
+          ramp.group.position.set(trackWorldX(ramp.trackDistance, laneX(ramp.lane)), trackRelativeY(ramp.trackDistance), trackWorldZ(ramp.trackDistance, laneX(ramp.lane)));
           ramp.group.rotation.set(trackPitch(ramp.trackDistance), trackYaw(ramp.trackDistance), 0);
         }
         miniGarages.forEach(placeMiniGarage);
@@ -10286,17 +10304,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         idle: true,
       });
 
-      const idleState = (car, maxSpeed) => animateRacerCar(car, { speed: currentSpeed, maxSpeed, idle: phase !== 'finished', steer: 0, lateral: 0 }, dt, clockTime);
-      playerCar.position.x = lerp(playerCar.position.x, laneX(playerLane), Math.min(1, dt * 4));
+      const idleState = (car, maxSpeed) => animateRacerCar(car, {
+        speed: currentSpeed,
+        maxSpeed,
+        idle: phase !== 'finished',
+        steer: 0,
+        lateral: 0,
+        driftOnlyRoll: tougeDrift,
+      }, dt, clockTime);
+      const idleX = trackWorldX(distance, laneX(playerLane));
+      const idleZ = trackWorldZ(distance, laneX(playerLane));
+      const idleAmount = Math.min(1, dt * 4);
+      playerCar.position.x = lerp(playerCar.position.x, idleX, idleAmount);
+      playerCar.position.z = lerp(playerCar.position.z, idleZ, idleAmount);
+      playerCar.rotation.y = trackYaw(distance);
       playerCar.rotation.x = trackPitch(distance);
       idleState(playerCar, playerTopSpeed);
       activeRacers().forEach((racer) => {
         if (phase === 'finished') {
           const gap = racer.distance - distance;
           racer.mesh.visible = racer.raceActive !== false && gap > -8 && gap < CITY_RUSH_RACER_VIEW_DISTANCE;
-          racer.mesh.position.x = racer.currentX + trackRelativeX(racer.distance);
+          racer.mesh.position.x = trackWorldX(racer.distance, racer.currentX);
           racer.mesh.position.y = trackRelativeY(racer.distance);
-          racer.mesh.position.z = PLAYER_Z - gap * SCALE;
+          racer.mesh.position.z = trackWorldZ(racer.distance, racer.currentX);
           racer.mesh.rotation.set(trackPitch(racer.distance), trackYaw(racer.distance), 0);
         }
         idleState(racer.mesh, racer.baseSpeed);
@@ -10312,7 +10342,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const gap = traffic.distance - distance;
         traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
         if (phase === 'finished') {
-          traffic.mesh.position.set(traffic.currentX + trackRelativeX(traffic.distance), trackRelativeY(traffic.distance), PLAYER_Z - gap * SCALE);
+          traffic.mesh.position.set(trackWorldX(traffic.distance, traffic.currentX), trackRelativeY(traffic.distance), trackWorldZ(traffic.distance, traffic.currentX));
         // La voie est publiée à part : sur un circuit courbe, l'abscisse monde
         // mêle le décalage de la courbe et la voie, et un lecteur extérieur (le
         // harnais) ne peut pas la retrouver depuis la position seule.
@@ -10341,7 +10371,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const gap = oncoming.distance - distance;
         oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
         if (phase === 'finished') {
-          oncoming.mesh.position.set(oncoming.currentX + trackRelativeX(oncoming.distance), trackRelativeY(oncoming.distance), PLAYER_Z - gap * SCALE);
+          oncoming.mesh.position.set(trackWorldX(oncoming.distance, oncoming.currentX), trackRelativeY(oncoming.distance), trackWorldZ(oncoming.distance, oncoming.currentX));
         oncoming.mesh.userData.lane = oncoming.lane;
         oncoming.mesh.userData.trackDistance = oncoming.distance;
           oncoming.mesh.rotation.set(-trackPitch(oncoming.distance), trackYaw(oncoming.distance) + Math.PI, 0);
@@ -10377,8 +10407,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     updatePickupBursts(dt);
     sky.material.uniforms.time.value = clockTime;
     if (headlamp.visible) {
-      headlamp.position.set(playerCar.position.x, 0.8, PLAYER_Z - 1.6);
-      headlamp.target.position.set(playerCar.position.x + trackRelativeX(distance + 22), trackRelativeY(distance + 22), PLAYER_Z - 16);
+      headlamp.position.set(trackWorldX(distance - 2, playerX), 0.8, trackWorldZ(distance - 2, playerX));
+      headlamp.target.position.set(trackWorldX(distance + 22), trackRelativeY(distance + 22), trackRelativeZ(distance + 22));
     }
     updateWatchHelicopter(dt);
     updateCamera(dt);

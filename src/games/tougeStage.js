@@ -587,9 +587,15 @@ function addGuardrail(batch, m, side, from, to, random) {
   const railX = side * (TOUGE_ROAD_HALF + 0.55);
   const length = to - from;
   if (length <= 1) return;
-  const middle = (from + to) / 2;
-  batch.cylinder(m.armco, [railX, 0.62, toZ(middle)], 0.055, 0.055, length, 6, [Math.PI / 2, 0, 0]);
-  batch.cylinder(m.armco, [railX, 0.36, toZ(middle)], 0.05, 0.05, length, 6, [Math.PI / 2, 0, 0]);
+  // Les deux lisses suivent aussi les cassures à 90° : un seul cylindre de
+  // 1 100 m resterait une corde droite après projection de la route 2D.
+  for (let segmentFrom = from; segmentFrom < to; segmentFrom += BEND_SEGMENT) {
+    const segmentTo = Math.min(to, segmentFrom + BEND_SEGMENT);
+    const segmentLength = segmentTo - segmentFrom;
+    const middle = (segmentFrom + segmentTo) / 2;
+    batch.cylinder(m.armco, [railX, 0.62, toZ(middle)], 0.055, 0.055, segmentLength, 6, [Math.PI / 2, 0, 0]);
+    batch.cylinder(m.armco, [railX, 0.36, toZ(middle)], 0.05, 0.05, segmentLength, 6, [Math.PI / 2, 0, 0]);
+  }
   for (let position = from; position < to; position += 3.2) {
     batch.box(m.armcoPost, [railX, 0.5, toZ(position)], [0.12, 1.0, 0.12]);
     const lit = random() < 0.85;

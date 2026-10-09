@@ -594,7 +594,7 @@ test('une berline armée se range dans le dos du pilote, avec une mire annoncée
   assert.match(policeUpdate, /type: 'police-aim'/);
   // La cible d'une mire doit porter sa position latérale : la mire se casse
   // quand le pilote se décale, pas seulement quand il change de voie.
-  assert.match(world, /x: playerCar\.position\.x/);
+  assert.match(world, /x: playerX/);
   assert.match(world, /x: racer\.currentX/);
   // Le HUD annonce la mire, la page la montre — halo rouge du cadre, alimenté
   // par la progression du viseur — et se tait : le pilote voit qu'on le vise
