@@ -57,6 +57,7 @@
     "check:city-rush-sprint-ui": "node scripts/vice-city-sprint-ui-check.mjs",
     "check:city-rush-mexico": "node scripts/vice-city-mexico-ui-check.mjs",
     "check:city-rush-nordschleife": "node scripts/vice-city-nordschleife-ui-check.mjs",
+    "check:city-rush-touge": "node scripts/vice-city-touge-ui-check.mjs",
     "check:city-rush-nordschleife-lanes": "node scripts/city-rush-nordschleife-lanes-check.mjs",
     "check:city-rush-lanes": "node scripts/city-rush-lanes-check.mjs",
     "check:city-rush-steer-hold": "node scripts/city-rush-steer-hold-check.mjs",

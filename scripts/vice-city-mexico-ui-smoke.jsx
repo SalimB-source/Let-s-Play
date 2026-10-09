@@ -69,7 +69,8 @@ export async function checkViceCityMexicoUi(assert) {
     await settle(30);
     await dismissTitleMenu(node);
 
-    // 1. Le mode CIRCUIT propose les huit parcours, Mexique compris.
+    // 1. Le mode CIRCUIT propose les neuf parcours (le tōgé du Mont Haruna a
+    //    rejoint le catalogue), Mexique compris.
     const modeCards = [...node.querySelectorAll('.city-rush-mode-card')];
     const circuit = modeCards.find((card) => /CIRCUIT/.test(squash(card.textContent)));
     assert.ok(circuit, 'la vignette CIRCUIT est affichée');
@@ -77,7 +78,7 @@ export async function checkViceCityMexicoUi(assert) {
     await settle();
 
     const cards = [...node.querySelectorAll('.city-rush-city-card')];
-    assert.equal(cards.length, 8, `les huit parcours sont proposés (trouvés : ${cards.length})`);
+    assert.equal(cards.length, 9, `les neuf parcours sont proposés (trouvés : ${cards.length})`);
     const mexico = cards.find((card) => squash(card.querySelector('b')?.textContent) === 'CARRETERA DEL SOL');
     assert.ok(mexico, 'la carte CARRETERA DEL SOL est affichée');
     assert.ok(!mexico.classList.contains('is-locked'), 'le parcours mexicain est débloqué dans cette sauvegarde');

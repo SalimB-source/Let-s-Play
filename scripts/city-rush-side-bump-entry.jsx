@@ -10,7 +10,8 @@
 // événements clavier** et chaque voiture est posée à la main par `world.harness`.
 // Le lanceur ne ferme aucune voie : ce qui est mesuré est le jeu réel.
 //
-// Comportements vérifiés, sur chaque parcours demandé (`--all` : les huit) :
+// Comportements vérifiés, sur chaque parcours demandé (`--all` : les neuf,
+// sauf le tōgé dont les deux voies ne permettent pas d'isoler le choc) :
 //   · le trafic ordinaire est poussé sur la voie libre, le pilote perd un carré,
 //     le trafic ne perd rien ;
 //   · la voiture glisse sur sa nouvelle voie en 0,5 s, et ne revient pas ;
@@ -230,6 +231,16 @@ for (const [cityIndex, city] of cities.entries()) {
   const h0 = world.harness;
   const F = [...h0.forwardLanes].sort((x, y) => x - y);
   const O = [...h0.oncomingLanes].sort((x, y) => x - y);
+  // Le banc de mesure a besoin de trois voies contiguës (poussée, pilote,
+  // témoin). La chaussée du tōgé n'en a que deux : le choc latéral y existe
+  // (voies 0 et 1) mais il ne peut pas être isolé — les huit autres parcours
+  // couvrent le comportement.
+  if (F.length < 3 || !F.every((lane, index) => index === 0 || lane === F[index - 1] + 1)) {
+    console.log(`[${city.id}] ignoré — moins de trois voies de course contiguës : le banc ne peut pas isoler le choc latéral`);
+    world.destroy?.();
+    race.destroy?.();
+    continue;
+  }
   check(F.length >= 3 && F.every((lane, index) => index === 0 || lane === F[index - 1] + 1),
     'il faut trois voies de course contiguës pour mesurer le choc', F);
   const [a, b, c] = F;

@@ -383,6 +383,70 @@ export function makeSkylineTexture(city, theme, random) {
       windows(x, horizon - h, w, h, options.density ?? 0.3, options.windowColor || dayWindow || 'rgba(255, 220, 160, .55)');
     };
 
+    if (style === 'touge') {
+      // Depuis la descente : la crête du Mont Haruna remplace la ville. Deux
+      // plans de montagne dans la brume lunaire, une forêt de cèdres noirs en
+      // ligne de crête, la balise rouge du sommet, et les lumières éparses de
+      // la vallée tout en bas — la ville d'en dessous, minuscule.
+      const ridge = (shade, amplitude, base, seed) => {
+        ctx.fillStyle = silhouette(shade);
+        ctx.beginPath();
+        ctx.moveTo(0, horizon + 20);
+        for (let x = 0; x <= width; x += 16) {
+          const bump = Math.sin((x + seed) * 0.004) * amplitude * 0.5
+            + Math.sin((x + seed * 1.7) * 0.011) * amplitude * 0.3
+            + Math.sin((x + seed * 3.1) * 0.027) * amplitude * 0.2;
+          ctx.lineTo(x, base - Math.abs(bump) - amplitude * 0.2);
+        }
+        ctx.lineTo(width, horizon + 20);
+        ctx.closePath();
+        ctx.fill();
+      };
+      // Plan lointain, bleuté par la brume.
+      ridge(26, 120, horizon - 60, 480);
+      // Plan proche, plus sombre, avec le sommet marqué côté gauche.
+      ctx.fillStyle = silhouette(6);
+      ctx.beginPath();
+      ctx.moveTo(0, horizon + 20);
+      const summitX = 430;
+      for (let x = 0; x <= width; x += 14) {
+        const profile = Math.max(0, 200 * Math.exp(-Math.pow((x - summitX) / 560, 2)))
+          + 46 * Math.sin(x * 0.013 + 1.2) * Math.sin(x * 0.005 + 0.4)
+          + 18 * Math.sin(x * 0.031);
+        ctx.lineTo(x, horizon - 24 - Math.abs(profile));
+      }
+      ctx.lineTo(width, horizon + 20);
+      ctx.closePath();
+      ctx.fill();
+      // Cèdres en ligne de crête : triangles serrés, presque noirs.
+      ctx.fillStyle = silhouette(-6);
+      for (let x = 6; x < width; x += 10 + random() * 16) {
+        const bump = Math.max(0, 200 * Math.exp(-Math.pow((x - summitX) / 560, 2)))
+          + 46 * Math.sin(x * 0.013 + 1.2) * Math.sin(x * 0.005 + 0.4)
+          + 18 * Math.sin(x * 0.031);
+        const groundY = horizon - 24 - Math.abs(bump);
+        const treeHeight = 14 + random() * 22;
+        ctx.beginPath();
+        ctx.moveTo(x - 5, groundY + 2);
+        ctx.lineTo(x, groundY - treeHeight);
+        ctx.lineTo(x + 5, groundY + 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Balise rouge du sommet, qui rêve de la ville d'en bas.
+      ctx.fillStyle = '#ff4a4a';
+      ctx.shadowColor = '#ff4a4a';
+      ctx.shadowBlur = 12;
+      ctx.fillRect(summitX - 2, horizon - 24 - 200 - 26, 4, 10);
+      ctx.shadowBlur = 0;
+      // La vallée, en bas : quelques lumières de la plaine de Takasaki.
+      for (let index = 0; index < 90; index += 1) {
+        ctx.fillStyle = random() < 0.3 ? 'rgba(255, 214, 150, .5)' : 'rgba(190, 205, 235, .32)';
+        ctx.fillRect(random() * width, horizon + 4 + random() * 26, 2 + random() * 2, 2);
+      }
+      return;
+    }
+
     // Rangée de fond, plus basse et plus sombre.
     for (let x = -20; x < width; x += 30 + random() * 40) {
       const h = (style === 'new-york' ? 150 : style === 'shuto' ? 132 : style === 'paris' ? 55 : 80) + random() * (style === 'paris' || style === 'london' ? 45 : 140);

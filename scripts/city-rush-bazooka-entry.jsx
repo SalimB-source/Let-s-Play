@@ -75,6 +75,7 @@ const {
   CITY_RUSH_CARS,
   CITY_RUSH_COURSES,
   CITY_RUSH_LANE_WIDTH,
+  cityRushBazookaAvailable,
   cityRushBazookaTrackDistances,
   cityRushDriveSide,
   cityRushLaneConfig,
@@ -390,12 +391,15 @@ if (audioCalls.missileLaunch !== 2) fail('les deux roquettes de la course doiven
 if (callbacks.errors.length) fail('le monde a remonté une erreur', callbacks.errors);
 world.destroy();
 
-// ── Les huit cartes : deux conteneurs de deux voies chacun ──────────────────
+// ── Les cartes : deux conteneurs de deux voies chacun ───────────────────────
 // Chaque parcours du jeu est construit une fois. Le conteneur prend toujours
 // les **deux voies extérieures** du sens de course : à droite en conduite à
 // droite, à gauche à Londres et sur la Shutō C1, où toute la caisse est
-// reflétée — sinon il s'étalerait sur les voies du contresens.
+// reflétée — sinon il s'étalerait sur les voies du contresens. Le tōgé du
+// Mont Haruna ferme l'arsenal (descente de nuit sans bazooka) : on vérifie
+// chez lui qu'aucun conteneur ne se dresse.
 for (const course of CITY_RUSH_COURSES) {
+  const bazookaExpected = cityRushBazookaAvailable(course);
   const laneConfig = cityRushLaneConfig(course);
   const leftHand = cityRushDriveSide(course) === 'left';
   const outward = leftHand ? -1 : 1;
@@ -415,7 +419,8 @@ for (const course of CITY_RUSH_COURSES) {
   courseWorld.scene.traverse((object) => {
     if (object.name === 'city-rush-bazooka-container') groups.push(object);
   });
-  if (groups.length !== 2) fail(`la carte ${course.name} doit poser deux conteneurs de bazooka`, { found: groups.length });
+  if (!bazookaExpected && groups.length) fail(`la carte ${course.name} devrait être sans conteneur de bazooka`, { found: groups.length });
+  if (bazookaExpected && groups.length !== 2) fail(`la carte ${course.name} doit poser deux conteneurs de bazooka`, { found: groups.length });
   for (const group of groups) {
     if (group.userData.side !== outward) {
       fail(`le conteneur de ${course.name} doit se refléter selon le côté de conduite`, { side: group.userData.side, outward });

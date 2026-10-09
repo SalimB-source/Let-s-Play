@@ -92,6 +92,7 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
     storyEnding: '',
     storyVersion: CITY_RUSH_STORY_VERSION,
     storyStars: {},
+    completedMissionIds: [],
     completedTournamentIds: [],
     tournamentTitles: {},
   });
@@ -105,6 +106,7 @@ test('la sauvegarde complète garde la carrière et la campagne dans une seule l
     storyEnding: '',
     storyVersion: CITY_RUSH_STORY_VERSION,
     storyStars: {},
+    completedMissionIds: [],
     completedTournamentIds: [],
     tournamentTitles: {},
   });
@@ -192,7 +194,8 @@ test('les listes du SQL ne dérivent pas du catalogue du jeu', () => {
   for (const course of CITY_RUSH_COURSES) assert.ok(course.id.length > 0);
   assert.match(grants, new RegExp(`jsonb_build_array\\([\\s\\S]*?'${CITY_RUSH_CARS.length === 0 ? '' : CITY_RUSH_CARS[0].id}'`));
   assert.equal(CITY_RUSH_CARS.length, 11);
-  assert.equal(CITY_RUSH_COURSES.length, 8);
+  // Le tōgé du mont Haruna a rejoint le catalogue : neuf parcours.
+  assert.equal(CITY_RUSH_COURSES.length, 9);
 });
 
 /** Contenu brut du document écrit sous une clé (pour vérifier la forme exacte). */

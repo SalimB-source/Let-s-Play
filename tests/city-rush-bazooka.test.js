@@ -9,6 +9,7 @@ import {
   CITY_RUSH_BAZOOKA_PROJECTILE_SPEED,
   CITY_RUSH_COURSES,
   CITY_RUSH_LANE_WIDTH,
+  cityRushBazookaAvailable,
   cityRushBazookaBlastContains,
   cityRushBazookaPickupCanUse,
   cityRushBazookaTarget,
@@ -117,9 +118,12 @@ test('chaque conteneur prend les deux voies extérieures du sens de course, sans
   assert.match(worldSource, /const outerX = out\(CITY_RUSH_LANE_WIDTH \/ 2\)/);
   assert.match(worldSource, /addBox\('bazooka-container-inner-wall', \[WALL, CEILING, LENGTH\], \[innerWallX/);
   assert.match(worldSource, /addBox\('bazooka-container-outer-wall', \[WALL, CEILING, LENGTH\], \[outerWallX/);
-  // Les sept parcours à trafic en face suivent leur côté de conduite ; le Ring,
-  // à sens unique, garde l'extérieur droit comme le reste du jeu.
-  for (const course of CITY_RUSH_COURSES) {
+  // Les parcours à trafic en face suivent leur côté de conduite ; le Ring,
+  // à sens unique, garde l'extérieur droit comme le reste du jeu. Le tōgé
+  // n'ouvre aucun conteneur (course de nuit sans bazooka) : ses deux voies
+  // étroites ne pourraient pas porter une caisse de deux voies sans mordre
+  // l'axe — il est donc exclu de ce contrat, comme du jeu.
+  for (const course of CITY_RUSH_COURSES.filter((entry) => cityRushBazookaAvailable(entry))) {
     const leftHand = cityRushDriveSide(course) === 'left';
     const laneConfig = cityRushLaneConfig(course);
     const pickupLane = leftHand ? laneConfig.forwardLanes[0] : laneConfig.forwardLanes.at(-1);

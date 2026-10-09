@@ -327,6 +327,63 @@ export const CITY_RUSH_THEMES = Object.freeze({
   // alors la piste étroite de `nordschleifeStage.js` au lieu d'une rue — et
   // `roadHalf` fixe sa largeur : 9,20 m de bitume (8,40 m utiles, comme le
   // vrai Ring, plus la marge peinte de chaque côté).
+  // ── Mont Haruna · le tōgé de nuit ────────────────────────────────────────
+  // Minuit sur la montagne : ciel d'encre criblé d'étoiles, pleine lune haute,
+  // brume bleutée dans les ravins. Pas de ville ici — juste la chaussée
+  // étroite, les glissières à réflecteurs, les cèdres noirs, les lampadaires
+  // orange espacés et les distributeurs lumineux du belvédère. Le thème porte
+  // `touge` — le monde construit alors la route de montagne de
+  // `tougeStage.js` — et `roadHalf` sa largeur : 6,40 m de bitume.
+  touge: Object.freeze({
+    touge: true,
+    roadHalf: 3.2,
+    sky: Object.freeze({
+      top: 0x030716, mid: 0x0d1a38, horizon: 0x27406e, haze: 0x8fa8d8,
+      sun: Object.freeze({ color: 0xfff6e0, glow: 0x4a6fb4, elevation: 0.08, radius: 0.04, stripes: 0 }),
+      stars: 0.9, moon: 1,
+    }),
+    weather: 'clear',
+    fogNear: 58, fogFar: 240,
+    // Aucune façade sur la montagne : les « boutiques » du thème ne servent
+    // qu'au contrat d'habillage ; le décor de la route vit dans tougeStage.js.
+    facade: Object.freeze({
+      style: 'mountain', floor: 1.4, litRatio: 0.02, litColors: ['#ffe9b0'],
+      wall: '#2a3230', glass: '#3d5566', sheen: 'rgba(200, 220, 255, .12)', frame: '#1c2422',
+    }),
+    shops: Object.freeze([
+      { text: '峠 TOFU', color: '#f4f1e8', awning: '#1d3b2a' },
+      { text: 'MIDNIGHT PARTS', color: '#ff5b5b', awning: '#1a1f2f' },
+      { text: 'HARUNA GAS', color: '#ffd36b', awning: '#2f3a42' },
+      { text: '峠ラーメン', color: '#ffb46b', awning: '#7a2a1f' },
+    ]),
+    shopWall: '#2a3230', shopTrim: '#1c2422', shopDoor: '#141a18',
+    verticalSigns: Object.freeze(['峠', 'TŌGE', '夜', 'ヘアピン', '榛名']),
+    sponsors: Object.freeze(['LET’S PLAY', 'MIDNIGHT TOUGE', '榛名山モータース', 'TOFU DELIVERY 豆腐', 'MOONLIGHT TYRES', '峠ガレージ']),
+    gate: Object.freeze({ style: 'touge', text: '榛名山 TŌGE' }),
+    gantryText: '榛名山 DESCENTE',
+    crowdColors: Object.freeze([0xffb46b, 0x8fd8ff, 0xf2f4ee, 0x3a4a3d, 0xff5b5b, 0xffd36b]),
+    roadTint: 0x1d2027, laneColor: '#e8ecf2', centerLineColor: '#e8ecf2', edgeColor: '#e8ecf2', sidewalkTint: 0x243428,
+    // Lampadaires orange de montagne, cèdres et bambou en bord de chaussée.
+    lamp: 'touge', tree: 'cedar',
+    ground: 0x17251c,
+    glow: 1,
+    lampCone: 0.08,
+    accentCone: 0.1,
+    skyline: Object.freeze({ base: [8, 14, 28], window: 'rgba(255, 220, 160, .25)' }),
+    materials: Object.freeze({
+      armco: 0xb9c2c9, armcoPost: 0x69727a, reflector: 0xffe9b0,
+      concrete: 0x5c626c, concreteDark: 0x3c424c, rock: 0x3a4048, rockDark: 0x2a2f36,
+      grass: 0x243428, grassDark: 0x182420, foliage: 0x16281e, foliageLight: 0x24402e,
+      trunk: 0x2e2620, wood: 0x4a3a2c, steel: 0x77828c, darkMetal: 0x22272e,
+      stone: 0x4a4f56, gravel: 0x3a3c40, slate: 0x2a2e34,
+      sodium: 0xffb46b, vendingRed: 0xff4d5e, vendingBlue: 0x4da3ff, white: 0xf2f4ee,
+      red: 0xc8382f, yellow: 0xf4c431, blue: 0x2d4f9e,
+    }),
+    // Coupe du tunnel : sodium orange au plafond, parois de roche brute.
+    touge: Object.freeze({
+      tunnel: Object.freeze({ wall: 0x23262c, ceiling: 0x191c22, portal: 0x3a4050, sodium: 0xffb46b }),
+    }),
+  }),
   nordschleife: Object.freeze({
     daylight: true,
     raceway: true,

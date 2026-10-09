@@ -107,6 +107,7 @@ test('chaque ville a son tempo, Vice City à 122', () => {
   assert.equal(cityRushMusicBpm('vice-city'), 122);
   assert.equal(cityRushMusicBpm('tokyo'), 132);
   assert.equal(cityRushMusicBpm('paris'), 118);
+  assert.equal(cityRushMusicBpm('touge'), 152, 'le tōgé roule en eurobeat à 152');
   assert.ok(cityRushMusicBpm('atlantide') === CITY_RUSH_DEFAULT_BPM, 'une ville inconnue retombe sur le tempo par défaut');
   assert.deepEqual(Object.keys(CITY_RUSH_MUSIC_BPM).sort(), ['london', 'mexico-countryside', 'new-york', 'paris', 'tokyo', 'vice-city']);
 });
@@ -449,7 +450,7 @@ test('les bruitages ne sont jamais créés hors d’un contexte vivant', () => {
 });
 
 test('chaque stage / parcours de Vice City Rush a sa propre partition musicale', async () => {
-  const cities = ['vice-city', 'tokyo', 'paris', 'london', 'new-york', 'route-66', 'mexico-countryside', 'nordschleife'];
+  const cities = ['vice-city', 'tokyo', 'paris', 'london', 'new-york', 'route-66', 'mexico-countryside', 'nordschleife', 'touge'];
   const notesByCity = {};
 
   for (const cityId of cities) {

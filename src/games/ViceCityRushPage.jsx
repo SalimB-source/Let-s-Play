@@ -59,6 +59,8 @@ import {
   CITY_RUSH_MINI_GARAGE_REPAIR_AMOUNT,
   CITY_RUSH_HEALTH_PICKUP_RESTORE,
   NORDSCHLEIFE_RELIEF_M,
+  TOUGE_SUMMIT_M,
+  TOUGE_LOW_M,
   CITY_RUSH_PLAYER_HEALTH_CRITICAL,
   cityRushCarMaxHealth,
   CITY_RUSH_WANTED_MAX_STARS,
@@ -74,6 +76,7 @@ import {
   CITY_RUSH_PICKUPS,
   CITY_RUSH_WEAPON_TYPES,
   cityRushActiveWeapon,
+  cityRushBazookaAvailable,
   CITY_RUSH_TRACK_BOOST_DURATION,
   buildCityRushMinimapState,
   cityRushPacedSpeed,
@@ -164,6 +167,7 @@ const CITY_THUMBNAILS = {
   london: 'london-thumb.jpg',
   'mexico-countryside': 'mexico-countryside-thumb.jpg',
   nordschleife: 'nordschleife-thumb.jpg',
+  touge: 'touge-thumb.jpg',
 };
 const CAR_THUMBNAILS = {
   'city-hatch': 'car-mistral-14.jpg',
@@ -952,9 +956,10 @@ export default function ViceCityRushPage() {
   // Course « pure » (turbo, soins et tremplins, ni armes ni police) : certains
   // chapitres d'histoire, certaines missions et tous les tournois.
   const pureRace = tournamentMode || ((storyMode || missionMode) && !storyWeaponsOn);
-  // Le bazooka est sur toutes les cartes (hors Sprint et chapitres sans arme) :
-  // deux conteneurs par course, à 30 % puis 65 % du parcours.
-  const bazookaMode = !sprintMode && storyWeaponsOn && storyPoliceOn && storyRules?.bazookaEnabled !== false;
+  // Le bazooka est sur toutes les cartes (hors Sprint, chapitres sans arme et
+  // parcours qui le ferment — le tōgé du Mont Haruna) : deux conteneurs par
+  // course, à 30 % puis 65 % du parcours.
+  const bazookaMode = !sprintMode && storyWeaponsOn && storyPoliceOn && storyRules?.bazookaEnabled !== false && cityRushBazookaAvailable(city);
   // Chronos de référence des chapitres contre-la-montre : cible fixe de la
   // TEMPESTA prêtée sur le Ring, par calculé sur la voiture engagée en Sprint.
   const storyTargetTime = useMemo(
@@ -2734,7 +2739,7 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 02 / VILLE · {mode.name}</span>
                       <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>DE {city.name}.</em></h2>
-                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : city.raceway ? ` — chaque boucle rejoue un trente-cinquième du tour réel de ${city.route.lengthKm.toLocaleString('fr-FR')} km, du pont d'Antoniusbuche (km 0) à la Start-Ziel-Anlage, ${city.route.corners} virages et ${NORDSCHLEIFE_RELIEF_M} m de dénivelé` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, ${formatSprintSeconds(sprintCheckpointBonus)} s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
+                      <p>{city.tagline} Circuit de {CITY_RUSH_LAP_LENGTH} m en boucle{city.route ? (city.id === 'route-66' ? ` — traversée condensée de la ${city.route.name}, de ${city.route.endpoints[0]} à ${city.route.endpoints[1]} (${city.route.lengthKm.toLocaleString('fr-FR')} km historiques)` : city.raceway ? ` — chaque boucle rejoue un trente-cinquième du tour réel de ${city.route.lengthKm.toLocaleString('fr-FR')} km, du pont d'Antoniusbuche (km 0) à la Start-Ziel-Anlage, ${city.route.corners} virages et ${NORDSCHLEIFE_RELIEF_M} m de dénivelé` : city.id === 'touge' ? ` — chaque boucle rejoue la descente de ${city.route.lengthKm.toLocaleString('fr-FR')} km du mont Haruna, du col au lac, ${city.route.corners} virages dont huit épingles et ${TOUGE_SUMMIT_M - TOUGE_LOW_M} m de dénivelé` : ` — chaque boucle rejoue un tiers des ${city.route.lengthKm.toLocaleString('fr-FR')} km de la ${city.route.name} (${city.route.direction})`) : ''}, {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} checkpoints, ${formatSprintSeconds(sprintCheckpointBonus)} s par checkpoint = ${currentDistance} m` : `${currentLaps} tour${currentLaps > 1 ? 's' : ''} dont un dernier tour double = ${currentDistance} m`}. Mode {mode.name} : {mode.desc.toLowerCase()}</p>
                     </div>
                     <div className="city-rush-city-picker is-large" role="group" aria-label="Choisir une ville">
                       {CITY_RUSH_COURSES.map((option, index) => (
