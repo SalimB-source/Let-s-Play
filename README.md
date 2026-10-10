@@ -2467,7 +2467,7 @@ et abandon propre depuis le garage.
 ## Vice City Rush : le tōgé freine avant le virage, la poursuite reste derrière
 
 Le **mont Haruna** (neuvième parcours, `touge`) est la seule route de montagne du
-jeu : 13,8 km de descente de nuit, chaussée de 6,40 m, douze virages dont huit
+jeu : 13,8 km de descente de nuit, chaussée de 8,40 m à quatre voies, douze virages dont huit
 épingles à 90° groupées en trois enfilades — 五連ヘアピン, 水沢の森, le ravin.
 Deux défauts la rendaient illisible : la caméra de poursuite partait sur le flanc
 dans les épingles, et personne ne freinait avant de tourner.

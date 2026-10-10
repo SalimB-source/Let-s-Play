@@ -333,10 +333,10 @@ export const CITY_RUSH_THEMES = Object.freeze({
   // étroite, les glissières à réflecteurs, les cèdres noirs, les lampadaires
   // orange espacés et les distributeurs lumineux du belvédère. Le thème porte
   // `touge` — le monde construit alors la route de montagne de
-  // `tougeStage.js` — et `roadHalf` sa largeur : 6,40 m de bitume.
+  // `tougeStage.js` — et `roadHalf` sa largeur : 8,40 m de bitume, quatre voies.
   touge: Object.freeze({
     touge: true,
-    roadHalf: 3.2,
+    roadHalf: 4.2,
     sky: Object.freeze({
       top: 0x030716, mid: 0x0d1a38, horizon: 0x27406e, haze: 0x8fa8d8,
       sun: Object.freeze({ color: 0xfff6e0, glow: 0x4a6fb4, elevation: 0.08, radius: 0.04, stripes: 0 }),

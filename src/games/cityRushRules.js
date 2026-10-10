@@ -66,10 +66,11 @@ export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
 // sens unique, exactement la largeur d'une voiture entre deux voies.
 export const CITY_RUSH_RACEWAY_ROAD_WIDTH = 9.2;
 export const CITY_RUSH_RACEWAY_ROAD_HALF = CITY_RUSH_RACEWAY_ROAD_WIDTH / 2;
-// Chaussée du tōgé : 6,40 m — deux voies de 2,10 m et un accotement d'un mètre
-// de chaque côté, la largeur d'une vraie route de montagne japonaise. Les
-// glissières s'y collent : la montagne est à un mètre du rétroviseur.
-export const CITY_RUSH_TOUGE_ROAD_WIDTH = 6.4;
+// Chaussée du tōgé : 8,40 m — quatre voies de 2,10 m, exactement la largeur du
+// Ring. Le ruban de bitume ne peut pas être plus large sans se replier dans les
+// épingles (rayon de courbure minimal du tracé ≈ 4,2 m) : les bas-côtés de
+// mousse et les glissières s'ajoutent de part et d'autre, hors du bitume.
+export const CITY_RUSH_TOUGE_ROAD_WIDTH = 8.4;
 export const CITY_RUSH_TOUGE_ROAD_HALF = CITY_RUSH_TOUGE_ROAD_WIDTH / 2;
 // Six voies au total : trois d'un sens, trois dans l'autre, séparées par l'axe
 // jaune central. Les voies restent au même espacement de 2,1 m ; c'est le
@@ -2317,7 +2318,7 @@ export const CITY_RUSH_NORDSCHLEIFE_COURSE = Object.freeze({
 });
 
 // ── Mont Haruna · tōgé de nuit ──────────────────────────────────────────────
-// La descente du tōgé : une route de montagne japonaise à deux voies, de nuit,
+// La descente du tōgé : une route de montagne japonaise à quatre voies, de nuit,
 // enchaînant les épingles du sommet (1,081 m) au lac en contrebas (345 m).
 // Comme le Ring, le tour du jeu est une boucle de 1 200 m qui rejoue la
 // descente à l'échelle : douze virages francs à 60° (huit épingles), un tunnel,
@@ -2536,8 +2537,8 @@ export const CITY_RUSH_TOUGE = Object.freeze({
 
 // ── Mont Haruna · le tōgé de nuit ───────────────────────────────────────────
 // La neuvième course n'est ni une ville ni un circuit : c'est une route de
-// montagne japonaise de nuit, une descente de tōgé à deux voies (6,40 m de
-// bitume, un accotement de chaque côté) entre les épingles. Elle reprend le
+// montagne japonaise de nuit, une descente de tōgé à quatre voies (8,40 m de
+// bitume, des bas-côtés de mousse de chaque côté) entre les épingles. Elle reprend le
 // modèle du Ring : sens unique, pas un seul véhicule en face, trafic rare —
 // mais la nuit, les phares et une lune haute. Le bazooka et le mini-garage
 // sont retirés de cette carte : sur la montagne, seul le pilotage compte.
@@ -2557,9 +2558,9 @@ export const CITY_RUSH_TOUGE_COURSE = Object.freeze({
   skyTop: 0x050818,
   skyGlow: 0xaecdf5,
   style: 'touge',
-  // Deux voies dans le même sens, chaussée étroite (6,40 m), personne en face :
-  // une route de montagne, pas une autoroute.
-  laneCount: 2,
+  // Quatre voies dans le même sens, chaussée de 8,40 m, personne en face :
+  // une route de montagne à quatre voies, pas une autoroute.
+  laneCount: 4,
   roadHalf: CITY_RUSH_TOUGE_ROAD_HALF,
   oncomingCount: 0,
   // La montagne de nuit est presque déserte : un taxi qui rentre au val et
@@ -2713,7 +2714,7 @@ export function cityRushLaneConfig(course) {
   // de la grille et la meute se répartit en alternance.
   const policeLanes = Object.freeze(laneCount > 1 ? [0, laneCount - 1] : [0]);
   // Largeur de chaussée : le Ring garde ses 9,20 m ; un parcours peut en
-  // déclarer une plus étroite (le tōgé : 6,40 m, deux voies et un accotement).
+  // déclarer une plus étroite (le tōgé : 8,40 m, quatre voies et des bas-côtés).
   const declaredHalf = Number(course?.roadHalf);
   const roadHalf = Number.isFinite(declaredHalf) && declaredHalf > CITY_RUSH_LANE_WIDTH / 2
     ? declaredHalf
