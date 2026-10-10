@@ -217,7 +217,7 @@ export const ROAD_VIEW_AHEAD = 390;
 // virages du Nordschleife, dont l'appui tient 70 m, sont découpés assez fin
 // pour rester des courbes. À 112 rangées (4,1 m), la cassure du Karussell
 // tournait de 31° d'une rangée à l'autre et le ruban dessinait un coude.
-const ROAD_CURVE_SEGMENTS = 176;
+export const ROAD_CURVE_SEGMENTS = 176;
 
 export function makeCurvedStripGeometry(innerX, outerX, y = 0, segments = ROAD_CURVE_SEGMENTS) {
   const rows = segments + 1;
@@ -250,10 +250,130 @@ export function makeCurvedStripGeometry(innerX, outerX, y = 0, segments = ROAD_C
   return geometry;
 }
 
+// ─── Le ruban ne passe jamais au-dessus de la chaussée ──────────────────────
+// Une bande large — le sol de la forêt du tōgé, 2 × 210 m — posée sur un
+// parcours qui tourne court se replie. Le déport latéral d'un sommet décale
+// aussi sa profondeur (`-latéral · sin(cap)`), si bien que le bord posé à
+// 210 m sur le côté atterrit plusieurs dizaines de mètres plus loin sur la
+// piste, à une hauteur qui n'est plus la sienne. Sur la descente du mont
+// Haruna — 20° de pente continue, les épingles repliées les unes sur les
+// autres — la nappe de la jambe d'au-dessus couvre la route jusqu'à **25 m
+// plus haut** : un mur de terre en travers du virage, et la voiture du pilote
+// disparaît derrière.
+//
+// La parade est verticale, et non latérale : réduire la largeur du ruban
+// laisserait un trou sur le flanc de la montagne (on y verrait le ciel), alors
+// qu'abaisser les sommets fautifs ne retire rien — le sol reste posé partout.
+// Chaque sommet reçoit donc la hauteur de la chaussée **qui passe sous lui** :
+// la plus basse des rangées dont il est assez proche, puis, à défaut, celle
+// dont il partage la profondeur. Le sol suit la descente au lieu de la
+// traverser, en restant juste en dessous du bitume
+// (`STRIP_FOLD_GUARD_CLEARANCE`) pour ne pas battre avec lui.
+//
+// Rien ne bouge là où le ruban ne se replie pas : la rangée la plus proche
+// d'un sommet posé au bord de la route est la sienne, et la mesure est alors
+// sans effet. Les parcours plats (villes, Route 66, Mexique) ont un relief
+// nul : la borne y rend exactement la hauteur du sommet.
+export const STRIP_FOLD_GUARD_CLEARANCE = 0.03; // m sous la chaussée : pas de battement de profondeur
+export const STRIP_FOLD_GUARD_RADIUS = 22; // m : on cherche la chaussée sous le sommet dans ce rayon
+// Au-delà de cette largeur, un sommet déporté peut atterrir sur une autre
+// partie de la piste : en dessous (chaussée, bordures), il reste au bord de sa
+// propre rangée et la mesure ne servirait qu'à brûler du temps de calcul.
+export const STRIP_FOLD_GUARD_MIN_WIDTH = 4.5; // m
+
+// Grille monde des rangées du ruban. Dans une épingle, la jambe d'en face
+// passe à une vingtaine de mètres : la chaussée la plus proche d'un sommet
+// n'est presque jamais une rangée voisine, et un simple tri par profondeur la
+// manque. On range donc les centres des rangées dans des mailles de la taille
+// du rayon cherché — le même procédé que le couloir de caméra du tōgé.
+const ROW_GRID_CELL = STRIP_FOLD_GUARD_RADIUS;
+const rowGrid = new Map();
+let gridX = new Float64Array(0);
+let gridZ = new Float64Array(0);
+let gridRise = new Float64Array(0);
+let gridRows = 0;
+// Les rubans d'une même image partagent le même joueur, le même tracé et les
+// mêmes rangées : la grille n'est rebâtie qu'une fois par image.
+let gridKey = '';
+
+const rowCell = (value) => Math.floor(value / ROW_GRID_CELL);
+const rowKey = (ix, iz) => ix * 4096 + iz;
+
+/**
+ * Rangée la plus basse dont la chaussée passe sous `(x, z)`, ou `-1`. Ce
+ * n'est pas la plus proche : dans une épingle, la jambe d'au-dessus passe à
+ * une vingtaine de mètres d'un sommet posé près de la voiture, et c'est sa
+ * hauteur à elle — pas celle de la route d'à côté — qui fait le mur. On
+ * retient donc la plus basse des chaussées du voisinage.
+ */
+function nearestRowInGrid(x, z) {
+  const ix = rowCell(x);
+  const iz = rowCell(z);
+  const reach = STRIP_FOLD_GUARD_RADIUS * STRIP_FOLD_GUARD_RADIUS;
+  let best = -1;
+  let bestRise = Infinity;
+  for (let cx = ix - 1; cx <= ix + 1; cx += 1) {
+    for (let cz = iz - 1; cz <= iz + 1; cz += 1) {
+      const bucket = rowGrid.get(rowKey(cx, cz));
+      if (!bucket) continue;
+      for (const row of bucket) {
+        const dx = gridX[row] - x;
+        const dz = gridZ[row] - z;
+        if (dx * dx + dz * dz > reach) continue;
+        if (gridRise[row] < bestRise) { bestRise = gridRise[row]; best = row; }
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * Rangée dont la profondeur `depth` est la plus proche de `z`. Les
+ * profondeurs des rangées décroissent avec l'indice (la piste avance, `z`
+ * diminue) : la recherche est dichotomique. Sert de repli quand aucune
+ * chaussée ne passe sous le sommet — le sol lointain suit alors la pente de la
+ * descente au lieu de la traverser.
+ */
+export function stripRowAtDepth(depthAt, rows, z) {
+  if (!rows) return -1;
+  let low = 0;
+  let high = rows - 1;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    // `depthAt` décroît : une profondeur plus grande que la cible est derrière.
+    if (depthAt(middle) > z) low = middle + 1;
+    else high = middle;
+  }
+  if (low > 0 && Math.abs(depthAt(low - 1) - z) < Math.abs(depthAt(low) - z)) return low - 1;
+  return low;
+}
+
+// Mémoires de rangée, réutilisées d'une image à l'autre (le nombre de rangées
+// ne change pas en cours de route).
+let guardDepth = new Float64Array(0);
+
+/**
+ * Hauteur d'un sommet du ruban, bornée par la chaussée qui passe sous lui.
+ * `height` est la hauteur demandée (celle de sa rangée) ; elle est ramenée à
+ * la hauteur de la chaussée la plus proche quand celle-ci est plus basse — le
+ * sommet vient alors se poser juste sous le bitume au lieu de le coiffer.
+ */
+export function stripFoldGuardHeight({ x, z, height, rows, baseY = 0 }) {
+  if (rows <= 0) return height;
+  const near = nearestRowInGrid(x, z);
+  const row = near >= 0 ? near : stripRowAtDepth((index) => gridZ[index], rows, z);
+  if (row < 0 || row >= rows) return height;
+  const limit = baseY + gridRise[row];
+  // La borne ne serre que si elle est plus basse : sur une route plate, ou
+  // pour un sommet posé au bord de sa propre rangée, rien ne bouge.
+  if (!(limit < height)) return height;
+  return limit - STRIP_FOLD_GUARD_CLEARANCE;
+}
+
 // Actualise une bande de bitume à partir de la distance réelle du joueur.
 // La courbe et le léger relief sont appliqués à chaque rangée de sommets :
 // marquages, trottoirs, bordures et lignes néon suivent la même chaussée.
-export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT) {
+export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ, profile = CITY_RUSH_TRACK_PROFILE_DEFAULT, { foldGuard = true } = {}) {
   const positions = mesh.geometry.attributes.position;
   const segments = positions.count / 2 - 1;
   const playerCurve = profile.offset(playerDistance);
@@ -261,6 +381,44 @@ export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ,
   const playerElevation = profile.elevation(playerDistance);
   const path2d = typeof profile.forward === 'function';
   const baseY = mesh.geometry.userData.trackBaseY || 0;
+  // Le garde-fou de repliement ne sert que là où un déport latéral change la
+  // profondeur du sommet (tracé 2D) **et** où la piste monte ou descend : sur
+  // une carte plate, la borne est la hauteur du sommet et le calcul est du
+  // temps perdu pour rien. `foldGuard: false` sert aux mesures : il rend le
+  // ruban d'avant la parade, pour chiffrer ce qu'elle corrige.
+  const wide = Math.max(Math.abs(innerX), Math.abs(outerX)) > STRIP_FOLD_GUARD_MIN_WIDTH;
+  // `foldGuard: false` sert aux mesures : il rend le ruban d'avant la parade,
+  // pour chiffrer ce qu'elle corrige.
+  const guarded = foldGuard && wide && path2d && typeof profile.elevation === 'function';
+  if (guarded) {
+    const key = `${playerDistance}|${profile.id || ''}|${segments}|${playerZ}`;
+    if (key !== gridKey) {
+      gridKey = key;
+      if (gridX.length < segments + 1) {
+        gridX = new Float64Array(segments + 1);
+        gridZ = new Float64Array(segments + 1);
+        gridRise = new Float64Array(segments + 1);
+        guardDepth = new Float64Array(segments + 1);
+      }
+      rowGrid.clear();
+      gridRows = segments + 1;
+      for (let index = 0; index <= segments; index += 1) {
+        const progress = index / segments;
+        const gap = ROAD_VIEW_BEHIND + (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * progress;
+        const trackDistance = playerDistance + gap;
+        const x = profile.offset(trackDistance) - playerCurve;
+        const z = playerZ - (profile.forward(trackDistance) - playerForward) * SCALE;
+        gridX[index] = x;
+        gridZ[index] = z;
+        gridRise[index] = profile.elevation(trackDistance) - playerElevation;
+        guardDepth[index] = z;
+        const cell = rowKey(rowCell(x), rowCell(z));
+        const bucket = rowGrid.get(cell);
+        if (bucket) bucket.push(index);
+        else rowGrid.set(cell, [index]);
+      }
+    }
+  }
   for (let index = 0; index <= segments; index += 1) {
     const progress = index / segments;
     const gap = ROAD_VIEW_BEHIND + (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * progress;
@@ -275,7 +433,10 @@ export function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ,
       const lateral = side ? outerX : innerX;
       const x = centerX + (path2d ? lateral * Math.cos(yaw) : lateral);
       const z = playerZ - forwardGap * SCALE - (path2d ? lateral * Math.sin(yaw) * SCALE : 0);
-      positions.setXYZ(vertex, x, y, z);
+      const height = guarded
+        ? stripFoldGuardHeight({ x, z, height: y, rows: gridRows, baseY })
+        : y;
+      positions.setXYZ(vertex, x, height, z);
     }
   }
   positions.needsUpdate = true;
