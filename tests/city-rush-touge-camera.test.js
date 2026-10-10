@@ -74,11 +74,11 @@ test('le couloir de la caméra couvre la chaussée et les épingles de la descen
     'la forêt du bord de route reste plantée où elle est');
 
   // La caméra décrochée de la chaussée, elle, n'apparaît que dans les trois
-  // enfilades — soit environ 285 mètres de piste sur les 1 200 du tour.
-  assert.ok(camera.length > 150 && camera.length < 400,
+  // enfilades — soit environ 125 mètres de piste sur les 1 200 du tour.
+  assert.ok(camera.length > 100 && camera.length < 400,
     `la caméra quitte la chaussée sur ${camera.length} mètres de piste`);
 
-  // À 60°, la caméra quitte le ruban mais reste dans le bas-côté, juste avant
+  // À 45°, la caméra quitte le ruban mais reste dans le bas-côté, juste avant
   // la bande plantée : un arbre peut donc encore être à portée de l'objectif.
   let shallowest = Number.POSITIVE_INFINITY;
   let deepest = 0;

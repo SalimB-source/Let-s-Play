@@ -2468,18 +2468,18 @@ et abandon propre depuis le garage.
 
 Le **mont Haruna** (neuvième parcours, `touge`) est la seule route de montagne du
 jeu : 13,8 km de descente de nuit, chaussée de 8,40 m à quatre voies, douze virages dont huit
-épingles à 90° groupées en trois enfilades — 五連ヘアピン, 水沢の森, le ravin.
+épingles à 45° groupées en trois enfilades — 五連ヘアピン, 水沢の森, le ravin.
 Deux défauts la rendaient illisible : la caméra de poursuite partait sur le flanc
 dans les épingles, et personne ne freinait avant de tourner.
 
 ### La poursuite reste derrière la voiture
 
 La caméra se posait sur le morceau de route *derrière* la caisse et regardait le
-morceau *devant*. Or une épingle tourne de 90° en neuf mètres : quinze mètres
+morceau *devant*. Or une épingle tourne de 45° en neuf mètres : quinze mètres
 plus loin, la route n'est plus devant, elle est à côté. Mesuré sur le profil
-rendu, l'ancien cadrage déportait la caméra jusqu'à **18,3 m sur le flanc** de la
-voiture, son regard jusqu'à **23,4 m** hors de l'axe, et la caisse sortait de
-l'image (**|x| = 1,52** en coordonnée écran).
+rendu, l'ancien cadrage déportait la caméra jusqu'à **8,9 m sur le flanc** de la
+voiture, son regard jusqu'à **10,5 m** hors de l'axe, et la caisse sortait de
+l'image (**1,2 × le demi-cadre**).
 
 `cityRushChasePlacement(distance, profile)` calcule désormais les deux cadrages
 et les départage : le cadrage historique, et le cadrage **ancré** — la caméra à
@@ -2487,7 +2487,7 @@ et les départage : le cadrage historique, et le cadrage **ancré** — la camé
 le regard à `CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD` (21 m) pour garder la même
 plongée. L'écart entre les deux regards, mesuré à recul égal, donne le poids
 d'ancrage (`cityRushChaseAnchorWeight`) : nul jusqu'à **7,5 m**
-(`CITY_RUSH_CHASE_ANCHOR_DRIFT_START`), plein à **15 m**
+(`CITY_RUSH_CHASE_ANCHOR_DRIFT_START`), plein à **9 m**
 (`CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL`), lissé entre les deux. `cityRushChaseFollowRate`
 monte le lissage de 4,5 à 7 pendant l'ancrage, et le relief suivi par la caméra
 s'efface avec lui.
@@ -2495,7 +2495,7 @@ s'efface avec lui.
 La règle est **géométrique** : elle ne connaît pas le tōgé, elle répond à « la
 route décroche-t-elle de l'axe de la caisse ? ». Écart maximal relevé sur les
 quatre profils : 0,04 m par défaut, 7,23 m à Vice City, 7,06 m sur le Ring — tous
-sous le seuil, **poids exactement nul**, cadrage inchangé — et 23,44 m au tōgé,
+sous le seuil, **poids exactement nul**, cadrage inchangé — et 10,51 m au tōgé,
 où l'ancrage devient complet dans les trois enfilades. Mesuré dans le monde
 (caméra réelle du smoke) : la voiture du pilote tient le tiers bas du cadre,
 **|x| ≤ 0,63**, y de −0,89 à −0,45, sur 8 078 images.
@@ -2505,8 +2505,9 @@ où l'ancrage devient complet dans les trois enfilades. Mesuré dans le monde
 `cityRushTougeCornerPace(distance)` lit la **table des virages** du tōgé (angle
 et étendue réels) au lieu du cap rendu — une cassure de neuf mètres est trop
 courte pour que la courbure lissée la voie. `cityRushTougeCornerFactor` tient le
-plancher `CITY_RUSH_CORNER_PACE_MIN` (0,58) à 90°, 0,790 à 60°, 1 au-delà de
-`CITY_RUSH_TOUGE_CORNER_ANGLE_START` (30°), et `CITY_RUSH_TOUGE_PREBRAKE_METERS`
+plancher `CITY_RUSH_CORNER_PACE_MIN` (0,58) à 45° — les douze virages de la
+descente —, 1 au-delà de `CITY_RUSH_TOUGE_CORNER_ANGLE_START` (30°), et
+`CITY_RUSH_TOUGE_PREBRAKE_METERS`
 (**46 m**, contre 40 m à Vice City) fait descendre la cible *avant* l'entrée et
 la tient jusqu'à la sortie. Les trois enfilades deviennent trois zones de
 freinage de 202 m, 98 m et 150 m — 37 % du tour, rythme moyen 0,866 — et les
@@ -2524,17 +2525,17 @@ suivent la vitesse et restent.
 
 ### La forêt s'écarte de l'objectif
 
-Une caméra qui quitte la chaussée de dix mètres traverse la forêt noire, plantée
+Une caméra qui quitte la chaussée de sept mètres traverse la forêt noire, plantée
 à partir de 8,7 m de l'axe. `buildCameraCorridor` relève donc deux couloirs à
 garder libres : la ligne centrale de tout le tour (rayon `ROAD_CORRIDOR_RADIUS`
 = 3,8 m, rien sur l'asphalte) et chaque position de caméra ancrée (rayon
 `CAMERA_CORRIDOR_RADIUS` = 3,4 m, le cône de feuillage le plus large plus la
 marge de lissage). Un arbre qui tombe dedans est **repoussé** de 1,5 m en 1,5 m
 vers l'extérieur, jamais supprimé tant qu'un déport libre existe. Sur la forêt
-réellement plantée (499 arbres) : 24 repoussés (4,8 %), 1 abandonné, aucun dans
-le couloir — et plus aucun cèdre sur l'asphalte d'un virage voisin (ils étaient
-trois : les épingles se replient les unes sur les autres, une jambe passe à une
-vingtaine de mètres de la précédente).
+réellement plantée (499 arbres), une poignée est repoussée et un seul abandonné,
+aucun dans le couloir — et plus aucun cèdre sur l'asphalte d'un virage voisin
+(ils étaient trois : les épingles se replient les unes sur les autres, une jambe
+passe à une vingtaine de mètres de la précédente).
 
 ### Fichiers
 
@@ -2556,8 +2557,8 @@ npm run check:city-rush-smoke                    # les neuf parcours, cadrage co
 ```
 
 `check:city-rush` porte deux tests. Le freinage (`le tōgé freine avant ses
-épingles, pas une fois dedans`) : le plancher à 90°, la descente progressive à
-45° et 60°, les trois enfilades retrouvées depuis la table des virages, la cible
+épingles, pas une fois dedans`) : le plancher à 45°, la descente progressive
+entre 30° et 45°, les trois enfilades retrouvées depuis la table des virages, la cible
 à 1 avant la zone de freinage, au plancher de l'entrée à la sortie, à 1 juste
 après, identique au tour suivant, les sept lignes droites à 1, le relief de l'IA,
 et — en déroulant `approachCityRushSpeed` — les freins touchés plus de 30 m avant

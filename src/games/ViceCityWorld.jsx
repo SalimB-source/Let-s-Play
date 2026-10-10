@@ -1913,7 +1913,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // tard. Ailleurs, l'IA suit exactement le profil du pilote.
   const aiCornerPaceAt = (trackDistance) => cityRushAiCornerPace(city, trackDistance, trackProfile, cornerPaceAt(trackDistance));
   // ── Dérapage contrôlé du tōgé ────────────────────────────────────────────
-  // Le dérapage ne se déclenche que dans les virages francs à 60° marqués dans
+  // Le dérapage ne se déclenche que dans les virages francs à 45° marqués dans
   // CITY_RUSH_TOUGE_TURNS : pilote et rivaux prennent alors un angle de caisse
   // et laissent une fumée de gomme. Entre ces zones — surtout sur les longues
   // lignes droites — la caisse reste droite. L'amplitude suit la vitesse ; le
@@ -9320,9 +9320,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // reste très doux : la route tourne, pas la tête du joueur.
       //
       // Sauf quand la route tourne plus court que le recul de la poursuite :
-      // dans les épingles à 60° du tōgé, le morceau de chaussée placé à 13,2 m
+      // dans les épingles à 45° du tōgé, le morceau de chaussée placé à 13,2 m
       // derrière n'est plus derrière la voiture mais sur son flanc (jusqu'à
-      // douze mètres de côté) — la voiture sortait du cadre et la descente
+      // neuf mètres de côté) — la voiture sortait du cadre et la descente
       // devenait illisible. `cityRushChasePlacement` mesure l'écart entre les
       // deux placements et recolle la poursuite dans l'axe de la caisse,
       // position et regard, dès que l'écart dépasse 7,5 m. Sur une courbe douce
@@ -9339,7 +9339,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       lookTarget.set(px * 0.09 + chase.lookX, CHASE_LOOK.y + chase.lookHill + jumpLookY, PLAYER_Z + chase.lookZ);
       targetFovOffset = (playerBoostLeft > 0 ? 6 : 0) + speedRatio * 2.5;
       // Une poursuite ancrée suit plus ferme : dans une cassure, l'axe tourne
-      // de 60° en un quart de seconde et le retard de lissage ferait couper le
+      // de 45° en un quart de seconde et le retard de lissage ferait couper le
       // virage à la caméra, donc ressortir la voiture du cadre.
       followRate = cityRushChaseFollowRate(chase.anchor);
     }

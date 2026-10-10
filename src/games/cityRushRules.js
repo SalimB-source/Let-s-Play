@@ -1959,7 +1959,7 @@ export function cityRushMinimapTrackShape(cityId) {
   }
   if (cityId === 'touge') {
     // Le tōgé vu du ciel : la descente est reconstruite avec les douze virages
-    // à 60° du profil. Les six paires opposées referment le tracé horizontal ;
+    // à 45° du profil. Les six paires opposées referment le tracé horizontal ;
     // le lac vient se glisser au bout de la descente, à l'est, comme au Haruna.
     const raw = [];
     const heading = { value: 0 };
@@ -2321,7 +2321,7 @@ export const CITY_RUSH_NORDSCHLEIFE_COURSE = Object.freeze({
 // La descente du tōgé : une route de montagne japonaise à quatre voies, de nuit,
 // enchaînant les épingles du sommet (1,081 m) au lac en contrebas (345 m).
 // Comme le Ring, le tour du jeu est une boucle de 1 200 m qui rejoue la
-// descente à l'échelle : douze virages francs à 60° (huit épingles), un tunnel,
+// descente à l'échelle : douze virages francs à 45° (huit épingles), un tunnel,
 // un pont sur le ravin et une aire de belvédère.
 export const TOUGE_LENGTH_KM = 13.8;
 export const TOUGE_HAIRPINS = 8; // épingles du tour (5 en enfilade d'ouverture, 3 au ravin)
@@ -2477,15 +2477,15 @@ export const CITY_RUSH_TOUGE = Object.freeze({
     }),
     tougeSector('goren-hebirin', 4.5, 6.5, {
       kind: 'hairpins', name: '五連ヘアピン', romaji: 'GO-REN HEBIRIN', side: 1,
-      note: 'Les cinq épingles à 60° : frein tardif, transfert de masse et dérapage dans chaque virage.',
-      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['急カーブ 5連続 · 60°', '速度制限 30']), hazard: true }),
+      note: 'Les cinq épingles à 45° : frein tardif, transfert de masse et dérapage dans chaque virage.',
+      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['急カーブ 5連続 · 45°', '速度制限 30']), hazard: true }),
       hairpins: 5,
     }),
     tougeSector('kazami-omawari', 6.5, 7.4, {
       kind: 'corner', name: '風見大回り', romaji: 'KAZAMI ŌMAWARI', side: 1,
-      note: 'Virage franc à gauche de 60° : la voiture dérape dans la courbe puis se remet droite à la sortie.',
-      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['風見大回り', '急カーブ 左 60°']), hazard: true }),
-      corner: Object.freeze({ direction: 'left', number: 60 }),
+      note: 'Virage franc à gauche de 45° : la voiture dérape dans la courbe puis se remet droite à la sortie.',
+      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['風見大回り', '急カーブ 左 45°']), hazard: true }),
+      corner: Object.freeze({ direction: 'left', number: 45 }),
     }),
     tougeSector('kazamisaka', 7.4, 8.5, {
       kind: 'descent', name: '風見坂', romaji: 'KAZAMISAKA', side: -1,
@@ -2494,8 +2494,8 @@ export const CITY_RUSH_TOUGE = Object.freeze({
     }),
     tougeSector('mizusawa', 8.5, 9.5, {
       kind: 'corner', name: '水沢の森', romaji: 'MIZUSAWA NO MORI', side: 1,
-      note: 'Deux virages francs gauche-droite à 60° sous les cèdres dégagés : drift dans les courbes, caisse droite entre elles.',
-      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['水沢の森', 'S字 · 60° × 2']), hazard: true }),
+      note: 'Deux virages francs gauche-droite à 45° sous les cèdres dégagés : drift dans les courbes, caisse droite entre elles.',
+      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['水沢の森', 'S字 · 45° × 2']), hazard: true }),
       corner: Object.freeze({ direction: 'complex', number: 2 }),
     }),
     tougeSector('iwadarekabe', 9.5, 10.8, {
@@ -2511,14 +2511,14 @@ export const CITY_RUSH_TOUGE = Object.freeze({
     }),
     tougeSector('mikuni-omawari', 11.3, 11.8, {
       kind: 'corner', name: '三国大回り', romaji: 'MIKUNI ŌMAWARI', side: -1,
-      note: 'Virage franc à droite de 60° avant le ravin : drift dans la courbe, cap droit dès la sortie.',
-      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['三国大回り', '急カーブ 右 60°']), hazard: true }),
-      corner: Object.freeze({ direction: 'right', number: 60 }),
+      note: 'Virage franc à droite de 45° avant le ravin : drift dans la courbe, cap droit dès la sortie.',
+      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['三国大回り', '急カーブ 右 45°']), hazard: true }),
+      corner: Object.freeze({ direction: 'right', number: 45 }),
     }),
     tougeSector('renzoku-hebirin', 11.8, 12.8, {
       kind: 'hairpins', name: '連続ヘアピン', romaji: 'RENZOKU HEBIRIN', side: 1,
-      note: 'Les trois dernières épingles à 60° du ravin : trois drifts francs, puis la caisse se remet droite.',
-      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['連続急カーブ 3 · 60°', '速度制限 30']), hazard: true }),
+      note: 'Les trois dernières épingles à 45° du ravin : trois drifts francs, puis la caisse se remet droite.',
+      sign: Object.freeze({ route: '榛名', lines: Object.freeze(['連続急カーブ 3 · 45°', '速度制限 30']), hazard: true }),
       hairpins: 3,
     }),
     tougeSector('tenbodai', 12.8, 13.3, {
@@ -2546,7 +2546,7 @@ export const CITY_RUSH_TOUGE_COURSE = Object.freeze({
   ...CITY_RUSH_TOUGE,
   label: 'JAPON · GUNMA · MONT HARUNA',
   district: '榛名山 · 峠ダウンヒル',
-  tagline: 'La descente de nuit à 20° : 12 virages à 60°, 8 épingles, un tunnel et le lac en contrebas.',
+  tagline: 'La descente de nuit à 20° : 12 virages à 45°, 8 épingles, un tunnel et le lac en contrebas.',
   accent: '#8fd8ff',
   secondary: '#ffb46b',
   background: 0x060a18,
@@ -3306,32 +3306,32 @@ export function nordschleifeTrackPitch(distance, scrollScale = CITY_RUSH_SCROLL_
 
 // ── Profil de piste du tōgé (rendu) ────────────────────────────────────────
 // Chaque entrée décrit le km réel, le changement de direction (°, + à droite),
-// l'étendue et la forme. Douze virages de 60° sont dessinés en six paires de
+// l'étendue et la forme. Douze virages de 45° sont dessinés en six paires de
 // S opposés : les huit épingles et quatre virages d'enchaînement. Chaque paire
 // remet le cap à zéro, ce qui laisse les voitures droites entre les zones de drift.
 export const CITY_RUSH_TOUGE_TURNS = Object.freeze([
-  // ── 五連ヘアピン · cinq épingles, trois S de 60° ─────────────────────────
-  Object.freeze([5.15, 60, 0.3, 'snap', true]), // épingle 1 · droite
-  Object.freeze([5.45, -60, 0.3, 'snap', true]), // épingle 2 · gauche
-  Object.freeze([5.75, -60, 0.3, 'snap', true]), // épingle 3 · gauche
-  Object.freeze([6.05, 60, 0.3, 'snap', true]), // épingle 4 · droite
-  Object.freeze([6.35, 60, 0.3, 'snap', true]), // épingle 5 · droite
-  Object.freeze([6.65, -60, 0.3, 'snap', true]), // virage franc · gauche
+  // ── 五連ヘアピン · cinq épingles, trois S de 45° ─────────────────────────
+  Object.freeze([5.15, 45, 0.3, 'snap', true]), // épingle 1 · droite
+  Object.freeze([5.45, -45, 0.3, 'snap', true]), // épingle 2 · gauche
+  Object.freeze([5.75, -45, 0.3, 'snap', true]), // épingle 3 · gauche
+  Object.freeze([6.05, 45, 0.3, 'snap', true]), // épingle 4 · droite
+  Object.freeze([6.35, 45, 0.3, 'snap', true]), // épingle 5 · droite
+  Object.freeze([6.65, -45, 0.3, 'snap', true]), // virage franc · gauche
   // ── 水沢の森 · chicane gauche-droite, désormais dégagée ───────────────────
-  Object.freeze([8.8, -60, 0.3, 'snap', true]), // virage franc · gauche
-  Object.freeze([9.1, 60, 0.3, 'snap', true]), // virage franc · droite
+  Object.freeze([8.8, -45, 0.3, 'snap', true]), // virage franc · gauche
+  Object.freeze([9.1, 45, 0.3, 'snap', true]), // virage franc · droite
   // ── 三国大回り · entrée droite du ravin ──────────────────────────────────
-  Object.freeze([11.65, 60, 0.3, 'snap', true]), // virage franc · droite
-  // ── 連続ヘアピン · trois épingles, deux S de 60° ──────────────────────────
-  Object.freeze([11.95, -60, 0.3, 'snap', true]), // épingle 6 · gauche
-  Object.freeze([12.25, -60, 0.3, 'snap', true]), // épingle 7 · gauche
-  Object.freeze([12.55, 60, 0.3, 'snap', true]), // épingle 8 · droite
+  Object.freeze([11.65, 45, 0.3, 'snap', true]), // virage franc · droite
+  // ── 連続ヘアピン · trois épingles, deux S de 45° ──────────────────────────
+  Object.freeze([11.95, -45, 0.3, 'snap', true]), // épingle 6 · gauche
+  Object.freeze([12.25, -45, 0.3, 'snap', true]), // épingle 7 · gauche
+  Object.freeze([12.55, 45, 0.3, 'snap', true]), // épingle 8 · droite
 ]);
 
 export const CITY_RUSH_TOUGE_PROFILE_STEPS = 2400;
-export const CITY_RUSH_TOUGE_MAX_CORNER_ANGLE = 60;
-// Le chemin 2D des virages à 60° reste dans cette enveloppe latérale.
-export const CITY_RUSH_TOUGE_MAX_OFFSET = 22;
+export const CITY_RUSH_TOUGE_MAX_CORNER_ANGLE = 45;
+// Le chemin 2D des virages à 45° reste dans cette enveloppe latérale.
+export const CITY_RUSH_TOUGE_MAX_OFFSET = 16;
 export const CITY_RUSH_TOUGE_DESCENT_ANGLE = 20;
 
 function buildTougeTrackProfile({ turns, steps, lengthKm }) {
@@ -3352,8 +3352,8 @@ function buildTougeTrackProfile({ turns, steps, lengthKm }) {
     const half = (spanKm * unitsPerKm) / 2;
     // Les angles du tableau sont les angles visibles du ruban. Comme la
     // profondeur est compressée par `CITY_RUSH_SCROLL_SCALE`, on inverse cette
-    // projection avant d'intégrer le cap : un 60° déclaré reste un vrai 60° à
-    // l'écran, au lieu de s'afficher à 67°.
+    // projection avant d'intégrer le cap : un 45° déclaré reste un vrai 45° à
+    // l'écran, au lieu de s'afficher à 54°.
     const visualAngle = (angleDeg * Math.PI) / 180;
     const trackAngle = Math.atan(Math.tan(visualAngle) * CITY_RUSH_SCROLL_SCALE);
     const peak = trackAngle / half;
@@ -3382,7 +3382,7 @@ function buildTougeTrackProfile({ turns, steps, lengthKm }) {
   heading[0] = 0;
   heading[steps] = 0;
 
-  // Paramétrage par la distance réellement parcourue : les virages à 60°
+  // Paramétrage par la distance réellement parcourue : les virages à 45°
   // suivent le cap demandé sans faire diverger le déport latéral.
   const rawOffset = new Float64Array(steps + 1);
   const rawForward = new Float64Array(steps + 1);
@@ -3546,7 +3546,7 @@ export function cityRushTrackProfile(course) {
 // ── Ralentissement dans les grands virages ──────────────────────────────────
 // Vice City, le Nordschleife et le tōgé du Mont Haruna sont les trois parcours
 // dont le tracé tourne vraiment : longues courbes puis virages secs à Vice
-// City, appuis tenus et cassures sur le Ring, douze épingles à 60° sur la
+// City, appuis tenus et cassures sur le Ring, douze virages à 45° sur la
 // descente. Tant que la route tourne, la vitesse visée baisse.
 //
 // Sur les deux premiers, le facteur suit le cap rendu (`trackProfile.yaw`), pas
@@ -3558,7 +3558,7 @@ export function cityRushTrackProfile(course) {
 // le virage, puis gardent le rythme adapté jusqu'à la sortie.
 //
 // Le tōgé a sa propre règle (`cityRushTougeCornerPace`) : son cap rendu reste
-// à 60° sur de longues lignes droites latérales, et ses virages sont trop
+// à 45° sur de longues lignes droites latérales, et ses virages sont trop
 // courtes (neuf mètres) pour qu'une simple anticipation de 40 m les attrape.
 // Le freinage y est lu dans la table des virages, et il commence **avant**
 // l'entrée — voir la section qui suit.
@@ -3605,7 +3605,7 @@ function cityRushCornerEase(progress) {
 }
 
 // ── Le freinage du tōgé : avant le virage, pas dedans ───────────────────────
-// Les douze virages de la descente du mont Haruna tournent de 60°,
+// Les douze virages de la descente du mont Haruna tournent de 45°,
 // ramassés sur neuf mètres (`CITY_RUSH_TOUGE_TURN_CORE_FRACTION` de 26 m
 // d'étendue). Cette zone est trop courte pour servir de repère de freinage :
 // une voiture qui attend d'y être est déjà dans le virage, et l'anticipation
@@ -3632,7 +3632,7 @@ export const CITY_RUSH_TOUGE_CORNER_ANGLE_START = 30; // ° : sous cet angle, le
 /**
  * Part de la vitesse visée conservée dans un virage du tōgé, d'après son
  * angle. `1` sous `CITY_RUSH_TOUGE_CORNER_ANGLE_START`,
- * `CITY_RUSH_CORNER_PACE_MIN` à 60° — les douze virages de la
+ * `CITY_RUSH_CORNER_PACE_MIN` à 45° — les douze virages de la
  * descente. Un angle illisible ne ralentit personne.
  */
 export function cityRushTougeCornerFactor(angleDegrees = 0) {
@@ -3733,7 +3733,7 @@ export function cityRushCornerPace(course = null, distance = 0, profile = null) 
   const courseId = typeof course === 'string' ? course : course?.id;
   const resolvedId = resolved?.id;
   if (courseId === 'touge' || resolvedId === 'touge') {
-    // Le cap rendu peut rester à 60° sur une ligne droite latérale du tōgé, et
+    // Le cap rendu peut rester à 45° sur une ligne droite latérale du tōgé, et
     // sa zone de dérapage ne dure que neuf mètres : la descente freine sur la
     // table de ses virages, avec une vraie anticipation avant l'entrée.
     return cityRushTougeCornerPace(safeDistance);
@@ -3753,10 +3753,10 @@ export function cityRushCornerPace(course = null, distance = 0, profile = null) 
 // pilote et regarde quelques mètres plus loin sur le même axe. Cela suit très
 // bien une courbe douce : la route tourne, pas la tête du joueur.
 //
-// Cela ne suit pas une cassure. Quand la route tourne de 60° en neuf mètres —
+// Cela ne suit pas une cassure. Quand la route tourne de 45° en neuf mètres —
 // les épingles du mont Haruna — le point placé à 13,2 m *le long de la route*
-// n'est plus derrière la voiture : il est sur son flanc, à une douzaine de
-// mètres. La voiture sortait alors du cadre (jusqu'à 1,7 × le demi-cadre,
+// n'est plus derrière la voiture : il est sur son flanc, à une dizaine de
+// mètres. La voiture sortait alors du cadre (jusqu'à 1,2 × le demi-cadre,
 // mesuré sur la descente) pendant que la route à venir passait hors champ :
 // « on ne voit rien » dans les virages du tōgé.
 //
@@ -3766,7 +3766,7 @@ export function cityRushCornerPace(course = null, distance = 0, profile = null) 
 // transforme cet écart en poids : nul tant que les deux placements se
 // confondent — les cinq villes et leurs deux S doux (0,04 m d'écart), Vice City
 // et ses virages secs (7,2 m au plus), le Ring et ses appuis (7,1 m) — et atteint
-// presque le maximum sur le tōgé à 60° (jusqu'à 14,8 m). Aucune autre carte ne
+// le maximum sur le tōgé à 45° (jusqu'à 10,5 m). Aucune autre carte ne
 // bouge donc d'une unité : la règle est géométrique, pas une liste de parcours.
 //
 // Les coordonnées sont relatives au point de la ligne centrale où se trouve la
@@ -3776,8 +3776,8 @@ export function cityRushCornerPace(course = null, distance = 0, profile = null) 
 export const CITY_RUSH_CHASE_BEHIND = 13.2; // unités monde : recul de la poursuite
 export const CITY_RUSH_CHASE_LOOK_AHEAD = 15; // unités monde : avance du regard qui suit la route
 export const CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD = 21; // unités monde : avance du regard dans l'axe de la caisse
-export const CITY_RUSH_CHASE_ANCHOR_DRIFT_START = 7.5; // m d'écart entre les deux placements : l'ancrage commence
-export const CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL = 15; // m d'écart : l'ancrage est complet
+export const CITY_RUSH_CHASE_ANCHOR_DRIFT_START = 7.5; // m d'écart entre les deux placements : l'ancrage commence (les autres cartes culminent à 7,2 m, hors jeu)
+export const CITY_RUSH_CHASE_ANCHOR_DRIFT_FULL = 9; // m d'écart : l'ancrage est complet (les cassures à 45° du tōgé culminent à 10,5 m)
 export const CITY_RUSH_CHASE_FOLLOW_RATE = 4.5; // suivi habituel de la poursuite
 export const CITY_RUSH_CHASE_ANCHOR_FOLLOW_RATE = 7; // suivi plus ferme une fois ancrée
 

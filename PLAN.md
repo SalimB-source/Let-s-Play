@@ -394,7 +394,7 @@ dans les épingles (elle partait sur le flanc, la caisse sortait du cadre) et
 ### Ce qui change
 
 - **Règles pures** (`src/games/cityRushRules.js`) :
-  - `cityRushTougeCornerFactor(angle)` (plancher 0,58 à 90°, 1 au-delà de
+  - `cityRushTougeCornerFactor(angle)` (plancher 0,58 à 45°, 1 au-delà de
     `CITY_RUSH_TOUGE_CORNER_ANGLE_START` = 30°, lissé entre les deux) et
     `cityRushTougeCornerPace(distance)` qui lit `CITY_RUSH_TOUGE_TURNS` et
     anticipe de `CITY_RUSH_TOUGE_PREBRAKE_METERS` = 46 m avant chaque cassure,
@@ -406,7 +406,7 @@ dans les épingles (elle partait sur le flanc, la caisse sortait du cadre) et
     (caméra dans l'axe de la caisse, regard à
     `CITY_RUSH_CHASE_ANCHOR_LOOK_AHEAD` = 21 m), départagés par l'écart des deux
     regards mesuré à recul égal — `cityRushChaseAnchorWeight`, nul sous 7,5 m,
-    plein à 15 m. `cityRushChaseFollowRate` monte le lissage de 4,5 à 7 pendant
+    plein à 9 m. `cityRushChaseFollowRate` monte le lissage de 4,5 à 7 pendant
     l'ancrage, et les reliefs (`cameraHill`, `lookHill`) s'effacent avec lui.
 - **Le monde** (`src/games/ViceCityWorld.jsx`) : `updateCamera` appelle
   `cityRushChasePlacement` et `cityRushChaseFollowRate` ; `CHASE_POSITION` et
