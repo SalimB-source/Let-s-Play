@@ -74,12 +74,15 @@ test('le couloir de la caméra couvre la chaussée et les épingles de la descen
     'la forêt du bord de route reste plantée où elle est');
 
   // La caméra décrochée de la chaussée, elle, n'apparaît que dans les trois
-  // enfilades — soit environ 285 mètres de piste sur les 1 200 du tour.
-  assert.ok(camera.length > 150 && camera.length < 400,
+  // enfilades — une cinquantaine de mètres de piste sur les 1 200 du tour,
+  // contre 285 m quand les virages tournaient à 60°.
+  assert.ok(camera.length > 60 && camera.length < 400,
     `la caméra quitte la chaussée sur ${camera.length} mètres de piste`);
 
-  // À 60°, la caméra quitte le ruban mais reste dans le bas-côté, juste avant
-  // la bande plantée : un arbre peut donc encore être à portée de l'objectif.
+  // À 45°, la caméra sort du ruban sans jamais le perdre : les jambes de chaque
+  // épingle se replient l'une sur l'autre, et le point de caméra le plus écarté
+  // reste à moins d'un mètre d'un autre morceau de route. La bande plantée
+  // (8,7 m) n'est plus à portée de l'objectif.
   let shallowest = Number.POSITIVE_INFINITY;
   let deepest = 0;
   for (const point of camera) {
@@ -87,10 +90,10 @@ test('le couloir de la caméra couvre la chaussée et les épingles de la descen
     shallowest = Math.min(shallowest, off);
     deepest = Math.max(deepest, off);
   }
-  assert.ok(deepest > TOUGE_ROAD_HALF + 2.5,
+  assert.ok(deepest > 0.5,
     `la caméra sort de la chaussée, jusqu'à ${deepest.toFixed(1)} m de l'axe`);
-  assert.ok(deepest < TOUGE_ROAD_HALF + 5.5,
-    `la caméra reste dans le bas-côté, avant la forêt (${deepest.toFixed(1)} m de l'axe)`);
+  assert.ok(deepest < TOUGE_ROAD_HALF,
+    `la caméra reste à portée du ruban, avant la forêt (${deepest.toFixed(1)} m de l'axe)`);
   assert.ok(shallowest >= 0, 'aucun point de caméra illisible');
 });
 
@@ -121,7 +124,12 @@ test('aucun arbre de la forêt noire ne bouche l’objectif ni la chaussée', ()
       }
     }
   }
-  assert.ok(pushed > 0, 'le couloir repousse bien des arbres dans les épingles');
+  // À 45°, la caméra ne s'écarte plus jusqu'à la bande plantée : plus un seul
+  // arbre n'a besoin d'être repoussé, et la forêt reste plantée où la montagne
+  // l'était (24 arbres sur 499 étaient déplacés quand les virages tournaient
+  // à 60°). Le couloir continue de protéger la chaussée, relevée sur tout le
+  // tour : c'est ce que vérifient les points qui précèdent.
+  assert.equal(pushed, 0, 'aucun arbre à repousser : la caméra ne quitte plus le bas-côté');
   assert.ok(pushed / planted < 0.15,
     `la forêt garde sa densité : ${(pushed / planted * 100).toFixed(1)} % des arbres repoussés`);
   assert.ok(dropped / planted < 0.01,
