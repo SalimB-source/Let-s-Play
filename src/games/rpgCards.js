@@ -1,43 +1,30 @@
 /**
- * Le concept cartes — « Le Sablier de Bab El ».
+ * Catalogue de cartes de l’univers « Le Sablier de Bab El ».
  *
- * Le combat est un jeu de cartes posé sur la table, façon Magic / Yu-Gi-Oh :
+ * Le duel utilise un jeu original de type TCG : les terrains génèrent du mana
+ * coloré, les créatures et héros combattent, et les rituels/éphémères résolvent
+ * leurs effets avant de rejoindre le cimetière. Les fiches portent coût,
+ * élément, rareté, ligne de type, texte de règle et illustration locale.
  *
- *  ┌ ANATOMIE D'UNE CARTE ────────────────────────────────────────────────┐
- *  │  Titre            nom + glyphe d'élément                            │
- *  │  Coût             pastilles de SABLE (le mana de Bab El)            │
- *  │  Illustration     portrait peint (créature) ou motif d'élément      │
- *  │  Ligne de type    « Créature — Sondeur · Sable », « Pouvoir · Eau » │
- *  │  Texte            règle de la carte (+ saveur en italique)          │
- *  │  Pied             puissance / PV, rareté                            │
- *  └──────────────────────────────────────────────────────────────────────┘
- *
- *  Trois familles de cartes :
- *  - **CRÉATURE** : les personnages. Au départ, UNE SEULE attaque de base
- *    (leur carte de base, gratuite, une fois par tour). Ils gagnent des
- *    capacités en avançant : ce sont les pouvoirs qui entrent dans la
- *    collection de l'équipe.
- *  - **POUVOIR** : les sorts à collectionner. Payés en sable de « notre sol »,
- *    joués depuis la main, puis au cimetière. Certains sont des *éphemères*
- *    (instantanés) : jouables pendant le tour ennemi, en réponse à une carte
- *    annoncée — de l'information, jamais des réflexes.
- *  - **CARTES ENNEMIES** : chaque ennemi a son petit paquet ; son intention
- *    est la carte qu'il posera à son tour, annoncée face visible.
- *
- *  Le sable est le mana : il tombe de moitié des PV perdus, se vole avec
- *  Souffle, se convertit en soins avec Récolte, et « Sonder le sol » (action
- *  de base gratuite, une fois par tour) en ajoute. Une carte sans sable ne
- *  part pas.
- *
- *  Collection : on commence avec un petit classeur ; après chaque vague, un
- *  **draft** propose trois cartes, on en choisit une. C'est la progression.
+ * Les anciennes cartes de pouvoir et de base restent disponibles au classeur
+ * et au draft du prototype RPG ; le duel s’appuie sur les catalogues terrains,
+ * créatures, héros et magies déclarés plus bas.
  */
 
 export const CARD_RARITIES = {
-  commune: { label: 'Commune', color: '#c9c2ae' },
-  rare: { label: 'Rare', color: '#7cc7ee' },
-  mythique: { label: 'Mythique', color: '#ffb347' },
+  commune: { label: 'Commune', color: '#f1f3f5' },
+  inhabituelle: { label: 'Inhabituelle', color: '#4d9aff' },
+  rare: { label: 'Rare', color: '#e1b33f' },
+  mythique: { label: 'Mythique', color: '#a875ed' },
 };
+
+/** Résout aussi l'alias anglais courant sans modifier les raretés du catalogue. */
+export function cardRarityInfo(carte) {
+  const requestedKey = carte?.rarity === 'uncommon' ? 'inhabituelle' : carte?.rarity;
+  const key = Object.hasOwn(CARD_RARITIES, requestedKey) ? requestedKey : 'commune';
+  return { key, ...CARD_RARITIES[key] };
+}
+
 
 export const CARD_KIND_LABELS = {
   physique: 'Attaque',
@@ -307,20 +294,22 @@ export const RPG_POWER_CARDS = [
 /**
  * Les créatures du duel — façon Magic : un coût en sable, ⚔ l'attaque,
  * 🛡 la défense, et parfois une capacité À L'ARRIVÉE ou QUAND ELLES
- * MEURENT. Première vague du set ; les magies puis les terrains suivront.
+ * MEURENT. Set jouable : créatures, héros, terrains et sorts composent les decks.
  */
 export const RPG_CREATURE_CARDS = [
   {
-    id: 'rat-des-decombres',
-    name: 'Rat des décombres',
+    id: 'fennec-des-decombres',
+    name: 'Fennec des décombres',
     element: 'sable',
-    cost: 1,
-    atk: 1,
+    cost: 2,
+    atk: 3,
     def: 1,
-    rarity: 'commune',
-    destruction: { type: 'pioche', amount: 1 },
-    text: 'Quand le Rat meurt : piochez une carte.',
-    flavor: 'Il vivait là avant l’effondrement. Il restera après.',
+    rarity: 'inhabituelle',
+    typeLine: 'Créature — Fennec',
+    rapidite: true,
+    esquive: 1,
+    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Esquive 1 — Réduit de 1 les dégâts reçus de chaque attaque ou magie (minimum 0).',
+    flavor: 'Les éclats sifflent ; le Fennec a déjà choisi son prochain pas.',
   },
   {
     id: 'chien-du-guet',
@@ -330,6 +319,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 2,
     rarity: 'commune',
+    typeLine: 'Créature — Chien',
     text: '—',
     flavor: 'Il n’aboie pas. Il compte.',
   },
@@ -341,6 +331,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 1,
     def: 3,
     rarity: 'commune',
+    typeLine: 'Créature — Habitante',
     arrivee: { type: 'soin', amount: 3 },
     text: 'Quand la Porteuse arrive : vous récupérez 3 points de vie.',
     flavor: 'Deux cruches pleines, une pour la soif, une pour la plaie.',
@@ -353,6 +344,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 2,
     rarity: 'commune',
+    typeLine: 'Créature — Vigie',
     arrivee: { type: 'pioche', amount: 1 },
     text: 'Quand le Guetteur arrive : piochez une carte.',
     flavor: 'D’en haut, il voit la vague avant qu’elle ne se nomme.',
@@ -365,6 +357,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 3,
     def: 1,
     rarity: 'rare',
+    typeLine: 'Créature — Serpent',
     arrivee: { type: 'degats', amount: 2, cible: 'creature' },
     text: 'Quand la Vipère arrive : elle mord une créature adverse (2 dégâts).',
     flavor: 'Elle se brise, mais d’abord elle tranche.',
@@ -377,6 +370,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 5,
     rarity: 'commune',
+    typeLine: 'Créature — Élémental',
     text: '—',
     flavor: 'Le vent la déplace. Elle revient toujours devant la porte.',
   },
@@ -388,6 +382,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 2,
     rarity: 'rare',
+    typeLine: 'Créature — Scribe',
     destruction: { type: 'pioche', amount: 2 },
     text: 'Quand le Scribe meurt : piochez deux cartes.',
     flavor: 'Sa mort est déjà notée. En double exemplaire.',
@@ -400,6 +395,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 3,
     rarity: 'rare',
+    typeLine: 'Créature — Sonneur',
     destruction: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     text: 'Quand le Sonneur meurt : son dernier tocsin blesse toutes les créatures adverses (2).',
     flavor: 'Fêlé, il sonne encore. Surtout en tombant.',
@@ -412,6 +408,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 5,
     def: 5,
     rarity: 'rare',
+    typeLine: 'Créature — Géant',
     arrivee: { type: 'buff', atk: 1, def: 1 },
     text: 'Quand le Colosse arrive : vos autres créatures gagnent +1/+1.',
     flavor: 'La mer est partie. Son sel est resté debout.',
@@ -424,9 +421,184 @@ export const RPG_CREATURE_CARDS = [
     atk: 6,
     def: 6,
     rarity: 'mythique',
+    typeLine: 'Créature — Djinn',
+    art: 'djinn-du-souk',
     arrivee: { type: 'degats', amount: 3, cible: 'sorcier' },
     text: 'Quand le Djinn arrive : 3 dégâts au sorcier adverse.',
     flavor: 'Il vendait des épices. Il a gardé le feu.',
+  },
+  {
+    id: 'veilleuse-des-citernes',
+    name: 'Veilleuse des citernes',
+    element: 'eau',
+    cost: 3,
+    atk: 1,
+    def: 4,
+    rarity: 'commune',
+    typeLine: 'Créature — Gardienne',
+    art: 'veilleuse-des-citernes',
+    arrivee: { type: 'bouclier', amount: 2, cible: 'creature-amie' },
+    text: 'Quand la Veilleuse arrive : elle reçoit un bouclier de 2.',
+    flavor: 'Elle garde les réserves, et la dernière porte.',
+  },
+  {
+    id: 'faiseur-de-passage',
+    name: 'Faiseur de passage',
+    element: 'sable',
+    cost: 2,
+    atk: 2,
+    def: 2,
+    rarity: 'commune',
+    typeLine: 'Créature — Éclaireur',
+    art: 'faiseur-de-passage',
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Quand le Faiseur arrive : piochez une carte.',
+    flavor: 'Il trouve une porte là où les autres voient un mur.',
+  },
+  // ── Veilleurs du Désert : personnages originaux inspirés des peuples amazighs d’Algérie ──
+  {
+    id: 'tislit-des-aures',
+    name: 'Tislit, éclaireuse des Aurès',
+    element: 'sable',
+    cost: 1,
+    atk: 1,
+    def: 2,
+    rarity: 'commune',
+    typeLine: 'Créature — Amazighe chaouie',
+    art: 'tislit-des-aures',
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Quand Tislit arrive : piochez une carte.',
+    flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
+  },
+  {
+    id: 'tiziri-du-djurdjura',
+    name: 'Tiziri, voix du Djurdjura',
+    element: 'sable',
+    cost: 2,
+    atk: 2,
+    def: 2,
+    rarity: 'commune',
+    typeLine: 'Créature — Amazighe kabyle',
+    art: 'tiziri-du-djurdjura',
+    protection: { contre: 'eau', tours: 2 },
+    arrivee: { type: 'buff', atk: 1, def: 0 },
+    text: 'À son arrivée, Tiziri est protégée contre l’Eau pendant ce tour et le prochain tour adverse. Vos autres créatures gagnent +1 ATQ.',
+    flavor: 'Son chant rassemble les villages avant la tempête.',
+  },
+  {
+    id: 'amani-des-ksour',
+    name: 'Amani, gardienne des ksour',
+    element: 'sable',
+    cost: 3,
+    atk: 2,
+    def: 4,
+    rarity: 'rare',
+    typeLine: 'Créature — Amazighe mozabite',
+    art: 'amani-des-ksour',
+    arrivee: { type: 'bouclier', amount: 2, cible: 'creature-amie' },
+    text: 'Quand Amani arrive : elle reçoit un bouclier de 2.',
+    flavor: 'Les portes de pierre tiennent parce que quelqu’un veille.',
+  },
+  {
+    id: 'amayas-du-hoggar',
+    name: 'Amayas, guide du Hoggar',
+    element: 'sable',
+    cost: 3,
+    atk: 3,
+    def: 2,
+    rarity: 'commune',
+    typeLine: 'Créature — Guide touareg',
+    art: 'amayas-du-hoggar',
+    protection: { contre: 'braise', tours: 2 },
+    destruction: { type: 'pioche', amount: 1 },
+    text: 'À son arrivée, Amayas est protégé contre la Braise pendant ce tour et le prochain tour adverse. Quand il meurt : piochez une carte.',
+    flavor: 'Même perdu, il laisse une piste pour ceux qui suivent.',
+  },
+  // ── Djinns et sorcellerie du Brasier ──────────────────────────────────
+  {
+    id: 'ghul-des-cendres',
+    name: 'Ghul des cendres',
+    element: 'braise',
+    cost: 2,
+    atk: 2,
+    def: 1,
+    rarity: 'commune',
+    typeLine: 'Créature — Ghul',
+    art: 'ghul-des-cendres',
+    destruction: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
+    text: 'Quand le Ghul est détruit : 1 dégât à toutes les créatures adverses.',
+    flavor: 'Sous la cendre, quelque chose attend la nuit.',
+  },
+  {
+    id: 'sahir-des-braises',
+    name: 'Sahir des braises',
+    element: 'braise',
+    cost: 3,
+    atk: 2,
+    def: 3,
+    rarity: 'rare',
+    typeLine: 'Créature — Sahir',
+    art: 'sahir-des-braises',
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Quand le Sahir arrive : piochez une carte.',
+    flavor: 'Il trace un cercle dans la poussière et écoute le vent répondre.',
+  },
+  {
+    id: 'ifrit-des-ergs',
+    name: 'Ifrit des ergs',
+    element: 'braise',
+    cost: 5,
+    atk: 5,
+    def: 4,
+    rarity: 'mythique',
+    typeLine: 'Créature — Ifrit',
+    art: 'feriel',
+    arrivee: { type: 'degats', amount: 2, cible: 'sorcier' },
+    text: 'Quand l’Ifrit arrive : 2 dégâts au sorcier adverse.',
+    flavor: 'Les dunes rougissent avant même qu’il apparaisse.',
+  },
+  {
+    id: 'braisier-du-souk',
+    name: 'Braisier du souk',
+    element: 'braise',
+    cost: 3,
+    atk: 3,
+    def: 2,
+    rarity: 'rare',
+    typeLine: 'Créature — Souffleur',
+    art: 'braisier-du-souk',
+    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
+    text: 'Quand le Braisier arrive : 1 dégât à toutes les créatures adverses.',
+    flavor: 'Une seule braise, et le marché se vide.',
+  },
+  {
+    id: 'cavalier-amazigh-du-desert',
+    name: 'Cavalier amazigh du Désert',
+    element: 'sable',
+    cost: 5,
+    atk: 4,
+    def: 4,
+    rarity: 'rare',
+    typeLine: 'Créature — Guerrier amazigh',
+    art: 'cavalier-amazigh-du-desert',
+    arrivee: { type: 'combat', cible: 'creature' },
+    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque.',
+    flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
+  },
+  {
+    id: 'veilleur-du-couchant',
+    name: 'Veilleur du couchant',
+    element: 'sable',
+    colors: ['sable', 'braise'],
+    colorCost: { sable: 1, braise: 1 },
+    cost: 3,
+    atk: 2,
+    def: 4,
+    rarity: 'inhabituelle',
+    typeLine: 'Créature — Sentinelle des mesas',
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
+    text: 'À son arrivée, le Veilleur reçoit un bouclier de 1.',
+    flavor: 'Il garde le passage jusqu’à la première lumière.',
   },
 ];
 
@@ -450,6 +622,7 @@ export const RPG_HERO_CARDS = [
     def: 3,
     rarity: 'mythique',
     kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
     arrivee: { type: 'degats', amount: 2, cible: 'creature' },
     text: 'Quand Salem arrive : son crochet fauche une créature adverse (2 dégâts).',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
@@ -464,6 +637,7 @@ export const RPG_HERO_CARDS = [
     def: 4,
     rarity: 'mythique',
     kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
     arrivee: { type: 'pioche', amount: 1 },
     text: 'Quand Yamina arrive : piochez une carte.',
     flavor: 'Je compte avant de signer.',
@@ -478,6 +652,7 @@ export const RPG_HERO_CARDS = [
     def: 4,
     rarity: 'mythique',
     kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
     arrivee: { type: 'soin', amount: 4 },
     text: 'Quand Boualem arrive : vous récupérez 4 points de vie.',
     flavor: 'Moi je fais monter ce qui aide.',
@@ -492,6 +667,7 @@ export const RPG_HERO_CARDS = [
     def: 3,
     rarity: 'mythique',
     kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
     arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
     text: 'Quand Fériel arrive : son souffle brûle toutes les créatures adverses (1).',
     flavor: 'Le verre se souvient du feu.',
@@ -506,9 +682,42 @@ export const RPG_HERO_CARDS = [
     def: 5,
     rarity: 'mythique',
     kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
     arrivee: { type: 'buff', atk: 1, def: 1 },
     text: 'Quand Tarek arrive : vos autres créatures gagnent +1/+1.',
     flavor: 'Il frappe avec ce qu’il porte.',
+  },
+  {
+    id: 'tin-hinan',
+    name: 'Tin Hinan, mère des pistes',
+    role: 'Matriarche touarègue',
+    element: 'sable',
+    cost: 5,
+    atk: 4,
+    def: 5,
+    rarity: 'mythique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Matriarche touarègue',
+    art: 'tin-hinan-des-pistes',
+    arrivee: { type: 'buff', atk: 1, def: 1 },
+    text: 'Quand Tin Hinan arrive : vos autres créatures gagnent +1/+1.',
+    flavor: 'Dans la mémoire des pistes, elle ouvre la route et rassemble les siens.',
+  },
+  {
+    id: 'ifrit-al-ahmar',
+    name: 'Ifrit al-Ahmar, seigneur des braises',
+    role: 'Souverain des cendres',
+    element: 'braise',
+    cost: 6,
+    atk: 6,
+    def: 5,
+    rarity: 'mythique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Ifrit',
+    art: 'ifrit-des-ergs',
+    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Quand l’Ifrit arrive : 2 dégâts à toutes les créatures adverses.',
+    flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
 ];
 
@@ -522,25 +731,90 @@ export function duelCardById(id) {
 }
 
 /**
- * Les decks de base : 40 cartes — 40 % de terrains (16), 30 % de créatures
- * (12), 20 % de sorts (8), 10 % de héros (4). Règle des 3 exemplaires par
- * carte, sauf les terrains de base qui, comme à Magic, ne sont pas limités
- * (sinon 3 types × 3 ne feraient jamais 40 %).
+ * Decks de 40 cartes : les archétypes monocolores et le nouvel hybride Sable/Braise
+ * contiennent 17 terrains, 18 créatures/personnages et 5 magies. Les terrains
+ * peuvent dépasser la limite des trois exemplaires ; les autres cartes non.
+ * Les identifiants et métadonnées alimentent le menu et les règles du duel.
  */
 export const RPG_DECK_JOUEUR_BASE = [
-  ...Array(6).fill('plaines'), ...Array(5).fill('mer'), ...Array(5).fill('montagne'),
-  ...Array(3).fill('chien-du-guet'), ...Array(3).fill('rat-des-decombres'),
-  ...Array(3).fill('porteuse-de-cruches'), ...Array(3).fill('dune-marchante'),
-  ...Array(3).fill('trait-de-braise'), ...Array(3).fill('eau-de-la-source'), ...Array(2).fill('tempete-de-sable'),
-  'salem', 'yamina', 'boualem', 'tarek',
+  ...Array(17).fill('desert'),
+  ...Array(2).fill('fennec-des-decombres'),
+  'cavalier-amazigh-du-desert',
+  ...Array(3).fill('faiseur-de-passage'),
+  ...Array(3).fill('tislit-des-aures'),
+  ...Array(3).fill('tiziri-du-djurdjura'),
+  ...Array(2).fill('amani-des-ksour'),
+  ...Array(2).fill('amayas-du-hoggar'),
+  ...Array(2).fill('tin-hinan'),
+  ...Array(2).fill('rapport-du-greffier'),
+  ...Array(2).fill('rempart-de-dunes'),
+  'tempete-de-sable',
 ];
 
 export const RPG_DECK_SORCIER_BASE = [
-  ...Array(6).fill('plaines'), ...Array(5).fill('montagne'), ...Array(5).fill('mer'),
-  ...Array(3).fill('chien-du-guet'), ...Array(3).fill('dune-marchante'),
-  ...Array(3).fill('sonneur-fele'), ...Array(3).fill('vipere-de-verre'),
-  ...Array(3).fill('trait-de-braise'), ...Array(3).fill('fureur-du-souk'), ...Array(2).fill('tempete-de-sable'),
-  'feriel', 'feriel', 'tarek', 'tarek',
+  ...Array(17).fill('montagne'),
+  ...Array(3).fill('braisier-du-souk'),
+  ...Array(3).fill('djinn-du-souk'),
+  ...Array(3).fill('ghul-des-cendres'),
+  ...Array(3).fill('sahir-des-braises'),
+  ...Array(3).fill('ifrit-des-ergs'),
+  ...Array(3).fill('ifrit-al-ahmar'),
+  ...Array(2).fill('trait-de-braise'),
+  'fureur-du-souk',
+  'rafale-du-minaret',
+  'nuage-de-cendres',
+];
+
+export const RPG_DECK_HYBRIDE_BASE = [
+  ...Array(6).fill('desert'),
+  ...Array(6).fill('montagne'),
+  ...Array(5).fill('petra'),
+  ...Array(2).fill('fennec-des-decombres'),
+  ...Array(2).fill('cavalier-amazigh-du-desert'),
+  ...Array(2).fill('faiseur-de-passage'),
+  ...Array(2).fill('tislit-des-aures'),
+  ...Array(2).fill('braisier-du-souk'),
+  ...Array(2).fill('djinn-du-souk'),
+  ...Array(2).fill('sahir-des-braises'),
+  ...Array(3).fill('veilleur-du-couchant'),
+  'ifrit-des-ergs',
+  ...Array(2).fill('trait-de-braise'),
+  'rempart-de-dunes',
+  ...Array(2).fill('vent-rouge'),
+];
+
+export const RPG_DECKS = [
+  {
+    id: 'veilleurs-du-desert',
+    name: 'Veilleurs du Désert',
+    role: 'joueur',
+    element: 'sable',
+    terrain: 'desert',
+    archetype: 'Assaut des dunes',
+    description: 'Deck mono-Sable inspiré des peuples amazighs d’Algérie : créatures offensives, renforts et protections ciblées contre une couleur pendant leur tour d’arrivée et le tour adverse suivant.',
+    cardIds: RPG_DECK_JOUEUR_BASE,
+  },
+  {
+    id: 'cour-des-djinns',
+    name: 'Cour des Djinns',
+    role: 'adversaire',
+    element: 'braise',
+    terrain: 'montagne',
+    archetype: 'Djinns et sorcellerie',
+    description: 'Deck mono-Braise inspiré du folklore arabo-musulman autour des djinns, ifrits et ghuls, avec des rituels de cendres.',
+    cardIds: RPG_DECK_SORCIER_BASE,
+  },
+  {
+    id: 'sentiers-de-cendre',
+    name: 'Sentiers de cendre',
+    role: 'joueur',
+    element: 'hybride',
+    elements: ['sable', 'braise'],
+    terrain: 'petra',
+    archetype: 'Sable + Braise · deux couleurs, une même piste',
+    description: 'Un deck hybride de Sable et de Braise : les terrains Désert et Montagne se mêlent à Pétra, cité des géants, qui choisit sa couleur à chaque engagement. Ses cartes bicolores évoquent avec subtilité des récits désertiques diné, sans divinité nommée ni symbole cérémoniel.',
+    cardIds: RPG_DECK_HYBRIDE_BASE,
+  },
 ];
 
 /** Valide un deck : 40 cartes, au moins 40 % de terrains, 3 exemplaires max
@@ -563,7 +837,7 @@ export function rpgValiderDeck(deck) {
 /**
  * Les terrains — façon Magic : piochés, posés (UN par tour), engagés pour
  * produire un mana de leur couleur. Montagne → braise, Mer → eau,
- * Plaines → sable.
+ * Désert → sable.
  */
 export const RPG_TERRAIN_CARDS = [
   {
@@ -571,9 +845,11 @@ export const RPG_TERRAIN_CARDS = [
     name: 'Montagne',
     element: 'braise',
     kind: 'terrain',
+    art: 'montagne',
+    typeLine: 'Terrain — Montagne',
     rarity: 'commune',
     cost: 0,
-    text: 'Engagez : ajoutez un mana braise {R}.',
+    text: 'Engagez : ajoutez un mana braise.',
     flavor: 'La braise dort sous la roche.',
   },
   {
@@ -581,20 +857,36 @@ export const RPG_TERRAIN_CARDS = [
     name: 'Mer',
     element: 'eau',
     kind: 'terrain',
+    typeLine: 'Terrain — Mer',
     rarity: 'commune',
     cost: 0,
-    text: 'Engagez : ajoutez un mana eau {U}.',
+    text: 'Engagez : ajoutez un mana eau.',
     flavor: 'Derrière la dune, elle attend encore.',
   },
   {
-    id: 'plaines',
-    name: 'Plaines',
+    id: 'desert',
+    name: 'Désert',
     element: 'sable',
     kind: 'terrain',
+    typeLine: 'Terrain — Désert',
     rarity: 'commune',
     cost: 0,
-    text: 'Engagez : ajoutez un mana sable {W}.',
-    flavor: 'L’herbe sèche s’y couche en vagues.',
+    text: 'Engagez : ajoutez un mana sable.',
+    flavor: 'Le vent grave des pistes dans l’or des dunes.',
+  },
+  {
+    id: 'petra',
+    name: 'Pétra',
+    element: 'hybride',
+    colors: ['sable', 'braise'],
+    manaColors: ['braise', 'sable'],
+    kind: 'terrain',
+    art: 'petra',
+    typeLine: 'Terrain — Cité des géants',
+    rarity: 'rare',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana Braise ou Sable.',
+    flavor: 'Sous les pas des géants, les ruelles gardent leur tumulte.'
   },
 ];
 
@@ -613,6 +905,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Trait de braise',
     element: 'braise',
     kind: 'magie',
+    typeLine: 'Rituel — Braise',
+    art: 'trait-de-braise',
     cost: 1,
     rarity: 'commune',
     cibles: ['creature', 'sorcier'],
@@ -625,6 +919,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Eau de la source',
     element: 'eau',
     kind: 'magie',
+    typeLine: 'Rituel — Eau',
+    art: 'mer',
     cost: 1,
     rarity: 'commune',
     cibles: ['soi'],
@@ -637,6 +933,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Rapport du greffier',
     element: 'sable',
     kind: 'magie',
+    typeLine: 'Rituel — Sable',
+    art: 'rapport-du-greffier',
     cost: 1,
     rarity: 'commune',
     cibles: ['soi'],
@@ -649,6 +947,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Lame de mer',
     element: 'eau',
     kind: 'magie',
+    typeLine: 'Rituel — Eau',
+    art: 'mer',
     cost: 2,
     rarity: 'commune',
     cibles: ['creature'],
@@ -661,6 +961,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Rempart de dunes',
     element: 'sable',
     kind: 'magie',
+    typeLine: 'Rituel — Sable',
+    art: 'rempart-de-dunes',
     cost: 2,
     rarity: 'commune',
     cibles: ['soi'],
@@ -673,6 +975,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Sentence de la Liste',
     element: 'sable',
     kind: 'magie',
+    typeLine: 'Rituel — Sable',
+    art: 'sentence-de-la-liste',
     cost: 3,
     rarity: 'rare',
     cibles: ['creature'],
@@ -685,6 +989,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Fureur du souk',
     element: 'braise',
     kind: 'magie',
+    typeLine: 'Rituel — Braise',
+    art: 'fureur-du-souk',
     cost: 3,
     rarity: 'rare',
     cibles: ['sorcier'],
@@ -697,6 +1003,8 @@ export const RPG_MAGIE_CARDS = [
     name: 'Tempête de sable',
     element: 'sable',
     kind: 'magie',
+    typeLine: 'Rituel — Sable',
+    art: 'tempete-de-sable',
     cost: 4,
     rarity: 'rare',
     cibles: ['toutes'],
@@ -704,6 +1012,89 @@ export const RPG_MAGIE_CARDS = [
     text: '2 dégâts à toutes les créatures adverses.',
     flavor: 'Le ciel se couche. Personne n’est invité.',
   },
+  {
+    id: 'parade-du-verre',
+    name: 'Parade de verre',
+    element: 'eau',
+    kind: 'magie',
+    typeLine: 'Éphémère — Protection',
+    art: 'parade-du-verre',
+    instant: true,
+    cost: 2,
+    rarity: 'rare',
+    cibles: ['creature-amie'],
+    effet: { type: 'bouclier', amount: 3, cible: 'creature-amie' },
+    text: 'Éphémère — Une créature alliée prévient les 3 prochains dégâts qu’elle devrait subir.',
+    flavor: 'Une seconde de verre suffit à dévier le coup.',
+  },
+  {
+    id: 'rafale-du-minaret',
+    name: 'Rafale du minaret',
+    element: 'braise',
+    kind: 'magie',
+    typeLine: 'Éphémère — Braise',
+    art: 'rafale-du-minaret',
+    instant: true,
+    cost: 2,
+    rarity: 'rare',
+    cibles: ['creature', 'sorcier'],
+    effet: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Éphémère — 2 dégâts à une créature ou un sorcier ciblés.',
+    flavor: 'Du haut du minaret, une étincelle trouve toujours sa cible.',
+  },
+  {
+    id: 'brisure-de-verre',
+    name: 'Brisure de verre',
+    element: 'eau',
+    kind: 'magie',
+    typeLine: 'Éphémère — Eau',
+    art: 'brisure-de-verre',
+    instant: true,
+    cost: 3,
+    rarity: 'rare',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
+    text: 'Éphémère — 1 dégât à toutes les créatures adverses.',
+    flavor: 'Le verre se fend en mille éclats, jamais au hasard.',
+  },
+  {
+    id: 'nuage-de-cendres',
+    name: 'Nuage de cendres',
+    element: 'braise',
+    kind: 'magie',
+    typeLine: 'Rituel — Sihr de braise',
+    art: 'nuage-de-cendres',
+    cost: 4,
+    rarity: 'rare',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Rituel — 2 dégâts à toutes les créatures adverses.',
+    flavor: 'Le vent tourne ; la poussière devient un voile brûlant.',
+  },
+  {
+    id: 'vent-rouge',
+    name: 'Vent rouge',
+    element: 'braise',
+    colors: ['braise', 'sable'],
+    colorCost: { braise: 1, sable: 1 },
+    kind: 'magie',
+    typeLine: 'Rituel — Sable et Braise',
+    art: 'vent-rouge',
+    cost: 3,
+    rarity: 'rare',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses.',
+    flavor: 'La poussière rougit, puis le vent l’emporte.',
+  },
+];
+
+/** Le catalogue complet du duel, avec un type unifié pour les filtres d’interface. */
+export const RPG_DUEL_CARDS = [
+  ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
+  ...RPG_HERO_CARDS,
+  ...RPG_TERRAIN_CARDS,
+  ...RPG_MAGIE_CARDS,
 ];
 
 export function magieById(id) {
@@ -771,14 +1162,65 @@ export const RPG_BASIC_ATTACKS = {
 };
 
 const CATALOG = new Map(
-  [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS),
-    ...RPG_CREATURE_CARDS.map((card) => ({ ...card, kind: 'creature' })),
-    ...RPG_HERO_CARDS, ...RPG_TERRAIN_CARDS, ...RPG_MAGIE_CARDS].map((card) => [card.id, card]),
+  [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS), ...RPG_DUEL_CARDS]
+    .map((card) => [card.id, card]),
 );
 
 /** Retrouve une carte du catalogue par son id. */
 export function cardById(id) {
   return CATALOG.get(id) ?? null;
+}
+
+const RPG_CARD_COLORS = new Set(['braise', 'eau', 'sable']);
+
+/** Identité chromatique d’une carte (une ou plusieurs couleurs). */
+export function cardColors(cardOrId) {
+  const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  const configured = Array.isArray(card?.colors) && card.colors.length ? card.colors : [card?.element];
+  return [...new Set(configured.filter((color) => RPG_CARD_COLORS.has(color)))];
+}
+
+/** Pips colorés exigés. Les cartes mono gardent leur règle historique. */
+export function cardColorCost(cardOrId) {
+  const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  if (card?.colorCost && typeof card.colorCost === 'object') {
+    return Object.fromEntries(Object.entries(card.colorCost)
+      .filter(([color, amount]) => RPG_CARD_COLORS.has(color) && Number.isInteger(amount) && amount > 0));
+  }
+  return Number(card?.cost) > 0 && RPG_CARD_COLORS.has(card?.element)
+    ? { [card.element]: 1 }
+    : {};
+}
+
+/** Couleurs que peut produire un terrain lorsqu’il est engagé. */
+export function terrainManaColors(cardOrId) {
+  const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  if (card?.kind !== 'terrain') return [];
+  const configured = Array.isArray(card.manaColors) && card.manaColors.length
+    ? card.manaColors
+    : card?.element === 'hybride' ? cardColors(card) : [card?.element];
+  return [...new Set(configured.filter((color) => RPG_CARD_COLORS.has(color)))];
+}
+
+/** Ligne de type imprimée sur la face de chaque carte du duel. */
+export function cardTypeLine(card) {
+  if (!card) return 'Carte inconnue';
+  if (card.typeLine) return card.typeLine;
+  if (card.kind === 'hero') return 'Créature légendaire — Héros';
+  if (card.kind === 'creature') return 'Créature — Habitants de Bab El';
+  if (card.kind === 'terrain') return `Terrain — ${card.name}`;
+  if (card.kind === 'magie') return card.instant ? 'Éphémère' : 'Rituel';
+  return 'Carte';
+}
+
+/**
+ * Chaque nouvelle carte du duel doit avoir son image full art locale, sans
+ * cadre ni texte (voir RPG-CARD-ART.md). `art` ne sert qu’aux exceptions
+ * explicitement mappées ; sinon l’identifiant de carte est le nom du fichier.
+ */
+export function cardArtId(cardOrId) {
+  const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  return card?.art ?? card?.id ?? cardOrId;
 }
 
 /** Le sable à payer pour poser une carte. */
