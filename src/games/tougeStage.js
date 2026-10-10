@@ -737,9 +737,14 @@ function addGuardrail(batch, m, side, from, to, random) {
   if (length <= 1) return;
   // Les deux lisses suivent aussi les cassures à 60° : un seul cylindre de
   // 1 100 m resterait une corde droite après projection de la route 2D.
+  // Longueur en unités monde (mètres de piste × SCALE) : des tronçons à la
+  // longueur piste se recouvriraient de 2,24 unités à chaque joint, et les
+  // doublons divergeraient jusqu'à ~2 m dans les épingles — des lisses qui se
+  // traversent et clignotent à chaque virage. Le centimètre de rabat masque
+  // l'angle entre deux cordes sans jamais doubler le tube.
   for (let segmentFrom = from; segmentFrom < to; segmentFrom += BEND_SEGMENT) {
     const segmentTo = Math.min(to, segmentFrom + BEND_SEGMENT);
-    const segmentLength = segmentTo - segmentFrom;
+    const segmentLength = (segmentTo - segmentFrom) * SCALE + 0.02;
     const middle = (segmentFrom + segmentTo) / 2;
     batch.cylinder(m.armco, [railX, 0.62, toZ(middle)], 0.055, 0.055, segmentLength, 6, [Math.PI / 2, 0, 0]);
     batch.cylinder(m.armco, [railX, 0.36, toZ(middle)], 0.05, 0.05, segmentLength, 6, [Math.PI / 2, 0, 0]);
@@ -867,24 +872,28 @@ function addTunnel(batch, m, atlas, sector, from, to, random) {
   // plus bas serait traversé par la caméra (le toit disparaît ou masque la
   // voiture). Le dessous de la voûte ne descend donc pas sous 7,4 m.
   const ceilingY = CAMERA_CLEARANCE;
+  // Tranches jointives en unités monde : des tranches de 2,02 unités espacées
+  // de 2 m de piste (1,44 unité monde) se recouvriraient de 0,58 unité à
+  // chaque joint, et les faces coplanaires des parois battraient entre elles.
+  const slice = 2 * SCALE + 0.02;
   for (let position = from; position < to - 1; position += 2) {
     const middle = position + 1;
     const z = toZ(middle);
     // Parois brutes et bandeau réfléchissant blanc, des deux côtés, posé sur
     // la face intérieure (et non noyé dans la paroi).
-    batch.box(m.rockDark, [-(wallX + 0.9), ceilingY / 2, z], [1.8, ceilingY, 2.02]);
-    batch.box(m.rockDark, [wallX + 0.9, ceilingY / 2, z], [1.8, ceilingY, 2.02]);
-    batch.box(m.white, [-(wallX - 0.06), 1.0, z], [0.05, 0.34, 1.9]);
-    batch.box(m.white, [wallX - 0.06, 1.0, z], [0.05, 0.34, 1.9]);
+    batch.box(m.rockDark, [-(wallX + 0.9), ceilingY / 2, z], [1.8, ceilingY, slice]);
+    batch.box(m.rockDark, [wallX + 0.9, ceilingY / 2, z], [1.8, ceilingY, slice]);
+    batch.box(m.white, [-(wallX - 0.06), 1.0, z], [0.05, 0.34, slice]);
+    batch.box(m.white, [wallX - 0.06, 1.0, z], [0.05, 0.34, slice]);
     // Voûte aplatie.
-    batch.box(m.concreteDark, [0, ceilingY + 0.35, z], [(wallX + 1.8) * 2, 0.7, 2.02]);
+    batch.box(m.concreteDark, [0, ceilingY + 0.35, z], [(wallX + 1.8) * 2, 0.7, slice]);
     // Sodium : un tube au plafond sur deux.
     if (Math.round(middle / 2) % 2 === 0) {
       batch.box(m.sodium, [0, ceilingY - 0.06, z], [0.3, 0.08, 1.7]);
       batch.plane(makeGlowMaterial(0xffb46b, 0.3), [0, ceilingY - 0.14, z], 5.4, 5.4, [-Math.PI / 2, 0, 0]);
     }
     // Radier légèrement plus clair.
-    batch.box(m.concrete, [0, -0.045, z], [(wallX + 0.05) * 2, 0.06, 2.02]);
+    batch.box(m.concrete, [0, -0.045, z], [(wallX + 0.05) * 2, 0.06, slice]);
     void random;
   }
   // Portails : un mur-fronton qui encadre l'entrée, lisible de loin.
@@ -912,15 +921,18 @@ function addTunnel(batch, m, atlas, sector, from, to, random) {
 function addRavineBridge(batch, m, atlas, sector, middle) {
   const z = toZ(middle);
   const halfLength = 11;
+  // Tablier en unités monde : 22 m de piste, et non 22 unités monde (qui en
+  // couvriraient 30,5 et déborderaient du secteur sur les virages voisins).
+  const deckLength = halfLength * 2 * SCALE;
   for (const side of [-1, 1]) {
-    batch.box(m.concrete, [side * (TOUGE_ROAD_HALF + 0.32), 0.42, z], [0.5, 0.84, halfLength * 2]);
-    batch.box(m.steel, [side * (TOUGE_ROAD_HALF + 0.32), 0.92, z], [0.34, 0.1, halfLength * 2]);
+    batch.box(m.concrete, [side * (TOUGE_ROAD_HALF + 0.32), 0.42, z], [0.5, 0.84, deckLength]);
+    batch.box(m.steel, [side * (TOUGE_ROAD_HALF + 0.32), 0.92, z], [0.34, 0.1, deckLength]);
     for (let post = -halfLength + 1.2; post <= halfLength - 1.2; post += 1.6) {
       batch.box(m.steel, [side * (TOUGE_ROAD_HALF + 0.32), 0.66, z + post * SCALE], [0.09, 0.5, 0.09]);
     }
     // Poutres et croix de Saint-André sous le tablier.
-    batch.box(m.darkMetal, [side * (TOUGE_ROAD_HALF * 0.5), -0.7, z], [0.5, 0.9, halfLength * 2]);
-    batch.box(m.darkMetal, [side * (TOUGE_ROAD_HALF + 0.6), -1.5, z], [0.4, 0.4, halfLength * 2]);
+    batch.box(m.darkMetal, [side * (TOUGE_ROAD_HALF * 0.5), -0.7, z], [0.5, 0.9, deckLength]);
+    batch.box(m.darkMetal, [side * (TOUGE_ROAD_HALF + 0.6), -1.5, z], [0.4, 0.4, deckLength]);
   }
   // Piles centrales qui plongent dans le ravin.
   for (const offset of [-4, 0, 4]) {
@@ -941,14 +953,16 @@ function addRavineBridge(batch, m, atlas, sector, middle) {
 function addViewpoint(batch, m, atlas, side, from, to, random, lite) {
   const middle = (from + to) / 2;
   const parkX = side * (TOUGE_ROAD_HALF + 3.4);
+  // Longueurs en unités monde : le secteur en mètres de piste, converti.
+  const parkLength = (to - from - 1) * SCALE;
   // Parking d'accotement en enrobé sombre.
-  batch.box(m.black, [parkX, 0.008, toZ(middle)], [6.2, 0.05, to - from - 1]);
+  batch.box(m.black, [parkX, 0.008, toZ(middle)], [6.2, 0.05, parkLength]);
   // Marquage de places, tout bête.
   for (let slot = 0; slot < 2; slot += 1) {
     batch.box(m.white, [parkX + side * 2.2, 0.035, toZ(middle - 2 + slot * 4)], [0.12, 0.02, 3.4]);
   }
   // Rambardes basses qui ferment le vide au fond du parking.
-  batch.box(m.steel, [parkX + side * 3.1, 0.5, toZ(middle)], [0.12, 0.9, to - from - 1]);
+  batch.box(m.steel, [parkX + side * 3.1, 0.5, toZ(middle)], [0.12, 0.9, parkLength]);
   // Les deux distributeurs : un rouge, un bleu, éclairés de l'intérieur.
   const vending = [
     { key: 'vending-red', mat: m.vendingRed, off: -2.2 },
@@ -962,9 +976,10 @@ function addViewpoint(batch, m, atlas, side, from, to, random, lite) {
     if (atlas.has(item.key)) {
       batch.plane(m.signs, [x - side * 0.56, 1.62, z], 0.6, 0.4, signRotation(side > 0 ? -1 : 1), { uv: atlas.uv(item.key) });
     }
-    // Piscine de lumière au sol du distributeur.
+    // Piscine de lumière au sol du distributeur : posée sur l'enrobé du
+    // parking (surface à 0,033), et non dessous où elle resterait enterrée.
     const poolColor = item.mat === m.vendingRed ? 0xff4d5e : 0x4da3ff;
-    batch.plane(makeGlowMaterial(poolColor, 0.35), [x - side * 0.8, 0.02, z], 2.6, 2.6, [-Math.PI / 2, 0, 0]);
+    batch.plane(makeGlowMaterial(poolColor, 0.35), [x - side * 0.8, 0.05, z], 2.6, 2.6, [-Math.PI / 2, 0, 0]);
   }
   // Banc de bois et poubelle.
   batch.box(m.wood, [parkX + side * 0.4, 0.42, toZ(to - 2.2)], [1.8, 0.1, 0.5]);
@@ -988,13 +1003,15 @@ function addViewpoint(batch, m, atlas, side, from, to, random, lite) {
 function addLakeside(batch, m, from, to, random, lite) {
   const middle = (from + to) / 2;
   const span = Math.min(56, (to - from) * SCALE);
-  // L'eau commence au-delà de l'accotement droit et couvre la plaine.
-  batch.box(m.water, [TOUGE_ROAD_HALF + 12, -0.09, toZ(middle)], [48, 0.12, span]);
+  // L'eau commence au-delà de l'accotement droit et couvre la plaine : son
+  // bord gauche affleure la mousse (5,6 m de l'axe), sans jamais recouvrir
+  // la chaussée — sa surface (-0,03) passe pourtant au-dessus du bitume.
+  batch.box(m.water, [TOUGE_VERGE_OUTER + 24, -0.09, toZ(middle)], [48, 0.12, span]);
   // Roseaux en lisière.
   const reeds = lite ? 10 : 26;
   for (let index = 0; index < reeds; index += 1) {
     const position = from + random() * (to - from);
-    addBamboo(batch, m, TOUGE_ROAD_HALF + 3.4 + random() * 2.2, position, random, 0.7);
+    addBamboo(batch, m, TOUGE_ROAD_HALF + 3.4 + random() * 2.2, toZ(position), random, 0.7);
   }
   // Ponton de bois.
   batch.box(m.wood, [TOUGE_ROAD_HALF + 5.2, 0.06, toZ(from + 3)], [0.1, 0.12, 4.4]);
@@ -1007,12 +1024,14 @@ function addLakeside(batch, m, from, to, random, lite) {
 /** Mur de roche de la tranchée 岩垂壁 : la montagne à un mètre du rétro. */
 function addRockCut(batch, m, side, from, to, random) {
   const wallX = side * (TOUGE_ROAD_HALF + 1.6);
-  const length = to - from;
+  // Paroi en unités monde : à la longueur piste, elle déborderait de ~22 m
+  // de chaque côté du secteur jusque dans les virages voisins.
+  const length = (to - from) * SCALE;
   batch.box(m.rock, [wallX + side * 1.1, 3.4, toZ((from + to) / 2)], [2.2, 6.8, length]);
   batch.box(m.rockDark, [wallX + side * 2.3, 4.6, toZ((from + to) / 2)], [2.0, 4.6, length]);
   // Blocs éboulés au pied de la paroi.
   for (let position = from; position < to; position += 5) {
-    if (random() < 0.5) addBoulder(batch, m, wallX - side * (0.4 + random()), position + random() * 3, random, 0.5 + random() * 0.5);
+    if (random() < 0.5) addBoulder(batch, m, wallX - side * (0.4 + random()), toZ(position + random() * 3), random, 0.5 + random() * 0.5);
   }
 }
 
