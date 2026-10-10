@@ -1,7 +1,7 @@
 // ── Mont Haruna · le tōgé de nuit ───────────────────────────────────────────
 //
 // Le tōgé n'est pas une ville : ni trottoirs, ni vitrines, ni néons de boutiques.
-// Une chaussée étroite (6,40 m) descend la montagne entre glissières à
+// Une chaussée de quatre voies (8,40 m) descend la montagne entre glissières à
 // réflecteurs, murs de roche, cèdres noirs et lampadaires orange espacés.
 // Ce module remplace `buildCityLoop` et `makeRoad` pour le parcours `touge` :
 // il pose le ruban d'asphalte, ses bas-côtés de mousse, ses glissières et,
@@ -15,6 +15,7 @@ import {
   CITY_RUSH_LANE_PAINT_WIDTH,
   CITY_RUSH_SCROLL_SCALE,
   CITY_RUSH_TOUGE,
+  CITY_RUSH_TOUGE_COURSE,
   CITY_RUSH_TOUGE_ROAD_HALF,
   CITY_RUSH_TOUGE_TURNS,
   CITY_RUSH_TRACK_PROFILE_TOUGE,
@@ -33,8 +34,8 @@ import { SignAtlas, makeCanvasTexture, seededRandom } from './cityRushBuilder.js
 
 const LAP = CITY_RUSH_LAP_LENGTH;
 const SCALE = CITY_RUSH_SCROLL_SCALE;
-// Chaussée du tōgé : 3,20 m de demi-largeur, les deux voies centrées à ±1,05 m
-// et un accotement d'un mètre avant la glissière.
+// Chaussée du tōgé : 4,20 m de demi-largeur, les quatre voies centrées à
+// ±1,05 m et ±3,15 m, puis les bas-côtés de mousse avant la glissière.
 export const TOUGE_ROAD_HALF = CITY_RUSH_TOUGE_ROAD_HALF;
 export const TOUGE_VERGE_OUTER = TOUGE_ROAD_HALF + 2.4;
 const LOOP_START = START_ZONE_HALF + 2;
@@ -532,8 +533,8 @@ export function buildTougeSignAtlas(city, theme, route = CITY_RUSH_TOUGE) {
 }
 
 // ─── Route ──────────────────────────────────────────────────────────────────
-// Bitume de montagne de nuit : deux voies sombres, une ligne discontinue au
-// centre, deux lignes de rive, et les yeux de chat peints qui renvoient les
+// Bitume de montagne de nuit : quatre voies sombres, des lignes discontinues
+// entre chaque voie, deux lignes de rive, et les yeux de chat peints qui renvoient les
 // phares. Les traces de gomme suivent la trajectoire de corde des épingles.
 export function makeTougeRoadTexture(theme, random) {
   const width = 256;
@@ -563,12 +564,16 @@ export function makeTougeRoadTexture(theme, random) {
         ctx.fillRect(laneCenter * width - 12 + drift, random() * height, 24, 12 + random() * 24);
       }
     }
-    // Ligne centrale discontinue blanche — une route à double sens blanc sur
-    // blanc, personne ne vient en face cette nuit : la descente est fermée.
+    // Lignes discontinues blanches entre les voies : une par séparateur (l'axe
+    // central compris). Personne ne vient en face cette nuit : la descente est
+    // fermée, les voies se suivent dans le même sens.
     const paintWidth = Math.max(2, (CITY_RUSH_LANE_PAINT_WIDTH / (roadHalf * 2)) * width);
     const dash = height / 4;
     ctx.fillStyle = 'rgba(232, 236, 242, .8)';
-    for (let y = 0; y < height; y += dash) ctx.fillRect(width / 2 - paintWidth / 2, y, paintWidth, dash * 0.38);
+    for (const separatorX of cityRushLaneSeparators(CITY_RUSH_TOUGE_COURSE)) {
+      const x = toPixel(separatorX);
+      for (let y = 0; y < height; y += dash) ctx.fillRect(x - paintWidth / 2, y, paintWidth, dash * 0.38);
+    }
     // Lignes de rive continues.
     ctx.fillStyle = 'rgba(232, 236, 242, .85)';
     const edgeLeft = toPixel(-TOUGH_ROAD_HALF_EDGE());
