@@ -46,7 +46,7 @@ const CAMERA_CLEARANCE = 7.4;
 
 // ── Le couloir de la caméra de poursuite ────────────────────────────────────
 // Dans les épingles, la poursuite ne se pose plus sur la chaussée derrière la
-// voiture — il n'y en a pas, la route tourne de 60° en neuf mètres — mais dans
+// voiture — il n'y en a pas, la route tourne de 45° en neuf mètres — mais dans
 // l'axe de la caisse, sur le bas-côté près de la bande plantée
 // (`cityRushChasePlacement`). Deux choses ne doivent donc jamais se trouver là :
 //
@@ -740,7 +740,7 @@ function addGuardrail(batch, m, side, from, to, random) {
   const railX = side * (TOUGE_ROAD_HALF + 0.55);
   const length = to - from;
   if (length <= 1) return;
-  // Les deux lisses suivent aussi les cassures à 60° : un seul cylindre de
+  // Les deux lisses suivent aussi les cassures à 45° : un seul cylindre de
   // 1 100 m resterait une corde droite après projection de la route 2D.
   // Longueur en unités monde (mètres de piste × SCALE) : des tronçons à la
   // longueur piste se recouvriraient de 2,24 unités à chaque joint, et les
