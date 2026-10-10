@@ -459,6 +459,10 @@ export function createTougeMaterials(city, theme, random) {
     lampGlow: unlit(0xffe2b0),
     accent: standard(city.accent, { emissive: city.accent, emissiveIntensity: 0.25 }),
     window: unlit(0x2f3a42),
+    // Fleurs de cerisier : rose sombre et blanc rosé, un peu d'émission pour
+    // qu'elles accrochent les phares la nuit.
+    blossom: standard(tints.blossom ?? 0xe8a0bd, { roughness: 0.9, emissive: 0x4a1f33, emissiveIntensity: 0.5 }),
+    blossomLight: standard(tints.blossomLight ?? 0xf7dbe6, { roughness: 0.9, emissive: 0x4a2a38, emissiveIntensity: 0.4 }),
   };
 }
 
@@ -637,9 +641,12 @@ export function makeTougeRoad(scene, theme, random, playerZ, profile = CITY_RUSH
 
   const vergeTexture = makeMossTexture(theme, random);
   vergeTexture.repeat.set(1, (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * SCALE / 6);
-  const vergeMaterial = new THREE.MeshStandardMaterial({ map: vergeTexture, roughness: 0.98, flatShading: true });
+  // Double face : dans les épingles, l'accotement et le sol se replient sur
+  // eux-mêmes et certains triangles s'inversent. Vus de dos, ils disparaîtraient
+  // avec la face avant seule et laisseraient apparaître le décor dessous.
+  const vergeMaterial = new THREE.MeshStandardMaterial({ map: vergeTexture, roughness: 0.98, flatShading: true, side: THREE.DoubleSide });
   // Au-delà de la mousse : la forêt noire du mont Haruna.
-  const groundMaterial = standard(theme.ground ?? 0x17251c, { roughness: 1 });
+  const groundMaterial = standard(theme.ground ?? 0x17251c, { roughness: 1, side: THREE.DoubleSide });
   const ground = new THREE.Mesh(makeCurvedStripGeometry(-210, 210, -0.12), groundMaterial);
   ground.receiveShadow = true;
   ground.frustumCulled = false;
@@ -1027,6 +1034,101 @@ function addWelcomeGate(batch, m, atlas, position) {
   }
 }
 
+// ─── Cerisiers et vallée éclairée ──────────────────────────────────────────
+/** Cerisier japonais (桜) : tronc sombre, couronne de fleurs roses et blanches. */
+function addCherry(batch, m, x, z, random, scale = 1) {
+  const height = (4.4 + random() * 1.2) * scale;
+  batch.cylinder(m.trunk, [x, height * 0.3, z], 0.1 * scale, 0.18 * scale, height * 0.6, 6);
+  const puffs = 6;
+  for (let index = 0; index < puffs; index += 1) {
+    const angle = (index / puffs) * Math.PI * 2 + random() * 0.6;
+    const reach = (0.5 + random() * 0.8) * scale;
+    const material = random() < 0.65 ? m.blossom : m.blossomLight;
+    batch.sphere(
+      material,
+      [x + Math.cos(angle) * reach, height * (0.72 + random() * 0.18), z + Math.sin(angle) * reach * 0.6],
+      (0.9 + random() * 0.5) * scale,
+      6,
+    );
+  }
+  batch.sphere(m.blossom, [x, height * 0.9, z], 1.1 * scale, 6);
+}
+
+/** Secteur de la descente (repère du tōgé) où se trouve la distance `metres`. */
+function tougeSectorAt(metres, route) {
+  const lengthKm = Number(route?.lengthKm) > 0 ? Number(route.lengthKm) : CITY_RUSH_TOUGE.lengthKm;
+  const km = (((metres % LAP) + LAP) % LAP) / LAP * lengthKm;
+  return (route?.sectors || []).find((entry) => km >= entry.km && km < entry.kmEnd) || null;
+}
+
+/** Ni tunnel, ni pont, ni paroi : un décor en bord de route peut s'y poser. */
+const tougeOpenSector = (sector) => !sector || !['tunnel', 'cut', 'bridge'].includes(sector.kind);
+
+/** Le bord de la route est-il dégagé ici : ni virage proche, ni tunnel, pont ou paroi ? */
+function tougeOpenRoadside(metres, route) {
+  if (tougeTurnSightlineClearance(metres, route)) return false;
+  return tougeOpenSector(tougeSectorAt(metres, route));
+}
+
+/**
+ * Un ensemble de la vallée se pose ici : hors tunnel, pont et paroi. Un virage
+ * proche n'est pas un obstacle — les immeubles sont à plus de 90 m du ruban.
+ */
+function tougeValleyView(metres, route) {
+  return tougeOpenSector(tougeSectorAt(metres, route));
+}
+
+// Les immeubles de la vallée sont posés loin du ruban (au-delà de la forêt) :
+// ils ne gênent ni la route ni la caméra, et la forêt les laisse dépasser.
+const VALLEY_INNER = 92; // m du centre de la chaussée, côté vallée
+const VALLEY_WINDOW_COLORS = ['rgba(255, 214, 140, 0.95)', 'rgba(255, 241, 196, 0.92)', 'rgba(159, 208, 255, 0.9)'];
+
+/**
+ * Façade de nuit : pierre bleu nuit percée de fenêtres, une part allumée et
+ * une part éteinte. Non éclairée : les fenêtres restent vives sans lumière.
+ */
+function makeValleyFacadeMaterial(random) {
+  const texture = makeCanvasTexture((ctx, width, height) => {
+    ctx.fillStyle = 'rgb(22, 28, 42)';
+    ctx.fillRect(0, 0, width, height);
+    const cols = 4;
+    const rows = 4;
+    const cellW = width / cols;
+    const cellH = height / rows;
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const lit = random() < 0.55;
+        ctx.fillStyle = lit
+          ? VALLEY_WINDOW_COLORS[Math.floor(random() * VALLEY_WINDOW_COLORS.length)]
+          : 'rgb(12, 16, 26)';
+        ctx.fillRect(col * cellW + cellW * 0.22, row * cellH + cellH * 0.28, cellW * 0.56, cellH * 0.5);
+      }
+    }
+  }, 256, 256, { smooth: true, repeat: true });
+  return unlit(0xffffff, { map: texture });
+}
+
+/** Un petit ensemble de tours de la vallée, alignées le long de la route. */
+function addValleyBlocks(batch, facades, side, position, random) {
+  const count = 3 + Math.floor(random() * 2);
+  let along = position;
+  for (let index = 0; index < count; index += 1) {
+    const width = 10 + random() * 6; // m le long de la route
+    const depth = 9 + random() * 5; // m vers la vallée
+    const height = 16 + random() * 26;
+    const facade = facades[Math.floor(random() * facades.length)];
+    const x = side * (VALLEY_INNER + depth / 2 + random() * 5);
+    const repeatU = Math.max(2, Math.round(depth / 4));
+    const repeatV = Math.max(2, Math.round(height / 4));
+    // L'UV est mis à l'échelle sans découper la tour : elle ne sera pas
+    // segmentée le long de la courbe, et ses fenêtres restent alignées.
+    batch.box(facade, [x, height / 2, toZ(along + width / 2)], [depth, height, width * SCALE], null, {
+      uv: [0, 0, repeatU, repeatV],
+    });
+    along += width + 2 + random() * 3;
+  }
+}
+
 /**
  * Petit groupe de spectateurs de nuit à une épingle : lanternes posées au
  * sol, drapeaux qui battent, l'équipe qui regarde passer la descente.
@@ -1128,6 +1230,36 @@ export function buildTougeTrack({ city, theme, materials: m, batch, cityIndex, l
       else if (roll < 0.82) addBamboo(bend, m, x, z, random, 0.9 + random() * 0.5);
       else addBoulder(bend, m, x, z, random, 0.7 + random() * 0.9);
     }
+  }
+
+  // ── Cerisiers en fleurs le long des lignes droites ─────────────────────
+  // Jamais dans une fenêtre de virage (la forêt y est déjà retirée), ni dans
+  // un tunnel, ni sur le couloir de la caméra : ils bordent la route sans la
+  // masquer.
+  let cherryTally = 0;
+  for (let position = LOOP_START + 8; position < LOOP_END - 8; position += 14) {
+    cherryTally += 1;
+    if (random() < 0.2) continue;
+    if (!tougeOpenRoadside(position, route)) continue;
+    const side = cherryTally % 2 ? 1 : -1;
+    const metres = position + random() * 4;
+    // Sur l'accotement, au-delà de la rive (5,6 m), devant la forêt (8,7 m).
+    const wanted = side * (TOUGE_ROAD_HALF + 2.5 + random() * 1.2);
+    const x = cameraCorridorLateral(cameraCorridor, CITY_RUSH_TRACK_PROFILE_TOUGE, metres, wanted);
+    if (x === null) continue;
+    addCherry(bend, m, x, toZ(metres), random, 0.9 + random() * 0.35);
+  }
+
+  // ── Immeubles éclairés de la vallée, à l'avant de la descente ───────────
+  // Un ensemble tous les ~120 m, sur les lignes droites, de part et d'autre :
+  // la vallée reste visible devant la voiture entre les virages.
+  const valleyFacades = [0, 1, 2].map(() => makeValleyFacadeMaterial(random));
+  let valleyTally = 0;
+  for (let position = LOOP_START + 30; position < LOOP_END - 60; position += 120) {
+    valleyTally += 1;
+    if (lite && valleyTally % 2 === 0) continue;
+    if (!tougeValleyView(position, route)) continue;
+    addValleyBlocks(batch, valleyFacades, valleyTally % 2 ? 1 : -1, position, random);
   }
 
   // ── Delineateurs et lampadaires, en cadence le long de la descente ──────
