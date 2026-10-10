@@ -6,9 +6,9 @@
 // Ce module remplace `buildCityLoop` et `makeRoad` pour le parcours `touge` :
 // il pose le ruban d'asphalte, ses bas-côtés de mousse, ses glissières et,
 // secteur par secteur, les repères de la descente — le premier tunnel et son
-// sodium, les cinq épingles et leurs flèches jaunes, la paroi de 岩垂壁, le
-// pont du ravin, les trois épingles du final, l'aire du belvédère avec ses
-// distributeurs allumés, et la rive du lac qui reflète la lune.
+// sodium, les quatre virages isolés et leurs flèches, la paroi de 岩垂壁,
+// l'aire du belvédère avec ses distributeurs allumés, et la rive du lac.
+// Les immeubles éclairés de la vallée restent visibles au fond, devant nous.
 import * as THREE from 'three';
 import {
   CITY_RUSH_LAP_LENGTH,
@@ -27,6 +27,7 @@ import {
   ROAD_VIEW_AHEAD,
   ROAD_VIEW_BEHIND,
   START_ZONE_HALF,
+  makeSkyline,
   makeCurvedStripGeometry,
   updateCurvedStrip,
 } from './cityRushStage.js';
@@ -181,6 +182,28 @@ export function cameraCorridorLateral(corridor, profile, metre, lateral) {
     if (!cameraCorridorBlocked(corridor, profile, metre, candidate)) return candidate;
   }
   return null;
+}
+
+// ── La vallée à l’horizon, dans le sens de la descente ─────────────────────
+// Les tours latérales ne suffisent pas : dans un virage à 60°, une skyline
+// fixée sur l’axe Z sort du regard. Ce plan lointain suit le regard réellement
+// lissé de la poursuite (cap ET plongée), tout en gardant les immeubles verticaux.
+// Un seul mesh/une seule texture, en mode léger comme en mode complet.
+export function makeTougeSkyline(city, theme, random) {
+  const object = makeSkyline(city, theme, random);
+  object.name = 'touge-valley-skyline';
+  const direction = new THREE.Vector3();
+  const distance = 268;
+  const rise = 46; // les toits se détachent au-dessus du point de fuite de la route
+  return {
+    object,
+    update(camera) {
+      direction.set(0, 0, -1).applyQuaternion(camera.quaternion);
+      object.position.copy(camera.position).addScaledVector(direction, distance);
+      object.position.y += rise;
+      object.rotation.y = Math.atan2(-direction.x, -direction.z);
+    },
+  };
 }
 
 const toZ = (trackMeters) => -trackMeters * SCALE;
@@ -1172,14 +1195,14 @@ function addHairpinCrowd(batch, m, atlas, side, position, random, lite) {
     // Lanterne au sol.
     const lanternMaterial = unlit(lanternColors[index % lanternColors.length]);
     const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), lanternMaterial);
-    lantern.position.set((random() - 0.5) * 0.8, 0.75, oz);
+    lantern.position.set(x + (random() - 0.5) * 0.8, 0.75, oz);
     crowd.add(lantern);
     // Spectateur : manteau sombre, tête claire.
     const coat = new THREE.Mesh(
       new THREE.BoxGeometry(0.42, 0.85, 0.34),
       standard([0x22282e, 0x2c3438, 0x1e2620][index % 3], { roughness: 0.95 }),
     );
-    coat.position.set((random() - 0.5) * 1.2, 1.1, oz + (random() - 0.5) * 0.6);
+    coat.position.set(x + (random() - 0.5) * 1.2, 1.1, oz + (random() - 0.5) * 0.6);
     crowd.add(coat);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), standard(0xd8b49a, { roughness: 0.9 }));
     head.position.set(coat.position.x, 1.66, coat.position.z);
@@ -1274,7 +1297,7 @@ export function buildTougeTrack({ city, theme, materials: m, batch, cityIndex, l
     addCherry(bend, m, x, toZ(metres), random, 0.9 + random() * 0.35);
   }
 
-  // ── Immeubles éclairés de la vallée, à l'avant de la descente ───────────
+  // ── Immeubles 3D latéraux, complétés par la skyline devant le pilote ───────────
   // Un ensemble tous les ~120 m, sur les lignes droites, de part et d'autre :
   // la vallée reste visible devant la voiture entre les virages.
   const valleyFacades = [0, 1, 2].map(() => makeValleyFacadeMaterial(random));
@@ -1312,12 +1335,9 @@ export function buildTougeTrack({ city, theme, materials: m, batch, cityIndex, l
         case 'tunnel':
           addTunnel(bend, m, atlas, sector, from, to, random);
           break;
-        case 'hairpins':
-          // Flèches et limitations sur toute l'enfilade d'épingles.
-          addLimitBoard(bend, m, atlas, opposite, from + 3.2, 'limit-30');
-          for (let position = from + 5; position < to - 2; position += 9) {
-            addChevronBoard(bend, m, atlas, sectorIndex % 2 ? side : opposite, position, sectorIndex % 2 ? 4 : 3);
-          }
+        case 'hairpin':
+          // Une seule épingle dans ce secteur, pas de panneaux d’enfilade.
+          addLimitBoard(bend, m, atlas, opposite, sector.turnKm / route.lengthKm * LAP - 18, 'limit-30');
           break;
         case 'cut':
           addRockCut(bend, m, side, from, to, random);
@@ -1342,13 +1362,16 @@ export function buildTougeTrack({ city, theme, materials: m, batch, cityIndex, l
       if (sector.kind === 'descent' || sector.kind === 'corner') {
         addWarnBoard(bend, m, atlas, sectorIndex % 2 ? side : opposite, from + 4.8, sectorIndex % 3 === 0 ? 'warn-animal' : 'warn-ice');
       }
-      // Panneaux losange avant chaque enfilade d'épingles.
-      if (sector.hairpins) {
-        addWarnBoard(bend, m, atlas, opposite, from + 0.8, 'warn-hairpin');
-      }
-      // Le miroir convexe se dresse aux sorties en aveugle.
+      // Signalisation concentrée sur le virage réel, pas sur toute la ligne
+      // droite qui suit : un panneau d’approche, trois chevrons et un miroir.
       if (sector.corner) {
-        addConvexMirror(bend, m, atlas, sectorIndex % 2 ? opposite : side, middle);
+        const turnPosition = sector.turnKm / route.lengthKm * LAP;
+        const outside = sector.corner.direction === 'right' ? -1 : 1;
+        addWarnBoard(bend, m, atlas, outside, turnPosition - 18, 'warn-hairpin');
+        for (const offset of [-5, 0, 5]) {
+          addChevronBoard(bend, m, atlas, outside, turnPosition + offset);
+        }
+        addConvexMirror(bend, m, atlas, outside, turnPosition + 8);
       }
 
       // Panneau sponsor cousu sur la glissière de temps en temps.
@@ -1360,9 +1383,10 @@ export function buildTougeTrack({ city, theme, materials: m, batch, cityIndex, l
         }
       }
 
-      // Les spectateurs de nuit se tiennent aux deux grandes enfilades.
-      if (sector.hairpins && (sector.hairpins === 5 || sector.hairpins === 3)) {
-        const crowd = addHairpinCrowd(bend, m, atlas, opposite, middle, random, lite);
+      // Les spectateurs restent sur le bas-côté des deux épingles isolées.
+      if (sector.hairpins === 1) {
+        const crowdPosition = sector.turnKm / route.lengthKm * LAP + 16;
+        const crowd = addHairpinCrowd(bend, m, atlas, opposite, crowdPosition, random, lite);
         if (crowd) {
           dynamicProps.push(crowd);
         }

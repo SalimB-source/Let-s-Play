@@ -102,6 +102,20 @@ export async function checkViceCityTougeUi(assert) {
     const kickers = [...node.querySelectorAll('.city-rush-overlay-kicker')].map((el) => squash(el.textContent));
     assert.ok(kickers.some((kicker) => /GARAGE · 榛名山 · 峠ダウンヒル/.test(kicker)), `le garage annonce le tōgé (lu : ${kickers.join(' // ')})`);
 
+    // Le retour au choix de parcours conserve Haruna et décrit le nouveau
+    // tracé, pas le Ring (les deux parcours portent le drapeau raceway).
+    const back = [...node.querySelectorAll('button')].find((button) => /← VILLE/.test(squash(button.textContent)));
+    assert.ok(back, 'le retour au choix de parcours est proposé');
+    await click(back);
+    await settle();
+    const description = squash(mustFind(node, '.city-rush-intro-copy p', 'description du tōgé').textContent);
+    assert.match(description, /4 virages isolés dont 2 épingles/, 'la description annonce un virage à la fois');
+    assert.match(description, /ville éclairée devant nous/, 'la description annonce les immeubles devant le pilote');
+    assert.doesNotMatch(description, /Antoniusbuche|huit épingles|12 virages/, 'aucun ancien enchaînement ni description du Ring');
+    const selectedTouge = [...node.querySelectorAll('.city-rush-city-card')].find((card) => squash(card.querySelector('b')?.textContent) === 'MONT HARUNA · TŌGE');
+    await click(selectedTouge);
+    await settle();
+
     // 5. Le départ lance le monde sur le bon parcours, sans erreur moteur.
     const start = [...node.querySelectorAll('button')].find((button) => /LANCER LA COURSE/.test(squash(button.textContent)));
     assert.ok(start, 'le bouton « LANCER LA COURSE » est affiché');

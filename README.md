@@ -2467,10 +2467,36 @@ et abandon propre depuis le garage.
 ## Vice City Rush : le tōgé freine avant le virage, la poursuite reste derrière
 
 Le **mont Haruna** (neuvième parcours, `touge`) est la seule route de montagne du
-jeu : 13,8 km de descente de nuit, chaussée de 8,40 m à quatre voies, douze virages dont huit
-épingles à 90° groupées en trois enfilades — 五連ヘアピン, 水沢の森, le ravin.
-Deux défauts la rendaient illisible : la caméra de poursuite partait sur le flanc
-dans les épingles, et personne ne freinait avant de tourner.
+jeu : 13,8 km de descente de nuit, chaussée de 8,40 m à quatre voies et désormais
+**quatre virages isolés à 60°**, dont deux épingles. Les enfilades d’ouverture,
+la chicane de Mizusawa et les épingles successives du ravin sont supprimées.
+
+### Un virage à la fois, les immeubles devant nous
+
+`CITY_RUSH_TOUGE_TURNS` garde un virage aux km 5,15, 6,65, 11,05 et 12,55.
+Au moins **104 m de piste jouable** séparent la sortie d’une zone de virage de
+l’entrée de la suivante : la voiture sort du drift et retrouve la pleine vitesse
+avant le freinage suivant. Chaque secteur signale au plus un virage ; les noms,
+panneaux et descriptions ne présentent plus de S ni de groupes d’épingles.
+Les lignes droites conservent leur nouveau cap au lieu de masquer une courbe de
+raccord. Le profil reste continu au passage du tour, incliné à 20°.
+
+Les tours de la vallée ne sont plus seulement sur les côtés : le panorama
+procédural porte deux rangées d’immeubles et des fenêtres éclairées en son centre.
+`makeTougeSkyline` suit le **regard réellement lissé de la caméra**, horizontalement
+et dans la descente, tout en gardant les tours verticales. Le fond reste devant
+le pilote après un virage, en portrait comme en paysage, avec un seul mesh en
+mode léger comme en mode complet. Le décor du tour précédent reprend aussi la
+bonne altitude : forêt et glissières ne disparaissent plus sous la chaussée.
+
+Les tests de règles vérifient la séparation des virages, le retour à pleine
+vitesse et la correspondance des panneaux. Les tests de décor vérifient les
+immeubles et leur projection dans le regard sur deux tours, en portrait et
+paysage. Le smoke du vrai monde contrôle également ce cadrage et l’altitude du
+décor à chaque image.
+
+Les mesures qui suivent décrivent le correctif initial de poursuite et de
+freinage, avant cette simplification du tracé.
 
 ### La poursuite reste derrière la voiture
 

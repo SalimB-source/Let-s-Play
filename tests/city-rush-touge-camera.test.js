@@ -73,9 +73,9 @@ test('le couloir de la caméra couvre la chaussée et les épingles de la descen
   assert.ok(ROAD_CORRIDOR_RADIUS < TOUGE_ROAD_HALF + 5.5,
     'la forêt du bord de route reste plantée où elle est');
 
-  // La caméra décrochée de la chaussée, elle, n'apparaît que dans les trois
-  // enfilades — soit environ 285 mètres de piste sur les 1 200 du tour.
-  assert.ok(camera.length > 150 && camera.length < 400,
+  // La caméra décrochée n’apparaît qu’autour des quatre virages isolés,
+  // pas sur les longues lignes droites qui les séparent.
+  assert.ok(camera.length > 50 && camera.length < 150,
     `la caméra quitte la chaussée sur ${camera.length} mètres de piste`);
 
   // À 60°, la caméra quitte le ruban mais reste dans le bas-côté, juste avant
@@ -161,7 +161,7 @@ test('les arbres hauts sont retirés des entrées, sommets et sorties des virage
   const isolatedCenter = atKm(6.65);
   const isolatedHalf = (0.3 / CITY_RUSH_TOUGE.lengthKm) * CITY_RUSH_LAP_LENGTH / 2;
   assert.equal(tougeTurnSightlineClearance(isolatedCenter + isolatedHalf + TOUGE_TURN_SIGHTLINE_BUFFER_METERS + 1), false,
-    'la forêt reprend après le dégagement du dernier virage de la première enfilade');
+    'la forêt reprend après le dégagement du virage isolé de Kazami');
   for (const km of [1, 2.6, 4, 7.5, 10, 13.4]) {
     assert.equal(tougeTurnSightlineClearance(atKm(km)), false,
       `la forêt est conservée sur la ligne droite du km ${km}`);

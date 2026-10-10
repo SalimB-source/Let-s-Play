@@ -384,10 +384,9 @@ export function makeSkylineTexture(city, theme, random) {
     };
 
     if (style === 'touge') {
-      // Depuis la descente : la crête du Mont Haruna remplace la ville. Deux
-      // plans de montagne dans la brume lunaire, une forêt de cèdres noirs en
-      // ligne de crête, la balise rouge du sommet, et les lumières éparses de
-      // la vallée tout en bas — la ville d'en dessous, minuscule.
+      // Depuis la descente : les crêtes encadrent la ville éclairée au fond
+      // de la vallée. Les vraies silhouettes de tours et leurs fenêtres sont
+      // centrées dans le sens du regard, pas réduites à des points sur les côtés.
       const ridge = (shade, amplitude, base, seed) => {
         ctx.fillStyle = silhouette(shade);
         ctx.beginPath();
@@ -439,7 +438,22 @@ export function makeSkylineTexture(city, theme, random) {
       ctx.shadowBlur = 12;
       ctx.fillRect(summitX - 2, horizon - 24 - 200 - 26, 4, 10);
       ctx.shadowBlur = 0;
-      // La vallée, en bas : quelques lumières de la plaine de Takasaki.
+      // Deux rangées d’immeubles au centre du panorama : les petits blocs
+      // bleutés de fond, puis les tours aux fenêtres chaudes, bien lisibles
+      // au-dessus de la forêt. Pas de vitrines ni de bâtiments sur la route.
+      for (let x = width * 0.2; x < width * 0.8; x += 28 + random() * 32) {
+        tower(x, 20 + random() * 28, 90 + random() * 65, 18, {
+          density: 0.28, windowColor: 'rgba(159, 208, 255, .55)',
+        });
+      }
+      for (let x = width * 0.25; x < width * 0.75; x += 44 + random() * 40) {
+        tower(x, 28 + random() * 36, 145 + random() * 110, 6, {
+          density: 0.5, windowColor: 'rgba(255, 222, 166, .85)',
+        });
+      }
+      tower(width * 0.47, 54, 290, 10, { density: 0.55, crown: '#8fb9db' });
+      tower(width * 0.55, 68, 240, 8, { density: 0.5, windowColor: 'rgba(255, 236, 196, .85)' });
+      // Les lumières de la plaine au pied des immeubles.
       for (let index = 0; index < 90; index += 1) {
         ctx.fillStyle = random() < 0.3 ? 'rgba(255, 214, 150, .5)' : 'rgba(190, 205, 235, .32)';
         ctx.fillRect(random() * width, horizon + 4 + random() * 26, 2 + random() * 2, 2);

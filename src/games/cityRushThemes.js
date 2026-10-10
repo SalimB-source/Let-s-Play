@@ -329,9 +329,9 @@ export const CITY_RUSH_THEMES = Object.freeze({
   // vrai Ring, plus la marge peinte de chaque côté).
   // ── Mont Haruna · le tōgé de nuit ────────────────────────────────────────
   // Minuit sur la montagne : ciel d'encre criblé d'étoiles, pleine lune haute,
-  // brume bleutée dans les ravins. Pas de ville ici — juste la chaussée
-  // étroite, les glissières à réflecteurs, les cèdres noirs, les lampadaires
-  // orange espacés et les distributeurs lumineux du belvédère. Le thème porte
+  // brume bleutée dans les ravins. La route reste forestière, entre glissières
+  // à réflecteurs, cèdres noirs et lampadaires orange espacés ; devant le pilote,
+  // les immeubles éclairés de la vallée se détachent des crêtes à l’horizon. Le thème porte
   // `touge` — le monde construit alors la route de montagne de
   // `tougeStage.js` — et `roadHalf` sa largeur : 8,40 m de bitume, quatre voies.
   touge: Object.freeze({

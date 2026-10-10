@@ -290,7 +290,7 @@ import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRu
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStage';
-import { buildTougeTrack, makeTougeRoad } from './tougeStage';
+import { buildTougeTrack, makeTougeRoad, makeTougeSkyline } from './tougeStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
 import { animateRacerCar, applyPoliceRacerLivery, configureCarReflections, createSmokePool, makeRacerCar, makeTrafficVehicle, setRacerDriver } from './cityRushCars';
 import { makeBoostPadMaterial, makeLapBoard, makePickupMaterial } from './cityRushTextures';
@@ -2034,7 +2034,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
   const sky = makeSkyDome(theme);
   scene.add(sky);
-  scene.add(makeSkyline(city, theme, sceneryRandom));
+  const tougeSkyline = touge ? makeTougeSkyline(city, theme, sceneryRandom) : null;
+  scene.add(tougeSkyline?.object || makeSkyline(city, theme, sceneryRandom));
   const road = expressway
     ? makeExpresswayRoad(scene, theme, sceneryRandom, PLAYER_Z)
     : raceway
@@ -4319,7 +4320,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     // décor reprend l'altitude relative de son vrai point de départ.
     const loopStartDistance = distance + lineGap;
     const loopAY = tougeDrift ? trackRelativeY(loopStartDistance) : -playerElevation;
-    const loopBY = tougeDrift ? trackRelativeY(loopStartDistance + CITY_RUSH_LAP_LENGTH) : -playerElevation;
+    // B est la copie précédente (son Z est augmenté d’un tour), pas la
+    // suivante : le signe de l’altitude doit suivre celui du décalage en Z.
+    // Sinon la forêt et les glissières plongent deux tours sous la chaussée.
+    const loopBY = tougeDrift ? trackRelativeY(loopStartDistance - CITY_RUSH_LAP_LENGTH) : -playerElevation;
     loopA.position.set(-playerCurve, loopAY, lineZ);
     loopB.position.set(-playerCurve, loopBY, lineZ + LAP_UNITS);
     loopB.visible = lineZ + START_ZONE_HALF * SCALE < camera.position.z + 4;
@@ -10455,6 +10459,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
     updateWatchHelicopter(dt);
     updateCamera(dt);
+    tougeSkyline?.update(camera);
     renderer.render(scene, camera);
   }
 
