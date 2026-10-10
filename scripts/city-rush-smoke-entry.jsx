@@ -91,7 +91,7 @@ const {
   CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance, selectCityRushRacers, cityRushLaneConfig,
   CITY_RUSH_ONCOMING_BONUS_MAX,
   CITY_RUSH_PLAYER_SPEED, CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, CITY_RUSH_CLEAN_LINE_MAX_BONUS,
-  cityRushCoursePace,
+  cityRushCoursePace, CITY_RUSH_TRACK_PROFILE_TOUGE, CITY_RUSH_START_LINE_LEAD,
 } = await import('../src/games/cityRushRules.js');
 
 // Tours de la course jouée : 6 par défaut (8 400 m) ;
@@ -334,6 +334,12 @@ for (const [index, city] of courses.entries()) {
   let maxHudSpeed = 0;
 
   const scene = world.scene || null;
+  const tougeSkyline = scene.getObjectByName('touge-valley-skyline');
+  const previousTougeLoop = city.id === 'touge' ? scene.getObjectByName('city-loop-copy') : null;
+  const skylineRoof = new THREE.Vector3();
+  if ((city.id === 'touge') !== Boolean(tougeSkyline)) {
+    fail('seul Haruna possède la skyline directionnelle de la vallée');
+  }
   // Éclatement et réapparition des bonus : le pool d'effets vit dans la scène,
   // et chaque bonus ramassé doit éclater puis réapparaître 0,1 s (3 frames à
   // 30 Hz) plus tard sur sa rangée.
@@ -908,6 +914,25 @@ for (const [index, city] of courses.entries()) {
         if (ndcY >= WATCH_HELI_BAND_Y_MIN && ndcY <= WATCH_HELI_BAND_Y_MAX && Math.abs(watchHeliNdc.x) <= WATCH_HELI_BAND_X_MAX) {
           watchHeliFramedFrames += 1;
         }
+      }
+    }
+    if (tougeSkyline && globalThis.__smokeCamera) {
+      // Le vrai monde doit mettre le fond à jour avec la caméra lissée,
+      // pas seulement construire une texture d’immeubles qui sort du champ.
+      tougeSkyline.localToWorld(skylineRoof.set(-13, 18, 0));
+      skylineRoof.project(globalThis.__smokeCamera);
+      if (Math.abs(skylineRoof.x) > 0.25 || skylineRoof.y <= 0 || skylineRoof.y >= 0.8
+        || skylineRoof.z <= -1 || skylineRoof.z >= 1) {
+        fail('les immeubles de Haruna quittent notre direction', { distance: world.distance, roof: skylineRoof.toArray() });
+      }
+      // La copie dont le Z est reculé d’un tour doit être remontée du même
+      // tour : sinon tout le décor statique disparaît sous la route après 60 m.
+      const profile = CITY_RUSH_TRACK_PROFILE_TOUGE;
+      const anchorForward = profile.forward(world.distance) + (3.1 - previousTougeLoop.position.z) / CITY_RUSH_SCROLL_SCALE;
+      const anchorDistance = Math.round(anchorForward / CITY_RUSH_LAP_LENGTH) * CITY_RUSH_LAP_LENGTH + CITY_RUSH_START_LINE_LEAD;
+      const expectedY = profile.elevation(anchorDistance) - profile.elevation(world.distance);
+      if (Math.abs(previousTougeLoop.position.y - expectedY) > 1e-6) {
+        fail('le décor de Haruna ne suit plus l’altitude de sa copie', { distance: world.distance, y: previousTougeLoop.position.y, expectedY });
       }
     }
     // Cadrage de la voiture du pilote. Hors jeu : l'arrivée (la caméra rend la

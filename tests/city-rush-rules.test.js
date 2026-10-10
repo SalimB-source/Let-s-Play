@@ -2613,25 +2613,62 @@ test('the Nürburgring plays at a slower pace, every other course keeps the hist
   assert.equal(approachCityRushSpeed(30, 10, 6, 1, 0), brakingFlat, 'un facteur invalide retombe sur 1');
 });
 
-test('le tōgé dessine douze virages à 60°, incline la descente et ne dérape que dans les courbes', () => {
+test('le tōgé dessine quatre virages isolés à 60°, incline la descente et ne dérape que dans les courbes', () => {
   const lengthKm = CITY_RUSH_TOUGE.lengthKm;
-  assert.equal(CITY_RUSH_TOUGE.corners, 12);
-  assert.equal(CITY_RUSH_TOUGE_TURNS.length, 12, '8 épingles et 4 virages d’enchaînement');
+  assert.equal(CITY_RUSH_TOUGE.corners, 4);
+  assert.equal(CITY_RUSH_TOUGE_TURNS.length, CITY_RUSH_TOUGE.corners);
+  assert.equal(CITY_RUSH_TOUGE.hairpins, 2, 'deux épingles isolées, sans enfilade');
   assert.equal(CITY_RUSH_TOUGE_MAX_CORNER_ANGLE, 60);
   assert.equal(CITY_RUSH_TOUGE_DESCENT_ANGLE, 20);
   assert.ok(CITY_RUSH_TOUGE_MAX_GRADE > 0.3, 'la descente de 20° a une pente visible jusque dans les virages');
-  assert.equal(CITY_RUSH_TOUGE_MAX_OFFSET, 22, 'le tracé à 60° reste dans un déport latéral de 22 m');
+  assert.equal(CITY_RUSH_TOUGE_MAX_OFFSET, 112, 'les longues lignes droites ne sont pas comprimées dans les anciens S');
   assert.equal(CITY_RUSH_TOUGE_TURNS.reduce((sum, turn) => sum + turn[1], 0), 0, 'les virages opposés referment le cap');
   assert.ok(CITY_RUSH_TOUGE_TURNS.every(([, angle, span, shape, drift]) => (
     Math.abs(angle) === 60 && span === 0.3 && shape === 'snap' && drift === true
   )), 'chaque zone de drift est une cassure de 60°');
 
-  for (let index = 0; index < CITY_RUSH_TOUGE_TURNS.length; index += 2) {
-    const first = CITY_RUSH_TOUGE_TURNS[index];
-    const second = CITY_RUSH_TOUGE_TURNS[index + 1];
-    assert.equal(second[1], -first[1], `la paire ${index / 2 + 1} remet le cap droit`);
-    assert.ok(Math.abs((second[0] - first[0]) - first[2]) < 1e-9, `la paire ${index / 2 + 1} forme un S continu`);
+  for (let index = 0; index < CITY_RUSH_TOUGE_TURNS.length; index += 1) {
+    const current = CITY_RUSH_TOUGE_TURNS[index];
+    const next = CITY_RUSH_TOUGE_TURNS[(index + 1) % CITY_RUSH_TOUGE_TURNS.length];
+    const nextKm = next[0] + (index === CITY_RUSH_TOUGE_TURNS.length - 1 ? lengthKm : 0);
+    const exitKm = current[0] + current[2] / 2;
+    const entryKm = nextKm - next[2] / 2;
+    const straightMetres = (entryKm - exitKm) / lengthKm * CITY_RUSH_LAP_LENGTH;
+    assert.ok(straightMetres >= 100, `au moins 100 m droits après le virage ${index + 1} (${straightMetres.toFixed(1)} m)`);
+    // Réaccélération avant de préparer le prochain virage : le freinage ne
+    // doit plus former une seule zone continue sur plusieurs courbes.
+    const recovery = (exitKm / lengthKm) * CITY_RUSH_LAP_LENGTH + 20;
+    assert.equal(cityRushTougeCornerPace(recovery), 1, 'on retrouve la pleine vitesse après chaque virage');
+    assert.equal(tougeDriftAmount((recovery % CITY_RUSH_LAP_LENGTH) / CITY_RUSH_LAP_LENGTH), 0);
+    const heading = tougeTrackYaw(recovery);
+    assert.ok(Math.abs(tougeTrackYaw(recovery + 20) - heading) < 0.001, 'la route conserve un cap constant sur la portion droite');
   }
+
+  // Les secteurs et panneaux ne doivent pas encore annoncer les anciennes
+  // enfilades : chacun contient au plus un virage, et tous sont signalés.
+  let signalledTurns = 0;
+  let hairpins = 0;
+  let sectorEnd = 0;
+  for (const sector of CITY_RUSH_TOUGE.sectors) {
+    assert.equal(sector.km, sectorEnd, 'les secteurs couvrent la descente sans trou');
+    sectorEnd = sector.kmEnd;
+    const turns = CITY_RUSH_TOUGE_TURNS.filter(([km]) => km >= sector.km && km < sector.kmEnd);
+    assert.ok(turns.length <= 1, `${sector.id} ne contient pas d’enchaînement`);
+    assert.doesNotMatch(sector.sign.lines.join(' '), /S字|連続|5連/);
+    if (sector.corner) {
+      assert.equal(turns.length, 1, `${sector.id} signale un seul virage réel`);
+      assert.equal(sector.turnKm, turns[0][0]);
+      assert.equal(sector.corner.direction, turns[0][1] > 0 ? 'right' : 'left');
+      signalledTurns += 1;
+    } else {
+      assert.equal(turns.length, 0, `${sector.id} reste droit`);
+    }
+    if (sector.hairpins) assert.equal(sector.hairpins, 1);
+    hairpins += sector.hairpins || 0;
+  }
+  assert.equal(sectorEnd, lengthKm);
+  assert.equal(signalledTurns, CITY_RUSH_TOUGE.corners);
+  assert.equal(hairpins, CITY_RUSH_TOUGE.hairpins);
 
   assert.ok(Math.abs(tougeTrackOffset(0)) < 1e-6);
   assert.ok(Math.abs(tougeTrackForward(0)) < 1e-6);
@@ -2665,7 +2702,7 @@ test('le tōgé dessine douze virages à 60°, incline la descente et ne dérape
     `le cap atteint réellement 60° (cap max ${(peakYaw * 180 / Math.PI).toFixed(1)}°)`);
   assert.ok(peakProjectedHeading >= 59.9 * Math.PI / 180 && peakProjectedHeading <= 60.1 * Math.PI / 180,
     `la tangente mesurée sur la route atteint aussi 60° (${(peakProjectedHeading * 180 / Math.PI).toFixed(1)}°)`);
-  assert.ok(peakOffset < CITY_RUSH_TOUGE_MAX_OFFSET && peakOffset > CITY_RUSH_TOUGE_MAX_OFFSET - 1,
+  assert.ok(peakOffset < CITY_RUSH_TOUGE_MAX_OFFSET && peakOffset > CITY_RUSH_TOUGE_MAX_OFFSET - 2,
     `la route reste dans son enveloppe de ${CITY_RUSH_TOUGE_MAX_OFFSET} m (${peakOffset.toFixed(2)} m)`);
 
   for (const [km, angle, span] of CITY_RUSH_TOUGE_TURNS) {
@@ -2686,7 +2723,7 @@ test('le tōgé dessine douze virages à 60°, incline la descente et ne dérape
 
   // Les longues lignes droites restent stables ; la route peut aussi être
   // droite après un virage à 60° tout en conservant son nouveau cap local.
-  for (const km of [1, 2.6, 4, 4.7, 7.5, 8.2, 10, 11, 13, 13.4]) {
+  for (const km of [1, 2.6, 4, 4.7, 7.5, 8.2, 10, 10.5, 13, 13.4]) {
     const progress = km / lengthKm;
     assert.ok(Math.abs(tougeTrackYaw(progress * CITY_RUSH_LAP_LENGTH)) < Math.PI / 180,
       `la route est droite à ${km} km`);
@@ -2726,7 +2763,7 @@ test('le tōgé freine avant ses épingles, pas une fois dedans', () => {
   assert.ok(CITY_RUSH_TOUGE_PREBRAKE_METERS > CITY_RUSH_CORNER_PACE_PREBRAKE_METERS);
   assert.equal(CITY_RUSH_TOUGE_CORNER_ANGLE_START, 30);
 
-  // Le plancher d'une cassure à 60° — les douze virages de la descente.
+  // Le plancher d'une cassure à 60° — les quatre virages isolés de la descente.
   assert.equal(cityRushTougeCornerFactor(60), CITY_RUSH_CORNER_PACE_MIN);
   assert.equal(cityRushTougeCornerFactor(-60), CITY_RUSH_CORNER_PACE_MIN, 'le sens du virage ne change rien');
   assert.equal(cityRushTougeCornerFactor(120), CITY_RUSH_CORNER_PACE_MIN, 'au-delà de la cassure, le plancher tient');
@@ -2736,9 +2773,8 @@ test('le tōgé freine avant ses épingles, pas une fois dedans', () => {
   const midFactor = cityRushTougeCornerFactor(55);
   assert.ok(midFactor < 1 && midFactor > CITY_RUSH_CORNER_PACE_MIN, 'la descente est progressive, pas d’un bloc');
 
-  // Les douze virages s'enchaînent en trois groupes contigus : les six de
-  // 五連ヘアピン, le S de 水沢の森, les quatre du ravin. Le plancher tient d'un
-  // bout à l'autre de chaque groupe et la vitesse revient dès la sortie.
+  // Chaque virage a sa propre zone de freinage. Aucune zone ne touche la
+  // suivante : les anciennes enfilades et le S de Mizusawa ont disparu.
   const turns = CITY_RUSH_TOUGE_TURNS
     .map(([km, angle, spanKm]) => ({
       km, angle,
@@ -2756,10 +2792,10 @@ test('le tōgé freine avant ses épingles, pas une fois dedans', () => {
       groups.push({ entry: turn.centre - turn.half, exit: turn.centre + turn.half, count: 1 });
     }
   }
-  assert.deepEqual(groups.map((group) => group.count), [6, 2, 4], 'les trois enfilades de la descente');
+  assert.deepEqual(groups.map((group) => group.count), [1, 1, 1, 1], 'quatre virages indépendants, aucune enfilade');
 
   for (const group of groups) {
-    const label = `enfilade ${group.entry.toFixed(0)}–${group.exit.toFixed(0)} m`;
+    const label = `virage isolé ${group.entry.toFixed(0)}–${group.exit.toFixed(0)} m`;
     // Avant la zone de freinage : pleine vitesse.
     assert.equal(
       cityRushTougeCornerPace(group.entry - CITY_RUSH_TOUGE_PREBRAKE_METERS - 2), 1,
@@ -2841,7 +2877,11 @@ test('la poursuite reste derrière la voiture dans les cassures, sans bouger ail
 
   // Même quand l'axe horizontal s'ancre dans une épingle, le tōgé conserve
   // son relief : la caméra remonte derrière et regarde vers la route en bas.
-  const steepAnchor = cityRushChasePlacement(497, CITY_RUSH_TRACK_PROFILE_TOUGE);
+  let steepAnchor = { anchor: 0 };
+  for (let distance = 0; distance < CITY_RUSH_LAP_LENGTH; distance += 0.5) {
+    const chase = cityRushChasePlacement(distance, CITY_RUSH_TRACK_PROFILE_TOUGE);
+    if (chase.anchor > steepAnchor.anchor) steepAnchor = chase;
+  }
   assert.ok(steepAnchor.anchor > 0.98, 'la poursuite est ancrée dans cette cassure');
   assert.ok(steepAnchor.cameraHill > 0 && steepAnchor.lookHill < 0,
     'la pente de 20° reste suivie même pendant l’ancrage');
