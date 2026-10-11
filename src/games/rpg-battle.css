@@ -3038,8 +3038,8 @@
 }
 
 /* Aperçu instantané au survol : contenu agrandi, sans fond principal ni grand
-   cadre — seul l’encadré des infos garde son fond sombre, sans masquer la table
-   ni ajouter de délai. */
+   cadre (ni son ombre) — seul l’encadré des infos garde son fond sombre, sans
+   masquer la table ni ajouter de délai. */
 .rpg-hover-card-preview {
   position: fixed;
   z-index: 110;
@@ -3052,7 +3052,6 @@
   overflow: hidden;
   padding: 11px;
   border-radius: 11px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, .42);
   color: #fff2d2;
   pointer-events: none;
   animation: rpg-hover-preview-in .08s ease-out both;
