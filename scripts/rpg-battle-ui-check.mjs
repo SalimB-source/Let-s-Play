@@ -94,7 +94,7 @@ assert.match(tableCardSource, /onHoverCard\?\.\(carte, event\)/,
   'les créatures en jeu utilisent le même aperçu sans icône d’état');
 assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(carte, event\)\}/,
   'les cartes affichent leur aperçu dès l’entrée de la souris');
-assert.match(battlePage, /const cliquerCarteMain = \(carteId\) => \{[\s\S]*?setCarteEnApercu\(carteId\)/,
+assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?setCarteEnApercu\(carteId\)/,
   'l’aperçu détaillé au clic reste accessible');
 assert.match(battlePage, /className="rpg-hover-card-preview__type"[\s\S]*?className="rpg-hover-card-preview__cost"[\s\S]*?className="rpg-hover-card-preview__rules"[\s\S]*?className="rpg-hover-card-preview__stats"/,
   'l’aperçu au survol ne contient que le type, le coût, les effets et les statistiques');

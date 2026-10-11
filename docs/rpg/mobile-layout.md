@@ -1,12 +1,28 @@
-# Affichage mobile du Sablier de Bab El
+# Duel mobile : paysage et actions dans l’aperçu
 
-La couche `src/games/rpg-mobile.css` est chargée après la feuille historique du duel. Elle remplace les positions absolues par des pistes de grille jusqu’à 1 100 px, sans changer les règles de jeu.
+## Présentation
 
-- **Portrait et tablettes** : navigation, identité adverse et compteurs, terrains adverses, deux champs distincts, terrains du joueur, identité du joueur et compteurs, commandes, main.
-- **Téléphones en paysage** (hauteur ≤ 550 px) : champs à gauche, terrains dans une colonne dédiée, commandes défilables à droite, main en bas. Les compteurs de paquet et de cimetière figurent dans les identités.
-- **Écrans courts** : cartes et espacements plus compacts. Si le contenu ne tient pas, la table défile verticalement plutôt que de superposer les commandes et la main.
-- **Cartes** : défilement horizontal conservé, aperçu détaillé au toucher et déplacement vertical pour jouer. Les flèches de blocage sont recalculées après défilement.
-- Les marges système et encoches restent gérées par `.rpg-battle`.
+`src/games/rpg-mobile.css` contient la présentation tactile, activée par `.rpg-battle--touch` (application Android, pointeur tactile ou fenêtre ≤ 1 100 px).
+
+Le plateau conserve les illustrations originales de Bab El, avec une organisation inspirée des jeux de cartes numériques en paysage :
+
+- deux champs au centre, sans panneaux opaques ;
+- terrains sur le côté, identités et compteurs flottants ;
+- main en bas, défilable horizontalement ;
+- fin du tour, confirmations et réponses au combat accessibles sur le plateau ;
+- détails et actions contextuelles dans l’aperçu d’une carte.
+
+Le clic sur une carte en main ouvre l’aperçu, sur ordinateur comme sur mobile. **Jouer la carte** réutilise la validation et les animations du glisser-déposer, y compris le paiement automatique et le choix ultérieur d’une cible. Sur mobile, les créatures et terrains du champ ouvrent aussi leur aperçu : attaque, retrait de la sélection, confirmation, annulation, blocage, choix de cible ou production de mana selon l’état de la partie. Les actions indisponibles sont désactivées. Les statistiques d’une créature en jeu reflètent ses valeurs actuelles.
+
+Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. Le grand aperçu conserve un fond lisible, mais son voile extérieur est léger et le plateau n’a plus de grands fonds opaques.
+
+## Orientation
+
+`rpgLandscape.js` demande le plein écran depuis le geste de lancement, puis `screen.orientation.lock('landscape')` quand le navigateur l’autorise. Si l’appareil reste en portrait, un écran de rotation empêche d’interagir avec le duel derrière lui. Aucun artifice CSS ne tourne les coordonnées du plateau.
+
+Safari, certaines WebViews et les aperçus embarqués peuvent refuser les API de plein écran/rotation. Dans ce cas, l’utilisateur tourne physiquement son appareil. Le bouton « Activer le paysage » permet de réessayer ; « Retour au menu » reste accessible.
+
+Dans l’APK, `LetsPlayAndroid.setDuelLandscape` demande `SCREEN_ORIENTATION_SENSOR_LANDSCAPE`, uniquement sur l’URL de confiance du duel. L’orientation précédente est restaurée au retour au menu ou en quittant le jeu. Le manifeste gère déjà les changements d’orientation sans recréer l’activité. **Cette nouvelle méthode native nécessite de reconstruire et installer l’APK** ; une ancienne APK utilise le repli navigateur.
 
 ## Vérifications
 
@@ -21,8 +37,10 @@ npm run check:rpg-ui
 npm run build
 ```
 
-Le contrôle navigateur couvre 320×568, 375×667, 390×844, 844×390, 768×1024 et 1024×768 : pas de débordement horizontal de la table, pas de recouvrement entre champs/commandes/main, cartes non coupées verticalement et bouton de fin du tour d’au moins 44 px. Il joue aussi un terrain avec de vrais événements tactiles Chromium après changements d’orientation, puis ouvre un aperçu.
+- Tests purs : moteur, audio, gestes et cycle de vie de l’orientation, y compris les refus et promesses tardives.
+- Tests React/jsdom : prévisualisation, jeu, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois et terrain engagé.
+- Tests Chromium : repli portrait, plateaux 568×320, 667×375, 844×390 et 1024×768 sans recouvrement des zones ; aperçu et actions au toucher ; jeu d’un terrain par glisser-déposer après rotations ; retour au menu.
 
-Variables facultatives : `RPG_URL` pour une autre URL locale et `CHROMIUM_EXECUTABLE_PATH` pour un Chromium déjà installé.
+Variables facultatives : `RPG_URL`, `CHROMIUM_EXECUTABLE_PATH` et `RPG_SCREENSHOT` (capture de l’aperçu).
 
-Ces tests de navigateur ne remplacent pas une validation sur appareil Android/iOS réel, notamment pour les encoches, la barre système et le comportement de la WebView.
+La compilation web et les tests de navigateur ne valident pas l’APK natif. Vérifier aussi sur Android/iOS réels, en particulier les encoches, barres système, verrouillages d’orientation et retours vers le menu.

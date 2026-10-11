@@ -1,174 +1,140 @@
+/* Landscape-first touch duel. Keep the original Bab El art; the battlefield
+   is unobstructed, with floating identities and contextual card actions. */
 .rpg-mobile-zones { display: none; }
-/* Mobile table: explicit tracks instead of desktop percentage positioning.
-   Keep this layer separate from the legacy full-screen desktop composition. */
-@media (max-width: 1100px) {
-  .rpg-battle[data-scene="duel"] .card-table {
-    --mobile-card: clamp(68px, 10dvh, 96px);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 100px;
-    grid-template-rows: 44px 44px 38px minmax(calc(var(--mobile-card) * 1.25 + 18px), 1fr) minmax(calc(var(--mobile-card) * 1.25 + 18px), 1fr) 38px 44px minmax(142px, max-content) 130px;
-    grid-template-areas: "nav nav" "opponent opponent-piles" "enemy-mana enemy-mana" "enemy enemy" "allies allies" "mana mana" "player player-piles" "controls controls" "hand hand";
-    gap: 4px;
-    padding: 6px;
-    overflow: auto;
-    overscroll-behavior: contain;
-    background-blend-mode: multiply;
-    background-color: #77706a;
-  }
-  .card-table > :is(.rpg-duel-nav, .rpg-wizard-plate, .rpg-card-piles, .rpg-terrains, .card-row, .rpg-bottombar, .rpg-hand-dock) {
-    position: relative;
-    inset: auto;
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    height: auto;
-    min-height: 0;
-    margin: 0;
-    transform: none;
-  }
-  .card-table > .rpg-duel-nav { grid-area: nav; z-index: 50; padding: 0 6px; gap: 2px; box-shadow: none; }
-  .rpg-duel-nav strong { flex: 1; padding: 0 4px; font-size: 9px; letter-spacing: .04em; }
-  .rpg-duel-nav button { min-height: 42px; padding: 6px 8px; font-size: 10px; }
-  /* The opponent's hand count remains in their identity plate. */
-  .card-table > .rpg-hidden-hand { display: none; }
-  .card-table > .rpg-wizard-plate--ennemi { grid-area: opponent; }
-  .card-table > .rpg-wizard-plate--joueur { grid-area: player; }
-  .card-table > .rpg-wizard-plate {
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px 6px;
-    padding: 4px 8px;
-    border-radius: 9px;
-    text-align: left;
-  }
-  .rpg-wizard-plate__avatar { grid-row: 1 / 3; width: 28px; height: 28px; }
-  .rpg-wizard-plate__identity strong { font-size: 10px; }
-  .rpg-wizard-plate__identity small, .rpg-wizard-plate__sable { display: none; }
-  .rpg-wizard-plate__zones { grid-column: 2; grid-row: 2; font-size: 10px; }
-  .rpg-wizard-plate__pv { grid-column: 3; grid-row: 1 / 3; font-size: 18px; }
-  .card-table > .rpg-card-piles--opponent { grid-area: opponent-piles; }
-  .card-table > .rpg-card-piles--player { grid-area: player-piles; }
-  .card-table > .rpg-card-piles { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 3px; border-radius: 9px; background: #100f16d9; }
-  .rpg-card-piles .rpg-card-pile { min-width: 0; flex: 1; gap: 3px; }
-  .rpg-card-piles .rpg-card-pile__stack { display: none; }
-  .rpg-card-piles .rpg-card-pile b { font-size: 14px; }
-  .rpg-card-piles .rpg-card-pile small { font-size: 8px; }
-  .card-table > .rpg-terrains--ennemi { grid-area: enemy-mana; }
-  .card-table > .rpg-terrains--joueur { grid-area: mana; }
-  .card-table > .rpg-terrains { align-items: center; gap: 8px; padding: 2px 8px; overflow-x: auto; border-radius: 7px; background: #0d0b1266; }
-  .rpg-terrains .rpg-terrain { width: 26px; height: 32px; flex: 0 0 26px; border-width: 1px; }
-  .card-table > .card-row--ennemi { grid-area: enemy; background: linear-gradient(180deg, #ae503420, #100e123d); border-color: #c179534d; }
-  .card-table > .card-row--equipe { grid-area: allies; background: linear-gradient(0deg, #d8b76a20, #100e123d); border-color: #d8b76a4d; }
-  .card-table > .card-row {
-    align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
-    padding: 8px 12px;
-    border-width: 1px;
-    border-style: solid;
-    border-radius: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-padding-inline: 12px;
-  }
-  .card-row .rpg-card { width: var(--mobile-card); flex: 0 0 var(--mobile-card); transform: none; }
-  .card-row .rpg-card.is-selected { transform: translateY(-3px); }
-  .rpg-empty-lane { width: 100%; text-align: center; font-size: 12px; color: #e7d9c1aa; }
-  .card-table > .rpg-bottombar {
-    grid-area: controls;
-    min-height: min-content;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 5px;
-    padding: 8px;
-    border: 1px solid #d1af6b33;
-    border-radius: 10px;
-    background: #100e16ed;
-    z-index: 20;
-  }
-  .rpg-bottombar__status, .rpg-bottombar .rpg-actions { display: contents; }
-  .rpg-bottombar .rpg-turn-indicator { grid-column: 1; grid-row: 1; padding: 4px 6px; min-height: 28px; gap: 5px; }
-  .rpg-bottombar .rpg-turn-indicator strong { font-size: 9px; letter-spacing: 0; }
-  .rpg-bottombar .rpg-phase-track { grid-column: 2; grid-row: 1; gap: 3px; justify-content: flex-end; }
-  .rpg-bottombar .rpg-phase-step { min-width: 25px; }
-  .rpg-bottombar .rpg-phase-step__label { display: none; }
-  .rpg-bottombar__status .rpg-actions__wait {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    max-width: none;
-    max-height: 42px;
-    padding: 0;
-    overflow: auto;
-    white-space: normal;
-    text-align: left;
-    font-size: 11px;
-    line-height: 1.3;
-    border: 0;
-    background: none;
-  }
-  .rpg-bottombar .rpg-log { display: none; }
-  .rpg-bottombar .rpg-actions__row { grid-column: 1 / -1; grid-row: 3; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
-  .rpg-actions__combat, .rpg-actions__turn { padding: 0; border: 0; gap: 4px; }
-  .rpg-actions__row .rpg-btn { min-height: 44px; padding: 6px 8px; font-size: 11px; }
-  .card-table > .rpg-hand-dock { grid-area: hand; display: block; padding: 0; overflow: hidden; border-top: 1px solid #d1af6b55; border-radius: 10px; z-index: 21; }
-  .rpg-hand-dock::before { content: "VOTRE MAIN · GLISSEZ VERS LE PLATEAU"; display: block; padding: 5px 10px 0; color: #ddc795; font: 600 9px/1.2 var(--display); letter-spacing: .06em; }
-  .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: 110px; margin: 0; padding: 6px 10px; justify-content: flex-start; align-items: center; gap: 10px; }
-  .rpg-hand .rpg-hand__card { width: 76px; min-height: 0; height: auto; flex: 0 0 76px; transform: none; }
-  .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
-  .rpg-hand .rpg-hand__card.is-targeting { outline: 3px solid #72e6d0; }
-  .rpg-card--img .rpg-card__type, .rpg-hand__type { font-size: 8px; line-height: 1.1; }
-  .rpg-hand__card--img .rpg-mana-cost, .rpg-card--img .rpg-mana-cost.is-compact { font-size: 12px; min-width: 26px; height: 22px; }
-  .rpg-hand__stat, .rpg-card--img .rpg-card__pt { font-size: 11px; }
-  .rpg-card-preview-backdrop { padding: 12px; }
-  .rpg-card-preview { max-height: calc(100dvh - 40px); overflow-y: auto; }
-  .rpg-card-preview__close { width: 44px; height: 44px; }
-  .rpg-card-preview__details header { padding-right: 36px; }
-  .rpg-card-preview__rules { font-size: 14px; }
-  .rpg-card-preview__hint { font-size: 12px; }
+.rpg-rotate-prompt {
+  position: absolute;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  text-align: center;
+  color: #fff0cf;
+  background: radial-gradient(ellipse at top, #614020, #100d13 75%);
 }
+.rpg-rotate-prompt__icon { font: 64px/1 Georgia, serif; color: #f4ce78; }
+.rpg-rotate-prompt h2 { margin: 0; font: 26px/1.15 Georgia, serif; }
+.rpg-rotate-prompt p { max-width: 32ch; margin: 0; font-size: 16px; line-height: 1.5; }
+.rpg-rotate-prompt small { max-width: 40ch; color: #ccbca1; line-height: 1.5; }
+.rpg-rotate-prompt .rpg-btn { min-height: 44px; flex-shrink: 0; }
 
-/* Landscape phones: commands get their own side panel, never over the lanes. */
-@media (orientation: landscape) and (max-height: 550px) and (max-width: 1100px) {
-  .rpg-battle[data-scene="duel"] .card-table {
-    --mobile-card: 64px;
-    grid-template-columns: minmax(0, 1fr) 56px 216px;
-    grid-template-rows: 44px minmax(100px, 1fr) minmax(100px, 1fr) 110px;
-    grid-template-areas: "nav nav opponent" "enemy enemy-mana controls" "allies mana controls" "hand hand player";
-  }
-  .card-table > .rpg-bottombar { min-height: 0; align-content: start; grid-template-columns: minmax(0, 1fr); gap: 8px; overflow-y: auto; }
-  .rpg-bottombar .rpg-turn-indicator { grid-row: 1; grid-column: 1; justify-content: center; }
-  .rpg-bottombar .rpg-phase-track { grid-row: 2; grid-column: 1; justify-content: space-around; }
-  .rpg-bottombar__status .rpg-actions__wait { grid-row: 3; max-height: 65px; font-size: 12px; }
-  .rpg-bottombar .rpg-actions__row { grid-row: 4; justify-content: center; }
-  .rpg-actions__combat, .rpg-actions__turn { justify-content: center; }
-  .card-table > .rpg-terrains { flex-direction: column; overflow-y: auto; overflow-x: hidden; padding: 5px; }
-  .rpg-terrains .rpg-terrain { flex-basis: 32px; }
-  .card-table > .rpg-card-piles { display: none; }
-  .card-table > .rpg-wizard-plate--joueur { align-self: start; height: 60px; }
-  .rpg-wizard-plate__zones { grid-column: 2 / 4; font-size: 8px; white-space: nowrap; }
-  .rpg-wizard-plate__pv { grid-row: 1; font-size: 16px; }
-  .rpg-mobile-zones { display: inline; }
-  .rpg-hand-dock .rpg-hand { height: 92px; }
-  .rpg-hand .rpg-hand__card { width: 62px; flex-basis: 62px; }
+/* Contextual actions are available with mouse, keyboard and touch. */
+.rpg-card-preview__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rpg-card-preview__actions .rpg-btn { min-height: 44px; padding: 10px 14px; font-size: 13px; }
+.rpg-card-preview__actions .rpg-btn:disabled { opacity: .45; cursor: not-allowed; }
+.rpg-card-preview__close { min-width: 44px; min-height: 44px; }
+.rpg-card-preview__details header { padding-right: 40px; }
 
+.rpg-battle--touch .card-table {
+  --duel-card: clamp(48px, 17dvh, 100px);
+  display: grid;
+  grid-template-columns: clamp(78px, 12vw, 130px) minmax(0, 1fr) clamp(130px, 18vw, 190px);
+  grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.25 + 10px), 1fr) minmax(calc(var(--duel-card) * 1.25 + 10px), 1fr) clamp(84px, 28dvh, 146px);
+  grid-template-areas: "enemy-mana opponent nav" "enemy-mana enemy opponent-piles" "mana allies controls" "player hand controls";
+  gap: 4px 8px;
+  padding: 6px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background-blend-mode: normal;
 }
-
-@media (max-width: 420px) {
-  .rpg-card-preview { grid-template-columns: 1fr; width: 100%; }
-  .rpg-card-preview__art { width: min(42vw, 170px); justify-self: center; }
-  .rpg-card-preview__details h2 { font-size: 22px; }
-  .rpg-card-preview__type { font-size: 12px; }
+.rpg-battle--touch .card-table::before { background: none; }
+.rpg-battle--touch .card-table > :is(.rpg-duel-nav, .rpg-wizard-plate, .rpg-card-piles, .rpg-terrains, .card-row, .rpg-bottombar, .rpg-hand-dock) {
+  position: relative;
+  inset: auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  transform: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
 }
-
-/* Short portrait screens retain a full hand; only genuinely tiny viewports
-   scroll vertically rather than cutting off the turn controls. */
-@media (max-width: 900px) and (orientation: portrait) and (max-height: 740px) {
-  .rpg-battle[data-scene="duel"] .card-table {
-    --mobile-card: 64px;
-    grid-template-rows: 44px 40px 30px minmax(94px, 1fr) minmax(94px, 1fr) 30px 40px minmax(142px, max-content) 110px;
-    gap: 2px;
-  }
-  .rpg-terrains .rpg-terrain { width: 22px; height: 26px; flex-basis: 22px; }
-  .rpg-hand-dock .rpg-hand { height: 92px; }
-  .rpg-hand .rpg-hand__card { width: 62px; flex-basis: 62px; }
+.rpg-battle--touch .card-table > .rpg-hidden-hand { display: none; }
+.rpg-battle--touch .card-table > .rpg-duel-nav { grid-area: nav; justify-content: flex-end; padding: 0; gap: 0; z-index: 50; }
+.rpg-battle--touch .rpg-duel-nav strong { display: none; }
+.rpg-battle--touch .rpg-duel-nav button { min-height: 38px; padding: 4px 5px; font-size: 9px; text-shadow: 0 1px 3px #000; }
+.rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { grid-area: opponent; justify-self: center; align-self: center; width: 210px; }
+.rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { grid-area: player; align-self: end; padding-bottom: 8px; }
+.rpg-battle--touch .card-table > .rpg-wizard-plate {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 3px 5px;
+  padding: 0;
+  color: #ffefcb;
+  text-shadow: 0 2px 3px #000;
+  text-align: left;
+}
+.rpg-battle--touch .rpg-wizard-plate__avatar { grid-row: 1 / 3; width: 28px; height: 28px; border: 1px solid #d8b975; }
+.rpg-battle--touch .rpg-wizard-plate__identity strong { font-size: 9px; letter-spacing: .05em; }
+.rpg-battle--touch .rpg-wizard-plate__identity small,
+.rpg-battle--touch .rpg-wizard-plate__sable { display: none; }
+.rpg-battle--touch .rpg-wizard-plate__pv { grid-column: 3; grid-row: 1; font-size: 20px; }
+.rpg-battle--touch .rpg-wizard-plate__zones { grid-column: 2 / 4; grid-row: 2; font-size: 9px; line-height: 1.3; }
+.rpg-battle--touch .rpg-wizard-plate--joueur { grid-template-columns: 28px minmax(0, 1fr); }
+.rpg-battle--touch .rpg-wizard-plate--joueur .rpg-wizard-plate__pv { grid-column: 2; grid-row: 2; }
+.rpg-battle--touch .rpg-wizard-plate--joueur .rpg-wizard-plate__zones { grid-column: 1 / -1; grid-row: 3; }
+.rpg-battle--touch .rpg-mobile-zones { display: inline; }
+.rpg-battle--touch .card-table > .rpg-card-piles--opponent { grid-area: opponent-piles; align-self: start; justify-content: flex-end; padding: 8px; }
+.rpg-battle--touch .card-table > .rpg-card-piles--player { display: none; }
+.rpg-battle--touch .rpg-card-pile { min-width: 42px; text-shadow: 0 2px 3px #000; }
+.rpg-battle--touch .rpg-card-pile__stack { display: none; }
+.rpg-battle--touch .rpg-card-pile b { font-size: 14px; }
+.rpg-battle--touch .rpg-card-pile small { font-size: 8px; }
+.rpg-battle--touch .card-table > .rpg-terrains--ennemi { grid-area: enemy-mana; }
+.rpg-battle--touch .card-table > .rpg-terrains--joueur { grid-area: mana; }
+.rpg-battle--touch .card-table > .rpg-terrains { display: flex; align-content: center; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 4px; padding: 5px; overflow-y: auto; }
+.rpg-battle--touch .rpg-terrain { flex: 0 0 30px; width: 30px; height: 38px; border-width: 1px; }
+.rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
+.rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
+.rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 5px 8px; gap: 12px; overflow-x: auto; overflow-y: hidden; scroll-padding-inline: 8px; }
+.rpg-battle--touch .card-row .rpg-card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; transform: none; }
+.rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
+.rpg-battle--touch .rpg-empty-lane { width: 100%; padding: 0; background: none; border: 0; text-align: center; font-size: 12px; color: #edd9b3b3; text-shadow: 0 2px 4px #000; }
+.rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px; overflow-y: auto; z-index: 20; }
+.rpg-battle--touch .rpg-bottombar__status { flex-direction: column; align-items: flex-end; gap: 3px; }
+.rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
+.rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
+.rpg-battle--touch .rpg-bottombar__status .rpg-actions__wait { flex: none; max-width: 100%; max-height: 48px; padding: 0; border: 0; background: none; color: #ffedc7; font-size: 11px; line-height: 1.35; white-space: normal; overflow-y: auto; text-shadow: 0 2px 3px #000; }
+.rpg-battle--touch .rpg-bottombar .rpg-log, .rpg-battle--touch .rpg-phase-track { display: none; }
+.rpg-battle--touch .rpg-bottombar .rpg-actions { display: block; }
+.rpg-battle--touch .rpg-bottombar .rpg-actions__row { justify-content: flex-end; gap: 4px; }
+.rpg-battle--touch .rpg-actions__combat, .rpg-battle--touch .rpg-actions__turn { justify-content: flex-end; gap: 4px; padding: 0; border: 0; }
+.rpg-battle--touch .rpg-actions__row .rpg-btn { min-height: 44px; padding: 6px 9px; font-size: 11px; }
+/* Individual attack/undo decisions now live in card previews. Confirmation,
+   target cancellation and response resolution remain reachable on the board. */
+.rpg-battle--touch .rpg-btn--attaque-tous, .rpg-battle--touch .rpg-btn--undo { display: none; }
+.rpg-battle--touch .card-table > .rpg-hand-dock { grid-area: hand; display: block; align-self: stretch; padding: 0; overflow: hidden; z-index: 21; }
+.rpg-battle--touch .rpg-hand-dock::before { content: "VOTRE MAIN · TOUCHEZ UNE CARTE POUR AGIR"; display: block; padding: 2px 8px; color: #efdbad; text-shadow: 0 1px 3px #000; font: 600 8px/1.3 var(--display); letter-spacing: .06em; }
+.rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 8px; justify-content: flex-start; align-items: center; gap: 8px; }
+.rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; }
+.rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
+.rpg-battle--touch .rpg-card--img .rpg-card__type,
+.rpg-battle--touch .rpg-hand__type { font-size: 7px; }
+.rpg-battle--touch .rpg-hand__card--img .rpg-mana-cost,
+.rpg-battle--touch .rpg-card--img .rpg-mana-cost.is-compact { font-size: 11px; min-width: 24px; height: 20px; }
+.rpg-battle--touch .rpg-hand__stat,
+.rpg-battle--touch .rpg-card--img .rpg-card__pt { font-size: 10px; }
+.rpg-battle--touch .rpg-card-preview-backdrop { padding: 8px; background: #08090f55; backdrop-filter: none; }
+.rpg-battle--touch .rpg-card-preview { grid-template-columns: minmax(100px, 24%) minmax(0, 1fr); width: min(760px, 96vw); max-height: calc(100dvh - 28px); padding: 12px; gap: 16px; overflow-y: auto; background: linear-gradient(120deg, #201b16ef, #10101aee); }
+.rpg-battle--touch .rpg-card-preview__art { max-height: 65dvh; align-self: start; }
+.rpg-battle--touch .rpg-card-preview__details { gap: 8px; }
+.rpg-battle--touch .rpg-card-preview__details h2 { font-size: 23px; }
+.rpg-battle--touch .rpg-card-preview__rules { padding: 8px; font-size: 14px; line-height: 1.4; }
+.rpg-battle--touch .rpg-card-preview__hint { margin: 0; padding-top: 5px; font-size: 12px; }
+.rpg-battle--touch .rpg-card-preview__flavor { display: none; }
+.rpg-battle--touch .rpg-card-preview__type { padding: 5px; font-size: 12px; }
+.rpg-battle--touch .rpg-card-preview__stats { padding: 5px 8px; font-size: 16px; }
+.rpg-battle--touch .rpg-card-preview__actions { position: sticky; bottom: 0; padding-block: 6px; background: #14131cee; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-battle--touch .rpg-card-preview { animation: none; }
 }

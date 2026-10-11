@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.media.AudioDeviceInfo;
@@ -40,6 +41,25 @@ import java.util.List;
  * fonctionnalité native.
  */
 public class MainActivity extends Activity {
+    private boolean duelLandscapeActive = false;
+    private int orientationBeforeDuel = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+
+    private void restoreDuelOrientation() {
+        if (!duelLandscapeActive) return;
+        duelLandscapeActive = false;
+        setRequestedOrientation(orientationBeforeDuel);
+    }
+
+    private boolean isTrustedDuelPage() {
+        if (webView == null || webView.getUrl() == null) return false;
+        Uri page = Uri.parse(webView.getUrl());
+        String path = page.getPath();
+        return "https".equals(page.getScheme()) && SITE_HOST.equals(page.getHost())
+            && path != null && (path.equals("/jeu/sablier-de-bab-el")
+                || path.equals("/jeu/sablier-de-bab-el/")
+                || path.equals("/Let-s-Play/jeu/sablier-de-bab-el"));
+    }
+
 
     /** Domaine servi dans la WebView — toute autre URL part vers une app externe. */
     private static final String SITE_HOST = "let-s-play-nu.vercel.app";
@@ -139,6 +159,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 refreshLayout.setRefreshing(false);
+                if (!isTrustedDuelPage()) restoreDuelOrientation();
             }
         });
 
@@ -285,6 +306,20 @@ public class MainActivity extends Activity {
 
     /** Pont appelé par le site : `LetsPlayAndroid.setCallAudio`. */
     private final class CallAudioBridge {
+        /** Scoped to the duel: the rest of the application keeps its orientation. */
+        @JavascriptInterface
+        public void setDuelLandscape(boolean active) {
+            runOnUiThread(() -> {
+                if (!active) {
+                    restoreDuelOrientation();
+                } else if (isTrustedDuelPage()) {
+                    if (!duelLandscapeActive) orientationBeforeDuel = getRequestedOrientation();
+                    duelLandscapeActive = true;
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                }
+            });
+        }
+
         @JavascriptInterface
         public void setCallAudio(boolean active) {
             runOnUiThread(() -> {
