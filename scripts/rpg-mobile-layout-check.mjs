@@ -104,9 +104,10 @@ try {
       for (const row of document.querySelectorAll('.rpg-terrains')) {
         const original = [...row.childNodes];
         try {
-          for (const count of [1, 8, 26]) {
-            const cards = Array.from({ length: count }, () => {
+          for (const count of [1, 2, 3, 8, 26]) {
+            const cards = Array.from({ length: count }, (_, index) => {
               const card = document.createElement('button');
+              card.dataset.cardId = `terrain-type-${index}`;
               card.className = 'rpg-terrain rpg-terrain-stack rpg-card--rarity-commune is-tapped';
               card.innerHTML = '<span class="rpg-terrain-stack__count">×26</span>';
               card.style.animation = 'none';
@@ -118,12 +119,18 @@ try {
             row.scrollLeft = 0;
             const rail = row.getBoundingClientRect();
             const first = cards[0].getBoundingClientRect();
-            row.scrollTop = row.scrollHeight;
+            const positions = cards.map(card => card.getBoundingClientRect());
+            results.push(positions.every((rect, index) => Math.abs(rect.top - first.top) < 1
+              && rect.width >= 44 && (!index || rect.left >= positions[index - 1].right + 7)));
+            // Even the smallest landscape shows two distinct types side by side.
+            if (count >= 2) results.push(positions[1].right <= rail.right);
+            row.scrollLeft = row.scrollWidth;
             const last = cards.at(-1).getBoundingClientRect();
             results.push(first.left >= rail.left && first.right <= rail.right && first.top >= rail.top
-              && last.left >= rail.left && last.right <= rail.right && last.bottom <= rail.bottom);
+              && last.left >= rail.left && last.right <= rail.right && last.bottom <= rail.bottom
+              && row.scrollHeight <= row.clientHeight);
           }
-        } finally { row.replaceChildren(...original); row.scrollTop = 0; }
+        } finally { row.replaceChildren(...original); row.scrollTop = 0; row.scrollLeft = 0; }
       }
       const card = document.querySelector('.rpg-hand__card:has(.rpg-hand__stats)');
       const rect = card.getBoundingClientRect();
@@ -132,7 +139,7 @@ try {
         && badges[1].right <= rect.right && badges.every(r => r.bottom <= rect.bottom));
       return results;
     });
-    assert.ok(rails.every(Boolean), `${width}: tilted terrain corners and hand stats stay inside their visible bounds`);
+    assert.ok(rails.every(Boolean), `${width}: terrain stacks stay side by side, scroll horizontally without clipped corners, and hand stats fit`);
     console.log(`✓ Layout ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });

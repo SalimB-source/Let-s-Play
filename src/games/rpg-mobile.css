@@ -84,7 +84,7 @@
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
   display: grid;
-  grid-template-columns: clamp(78px, 12vw, 130px) minmax(0, 1fr) clamp(220px, 30vw, 340px);
+  grid-template-columns: clamp(116px, 18vw, 210px) minmax(0, 1fr) clamp(220px, 30vw, 340px);
   grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) clamp(84px, 28dvh, 146px);
   grid-template-areas: "enemy-mana opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
@@ -146,16 +146,17 @@
 .rpg-battle--touch .card-table > .rpg-terrains--ennemi { grid-area: enemy-mana; }
 .rpg-battle--touch .card-table > .rpg-terrains--joueur { grid-area: mana; }
 .rpg-battle--touch .card-table > .rpg-terrains {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-  grid-auto-rows: 72px;
-  align-content: start;
-  align-items: center;
-  justify-items: center;
-  gap: 6px 4px;
+  /* Different terrain stacks share one horizontal row, never a vertical grid.
+     The side column fits at least two stacks; extra types scroll sideways. */
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
   padding: 10px 8px;
   scroll-padding: 10px 8px;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 .rpg-battle--touch .rpg-terrain { flex: 0 0 30px; width: 30px; height: 38px; border-width: 1px; }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
@@ -238,7 +239,7 @@
 /* One visible stack per terrain type. Keep it upright even when exhausted:
    the total count stays legible and inside the rail. Availability is kept in
    the accessible label and the preview, not printed over the illustration. */
-.rpg-terrain.rpg-terrain-stack { position: relative; display: block; box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-rarity-color); }
+.rpg-terrain.rpg-terrain-stack { flex-shrink: 0; position: relative; display: block; box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-rarity-color); }
 .rpg-terrain.rpg-terrain-stack.is-tapped,
 .rpg-terrain.rpg-terrain-stack:hover { transform: none; }
 .rpg-terrain-stack__count {
@@ -258,5 +259,5 @@
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
-.rpg-battle--touch .rpg-terrain.rpg-terrain-stack { width: 44px; height: 55px; border-width: 2px; }
+.rpg-battle--touch .rpg-terrain.rpg-terrain-stack { flex: 0 0 44px; width: 44px; height: 55px; border-width: 2px; }
 .rpg-card-preview__resources { margin: 0; color: #e6d4ac; font: 600 12px/1.4 var(--display); }
