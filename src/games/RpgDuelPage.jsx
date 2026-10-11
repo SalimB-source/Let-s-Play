@@ -2504,17 +2504,11 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       const selected = attaquants.includes(entiteApercu.id);
       actionsApercu.push({ id: 'attack', label: selected ? 'Retirer de l’attaque' : 'Attaquer avec cette créature',
         primary: !selected, disabled: !monTour || Boolean(combatEntrant) || !entiteApercu.ready || entiteApercu.attaquee,
-        run: () => {
-          selectionner();
-          if (!selected && ciblesCoupRapideLegales(entiteApercu, 'joueur').length) fermerApercu();
-        },
+        run: apresFermeture(selectionner),
       });
     }
   }
   if (carteEnApercu && phase && !combatEntrant) {
-    actionsApercu.push({ id: 'confirm', label: `Confirmer l’attaque (${attaquants.length})`, primary: true,
-      disabled: !attaquants.length || Boolean(cibleAttaqueEnCours) || Boolean(prochainCoupRapideSansCible(attaquants, ciblesAttaque)),
-      run: apresFermeture(lancerAttaque) });
     actionsApercu.push({ id: 'cancel-attack', label: 'Annuler l’attaque', run: apresFermeture(annulerAttaque) });
   }
   if (carteEnApercu && cibleEnCours) {
@@ -2812,7 +2806,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                 ) : (
                   <>
                     <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque" disabled={!attaquants.length || Boolean(cibleAttaqueEnCours) || Boolean(prochainCoupRapideSansCible(attaquants, ciblesAttaque))} onClick={() => lancerAttaque()}>
-                      <CombatActionIcon type="confirm" /> Confirmer ({attaquants.length})
+                      <CombatActionIcon type="confirm" /> Confirmer l’attaque ({attaquants.length})
                     </button>
                     <button type="button" className="rpg-btn rpg-btn--ghost rpg-btn--cancel-attack" onClick={annulerAttaque}>
                       Annuler l’attaque
