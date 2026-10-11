@@ -5162,16 +5162,28 @@ désormais plusieurs, et **le plateau change de partie en partie**.
   `nouvellePartie`, et la classe `card-table--plateau-<id>` + le
   `background-image` posés sur la table.
 - `src/games/rpg-battle.css` — les styles du bloc, la couleur de repli de chaque
-  plateau, et les **voiles de lisibilité**, un par famille de terrain. Le sable
-  (moyenne 127 sur 255) et la pierre des ruines (133) sont deux fois plus
-  lumineux que le bois (57) : sans ombre dense, les libellés clairs de la table
-  et les cartes posées se noient dans le beige. La terre brûlée est sombre (66)
-  mais très contrastée : elle reçoit un voile léger et une vignette appuyée,
-  pour laisser les braises lisibles sans que les éclats de lave mangent les
-  cartes. Le bois garde son voile d'origine. Seule la teinte distingue les
-  fonds clairs : ombre chaude pour les sables, ombre neutre et froide pour la
-  pierre au bord de la mer. Même mécanisme pour tous (le pseudo-élément de la
-  table) et même exception : ils disparaissent en tactile (`rpg-mobile.css`).
+  plateau, et les **voiles de lisibilité**. Le voile principal est un
+  **dégradé noir posé en haut et en bas du plateau**
+  (`--rpg-plateau-voile`) : c'est là que vivent les textes de la table —
+  navigation, main adverse et identité du sorcier en haut ; identité du joueur,
+  rails de terrains, message du tour, phases, commandes et main en bas. Le
+  centre reste dégagé, c'est la zone où les cartes se posent. Chaque plateau
+  règle sa densité par deux variables, mesurée sur le fond livré (luminance du
+  haut du cadre, sur 255) : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
+  Caravane de Gourara 102, Terre de Damnation 61, Table des Heures 54. L'encre
+  crème de la table (`#fff0cf`) tombe sous 3:1 sur les deux premiers sans une
+  ombre d'au moins 80 % ; la terre brûlée, sombre mais très contrastée, garde
+  une vignette appuyée pour laisser les braises lisibles sans que les éclats de
+  lave mangent les cartes. Seule la teinte distingue les fonds clairs : ombre
+  chaude pour les sables, ombre neutre et froide pour la pierre au bord de la
+  mer. À ce voile s'ajoute, à la souris seulement, la vignette centrale propre à
+  chaque famille de terrain.
+- `src/games/rpg-mobile.css` — **le voile haut/bas reste au doigt** : il y était
+  supprimé, et c'est justement en paysage de téléphone (et dans l'APK) que les
+  libellés se noyaient dans le sable. Seule la vignette centrale disparaît, pour
+  garder le champ de bataille dégagé, et les bandes du dégradé sont recalées sur
+  la grille tactile — la rangée de navigation en haut, la main et les commandes
+  en bas.
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
   `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
   — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
@@ -5183,7 +5195,7 @@ désormais plusieurs, et **le plateau change de partie en partie**.
 
 ```bash
 npm run check:rpg        # règles + les 10 tests des plateaux
-npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau compris
+npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau et voile compris
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
@@ -5194,4 +5206,182 @@ respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
 retour, valeur inconnue normalisée, stockage illisible ou absent).
 `check:rpg-ui` monte la page : le menu présente chaque plateau plus le tirage
 aléatoire, le verrou est exclusif, et le duel qui suit se joue bien sur le
-plateau verrouillé — classe, fond et libellé de la table compris.
+plateau verrouillé — classe, fond et libellé de la table compris. Il vérifie
+aussi le voile : le dégradé noir haut/bas est posé sous l'interface, **chaque
+plateau du catalogue règle sa propre densité**, les fonds clairs (sables, pierre
+de Tipaza) sont plus voilés que le bois, et la présentation tactile conserve le
+voile au lieu de le supprimer.
+
+## Le Sablier du temps : l'aperçu d'une carte au doigt
+
+À la souris, survoler une carte ouvre son **aperçu instantané** : le type, le
+coût, les effets ligne à ligne, l'attaque et la défense. Sur écran tactile, le
+survol n'existe pas — et dans l'application comme en version mobile, il ne
+restait que le clic, qui **agit** : poser la carte, déclarer une attaque,
+produire un mana. Consulter une carte sans la jouer était impossible.
+
+### Le geste
+
+- **Une seconde d'appui sur une carte ouvre son aperçu.** Le doigt reste posé
+  une seconde (`RPG_LONG_PRESS_MS = 1000`), l'aperçu s'ouvre dans un volet
+  sombre centré, et **rien n'est joué** : le clic synthétique qui suit le lever
+  du doigt est avalé, comme le fait déjà le glisser-déposer tactile.
+- **Partout où une carte est affichée.** Le geste est délégué à la page : toute
+  carte qui porte un `data-card-id` y répond — la main, les créatures des deux
+  camps, les rails de terrains, le dessus d'un cimetière, le catalogue et la
+  liste d'un deck, au menu comme en duel.
+- **Un appui court reste un clic.** Lever le doigt avant la seconde ne change
+  rien au jeu : la carte se pose, la créature se déclare, le terrain produit son
+  mana. Un doigt qui glisse au-delà de 10 px non plus — c'est un défilement de
+  la main ou un glisser-déposer, et l'appui est annulé.
+- **Le volet se referme** d'un toucher n'importe où dessus, du bouton « Fermer
+  l'aperçu » ou de la touche Échap. Il se referme aussi en changeant d'écran et
+  quand l'appareil repasse en portrait (l'écran de rotation reprend la main).
+- **Le geste est annoncé.** L'ouverture du duel l'explique dans la barre du bas
+  sur appareil tactile : « Appui long d'une seconde sur une carte : son aperçu,
+  sans la jouer. »
+
+### Où vit le code
+
+- `src/games/rpgLongPress.js` — le geste seul, sans React ni DOM créé : même
+  contrat que `rpgTouchDrag.js` (un `cleanup` idempotent). Il ne répond qu'au
+  doigt et au stylet, annule sur déplacement, lever précoce, second pointeur,
+  `pointercancel`, perte de focus, défilement ou page cachée, étouffe le menu
+  contextuel natif (callout iOS, « enregistrer l'image » Android) et avale le
+  clic qui suit l'aperçu ouvert.
+- `src/games/RpgDuelPage.jsx` — un `pointerdown` délégué sur les deux écrans
+  (`data-scene="menu"` et `data-scene="duel"`), l'état `apercuAppui`, le volet
+  `ApercuCarteAppuiLong` qui réutilise `HoverCardPreview` dans sa variante
+  `appui-long`, et la désactivation du glisser-déposé armé par le même doigt.
+- `src/games/rpg-battle.css` — le volet `.rpg-card-peek` (fond sombre, panneau
+  centré, bouton Fermer en encre crème quel que soit le thème du site),
+  l'exception au `display: none` qui masque l'aperçu au survol sur pointeur
+  tactile (dans le volet, il s'affiche), le cadrage en paysage de téléphone
+  (`@media (max-height: 520px)` : l'illustration se règle sur la hauteur
+  disponible, `42dvh`, au menu comme en duel) et l'annulation du callout natif
+  et de la sélection de texte sur toute carte affichée.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # les 11 tests du geste (tests/rpg-long-press.test.js)
+npm run check:rpg-ui     # la page montée dans jsdom, appui long compris
+```
+
+`tests/rpg-long-press.test.js` vérifie le geste pur : une seconde de contact
+immobile ouvre l'aperçu une seule fois, le clic qui suit est avalé, un appui
+court laisse passer le clic de jeu, le menu contextuel est étouffé puis rendu,
+un déplacement au-delà du seuil annule (un tremblement en dessous, non),
+l'aperçu ouvert ne dépend plus du doigt, et `pointercancel`, perte de focus,
+défilement, page cachée, second doigt, souris et démontage n'ouvrent rien.
+
+`check:rpg-ui` monte la page en mode tactile : une seconde d'appui sur une carte
+du **catalogue** puis sur une carte de la **main** ouvre le volet nommé, avec le
+type, les effets ligne à ligne et les statistiques ; la carte n'est pas jouée,
+aucun terrain n'est posé, aucune confirmation demandée ; le clic suivant est
+avalé ; le volet se referme au toucher et à Échap ; une créature en jeu
+s'aperçoit sans être déclarée attaquante ; un appui qui glisse n'ouvre rien ; un
+appui court laisse passer le clic qui joue la carte.
+
+## Le Sablier du temps : la zone de jeu au doigt, élargie et empilée
+
+Sur un téléphone en paysage, la zone de jeu est la **colonne centrale** de la
+grille tactile, prise entre deux rails : identité et terrains à gauche, phases
+et commandes à droite. Elle mesurait **343 px** sur un 844 × 390 — de quoi
+montrer 3,8 cartes — et **246 px** sur un 667 × 375 (≈ 2,8). Avec cinq cartes
+en main et deux créatures de chaque côté, il fallait défiler sans arrêt pour
+voir son propre champ de bataille.
+
+### Ce qui change
+
+- **La colonne centrale est élargie** : `clamp(116px, 16vw, 190px)` à gauche au
+  lieu de `clamp(116px, 18vw, 210px)`, `clamp(200px, 27vw, 320px)` à droite au
+  lieu de `clamp(220px, 30vw, 340px)`, et des gouttières resserrées
+  (`gap: max(8px, carte × .22)` au lieu de `.36`, marges intérieures
+  `max(8px, carte × .12)`, main à 6 px). Résultat : **386 px et ≈ 4,7 cartes**
+  sur 844 × 390 (+25 %), **270 px et ≈ 3,4** sur 667 × 375 (+21 %).
+- **Rien d'autre ne bouge.** `--duel-card` (la taille des cartes) reste à
+  `clamp(48px, 17dvh, 100px)` — agrandir les cartes en réduirait le nombre — et
+  `--terrain-inset` reste à `clamp(44px, 8vw, 160px)` : c'est la marge qui
+  tient les rails de terrains hors du cadre illustré, mesurée par
+  `check:rpg-mobile`. Les commandes gardent 200 px, assez pour trois boutons
+  tactiles de 44 px côte à côte.
+- **Les cartes homonymes s'empilent**, comme les terrains le font déjà : au
+  doigt seulement, N exemplaires identiques n'occupent plus qu'**un
+  emplacement**, avec un compteur **×N** flottant sur le coin et des ombres
+  décalées — dans la main et sur les **deux** champs de bataille. À la souris
+  et sur grand écran rien ne change : une carte = un emplacement, et le DOM de
+  la main reste exactement celui d'origine.
+- **Une pile agit sur l'exemplaire pertinent.** Poser un terrain, déclarer une
+  attaque, bloquer, cibler : la tête de pile est le premier exemplaire **prêt**
+  (ni engagé, ni déjà attaquant, ni mal d'invocation) côté joueur, la cible
+  légale ou l'attaquant non bloqué côté adverse. Chaque clic suivant avance
+  dans le groupe ; après une attaque, la tête passe à l'exemplaire qui n'a pas
+  encore attaqué.
+- **On peut déplier.** Toucher le compteur ×N déplie le groupe, et une puce ×N
+  placée dans la rangée permet de le replier. Surtout, tout groupe dont un
+  exemplaire participe à l'**action en cours** — attaquants déclarés, combat
+  entrant, blocages assignés, cible de sort, coup rapide, bloqueur sélectionné,
+  effet visuel — **se déplie seul**, pour que les flèches de blocage, les halos
+  de cible et les effets de destruction trouvent leur carte.
+- **Un exemplaire masqué emprunte la place de sa pile** dans l'instantané du
+  champ : son effet de destruction part du bon endroit au lieu du coin de la
+  table.
+- **L'appui long reste disponible** sur une pile : une seconde de contact ouvre
+  l'aperçu de la carte, sans rien jouer ni déplier.
+
+### Où vit le code
+
+- `src/games/rpgCardStacks.js` — le regroupement pur, même contrat que
+  `rpgTerrainStacks.js` : `groupCartesMain` (les exemplaires d'une main, dans
+  l'ordre d'arrivée, avec leurs **index réels**) et `groupEntitesParCarte` (les
+  créatures d'un camp qui partagent une carte). Aucune mutation de l'état du
+  moteur.
+- `src/games/RpgDuelPage.jsx` — `empilerCartes = viewport.mobile` ; la main
+  rendue pile par pile (`data-pile-count`, index représentant pour le clic, le
+  glisser-déposer, le vol de carte et l'animation de pioche, qui suivent le
+  groupe contenant l'exemplaire concerné) ; les deux lignes de jeu rendues pile
+  par pile (`champEnPiles`, `teteDePile`, `pileDeployee`, `idsActionEnCours`,
+  l'état `pilesDeployees` et `basculerPile`) ; et `prendreInstantaneChamp` qui
+  prête la place de la pile visible à un exemplaire masqué.
+- `src/games/rpg-mobile.css` — la grille tactile élargie, les gouttières
+  resserrées, le centrage des groupes (les piles et leur puce participent aux
+  marges automatiques), et la présentation des piles : `.rpg-hand__pile`,
+  `.rpg-card-stack`, compteurs `.rpg-hand__pile-count` (inerte, il laisse
+  passer le geste de jeu) et `.rpg-card-stack__count` (bouton qui déplie),
+  puce `.rpg-card-stack__toggle`.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # les 3 tests de regroupement (tests/rpg-card-stacks.test.js)
+npm run check:rpg-ui     # la grille élargie + les deux scénarios de piles en jsdom
+npm run check:rpg-mobile # la géométrie réelle (Playwright) : rails, terrains, centrage
+npm run build
+```
+
+`tests/rpg-card-stacks.test.js` vérifie le regroupement pur : l'ordre de
+première apparition, les index réels de chaque exemplaire (le total reste égal
+à la taille de la main), la carte de tête, l'absence de mutation de l'état, une
+pile par carte sans doublon, et le fait que deux camps ne partagent jamais une
+pile.
+
+`scripts/rpg-stacks-smoke.jsx` monte deux duels tactiles dans jsdom. **Côté
+joueur** : deux Chiens du guet en main ne forment qu'un emplacement avec son
+×2, le second exemplaire posé rejoint le premier en une pile ×2 dont la tête
+reste le premier venu, un appui long ouvre l'aperçu sans déplier ni déclarer,
+toucher la pile déclare **l'exemplaire prêt** et déplie le groupe, annuler
+l'attaque le replie, le compteur déplie et la puce replie, l'attaque confirmée
+laisse la tête passer à l'exemplaire qui n'a pas attaqué, et une pioche
+identique remplit la pile sans ajouter d'emplacement. **Côté sorcier** : les
+créatures adverses identiques s'empilent, leur groupe se déplie pendant
+l'attaque (chaque attaquant reste visible et recevable), un bloqueur s'assigne
+depuis la pile repliée du joueur (la tête devient le bloqueur sélectionné, le
+groupe se déplie), puis les deux camps se replient une fois le combat résolu.
+
+`check:rpg-ui` ajoute les garde-fous statiques : la nouvelle grille tactile
+(colonnes, gouttières, main), `--duel-card` et `--terrain-inset` inchangés, la
+présentation des piles (bloc relatif, compteur flottant, puce tactile, ombres
+décalées), l'empilement réservé au doigt (`empilerCartes = viewport.mobile`),
+le DOM de la main inchangé à la souris, et les groupes dépliés par toute action
+en cours.
