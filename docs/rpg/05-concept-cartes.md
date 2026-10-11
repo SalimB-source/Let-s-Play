@@ -142,8 +142,16 @@ réponse plutôt que la frappe : des **contresorts** qui attendent la magie adve
   **Léviathan** (3 dégâts à une créature à l'arrivée), **Jörmungandr**
   (3 dégâts au sorcier à l'arrivée).
 
-Limites actuelles : le moteur ne possède pas de pile de résolution, donc un
-contresort ne peut pas interrompre un sort **déjà en cours** ; il vise la
-prochaine magie adverse. L'IA ne lance jamais de contresort (elle les garde en main).
+**Fenêtre de réponse à chaque carte du sorcier.** Le sorcier n'aligne plus ses
+cartes d'un coup : il **annonce** la carte suivante (`rpgSorcierAnnonceSuivante`),
+sans la payer. Une bannière « Le sorcier annonce X » apparaît, et le joueur a la main :
+- il peut **répondre** avec un éphémère ou un contresort (la main reste jouable) ;
+- ou **laisser passer** (`rpgSorcierResoudreAnnonce`) : la carte se résout, puis le
+  sorcier annonce la suivante, jusqu'à épuisement avant sa phase d'attaque.
+
+Un contresort joué pendant l'annonce reste en attente, et annule la magie du
+sorcier au moment où elle se résout. Limite : le moteur n'a pas de pile, donc
+un contresort ne peut pas interrompre un sort **déjà résolu** ; il vise la
+prochaine magie du sorcier. L'IA ne lance jamais de contresort (elle les garde en main).
 
 Vérifications : `tests/rpg-maree.test.js` (inclus dans `npm run check:rpg`).

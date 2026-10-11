@@ -96,6 +96,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       contresorts: [],
     },
     fenetreReponse: false,
+    // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
+    annonce: null,
     log: [],
   };
   for (let i = 0; i < RPG_MAIN_DEPART; i += 1) {
@@ -991,6 +993,7 @@ function resoudreRetoursProgrammes(duel) {
  *  ses créatures deviennent prêtes (le mal d'invocation tombe). */
 export function rpgFinDeTour(duel) {
   duel.fenetreReponse = false;
+  duel.annonce = null;
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.protection?.toursRestants > 0)) continue;
@@ -1020,27 +1023,49 @@ export function rpgFinDeTour(duel) {
 /** L'IA joue sa phase principale : terrain, créatures et sorts dans l'ordre
  *  le plus utile (kill avant développement, renforts quand le plateau est
  *  garni, burn pour conclure), puis prépare ses attaques. */
-export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
-  const joue = [];
-  const options = { ia: duel.sorcier.ia, rng };
-  // Le sorcier pose le terrain qui ouvre le plus de coups, puis engage en
-  // réservant la couleur des terrains flexibles à ce qu'il lui reste à jouer.
+/** Phase de préparation du sorcier : il pose son terrain et engage ses terrains. */
+export function rpgSorcierPrepareTerrain(duel) {
   const terrainEnMain = choisirTerrainIA(duel, 'sorcier');
   if (terrainEnMain) rpgPoserTerrain(duel, 'sorcier', terrainEnMain);
   for (const terrain of duel.sorcier.terrains) {
     if (terrain.tapped) continue;
     rpgEngagerTerrain(duel, 'sorcier', terrain.id, couleurEngagement(terrain, duel.sorcier.main));
   }
-  // Ensuite, coup après coup, la carte la plus utile — ou rien, et le mana
-  // reste en réserve plutôt que de gaspiller les cartes.
+}
+
+/** Le sorcier choisit sa prochaine carte et l'ANNONCE sans la payer ni la résoudre.
+ *  Ouvre la fenêtre de réponse : le joueur peut répondre avec un éphémère, ou laisser passer.
+ *  Retourne null quand le sorcier n'a plus rien à jouer. */
+export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
+  if (duel.annonce) return duel.annonce;
+  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
+  if (!coup) return null;
+  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null };
+  duel.fenetreReponse = true;
+  duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? coup.carteId}.`);
+  return duel.annonce;
+}
+
+/** Laisser passer : résout la carte annoncée (paiement, effet, contresorts adverses compris). */
+export function rpgSorcierResoudreAnnonce(duel) {
+  const annonce = duel.annonce;
+  if (!annonce) return { ok: false, raison: 'aucune-annonce' };
+  duel.annonce = null;
+  duel.fenetreReponse = false;
+  const res = duelCardById(annonce.carteId)
+    ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
+    : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
+  return { ...res, carteId: annonce.carteId };
+}
+
+export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
+  const joue = [];
+  rpgSorcierPrepareTerrain(duel);
+  // Sans interface, chaque carte annoncée est résolue aussitôt (pas de réponse du joueur).
   let garde = 12;
   while (garde-- > 0) {
-    const coup = choisirCarteIA(duel, 'sorcier', options);
-    if (!coup) break;
-    const carte = duelCardById(coup.carteId);
-    const res = carte
-      ? rpgJouerCreature(duel, 'sorcier', coup.carteId, coup.cibleId)
-      : rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
+    if (!rpgSorcierAnnonceSuivante(duel, rng)) break;
+    const res = rpgSorcierResoudreAnnonce(duel);
     if (!res.ok) break;
     if (res.entite) joue.push(res.entite);
   }

@@ -4643,3 +4643,19 @@
   .rpg-hand, .card-row { overscroll-behavior-x: contain; }
   .rpg-hover-card-preview { display: none; }
 }
+
+/* Fenêtre de réponse : le sorcier a annoncé une carte, le joueur répond ou laisse passer. */
+.rpg-annonce-sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border: 1px solid #e1b33f;
+  border-radius: 8px;
+  background: rgba(28, 22, 10, 0.92);
+  color: #f7f3e6;
+  font-size: 0.9rem;
+}
+.rpg-annonce-sort b { color: #e1b33f; }

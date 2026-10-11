@@ -9,6 +9,17 @@ import { RPG_PLATEAU_ALEATOIRE, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Le sorcier annonce chaque carte : le joueur laisse passer (sans réponse dans ces scénarios). */
+async function passerAnnoncesSorcier(racine) {
+  for (let annonce = 0; annonce < 8; annonce += 1) {
+    const passer = [...racine.querySelectorAll('.rpg-annonce-sort button')]
+      .find((bouton) => bouton.textContent.includes('Laisser passer'));
+    if (!passer) break;
+    await act(async () => { passer.click(); });
+    await act(async () => { await wait(1100); });
+  }
+}
+
 export async function checkRpgBattle(assert) {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -551,6 +562,17 @@ export async function checkRpgBattle(assert) {
   assert.ok(annulerSelectionAttaque, 'la sélection du Fennec peut encore être annulée avant confirmation');
   await act(async () => { annulerSelectionAttaque.click(); });
 
+  // Chaque carte annoncée par le sorcier attend la réponse du joueur : ici, on laisse passer.
+  const laisserPasserLesAnnonces = async (racine = container) => {
+    for (let annonce = 0; annonce < 8; annonce += 1) {
+      const passer = [...racine.querySelectorAll('.rpg-annonce-sort button')]
+        .find((bouton) => bouton.textContent.includes('Laisser passer'));
+      if (!passer) break;
+      await act(async () => { passer.click(); });
+      await act(async () => { await wait(1100); });
+    }
+  };
+
   // ── Le sorcier annonce ses attaquants et ouvre la phase de réponse ────
   let ennemiJoue = 0;
   for (let tour = 0; tour < 6 && !container.querySelector('.rpg-btn--resolve-combat'); tour += 1) {
@@ -567,6 +589,7 @@ export async function checkRpgBattle(assert) {
         'la créature reprend ses couleurs dès que commence le tour adverse');
     }
     await act(async () => { await wait(1800); });
+    await laisserPasserLesAnnonces();
     ennemiJoue = container.querySelectorAll('.rpg-card--ennemi').length
       + container.querySelectorAll('.rpg-terrains--ennemi .rpg-terrain').length;
     if (!container.querySelector('.rpg-btn--resolve-combat')) await resoudreCombat();
@@ -664,6 +687,7 @@ export async function checkRpgBattle(assert) {
   // ── Au tour suivant, notre créature reste disponible ──────────────────
   await act(async () => { findButton('Fin du tour').click(); });
   await act(async () => { await wait(1800); });
+  await laisserPasserLesAnnonces();
   await resoudreCombat();
   assert.ok(container.querySelector('.rpg-card--equipe.is-pret'),
     'notre créature doit être prête à attaquer à notre tour');
@@ -712,6 +736,7 @@ export async function checkRpgBattle(assert) {
   // ── Attaque express avec toutes les créatures prêtes ──────────────────
   await act(async () => { findButton('Fin du tour').click(); });
   await act(async () => { await wait(1800); });
+  await laisserPasserLesAnnonces();
   await resoudreCombat();
   const boutonAttaquerTous = container.querySelector('.rpg-btn--attaque-tous');
   assert.ok(boutonAttaquerTous && !boutonAttaquerTous.disabled,
@@ -765,6 +790,13 @@ export async function checkRpgBattle(assert) {
   const terminerTourReponse = async () => {
     await act(async () => { responseButton('Fin du tour').click(); });
     await act(async () => { await wait(1800); });
+    for (let annonce = 0; annonce < 8; annonce += 1) {
+      const passer = [...responseContainer.querySelectorAll('.rpg-annonce-sort button')]
+        .find((bouton) => bouton.textContent.includes('Laisser passer'));
+      if (!passer) break;
+      await act(async () => { passer.click(); });
+      await act(async () => { await wait(1100); });
+    }
     const combat = responseContainer.querySelector('.rpg-btn--resolve-combat');
     if (combat) await act(async () => { combat.click(); });
   };
@@ -827,6 +859,13 @@ export async function checkRpgBattle(assert) {
   const terminerTourImpact = async () => {
     await act(async () => { impactButton('Fin du tour').click(); });
     await act(async () => { await wait(1800); });
+    for (let annonce = 0; annonce < 8; annonce += 1) {
+      const passer = [...impactContainer.querySelectorAll('.rpg-annonce-sort button')]
+        .find((bouton) => bouton.textContent.includes('Laisser passer'));
+      if (!passer) break;
+      await act(async () => { passer.click(); });
+      await act(async () => { await wait(1100); });
+    }
   };
   await jouerTerrainImpact();
   await terminerTourImpact();
@@ -894,11 +933,13 @@ export async function checkRpgBattle(assert) {
   await act(async () => { [...killContainer.querySelectorAll('.rpg-terrain--joueur:not(.is-tapped)')][0].click(); });
   await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(killContainer);
   assert.ok(!killContainer.querySelector('.rpg-btn--resolve-combat'), 'le Fennec qui vient d’arriver ne peut pas attaquer');
 
   await jouerCarteParGlisser('Mer');
   await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(killContainer);
   assert.ok(killContainer.querySelector('.rpg-btn--resolve-combat'),
     'le Fennec adverse attaque dès son arrivée grâce à Rapidité');
   assert.ok([...killContainer.querySelectorAll('.rpg-card--ennemi')]
@@ -907,6 +948,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { killContainer.querySelector('.rpg-btn--resolve-combat').click(); });
   await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(killContainer);
   assert.ok(killContainer.querySelector('.rpg-btn--resolve-combat'), 'le Fennec peut aussi attaquer lors du tour adverse suivant');
   assert.ok([...killContainer.querySelectorAll('.rpg-card--ennemi')]
     .some((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')), 'le Fennec est l’attaquant à éliminer');
@@ -952,11 +994,17 @@ export async function checkRpgBattle(assert) {
   await jouerCarteAiFire('Désert');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(aiFireContainer);
   await jouerCarteAiFire('Désert');
   await jouerCarteAiFire('Fennec des décombres');
   assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'le Fennec est présent avant l’action de l’IA');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(900); });
+  // Le sort Braise est annoncé : le joueur a la main pour répondre, ou laisser passer.
+  assert.match(aiFireContainer.querySelector('.rpg-annonce-sort')?.textContent ?? '', /Trait de braise/,
+    'la bannière annonce le sort du sorcier avant sa résolution');
+  await act(async () => { aiFireContainer.querySelector('.rpg-annonce-sort button')?.click(); });
+  await act(async () => { await wait(200); });
   const destructionAi = aiFireContainer.querySelector('.rpg-card-destruction-fx[data-rpg-destroyed-id]');
   assert.ok(destructionAi?.classList.contains('is-burning')
     && destructionAi.dataset.destructionSource === 'braise',
@@ -986,9 +1034,11 @@ export async function checkRpgBattle(assert) {
   await act(async () => { waterContainer.querySelector('.rpg-terrain--joueur:not(.is-tapped)').click(); });
   await act(async () => { waterContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(waterContainer);
   await jouerCarteEau('Mer');
   await act(async () => { waterContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(waterContainer);
   const combatRapiditeEau = waterContainer.querySelector('.rpg-btn--resolve-combat');
   if (combatRapiditeEau) await act(async () => { combatRapiditeEau.click(); });
   assert.ok([...waterContainer.querySelectorAll('.rpg-card--ennemi')]
@@ -1032,6 +1082,7 @@ export async function checkRpgBattle(assert) {
   const terminerTourProtection = async () => {
     await act(async () => { protectionButton('Fin du tour').click(); });
     await act(async () => { await wait(1800); });
+    await laisserPasserLesAnnonces(protectionContainer);
   };
   await poserDesertProtection();
   await terminerTourProtection();
@@ -1080,6 +1131,7 @@ export async function checkRpgBattle(assert) {
     if (tour < 5) {
       await act(async () => { cavalryContainer.querySelector('.rpg-btn--endturn').click(); });
       await act(async () => { await wait(1800); });
+      await passerAnnoncesSorcier(cavalryContainer);
       const combatSorcier = cavalryContainer.querySelector('.rpg-btn--resolve-combat');
       if (combatSorcier) await act(async () => { combatSorcier.click(); });
     }
@@ -1151,6 +1203,7 @@ export async function checkRpgBattle(assert) {
   await engagerPetraEn('sable');
   await act(async () => { petraContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(petraContainer);
   await engagerPetraEn('braise');
   await act(async () => { petraRoot.unmount(); });
   petraContainer.remove();
@@ -1176,6 +1229,7 @@ export async function checkRpgBattle(assert) {
   const finirTourFeriel = async () => {
     await act(async () => { ferielContainer.querySelector('.rpg-btn--endturn').click(); });
     await act(async () => { await wait(1800); });
+    await passerAnnoncesSorcier(ferielContainer);
     const resolve = ferielContainer.querySelector('.rpg-btn--resolve-combat');
     if (resolve) await act(async () => { resolve.click(); });
   };

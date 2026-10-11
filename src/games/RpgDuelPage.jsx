@@ -70,7 +70,9 @@ import {
   rpgPeutBloquerAttaquant,
   rpgPeutPayer,
   rpgPoserTerrain,
-  rpgTourSorcierPreparationIA,
+  rpgSorcierAnnonceSuivante,
+  rpgSorcierPrepareTerrain,
+  rpgSorcierResoudreAnnonce,
   rpgVainqueur,
 } from './rpgDuel.js';
 import {
@@ -1704,10 +1706,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const monTour = duel.tour === 'joueur' && !vainqueur;
   const deckJoueurAffiche = RPG_DECKS.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckEstSelectionnable(deck)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
-  const reponseActive = Boolean(combatEntrant && duel.fenetreReponse && !vainqueur);
+  // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
+  const fenetreSort = Boolean(duel.annonce && !vainqueur);
+  const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
+    : fenetreSort
+      ? 'SORT ANNONCÉ'
     : reponseActive
       ? reponseApresBlocage ? 'À VOUS · RÉPONSE' : 'À VOUS · DÉFENSE'
       : phase ? 'À VOUS · ATTAQUE' : monTour ? 'À VOTRE TOUR' : 'TOUR DU SORCIER';
@@ -2742,13 +2748,49 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     later(() => {
       const champAvantIA = prendreInstantaneChamp();
       const debutJournalDestructions = rpgNombreDestructions(duel);
-      rpgTourSorcierPreparationIA(duel, rng);
+      rpgSorcierPrepareTerrain(duel);
       animerModificationsChamp(champAvantIA, [], debutJournalDestructions);
-      if (rpgVainqueur(duel)) {
-        setMessage('Le sort du sorcier a décidé du duel.');
-        force();
-        return;
-      }
+      annoncerSuivantSorcier();
+    }, 700);
+  };
+
+  // Le sorcier annonce sa carte suivante. Le joueur répond avec un éphémère, ou laisse passer.
+  const annoncerSuivantSorcier = () => {
+    if (rpgVainqueur(duel)) {
+      setMessage('Le sort du sorcier a décidé du duel.');
+      force();
+      return;
+    }
+    const annonce = rpgSorcierAnnonceSuivante(duel, rng);
+    if (!annonce) {
+      declarerAttaqueSorcier();
+      return;
+    }
+    const carte = cardById(annonce.carteId);
+    setMessage(`Le sorcier annonce ${carte?.name ?? 'une carte'}. Répondez avec un éphémère, ou laissez passer.`);
+    force();
+  };
+
+  // « Laisser passer » : la carte annoncée se résout (un contresort adverse peut l'annuler).
+  const laisserPasser = () => {
+    if (!duel.annonce) return;
+    const carte = cardById(duel.annonce.carteId);
+    const champAvant = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
+    const res = rpgSorcierResoudreAnnonce(duel);
+    animerModificationsChamp(champAvant, [], debutJournalDestructions);
+    const nom = carte?.name ?? 'la carte';
+    setMessage(res.contre
+      ? `Votre contresort annule ${nom} du sorcier.`
+      : res.ok
+        ? `Le sorcier joue ${nom}.`
+        : `${nom} du sorcier ne peut plus être jouée.`);
+    force();
+    later(annoncerSuivantSorcier, 900);
+  };
+
+  // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
+  const declarerAttaqueSorcier = () => {
       const ids = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
       if (!ids.length) {
         rpgFinDeTour(duel);
@@ -2782,7 +2824,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         ? `Le sorcier attaque : ${coupsRapides.join(' ; ')}. Glissez vos bloqueurs sur les autres attaquants, puis résolvez le combat. Vous pouvez aussi jouer un éphémère.${noteEnvol}`
         : `Le sorcier attaque : glissez vos bloqueurs sur les attaquants, puis résolvez le combat. Vous pouvez aussi jouer un éphémère.${noteEnvol}`);
       force();
-    }, 700);
   };
 
   const commencerGlisserTactile = (event) => {
@@ -3152,6 +3193,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   </button>
                 )}
               </div>
+              {fenetreSort && (
+                <div className="rpg-annonce-sort" role="status" aria-live="polite">
+                  <span>Le sorcier annonce <b>{cardById(duel.annonce.carteId)?.name ?? 'une carte'}</b>. Répondez avec un éphémère, ou laissez passer.</span>
+                  <button type="button" className="rpg-btn rpg-btn--endturn" onClick={laisserPasser}>
+                    ➜ Laisser passer
+                  </button>
+                </div>
+              )}
               <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
                 {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
                   <button

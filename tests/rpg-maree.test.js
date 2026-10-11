@@ -6,6 +6,8 @@ import {
   rpgJouerCreature,
   rpgOuvrirFenetreReponse,
   rpgTourSorcierPreparationIA,
+  rpgSorcierAnnonceSuivante,
+  rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DECKS,
@@ -166,4 +168,65 @@ test('le sorcier IA ne lance jamais un contresort : il le garde en main', () => 
 
 test('le deck de départ du sorcier reste valide après l’ajout des contresorts', () => {
   assert.equal(rpgValiderDeck(RPG_DECK_SORCIER_BASE).ok, true);
+});
+
+test('le sorcier annonce sa carte sans la payer : le joueur a la main pour répondre', () => {
+  const duel = duelVide();
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'fureur-du-souk');
+  mana(duel, 'sorcier', 'braise', 3);
+  const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.equal(annonce.carteId, 'fureur-du-souk', 'la carte est annoncée');
+  assert.equal(duel.fenetreReponse, true, 'la fenêtre de réponse est ouverte');
+  assert.equal(duel.sorcier.mana.braise, 3, 'rien n’est payé avant la résolution');
+  assert.ok(duel.sorcier.main.includes('fureur-du-souk'), 'la carte est encore en main');
+  assert.equal(duel.joueur.pv, 50, 'aucun effet avant de laisser passer');
+});
+
+test('laisser passer résout la carte annoncée', () => {
+  const duel = duelVide();
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'fureur-du-souk');
+  mana(duel, 'sorcier', 'braise', 3);
+  rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  const res = rpgSorcierResoudreAnnonce(duel);
+  assert.equal(res.ok, true);
+  assert.equal(duel.joueur.pv, 46, 'la magie fait ses dégâts');
+  assert.equal(duel.annonce, null);
+  assert.equal(duel.fenetreReponse, false);
+});
+
+test('un contresort joué pendant l’annonce annule la carte au moment où elle se résout', () => {
+  const duel = duelVide();
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'fureur-du-souk');
+  mana(duel, 'sorcier', 'braise', 3);
+  rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  donner(duel, 'joueur', 'contresort-des-abimes');
+  mana(duel, 'joueur', 'eau', 2);
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'contresort-des-abimes').ok, true, 'la réponse est jouable');
+  const res = rpgSorcierResoudreAnnonce(duel);
+  assert.equal(res.contre, true, 'la carte annoncée est annulée');
+  assert.equal(duel.joueur.pv, 50, 'aucun dégât');
+});
+
+test('le sorcier enchaîne les annonces jusqu’à épuisement, une par une', () => {
+  const duel = duelVide();
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'fureur-du-souk');
+  donner(duel, 'sorcier', 'chien-du-guet');
+  mana(duel, 'sorcier', 'braise', 3);
+  mana(duel, 'sorcier', 'sable', 2);
+  const premiere = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.ok(premiere);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => 0.5), premiere, 'pas de seconde annonce tant qu’on n’a pas passé');
+  rpgSorcierResoudreAnnonce(duel);
+  let suivantes = 0;
+  while (rpgSorcierAnnonceSuivante(duel, () => 0.5)) {
+    suivantes += 1;
+    if (!rpgSorcierResoudreAnnonce(duel).ok) break;
+    if (suivantes > 10) break;
+  }
+  assert.ok(suivantes >= 1, 'la carte suivante est annoncée après le passage');
+  assert.equal(duel.annonce, null);
 });
