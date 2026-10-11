@@ -11,7 +11,7 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-11';
 
 // Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
 // Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
@@ -82,7 +82,7 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
-  // L’édition du 08.10.2026 ouvre la page, avant les archives ci-dessous.
+  // L’édition du 11.10.2026 ouvre la page, avant les archives ci-dessous.
   // Actus cinéma du mercredi 07.10.2026 : l'officialisation de Destin Daniel
   // Cretton à la réalisation de Spider-Man 4 ouvre la page ; suivent l'actu du
   // mardi 06.10.2026 (pause de tournage de The Batman Part II), celles du lundi

@@ -73,32 +73,30 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
-  // ---- Édition du jeudi 08.10.2026 -----------------------------------------
-  // Titres et chaînes contrôlés via YouTube oEmbed le 08.10.2026.
-  // Les coulisses de Hellraiser datent de juillet : la note ne les présente
-  // pas comme une nouvelle vidéo de lancement. Les images KARI sont bien
-  // celles du cinquième vol, et non un ancien décollage de Nuri.
-  'hellraiser-revival-sortie': {
-    label: 'HELLRAISER: REVIVAL', meta: 'SABER INTERACTIVE · PLAYSTATION',
+  // ---- Édition du dimanche 11.10.2026 --------------------------------------
+  // Titres et chaînes contrôlés via YouTube oEmbed le 11.10.2026.
+  // Le teaser de l'anime Ghost of Tsushima: Legends date de juillet 2026 : la
+  // note dit qu'il sert d'illustration, pas d'annonce du report à 2028.
+  // La bande-annonce de L'Exorciste : Martyrs est, elle, bien celle dévoilée
+  // à la New York Comic Con le 9 octobre 2026.
+  'ghost-tsushima-legends-anime-2028': {
+    label: 'GHOST OF TSUSHIMA: LEGENDS', meta: 'CRUNCHYROLL · ANIPLEX',
     items: [
-      { id: '2e5lR5c4dEo', kind: 'coulisses', title: 'Clive Barker’s Hellraiser: Revival - "Horror" Developer Diary | PS5 Games', channel: 'PlayStation', verified: '08.10.2026', note: 'À titre d’illustration : le carnet de développement publié avec le PlayStation Blog du 16 juillet 2026. Il présente la conception de l’horreur du jeu, pas une nouvelle bande-annonce du jour. Images horrifiques : public sensible averti.' },
+      { id: 'uU8slMpqDXU', kind: 'teaser', title: 'Ghost of Tsushima Legends | Official Teaser | Crunchyroll', channel: 'Crunchyroll', verified: '11.10.2026', note: 'À titre d’illustration : le teaser « character art » publié par Crunchyroll en juillet 2026, avant l’annonce du report. Il présente le trio de personnages et le traitement encre de l’anime, pas la nouvelle fenêtre de diffusion.' },
+      { id: 'm4E5n06ZxNU', kind: 'teaser', title: 'アニメ「Ghost of Tsushima 冥人奇譚」キャラクターアートPV', channel: 'アニプレックス チャンネル', verified: '11.10.2026', note: 'Le même teaser « character art » dans sa version japonaise, publiée par Aniplex, coproducteur de l’anime : mêmes images, titres et mentions en japonais. La vidéo est en japonais ; le titre traduit annonce le visuel de personnages de l’anime Ghost of Tsushima : Legends.' },
     ],
-    credit: 'Vidéo officielle : chaîne principale PlayStation, carnet de développement de Saber Interactive.',
+    credit: 'Vidéos officielles : chaîne principale Crunchyroll (version anglaise) et chaîne アニプレックス チャンネル d’Aniplex (version japonaise), teasers de juillet 2026 intégrés à titre d’illustration.',
   },
-  'cinema/below-netflix-sortie': {
-    label: 'BELOW', meta: 'NETFLIX · MINI-SÉRIE',
+  'cinema/exorciste-martyrs-trailer': {
+    label: 'L’EXORCISTE : MARTYRS', meta: 'UNIVERSAL · BLUMHOUSE',
     items: [
-      { id: 'U57CNxSgoss', kind: 'trailer', title: 'BELOW | Official Trailer | Netflix', channel: 'Netflix', verified: '08.10.2026' },
+      { id: 'iIEYfH-jg1Y', kind: 'trailer', title: 'The Exorcist: Martyrs | Official Trailer', channel: 'Universal Pictures', verified: '11.10.2026' },
     ],
-    credit: 'Bande-annonce officielle : chaîne principale Netflix, publiée le 10 septembre 2026.',
+    credit: 'Bande-annonce officielle : chaîne principale Universal Pictures, dévoilée au BlumFest de la New York Comic Con le 9 octobre 2026.',
   },
-  'tech/nuri-cinquieme-vol-satellites': {
-    label: 'NURI · CINQUIÈME VOL', meta: 'CORÉE DU SUD · KARI',
-    items: [
-      { id: 'YeM0G_BEBzY', kind: 'extrait', title: '누리호 5차 발사 성공! 탑재 위성 분리의 순간 공개!', channel: '한국항공우주연구원 KARI TV', verified: '08.10.2026', note: 'Images embarquées du cinquième vol, le 7 octobre 2026 : KARI montre la séparation des satellites. Le titre coréen annonce la réussite du vol et ces images de séparation ; la vidéo est en coréen.' },
-      { id: 'v9gY7VkVT0w', kind: 'replay', title: '[LIVE] 누리호 5차 발사 공식 생중계 🚀 2026.10.07.', channel: '한국항공우주연구원 KARI TV', verified: '08.10.2026', note: 'Replay de la retransmission officielle du lancement du 7 octobre 2026, en coréen. Malgré le mot « LIVE » conservé dans le titre d’origine, il ne s’agit pas d’un direct en cours.' },
-    ],
-    credit: 'Vidéos officielles : Korea Aerospace Research Institute, chaîne 한국항공우주연구원 KARI TV.',
+  'tech/anthropic-claude-faux-indice-philadelphie': {
+    label: 'ANTHROPIC · AGENTS IA', meta: 'ÉVALUATIONS INTERNES',
+    pending: 'Aucune vidéo officielle : Anthropic n’a publié ni captation ni point presse filmé sur cet incident, et le formulaire de la police de Philadelphie ne donne évidemment pas d’images. L’article se tient donc au rapport du laboratoire et aux prises de parole publiques.',
   },
 
   // ---- Fournée du mercredi 07.10.2026 ---------------------------------------

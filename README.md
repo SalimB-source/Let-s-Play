@@ -4622,32 +4622,38 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
 - `npm run check:light-news` : le thème clair des pages Actus, galeries
   comprises.
 
-## Édition du 08.10.2026 : articles, miniatures et vidéos
+## Édition du 11.10.2026 : articles, miniatures et vidéos
 
 Les trois actualités de cette édition partagent une seule source de données,
-`src/news/daily/2026-10-08.js`, utilisée par les articles, les cartes des hubs,
+`src/news/daily/2026-10-11.js`, utilisée par les articles, les cartes des hubs,
 la une gaming de l’accueil, la recherche et les métadonnées SEO :
 
-- `/news/hellraiser-revival-sortie` — gaming, avec les coulisses officielles
-  publiées par PlayStation ; la vidéo de juillet est explicitement signalée
-  comme illustration, et non comme une nouvelle bande-annonce du jour.
-- `/news/cinema/below-netflix-sortie` — cinéma & séries, avec la bande-annonce
-  de la chaîne principale Netflix.
-- `/news/tech/nuri-cinquieme-vol-satellites` — tech & espace, avec les images
-  embarquées KARI et le replay du lancement. La date du vol (7 octobre) reste
-  distincte de celle du bilan publié le 8 ; le satellite non séparé est signalé.
+- `/news/ghost-tsushima-legends-anime-2028` — gaming, avec le teaser officiel
+  de l’anime, en version anglaise (Crunchyroll) et japonaise (Aniplex). La
+  vidéo de juillet est explicitement signalée comme illustration, et non comme
+  l’annonce du report à 2028.
+- `/news/cinema/exorciste-martyrs-trailer` — cinéma & séries, avec la
+  bande-annonce de la chaîne principale Universal Pictures, dévoilée au
+  BlumFest de la New York Comic Con le 9 octobre.
+- `/news/tech/anthropic-claude-faux-indice-philadelphie` — tech & IA : un
+  modèle d’Anthropic a déposé un faux indice sur un homicide non élucidé via
+  le formulaire public de la police de Philadelphie. Aucune vidéo officielle
+  n’existe : l’entrée du lecteur porte donc une mention d’absence, affichée
+  telle quelle dans l’article (le gabarit la prévoit, comme `pending`).
 
 Les trois miniatures sont livrées en JPEG compressé dans
-`public/news/2026-10-08/`, avec leurs crédits et URLs d’origine dans
+`public/news/2026-10-11/`, avec leurs crédits et URLs d’origine dans
 `credits.md`. Elles s’affichent aussi avant le démarrage des vidéos à la une ;
-les miniatures YouTube restent le repli. Les genres « COULISSES » et « REPLAY »
-complètent les libellés du lecteur sans présenter toutes les vidéos comme des
-bandes-annonces. Aucun sujet Mistral AI n’est inclus dans cette édition.
+les miniatures YouTube restent le repli. La pastille des cartes reprend la
+nature de la première vidéo (`TEASER` pour l’anime, `BANDE-ANNONCE` pour
+L’Exorciste : Martyrs) et disparaît sur l’actu tech, qui n’a pas de vidéo.
 
 `npm run check:daily-news` vérifie les fichiers image, les routes réelles,
-les trois cartes du jour, les mises en avant, la recherche, le SEO et le
-changement de vidéo Nuri. `npm run check:trailers` couvre désormais aussi
-les articles et les pastilles du hub tech, en plus du gaming et du cinéma.
+les trois cartes du jour, les mises en avant, la recherche, le SEO, la
+sélection des deux teasers et la mention d’absence de l’actu tech. L’édition
+précédente (08.10.2026 : Hellraiser, Below, Nuri) a été remplacée, comme le
+veut le principe d’une seule édition du jour : ses routes quittent le sitemap
+avec elle.
 
 ## Actus cinéma du jour
 
@@ -4656,7 +4662,19 @@ tech ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
-« À RETENIR », source d’origine citée et liée. Fournée du 06.10.2026 :
+« À RETENIR », source d’origine citée et liée.
+
+Fournée du 11.10.2026 :
+
+- `/news/cinema/exorciste-martyrs-trailer` — Universal Pictures dévoile au
+  BlumFest de la New York Comic Con le premier trailer de *L’Exorciste :
+  Martyrs*, écrit et réalisé par Mike Flanagan avec Scarlett Johansson en
+  inspectrice du NYPD ; sortie en salles le 12 mars 2027 (Superpouvoir,
+  FirstShowing). La miniature vient du trailer officiel relayé par Phantasmag
+  et la vidéo intégrée est celle d’Universal Pictures — vérifiée via oEmbed le
+  11.10.2026, comme la chaîne Crunchyroll de l’actu gaming du jour.
+
+Fournée du 06.10.2026 :
 
 - `/news/cinema/the-batman-part-ii-tournage-suspendu` — DC Studios et Warner
   Bros. suspendent temporairement le tournage de The Batman Part II : Matt
@@ -5104,3 +5122,76 @@ tracé au journal, les cinq réponses proposées, la première vague gagnée en
 jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
 réserve.
 
+## Le Sablier du temps : les plateaux du duel
+
+Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
+Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
+désormais plusieurs, et **le plateau change de partie en partie**.
+
+### La règle
+
+- **Un tirage par partie.** Chaque nouvelle partie tire son plateau ; celui du
+  duel précédent est écarté, donc deux duels de suite ne se jouent jamais sur
+  le même terrain. Le tirage passe par le `rng` du duel (injectable), comme le
+  reste du moteur : une partie se rejoue à l'identique, valeurs hors bornes
+  comprises.
+- **Un verrou, si on préfère la stabilité.** Le menu *Jouer* liste les plateaux
+  avec leur fond et leur résumé ; en choisir un le verrouille pour les duels
+  suivants (mémorisé sur l'appareil, clé `letsplay_sablier_plateau_v1`). La
+  pastille **Aléatoire** rend la main au tirage.
+- **Le plateau est annoncé.** Le duel ouvre sur « Plateau : … » dans la barre
+  du bas, et la table porte son terrain dans son libellé accessible.
+
+### Les plateaux
+
+| Fichier | Plateau | Ce qu'on y voit |
+| --- | --- | --- |
+| `public/card-table.jpg` | **La Table des Heures** (Bab El) | le bois des Veilleurs, l'astrolabe doré gravé au centre, quatre bougies. |
+| `public/plateau-erg-du-sahara.jpg` | **L'Erg du Sahara** | la rose des sables tracée à la main dans la dune, la lanterne de laiton et son feu, l'outre, la corde, les pierres noires. |
+| `public/plateau-caravane-de-gourara.jpg` | **La Caravane de Gourara** | le lit sec de l'oued et sa piste : les deux empreintes du campement, l'outre, la corde et le compas abandonné. |
+| `public/plateau-terre-de-damnation.jpg` | **La Terre de Damnation** (Les Brûlés) | l'étage repris par le feu : la croûte craquelée et ses braises encore vives, l'encensoir de fer renversé et sa coulée de cendres, les troncs noircis, les éclats d'obsidienne. |
+| `public/plateau-ruines-de-tipaza.jpg` | **Les Ruines de Tipaza** (Tipasa) | la mosaïque romaine ouverte par le vent, les dalles disjointes, les fûts de colonne tombés, le chapiteau corinthien et le débris d’architrave, coquillages et cristaux de sel. |
+
+### Où vit le code
+
+- `src/games/rpgPlateaux.js` — le catalogue des plateaux (identifiant, nom,
+  lieu, fichier, résumé), le tirage (`tirerPlateau`), la normalisation et la
+  sauvegarde du choix. Aucun rendu, aucun DOM : testable comme le moteur.
+- `src/games/RpgDuelPage.jsx` — le bloc « Le terrain d'affrontement » du menu
+  (une carte par plateau, plus la pastille aléatoire), le tirage dans
+  `nouvellePartie`, et la classe `card-table--plateau-<id>` + le
+  `background-image` posés sur la table.
+- `src/games/rpg-battle.css` — les styles du bloc, la couleur de repli de chaque
+  plateau, et les **voiles de lisibilité**, un par famille de terrain. Le sable
+  (moyenne 127 sur 255) et la pierre des ruines (133) sont deux fois plus
+  lumineux que le bois (57) : sans ombre dense, les libellés clairs de la table
+  et les cartes posées se noient dans le beige. La terre brûlée est sombre (66)
+  mais très contrastée : elle reçoit un voile léger et une vignette appuyée,
+  pour laisser les braises lisibles sans que les éclats de lave mangent les
+  cartes. Le bois garde son voile d'origine. Seule la teinte distingue les
+  fonds clairs : ombre chaude pour les sables, ombre neutre et froide pour la
+  pierre au bord de la mer. Même mécanisme pour tous (le pseudo-élément de la
+  table) et même exception : ils disparaissent en tactile (`rpg-mobile.css`).
+- `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
+  `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
+  — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
+  ni interface dessinée — l'interface du jeu se superpose (règle de
+  `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
+  calme et peu contrasté : c'est la zone où les cartes se posent.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # règles + les 10 tests des plateaux
+npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau compris
+```
+
+`tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
+livrés dans `public/`, chaque atmosphère — Bab El, les deux déserts, la
+terre brûlée, les ruines de Tipaza — avec son propre fond), le tirage (jamais deux fois de suite le même terrain,
+déterminisme par `rng`, valeurs hors bornes sans plantage), le verrou (toujours
+respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
+retour, valeur inconnue normalisée, stockage illisible ou absent).
+`check:rpg-ui` monte la page : le menu présente chaque plateau plus le tirage
+aléatoire, le verrou est exclusif, et le duel qui suit se joue bien sur le
+plateau verrouillé — classe, fond et libellé de la table compris.

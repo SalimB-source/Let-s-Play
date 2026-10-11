@@ -48,7 +48,7 @@ import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
 import { gameTests } from '../src/reviewsData';
 import { autoStories } from '../src/news/autoIndex';
-import { dailyStories } from '../src/news/daily/2026-10-08';
+import { dailyStories } from '../src/news/daily/2026-10-11';
 
 const e = React.createElement;
 

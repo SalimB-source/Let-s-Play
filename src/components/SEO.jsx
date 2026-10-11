@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
-import { dailySeoEntries } from '../news/daily/2026-10-08';
+import { dailySeoEntries } from '../news/daily/2026-10-11';
 
 const SITE_URL = 'https://salimb-source.github.io/Let-s-Play';
 const base = import.meta.env.BASE_URL;
