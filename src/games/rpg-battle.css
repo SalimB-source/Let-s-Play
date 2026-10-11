@@ -798,6 +798,7 @@
 .mana--braise { background: #a3341f; color: #ffe1d6; }
 .mana--eau { background: #1f4fa3; color: #dcecff; }
 .mana--sable { background: #c9a13b; color: #241a04; }
+.mana--neige { background: #bfe9ff; color: #0b2a3c; }
 
 /* Couches des visages 4:5 full art pour les cartes du duel. */
 .rpg-card--img {
@@ -2090,6 +2091,11 @@
   --rpg-plateau-voile-haut: rgba(13, 13, 17, .86);
   --rpg-plateau-voile-bas: rgba(10, 10, 14, .88);
 }
+.card-table--plateau-fjord-des-neuf-hivers {
+  background-color: #b9cdd6;
+  --rpg-plateau-voile-haut: rgba(9, 17, 23, .84);
+  --rpg-plateau-voile-bas: rgba(7, 14, 20, .86);
+}
 .rpg-battle:not(.rpg-battle--touch) :is(.card-table--plateau-erg-du-sahara, .card-table--plateau-caravane-de-gourara)::before {
   background:
     var(--rpg-plateau-voile),
@@ -2100,6 +2106,21 @@
     var(--rpg-plateau-voile),
     radial-gradient(ellipse at 50% 45%, rgba(30, 12, 6, .04), rgba(11, 5, 3, .52) 90%);
 }
+/* La glace du fjord : la surface la plus claire du jeu (moyenne 170 sur 255 —
+   neige et glace bleutée). L'ombre est franche, froide et dense, comme la pierre
+   des ruines, mais teintée de bleu polaire : sans elle, la rose des vents et le
+   grain de la glace mangeraient les cartes, et le blanc de la Neige se perdrait
+   dans son propre terrain. Sa vignette se compose **avec** le dégradé commun
+   (`--rpg-plateau-voile`), comme celle des autres plateaux : le haut et le bas
+   de la table, où vivent les textes, gardent leur ombre. Les éléments de décor
+   (lanterne, cor, corde, hache, bâton de runes) restent dans les coins, sous le
+   premier tiers du voile. */
+.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-fjord-des-neuf-hivers::before {
+  background:
+    var(--rpg-plateau-voile),
+    radial-gradient(ellipse at 50% 44%, rgba(13, 24, 34, .2), rgba(9, 18, 28, .52) 90%);
+}
+
 /* La pierre des ruines : plus claire encore que le sable, et c'est le centre qui
    porte la mosaïque — l'ombre est donc neutre et froide (mer au nord), plus
    dense au centre que sur les sables, sinon les cartes flottent sur la pierre. */
@@ -3477,6 +3498,7 @@
 .rpg-card-element-badge--braise { background: radial-gradient(circle at 34% 24%, #f09675, #8e2e1d 72%); }
 .rpg-card-element-badge--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
 .rpg-card-element-badge--sable { background: radial-gradient(circle at 34% 24%, #f8e69d, #795613 72%); color: #281b05; text-shadow: 0 1px 1px rgba(255,255,255,.68); filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8)); }
+.rpg-card-element-badge--neige { background: radial-gradient(circle at 34% 24%, #eefaff, #4a86ab 72%); color: #08202e; text-shadow: 0 1px 1px rgba(255, 255, 255, .7); filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85)); }
 .rpg-card-element-badge--hybride {
   display: flex;
   width: var(--rpg-card-element-marker-size, clamp(16px, 18%, 23px));
@@ -3518,6 +3540,12 @@
 }
 .rpg-card-element-badge__pip--braise { background: radial-gradient(circle at 34% 24%, #f09675, #8e2e1d 72%); }
 .rpg-card-element-badge__pip--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
+.rpg-card-element-badge__pip--neige {
+  background: radial-gradient(circle at 34% 24%, #eefaff, #4a86ab 72%);
+  color: #08202e;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, .7);
+  filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85));
+}
 .rpg-card-element-badge--verre { background: radial-gradient(circle at 34% 24%, #9fd6e8, #2b6d84 72%); }
 .rpg-card-element-badge--souffle { background: radial-gradient(circle at 34% 24%, #d9dee6, #6d7480 72%); }
 .rpg-card-element-badge--encre { background: radial-gradient(circle at 34% 24%, #b39ae0, #432d73 72%); }
@@ -4642,10 +4670,52 @@
   background-color: #0d2438;
 }
 
-/* Braise + Eau + Sable : le prisme des trois couleurs, si un jour une carte
-   tricolore apparaît au catalogue. */
+/* Braise + Neige : la braise et le givre, rouge sombre traversé de blanc bleu. */
+.rpg-card--frame-hybride-braise-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #43110a 0%, #ff8a5c 20%, #7fb6d8 40%, #eaf9ff 54%, #5a2a2a 72%, #a9e0f5 88%, #43110a 100%);
+  background-color: #35202a;
+}
+
+/* Eau + Neige : l'eau prise, bleu profond et glace pâle. */
+.rpg-card--frame-hybride-eau-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #6fb6e8 20%, #dff3ff 40%, #2f7fae 58%, #12496e 76%, #bfe9ff 90%, #0b2a4a 100%);
+  background-color: #10283c;
+}
+
+/* Sable + Neige : le vent sur la banquise, ivoire et bleu clair. */
+.rpg-card--frame-hybride-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #2a3b45 0%, #f7f3e6 22%, #a9e0f5 42%, #6e8ea3 58%, #dff3ff 76%, #c9a13b 90%, #2a3b45 100%);
+  background-color: #26333c;
+}
+
+/* Braise + Eau + Sable : le prisme des trois couleurs de Bab El. */
 .rpg-card--frame-hybride-braise-eau-sable {
   --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 16%, #f3ead2 32%, #ffb44d 48%, #e2401c 64%, #b06ad8 80%, #123a63 100%);
+  background-color: #241a33;
+}
+
+/* Braise + Eau + Neige : la vapeur des mers froides. */
+.rpg-card--frame-hybride-braise-eau-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #2a1050 0%, #b06ad8 16%, #ff8a5c 34%, #bfe9ff 52%, #2f7fae 70%, #e0432a 86%, #2a1050 100%);
+  background-color: #2a1a40;
+}
+
+/* Braise + Sable + Neige : le désert sous la première neige. */
+.rpg-card--frame-hybride-braise-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #4d0c05 0%, #ff9a34 18%, #f7f3e6 38%, #a9e0f5 56%, #a81f08 74%, #bfe9ff 90%, #4d0c05 100%);
+  background-color: #3d2020;
+}
+
+/* Eau + Sable + Neige : les rivages du Nord. */
+.rpg-card--frame-hybride-eau-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #6fb6e8 18%, #f7f3e6 36%, #a9e0f5 56%, #12496e 74%, #cfe9d8 90%, #0b2a4a 100%);
+  background-color: #102c3a;
+}
+
+/* Braise + Eau + Sable + Neige : les quatre éléments, si un jour une carte les
+   rassemble au catalogue. */
+.rpg-card--frame-hybride-braise-eau-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 14%, #f3ead2 28%, #a9e0f5 42%, #ffb44d 58%, #e2401c 72%, #b06ad8 86%, #123a63 100%);
   background-color: #241a33;
 }
 

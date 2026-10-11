@@ -27,14 +27,38 @@ en bas, le sable a déjà tout repris.
 | 5 | Le Grand Horloger | Deck propre + 2 mythiques | `veilleur` / `controle` | **boss** : deux phases (deux duels enchaînés, PV partiellement conservés) |
 
 **La Tour des Abysses** (4 étages, bleue) : ses quatre sorciers jouent la Marée
-des abysses, avec contres et bêtes marines. Elle est la seule tour dédiée à une
-couleur ; les trois autres mélangent encore leurs couleurs. Dans le mode Histoire,
-le sorcier peut jouer n'importe quel deck de campagne (`RPG_STORY_DECKS`).
+des abysses, avec contres et bêtes marines. Avec **la Tour du Fjord** (la
+Neige), ce sont les **deux tours dédiées à une couleur** ; les trois autres
+mélangent encore leurs couleurs. Dans le mode Histoire, le sorcier peut jouer
+n'importe quel deck de campagne (`RPG_STORY_DECKS`).
 
 Une tour = 5 étages × 1 duel, un boss tous les 3 étages mineurs si on
 découpe plus grand (les autres tours : la Tour des Heures, la Tour du
-Souk, la Tour des Sables…). Les noms et dialogues vivent dans le dossier
-[`02-histoire.md`](02-histoire.md).
+Souk, la Tour des Sables, la Tour du Fjord…). Les noms et dialogues vivent
+dans le dossier [`02-histoire.md`](02-histoire.md).
+
+## La Tour du Fjord — la Neige entre dans la campagne
+
+La quatrième tour est la maison du deck **Serment des Neuf Hivers** : elle
+donne à la couleur Neige une place dans le mode Histoire, sans toucher aux
+règles du duel. Comme les autres, elle suit la convention « un étage = un duel
+autonome » (deck complet, PV pleins, rien de reporté).
+
+| Étage | Sorcier | Deck | Profil IA | Note |
+| --- | --- | --- | --- | --- |
+| 1 | La Garde du fjord | `gardes-du-fjord` (21 Glaciers, boucliers et brumes) | `normale` / `prudent` | la muraille épuise avant de rendre les coups |
+| 2 | La Meute des neiges | `meute-des-neiges` (loups, berserks, éclairs) | `normale` / `agressif` | la course : le premier tour décide |
+| 3 | La Valkyrie du fjord | `serment-des-neuf-hivers` (le deck Neige du catalogue) | `veilleur` / `agressif` | vol, coups rapides et pioches du Père des corbeaux |
+| 4 | Le Maître des Neuf Hivers | `maitre-des-neuf-hivers` (le Serment essuyé + les figures) | `veilleur` / `controle` | **boss** : le Père des corbeaux et le Maître du marteau |
+
+- Les quatre decks de la tour sont **mono-Neige** (vérifié par test : chaque
+  carte porte l'identité Neige, et le seul terrain est le Glacier) et passent
+  `rpgValiderDeck` — les cartes épiques y restent à un exemplaire.
+- Un étage peut porter un **portrait de sorcier** (`avatar`, un identifiant
+  d'illustration de `public/cards/`) : la plaque « LE SORCIER » montre alors ce
+  visage au lieu de l'Ifrit générique. Le test vérifie que chaque portrait
+  annoncé est une carte du catalogue et une peinture réellement livrée
+  (`tests/rpg-story.test.js`).
 
 ## Ce qui existe déjà (à brancher, pas à réinventer)
 
@@ -63,8 +87,9 @@ Souk, la Tour des Sables…). Les noms et dialogues vivent dans le dossier
    progression en localStorage (`letsplay_sablier_histoire_v1`, d'abord local ;
    Supabase ensuite comme le reste du site — voir `src/auth/`).
 2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, fonction,
-   deck, puissance, ia, note) : trois tours, douze étages, cinq decks (les
-   archétypes existants + deux variantes à 40 cartes validées).
+   deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
+   l'étage sur la plaque du sorcier) : **cinq tours, vingt étages, dix decks**
+   (les archétypes existants et leurs variantes, tous à 40 cartes validées).
 3. **La règle de continuité entre étages** — **décision : piste A (simple) retenue
    pour l'instant**. Chaque étage est un duel autonome : deck complet, PV pleins,
    aucune ressource reportée ; seule la progression (étages déblayés) compte.

@@ -44,6 +44,7 @@
 .rpg-deckbox--braise { --accent: #ec7a4c; --accent-deep: #8f2c1a; --glow: rgba(255, 112, 62, .55); --hide: #1f110e; --hide-hi: #35201a; }
 .rpg-deckbox--hybride { --accent: #eaa55a; --accent-deep: #8c4a20; --glow: rgba(244, 150, 72, .55); --hide: #1e1410; --hide-hi: #33231a; }
 .rpg-deckbox--eau { --accent: #6fc3e6; --accent-deep: #1f5f84; --glow: rgba(90, 190, 240, .5); --hide: #0f1620; --hide-hi: #1b2837; }
+.rpg-deckbox--neige { --accent: #a9e0f5; --accent-deep: #2f6f92; --glow: rgba(160, 224, 255, .5); --hide: #101b24; --hide-hi: #1c2e3b; }
 
 /* Ombre au sol (peinte sous le boîtier) ; l'halo de couleur marque le deck ouvert. */
 .rpg-deckbox__shadow {
@@ -344,6 +345,7 @@
 }
 .rpg-deck-choice--braise.is-open { border-color: rgba(215, 107, 81, .7); background: radial-gradient(ellipse at 50% 34%, rgba(255, 120, 70, .16), rgba(255, 120, 70, 0) 70%); }
 .rpg-deck-choice--hybride.is-open { border-color: rgba(232, 168, 100, .75); background: radial-gradient(ellipse at 50% 34%, rgba(244, 150, 72, .16), rgba(244, 150, 72, 0) 70%); }
+.rpg-deck-choice--neige.is-open { border-color: rgba(140, 208, 238, .75); background: radial-gradient(ellipse at 50% 34%, rgba(150, 220, 255, .18), rgba(150, 220, 255, 0) 70%); }
 .rpg-deck-choice.is-open .rpg-deckbox__shadow {
   background:
     radial-gradient(ellipse at 50% 50%, var(--glow), rgba(0, 0, 0, 0) 70%),
@@ -354,6 +356,7 @@
 .rpg-deck-choice__text small { color: #d6b970; font: 800 9px/1.2 var(--mono, monospace); letter-spacing: .12em; }
 .rpg-deck-choice--braise .rpg-deck-choice__text small { color: #eba089; }
 .rpg-deck-choice--hybride .rpg-deck-choice__text small { color: #e8c37a; }
+.rpg-deck-choice--neige .rpg-deck-choice__text small { color: #a9dbef; }
 .rpg-deck-choice__text strong { color: #fff0d4; font: 700 clamp(14px, 1.5vw, 17px) / 1.2 Georgia, serif; text-wrap: balance; }
 .rpg-deck-choice__text em { color: rgba(244, 231, 207, .74); font: 10px/1.35 var(--mono, monospace); font-style: normal; }
 .rpg-deck-choice__meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; }
@@ -459,12 +462,14 @@
 .rpg-emblem--sable { color: #e5bf69; }
 .rpg-emblem--braise { color: #ee7f55; }
 .rpg-emblem--eau { color: #70c6ea; }
+.rpg-emblem--neige { color: #a9e0f5; }
 /* Puce active : pleine, de la couleur du filtre, texte sombre. */
 .rpg-deck-filter__chip.is-active { border-color: rgba(255, 244, 214, .85); color: #1d130a; background: linear-gradient(135deg, #f6ead0, #d8c9a2); }
 .rpg-deck-filter__chip--sable.is-active { background: linear-gradient(135deg, #f0d284, #d9a548); }
 .rpg-deck-filter__chip--braise.is-active { background: linear-gradient(135deg, #f7ac8a, #e07a52); }
 .rpg-deck-filter__chip--hybride.is-active { background: linear-gradient(135deg, #f0d284, #e5835a); }
 .rpg-deck-filter__chip--eau.is-active { background: linear-gradient(135deg, #a3dcf2, #62b6df); }
+.rpg-deck-filter__chip--neige.is-active { background: linear-gradient(135deg, #dff3ff, #8fd0ec); }
 .rpg-deck-filter__chip.is-active .rpg-emblem { color: inherit; }
 .rpg-deck-filter__count { grid-area: count; margin: 0; color: rgba(244, 233, 214, .68); font: 800 9px/1.3 var(--mono, monospace); white-space: nowrap; }
 /* Dès 641 px, étagère fermée : libellé, puces et compteur sur une seule rangée centrée. */
