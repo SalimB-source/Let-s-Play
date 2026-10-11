@@ -85,7 +85,7 @@
   --duel-card: clamp(48px, 17dvh, 100px);
   display: grid;
   grid-template-columns: clamp(78px, 12vw, 130px) minmax(0, 1fr) clamp(220px, 30vw, 340px);
-  grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.25 + 10px), 1fr) minmax(calc(var(--duel-card) * 1.25 + 10px), 1fr) clamp(84px, 28dvh, 146px);
+  grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) clamp(84px, 28dvh, 146px);
   grid-template-areas: "enemy-mana opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
   padding: 6px;
@@ -160,8 +160,15 @@
 .rpg-battle--touch .rpg-terrain { flex: 0 0 30px; width: 30px; height: 38px; border-width: 1px; }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
 .rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
-.rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 5px 8px; gap: 12px; overflow-x: auto; overflow-y: hidden; scroll-padding-inline: 8px; }
+.rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 4px max(12px, calc(var(--duel-card) * .18)); gap: max(12px, calc(var(--duel-card) * .36)); overflow-x: auto; overflow-y: hidden; scroll-padding-inline: max(12px, calc(var(--duel-card) * .18)); }
 .rpg-battle--touch .card-row .rpg-card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; transform: none; }
+/* The neutral mobile transform must not erase the combat state. Reserve
+   room for tilted corners while keeping the cards within their scroll lane. */
+.rpg-battle--touch .card-row .rpg-card:is(.is-declared-attacker, .is-attacked),
+.rpg-battle--touch .card-row .rpg-card:is(.is-declared-attacker, .is-attacked):hover {
+  transform: rotate(40deg) scale(.85);
+  transform-origin: center;
+}
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
 .rpg-battle--touch .rpg-empty-lane { width: 100%; padding: 0; background: none; border: 0; text-align: center; font-size: 12px; color: #edd9b3b3; text-shadow: 0 2px 4px #000; }
 .rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px; overflow-y: auto; z-index: 20; }

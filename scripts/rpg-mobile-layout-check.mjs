@@ -223,12 +223,24 @@ try {
   await page.locator('.rpg-card--equipe[data-card-id="fennec-des-decombres"]').waitFor();
   await page.locator('.rpg-btn--attaque-tous').click();
   assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'combat');
+  const waitForTilt = async (selector, expected) => page.waitForFunction(({ selector, expected }) => {
+    const card = document.querySelector(selector);
+    if (!card) return false;
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(card).transform);
+    const angle = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+    return Math.abs(angle - expected) < .5;
+  }, { selector, expected });
+  await waitForTilt('.rpg-card--equipe.is-declared-attacker', 40);
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     const cancel = await page.locator('.rpg-btn--cancel-attack').boundingBox();
     const confirm = await page.locator('.rpg-btn--confirmer-attaque').boundingBox();
     const end = await page.locator('.rpg-btn--endturn').boundingBox();
     const phases = await page.locator('.rpg-phase-track').boundingBox();
+    const attacker = await page.locator('.rpg-card--equipe.is-declared-attacker').boundingBox();
+    const lane = await page.locator('.card-row--equipe').boundingBox();
+    assert.ok(attacker.x >= lane.x && attacker.x + attacker.width <= lane.x + lane.width
+      && attacker.y >= lane.y && attacker.y + attacker.height <= lane.y + lane.height, `${width}: tilted attacker corners remain visible`);
     assert.ok(cancel.width >= 44 && cancel.height >= 44 && Math.abs(cancel.y - end.y) <= 1, `${width}: cancel attack is beside end-turn`);
     assert.ok(confirm.x + confirm.width <= cancel.x && cancel.x + cancel.width <= end.x, `${width}: combat buttons do not overlap`);
     assert.ok(phases.y + phases.height <= cancel.y && cancel.y - phases.y - phases.height <= 10, `${width}: phases are directly above combat controls`);
@@ -239,6 +251,11 @@ try {
   await page.locator('.rpg-btn--cancel-attack').click();
   assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'principal');
   assert.equal(await page.locator('.rpg-card--equipe.is-selected').count(), 0);
+  await waitForTilt('.rpg-card--equipe', 0);
+  await page.locator('.rpg-btn--attaque-tous').click();
+  await page.locator('.rpg-btn--confirmer-attaque').click();
+  await waitForTilt('.rpg-card--equipe.is-attacked', 40);
+  console.log('✓ Attackers tilt on declaration, straighten on cancellation and stay tilted after attacking');
   console.log('✓ Attack-all, cancellation and end-turn share a row; phases follow combat and cancellation');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.rpg-rotate-prompt').waitFor();
