@@ -108,7 +108,7 @@ try {
             const cards = Array.from({ length: count }, (_, index) => {
               const card = document.createElement('button');
               card.dataset.cardId = `terrain-type-${index}`;
-              card.className = 'rpg-terrain rpg-terrain-stack rpg-card--rarity-commune is-tapped';
+              card.className = 'rpg-terrain rpg-terrain-stack rpg-card--frame-sable is-tapped';
               card.innerHTML = '<span class="rpg-terrain-stack__count">×26</span>';
               card.style.animation = 'none';
               card.style.transition = 'none';

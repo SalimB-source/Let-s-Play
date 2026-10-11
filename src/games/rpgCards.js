@@ -25,6 +25,56 @@ export function cardRarityInfo(carte) {
   return { key, ...CARD_RARITIES[key] };
 }
 
+/**
+ * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté —
+ * sauf pour les mythiques, dont le cadre doré prime (voir MYTHIC_FRAME_COLOR).
+ *
+ * Chaque combinaison bicolore a déjà son identité, y compris celles qui
+ * n'existent pas encore dans le catalogue : le jour où une carte Eau + Sable
+ * ou Eau + Braise est créée, son cadre brillant l'attend.
+ */
+export const CARD_FRAME_COLORS = {
+  braise: { label: 'Braise', color: '#e0412a' },
+  eau: { label: 'Eau', color: '#3f9fe8' },
+  sable: { label: 'Sable', color: '#f7f3e6' },
+  'hybride-braise-eau': { label: 'Braise + Eau', color: '#a86ad6' },
+  'hybride-braise-sable': { label: 'Braise + Sable', color: '#e2521f' },
+  'hybride-eau-sable': { label: 'Eau + Sable', color: '#7fd4c8' },
+  'hybride-braise-eau-sable': { label: 'Braise + Eau + Sable', color: '#d8b45a' },
+};
+
+/** Ordre canonique des couleurs : la clé d'une hybride ne dépend pas de l'ordre déclaré. */
+const CARD_FRAME_COLOR_ORDER = ['braise', 'eau', 'sable'];
+
+/** Cadre doré des cartes mythiques, quelle que soit leur couleur. */
+export const MYTHIC_FRAME_COLOR = '#e8b745';
+
+/** Clé et couleur de cadre d'une carte : élément seul, ou combinaison bicolore. */
+export function cardFrameInfo(carte) {
+  const colors = cardColors(carte).slice().sort(
+    (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
+  );
+  const key = colors.length > 1
+    ? `hybride-${colors.join('-')}`
+    : (Object.hasOwn(CARD_FRAME_COLORS, colors[0]) ? colors[0] : 'sable');
+  const known = Object.hasOwn(CARD_FRAME_COLORS, key) ? key : 'hybride-braise-eau-sable';
+  return { key: known, ...CARD_FRAME_COLORS[known] };
+}
+
+/** Toute carte mythique porte le cadre doré. */
+export function cardHasMythicFrame(carte) {
+  return cardRarityInfo(carte).key === 'mythique';
+}
+
+/** Un cadre brillant est un dégradé balayé d'un reflet : hybrides et mythiques. */
+export function cardHasShinyFrame(carte) {
+  return cardFrameInfo(carte).key.startsWith('hybride-') || cardHasMythicFrame(carte);
+}
+
+/** Couleur de cadre réellement peinte : l'or mythique prime sur l'élément. */
+export function cardFrameColor(carte) {
+  return cardHasMythicFrame(carte) ? MYTHIC_FRAME_COLOR : cardFrameInfo(carte).color;
+}
 
 export const CARD_KIND_LABELS = {
   physique: 'Attaque',

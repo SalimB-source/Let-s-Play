@@ -34,6 +34,10 @@ import {
 } from './rpgDuel.js';
 import {
   cardRarityInfo,
+  cardFrameColor,
+  cardFrameInfo,
+  cardHasMythicFrame,
+  cardHasShinyFrame,
   cardColorCost,
   cardColors,
   terrainManaColors,
@@ -310,13 +314,26 @@ function cardFrameType(carte) {
   return 'creature';
 }
 
-function cardRarityClass(carte) {
-  return `rpg-card--rarity-${cardRarityInfo(carte).key}`;
-}
-
+/** La rareté ne colore plus rien : elle ne sert qu'au badge de l'aperçu. */
 function cardRarityStyle(carte) {
   const { color } = cardRarityInfo(carte);
-  return { '--rpg-rarity-color': color, '--rarity-color': color };
+  return { '--rarity-color': color };
+}
+
+/**
+ * Le cadre suit la couleur de la carte : bleu (Eau), blanc (Sable), rouge
+ * (Braise). Une carte bicolore ajoute le dégradé de sa combinaison, une carte
+ * mythique le dégradé doré — les deux sont des cadres brillants.
+ */
+function cardFrameClass(carte) {
+  const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
+  if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
+  if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
+  return classes.join(' ');
+}
+
+function cardFrameStyle(carte) {
+  return { '--rpg-frame-color': cardFrameColor(carte) };
 }
 
 function deckStats(deck) {
@@ -383,8 +400,8 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         {topCard
           ? <img
-              className={`rpg-card-pile__card rpg-card-pile__card--top ${cardRarityClass(carteDuDessus)}`}
-              style={cardRarityStyle(carteDuDessus)}
+              className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)}`}
+              style={cardFrameStyle(carteDuDessus)}
               src={cardArt(topCard)}
               alt=""
               onMouseEnter={(event) => onHoverCard?.(carteDuDessus, event)}
@@ -490,7 +507,7 @@ function TableCard({
       className={[
         `rpg-card rpg-card--img rpg-card--elem-${carte?.element ?? 'sable'} rpg-card--type-${cardFrameType(carte)}`,
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
-        cardRarityClass(carte),
+        cardFrameClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -516,7 +533,7 @@ function TableCard({
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
       ].filter(Boolean).join(' ')}
-      style={{ '--tilt': `${tilt}deg`, ...cardRarityStyle(carte) }}
+      style={{ '--tilt': `${tilt}deg`, ...cardFrameStyle(carte) }}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
       data-card-id={carte?.id}
@@ -726,7 +743,7 @@ function CardPreview({ carte, onClose, actions = [], entite, terrainStack }) {
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
     >
       <section
-        className={`rpg-card-preview rpg-card-preview--${carte.element} rpg-card-preview--type-${cardFrameType(carte)} ${cardRarityClass(carte)}${carte.kind === 'terrain' ? ' rpg-card-preview--terrain' : ''}`}
+        className={`rpg-card-preview rpg-card-preview--${carte.element} rpg-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${carte.kind === 'terrain' ? ' rpg-card-preview--terrain' : ''}`}
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
@@ -734,10 +751,10 @@ function CardPreview({ carte, onClose, actions = [], entite, terrainStack }) {
       >
         <button type="button" className="rpg-card-preview__close" onClick={onClose} aria-label="Fermer l’aperçu">×</button>
         <div className="rpg-card-preview__visual">
-          <div className={`rpg-card-preview__art ${cardRarityClass(carte)}`} style={cardRarityStyle(carte)}>
+          <div className={`rpg-card-preview__art ${cardFrameClass(carte)}`} style={{ ...cardFrameStyle(carte), ...cardRarityStyle(carte) }}>
             <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} />
             <CardElementBadge carte={carte} />
-            <span>{rarete.label}</span>
+            <span className="rpg-card-preview__rarity" aria-label={`Rareté : ${rarete.label}`}>{rarete.label}</span>
           </div>
           {estCreature && <p className="rpg-card-preview__stats" aria-label={`Attaque ${entite?.atk ?? carte.atk}, défense ${entite?.pv ?? carte.def}`}>
             <span title="Attaque"><CardStatIcon type="attack" /><b>{entite?.atk ?? carte.atk}</b></span>
@@ -779,14 +796,14 @@ function HoverCardPreview({ carte, style, spellPlayed = false }) {
   const effets = cardEffectLines(effet);
   return (
     <aside
-      className={`rpg-hover-card-preview rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardRarityClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
+      className={`rpg-hover-card-preview rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role="tooltip"
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}`}
-      style={{ ...style, ...cardRarityStyle(carte) }}
+      style={{ ...style, ...cardFrameStyle(carte) }}
     >
       <div
-        className={`rpg-hover-card-preview__face ${cardRarityClass(carte)}`}
-        style={cardRarityStyle(carte)}
+        className={`rpg-hover-card-preview__face ${cardFrameClass(carte)}`}
+        style={cardFrameStyle(carte)}
         aria-hidden="true"
       >
         <img src={cardArt(carte)} alt="" />
@@ -816,8 +833,8 @@ function SpellAnnouncement({ annonce }) {
       aria-label={`Magie jouée : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
       <img
-        className={`rpg-spell-played__art ${cardRarityClass(carte)}`}
-        style={cardRarityStyle(carte)}
+        className={`rpg-spell-played__art ${cardFrameClass(carte)}`}
+        style={cardFrameStyle(carte)}
         src={cardArt(carte)}
         alt=""
       />
@@ -1013,7 +1030,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const type = carte.kind === 'terrain' ? 'Terrain'
                     : carte.kind === 'magie' ? 'Magie'
                       : carte.kind === 'hero' ? 'Héros' : 'Créature';
-                  const rarete = cardRarityInfo(carte);
                   return (
                     <article
                       key={carte.id}
@@ -1022,7 +1038,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       data-color={carte.element}
                       data-colors={cardColors(carte).join(' ')}
                       data-type={carte.kind}
-                      style={cardRarityStyle(carte)}
+                      style={cardFrameStyle(carte)}
                       tabIndex={0}
                       onMouseEnter={(event) => onHoverCard?.(carte, event)}
                       onMouseLeave={onLeaveHoverCard}
@@ -1037,7 +1053,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       <div className="rpg-card-catalogue__details">
                         <div className="rpg-card-catalogue__title">
                           <h3>{carte.name}</h3>
-                          <span className="rpg-card-catalogue__rarity" style={{ '--rarity-color': rarete.color }}>{rarete.label}</span>
                         </div>
                         <p className="rpg-card-catalogue__type">{cardFaceTypeLine(carte)}</p>
                         <div className="rpg-card-catalogue__meta">
@@ -2599,8 +2614,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                 key={groupe.carteId}
                 onClick={() => ouvrirApercuEntite(terrain, 'terrain-ennemi')}
                 aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrains, ${groupe.available} disponibles, ${groupe.tapped} engagés — aperçu`}
-                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardRarityClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}`}
-                style={cardRarityStyle(carte)}
+                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}`}
+                style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
                 data-terrain-count={groupe.count}
@@ -2677,12 +2692,12 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           return (
             <div
               key={effet.effectId}
-              className={`rpg-card-destruction-fx ${cardRarityClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
+              className={`rpg-card-destruction-fx ${cardFrameClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
               data-rpg-destroyed-id={effet.entityId}
               data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
               aria-hidden="true"
               style={{
-                ...cardRarityStyle(carteDetruite),
+                ...cardFrameStyle(carteDetruite),
                 left: `${effet.left}px`,
                 top: `${effet.top}px`,
                 width: `${effet.width}px`,
@@ -2708,8 +2723,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               <button
                 key={groupe.carteId}
                 type="button"
-                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardRarityClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
-                style={cardRarityStyle(carte)}
+                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
+                style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
                 data-terrain-count={groupe.count}
@@ -2909,7 +2924,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                     estTerrain ? 'rpg-hand__card--terrain' : '',
                     `rpg-hand__card--type-${cardFrameType(carte)}`,
                     `rpg-hand__card--elem-${carte.element}`,
-                    cardRarityClass(carte),
+                    cardFrameClass(carte),
                     piocheEnCours ? 'rpg-hand-card--drawing' : '',
                     carte.instant ? 'is-instant' : '',
                     cibleEnCours === carteId ? 'is-targeting' : '',
@@ -2919,7 +2934,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   ].filter(Boolean).join(' ')}
                   style={{
                     '--tilt': `${TILTS[i % TILTS.length]}deg`,
-                    ...cardRarityStyle(carte),
+                    ...cardFrameStyle(carte),
                     ...(piocheEnCours ? { '--rpg-draw-delay': `${piocheEnCours.delay}ms` } : {}),
                     ...styleVol,
                   }}

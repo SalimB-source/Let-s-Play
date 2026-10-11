@@ -453,7 +453,7 @@
 .rpg-card--legendaire {
   box-shadow:
     0 12px 28px rgba(0, 0, 0, .65),
-    0 0 14px color-mix(in srgb, var(--rpg-rarity-color, #a875ed) 24%, transparent);
+    0 0 14px color-mix(in srgb, var(--rpg-frame-color, #a875ed) 24%, transparent);
 }
 
 /* Bannière de titre : parchemin doré, nom à gauche, coût en pastilles. */
@@ -520,7 +520,7 @@
   background: linear-gradient(115deg, transparent 42%, rgba(255, 248, 220, .14) 50%, transparent 58%);
 }
 
-.rpg-card--legendaire .rpg-card__art { border-color: var(--rpg-rarity-color, #a875ed); }
+.rpg-card--legendaire .rpg-card__art { border-color: var(--rpg-frame-color, #a875ed); }
 
 .rpg-card__art img {
   width: 100%;
@@ -690,10 +690,11 @@
 .rpg-terrains--joueur { bottom: 118px; left: 12px; }
 
 .rpg-terrain {
-  width: 54px;
+  --rpg-frame-fill: transparent;
+  width: clamp(62px, 5.8vw, 80px);
   aspect-ratio: 4 / 5;
   padding: 0;
-  border: 3px solid var(--rpg-rarity-color, #f1f3f5);
+  border: 3px solid var(--rpg-frame-color, #f1f3f5);
   border-radius: 6px;
   overflow: visible;
   background: transparent;
@@ -929,7 +930,7 @@
   gap: 2px;
   padding: 4px;
   border-radius: 8px;
-  border: 3px solid var(--rpg-rarity-color, #f1f3f5);
+  border: 3px solid var(--rpg-frame-color, #f1f3f5);
   background: #0c0c0e;
   box-shadow: 0 6px 16px rgba(0, 0, 0, .5);
   cursor: pointer;
@@ -2171,9 +2172,9 @@
 }
 
 .rpg-terrains { z-index: 4; gap: 5px; max-width: calc(100% - 430px); overflow-x: auto; overflow-y: visible; padding: 10px 12px 12px; scroll-padding-inline: 12px; }
-.rpg-terrains--ennemi { top: 11%; right: auto; left: clamp(220px, 20%, 280px); }
+.rpg-terrains--ennemi { top: 8%; right: auto; left: clamp(220px, 20%, 280px); }
 .rpg-terrains--joueur { top: 72%; bottom: auto; left: clamp(220px, 20%, 280px); }
-.rpg-terrain { width: clamp(58px, 5.2vw, 70px); border-color: rgba(7, 8, 11, .92); }
+.rpg-terrain { width: clamp(74px, 6.6vw, 96px); border-color: rgba(7, 8, 11, .92); }
 .rpg-terrain.is-tapped { transform: rotate(12deg) translateY(1px); }
 
 .rpg-card-piles--opponent { top: 11%; right: 14px; }
@@ -2425,13 +2426,14 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 5px solid var(--rarity-color, #c9c2ae);
+  border: 5px solid var(--rpg-frame-color, #c9c2ae);
   border-radius: 12px;
   background: #0c0c0e;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .62), 0 0 18px color-mix(in srgb, var(--rarity-color, #c9c2ae) 24%, transparent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .62), 0 0 18px color-mix(in srgb, var(--rpg-frame-color, #c9c2ae) 24%, transparent);
 }
 .rpg-card-preview__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.rpg-card-preview__art > span:not(.rpg-card-element-badge) {
+.rpg-card-preview__art > span:not(.rpg-card-element-badge),
+.rpg-card-preview__rarity {
   position: absolute;
   right: 7px;
   bottom: 7px;
@@ -3067,7 +3069,8 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 3px solid var(--rpg-rarity-color, #f1f3f5);
+  --rpg-frame-fill: transparent;
+  border: 3px solid var(--rpg-frame-color, #f1f3f5);
   border-radius: 8px;
   background: transparent;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
@@ -3957,7 +3960,7 @@
   isolation: isolate;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 3px solid var(--rpg-rarity-color, #f1f3f5);
+  border: 3px solid var(--rpg-frame-color, #f1f3f5);
   border-radius: 12px 12px 7px 7px;
   background: #171218;
 }
@@ -3984,7 +3987,6 @@
 .rpg-card-catalogue__details { display: grid; gap: 7px; padding: 11px 12px 13px; }
 .rpg-card-catalogue__title { display: flex; align-items: start; justify-content: space-between; gap: 7px; }
 .rpg-card-catalogue__title h3 { min-width: 0; margin: 0; color: #fff0d4; font: 700 15px/1.17 Georgia, serif; }
-.rpg-card-catalogue__rarity { flex: none; padding: 3px 5px; border: 1px solid var(--rarity-color, #f1f3f5); border-radius: 5px; color: var(--rarity-color, #f1f3f5); font: 800 7px/1 var(--mono, monospace); text-transform: uppercase; }
 .rpg-card-catalogue__type { margin: 0; color: rgba(229, 203, 149, .8); font: italic 10px/1.3 Georgia, serif; }
 .rpg-card-catalogue__meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; color: rgba(244, 233, 214, .72); font: 800 8px/1.25 var(--mono, monospace); }
 .rpg-card-catalogue__meta b { color: #f3d891; white-space: nowrap; }
@@ -4419,27 +4421,93 @@
   .rpg-phase-step.is-active .rpg-phase-step__icon { animation: none; }
 }
 
-/* Le bord reste identique sur les cartes en main, en jeu, sur les terrains,
-   dans les aperçus et pendant les animations ; seule sa variable vient de la rareté. */
-.rpg-card.rpg-card--rarity-commune,
-.rpg-card.rpg-card--rarity-inhabituelle,
-.rpg-card.rpg-card--rarity-rare,
-.rpg-card.rpg-card--rarity-mythique,
-.rpg-hand__card.rpg-card--rarity-commune,
-.rpg-hand__card.rpg-card--rarity-inhabituelle,
-.rpg-hand__card.rpg-card--rarity-rare,
-.rpg-hand__card.rpg-card--rarity-mythique,
-.rpg-terrain.rpg-card--rarity-commune,
-.rpg-terrain.rpg-card--rarity-inhabituelle,
-.rpg-terrain.rpg-card--rarity-rare,
-.rpg-terrain.rpg-card--rarity-mythique,
+/* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
+   blanc pour le Sable, rouge pour la Braise, et un dégradé propre à chaque
+   combinaison bicolore. Le bord reste identique en main, en jeu, sur les
+   terrains, dans les aperçus et pendant les animations ; seule sa variable
+   change. La rareté, elle, n’est annoncée que par le badge de l’aperçu.
+   Le sélecteur vise toute classe de cadre : une nouvelle combinaison n’a rien
+   à ajouter ici. */
+.rpg-card[class*="rpg-card--frame-"],
+.rpg-hand__card[class*="rpg-card--frame-"],
+.rpg-terrain[class*="rpg-card--frame-"],
 .rpg-card-preview__art,
 .rpg-hover-card-preview__face,
 .rpg-spell-played__art,
 .rpg-card-destruction-fx,
 .rpg-card-pile__card--top,
 .rpg-card-pile--deck .rpg-card-pile__card--top {
-  border: 3px solid var(--rpg-rarity-color, #f1f3f5);
+  border: 3px solid var(--rpg-frame-color, #f1f3f5);
+}
+
+/* ── Cadres brillants : hybrides (une teinte par combinaison) et mythiques ──
+   Le dégradé est peint dans l'anneau de bordure : bordure transparente, une
+   couche opaque sur la padding-box, le dégradé sur la border-box. Chaque
+   variante ne fournit que son dégradé ; la mécanique est partagée. */
+.rpg-card.rpg-card--frame-brillant,
+.rpg-hand__card.rpg-card--frame-brillant,
+.rpg-terrain.rpg-card--frame-brillant,
+.rpg-card-preview__art.rpg-card--frame-brillant,
+.rpg-hover-card-preview__face.rpg-card--frame-brillant,
+.rpg-spell-played__art.rpg-card--frame-brillant,
+.rpg-card-destruction-fx.rpg-card--frame-brillant,
+.rpg-card-pile__card--top.rpg-card--frame-brillant {
+  border-color: transparent;
+  background-image:
+    linear-gradient(var(--rpg-frame-fill, #0c0c0e), var(--rpg-frame-fill, #0c0c0e)),
+    var(--rpg-frame-gradient);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 240% 100%;
+  background-repeat: no-repeat, no-repeat;
+  animation: rpg-frame-shine-sweep var(--rpg-frame-shine-duration, 3.2s) ease-in-out infinite alternate;
+}
+
+/* Braise + Sable : le désert qui prend feu, rouge-orange. */
+.rpg-card--frame-hybride-braise-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #4d0c05 0%, #ff9a34 20%, #e23a14 38%, #ffd79a 52%, #a81f08 70%, #ff7a26 88%, #4d0c05 100%);
+  background-color: #4a1108;
+}
+
+/* Braise + Eau : la vapeur, indigo violacé traversé de braise. */
+.rpg-card--frame-hybride-braise-eau {
+  --rpg-frame-gradient: linear-gradient(115deg, #2a1050 0%, #b06ad8 20%, #ff7a4d 40%, #ffd9e6 54%, #7a2ea8 72%, #e0432a 88%, #2a1050 100%);
+  background-color: #2b1240;
+}
+
+/* Eau + Sable : l'écume sur la dune, bleu profond et ivoire. */
+.rpg-card--frame-hybride-eau-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #7fd8e8 20%, #f3ead2 40%, #3f9fe8 58%, #12496e 76%, #cfe9d8 90%, #0b2a4a 100%);
+  background-color: #0d2438;
+}
+
+/* Braise + Eau + Sable : le prisme des trois couleurs, si un jour une carte
+   tricolore apparaît au catalogue. */
+.rpg-card--frame-hybride-braise-eau-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 16%, #f3ead2 32%, #ffb44d 48%, #e2401c 64%, #b06ad8 80%, #123a63 100%);
+  background-color: #241a33;
+}
+
+/* Mythique : le cadre doré, quelle que soit la couleur de la carte. Déclaré en
+   dernier — une carte à la fois mythique et bicolore garde l'or. */
+.rpg-card--mythique {
+  --rpg-frame-gradient: linear-gradient(115deg, #7d5415 0%, #ffe6a3 24%, #e3ad3d 42%, #fff6d4 55%, #b8801f 74%, #f2d379 100%);
+  --rpg-frame-shine-duration: 2.8s;
+  background-color: #6d4a13;
+}
+
+/* Filet de sécurité commun : si l'anneau n'était pas couvert par le dégradé,
+   on verrait la teinte sombre de la variante, jamais le fond noir de la carte.
+   Le reflet fait des allers-retours entre 0 % et 100 % et ne sort JAMAIS de
+   cette plage : ces dégradés font 240 % de large sans répétition, donc ils ne
+   recouvrent tout l'anneau que tant que leur position reste entre 0 % et 100 %. */
+@keyframes rpg-frame-shine-sweep {
+  from { background-position: 0 0, 0% 0; }
+  to { background-position: 0 0, 100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card--frame-brillant { animation: none !important; background-position: 0 0, 42% 0; }
 }
 
 /* Coût, attaque et défense doivent rester immédiatement lisibles sur les faces. */
