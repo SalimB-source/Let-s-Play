@@ -41,8 +41,10 @@ const cardsSource = readFileSync(new URL('../src/games/rpgCards.js', import.meta
 const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function HoverCardPreview('));
 const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function ConfirmationSort('));
 const confirmSortSource = battlePage.slice(battlePage.indexOf('function ConfirmationSort('), battlePage.indexOf('function SpellAnnouncement('));
-assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', hybride: '🔥⏳' \};/,
-  'les éléments utilisent flamme, goutte d’eau, sablier et repère bicolore');
+assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', hybride: '🔥⏳' \};/,
+  'les éléments utilisent flamme, goutte d’eau, sablier, cristal de glace et repère bicolore');
+assert.match(battlePage, /FILTRE_COULEUR_LABELS = \{ toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', hybride: 'Hybride' \};/,
+  'la puce de filtre Neige existe, à côté des trois couleurs historiques');
 assert.match(battleCss, /\.rpg-card-element-badge--sable\s*\{[^}]*drop-shadow\(0 0 2px rgba\(255, 215, 98, \.8\)\)/,
   'le sablier Sable est souligné par un halo doré pour rester lisible');
 assert.match(battlePage, /terrainManaColors\(terrain\.carteId\)[\s\S]*?rpg-terrain-mana-choice__option--\$\{couleur\}[\s\S]*?engager\(terrainId, couleur\)/,
@@ -197,7 +199,9 @@ assert.match(battlePage, /function cardFrameStyle\(carte\)[\s\S]*?--rpg-frame-co
   'les cartes transmettent la couleur de leur élément à leur cadre');
 assert.doesNotMatch(battlePage, /rpg-card--rarity-/,
   'plus aucun cadre n’est piloté par la rareté');
-assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*braise:[\s\S]*?eau:[\s\S]*?sable:[\s\S]*?'hybride-braise-eau':[\s\S]*?'hybride-braise-sable':[\s\S]*?'hybride-eau-sable':[\s\S]*?'hybride-braise-eau-sable':/,
+assert.match(cardsSource, /export const RPG_ELEMENTS = \['braise', 'eau', 'sable', 'neige'\];/,
+  'les quatre éléments sont déclarés une seule fois, dans l’ordre canonique des couleurs');
+assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*braise:[\s\S]*?eau:[\s\S]*?sable:[\s\S]*?neige:[\s\S]*?'hybride-braise-eau':[\s\S]*?'hybride-braise-sable':[\s\S]*?'hybride-braise-neige':[\s\S]*?'hybride-eau-sable':[\s\S]*?'hybride-eau-neige':[\s\S]*?'hybride-sable-neige':[\s\S]*?'hybride-braise-eau-sable':/,
   'le catalogue déclare un cadre pour chaque couleur et chaque combinaison, y compris celles qui n’existent pas encore');
 assert.match(cardsSource, /export const MYTHIC_FRAME_COLOR = '#e8b745';/,
   'le cadre doré des cartes mythiques est déclaré à part de la couleur');

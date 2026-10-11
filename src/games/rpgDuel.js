@@ -8,6 +8,7 @@
  */
 
 import {
+  RPG_ELEMENTS,
   cardColorCost,
   cardColors,
   duelCardById,
@@ -29,7 +30,7 @@ export const RPG_PV_JOUEUR = 50;
 export const RPG_PV_SORCIER_BASE = 50;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 5;
 export const RPG_MAIN_DEPART = 5;
-export const RPG_COULEURS = ['braise', 'eau', 'sable'];
+export const RPG_COULEURS = RPG_ELEMENTS;
 
 const destructionsParDuel = new WeakMap();
 
@@ -52,9 +53,9 @@ function journaliserDestruction(duel, entite, sourceElements = []) {
   destructionsParDuel.set(duel, journal);
 }
 
-const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable' };
+const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige' };
 const normaliserCouleurs = (couleurs) => [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
-const manaVide = () => ({ braise: 0, eau: 0, sable: 0 });
+const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0 });
 const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[c], 0);
 
 /** PV d'un sorcier adverse selon sa puissance. */

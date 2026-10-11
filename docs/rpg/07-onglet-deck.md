@@ -36,8 +36,9 @@ Ouvrir un boîtier et le choisir sont deux gestes distincts :
 | « Lancer le duel » (écran Jouer) | joue avec le deck de jeu courant |
 
 - **Qui est sélectionnable** : **tous les decks complets** — Veilleurs du Désert,
-  Sentiers de cendre **et la Cour des Djinns** (`deckEstSelectionnable` : 40
-  cartes qui tiennent les quotas de `rpgValiderDeck`). Le champ `role` de
+  Sentiers de cendre, la Cour des Djinns **et le Serment des Neuf Hivers** (le
+  deck Neige) (`deckEstSelectionnable` : 40 cartes qui tiennent les quotas de
+  `rpgValiderDeck`). Le champ `role` de
   `RPG_DECKS` ne limite rien : il dit seulement quel camp tient le deck *par
   défaut* (`joueur` : decks de départ ; `adversaire` : le deck du sorcier). Un
   deck qui ne passerait pas la validation aurait un bouton désactivé
@@ -71,11 +72,11 @@ Ouvrir un boîtier et le choisir sont deux gestes distincts :
 
 Une rangée de puces au-dessus de l'étagère (`.rpg-deck-filter`, groupe nommé,
 `aria-pressed`) : **Toutes**, puis une puce par couleur réellement employée par
-un deck — aujourd'hui Sable, Braise, Hybride (pas d'Eau tant qu'aucun deck Eau
-n'existe : aucune puce ne mène à une étagère vide). Une couleur retient les
-decks qui l'emploient (le deck hybride Sable + Braise compte pour le Sable **et**
-pour la Braise) ; **Hybride** retient les decks de plusieurs couleurs. Un
-compteur annonce « 2 / 3 decks » (`aria-live`).
+un deck — aujourd'hui Sable, Braise, Neige et Hybride (pas d'Eau tant qu'aucun
+deck Eau n'existe : aucune puce ne mène à une étagère vide). Une couleur retient
+les decks qui l'emploient (le deck hybride Sable + Braise compte pour le Sable
+**et** pour la Braise) ; **Hybride** retient les decks de plusieurs couleurs. Un
+compteur annonce « 4 / 4 decks » (`aria-live`).
 
 - Le filtre porte sur **l'étagère** (quels boîtiers sont affichés), pas sur les
   cartes d'un deck ouvert. Un deck ouvert que le filtre écarte se referme ; revenir
@@ -129,6 +130,13 @@ l'unicité). Sans `boxArt`, le boîtier retombe sur la première carte non-terra
 | Veilleurs du Désert | `cavalier-amazigh-du-desert` |
 | Cour des Djinns | `ifrit-al-ahmar` |
 | Sentiers de cendre | `feriel` (cheval de feu dans les dunes : Sable + Braise) |
+| Serment des Neuf Hivers | `valkyrie-des-glaces` (Valkyrie et monture pâle dans la tempête) |
+
+Les raretés d'exception (`CARD_UNIQUE_RARITIES` : épique et mythique) ne se
+jouent qu'en **un exemplaire** ; les autres cartes non-terrain restent limitées à
+trois, les terrains illimités (`cardCopyLimit`). Les cartes **épiques** — la
+rareté du set Neige — portent un cadre de couleur par élément, comme toute carte
+mono ; seules les mythiques gardent le cadre doré.
 
 ## Vérifications
 
@@ -144,6 +152,10 @@ l'unicité). Sans `boxArt`, le boîtier retombe sur la première carte non-terra
   faces cachées, animations réduites) et sur le bouton (au-dessus de la zone
   cliquable, pleine largeur en disposition ouverte, 44 px au doigt).
 - `npm run check:rpg` — `boxArt` existe, est unique et vient d'une carte du deck ;
+  les cartes Neige sont mono-Neige, les épiques en un exemplaire, les textes du
+  Nord ne nomment jamais de divinité, et les illustrations provisoires
+  (`RPG_ART_PROVISOIRE`) sont recensées — `assert.equal(RPG_ART_PROVISOIRE.length, 8)`
+  tombe le jour où une peinture définitive remplace un recadrage ;
   `tests/rpg-deck-choice.test.js` couvre la règle de sélection, le choix de
   l'adversaire (jamais le même deck), la mémorisation (aller-retour, valeurs
   invalides, stockage absent ou en panne) et le filtre de couleur.

@@ -99,6 +99,15 @@ assert.match(pageSource, /RPG_DECKS\.map\(\(deck\) => \{\s*if \(!deckCorrespondC
 assert.match(pageSource, /className="rpg-deck-filter" role="group" aria-label="Filtrer les decks par couleur"/,
   'le filtre de couleur est un groupe nommé');
 assert.match(pageSource, /aria-pressed=\{actif\}[\s\S]*?changerCouleur\(filtre\.id\)/, 'chaque puce indique si elle est active');
+// La Neige, quatrième couleur du set : puce, emblème, boîtier et cadre de couleur.
+assert.match(pageSource, /neige: 'Neige'/, 'la puce de filtre Neige existe dans le menu Deck');
+assert.match(pageSource, /rpg-emblem--\$\{element\}/, 'les emblèmes de couleur sont dessinés par le même composant SVG');
+assert.match(boxCss, /\.rpg-emblem--neige\s*\{\s*color:\s*#a9e0f5;/,
+  'l’emblème Neige est un cristal de glace bleu clair');
+assert.match(boxCss, /\.rpg-deckbox--neige\s*\{[^}]*--accent:\s*#a9e0f5;/,
+  'le boîtier du deck Neige a son laiton bleu clair');
+assert.match(boxCss, /\.rpg-deck-filter__chip--neige\.is-active\s*\{/,
+  'la puce Neige active a sa teinte');
 
 // Le bouton passe AU-DESSUS de la zone cliquable étirée du boîtier, sinon son clic ouvrirait le deck.
 assert.match(boxCss, /\.rpg-deck-choice__button::before\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0/,

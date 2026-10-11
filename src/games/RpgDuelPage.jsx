@@ -93,9 +93,9 @@ import {
 } from './rpgCards.js';
 
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
-const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', hybride: '🔥⏳' };
-const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', hybride: 'Sable + Braise' };
-const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', hybride: 'Hybride' };
+const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', hybride: '🔥⏳' };
+const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', hybride: 'Sable + Braise' };
+const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', hybride: 'Hybride' };
 const CARD_ART_CACHE_VERSIONS = {
   'djinn-du-souk': 'munch-impressionniste-v3',
   'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
@@ -850,6 +850,13 @@ const EMBLEMS = {
   sable: <><path d="M6 2.6h12v2.1H6zM6 19.3h12v2.1H6z" /><path d="M7.7 4.7h8.6c0 3.5-2.5 5-3.3 7.3.8 2.3 3.3 3.8 3.3 7.3H7.7c0-3.5 2.5-5 3.3-7.3-.8-2.3-3.3-3.8-3.3-7.3z" /></>,
   braise: <path d="M12.6 1.6c.2 2.7 1.6 3.9 3 5.5 1.7 1.9 3.2 3.9 3.2 6.7a6.8 6.8 0 0 1-13.6 0c0-2.6 1.3-4.3 2.6-5.7.2 1.6.9 2.5 1.9 2.9C9.3 7.8 10.1 4.2 12.6 1.6z" />,
   eau: <path d="M12 2.6c3.5 4.3 6 7.4 6 10.9a6 6 0 0 1-12 0c0-3.5 2.5-6.6 6-10.9z" />,
+  // Neige : un cristal de glace taillé — prisme hexagonal et ses arêtes.
+  neige: (
+    <>
+      <path d="M12 1.3 4.9 5.6v9.6L12 22.7l7.1-7.5V5.6z" />
+      <path d="M12 1.3v21.4M4.9 5.6 12 11.8l7.1-6.2" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" />
+    </>
+  ),
 };
 
 function ElementEmblem({ element }) {
@@ -1286,7 +1293,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <option value="braise">Braise</option>
                   <option value="eau">Eau</option>
                   <option value="sable">Sable · Désert</option>
-                  <option value="hybride">Hybrides · Sable + Braise</option>
+                  <option value="neige">Neige · Glacier</option>
+                  <option value="hybride">Hybrides · deux couleurs ou plus</option>
                 </select>
               </label>
               <label>
@@ -2896,6 +2904,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             <i className="mana mana--braise" title="Mana braise">{duel.sorcier.mana.braise}</i>
             <i className="mana mana--eau" title="Mana eau">{duel.sorcier.mana.eau}</i>
             <i className="mana mana--sable" title="Mana sable">{duel.sorcier.mana.sable}</i>
+            <i className="mana mana--neige" title="Mana neige">{duel.sorcier.mana.neige}</i>
           </span>
           <span className="rpg-wizard-plate__zones">Main · {duel.sorcier.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.sorcier.deck.length} · Cimetière {duel.sorcier.cimetiere.length}</span></span>
         </button>
@@ -3095,6 +3104,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             <i className="mana mana--braise" title="Mana braise">{duel.joueur.mana.braise}</i>
             <i className="mana mana--eau" title="Mana eau">{duel.joueur.mana.eau}</i>
             <i className="mana mana--sable" title="Mana sable">{duel.joueur.mana.sable}</i>
+            <i className="mana mana--neige" title="Mana neige">{duel.joueur.mana.neige}</i>
           </span>
           <span className="rpg-wizard-plate__zones">Main · {duel.joueur.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.joueur.deck.length} · Cimetière {duel.joueur.cimetiere.length}</span></span>
         </div>

@@ -17,6 +17,8 @@
  */
 
 import {
+  RPG_ELEMENTS,
+  cardColorCost,
   cardColors,
   duelCardById,
   magieById,
@@ -464,12 +466,14 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
 // ── Phase principale : quoi jouer ───────────────────────────────────────────
 
 function compterBesoins(main) {
-  const besoins = { braise: 0, eau: 0, sable: 0 };
+  const besoins = Object.fromEntries(RPG_ELEMENTS.map((couleur) => [couleur, 0]));
   for (const id of main) {
     const carte = duelCardById(id) ?? magieById(id);
     if (!carte) continue;
-    const cout = carte.colorCost ?? {};
-    for (const [couleur, quantite] of Object.entries(cout)) {
+    // `cardColorCost` couvre les deux écritures du catalogue : les pips
+    // explicites (`colorCost`) des bicolores, et le pip d'élément des
+    // cartes monocolores — Neige comprise.
+    for (const [couleur, quantite] of Object.entries(cardColorCost(carte))) {
       besoins[couleur] = (besoins[couleur] ?? 0) + quantite;
     }
   }
@@ -484,7 +488,7 @@ export function choisirTerrainIA(duel, cote) {
   if (terrains.length === 1) return terrains[0];
 
   const sources = {};
-  for (const couleur of ['braise', 'eau', 'sable']) sources[couleur] = 0;
+  for (const couleur of RPG_ELEMENTS) sources[couleur] = 0;
   for (const terrain of camp.terrains) {
     for (const couleur of terrainManaColors(terrain.carteId)) {
       sources[couleur] = (sources[couleur] ?? 0) + 1;

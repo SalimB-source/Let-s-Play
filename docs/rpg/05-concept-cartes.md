@@ -17,14 +17,20 @@ limitée à 7.
 - Comme les terrains de Magic : **piochés**, posés **UN par tour**,
   **engagés** pour produire un mana de leur couleur. Ils dégagent au
   début de votre tour ; le mana non dépensé s'évapore.
-- Trois terrains pour commencer : **Montagne** (→ mana braise),
-  **Mer** (→ mana eau), **Plaines** (→ mana sable).
+- Terrains du set : **Montagne** (→ mana braise), **Mer** (→ mana eau),
+  **Désert** (→ mana sable), **Glacier** (→ mana neige) et **Pétra**, qui choisit
+  entre Braise et Sable à chaque engagement.
 - Les terrains restent sur la table : une petite défense, pas d'attaque.
 
 ### Couleurs et paiement (façon Magic)
 
-- Chaque carte (créature, magie, héros) a un **type** : braise, eau ou
-  sable — les trois couleurs du set.
+- Quatre couleurs composent le set (`RPG_ELEMENTS`) : **braise**, **eau**,
+  **sable** et **neige**. Bab El est née des trois premières ; la Neige arrive
+  avec le **Serment des Neuf Hivers**, le deck mono-Neige inspiré des récits du
+  Nord (valkyries, guerriers de clan, drakkars, et les figures du panthéon
+  scandinave — jamais appelées « dieux » : le Père des corbeaux, le Maître du
+  marteau, la Dame des neuf mondes, le Serpent du monde).
+- Chaque carte (créature, magie, héros) a un **type** : une des quatre couleurs.
 - Payer un coût de N exige **N mana au total, dont au moins un de la
   couleur de la carte** (comme « 2R » à Magic).
 

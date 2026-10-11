@@ -28,7 +28,7 @@ const duelNu = (opts = {}) => rpgNouveauDuel({
 });
 
 const donner = (duel, cote, carteId) => duel[cote].main.push(carteId);
-const donnerMana = (duel, cote, n) => { duel[cote].mana = { braise: n, eau: n, sable: n }; };
+const donnerMana = (duel, cote, n) => { duel[cote].mana = { braise: n, eau: n, sable: n, neige: n }; };
 
 // ── Ciblage ─────────────────────────────────────────────────────────────────
 

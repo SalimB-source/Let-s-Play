@@ -241,14 +241,21 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, 3, 'les deux decks monocolores et le deck hybride sont sélectionnables');
+  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, 4, 'les decks mono-Sable, mono-Braise, hybride et mono-Neige sont sélectionnables');
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
   assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');
   assert.match(container.textContent, /Sentiers de cendre/, 'le deck joueur hybride Sable + Braise est présenté');
+  assert.match(container.textContent, /Serment des Neuf Hivers/, 'le deck joueur mono-Neige est présenté');
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 0, 'la liste des cartes reste masquée tant qu’aucun deck n’est cliqué');
   // Chaque deck est un boîtier 3D : le clic est porté par le bouton voisin du décor.
   const boutonDeck = (nom) => [...container.querySelectorAll('.rpg-deck-choice__button')]
     .find((button) => button.textContent.includes(nom));
+  await act(async () => { boutonDeck('Serment des Neuf Hivers').click(); });
+  const ficheNeige = container.querySelector('.rpg-deck-detail');
+  assert.match(ficheNeige?.textContent ?? '', /Neige[\s\S]*GLACIER/i,
+    'la fiche du Serment annonce son identité Neige et son terrain Glacier');
+  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*7[\s\S]*validé/,
+    'le Serment est validé à 40 cartes : 17 terrains, 16 créatures et héros, 7 magies');
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes avec leurs quantités, Cavalier inclus');
   assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
