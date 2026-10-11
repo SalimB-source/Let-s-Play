@@ -122,3 +122,28 @@ Les cartes posées sont **courtes** — la table reste lisible :
 
 Plus de grand encadré de règles ni de saveur sur les cartes posées : la
 règle détaillée vit dans la carte en main et dans le journal.
+
+## 7. Les contresorts (deck Marée des abysses)
+
+Le deck **Marée des abysses** (`RPG_DECK_MAREE_BASE`, mono-Eau, 16 Mer) joue la
+réponse plutôt que la frappe : des **contresorts** qui attendent la magie adverse.
+
+- Un contresort (`effet.type: 'contresort'`) se lance pendant le tour adverse,
+  dans la fenêtre de réponse (`Éphémère`). Il **ne résout rien tout de suite** :
+  il reste en attente sur le camp qui l'a lancé (`camp.contresorts`).
+- La **prochaine magie** de l'adversaire qui correspond est alors **annulée** :
+  elle est payée, va au cimetière, et son effet ne se produit pas. Le contresort
+  est consommé (un seul sort annulé par contresort).
+- `contre` restreint la couleur visée : *Silence d’écume* ne contre que la Braise
+  et le Sable ; *Contresort des abîmes* contre tout.
+- *Marée contraire* annule et fait piocher une carte (`pioche: 1`).
+- **Bakunawa** (mythique) pose un contresort à son arrivée (`arrivee.type: 'contresort'`).
+- Les autres bêtes mythiques : **Kraken** (à sa destruction, pioche 2),
+  **Léviathan** (3 dégâts à une créature à l'arrivée), **Jörmungandr**
+  (3 dégâts au sorcier à l'arrivée).
+
+Limites actuelles : le moteur ne possède pas de pile de résolution, donc un
+contresort ne peut pas interrompre un sort **déjà en cours** ; il vise la
+prochaine magie adverse. L'IA ne lance jamais de contresort (elle les garde en main).
+
+Vérifications : `tests/rpg-maree.test.js` (inclus dans `npm run check:rpg`).

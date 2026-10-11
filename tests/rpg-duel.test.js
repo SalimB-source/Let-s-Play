@@ -95,8 +95,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'terrain', 'magie']));
 });
 
-test('le set de créatures existe : vingt-trois cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 23);
+test('le set de créatures existe : vingt-sept cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 27);
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -1256,7 +1256,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et éphémères de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 13);
+  assert.equal(RPG_MAGIE_CARDS.length, 16);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(['braise', 'eau', 'sable'].includes(carte.element), 'type parmi les trois couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -1386,7 +1386,7 @@ test('Parade de verre ne se lance pas si sa créature cible est absente', () => 
 });
 
 test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
-  assert.deepEqual(RPG_DECKS.map(({ id }) => id), ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre']);
+  assert.deepEqual(RPG_DECKS.map(({ id }) => id), ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses']);
   assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'feriel').length, 1,
     'la Cour des Djinns contient une Fériel mythique');
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,

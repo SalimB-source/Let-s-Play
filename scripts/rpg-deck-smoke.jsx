@@ -67,6 +67,7 @@ const NOMS = Object.fromEntries(RPG_DECKS.map((deck) => [deck.id, deck.name]));
 const VEILLEURS = NOMS['veilleurs-du-desert'];
 const SENTIERS = NOMS['sentiers-de-cendre'];
 const COUR = NOMS['cour-des-djinns'];
+const MAREE = NOMS['maree-des-abysses'];
 
 export async function checkRpgDecks(assert) {
   window.localStorage.clear();
@@ -274,25 +275,26 @@ export async function checkRpgDecks(assert) {
   const groupe = filtre.container.querySelector('.rpg-deck-filter');
   assert.equal(groupe?.getAttribute('role'), 'group', 'les puces forment un groupe');
   assert.match(groupe.getAttribute('aria-label'), /couleur/i, 'le groupe de filtres est nommé');
-  assert.deepEqual([...filtre.container.querySelectorAll('.rpg-deck-filter__chip')].map(texte), ['Toutes', 'Sable', 'Braise', 'Hybride'],
-    'le filtre propose Toutes puis les couleurs des decks existants (pas d’Eau : aucun deck Eau)');
+  assert.deepEqual([...filtre.container.querySelectorAll('.rpg-deck-filter__chip')].map(texte), ['Toutes', 'Sable', 'Braise', 'Eau', 'Hybride'],
+    'le filtre propose Toutes puis les couleurs des decks existants (Eau : la Marée des abysses)');
   assert.ok(filtre.container.querySelectorAll('.rpg-deck-filter__chip svg').length >= 4, 'les puces de couleur portent un emblème dessiné (SVG)');
   assert.equal(filtre.puce('Toutes').getAttribute('aria-pressed'), 'true', 'Toutes est active au départ');
-  assert.deepEqual(filtre.decksVisibles(), [VEILLEURS, COUR, SENTIERS], 'sans filtre, les trois decks sont sur l’étagère');
-  assert.equal(texte(filtre.container.querySelector('.rpg-deck-filter__count')), '3 / 3 decks', 'le compteur annonce 3 / 3 decks');
+  assert.deepEqual(filtre.decksVisibles(), [VEILLEURS, COUR, SENTIERS, MAREE], 'sans filtre, les quatre decks sont sur l’étagère');
+  assert.equal(texte(filtre.container.querySelector('.rpg-deck-filter__count')), '4 / 4 decks', 'le compteur annonce 4 / 4 decks');
 
   const attendu = [
     ['Sable', [VEILLEURS, SENTIERS]],
     ['Braise', [COUR, SENTIERS]],
+    ['Eau', [MAREE]],
     ['Hybride', [SENTIERS]],
-    ['Toutes', [VEILLEURS, COUR, SENTIERS]],
+    ['Toutes', [VEILLEURS, COUR, SENTIERS, MAREE]],
   ];
   for (const [couleur, decks] of attendu) {
     await filtre.click(filtre.puce(couleur), `puce ${couleur}`);
     assert.deepEqual(filtre.decksVisibles(), decks, `filtre ${couleur} : ${decks.join(' + ')}`);
     assert.equal(filtre.container.querySelectorAll('.rpg-deck-filter__chip[aria-pressed="true"]').length, 1, 'une seule puce active');
     assert.equal(filtre.puce(couleur).getAttribute('aria-pressed'), 'true', `la puce ${couleur} est signalée active`);
-    assert.equal(texte(filtre.container.querySelector('.rpg-deck-filter__count')), `${decks.length} / 3 decks`, `le compteur suit le filtre ${couleur}`);
+    assert.equal(texte(filtre.container.querySelector('.rpg-deck-filter__count')), `${decks.length} / 4 decks`, `le compteur suit le filtre ${couleur}`);
     assert.equal(filtre.container.querySelectorAll('.rpg-deckbox').length, decks.length, 'les boîtiers écartés ne sont pas dessinés');
   }
   assert.ok(!filtre.container.querySelector('.rpg-deck-list'), 'filtrer n’ouvre aucune liste de cartes');

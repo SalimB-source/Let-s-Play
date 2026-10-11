@@ -78,7 +78,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   };
   const duel = {
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], contresorts: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
@@ -93,6 +93,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       terrains: [],
       cimetiere: [],
       retoursProgrammes: [],
+      contresorts: [],
     },
     fenetreReponse: false,
     log: [],
@@ -237,6 +238,15 @@ export const rpgMana = (camp) => ({ ...camp.mana, total: totalMana(camp) });
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
 
+/** Retire et renvoie le premier contresort du camp qui vise une magie de ces couleurs. */
+function trouverContresort(camp, couleursMagie) {
+  const liste = camp.contresorts ?? [];
+  const index = liste.findIndex((c) => !c.contre || c.contre.some((couleur) => couleursMagie.includes(couleur)));
+  if (index < 0) return null;
+  const [contre] = liste.splice(index, 1);
+  return contre;
+}
+
 /** Protection temporaire contre les effets et les créatures d'une couleur donnée. */
 export function rpgEstProtegee(entite, element) {
   const couleursSources = normaliserCouleurs(element);
@@ -377,6 +387,18 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       camp.retoursProgrammes ??= [];
       camp.retoursProgrammes.push({ carteId: sourceCarteId, toursRestants: tours });
       duel.log.push(`${carteSource.name} reviendra en jeu après ${tours} tour${tours === 1 ? '' : 's'}.`);
+      return;
+    }
+    case 'contresort': {
+      // Un contresort reste en attente sur le camp qui l'a lancé : il annule la
+      // prochaine magie de l'ADVERSAIRE dont les couleurs correspondent (`contre`).
+      const camp = duel[cote];
+      camp.contresorts ??= [];
+      for (let i = 0; i < Math.max(1, Math.floor(Number(effet.amount) || 1)); i += 1) {
+        camp.contresorts.push({ contre: effet.contre ? [...effet.contre] : null });
+      }
+      duel.log.push(`${cote === 'joueur' ? 'Vous préparez' : 'Le sorcier prépare'} un contresort : la prochaine magie adverse${effet.contre ? ` de ${effet.contre.map((c) => ELEMENT_LABELS[c] ?? c).join(' ou de ')}` : ''} sera annulée.`);
+      if (effet.pioche) for (let i = 0; i < effet.pioche; i += 1) rpgPiocher(duel, cote);
       return;
     }
     case 'sable':
@@ -612,6 +634,15 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
 
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  // Un contresort adverse en attente annule la magie : elle est payée et va au cimetière.
+  const contre = trouverContresort(duel[adv], cardColors(carte));
+  if (contre) {
+    camp.cimetiere.push(carteId);
+    duel.log.push(cote === 'joueur'
+      ? `Vous lancez ${carte.name}, mais le contresort du sorcier l’annule.`
+      : `Le sorcier lance ${carte.name}, mais votre contresort l’annule.`);
+    return { ok: true, contre: true };
+  }
   const effet = carte.effet.type === 'degats'
     && carte.effet.cible === 'creature'
     && cibleId === 'sorcier'

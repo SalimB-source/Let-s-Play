@@ -666,6 +666,59 @@ export const RPG_CREATURE_CARDS = [
     text: 'À son arrivée, le Veilleur reçoit un bouclier de 1.',
     flavor: 'Il garde le passage jusqu’à la première lumière.',
   },
+  // ── Bêtes marines mythiques (deck Marée des abysses) ───────────────────
+  {
+    id: 'kraken',
+    name: 'Kraken',
+    element: 'eau',
+    cost: 5,
+    atk: 4,
+    def: 5,
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Bête marine',
+    destruction: { type: 'pioche', amount: 2 },
+    text: 'Quand le Kraken est détruit : piochez deux cartes, ses bras emportent le reste.',
+    flavor: 'Il ne laisse que des bateaux vides et des récits.',
+  },
+  {
+    id: 'leviathan',
+    name: 'Léviathan',
+    element: 'eau',
+    cost: 6,
+    atk: 5,
+    def: 6,
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Bête marine',
+    arrivee: { type: 'degats', amount: 3, cible: 'creature' },
+    text: 'Quand le Léviathan arrive : 3 dégâts à une créature adverse ciblée.',
+    flavor: 'Nul ne le dompte, et nul ne l’a jamais vu en entier.',
+  },
+  {
+    id: 'bakunawa',
+    name: 'Bakunawa',
+    element: 'eau',
+    cost: 4,
+    atk: 3,
+    def: 6,
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Serpent lunaire',
+    arrivee: { type: 'contresort', amount: 1 },
+    text: 'Quand Bakunawa arrive : la prochaine magie adverse est avalée et annulée.',
+    flavor: 'Il avale la lumière avant qu’elle ne touche la table.',
+  },
+  {
+    id: 'jormungandr',
+    name: 'Jörmungandr',
+    element: 'eau',
+    cost: 7,
+    atk: 6,
+    def: 7,
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Serpent du monde',
+    arrivee: { type: 'degats', amount: 3, cible: 'sorcier' },
+    text: 'Quand Jörmungandr arrive : 3 dégâts au sorcier adverse.',
+    flavor: 'Il tient le monde dans sa queue. Il lâche prise pour frapper.',
+  },
 ];
 
 export function creatureById(id) {
@@ -853,6 +906,28 @@ export const RPG_DECK_HYBRIDE_BASE = [
   ...Array(2).fill('vent-rouge'),
 ];
 
+/**
+ * Marée des abysses — mono-Eau : des contresorts qui attendent la magie
+ * adverse et des bêtes marines mythiques. 16 Mer, 13 créatures (4 mythiques,
+ * un seul exemplaire chacune), 11 sorts.
+ */
+export const RPG_DECK_MAREE_BASE = [
+  ...Array(16).fill('mer'),
+  ...Array(3).fill('porteuse-de-cruches'),
+  ...Array(3).fill('veilleuse-des-citernes'),
+  ...Array(2).fill('vipere-de-verre'),
+  'sonneur-fele',
+  'bakunawa',
+  'kraken',
+  'leviathan',
+  'jormungandr',
+  ...Array(3).fill('contresort-des-abimes'),
+  ...Array(3).fill('silence-decume'),
+  ...Array(2).fill('maree-contraire'),
+  ...Array(2).fill('parade-du-verre'),
+  'brisure-de-verre',
+];
+
 /** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
  *  sur le boîtier 3D de l'onglet Deck — un identifiant de `public/cards/`.
  *  `role` : le camp que le deck tient par défaut — `joueur` (deck de départ du joueur) ou
@@ -896,6 +971,18 @@ export const RPG_DECKS = [
     archetype: 'Sable + Braise · deux couleurs, une même piste',
     description: 'Un deck hybride de Sable et de Braise : les terrains Désert et Montagne se mêlent à Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores évoquent avec subtilité des récits désertiques diné, sans divinité nommée ni symbole cérémoniel.',
     cardIds: RPG_DECK_HYBRIDE_BASE,
+  },
+  {
+    id: 'maree-des-abysses',
+    name: 'Marée des abysses',
+    role: 'joueur',
+    element: 'eau',
+    terrain: 'mer',
+    boxArt: 'leviathan',
+    archetype: 'Contresorts · bêtes marines mythiques',
+    affrontement: 'Affrontez la marée des abysses.',
+    description: 'Deck mono-Eau : des contresorts qui attendent la prochaine magie adverse pour l’annuler, et les bêtes marines mythiques (Kraken, Léviathan, Bakunawa, Jörmungandr) qui surgissent des profondeurs.',
+    cardIds: RPG_DECK_MAREE_BASE,
   },
 ];
 
@@ -1174,6 +1261,54 @@ export const RPG_MAGIE_CARDS = [
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses.',
     flavor: 'La poussière rougit, puis le vent l’emporte.',
+  },
+  // ── Contresorts (deck Marée des abysses) ───────────────────────────────
+  // Un contresort se lance pendant le tour adverse (fenêtre de réponse) et
+  // reste en attente : il annule la PROCHAINE magie adverse qui correspond.
+  {
+    id: 'contresort-des-abimes',
+    name: 'Contresort des abîmes',
+    element: 'eau',
+    kind: 'magie',
+    typeLine: 'Éphémère — Eau',
+    art: 'contresort-des-abimes',
+    instant: true,
+    cost: 2,
+    rarity: 'commune',
+    cibles: ['soi'],
+    effet: { type: 'contresort', amount: 1 },
+    text: 'Éphémère — Annule la prochaine magie adverse, quelle qu’elle soit.',
+    flavor: 'Le fond ne rend jamais ce qu’il a englouti.',
+  },
+  {
+    id: 'silence-decume',
+    name: 'Silence d’écume',
+    element: 'eau',
+    kind: 'magie',
+    typeLine: 'Éphémère — Eau',
+    art: 'silence-decume',
+    instant: true,
+    cost: 1,
+    rarity: 'commune',
+    cibles: ['soi'],
+    effet: { type: 'contresort', amount: 1, contre: ['braise', 'sable'] },
+    text: 'Éphémère — Annule la prochaine magie adverse de Braise ou de Sable.',
+    flavor: 'Une écume basse suffit à étouffer la braise.',
+  },
+  {
+    id: 'maree-contraire',
+    name: 'Marée contraire',
+    element: 'eau',
+    kind: 'magie',
+    typeLine: 'Éphémère — Eau',
+    art: 'maree-contraire',
+    instant: true,
+    cost: 3,
+    rarity: 'rare',
+    cibles: ['soi'],
+    effet: { type: 'contresort', amount: 1, pioche: 1 },
+    text: 'Éphémère — Annule la prochaine magie adverse, puis piochez une carte.',
+    flavor: 'Le sable remonte le temps et l’eau reprend sa place.',
   },
 ];
 
