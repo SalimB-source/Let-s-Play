@@ -1,4 +1,4 @@
-# 02 — « Le Sablier de Bab El » : l'histoire
+# 02 — « Le Sablier du temps » : l'histoire
 
 Concept B retenu, avec une contrainte de conception explicite du créateur :
 **pas de réactions en temps réel**. Le tour par tour reste du tour par tour —

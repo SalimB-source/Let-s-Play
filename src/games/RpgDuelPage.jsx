@@ -1,5 +1,5 @@
 /**
- * Le Sablier de Bab El — duel de cartes tactique.
+ * Le Sablier du temps — duel de cartes tactique.
  * Les tours gardent leur liberté d'une partie de cartes à collectionner :
  * poser un terrain, lancer des sorts, déclarer ses attaquants, puis défendre
  * pendant la fenêtre de réponse de l'adversaire.
@@ -851,7 +851,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
         <header className="rpg-mode-menu__header">
           <div className="rpg-mode-menu__brand">
             <span className="rpg-mode-menu__eyebrow">DUEL TACTIQUE · ALGÉRIE FANTASTIQUE</span>
-            <h1>Le Sablier <span>de Bab El</span></h1>
+            <h1>Le Sablier <span>du temps</span></h1>
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
@@ -1109,7 +1109,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             )}
           </main>
         )}
-        <footer className="rpg-mode-menu__footer"><span>LE SABLIER DE BAB EL</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
+        <footer className="rpg-mode-menu__footer"><span>LE SABLIER DU TEMPS</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
       </div>
     </section>
   );
@@ -2568,7 +2568,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         onDrop={deposerCarteSurTable}
       >
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
-          <strong>LE SABLIER DE BAB EL</strong>
+          <strong>LE SABLIER DU TEMPS</strong>
           {etageHistoire && <span className="rpg-duel-nav__story">MODE HISTOIRE · {etageHistoire.nom}</span>}
           <button type="button" onClick={() => setEcran(histoireEtageId ? 'histoire' : 'jouer')}>Menu</button>
           <button type="button" onClick={() => setEcran('decks')}>Deck</button>

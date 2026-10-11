@@ -1,5 +1,5 @@
 /**
- * Son du prototype — « Le Sablier de Bab El ».
+ * Son du prototype — « Le Sablier du temps ».
  *
  * Zéro asset : tout est synthétisé en WebAudio, dans le vocabulaire du
  * dossier DA (§ 5) — carrés nets pour les jingles, sinus doux pour les
