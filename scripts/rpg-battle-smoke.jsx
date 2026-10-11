@@ -455,14 +455,15 @@ export async function checkRpgBattle(assert) {
     'les icônes d’effets sont absentes de la carte posée sur la table');
   assert.match(visageTable.getAttribute('aria-label') ?? '', /rapidité.*attaquer le tour où elle arrive.*esquive 1 contre les attaques et magies/,
     'Rapidité et Esquive restent annoncées dans le libellé accessible');
-  assert.ok(visageTable.querySelector('.rpg-card__img') && visageTable.querySelector('.rpg-card__type')
+  assert.ok(visageTable.querySelector('.rpg-card__img')
     && visageTable.querySelector('.rpg-mana-cost') && visageTable.querySelector('.rpg-card-element-badge')
     && visageTable.querySelector('.rpg-card__foot')?.querySelectorAll(':scope > span').length === 2,
-  'une créature posée montre son illustration, sa couleur à gauche, son coût à droite, son type et ses statistiques');
+  'une créature posée montre son illustration, sa couleur à gauche, son coût à droite et ses statistiques, sans type imprimé');
   assert.equal(visageTable.querySelectorAll('.rpg-card__foot .rpg-stat-icon').length, 2, 'attaque et défense ont des icônes vectorielles');
   assert.deepEqual([...visageTable.querySelectorAll('.rpg-card__foot .rpg-stat-value')].map(node => node.textContent), ['3', '1']);
-  assert.match(visageTable.querySelector('.rpg-card__type')?.textContent ?? '', /^Type\s+—/,
-    'le type imprimé d’une créature ne répète pas le mot Créature');
+  assert.equal(visageTable.querySelector('.rpg-card__type'), null,
+    'le type n’est pas imprimé sur la carte posée');
+  assert.match(visageTable.getAttribute('aria-label'), /Type\s+—/, 'le type reste accessible');
   assert.equal(visageTable.querySelector('.rpg-mana-cost i'), null, 'le coût sur table reste séparé de son symbole de couleur');
   assert.ok(visageTable.classList.contains('is-pret') && !visageTable.classList.contains('is-summoning-sick'),
     'le Fennec est prêt à attaquer dès son arrivée grâce à Rapidité');

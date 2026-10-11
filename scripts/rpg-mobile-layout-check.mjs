@@ -119,6 +119,12 @@ try {
             row.scrollLeft = 0;
             const rail = row.getBoundingClientRect();
             const first = cards[0].getBoundingClientRect();
+            const table = document.querySelector('.card-table').getBoundingClientRect();
+            const lane = document.querySelector(row.classList.contains('rpg-terrains--ennemi')
+              ? '.card-row--ennemi' : '.card-row--equipe').getBoundingClientRect();
+            results.push(first.left >= table.left + Math.min(160, Math.max(44, innerWidth * .08))
+              && first.top >= lane.top && first.bottom <= lane.bottom
+              && rail.right <= lane.left);
             const positions = cards.map(card => card.getBoundingClientRect());
             results.push(positions.every((rect, index) => Math.abs(rect.top - first.top) < 1
               && rect.width >= 44 && (!index || rect.left >= positions[index - 1].right + 7)));
@@ -240,6 +246,7 @@ try {
     return Math.abs(angle - expected) < .5;
   }, { selector, expected });
   await waitForTilt('.rpg-card--equipe.is-declared-attacker', 90);
+  assert.equal(await page.locator('.card-row .rpg-card__type').count(), 0, 'table cards do not print their type');
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     const cancel = await page.locator('.rpg-btn--cancel-attack').boundingBox();

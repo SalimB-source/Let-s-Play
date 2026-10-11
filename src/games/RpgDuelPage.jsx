@@ -540,9 +540,6 @@ function TableCard({
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
       </header>
-        <div className="rpg-card__type">
-          <span>{cardFaceTypeLine(carte)}</span>
-        </div>
         <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${blessee ? ', blessée' : ''}`}>
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{entite.atk}</span></span>
           <span className={`rpg-card__pt${blessee ? ' is-wounded' : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span></span>

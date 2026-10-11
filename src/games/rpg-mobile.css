@@ -83,10 +83,11 @@
 
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
+  --terrain-inset: clamp(44px, 8vw, 160px);
   display: grid;
-  grid-template-columns: clamp(116px, 18vw, 210px) minmax(0, 1fr) clamp(220px, 30vw, 340px);
+  grid-template-columns: calc(clamp(116px, 18vw, 210px) + var(--terrain-inset)) minmax(0, 1fr) clamp(220px, 30vw, 340px);
   grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) clamp(84px, 28dvh, 146px);
-  grid-template-areas: "enemy-mana opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
+  grid-template-areas: ". opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
   padding: 6px;
   overflow: auto;
@@ -146,6 +147,11 @@
 .rpg-battle--touch .card-table > .rpg-terrains--ennemi { grid-area: enemy-mana; }
 .rpg-battle--touch .card-table > .rpg-terrains--joueur { grid-area: mana; }
 .rpg-battle--touch .card-table > .rpg-terrains {
+  /* Stay on the wooden playing surface, away from the illustrated rim and
+     upper corner ornaments. Reserve the inset in the grid, not over cards. */
+  margin-inline-start: var(--terrain-inset);
+  align-self: end;
+  height: 75px;
   /* Different terrain stacks share one horizontal row, never a vertical grid.
      The side column fits at least two stacks; extra types scroll sideways. */
   display: flex;
@@ -209,7 +215,6 @@
 .rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 8px; justify-content: flex-start; align-items: center; gap: 8px; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
-.rpg-battle--touch .rpg-card--img .rpg-card__type,
 .rpg-battle--touch .rpg-hand__type { font-size: 7px; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-mana-cost,
 .rpg-battle--touch .rpg-card--img .rpg-mana-cost.is-compact { font-size: 11px; min-width: 24px; height: 20px; }
