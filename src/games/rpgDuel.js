@@ -8,6 +8,7 @@
  */
 
 import {
+  cardById,
   cardColorCost,
   cardColors,
   duelCardById,
@@ -517,6 +518,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
   const entite = creerEntiteCreature(carte);
   camp.creatures.push(entite);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
@@ -592,25 +597,44 @@ function contreCorrespond(effet, carte) {
   return true;
 }
 
-/** Contrer : répond à l'annonce du sorcier. La carte annoncée est défaussée sans effet,
- *  et le contre paie son coût (Marée contraire fait aussi piocher une carte). */
-function contrerAnnonce(duel, cote, carte) {
+/** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
+ *  La carte visée est défaussée sans effet, et le contre paie son coût (Marée
+ *  contraire fait aussi piocher une carte). `annonce` : { cote, carteId } ;
+ *  par défaut l'annonce en cours du sorcier. */
+function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   const camp = duel[cote];
-  const annonce = duel.annonce;
-  if (cote !== 'joueur' || !annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
+  if (!annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
   const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
   if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
+  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carte.id), 1);
   camp.cimetiere.push(carte.id);
   const main = duel[annonce.cote].main;
   if (main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
   duel[annonce.cote].cimetiere.push(annonce.carteId);
-  duel.annonce = null;
-  duel.fenetreReponse = false;
+  if (annonce === duel.annonce) {
+    duel.annonce = null;
+    duel.fenetreReponse = false;
+  }
   for (let i = 0; i < (carte.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
-  duel.log.push(`Vous contrez ${cible.name} avec ${carte.name}.`);
-  return { ok: true, contre: true, carteContree: annonce.carteId };
+  duel.log.push(cote === 'joueur'
+    ? `Vous contrez ${cible.name} avec ${carte.name}.`
+    : `Le sorcier contre ${cible.name} avec ${carte.name}.`);
+  return { ok: true, contre: true, parIA: cote === 'sorcier', carteContree: annonce.carteId, carteContre: carte.id };
+}
+
+/** Contre de l'IA à une carte du joueur : seulement si la carte coûte au moins 2,
+ *  et avec le contre le moins cher qui vise cette carte et que le sorcier peut payer. */
+function choisirContreIA(duel, carte) {
+  if (!carte || (carte.cost ?? 0) < 2) return null;
+  const candidats = duel.sorcier.main
+    .map((id) => cardById(id))
+    .filter((c) => c?.effet?.type === 'contresort'
+      && contreCorrespond(c.effet, carte)
+      && rpgPeutPayer(duel.sorcier, c))
+    .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0));
+  return candidats[0] ?? null;
 }
 
 /** Lancer une magie : rituel pendant son tour, éphémère aussi en réponse. */
@@ -626,6 +650,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
+
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (cibleId === 'sorcier') {

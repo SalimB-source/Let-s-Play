@@ -156,7 +156,16 @@ sans la payer. Une bannière « Le sorcier annonce X » apparaît, et le joueur 
 destruction, pioche 2), **Léviathan** (3 dégâts à une créature à l'arrivée),
 **Jörmungandr** (3 dégâts au sorcier à l'arrivée).
 
+**Contre de l'IA.** Quand le joueur lance une magie ou pose une créature (hors
+annonce en cours), le sorcier peut contrer : il choisit le contre le moins cher
+qui vise la carte et qu'il peut payer (`choisirContreIA`, moteur). Seules les cartes
+de coût 2 ou plus sont contrées. La carte du joueur est défaussée sans effet ; une
+créature contrée n'entre pas en jeu. L'IA ne lance jamais de contre de sa propre
+initiative : elle ne contre que la carte du joueur.
+
 Limites : le moteur n'a pas de pile de résolution, donc un contre ne peut pas
-défaire un sort **déjà résolu**. L'IA ne lance jamais de contre (elle les garde en main).
+défaire un sort **déjà résolu**. Une réponse du joueur dans la fenêtre d'annonce
+du sorcier n'est pas contrée par l'IA. Un contre de l'IA n'existe que si son deck
+contient des contres (voir la décision sur le deck de l'IA).
 
 Vérifications : `tests/rpg-maree.test.js` (inclus dans `npm run check:rpg`).

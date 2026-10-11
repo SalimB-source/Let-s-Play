@@ -2085,6 +2085,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective);
+    if (res.ok && res.contre && res.parIA) {
+      // Le sorcier contre la carte du joueur : elle est défaussée, le tour du joueur continue.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      invaliderAnnulation();
+      setCibleEnCours(null);
+      setMessage(`Le sorcier contre ${carte.name} avec ${cardById(res.carteContre)?.name ?? 'un contre'}.`);
+      force();
+      return;
+    }
     if (res.ok && res.contre) {
       // Le contre a défait l'annonce du sorcier : il reprend son tour, carte suivante.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -2186,6 +2195,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       else if (res.raison === 'cible') setMessage(`Choisissez une créature adverse pour ${carte.name}.`);
       else if (res.raison === 'protection') setMessage(`${nomCibleCombat ?? 'Cette créature'} est protégée contre ${cardColorLabel(carte)}.`);
       else setMessage('Impossible.');
+    } else if (res.contre && res.parIA) {
+      // Le sorcier contre la créature : elle n'entre pas en jeu.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      setMessage(`Le sorcier contre ${carte.name} avec ${cardById(res.carteContre)?.name ?? 'un contre'}. La créature ne rejoint pas le champ.`);
     } else {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);

@@ -205,3 +205,74 @@ test('le sorcier IA ne lance jamais un contre : il le garde en main', () => {
 test('le deck de départ du sorcier reste valide', () => {
   assert.equal(rpgValiderDeck(RPG_DECK_SORCIER_BASE).ok, true);
 });
+
+/** Le joueur joue une carte : l'IA peut la contrer avec un contre payable. */
+const jouerJoueur = (duel) => { duel.tour = 'joueur'; };
+
+test('l’IA contre une créature du joueur de coût 2 avec Contresort des abîmes', () => {
+  const duel = duelVide();
+  jouerJoueur(duel);
+  mana(duel, 'joueur', 'eau', 2);
+  donner(duel, 'joueur', 'porteuse-de-cruches');
+  mana(duel, 'sorcier', 'eau', 2);
+  donner(duel, 'sorcier', 'contresort-des-abimes');
+  const res = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
+  assert.equal(res.ok, true);
+  assert.equal(res.contre, true);
+  assert.equal(res.parIA, true);
+  assert.equal(duel.joueur.creatures.length, 0, 'la créature n’entre pas en jeu');
+  assert.ok(duel.joueur.cimetiere.includes('porteuse-de-cruches'));
+  assert.ok(duel.sorcier.cimetiere.includes('contresort-des-abimes'));
+  assert.equal(duel.sorcier.mana.eau, 0, 'le contre est payé');
+});
+
+test('l’IA contre une magie du joueur avec Silence d’écume si c’est un sort de Braise', () => {
+  const duel = duelVide();
+  jouerJoueur(duel);
+  mana(duel, 'joueur', 'braise', 3);
+  donner(duel, 'joueur', 'fureur-du-souk');
+  mana(duel, 'sorcier', 'eau', 1);
+  donner(duel, 'sorcier', 'silence-decume');
+  const res = rpgLancerMagie(duel, 'joueur', 'fureur-du-souk');
+  assert.equal(res.contre, true);
+  assert.equal(res.parIA, true);
+  assert.ok(duel.joueur.cimetiere.includes('fureur-du-souk'));
+});
+
+test('l’IA ne contre pas une carte de coût 1', () => {
+  const duel = duelVide();
+  jouerJoueur(duel);
+  mana(duel, 'joueur', 'eau', 1);
+  donner(duel, 'joueur', 'eau-de-la-source');
+  mana(duel, 'sorcier', 'eau', 2);
+  donner(duel, 'sorcier', 'contresort-des-abimes');
+  const res = rpgLancerMagie(duel, 'joueur', 'eau-de-la-source');
+  assert.equal(res.ok, true);
+  assert.equal(res.contre, undefined, 'pas de contre pour une carte bon marché');
+  assert.ok(duel.sorcier.main.includes('contresort-des-abimes'));
+});
+
+test('l’IA ne contre pas un sort d’Eau avec Silence d’écume', () => {
+  const duel = duelVide();
+  jouerJoueur(duel);
+  mana(duel, 'joueur', 'eau', 3);
+  donner(duel, 'joueur', 'brisure-de-verre');
+  mana(duel, 'sorcier', 'eau', 1);
+  donner(duel, 'sorcier', 'silence-decume');
+  const res = rpgLancerMagie(duel, 'joueur', 'brisure-de-verre');
+  assert.equal(res.ok, true);
+  assert.equal(res.contre, undefined);
+  assert.ok(duel.sorcier.main.includes('silence-decume'), 'Silence reste en main');
+});
+
+test('sans mana, l’IA ne contre pas : la carte du joueur se résout', () => {
+  const duel = duelVide();
+  jouerJoueur(duel);
+  mana(duel, 'joueur', 'eau', 2);
+  donner(duel, 'joueur', 'porteuse-de-cruches');
+  donner(duel, 'sorcier', 'contresort-des-abimes');
+  const res = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
+  assert.equal(res.ok, true);
+  assert.equal(res.contre, undefined);
+  assert.equal(duel.joueur.creatures.length, 1, 'la créature est posée');
+});
