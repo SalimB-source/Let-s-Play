@@ -4458,6 +4458,9 @@
 .rpg-card-destruction-fx.rpg-card--frame-hybride,
 .rpg-card-pile__card--top.rpg-card--frame-hybride {
   --rpg-gold-frame: linear-gradient(115deg, #7d5415 0%, #ffe6a3 24%, #e3ad3d 42%, #fff6d4 55%, #b8801f 74%, #f2d379 100%);
+  /* Filet de sécurité : si l'anneau n'était pas couvert, on verrait un or
+     sombre et non le fond noir de la carte. */
+  background-color: #6d4a13;
   border-color: transparent;
   background-image:
     linear-gradient(var(--rpg-frame-fill, #0c0c0e), var(--rpg-frame-fill, #0c0c0e)),
@@ -4466,12 +4469,17 @@
   background-clip: padding-box, border-box;
   background-size: 100% 100%, 240% 100%;
   background-repeat: no-repeat, no-repeat;
-  animation: rpg-frame-gold-sweep 3.6s linear infinite;
+  animation: rpg-frame-gold-sweep 3.2s ease-in-out infinite alternate;
 }
 
+/* Le reflet fait des allers-retours entre 0 % et 100 %, et ne sort JAMAIS de
+   cette plage : le dégradé doré fait 240 % de large sans répétition, donc il
+   ne recouvre tout l'anneau que tant que sa position reste entre 0 % et 100 %.
+   Au-delà, l'anneau n'est plus couvert et le fond sombre de la carte (#0c0c0e)
+   réapparaît — le cadre semblait devenir noir une partie du cycle. */
 @keyframes rpg-frame-gold-sweep {
-  from { background-position: 0 0, 100% 0; }
-  to { background-position: 0 0, -140% 0; }
+  from { background-position: 0 0, 0% 0; }
+  to { background-position: 0 0, 100% 0; }
 }
 
 /* ── Braise mythique posée : les flammes lèchent le cadre de la carte ─────── */

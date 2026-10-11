@@ -284,6 +284,13 @@ assert.match(goldRule, /\.rpg-card\.rpg-card--frame-hybride,[\s\S]*?\.rpg-hand__
   'les cartes bicolores portent un cadre doré balayé par un reflet');
 assert.doesNotMatch(goldRule, /--frame-(?:eau|sable|braise)\b/,
   'le cadre doré reste réservé aux cartes bicolores, jamais aux cadres monocolores');
+assert.match(goldRule, /animation:\s*rpg-frame-gold-sweep[^;]*\binfinite alternate;/,
+  'le reflet doré fait des allers-retours, sans saut au retour du cycle');
+const goldPositions = [...frameCss.slice(frameCss.indexOf('@keyframes rpg-frame-gold-sweep'))
+  .matchAll(/background-position:\s*0 0,\s*(-?[\d.]+)%/g)].map((match) => Number(match[1]));
+assert.ok(goldPositions.length >= 2, 'le reflet doré est animé sur toute la largeur du cadre');
+assert.ok(goldPositions.every((position) => position >= 0 && position <= 100),
+  `le reflet doré reste entre 0 % et 100 % (reçu : ${goldPositions.join(', ')}) — hors de cette plage le dégradé non répété ne couvre plus l'anneau et le cadre redevient noir`);
 assert.match(frameCss, /@keyframes rpg-frame-gold-sweep/,
   'le reflet doré des cartes bicolores est animé');
 assert.match(frameCss, /\.rpg-card\.rpg-card--mythic-braise\s*\{\s*overflow:\s*visible;\s*isolation:\s*isolate;\s*\}/,
