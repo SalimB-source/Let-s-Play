@@ -5122,3 +5122,76 @@ tracé au journal, les cinq réponses proposées, la première vague gagnée en
 jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
 réserve.
 
+## Le Sablier du temps : les plateaux du duel
+
+Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
+Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
+désormais plusieurs, et **le plateau change de partie en partie**.
+
+### La règle
+
+- **Un tirage par partie.** Chaque nouvelle partie tire son plateau ; celui du
+  duel précédent est écarté, donc deux duels de suite ne se jouent jamais sur
+  le même terrain. Le tirage passe par le `rng` du duel (injectable), comme le
+  reste du moteur : une partie se rejoue à l'identique, valeurs hors bornes
+  comprises.
+- **Un verrou, si on préfère la stabilité.** Le menu *Jouer* liste les plateaux
+  avec leur fond et leur résumé ; en choisir un le verrouille pour les duels
+  suivants (mémorisé sur l'appareil, clé `letsplay_sablier_plateau_v1`). La
+  pastille **Aléatoire** rend la main au tirage.
+- **Le plateau est annoncé.** Le duel ouvre sur « Plateau : … » dans la barre
+  du bas, et la table porte son terrain dans son libellé accessible.
+
+### Les plateaux
+
+| Fichier | Plateau | Ce qu'on y voit |
+| --- | --- | --- |
+| `public/card-table.jpg` | **La Table des Heures** (Bab El) | le bois des Veilleurs, l'astrolabe doré gravé au centre, quatre bougies. |
+| `public/plateau-erg-du-sahara.jpg` | **L'Erg du Sahara** | la rose des sables tracée à la main dans la dune, la lanterne de laiton et son feu, l'outre, la corde, les pierres noires. |
+| `public/plateau-caravane-de-gourara.jpg` | **La Caravane de Gourara** | le lit sec de l'oued et sa piste : les deux empreintes du campement, l'outre, la corde et le compas abandonné. |
+| `public/plateau-terre-de-damnation.jpg` | **La Terre de Damnation** (Les Brûlés) | l'étage repris par le feu : la croûte craquelée et ses braises encore vives, l'encensoir de fer renversé et sa coulée de cendres, les troncs noircis, les éclats d'obsidienne. |
+| `public/plateau-ruines-de-tipaza.jpg` | **Les Ruines de Tipaza** (Tipasa) | la mosaïque romaine ouverte par le vent, les dalles disjointes, les fûts de colonne tombés, le chapiteau corinthien et le débris d’architrave, coquillages et cristaux de sel. |
+
+### Où vit le code
+
+- `src/games/rpgPlateaux.js` — le catalogue des plateaux (identifiant, nom,
+  lieu, fichier, résumé), le tirage (`tirerPlateau`), la normalisation et la
+  sauvegarde du choix. Aucun rendu, aucun DOM : testable comme le moteur.
+- `src/games/RpgDuelPage.jsx` — le bloc « Le terrain d'affrontement » du menu
+  (une carte par plateau, plus la pastille aléatoire), le tirage dans
+  `nouvellePartie`, et la classe `card-table--plateau-<id>` + le
+  `background-image` posés sur la table.
+- `src/games/rpg-battle.css` — les styles du bloc, la couleur de repli de chaque
+  plateau, et les **voiles de lisibilité**, un par famille de terrain. Le sable
+  (moyenne 127 sur 255) et la pierre des ruines (133) sont deux fois plus
+  lumineux que le bois (57) : sans ombre dense, les libellés clairs de la table
+  et les cartes posées se noient dans le beige. La terre brûlée est sombre (66)
+  mais très contrastée : elle reçoit un voile léger et une vignette appuyée,
+  pour laisser les braises lisibles sans que les éclats de lave mangent les
+  cartes. Le bois garde son voile d'origine. Seule la teinte distingue les
+  fonds clairs : ombre chaude pour les sables, ombre neutre et froide pour la
+  pierre au bord de la mer. Même mécanisme pour tous (le pseudo-élément de la
+  table) et même exception : ils disparaissent en tactile (`rpg-mobile.css`).
+- `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
+  `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
+  — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
+  ni interface dessinée — l'interface du jeu se superpose (règle de
+  `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
+  calme et peu contrasté : c'est la zone où les cartes se posent.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # règles + les 10 tests des plateaux
+npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau compris
+```
+
+`tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
+livrés dans `public/`, chaque atmosphère — Bab El, les deux déserts, la
+terre brûlée, les ruines de Tipaza — avec son propre fond), le tirage (jamais deux fois de suite le même terrain,
+déterminisme par `rng`, valeurs hors bornes sans plantage), le verrou (toujours
+respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
+retour, valeur inconnue normalisée, stockage illisible ou absent).
+`check:rpg-ui` monte la page : le menu présente chaque plateau plus le tirage
+aléatoire, le verrou est exclusif, et le duel qui suit se joue bien sur le
+plateau verrouillé — classe, fond et libellé de la table compris.
