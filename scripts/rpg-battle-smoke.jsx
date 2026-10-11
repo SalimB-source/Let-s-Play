@@ -159,6 +159,9 @@ export async function checkRpgBattle(assert) {
     'le catalogue affiche les statistiques 4/4 de l’Anqa');
   assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /revient en jeu après deux tours/i,
     'le catalogue décrit le retour de l’Anqa deux tours après sa destruction');
+  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '',
+    /Envol — Ne peut être bloquée que par une créature avec Envol/,
+    'le catalogue décrit l’Envol de l’Anqa et son blocage réservé aux créatures volantes');
   const fennecCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="fennec-des-decombres"]');
   assert.ok(fennecCatalogue, 'le Fennec apparaît au catalogue');
   assert.equal(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-card-rapidity, .rpg-card-catalogue__art .rpg-card-evasion'), null,

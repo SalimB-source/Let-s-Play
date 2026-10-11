@@ -554,8 +554,9 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Oiseau de feu',
     art: 'anqa-des-braises',
+    envol: true,
     destruction: { type: 'retour-apres-tours', tours: 2 },
-    text: 'Quand Anqa est détruite : elle revient en jeu après deux tours.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand Anqa est détruite : elle revient en jeu après deux tours.',
     flavor: 'Même la cendre sait où se cachent les braises.',
   },
   {

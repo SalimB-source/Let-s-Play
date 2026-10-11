@@ -107,15 +107,52 @@ test('le set de créatures existe : vingt-trois cartes façon TCG (coût, attaqu
   assert.equal(creatureById('djinn-du-souk').name, 'Djinn du souk');
 });
 
-test('Anqa est une 4/4 Braise à 4 qui revient après deux tours', () => {
+test('Anqa est une 4/4 Braise à 4 avec Envol qui revient après deux tours', () => {
   const anqa = cardById('anqa-des-braises');
-  assert.deepEqual({ element: anqa.element, cost: anqa.cost, atk: anqa.atk, def: anqa.def, rarity: anqa.rarity }, {
-    element: 'braise', cost: 4, atk: 4, def: 4, rarity: 'mythique',
+  assert.deepEqual({ element: anqa.element, cost: anqa.cost, atk: anqa.atk, def: anqa.def, rarity: anqa.rarity, envol: anqa.envol }, {
+    element: 'braise', cost: 4, atk: 4, def: 4, rarity: 'mythique', envol: true,
   });
   assert.equal(anqa.destruction.type, 'retour-apres-tours');
   assert.equal(anqa.destruction.tours, 2);
+  assert.match(anqa.text, /Envol — Ne peut être bloquée que par une créature avec Envol/);
   assert.match(anqa.text, /revient en jeu après deux tours/i);
   assert.equal(cardArtId(anqa), 'anqa-des-braises');
+});
+
+test('l’Envol d’Anqa ne laisse que les créatures volantes la bloquer', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'anqa-des-braises');
+  const anqaAttaquante = rpgJouerCreature(duel, 'sorcier', 'anqa-des-braises').entite;
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  anqaAttaquante.ready = true;
+  chien.ready = true;
+
+  assert.equal(anqaAttaquante.envol, true, 'l’Envol est porté par l’entité en jeu');
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'sorcier', [anqaAttaquante.id]), {},
+    'l’IA ne jette pas un Chien terrestre devant l’Anqa volante');
+  const refus = rpgLancerAttaque(duel, 'sorcier', [anqaAttaquante.id], { [anqaAttaquante.id]: [chien.id] });
+  assert.equal(refus.ok, false);
+  assert.equal(refus.raison, 'envol', 'le moteur refuse un bloqueur sans Envol');
+  assert.equal(chien.pv, 2, 'le blocage refusé ne blesse personne');
+  assert.equal(duel.joueur.pv, 50, 'aucune attaque n’est résolue');
+
+  donner(duel, 'joueur', 'anqa-des-braises');
+  const anqaBloqueuse = rpgJouerCreature(duel, 'joueur', 'anqa-des-braises').entite;
+  anqaBloqueuse.ready = true;
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'sorcier', [anqaAttaquante.id]), {
+    [anqaAttaquante.id]: [anqaBloqueuse.id],
+  }, 'une créature avec Envol peut bloquer un attaquant avec Envol');
+  const combat = rpgLancerAttaque(duel, 'sorcier', [anqaAttaquante.id], {
+    [anqaAttaquante.id]: [anqaBloqueuse.id],
+  });
+  assert.equal(combat.ok, true);
+  assert.equal(combat.resume.paires.length, 1, 'les deux Anqa s’affrontent en vol');
+  assert.equal(duel.joueur.pv, 50, 'l’Anqa volante arrête l’attaque avant les PV');
+  assert.equal(duel.sorcier.creatures.includes(anqaAttaquante), false, 'les deux 4/4 se détruisent');
+  assert.equal(duel.joueur.creatures.includes(anqaBloqueuse), false);
 });
 
 test('Anqa revient en jeu après deux changements de tour, sans attaquer immédiatement', () => {
@@ -141,6 +178,7 @@ test('Anqa revient en jeu après deux changements de tour, sans attaquer immédi
   const anqaRenaissante = duel.joueur.creatures.find((entite) => entite.carteId === 'anqa-des-braises');
   assert.ok(anqaRenaissante, 'Anqa revient au début du tour après le deuxième tour');
   assert.equal(anqaRenaissante.pv, 4);
+  assert.equal(anqaRenaissante.envol, true, 'elle renaît toujours volante');
   assert.equal(anqaRenaissante.ready, false, 'elle arrive avec le mal d’invocation');
   assert.equal(duel.joueur.cimetiere.includes('anqa-des-braises'), false);
   assert.deepEqual(duel.joueur.retoursProgrammes, []);
