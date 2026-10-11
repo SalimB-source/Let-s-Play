@@ -30,6 +30,14 @@ limitée à 7.
   Nord (valkyries, guerriers de clan, drakkars, et les figures du panthéon
   scandinave — jamais appelées « dieux » : le Père des corbeaux, le Maître du
   marteau, la Dame des neuf mondes, le Serpent du monde).
+- **Les quatre figures du Nord** sont nommées par leur attribut, comme le
+  faisaient les poèmes : *le Tonnerre* (le Maître du marteau — cheveux et barbe
+  roux, gantelets, le marteau qui revient toujours à sa main), *Celui qui sait*
+  (le Père des corbeaux — ses deux corbeaux rapportent la nouvelle), *la
+  Gardienne du foyer* (la Dame des neuf mondes — le fil des maisons), *Celui
+  qui entoure* (le Serpent du monde — l’anneau des eaux). Aucune carte, aucun
+  type, aucune saveur ne les nomme autrement : le set raconte les mythes du
+  Nord sans jamais écrire le mot « dieu ».
 - Chaque carte (créature, magie, héros) a un **type** : une des quatre couleurs.
 - Payer un coût de N exige **N mana au total, dont au moins un de la
   couleur de la carte** (comme « 2R » à Magic).

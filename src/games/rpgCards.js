@@ -973,7 +973,7 @@ export const RPG_HERO_CARDS = [
     art: 'maitre-du-marteau',
     arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     text: 'Quand il arrive : son marteau tombe — 2 dégâts à toutes les créatures adverses.',
-    flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous.',
+    flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {
     id: 'dame-des-neuf-mondes',

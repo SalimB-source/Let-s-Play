@@ -1559,6 +1559,27 @@ test('le plein art du Serment est livré : dix-neuf peintures dédiées, aucune 
   }
 });
 
+test('les quatre figures du Nord portent leur kenning, jamais le mot « dieu »', () => {
+  const figures = RPG_DUEL_CARDS.filter((carte) => carte.kind === 'hero' && carte.element === 'neige');
+  assert.equal(figures.length, 4, 'le set Neige a quatre figures légendaires');
+  assert.deepEqual(figures.map((carte) => carte.id),
+    ['pere-des-corbeaux', 'maitre-du-marteau', 'dame-des-neuf-mondes', 'serpent-du-monde']);
+  // Les noms du catalogue suivent les périphrases des poèmes du Nord : la
+  // figure du tonnerre se reconnaît à son marteau, pas à un nom de divinité.
+  assert.deepEqual(figures.map((carte) => carte.role),
+    ['Celui qui sait', 'Le Tonnerre', 'La Gardienne du foyer', 'Celui qui entoure']);
+  for (const carte of figures) {
+    assert.equal(carte.rarity, 'epique');
+    assert.match(carte.typeLine, /^Créature légendaire — /);
+    assert.doesNotMatch(`${carte.name} ${carte.role} ${carte.text ?? ''} ${carte.flavor ?? ''}`,
+      /\bdieu(x)?\b/i, `${carte.id} ne nomme jamais de divinité`);
+  }
+  const maitre = RPG_DUEL_CARDS.find((carte) => carte.id === 'maitre-du-marteau');
+  assert.equal(maitre.role, 'Le Tonnerre', 'le Maître du marteau est la figure du tonnerre');
+  assert.match(maitre.flavor, /marteau/, 'son marteau qui revient à sa main est sa marque');
+  assert.match(maitre.flavor, /tonnerre/);
+});
+
 test('aucune peinture Neige n’est le doublon d’une autre : les figures du Nord ont leur propre sujet', () => {
   // Deux cartes peuvent partager un même sujet (le marteau du Maître et
   // l’Éclair du marteau, les corbeaux du Père) : leurs peintures doivent
@@ -1607,7 +1628,7 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : dix-neuf cartes dédi�
 
   // Les figures du Nord ne sont jamais appelées « dieux » dans leurs textes.
   for (const carte of RPG_DUEL_CARDS) {
-    const texte = `${carte.name} ${carte.text ?? ''} ${carte.flavor ?? ''}`;
+    const texte = `${carte.name} ${carte.role ?? ''} ${carte.text ?? ''} ${carte.flavor ?? ''}`;
     assert.doesNotMatch(texte, /\bdieu(x)?\b/i, `${carte.id} ne nomme pas de divinité`);
   }
 });
