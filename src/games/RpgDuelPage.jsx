@@ -10,6 +10,7 @@ import './rpg-battle.css';
 import {
   rpgCibleAuto,
   rpgChoisirBloqueurs,
+  rpgCiblesAttaqueRapide,
   rpgEngagerTerrain,
   rpgFermerFenetreReponse,
   rpgFinDeTour,
@@ -44,7 +45,18 @@ import {
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', hybride: 'Sable + Braise' };
-const cardArt = (id) => `${import.meta.env.BASE_URL}cards/${cardArtId(id)}.jpg`;
+const CARD_ART_CACHE_VERSIONS = {
+  'djinn-du-souk': 'munch-impressionniste-v3',
+  'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
+  feriel: 'lance-de-feu-photoreal-v1',
+  'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
+  'anqa-des-braises': 'anqa-des-braises-huile-v1',
+};
+const cardArt = (id) => {
+  const artId = cardArtId(id);
+  const revision = CARD_ART_CACHE_VERSIONS[artId];
+  return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
+};
 const couleurLabel = (couleur) => ELEMENT_LABELS[couleur] ?? couleur;
 
 function cardColorLabel(carte) {
@@ -62,6 +74,14 @@ function cardCostLabel(carte) {
   return `${carte?.cost ?? 0} mana${exigences ? `, dont ${exigences}` : ''}`;
 }
 
+function cardEffectLines(text) {
+  if (!text || text === '—') return [];
+  return String(text)
+    .split(/\n+|(?<=[.!?])\s+/u)
+    .map((effet) => effet.trim())
+    .filter(Boolean);
+}
+
 function deckColors(deck) {
   return cardColors({ element: deck?.element, colors: deck?.elements });
 }
@@ -71,7 +91,7 @@ function deckColorLabel(deck) {
 }
 
 function deckColorGlyph(deck) {
-  return deckColors(deck).map((couleur) => ELEMENT_GLYPHS[couleur] ?? '◇').join('');
+  return deckColors(deck).map((couleur) => ELEMENT_GLYPHS[couleur] ?? '◇').join('\u00a0');
 }
 
 function deckColorModifier(deck) {
@@ -149,23 +169,13 @@ function ManaCost({ carte, compact = false, showElement = true }) {
   if (!carte || carte.kind === 'terrain') return null;
   const colors = cardColors(carte);
   const hybrid = colors.length > 1;
-  const pips = Object.entries(cardColorCost(carte))
-    .flatMap(([couleur, quantite]) => Array.from({ length: quantite }, () => couleur));
   return (
     <span
       className={`rpg-mana-cost rpg-mana-cost--${hybrid ? 'hybride' : carte.element}${compact ? ' is-compact' : ''}`}
       aria-label={`Coût : ${cardCostLabel(carte)}`}
     >
       <b>{carte.cost}</b>
-      {hybrid ? (
-        <span className="rpg-mana-cost__hybrid-pips" aria-hidden="true">
-          {pips.map((couleur, index) => (
-            <i key={`${couleur}-${index}`} className={`rpg-mana-cost__pip rpg-mana-cost__pip--${couleur}`}>
-              {ELEMENT_GLYPHS[couleur] ?? '◇'}
-            </i>
-          ))}
-        </span>
-      ) : showElement && <i aria-hidden="true">{ELEMENT_GLYPHS[carte.element] ?? '◇'}</i>}
+      {!hybrid && showElement && <i aria-hidden="true">{ELEMENT_GLYPHS[carte.element] ?? '◇'}</i>}
     </span>
   );
 }
@@ -186,45 +196,6 @@ function CardElementBadge({ carte }) {
           </i>
         ))
         : ELEMENT_GLYPHS[carte.element] ?? '◇'}
-    </span>
-  );
-}
-
-function CardProtectionBadge({ protection }) {
-  if (!protection || protection.toursRestants <= 0) return null;
-  return (
-    <span
-      className={`rpg-card-protection rpg-card-protection--${protection.contre}`}
-      aria-hidden="true"
-    >
-      🛡
-    </span>
-  );
-}
-
-function CardEvasionBadge({ amount = 0 }) {
-  const esquive = Math.max(0, amount);
-  if (!esquive) return null;
-  return (
-    <span className="rpg-card-evasion" aria-hidden="true">
-      <svg viewBox="0 0 24 24" focusable="false">
-        <path d="M4 17c3.2-6 6.3-8.4 9.6-6.8 1.8.9 3.6 2.6 5 4.4" />
-        <path d="m14.6 8.2 4.2 6.4 1.8-7" />
-        <path d="M3.5 20h7" />
-      </svg>
-      <b>{esquive}</b>
-    </span>
-  );
-}
-
-function CardRapidityBadge({ active = false }) {
-  if (!active) return null;
-  return (
-    <span className="rpg-card-rapidity" aria-hidden="true">
-      <svg viewBox="0 0 24 24" focusable="false">
-        <path d="M2.5 6.5h8M1.5 12h6.5M2.5 17.5h8" />
-        <path d="m11 4.5 10 7.5-10 7.5z" />
-      </svg>
     </span>
   );
 }
@@ -418,6 +389,7 @@ function TableCard({
   blocking,
   canTarget,
   spellTarget = false,
+  coupRapideCible = false,
   declaredAttacker = false,
   onClick,
   tilt,
@@ -502,6 +474,7 @@ function TableCard({
         blessee ? 'is-wounded' : '',
         canTarget ? 'is-ciblable' : '',
         spellTarget ? 'is-spell-target' : '',
+        coupRapideCible ? 'is-coup-rapide-cible' : '',
         canDragBlocker ? 'is-blocker-draggable' : '',
         blocking ? 'is-blocker-assigned' : '',
         draggedBlocker ? 'is-blocker-dragging' : '',
@@ -528,16 +501,12 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
-      <CardRapidityBadge active={entite.rapidite} />
-      {actionFx?.statsUp && <span className="rpg-card-stat-boost" aria-hidden="true">↑</span>}
-      <CardProtectionBadge protection={protectionActive ? entite.protection : null} />
-      <CardEvasionBadge amount={entite.esquive} />
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
       </header>
@@ -706,6 +675,7 @@ function CardPreview({ carte, jouable, onClose }) {
 
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
+  const effets = cardEffectLines(carte.text);
   return (
     <div
       className="rpg-card-preview-backdrop"
@@ -722,8 +692,6 @@ function CardPreview({ carte, jouable, onClose }) {
         <div className={`rpg-card-preview__art ${cardRarityClass(carte)}`} style={cardRarityStyle(carte)}>
           <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} />
           <CardElementBadge carte={carte} />
-          <CardRapidityBadge active={carte.rapidite} />
-          <CardEvasionBadge amount={carte.esquive} />
           <span>{rarete.label}</span>
         </div>
         <div className="rpg-card-preview__details">
@@ -732,7 +700,11 @@ function CardPreview({ carte, jouable, onClose }) {
             <ManaCost carte={carte} showElement={false} />
           </header>
           <p className="rpg-card-preview__type">{cardFaceTypeLine(carte)}</p>
-          <p className="rpg-card-preview__rules">{carte.text && carte.text !== '—' ? carte.text : 'Aucune capacité.'}</p>
+          <div className="rpg-card-preview__rules" aria-label="Effets">
+            {effets.length
+              ? effets.map((effet, index) => <span key={`${index}-${effet}`}>{effet}</span>)
+              : <span>Aucune capacité.</span>}
+          </div>
           {estCreature && <p className="rpg-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
           {carte.flavor && <p className="rpg-card-preview__flavor">« {carte.flavor} »</p>}
           <p className="rpg-card-preview__hint">
@@ -751,6 +723,7 @@ function HoverCardPreview({ carte, style, spellPlayed = false }) {
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
+  const effets = cardEffectLines(effet);
   return (
     <aside
       className={`rpg-hover-card-preview rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardRarityClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
@@ -764,11 +737,16 @@ function HoverCardPreview({ carte, style, spellPlayed = false }) {
         aria-hidden="true"
       >
         <img src={cardArt(carte)} alt="" />
+        <CardElementBadge carte={carte} />
       </div>
       <div className="rpg-hover-card-preview__details">
         <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>
         {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
-        {effet && <p className="rpg-hover-card-preview__rules">{effet}</p>}
+        {effet && (
+          <div className="rpg-hover-card-preview__rules" aria-label="Effets">
+            {effets.map((ligne, index) => <span key={`${index}-${ligne}`}>{ligne}</span>)}
+          </div>
+        )}
         {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
       </div>
     </aside>
@@ -1001,8 +979,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       <div className="rpg-card-catalogue__art">
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
-                        <CardRapidityBadge active={carte.rapidite} />
-                        {estCreature && <CardEvasionBadge amount={carte.esquive} />}
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
                       </div>
                       <div className="rpg-card-catalogue__details">
@@ -1064,6 +1040,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const force = () => setVersion((v) => v + 1);
   const [phase, setPhase] = useState(false);
   const [attaquants, setAttaquants] = useState([]);
+  const [ciblesAttaque, setCiblesAttaque] = useState({});
+  const [cibleAttaqueEnCours, setCibleAttaqueEnCours] = useState(null);
   const [combatEntrant, setCombatEntrant] = useState(null);
   const [bloqueurGlisse, setBloqueurGlisse] = useState(null);
   const [bloqueurSelectionne, setBloqueurSelectionne] = useState(null);
@@ -1095,6 +1073,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
   }, []);
+
+  useEffect(() => {
+    if (!terrainManaChoix) return undefined;
+    const fermerAvecEchap = (event) => {
+      if (event.key === 'Escape') setTerrainManaChoix(null);
+    };
+    window.addEventListener('keydown', fermerAvecEchap);
+    return () => window.removeEventListener('keydown', fermerAvecEchap);
+  }, [terrainManaChoix]);
 
   useLayoutEffect(() => {
     if (carteEnVol?.phase !== 'pending') return;
@@ -1132,6 +1119,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setAnimationsPioche([]);
     setPhase(false);
     setAttaquants([]);
+    setCiblesAttaque({});
+    setCibleAttaqueEnCours(null);
     setCombatEntrant(null);
     setBloqueurGlisse(null);
     setBloqueurSelectionne(null);
@@ -1214,8 +1203,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const rectangle = event.currentTarget.getBoundingClientRect();
     const largeurVue = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1024);
     const hauteurVue = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 768);
-    const largeurApercu = Math.min(330, Math.max(180, largeurVue - 20));
-    const hauteurApercu = Math.min(180, Math.max(130, hauteurVue - 20));
+    const largeurApercu = Math.min(480, Math.max(180, largeurVue - 20));
+    const hauteurApercu = Math.min(300, Math.max(150, hauteurVue - 20));
     const marge = 10;
     const espace = 12;
     let left = rectangle.right + espace;
@@ -1263,6 +1252,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   if (!duel) return null;
   const vainqueur = rpgVainqueur(duel);
   const monTour = duel.tour === 'joueur' && !vainqueur;
+  const deckJoueurAffiche = RPG_DECKS.find((deck) => deck.id === deckSelectionneId && deck.role === 'joueur') ?? RPG_DECKS[0];
   const reponseActive = Boolean(combatEntrant && duel.fenetreReponse && !vainqueur);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const indicateurTour = vainqueur
@@ -1281,6 +1271,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const prets = duel.joueur.creatures.filter((e) => e.ready && !e.attaquee);
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   const modeCible = targetMode(carteCiblee);
+  const ciblesCoupRapideLegales = (attaquant, cote = 'joueur') => {
+    const carte = cardById(attaquant?.carteId);
+    if (!carte?.coupRapide) return [];
+    const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+    return duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+  };
+  const prochainCoupRapideSansCible = (ids, selections = ciblesAttaque) => ids.find((id) => {
+    const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
+    const ciblesLegales = ciblesCoupRapideLegales(attaquant, 'joueur');
+    return ciblesLegales.length > 0 && !ciblesLegales.some((cible) => cible.id === selections?.[id]);
+  }) ?? null;
   const repartitionValide = !combatEntrant || combatEntrant.attaquants.every((id) => {
     const coteAttaquant = combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
     const attaquant = duel[coteAttaquant].creatures.find((entite) => entite.id === id);
@@ -1364,9 +1365,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const prendreInstantaneChamp = () => {
     const table = tableRef.current;
     const tableRect = table?.getBoundingClientRect() ?? { left: 0, top: 0 };
-    const elements = new Map([...(table?.querySelectorAll('[data-entity-id]') ?? [])]
-      .map((element) => [element.dataset.entityId, element]));
-    return [...duel.joueur.creatures, ...duel.sorcier.creatures].map((entite) => {
+    const elements = new Map([...(table?.querySelectorAll('[data-entity-id], [data-terrain-id]') ?? [])]
+      .map((element) => [element.dataset.entityId ?? element.dataset.terrainId, element]));
+    const cartesEnJeu = [
+      ...duel.joueur.creatures.map((entite) => ({ ...entite, isTerrain: false })),
+      ...duel.sorcier.creatures.map((entite) => ({ ...entite, isTerrain: false })),
+      ...duel.joueur.terrains.map((terrain) => ({
+        ...terrain,
+        name: cardById(terrain.carteId)?.name ?? terrain.carteId,
+        isTerrain: true,
+      })),
+      ...duel.sorcier.terrains.map((terrain) => ({
+        ...terrain,
+        name: cardById(terrain.carteId)?.name ?? terrain.carteId,
+        isTerrain: true,
+      })),
+    ];
+    return cartesEnJeu.map((entite) => {
       const element = elements.get(entite.id);
       const rect = element?.getBoundingClientRect() ?? { left: tableRect.left, top: tableRect.top, width: 0, height: 0 };
       const width = element?.offsetWidth || rect.width || 120;
@@ -1384,6 +1399,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         entityId: entite.id,
         cardId: entite.carteId,
         name: entite.name,
+        isTerrain: entite.isTerrain,
         atk: entite.atk,
         def: entite.def,
         pv: entite.pv,
@@ -1399,7 +1415,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null) => {
     if (!avant?.length) return;
-    const vivants = new Map([...duel.joueur.creatures, ...duel.sorcier.creatures].map((entite) => [entite.id, entite]));
+    const vivants = new Map([
+      ...duel.joueur.creatures,
+      ...duel.sorcier.creatures,
+      ...duel.joueur.terrains,
+      ...duel.sorcier.terrains,
+    ].map((entite) => [entite.id, entite]));
     const disparues = avant.filter((entite) => !vivants.has(entite.entityId));
     if (disparues.length) {
       const entitesBrulees = new Set((Number.isInteger(debutJournalDestructions)
@@ -1428,7 +1449,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const statsAugmentees = [];
     avant.forEach((entite) => {
       const apres = vivants.get(entite.entityId);
-      if (!apres) return;
+      if (!apres || entite.isTerrain) return;
       if (apres.pv < entite.pv || (apres.bouclier ?? 0) < entite.bouclier || apres.def < entite.def) {
         if (!attaquants.has(entite.entityId)) touches.push(entite.entityId);
       } else if (apres.pv > entite.pv || (apres.bouclier ?? 0) > entite.bouclier || apres.atk > entite.atk || apres.def > entite.def) {
@@ -1462,6 +1483,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     actionVolRef.current = null;
     setPhase(false);
     setAttaquants([]);
+    setCiblesAttaque({});
+    setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
     setCarteEnApercu(null);
     setApercuSurvol(null);
@@ -1833,7 +1856,20 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       force();
       return;
     }
-    setAttaquants((prev) => (prev.includes(entite.id) ? prev.filter((id) => id !== entite.id) : [...prev, entite.id]));
+    const dejaSelectionnee = attaquants.includes(entite.id);
+    const ids = dejaSelectionnee
+      ? attaquants.filter((id) => id !== entite.id)
+      : [...attaquants, entite.id];
+    const cibles = { ...ciblesAttaque };
+    if (dejaSelectionnee) delete cibles[entite.id];
+    setAttaquants(ids);
+    setCiblesAttaque(cibles);
+    const prochainId = prochainCoupRapideSansCible(ids, cibles);
+    setCibleAttaqueEnCours(prochainId);
+    const prochain = prochainId && duel.joueur.creatures.find((candidate) => candidate.id === prochainId);
+    setMessage(prochain
+      ? `Coup rapide de ${prochain.name} : choisissez une créature adverse à laquelle infliger ses dégâts d’attaque.`
+      : dejaSelectionnee ? `${entite.name} n’est plus déclarée attaquante.` : `${entite.name} est déclarée attaquante.`);
     force();
   };
 
@@ -1860,13 +1896,26 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       return;
     }
     if (reponseApresBlocage || !monTour) return;
+    if (cibleAttaqueEnCours) {
+      if (entite.id === cibleAttaqueEnCours) basculerAttaquant(entite);
+      else setMessage('Choisissez d’abord une créature adverse pour terminer le Coup rapide.');
+      force();
+      return;
+    }
     if (!phase) {
       setPhase(true);
       if (entite.ready && !entite.attaquee) {
+        const cibleRequise = ciblesCoupRapideLegales(entite, 'joueur').length > 0;
         setAttaquants([entite.id]);
-        setMessage('Phase de combat : sélectionnez tous vos attaquants, puis confirmez.');
+        setCiblesAttaque({});
+        setCibleAttaqueEnCours(cibleRequise ? entite.id : null);
+        setMessage(cibleRequise
+          ? `Coup rapide de ${entite.name} : choisissez une créature adverse à laquelle infliger ses dégâts d’attaque.`
+          : 'Phase de combat : sélectionnez tous vos attaquants, puis confirmez.');
       } else {
         setAttaquants([]);
+        setCiblesAttaque({});
+        setCibleAttaqueEnCours(null);
         setMessage(entite.ready ? `${entite.name} a déjà attaqué ce tour.` : `${entite.name} observe encore (mal d'invocation).`);
       }
       force();
@@ -1880,7 +1929,33 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       resoudreCible(entite, 'ennemi');
       return;
     }
+    if (cibleAttaqueEnCours) {
+      const attaquant = duel.joueur.creatures.find((candidate) => candidate.id === cibleAttaqueEnCours);
+      const ciblesLegales = ciblesCoupRapideLegales(attaquant, 'joueur');
+      if (!attaquant || !ciblesLegales.some((cible) => cible.id === entite.id)) {
+        setMessage(`Protection contre Braise ou cible absente : ${entite.name} ne peut pas être choisie pour ce Coup rapide.`);
+        force();
+        return;
+      }
+      const cibles = { ...ciblesAttaque, [attaquant.id]: entite.id };
+      setCiblesAttaque(cibles);
+      const prochainId = prochainCoupRapideSansCible(attaquants, cibles);
+      setCibleAttaqueEnCours(prochainId);
+      const prochain = prochainId && duel.joueur.creatures.find((candidate) => candidate.id === prochainId);
+      setMessage(prochain
+        ? `Coup rapide de ${prochain.name} : choisissez une créature adverse à laquelle infliger ses dégâts d’attaque.`
+        : `${attaquant.name} infligera ${attaquant.atk} dégâts d’attaque à ${entite.name} avec Coup rapide.`);
+      force();
+      return;
+    }
     if (reponseActive && combatEntrant?.coteAttaquant === 'sorcier' && combatEntrant.attaquants.includes(entite.id)) {
+      if (combatEntrant.ciblesAttaque?.[entite.id]) {
+        const cible = duel.joueur.creatures.find((candidate) => candidate.id === combatEntrant.ciblesAttaque[entite.id]);
+        setBloqueurSelectionne(null);
+        setMessage(`${entite.name} vise ${cible?.name ?? 'une créature'} avec Coup rapide et ne peut pas être bloquée.`);
+        force();
+        return;
+      }
       if (bloqueurSelectionne) {
         assignerBloqueur(entite.id, bloqueurSelectionne);
       } else {
@@ -1904,15 +1979,32 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       setMessage('Personne n’est prêt à attaquer.');
       setPhase(false);
       setAttaquants([]);
+      setCiblesAttaque({});
+      setCibleAttaqueEnCours(null);
       force();
       return;
     }
+
+    const cibleManquante = prochainCoupRapideSansCible(ids, ciblesAttaque);
+    if (cibleManquante) {
+      setCibleAttaqueEnCours(cibleManquante);
+      const attaquant = duel.joueur.creatures.find((entite) => entite.id === cibleManquante);
+      setMessage(`Coup rapide de ${attaquant?.name ?? 'la créature'} : choisissez une créature adverse avant de confirmer.`);
+      force();
+      return;
+    }
+    const ciblesFinales = Object.fromEntries(ids.flatMap((id) => {
+      const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
+      const cible = ciblesCoupRapideLegales(attaquant, 'joueur')
+        .find((entite) => entite.id === ciblesAttaque[id]);
+      return cible ? [[id, cible.id]] : [];
+    }));
 
     if (!rpgOuvrirFenetreReponse(duel, 'joueur')) {
       setMessage('La fenêtre de réponse ne peut pas s’ouvrir hors de votre tour.');
       return;
     }
-    const blocages = rpgChoisirBloqueurs(duel, 'joueur', ids);
+    const blocages = rpgChoisirBloqueurs(duel, 'joueur', ids, ciblesFinales);
     const attaquantsBloques = Object.entries(blocages)
       .filter(([, bloqueurs]) => bloqueurs.length > 0)
       .map(([id]) => id);
@@ -1922,12 +2014,15 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       blocages,
       attaquantsBloques,
       repartitions: {},
+      ciblesAttaque: ciblesFinales,
     };
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
+    setCiblesAttaque({});
+    setCibleAttaqueEnCours(null);
     if (!attaquantsBloques.length) {
-      setMessage('Aucun bloqueur adverse : les attaques directes se résolvent automatiquement.');
+      setMessage('Aucun bloqueur adverse : les attaques directes et Coups rapides se résolvent automatiquement.');
       resoudreAttaqueJoueur(combat);
       return;
     }
@@ -1942,13 +2037,21 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     if (!ids.length) return;
     setPhase(true);
     setAttaquants(ids);
-    setMessage('Toutes vos créatures prêtes sont déclarées : vérifiez les cartes inclinées, puis confirmez l’attaque.');
+    setCiblesAttaque({});
+    const prochainId = prochainCoupRapideSansCible(ids, {});
+    setCibleAttaqueEnCours(prochainId);
+    const prochain = prochainId && duel.joueur.creatures.find((entite) => entite.id === prochainId);
+    setMessage(prochain
+      ? `Coup rapide de ${prochain.name} : choisissez une créature adverse avant de confirmer l’attaque.`
+      : 'Toutes vos créatures prêtes sont déclarées : vérifiez les cartes inclinées, puis confirmez l’attaque.');
     force();
   };
 
   const annulerAttaque = () => {
     setPhase(false);
     setAttaquants([]);
+    setCiblesAttaque({});
+    setCibleAttaqueEnCours(null);
     setMessage('Déclaration annulée.');
     force();
   };
@@ -1983,6 +2086,12 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     const attaquant = duel.sorcier.creatures.find((entite) => entite.id === attaquantId);
     const bloqueur = duel.joueur.creatures.find((entite) => entite.id === bloqueurId && !entite.attaquee);
     if (!reponseActive || combatEntrant?.coteAttaquant === 'joueur' || !attaquant || !bloqueur) return;
+    if (combatEntrant.ciblesAttaque?.[attaquantId]) {
+      setBloqueurSelectionne(null);
+      setMessage(`${attaquant.name} vise une créature avec Coup rapide et ne peut pas être bloquée.`);
+      force();
+      return;
+    }
     const retireDeCetteAttaque = (combatEntrant?.blocages[attaquantId] ?? []).includes(bloqueurId);
     const couleursBloqueur = cardColors(cardById(bloqueur.carteId));
     if (!retireDeCetteAttaque && rpgEstProtegee(attaquant, couleursBloqueur)) {
@@ -2041,7 +2150,16 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     const repartitions = Object.fromEntries(Object.entries(combatEntrant.repartitions).filter(([id]) => vivants.has(id)));
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const res = rpgLancerAttaque(duel, 'sorcier', attaquantsVivants, blocages, repartitions);
+    const res = rpgLancerAttaque(
+      duel,
+      'sorcier',
+      attaquantsVivants,
+      blocages,
+      repartitions,
+      null,
+      Object.fromEntries(Object.entries(combatEntrant.ciblesAttaque ?? {})
+        .filter(([id]) => attaquantsVivants.includes(id))),
+    );
     if (!res.ok) {
       setMessage('Le combat n’a pas pu être résolu. Vérifiez les créatures bloquées et réessayez.');
       force();
@@ -2056,8 +2174,15 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       setMessage('Le combat est terminé.');
     } else {
       const degats = res.resume.frappeSorcier;
-      setMessage(degats
-        ? `Combat adverse résolu : ${degats} dégâts au joueur. Votre tour commence.`
+      const resumeCoupRapide = (res.resume.coupsRapides ?? []).map((coup) => (coup.annule
+        ? `${coup.attaquant} ne trouve plus sa cible pour son Coup rapide.`
+        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide.`));
+      const resume = [
+        degats ? `${degats} dégâts au joueur` : null,
+        ...resumeCoupRapide,
+      ].filter(Boolean).join(' ; ');
+      setMessage(resume
+        ? `Combat adverse résolu : ${resume}. Votre tour commence.`
         : 'Combat adverse résolu. Votre tour commence.');
       rpgFinDeTour(duel);
     }
@@ -2095,6 +2220,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       blocages,
       combat.repartitions,
       attaquantsBloques,
+      Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {})
+        .filter(([id]) => attaquantsVivants.includes(id))),
     );
     if (!res.ok) {
       setMessage('Le combat n’a pas pu être résolu. Vérifiez les bloqueurs et réessayez.');
@@ -2109,9 +2236,15 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     setCibleEnCours(null);
     const direct = res.resume.frappeSorcier;
     const attaquesBloquees = res.resume.attaquantsBloques?.length ?? attaquantsBloques.length;
-    const resume = direct
-      ? `Combat résolu : ${attaquesBloquees} attaque(s) bloquée(s), ${direct} dégâts au sorcier adverse.`
-      : `Combat résolu : ${attaquesBloquees} attaque(s) bloquée(s), aucune attaque directe.`;
+    const resumeCoupRapide = (res.resume.coupsRapides ?? []).map((coup) => (coup.annule
+      ? `${coup.attaquant} ne trouve plus sa cible pour son Coup rapide.`
+      : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide.`));
+    const resume = [
+      direct
+        ? `Combat résolu : ${attaquesBloquees} attaque(s) bloquée(s), ${direct} dégâts au sorcier adverse.`
+        : `Combat résolu : ${attaquesBloquees} attaque(s) bloquée(s), aucune attaque directe.`,
+      ...resumeCoupRapide,
+    ].join(' ');
     setMessage(rpgVainqueur(duel) ? 'Le combat est terminé.' : resume);
     force();
   };
@@ -2126,6 +2259,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
+    setCiblesAttaque({});
+    setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
     rpgFinDeTour(duel);
     setMessage('Le sorcier adverse joue ses cartes…');
@@ -2148,8 +2283,22 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         return;
       }
       rpgOuvrirFenetreReponse(duel);
-      setCombatEntrant({ coteAttaquant: 'sorcier', attaquants: ids, blocages: {}, repartitions: {} });
-      setMessage('Le sorcier attaque : glissez vos bloqueurs sur les attaquants, puis résolvez le combat. Vous pouvez aussi jouer un éphémère.');
+      const ciblesRapides = rpgCiblesAttaqueRapide(duel, 'sorcier', ids);
+      setCombatEntrant({
+        coteAttaquant: 'sorcier',
+        attaquants: ids,
+        blocages: {},
+        repartitions: {},
+        ciblesAttaque: ciblesRapides,
+      });
+      const coupsRapides = Object.entries(ciblesRapides).map(([attaquantId, cibleId]) => {
+        const attaquant = duel.sorcier.creatures.find((entite) => entite.id === attaquantId);
+        const cible = duel.joueur.creatures.find((entite) => entite.id === cibleId);
+        return attaquant && cible ? `${attaquant.name} vise ${cible.name} avec Coup rapide` : null;
+      }).filter(Boolean);
+      setMessage(coupsRapides.length
+        ? `Le sorcier attaque : ${coupsRapides.join(' ; ')}. Glissez vos bloqueurs sur les autres attaquants, puis résolvez le combat. Vous pouvez aussi jouer un éphémère.`
+        : 'Le sorcier attaque : glissez vos bloqueurs sur les attaquants, puis résolvez le combat. Vous pouvez aussi jouer un éphémère.');
       force();
     }, 700);
   };
@@ -2223,6 +2372,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                 className={`rpg-terrain rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardRarityClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}`}
                 style={cardRarityStyle(carte)}
                 data-card-id={terrain.carteId}
+                data-terrain-id={terrain.id}
                 onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
                 onMouseLeave={masquerApercuSurvol}
               >
@@ -2242,8 +2392,15 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
               blocking={bloqueursSelectionnes.has(entite.id)}
               spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
-              canTarget={Boolean(cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))}
-              canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
+              coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
+              canTarget={Boolean(
+                (cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
+                  duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
+                  'joueur',
+                ).some((cible) => cible.id === entite.id))
+              )}
+              canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id])}
               onAssignBlocker={assignerBloqueur}
               actionFx={animationsEntites[entite.id]}
               tilt={TILTS[i % TILTS.length]}
@@ -2265,6 +2422,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
               blocking={bloqueursSelectionnes.has(entite.id)}
               selectedBlocker={bloqueurSelectionne === entite.id}
+              coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
               canTarget={Boolean(cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))}
               canDragBlocker={Boolean(reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
               draggedBlocker={bloqueurGlisse === entite.id}
@@ -2380,7 +2538,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
         <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' ? ' is-spell-target' : ''}`} title="Vous">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
-          <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>Veilleurs du Désert · Sable</small></span>
+          <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
           <span className="rpg-wizard-plate__pv">🛡 {duel.joueur.pv}{duel.joueur.bouclier > 0 ? ` · ◇ ${duel.joueur.bouclier}` : ''}</span>
           <span className="rpg-wizard-plate__sable">
             <i className="mana mana--braise" title="Mana braise">{duel.joueur.mana.braise}</i>
@@ -2419,7 +2577,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   </button>
                 ) : (
                   <>
-                    <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque" disabled={!attaquants.length} onClick={() => lancerAttaque()}>
+                    <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque" disabled={!attaquants.length || Boolean(cibleAttaqueEnCours) || Boolean(prochainCoupRapideSansCible(attaquants, ciblesAttaque))} onClick={() => lancerAttaque()}>
                       <CombatActionIcon type="confirm" /> Confirmer ({attaquants.length})
                     </button>
                     <button type="button" className="rpg-btn rpg-btn--ghost" onClick={annulerAttaque}>
@@ -2532,8 +2690,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
-                  <CardRapidityBadge active={carte.rapidite} />
-                  <CardEvasionBadge amount={carte.esquive} />
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>

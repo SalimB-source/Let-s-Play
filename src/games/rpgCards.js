@@ -417,14 +417,14 @@ export const RPG_CREATURE_CARDS = [
     id: 'djinn-du-souk',
     name: 'Djinn du souk',
     element: 'braise',
-    cost: 7,
-    atk: 6,
-    def: 6,
+    cost: 5,
+    atk: 3,
+    def: 3,
     rarity: 'mythique',
     typeLine: 'Créature — Djinn',
     art: 'djinn-du-souk',
-    arrivee: { type: 'degats', amount: 3, cible: 'sorcier' },
-    text: 'Quand le Djinn arrive : 3 dégâts au sorcier adverse.',
+    arrivee: { type: 'detruire-terrain-aleatoire' },
+    text: 'Quand le Djinn arrive : il détruit un terrain adverse au hasard.',
     flavor: 'Il vendait des épices. Il a gardé le feu.',
   },
   {
@@ -536,12 +536,27 @@ export const RPG_CREATURE_CARDS = [
     cost: 3,
     atk: 2,
     def: 3,
-    rarity: 'rare',
+    rarity: 'mythique',
     typeLine: 'Créature — Sahir',
     art: 'sahir-des-braises',
     arrivee: { type: 'pioche', amount: 1 },
-    text: 'Quand le Sahir arrive : piochez une carte.',
-    flavor: 'Il trace un cercle dans la poussière et écoute le vent répondre.',
+    combat: { type: 'degats-creature-combattue', amount: 2 },
+    text: 'Quand le Sahir arrive : piochez une carte. Quand il attaque ou bloque : avant les blessures de combat, il inflige 2 dégâts à la créature qui le bloque ou qu’il bloque.',
+    flavor: 'Il trace un cercle dans la poussière et écoute le vent répondre.'
+  },
+  {
+    id: 'anqa-des-braises',
+    name: 'Anqa',
+    element: 'braise',
+    cost: 4,
+    atk: 4,
+    def: 4,
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Oiseau de feu',
+    art: 'anqa-des-braises',
+    destruction: { type: 'retour-apres-tours', tours: 2 },
+    text: 'Quand Anqa est détruite : elle revient en jeu après deux tours.',
+    flavor: 'Même la cendre sait où se cachent les braises.',
   },
   {
     id: 'ifrit-des-ergs',
@@ -552,7 +567,7 @@ export const RPG_CREATURE_CARDS = [
     def: 4,
     rarity: 'mythique',
     typeLine: 'Créature — Ifrit',
-    art: 'feriel',
+    art: 'ifrit-des-ergs',
     arrivee: { type: 'degats', amount: 2, cible: 'sorcier' },
     text: 'Quand l’Ifrit arrive : 2 dégâts au sorcier adverse.',
     flavor: 'Les dunes rougissent avant même qu’il apparaisse.',
@@ -662,14 +677,15 @@ export const RPG_HERO_CARDS = [
     name: 'FÉRIEL',
     role: 'La Souffleuse de verre',
     element: 'braise',
-    cost: 5,
+    cost: 4,
     atk: 3,
-    def: 3,
+    def: 1,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
-    text: 'Quand Fériel arrive : son souffle brûle toutes les créatures adverses (1).',
+    rapidite: true,
+    coupRapide: true,
+    text: 'Rapidité. Coup rapide — Quand Fériel est sélectionnée pour attaquer, choisissez une créature adverse : Fériel lui inflige ses dégâts d’attaque.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -714,7 +730,7 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Ifrit',
-    art: 'ifrit-des-ergs',
+    art: 'ifrit-al-ahmar',
     arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     text: 'Quand l’Ifrit arrive : 2 dégâts à toutes les créatures adverses.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
@@ -731,10 +747,9 @@ export function duelCardById(id) {
 }
 
 /**
- * Decks de 40 cartes : les archétypes monocolores et le nouvel hybride Sable/Braise
- * contiennent 17 terrains, 18 créatures/personnages et 5 magies. Les terrains
- * peuvent dépasser la limite des trois exemplaires ; les autres cartes non.
- * Les identifiants et métadonnées alimentent le menu et les règles du duel.
+ * Decks de 40 cartes : les archétypes monocolores et l’hybride Sable/Braise
+ * contiennent au moins 40 % de terrains. Les mythiques sont limités à un
+ * exemplaire par deck ; les autres cartes non-terrain à trois exemplaires.
  */
 export const RPG_DECK_JOUEUR_BASE = [
   ...Array(17).fill('desert'),
@@ -743,39 +758,43 @@ export const RPG_DECK_JOUEUR_BASE = [
   ...Array(3).fill('faiseur-de-passage'),
   ...Array(3).fill('tislit-des-aures'),
   ...Array(3).fill('tiziri-du-djurdjura'),
-  ...Array(2).fill('amani-des-ksour'),
+  ...Array(3).fill('amani-des-ksour'),
   ...Array(2).fill('amayas-du-hoggar'),
-  ...Array(2).fill('tin-hinan'),
+  'tin-hinan',
   ...Array(2).fill('rapport-du-greffier'),
   ...Array(2).fill('rempart-de-dunes'),
   'tempete-de-sable',
 ];
 
 export const RPG_DECK_SORCIER_BASE = [
-  ...Array(17).fill('montagne'),
-  ...Array(3).fill('braisier-du-souk'),
-  ...Array(3).fill('djinn-du-souk'),
+  ...Array(18).fill('montagne'),
+  'braisier-du-souk',
+  'feriel',
+  'anqa-des-braises',
+  'djinn-du-souk',
   ...Array(3).fill('ghul-des-cendres'),
-  ...Array(3).fill('sahir-des-braises'),
-  ...Array(3).fill('ifrit-des-ergs'),
-  ...Array(3).fill('ifrit-al-ahmar'),
-  ...Array(2).fill('trait-de-braise'),
-  'fureur-du-souk',
-  'rafale-du-minaret',
-  'nuage-de-cendres',
+  'sahir-des-braises',
+  'ifrit-des-ergs',
+  'ifrit-al-ahmar',
+  ...Array(3).fill('trait-de-braise'),
+  ...Array(3).fill('fureur-du-souk'),
+  ...Array(3).fill('rafale-du-minaret'),
+  ...Array(3).fill('nuage-de-cendres'),
 ];
 
 export const RPG_DECK_HYBRIDE_BASE = [
   ...Array(6).fill('desert'),
   ...Array(6).fill('montagne'),
   ...Array(5).fill('petra'),
-  ...Array(2).fill('fennec-des-decombres'),
+  ...Array(3).fill('fennec-des-decombres'),
   ...Array(2).fill('cavalier-amazigh-du-desert'),
   ...Array(2).fill('faiseur-de-passage'),
   ...Array(2).fill('tislit-des-aures'),
-  ...Array(2).fill('braisier-du-souk'),
-  ...Array(2).fill('djinn-du-souk'),
-  ...Array(2).fill('sahir-des-braises'),
+  'braisier-du-souk',
+  'feriel',
+  'anqa-des-braises',
+  'djinn-du-souk',
+  'sahir-des-braises',
   ...Array(3).fill('veilleur-du-couchant'),
   'ifrit-des-ergs',
   ...Array(2).fill('trait-de-braise'),
@@ -812,13 +831,13 @@ export const RPG_DECKS = [
     elements: ['sable', 'braise'],
     terrain: 'petra',
     archetype: 'Sable + Braise · deux couleurs, une même piste',
-    description: 'Un deck hybride de Sable et de Braise : les terrains Désert et Montagne se mêlent à Pétra, cité des géants, qui choisit sa couleur à chaque engagement. Ses cartes bicolores évoquent avec subtilité des récits désertiques diné, sans divinité nommée ni symbole cérémoniel.',
+    description: 'Un deck hybride de Sable et de Braise : les terrains Désert et Montagne se mêlent à Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores évoquent avec subtilité des récits désertiques diné, sans divinité nommée ni symbole cérémoniel.',
     cardIds: RPG_DECK_HYBRIDE_BASE,
   },
 ];
 
-/** Valide un deck : 40 cartes, au moins 40 % de terrains, 3 exemplaires max
- *  (hors terrains de base). */
+/** Valide un deck : 40 cartes, au moins 40 % de terrains, mythiques limités
+ *  à un exemplaire, autres cartes non-terrain limitées à trois exemplaires. */
 export function rpgValiderDeck(deck) {
   if (deck.length !== 40) return { ok: false, raison: `40 cartes exigées (${deck.length})` };
   const comptes = {};
@@ -828,7 +847,12 @@ export function rpgValiderDeck(deck) {
     if (!carte) return { ok: false, raison: `carte inconnue : ${id}` };
     comptes[id] = (comptes[id] ?? 0) + 1;
     if (carte.kind === 'terrain') terrains += 1;
-    else if (comptes[id] > 3) return { ok: false, raison: `${id} en ${comptes[id]} exemplaires (3 max)` };
+    if (carte.rarity === 'mythique' && comptes[id] > 1) {
+      return { ok: false, raison: `${id} mythique en ${comptes[id]} exemplaires (1 max)` };
+    }
+    if (carte.kind !== 'terrain' && carte.rarity !== 'mythique' && comptes[id] > 3) {
+      return { ok: false, raison: `${id} en ${comptes[id]} exemplaires (3 max)` };
+    }
   }
   if (terrains < 0.4 * deck.length) return { ok: false, raison: `terrains ${Math.round((terrains / deck.length) * 100)} % (40 % min)` };
   return { ok: true, terrains };
@@ -882,11 +906,11 @@ export const RPG_TERRAIN_CARDS = [
     manaColors: ['braise', 'sable'],
     kind: 'terrain',
     art: 'petra',
-    typeLine: 'Terrain — Cité des géants',
+    typeLine: 'Terrain — Cité',
     rarity: 'rare',
     cost: 0,
     text: 'Engagez : ajoutez un mana Braise ou Sable.',
-    flavor: 'Sous les pas des géants, les ruelles gardent leur tumulte.'
+    flavor: 'Dans la roche rose, les pistes se croisent.',
   },
 ];
 
@@ -905,13 +929,14 @@ export const RPG_MAGIE_CARDS = [
     name: 'Trait de braise',
     element: 'braise',
     kind: 'magie',
-    typeLine: 'Rituel — Braise',
+    typeLine: 'Éphémère — Braise',
     art: 'trait-de-braise',
-    cost: 1,
+    cost: 2,
     rarity: 'commune',
+    instant: true,
     cibles: ['creature', 'sorcier'],
-    effet: { type: 'degats', amount: 2, cible: 'creature' },
-    text: '2 dégâts à une créature ou un sorcier ciblés.',
+    effet: { type: 'degats', amount: 3, cible: 'creature' },
+    text: '3 dégâts à une créature ou un sorcier ciblés.',
     flavor: 'Une étincelle suffit, au souk.',
   },
   {

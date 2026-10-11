@@ -95,8 +95,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'terrain', 'magie']));
 });
 
-test('le set de créatures existe : vingt-deux cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 22);
+test('le set de créatures existe : vingt-trois cartes façon TCG (coût, attaque, défense, rareté, type)', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 23);
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -105,6 +105,62 @@ test('le set de créatures existe : vingt-deux cartes façon TCG (coût, attaque
     assert.ok(['braise', 'eau', 'sable'].includes(carte.element), 'chaque carte a un type parmi les trois couleurs');
   }
   assert.equal(creatureById('djinn-du-souk').name, 'Djinn du souk');
+});
+
+test('Anqa est une 4/4 Braise à 4 qui revient après deux tours', () => {
+  const anqa = cardById('anqa-des-braises');
+  assert.deepEqual({ element: anqa.element, cost: anqa.cost, atk: anqa.atk, def: anqa.def, rarity: anqa.rarity }, {
+    element: 'braise', cost: 4, atk: 4, def: 4, rarity: 'mythique',
+  });
+  assert.equal(anqa.destruction.type, 'retour-apres-tours');
+  assert.equal(anqa.destruction.tours, 2);
+  assert.match(anqa.text, /revient en jeu après deux tours/i);
+  assert.equal(cardArtId(anqa), 'anqa-des-braises');
+});
+
+test('Anqa revient en jeu après deux changements de tour, sans attaquer immédiatement', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'anqa-des-braises');
+  const anqa = rpgJouerCreature(duel, 'joueur', 'anqa-des-braises').entite;
+  assert.equal(rpgBlesserCreature(duel, 'joueur', anqa.id, 4).ok, true);
+  assert.equal(duel.joueur.creatures.includes(anqa), false, 'Anqa est détruite et quitte le champ');
+  assert.ok(duel.joueur.cimetiere.includes('anqa-des-braises'));
+  assert.deepEqual(duel.joueur.retoursProgrammes, [
+    { carteId: 'anqa-des-braises', toursRestants: 2 },
+  ]);
+
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(duel.joueur.retoursProgrammes[0].toursRestants, 1,
+    'elle reste au cimetière après le premier tour');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.carteId === 'anqa-des-braises'), false);
+
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur');
+  const anqaRenaissante = duel.joueur.creatures.find((entite) => entite.carteId === 'anqa-des-braises');
+  assert.ok(anqaRenaissante, 'Anqa revient au début du tour après le deuxième tour');
+  assert.equal(anqaRenaissante.pv, 4);
+  assert.equal(anqaRenaissante.ready, false, 'elle arrive avec le mal d’invocation');
+  assert.equal(duel.joueur.cimetiere.includes('anqa-des-braises'), false);
+  assert.deepEqual(duel.joueur.retoursProgrammes, []);
+});
+
+test('une Anqa détruite par des blessures simultanées programme aussi son retour', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'anqa-des-braises');
+  donner(duel, 'sorcier', 'colosse-de-sel');
+  const anqa = rpgJouerCreature(duel, 'joueur', 'anqa-des-braises').entite;
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  colosse.ready = true;
+
+  assert.equal(rpgAttaquerCreature(duel, 'sorcier', colosse.id, anqa.id).ok, true);
+  assert.equal(duel.joueur.creatures.includes(anqa), false);
+  assert.deepEqual(duel.joueur.retoursProgrammes, [
+    { carteId: 'anqa-des-braises', toursRestants: 2 },
+  ]);
 });
 
 test('chaque carte du duel possède une illustration locale et une ligne de type', () => {
@@ -146,12 +202,13 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     ['montagne', 'montagne'], ['fennec-des-decombres', 'fennec-des-decombres'],
     ['braisier-du-souk', 'braisier-du-souk'],
     ['djinn-du-souk', 'djinn-du-souk'], ['ghul-des-cendres', 'ghul-des-cendres'],
-    ['sahir-des-braises', 'sahir-des-braises'], ['ifrit-al-ahmar', 'ifrit-des-ergs'],
+    ['sahir-des-braises', 'sahir-des-braises'], ['ifrit-des-ergs', 'ifrit-des-ergs'],
+    ['ifrit-al-ahmar', 'ifrit-al-ahmar'],
     ['trait-de-braise', 'trait-de-braise'], ['fureur-du-souk', 'fureur-du-souk'],
     ['rafale-du-minaret', 'rafale-du-minaret'], ['nuage-de-cendres', 'nuage-de-cendres'],
     ['cavalier-amazigh-du-desert', 'cavalier-amazigh-du-desert'],
     ['veilleur-du-couchant', 'veilleur-du-couchant'], ['vent-rouge', 'vent-rouge'],
-    ['petra', 'petra'],
+    ['petra', 'petra'], ['feriel', 'feriel'],
   ];
   for (const [carteId, illustration] of nouvellesIllustrations) {
     assert.equal(cardArtId(carteId), illustration,
@@ -174,7 +231,6 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     .map(([illustration, ids]) => [illustration, ids])
     .sort(([a], [b]) => a.localeCompare(b));
   assert.deepEqual(partages, [
-    ['feriel', ['ifrit-des-ergs', 'feriel']],
     ['mer', ['mer', 'eau-de-la-source', 'lame-de-mer']],
   ]);
 });
@@ -274,6 +330,61 @@ test('Rapidité permet au Fennec d’attaquer dès son tour de pose', () => {
   assert.equal(fennec.attaquee, true, 'l’attaque immédiate est bien consommée pour le tour');
 });
 
+test('Fériel est une mythique 4 mana 3/1 avec Rapidité et Coup rapide', () => {
+  const feriel = cardById('feriel');
+  assert.deepEqual({ cost: feriel.cost, atk: feriel.atk, def: feriel.def, rarity: feriel.rarity, rapidite: feriel.rapidite, coupRapide: feriel.coupRapide }, {
+    cost: 4, atk: 3, def: 1, rarity: 'mythique', rapidite: true, coupRapide: true,
+  });
+  assert.equal(feriel.arrivee, undefined, 'son ancien effet de dégâts à l’arrivée est retiré');
+  assert.match(feriel.text, /Rapidité/);
+  assert.match(feriel.text, /Coup rapide.*sélectionnée pour attaquer.*créature adverse.*dégâts d’attaque/i);
+  assert.equal(cardArtId(feriel), 'feriel', 'Fériel utilise sa nouvelle illustration dédiée');
+});
+
+test('le Coup rapide de Fériel vise une créature, applique Esquive, sans riposte ni dégâts directs', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'feriel');
+  const feriel = rpgJouerCreature(duel, 'joueur', 'feriel').entite;
+  donner(duel, 'sorcier', 'fennec-des-decombres');
+  const fennec = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
+  Object.assign(fennec, { pv: 5, def: 5, pvMax: 5 });
+
+  assert.equal(feriel.ready, true, 'Fériel peut attaquer dès son tour de pose');
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [feriel.id]).raison, 'cible',
+    'le moteur réclame une cible quand une créature adverse peut être choisie');
+  assert.equal(rpgAttaquerSorcier(duel, 'joueur', feriel.id).raison, 'cible',
+    'Fériel ne peut pas contourner son Coup rapide pour frapper directement le sorcier');
+
+  const pvSorcier = duel.sorcier.pv;
+  const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {}, null, null, { [feriel.id]: fennec.id });
+  assert.equal(res.ok, true);
+  assert.equal(fennec.pv, 3, 'les 3 dégâts d’attaque perdent 1 point face à Esquive 1');
+  assert.equal(feriel.pv, 1, 'la créature visée ne riposte pas contre Fériel');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'le Coup rapide ne touche pas les PV du sorcier');
+  assert.equal(feriel.attaquee, true, 'Fériel a consommé son attaque');
+  assert.deepEqual(res.resume.coupsRapides.map(({ attaquant, cible, degats }) => ({ attaquant, cible, degats })), [
+    { attaquant: 'FÉRIEL', cible: 'Fennec des décombres', degats: 3 },
+  ]);
+});
+
+test('le Coup rapide de Fériel choisit automatiquement une cible légale pendant le tour de l’IA', () => {
+  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.999 });
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'sorcier', 'feriel');
+  const feriel = rpgJouerCreature(duel, 'sorcier', 'feriel').entite;
+  const pvJoueur = duel.joueur.pv;
+
+  rpgTourSorcierIA(duel);
+  assert.equal(duel.joueur.creatures.includes(chien), false, 'Fériel vise automatiquement le Chien adverse');
+  assert.equal(duel.joueur.pv, pvJoueur, 'l’attaque ciblée ne frappe pas le joueur');
+  assert.equal(feriel.attaquee, true, 'l’attaque rapide de l’IA est bien consommée');
+});
+
 test('les capacités de feu punissent les bloqueurs et rendent les djinns distincts', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 100);
@@ -345,7 +456,7 @@ test('les dégâts d’arrivée Braise attribuent la destruction à la créature
   ], 'le dégât d’arrivée du Braisier est reconnu comme source Braise');
 });
 
-test('le combat attribue les destructions croisées du Fennec et du Sahir à leurs sources', () => {
+test('le Sahir abat le Fennec avant qu’il ne puisse infliger ses blessures de combat', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -360,8 +471,84 @@ test('le combat attribue les destructions croisées du Fennec et du Sahir à leu
   assert.equal(combat.ok, true);
   assert.deepEqual(rpgDestructionsDepuis(duel, debutCombat), [
     { entityId: fennec.id, sourceElements: ['braise'] },
-    { entityId: sahir.id, sourceElements: ['sable'] },
-  ], 'le Fennec détruit par le Sahir riposte assez fort pour le détruire à son tour');
+  ], 'les 2 dégâts préalables du Sahir tuent le Fennec avant les blessures de combat');
+  assert.equal(duel.sorcier.creatures.includes(fennec), false);
+  assert.equal(sahir.pv, sahir.pvMax, 'le Fennec détruit ne peut plus infliger ses 3 dégâts au Sahir');
+});
+
+test('Sahir des braises est mythique, conserve sa pioche et gagne 2 dégâts en combat', () => {
+  const carte = cardById('sahir-des-braises');
+  assert.equal(carte.rarity, 'mythique');
+  assert.deepEqual(carte.arrivee, { type: 'pioche', amount: 1 });
+  assert.deepEqual(carte.combat, { type: 'degats-creature-combattue', amount: 2 });
+  assert.match(carte.text, /attaque ou bloque/i);
+  assert.match(carte.text, /avant les blessures de combat/i, 'le texte précise que les 2 dégâts partent en premier');
+});
+
+test('Sahir inflige ses 2 dégâts à la créature qui le bloque quand il attaque', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  donner(duel, 'sorcier', 'colosse-de-sel');
+  const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+  const bloqueur = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  sahir.ready = true;
+
+  const combat = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: [bloqueur.id] });
+  assert.equal(combat.ok, true);
+  assert.equal(bloqueur.pv, 1, 'le Colosse 5/5 reçoit 2 dégâts d’attaque et 2 dégâts du Sahir');
+  assert.equal(duel.joueur.creatures.includes(sahir), false,
+    'le Colosse survit aux dégâts préalables et inflige ensuite ses blessures normales au Sahir');
+});
+
+test('Sahir inflige ses 2 dégâts à la créature qu’il bloque', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  donner(duel, 'sorcier', 'colosse-de-sel');
+  const bloqueur = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+  const attaquant = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  attaquant.ready = true;
+
+  const combat = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [bloqueur.id] });
+  assert.equal(combat.ok, true);
+  assert.equal(attaquant.pv, 1, 'le Sahir bloqueur inflige 2 dégâts en plus de ses 2 dégâts de combat');
+  assert.equal(duel.joueur.creatures.includes(bloqueur), false,
+    'le Colosse survit aux dégâts préalables et tue ensuite le Sahir avec ses blessures normales');
+});
+
+test('un Sahir bloqueur détruit le Fennec avant ses blessures de combat', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  donner(duel, 'sorcier', 'fennec-des-decombres');
+  const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+  const fennec = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
+  fennec.ready = true;
+
+  const combat = rpgLancerAttaque(duel, 'sorcier', [fennec.id], { [fennec.id]: [sahir.id] });
+  assert.equal(combat.ok, true);
+  assert.equal(duel.sorcier.creatures.includes(fennec), false, 'les 2 dégâts préalables tuent le Fennec 3/1');
+  assert.equal(duel.joueur.creatures.includes(sahir), true, 'le Sahir reste en jeu');
+  assert.equal(sahir.pv, sahir.pvMax, 'le Fennec tué ne porte pas ses 3 dégâts');
+});
+
+test('rpgAttaquerCreature résout aussi les dégâts du Sahir avant la riposte', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  donner(duel, 'sorcier', 'fennec-des-decombres');
+  const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+  const adversaire = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
+  sahir.ready = true;
+
+  assert.equal(rpgAttaquerCreature(duel, 'joueur', sahir.id, adversaire.id).ok, true);
+  assert.equal(duel.sorcier.creatures.includes(adversaire), false, 'les 2 dégâts du Sahir détruisent le Fennec');
+  assert.equal(sahir.pv, sahir.pvMax, 'le Fennec détruit ne peut pas infliger ses dégâts de riposte');
 });
 
 test('les terrains mono produisent leur couleur et Pétra produit Braise ou Sable', () => {
@@ -373,14 +560,6 @@ test('les terrains mono produisent leur couleur et Pétra produit Braise ou Sabl
   assert.equal(cardById('petra').element, 'hybride');
   assert.deepEqual(cardColors('petra'), ['sable', 'braise']);
   assert.deepEqual(terrainManaColors('petra'), ['braise', 'sable']);
-});
-
-test('une protection colorée bloque aussi un effet venant d’une source hybride', () => {
-  const cible = { protection: { contre: 'sable', toursRestants: 1 } };
-  assert.equal(rpgEstProtegee(cible, cardColors('vent-rouge')), true,
-    'la protection Sable reconnaît la source bicolore Sable/Braise');
-  assert.equal(rpgEstProtegee(cible, ['braise']), false,
-    'une source uniquement Braise ne déclenche pas la protection Sable');
 });
 
 test('les créatures du Désert attaquent et leur protection colorée dure le tour posé et le suivant adverse', () => {
@@ -400,7 +579,7 @@ test('les créatures du Désert attaquent et leur protection colorée dure le to
   assert.equal(duel.tour, 'sorcier');
   assert.equal(amayas.protection.toursRestants, 1, 'la protection reste active pendant le tour adverse juste après');
   duel.sorcier.main.push('trait-de-braise');
-  duel.sorcier.mana = { braise: 1, eau: 0, sable: 0 };
+  duel.sorcier.mana = { braise: 2, eau: 0, sable: 0 };
   const magieBloquee = rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', amayas.id);
   assert.equal(magieBloquee.raison, 'protection', 'la couleur protégée ne peut pas cibler la créature');
   assert.ok(duel.sorcier.main.includes('trait-de-braise'), 'le sort bloqué reste en main');
@@ -475,12 +654,12 @@ test('on pose un terrain par tour, et l’engager donne son mana', () => {
 
 test('payer une créature : le total ET un mana de sa couleur', () => {
   const duel = duelDeBase();
-  donner(duel, 'joueur', 'djinn-du-souk'); // 7, braise
-  duel.joueur.mana = { braise: 0, eau: 7, sable: 7 };
+  donner(duel, 'joueur', 'djinn-du-souk'); // coût 5, dont 1 braise
+  duel.joueur.mana = { braise: 0, eau: 5, sable: 5 };
   assert.equal(rpgJouerCreature(duel, 'joueur', 'djinn-du-souk').ok, false,
-    '14 mana mais aucun braise : le Djinn ne sort pas');
-  duel.joueur.mana = { braise: 1, eau: 6, sable: 0 };
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'djinn-du-souk').ok, true, '1 braise + 6 : payé');
+    '10 mana mais aucun braise : le Djinn ne sort pas');
+  duel.joueur.mana = { braise: 1, eau: 4, sable: 0 };
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'djinn-du-souk').ok, true, '1 braise + 4 : payé');
   assert.equal(rpgMana(duel.joueur).total, 0, 'le mana est dépensé');
 });
 
@@ -533,6 +712,10 @@ test('un coût hybride exige une source Braise et une source Sable', () => {
   assert.deepEqual(cardColors(veilleur), ['sable', 'braise']);
   assert.deepEqual(cardColorCost(veilleur), { sable: 1, braise: 1 });
   assert.deepEqual(cardColorCost(sort), { braise: 1, sable: 1 });
+  assert.equal(rpgEstProtegee({ protection: { contre: 'sable', toursRestants: 1 } }, cardColors(veilleur)), true,
+    'un attaquant bicolore est arrêté par une protection contre le Sable');
+  assert.equal(rpgEstProtegee({ protection: { contre: 'eau', toursRestants: 1 } }, cardColors(veilleur)), false,
+    'une protection contre une troisième couleur ne s’applique pas');
 
   const camp = duelDeBase().joueur;
   camp.mana = { braise: 3, eau: 0, sable: 0 };
@@ -657,12 +840,38 @@ test('capacité à l’arrivée : le Colosse buffe vos autres créatures', () =>
   assert.equal(colosse.atk, 5, 'lui-même n’est pas buffé');
 });
 
-test('capacité à l’arrivée : le Djinn brûle le sorcier adverse', () => {
+test('le Djinn coûte 5, est 3/3 et détruit au hasard un terrain adverse à son arrivée', () => {
+  const carte = cardById('djinn-du-souk');
+  assert.deepEqual({ cost: carte.cost, atk: carte.atk, def: carte.def }, { cost: 5, atk: 3, def: 3 });
+  assert.deepEqual(carte.arrivee, { type: 'detruire-terrain-aleatoire' });
+  assert.match(carte.text, /terrain adverse au hasard/i);
+
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donner(duel, 'joueur', 'djinn-du-souk');
-  rpgJouerCreature(duel, 'joueur', 'djinn-du-souk');
-  assert.equal(duel.sorcier.pv, 50 - 3);
+  duel.sorcier.terrains.push(
+    { id: 'terrain-petra', carteId: 'petra', tapped: false },
+    { id: 'terrain-desert', carteId: 'desert', tapped: true },
+  );
+  const debutDestruction = rpgNombreDestructions(duel);
+  const randomOriginal = Math.random;
+  let pose;
+  Math.random = () => 0.99;
+  try {
+    pose = rpgJouerCreature(duel, 'joueur', 'djinn-du-souk');
+  } finally {
+    Math.random = randomOriginal;
+  }
+
+  assert.equal(pose.ok, true);
+  assert.deepEqual(duel.sorcier.terrains.map((terrain) => terrain.carteId), ['petra'],
+    'le tirage aléatoire choisi retire bien le Désert, qu’il soit engagé ou non');
+  assert.equal(duel.sorcier.cimetiere.at(-1), 'desert', 'le terrain détruit rejoint le cimetière de son propriétaire');
+  assert.deepEqual(rpgDestructionsDepuis(duel, debutDestruction), [
+    { entityId: 'terrain-desert', sourceElements: ['braise'] },
+  ], 'la destruction est attribuée au Djinn Braise pour déclencher l’animation de brûlure');
+  assert.equal(duel.sorcier.pv, 50, 'la nouvelle capacité ne blesse plus le sorcier adverse');
+  assert.match(duel.log.at(-1), /Djinn du souk détruit le terrain adverse Désert/);
 });
 
 test('Esquive 1 réduit les attaques et les magies, mais pas les capacités d’arrivée', () => {
@@ -923,25 +1132,25 @@ test('plusieurs bloqueurs défendent un attaquant et la force est répartie avan
   const duel = duelDeBase();
   donnerMana(duel, 'sorcier', 30);
   donnerMana(duel, 'joueur', 30);
-  donner(duel, 'sorcier', 'djinn-du-souk'); // 6/6
-  const djinn = rpgJouerCreature(duel, 'sorcier', 'djinn-du-souk').entite;
-  donner(duel, 'joueur', 'chien-du-guet'); // 2/2
+  donner(duel, 'sorcier', 'colosse-de-sel'); // 5/5
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  donner(duel, 'joueur', 'porteuse-de-cruches'); // 1/3
   donner(duel, 'joueur', 'fennec-des-decombres'); // 3/1, Esquive 1
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  const porteuse = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
   const fennec = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
-  djinn.ready = true;
+  colosse.ready = true;
 
-  const res = rpgLancerAttaque(duel, 'sorcier', [djinn.id], {
-    [djinn.id]: [chien.id, fennec.id],
+  const res = rpgLancerAttaque(duel, 'sorcier', [colosse.id], {
+    [colosse.id]: [porteuse.id, fennec.id],
   }, {
-    [djinn.id]: { [chien.id]: 4, [fennec.id]: 2 },
+    [colosse.id]: { [porteuse.id]: 3, [fennec.id]: 2 },
   });
   assert.equal(res.ok, true, 'les créatures nouvellement posées peuvent défendre');
-  assert.deepEqual(res.resume.blocages[djinn.id], [chien.id, fennec.id]);
-  assert.deepEqual(res.resume.repartitions[djinn.id], { [chien.id]: 4, [fennec.id]: 2 });
-  assert.equal(duel.sorcier.creatures[0].pv, 1, 'le Djinn reçoit les 2 dégâts du Chien et les 3 dégâts du Fennec');
-  assert.deepEqual(duel.joueur.creatures, [], 'les 4 dégâts détruisent le Chien et, malgré son esquive, les 2 dégâts tuent le Fennec');
-  assert.ok(duel.joueur.cimetiere.includes('chien-du-guet'));
+  assert.deepEqual(res.resume.blocages[colosse.id], [porteuse.id, fennec.id]);
+  assert.deepEqual(res.resume.repartitions[colosse.id], { [porteuse.id]: 3, [fennec.id]: 2 });
+  assert.equal(colosse.pv, 1, 'le Colosse reçoit 1 dégât de la Porteuse et 3 du Fennec');
+  assert.deepEqual(duel.joueur.creatures, [], 'la répartition détruit la Porteuse et, malgré son esquive, le Fennec');
+  assert.ok(duel.joueur.cimetiere.includes('porteuse-de-cruches'));
   assert.ok(duel.joueur.cimetiere.includes('fennec-des-decombres'));
 });
 
@@ -949,28 +1158,32 @@ test('la répartition des dégâts doit exactement égaler la force de l’attaq
   const duel = duelDeBase();
   donnerMana(duel, 'sorcier', 30);
   donnerMana(duel, 'joueur', 30);
-  donner(duel, 'sorcier', 'djinn-du-souk');
-  const djinn = rpgJouerCreature(duel, 'sorcier', 'djinn-du-souk').entite;
-  donner(duel, 'joueur', 'chien-du-guet');
+  donner(duel, 'sorcier', 'colosse-de-sel');
+  const colosse = rpgJouerCreature(duel, 'sorcier', 'colosse-de-sel').entite;
+  donner(duel, 'joueur', 'porteuse-de-cruches');
   donner(duel, 'joueur', 'fennec-des-decombres');
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  const porteuse = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
   const fennec = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
-  djinn.ready = true;
-  const res = rpgLancerAttaque(duel, 'sorcier', [djinn.id], {
-    [djinn.id]: [chien.id, fennec.id],
+  colosse.ready = true;
+  const res = rpgLancerAttaque(duel, 'sorcier', [colosse.id], {
+    [colosse.id]: [porteuse.id, fennec.id],
   }, {
-    [djinn.id]: { [chien.id]: 3, [fennec.id]: 2 },
+    [colosse.id]: { [porteuse.id]: 3, [fennec.id]: 1 },
   });
   assert.equal(res.ok, false);
   assert.equal(res.raison, 'repartition');
-  assert.equal(djinn.attaquee, false, 'une répartition invalide n’engage pas l’attaquant');
+  assert.equal(colosse.attaquee, false, 'une répartition invalide n’engage pas l’attaquant');
 });
 
-test('Parade de verre est un éphémère de réponse et son bouclier absorbe les dégâts', () => {
+test('Parade et Trait de braise sont des éphémères de réponse; le bouclier absorbe les dégâts', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const cible = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  Object.assign(cible, { pv: 5, def: 5, pvMax: 5 });
   donner(duel, 'joueur', 'parade-du-verre');
   donner(duel, 'joueur', 'trait-de-braise');
   donnerMana(duel, 'joueur', 2);
@@ -978,13 +1191,19 @@ test('Parade de verre est un éphémère de réponse et son bouclier absorbe les
   duel.tour = 'sorcier';
   assert.equal(rpgLancerMagie(duel, 'joueur', 'parade-du-verre', chien.id).raison, 'timing',
     'aucune réponse hors de la fenêtre de combat');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', cible.id).raison, 'timing',
+    'Trait de braise ne peut pas être lancé hors de la fenêtre de réponse adverse');
   duel.fenetreReponse = true;
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', chien.id).raison, 'timing',
-    'un rituel reste interdit pendant le tour adverse');
+  const trait = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', cible.id);
+  assert.equal(trait.ok, true, 'le nouvel éphémère Braise peut être lancé en réponse');
+  assert.equal(cible.pv, 2, 'les 3 dégâts du Trait laissent 2 PV à la créature adverse 5/5');
+  assert.ok(duel.joueur.cimetiere.includes('trait-de-braise'), 'le Trait résolu va au cimetière');
+
+  donnerMana(duel, 'joueur', 2);
   const parade = rpgLancerMagie(duel, 'joueur', 'parade-du-verre', chien.id);
   assert.equal(parade.ok, true);
   assert.equal(chien.bouclier, 3);
-  assert.ok(duel.joueur.cimetiere.includes('parade-du-verre'), 'le sort va au cimetière');
+  assert.ok(duel.joueur.cimetiere.includes('parade-du-verre'), 'la Parade résolue va au cimetière');
 
   const premierCoup = rpgBlesserCreature(duel, 'joueur', chien.id, 2);
   assert.equal(premierCoup.absorbes, 2);
@@ -1002,26 +1221,38 @@ test('Parade de verre ne se lance pas si sa créature cible est absente', () => 
   assert.ok(duel.joueur.main.includes('parade-du-verre'), 'la carte et le mana restent intacts');
 });
 
-test('les decks de départ monocolores restent intacts et le deck hybride est sélectionnable', () => {
+test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
   assert.deepEqual(RPG_DECKS.map(({ id }) => id), ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre']);
-  for (const deck of [RPG_DECK_JOUEUR_BASE, RPG_DECK_SORCIER_BASE]) {
+  assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'feriel').length, 1,
+    'la Cour des Djinns contient une Fériel mythique');
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,
+    'les Sentiers de cendre contiennent une Fériel mythique');
+  assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
+    'la Cour des Djinns contient une Anqa mythique');
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
+    'les Sentiers de cendre contiennent une Anqa mythique');
+  for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues] of [
+    [RPG_DECK_JOUEUR_BASE, 17, 18, 5],
+    [RPG_DECK_SORCIER_BASE, 18, 10, 12],
+  ]) {
     const valide = rpgValiderDeck(deck);
     assert.equal(valide.ok, true, valide.raison);
     assert.equal(deck.length, 40);
-    assert.equal(valide.terrains, 17, 'chaque deck contient 42,5 % de son terrain de base');
+    assert.equal(valide.terrains, terrainsAttendus);
     const comptes = {};
     for (const id of deck) {
       comptes[id] = (comptes[id] ?? 0) + 1;
       assert.ok(cardById(id), `${id} existe dans le catalogue des cartes`);
     }
     for (const [id, n] of Object.entries(comptes)) {
-      if (id !== 'desert' && id !== 'montagne') assert.ok(n <= 3, `${id} ×${n} (3 max)`);
+      const carte = cardById(id);
+      const limite = carte.rarity === 'mythique' ? 1 : carte.kind === 'terrain' ? Infinity : 3;
+      assert.ok(n <= limite, `${id} ×${n} (limite ${limite})`);
     }
     const creatures = deck.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind));
     const magies = deck.filter((id) => cardById(id)?.kind === 'magie');
-    assert.equal(creatures.length, 18, '18 créatures et personnages');
-    assert.equal(magies.length, 5, '5 magies');
-    assert.ok(creatures.length > magies.length, 'l’archétype repose davantage sur les créatures que sur les sorts');
+    assert.equal(creatures.length, creaturesAttendues);
+    assert.equal(magies.length, magiesAttendues);
   }
 
   for (const [deck, element, terrain] of [
@@ -1048,6 +1279,10 @@ test('les decks de départ monocolores restent intacts et le deck hybride est s�
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 6);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 18);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 5);
+  for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique')) {
+    assert.ok(RPG_DECK_HYBRIDE_BASE.filter((id) => id === carte.id).length <= 1,
+      `${carte.id} mythique apparaît au plus une fois dans le deck hybride`);
+  }
   for (const id of new Set(RPG_DECK_HYBRIDE_BASE)) {
     const carte = cardById(id);
     assert.ok(cardColors(carte).every((couleur) => deckHybride.elements.includes(couleur)),
@@ -1070,20 +1305,37 @@ test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de t
   ];
   assert.equal(tropDeCopies.length, 40);
   assert.equal(rpgValiderDeck(tropDeCopies).ok, false, '4 exemplaires d’une créature sont refusés');
+
+  const mythiqueEnDouble = [...RPG_DECK_HYBRIDE_BASE];
+  const emplacementFennec = mythiqueEnDouble.indexOf('fennec-des-decombres');
+  mythiqueEnDouble[emplacementFennec] = 'sahir-des-braises';
+  const resultatMythique = rpgValiderDeck(mythiqueEnDouble);
+  assert.equal(resultatMythique.ok, false, 'deux exemplaires du même mythique sont refusés');
+  assert.match(resultatMythique.raison, /sahir-des-braises mythique en 2 exemplaires \(1 max\)/);
+
   const sansTerrains = Array.from({ length: 40 }, (_, index) => RPG_CREATURE_CARDS[index % RPG_CREATURE_CARDS.length].id);
   assert.equal(rpgValiderDeck(sansTerrains).ok, false, '0 terrain = refus');
 });
 
-test('magies : dégâts ciblés, soin, pioche, et refus sans cible', () => {
+test('Trait de braise coûte 2, est un éphémère et inflige 3 dégâts à une créature ou un sorcier', () => {
+  const trait = cardById('trait-de-braise');
+  assert.deepEqual({ cost: trait.cost, instant: trait.instant, typeLine: trait.typeLine, amount: trait.effet.amount, cibles: trait.cibles }, {
+    cost: 2, instant: true, typeLine: 'Éphémère — Braise', amount: 3, cibles: ['creature', 'sorcier'],
+  });
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donner(duel, 'joueur', 'trait-de-braise');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise').ok, false, 'sans créature cible, non');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise').ok, false, 'sans cible légale, le sort échoue');
   donnerMana(duel, 'sorcier', 10);
   donner(duel, 'sorcier', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', chien.id).ok, true, '2 dégâts au chien 2/2');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', chien.id).ok, true, 'les 3 dégâts détruisent le Chien 2/2');
   assert.equal(duel.sorcier.creatures.length, 0);
+  const pvSorcierAvant = duel.sorcier.pv;
+  donner(duel, 'joueur', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier').ok, true,
+    'la cible Sorcier applique aussi les 3 dégâts');
+  assert.equal(duel.sorcier.pv, pvSorcierAvant - 3);
   duel.joueur.pv = 40;
   donner(duel, 'joueur', 'eau-de-la-source');
   rpgLancerMagie(duel, 'joueur', 'eau-de-la-source');

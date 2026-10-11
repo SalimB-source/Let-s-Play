@@ -16,7 +16,7 @@ export async function checkRpgBattle(assert) {
   // Decks déterministes : 5 cartes chacun, tout part dans la main de départ.
   await act(async () => {
     root.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'desert', 'fennec-des-decombres', 'desert']}
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'veilleur-du-couchant', 'fennec-des-decombres', 'desert']}
       sorcierDeck={['chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert']}
       rng={() => 0.999}
     />);
@@ -121,34 +121,77 @@ export async function checkRpgBattle(assert) {
     'le catalogue présente toutes les créatures, tous les héros, terrains et magies');
   assert.equal(new Set([...container.querySelectorAll('.rpg-card-catalogue__card')].map((card) => card.dataset.cardId)).size,
     RPG_DUEL_CARDS.length, 'chaque carte apparaît une seule fois dans le catalogue');
+  const djinnCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="djinn-du-souk"]');
+  assert.match(djinnCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
+    /\/cards\/djinn-du-souk\.jpg\?v=munch-impressionniste-v3$/,
+    'le catalogue charge la nouvelle illustration avec une URL versionnée contre le cache');
+  const ifritCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="ifrit-al-ahmar"]');
+  assert.match(ifritCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
+    /\/cards\/ifrit-al-ahmar\.jpg\?v=sourire-tempete-huile-v1$/,
+    'le catalogue charge la nouvelle illustration de l’Ifrit contre le cache');
+  const ferielCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="feriel"]');
+  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
+    /\/cards\/feriel\.jpg\?v=lance-de-feu-photoreal-v1$/,
+    'le catalogue charge la nouvelle illustration de Fériel avec une URL versionnée contre le cache');
+  assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '4',
+    'le catalogue affiche le nouveau coût de quatre pour Fériel');
+  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /3\s*·\s*🛡\s*1/,
+    'le catalogue affiche les nouvelles statistiques 3/1 de Fériel');
+  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Coup rapide/s,
+    'le catalogue décrit Rapidité et le ciblage du Coup rapide');
+  const traitCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="trait-de-braise"]');
+  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
+    /\/cards\/trait-de-braise\.jpg\?v=trait-feu-sorcier-appeure-v1$/,
+    'le catalogue charge le nouveau Trait de braise vers le sorcier avec une URL versionnée');
+  assert.equal(traitCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '2',
+    'le catalogue affiche le coût de deux du Trait de braise');
+  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__type')?.textContent ?? '', /Éphémère/,
+    'le catalogue identifie le Trait de braise comme éphémère');
+  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts.*créature.*sorcier/i,
+    'le catalogue décrit ses 3 dégâts sur une créature ou un sorcier');
+  const anqaCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="anqa-des-braises"]');
+  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
+    /\/cards\/anqa-des-braises\.jpg\?v=anqa-des-braises-huile-v1$/,
+    'le catalogue charge l’illustration de l’Anqa avec une URL versionnée');
+  assert.equal(anqaCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '4',
+    'le catalogue affiche le coût de quatre de l’Anqa');
+  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /4\s*·\s*🛡\s*4/,
+    'le catalogue affiche les statistiques 4/4 de l’Anqa');
+  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /revient en jeu après deux tours/i,
+    'le catalogue décrit le retour de l’Anqa deux tours après sa destruction');
+  const fennecCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="fennec-des-decombres"]');
+  assert.ok(fennecCatalogue, 'le Fennec apparaît au catalogue');
+  assert.equal(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-card-rapidity, .rpg-card-catalogue__art .rpg-card-evasion'), null,
+    'le Fennec n’affiche aucune icône d’effet dans le catalogue');
+  assert.equal(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-card-element-badge')?.textContent.trim(), '⏳',
+    'le badge élémentaire Sable du Fennec reste visible dans le catalogue');
+  assert.match(fennecCatalogue.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Esquive 1/,
+    'le catalogue conserve le texte de Rapidité et Esquive');
   const filtresCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__filters select')];
   const filtrerCatalogue = async (select, value) => act(async () => {
     select.value = value;
     select.dispatchEvent(new window.Event('change', { bubbles: true }));
   });
   await filtrerCatalogue(filtresCatalogue[0], 'sable');
-  assert.ok([...container.querySelectorAll('.rpg-card-catalogue__card')]
-    .every((card) => card.dataset.colors.split(' ').includes('sable')),
-  'le filtre Sable inclut aussi les cartes qui partagent l’identité hybride');
+  assert.ok([...container.querySelectorAll('.rpg-card-catalogue__card')].every((card) => card.dataset.colors.split(' ').includes('sable')),
+    'le filtre Sable inclut aussi les cartes hybrides qui demandent cette couleur');
   await filtrerCatalogue(filtresCatalogue[1], 'terrain');
   const terrainsCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__card')];
-  assert.ok(terrainsCatalogue.length && terrainsCatalogue.every((card) => (
-    card.dataset.colors.split(' ').includes('sable') && card.dataset.type === 'terrain'
-  )), 'les filtres couleur et type se cumulent, Pétra comprise');
+  assert.ok(terrainsCatalogue.length && terrainsCatalogue.every((card) => card.dataset.colors.split(' ').includes('sable') && card.dataset.type === 'terrain'),
+    'les filtres couleur et type se cumulent, y compris pour Pétra');
   assert.equal(container.querySelectorAll('.rpg-card-catalogue__art .rpg-card-element-badge').length, 0,
     'les terrains du catalogue restent sans badge de couleur');
   assert.equal(container.querySelectorAll('.rpg-card-catalogue__art .rpg-card-catalogue__cost').length, 0,
     'les terrains du catalogue restent sans coût');
   await filtrerCatalogue(filtresCatalogue[1], 'tous');
   await filtrerCatalogue(filtresCatalogue[0], 'hybride');
-  const cartesHybrides = [...container.querySelectorAll('.rpg-card-catalogue__card')];
-  assert.equal(cartesHybrides.length, 3, 'le filtre Hybrides isole les deux cartes bicolores et Pétra');
-  assert.ok(cartesHybrides.every((card) => (
-    card.dataset.colors.split(' ').includes('braise') && card.dataset.colors.split(' ').includes('sable')
-  )), 'chaque carte hybride expose les deux couleurs dans le catalogue');
-  const veilleurHybride = container.querySelector('.rpg-card-catalogue__card[data-card-id="veilleur-du-couchant"]');
-  assert.match(veilleurHybride.querySelector('.rpg-card-catalogue__cost').getAttribute('aria-label'), /1 Sable et 1 Braise/,
-    'le coût du Veilleur annonce ses deux sources colorées');
+  const cartesHybridesCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__card')];
+  assert.ok(cartesHybridesCatalogue.length >= 3
+    && cartesHybridesCatalogue.every((card) => ['sable', 'braise'].every((color) => card.dataset.colors.split(' ').includes(color))),
+  'le filtre hybride isole les cartes qui exigent Braise et Sable, terrain de Pétra inclus');
+  const veilleurCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="veilleur-du-couchant"]');
+  assert.ok(veilleurCatalogue?.querySelector('.rpg-card-catalogue__cost')?.getAttribute('aria-label')?.includes('1 Sable et 1 Braise'),
+    'le coût du Veilleur annonce clairement ses deux pips obligatoires');
   await filtrerCatalogue(filtresCatalogue[0], 'toutes');
   await filtrerCatalogue(filtresCatalogue[1], 'creature');
   const cavalierCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="cavalier-amazigh-du-desert"]');
@@ -165,30 +208,28 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, 3, 'les deux decks monocolores et le deck hybride sont listés');
+  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, 3, 'les deux decks monocolores et le deck hybride sont sélectionnables');
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
   assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');
-  assert.match(container.textContent, /Sentiers de cendre/, 'le deck joueur Sable + Braise est présenté');
-  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes du deck monocolore');
+  assert.match(container.textContent, /Sentiers de cendre/, 'le deck joueur hybride Sable + Braise est présenté');
+  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes avec leurs quantités, Cavalier inclus');
   assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
     'la fiche indique la taille et la répartition terrain / créature / magie du deck validé');
-  const choixDeckHybride = [...container.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Sentiers de cendre'));
-  await act(async () => { choixDeckHybride.click(); });
-  assert.match(container.querySelector('.rpg-deck-detail')?.textContent ?? '', /HYBRIDE[\s\S]*Sable[\s\S]*Braise/,
-    'la fiche affiche l’identité chromatique hybride');
-  assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
-    'le deck hybride reste validé avec 17 terrains, 18 créatures et 5 magies');
-  assert.ok([...container.querySelectorAll('.rpg-deck-list li')].some((item) => item.textContent.includes('Pétra')),
-    'la liste hybride inclut la ville de Pétra');
-  assert.ok([...container.querySelectorAll('.rpg-deck-list li')].some((item) => item.textContent.includes('Vent rouge')),
-    'la liste hybride inclut une magie exigeant les deux couleurs');
-  assert.ok(findButton('Jouer avec ce deck'), 'le deck hybride peut être lancé depuis sa fiche');
   const choixDeckAdverse = [...container.querySelectorAll('.rpg-deck-choice')]
     .find((button) => button.textContent.includes('Cour des Djinns'));
   await act(async () => { choixDeckAdverse.click(); });
   assert.match(container.querySelector('.rpg-deck-detail')?.textContent ?? '', /Braise/,
     'la sélection affiche les détails du deck de Braise');
+  const choixDeckHybride = [...container.querySelectorAll('.rpg-deck-choice')]
+    .find((button) => button.textContent.includes('Sentiers de cendre'));
+  await act(async () => { choixDeckHybride.click(); });
+  const ficheHybride = container.querySelector('.rpg-deck-detail');
+  assert.match(ficheHybride?.textContent ?? '', /Sable \+ Braise[\s\S]*HYBRIDE/i,
+    'la fiche précise l’identité bicolore du deck');
+  assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Veilleur du couchant[\s\S]*Vent rouge/,
+    'la liste hybride présente son terrain flexible et ses cartes bicolores');
+  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5[\s\S]*validé/,
+    'le deck hybride est validé à 40 cartes, avec 17 terrains, 18 créatures et 5 magies');
   const choixDeckJoueur = [...container.querySelectorAll('.rpg-deck-choice')]
     .find((button) => button.textContent.includes('Veilleurs du Désert'));
   await act(async () => { choixDeckJoueur.click(); });
@@ -210,7 +251,7 @@ export async function checkRpgBattle(assert) {
     'la phase principale s’allume au début du tour du joueur');
   assert.equal(container.querySelectorAll('.rpg-phase-step[aria-current="step"]').length, 1,
     'une seule phase du duel est annoncée comme active');
-  assert.match(container.querySelector('.rpg-wizard-plate--joueur')?.textContent ?? '', /Veilleurs du Désert · Sable/,
+  assert.match(container.querySelector('.rpg-wizard-plate--joueur')?.textContent ?? '', /Veilleurs du Désert · ⏳ Sable/,
     'le plateau annonce l’archétype mono-Désert du joueur');
   assert.match(container.querySelector('.rpg-wizard-plate--ennemi')?.textContent ?? '', /Cour des Djinns · Braise/,
     'le plateau annonce l’archétype de feu de l’adversaire');
@@ -241,11 +282,21 @@ export async function checkRpgBattle(assert) {
     .every((carte) => carte.querySelector('.rpg-card-element-badge')),
   'les cartes non-terrain affichent leur couleur à gauche');
   const fennecMain = visagesMain.find((carte) => carte.dataset.cardId === 'fennec-des-decombres');
-  assert.ok(fennecMain?.querySelector('.rpg-card-rapidity svg'), 'le Fennec affiche l’icône de Rapidité dans la main');
-  assert.ok(fennecMain?.querySelector('.rpg-card-evasion svg'), 'le Fennec affiche aussi l’icône SVG Esquive dans la main');
+  assert.equal(fennecMain?.querySelector('.rpg-card-rapidity, .rpg-card-evasion'), null,
+    'le Fennec n’affiche pas d’icône d’effet sur la carte en main');
   assert.match(fennecMain?.getAttribute('aria-label') ?? '', /Rapidité.*attaquer le tour où elle arrive.*Esquive 1/,
     'les deux capacités du Fennec restent annoncées de façon accessible');
   assert.equal(fennecMain?.hasAttribute('title'), false, 'la carte en main n’affiche plus d’aide au survol');
+  const veilleurMain = visagesMain.find((carte) => carte.dataset.cardId === 'veilleur-du-couchant');
+  assert.ok(veilleurMain, 'la main de test contient une créature hybride');
+  assert.equal(veilleurMain.querySelector('.rpg-mana-cost b')?.textContent, '3',
+    'le coût hybride conserve son nombre de manas');
+  assert.equal(veilleurMain.querySelector('.rpg-mana-cost__hybrid-pips, .rpg-mana-cost__pip'), null,
+    'les icônes de couleur sont retirées du coût de la créature hybride');
+  assert.match(veilleurMain.querySelector('.rpg-mana-cost')?.getAttribute('aria-label') ?? '', /1 Sable et 1 Braise/,
+    'le libellé accessible du coût hybride conserve ses exigences de couleur');
+  assert.equal(veilleurMain.querySelector('.rpg-card-element-badge')?.querySelectorAll('.rpg-card-element-badge__pip').length, 2,
+    'les deux pastilles de couleur restent sur le badge élémentaire, séparées du coût');
   assert.match(visageCreatureMain.querySelector('.rpg-hand__type')?.textContent ?? '', /^Type\s+—/,
     'la ligne des créatures affiche Type à la place de Créature');
   assert.equal(visageCreatureMain.querySelector('.rpg-card-element-badge')?.textContent.trim(), '⏳',
@@ -307,6 +358,15 @@ export async function checkRpgBattle(assert) {
   assert.equal(handCards().length, 5, 'la carte reste en main tant qu’elle n’est pas glissée sur la table');
   assert.equal(container.querySelectorAll('.rpg-card').length, 0, 'l’aperçu ne joue pas la carte');
   await act(async () => { container.querySelector('.rpg-card-preview__close').click(); });
+
+  await act(async () => { fennecMain.click(); });
+  const apercuFennecClique = container.querySelector('.rpg-card-preview[role="dialog"]');
+  assert.ok(apercuFennecClique, 'le clic ouvre aussi l’aperçu détaillé du Fennec');
+  assert.equal(apercuFennecClique.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
+    'l’aperçu détaillé ne montre aucune icône d’effet');
+  assert.equal(apercuFennecClique.querySelectorAll('.rpg-card-preview__rules > span').length, 2,
+    'l’aperçu détaillé met Rapidité et Esquive chacune sur leur ligne');
+  await act(async () => { apercuFennecClique.querySelector('.rpg-card-preview__close').click(); });
 
   // ── Une seule étape d'annulation restaure le dernier terrain posé ──────
   const terrainAAnnuler = handCards().find((b) => b.className.includes('rpg-hand__card--terrain') && estJouable(b));
@@ -388,8 +448,8 @@ export async function checkRpgBattle(assert) {
   const visageTable = container.querySelector('.rpg-card--equipe');
   assertRarityFrame(visageTable, visageTable.dataset.cardId, 'la carte posée sur la table');
   assert.equal(visageTable.dataset.cardId, 'fennec-des-decombres', 'la créature jouée est le Fennec inhabituel du deck');
-  assert.ok(visageTable.querySelector('.rpg-card-rapidity svg'), 'l’icône Rapidité reste visible sur le plateau');
-  assert.ok(visageTable.querySelector('.rpg-card-evasion svg'), 'le badge SVG Esquive reste visible sur le plateau');
+  assert.equal(visageTable.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
+    'les icônes d’effets sont absentes de la carte posée sur la table');
   assert.match(visageTable.getAttribute('aria-label') ?? '', /rapidité.*attaquer le tour où elle arrive.*esquive 1 contre les attaques et magies/,
     'Rapidité et Esquive restent annoncées dans le libellé accessible');
   assert.ok(visageTable.querySelector('.rpg-card__img') && visageTable.querySelector('.rpg-card__type')
@@ -408,6 +468,10 @@ export async function checkRpgBattle(assert) {
   await act(async () => { envoyerSouris(visageTable, 'mouseover'); });
   const apercuFennecSurvol = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
   assert.ok(apercuFennecSurvol, 'le survol d’une créature en jeu ouvre immédiatement son aperçu');
+  assert.equal(apercuFennecSurvol.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
+    'l’aperçu au survol n’affiche aucune icône d’effet');
+  assert.equal(apercuFennecSurvol.querySelectorAll('.rpg-hover-card-preview__rules > span').length, 2,
+    'l’aperçu au survol place Rapidité et Esquive chacune sur sa propre ligne');
   assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__type')?.textContent ?? '', /Fennec/,
     'l’aperçu de créature affiche le type');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '2',
@@ -638,7 +702,7 @@ export async function checkRpgBattle(assert) {
   const responseRoot = createRoot(responseContainer);
   await act(async () => {
     responseRoot.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'chien-du-guet', 'rafale-du-minaret', 'desert', 'montagne', 'desert']}
+      joueurDeck={['desert', 'desert', 'desert', 'chien-du-guet', 'trait-de-braise', 'desert', 'montagne', 'desert']}
       sorcierDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert']}
       rng={() => 0.999}
     />);
@@ -660,8 +724,8 @@ export async function checkRpgBattle(assert) {
     const combat = responseContainer.querySelector('.rpg-btn--resolve-combat');
     if (combat) await act(async () => { combat.click(); });
   };
-  assert.ok(responseHand().some((card) => card.getAttribute('aria-label')?.includes('Rafale du minaret')),
-    'Rafale est conservée en main jusqu’à la réponse aux bloqueurs');
+  assert.ok(responseHand().some((card) => card.getAttribute('aria-label')?.includes('Trait de braise')),
+    'Trait de braise est conservé en main jusqu’à la réponse aux bloqueurs');
   await jouerTerrainReponse('désert');
   await terminerTourReponse();
   await jouerTerrainReponse('désert');
@@ -677,14 +741,14 @@ export async function checkRpgBattle(assert) {
     'le sorcier choisit un bloqueur avant que le joueur ne reçoive la priorité');
   assert.equal(responseContainer.querySelector('.rpg-blocker-arrows')?.getAttribute('data-arrow-count'), '1',
     'la flèche jaune matérialise le blocage adverse pendant la fenêtre de réponse');
-  const rafaleReponse = responseHand().find((card) => card.getAttribute('aria-label')?.includes('Rafale du minaret'));
-  assert.ok(rafaleReponse && estJouable(rafaleReponse), 'la main rendue contient un éphémère payable');
-  await glisserSurTable(responseContainer, rafaleReponse);
-  const bloqueurRafale = responseContainer.querySelector('.rpg-card--ennemi.is-blocking');
-  assert.ok(bloqueurRafale?.classList.contains('is-ciblable'), 'le bloqueur choisi est mis en évidence comme cible de Rafale');
-  await act(async () => { bloqueurRafale.click(); });
+  const traitReponse = responseHand().find((card) => card.getAttribute('aria-label')?.includes('Trait de braise'));
+  assert.ok(traitReponse && estJouable(traitReponse), 'Trait de braise, éphémère à 2, est payable pendant la réponse');
+  await glisserSurTable(responseContainer, traitReponse);
+  const bloqueurTrait = responseContainer.querySelector('.rpg-card--ennemi.is-blocking');
+  assert.ok(bloqueurTrait?.classList.contains('is-ciblable'), 'le bloqueur choisi est mis en évidence comme cible du Trait');
+  await act(async () => { bloqueurTrait.click(); });
   assert.ok(!responseContainer.querySelector('.rpg-card--ennemi.is-blocking'),
-    'Rafale détruit le bloqueur avant la résolution des dégâts de combat');
+    'les 3 dégâts du Trait détruisent le bloqueur avant la résolution des dégâts de combat');
   assert.equal(responseContainer.querySelector('.rpg-btn--resolve-combat')?.textContent.includes('Accepter les blocages'), true,
     'le joueur garde la commande pour accepter puis résoudre le combat');
   const responseTable = responseContainer.querySelector('.card-table');
@@ -934,10 +998,16 @@ export async function checkRpgBattle(assert) {
   assert.ok(amayasMain && estJouable(amayasMain), 'Amayas devient jouable après la pose de trois terrains Désert');
   await glisserSurTable(protectionContainer, amayasMain);
   const amayasTable = protectionContainer.querySelector('.rpg-card--equipe[data-card-id="amayas-du-hoggar"]');
-  assert.ok(amayasTable?.querySelector('.rpg-card-protection--braise'),
-    'la protection contre Braise apparaît en bouclier sous le coût sur la créature');
+  assert.equal(amayasTable?.querySelector('.rpg-card-protection--braise'), null,
+    'le bouclier de protection n’est pas imprimé sur la carte posée');
   assert.match(amayasTable.getAttribute('aria-label'), /protection contre Braise pendant encore 2 tours/,
-    'la couleur et la durée de la protection sont annoncées de façon accessible');
+    'la couleur et la durée de la protection restent annoncées de façon accessible');
+  await act(async () => { envoyerSouris(amayasTable, 'mouseover'); });
+  const apercuAmayas = protectionContainer.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
+  assert.equal(apercuAmayas?.querySelector('.rpg-card-protection--braise, .rpg-card-stat-boost'), null,
+    'l’aperçu de la créature n’affiche pas d’icône d’effet');
+  assert.equal(apercuAmayas?.querySelectorAll('.rpg-hover-card-preview__rules > span').length, 2,
+    'l’aperçu sépare la protection et la capacité de pioche sur deux lignes');
   await act(async () => { protectionRoot.unmount(); });
   protectionContainer.remove();
 
@@ -996,7 +1066,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { cavalryRoot.unmount(); });
   cavalryContainer.remove();
 
-  // ── Pétra laisse choisir la couleur de mana au clic ───────────────────
+  // ── Pétra : choix manuel de Braise ou Sable à chaque engagement ───────
   const petraContainer = document.createElement('div');
   document.body.appendChild(petraContainer);
   const petraRoot = createRoot(petraContainer);
@@ -1008,46 +1078,84 @@ export async function checkRpgBattle(assert) {
     />);
   });
   await lancerDepuisMenu(petraContainer);
-  const petraCardInHand = petraContainer.querySelector('.rpg-hand__card[data-card-id="petra"]');
-  assert.ok(petraCardInHand && estJouable(petraCardInHand), 'Pétra est jouable depuis la main');
-  await glisserSurTable(petraContainer, petraCardInHand);
-  const petraTerrain = petraContainer.querySelector('.rpg-terrains--joueur .rpg-terrain[data-card-id="petra"]');
-  assert.ok(petraTerrain, 'Pétra arrive sur la rangée des terrains');
-  await act(async () => { petraTerrain.click(); });
-  const choixMana = petraContainer.querySelector('.rpg-terrain-mana-choice[role="dialog"]');
-  assert.ok(choixMana, 'le clic sur Pétra ouvre le choix de mana');
-  assert.match(choixMana.textContent, /Braise[\s\S]*Sable/, 'les deux couleurs possibles sont proposées');
-  await act(async () => { choixMana.querySelector('.rpg-terrain-mana-choice__option--sable').click(); });
-  assert.equal(petraContainer.querySelector('.rpg-terrain-mana-choice'), null, 'le choix se ferme après sélection');
-  assert.equal(petraContainer.querySelector('.rpg-wizard-plate--joueur .mana--sable')?.textContent, '1',
-    'choisir Sable ajoute un mana Sable');
-  assert.equal(petraContainer.querySelector('.rpg-wizard-plate--joueur .mana--braise')?.textContent, '0',
-    'le clic ne produit pas simultanément les deux couleurs');
-  assert.ok(petraTerrain.classList.contains('is-tapped'), 'Pétra s’engage après la production choisie');
+  const petraMain = () => [...petraContainer.querySelectorAll('button.rpg-hand__card')]
+    .find((card) => card.dataset.cardId === 'petra');
+  const engagerPetraEn = async (couleur) => {
+    const carte = petraMain();
+    assert.ok(carte && estJouable(carte), 'Pétra est jouable dans la main');
+    await glisserSurTable(petraContainer, carte);
+    const terrain = petraContainer.querySelector('.rpg-terrains--joueur .rpg-terrain[data-card-id="petra"]:not(.is-tapped)');
+    assert.ok(terrain, 'la vraie carte Pétra rejoint le rail des terrains');
+    await act(async () => { terrain.click(); });
+    const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
+    assert.ok(choix, 'un choix accessible de couleur s’ouvre au clic sur Pétra');
+    assert.match(choix.textContent, /Braise[\s\S]*Sable/,
+      'le menu offre les deux productions de Pétra');
+    await act(async () => { choix.querySelector(`.rpg-terrain-mana-choice__option--${couleur}`).click(); });
+    assert.equal(petraContainer.querySelector(`.rpg-wizard-plate--joueur .mana--${couleur}`)?.textContent, '1',
+      `Pétra ajoute un mana ${couleur}`);
+    assert.ok(terrain.classList.contains('is-tapped'), 'Pétra est engagée après le choix');
+    assert.equal(petraContainer.querySelector('.rpg-terrain-mana-choice'), null, 'le sélecteur se referme après le choix');
+  };
+  await engagerPetraEn('sable');
+  await act(async () => { petraContainer.querySelector('.rpg-btn--endturn').click(); });
+  await act(async () => { await wait(1800); });
+  await engagerPetraEn('braise');
   await act(async () => { petraRoot.unmount(); });
   petraContainer.remove();
 
-  // ── Le menu lance réellement le deck hybride sélectionné ──────────────
-  const hybridDeckContainer = document.createElement('div');
-  document.body.appendChild(hybridDeckContainer);
-  const hybridDeckRoot = createRoot(hybridDeckContainer);
+  // ── Fériel : Rapidité puis choix manuel de la cible du Coup rapide ──
+  const ferielContainer = document.createElement('div');
+  document.body.appendChild(ferielContainer);
+  const ferielRoot = createRoot(ferielContainer);
   await act(async () => {
-    hybridDeckRoot.render(<RpgDuelPage sorcierDeck={[]} rng={() => 0.999} />);
+    ferielRoot.render(<RpgDuelPage
+      joueurDeck={['desert', 'desert', 'desert', 'montagne', 'feriel']}
+      sorcierDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet']}
+      rng={() => 0.999}
+    />);
   });
-  const modeDeck = [...hybridDeckContainer.querySelectorAll('.rpg-mode-menu__switch button')]
-    .find((button) => button.textContent.includes('Deck'));
-  await act(async () => { modeDeck.click(); });
-  const choixDeckHybridePartie = [...hybridDeckContainer.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Sentiers de cendre'));
-  await act(async () => { choixDeckHybridePartie.click(); });
-  const jouerDeckHybride = [...hybridDeckContainer.querySelectorAll('button')]
-    .find((button) => button.textContent.includes('Jouer avec ce deck'));
-  assert.ok(jouerDeckHybride, 'la fiche hybride offre le lancement du duel');
-  await act(async () => { jouerDeckHybride.click(); });
-  const mainHybride = [...hybridDeckContainer.querySelectorAll('.rpg-hand__card')]
-    .map((card) => card.dataset.cardId).sort();
-  assert.deepEqual(mainHybride, ['rempart-de-dunes', 'trait-de-braise', 'trait-de-braise', 'vent-rouge', 'vent-rouge'].sort(),
-    'la main de départ provient bien du deck hybride sélectionné');
-  await act(async () => { hybridDeckRoot.unmount(); });
-  hybridDeckContainer.remove();
+  await lancerDepuisMenu(ferielContainer);
+  const ferielHand = () => [...ferielContainer.querySelectorAll('button.rpg-hand__card')];
+  const poserDesertFeriel = async () => {
+    const terrain = ferielHand().find((card) => card.classList.contains('rpg-hand__card--terrain') && estJouable(card));
+    assert.ok(terrain, 'un terrain est disponible pour financer Fériel');
+    await glisserSurTable(ferielContainer, terrain);
+  };
+  const finirTourFeriel = async () => {
+    await act(async () => { ferielContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(1800); });
+    const resolve = ferielContainer.querySelector('.rpg-btn--resolve-combat');
+    if (resolve) await act(async () => { resolve.click(); });
+  };
+  for (let tour = 1; tour <= 3; tour += 1) {
+    await poserDesertFeriel();
+    await finirTourFeriel();
+  }
+  await poserDesertFeriel();
+  const ferielEnMain = ferielHand().find((card) => card.dataset.cardId === 'feriel');
+  assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
+  await glisserSurTable(ferielContainer, ferielEnMain);
+  const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
+  assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
+  await act(async () => { ferielEnJeu.click(); });
+  const confirmerFeriel = ferielContainer.querySelector('.rpg-btn--confirmer-attaque');
+  assert.equal(confirmerFeriel.disabled, true, 'la confirmation attend que la cible du Coup rapide soit choisie');
+  assert.match(ferielContainer.textContent, /Coup rapide.*choisissez une créature adverse/i,
+    'l’interface annonce la sélection de la cible de Fériel');
+  const chienCibleFeriel = [...ferielContainer.querySelectorAll('.rpg-card--ennemi')]
+    .find((card) => card.dataset.cardId === 'chien-du-guet');
+  assert.ok(chienCibleFeriel?.classList.contains('is-ciblable'), 'le Chien adverse est présenté comme cible légale');
+  await act(async () => { chienCibleFeriel.click(); });
+  assert.equal(ferielContainer.querySelector('.rpg-btn--confirmer-attaque').disabled, false,
+    'la confirmation s’active après le choix de la cible');
+  await act(async () => { ferielContainer.querySelector('.rpg-btn--confirmer-attaque').click(); });
+  assert.ok(ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]'),
+    'Fériel reste en jeu car la créature ciblée ne riposte pas');
+  assert.equal(ferielContainer.querySelector('.rpg-card--ennemi[data-card-id="chien-du-guet"]'), null,
+    'le Coup rapide inflige les 3 dégâts d’attaque et détruit le Chien 2/2');
+  assert.match(ferielContainer.textContent, /Coup rapide.*3 dégâts.*Chien du guet/i,
+    'le résultat de l’attaque ciblée est annoncé avec le montant et la cible');
+  await act(async () => { ferielRoot.unmount(); });
+  ferielContainer.remove();
 }
