@@ -434,6 +434,8 @@ function deckCardList(deck) {
 function targetMode(carte) {
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.effet?.type === 'degats' && carte.effet.cible === 'creature') return 'ennemi';
+  // Renvoi en main : le joueur choisit la créature qui repart dans une main.
+  if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (carte?.effet?.type === 'bouclier' && carte.effet.cible === 'creature-amie') return 'allie';
   return null;
 }
@@ -2393,7 +2395,9 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           setCibleEnCours(carteId);
           setMessage(cible === 'allie'
             ? `Choisissez une de vos créatures pour recevoir ${carte.name}.`
-            : `Choisissez une créature adverse (ou le sorcier) pour ${carte.name}.`);
+            : carte.cibles?.includes('sorcier')
+              ? `Choisissez une créature adverse (ou le sorcier) pour ${carte.name}.`
+              : `Choisissez une créature adverse pour ${carte.name}.`);
         }
         force();
         return;

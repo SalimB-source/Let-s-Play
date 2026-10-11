@@ -238,6 +238,9 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       rng,
     })?.cibleId ?? null;
   }
+  if (carte?.effet?.type === 'retour-main') {
+    return meilleureCibleRenvoiIA(duel, cote, carte);
+  }
   if (carte?.effet?.cible === 'creature-amie') {
     return meilleureCibleAmie(duel, cote, carte);
   }
@@ -259,6 +262,22 @@ function meilleureCibleAmie(duel, cote, carte) {
   return duel[cote].creatures
     .filter((entite) => !estProtegee(entite, couleurs))
     .map((entite) => ({ entite, score: valeurEntite(entite) }))
+    .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
+}
+
+/**
+ * Cible du renvoi en main (« bounce ») : la créature la plus lourde parmi
+ * celles que le sort peut toucher — la menace adverse qui repart en main
+ * (`cible: 'creature'`), ou sa propre créature la plus précieuse si une carte
+ * renvoyait une alliée (`cible: 'creature-amie'`). La protection rend la
+ * créature intouchable ; sans cible légale, la fonction rend `null`.
+ */
+function meilleureCibleRenvoiIA(duel, cote, carte) {
+  const campCible = carte?.effet?.cible === 'creature-amie' ? duel[cote] : duel[autre(cote)];
+  const couleurs = cardColors(carte);
+  return campCible.creatures
+    .filter((entite) => !estProtegee(entite, couleurs))
+    .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2 }))
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }
 
@@ -619,6 +638,20 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     }
     if (effet.type === 'pioche') {
       return { score: 3 + (camp.main.length <= 3 ? 3 : 0) - cout * 0.2, cibleId: null };
+    }
+    if (effet.type === 'retour-main') {
+      // Renvoi en main : rien n'est tué, mais la menace adverse repart en main
+      // (son mana est perdu, son arrivée devra être repayée) et le Courant de
+      // retour ajoute une carte. Sans cible légale, le sort reste en main.
+      const cibleId = meilleureCibleRenvoiIA(duel, cote, carte);
+      if (!cibleId) return null;
+      const cible = duel[effet.cible === 'creature-amie' ? cote : adv].creatures
+        .find((entite) => entite.id === cibleId);
+      if (!cible) return null;
+      const tempo = effet.cible === 'creature-amie' ? valeurEntite(cible) * 0.2 : 1.5 + menace(cible) * 0.5;
+      const controle = profil.style === 'controle' ? 1 : 0;
+      const score = tempo + controle + (effet.pioche ?? 0) * 2 - cout * 0.3;
+      return { score: score > 0 ? score : 0, cibleId };
     }
     if (effet.type === 'buff') {
       return { score: 1.5 + camp.creatures.length * 1.5 - cout * 0.2, cibleId: null };

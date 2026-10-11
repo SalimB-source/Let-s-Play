@@ -211,3 +211,40 @@ du sorcier n'est pas contrée par l'IA. Un contre de l'IA n'existe que si son de
 contient des contres (voir la décision sur le deck de l'IA).
 
 Vérifications : `tests/rpg-maree.test.js` (inclus dans `npm run check:rpg`).
+
+## 8. Le renvoi en main (deck Marée des abysses)
+
+Deux sorts d'Eau jouent l'effet **`retour-main`** du moteur : la créature visée
+quitte la table **sans mourir** et retourne dans la main de son propriétaire.
+
+| Carte | Type | Effet |
+|---|---|---|
+| *Ressac* (×2) | Éphémère — Eau, 1 mana | Renvoyez une créature adverse ciblée dans la main de son propriétaire. |
+| *Courant de retour* (×1) | Rituel — Eau, 3 mana | Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. |
+
+Résolution (`renvoyerEnMain`, moteur) :
+- la créature n'entre **pas** au cimetière et ne déclenche **aucune** capacité de
+  destruction (un Kraken renvoyé ne fait pas piocher) ;
+- elle perd tout ce qu'elle avait gagné sur la table (blessures, boucliers,
+  Furie, Résonance) : la rejouer coûtera de nouveau son mana ;
+- la **protection** contre l'Eau arrête le renvoi, comme elle arrête les dégâts ;
+- sans créature légale, le sort refuse de partir : rien n'est payé.
+
+Le renvoi est un coup de **tempo**, pas un anti-créature : la menace reviendra,
+mais elle aura coûté un tour et un paiement de plus. L'IA du sorcier le sait :
+elle cible la créature la plus lourde (`meilleureCibleRenvoiIA`) et ne le lance
+que si la menace adverse le justifie (`scoreCarte`, profil « contrôle »
+favorisé).
+
+Côté interface, le joueur choisit la cible lui-même (`targetMode` rend le sort
+ciblable « ennemi »), et l'aperçu d'une annonce nomme la créature visée. Le
+deck **Marée des abysses** embarque deux *Ressac* et un *Courant de retour*, en
+échange d'un exemplaire de trois créatures communes pour rester à 40 cartes.
+
+Chaque carte a sa peinture dédiée (`public/cards/ressac.jpg`,
+`public/cards/courant-de-retour.jpg`) : le garde-fou du catalogue interdit tout
+partage d'illustration au sein d'un même deck.
+
+Vérifications : `tests/rpg-maree.test.js` (moteur + IA) et le scénario « Ressac »
+de `scripts/rpg-battle-smoke.jsx` (cible cliquée, créature rendue à la main
+adverse), inclus dans `npm run check:rpg` et `npm run check:rpg-ui`.

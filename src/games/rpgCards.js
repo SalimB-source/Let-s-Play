@@ -1168,14 +1168,15 @@ export const RPG_DECK_NEIGE_BASE = [
 
 /**
  * Marée des abysses — mono-Eau : des contresorts qui répondent aux annonces du sorcier
- * adverse et des bêtes marines mythiques. 16 Mer, 13 créatures (4 mythiques,
- * un seul exemplaire chacune), 11 sorts.
+ * adverse, des bêtes marines mythiques et le renvoi en main (Ressac, Courant de retour)
+ * qui reprend du tempo sans tuer. 16 Mer, 10 créatures (4 mythiques, un seul
+ * exemplaire chacune), 14 sorts.
  */
 export const RPG_DECK_MAREE_BASE = [
   ...Array(16).fill('mer'),
-  ...Array(3).fill('porteuse-de-cruches'),
-  ...Array(3).fill('veilleuse-des-citernes'),
-  ...Array(2).fill('vipere-de-verre'),
+  ...Array(2).fill('porteuse-de-cruches'),
+  ...Array(2).fill('veilleuse-des-citernes'),
+  'vipere-de-verre',
   'sonneur-fele',
   'bakunawa',
   'kraken',
@@ -1186,6 +1187,8 @@ export const RPG_DECK_MAREE_BASE = [
   ...Array(2).fill('maree-contraire'),
   ...Array(2).fill('parade-du-verre'),
   'brisure-de-verre',
+  ...Array(2).fill('ressac'),
+  'courant-de-retour',
 ];
 
 /** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
@@ -1679,6 +1682,37 @@ export const RPG_MAGIE_CARDS = [
     effet: { type: 'contresort', cible: 'sort', pioche: 1 },
     text: 'Éphémère — Contre un sort annoncé par le sorcier, puis piochez une carte.',
     flavor: 'Le sable remonte le temps et l’eau reprend sa place.',
+  },
+  // ── Renvoi en main (deck Marée des abysses) ────────────────────────────
+  // L'effet « retour-main » du moteur : la créature visée quitte la table
+  // sans mourir et retourne dans la main de son propriétaire. Ni cimetière,
+  // ni capacité de destruction — mais elle devra être repayée.
+  {
+    id: 'ressac',
+    name: 'Ressac',
+    element: 'eau',
+    kind: 'magie',
+    typeLine: 'Éphémère — Eau',
+    instant: true,
+    cost: 1,
+    rarity: 'commune',
+    cibles: ['creature'],
+    effet: { type: 'retour-main', cible: 'creature' },
+    text: 'Éphémère — Renvoyez une créature adverse ciblée dans la main de son propriétaire.',
+    flavor: 'La mer reprend toujours ce qui s’avance trop près du bord.',
+  },
+  {
+    id: 'courant-de-retour',
+    name: 'Courant de retour',
+    element: 'eau',
+    kind: 'magie',
+    typeLine: 'Rituel — Eau',
+    cost: 3,
+    rarity: 'rare',
+    cibles: ['creature'],
+    effet: { type: 'retour-main', cible: 'creature', pioche: 1 },
+    text: 'Rituel — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte.',
+    flavor: 'Ce que la vague emporte, le courant vous le raconte à l’oreille.',
   },
 ];
 

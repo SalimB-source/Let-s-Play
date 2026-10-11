@@ -440,6 +440,18 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     case 'pioche':
       for (let i = 0; i < (effet.amount ?? 1); i += 1) rpgPiocher(duel, cote);
       return;
+    case 'retour-main': {
+      // Renvoi en main (« bounce ») : la cible quitte la table pour la main de
+      // son propriétaire. `creature` vise le camp adverse, `creature-amie` le
+      // camp du lanceur. `pioche` fait piocher le lanceur après le renvoi.
+      const coteCible = effet.cible === 'creature-amie' ? cote : adv;
+      const cibles = duel[coteCible].creatures.filter((entite) => entite.id === cibleId);
+      for (const cible of cibles) {
+        renvoyerEnMain(duel, coteCible, cible, sourceElement);
+      }
+      for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+      return;
+    }
     case 'retour-apres-tours': {
       const carteSource = duelCardById(sourceCarteId);
       if (!carteSource) return;
@@ -530,6 +542,29 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
     default:
   }
+}
+
+/**
+ * Renvoi en main (« bounce ») : la créature quitte la table **sans mourir** —
+ * elle retourne dans la main de son propriétaire. Elle n'entre donc pas au
+ * cimetière, ne déclenche aucune capacité de destruction, et perd tout ce
+ * qu'elle avait gagné sur la table (blessures soignées, boucliers, Furie,
+ * compteurs) : la rejouer coûtera de nouveau son mana. La protection contre la
+ * couleur du sort arrête le renvoi, comme elle arrête les dégâts.
+ */
+function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
+  const camp = duel[cote];
+  const presente = camp.creatures.find((e) => e.id === entite.id);
+  if (!presente) return false;
+  if (rpgEstProtegee(presente, sourceElement)) {
+    duel.log.push(`${presente.name} échappe au renvoi : protégée.`);
+    return false;
+  }
+  camp.creatures = camp.creatures.filter((e) => e.id !== presente.id);
+  camp.main.push(presente.carteId);
+  duel.log.push(`${presente.name} retourne dans la main de son propriétaire.`);
+  majResonance(duel);
+  return true;
 }
 
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
@@ -740,6 +775,15 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   }
   if (carte.effet.type === 'bouclier' && carte.effet.cible === 'creature-amie') {
     const cible = camp.creatures.find((entite) => entite.id === cibleId);
+    if (!cible) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
+  if (carte.effet.type === 'retour-main') {
+    // Le renvoi exige une créature sur la table : `creature` vise le camp
+    // adverse, `creature-amie` le camp du lanceur. Sans cible légale, le sort
+    // ne se lance pas et le mana n'est pas payé.
+    const campCible = carte.effet.cible === 'creature-amie' ? camp : duel[adv];
+    const cible = campCible.creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }

@@ -4,6 +4,7 @@ import {
   rpgNouveauDuel,
   rpgLancerMagie,
   rpgJouerCreature,
+  rpgCibleAuto,
   rpgTourSorcierPreparationIA,
   rpgSorcierAnnonceSuivante,
   rpgSorcierResoudreAnnonce,
@@ -284,4 +285,136 @@ test('la Tour des Abysses joue le deck bleu sur ses quatre étages, avec des con
   assert.equal(tour.etages.length, 4);
   for (const etage of tour.etages) assert.equal(etage.deck, 'maree-des-abysses');
   assert.equal(deckHistoire('maree-des-abysses'), RPG_DECK_MAREE_BASE);
+});
+
+// ── Renvoi en main : Ressac et Courant de retour ───────────────────────────────
+// L'effet `retour-main` du moteur : la créature visée quitte la table sans
+// mourir et retourne dans la main de son propriétaire (ni cimetière, ni
+// capacité de destruction).
+
+/** Le sorcier pose une de ses créatures : elle devient la cible du renvoi. */
+const creatureAdverse = (duel, carteId) => {
+  mana(duel, 'sorcier', 'sable', 9);
+  mana(duel, 'sorcier', 'eau', 9);
+  mana(duel, 'sorcier', 'braise', 9);
+  donner(duel, 'sorcier', carteId);
+  const pose = rpgJouerCreature(duel, 'sorcier', carteId);
+  assert.equal(pose.ok, true, `${carteId} est en jeu`);
+  return pose.entite;
+};
+
+test('la Marée des abysses embarque le renvoi en main : deux Ressac et un Courant de retour', () => {
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'ressac').length, 2, 'deux Ressac');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'courant-de-retour').length, 1, 'un Courant de retour');
+  for (const id of ['ressac', 'courant-de-retour']) {
+    const carte = cardById(id);
+    assert.equal(carte.kind, 'magie', `${id} est un sort`);
+    assert.deepEqual(cardColors(carte), ['eau'], `${id} est un sort d’Eau`);
+    assert.equal(carte.effet.type, 'retour-main', `${id} renvoie en main`);
+    assert.equal(carte.effet.cible, 'creature', `${id} vise une créature`);
+  }
+  assert.equal(cardById('ressac').instant, true, 'le Ressac est un éphémère');
+  assert.equal(cardById('ressac').effet.pioche, undefined, 'le Ressac ne fait pas piocher');
+  assert.equal(cardById('courant-de-retour').effet.pioche, 1, 'le Courant de retour fait piocher une carte');
+});
+
+test('Ressac renvoie une créature adverse dans la main de son propriétaire', () => {
+  const duel = duelVide();
+  duel.tour = 'joueur';
+  const chien = creatureAdverse(duel, 'chien-du-guet');
+  mana(duel, 'joueur', 'eau', 1);
+  donner(duel, 'joueur', 'ressac');
+  const res = rpgLancerMagie(duel, 'joueur', 'ressac', chien.id);
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(duel.sorcier.creatures.length, 0, 'la créature quitte la table');
+  assert.ok(duel.sorcier.main.includes('chien-du-guet'), 'elle retourne dans la main du sorcier');
+  assert.equal(duel.sorcier.cimetiere.length, 0, 'un renvoi n’envoie rien au cimetière');
+  assert.ok(duel.joueur.cimetiere.includes('ressac'), 'le sort, lui, est consommé');
+  assert.equal(duel.joueur.mana.eau, 0, 'le mana d’Eau est payé');
+  assert.match(duel.log.at(-2), /Chien du guet retourne dans la main de son propriétaire/,
+    'le journal nomme la carte renvoyée');
+});
+
+test('Courant de retour renvoie une créature adverse, puis fait piocher son lanceur', () => {
+  const duel = duelVide();
+  duel.tour = 'joueur';
+  duel.joueur.deck = ['mer', 'mer'];
+  const colosse = creatureAdverse(duel, 'colosse-de-sel');
+  mana(duel, 'joueur', 'eau', 3);
+  donner(duel, 'joueur', 'courant-de-retour');
+  const res = rpgLancerMagie(duel, 'joueur', 'courant-de-retour', colosse.id);
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.ok(duel.sorcier.main.includes('colosse-de-sel'), 'le Colosse repart dans la main adverse');
+  assert.equal(duel.joueur.deck.length, 1, 'une carte a été piochée');
+  assert.ok(duel.joueur.main.includes('mer'), 'la carte piochée vient du deck');
+  assert.equal(duel.joueur.main.length, 1, 'le sort quitte la main, la pioche le remplace');
+});
+
+test('un renvoi ne déclenche pas la capacité de destruction du Kraken', () => {
+  const duel = duelVide();
+  duel.tour = 'joueur';
+  const kraken = creatureAdverse(duel, 'kraken');
+  mana(duel, 'joueur', 'eau', 3);
+  donner(duel, 'joueur', 'courant-de-retour');
+  const mainAdverse = duel.sorcier.main.length;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'courant-de-retour', kraken.id).ok, true);
+  assert.equal(duel.sorcier.main.length, mainAdverse + 1, 'seul le renvoi ajoute une carte à la main adverse');
+  assert.equal(duel.sorcier.cimetiere.length, 0, 'le Kraken n’est pas détruit');
+  assert.equal(duel.log.some((ligne) => ligne.includes('pioche')), false, 'aucune pioche de destruction');
+});
+
+test('Ressac sans créature adverse ne se lance pas et ne coûte rien', () => {
+  const duel = duelVide();
+  duel.tour = 'joueur';
+  mana(duel, 'joueur', 'eau', 1);
+  donner(duel, 'joueur', 'ressac');
+  const res = rpgLancerMagie(duel, 'joueur', 'ressac', null);
+  assert.equal(res.ok, false);
+  assert.equal(res.raison, 'cible');
+  assert.ok(duel.joueur.main.includes('ressac'), 'la carte reste en main');
+  assert.equal(duel.joueur.mana.eau, 1, 'rien n’est payé');
+});
+
+test('une créature protégée contre l’Eau échappe au renvoi', () => {
+  const duel = duelVide();
+  duel.tour = 'joueur';
+  const tiziri = creatureAdverse(duel, 'tiziri-du-djurdjura');
+  mana(duel, 'joueur', 'eau', 1);
+  donner(duel, 'joueur', 'ressac');
+  const res = rpgLancerMagie(duel, 'joueur', 'ressac', tiziri.id);
+  assert.equal(res.ok, false);
+  assert.equal(res.raison, 'protection');
+  assert.equal(duel.sorcier.creatures.length, 1, 'Tiziri reste en jeu');
+  assert.equal(duel.joueur.mana.eau, 1, 'rien n’est payé');
+  assert.ok(duel.joueur.main.includes('ressac'));
+});
+
+test('l’IA vise la menace la plus lourde avec le Ressac', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 'sable', 9);
+  mana(duel, 'joueur', 'eau', 9); // le Colosse de sel est une créature d’Eau
+  donner(duel, 'joueur', 'chien-du-guet');
+  donner(duel, 'joueur', 'colosse-de-sel');
+  rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
+  const colosse = rpgJouerCreature(duel, 'joueur', 'colosse-de-sel').entite;
+  assert.equal(rpgCibleAuto(duel, 'sorcier', cardById('ressac')), colosse.id,
+    'le Colosse pèse plus lourd que le Chien');
+});
+
+test('le sorcier annonce et résout un Ressac sur la créature du joueur', () => {
+  const duel = duelVide();
+  mana(duel, 'joueur', 'sable', 9);
+  mana(duel, 'joueur', 'eau', 9); // le Colosse de sel est une créature d’Eau
+  donner(duel, 'joueur', 'colosse-de-sel');
+  const colosse = rpgJouerCreature(duel, 'joueur', 'colosse-de-sel').entite;
+  duel.tour = 'sorcier';
+  mana(duel, 'sorcier', 'eau', 5);
+  donner(duel, 'sorcier', 'ressac');
+  const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.equal(annonce?.carteId, 'ressac', 'le sorcier annonce le Ressac');
+  assert.equal(annonce.cibleId, colosse.id, 'il vise la créature posée');
+  assert.equal(rpgSorcierResoudreAnnonce(duel).ok, true);
+  assert.equal(duel.joueur.creatures.length, 0, 'la créature du joueur quitte la table');
+  assert.ok(duel.joueur.main.includes('colosse-de-sel'), 'elle revient dans la main du joueur');
+  assert.ok(duel.sorcier.cimetiere.includes('ressac'), 'le sort du sorcier est consommé');
 });
