@@ -2000,19 +2000,22 @@
 
 /* Les plateaux du duel (voir `rpgPlateaux.js`) : le fond image est posé par la
    page, ces classes ne règlent que la couleur de repli et le voile propre au
-   terrain. Deux familles de voile, parce que les fonds n'ont pas la même
+   terrain. Trois familles de voile, parce que les fonds n'ont pas la même
    lumière : le bois est déjà sombre (moyenne 57 sur 255) et se contente de son
-   voile d'origine ; le sable est deux fois plus lumineux (127) et reçoit une
-   ombre chaude dense, sinon les libellés clairs de la table et les cartes
-   posées se noient dans le beige ; la terre brûlée est sombre (66) mais très
-   contrastée — elle reçoit un voile léger et une vignette appuyée, pour garder
-   les braises lisibles sans laisser les éclats de lave manger les cartes.
+   voile d'origine ; la terre brûlée est sombre (66) mais très contrastée — un
+   voile léger et une vignette appuyée, pour garder les braises lisibles sans
+   laisser les éclats de lave manger les cartes ; les fonds clairs — le sable
+   (127) et la pierre des ruines (133) — reçoivent une ombre dense, sinon les
+   libellés clairs de la table et les cartes posées se noient dans le beige.
+   Seule la teinte change : ombre chaude pour les sables, ombre neutre et
+   froide pour la pierre au bord de la mer.
    Le voile est le même mécanisme que pour le bois (le pseudo-élément de la
    table), et il disparaît en tactile comme lui (`rpg-mobile.css`). */
 .card-table--plateau-table-des-heures { background-color: #1c1006; }
 .card-table--plateau-erg-du-sahara { background-color: #a8804f; }
 .card-table--plateau-caravane-de-gourara { background-color: #a8764f; }
 .card-table--plateau-terre-de-damnation { background-color: #24120b; }
+.card-table--plateau-ruines-de-tipaza { background-color: #9d9179; }
 .rpg-battle:not(.rpg-battle--touch) :is(.card-table--plateau-erg-du-sahara, .card-table--plateau-caravane-de-gourara)::before {
   background:
     radial-gradient(ellipse at 50% 44%, rgba(26, 15, 6, .14), rgba(20, 11, 5, .5) 88%),
@@ -2022,6 +2025,14 @@
   background:
     radial-gradient(ellipse at 50% 45%, rgba(30, 12, 6, .04), rgba(11, 5, 3, .52) 90%),
     linear-gradient(180deg, rgba(20, 9, 4, .3) 0%, rgba(28, 12, 6, .14) 22%, rgba(28, 12, 6, .1) 60%, rgba(13, 6, 3, .4) 100%);
+}
+/* La pierre des ruines : plus claire encore que le sable, et c'est le centre qui
+   porte la mosaïque — l'ombre est donc neutre et froide (mer au nord), plus
+   dense au centre que sur les sables, sinon les cartes flottent sur la pierre. */
+.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-ruines-de-tipaza::before {
+  background:
+    radial-gradient(ellipse at 50% 44%, rgba(18, 18, 22, .3), rgba(14, 15, 19, .52) 90%),
+    linear-gradient(180deg, rgba(16, 16, 20, .42) 0%, rgba(20, 20, 24, .26) 24%, rgba(20, 20, 24, .18) 62%, rgba(13, 13, 17, .48) 100%);
 }
 
 .rpg-hidden-hand {

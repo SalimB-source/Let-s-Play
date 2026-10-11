@@ -55,6 +55,13 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-terre-de-damnation.jpg',
     resume: 'L’étage repris par le feu : la croûte craquelée et ses braises encore vives, l’encensoir de fer renversé, les troncs calcinés, la cendre grise.',
   },
+  {
+    id: 'ruines-de-tipaza',
+    nom: 'Les Ruines de Tipaza',
+    lieu: 'Tipasa, la ville romaine au bord de la mer',
+    fichier: 'plateau-ruines-de-tipaza.jpg',
+    resume: 'La mosaïque de pierre noire et blanche ouverte par le vent, les dalles romaines disjointes, les fûts de colonne et le chapiteau corinthien tombés à l’entour.',
+  },
 ];
 
 /** Le plateau par son identifiant, ou null. */

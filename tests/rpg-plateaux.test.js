@@ -53,9 +53,20 @@ test('la terre de damnation est livrée comme plateau de plein droit', () => {
   assert.match(damnation.nom, /damnation/i);
   assert.match(damnation.resume, /feu|braise|cendre|calcin/i,
     'le résumé annonce bien les flammes et la désolation');
-  // Les trois atmosphères du jeu : Bab El, le désert vivant, la terre brûlée.
+  // Les quatre atmosphères du jeu : Bab El, les déserts, la terre brûlée,
+  // la cité antique au bord de la mer.
   assert.equal(new Set(RPG_PLATEAUX.map((plateau) => plateau.fichier)).size, RPG_PLATEAUX.length,
     'aucun plateau ne réutilise le fond d’un autre');
+});
+
+test('les ruines de Tipaza sont livrées comme plateau de plein droit', () => {
+  const tipaza = plateauParId('ruines-de-tipaza');
+  assert.ok(tipaza, 'les Ruines de Tipaza font partie des plateaux');
+  assert.match(tipaza.fichier, /\.jpg$/);
+  assert.match(tipaza.nom, /Tipaza/);
+  assert.match(tipaza.lieu, /Tipasa/);
+  assert.match(tipaza.resume, /mosaïque|romaine|colonne/i,
+    'le résumé annonce bien la mosaïque et les ruines romaines');
 });
 
 // ── Le tirage : le plateau change de partie en partie ───────────────────────

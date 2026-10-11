@@ -33,6 +33,7 @@ try {
 }
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+const { RPG_PLATEAUX } = await import('../src/games/rpgPlateaux.js');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
 const aiBrain = readFileSync(new URL('../src/games/rpgAI.js', import.meta.url), 'utf8');
@@ -374,6 +375,14 @@ assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d
   'les cartes piochées glissent de gauche à droite jusqu’à leur place dans la main');
 // ── Les plateaux du duel : le terrain change de partie en partie ────────────
 const plateauxSource = readFileSync(new URL('../src/games/rpgPlateaux.js', import.meta.url), 'utf8');
+// Un fond ne doit porter aucun texte : l'interface du jeu se superpose toujours
+// (RPG-CARD-ART.md). Les métadonnées sont un bon témoin d'une image retouchée.
+for (const { fichier } of RPG_PLATEAUX) {
+  const octets = readFileSync(new URL(`../public/${fichier}`, import.meta.url));
+  const marqueursTexte = /Photoshop|GIMP|Duparcq|signature|watermark|Adobe|exiftool|Canva/i;
+  assert.doesNotMatch(octets.toString('latin1'), marqueursTexte,
+    `le fond ${fichier} ne porte ni métadonnée d'éditeur ni signature`);
+}
 assert.match(plateauxSource, /id: 'erg-du-sahara'[\s\S]*?fichier: 'plateau-erg-du-sahara\.jpg'/,
   'le désert du Sahara est un plateau déclaré, avec son fond dans public/');
 assert.match(battlePage, /tirerPlateau\(\{ choix: choixPlateau, rng, precedentId: plateauPrecedentRef\.current \}\)/,
@@ -394,6 +403,12 @@ for (const plateauSable of ['erg-du-sahara', 'caravane-de-gourara']) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSable}\\s*\\{[^}]*background-color:`),
     `le plateau ${plateauSable} a sa propre couleur de repli`);
 }
+assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza\.jpg'/,
+  'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
+assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
+  'la pierre des ruines a sa propre couleur de repli');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-ruines-de-tipaza::before\s*\{[^}]*radial-gradient/s,
+  'les ruines reçoivent un voile dense et froid : pierre claire au bord de la mer');
 assert.match(plateauxSource, /id: 'terre-de-damnation'[\s\S]*?fichier: 'plateau-terre-de-damnation\.jpg'/,
   'la terre de damnation est un plateau déclaré, avec son fond dans public/');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-terre-de-damnation::before\s*\{[^}]*radial-gradient/s,
@@ -409,6 +424,6 @@ console.log(
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, Fin du tour doré et compact, phases du duel indiquées par des icônes lumineuses agrandies, annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu et voile de lisibilité du sable, régression Rafale.'
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu et voile de lisibilité du sable, régression Rafale.'
 );
 process.exit(0);

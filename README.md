@@ -5122,7 +5122,7 @@ tracé au journal, les cinq réponses proposées, la première vague gagnée en
 jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
 réserve.
 
-## Le Sablier du temps : le plateau du désert du Sahara
+## Le Sablier du temps : les plateaux du duel
 
 Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
 Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
@@ -5150,6 +5150,7 @@ désormais plusieurs, et **le plateau change de partie en partie**.
 | `public/plateau-erg-du-sahara.jpg` | **L'Erg du Sahara** | la rose des sables tracée à la main dans la dune, la lanterne de laiton et son feu, l'outre, la corde, les pierres noires. |
 | `public/plateau-caravane-de-gourara.jpg` | **La Caravane de Gourara** | le lit sec de l'oued et sa piste : les deux empreintes du campement, l'outre, la corde et le compas abandonné. |
 | `public/plateau-terre-de-damnation.jpg` | **La Terre de Damnation** (Les Brûlés) | l'étage repris par le feu : la croûte craquelée et ses braises encore vives, l'encensoir de fer renversé et sa coulée de cendres, les troncs noircis, les éclats d'obsidienne. |
+| `public/plateau-ruines-de-tipaza.jpg` | **Les Ruines de Tipaza** (Tipasa) | la mosaïque romaine ouverte par le vent, les dalles disjointes, les fûts de colonne tombés, le chapiteau corinthien et le débris d’architrave, coquillages et cristaux de sel. |
 
 ### Où vit le code
 
@@ -5162,30 +5163,32 @@ désormais plusieurs, et **le plateau change de partie en partie**.
   `background-image` posés sur la table.
 - `src/games/rpg-battle.css` — les styles du bloc, la couleur de repli de chaque
   plateau, et les **voiles de lisibilité**, un par famille de terrain. Le sable
-  est deux fois plus lumineux que le bois (moyenne 127 contre 57 sur 255) : sans
-  ombre chaude dense, les libellés clairs de la table et les cartes posées se
-  noient dans le beige. La terre brûlée est sombre (66) mais très contrastée :
-  elle reçoit un voile léger et une vignette appuyée, pour laisser les braises
-  lisibles sans que les éclats de lave mangent les cartes. Le bois garde son
-  voile d'origine. Même mécanisme pour tous (le pseudo-élément de la table) et
-  même exception : ils disparaissent en tactile (`rpg-mobile.css`).
+  (moyenne 127 sur 255) et la pierre des ruines (133) sont deux fois plus
+  lumineux que le bois (57) : sans ombre dense, les libellés clairs de la table
+  et les cartes posées se noient dans le beige. La terre brûlée est sombre (66)
+  mais très contrastée : elle reçoit un voile léger et une vignette appuyée,
+  pour laisser les braises lisibles sans que les éclats de lave mangent les
+  cartes. Le bois garde son voile d'origine. Seule la teinte distingue les
+  fonds clairs : ombre chaude pour les sables, ombre neutre et froide pour la
+  pierre au bord de la mer. Même mécanisme pour tous (le pseudo-élément de la
+  table) et même exception : ils disparaissent en tactile (`rpg-mobile.css`).
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
-  `public/plateau-terre-de-damnation.jpg` — les fonds, 1536×1024 JPEG chacun :
-  des peintures vues de dessus, sans texte ni interface dessinée — l'interface
-  du jeu se superpose (règle de `src/games/RPG-CARD-ART.md`). Le centre de
-  chaque tableau est volontairement calme et peu contrasté : c'est la zone où
-  les cartes se posent.
+  `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
+  — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
+  ni interface dessinée — l'interface du jeu se superpose (règle de
+  `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
+  calme et peu contrasté : c'est la zone où les cartes se posent.
 
 ### Vérifications
 
 ```bash
-npm run check:rpg        # règles + les 9 tests des plateaux
+npm run check:rpg        # règles + les 10 tests des plateaux
 npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau compris
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
 livrés dans `public/`, chaque atmosphère — Bab El, les deux déserts, la
-terre brûlée — avec son propre fond), le tirage (jamais deux fois de suite le même terrain,
+terre brûlée, les ruines de Tipaza — avec son propre fond), le tirage (jamais deux fois de suite le même terrain,
 déterminisme par `rng`, valeurs hors bornes sans plantage), le verrou (toujours
 respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
 retour, valeur inconnue normalisée, stockage illisible ou absent).
