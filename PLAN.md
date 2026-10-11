@@ -394,7 +394,8 @@ dans les épingles (elle partait sur le flanc, la caisse sortait du cadre) et
 ### Ce qui change
 
 - **Règles pures** (`src/games/cityRushRules.js`) :
-  - `cityRushTougeCornerFactor(angle)` (plancher 0,58 à 90°, 1 au-delà de
+  - `cityRushTougeCornerFactor(angle)` (plancher 0,58 à 45° — l'angle des douze
+    virages de la descente — 1 au-delà de
     `CITY_RUSH_TOUGE_CORNER_ANGLE_START` = 30°, lissé entre les deux) et
     `cityRushTougeCornerPace(distance)` qui lit `CITY_RUSH_TOUGE_TURNS` et
     anticipe de `CITY_RUSH_TOUGE_PREBRAKE_METERS` = 46 m avant chaque cassure,
@@ -441,17 +442,17 @@ dans les épingles (elle partait sur le flanc, la caisse sortait du cadre) et
   autres profils inchangés, la ligne droite du tōgé au millième, la caméra
   strictement derrière la caisse dans les épingles).
 - `tests/city-rush-touge-camera.test.js` (nouveau, dans `check:city-rush-touge`) :
-  le couloir couvre toute la chaussée et 150 à 400 m de caméra décrochée, qui
-  entre bien dans la bande plantée ; sur toute la bande de la forêt, aucun arbre
-  repoussé ne gêne, ne traverse la route ni n'est rapproché, moins de 15 %
-  bougent, moins de 1 % sont abandonnés.
+  le couloir couvre toute la chaussée et la caméra décrochée ; sur toute la bande
+  de la forêt, aucun arbre repoussé ne gêne, ne traverse la route ni n'est
+  rapproché, moins de 15 % bougent, moins de 1 % sont abandonnés. À 45°, la
+  caméra ne quitte plus le bas-côté : plus un arbre n'a besoin d'être repoussé.
 - `scripts/city-rush-smoke-entry.jsx` : le smoke juge maintenant le cadrage de la
   voiture du pilote sur les neuf parcours (jamais hors de l'image, |x| ≤ 0,98 ;
   dans sa bande sur 98 % des images ; arrivée, épave et tremplin écartés). Sur le
   tōgé non corrigé il échoue avec |x| = 1,52 — c'est le filet du défaut.
 - `npm run check:city-rush`, `npm run check:city-rush-touge` et
   `npm run check:city-rush-smoke -- --all` : verts. Sur le tōgé : la voiture du
-  pilote tient |x| ≤ 0,63 et y −0,89…−0,45 sur 8 078 images, l'hélico
+  pilote tient |x| ≤ 0,58 et y −0,59…−0,30 sur 8 138 images, l'hélico
   d'observation reste dans sa bande de ciel.
 - Forêt réellement plantée : 499 arbres, 24 repoussés (4,8 %), 1 abandonné, 0
   dans le couloir, et 0 cèdre sur l'asphalte d'un virage voisin (3 avant).

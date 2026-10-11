@@ -125,7 +125,7 @@ test('les immeubles restent dans notre direction, même après un virage et au t
   const direction = new THREE.Vector3();
   const delta = new THREE.Vector3();
   try {
-    // Caméra en descente, caps droits puis ±60°, toutes les entrées/sorties
+    // Caméra en descente, caps droits puis ±45°, toutes les entrées/sorties
     // et la couture du tour. La même mise à jour sert au mode léger du mobile.
     for (const aspect of [16 / 9, 9 / 16]) {
       camera.aspect = aspect;
