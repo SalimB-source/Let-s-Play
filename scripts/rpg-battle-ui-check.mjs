@@ -386,10 +386,18 @@ assert.match(battlePage, /Plateau : \$\{plateau\.nom\}/,
   'le message d’ouverture annonce le terrain de la partie');
 assert.match(plateauxSource, /id: 'caravane-de-gourara'[\s\S]*?fichier: 'plateau-caravane-de-gourara\.jpg'/,
   'la piste de caravane du Gourara est un second plateau saharien');
+for (const plateauSombre of ['table-des-heures', 'terre-de-damnation']) {
+  assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSombre}\\s*\\{[^}]*background-color:`),
+    `le plateau ${plateauSombre} a sa propre couleur de repli`);
+}
 for (const plateauSable of ['erg-du-sahara', 'caravane-de-gourara']) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSable}\\s*\\{[^}]*background-color:`),
     `le plateau ${plateauSable} a sa propre couleur de repli`);
 }
+assert.match(plateauxSource, /id: 'terre-de-damnation'[\s\S]*?fichier: 'plateau-terre-de-damnation\.jpg'/,
+  'la terre de damnation est un plateau déclaré, avec son fond dans public/');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-terre-de-damnation::before\s*\{[^}]*radial-gradient/s,
+  'la terre brûlée reçoit son propre voile : vignette appuyée, centre laissé aux cartes');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-table--plateau-erg-du-sahara, \.card-table--plateau-caravane-de-gourara\)::before\s*\{[^}]*radial-gradient/s,
   'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 

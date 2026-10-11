@@ -5149,6 +5149,7 @@ désormais plusieurs, et **le plateau change de partie en partie**.
 | `public/card-table.jpg` | **La Table des Heures** (Bab El) | le bois des Veilleurs, l'astrolabe doré gravé au centre, quatre bougies. |
 | `public/plateau-erg-du-sahara.jpg` | **L'Erg du Sahara** | la rose des sables tracée à la main dans la dune, la lanterne de laiton et son feu, l'outre, la corde, les pierres noires. |
 | `public/plateau-caravane-de-gourara.jpg` | **La Caravane de Gourara** | le lit sec de l'oued et sa piste : les deux empreintes du campement, l'outre, la corde et le compas abandonné. |
+| `public/plateau-terre-de-damnation.jpg` | **La Terre de Damnation** (Les Brûlés) | l'étage repris par le feu : la croûte craquelée et ses braises encore vives, l'encensoir de fer renversé et sa coulée de cendres, les troncs noircis, les éclats d'obsidienne. |
 
 ### Où vit le code
 
@@ -5160,27 +5161,31 @@ désormais plusieurs, et **le plateau change de partie en partie**.
   `nouvellePartie`, et la classe `card-table--plateau-<id>` + le
   `background-image` posés sur la table.
 - `src/games/rpg-battle.css` — les styles du bloc, la couleur de repli de chaque
-  plateau, et le **voile de lisibilité** propre au sable : il est bien plus
-  lumineux que le bois, et sans lui les libellés clairs de la table se noieraient
-  dans le beige. Même mécanisme que le voile du bois (le pseudo-élément de la
-  table) et même exception : il disparaît en tactile (`rpg-mobile.css`).
-- `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg` —
-  les fonds sahariens, 1536×1024 JPEG chacun : des peintures vues de dessus,
-  sans texte ni interface dessinée — l'interface du jeu se superpose (règle de
-  `src/games/RPG-CARD-ART.md`). Le voile de lisibilité du sable y est plus
-  dense que sur le bois : le sable est deux fois plus lumineux (moyenne 127
-  contre 57 sur le bois), et les cartes y gagnent à être cadrées par une ombre
-  chaude plutôt que par un fond déjà sombre.
+  plateau, et les **voiles de lisibilité**, un par famille de terrain. Le sable
+  est deux fois plus lumineux que le bois (moyenne 127 contre 57 sur 255) : sans
+  ombre chaude dense, les libellés clairs de la table et les cartes posées se
+  noient dans le beige. La terre brûlée est sombre (66) mais très contrastée :
+  elle reçoit un voile léger et une vignette appuyée, pour laisser les braises
+  lisibles sans que les éclats de lave mangent les cartes. Le bois garde son
+  voile d'origine. Même mécanisme pour tous (le pseudo-élément de la table) et
+  même exception : ils disparaissent en tactile (`rpg-mobile.css`).
+- `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
+  `public/plateau-terre-de-damnation.jpg` — les fonds, 1536×1024 JPEG chacun :
+  des peintures vues de dessus, sans texte ni interface dessinée — l'interface
+  du jeu se superpose (règle de `src/games/RPG-CARD-ART.md`). Le centre de
+  chaque tableau est volontairement calme et peu contrasté : c'est la zone où
+  les cartes se posent.
 
 ### Vérifications
 
 ```bash
-npm run check:rpg        # règles + les 8 tests des plateaux
+npm run check:rpg        # règles + les 9 tests des plateaux
 npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau compris
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
-livrés dans `public/`, les deux terrains sahariens distincts), le tirage (jamais deux fois de suite le même terrain,
+livrés dans `public/`, chaque atmosphère — Bab El, les deux déserts, la
+terre brûlée — avec son propre fond), le tirage (jamais deux fois de suite le même terrain,
 déterminisme par `rng`, valeurs hors bornes sans plantage), le verrou (toujours
 respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
 retour, valeur inconnue normalisée, stockage illisible ou absent).

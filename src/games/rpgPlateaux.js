@@ -48,6 +48,13 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-caravane-de-gourara.jpg',
     resume: 'Le lit sec de l’oued et sa piste de caravane : les deux empreintes du campement, l’outre, la corde et le compas abandonné.',
   },
+  {
+    id: 'terre-de-damnation',
+    nom: 'La Terre de Damnation',
+    lieu: 'Les Brûlés, étage perdu de Bab El',
+    fichier: 'plateau-terre-de-damnation.jpg',
+    resume: 'L’étage repris par le feu : la croûte craquelée et ses braises encore vives, l’encensoir de fer renversé, les troncs calcinés, la cendre grise.',
+  },
 ];
 
 /** Le plateau par son identifiant, ou null. */

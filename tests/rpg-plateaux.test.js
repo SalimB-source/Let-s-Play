@@ -46,6 +46,18 @@ test('le désert du Sahara est livré comme plateau de plein droit', () => {
   assert.ok(caravane && caravane.fichier !== sahara.fichier, 'chaque plateau saharien a son propre fond');
 });
 
+test('la terre de damnation est livrée comme plateau de plein droit', () => {
+  const damnation = plateauParId('terre-de-damnation');
+  assert.ok(damnation, 'la Terre de Damnation fait partie des plateaux');
+  assert.match(damnation.fichier, /\.jpg$/);
+  assert.match(damnation.nom, /damnation/i);
+  assert.match(damnation.resume, /feu|braise|cendre|calcin/i,
+    'le résumé annonce bien les flammes et la désolation');
+  // Les trois atmosphères du jeu : Bab El, le désert vivant, la terre brûlée.
+  assert.equal(new Set(RPG_PLATEAUX.map((plateau) => plateau.fichier)).size, RPG_PLATEAUX.length,
+    'aucun plateau ne réutilise le fond d’un autre');
+});
+
 // ── Le tirage : le plateau change de partie en partie ───────────────────────
 
 test('chaque nouvelle partie tire un plateau, jamais celui du duel précédent', () => {
