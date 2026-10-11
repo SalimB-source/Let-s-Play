@@ -103,9 +103,20 @@ const CARD_ART_CACHE_VERSIONS = {
   'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
   'anqa-des-braises': 'anqa-des-braises-huile-v1',
 };
+/**
+ * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
+ * place aux peintures définitives **sous les mêmes noms de fichiers**, et deux
+ * figures (le Maître du marteau, le Père des corbeaux) ont ensuite été
+ * repeintes. On date donc ses images : le `?v=` change l'URL, si bien qu'aucun
+ * cache — celui du navigateur comme celui d'un intermédiaire — ne peut plus
+ * resservir une ancienne peinture sous le nom d'une nouvelle. Incrémenter la
+ * version à chaque repeint du set.
+ */
+const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
 const cardArt = (id) => {
   const artId = cardArtId(id);
-  const revision = CARD_ART_CACHE_VERSIONS[artId];
+  const revision = CARD_ART_CACHE_VERSIONS[artId]
+    ?? (cardById(artId)?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
   return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
 const couleurLabel = (couleur) => ELEMENT_LABELS[couleur] ?? couleur;

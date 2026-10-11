@@ -437,6 +437,17 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--p
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-table--plateau-erg-du-sahara, \.card-table--plateau-caravane-de-gourara\)::before\s*\{[^}]*radial-gradient/s,
   'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 
+// Les peintures du set Neige sont datées dans l'URL : esquisses et figures
+// repeintes portent les mêmes noms de fichiers, un cache ne doit jamais
+// resservir l'ancienne image sous le nom de la nouvelle.
+assert.match(battlePage, /const SET_NEIGE_ART_VERSION = 'peintures-definitives-v\d+';/,
+  'la version des peintures Neige est déclarée et incrémentable');
+assert.match(battlePage,
+  /const revision = CARD_ART_CACHE_VERSIONS\[artId\]\s*\n\s*\?\? \(cardById\(artId\)\?\.element === 'neige' \? SET_NEIGE_ART_VERSION : undefined\);/,
+  'chaque image d’une carte Neige reçoit sa version dans l’URL');
+assert.match(battlePage, /cards\/\$\{artId\}\.jpg\$\{revision \? `\?v=\$\{revision\}` : ''\}/,
+  'l’URL de l’illustration porte bien le paramètre de version');
+
 // ── Les capacités de clan du Nord : Furie des vikings, Résonance des valkyries.
 const { RPG_DECK_NEIGE_BASE, RPG_DUEL_CARDS } = await import('../src/games/rpgCards.js');
 assert.match(duelEngine, /entite\.atk \+= furie;[\s\S]*?duel\.log\.push\(`\$\{entite\.name\} entre en furie : \+\$\{furie\}\/\+\$\{furie\}\.`\)/,
