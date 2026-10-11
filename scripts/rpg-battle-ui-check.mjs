@@ -121,6 +121,16 @@ assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*background:/s,
   'l’aperçu au survol n’a plus de fond principal');
 assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*(?:border|box-shadow):/s,
   'l’aperçu au survol n’a plus de grand cadre ni l’ombre du cadre autour du contenu');
+// L'aperçu de la magie lancée (centré, 1,8 s) doit ressembler EXACTEMENT à l'aperçu rapide : on l'avait
+// entouré d'un liseré turquoise, d'un halo cyan et d'une ombre portée avec sa propre animation.
+const regleApercuMagie = battleCss.match(/\.rpg-hover-card-preview\.is-spell-preview\s*\{([^}]*)\}/);
+assert.ok(regleApercuMagie, 'l’aperçu de la magie lancée garde sa classe is-spell-preview (z-index devant l’annonce)');
+assert.match(regleApercuMagie[1].trim(), /^z-index:\s*\d+;?$/,
+  'l’aperçu de la magie lancée ne déclare que son empilement : ni liseré, ni halo, ni ombre, ni animation propre');
+assert.doesNotMatch(battleCss, /rpg-spell-card-preview|\.is-spell-preview[^{]*\{[^}]*(?:border|outline|box-shadow|background|filter|animation|scale|opacity)[\w-]*\s*:/s,
+  'aucune autre règle ne décore l’aperçu de la magie lancée (il garde l’animation d’entrée de l’aperçu rapide)');
+assert.match(battlePage, /\{apercuMagie && \(\s*<HoverCardPreview\s+carte=\{cardById\(apercuMagie\)\}\s+style=\{\{ left: '50%', top: '50%', transform: 'translate\(-50%, -50%\)' \}\}\s+spellPlayed\s*\/>/,
+  'l’aperçu de la magie lancée réutilise le composant de l’aperçu rapide, posé au centre, sans style de décor en ligne');
 assert.match(battleCss, /\.rpg-hover-card-preview__details\s*\{[^}]*background:\s*rgba\(5, 8, 11, \.8\);/s,
   'seul le fond de l’encadré des infos reste pour la lisibilité');
 assert.match(battlePage, /const largeurApercu = Math\.min\(680,[\s\S]*?const hauteurApercu = Math\.min\(400,/,

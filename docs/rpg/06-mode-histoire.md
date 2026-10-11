@@ -52,7 +52,9 @@ Souk, la Tour des Sables…). Les noms et dialogues vivent dans le dossier
 1. **Le conteneur mode Histoire** — `src/games/rpgStory.js` + l'écran « Histoire »
    de `RpgDuelPage` : sélection de tour → liste d'étages → lancement du duel avec
    les bons props ; écran de victoire d'étage (étage suivant / rejouer / retour
-   aux tours) et de défaite (recommencer / retour) ; **sauvegarde** de la
+   aux tours) et de défaite (recommencer / retour), dont les boutons ont tous la même hauteur
+   et leur texte centré verticalement (la flèche de « Étage suivant » reste sur la
+   ligne du nom d'étage) ; **sauvegarde** de la
    progression en localStorage (`letsplay_sablier_histoire_v1`, d'abord local ;
    Supabase ensuite comme le reste du site — voir `src/auth/`).
 2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, fonction,
@@ -83,3 +85,13 @@ Souk, la Tour des Sables…). Les noms et dialogues vivent dans le dossier
 - **Chaque sorcier a une signature lisible** (style + cartes emblématiques),
   pour que le joueur explique pourquoi il a gagné — la règle d'or de
   [`03-combat.md`](03-combat.md).
+- **Tout le texte reste lisible, en thème clair comme en thème sombre** : le menu,
+  le mode Histoire et le duel forment un écran de jeu **sombre dans les deux
+  thèmes**. Les jetons du site qu'ils lisent (`--ink`, `--muted`, `--dim`,
+  `--line*`, `--cyan`, `--violet`) sont réancrés sur `.rpg-battle` dans
+  `rpg-battle.css` ; tout nouveau jeton lu par le CSS du jeu doit y être ajouté.
+  Un étage verrouillé s'estompe par la couleur, jamais par `opacity` ; les
+  descriptions d'étage passent à la ligne (pas d'ellipse) ; l'overlay de fin
+  d'étage porte son propre `z-index` pour rester au-dessus de la table. Le
+  balayage d'encre (`scripts/theme-ink-sweep.mjs`) exclut le motif `.rpg-`.
+  `npm run check:rpg-story-ui` vérifie ces points dans les sources CSS.
