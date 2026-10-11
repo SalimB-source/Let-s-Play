@@ -1043,24 +1043,10 @@ html body .mirage-page :is(
   background: linear-gradient(90deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
 }
 
-/* Contrôles tactiles liseré lumineux */
-.mirage-touch-btn,
-.mirage-mobile-controls button {
-  border-radius: 16px;
-  background: rgba(43, 33, 15, .76);
-  border: 1px solid rgba(237, 201, 140, .38);
-  color: var(--sand-ink-bright);
-  box-shadow:
-    inset 0 1px 0 rgba(250, 242, 228, .18),
-    0 10px 24px rgba(20, 15, 5, .65);
-  backdrop-filter: blur(12px);
-}
-
-.mirage-touch-btn:active,
-.mirage-mobile-controls button:active {
-  background: linear-gradient(135deg, rgba(184, 126, 25, .68), rgba(225, 171, 79, .48));
-  border-color: var(--sand-border-focus);
-}
+/* Contrôles tactiles liseré lumineux : les anciens boutons virtuels
+   (`.mirage-mobile-controls`) ont disparu avec le passage au glisser-déposer
+   100 % gestuel (mirageTouch.js). Les règles ci-dessous ne ciblent plus que
+   les pouvoirs / boutons tactiles réellement rendus par le jeu. */
 
 /* ═══════════════════════════════════════════════════════════════════════
    5. OVERLAYS Mirage Rush — Accueil, Modes, Pistes, Coupes, Pause, Compte à rebours

@@ -542,9 +542,11 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 }
 .mirage-pause-stats b { color: #ffd76b; font: 800 13px var(--font-gaming); }
 
-.mirage-mobile-controls { display: none; }
 /* Ligne « MOBILE : … » du pied de jeu, réservée aux écrans tactiles : le bureau
-   garde ses touches, le téléphone son glissement. */
+   garde ses touches, le téléphone son glissement. Les anciens boutons virtuels
+   (`.mirage-mobile-controls`, `.mirage-jump-control`) ont été retirés — tout se
+   joue au glisser depuis la réécriture de mirageTouch.js — donc leurs règles
+   ont été nettoyées de ce fichier et du thème western. */
 .mirage-foot-touch { display: none; color: #f0c579; }
 .mirage-game-foot { display: flex; justify-content: space-between; gap: 12px; padding: 12px 15px; color: rgba(255, 242, 221, .48); font-size: 8px; letter-spacing: .12em; }
 .mirage-game-foot b { color: #e8ba64; }
@@ -868,20 +870,6 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-pause-stats span { padding: 7px 10px; font-size: 7px; }
   .mirage-pause-stats b { font-size: 11px; }
   .mirage-game-foot { flex-direction: column; gap: 5px; padding: 9px; font-size: 7px; }
-  /* Commandes tactiles : visibles uniquement pendant la course. */
-  .mirage-game-shell.is-running .mirage-mobile-controls {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(18, 12, 29, .96); border-top: 1px solid rgba(255, 255, 255, .07);
-  }
-  .mirage-mobile-controls button {
-    width: 58px; height: 46px; border-radius: 12px; border: 1px solid rgba(255, 220, 153, .32);
-    background: rgba(255, 255, 255, .055); color: #fff0d5; font: 800 22px var(--font-gaming);
-    touch-action: manipulation; cursor: pointer; transition: background .12s, transform .12s;
-  }
-  .mirage-mobile-controls button:active { background: rgba(243, 198, 91, .25); transform: scale(.96); }
-  .mirage-mobile-controls .mirage-jump-control { width: 124px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(229, 99, 160, .16); border-color: rgba(242, 119, 169, .4); color: #f5b7d7; font: 800 10px var(--mono); letter-spacing: .12em; }
-  .mirage-mobile-controls .mirage-jump-control span { font-size: 17px; }
   .mirage-settings-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mirage-settings-tabs button { min-height: 32px; }
   .mirage-shop-card { grid-template-columns: 1fr; }

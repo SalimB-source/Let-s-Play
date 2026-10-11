@@ -1628,8 +1628,8 @@ export default function MirageRushPage() {
                        geste, pas la touche. Les objets se touchent sur la
                        barre du bas, comme sur ordinateur. */
                     <div className="mirage-keys-hint" aria-label="Commandes tactiles">
-                      <span>GLISSE ← → POUR ESQUIVER</span>
-                      <span>TAPE POUR SAUTER</span>
+                      <span>GLISSE ← → POUR CHANGER DE VOIE</span>
+                      <span>GLISSE ↑ OU TAPE POUR SAUTER</span>
                       {(selectedMode === 'duel' || isCup) && <span>TOUCHE UN OBJET EN BAS POUR LE LANCER</span>}
                     </div>
                   ) : (
@@ -1722,7 +1722,7 @@ export default function MirageRushPage() {
             {phase === 'playing' && (
               <div className="mirage-live-callout" aria-hidden="true">
                 {hud.combo >= 5 && <span>✦ ÉCHO SOLAIRE ×{hud.multiplier} ✦</span>}
-                {hud.combo === 0 && hud.score === 0 && <span className="mirage-callout-keys">ESQUIVE ← → <b>SAUTE ↑</b></span>}
+                {hud.combo === 0 && hud.score === 0 && <span className="mirage-callout-keys">VOIE ← → <b>SAUTE ↑</b></span>}
               </div>
             )}
           </div>

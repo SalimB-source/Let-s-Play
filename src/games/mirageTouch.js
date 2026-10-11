@@ -294,7 +294,7 @@ export function createSwipeFeedback(mount, options = {}) {
   if (!mount || typeof document === 'undefined') {
     return { pulse() {}, showHint() {}, hideHint() {}, destroy() {} };
   }
-  const hintText = options.hint || 'GLISSE ← → POUR ESQUIVER · ↑ OU TAPE POUR SAUTER';
+  const hintText = options.hint || 'GLISSE ← → POUR CHANGER DE VOIE · ↑ OU TAPE POUR SAUTER';
   const hintTimeout = options.hintTimeout ?? 6000;
   const hintGestures = options.hintGestures ?? 3;
 
