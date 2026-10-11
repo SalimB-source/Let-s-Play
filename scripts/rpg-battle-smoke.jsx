@@ -455,12 +455,15 @@ export async function checkRpgBattle(assert) {
     'les icônes d’effets sont absentes de la carte posée sur la table');
   assert.match(visageTable.getAttribute('aria-label') ?? '', /rapidité.*attaquer le tour où elle arrive.*esquive 1 contre les attaques et magies/,
     'Rapidité et Esquive restent annoncées dans le libellé accessible');
-  assert.ok(visageTable.querySelector('.rpg-card__img') && visageTable.querySelector('.rpg-card__type')
+  assert.ok(visageTable.querySelector('.rpg-card__img')
     && visageTable.querySelector('.rpg-mana-cost') && visageTable.querySelector('.rpg-card-element-badge')
-    && visageTable.querySelector('.rpg-card__foot')?.querySelectorAll('span').length === 2,
-  'une créature posée montre son illustration, sa couleur à gauche, son coût à droite, son type et ses statistiques');
-  assert.match(visageTable.querySelector('.rpg-card__type')?.textContent ?? '', /^Type\s+—/,
-    'le type imprimé d’une créature ne répète pas le mot Créature');
+    && visageTable.querySelector('.rpg-card__foot')?.querySelectorAll(':scope > span').length === 2,
+  'une créature posée montre son illustration, sa couleur à gauche, son coût à droite et ses statistiques, sans type imprimé');
+  assert.equal(visageTable.querySelectorAll('.rpg-card__foot .rpg-stat-icon').length, 2, 'attaque et défense ont des icônes vectorielles');
+  assert.deepEqual([...visageTable.querySelectorAll('.rpg-card__foot .rpg-stat-value')].map(node => node.textContent), ['3', '1']);
+  assert.equal(visageTable.querySelector('.rpg-card__type'), null,
+    'le type n’est pas imprimé sur la carte posée');
+  assert.match(visageTable.getAttribute('aria-label'), /Type\s+—/, 'le type reste accessible');
   assert.equal(visageTable.querySelector('.rpg-mana-cost i'), null, 'le coût sur table reste séparé de son symbole de couleur');
   assert.ok(visageTable.classList.contains('is-pret') && !visageTable.classList.contains('is-summoning-sick'),
     'le Fennec est prêt à attaquer dès son arrivée grâce à Rapidité');
@@ -640,7 +643,7 @@ export async function checkRpgBattle(assert) {
   const lancer = findButton('Confirmer');
   assert.match(lancer.textContent, /\(2\)/, 'deux attaquants déclarés');
   assert.equal(container.querySelectorAll('.rpg-card.is-declared-attacker').length, 2,
-    'les créatures déclarées s’inclinent à 40° avant la confirmation');
+    'les créatures déclarées s’inclinent à 90° avant la confirmation');
   await act(async () => { lancer.click(); });
   assert.ok(!container.querySelector('.rpg-btn--undo'), 'une attaque confirmée ne peut plus être annulée');
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · RÉPONSE/,
@@ -1089,6 +1092,7 @@ export async function checkRpgBattle(assert) {
     await glisserSurTable(petraContainer, carte);
     const terrain = petraContainer.querySelector('.rpg-terrains--joueur .rpg-terrain[data-card-id="petra"]:not(.is-tapped)');
     assert.ok(terrain, 'la vraie carte Pétra rejoint le rail des terrains');
+    const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
     assert.ok(choix, 'un choix accessible de couleur s’ouvre au clic sur Pétra');
@@ -1097,7 +1101,8 @@ export async function checkRpgBattle(assert) {
     await act(async () => { choix.querySelector(`.rpg-terrain-mana-choice__option--${couleur}`).click(); });
     assert.equal(petraContainer.querySelector(`.rpg-wizard-plate--joueur .mana--${couleur}`)?.textContent, '1',
       `Pétra ajoute un mana ${couleur}`);
-    assert.ok(terrain.classList.contains('is-tapped'), 'Pétra est engagée après le choix');
+    assert.equal(Number(terrain.dataset.availableCount), disponiblesAvant - 1, 'le choix engage une seule Pétra de la pile');
+    assert.ok(Number(terrain.dataset.tappedCount) >= 1, 'la pile indique les Pétra engagées');
     assert.equal(petraContainer.querySelector('.rpg-terrain-mana-choice'), null, 'le sélecteur se referme après le choix');
   };
   await engagerPetraEn('sable');

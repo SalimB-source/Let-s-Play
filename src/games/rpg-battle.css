@@ -856,8 +856,8 @@
 .rpg-card--equipe.fx-lunge { animation: card-lunge-team .55s ease; }
 .rpg-card--ennemi.fx-lunge { animation: card-lunge-foe .55s ease; }
 
-@keyframes card-lunge-team { 40% { transform: translateY(-52px) rotate(0deg); } }
-@keyframes card-lunge-foe { 40% { transform: translateY(52px) rotate(0deg); } }
+@keyframes card-lunge-team { 40% { translate: 0 -52px; } }
+@keyframes card-lunge-foe { 40% { translate: 0 52px; } }
 
 .fx-hit { animation: rpg-hit .45s steps(2, start); }
 
@@ -2318,17 +2318,15 @@
   box-shadow: 0 0 0 4px rgba(8, 24, 26, .9), 0 0 22px rgba(91, 240, 218, .46), 0 12px 28px rgba(0, 0, 0, .72);
 }
 
-/* L'inclinaison montre la déclaration ; l'état gris intervient à confirmation. */
-.rpg-card.is-declared-attacker,
-.rpg-card.is-declared-attacker:hover { transform: rotate(40deg); }
-
-/* Une créature qui a attaqué s'incline de 40° et reste visiblement épuisée.
-   La face est désaturée par couches afin qu'une défense blessée puisse rester rouge. */
-.rpg-card.is-attacked,
-.rpg-card.is-attacked:hover {
-  transform: rotate(40deg);
-  opacity: .76;
+/* Combat rotation is driven by entity state, not hover/selection styling.
+   Important here is intentional: entry, hit and attack animations must never
+   replace the tapped rotation with a neutral transform, including in WebViews. */
+.rpg-card[data-combat-tilted="true"] {
+  transform: rotate(90deg) !important;
+  transform-origin: center;
 }
+/* A creature that has attacked stays sideways and visibly exhausted. */
+.rpg-card.is-attacked { opacity: .76; }
 .rpg-card.is-attacked .rpg-card__img,
 .rpg-card.is-attacked .rpg-card__title,
 .rpg-card.is-attacked .rpg-card__type,
@@ -2455,7 +2453,6 @@
 .rpg-card-preview__stats { margin: 0; justify-self: end; padding: 7px 12px; border: 1px solid #24180d; border-radius: 8px; background: linear-gradient(180deg, #f3e6bb, #d2b875); color: #21180f; font: 800 18px/1 Georgia, serif; }
 .rpg-card-preview__stats span { padding-inline: 7px; color: #775329; }
 .rpg-card-preview__flavor { margin: 0; color: rgba(244, 225, 190, .72); font: italic 13px/1.4 Georgia, serif; }
-.rpg-card-preview__hint { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .13); color: #a9e8d9; font: 700 11px/1.45 var(--display); letter-spacing: .03em; }
 
 @media (max-width: 560px) {
   .rpg-card-preview-backdrop { padding: 8px; }
@@ -2468,7 +2465,6 @@
   .rpg-card-preview__rules { padding: 8px; font-size: 11px; }
   .rpg-card-preview__stats { padding: 5px 8px; font-size: 14px; }
   .rpg-card-preview__flavor { font-size: 10px; }
-  .rpg-card-preview__hint { font-size: 9px; }
   .rpg-card-preview__close { top: 3px; right: 4px; width: 28px; height: 28px; font-size: 21px; }
 }
 
@@ -4513,4 +4509,40 @@
   .rpg-hover-card-preview__stats { font-size: 12px; }
   .rpg-card-catalogue__cost { width: 35px; font-size: 16px; }
   .rpg-card-catalogue__meta b { font-size: 9px; }
+}
+
+/* Mobile / WebView : le mouvement horizontal parcourt les cartes, le
+   mouvement vertical joue une carte. La souris conserve son drag natif. */
+.rpg-hand__card.is-playable,
+.rpg-card.is-blocker-draggable {
+  touch-action: pan-x;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.rpg-hand__card img, .rpg-card img { -webkit-user-drag: none; }
+.rpg-touch-drag-ghost {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  transform: translate(-50%, -100%) rotate(-4deg);
+  border: 2px solid #efd28b;
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px #000a;
+}
+.rpg-touch-drag-ghost img { width: 100%; height: 100%; object-fit: cover; }
+.rpg-card.is-touch-drop-target { outline: 3px solid #efd28b; outline-offset: 3px; }
+
+/* Keep the entire table inside notches, home indicators and WebView insets. */
+.rpg-battle {
+  top: env(safe-area-inset-top, 0px);
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  left: env(safe-area-inset-left, 0px);
+}
+@media (pointer: coarse) {
+  .rpg-duel-nav button, .rpg-btn { min-height: 44px; }
+  .rpg-hand, .card-row { overscroll-behavior-x: contain; }
+  .rpg-hover-card-preview { display: none; }
 }
