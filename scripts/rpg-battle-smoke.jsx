@@ -453,6 +453,8 @@ export async function checkRpgBattle(assert) {
   assert.ok(poses >= 1, 'une créature payée au mana doit entrer en jeu');
   const visageTable = container.querySelector('.rpg-card--equipe');
   assertElementFrame(visageTable, visageTable.dataset.cardId, 'la carte posée sur la table');
+  assert.ok(!visageTable.classList.contains('rpg-card--mythic-braise'),
+    'une Braise non mythique garde son cadre rouge mat, sans reflet');
   assert.equal(container.querySelectorAll('[class*="rpg-card--rarity-"]').length, 0,
     'aucune carte posée ne porte plus de cadre piloté par la rareté');
   assert.equal(visageTable.dataset.cardId, 'fennec-des-decombres', 'la créature jouée est le Fennec inhabituel du deck');
@@ -1151,19 +1153,15 @@ export async function checkRpgBattle(assert) {
   await poserDesertFeriel();
   const ferielEnMain = ferielHand().find((card) => card.dataset.cardId === 'feriel');
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
-  assert.equal(ferielEnMain.querySelector('.rpg-card__flames'), null,
-    'les flammes restent réservées à la carte posée, pas à la main');
+  assert.ok(ferielEnMain.classList.contains('rpg-card--mythic-braise'),
+    'Fériel porte son cadre rouge-orange brillant dès la main');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythic-braise'),
-    'Fériel, Braise mythique, est repérée comme telle sur la table');
-  assert.ok(ferielEnJeu.querySelector('.rpg-card__flames-halo'),
-    'un halo de flammes entoure la carte Braise mythique posée');
-  assert.ok(ferielEnJeu.querySelectorAll('.rpg-card__flames-tongue').length >= 5,
-    'plusieurs langues de feu animent le cadre de la carte posée');
-  assert.ok(ferielEnJeu.querySelectorAll('.rpg-card__flames-tongue--sommet, .rpg-card__flames-tongue--cote').length >= 5,
-    'les langues de feu débordent du sommet et des côtés du cadre');
+    'Fériel, Braise mythique, garde son cadre rouge-orange sur la table');
+  assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
+    'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });
   const confirmerFeriel = ferielContainer.querySelector('.rpg-btn--confirmer-attaque');
   assert.equal(confirmerFeriel.disabled, true, 'la confirmation attend que la cible du Coup rapide soit choisie');

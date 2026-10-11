@@ -4447,6 +4447,31 @@
   border: 3px solid var(--rpg-frame-color, #f1f3f5);
 }
 
+/* Carte Braise mythique : cadre rouge-orange qui brille, même principe que
+   l'or des bicolores. Placée avant la règle dorée : une carte à la fois
+   mythique et bicolore garderait l'or. */
+.rpg-card.rpg-card--mythic-braise,
+.rpg-hand__card.rpg-card--mythic-braise,
+.rpg-terrain.rpg-card--mythic-braise,
+.rpg-card-preview__art.rpg-card--mythic-braise,
+.rpg-hover-card-preview__face.rpg-card--mythic-braise,
+.rpg-spell-played__art.rpg-card--mythic-braise,
+.rpg-card-destruction-fx.rpg-card--mythic-braise,
+.rpg-card-pile__card--top.rpg-card--mythic-braise {
+  --rpg-ember-frame: linear-gradient(115deg, #4d0c05 0%, #ff9a34 20%, #e23a14 38%, #ffd79a 52%, #a81f08 70%, #ff7a26 88%, #4d0c05 100%);
+  /* Même filet de sécurité que l'or : un rouge sombre, jamais le fond noir. */
+  background-color: #4a1108;
+  border-color: transparent;
+  background-image:
+    linear-gradient(var(--rpg-frame-fill, #0c0c0e), var(--rpg-frame-fill, #0c0c0e)),
+    var(--rpg-ember-frame);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 240% 100%;
+  background-repeat: no-repeat, no-repeat;
+  animation: rpg-frame-shine-sweep 2.8s ease-in-out infinite alternate;
+}
+
 /* Carte bicolore : cadre doré qui brille, balayé par un reflet métallique.
    Réservé aux cartes hybrides — les cadres monocolores restent mats. */
 .rpg-card.rpg-card--frame-hybride,
@@ -4469,83 +4494,22 @@
   background-clip: padding-box, border-box;
   background-size: 100% 100%, 240% 100%;
   background-repeat: no-repeat, no-repeat;
-  animation: rpg-frame-gold-sweep 3.2s ease-in-out infinite alternate;
+  animation: rpg-frame-shine-sweep 3.2s ease-in-out infinite alternate;
 }
 
-/* Le reflet fait des allers-retours entre 0 % et 100 %, et ne sort JAMAIS de
-   cette plage : le dégradé doré fait 240 % de large sans répétition, donc il
-   ne recouvre tout l'anneau que tant que sa position reste entre 0 % et 100 %.
-   Au-delà, l'anneau n'est plus couvert et le fond sombre de la carte (#0c0c0e)
-   réapparaît — le cadre semblait devenir noir une partie du cycle. */
-@keyframes rpg-frame-gold-sweep {
+/* Le reflet (or des bicolores, rouge-orange des Braise mythiques) fait des
+   allers-retours entre 0 % et 100 %, et ne sort JAMAIS de cette plage : ces
+   dégradés font 240 % de large sans répétition, donc ils ne recouvrent tout
+   l'anneau que tant que leur position reste entre 0 % et 100 %. Au-delà,
+   l'anneau n'est plus couvert et le fond sombre de la carte réapparaît. */
+@keyframes rpg-frame-shine-sweep {
   from { background-position: 0 0, 0% 0; }
   to { background-position: 0 0, 100% 0; }
 }
 
-/* ── Braise mythique posée : les flammes lèchent le cadre de la carte ─────── */
-.rpg-card.rpg-card--mythic-braise { overflow: visible; isolation: isolate; }
-.rpg-card--mythic-braise .rpg-card__img { border-radius: 9px; }
-.rpg-card--mythic-braise .rpg-card__title { border-radius: 9px 9px 0 0; }
-.rpg-card--mythic-braise .rpg-card__foot { border-radius: 0 0 9px 9px; }
-
-.rpg-card__flames {
-  position: absolute;
-  z-index: -1;
-  inset: -18px -16px -14px;
-  pointer-events: none;
-}
-
-.rpg-card__flames-halo {
-  position: absolute;
-  inset: 2px;
-  border-radius: 20px;
-  background:
-    radial-gradient(56% 44% at 50% 106%, rgba(255, 170, 56, .62), transparent 72%),
-    radial-gradient(42% 46% at 6% 74%, rgba(255, 96, 28, .46), transparent 70%),
-    radial-gradient(42% 46% at 94% 74%, rgba(255, 96, 28, .46), transparent 70%),
-    radial-gradient(48% 34% at 50% -6%, rgba(255, 128, 34, .34), transparent 74%);
-  filter: blur(7px);
-  animation: rpg-mythic-flame-halo 1.7s ease-in-out infinite;
-}
-
-.rpg-card__flames-tongue {
-  position: absolute;
-  left: var(--flame-left, 50%);
-  border-radius: 50% 50% 44% 44% / 66% 66% 34% 34%;
-  background: linear-gradient(0deg,
-    rgba(255, 238, 176, .95) 0%,
-    rgba(255, 162, 44, .84) 30%,
-    rgba(228, 64, 20, .46) 64%,
-    rgba(184, 32, 12, 0) 92%);
-  filter: blur(3px);
-  mix-blend-mode: screen;
-  transform: translateX(-50%) scale(var(--flame-scale, 1));
-  transform-origin: 50% 100%;
-  animation: rpg-mythic-flame-tongue var(--flame-duration, 1.2s) ease-in-out var(--flame-delay, 0s) infinite;
-}
-
-/* Les langues du sommet dépassent du haut de la carte, celles des côtés
-   débordent du cadre : le feu entoure la carte sans masquer ses valeurs. */
-.rpg-card__flames-tongue--sommet { bottom: -12%; width: 26%; height: 120%; }
-.rpg-card__flames-tongue--cote { bottom: 14%; width: 22%; height: 54%; }
-
-@keyframes rpg-mythic-flame-halo {
-  0%, 100% { opacity: .68; transform: scale(1); }
-  38% { opacity: 1; transform: scale(1.035); }
-  64% { opacity: .8; transform: scale(.99); }
-}
-
-@keyframes rpg-mythic-flame-tongue {
-  0%, 100% { transform: translateX(-50%) scale(var(--flame-scale, 1)) scaleY(.66) skewX(-3deg); opacity: .5; }
-  28% { transform: translateX(-50%) scale(var(--flame-scale, 1)) scaleY(1.1) skewX(4deg); opacity: .95; }
-  54% { transform: translateX(-50%) scale(var(--flame-scale, 1)) scaleY(.84) skewX(-5deg); opacity: .7; }
-  78% { transform: translateX(-50%) scale(var(--flame-scale, 1)) scaleY(1.02) skewX(2deg); opacity: .88; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .rpg-card__flames-halo,
-  .rpg-card__flames-tongue { animation: none !important; opacity: .8; }
-  .rpg-card--frame-hybride { animation: none !important; background-position: 0 0, 42% 0; }
+  .rpg-card--frame-hybride,
+  .rpg-card--mythic-braise { animation: none !important; background-position: 0 0, 42% 0; }
 }
 
 /* Coût, attaque et défense doivent rester immédiatement lisibles sur les faces. */

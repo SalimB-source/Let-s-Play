@@ -44,8 +44,8 @@ export function cardFrameInfo(carte) {
   return { key, ...CARD_FRAME_COLORS[key] };
 }
 
-/** Une carte Braise mythique brûle autour d'elle une fois posée sur la table. */
-export function cardHasMythicFlames(carte) {
+/** Une carte Braise mythique porte un cadre rouge-orange qui brille. */
+export function cardHasMythicEmberFrame(carte) {
   return cardRarityInfo(carte).key === 'mythique' && cardColors(carte).includes('braise');
 }
 

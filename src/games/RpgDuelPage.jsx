@@ -35,7 +35,7 @@ import {
 import {
   cardRarityInfo,
   cardFrameInfo,
-  cardHasMythicFlames,
+  cardHasMythicEmberFrame,
   cardColorCost,
   cardColors,
   terrainManaColors,
@@ -50,19 +50,6 @@ import {
 } from './rpgCards.js';
 
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
-/**
- * Langues de feu qui lèchent le cadre d'une carte Braise mythique posée.
- * Chaque langue a son rythme pour éviter un mouvement mécanique.
- */
-const MYTHIC_FLAME_TONGUES = [
-  { place: 'cote', left: '-4%', delay: '0ms', duration: '1.05s', scale: 0.95 },
-  { place: 'cote', left: '12%', delay: '310ms', duration: '1.4s', scale: 0.72 },
-  { place: 'cote', left: '88%', delay: '150ms', duration: '1.2s', scale: 0.9 },
-  { place: 'cote', left: '104%', delay: '430ms', duration: '1.5s', scale: 0.78 },
-  { place: 'sommet', left: '20%', delay: '80ms', duration: '1.15s', scale: 1 },
-  { place: 'sommet', left: '48%', delay: '260ms', duration: '1.35s', scale: 0.92 },
-  { place: 'sommet', left: '74%', delay: '400ms', duration: '1.05s', scale: 0.84 },
-];
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', hybride: 'Sable + Braise' };
 const CARD_ART_CACHE_VERSIONS = {
@@ -331,9 +318,13 @@ function cardRarityStyle(carte) {
   return { '--rarity-color': color };
 }
 
-/** Le cadre suit l'élément : bleu (Eau), blanc (Sable), rouge (Braise), or (bicolore). */
+/**
+ * Le cadre suit l'élément : bleu (Eau), blanc (Sable), rouge (Braise) et or
+ * (bicolore). Une carte Braise mythique ajoute son cadre rouge-orange brillant.
+ */
 function cardFrameClass(carte) {
-  return `rpg-card--frame-${cardFrameInfo(carte).key}`;
+  const cadre = `rpg-card--frame-${cardFrameInfo(carte).key}`;
+  return cardHasMythicEmberFrame(carte) ? `${cadre} rpg-card--mythic-braise` : cadre;
 }
 
 function cardFrameStyle(carte) {
@@ -458,7 +449,6 @@ function TableCard({
 }) {
   const carte = cardById(entite.carteId);
   const nom = entite.name;
-  const flammesMythiques = cardHasMythicFlames(carte);
   const protectionActive = entite.protection?.toursRestants > 0;
   const protectionLabel = protectionActive
     ? ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre
@@ -514,7 +504,6 @@ function TableCard({
         `rpg-card rpg-card--img rpg-card--elem-${carte?.element ?? 'sable'} rpg-card--type-${cardFrameType(carte)}`,
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
         cardFrameClass(carte),
-        flammesMythiques ? 'rpg-card--mythic-braise' : '',
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -558,23 +547,6 @@ function TableCard({
       aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
-      {flammesMythiques && (
-        <span className="rpg-card__flames" aria-hidden="true">
-          <span className="rpg-card__flames-halo" />
-          {MYTHIC_FLAME_TONGUES.map((langue) => (
-            <span
-              key={`${langue.place}-${langue.left}`}
-              className={`rpg-card__flames-tongue rpg-card__flames-tongue--${langue.place}`}
-              style={{
-                '--flame-left': langue.left,
-                '--flame-delay': langue.delay,
-                '--flame-duration': langue.duration,
-                '--flame-scale': langue.scale,
-              }}
-            />
-          ))}
-        </span>
-      )}
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       <CardElementBadge carte={carte} />

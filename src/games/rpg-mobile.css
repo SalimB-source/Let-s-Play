@@ -266,9 +266,4 @@
   pointer-events: none;
 }
 .rpg-battle--touch .rpg-terrain.rpg-terrain-stack { flex: 0 0 52px; width: 52px; height: 65px; border-width: 2px; }
-/* Sur table tactile, l'aura de flammes reste compacte pour ne rien rogner. */
-.rpg-battle--touch .rpg-card__flames { inset: -10px -9px -8px; }
-.rpg-battle--touch .rpg-card__flames-halo { filter: blur(5px); }
-.rpg-battle--touch .rpg-card__flames-tongue--sommet { height: 96%; }
-.rpg-battle--touch .rpg-card__flames-tongue--cote { height: 46%; }
 .rpg-card-preview__resources { margin: 0; color: #e6d4ac; font: 600 12px/1.4 var(--display); }
