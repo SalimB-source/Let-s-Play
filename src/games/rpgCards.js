@@ -541,7 +541,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'sahir-des-braises',
     arrivee: { type: 'pioche', amount: 1 },
     combat: { type: 'degats-creature-combattue', amount: 2 },
-    text: 'Quand le Sahir arrive : piochez une carte. Quand il attaque ou bloque : avant les blessures de combat, il inflige 2 dégâts à la créature qui le bloque ou qu’il bloque.',
+    text: 'Quand le Sahir arrive : piochez une carte. Quand il attaque ou bloque : avant les blessures de combat et leur répartition, il inflige 2 dégâts à la créature qui le bloque ou qu’il bloque.',
     flavor: 'Il trace un cercle dans la poussière et écoute le vent répondre.'
   },
   {

@@ -589,6 +589,118 @@ test('rpgAttaquerCreature résout aussi les dégâts du Sahir avant la riposte',
   assert.equal(sahir.pv, sahir.pvMax, 'le Fennec détruit ne peut pas infliger ses dégâts de riposte');
 });
 
+// A blocker killed by the Sahir must not consume part of its normal attack.
+for (const cote of ['joueur', 'sorcier']) {
+  test(`Sahir : partage après les dégâts préalables, côté ${cote}`, () => {
+    const duel = duelDeBase();
+    const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+    donnerMana(duel, cote, 30);
+    donnerMana(duel, adv, 30);
+    donner(duel, cote, 'sahir-des-braises');
+    donner(duel, adv, 'fennec-des-decombres');
+    donner(duel, adv, 'colosse-de-sel');
+    const sahir = rpgJouerCreature(duel, cote, 'sahir-des-braises').entite;
+    const fennec = rpgJouerCreature(duel, adv, 'fennec-des-decombres').entite;
+    const colosse = rpgJouerCreature(duel, adv, 'colosse-de-sel').entite;
+    sahir.ready = true;
+    const pvSorcier = duel[adv].pv;
+    const res = rpgLancerAttaque(duel, cote, [sahir.id], { [sahir.id]: [fennec.id, colosse.id] });
+    assert.equal(res.ok, true);
+    assert.deepEqual(res.resume.repartitions[sahir.id], { [colosse.id]: 2 });
+    assert.equal(colosse.pv, 1, '2 dégâts de capacité puis les 2 blessures, pas seulement la moitié');
+    assert.equal(duel[adv].creatures.includes(fennec), false);
+    assert.equal(duel[adv].pv, pvSorcier, 'une attaque bloquée ne devient pas une attaque directe');
+  });
+}
+
+for (const explicite of [false, true]) {
+  test(`Sahir : partage ${explicite ? 'explicite' : 'automatique'} entre les seuls survivants`, () => {
+    const duel = duelDeBase();
+    donnerMana(duel, 'joueur', 30);
+    donnerMana(duel, 'sorcier', 30);
+    donner(duel, 'joueur', 'sahir-des-braises');
+    const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+    const bloqueurs = ['fennec-des-decombres', 'colosse-de-sel', 'colosse-de-sel'].map(id => {
+      donner(duel, 'sorcier', id);
+      return rpgJouerCreature(duel, 'sorcier', id).entite;
+    });
+    // Neutraliser les bonus d’arrivée des Colosses pour isoler le partage.
+    bloqueurs.forEach(b => { b.pv = b.def = b.carteId === 'fennec-des-decombres' ? 1 : 5; });
+    sahir.ready = true;
+    const partage = { [bloqueurs[1].id]: explicite ? 2 : 1, [bloqueurs[2].id]: explicite ? 0 : 1 };
+    const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], {
+      [sahir.id]: bloqueurs.map(b => b.id),
+    }, explicite ? { [sahir.id]: partage } : null);
+    assert.equal(res.ok, true);
+    assert.deepEqual(res.resume.repartitions[sahir.id], partage);
+    assert.equal(bloqueurs[1].pv, explicite ? 1 : 2);
+    assert.equal(bloqueurs[2].pv, explicite ? 3 : 2, 'la capacité ne se déclenche qu’une fois');
+  });
+}
+
+test('Sahir : une répartition invalide ne consomme ni capacité ni bouclier', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+  const bloqueurs = ['fennec-des-decombres', 'colosse-de-sel', 'colosse-de-sel'].map(id => {
+    donner(duel, 'sorcier', id);
+    return rpgJouerCreature(duel, 'sorcier', id).entite;
+  });
+  bloqueurs.forEach(b => { b.pv = b.def = b.carteId === 'fennec-des-decombres' ? 1 : 5; });
+  sahir.ready = true;
+  bloqueurs[1].bouclier = 1;
+  const avant = JSON.stringify(duel);
+  const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], {
+    [sahir.id]: bloqueurs.map(b => b.id),
+  }, { [sahir.id]: { [bloqueurs[1].id]: 1, [bloqueurs[2].id]: 0 } });
+  assert.deepEqual(res, { ok: false, raison: 'repartition' });
+  assert.equal(JSON.stringify(duel), avant, 'aucun dégât, cimetière, pioche ou journal modifié');
+});
+
+test('Sahir : les boucliers préservent les bloqueurs pour le partage', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+  const bloqueurs = ['fennec-des-decombres', 'colosse-de-sel'].map(id => {
+    donner(duel, 'sorcier', id);
+    return rpgJouerCreature(duel, 'sorcier', id).entite;
+  });
+  sahir.ready = true;
+  bloqueurs[0].bouclier = 2;
+  const pvFennec = bloqueurs[0].pv;
+  const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.resume.repartitions[sahir.id], Object.fromEntries(bloqueurs.map(b => [b.id, 1])));
+  assert.equal(bloqueurs[0].bouclier, 0);
+  assert.equal(bloqueurs[0].pv, pvFennec, 'le bouclier absorbe la capacité et l’esquive la blessure normale');
+  assert.equal(bloqueurs[1].pv, 2);
+});
+
+test('Sahir : les destructions en chaîne précèdent aussi le partage', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite;
+  const bloqueurs = ['ghul-des-cendres', 'colosse-de-sel'].map(id => {
+    donner(duel, 'sorcier', id);
+    return rpgJouerCreature(duel, 'sorcier', id).entite;
+  });
+  sahir.ready = true;
+  sahir.pv = sahir.def = 1;
+  const pvSorcier = duel.sorcier.pv;
+  const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
+  assert.equal(res.ok, true);
+  assert.equal(duel.joueur.creatures.includes(sahir), false, 'le Ghul détruit emporte le Sahir');
+  assert.deepEqual(res.resume.repartitions, {}, 'le Sahir détruit ne distribue aucune blessure');
+  assert.equal(bloqueurs[1].pv, 3, 'seuls les 2 dégâts préalables touchent le Colosse');
+  assert.equal(duel.sorcier.pv, pvSorcier);
+});
+
 test('les terrains mono produisent leur couleur et Pétra produit Braise ou Sable', () => {
   assert.equal(RPG_TERRAIN_CARDS.length, 4);
   assert.deepEqual(RPG_TERRAIN_CARDS.map((t) => t.id).sort(), ['desert', 'mer', 'montagne', 'petra']);

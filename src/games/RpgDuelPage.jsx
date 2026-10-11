@@ -2235,7 +2235,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     }
     const vivants = new Set(attaquantsVivants);
     const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages).filter(([id]) => vivants.has(id)));
-    const repartitions = Object.fromEntries(Object.entries(combatEntrant.repartitions).filter(([id]) => vivants.has(id)));
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -2243,7 +2242,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       'sorcier',
       attaquantsVivants,
       blocages,
-      repartitions,
+      null, // Le moteur partage les blessures après les capacités du Sahir.
       null,
       Object.fromEntries(Object.entries(combatEntrant.ciblesAttaque ?? {})
         .filter(([id]) => attaquantsVivants.includes(id))),
@@ -2306,7 +2305,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       'joueur',
       attaquantsVivants,
       blocages,
-      combat.repartitions,
+      null, // Ne pas figer un partage calculé avant les dégâts préalables.
       attaquantsBloques,
       Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {})
         .filter(([id]) => attaquantsVivants.includes(id))),

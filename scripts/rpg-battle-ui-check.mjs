@@ -120,6 +120,12 @@ assert.match(battlePage, /Aucune de vos créatures n’a Envol : leurs créature
   'l’annonce de l’attaque adverse signale les volants impossibles à bloquer');
 assert.match(duelEngine, /export function rpgLancerAttaque\([\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, degatsAvantCombat\)[\s\S]*?const coupsNormaux = degatsCombat[\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, coupsNormaux\)/,
   'les capacités de combat du Sahir se résolvent avant les blessures normales');
+assert.match(duelEngine, /appliquerDegatsDeCombatSimultanes\(apresCapacites, degatsAvantCombat\)[\s\S]*?const repartitionFinale/,
+  'le partage tient compte des survivants après les capacités préalables');
+assert.match(battlePage, /attaquantsVivants,\s*blocages,\s*null, \/\/ Le moteur partage/,
+  'la défense ne transmet pas de partage figé avant les capacités');
+assert.match(battlePage, /attaquantsVivants,\s*blocages,\s*null, \/\/ Ne pas figer/,
+  'l’attaque du joueur ne transmet pas de partage figé avant les capacités');
 assert.match(battlePage, /cibleAttaqueEnCours[\s\S]*?prochainCoupRapideSansCible[\s\S]*?ciblesAttaque/,
   'l’interface exige la cible de chaque Coup rapide avant de confirmer les attaquants');
 assert.match(battleCss, /\.rpg-card\.is-coup-rapide-cible\s*\{[^}]*outline:\s*4px solid #ffb15e/s,

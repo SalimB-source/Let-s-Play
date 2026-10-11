@@ -734,10 +734,30 @@ export function rpgLancerAttaque(
     }
   }
 
+  // Les capacités déclenchées par les blocages précèdent même le partage des
+  // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
+  // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
+  const degatsAvantCombat = [];
+  for (const attaquant of attaquants) {
+    for (const bloqueurId of affectations[attaquant.id] ?? []) {
+      const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
+      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur);
+      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant);
+    }
+  }
+  const apresCapacites = degatsAvantCombat.length ? JSON.parse(JSON.stringify(duel)) : duel;
+  if (degatsAvantCombat.length) appliquerDegatsDeCombatSimultanes(apresCapacites, degatsAvantCombat);
+  const attaquantsApresCapacites = apresCapacites[cote].creatures.filter((entite) => ids.includes(entite.id));
+  const bloqueursApresCapacites = new Set(apresCapacites[adv].creatures.map((entite) => entite.id));
+  const blocagesApresCapacites = Object.fromEntries(attaquantsApresCapacites.map((entite) => [
+    entite.id,
+    (affectations[entite.id] ?? []).filter((id) => bloqueursApresCapacites.has(id)),
+  ]));
+
   // Prépare et valide toutes les répartitions avant de modifier la partie.
   const repartitionFinale = {};
-  for (const attaquant of attaquants) {
-    const idsBloqueurs = affectations[attaquant.id] ?? [];
+  for (const attaquant of attaquantsApresCapacites) {
+    const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) continue;
     if (idsBloqueurs.length === 1) {
       repartitionFinale[attaquant.id] = { [idsBloqueurs[0]]: attaquant.atk };
@@ -777,7 +797,6 @@ export function rpgLancerAttaque(
     repartitions: repartitionFinale,
     attaquantsBloques: [...attaquantsDejaBloques],
   };
-  const degatsAvantCombat = [];
   const degatsCombat = [];
   const coupsSorcier = [];
   const enregistrerDegatsCombat = (coups, coteCible, entiteId, amount, sourceElement, sourceType, coteSource, sourceId) => {
@@ -791,8 +810,11 @@ export function rpgLancerAttaque(
       sourceId,
     });
   };
+  // Appliquer réellement cette étape une seule fois, avant les blessures normales.
+  appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
   for (const attaquant of attaquants) {
     attaquant.attaquee = true;
+    if (!duel[cote].creatures.some((entite) => entite.id === attaquant.id)) continue;
     const cibleRapideId = ciblesRapides[attaquant.id];
     if (cibleRapideId) {
       const cible = duel[adv].creatures.find((entite) => entite.id === cibleRapideId);
@@ -808,7 +830,7 @@ export function rpgLancerAttaque(
       continue;
     }
 
-    const idsBloqueurs = affectations[attaquant.id] ?? [];
+    const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) {
       if (!attaquantsDejaBloques.has(attaquant.id)) {
         coupsSorcier.push({ attaquantId: attaquant.id, amount: attaquant.atk });
@@ -833,7 +855,6 @@ export function rpgLancerAttaque(
         cote,
         attaquant.id,
       );
-      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, carteAttaquant, bloqueur);
 
       enregistrerDegatsCombat(
         degatsCombat,
@@ -845,14 +866,9 @@ export function rpgLancerAttaque(
         adv,
         bloqueur.id,
       );
-      ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, carteBloqueur, attaquant);
     }
     resume.paires.push([attaquant.name, ...bloqueurs.map((bloqueur) => bloqueur.name)]);
   }
-
-  // Les capacités du Sahir se résolvent avant les blessures ordinaires.
-  // Une créature tuée à cette étape ne participera pas aux dégâts de combat.
-  appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
 
   for (const coup of resume.coupsRapides) {
     if (coup.annule) continue;
