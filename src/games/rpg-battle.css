@@ -2048,6 +2048,7 @@
 .card-table--plateau-caravane-de-gourara { background-color: #a8764f; }
 .card-table--plateau-terre-de-damnation { background-color: #24120b; }
 .card-table--plateau-ruines-de-tipaza { background-color: #9d9179; }
+.card-table--plateau-fjord-des-neuf-hivers { background-color: #b9cdd6; }
 .rpg-battle:not(.rpg-battle--touch) :is(.card-table--plateau-erg-du-sahara, .card-table--plateau-caravane-de-gourara)::before {
   background:
     radial-gradient(ellipse at 50% 44%, rgba(26, 15, 6, .14), rgba(20, 11, 5, .5) 88%),
@@ -2058,6 +2059,18 @@
     radial-gradient(ellipse at 50% 45%, rgba(30, 12, 6, .04), rgba(11, 5, 3, .52) 90%),
     linear-gradient(180deg, rgba(20, 9, 4, .3) 0%, rgba(28, 12, 6, .14) 22%, rgba(28, 12, 6, .1) 60%, rgba(13, 6, 3, .4) 100%);
 }
+/* La glace du fjord : la surface la plus claire du jeu (moyenne 170 sur 255 —
+   neige et glace bleutée). L'ombre est franche, froide et dense, comme la pierre
+   des ruines, mais teintée de bleu polaire : sans elle, la rose des vents et le
+   grain de la glace mangeraient les cartes, et le blanc de la Neige se perdrait
+   dans son propre terrain. Les éléments de décor (lanterne, cor, corde, hache,
+   bâton de runes) restent donc dans les coins, sous le premier tiers du voile. */
+.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-fjord-des-neuf-hivers::before {
+  background:
+    radial-gradient(ellipse at 50% 44%, rgba(12, 22, 32, .26), rgba(9, 17, 26, .56) 90%),
+    linear-gradient(180deg, rgba(11, 20, 30, .44) 0%, rgba(14, 25, 35, .24) 24%, rgba(14, 25, 35, .16) 62%, rgba(9, 16, 24, .5) 100%);
+}
+
 /* La pierre des ruines : plus claire encore que le sable, et c'est le centre qui
    porte la mosaïque — l'ombre est donc neutre et froide (mer au nord), plus
    dense au centre que sur les sables, sinon les cartes flottent sur la pierre. */

@@ -56,6 +56,13 @@ export const RPG_PLATEAUX = [
     resume: 'L’étage repris par le feu : la croûte craquelée et ses braises encore vives, l’encensoir de fer renversé, les troncs calcinés, la cendre grise.',
   },
   {
+    id: 'fjord-des-neuf-hivers',
+    nom: 'Le Fjord des Neuf Hivers',
+    lieu: 'La glace du Nord, devant le Serment',
+    fichier: 'plateau-fjord-des-neuf-hivers.jpg',
+    resume: 'La glace polie du fjord et sa rose des vents gravée au ciseau ; la lanterne de fer, le cor à boire, la corde lovée, la hache et le bâton de runes posés au bord.',
+  },
+  {
     id: 'ruines-de-tipaza',
     nom: 'Les Ruines de Tipaza',
     lieu: 'Tipasa, la ville romaine au bord de la mer',

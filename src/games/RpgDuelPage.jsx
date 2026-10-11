@@ -2894,7 +2894,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
         <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}`} onClick={cliquerSorcier}
           title="Le sorcier adverse">
-          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={etageHistoire ? cardArt('ifrit-al-ahmar') : deckBoxArtUrl(deckAdverseAffiche)} alt="" /></span>
+          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche))} alt="" /></span>
           <span className="rpg-wizard-plate__identity">
             <strong>{etageHistoire ? etageHistoire.nom : 'LE SORCIER'}</strong>
             <small>{etageHistoire ? etageHistoire.fonction : `${deckAdverseAffiche.name} · ${deckColorLabel(deckAdverseAffiche)}`}</small>

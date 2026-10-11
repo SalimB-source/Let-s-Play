@@ -28,8 +28,31 @@ en bas, le sable a déjà tout repris.
 
 Une tour = 5 étages × 1 duel, un boss tous les 3 étages mineurs si on
 découpe plus grand (les autres tours : la Tour des Heures, la Tour du
-Souk, la Tour des Sables…). Les noms et dialogues vivent dans le dossier
-[`02-histoire.md`](02-histoire.md).
+Souk, la Tour des Sables, la Tour du Fjord…). Les noms et dialogues vivent
+dans le dossier [`02-histoire.md`](02-histoire.md).
+
+## La Tour du Fjord — la Neige entre dans la campagne
+
+La quatrième tour est la maison du deck **Serment des Neuf Hivers** : elle
+donne à la couleur Neige une place dans le mode Histoire, sans toucher aux
+règles du duel. Comme les autres, elle suit la convention « un étage = un duel
+autonome » (deck complet, PV pleins, rien de reporté).
+
+| Étage | Sorcier | Deck | Profil IA | Note |
+| --- | --- | --- | --- | --- |
+| 1 | La Garde du fjord | `gardes-du-fjord` (21 Glaciers, boucliers et brumes) | `normale` / `prudent` | la muraille épuise avant de rendre les coups |
+| 2 | La Meute des neiges | `meute-des-neiges` (loups, berserks, éclairs) | `normale` / `agressif` | la course : le premier tour décide |
+| 3 | La Valkyrie du fjord | `serment-des-neuf-hivers` (le deck Neige du catalogue) | `veilleur` / `agressif` | vol, coups rapides et pioches du Père des corbeaux |
+| 4 | Le Maître des Neuf Hivers | `maitre-des-neuf-hivers` (le Serment essuyé + les figures) | `veilleur` / `controle` | **boss** : le Père des corbeaux et le Maître du marteau |
+
+- Les quatre decks de la tour sont **mono-Neige** (vérifié par test : chaque
+  carte porte l'identité Neige, et le seul terrain est le Glacier) et passent
+  `rpgValiderDeck` — les cartes épiques y restent à un exemplaire.
+- Un étage peut porter un **portrait de sorcier** (`avatar`, un identifiant
+  d'illustration de `public/cards/`) : la plaque « LE SORCIER » montre alors ce
+  visage au lieu de l'Ifrit générique. Le test vérifie que chaque portrait
+  annoncé est une carte du catalogue et une peinture réellement livrée
+  (`tests/rpg-story.test.js`).
 
 ## Ce qui existe déjà (à brancher, pas à réinventer)
 

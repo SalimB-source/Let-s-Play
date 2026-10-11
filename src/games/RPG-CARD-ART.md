@@ -17,4 +17,18 @@ La collection adopte une fantasy adulte, sobre et incarnée, peinte comme une hu
 
 Cette direction s’applique à toute la collection sans exception — Sable, Eau, Braise, terrains, créatures, héros et magies. Chaque carte garde sa propre scène et son sujet clairement identifiable même en petit aperçu. La couleur de l’élément peut influencer la lumière et la palette, mais ne doit pas devenir un badge dessiné dans l’image. L’illustration reste une peinture plein cadre sans texte intégré; l’interface HTML/CSS superpose séparément types, coûts, icônes et statistiques.
 
-Les terrains gardent une illustration plein cadre, mais ne reçoivent ni coût ni badge élémentaire. Les types, coûts, icônes et statistiques de jeu restent des éléments HTML/CSS séparés de l’illustration.
+Les terrains gardent une illustration plein cadre, mais ne reçoivent ni coût ni badge élémentaire.
+
+## État du set Neige
+
+Le **Serment des Neuf Hivers** (couleur Neige, cadre bleu clair `#a9e0f5`,
+badge ❄️) est entièrement peint : ses dix-huit cartes — Glacier, Guerrier au
+bouclier rond, Loup des neiges, Scalde des runes, Valkyrie au corbeau, Berserk
+des trois hivers, Valkyrie des glaces, Géant des banquises, Drakkar à tête de
+dragon, Éclair du marteau, Mur de boucliers, Festin des vaillants, Brume du
+fjord, Hurlement du blizzard, le Père des corbeaux, le Maître du marteau, la
+Dame des neuf mondes et le Serpent du monde — ont leur plein art dédié dans
+`public/cards/`. Une carte dont la peinture resterait à faire se déclare dans
+`RPG_ART_PROVISOIRE` (`rpgCards.js`) : elle affiche alors le recadrage étalonné
+d'une illustration voisine, et `npm run check:rpg` vérifie que la liste ne
+contient que des cartes réellement livrées, image comprise. Les types, coûts, icônes et statistiques de jeu restent des éléments HTML/CSS séparés de l’illustration.

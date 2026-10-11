@@ -1057,22 +1057,14 @@ export const RPG_DECK_HYBRIDE_BASE = [
 ];
 
 /**
- * Illustrations provisoires du Serment des Neuf Hivers : ces huit cartes
- * affichent un recadrage étalonné d'une illustration Neige définitive, en
- * attendant leur plein art dédié (direction artistique : `RPG-CARD-ART.md`).
- * Chaque entrée doit disparaître de cette liste le jour où son fichier
- * `public/cards/<id>.jpg` est remplacé par une peinture originale.
+ * Illustrations provisoires : une carte dont le plein art n'est pas encore
+ * peint peut être déclarée ici — elle affiche alors un recadrage étalonné d'une
+ * illustration existante (direction artistique : `RPG-CARD-ART.md`). La liste
+ * est vide : les dix-huit cartes du Serment des Neuf Hivers ont leur peinture
+ * dédiée. Chaque entrée doit disparaître le jour où la peinture originale
+ * remplace le fichier `public/cards/<id>.jpg`.
  */
-export const RPG_ART_PROVISOIRE = [
-  'mur-de-boucliers',
-  'festin-des-vaillants',
-  'brume-du-fjord',
-  'hurlement-du-blizzard',
-  'pere-des-corbeaux',
-  'maitre-du-marteau',
-  'dame-des-neuf-mondes',
-  'serpent-du-monde',
-];
+export const RPG_ART_PROVISOIRE = [];
 
 /**
  * Serment des Neuf Hivers — le deck mono-Neige : dix-sept glaciers, des

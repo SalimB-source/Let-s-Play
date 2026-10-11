@@ -417,6 +417,13 @@ for (const plateauSable of ['erg-du-sahara', 'caravane-de-gourara']) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSable}\\s*\\{[^}]*background-color:`),
     `le plateau ${plateauSable} a sa propre couleur de repli`);
 }
+// La glace du fjord : la surface la plus claire du jeu, voile froid obligatoire.
+assert.match(battleCss, /\.card-table--plateau-fjord-des-neuf-hivers\s*\{[^}]*background-color:/s,
+  'le Fjord des Neuf Hivers a sa propre couleur de repli');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-fjord-des-neuf-hivers::before\s*\{[^}]*radial-gradient/s,
+  'la glace du fjord reçoit son voile froid, sinon les cartes se noieraient dans le blanc');
+assert.match(plateauxSource, /id: 'fjord-des-neuf-hivers'[\s\S]*?fichier: 'plateau-fjord-des-neuf-hivers\.jpg'/,
+  'le fjord des Neuf Hivers est un plateau déclaré, avec son fond dans public/');
 assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza\.jpg'/,
   'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,

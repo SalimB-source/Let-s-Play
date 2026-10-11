@@ -46,6 +46,21 @@ test('le désert du Sahara est livré comme plateau de plein droit', () => {
   assert.ok(caravane && caravane.fichier !== sahara.fichier, 'chaque plateau saharien a son propre fond');
 });
 
+test('le fjord des Neuf Hivers est livré comme plateau de plein droit', () => {
+  const fjord = plateauParId('fjord-des-neuf-hivers');
+  assert.ok(fjord, 'le Fjord des Neuf Hivers fait partie des plateaux');
+  assert.match(fjord.fichier, /\.jpg$/);
+  assert.match(fjord.nom, /fjord/i);
+  assert.match(fjord.resume, /glace/i, 'le résumé annonce bien la glace du fjord');
+  // Le décor du Nord : lanterne, cor, corde, hache et bâton de runes.
+  for (const accessoire of ['lanterne', 'cor', 'corde', 'hache', 'runes']) {
+    assert.match(fjord.resume, new RegExp(accessoire, 'i'),
+      `le résumé nomme ${accessoire} au bord du plateau`);
+  }
+  assert.equal(new Set(RPG_PLATEAUX.map((plateau) => plateau.fichier)).size, RPG_PLATEAUX.length,
+    'aucun plateau ne réutilise le fond d’un autre');
+});
+
 test('la terre de damnation est livrée comme plateau de plein droit', () => {
   const damnation = plateauParId('terre-de-damnation');
   assert.ok(damnation, 'la Terre de Damnation fait partie des plateaux');

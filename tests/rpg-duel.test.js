@@ -1404,19 +1404,26 @@ test('Parade de verre ne se lance pas si sa créature cible est absente', () => 
   assert.ok(duel.joueur.main.includes('parade-du-verre'), 'la carte et le mana restent intacts');
 });
 
-test('le plein art du Serment est livré, et les provisoires sont recensées', () => {
+test('le plein art du Serment est livré : dix-huit peintures dédiées, aucune provisoire', () => {
+  // La liste des illustrations provisoires est vide : le deck Neige est peint.
+  assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
+  const fiches = ['creature', 'hero', 'magie', 'terrain'];
+  const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
+  assert.equal(cartesNeige.length, 18, 'dix-huit cartes Neige au catalogue');
+  assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
+    ['creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les quatre types de cartes');
+  for (const carte of cartesNeige) {
+    assert.ok(fiches.includes(carte.kind), `${carte.id} est une carte jouable du set Neige`);
+    assert.equal(cardArtId(carte), carte.id, `${carte.id} affiche son illustration dédiée`);
+    assert.ok(existsSync(fileURLToPath(new URL(`../public/cards/${carte.id}.jpg`, import.meta.url))),
+      `${carte.id} a sa peinture plein art`);
+  }
+  // Une carte ajoutée à la liste provisoire doit exister, et le jour où son
+  // plein art arrive, elle doit en sortir : la liste ne peut pas mentir.
   for (const id of RPG_ART_PROVISOIRE) {
     assert.ok(RPG_DECK_NEIGE_BASE.includes(id), `${id} appartient au deck Neige`);
     assert.ok(existsSync(fileURLToPath(new URL(`../public/cards/${id}.jpg`, import.meta.url))),
       `${id} a bien une image, même provisoire`);
-  }
-  // Les illustrations définitives ne doivent jamais être remplacées par un
-  // recadrage : tant qu'une carte figure ici, son plein art dédié est à livrer.
-  assert.equal(RPG_ART_PROVISOIRE.length, 8, 'huit illustrations restent à peindre');
-  for (const id of RPG_DECK_NEIGE_BASE.filter((carteId, index, deck) => deck.indexOf(carteId) === index)) {
-    if (RPG_ART_PROVISOIRE.includes(id)) continue;
-    assert.ok(existsSync(fileURLToPath(new URL(`../public/cards/${id}.jpg`, import.meta.url))),
-      `${id} garde son illustration définitive`);
   }
 });
 
