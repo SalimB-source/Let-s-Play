@@ -249,6 +249,31 @@
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
 .rpg-battle--touch .rpg-spell-confirm { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 28px); overflow-y: auto; }
 .rpg-battle--touch .rpg-spell-confirm__actions { position: sticky; bottom: 0; padding-block: 6px; background: #14131cee; }
+/* L’aperçu est permanent pendant une réponse, même si les aperçus de survol
+   restent masqués sur écran tactile. Le rail de commandes est étroit en paysage :
+   empiler l’aperçu et le bouton garde la carte, sa cible et le texte lisibles. */
+.rpg-battle--touch .rpg-hover-card-preview--annonce {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 6px;
+}
+.rpg-battle--touch .rpg-annonce-sort {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  padding: 6px;
+}
+.rpg-battle--touch .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
+  gap: 3px;
+  padding: 5px 6px;
+}
+.rpg-battle--touch .rpg-annonce-sort__pass {
+  justify-self: center;
+  width: auto;
+  min-width: 108px;
+  min-height: 44px;
+  padding: 6px 9px;
+  font-size: 10px;
+}
 
 /* One visible stack per terrain type. Keep it upright even when exhausted:
    the total count stays legible and inside the rail. Availability is kept in

@@ -428,6 +428,20 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-tab
 
 // ── Le voile noir haut/bas du plateau : la lisibilité des textes de la table ─
 const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+assert.match(battlePage, /<HoverCardPreview carte=\{carteAnnoncee\} cible=\{cibleAnnoncee\} variante="annonce" \/>/,
+  'la fenêtre de réponse affiche l’aperçu de la carte annoncée et lui transmet sa cible');
+assert.match(hoverPreviewSource, /cibleAnnoncee && \([\s\S]*?rpg-hover-card-preview__target[\s\S]*?cibleAnnoncee\.nom/,
+  'l’aperçu d’une magie rend le nom et l’illustration de sa cible');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce\s*\{[^}]*position:\s*relative;[^}]*display:\s*grid;[^}]*width:\s*100%;/s,
+  'l’aperçu annoncé reste dans son panneau de réponse au lieu de flotter comme un tooltip');
+assert.match(battleCss, /\.rpg-annonce-sort__pass\s*\{[^}]*display:\s*inline-flex;[^}]*flex-direction:\s*row;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*min-height:\s*36px;/s,
+  'Laisser passer est un bouton compact dont le texte est centré verticalement');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hover-card-preview--annonce\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*42px minmax\(0, 1fr\);/s,
+  'l’aperçu annoncé reste visible et lisible dans le rail tactile, alors que les tooltips au survol sont masqués');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/s,
+  'sur tactile, l’aperçu et sa commande s’empilent dans le rail étroit');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass\s*\{[^}]*justify-self:\s*center;[^}]*width:\s*auto;[^}]*min-width:\s*108px;[^}]*min-height:\s*44px;/s,
+  'Laisser passer reste compact tout en gardant une zone de toucher de 44 px');
 assert.match(battleCss, /--rpg-plateau-voile:\s*linear-gradient\(180deg,\s*var\(--rpg-plateau-voile-haut\) 0%,[\s\S]*?var\(--rpg-plateau-voile-bas\) 100%\);/,
   'le plateau porte un dégradé noir en haut et en bas, là où vivent les textes de la table');
 assert.match(battleCss, /\.card-table::before\s*\{[^}]*background:[^}]*var\(--rpg-plateau-voile\),/s,
