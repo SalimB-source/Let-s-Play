@@ -2522,9 +2522,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       setCibleEnCours(null); carteCibleeHandIndexRef.current = null; setMessage('Choix de cible annulé.');
     }) });
   }
-  if (carteEnApercu && annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant) {
-    actionsApercu.push({ id: 'undo', label: 'Annuler la dernière action', run: apresFermeture(annulerDerniereAction) });
-  }
   const piochesJoueur = animationsPioche.filter((animation) => animation.side === 'joueur');
   const piochesSorcier = animationsPioche.filter((animation) => animation.side === 'sorcier');
   const tokenPiocheJoueur = piochesJoueur.at(-1)?.token ?? null;
@@ -2843,6 +2840,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   <button
                     type="button"
                     className="rpg-btn rpg-btn--undo"
+                    aria-label="Annuler la dernière action"
                     title="Annule une seule action réversible. Une attaque confirmée ou une magie jouée est définitive."
                     onClick={annulerDerniereAction}
                   >

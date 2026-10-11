@@ -9,10 +9,10 @@ Le plateau conserve les illustrations originales de Bab El, avec une organisatio
 - deux champs au centre, sans panneaux opaques ;
 - terrains sur le côté, identités et compteurs flottants ;
 - main en bas, défilable horizontalement ;
-- fin du tour, confirmations et réponses au combat accessibles sur le plateau ;
+- annulation de la dernière action à côté de la fin du tour sur le plateau, avec les confirmations et réponses au combat ;
 - détails et actions contextuelles dans l’aperçu d’une carte.
 
-Le clic sur une carte en main ouvre l’aperçu, sur ordinateur comme sur mobile. **Jouer la carte** réutilise la validation et les animations du glisser-déposer, y compris le paiement automatique et le choix ultérieur d’une cible. Sur mobile, les créatures et terrains du champ ouvrent aussi leur aperçu : attaque, retrait de la sélection, confirmation, annulation, blocage, choix de cible ou production de mana selon l’état de la partie. Les actions indisponibles sont désactivées. Les statistiques d’une créature en jeu reflètent ses valeurs actuelles.
+Le clic sur une carte en main ouvre l’aperçu, sur ordinateur comme sur mobile. **Jouer la carte** réutilise la validation et les animations du glisser-déposer, y compris le paiement automatique et le choix ultérieur d’une cible. Sur mobile, les créatures et terrains du champ ouvrent aussi leur aperçu : attaque, retrait de la sélection, confirmation, annulation, blocage, choix de cible ou production de mana selon l’état de la partie. L’annulation de la dernière action reste sur le plateau, à côté de la fin du tour, et non dans l’aperçu. Les actions indisponibles sont désactivées. Les statistiques d’une créature en jeu reflètent ses valeurs actuelles.
 
 Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. Le grand aperçu conserve un fond lisible, mais son voile extérieur est léger et le plateau n’a plus de grands fonds opaques.
 

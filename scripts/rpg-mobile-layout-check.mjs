@@ -166,7 +166,18 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === 1);
   await page.locator('.rpg-hand__card--terrain').first().tap();
   assert.equal(await page.getByRole('button', { name: 'Jouer la carte', exact: true }).isDisabled(), true);
-  await page.getByRole('button', { name: 'Annuler la dernière action', exact: true }).last().click();
+  assert.equal(await page.locator('.rpg-card-preview__actions .rpg-btn--undo').count(), 0);
+  await page.getByRole('button', { name: 'Retour au plateau', exact: true }).click();
+  for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
+    await page.setViewportSize({ width, height });
+    const undo = await page.locator('.rpg-actions__turn .rpg-btn--undo').boundingBox();
+    const end = await page.locator('.rpg-actions__turn .rpg-btn--endturn').boundingBox();
+    assert.ok(undo && end && undo.width >= 44 && undo.height >= 44, `${width}: undo is visible on the table`);
+    assert.ok(undo.x + undo.width <= end.x && Math.abs(undo.y - end.y) <= 1, `${width}: undo is beside end-turn, not stacked`);
+    assert.ok(end.x + end.width <= width && end.y + end.height <= height, `${width}: turn buttons fit the screen`);
+  }
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.getByRole('button', { name: 'Annuler la dernière action', exact: true }).click();
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 0);
   console.log('✓ Preview plays a terrain, disables a second terrain, and undoes the action');
   const before = await page.locator('.rpg-terrains--joueur .rpg-terrain').count();

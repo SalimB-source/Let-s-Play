@@ -33,7 +33,9 @@ export async function checkRpgPreviewActions(assert) {
     await play('desert');
     await click(hand('desert'));
     assert.equal(action('Jouer la carte').disabled, true, 'second terrain is forbidden');
-    await click(action('Annuler la dernière action'));
+    assert.equal(action('Annuler la dernière action'), undefined, 'undo is not a card action');
+    await click(action('Retour au plateau'));
+    await click(container.querySelector('.rpg-actions__turn .rpg-btn--undo'));
     assert.equal(container.querySelectorAll('.rpg-terrain--joueur').length, 0);
     await play('desert');
     await click(container.querySelector('.rpg-btn--endturn'));
