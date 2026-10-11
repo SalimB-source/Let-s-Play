@@ -42,6 +42,14 @@ export async function checkRpgPreviewActions(assert) {
     await act(async () => new Promise(resolve => setTimeout(resolve, 800)));
     await play('desert');
     await play('fennec-des-decombres');
+    await click(container.querySelector('.rpg-btn--attaque-tous'));
+    assert.equal(container.querySelectorAll('.rpg-card--equipe.is-selected').length, 1, 'attack-all selects ready creatures from the board');
+    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'combat');
+    assert.equal(container.querySelector('.rpg-btn--endturn').disabled, true);
+    await click(container.querySelector('.rpg-btn--cancel-attack'));
+    assert.equal(container.querySelectorAll('.rpg-card--equipe.is-selected').length, 0);
+    assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'principal');
+    assert.equal(container.querySelector('.rpg-btn--endturn').disabled, false);
     const fennec = () => container.querySelector('.rpg-card--equipe[data-card-id="fennec-des-decombres"]');
     await click(fennec());
     assert.equal(fennec().classList.contains('is-selected'), false, 'inspecting does not declare an attack');

@@ -2814,8 +2814,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                     <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque" disabled={!attaquants.length || Boolean(cibleAttaqueEnCours) || Boolean(prochainCoupRapideSansCible(attaquants, ciblesAttaque))} onClick={() => lancerAttaque()}>
                       <CombatActionIcon type="confirm" /> Confirmer ({attaquants.length})
                     </button>
-                    <button type="button" className="rpg-btn rpg-btn--ghost" onClick={annulerAttaque}>
-                      Annuler
+                    <button type="button" className="rpg-btn rpg-btn--ghost rpg-btn--cancel-attack" onClick={annulerAttaque}>
+                      Annuler l’attaque
                     </button>
                   </>
                 )}

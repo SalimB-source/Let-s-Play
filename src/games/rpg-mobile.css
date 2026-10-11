@@ -84,9 +84,9 @@
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
   display: grid;
-  grid-template-columns: clamp(78px, 12vw, 130px) minmax(0, 1fr) clamp(130px, 18vw, 190px);
+  grid-template-columns: clamp(78px, 12vw, 130px) minmax(0, 1fr) clamp(220px, 30vw, 340px);
   grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.25 + 10px), 1fr) minmax(calc(var(--duel-card) * 1.25 + 10px), 1fr) clamp(84px, 28dvh, 146px);
-  grid-template-areas: "enemy-mana opponent nav" "enemy-mana enemy opponent-piles" "mana allies controls" "player hand controls";
+  grid-template-areas: "enemy-mana opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
   padding: 6px;
   overflow: auto;
@@ -136,7 +136,8 @@
 .rpg-battle--touch .rpg-wizard-plate--joueur .rpg-wizard-plate__pv { grid-column: 2; grid-row: 2; }
 .rpg-battle--touch .rpg-wizard-plate--joueur .rpg-wizard-plate__zones { grid-column: 1 / -1; grid-row: 3; }
 .rpg-battle--touch .rpg-mobile-zones { display: inline; }
-.rpg-battle--touch .card-table > .rpg-card-piles--opponent { grid-area: opponent-piles; align-self: start; justify-content: flex-end; padding: 8px; }
+/* Deck/graveyard counts remain in the opponent identity, freeing the side rail. */
+.rpg-battle--touch .card-table > .rpg-card-piles--opponent { display: none; }
 .rpg-battle--touch .card-table > .rpg-card-piles--player { display: none; }
 .rpg-battle--touch .rpg-card-pile { min-width: 42px; text-shadow: 0 2px 3px #000; }
 .rpg-battle--touch .rpg-card-pile__stack { display: none; }
@@ -168,23 +169,29 @@
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
 .rpg-battle--touch .rpg-bottombar__status .rpg-actions__wait { flex: none; max-width: 100%; max-height: 48px; padding: 0; border: 0; background: none; color: #ffedc7; font-size: 11px; line-height: 1.35; white-space: normal; overflow-y: auto; text-shadow: 0 2px 3px #000; }
-.rpg-battle--touch .rpg-bottombar .rpg-log, .rpg-battle--touch .rpg-phase-track { display: none; }
-.rpg-battle--touch .rpg-bottombar .rpg-actions { display: block; }
-.rpg-battle--touch .rpg-bottombar .rpg-actions__row { justify-content: flex-end; gap: 4px; }
-.rpg-battle--touch .rpg-actions__combat, .rpg-battle--touch .rpg-actions__turn { justify-content: flex-end; gap: 4px; padding: 0; border: 0; }
-.rpg-battle--touch .rpg-actions__row .rpg-btn { min-height: 44px; padding: 6px 9px; font-size: 11px; }
-/* Individual attack decisions live in card previews. Undo, confirmation,
-   target cancellation and response resolution remain reachable on the board. */
-.rpg-battle--touch .rpg-btn--attaque-tous { display: none; }
-/* Undo belongs beside end-turn, including on the narrow landscape side rail. */
-.rpg-battle--touch .rpg-actions__turn {
+.rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
+.rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 7px; }
+.rpg-battle--touch .rpg-phase-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+  gap: 3px;
+  padding: 0;
+}
+.rpg-battle--touch .rpg-phase-step { min-width: 0; }
+.rpg-battle--touch .rpg-phase-step__label { font-size: 8px; letter-spacing: 0; text-shadow: 0 1px 3px #000; }
+/* Combat and turn buttons share one row, with phases immediately above.
+   The DOM keeps its labelled groups for keyboard and assistive technology. */
+.rpg-battle--touch .rpg-bottombar .rpg-actions__row {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
-  width: 100%;
+  gap: 4px;
   align-items: stretch;
 }
-.rpg-battle--touch .rpg-actions__turn .rpg-btn {
+.rpg-battle--touch .rpg-actions__combat,
+.rpg-battle--touch .rpg-actions__turn { display: contents; }
+.rpg-battle--touch .rpg-actions__row .rpg-btn {
   min-width: 0;
   min-height: 44px;
   padding: 6px 4px;
@@ -195,6 +202,7 @@
   align-items: center;
   justify-content: center;
 }
+.rpg-battle--touch .rpg-actions__row .rpg-btn:hover { transform: none; }
 .rpg-battle--touch .card-table > .rpg-hand-dock { grid-area: hand; display: block; align-self: stretch; padding: 0; overflow: hidden; z-index: 21; }
 .rpg-battle--touch .rpg-hand-dock::before { content: "VOTRE MAIN · TOUCHEZ UNE CARTE POUR AGIR"; display: block; padding: 2px 8px; color: #efdbad; text-shadow: 0 1px 3px #000; font: 600 8px/1.3 var(--display); letter-spacing: .06em; }
 .rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 8px; justify-content: flex-start; align-items: center; gap: 8px; }

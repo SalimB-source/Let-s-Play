@@ -9,7 +9,8 @@ Le plateau conserve les illustrations originales de Bab El, avec une organisatio
 - deux champs au centre, sans panneaux opaques ;
 - terrains sur le côté, identités et compteurs flottants ;
 - main en bas, défilable horizontalement ;
-- annulation de la dernière action à côté de la fin du tour sur le plateau, avec les confirmations et réponses au combat ;
+- commandes « Attaquer avec tous », confirmation/annulation de l’attaque, annulation de la dernière action et fin du tour regroupées côte à côte sur le plateau, selon la phase ;
+- progression des phases immédiatement au-dessus des commandes, avec la phase actuelle mise en évidence ;
 - détails et actions contextuelles dans l’aperçu d’une carte.
 
 Le clic sur une carte en main ouvre l’aperçu, sur ordinateur comme sur mobile. **Jouer la carte** réutilise la validation et les animations du glisser-déposer, y compris le paiement automatique et le choix ultérieur d’une cible. Sur mobile, les créatures et terrains du champ ouvrent aussi leur aperçu : attaque, retrait de la sélection, confirmation, annulation, blocage, choix de cible ou production de mana selon l’état de la partie. L’annulation de la dernière action reste sur le plateau, à côté de la fin du tour, et non dans l’aperçu. Les actions indisponibles sont désactivées. Les statistiques d’une créature en jeu reflètent ses valeurs actuelles.

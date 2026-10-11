@@ -39,8 +39,12 @@ try {
         hand: rect('.rpg-hand'),
         card: rect('.rpg-hand__card'),
         endTurn: rect('.rpg-btn--endturn'),
+        attackAll: rect('.rpg-btn--attaque-tous'),
+        phases: rect('.rpg-phase-track'),
       };
     });
+    assert.ok(result.attackAll.width >= 44 && Math.abs(result.attackAll.y - result.endTurn.y) <= 1, `${width}: attack-all is beside end-turn`);
+    assert.ok(result.phases.height > 0 && result.phases.bottom <= result.endTurn.y && result.endTurn.y - result.phases.bottom <= 10, `${width}: phases sit immediately above the buttons`);
     assert.equal(result.overflow, false, `${width}: no page-wide horizontal overflow`);
     for (let i = 0; i < result.areas.length; i++) {
       for (let j = i + 1; j < result.areas.length; j++) {
@@ -192,6 +196,33 @@ try {
   await page.waitForFunction((count) => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === count + 1, before);
   assert.equal(await page.locator('.rpg-touch-drag-ghost').count(), 0);
   console.log('✓ Touch drag plays a terrain after orientation changes');
+  await page.locator('.rpg-btn--endturn').click();
+  await page.locator('.rpg-turn-indicator.is-player').waitFor();
+  await page.locator('.rpg-hand__card--terrain.is-playable').first().click();
+  await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === 2);
+  await page.locator('.rpg-hand__card[data-card-id="fennec-des-decombres"]').click();
+  await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();
+  await page.locator('.rpg-card--equipe[data-card-id="fennec-des-decombres"]').waitFor();
+  await page.locator('.rpg-btn--attaque-tous').click();
+  assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'combat');
+  for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
+    await page.setViewportSize({ width, height });
+    const cancel = await page.locator('.rpg-btn--cancel-attack').boundingBox();
+    const confirm = await page.locator('.rpg-btn--confirmer-attaque').boundingBox();
+    const end = await page.locator('.rpg-btn--endturn').boundingBox();
+    const phases = await page.locator('.rpg-phase-track').boundingBox();
+    assert.ok(cancel.width >= 44 && cancel.height >= 44 && Math.abs(cancel.y - end.y) <= 1, `${width}: cancel attack is beside end-turn`);
+    assert.ok(confirm.x + confirm.width <= cancel.x && cancel.x + cancel.width <= end.x, `${width}: combat buttons do not overlap`);
+    assert.ok(phases.y + phases.height <= cancel.y && cancel.y - phases.y - phases.height <= 10, `${width}: phases are directly above combat controls`);
+    assert.ok(end.y + end.height <= height && end.x + end.width <= width, `${width}: combat controls fit the screen`);
+  }
+  await page.setViewportSize({ width: 844, height: 390 });
+  if (process.env.RPG_CONTROLS_SCREENSHOT) await page.screenshot({ path: process.env.RPG_CONTROLS_SCREENSHOT });
+  await page.locator('.rpg-btn--cancel-attack').click();
+  assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'principal');
+  assert.equal(await page.locator('.rpg-card--equipe.is-selected').count(), 0);
+  console.log('✓ Attack-all, cancellation and end-turn share a row; phases follow combat and cancellation');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.rpg-rotate-prompt').waitFor();
   await page.getByRole('button', { name: 'Retour au menu', exact: true }).click();
