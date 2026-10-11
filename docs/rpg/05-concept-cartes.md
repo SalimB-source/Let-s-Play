@@ -94,6 +94,34 @@ limitée à 7.
   les créatures ennemies et encaissent la riposte même si leur cible
   meurt.
 
+### Les capacités de clan du Nord
+
+Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent
+sur la carte (`furie`, `resonance`) et le moteur les applique sans table
+d'effets supplémentaires.
+
+- **Furie X** (les vikings : Guerrier au bouclier rond 1, Berserk des trois
+  hivers 2, Jarl au marteau de guerre 3) — « Chaque fois qu'elle est blessée et
+  survit, la créature gagne +X/+X. » Une attaque **entièrement absorbée par un
+  bouclier n'est pas une blessure** : la Furie attend le premier sang. Elle
+  frappe **une seule fois par échange**, même quand la créature encaisse comme
+  attaquante et comme bloqueuse dans le même combat, et **jamais une créature
+  qui meurt** : c'est une récompense de survie, pas un baroud d'honneur. Le
+  bonus porte sur l'attaque, la défense et les points de vie présents et
+  maximum : une créature furieuse reste entamée sous son nouveau plafond.
+- **Résonance** (les valkyries : Valkyrie au corbeau et Valkyrie des glaces) —
+  « Tant qu'elle est en jeu, **toutes** les créatures Neige de la table
+  gagnent +1/+1. » L'aura est de table : elle profite aux deux camps, à la
+  valkyrie elle-même, et se cumule si deux sources sont en jeu. Chaque entité
+  retient sa part (`entite.resonance`), si bien qu'une source qui entre ou qui
+  meurt n'ajoute ou ne retire que son écart — les bonus déjà gagnés par la
+  Furie ne dérivent jamais. Perdre l'aura ne peut pas tuer : les points de vie
+  et la défense retombent au plancher de 1.
+
+Les deux capacités se cumulent, et les vikings comme les valkyries gardent
+leurs capacités propres (Coup rapide du Berserk, Envol et arrivée des
+valkyries, arrivées du Guerrier et du Jarl).
+
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 

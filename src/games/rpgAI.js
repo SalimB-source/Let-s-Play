@@ -79,6 +79,22 @@ export function degatsApresEsquive(entite, montant, sourceType = 'attaque') {
   return degats - esquive;
 }
 
+/**
+ * Blessure nette encaissée : ce qui reste après l’Esquive puis le bouclier.
+ * Une attaque entièrement absorbée n’est pas une blessure — la Furie attend
+ * le premier sang, exactement comme le moteur.
+ */
+export function blessureNette(entite, montant, sourceType = 'attaque') {
+  const apresEsquive = degatsApresEsquive(entite, montant, sourceType);
+  return Math.max(0, apresEsquive - Math.max(0, entite?.bouclier ?? 0));
+}
+
+/** Furie gagnée par une créature blessée qui survit (0 sans Furie ni blessure). */
+export function furieGagnee(entite, degatsRecus) {
+  const furie = Math.max(0, Number(duelCardById(entite?.carteId)?.furie) || 0);
+  return furie > 0 && (degatsRecus ?? 0) > 0 ? furie : 0;
+}
+
 /** L’entité meurt-elle sous un coup de ce type (bouclier compris) ?
  *  Le moteur tue à 0 PV : dégâts ≥ PV + bouclier, pas strictement plus. */
 function meurtSous(entite, montant, sourceType = 'attaque') {
@@ -101,6 +117,10 @@ export function valeurEntite(entite) {
   if (entite?.coupRapide) valeur += 2;
   if (entite?.rapidite) valeur += 0.5;
   if (entite?.protection) valeur += 1.5;
+  // Furie : la créature grandit à chaque échange où elle survit blessée.
+  if (carte.furie) valeur += 1 + carte.furie * 0.7;
+  // Résonance : une aura qui renforce toute la Neige de la table.
+  if (carte.resonance) valeur += 2 + carte.resonance * 2;
   if (carte.arrivee) valeur += 1.5;
   if (carte.destruction) valeur += 1;
   if (carte.combat) valeur += 2;
@@ -121,6 +141,8 @@ function degatsAvantCombat(carte) {
 export function resultatBlocage(attaquant, bloqueur) {
   const carteA = duelCardById(attaquant?.carteId) ?? {};
   const carteB = duelCardById(bloqueur?.carteId) ?? {};
+  let blessureA = blessureNette(attaquant, degatsAvantCombat(carteB), 'capacite');
+  let blessureB = blessureNette(bloqueur, degatsAvantCombat(carteA), 'capacite');
   const attaquantVit = !meurtSous(attaquant, degatsAvantCombat(carteB), 'capacite');
   const bloqueurVit = !meurtSous(bloqueur, degatsAvantCombat(carteA), 'capacite');
   let attaquantMeurt = !attaquantVit;
@@ -128,8 +150,16 @@ export function resultatBlocage(attaquant, bloqueur) {
   if (attaquantVit && bloqueurVit) {
     attaquantMeurt = meurtSous(attaquant, bloqueur.atk, 'attaque');
     bloqueurMeurt = meurtSous(bloqueur, attaquant.atk, 'attaque');
+    blessureA += blessureNette(attaquant, bloqueur.atk, 'attaque');
+    blessureB += blessureNette(bloqueur, attaquant.atk, 'attaque');
   }
-  return { attaquantMeurt, bloqueurMeurt };
+  return {
+    attaquantMeurt,
+    bloqueurMeurt,
+    // Survivre blessé, c’est entrer en furie : l’IA ne l’oublie pas.
+    attaquantFurie: attaquantMeurt ? 0 : furieGagnee(attaquant, blessureA),
+    bloqueurFurie: bloqueurMeurt ? 0 : furieGagnee(bloqueur, blessureB),
+  };
 }
 
 /** Menace offensive d’une créature : ce qu’elle pèse sur la course aux PV. */
@@ -293,22 +323,25 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   const facteurVie = sousPression ? 1.25 : 0.4;
 
   const scoreBlocage = (attaquant, bloqueur) => {
-    const { attaquantMeurt, bloqueurMeurt } = resultatBlocage(attaquant, bloqueur);
+    const { attaquantMeurt, bloqueurMeurt, attaquantFurie, bloqueurFurie } = resultatBlocage(attaquant, bloqueur);
     const degatsEvites = Math.min(attaquant.atk ?? 0, pvDefense());
     const degatsRecus = degatsApresEsquive(bloqueur, attaquant.atk ?? 0, 'attaque');
-    if (attaquantMeurt && !bloqueurMeurt) return 20 + valeurEntite(attaquant) + degatsEvites * facteurVie;
+    // La Furie pèse dans la balance : entamer un viking sans le tuer le
+    // nourrit ; survivre blessé de notre côté, au contraire, nous grandit.
+    const furie = bloqueurFurie * 0.9 - attaquantFurie * 1.2;
+    if (attaquantMeurt && !bloqueurMeurt) return 20 + valeurEntite(attaquant) + degatsEvites * facteurVie + furie;
     if (attaquantMeurt && bloqueurMeurt) {
       const ecart = valeurEntite(attaquant) - valeurEntite(bloqueur);
-      if (ecart >= 0) return 10 + ecart + degatsEvites * facteurVie * 0.6;
-      return -5 + ecart + degatsEvites * (sousPression ? 0.5 : 0.15);
+      if (ecart >= 0) return 10 + ecart + degatsEvites * facteurVie * 0.6 + furie;
+      return -5 + ecart + degatsEvites * (sousPression ? 0.5 : 0.15) + furie;
     }
     if (!attaquantMeurt && !bloqueurMeurt) {
-      // On l'écroule sans le tuer : utile seulement si ça coûte peu.
-      return degatsEvites * facteurVie * 0.6 - degatsRecus * 0.4;
+      // On l’écroule sans le tuer : utile seulement si ça coûte peu.
+      return degatsEvites * facteurVie * 0.6 - degatsRecus * 0.4 + furie;
     }
     // Chump : on meurt sans le tuer — on encaisse quand même le coup est plus
     // lourd que ce que la créature vaut, surtout sous pression.
-    return degatsEvites * facteurVie - valeurEntite(bloqueur) * 0.9;
+    return degatsEvites * facteurVie - valeurEntite(bloqueur) * 0.9 + furie;
   };
   const seuil = profil.style === 'agressif' ? -1 : profil.style === 'prudent' ? 2 : 0;
 
@@ -416,6 +449,8 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
     let face = 0;
     let notrePerte = 0;
     let leurPerte = 0;
+    let notreFurie = 0;
+    let leurFurie = 0;
     for (const attaquant of frappent) {
       const idsBloqueurs = blocages[attaquant.id] ?? [];
       const bloqueur = idsBloqueurs.length
@@ -427,7 +462,9 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
       }
       const echange = resultatBlocage(attaquant, bloqueur);
       if (echange.attaquantMeurt) notrePerte += valeurEntite(attaquant);
+      else notreFurie += echange.attaquantFurie * 0.8;
       if (echange.bloqueurMeurt) leurPerte += valeurEntite(bloqueur);
+      else leurFurie += echange.bloqueurFurie * 0.8;
     }
     for (const [id, cibleId] of Object.entries(ciblesRapides)) {
       const attaquant = ensemble.find((entite) => entite.id === id);
@@ -436,7 +473,12 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
       if (meurtSous(cible, attaquant.atk, 'attaque')) leurPerte += valeurEntite(cible);
       else leurPerte += menace(cible) * 0.3;
     }
-    return { face, notrePerte, leurPerte, score: face + leurPerte - notrePerte };
+    return {
+      face,
+      notrePerte,
+      leurPerte,
+      score: face + leurPerte - notrePerte + notreFurie - leurFurie,
+    };
   };
 
   const seuil = profil.style === 'agressif' ? -2 : profil.style === 'prudent' ? 1.5 : 0;
@@ -514,15 +556,19 @@ export function couleurEngagement(carteTerrain, main = []) {
   return [...couleurs].sort((a, b) => (besoins[b] ?? 0) - (besoins[a] ?? 0))[0];
 }
 
-/** Petite entité fictive pour évaluer un combat d’arrivée sans toucher la partie. */
-function entiteDeSecours(carte) {
+/** Petite entité fictive pour évaluer un combat d’arrivée sans toucher la partie.
+ *  `duel` fourni : l’entité naît avec la Résonance déjà en table, comme en jeu. */
+function entiteDeSecours(carte, duel = null) {
+  const resonance = duel && cardColors(carte).includes('neige')
+    ? Math.max(0, Number(moteur.rpgResonanceEnJeu(duel)) || 0)
+    : 0;
   return {
     id: 'simulation',
     carteId: carte.id,
-    atk: carte.atk ?? 0,
-    def: carte.def ?? 0,
-    pv: carte.def ?? 0,
-    pvMax: carte.def ?? 0,
+    atk: (carte.atk ?? 0) + resonance,
+    def: (carte.def ?? 0) + resonance,
+    pv: (carte.def ?? 0) + resonance,
+    pvMax: (carte.def ?? 0) + resonance,
     bouclier: 0,
     esquive: Math.max(0, carte.esquive ?? 0),
     protection: null,
@@ -586,6 +632,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
 
   // Créature ou héros : le corps sur la table, les arrivées modulent.
   let score = 4 + cout * 0.8;
+  // Les capacités de clan du Nord : un corps qui grandit sous les coups, ou
+  // une aura qui renforce toute la Neige déjà posée.
+  if (carte.furie) score += 0.8 + carte.furie * 0.7;
+  if (carte.resonance) {
+    const neigeAlliee = duel[cote].creatures
+      .filter((entite) => cardColors(duelCardById(entite.carteId)).includes('neige')).length;
+    const neigeAdverse = duel[adv].creatures
+      .filter((entite) => cardColors(duelCardById(entite.carteId)).includes('neige')).length;
+    score += 1.5 + carte.resonance * 1.5 + neigeAlliee * 0.6 - neigeAdverse * 0.4;
+  }
   if (profil.style === 'controle' && cout <= 2) score -= 1;
   let cibleId = null;
   const arrivee = carte.arrivee;
@@ -625,10 +681,11 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       if (meilleure?.cibleId && meilleure.cibleId !== 'sorcier') {
         cibleId = meilleure.cibleId;
         const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
-        const echange = resultatBlocage(entiteDeSecours(carte), cible);
+        const echange = resultatBlocage(entiteDeSecours(carte, duel), cible);
         if (echange.attaquantMeurt && !echange.bloqueurMeurt) score -= 8;
         else if (!echange.attaquantMeurt && echange.bloqueurMeurt) score += 3 + valeurEntite(cible);
-        else score += (valeurEntite(cible) - valeurEntite(entiteDeSecours(carte))) * 0.6;
+        else score += (valeurEntite(cible) - valeurEntite(entiteDeSecours(carte, duel))) * 0.6;
+        score += echange.attaquantFurie * 0.8;
       } else if (duel[adv].creatures.length) {
         return null; // le Cavalier exige une cible légale
       }

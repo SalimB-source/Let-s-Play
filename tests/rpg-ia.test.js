@@ -11,9 +11,12 @@ import {
   rpgVainqueur,
 } from '../src/games/rpgDuel.js';
 import {
+  blessureNette,
   choisirCarteIA,
+  furieGagnee,
   rpgProfilIA,
   resultatBlocage,
+  valeurEntite,
   RPG_NIVEAUX_IA,
   RPG_STYLES_IA,
 } from '../src/games/rpgAI.js';
@@ -271,6 +274,83 @@ test('le résultat de blocage suit l’ordre réel du moteur (capacités d’abo
   // Sahir 2/3 : ses 2 dégâts préalables tuent le Fennec 3/1 avant riposte.
   const sahir = { id: 'a', carteId: 'sahir-des-braises', atk: 2, def: 3, pv: 3, pvMax: 3, bouclier: 0, esquive: 0 };
   const fennec = { id: 'b', carteId: 'fennec-des-decombres', atk: 3, def: 1, pv: 1, pvMax: 1, bouclier: 0, esquive: 1 };
-  assert.deepEqual(resultatBlocage(sahir, fennec), { attaquantMeurt: false, bloqueurMeurt: true },
+  assert.deepEqual(resultatBlocage(sahir, fennec),
+    { attaquantMeurt: false, bloqueurMeurt: true, attaquantFurie: 0, bloqueurFurie: 0 },
     'le Fennec meurt avant d’infliger ses blessures, le Sahir survit');
+});
+
+// ── Les capacités du Nord dans la tête du sorcier ───────────────────────────
+
+/** Attaquant témoin : mêmes statistiques que le Jarl (4/4), aucune Furie. */
+const attaquantTemoin = () => ({
+  id: 'cavalier-temoin', carteId: 'cavalier-amazigh-du-desert', name: 'Cavalier témoin',
+  atk: 4, def: 4, pv: 4, pvMax: 4, bouclier: 0, esquive: 0, ready: true, attaquee: false,
+});
+
+const defenseurSousLeCoup = (duel) => {
+  donner(duel, 'joueur', 'dune-marchante');
+  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  duel.joueur.pv = 8; // menace imminente : la pression autorise les blocages
+  return dune;
+};
+
+test('l’IA connaît la Furie : entamer un viking sans le tuer le nourrit', () => {
+  // Une attaque entièrement absorbée n’est pas une blessure…
+  const garde = { id: 'g', carteId: 'jarl-au-marteau-de-guerre', atk: 4, def: 4, pv: 4, pvMax: 4, bouclier: 3, esquive: 0 };
+  assert.equal(blessureNette(garde, 2), 0, 'le bouclier absorbe tout : aucune furie');
+  assert.equal(furieGagnee(garde, blessureNette(garde, 2)), 0);
+  // …alors qu’un coup qui passe laisse la créature entrer en furie.
+  assert.equal(blessureNette(garde, 5), 2);
+  assert.equal(furieGagnee(garde, blessureNette(garde, 5)), 3, 'Furie 3 : +3/+3 pour le Jarl');
+  // Une créature sans Furie ne gagne rien, et une morte non plus.
+  const cavalier = attaquantTemoin();
+  assert.equal(furieGagnee(cavalier, 2), 0);
+  assert.equal(furieGagnee(garde, 0), 0);
+
+  // L’échange simulé rapporte le gain : 4/4 des deux côtés, mais un seul
+  // grandit — le bloqueur qui survit blessé et le viking qui encaisse.
+  const jarl = { ...garde, bouclier: 0 };
+  const dune = { id: 'd', carteId: 'dune-marchante', atk: 2, def: 5, pv: 5, pvMax: 5, bouclier: 0, esquive: 0 };
+  assert.deepEqual(resultatBlocage(jarl, dune),
+    { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 3, bloqueurFurie: 0 });
+  assert.deepEqual(resultatBlocage(cavalier, dune),
+    { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 0, bloqueurFurie: 0 },
+    'un corps sans Furie ne profite pas de la blessure');
+
+  // Sur la table : à statistiques égales, le viking entamé fait refuser le
+  // blocage que le témoin identique accepte — la seule différence est la Furie.
+  const duelFurieux = duelNu();
+  donnerMana(duelFurieux, 'joueur', 40);
+  donnerMana(duelFurieux, 'sorcier', 40);
+  const duneContreJarl = defenseurSousLeCoup(duelFurieux);
+  donner(duelFurieux, 'sorcier', 'jarl-au-marteau-de-guerre');
+  const jarlEnJeu = rpgJouerCreature(duelFurieux, 'sorcier', 'jarl-au-marteau-de-guerre').entite;
+  jarlEnJeu.ready = true;
+  assert.deepEqual(rpgChoisirBloqueurs(duelFurieux, 'sorcier', [jarlEnJeu.id]), {},
+    'l’IA refuse d’écorner le Jarl : elle ne lui offrirait que +3/+3');
+  assert.equal(duneContreJarl.atk, 2, 'le bloqueur reste en réserve');
+
+  const duelTemoin = duelNu();
+  donnerMana(duelTemoin, 'joueur', 40);
+  donnerMana(duelTemoin, 'sorcier', 40);
+  const duneTemoin = defenseurSousLeCoup(duelTemoin);
+  const temoin = attaquantTemoin();
+  duelTemoin.sorcier.creatures.push(temoin);
+  assert.deepEqual(rpgChoisirBloqueurs(duelTemoin, 'sorcier', [temoin.id]),
+    { [temoin.id]: [duneTemoin.id] },
+    'mêmes 4/4 sans Furie : l’échange devient acceptable et l’IA bloque');
+});
+
+test('l’IA connaît la Résonance : une valkyrie vaut plus que ses seules statistiques', () => {
+  // Deux 3/3 sur la table : le Djinn arrivé en premier, la Valkyrie ensuite.
+  const duel = duelNu();
+  const djinn = { id: 'djinn', carteId: 'djinn-du-souk', name: 'Djinn du souk', atk: 3, def: 3, pv: 3, pvMax: 3, bouclier: 0, esquive: 0, ready: true, attaquee: false };
+  const valkyrie = { id: 'valkyrie', carteId: 'valkyrie-au-corbeau', name: 'Valkyrie au corbeau', atk: 3, def: 3, pv: 3, pvMax: 3, bouclier: 0, esquive: 0, ready: true, attaquee: false };
+  duel.joueur.creatures.push(djinn, valkyrie);
+  // Sans son aura, la Valkyrie vaudrait moins que le Djinn : c’est la
+  // Résonance — le renfort de toute la Neige — qui renverse le classement.
+  assert.ok(valeurEntite(valkyrie) > valeurEntite(djinn) - 0.001,
+    'l’aura de la Valkyrie compte dans sa valeur');
+  assert.equal(rpgCibleAuto(duel, 'sorcier', cardById('trait-de-braise')), 'valkyrie',
+    'le Trait de braise tue la source de Résonance plutôt que le 3/3 nu');
 });

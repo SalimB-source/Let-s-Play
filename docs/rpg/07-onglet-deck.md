@@ -153,7 +153,7 @@ mono ; seules les mythiques gardent le cadre doré.
   cliquable, pleine largeur en disposition ouverte, 44 px au doigt).
 - `npm run check:rpg` — `boxArt` existe, est unique et vient d'une carte du deck ;
   les cartes Neige sont mono-Neige, les épiques en un exemplaire, les textes du
-  Nord ne nomment jamais de divinité, et **les dix-huit cartes du Serment ont
+  Nord ne nomment jamais de divinité, et **les dix-neuf cartes du Serment ont
   leur peinture plein art dédiée** (la liste `RPG_ART_PROVISOIRE` est vide et le
   test l'exige : le jour où une carte y entre, elle doit en sortir dès que sa
   peinture est livrée) ;
