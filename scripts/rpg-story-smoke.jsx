@@ -36,7 +36,7 @@ export async function checkRpgStory(assert) {
   // --- Accès au mode Histoire depuis le menu ---
   await click(buttons().find((button) => button.textContent.includes('Histoire')), 'entrée Histoire depuis le menu');
   assert.ok(container.querySelector('.rpg-story'), 'la carte du mode Histoire s’affiche');
-  assert.equal(container.querySelectorAll('.rpg-story-tour').length, 3, 'les trois tours sont présentées');
+  assert.equal(container.querySelectorAll('.rpg-story-tour').length, 4, 'les quatre tours sont présentées');
 
   // --- Étages : le premier est ouvert, les suivants verrouillés ---
   const floors = () => [...container.querySelectorAll('.rpg-story-floor')];

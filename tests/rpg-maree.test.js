@@ -8,6 +8,7 @@ import {
   rpgSorcierAnnonceSuivante,
   rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
+import { RPG_STORY_TOURS, deckHistoire } from '../src/games/rpgStoryTours.js';
 import {
   RPG_DECKS,
   RPG_DECK_MAREE_BASE,
@@ -275,4 +276,12 @@ test('sans mana, l’IA ne contre pas : la carte du joueur se résout', () => {
   assert.equal(res.ok, true);
   assert.equal(res.contre, undefined);
   assert.equal(duel.joueur.creatures.length, 1, 'la créature est posée');
+});
+
+test('la Tour des Abysses joue le deck bleu sur ses quatre étages, avec des contres pour l’IA', () => {
+  const tour = RPG_STORY_TOURS.find((t) => t.id === 'tour-des-abysses');
+  assert.ok(tour, 'la tour existe');
+  assert.equal(tour.etages.length, 4);
+  for (const etage of tour.etages) assert.equal(etage.deck, 'maree-des-abysses');
+  assert.equal(deckHistoire('maree-des-abysses'), RPG_DECK_MAREE_BASE);
 });
