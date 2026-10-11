@@ -3037,9 +3037,9 @@
   .rpg-card { width: clamp(54px, 15vw, 82px); }
 }
 
-/* Aperçu instantané au survol : contenu agrandi, sans fond principal — seul
-   l’encadré des infos garde son fond sombre, sans masquer la table ni ajouter
-   de délai. */
+/* Aperçu instantané au survol : contenu agrandi, sans fond principal ni grand
+   cadre — seul l’encadré des infos garde son fond sombre, sans masquer la table
+   ni ajouter de délai. */
 .rpg-hover-card-preview {
   position: fixed;
   z-index: 110;
@@ -3051,7 +3051,6 @@
   max-height: calc(100vh - 20px);
   overflow: hidden;
   padding: 11px;
-  border: 1px solid rgba(236, 214, 172, .48);
   border-radius: 11px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, .42);
   color: #fff2d2;
@@ -3458,7 +3457,7 @@
 
 .rpg-hover-card-preview.is-spell-preview {
   z-index: 116;
-  border-color: rgba(114, 230, 208, .92);
+  border: 1px solid rgba(114, 230, 208, .92);
   box-shadow: 0 20px 58px rgba(0, 0, 0, .85), 0 0 28px rgba(91, 240, 218, .42);
   animation: rpg-spell-card-preview .22s ease-out both;
 }

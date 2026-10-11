@@ -102,6 +102,8 @@ assert.match(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*grid-template-columns
   'l’aperçu au survol est agrandi à 680 px');
 assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*background:/s,
   'l’aperçu au survol n’a plus de fond principal');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*border:/s,
+  'l’aperçu au survol n’a plus de grand cadre autour du contenu');
 assert.match(battleCss, /\.rpg-hover-card-preview__details\s*\{[^}]*background:\s*rgba\(5, 8, 11, \.8\);/s,
   'seul le fond de l’encadré des infos reste pour la lisibilité');
 assert.match(battlePage, /const largeurApercu = Math\.min\(680,[\s\S]*?const hauteurApercu = Math\.min\(400,/,
@@ -295,7 +297,7 @@ assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d
   'les cartes piochées glissent de gauche à droite jusqu’à leur place dans la main');
 
 console.log(
-  'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal, seul l’encadré des infos garde son fond sombre lisible, aperçu détaillé au clic et aperçu des magies jouées, '
+  'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre, seul l’encadré des infos garde son fond sombre lisible, aperçu détaillé au clic et aperçu des magies jouées, '
   + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par la rareté, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
