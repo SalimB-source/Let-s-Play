@@ -1407,7 +1407,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et éphémères de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 21);
+  assert.equal(RPG_MAGIE_CARDS.length, 23);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les quatre couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);

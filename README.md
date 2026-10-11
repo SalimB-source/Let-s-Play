@@ -5385,3 +5385,60 @@ présentation des piles (bloc relatif, compteur flottant, puce tactile, ombres
 décalées), l'empilement réservé au doigt (`empilerCartes = viewport.mobile`),
 le DOM de la main inchangé à la souris, et les groupes dépliés par toute action
 en cours.
+
+## Le Sablier du temps : le renvoi en main (Ressac, Courant de retour)
+
+La Marée des abysses gagne deux sorts d'Eau qui **renvoient une créature dans
+la main de son propriétaire** — l'effet `retour-main` du moteur. La créature
+quitte la table **sans mourir** : ni cimetière, ni capacité de destruction, et
+tout ce qu'elle avait gagné (blessures, boucliers, Furie, Résonance) est perdu ;
+la rejouer coûtera de nouveau son mana. La protection contre l'Eau arrête le
+renvoi, et sans créature légale le sort refuse de partir sans rien payer.
+
+- **Ressac** (Éphémère — Eau, 1 mana, commune ×2) : renvoyez une créature
+  adverse ciblée dans la main de son propriétaire.
+- **Courant de retour** (Rituel — Eau, 3 mana, rare ×1) : renvoyez une créature
+  adverse ciblée dans la main de son propriétaire, puis piochez une carte.
+
+C'est un coup de tempo, pas une destruction : la menace reviendra, mais elle
+aura coûté un tour et un paiement de plus. L'IA du sorcier cible la créature la
+plus lourde et ne lance le renvoi que si la menace le justifie ; le profil
+« contrôle » l'apprécie davantage. Côté joueur, le sort ouvre le choix d'une
+cible adverse (jamais le sorcier), et l'aperçu d'une annonce nomme la créature
+visée. Le deck reste à 40 cartes : un exemplaire de trois créatures communes
+(Porteuse de cruches, Veilleuse des citernes, Vipère de verre) cède sa place.
+
+Chaque carte a sa peinture dédiée dans le style huile sur toile de la
+collection (`public/cards/ressac.jpg`, `public/cards/courant-de-retour.jpg`) —
+le garde-fou du catalogue interdit tout partage d'illustration dans un même
+deck.
+
+### Où vit le code
+
+- `src/games/rpgCards.js` — les deux magies (`effet: { type: 'retour-main', … }`,
+  `pioche: 1` pour le Courant de retour) et le deck Marée des abysses à 40 cartes.
+- `src/games/rpgDuel.js` — `renvoyerEnMain` (départ de la table vers la main,
+  protection respectée, `majResonance` recalculé), le cas `retour-main` dans
+  `appliquer`, et la validation de cible dans `rpgLancerMagie` (raisons
+  `cible` / `protection` sans paiement).
+- `src/games/rpgAI.js` — `meilleureCibleRenvoiIA` (la menace la plus lourde,
+  hors créatures protégées) branchée sur `rpgCibleAuto`, et le score du renvoi
+  dans `scoreCarte` (tempo + pioche éventuelle − coût).
+- `src/games/RpgDuelPage.jsx` — `targetMode` rend le sort ciblable « ennemi »
+  (ou « allié » si une carte renvoyait une créature amie), et le message de
+  ciblage ne propose le sorcier que si la carte peut réellement le viser.
+
+### Vérifications
+
+```bash
+npm run check:rpg     # tests moteur + IA, dont le renvoi en main (tests/rpg-maree.test.js)
+npm run check:rpg-ui  # scénario jsdom « Ressac » : cible cliquée, créature rendue à la main adverse
+npm run build
+```
+
+`tests/rpg-maree.test.js` vérifie que la créature renvoyée rejoint la main de
+son propriétaire (jamais le cimetière), que le Courant de retour fait piocher,
+que le Kraken renvoyé ne déclenche pas sa pioche de destruction, que la
+protection et l'absence de cible bloquent le sort sans paiement, et que l'IA
+annonce puis résout un Ressac sur la plus grosse menace. Le scénario de
+`scripts/rpg-battle-smoke.jsx` rejoue le geste complet dans la vraie interface.

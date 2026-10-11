@@ -1296,4 +1296,61 @@ export async function checkRpgBattle(assert) {
     'le résultat de l’attaque ciblée est annoncé avec le montant et la cible');
   await act(async () => { ferielRoot.unmount(); });
   ferielContainer.remove();
+
+  // ── Ressac : la créature adverse ciblée repart dans la main du sorcier ──
+  const bounceContainer = document.createElement('div');
+  document.body.appendChild(bounceContainer);
+  const bounceRoot = createRoot(bounceContainer);
+  await act(async () => {
+    bounceRoot.render(<RpgDuelPage
+      joueurDeck={['mer', 'mer', 'ressac', 'desert', 'desert']}
+      sorcierDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'fennec-des-decombres']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(bounceContainer);
+  const bounceHand = () => [...bounceContainer.querySelectorAll('button.rpg-hand__card')];
+  const mainAdverseCount = () => Number(bounceContainer.querySelector('.rpg-hidden-hand__count')
+    ?.textContent.replace(/\D+/g, '') ?? NaN);
+  const jouerTerrainBounce = async (name) => {
+    const terrain = bounceHand().find((card) => card.getAttribute('aria-label')?.includes(name) && estJouable(card));
+    assert.ok(terrain, `${name} doit être jouable`);
+    await glisserSurTable(bounceContainer, terrain);
+  };
+  const finirTourBounce = async () => {
+    await act(async () => { bounceContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(1800); });
+    await passerAnnoncesSorcier(bounceContainer);
+    const resoudre = bounceContainer.querySelector('.rpg-btn--resolve-combat');
+    if (resoudre) await act(async () => { resoudre.click(); });
+  };
+  await jouerTerrainBounce('Mer');
+  await finirTourBounce();
+  await jouerTerrainBounce('Mer');
+  await finirTourBounce();
+  assert.ok([...bounceContainer.querySelectorAll('.rpg-card--ennemi')]
+    .some((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')),
+  'le Fennec adverse est en jeu pour devenir la cible du renvoi');
+  const mainAdverseAvant = mainAdverseCount();
+  await act(async () => { bounceContainer.querySelector('.rpg-terrain--joueur:not(.is-tapped)').click(); });
+  const ressac = bounceHand().find((card) => card.getAttribute('aria-label')?.includes('Ressac'));
+  assert.ok(ressac && estJouable(ressac), 'le Ressac est payable avec une Mer engagée');
+  await glisserSurTable(bounceContainer, ressac);
+  assert.match(bounceContainer.textContent, /Choisissez une créature adverse pour Ressac/,
+    'le renvoi ouvre le choix d’une cible adverse sans proposer le sorcier');
+  const fennecCible = [...bounceContainer.querySelectorAll('.rpg-card--ennemi')]
+    .find((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres'));
+  assert.ok(fennecCible?.classList.contains('is-ciblable'), 'la créature adverse devient une cible cliquable');
+  await act(async () => { fennecCible.click(); });
+  assert.equal([...bounceContainer.querySelectorAll('.rpg-card--ennemi')]
+    .find((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')), undefined,
+  'le Fennec quitte la table adverse');
+  assert.match(bounceContainer.querySelector('.rpg-spell-played__target')?.textContent ?? '', /Fennec des décombres/,
+    'l’annonce du sort nomme la créature renvoyée');
+  assert.equal(mainAdverseCount(), mainAdverseAvant + 1,
+    'la créature renvoyée rejoint la main cachée du sorcier au lieu du cimetière');
+  assert.ok(!bounceHand().some((card) => card.getAttribute('aria-label')?.includes('Ressac')),
+    'le Ressac a quitté la main du joueur');
+  await act(async () => { bounceRoot.unmount(); });
+  bounceContainer.remove();
 }
