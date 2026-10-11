@@ -257,6 +257,8 @@ for (const key of rendered) {
   if (!videos.length) {
     check(`${key} : aucun lecteur intégré`, page.players.length, 0);
     check(`${key} : aucune miniature demandée`, page.thumbs.length, 0);
+    check(`${key} : l’en-tête n’annonce pas une bande-annonce`, /BANDE-ANNONCE|TEASER|EXTRAIT/.test(page.heading || ''), false);
+    check(`${key} : l’en-tête dit l’absence de vidéo`, (page.heading || '').includes('PAS DE VIDÉO'), true);
     check(`${key} : la mention d’absence est affichée telle quelle`, page.pendingText, entry.pending);
     continue;
   }
