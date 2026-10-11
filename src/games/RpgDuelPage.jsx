@@ -7,6 +7,8 @@
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
+import './rpg-mobile.css';
+import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
   rpgCibleAuto,
   rpgChoisirBloqueurs,
@@ -552,8 +554,8 @@ function BlockerArrows({ tableRef, assignments }) {
       const findCard = (id) => cards.find((card) => card.dataset.entityId === id);
       const arrows = [];
       const point = (rect) => ({
-        x: rect.left + rect.width / 2 - tableRect.left,
-        y: rect.top + rect.height / 2 - tableRect.top,
+        x: rect.left + rect.width / 2 - tableRect.left + table.scrollLeft,
+        y: rect.top + rect.height / 2 - tableRect.top + table.scrollTop,
       });
       const cardGeometry = (card) => {
         const rect = card.getBoundingClientRect();
@@ -624,6 +626,7 @@ function BlockerArrows({ tableRef, assignments }) {
 
     update();
     window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
     const Observer = window.ResizeObserver ?? globalThis.ResizeObserver;
     const observer = Observer ? new Observer(update) : null;
     const table = tableRef.current;
@@ -635,6 +638,7 @@ function BlockerArrows({ tableRef, assignments }) {
 
     return () => {
       window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
       observer?.disconnect();
       if (frame !== undefined) window.cancelAnimationFrame?.(frame);
     };
@@ -1020,6 +1024,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [deckSelectionneId, setDeckSelectionneId] = useState(() => RPG_DECKS.find((deck) => deck.role === 'joueur')?.id ?? '');
   const duelRef = useRef(null);
   const tableRef = useRef(null);
+  const touchDragRef = useRef(null);
+  useEffect(() => () => {
+    touchDragRef.current?.();
+    touchDragRef.current = null;
+  }, [ecran]);
   const clicApresGlisserBloqueurRef = useRef(null);
   const animationsVisuellesTimersRef = useRef([]);
   const sequenceAnimationRef = useRef(0);
@@ -2318,6 +2327,42 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     }, 700);
   };
 
+  const commencerGlisserTactile = (event) => {
+    if (!['touch', 'pen'].includes(event.pointerType) || event.isPrimary === false || carteEnVol) return;
+    const source = event.target.closest('.rpg-hand__card.is-playable, .rpg-card.is-blocker-draggable');
+    if (!source) return;
+    const depuisMain = source.classList.contains('rpg-hand__card');
+    const carte = cardById(source.dataset.cardId);
+    if (depuisMain && !peutJouerCarte(carte)) return;
+    touchDragRef.current?.();
+    const bloqueurId = source.dataset.entityId;
+    touchDragRef.current = startRpgTouchDrag(event, {
+      source,
+      targetAt: (x, y) => {
+        const element = document.elementFromPoint(x, y);
+        if (!element || !tableRef.current?.contains(element)) return null;
+        if (!depuisMain) return element.closest('.is-blocker-target');
+        // Dropping back in the hand or on HUD/overlays must not play a card.
+        if (element.closest('.rpg-hand-dock, button:not(.rpg-card), nav, [role="dialog"], .rpg-controls, .rpg-bottombar, .rpg-combat-window')) return null;
+        return element.closest('.card-table');
+      },
+      onStart: () => {
+        masquerApercuSurvol();
+        if (depuisMain) commencerGlisserCarte({ currentTarget: source, preventDefault() {} }, carte);
+        else commencerGlisserBloqueur(bloqueurId);
+      },
+      onHover: (over) => { if (depuisMain) setSurZoneDepot(over); },
+      onDrop: (target) => {
+        if (depuisMain) deposerCarteSurTable({ preventDefault() {} });
+        else assignerBloqueur(target.dataset.entityId, bloqueurId);
+      },
+      onEnd: () => {
+        if (depuisMain) terminerGlisserCarte();
+        else terminerGlisserBloqueur(bloqueurId);
+      },
+    });
+  };
+
   const bloqueursDisponibles = duel.joueur.creatures.filter((e) => !e.attaquee);
   const bloqueursSelectionnes = new Set(Object.values(combatEntrant?.blocages ?? {}).flat());
   const piochesJoueur = animationsPioche.filter((animation) => animation.side === 'joueur');
@@ -2335,6 +2380,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         aria-busy={carteEnVol ? 'true' : undefined}
         style={{ backgroundImage: `url(${import.meta.env.BASE_URL}card-table.jpg)` }}
         aria-label="Table de jeu du duel de sorciers"
+        onPointerDown={commencerGlisserTactile}
         onDragOver={survolerTablePourDepot}
         onDragLeave={quitterZoneDepot}
         onDrop={deposerCarteSurTable}
@@ -2375,7 +2421,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             <i className="mana mana--eau" title="Mana eau">{duel.sorcier.mana.eau}</i>
             <i className="mana mana--sable" title="Mana sable">{duel.sorcier.mana.sable}</i>
           </span>
-          <span className="rpg-wizard-plate__zones">Main · {duel.sorcier.main.length}</span>
+          <span className="rpg-wizard-plate__zones">Main · {duel.sorcier.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.sorcier.deck.length} · Cimetière {duel.sorcier.cimetiere.length}</span></span>
         </button>
 
         <div className="rpg-terrains rpg-terrains--ennemi" aria-label="Terrains du sorcier">
@@ -2560,7 +2606,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             <i className="mana mana--eau" title="Mana eau">{duel.joueur.mana.eau}</i>
             <i className="mana mana--sable" title="Mana sable">{duel.joueur.mana.sable}</i>
           </span>
-          <span className="rpg-wizard-plate__zones">Main · {duel.joueur.main.length}</span>
+          <span className="rpg-wizard-plate__zones">Main · {duel.joueur.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.joueur.deck.length} · Cimetière {duel.joueur.cimetiere.length}</span></span>
         </div>
 
         <div className="rpg-bottombar">

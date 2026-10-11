@@ -4514,3 +4514,39 @@
   .rpg-card-catalogue__cost { width: 35px; font-size: 16px; }
   .rpg-card-catalogue__meta b { font-size: 9px; }
 }
+
+/* Mobile / WebView : le mouvement horizontal parcourt les cartes, le
+   mouvement vertical joue une carte. La souris conserve son drag natif. */
+.rpg-hand__card.is-playable,
+.rpg-card.is-blocker-draggable {
+  touch-action: pan-x;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.rpg-hand__card img, .rpg-card img { -webkit-user-drag: none; }
+.rpg-touch-drag-ghost {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  transform: translate(-50%, -100%) rotate(-4deg);
+  border: 2px solid #efd28b;
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px #000a;
+}
+.rpg-touch-drag-ghost img { width: 100%; height: 100%; object-fit: cover; }
+.rpg-card.is-touch-drop-target { outline: 3px solid #efd28b; outline-offset: 3px; }
+
+/* Keep the entire table inside notches, home indicators and WebView insets. */
+.rpg-battle {
+  top: env(safe-area-inset-top, 0px);
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  left: env(safe-area-inset-left, 0px);
+}
+@media (pointer: coarse) {
+  .rpg-duel-nav button, .rpg-btn { min-height: 44px; }
+  .rpg-hand, .card-row { overscroll-behavior-x: contain; }
+  .rpg-hover-card-preview { display: none; }
+}
