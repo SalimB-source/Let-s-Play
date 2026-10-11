@@ -165,8 +165,12 @@ assert.match(battlePage, /function cardFrameStyle\(carte\)[\s\S]*?--rpg-frame-co
   'les cartes transmettent la couleur de leur élément à leur cadre');
 assert.doesNotMatch(battlePage, /rpg-card--rarity-/,
   'plus aucun cadre n’est piloté par la rareté');
-assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*eau:[\s\S]*?sable:[\s\S]*?braise:[\s\S]*?hybride:/,
-  'le catalogue déclare les couleurs de cadre Eau, Sable, Braise et hybride');
+assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*braise:[\s\S]*?eau:[\s\S]*?sable:[\s\S]*?'hybride-braise-eau':[\s\S]*?'hybride-braise-sable':[\s\S]*?'hybride-eau-sable':[\s\S]*?'hybride-braise-eau-sable':/,
+  'le catalogue déclare un cadre pour chaque couleur et chaque combinaison, y compris celles qui n’existent pas encore');
+assert.match(cardsSource, /export const MYTHIC_FRAME_COLOR = '#e8b745';/,
+  'le cadre doré des cartes mythiques est déclaré à part de la couleur');
+assert.match(cardsSource, /CARD_FRAME_COLOR_ORDER/,
+  'la clé d’une carte bicolore ne dépend pas de l’ordre de ses couleurs');
 assert.match(clickPreviewSource, /rpg-card-preview__rarity[\s\S]*?\{rarete\.label\}/,
   'l’aperçu détaillé annonce la rareté de la carte');
 assert.doesNotMatch(battlePage.replace(clickPreviewSource, ''), /rarete\.label|rpg-card-catalogue__rarity/,
@@ -272,27 +276,43 @@ assert.match(battlePage, /⚔<\/span> Jouer\s*<\/button>/,
   'le menu comporte un mode Jouer');
 assert.match(battlePage, /cardFrameClass\(carte\)/,
   'les cartes en main, sur table et les aperçus portent leur élément');
-const frameCss = battleCss.slice(battleCss.lastIndexOf('/* Le cadre suit l’ÉLÉMENT'));
-assert.match(frameCss, /\.rpg-card\.rpg-card--frame-eau,[\s\S]*?\.rpg-card\.rpg-card--frame-sable,[\s\S]*?\.rpg-card\.rpg-card--frame-braise,[\s\S]*?\.rpg-card\.rpg-card--frame-hybride,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-eau,[\s\S]*?\.rpg-terrain\.rpg-card--frame-hybride,[\s\S]*?\.rpg-card-preview__art,[\s\S]*?\.rpg-hover-card-preview__face,[\s\S]*?\{\s*border:\s*3px solid var\(--rpg-frame-color, #f1f3f5\);/s,
-  'main, terrains, aperçus et animations partagent un cadre solide de 3 px piloté par l’élément');
+const frameCss = battleCss.slice(battleCss.lastIndexOf('/* Le cadre suit la COULEUR'));
+assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-hand__card\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-terrain\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-card-preview__art,[\s\S]*?\.rpg-hover-card-preview__face,[\s\S]*?\{\s*border:\s*3px solid var\(--rpg-frame-color, #f1f3f5\);/s,
+  'main, terrains, aperçus et animations partagent un cadre solide de 3 px, pour toute combinaison de couleurs');
 assert.doesNotMatch(battleCss, /--rpg-rarity-color/,
   'la variable de rareté ne pilote plus aucune bordure');
 assert.match(battleCss, /\.rpg-card-preview__art > span:not\(\.rpg-card-element-badge\),\s*\.rpg-card-preview__rarity\s*\{[\s\S]*?color:\s*var\(--rarity-color/s,
   'le badge de rareté de l’aperçu garde sa couleur propre');
-const goldRule = frameCss.slice(frameCss.indexOf('/* Carte bicolore'), frameCss.indexOf('@keyframes rpg-frame-shine-sweep'));
-assert.match(goldRule, /\.rpg-card\.rpg-card--frame-hybride,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-hybride,[\s\S]*?\.rpg-terrain\.rpg-card--frame-hybride,[\s\S]*?border-color:\s*transparent;[\s\S]*?background-clip:\s*padding-box, border-box;[\s\S]*?animation:\s*rpg-frame-shine-sweep/s,
-  'les cartes bicolores portent un cadre doré balayé par un reflet');
-assert.doesNotMatch(goldRule, /--frame-(?:eau|sable|braise)\b/,
-  'le cadre doré reste réservé aux cartes bicolores, jamais aux cadres monocolores');
-const emberRule = frameCss.slice(frameCss.indexOf('/* Carte Braise mythique'), frameCss.indexOf('/* Carte bicolore'));
-assert.match(emberRule, /\.rpg-card\.rpg-card--mythic-braise,[\s\S]*?\.rpg-hand__card\.rpg-card--mythic-braise,[\s\S]*?\.rpg-terrain\.rpg-card--mythic-braise,[\s\S]*?\.rpg-card-preview__art\.rpg-card--mythic-braise,[\s\S]*?border-color:\s*transparent;[\s\S]*?background-clip:\s*padding-box, border-box;[\s\S]*?animation:\s*rpg-frame-shine-sweep/s,
-  'les Braise mythiques portent un cadre dégradé balayé par un reflet, en main comme sur table et dans les aperçus');
-assert.match(emberRule, /--rpg-ember-frame:\s*linear-gradient\(115deg,\s*#4d0c05 0%,\s*#ff9a34 20%,\s*#e23a14 38%,\s*#ffd79a 52%,\s*#a81f08 70%,\s*#ff7a26 88%,\s*#4d0c05 100%\)/,
-  'le dégradé du cadre mythique passe du rouge sombre à l’orange lumineux');
-assert.doesNotMatch(emberRule, /--frame-(?:eau|sable|braise|hybride)\b/,
-  'le cadre rouge-orange reste réservé aux Braise mythiques');
-assert.ok(frameCss.indexOf('/* Carte Braise mythique') < frameCss.indexOf('/* Carte bicolore'),
-  'une carte à la fois mythique et bicolore garde le cadre doré');
+const shineRule = frameCss.slice(frameCss.indexOf('/* ── Cadres brillants'), frameCss.indexOf('/* Braise + Sable'));
+assert.match(shineRule, /\.rpg-card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-terrain\.rpg-card--frame-brillant,[\s\S]*?\.rpg-card-preview__art\.rpg-card--frame-brillant,[\s\S]*?border-color:\s*transparent;[\s\S]*?var\(--rpg-frame-gradient\);[\s\S]*?background-clip:\s*padding-box, border-box;[\s\S]*?animation:\s*rpg-frame-shine-sweep/s,
+  'un cadre brillant peint son dégradé dans l’anneau de bordure, en main comme sur table et dans les aperçus');
+assert.doesNotMatch(shineRule, /linear-gradient\(115deg/,
+  'la mécanique du cadre brillant est partagée : chaque variante ne fournit que son dégradé');
+// Toute combinaison déclarée au catalogue doit exister en CSS : une future
+// carte bicolore obtient son cadre sans retouche du composant. Les couleurs
+// seules, elles, peignent leur cadre via la variable --rpg-frame-color.
+const { CARD_FRAME_COLORS } = await import('../src/games/rpgCards.js');
+for (const cle of Object.keys(CARD_FRAME_COLORS).filter((key) => key.startsWith('hybride-'))) {
+  assert.match(battleCss, new RegExp(`\\.rpg-card--frame-${cle}\\s*\\{[^}]*--rpg-frame-gradient:`, 's'),
+    `la combinaison ${cle} a son propre dégradé de cadre`);
+}
+const shinyVariants = {
+  'hybride-braise-sable': '#ff9a34',
+  'hybride-braise-eau': '#b06ad8',
+  'hybride-eau-sable': '#7fd8e8',
+  'hybride-braise-eau-sable': '#ffb44d',
+};
+for (const [variante, teinte] of Object.entries(shinyVariants)) {
+  assert.match(frameCss,
+    new RegExp(`\\.rpg-card--frame-${variante}\\s*\\{[^}]*--rpg-frame-gradient:\\s*linear-gradient\\(115deg,[^}]*${teinte}`, 's'),
+    `la combinaison ${variante} a son propre dégradé de cadre`);
+}
+assert.match(frameCss, /\.rpg-card--mythique\s*\{[^}]*--rpg-frame-gradient:\s*linear-gradient\(115deg, #7d5415 0%, #ffe6a3 24%/s,
+  'les cartes mythiques portent le cadre doré, quelle que soit leur couleur');
+assert.match(frameCss, /\.rpg-card--mythique\s*\{[^}]*--rpg-frame-shine-duration:\s*2\.8s;/s,
+  'le reflet doré des mythiques est un peu plus rapide que celui des bicolores');
+assert.ok(frameCss.indexOf('.rpg-card--mythique {') > frameCss.indexOf('.rpg-card--frame-hybride-braise-sable {'),
+  'le cadre doré est déclaré après les combinaisons : une carte mythique ET bicolore garde l’or');
 assert.match(frameCss, /animation:\s*rpg-frame-shine-sweep[^;]*\binfinite alternate;/,
   'les reflets font des allers-retours, sans saut au retour du cycle');
 const shinePositions = [...frameCss.slice(frameCss.indexOf('@keyframes rpg-frame-shine-sweep'))
@@ -300,13 +320,15 @@ const shinePositions = [...frameCss.slice(frameCss.indexOf('@keyframes rpg-frame
 assert.ok(shinePositions.length >= 2, 'le reflet est animé sur toute la largeur du cadre');
 assert.ok(shinePositions.every((position) => position >= 0 && position <= 100),
   `le reflet reste entre 0 % et 100 % (reçu : ${shinePositions.join(', ')}) — hors de cette plage le dégradé non répété ne couvre plus l'anneau et le cadre redevient noir`);
-assert.match(frameCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card--frame-hybride,\s*\.rpg-card--mythic-braise\s*\{\s*animation:\s*none !important;/s,
+assert.match(frameCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card--frame-brillant\s*\{\s*animation:\s*none !important;/s,
   'les cadres brillants respectent la préférence de mouvement réduit');
-assert.match(battlePage, /function cardFrameClass\(carte\)[\s\S]*?cardHasMythicEmberFrame\(carte\)/,
-  'le cadre rouge-orange est ajouté par la même fabrique de classe que le cadre d’élément');
+assert.match(battlePage, /function cardFrameClass\(carte\)[\s\S]*?cardHasShinyFrame\(carte\)[\s\S]*?rpg-card--frame-brillant[\s\S]*?cardHasMythicFrame\(carte\)[\s\S]*?rpg-card--mythique/,
+  'la même fabrique de classe ajoute le cadre brillant et le cadre doré des mythiques');
+assert.match(battlePage, /function cardFrameStyle\(carte\)[\s\S]*?cardFrameColor\(carte\)/,
+  'la couleur de cadre transmise tient compte de l’or mythique');
 assert.doesNotMatch(battleCss, /\.rpg-card__flames|rpg-mythic-flame/,
   'l’effet de flammes autour des cartes mythiques a été retiré');
-assert.doesNotMatch(battlePage, /rpg-card__flames|MYTHIC_FLAME_TONGUES|cardHasMythicFlames/,
+assert.doesNotMatch(battlePage, /rpg-card__flames|MYTHIC_FLAME_TONGUES|cardHasMythicFlames|rpg-card--mythic-braise/,
   'plus aucune langue de feu n’est rendue dans le duel');
 assert.doesNotMatch(battleCss, /\.rpg-hand__card\.is-playable\s*\{[^}]*border-color:/s,
   'la jouabilité conserve son halo sans recolorer la bordure');

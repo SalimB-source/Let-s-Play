@@ -4421,23 +4421,16 @@
   .rpg-phase-step.is-active .rpg-phase-step__icon { animation: none; }
 }
 
-/* Le cadre suit l’ÉLÉMENT de la carte, jamais sa rareté : bleu pour l’Eau,
-   blanc pour le Sable, rouge pour la Braise, or pour les cartes bicolores.
-   Le bord reste identique en main, en jeu, sur les terrains, dans les aperçus
-   et pendant les animations ; seule sa variable change. La rareté, elle, n’est
-   annoncée que par le badge de l’aperçu détaillé. */
-.rpg-card.rpg-card--frame-eau,
-.rpg-card.rpg-card--frame-sable,
-.rpg-card.rpg-card--frame-braise,
-.rpg-card.rpg-card--frame-hybride,
-.rpg-hand__card.rpg-card--frame-eau,
-.rpg-hand__card.rpg-card--frame-sable,
-.rpg-hand__card.rpg-card--frame-braise,
-.rpg-hand__card.rpg-card--frame-hybride,
-.rpg-terrain.rpg-card--frame-eau,
-.rpg-terrain.rpg-card--frame-sable,
-.rpg-terrain.rpg-card--frame-braise,
-.rpg-terrain.rpg-card--frame-hybride,
+/* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
+   blanc pour le Sable, rouge pour la Braise, et un dégradé propre à chaque
+   combinaison bicolore. Le bord reste identique en main, en jeu, sur les
+   terrains, dans les aperçus et pendant les animations ; seule sa variable
+   change. La rareté, elle, n’est annoncée que par le badge de l’aperçu.
+   Le sélecteur vise toute classe de cadre : une nouvelle combinaison n’a rien
+   à ajouter ici. */
+.rpg-card[class*="rpg-card--frame-"],
+.rpg-hand__card[class*="rpg-card--frame-"],
+.rpg-terrain[class*="rpg-card--frame-"],
 .rpg-card-preview__art,
 .rpg-hover-card-preview__face,
 .rpg-spell-played__art,
@@ -4447,69 +4440,74 @@
   border: 3px solid var(--rpg-frame-color, #f1f3f5);
 }
 
-/* Carte Braise mythique : cadre rouge-orange qui brille, même principe que
-   l'or des bicolores. Placée avant la règle dorée : une carte à la fois
-   mythique et bicolore garderait l'or. */
-.rpg-card.rpg-card--mythic-braise,
-.rpg-hand__card.rpg-card--mythic-braise,
-.rpg-terrain.rpg-card--mythic-braise,
-.rpg-card-preview__art.rpg-card--mythic-braise,
-.rpg-hover-card-preview__face.rpg-card--mythic-braise,
-.rpg-spell-played__art.rpg-card--mythic-braise,
-.rpg-card-destruction-fx.rpg-card--mythic-braise,
-.rpg-card-pile__card--top.rpg-card--mythic-braise {
-  --rpg-ember-frame: linear-gradient(115deg, #4d0c05 0%, #ff9a34 20%, #e23a14 38%, #ffd79a 52%, #a81f08 70%, #ff7a26 88%, #4d0c05 100%);
-  /* Même filet de sécurité que l'or : un rouge sombre, jamais le fond noir. */
+/* ── Cadres brillants : hybrides (une teinte par combinaison) et mythiques ──
+   Le dégradé est peint dans l'anneau de bordure : bordure transparente, une
+   couche opaque sur la padding-box, le dégradé sur la border-box. Chaque
+   variante ne fournit que son dégradé ; la mécanique est partagée. */
+.rpg-card.rpg-card--frame-brillant,
+.rpg-hand__card.rpg-card--frame-brillant,
+.rpg-terrain.rpg-card--frame-brillant,
+.rpg-card-preview__art.rpg-card--frame-brillant,
+.rpg-hover-card-preview__face.rpg-card--frame-brillant,
+.rpg-spell-played__art.rpg-card--frame-brillant,
+.rpg-card-destruction-fx.rpg-card--frame-brillant,
+.rpg-card-pile__card--top.rpg-card--frame-brillant {
+  border-color: transparent;
+  background-image:
+    linear-gradient(var(--rpg-frame-fill, #0c0c0e), var(--rpg-frame-fill, #0c0c0e)),
+    var(--rpg-frame-gradient);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 240% 100%;
+  background-repeat: no-repeat, no-repeat;
+  animation: rpg-frame-shine-sweep var(--rpg-frame-shine-duration, 3.2s) ease-in-out infinite alternate;
+}
+
+/* Braise + Sable : le désert qui prend feu, rouge-orange. */
+.rpg-card--frame-hybride-braise-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #4d0c05 0%, #ff9a34 20%, #e23a14 38%, #ffd79a 52%, #a81f08 70%, #ff7a26 88%, #4d0c05 100%);
   background-color: #4a1108;
-  border-color: transparent;
-  background-image:
-    linear-gradient(var(--rpg-frame-fill, #0c0c0e), var(--rpg-frame-fill, #0c0c0e)),
-    var(--rpg-ember-frame);
-  background-origin: padding-box, border-box;
-  background-clip: padding-box, border-box;
-  background-size: 100% 100%, 240% 100%;
-  background-repeat: no-repeat, no-repeat;
-  animation: rpg-frame-shine-sweep 2.8s ease-in-out infinite alternate;
 }
 
-/* Carte bicolore : cadre doré qui brille, balayé par un reflet métallique.
-   Réservé aux cartes hybrides — les cadres monocolores restent mats. */
-.rpg-card.rpg-card--frame-hybride,
-.rpg-hand__card.rpg-card--frame-hybride,
-.rpg-terrain.rpg-card--frame-hybride,
-.rpg-card-preview__art.rpg-card--frame-hybride,
-.rpg-hover-card-preview__face.rpg-card--frame-hybride,
-.rpg-spell-played__art.rpg-card--frame-hybride,
-.rpg-card-destruction-fx.rpg-card--frame-hybride,
-.rpg-card-pile__card--top.rpg-card--frame-hybride {
-  --rpg-gold-frame: linear-gradient(115deg, #7d5415 0%, #ffe6a3 24%, #e3ad3d 42%, #fff6d4 55%, #b8801f 74%, #f2d379 100%);
-  /* Filet de sécurité : si l'anneau n'était pas couvert, on verrait un or
-     sombre et non le fond noir de la carte. */
+/* Braise + Eau : la vapeur, indigo violacé traversé de braise. */
+.rpg-card--frame-hybride-braise-eau {
+  --rpg-frame-gradient: linear-gradient(115deg, #2a1050 0%, #b06ad8 20%, #ff7a4d 40%, #ffd9e6 54%, #7a2ea8 72%, #e0432a 88%, #2a1050 100%);
+  background-color: #2b1240;
+}
+
+/* Eau + Sable : l'écume sur la dune, bleu profond et ivoire. */
+.rpg-card--frame-hybride-eau-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #7fd8e8 20%, #f3ead2 40%, #3f9fe8 58%, #12496e 76%, #cfe9d8 90%, #0b2a4a 100%);
+  background-color: #0d2438;
+}
+
+/* Braise + Eau + Sable : le prisme des trois couleurs, si un jour une carte
+   tricolore apparaît au catalogue. */
+.rpg-card--frame-hybride-braise-eau-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 16%, #f3ead2 32%, #ffb44d 48%, #e2401c 64%, #b06ad8 80%, #123a63 100%);
+  background-color: #241a33;
+}
+
+/* Mythique : le cadre doré, quelle que soit la couleur de la carte. Déclaré en
+   dernier — une carte à la fois mythique et bicolore garde l'or. */
+.rpg-card--mythique {
+  --rpg-frame-gradient: linear-gradient(115deg, #7d5415 0%, #ffe6a3 24%, #e3ad3d 42%, #fff6d4 55%, #b8801f 74%, #f2d379 100%);
+  --rpg-frame-shine-duration: 2.8s;
   background-color: #6d4a13;
-  border-color: transparent;
-  background-image:
-    linear-gradient(var(--rpg-frame-fill, #0c0c0e), var(--rpg-frame-fill, #0c0c0e)),
-    var(--rpg-gold-frame);
-  background-origin: padding-box, border-box;
-  background-clip: padding-box, border-box;
-  background-size: 100% 100%, 240% 100%;
-  background-repeat: no-repeat, no-repeat;
-  animation: rpg-frame-shine-sweep 3.2s ease-in-out infinite alternate;
 }
 
-/* Le reflet (or des bicolores, rouge-orange des Braise mythiques) fait des
-   allers-retours entre 0 % et 100 %, et ne sort JAMAIS de cette plage : ces
-   dégradés font 240 % de large sans répétition, donc ils ne recouvrent tout
-   l'anneau que tant que leur position reste entre 0 % et 100 %. Au-delà,
-   l'anneau n'est plus couvert et le fond sombre de la carte réapparaît. */
+/* Filet de sécurité commun : si l'anneau n'était pas couvert par le dégradé,
+   on verrait la teinte sombre de la variante, jamais le fond noir de la carte.
+   Le reflet fait des allers-retours entre 0 % et 100 % et ne sort JAMAIS de
+   cette plage : ces dégradés font 240 % de large sans répétition, donc ils ne
+   recouvrent tout l'anneau que tant que leur position reste entre 0 % et 100 %. */
 @keyframes rpg-frame-shine-sweep {
   from { background-position: 0 0, 0% 0; }
   to { background-position: 0 0, 100% 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rpg-card--frame-hybride,
-  .rpg-card--mythic-braise { animation: none !important; background-position: 0 0, 42% 0; }
+  .rpg-card--frame-brillant { animation: none !important; background-position: 0 0, 42% 0; }
 }
 
 /* Coût, attaque et défense doivent rester immédiatement lisibles sur les faces. */

@@ -34,8 +34,10 @@ import {
 } from './rpgDuel.js';
 import {
   cardRarityInfo,
+  cardFrameColor,
   cardFrameInfo,
-  cardHasMythicEmberFrame,
+  cardHasMythicFrame,
+  cardHasShinyFrame,
   cardColorCost,
   cardColors,
   terrainManaColors,
@@ -319,17 +321,19 @@ function cardRarityStyle(carte) {
 }
 
 /**
- * Le cadre suit l'élément : bleu (Eau), blanc (Sable), rouge (Braise) et or
- * (bicolore). Une carte Braise mythique ajoute son cadre rouge-orange brillant.
+ * Le cadre suit la couleur de la carte : bleu (Eau), blanc (Sable), rouge
+ * (Braise). Une carte bicolore ajoute le dégradé de sa combinaison, une carte
+ * mythique le dégradé doré — les deux sont des cadres brillants.
  */
 function cardFrameClass(carte) {
-  const cadre = `rpg-card--frame-${cardFrameInfo(carte).key}`;
-  return cardHasMythicEmberFrame(carte) ? `${cadre} rpg-card--mythic-braise` : cadre;
+  const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
+  if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
+  if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
+  return classes.join(' ');
 }
 
 function cardFrameStyle(carte) {
-  const { color } = cardFrameInfo(carte);
-  return { '--rpg-frame-color': color };
+  return { '--rpg-frame-color': cardFrameColor(carte) };
 }
 
 function deckStats(deck) {
