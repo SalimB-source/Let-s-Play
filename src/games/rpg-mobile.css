@@ -151,7 +151,8 @@
      upper corner ornaments. Reserve the inset in the grid, not over cards. */
   margin-inline-start: var(--terrain-inset);
   align-self: end;
-  height: 75px;
+  /* Le rail grandit avec les terrains sans jamais dépasser la ligne de jeu. */
+  height: min(90px, calc(var(--duel-card) * 1.4 + 8px));
   /* Different terrain stacks share one horizontal row, never a vertical grid.
      The side column fits at least two stacks; extra types scroll sideways. */
   display: flex;
@@ -164,7 +165,7 @@
   overflow-x: auto;
   overflow-y: hidden;
 }
-.rpg-battle--touch .rpg-terrain { flex: 0 0 30px; width: 30px; height: 38px; border-width: 1px; }
+.rpg-battle--touch .rpg-terrain { flex: 0 0 36px; width: 36px; height: 45px; border-width: 1px; }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
 .rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
 .rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 4px max(12px, calc(var(--duel-card) * .18)); gap: max(12px, calc(var(--duel-card) * .36)); overflow-x: auto; overflow-y: hidden; scroll-padding-inline: max(12px, calc(var(--duel-card) * .18)); }
@@ -244,7 +245,7 @@
 /* One visible stack per terrain type. Keep it upright even when exhausted:
    the total count stays legible and inside the rail. Availability is kept in
    the accessible label and the preview, not printed over the illustration. */
-.rpg-terrain.rpg-terrain-stack { flex-shrink: 0; position: relative; display: block; box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-rarity-color); }
+.rpg-terrain.rpg-terrain-stack { flex-shrink: 0; position: relative; display: block; box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-frame-color, #f1f3f5); }
 .rpg-terrain.rpg-terrain-stack.is-tapped,
 .rpg-terrain.rpg-terrain-stack:hover { transform: none; }
 .rpg-terrain-stack__count {
@@ -264,5 +265,10 @@
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
-.rpg-battle--touch .rpg-terrain.rpg-terrain-stack { flex: 0 0 44px; width: 44px; height: 55px; border-width: 2px; }
+.rpg-battle--touch .rpg-terrain.rpg-terrain-stack { flex: 0 0 52px; width: 52px; height: 65px; border-width: 2px; }
+/* Sur table tactile, l'aura de flammes reste compacte pour ne rien rogner. */
+.rpg-battle--touch .rpg-card__flames { inset: -10px -9px -8px; }
+.rpg-battle--touch .rpg-card__flames-halo { filter: blur(5px); }
+.rpg-battle--touch .rpg-card__flames-tongue--sommet { height: 96%; }
+.rpg-battle--touch .rpg-card__flames-tongue--cote { height: 46%; }
 .rpg-card-preview__resources { margin: 0; color: #e6d4ac; font: 600 12px/1.4 var(--display); }

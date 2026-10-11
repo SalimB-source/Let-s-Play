@@ -25,6 +25,30 @@ export function cardRarityInfo(carte) {
   return { key, ...CARD_RARITIES[key] };
 }
 
+/**
+ * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté.
+ * Bleu pour l'Eau, blanc pour le Sable, rouge pour la Braise et or brillant
+ * pour les cartes bicolores. La rareté, elle, n'est lisible que dans l'aperçu.
+ */
+export const CARD_FRAME_COLORS = {
+  eau: { label: 'Eau', color: '#3f9fe8' },
+  sable: { label: 'Sable', color: '#f7f3e6' },
+  braise: { label: 'Braise', color: '#e0412a' },
+  hybride: { label: 'Sable + Braise', color: '#e8b745' },
+};
+
+/** Clé et couleur de cadre d'une carte ; une carte bicolore reçoit l'or. */
+export function cardFrameInfo(carte) {
+  const colors = cardColors(carte);
+  const key = colors.length > 1 ? 'hybride' : (Object.hasOwn(CARD_FRAME_COLORS, colors[0]) ? colors[0] : 'sable');
+  return { key, ...CARD_FRAME_COLORS[key] };
+}
+
+/** Une carte Braise mythique brûle autour d'elle une fois posée sur la table. */
+export function cardHasMythicFlames(carte) {
+  return cardRarityInfo(carte).key === 'mythique' && cardColors(carte).includes('braise');
+}
+
 
 export const CARD_KIND_LABELS = {
   physique: 'Attaque',
