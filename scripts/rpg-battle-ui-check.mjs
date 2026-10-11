@@ -416,6 +416,66 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--p
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-table--plateau-erg-du-sahara, \.card-table--plateau-caravane-de-gourara\)::before\s*\{[^}]*radial-gradient/s,
   'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 
+// ── Le voile noir haut/bas du plateau : la lisibilité des textes de la table ─
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+assert.match(battleCss, /--rpg-plateau-voile:\s*linear-gradient\(180deg,\s*var\(--rpg-plateau-voile-haut\) 0%,[\s\S]*?var\(--rpg-plateau-voile-bas\) 100%\);/,
+  'le plateau porte un dégradé noir en haut et en bas, là où vivent les textes de la table');
+assert.match(battleCss, /\.card-table::before\s*\{[^}]*background:[^}]*var\(--rpg-plateau-voile\),/s,
+  'le voile haut/bas est posé sous l’interface, au-dessus du fond illustré');
+for (const { id } of RPG_PLATEAUX) {
+  assert.match(battleCss, new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*background-color:[^}]*--rpg-plateau-voile-haut:[^}]*--rpg-plateau-voile-bas:`, 's'),
+    `le plateau ${id} règle la densité de son voile haut/bas avec sa couleur de repli`);
+}
+// Mesure sur les fonds livrés (haut du cadre, 0-255) : Erg 142, Tipaza 118,
+// Gourara 102, Damnation 61, bois des Heures 54. Plus le fond est clair, plus
+// l'ombre doit être dense pour tenir l'encre crème au-dessus de 3:1.
+const densiteVoile = (id) => Number(battleCss.match(
+  new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*--rpg-plateau-voile-haut:\\s*rgba\\([^)]*,\\s*([\\d.]+)\\)`, 's'),
+)[1]);
+for (const plateauClair of ['erg-du-sahara', 'caravane-de-gourara', 'ruines-de-tipaza', 'terre-de-damnation']) {
+  assert.ok(densiteVoile(plateauClair) > densiteVoile('table-des-heures'),
+    `${plateauClair} reçoit une ombre plus dense que le bois, déjà sombre`);
+}
+assert.ok(densiteVoile('erg-du-sahara') >= .8 && densiteVoile('ruines-de-tipaza') >= .8,
+  'les deux fonds les plus clairs (sable et pierre) sont voilés à au moins 80 %');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table::before\s*\{\s*background:\s*var\(--rpg-plateau-voile\);\s*\}/,
+  'au doigt le voile noir haut/bas reste posé : seule la vignette centrale disparaît');
+assert.doesNotMatch(mobileCss, /\.card-table::before\s*\{\s*background:\s*none/,
+  'le voile de lisibilité du plateau n’est plus supprimé en tactile');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table\s*\{[^}]*--rpg-plateau-voile-bas-debut:/s,
+  'les bandes du voile suivent les rangées de la grille tactile (navigation, main et commandes)');
+
+// ── L'aperçu au doigt : une seconde d'appui sur une carte ───────────────────
+const longPressSource = readFileSync(new URL('../src/games/rpgLongPress.js', import.meta.url), 'utf8');
+assert.match(longPressSource, /export const RPG_LONG_PRESS_MS = 1000;/,
+  'l’aperçu au doigt demande une seconde d’appui, comme annoncé au joueur');
+assert.match(longPressSource, /if \(!\['touch', 'pen'\]\.includes\(event\.pointerType\)[\s\S]*?return null;/,
+  'la souris garde le survol : l’appui long ne concerne que le doigt et le stylet');
+assert.match(battlePage, /startRpgLongPress\(event, \{\s*source: hote,\s*onTrigger:/,
+  'la page arme l’appui long sur le `pointerdown` d’une carte');
+assert.match(battlePage, /const hote = event\.target\?\.closest\?\.\('\[data-card-id\]'\);/,
+  'toute carte affichée porte son identifiant : main, table, terrains, cimetière, catalogue, deck');
+assert.match(battlePage, /data-scene="menu" onPointerDown=\{demarrerAppuiLongCarte\}/,
+  'le menu (catalogue et decks) répond à l’appui long');
+assert.match(battlePage, /data-scene="duel"\s*onPointerDown=\{demarrerAppuiLongCarte\}/,
+  'le plateau répond au même appui long');
+assert.match(battlePage, /touchDragRef\.current\?\.\(\);[\s\S]*?setApercuAppui\(carte\.id\)/,
+  'consulter une carte désarme le glisser-déposer lancé par le même doigt');
+assert.equal(battlePage.match(/<ApercuCarteAppuiLong carte=\{cardById\(apercuAppui\)\} onFermer=\{fermerApercuAppui\} \/>/g).length, 2,
+  'le volet d’aperçu est rendu au menu comme en duel');
+assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1250;/s,
+  'le volet de l’aperçu couvre l’écran, au-dessus de l’écran de rotation');
+assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-hover-card-preview \{ display: none; \}[\s\S]*?\.rpg-card-peek \.rpg-hover-card-preview \{ display: grid; \}/,
+  'au doigt le survol reste masqué, mais l’aperçu de l’appui long s’affiche');
+assert.match(battleCss, /\.rpg-card-peek \.rpg-hover-card-preview\s*\{[^}]*position:\s*relative;/s,
+  'dans le volet, l’aperçu n’est plus placé au survol : le volet le centre');
+assert.match(battleCss, /@media \(max-height: 520px\) \{[\s\S]*?\.rpg-card-peek \.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(104px, min\(232px, 42dvh\)\)/s,
+  'en paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible — au menu comme en duel');
+assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-battle \[data-card-id\]\s*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;/s,
+  'une carte tenue une seconde n’appelle ni le menu natif ni la sélection de texte');
+assert.match(battlePage, /viewport\.mobile \? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer\.' : ''/,
+  'l’ouverture du duel annonce le geste au doigt');
+
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
   + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, blanc Sable, rouge Braise, or bicolore), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
@@ -424,6 +484,6 @@ console.log(
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, Fin du tour doré et compact, phases du duel indiquées par des icônes lumineuses agrandies, annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu et voile de lisibilité du sable, régression Rafale.'
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), régression Rafale.'
 );
 process.exit(0);

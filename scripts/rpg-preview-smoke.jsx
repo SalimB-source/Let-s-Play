@@ -1,6 +1,8 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
+import { cardById } from '../src/games/rpgCards.js';
+import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
 
 export async function checkRpgPreviewActions(assert) {
   const originalMatchMedia = window.matchMedia;
@@ -17,11 +19,47 @@ export async function checkRpgPreviewActions(assert) {
   const confirmDialog = () => container.querySelector('.rpg-spell-confirm[role="dialog"]');
   const confirmButton = (label) => [...(confirmDialog()?.querySelectorAll('button') ?? [])].find((b) => b.textContent === label);
   const fennec = () => container.querySelector('.rpg-card--equipe[data-card-id="fennec-des-decombres"]');
+  // Le geste tactile : `pointerdown` tenu une seconde, puis levé — exactement ce
+  // qu'envoie un doigt sur l'APK ou le navigateur mobile.
+  const peek = () => container.querySelector('.rpg-card-peek');
+  const attendre = (ms) => act(async () => new Promise((resolve) => setTimeout(resolve, ms)));
+  const envoyerPointeur = async (element, type, props = {}) => {
+    assert.ok(element, 'la carte existe');
+    await act(async () => {
+      const evenement = new window.Event(type, { bubbles: true, cancelable: true });
+      Object.assign(evenement, {
+        pointerType: 'touch', pointerId: 7, clientX: 30, clientY: 30, isPrimary: true, button: 0, ...props,
+      });
+      element.dispatchEvent(evenement);
+    });
+  };
+  const appuiLong = async (element) => {
+    await envoyerPointeur(element, 'pointerdown');
+    await attendre(RPG_LONG_PRESS_MS + 120);
+    await envoyerPointeur(element, 'pointerup');
+  };
+  const changerEcran = async (libelle) => {
+    await act(async () => {
+      [...container.querySelectorAll('.rpg-mode-menu__switch button')]
+        .find((button) => button.textContent.includes(libelle)).click();
+    });
+  };
   try {
     await act(async () => root.render(<RpgDuelPage
       joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'rapport-du-greffier', 'fennec-des-decombres', 'desert', 'chien-du-guet', 'desert']}
       sorcierDeck={Array(15).fill('desert')} rng={() => .999}
     />));
+    // ── Hors duel : le catalogue répond au même appui long ──────────────────
+    await changerEcran('Catalogue');
+    const carteCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="fennec-des-decombres"]');
+    await appuiLong(carteCatalogue);
+    assert.ok(peek(), 'une carte du catalogue s’aperçoit aussi par appui long');
+    assert.ok(peek().getAttribute('aria-label').includes('Fennec'), 'le volet nomme la carte du catalogue');
+    await attendre(460);
+    await click(peek());
+    assert.ok(peek() === null, 'le volet se referme au toucher');
+    await changerEcran('Jouer');
+
     await click(container.querySelector('.rpg-menu-button--primary'));
     assert.ok(container.querySelector('.rpg-battle--touch'));
 
@@ -111,6 +149,75 @@ export async function checkRpgPreviewActions(assert) {
     assert.deepEqual(
       { available: terrain().dataset.availableCount, tapped: terrain().dataset.tappedCount }, comptes,
       'cliquer un terrain engagé ne produit pas de mana');
+
+    // ── L'appui long d'une seconde ouvre l'aperçu de la carte, sans la jouer ─
+    const carteMain = handCards().at(-1);
+    const attendue = cardById(carteMain.dataset.cardId);
+    const mainAvantAppui = handCards().length;
+    const terrainsAvantAppui = terrainsJoueurs().length;
+    await appuiLong(carteMain);
+    assert.ok(peek(), 'une seconde d’appui sur une carte en main ouvre son aperçu');
+    assert.equal(peek().getAttribute('role'), 'dialog', 'l’aperçu au doigt est annoncé comme un volet');
+    assert.ok(peek().getAttribute('aria-label').includes(attendue.name),
+      'le volet nomme la carte tenue');
+    const apercuAppui = peek().querySelector('.rpg-hover-card-preview--appui-long');
+    assert.ok(apercuAppui, 'l’aperçu au doigt est bien l’aperçu instantané, dans sa variante tactile');
+    assert.match(apercuAppui.querySelector('.rpg-hover-card-preview__type')?.textContent ?? '', /./,
+      'le type de la carte est affiché');
+    const lignesAttendues = attendue.text && attendue.text !== '—'
+      ? attendue.text.split(/\n+|(?<=[.!?])\s+/u).map((ligne) => ligne.trim()).filter(Boolean)
+      : [];
+    assert.deepEqual(
+      [...apercuAppui.querySelectorAll('.rpg-hover-card-preview__rules > span')].map((node) => node.textContent),
+      lignesAttendues,
+      'les effets de la carte tiennent dans l’aperçu, un par ligne');
+    if (attendue.kind === 'creature' || attendue.kind === 'hero') {
+      assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__stats')?.textContent.trim(),
+        `⚔ ${attendue.atk} · 🛡 ${attendue.def}`, 'l’attaque et la défense restent lisibles au doigt');
+    }
+    assert.equal(handCards().length, mainAvantAppui, 'l’appui long ne joue pas la carte');
+    assert.equal(terrainsJoueurs().length, terrainsAvantAppui, 'l’appui long ne pose rien sur la table');
+    assert.ok(confirmDialog() === null, 'consulter une carte ne demande pas de confirmation');
+    // Le clic synthétique qui suit le lever du doigt est avalé.
+    await click(carteMain);
+    assert.ok(peek(), 'le clic qui suit l’appui long ne referme pas l’aperçu');
+    assert.equal(handCards().length, mainAvantAppui, '… et ne joue pas la carte non plus');
+    // La fenêtre qui avale le clic synthétique est passée : le volet répond.
+    await attendre(460);
+    await click(peek());
+    assert.ok(peek() === null, 'toucher le volet referme l’aperçu');
+
+    // ── Sur la table : l'aperçu ne déclare ni attaque ni mana ───────────────
+    await appuiLong(fennec());
+    assert.ok(peek(), 'une créature en jeu s’aperçoit aussi par appui long');
+    assert.ok(peek().getAttribute('aria-label').includes('Fennec'), 'l’aperçu nomme la créature tenue');
+    assert.equal(fennec().classList.contains('is-selected'), false,
+      'l’appui long ne déclare pas la créature attaquante');
+    assert.equal(fennec().dataset.combatTilted, 'true', 'son état de combat ne change pas');
+    await act(async () => {
+      window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    assert.ok(peek() === null, 'Échap referme l’aperçu au doigt');
+
+    // ── Un doigt qui glisse consulte autre chose : la main qui défile ───────
+    await envoyerPointeur(carteMain, 'pointerdown');
+    await envoyerPointeur(window.document.body, 'pointermove', { clientX: 90, clientY: 30 });
+    await attendre(RPG_LONG_PRESS_MS + 120);
+    assert.ok(peek() === null, 'un appui qui défile n’ouvre pas d’aperçu');
+    await envoyerPointeur(carteMain, 'pointerup');
+
+    // ── Un appui court reste un clic : la carte agit, l'aperçu ne s'ouvre pas ─
+    const carteCourte = handCards()[0];
+    let clicRecu = false;
+    const noterClic = () => { clicRecu = true; };
+    carteCourte.addEventListener('click', noterClic);
+    await envoyerPointeur(carteCourte, 'pointerdown');
+    await attendre(140);
+    await envoyerPointeur(carteCourte, 'pointerup');
+    assert.ok(peek() === null, 'un appui court n’ouvre pas l’aperçu');
+    await click(carteCourte);
+    carteCourte.removeEventListener('click', noterClic);
+    assert.ok(clicRecu, 'un appui court laisse passer le clic : la carte garde son action de jeu');
   } finally {
     await act(async () => root.unmount());
     container.remove();

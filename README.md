@@ -5162,16 +5162,28 @@ désormais plusieurs, et **le plateau change de partie en partie**.
   `nouvellePartie`, et la classe `card-table--plateau-<id>` + le
   `background-image` posés sur la table.
 - `src/games/rpg-battle.css` — les styles du bloc, la couleur de repli de chaque
-  plateau, et les **voiles de lisibilité**, un par famille de terrain. Le sable
-  (moyenne 127 sur 255) et la pierre des ruines (133) sont deux fois plus
-  lumineux que le bois (57) : sans ombre dense, les libellés clairs de la table
-  et les cartes posées se noient dans le beige. La terre brûlée est sombre (66)
-  mais très contrastée : elle reçoit un voile léger et une vignette appuyée,
-  pour laisser les braises lisibles sans que les éclats de lave mangent les
-  cartes. Le bois garde son voile d'origine. Seule la teinte distingue les
-  fonds clairs : ombre chaude pour les sables, ombre neutre et froide pour la
-  pierre au bord de la mer. Même mécanisme pour tous (le pseudo-élément de la
-  table) et même exception : ils disparaissent en tactile (`rpg-mobile.css`).
+  plateau, et les **voiles de lisibilité**. Le voile principal est un
+  **dégradé noir posé en haut et en bas du plateau**
+  (`--rpg-plateau-voile`) : c'est là que vivent les textes de la table —
+  navigation, main adverse et identité du sorcier en haut ; identité du joueur,
+  rails de terrains, message du tour, phases, commandes et main en bas. Le
+  centre reste dégagé, c'est la zone où les cartes se posent. Chaque plateau
+  règle sa densité par deux variables, mesurée sur le fond livré (luminance du
+  haut du cadre, sur 255) : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
+  Caravane de Gourara 102, Terre de Damnation 61, Table des Heures 54. L'encre
+  crème de la table (`#fff0cf`) tombe sous 3:1 sur les deux premiers sans une
+  ombre d'au moins 80 % ; la terre brûlée, sombre mais très contrastée, garde
+  une vignette appuyée pour laisser les braises lisibles sans que les éclats de
+  lave mangent les cartes. Seule la teinte distingue les fonds clairs : ombre
+  chaude pour les sables, ombre neutre et froide pour la pierre au bord de la
+  mer. À ce voile s'ajoute, à la souris seulement, la vignette centrale propre à
+  chaque famille de terrain.
+- `src/games/rpg-mobile.css` — **le voile haut/bas reste au doigt** : il y était
+  supprimé, et c'est justement en paysage de téléphone (et dans l'APK) que les
+  libellés se noyaient dans le sable. Seule la vignette centrale disparaît, pour
+  garder le champ de bataille dégagé, et les bandes du dégradé sont recalées sur
+  la grille tactile — la rangée de navigation en haut, la main et les commandes
+  en bas.
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
   `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
   — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
@@ -5183,7 +5195,7 @@ désormais plusieurs, et **le plateau change de partie en partie**.
 
 ```bash
 npm run check:rpg        # règles + les 10 tests des plateaux
-npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau compris
+npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau et voile compris
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
@@ -5194,4 +5206,79 @@ respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
 retour, valeur inconnue normalisée, stockage illisible ou absent).
 `check:rpg-ui` monte la page : le menu présente chaque plateau plus le tirage
 aléatoire, le verrou est exclusif, et le duel qui suit se joue bien sur le
-plateau verrouillé — classe, fond et libellé de la table compris.
+plateau verrouillé — classe, fond et libellé de la table compris. Il vérifie
+aussi le voile : le dégradé noir haut/bas est posé sous l'interface, **chaque
+plateau du catalogue règle sa propre densité**, les fonds clairs (sables, pierre
+de Tipaza) sont plus voilés que le bois, et la présentation tactile conserve le
+voile au lieu de le supprimer.
+
+## Le Sablier du temps : l'aperçu d'une carte au doigt
+
+À la souris, survoler une carte ouvre son **aperçu instantané** : le type, le
+coût, les effets ligne à ligne, l'attaque et la défense. Sur écran tactile, le
+survol n'existe pas — et dans l'application comme en version mobile, il ne
+restait que le clic, qui **agit** : poser la carte, déclarer une attaque,
+produire un mana. Consulter une carte sans la jouer était impossible.
+
+### Le geste
+
+- **Une seconde d'appui sur une carte ouvre son aperçu.** Le doigt reste posé
+  une seconde (`RPG_LONG_PRESS_MS = 1000`), l'aperçu s'ouvre dans un volet
+  sombre centré, et **rien n'est joué** : le clic synthétique qui suit le lever
+  du doigt est avalé, comme le fait déjà le glisser-déposer tactile.
+- **Partout où une carte est affichée.** Le geste est délégué à la page : toute
+  carte qui porte un `data-card-id` y répond — la main, les créatures des deux
+  camps, les rails de terrains, le dessus d'un cimetière, le catalogue et la
+  liste d'un deck, au menu comme en duel.
+- **Un appui court reste un clic.** Lever le doigt avant la seconde ne change
+  rien au jeu : la carte se pose, la créature se déclare, le terrain produit son
+  mana. Un doigt qui glisse au-delà de 10 px non plus — c'est un défilement de
+  la main ou un glisser-déposer, et l'appui est annulé.
+- **Le volet se referme** d'un toucher n'importe où dessus, du bouton « Fermer
+  l'aperçu » ou de la touche Échap. Il se referme aussi en changeant d'écran et
+  quand l'appareil repasse en portrait (l'écran de rotation reprend la main).
+- **Le geste est annoncé.** L'ouverture du duel l'explique dans la barre du bas
+  sur appareil tactile : « Appui long d'une seconde sur une carte : son aperçu,
+  sans la jouer. »
+
+### Où vit le code
+
+- `src/games/rpgLongPress.js` — le geste seul, sans React ni DOM créé : même
+  contrat que `rpgTouchDrag.js` (un `cleanup` idempotent). Il ne répond qu'au
+  doigt et au stylet, annule sur déplacement, lever précoce, second pointeur,
+  `pointercancel`, perte de focus, défilement ou page cachée, étouffe le menu
+  contextuel natif (callout iOS, « enregistrer l'image » Android) et avale le
+  clic qui suit l'aperçu ouvert.
+- `src/games/RpgDuelPage.jsx` — un `pointerdown` délégué sur les deux écrans
+  (`data-scene="menu"` et `data-scene="duel"`), l'état `apercuAppui`, le volet
+  `ApercuCarteAppuiLong` qui réutilise `HoverCardPreview` dans sa variante
+  `appui-long`, et la désactivation du glisser-déposé armé par le même doigt.
+- `src/games/rpg-battle.css` — le volet `.rpg-card-peek` (fond sombre, panneau
+  centré, bouton Fermer en encre crème quel que soit le thème du site),
+  l'exception au `display: none` qui masque l'aperçu au survol sur pointeur
+  tactile (dans le volet, il s'affiche), le cadrage en paysage de téléphone
+  (`@media (max-height: 520px)` : l'illustration se règle sur la hauteur
+  disponible, `42dvh`, au menu comme en duel) et l'annulation du callout natif
+  et de la sélection de texte sur toute carte affichée.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # les 11 tests du geste (tests/rpg-long-press.test.js)
+npm run check:rpg-ui     # la page montée dans jsdom, appui long compris
+```
+
+`tests/rpg-long-press.test.js` vérifie le geste pur : une seconde de contact
+immobile ouvre l'aperçu une seule fois, le clic qui suit est avalé, un appui
+court laisse passer le clic de jeu, le menu contextuel est étouffé puis rendu,
+un déplacement au-delà du seuil annule (un tremblement en dessous, non),
+l'aperçu ouvert ne dépend plus du doigt, et `pointercancel`, perte de focus,
+défilement, page cachée, second doigt, souris et démontage n'ouvrent rien.
+
+`check:rpg-ui` monte la page en mode tactile : une seconde d'appui sur une carte
+du **catalogue** puis sur une carte de la **main** ouvre le volet nommé, avec le
+type, les effets ligne à ligne et les statistiques ; la carte n'est pas jouée,
+aucun terrain n'est posé, aucune confirmation demandée ; le clic suivant est
+avalé ; le volet se referme au toucher et à Échap ; une créature en jeu
+s'aperçoit sans être déclarée attaquante ; un appui qui glisse n'ouvre rien ; un
+appui court laisse passer le clic qui joue la carte.

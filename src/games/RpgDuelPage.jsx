@@ -19,6 +19,7 @@ import {
   tirerPlateau,
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
+import { startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
   chargerProgressionHistoire,
@@ -430,6 +431,7 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
               style={cardFrameStyle(carteDuDessus)}
               src={cardArt(topCard)}
               alt=""
+              data-card-id={carteDuDessus?.id}
               onMouseEnter={(event) => onHoverCard?.(carteDuDessus, event)}
               onMouseLeave={onLeaveHoverCard}
             />
@@ -735,7 +737,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style, spellPlayed = false }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '' }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -743,7 +745,7 @@ function HoverCardPreview({ carte, style, spellPlayed = false }) {
   const effets = cardEffectLines(effet);
   return (
     <aside
-      className={`rpg-hover-card-preview rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role="tooltip"
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
@@ -767,6 +769,32 @@ function HoverCardPreview({ carte, style, spellPlayed = false }) {
         {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
       </div>
     </aside>
+  );
+}
+
+/** L'aperçu au doigt : une seconde d'appui sur une carte ouvre le même contenu
+ * que le survol de la souris, posé sur un volet sombre qui l'isole du plateau.
+ * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
+ * joue jamais la carte : c'est une consultation, pas une action. */
+function ApercuCarteAppuiLong({ carte, onFermer }) {
+  if (!carte) return null;
+  return (
+    <div
+      className="rpg-card-peek"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Aperçu de ${carte.name}`}
+      onClick={onFermer}
+    >
+      <div className="rpg-card-peek__backdrop" aria-hidden="true" />
+      <div className="rpg-card-peek__panel">
+        <p className="rpg-card-peek__hint">Appui long d’une seconde · aperçu de la carte</p>
+        <HoverCardPreview carte={carte} variante="appui-long" />
+      </div>
+      <button type="button" autoFocus className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
+        Fermer l’aperçu
+      </button>
+    </div>
   );
 }
 
@@ -996,7 +1024,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{selectedCards.length} références · quantités incluses</span></div>
                 <ul className="rpg-deck-list">
                   {selectedCards.map(({ carte, count }) => (
-                    <li key={carte.id}>
+                    <li key={carte.id} data-card-id={carte.id}>
                       <img src={cardArt(carte)} alt="" />
                       <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
                       <b>×{count}</b>
@@ -1223,9 +1251,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const duelRef = useRef(null);
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
-  useEffect(() => () => {
-    touchDragRef.current?.();
-    touchDragRef.current = null;
+  // Aperçu au doigt : sur écran tactile le survol n'existe pas, un appui long
+  // d'une seconde sur une carte ouvre donc le même aperçu (voir
+  // `rpgLongPress.js`). C'est une consultation : la carte n'est jamais jouée.
+  const [apercuAppui, setApercuAppui] = useState(null);
+  const appuiLongRef = useRef(null);
+  useEffect(() => {
+    // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
+    // et désarme les gestes en cours.
+    setApercuAppui(null);
+    return () => {
+      touchDragRef.current?.();
+      touchDragRef.current = null;
+      appuiLongRef.current?.();
+      appuiLongRef.current = null;
+    };
   }, [ecran]);
   const clicApresGlisserBloqueurRef = useRef(null);
   const animationsVisuellesTimersRef = useRef([]);
@@ -1345,6 +1385,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCibleEnCours(null);
     setConfirmationSort(null);
     setApercuSurvol(null);
+    appuiLongRef.current?.();
+    appuiLongRef.current = null;
+    setApercuAppui(null);
     setCarteGlissee(null);
     setSurZoneDepot(false);
     setAnnulationDisponible(false);
@@ -1369,7 +1412,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timerApercuMagieRef.current = null;
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
-    setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).`);
+    // Au doigt, le survol n'existe pas : l'ouverture annonce le geste qui le
+    // remplace (appui long d'une seconde = aperçu de la carte, sans la jouer).
+    setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).${viewport.mobile ? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer.' : ''}`);
     force();
   };
 
@@ -1442,6 +1487,49 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const masquerApercuSurvol = () => setApercuSurvol(null);
 
+  // ── L'aperçu au doigt : appui long d'une seconde sur une carte ────────────
+  const annulerAppuiLong = () => {
+    appuiLongRef.current?.();
+    appuiLongRef.current = null;
+  };
+  const fermerApercuAppui = () => {
+    annulerAppuiLong();
+    setApercuAppui(null);
+  };
+  /** Un seul geste pour toute la page : toute carte affichée porte un
+   * `data-card-id`, en main, sur la table, dans un rail de terrains, sur le
+   * dessus d'un cimetière, au catalogue et dans la liste d'un deck. */
+  const demarrerAppuiLongCarte = (event) => {
+    const hote = event.target?.closest?.('[data-card-id]');
+    const carte = cardById(hote?.dataset?.cardId);
+    if (!hote || !carte) return;
+    annulerAppuiLong();
+    appuiLongRef.current = startRpgLongPress(event, {
+      source: hote,
+      onTrigger: () => {
+        // Le même `pointerdown` a pu armer un glisser-déposer tactile : consulter
+        // une carte ne la déplace pas. Le survol éventuel s'efface aussi.
+        touchDragRef.current?.();
+        touchDragRef.current = null;
+        masquerApercuSurvol();
+        setApercuAppui(carte.id);
+      },
+    });
+  };
+  // Échap referme l'aperçu, comme le volet et le bouton Fermer.
+  useEffect(() => {
+    if (!apercuAppui) return undefined;
+    const fermerAvecEchap = (event) => {
+      if (event.key === 'Escape') fermerApercuAppui();
+    };
+    window.addEventListener('keydown', fermerAvecEchap);
+    return () => window.removeEventListener('keydown', fermerAvecEchap);
+  }, [apercuAppui]);
+  // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
+  useEffect(() => {
+    if (viewport.portrait) fermerApercuAppui();
+  }, [viewport.portrait]);
+
   const demarrerEtage = (etageId) => {
     setHistoireEtageId(etageId);
     nouvellePartie({ etageId });
@@ -1456,7 +1544,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran !== 'partie') {
     return (
-      <div className="rpg-battle rpg-battle--menu" data-scene="menu">
+      <div className="rpg-battle rpg-battle--menu" data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -1482,6 +1570,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             style={apercuSurvol.style}
           />
         )}
+        {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
       </div>
     );
   }
@@ -2616,7 +2705,11 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
   const tokenPiocheSorcier = piochesSorcier.at(-1)?.token ?? null;
 
   return (
-    <div className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`} data-scene="duel">
+    <div
+      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`}
+      data-scene="duel"
+      onPointerDown={demarrerAppuiLongCarte}
+    >
       {viewport.portrait && <div className="rpg-rotate-prompt" role="dialog" aria-modal="true" aria-label="Jouer en paysage">
         <span className="rpg-rotate-prompt__icon" aria-hidden="true">↻</span>
         <h2>Le duel se joue en paysage</h2>
@@ -3113,6 +3206,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           </div>
         )}
       </div>
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
     </div>
   );
 }

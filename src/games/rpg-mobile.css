@@ -84,7 +84,20 @@
   overscroll-behavior: contain;
   background-blend-mode: normal;
 }
-.rpg-battle--touch .card-table::before { background: none; }
+/* Le voile noir haut/bas du plateau reste au doigt — seule la vignette centrale
+   saute, pour garder le champ de bataille dégagé. La navigation et l'identité du
+   sorcier occupent la première rangée de la grille, la main, les phases et les
+   commandes la dernière : les bandes du dégradé suivent ces deux rangées
+   (variable partagée avec la souris, voir `rpg-battle.css`). Sans elles, l'encre
+   crème des libellés tombe sous 3:1 sur les plateaux clairs — l'Erg du Sahara
+   monte à 142/255 en haut du cadre, les Ruines de Tipaza à 118 en bas. */
+.rpg-battle--touch .card-table {
+  --rpg-plateau-voile-haut-plein: 8%;
+  --rpg-plateau-voile-haut-fin: 24%;
+  --rpg-plateau-voile-bas-debut: 54%;
+  --rpg-plateau-voile-bas-plein: 78%;
+}
+.rpg-battle--touch .card-table::before { background: var(--rpg-plateau-voile); }
 .rpg-battle--touch .card-table > :is(.rpg-duel-nav, .rpg-wizard-plate, .rpg-card-piles, .rpg-terrains, .card-row, .rpg-bottombar, .rpg-hand-dock) {
   position: relative;
   inset: auto;

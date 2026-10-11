@@ -17,11 +17,27 @@ Le clic sur une carte en main la joue immédiatement, sur ordinateur comme sur m
 
 Au survol d’une carte (ordinateur), l’aperçu instantané reste le seul moyen de consulter les détails : effets, statistiques, compteurs de terrains, sans texte explicatif bleu.
 
+## L’aperçu au doigt : appui long d’une seconde
+
+Le survol n’existe pas sur écran tactile, et le clic **agit** (poser la carte, déclarer une attaque, produire un mana). Consulter une carte sans la jouer passe donc par l’**appui long** :
+
+- garder le doigt **une seconde** sur une carte (`RPG_LONG_PRESS_MS`, `src/games/rpgLongPress.js`) ouvre le même aperçu, dans un volet sombre centré avec son bouton « Fermer l’aperçu » ;
+- le geste répond partout où une carte porte un `data-card-id` : main, créatures des deux camps, rails de terrains, dessus de cimetière, catalogue et liste de deck — au menu comme en duel ;
+- **rien n’est joué** : le clic synthétique qui suit le lever du doigt est avalé, comme après un glisser-déposer ;
+- un **appui court reste un clic** et garde son action de jeu ; un doigt qui glisse au-delà de 10 px annule l’appui (c’est un défilement de la main ou un glisser-déposer) ;
+- le volet se referme d’un toucher, du bouton Fermer, d’Échap, en changeant d’écran, ou quand l’appareil repasse en portrait ;
+- le menu contextuel natif (callout iOS, « enregistrer l’image » Android) et la sélection de texte sont étouffés sur les cartes ;
+- l’ouverture du duel annonce le geste dans la barre du bas sur appareil tactile.
+
+En paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible (`42dvh`) pour que le volet, son indice et son bouton tiennent sans recouvrir la main.
+
 Les piles de terrains sont uniquement une présentation : chaque terrain reste une instance distincte dans le moteur. Une production manuelle engage le prochain terrain disponible de la pile ; le paiement automatique, le choix de couleur de Pétra, le dégagement et l’annulation conservent leur fonctionnement. Les types de terrains différents se placent côte à côte sur une seule rangée horizontale, dans les deux camps. Au moins deux piles sont visibles sur les formats paysage testés ; les suivantes sont accessibles par défilement horizontal, sans retour à la ligne. Les rangées sont décalées vers l’intérieur du bois et alignées en bas du champ de chaque camp, hors des bordures et ornements du décor. Les piles restent droites et leurs compteurs demeurent dans leur cadre. Une carte terrain jouée rejoint sa pile existante lors de l’animation.
 
 Les attaquants sont couchés à 90° dès leur déclaration et restent couchés après l’attaque. Cette rotation dépend de l’état de la créature et reste prioritaire sur les animations ; annuler la déclaration redresse la carte.
 
 Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. L’aperçu instantané n’a ni fond principal ni cadre ; seul l’encadré des infos garde son fond sombre, et le plateau n’a plus de grands fonds opaques.
+
+Le plateau garde en revanche son **voile noir dégradé en haut et en bas** (`--rpg-plateau-voile`, `rpg-battle.css`) : les textes de la table vivent dans ces deux bandes — navigation et identité du sorcier en haut, identité du joueur, terrains, message du tour, phases, commandes et main en bas — et les plateaux clairs (l’Erg du Sahara monte à 142/255 en haut du cadre, les Ruines de Tipaza à 118 en bas) noyaient l’encre crème. Seule la vignette centrale disparaît au doigt, pour laisser le champ de bataille dégagé ; les bandes sont recalées sur les rangées de la grille tactile.
 
 ## Orientation
 
@@ -44,8 +60,8 @@ npm run check:rpg-ui
 npm run build
 ```
 
-- Tests purs : moteur, audio, gestes, piles de terrains (paiement, production individuelle, dégagement, restauration) et cycle de vie de l’orientation, y compris les refus et promesses tardives.
-- Tests React/jsdom : clic-jeu direct, confirmation des magies, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois et terrain engagé.
+- Tests purs : moteur, audio, gestes (glisser-déposer **et appui long** : `tests/rpg-long-press.test.js`), piles de terrains (paiement, production individuelle, dégagement, restauration) et cycle de vie de l’orientation, y compris les refus et promesses tardives.
+- Tests React/jsdom : clic-jeu direct, confirmation des magies, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois, terrain engagé, et aperçu par appui long (catalogue, main, créature en jeu) qui ne joue rien.
 - Tests Chromium : repli portrait, plateaux 568×320, 667×375, 844×390 et 1024×768 sans recouvrement des zones ; actions directes au toucher ; jeu d’un terrain par glisser-déposer après rotations ; retour au menu.
 
 Variables facultatives : `RPG_URL`, `CHROMIUM_EXECUTABLE_PATH` et `RPG_SCREENSHOT` (capture du plateau).
