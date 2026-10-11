@@ -13,6 +13,7 @@ import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
   rpgCibleAuto,
+  rpgChoisirAttaquants,
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
   rpgEngagerTerrain,
@@ -2104,7 +2105,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     setCiblesAttaque({});
     setCibleAttaqueEnCours(null);
     if (!attaquantsBloques.length) {
-      setMessage('Aucun bloqueur adverse : les attaques directes et Coups rapides se résolvent automatiquement.');
+      setMessage('Aucun blocage adverse : les attaques directes et Coups rapides se résolvent automatiquement.');
       resoudreAttaqueJoueur(combat);
       return;
     }
@@ -2362,10 +2363,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         force();
         return;
       }
-      const ids = duel.sorcier.creatures.filter((e) => e.ready && !e.attaquee).map((e) => e.id);
+      const ids = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
       if (!ids.length) {
         rpgFinDeTour(duel);
-        setMessage('À vous : vos terrains sont dégagés, une carte est piochée.');
+        setMessage('Le sorcier garde ses créatures en défense. À vous : vos terrains sont dégagés, une carte est piochée.');
         force();
         return;
       }

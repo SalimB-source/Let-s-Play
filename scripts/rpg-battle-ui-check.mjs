@@ -35,6 +35,7 @@ try {
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
+const aiBrain = readFileSync(new URL('../src/games/rpgAI.js', import.meta.url), 'utf8');
 const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function CardPreview('));
 const clickPreviewSource = battlePage.slice(battlePage.indexOf('function CardPreview('), battlePage.indexOf('function HoverCardPreview('));
 const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function SpellAnnouncement('));
@@ -110,7 +111,7 @@ assert.match(duelEngine, /cibleRapideId[\s\S]*?resume\.coupsRapides\.push[\s\S]*
   'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
 assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
   'l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
-assert.match(duelEngine, /&& rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\)\)/,
+assert.match(aiBrain, /peutBloquerAttaquant\(bloqueur, attaquant\)\s*&&\s*!estProtegee\(attaquant, cardColors\(duelCardById\(bloqueur\.carteId\)\)\)/,
   'l’IA écarte les bloqueurs sans Envol face à un attaquant volant');
 assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) return \{ ok: false, raison: 'envol' \}/,
   'le moteur refuse un blocage terrestre contre un attaquant avec Envol');
