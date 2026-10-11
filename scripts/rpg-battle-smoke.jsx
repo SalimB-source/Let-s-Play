@@ -219,17 +219,18 @@ export async function checkRpgBattle(assert) {
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
   assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');
   assert.match(container.textContent, /Sentiers de cendre/, 'le deck joueur hybride Sable + Braise est présenté');
+  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 0, 'la liste des cartes reste masquée tant qu’aucun deck n’est cliqué');
+  // Chaque deck est un boîtier 3D : le clic est porté par le bouton voisin du décor.
+  const boutonDeck = (nom) => [...container.querySelectorAll('.rpg-deck-choice__button')]
+    .find((button) => button.textContent.includes(nom));
+  await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes avec leurs quantités, Cavalier inclus');
   assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
     'la fiche indique la taille et la répartition terrain / créature / magie du deck validé');
-  const choixDeckAdverse = [...container.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Cour des Djinns'));
-  await act(async () => { choixDeckAdverse.click(); });
+  await act(async () => { boutonDeck('Cour des Djinns').click(); });
   assert.match(container.querySelector('.rpg-deck-detail')?.textContent ?? '', /Braise/,
     'la sélection affiche les détails du deck de Braise');
-  const choixDeckHybride = [...container.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Sentiers de cendre'));
-  await act(async () => { choixDeckHybride.click(); });
+  await act(async () => { boutonDeck('Sentiers de cendre').click(); });
   const ficheHybride = container.querySelector('.rpg-deck-detail');
   assert.match(ficheHybride?.textContent ?? '', /Sable \+ Braise[\s\S]*HYBRIDE/i,
     'la fiche précise l’identité bicolore du deck');
@@ -237,9 +238,7 @@ export async function checkRpgBattle(assert) {
     'la liste hybride présente son terrain flexible et ses cartes bicolores');
   assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5[\s\S]*validé/,
     'le deck hybride est validé à 40 cartes, avec 17 terrains, 18 créatures et 5 magies');
-  const choixDeckJoueur = [...container.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Veilleurs du Désert'));
-  await act(async () => { choixDeckJoueur.click(); });
+  await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.ok(findButton('Jouer avec ce deck'), 'la fiche du deck joueur permet de le lancer');
   await act(async () => { findButton('Jouer avec ce deck').click(); });
 

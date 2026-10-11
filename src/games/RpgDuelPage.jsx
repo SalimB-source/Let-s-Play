@@ -9,6 +9,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
 import './rpg-story.css';
+import './rpg-deckbox.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
@@ -28,6 +29,20 @@ import {
   prochainEtage,
   RPG_STORY_TOURS,
 } from './rpgStoryTours.js';
+import {
+  chargerDeckChoisi,
+  deckAdverseParDefaut,
+  deckAdversePour,
+  deckEstSelectionnable,
+  deckParDefaut,
+  sauverDeckChoisi,
+} from './rpgDeckChoice.js';
+import {
+  deckColors,
+  deckCorrespondCouleur,
+  filtrerDecksParCouleur,
+  filtresCouleurDecks,
+} from './rpgDeckFilter.js';
 import {
   rpgCibleAuto,
   rpgChoisirAttaquants,
@@ -72,6 +87,7 @@ import {
 const TILTS = [-2.4, 1.7, -1.2, 2.3, -1.8, 1.1];
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', hybride: '🔥⏳' };
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', hybride: 'Sable + Braise' };
+const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', hybride: 'Hybride' };
 const CARD_ART_CACHE_VERSIONS = {
   'djinn-du-souk': 'munch-impressionniste-v3',
   'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
@@ -107,10 +123,6 @@ function cardEffectLines(text) {
     .split(/\n+|(?<=[.!?])\s+/u)
     .map((effet) => effet.trim())
     .filter(Boolean);
-}
-
-function deckColors(deck) {
-  return cardColors({ element: deck?.element, colors: deck?.elements });
 }
 
 function deckColorLabel(deck) {
@@ -823,16 +835,96 @@ function SpellAnnouncement({ annonce }) {
   );
 }
 
+/* ── Boîtier de deck en 3D (onglet Deck) ──────────────────────────────────────
+   Décor pur : le clic est porté par le bouton voisin (voir `GameModeMenu`), et le
+   nom du deck y figure en clair — tout ce qui est dessiné ici est `aria-hidden`. */
+const EMBLEMS = {
+  sable: <><path d="M6 2.6h12v2.1H6zM6 19.3h12v2.1H6z" /><path d="M7.7 4.7h8.6c0 3.5-2.5 5-3.3 7.3.8 2.3 3.3 3.8 3.3 7.3H7.7c0-3.5 2.5-5 3.3-7.3-.8-2.3-3.3-3.8-3.3-7.3z" /></>,
+  braise: <path d="M12.6 1.6c.2 2.7 1.6 3.9 3 5.5 1.7 1.9 3.2 3.9 3.2 6.7a6.8 6.8 0 0 1-13.6 0c0-2.6 1.3-4.3 2.6-5.7.2 1.6.9 2.5 1.9 2.9C9.3 7.8 10.1 4.2 12.6 1.6z" />,
+  eau: <path d="M12 2.6c3.5 4.3 6 7.4 6 10.9a6 6 0 0 1-12 0c0-3.5 2.5-6.6 6-10.9z" />,
+};
+
+function ElementEmblem({ element }) {
+  return <svg className={`rpg-emblem rpg-emblem--${element}`} viewBox="0 0 24 24" aria-hidden="true" focusable="false">{EMBLEMS[element] ?? EMBLEMS.sable}</svg>;
+}
+
+/** Illustration imprimée sur le boîtier : `boxArt` du deck, sinon sa première carte non-terrain. */
+function deckBoxArtUrl(deck) {
+  const fallbackId = deck?.cardIds.find((id) => cardById(id)?.kind !== 'terrain') ?? deck?.cardIds[0];
+  const artId = deck?.boxArt ?? fallbackId;
+  return artId ? cardArt(artId) : '';
+}
+
+/** `size` : « shelf » (étagère, grand), « mini » (colonne de gauche) ou « showcase » (en-tête du deck ouvert). */
+function DeckBox({ deck, index = 0, size = 'shelf' }) {
+  const modifier = deckColorModifier(deck);
+  const emblems = deckColors(deck);
+  const medals = emblems.map((couleur) => <span className="rpg-deckbox__medal" key={couleur}><ElementEmblem element={couleur} /></span>);
+  return (
+    <span className={`rpg-deckbox rpg-deckbox--${size} rpg-deckbox--${modifier}`} style={{ '--i': index }} aria-hidden="true">
+      <span className="rpg-deckbox__shadow" />
+      <span className="rpg-deckbox__sway">
+        <span className="rpg-deckbox__body">
+          <span className="rpg-deckbox__face rpg-deckbox__face--back"><span className="rpg-deckbox__crest"><ElementEmblem element={emblems[0]} /></span></span>
+          <span className="rpg-deckbox__face rpg-deckbox__face--bottom" />
+          <span className="rpg-deckbox__face rpg-deckbox__face--right"><span className="rpg-deckbox__medals">{medals}</span></span>
+          <span className="rpg-deckbox__face rpg-deckbox__face--top" />
+          <span className="rpg-deckbox__face rpg-deckbox__face--left">
+            <span className="rpg-deckbox__medals">{medals}</span>
+            <span className="rpg-deckbox__title">{deck.name}</span>
+            <span className="rpg-deckbox__count">{deck.cardIds.length}</span>
+          </span>
+          <span className="rpg-deckbox__face rpg-deckbox__face--front">
+            <span className="rpg-deckbox__art" style={{ backgroundImage: `url("${deckBoxArtUrl(deck)}")` }} />
+            <span className="rpg-deckbox__lid"><span className="rpg-deckbox__medals">{medals}</span></span>
+            <span className="rpg-deckbox__latch" />
+            <span className="rpg-deckbox__plate">{deck.name}</span>
+            <span className="rpg-deckbox__gloss" />
+          </span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
+/** Le boîtier se tourne vers le curseur (souris seulement : au doigt, on laisse la page défiler). */
+function inclinerBoitier(event) {
+  if (event.pointerType !== 'mouse') return;
+  const boitier = event.currentTarget.querySelector('.rpg-deckbox');
+  if (!boitier) return;
+  const zone = event.currentTarget.getBoundingClientRect();
+  const x = (event.clientX - zone.left) / (zone.width || 1) - 0.5;
+  const y = (event.clientY - zone.top) / (zone.height || 1) - 0.5;
+  boitier.style.setProperty('--ry', `${(16 + x * 52).toFixed(1)}deg`);
+  boitier.style.setProperty('--rx', `${(-9 - y * 18).toFixed(1)}deg`);
+}
+
+function redresserBoitier(event) {
+  const boitier = event.currentTarget.querySelector('.rpg-deckbox');
+  boitier?.style.removeProperty('--ry');
+  boitier?.style.removeProperty('--rx');
+}
+
 function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onHoverCard, onLeaveHoverCard }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
+  const [openDeckId, setOpenDeckId] = useState(null);
+  const [deckCouleur, setDeckCouleur] = useState('toutes');
+  const [confirmation, setConfirmation] = useState(null);
+  const detailRef = useRef(null);
   const selectedDeck = RPG_DECKS.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
-  const defaultPlayerDeck = RPG_DECKS.find((deck) => deck.role === 'joueur') ?? RPG_DECKS[0];
-  const playerDeck = selectedDeck?.role === 'joueur' ? selectedDeck : defaultPlayerDeck;
-  const opponentDeck = RPG_DECKS.find((deck) => deck.role === 'adversaire');
-  const selectedStats = selectedDeck ? deckStats(selectedDeck) : { terrains: 0, creatures: 0, magies: 0 };
-  const selectedCards = selectedDeck ? deckCardList(selectedDeck) : [];
-  const selectedValidation = selectedDeck ? rpgValiderDeck(selectedDeck.cardIds) : { ok: false, raison: 'Aucun deck disponible.' };
+  const playerDeck = deckEstSelectionnable(selectedDeck) ? selectedDeck : deckParDefaut();
+  // Le sorcier joue la Cour des Djinns — sauf si c'est le deck du joueur : il prend alors un autre deck.
+  const opponentDeck = deckAdversePour(playerDeck);
+  // Filtre par couleur de l'étagère : un deck écarté n'est pas dessiné et ne peut pas rester ouvert.
+  const filtresCouleur = filtresCouleurDecks(RPG_DECKS);
+  const decksVisibles = filtrerDecksParCouleur(RPG_DECKS, deckCouleur);
+  // La liste des cartes n'existe qu'une fois un deck cliqué : `openDeck` reste nul
+  // (et la liste n'est même pas calculée) tant que le joueur n'a rien ouvert.
+  const openDeck = decksVisibles.find((deck) => deck.id === openDeckId) ?? null;
+  const openStats = openDeck ? deckStats(openDeck) : { terrains: 0, creatures: 0, magies: 0 };
+  const openCards = openDeck ? deckCardList(openDeck) : [];
+  const openValidation = openDeck ? rpgValiderDeck(openDeck.cardIds) : { ok: false, raison: 'Aucun deck ouvert.' };
   const cartesCatalogue = RPG_DUEL_CARDS.filter((carte) => {
     const colors = cardColors(carte);
     const couleurCorrespond = catalogueCouleur === 'toutes'
@@ -844,6 +936,32 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
     return cardId ? cardArt(cardId) : '';
   };
   const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .96) 0%, rgba(8, 7, 13, .82) 48%, rgba(8, 7, 13, .72) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
+  // Quitter l'onglet Deck referme l'étagère : le prochain passage repart sans liste.
+  useEffect(() => { if (screen !== 'decks') setOpenDeckId(null); }, [screen]);
+  // Sur écran étroit, la fiche s'ouvre sous l'étagère : on l'amène à l'écran.
+  useEffect(() => {
+    const fiche = detailRef.current;
+    if (!openDeckId || !fiche?.scrollIntoView) return;
+    if (fiche.getBoundingClientRect().top <= window.innerHeight * 0.55) return;
+    const calme = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    fiche.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' });
+  }, [openDeckId]);
+  // « Sélectionner » : le deck devient le deck de jeu (le parent le mémorise sur l'appareil).
+  // Ouvrir un boîtier, lui, ne fait que montrer la liste de ses cartes.
+  const choisirDeck = (deck) => {
+    if (!deckEstSelectionnable(deck) || deck.id === playerDeck?.id) return;
+    setConfirmation({ deckId: deck.id, enregistre: onSelectDeck(deck.id) === true });
+  };
+  // Jouer avec un deck en fait le deck de jeu ; le duel démarre avec lui sans attendre le rendu.
+  const jouerAvec = (deck) => {
+    if (!deckEstSelectionnable(deck)) return;
+    onSelectDeck(deck.id);
+    onStartGame(deck.id);
+  };
+  const changerCouleur = (couleur) => {
+    setDeckCouleur(couleur);
+    if (openDeck && !deckCorrespondCouleur(openDeck, couleur)) setOpenDeckId(null);
+  };
 
   return (
     <section className={`rpg-mode-menu rpg-mode-menu--${screen}`} style={{ backgroundImage: menuBackground }}>
@@ -877,7 +995,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <span className="rpg-mode-menu__eyebrow">UN DUEL · DEUX DECKS · 40 CARTES</span>
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
                 <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes.</p>
-                <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={onStartGame}>
+                <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={() => onStartGame()}>
                   ⚔ Lancer le duel <span aria-hidden="true">→</span>
                 </button>
               </div>
@@ -891,58 +1009,135 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               </div>
               {playerDeck && (
                 <article className="rpg-menu-deck-summary rpg-menu-deck-summary--player">
-                  <img src={imageForDeck(playerDeck)} alt="" />
+                  <img src={deckBoxArtUrl(playerDeck)} alt="" />
                   <div><small>VOTRE DECK · {deckColorGlyph(playerDeck)} {deckColorLabel(playerDeck).toUpperCase()}</small><strong>{playerDeck.name}</strong><span>{deckStats(playerDeck).creatures} créatures · {deckStats(playerDeck).magies} magies</span></div>
                 </article>
               )}
               {opponentDeck && (
                 <article className="rpg-menu-deck-summary rpg-menu-deck-summary--opponent">
-                  <img src={imageForDeck(opponentDeck)} alt="" />
-                  <div><small>ADVERSAIRE · {deckColorGlyph(opponentDeck)} {deckColorLabel(opponentDeck).toUpperCase()}</small><strong>{opponentDeck.name}</strong><span>Affrontez les djinns de Braise.</span></div>
+                  <img src={deckBoxArtUrl(opponentDeck)} alt="" />
+                  <div><small>ADVERSAIRE · {deckColorGlyph(opponentDeck)} {deckColorLabel(opponentDeck).toUpperCase()}</small><strong>{opponentDeck.name}</strong><span>{opponentDeck.affrontement ?? `Affrontez ${opponentDeck.name}.`}</span></div>
                 </article>
               )}
               {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={onResumeGame}>↩ Reprendre le duel en cours</button>}
             </aside>
           </main>
         ) : screen === 'decks' ? (
-          <main className="rpg-deck-catalog">
+          <main className={`rpg-deck-catalog ${openDeck ? 'rpg-deck-catalog--open' : 'rpg-deck-catalog--closed'}`}>
             <aside className="rpg-deck-catalog__rail">
-              <div className="rpg-deck-catalog__intro"><span className="rpg-mode-menu__eyebrow">COLLECTION</span><h2>Vos decks</h2><p>Choisissez un deck monochrome ou hybride pour consulter sa liste et le sélectionner avant le duel.</p></div>
-              <div className="rpg-deck-catalog__choices">
-                {RPG_DECKS.map((deck) => (
-                  <button
-                    key={deck.id}
-                    type="button"
-                    className={`rpg-deck-choice rpg-deck-choice--${deckColorModifier(deck)}${selectedDeck?.id === deck.id ? ' is-selected' : ''}`}
-                    aria-pressed={selectedDeck?.id === deck.id}
-                    onClick={() => onSelectDeck(deck.id)}
-                  >
-                    <img src={imageForDeck(deck)} alt="" />
-                    <span className="rpg-deck-choice__text"><small>{deck.role === 'joueur' ? 'DECK JOUEUR' : 'DECK ADVERSAIRE'}</small><strong>{deck.name}</strong><em>{deckColorGlyph(deck)} {deckColorLabel(deck)}{deckColors(deck).length > 1 ? ' · Hybride' : ' · Mono'}</em></span>
-                    <span className="rpg-deck-choice__count">{deck.cardIds.length}</span>
-                  </button>
-                ))}
+              <div className="rpg-deck-catalog__intro">
+                <span className="rpg-mode-menu__eyebrow">COLLECTION</span>
+                <h2>Vos decks</h2>
+                <p>{openDeck
+                  ? 'Cliquez sur un autre boîtier pour changer de deck, ou fermez celui-ci pour masquer sa liste.'
+                  : 'Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties.'}</p>
               </div>
+              <div className="rpg-deck-filter" role="group" aria-label="Filtrer les decks par couleur">
+                <span className="rpg-deck-filter__label" aria-hidden="true">Couleur</span>
+                <div className="rpg-deck-filter__chips">
+                  {filtresCouleur.map((filtre) => {
+                    const actif = deckCouleur === filtre.id;
+                    return (
+                      <button
+                        key={filtre.id}
+                        type="button"
+                        className={`rpg-deck-filter__chip rpg-deck-filter__chip--${filtre.id}${actif ? ' is-active' : ''}`}
+                        aria-pressed={actif}
+                        onClick={() => changerCouleur(filtre.id)}
+                      >
+                        {filtre.couleurs.length > 0 && (
+                          <span className="rpg-deck-filter__emblems" aria-hidden="true">
+                            {filtre.couleurs.map((couleur) => <ElementEmblem key={couleur} element={couleur} />)}
+                          </span>
+                        )}
+                        {FILTRE_COULEUR_LABELS[filtre.id] ?? filtre.id}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="rpg-deck-filter__count" aria-live="polite">{decksVisibles.length} / {RPG_DECKS.length} deck{RPG_DECKS.length === 1 ? '' : 's'}</p>
+              </div>
+              <div className="rpg-deck-catalog__choices">
+                {RPG_DECKS.map((deck) => {
+                  if (!deckCorrespondCouleur(deck, deckCouleur)) return null; // écarté par le filtre de couleur
+                  const ouvert = openDeck?.id === deck.id;
+                  const actif = playerDeck?.id === deck.id;
+                  const jouable = deckEstSelectionnable(deck);
+                  return (
+                    <div
+                      key={deck.id}
+                      className={`rpg-deck-choice rpg-deck-choice--${deckColorModifier(deck)}${ouvert ? ' is-open' : ''}${actif ? ' is-active' : ''}`}
+                      onPointerMove={inclinerBoitier}
+                      onPointerLeave={redresserBoitier}
+                    >
+                      <DeckBox deck={deck} index={RPG_DECKS.indexOf(deck)} size={openDeck ? 'mini' : 'shelf'} />
+                      <button
+                        type="button"
+                        className="rpg-deck-choice__button"
+                        aria-pressed={ouvert}
+                        aria-controls={openDeck ? 'rpg-deck-detail' : undefined}
+                        onClick={() => setOpenDeckId(deck.id)}
+                      >
+                        <span className="rpg-deck-choice__text">
+                          <small>{jouable ? 'DECK JOUEUR' : 'DECK INCOMPLET'}</small>
+                          <strong>{deck.name}</strong>
+                          <em>{deckColorGlyph(deck)} {deckColorLabel(deck)}{deckColors(deck).length > 1 ? ' · Hybride' : ' · Mono'}</em>
+                          <span className="rpg-deck-choice__meta">
+                            <b>{deck.cardIds.length} cartes</b>
+                            <span className="rpg-deck-choice__cta">{ouvert ? 'Deck ouvert' : 'Voir la liste →'}</span>
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`rpg-deck-choice__select${actif ? ' is-selected' : ''}`}
+                        disabled={!jouable}
+                        aria-disabled={actif ? 'true' : undefined}
+                        aria-label={!jouable ? `Indisponible : ${deck.name}` : actif ? `Sélectionné : ${deck.name}` : `Sélectionner ${deck.name}`}
+                        onClick={() => choisirDeck(deck)}
+                      >
+                        {!jouable ? 'Indisponible' : actif ? <><span aria-hidden="true">✓</span> Sélectionné</> : 'Sélectionner'}
+                      </button>
+                    </div>
+                  );
+                })}
+                {RPG_DECKS.length === 0 && <p className="rpg-deck-catalog__empty">Aucun deck n’est encore disponible.</p>}
+                {RPG_DECKS.length > 0 && decksVisibles.length === 0 && <p className="rpg-deck-catalog__empty">Aucun deck de cette couleur.</p>}
+              </div>
+              {playerDeck && (
+                <p className="rpg-deck-catalog__status" role="status">
+                  <span>Deck de jeu : <strong>{playerDeck.name}</strong></span>
+                  {confirmation?.deckId === playerDeck.id && (
+                    <span className={confirmation.enregistre ? 'is-saved' : 'is-unsaved'}>
+                      {confirmation.enregistre
+                        ? '✓ Mémorisé sur cet appareil pour vos prochaines parties.'
+                        : 'Non mémorisé : le stockage du navigateur est indisponible.'}
+                    </span>
+                  )}
+                  {hasGame && confirmation?.deckId === playerDeck.id && <span>Le duel en cours garde son deck : ce choix vaudra pour le prochain.</span>}
+                </p>
+              )}
               {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={onResumeGame}>↩ Reprendre le duel</button>}
             </aside>
 
-            {selectedDeck ? (
-              <section className={`rpg-deck-detail rpg-deck-detail--${deckColorModifier(selectedDeck)}`} aria-label={`Détails du deck ${selectedDeck.name}`}>
+            {openDeck && (
+              <section id="rpg-deck-detail" ref={detailRef} className={`rpg-deck-detail rpg-deck-detail--${deckColorModifier(openDeck)}`} aria-label={`Détails du deck ${openDeck.name}`}>
+                <button type="button" className="rpg-menu-link rpg-deck-detail__close" onClick={() => setOpenDeckId(null)}>✕ Fermer le deck</button>
                 <header className="rpg-deck-detail__header">
-                  <img src={imageForDeck(selectedDeck)} alt="" />
-                  <div><span className="rpg-mode-menu__eyebrow">{selectedDeck.role === 'joueur' ? 'VOTRE DECK' : 'DECK ADVERSE'} · {deckColorGlyph(selectedDeck)} {deckColorLabel(selectedDeck).toUpperCase()} · {deckColors(selectedDeck).length > 1 ? 'HYBRIDE' : 'MONO'}</span><h2>{selectedDeck.name}</h2><p>{selectedDeck.archetype}</p></div>
+                  <DeckBox deck={openDeck} size="showcase" />
+                  <div><span className="rpg-mode-menu__eyebrow">{deckEstSelectionnable(openDeck) ? 'VOTRE DECK' : 'DECK INCOMPLET'} · {deckColorGlyph(openDeck)} {deckColorLabel(openDeck).toUpperCase()} · {deckColors(openDeck).length > 1 ? 'HYBRIDE' : 'MONO'}</span><h2>{openDeck.name}</h2><p>{openDeck.archetype}</p></div>
                 </header>
-                <p className="rpg-deck-detail__description">{selectedDeck.description}</p>
+                <p className="rpg-deck-detail__description">{openDeck.description}</p>
                 <div className="rpg-deck-detail__stats" aria-label="Répartition du deck">
-                  <span><b>{selectedDeck.cardIds.length}</b><small>cartes</small></span>
-                  <span><b>{selectedStats.terrains}</b><small>terrains</small></span>
-                  <span><b>{selectedStats.creatures}</b><small>créatures</small></span>
-                  <span><b>{selectedStats.magies}</b><small>magies</small></span>
-                  <span className={selectedValidation.ok ? 'is-valid' : 'is-invalid'}><b>{selectedValidation.ok ? '✓' : '!'}</b><small>{selectedValidation.ok ? 'validé' : selectedValidation.raison}</small></span>
+                  <span><b>{openDeck.cardIds.length}</b><small>cartes</small></span>
+                  <span><b>{openStats.terrains}</b><small>terrains</small></span>
+                  <span><b>{openStats.creatures}</b><small>créatures</small></span>
+                  <span><b>{openStats.magies}</b><small>magies</small></span>
+                  <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : openValidation.raison}</small></span>
                 </div>
-                <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{selectedCards.length} références · quantités incluses</span></div>
+                <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
                 <ul className="rpg-deck-list">
-                  {selectedCards.map(({ carte, count }) => (
+                  {openCards.map(({ carte, count }) => (
                     <li key={carte.id}>
                       <img src={cardArt(carte)} alt="" />
                       <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
@@ -950,15 +1145,15 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </li>
                   ))}
                 </ul>
-                {selectedDeck.role === 'joueur' ? (
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-deck-detail__play" onClick={onStartGame}>
+                {deckEstSelectionnable(openDeck) ? (
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-deck-detail__play" onClick={() => jouerAvec(openDeck)}>
                     ⚔ Jouer avec ce deck <span aria-hidden="true">→</span>
                   </button>
                 ) : (
-                  <p className="rpg-deck-detail__note">Ce deck Braise est réservé au sorcier adverse ; il sera chargé automatiquement pendant le duel.</p>
+                  <p className="rpg-deck-detail__note">Ce deck n’est pas valide ({openValidation.raison}) : il ne peut pas être joué.</p>
                 )}
               </section>
-            ) : <p className="rpg-deck-catalog__empty">Aucun deck n’est encore disponible.</p>}
+            )}
           </main>
         ) : screen === 'histoire' ? (
           <main className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
@@ -1150,7 +1345,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     landscapeRef.current?.enter();
     setEcran('partie');
   };
-  const [deckSelectionneId, setDeckSelectionneId] = useState(() => RPG_DECKS.find((deck) => deck.role === 'joueur')?.id ?? '');
+  // Le deck de jeu : celui que le joueur a sélectionné lors d'un lancement précédent
+  // (mémorisé sur l'appareil), sinon le deck par défaut.
+  const [deckSelectionneId, setDeckSelectionneId] = useState(() => chargerDeckChoisi() ?? deckParDefaut()?.id ?? '');
+  // Le deck du duel en cours : changer de sélection dans le menu ne change pas un duel déjà lancé.
+  const [deckDuelId, setDeckDuelId] = useState(null);
+  // Le deck du sorcier en duel libre (null : celui par défaut, ou un étage du mode Histoire).
+  const [deckAdverseId, setDeckAdverseId] = useState(null);
+  const choisirDeck = (deckId) => {
+    const deck = RPG_DECKS.find((candidat) => candidat.id === deckId);
+    if (!deckEstSelectionnable(deck)) return false;
+    setDeckSelectionneId(deck.id);
+    return sauverDeckChoisi(deck.id);
+  };
   // Mode Histoire : l'étage en cours (null = duel libre).
   const [histoireEtageId, setHistoireEtageId] = useState(null);
   const [progressionHistoire, setProgressionHistoire] = useState(() => chargerProgressionHistoire());
@@ -1250,10 +1457,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const nouvellePartie = (options = {}) => {
     const etageId = options.etageId ?? histoireEtageId;
     const etageCourant = etageId ? etageHistoireParId(etageId)?.etage ?? null : null;
-    const deckJoueurSelectionne = RPG_DECKS.find((deck) => deck.id === deckSelectionneId && deck.role === 'joueur');
+    const deckChoisiId = options.deckId ?? deckSelectionneId;
+    const deckJoueurSelectionne = RPG_DECKS.find((deck) => deck.id === deckChoisiId && deckEstSelectionnable(deck));
+    // Duel libre : le sorcier joue la Cour des Djinns, ou un autre deck si le joueur joue déjà la Cour.
+    const deckAdverse = etageCourant || sorcierDeck ? null : deckAdversePour(deckJoueurSelectionne);
+    setDeckDuelId(joueurDeck ? null : deckJoueurSelectionne?.id ?? null);
+    setDeckAdverseId(deckAdverse?.id ?? null);
     duelRef.current = rpgNouveauDuel({
       joueurDeck: joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE,
-      sorcierDeck: etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? RPG_DECK_SORCIER_BASE,
+      sorcierDeck: etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE,
       sorcierPuissance: etageCourant ? etageCourant.puissance : sorcierPuissance,
       sorcierIA: etageCourant ? etageCourant.ia : undefined,
       rng,
@@ -1377,9 +1589,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     reprendrePartie();
   };
 
-  const demarrerPartie = () => {
+  const demarrerPartie = (deckId) => {
     setHistoireEtageId(null);
-    nouvellePartie({ etageId: null });
+    nouvellePartie({ etageId: null, deckId: typeof deckId === 'string' ? deckId : undefined });
     reprendrePartie();
   };
 
@@ -1389,7 +1601,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
-          onSelectDeck={setDeckSelectionneId}
+          onSelectDeck={choisirDeck}
           onChangeScreen={setEcran}
           onStartGame={demarrerPartie}
           onResumeGame={reprendrePartie}
@@ -1417,7 +1629,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const monTour = duel.tour === 'joueur' && !vainqueur;
-  const deckJoueurAffiche = RPG_DECKS.find((deck) => deck.id === deckSelectionneId && deck.role === 'joueur') ?? RPG_DECKS[0];
+  const deckJoueurAffiche = RPG_DECKS.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckEstSelectionnable(deck)) ?? RPG_DECKS[0];
+  const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
   const reponseActive = Boolean(combatEntrant && duel.fenetreReponse && !vainqueur);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const indicateurTour = vainqueur
@@ -2569,7 +2782,11 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       >
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER DU TEMPS</strong>
-          {etageHistoire && <span className="rpg-duel-nav__story">MODE HISTOIRE · {etageHistoire.nom}</span>}
+          {etageHistoire && (
+            <span className="rpg-duel-nav__story">
+              <span className="rpg-duel-nav__story-mode">MODE </span>HISTOIRE<span className="rpg-duel-nav__story-floor"> · {etageHistoire.nom}</span>
+            </span>
+          )}
           <button type="button" onClick={() => setEcran(histoireEtageId ? 'histoire' : 'jouer')}>Menu</button>
           <button type="button" onClick={() => setEcran('decks')}>Deck</button>
           <button type="button" onClick={() => setEcran('catalogue')}>Catalogue</button>
@@ -2596,10 +2813,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
         <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}`} onClick={cliquerSorcier}
           title="Le sorcier adverse">
-          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={cardArt('ifrit-al-ahmar')} alt="" /></span>
+          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={etageHistoire ? cardArt('ifrit-al-ahmar') : deckBoxArtUrl(deckAdverseAffiche)} alt="" /></span>
           <span className="rpg-wizard-plate__identity">
             <strong>{etageHistoire ? etageHistoire.nom : 'LE SORCIER'}</strong>
-            <small>{etageHistoire ? etageHistoire.fonction : 'Cour des Djinns · Braise'}</small>
+            <small>{etageHistoire ? etageHistoire.fonction : `${deckAdverseAffiche.name} · ${deckColorLabel(deckAdverseAffiche)}`}</small>
           </span>
           <span className="rpg-wizard-plate__pv">🛡 {duel.sorcier.pv}{duel.sorcier.bouclier > 0 ? ` · ◇ ${duel.sorcier.bouclier}` : ''}</span>
           <span className="rpg-wizard-plate__sable">

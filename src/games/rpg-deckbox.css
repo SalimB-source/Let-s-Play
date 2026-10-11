@@ -1,0 +1,564 @@
+/* Onglet Deck de « Le Sablier du temps » — les decks sont des boîtiers 3D.
+
+   Chaque deck est un boîtier rigide en cuir sombre, cerclé de laiton, dont la face
+   avant porte l'illustration plein art d'une carte emblématique (`boxArt`, dans
+   rpgCards.js). Le volume est de la 3D CSS pure : six faces posées autour du centre
+   d'un cube déformé (largeur × hauteur × profondeur), sous une perspective.
+   Un léger balancement garde la scène vivante ; le boîtier se tourne vers le
+   curseur (voir `inclinerBoitier`) et se redresse au survol ou au focus.
+
+   La liste des cartes d'un deck n'existe qu'une fois son boîtier cliqué : tant
+   qu'aucun n'est ouvert, l'étagère occupe tout l'écran (`--closed`) ; à l'ouverture,
+   les boîtiers se réduisent dans la colonne de gauche (`--open`) et la fiche du
+   deck, liste comprise, apparaît à droite.
+
+   Ouvrir un boîtier et le sélectionner sont deux gestes : le clic montre la liste,
+   le bouton « Sélectionner » sous le boîtier en fait le deck de jeu (mémorisé sur
+   l'appareil, voir rpgDeckChoice.js). Une rangée de puces filtre l'étagère par
+   couleur (voir rpgDeckFilter.js). */
+
+/* ── Le boîtier ──────────────────────────────────────────────────────────── */
+.rpg-deckbox {
+  --bw: 150px;                          /* largeur de la face avant */
+  --bh: calc(var(--bw) * 1.4);          /* hauteur */
+  --bd: calc(var(--bw) * .42);          /* profondeur */
+  --lid: calc(var(--bh) * .15);         /* hauteur du couvercle (jusqu'au joint) */
+  --accent: #e5bf69;                    /* laiton */
+  --accent-deep: #8a5a1e;
+  --glow: rgba(240, 196, 104, .55);
+  --hide: #1b150f;                      /* cuir */
+  --hide-hi: #2e241a;
+  position: relative;
+  display: block;
+  flex: none;
+  width: calc(var(--bw) * 1.22);        /* marge pour la rotation */
+  height: calc(var(--bh) + var(--bd) * .6);
+  perspective: calc(var(--bw) * 7);
+  perspective-origin: 50% 38%;
+  pointer-events: none;
+}
+/* Borné aussi par la hauteur : sur un écran peu haut, le bouton « Sélectionner » reste visible sans défiler. */
+.rpg-deckbox--shelf { --bw: clamp(112px, min(15vw, 21vh), 176px); }
+.rpg-deckbox--mini { --bw: 58px; }
+.rpg-deckbox--showcase { --bw: clamp(64px, 7vw, 84px); }
+.rpg-deckbox--braise { --accent: #ec7a4c; --accent-deep: #8f2c1a; --glow: rgba(255, 112, 62, .55); --hide: #1f110e; --hide-hi: #35201a; }
+.rpg-deckbox--hybride { --accent: #eaa55a; --accent-deep: #8c4a20; --glow: rgba(244, 150, 72, .55); --hide: #1e1410; --hide-hi: #33231a; }
+.rpg-deckbox--eau { --accent: #6fc3e6; --accent-deep: #1f5f84; --glow: rgba(90, 190, 240, .5); --hide: #0f1620; --hide-hi: #1b2837; }
+
+/* Ombre au sol (peinte sous le boîtier) ; l'halo de couleur marque le deck ouvert. */
+.rpg-deckbox__shadow {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bd) * .02);
+  width: calc(var(--bw) * 1.25);
+  height: calc(var(--bd) * .95);
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, .66), rgba(0, 0, 0, 0) 68%);
+  filter: blur(calc(var(--bw) * .03));
+}
+
+/* Balancement continu : décalé d'un boîtier à l'autre pour que l'étagère n'ait pas
+   l'air synchronisée. */
+.rpg-deckbox__sway {
+  position: absolute;
+  top: calc(var(--bd) * .24);
+  left: calc((100% - var(--bw)) / 2);
+  width: var(--bw);
+  height: var(--bh);
+  transform-style: preserve-3d;
+  animation: rpg-deckbox-sway 8s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i, 0) * -2.7s);
+}
+@keyframes rpg-deckbox-sway {
+  from { transform: translateY(0) rotateY(-6deg); }
+  to { transform: translateY(calc(var(--bw) * -.04)) rotateY(6deg); }
+}
+
+/* Pose du boîtier : tourné vers la droite (on voit son dos gauche), légèrement vu
+   de dessus. `--rx` / `--ry` / `--lift` sont pilotés par le survol et par le curseur. */
+.rpg-deckbox__body {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: translateY(var(--lift, 0px)) rotateX(var(--rx, -10deg)) rotateY(var(--ry, 28deg));
+  transition: transform .55s cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Six faces, centrées sur le boîtier puis repoussées de la demi-épaisseur. */
+.rpg-deckbox__face {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .028) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
+    linear-gradient(160deg, var(--hide-hi), var(--hide) 62%);
+}
+.rpg-deckbox__face--front { inset: 0; transform: translateZ(calc(var(--bd) / 2)); border-radius: calc(var(--bw) * .035); }
+.rpg-deckbox__face--back { inset: 0; transform: rotateY(180deg) translateZ(calc(var(--bd) / 2)); border-radius: calc(var(--bw) * .035); }
+.rpg-deckbox__face--left,
+.rpg-deckbox__face--right { top: 0; left: calc((var(--bw) - var(--bd)) / 2); width: var(--bd); height: 100%; }
+.rpg-deckbox__face--left { transform: rotateY(-90deg) translateZ(calc(var(--bw) / 2)); }
+.rpg-deckbox__face--right { transform: rotateY(90deg) translateZ(calc(var(--bw) / 2)); filter: brightness(.74); }
+.rpg-deckbox__face--top,
+.rpg-deckbox__face--bottom { left: 0; top: calc((var(--bh) - var(--bd)) / 2); width: 100%; height: var(--bd); }
+.rpg-deckbox__face--top { transform: rotateX(90deg) translateZ(calc(var(--bh) / 2)); }
+.rpg-deckbox__face--bottom { transform: rotateX(-90deg) translateZ(calc(var(--bh) / 2)); filter: brightness(.55); }
+
+/* Face avant : illustration, cadre de laiton, couvercle, fermoir, plaque, reflet. */
+.rpg-deckbox__art {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 28%;
+}
+.rpg-deckbox__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(6, 4, 3, .28), rgba(6, 4, 3, 0) 24%, rgba(6, 4, 3, 0) 50%, rgba(6, 4, 3, .82) 100%);
+}
+.rpg-deckbox__face--front::before,
+.rpg-deckbox__face--back::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--bw) * .03);
+  z-index: 3;
+  border-radius: calc(var(--bw) * .02);
+  box-shadow:
+    inset 0 0 0 max(1px, calc(var(--bw) * .011)) var(--accent),
+    inset 0 0 0 max(2px, calc(var(--bw) * .02)) rgba(0, 0, 0, .35);
+  pointer-events: none;
+}
+.rpg-deckbox__lid {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--lid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(22, 16, 10, .88), rgba(22, 16, 10, .62));
+  border-bottom: max(1px, calc(var(--bw) * .01)) solid rgba(0, 0, 0, .78);
+  box-shadow: 0 max(1px, calc(var(--bw) * .008)) 0 rgba(255, 233, 184, .32);
+}
+.rpg-deckbox__medals { display: flex; align-items: center; justify-content: center; gap: calc(var(--bw) * .02); }
+.rpg-deckbox__medal {
+  display: grid;
+  place-items: center;
+  width: calc(var(--lid) * .7);
+  height: calc(var(--lid) * .7);
+  border-radius: 50%;
+  color: #1c140b;
+  background: radial-gradient(circle at 34% 28%, #fff1c2, var(--accent) 55%, var(--accent-deep));
+  box-shadow: 0 0 0 max(1px, calc(var(--bw) * .006)) rgba(0, 0, 0, .55), 0 1px 3px rgba(0, 0, 0, .6);
+}
+.rpg-deckbox__medal svg { display: block; width: 64%; height: 64%; fill: currentColor; }
+.rpg-deckbox__latch {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: calc(var(--lid) - var(--bw) * .03);
+  width: calc(var(--bw) * .13);
+  height: calc(var(--bw) * .085);
+  transform: translateX(-50%);
+  border-radius: calc(var(--bw) * .012) calc(var(--bw) * .012) 50% 50% / calc(var(--bw) * .012) calc(var(--bw) * .012) 100% 100%;
+  background: linear-gradient(180deg, #f9e3a6, var(--accent) 55%, var(--accent-deep));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .75), inset 0 0 0 1px rgba(0, 0, 0, .35);
+}
+.rpg-deckbox__latch::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  width: 16%;
+  height: 38%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(20, 12, 4, .85);
+}
+.rpg-deckbox__plate {
+  position: absolute;
+  z-index: 3;
+  left: 11%;
+  right: 11%;
+  bottom: 8%;
+  padding: calc(var(--bw) * .03) calc(var(--bw) * .02) calc(var(--bw) * .034);
+  text-align: center;
+  color: #fff1d2;
+  font: 700 calc(var(--bw) * .086) / 1.14 Georgia, 'Times New Roman', serif;
+  text-wrap: balance;
+  text-shadow: 0 1px 2px #000;
+  background: linear-gradient(180deg, rgba(20, 15, 10, .84), rgba(8, 6, 4, .92));
+  border: max(1px, calc(var(--bw) * .008)) solid var(--accent);
+  border-radius: calc(var(--bw) * .02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .65);
+}
+.rpg-deckbox__gloss {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(118deg, rgba(255, 255, 255, .28) 0%, rgba(255, 255, 255, .07) 22%, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, .1) 100%);
+}
+
+/* Flancs : couvercle séparé du corps par un joint, bandes de laiton en haut et en bas.
+   Le dos du boîtier (gauche) porte le nom du deck, ses médaillons et son nombre de cartes. */
+.rpg-deckbox__face--left::before,
+.rpg-deckbox__face--right::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--lid);
+  background: linear-gradient(180deg, var(--accent) 0 calc(var(--bw) * .02), rgba(22, 16, 10, .72) calc(var(--bw) * .02));
+  border-bottom: max(1px, calc(var(--bw) * .01)) solid rgba(0, 0, 0, .78);
+  box-shadow: 0 max(1px, calc(var(--bw) * .008)) 0 rgba(255, 233, 184, .28);
+}
+.rpg-deckbox__face--left::after,
+.rpg-deckbox__face--right::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--bw) * .02);
+  background: var(--accent);
+}
+.rpg-deckbox__face--left .rpg-deckbox__medals,
+.rpg-deckbox__face--right .rpg-deckbox__medals {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--bw) * .02);
+  height: calc(var(--lid) - var(--bw) * .02);
+  z-index: 1;
+}
+.rpg-deckbox__title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--lid) + var(--bw) * .03);
+  bottom: calc(var(--bd) * .74);
+  display: grid;
+  place-items: center;
+  writing-mode: vertical-rl;
+  color: #f7e8c2;
+  font: 800 calc(var(--bd) * .15) / 1 Georgia, 'Times New Roman', serif;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+}
+.rpg-deckbox__count {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bw) * .05);
+  width: calc(var(--bd) * .56);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #1c140b;
+  font: 800 calc(var(--bd) * .21) / 1 var(--mono, monospace);
+  background: radial-gradient(circle at 34% 28%, #fff1c2, var(--accent) 55%, var(--accent-deep));
+  box-shadow: 0 0 0 max(1px, calc(var(--bw) * .006)) rgba(0, 0, 0, .55), 0 1px 3px rgba(0, 0, 0, .6);
+}
+
+/* Dessus (couvercle) : reflet de cuir, liseré de laiton, creux pour le pouce. */
+.rpg-deckbox__face--top {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .02)),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .028) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
+    linear-gradient(160deg, var(--hide-hi), var(--hide) 62%);
+  box-shadow: inset 0 0 0 calc(var(--bw) * .018) var(--accent-deep);
+}
+.rpg-deckbox__face--top::after {
+  content: '';
+  position: absolute;
+  left: 32%;
+  right: 32%;
+  top: 36%;
+  bottom: 36%;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .38);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .65), 0 1px 0 rgba(255, 235, 190, .16);
+}
+
+/* Dos : blason du deck. */
+.rpg-deckbox__crest { position: absolute; inset: 0; display: grid; place-items: center; color: var(--accent); opacity: .55; }
+.rpg-deckbox__crest svg { display: block; width: 34%; height: auto; fill: currentColor; filter: drop-shadow(0 1px 1px #000); }
+
+/* Version réduite (colonne de gauche) : trop petit pour du texte, on garde les formes. */
+.rpg-deckbox--mini .rpg-deckbox__plate,
+.rpg-deckbox--mini .rpg-deckbox__title,
+.rpg-deckbox--mini .rpg-deckbox__count,
+.rpg-deckbox--mini .rpg-deckbox__latch { display: none; }
+.rpg-deckbox--mini .rpg-deckbox__medals { transform: scale(.8); }
+
+/* ── Choix d'un deck : boîtier + légende, le tout cliquable ────────────────── */
+.rpg-deck-choice {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #f4ead5;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  transition: background .18s ease, border-color .18s ease;
+}
+.rpg-deck-choice__button {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  border-radius: inherit;
+}
+/* La zone cliquable couvre le boîtier (voisin du bouton) et sa légende. */
+.rpg-deck-choice__button::before { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.rpg-deck-choice__button:focus-visible { outline: none; }
+.rpg-deck-choice:has(.rpg-deck-choice__button:focus-visible) { outline: 2px solid #f0d994; outline-offset: 3px; }
+
+/* Pose redressée au survol, au focus et pour le deck ouvert. */
+.rpg-deck-choice:hover .rpg-deckbox,
+.rpg-deck-choice:has(.rpg-deck-choice__button:focus-visible) .rpg-deckbox { --ry: 14deg; --rx: -8deg; --lift: calc(var(--bw) * -.05); }
+.rpg-deck-choice.is-open .rpg-deckbox { --ry: 10deg; --rx: -6deg; }
+.rpg-deck-choice:hover { border-color: rgba(235, 194, 106, .26); background: radial-gradient(ellipse at 50% 34%, rgba(255, 226, 160, .09), rgba(255, 226, 160, 0) 68%); }
+.rpg-deck-choice.is-open {
+  border-color: rgba(235, 194, 106, .62);
+  background: radial-gradient(ellipse at 50% 34%, rgba(255, 214, 140, .14), rgba(255, 214, 140, 0) 70%);
+}
+.rpg-deck-choice--braise.is-open { border-color: rgba(215, 107, 81, .7); background: radial-gradient(ellipse at 50% 34%, rgba(255, 120, 70, .16), rgba(255, 120, 70, 0) 70%); }
+.rpg-deck-choice--hybride.is-open { border-color: rgba(232, 168, 100, .75); background: radial-gradient(ellipse at 50% 34%, rgba(244, 150, 72, .16), rgba(244, 150, 72, 0) 70%); }
+.rpg-deck-choice.is-open .rpg-deckbox__shadow {
+  background:
+    radial-gradient(ellipse at 50% 50%, var(--glow), rgba(0, 0, 0, 0) 70%),
+    radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0) 62%);
+}
+
+.rpg-deck-choice__text { min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 0 4px 6px; text-align: center; }
+.rpg-deck-choice__text small { color: #d6b970; font: 800 9px/1.2 var(--mono, monospace); letter-spacing: .12em; }
+.rpg-deck-choice--braise .rpg-deck-choice__text small { color: #eba089; }
+.rpg-deck-choice--hybride .rpg-deck-choice__text small { color: #e8c37a; }
+.rpg-deck-choice__text strong { color: #fff0d4; font: 700 clamp(14px, 1.5vw, 17px) / 1.2 Georgia, serif; text-wrap: balance; }
+.rpg-deck-choice__text em { color: rgba(244, 231, 207, .74); font: 10px/1.35 var(--mono, monospace); font-style: normal; }
+.rpg-deck-choice__meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; }
+.rpg-deck-choice__meta b { color: rgba(239, 221, 188, .8); font: 800 10px/1 var(--mono, monospace); }
+.rpg-deck-choice__cta { color: #e7c274; font: 800 10px/1.2 var(--mono, monospace); letter-spacing: .05em; }
+.rpg-deck-choice:not(.is-open):hover:not(:has(.rpg-deck-choice__select:hover)) .rpg-deck-choice__cta { color: #fff0bf; text-decoration: underline; }
+
+/* Le deck de jeu courant : liseré vert discret, en plus de l'état du bouton. */
+.rpg-deck-choice.is-active { box-shadow: inset 0 0 0 1px rgba(163, 203, 164, .32); }
+
+/* ── « Sélectionner » : le bouton sous chaque boîtier ────────────────────────
+   Placé APRÈS la zone cliquable étirée du boîtier (`__button::before`), il doit la
+   dépasser (position + z-index) : sinon un clic dessus ouvrirait le deck. */
+.rpg-deck-choice__select {
+  position: relative;
+  z-index: 2;
+  align-self: stretch;
+  min-height: 38px;
+  margin: 8px 4px 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(232, 194, 113, .62);
+  border-radius: 9px;
+  background: rgba(27, 20, 14, .82);
+  color: #f4ddb0;
+  font: 800 10px/1.15 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
+}
+.rpg-deck-choice__select:hover:not(:disabled):not([aria-disabled='true']),
+.rpg-deck-choice__select:focus-visible:not(:disabled):not([aria-disabled='true']) {
+  border-color: #f0d994;
+  background: linear-gradient(135deg, #e5c06b, #b77d32);
+  color: #21170d;
+  transform: translateY(-1px);
+}
+.rpg-deck-choice__select:focus-visible { outline: 2px solid #f0d994; outline-offset: 2px; }
+/* Déjà sélectionné : un état, pas une action (il reste focalisable, sans effet au clic). */
+.rpg-deck-choice__select.is-selected {
+  border-color: rgba(163, 203, 164, .6);
+  background: rgba(49, 90, 57, .4);
+  color: #d6eed0;
+  cursor: default;
+}
+/* Deck adverse : jamais sélectionnable. */
+.rpg-deck-choice__select:disabled {
+  border-color: rgba(237, 220, 187, .18);
+  background: rgba(255, 255, 255, .03);
+  color: rgba(244, 233, 214, .64);
+  cursor: default;
+}
+
+/* Ligne d'état sous l'étagère : deck de jeu courant, et confirmation de la mémorisation. */
+.rpg-deck-catalog__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 9px 14px;
+  border: 1px solid rgba(163, 203, 164, .26);
+  border-radius: 10px;
+  background: rgba(49, 90, 57, .14);
+  color: rgba(244, 233, 214, .8);
+  font: 10px/1.5 var(--mono, monospace);
+}
+.rpg-deck-catalog__status strong { color: #fff0d4; font: 700 13px/1.3 Georgia, serif; }
+.rpg-deck-catalog__status .is-saved { color: #c8e4c1; font-weight: 800; }
+.rpg-deck-catalog__status .is-unsaved { color: #f3b8a4; font-weight: 800; }
+
+/* ── Filtre par couleur : une rangée de puces au-dessus de l'étagère ──────── */
+.rpg-deck-filter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label count' 'chips chips';
+  align-items: center;
+  gap: 6px 10px;
+}
+.rpg-deck-filter__label { grid-area: label; color: #e8c77f; font: 800 8px/1.2 var(--mono, monospace); letter-spacing: .13em; text-transform: uppercase; }
+.rpg-deck-filter__chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 5px; }
+.rpg-deck-filter__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid rgba(235, 215, 176, .28);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .045);
+  color: #f1e3c4;
+  font: 800 10px/1 var(--mono, monospace);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+.rpg-deck-filter__chip:hover { border-color: rgba(240, 217, 148, .6); background: rgba(255, 255, 255, .1); }
+.rpg-deck-filter__chip:focus-visible { outline: 2px solid #f0d994; outline-offset: 2px; }
+.rpg-deck-filter__emblems { display: inline-flex; align-items: center; gap: 2px; }
+.rpg-deck-filter__emblems svg { display: block; width: 14px; height: 14px; fill: currentColor; }
+.rpg-emblem--sable { color: #e5bf69; }
+.rpg-emblem--braise { color: #ee7f55; }
+.rpg-emblem--eau { color: #70c6ea; }
+/* Puce active : pleine, de la couleur du filtre, texte sombre. */
+.rpg-deck-filter__chip.is-active { border-color: rgba(255, 244, 214, .85); color: #1d130a; background: linear-gradient(135deg, #f6ead0, #d8c9a2); }
+.rpg-deck-filter__chip--sable.is-active { background: linear-gradient(135deg, #f0d284, #d9a548); }
+.rpg-deck-filter__chip--braise.is-active { background: linear-gradient(135deg, #f7ac8a, #e07a52); }
+.rpg-deck-filter__chip--hybride.is-active { background: linear-gradient(135deg, #f0d284, #e5835a); }
+.rpg-deck-filter__chip--eau.is-active { background: linear-gradient(135deg, #a3dcf2, #62b6df); }
+.rpg-deck-filter__chip.is-active .rpg-emblem { color: inherit; }
+.rpg-deck-filter__count { grid-area: count; margin: 0; color: rgba(244, 233, 214, .68); font: 800 9px/1.3 var(--mono, monospace); white-space: nowrap; }
+/* Dès 641 px, étagère fermée : libellé, puces et compteur sur une seule rangée centrée. */
+@media (min-width: 641px) {
+  .rpg-deck-catalog--closed .rpg-deck-filter { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 12px; }
+  .rpg-deck-catalog--closed .rpg-deck-filter__chips { gap: 6px; }
+  .rpg-deck-catalog--closed .rpg-deck-filter__chip { padding: 6px 13px; }
+}
+
+/* ── Étagère fermée : aucun deck ouvert, donc aucune liste de cartes ─────────── */
+.rpg-deck-catalog--closed { grid-template-columns: minmax(0, 1fr); }
+.rpg-deck-catalog--closed .rpg-deck-catalog__rail { gap: clamp(10px, 1.9vh, 20px); padding: clamp(14px, 2.6vh, 28px) clamp(18px, 3vw, 30px); }
+.rpg-deck-catalog--closed .rpg-deck-catalog__intro { max-width: 760px; margin: 0 auto; text-align: center; }
+.rpg-deck-catalog--closed .rpg-deck-catalog__status { justify-content: center; align-self: center; max-width: 100%; text-align: center; }
+.rpg-deck-catalog--closed .rpg-deck-catalog__choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(8px, 2.4vw, 32px);
+}
+.rpg-deck-catalog--closed .rpg-deck-choice { width: clamp(150px, 21vw, 240px); padding: 10px 8px 12px; }
+
+/* ── Deck ouvert : boîtiers réduits à gauche, fiche et liste à droite ───────── */
+.rpg-deck-catalog--open .rpg-deck-catalog__choices { display: grid; gap: 8px; }
+.rpg-deck-catalog--open .rpg-deck-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 6px;
+  padding: 6px 10px 6px 2px;
+  border-color: rgba(237, 220, 187, .15);
+  background: rgba(255, 255, 255, .025);
+}
+.rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text { justify-items: start; padding: 0; text-align: left; }
+.rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text strong { font-size: 14px; }
+.rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__meta { justify-content: flex-start; }
+.rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__cta { display: none; }
+.rpg-deck-catalog--open .rpg-deck-choice__select { grid-column: 1 / -1; margin: 6px 0 2px 8px; min-height: 34px; padding: 7px 10px; }
+.rpg-deck-catalog--open .rpg-deck-choice.is-open .rpg-deck-choice__cta { display: block; color: #a9d7a2; }
+
+/* ── Fiche du deck ouvert ─────────────────────────────────────────────────── */
+.rpg-deck-detail { position: relative; animation: rpg-deck-detail-in .38s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rpg-deck-detail-in { from { opacity: 0; transform: translateY(12px); } }
+.rpg-deck-detail__close { display: block; min-height: 30px; margin: -6px 0 4px auto; padding: 7px 0 7px 12px; }
+.rpg-deck-detail__header { gap: clamp(8px, 1.6vw, 18px); }
+.rpg-deck-detail__header > div { min-width: 0; }
+
+/* ── Écrans étroits ───────────────────────────────────────────────────────── */
+@media (max-width: 820px) {
+  /* La fiche passe sous les boîtiers, qui forment alors une rangée de trois. */
+  .rpg-deck-catalog--open .rpg-deck-catalog__choices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .rpg-deck-catalog--open .rpg-deck-choice { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 4px 4px 8px; }
+  .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text { justify-items: center; text-align: center; }
+  .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text strong { font-size: 12px; }
+  .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text small,
+  .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text em,
+  .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__meta b { display: none; }
+  .rpg-deck-catalog--open .rpg-deck-choice__select { grid-column: auto; justify-self: stretch; margin: 6px 0 0; padding: 7px 2px; font-size: 9px; letter-spacing: .03em; }
+}
+@media (max-width: 560px) {
+  .rpg-deckbox--shelf { --bw: clamp(96px, 30vw, 132px); }
+  /* Les quatre puces de couleur tiennent sur une rangée dès 360 px. */
+  .rpg-deck-filter__chips { gap: 4px; }
+  .rpg-deck-filter__chip { gap: 4px; padding: 6px 8px; font-size: 9px; letter-spacing: .04em; }
+  .rpg-deck-catalog--closed .rpg-deck-catalog__choices { gap: 4px; }
+  .rpg-deck-catalog--closed .rpg-deck-choice { width: calc(50% - 4px); padding: 8px 4px 10px; }
+  .rpg-deck-detail__header .rpg-deckbox { margin-left: -6px; }
+}
+/* Écran large mais peu haut (portable) : l'aide cède la place, les boutons restent visibles. */
+@media (min-width: 821px) and (max-height: 700px) {
+  .rpg-deck-catalog--closed .rpg-deck-catalog__intro p { display: none; }
+}
+/* Téléphone en paysage : peu de hauteur, on rapproche et on réduit l'étagère. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .rpg-deckbox--shelf { --bw: 96px; }
+  .rpg-deck-catalog--closed .rpg-deck-choice { width: clamp(132px, 22vw, 200px); }
+  .rpg-deck-catalog--closed .rpg-deck-catalog__intro p { display: none; }
+}
+
+/* Au doigt : des cibles d'au moins 44 px (y compris dans la rangée de boîtiers réduits). */
+@media (pointer: coarse) {
+  .rpg-deck-choice__select,
+  .rpg-deck-catalog--open .rpg-deck-choice__select { min-height: 44px; }
+  .rpg-deck-filter__chip { min-height: 40px; }
+}
+/* Très petit écran : « SÉLECTIONNER » doit tenir dans un tiers de la rangée. */
+@media (max-width: 360px) {
+  .rpg-deck-catalog--open .rpg-deck-choice__select { padding-inline: 1px; font-size: 8px; letter-spacing: .02em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-deckbox__sway { animation: none; }
+  .rpg-deckbox__body { transition: none; }
+  .rpg-deck-detail { animation: none; }
+  .rpg-deck-choice__select, .rpg-deck-filter__chip { transition: none; }
+}
