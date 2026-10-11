@@ -273,6 +273,20 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   ]);
 });
 
+test('chaque deck de départ a son boîtier illustré : une carte emblématique du deck, unique et livrée avec le jeu', () => {
+  const illustrations = new Map();
+  for (const deck of RPG_DECKS) {
+    assert.ok(deck.boxArt, `${deck.name} a une illustration de boîtier (boxArt)`);
+    assert.ok(deck.cardIds.some((id) => cardArtId(cardById(id)) === deck.boxArt),
+      `l’illustration du boîtier « ${deck.name} » est celle d’une carte de ce deck`);
+    assert.ok(existsSync(fileURLToPath(new URL(`../public/cards/${deck.boxArt}.jpg`, import.meta.url))),
+      `l’illustration ${deck.boxArt} du boîtier « ${deck.name} » est livrée avec le jeu`);
+    assert.equal(illustrations.has(deck.boxArt), false,
+      `${deck.name} partage l’illustration ${deck.boxArt} avec ${illustrations.get(deck.boxArt)}`);
+    illustrations.set(deck.boxArt, deck.name);
+  }
+});
+
 test('les capacités des personnages amazighs se déclenchent à l’arrivée et à la destruction', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 100);

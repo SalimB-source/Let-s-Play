@@ -36,7 +36,7 @@ Les piles de terrains sont uniquement une présentation : chaque terrain reste u
 
 Les attaquants sont couchés à 90° dès leur déclaration et restent couchés après l’attaque. Cette rotation dépend de l’état de la créature et reste prioritaire sur les animations ; annuler la déclaration redresse la carte.
 
-Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. L’aperçu instantané n’a ni fond principal ni cadre ; seul l’encadré des infos garde son fond sombre, et le plateau n’a plus de grands fonds opaques.
+Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. L’aperçu instantané n’a ni fond principal ni cadre ; seul l’encadré des infos garde son fond sombre, et le plateau n’a plus de grands fonds opaques. L’aperçu d’une magie lancée (centré, 1,8 s, aucune carte n’étant survolée) est ce même aperçu : ni liseré, ni halo, ni ombre, ni animation à lui. Seul son `z-index` (`.is-spell-preview`) le distingue, pour rester devant l’annonce « MAGIE JOUÉE ».
 
 Le plateau garde en revanche son **voile noir dégradé en haut et en bas** (`--rpg-plateau-voile`, `rpg-battle.css`) : les textes de la table vivent dans ces deux bandes — navigation et identité du sorcier en haut, identité du joueur, terrains, message du tour, phases, commandes et main en bas — et les plateaux clairs (l’Erg du Sahara monte à 142/255 en haut du cadre, les Ruines de Tipaza à 118 en bas) noyaient l’encre crème. Seule la vignette centrale disparaît au doigt, pour laisser le champ de bataille dégagé ; les bandes sont recalées sur les rangées de la grille tactile.
 

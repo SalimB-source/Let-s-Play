@@ -1,7 +1,30 @@
 /* Prototype RPG « Le Sablier du temps » — écran de combat.
    Palette du concept B : laiton et cuivre de la ville, indigo de la nuit,
-   ocre du sable qui monte. Les variables viennent du site (src/styles.css),
-   donc le thème clair s'applique aux panneaux sans retouche ici. */
+   ocre du sable qui monte. Les variables viennent du site (src/styles.css) ;
+   la scène de jeu, elle, reste nocturne dans les deux thèmes (voir ci-dessous). */
+
+/* ── Thème clair : la scène de jeu reste nocturne ────────────────────────────
+   Règle 2 de src/theme.css — « les médias restent sombres ». Le menu, le duel
+   et tous leurs écrans (mode Histoire, fin d'étage, invite de rotation) sont un
+   écran de jeu posé sur un fond sombre fixe (key art, table de bois, voiles
+   noirs), pas une surface d'interface. Or ils lisent les jetons du site
+   (`--ink`, `--muted`, `--dim`, `--line*`…), et en thème clair ces jetons passent
+   à l'encre sombre : du bleu nuit sur du noir, soit ~1,1:1 de contraste. Les
+   résumés de tour, les descriptions d'étage, « Effacer la progression », le
+   texte de fin d'étage et ses boutons « fantômes » devenaient invisibles.
+   On réancre donc ici, sur la scène, les valeurs du thème sombre
+   (src/styles.css) — comme Vice City Rush pour `.city-rush-page`. Tout texte
+   ajouté plus tard à ces écrans et écrit avec les jetons du site reste lisible. */
+:root[data-theme='light'] .rpg-battle {
+  --ink: #eef0ff;
+  --muted: rgba(214, 220, 255, .64);
+  --dim: rgba(214, 220, 255, .4);
+  --line: rgba(148, 130, 255, .18);
+  --line-strong: rgba(148, 130, 255, .36);
+  --cyan: #22d3ee;
+  --violet: #a855f7;
+  color-scheme: dark;
+}
 
 .rpg-page {
   max-width: 1180px;
@@ -223,6 +246,9 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
+  /* Colonne : le centrage vertical, c'est justify-content. Sans lui, le texte restait collé en haut dès que
+     le bouton était plus haut que son contenu (rangée étirée au plus grand, min-height tactile de 44 px). */
+  justify-content: center;
   gap: 2px;
   line-height: 1.2;
   transition: transform .12s ease, border-color .12s ease;
@@ -1566,6 +1592,11 @@
 .rpg-overlay {
   position: absolute;
   inset: 0;
+  /* Au-dessus du plateau (main 40, barre de commandes 16/20, choix de mana 48) :
+     sans z-index, la main, la pastille « DUEL TERMINÉ » et les étiquettes de
+     couloir recouvraient les boutons de fin d'étage. Reste sous la navigation
+     tactile (50) et celle du bureau (900) : « Menu » demeure accessible. */
+  z-index: 49;
   display: grid;
   place-content: center;
   justify-items: center;
@@ -3556,16 +3587,10 @@
   .rpg-hand__stat { min-width: 27px; padding: 1px 3px; font-size: 8.5px; }
 }
 
-.rpg-hover-card-preview.is-spell-preview {
-  z-index: 116;
-  border: 1px solid rgba(114, 230, 208, .92);
-  box-shadow: 0 20px 58px rgba(0, 0, 0, .85), 0 0 28px rgba(91, 240, 218, .42);
-  animation: rpg-spell-card-preview .22s ease-out both;
-}
-@keyframes rpg-spell-card-preview {
-  from { opacity: 0; scale: .92; }
-  to { opacity: 1; scale: 1; }
-}
+/* L'aperçu de la magie jouée EST l'aperçu rapide, tel quel : même carte, même encadré d'infos,
+   ni liseré, ni halo, ni ombre portée, ni animation à lui. Seuls changent sa place (centré : aucune
+   carte n'est survolée) et son empilement, pour rester devant l'annonce « MAGIE JOUÉE ». */
+.rpg-hover-card-preview.is-spell-preview { z-index: 116; }
 
 /* Coup reçu et impact direct : l'arène entière frémit, avec une vignette rouge
    uniquement lorsque vos PV sont touchés. Les variantes alternent pour relancer
@@ -3715,6 +3740,10 @@
   margin: 0 auto;
   padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 46px) 18px;
   display: grid;
+  /* Colonne unique bornée à la largeur de l'écran : en `auto`, elle prenait la
+     largeur minimale de la barre de modes (4 boutons) et poussait tout le
+     contenu — dont les écrans du mode Histoire — hors du téléphone. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
   gap: clamp(20px, 3.2vh, 34px);
 }
@@ -4014,46 +4043,11 @@
 }
 .rpg-deck-catalog__rail { display: flex; flex-direction: column; gap: 14px; padding: 17px; }
 .rpg-deck-catalog__intro p { margin: 8px 0 0; color: rgba(244, 233, 214, .68); font: 12px/1.55 Georgia, serif; }
-.rpg-deck-catalog__choices { display: grid; gap: 8px; }
-.rpg-deck-choice {
-  width: 100%;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: 50px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 11px;
-  padding: 8px;
-  border: 1px solid rgba(237, 220, 187, .15);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, .025);
-  color: #f4ead5;
-  text-align: left;
-  cursor: pointer;
-  transition: background .16s ease, border-color .16s ease, transform .16s ease;
-}
-.rpg-deck-choice:hover,
-.rpg-deck-choice:focus-visible,
-.rpg-deck-choice.is-selected { transform: translateY(-1px); border-color: rgba(235, 194, 106, .66); background: rgba(212, 168, 87, .1); outline: none; }
-.rpg-deck-choice--braise.is-selected { border-color: rgba(215, 107, 81, .7); background: rgba(157, 57, 40, .16); }
-.rpg-deck-choice img { width: 50px; height: 66px; object-fit: cover; border: 1px solid #92794d; border-radius: 5px; }
-.rpg-deck-choice--braise img { border-color: #a5483d; }
-.rpg-deck-choice__text { min-width: 0; display: grid; gap: 4px; }
-.rpg-deck-choice__text small { color: #d6b970; font: 800 7px/1.2 var(--mono, monospace); letter-spacing: .12em; }
-.rpg-deck-choice--braise .rpg-deck-choice__text small { color: #e18b76; }
-.rpg-deck-choice--hybride.is-selected { border-color: rgba(232, 192, 106, .82); background: linear-gradient(115deg, rgba(157, 57, 40, .2), rgba(121, 89, 30, .18)); }
-.rpg-deck-choice--hybride img { border-color: #c0944c; }
-.rpg-deck-choice--hybride .rpg-deck-choice__text small { color: #e4bf73; }
-.rpg-deck-choice__text strong { overflow: hidden; color: #fff0d4; font: 700 13px/1.2 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
-.rpg-deck-choice__text em { color: rgba(244, 231, 207, .59); font: 9px/1.3 var(--mono, monospace); font-style: normal; }
-.rpg-deck-choice__count { align-self: start; color: rgba(239, 221, 188, .66); font: 800 10px/1 var(--mono, monospace); }
 .rpg-deck-detail { padding: clamp(16px, 2.3vw, 25px); }
 .rpg-deck-detail__header { display: flex; align-items: center; gap: 17px; }
-.rpg-deck-detail__header > img { width: 88px; height: 112px; flex: none; object-fit: cover; border: 2px solid #ad986a; border-radius: 9px; box-shadow: 0 10px 24px rgba(0, 0, 0, .45); }
-.rpg-deck-detail--braise .rpg-deck-detail__header > img { border-color: #ae5344; }
 .rpg-deck-detail__header h2 { margin: 5px 0 4px; color: #fff0d5; font: 800 clamp(22px, 3vw, 32px)/1 Georgia, serif; }
 .rpg-deck-detail__header p { margin: 0; color: #e8c576; font: italic 12px/1.4 Georgia, serif; }
 .rpg-deck-detail--braise .rpg-deck-detail__header p { color: #e99479; }
-.rpg-deck-detail--hybride .rpg-deck-detail__header > img { border-color: #c2934d; }
 .rpg-deck-detail--hybride .rpg-deck-detail__header p { color: #edcc82; }
 .rpg-deck-detail__description { margin: 15px 0; color: rgba(244, 233, 214, .73); font: 12px/1.6 Georgia, serif; }
 .rpg-deck-detail__stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
@@ -4064,13 +4058,13 @@
 .rpg-deck-detail__stats .is-invalid b { color: #e48a76; }
 .rpg-deck-detail__list-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 16px 0 8px; }
 .rpg-deck-detail__list-heading h3 { margin: 0; color: #f3dfb4; font: 700 14px/1 Georgia, serif; }
-.rpg-deck-detail__list-heading span { color: rgba(244, 233, 214, .48); font: 8px/1.2 var(--mono, monospace); text-align: right; }
+.rpg-deck-detail__list-heading span { color: rgba(244, 233, 214, .64); font: 8px/1.2 var(--mono, monospace); text-align: right; }
 .rpg-deck-list { max-height: min(29vh, 270px); overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin: 0; padding: 0 5px 0 0; list-style: none; scrollbar-color: rgba(226, 187, 111, .45) rgba(15, 13, 16, .6); }
 .rpg-deck-list li { min-width: 0; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 4px 0; border-bottom: 1px solid rgba(240, 226, 204, .08); }
 .rpg-deck-list img { width: 30px; height: 40px; object-fit: cover; border: 1px solid rgba(220, 194, 144, .37); border-radius: 3px; }
 .rpg-deck-list li > span { min-width: 0; display: grid; gap: 3px; }
 .rpg-deck-list li strong { overflow: hidden; color: rgba(248, 239, 222, .92); font: 700 9px/1.2 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
-.rpg-deck-list li small { overflow: hidden; color: rgba(237, 220, 190, .5); font: 7px/1.2 var(--mono, monospace); text-overflow: ellipsis; white-space: nowrap; }
+.rpg-deck-list li small { overflow: hidden; color: rgba(237, 220, 190, .68); font: 7px/1.2 var(--mono, monospace); text-overflow: ellipsis; white-space: nowrap; }
 .rpg-deck-list li > b { color: #edcc82; font: 800 9px/1 var(--mono, monospace); }
 .rpg-deck-detail__play { width: 100%; margin-top: 13px; }
 .rpg-deck-detail__note { margin: 13px 0 0; padding: 10px 12px; border: 1px solid rgba(190, 104, 78, .28); border-radius: 8px; background: rgba(126, 48, 35, .12); color: rgba(246, 212, 191, .76); font: 10px/1.5 var(--mono, monospace); }
@@ -4167,15 +4161,17 @@
   .rpg-mode-menu__loadout-heading { grid-column: 1 / -1; }
   .rpg-mode-menu__loadout .rpg-menu-button--resume { grid-column: 1 / -1; }
   .rpg-deck-catalog { grid-template-columns: minmax(0, 1fr); }
-  .rpg-deck-catalog__choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rpg-card-catalogue__grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
 }
 @media (max-width: 560px) {
   .rpg-mode-menu { background-position: 58% center; }
   .rpg-mode-menu__content { gap: 18px; padding: 19px 14px 14px; }
   .rpg-mode-menu__header { align-items: start; flex-direction: column; gap: 14px; }
-  .rpg-mode-menu__switch { width: 100%; }
-  .rpg-mode-menu__switch button { flex: 1; }
+  /* Quatre boutons à parts égales, icône au-dessus du libellé : « CATALOGUE »
+     tient dans un écran de 320 px au lieu de déborder à droite. */
+  .rpg-mode-menu__switch { width: 100%; gap: 4px; padding: 4px; }
+  .rpg-mode-menu__switch button { flex: 1 1 0; min-width: 0; padding: 9px 2px; font-size: 10px; letter-spacing: .06em; }
+  .rpg-mode-menu__switch button span { display: block; margin: 0 0 5px; }
   .rpg-mode-menu__brand p { font-size: 11px; }
   .rpg-mode-menu__hero { min-height: 360px; border-radius: 16px; }
   .rpg-mode-menu__hero::before { background-position: center, 58% center; }
@@ -4193,7 +4189,6 @@
   .rpg-board-choice img { width: 78px; height: 52px; }
   .rpg-board-choice__copy em { font-size: 10px; }
   .rpg-mode-menu__footer { font-size: 7px; letter-spacing: .08em; }
-  .rpg-deck-catalog__choices { grid-template-columns: minmax(0, 1fr); }
   .rpg-deck-catalog__rail { padding: 13px; }
   .rpg-deck-detail { padding: 14px; }
   .rpg-card-catalogue__header { align-items: start; flex-direction: column; }
@@ -4206,7 +4201,6 @@
   .rpg-card-catalogue__title h3 { font-size: 13px; }
   .rpg-card-catalogue__rarity { padding: 3px 4px; font-size: 6px; }
   .rpg-deck-detail__header { gap: 11px; }
-  .rpg-deck-detail__header > img { width: 66px; height: 84px; }
   .rpg-deck-detail__header h2 { font-size: 21px; }
   .rpg-deck-detail__stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
   .rpg-deck-detail__stats > span { min-height: 50px; }

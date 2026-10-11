@@ -853,6 +853,13 @@ export const RPG_DECK_HYBRIDE_BASE = [
   ...Array(2).fill('vent-rouge'),
 ];
 
+/** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
+ *  sur le boîtier 3D de l'onglet Deck — un identifiant de `public/cards/`.
+ *  `role` : le camp que le deck tient par défaut — `joueur` (deck de départ du joueur) ou
+ *  `adversaire` (deck du sorcier en duel libre). Il ne limite rien : le joueur peut choisir
+ *  n'importe quel deck complet, la Cour des Djinns comprise (voir `rpgDeckChoice.js`).
+ *  `affrontement` : la phrase de la carte « ADVERSAIRE » de l'écran Jouer quand le sorcier
+ *  joue ce deck (sans elle : « Affrontez <nom du deck>. »). */
 export const RPG_DECKS = [
   {
     id: 'veilleurs-du-desert',
@@ -860,7 +867,9 @@ export const RPG_DECKS = [
     role: 'joueur',
     element: 'sable',
     terrain: 'desert',
+    boxArt: 'cavalier-amazigh-du-desert',
     archetype: 'Assaut des dunes',
+    affrontement: 'Affrontez les veilleurs du Désert.',
     description: 'Deck mono-Sable inspiré des peuples amazighs d’Algérie : créatures offensives, renforts et protections ciblées contre une couleur pendant leur tour d’arrivée et le tour adverse suivant.',
     cardIds: RPG_DECK_JOUEUR_BASE,
   },
@@ -870,7 +879,9 @@ export const RPG_DECKS = [
     role: 'adversaire',
     element: 'braise',
     terrain: 'montagne',
+    boxArt: 'ifrit-al-ahmar',
     archetype: 'Djinns et sorcellerie',
+    affrontement: 'Affrontez les djinns de Braise.',
     description: 'Deck mono-Braise inspiré du folklore arabo-musulman autour des djinns, ifrits et ghuls, avec des rituels de cendres.',
     cardIds: RPG_DECK_SORCIER_BASE,
   },
@@ -881,6 +892,7 @@ export const RPG_DECKS = [
     element: 'hybride',
     elements: ['sable', 'braise'],
     terrain: 'petra',
+    boxArt: 'feriel',
     archetype: 'Sable + Braise · deux couleurs, une même piste',
     description: 'Un deck hybride de Sable et de Braise : les terrains Désert et Montagne se mêlent à Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores évoquent avec subtilité des récits désertiques diné, sans divinité nommée ni symbole cérémoniel.',
     cardIds: RPG_DECK_HYBRIDE_BASE,
