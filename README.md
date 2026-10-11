@@ -5282,3 +5282,106 @@ aucun terrain n'est posé, aucune confirmation demandée ; le clic suivant est
 avalé ; le volet se referme au toucher et à Échap ; une créature en jeu
 s'aperçoit sans être déclarée attaquante ; un appui qui glisse n'ouvre rien ; un
 appui court laisse passer le clic qui joue la carte.
+
+## Le Sablier du temps : la zone de jeu au doigt, élargie et empilée
+
+Sur un téléphone en paysage, la zone de jeu est la **colonne centrale** de la
+grille tactile, prise entre deux rails : identité et terrains à gauche, phases
+et commandes à droite. Elle mesurait **343 px** sur un 844 × 390 — de quoi
+montrer 3,8 cartes — et **246 px** sur un 667 × 375 (≈ 2,8). Avec cinq cartes
+en main et deux créatures de chaque côté, il fallait défiler sans arrêt pour
+voir son propre champ de bataille.
+
+### Ce qui change
+
+- **La colonne centrale est élargie** : `clamp(116px, 16vw, 190px)` à gauche au
+  lieu de `clamp(116px, 18vw, 210px)`, `clamp(200px, 27vw, 320px)` à droite au
+  lieu de `clamp(220px, 30vw, 340px)`, et des gouttières resserrées
+  (`gap: max(8px, carte × .22)` au lieu de `.36`, marges intérieures
+  `max(8px, carte × .12)`, main à 6 px). Résultat : **386 px et ≈ 4,7 cartes**
+  sur 844 × 390 (+25 %), **270 px et ≈ 3,4** sur 667 × 375 (+21 %).
+- **Rien d'autre ne bouge.** `--duel-card` (la taille des cartes) reste à
+  `clamp(48px, 17dvh, 100px)` — agrandir les cartes en réduirait le nombre — et
+  `--terrain-inset` reste à `clamp(44px, 8vw, 160px)` : c'est la marge qui
+  tient les rails de terrains hors du cadre illustré, mesurée par
+  `check:rpg-mobile`. Les commandes gardent 200 px, assez pour trois boutons
+  tactiles de 44 px côte à côte.
+- **Les cartes homonymes s'empilent**, comme les terrains le font déjà : au
+  doigt seulement, N exemplaires identiques n'occupent plus qu'**un
+  emplacement**, avec un compteur **×N** flottant sur le coin et des ombres
+  décalées — dans la main et sur les **deux** champs de bataille. À la souris
+  et sur grand écran rien ne change : une carte = un emplacement, et le DOM de
+  la main reste exactement celui d'origine.
+- **Une pile agit sur l'exemplaire pertinent.** Poser un terrain, déclarer une
+  attaque, bloquer, cibler : la tête de pile est le premier exemplaire **prêt**
+  (ni engagé, ni déjà attaquant, ni mal d'invocation) côté joueur, la cible
+  légale ou l'attaquant non bloqué côté adverse. Chaque clic suivant avance
+  dans le groupe ; après une attaque, la tête passe à l'exemplaire qui n'a pas
+  encore attaqué.
+- **On peut déplier.** Toucher le compteur ×N déplie le groupe, et une puce ×N
+  placée dans la rangée permet de le replier. Surtout, tout groupe dont un
+  exemplaire participe à l'**action en cours** — attaquants déclarés, combat
+  entrant, blocages assignés, cible de sort, coup rapide, bloqueur sélectionné,
+  effet visuel — **se déplie seul**, pour que les flèches de blocage, les halos
+  de cible et les effets de destruction trouvent leur carte.
+- **Un exemplaire masqué emprunte la place de sa pile** dans l'instantané du
+  champ : son effet de destruction part du bon endroit au lieu du coin de la
+  table.
+- **L'appui long reste disponible** sur une pile : une seconde de contact ouvre
+  l'aperçu de la carte, sans rien jouer ni déplier.
+
+### Où vit le code
+
+- `src/games/rpgCardStacks.js` — le regroupement pur, même contrat que
+  `rpgTerrainStacks.js` : `groupCartesMain` (les exemplaires d'une main, dans
+  l'ordre d'arrivée, avec leurs **index réels**) et `groupEntitesParCarte` (les
+  créatures d'un camp qui partagent une carte). Aucune mutation de l'état du
+  moteur.
+- `src/games/RpgDuelPage.jsx` — `empilerCartes = viewport.mobile` ; la main
+  rendue pile par pile (`data-pile-count`, index représentant pour le clic, le
+  glisser-déposer, le vol de carte et l'animation de pioche, qui suivent le
+  groupe contenant l'exemplaire concerné) ; les deux lignes de jeu rendues pile
+  par pile (`champEnPiles`, `teteDePile`, `pileDeployee`, `idsActionEnCours`,
+  l'état `pilesDeployees` et `basculerPile`) ; et `prendreInstantaneChamp` qui
+  prête la place de la pile visible à un exemplaire masqué.
+- `src/games/rpg-mobile.css` — la grille tactile élargie, les gouttières
+  resserrées, le centrage des groupes (les piles et leur puce participent aux
+  marges automatiques), et la présentation des piles : `.rpg-hand__pile`,
+  `.rpg-card-stack`, compteurs `.rpg-hand__pile-count` (inerte, il laisse
+  passer le geste de jeu) et `.rpg-card-stack__count` (bouton qui déplie),
+  puce `.rpg-card-stack__toggle`.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # les 3 tests de regroupement (tests/rpg-card-stacks.test.js)
+npm run check:rpg-ui     # la grille élargie + les deux scénarios de piles en jsdom
+npm run check:rpg-mobile # la géométrie réelle (Playwright) : rails, terrains, centrage
+npm run build
+```
+
+`tests/rpg-card-stacks.test.js` vérifie le regroupement pur : l'ordre de
+première apparition, les index réels de chaque exemplaire (le total reste égal
+à la taille de la main), la carte de tête, l'absence de mutation de l'état, une
+pile par carte sans doublon, et le fait que deux camps ne partagent jamais une
+pile.
+
+`scripts/rpg-stacks-smoke.jsx` monte deux duels tactiles dans jsdom. **Côté
+joueur** : deux Chiens du guet en main ne forment qu'un emplacement avec son
+×2, le second exemplaire posé rejoint le premier en une pile ×2 dont la tête
+reste le premier venu, un appui long ouvre l'aperçu sans déplier ni déclarer,
+toucher la pile déclare **l'exemplaire prêt** et déplie le groupe, annuler
+l'attaque le replie, le compteur déplie et la puce replie, l'attaque confirmée
+laisse la tête passer à l'exemplaire qui n'a pas attaqué, et une pioche
+identique remplit la pile sans ajouter d'emplacement. **Côté sorcier** : les
+créatures adverses identiques s'empilent, leur groupe se déplie pendant
+l'attaque (chaque attaquant reste visible et recevable), un bloqueur s'assigne
+depuis la pile repliée du joueur (la tête devient le bloqueur sélectionné, le
+groupe se déplie), puis les deux camps se replient une fois le combat résolu.
+
+`check:rpg-ui` ajoute les garde-fous statiques : la nouvelle grille tactile
+(colonnes, gouttières, main), `--duel-card` et `--terrain-inset` inchangés, la
+présentation des piles (bloc relatif, compteur flottant, puce tactile, ombres
+décalées), l'empilement réservé au doigt (`empilerCartes = viewport.mobile`),
+le DOM de la main inchangé à la souris, et les groupes dépliés par toute action
+en cours.

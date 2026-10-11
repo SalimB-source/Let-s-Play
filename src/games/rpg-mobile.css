@@ -23,10 +23,15 @@
 .rpg-rotate-prompt .rpg-btn { min-height: 44px; flex-shrink: 0; }
 
 /* Centre the played cards as a group, in both camps. Auto margins consume
-   spare space but collapse on overflow, keeping the first card reachable. */
+   spare space but collapse on overflow, keeping the first card reachable.
+   Same for the identical-card piles and their expand/collapse chip. */
 .card-row { justify-content: flex-start; }
-.card-row > .rpg-card:first-child { margin-inline-start: auto; }
-.card-row > .rpg-card:last-child { margin-inline-end: auto; }
+.card-row > .rpg-card:first-child,
+.card-row > .rpg-card-stack:first-child,
+.card-row > .rpg-card-stack__toggle:first-child { margin-inline-start: auto; }
+.card-row > .rpg-card:last-child,
+.card-row > .rpg-card-stack:last-child,
+.card-row > .rpg-card-stack__toggle:last-child { margin-inline-end: auto; }
 
 /* La confirmation de sort reste utilisable à la souris, au clavier et au doigt. */
 .rpg-spell-confirm__actions .rpg-btn {
@@ -71,11 +76,22 @@
 .rpg-terrains { padding: 14px 20px 16px; scroll-padding: 14px 20px; }
 .rpg-terrain { flex-shrink: 0; }
 
+/* La zone de jeu (colonne centrale) était trop courte en largeur : 343 px sur
+   un 844 × 390 (~3,8 cartes visibles) et 246 px sur un 667 × 375 (~2,8). Les
+   deux rails latéraux rendent de la place — identité et terrains à gauche,
+   phases et commandes à droite — et les gouttières des rangées se resserrent :
+   386 px au centre sur 844 (~4,7 cartes, +25 %) et 270 px sur 667 (~3,4,
+   +21 %). Les piles de cartes homonymes (plus bas) font le reste : N exemplaires
+   identiques n'y occupent plus qu'un emplacement.
+   `--terrain-inset` ne bouge pas : c'est la marge qui tient les terrains hors
+   du cadre illustré, vérifiée par `check:rpg-mobile`. `--duel-card` non plus —
+   agrandir les cartes en réduirait le nombre. Les commandes gardent 200 px :
+   trois boutons tactiles de 44 px y tiennent côte à côte. */
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
   --terrain-inset: clamp(44px, 8vw, 160px);
   display: grid;
-  grid-template-columns: calc(clamp(116px, 18vw, 210px) + var(--terrain-inset)) minmax(0, 1fr) clamp(220px, 30vw, 340px);
+  grid-template-columns: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset)) minmax(0, 1fr) clamp(200px, 27vw, 320px);
   grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) clamp(84px, 28dvh, 146px);
   grid-template-areas: ". opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
@@ -171,7 +187,7 @@
 .rpg-battle--touch .rpg-terrain { flex: 0 0 36px; width: 36px; height: 45px; border-width: 1px; }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
 .rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
-.rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 4px max(12px, calc(var(--duel-card) * .18)); gap: max(12px, calc(var(--duel-card) * .36)); overflow-x: auto; overflow-y: hidden; scroll-padding-inline: max(12px, calc(var(--duel-card) * .18)); }
+.rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 4px max(8px, calc(var(--duel-card) * .12)); gap: max(8px, calc(var(--duel-card) * .22)); overflow-x: auto; overflow-y: hidden; scroll-padding-inline: max(8px, calc(var(--duel-card) * .12)); }
 .rpg-battle--touch .card-row .rpg-card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; transform: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
 .rpg-battle--touch .rpg-empty-lane { width: 100%; padding: 0; background: none; border: 0; text-align: center; font-size: 12px; color: #edd9b3b3; text-shadow: 0 2px 4px #000; }
@@ -216,7 +232,7 @@
 .rpg-battle--touch .rpg-actions__row .rpg-btn:hover { transform: none; }
 .rpg-battle--touch .card-table > .rpg-hand-dock { grid-area: hand; display: block; align-self: stretch; padding: 0; overflow: hidden; z-index: 21; }
 .rpg-battle--touch .rpg-hand-dock::before { content: "VOTRE MAIN · TOUCHEZ UNE CARTE POUR AGIR"; display: block; padding: 2px 8px; color: #efdbad; text-shadow: 0 1px 3px #000; font: 600 8px/1.3 var(--display); letter-spacing: .06em; }
-.rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 8px; justify-content: flex-start; align-items: center; gap: 8px; }
+.rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 6px; justify-content: flex-start; align-items: center; gap: 6px; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
 .rpg-battle--touch .rpg-hand__type { font-size: 7px; }
@@ -258,3 +274,57 @@
   pointer-events: none;
 }
 .rpg-battle--touch .rpg-terrain.rpg-terrain-stack { flex: 0 0 52px; width: 52px; height: 65px; border-width: 2px; }
+
+/* Une pile visible par nom de carte, au doigt seulement : quand la main ou un
+   champ de bataille se remplit d'exemplaires identiques, ils ne mangent plus la
+   largeur disponible. Même langage que les terrains (ombres décalées, compteur
+   ×N), avec une différence : une créature porte un état propre (blessée,
+   engagée, ciblée), donc le compteur se touche pour déplier le groupe, et une
+   puce « ×N » le replie. Tout groupe engagé dans le combat en cours se déplie
+   seul, pour que les flèches de blocage trouvent chaque carte. */
+.rpg-hand__pile,
+.rpg-card-stack {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+}
+/* Les ombres décalées sont portées par le bloc de la pile, jamais par la carte
+   elle-même : `.rpg-card.is-pret`, `.is-ciblable`, `.is-blocking` et consorts
+   pilotent leur propre `box-shadow` (halo doré, halo de cible) et ce fichier est
+   chargé après `rpg-battle.css` — il les écraserait. Le bloc reprend le rayon
+   de la carte et sa couleur de cadre (`cardFrameStyle` posé sur la pile). */
+.rpg-card-stack {
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 #15121a, 6px 6px 0 var(--rpg-frame-color, #f1f3f5);
+}
+.rpg-hand__pile-count,
+.rpg-card-stack__count,
+.rpg-card-stack__toggle {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  min-height: 18px;
+  padding: 1px 3px;
+  border: 1px solid #e2c482;
+  border-radius: 5px;
+  background: #17110eee;
+  color: #fff1c6;
+  font: 800 12px/1.2 var(--display);
+  font-variant-numeric: tabular-nums;
+}
+.rpg-hand__pile-count { position: absolute; top: -4px; right: -4px; z-index: 3; pointer-events: none; }
+.rpg-card-stack__count { position: absolute; top: -4px; right: -4px; z-index: 3; cursor: pointer; }
+.rpg-card-stack__toggle {
+  position: relative;
+  flex: none;
+  align-self: center;
+  min-height: 40px;
+  padding: 4px 5px;
+  cursor: pointer;
+}
+.rpg-card-stack__toggle:hover { transform: none; }
+/* Le compteur et la puce sont petits sur la carte : leur zone de toucher
+   déborde vers l'extérieur — jamais vers le nom ni le coût, qui restent
+   cliquables pour jouer la carte. */
+.rpg-card-stack__count::after { content: ""; position: absolute; inset: -10px -10px -6px -2px; }
+.rpg-card-stack__toggle::after { content: ""; position: absolute; inset: -8px -6px; }

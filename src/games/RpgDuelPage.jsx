@@ -19,6 +19,7 @@ import {
   tirerPlateau,
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
+import { groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
 import { startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
@@ -1302,6 +1303,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
   const [sortJoue, setSortJoue] = useState(null);
   const [apercuMagie, setApercuMagie] = useState(null);
+  // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
+  const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
   const carteGlisseeRef = useRef(null);
   const clicApresGlisserRef = useRef(false);
   const annulationRef = useRef(null);
@@ -1709,7 +1712,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       })),
     ];
     return cartesEnJeu.map((entite) => {
-      const element = elements.get(entite.id);
+      // Pile d'homonymes repliée : l'exemplaire masqué n'a pas d'élément, il
+      // emprunte la place de sa pile visible pour que l'effet de destruction
+      // parte du bon endroit au lieu du coin de la table.
+      const element = elements.get(entite.id)
+        ?? table?.querySelector(`.card-row [data-card-id="${entite.carteId}"], .rpg-terrains [data-card-id="${entite.carteId}"]`);
       const rect = element?.getBoundingClientRect() ?? { left: tableRect.left, top: tableRect.top, width: 0, height: 0 };
       const width = element?.offsetWidth || rect.width || 120;
       const height = element?.offsetHeight || rect.height || 150;
@@ -2704,6 +2711,88 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
   const tokenPiocheJoueur = piochesJoueur.at(-1)?.token ?? null;
   const tokenPiocheSorcier = piochesSorcier.at(-1)?.token ?? null;
 
+  /* ── Piles de cartes homonymes (au doigt seulement) ─────────────────────────
+     La zone de jeu tactile est étroite : deux exemplaires identiques y coûtent
+     deux emplacements pour une seule décision. Comme les terrains, les cartes
+     qui partagent un nom forment une pile unique avec son compteur ×N. La pile
+     agit sur l'exemplaire pertinent — le premier prêt, disponible, ciblé,
+     attaquant ou bloqueur — ; toucher le compteur déplie le groupe pour
+     choisir soi-même, et tout groupe dont un exemplaire participe à l'action
+     en cours se déplie de lui-même afin que les flèches de blocage, les halos
+     de cible et les destructions retrouvent leur carte.
+     Sur grand écran rien ne change : chaque carte garde son emplacement. */
+  const empilerCartes = viewport.mobile;
+  const groupesMain = empilerCartes
+    ? groupCartesMain(duel.joueur.main)
+    : duel.joueur.main.map((carteId, index) => ({ carteId, indices: [index] }));
+  // Exemplaires impliqués dans l'action en cours : leur groupe se déplie seul,
+  // pour que le joueur voie chaque carte concernée (et que les flèches de
+  // blocage, les halos de cible et les destructions trouvent leur élément).
+  const idsActionEnCours = new Set([
+    ...attaquants,
+    ...(combatEntrant?.attaquants ?? []),
+    ...Object.values(combatEntrant?.blocages ?? {}).flat(),
+    ...Object.values(combatEntrant?.ciblesAttaque ?? {}),
+    ...(sortJoue?.cible?.targetIds ?? []),
+    ...(bloqueurSelectionne ? [bloqueurSelectionne] : []),
+    ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
+    ...Object.keys(animationsEntites ?? {}),
+  ]);
+  const champEnPiles = (entites) => ({
+    indexParId: new Map(entites.map((entite, index) => [entite.id, index])),
+    piles: empilerCartes
+      ? groupEntitesParCarte(entites)
+      : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
+  });
+  const clePile = (cote, carteId) => `${cote}:${carteId}`;
+  const basculerPile = (cle) => setPilesDeployees((actuel) => {
+    const suivant = new Set(actuel);
+    if (suivant.has(cle)) suivant.delete(cle);
+    else suivant.add(cle);
+    return suivant;
+  });
+  const pileDeployee = (cote, pile) => pile.entites.length < 2
+    || pile.entites.some((entite) => idsActionEnCours.has(entite.id))
+    || pilesDeployees.has(clePile(cote, pile.carteId));
+  const teteDePile = (cote, pile) => {
+    const liste = pile.entites;
+    if (liste.length < 2) return liste[0];
+    if (cote === 'joueur') {
+      if (reponseActive && !reponseApresBlocage) {
+        const bloqueur = liste.find((entite) => bloqueursDisponibles.some((disponible) => disponible.id === entite.id));
+        if (bloqueur) return bloqueur;
+      }
+      if (cibleEnCours && modeCible === 'allie') {
+        const cible = liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee)));
+        if (cible) return cible;
+      }
+      const prete = liste.find((entite) => entite.ready && !entite.attaquee && !attaquants.includes(entite.id));
+      return prete
+        ?? liste.find((entite) => !entite.attaquee && !attaquants.includes(entite.id))
+        ?? liste[0];
+    }
+    if (cibleEnCours && modeCible === 'ennemi') {
+      return liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee))) ?? liste[0];
+    }
+    if (cibleAttaqueEnCours) {
+      const legales = ciblesCoupRapideLegales(
+        duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
+        'joueur',
+      );
+      return liste.find((entite) => legales.some((cible) => cible.id === entite.id)) ?? liste[0];
+    }
+    if (combatEntrant && combatEntrant.coteAttaquant !== 'joueur') {
+      return liste.find((entite) => combatEntrant.attaquants.includes(entite.id)
+        && !combatEntrant.ciblesAttaque?.[entite.id]) ?? liste[0];
+    }
+    if (combatEntrant) {
+      return liste.find((entite) => combatEntrant.attaquants.includes(entite.id)) ?? liste[0];
+    }
+    return liste[0];
+  };
+  const campEnnemi = champEnPiles(duel.sorcier.creatures);
+  const campJoueur = champEnPiles(duel.joueur.creatures);
+
   return (
     <div
       className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`}
@@ -2803,59 +2892,141 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         </div>
 
         <div className="card-row card-row--ennemi" aria-label="Champ du sorcier">
-          {duel.sorcier.creatures.length ? duel.sorcier.creatures.map((entite, i) => (
-            <TableCard
-              key={entite.id}
-              entite={entite}
-              cote="ennemi"
-              active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
-              declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
-              blocking={bloqueursSelectionnes.has(entite.id)}
-              spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
-              coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-              canTarget={Boolean(
-                (cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
-                || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
-                  duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
-                  'joueur',
-                ).some((cible) => cible.id === entite.id))
-              )}
-              canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id])}
-              onAssignBlocker={assignerBloqueur}
-              actionFx={animationsEntites[entite.id]}
-              tilt={TILTS[i % TILTS.length]}
-              onHoverCard={afficherApercuSurvol}
-              onLeaveHoverCard={masquerApercuSurvol}
-              onClick={() => cliquerCreatureEnnemie(entite)}
-            />
-          )) : <span className="rpg-empty-lane">Les gardiens du sorcier attendent.</span>}
+          {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
+            const cle = clePile('ennemi', pile.carteId);
+            const deployee = pileDeployee('ennemi', pile);
+            const affichees = deployee ? pile.entites : [teteDePile('ennemi', pile)];
+            const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
+            return (
+              <Fragment key={pile.carteId}>
+                {deployee && pile.entites.length > 1 && (
+                  <button
+                    type="button"
+                    className="rpg-card-stack__toggle"
+                    onClick={() => basculerPile(cle)}
+                    aria-label={`Replier les ${pile.entites.length} ${nom} identiques`}
+                  >
+                    ×{pile.entites.length}
+                  </button>
+                )}
+                {affichees.map((entite) => {
+                  const i = campEnnemi.indexParId.get(entite.id) ?? 0;
+                  const carte = (
+                    <TableCard
+                      key={entite.id}
+                      entite={entite}
+                      cote="ennemi"
+                      active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
+                      declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
+                      blocking={bloqueursSelectionnes.has(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
+                      coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
+                      canTarget={Boolean(
+                        (cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                        || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
+                          duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
+                          'joueur',
+                        ).some((cible) => cible.id === entite.id))
+                      )}
+                      canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id])}
+                      onAssignBlocker={assignerBloqueur}
+                      actionFx={animationsEntites[entite.id]}
+                      tilt={TILTS[i % TILTS.length]}
+                      onHoverCard={afficherApercuSurvol}
+                      onLeaveHoverCard={masquerApercuSurvol}
+                      onClick={() => cliquerCreatureEnnemie(entite)}
+                    />
+                  );
+                  if (deployee || pile.entites.length < 2) return carte;
+                  return (
+                    <span
+                      className="rpg-card-stack"
+                      key={entite.id}
+                      style={cardFrameStyle(cardById(pile.carteId))}
+                    >
+                      {carte}
+                      <button
+                        type="button"
+                        className="rpg-card-stack__count"
+                        onClick={() => basculerPile(cle)}
+                        aria-label={`Déplier les ${pile.entites.length} ${nom} identiques`}
+                      >
+                        ×{pile.entites.length}
+                      </button>
+                    </span>
+                  );
+                })}
+              </Fragment>
+            );
+          }) : <span className="rpg-empty-lane">Les gardiens du sorcier attendent.</span>}
         </div>
         <div className="card-row card-row--equipe" aria-label="Votre champ de bataille">
-          {duel.joueur.creatures.length ? duel.joueur.creatures.map((entite, i) => (
-            <TableCard
-              key={entite.id}
-              entite={entite}
-              cote="joueur"
-              active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
-              selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
-              declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
-              spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
-              blocking={bloqueursSelectionnes.has(entite.id)}
-              selectedBlocker={bloqueurSelectionne === entite.id}
-              coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-              canTarget={Boolean(cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))}
-              canDragBlocker={Boolean(reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
-              draggedBlocker={bloqueurGlisse === entite.id}
-              onStartBlockerDrag={commencerGlisserBloqueur}
-              onEndBlockerDrag={terminerGlisserBloqueur}
-              actionFx={animationsEntites[entite.id]}
-              playerTurn={monTour}
-              tilt={TILTS[(i + 2) % TILTS.length]}
-              onHoverCard={afficherApercuSurvol}
-              onLeaveHoverCard={masquerApercuSurvol}
-              onClick={() => cliquerCreatureJoueur(entite)}
-            />
-          )) : <span className="rpg-empty-lane">Vos alliés prendront place ici.</span>}
+          {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
+            const cle = clePile('joueur', pile.carteId);
+            const deployee = pileDeployee('joueur', pile);
+            const affichees = deployee ? pile.entites : [teteDePile('joueur', pile)];
+            const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
+            return (
+              <Fragment key={pile.carteId}>
+                {deployee && pile.entites.length > 1 && (
+                  <button
+                    type="button"
+                    className="rpg-card-stack__toggle"
+                    onClick={() => basculerPile(cle)}
+                    aria-label={`Replier les ${pile.entites.length} ${nom} identiques`}
+                  >
+                    ×{pile.entites.length}
+                  </button>
+                )}
+                {affichees.map((entite) => {
+                  const i = campJoueur.indexParId.get(entite.id) ?? 0;
+                  const carte = (
+                    <TableCard
+                      key={entite.id}
+                      entite={entite}
+                      cote="joueur"
+                      active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
+                      selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
+                      declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
+                      blocking={bloqueursSelectionnes.has(entite.id)}
+                      selectedBlocker={bloqueurSelectionne === entite.id}
+                      coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
+                      canTarget={Boolean(cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))}
+                      canDragBlocker={Boolean(reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
+                      draggedBlocker={bloqueurGlisse === entite.id}
+                      onStartBlockerDrag={commencerGlisserBloqueur}
+                      onEndBlockerDrag={terminerGlisserBloqueur}
+                      actionFx={animationsEntites[entite.id]}
+                      playerTurn={monTour}
+                      tilt={TILTS[(i + 2) % TILTS.length]}
+                      onHoverCard={afficherApercuSurvol}
+                      onLeaveHoverCard={masquerApercuSurvol}
+                      onClick={() => cliquerCreatureJoueur(entite)}
+                    />
+                  );
+                  if (deployee || pile.entites.length < 2) return carte;
+                  return (
+                    <span
+                      className="rpg-card-stack"
+                      key={entite.id}
+                      style={cardFrameStyle(cardById(pile.carteId))}
+                    >
+                      {carte}
+                      <button
+                        type="button"
+                        className="rpg-card-stack__count"
+                        onClick={() => basculerPile(cle)}
+                        aria-label={`Déplier les ${pile.entites.length} ${nom} identiques`}
+                      >
+                        ×{pile.entites.length}
+                      </button>
+                    </span>
+                  );
+                })}
+              </Fragment>
+            );
+          }) : <span className="rpg-empty-lane">Vos alliés prendront place ici.</span>}
         </div>
 
         {cartesEnDestruction.map((effet) => {
@@ -3051,7 +3222,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
         <div className={`rpg-hand-dock${combatEntrant ? ' is-open' : ''}`} aria-label="Votre main">
           <div className="rpg-hand">
-            {duel.joueur.main.map((carteId, i) => {
+            {groupesMain.map((groupe) => {
+              const carteId = groupe.carteId;
+              const i = groupe.indices[0];
+              const exemplaires = groupe.indices.length;
               const carte = cardById(carteId);
               if (!carte) return null;
               const estTerrain = carte.kind === 'terrain';
@@ -3064,8 +3238,9 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   : (monTour || peutRepondre) && rpgPeutPayer(duel.joueur, carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
-                && carteEnVol.handIndex === i;
-              const piocheEnCours = enVol ? null : piochesJoueur.find((animation) => animation.handIndex === i);
+                && groupe.indices.includes(carteEnVol.handIndex);
+              const piocheEnCours = enVol ? null
+                : piochesJoueur.find((animation) => groupe.indices.includes(animation.handIndex));
               const styleVol = enVol ? {
                 left: `${carteEnVol.from.left}px`,
                 top: `${carteEnVol.from.top}px`,
@@ -3077,8 +3252,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                 '--rpg-flight-scale-y': carteEnVol.to.height / Math.max(1, carteEnVol.from.height),
               } : {};
 
-              return (
-                <Fragment key={`${carteId}-${i}`}>
+              const contenu = (
+                <>
                 <button
                   type="button"
                   draggable={jouable}
@@ -3111,10 +3286,11 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   data-draw-token={piocheEnCours?.token}
                   data-card-id={carteId}
                   data-hand-index={i}
+                  data-pile-count={exemplaires}
                   data-rpg-card-flight={enVol ? (estTerrain ? 'terrain' : 'creature') : undefined}
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
-                  aria-label={`${carte.name} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
@@ -3129,6 +3305,9 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                     </span>
                   )}
                 </button>
+                {exemplaires > 1 && (
+                  <span className="rpg-hand__pile-count" aria-hidden="true">×{exemplaires}</span>
+                )}
                 {enVol && (
                   <span
                     className="rpg-hand__flight-placeholder"
@@ -3136,8 +3315,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                     aria-hidden="true"
                   />
                 )}
-                </Fragment>
+                </>
               );
+              // Au doigt, chaque pile forme un bloc : le compteur flotte sur son
+              // coin sans masquer le nom ni le coût. À la souris, le DOM reste
+              // exactement celui d'origine (une carte = un bouton).
+              return empilerCartes
+                ? <span className="rpg-hand__pile" key={`${carteId}-${i}`}>{contenu}</span>
+                : <Fragment key={`${carteId}-${i}`}>{contenu}</Fragment>;
             })}
           </div>
         </div>
