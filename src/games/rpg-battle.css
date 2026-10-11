@@ -3027,7 +3027,7 @@
   padding: 12px 16px;
   border: 1px solid rgba(236, 214, 172, .2);
   border-radius: 8px;
-  background: rgba(5, 8, 11, .8);
+  background: transparent;
   text-shadow: 0 2px 4px rgba(0, 0, 0, .96);
 }
 .rpg-hover-card-preview__type,

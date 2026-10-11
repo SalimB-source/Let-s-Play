@@ -351,6 +351,10 @@ function cardFrameClass(carte) {
 }
 
 function cardFrameStyle(carte) {
+  // Les cartes mythiques et hybrides n'ont pas de fond coloré sur l'aperçu
+  if (cardHasMythicFrame(carte) || cardFrameInfo(carte).key.startsWith('hybride-')) {
+    return {};
+  }
   return { '--rpg-frame-color': cardFrameColor(carte) };
 }
 
