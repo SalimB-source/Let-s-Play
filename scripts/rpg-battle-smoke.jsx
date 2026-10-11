@@ -642,7 +642,7 @@ export async function checkRpgBattle(assert) {
   const lancer = findButton('Confirmer');
   assert.match(lancer.textContent, /\(2\)/, 'deux attaquants déclarés');
   assert.equal(container.querySelectorAll('.rpg-card.is-declared-attacker').length, 2,
-    'les créatures déclarées s’inclinent à 40° avant la confirmation');
+    'les créatures déclarées s’inclinent à 90° avant la confirmation');
   await act(async () => { lancer.click(); });
   assert.ok(!container.querySelector('.rpg-btn--undo'), 'une attaque confirmée ne peut plus être annulée');
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · RÉPONSE/,

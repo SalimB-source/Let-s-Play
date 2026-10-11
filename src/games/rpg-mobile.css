@@ -162,13 +162,6 @@
 .rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
 .rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 4px max(12px, calc(var(--duel-card) * .18)); gap: max(12px, calc(var(--duel-card) * .36)); overflow-x: auto; overflow-y: hidden; scroll-padding-inline: max(12px, calc(var(--duel-card) * .18)); }
 .rpg-battle--touch .card-row .rpg-card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; transform: none; }
-/* The neutral mobile transform must not erase the combat state. Reserve
-   room for tilted corners while keeping the cards within their scroll lane. */
-.rpg-battle--touch .card-row .rpg-card:is(.is-declared-attacker, .is-attacked),
-.rpg-battle--touch .card-row .rpg-card:is(.is-declared-attacker, .is-attacked):hover {
-  transform: rotate(40deg) scale(.85);
-  transform-origin: center;
-}
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
 .rpg-battle--touch .rpg-empty-lane { width: 100%; padding: 0; background: none; border: 0; text-align: center; font-size: 12px; color: #edd9b3b3; text-shadow: 0 2px 4px #000; }
 .rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px; overflow-y: auto; z-index: 20; }
@@ -243,7 +236,8 @@
 }
 
 /* One visible stack per terrain type. Keep it upright even when exhausted:
-   totals and remaining mana sources must stay legible and inside the rail. */
+   the total count stays legible and inside the rail. Availability is kept in
+   the accessible label and the preview, not printed over the illustration. */
 .rpg-terrain.rpg-terrain-stack { position: relative; display: block; box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-rarity-color); }
 .rpg-terrain.rpg-terrain-stack.is-tapped,
 .rpg-terrain.rpg-terrain-stack:hover { transform: none; }
@@ -264,21 +258,5 @@
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
-.rpg-terrain-stack__available {
-  position: absolute;
-  bottom: 2px;
-  left: 2px;
-  right: 2px;
-  padding: 2px 0;
-  border-radius: 3px;
-  background: #122820eb;
-  color: #aff2cd;
-  text-align: center;
-  font: 700 9px/1.1 var(--display);
-  white-space: nowrap;
-  pointer-events: none;
-}
-.rpg-terrain-stack.is-tapped .rpg-terrain-stack__available { background: #292329ee; color: #d0c3bd; }
 .rpg-battle--touch .rpg-terrain.rpg-terrain-stack { width: 44px; height: 55px; border-width: 2px; }
-.rpg-battle--touch .rpg-terrain-stack__available { font-size: 8px; }
 .rpg-card-preview__resources { margin: 0; color: #e6d4ac; font: 600 12px/1.4 var(--display); }

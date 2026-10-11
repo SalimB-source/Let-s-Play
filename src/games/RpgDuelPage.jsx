@@ -517,6 +517,7 @@ function TableCard({
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
       ].filter(Boolean).join(' ')}
       style={{ '--tilt': `${tilt}deg`, ...cardRarityStyle(carte) }}
+      data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={entite.id}
       data-card-id={carte?.id}
       draggable={canDragBlocker}
@@ -2614,7 +2615,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
                 <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
-                <span className="rpg-terrain-stack__available" aria-hidden="true">{groupe.available} libre{groupe.available > 1 ? 's' : ''}</span>
               </button>
             );
           })}
@@ -2736,7 +2736,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
                 <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
-                <span className="rpg-terrain-stack__available" aria-hidden="true">{groupe.available} libre{groupe.available > 1 ? 's' : ''}</span>
               </button>
             );
           })}

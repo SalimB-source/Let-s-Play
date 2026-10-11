@@ -856,8 +856,8 @@
 .rpg-card--equipe.fx-lunge { animation: card-lunge-team .55s ease; }
 .rpg-card--ennemi.fx-lunge { animation: card-lunge-foe .55s ease; }
 
-@keyframes card-lunge-team { 40% { transform: translateY(-52px) rotate(0deg); } }
-@keyframes card-lunge-foe { 40% { transform: translateY(52px) rotate(0deg); } }
+@keyframes card-lunge-team { 40% { translate: 0 -52px; } }
+@keyframes card-lunge-foe { 40% { translate: 0 52px; } }
 
 .fx-hit { animation: rpg-hit .45s steps(2, start); }
 
@@ -2318,17 +2318,15 @@
   box-shadow: 0 0 0 4px rgba(8, 24, 26, .9), 0 0 22px rgba(91, 240, 218, .46), 0 12px 28px rgba(0, 0, 0, .72);
 }
 
-/* L'inclinaison montre la déclaration ; l'état gris intervient à confirmation. */
-.rpg-card.is-declared-attacker,
-.rpg-card.is-declared-attacker:hover { transform: rotate(40deg); }
-
-/* Une créature qui a attaqué s'incline de 40° et reste visiblement épuisée.
-   La face est désaturée par couches afin qu'une défense blessée puisse rester rouge. */
-.rpg-card.is-attacked,
-.rpg-card.is-attacked:hover {
-  transform: rotate(40deg);
-  opacity: .76;
+/* Combat rotation is driven by entity state, not hover/selection styling.
+   Important here is intentional: entry, hit and attack animations must never
+   replace the tapped rotation with a neutral transform, including in WebViews. */
+.rpg-card[data-combat-tilted="true"] {
+  transform: rotate(90deg) !important;
+  transform-origin: center;
 }
+/* A creature that has attacked stays sideways and visibly exhausted. */
+.rpg-card.is-attacked { opacity: .76; }
 .rpg-card.is-attacked .rpg-card__img,
 .rpg-card.is-attacked .rpg-card__title,
 .rpg-card.is-attacked .rpg-card__type,

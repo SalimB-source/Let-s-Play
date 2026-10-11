@@ -108,7 +108,7 @@ try {
             const cards = Array.from({ length: count }, () => {
               const card = document.createElement('button');
               card.className = 'rpg-terrain rpg-terrain-stack rpg-card--rarity-commune is-tapped';
-              card.innerHTML = '<span class="rpg-terrain-stack__count">×26</span><span class="rpg-terrain-stack__available">0 libre</span>';
+              card.innerHTML = '<span class="rpg-terrain-stack__count">×26</span>';
               card.style.animation = 'none';
               card.style.transition = 'none';
               return card;
@@ -205,6 +205,8 @@ try {
   await page.waitForFunction(() => document.querySelector('.rpg-terrains--joueur .rpg-terrain[data-terrain-count="2"]'));
   const stack = page.locator('.rpg-terrains--joueur .rpg-terrain');
   assert.equal(await stack.count(), 1, 'identical terrains share one pile');
+  assert.equal(await stack.locator('.rpg-terrain-stack__available').count(), 0);
+  assert.equal((await stack.textContent()).trim(), '×2', 'only the total count is printed over the terrain');
   assert.equal(await stack.getAttribute('data-available-count'), '2');
   for (const remaining of [1, 0]) {
     await stack.click();
@@ -230,7 +232,7 @@ try {
     const angle = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
     return Math.abs(angle - expected) < .5;
   }, { selector, expected });
-  await waitForTilt('.rpg-card--equipe.is-declared-attacker', 40);
+  await waitForTilt('.rpg-card--equipe.is-declared-attacker', 90);
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     const cancel = await page.locator('.rpg-btn--cancel-attack').boundingBox();
@@ -254,7 +256,18 @@ try {
   await waitForTilt('.rpg-card--equipe', 0);
   await page.locator('.rpg-btn--attaque-tous').click();
   await page.locator('.rpg-btn--confirmer-attaque').click();
-  await waitForTilt('.rpg-card--equipe.is-attacked', 40);
+  await waitForTilt('.rpg-card--equipe.is-attacked', 90);
+  const angles = await page.locator('.rpg-card--equipe.is-attacked').evaluate(async card => {
+    const values = [];
+    // Sample the lunge/impact animation and its cleanup, not just the resting state.
+    for (let index = 0; index < 8; index++) {
+      const matrix = new DOMMatrixReadOnly(getComputedStyle(card).transform);
+      values.push(Math.atan2(matrix.b, matrix.a) * 180 / Math.PI);
+      await new Promise(resolve => setTimeout(resolve, 60));
+    }
+    return values;
+  });
+  assert.ok(angles.every(angle => Math.abs(angle - 90) < .5), 'combat animations never straighten the attacker');
   console.log('✓ Attackers tilt on declaration, straighten on cancellation and stay tilted after attacking');
   console.log('✓ Attack-all, cancellation and end-turn share a row; phases follow combat and cancellation');
   await page.setViewportSize({ width: 390, height: 844 });

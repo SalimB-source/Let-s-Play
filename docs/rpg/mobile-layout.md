@@ -7,7 +7,7 @@
 Le plateau conserve les illustrations originales de Bab El, avec une organisation inspirée des jeux de cartes numériques en paysage :
 
 - deux champs au centre, sans panneaux opaques ;
-- terrains identiques regroupés par type dans chaque camp, avec un compteur total et le nombre encore disponible ;
+- terrains identiques regroupés par type dans chaque camp, avec uniquement le compteur total sur la carte (disponibilités dans l’aperçu et le libellé accessible) ;
 - identités et compteurs flottants ;
 - main en bas, défilable horizontalement ;
 - commandes « Attaquer avec tous », confirmation/annulation de l’attaque, annulation de la dernière action et fin du tour regroupées côte à côte sur le plateau, selon la phase ;
@@ -19,6 +19,8 @@ Le clic sur une carte en main ouvre l’aperçu, sur ordinateur comme sur mobile
 L’aperçu ne contient plus le texte explicatif bleu : seuls les effets, statistiques, compteurs de terrains et actions restent affichés.
 
 Les piles de terrains sont uniquement une présentation : chaque terrain reste une instance distincte dans le moteur. Une production manuelle engage le prochain terrain disponible de la pile ; le paiement automatique, le choix de couleur de Pétra, le dégagement et l’annulation conservent leur fonctionnement. Les piles restent droites et leurs compteurs demeurent dans leur cadre. Une carte terrain jouée rejoint sa pile existante lors de l’animation.
+
+Les attaquants sont couchés à 90° dès leur déclaration et restent couchés après l’attaque. Cette rotation dépend de l’état de la créature et reste prioritaire sur les animations ; annuler la déclaration redresse la carte.
 
 Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. Le grand aperçu conserve un fond lisible, mais son voile extérieur est léger et le plateau n’a plus de grands fonds opaques.
 

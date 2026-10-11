@@ -60,6 +60,7 @@ export async function checkRpgPreviewActions(assert) {
     assert.equal(fennec().classList.contains('is-selected'), false, 'inspecting does not declare an attack');
     await click(action('Attaquer avec cette créature'));
     assert.equal(fennec().classList.contains('is-selected'), true);
+    assert.equal(fennec().dataset.combatTilted, 'true');
     assert.equal(container.querySelector('.rpg-card-preview'), null, 'choosing an attacker returns to the board');
     assert.equal(container.querySelector('.rpg-btn--confirmer-attaque').disabled, false);
     await click(fennec());
@@ -67,11 +68,13 @@ export async function checkRpgPreviewActions(assert) {
     await click(action('Retour au plateau'));
     await click(container.querySelector('.rpg-btn--cancel-attack'));
     assert.equal(fennec().classList.contains('is-selected'), false);
+    assert.equal(fennec().dataset.combatTilted, 'false');
     await click(fennec());
     await click(action('Attaquer avec cette créature'));
     await click(container.querySelector('.rpg-btn--confirmer-attaque'));
     assert.equal(container.querySelector('.rpg-card-preview'), null);
     assert.equal(fennec().classList.contains('is-attacked'), true, 'confirmation resolves the unblocked attack');
+    assert.equal(fennec().dataset.combatTilted, 'true');
     await click(fennec());
     assert.equal(action('Attaquer avec cette créature').disabled, true, 'a spent creature cannot attack twice');
     await click(action('Retour au plateau'));
