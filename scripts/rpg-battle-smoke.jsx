@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DUEL_CARDS, cardById, cardRarityInfo } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -30,12 +30,16 @@ export async function checkRpgBattle(assert) {
     await act(async () => { button.click(); });
   };
   const handCards = () => buttons().filter((b) => b.className.includes('rpg-hand__card'));
-  const assertRarityFrame = (element, cardId, context) => {
-    const rarity = cardRarityInfo(cardById(cardId));
-    assert.ok(element.classList.contains(`rpg-card--rarity-${rarity.key}`),
-      `${context} identifie sa rareté ${rarity.key}`);
-    assert.equal(element.style.getPropertyValue('--rpg-rarity-color'), rarity.color,
-      `${context} utilise la couleur de bordure ${rarity.color}`);
+  const assertElementFrame = (element, cardId, context) => {
+    const carte = cardById(cardId);
+    const frame = cardFrameInfo(carte);
+    assert.ok(element.classList.contains(`rpg-card--frame-${frame.key}`),
+      `${context} identifie sa couleur ${frame.key}`);
+    assert.equal(element.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(carte),
+      `${context} utilise la couleur de cadre ${cardFrameColor(carte)}`);
+    assert.equal(element.classList.contains('rpg-card--frame-brillant'),
+      frame.key.startsWith('hybride-') || cardRarityInfo(carte).key === 'mythique',
+      `${context} n'a un cadre brillant que si la carte est bicolore ou mythique`);
   };
   const envoyerSouris = (target, type) => {
     target.dispatchEvent(new window.MouseEvent(type, { bubbles: true, relatedTarget: document.body }));
@@ -273,7 +277,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(container.querySelectorAll('.rpg-card').length, 0, 'la table démarre sans aucune carte');
   assert.equal(handCards().length, 5, 'chaque camp pioche 5 cartes');
   const visagesMain = handCards();
-  visagesMain.forEach((carte) => assertRarityFrame(carte, carte.dataset.cardId, 'chaque carte en main'));
+  visagesMain.forEach((carte) => assertElementFrame(carte, carte.dataset.cardId, 'chaque carte en main'));
   assert.ok(visagesMain.every((carte) => carte.querySelector('.rpg-hand__img') && carte.querySelector('.rpg-hand__type')),
     'chaque carte en main montre son illustration et son type');
   const visageCreatureMain = visagesMain.find((carte) => carte.querySelector('.rpg-hand__stats'));
@@ -353,9 +357,12 @@ export async function checkRpgBattle(assert) {
   // ── Cliquer consulte toujours le grand aperçu sans jouer la carte ──────
   await act(async () => { carteSurvolee.click(); });
   assert.ok(container.querySelector('.rpg-card-preview[role="dialog"]'), 'un clic ouvre l’aperçu agrandi');
-  assertRarityFrame(container.querySelector('.rpg-card-preview__art'), carteSurvolee.dataset.cardId,
+  assertElementFrame(container.querySelector('.rpg-card-preview__art'), carteSurvolee.dataset.cardId,
     'la face de l’aperçu au clic');
-  assert.ok(container.querySelector('.rpg-card-preview--terrain'), 'l’aperçu cliqué conserve l’identité de terrain sans changer sa bordure de rareté');
+  assert.equal(container.querySelector('.rpg-card-preview__rarity')?.textContent,
+    cardRarityInfo(cardById(carteSurvolee.dataset.cardId)).label,
+    'l’aperçu au clic est le seul endroit qui annonce la rareté');
+  assert.ok(container.querySelector('.rpg-card-preview--terrain'), 'l’aperçu cliqué conserve l’identité de terrain sans changer sa bordure d’élément');
   assert.equal(container.querySelector('.rpg-card-preview__art .rpg-card-element-badge'), null,
     'l’aperçu au clic d’un terrain ne montre pas d’icône de couleur');
   assert.equal(handCards().length, 5, 'la carte reste en main tant qu’elle n’est pas glissée sur la table');
@@ -449,7 +456,12 @@ export async function checkRpgBattle(assert) {
   }
   assert.ok(poses >= 1, 'une créature payée au mana doit entrer en jeu');
   const visageTable = container.querySelector('.rpg-card--equipe');
-  assertRarityFrame(visageTable, visageTable.dataset.cardId, 'la carte posée sur la table');
+  assertElementFrame(visageTable, visageTable.dataset.cardId, 'la carte posée sur la table');
+  assert.ok(!visageTable.classList.contains('rpg-card--mythique')
+    && !visageTable.classList.contains('rpg-card--frame-brillant'),
+    'une carte monocolore non mythique garde son cadre mat, sans reflet');
+  assert.equal(container.querySelectorAll('[class*="rpg-card--rarity-"]').length, 0,
+    'aucune carte posée ne porte plus de cadre piloté par la rareté');
   assert.equal(visageTable.dataset.cardId, 'fennec-des-decombres', 'la créature jouée est le Fennec inhabituel du deck');
   assert.equal(visageTable.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
     'les icônes d’effets sont absentes de la carte posée sur la table');
@@ -496,7 +508,7 @@ export async function checkRpgBattle(assert) {
   assert.ok(container.querySelectorAll('.rpg-terrain--joueur').length >= 1, 'le terrain posé est visible');
   const terrainPose = container.querySelector('.rpg-terrain--joueur.rpg-terrain--elem-sable');
   assert.ok(terrainPose, 'le terrain Désert est posé sur le champ');
-  assertRarityFrame(terrainPose, terrainPose.dataset.cardId, 'le terrain posé');
+  assertElementFrame(terrainPose, terrainPose.dataset.cardId, 'le terrain posé');
   assert.ok(container.querySelector('.rpg-terrain--joueur.is-tapped'), 'le terrain a été engagé pour son mana');
 
   // ── Rapidité : le Fennec peut être déclaré attaquant immédiatement ────
@@ -1092,6 +1104,11 @@ export async function checkRpgBattle(assert) {
     await glisserSurTable(petraContainer, carte);
     const terrain = petraContainer.querySelector('.rpg-terrains--joueur .rpg-terrain[data-card-id="petra"]:not(.is-tapped)');
     assert.ok(terrain, 'la vraie carte Pétra rejoint le rail des terrains');
+    assertElementFrame(terrain, 'petra', 'le terrain bicolore Pétra');
+    assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable'),
+      'une carte Braise + Sable reçoit le cadre rouge-orange de sa combinaison');
+    assert.ok(!terrain.classList.contains('rpg-card--mythique'),
+      'Pétra est rare, pas mythique : elle ne prend pas le cadre doré');
     const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
@@ -1143,9 +1160,16 @@ export async function checkRpgBattle(assert) {
   await poserDesertFeriel();
   const ferielEnMain = ferielHand().find((card) => card.dataset.cardId === 'feriel');
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
+  assert.ok(ferielEnMain.classList.contains('rpg-card--mythique')
+    && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
+    'Fériel porte son cadre doré brillant dès la main');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
+  assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
+    'Fériel, mythique, garde son cadre doré sur la table');
+  assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
+    'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });
   const confirmerFeriel = ferielContainer.querySelector('.rpg-btn--confirmer-attaque');
   assert.equal(confirmerFeriel.disabled, true, 'la confirmation attend que la cible du Coup rapide soit choisie');
