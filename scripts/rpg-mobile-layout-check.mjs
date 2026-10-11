@@ -150,43 +150,27 @@ try {
   }
   await page.setViewportSize({ width: 844, height: 390 });
   await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
-  await page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first().tap();
-  const creaturePreview = page.locator('.rpg-card-preview');
-  await creaturePreview.waitFor();
-  const visual = await creaturePreview.locator('.rpg-card-preview__art').boundingBox();
-  const stats = await creaturePreview.locator('.rpg-card-preview__stats').boundingBox();
-  const compact = await creaturePreview.boundingBox();
-  assert.ok(compact.width <= 560, 'Preview is compact, not a full-width banner');
-  assert.ok(stats.y >= visual.y + visual.height && Math.abs(stats.x + stats.width / 2 - visual.x - visual.width / 2) < 1, 'ATK/DEF appear immediately below the illustration');
-  assert.ok(Math.abs(visual.width / visual.height - .8) < .01, 'Preview artwork keeps its card aspect ratio');
-  assert.equal(await creaturePreview.locator('.rpg-card-preview__details .rpg-card-preview__stats').count(), 0);
+  // Tap a creature without mana: the refusal is explained and nothing is played.
+  const creature = page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first();
+  await creature.tap();
+  await page.locator('.rpg-actions__wait').getByText(/Mana insuffisant/).waitFor();
+  assert.equal(await page.locator('.rpg-card--equipe').count(), 0, 'the refused creature stays in hand');
+  assert.equal(await page.locator('.rpg-spell-confirm, .rpg-card-preview').count(), 0, 'a tap opens no dialog for a creature');
   if (process.env.RPG_CREATURE_SCREENSHOT) await page.screenshot({ path: process.env.RPG_CREATURE_SCREENSHOT });
-  await page.getByRole('button', { name: 'Retour au plateau', exact: true }).click();
   const terrain = page.locator('.rpg-hand__card--terrain.is-playable').first();
   await terrain.scrollIntoViewIfNeeded();
-  // Tap opens a preview, not a play. Its contextual action plays the card.
+  // Tap plays the card immediately.
   await terrain.tap();
-  await page.locator('.rpg-card-preview').waitFor();
-  const preview = await page.locator('.rpg-card-preview').boundingBox();
-  assert.ok(preview.x >= 0 && preview.y >= 0 && preview.x + preview.width <= 844 && preview.y + preview.height <= 390);
-  const labels = await page.locator('.rpg-card-preview__actions .rpg-btn').evaluateAll(buttons => buttons.map(button => {
-    const range = document.createRange();
-    range.selectNodeContents(button);
-    const label = range.getBoundingClientRect();
-    const box = button.getBoundingClientRect();
-    return { text: button.textContent, offset: Math.abs((label.top + label.bottom) / 2 - (box.top + box.bottom) / 2) };
-  }));
-  for (const label of labels) assert.ok(label.offset <= 2, `Vertically centred button: ${label.text}`);
-  assert.equal(await page.locator('.rpg-card-preview__hint').count(), 0);
-  console.log('✓ Tap preview fits the landscape viewport');
-  if (process.env.RPG_SCREENSHOT) await page.screenshot({ path: process.env.RPG_SCREENSHOT });
-  assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 0);
-  await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();
   await page.waitForFunction(() => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === 1);
+  const terrainBox = await page.locator('.rpg-terrains--joueur .rpg-terrain').boundingBox();
+  assert.ok(terrainBox && terrainBox.x >= 0 && terrainBox.x + terrainBox.width <= 844,
+    'the played terrain stays inside the landscape viewport');
   await page.locator('.rpg-hand__card--terrain').first().tap();
-  assert.equal(await page.getByRole('button', { name: 'Jouer la carte', exact: true }).isDisabled(), true);
-  assert.equal(await page.locator('.rpg-card-preview__actions .rpg-btn--undo').count(), 0);
-  await page.getByRole('button', { name: 'Retour au plateau', exact: true }).click();
+  await page.locator('.rpg-actions__wait').getByText(/déjà posé votre terrain/).waitFor();
+  assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 1,
+    'the second terrain of the turn is refused without being played');
+  console.log('✓ Tap plays a terrain at once and explains the second-terrain refusal');
+  if (process.env.RPG_SCREENSHOT) await page.screenshot({ path: process.env.RPG_SCREENSHOT });
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     const undo = await page.locator('.rpg-actions__turn .rpg-btn--undo').boundingBox();
@@ -198,7 +182,7 @@ try {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.getByRole('button', { name: 'Annuler la dernière action', exact: true }).click();
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 0);
-  console.log('✓ Preview plays a terrain, disables a second terrain, and undoes the action');
+  console.log('✓ Tap plays a terrain and undoes the action');
   const before = await page.locator('.rpg-terrains--joueur .rpg-terrain').count();
   const card = await terrain.boundingBox();
   const lane = await page.locator('.card-row--equipe').boundingBox();
@@ -214,7 +198,6 @@ try {
   await page.locator('.rpg-btn--endturn').click();
   await page.locator('.rpg-turn-indicator.is-player').waitFor();
   await page.locator('.rpg-hand__card--terrain.is-playable').first().click();
-  await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.rpg-terrains--joueur .rpg-terrain[data-terrain-count="2"]'));
   const stack = page.locator('.rpg-terrains--joueur .rpg-terrain');
   assert.equal(await stack.count(), 1, 'identical terrains share one pile');
@@ -223,15 +206,22 @@ try {
   assert.equal(await stack.getAttribute('data-available-count'), '2');
   for (const remaining of [1, 0]) {
     await stack.click();
-    assert.equal(await page.locator('.rpg-card-preview__hint').count(), 0, 'no blue explanatory hint in the preview');
-    await page.getByRole('button', { name: 'Produire du mana Sable', exact: true }).click();
+    await page.waitForFunction((r) => {
+      const pile = document.querySelector('.rpg-terrains--joueur .rpg-terrain');
+      return pile?.dataset.availableCount === String(r);
+    }, remaining);
     assert.equal(await stack.getAttribute('data-terrain-count'), '2');
-    assert.equal(await stack.getAttribute('data-available-count'), String(remaining), 'a mana action taps only one terrain');
-    assert.equal(await stack.getAttribute('data-tapped-count'), String(2 - remaining));
+    assert.equal(await stack.getAttribute('data-tapped-count'), String(2 - remaining), 'a mana click taps only one terrain');
   }
+  const counts = {
+    available: await stack.getAttribute('data-available-count'),
+    tapped: await stack.getAttribute('data-tapped-count'),
+  };
   await stack.click();
-  assert.equal(await page.getByRole('button', { name: 'Produire du mana Sable', exact: true }).isDisabled(), true);
-  await page.getByRole('button', { name: 'Retour au plateau', exact: true }).click();
+  assert.deepEqual({
+    available: await stack.getAttribute('data-available-count'),
+    tapped: await stack.getAttribute('data-tapped-count'),
+  }, counts, 'an exhausted stack produces nothing');
   console.log('✓ Identical terrain stack counts and one-at-a-time mana production');
   await page.locator('.rpg-hand__card[data-card-id="fennec-des-decombres"]').click();
   await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();

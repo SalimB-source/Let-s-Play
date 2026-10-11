@@ -37,9 +37,9 @@ const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.m
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
 const aiBrain = readFileSync(new URL('../src/games/rpgAI.js', import.meta.url), 'utf8');
 const cardsSource = readFileSync(new URL('../src/games/rpgCards.js', import.meta.url), 'utf8');
-const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function CardPreview('));
-const clickPreviewSource = battlePage.slice(battlePage.indexOf('function CardPreview('), battlePage.indexOf('function HoverCardPreview('));
-const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function SpellAnnouncement('));
+const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function HoverCardPreview('));
+const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function ConfirmationSort('));
+const confirmSortSource = battlePage.slice(battlePage.indexOf('function ConfirmationSort('), battlePage.indexOf('function SpellAnnouncement('));
 assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', hybride: '🔥⏳' \};/,
   'les éléments utilisent flamme, goutte d’eau, sablier et repère bicolore');
 assert.match(battleCss, /\.rpg-card-element-badge--sable\s*\{[^}]*drop-shadow\(0 0 2px rgba\(255, 215, 98, \.8\)\)/,
@@ -80,14 +80,14 @@ assert.doesNotMatch(battleCss, /\.rpg-card-(rapidity|evasion|protection|stat-boo
   'les styles des icônes d’effet sur carte ont été retirés');
 assert.doesNotMatch(tableCardSource, /CardRapidityBadge|CardEvasionBadge|CardProtectionBadge|rpg-card-stat-boost/,
   'les icônes d’effets sont absentes des cartes posées');
-assert.doesNotMatch(clickPreviewSource, /CardRapidityBadge|CardEvasionBadge|CardProtectionBadge|rpg-card-stat-boost/,
-  'l’aperçu détaillé ne montre aucune icône d’effet');
+assert.doesNotMatch(confirmSortSource, /CardRapidityBadge|CardEvasionBadge|CardProtectionBadge|rpg-card-stat-boost/,
+  'la confirmation de sort ne montre aucune icône d’effet');
 assert.doesNotMatch(hoverPreviewSource, /CardRapidityBadge|CardEvasionBadge|CardProtectionBadge|rpg-card-stat-boost/,
   'l’aperçu au survol ne montre aucune icône d’effet');
 assert.match(battlePage, /function cardEffectLines\(text\)[\s\S]*?\.split\(/,
   'les effets des cartes sont séparés pour les afficher sur plusieurs lignes');
-assert.match(clickPreviewSource, /rpg-card-preview__rules[\s\S]*?effets\.map/,
-  'chaque effet occupe une ligne dans l’aperçu détaillé');
+assert.match(confirmSortSource, /rpg-spell-confirm__rules[\s\S]*?effets\.map/,
+  'chaque effet occupe une ligne dans la confirmation de sort');
 assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans l’aperçu au survol');
 assert.match(battlePage, /const afficherApercuSurvol = \(carte, event\) => \{[\s\S]*?setApercuSurvol\(/,
@@ -96,15 +96,35 @@ assert.match(tableCardSource, /onHoverCard\?\.\(carte, event\)/,
   'les créatures en jeu utilisent le même aperçu sans icône d’état');
 assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(carte, event\)\}/,
   'les cartes affichent leur aperçu dès l’entrée de la souris');
-assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?setCarteEnApercu\(carteId\)/,
-  'l’aperçu détaillé au clic reste accessible');
+assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?jouerCarteDepuisMain\(carteId, handIndex\)/,
+  'cliquer une carte de la main la joue directement');
+assert.match(battlePage, /carte\.kind === 'magie' && peutJouerCarte\(carte\)[\s\S]*?setConfirmationSort\(\{ carteId, handIndex \}\)/,
+  'cliquer une magie demande une confirmation avant le lancement');
+assert.doesNotMatch(battlePage, /function CardPreview\(|setCarteEnApercu|ouvrirApercuEntite/,
+  'l’aperçu détaillé au clic a été retiré au profit du clic action');
+assert.doesNotMatch(battleCss, /\.rpg-card-preview\b/,
+  'les styles de l’aperçu au clic ont été retirés');
+assert.match(battleCss, /\.rpg-spell-confirm\s*\{/,
+  'la confirmation de lancement des magies est stylée');
+assert.match(battlePage, /onClick=\{\(\) => cliquerCreatureJoueur\(entite\)\}/,
+  'le clic sur une créature alliée agit directement, sans aperçu');
+assert.match(battlePage, /onClick=\{\(\) => cliquerCreatureEnnemie\(entite\)\}/,
+  'le clic sur une créature adverse agit directement, sans aperçu');
+assert.match(battlePage, /if \(!terrainInactif\) demanderCouleurMana\(event, terrain\);/,
+  'le clic sur un terrain produit le mana directement, sans aperçu');
 assert.match(battlePage, /className="rpg-hover-card-preview__type"[\s\S]*?className="rpg-hover-card-preview__cost"[\s\S]*?className="rpg-hover-card-preview__rules"[\s\S]*?className="rpg-hover-card-preview__stats"/,
   'l’aperçu au survol ne contient que le type, le coût, les effets et les statistiques');
-assert.match(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(132px, 158px\) minmax\(0, 1fr\);[^}]*width:\s*min\(480px, calc\(100vw - 20px\)\);[^}]*background:\s*rgba\(5, 8, 11, \.76\);[^}]*box-shadow:\s*0 12px 30px rgba\(0, 0, 0, \.42\);/s,
-  'l’aperçu au survol est agrandi à 480 px et conserve son fond assez opaque pour la lisibilité');
-assert.match(battlePage, /const largeurApercu = Math\.min\(480,[\s\S]*?const hauteurApercu = Math\.min\(300,/,
+assert.match(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(190px, 232px\) minmax\(0, 1fr\);[^}]*width:\s*min\(680px, calc\(100vw - 20px\)\);/s,
+  'l’aperçu au survol est agrandi à 680 px');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*background:/s,
+  'l’aperçu au survol n’a plus de fond principal');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*(?:border|box-shadow):/s,
+  'l’aperçu au survol n’a plus de grand cadre ni l’ombre du cadre autour du contenu');
+assert.match(battleCss, /\.rpg-hover-card-preview__details\s*\{[^}]*background:\s*rgba\(5, 8, 11, \.8\);/s,
+  'seul le fond de l’encadré des infos reste pour la lisibilité');
+assert.match(battlePage, /const largeurApercu = Math\.min\(680,[\s\S]*?const hauteurApercu = Math\.min\(400,/,
   'le calcul de placement prend en compte la nouvelle taille de l’aperçu');
-assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*5px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
+assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*7px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
@@ -172,10 +192,8 @@ assert.match(cardsSource, /export const MYTHIC_FRAME_COLOR = '#e8b745';/,
   'le cadre doré des cartes mythiques est déclaré à part de la couleur');
 assert.match(cardsSource, /CARD_FRAME_COLOR_ORDER/,
   'la clé d’une carte bicolore ne dépend pas de l’ordre de ses couleurs');
-assert.match(clickPreviewSource, /rpg-card-preview__rarity[\s\S]*?\{rarete\.label\}/,
-  'l’aperçu détaillé annonce la rareté de la carte');
-assert.doesNotMatch(battlePage.replace(clickPreviewSource, ''), /rarete\.label|rpg-card-catalogue__rarity/,
-  'la rareté n’est annoncée nulle part ailleurs que dans l’aperçu');
+assert.doesNotMatch(battlePage, /rarete\.label|rpg-card-catalogue__rarity|rpg-card-preview__rarity/,
+  'la rareté n’est annoncée nulle part dans le duel : l’aperçu au clic qui la montrait a été retiré');
 assert.match(battleCss, /\.rpg-card\.is-summoning-sick \.rpg-card__img\s*\{[^}]*grayscale\(1\)/s,
   'le mal d’invocation désature visiblement la créature');
 assert.match(battleCss, /\.rpg-card__blood\s*\{/, 'les blessures disposent d’un calque de sang dédié');
@@ -193,9 +211,9 @@ assert.match(battleCss, /\.card-table\.rpg-screen-hit--a::after[\s\S]*?radial-gr
   'les dégâts reçus affichent une vignette rouge en bord d’écran');
 assert.match(battleCss, /\.rpg-card-flight\.is-flying\s*\{\s*animation:\s*rpg-card-flight-to-table/,
   'une carte jouée vole de la main jusqu’à sa destination');
-assert.match(battlePage, /demarrerVolCarte\(carte, carteOrigineVolRef\.current\?\.handIndex, \(\) => poserTerrain\(carteId\)\)/,
+assert.match(battlePage, /const jouerCarteDepuisMain = \(carteId, handIndex = null\) => \{[\s\S]*?demarrerVolCarte\(carte, index, \(\) => poserTerrain\(carteId\)\)/,
   'la pose d’un terrain déclenche le vol de sa carte réelle depuis la main');
-assert.match(battlePage, /demarrerVolCarte\(carte, carteOrigineVolRef\.current\?\.handIndex, \(\) => poserCarte\(carteId\)\)/,
+assert.match(battlePage, /demarrerVolCarte\(carte, index, \(\) => poserCarte\(carteId\)\)/,
   'la pose d’une créature déclenche le vol de sa carte réelle depuis la main');
 assert.match(battlePage, /data-hand-index=\{i\}/,
   'la carte animée reste liée à son emplacement stable dans la main');
@@ -278,15 +296,15 @@ assert.match(battlePage, /⚔<\/span> Jouer\s*<\/button>/,
 assert.match(battlePage, /cardFrameClass\(carte\)/,
   'les cartes en main, sur table et les aperçus portent leur élément');
 const frameCss = battleCss.slice(battleCss.lastIndexOf('/* Le cadre suit la COULEUR'));
-assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-hand__card\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-terrain\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-card-preview__art,[\s\S]*?\.rpg-hover-card-preview__face,[\s\S]*?\{\s*border:\s*3px solid var\(--rpg-frame-color, #f1f3f5\);/s,
+assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-hand__card\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-terrain\[class\*="rpg-card--frame-"\],[\s\S]*?\.rpg-hover-card-preview__face,[\s\S]*?\{\s*border:\s*3px solid var\(--rpg-frame-color, #f1f3f5\);/s,
   'main, terrains, aperçus et animations partagent un cadre solide de 3 px, pour toute combinaison de couleurs');
 assert.doesNotMatch(battleCss, /--rpg-rarity-color/,
   'la variable de rareté ne pilote plus aucune bordure');
-assert.match(battleCss, /\.rpg-card-preview__art > span:not\(\.rpg-card-element-badge\),\s*\.rpg-card-preview__rarity\s*\{[\s\S]*?color:\s*var\(--rarity-color/s,
-  'le badge de rareté de l’aperçu garde sa couleur propre');
+assert.match(battleCss, /\.rpg-hand__card--img \.rpg-hand__rarity\s*\{[\s\S]*?color:\s*var\(--rarity-color/s,
+  'le badge de rareté des cartes en main garde sa couleur propre');
 const shineRule = frameCss.slice(frameCss.indexOf('/* ── Cadres brillants'), frameCss.indexOf('/* Braise + Sable'));
-assert.match(shineRule, /\.rpg-card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-terrain\.rpg-card--frame-brillant,[\s\S]*?\.rpg-card-preview__art\.rpg-card--frame-brillant,[\s\S]*?border-color:\s*transparent;[\s\S]*?var\(--rpg-frame-gradient\);[\s\S]*?background-clip:\s*padding-box, border-box;[\s\S]*?animation:\s*rpg-frame-shine-sweep/s,
-  'un cadre brillant peint son dégradé dans l’anneau de bordure, en main comme sur table et dans les aperçus');
+assert.match(shineRule, /\.rpg-card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-hand__card\.rpg-card--frame-brillant,[\s\S]*?\.rpg-terrain\.rpg-card--frame-brillant,[\s\S]*?border-color:\s*transparent;[\s\S]*?var\(--rpg-frame-gradient\);[\s\S]*?background-clip:\s*padding-box, border-box;[\s\S]*?animation:\s*rpg-frame-shine-sweep/s,
+  'un cadre brillant peint son dégradé dans l’anneau de bordure, en main, sur table et dans les aperçus au survol');
 assert.doesNotMatch(shineRule, /linear-gradient\(115deg/,
   'la mécanique du cadre brillant est partagée : chaque variante ne fournit que son dégradé');
 // Toute combinaison déclarée au catalogue doit exister en CSS : une future
@@ -356,8 +374,8 @@ assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d
   'les cartes piochées glissent de gauche à droite jusqu’à leur place dans la main');
 
 console.log(
-  'check:rpg-ui ✓ — aperçu au survol agrandi, fond sombre translucide et lisible, aperçu détaillé au clic et aperçu des magies jouées, '
-  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, blanc Sable, rouge Braise, or bicolore), rareté annoncée uniquement dans l’aperçu, flammes autour des Braise mythiques posées, terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
+  'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
+  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, blanc Sable, rouge Braise, or bicolore), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '

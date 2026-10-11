@@ -354,34 +354,26 @@ export async function checkRpgBattle(assert) {
   assert.equal(container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)'), null,
     'l’aperçu disparaît lorsque la souris quitte la carte');
 
-  // ── Cliquer consulte toujours le grand aperçu sans jouer la carte ──────
-  await act(async () => { carteSurvolee.click(); });
-  assert.ok(container.querySelector('.rpg-card-preview[role="dialog"]'), 'un clic ouvre l’aperçu agrandi');
-  assertElementFrame(container.querySelector('.rpg-card-preview__art'), carteSurvolee.dataset.cardId,
-    'la face de l’aperçu au clic');
-  assert.equal(container.querySelector('.rpg-card-preview__rarity')?.textContent,
-    cardRarityInfo(cardById(carteSurvolee.dataset.cardId)).label,
-    'l’aperçu au clic est le seul endroit qui annonce la rareté');
-  assert.ok(container.querySelector('.rpg-card-preview--terrain'), 'l’aperçu cliqué conserve l’identité de terrain sans changer sa bordure d’élément');
-  assert.equal(container.querySelector('.rpg-card-preview__art .rpg-card-element-badge'), null,
-    'l’aperçu au clic d’un terrain ne montre pas d’icône de couleur');
-  assert.equal(handCards().length, 5, 'la carte reste en main tant qu’elle n’est pas glissée sur la table');
-  assert.equal(container.querySelectorAll('.rpg-card').length, 0, 'l’aperçu ne joue pas la carte');
-  await act(async () => { container.querySelector('.rpg-card-preview__close').click(); });
-
+  // ── Cliquer une carte la joue ; les refus sont expliqués sans lancer ────
   await act(async () => { fennecMain.click(); });
-  const apercuFennecClique = container.querySelector('.rpg-card-preview[role="dialog"]');
-  assert.ok(apercuFennecClique, 'le clic ouvre aussi l’aperçu détaillé du Fennec');
-  assert.equal(apercuFennecClique.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
-    'l’aperçu détaillé ne montre aucune icône d’effet');
-  assert.equal(apercuFennecClique.querySelectorAll('.rpg-card-preview__rules > span').length, 2,
-    'l’aperçu détaillé met Rapidité et Esquive chacune sur leur ligne');
-  await act(async () => { apercuFennecClique.querySelector('.rpg-card-preview__close').click(); });
+  assert.ok(container.textContent.includes('Mana insuffisant pour Fennec des décombres'),
+    'cliquer une créature non payable explique le refus');
+  assert.equal(handCards().length, 5, 'la carte refusée reste en main');
+  assert.equal(container.querySelector('.rpg-card-preview, .rpg-spell-confirm'), null,
+    'le clic n’ouvre ni aperçu ni confirmation');
+  await act(async () => { envoyerSouris(fennecMain, 'mouseover'); });
+  const apercuFennecMain = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
+  assert.ok(apercuFennecMain, 'le survol garde l’aperçu instantané, qui reste le seul moyen de lire la carte');
+  assert.equal(apercuFennecMain.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
+    'l’aperçu au survol ne montre aucune icône d’effet');
+  assert.equal(apercuFennecMain.querySelectorAll('.rpg-hover-card-preview__rules > span').length, 2,
+    'l’aperçu met Rapidité et Esquive chacune sur leur ligne');
+  await act(async () => { envoyerSouris(fennecMain, 'mouseout'); });
 
-  // ── Une seule étape d'annulation restaure le dernier terrain posé ──────
-  const terrainAAnnuler = handCards().find((b) => b.className.includes('rpg-hand__card--terrain') && estJouable(b));
+  // ── Cliquer le terrain le pose ; une seule étape d'annulation le restaure ─
+  const terrainAAnnuler = carteSurvolee;
   const nomTerrainAAnnuler = terrainAAnnuler.getAttribute('aria-label').split(' — ')[0];
-  await glisserSurTable(container, terrainAAnnuler, false);
+  await act(async () => { terrainAAnnuler.click(); });
   const terrainEnVol = carteEnVol();
   assert.ok(terrainEnVol?.matches('.rpg-card-flight[data-rpg-card-flight="terrain"]'),
     'le terrain quitte visiblement la main et vole vers son emplacement sur la table');

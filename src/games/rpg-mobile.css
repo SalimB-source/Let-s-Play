@@ -28,9 +28,8 @@
 .card-row > .rpg-card:first-child { margin-inline-start: auto; }
 .card-row > .rpg-card:last-child { margin-inline-end: auto; }
 
-/* Contextual actions are available with mouse, keyboard and touch. */
-.rpg-card-preview__actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.rpg-card-preview__actions .rpg-btn {
+/* La confirmation de sort reste utilisable à la souris, au clavier et au doigt. */
+.rpg-spell-confirm__actions .rpg-btn {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -41,9 +40,6 @@
   line-height: 1.2;
   text-align: center;
 }
-.rpg-card-preview__actions .rpg-btn:disabled { opacity: .45; cursor: not-allowed; }
-.rpg-card-preview__close { min-width: 44px; min-height: 44px; }
-.rpg-card-preview__details header { padding-right: 40px; }
 
 /* A pair of bounded cells, not two fixed minimum-width badges: landscape
    phones can render cards narrower than the old 2 × 38px stat minimum. */
@@ -74,12 +70,6 @@
 }
 .rpg-terrains { padding: 14px 20px 16px; scroll-padding: 14px 20px; }
 .rpg-terrain { flex-shrink: 0; }
-.rpg-card-preview { width: min(560px, calc(100vw - 24px)); grid-template-columns: minmax(120px, 180px) minmax(0, 1fr); gap: 16px; align-items: start; padding: 16px; }
-.rpg-card-preview__visual { display: grid; gap: 8px; align-content: start; justify-self: center; width: 100%; min-width: 0; }
-.rpg-card-preview__visual .rpg-card-preview__art { width: 100%; height: auto; max-height: none; aspect-ratio: 4 / 5; }
-.rpg-card-preview__visual .rpg-card-preview__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-self: stretch; gap: 6px; margin: 0; padding: 7px 5px; font-size: 18px; }
-.rpg-card-preview__visual .rpg-card-preview__stats > span { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0; color: #21180f; }
-.rpg-card-preview__visual .rpg-card-preview__stats b { font-variant-numeric: tabular-nums; }
 
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
@@ -228,19 +218,8 @@
 }
 .rpg-battle--touch .rpg-card__foot .rpg-stat-icon,
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
-.rpg-battle--touch .rpg-card-preview-backdrop { padding: 8px; background: #08090f55; backdrop-filter: none; }
-.rpg-battle--touch .rpg-card-preview { grid-template-columns: minmax(112px, 34%) minmax(0, 1fr); width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 28px); padding: 12px; gap: 16px; overflow-y: auto; background: linear-gradient(120deg, #201b16ef, #10101aee); }
-.rpg-battle--touch .rpg-card-preview__visual { width: min(100%, 44dvh); }
-.rpg-battle--touch .rpg-card-preview__details { gap: 8px; }
-.rpg-battle--touch .rpg-card-preview__details h2 { font-size: 23px; }
-.rpg-battle--touch .rpg-card-preview__rules { padding: 8px; font-size: 14px; line-height: 1.4; }
-.rpg-battle--touch .rpg-card-preview__flavor { display: none; }
-.rpg-battle--touch .rpg-card-preview__type { padding: 5px; font-size: 12px; }
-.rpg-battle--touch .rpg-card-preview__stats { padding: 5px 8px; font-size: 16px; }
-.rpg-battle--touch .rpg-card-preview__actions { position: sticky; bottom: 0; padding-block: 6px; background: #14131cee; }
-@media (prefers-reduced-motion: reduce) {
-  .rpg-battle--touch .rpg-card-preview { animation: none; }
-}
+.rpg-battle--touch .rpg-spell-confirm { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 28px); overflow-y: auto; }
+.rpg-battle--touch .rpg-spell-confirm__actions { position: sticky; bottom: 0; padding-block: 6px; background: #14131cee; }
 
 /* One visible stack per terrain type. Keep it upright even when exhausted:
    the total count stays legible and inside the rail. Availability is kept in
@@ -266,4 +245,3 @@
   pointer-events: none;
 }
 .rpg-battle--touch .rpg-terrain.rpg-terrain-stack { flex: 0 0 52px; width: 52px; height: 65px; border-width: 2px; }
-.rpg-card-preview__resources { margin: 0; color: #e6d4ac; font: 600 12px/1.4 var(--display); }
