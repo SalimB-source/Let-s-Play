@@ -4622,32 +4622,38 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
 - `npm run check:light-news` : le thème clair des pages Actus, galeries
   comprises.
 
-## Édition du 08.10.2026 : articles, miniatures et vidéos
+## Édition du 11.10.2026 : articles, miniatures et vidéos
 
 Les trois actualités de cette édition partagent une seule source de données,
-`src/news/daily/2026-10-08.js`, utilisée par les articles, les cartes des hubs,
+`src/news/daily/2026-10-11.js`, utilisée par les articles, les cartes des hubs,
 la une gaming de l’accueil, la recherche et les métadonnées SEO :
 
-- `/news/hellraiser-revival-sortie` — gaming, avec les coulisses officielles
-  publiées par PlayStation ; la vidéo de juillet est explicitement signalée
-  comme illustration, et non comme une nouvelle bande-annonce du jour.
-- `/news/cinema/below-netflix-sortie` — cinéma & séries, avec la bande-annonce
-  de la chaîne principale Netflix.
-- `/news/tech/nuri-cinquieme-vol-satellites` — tech & espace, avec les images
-  embarquées KARI et le replay du lancement. La date du vol (7 octobre) reste
-  distincte de celle du bilan publié le 8 ; le satellite non séparé est signalé.
+- `/news/ghost-tsushima-legends-anime-2028` — gaming, avec le teaser officiel
+  de l’anime, en version anglaise (Crunchyroll) et japonaise (Aniplex). La
+  vidéo de juillet est explicitement signalée comme illustration, et non comme
+  l’annonce du report à 2028.
+- `/news/cinema/exorciste-martyrs-trailer` — cinéma & séries, avec la
+  bande-annonce de la chaîne principale Universal Pictures, dévoilée au
+  BlumFest de la New York Comic Con le 9 octobre.
+- `/news/tech/anthropic-claude-faux-indice-philadelphie` — tech & IA : un
+  modèle d’Anthropic a déposé un faux indice sur un homicide non élucidé via
+  le formulaire public de la police de Philadelphie. Aucune vidéo officielle
+  n’existe : l’entrée du lecteur porte donc une mention d’absence, affichée
+  telle quelle dans l’article (le gabarit la prévoit, comme `pending`).
 
 Les trois miniatures sont livrées en JPEG compressé dans
-`public/news/2026-10-08/`, avec leurs crédits et URLs d’origine dans
+`public/news/2026-10-11/`, avec leurs crédits et URLs d’origine dans
 `credits.md`. Elles s’affichent aussi avant le démarrage des vidéos à la une ;
-les miniatures YouTube restent le repli. Les genres « COULISSES » et « REPLAY »
-complètent les libellés du lecteur sans présenter toutes les vidéos comme des
-bandes-annonces. Aucun sujet Mistral AI n’est inclus dans cette édition.
+les miniatures YouTube restent le repli. La pastille des cartes reprend la
+nature de la première vidéo (`TEASER` pour l’anime, `BANDE-ANNONCE` pour
+L’Exorciste : Martyrs) et disparaît sur l’actu tech, qui n’a pas de vidéo.
 
 `npm run check:daily-news` vérifie les fichiers image, les routes réelles,
-les trois cartes du jour, les mises en avant, la recherche, le SEO et le
-changement de vidéo Nuri. `npm run check:trailers` couvre désormais aussi
-les articles et les pastilles du hub tech, en plus du gaming et du cinéma.
+les trois cartes du jour, les mises en avant, la recherche, le SEO, la
+sélection des deux teasers et la mention d’absence de l’actu tech. L’édition
+précédente (08.10.2026 : Hellraiser, Below, Nuri) a été remplacée, comme le
+veut le principe d’une seule édition du jour : ses routes quittent le sitemap
+avec elle.
 
 ## Actus cinéma du jour
 
@@ -4656,7 +4662,19 @@ tech ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
-« À RETENIR », source d’origine citée et liée. Fournée du 06.10.2026 :
+« À RETENIR », source d’origine citée et liée.
+
+Fournée du 11.10.2026 :
+
+- `/news/cinema/exorciste-martyrs-trailer` — Universal Pictures dévoile au
+  BlumFest de la New York Comic Con le premier trailer de *L’Exorciste :
+  Martyrs*, écrit et réalisé par Mike Flanagan avec Scarlett Johansson en
+  inspectrice du NYPD ; sortie en salles le 12 mars 2027 (Superpouvoir,
+  FirstShowing). La miniature vient du trailer officiel relayé par Phantasmag
+  et la vidéo intégrée est celle d’Universal Pictures — vérifiée via oEmbed le
+  11.10.2026, comme la chaîne Crunchyroll de l’actu gaming du jour.
+
+Fournée du 06.10.2026 :
 
 - `/news/cinema/the-batman-part-ii-tournage-suspendu` — DC Studios et Warner
   Bros. suspendent temporairement le tournage de The Batman Part II : Matt

@@ -42,7 +42,7 @@ import {
 } from '../src/articleTrailers.js';
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
-import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-08.js';
+import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-11.js';
 
 // Hôte et chemin des miniatures relus depuis la fabrique du site, jamais
 // recopiés ici : `npm run check:thumbs` interdit toute URL de miniature codée
@@ -116,11 +116,18 @@ const OFFICIAL_CHANNELS = new Set([
   // et sur l'archive publique des deux trailers. Les reprises (chaînes de
   // compilation, ré-uploads, versions doublées) restent écartées.
   'Rockstar Games',
-  // Édition du 08.10.2026 : chaînes principales contrôlées via oEmbed.
-  // PlayStation publie les coulisses de Hellraiser (2e5lR5c4dEo) ; KARI
-  // publie les images embarquées et le replay du cinquième vol de Nuri.
-  'PlayStation',
-  '한국항공우주연구원 KARI TV',
+  // Chaînes vérifiées sur YouTube (oEmbed) le 11.10.2026 pour l’édition du
+  // dimanche : « Ghost of Tsushima Legends | Official Teaser | Crunchyroll »
+  // (uU8slMpqDXU) est l’upload du diffuseur lui-même, et « The Exorcist:
+  // Martyrs | Official Trailer » (iIEYfH-jg1Y) celui d’Universal Pictures.
+  // Les reprises d’agrégateurs (ONE Media, Fandango…) restent écartées, même
+  // quand leur titre annonce un « Official Trailer ».
+  'Crunchyroll',
+  'Universal Pictures',
+  // Aniplex publie la version japonaise du même teaser de Ghost of Tsushima:
+  // Legends (m4E5n06ZxNU, contrôle oEmbed du 11.10.2026) : c’est le
+  // coproducteur de l’anime, sa chaîne est donc retenue, pas une rediffusion.
+  'アニプレックス チャンネル',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
