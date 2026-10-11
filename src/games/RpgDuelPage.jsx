@@ -1284,8 +1284,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const rectangle = event.currentTarget.getBoundingClientRect();
     const largeurVue = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1024);
     const hauteurVue = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 768);
-    const largeurApercu = Math.min(480, Math.max(180, largeurVue - 20));
-    const hauteurApercu = Math.min(300, Math.max(150, hauteurVue - 20));
+    const largeurApercu = Math.min(680, Math.max(180, largeurVue - 20));
+    const hauteurApercu = Math.min(400, Math.max(150, hauteurVue - 20));
     const marge = 10;
     const espace = 12;
     let left = rectangle.right + espace;

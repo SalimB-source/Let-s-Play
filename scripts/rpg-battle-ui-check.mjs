@@ -98,11 +98,15 @@ assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[
   'l’aperçu détaillé au clic reste accessible');
 assert.match(battlePage, /className="rpg-hover-card-preview__type"[\s\S]*?className="rpg-hover-card-preview__cost"[\s\S]*?className="rpg-hover-card-preview__rules"[\s\S]*?className="rpg-hover-card-preview__stats"/,
   'l’aperçu au survol ne contient que le type, le coût, les effets et les statistiques');
-assert.match(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(132px, 158px\) minmax\(0, 1fr\);[^}]*width:\s*min\(480px, calc\(100vw - 20px\)\);[^}]*background:\s*rgba\(5, 8, 11, \.76\);[^}]*box-shadow:\s*0 12px 30px rgba\(0, 0, 0, \.42\);/s,
-  'l’aperçu au survol est agrandi à 480 px et conserve son fond assez opaque pour la lisibilité');
-assert.match(battlePage, /const largeurApercu = Math\.min\(480,[\s\S]*?const hauteurApercu = Math\.min\(300,/,
+assert.match(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(190px, 232px\) minmax\(0, 1fr\);[^}]*width:\s*min\(680px, calc\(100vw - 20px\)\);[^}]*box-shadow:\s*0 12px 30px rgba\(0, 0, 0, \.42\);/s,
+  'l’aperçu au survol est agrandi à 680 px');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*background:/s,
+  'l’aperçu au survol n’a plus de fond principal');
+assert.match(battleCss, /\.rpg-hover-card-preview__details\s*\{[^}]*background:\s*rgba\(5, 8, 11, \.8\);/s,
+  'seul le fond de l’encadré des infos reste pour la lisibilité');
+assert.match(battlePage, /const largeurApercu = Math\.min\(680,[\s\S]*?const hauteurApercu = Math\.min\(400,/,
   'le calcul de placement prend en compte la nouvelle taille de l’aperçu');
-assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*5px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
+assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*7px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
@@ -291,7 +295,7 @@ assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d
   'les cartes piochées glissent de gauche à droite jusqu’à leur place dans la main');
 
 console.log(
-  'check:rpg-ui ✓ — aperçu au survol agrandi, fond sombre translucide et lisible, aperçu détaillé au clic et aperçu des magies jouées, '
+  'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal, seul l’encadré des infos garde son fond sombre lisible, aperçu détaillé au clic et aperçu des magies jouées, '
   + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par la rareté, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
