@@ -20,6 +20,8 @@ import {
   tirerPlateau,
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
+import { groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
+import { startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
   chargerProgressionHistoire,
@@ -70,7 +72,9 @@ import {
   rpgPeutBloquerAttaquant,
   rpgPeutPayer,
   rpgPoserTerrain,
-  rpgTourSorcierPreparationIA,
+  rpgSorcierAnnonceSuivante,
+  rpgSorcierPrepareTerrain,
+  rpgSorcierResoudreAnnonce,
   rpgVainqueur,
 } from './rpgDuel.js';
 import {
@@ -453,6 +457,7 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
               style={cardFrameStyle(carteDuDessus)}
               src={cardArt(topCard)}
               alt=""
+              data-card-id={carteDuDessus?.id}
               onMouseEnter={(event) => onHoverCard?.(carteDuDessus, event)}
               onMouseLeave={onLeaveHoverCard}
             />
@@ -758,7 +763,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style, spellPlayed = false }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '' }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -766,7 +771,7 @@ function HoverCardPreview({ carte, style, spellPlayed = false }) {
   const effets = cardEffectLines(effet);
   return (
     <aside
-      className={`rpg-hover-card-preview rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
+      className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role="tooltip"
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
@@ -790,6 +795,32 @@ function HoverCardPreview({ carte, style, spellPlayed = false }) {
         {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
       </div>
     </aside>
+  );
+}
+
+/** L'aperçu au doigt : une seconde d'appui sur une carte ouvre le même contenu
+ * que le survol de la souris, posé sur un volet sombre qui l'isole du plateau.
+ * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
+ * joue jamais la carte : c'est une consultation, pas une action. */
+function ApercuCarteAppuiLong({ carte, onFermer }) {
+  if (!carte) return null;
+  return (
+    <div
+      className="rpg-card-peek"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Aperçu de ${carte.name}`}
+      onClick={onFermer}
+    >
+      <div className="rpg-card-peek__backdrop" aria-hidden="true" />
+      <div className="rpg-card-peek__panel">
+        <p className="rpg-card-peek__hint">Appui long d’une seconde · aperçu de la carte</p>
+        <HoverCardPreview carte={carte} variante="appui-long" />
+      </div>
+      <button type="button" autoFocus className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
+        Fermer l’aperçu
+      </button>
+    </div>
   );
 }
 
@@ -1209,7 +1240,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
                 <ul className="rpg-deck-list">
                   {openCards.map(({ carte, count }) => (
-                    <li key={carte.id}>
+                    <li key={carte.id} data-card-id={carte.id}>
                       <img src={cardArt(carte)} alt="" />
                       <span><strong>{carte.name}</strong><small>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
                       <b>×{count}</b>
@@ -1449,9 +1480,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const duelRef = useRef(null);
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
-  useEffect(() => () => {
-    touchDragRef.current?.();
-    touchDragRef.current = null;
+  // Aperçu au doigt : sur écran tactile le survol n'existe pas, un appui long
+  // d'une seconde sur une carte ouvre donc le même aperçu (voir
+  // `rpgLongPress.js`). C'est une consultation : la carte n'est jamais jouée.
+  const [apercuAppui, setApercuAppui] = useState(null);
+  const appuiLongRef = useRef(null);
+  useEffect(() => {
+    // Changer d'écran (menu, deck, catalogue, duel) referme l'aperçu au doigt
+    // et désarme les gestes en cours.
+    setApercuAppui(null);
+    return () => {
+      touchDragRef.current?.();
+      touchDragRef.current = null;
+      appuiLongRef.current?.();
+      appuiLongRef.current = null;
+    };
   }, [ecran]);
   const clicApresGlisserBloqueurRef = useRef(null);
   const animationsVisuellesTimersRef = useRef([]);
@@ -1488,6 +1531,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
   const [sortJoue, setSortJoue] = useState(null);
   const [apercuMagie, setApercuMagie] = useState(null);
+  // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
+  const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
   const carteGlisseeRef = useRef(null);
   const clicApresGlisserRef = useRef(false);
   const annulationRef = useRef(null);
@@ -1576,6 +1621,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCibleEnCours(null);
     setConfirmationSort(null);
     setApercuSurvol(null);
+    appuiLongRef.current?.();
+    appuiLongRef.current = null;
+    setApercuAppui(null);
     setCarteGlissee(null);
     setSurZoneDepot(false);
     setAnnulationDisponible(false);
@@ -1600,7 +1648,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timerApercuMagieRef.current = null;
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
-    setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).`);
+    // Au doigt, le survol n'existe pas : l'ouverture annonce le geste qui le
+    // remplace (appui long d'une seconde = aperçu de la carte, sans la jouer).
+    setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).${viewport.mobile ? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer.' : ''}`);
     force();
   };
 
@@ -1673,6 +1723,49 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const masquerApercuSurvol = () => setApercuSurvol(null);
 
+  // ── L'aperçu au doigt : appui long d'une seconde sur une carte ────────────
+  const annulerAppuiLong = () => {
+    appuiLongRef.current?.();
+    appuiLongRef.current = null;
+  };
+  const fermerApercuAppui = () => {
+    annulerAppuiLong();
+    setApercuAppui(null);
+  };
+  /** Un seul geste pour toute la page : toute carte affichée porte un
+   * `data-card-id`, en main, sur la table, dans un rail de terrains, sur le
+   * dessus d'un cimetière, au catalogue et dans la liste d'un deck. */
+  const demarrerAppuiLongCarte = (event) => {
+    const hote = event.target?.closest?.('[data-card-id]');
+    const carte = cardById(hote?.dataset?.cardId);
+    if (!hote || !carte) return;
+    annulerAppuiLong();
+    appuiLongRef.current = startRpgLongPress(event, {
+      source: hote,
+      onTrigger: () => {
+        // Le même `pointerdown` a pu armer un glisser-déposer tactile : consulter
+        // une carte ne la déplace pas. Le survol éventuel s'efface aussi.
+        touchDragRef.current?.();
+        touchDragRef.current = null;
+        masquerApercuSurvol();
+        setApercuAppui(carte.id);
+      },
+    });
+  };
+  // Échap referme l'aperçu, comme le volet et le bouton Fermer.
+  useEffect(() => {
+    if (!apercuAppui) return undefined;
+    const fermerAvecEchap = (event) => {
+      if (event.key === 'Escape') fermerApercuAppui();
+    };
+    window.addEventListener('keydown', fermerAvecEchap);
+    return () => window.removeEventListener('keydown', fermerAvecEchap);
+  }, [apercuAppui]);
+  // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
+  useEffect(() => {
+    if (viewport.portrait) fermerApercuAppui();
+  }, [viewport.portrait]);
+
   const demarrerEtage = (etageId) => {
     setHistoireEtageId(etageId);
     nouvellePartie({ etageId });
@@ -1687,7 +1780,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran !== 'partie') {
     return (
-      <div className="rpg-battle rpg-battle--menu" data-scene="menu">
+      <div className="rpg-battle rpg-battle--menu" data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -1713,6 +1806,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             style={apercuSurvol.style}
           />
         )}
+        {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
       </div>
     );
   }
@@ -1723,10 +1817,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const monTour = duel.tour === 'joueur' && !vainqueur;
   const deckJoueurAffiche = RPG_DECKS.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckEstSelectionnable(deck)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
-  const reponseActive = Boolean(combatEntrant && duel.fenetreReponse && !vainqueur);
+  // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
+  const fenetreSort = Boolean(duel.annonce && !vainqueur);
+  const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
+    : fenetreSort
+      ? 'SORT ANNONCÉ'
     : reponseActive
       ? reponseApresBlocage ? 'À VOUS · RÉPONSE' : 'À VOUS · DÉFENSE'
       : phase ? 'À VOUS · ATTAQUE' : monTour ? 'À VOTRE TOUR' : 'TOUR DU SORCIER';
@@ -1852,7 +1950,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       })),
     ];
     return cartesEnJeu.map((entite) => {
-      const element = elements.get(entite.id);
+      // Pile d'homonymes repliée : l'exemplaire masqué n'a pas d'élément, il
+      // emprunte la place de sa pile visible pour que l'effet de destruction
+      // parte du bon endroit au lieu du coin de la table.
+      const element = elements.get(entite.id)
+        ?? table?.querySelector(`.card-row [data-card-id="${entite.carteId}"], .rpg-terrains [data-card-id="${entite.carteId}"]`);
       const rect = element?.getBoundingClientRect() ?? { left: tableRect.left, top: tableRect.top, width: 0, height: 0 };
       const width = element?.offsetWidth || rect.width || 120;
       const height = element?.offsetHeight || rect.height || 150;
@@ -2098,6 +2200,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective);
+    if (res.ok && res.contre && res.parIA) {
+      // Le sorcier contre la carte du joueur : elle est défaussée, le tour du joueur continue.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      invaliderAnnulation();
+      setCibleEnCours(null);
+      setMessage(`Le sorcier contre ${carte.name} avec ${cardById(res.carteContre)?.name ?? 'un contre'}.`);
+      force();
+      return;
+    }
+    if (res.ok && res.contre) {
+      // Le contre a défait l'annonce du sorcier : il reprend son tour, carte suivante.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      invaliderAnnulation();
+      annoncerMagie(carte, cibleDecrite);
+      setCibleEnCours(null);
+      setMessage(`Vous contrez ${cardById(res.carteContree)?.name ?? 'la carte annoncée'} avec ${carte.name}.`);
+      force();
+      later(annoncerSuivantSorcier, 900);
+      return;
+    }
     if (res.ok) {
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
@@ -2188,6 +2310,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       else if (res.raison === 'cible') setMessage(`Choisissez une créature adverse pour ${carte.name}.`);
       else if (res.raison === 'protection') setMessage(`${nomCibleCombat ?? 'Cette créature'} est protégée contre ${cardColorLabel(carte)}.`);
       else setMessage('Impossible.');
+    } else if (res.contre && res.parIA) {
+      // Le sorcier contre la créature : elle n'entre pas en jeu.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      setMessage(`Le sorcier contre ${carte.name} avec ${cardById(res.carteContre)?.name ?? 'un contre'}. La créature ne rejoint pas le champ.`);
     } else {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -2761,13 +2887,49 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     later(() => {
       const champAvantIA = prendreInstantaneChamp();
       const debutJournalDestructions = rpgNombreDestructions(duel);
-      rpgTourSorcierPreparationIA(duel, rng);
+      rpgSorcierPrepareTerrain(duel);
       animerModificationsChamp(champAvantIA, [], debutJournalDestructions);
-      if (rpgVainqueur(duel)) {
-        setMessage('Le sort du sorcier a décidé du duel.');
-        force();
-        return;
-      }
+      annoncerSuivantSorcier();
+    }, 700);
+  };
+
+  // Le sorcier annonce sa carte suivante. Le joueur répond avec un éphémère, ou laisse passer.
+  const annoncerSuivantSorcier = () => {
+    if (rpgVainqueur(duel)) {
+      setMessage('Le sort du sorcier a décidé du duel.');
+      force();
+      return;
+    }
+    const annonce = rpgSorcierAnnonceSuivante(duel, rng);
+    if (!annonce) {
+      declarerAttaqueSorcier();
+      return;
+    }
+    const carte = cardById(annonce.carteId);
+    setMessage(`Le sorcier annonce ${carte?.name ?? 'une carte'}. Répondez avec un éphémère, ou laissez passer.`);
+    force();
+  };
+
+  // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
+  const laisserPasser = () => {
+    if (!duel.annonce) return;
+    const carte = cardById(duel.annonce.carteId);
+    const champAvant = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
+    const res = rpgSorcierResoudreAnnonce(duel);
+    animerModificationsChamp(champAvant, [], debutJournalDestructions);
+    const nom = carte?.name ?? 'la carte';
+    setMessage(res.contre
+      ? `Votre contresort annule ${nom} du sorcier.`
+      : res.ok
+        ? `Le sorcier joue ${nom}.`
+        : `${nom} du sorcier ne peut plus être jouée.`);
+    force();
+    later(annoncerSuivantSorcier, 900);
+  };
+
+  // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
+  const declarerAttaqueSorcier = () => {
       const ids = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
       if (!ids.length) {
         rpgFinDeTour(duel);
@@ -2801,7 +2963,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         ? `Le sorcier attaque : ${coupsRapides.join(' ; ')}. Glissez vos bloqueurs sur les autres attaquants, puis résolvez le combat. Vous pouvez aussi jouer un éphémère.${noteEnvol}`
         : `Le sorcier attaque : glissez vos bloqueurs sur les attaquants, puis résolvez le combat. Vous pouvez aussi jouer un éphémère.${noteEnvol}`);
       force();
-    }, 700);
   };
 
   const commencerGlisserTactile = (event) => {
@@ -2847,8 +3008,94 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
   const tokenPiocheJoueur = piochesJoueur.at(-1)?.token ?? null;
   const tokenPiocheSorcier = piochesSorcier.at(-1)?.token ?? null;
 
+  /* ── Piles de cartes homonymes (au doigt seulement) ─────────────────────────
+     La zone de jeu tactile est étroite : deux exemplaires identiques y coûtent
+     deux emplacements pour une seule décision. Comme les terrains, les cartes
+     qui partagent un nom forment une pile unique avec son compteur ×N. La pile
+     agit sur l'exemplaire pertinent — le premier prêt, disponible, ciblé,
+     attaquant ou bloqueur — ; toucher le compteur déplie le groupe pour
+     choisir soi-même, et tout groupe dont un exemplaire participe à l'action
+     en cours se déplie de lui-même afin que les flèches de blocage, les halos
+     de cible et les destructions retrouvent leur carte.
+     Sur grand écran rien ne change : chaque carte garde son emplacement. */
+  const empilerCartes = viewport.mobile;
+  const groupesMain = empilerCartes
+    ? groupCartesMain(duel.joueur.main)
+    : duel.joueur.main.map((carteId, index) => ({ carteId, indices: [index] }));
+  // Exemplaires impliqués dans l'action en cours : leur groupe se déplie seul,
+  // pour que le joueur voie chaque carte concernée (et que les flèches de
+  // blocage, les halos de cible et les destructions trouvent leur élément).
+  const idsActionEnCours = new Set([
+    ...attaquants,
+    ...(combatEntrant?.attaquants ?? []),
+    ...Object.values(combatEntrant?.blocages ?? {}).flat(),
+    ...Object.values(combatEntrant?.ciblesAttaque ?? {}),
+    ...(sortJoue?.cible?.targetIds ?? []),
+    ...(bloqueurSelectionne ? [bloqueurSelectionne] : []),
+    ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
+    ...Object.keys(animationsEntites ?? {}),
+  ]);
+  const champEnPiles = (entites) => ({
+    indexParId: new Map(entites.map((entite, index) => [entite.id, index])),
+    piles: empilerCartes
+      ? groupEntitesParCarte(entites)
+      : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
+  });
+  const clePile = (cote, carteId) => `${cote}:${carteId}`;
+  const basculerPile = (cle) => setPilesDeployees((actuel) => {
+    const suivant = new Set(actuel);
+    if (suivant.has(cle)) suivant.delete(cle);
+    else suivant.add(cle);
+    return suivant;
+  });
+  const pileDeployee = (cote, pile) => pile.entites.length < 2
+    || pile.entites.some((entite) => idsActionEnCours.has(entite.id))
+    || pilesDeployees.has(clePile(cote, pile.carteId));
+  const teteDePile = (cote, pile) => {
+    const liste = pile.entites;
+    if (liste.length < 2) return liste[0];
+    if (cote === 'joueur') {
+      if (reponseActive && !reponseApresBlocage) {
+        const bloqueur = liste.find((entite) => bloqueursDisponibles.some((disponible) => disponible.id === entite.id));
+        if (bloqueur) return bloqueur;
+      }
+      if (cibleEnCours && modeCible === 'allie') {
+        const cible = liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee)));
+        if (cible) return cible;
+      }
+      const prete = liste.find((entite) => entite.ready && !entite.attaquee && !attaquants.includes(entite.id));
+      return prete
+        ?? liste.find((entite) => !entite.attaquee && !attaquants.includes(entite.id))
+        ?? liste[0];
+    }
+    if (cibleEnCours && modeCible === 'ennemi') {
+      return liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee))) ?? liste[0];
+    }
+    if (cibleAttaqueEnCours) {
+      const legales = ciblesCoupRapideLegales(
+        duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
+        'joueur',
+      );
+      return liste.find((entite) => legales.some((cible) => cible.id === entite.id)) ?? liste[0];
+    }
+    if (combatEntrant && combatEntrant.coteAttaquant !== 'joueur') {
+      return liste.find((entite) => combatEntrant.attaquants.includes(entite.id)
+        && !combatEntrant.ciblesAttaque?.[entite.id]) ?? liste[0];
+    }
+    if (combatEntrant) {
+      return liste.find((entite) => combatEntrant.attaquants.includes(entite.id)) ?? liste[0];
+    }
+    return liste[0];
+  };
+  const campEnnemi = champEnPiles(duel.sorcier.creatures);
+  const campJoueur = champEnPiles(duel.joueur.creatures);
+
   return (
-    <div className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`} data-scene="duel">
+    <div
+      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`}
+      data-scene="duel"
+      onPointerDown={demarrerAppuiLongCarte}
+    >
       {viewport.portrait && <div className="rpg-rotate-prompt" role="dialog" aria-modal="true" aria-label="Jouer en paysage">
         <span className="rpg-rotate-prompt__icon" aria-hidden="true">↻</span>
         <h2>Le duel se joue en paysage</h2>
@@ -2947,59 +3194,141 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         </div>
 
         <div className="card-row card-row--ennemi" aria-label="Champ du sorcier">
-          {duel.sorcier.creatures.length ? duel.sorcier.creatures.map((entite, i) => (
-            <TableCard
-              key={entite.id}
-              entite={entite}
-              cote="ennemi"
-              active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
-              declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
-              blocking={bloqueursSelectionnes.has(entite.id)}
-              spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
-              coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-              canTarget={Boolean(
-                (cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
-                || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
-                  duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
-                  'joueur',
-                ).some((cible) => cible.id === entite.id))
-              )}
-              canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id])}
-              onAssignBlocker={assignerBloqueur}
-              actionFx={animationsEntites[entite.id]}
-              tilt={TILTS[i % TILTS.length]}
-              onHoverCard={afficherApercuSurvol}
-              onLeaveHoverCard={masquerApercuSurvol}
-              onClick={() => cliquerCreatureEnnemie(entite)}
-            />
-          )) : <span className="rpg-empty-lane">Les gardiens du sorcier attendent.</span>}
+          {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
+            const cle = clePile('ennemi', pile.carteId);
+            const deployee = pileDeployee('ennemi', pile);
+            const affichees = deployee ? pile.entites : [teteDePile('ennemi', pile)];
+            const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
+            return (
+              <Fragment key={pile.carteId}>
+                {deployee && pile.entites.length > 1 && (
+                  <button
+                    type="button"
+                    className="rpg-card-stack__toggle"
+                    onClick={() => basculerPile(cle)}
+                    aria-label={`Replier les ${pile.entites.length} ${nom} identiques`}
+                  >
+                    ×{pile.entites.length}
+                  </button>
+                )}
+                {affichees.map((entite) => {
+                  const i = campEnnemi.indexParId.get(entite.id) ?? 0;
+                  const carte = (
+                    <TableCard
+                      key={entite.id}
+                      entite={entite}
+                      cote="ennemi"
+                      active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
+                      declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
+                      blocking={bloqueursSelectionnes.has(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
+                      coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
+                      canTarget={Boolean(
+                        (cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                        || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
+                          duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
+                          'joueur',
+                        ).some((cible) => cible.id === entite.id))
+                      )}
+                      canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id])}
+                      onAssignBlocker={assignerBloqueur}
+                      actionFx={animationsEntites[entite.id]}
+                      tilt={TILTS[i % TILTS.length]}
+                      onHoverCard={afficherApercuSurvol}
+                      onLeaveHoverCard={masquerApercuSurvol}
+                      onClick={() => cliquerCreatureEnnemie(entite)}
+                    />
+                  );
+                  if (deployee || pile.entites.length < 2) return carte;
+                  return (
+                    <span
+                      className="rpg-card-stack"
+                      key={entite.id}
+                      style={cardFrameStyle(cardById(pile.carteId))}
+                    >
+                      {carte}
+                      <button
+                        type="button"
+                        className="rpg-card-stack__count"
+                        onClick={() => basculerPile(cle)}
+                        aria-label={`Déplier les ${pile.entites.length} ${nom} identiques`}
+                      >
+                        ×{pile.entites.length}
+                      </button>
+                    </span>
+                  );
+                })}
+              </Fragment>
+            );
+          }) : <span className="rpg-empty-lane">Les gardiens du sorcier attendent.</span>}
         </div>
         <div className="card-row card-row--equipe" aria-label="Votre champ de bataille">
-          {duel.joueur.creatures.length ? duel.joueur.creatures.map((entite, i) => (
-            <TableCard
-              key={entite.id}
-              entite={entite}
-              cote="joueur"
-              active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
-              selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
-              declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
-              spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
-              blocking={bloqueursSelectionnes.has(entite.id)}
-              selectedBlocker={bloqueurSelectionne === entite.id}
-              coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-              canTarget={Boolean(cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))}
-              canDragBlocker={Boolean(reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
-              draggedBlocker={bloqueurGlisse === entite.id}
-              onStartBlockerDrag={commencerGlisserBloqueur}
-              onEndBlockerDrag={terminerGlisserBloqueur}
-              actionFx={animationsEntites[entite.id]}
-              playerTurn={monTour}
-              tilt={TILTS[(i + 2) % TILTS.length]}
-              onHoverCard={afficherApercuSurvol}
-              onLeaveHoverCard={masquerApercuSurvol}
-              onClick={() => cliquerCreatureJoueur(entite)}
-            />
-          )) : <span className="rpg-empty-lane">Vos alliés prendront place ici.</span>}
+          {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
+            const cle = clePile('joueur', pile.carteId);
+            const deployee = pileDeployee('joueur', pile);
+            const affichees = deployee ? pile.entites : [teteDePile('joueur', pile)];
+            const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
+            return (
+              <Fragment key={pile.carteId}>
+                {deployee && pile.entites.length > 1 && (
+                  <button
+                    type="button"
+                    className="rpg-card-stack__toggle"
+                    onClick={() => basculerPile(cle)}
+                    aria-label={`Replier les ${pile.entites.length} ${nom} identiques`}
+                  >
+                    ×{pile.entites.length}
+                  </button>
+                )}
+                {affichees.map((entite) => {
+                  const i = campJoueur.indexParId.get(entite.id) ?? 0;
+                  const carte = (
+                    <TableCard
+                      key={entite.id}
+                      entite={entite}
+                      cote="joueur"
+                      active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
+                      selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
+                      declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id))}
+                      blocking={bloqueursSelectionnes.has(entite.id)}
+                      selectedBlocker={bloqueurSelectionne === entite.id}
+                      coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
+                      canTarget={Boolean(cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))}
+                      canDragBlocker={Boolean(reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
+                      draggedBlocker={bloqueurGlisse === entite.id}
+                      onStartBlockerDrag={commencerGlisserBloqueur}
+                      onEndBlockerDrag={terminerGlisserBloqueur}
+                      actionFx={animationsEntites[entite.id]}
+                      playerTurn={monTour}
+                      tilt={TILTS[(i + 2) % TILTS.length]}
+                      onHoverCard={afficherApercuSurvol}
+                      onLeaveHoverCard={masquerApercuSurvol}
+                      onClick={() => cliquerCreatureJoueur(entite)}
+                    />
+                  );
+                  if (deployee || pile.entites.length < 2) return carte;
+                  return (
+                    <span
+                      className="rpg-card-stack"
+                      key={entite.id}
+                      style={cardFrameStyle(cardById(pile.carteId))}
+                    >
+                      {carte}
+                      <button
+                        type="button"
+                        className="rpg-card-stack__count"
+                        onClick={() => basculerPile(cle)}
+                        aria-label={`Déplier les ${pile.entites.length} ${nom} identiques`}
+                      >
+                        ×{pile.entites.length}
+                      </button>
+                    </span>
+                  );
+                })}
+              </Fragment>
+            );
+          }) : <span className="rpg-empty-lane">Vos alliés prendront place ici.</span>}
         </div>
 
         {cartesEnDestruction.map((effet) => {
@@ -3173,6 +3502,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   </button>
                 )}
               </div>
+              {fenetreSort && (
+                <div className="rpg-annonce-sort" role="status" aria-live="polite">
+                  <span>Le sorcier annonce <b>{cardById(duel.annonce.carteId)?.name ?? 'une carte'}</b>. Répondez avec un éphémère, ou laissez passer.</span>
+                  <button type="button" className="rpg-btn rpg-btn--endturn" onClick={laisserPasser}>
+                    ➜ Laisser passer
+                  </button>
+                </div>
+              )}
               <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
                 {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
                   <button
@@ -3196,7 +3533,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
         <div className={`rpg-hand-dock${combatEntrant ? ' is-open' : ''}`} aria-label="Votre main">
           <div className="rpg-hand">
-            {duel.joueur.main.map((carteId, i) => {
+            {groupesMain.map((groupe) => {
+              const carteId = groupe.carteId;
+              const i = groupe.indices[0];
+              const exemplaires = groupe.indices.length;
               const carte = cardById(carteId);
               if (!carte) return null;
               const estTerrain = carte.kind === 'terrain';
@@ -3209,8 +3549,9 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   : (monTour || peutRepondre) && rpgPeutPayer(duel.joueur, carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
-                && carteEnVol.handIndex === i;
-              const piocheEnCours = enVol ? null : piochesJoueur.find((animation) => animation.handIndex === i);
+                && groupe.indices.includes(carteEnVol.handIndex);
+              const piocheEnCours = enVol ? null
+                : piochesJoueur.find((animation) => groupe.indices.includes(animation.handIndex));
               const styleVol = enVol ? {
                 left: `${carteEnVol.from.left}px`,
                 top: `${carteEnVol.from.top}px`,
@@ -3222,8 +3563,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                 '--rpg-flight-scale-y': carteEnVol.to.height / Math.max(1, carteEnVol.from.height),
               } : {};
 
-              return (
-                <Fragment key={`${carteId}-${i}`}>
+              const contenu = (
+                <>
                 <button
                   type="button"
                   draggable={jouable}
@@ -3256,10 +3597,11 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   data-draw-token={piocheEnCours?.token}
                   data-card-id={carteId}
                   data-hand-index={i}
+                  data-pile-count={exemplaires}
                   data-rpg-card-flight={enVol ? (estTerrain ? 'terrain' : 'creature') : undefined}
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
-                  aria-label={`${carte.name} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
@@ -3274,6 +3616,9 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                     </span>
                   )}
                 </button>
+                {exemplaires > 1 && (
+                  <span className="rpg-hand__pile-count" aria-hidden="true">×{exemplaires}</span>
+                )}
                 {enVol && (
                   <span
                     className="rpg-hand__flight-placeholder"
@@ -3281,8 +3626,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                     aria-hidden="true"
                   />
                 )}
-                </Fragment>
+                </>
               );
+              // Au doigt, chaque pile forme un bloc : le compteur flotte sur son
+              // coin sans masquer le nom ni le coût. À la souris, le DOM reste
+              // exactement celui d'origine (une carte = un bouton).
+              return empilerCartes
+                ? <span className="rpg-hand__pile" key={`${carteId}-${i}`}>{contenu}</span>
+                : <Fragment key={`${carteId}-${i}`}>{contenu}</Fragment>;
             })}
           </div>
         </div>
@@ -3351,6 +3702,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           </div>
         )}
       </div>
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
     </div>
   );
 }

@@ -36,8 +36,9 @@ Ouvrir un boîtier et le choisir sont deux gestes distincts :
 | « Lancer le duel » (écran Jouer) | joue avec le deck de jeu courant |
 
 - **Qui est sélectionnable** : **tous les decks complets** — Veilleurs du Désert,
-  Sentiers de cendre, la Cour des Djinns **et le Serment des Neuf Hivers** (le
-  deck Neige) (`deckEstSelectionnable` : 40 cartes qui tiennent les quotas de
+  Sentiers de cendre, la Cour des Djinns, **la Marée des abysses** (le deck
+  Eau, contres et bêtes marines) **et le Serment des Neuf Hivers** (le deck
+  Neige) (`deckEstSelectionnable` : 40 cartes qui tiennent les quotas de
   `rpgValiderDeck`). Le champ `role` de
   `RPG_DECKS` ne limite rien : il dit seulement quel camp tient le deck *par
   défaut* (`joueur` : decks de départ ; `adversaire` : le deck du sorcier). Un
@@ -72,11 +73,11 @@ Ouvrir un boîtier et le choisir sont deux gestes distincts :
 
 Une rangée de puces au-dessus de l'étagère (`.rpg-deck-filter`, groupe nommé,
 `aria-pressed`) : **Toutes**, puis une puce par couleur réellement employée par
-un deck — aujourd'hui Sable, Braise, Neige et Hybride (pas d'Eau tant qu'aucun
-deck Eau n'existe : aucune puce ne mène à une étagère vide). Une couleur retient
-les decks qui l'emploient (le deck hybride Sable + Braise compte pour le Sable
-**et** pour la Braise) ; **Hybride** retient les decks de plusieurs couleurs. Un
-compteur annonce « 4 / 4 decks » (`aria-live`).
+un deck — aujourd'hui Sable, Braise, Eau, Neige et Hybride (aucune puce ne mène
+à une étagère vide : une couleur n'apparaît qu'avec son premier deck). Une
+couleur retient les decks qui l'emploient (le deck hybride Sable + Braise compte
+pour le Sable **et** pour la Braise) ; **Hybride** retient les decks de plusieurs
+couleurs. Un compteur annonce « 5 / 5 decks » (`aria-live`).
 
 - Le filtre porte sur **l'étagère** (quels boîtiers sont affichés), pas sur les
   cartes d'un deck ouvert. Un deck ouvert que le filtre écarte se referme ; revenir

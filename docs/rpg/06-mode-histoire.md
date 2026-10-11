@@ -26,6 +26,12 @@ en bas, le sable a déjà tout repris.
 | 4 | La Souffleuse de verre | Variante hybride + Fériel | `normale` / `agressif` | Coups rapides, course aux PV |
 | 5 | Le Grand Horloger | Deck propre + 2 mythiques | `veilleur` / `controle` | **boss** : deux phases (deux duels enchaînés, PV partiellement conservés) |
 
+**La Tour des Abysses** (4 étages, bleue) : ses quatre sorciers jouent la Marée
+des abysses, avec contres et bêtes marines. Avec **la Tour du Fjord** (la
+Neige), ce sont les **deux tours dédiées à une couleur** ; les trois autres
+mélangent encore leurs couleurs. Dans le mode Histoire, le sorcier peut jouer
+n'importe quel deck de campagne (`RPG_STORY_DECKS`).
+
 Une tour = 5 étages × 1 duel, un boss tous les 3 étages mineurs si on
 découpe plus grand (les autres tours : la Tour des Heures, la Tour du
 Souk, la Tour des Sables, la Tour du Fjord…). Les noms et dialogues vivent
@@ -81,8 +87,9 @@ autonome » (deck complet, PV pleins, rien de reporté).
    progression en localStorage (`letsplay_sablier_histoire_v1`, d'abord local ;
    Supabase ensuite comme le reste du site — voir `src/auth/`).
 2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, fonction,
-   deck, puissance, ia, note) : trois tours, douze étages, cinq decks (les
-   archétypes existants + deux variantes à 40 cartes validées).
+   deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
+   l'étage sur la plaque du sorcier) : **cinq tours, vingt étages, dix decks**
+   (les archétypes existants et leurs variantes, tous à 40 cartes validées).
 3. **La règle de continuité entre étages** — **décision : piste A (simple) retenue
    pour l'instant**. Chaque étage est un duel autonome : deck complet, PV pleins,
    aucune ressource reportée ; seule la progression (étages déblayés) compte.

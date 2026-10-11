@@ -40,6 +40,7 @@ export async function checkRpgStory(assert) {
   assert.equal(container.querySelectorAll('.rpg-story-tour').length, RPG_STORY_TOURS.length,
     'les tours du catalogue sont toutes présentées');
   assert.ok(container.textContent.includes('La Tour du Fjord'), 'la Tour du Fjord (la Neige) est présentée');
+  assert.ok(container.textContent.includes('La Tour des Abysses'), 'la Tour des Abysses (l’Eau) est présentée');
 
   // --- Étages : le premier est ouvert, les suivants verrouillés ---
   const floors = () => [...container.querySelectorAll('.rpg-story-floor')];

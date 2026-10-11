@@ -9,6 +9,7 @@
 
 import {
   RPG_ELEMENTS,
+  cardById,
   cardColorCost,
   cardColors,
   duelCardById,
@@ -96,6 +97,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       retoursProgrammes: [],
     },
     fenetreReponse: false,
+    // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
+    annonce: null,
     log: [],
   };
   for (let i = 0; i < RPG_MAIN_DEPART; i += 1) {
@@ -587,6 +590,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
   const entite = creerEntiteCreature(carte);
   camp.creatures.push(entite);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
@@ -655,6 +662,54 @@ export function rpgCibleAuto(duel, cote, carte) {
   return choisirCibleAutoIA(duel, cote, carte);
 }
 
+/** Un contre ne vise que la carte que le sorcier vient d'annoncer. `cible` : 'carte'
+ *  (n'importe quelle carte) ou 'sort' (magies seulement) ; `contre` : couleurs visées. */
+function contreCorrespond(effet, carte) {
+  if (effet.cible === 'sort' && !magieById(carte.id)) return false;
+  if (effet.contre && !cardColors(carte).some((couleur) => effet.contre.includes(couleur))) return false;
+  return true;
+}
+
+/** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
+ *  La carte visée est défaussée sans effet, et le contre paie son coût (Marée
+ *  contraire fait aussi piocher une carte). `annonce` : { cote, carteId } ;
+ *  par défaut l'annonce en cours du sorcier. */
+function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
+  const camp = duel[cote];
+  if (!annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
+  const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
+  if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
+  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  payer(duel, cote, carte);
+  camp.main.splice(camp.main.indexOf(carte.id), 1);
+  camp.cimetiere.push(carte.id);
+  const main = duel[annonce.cote].main;
+  if (main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
+  duel[annonce.cote].cimetiere.push(annonce.carteId);
+  if (annonce === duel.annonce) {
+    duel.annonce = null;
+    duel.fenetreReponse = false;
+  }
+  for (let i = 0; i < (carte.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+  duel.log.push(cote === 'joueur'
+    ? `Vous contrez ${cible.name} avec ${carte.name}.`
+    : `Le sorcier contre ${cible.name} avec ${carte.name}.`);
+  return { ok: true, contre: true, parIA: cote === 'sorcier', carteContree: annonce.carteId, carteContre: carte.id };
+}
+
+/** Contre de l'IA à une carte du joueur : seulement si la carte coûte au moins 2,
+ *  et avec le contre le moins cher qui vise cette carte et que le sorcier peut payer. */
+function choisirContreIA(duel, carte) {
+  if (!carte || (carte.cost ?? 0) < 2) return null;
+  const candidats = duel.sorcier.main
+    .map((id) => cardById(id))
+    .filter((c) => c?.effet?.type === 'contresort'
+      && contreCorrespond(c.effet, carte)
+      && rpgPeutPayer(duel.sorcier, c))
+    .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0));
+  return candidats[0] ?? null;
+}
+
 /** Lancer une magie : rituel pendant son tour, éphémère aussi en réponse. */
 export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   const camp = duel[cote];
@@ -667,6 +722,12 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     && carte.instant;
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
+
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (cibleId === 'sorcier') {
@@ -1034,6 +1095,7 @@ function resoudreRetoursProgrammes(duel) {
  *  ses créatures deviennent prêtes (le mal d'invocation tombe). */
 export function rpgFinDeTour(duel) {
   duel.fenetreReponse = false;
+  duel.annonce = null;
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.protection?.toursRestants > 0)) continue;
@@ -1063,27 +1125,49 @@ export function rpgFinDeTour(duel) {
 /** L'IA joue sa phase principale : terrain, créatures et sorts dans l'ordre
  *  le plus utile (kill avant développement, renforts quand le plateau est
  *  garni, burn pour conclure), puis prépare ses attaques. */
-export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
-  const joue = [];
-  const options = { ia: duel.sorcier.ia, rng };
-  // Le sorcier pose le terrain qui ouvre le plus de coups, puis engage en
-  // réservant la couleur des terrains flexibles à ce qu'il lui reste à jouer.
+/** Phase de préparation du sorcier : il pose son terrain et engage ses terrains. */
+export function rpgSorcierPrepareTerrain(duel) {
   const terrainEnMain = choisirTerrainIA(duel, 'sorcier');
   if (terrainEnMain) rpgPoserTerrain(duel, 'sorcier', terrainEnMain);
   for (const terrain of duel.sorcier.terrains) {
     if (terrain.tapped) continue;
     rpgEngagerTerrain(duel, 'sorcier', terrain.id, couleurEngagement(terrain, duel.sorcier.main));
   }
-  // Ensuite, coup après coup, la carte la plus utile — ou rien, et le mana
-  // reste en réserve plutôt que de gaspiller les cartes.
+}
+
+/** Le sorcier choisit sa prochaine carte et l'ANNONCE sans la payer ni la résoudre.
+ *  Ouvre la fenêtre de réponse : le joueur peut répondre avec un éphémère, ou laisser passer.
+ *  Retourne null quand le sorcier n'a plus rien à jouer. */
+export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
+  if (duel.annonce) return duel.annonce;
+  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
+  if (!coup) return null;
+  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null };
+  duel.fenetreReponse = true;
+  duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? coup.carteId}.`);
+  return duel.annonce;
+}
+
+/** Laisser passer : résout la carte annoncée (paiement et effet). */
+export function rpgSorcierResoudreAnnonce(duel) {
+  const annonce = duel.annonce;
+  if (!annonce) return { ok: false, raison: 'aucune-annonce' };
+  duel.annonce = null;
+  duel.fenetreReponse = false;
+  const res = duelCardById(annonce.carteId)
+    ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
+    : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
+  return { ...res, carteId: annonce.carteId };
+}
+
+export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
+  const joue = [];
+  rpgSorcierPrepareTerrain(duel);
+  // Sans interface, chaque carte annoncée est résolue aussitôt (pas de réponse du joueur).
   let garde = 12;
   while (garde-- > 0) {
-    const coup = choisirCarteIA(duel, 'sorcier', options);
-    if (!coup) break;
-    const carte = duelCardById(coup.carteId);
-    const res = carte
-      ? rpgJouerCreature(duel, 'sorcier', coup.carteId, coup.cibleId)
-      : rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
+    if (!rpgSorcierAnnonceSuivante(duel, rng)) break;
+    const res = rpgSorcierResoudreAnnonce(duel);
     if (!res.ok) break;
     if (res.entite) joue.push(res.entite);
   }

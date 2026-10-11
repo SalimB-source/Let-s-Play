@@ -13,6 +13,7 @@
 import {
   RPG_DECK_HYBRIDE_BASE,
   RPG_DECK_JOUEUR_BASE,
+  RPG_DECK_MAREE_BASE,
   RPG_DECK_NEIGE_BASE,
   RPG_DECK_SORCIER_BASE,
 } from './rpgCards.js';
@@ -21,6 +22,8 @@ import {
 export const RPG_STORY_DECKS = {
   'cour-des-djinns': RPG_DECK_SORCIER_BASE,
   'veilleurs-du-desert': RPG_DECK_JOUEUR_BASE,
+  // Deck bleu (Eau) : contres et bêtes marines. Seule la Tour des Abysses le joue.
+  'maree-des-abysses': RPG_DECK_MAREE_BASE,
   'sentiers-de-cendre': RPG_DECK_HYBRIDE_BASE,
   // Hybride agressive : le retrait passe devant le rempart, la Souffleuse
   // frappe avec le verre (Fériel) plutôt qu'elle ne se barricade.
@@ -231,6 +234,53 @@ export const RPG_STORY_TOURS = [
         puissance: 7,
         ia: { niveau: 'veilleur', style: 'controle' },
         note: 'L’horloge n’annonce plus les cycles : elle les compte sur vous.',
+      },
+    ],
+  },
+  {
+    id: 'tour-des-abysses',
+    nom: 'La Tour des Abysses',
+    resume: 'Une tour d’eau, sans un grain de sable : l’abîme garde ce que la ville a perdu. Ses sorciers répondent à chaque carte, et rien ne passe sans réponse.',
+    etages: [
+      {
+        id: 'abysses-1',
+        nom: 'Le Pêcheur de perles',
+        fonction: 'Plongeur des citernes basses',
+        deck: 'maree-des-abysses',
+        avatar: 'veilleuse-des-citernes',
+        puissance: 1,
+        ia: { niveau: 'recit', style: 'equilibre' },
+        note: 'Il remonte ses filets vides et s’en amuse. Premier plongeon : on apprend à contrer.',
+      },
+      {
+        id: 'abysses-2',
+        nom: 'La Nageuse des puits',
+        fonction: 'Gardienne des eaux souterraines',
+        deck: 'maree-des-abysses',
+        avatar: 'bakunawa',
+        puissance: 3,
+        ia: { niveau: 'normale', style: 'controle' },
+        note: 'Elle attend que vous posiez votre carte pour la défaire. Ses silences tombent au bon moment.',
+      },
+      {
+        id: 'abysses-3',
+        nom: 'Le Sonneur d’écume',
+        fonction: 'Cloche des ports engloutis',
+        deck: 'maree-des-abysses',
+        avatar: 'sonneur-fele',
+        puissance: 5,
+        ia: { niveau: 'normale', style: 'agressif' },
+        note: 'Il sonne l’alerte et frappe avant que l’eau ne retombe.',
+      },
+      {
+        id: 'abysses-4',
+        nom: 'Le Dévoreur de l’abîme',
+        fonction: 'Gardien du fond',
+        deck: 'maree-des-abysses',
+        avatar: 'leviathan',
+        puissance: 7,
+        ia: { niveau: 'veilleur', style: 'controle' },
+        note: 'Les bêtes du fond répondent à son appel. Il contre le premier sort qui le menace.',
       },
     ],
   },
