@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
-import { RPG_PLATEAU_ALEATOIRE, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
+import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -132,29 +132,20 @@ export async function checkRpgBattle(assert) {
     && modeButtons.some((button) => button.textContent.includes('Catalogue')),
   'le menu expose Jouer, Deck et Catalogue');
 
-  // ── Le terrain d'affrontement : les plateaux, et le verrou de choix ─────
-  const boutonPlateau = (id) => container.querySelector(`.rpg-mode-menu__boards .rpg-board-choice[data-plateau="${id}"]`);
-  const etatPlateau = (id) => boutonPlateau(id)?.getAttribute('aria-pressed');
-  assert.equal(container.querySelectorAll('.rpg-mode-menu__boards .rpg-board-choice').length, RPG_PLATEAUX.length + 1,
-    'le menu présente chaque plateau plus le tirage aléatoire');
-  assert.equal(etatPlateau(RPG_PLATEAU_ALEATOIRE), 'true',
-    'par défaut le plateau est tiré à chaque nouvelle partie');
-  for (const plateau of RPG_PLATEAUX) {
-    const bouton = boutonPlateau(plateau.id);
-    assert.ok(bouton, `le plateau ${plateau.id} est proposé au menu`);
-    assert.match(bouton.querySelector('img')?.getAttribute('src') ?? '', new RegExp(`${plateau.fichier}$`),
-      `le plateau ${plateau.id} montre son propre fond`);
-    assert.ok(bouton.textContent.includes(plateau.nom),
-      `le plateau ${plateau.id} annonce son nom lisible`);
-    assert.ok(bouton.textContent.includes(plateau.lieu),
-      `le plateau ${plateau.id} annonce son lieu`);
-  }
-  await act(async () => { boutonPlateau('erg-du-sahara').click(); });
-  assert.equal(etatPlateau('erg-du-sahara'), 'true', 'cliquer un plateau le verrouille');
-  assert.equal(etatPlateau(RPG_PLATEAU_ALEATOIRE), 'false', 'le verrou est exclusif du tirage');
-  await act(async () => { boutonPlateau(RPG_PLATEAU_ALEATOIRE).click(); });
-  assert.equal(etatPlateau(RPG_PLATEAU_ALEATOIRE), 'true', 'le tirage se réactive d’un clic');
-  await act(async () => { boutonPlateau('erg-du-sahara').click(); });
+  // ── Le plateau n'est plus un choix : le menu ne propose rien ────────────
+  assert.equal(container.querySelector('.rpg-mode-menu__boards'), null,
+    'le menu Jouer ne présente plus le bloc « Le terrain d’affrontement »');
+  assert.equal(container.querySelectorAll('.rpg-mode-menu [data-plateau]').length, 0,
+    'aucun bouton de plateau : ni verrou, ni pastille aléatoire');
+  assert.equal(container.querySelectorAll('.rpg-board-choice, .rpg-board-grid').length, 0,
+    'le sélecteur de plateau a disparu du rendu');
+  assert.doesNotMatch(container.querySelector('.rpg-mode-menu__play').textContent, /terrain d’affrontement/i,
+    'le menu Jouer ne parle plus de choisir son terrain');
+  // Chaque deck du catalogue garde son terrain : c'est lui, pas le joueur, qui décide.
+  assert.equal(plateauDeDeck('veilleurs-du-desert').plateau.id, 'erg-du-sahara',
+    'les Veilleurs du Désert imposent l’Erg du Sahara');
+  assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'terre-de-damnation',
+    'la Cour des Djinns impose la Terre de Damnation');
 
   await act(async () => { modeButtons.find((button) => button.textContent.includes('Catalogue')).click(); });
   assert.ok(container.querySelector('.rpg-card-catalogue'), 'le mode Catalogue ouvre le catalogue complet des cartes');
@@ -290,14 +281,19 @@ export async function checkRpgBattle(assert) {
   // ── Nouvelle partie : table vide, 5 cartes, 50 PV face à un sorcier à 60 ─
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée après le choix de Jouer');
   const tableDuDuel = container.querySelector('.card-table');
-  assert.ok(tableDuDuel.classList.contains('card-table--plateau-erg-du-sahara'),
-    'le duel se joue sur le plateau verrouillé depuis le menu');
+  // Les deux paquets de ce scénario sont mono-Sable : quel que soit le camp
+  // désigné par le rng (0.999 → l'adversaire), le terrain est l'Erg du Sahara.
+  const plateauxMontes = RPG_PLATEAUX.filter(({ id }) => tableDuDuel.classList.contains(`card-table--plateau-${id}`));
+  assert.equal(plateauxMontes.length, 1, 'la table porte exactement un plateau du catalogue');
+  assert.equal(plateauxMontes[0].id, 'erg-du-sahara',
+    'le duel se joue sur le terrain imposé par le deck désigné au lancement');
   assert.match(tableDuDuel.style.backgroundImage, /plateau-erg-du-sahara\.jpg/,
-    'le fond de la table est l’image du plateau tiré');
+    'le fond de la table est l’image du plateau imposé par le deck');
   assert.match(tableDuDuel.getAttribute('aria-label') ?? '', /L’Erg du Sahara/,
     'la table annonce le plateau sur lequel elle se joue');
-  assert.match(container.querySelector('.rpg-actions__wait')?.textContent ?? '', /L’Erg du Sahara/,
-    'le message d’ouverture rappelle le terrain de la partie');
+  assert.match(container.querySelector('.rpg-actions__wait')?.textContent ?? '',
+    /Plateau : L’Erg du Sahara — [^.]*imposé par le deck adverse/,
+    'le message d’ouverture rappelle le terrain de la partie et le deck qui l’impose');
   assert.ok(container.querySelector('.rpg-actions__combat .rpg-btn--attaque')
     && container.querySelector('.rpg-actions__turn .rpg-btn--endturn'),
   'les commandes de combat et de tour sont rangées dans deux groupes distincts');

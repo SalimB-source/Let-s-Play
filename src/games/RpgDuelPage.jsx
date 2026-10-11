@@ -12,12 +12,9 @@ import './rpg-story.css';
 import './rpg-deckbox.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import {
-  chargerChoixPlateau,
+  plateauDeRepli,
   plateauParId,
-  RPG_PLATEAU_ALEATOIRE,
-  RPG_PLATEAUX,
-  sauverChoixPlateau,
-  tirerPlateau,
+  tirerPlateauDuDuel,
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import { groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
@@ -1001,7 +998,21 @@ function redresserBoitier(event) {
   boitier?.style.removeProperty('--rx');
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, choixPlateau, onSelectPlateau, onHoverCard, onLeaveHoverCard }) {
+/** La table posée avant le premier tirage, et le repli si un identifiant se perd. */
+const PLATEAU_PAR_DEFAUT = plateauDeRepli();
+
+/**
+ * Qui impose le terrain, en toutes lettres, pour l'annonce d'ouverture : le
+ * camp désigné par le tirage, avec le nom de son deck quand on le connaît
+ * (deck du catalogue joué, sorcier de l'étage en mode Histoire). Un paquet brut
+ * passé en prop n'a pas de nom — on s'en tient alors au camp.
+ */
+function nommerOriginePlateau(camp, nomJoueur = null, nomAdverse = null) {
+  if (camp === 'joueur') return nomJoueur ?? 'votre deck';
+  return nomAdverse ?? 'le deck adverse';
+}
+
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onHoverCard, onLeaveHoverCard }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1117,51 +1128,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               )}
               {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={onResumeGame}>↩ Reprendre le duel en cours</button>}
             </aside>
-
-            <section className="rpg-mode-menu__boards" aria-label="Plateaux du duel">
-              <div className="rpg-mode-menu__boards-heading">
-                <div>
-                  <span className="rpg-mode-menu__eyebrow">PLATEAU DU DUEL · IL CHANGE À CHAQUE PARTIE</span>
-                  <h2>Le terrain d’affrontement</h2>
-                </div>
-                <button
-                  type="button"
-                  className={`rpg-board-choice rpg-board-choice--aleatoire${choixPlateau === RPG_PLATEAU_ALEATOIRE ? ' is-selected' : ''}`}
-                  aria-pressed={choixPlateau === RPG_PLATEAU_ALEATOIRE}
-                  data-plateau={RPG_PLATEAU_ALEATOIRE}
-                  onClick={() => onSelectPlateau(RPG_PLATEAU_ALEATOIRE)}
-                >
-                  <span aria-hidden="true">🎲</span>
-                  <span className="rpg-board-choice__copy">
-                    <strong>Aléatoire</strong>
-                    <small>Un plateau tiré à chaque duel</small>
-                  </span>
-                </button>
-              </div>
-              <div className="rpg-board-grid">
-                {RPG_PLATEAUX.map((plateau) => (
-                  <button
-                    key={plateau.id}
-                    type="button"
-                    className={`rpg-board-choice rpg-board-choice--plateau${choixPlateau === plateau.id ? ' is-selected' : ''}`}
-                    aria-pressed={choixPlateau === plateau.id}
-                    data-plateau={plateau.id}
-                    onClick={() => onSelectPlateau(plateau.id)}
-                  >
-                    <img src={`${import.meta.env.BASE_URL}${plateau.fichier}`} alt="" loading="lazy" />
-                    <span className="rpg-board-choice__copy">
-                      <strong>{plateau.nom}</strong>
-                      <small>{plateau.lieu}</small>
-                      <em>{plateau.resume}</em>
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <p className="rpg-mode-menu__boards-note">
-                Sans verrou, le plateau est tiré à chaque nouvelle partie — jamais deux duels de suite sur le même.
-                Verrouillez-en un pour garder son terrain d’un duel à l’autre.
-              </p>
-            </section>
           </main>
         ) : screen === 'decks' ? (
           <main className={`rpg-deck-catalog ${openDeck ? 'rpg-deck-catalog--open' : 'rpg-deck-catalog--closed'}`}>
@@ -1500,18 +1466,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setDeckSelectionneId(deck.id);
     return sauverDeckChoisi(deck.id);
   };
-  // Plateau du duel : tiré à chaque nouvelle partie, sauf plateau verrouillé
-  // depuis le menu (choix mémorisé sur l'appareil).
-  const [choixPlateau, setChoixPlateau] = useState(() => chargerChoixPlateau());
-  // Le tirage lui-même a lieu au lancement du duel (`nouvellePartie`) : ici, on
-  // ne pose qu'un terrain de départ — le verrou s'il y en a un, sinon le
-  // premier plateau, que le tirage remplacera de toute façon.
-  const [plateauId, setPlateauId] = useState(() => (choixPlateau === RPG_PLATEAU_ALEATOIRE ? RPG_PLATEAUX[0].id : choixPlateau));
-  const plateauPrecedentRef = useRef(null);
-  const choisirPlateau = (choix) => {
-    setChoixPlateau(choix);
-    sauverChoixPlateau(choix);
-  };
+  // Plateau du duel : le joueur n'en choisit aucun. C'est le deck de l'un des
+  // deux duellistes qui impose son terrain, et le tirage du lancement
+  // (`nouvellePartie`) désigne lequel. Avant la première partie, la table
+  // d'origine de Bab El sert de décor.
+  const [plateauId, setPlateauId] = useState(PLATEAU_PAR_DEFAUT.id);
   // Mode Histoire : l'étage en cours (null = duel libre).
   const [histoireEtageId, setHistoireEtageId] = useState(null);
   const [progressionHistoire, setProgressionHistoire] = useState(() => chargerProgressionHistoire());
@@ -1631,11 +1590,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const deckAdverse = etageCourant || sorcierDeck ? null : deckAdversePour(deckJoueurSelectionne);
     setDeckDuelId(joueurDeck ? null : deckJoueurSelectionne?.id ?? null);
     setDeckAdverseId(deckAdverse?.id ?? null);
-    // Le plateau change de partie en partie : le tirage écarte celui du duel
-    // précédent, sauf si le joueur en a verrouillé un dans le menu.
-    const plateau = tirerPlateau({ choix: choixPlateau, rng, precedentId: plateauPrecedentRef.current });
-    plateauPrecedentRef.current = plateau.id;
+    // Le plateau n'est pas un choix du joueur : il vient du **deck de l'un des
+    // deux duellistes**, et c'est le tirage du duel qui désigne lequel. Les
+    // paquets joués sont exactement ceux du duel — une prop brute (sans
+    // identité de deck) parle par sa couleur dominante, un étage d'Histoire par
+    // la clé de son deck de campagne.
+    const tiragePlateau = tirerPlateauDuDuel({
+      deckJoueur: joueurDeck ?? deckJoueurSelectionne,
+      deckAdverse: etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse,
+      rng,
+    });
+    const plateau = tiragePlateau.plateau;
     setPlateauId(plateau.id);
+    // Le deck dont vient le terrain, nommé pour l'annonce d'ouverture.
+    const nomDeckJoueur = !joueurDeck && deckJoueurSelectionne?.name
+      ? `votre deck ${deckJoueurSelectionne.name}`
+      : null;
+    const nomDeckAdverse = etageCourant
+      ? `le deck de ${etageCourant.nom}`
+      : !sorcierDeck && deckAdverse?.name ? `le deck adverse ${deckAdverse.name}` : null;
+    const originePlateau = nommerOriginePlateau(tiragePlateau.camp, nomDeckJoueur, nomDeckAdverse);
     duelRef.current = rpgNouveauDuel({
       joueurDeck: joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE,
       sorcierDeck: etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE,
@@ -1689,12 +1663,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     clicApresGlisserRef.current = false;
     // Au doigt, le survol n'existe pas : l'ouverture annonce le geste qui le
     // remplace (appui long d'une seconde = aperçu de la carte, sans la jouer).
-    setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).${viewport.mobile ? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer.' : ''}`);
+    setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}, imposé par ${originePlateau}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).${viewport.mobile ? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer.' : ''}`);
     force();
   };
 
   const duel = duelRef.current;
-  const plateau = plateauParId(plateauId) ?? RPG_PLATEAUX[0];
+  const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
   useLayoutEffect(() => {
     if (!duel) return;
     const instantaneActuel = {
@@ -1834,8 +1808,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             reinitialiserProgressionHistoire();
             setProgressionHistoire(progressionHistoireVide());
           }}
-          choixPlateau={choixPlateau}
-          onSelectPlateau={choisirPlateau}
           onHoverCard={afficherApercuSurvol}
           onLeaveHoverCard={masquerApercuSurvol}
         />

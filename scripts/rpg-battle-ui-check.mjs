@@ -393,7 +393,7 @@ assert.match(battleCss, /\.rpg-hand__card\.rpg-hand-card--drawing\s*\{[^}]*anima
   'la pioche anime les vraies cartes en taille réelle dans la main');
 assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d\(-100%, 0, 0\)[\s\S]*?translate3d\(0, 0, 0\)/,
   'les cartes piochées glissent de gauche à droite jusqu’à leur place dans la main');
-// ── Les plateaux du duel : le terrain change de partie en partie ────────────
+// ── Les plateaux du duel : le terrain vient du deck d'un des deux duellistes ─
 const plateauxSource = readFileSync(new URL('../src/games/rpgPlateaux.js', import.meta.url), 'utf8');
 // Un fond ne doit porter aucun texte : l'interface du jeu se superpose toujours
 // (RPG-CARD-ART.md). Les métadonnées sont un bon témoin d'une image retouchée.
@@ -405,14 +405,22 @@ for (const { fichier } of RPG_PLATEAUX) {
 }
 assert.match(plateauxSource, /id: 'erg-du-sahara'[\s\S]*?fichier: 'plateau-erg-du-sahara\.jpg'/,
   'le désert du Sahara est un plateau déclaré, avec son fond dans public/');
-assert.match(battlePage, /tirerPlateau\(\{ choix: choixPlateau, rng, precedentId: plateauPrecedentRef\.current \}\)/,
-  'chaque nouvelle partie retire un plateau en écartant celui du duel précédent');
-assert.match(battlePage, /sauverChoixPlateau\(choix\)/,
-  'le plateau verrouillé au menu est mémorisé sur l’appareil');
+assert.match(battlePage, /tirerPlateauDuDuel\(\{\s*deckJoueur: joueurDeck \?\? deckJoueurSelectionne,\s*deckAdverse: etageCourant \? etageCourant\.deck : sorcierDeck \?\? deckAdverse,\s*rng,\s*\}\)/,
+  'chaque nouvelle partie prend le plateau du deck de l’un des deux duellistes, celui que le rng du duel désigne');
+assert.doesNotMatch(battlePage, /choixPlateau|onSelectPlateau|[cs]hargerChoixPlateau|sauverChoixPlateau|RPG_PLATEAU_ALEATOIRE|plateauPrecedent/,
+  'le joueur ne choisit plus son plateau : ni verrou, ni pastille aléatoire, ni sauvegarde sur l’appareil');
+assert.doesNotMatch(battlePage, /rpg-mode-menu__boards|rpg-board-choice|rpg-board-grid/,
+  'le bloc « Le terrain d’affrontement » a disparu du menu Jouer');
+assert.doesNotMatch(battleCss, /\.rpg-board-choice|\.rpg-mode-menu__boards|\.rpg-board-grid/,
+  'les styles du sélecteur de plateau ont été retirés de la feuille de combat');
+assert.match(plateauxSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'veilleurs-du-desert': 'erg-du-sahara',[\s\S]*?'cour-des-djinns': 'terre-de-damnation',[\s\S]*?'sentiers-de-cendre': 'caravane-de-gourara',[\s\S]*?'maree-des-abysses': 'ruines-de-tipaza'/,
+  'chaque deck du catalogue a son terrain attitré');
+assert.match(plateauxSource, /couleurDominanteDeck/,
+  'un deck sans identité connue (paquet brut) parle par sa couleur dominante');
 assert.match(battlePage, /className=\{`card-table card-table--plateau-\$\{plateau\.id\}/,
   'la table porte le plateau tiré pour la partie en cours');
-assert.match(battlePage, /Plateau : \$\{plateau\.nom\}/,
-  'le message d’ouverture annonce le terrain de la partie');
+assert.match(battlePage, /Plateau : \$\{plateau\.nom\} — \$\{plateau\.lieu\}, imposé par \$\{originePlateau\}/,
+  'le message d’ouverture annonce le terrain de la partie et le deck qui l’impose');
 assert.match(plateauxSource, /id: 'caravane-de-gourara'[\s\S]*?fichier: 'plateau-caravane-de-gourara\.jpg'/,
   'la piste de caravane du Gourara est un second plateau saharien');
 for (const plateauSombre of ['table-des-heures', 'terre-de-damnation']) {
@@ -640,7 +648,7 @@ console.log(
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, Fin du tour doré et compact, phases du duel indiquées par des icônes lumineuses agrandies, annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression Rafale.'
 );
