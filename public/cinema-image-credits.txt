@@ -136,6 +136,16 @@ https://teslaoracle.com/2025/06/28/tesla-shares-video-of-the-first-fully-autonom
 https://scmp.com/topics/byd
 https://electrek.co/2025/01/27/byd-first-china-car-sales-revenue-even-with-prices-under-17k/
 
-news/2026-10-08/below-netflix.jpg — photo de presse © Netflix (2026), Josh Hartnett dans le rôle de Calvin Penney, relayée par Variety. Recadrage 16:9 et compression ; crédit affiché dans l’article. La bande-annonce intégrée vient de la chaîne principale Netflix (U57CNxSgoss, contrôle oEmbed du 08.10.2026).
-https://variety.com/2026/tv/news/josh-hartnett-netflix-series-below-teaser-1236822698/
-Crédits complets de l’édition : news/2026-10-08/credits.md
+Fournée du 11.10.2026 :
+
+news/2026-10-11/exorciste-martyrs.jpg — image du trailer officiel de L’Exorciste : Martyrs (Universal Pictures / Blumhouse – Atomic Monster), Scarlett Johansson en inspectrice Julie Miller, dévoilé au BlumFest de la New York Comic Con le 9 octobre 2026 et relayé par Phantasmag. Recadrage 16:9 et compression ; crédit affiché dans l’article. La bande-annonce intégrée vient de la chaîne principale Universal Pictures (iIEYfH-jg1Y, contrôle oEmbed du 11.10.2026).
+https://phantasmag.com/articles-6/the-exorcist-martyrs-scarlett-johansson-mike-flanagan-first-look
+
+news/2026-10-11/ghost-tsushima-legends-anime.jpg (actu gaming) — visuel clé officiel de l’anime Ghost of Tsushima: Legends (Crunchyroll / Aniplex / PlayStation Productions), présenté au showcase de l’Anime Expo le 4 juillet 2026. Le teaser intégré vient de la chaîne principale Crunchyroll (uU8slMpqDXU) et sa version japonaise de la chaîne d’Aniplex (m4E5n06ZxNU) ; les deux contrôlés via oEmbed le 11.10.2026.
+https://finalweapon.net/2026/07/05/ghost-of-tsushima-legends-anime-new-key-visuals/
+https://www.gematsu.com/2026/10/ghost-of-tsushima-legends-anime-delayed-to-2028
+
+news/2026-10-11/philadelphie-roundhouse.jpg (actu tech) — photographie du « Roundhouse », ancien quartier général de la police de Philadelphie, diffusée par KYW Newsradio / Audacy, sans auteur nommé par la source. L’article ne publie aucune image officielle d’Anthropic : le sujet est le faux indice déposé via un formulaire public de la police.
+https://audacy.com/kywnewsradio/news/local/city-no-redevelopment-plans-ppd-roundhouse
+
+Crédits complets de l’édition : news/2026-10-11/credits.md

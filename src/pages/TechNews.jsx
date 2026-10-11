@@ -8,7 +8,7 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-11';
 
 // Les URLs absolues (visuels officiels) passent telles quelles, les fichiers
 // locaux du site prennent le préfixe du baseUrl ; une carte éditoriale SVG de
@@ -79,7 +79,7 @@ export default function TechNews() {
     back: 'Retour au hub',
   };
 
-  // L’édition du 08.10.2026 ouvre la page, avant les archives ci-dessous.
+  // L’édition du 11.10.2026 ouvre la page, avant les archives ci-dessous.
   // Actu tech du mercredi 07.10.2026 : l'AI Act européen déclenche ses premiers
   // contrôles sur les modèles frontières (OpenAI, Google, Meta, Anthropic) ;
   // suivent l'actu du mardi 06.10.2026 (interdiction partielle des lunettes
