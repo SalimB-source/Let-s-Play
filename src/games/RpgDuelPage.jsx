@@ -140,6 +140,31 @@ function cardCostLabel(carte) {
   return `${carte?.cost ?? 0} mana${exigences ? `, dont ${exigences}` : ''}`;
 }
 
+function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId) {
+  if (!carte || carte.kind !== 'magie') return null;
+  const effet = carte.effet ?? {};
+
+  // Pour une annonce du sorcier, l’identifiant réservé « sorcier » désigne
+  // l’adversaire du lanceur : le joueur qui voit l’aperçu.
+  if (cibleId === 'sorcier' || effet.cible === 'sorcier' || (carte.cibles?.includes('sorcier') && !cibleId)) {
+    return { nom: 'Vous', illustrationId: 'salem' };
+  }
+
+  const entite = [...duel.joueur.creatures, ...duel.sorcier.creatures]
+    .find((candidate) => candidate.id === cibleId);
+  if (entite) return { nom: entite.name, illustrationId: entite.carteId };
+
+  if (effet.cible === 'toutes-creatures') return { nom: 'Toutes vos créatures' };
+  if (effet.type === 'buff') return { nom: 'Toutes les créatures du sorcier' };
+  if (effet.type === 'contresort') return { nom: 'La carte annoncée' };
+  if (effet.cible === 'creature-amie') return { nom: 'Une créature du sorcier', illustrationId: sorcierArtId };
+  if (effet.type === 'soin' || effet.type === 'pioche' || carte.cibles?.includes('soi')) {
+    return { nom: 'Le sorcier', illustrationId: sorcierArtId };
+  }
+  if (effet.cible === 'creature') return { nom: 'Une créature ciblée' };
+  return { nom: 'Champ de bataille' };
+}
+
 function cardEffectLines(text) {
   if (!text || text === '—') return [];
   return String(text)
@@ -763,17 +788,19 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '' }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
   const effets = cardEffectLines(effet);
+  const cibleAnnoncee = variante === 'annonce' ? cible : null;
+  const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   return (
     <aside
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
-      role="tooltip"
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}`}
+      role={variante === 'annonce' ? 'group' : 'tooltip'}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
     >
       <div
@@ -785,7 +812,17 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
         <CardElementBadge carte={carte} />
       </div>
       <div className="rpg-hover-card-preview__details">
+        {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
+        {variante === 'annonce' && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
         <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>
+        {cibleAnnoncee && (
+          <div className="rpg-spell-played__target rpg-hover-card-preview__target">
+            {cibleAnnoncee.illustrationId
+              ? <img src={cardArt(cibleAnnoncee.illustrationId)} alt="" />
+              : <span className="rpg-spell-played__target-mark" aria-hidden="true">⌖</span>}
+            <span><small>CIBLE</small><b>{cibleAnnoncee.nom}</b></span>
+          </div>
+        )}
         {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
         {effet && (
           <div className="rpg-hover-card-preview__rules" aria-label="Effets">
@@ -1819,6 +1856,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
+  const carteAnnoncee = fenetreSort ? cardById(duel.annonce.carteId) : null;
+  const sorcierArtId = etageHistoire
+    ? 'ifrit-al-ahmar'
+    : (
+      deckAdverseAffiche.boxArt
+      ?? deckAdverseAffiche.cardIds.find((id) => cardById(id)?.kind !== 'terrain')
+      ?? 'djinn-du-souk'
+    );
+  const cibleAnnoncee = carteAnnoncee?.kind === 'magie'
+    ? describeAnnouncedMagicTarget(carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId)
+    : null;
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const indicateurTour = vainqueur
@@ -3464,6 +3512,25 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           </ol>
           <div className="rpg-actions">
             <PhaseTrack current={phaseDuelActive} />
+            {fenetreSort && (
+              <section
+                className="rpg-annonce-sort"
+                role="status"
+                aria-live="polite"
+                aria-label={`Le sorcier annonce ${carteAnnoncee?.name ?? 'une carte'}${cibleAnnoncee ? `. Cible : ${cibleAnnoncee.nom}` : ''}. Répondez avec un éphémère, ou laissez passer.`}
+              >
+                <HoverCardPreview carte={carteAnnoncee} cible={cibleAnnoncee} variante="annonce" />
+                <button
+                  type="button"
+                  className="rpg-btn rpg-annonce-sort__pass"
+                  aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
+                  onClick={laisserPasser}
+                >
+                  <span aria-hidden="true">➜</span>
+                  <span>Laisser passer</span>
+                </button>
+              </section>
+            )}
             <div className="rpg-actions__row">
               <div className="rpg-actions__combat" role="group" aria-label="Actions de combat">
                 {!phase ? (
@@ -3502,14 +3569,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   </button>
                 )}
               </div>
-              {fenetreSort && (
-                <div className="rpg-annonce-sort" role="status" aria-live="polite">
-                  <span>Le sorcier annonce <b>{cardById(duel.annonce.carteId)?.name ?? 'une carte'}</b>. Répondez avec un éphémère, ou laissez passer.</span>
-                  <button type="button" className="rpg-btn rpg-btn--endturn" onClick={laisserPasser}>
-                    ➜ Laisser passer
-                  </button>
-                </div>
-              )}
               <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
                 {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
                   <button

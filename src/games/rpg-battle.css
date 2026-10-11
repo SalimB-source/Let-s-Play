@@ -4845,18 +4845,157 @@
   }
 }
 
-/* Fenêtre de réponse : le sorcier a annoncé une carte, le joueur répond ou laisse passer. */
+/* Fenêtre de réponse : l'aperçu de la carte annoncée reste visible, avec sa
+   cible éventuelle, sans transformer « Laisser passer » en second bouton de tour. */
 .rpg-annonce-sort {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 12px;
-  margin: 0 0 8px;
-  padding: 8px 12px;
-  border: 1px solid #e1b33f;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(225, 179, 63, .72);
   border-radius: 8px;
-  background: rgba(28, 22, 10, 0.92);
+  background: rgba(28, 22, 10, .92);
   color: #f7f3e6;
-  font-size: 0.9rem;
 }
-.rpg-annonce-sort b { color: #e1b33f; }
+.rpg-hover-card-preview--annonce {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: clamp(54px, 8vw, 72px) minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  max-height: none;
+  padding: 0;
+  border-radius: 0;
+  overflow: hidden;
+  animation: none;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__face {
+  width: 100%;
+  border-width: 2px;
+  border-radius: 5px;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
+  gap: 4px;
+  max-height: none;
+  min-height: 0;
+  padding: 6px 9px;
+  border-color: rgba(236, 214, 172, .18);
+  border-radius: 6px;
+  background: rgba(5, 8, 11, .56);
+}
+.rpg-hover-card-preview__eyebrow {
+  color: #e1b33f;
+  font: 800 7px/1 var(--display);
+  letter-spacing: .13em;
+}
+.rpg-hover-card-preview__name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #ffe9a0;
+  font: 700 14px/1.1 Georgia, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__type {
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1.15;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost {
+  gap: 6px;
+  font-size: 11px;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 13px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 9px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules {
+  gap: 3px;
+  max-height: 2.8em;
+  font-size: 10px;
+  line-height: 1.3;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target {
+  gap: 5px;
+  min-height: 23px;
+  margin: 1px 0;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 18px; height: 23px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
+  width: 18px;
+  height: 18px;
+  font-size: 13px;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 9px; }
+.rpg-annonce-sort__pass {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 108px;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 11px;
+  border: 1px solid rgba(114, 230, 208, .48);
+  border-radius: 8px;
+  background: rgba(13, 31, 32, .92);
+  color: #c7f4e9;
+  box-shadow: none;
+  font: 700 11px/1.15 var(--display);
+  letter-spacing: .015em;
+  text-align: center;
+  text-transform: none;
+  white-space: nowrap;
+}
+.rpg-actions .rpg-annonce-sort__pass::before { display: none; }
+.rpg-annonce-sort__pass:hover:not(:disabled) {
+  transform: none;
+  border-color: #8af2df;
+  background: rgba(19, 49, 48, .98);
+  color: #edfff9;
+  box-shadow: 0 0 9px rgba(91, 240, 218, .16);
+}
+.rpg-annonce-sort__pass:focus-visible { outline: 2px solid #8af2df; outline-offset: 2px; }
+
+@media (max-width: 620px) {
+  .rpg-annonce-sort {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px;
+  }
+  .rpg-hover-card-preview--annonce {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
+    gap: 3px;
+    padding: 5px 6px;
+  }
+  .rpg-hover-card-preview__eyebrow { font-size: 6px; }
+  .rpg-hover-card-preview__name { font-size: 11px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__type { font-size: 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost { gap: 4px; font-size: 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 11px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 8px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules { max-height: 2.5em; font-size: 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 16px; height: 20px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+  }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 8px; }
+  .rpg-annonce-sort__pass {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+}

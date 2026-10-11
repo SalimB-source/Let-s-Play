@@ -1011,7 +1011,25 @@ export async function checkRpgBattle(assert) {
   // Le sort Braise est annoncé : le joueur a la main pour répondre, ou laisser passer.
   assert.match(aiFireContainer.querySelector('.rpg-annonce-sort')?.textContent ?? '', /Trait de braise/,
     'la bannière annonce le sort du sorcier avant sa résolution');
-  await act(async () => { aiFireContainer.querySelector('.rpg-annonce-sort button')?.click(); });
+  const previewSortAnnonce = aiFireContainer.querySelector('.rpg-annonce-sort .rpg-hover-card-preview--annonce');
+  assert.ok(previewSortAnnonce, 'la carte annoncée reste visible dans son aperçu pendant la fenêtre de réponse');
+  assert.match(previewSortAnnonce.querySelector('.rpg-hover-card-preview__face img')?.getAttribute('src') ?? '',
+    /\/cards\/trait-de-braise\.jpg(?:\?|$)/,
+    'l’aperçu affiche l’illustration de la carte annoncée');
+  assert.equal(previewSortAnnonce.querySelector('.rpg-hover-card-preview__name')?.textContent, 'Trait de braise',
+    'l’aperçu nomme clairement le sort annoncé');
+  const cibleSortAnnonce = previewSortAnnonce.querySelector('.rpg-hover-card-preview__target');
+  assert.match(cibleSortAnnonce?.textContent ?? '', /Fennec des décombres/,
+    'l’aperçu d’une magie montre la créature choisie comme cible');
+  assert.match(cibleSortAnnonce?.querySelector('img')?.getAttribute('src') ?? '',
+    /\/cards\/fennec-des-decombres\.jpg(?:\?|$)/,
+    'l’aperçu identifie aussi la cible par son illustration');
+  const boutonLaisserPasser = aiFireContainer.querySelector('.rpg-annonce-sort__pass');
+  assert.ok(boutonLaisserPasser && !boutonLaisserPasser.classList.contains('rpg-btn--endturn'),
+    'Laisser passer utilise son propre style compact, pas le gros bouton de fin de tour');
+  assert.ok(boutonLaisserPasser.getAttribute('aria-label')?.includes('Trait de braise'),
+    'le bouton précise quelle carte laisser passer');
+  await act(async () => { boutonLaisserPasser.click(); });
   await act(async () => { await wait(200); });
   const destructionAi = aiFireContainer.querySelector('.rpg-card-destruction-fx[data-rpg-destroyed-id]');
   assert.ok(destructionAi?.classList.contains('is-burning')
