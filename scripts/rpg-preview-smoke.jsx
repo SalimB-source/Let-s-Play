@@ -26,6 +26,7 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-menu-button--primary'));
     assert.ok(container.querySelector('.rpg-battle--touch'));
     await click(hand('fennec-des-decombres'));
+    assert.equal(container.querySelector('.rpg-card-preview__hint'), null, 'the explanatory blue text is removed');
     assert.equal(container.querySelector('.rpg-card-preview__visual .rpg-card-preview__stats')?.getAttribute('aria-label'), 'Attaque 3, défense 1');
     assert.equal(container.querySelector('.rpg-card-preview__details .rpg-card-preview__stats'), null, 'stats stay with the card, not the text panel');
     assert.equal(action('Jouer la carte').disabled, true, 'unpayable creature is inspectable but cannot be played');
@@ -41,7 +42,11 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-btn--endturn'));
     await act(async () => new Promise(resolve => setTimeout(resolve, 800)));
     await play('desert');
+    assert.equal(container.querySelectorAll('.rpg-terrain--joueur').length, 1, 'two identical lands form one pile');
+    assert.equal(container.querySelector('.rpg-terrain--joueur').dataset.terrainCount, '2');
+    assert.equal(container.querySelector('.rpg-terrain--joueur').dataset.availableCount, '2');
     await play('fennec-des-decombres');
+    assert.equal(container.querySelector('.rpg-terrain--joueur').dataset.availableCount, '0', 'automatic payment taps two instances, not just the displayed card');
     await click(container.querySelector('.rpg-btn--attaque-tous'));
     assert.equal(container.querySelectorAll('.rpg-card--equipe.is-selected').length, 1, 'attack-all selects ready creatures from the board');
     assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'combat');

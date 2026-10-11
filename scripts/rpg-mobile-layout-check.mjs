@@ -107,7 +107,8 @@ try {
           for (const count of [1, 8, 26]) {
             const cards = Array.from({ length: count }, () => {
               const card = document.createElement('button');
-              card.className = 'rpg-terrain rpg-card--rarity-commune is-tapped';
+              card.className = 'rpg-terrain rpg-terrain-stack rpg-card--rarity-commune is-tapped';
+              card.innerHTML = '<span class="rpg-terrain-stack__count">×26</span><span class="rpg-terrain-stack__available">0 libre</span>';
               card.style.animation = 'none';
               card.style.transition = 'none';
               return card;
@@ -163,6 +164,7 @@ try {
     return { text: button.textContent, offset: Math.abs((label.top + label.bottom) / 2 - (box.top + box.bottom) / 2) };
   }));
   for (const label of labels) assert.ok(label.offset <= 2, `Vertically centred button: ${label.text}`);
+  assert.equal(await page.locator('.rpg-card-preview__hint').count(), 0);
   console.log('✓ Tap preview fits the landscape viewport');
   if (process.env.RPG_SCREENSHOT) await page.screenshot({ path: process.env.RPG_SCREENSHOT });
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 0);
@@ -200,7 +202,22 @@ try {
   await page.locator('.rpg-turn-indicator.is-player').waitFor();
   await page.locator('.rpg-hand__card--terrain.is-playable').first().click();
   await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();
-  await page.waitForFunction(() => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === 2);
+  await page.waitForFunction(() => document.querySelector('.rpg-terrains--joueur .rpg-terrain[data-terrain-count="2"]'));
+  const stack = page.locator('.rpg-terrains--joueur .rpg-terrain');
+  assert.equal(await stack.count(), 1, 'identical terrains share one pile');
+  assert.equal(await stack.getAttribute('data-available-count'), '2');
+  for (const remaining of [1, 0]) {
+    await stack.click();
+    assert.equal(await page.locator('.rpg-card-preview__hint').count(), 0, 'no blue explanatory hint in the preview');
+    await page.getByRole('button', { name: 'Produire du mana Sable', exact: true }).click();
+    assert.equal(await stack.getAttribute('data-terrain-count'), '2');
+    assert.equal(await stack.getAttribute('data-available-count'), String(remaining), 'a mana action taps only one terrain');
+    assert.equal(await stack.getAttribute('data-tapped-count'), String(2 - remaining));
+  }
+  await stack.click();
+  assert.equal(await page.getByRole('button', { name: 'Produire du mana Sable', exact: true }).isDisabled(), true);
+  await page.getByRole('button', { name: 'Retour au plateau', exact: true }).click();
+  console.log('✓ Identical terrain stack counts and one-at-a-time mana production');
   await page.locator('.rpg-hand__card[data-card-id="fennec-des-decombres"]').click();
   await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();
   await page.locator('.rpg-card--equipe[data-card-id="fennec-des-decombres"]').waitFor();

@@ -9,6 +9,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
+import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
   rpgCibleAuto,
@@ -114,7 +115,7 @@ function mesurerRectangle(element, fallbackWidth = 128, fallbackHeight = 160) {
   };
 }
 
-function mesurerDestinationVol(table, kind, from) {
+function mesurerDestinationVol(table, kind, from, carteId) {
   const terrain = kind === 'terrain';
   const zone = table?.querySelector(terrain ? '.rpg-terrains--joueur' : '.card-row--equipe');
   if (!zone) return from;
@@ -140,11 +141,26 @@ function mesurerDestinationVol(table, kind, from) {
 
   if (terrain) {
     const existing = [...zone.querySelectorAll('.rpg-terrain--joueur')];
+    const stack = existing.find((element) => element.dataset.cardId === carteId);
+    if (stack) return mesurerRectangle(stack);
     const last = existing.at(-1);
     const lastRect = last?.getBoundingClientRect();
     const lastWidth = last?.offsetWidth || lastRect?.width || 0;
-    const width = lastWidth || readPx(zone.querySelector('.rpg-terrain--joueur'), 'width', Math.min(from.width, 68));
+    const width = lastWidth || readPx(zone.querySelector('.rpg-terrain--joueur'), 'width', table.closest('.rpg-battle--touch') ? 44 : Math.min(from.width, 68));
     const height = last?.offsetHeight || lastRect?.height || width * 1.25;
+    if (styleOf(zone)?.display === 'grid') {
+      const columns = styleOf(zone).gridTemplateColumns.split(' ').map(Number.parseFloat).filter(Number.isFinite);
+      const column = existing.length % Math.max(1, columns.length);
+      const row = Math.floor(existing.length / Math.max(1, columns.length));
+      const rowHeight = readPx(zone, 'gridAutoRows', height + 16);
+      return {
+        left: box.left + paddingLeft + columns.slice(0, column).reduce((a, b) => a + b, 0)
+          + column * gap + ((columns[column] || width) - width) / 2 - zone.scrollLeft,
+        top: Math.max(box.top + paddingTop, Math.min(box.bottom - paddingBottom - height,
+          box.top + paddingTop + row * (rowHeight + readPx(zone, 'rowGap', gap)) + (rowHeight - height) / 2 - zone.scrollTop)),
+        width, height,
+      };
+    }
     return {
       left: last ? (lastRect?.right ?? box.left + paddingLeft + width) + gap : box.left + paddingLeft,
       top: last ? (lastRect?.top ?? box.top + paddingTop) : box.top + paddingTop,
@@ -678,7 +694,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function CardPreview({ carte, jouable, onClose, actions = [], hint, entite }) {
+function CardPreview({ carte, onClose, actions = [], entite, terrainStack }) {
   const rarete = cardRarityInfo(carte);
   const dialogRef = useRef(null);
   const closeRef = useRef(onClose);
@@ -742,11 +758,9 @@ function CardPreview({ carte, jouable, onClose, actions = [], hint, entite }) {
               : <span>Aucune capacité.</span>}
           </div>
           {carte.flavor && <p className="rpg-card-preview__flavor">« {carte.flavor} »</p>}
-          <p className="rpg-card-preview__hint">
-            {hint ?? (jouable
-              ? 'Jouez cette carte ici ou glissez-la depuis votre main. Le mana est payé automatiquement.'
-              : 'Cette carte n’est pas jouable maintenant. Consultez ses effets avant de revenir au plateau.')}
-          </p>
+          {terrainStack && <p className="rpg-card-preview__resources">
+            {terrainStack.count} terrain{terrainStack.count > 1 ? 's' : ''} · {terrainStack.available} disponible{terrainStack.available > 1 ? 's' : ''} · {terrainStack.tapped} engagé{terrainStack.tapped > 1 ? 's' : ''}
+          </p>}
           <div className="rpg-card-preview__actions" aria-label="Actions de la carte">
             {actions.map((action) => <button key={action.id} type="button"
               className={`rpg-btn${action.primary ? ' rpg-btn--primary' : ' rpg-btn--ghost'}`}
@@ -1162,7 +1176,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const from = mesurerRectangle(source, 128, 160);
-    const to = mesurerDestinationVol(table, carteEnVol.kind, from);
+    const to = mesurerDestinationVol(table, carteEnVol.kind, from, carteEnVol.carteId);
     const slotWidth = source.offsetWidth || from.width;
     const slotHeight = source.offsetHeight || from.height;
     setCarteEnVol((current) => current?.token === carteEnVol.token && current.phase === 'pending'
@@ -2432,18 +2446,20 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       return;
     }
     masquerApercuSurvol();
-    setContexteApercu({ zone, id: entite.id });
+    setContexteApercu({ zone, id: entite.id, carteId: entite.carteId });
     setCarteEnApercu(entite.carteId);
   };
   const zoneApercu = contexteApercu?.zone;
   const coteApercu = zoneApercu?.includes('ennemi') ? 'ennemi' : 'joueur';
   const terrainApercu = zoneApercu?.startsWith('terrain-');
-  const entiteApercu = zoneApercu && zoneApercu !== 'main'
-    ? duel[coteApercu === 'ennemi' ? 'sorcier' : 'joueur'][terrainApercu ? 'terrains' : 'creatures']
-      .find((entity) => entity.id === contexteApercu.id)
+  const terrainPileApercu = terrainApercu
+    ? groupTerrainStacks(duel[coteApercu === 'ennemi' ? 'sorcier' : 'joueur'].terrains)
+      .find((group) => group.carteId === contexteApercu.carteId)
+    : null;
+  const entiteApercu = terrainApercu ? terrainPileApercu?.terrain : zoneApercu && zoneApercu !== 'main'
+    ? duel[coteApercu === 'ennemi' ? 'sorcier' : 'joueur'].creatures.find((entity) => entity.id === contexteApercu.id)
     : null;
   const actionsApercu = [];
-  let hintApercu;
   const apresFermeture = (action) => () => { fermerApercu(); action(); };
   if (carteEnApercu && zoneApercu === 'main') {
     const carte = cardById(carteEnApercu);
@@ -2459,13 +2475,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         setContexteApercu(null);
       },
     });
-    if (!jouable) hintApercu = cibleEnCours || cibleAttaqueEnCours
-      ? 'Terminez ou annulez le choix de cible en cours avant de jouer une autre carte.'
-      : carte?.kind === 'terrain' && duel.joueur.terrainPose
-        ? 'Vous avez déjà posé un terrain ce tour.'
-        : 'Carte indisponible : vérifiez votre mana et la phase du tour.';
   } else if (entiteApercu && terrainApercu) {
-    hintApercu = entiteApercu.tapped ? 'Terrain engagé.' : 'Ce terrain produit du mana. Le paiement des cartes est aussi automatique.';
     if (coteApercu === 'joueur') {
       terrainManaColors(entiteApercu.carteId).forEach((couleur) => {
         actionsApercu.push({ id: couleur, label: `Produire du mana ${couleurLabel(couleur)}`, primary: true,
@@ -2477,9 +2487,6 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
   } else if (entiteApercu) {
     const selectionner = () => coteApercu === 'joueur'
       ? cliquerCreatureJoueur(entiteApercu) : cliquerCreatureEnnemie(entiteApercu);
-    hintApercu = coteApercu === 'ennemi' ? 'Créature adverse : consultez ses capacités et ses statistiques actuelles.'
-      : !entiteApercu.ready ? 'Mal d’invocation : cette créature ne peut pas encore attaquer.'
-        : entiteApercu.attaquee ? 'Cette créature a déjà attaqué.' : 'Choisissez une action pour cette créature.';
     if (cibleEnCours || cibleAttaqueEnCours) {
       const cibleLegale = cibleEnCours
         ? (modeCible === (coteApercu === 'joueur' ? 'allie' : 'ennemi'))
@@ -2586,22 +2593,28 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         </button>
 
         <div className="rpg-terrains rpg-terrains--ennemi" aria-label="Terrains du sorcier">
-          {duel.sorcier.terrains.map((terrain) => {
+          {groupTerrainStacks(duel.sorcier.terrains).map((groupe) => {
+            const terrain = groupe.terrain;
             const carte = cardById(terrain.carteId);
             return (
               <button
                 type="button"
-                key={terrain.id}
+                key={groupe.carteId}
                 onClick={() => ouvrirApercuEntite(terrain, 'terrain-ennemi')}
-                aria-label={`${carte?.name ?? 'Terrain adverse'} — aperçu`}
-                className={`rpg-terrain rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardRarityClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}`}
+                aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrains, ${groupe.available} disponibles, ${groupe.tapped} engagés — aperçu`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardRarityClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}`}
                 style={cardRarityStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
+                data-terrain-count={groupe.count}
+                data-available-count={groupe.available}
+                data-tapped-count={groupe.tapped}
                 onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
                 onMouseLeave={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
+                <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
+                <span className="rpg-terrain-stack__available" aria-hidden="true">{groupe.available} libre{groupe.available > 1 ? 's' : ''}</span>
               </button>
             );
           })}
@@ -2688,7 +2701,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         })}
 
         <div className="rpg-terrains rpg-terrains--joueur" aria-label="Vos terrains : clic manuel pour produire du mana, ou engagement automatique au paiement">
-          {duel.joueur.terrains.map((terrain) => {
+          {groupTerrainStacks(duel.joueur.terrains).map((groupe) => {
+            const terrain = groupe.terrain;
             const carte = cardById(terrain.carteId);
             const couleursProduites = terrainManaColors(terrain.carteId);
             const terrainInactif = (!monTour && !reponseActive) || terrain.tapped;
@@ -2696,18 +2710,21 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             const production = couleursProduites.map(couleurLabel).join(' ou ');
             return (
               <button
-                key={terrain.id}
+                key={groupe.carteId}
                 type="button"
-                className={`rpg-terrain rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardRarityClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardRarityClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
                 style={cardRarityStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
+                data-terrain-count={groupe.count}
+                data-available-count={groupe.available}
+                data-tapped-count={groupe.tapped}
                 data-mana-colors={couleursProduites.join(' ')}
-                aria-disabled={terrainInactif}
-                aria-haspopup={couleursProduites.length > 1 ? 'dialog' : undefined}
+                aria-disabled={!viewport.mobile && terrainInactif}
+                aria-haspopup={viewport.mobile || couleursProduites.length > 1 ? 'dialog' : undefined}
                 aria-expanded={couleursProduites.length > 1 ? choixOuvert : undefined}
                 aria-controls={couleursProduites.length > 1 ? 'rpg-terrain-mana-choice' : undefined}
-                aria-label={`${carte?.name ?? 'Terrain'}${terrain.tapped ? ', engagé' : terrainInactif ? ', indisponible' : couleursProduites.length > 1 ? `, cliquer pour choisir un mana ${production}` : `, disponible pour produire un mana ${production}`}`}
+                aria-label={`${carte?.name ?? 'Terrain'}, ${groupe.count} terrains, ${groupe.available} disponibles, ${groupe.tapped} engagés${terrain.tapped ? ', engagé' : terrainInactif ? ', indisponible' : couleursProduites.length > 1 ? `, cliquer pour choisir un mana ${production}` : `, disponible pour produire un mana ${production}`}`}
                 onClick={(event) => {
                   if (viewport.mobile) ouvrirApercuEntite(terrain, 'terrain-joueur');
                   else if (!terrainInactif) demanderCouleurMana(event, terrain);
@@ -2718,6 +2735,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                 onBlur={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
+                <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
+                <span className="rpg-terrain-stack__available" aria-hidden="true">{groupe.available} libre{groupe.available > 1 ? 's' : ''}</span>
               </button>
             );
           })}
@@ -2961,9 +2980,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         {carteEnApercu && (
           <CardPreview
             carte={cardById(carteEnApercu)}
-            jouable={contexteApercu?.zone === 'main' && peutJouerCarte(cardById(carteEnApercu))}
             entite={entiteApercu}
-            hint={hintApercu}
+            terrainStack={terrainPileApercu}
             actions={actionsApercu}
             onClose={fermerApercu}
           />

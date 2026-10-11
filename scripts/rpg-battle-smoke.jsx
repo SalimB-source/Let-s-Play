@@ -1091,6 +1091,7 @@ export async function checkRpgBattle(assert) {
     await glisserSurTable(petraContainer, carte);
     const terrain = petraContainer.querySelector('.rpg-terrains--joueur .rpg-terrain[data-card-id="petra"]:not(.is-tapped)');
     assert.ok(terrain, 'la vraie carte Pétra rejoint le rail des terrains');
+    const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
     assert.ok(choix, 'un choix accessible de couleur s’ouvre au clic sur Pétra');
@@ -1099,7 +1100,8 @@ export async function checkRpgBattle(assert) {
     await act(async () => { choix.querySelector(`.rpg-terrain-mana-choice__option--${couleur}`).click(); });
     assert.equal(petraContainer.querySelector(`.rpg-wizard-plate--joueur .mana--${couleur}`)?.textContent, '1',
       `Pétra ajoute un mana ${couleur}`);
-    assert.ok(terrain.classList.contains('is-tapped'), 'Pétra est engagée après le choix');
+    assert.equal(Number(terrain.dataset.availableCount), disponiblesAvant - 1, 'le choix engage une seule Pétra de la pile');
+    assert.ok(Number(terrain.dataset.tappedCount) >= 1, 'la pile indique les Pétra engagées');
     assert.equal(petraContainer.querySelector('.rpg-terrain-mana-choice'), null, 'le sélecteur se referme après le choix');
   };
   await engagerPetraEn('sable');

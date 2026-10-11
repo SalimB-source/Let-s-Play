@@ -7,13 +7,18 @@
 Le plateau conserve les illustrations originales de Bab El, avec une organisation inspirée des jeux de cartes numériques en paysage :
 
 - deux champs au centre, sans panneaux opaques ;
-- terrains sur le côté, identités et compteurs flottants ;
+- terrains identiques regroupés par type dans chaque camp, avec un compteur total et le nombre encore disponible ;
+- identités et compteurs flottants ;
 - main en bas, défilable horizontalement ;
 - commandes « Attaquer avec tous », confirmation/annulation de l’attaque, annulation de la dernière action et fin du tour regroupées côte à côte sur le plateau, selon la phase ;
 - progression des phases immédiatement au-dessus des commandes, avec la phase actuelle mise en évidence ;
 - détails et actions contextuelles dans l’aperçu d’une carte.
 
 Le clic sur une carte en main ouvre l’aperçu, sur ordinateur comme sur mobile. **Jouer la carte** réutilise la validation et les animations du glisser-déposer, y compris le paiement automatique et le choix ultérieur d’une cible. Sur mobile, les créatures et terrains du champ ouvrent aussi leur aperçu : attaque, retrait de la sélection, annulation, blocage, choix de cible ou production de mana selon l’état de la partie. Sélectionner un attaquant ferme l’aperçu ; la confirmation de l’attaque se fait uniquement sur le plateau, à côté de la fin du tour. L’annulation de la dernière action reste sur le plateau, à côté de la fin du tour, et non dans l’aperçu. Les actions indisponibles sont désactivées. Les statistiques d’une créature en jeu reflètent ses valeurs actuelles.
+
+L’aperçu ne contient plus le texte explicatif bleu : seuls les effets, statistiques, compteurs de terrains et actions restent affichés.
+
+Les piles de terrains sont uniquement une présentation : chaque terrain reste une instance distincte dans le moteur. Une production manuelle engage le prochain terrain disponible de la pile ; le paiement automatique, le choix de couleur de Pétra, le dégagement et l’annulation conservent leur fonctionnement. Les piles restent droites et leurs compteurs demeurent dans leur cadre. Une carte terrain jouée rejoint sa pile existante lors de l’animation.
 
 Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. Le grand aperçu conserve un fond lisible, mais son voile extérieur est léger et le plateau n’a plus de grands fonds opaques.
 
@@ -38,7 +43,7 @@ npm run check:rpg-ui
 npm run build
 ```
 
-- Tests purs : moteur, audio, gestes et cycle de vie de l’orientation, y compris les refus et promesses tardives.
+- Tests purs : moteur, audio, gestes, piles de terrains (paiement, production individuelle, dégagement, restauration) et cycle de vie de l’orientation, y compris les refus et promesses tardives.
 - Tests React/jsdom : prévisualisation, jeu, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois et terrain engagé.
 - Tests Chromium : repli portrait, plateaux 568×320, 667×375, 844×390 et 1024×768 sans recouvrement des zones ; aperçu et actions au toucher ; jeu d’un terrain par glisser-déposer après rotations ; retour au menu.
 

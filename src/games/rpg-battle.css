@@ -2455,7 +2455,6 @@
 .rpg-card-preview__stats { margin: 0; justify-self: end; padding: 7px 12px; border: 1px solid #24180d; border-radius: 8px; background: linear-gradient(180deg, #f3e6bb, #d2b875); color: #21180f; font: 800 18px/1 Georgia, serif; }
 .rpg-card-preview__stats span { padding-inline: 7px; color: #775329; }
 .rpg-card-preview__flavor { margin: 0; color: rgba(244, 225, 190, .72); font: italic 13px/1.4 Georgia, serif; }
-.rpg-card-preview__hint { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .13); color: #a9e8d9; font: 700 11px/1.45 var(--display); letter-spacing: .03em; }
 
 @media (max-width: 560px) {
   .rpg-card-preview-backdrop { padding: 8px; }
@@ -2468,7 +2467,6 @@
   .rpg-card-preview__rules { padding: 8px; font-size: 11px; }
   .rpg-card-preview__stats { padding: 5px 8px; font-size: 14px; }
   .rpg-card-preview__flavor { font-size: 10px; }
-  .rpg-card-preview__hint { font-size: 9px; }
   .rpg-card-preview__close { top: 3px; right: 4px; width: 28px; height: 28px; font-size: 21px; }
 }
 
