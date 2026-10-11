@@ -3059,6 +3059,9 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
     ...Object.keys(animationsEntites ?? {}),
   ]);
+  // Au doigt, la clé identifie une pile ; sur grand écran, elle identifie
+  // un exemplaire. Partager la clé carteId entre deux exemplaires laisserait
+  // des cartes fantômes (avec leur ancien état engagé) après une destruction.
   const champEnPiles = (entites) => ({
     indexParId: new Map(entites.map((entite, index) => [entite.id, index])),
     piles: empilerCartes
@@ -3224,7 +3227,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             const affichees = deployee ? pile.entites : [teteDePile('ennemi', pile)];
             const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
             return (
-              <Fragment key={pile.carteId}>
+              <Fragment key={empilerCartes ? pile.carteId : pile.entites[0].id}>
                 {deployee && pile.entites.length > 1 && (
                   <button
                     type="button"
@@ -3293,7 +3296,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             const affichees = deployee ? pile.entites : [teteDePile('joueur', pile)];
             const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
             return (
-              <Fragment key={pile.carteId}>
+              <Fragment key={empilerCartes ? pile.carteId : pile.entites[0].id}>
                 {deployee && pile.entites.length > 1 && (
                   <button
                     type="button"
