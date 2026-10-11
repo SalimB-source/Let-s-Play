@@ -858,6 +858,27 @@
 /* États de la carte posée. */
 .rpg-card:hover { transform: rotate(0deg) translateY(-6px); }
 
+/* Sous la souris, l'illustration des créatures respire doucement. L'animation
+   reste sur l'image pour ne pas remplacer celles de combat jouées par la carte. */
+@media (hover: hover) and (pointer: fine) {
+  .rpg-card--type-creature:is(:hover, :focus-visible) .rpg-card__img {
+    animation: rpg-creature-hover-float 2.2s ease-in-out infinite;
+    will-change: transform;
+  }
+}
+
+@keyframes rpg-creature-hover-float {
+  0%, 100% { transform: translate3d(-1px, 0, 0) scale(1.04); }
+  50% { transform: translate3d(1px, -3px, 0) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card--type-creature:is(:hover, :focus-visible) .rpg-card__img {
+    animation: none !important;
+    will-change: auto;
+  }
+}
+
 .rpg-card.is-active {
   transform: rotate(0deg) translateY(-10px);
   box-shadow:
