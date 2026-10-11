@@ -5126,20 +5126,34 @@ réserve.
 
 Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
 Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
-désormais plusieurs, et **le plateau change de partie en partie**.
+désormais plusieurs, et **le joueur n'en choisit aucune** : le plateau d'une
+partie est imposé par **le deck de l'un des deux duellistes**.
 
 ### La règle
 
-- **Un tirage par partie.** Chaque nouvelle partie tire son plateau ; celui du
-  duel précédent est écarté, donc deux duels de suite ne se jouent jamais sur
-  le même terrain. Le tirage passe par le `rng` du duel (injectable), comme le
-  reste du moteur : une partie se rejoue à l'identique, valeurs hors bornes
-  comprises.
-- **Un verrou, si on préfère la stabilité.** Le menu *Jouer* liste les plateaux
-  avec leur fond et leur résumé ; en choisir un le verrouille pour les duels
-  suivants (mémorisé sur l'appareil, clé `letsplay_sablier_plateau_v1`). La
-  pastille **Aléatoire** rend la main au tirage.
-- **Le plateau est annoncé.** Le duel ouvre sur « Plateau : … » dans la barre
+- **Chaque deck a son terrain.** Les Veilleurs du Désert se battent dans l'Erg
+  du Sahara, la Cour des Djinns sur la Terre de Damnation, les Sentiers de
+  cendre sur la piste de la Caravane de Gourara, la Marée des abysses dans les
+  Ruines de Tipaza. Les decks de campagne ont leur entrée aussi — la Souffleuse
+  de verre tient la piste de caravane, le Grand Horloger reçoit dans la salle
+  haute de la Chambre, sur la Table des Heures (`RPG_PLATEAUX_PAR_DECK`).
+- **Un paquet inconnu parle par sa couleur.** Un deck sans identité — paquet
+  brut passé en prop à la page, deck maison — prend le terrain de sa **couleur
+  dominante** : Sable → l'Erg, Braise → la Terre de Damnation, Eau → Tipaza,
+  deux couleurs à égalité → la Caravane de Gourara, le carrefour des pistes.
+  Rien de lisible : la Table des Heures, la table d'origine.
+- **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
+  choisit l'un des deux camps ; c'est le deck de ce duelliste qui donne son
+  plateau à la partie. Le tirage passe par le `rng` du duel (injectable) et ne
+  consomme qu'une valeur : une partie se rejoue à l'identique, valeurs hors
+  bornes comprises, et la suite du moteur (le mélange des paquets) ne bouge pas.
+- **Plus aucun choix de plateau.** Le bloc « Le terrain d'affrontement » du menu
+  *Jouer* a été retiré, avec la pastille **Aléatoire**, le verrou de plateau et
+  sa sauvegarde sur l'appareil (la clé `letsplay_sablier_plateau_v1` n'est plus
+  ni lue ni écrite). Rien à régler : le terrain se découvre à l'ouverture du
+  duel.
+- **Le plateau est annoncé.** Le duel ouvre sur « Plateau : … — …, imposé par
+  votre deck / le deck adverse / le deck de <sorcier de l'étage> » dans la barre
   du bas, et la table porte son terrain dans son libellé accessible.
 
 ### Les plateaux
@@ -5155,13 +5169,16 @@ désormais plusieurs, et **le plateau change de partie en partie**.
 ### Où vit le code
 
 - `src/games/rpgPlateaux.js` — le catalogue des plateaux (identifiant, nom,
-  lieu, fichier, résumé), le tirage (`tirerPlateau`), la normalisation et la
-  sauvegarde du choix. Aucun rendu, aucun DOM : testable comme le moteur.
-- `src/games/RpgDuelPage.jsx` — le bloc « Le terrain d'affrontement » du menu
-  (une carte par plateau, plus la pastille aléatoire), le tirage dans
-  `nouvellePartie`, et la classe `card-table--plateau-<id>` + le
-  `background-image` posés sur la table.
-- `src/games/rpg-battle.css` — les styles du bloc, la couleur de repli de chaque
+  lieu, fichier, résumé), la correspondance deck → terrain
+  (`RPG_PLATEAUX_PAR_DECK`, `RPG_PLATEAUX_PAR_COULEUR`), la lecture d'un paquet
+  (`plateauDeDeck`, `couleurDominanteDeck`) et le tirage du duel
+  (`tirerPlateauDuDuel`, qui rend `{ plateau, camp, motif }`). Aucun rendu,
+  aucun DOM, aucun `localStorage` : testable comme le moteur.
+- `src/games/RpgDuelPage.jsx` — le tirage dans `nouvellePartie`, sur les deux
+  paquets réellement joués (prop brute, deck du catalogue ou clé de deck
+  d'étage), l'annonce nommée (`nommerOriginePlateau`), et la classe
+  `card-table--plateau-<id>` + le `background-image` posés sur la table.
+- `src/games/rpg-battle.css` — la couleur de repli de chaque
   plateau, et les **voiles de lisibilité**. Le voile principal est un
   **dégradé noir posé en haut et en bas du plateau**
   (`--rpg-plateau-voile`) : c'est là que vivent les textes de la table —
@@ -5194,8 +5211,8 @@ désormais plusieurs, et **le plateau change de partie en partie**.
 ### Vérifications
 
 ```bash
-npm run check:rpg        # règles + les 10 tests des plateaux
-npm run check:rpg-ui     # la page montée dans jsdom, choix de plateau et voile compris
+npm run check:rpg        # règles + les 16 tests des plateaux
+npm run check:rpg-ui     # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, voile compris
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds

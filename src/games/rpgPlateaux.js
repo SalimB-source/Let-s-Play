@@ -2,30 +2,38 @@
  * Le Sablier du temps — les plateaux de duel.
  *
  * Le duel se joue sur une **table** : un fond plein cadre, sous les cartes.
- * Le jeu n'en avait qu'une (le bois gravé d'un astrolabe) ; il en propose
- * désormais plusieurs, et **le plateau change de partie en partie** : à chaque
- * nouveau duel, un tirage parmi les plateaux disponibles, jamais deux fois de
- * suite le même tant qu'il en existe un autre.
+ * Le jeu en propose plusieurs, mais **le joueur n'en choisit aucun** : le
+ * plateau d'une partie est imposé par **le deck de l'un des deux duellistes**.
  *
- * Qui préfère garder le même terrain d'un duel à l'autre le **verrouille**
- * depuis le menu : le choix est mémorisé sur l'appareil (même convention que
- * `rpgStory.js` : accès `localStorage` tolérant, écriture silencieuse, lecture
- * normalisée) et le tirage ne reprend qu'une fois « Aléatoire » resélectionné.
+ * La règle tient en deux temps :
  *
- * Le tirage passe par le `rng` du duel — injectable — donc une partie se
- * rejoue à l'identique, comme le reste du moteur.
+ * 1. **Chaque deck a son terrain.** Un deck du catalogue (ou un deck du mode
+ *    Histoire) porte une correspondance explicite — les Veilleurs du Désert se
+ *    battent dans l'Erg, la Cour des Djinns sur la Terre de Damnation… Un deck
+ *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
+ *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Terre
+ *    de Damnation, Eau → les Ruines de Tipaza, deux couleurs à égalité → la
+ *    Caravane de Gourara, le carrefour des pistes. Sans rien de lisible, c'est
+ *    la Table des Heures, la table d'origine de Bab El.
+ * 2. **Le sable désigne qui impose son terrain.** Au lancement du duel, un
+ *    tirage choisit l'un des deux camps ; c'est le deck de ce duelliste qui
+ *    donne son plateau à la partie. Le tirage passe par le `rng` du duel —
+ *    injectable — donc une partie se rejoue à l'identique, comme le reste du
+ *    moteur, et une valeur hors bornes ne plante rien.
+ *
+ * Il n'y a donc plus ni pastille « Aléatoire », ni verrou de plateau, ni
+ * sauvegarde du choix sur l'appareil : rien à mémoriser, rien à reprendre.
  *
  * Un plateau = un identifiant, un nom lisible, un lieu, un fichier de
- * `public/` et un résumé pour le menu. Le fichier est un fond plein cadre
- * **sans texte ni interface dessinée** : l'interface du jeu se superpose
- * elle-même (voir `RPG-CARD-ART.md` pour l'esprit de la direction artistique).
+ * `public/` et un résumé pour l'annonce d'ouverture. Le fichier est un fond
+ * plein cadre **sans texte ni interface dessinée** : l'interface du jeu se
+ * superpose elle-même (voir `RPG-CARD-ART.md` pour l'esprit de la direction
+ * artistique).
  */
 
-export const RPG_PLATEAU_STORAGE_KEY = 'letsplay_sablier_plateau_v1';
+import { cardColors } from './rpgCards.js';
 
-/** Valeur de choix : le plateau est tiré à chaque nouvelle partie. */
-export const RPG_PLATEAU_ALEATOIRE = 'aleatoire';
-
+/** Le catalogue des plateaux, dans l'ordre de la galerie d'origine. */
 export const RPG_PLATEAUX = [
   {
     id: 'table-des-heures',
@@ -64,67 +72,119 @@ export const RPG_PLATEAUX = [
   },
 ];
 
+/** Le terrain rendu quand aucun deck ne parle : la table d'origine de Bab El. */
+export const RPG_PLATEAU_DE_REPLI = 'table-des-heures';
+
+/**
+ * Le terrain qu'un deck impose. Clés : les identifiants des decks du catalogue
+ * (`rpgCards.js`) et les clés des decks de campagne (`rpgStoryTours.js`).
+ */
+export const RPG_PLATEAUX_PAR_DECK = {
+  // Catalogue — chaque deck se bat chez lui.
+  'veilleurs-du-desert': 'erg-du-sahara',
+  'cour-des-djinns': 'terre-de-damnation',
+  'sentiers-de-cendre': 'caravane-de-gourara',
+  'maree-des-abysses': 'ruines-de-tipaza',
+  // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
+  // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
+  // dans la salle haute de la Chambre, sur la table d'origine.
+  'souffleuse-de-verre': 'caravane-de-gourara',
+  'grand-horloger': 'table-des-heures',
+};
+
+/** Le terrain d'une couleur de deck sans identité connue. */
+export const RPG_PLATEAUX_PAR_COULEUR = {
+  sable: 'erg-du-sahara',
+  braise: 'terre-de-damnation',
+  eau: 'ruines-de-tipaza',
+  hybride: 'caravane-de-gourara',
+};
+
 /** Le plateau par son identifiant, ou null. */
 export function plateauParId(id) {
   if (typeof id !== 'string') return null;
   return RPG_PLATEAUX.find((plateau) => plateau.id === id) ?? null;
 }
 
-/** Un choix valide : « aléatoire » ou l'identifiant d'un plateau connu. */
-export function normaliserChoixPlateau(valeur) {
-  return plateauParId(valeur) ? valeur : RPG_PLATEAU_ALEATOIRE;
+/** Le plateau rendu quand aucun deck ne parle — toujours un plateau du catalogue. */
+export function plateauDeRepli() {
+  return plateauParId(RPG_PLATEAU_DE_REPLI) ?? RPG_PLATEAUX[0];
 }
 
-/** Le plateau est-il verrouillé (choix explicite du joueur) ? */
-export function plateauVerrouille(choix) {
-  return Boolean(plateauParId(choix));
-}
-
-function browserStorage() {
-  try {
-    return globalThis.window?.localStorage || globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
-}
-
-/** Charge le choix mémorisé ; « aléatoire » si absent, illisible ou inconnu. */
-export function chargerChoixPlateau() {
-  const stockage = browserStorage();
-  if (!stockage) return RPG_PLATEAU_ALEATOIRE;
-  try {
-    return normaliserChoixPlateau(stockage.getItem(RPG_PLATEAU_STORAGE_KEY));
-  } catch {
-    return RPG_PLATEAU_ALEATOIRE;
-  }
-}
-
-/** Mémorise le choix (silencieux si le stockage manque). */
-export function sauverChoixPlateau(choix) {
-  const stockage = browserStorage();
-  if (!stockage) return false;
-  try {
-    stockage.setItem(RPG_PLATEAU_STORAGE_KEY, normaliserChoixPlateau(choix));
-    return true;
-  } catch {
-    return false;
-  }
+function cartesDeDeck(deck) {
+  if (Array.isArray(deck)) return deck;
+  return Array.isArray(deck?.cardIds) ? deck.cardIds : null;
 }
 
 /**
- * Le plateau d'une nouvelle partie.
- *
- * - choix verrouillé : ce plateau, toujours.
- * - « aléatoire » : un tirage parmi tous les plateaux, en écartant celui de la
- *   partie précédente (jamais deux duels de suite sur le même terrain), avec
- *   un rejet des valeurs de `rng` hors bornes plutôt qu'un plantage.
+ * La couleur dominante d'un paquet : la couleur la plus présente parmi ses
+ * cartes, `hybride` quand deux couleurs sont à égalité en tête, `null` quand
+ * le paquet ne dit rien (vide, cartes inconnues, incolores).
  */
-export function tirerPlateau({ choix = RPG_PLATEAU_ALEATOIRE, rng = Math.random, precedentId = null } = {}) {
-  const verrouille = plateauParId(choix);
-  if (verrouille) return verrouille;
-  const candidats = RPG_PLATEAUX.filter((plateau) => plateau.id !== precedentId);
-  const vivier = candidats.length ? candidats : RPG_PLATEAUX;
+export function couleurDominanteDeck(deck) {
+  const comptes = new Map();
+  for (const carteId of cartesDeDeck(deck) ?? []) {
+    for (const couleur of cardColors(carteId)) {
+      comptes.set(couleur, (comptes.get(couleur) ?? 0) + 1);
+    }
+  }
+  // Un deck déclaré sans liste (identifiant seul, `element`/`elements`) : on
+  // lit sa couleur d'état civil plutôt que de rendre les mains vides.
+  if (!comptes.size && !Array.isArray(deck) && deck && typeof deck === 'object') {
+    for (const couleur of cardColors({ element: deck.element, colors: deck.elements })) {
+      comptes.set(couleur, 1);
+    }
+  }
+  if (!comptes.size) return null;
+  const maximum = Math.max(...comptes.values());
+  const enTete = [...comptes].filter(([, compte]) => compte === maximum).map(([couleur]) => couleur);
+  return enTete.length > 1 ? 'hybride' : enTete[0];
+}
+
+/**
+ * Le terrain qu'un deck impose, et pourquoi.
+ *
+ * `deck` accepte l'identifiant d'un deck connu, un deck du catalogue
+ * (`{ id, cardIds }`) ou un paquet brut (tableau d'identifiants de cartes).
+ * `motif` dit d'où vient la réponse : `deck` (correspondance explicite),
+ * `couleur` (couleur dominante du paquet) ou `repli` (rien de lisible).
+ */
+export function plateauDeDeck(deck) {
+  const identifiant = typeof deck === 'string' ? deck : deck?.id;
+  const attitre = plateauParId(RPG_PLATEAUX_PAR_DECK[identifiant] ?? null);
+  if (attitre) return { plateau: attitre, motif: 'deck' };
+  const parCouleur = plateauParId(RPG_PLATEAUX_PAR_COULEUR[couleurDominanteDeck(deck)] ?? null);
+  if (parCouleur) return { plateau: parCouleur, motif: 'couleur' };
+  return { plateau: plateauDeRepli(), motif: 'repli' };
+}
+
+function borneDeTirage(rng) {
   const tirage = typeof rng === 'function' ? Number(rng()) : Math.random();
-  const borne = Number.isFinite(tirage) ? Math.min(Math.max(tirage, 0), 0.999999) : 0;
-  return vivier[Math.floor(borne * vivier.length)];
+  return Number.isFinite(tirage) ? Math.min(Math.max(tirage, 0), 0.999999) : 0;
+}
+
+/**
+ * Le plateau d'une nouvelle partie : **le deck de l'un des deux duellistes**
+ * impose son terrain, et le sable désigne lequel.
+ *
+ * `deckJoueur` et `deckAdverse` acceptent ce que `plateauDeDeck` accepte —
+ * identifiant de deck, deck du catalogue ou paquet brut. Un camp dont le deck
+ * ne dit rien laisse la place à l'autre : on ne retombe sur la Table des
+ * Heures que si aucun des deux paquets ne parle.
+ *
+ * Rend `{ plateau, camp, motif }` — `camp` : `'joueur'` ou `'adversaire'`, le
+ * duelliste dont le deck a imposé le terrain (de quoi l'annoncer en début de
+ * partie).
+ */
+export function tirerPlateauDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random } = {}) {
+  const camps = [
+    { camp: 'joueur', deck: deckJoueur },
+    { camp: 'adversaire', deck: deckAdverse },
+  ];
+  const [premier, second] = borneDeTirage(rng) < 0.5 ? camps : [camps[1], camps[0]];
+  const resolu = plateauDeDeck(premier.deck);
+  if (resolu.motif !== 'repli') return { ...resolu, camp: premier.camp };
+  const autre = plateauDeDeck(second.deck);
+  if (autre.motif !== 'repli') return { ...autre, camp: second.camp };
+  return { ...resolu, camp: premier.camp };
 }
