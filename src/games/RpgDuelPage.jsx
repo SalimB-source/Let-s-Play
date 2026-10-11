@@ -8,9 +8,26 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
+import './rpg-story.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
+import {
+  chargerProgressionHistoire,
+  etageEstDebloque,
+  etageEstVaincu,
+  marquerEtageVaincu,
+  progressionHistoireVide,
+  reinitialiserProgressionHistoire,
+  resumeTourHistoire,
+  sauverProgressionHistoire,
+} from './rpgStory.js';
+import {
+  deckHistoire,
+  etageHistoireParId,
+  prochainEtage,
+  RPG_STORY_TOURS,
+} from './rpgStoryTours.js';
 import {
   rpgCibleAuto,
   rpgChoisirAttaquants,
@@ -837,7 +854,7 @@ function SpellAnnouncement({ annonce }) {
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, onHoverCard, onLeaveHoverCard }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onHoverCard, onLeaveHoverCard }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const selectedDeck = RPG_DECKS.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
@@ -871,6 +888,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => onChangeScreen('jouer')}>
               <span aria-hidden="true">⚔</span> Jouer
+            </button>
+            <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => onChangeScreen('histoire')}>
+              <span aria-hidden="true">⌛</span> Histoire
             </button>
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => onChangeScreen('decks')}>
               <span aria-hidden="true">▤</span> Deck
@@ -970,6 +990,66 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 )}
               </section>
             ) : <p className="rpg-deck-catalog__empty">Aucun deck n’est encore disponible.</p>}
+          </main>
+        ) : screen === 'histoire' ? (
+          <main className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
+            <div className="rpg-story__intro">
+              <div>
+                <span className="rpg-mode-menu__eyebrow">MODE HISTOIRE · CONTINUITÉ SIMPLE</span>
+                <h2>Les Tours de Bab El</h2>
+                <p>
+                  Chaque étage est un duel autonome : deck complet, PV pleins, aucune ressource
+                  reportée. Gravissez les tours, étage après étage — la progression est gardée sur
+                  cet appareil.
+                </p>
+              </div>
+              <button type="button" className="rpg-story__reset" onClick={onResetHistoire}>
+                Effacer la progression
+              </button>
+            </div>
+            <div className="rpg-story__tours">
+              {RPG_STORY_TOURS.map((tour) => {
+                const resume = resumeTourHistoire(tour.id, progressionHistoire);
+                return (
+                  <section key={tour.id} className="rpg-story-tour">
+                    <header className="rpg-story-tour__header">
+                      <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
+                      <h3>{tour.nom}</h3>
+                      <p>{tour.resume}</p>
+                    </header>
+                    <div className="rpg-story-tour__progress" aria-hidden="true">
+                      <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
+                    </div>
+                    <ul className="rpg-story-tour__floors">
+                      {tour.etages.map((etage, index) => {
+                        const vaincu = etageEstVaincu(progressionHistoire, etage.id);
+                        const debloque = etageEstDebloque(progressionHistoire, etage.id);
+                        return (
+                          <li key={etage.id}>
+                            <button
+                              type="button"
+                              className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
+                              disabled={!debloque}
+                              data-etage={etage.id}
+                              onClick={() => onStartEtage(etage.id)}
+                            >
+                              <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
+                              <span className="rpg-story-floor__copy">
+                                <strong>{etage.nom}</strong>
+                                <small>{etage.note}</small>
+                              </span>
+                              <span className="rpg-story-floor__badge">
+                                {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                );
+              })}
+            </div>
           </main>
         ) : (
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">
@@ -1085,11 +1165,29 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     if (ecran !== 'partie') landscapeRef.current?.leave();
   }, [ecran]);
+  // Mode Histoire : la première fois qu'un étage est remporté, il est marqué
+  // déblayé et sauvegardé sur l'appareil (une seule fois par duel).
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant || !histoireEtageId) return;
+    if (rpgVainqueur(duelCourant) !== 'joueur') return;
+    if (histoireVictoireMarqueeRef.current === histoireEtageId) return;
+    histoireVictoireMarqueeRef.current = histoireEtageId;
+    setProgressionHistoire((progression) => {
+      const maj = marquerEtageVaincu(progression, histoireEtageId);
+      sauverProgressionHistoire(maj);
+      return maj;
+    });
+  });
   const reprendrePartie = () => {
     landscapeRef.current?.enter();
     setEcran('partie');
   };
   const [deckSelectionneId, setDeckSelectionneId] = useState(() => RPG_DECKS.find((deck) => deck.role === 'joueur')?.id ?? '');
+  // Mode Histoire : l'étage en cours (null = duel libre).
+  const [histoireEtageId, setHistoireEtageId] = useState(null);
+  const [progressionHistoire, setProgressionHistoire] = useState(() => chargerProgressionHistoire());
+  const histoireVictoireMarqueeRef = useRef(null);
   const duelRef = useRef(null);
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
@@ -1183,14 +1281,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       : current);
   }, [carteEnVol?.token]);
 
-  const nouvellePartie = () => {
+  const nouvellePartie = (options = {}) => {
+    const etageId = options.etageId ?? histoireEtageId;
+    const etageCourant = etageId ? etageHistoireParId(etageId)?.etage ?? null : null;
     const deckJoueurSelectionne = RPG_DECKS.find((deck) => deck.id === deckSelectionneId && deck.role === 'joueur');
     duelRef.current = rpgNouveauDuel({
       joueurDeck: joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE,
-      sorcierDeck: sorcierDeck ?? RPG_DECK_SORCIER_BASE,
-      sorcierPuissance,
+      sorcierDeck: etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? RPG_DECK_SORCIER_BASE,
+      sorcierPuissance: etageCourant ? etageCourant.puissance : sorcierPuissance,
+      sorcierIA: etageCourant ? etageCourant.ia : undefined,
       rng,
     });
+    histoireVictoireMarqueeRef.current = null;
     instantanePiocheRef.current = {
       joueur: { deck: duelRef.current.joueur.deck.length + duelRef.current.joueur.main.length, main: 0 },
       sorcier: { deck: duelRef.current.sorcier.deck.length + duelRef.current.sorcier.main.length, main: 0 },
@@ -1303,8 +1405,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const masquerApercuSurvol = () => setApercuSurvol(null);
 
+  const demarrerEtage = (etageId) => {
+    setHistoireEtageId(etageId);
+    nouvellePartie({ etageId });
+    reprendrePartie();
+  };
+
   const demarrerPartie = () => {
-    nouvellePartie();
+    setHistoireEtageId(null);
+    nouvellePartie({ etageId: null });
     reprendrePartie();
   };
 
@@ -1319,6 +1428,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onStartGame={demarrerPartie}
           onResumeGame={reprendrePartie}
           hasGame={Boolean(duel)}
+          progressionHistoire={progressionHistoire}
+          onStartEtage={demarrerEtage}
+          onResetHistoire={() => {
+            reinitialiserProgressionHistoire();
+            setProgressionHistoire(progressionHistoireVide());
+          }}
           onHoverCard={afficherApercuSurvol}
           onLeaveHoverCard={masquerApercuSurvol}
         />
@@ -1333,6 +1448,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }
   if (!duel) return null;
   const vainqueur = rpgVainqueur(duel);
+  const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
+  const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const monTour = duel.tour === 'joueur' && !vainqueur;
   const deckJoueurAffiche = RPG_DECKS.find((deck) => deck.id === deckSelectionneId && deck.role === 'joueur') ?? RPG_DECKS[0];
   const reponseActive = Boolean(combatEntrant && duel.fenetreReponse && !vainqueur);
@@ -2553,7 +2670,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       >
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER DE BAB EL</strong>
-          <button type="button" onClick={() => setEcran('jouer')}>Menu</button>
+          {etageHistoire && <span className="rpg-duel-nav__story">MODE HISTOIRE · {etageHistoire.nom}</span>}
+          <button type="button" onClick={() => setEcran(histoireEtageId ? 'histoire' : 'jouer')}>Menu</button>
           <button type="button" onClick={() => setEcran('decks')}>Deck</button>
           <button type="button" onClick={() => setEcran('catalogue')}>Catalogue</button>
         </nav>
@@ -2580,7 +2698,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}`} onClick={cliquerSorcier}
           title="Le sorcier adverse">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={cardArt('ifrit-al-ahmar')} alt="" /></span>
-          <span className="rpg-wizard-plate__identity"><strong>LE SORCIER</strong><small>Cour des Djinns · Braise</small></span>
+          <span className="rpg-wizard-plate__identity">
+            <strong>{etageHistoire ? etageHistoire.nom : 'LE SORCIER'}</strong>
+            <small>{etageHistoire ? etageHistoire.fonction : 'Cour des Djinns · Braise'}</small>
+          </span>
           <span className="rpg-wizard-plate__pv">🛡 {duel.sorcier.pv}{duel.sorcier.bouclier > 0 ? ` · ◇ ${duel.sorcier.bouclier}` : ''}</span>
           <span className="rpg-wizard-plate__sable">
             <i className="mana mana--braise" title="Mana braise">{duel.sorcier.mana.braise}</i>
@@ -2983,16 +3104,44 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           />
         )}
         {vainqueur && (
-          <div className="rpg-overlay">
-            <h2>{vainqueur === 'joueur' ? 'Le sorcier s’effondre !' : vainqueur === 'sorcier' ? 'Vous êtes tombé…' : 'Double chute…'}</h2>
+          <div className={`rpg-overlay${vainqueur === 'joueur' ? '' : ' rpg-overlay--loss'}`}>
+            <h2>
+              {etageHistoire
+                ? vainqueur === 'joueur' ? 'Étage déblayé !' : 'L’étage vous repousse…'
+                : vainqueur === 'joueur' ? 'Le sorcier s’effondre !' : vainqueur === 'sorcier' ? 'Vous êtes tombé…' : 'Double chute…'}
+            </h2>
             <p>
-              {vainqueur === 'joueur'
-                ? 'Bab El respire : le cycle tient encore un soir.'
-                : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
+              {etageHistoire
+                ? vainqueur === 'joueur'
+                  ? `${etageHistoire.nom} ne tient plus son palier. La suite de la tour vous attend.`
+                  : `${etageHistoire.nom} vous attend au même étage : chaque duel repart à zéro.`
+                : vainqueur === 'joueur'
+                  ? 'Bab El respire : le cycle tient encore un soir.'
+                  : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
             </p>
-            <button type="button" className="rpg-btn rpg-btn--primary" onClick={nouvellePartie}>
-              Nouvelle partie
-            </button>
+            {etageHistoire ? (
+              <div className="rpg-overlay__actions">
+                {vainqueur === 'joueur' && etageSuivant && (
+                  <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => demarrerEtage(etageSuivant.id)}>
+                    Étage suivant : {etageSuivant.nom} <span aria-hidden="true">→</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`rpg-btn ${vainqueur === 'joueur' && !etageSuivant ? 'rpg-btn--primary' : 'rpg-btn--ghost'}`}
+                  onClick={() => demarrerEtage(etageHistoire.id)}
+                >
+                  {vainqueur === 'joueur' ? 'Rejouer l’étage' : 'Recommencer l’étage'}
+                </button>
+                <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setEcran('histoire')}>
+                  {vainqueur === 'joueur' && !etageSuivant ? 'Tour terminée — retour aux tours' : 'Retour aux tours'}
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => nouvellePartie()}>
+                Nouvelle partie
+              </button>
+            )}
           </div>
         )}
       </div>

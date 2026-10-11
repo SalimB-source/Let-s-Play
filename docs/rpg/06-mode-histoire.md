@@ -47,24 +47,25 @@ Souk, la Tour des Sables…). Les noms et dialogues vivent dans le dossier
   blocages (échanges, chump sous pression, survie), choix d'attaquants
   (rentabilité de la déclaration entière), séquencement de la phase principale.
 
+## Ce qui est en place (octobre 2026)
+
+1. **Le conteneur mode Histoire** — `src/games/rpgStory.js` + l'écran « Histoire »
+   de `RpgDuelPage` : sélection de tour → liste d'étages → lancement du duel avec
+   les bons props ; écran de victoire d'étage (étage suivant / rejouer / retour
+   aux tours) et de défaite (recommencer / retour) ; **sauvegarde** de la
+   progression en localStorage (`letsplay_sablier_histoire_v1`, d'abord local ;
+   Supabase ensuite comme le reste du site — voir `src/auth/`).
+2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, fonction,
+   deck, puissance, ia, note) : trois tours, douze étages, cinq decks (les
+   archétypes existants + deux variantes à 40 cartes validées).
+3. **La règle de continuité entre étages** — **décision : piste A (simple) retenue
+   pour l'instant**. Chaque étage est un duel autonome : deck complet, PV pleins,
+   aucune ressource reportée ; seule la progression (étages déblayés) compte.
+   La piste B (bouclier de verre conservé entre les étages) et le scénario
+   (dialogues, récompenses d'étage) sont remis à plus tard.
+
 ## Ce qu'il reste à construire
 
-1. **Le conteneur mode Histoire** (`src/games/rpgStory.js` + écran dans
-   `RpgDuelPage` ou page dédiée) :
-   - sélection de tour → liste d'étages → lancement du duel avec les bons
-     props ; écran de victoire d'étage (récompense, dialogue, étage suivant) ;
-   - **sauvegarde** de la progression (localStorage d'abord, Supabase ensuite
-     comme le reste du site — voir `src/auth/`).
-2. **Les données des tours** : un fichier `rpgStoryTours.js` (id, nom,
-   étages [{ sorcier, deckId, puissance, ia, dialogueIntro, recompense }]).
-   Aucun deck nouveau n'est obligatoire pour la première tour : les trois
-   archétypes existants + des variantes de puissance suffisent.
-3. **La règle de continuité entre étages** (choisir une piste) :
-   - piste A (simple) : chaque duel repart à 50 PV, deck complet — purement
-     tactique ;
-   - piste B (narrative) : on garde un **bouclier de verre** accumulé
-     (jusqu'à 10 PV de moins subis au premier tour du duel suivant), ce qui
-     récompense les victoires propres sans grind.
 4. **Dialogue et cadence** : avant/après chaque duel, une carte-scène sobre
    (le site a déjà les habitudes visuelles — voir `city-rush-story.css` pour
    la mécanique d'enchaînement réutilisable dans *City Rush*).

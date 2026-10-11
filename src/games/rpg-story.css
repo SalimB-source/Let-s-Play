@@ -1,0 +1,181 @@
+/* ── Mode Histoire : les Tours de Bab El ─────────────────────────────────── */
+
+.rpg-story {
+  display: grid;
+  gap: 18px;
+  padding: 18px clamp(12px, 3vw, 32px) 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.rpg-story__intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rpg-story__intro h2 {
+  margin: 4px 0 6px;
+  font-family: var(--font-gaming);
+  font-size: clamp(20px, 3vw, 28px);
+  color: var(--yellow);
+}
+
+.rpg-story__intro p { margin: 0; max-width: 62ch; color: var(--muted); }
+
+.rpg-story__reset {
+  border: 1px solid rgba(229, 191, 105, .35);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.rpg-story__reset:hover,
+.rpg-story__reset:focus-visible { color: #fca5a5; border-color: #fca5a5; outline: none; }
+
+.rpg-story__tours {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.rpg-story-tour {
+  border: 1px solid rgba(229, 191, 105, .22);
+  border-radius: 14px;
+  background: rgba(10, 10, 18, .78);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rpg-story-tour__header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(229, 191, 105, .16);
+  background: linear-gradient(120deg, rgba(92, 59, 28, .32), rgba(10, 10, 18, .2));
+}
+
+.rpg-story-tour__header h3 {
+  margin: 2px 0 6px;
+  font-family: var(--font-gaming);
+  font-size: 18px;
+  color: var(--yellow);
+}
+
+.rpg-story-tour__header p { margin: 0; font-size: 13px; color: var(--muted); }
+
+.rpg-story-tour__progress {
+  margin: 10px 16px 0;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(229, 191, 105, .16);
+  overflow: hidden;
+}
+
+.rpg-story-tour__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b9863c, var(--yellow));
+}
+
+.rpg-story-tour__floors {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.rpg-story-floor {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: 1px solid rgba(229, 191, 105, .16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .03);
+  color: inherit;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.rpg-story-floor:hover:not(:disabled),
+.rpg-story-floor:focus-visible:not(:disabled) {
+  border-color: rgba(229, 191, 105, .55);
+  background: rgba(92, 59, 28, .28);
+  outline: none;
+}
+
+.rpg-story-floor:disabled { cursor: not-allowed; opacity: .55; }
+
+.rpg-story-floor__step {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(229, 191, 105, .35);
+  font-family: var(--font-gaming);
+  color: var(--yellow);
+}
+
+.rpg-story-floor.is-cleared .rpg-story-floor__step {
+  background: rgba(122, 168, 92, .28);
+  border-color: rgba(122, 168, 92, .7);
+}
+
+.rpg-story-floor.is-next .rpg-story-floor__step {
+  background: rgba(229, 191, 105, .22);
+  box-shadow: 0 0 12px rgba(229, 191, 105, .35);
+}
+
+.rpg-story-floor__copy { display: grid; gap: 2px; min-width: 0; }
+
+.rpg-story-floor__copy strong { font-size: 14px; }
+
+.rpg-story-floor__copy small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpg-story-floor__badge {
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid rgba(229, 191, 105, .25);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.rpg-story-floor.is-cleared .rpg-story-floor__badge { color: #9fd07a; border-color: rgba(122, 168, 92, .5); }
+.rpg-story-floor.is-next .rpg-story-floor__badge { color: var(--yellow); border-color: rgba(229, 191, 105, .6); }
+
+/* Bandeau du duel en cours (étage affiché dans la nav de la table) */
+.rpg-duel-nav__story {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .04em;
+  margin-left: 10px;
+}
+
+/* Actions de fin de duel en mode Histoire */
+.rpg-overlay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 6px;
+}
