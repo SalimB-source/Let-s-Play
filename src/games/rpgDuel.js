@@ -15,6 +15,15 @@ import {
   terrainById,
   terrainManaColors,
 } from './rpgCards.js';
+import {
+  choisirAttaquantsIA,
+  choisirBloqueursIA,
+  choisirCarteIA,
+  choisirCibleAutoIA,
+  choisirCiblesRapidesIA,
+  choisirTerrainIA,
+  couleurEngagement,
+} from './rpgAI.js';
 
 export const RPG_PV_JOUEUR = 50;
 export const RPG_PV_SORCIER_BASE = 50;
@@ -55,8 +64,10 @@ export const rpgSorcierPv = (puissance = 0) =>
 /**
  * Nouveau duel : tables vides, 0 sable, puis chaque camp pioche 5 cartes.
  * `decks` : listes d'identifiants de cartes (créatures pour l'instant).
+ * `sorcierIA` : profil de l'IA ({ niveau, style }) — voir rpgAI.js. Chaque
+ * sorcier du mode Histoire peut porter le sien.
  */
-export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, rng = Math.random } = {}) {
+export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random } = {}) {
   const melanger = (deck) => {
     const d = [...deck];
     for (let i = d.length - 1; i > 0; i -= 1) {
@@ -72,6 +83,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
       puissance: sorcierPuissance,
+      ia: sorcierIA,
       mana: manaVide(),
       bouclier: 0,
       terrainPose: false,
@@ -563,19 +575,11 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
 }
 
 /** Cible automatique pour l'IA et les effets globaux ; l'interface laisse
- *  le joueur choisir la cible des sorts qui la demandent. */
+ *  le joueur choisir la cible des sorts qui la demandent. Le choix est
+ *  tactique : un kill sur la meilleure valeur, la menace principale, ou le
+ *  sorcier quand c'est le meilleur coup (surtout quand il est létal). */
 export function rpgCibleAuto(duel, cote, carte) {
-  if (carte?.arrivee?.type === 'combat') {
-    return duel[autre(cote)].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)))?.id ?? null;
-  }
-  const cible = carte.effet?.cible;
-  if (cible === 'creature-amie') {
-    return duel[cote].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)))?.id ?? null;
-  }
-  if (carte.effet?.type !== 'degats' || cible !== 'creature') return null;
-  const adversaire = autre(cote);
-  return duel[adversaire].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)))?.id
-    ?? (carte.cibles?.includes('sorcier') ? 'sorcier' : null);
+  return choisirCibleAutoIA(duel, cote, carte);
 }
 
 /** Lancer une magie : rituel pendant son tour, éphémère aussi en réponse. */
@@ -630,37 +634,21 @@ export function rpgFermerFenetreReponse(duel) {
   duel.fenetreReponse = false;
 }
 
-/** L’IA assigne ses bloqueurs avant que le joueur attaquant ne reçoive la priorité. */
-export function rpgChoisirBloqueurs(duel, cote, attaquantIds, ciblesAttaque = {}) {
-  const adv = autre(cote);
-  const ids = [...new Set(attaquantIds ?? [])].filter((id) => !ciblesAttaque?.[id]);
-  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
-  const bloqueursDisponibles = duel[adv].creatures.filter(peutBloquer);
-  const affectations = {};
-  for (const attaquant of attaquants) {
-    const index = bloqueursDisponibles.findIndex((bloqueur) => (
-      !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))
-      && rpgPeutBloquerAttaquant(bloqueur, attaquant)
-    ));
-    if (index < 0) continue;
-    const [bloqueur] = bloqueursDisponibles.splice(index, 1);
-    affectations[attaquant.id] = [bloqueur.id];
-  }
-  return affectations;
+/** L’IA assigne ses bloqueurs avant que le joueur attaquant ne reçoive la priorité.
+ *  Échanges favorables ou acceptables seulement, interposition forcée pour la survie. */
+export function rpgChoisirBloqueurs(duel, cote, attaquantIds, ciblesAttaque = {}, options = {}) {
+  return choisirBloqueursIA(duel, cote, attaquantIds, ciblesAttaque, options);
 }
 
-/** L’IA choisit une créature légale pour le Coup rapide, si elle en trouve. */
-export function rpgCiblesAttaqueRapide(duel, cote, attaquantIds) {
-  const adv = autre(cote);
-  const cibles = {};
-  for (const id of [...new Set(attaquantIds ?? [])]) {
-    const attaquant = duel[cote].creatures.find((entite) => entite.id === id);
-    const carte = duelCardById(attaquant?.carteId);
-    if (!attaquant || !carte?.coupRapide) continue;
-    const cible = duel[adv].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)));
-    if (cible) cibles[attaquant.id] = cible.id;
-  }
-  return cibles;
+/** L’IA vise avec le Coup rapide la créature la plus intéressante à abattre. */
+export function rpgCiblesAttaqueRapide(duel, cote, attaquantIds, options = {}) {
+  return choisirCiblesRapidesIA(duel, cote, attaquantIds, options);
+}
+
+/** Les créatures que le sorcier engage réellement à l’attaque : pas
+ *  d’assaut suicidaire, conclusion immédiate quand le visage adverse tombe. */
+export function rpgChoisirAttaquants(duel, cote = 'sorcier', options = {}) {
+  return choisirAttaquantsIA(duel, cote, options);
 }
 
 /**
@@ -998,46 +986,32 @@ export function rpgFinDeTour(duel) {
   return duel;
 }
 
-/** L'IA pose son terrain, joue ses cartes payables et prépare ses attaques. */
+/** L'IA joue sa phase principale : terrain, créatures et sorts dans l'ordre
+ *  le plus utile (kill avant développement, renforts quand le plateau est
+ *  garni, burn pour conclure), puis prépare ses attaques. */
 export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
   const joue = [];
-  // Le sorcier pose son terrain du tour puis engage tout ce qui peut l'être.
-  const terrainEnMain = duel.sorcier.main.find((id) => terrainById(id));
+  const options = { ia: duel.sorcier.ia, rng };
+  // Le sorcier pose le terrain qui ouvre le plus de coups, puis engage en
+  // réservant la couleur des terrains flexibles à ce qu'il lui reste à jouer.
+  const terrainEnMain = choisirTerrainIA(duel, 'sorcier');
   if (terrainEnMain) rpgPoserTerrain(duel, 'sorcier', terrainEnMain);
   for (const terrain of duel.sorcier.terrains) {
-    if (!terrain.tapped) rpgEngagerTerrain(duel, 'sorcier', terrain.id);
+    if (terrain.tapped) continue;
+    rpgEngagerTerrain(duel, 'sorcier', terrain.id, couleurEngagement(terrain, duel.sorcier.main));
   }
-  let garde = 8;
+  // Ensuite, coup après coup, la carte la plus utile — ou rien, et le mana
+  // reste en réserve plutôt que de gaspiller les cartes.
+  let garde = 12;
   while (garde-- > 0) {
-    const jouables = duel.sorcier.main
-      .map((id) => duelCardById(id))
-      .filter((carte) => carte && carte.kind !== 'terrain' && rpgPeutPayer(duel.sorcier, carte))
-      .sort((a, b) => b.cost - a.cost);
-    if (!jouables.length) break;
-    const res = rpgJouerCreature(
-      duel,
-      'sorcier',
-      jouables[0].id,
-      rpgCibleAuto(duel, 'sorcier', jouables[0]),
-    );
+    const coup = choisirCarteIA(duel, 'sorcier', options);
+    if (!coup) break;
+    const carte = duelCardById(coup.carteId);
+    const res = carte
+      ? rpgJouerCreature(duel, 'sorcier', coup.carteId, coup.cibleId)
+      : rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
     if (!res.ok) break;
-    joue.push(res.entite);
-  }
-  // Le sorcier résout ses sorts pendant sa phase principale ; l'interface
-  // ouvre ensuite la fenêtre de réponse avant de résoudre ses attaques.
-  let gardeMagie = 6;
-  while (gardeMagie-- > 0) {
-    const magie = duel.sorcier.main
-      .map((id) => magieById(id))
-      .find((carte) => carte && rpgPeutPayer(duel.sorcier, carte)
-        && (carte.effet.cible !== 'creature'
-          || duel.joueur.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))
-          || carte.cibles?.includes('sorcier'))
-        && (carte.effet.cible !== 'creature-amie'
-          || duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))));
-    if (!magie) break;
-    const res = rpgLancerMagie(duel, 'sorcier', magie.id, rpgCibleAuto(duel, 'sorcier', magie));
-    if (!res.ok) break;
+    if (res.entite) joue.push(res.entite);
   }
   return joue;
 }
@@ -1045,10 +1019,10 @@ export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
 /** Tour complet de l'IA, conservé pour les scénarios sans interface. */
 export function rpgTourSorcierIA(duel, rng = Math.random) {
   const joue = rpgTourSorcierPreparationIA(duel, rng);
-  const pretsIds = duel.sorcier.creatures.filter((e) => pret(e)).map((e) => e.id);
-  if (pretsIds.length) {
-    const ciblesAttaque = rpgCiblesAttaqueRapide(duel, 'sorcier', pretsIds);
-    rpgLancerAttaque(duel, 'sorcier', pretsIds, null, null, null, ciblesAttaque);
+  const attaquants = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
+  if (attaquants.length) {
+    const ciblesAttaque = rpgCiblesAttaqueRapide(duel, 'sorcier', attaquants, { ia: duel.sorcier.ia, rng });
+    rpgLancerAttaque(duel, 'sorcier', attaquants, null, null, null, ciblesAttaque);
   }
   return joue;
 }
