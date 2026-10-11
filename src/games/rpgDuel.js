@@ -78,7 +78,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   };
   const duel = {
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], contresorts: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
@@ -93,7 +93,6 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       terrains: [],
       cimetiere: [],
       retoursProgrammes: [],
-      contresorts: [],
     },
     fenetreReponse: false,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
@@ -240,15 +239,6 @@ export const rpgMana = (camp) => ({ ...camp.mana, total: totalMana(camp) });
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
 
-/** Retire et renvoie le premier contresort du camp qui vise une magie de ces couleurs. */
-function trouverContresort(camp, couleursMagie) {
-  const liste = camp.contresorts ?? [];
-  const index = liste.findIndex((c) => !c.contre || c.contre.some((couleur) => couleursMagie.includes(couleur)));
-  if (index < 0) return null;
-  const [contre] = liste.splice(index, 1);
-  return contre;
-}
-
 /** Protection temporaire contre les effets et les créatures d'une couleur donnée. */
 export function rpgEstProtegee(entite, element) {
   const couleursSources = normaliserCouleurs(element);
@@ -389,18 +379,6 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       camp.retoursProgrammes ??= [];
       camp.retoursProgrammes.push({ carteId: sourceCarteId, toursRestants: tours });
       duel.log.push(`${carteSource.name} reviendra en jeu après ${tours} tour${tours === 1 ? '' : 's'}.`);
-      return;
-    }
-    case 'contresort': {
-      // Un contresort reste en attente sur le camp qui l'a lancé : il annule la
-      // prochaine magie de l'ADVERSAIRE dont les couleurs correspondent (`contre`).
-      const camp = duel[cote];
-      camp.contresorts ??= [];
-      for (let i = 0; i < Math.max(1, Math.floor(Number(effet.amount) || 1)); i += 1) {
-        camp.contresorts.push({ contre: effet.contre ? [...effet.contre] : null });
-      }
-      duel.log.push(`${cote === 'joueur' ? 'Vous préparez' : 'Le sorcier prépare'} un contresort : la prochaine magie adverse${effet.contre ? ` de ${effet.contre.map((c) => ELEMENT_LABELS[c] ?? c).join(' ou de ')}` : ''} sera annulée.`);
-      if (effet.pioche) for (let i = 0; i < effet.pioche; i += 1) rpgPiocher(duel, cote);
       return;
     }
     case 'sable':
@@ -606,6 +584,35 @@ export function rpgCibleAuto(duel, cote, carte) {
   return choisirCibleAutoIA(duel, cote, carte);
 }
 
+/** Un contre ne vise que la carte que le sorcier vient d'annoncer. `cible` : 'carte'
+ *  (n'importe quelle carte) ou 'sort' (magies seulement) ; `contre` : couleurs visées. */
+function contreCorrespond(effet, carte) {
+  if (effet.cible === 'sort' && !magieById(carte.id)) return false;
+  if (effet.contre && !cardColors(carte).some((couleur) => effet.contre.includes(couleur))) return false;
+  return true;
+}
+
+/** Contrer : répond à l'annonce du sorcier. La carte annoncée est défaussée sans effet,
+ *  et le contre paie son coût (Marée contraire fait aussi piocher une carte). */
+function contrerAnnonce(duel, cote, carte) {
+  const camp = duel[cote];
+  const annonce = duel.annonce;
+  if (cote !== 'joueur' || !annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
+  const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
+  if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
+  payer(duel, cote, carte);
+  camp.main.splice(camp.main.indexOf(carte.id), 1);
+  camp.cimetiere.push(carte.id);
+  const main = duel[annonce.cote].main;
+  if (main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
+  duel[annonce.cote].cimetiere.push(annonce.carteId);
+  duel.annonce = null;
+  duel.fenetreReponse = false;
+  for (let i = 0; i < (carte.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+  duel.log.push(`Vous contrez ${cible.name} avec ${carte.name}.`);
+  return { ok: true, contre: true, carteContree: annonce.carteId };
+}
+
 /** Lancer une magie : rituel pendant son tour, éphémère aussi en réponse. */
 export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   const camp = duel[cote];
@@ -618,6 +625,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     && carte.instant;
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (cibleId === 'sorcier') {
@@ -636,15 +644,6 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
 
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
-  // Un contresort adverse en attente annule la magie : elle est payée et va au cimetière.
-  const contre = trouverContresort(duel[adv], cardColors(carte));
-  if (contre) {
-    camp.cimetiere.push(carteId);
-    duel.log.push(cote === 'joueur'
-      ? `Vous lancez ${carte.name}, mais le contresort du sorcier l’annule.`
-      : `Le sorcier lance ${carte.name}, mais votre contresort l’annule.`);
-    return { ok: true, contre: true };
-  }
   const effet = carte.effet.type === 'degats'
     && carte.effet.cible === 'creature'
     && cibleId === 'sorcier'
@@ -1046,7 +1045,7 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
   return duel.annonce;
 }
 
-/** Laisser passer : résout la carte annoncée (paiement, effet, contresorts adverses compris). */
+/** Laisser passer : résout la carte annoncée (paiement et effet). */
 export function rpgSorcierResoudreAnnonce(duel) {
   const annonce = duel.annonce;
   if (!annonce) return { ok: false, raison: 'aucune-annonce' };

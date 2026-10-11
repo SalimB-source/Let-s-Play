@@ -123,35 +123,40 @@ Les cartes posées sont **courtes** — la table reste lisible :
 Plus de grand encadré de règles ni de saveur sur les cartes posées : la
 règle détaillée vit dans la carte en main et dans le journal.
 
-## 7. Les contresorts (deck Marée des abysses)
+## 7. Les contres (deck Marée des abysses)
 
 Le deck **Marée des abysses** (`RPG_DECK_MAREE_BASE`, mono-Eau, 16 Mer) joue la
-réponse plutôt que la frappe : des **contresorts** qui attendent la magie adverse.
+réponse : des **contres** qui défont la carte que le sorcier vient d'annoncer.
 
-- Un contresort (`effet.type: 'contresort'`) se lance pendant le tour adverse,
-  dans la fenêtre de réponse (`Éphémère`). Il **ne résout rien tout de suite** :
-  il reste en attente sur le camp qui l'a lancé (`camp.contresorts`).
-- La **prochaine magie** de l'adversaire qui correspond est alors **annulée** :
-  elle est payée, va au cimetière, et son effet ne se produit pas. Le contresort
-  est consommé (un seul sort annulé par contresort).
-- `contre` restreint la couleur visée : *Silence d’écume* ne contre que la Braise
-  et le Sable ; *Contresort des abîmes* contre tout.
-- *Marée contraire* annule et fait piocher une carte (`pioche: 1`).
-- **Bakunawa** (mythique) pose un contresort à son arrivée (`arrivee.type: 'contresort'`).
-- Les autres bêtes mythiques : **Kraken** (à sa destruction, pioche 2),
-  **Léviathan** (3 dégâts à une créature à l'arrivée), **Jörmungandr**
-  (3 dégâts au sorcier à l'arrivée).
+Il n'y a **pas de prévention** : aucun contre ne reste en réserve pour la suite.
+Un contre ne peut être joué que pendant une annonce du sorcier, et il vise
+**cette** carte-là.
 
-**Fenêtre de réponse à chaque carte du sorcier.** Le sorcier n'aligne plus ses
+| Carte | Contre | Effet |
+|---|---|---|
+| *Contresort des abîmes* (×3) | n'importe quelle carte annoncée (créature ou sort) | `cible: 'carte'` |
+| *Silence d'écume* (×3) | un sort annoncé de Braise ou de Sable | `cible: 'sort'`, `contre: ['braise','sable']` |
+| *Marée contraire* (×2) | un sort annoncé, puis piochez une carte | `cible: 'sort'`, `pioche: 1` |
+
+Résolution (`contrerAnnonce`, moteur) :
+- le contre doit correspondre à la carte annoncée, sinon il est refusé et rien n'est payé ;
+- la carte annoncée n'a pas été payée : elle quitte la main du sorcier et va au
+  cimetière, sans effet ;
+- l'annonce est close, et le sorcier passe à sa carte suivante.
+
+**Fenêtre de réponse à chaque carte du sorcier.** Le sorcier n'aligne pas ses
 cartes d'un coup : il **annonce** la carte suivante (`rpgSorcierAnnonceSuivante`),
 sans la payer. Une bannière « Le sorcier annonce X » apparaît, et le joueur a la main :
-- il peut **répondre** avec un éphémère ou un contresort (la main reste jouable) ;
+- il peut **répondre** avec un contre (la main reste jouable) ;
 - ou **laisser passer** (`rpgSorcierResoudreAnnonce`) : la carte se résout, puis le
   sorcier annonce la suivante, jusqu'à épuisement avant sa phase d'attaque.
 
-Un contresort joué pendant l'annonce reste en attente, et annule la magie du
-sorcier au moment où elle se résout. Limite : le moteur n'a pas de pile, donc
-un contresort ne peut pas interrompre un sort **déjà résolu** ; il vise la
-prochaine magie du sorcier. L'IA ne lance jamais de contresort (elle les garde en main).
+**Bakunawa** (mythique) n'a plus d'effet de contre : à son arrivée, elle inflige
+2 dégâts à une créature adverse ciblée. Les autres bêtes : **Kraken** (à sa
+destruction, pioche 2), **Léviathan** (3 dégâts à une créature à l'arrivée),
+**Jörmungandr** (3 dégâts au sorcier à l'arrivée).
+
+Limites : le moteur n'a pas de pile de résolution, donc un contre ne peut pas
+défaire un sort **déjà résolu**. L'IA ne lance jamais de contre (elle les garde en main).
 
 Vérifications : `tests/rpg-maree.test.js` (inclus dans `npm run check:rpg`).

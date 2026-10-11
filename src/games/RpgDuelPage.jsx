@@ -2085,6 +2085,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective);
+    if (res.ok && res.contre) {
+      // Le contre a défait l'annonce du sorcier : il reprend son tour, carte suivante.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      invaliderAnnulation();
+      annoncerMagie(carte, cibleDecrite);
+      setCibleEnCours(null);
+      setMessage(`Vous contrez ${cardById(res.carteContree)?.name ?? 'la carte annoncée'} avec ${carte.name}.`);
+      force();
+      later(annoncerSuivantSorcier, 900);
+      return;
+    }
     if (res.ok) {
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
@@ -2771,7 +2782,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     force();
   };
 
-  // « Laisser passer » : la carte annoncée se résout (un contresort adverse peut l'annuler).
+  // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
     if (!duel.annonce) return;
     const carte = cardById(duel.annonce.carteId);

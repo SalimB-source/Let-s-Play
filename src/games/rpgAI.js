@@ -631,7 +631,6 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     }
     if (arrivee.type === 'buff') score += camp.creatures.length * 1.5;
     if (arrivee.type === 'bouclier') score += 1.5;
-    if (arrivee.type === 'contresort') score += 2;
     if (arrivee.type === 'retour-apres-tours') score += 2;
     if (arrivee.type === 'detruire-terrain-aleatoire') score += duel[adv].terrains.length ? 3 : 0;
   }

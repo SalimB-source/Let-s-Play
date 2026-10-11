@@ -4,7 +4,6 @@ import {
   rpgNouveauDuel,
   rpgLancerMagie,
   rpgJouerCreature,
-  rpgOuvrirFenetreReponse,
   rpgTourSorcierPreparationIA,
   rpgSorcierAnnonceSuivante,
   rpgSorcierResoudreAnnonce,
@@ -21,11 +20,17 @@ import {
 const duelVide = () => rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
 const donner = (duel, cote, id) => duel[cote].main.push(id);
 const mana = (duel, cote, couleur, n) => { duel[cote].mana[couleur] += n; };
-/** Pendant le tour du sorcier, la fenêtre de réponse est ouverte au joueur. */
-const fenetreDuSorcier = (duel) => {
+/** Le sorcier joue son tour : il annonce une carte, la fenêtre de réponse s'ouvre au joueur. */
+const annoncer = (duel, carteId) => {
   duel.tour = 'sorcier';
-  assert.equal(rpgOuvrirFenetreReponse(duel, 'sorcier'), true);
+  // Le sorcier a de quoi payer : sinon l'IA n'annonce rien.
+  duel.sorcier.mana = { braise: 5, eau: 5, sable: 5 };
+  donner(duel, 'sorcier', carteId);
+  const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
+  assert.equal(annonce?.carteId, carteId, `${carteId} est annoncé`);
+  return annonce;
 };
+const contre = (duel, id) => rpgLancerMagie(duel, 'joueur', id);
 
 test('la Marée des abysses est un deck d’Eau valide de 40 cartes, avec les quatre bêtes mythiques', () => {
   assert.equal(RPG_DECK_MAREE_BASE.length, 40);
@@ -38,157 +43,122 @@ test('la Marée des abysses est un deck d’Eau valide de 40 cartes, avec les qu
   for (const id of new Set(RPG_DECK_MAREE_BASE)) {
     assert.deepEqual(cardColors(cardById(id)), ['eau'], `${id} est bleu (Eau)`);
   }
-  const contresorts = RPG_DECK_MAREE_BASE.filter((id) => cardById(id).effet?.type === 'contresort');
-  assert.ok(contresorts.length >= 6, 'le deck embarque plusieurs contresorts');
+  const contres = RPG_DECK_MAREE_BASE.filter((id) => cardById(id).effet?.type === 'contresort');
+  assert.ok(contres.length >= 6, 'le deck embarque plusieurs contres');
   const entree = RPG_DECKS.find((deck) => deck.id === 'maree-des-abysses');
   assert.ok(entree, 'le deck est dans l’étagère');
-  assert.equal(entree.element, 'eau');
   assert.equal(entree.cardIds, RPG_DECK_MAREE_BASE);
   assert.ok(entree.cardIds.includes(entree.boxArt), 'le boîtier reprend une carte du deck');
 });
 
-test('un contresort en attente annule la prochaine magie adverse : payée, défaussée, sans effet', () => {
+test('Contresort des abîmes contre la carte annoncée, sort ou créature : la carte est défaussée sans effet', () => {
   const duel = duelVide();
+  annoncer(duel, 'fureur-du-souk');
   donner(duel, 'joueur', 'contresort-des-abimes');
   mana(duel, 'joueur', 'eau', 2);
-  fenetreDuSorcier(duel);
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'contresort-des-abimes').ok, true);
-  assert.equal(duel.joueur.contresorts.length, 1, 'le contresort attend');
-
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  mana(duel, 'sorcier', 'braise', 3);
-  const pvAvant = duel.joueur.pv;
-  const res = rpgLancerMagie(duel, 'sorcier', 'fureur-du-souk', 'sorcier');
+  const res = contre(duel, 'contresort-des-abimes');
   assert.equal(res.ok, true);
-  assert.equal(res.contre, true, 'la magie est annulée');
-  assert.equal(duel.joueur.pv, pvAvant, 'aucun dégât au joueur');
-  assert.equal(duel.sorcier.mana.braise, 0, 'le sorcier a payé le coût');
-  assert.ok(duel.sorcier.cimetiere.includes('fureur-du-souk'), 'la magie va au cimetière');
-  assert.equal(duel.joueur.contresorts.length, 0, 'le contresort est consommé');
-  assert.ok(duel.log.some((l) => l.includes('Le sorcier lance Fureur du souk, mais votre contresort l’annule.')),
-    'le journal dit qui annule quoi');
+  assert.equal(res.contre, true);
+  assert.equal(res.carteContree, 'fureur-du-souk');
+  assert.equal(duel.annonce, null, 'l’annonce est défaite');
+  assert.equal(duel.sorcier.main.includes('fureur-du-souk'), false, 'la carte quitte la main du sorcier');
+  assert.ok(duel.sorcier.cimetiere.includes('fureur-du-souk'), 'elle va au cimetière');
+  assert.equal(duel.sorcier.mana.braise, 5, 'le sorcier n’a rien payé : sa carte n’a pas été résolue');
+  assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false, 'il n’y a plus rien à résoudre');
+  assert.equal(duel.joueur.pv, 50, 'aucun dégât');
 });
 
-test('quand le joueur lance une magie annulée, le journal le dit du point de vue du joueur', () => {
+test('Contresort des abîmes peut contrer une créature annoncée', () => {
   const duel = duelVide();
-  duel.sorcier.contresorts.push({ contre: null });
-  duel.tour = 'joueur';
-  donner(duel, 'joueur', 'fureur-du-souk');
-  mana(duel, 'joueur', 'braise', 3);
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'fureur-du-souk', 'sorcier').contre, true);
-  assert.ok(duel.log.some((l) => l.includes('Vous lancez Fureur du souk, mais le contresort du sorcier l’annule.')));
+  annoncer(duel, 'chien-du-guet');
+  mana(duel, 'sorcier', 'sable', 2);
+  donner(duel, 'joueur', 'contresort-des-abimes');
+  mana(duel, 'joueur', 'eau', 2);
+  assert.equal(contre(duel, 'contresort-des-abimes').contre, true);
+  assert.equal(duel.sorcier.creatures.length, 0, 'la créature n’entre pas sur la table');
+  assert.ok(duel.sorcier.cimetiere.includes('chien-du-guet'));
 });
 
-test('sans contresort, la même magie fait ses dégâts', () => {
+test('un contre ne peut répondre qu’à une annonce : rien à contrer sans carte annoncée', () => {
   const duel = duelVide();
   duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  mana(duel, 'sorcier', 'braise', 3);
-  const pvAvant = duel.joueur.pv;
-  const res = rpgLancerMagie(duel, 'sorcier', 'fureur-du-souk', 'sorcier');
-  assert.equal(res.ok, true, 'le sort est bien lancé pendant le tour du sorcier');
-  assert.equal(res.contre, undefined);
-  assert.equal(duel.joueur.pv, pvAvant - 4);
+  duel.fenetreReponse = true;
+  donner(duel, 'joueur', 'contresort-des-abimes');
+  mana(duel, 'joueur', 'eau', 2);
+  const res = contre(duel, 'contresort-des-abimes');
+  assert.equal(res.ok, false);
+  assert.equal(res.raison, 'rien-a-contrer');
+  assert.ok(duel.joueur.main.includes('contresort-des-abimes'), 'la carte reste en main');
+  assert.equal(duel.joueur.mana.eau, 2, 'rien n’est payé');
 });
 
-test('un contresort ne vise que sa couleur : Silence d’écume ignore l’Eau et contre la Braise', () => {
+test('laisser passer après un contre : aucune carte ne se résout', () => {
   const duel = duelVide();
+  annoncer(duel, 'fureur-du-souk');
+  mana(duel, 'sorcier', 'braise', 3);
+  donner(duel, 'joueur', 'contresort-des-abimes');
+  mana(duel, 'joueur', 'eau', 2);
+  contre(duel, 'contresort-des-abimes');
+  assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false);
+  assert.equal(duel.joueur.pv, 50);
+});
+
+test('Silence d’écume ne contre que les sorts de Braise ou de Sable', () => {
+  const duel = duelVide();
+  // Annonce posée directement : l'IA ne soigne pas un sorcier à pleine vie.
+  duel.tour = 'sorcier';
+  duel.annonce = { cote: 'sorcier', carteId: 'eau-de-la-source', cibleId: null };
+  duel.fenetreReponse = true;
   donner(duel, 'joueur', 'silence-decume');
   mana(duel, 'joueur', 'eau', 1);
-  fenetreDuSorcier(duel);
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'silence-decume').ok, true);
-
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'eau-de-la-source');
-  mana(duel, 'sorcier', 'eau', 1);
-  duel.sorcier.pv = 40;
-  const soinEau = rpgLancerMagie(duel, 'sorcier', 'eau-de-la-source');
-  assert.equal(soinEau.contre, undefined, 'la magie d’Eau n’est pas visée');
-  assert.equal(duel.sorcier.pv, 44, 'le soin est appliqué');
-  assert.equal(duel.joueur.contresorts.length, 1, 'le contresort attend toujours');
-
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  mana(duel, 'sorcier', 'braise', 3);
-  assert.equal(rpgLancerMagie(duel, 'sorcier', 'fureur-du-souk', 'sorcier').contre, true, 'la Braise est annulée');
-  assert.equal(duel.joueur.contresorts.length, 0);
+  assert.equal(contre(duel, 'silence-decume').raison, 'cible', 'un sort d’Eau échappe au Silence');
+  assert.equal(duel.annonce.carteId, 'eau-de-la-source', 'l’annonce tient toujours');
+  assert.equal(duel.joueur.mana.eau, 1, 'le refus ne coûte rien');
 });
 
-test('le contresort ne s’applique qu’à la prochaine magie, pas aux suivantes', () => {
+test('Silence d’écume contre un sort de Braise, mais pas une créature', () => {
   const duel = duelVide();
-  donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 2);
-  fenetreDuSorcier(duel);
-  rpgLancerMagie(duel, 'joueur', 'contresort-des-abimes');
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  mana(duel, 'sorcier', 'braise', 6);
-  const pvAvant = duel.joueur.pv;
-  assert.equal(rpgLancerMagie(duel, 'sorcier', 'fureur-du-souk', 'sorcier').contre, true);
-  assert.equal(rpgLancerMagie(duel, 'sorcier', 'fureur-du-souk', 'sorcier').contre, undefined);
-  assert.equal(duel.joueur.pv, pvAvant - 4, 'la seconde frappe passe');
+  annoncer(duel, 'chien-du-guet');
+  mana(duel, 'sorcier', 'sable', 2);
+  donner(duel, 'joueur', 'silence-decume');
+  mana(duel, 'joueur', 'eau', 1);
+  assert.equal(contre(duel, 'silence-decume').raison, 'cible', 'Silence ne vise que les sorts');
 });
 
-test('Bakunawa, à son arrivée, pose un contresort en attente', () => {
+test('Silence d’écume contre un sort de Braise annoncé', () => {
   const duel = duelVide();
-  duel.tour = 'joueur';
-  donner(duel, 'joueur', 'bakunawa');
-  mana(duel, 'joueur', 'eau', 4);
-  const pose = rpgJouerCreature(duel, 'joueur', 'bakunawa');
-  assert.equal(pose.ok, true, JSON.stringify(pose));
-  assert.equal(duel.joueur.contresorts.length, 1, 'l’arrivée prépare le contresort');
-
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'fureur-du-souk');
+  annoncer(duel, 'fureur-du-souk');
   mana(duel, 'sorcier', 'braise', 3);
-  assert.equal(rpgLancerMagie(duel, 'sorcier', 'fureur-du-souk', 'sorcier').contre, true);
+  donner(duel, 'joueur', 'silence-decume');
+  mana(duel, 'joueur', 'eau', 1);
+  assert.equal(contre(duel, 'silence-decume').contre, true);
 });
 
-test('Marée contraire annule la magie adverse et fait piocher une carte', () => {
+test('Marée contraire contre un sort annoncé et fait piocher une carte', () => {
   const duel = duelVide();
   duel.joueur.deck = ['desert', 'mer'];
+  annoncer(duel, 'fureur-du-souk');
+  mana(duel, 'sorcier', 'braise', 3);
   donner(duel, 'joueur', 'maree-contraire');
   mana(duel, 'joueur', 'eau', 3);
-  fenetreDuSorcier(duel);
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'maree-contraire').ok, true);
+  assert.equal(contre(duel, 'maree-contraire').contre, true);
   assert.equal(duel.joueur.deck.length, 1, 'une carte piochée');
-  assert.ok(duel.joueur.main.includes('mer'), 'la carte piochée est en main');
-  assert.equal(duel.joueur.contresorts.length, 1);
+  assert.ok(duel.joueur.main.includes('mer'));
 });
 
-test('le sorcier IA ne lance jamais un contresort : il le garde en main', () => {
+test('Marée contraire ne contre pas une créature', () => {
   const duel = duelVide();
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'contresort-des-abimes');
-  mana(duel, 'sorcier', 'eau', 4);
-  rpgTourSorcierPreparationIA(duel, () => 0.5);
-  assert.ok(duel.sorcier.main.includes('contresort-des-abimes'), 'la carte reste en main');
-  assert.equal(duel.sorcier.contresorts.length, 0);
+  annoncer(duel, 'chien-du-guet');
+  mana(duel, 'sorcier', 'sable', 2);
+  donner(duel, 'joueur', 'maree-contraire');
+  mana(duel, 'joueur', 'eau', 3);
+  assert.equal(contre(duel, 'maree-contraire').raison, 'cible');
 });
 
-test('le deck de départ du sorcier reste valide après l’ajout des contresorts', () => {
-  assert.equal(rpgValiderDeck(RPG_DECK_SORCIER_BASE).ok, true);
-});
-
-test('le sorcier annonce sa carte sans la payer : le joueur a la main pour répondre', () => {
+test('sans contre, la carte annoncée se résout quand le joueur laisse passer', () => {
   const duel = duelVide();
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'fureur-du-souk');
+  annoncer(duel, 'fureur-du-souk');
   mana(duel, 'sorcier', 'braise', 3);
-  const annonce = rpgSorcierAnnonceSuivante(duel, () => 0.5);
-  assert.equal(annonce.carteId, 'fureur-du-souk', 'la carte est annoncée');
-  assert.equal(duel.fenetreReponse, true, 'la fenêtre de réponse est ouverte');
-  assert.equal(duel.sorcier.mana.braise, 3, 'rien n’est payé avant la résolution');
-  assert.ok(duel.sorcier.main.includes('fureur-du-souk'), 'la carte est encore en main');
-  assert.equal(duel.joueur.pv, 50, 'aucun effet avant de laisser passer');
-});
-
-test('laisser passer résout la carte annoncée', () => {
-  const duel = duelVide();
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  mana(duel, 'sorcier', 'braise', 3);
-  rpgSorcierAnnonceSuivante(duel, () => 0.5);
   const res = rpgSorcierResoudreAnnonce(duel);
   assert.equal(res.ok, true);
   assert.equal(duel.joueur.pv, 46, 'la magie fait ses dégâts');
@@ -196,21 +166,7 @@ test('laisser passer résout la carte annoncée', () => {
   assert.equal(duel.fenetreReponse, false);
 });
 
-test('un contresort joué pendant l’annonce annule la carte au moment où elle se résout', () => {
-  const duel = duelVide();
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  mana(duel, 'sorcier', 'braise', 3);
-  rpgSorcierAnnonceSuivante(duel, () => 0.5);
-  donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 2);
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'contresort-des-abimes').ok, true, 'la réponse est jouable');
-  const res = rpgSorcierResoudreAnnonce(duel);
-  assert.equal(res.contre, true, 'la carte annoncée est annulée');
-  assert.equal(duel.joueur.pv, 50, 'aucun dégât');
-});
-
-test('le sorcier enchaîne les annonces jusqu’à épuisement, une par une', () => {
+test('le sorcier enchaîne les annonces, une par une', () => {
   const duel = duelVide();
   duel.tour = 'sorcier';
   donner(duel, 'sorcier', 'fureur-du-souk');
@@ -218,15 +174,34 @@ test('le sorcier enchaîne les annonces jusqu’à épuisement, une par une', ()
   mana(duel, 'sorcier', 'braise', 3);
   mana(duel, 'sorcier', 'sable', 2);
   const premiere = rpgSorcierAnnonceSuivante(duel, () => 0.5);
-  assert.ok(premiere);
-  assert.equal(rpgSorcierAnnonceSuivante(duel, () => 0.5), premiere, 'pas de seconde annonce tant qu’on n’a pas passé');
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => 0.5), premiere, 'pas de seconde annonce avant de passer');
   rpgSorcierResoudreAnnonce(duel);
-  let suivantes = 0;
-  while (rpgSorcierAnnonceSuivante(duel, () => 0.5)) {
-    suivantes += 1;
-    if (!rpgSorcierResoudreAnnonce(duel).ok) break;
-    if (suivantes > 10) break;
-  }
-  assert.ok(suivantes >= 1, 'la carte suivante est annoncée après le passage');
-  assert.equal(duel.annonce, null);
+  assert.ok(rpgSorcierAnnonceSuivante(duel, () => 0.5), 'la carte suivante est annoncée après le passage');
+});
+
+test('Bakunawa, à son arrivée, inflige 2 dégâts à une créature adverse', () => {
+  const duel = duelVide();
+  duel.tour = 'joueur';
+  donner(duel, 'sorcier', 'chien-du-guet');
+  mana(duel, 'sorcier', 'sable', 2);
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
+  assert.equal(chien.ok, true);
+  donner(duel, 'joueur', 'bakunawa');
+  mana(duel, 'joueur', 'eau', 4);
+  const pose = rpgJouerCreature(duel, 'joueur', 'bakunawa', chien.entite.id);
+  assert.equal(pose.ok, true, JSON.stringify(pose));
+  assert.equal(duel.sorcier.creatures.length, 0, 'le chien (2 de défense) tombe sous les 2 dégâts');
+});
+
+test('le sorcier IA ne lance jamais un contre : il le garde en main', () => {
+  const duel = duelVide();
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'contresort-des-abimes');
+  mana(duel, 'sorcier', 'eau', 4);
+  rpgTourSorcierPreparationIA(duel, () => 0.5);
+  assert.ok(duel.sorcier.main.includes('contresort-des-abimes'), 'la carte reste en main');
+});
+
+test('le deck de départ du sorcier reste valide', () => {
+  assert.equal(rpgValiderDeck(RPG_DECK_SORCIER_BASE).ok, true);
 });

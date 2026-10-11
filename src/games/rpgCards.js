@@ -702,9 +702,9 @@ export const RPG_CREATURE_CARDS = [
     def: 6,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Serpent lunaire',
-    arrivee: { type: 'contresort', amount: 1 },
-    text: 'Quand Bakunawa arrive : la prochaine magie adverse est avalée et annulée.',
-    flavor: 'Il avale la lumière avant qu’elle ne touche la table.',
+    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Quand Bakunawa arrive : 2 dégâts à une créature adverse ciblée.',
+    flavor: 'Il avale tout ce qui brille sur la table.',
   },
   {
     id: 'jormungandr',
@@ -907,7 +907,7 @@ export const RPG_DECK_HYBRIDE_BASE = [
 ];
 
 /**
- * Marée des abysses — mono-Eau : des contresorts qui attendent la magie
+ * Marée des abysses — mono-Eau : des contresorts qui répondent aux annonces du sorcier
  * adverse et des bêtes marines mythiques. 16 Mer, 13 créatures (4 mythiques,
  * un seul exemplaire chacune), 11 sorts.
  */
@@ -981,7 +981,7 @@ export const RPG_DECKS = [
     boxArt: 'leviathan',
     archetype: 'Contresorts · bêtes marines mythiques',
     affrontement: 'Affrontez la marée des abysses.',
-    description: 'Deck mono-Eau : des contresorts qui attendent la prochaine magie adverse pour l’annuler, et les bêtes marines mythiques (Kraken, Léviathan, Bakunawa, Jörmungandr) qui surgissent des profondeurs.',
+    description: 'Deck mono-Eau : des contresorts qui répondent aux cartes annoncées par le sorcier, et les bêtes marines mythiques (Kraken, Léviathan, Bakunawa, Jörmungandr) qui surgissent des profondeurs.',
     cardIds: RPG_DECK_MAREE_BASE,
   },
 ];
@@ -1263,8 +1263,7 @@ export const RPG_MAGIE_CARDS = [
     flavor: 'La poussière rougit, puis le vent l’emporte.',
   },
   // ── Contresorts (deck Marée des abysses) ───────────────────────────────
-  // Un contresort se lance pendant le tour adverse (fenêtre de réponse) et
-  // reste en attente : il annule la PROCHAINE magie adverse qui correspond.
+  // Un contresort répond à l'annonce du sorcier : il annule la carte annoncée.
   {
     id: 'contresort-des-abimes',
     name: 'Contresort des abîmes',
@@ -1276,8 +1275,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'commune',
     cibles: ['soi'],
-    effet: { type: 'contresort', amount: 1 },
-    text: 'Éphémère — Annule la prochaine magie adverse, quelle qu’elle soit.',
+    effet: { type: 'contresort', cible: 'carte' },
+    text: 'Éphémère — Contre la carte annoncée par le sorcier : créature ou sort.',
     flavor: 'Le fond ne rend jamais ce qu’il a englouti.',
   },
   {
@@ -1291,8 +1290,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 1,
     rarity: 'commune',
     cibles: ['soi'],
-    effet: { type: 'contresort', amount: 1, contre: ['braise', 'sable'] },
-    text: 'Éphémère — Annule la prochaine magie adverse de Braise ou de Sable.',
+    effet: { type: 'contresort', cible: 'sort', contre: ['braise', 'sable'] },
+    text: 'Éphémère — Contre un sort annoncé par le sorcier, de Braise ou de Sable.',
     flavor: 'Une écume basse suffit à étouffer la braise.',
   },
   {
@@ -1306,8 +1305,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 3,
     rarity: 'rare',
     cibles: ['soi'],
-    effet: { type: 'contresort', amount: 1, pioche: 1 },
-    text: 'Éphémère — Annule la prochaine magie adverse, puis piochez une carte.',
+    effet: { type: 'contresort', cible: 'sort', pioche: 1 },
+    text: 'Éphémère — Contre un sort annoncé par le sorcier, puis piochez une carte.',
     flavor: 'Le sable remonte le temps et l’eau reprend sa place.',
   },
 ];
