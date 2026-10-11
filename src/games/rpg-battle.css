@@ -2374,99 +2374,44 @@
   color: #aaffef;
 }
 
-.rpg-card-preview-backdrop {
+/* Confirmation de lancement des magies au clic : dialogue sobre, uniquement
+   pour valider le sort avant de le lancer. */
+.rpg-spell-confirm-backdrop {
   position: absolute;
   z-index: 120;
   inset: 0;
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(5, 7, 9, .78);
-  backdrop-filter: blur(6px);
+  background: rgba(5, 7, 9, .62);
+  backdrop-filter: blur(4px);
 }
-.rpg-card-preview {
-  position: relative;
+.rpg-spell-confirm {
   display: grid;
-  grid-template-columns: minmax(175px, 280px) minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(14px, 3vw, 28px);
-  width: min(760px, 100%);
-  max-height: 88%;
-  overflow: auto;
-  padding: clamp(14px, 3vw, 28px);
+  gap: 12px;
+  width: min(420px, 100%);
+  padding: 20px;
   border: 1px solid rgba(237, 203, 139, .78);
-  border-radius: 20px;
+  border-radius: 16px;
   background: radial-gradient(circle at 15% 8%, rgba(160, 115, 53, .27), transparent 40%), linear-gradient(145deg, #261b14, #10151a 76%);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, .82), inset 0 1px rgba(255, 255, 255, .1);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .82);
   color: #f7edda;
 }
-.rpg-card-preview__close {
-  position: absolute;
-  z-index: 2;
-  top: 8px;
-  right: 10px;
+.rpg-spell-confirm h2 { margin: 0; color: #ffe8b0; font: 700 clamp(19px, 3vw, 25px)/1.15 Georgia, serif; text-wrap: balance; }
+.rpg-spell-confirm__type { margin: 0; padding: 6px 9px; border-block: 1px solid rgba(226, 190, 119, .35); color: #f1d5a1; font: 700 12px/1.2 Georgia, serif; }
+.rpg-spell-confirm__rules {
   display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(255, 237, 197, .42);
-  border-radius: 50%;
-  background: rgba(9, 11, 13, .8);
-  color: #fff0d0;
-  font: 500 25px/1 Georgia, serif;
-  cursor: pointer;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(223, 196, 143, .34);
+  border-radius: 9px;
+  background: rgba(238, 228, 204, .95);
+  color: #21180f;
+  font: 600 15px/1.45 Georgia, serif;
 }
-.rpg-card-preview__close:hover { background: #7d3024; }
-.rpg-card-preview__art {
-  --rpg-card-element-marker-top: 5%;
-  --rpg-card-element-marker-left: 6%;
-  --rpg-card-element-marker-size: clamp(16px, 18%, 23px);
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  overflow: hidden;
-  border: 5px solid var(--rarity-color, #c9c2ae);
-  border-radius: 12px;
-  background: #0c0c0e;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .62), 0 0 18px color-mix(in srgb, var(--rarity-color, #c9c2ae) 24%, transparent);
-}
-.rpg-card-preview__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.rpg-card-preview__art > span:not(.rpg-card-element-badge) {
-  position: absolute;
-  right: 7px;
-  bottom: 7px;
-  padding: 4px 7px;
-  border: 1px solid color-mix(in srgb, var(--rarity-color, #c9c2ae) 70%, #15100a);
-  border-radius: 5px;
-  background: rgba(17, 12, 8, .9);
-  color: var(--rarity-color, #c9c2ae);
-  font: 700 9px/1.1 var(--display);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
-.rpg-card-preview__details { display: grid; align-content: center; gap: 12px; min-width: 0; padding: 8px 2px; }
-.rpg-card-preview__details header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-right: 28px; }
-.rpg-card-preview__details h2 { margin: 0; color: #ffe8b0; font: 700 clamp(20px, 3vw, 31px)/1.05 Georgia, serif; text-wrap: balance; }
-.rpg-card-preview__type { margin: 0; padding: 7px 9px; border-block: 1px solid rgba(226, 190, 119, .35); color: #f1d5a1; font: 700 12px/1.2 Georgia, serif; }
-.rpg-card-preview__rules { display: grid; gap: 8px; margin: 0; padding: 12px; border: 1px solid rgba(223, 196, 143, .34); border-radius: 9px; background: rgba(238, 228, 204, .95); color: #21180f; font: 600 15px/1.45 Georgia, serif; }
-.rpg-card-preview__rules > span { display: block; }
-.rpg-card-preview__stats { margin: 0; justify-self: end; padding: 7px 12px; border: 1px solid #24180d; border-radius: 8px; background: linear-gradient(180deg, #f3e6bb, #d2b875); color: #21180f; font: 800 18px/1 Georgia, serif; }
-.rpg-card-preview__stats span { padding-inline: 7px; color: #775329; }
-.rpg-card-preview__flavor { margin: 0; color: rgba(244, 225, 190, .72); font: italic 13px/1.4 Georgia, serif; }
-
-@media (max-width: 560px) {
-  .rpg-card-preview-backdrop { padding: 8px; }
-  .rpg-card-preview { grid-template-columns: minmax(96px, 32vw) minmax(0, 1fr); gap: 10px; padding: 12px; border-radius: 14px; max-height: 90%; }
-  .rpg-card-preview__art { border-width: 3px; border-radius: 8px; }
-  .rpg-card-preview__details { gap: 8px; }
-  .rpg-card-preview__details header { gap: 5px; padding-right: 22px; }
-  .rpg-card-preview__details h2 { font-size: clamp(16px, 5vw, 22px); }
-  .rpg-card-preview__type { padding: 5px 6px; font-size: 9px; }
-  .rpg-card-preview__rules { padding: 8px; font-size: 11px; }
-  .rpg-card-preview__stats { padding: 5px 8px; font-size: 14px; }
-  .rpg-card-preview__flavor { font-size: 10px; }
-  .rpg-card-preview__close { top: 3px; right: 4px; width: 28px; height: 28px; font-size: 21px; }
-}
+.rpg-spell-confirm__rules > span { display: block; }
+.rpg-spell-confirm__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
 
 /* Magie sur la pile : affiche le sort joué, sa cible et la liaison visuelle. */
 .rpg-spell-played {
@@ -4417,7 +4362,7 @@
 }
 
 /* Le bord reste identique sur les cartes en main, en jeu, sur les terrains,
-   dans les aperçus et pendant les animations ; seule sa variable vient de la rareté. */
+   dans l’aperçu au survol et pendant les animations ; seule sa variable vient de la rareté. */
 .rpg-card.rpg-card--rarity-commune,
 .rpg-card.rpg-card--rarity-inhabituelle,
 .rpg-card.rpg-card--rarity-rare,
@@ -4430,7 +4375,6 @@
 .rpg-terrain.rpg-card--rarity-inhabituelle,
 .rpg-terrain.rpg-card--rarity-rare,
 .rpg-terrain.rpg-card--rarity-mythique,
-.rpg-card-preview__art,
 .rpg-hover-card-preview__face,
 .rpg-spell-played__art,
 .rpg-card-destruction-fx,
@@ -4452,12 +4396,6 @@
   padding: 2px 4px;
   font-size: 12.5px;
 }
-.rpg-card-preview__details header .rpg-mana-cost {
-  min-width: 34px;
-  height: 26px;
-  padding: 2px 6px;
-  font-size: 14px;
-}
 .rpg-card--img .rpg-card__stat--atk,
 .rpg-card--img .rpg-card__pt,
 .rpg-hand__stat {
@@ -4466,7 +4404,6 @@
   font-size: 13px;
   line-height: 1.15;
 }
-.rpg-card-preview__stats { font-size: 20px; }
 .rpg-hover-card-preview__cost b { font-size: 18px; }
 .rpg-hover-card-preview__stats { font-size: 18px; }
 .rpg-card-catalogue__cost { width: 38px; font-size: 17px; }
@@ -4485,12 +4422,6 @@
     padding: 2px 3px;
     font-size: 11px;
   }
-  .rpg-card-preview__details header .rpg-mana-cost {
-    min-width: 30px;
-    height: 22px;
-    padding: 1px 4px;
-    font-size: 12px;
-  }
   .rpg-card--img .rpg-card__foot,
   .rpg-hand__stats { gap: 2px; }
   .rpg-card--img .rpg-card__stat--atk,
@@ -4501,7 +4432,6 @@
     font-size: 9.5px;
     line-height: 1.1;
   }
-  .rpg-card-preview__stats { font-size: 16px; }
   .rpg-hover-card-preview__cost b { font-size: 14px; }
   .rpg-hover-card-preview__stats { font-size: 14px; }
   .rpg-card-catalogue__cost { width: 35px; font-size: 16px; }

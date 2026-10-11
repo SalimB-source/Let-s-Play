@@ -15,5 +15,5 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 try {
   const { checkRpgPreviewActions } = await import('../node_modules/.cache/rpg-preview/rpg-preview-smoke.js');
   await checkRpgPreviewActions(assert);
-  console.log('✓ Touch card previews: play, mana checks, terrain limit, undo, attack selection, cancellation, confirmation and spent-card guards');
+  console.log('✓ Touch click-to-play: clicking plays cards, spells confirm before launch, mana checks, terrain limit, undo, direct attack selection, cancellation and spent-card guards');
 } finally { dom.window.close(); }
