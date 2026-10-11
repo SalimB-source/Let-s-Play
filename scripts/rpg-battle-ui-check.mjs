@@ -41,8 +41,10 @@ const cardsSource = readFileSync(new URL('../src/games/rpgCards.js', import.meta
 const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function HoverCardPreview('));
 const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function ConfirmationSort('));
 const confirmSortSource = battlePage.slice(battlePage.indexOf('function ConfirmationSort('), battlePage.indexOf('function SpellAnnouncement('));
-assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', hybride: '🔥⏳' \};/,
-  'les éléments utilisent flamme, goutte d’eau, sablier et repère bicolore');
+assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', hybride: '🔥⏳' \};/,
+  'les éléments utilisent flamme, goutte d’eau, sablier, cristal de glace et repère bicolore');
+assert.match(battlePage, /FILTRE_COULEUR_LABELS = \{ toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', hybride: 'Hybride' \};/,
+  'la puce de filtre Neige existe, à côté des trois couleurs historiques');
 assert.match(battleCss, /\.rpg-card-element-badge--sable\s*\{[^}]*drop-shadow\(0 0 2px rgba\(255, 215, 98, \.8\)\)/,
   'le sablier Sable est souligné par un halo doré pour rester lisible');
 assert.match(battlePage, /terrainManaColors\(terrain\.carteId\)[\s\S]*?rpg-terrain-mana-choice__option--\$\{couleur\}[\s\S]*?engager\(terrainId, couleur\)/,
@@ -95,6 +97,12 @@ assert.match(battlePage, /const afficherApercuSurvol = \(carte, event\) => \{[\s
   'le survol déclenche l’aperçu instantané de la carte');
 assert.match(tableCardSource, /onHoverCard\?\.\(carte, event\)/,
   'les créatures en jeu utilisent le même aperçu sans icône d’état');
+assert.match(battleCss, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.rpg-card--type-creature:is\(:hover, :focus-visible\) \.rpg-card__img \{[^}]*animation: rpg-creature-hover-float 2\.2s ease-in-out infinite;/s,
+  'les illustrations des créatures flottent uniquement au survol ou au focus sur un appareil avec pointeur précis');
+assert.match(battleCss, /@keyframes rpg-creature-hover-float\s*\{\s*0%, 100% \{ transform: translate3d\(-1px, 0, 0\) scale\(1\.04\); \}\s*50% \{ transform: translate3d\(1px, -3px, 0\) scale\(1\.04\); \}\s*\}/s,
+  'le mouvement des créatures combine un léger flottement et un balancement gauche-droite');
+assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-card--type-creature:is\(:hover, :focus-visible\) \.rpg-card__img \{[^}]*animation: none !important;/s,
+  'le flottement des créatures respecte la préférence de mouvement réduit');
 assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(carte, event\)\}/,
   'les cartes affichent leur aperçu dès l’entrée de la souris');
 assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?jouerCarteDepuisMain\(carteId, handIndex\)/,
@@ -197,7 +205,9 @@ assert.match(battlePage, /function cardFrameStyle\(carte\)[\s\S]*?--rpg-frame-co
   'les cartes transmettent la couleur de leur élément à leur cadre');
 assert.doesNotMatch(battlePage, /rpg-card--rarity-/,
   'plus aucun cadre n’est piloté par la rareté');
-assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*braise:[\s\S]*?eau:[\s\S]*?sable:[\s\S]*?'hybride-braise-eau':[\s\S]*?'hybride-braise-sable':[\s\S]*?'hybride-eau-sable':[\s\S]*?'hybride-braise-eau-sable':/,
+assert.match(cardsSource, /export const RPG_ELEMENTS = \['braise', 'eau', 'sable', 'neige'\];/,
+  'les quatre éléments sont déclarés une seule fois, dans l’ordre canonique des couleurs');
+assert.match(cardsSource, /export const CARD_FRAME_COLORS = \{\s*braise:[\s\S]*?eau:[\s\S]*?sable:[\s\S]*?neige:[\s\S]*?'hybride-braise-eau':[\s\S]*?'hybride-braise-sable':[\s\S]*?'hybride-braise-neige':[\s\S]*?'hybride-eau-sable':[\s\S]*?'hybride-eau-neige':[\s\S]*?'hybride-sable-neige':[\s\S]*?'hybride-braise-eau-sable':/,
   'le catalogue déclare un cadre pour chaque couleur et chaque combinaison, y compris celles qui n’existent pas encore');
 assert.match(cardsSource, /export const MYTHIC_FRAME_COLOR = '#e8b745';/,
   'le cadre doré des cartes mythiques est déclaré à part de la couleur');
@@ -421,6 +431,13 @@ for (const plateauSable of ['erg-du-sahara', 'caravane-de-gourara']) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSable}\\s*\\{[^}]*background-color:`),
     `le plateau ${plateauSable} a sa propre couleur de repli`);
 }
+// La glace du fjord : la surface la plus claire du jeu, voile froid obligatoire.
+assert.match(battleCss, /\.card-table--plateau-fjord-des-neuf-hivers\s*\{[^}]*background-color:/s,
+  'le Fjord des Neuf Hivers a sa propre couleur de repli');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-fjord-des-neuf-hivers::before\s*\{[^}]*radial-gradient/s,
+  'la glace du fjord reçoit son voile froid, sinon les cartes se noieraient dans le blanc');
+assert.match(plateauxSource, /id: 'fjord-des-neuf-hivers'[\s\S]*?fichier: 'plateau-fjord-des-neuf-hivers\.jpg'/,
+  'le fjord des Neuf Hivers est un plateau déclaré, avec son fond dans public/');
 assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza\.jpg'/,
   'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
@@ -436,6 +453,20 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-tab
 
 // ── Le voile noir haut/bas du plateau : la lisibilité des textes de la table ─
 const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+assert.match(battlePage, /<HoverCardPreview carte=\{carteAnnoncee\} cible=\{cibleAnnoncee\} variante="annonce" \/>/,
+  'la fenêtre de réponse affiche l’aperçu de la carte annoncée et lui transmet sa cible');
+assert.match(hoverPreviewSource, /cibleAnnoncee && \([\s\S]*?rpg-hover-card-preview__target[\s\S]*?cibleAnnoncee\.nom/,
+  'l’aperçu d’une magie rend le nom et l’illustration de sa cible');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce\s*\{[^}]*position:\s*relative;[^}]*display:\s*grid;[^}]*width:\s*100%;/s,
+  'l’aperçu annoncé reste dans son panneau de réponse au lieu de flotter comme un tooltip');
+assert.match(battleCss, /\.rpg-annonce-sort__pass\s*\{[^}]*display:\s*inline-flex;[^}]*flex-direction:\s*row;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*min-height:\s*36px;/s,
+  'Laisser passer est un bouton compact dont le texte est centré verticalement');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hover-card-preview--annonce\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*42px minmax\(0, 1fr\);/s,
+  'l’aperçu annoncé reste visible et lisible dans le rail tactile, alors que les tooltips au survol sont masqués');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/s,
+  'sur tactile, l’aperçu et sa commande s’empilent dans le rail étroit');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass\s*\{[^}]*justify-self:\s*center;[^}]*width:\s*auto;[^}]*min-width:\s*108px;[^}]*min-height:\s*44px;/s,
+  'Laisser passer reste compact tout en gardant une zone de toucher de 44 px');
 assert.match(battleCss, /--rpg-plateau-voile:\s*linear-gradient\(180deg,\s*var\(--rpg-plateau-voile-haut\) 0%,[\s\S]*?var\(--rpg-plateau-voile-bas\) 100%\);/,
   'le plateau porte un dégradé noir en haut et en bas, là où vivent les textes de la table');
 assert.match(battleCss, /\.card-table::before\s*\{[^}]*background:[^}]*var\(--rpg-plateau-voile\),/s,
@@ -570,6 +601,44 @@ assert.match(battlePage, /entite\.ready && !entite\.attaquee && !attaquants\.inc
   'la tête de pile est d’abord l’exemplaire prêt à agir');
 assert.match(battlePage, /const element = elements\.get\(entite\.id\)\s*\?\?\s*table\?\.querySelector\(`\.card-row \[data-card-id="\$\{entite\.carteId\}"\], \.rpg-terrains \[data-card-id="\$\{entite\.carteId\}"\]`\);/s,
   'un exemplaire masqué emprunte la place de sa pile pour l’effet de destruction');
+// Les peintures du set Neige sont datées dans l'URL : esquisses et figures
+// repeintes portent les mêmes noms de fichiers, un cache ne doit jamais
+// resservir l'ancienne image sous le nom de la nouvelle.
+assert.match(battlePage, /const SET_NEIGE_ART_VERSION = 'peintures-definitives-v\d+';/,
+  'la version des peintures Neige est déclarée et incrémentable');
+assert.match(battlePage,
+  /const revision = CARD_ART_CACHE_VERSIONS\[artId\]\s*\n\s*\?\? \(cardById\(artId\)\?\.element === 'neige' \? SET_NEIGE_ART_VERSION : undefined\);/,
+  'chaque image d’une carte Neige reçoit sa version dans l’URL');
+assert.match(battlePage, /cards\/\$\{artId\}\.jpg\$\{revision \? `\?v=\$\{revision\}` : ''\}/,
+  'l’URL de l’illustration porte bien le paramètre de version');
+
+// ── Les capacités de clan du Nord : Furie des vikings, Résonance des valkyries.
+const { RPG_DECK_NEIGE_BASE, RPG_DUEL_CARDS } = await import('../src/games/rpgCards.js');
+assert.match(duelEngine, /entite\.atk \+= furie;[\s\S]*?duel\.log\.push\(`\$\{entite\.name\} entre en furie : \+\$\{furie\}\/\+\$\{furie\}\.`\)/,
+  'le moteur applique et journalise la Furie d’une créature blessée qui survit');
+assert.match(duelEngine, /export function rpgResonanceEnJeu\(duel\)/,
+  'la Résonance en jeu se compte sur toute la table, les deux camps compris');
+assert.match(duelEngine, /cardColors\(carte\)\.includes\('neige'\) \? total : 0[\s\S]*?entite\.pv = Math\.max\(1, entite\.pv \+ delta\)/,
+  'seule la Neige profite de l’aura, l’écart étant mémorisé par entité et les PV plancher à 1');
+assert.match(aiBrain, /const furie = bloqueurFurie \* 0\.9 - attaquantFurie \* 1\.2;/,
+  'l’IA sait qu’entamer un viking sans le tuer le nourrit');
+assert.match(aiBrain, /rpgResonanceEnJeu\(duel\)[\s\S]*?atk: \(carte\.atk \?\? 0\) \+ resonance/,
+  'l’IA compte la Résonance déjà en table quand elle évalue une arrivée Neige');
+const jarl = RPG_DUEL_CARDS.find((carte) => carte.id === 'jarl-au-marteau-de-guerre');
+assert.ok(jarl && jarl.element === 'neige' && jarl.furie === 3,
+  'le Jarl au marteau de guerre porte la Furie 3 du set Neige');
+assert.ok(RPG_DECK_NEIGE_BASE.includes('jarl-au-marteau-de-guerre'),
+  'le Serment des Neuf Hivers aligne le Jarl');
+for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.furie)) {
+  assert.match(carte.typeLine, /viking/i, `${carte.id} est un viking`);
+  assert.match(carte.text, new RegExp(`Furie ${carte.furie} — Chaque fois qu’il est blessé et survit`),
+    `${carte.id} annonce sa Furie sur sa face`);
+}
+for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
+  assert.match(carte.typeLine, /valkyrie/i, `${carte.id} est une valkyrie`);
+  assert.match(carte.text, /Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent \+1\/\+1/,
+    `${carte.id} annonce sa Résonance sur sa face`);
+}
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
@@ -579,6 +648,8 @@ console.log(
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, Fin du tour doré et compact, phases du duel indiquées par des icônes lumineuses agrandies, annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression Rafale.'
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
+  + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
+  + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression Rafale.'
 );
 process.exit(0);

@@ -8,10 +8,12 @@
  * la puce Eau, sans qu'aucune puce ne mène à une étagère vide.
  */
 
-import { cardColors } from './rpgCards.js';
+import { RPG_ELEMENTS, cardColors } from './rpgCards.js';
 
-/** Couleurs de jeu, dans l'ordre d'affichage des puces. */
-const COULEURS = ['sable', 'braise', 'eau'];
+/** Couleurs de jeu, dans l'ordre d'affichage des puces (la Neige en dernier). */
+const ORDRE_PUCES = ['sable', 'braise', 'eau', 'neige'];
+/** Toute couleur future absente de cet ordre s'afficherait quand même, à la fin. */
+const COULEURS = [...ORDRE_PUCES, ...RPG_ELEMENTS.filter((couleur) => !ORDRE_PUCES.includes(couleur))];
 
 /** Valeurs du filtre (hors « toutes »), dans l'ordre d'affichage. */
 export const RPG_DECK_FILTRES = [...COULEURS, 'hybride'];

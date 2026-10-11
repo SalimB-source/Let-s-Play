@@ -49,6 +49,21 @@ test('le désert du Sahara est livré comme plateau de plein droit', () => {
   assert.ok(caravane && caravane.fichier !== sahara.fichier, 'chaque plateau saharien a son propre fond');
 });
 
+test('le fjord des Neuf Hivers est livré comme plateau de plein droit', () => {
+  const fjord = plateauParId('fjord-des-neuf-hivers');
+  assert.ok(fjord, 'le Fjord des Neuf Hivers fait partie des plateaux');
+  assert.match(fjord.fichier, /\.jpg$/);
+  assert.match(fjord.nom, /fjord/i);
+  assert.match(fjord.resume, /glace/i, 'le résumé annonce bien la glace du fjord');
+  // Le décor du Nord : lanterne, cor, corde, hache et bâton de runes.
+  for (const accessoire of ['lanterne', 'cor', 'corde', 'hache', 'runes']) {
+    assert.match(fjord.resume, new RegExp(accessoire, 'i'),
+      `le résumé nomme ${accessoire} au bord du plateau`);
+  }
+  assert.equal(new Set(RPG_PLATEAUX.map((plateau) => plateau.fichier)).size, RPG_PLATEAUX.length,
+    'aucun plateau ne réutilise le fond d’un autre');
+});
+
 test('la terre de damnation est livrée comme plateau de plein droit', () => {
   const damnation = plateauParId('terre-de-damnation');
   assert.ok(damnation, 'la Terre de Damnation fait partie des plateaux');
@@ -119,6 +134,7 @@ test('chaque deck du catalogue impose un plateau connu', () => {
   assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'terre-de-damnation');
   assert.equal(plateauDeDeck('sentiers-de-cendre').plateau.id, 'caravane-de-gourara');
   assert.equal(plateauDeDeck('maree-des-abysses').plateau.id, 'ruines-de-tipaza');
+  assert.equal(plateauDeDeck('serment-des-neuf-hivers').plateau.id, 'fjord-des-neuf-hivers');
 });
 
 test('chaque deck de la campagne impose un plateau connu', () => {
@@ -129,6 +145,10 @@ test('chaque deck de la campagne impose un plateau connu', () => {
   }
   // Le Grand Horloger reçoit dans la salle haute de la Chambre.
   assert.equal(plateauDeDeck('grand-horloger').plateau.id, 'table-des-heures');
+  // Les étages de la Tour du Fjord gardent la glace de leur deck de Neige.
+  for (const cle of ['gardes-du-fjord', 'meute-des-neiges', 'serment-des-neuf-hivers', 'maitre-des-neuf-hivers']) {
+    assert.equal(plateauDeDeck(cle).plateau.id, 'fjord-des-neuf-hivers', `${cle} se bat sur le fjord`);
+  }
 });
 
 test('toutes les correspondances de decks pointent vers un plateau livré', () => {
@@ -157,6 +177,9 @@ test('un paquet brut prend le terrain de sa couleur dominante', () => {
   assert.equal(plateauDeDeck(['desert', 'desert', 'chien-du-guet']).plateau.id, 'erg-du-sahara');
   assert.equal(plateauDeDeck(Array(8).fill('montagne')).plateau.id, 'terre-de-damnation');
   assert.equal(plateauDeDeck(Array(8).fill('mer')).plateau.id, 'ruines-de-tipaza');
+  // La quatrième couleur : la Neige prend la glace du fjord.
+  assert.equal(couleurDominanteDeck(['glacier', 'glacier', 'loup-des-neiges']), 'neige');
+  assert.equal(plateauDeDeck(Array(8).fill('glacier')).plateau.id, 'fjord-des-neuf-hivers');
   // Deux couleurs à égalité : le carrefour des pistes.
   assert.equal(couleurDominanteDeck(['desert', 'desert', 'mer', 'mer']), 'hybride');
   assert.equal(plateauDeDeck(['desert', 'desert', 'mer', 'mer']).plateau.id, 'caravane-de-gourara');

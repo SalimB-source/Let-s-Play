@@ -15,6 +15,7 @@ export const CARD_RARITIES = {
   commune: { label: 'Commune', color: '#f1f3f5' },
   inhabituelle: { label: 'Inhabituelle', color: '#4d9aff' },
   rare: { label: 'Rare', color: '#e1b33f' },
+  epique: { label: 'Épique', color: '#8fe3ff' },
   mythique: { label: 'Mythique', color: '#a875ed' },
 };
 
@@ -26,25 +27,44 @@ export function cardRarityInfo(carte) {
 }
 
 /**
+ * Les quatre éléments du duel, dans l'ordre canonique des couleurs : c'est
+ * cet ordre qui nomme les combinaisons bicolores et tricolores, quel que soit
+ * l'ordre dans lequel une carte déclare ses couleurs. Braise, Eau et Sable
+ * composent Bab El ; la Neige arrive avec le Serment des Neuf Hivers.
+ */
+export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
+
+/**
  * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté —
  * sauf pour les mythiques, dont le cadre doré prime (voir MYTHIC_FRAME_COLOR).
  *
- * Chaque combinaison bicolore a déjà son identité, y compris celles qui
- * n'existent pas encore dans le catalogue : le jour où une carte Eau + Sable
- * ou Eau + Braise est créée, son cadre brillant l'attend.
+ * Chaque combinaison a son identité, y compris celles qui n'existent pas
+ * encore dans le catalogue : le jour où une carte Neige + Sable ou Neige +
+ * Braise est créée, son cadre brillant l'attend.
  */
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
   eau: { label: 'Eau', color: '#3f9fe8' },
   sable: { label: 'Sable', color: '#f7f3e6' },
+  neige: { label: 'Neige', color: '#a9e0f5' },
   'hybride-braise-eau': { label: 'Braise + Eau', color: '#a86ad6' },
   'hybride-braise-sable': { label: 'Braise + Sable', color: '#e2521f' },
+  'hybride-braise-neige': { label: 'Braise + Neige', color: '#c98a86' },
   'hybride-eau-sable': { label: 'Eau + Sable', color: '#7fd4c8' },
+  'hybride-eau-neige': { label: 'Eau + Neige', color: '#8fd4ef' },
+  'hybride-sable-neige': { label: 'Sable + Neige', color: '#dfeef0' },
   'hybride-braise-eau-sable': { label: 'Braise + Eau + Sable', color: '#d8b45a' },
+  'hybride-braise-eau-neige': { label: 'Braise + Eau + Neige', color: '#c9a6e0' },
+  'hybride-braise-sable-neige': { label: 'Braise + Sable + Neige', color: '#e8b98a' },
+  'hybride-eau-sable-neige': { label: 'Eau + Sable + Neige', color: '#a8e2dc' },
+  'hybride-braise-eau-sable-neige': { label: 'Braise + Eau + Sable + Neige', color: '#e6d3a4' },
 };
 
+/** Clé de repli : les quatre couleurs, si une combinaison inconnue apparaissait. */
+const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige';
+
 /** Ordre canonique des couleurs : la clé d'une hybride ne dépend pas de l'ordre déclaré. */
-const CARD_FRAME_COLOR_ORDER = ['braise', 'eau', 'sable'];
+const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
 /** Cadre doré des cartes mythiques, quelle que soit leur couleur. */
 export const MYTHIC_FRAME_COLOR = '#e8b745';
@@ -57,7 +77,7 @@ export function cardFrameInfo(carte) {
   const key = colors.length > 1
     ? `hybride-${colors.join('-')}`
     : (Object.hasOwn(CARD_FRAME_COLORS, colors[0]) ? colors[0] : 'sable');
-  const known = Object.hasOwn(CARD_FRAME_COLORS, key) ? key : 'hybride-braise-eau-sable';
+  const known = Object.hasOwn(CARD_FRAME_COLORS, key) ? key : CARD_FRAME_FALLBACK_KEY;
   return { key: known, ...CARD_FRAME_COLORS[known] };
 }
 
@@ -666,6 +686,142 @@ export const RPG_CREATURE_CARDS = [
     text: 'À son arrivée, le Veilleur reçoit un bouclier de 1.',
     flavor: 'Il garde le passage jusqu’à la première lumière.',
   },
+  // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
+  // Récits du Nord : les figures du panthéon nordique n'y sont jamais nommées
+  // « dieux » — elles portent des titres (le Père des corbeaux, le Maître du
+  // marteau), comme on les appelait pour ne pas les appeler.
+  {
+    id: 'guerrier-au-bouclier-rond',
+    name: 'Guerrier au bouclier rond',
+    element: 'neige',
+    cost: 2,
+    atk: 1,
+    def: 3,
+    rarity: 'commune',
+    typeLine: 'Créature — Guerrier viking',
+    art: 'guerrier-au-bouclier-rond',
+    furie: 1,
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
+    text: 'Furie 1 — Chaque fois qu’il est blessé et survit, le Guerrier gagne +1/+1. Quand il arrive : il reçoit un bouclier de 1.',
+    flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
+  },
+  {
+    id: 'loup-des-neiges',
+    name: 'Loup des neiges',
+    element: 'neige',
+    cost: 3,
+    atk: 3,
+    def: 2,
+    rarity: 'commune',
+    typeLine: 'Créature — Loup',
+    art: 'loup-des-neiges',
+    esquive: 1,
+    text: 'Esquive 1 — Réduit de 1 les dégâts reçus de chaque attaque ou magie (minimum 0).',
+    flavor: 'La meute court sur la croûte gelée sans la briser.',
+  },
+  {
+    id: 'scalde-des-runes',
+    name: 'Scalde des runes',
+    element: 'neige',
+    cost: 3,
+    atk: 2,
+    def: 3,
+    rarity: 'rare',
+    typeLine: 'Créature — Scalde',
+    art: 'scalde-des-runes',
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Quand le Scalde arrive : piochez une carte.',
+    flavor: 'Il grave le poème avant de le chanter.',
+  },
+  {
+    id: 'valkyrie-au-corbeau',
+    name: 'Valkyrie au corbeau',
+    element: 'neige',
+    cost: 4,
+    atk: 3,
+    def: 3,
+    rarity: 'rare',
+    typeLine: 'Créature — Valkyrie',
+    art: 'valkyrie-au-corbeau',
+    resonance: 1,
+    envol: true,
+    arrivee: { type: 'buff', atk: 1, def: 0 },
+    text: 'Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : vos autres créatures gagnent +1 ATQ.',
+    flavor: 'Le corbeau tourne une fois, puis la mêlée se souvient de son nom.',
+  },
+  {
+    id: 'berserk-des-trois-hivers',
+    name: 'Berserk des trois hivers',
+    element: 'neige',
+    cost: 4,
+    atk: 4,
+    def: 2,
+    rarity: 'rare',
+    typeLine: 'Créature — Berserk viking',
+    art: 'berserk-des-trois-hivers',
+    furie: 2,
+    coupRapide: true,
+    text: 'Furie 2 — Chaque fois qu’il est blessé et survit, le Berserk gagne +2/+2. Coup rapide — Quand il est sélectionné pour attaquer, choisissez une créature adverse : il lui inflige ses dégâts d’attaque.',
+    flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
+  },
+  {
+    id: 'jarl-au-marteau-de-guerre',
+    name: 'Jarl au marteau de guerre',
+    element: 'neige',
+    cost: 5,
+    atk: 4,
+    def: 4,
+    rarity: 'epique',
+    typeLine: 'Créature — Jarl viking',
+    art: 'jarl-au-marteau-de-guerre',
+    furie: 3,
+    text: 'Furie 3 — Chaque fois qu’il est blessé et survit, le Jarl gagne +3/+3.',
+    flavor: 'Le vieux chef ne crie pas : il encaisse, puis il avance.',
+  },
+  {
+    id: 'valkyrie-des-glaces',
+    name: 'Valkyrie des glaces',
+    element: 'neige',
+    cost: 5,
+    atk: 4,
+    def: 4,
+    rarity: 'epique',
+    typeLine: 'Créature — Valkyrie',
+    art: 'valkyrie-des-glaces',
+    resonance: 1,
+    envol: true,
+    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Résonance — Tant qu’elle est en jeu, toutes les créatures Neige de la table gagnent +1/+1. Envol — Ne peut être bloquée que par une créature avec Envol. Quand elle arrive : sa lance de givre blesse une créature adverse (2 dégâts).',
+    flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
+  },
+  {
+    id: 'geant-des-banquises',
+    name: 'Géant des banquises',
+    element: 'neige',
+    cost: 6,
+    atk: 5,
+    def: 5,
+    rarity: 'epique',
+    typeLine: 'Créature — Géant',
+    art: 'geant-des-banquises',
+    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
+    text: 'Quand le Géant arrive : son pas brise la glace — 1 dégât à toutes les créatures adverses.',
+    flavor: 'La banquise craque bien avant qu’il n’apparaisse.',
+  },
+  {
+    id: 'drakkar-a-tete-de-dragon',
+    name: 'Drakkar à tête de dragon',
+    element: 'neige',
+    cost: 5,
+    atk: 4,
+    def: 6,
+    rarity: 'epique',
+    typeLine: 'Créature — Navire viking',
+    art: 'drakkar-a-tete-de-dragon',
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Quand le Drakkar arrive : son équipage débarque — piochez une carte.',
+    flavor: 'Quarante rameurs, une proue de dragon, et la brume qui s’ouvre.',
+  },
   // ── Bêtes marines mythiques (deck Marée des abysses) ───────────────────
   {
     id: 'kraken',
@@ -839,6 +995,71 @@ export const RPG_HERO_CARDS = [
     text: 'Quand l’Ifrit arrive : 2 dégâts à toutes les créatures adverses.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
+  // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
+  {
+    id: 'pere-des-corbeaux',
+    name: 'LE PÈRE DES CORBEAUX',
+    role: 'Celui qui sait',
+    element: 'neige',
+    cost: 5,
+    atk: 4,
+    def: 4,
+    rarity: 'epique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
+    art: 'pere-des-corbeaux',
+    arrivee: { type: 'pioche', amount: 2 },
+    text: 'Quand il arrive : ses deux corbeaux reviennent — piochez deux cartes.',
+    flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
+  },
+  {
+    id: 'maitre-du-marteau',
+    name: 'LE MAÎTRE DU MARTEAU',
+    role: 'Le Tonnerre',
+    element: 'neige',
+    cost: 6,
+    atk: 6,
+    def: 5,
+    rarity: 'epique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
+    art: 'maitre-du-marteau',
+    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Quand il arrive : son marteau tombe — 2 dégâts à toutes les créatures adverses.',
+    flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
+  },
+  {
+    id: 'dame-des-neuf-mondes',
+    name: 'LA DAME DES NEUF MONDES',
+    role: 'La Gardienne du foyer',
+    element: 'neige',
+    cost: 4,
+    atk: 3,
+    def: 5,
+    rarity: 'epique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Héros',
+    art: 'dame-des-neuf-mondes',
+    arrivee: { type: 'soin', amount: 5 },
+    text: 'Quand elle arrive : vous récupérez 5 points de vie.',
+    flavor: 'Elle tient le fil de toutes les maisons à la fois.',
+  },
+  {
+    id: 'serpent-du-monde',
+    name: 'LE SERPENT DU MONDE',
+    role: 'Celui qui entoure',
+    element: 'neige',
+    cost: 6,
+    atk: 6,
+    def: 6,
+    rarity: 'epique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Serpent',
+    art: 'serpent-du-monde',
+    destruction: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Quand il est détruit : son corps retombe sur la table — 2 dégâts à toutes les créatures adverses.',
+    flavor: 'Il mord sa propre queue dans la glace, et le monde tient debout.',
+  },
 ];
 
 export function heroById(id) {
@@ -905,6 +1126,45 @@ export const RPG_DECK_HYBRIDE_BASE = [
   'rempart-de-dunes',
   ...Array(2).fill('vent-rouge'),
 ];
+
+/**
+ * Illustrations provisoires : une carte dont le plein art n'est pas encore
+ * peint peut être déclarée ici — elle affiche alors un recadrage étalonné d'une
+ * illustration existante (direction artistique : `RPG-CARD-ART.md`). La liste
+ * est vide : les dix-huit cartes du Serment des Neuf Hivers ont leur peinture
+ * dédiée. Chaque entrée doit disparaître le jour où la peinture originale
+ * remplace le fichier `public/cards/<id>.jpg`.
+ */
+export const RPG_ART_PROVISOIRE = [];
+
+/**
+ * Serment des Neuf Hivers — le deck mono-Neige : dix-sept glaciers, des
+ * guerriers de clan, des valkyries, un berserk, un drakkar et les figures du
+ * Nord (jamais nommées « dieux » : le Père des corbeaux, le Maître du marteau,
+ * la Dame des neuf mondes, le Serpent du monde). Les cartes épiques — la
+ * rareté du set — n'y sont qu'en un exemplaire.
+ */
+export const RPG_DECK_NEIGE_BASE = [
+  ...Array(17).fill('glacier'),
+  ...Array(2).fill('guerrier-au-bouclier-rond'),
+  ...Array(2).fill('loup-des-neiges'),
+  'scalde-des-runes',
+  ...Array(2).fill('valkyrie-au-corbeau'),
+  'berserk-des-trois-hivers',
+  'jarl-au-marteau-de-guerre',
+  ...Array(2).fill('mur-de-boucliers'),
+  ...Array(2).fill('eclair-du-marteau'),
+  'brume-du-fjord',
+  'festin-des-vaillants',
+  'valkyrie-des-glaces',
+  'geant-des-banquises',
+  'drakkar-a-tete-de-dragon',
+  'hurlement-du-blizzard',
+  'pere-des-corbeaux',
+  'maitre-du-marteau',
+  'dame-des-neuf-mondes',
+  'serpent-du-monde',
+  ];
 
 /**
  * Marée des abysses — mono-Eau : des contresorts qui répondent aux annonces du sorcier
@@ -984,10 +1244,33 @@ export const RPG_DECKS = [
     description: 'Deck mono-Eau : des contresorts qui répondent aux cartes annoncées par le sorcier, et les bêtes marines mythiques (Kraken, Léviathan, Bakunawa, Jörmungandr) qui surgissent des profondeurs.',
     cardIds: RPG_DECK_MAREE_BASE,
   },
+  {
+    id: 'serment-des-neuf-hivers',
+    name: 'Serment des Neuf Hivers',
+    role: 'joueur',
+    element: 'neige',
+    terrain: 'glacier',
+    boxArt: 'valkyrie-des-glaces',
+    archetype: 'Neige · valkyries, guerriers et drakkars',
+    affrontement: 'Affrontez les serments du Nord.',
+    description: 'Deck mono-Neige inspiré des récits du Nord : guerriers au bouclier rond, loups des neiges, scalde, berserk, valkyries ailées et drakkar à tête de dragon, aux côtés des figures du panthéon scandinave — le Père des corbeaux, le Maître du marteau, la Dame des neuf mondes et le Serpent du monde — jamais nommées « dieux ». Combat physique des clans et combat magique des runes, sous les boucliers de givre.',
+    cardIds: RPG_DECK_NEIGE_BASE,
+  },
 ];
 
-/** Valide un deck : 40 cartes, au moins 40 % de terrains, mythiques limités
- *  à un exemplaire, autres cartes non-terrain limitées à trois exemplaires. */
+/** Raretés d'exception : une seule copie par deck. */
+export const CARD_UNIQUE_RARITIES = ['epique', 'mythique'];
+
+/** Exemplaires autorisés dans un deck : terrains illimités, raretés d'exception
+ *  à un exemplaire, tout le reste à trois. */
+export function cardCopyLimit(card) {
+  if (card?.kind === 'terrain') return Infinity;
+  return CARD_UNIQUE_RARITIES.includes(card?.rarity) ? 1 : 3;
+}
+
+/** Valide un deck : 40 cartes, au moins 40 % de terrains, cartes d'exception
+ *  (épiques et mythiques) limitées à un exemplaire, autres cartes non-terrain
+ *  limitées à trois exemplaires. */
 export function rpgValiderDeck(deck) {
   if (deck.length !== 40) return { ok: false, raison: `40 cartes exigées (${deck.length})` };
   const comptes = {};
@@ -997,11 +1280,14 @@ export function rpgValiderDeck(deck) {
     if (!carte) return { ok: false, raison: `carte inconnue : ${id}` };
     comptes[id] = (comptes[id] ?? 0) + 1;
     if (carte.kind === 'terrain') terrains += 1;
-    if (carte.rarity === 'mythique' && comptes[id] > 1) {
-      return { ok: false, raison: `${id} mythique en ${comptes[id]} exemplaires (1 max)` };
-    }
-    if (carte.kind !== 'terrain' && carte.rarity !== 'mythique' && comptes[id] > 3) {
-      return { ok: false, raison: `${id} en ${comptes[id]} exemplaires (3 max)` };
+    const limite = cardCopyLimit(carte);
+    if (comptes[id] > limite) {
+      return {
+        ok: false,
+        raison: limite === 1
+          ? `${id} ${carte.rarity} en ${comptes[id]} exemplaires (1 max)`
+          : `${id} en ${comptes[id]} exemplaires (${limite} max)`,
+      };
     }
   }
   if (terrains < 0.4 * deck.length) return { ok: false, raison: `terrains ${Math.round((terrains / deck.length) * 100)} % (40 % min)` };
@@ -1061,6 +1347,18 @@ export const RPG_TERRAIN_CARDS = [
     cost: 0,
     text: 'Engagez : ajoutez un mana Braise ou Sable.',
     flavor: 'Dans la roche rose, les pistes se croisent.',
+  },
+  {
+    id: 'glacier',
+    name: 'Glacier',
+    element: 'neige',
+    kind: 'terrain',
+    art: 'glacier',
+    typeLine: 'Terrain — Glacier',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana Neige.',
+    flavor: 'Sous la glace, le temps dort debout.',
   },
 ];
 
@@ -1262,6 +1560,79 @@ export const RPG_MAGIE_CARDS = [
     text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses.',
     flavor: 'La poussière rougit, puis le vent l’emporte.',
   },
+  // ── Serment des Neuf Hivers : le combat physique et le combat magique ──
+  {
+    id: 'eclair-du-marteau',
+    name: 'Éclair du marteau',
+    element: 'neige',
+    kind: 'magie',
+    typeLine: 'Éphémère — Neige',
+    art: 'eclair-du-marteau',
+    instant: true,
+    cost: 2,
+    rarity: 'commune',
+    cibles: ['creature', 'sorcier'],
+    effet: { type: 'degats', amount: 3, cible: 'creature' },
+    text: 'Éphémère — 3 dégâts à une créature ou un sorcier ciblés.',
+    flavor: 'Le ciel se fend ; le marteau a parlé.',
+  },
+  {
+    id: 'mur-de-boucliers',
+    name: 'Mur de boucliers',
+    element: 'neige',
+    kind: 'magie',
+    typeLine: 'Rituel — Neige',
+    art: 'mur-de-boucliers',
+    cost: 2,
+    rarity: 'commune',
+    cibles: ['soi'],
+    effet: { type: 'buff', atk: 1, def: 1 },
+    text: 'Vos créatures gagnent +1/+1.',
+    flavor: 'Épaule contre épaule, le clan devient une muraille.',
+  },
+  {
+    id: 'festin-des-vaillants',
+    name: 'Festin des vaillants',
+    element: 'neige',
+    kind: 'magie',
+    typeLine: 'Rituel — Neige',
+    art: 'festin-des-vaillants',
+    cost: 2,
+    rarity: 'commune',
+    cibles: ['soi'],
+    effet: { type: 'soin', amount: 5 },
+    text: 'Vous récupérez 5 points de vie.',
+    flavor: 'On boit au souvenir de ceux qui ne reviendront pas.',
+  },
+  {
+    id: 'brume-du-fjord',
+    name: 'Brume du fjord',
+    element: 'neige',
+    kind: 'magie',
+    typeLine: 'Éphémère — Neige',
+    art: 'brume-du-fjord',
+    instant: true,
+    cost: 2,
+    rarity: 'rare',
+    cibles: ['creature-amie'],
+    effet: { type: 'bouclier', amount: 3, cible: 'creature-amie' },
+    text: 'Éphémère — Une créature alliée prévient les 3 prochains dégâts qu’elle devrait subir.',
+    flavor: 'La brume avale les coups avant qu’ils n’arrivent.',
+  },
+  {
+    id: 'hurlement-du-blizzard',
+    name: 'Hurlement du blizzard',
+    element: 'neige',
+    kind: 'magie',
+    typeLine: 'Rituel — Neige',
+    art: 'hurlement-du-blizzard',
+    cost: 4,
+    rarity: 'epique',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Rituel — 2 dégâts à toutes les créatures adverses.',
+    flavor: 'Le vent hurle si fort que la neige devient des lames.',
+  },
   // ── Contresorts (deck Marée des abysses) ───────────────────────────────
   // Un contresort répond à l'annonce du sorcier : il annule la carte annoncée.
   {
@@ -1393,7 +1764,7 @@ export function cardById(id) {
   return CATALOG.get(id) ?? null;
 }
 
-const RPG_CARD_COLORS = new Set(['braise', 'eau', 'sable']);
+const RPG_CARD_COLORS = new Set(RPG_ELEMENTS);
 
 /** Identité chromatique d’une carte (une ou plusieurs couleurs). */
 export function cardColors(cardOrId) {

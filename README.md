@@ -5134,14 +5134,18 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 - **Chaque deck a son terrain.** Les Veilleurs du Désert se battent dans l'Erg
   du Sahara, la Cour des Djinns sur la Terre de Damnation, les Sentiers de
   cendre sur la piste de la Caravane de Gourara, la Marée des abysses dans les
-  Ruines de Tipaza. Les decks de campagne ont leur entrée aussi — la Souffleuse
-  de verre tient la piste de caravane, le Grand Horloger reçoit dans la salle
-  haute de la Chambre, sur la Table des Heures (`RPG_PLATEAUX_PAR_DECK`).
+  Ruines de Tipaza, le Serment des Neuf Hivers sur la glace du Fjord. Les decks
+  de campagne ont leur entrée aussi — la Souffleuse de verre tient la piste de
+  caravane, le Grand Horloger reçoit dans la salle haute de la Chambre sur la
+  Table des Heures, et les quatre étages de la Tour du Fjord (la Garde, la
+  Meute, la Valkyrie, le Maître des Neuf Hivers) restent sur la glace
+  (`RPG_PLATEAUX_PAR_DECK`).
 - **Un paquet inconnu parle par sa couleur.** Un deck sans identité — paquet
   brut passé en prop à la page, deck maison — prend le terrain de sa **couleur
   dominante** : Sable → l'Erg, Braise → la Terre de Damnation, Eau → Tipaza,
-  deux couleurs à égalité → la Caravane de Gourara, le carrefour des pistes.
-  Rien de lisible : la Table des Heures, la table d'origine.
+  Neige → le Fjord, deux couleurs à égalité → la Caravane de Gourara, le
+  carrefour des pistes. Rien de lisible : la Table des Heures, la table
+  d'origine.
 - **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
   choisit l'un des deux camps ; c'est le deck de ce duelliste qui donne son
   plateau à la partie. Le tirage passe par le `rng` du duel (injectable) et ne
@@ -5164,6 +5168,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 | `public/plateau-erg-du-sahara.jpg` | **L'Erg du Sahara** | la rose des sables tracée à la main dans la dune, la lanterne de laiton et son feu, l'outre, la corde, les pierres noires. |
 | `public/plateau-caravane-de-gourara.jpg` | **La Caravane de Gourara** | le lit sec de l'oued et sa piste : les deux empreintes du campement, l'outre, la corde et le compas abandonné. |
 | `public/plateau-terre-de-damnation.jpg` | **La Terre de Damnation** (Les Brûlés) | l'étage repris par le feu : la croûte craquelée et ses braises encore vives, l'encensoir de fer renversé et sa coulée de cendres, les troncs noircis, les éclats d'obsidienne. |
+| `public/plateau-fjord-des-neuf-hivers.jpg` | **Le Fjord des Neuf Hivers** (la glace du Nord) | la glace polie du fjord et sa rose des vents gravée au ciseau, la lanterne de fer, le cor à boire, la corde lovée, la hache et le bâton de runes. |
 | `public/plateau-ruines-de-tipaza.jpg` | **Les Ruines de Tipaza** (Tipasa) | la mosaïque romaine ouverte par le vent, les dalles disjointes, les fûts de colonne tombés, le chapiteau corinthien et le débris d’architrave, coquillages et cristaux de sel. |
 
 ### Où vit le code
@@ -5211,7 +5216,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 ### Vérifications
 
 ```bash
-npm run check:rpg        # règles + les 16 tests des plateaux
+npm run check:rpg        # règles + les 17 tests des plateaux
 npm run check:rpg-ui     # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, voile compris
 ```
 

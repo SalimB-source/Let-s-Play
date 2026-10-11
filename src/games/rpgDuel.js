@@ -8,6 +8,7 @@
  */
 
 import {
+  RPG_ELEMENTS,
   cardById,
   cardColorCost,
   cardColors,
@@ -30,7 +31,7 @@ export const RPG_PV_JOUEUR = 50;
 export const RPG_PV_SORCIER_BASE = 50;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 5;
 export const RPG_MAIN_DEPART = 5;
-export const RPG_COULEURS = ['braise', 'eau', 'sable'];
+export const RPG_COULEURS = RPG_ELEMENTS;
 
 const destructionsParDuel = new WeakMap();
 
@@ -53,9 +54,9 @@ function journaliserDestruction(duel, entite, sourceElements = []) {
   destructionsParDuel.set(duel, journal);
 }
 
-const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable' };
+const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige' };
 const normaliserCouleurs = (couleurs) => [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
-const manaVide = () => ({ braise: 0, eau: 0, sable: 0 });
+const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0 });
 const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[c], 0);
 
 /** PV d'un sorcier adverse selon sa puissance. */
@@ -283,7 +284,66 @@ function creerEntiteCreature(carte) {
     } : null,
     ready: Boolean(carte.rapidite),
     attaquee: false,
+    resonance: 0,
   };
+}
+
+/**
+ * Furie — capacité des vikings : une créature **blessée qui survit** gagne
+ * +X/+X (X = la furie imprimée sur la carte). Les blessures d'un même échange
+ * comptent une seule fois, et une attaque entièrement absorbée par un bouclier
+ * n'est pas une blessure : la furie attend le premier sang.
+ */
+function appliquerFurie(duel, entite, degatsRecus) {
+  const furie = Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0);
+  if (!furie || degatsRecus <= 0) return;
+  entite.atk += furie;
+  entite.pvMax = (entite.pvMax ?? entite.def) + furie;
+  entite.def += furie;
+  entite.pv += furie;
+  duel.log.push(`${entite.name} entre en furie : +${furie}/+${furie}.`);
+}
+
+/** Résonance — la valeur totale des sources présentes sur la table : chaque
+ *  valkyrie en jeu ajoute la sienne (1 par défaut) au renfort de la Neige. */
+export function rpgResonanceEnJeu(duel) {
+  let total = 0;
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      total += Math.max(0, Number(duelCardById(entite.carteId)?.resonance) || 0);
+    }
+  }
+  return total;
+}
+
+/**
+ * Résonance — aura de table : tant qu'une valkyrie est en jeu, **toutes** les
+ * créatures Neige de la table (les deux camps) gagnent +1/+1 par source. On ne
+ * pose que l'écart pour chaque entité (`entite.resonance`), pour qu'une source
+ * qui entre ou qui meurt ne fasse pas dériver les statistiques déjà cumulées
+ * par la Furie. Perdre la Résonance ne tue jamais : au pire, 1 PV.
+ */
+function majResonance(duel) {
+  const total = rpgResonanceEnJeu(duel);
+  let renforcees = 0;
+  let affaiblies = 0;
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      const carte = duelCardById(entite.carteId);
+      const voulu = cardColors(carte).includes('neige') ? total : 0;
+      const actuel = Math.max(0, Number(entite.resonance) || 0);
+      if (voulu === actuel) continue;
+      const delta = voulu - actuel;
+      entite.resonance = voulu;
+      entite.atk = Math.max(0, entite.atk + delta);
+      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + delta);
+      entite.def = Math.max(1, entite.def + delta);
+      entite.pv = Math.max(1, entite.pv + delta);
+      if (delta > 0) renforcees += 1; else affaiblies += 1;
+    }
+  }
+  if (renforcees) duel.log.push(`La Résonance renforce la Neige : +${total}/+${total} aux créatures Neige.`);
+  else if (affaiblies) duel.log.push('La Résonance se tait : les créatures Neige perdent leur bonus.');
 }
 
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
@@ -312,11 +372,13 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   }
 
   const mortes = [];
+  const furieuses = [];
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
     const absorbes = Math.min(entite.bouclier ?? 0, montant);
     entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
-    entite.pv -= montant - absorbes;
+    const recus = montant - absorbes;
+    entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
     if (entite.pv <= 0) {
       mortes.push({
@@ -324,8 +386,13 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
         entite,
         sourceElements: blessure.sourceElements,
       });
+    } else {
+      furieuses.push({ entite, recus });
     }
   }
+  // La furie monte après les blessures : les blessures d'un même échange ne
+  // comptent qu'une fois, et une créature morte ne s'énerve pas.
+  for (const { entite, recus } of furieuses) appliquerFurie(duel, entite, recus);
 
   // Retire d’abord toutes les victimes : une capacité de destruction ne peut
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
@@ -342,6 +409,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       appliquer(duel, mort.cote, carte.destruction, null, null, cardColors(carte), null, mort.entite.carteId);
     }
   }
+  majResonance(duel);
 }
 
 /** Dégâts de capacité infligés à la créature que la carte combat, s’il y a lieu. */
@@ -475,6 +543,7 @@ function enterrer(duel, cote, entite, sourceElements = []) {
   if (carte?.destruction) {
     appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
   }
+  majResonance(duel);
 }
 
 /** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise). */
@@ -491,13 +560,16 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   const apresEsquive = degats - esquive;
   const absorbes = Math.min(entite.bouclier ?? 0, apresEsquive);
   entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
-  entite.pv -= apresEsquive - absorbes;
+  const recus = apresEsquive - absorbes;
+  entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
   if (entite.pv <= 0) {
     const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
     enterrer(duel, cote, entite, elements);
+  } else {
+    appliquerFurie(duel, entite, recus);
   }
-  return { ok: true, recus: apresEsquive - absorbes, absorbes, esquives: esquive };
+  return { ok: true, recus, absorbes, esquives: esquive };
 }
 
 /** Pose une créature : paie le sable, arrive en jeu, capacité d'arrivée. */
@@ -533,6 +605,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     const cibleArrivee = carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId;
     appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte));
   }
+  majResonance(duel);
   return { ok: true, entite };
 }
 
@@ -1015,6 +1088,7 @@ function resoudreRetoursProgrammes(duel) {
       }
     }
   }
+  majResonance(duel);
 }
 
 /** Fin du tour : l'autre camp commence — revenu de sable, pioche 1,

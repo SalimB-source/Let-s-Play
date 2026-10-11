@@ -4,6 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
+import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -36,7 +37,10 @@ export async function checkRpgStory(assert) {
   // --- Accès au mode Histoire depuis le menu ---
   await click(buttons().find((button) => button.textContent.includes('Histoire')), 'entrée Histoire depuis le menu');
   assert.ok(container.querySelector('.rpg-story'), 'la carte du mode Histoire s’affiche');
-  assert.equal(container.querySelectorAll('.rpg-story-tour').length, 4, 'les quatre tours sont présentées');
+  assert.equal(container.querySelectorAll('.rpg-story-tour').length, RPG_STORY_TOURS.length,
+    'les tours du catalogue sont toutes présentées');
+  assert.ok(container.textContent.includes('La Tour du Fjord'), 'la Tour du Fjord (la Neige) est présentée');
+  assert.ok(container.textContent.includes('La Tour des Abysses'), 'la Tour des Abysses (l’Eau) est présentée');
 
   // --- Étages : le premier est ouvert, les suivants verrouillés ---
   const floors = () => [...container.querySelectorAll('.rpg-story-floor')];

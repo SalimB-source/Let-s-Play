@@ -798,6 +798,7 @@
 .mana--braise { background: #a3341f; color: #ffe1d6; }
 .mana--eau { background: #1f4fa3; color: #dcecff; }
 .mana--sable { background: #c9a13b; color: #241a04; }
+.mana--neige { background: #bfe9ff; color: #0b2a3c; }
 
 /* Couches des visages 4:5 full art pour les cartes du duel. */
 .rpg-card--img {
@@ -856,6 +857,27 @@
 
 /* États de la carte posée. */
 .rpg-card:hover { transform: rotate(0deg) translateY(-6px); }
+
+/* Sous la souris, l'illustration des créatures respire doucement. L'animation
+   reste sur l'image pour ne pas remplacer celles de combat jouées par la carte. */
+@media (hover: hover) and (pointer: fine) {
+  .rpg-card--type-creature:is(:hover, :focus-visible) .rpg-card__img {
+    animation: rpg-creature-hover-float 2.2s ease-in-out infinite;
+    will-change: transform;
+  }
+}
+
+@keyframes rpg-creature-hover-float {
+  0%, 100% { transform: translate3d(-1px, 0, 0) scale(1.04); }
+  50% { transform: translate3d(1px, -3px, 0) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card--type-creature:is(:hover, :focus-visible) .rpg-card__img {
+    animation: none !important;
+    will-change: auto;
+  }
+}
 
 .rpg-card.is-active {
   transform: rotate(0deg) translateY(-10px);
@@ -2090,6 +2112,11 @@
   --rpg-plateau-voile-haut: rgba(13, 13, 17, .86);
   --rpg-plateau-voile-bas: rgba(10, 10, 14, .88);
 }
+.card-table--plateau-fjord-des-neuf-hivers {
+  background-color: #b9cdd6;
+  --rpg-plateau-voile-haut: rgba(9, 17, 23, .84);
+  --rpg-plateau-voile-bas: rgba(7, 14, 20, .86);
+}
 .rpg-battle:not(.rpg-battle--touch) :is(.card-table--plateau-erg-du-sahara, .card-table--plateau-caravane-de-gourara)::before {
   background:
     var(--rpg-plateau-voile),
@@ -2100,6 +2127,21 @@
     var(--rpg-plateau-voile),
     radial-gradient(ellipse at 50% 45%, rgba(30, 12, 6, .04), rgba(11, 5, 3, .52) 90%);
 }
+/* La glace du fjord : la surface la plus claire du jeu (moyenne 170 sur 255 —
+   neige et glace bleutée). L'ombre est franche, froide et dense, comme la pierre
+   des ruines, mais teintée de bleu polaire : sans elle, la rose des vents et le
+   grain de la glace mangeraient les cartes, et le blanc de la Neige se perdrait
+   dans son propre terrain. Sa vignette se compose **avec** le dégradé commun
+   (`--rpg-plateau-voile`), comme celle des autres plateaux : le haut et le bas
+   de la table, où vivent les textes, gardent leur ombre. Les éléments de décor
+   (lanterne, cor, corde, hache, bâton de runes) restent dans les coins, sous le
+   premier tiers du voile. */
+.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-fjord-des-neuf-hivers::before {
+  background:
+    var(--rpg-plateau-voile),
+    radial-gradient(ellipse at 50% 44%, rgba(13, 24, 34, .2), rgba(9, 18, 28, .52) 90%);
+}
+
 /* La pierre des ruines : plus claire encore que le sable, et c'est le centre qui
    porte la mosaïque — l'ombre est donc neutre et froide (mer au nord), plus
    dense au centre que sur les sables, sinon les cartes flottent sur la pierre. */
@@ -3477,6 +3519,7 @@
 .rpg-card-element-badge--braise { background: radial-gradient(circle at 34% 24%, #f09675, #8e2e1d 72%); }
 .rpg-card-element-badge--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
 .rpg-card-element-badge--sable { background: radial-gradient(circle at 34% 24%, #f8e69d, #795613 72%); color: #281b05; text-shadow: 0 1px 1px rgba(255,255,255,.68); filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8)); }
+.rpg-card-element-badge--neige { background: radial-gradient(circle at 34% 24%, #eefaff, #4a86ab 72%); color: #08202e; text-shadow: 0 1px 1px rgba(255, 255, 255, .7); filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85)); }
 .rpg-card-element-badge--hybride {
   display: flex;
   width: var(--rpg-card-element-marker-size, clamp(16px, 18%, 23px));
@@ -3518,6 +3561,12 @@
 }
 .rpg-card-element-badge__pip--braise { background: radial-gradient(circle at 34% 24%, #f09675, #8e2e1d 72%); }
 .rpg-card-element-badge__pip--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
+.rpg-card-element-badge__pip--neige {
+  background: radial-gradient(circle at 34% 24%, #eefaff, #4a86ab 72%);
+  color: #08202e;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, .7);
+  filter: drop-shadow(0 0 2px rgba(150, 220, 255, .85));
+}
 .rpg-card-element-badge--verre { background: radial-gradient(circle at 34% 24%, #9fd6e8, #2b6d84 72%); }
 .rpg-card-element-badge--souffle { background: radial-gradient(circle at 34% 24%, #d9dee6, #6d7480 72%); }
 .rpg-card-element-badge--encre { background: radial-gradient(circle at 34% 24%, #b39ae0, #432d73 72%); }
@@ -4569,10 +4618,52 @@
   background-color: #0d2438;
 }
 
-/* Braise + Eau + Sable : le prisme des trois couleurs, si un jour une carte
-   tricolore apparaît au catalogue. */
+/* Braise + Neige : la braise et le givre, rouge sombre traversé de blanc bleu. */
+.rpg-card--frame-hybride-braise-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #43110a 0%, #ff8a5c 20%, #7fb6d8 40%, #eaf9ff 54%, #5a2a2a 72%, #a9e0f5 88%, #43110a 100%);
+  background-color: #35202a;
+}
+
+/* Eau + Neige : l'eau prise, bleu profond et glace pâle. */
+.rpg-card--frame-hybride-eau-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #6fb6e8 20%, #dff3ff 40%, #2f7fae 58%, #12496e 76%, #bfe9ff 90%, #0b2a4a 100%);
+  background-color: #10283c;
+}
+
+/* Sable + Neige : le vent sur la banquise, ivoire et bleu clair. */
+.rpg-card--frame-hybride-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #2a3b45 0%, #f7f3e6 22%, #a9e0f5 42%, #6e8ea3 58%, #dff3ff 76%, #c9a13b 90%, #2a3b45 100%);
+  background-color: #26333c;
+}
+
+/* Braise + Eau + Sable : le prisme des trois couleurs de Bab El. */
 .rpg-card--frame-hybride-braise-eau-sable {
   --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 16%, #f3ead2 32%, #ffb44d 48%, #e2401c 64%, #b06ad8 80%, #123a63 100%);
+  background-color: #241a33;
+}
+
+/* Braise + Eau + Neige : la vapeur des mers froides. */
+.rpg-card--frame-hybride-braise-eau-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #2a1050 0%, #b06ad8 16%, #ff8a5c 34%, #bfe9ff 52%, #2f7fae 70%, #e0432a 86%, #2a1050 100%);
+  background-color: #2a1a40;
+}
+
+/* Braise + Sable + Neige : le désert sous la première neige. */
+.rpg-card--frame-hybride-braise-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #4d0c05 0%, #ff9a34 18%, #f7f3e6 38%, #a9e0f5 56%, #a81f08 74%, #bfe9ff 90%, #4d0c05 100%);
+  background-color: #3d2020;
+}
+
+/* Eau + Sable + Neige : les rivages du Nord. */
+.rpg-card--frame-hybride-eau-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #6fb6e8 18%, #f7f3e6 36%, #a9e0f5 56%, #12496e 74%, #cfe9d8 90%, #0b2a4a 100%);
+  background-color: #102c3a;
+}
+
+/* Braise + Eau + Sable + Neige : les quatre éléments, si un jour une carte les
+   rassemble au catalogue. */
+.rpg-card--frame-hybride-braise-eau-sable-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 14%, #f3ead2 28%, #a9e0f5 42%, #ffb44d 58%, #e2401c 72%, #b06ad8 86%, #123a63 100%);
   background-color: #241a33;
 }
 
@@ -4702,18 +4793,157 @@
   }
 }
 
-/* Fenêtre de réponse : le sorcier a annoncé une carte, le joueur répond ou laisse passer. */
+/* Fenêtre de réponse : l'aperçu de la carte annoncée reste visible, avec sa
+   cible éventuelle, sans transformer « Laisser passer » en second bouton de tour. */
 .rpg-annonce-sort {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 12px;
-  margin: 0 0 8px;
-  padding: 8px 12px;
-  border: 1px solid #e1b33f;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(225, 179, 63, .72);
   border-radius: 8px;
-  background: rgba(28, 22, 10, 0.92);
+  background: rgba(28, 22, 10, .92);
   color: #f7f3e6;
-  font-size: 0.9rem;
 }
-.rpg-annonce-sort b { color: #e1b33f; }
+.rpg-hover-card-preview--annonce {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: clamp(54px, 8vw, 72px) minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  max-height: none;
+  padding: 0;
+  border-radius: 0;
+  overflow: hidden;
+  animation: none;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__face {
+  width: 100%;
+  border-width: 2px;
+  border-radius: 5px;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
+  gap: 4px;
+  max-height: none;
+  min-height: 0;
+  padding: 6px 9px;
+  border-color: rgba(236, 214, 172, .18);
+  border-radius: 6px;
+  background: rgba(5, 8, 11, .56);
+}
+.rpg-hover-card-preview__eyebrow {
+  color: #e1b33f;
+  font: 800 7px/1 var(--display);
+  letter-spacing: .13em;
+}
+.rpg-hover-card-preview__name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #ffe9a0;
+  font: 700 14px/1.1 Georgia, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__type {
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1.15;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost {
+  gap: 6px;
+  font-size: 11px;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 13px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 9px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules {
+  gap: 3px;
+  max-height: 2.8em;
+  font-size: 10px;
+  line-height: 1.3;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target {
+  gap: 5px;
+  min-height: 23px;
+  margin: 1px 0;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 18px; height: 23px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
+  width: 18px;
+  height: 18px;
+  font-size: 13px;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 9px; }
+.rpg-annonce-sort__pass {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 108px;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 11px;
+  border: 1px solid rgba(114, 230, 208, .48);
+  border-radius: 8px;
+  background: rgba(13, 31, 32, .92);
+  color: #c7f4e9;
+  box-shadow: none;
+  font: 700 11px/1.15 var(--display);
+  letter-spacing: .015em;
+  text-align: center;
+  text-transform: none;
+  white-space: nowrap;
+}
+.rpg-actions .rpg-annonce-sort__pass::before { display: none; }
+.rpg-annonce-sort__pass:hover:not(:disabled) {
+  transform: none;
+  border-color: #8af2df;
+  background: rgba(19, 49, 48, .98);
+  color: #edfff9;
+  box-shadow: 0 0 9px rgba(91, 240, 218, .16);
+}
+.rpg-annonce-sort__pass:focus-visible { outline: 2px solid #8af2df; outline-offset: 2px; }
+
+@media (max-width: 620px) {
+  .rpg-annonce-sort {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px;
+  }
+  .rpg-hover-card-preview--annonce {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
+    gap: 3px;
+    padding: 5px 6px;
+  }
+  .rpg-hover-card-preview__eyebrow { font-size: 6px; }
+  .rpg-hover-card-preview__name { font-size: 11px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__type { font-size: 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost { gap: 4px; font-size: 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 11px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 8px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules { max-height: 2.5em; font-size: 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 16px; height: 20px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+  }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 8px; }
+  .rpg-annonce-sort__pass {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+}

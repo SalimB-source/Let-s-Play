@@ -12,9 +12,10 @@
  *    battent dans l'Erg, la Cour des Djinns sur la Terre de Damnation… Un deck
  *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
  *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Terre
- *    de Damnation, Eau → les Ruines de Tipaza, deux couleurs à égalité → la
- *    Caravane de Gourara, le carrefour des pistes. Sans rien de lisible, c'est
- *    la Table des Heures, la table d'origine de Bab El.
+ *    de Damnation, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
+ *    Hivers, deux couleurs à égalité → la Caravane de Gourara, le carrefour des
+ *    pistes. Sans rien de lisible, c'est la Table des Heures, la table
+ *    d'origine de Bab El.
  * 2. **Le sable désigne qui impose son terrain.** Au lancement du duel, un
  *    tirage choisit l'un des deux camps ; c'est le deck de ce duelliste qui
  *    donne son plateau à la partie. Le tirage passe par le `rng` du duel —
@@ -64,6 +65,13 @@ export const RPG_PLATEAUX = [
     resume: 'L’étage repris par le feu : la croûte craquelée et ses braises encore vives, l’encensoir de fer renversé, les troncs calcinés, la cendre grise.',
   },
   {
+    id: 'fjord-des-neuf-hivers',
+    nom: 'Le Fjord des Neuf Hivers',
+    lieu: 'La glace du Nord, devant le Serment',
+    fichier: 'plateau-fjord-des-neuf-hivers.jpg',
+    resume: 'La glace polie du fjord et sa rose des vents gravée au ciseau ; la lanterne de fer, le cor à boire, la corde lovée, la hache et le bâton de runes posés au bord.',
+  },
+  {
     id: 'ruines-de-tipaza',
     nom: 'Les Ruines de Tipaza',
     lieu: 'Tipasa, la ville romaine au bord de la mer',
@@ -85,11 +93,17 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'cour-des-djinns': 'terre-de-damnation',
   'sentiers-de-cendre': 'caravane-de-gourara',
   'maree-des-abysses': 'ruines-de-tipaza',
+  // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.
+  'serment-des-neuf-hivers': 'fjord-des-neuf-hivers',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
-  // dans la salle haute de la Chambre, sur la table d'origine.
+  // dans la salle haute de la Chambre, sur la table d'origine. Les quatre
+  // étages de la Tour du Fjord gardent la glace de leur deck.
   'souffleuse-de-verre': 'caravane-de-gourara',
   'grand-horloger': 'table-des-heures',
+  'gardes-du-fjord': 'fjord-des-neuf-hivers',
+  'meute-des-neiges': 'fjord-des-neuf-hivers',
+  'maitre-des-neuf-hivers': 'fjord-des-neuf-hivers',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */
@@ -97,6 +111,7 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
   sable: 'erg-du-sahara',
   braise: 'terre-de-damnation',
   eau: 'ruines-de-tipaza',
+  neige: 'fjord-des-neuf-hivers',
   hybride: 'caravane-de-gourara',
 };
 

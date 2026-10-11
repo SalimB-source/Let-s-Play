@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -243,14 +243,22 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, 4, 'les deux decks monocolores, le deck hybride et la Marée des abysses sont sélectionnables');
+  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, RPG_DECKS.length,
+    'chaque deck du catalogue (Sable, Braise, hybride, Eau de la Marée, Neige du Serment) est sélectionnable');
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
   assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');
   assert.match(container.textContent, /Sentiers de cendre/, 'le deck joueur hybride Sable + Braise est présenté');
+  assert.match(container.textContent, /Serment des Neuf Hivers/, 'le deck joueur mono-Neige est présenté');
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 0, 'la liste des cartes reste masquée tant qu’aucun deck n’est cliqué');
   // Chaque deck est un boîtier 3D : le clic est porté par le bouton voisin du décor.
   const boutonDeck = (nom) => [...container.querySelectorAll('.rpg-deck-choice__button')]
     .find((button) => button.textContent.includes(nom));
+  await act(async () => { boutonDeck('Serment des Neuf Hivers').click(); });
+  const ficheNeige = container.querySelector('.rpg-deck-detail');
+  assert.match(ficheNeige?.textContent ?? '', /Neige[\s\S]*GLACIER/i,
+    'la fiche du Serment annonce son identité Neige et son terrain Glacier');
+  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*7[\s\S]*validé/,
+    'le Serment est validé à 40 cartes : 17 terrains, 16 créatures et héros, 7 magies');
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes avec leurs quantités, Cavalier inclus');
   assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
@@ -999,7 +1007,25 @@ export async function checkRpgBattle(assert) {
   // Le sort Braise est annoncé : le joueur a la main pour répondre, ou laisser passer.
   assert.match(aiFireContainer.querySelector('.rpg-annonce-sort')?.textContent ?? '', /Trait de braise/,
     'la bannière annonce le sort du sorcier avant sa résolution');
-  await act(async () => { aiFireContainer.querySelector('.rpg-annonce-sort button')?.click(); });
+  const previewSortAnnonce = aiFireContainer.querySelector('.rpg-annonce-sort .rpg-hover-card-preview--annonce');
+  assert.ok(previewSortAnnonce, 'la carte annoncée reste visible dans son aperçu pendant la fenêtre de réponse');
+  assert.match(previewSortAnnonce.querySelector('.rpg-hover-card-preview__face img')?.getAttribute('src') ?? '',
+    /\/cards\/trait-de-braise\.jpg(?:\?|$)/,
+    'l’aperçu affiche l’illustration de la carte annoncée');
+  assert.equal(previewSortAnnonce.querySelector('.rpg-hover-card-preview__name')?.textContent, 'Trait de braise',
+    'l’aperçu nomme clairement le sort annoncé');
+  const cibleSortAnnonce = previewSortAnnonce.querySelector('.rpg-hover-card-preview__target');
+  assert.match(cibleSortAnnonce?.textContent ?? '', /Fennec des décombres/,
+    'l’aperçu d’une magie montre la créature choisie comme cible');
+  assert.match(cibleSortAnnonce?.querySelector('img')?.getAttribute('src') ?? '',
+    /\/cards\/fennec-des-decombres\.jpg(?:\?|$)/,
+    'l’aperçu identifie aussi la cible par son illustration');
+  const boutonLaisserPasser = aiFireContainer.querySelector('.rpg-annonce-sort__pass');
+  assert.ok(boutonLaisserPasser && !boutonLaisserPasser.classList.contains('rpg-btn--endturn'),
+    'Laisser passer utilise son propre style compact, pas le gros bouton de fin de tour');
+  assert.ok(boutonLaisserPasser.getAttribute('aria-label')?.includes('Trait de braise'),
+    'le bouton précise quelle carte laisser passer');
+  await act(async () => { boutonLaisserPasser.click(); });
   await act(async () => { await wait(200); });
   const destructionAi = aiFireContainer.querySelector('.rpg-card-destruction-fx[data-rpg-destroyed-id]');
   assert.ok(destructionAi?.classList.contains('is-burning')

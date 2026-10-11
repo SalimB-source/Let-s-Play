@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rpgValiderDeck } from '../src/games/rpgCards.js';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import {
+  RPG_ART_PROVISOIRE,
+  cardArtId,
+  cardById,
+  cardColors,
+  rpgValiderDeck,
+} from '../src/games/rpgCards.js';
 import { RPG_NIVEAUX_IA, RPG_STYLES_IA } from '../src/games/rpgAI.js';
 import {
   chargerProgressionHistoire,
@@ -50,6 +58,51 @@ test('les étages ont identifiants uniques, profils IA et puissances lisibles', 
     assert.equal(etageHistoireParId(etage.id).tour.id, tour.id);
   }
   assert.ok(vus.size >= 9, 'la campagne compte au moins neuf étages');
+});
+
+test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss compris', () => {
+  const tour = tourHistoireParId('tour-du-fjord');
+  assert.ok(tour, 'la Tour du Fjord fait partie de la campagne');
+  assert.match(tour.resume, /glace|hiver|fjord/i, 'son résumé annonce le froid');
+  assert.ok(tour.etages.length >= 3, 'la tour a ses étages');
+
+  for (const etage of tour.etages) {
+    const deck = deckHistoire(etage.deck);
+    const validation = rpgValiderDeck(deck);
+    assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
+    assert.equal(validation.terrains, deck.filter((id) => id === 'glacier').length,
+      `${etage.id} pose ses seuls Glaciers comme terrains`);
+    for (const id of new Set(deck)) {
+      assert.deepEqual(cardColors(cardById(id)), ['neige'],
+        `${etage.id} reste mono-Neige (${id} fait exception)`);
+    }
+  }
+
+  // La difficulté monte d'étage en étage, et le sommet est le boss.
+  const puissances = tour.etages.map((etage) => etage.puissance);
+  assert.deepEqual(puissances, [...puissances].sort((a, b) => a - b), 'les étages montent en puissance');
+  assert.equal(tour.etages.at(-1).ia.niveau, 'veilleur', 'le sommet se joue contre un Veilleur');
+
+  // Le boss réunit les figures du Nord — sans jamais les appeler dieux.
+  const boss = deckHistoire(tour.etages.at(-1).deck);
+  assert.ok(boss.includes('pere-des-corbeaux') && boss.includes('maitre-du-marteau'),
+    'le Maître des Neuf Hivers a ses deux figures');
+  for (const id of new Set(boss)) {
+    const carte = cardById(id);
+    assert.doesNotMatch(`${carte.name} ${carte.text ?? ''} ${carte.flavor ?? ''}`, /\bdieu(x)?\b/i,
+      `${id} ne nomme pas de divinité`);
+  }
+
+  // Chaque sorcier de la campagne qui porte un portrait le voit livré avec le jeu.
+  for (const { etage } of tousLesEtages()) {
+    if (!etage.avatar) continue;
+    const carte = cardById(etage.avatar);
+    assert.ok(carte, `${etage.id} : l’avatar ${etage.avatar} est une carte du catalogue`);
+    assert.ok(!RPG_ART_PROVISOIRE.includes(etage.avatar),
+      `${etage.id} : le portrait ${etage.avatar} est une peinture définitive`);
+    assert.ok(existsSync(fileURLToPath(new URL(`../public/cards/${cardArtId(carte)}.jpg`, import.meta.url))),
+      `${etage.id} : le portrait ${etage.avatar} est livré dans public/cards/`);
+  }
 });
 
 test('les tours s’enchaînent étage par étage', () => {

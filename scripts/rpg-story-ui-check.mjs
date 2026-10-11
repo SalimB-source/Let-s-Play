@@ -38,6 +38,9 @@ assert.match(pageSource, /marquerEtageVaincu\(progression, histoireEtageId\)/,
 assert.match(pageSource, /Étage suivant/, 'la victoire propose l’étage suivant');
 assert.match(pageSource, /Recommencer l’étage/, 'la défaite permet de rejouer l’étage');
 assert.match(pageSource, /Tour terminée/, 'le sommet annonce la fin de la tour');
+// Le portrait d'un étage : celui de l'étage s'il en a un, l'Ifrit générique sinon.
+assert.match(pageSource, /cardArt\(etageHistoire \? etageHistoire\.avatar \?\? 'ifrit-al-ahmar' : deckBoxArtUrl\(deckAdverseAffiche\)\)/,
+  'la plaque du sorcier suit le portrait de l’étage quand il en porte un');
 
 // ── Lisibilité : tout le texte du mode Histoire doit rester lisible, en thème clair
 // comme en thème sombre. Ces garde-fous lisent les sources CSS (le rendu réel a été

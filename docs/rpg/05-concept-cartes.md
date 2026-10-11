@@ -17,14 +17,28 @@ limitée à 7.
 - Comme les terrains de Magic : **piochés**, posés **UN par tour**,
   **engagés** pour produire un mana de leur couleur. Ils dégagent au
   début de votre tour ; le mana non dépensé s'évapore.
-- Trois terrains pour commencer : **Montagne** (→ mana braise),
-  **Mer** (→ mana eau), **Plaines** (→ mana sable).
+- Terrains du set : **Montagne** (→ mana braise), **Mer** (→ mana eau),
+  **Désert** (→ mana sable), **Glacier** (→ mana neige) et **Pétra**, qui choisit
+  entre Braise et Sable à chaque engagement.
 - Les terrains restent sur la table : une petite défense, pas d'attaque.
 
 ### Couleurs et paiement (façon Magic)
 
-- Chaque carte (créature, magie, héros) a un **type** : braise, eau ou
-  sable — les trois couleurs du set.
+- Quatre couleurs composent le set (`RPG_ELEMENTS`) : **braise**, **eau**,
+  **sable** et **neige**. Bab El est née des trois premières ; la Neige arrive
+  avec le **Serment des Neuf Hivers**, le deck mono-Neige inspiré des récits du
+  Nord (valkyries, guerriers de clan, drakkars, et les figures du panthéon
+  scandinave — jamais appelées « dieux » : le Père des corbeaux, le Maître du
+  marteau, la Dame des neuf mondes, le Serpent du monde).
+- **Les quatre figures du Nord** sont nommées par leur attribut, comme le
+  faisaient les poèmes : *le Tonnerre* (le Maître du marteau — cheveux et barbe
+  roux, gantelets, le marteau qui revient toujours à sa main), *Celui qui sait*
+  (le Père des corbeaux — ses deux corbeaux rapportent la nouvelle), *la
+  Gardienne du foyer* (la Dame des neuf mondes — le fil des maisons), *Celui
+  qui entoure* (le Serpent du monde — l’anneau des eaux). Aucune carte, aucun
+  type, aucune saveur ne les nomme autrement : le set raconte les mythes du
+  Nord sans jamais écrire le mot « dieu ».
+- Chaque carte (créature, magie, héros) a un **type** : une des quatre couleurs.
 - Payer un coût de N exige **N mana au total, dont au moins un de la
   couleur de la carte** (comme « 2R » à Magic).
 
@@ -87,6 +101,34 @@ limitée à 7.
   frappe le sorcier ; avec un mur, les attaquants se répartissent sur
   les créatures ennemies et encaissent la riposte même si leur cible
   meurt.
+
+### Les capacités de clan du Nord
+
+Deux capacités appartiennent au set **Neige** et à lui seul ; elles se lisent
+sur la carte (`furie`, `resonance`) et le moteur les applique sans table
+d'effets supplémentaires.
+
+- **Furie X** (les vikings : Guerrier au bouclier rond 1, Berserk des trois
+  hivers 2, Jarl au marteau de guerre 3) — « Chaque fois qu'elle est blessée et
+  survit, la créature gagne +X/+X. » Une attaque **entièrement absorbée par un
+  bouclier n'est pas une blessure** : la Furie attend le premier sang. Elle
+  frappe **une seule fois par échange**, même quand la créature encaisse comme
+  attaquante et comme bloqueuse dans le même combat, et **jamais une créature
+  qui meurt** : c'est une récompense de survie, pas un baroud d'honneur. Le
+  bonus porte sur l'attaque, la défense et les points de vie présents et
+  maximum : une créature furieuse reste entamée sous son nouveau plafond.
+- **Résonance** (les valkyries : Valkyrie au corbeau et Valkyrie des glaces) —
+  « Tant qu'elle est en jeu, **toutes** les créatures Neige de la table
+  gagnent +1/+1. » L'aura est de table : elle profite aux deux camps, à la
+  valkyrie elle-même, et se cumule si deux sources sont en jeu. Chaque entité
+  retient sa part (`entite.resonance`), si bien qu'une source qui entre ou qui
+  meurt n'ajoute ou ne retire que son écart — les bonus déjà gagnés par la
+  Furie ne dérivent jamais. Perdre l'aura ne peut pas tuer : les points de vie
+  et la défense retombent au plancher de 1.
+
+Les deux capacités se cumulent, et les vikings comme les valkyries gardent
+leurs capacités propres (Coup rapide du Berserk, Envol et arrivée des
+valkyries, arrivées du Guerrier et du Jarl).
 
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
