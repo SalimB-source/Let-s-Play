@@ -426,6 +426,143 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--p
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-table--plateau-erg-du-sahara, \.card-table--plateau-caravane-de-gourara\)::before\s*\{[^}]*radial-gradient/s,
   'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 
+// ── Le voile noir haut/bas du plateau : la lisibilité des textes de la table ─
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+assert.match(battleCss, /--rpg-plateau-voile:\s*linear-gradient\(180deg,\s*var\(--rpg-plateau-voile-haut\) 0%,[\s\S]*?var\(--rpg-plateau-voile-bas\) 100%\);/,
+  'le plateau porte un dégradé noir en haut et en bas, là où vivent les textes de la table');
+assert.match(battleCss, /\.card-table::before\s*\{[^}]*background:[^}]*var\(--rpg-plateau-voile\),/s,
+  'le voile haut/bas est posé sous l’interface, au-dessus du fond illustré');
+for (const { id } of RPG_PLATEAUX) {
+  assert.match(battleCss, new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*background-color:[^}]*--rpg-plateau-voile-haut:[^}]*--rpg-plateau-voile-bas:`, 's'),
+    `le plateau ${id} règle la densité de son voile haut/bas avec sa couleur de repli`);
+}
+// Mesure sur les fonds livrés (haut du cadre, 0-255) : Erg 142, Tipaza 118,
+// Gourara 102, Damnation 61, bois des Heures 54. Plus le fond est clair, plus
+// l'ombre doit être dense pour tenir l'encre crème au-dessus de 3:1.
+const densiteVoile = (id) => Number(battleCss.match(
+  new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*--rpg-plateau-voile-haut:\\s*rgba\\([^)]*,\\s*([\\d.]+)\\)`, 's'),
+)[1]);
+for (const plateauClair of ['erg-du-sahara', 'caravane-de-gourara', 'ruines-de-tipaza', 'terre-de-damnation']) {
+  assert.ok(densiteVoile(plateauClair) > densiteVoile('table-des-heures'),
+    `${plateauClair} reçoit une ombre plus dense que le bois, déjà sombre`);
+}
+assert.ok(densiteVoile('erg-du-sahara') >= .8 && densiteVoile('ruines-de-tipaza') >= .8,
+  'les deux fonds les plus clairs (sable et pierre) sont voilés à au moins 80 %');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table::before\s*\{\s*background:\s*var\(--rpg-plateau-voile\);\s*\}/,
+  'au doigt le voile noir haut/bas reste posé : seule la vignette centrale disparaît');
+assert.doesNotMatch(mobileCss, /\.card-table::before\s*\{\s*background:\s*none/,
+  'le voile de lisibilité du plateau n’est plus supprimé en tactile');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table\s*\{[^}]*--rpg-plateau-voile-bas-debut:/s,
+  'les bandes du voile suivent les rangées de la grille tactile (navigation, main et commandes)');
+
+// ── L'aperçu au doigt : une seconde d'appui sur une carte ───────────────────
+const longPressSource = readFileSync(new URL('../src/games/rpgLongPress.js', import.meta.url), 'utf8');
+assert.match(longPressSource, /export const RPG_LONG_PRESS_MS = 1000;/,
+  'l’aperçu au doigt demande une seconde d’appui, comme annoncé au joueur');
+assert.match(longPressSource, /if \(!\['touch', 'pen'\]\.includes\(event\.pointerType\)[\s\S]*?return null;/,
+  'la souris garde le survol : l’appui long ne concerne que le doigt et le stylet');
+assert.match(battlePage, /startRpgLongPress\(event, \{\s*source: hote,\s*onTrigger:/,
+  'la page arme l’appui long sur le `pointerdown` d’une carte');
+assert.match(battlePage, /const hote = event\.target\?\.closest\?\.\('\[data-card-id\]'\);/,
+  'toute carte affichée porte son identifiant : main, table, terrains, cimetière, catalogue, deck');
+assert.match(battlePage, /data-scene="menu" onPointerDown=\{demarrerAppuiLongCarte\}/,
+  'le menu (catalogue et decks) répond à l’appui long');
+assert.match(battlePage, /data-scene="duel"\s*onPointerDown=\{demarrerAppuiLongCarte\}/,
+  'le plateau répond au même appui long');
+assert.match(battlePage, /touchDragRef\.current\?\.\(\);[\s\S]*?setApercuAppui\(carte\.id\)/,
+  'consulter une carte désarme le glisser-déposer lancé par le même doigt');
+assert.equal(battlePage.match(/<ApercuCarteAppuiLong carte=\{cardById\(apercuAppui\)\} onFermer=\{fermerApercuAppui\} \/>/g).length, 2,
+  'le volet d’aperçu est rendu au menu comme en duel');
+assert.match(battleCss, /\.rpg-card-peek\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1250;/s,
+  'le volet de l’aperçu couvre l’écran, au-dessus de l’écran de rotation');
+assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-hover-card-preview \{ display: none; \}[\s\S]*?\.rpg-card-peek \.rpg-hover-card-preview \{ display: grid; \}/,
+  'au doigt le survol reste masqué, mais l’aperçu de l’appui long s’affiche');
+assert.match(battleCss, /\.rpg-card-peek \.rpg-hover-card-preview\s*\{[^}]*position:\s*relative;/s,
+  'dans le volet, l’aperçu n’est plus placé au survol : le volet le centre');
+assert.match(battleCss, /@media \(max-height: 520px\) \{[\s\S]*?\.rpg-card-peek \.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(104px, min\(232px, 42dvh\)\)/s,
+  'en paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible — au menu comme en duel');
+assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-battle \[data-card-id\]\s*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;/s,
+  'une carte tenue une seconde n’appelle ni le menu natif ni la sélection de texte');
+assert.match(battlePage, /viewport\.mobile \? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer\.' : ''/,
+  'l’ouverture du duel annonce le geste au doigt');
+
+// ── Zone de jeu tactile élargie et piles de cartes homonymes ───────────────
+const cardStacks = readFileSync(new URL('../src/games/rpgCardStacks.js', import.meta.url), 'utf8');
+assert.match(cardStacks, /export function groupCartesMain\(main = \[\]\) \{/,
+  'les exemplaires identiques de la main sont regroupés, dans l’ordre d’arrivée');
+assert.match(cardStacks, /export function groupEntitesParCarte\(entites = \[\]\) \{/,
+  'les créatures en jeu portant la même carte sont regroupées, camp par camp');
+assert.match(cardStacks, /pile\.indices\.push\(index\);/,
+  'chaque pile garde les index réels de la main : le jeu vise toujours un exemplaire précis');
+
+assert.match(mobileCss, /grid-template-columns:\s*calc\(clamp\(116px, 16vw, 190px\) \+ var\(--terrain-inset\)\) minmax\(0, 1fr\) clamp\(200px, 27vw, 320px\);/,
+  'la colonne centrale du duel tactile est élargie : les deux rails latéraux rendent de la place');
+assert.match(mobileCss, /--terrain-inset:\s*clamp\(44px, 8vw, 160px\);/,
+  'la marge qui tient les terrains hors du cadre illustré est conservée telle quelle');
+assert.match(mobileCss, /--duel-card:\s*clamp\(48px, 17dvh, 100px\);/,
+  'la taille des cartes ne bouge pas : des cartes plus grandes en montreraient moins');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/s,
+  'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*padding:\s*4px 6px;[^}]*gap:\s*6px;/s,
+  'la main tactile resserre ses propres gouttières');
+assert.match(mobileCss, /\.card-row > \.rpg-card:first-child,\s*\.card-row > \.rpg-card-stack:first-child,\s*\.card-row > \.rpg-card-stack__toggle:first-child \{ margin-inline-start: auto; \}/,
+  'les piles et leur puce ×N participent au centrage du groupe de cartes');
+
+assert.match(mobileCss, /\.rpg-hand__pile,\s*\.rpg-card-stack \{\s*position: relative;\s*display: block;\s*flex: 0 0 auto;\s*\}/s,
+  'une pile est un bloc relatif : son compteur flotte sur le coin sans masquer nom ni coût');
+assert.match(mobileCss, /\.rpg-card-stack__count \{ position: absolute; top: -4px; right: -4px; z-index: 3; cursor: pointer; \}/,
+  'le compteur ×N d’une créature se touche pour déplier le groupe');
+assert.match(mobileCss, /\.rpg-hand__pile-count \{ position: absolute; top: -4px; right: -4px; z-index: 3; pointer-events: none; \}/,
+  'le compteur ×N de la main laisse passer le geste : la carte garde son action de jeu');
+assert.match(mobileCss, /\.rpg-card-stack__toggle \{[\s\S]{0,200}?min-height: 40px;[\s\S]{0,120}?cursor: pointer;\s*\}/,
+  'la puce qui replie un groupe reste une cible tactile');
+assert.match(mobileCss, /\.rpg-card-stack__count::after \{ content: ""; position: absolute; inset: -10px -10px -6px -2px; \}[\s\S]{0,120}?\.rpg-card-stack__toggle::after \{ content: ""; position: absolute; inset: -8px -6px; \}/,
+  'compteur et puce débordent vers l’extérieur : la zone de toucher est large sans voler le clic de la carte');
+assert.match(mobileCss, /\.rpg-card-stack \{\s*border-radius: 12px;\s*box-shadow: 3px 3px 0 #15121a, 6px 6px 0 var\(--rpg-frame-color, #f1f3f5\);\s*\}/s,
+  'les ombres décalées disent qu’il reste des exemplaires sous la carte, comme pour les terrains');
+assert.doesNotMatch(mobileCss, /\.rpg-card-stack > \.rpg-card \{[^}]*box-shadow/,
+  'l’ombre de pile reste sur le bloc : la carte garde ses halos d’état (prête, ciblée, bloqueur)');
+assert.match(battlePage, /className="rpg-card-stack"[\s\S]{0,120}?style=\{cardFrameStyle\(cardById\(pile\.carteId\)\)\}/,
+  'la pile reprend la couleur de cadre de sa carte pour ses ombres décalées');
+
+assert.match(battlePage, /import \{ groupCartesMain, groupEntitesParCarte \} from '\.\/rpgCardStacks\.js';/,
+  'la page de duel regroupe les homonymes avec le même module que ses tests');
+assert.match(battlePage, /const empilerCartes = viewport\.mobile;/,
+  'les piles sont réservées au doigt : le grand écran garde une carte par emplacement');
+assert.match(battlePage, /const groupesMain = empilerCartes\s*\?\s*groupCartesMain\(duel\.joueur\.main\)\s*:\s*duel\.joueur\.main\.map\(\(carteId, index\) => \(\{ carteId, indices: \[index\] \}\)\);/s,
+  'sans empilement, chaque carte de la main reste son propre groupe');
+assert.match(battlePage, /\{groupesMain\.map\(\(groupe\) => \{/, 'la main tactile est rendue pile par pile');
+assert.match(battlePage, /data-pile-count=\{exemplaires\}/, 'chaque emplacement de la main annonce son nombre d’exemplaires');
+assert.match(battlePage, /groupe\.indices\.includes\(carteEnVol\.handIndex\)/,
+  'le vol de carte suit le groupe qui contient l’exemplaire joué');
+assert.match(battlePage, /groupe\.indices\.includes\(animation\.handIndex\)/,
+  'l’animation de pioche tombe sur le groupe qui reçoit la carte');
+assert.match(battlePage, /return empilerCartes\s*\?\s*<span className="rpg-hand__pile" key=\{`\$\{carteId\}-\$\{i\}`\}>\{contenu\}<\/span>\s*:\s*<Fragment key=\{`\$\{carteId\}-\$\{i\}`\}>\{contenu\}<\/Fragment>;/,
+  'à la souris, le DOM de la main reste exactement celui d’origine');
+assert.match(battlePage, /pile de \$\{exemplaires\} exemplaires identiques/,
+  'le libellé accessible de la main dit combien d’exemplaires la pile contient');
+
+assert.match(battlePage, /\{duel\.sorcier\.creatures\.length \? campEnnemi\.piles\.map\(\(pile\) => \{/,
+  'le camp du sorcier est rendu pile par pile');
+assert.match(battlePage, /\{duel\.joueur\.creatures\.length \? campJoueur\.piles\.map\(\(pile\) => \{/,
+  'le camp du joueur est rendu pile par pile');
+assert.match(battlePage, /const cle = clePile\('ennemi', pile\.carteId\);/, 'chaque pile adverse a sa clé de dépliage');
+assert.match(battlePage, /const cle = clePile\('joueur', pile\.carteId\);/, 'chaque pile du joueur a sa clé de dépliage');
+assert.match(battlePage, /const affichees = deployee \? pile\.entites : \[teteDePile\('(ennemi|joueur)', pile\)\];/,
+  'une pile repliée ne montre que sa carte de tête');
+assert.match(battlePage, /className="rpg-card-stack__count"[\s\S]{0,200}?aria-label=\{`Déplier les \$\{pile\.entites\.length\}/,
+  'le compteur ×N d’une pile repliée est un bouton qui déplie, avec son libellé');
+assert.match(battlePage, /className="rpg-card-stack__toggle"[\s\S]{0,200}?aria-label=\{`Replier les \$\{pile\.entites\.length\}/,
+  'un groupe déplié propose une puce ×N pour se replier');
+assert.match(battlePage, /const pileDeployee = \(cote, pile\) => pile\.entites\.length < 2\s*\|\|\s*pile\.entites\.some\(\(entite\) => idsActionEnCours\.has\(entite\.id\)\)\s*\|\|\s*pilesDeployees\.has\(clePile\(cote, pile\.carteId\)\);/s,
+  'un groupe se déplie dès qu’un de ses exemplaires participe à l’action en cours');
+assert.match(battlePage, /const idsActionEnCours = new Set\(\[[\s\S]*?\.\.\.attaquants,[\s\S]*?combatEntrant\?\.attaquants[\s\S]*?blocages[\s\S]*?ciblesAttaque[\s\S]*?sortJoue\?\.cible\?\.targetIds[\s\S]*?bloqueurSelectionne[\s\S]*?cibleAttaqueEnCours[\s\S]*?animationsEntites/,
+  'attaquants déclarés, bloqueurs, cibles de sort et effets en cours déplient leur groupe : flèches et destructions trouvent leur carte');
+assert.match(battlePage, /entite\.ready && !entite\.attaquee && !attaquants\.includes\(entite\.id\)/,
+  'la tête de pile est d’abord l’exemplaire prêt à agir');
+assert.match(battlePage, /const element = elements\.get\(entite\.id\)\s*\?\?\s*table\?\.querySelector\(`\.card-row \[data-card-id="\$\{entite\.carteId\}"\], \.rpg-terrains \[data-card-id="\$\{entite\.carteId\}"\]`\);/s,
+  'un exemplaire masqué emprunte la place de sa pile pour l’effet de destruction');
+
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
   + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, blanc Sable, rouge Braise, or bicolore), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
@@ -434,6 +571,6 @@ console.log(
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, Fin du tour doré et compact, phases du duel indiquées par des icônes lumineuses agrandies, annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu et voile de lisibilité du sable, régression Rafale.'
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression Rafale.'
 );
 process.exit(0);
