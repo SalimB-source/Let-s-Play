@@ -18,7 +18,7 @@ try {
       Object.defineProperty(Element.prototype, key, { value: undefined, configurable: true });
     }
     if (screen.orientation) Object.defineProperty(screen.orientation, 'lock', { value: () => Promise.reject(new Error('unsupported')), configurable: true });
-    Math.random = () => 0.42;
+    Math.random = () => 0.425;
   });
   await page.goto(process.env.RPG_URL || 'http://localhost:5173/Let-s-Play/jeu/sablier-de-bab-el');
   await page.getByRole('button', { name: /Lancer le duel/i }).click();
@@ -60,8 +60,12 @@ try {
         try {
           for (const count of [1, 3, 12]) {
             const cards = Array.from({ length: count }, () => {
-              const card = document.createElement('button');
+              const card = document.querySelector('.rpg-hand__card:has(.rpg-hand__stats)').cloneNode(true);
               card.className = 'rpg-card rpg-card--img';
+              card.querySelector('.rpg-hand__stats').className = 'rpg-card__foot';
+              card.querySelector('.rpg-hand__stat--atk').className = 'rpg-card__stat--atk';
+              card.querySelector('.rpg-hand__stat--def').className = 'rpg-card__pt';
+              if (count === 3) card.querySelectorAll('.rpg-stat-value').forEach(node => { node.textContent = '12'; });
               return card;
             });
             row.replaceChildren(...cards);
@@ -69,23 +73,77 @@ try {
             const lane = row.getBoundingClientRect();
             const first = cards[0].getBoundingClientRect();
             const last = cards.at(-1).getBoundingClientRect();
+            const metrics = cards[0].querySelector('.rpg-card__foot').getBoundingClientRect();
+            const cells = [...cards[0].querySelectorAll('.rpg-card__foot > span')].map(e => e.getBoundingClientRect());
+            const badgesFit = metrics.left >= first.left && metrics.right <= first.right
+              && cells[0].right <= cells[1].left && cells[1].right <= first.right;
+            const valuesFit = [...cards[0].querySelectorAll('.rpg-stat-value')].every(node => {
+              const cell = node.parentElement.getBoundingClientRect(), value = node.getBoundingClientRect();
+              return value.left >= cell.left && value.right <= cell.right;
+            });
             const overflowing = row.scrollWidth > row.clientWidth;
             const centred = Math.abs((first.left + last.right) / 2 - (lane.left + lane.right) / 2) < 1;
             row.scrollLeft = row.scrollWidth;
             const end = cards.at(-1).getBoundingClientRect();
-            results.push({ count, overflowing, centred, reachable: first.left >= lane.left && end.right <= lane.right + 1 });
+            results.push({ count, overflowing, centred, badgesFit, valuesFit, reachable: first.left >= lane.left && end.right <= lane.right + 1 });
           }
         } finally { row.replaceChildren(...original); row.scrollLeft = 0; }
       }
       return results;
     });
     for (const group of groups) {
+      assert.ok(group.badgesFit && group.valuesFit, `${width}: battlefield ATK/DEF fit inside the card without overlap`);
       assert.ok(group.overflowing ? group.reachable : group.centred, `${width}: group of ${group.count} cards is centred or fully scrollable`);
     }
+    const rails = await page.evaluate(() => {
+      const results = [];
+      for (const row of document.querySelectorAll('.rpg-terrains')) {
+        const original = [...row.childNodes];
+        try {
+          for (const count of [1, 8, 26]) {
+            const cards = Array.from({ length: count }, () => {
+              const card = document.createElement('button');
+              card.className = 'rpg-terrain rpg-card--rarity-commune is-tapped';
+              card.style.animation = 'none';
+              card.style.transition = 'none';
+              return card;
+            });
+            row.replaceChildren(...cards);
+            row.scrollTop = 0;
+            row.scrollLeft = 0;
+            const rail = row.getBoundingClientRect();
+            const first = cards[0].getBoundingClientRect();
+            row.scrollTop = row.scrollHeight;
+            const last = cards.at(-1).getBoundingClientRect();
+            results.push(first.left >= rail.left && first.right <= rail.right && first.top >= rail.top
+              && last.left >= rail.left && last.right <= rail.right && last.bottom <= rail.bottom);
+          }
+        } finally { row.replaceChildren(...original); row.scrollTop = 0; }
+      }
+      const card = document.querySelector('.rpg-hand__card:has(.rpg-hand__stats)');
+      const rect = card.getBoundingClientRect();
+      const badges = [...card.querySelectorAll('.rpg-hand__stat')].map(e => e.getBoundingClientRect());
+      results.push(badges[0].left >= rect.left && badges[0].right <= badges[1].left
+        && badges[1].right <= rect.right && badges.every(r => r.bottom <= rect.bottom));
+      return results;
+    });
+    assert.ok(rails.every(Boolean), `${width}: tilted terrain corners and hand stats stay inside their visible bounds`);
     console.log(`✓ Layout ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
   await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
+  await page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first().tap();
+  const creaturePreview = page.locator('.rpg-card-preview');
+  await creaturePreview.waitFor();
+  const visual = await creaturePreview.locator('.rpg-card-preview__art').boundingBox();
+  const stats = await creaturePreview.locator('.rpg-card-preview__stats').boundingBox();
+  const compact = await creaturePreview.boundingBox();
+  assert.ok(compact.width <= 560, 'Preview is compact, not a full-width banner');
+  assert.ok(stats.y >= visual.y + visual.height && Math.abs(stats.x + stats.width / 2 - visual.x - visual.width / 2) < 1, 'ATK/DEF appear immediately below the illustration');
+  assert.ok(Math.abs(visual.width / visual.height - .8) < .01, 'Preview artwork keeps its card aspect ratio');
+  assert.equal(await creaturePreview.locator('.rpg-card-preview__details .rpg-card-preview__stats').count(), 0);
+  if (process.env.RPG_CREATURE_SCREENSHOT) await page.screenshot({ path: process.env.RPG_CREATURE_SCREENSHOT });
+  await page.getByRole('button', { name: 'Retour au plateau', exact: true }).click();
   const terrain = page.locator('.rpg-hand__card--terrain.is-playable').first();
   await terrain.scrollIntoViewIfNeeded();
   // Tap opens a preview, not a play. Its contextual action plays the card.

@@ -26,6 +26,8 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-menu-button--primary'));
     assert.ok(container.querySelector('.rpg-battle--touch'));
     await click(hand('fennec-des-decombres'));
+    assert.equal(container.querySelector('.rpg-card-preview__visual .rpg-card-preview__stats')?.getAttribute('aria-label'), 'Attaque 3, défense 1');
+    assert.equal(container.querySelector('.rpg-card-preview__details .rpg-card-preview__stats'), null, 'stats stay with the card, not the text panel');
     assert.equal(action('Jouer la carte').disabled, true, 'unpayable creature is inspectable but cannot be played');
     await click(action('Retour au plateau'));
     await play('desert');

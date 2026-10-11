@@ -382,6 +382,15 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
   );
 }
 
+/** Vector stat symbols remain legible even on WebViews without emoji fonts. */
+function CardStatIcon({ type }) {
+  return <svg className="rpg-stat-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    {type === 'attack'
+      ? <><path d="M15 3h6v6L11 19l-6-6L15 3Z" /><path d="m3 11 10 10M8 16l-5 5" /></>
+      : <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7l-9-4Z" />}
+  </svg>;
+}
+
 /** Face full art : couleur, coût, type et statistiques des créatures. */
 const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
 
@@ -518,8 +527,8 @@ function TableCard({
           <span>{cardFaceTypeLine(carte)}</span>
         </div>
         <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${blessee ? ', blessée' : ''}`}>
-          <span className="rpg-card__stat--atk">⚔ {entite.atk}</span>
-          <span className={`rpg-card__pt${blessee ? ' is-wounded' : ''}`}>🛡 {entite.pv}</span>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{entite.atk}</span></span>
+          <span className={`rpg-card__pt${blessee ? ' is-wounded' : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span></span>
         </footer>
         {actionFx && (
           <span key={actionFx.token} className={`rpg-card__action-fx rpg-card__action-fx--${actionFx.type}`} aria-hidden="true">
@@ -710,10 +719,16 @@ function CardPreview({ carte, jouable, onClose, actions = [], hint, entite }) {
         aria-labelledby={`rpg-card-preview-title-${carte.id}`}
       >
         <button type="button" className="rpg-card-preview__close" onClick={onClose} aria-label="Fermer l’aperçu">×</button>
-        <div className={`rpg-card-preview__art ${cardRarityClass(carte)}`} style={cardRarityStyle(carte)}>
-          <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} />
-          <CardElementBadge carte={carte} />
-          <span>{rarete.label}</span>
+        <div className="rpg-card-preview__visual">
+          <div className={`rpg-card-preview__art ${cardRarityClass(carte)}`} style={cardRarityStyle(carte)}>
+            <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} />
+            <CardElementBadge carte={carte} />
+            <span>{rarete.label}</span>
+          </div>
+          {estCreature && <p className="rpg-card-preview__stats" aria-label={`Attaque ${entite?.atk ?? carte.atk}, défense ${entite?.pv ?? carte.def}`}>
+            <span title="Attaque"><CardStatIcon type="attack" /><b>{entite?.atk ?? carte.atk}</b></span>
+            <span title="Défense"><CardStatIcon type="defense" /><b>{entite?.pv ?? carte.def}</b></span>
+          </p>}
         </div>
         <div className="rpg-card-preview__details">
           <header>
@@ -726,7 +741,6 @@ function CardPreview({ carte, jouable, onClose, actions = [], hint, entite }) {
               ? effets.map((effet, index) => <span key={`${index}-${effet}`}>{effet}</span>)
               : <span>Aucune capacité.</span>}
           </div>
-          {estCreature && <p className="rpg-card-preview__stats">⚔ {entite?.atk ?? carte.atk} <span>·</span> 🛡 {entite?.pv ?? carte.def}</p>}
           {carte.flavor && <p className="rpg-card-preview__flavor">« {carte.flavor} »</p>}
           <p className="rpg-card-preview__hint">
             {hint ?? (jouable
@@ -1247,7 +1261,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useLayoutEffect(() => {
     if (!duel) return;
     const terrains = tableRef.current?.querySelector('.rpg-terrains--joueur');
-    if (terrains) terrains.scrollLeft = terrains.scrollWidth;
+    if (terrains) {
+      terrains.scrollLeft = terrains.scrollWidth;
+      terrains.scrollTop = terrains.scrollHeight;
+    }
   }, [duel?.joueur.terrains.length]);
 
   const afficherApercuSurvol = (carte, event) => {
@@ -2916,8 +2933,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   <span className="rpg-hand__type">{cardFaceTypeLine(carte)}</span>
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-                      <span className="rpg-hand__stat rpg-hand__stat--atk">⚔ {carte.atk}</span>
-                      <span className="rpg-hand__stat rpg-hand__stat--def">🛡 {carte.def}</span>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
                     </span>
                   )}
                 </button>
