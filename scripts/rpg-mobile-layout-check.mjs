@@ -52,6 +52,36 @@ try {
     }
     assert.ok(result.card.top >= result.hand.top - 1 && result.card.bottom <= result.hand.bottom + 1, `${width}: hand cards are not clipped vertically`);
     assert.ok(result.endTurn.height >= 44, `${width}: touch-sized end-turn button`);
+    // Layout-only fixtures: test populated lanes without changing game state.
+    const groups = await page.evaluate(() => {
+      const results = [];
+      for (const row of document.querySelectorAll('.card-row')) {
+        const original = [...row.childNodes];
+        try {
+          for (const count of [1, 3, 12]) {
+            const cards = Array.from({ length: count }, () => {
+              const card = document.createElement('button');
+              card.className = 'rpg-card rpg-card--img';
+              return card;
+            });
+            row.replaceChildren(...cards);
+            row.scrollLeft = 0;
+            const lane = row.getBoundingClientRect();
+            const first = cards[0].getBoundingClientRect();
+            const last = cards.at(-1).getBoundingClientRect();
+            const overflowing = row.scrollWidth > row.clientWidth;
+            const centred = Math.abs((first.left + last.right) / 2 - (lane.left + lane.right) / 2) < 1;
+            row.scrollLeft = row.scrollWidth;
+            const end = cards.at(-1).getBoundingClientRect();
+            results.push({ count, overflowing, centred, reachable: first.left >= lane.left && end.right <= lane.right + 1 });
+          }
+        } finally { row.replaceChildren(...original); row.scrollLeft = 0; }
+      }
+      return results;
+    });
+    for (const group of groups) {
+      assert.ok(group.overflowing ? group.reachable : group.centred, `${width}: group of ${group.count} cards is centred or fully scrollable`);
+    }
     console.log(`✓ Layout ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
@@ -63,6 +93,14 @@ try {
   await page.locator('.rpg-card-preview').waitFor();
   const preview = await page.locator('.rpg-card-preview').boundingBox();
   assert.ok(preview.x >= 0 && preview.y >= 0 && preview.x + preview.width <= 844 && preview.y + preview.height <= 390);
+  const labels = await page.locator('.rpg-card-preview__actions .rpg-btn').evaluateAll(buttons => buttons.map(button => {
+    const range = document.createRange();
+    range.selectNodeContents(button);
+    const label = range.getBoundingClientRect();
+    const box = button.getBoundingClientRect();
+    return { text: button.textContent, offset: Math.abs((label.top + label.bottom) / 2 - (box.top + box.bottom) / 2) };
+  }));
+  for (const label of labels) assert.ok(label.offset <= 2, `Vertically centred button: ${label.text}`);
   console.log('✓ Tap preview fits the landscape viewport');
   if (process.env.RPG_SCREENSHOT) await page.screenshot({ path: process.env.RPG_SCREENSHOT });
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 0);

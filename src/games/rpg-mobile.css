@@ -22,9 +22,25 @@
 .rpg-rotate-prompt small { max-width: 40ch; color: #ccbca1; line-height: 1.5; }
 .rpg-rotate-prompt .rpg-btn { min-height: 44px; flex-shrink: 0; }
 
+/* Centre the played cards as a group, in both camps. Auto margins consume
+   spare space but collapse on overflow, keeping the first card reachable. */
+.card-row { justify-content: flex-start; }
+.card-row > .rpg-card:first-child { margin-inline-start: auto; }
+.card-row > .rpg-card:last-child { margin-inline-end: auto; }
+
 /* Contextual actions are available with mouse, keyboard and touch. */
 .rpg-card-preview__actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.rpg-card-preview__actions .rpg-btn { min-height: 44px; padding: 10px 14px; font-size: 13px; }
+.rpg-card-preview__actions .rpg-btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+}
 .rpg-card-preview__actions .rpg-btn:disabled { opacity: .45; cursor: not-allowed; }
 .rpg-card-preview__close { min-width: 44px; min-height: 44px; }
 .rpg-card-preview__details header { padding-right: 40px; }
