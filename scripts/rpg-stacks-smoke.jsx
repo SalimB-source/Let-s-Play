@@ -200,6 +200,14 @@ async function scenarioChampAdverse(assert) {
   const finirLeTour = async () => {
     await click(container.querySelector('.rpg-btn--endturn:not([disabled])'), 'Fin du tour est disponible');
     await attendre(1200);
+    // Chaque carte annoncée par le sorcier attend la réponse du joueur : « Laisser passer » la résout.
+    for (let i = 0; i < 20; i += 1) {
+      const laisser = [...container.querySelectorAll('button')]
+        .find((bouton) => bouton.textContent.includes('Laisser passer') && !bouton.disabled);
+      if (!laisser) break;
+      await click(laisser, 'laisser passer l’annonce du sorcier');
+      await attendre(1200);
+    }
   };
   try {
     await act(async () => root.render(<RpgDuelPage

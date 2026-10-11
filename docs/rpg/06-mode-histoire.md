@@ -26,6 +26,11 @@ en bas, le sable a déjà tout repris.
 | 4 | La Souffleuse de verre | Variante hybride + Fériel | `normale` / `agressif` | Coups rapides, course aux PV |
 | 5 | Le Grand Horloger | Deck propre + 2 mythiques | `veilleur` / `controle` | **boss** : deux phases (deux duels enchaînés, PV partiellement conservés) |
 
+**La Tour des Abysses** (4 étages, bleue) : ses quatre sorciers jouent la Marée
+des abysses, avec contres et bêtes marines. Elle est la seule tour dédiée à une
+couleur ; les trois autres mélangent encore leurs couleurs. Dans le mode Histoire,
+le sorcier peut jouer n'importe quel deck de campagne (`RPG_STORY_DECKS`).
+
 Une tour = 5 étages × 1 duel, un boss tous les 3 étages mineurs si on
 découpe plus grand (les autres tours : la Tour des Heures, la Tour du
 Souk, la Tour des Sables…). Les noms et dialogues vivent dans le dossier

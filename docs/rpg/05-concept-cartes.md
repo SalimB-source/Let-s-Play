@@ -122,3 +122,50 @@ Les cartes posées sont **courtes** — la table reste lisible :
 
 Plus de grand encadré de règles ni de saveur sur les cartes posées : la
 règle détaillée vit dans la carte en main et dans le journal.
+
+## 7. Les contres (deck Marée des abysses)
+
+Le deck **Marée des abysses** (`RPG_DECK_MAREE_BASE`, mono-Eau, 16 Mer) joue la
+réponse : des **contres** qui défont la carte que le sorcier vient d'annoncer.
+
+Il n'y a **pas de prévention** : aucun contre ne reste en réserve pour la suite.
+Un contre ne peut être joué que pendant une annonce du sorcier, et il vise
+**cette** carte-là.
+
+| Carte | Contre | Effet |
+|---|---|---|
+| *Contresort des abîmes* (×3) | n'importe quelle carte annoncée (créature ou sort) | `cible: 'carte'` |
+| *Silence d'écume* (×3) | un sort annoncé de Braise ou de Sable | `cible: 'sort'`, `contre: ['braise','sable']` |
+| *Marée contraire* (×2) | un sort annoncé, puis piochez une carte | `cible: 'sort'`, `pioche: 1` |
+
+Résolution (`contrerAnnonce`, moteur) :
+- le contre doit correspondre à la carte annoncée, sinon il est refusé et rien n'est payé ;
+- la carte annoncée n'a pas été payée : elle quitte la main du sorcier et va au
+  cimetière, sans effet ;
+- l'annonce est close, et le sorcier passe à sa carte suivante.
+
+**Fenêtre de réponse à chaque carte du sorcier.** Le sorcier n'aligne pas ses
+cartes d'un coup : il **annonce** la carte suivante (`rpgSorcierAnnonceSuivante`),
+sans la payer. Une bannière « Le sorcier annonce X » apparaît, et le joueur a la main :
+- il peut **répondre** avec un contre (la main reste jouable) ;
+- ou **laisser passer** (`rpgSorcierResoudreAnnonce`) : la carte se résout, puis le
+  sorcier annonce la suivante, jusqu'à épuisement avant sa phase d'attaque.
+
+**Bakunawa** (mythique) n'a plus d'effet de contre : à son arrivée, elle inflige
+2 dégâts à une créature adverse ciblée. Les autres bêtes : **Kraken** (à sa
+destruction, pioche 2), **Léviathan** (3 dégâts à une créature à l'arrivée),
+**Jörmungandr** (3 dégâts au sorcier à l'arrivée).
+
+**Contre de l'IA.** Quand le joueur lance une magie ou pose une créature (hors
+annonce en cours), le sorcier peut contrer : il choisit le contre le moins cher
+qui vise la carte et qu'il peut payer (`choisirContreIA`, moteur). Seules les cartes
+de coût 2 ou plus sont contrées. La carte du joueur est défaussée sans effet ; une
+créature contrée n'entre pas en jeu. L'IA ne lance jamais de contre de sa propre
+initiative : elle ne contre que la carte du joueur.
+
+Limites : le moteur n'a pas de pile de résolution, donc un contre ne peut pas
+défaire un sort **déjà résolu**. Une réponse du joueur dans la fenêtre d'annonce
+du sorcier n'est pas contrée par l'IA. Un contre de l'IA n'existe que si son deck
+contient des contres (voir la décision sur le deck de l'IA).
+
+Vérifications : `tests/rpg-maree.test.js` (inclus dans `npm run check:rpg`).
