@@ -31,7 +31,7 @@
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
     "check:mirage-engine": "node --test tests/mirage-engine.test.js",
-    "check:rpg": "node --test tests/rpg-duel.test.js tests/rpg-ia.test.js tests/rpg-story.test.js tests/rpg-audio.test.js tests/rpg-touch-drag.test.js tests/rpg-landscape.test.js tests/rpg-terrain-stacks.test.js",
+    "check:rpg": "node --test tests/rpg-duel.test.js tests/rpg-ia.test.js tests/rpg-story.test.js tests/rpg-audio.test.js tests/rpg-touch-drag.test.js tests/rpg-landscape.test.js tests/rpg-terrain-stacks.test.js tests/rpg-plateaux.test.js",
     "check:rpg-mobile": "node scripts/rpg-mobile-layout-check.mjs",
     "check:rpg-ui": "node scripts/rpg-battle-ui-check.mjs && node scripts/rpg-preview-check.mjs",
     "check:rpg-story-ui": "node scripts/rpg-story-ui-check.mjs",

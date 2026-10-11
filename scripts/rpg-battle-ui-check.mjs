@@ -372,6 +372,26 @@ assert.match(battleCss, /\.rpg-hand__card\.rpg-hand-card--drawing\s*\{[^}]*anima
   'la pioche anime les vraies cartes en taille réelle dans la main');
 assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d\(-100%, 0, 0\)[\s\S]*?translate3d\(0, 0, 0\)/,
   'les cartes piochées glissent de gauche à droite jusqu’à leur place dans la main');
+// ── Les plateaux du duel : le terrain change de partie en partie ────────────
+const plateauxSource = readFileSync(new URL('../src/games/rpgPlateaux.js', import.meta.url), 'utf8');
+assert.match(plateauxSource, /id: 'erg-du-sahara'[\s\S]*?fichier: 'plateau-erg-du-sahara\.jpg'/,
+  'le désert du Sahara est un plateau déclaré, avec son fond dans public/');
+assert.match(battlePage, /tirerPlateau\(\{ choix: choixPlateau, rng, precedentId: plateauPrecedentRef\.current \}\)/,
+  'chaque nouvelle partie retire un plateau en écartant celui du duel précédent');
+assert.match(battlePage, /sauverChoixPlateau\(choix\)/,
+  'le plateau verrouillé au menu est mémorisé sur l’appareil');
+assert.match(battlePage, /className=\{`card-table card-table--plateau-\$\{plateau\.id\}/,
+  'la table porte le plateau tiré pour la partie en cours');
+assert.match(battlePage, /Plateau : \$\{plateau\.nom\}/,
+  'le message d’ouverture annonce le terrain de la partie');
+assert.match(plateauxSource, /id: 'caravane-de-gourara'[\s\S]*?fichier: 'plateau-caravane-de-gourara\.jpg'/,
+  'la piste de caravane du Gourara est un second plateau saharien');
+for (const plateauSable of ['erg-du-sahara', 'caravane-de-gourara']) {
+  assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSable}\\s*\\{[^}]*background-color:`),
+    `le plateau ${plateauSable} a sa propre couleur de repli`);
+}
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-table--plateau-erg-du-sahara, \.card-table--plateau-caravane-de-gourara\)::before\s*\{[^}]*radial-gradient/s,
+  'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
@@ -380,6 +400,7 @@ console.log(
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, Fin du tour doré et compact, phases du duel indiquées par des icônes lumineuses agrandies, annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
-  + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, régression Rafale.'
+  + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara) tirés à chaque nouvelle partie sans jamais reprendre le terrain du duel précédent, verrou de plateau mémorisé depuis le menu et voile de lisibilité du sable, régression Rafale.'
 );
 process.exit(0);

@@ -1998,6 +1998,22 @@
     linear-gradient(180deg, rgba(11, 8, 5, .32), transparent 18%, transparent 68%, rgba(8, 7, 8, .56));
 }
 
+/* Les plateaux du duel (voir `rpgPlateaux.js`) : le fond image est posé par la
+   page, ces classes ne règlent que la couleur de repli et le voile propre au
+   terrain clair. Le sable du Sahara est bien plus lumineux que le bois : il
+   reçoit une ombre chaude plus dense, sinon les libellés clairs de la table et
+   les cartes posées se noient dans le beige. Le voile est le même mécanisme que
+   pour le bois (le pseudo-élément de la table), et il disparaît en tactile
+   comme lui (`rpg-mobile.css`). */
+.card-table--plateau-table-des-heures { background-color: #1c1006; }
+.card-table--plateau-erg-du-sahara { background-color: #a8804f; }
+.card-table--plateau-caravane-de-gourara { background-color: #a8764f; }
+.rpg-battle:not(.rpg-battle--touch) :is(.card-table--plateau-erg-du-sahara, .card-table--plateau-caravane-de-gourara)::before {
+  background:
+    radial-gradient(ellipse at 50% 44%, rgba(26, 15, 6, .14), rgba(20, 11, 5, .5) 88%),
+    linear-gradient(180deg, rgba(22, 13, 5, .44) 0%, rgba(30, 18, 8, .2) 24%, rgba(30, 18, 8, .12) 62%, rgba(18, 11, 5, .48) 100%);
+}
+
 .rpg-hidden-hand {
   position: absolute;
   z-index: 3;
@@ -3773,6 +3789,74 @@
 .rpg-menu-button--resume { width: 100%; margin-top: auto; border-color: rgba(163, 203, 164, .44); color: #c8e4c1; }
 .rpg-menu-button--resume:hover { background: rgba(49, 90, 57, .36); }
 
+/* ── Le terrain d'affrontement : les plateaux du duel ──────────────────────
+   Le plateau change de partie en partie : ce bloc annonce la règle, montre ce
+   qu'est chaque terrain, et verrouille un choix au besoin. La pastille
+   « Aléatoire » vit dans l'en-tête, les plateaux dans la grille. */
+.rpg-mode-menu__boards {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 13px;
+  padding: clamp(16px, 2.4vw, 24px);
+  border: 1px solid rgba(235, 215, 176, .2);
+  border-radius: 20px;
+  background: linear-gradient(155deg, rgba(24, 20, 21, .9), rgba(13, 11, 16, .88));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(12px);
+}
+.rpg-mode-menu__boards-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.rpg-mode-menu__boards-heading h2 { margin: 4px 0 0; color: #fff1d5; font: 700 22px/1.08 Georgia, serif; }
+.rpg-board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 12px; }
+.rpg-board-choice {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px;
+  border: 1px solid rgba(237, 220, 187, .16);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .035);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.rpg-board-choice:hover,
+.rpg-board-choice:focus-visible {
+  border-color: rgba(231, 191, 101, .52);
+  background: rgba(244, 192, 79, .1);
+  outline: none;
+}
+.rpg-board-choice.is-selected {
+  border-color: rgba(240, 213, 148, .84);
+  background: linear-gradient(135deg, rgba(201, 150, 57, .24), rgba(111, 69, 34, .2));
+  box-shadow: 0 0 0 1px rgba(240, 213, 148, .34) inset;
+}
+.rpg-board-choice img {
+  width: 106px;
+  height: 68px;
+  flex: none;
+  object-fit: cover;
+  border: 2px solid #8c7443;
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .45);
+}
+.rpg-board-choice.is-selected img { border-color: #f0d994; }
+.rpg-board-choice__copy { min-width: 0; display: grid; gap: 4px; }
+.rpg-board-choice__copy strong { color: #f6ead1; font: 700 15px/1.15 Georgia, serif; }
+.rpg-board-choice__copy small { color: #d8b76e; font: 800 8px/1.3 var(--mono, monospace); letter-spacing: .1em; text-transform: uppercase; }
+.rpg-board-choice__copy em { color: rgba(243, 232, 213, .62); font: 11px/1.45 Georgia, serif; font-style: normal; }
+.rpg-board-choice--aleatoire { flex: none; padding: 8px 14px; gap: 10px; }
+.rpg-board-choice--aleatoire > span[aria-hidden] { font-size: 20px; line-height: 1; }
+.rpg-board-choice--aleatoire .rpg-board-choice__copy small { letter-spacing: .04em; text-transform: none; }
+.rpg-mode-menu__boards-note { margin: 0; color: rgba(243, 232, 213, .6); font: 11px/1.55 Georgia, serif; }
+
 .rpg-deck-catalog {
   min-height: 0;
   display: grid;
@@ -3964,6 +4048,11 @@
   .rpg-mode-menu__loadout-heading { grid-column: auto; align-items: center; }
   .rpg-menu-deck-summary { min-height: 82px; }
   .rpg-menu-deck-summary img { width: 48px; height: 62px; }
+  .rpg-mode-menu__boards { padding: 14px; gap: 11px; }
+  .rpg-mode-menu__boards-heading { align-items: stretch; }
+  .rpg-board-choice--aleatoire { width: 100%; justify-content: center; }
+  .rpg-board-choice img { width: 78px; height: 52px; }
+  .rpg-board-choice__copy em { font-size: 10px; }
   .rpg-mode-menu__footer { font-size: 7px; letter-spacing: .08em; }
   .rpg-deck-catalog__choices { grid-template-columns: minmax(0, 1fr); }
   .rpg-deck-catalog__rail { padding: 13px; }
