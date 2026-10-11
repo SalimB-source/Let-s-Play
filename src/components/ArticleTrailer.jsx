@@ -37,8 +37,10 @@ export default function ArticleTrailer({ label, meta, items = [], credit, pendin
     if (!pending) return null;
     return (
       <figure className="article-trailer article-trailer--pending">
+        {/* Sans vidéo, l'en-tête ne doit pas annoncer une bande-annonce :
+            il dit l'absence, et la phrase du dessous l'explique. */}
         <div className="section-label">
-          <span><b>BANDE-ANNONCE</b> / {label || 'À VENIR'}</span>
+          <span><b>PAS DE VIDÉO</b> / {label || 'À VENIR'}</span>
           {meta ? <span>{meta}</span> : null}
         </div>
         <p className="article-trailer-pending"><span className="live-dot" /> {pending}</p>
