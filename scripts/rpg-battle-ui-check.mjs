@@ -97,6 +97,12 @@ assert.match(battlePage, /const afficherApercuSurvol = \(carte, event\) => \{[\s
   'le survol déclenche l’aperçu instantané de la carte');
 assert.match(tableCardSource, /onHoverCard\?\.\(carte, event\)/,
   'les créatures en jeu utilisent le même aperçu sans icône d’état');
+assert.match(battleCss, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.rpg-card--type-creature:is\(:hover, :focus-visible\) \.rpg-card__img \{[^}]*animation: rpg-creature-hover-float 2\.2s ease-in-out infinite;/s,
+  'les illustrations des créatures flottent uniquement au survol ou au focus sur un appareil avec pointeur précis');
+assert.match(battleCss, /@keyframes rpg-creature-hover-float\s*\{\s*0%, 100% \{ transform: translate3d\(-1px, 0, 0\) scale\(1\.04\); \}\s*50% \{ transform: translate3d\(1px, -3px, 0\) scale\(1\.04\); \}\s*\}/s,
+  'le mouvement des créatures combine un léger flottement et un balancement gauche-droite');
+assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-card--type-creature:is\(:hover, :focus-visible\) \.rpg-card__img \{[^}]*animation: none !important;/s,
+  'le flottement des créatures respecte la préférence de mouvement réduit');
 assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(carte, event\)\}/,
   'les cartes affichent leur aperçu dès l’entrée de la souris');
 assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?jouerCarteDepuisMain\(carteId, handIndex\)/,
