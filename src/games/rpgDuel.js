@@ -261,6 +261,7 @@ function creerEntiteCreature(carte) {
     esquive: Math.max(0, carte.esquive ?? 0),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
+    envol: Boolean(carte.envol),
     protection: carte.protection ? {
       contre: carte.protection.contre,
       toursRestants: carte.protection.tours ?? 2,
@@ -521,6 +522,12 @@ const pret = (entite) => entite && entite.ready && !entite.attaquee;
 // qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
 const peutBloquer = (entite) => entite && !entite.attaquee;
 
+/** Envol : un attaquant volant ne peut être bloqué que par une créature volante. */
+export function rpgPeutBloquerAttaquant(bloqueur, attaquant) {
+  if (!bloqueur || !attaquant) return false;
+  return !attaquant.envol || Boolean(bloqueur.envol);
+}
+
 /** Combat entre créatures : dégâts mutuels et capacités liées au combat. */
 export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const attaquant = duel[cote].creatures.find((e) => e.id === entiteId);
@@ -633,6 +640,7 @@ export function rpgChoisirBloqueurs(duel, cote, attaquantIds, ciblesAttaque = {}
   for (const attaquant of attaquants) {
     const index = bloqueursDisponibles.findIndex((bloqueur) => (
       !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))
+      && rpgPeutBloquerAttaquant(bloqueur, attaquant)
     ));
     if (index < 0) continue;
     const [bloqueur] = bloqueursDisponibles.splice(index, 1);
@@ -718,6 +726,7 @@ export function rpgLancerAttaque(
     for (const bloqueurId of idsBloqueurs) {
       const bloqueur = bloqueursDisponibles.find((entite) => entite.id === bloqueurId);
       if (!bloqueur || bloqueursUtilises.has(bloqueurId)) return { ok: false, raison: 'bloqueur' };
+      if (!rpgPeutBloquerAttaquant(bloqueur, attaquant)) return { ok: false, raison: 'envol' };
       if (rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))) {
         return { ok: false, raison: 'protection' };
       }

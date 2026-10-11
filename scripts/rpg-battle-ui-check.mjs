@@ -108,6 +108,16 @@ assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
 assert.match(duelEngine, /cibleRapideId[\s\S]*?resume\.coupsRapides\.push[\s\S]*?for \(const coup of resume\.coupsRapides\)[\s\S]*?enregistrerDegatsCombat\(\s*degatsCombat,\s*adv,\s*coup\.cibleId,\s*coup\.degats/s,
   'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
+assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
+  'l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
+assert.match(duelEngine, /&& rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\)\)/,
+  'l’IA écarte les bloqueurs sans Envol face à un attaquant volant');
+assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) return \{ ok: false, raison: 'envol' \}/,
+  'le moteur refuse un blocage terrestre contre un attaquant avec Envol');
+assert.match(battlePage, /a Envol : seules les créatures avec Envol peuvent le bloquer\./,
+  'l’interface explique pourquoi un bloqueur sans Envol est refusé');
+assert.match(battlePage, /Aucune de vos créatures n’a Envol : leurs créatures volantes ne peuvent pas être bloquées\./,
+  'l’annonce de l’attaque adverse signale les volants impossibles à bloquer');
 assert.match(duelEngine, /export function rpgLancerAttaque\([\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, degatsAvantCombat\)[\s\S]*?const coupsNormaux = degatsCombat[\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, coupsNormaux\)/,
   'les capacités de combat du Sahir se résolvent avant les blessures normales');
 assert.match(battlePage, /cibleAttaqueEnCours[\s\S]*?prochainCoupRapideSansCible[\s\S]*?ciblesAttaque/,
@@ -276,7 +286,7 @@ assert.match(battleCss, /@keyframes rpg-player-card-draw\s*\{[\s\S]*?translate3d
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi, fond sombre translucide et lisible, aperçu détaillé au clic et aperçu des magies jouées, '
-  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par la rareté, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
+  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par la rareté, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
