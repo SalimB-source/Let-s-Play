@@ -1,6 +1,6 @@
 # 05 — Le concept cartes (v2 : le duel de sorciers)
 
-Le combat du Sablier de Bab El est un **duel de cartes** posé sur une table
+Le combat du Sablier du temps est un **duel de cartes** posé sur une table
 en bois : deux sorciers face à face, chacun avec son paquet, sa main et ses
 terrains. Tout ce qui existe dans le combat est une carte ; rien d'autre ne
 se clique. Implémenté dans `src/games/rpgCards.js` (catalogue),

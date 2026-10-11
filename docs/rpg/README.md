@@ -1,7 +1,7 @@
 # RPG tour par tour — dossier de conception
 
 Dossier de conception pour le premier RPG de la maison :
-**« Le Sablier de Bab El »**, un jeu de rôle **tour par tour** dans la lignée
+**« Le Sablier du temps »**, un jeu de rôle **tour par tour** dans la lignée
 de *Final Fantasy* et *Dragon Quest* — et explicitement **sans** le système
 réactif de *Clair Obscur*.
 
@@ -17,7 +17,7 @@ réactif de *Clair Obscur*.
 
 Deux choix structurent tout le dossier :
 
-1. **L'univers** : *Le Sablier de Bab El* — une ville verticale de neuf étages
+1. **L'univers** : *Le Sablier du temps* — une ville verticale de neuf étages
    au-dessus d'un désert qui monte, une horloge céleste qui égrène les cycles,
    et une administration qui décide qui est évacuable.
 2. **Le combat** : **aucun réflexe**. Pas de parade, pas d'esquive, pas de

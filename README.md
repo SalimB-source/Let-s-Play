@@ -4984,7 +4984,7 @@ complètes du vrai moteur avec rendu GPU factice, tirs tactiles puis touche Z.
 Aucun dégât ni trafic n’est désactivé. Pour varier la simulation :
 `CITY_RUSH_MISSION_SEED=42 node scripts/city-rush-mission-run-check.mjs`.
 
-## Le Sablier de Bab El : prototype de RPG tour par tour
+## Le Sablier du temps : prototype de RPG tour par tour
 
 Troisième jeu de la page (`/jeu/sablier-de-bab-el`) : un **prototype de combat
 tour par tour** dans la lignée de *Final Fantasy* et *Dragon Quest* — et

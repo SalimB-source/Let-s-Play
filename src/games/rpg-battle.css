@@ -1,4 +1,4 @@
-/* Prototype RPG « Le Sablier de Bab El » — écran de combat.
+/* Prototype RPG « Le Sablier du temps » — écran de combat.
    Palette du concept B : laiton et cuivre de la ville, indigo de la nuit,
    ocre du sable qui monte. Les variables viennent du site (src/styles.css),
    donc le thème clair s'applique aux panneaux sans retouche ici. */
@@ -3539,7 +3539,7 @@
   outline: none;
 }
 
-/* Menu principal, catalogues des decks et des cartes de Sablier de Bab El. */
+/* Menu principal, catalogues des decks et des cartes de Sablier du temps. */
 .rpg-battle--menu { background: #09080d; }
 .rpg-mode-menu {
   position: absolute;
