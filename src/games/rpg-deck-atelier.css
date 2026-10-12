@@ -95,6 +95,17 @@
   font: 500 11px/1.3 var(--mono, monospace);
 }
 
+/* L'astuce de l'aperçu au doigt : elle n'apparaît qu'au doigt — au pointeur
+   fin, le survol d'une carte ouvre déjà l'aperçu instantané, et le rappeler
+   serait du bruit. C'est la même annonce que la barre du duel (`rpgLongPress.js`). */
+.rpg-atelier__astuce {
+  display: none;
+  color: #d8c48c;
+}
+@media (pointer: coarse) {
+  .rpg-atelier__astuce { display: block; }
+}
+
 .rpg-atelier__deck header { flex-direction: column; align-items: stretch; gap: 8px; }
 
 .rpg-atelier__champ { display: grid; gap: 4px; }

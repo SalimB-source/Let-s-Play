@@ -102,6 +102,24 @@ lisent tous la même chose.
   au plus ancien (`decksTous = [...RPG_DECKS, ...decksMaison]`, la liste
   filtrée par couleur passe par `decksVisibles`).
 
+## L'aperçu d'une carte au doigt
+
+L'atelier vit dans l'écran de menu, qui arme déjà le geste de la maison
+(`rpgLongPress.js`, une seconde de contact) pour **toute** carte portant un
+`data-card-id`. Ses deux listes le portent — la bibliothèque et le deck en
+cours —, si bien qu'au doigt :
+
+- tenir une carte une seconde ouvre son aperçu (`HoverCardPreview`, variante
+  `appui-long`) sans rien ajouter ni retirer ; le clic synthétique qui suit est
+  avalé, donc le bouton « + » ou « − » tenu une seconde **ne modifie pas** le
+  deck — c'est le clic simple qui agit ;
+- l'illustration d'une carte ne part jamais en drag natif
+  (`.rpg-battle [data-card-id] img { -webkit-user-drag: none }`) : le doigt
+  consulte au lieu d'attraper l'image ;
+- l'atelier **annonce** le geste en tête de sa bibliothèque
+  (`.rpg-atelier__astuce`), montrée au seul pointeur grossier — ailleurs, le
+  survol fait déjà le travail.
+
 ## Les comptes : garder ses decks et sa collection
 
 `src/games/useDecksSablier.js` — le hook rendu par `RpgDuelPage` et passé au
@@ -138,7 +156,8 @@ casse.
 | --- | --- |
 | `src/games/rpgCollection.js` | dotation de départ, récompenses d'étage, `carteDebloqueePar`, `normaliserCollection` |
 | `src/games/rpgDeckBuilder.js` | limites (nom, plafond), `rpgValiderDeckMaison`, `normaliserDeckMaison`, `fusionnerEtatsSablier` |
-| `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur : composant pur, tout état vient en props, la persistance reste au parent |
+| `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur : composant pur, tout état vient en props, la persistance reste au parent, l'astuce d'aperçu au doigt |
+| `src/games/rpgLongPress.js`, `src/games/RpgDuelPage.jsx` | le geste d'aperçu, délégué au menu entier (l'atelier compris) par `onPointerDown` |
 | `src/games/useDecksSablier.js` | casier local, collection, compte, `statutSync`, suppression à pierre tombale |
 | `src/games/rpgSablierRemote.js` | transport Supabase (lecture `maybeSingle`, upsert tolérant) |
 | `src/games/RpgDuelPage.jsx` | le câblage : crate, étagère maison, fiche, ligne d'état, `enregistrerAtelier` |
@@ -146,6 +165,7 @@ casse.
 | `supabase/schema.sql` | la table `rpg_sablier_progress` et ses règles RLS |
 | `tests/rpg-collection.test.js`, `tests/rpg-deck-builder.test.js` | les règles vérifiées (`npm run check:rpg`) |
 | `scripts/rpg-deck-smoke.jsx` + `scripts/rpg-deck-ui-check.mjs` | la page montée dans jsdom : atelier complet, brouillon, duel maison, édition, copie, garde-fous de source (`npm run check:rpg-deck-ui`) |
+| `scripts/rpg-preview-smoke.jsx` | le scénario d'appui long, créateur de deck compris (bibliothèque, « + », ligne du deck, « − ») : l'aperçu s'ouvre, le deck ne bouge pas (`npm run check:rpg-ui`) |
 
 ## Les décisions, et pourquoi
 
@@ -165,6 +185,8 @@ casse.
   le `window.confirm` proscrit, la liste `supprimes` évite la résurrection
   lors d'une fusion avec un appareil qui ne sait pas encore.
 
-Les vérifications : `npm run check:rpg` (les règles pures, 240 tests) et
-`npm run check:rpg-deck-ui` (la page rendue dans jsdom, plus les garde-fous de
-source) — les deux doivent rester verts, ainsi que `npx vite build`.
+Les vérifications : `npm run check:rpg` (les règles pures — moteur, collection,
+deck builder), `npm run check:rpg-deck-ui` (la page rendue dans jsdom, plus les
+garde-fous de source, l'atelier par la crate jusqu'à la copie) et
+`npm run check:rpg-ui` (le geste d'aperçu au doigt, atelier compris) — ces
+commandes doivent rester vertes, ainsi que `npx vite build`.

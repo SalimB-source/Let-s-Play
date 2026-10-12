@@ -207,6 +207,46 @@ export async function checkRpgBattle(assert) {
     'le badge élémentaire Sable du Fennec reste visible dans le catalogue');
   assert.match(fennecCatalogue.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Esquive 1/,
     'le catalogue conserve le texte de Rapidité et Esquive');
+  // Refonte « plein art 4:5 » des magies d’Eau et de Sable. Une peinture
+  // reprise sous le même nom de fichier doit changer d’URL — sinon le cache du
+  // navigateur resservirait l’ancien cadrage ; une peinture nouvelle n’a rien à
+  // tromper et pointe simplement sur son propre fichier.
+  const peinturesReprises = [
+    ['brisure-de-verre', 'plein-art-verre-v1'],
+    ['parade-du-verre', 'plein-art-verre-v1'],
+    ['maree-contraire', 'deflection-ultrason-v1'],
+    ['ressac', 'djinn-tourbillon-v1'],
+    ['courant-de-retour', 'djinn-tourbillon-v1'],
+  ];
+  const srcIllustration = (carteId) => container
+    .querySelector(`.rpg-card-catalogue__card[data-card-id="${carteId}"]`)
+    ?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '';
+  for (const [carteId, version] of peinturesReprises) {
+    assert.match(srcIllustration(carteId),
+      new RegExp(`/cards/${carteId}\\.jpg\\?v=${version}$`),
+      `${carteId} charge sa nouvelle peinture plein art avec une URL versionnée contre le cache`);
+  }
+  for (const carteId of ['eau-de-la-source', 'lame-de-mer', 'maree-contraire', 'ressac', 'courant-de-retour']) {
+    assert.match(srcIllustration(carteId), new RegExp(`/cards/${carteId}\\.jpg(\\?|$)`),
+      `${carteId} n’emprunte plus l’illustration d’une autre carte`);
+  }
+  const deflectionCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="maree-contraire"]');
+  assert.match(deflectionCatalogue?.querySelector('.rpg-card-catalogue__title h3')?.textContent ?? '', /Déflection/,
+    'Marée contraire a rendu son nom : la carte s’appelle Déflection');
+  assert.match(srcIllustration('maree-contraire'), /deflection-ultrason/,
+    'Déflection est portée par le sorcier en méditation et son anneau d’ultrason bleu');
+  const rapportCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="rapport-du-greffier"]');
+  assert.equal(rapportCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '3',
+    'le catalogue affiche le nouveau coût de trois du Rapport du greffier');
+  const rempartCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="rempart-de-dunes"]');
+  assert.match(rempartCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /\+0\/\+3.*fin du tour/u,
+    'le Rempart de dunes annonce un bonus qui ne dépasse pas le tour');
+  const tempeteCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="tempete-de-sable"]');
+  assert.match(tempeteCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts à toutes les créatures adverses/u,
+    'la Tempête de sable annonce ses trois dégâts');
+  const nuageCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="nuage-de-cendres"]');
+  assert.match(nuageCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /puis 2 autres au début du tour suivant/u,
+    'le Nuage de cendres annonce sa seconde vague pour le tour suivant');
   const filtresCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__filters select')];
   const filtrerCatalogue = async (select, value) => act(async () => {
     select.value = value;
@@ -248,8 +288,8 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  // Le casier « Composer » du deck maison partage la classe : hors de lui,
-  // chaque deck du catalogue a bien sa boîte sélectionnable.
+  // La crate « Nouveau deck » (au bouton « Composer ») est un choix de plus sur
+  // l’étagère : elle ne compte pas parmi les boîtiers du catalogue.
   assert.equal(container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)').length, RPG_DECKS.length,
     'chaque deck du catalogue (Sable, Braise, hybride, Eau de la Marée, Neige du Serment) est sélectionnable');
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
@@ -388,7 +428,7 @@ export async function checkRpgBattle(assert) {
   // ── Toutes les cartes de la main sont les images 4:5 générées ──────────
   const srcs = [...container.querySelectorAll('.rpg-hand__card--img img')].map((i) => i.getAttribute('src'));
   assert.equal(srcs.length, 5, 'chaque carte de la main est une image');
-  assert.ok(srcs.every((s) => /cards\/.+\.jpg$/.test(s)), `les cartes pointent vers /cards/ (${srcs.join(', ')})`);
+  assert.ok(srcs.every((s) => /cards\/[^?]+\.jpg(\?v=[\w-]+)?$/.test(s)), `les cartes pointent vers /cards/ (${srcs.join(', ')})`);
 
   // ── L’aperçu apparaît immédiatement au survol et reste synthétique ────
   const carteSurvolee = terrainsMain[0];

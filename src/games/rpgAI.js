@@ -642,7 +642,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         const tues = duel[adv].creatures.filter((entite) => meurtSous(entite, montant, 'magie'));
         const blessees = duel[adv].creatures
           .filter((entite) => !meurtSous(entite, montant, 'magie') && degatsApresEsquive(entite, montant, 'magie') > 0);
-        const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2;
+        // Une seconde vague (`echo`, le Nuage de cendres) ne tue pas encore :
+        // l'adversaire a un tour pour la jouer. Elle vaut donc moins qu'un
+        // dégât immédiat, mais elle use le bord de table.
+        const echoMontant = Math.max(0, Number(effet.echo?.amount) || 0);
+        const echo = echoMontant > 0
+          ? (duel[adv].creatures.length - tues.length) * echoMontant * 0.35
+          : 0;
+        const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2 + echo;
         return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
       }
       const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
@@ -683,7 +690,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       return { score: score > 0 ? score : 0, cibleId };
     }
     if (effet.type === 'buff') {
-      return { score: 1.5 + camp.creatures.length * 1.5 - cout * 0.2, cibleId: null };
+      // Rien à renforcer sans créature en jeu : le sort reste en main plutôt
+      // que d'être brûlé. Un bonus déclaré avec `tours` ne dépasse pas le tour
+      // en cours — il ne développe pas la table et ne vaut que pour l’échange.
+      if (!camp.creatures.length) return { score: 0, cibleId: null };
+      const bonus = (effet.atk ?? 0) * 0.8 + (effet.def ?? 0) * 0.4;
+      const durable = Number(effet.tours) > 0 ? 0.5 : 1;
+      const score = (1.5 + camp.creatures.length * (1.5 + bonus)) * durable - cout * 0.2;
+      return { score: score > 0 ? score : 0, cibleId: null };
     }
     if (effet.type === 'bouclier' && effet.cible === 'creature-amie') {
       const cibleId = meilleureCibleAmie(duel, cote, carte);

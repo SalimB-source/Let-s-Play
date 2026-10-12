@@ -63,6 +63,43 @@ export async function checkRpgPreviewActions(assert) {
     await attendre(460);
     await click(peek());
     assert.ok(peek() === null, 'le volet se referme au toucher');
+
+    // ── Le créateur de deck répond au même geste ────────────────────────────
+    await changerEcran('Deck');
+    await click(container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir l’atelier');
+    assert.ok(container.querySelector('.rpg-atelier'), 'l’atelier de deck est ouvert');
+    assert.match(container.querySelector('.rpg-atelier__astuce').textContent, /Appui long d’une seconde/,
+      'l’atelier annonce le geste, comme la barre du duel');
+    const carteAtelier = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
+    const lignesAtelier = () => container.querySelectorAll('.rpg-atelier__ligne').length;
+    await appuiLong(carteAtelier);
+    assert.ok(peek(), 'une carte de la bibliothèque de l’atelier s’aperçoit par appui long');
+    assert.ok(peek().getAttribute('aria-label').includes('Chien du guet'),
+      'le volet nomme la carte tenue dans la bibliothèque');
+    assert.equal(lignesAtelier(), 0, 'consulter une carte de la bibliothèque ne l’ajoute pas au deck');
+    await attendre(460);
+    await click(peek());
+    assert.ok(peek() === null, 'le volet se referme au toucher, dans l’atelier aussi');
+    // Un appui long sur le bouton « + » consulte la carte sans l’ajouter ; le
+    // clic simple, lui, garde son action d’atelier.
+    await appuiLong(carteAtelier.querySelector('.rpg-atelier__carte-ajout'));
+    assert.ok(peek(), 'le bouton « + » tenu une seconde ouvre l’aperçu de sa carte');
+    assert.equal(lignesAtelier(), 0, 'l’appui long sur « + » n’ajoute pas la carte au deck');
+    await attendre(460);
+    await click(peek());
+    await click(carteAtelier.querySelector('.rpg-atelier__carte-ajout'), 'ajouter Chien du guet');
+    assert.equal(lignesAtelier(), 1, 'le clic simple ajoute bien la carte au deck en cours');
+    const ligneAtelier = container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]');
+    await appuiLong(ligneAtelier);
+    assert.ok(peek(), 'la ligne du deck en cours s’aperçoit aussi par appui long');
+    assert.ok(peek().getAttribute('aria-label').includes('Chien du guet'), 'le volet nomme la carte du deck en cours');
+    assert.equal(lignesAtelier(), 1, 'consulter une ligne du deck ne la retire pas');
+    await appuiLong(ligneAtelier.querySelector('.rpg-atelier__ligne-compte button'));
+    assert.ok(peek(), 'le bouton « − » tenu une seconde ouvre l’aperçu de sa carte');
+    assert.equal(lignesAtelier(), 1, 'l’appui long sur « − » ne retire pas la carte');
+    await attendre(460);
+    await click(peek());
+    assert.ok(peek() === null, 'le volet se referme, et le deck en cours est intact');
     await changerEcran('Jouer');
 
     await click(container.querySelector('.rpg-menu-button--primary'));
@@ -106,6 +143,14 @@ export async function checkRpgPreviewActions(assert) {
     assert.equal(terrainsJoueurs().length, 0, 'l’annulation retire le terrain posé');
 
     // ── Les magies demandent confirmation avant le lancement ──────────────
+    // Le Rapport du greffier se paie trois manas : le scénario laisse donc le
+    // joueur poser un terrain par tour pendant trois tours avant de le lancer.
+    await click(hand('desert'));
+    await click(container.querySelector('.rpg-btn--endturn'));
+    await attendre(800);
+    await click(hand('desert'));
+    await click(container.querySelector('.rpg-btn--endturn'));
+    await attendre(800);
     await click(hand('desert'));
     const mainAvantSort = totalMain();
     await click(hand('rapport-du-greffier'));
@@ -131,14 +176,16 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-btn--endturn'));
     await act(async () => new Promise(resolve => setTimeout(resolve, 800)));
     await click(hand('desert'));
-    assert.equal(terrainsJoueurs().length, 1, 'deux terrains identiques forment une pile');
-    assert.equal(terrain().dataset.terrainCount, '2');
+    assert.equal(terrainsJoueurs().length, 1, 'les terrains identiques forment une seule pile');
+    assert.equal(terrain().dataset.terrainCount, '4');
     assert.equal(hand('desert').dataset.pileCount, '3',
       'le Désert posé quitte la pile, les autres exemplaires restent groupés');
     await click(hand('fennec-des-decombres'));
     assert.ok(fennec(), 'cliquer une créature payable la pose sur la table');
-    assert.equal(terrain().dataset.availableCount, '0',
-      'le paiement automatique engage les deux instances, pas seulement la carte affichée');
+    assert.equal(terrain().dataset.tappedCount, '2',
+      'le paiement automatique engage deux instances de la pile, pas la carte affichée deux fois');
+    assert.equal(terrain().dataset.availableCount, '2',
+      'les deux terrains de trop restent dégagés après le paiement');
 
     // ── La sélection d’attaque est directe, avec annulation et confirmation ─
     await click(container.querySelector('.rpg-btn--attaque-tous'));
@@ -171,7 +218,14 @@ export async function checkRpgPreviewActions(assert) {
       'une créature engagée ne peut pas attaquer deux fois');
     assert.ok(container.textContent.includes('a déjà attaqué ce tour'),
       'le clic sur la créature engagée explique qu’elle a déjà attaqué');
+    // Les terrains que le paiement du Fennec a laissés dégagés produisent bien
+    // leur mana au toucher, un exemplaire par clic ; une pile entièrement
+    // engagée, elle, ne donne plus rien.
+    await click(terrain());
+    await click(terrain());
     const comptes = { available: terrain().dataset.availableCount, tapped: terrain().dataset.tappedCount };
+    assert.deepEqual(comptes, { available: '0', tapped: '4' },
+      'deux touches engagent les deux terrains restés libres de la pile');
     await click(terrain());
     assert.deepEqual(
       { available: terrain().dataset.availableCount, tapped: terrain().dataset.tappedCount }, comptes,

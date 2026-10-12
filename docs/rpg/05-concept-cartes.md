@@ -149,6 +149,28 @@ Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
    puis lancer l'attaque ;
 5. **Fin du tour** (la grande pastille dorée ⧗).
 
+### Ce qui se passe à la charnière des deux tours
+
+Deux effets ne se résolvent pas dans le tour qui les joue ; le moteur les
+note sur le camp concerné et les liquide au tour suivant (`rpgFinDeTour`) :
+
+- **le bonus borné** (`effet.tours`, la carte `buff`) — *Rempart de dunes*
+  donne `+0/+3` à toutes les créatures du joueur **jusqu'à la fin du tour** :
+  le gain est inscrit dans `camp.bonusTemporaires` **avec le tour qui le voit
+  naître**, puis retiré quand *ce* tour-là se termine, avant que l'autre camp ne
+  commence. Un rituel meurt donc avec son propre tour — il renforce vos
+  attaques et vos échanges, il ne vous protège pas pendant le tour adverse ; et
+  le jour où un éphémère portera le même `tours`, il s'évapora avec l'échange en
+  cours plutôt qu'avec le tour du camp renforcé. Contrairement
+  à la Résonance, ce retrait **peut** faire tomber une créature déjà entamée
+  (le plancher de 1 ne s'applique qu'aux auras de table) : on ne renforce pas
+  trois tours pour rien.
+- **l'écho** (`effet.echo`, la carte `degats`) — *Nuage de cendres* inflige
+  d'abord ses 2 dégâts, puis promet les mêmes **au début du tour suivant** :
+  la promesse est consignée dans `camp.degatsEchos` de la victime et retombe
+  une seule fois, avant que son propriétaire n'agisse. Sur une table vide, la
+  promesse n'est même pas écrite — un nuage qui ne couvre personne se dissipe.
+
 ## 5. L’adversaire : un sorcier
 
 L'adversaire n'est pas un monstre passif : c'est un **sorcier** avec son
@@ -185,7 +207,12 @@ Un contre ne peut être joué que pendant une annonce du sorcier, et il vise
 |---|---|---|
 | *Contresort des abîmes* (×3) | n'importe quelle carte annoncée (créature ou sort) | `cible: 'carte'` |
 | *Silence d'écume* (×3) | un sort annoncé de Braise ou de Sable | `cible: 'sort'`, `contre: ['braise','sable']` |
-| *Marée contraire* (×2) | un sort annoncé, puis piochez une carte | `cible: 'sort'`, `pioche: 1` |
+| *Déflection* (×2) | un sort annoncé, puis piochez une carte | `cible: 'sort'`, `pioche: 1` |
+
+La carte s'appelle **Déflection** depuis la refonte de son illustration (le
+sorcier qui renvoie le sort sans bouger) ; son identifiant de catalogue reste
+`maree-contraire`, comme son fichier de peinture, pour ne casser aucun deck
+enregistré.
 
 Résolution (`contrerAnnonce`, moteur) :
 - le contre doit correspondre à la carte annoncée, sinon il est refusé et rien n'est payé ;
@@ -249,8 +276,11 @@ deck **Marée des abysses** embarque deux *Ressac* et un *Courant de retour*, en
 échange d'un exemplaire de trois créatures communes pour rester à 40 cartes.
 
 Chaque carte a sa peinture dédiée (`public/cards/ressac.jpg`,
-`public/cards/courant-de-retour.jpg`) : le garde-fou du catalogue interdit tout
-partage d'illustration au sein d'un même deck.
+`public/cards/courant-de-retour.jpg`), livrée au **ratio exact de la face, 4:5** :
+les deux scènes jouent le même geste — un djinn noir aspiré par le tourbillon —
+vu de très près pour *Ressac*, depuis le rivage pour *Courant de retour*. Le
+garde-fou du catalogue interdit tout partage d'illustration au sein d'un même deck,
+et `tests/rpg-duel.test.js` vérifie le ratio des plein art concernés.
 
 Vérifications : `tests/rpg-maree.test.js` (moteur + IA) et le scénario « Ressac »
 de `scripts/rpg-battle-smoke.jsx` (cible cliquée, créature rendue à la main

@@ -4997,6 +4997,12 @@
   user-select: none;
 }
 .rpg-hand__card img, .rpg-card img { -webkit-user-drag: none; }
+/* Toute carte de la page — duel comme créateur de deck — refuse le drag natif
+   de son illustration : un doigt posé une seconde consulte, il n'attrape pas
+   l'image. `data-card-id` est porté par la carte, ou par l'illustration
+   elle-même (le dessus d'un cimetière) : les deux formes sont couvertes. */
+.rpg-battle [data-card-id] img,
+.rpg-battle img[data-card-id] { -webkit-user-drag: none; }
 .rpg-touch-drag-ghost {
   position: fixed;
   z-index: 3000;

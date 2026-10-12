@@ -5250,8 +5250,11 @@ produire un mana. Consulter une carte sans la jouer était impossible.
   du doigt est avalé, comme le fait déjà le glisser-déposer tactile.
 - **Partout où une carte est affichée.** Le geste est délégué à la page : toute
   carte qui porte un `data-card-id` y répond — la main, les créatures des deux
-  camps, les rails de terrains, le dessus d'un cimetière, le catalogue et la
-  liste d'un deck, au menu comme en duel.
+  camps, les rails de terrains, le dessus d'un cimetière, le catalogue, la
+  liste d'un deck et le **créateur de deck** (bibliothèque et deck en cours),
+  au menu comme en duel. Dans l'atelier, tenir une carte ou son bouton « + » ou
+  « − » n'ajoute ni ne retire rien : le clic avalé après l'appui est celui qui
+  agit.
 - **Un appui court reste un clic.** Lever le doigt avant la seconde ne change
   rien au jeu : la carte se pose, la créature se déclare, le terrain produit son
   mana. Un doigt qui glisse au-delà de 10 px non plus — c'est un défilement de
@@ -5261,7 +5264,9 @@ produire un mana. Consulter une carte sans la jouer était impossible.
   quand l'appareil repasse en portrait (l'écran de rotation reprend la main).
 - **Le geste est annoncé.** L'ouverture du duel l'explique dans la barre du bas
   sur appareil tactile : « Appui long d'une seconde sur une carte : son aperçu,
-  sans la jouer. »
+  sans la jouer. » Le créateur de deck le rappelle de la même façon, en tête de
+  sa bibliothèque (« … sans rien ajouter ni retirer »), et seulement au doigt :
+  au pointeur fin, le survol ouvre déjà l'aperçu.
 
 ### Où vit le code
 
@@ -5280,8 +5285,13 @@ produire un mana. Consulter une carte sans la jouer était impossible.
   l'exception au `display: none` qui masque l'aperçu au survol sur pointeur
   tactile (dans le volet, il s'affiche), le cadrage en paysage de téléphone
   (`@media (max-height: 520px)` : l'illustration se règle sur la hauteur
-  disponible, `42dvh`, au menu comme en duel) et l'annulation du callout natif
-  et de la sélection de texte sur toute carte affichée.
+  disponible, `42dvh`, au menu comme en duel) et l'annulation du callout natif,
+  de la sélection de texte et du **drag natif de l'illustration** sur toute
+  carte affichée — `[data-card-id]`, créateur de deck compris, jamais seulement
+  les cartes du duel.
+- `src/games/RpgDeckAtelier.jsx` + `src/games/rpg-deck-atelier.css` — l'astuce
+  tactile de la bibliothèque (`.rpg-atelier__astuce`, masquée au pointeur fin) :
+  le créateur de deck vit dans le menu, qui arme déjà le geste pour lui.
 
 ### Vérifications
 
@@ -5298,12 +5308,14 @@ l'aperçu ouvert ne dépend plus du doigt, et `pointercancel`, perte de focus,
 défilement, page cachée, second doigt, souris et démontage n'ouvrent rien.
 
 `check:rpg-ui` monte la page en mode tactile : une seconde d'appui sur une carte
-du **catalogue** puis sur une carte de la **main** ouvre le volet nommé, avec le
-type, les effets ligne à ligne et les statistiques ; la carte n'est pas jouée,
-aucun terrain n'est posé, aucune confirmation demandée ; le clic suivant est
-avalé ; le volet se referme au toucher et à Échap ; une créature en jeu
-s'aperçoit sans être déclarée attaquante ; un appui qui glisse n'ouvre rien ; un
-appui court laisse passer le clic qui joue la carte.
+du **catalogue**, de la **main**, d'une **créature en jeu** ou du **créateur de
+deck** (bibliothèque, bouton « + », ligne du deck en cours, bouton « − ») ouvre
+le volet nommé, avec le type, les effets ligne à ligne et les statistiques ; la
+carte n'est pas jouée, aucun terrain n'est posé, aucune confirmation demandée,
+et dans l'atelier rien n'est ajouté ni retiré du deck ; le clic suivant est
+avalé ; le volet se referme au toucher et à Échap ; un appui qui glisse n'ouvre
+rien ; un appui court laisse passer le clic qui joue la carte — ou qui ajoute
+la carte au deck.
 
 ## Le Sablier : la zone de jeu au doigt, élargie et empilée
 

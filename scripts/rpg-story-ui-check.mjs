@@ -33,7 +33,7 @@ try {
 }
 
 const pageSource = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-assert.match(pageSource, /marquerEtageVaincu\(progression, histoireEtageId\)/,
+assert.match(pageSource, /marquerEtageVaincu\(progressionHistoire, histoireEtageId\)/,
   'la victoire en mode Histoire est enregistrée dans la progression');
 assert.match(pageSource, /Étage suivant/, 'la victoire propose l’étage suivant');
 assert.match(pageSource, /Recommencer l’étage/, 'la défaite permet de rejouer l’étage');
