@@ -566,6 +566,35 @@ export function choisirTerrainIA(duel, cote) {
   return [...terrains].sort((a, b) => gain(b) - gain(a))[0];
 }
 
+/**
+ * Mulligan d’ouverture du sorcier : il renvoie ce qu’il ne pourra pas lancer.
+ * Une main sans terrain ne joue rien, une main que de terrains ne gagne pas de
+ * duel. Niveau Récit, il garde sa main : la tour doit rester racontable.
+ * Retourne la liste des indices de main à écarter (vide = on garde tout).
+ */
+export function choisirMulliganIA(duel, cote = 'sorcier', options = {}) {
+  const profil = options.profil ?? rpgProfilIA(duel?.[cote]?.ia ?? null);
+  const main = duel?.[cote]?.main ?? [];
+  if (main.length < 2 || profil.niveau === 'recit') return [];
+  const terrains = [];
+  const autres = [];
+  main.forEach((carteId, index) => (terrainById(carteId) ? terrains : autres).push(index));
+  // Renoncer à sa main ne vaut que si le paquet peut mieux faire : sans une
+  // seule source restante, l'échange ne serait qu'un coup de théâtre.
+  const sourcesAuPaquet = (duel[cote].deck ?? []).filter((carteId) => terrainById(carteId)).length;
+  if (!sourcesAuPaquet) return [];
+  // Aucune source : on renvoie tout ce qui ne se paie pas sans mana.
+  if (!terrains.length) return autres;
+  // Le cas inverse : on renvoie les terrains de trop, deux suffisent pour ouvrir.
+  if (!autres.length) return terrains.slice(2);
+  // Une carte qu’aucun terrain de la main ne finance est un tour perdu d’avance.
+  const couleurs = new Set(terrains.flatMap((index) => terrainManaColors(main[index])));
+  const injouables = autres.filter((index) => Object.keys(cardColorCost(main[index]))
+    .some((couleur) => !couleurs.has(couleur)));
+  // Renvoyer sa seule perspective n’en ouvrirait pas une meilleure : on garde.
+  return injouables.length === autres.length ? [] : injouables;
+}
+
 /** Couleur à préférer quand un terrain flexible (Pétra…) s’engage. */
 export function couleurEngagement(carteTerrain, main = []) {
   const id = typeof carteTerrain === 'string' ? carteTerrain : carteTerrain?.carteId ?? carteTerrain?.id;

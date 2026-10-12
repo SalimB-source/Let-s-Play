@@ -23,6 +23,7 @@ import {
   choisirCarteIA,
   choisirCibleAutoIA,
   choisirCiblesRapidesIA,
+  choisirMulliganIA,
   choisirTerrainIA,
   couleurEngagement,
 } from './rpgAI.js';
@@ -63,6 +64,16 @@ const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[
 export const rpgSorcierPv = (puissance = 0) =>
   RPG_PV_SORCIER_BASE + RPG_PV_SORCIER_PAR_PUISSANCE * Math.max(0, puissance);
 
+/** Mélange de Fisher-Yates ; le même tirage sert à l'ouverture et au mulligan. */
+function melangerDeck(deck, rng = Math.random) {
+  const d = [...deck];
+  for (let i = d.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
 /**
  * Nouveau duel : tables vides, 0 sable, puis chaque camp pioche 5 cartes.
  * `decks` : listes d'identifiants de cartes (créatures pour l'instant).
@@ -70,17 +81,9 @@ export const rpgSorcierPv = (puissance = 0) =>
  * sorcier du mode Histoire peut porter le sien.
  */
 export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random } = {}) {
-  const melanger = (deck) => {
-    const d = [...deck];
-    for (let i = d.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(rng() * (i + 1));
-      [d[i], d[j]] = [d[j], d[i]];
-    }
-    return d;
-  };
   const duel = {
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
@@ -89,7 +92,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       mana: manaVide(),
       bouclier: 0,
       terrainPose: false,
-      deck: melanger(sorcierDeck),
+      deck: melangerDeck(sorcierDeck, rng),
       main: [],
       creatures: [],
       terrains: [],
@@ -99,12 +102,17 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     fenetreReponse: false,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
     annonce: null,
+    // Mulligan : chaque camp a droit à UN échange, avant le premier tour.
+    mulliganFait: { joueur: false, sorcier: false },
     log: [],
   };
   for (let i = 0; i < RPG_MAIN_DEPART; i += 1) {
     rpgPiocher(duel, 'joueur');
     rpgPiocher(duel, 'sorcier');
   }
+  // Témoin de la main de départ : le mulligan n'est légal que tant qu'elle est
+  // intacte (et il la conserve, puisque l'on pioche autant qu'on écarte).
+  duel.mainDepart = { joueur: duel.joueur.main.length, sorcier: duel.sorcier.main.length };
   return duel;
 }
 
@@ -115,6 +123,67 @@ export function rpgPiocher(duel, cote) {
   const carte = camp.deck.pop();
   camp.main.push(carte);
   return carte;
+}
+
+/** Le mulligan est ouvert tant que la partie n'a pas commencé : table vide et
+ *  main encore égale à celle du départ. Un seul échange par camp. */
+export function rpgPeutMulligan(duel, cote = 'joueur') {
+  if (!duel || duel.mulliganFait?.[cote]) return false;
+  if (duel.tour !== 'joueur' || duel.annonce) return false;
+  if (!duel[cote].main.length) return false;
+  if (duel[cote].main.length !== (duel.mainDepart?.[cote] ?? 0)) return false;
+  return ['joueur', 'sorcier'].every((camp) => !duel[camp].creatures.length
+    && !duel[camp].terrains.length
+    && !duel[camp].terrainPose
+    && !duel[camp].cimetiere.length);
+}
+
+/**
+ * Échange de la main de départ : les cartes désignées (indices dans `main`)
+ * repartent dans le paquet, qui est battu, puis le camp pioche autant de
+ * cartes qu'il en a écartées — jamais plus qu'il n'en reste.
+ * Aucun camp n'est pénalisé en nombre de cartes : c'est un choix, pas un prix.
+ */
+export function rpgMulligan(duel, cote, index = [], rng = Math.random) {
+  const camp = duel[cote];
+  if (!camp || !rpgPeutMulligan(duel, cote)) return { ok: false, ecartees: [], piochees: [] };
+  // Un index, jamais un nom : dans une main de cinq exemplaires identiques,
+  // « changer un Désert » ne veut rien dire — « changer celui de la case 2 » oui.
+  const versIndex = (valeur) => (typeof valeur === 'number' || typeof valeur === 'string' ? Number(valeur) : Number.NaN);
+  const valides = [...new Set(index.map(versIndex)
+    .filter((valeur) => Number.isInteger(valeur) && valeur >= 0 && valeur < camp.main.length))]
+    .sort((a, b) => a - b);
+  // Rien de choisi, rien de désigné : « je garde » ne déplace ni main ni paquet,
+  // et ne perturbe aucun tirage — le droit est simplement consommé.
+  if (!valides.length) {
+    duel.mulliganFait[cote] = true;
+    duel.log.push(cote === 'joueur' ? 'Vous gardez votre main de départ.' : 'Le sorcier garde sa main de départ.');
+    return { ok: true, ecartees: [], piochees: [] };
+  }
+  const ecartees = valides.map((valeur) => camp.main[valeur]);
+  // Retirer du plus grand vers le plus petit : les indices restants restent justes.
+  for (let i = valides.length - 1; i >= 0; i -= 1) camp.main.splice(valides[i], 1);
+  camp.deck = melangerDeck([...camp.deck, ...ecartees], rng);
+  const piochees = [];
+  for (let i = 0; i < ecartees.length; i += 1) {
+    const carte = rpgPiocher(duel, cote);
+    if (!carte) break;
+    piochees.push(carte);
+  }
+  duel.mulliganFait[cote] = true;
+  const nom = (carteId) => cardById(carteId)?.name ?? carteId;
+  const fois = `${piochees.length} carte${piochees.length > 1 ? 's' : ''}`;
+  duel.log.push(ecartees.length
+    ? (cote === 'joueur'
+      ? `Vous écartez ${ecartees.map(nom).join(', ')} et piochez ${fois}.`
+      : `Le sorcier écarte ${ecartees.map(nom).join(', ')} et pioche ${fois}.`)
+    : (cote === 'joueur' ? 'Vous gardez votre main de départ.' : 'Le sorcier garde sa main de départ.'));
+  return { ok: true, ecartees, piochees };
+}
+
+/** Le sorcier mulligane au même moment, avec sa propre lecture de la main. */
+export function rpgMulliganSorcier(duel, rng = Math.random) {
+  return rpgMulligan(duel, 'sorcier', choisirMulliganIA(duel, 'sorcier'), rng);
 }
 
 /** Sources présentes en réserve et sur les terrains dégagés. Une source

@@ -6,6 +6,7 @@ import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
+import { passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -36,10 +37,14 @@ export async function checkRpgBattle(assert) {
 
   const buttons = () => [...container.querySelectorAll('button')];
   const findButton = (label) => buttons().find((button) => button.textContent.includes(label));
+  const cliquer = async (element) => { await act(async () => { element.click(); }); };
   const lancerDepuisMenu = async (target) => {
     const button = target.querySelector('.rpg-mode-menu__play .rpg-menu-button--primary');
     assert.ok(button, 'le menu Jouer propose de lancer le duel');
     await act(async () => { button.click(); });
+    // Le volet de mulligan ouvre la partie : les scénarios jouent la main
+    // qu'on vient de garder, ils valident donc cette première étape.
+    await passerMulligan(target, cliquer);
   };
   const handCards = () => buttons().filter((b) => b.className.includes('rpg-hand__card'));
   const assertElementFrame = (element, cardId, context) => {
@@ -243,7 +248,9 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, RPG_DECKS.length,
+  // Le casier « Composer » du deck maison partage la classe : hors de lui,
+  // chaque deck du catalogue a bien sa boîte sélectionnable.
+  assert.equal(container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)').length, RPG_DECKS.length,
     'chaque deck du catalogue (Sable, Braise, hybride, Eau de la Marée, Neige du Serment) est sélectionnable');
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
   assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');
@@ -277,6 +284,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.ok(findButton('Jouer avec ce deck'), 'la fiche du deck joueur permet de le lancer');
   await act(async () => { findButton('Jouer avec ce deck').click(); });
+  await passerMulligan(container, cliquer);
 
   // ── Nouvelle partie : table vide, 5 cartes, 50 PV face à un sorcier à 60 ─
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée après le choix de Jouer');

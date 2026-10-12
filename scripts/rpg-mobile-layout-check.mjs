@@ -150,6 +150,10 @@ try {
   }
   await page.setViewportSize({ width: 844, height: 390 });
   await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
+  // Le duel s'ouvre sur son volet de mulligan : la mise en page se mesure
+  // dessus, le jeu commence une fois la main de départ validée.
+  await page.getByRole('button', { name: /Garder cette main/i }).click();
+  await page.locator('.rpg-mulligan').waitFor({ state: 'detached' });
   // Tap a creature without mana: the refusal is explained and nothing is played.
   const creature = page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first();
   await creature.tap();
