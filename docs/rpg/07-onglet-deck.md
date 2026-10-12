@@ -138,8 +138,17 @@ Les raretés sont **celles de Magic** — commune, inhabituelle, rare, mythique
 (`CARD_UNIQUE_RARITIES`) ne se joue qu'en **un exemplaire** ; les autres cartes
 non-terrain restent limitées à trois, les terrains illimités (`cardCopyLimit`).
 Dans le set Neige, les quatre figures du Nord sont mythiques — comme tous les
-héros du jeu — et portent donc le cadre doré ; les autres cartes du set sont
-rares ou moins, avec le cadre de leur couleur.
+héros du jeu — et portent donc le cadre violet orné de zelliges ; les autres
+cartes du set sont rares ou moins, avec le cadre de leur couleur
+(`CARD_FRAME_COLORS` : rouge Braise, bleu Eau, beige de dune pour le Sable, bleu
+clair Neige). Tous les cadres sont des **anneaux ornés** (`rpg-battle.css`,
+« Cadres ornés ») : la couleur y est peinte sous une résille de losanges gravée,
+faite seulement d'ombre et de reflet pour se lire sur toute couleur ; les
+bicolores y font courir leur dégradé, la mythique y pose son zellige. Leur
+épaisseur suit la largeur de la carte, dans l'esprit d'une carte Magic (≈ 3,5 %,
+trois gabarits `--rpg-card-border*`). Ce cadre ne déborde jamais sur l'aperçu
+rapide : au survol comme à l'appui long, l'encadré reste sans fond,
+l'illustration flotte sur la table (voir `mobile-layout.md`).
 
 ## Vérifications
 

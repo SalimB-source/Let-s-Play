@@ -35,7 +35,7 @@ export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
 
 /**
  * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté —
- * sauf pour les mythiques, dont le cadre doré prime (voir MYTHIC_FRAME_COLOR).
+ * sauf pour les mythiques, dont le cadre violet prime (voir MYTHIC_FRAME_COLOR).
  *
  * Chaque combinaison a son identité, y compris celles qui n'existent pas
  * encore dans le catalogue : le jour où une carte Neige + Sable ou Neige +
@@ -44,7 +44,7 @@ export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
   eau: { label: 'Eau', color: '#3f9fe8' },
-  sable: { label: 'Sable', color: '#f7f3e6' },
+  sable: { label: 'Sable', color: '#d8bc86' },
   neige: { label: 'Neige', color: '#a9e0f5' },
   'hybride-braise-eau': { label: 'Braise + Eau', color: '#a86ad6' },
   'hybride-braise-sable': { label: 'Braise + Sable', color: '#e2521f' },
@@ -65,8 +65,8 @@ const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige';
 /** Ordre canonique des couleurs : la clé d'une hybride ne dépend pas de l'ordre déclaré. */
 const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
-/** Cadre doré des cartes mythiques, quelle que soit leur couleur. */
-export const MYTHIC_FRAME_COLOR = '#e8b745';
+/** Cadre violet des cartes mythiques, quelle que soit leur couleur. */
+export const MYTHIC_FRAME_COLOR = '#b06cf5';
 
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison bicolore. */
 export function cardFrameInfo(carte) {
@@ -80,7 +80,7 @@ export function cardFrameInfo(carte) {
   return { key: known, ...CARD_FRAME_COLORS[known] };
 }
 
-/** Toute carte mythique porte le cadre doré. */
+/** Toute carte mythique porte le cadre violet. */
 export function cardHasMythicFrame(carte) {
   return cardRarityInfo(carte).key === 'mythique';
 }
@@ -90,7 +90,7 @@ export function cardHasShinyFrame(carte) {
   return cardFrameInfo(carte).key.startsWith('hybride-') || cardHasMythicFrame(carte);
 }
 
-/** Couleur de cadre réellement peinte : l'or mythique prime sur l'élément. */
+/** Couleur de cadre réellement peinte : le violet mythique prime sur l'élément. */
 export function cardFrameColor(carte) {
   return cardHasMythicFrame(carte) ? MYTHIC_FRAME_COLOR : cardFrameInfo(carte).color;
 }
