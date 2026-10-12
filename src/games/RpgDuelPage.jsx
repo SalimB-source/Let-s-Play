@@ -37,6 +37,7 @@ import {
   RPG_STORY_TOURS,
 } from './rpgStoryTours.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
+import { RpgAudioPlayer } from './rpgAudio.js';
 import {
   chargerDeckChoisi,
   deckAdverseParDefaut,
@@ -1023,13 +1024,14 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onHoverCard, onLeaveHoverCard }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onHoverCard, onLeaveHoverCard, onPlaySfx }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
   const [deckCouleur, setDeckCouleur] = useState('toutes');
   const [confirmation, setConfirmation] = useState(null);
   const detailRef = useRef(null);
+  const play = (n) => { try { onPlaySfx?.(n); } catch {} };
   const selectedDeck = RPG_DECKS.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
   const playerDeck = deckEstSelectionnable(selectedDeck) ? selectedDeck : deckParDefaut();
   // Le sorcier joue la Cour des Djinns — sauf si c'est le deck du joueur : il prend alors un autre deck.
@@ -1091,16 +1093,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
-            <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => onChangeScreen('jouer')}>
+            <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
             </button>
-            <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => onChangeScreen('histoire')}>
+            <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('histoire'); }}>
               <span aria-hidden="true">⌛</span> Histoire
             </button>
-            <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => onChangeScreen('decks')}>
+            <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
               <span aria-hidden="true">▤</span> Deck
             </button>
-            <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} onClick={() => onChangeScreen('catalogue')}>
+            <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('catalogue'); }}>
               <span aria-hidden="true">▧</span> Catalogue
             </button>
           </nav>
@@ -1113,7 +1115,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <span className="rpg-mode-menu__eyebrow">UN DUEL · DEUX DECKS · 40 CARTES</span>
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
                 <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes.</p>
-                <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={() => onStartGame()}>
+                <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={() => { play('select'); onStartGame(); }}>
                   ⚔ Lancer le duel <span aria-hidden="true">→</span>
                 </button>
               </div>
@@ -1123,7 +1125,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <aside className="rpg-mode-menu__loadout">
               <div className="rpg-mode-menu__loadout-heading">
                 <div><span className="rpg-mode-menu__eyebrow">VOTRE AFFRONTEMENT</span><h2>Decks de départ</h2></div>
-                <button type="button" className="rpg-menu-link" onClick={() => onChangeScreen('decks')}>Voir les decks <span aria-hidden="true">→</span></button>
+                <button type="button" className="rpg-menu-link" onClick={() => { play('menu'); onChangeScreen('decks'); }}>Voir les decks <span aria-hidden="true">→</span></button>
               </div>
               {playerDeck && (
                 <article className="rpg-menu-deck-summary rpg-menu-deck-summary--player">
@@ -1137,7 +1139,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <div><small>ADVERSAIRE · {deckColorGlyph(opponentDeck)} {deckColorLabel(opponentDeck).toUpperCase()}</small><strong>{opponentDeck.name}</strong><span>{opponentDeck.affrontement ?? `Affrontez ${opponentDeck.name}.`}</span></div>
                 </article>
               )}
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={onResumeGame}>↩ Reprendre le duel en cours</button>}
+              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel en cours</button>}
             </aside>
           </main>
         ) : screen === 'decks' ? (
@@ -1161,7 +1163,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         type="button"
                         className={`rpg-deck-filter__chip rpg-deck-filter__chip--${filtre.id}${actif ? ' is-active' : ''}`}
                         aria-pressed={actif}
-                        onClick={() => changerCouleur(filtre.id)}
+                        onClick={() => { play('menu'); changerCouleur(filtre.id); }}
                       >
                         {filtre.couleurs.length > 0 && (
                           <span className="rpg-deck-filter__emblems" aria-hidden="true">
@@ -1194,7 +1196,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         className="rpg-deck-choice__button"
                         aria-pressed={ouvert}
                         aria-controls={openDeck ? 'rpg-deck-detail' : undefined}
-                        onClick={() => setOpenDeckId(deck.id)}
+                        onClick={() => { play(ouvert ? 'annuler' : 'select'); setOpenDeckId(ouvert ? null : deck.id); }}
                       >
                         <span className="rpg-deck-choice__text">
                           <small>{jouable ? 'DECK JOUEUR' : 'DECK INCOMPLET'}</small>
@@ -1212,7 +1214,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         disabled={!jouable}
                         aria-disabled={actif ? 'true' : undefined}
                         aria-label={!jouable ? `Indisponible : ${deck.name}` : actif ? `Sélectionné : ${deck.name}` : `Sélectionner ${deck.name}`}
-                        onClick={() => choisirDeck(deck)}
+                        onClick={() => { play(actif ? 'annuler' : 'select'); choisirDeck(deck); }}
                       >
                         {!jouable ? 'Indisponible' : actif ? <><span aria-hidden="true">✓</span> Sélectionné</> : 'Sélectionner'}
                       </button>
@@ -1235,12 +1237,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   {hasGame && confirmation?.deckId === playerDeck.id && <span>Le duel en cours garde son deck : ce choix vaudra pour le prochain.</span>}
                 </p>
               )}
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={onResumeGame}>↩ Reprendre le duel</button>}
+              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
             </aside>
 
             {openDeck && (
               <section id="rpg-deck-detail" ref={detailRef} className={`rpg-deck-detail rpg-deck-detail--${deckColorModifier(openDeck)}`} aria-label={`Détails du deck ${openDeck.name}`}>
-                <button type="button" className="rpg-menu-link rpg-deck-detail__close" onClick={() => setOpenDeckId(null)}>✕ Fermer le deck</button>
+                <button type="button" className="rpg-menu-link rpg-deck-detail__close" onClick={() => { play('annuler'); setOpenDeckId(null); }}>✕ Fermer le deck</button>
                 <header className="rpg-deck-detail__header">
                   <DeckBox deck={openDeck} size="showcase" />
                   <div><span className="rpg-mode-menu__eyebrow">{deckEstSelectionnable(openDeck) ? 'VOTRE DECK' : 'DECK INCOMPLET'} · {deckColorGlyph(openDeck)} {deckColorLabel(openDeck).toUpperCase()} · {deckColors(openDeck).length > 1 ? 'HYBRIDE' : 'MONO'}</span><h2>{openDeck.name}</h2><p>{openDeck.archetype}</p></div>
@@ -1264,7 +1266,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   ))}
                 </ul>
                 {deckEstSelectionnable(openDeck) ? (
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-deck-detail__play" onClick={() => jouerAvec(openDeck)}>
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-deck-detail__play" onClick={() => { play('select'); jouerAvec(openDeck); }}>
                     ⚔ Jouer avec ce deck <span aria-hidden="true">→</span>
                   </button>
                 ) : (
@@ -1285,7 +1287,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   cet appareil.
                 </p>
               </div>
-              <button type="button" className="rpg-story__reset" onClick={onResetHistoire}>
+              <button type="button" className="rpg-story__reset" onClick={() => { play('annuler'); onResetHistoire(); }}>
                 Effacer la progression
               </button>
             </div>
@@ -1313,7 +1315,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                               className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
                               disabled={!debloque}
                               data-etage={etage.id}
-                              onClick={() => onStartEtage(etage.id)}
+                              onClick={() => { play('select'); onStartEtage(etage.id); }}
                             >
                               <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
                               <span className="rpg-story-floor__copy">
@@ -1341,12 +1343,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Catalogue</h2>
                 <p>Parcourez les créatures, héros, terrains et magies de Bab El.</p>
               </div>
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={onResumeGame}>↩ Reprendre le duel</button>}
+              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
             </header>
             <div className="rpg-card-catalogue__filters" aria-label="Filtres du catalogue">
               <label>
                 <span>Couleur</span>
-                <select aria-label="Filtrer par couleur" value={catalogueCouleur} onChange={(event) => setCatalogueCouleur(event.target.value)}>
+                <select aria-label="Filtrer par couleur" value={catalogueCouleur} onChange={(event) => { play('menu'); setCatalogueCouleur(event.target.value); }}>
                   <option value="toutes">Toutes les couleurs</option>
                   <option value="braise">Braise</option>
                   <option value="eau">Eau</option>
@@ -1357,7 +1359,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               </label>
               <label>
                 <span>Type</span>
-                <select aria-label="Filtrer par type" value={catalogueType} onChange={(event) => setCatalogueType(event.target.value)}>
+                <select aria-label="Filtrer par type" value={catalogueType} onChange={(event) => { play('menu'); setCatalogueType(event.target.value); }}>
                   <option value="tous">Tous les types</option>
                   <option value="creature">Créatures</option>
                   <option value="hero">Héros</option>
@@ -1491,15 +1493,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // n'est lancé — les duels libres et les menus n'ont pas de tour, donc pas
   // de boucle. Même contrat de cycle de vie que la bande-son de la course.
   const musiqueRef = useRef(null);
+  const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
   useEffect(() => { writeRpgSoundPref(sonActif); }, [sonActif]);
   useEffect(() => {
     musiqueRef.current = new RpgAmbientMusic();
+    sfxRef.current = new RpgAudioPlayer();
+    sfxRef.current.setMuted(!sonActif);
     return () => {
       musiqueRef.current?.destroy();
       musiqueRef.current = null;
+      sfxRef.current = null;
     };
   }, []);
+  useEffect(() => {
+    sfxRef.current?.setMuted(!sonActif);
+    musiqueRef.current?.setMuted(!sonActif);
+  }, [sonActif]);
   // La tour de l'étage en cours commande la boucle (null : duel libre).
   const tourHistoireId = histoireEtageId
     ? etageHistoireParId(histoireEtageId)?.tour?.id ?? null
@@ -1524,6 +1534,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => document.removeEventListener('visibilitychange', surVisibilite);
   }, [ecran, tourHistoireId, sonActif]);
   const basculerSon = () => setSonActif((actif) => !actif);
+  const jouerSfx = (nom, delai = 0) => {
+    try {
+      const p = sfxRef.current;
+      if (!p) return;
+      p.unlock();
+      p.play(nom, delai);
+    } catch { /* audio indisponible */ }
+  };
+  const unlockSfx = () => {
+    try { sfxRef.current?.unlock(); } catch { /* ignore */ }
+  };
   const duelRef = useRef(null);
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
@@ -1713,6 +1734,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Au doigt, le survol n'existe pas : l'ouverture annonce le geste qui le
     // remplace (appui long d'une seconde = aperçu de la carte, sans la jouer).
     setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}, imposé par ${originePlateau}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).${viewport.mobile ? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer.' : ''}`);
+    jouerSfx('apparition');
+    jouerSfx('tour', 0.35);
     force();
   };
 
@@ -1744,6 +1767,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
     }
     if (!animations.length) return;
+    animations.forEach((a, idx) => { jouerSfx('pioche', idx * 0.08); });
     setAnimationsPioche((current) => [...current, ...animations].slice(-12));
     animations.forEach((animation) => {
       const timer = window.setTimeout(() => {
@@ -1782,6 +1806,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       carteId: carte.id,
       style: { left: `${left}px`, top: `${top}px` },
     });
+    if (!viewport.mobile) jouerSfx('hover');
   };
   const masquerApercuSurvol = () => setApercuSurvol(null);
 
@@ -1792,6 +1817,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const fermerApercuAppui = () => {
     annulerAppuiLong();
+    jouerSfx('annuler');
     setApercuAppui(null);
   };
   /** Un seul geste pour toute la page : toute carte affichée porte un
@@ -1810,6 +1836,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         touchDragRef.current?.();
         touchDragRef.current = null;
         masquerApercuSurvol();
+        unlockSfx();
+        jouerSfx('hover');
         setApercuAppui(carte.id);
       },
     });
@@ -1842,6 +1870,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [ecran]);
 
   const demarrerEtage = (etageId) => {
+    unlockSfx();
+    jouerSfx('select');
     setHistoireEtageId(etageId);
     nouvellePartie({ etageId });
     reprendrePartie();
@@ -1850,12 +1880,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // reprises (retour au duel, préférence rendue).
     musiqueRef.current?.setTour(etageHistoireParId(etageId)?.tour?.id ?? null);
     musiqueRef.current?.start();
+    sfxRef.current?.unlock();
   };
 
   const demarrerPartie = (deckId) => {
+    unlockSfx();
+    jouerSfx('select');
     setHistoireEtageId(null);
     nouvellePartie({ etageId: null, deckId: typeof deckId === 'string' ? deckId : undefined });
     reprendrePartie();
+    sfxRef.current?.unlock();
   };
 
   if (ecran !== 'partie') {
@@ -1877,6 +1911,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           }}
           onHoverCard={afficherApercuSurvol}
           onLeaveHoverCard={masquerApercuSurvol}
+          onPlaySfx={jouerSfx}
         />
         {apercuSurvol && (
           <HoverCardPreview
@@ -1949,6 +1984,40 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return somme === attaquant.atk;
   });
 
+  // ── SFX réactifs : pioche, destruction, impact, victoire/défaite, phases ──
+  const prevVainqueurRef = useRef(null);
+  const prevPhaseRef = useRef(null);
+  const prevDestructionCountRef = useRef(0);
+  useEffect(() => {
+    if (vainqueur && prevVainqueurRef.current !== vainqueur) {
+      jouerSfx(vainqueur === 'joueur' ? 'victoire' : 'defaite');
+    }
+    prevVainqueurRef.current = vainqueur;
+  }, [vainqueur]);
+  useEffect(() => {
+    if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
+      if (phaseDuelActive === 'combat') jouerSfx('phase');
+      else if (phaseDuelActive === 'reponse') jouerSfx('annonce');
+      else if (phaseDuelActive === 'principal' || phaseDuelActive === 'adverse') jouerSfx('tour');
+    }
+    prevPhaseRef.current = phaseDuelActive;
+  }, [phaseDuelActive]);
+  useEffect(() => {
+    if (cartesEnDestruction.length > prevDestructionCountRef.current) {
+      const last = cartesEnDestruction[cartesEnDestruction.length - 1];
+      jouerSfx(last?.bruleeParBraise ? 'burn' : 'destruction');
+    }
+    prevDestructionCountRef.current = cartesEnDestruction.length;
+  }, [cartesEnDestruction]);
+  useEffect(() => {
+    if (impactEcran) {
+      jouerSfx(impactEcran.mode === 'received' ? 'degats' : 'degats_sorcier');
+      jouerSfx('impact', 0.08);
+    }
+  }, [impactEcran?.token]);
+
+
+
   const programmerNettoyageVisuel = (callback, duree) => {
     const timer = window.setTimeout(() => {
       animationsVisuellesTimersRef.current = animationsVisuellesTimersRef.current.filter((id) => id !== timer);
@@ -1995,6 +2064,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setImpactEcran(null);
     const token = ++sequenceVolRef.current;
     actionVolRef.current = { token, resoudre: resoudreAction };
+    jouerSfx('whoosh');
     setCarteEnVol({ token, carteId: carte.id, kind: carte.kind === 'terrain' ? 'terrain' : 'creature', handIndex: index, phase: 'pending' });
     const timer = window.setTimeout(() => {
       if (timerVolRef.current !== timer) return;
@@ -2134,7 +2204,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const annulerDerniereAction = () => {
-    if (!annulationDisponible || !annulationRef.current || !monTour || phase || cibleEnCours || combatEntrant) return;
+    if (!annulationDisponible || !annulationRef.current || !monTour || phase || cibleEnCours || combatEntrant) { jouerSfx('erreur'); return; }
+    jouerSfx('annuler');
     duelRef.current = JSON.parse(annulationRef.current);
     invaliderAnnulation();
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
@@ -2200,19 +2271,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const poserTerrain = (carteId) => {
-    if (!monTour || reponseApresBlocage) return;
+    if (!monTour || reponseApresBlocage) { jouerSfx('erreur'); return; }
     const etatAvantAction = JSON.stringify(duel);
     const res = rpgPoserTerrain(duel, 'joueur', carteId);
-    if (res.ok) conserverAnnulation(etatAvantAction);
+    if (res.ok) { conserverAnnulation(etatAvantAction); jouerSfx('terrain_pose'); }
+    else { jouerSfx('erreur'); }
     setMessage(res.ok ? `Terrain posé : ${cardById(carteId).name}. Les terrains nécessaires s’engageront automatiquement au paiement.` : 'Un seul terrain par tour.');
     force();
   };
 
   const engager = (terrainId, couleurChoisie = null) => {
-    if (!monTour && !reponseActive) return;
+    if (!monTour && !reponseActive) { jouerSfx('erreur'); return; }
     const etatAvantAction = monTour ? JSON.stringify(duel) : null;
     const res = rpgEngagerTerrain(duel, 'joueur', terrainId, couleurChoisie);
-    if (res.ok && etatAvantAction) conserverAnnulation(etatAvantAction);
+    if (res.ok) { if (etatAvantAction) conserverAnnulation(etatAvantAction); jouerSfx('terrain_tap'); }
+    else { jouerSfx('erreur'); }
     setMessage(res.ok
       ? `Terrain engagé : +1 mana ${ELEMENT_LABELS[res.couleur] ?? res.couleur} disponible. Les cartes peuvent aussi engager leurs terrains automatiquement.`
       : 'Ce terrain ne peut pas produire cette couleur ou il est déjà engagé.');
@@ -2268,6 +2341,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const annoncerMagie = (carte, cible) => {
+    jouerSfx(carte?.effet?.type === 'soin' ? 'soin_long' : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     setSortJoue({ carteId: carte.id, cible });
@@ -2310,6 +2384,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (res.ok) {
+      jouerSfx(carte?.effet?.type === 'soin' ? 'soin_long' : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
       annoncerMagie(carte, cibleDecrite);
@@ -2406,6 +2481,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     } else {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      jouerSfx('creature');
       const protection = carte.protection
         ? ` Protection contre ${ELEMENT_LABELS[carte.protection.contre] ?? carte.protection.contre} active ce tour et jusqu’à la fin du prochain tour adverse.`
         : '';
@@ -2462,6 +2538,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     if (carteEnVol) return;
     if (!carte || !duel.joueur.main.includes(carteId)) return;
     if (!peutJouerCarte(carte)) {
+      jouerSfx('erreur');
       const explication = carte.kind === 'terrain'
         ? !monTour ? 'Vous ne pouvez poser un terrain que pendant votre tour.' : 'Vous avez déjà posé votre terrain ce tour.'
         : !monTour && !(reponseActive && carte.instant)
@@ -2471,6 +2548,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       force();
       return;
     }
+    if (carte.kind !== 'terrain') { unlockSfx(); }
     const index = Number.isInteger(handIndex) && duel.joueur.main[handIndex] === carteId
       ? handIndex : duel.joueur.main.indexOf(carteId);
     if (carte.kind === 'terrain') {
@@ -2508,10 +2586,12 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       return;
     }
     masquerApercuSurvol();
+    unlockSfx();
     const carte = cardById(carteId);
     if (!carte) return;
     if (carteEnVol || cibleEnCours || cibleAttaqueEnCours) return;
     if (carte.kind === 'magie' && peutJouerCarte(carte)) {
+      jouerSfx('menu');
       setConfirmationSort({ carteId, handIndex });
       return;
     }
@@ -2522,27 +2602,32 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     const confirmation = confirmationSort;
     setConfirmationSort(null);
     if (!confirmation) return;
+    jouerSfx('select');
     jouerCarteDepuisMain(confirmation.carteId, confirmation.handIndex);
   };
 
   const resoudreCible = (entite, cote) => {
     if (!cibleEnCours) return false;
     if (modeCible === 'allie' && cote !== 'joueur') {
+      jouerSfx('erreur');
       setMessage('Cette parade doit protéger une de vos créatures.');
       force();
       return true;
     }
     if (modeCible === 'ennemi' && cote !== 'ennemi') {
+      jouerSfx('erreur');
       setMessage('Choisissez une créature adverse.');
       force();
       return true;
     }
     const carteSource = cardById(cibleEnCours);
     if (rpgEstProtegee(entite, cardColors(carteSource))) {
+      jouerSfx('erreur');
       setMessage(`Protection de ${entite.name} contre ${cardColorLabel(carteSource)} : choisissez une autre cible.`);
       force();
       return true;
     }
+    jouerSfx('select');
     if (carteSource?.arrivee?.type === 'combat') {
       const carteId = cibleEnCours;
       const handIndex = carteCibleeHandIndexRef.current;
@@ -2557,10 +2642,12 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
   const basculerAttaquant = (entite) => {
     if (!entite.ready || entite.attaquee) {
+      jouerSfx('erreur');
       setMessage(entite.ready ? `${entite.name} a déjà attaqué ce tour.` : `${entite.name} observe encore (mal d'invocation).`);
       force();
       return;
     }
+    jouerSfx(attaquants.includes(entite.id) ? 'annuler' : 'attaque_declaree');
     const dejaSelectionnee = attaquants.includes(entite.id);
     const ids = dejaSelectionnee
       ? attaquants.filter((id) => id !== entite.id)
@@ -2589,11 +2676,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     }
     if (reponseActive && combatEntrant?.coteAttaquant === 'sorcier') {
       if (!bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id)) {
+        jouerSfx('erreur');
         setMessage(`${entite.name} ne peut pas bloquer une seconde fois pendant ce combat.`);
       } else if (bloqueurSelectionne === entite.id) {
+        jouerSfx('annuler');
         setBloqueurSelectionne(null);
         setMessage('Sélection du bloqueur annulée.');
       } else {
+        jouerSfx('blocage');
         setBloqueurSelectionne(entite.id);
         setMessage(`${entite.name} sélectionné : cliquez une créature attaquante pour lui assigner le blocage. Vous pouvez toujours glisser la carte.`);
       }
@@ -2638,10 +2728,12 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       const attaquant = duel.joueur.creatures.find((candidate) => candidate.id === cibleAttaqueEnCours);
       const ciblesLegales = ciblesCoupRapideLegales(attaquant, 'joueur');
       if (!attaquant || !ciblesLegales.some((cible) => cible.id === entite.id)) {
+        jouerSfx('erreur');
         setMessage(`Protection contre Braise ou cible absente : ${entite.name} ne peut pas être choisie pour ce Coup rapide.`);
         force();
         return;
       }
+      jouerSfx('coup_rapide');
       const cibles = { ...ciblesAttaque, [attaquant.id]: entite.id };
       setCiblesAttaque(cibles);
       const prochainId = prochainCoupRapideSansCible(attaquants, cibles);
@@ -2681,6 +2773,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     const attaquantsValides = ids.length && ids.every((id) => duel.joueur.creatures
       .some((entite) => entite.id === id && entite.ready && !entite.attaquee));
     if (!attaquantsValides) {
+      jouerSfx('erreur');
       setMessage('Personne n’est prêt à attaquer.');
       setPhase(false);
       setAttaquants([]);
@@ -2692,12 +2785,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
     const cibleManquante = prochainCoupRapideSansCible(ids, ciblesAttaque);
     if (cibleManquante) {
+      jouerSfx('erreur');
       setCibleAttaqueEnCours(cibleManquante);
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === cibleManquante);
       setMessage(`Coup rapide de ${attaquant?.name ?? 'la créature'} : choisissez une créature adverse avant de confirmer.`);
       force();
       return;
     }
+    jouerSfx('attaque_confirmee');
     const ciblesFinales = Object.fromEntries(ids.flatMap((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
       const cible = ciblesCoupRapideLegales(attaquant, 'joueur')
@@ -2739,7 +2834,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
   const declarerAttaqueAvecTous = () => {
     const ids = prets.map((entite) => entite.id);
-    if (!ids.length) return;
+    if (!ids.length) { jouerSfx('erreur'); return; }
+    jouerSfx('attaque_declaree');
     setPhase(true);
     setAttaquants(ids);
     setCiblesAttaque({});
@@ -2753,6 +2849,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
   };
 
   const annulerAttaque = () => {
+    jouerSfx('annuler');
     setPhase(false);
     setAttaquants([]);
     setCiblesAttaque({});
@@ -2763,10 +2860,12 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
   const cliquerSorcier = () => {
     if (cibleEnCours && carteCiblee?.cibles?.includes('sorcier')) {
+      jouerSfx('select');
       lancerMagie(cibleEnCours, 'sorcier');
       return;
     }
     if (!monTour) return;
+    jouerSfx('menu');
     setMessage(duel.sorcier.creatures.length
       ? 'Déclarez vos attaquants : le sorcier peut bloquer certains d’entre eux, les autres frappent ses PV.'
       : 'Déclarez vos attaquants pour frapper directement le sorcier.');
@@ -2793,6 +2892,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     if (!reponseActive || combatEntrant?.coteAttaquant === 'joueur' || !attaquant || !bloqueur) return;
     if (combatEntrant.ciblesAttaque?.[attaquantId]) {
       setBloqueurSelectionne(null);
+      jouerSfx('erreur');
       setMessage(`${attaquant.name} vise une créature avec Coup rapide et ne peut pas être bloquée.`);
       force();
       return;
@@ -2800,6 +2900,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     const retireDeCetteAttaque = (combatEntrant?.blocages[attaquantId] ?? []).includes(bloqueurId);
     if (!retireDeCetteAttaque && !rpgPeutBloquerAttaquant(bloqueur, attaquant)) {
       setBloqueurSelectionne(null);
+      jouerSfx('erreur');
       setMessage(`${attaquant.name} a Envol : seules les créatures avec Envol peuvent le bloquer. ${bloqueur.name} reste au sol.`);
       force();
       return;
@@ -2807,10 +2908,12 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
     const couleursBloqueur = cardColors(cardById(bloqueur.carteId));
     if (!retireDeCetteAttaque && rpgEstProtegee(attaquant, couleursBloqueur)) {
       setBloqueurSelectionne(null);
+      jouerSfx('erreur');
       setMessage(`${attaquant.name} résiste à ${couleursBloqueur.map(couleurLabel).join(' + ')} : ce bloqueur est impossible.`);
       force();
       return;
     }
+    jouerSfx(retireDeCetteAttaque ? 'annuler' : 'blocage');
     setBloqueurSelectionne(null);
     setCombatEntrant((courant) => {
       if (!courant?.attaquants.includes(attaquantId)) return courant;
@@ -2871,10 +2974,13 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         .filter(([id]) => attaquantsVivants.includes(id))),
     );
     if (!res.ok) {
+      jouerSfx('erreur');
       setMessage('Le combat n’a pas pu être résolu. Vérifiez les créatures bloquées et réessayez.');
       force();
       return;
     }
+    jouerSfx('combat');
+    if (res.resume.frappeSorcier > 0) { jouerSfx('degats', 0.18); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('received');
     rpgFermerFenetreReponse(duel);
@@ -2934,11 +3040,15 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         .filter(([id]) => attaquantsVivants.includes(id))),
     );
     if (!res.ok) {
+      jouerSfx('erreur');
       setMessage('Le combat n’a pas pu être résolu. Vérifiez les bloqueurs et réessayez.');
       force();
       return;
     }
 
+    jouerSfx('combat');
+    if (res.resume.frappeSorcier > 0) { jouerSfx('degats_sorcier', 0.18); }
+    else { jouerSfx('blocage', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
     rpgFermerFenetreReponse(duel);
@@ -2965,7 +3075,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
   };
 
   const finDuTour = () => {
-    if (!monTour || combatEntrant) return;
+    if (!monTour || combatEntrant) { jouerSfx('erreur'); return; }
+    jouerSfx('tour');
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
@@ -3003,7 +3114,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
   // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
-    if (!duel.annonce) return;
+    if (!duel.annonce) { jouerSfx('erreur'); return; }
+    jouerSfx('pass');
     const carte = cardById(duel.annonce.carteId);
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
@@ -3136,12 +3248,15 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
   });
   const clePile = (cote, carteId) => `${cote}:${carteId}`;
-  const basculerPile = (cle) => setPilesDeployees((actuel) => {
-    const suivant = new Set(actuel);
-    if (suivant.has(cle)) suivant.delete(cle);
-    else suivant.add(cle);
-    return suivant;
-  });
+  const basculerPile = (cle) => {
+    jouerSfx('pile');
+    setPilesDeployees((actuel) => {
+      const suivant = new Set(actuel);
+      if (suivant.has(cle)) suivant.delete(cle);
+      else suivant.add(cle);
+      return suivant;
+    });
+  };
   const pileDeployee = (cote, pile) => pile.entites.length < 2
     || pile.entites.some((entite) => idsActionEnCours.has(entite.id))
     || pilesDeployees.has(clePile(cote, pile.carteId));
@@ -3202,6 +3317,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       <div
         ref={tableRef}
         inert={viewport.portrait ? true : undefined}
+        onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
         data-screen-impact-token={impactEcran?.token ?? undefined}

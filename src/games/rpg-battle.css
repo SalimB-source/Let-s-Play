@@ -26,6 +26,16 @@
   color-scheme: dark;
 }
 
+/* ── Cadres responsive : la bordure suit la taille d'écran pour rester lisible
+   sur mobile/APK sans écraser l'art sur desktop. */
+.rpg-battle {
+  --rpg-card-border: clamp(2px, 0.38vw, 3px);
+  --rpg-card-border-strong: clamp(2.5px, 0.52vw, 3.5px);
+  --rpg-card-radius: clamp(6px, 0.9vw, 12px);
+  --rpg-card-radius-sm: clamp(5px, 0.7vw, 8px);
+}
+
+
 .rpg-page {
   max-width: 1180px;
   margin: 0 auto;
@@ -466,7 +476,7 @@
   flex-direction: column;
   gap: 3px;
   padding: 6px 6px 5px;
-  border-radius: 12px;
+  border-radius: var(--rpg-card-radius, 12px);
   background: #0c0c0e;
   outline: 2px solid #000;                   /* le liseré noir extérieur */
   box-shadow: 0 12px 28px rgba(0, 0, 0, .65), 0 2px 6px rgba(0, 0, 0, .5);
@@ -720,7 +730,7 @@
   width: clamp(62px, 5.8vw, 80px);
   aspect-ratio: 4 / 5;
   padding: 0;
-  border: 3px solid var(--rpg-frame-color, #f1f3f5);
+  border: var(--rpg-card-border, 3px) solid var(--rpg-frame-color, #f1f3f5);
   border-radius: 6px;
   overflow: visible;
   background: transparent;
@@ -978,7 +988,7 @@
   gap: 2px;
   padding: 4px;
   border-radius: 8px;
-  border: 3px solid var(--rpg-frame-color, #f1f3f5);
+  border: var(--rpg-card-border, 3px) solid var(--rpg-frame-color, #f1f3f5);
   background: #0c0c0e;
   box-shadow: 0 6px 16px rgba(0, 0, 0, .5);
   cursor: pointer;
@@ -3164,8 +3174,8 @@
   aspect-ratio: 4 / 5;
   overflow: hidden;
   --rpg-frame-fill: transparent;
-  border: 3px solid var(--rpg-frame-color, #f1f3f5);
-  border-radius: 8px;
+  border: var(--rpg-card-border, 3px) solid var(--rpg-frame-color, #f1f3f5);
+  border-radius: var(--rpg-card-radius-sm, 8px);
   background: transparent;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
@@ -4112,7 +4122,7 @@
   isolation: isolate;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 3px solid var(--rpg-frame-color, #f1f3f5);
+  border: var(--rpg-card-border, 3px) solid var(--rpg-frame-color, #f1f3f5);
   border-radius: 12px 12px 7px 7px;
   background: #171218;
 }
@@ -4588,7 +4598,7 @@
 .rpg-card-destruction-fx,
 .rpg-card-pile__card--top,
 .rpg-card-pile--deck .rpg-card-pile__card--top {
-  border: 3px solid var(--rpg-frame-color, #f1f3f5);
+  border: var(--rpg-card-border, 3px) solid var(--rpg-frame-color, #f1f3f5);
 }
 
 /* ── Cadres brillants : hybrides (une teinte par combinaison) et mythiques ──
