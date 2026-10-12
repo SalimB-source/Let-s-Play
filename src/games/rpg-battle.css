@@ -2505,27 +2505,11 @@
 
 .card-table.is-card-dragging { cursor: copy; }
 .card-table.is-card-flight-active { pointer-events: none; cursor: progress; }
-.rpg-drop-indicator {
-  position: absolute;
-  z-index: 80;
-  inset: 12px;
-  display: grid;
-  place-items: center;
-  border: 2px dashed rgba(255, 229, 164, .72);
-  border-radius: 22px;
-  background: rgba(8, 12, 13, .28);
-  color: #fff0c6;
-  font: 800 clamp(15px, 2vw, 24px)/1.2 var(--display);
-  letter-spacing: .12em;
-  text-align: center;
-  text-shadow: 0 3px 12px #000;
-  pointer-events: none;
-  transition: background .15s ease, border-color .15s ease, color .15s ease;
-}
+/* Indicateur de glisser-déposer retiré à la demande : ne plus afficher le cadre jaune
+   « Glissez la carte sur la table » qui pouvait rester figé sur mobile/WebView. */
+.rpg-drop-indicator,
 .rpg-drop-indicator.is-over {
-  border-color: #72e6d0;
-  background: rgba(15, 64, 58, .35);
-  color: #aaffef;
+  display: none !important;
 }
 
 /* Confirmation de lancement des magies au clic : dialogue sobre, uniquement
