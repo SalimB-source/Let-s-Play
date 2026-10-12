@@ -31,7 +31,7 @@
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
     "check:mirage-engine": "node --test tests/mirage-engine.test.js",
-"check:rpg": "node --test tests/rpg-duel.test.js tests/rpg-ia.test.js tests/rpg-story.test.js tests/rpg-story-3d.test.js tests/rpg-deck-choice.test.js tests/rpg-deck-builder.test.js tests/rpg-collection.test.js tests/rpg-audio.test.js tests/rpg-ambient-music.test.js tests/rpg-touch-drag.test.js tests/rpg-long-press.test.js tests/rpg-landscape.test.js tests/rpg-terrain-stacks.test.js tests/rpg-card-stacks.test.js tests/rpg-decks-puissance.test.js tests/rpg-plateaux.test.js tests/rpg-maree.test.js tests/rpg-tutorial.test.js",
+    "check:rpg": "node --test tests/rpg-duel.test.js tests/rpg-ia.test.js tests/rpg-story.test.js tests/rpg-story-3d.test.js tests/rpg-story-narrative.test.js tests/rpg-deck-choice.test.js tests/rpg-deck-builder.test.js tests/rpg-collection.test.js tests/rpg-audio.test.js tests/rpg-ambient-music.test.js tests/rpg-touch-drag.test.js tests/rpg-long-press.test.js tests/rpg-landscape.test.js tests/rpg-terrain-stacks.test.js tests/rpg-card-stacks.test.js tests/rpg-decks-puissance.test.js tests/rpg-plateaux.test.js tests/rpg-maree.test.js tests/rpg-tutorial.test.js",
     "check:rpg-tutorial": "node --test tests/rpg-tutorial.test.js && npm run check:rpg-tutorial-ui",
     "check:rpg-tutorial-ui": "node scripts/rpg-tutorial-ui-check.mjs && node scripts/rpg-tutorial-flow-check.mjs",
     "check:rpg-mobile": "node scripts/rpg-mobile-layout-check.mjs",
@@ -40,7 +40,7 @@
     "check:rpg-ui": "node scripts/rpg-card-state-check.mjs && node scripts/rpg-battle-ui-check.mjs && node scripts/rpg-preview-check.mjs && node scripts/rpg-stacks-check.mjs && node scripts/rpg-ghost-check.mjs && node scripts/rpg-mulligan-check.mjs",
     "check:rpg-decks": "node --test tests/rpg-decks-puissance.test.js",
     "check:rpg-mulligan": "node scripts/rpg-mulligan-check.mjs",
-    "check:rpg-story-ui": "node scripts/rpg-story-ui-check.mjs",
+    "check:rpg-story-ui": "node scripts/rpg-story-ui-check.mjs && node scripts/rpg-story-narrative-check.mjs",
     "check:rpg-story-3d": "node --test tests/rpg-story-3d.test.js",
     "check:rpg-story-3d-ui": "node scripts/rpg-story-3d-check.mjs",
     "check:rpg-ambient-ui": "node scripts/rpg-ambient-music-ui-check.mjs",
@@ -96,7 +96,8 @@
     "check:city-rush-police-fire": "node scripts/city-rush-police-fire-check.mjs --all",
     "check:city-rush-police-reaction": "node scripts/city-rush-police-lane-reaction-check.mjs --all",
     "check:city-rush-police-wreck": "node scripts/city-rush-police-wreck-check.mjs --all",
-    "check:city-rush-rival-police": "node scripts/city-rush-rival-police-check.mjs --all && node scripts/city-rush-rival-police-check.mjs --all --leader-only"
+    "check:city-rush-rival-police": "node scripts/city-rush-rival-police-check.mjs --all && node scripts/city-rush-rival-police-check.mjs --all --leader-only",
+    "check:rpg-story-browser": "node scripts/rpg-story-browser-check.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

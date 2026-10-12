@@ -152,10 +152,8 @@ assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*display:\s*flex;[^}]*jus
   'les deux plaques se partagent la largeur de la carte : l’attaque sur un bord, la défense sur l’autre');
 assert.match(battleCss, /\.rpg-mulligan__stats\s+\.rpg-card__stat--atk,[\s\S]{0,200}?\.rpg-mulligan__stats\s+\.rpg-card__pt\s*\{[\s\S]{0,400}?font:\s*900 clamp\(11px,\s*7\.6cqw,\s*26px\)/s,
   'les plaques reprennent le dessin du jeu et se composent plus grand, sur la largeur de la carte');
-assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-gradient:[^}]*linear-gradient\(#ffd619,\s*#ffd619\);/s,
-  'une carte mise de côté prend le liseré doré du jeu : l’anneau orné se repeint en or — son seul signe visible');
-assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*box-shadow:[^}]*rgba\(255,\s*214,\s*25,/s,
-  'et la carte choisie garde son halo doré, même sans bordure peinte');
+assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*--rpg-frame-gradient:\s*linear-gradient\(#ffd619,\s*#ffd619\);/s,
+  'une carte mise de côté repeint son cadre orné en or, sans masquer son illustration');
 assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|rules|flag|banner|top)\b/,
