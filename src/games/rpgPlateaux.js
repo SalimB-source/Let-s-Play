@@ -25,11 +25,22 @@
  * Il n'y a donc plus ni pastille « Aléatoire », ni verrou de plateau, ni
  * sauvegarde du choix sur l'appareil : rien à mémoriser, rien à reprendre.
  *
+ * Les terrains classiques ont leur **double merveilleux** : quand la partie
+ * l'autorise (`variantesFantaisistes`), un second tirage peut échanger le
+ * terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
+ * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
+ * Îles Célestes, et la Table des Heures — le terrain de la Braise depuis le
+ * retrait des Brûlés — contre les Cavernes de Cristal. Seule la piste
+ * caravanière reste unique. Le motif et le camp ne bougent pas : ils disent
+ * toujours quel deck a imposé le terrain.
+ *
  * Un plateau = un identifiant, un nom lisible, un lieu, un fichier de
  * `public/` et un résumé pour l'annonce d'ouverture. Le fichier est un fond
  * plein cadre **sans texte ni interface dessinée** : l'interface du jeu se
  * superpose elle-même (voir `RPG-CARD-ART.md` pour l'esprit de la direction
- * artistique).
+ * artistique). Tous les fonds sont livrés en **4K au ratio 3:2**
+ * (3840×2560) : la table les affiche en `background-size: cover`, le
+ * recadrage se fait au centre sans rien perdre de l'arène.
  */
 
 import { cardColors } from './rpgCards.js';
@@ -71,6 +82,36 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-ruines-de-tipaza.jpg',
     resume: 'La mosaïque de pierre noire et blanche ouverte par le vent, les dalles romaines disjointes, les fûts de colonne et le chapiteau corinthien tombés à l’entour.',
   },
+  // Les doubles merveilleux : un par couleur, atteints par le second tirage
+  // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
+  {
+    id: 'desert-de-verre',
+    nom: 'Le Désert de Verre',
+    lieu: 'Au-delà de l’Erg, là où la foudre a fondu le sable',
+    fichier: 'plateau-desert-de-verre.jpg',
+    resume: 'L’étendue de sable vitrifié, ambrée et aigue-marine ; l’anneau de cristal pilé au centre, les roses de verre, l’astrolabe de laiton, l’outre et la corde aux coins.',
+  },
+  {
+    id: 'cavernes-de-cristal',
+    nom: 'Les Cavernes de Cristal',
+    lieu: 'Les Brûlés, galeries profondes sous Bab El',
+    fichier: 'plateau-cavernes-de-cristal.jpg',
+    resume: 'Le dallage d’obsidienne veiné de braise ; l’anneau de poussière de cristal au centre, les améthystes et les rubis, les fissures de lave aux bords.',
+  },
+  {
+    id: 'abysses-phosphorescentes',
+    nom: 'Les Abysses Phosphorescentes',
+    lieu: 'Sous la mer de Tipasa, la faille luminescente',
+    fichier: 'plateau-abysses-phosphorescentes.jpg',
+    resume: 'Le sable pâle vu à travers l’eau claire ; l’anneau de coquillages au centre, les coraux, les colonnes tombées, les amphores et la raie manta aux bords.',
+  },
+  {
+    id: 'iles-celestes',
+    nom: 'Les Îles Célestes',
+    lieu: 'Au-dessus du fjord, les glaces flottantes du ciel',
+    fichier: 'plateau-iles-celestes.jpg',
+    resume: 'Le lac de glace polie où danse l’aurore ; l’anneau gravé au centre, les sapins, les rochers, la lanterne de fer et la corde lovée aux bords.',
+  },
 ];
 
 /** Le terrain rendu quand aucun deck ne parle : la table d'origine de Bab El. */
@@ -109,6 +150,19 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
   hybride: 'caravane-de-gourara',
 };
 
+/**
+ * Le double merveilleux d'un terrain classique, par identifiant de plateau.
+ * La Table des Heures — le terrain de la Braise depuis le retrait des
+ * Brûlés — s'embrase en Cavernes de Cristal ; seule la piste caravanière
+ * reste unique.
+ */
+export const RPG_PLATEAUX_VARIANTES_FANTAISISTES = {
+  'erg-du-sahara': 'desert-de-verre',
+  'table-des-heures': 'cavernes-de-cristal',
+  'ruines-de-tipaza': 'abysses-phosphorescentes',
+  'fjord-des-neuf-hivers': 'iles-celestes',
+};
+
 /** Le plateau par son identifiant, ou null. */
 export function plateauParId(id) {
   if (typeof id !== 'string') return null;
@@ -118,6 +172,16 @@ export function plateauParId(id) {
 /** Le plateau rendu quand aucun deck ne parle — toujours un plateau du catalogue. */
 export function plateauDeRepli() {
   return plateauParId(RPG_PLATEAU_DE_REPLI) ?? RPG_PLATEAUX[0];
+}
+
+/**
+ * Le double merveilleux d'un plateau — son identifiant ou le plateau lui-même
+ * —, ou `null` quand il n'en a pas (piste caravanière, variantes
+ * elles-mêmes, inconnu).
+ */
+export function varianteFantaisisteDe(plateau) {
+  const identifiant = typeof plateau === 'string' ? plateau : plateau?.id;
+  return plateauParId(RPG_PLATEAUX_VARIANTES_FANTAISISTES[identifiant] ?? null);
 }
 
 function cartesDeDeck(deck) {
@@ -181,19 +245,31 @@ function borneDeTirage(rng) {
  * ne dit rien laisse la place à l'autre : on ne retombe sur la Table des
  * Heures que si aucun des deux paquets ne parle.
  *
- * Rend `{ plateau, camp, motif }` — `camp` : `'joueur'` ou `'adversaire'`, le
- * duelliste dont le deck a imposé le terrain (de quoi l'annoncer en début de
- * partie).
+ * Quand `variantesFantaisistes` est vrai, un second tirage peut échanger le
+ * terrain imposé contre son double merveilleux (`variante` vaut alors `true`,
+ * sinon `false`) ; il n'est consommé que si le terrain en a un, et une valeur
+ * hors bornes garde le classique, sans planter.
+ *
+ * Rend `{ plateau, camp, motif, variante }` — `camp` : `'joueur'` ou
+ * `'adversaire'`, le duelliste dont le deck a imposé le terrain (de quoi
+ * l'annoncer en début de partie).
  */
-export function tirerPlateauDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random } = {}) {
+export function tirerPlateauDuDuel({ deckJoueur = null, deckAdverse = null, rng = Math.random, variantesFantaisistes = false } = {}) {
   const camps = [
     { camp: 'joueur', deck: deckJoueur },
     { camp: 'adversaire', deck: deckAdverse },
   ];
   const [premier, second] = borneDeTirage(rng) < 0.5 ? camps : [camps[1], camps[0]];
-  const resolu = plateauDeDeck(premier.deck);
-  if (resolu.motif !== 'repli') return { ...resolu, camp: premier.camp };
-  const autre = plateauDeDeck(second.deck);
-  if (autre.motif !== 'repli') return { ...autre, camp: second.camp };
-  return { ...resolu, camp: premier.camp };
+  let tirage = { ...plateauDeDeck(premier.deck), camp: premier.camp };
+  if (tirage.motif === 'repli') {
+    const autre = plateauDeDeck(second.deck);
+    if (autre.motif !== 'repli') tirage = { ...autre, camp: second.camp };
+  }
+  if (variantesFantaisistes) {
+    const merveilleux = varianteFantaisisteDe(tirage.plateau);
+    if (merveilleux && borneDeTirage(rng) >= 0.5) {
+      return { ...tirage, plateau: merveilleux, variante: true };
+    }
+  }
+  return { ...tirage, variante: false };
 }
