@@ -1214,6 +1214,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               onEnregistrer={enregistrerAtelier}
               onAnnuler={() => setAtelier(null)}
               onSupprimer={(id) => { onSupprimerDeckMaison(id); setAtelier(null); setConfirmation({ supprime: true }); }}
+              onHoverCard={onHoverCard}
+              onLeaveHoverCard={onLeaveHoverCard}
               surSfx={play}
             />
           </main>

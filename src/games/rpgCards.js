@@ -15,7 +15,6 @@ export const CARD_RARITIES = {
   commune: { label: 'Commune', color: '#f1f3f5' },
   inhabituelle: { label: 'Inhabituelle', color: '#4d9aff' },
   rare: { label: 'Rare', color: '#e1b33f' },
-  epique: { label: 'Épique', color: '#8fe3ff' },
   mythique: { label: 'Mythique', color: '#a875ed' },
 };
 
@@ -771,7 +770,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 5,
     atk: 4,
     def: 4,
-    rarity: 'epique',
+    rarity: 'rare',
     typeLine: 'Créature — Jarl viking',
     art: 'jarl-au-marteau-de-guerre',
     furie: 3,
@@ -785,7 +784,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 5,
     atk: 4,
     def: 4,
-    rarity: 'epique',
+    rarity: 'rare',
     typeLine: 'Créature — Valkyrie',
     art: 'valkyrie-des-glaces',
     resonance: 1,
@@ -801,7 +800,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 6,
     atk: 5,
     def: 5,
-    rarity: 'epique',
+    rarity: 'rare',
     typeLine: 'Créature — Géant',
     art: 'geant-des-banquises',
     arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
@@ -815,7 +814,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 5,
     atk: 4,
     def: 6,
-    rarity: 'epique',
+    rarity: 'rare',
     typeLine: 'Créature — Navire viking',
     art: 'drakkar-a-tete-de-dragon',
     arrivee: { type: 'pioche', amount: 1 },
@@ -1003,7 +1002,7 @@ export const RPG_HERO_CARDS = [
     cost: 5,
     atk: 4,
     def: 4,
-    rarity: 'epique',
+    rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'pere-des-corbeaux',
@@ -1019,7 +1018,7 @@ export const RPG_HERO_CARDS = [
     cost: 6,
     atk: 6,
     def: 5,
-    rarity: 'epique',
+    rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'maitre-du-marteau',
@@ -1035,7 +1034,7 @@ export const RPG_HERO_CARDS = [
     cost: 4,
     atk: 3,
     def: 5,
-    rarity: 'epique',
+    rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'dame-des-neuf-mondes',
@@ -1051,7 +1050,7 @@ export const RPG_HERO_CARDS = [
     cost: 6,
     atk: 6,
     def: 6,
-    rarity: 'epique',
+    rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Serpent',
     art: 'serpent-du-monde',
@@ -1145,8 +1144,8 @@ export const RPG_ART_PROVISOIRE = [];
  * Serment des Neuf Hivers — le deck mono-Neige : dix-sept glaciers, des
  * guerriers de clan, des valkyries, un berserk, un drakkar et les figures du
  * Nord (jamais nommées « dieux » : le Père des corbeaux, le Maître du marteau,
- * la Dame des neuf mondes, le Serpent du monde). Les cartes épiques — la
- * rareté du set — n'y sont qu'en un exemplaire.
+ * la Dame des neuf mondes, le Serpent du monde). Les figures sont mythiques,
+ * donc en un exemplaire ; les autres cartes rares du set peuvent aller à trois.
  */
 export const RPG_DECK_NEIGE_BASE = [
   ...Array(17).fill('glacier'),
@@ -1265,8 +1264,12 @@ export const RPG_DECKS = [
   },
 ];
 
-/** Raretés d'exception : une seule copie par deck. */
-export const CARD_UNIQUE_RARITIES = ['epique', 'mythique'];
+/**
+ * Raretés d'exception : une seule copie par deck. Les raretés du Sablier sont
+ * celles de Magic — commune, inhabituelle, rare, mythique — et seule la
+ * mythique est unique.
+ */
+export const CARD_UNIQUE_RARITIES = ['mythique'];
 
 /** Exemplaires autorisés dans un deck : terrains illimités, raretés d'exception
  *  à un exemplaire, tout le reste à trois. */
@@ -1275,9 +1278,9 @@ export function cardCopyLimit(card) {
   return CARD_UNIQUE_RARITIES.includes(card?.rarity) ? 1 : 3;
 }
 
-/** Valide un deck : 40 cartes, au moins 40 % de terrains, cartes d'exception
- *  (épiques et mythiques) limitées à un exemplaire, autres cartes non-terrain
- *  limitées à trois exemplaires. */
+/** Valide un deck : 40 cartes, au moins 40 % de terrains, cartes mythiques
+ *  limitées à un exemplaire, autres cartes non-terrain limitées à trois
+ *  exemplaires. */
 export function rpgValiderDeck(deck) {
   if (deck.length !== 40) return { ok: false, raison: `40 cartes exigées (${deck.length})` };
   const comptes = {};
@@ -1596,7 +1599,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Rituel — Neige',
     art: 'hurlement-du-blizzard',
     cost: 4,
-    rarity: 'epique',
+    rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     text: 'Rituel — 2 dégâts à toutes les créatures adverses.',

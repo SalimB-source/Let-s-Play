@@ -14,15 +14,17 @@
    termine l'étagère, après les decks du catalogue et les decks maison. Un clic
    ouvre l'atelier en création : nom proposé par défaut (il n'existe pas encore
    sur l'étagère), cartes vides.
-2. **L'atelier** — pleine largeur, deux colonnes : à gauche **la bibliothèque**
-   des cartes débloquées (filtre par couleur et par type, recherche), à droite
-   **le deck en cours** (40 emplacements, compteurs `N / 40 cartes` et
-   `N terrains`), le **nom** (60 caractères), la **carte emblématique** du
-   boîtier. La validation (`rpgValiderDeckMaison`) court **en direct** : elle
-   dit à chaque instant si le deck tiendrait les quotas, et **vérifie la
-   collection** — une carte verrouillée refuse de rejoindre le deck et annonce
-   où se débloquer (« Vainquez « Le Pêcheur de perles » — La Tour des
-   Abysses »).
+2. **L'atelier** — pleine largeur, disposé **comme le constructeur de Magic
+   Arena** (voir « La disposition » plus bas) : à gauche **la collection en
+   grille** de cartes illustrées, surmontée d'une barre de filtres à
+   bascules ; à droite **le panneau du deck** — le **nom** (60 caractères),
+   le compteur `N / 40 cartes` et sa jauge, `N terrains · P %`, la **courbe de
+   mana**, la répartition des couleurs, la liste par type, la **carte
+   emblématique** du boîtier. La validation (`rpgValiderDeckMaison`) court
+   **en direct** : elle dit à chaque instant si le deck tiendrait les quotas,
+   et **vérifie la collection** — une carte verrouillée refuse de rejoindre le
+   deck et annonce où se débloquer (« Vainquez « Le Pêcheur de perles » — La
+   Tour des Abysses »).
 3. **Enregistrer** — un deck peut être enregistré **en brouillon** (moins de
    40 cartes) : il rejoint l'étagère, mais son bouton reste « Indisponible »
    tant que les quotas ne sont pas tenus, et sa fiche l'explique. Un deck
@@ -46,6 +48,35 @@
    garde les decks écrits pour chaque étage (`deckSeJoue` refuse un deck
    maison en Histoire).
 
+## La disposition : ce que l'on emprunte à Magic Arena
+
+Le constructeur de decks d'Arena est la référence des joueurs de cartes sur
+PC ; l'atelier en reprend les gestes, dans la matière du Sablier (nuit,
+laiton, encres claires — `src/games/rpg-deck-atelier.css`).
+
+| Arena | L'atelier |
+|---|---|
+| La collection est une **grille de cartes**, pas une liste | `.rpg-atelier__cartes` : vignettes plein art au cadre de la couleur de la carte (`cardFrameColor`), médaillon de coût avec pips, attaque / défense des créatures, losange de rareté |
+| **Clic gauche +1, clic droit −1** | le bouton `.rpg-atelier__carte-ajout` couvre la vignette ; `contextmenu` sur la vignette ou sur une rangée du deck retire un exemplaire (et ne montre pas le menu du navigateur) ; un petit « − » (`.rpg-atelier__carte-retrait`) apparaît au survol, toujours visible au doigt |
+| Compteur « 2/4 » posé sur la carte | `.rpg-atelier__carte-count` : `×N/limite` (`×N` pour un terrain, illimité) ; une carte au quota s'éteint (`.is-full`), une carte verrouillée porte un cadenas et dit où se gagner (`.is-locked`) |
+| **Aperçu grand format au survol** | le même `HoverCardPreview` que le duel et le catalogue : la page passe `onHoverCard` / `onLeaveHoverCard`, l'atelier les pose sur les vignettes (souris **et** focus clavier) et les rangées du deck |
+| Barre de filtres à **bascules** (symboles de mana, coût, type, rareté, « possédées ») | `.rpg-atelier__toolbar` : quatre **pips de couleur** (`aria-pressed`, cumulables en OU) + « Hybrides » ; coûts **1 à 6 et 7+** (un filtre de coût écarte les terrains) ; types ; raretés — **commune, inhabituelle, rare, mythique**, comme Magic (losange coloré) ; « Possédées » ; recherche sur nom, ligne de type **et texte** ; tri (coût — terrains en fin —, nom, couleur, rareté) ; « ↺ Réinitialiser » n'apparaît que si un filtre est actif |
+| Panneau du deck à droite : nom en titre, compteur, **courbe de mana**, couleurs, liste par type | `.rpg-atelier__deck` (collant à l'écran sur PC) : nom en champ-titre, `N / 40` et jauge (verte à 40, rouge au-delà), terrains / créatures / magies / **coût moyen**, verdict de validation ; `courbeDeMana` dessine sept barres (1…6, 7+) ; `repartitionCouleurs` liste par couleur cartes, pips exigés et terrains producteurs ; la liste va **Créatures → Magies → Terrains**, rangées « vignette · médaillon de coût · nom · − × N + » triées par coût |
+| **« Ajouter des terrains »** | **« ⛰ Compléter en terrains »** (`completerEnTerrains`) : remplit les places libres jusqu'à 40 avec des terrains **possédés**, au prorata des **pips** exigés par les sorts (à défaut des couleurs des cartes, à défaut du Sable), parts entières aux plus forts restes ; ne retire jamais rien |
+| Vider le deck | « ⌫ Vider le deck », confirmation en deux temps sur le bouton lui-même |
+
+Les règles pures du panneau (`courbeDeMana`, `repartitionCouleurs`,
+`completerEnTerrains`, `RPG_DECK_TAILLE`) vivent dans
+`src/games/rpgDeckBuilder.js` et sont testées par
+`tests/rpg-deck-builder.test.js` ; les gestes (bascules, clic droit, courbe,
+complétion, vidage, aperçu au survol) sont joués dans jsdom par
+`scripts/rpg-deck-smoke.jsx` (`npm run check:rpg-deck-ui`).
+
+Sous 1100 px la courbe et les couleurs s'empilent ; sous 820 px le panneau du
+deck passe sous la grille, et le « − » des vignettes reste visible (pas de
+survol au doigt). `prefers-reduced-motion` coupe les transitions des
+vignettes, de la jauge et des barres.
+
 ## La collection : ce que l'on possède
 
 `src/games/rpgCollection.js` — module pur, testé par
@@ -57,7 +88,7 @@
 - **Les récompenses d'étage** (`RPG_RECOMPENSES_PAR_ETAGE`) donnent les
   cartes rares : les 20 étages des sept chapitres débloquent au fil de l'eau
   **46 cartes** — collection complète : **75 cartes** sur les 82 du set. Les
-  épique et mythique se gagnent aux boss ; le Kraken mythique attend la
+  mythiques se gagnent aux boss ; le Kraken mythique attend la
   victoire sur « Le Pêcheur de perles ».
 - **Le suivi** : `carteDebloqueePar(id)` dit quelle étage débloque une carte
   (l'atelier s'en sert pour ses messages), `carteEstDebloquee(id, collection)`
@@ -81,7 +112,7 @@ decks maison par `rpgValiderDeckMaison` dans `src/games/rpgDeckBuilder.js`) :
 |---|---|
 | Taille | exactement **40 cartes** (un brouillon peut être enregistré en dessous, il n'est pas jouable) |
 | Terrains | au moins **40 %** du deck, en quantité libre |
-| Épique / mythique | **× 1** |
+| Mythique | **× 1** |
 | Autres non-terrains | **× 3** |
 
 Un deck maison porte un nom (60 caractères au plus, tronqué sans casser), un
@@ -106,19 +137,19 @@ lisent tous la même chose.
 
 L'atelier vit dans l'écran de menu, qui arme déjà le geste de la maison
 (`rpgLongPress.js`, une seconde de contact) pour **toute** carte portant un
-`data-card-id`. Ses deux listes le portent — la bibliothèque et le deck en
-cours —, si bien qu'au doigt :
+`data-card-id`. Les vignettes de la grille et les rangées du deck le portent,
+si bien qu'au doigt :
 
 - tenir une carte une seconde ouvre son aperçu (`HoverCardPreview`, variante
   `appui-long`) sans rien ajouter ni retirer ; le clic synthétique qui suit est
-  avalé, donc le bouton « + » ou « − » tenu une seconde **ne modifie pas** le
-  deck — c'est le clic simple qui agit ;
+  avalé, donc une vignette ou un « + » / « − » tenu une seconde **ne modifie
+  pas** le deck — c'est le clic simple qui agit ;
 - l'illustration d'une carte ne part jamais en drag natif
   (`.rpg-battle [data-card-id] img { -webkit-user-drag: none }`) : le doigt
   consulte au lieu d'attraper l'image ;
-- l'atelier **annonce** le geste en tête de sa bibliothèque
-  (`.rpg-atelier__astuce`), montrée au seul pointeur grossier — ailleurs, le
-  survol fait déjà le travail.
+- l'atelier **annonce** le geste dans son en-tête (`.rpg-atelier__astuce`),
+  montrée au seul pointeur grossier — au pointeur fin, l'aide « clic / clic
+  droit / survol » prend sa place.
 
 ## Les comptes : garder ses decks et sa collection
 
@@ -155,9 +186,9 @@ casse.
 | Fichier | Rôle |
 | --- | --- |
 | `src/games/rpgCollection.js` | dotation de départ, récompenses d'étage, `carteDebloqueePar`, `normaliserCollection` |
-| `src/games/rpgDeckBuilder.js` | limites (nom, plafond), `rpgValiderDeckMaison`, `normaliserDeckMaison`, `fusionnerEtatsSablier` |
-| `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur : composant pur, tout état vient en props, la persistance reste au parent, l'astuce d'aperçu au doigt |
-| `src/games/rpgLongPress.js`, `src/games/RpgDuelPage.jsx` | le geste d'aperçu, délégué au menu entier (l'atelier compris) par `onPointerDown` |
+| `src/games/rpgDeckBuilder.js` | limites (nom, plafond, `RPG_DECK_TAILLE`), `rpgValiderDeckMaison`, `normaliserDeckMaison`, `fusionnerEtatsSablier`, et le panneau du deck : `courbeDeMana`, `repartitionCouleurs`, `completerEnTerrains` |
+| `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur façon Arena (grille, bascules, panneau du deck) : composant pur, tout état vient en props, la persistance et l'aperçu au survol restent au parent |
+| `src/games/rpgLongPress.js`, `src/games/RpgDuelPage.jsx` | le geste d'aperçu au doigt, délégué au menu entier (l'atelier compris) par `onPointerDown` |
 | `src/games/useDecksSablier.js` | casier local, collection, compte, `statutSync`, suppression à pierre tombale |
 | `src/games/rpgSablierRemote.js` | transport Supabase (lecture `maybeSingle`, upsert tolérant) |
 | `src/games/RpgDuelPage.jsx` | le câblage : crate, étagère maison, fiche, ligne d'état, `enregistrerAtelier` |
@@ -165,7 +196,7 @@ casse.
 | `supabase/schema.sql` | la table `rpg_sablier_progress` et ses règles RLS |
 | `tests/rpg-collection.test.js`, `tests/rpg-deck-builder.test.js` | les règles vérifiées (`npm run check:rpg`) |
 | `scripts/rpg-deck-smoke.jsx` + `scripts/rpg-deck-ui-check.mjs` | la page montée dans jsdom : atelier complet, brouillon, duel maison, édition, copie, garde-fous de source (`npm run check:rpg-deck-ui`) |
-| `scripts/rpg-preview-smoke.jsx` | le scénario d'appui long, créateur de deck compris (bibliothèque, « + », ligne du deck, « − ») : l'aperçu s'ouvre, le deck ne bouge pas (`npm run check:rpg-ui`) |
+| `scripts/rpg-preview-smoke.jsx` | le scénario d'appui long, créateur de deck compris (grille, « + », ligne du deck, « − ») : l'aperçu s'ouvre, le deck ne bouge pas (`npm run check:rpg-ui`) |
 
 ## Les décisions, et pourquoi
 
