@@ -33,8 +33,13 @@ try {
 }
 
 const pageSource = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-assert.match(pageSource, /marquerEtageVaincu\(progressionHistoire, histoireEtageId\)/,
-  'la victoire en mode Histoire est enregistrée dans la progression');
+assert.match(pageSource, /enregistrerVictoire\(histoireEtageId, campagne \? contexte\.curseur : null\)/,
+  'la victoire et le contexte narratif passent au propriétaire unique de progression');
+const storyHook = readFileSync(new URL('../src/games/useRpgStory.js', import.meta.url), 'utf8');
+assert.match(storyHook, /marquerEtageVaincu\(etat, etageId\)/,
+  'le hook conserve la progression des tours');
+assert.match(storyHook, /sauverProgressionHistoire\(apres\)/,
+  'victoire et scène en attente sont sauvegardées dans le même état');
 assert.match(pageSource, /Étage suivant/, 'la victoire propose l’étage suivant');
 assert.match(pageSource, /Recommencer l’étage/, 'la défaite permet de rejouer l’étage');
 assert.match(pageSource, /Tour terminée/, 'le sommet annonce la fin de la tour');

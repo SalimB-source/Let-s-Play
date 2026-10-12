@@ -5845,6 +5845,39 @@ survolée, et se pose au-dessus du volet (`z-index: 1200`). Les duels au
 pilote automatique de `scripts/rpg-ghost-check.mjs` valident le mulligan à
 chaque graine, grand écran et doigt confondus.
 
+## Le Sablier : La Dernière Liste — premier épisode illustré
+
+Dans `/jeu/sablier-de-bab-el`, ouvrir **Histoire → Commencer le récit**.
+L’épisode **Les absents** accompagne les cinq duels de la Tour des Listes :
+Salem a ramené douze habitants que la Chambre des Heures a déjà rayés de la Liste.
+
+- **Dix scènes**, une avant et une après chaque duel, avec résumé facultatif.
+- **Un choix chez la Scribe**, repris chez Fériel puis dans deux épilogues ;
+  mêmes duels et récompenses, aucune difficulté cachée.
+- **Portraits fixes** : Salem, Yamina, Fériel et Tarek gardent leurs illustrations
+  existantes. Un registre central donne à chaque personnage le même portrait
+  dans ses dialogues, le journal, le briefing et le duel. Trois portraits
+  manquants et un décor de greffe ont été ajoutés, sans repeindre les compagnons.
+- **Journal** des scènes lues, des personnages et des douze noms, sans effet
+  sur les décisions. Aucun chronomètre ; les scènes se lisent aussi en portrait.
+- **Sauvegarde v2 locale** : migration des anciennes victoires, reprise à la
+  réplique ou au choix en attente, victoire et scène de sortie conservées
+  ensemble. Le plateau du duel n’est pas sauvegardé après fermeture de page.
+- Les **cinq tours libres** sont conservées. Les combats déjà gagnés peuvent
+  être passés pour lire le récit ; recommencer l’histoire ne retire ni cartes,
+  ni victoires, ni decks. Les actes suivants ne sont pas encore scénarisés.
+
+Contenu : `rpgStoryScenes.js` ; portraits : `rpgStoryCast.js` ; transitions :
+`rpgStoryFlow.js` et `useRpgStory.js` ; lecteur : `RpgStoryScene.jsx`.
+Voir le [scénario](docs/rpg/10-scenario-la-derniere-liste.md) et la
+[bible visuelle / état de réalisation](docs/rpg/11-bible-visuelle.md).
+
+```bash
+npm run check:rpg                 # inclut les règles de récit et les références de portraits
+npm run check:rpg-story-ui        # tours libres + vraie page : lecture, choix, victoire/défaite, reprise
+npm run check:rpg-story-browser   # serveur Vite démarré et Chromium installé : deux branches, mobile, thèmes
+```
+
 ## Le Sablier : le plein écran, du menu au duel
 
 Le jeu (`/jeu/sablier-de-bab-el`) **se lance en plein écran**, sur ordinateur

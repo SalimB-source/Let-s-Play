@@ -87,10 +87,10 @@ test('la page du duel joue la musique d’ambiance du mode Histoire', () => {
     'le lecteur est détruit au démontage (contexte audio fermé)');
   assert.match(page, /musiqueRef\.current\?\.setTour\(tourHistoireId\)/,
     'la tour de l’étage en cours commande la boucle');
-  assert.match(page, /ecran === 'partie' && tourHistoireId && sonActif\) musique\.start\(\)/,
-    'la boucle démarre pendant un étage du mode Histoire, si le son est actif');
+  assert.match(page, /\(ecran === 'partie' \|\| lectureHistoire\) && tourHistoireId && sonActif\) musique\.start\(\)/,
+    'la boucle démarre pendant un étage ou une scène du mode Histoire, si le son est actif');
   assert.match(page, /musique\.stop\(\)/,
-    'la boucle s’arrête hors duel (menus, duels libres, son coupé)');
+    'la boucle s’arrête hors duel et récit (menus, duels libres, son coupé)');
   assert.match(page, /musique\.pause\(\)/,
     'un onglet mis de côté suspend la musique');
   assert.match(page, /musique\.resume\(\)/,
