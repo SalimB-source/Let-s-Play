@@ -169,9 +169,18 @@ try {
         touchable: boxes.every((box) => box.width >= 44 && box.height >= 44),
         // Chaque carte garde le 4:5 du jeu, au pixel près sur les arrondis.
         faces45: boxes.every((box) => Math.abs(box.width / box.height - 0.8) < 0.02),
-        // Rien à lire sur la carte : ni nom, ni type, ni effet, ni drapeau.
-        muettes: cards.every((card) => !card.querySelector('.rpg-mulligan__name, .rpg-mulligan__type, .rpg-mulligan__rules, .rpg-mulligan__flag')
+        // Rien à lire sur la carte, hors la ligne de type : ni nom, ni effet, ni drapeau.
+        muettes: cards.every((card) => !card.querySelector('.rpg-mulligan__name, .rpg-mulligan__rules, .rpg-mulligan__flag')
           && [...card.childNodes].every((node) => node.nodeType !== 3 || !node.textContent.trim())),
+        // Le type est écrit au-dessus de l'attaque et de la défense.
+        typeAuDessus: cards.every((card) => {
+          const box = card.getBoundingClientRect();
+          const type = card.querySelector('.rpg-mulligan__bas .rpg-mulligan__type')?.getBoundingClientRect();
+          if (!type) return false;
+          const stats = card.querySelector('.rpg-mulligan__stats')?.getBoundingClientRect();
+          const enBasADroite = box.right - type.right < box.width * .35 && box.bottom - type.bottom < box.height * .35;
+          return enBasADroite && (!stats || type.bottom <= stats.top + 1);
+        }),
         illustrees: cards.every((card) => card.querySelector('img.rpg-mulligan__img')?.complete === true),
         // Les repères des cartes du jeu : la couleur en haut à gauche, le coût
         // en haut à droite, l'attaque et la défense en bas à droite.
@@ -194,6 +203,7 @@ try {
     assert.ok(hand.faces45, `${width}×${height}: chaque carte garde le format 4:5 du jeu`);
     assert.ok(hand.muettes && hand.illustrees, `${width}×${height}: la carte est son illustration, sans texte par-dessus`);
     assert.ok(hand.reperes, `${width}×${height}: couleur en haut à gauche, coût en haut à droite, statistiques en bas à droite`);
+    assert.ok(hand.typeAuDessus, `${width}×${height}: la ligne de type est au-dessus de l’attaque et de la défense`);
     console.log(`✓ Mulligan complet ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });

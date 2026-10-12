@@ -3478,24 +3478,52 @@
   object-fit: cover;
 }
 /* Les repères des cartes du jeu, et rien d'autre : la couleur en haut à gauche,
-   le coût en haut à droite, l'attaque et la défense en bas à droite. */
+   le coût en haut à droite, et en bas à droite la ligne de type — la seule
+   ligne écrite de la face — au-dessus de l'attaque et de la défense. */
 .rpg-mulligan__card .rpg-card-element-badge {
   --rpg-card-element-marker-size: clamp(15px, 15cqw, 30px);
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
 }
-.rpg-mulligan__stats {
+/* La pile du bas : le type d'abord, les statistiques ensuite. Le bloc est
+   ancré par son bas — il grandit donc vers le haut, et les statistiques ne
+   quittent jamais leur coin. Son bord gauche laisse au badge d'élément le coin
+   qu'il occupe : la ligne de type se replie avant de venir sur lui. */
+.rpg-mulligan__bas {
   position: absolute;
   z-index: 3;
   right: 6%;
   bottom: 5%;
+  left: 26%;
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  pointer-events: none;
+}
+.rpg-mulligan__type {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-width: 0;
+  padding: 1px 6px;
+  border: 1px solid rgba(20, 13, 7, .85);
+  border-radius: 4px;
+  background: rgba(31, 22, 13, .86);
+  color: #fff1cf;
+  font: 700 clamp(6.5px, 4.2cqw, 12px)/1.25 var(--mono, monospace);
+  letter-spacing: .03em;
+  text-align: right;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px #000;
+}
+.rpg-mulligan__stats {
   padding: 1px 6px;
   border-radius: 999px;
   background: rgba(6, 5, 4, .78);
   color: #ffe9a0;
   font: 900 clamp(9px, 6.5cqw, 19px)/1.3 var(--mono, monospace);
   text-shadow: 0 1px 2px #000;
-  pointer-events: none;
 }
 .rpg-mulligan__stats span { color: #e1cb9c; }
 .rpg-mulligan__card .rpg-mana-cost {

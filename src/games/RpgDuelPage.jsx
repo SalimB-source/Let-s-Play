@@ -888,14 +888,14 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
 
 /* ── Le mulligan : la main de départ, nue — l'aperçu dit le reste ─────────────
    Avant le premier tour, chaque camp voit ses cartes piochées : des **faces
-   4:5** comme sur la table, sans un mot d'interface — l'illustration, le coût,
-   le badge d'élément et, pour les créatures, l'attaque et la défense. Tout le
-   texte (nom, type, effets) se lit dans l'**aperçu rapide** : au survol d'une
-   carte à la souris, à l'appui long d'une seconde au doigt. Toucher une carte
-   la met de côté (liseré doré), la retoucher la reprend : elles repartent dans
-   le paquet, qui est battu, et le camp pioche autant de cartes qu'il en a
-   écartées. Un seul échange, et la main ne diminue jamais : c'est une décision,
-   pas une punition. */
+   4:5** comme sur la table, sans un mot d'interface — l'illustration, la couleur
+   en haut à gauche, le coût en haut à droite, la ligne de type en bas à droite
+   au-dessus de l'attaque et de la défense. Le reste du texte (nom, effets) se
+   lit dans l'**aperçu rapide** : au survol d'une carte à la souris, à l'appui
+   long d'une seconde au doigt. Toucher une carte la met de côté (liseré doré),
+   la retoucher la reprend : elles repartent dans le paquet, qui est battu, et
+   le camp pioche autant de cartes qu'il en a écartées. Un seul échange, et la
+   main ne diminue jamais : c'est une décision, pas une punition. */
 function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBasculer, onSurvol, onQuitterSurvol }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
@@ -927,9 +927,14 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
-      {estCreature && (
-        <span className="rpg-mulligan__stats" aria-hidden="true">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</span>
-      )}
+      {/* Le bas de la carte : la ligne de type, et sous elle l'attaque et la
+          défense — le seul texte que la face imprime. */}
+      <span className="rpg-mulligan__bas">
+        <span className="rpg-mulligan__type" aria-hidden="true">{cardFaceTypeLine(carte)}</span>
+        {estCreature && (
+          <span className="rpg-mulligan__stats" aria-hidden="true">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</span>
+        )}
+      </span>
     </button>
   );
 }

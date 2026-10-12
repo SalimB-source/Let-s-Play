@@ -53,13 +53,13 @@ export async function checkRpgMulligan(assert) {
   for (const carte of cartes()) {
     const id = carte.dataset.cardId;
     const attendue = cardById(id);
-    assert.ok(carte.querySelector('img')?.getAttribute('src')?.includes(`/cards/${id}.jpg`),
-      `la carte ${id} montre son illustration, et rien d’autre à lire`);
+    assert.equal(carte.querySelector('img')?.getAttribute('src')?.includes(`/cards/${id}.jpg`) ?? false, true,
+      `la carte ${id} montre son illustration`);
     // Aucun texte imprimé sur la carte : ni nom, ni type, ni effets, ni drapeau.
     // Il ne reste que l'illustration et les repères du jeu (coût, badge, stats).
     const reperes = (noeud) => noeud.classList?.contains('rpg-card-element-badge')
       || noeud.classList?.contains('rpg-mana-cost')
-      || noeud.classList?.contains('rpg-mulligan__stats');
+      || noeud.classList?.contains('rpg-mulligan__bas');
     for (const noeud of carte.childNodes) {
       if (noeud.nodeType === 3) {
         assert.equal(noeud.textContent.trim(), '', `aucun texte n’est posé sur la carte ${id}`);
@@ -68,14 +68,30 @@ export async function checkRpgMulligan(assert) {
           `la carte ${id} ne porte que son illustration et ses repères (${noeud.className})`);
       }
     }
-    assert.equal(carte.querySelector('.rpg-mulligan__name, .rpg-mulligan__type, .rpg-mulligan__rules, .rpg-mulligan__flag'), null,
-      `rien du texte d’interface n’est rendu sur la carte ${id}`);
+    assert.equal(Boolean(carte.querySelector('.rpg-mulligan__name, .rpg-mulligan__rules, .rpg-mulligan__flag')), false,
+      `rien du texte d’interface n’est rendu sur la carte ${id}, hors la ligne de type`);
     // Les repères du jeu, eux, restent : le coût, le badge d’élément, les stats.
     assert.equal(Boolean(carte.querySelector('.rpg-mana-cost')) || attendue.kind === 'terrain', true,
       `la carte ${id} montre son coût (ou est un terrain, qui n’en a pas)`);
     const creature = attendue.kind === 'creature' || attendue.kind === 'hero';
     assert.equal(Boolean(carte.querySelector('.rpg-mulligan__stats')), creature,
       `la carte ${id} montre son attaque et sa défense si c’est une créature`);
+    // La ligne de type est la seule ligne écrite de la face, et elle est au-dessus.
+    const ligneType = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__type');
+    const motAttendu = attendue.kind === 'terrain' ? /^Terrain/
+      : attendue.kind === 'magie' ? /^(Rituel|Éphémère)/
+        : /^(Type|Créature)/; // la face du jeu nomme les créatures « Type »
+    assert.match(ligneType?.textContent ?? '', motAttendu,
+      `la carte ${id} affiche son type — le mot de sa famille, imprimé sur la face`);
+    assert.equal(ligneType.previousElementSibling === null, true,
+      `le type de ${id} ouvre la pile du bas`);
+    const stats = carte.querySelector('.rpg-mulligan__stats');
+    if (stats) {
+      assert.equal(stats.previousElementSibling === ligneType, true,
+        `le type de ${id} précède immédiatement l’attaque et la défense`);
+      assert.equal(stats.parentElement === ligneType.parentElement, true,
+        `type et statistiques de ${id} partagent le même coin de la carte`);
+    }
     assert.equal(carte.getAttribute('aria-pressed'), 'false', 'aucune carte n’est choisie à l’ouverture');
   }
   assert.match(q('.rpg-mulligan__head p').textContent, /Survolez une carte pour la lire en entier/,

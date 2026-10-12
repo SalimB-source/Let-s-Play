@@ -142,14 +142,20 @@ assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*positio
   'le coût est posé en haut à droite de l’illustration, à la taille de la carte');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:/s,
   'le coût a quitté le coin gauche');
-assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*position:\s*absolute;[^}]*cqw/s,
-  'l’attaque et la défense sont posées sur l’illustration, à la taille de la carte');
+assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*font:\s*900 clamp\([^;]*cqw/s,
+  'l’attaque et la défense sont à la taille de la carte, dans la pile du bas');
 assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:\s*#ffd619;/s,
   'une carte mise de côté prend le liseré doré du jeu — son seul signe visible');
 assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
-assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|type|rules|flag|banner|top)\b/,
-  'plus un seul bloc de texte sur les cartes : nom, type, effets et drapeau ont quitté la feuille');
+assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|rules|flag|banner|top)\b/,
+  'plus un bloc de texte encombrant sur les cartes : nom, effets et drapeau ont quitté la feuille');
+assert.match(battleCss, /\.rpg-mulligan__bas\s*\{[^}]*position:\s*absolute;[^}]*right:\s*6%;[^}]*bottom:\s*5%;[^}]*left:\s*26%;[^}]*justify-items:\s*end;/s,
+  'le bas de la carte est ancré dans son coin — il grandit vers le haut, sans jamais venir sur la couleur');
+assert.match(battleCss, /\.rpg-mulligan__type\s*\{[^}]*background:\s*rgba\(31,\s*22,\s*13/s,
+  'la ligne de type porte le bandeau sombre des cartes du jeu');
+assert.match(battlePage, /rpg-mulligan__bas"[\s\S]{0,240}?rpg-mulligan__type"[\s\S]{0,120}?rpg-mulligan__stats"/,
+  'le type est écrit AU-DESSUS de l’attaque et de la défense, dans cet ordre');
 
 // ── L'aperçu rapide : c'est lui qui porte le texte, au survol ──────────────
 assert.match(mulliganPanel, /onMouseEnter=\{survol \? \(event\) => onSurvol\(carte, event\) : undefined\}/,
@@ -189,4 +195,4 @@ assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*m
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, type au-dessus des statistiques — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
