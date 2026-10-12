@@ -2542,6 +2542,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: rotate(15deg) !important;
   transform-origin: center;
 }
+/* Une créature engagée garde sa lueur rouge pendant l'animation d'attaque ;
+   le halo s'éteint dès que cette phase visuelle se termine. */
+.rpg-card.is-attacked.fx-lunge {
+  box-shadow:
+    0 0 0 2px rgba(255, 83, 76, .96),
+    0 0 18px 5px rgba(239, 49, 43, .74),
+    0 0 32px rgba(222, 38, 34, .42),
+    0 12px 28px rgba(0, 0, 0, .65);
+}
 /* Une créature qui a attaqué reste légèrement inclinée et visiblement fatiguée,
    sans texte superposé sur son illustration. */
 .rpg-card.is-attacked { opacity: .92; }
