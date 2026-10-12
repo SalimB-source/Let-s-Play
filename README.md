@@ -5268,6 +5268,10 @@ là où il se passe.
   zones, la piste des phases et le **journal du duel** (`.rpg-log`, écrit par le
   moteur : « Combat : 2 attaquant(s), 1 bloqué(s), 2 dégâts directs. ») disent
   ce qui s'est passé, jamais ce qu'il faut faire.
+- **Une rangée vide reste vide.** Les deux champs de bataille affichaient une
+  pastille en pointillés quand ils étaient déserts — « Vos alliés prendront
+  place ici. », « Les gardiens du sorcier attendent. ». Une rangée sans carte se
+  voit : la pastille et ses deux phrases partent (`.rpg-empty-lane`).
 - **L'aperçu au doigt ne se légende plus.** Le volet d'appui long montre la
   carte, sans la ligne « Appui long d'une seconde · aperçu de la carte » : qui
   l'a sous les yeux vient de faire le geste. Les deux infobulles explicatives
@@ -5288,7 +5292,8 @@ consigne de jeu mais une condition d'affichage, avec son bouton.
   l'annonce d'ouverture. Les branches devenues vides ont été repliées (un
   `if (!res.ok)` qui ne faisait qu'écrire n'existe plus), et les variables qui
   ne nourrissaient que des phrases (`resume`, `noteEnvol`, `coupsRapides`…) avec
-  elles — le moteur, lui, n'a pas bougé d'une ligne.
+  elles. Les deux `<span className="rpg-empty-lane">` des champs de bataille
+  rendent `null` — le moteur, lui, n'a pas bougé d'une ligne.
 - `src/games/rpg-battle.css`, `src/games/rpg-mobile.css` — toutes les règles du
   bandeau (socle, variantes d'écran étroit, présentation tactile) et son
   animation d'arrivée (`rpg-message-arrive`), plus celles de la légende du
@@ -5307,8 +5312,9 @@ Les épreuves qui lisaient le bandeau lisent désormais la table : le halo
 cible, `is-pret` pour une créature déjà engagée, l'indicateur de tour pour la
 reprise de la main, les PV du joueur pour une attaque encaissée, et le journal
 du moteur pour le résultat d'un combat. `check:rpg-ui` interdit en plus le
-retour du bandeau : ni `rpg-actions__wait` ni `rpg-card-peek__hint` ne doivent
-réapparaître dans la page ou la feuille de style.
+retour du bandeau : ni `rpg-actions__wait`, ni `rpg-card-peek__hint`, ni
+`rpg-empty-lane` ne doivent réapparaître dans la page ou la feuille de style,
+et aucune phrase ne doit recommenter une rangée vide.
 
 ## Le Sablier : l'aperçu d'une carte au doigt
 

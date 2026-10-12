@@ -2301,18 +2301,6 @@
 .card-row--ennemi { top: 21%; bottom: auto; }
 .card-row--equipe { top: 49%; bottom: auto; }
 .rpg-card { width: clamp(104px, 10vw, 142px); }
-.rpg-empty-lane {
-  display: grid;
-  place-items: center;
-  min-width: min(320px, 70%);
-  min-height: 44px;
-  border: 1px dashed rgba(232, 204, 150, .2);
-  border-radius: 999px;
-  background: rgba(16, 12, 9, .2);
-  color: rgba(245, 225, 188, .48);
-  font: italic 12px/1.2 Georgia, serif;
-  letter-spacing: .02em;
-}
 
 .rpg-turn-ribbon {
   top: 50%;

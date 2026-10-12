@@ -3607,7 +3607,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 })}
               </Fragment>
             );
-          }) : <span className="rpg-empty-lane">Les gardiens du sorcier attendent.</span>}
+          }) : null}
         </div>
         <div className="card-row card-row--equipe" aria-label="Votre champ de bataille">
           {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
@@ -3675,7 +3675,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 })}
               </Fragment>
             );
-          }) : <span className="rpg-empty-lane">Vos alliés prendront place ici.</span>}
+          }) : null}
         </div>
 
         {cartesEnDestruction.map((effet) => {

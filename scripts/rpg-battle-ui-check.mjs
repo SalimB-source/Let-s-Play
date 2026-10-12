@@ -278,8 +278,8 @@ assert.match(battleCss, /\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*border-
   'Fin du tour garde un repère doré compact et bien visible');
 assert.match(battleCss, /\/\* Commandes de duel compactes[\s\S]*?\.rpg-bottombar\s*\{[^}]*width: min\(500px, calc\(100vw - 230px\)\);/s,
   'la barre inférieure agrandie est visible à toutes les tailles d’écran');
-assert.doesNotMatch(battleCss, /rpg-actions__wait/,
-  'les styles du bandeau d’indications ont été retirés de la feuille de combat');
+assert.doesNotMatch(battleCss, /rpg-actions__wait|rpg-empty-lane/,
+  'les styles du bandeau d’indications et des rangées vides ont été retirés de la feuille de combat');
 assert.match(battleCss, /\.rpg-phase-step__icon\s*\{\s*display:\s*grid;\s*width:\s*24px;\s*height:\s*24px;/,
   'les icônes de phase sont agrandies partout');
 assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-bottombar \{[\s\S]*?\.rpg-actions__row \.rpg-btn \{ min-height: 39px; padding: 6px 9px; font-size: 11px; \}/,
@@ -421,8 +421,10 @@ assert.match(plateauxSource, /couleurDominanteDeck/,
   'un deck sans identité connue (paquet brut) parle par sa couleur dominante');
 assert.match(battlePage, /className=\{`card-table card-table--plateau-\$\{plateau\.id\}/,
   'la table porte le plateau tiré pour la partie en cours');
-assert.doesNotMatch(battlePage, /rpg-actions__wait|rpg-card-peek__hint/,
-  'le duel ne porte plus de texte d’indications : la table, les flèches et le journal suffisent');
+assert.doesNotMatch(battlePage, /rpg-actions__wait|rpg-card-peek__hint|rpg-empty-lane/,
+  'le duel ne porte plus de texte d’indications — bandeau, légende d’aperçu, rangées vides : la table, les flèches et le journal suffisent');
+assert.doesNotMatch(battlePage, /prendront place ici|gardiens du sorcier attendent/,
+  'une rangée de créatures vide reste vide : aucune phrase ne la commente');
 assert.match(plateauxSource, /id: 'caravane-de-gourara'[\s\S]*?fichier: 'plateau-caravane-de-gourara\.jpg'/,
   'la piste de caravane du Gourara est un second plateau saharien');
 for (const plateauSombre of ['table-des-heures', 'terre-de-damnation']) {
