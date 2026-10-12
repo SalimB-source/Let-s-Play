@@ -1495,14 +1495,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-name-segments { display: inline-flex; gap: 3px; }
 .rpg-name-segments span { width: 9px; }
 
-/* Journal */
+/* Journal — le récit du duel se lit sur les plateaux clairs aussi : sa capsule
+   est assez dense pour tenir l'encre pâle (`--muted`) sur le sable comme sur la
+   glace, là où le voile du plateau travaillait avant d'être retiré. */
 .rpg-log {
   list-style: none;
   margin: 0;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(6, 6, 14, .55);
+  background: rgba(6, 6, 14, .72);
   max-height: 360px;
   overflow-y: auto;
   display: grid;
@@ -2062,122 +2064,55 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card.is-ciblable { animation: none; }
 }
 
-/* ── Table de duel façon TCG : mains opposées, deux champs, piles et vies ── */
+/* ── Table de duel façon TCG : mains opposées, deux champs, piles et vies ──
+   Le plateau est une **peinture**, et rien ne la recouvre : ni voile, ni
+   vignette. Les bandes noires dégradées d'autrefois (haut et bas du cadre)
+   noircissaient un tiers de chaque tableau — l'Erg du Sahara et les Ruines de
+   Tipaza y perdaient leurs dunes et leur mosaïque, et la table ressemblait à
+   une fenêtre sale. La lisibilité ne vient plus d'un filtre posé sur l'image,
+   mais de **chaque élément d'interface**, qui porte désormais son propre fond
+   (voir « Le chrome de la table », plus bas) : les plaques des sorciers, la
+   capsule du tour, la barre de navigation du duel, les compteurs des piles et
+   le journal ont tous de quoi tenir l'encre crème sur n'importe quel fond.
+   Les cartes, elles, se détachent par leur ombre : `box-shadow`, jamais un
+   aplat sur le décor. */
 .card-table {
   isolation: isolate;
   background-position: center;
-  /* Le voile de lisibilité du plateau : un dégradé noir **en haut et en bas** de
-     la table, là où vivent ses textes — navigation, main adverse et identité du
-     sorcier en haut ; identité du joueur, rails de terrains, message du tour,
-     phases, commandes et main en bas. Les plateaux sont des peintures claires :
-     mesuré sur le haut du cadre, l'Erg du Sahara monte à 142/255 et les Ruines
-     de Tipaza à 118, contre 54 pour le bois des Heures. L'encre crème de la
-     table (#fff0cf) y tombe sous 3:1 — d'où l'ombre, dont chaque plateau règle
-     la densité. Le centre reste dégagé : c'est la zone où les cartes se posent.
-     Le dégradé vit dans une variable, donc un seul mécanisme sert la souris
-     (voile + vignette, ci-dessous) et le doigt (voile seul, `rpg-mobile.css`). */
-  --rpg-plateau-voile-haut: rgba(6, 4, 3, .6);
-  --rpg-plateau-voile-bas: rgba(5, 4, 3, .68);
-  --rpg-plateau-voile-haut-plein: 9%;
-  --rpg-plateau-voile-haut-fin: 34%;
-  --rpg-plateau-voile-bas-debut: 56%;
-  --rpg-plateau-voile-bas-plein: 86%;
-  --rpg-plateau-voile: linear-gradient(180deg,
-      var(--rpg-plateau-voile-haut) 0%,
-      var(--rpg-plateau-voile-haut) var(--rpg-plateau-voile-haut-plein),
-      rgba(0, 0, 0, 0) var(--rpg-plateau-voile-haut-fin),
-      rgba(0, 0, 0, 0) var(--rpg-plateau-voile-bas-debut),
-      var(--rpg-plateau-voile-bas) var(--rpg-plateau-voile-bas-plein),
-      var(--rpg-plateau-voile-bas) 100%);
 }
 
-.card-table::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  pointer-events: none;
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 43%, rgba(12, 12, 16, .06), rgba(8, 7, 8, .48) 82%);
-}
-
-/* Les plateaux du duel (voir `rpgPlateaux.js`) : le fond image est posé par la
-   page, ces classes ne règlent que la couleur de repli, la densité du voile
-   haut/bas et la vignette propre au terrain. Trois familles, parce que les
-   fonds n'ont pas la même lumière : le bois est déjà sombre (moyenne 57 sur
-   255) et se contente d'un voile discret ; la terre brûlée est sombre (66) mais
-   très contrastée — un voile net et une vignette appuyée, pour garder les
-   braises lisibles sans laisser les éclats de lave manger les cartes ; les
-   fonds clairs — le sable (127) et la pierre des ruines (133) — reçoivent une
-   ombre dense en haut comme en bas, sinon les libellés clairs de la table se
-   noient dans le beige. Seule la teinte change : ombre chaude pour les sables,
-   ombre neutre et froide pour la pierre au bord de la mer.
-   Le voile est le même mécanisme pour tous (la variable de la table) et il
-   reste en tactile (`rpg-mobile.css`) : seule la vignette centrale y disparaît. */
+/* Les plateaux du duel (voir `rpgPlateaux.js`) : la classe ne règle plus que la
+   **couleur de repli**, celle qu'on voit le temps que la peinture arrive (ou si
+   elle manque). Chaque fond garde sa lumière d'origine. */
 .card-table--plateau-table-des-heures {
   background-color: #1c1006;
-  --rpg-plateau-voile-haut: rgba(8, 5, 2, .54);
-  --rpg-plateau-voile-bas: rgba(6, 4, 3, .62);
 }
 .card-table--plateau-erg-du-sahara {
   background-color: #a8804f;
-  --rpg-plateau-voile-haut: rgba(12, 7, 2, .88);
-  --rpg-plateau-voile-bas: rgba(9, 6, 2, .86);
 }
 .card-table--plateau-caravane-de-gourara {
   background-color: #a8764f;
-  --rpg-plateau-voile-haut: rgba(12, 7, 3, .84);
-  --rpg-plateau-voile-bas: rgba(9, 6, 3, .84);
 }
 .card-table--plateau-terre-de-damnation {
   background-color: #24120b;
-  --rpg-plateau-voile-haut: rgba(14, 6, 3, .76);
-  --rpg-plateau-voile-bas: rgba(10, 4, 2, .8);
 }
 .card-table--plateau-ruines-de-tipaza {
   background-color: #9d9179;
-  --rpg-plateau-voile-haut: rgba(13, 13, 17, .86);
-  --rpg-plateau-voile-bas: rgba(10, 10, 14, .88);
 }
 .card-table--plateau-fjord-des-neuf-hivers {
   background-color: #b9cdd6;
-  --rpg-plateau-voile-haut: rgba(9, 17, 23, .84);
-  --rpg-plateau-voile-bas: rgba(7, 14, 20, .86);
-}
-.rpg-battle:not(.rpg-battle--touch) :is(.card-table--plateau-erg-du-sahara, .card-table--plateau-caravane-de-gourara)::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 44%, rgba(26, 15, 6, .14), rgba(20, 11, 5, .5) 88%);
-}
-.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-terre-de-damnation::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 45%, rgba(30, 12, 6, .04), rgba(11, 5, 3, .52) 90%);
-}
-/* La glace du fjord : la surface la plus claire du jeu (moyenne 170 sur 255 —
-   neige et glace bleutée). L'ombre est franche, froide et dense, comme la pierre
-   des ruines, mais teintée de bleu polaire : sans elle, la rose des vents et le
-   grain de la glace mangeraient les cartes, et le blanc de la Neige se perdrait
-   dans son propre terrain. Sa vignette se compose **avec** le dégradé commun
-   (`--rpg-plateau-voile`), comme celle des autres plateaux : le haut et le bas
-   de la table, où vivent les textes, gardent leur ombre. Les éléments de décor
-   (lanterne, cor, corde, hache, bâton de runes) restent dans les coins, sous le
-   premier tiers du voile. */
-.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-fjord-des-neuf-hivers::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 44%, rgba(13, 24, 34, .2), rgba(9, 18, 28, .52) 90%);
 }
 
-/* La pierre des ruines : plus claire encore que le sable, et c'est le centre qui
-   porte la mosaïque — l'ombre est donc neutre et froide (mer au nord), plus
-   dense au centre que sur les sables, sinon les cartes flottent sur la pierre. */
-.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-ruines-de-tipaza::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 44%, rgba(18, 18, 22, .3), rgba(14, 15, 19, .52) 90%);
-}
+/* ── Le chrome de la table : chaque texte porte son propre fond ──────────────
+   La mesure qui a fait tomber le voile : sur les plateaux clairs, la luminosité
+   du haut du cadre monte à 142/255 (Erg du Sahara) et celle du bas à 118 (Ruines
+   de Tipaza), 170 pour la glace du fjord. L'encre crème du jeu (#fff0cf, L ≈
+   0,88) y tombe **sous 3:1** — mais seulement quand elle est posée à même la
+   peinture. Un fond sombre translucide — deux tiers d'ombre, un tiers d'image —
+   ramène le fond sous 0,16 de luminance, soit un contraste d'environ 4,5:1, en
+   laissant voir le décor au travers. C'est le traitement des capsules de la
+   table : elles restent **translucides** (jamais des panneaux opaques, la règle
+   du duel tactile n'a pas bougé), et elles suivent leur élément partout. */
 
 .rpg-hidden-hand {
   position: absolute;
@@ -2222,11 +2157,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-card-piles--opponent { top: 12%; right: 16px; }
 .rpg-card-piles--player { top: 70%; right: auto; left: 16px; }
+/* Les compteurs de paquet et de cimetière vivent aux coins du cadre — là où le
+   voile noir travaillait autrefois. Ils portent donc leur propre capsule : les
+   deux lignes d'encre crème (« 35 » et « PAQUET ») tiennent sur les plateaux
+   clairs, et le dos de carte posé dessus garde son ombre. */
 .rpg-card-pile {
   display: grid;
   justify-items: center;
   gap: 2px;
   min-width: 48px;
+  padding: 5px 8px 4px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(9, 7, 6, .66), rgba(7, 7, 11, .58));
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
   color: #f0dfbd;
   text-shadow: 0 1px 3px #000;
 }
@@ -2356,11 +2299,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-bottombar .rpg-actions { max-height: none; overflow: visible; }
 .rpg-actions__row { justify-content: flex-end; gap: 7px; }
 
+/* Le dock de la main ne pose plus de bande sombre sur le bas du tableau : les
+   cartes sont opaques et se détachent par leur ombre — le reste du cadre garde
+   sa peinture, comme partout ailleurs. */
 .rpg-hand-dock {
   z-index: 40;
   transform: none;
   padding: 8px 0 5px;
-  background: linear-gradient(0deg, rgba(10, 8, 8, .94), rgba(12, 10, 9, .84) 75%, transparent);
+  background: none;
 }
 .rpg-hand-dock:hover { transform: none; }
 .rpg-hand-dock.is-open { transform: none; }
@@ -4588,9 +4534,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   max-height: 30px;
   padding: 2px 6px;
   border: 0;
-  background: rgba(6, 6, 14, .16);
+  /* Le journal reste discret, mais lisible : sans le voile du plateau, c'est sa
+     capsule — et elle seule — qui tient l'encre pâle sur les fonds clairs
+     (sable, pierre, glace). */
+  background: rgba(6, 6, 14, .56);
   font-size: 8px;
-  opacity: .72;
+  opacity: .9;
 }
 .rpg-bottombar .rpg-actions {
   display: grid;

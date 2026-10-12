@@ -120,25 +120,6 @@
   overscroll-behavior: contain;
   background-blend-mode: normal;
 }
-/* Le voile noir haut/bas du plateau reste au doigt — seule la vignette centrale
-   saute, pour garder le champ de bataille dégagé. La navigation et l'identité du
-   sorcier occupent la première rangée de la grille, la main, les phases et les
-   commandes la dernière : les bandes du dégradé suivent ces deux rangées
-   (variable partagée avec la souris, voir `rpg-battle.css`). Sans elles, l'encre
-   crème des libellés tombe sous 3:1 sur les plateaux clairs — l'Erg du Sahara
-   monte à 142/255 en haut du cadre, les Ruines de Tipaza à 118 en bas. */
-.rpg-battle--touch .card-table {
-  --rpg-plateau-voile-haut-plein: 8%;
-  --rpg-plateau-voile-haut-fin: 24%;
-  /* La bande sombre du bas doit couvrir toute la rangée de la main (elle
-     commence à ≈ 70 % de la hauteur, gouttières comprises), pas seulement ses
-     trois quarts bas : c'est elle qui tient les libellés lisibles sur les
-     plateaux clairs, pas un masque posé sur les cartes. Un plein à 78 %
-     laissait les cartes sortir de la bande par le haut. */
-  --rpg-plateau-voile-bas-debut: 52%;
-  --rpg-plateau-voile-bas-plein: 70%;
-}
-.rpg-battle--touch .card-table::before { background: var(--rpg-plateau-voile); }
 .rpg-battle--touch .card-table > :is(.rpg-duel-nav, .rpg-wizard-plate, .rpg-card-piles, .rpg-terrains, .card-row, .rpg-bottombar, .rpg-hand-dock) {
   position: relative;
   inset: auto;
@@ -273,6 +254,28 @@
   justify-content: center;
 }
 .rpg-battle--touch .rpg-actions__row .rpg-btn:hover { transform: none; }
+/* ── Le chrome du duel au doigt : chaque texte porte son fond ─────────────────
+   Le voile noir haut/bas du plateau est retiré (voir `rpg-battle.css`) : la
+   barre de navigation du duel et les plaques des deux sorciers reprennent donc
+   la capsule qui les tient lisibles. Deux tiers d'ombre, un tiers de peinture :
+   l'encre crème passe de ~2,9:1 (posée sur la dune de l'Erg) à ~4,5:1, et le
+   décor reste visible jusque sous les libellés. Rien n'est opaque — la règle du
+   duel tactile (aucun panneau opaque sur le champ de bataille) n'a pas bougé. */
+.rpg-battle--touch .card-table > .rpg-duel-nav {
+  padding: 3px 5px;
+  border: 1px solid rgba(238, 216, 171, .24);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(9, 7, 6, .66), rgba(7, 7, 11, .58));
+}
+.rpg-battle--touch .card-table > .rpg-wizard-plate {
+  padding: 3px 6px;
+  border: 1px solid rgba(226, 190, 119, .34);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(9, 7, 6, .66), rgba(7, 7, 11, .58));
+}
+.rpg-battle--touch .rpg-wizard-plate--ennemi { border-color: rgba(193, 105, 72, .58); }
+.rpg-battle--touch .rpg-wizard-plate--joueur { border-color: rgba(220, 186, 105, .58); }
+
 .rpg-battle--touch .card-table > .rpg-hand-dock {
   grid-area: hand;
   display: block;
@@ -283,8 +286,6 @@
   padding: 0 0 env(safe-area-inset-bottom, 0px);
   z-index: 21;
 }
-.rpg-battle--touch .rpg-hand-dock::before { content: "VOTRE MAIN · TOUCHEZ UNE CARTE POUR AGIR"; display: block; padding: 2px 8px; color: #efdbad; text-shadow: 0 1px 3px #000; font: 600 8px/1.3 var(--display); letter-spacing: .06em; }
-.rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 0; justify-content: flex-start; align-items: center; gap: 6px; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 8px); touch-action: pan-x; -webkit-touch-callout: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
 /* Le mulligan, au doigt : le survol ne soulève rien (l'aperçu rapide y passe
@@ -473,16 +474,52 @@
   border-radius: var(--rpg-card-radius, 10px);
 }
 
-/* Une main ouverte : les cartes se chevauchent plutôt que d'être découpées
-   par un conteneur défilant. Chaque carte reste accessible au toucher. */
+/* Une main lisible : une carte = une cible, jamais deux cartes sous le doigt.
+   Quand la main s'allonge, c'est la **largeur des cartes** qui descend —
+   toutes ensemble, jusqu'à un plancher lisible (`--rpg-hand-min`) — et c'est
+   seulement sous ce plancher que la rangée défile, au glissement horizontal,
+   avec un cran par carte. Les cartes ne se recouvrent donc jamais : le doigt
+   qui touche une carte joue **cette** carte, où qu'il tombe dessus.
+   Toute la géométrie sort d'une seule mesure : la largeur de la colonne de jeu
+   divisée par le nombre d'emplacements (`--hand-count`, posé par la page sur
+   la rangée), gouttières déduites. Sur un 844 × 390, cinq cartes font 62 px et
+   huit en font 39 ; les piles homonymes (`×N`) réduisent le compte avant que
+   la place ne manque. `justify-content: safe center` centre une main courte,
+   et laisse la première carte atteignable dès que la rangée déborde. */
 .rpg-battle--touch .rpg-hand-dock .rpg-hand {
-  display: grid;
-  grid-template-columns: repeat(var(--hand-count), minmax(0, var(--duel-card)));
-  gap: 0;
-  padding-right: var(--duel-card);
-  overflow: visible;
+  --rpg-hand-gap: 6px;
+  --rpg-hand-min: 34px;
+  --hand-count: 1;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: safe center;
+  gap: var(--rpg-hand-gap);
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 6px;
+  scrollbar-width: none;
   mask-image: none;
   -webkit-mask-image: none;
 }
+.rpg-battle--touch .rpg-hand-dock .rpg-hand::-webkit-scrollbar { display: none; }
+/* La carte, et la pile qui l'emballe, partagent la même largeur : le plancher
+   tient la cible tactile, `--duel-card` garde l'échelle du champ de bataille. */
+.rpg-battle--touch .rpg-hand .rpg-hand__card,
+.rpg-battle--touch .rpg-hand .rpg-hand__pile {
+  flex: 0 0 auto;
+  width: clamp(var(--rpg-hand-min), calc((100% - (var(--hand-count) - 1) * var(--rpg-hand-gap)) / var(--hand-count)), var(--duel-card));
+  scroll-snap-align: center;
+}
+.rpg-battle--touch .rpg-hand .rpg-hand__pile { display: block; }
+.rpg-battle--touch .rpg-hand .rpg-hand__pile > .rpg-hand__card { width: 100%; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { position: relative; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:focus-visible { z-index: 2; }
