@@ -495,22 +495,65 @@ assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*backgro
 assert.match(plateauxSource, /id: 'terre-de-damnation'[\s\S]*?fichier: 'plateau-terre-de-damnation\.jpg'/,
   'la terre de damnation est un plateau déclaré, avec son fond dans public/');
 
-// ── Aperçu de la carte annoncée, puis plateau sans voile ───────────────────
-assert.match(battlePage, /<HoverCardPreview carte=\{carteAnnoncee\} cible=\{cibleAnnoncee\} variante="annonce" \/>/,
-  'la fenêtre de réponse affiche l’aperçu de la carte annoncée et lui transmet sa cible');
+// ── Réponse à une annonce : aperçu, commandes et voile translucide ─────────
+assert.match(battlePage, /<HoverCardPreview[\s\S]*?carte=\{carteAnnoncee\}[\s\S]*?cible=\{cibleAnnoncee\}[\s\S]*?variante="annonce"[\s\S]*?controls=\{\s*\(/,
+  'la fenêtre de réponse affiche la carte annoncée, sa cible et ses commandes');
 assert.match(hoverPreviewSource, /cibleAnnoncee && \([\s\S]*?rpg-hover-card-preview__target[\s\S]*?cibleAnnoncee\.nom/,
   'l’aperçu d’une magie rend le nom et l’illustration de sa cible');
-assert.match(battleCss, /\.rpg-hover-card-preview--annonce\s*\{[^}]*position:\s*relative;[^}]*display:\s*grid;[^}]*width:\s*100%;/s,
-  'l’aperçu annoncé reste dans son panneau de réponse au lieu de flotter comme un tooltip');
-assert.match(battleCss, /\.rpg-annonce-sort__pass\s*\{[^}]*display:\s*inline-flex;[^}]*flex-direction:\s*row;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*min-height:\s*36px;/s,
-  'Laisser passer est un bouton compact dont le texte est centré verticalement');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hover-card-preview--annonce\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*42px minmax\(0, 1fr\);/s,
-  'l’aperçu annoncé reste visible et lisible dans le rail tactile, alors que les tooltips au survol sont masqués');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/s,
-  'sur tactile, l’aperçu et sa commande s’empilent dans le rail étroit');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass\s*\{[^}]*justify-self:\s*center;[^}]*width:\s*auto;[^}]*min-width:\s*108px;[^}]*min-height:\s*44px;/s,
-  'Laisser passer reste compact tout en gardant une zone de toucher de 44 px');
-
+assert.match(hoverPreviewSource, /<div className="rpg-hover-card-preview__details-column">\s*<div className="rpg-hover-card-preview__details">\{details\}<\/div>\s*\{controls\}/,
+  'les boutons sont dans la colonne et suivent naturellement la fenêtre de texte');
+assert.match(battleCss, /\.rpg-annonce-sort\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*950;[^}]*inset:\s*0;[^}]*pointer-events:\s*auto;/s,
+  'la couche de réponse recouvre le plateau et bloque les clics sous l’aperçu');
+assert.match(battleCss, /\.rpg-annonce-sort\s*\{[^}]*background:\s*rgba\(0, 0, 0, \.46\) !important;[^}]*background-color:\s*rgba\(0, 0, 0, \.46\) !important;/s,
+  'un voile noir semi-transparent assombrit le plateau sans le cacher');
+assert.match(battleCss, /\.rpg-annonce-sort__panel\s*\{[^}]*background:\s*transparent !important;[^}]*background-color:\s*transparent !important;/s,
+  'le panneau intérieur reste transparent et ne repeint pas le voile noir');
+assert.match(battleCss, /\.rpg-annonce-sort__panel\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*pointer-events:\s*none;/s,
+  'le panneau visuel laisse les commandes interactives gérer leurs propres clics');
+assert.match(battlePage, /const apercuAnnonceOuvert = Boolean\(fenetreSort && annonceApercueFermeePour !== duel\.annonce\);/,
+  'le bouton Répondre peut fermer seulement l’aperçu courant sans terminer la fenêtre de réponse');
+assert.match(battlePage, /inert=\{apercuAnnonceOuvert \? true : undefined\}/,
+  'la main devient inerte et ne peut pas être cliquée pendant l’aperçu de l’annonce');
+assert.match(battlePage, /apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert/,
+  'les aperçus de survol des cartes sont masqués pendant l’annonce');
+assert.match(battlePage, /const aReponseJouableEnMain = Boolean\(apercuAnnonceOuvert && duel\.joueur\.main\.some\(\(carteId\) => \{[\s\S]*?carte\?\.instant && peutJouerCarte\(carte\)[\s\S]*?\}\)\);/,
+  'la lueur dépend réellement d’une carte rapide jouable dans la main et payable maintenant');
+assert.match(battlePage, /className=\{`rpg-btn rpg-annonce-sort__respond\$\{aReponseJouableEnMain \? ' is-response-available' : ''\}`\}[\s\S]*?onClick=\{repondreAAnnonce\}[\s\S]*?<span>Répondre<\/span>/,
+  'un bouton Répondre bleu seulement si une réponse jouable est réellement en main');
+assert.doesNotMatch(battlePage, /rpg-annonce-sort__hint|Répondez avec une magie rapide/,
+  'le texte explicatif de réponse est supprimé de l’aperçu');
+assert.match(battlePage, /const repondreAAnnonce = \(\) => \{[\s\S]*?setAnnonceApercueFermeePour\(duel\.annonce\);\s*\};/,
+  'Répondre mémorise l’annonce courante sans la résoudre ni la laisser passer');
+assert.match(battlePage, /fenetreSort && !apercuAnnonceOuvert && \([\s\S]*?rpg-annonce-sort__compact[\s\S]*?onClick=\{laisserPasser\}/,
+  'après fermeture de l’aperçu, Laisser passer reste accessible comme action distincte');
+assert.match(battleCss, /\.rpg-annonce-sort__respond\s*\{[^}]*min-height:\s*46px;[^}]*background:\s*rgba\(7, 12, 19, \.82\);[^}]*color:\s*#fff;[^}]*pointer-events:\s*auto;/s,
+  'sans réponse jouable, Répondre garde un fond sombre semi-transparent et un texte blanc');
+assert.match(battleCss, /\.rpg-annonce-sort__respond\.is-response-available\s*\{[^}]*background:\s*linear-gradient\(180deg, #c9f4ff, #67c4e5\);[^}]*color:\s*#062b3a;/s,
+  'Répondre devient bleu clair seulement quand une carte jouable est disponible');
+assert.doesNotMatch(battleCss, /rpg-annonce-respond-glow|is-response-ready|@keyframes[^}]*respond/i,
+  'aucune lueur ni animation ne subsiste sur le bouton Répondre');
+assert.match(battleCss, /\.rpg-spell-confirm-backdrop\s*\{[^}]*z-index:\s*1000;/s,
+  'la confirmation d’une magie jouée en réponse passe au-dessus de l’annonce adverse');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-card-width:\s*clamp\(140px, min\(28vw, 42dvh\), 280px\);[^}]*--rpg-annonce-column-width:\s*min\(360px,[^}]*position:\s*absolute;[^}]*inset:\s*0;/s,
+  'l’aperçu annoncé réserve une grande carte et sa colonne de texte/actions');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__layout\s*\{[^}]*top:\s*50%;[^}]*left:\s*50%;[^}]*grid-template-columns:\s*var\(--rpg-annonce-card-width\) minmax\(0, var\(--rpg-annonce-column-width\)\);[^}]*width:\s*calc\(var\(--rpg-annonce-card-width\) \+ var\(--rpg-annonce-column-gap\) \+ var\(--rpg-annonce-column-width\)\);[^}]*transform:\s*translate\(-50%, -50%\);/s,
+  'la carte et sa colonne forment un seul ensemble centré dans l’écran');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__face\s*\{[^}]*position:\s*relative;[^}]*width:\s*var\(--rpg-annonce-card-width\);[^}]*transform:\s*none;/s,
+  'la carte occupe la colonne gauche de l’ensemble centré');
+assert.match(battleCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-column-width:\s*min\(210px, calc\(100vw/s,
+  'sur mobile, la colonne est dimensionnée pour centrer tout l’aperçu sans couper son contenu');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__details-column\s*\{[^}]*position:\s*relative;[^}]*width:\s*var\(--rpg-annonce-column-width\);/s,
+  'la colonne de texte et de boutons se place à droite de la carte');
+assert.match(battleCss, /\.rpg-annonce-sort__controls\s*\{[^}]*display:\s*grid;[^}]*grid-template-areas:\s*"respond pass";[^}]*width:\s*100%;/s,
+  'Répondre et Laisser passer sont côte à côte sous la fenêtre de texte');
+assert.doesNotMatch(battleCss, /rpg-annonce-sort__hint/,
+  'aucun style ne conserve le texte explicatif supprimé');
+assert.match(battleCss, /\.rpg-annonce-sort__pass\s*\{[^}]*grid-area:\s*pass;[^}]*display:\s*inline-flex;[^}]*flex-direction:\s*row;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*min-height:\s*46px;[^}]*pointer-events:\s*auto;/s,
+  'Laisser passer est un bouton central et facilement cliquable');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hover-card-preview--annonce\s*\{\s*display:\s*grid;\s*\}/,
+  'l’aperçu annoncé reste visible sur tactile, alors que les tooltips au survol sont masqués');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__respond,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__compact-preview,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__compact-pass \{ min-height: 44px; \}/,
+  'Répondre, Laisser passer et leurs commandes compactes gardent une zone tactile de 44 px sur mobile');
 // Le plateau est peint, pas voilé : les capsules tiennent la lisibilité.
 assert.doesNotMatch(battleCss, /--rpg-plateau-voile/,
   'aucun voile noir n’habille plus les plateaux : la peinture reste entière');
@@ -586,8 +629,12 @@ assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*pa
   'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*--rpg-hand-gap:\s*6px;[^}]*--rpg-hand-min:\s*34px;[^}]*justify-content:\s*safe center;[^}]*gap:\s*var\(--rpg-hand-gap\);[^}]*overflow-x:\s*auto;/s,
   'la main tactile partage sa largeur entre ses cartes, se centre tant qu’elle tient, et défile au-delà');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-hand-dock \{[^}]*padding:\s*0 0 env\(safe-area-inset-bottom, 0px\);[^}]*z-index:\s*21;/s,
-  'le dock de la main au doigt ne garde aucune marge sur les côtés');
+assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*z-index:\s*41;/s,
+  'le rail des terrains reste derrière les cartes de la main');
+assert.match(battleCss, /\.rpg-hand-dock\s*\{[^}]*z-index:\s*42;/s,
+  'le dock de la main passe au premier plan devant le rail des terrains');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-hand-dock \{[^}]*padding:\s*0 0 env\(safe-area-inset-bottom, 0px\);[^}]*z-index:\s*42;/s,
+  'le dock tactile garde ses bords sans marge et passe devant les terrains');
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-hand-dock \{[^}]*overflow:\s*hidden;/s,
   'le dock de la main ne recadre plus les cartes du bout : plus de masque autour de la main');
 assert.match(battleCss, /\.rpg-hand-dock \{[^}]*padding:\s*8px 0 5px;/s,

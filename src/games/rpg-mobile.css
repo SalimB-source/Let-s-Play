@@ -284,7 +284,8 @@
      La rangée prend toute la largeur de la table, du bord gauche au bord
      droit, et les cartes du bout ne sont jamais rognées. */
   padding: 0 0 env(safe-area-inset-bottom, 0px);
-  z-index: 21;
+  /* Les cartes de la main restent devant les terrains aux zones de chevauchement. */
+  z-index: 42;
 }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 8px); touch-action: pan-x; -webkit-touch-callout: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
@@ -309,31 +310,13 @@
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
 .rpg-battle--touch .rpg-spell-confirm { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 28px); overflow-y: auto; }
 .rpg-battle--touch .rpg-spell-confirm__actions { position: sticky; bottom: 0; padding-block: 6px; background: #14131cee; }
-/* L’aperçu est permanent pendant une réponse, même si les aperçus de survol
-   restent masqués sur écran tactile. Le rail de commandes est étroit en paysage :
-   empiler l’aperçu et le bouton garde la carte, sa cible et le texte lisibles. */
-.rpg-battle--touch .rpg-hover-card-preview--annonce {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 6px;
-}
-.rpg-battle--touch .rpg-annonce-sort {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
-  padding: 6px;
-}
-.rpg-battle--touch .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
-  gap: 3px;
-  padding: 5px 6px;
-}
-.rpg-battle--touch .rpg-annonce-sort__pass {
-  justify-self: center;
-  width: auto;
-  min-width: 108px;
-  min-height: 44px;
-  padding: 6px 9px;
-  font-size: 10px;
-}
+/* Pendant une réponse, l’aperçu centré reste visible au doigt même si les
+   tooltips de survol sont masqués. Les commandes gardent une vraie zone tactile. */
+.rpg-battle--touch .rpg-hover-card-preview--annonce { display: grid; }
+.rpg-battle--touch .rpg-annonce-sort__pass,
+.rpg-battle--touch .rpg-annonce-sort__respond,
+.rpg-battle--touch .rpg-annonce-sort__compact-preview,
+.rpg-battle--touch .rpg-annonce-sort__compact-pass { min-height: 44px; }
 
 /* Un seul emplacement visuel par type de terrain. Une carte seule reste sans
    fausse épaisseur ni compteur ; les doublons forment une pile. Les terrains
