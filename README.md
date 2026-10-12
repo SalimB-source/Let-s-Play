@@ -5567,10 +5567,11 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   ne s'engage, « Fin du tour » est désactivé. Le halo doré de la main
   s'éteint — une carte allumée mais injouable enferme le joueur.
 - **Des cartes 4:5, nues.** Chaque carte de la main de départ est la **face
-  4:5** du jeu et rien d'autre : l'illustration plein cadre, le coût, le badge
-  d'élément et, pour les créatures, l'attaque et la défense. **Aucun mot
-  d'interface n'est imprimé dessus** — ni nom, ni type, ni effet, ni drapeau :
-  la carte est son image, et c'est le liseré doré qui dit ce qu'on met de côté.
+  4:5** du jeu et rien d'autre : l'illustration plein cadre, ses repères aux
+  places du jeu — **la couleur en haut à gauche, le coût en haut à droite**,
+  l'attaque et la défense en bas à droite. **Aucun mot d'interface n'est imprimé
+  dessus** — ni nom, ni type, ni effet, ni drapeau : la carte est son image, et
+  c'est le liseré doré qui dit ce qu'on met de côté.
 - **Tout le texte passe par l'aperçu rapide.** Survoler une carte ouvre son
   aperçu complet (nom, type, coût, effets, statistiques) ; le volet le pose
   **au-dessus de lui** (`z-index: 1200`, sous l'aperçu au doigt de 1250), et
@@ -5624,8 +5625,9 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   l'écran de rotation et l'aperçu au doigt), sa **scène mesurée** par requêtes
   de conteneur (`.rpg-mulligan__stage` : une hauteur tenue par le volet, sur
   laquelle les cinq colonnes se règlent, `cqw`/`cqh`), la **carte 4:5**
-  (`.rpg-mulligan__card`, conteneur de taille en largeur : coût, badge et
-  statistiques se règlent en `cqw` sur elle), la réservation
+  (`.rpg-mulligan__card`, conteneur de taille en largeur : le coût en haut à
+  droite, la couleur en haut à gauche et les statistiques en bas à droite se
+  règlent en `cqw` sur elle), la réservation
   `--rpg-mulligan-text` de ce que la carte garde autour d'elle, et
   `.rpg-hover-card-preview--mulligan` qui pose l'aperçu au-dessus du volet ;
   `src/games/rpg-mobile.css` neutralise le survol au doigt sans toucher au
@@ -5661,7 +5663,8 @@ largeur du volet, et aucun bloc de texte sur la carte.
 `scripts/rpg-mobile-layout-check.mjs` mesure la main de départ au navigateur, à
 trois tailles (téléphone en paysage, tablette, moniteur) : les cinq cartes sont
 dans le cadre, entières, touchables, chacune garde le **4:5** du jeu (au pixel
-près), sans texte par-dessus, et la rangée ne défile jamais. Il survole ensuite
+près), **couleur en haut à gauche, coût en haut à droite, statistiques en bas à
+droite**, sans texte par-dessus, et la rangée ne défile jamais. Il survole ensuite
 une carte dans un contexte de bureau : l'aperçu rapide s'ouvre, décrit la carte
 survolée, et se pose au-dessus du volet (`z-index: 1200`). Les duels au
 pilote automatique de `scripts/rpg-ghost-check.mjs` valident le mulligan à

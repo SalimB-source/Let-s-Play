@@ -173,6 +173,18 @@ try {
         muettes: cards.every((card) => !card.querySelector('.rpg-mulligan__name, .rpg-mulligan__type, .rpg-mulligan__rules, .rpg-mulligan__flag')
           && [...card.childNodes].every((node) => node.nodeType !== 3 || !node.textContent.trim())),
         illustrees: cards.every((card) => card.querySelector('img.rpg-mulligan__img')?.complete === true),
+        // Les repères des cartes du jeu : la couleur en haut à gauche, le coût
+        // en haut à droite, l'attaque et la défense en bas à droite.
+        reperes: cards.every((card) => {
+          const box = card.getBoundingClientRect();
+          const coin = (noeud) => noeud?.getBoundingClientRect();
+          const enHautAGauche = (r) => !r || (r.left - box.left < box.width * .35 && r.top - box.top < box.height * .25);
+          const enHautADroite = (r) => !r || (box.right - r.right < box.width * .35 && r.top - box.top < box.height * .25);
+          const enBasADroite = (r) => !r || (box.right - r.right < box.width * .35 && box.bottom - r.bottom < box.height * .25);
+          return enHautAGauche(coin(card.querySelector('.rpg-card-element-badge')))
+            && enHautADroite(coin(card.querySelector('.rpg-mana-cost')))
+            && enBasADroite(coin(card.querySelector('.rpg-mulligan__stats')));
+        }),
       };
     });
     assert.equal(hand.count, 5, `${width}×${height}: les cinq cartes de la main de départ sont présentées`);
@@ -181,6 +193,7 @@ try {
     assert.ok(hand.touchable, `${width}×${height}: chaque carte de la main reste touchable`);
     assert.ok(hand.faces45, `${width}×${height}: chaque carte garde le format 4:5 du jeu`);
     assert.ok(hand.muettes && hand.illustrees, `${width}×${height}: la carte est son illustration, sans texte par-dessus`);
+    assert.ok(hand.reperes, `${width}×${height}: couleur en haut à gauche, coût en haut à droite, statistiques en bas à droite`);
     console.log(`✓ Mulligan complet ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });

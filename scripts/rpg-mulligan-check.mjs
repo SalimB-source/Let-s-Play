@@ -134,8 +134,14 @@ assert.match(battleCss, /\.rpg-mulligan__img\s*\{[^}]*object-fit:\s*cover;/s,
   'l’illustration remplit la face sans déformer');
 assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\([^;]*cqw/s,
   'le badge d’élément se dimensionne sur la largeur de la carte');
-assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*cqw/s,
-  'le coût est posé sur l’illustration et se règle sur la carte');
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-top:\s*5%;[^}]*--rpg-card-element-marker-left:\s*6%;/s,
+  'la couleur de la carte est en haut à gauche, comme sur les cartes du jeu');
+assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*bottom:/s,
+  'la couleur n’est plus en bas de la carte');
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*5%;[^}]*right:\s*6%;[^}]*cqw/s,
+  'le coût est posé en haut à droite de l’illustration, à la taille de la carte');
+assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:/s,
+  'le coût a quitté le coin gauche');
 assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*position:\s*absolute;[^}]*cqw/s,
   'l’attaque et la défense sont posées sur l’illustration, à la taille de la carte');
 assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:\s*#ffd619;/s,
@@ -183,4 +189,4 @@ assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*m
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus, l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');

@@ -89,8 +89,9 @@ limitée à 7.
   5 cartes**.
 - **Le mulligan** ouvre la partie : avant le premier tour, la main de départ
   s'affiche **en entier** — les cinq cartes d'un seul coup, chacune réduite à sa
-  **face 4:5** (l'illustration, le coût, le badge d'élément, l'attaque et la
-  défense), **sans aucun texte imprimé dessus** : le nom, le type et les effets
+  **face 4:5** (l'illustration, la couleur en haut à gauche, le coût en haut à
+  droite, l'attaque et la défense en bas à droite), **sans aucun texte imprimé
+  dessus** : le nom, le type et les effets
   se lisent dans l'**aperçu rapide** (survol à la souris, appui long d'une
   seconde au doigt) — et le joueur touche les cartes qu'il ne garde pas, ce que
   dit le liseré doré.

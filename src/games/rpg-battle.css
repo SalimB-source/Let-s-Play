@@ -3477,14 +3477,12 @@
   height: 100%;
   object-fit: cover;
 }
-/* Le badge d'élément en bas à gauche, les statistiques en bas à droite, le coût
-   en haut à gauche : les repères des cartes du jeu, et rien d'autre. */
+/* Les repères des cartes du jeu, et rien d'autre : la couleur en haut à gauche,
+   le coût en haut à droite, l'attaque et la défense en bas à droite. */
 .rpg-mulligan__card .rpg-card-element-badge {
   --rpg-card-element-marker-size: clamp(15px, 15cqw, 30px);
-  --rpg-card-element-marker-top: auto;
+  --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  top: auto;
-  bottom: 5%;
 }
 .rpg-mulligan__stats {
   position: absolute;
@@ -3504,7 +3502,7 @@
   position: absolute;
   z-index: 3;
   top: 5%;
-  left: 6%;
+  right: 6%;
   height: clamp(16px, 12.5cqw, 30px);
   min-width: clamp(20px, 16cqw, 40px);
   font-size: clamp(8px, 6cqw, 15px);
