@@ -1609,6 +1609,36 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.removeEventListener('keydown', fermerAvecEchap);
   }, [terrainManaChoix]);
 
+  // Sécurité : si un glisser-déposer échoue, l'état ne reste jamais figé
+  // (le cadre jaune a été retiré, mais on purge aussi l'état pour éviter un
+  // écran qui semble bloqué).
+  useEffect(() => {
+    if (!carteGlissee) return undefined;
+    const purgeGlisser = () => {
+      carteGlisseeRef.current = null;
+      setCarteGlissee(null);
+      setSurZoneDepot(false);
+      if (carteOrigineVolRef.current?.carteId === carteGlissee) carteOrigineVolRef.current = null;
+      clicApresGlisserRef.current = false;
+    };
+    const onKey = (event) => { if (event.key === 'Escape') purgeGlisser(); };
+    window.addEventListener('pointerup', purgeGlisser);
+    window.addEventListener('pointercancel', purgeGlisser);
+    window.addEventListener('dragend', purgeGlisser);
+    window.addEventListener('blur', purgeGlisser);
+    window.addEventListener('keydown', onKey);
+    // Sur certains WebView le dragend ne part pas : purge automatique après 3 s
+    const safety = window.setTimeout(purgeGlisser, 3000);
+    return () => {
+      window.removeEventListener('pointerup', purgeGlisser);
+      window.removeEventListener('pointercancel', purgeGlisser);
+      window.removeEventListener('dragend', purgeGlisser);
+      window.removeEventListener('blur', purgeGlisser);
+      window.removeEventListener('keydown', onKey);
+      window.clearTimeout(safety);
+    };
+  }, [carteGlissee]);
+
   useLayoutEffect(() => {
     if (carteEnVol?.phase !== 'pending') return;
     const table = tableRef.current;
@@ -3234,11 +3264,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
           </button>
         </nav>
-        {carteGlissee && (
-          <div className={`rpg-drop-indicator${surZoneDepot ? ' is-over' : ''}`} aria-hidden="true">
-            {surZoneDepot ? 'Relâchez pour jouer la carte' : 'Glissez la carte sur la table'}
-          </div>
-        )}
+
         {combatEntrant && <BlockerArrows tableRef={tableRef} assignments={combatEntrant.blocages} />}
         <FaceDownHand count={duel.sorcier.main.length} drawAnimations={piochesSorcier} />
 
