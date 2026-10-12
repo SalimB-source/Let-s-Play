@@ -1092,13 +1092,14 @@ export const RPG_DECK_JOUEUR_BASE = [
 ];
 
 /**
- * Mono-Braise. La Rafale du minaret a été retirée du jeu : ses trois
- * exemplaires deviennent deux Braisiers du souk — la créature de coût 3 monte
- * à trois cartes — et une dix-neuvième Montagne, parce que la courbe grimpe
- * jusqu'à l'Ifrit al-Ahmar.
+ * Mono-Braise. La Rafale du minaret puis la Fureur du souk ont été retirées du
+ * jeu. Le vivier Braise est dès lors au complet — Braisier, Ghul, Trait et
+ * Nuage sont déjà à trois exemplaires, les six mythiques à un —, si bien que
+ * les quatre cases libérées reviennent aux Montagnes : vingt-deux terrains
+ * pour une courbe qui grimpe jusqu'à l'Ifrit al-Ahmar.
  */
 export const RPG_DECK_SORCIER_BASE = [
-  ...Array(19).fill('montagne'),
+  ...Array(22).fill('montagne'),
   ...Array(3).fill('braisier-du-souk'),
   'feriel',
   'anqa-des-braises',
@@ -1108,7 +1109,6 @@ export const RPG_DECK_SORCIER_BASE = [
   'ifrit-des-ergs',
   'ifrit-al-ahmar',
   ...Array(3).fill('trait-de-braise'),
-  ...Array(3).fill('fureur-du-souk'),
   ...Array(3).fill('nuage-de-cendres'),
 ];
 
@@ -1450,20 +1450,6 @@ export const RPG_MAGIE_CARDS = [
     effet: { type: 'buff', atk: 1, def: 1 },
     text: 'Vos créatures gagnent +1/+1.',
     flavor: 'Le vent bâtit plus vite que les maçons.',
-  },
-  {
-    id: 'fureur-du-souk',
-    name: 'Fureur du souk',
-    element: 'braise',
-    kind: 'magie',
-    typeLine: 'Rituel — Braise',
-    art: 'fureur-du-souk',
-    cost: 3,
-    rarity: 'rare',
-    cibles: ['sorcier'],
-    effet: { type: 'degats', amount: 4, cible: 'sorcier' },
-    text: '4 dégâts au sorcier adverse.',
-    flavor: 'On ne négocie pas avec un étal en feu.',
   },
   {
     id: 'tempete-de-sable',
