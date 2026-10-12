@@ -5464,3 +5464,78 @@ que le Kraken renvoyé ne déclenche pas sa pioche de destruction, que la
 protection et l'absence de cible bloquent le sort sans paiement, et que l'IA
 annonce puis résout un Ressac sur la plus grosse menace. Le scénario de
 `scripts/rpg-battle-smoke.jsx` rejoue le geste complet dans la vraie interface.
+
+## Le Sablier du temps : plus de carte morte sur le terrain
+
+Une carte détruite pouvait rester posée sur la table, figée et comme engagée,
+jusqu'à bloquer le duel. Les règles n'y étaient pour rien — le moteur enterrait
+bien la créature : c'est **le temps qui passe autour de la table** qui laissait
+des restes.
+
+**1. L'image d'adieu survivait à son animation.** Quand une créature meurt, une
+copie de sa carte reste une fraction de seconde à sa place, avec son inclinaison,
+le temps de se dissiper : c'est elle, et non la créature, que le joueur voyait
+« rester engagée sur le terrain ». Elle ne partait que sur une minuterie. Elle
+se retire désormais par quatre voies : la fin de son animation
+(`onAnimationEnd`), sa minuterie, un chien de garde réarmé à chaque changement
+de la liste, et un ménage au retour d'arrière-plan (`visibilitychange`). Et
+quand le joueur a demandé **moins d'animations** (réglage système), l'adieu
+n'est plus affiché du tout : sans animation, ce n'était plus un adieu mais une
+carte morte posée sur la table.
+
+**2. La partie précédente parlait encore.** Le tour du sorcier s'anime par une
+chaîne de minuteries. Quitter la table par « Menu » pendant ce tour, puis
+lancer un nouveau duel, ne les annulait pas : elles atterrissaient sur la
+partie neuve et y rouvraient un combat fantôme — plus moyen de finir son tour,
+les cartes restaient figées dans leur dernier état. Chaque partie porte
+désormais un numéro (`sessionDuelRef`) : une minuterie vérifie qu'elle
+appartient toujours à la partie en cours avant d'agir, et `nouvellePartie()`
+coupe tout ce qui était en vol.
+
+**3. Une carte engagée n'est pas une carte morte.** Une créature qui a attaqué
+reste couchée jusqu'au début du tour de son camp — c'est la règle. Mais elle
+était affichée en gris complet et à 76 % d'opacité : exactement le langage
+visuel d'une carte détruite. Le gris est maintenant léger, et un jeton
+**« engagée »**, redressé à l'horizontale sur la carte couchée, dit ce qu'il en
+est ; les lecteurs d'écran annoncent « engagée, elle se dégagera au début du
+prochain tour ».
+
+**4. Un contre allumé sans rien à contrer.** Le halo doré de la main était
+calculé deux fois, à deux endroits. Un contresort (*Silence d'écume*, *Parade
+du verre*…) apparaissait jouable hors d'une annonce adverse : le joueur le
+tapait, confirmait, et rien ne se passait — indéfiniment. La main interroge
+désormais la même règle que le clic (`peutJouerCarte`), et cette règle
+consulte `rpgContreJouable()` : un contre ne s'allume que face à une annonce
+adverse qu'il peut réellement viser.
+
+**5. Filet de sécurité dans les règles.** `rpgActionsEtat()` retire toute
+créature sans défense **à la fin de chaque geste public** du duel (pose, magie,
+attaque, combat, fin de tour, annonce du sorcier), en rejouant les capacités de
+destruction en cascade. Aucun chemin de dégâts n'oublie aujourd'hui d'enterrer
+sa victime : le balayage ne change donc rien à une partie saine, mais un futur
+malus de défense ne pourra plus laisser une carte morte sur le terrain.
+
+### Vérifications
+
+```bash
+npm run check:rpg         # moteur : actions d'état, contre jouable ou non
+npm run check:rpg-ghosts  # la chasse aux fantômes dans la vraie page
+npm run check:rpg-ui      # inclut la chasse aux fantômes
+```
+
+`scripts/rpg-ghost-check.mjs` monte la page dans jsdom avec une horloge
+virtuelle et joue **des duels entiers au pilote automatique**, sur grand écran
+et au doigt : il joue des cartes, bloque, attaque, annule, répond aux annonces,
+déplie les piles, fait pivoter l'écran en plein combat, quitte la table pour y
+revenir — et, une fois sur trois, **rejoue sans attendre la fin des
+animations**, comme un joueur impatient. Après chaque geste, y compris au
+milieu d'une animation, il compare la table affichée à la vérité du moteur :
+aucune créature à zéro défense en jeu, aucune carte affichée qui ait quitté le
+terrain, aucune carte engagée que le moteur dit dégagée, aucune image de
+destruction oubliée une fois l'horloge à jour. Deux épreuves ciblées complètent
+les duels : la relance d'une partie pendant le tour du sorcier, et un retour
+d'arrière-plan où **toutes les minuteries en attente sont perdues** — la table
+doit se nettoyer d'elle-même.
+
+C'est ce pilote qui a trouvé le contresort injouable : la graine 4 tournait en
+rond à taper *Silence d'écume* sans jamais pouvoir finir son tour.

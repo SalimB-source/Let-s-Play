@@ -2479,16 +2479,38 @@
   transform: rotate(90deg) !important;
   transform-origin: center;
 }
-/* A creature that has attacked stays sideways and visibly exhausted. */
-.rpg-card.is-attacked { opacity: .76; }
+/* Une créature qui a attaqué reste couchée et visiblement fatiguée — mais
+   elle est vivante : le gris reste léger pour qu'on ne la croie pas détruite,
+   et le jeton « engagée » dit à quoi s'en tenir. */
+.rpg-card.is-attacked { opacity: .92; }
 .rpg-card.is-attacked .rpg-card__img,
 .rpg-card.is-attacked .rpg-card__title,
 .rpg-card.is-attacked .rpg-card__type,
   .rpg-card.is-attacked .rpg-card__stat--atk,
 .rpg-card.is-attacked .rpg-card__pt:not(.is-wounded),
 .rpg-card.is-attacked .rpg-card-element-badge {
-  filter: grayscale(1) brightness(.7) saturate(.45);
+  filter: grayscale(.5) brightness(.88) saturate(.7);
 }
+/* Jeton « engagée » : redressé à l'horizontale sur une carte couchée. */
+.rpg-card__engagee {
+  position: absolute;
+  z-index: 6;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 214, 25, .75);
+  border-radius: 999px;
+  background: rgba(14, 11, 8, .86);
+  color: #ffd84d;
+  font: 800 8px/1.1 Georgia, serif;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  filter: none;
+}
+.rpg-card:not(.is-attacked) .rpg-card__engagee { display: none; }
 
 /* La main est consultable à tout moment ; seul le glisser-déposer joue la carte. */
 .rpg-hand__card[data-jouable="true"] { cursor: grab; }

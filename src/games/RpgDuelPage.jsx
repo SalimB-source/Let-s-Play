@@ -54,6 +54,7 @@ import {
 import {
   rpgCibleAuto,
   rpgChoisirAttaquants,
+  rpgContreJouable,
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
   rpgEngagerTerrain,
@@ -627,10 +628,11 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      {entite.attaquee && <span className="rpg-card__engagee" aria-hidden="true">engagée</span>}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
       <header className="rpg-card__title">
@@ -1429,6 +1431,22 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   );
 }
 
+/**
+ * Ménage des images de cartes détruites : tout fantôme dont l'animation est
+ * terminée depuis longtemps disparaît. Une minuterie perdue — onglet mis en
+ * veille par le téléphone, application repassée en arrière-plan — ne peut
+ * donc plus laisser une carte morte posée sur le champ de bataille.
+ */
+function nettoyerFantomes(effets, maintenant = Date.now()) {
+  const restants = effets.filter((effet) => !effet.expireA || effet.expireA > maintenant);
+  return restants.length === effets.length ? effets : restants;
+}
+
+/** Le joueur a demandé moins d'animations : on les lui épargne. */
+function animationsReduites() {
+  return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+}
+
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
   const [ecran, setEcran] = useState('jouer');
   const landscapeRef = useRef(null);
@@ -1587,9 +1605,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const timerApercuMagieRef = useRef(null);
   const [message, setMessage] = useState('Les cartes au halo doré sont jouables ; glissez-les sur la table pour les jouer, leurs terrains s’engageront automatiquement.');
   const timersRef = useRef([]);
+  // Chaque partie a son numéro. Les minuteries du tour du sorcier (annonces,
+  // attaque, animations) le portent : une partie relancée — ou quittée puis
+  // reprise ailleurs — ne peut donc plus recevoir le tour de la précédente,
+  // qui laissait un combat fantôme sur la table et figeait les cartes dans
+  // leur dernier état (créatures mortes comprises).
+  const sessionDuelRef = useRef(0);
   const later = (fn, ms) => {
-    const id = window.setTimeout(fn, ms);
+    const session = sessionDuelRef.current;
+    const id = window.setTimeout(() => {
+      timersRef.current = timersRef.current.filter((timer) => timer !== id);
+      if (sessionDuelRef.current !== session) return;
+      fn();
+    }, ms);
     timersRef.current.push(id);
+  };
+  const annulerMinuteriesDuTour = () => {
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current = [];
   };
   useEffect(() => () => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
@@ -1598,6 +1631,46 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
+  }, []);
+
+  // Chien de garde des images d'adieu : réarmé par React à chaque changement de
+  // la liste, il retire les fantômes périmés même si la minuterie d'animation
+  // qui devait s'en charger a été perdue en route.
+  useEffect(() => {
+    if (!cartesEnDestruction.length) return undefined;
+    const derniere = Math.max(...cartesEnDestruction.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setCartesEnDestruction((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [cartesEnDestruction]);
+
+  // Retour d'arrière-plan : un téléphone qui met l'onglet en veille peut avaler
+  // les minuteries d'animation. On rattrape alors à la main tout ce qui serait
+  // resté figé — image de carte détruite, carte en vol, halos de combat — pour
+  // que la table retrouve exactement l'état du duel.
+  useEffect(() => {
+    const rattraperAnimations = () => {
+      if (document.visibilityState !== 'visible') return;
+      setCartesEnDestruction((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setAnimationsEntites((current) => (Object.keys(current).length ? {} : current));
+      const action = actionVolRef.current;
+      if (action) {
+        if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
+        timerVolRef.current = null;
+        actionVolRef.current = null;
+        setCarteEnVol(null);
+        action.resoudre();
+      }
+    };
+    document.addEventListener('visibilitychange', rattraperAnimations);
+    window.addEventListener('pageshow', rattraperAnimations);
+    return () => {
+      document.removeEventListener('visibilitychange', rattraperAnimations);
+      window.removeEventListener('pageshow', rattraperAnimations);
+    };
   }, []);
 
   useEffect(() => {
@@ -1661,6 +1734,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [carteEnVol?.token]);
 
   const nouvellePartie = (options = {}) => {
+    // Nouvelle partie : la précédente perd la parole. Sans ça, une annonce ou
+    // une attaque du sorcier encore en vol atterrissait sur la table neuve.
+    sessionDuelRef.current += 1;
+    annulerMinuteriesDuTour();
     const etageId = options.etageId ?? histoireEtageId;
     const etageCourant = etageId ? etageHistoireParId(etageId)?.etage ?? null : null;
     const deckChoisiId = options.deckId ?? deckSelectionneId;
@@ -2112,7 +2189,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
-    const disparues = avant.filter((entite) => !vivants.has(entite.entityId));
+    const disparues = animationsReduites() ? [] : avant.filter((entite) => !vivants.has(entite.entityId));
     if (disparues.length) {
       const entitesBrulees = new Set((Number.isInteger(debutJournalDestructions)
         ? rpgDestructionsDepuis(duel, debutJournalDestructions)
@@ -2120,17 +2197,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         .filter((evenement) => evenement.sourceElements.includes('braise'))
         .map((evenement) => evenement.entityId));
       const token = ++sequenceAnimationRef.current;
+      const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050 : 760;
       const effets = disparues.map((entite) => ({
         ...entite,
         token,
         effectId: `${token}-${entite.entityId}`,
         bruleeParBraise: entitesBrulees.has(entite.entityId),
+        // Date de péremption : l'image d'une carte détruite n'est qu'un adieu.
+        // Trois voies la retirent (fin d'animation, minuterie, ménage), la
+        // dernière servant de filet si l'onglet dort pendant l'animation.
+        expireA: Date.now() + duree + 400,
       }));
-      setCartesEnDestruction((current) => [...current, ...effets]);
+      setCartesEnDestruction((current) => [...nettoyerFantomes(current), ...effets]);
       programmerNettoyageVisuel(() => {
         const ids = new Set(effets.map((effect) => effect.effectId));
         setCartesEnDestruction((current) => current.filter((effect) => !ids.has(effect.effectId)));
-      }, effets.some((effect) => effect.bruleeParBraise) ? 1050 : 760);
+      }, duree);
     }
 
     const attaquants = new Set(attaquantsIds);
@@ -2185,6 +2267,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const peutJouerCarte = (carte) => {
     if (!carte || !duel.joueur.main.includes(carte.id)) return false;
+    // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
+    // le joueur dans une confirmation qui ne menait à rien.
+    if (!rpgContreJouable(duel, 'joueur', carte)) return false;
     if (reponseApresBlocage && !carte.instant) return false;
     if (carte.kind === 'terrain') return monTour && !reponseApresBlocage && !duel.joueur.terrainPose;
     return (reponseApresBlocage ? carte.instant : monTour || (reponseActive && carte.instant))
@@ -3470,6 +3555,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               data-rpg-destroyed-id={effet.entityId}
               data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
               aria-hidden="true"
+              // L'adieu se retire de lui-même dès la dernière image de son
+              // animation, sans dépendre d'une minuterie. On ignore les
+              // animations des enfants (l'illustration qui brûle) et des
+              // pseudo-éléments, qui se terminent avant la carte.
+              onAnimationEnd={(event) => {
+                if (event.target !== event.currentTarget || event.pseudoElement) return;
+                setCartesEnDestruction((current) => current.filter((autre) => autre.effectId !== effet.effectId));
+              }}
               style={{
                 ...cardFrameStyle(carteDetruite),
                 left: `${effet.left}px`,
@@ -3683,11 +3776,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               const estTerrain = carte.kind === 'terrain';
               const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
               const peutRepondre = reponseActive && carte.instant;
-              const jouable = reponseApresBlocage
-                ? carte.instant && rpgPeutPayer(duel.joueur, carte)
-                : estTerrain
-                  ? monTour && !duel.joueur.terrainPose
-                  : (monTour || peutRepondre) && rpgPeutPayer(duel.joueur, carte);
+              // Une seule règle pour le halo doré, le glisser-déposer et le
+              // clic : deux copies de la règle finissaient par diverger, et
+              // une carte allumée mais injouable enferme le joueur.
+              const jouable = peutJouerCarte(carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
