@@ -104,6 +104,14 @@ export async function checkRpgPreviewActions(assert) {
     assert.equal(terrainsJoueurs().length, 0, 'l’annulation retire le terrain posé');
 
     // ── Les magies demandent confirmation avant le lancement ──────────────
+    // Le Rapport du greffier se paie trois manas : le scénario laisse donc le
+    // joueur poser un terrain par tour pendant trois tours avant de le lancer.
+    await click(hand('desert'));
+    await click(container.querySelector('.rpg-btn--endturn'));
+    await attendre(800);
+    await click(hand('desert'));
+    await click(container.querySelector('.rpg-btn--endturn'));
+    await attendre(800);
     await click(hand('desert'));
     const mainAvantSort = totalMain();
     await click(hand('rapport-du-greffier'));
@@ -129,14 +137,16 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-btn--endturn'));
     await act(async () => new Promise(resolve => setTimeout(resolve, 800)));
     await click(hand('desert'));
-    assert.equal(terrainsJoueurs().length, 1, 'deux terrains identiques forment une pile');
-    assert.equal(terrain().dataset.terrainCount, '2');
+    assert.equal(terrainsJoueurs().length, 1, 'les terrains identiques forment une seule pile');
+    assert.equal(terrain().dataset.terrainCount, '4');
     assert.equal(hand('desert').dataset.pileCount, '3',
       'le Désert posé quitte la pile, les autres exemplaires restent groupés');
     await click(hand('fennec-des-decombres'));
     assert.ok(fennec(), 'cliquer une créature payable la pose sur la table');
-    assert.equal(terrain().dataset.availableCount, '0',
-      'le paiement automatique engage les deux instances, pas seulement la carte affichée');
+    assert.equal(terrain().dataset.tappedCount, '2',
+      'le paiement automatique engage deux instances de la pile, pas la carte affichée deux fois');
+    assert.equal(terrain().dataset.availableCount, '2',
+      'les deux terrains de trop restent dégagés après le paiement');
 
     // ── La sélection d’attaque est directe, avec annulation et confirmation ─
     await click(container.querySelector('.rpg-btn--attaque-tous'));
@@ -169,7 +179,14 @@ export async function checkRpgPreviewActions(assert) {
       'une créature engagée ne peut pas attaquer deux fois');
     assert.ok(container.textContent.includes('a déjà attaqué ce tour'),
       'le clic sur la créature engagée explique qu’elle a déjà attaqué');
+    // Les terrains que le paiement du Fennec a laissés dégagés produisent bien
+    // leur mana au toucher, un exemplaire par clic ; une pile entièrement
+    // engagée, elle, ne donne plus rien.
+    await click(terrain());
+    await click(terrain());
     const comptes = { available: terrain().dataset.availableCount, tapped: terrain().dataset.tappedCount };
+    assert.deepEqual(comptes, { available: '0', tapped: '4' },
+      'deux touches engagent les deux terrains restés libres de la pile');
     await click(terrain());
     assert.deepEqual(
       { available: terrain().dataset.availableCount, tapped: terrain().dataset.tappedCount }, comptes,

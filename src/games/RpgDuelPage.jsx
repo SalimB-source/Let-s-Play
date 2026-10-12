@@ -119,6 +119,11 @@ const CARD_ART_CACHE_VERSIONS = {
   yamina: 'full-art-huile-realiste-v2',
   tarek: 'full-art-huile-realiste-v2',
   boualem: 'full-art-citerne-protectrice-v1',
+  'brisure-de-verre': 'plein-art-verre-v1',
+  'parade-du-verre': 'plein-art-verre-v1',
+  'maree-contraire': 'deflection-ultrason-v1',
+  ressac: 'djinn-tourbillon-v1',
+  'courant-de-retour': 'djinn-tourbillon-v1',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la

@@ -70,6 +70,27 @@ const donner = (duel, cote, carteId) => duel[cote].main.push(carteId);
 /** Donne directement du mana (le paiement est testé à part). */
 const donnerMana = (duel, cote, n) => { duel[cote].mana = Object.fromEntries(RPG_ELEMENTS.map((couleur) => [couleur, n])); };
 
+/** Les peintures livrées au ratio de la face (4:5) : direction artistique `RPG-CARD-ART.md`. */
+const PLEIN_ART_45 = [
+  'eau-de-la-source', 'lame-de-mer', 'brisure-de-verre', 'parade-du-verre',
+  'maree-contraire', 'ressac', 'courant-de-retour',
+];
+
+/** Largeur et hauteur d'un JPEG, lues dans son en-tête SOF (aucune dépendance). */
+function dimensionsJpeg(chemin) {
+  const octets = readFileSync(chemin);
+  if (octets[0] !== 0xff || octets[1] !== 0xd8) throw new Error(`${chemin} n’est pas un JPEG`);
+  for (let i = 2; i + 9 < octets.length;) {
+    if (octets[i] !== 0xff) { i += 1; continue; }
+    const balise = octets[i + 1];
+    const estSof = balise >= 0xc0 && balise <= 0xcf
+      && ![0xc4, 0xc8, 0xcc].includes(balise);
+    if (estSof) return [octets.readUInt16BE(i + 7), octets.readUInt16BE(i + 5)];
+    i += 2 + octets.readUInt16BE(i + 2);
+  }
+  throw new Error(`dimensions introuvables dans ${chemin}`);
+}
+
 test('les bordures utilisent les cinq raretés — l’Épique de la Neige comprise — et acceptent uncommon', () => {
   assert.deepEqual(Object.fromEntries(Object.entries(CARD_RARITIES).map(([key, rarity]) => [key, rarity.color])), {
     commune: '#f1f3f5',
@@ -387,6 +408,16 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     ['cavalier-amazigh-du-desert', 'cavalier-amazigh-du-desert'],
     ['veilleur-du-couchant', 'veilleur-du-couchant'], ['vent-rouge', 'vent-rouge'],
     ['petra', 'petra'], ['feriel', 'feriel'],
+    // Refonte « plein art 4:5 » : ces sept magies portaient une illustration
+    // prêtée (la Mer) ou un cadrage qui n’était pas celui de la carte. Chacune
+    // a désormais sa peinture dédiée, livrée au format de la face (4:5).
+    ['eau-de-la-source', 'eau-de-la-source'],
+    ['lame-de-mer', 'lame-de-mer'],
+    ['brisure-de-verre', 'brisure-de-verre'],
+    ['parade-du-verre', 'parade-du-verre'],
+    ['maree-contraire', 'maree-contraire'],
+    ['ressac', 'ressac'],
+    ['courant-de-retour', 'courant-de-retour'],
   ];
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée (aucune ne réutilise le fichier d'une autre carte du duel).
@@ -406,6 +437,17 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
       `l’illustration plein art ${illustration} est livrée avec le jeu`);
   }
 
+  // Les faces du duel font 4:5 : un plein art livré dans un autre ratio se
+  // retrouve recadré au milieu d’un sujet (ou cerclé de bandes). Ces
+  // peintures-là sont contrôlées à la source, dans leur fichier.
+  for (const carteId of PLEIN_ART_45) {
+    const [largeur, hauteur] = dimensionsJpeg(
+      fileURLToPath(new URL(`../public/cards/${cardArtId(carteId)}.jpg`, import.meta.url)),
+    );
+    assert.ok(Math.abs(largeur / hauteur - 4 / 5) < 0.01,
+      `${carteId} est peint au ratio 4:5 de la face (${largeur}×${hauteur})`);
+  }
+
   // Les illustrations dédiées des decks sont uniques. Les rares partages
   // restants dans le catalogue hors decks de départ sont recensés ici afin
   // qu'aucun nouveau partage ne passe inaperçu.
@@ -419,9 +461,10 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     .filter(([, ids]) => ids.length > 1)
     .map(([illustration, ids]) => [illustration, ids])
     .sort(([a], [b]) => a.localeCompare(b));
-  assert.deepEqual(partages, [
-    ['mer', ['mer', 'eau-de-la-source', 'lame-de-mer']],
-  ]);
+  // Le catalogue ne compte plus aucun partage d’illustration : l’Eau de la
+  // source et la Lame de mer, qui regardaient la peinture du terrain Mer, ont
+  // chacune la leur.
+  assert.deepEqual(partages, []);
 });
 
 test('chaque deck de départ a son boîtier illustré : une carte emblématique du deck, unique et livrée avec le jeu', () => {
@@ -1093,10 +1136,149 @@ test('les blessures restent repérables après un bonus de défense', () => {
 
   donner(duel, 'joueur', 'rempart-de-dunes');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes').ok, true);
-  assert.equal(chien.pvMax, 3, 'un bonus de défense augmente aussi le maximum de PV');
+  assert.equal(chien.pvMax, 5, 'un bonus de défense augmente aussi le maximum de PV');
   rpgBlesserCreature(duel, 'joueur', chien.id, 1);
-  assert.equal(chien.pv, 2);
+  assert.equal(chien.pv, 4);
   assert.ok(chien.pv < chien.pvMax, 'la créature blessée reste distinguable après le bonus');
+});
+
+test('Rempart de dunes : +0/+3 à toutes les créatures, jusqu’à la fin du tour seulement', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  donner(duel, 'joueur', 'fennec-des-decombres');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  const fennec = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
+
+  donner(duel, 'joueur', 'rempart-de-dunes');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes').ok, true);
+  assert.equal(chien.def, 5, 'le Chien 2/2 tient à 5 derrière son mur de sable');
+  assert.equal(chien.atk, 2, 'le rempart ne rend pas plus fort : il rend plus difficile à tuer');
+  assert.equal(fennec.def, 4, 'toute la ligne est renforcée, pas seulement la cible');
+  assert.equal(fennec.atk, 3, 'l’attaque du Fennec reste la sienne');
+
+  // Le rempart court sur tout le tour qui l’a vu jouer : l’attaque ne le solde
+  // pas avant la fin du tour.
+  chien.ready = true;
+  const pvSorcierAvant = duel.sorcier.pv;
+  rpgLancerAttaque(duel, 'joueur', [chien.id]);
+  assert.equal(duel.sorcier.pv, pvSorcierAvant - 2, 'le Chien frappe derrière son mur de sable');
+  assert.equal(chien.def, 5, 'déclarer l’attaque ne fait pas tomber le bonus');
+
+  // Le sable retombe avec le tour : la table retrouve ses défenses d’avant.
+  rpgFinDeTour(duel);
+  assert.equal(chien.def, 2, 'le bonus ne survit pas à la fin du tour où il a été joué');
+  assert.equal(chien.pvMax, 2, 'le maximum de PV rendu disparaît avec le bonus');
+  assert.equal(chien.atk, 2, 'le Chien n’avait rien gagné en attaque, il ne perd rien');
+  assert.equal(fennec.def, 1, 'le Fennec retrouve sa défense de base');
+  assert.deepEqual(duel.joueur.bonusTemporaires, [], 'le carnet des renforts est vide après la fin du tour');
+
+  // Le tour du sorcier ne renforce personne : la ligne du joueur n’a rien à récupérer.
+  rpgFinDeTour(duel);
+  assert.equal(chien.pv, 2, 'un tour adverse ne fait pas tomber deux fois le même bonus');
+});
+
+test('Tempête de sable : 3 dégâts à toutes les créatures adverses', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'sonneur-fele');
+  const sonneur = rpgJouerCreature(duel, 'sorcier', 'sonneur-fele').entite;
+  assert.equal(sonneur.pv, 3, 'le Sonneur tient sur trois défenses');
+
+  donner(duel, 'joueur', 'tempete-de-sable');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'tempete-de-sable').ok, true);
+  assert.equal(sonneur.pv, 0, 'un dégât de plus que la tempête d’avant : le Sonneur ne tient plus');
+  assert.equal(duel.sorcier.creatures.includes(sonneur), false, 'la tempête vide la table adverse');
+  assert.ok(duel.sorcier.cimetiere.includes('sonneur-fele'), 'la victime est bien enterrée');
+});
+
+test('Nuage de cendres : 2 dégâts sur le coup, 2 autres au début du tour suivant', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'sonneur-fele');
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const sonneur = rpgJouerCreature(duel, 'sorcier', 'sonneur-fele').entite;
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+
+  donner(duel, 'joueur', 'nuage-de-cendres');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
+  assert.equal(chien.pv, 0, 'la première vague emporte le Chien 2/2');
+  assert.equal(sonneur.pv, 1, 'le Sonneur 2/3 traverse la première vague avec un point de vie');
+  assert.equal(duel.sorcier.degatsEchos.length, 1, 'la seconde vague est promise au tour suivant');
+
+  // Le tour du joueur se ferme, celui du sorcier s’ouvre : le nuage retombe.
+  rpgFinDeTour(duel);
+  assert.ok(sonneur.pv <= 0, 'le nuage retombe au début du tour suivant');
+  assert.equal(duel.sorcier.creatures.includes(sonneur), false, 'et il l’emporte avec lui');
+  assert.deepEqual(duel.sorcier.degatsEchos, [], 'l’écho est consommé, il ne repasse pas deux fois');
+
+  rpgFinDeTour(duel);
+  assert.equal(duel.joueur.creatures.length, 0, 'la table du joueur n’a jamais été touchée');
+});
+
+test('un écho qui ne trouve personne sur la table se dissipe sans rien promettre', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'nuage-de-cendres');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true,
+    'le sort se lance même sans créature en face');
+  assert.deepEqual(duel.sorcier.degatsEchos, [], 'le nuage passe sur une table vide');
+  rpgFinDeTour(duel);
+  assert.equal(duel.joueur.pv, duel.joueur.pvMax, 'le tour suivant ne tombe sur personne');
+  assert.equal(duel.sorcier.pv, duel.sorcier.pvMax, 'et ne touche pas non plus le sorcier adverse');
+});
+
+test('les retouches du catalogue : Rapport du greffier à 3 manas, Déflection renommée', () => {
+  assert.equal(cardById('rapport-du-greffier').cost, 3, 'le Rapport se paie trois manas');
+  assert.deepEqual(cardById('rapport-du-greffier').effet, { type: 'pioche', amount: 2 },
+    'son effet reste la pioche de deux cartes');
+  assert.equal(cardById('maree-contraire').name, 'Déflection', 'Marée contraire s’appelle Déflection');
+  assert.equal(cardById('maree-contraire').effet.type, 'contresort', 'son effet de contre est intact');
+  assert.match(cardById('rempart-de-dunes').text, /\+0\/\+3.*fin du tour/u,
+    'le Rempart annonce son bonus borné au tour');
+  assert.deepEqual(cardById('rempart-de-dunes').effet, { type: 'buff', atk: 0, def: 3, tours: 1 },
+    'le moteur porte la durée du bonus');
+  assert.equal(cardById('nuage-de-cendres').effet.echo.amount, 2, 'le Nuage promet sa seconde vague');
+});
+
+test('le carnet des renforts ne solde que le tour qui les a vus jouer', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+
+  // Le cas d’un éphémère de renfort lancé en réponse pendant le tour adverse :
+  // le carnet retient le tour de l’échange, jamais le camp renforcé.
+  chien.def += 3;
+  chien.pv += 3;
+  chien.pvMax += 3;
+  duel.joueur.bonusTemporaires.push({ entiteId: chien.id, atk: 0, def: 3, tour: 'sorcier' });
+
+  rpgFinDeTour(duel);
+  assert.equal(chien.def, 5, 'un bonus né pendant le tour adverse ne tombe pas avec le nôtre');
+  assert.equal(duel.joueur.bonusTemporaires.length, 1, 'il attend le tour qui l’a vu jouer');
+
+  rpgFinDeTour(duel);
+  assert.equal(chien.def, 2, 'il retombe avec le tour pendant lequel il a été joué');
+  assert.equal(chien.pvMax, 2, 'le maximum de PV suit la même échéance');
+  assert.deepEqual(duel.joueur.bonusTemporaires, [], 'le carnet est soldé, et soldé une seule fois');
+});
+
+test('un renfort éphémère qui s’évapore peut laisser une créature à terre', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'rempart-de-dunes');
+  rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes');
+  rpgBlesserCreature(duel, 'joueur', chien.id, 4);
+  assert.equal(chien.pv, 1, 'les 3 défenses du rempart ont encaissé trois des quatre dégâts');
+
+  rpgFinDeTour(duel);
+  assert.equal(chien.pv, 0, 'le bonus retiré, la blessure devient mortelle');
+  assert.equal(duel.joueur.creatures.includes(chien), false, 'la créature quitte la table avec son rempart');
 });
 
 test('capacité à l’arrivée : la Porteuse soigne son sorcier (plafonné)', () => {

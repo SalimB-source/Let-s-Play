@@ -640,6 +640,39 @@ for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
     `${carte.id} annonce sa Résonance sur sa face`);
 }
 
+// ── Retouches du catalogue : bonus borné, écho, coût et peintures reprises ─
+// Ces quatre règles vivent dans le moteur, pas dans le texte des cartes : le
+// garde-fou vérifie les deux extrémités (octroi + effacement, promesse + chute).
+assert.match(duelEngine, /const temporaire = Number\(effet\.tours\) > 0;[\s\S]*?carnet\.push\(\{ entiteId: entite\.id, atk: bonusAttaque, def: bonusDefense, tour: duel\.tour \}\)/,
+  'un bonus déclaré avec `tours` est accordé puis consigné dans le carnet du camp, daté du tour qui le voit jouer');
+assert.match(duelEngine, /annulerBonusTemporaires\(duel, duel\.tour\);[\s\S]*?duel\.tour = autre\(duel\.tour\)/,
+  'les renforts du tour qui se termine s’effacent avant que l’autre camp ne commence');
+assert.match(duelEngine, /if \(entry\.tour && entry\.tour !== tourFerme\) \{\s*restants\.push\(entry\);/,
+  'un bonus né pendant un autre tour que celui qui se ferme reste attendu dans le carnet');
+assert.match(duelEngine, /differerEcho\(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId\)/,
+  'la seconde vague d’un sort à écho est promise à la résolution des dégâts');
+assert.match(duelEngine, /resoudreEchos\(duel\);/,
+  'l’écho retombe au début du tour suivant, avant que son destinataire n’agisse');
+assert.match(aiBrain, /const durable = Number\(effet\.tours\) > 0 \? 0\.5 : 1;/,
+  'l’IA ne paie pas un renfort éphémère au prix d’un renfort durable');
+assert.match(aiBrain, /const echoMontant = Math\.max\(0, Number\(effet\.echo\?\.amount\) \|\| 0\);/,
+  'l’IA compte la seconde vague d’un sort à écho sans la surpayer');
+assert.equal(RPG_DUEL_CARDS.find((carte) => carte.id === 'rapport-du-greffier').cost, 3,
+  'le Rapport du greffier se paie trois manas');
+assert.deepEqual(RPG_DUEL_CARDS.find((carte) => carte.id === 'rempart-de-dunes').effet,
+  { type: 'buff', atk: 0, def: 3, tours: 1 },
+  'le Rempart de dunes donne +0/+3 jusqu’à la fin du tour');
+assert.equal(RPG_DUEL_CARDS.find((carte) => carte.id === 'tempete-de-sable').effet.amount, 3,
+  'la Tempête de sable inflige trois dégâts');
+assert.equal(RPG_DUEL_CARDS.find((carte) => carte.id === 'maree-contraire').name, 'Déflection',
+  'Marée contraire a rendu son nom : la carte s’appelle Déflection');
+// Une peinture remplacée sous le même nom de fichier doit changer d’URL.
+const cacheVersions = battlePage.match(/const CARD_ART_CACHE_VERSIONS = \{([\s\S]*?)\};/)?.[1] ?? '';
+for (const illustration of ['brisure-de-verre', 'parade-du-verre', 'maree-contraire', 'ressac', 'courant-de-retour']) {
+  assert.match(cacheVersions, new RegExp(`(?:'|\\b)${illustration}'?\\s*:`),
+    `${illustration} est datée dans l’URL pour qu’aucun cache ne fige l’ancienne peinture`);
+}
+
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
   + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, blanc Sable, rouge Braise, or bicolore), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
@@ -650,6 +683,7 @@ console.log(
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
+  + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres qui promet sa seconde vague au début du tour suivant, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de l’éphémère qui élimine le dernier attaquant pendant la réponse.'
 );
 process.exit(0);
