@@ -334,16 +334,18 @@
   font-size: 10px;
 }
 
-/* One visible stack per terrain type. Keep it upright even when exhausted:
-   the total count stays legible and inside the rail. Availability is kept in
-   the accessible label and the preview, not printed over the illustration. */
-.rpg-terrain.rpg-terrain-stack { flex-shrink: 0; position: relative; display: block; box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-frame-color, #f1f3f5); }
-.rpg-terrain.rpg-terrain-stack.is-tapped,
-.rpg-terrain.rpg-terrain-stack:hover { transform: none; }
-.rpg-terrain-stack__count {
+/* Un seul emplacement visuel par type de terrain. Une carte seule reste sans
+   fausse épaisseur ni compteur ; les doublons forment une pile. Les terrains
+   épuisés restent inclinés et les piles mixtes indiquent combien sont engagés. */
+.rpg-terrain.rpg-terrain-stack { flex-shrink: 0; position: relative; display: block; }
+.rpg-terrain.rpg-terrain-stack.is-stacked {
+  box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-frame-color, #f1f3f5);
+}
+.rpg-terrain.rpg-terrain-stack:hover:not(.is-tapped) { transform: none; }
+.rpg-terrain.rpg-terrain-stack.is-tapped { transform: rotate(12deg) translateY(1px); }
+.rpg-terrain-stack__count,
+.rpg-terrain-stack__engagement {
   position: absolute;
-  top: 2px;
-  right: 2px;
   display: grid;
   place-items: center;
   min-width: 22px;
@@ -357,11 +359,25 @@
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
+.rpg-terrain-stack__count { top: 2px; right: 2px; }
+.rpg-terrain-stack__engagement {
+  bottom: 2px;
+  left: 2px;
+  min-width: 19px;
+  min-height: 15px;
+  border-color: rgba(219, 174, 128, .78);
+  background: rgba(30, 22, 17, .96);
+  color: #ffd9a8;
+  font-size: 8px;
+}
+.rpg-terrain.rpg-terrain-stack.is-partially-tapped {
+  box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-frame-color, #f1f3f5), 0 0 0 1px rgba(255, 217, 168, .45);
+}
 .rpg-battle--touch .rpg-terrain.rpg-terrain-stack {
   /* Deux types côte à côte dans le rail le plus étroit (568 × 320 : 116 px de
-     rail) : 8 (marge) + 48 + 8 (gouttière) + 48 = 112 px ≤ 116. Et la pile
-     tient dans la hauteur du rail (60 + 2 × 10 ≤ min(90 px, 1,4 carte + 8)) :
-     aucun coin tronqué par `overflow-y: hidden`. 48 px reste la cible tactile
+     rail) : 8 (marge) + 48 + 8 (gouttière) + 48 = 112 px ≤ 116. Une pile tient
+     dans la hauteur du rail (60 + 2 × 10 ≤ min(90 px, 1,4 carte + 8)) : aucun
+     coin tronqué par `overflow-y: hidden`. 48 px reste la cible tactile
      minimale, 60 px suit le 4:5 des cartes. */
   flex: 0 0 48px;
   width: 48px;

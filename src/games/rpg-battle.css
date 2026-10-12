@@ -711,7 +711,7 @@
   box-shadow: 0 0 0 2px rgba(255, 214, 25, .8), 0 6px 16px rgba(0, 0, 0, .5);
 }
 
-/* ── Les terrains posés : mini-cartes 4:5, engagées = couchées/grisées ── */
+/* ── Les terrains posés : mini-cartes 4:5, engagées = inclinées/grisées ── */
 .rpg-terrains {
   position: absolute;
   /* Au-dessus du dégradé noir du dock de la main (z-index 40) : le rail joueur
@@ -2479,15 +2479,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* Combat rotation is driven by entity state, not hover/selection styling.
-   Important here is intentional: entry, hit and attack animations must never
-   replace the tapped rotation with a neutral transform, including in WebViews. */
+   Keep attackers readable while still making their engaged state visible;
+   `!important` prevents entry, hit and attack animations from straightening them. */
 .rpg-card[data-combat-tilted="true"] {
-  transform: rotate(90deg) !important;
+  transform: rotate(15deg) !important;
   transform-origin: center;
 }
-/* Une créature qui a attaqué reste couchée et visiblement fatiguée — mais
-   elle est vivante : le gris reste léger pour qu'on ne la croie pas détruite,
-   et le jeton « engagée » dit à quoi s'en tenir. */
+/* Une créature qui a attaqué reste légèrement inclinée et visiblement fatiguée,
+   sans texte superposé sur son illustration. */
 .rpg-card.is-attacked { opacity: .92; }
 .rpg-card.is-attacked .rpg-card__img,
 .rpg-card.is-attacked .rpg-card__title,
@@ -2497,26 +2496,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card.is-attacked .rpg-card-element-badge {
   filter: grayscale(.5) brightness(.88) saturate(.7);
 }
-/* Jeton « engagée » : redressé à l'horizontale sur une carte couchée. */
-.rpg-card__engagee {
-  position: absolute;
-  z-index: 6;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
-  padding: 2px 7px;
-  border: 1px solid rgba(255, 214, 25, .75);
-  border-radius: 999px;
-  background: rgba(14, 11, 8, .86);
-  color: #ffd84d;
-  font: 800 8px/1.1 Georgia, serif;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  pointer-events: none;
-  filter: none;
-}
-.rpg-card:not(.is-attacked) .rpg-card__engagee { display: none; }
 
 /* La main est consultable à tout moment ; seul le glisser-déposer joue la carte. */
 .rpg-hand__card[data-jouable="true"] { cursor: grab; }
@@ -3584,7 +3563,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mulligan__panel { padding: 8px 6px; }
 }
 
-/* Les cartes entrent, frappent et encaissent un coup avec des signaux courts. */
+/* Les cartes entrent, frappent et encaissent un coup avec des animations,
+   sans étiquette d'action affichée par-dessus. */
 .rpg-card.fx-enter { animation: rpg-card-arrive .5s cubic-bezier(.18, .76, .28, 1.12) both; }
 @keyframes rpg-card-arrive {
   0% { opacity: 0; translate: 0 24px; scale: .82; filter: brightness(1.65); }
@@ -3597,37 +3577,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   0%, 100% { filter: brightness(1); }
   22% { filter: brightness(1.65) saturate(1.35); scale: 1.055; }
   54% { filter: brightness(1.25); scale: .98; }
-}
-.rpg-card__action-fx {
-  position: absolute;
-  z-index: 5;
-  top: 50%;
-  left: 50%;
-  display: grid;
-  place-items: center;
-  min-width: 52px;
-  padding: 5px 7px;
-  transform: translate(-50%, -50%);
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  background: rgba(8, 9, 11, .9);
-  box-shadow: 0 0 16px currentColor;
-  font: 900 7px/1 var(--display);
-  letter-spacing: .1em;
-  white-space: nowrap;
-  pointer-events: none;
-  animation: rpg-action-burst .7s cubic-bezier(.16, .8, .26, 1) both;
-}
-.rpg-card__action-fx--block { color: #ffe16b; }
-.rpg-card__action-fx--unblock { color: #8af2df; }
-.rpg-card__action-fx--attack { color: #ffe8a1; }
-.rpg-card__action-fx--hit { color: #ff9c77; }
-.rpg-card__action-fx--glow { color: #9cf4bc; }
-@keyframes rpg-action-burst {
-  0% { opacity: 0; scale: .55; }
-  20% { opacity: 1; scale: 1.08; }
-  78% { opacity: 1; scale: 1; }
-  100% { opacity: 0; scale: .92; }
 }
 
 .rpg-terrain { animation: rpg-terrain-arrive .4s ease-out both; }
@@ -3740,8 +3689,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   100% { opacity: 0; transform: translateY(-48%) scaleY(.66); }
 }
 
-/* Les flèches se dessinent à l'affectation ; les textes de statut entrent
-   brièvement quand une action change la table. */
+/* Les flèches de blocage se dessinent brièvement à leur affectation. */
 .rpg-blocker-arrow__shaft { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 .rpg-blocker-arrow__glow { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 @keyframes rpg-arrow-draw { to { stroke-dashoffset: 0; } }
@@ -3754,7 +3702,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card.fx-glow,
   .rpg-card.fx-block,
   .rpg-card.fx-unblock,
-  .rpg-card__action-fx,
   .rpg-terrain,
   .rpg-card-destruction-fx,
   .rpg-card-destruction-fx::before,

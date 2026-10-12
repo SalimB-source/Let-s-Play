@@ -33,6 +33,7 @@ try {
 }
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
 const { RPG_PLATEAUX } = await import('../src/games/rpgPlateaux.js');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
@@ -63,6 +64,22 @@ assert.match(battlePage, /RPG_DUEL_CARDS\.filter\(\(carte\) => \{[\s\S]*?catalog
   'le catalogue filtre les hybrides seuls ou via chacune de leurs couleurs');
 assert.match(battleCss, /\.rpg-terrain-mana-choice\s*\{[^}]*position:\s*absolute;[^}]*z-index:/s,
   'le sélecteur de couleur de Pétra reste lisible au-dessus du rail des terrains');
+assert.match(battleCss, /\.rpg-card\[data-combat-tilted="true"\]\s*\{\s*transform:\s*rotate\(15deg\) !important;/,
+  'les créatures engagées gardent une inclinaison de 15° vers la droite');
+assert.doesNotMatch(tableCardSource, /rpg-card__(?:engagee|action-fx)|(?:BLOCAGE|RETIRÉ|IMPACT|ATTAQUE|RENFORCÉ)/,
+  'aucun texte d’état ou d’action n’est superposé sur les cartes');
+assert.doesNotMatch(battleCss, /\.rpg-card__(?:engagee|action-fx)\b/,
+  'les anciens styles des étiquettes posées sur les cartes sont supprimés');
+assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-tapped\s*\{[^}]*transform:\s*rotate\(12deg\)/s,
+  'un terrain engagé reste incliné sur écran tactile');
+assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-stacked\s*\{[^}]*box-shadow:/s,
+  'seules les vraies piles de terrains montrent une épaisseur décalée');
+assert.match(battlePage, /groupe\.count > 1 && <span className="rpg-terrain-stack__count"/,
+  'un terrain seul n’affiche pas de compteur de pile');
+assert.match(battlePage, /groupe\.count > 1 && groupe\.tapped > 0[\s\S]*?rpg-terrain-stack__engagement/,
+  'une pile renseigne le nombre de terrains déjà engagés');
+assert.match(battlePage, /groupe\.available === 0 && groupe\.tapped > 0 \? ' is-tapped' : ''/,
+  'une pile entièrement utilisée prend l’état visuel engagé');
 assert.match(battlePage, /rpgDestructionsDepuis\(duel, debutJournalDestructions\)[\s\S]*?evenement\.sourceElements\.includes\('braise'\)/,
   'la combustion dépend des sources réelles de chaque destruction');
 assert.match(battlePage, /effet\.bruleeParBraise \? ' is-burning' : ''/,
@@ -487,7 +504,6 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-tab
   'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 
 // ── Le voile noir haut/bas du plateau : la lisibilité des textes de la table ─
-const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
 assert.match(battlePage, /<HoverCardPreview carte=\{carteAnnoncee\} cible=\{cibleAnnoncee\} variante="annonce" \/>/,
   'la fenêtre de réponse affiche l’aperçu de la carte annoncée et lui transmet sa cible');
 assert.match(hoverPreviewSource, /cibleAnnoncee && \([\s\S]*?rpg-hover-card-preview__target[\s\S]*?cibleAnnoncee\.nom/,
