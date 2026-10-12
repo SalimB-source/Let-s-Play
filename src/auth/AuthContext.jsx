@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { DEMO_PROFILES, DEFAULT_DEMO_KEY } from './demoProfiles';
 import { syncDemoCommentsForUser } from '../lib/comments';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
 
 function getStoredDemoUser() {

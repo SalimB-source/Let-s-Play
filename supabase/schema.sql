@@ -145,6 +145,28 @@ drop policy if exists "Players update their own Vice City Rush progress" on publ
 create policy "Players update their own Vice City Rush progress"
   on public.vice_city_rush_progress for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- Decks maison et collection du Sablier, privés par compte : l'atelier de deck
+-- écrit localement (le jeu marche hors ligne), cette table suit le joueur d'un
+-- appareil à l'autre. `state` porte le casier complet calculé côté client par
+-- `fusionnerEtatsSablier` (decks maison avec leur horodatage `majLe`, pierres
+-- tombales de suppression, collection en union monotone). Même contrat que
+-- Mirage Rush : personne ne lit ni n'écrit la ligne d'un autre.
+create table if not exists public.rpg_sablier_progress (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  state jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.rpg_sablier_progress enable row level security;
+drop policy if exists "Players read their own Sablier progress" on public.rpg_sablier_progress;
+create policy "Players read their own Sablier progress"
+  on public.rpg_sablier_progress for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "Players insert their own Sablier progress" on public.rpg_sablier_progress;
+create policy "Players insert their own Sablier progress"
+  on public.rpg_sablier_progress for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "Players update their own Sablier progress" on public.rpg_sablier_progress;
+create policy "Players update their own Sablier progress"
+  on public.rpg_sablier_progress for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 
 -- ----------------------------------------------------------------------------
 -- 2. Création du profil à l'inscription (trigger sur auth.users)

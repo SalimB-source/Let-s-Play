@@ -45,9 +45,9 @@ assert.match(pageSource, /\{openDeck && \(\s*<section id="rpg-deck-detail"/,
 assert.equal((pageSource.match(/className="rpg-deck-list"/g) ?? []).length, 1, 'une seule liste de cartes, dans la fiche');
 assert.ok(pageSource.indexOf('className="rpg-deck-list"') > pageSource.indexOf('{openDeck && ('),
   'la liste des cartes se trouve dans la fiche du deck ouvert');
-assert.match(pageSource, /useEffect\(\(\) => \{ if \(screen !== 'decks'\) setOpenDeckId\(null\); \}, \[screen\]\);/,
-  'quitter l’onglet Deck referme l’étagère');
-assert.match(pageSource, /RPG_DECKS\.map\(\(deck\)/, 'tous les decks sont présentés');
+assert.match(pageSource, /useEffect\(\(\) => \{ if \(screen !== 'decks'\) \{ setOpenDeckId\(null\); setAtelier\(null\); \} \}, \[screen\]\);/,
+  'quitter l’onglet Deck referme l’étagère et l’atelier');
+assert.match(pageSource, /decksVisibles\.map\(\(deck\)/, 'tous les decks (catalogue et maison) sont présentés');
 
 // Le boîtier est bien de la 3D CSS : perspective, faces posées dans l'espace, volume conservé.
 assert.match(boxCss, /\.rpg-deckbox\s*\{[^}]*perspective:/, 'le boîtier pose une perspective');
@@ -64,15 +64,15 @@ assert.match(pageSource, /<DeckBox deck=\{deck\}[^>]*\/>\s*<button/, 'le bouton 
 
 // ── Sélection du deck de jeu et mémorisation locale ──────────────────────────────────────────
 // Au lancement du jeu, le deck de jeu est celui que le joueur avait sélectionné (sinon le défaut).
-assert.match(pageSource, /useState\(\(\) => chargerDeckChoisi\(\)/,
-  'le deck de jeu initial est celui mémorisé lors d’un lancement précédent');
+assert.match(pageSource, /useState\(\(\) => chargerDeckChoisi\(decksMaison, collection\)/,
+  'le deck de jeu initial est celui mémorisé lors d’un lancement précédent (maison comprise)');
 // Chaque sélection est enregistrée sur l'appareil ; le menu passe par cette fonction.
-assert.match(pageSource, /const choisirDeck = \(deckId\) => \{[\s\S]*?setDeckSelectionneId\(deck\.id\);\s*return sauverDeckChoisi\(deck\.id\);/,
-  'sélectionner un deck le mémorise sur l’appareil');
+assert.match(pageSource, /const choisirDeck = \(deckId\) => \{[\s\S]*?deckSeJoue\(deck, collection\)[\s\S]*?setDeckSelectionneId\(deck\.id\);\s*return sauverDeckChoisi\(deck\.id, decksMaison, collection\);/,
+  'sélectionner un deck le mémorise sur l’appareil (catalogue et maison, collection vérifiée)');
 assert.match(pageSource, /onSelectDeck=\{choisirDeck\}/, 'le menu sélectionne par la fonction qui mémorise');
 // Cliquer un boîtier ouvre seulement sa liste ; la sélection passe par le bouton dédié.
-assert.match(pageSource, /className="rpg-deck-choice__button"[\s\S]*?onClick=\{\(\) => setOpenDeckId\(deck\.id\)\}/,
-  'cliquer un boîtier ne fait qu’ouvrir le deck, sans le sélectionner');
+assert.match(pageSource, /className="rpg-deck-choice__button"[\s\S]*?setOpenDeckId\(ouvert \? null : deck\.id\)/,
+  'cliquer un boîtier ne fait qu’ouvrir ou refermer le deck, sans le sélectionner');
 assert.match(pageSource, /<\/button>\s*<button\s+type="button"\s+className=\{`rpg-deck-choice__select/,
   '« Sélectionner » est un bouton voisin, sous le boîtier (jamais imbriqué dans le bouton du boîtier)');
 assert.match(pageSource, /disabled=\{!jouable\}/, 'un deck incomplet n’est pas sélectionnable');
@@ -90,11 +90,13 @@ assert.match(pageSource, /\$\{deckAdverseAffiche\.name\} · \$\{deckColorLabel\(
 // « Jouer avec ce deck » démarre avec le deck ouvert sans attendre le rendu suivant ; le bouton
 // « Lancer le duel » ne doit pas transmettre son événement de clic comme identifiant de deck.
 assert.match(pageSource, /onStartGame\(deck\.id\)/, '« Jouer avec ce deck » démarre le duel avec le deck ouvert');
-assert.match(pageSource, /onClick=\{\(\) => onStartGame\(\)\}/, '« Lancer le duel » ne transmet pas l’événement de clic');
+assert.match(pageSource, /onClick=\{\(\) => \{ play\('select'\); onStartGame\(\); \}\}/, '« Lancer le duel » ne transmet pas l’événement de clic');
 assert.match(pageSource, /typeof deckId === 'string'/, 'seul un identifiant de deck est pris en compte au démarrage');
 assert.match(pageSource, /options\.deckId \?\? deckSelectionneId/, 'le duel prend le deck demandé, sinon le deck sélectionné');
 // Le filtre de couleur écarte les decks de l'étagère elle-même (et non de la liste des cartes).
-assert.match(pageSource, /RPG_DECKS\.map\(\(deck\) => \{\s*if \(!deckCorrespondCouleur\(deck, deckCouleur\)\) return null;/,
+assert.match(pageSource, /const decksTous = \[\.\.\.RPG_DECKS, \.\.\.decksMaison\];/,
+  'l’étagère fusionne le catalogue et les decks maison');
+assert.match(pageSource, /decksVisibles\.map\(\(deck\) => \{\s*if \(!deckCorrespondCouleur\(deck, deckCouleur\)\) return null;/,
   'l’étagère n’affiche que les decks retenus par le filtre de couleur');
 assert.match(pageSource, /className="rpg-deck-filter" role="group" aria-label="Filtrer les decks par couleur"/,
   'le filtre de couleur est un groupe nommé');
@@ -124,3 +126,41 @@ assert.match(boxCss, /\.rpg-deck-choice__select\.is-selected\s*\{/, 'le deck sé
 assert.match(boxCss, /\.rpg-deck-choice__select:disabled\s*\{/, 'le bouton du deck adverse a son propre style');
 
 console.log('✓ Onglet Deck : boîtiers 3D illustrés, liste des cartes masquée tant qu’aucun deck n’est cliqué, sélection mémorisée sur l’appareil, filtre par couleur, fermeture et retour sur l’onglet');
+
+// ── Atelier de deck : la création vit dans l'onglet Deck, pleine largeur quand elle est ouverte ──
+assert.match(pageSource, /screen === 'decks' \? \(atelier \? \(/,
+  'l’atelier remplace l’étagère quand il est ouvert');
+assert.match(pageSource, /<RpgDeckAtelier[\s\S]*?onEnregistrer=\{enregistrerAtelier\}/,
+  'l’enregistrement de l’atelier passe par le parent (casier + synchronisation)');
+assert.match(pageSource, /rpg-deck-choice--neuf/, 'la crate « Nouveau deck » est sur l’étagère');
+assert.match(pageSource, /RPG_DECKS_MAISON_LIMITE/, 'l’étagère maison a un plafond affiché');
+assert.match(pageSource, /rpg-deck-catalog__sync/, 'la ligne de synchronisation du compte est sur l’étagère');
+assert.match(pageSource, /DECK MAISON/, 'les decks maison portent leur étiquette');
+assert.match(pageSource, /onSupprimerDeckMaison\(openDeck\.id\)/, 'la suppression d’un deck maison passe par le parent');
+assert.match(pageSource, /noterVictoireEtage\(histoireEtageId, maj\)/,
+  'une victoire d’étage débloque les cartes de sa récompense');
+assert.match(boxCss, /\.rpg-deck-choice--neuf\s*\{/, 'la crate a son style de boîtier entrouvert');
+
+// ── Collection & compte : modules purs, transport Supabase, table SQL ──────────────────────
+const collectionSource = readSource('../src/games/rpgCollection.js');
+const builderSource = readSource('../src/games/rpgDeckBuilder.js');
+const remoteSource = readSource('../src/games/rpgSablierRemote.js');
+const hookSource = readSource('../src/games/useDecksSablier.js');
+const schemaSource = readSource('../supabase/schema.sql');
+assert.match(collectionSource, /COLLECTION_DEPART = RPG_DUEL_CARDS[\s\S]*?rarity === 'commune' \|\| carte\.rarity === 'inhabituelle'/,
+  'la dotation de départ est une règle (communes + inhabituelles), pas une liste figée');
+assert.match(collectionSource, /RPG_RECOMPENSES_PAR_ETAGE = \{/, 'les récompenses d’étage sont du contenu déclaré');
+assert.match(builderSource, /fusionnerEtatsSablier/, 'la fusion de compte est calculée côté client');
+assert.match(builderSource, /normaliserCollection\(local\?\.collection\)/, 'la fusion compare les collections normalisées');
+assert.match(remoteSource, /rpg_sablier_progress/, 'le transport parle à la table du compte');
+assert.match(remoteSource, /maybeSingle/, 'la lecture tolère l’absence de ligne (compte neuf)');
+assert.match(hookSource, /useContext\(AuthContext\)/, 'le hook lit le contexte d’authentification de façon défensive');
+assert.match(hookSource, /chargerEtatSablier[\s\S]*sauverCasierMaison[\s\S]*sauverCollectionDistante/,
+  'à la connexion, la fusion alimente le casier et le cache de collection locaux');
+assert.match(schemaSource, /create table if not exists public\.rpg_sablier_progress/, 'la table du compte existe au schéma');
+assert.match(schemaSource, /on public\.rpg_sablier_progress for select to authenticated using \(auth\.uid\(\) = user_id\)/,
+  'la table est fermée par RLS à sa propre ligne');
+assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /rpgValiderDeckMaison/, 'l’atelier valide structure ET collection en direct');
+assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /carteDebloqueePar/, 'les cartes verrouillées annoncent où se débloquer');
+
+console.log('✓ Atelier de decks : crate « Nouveau deck », éditeur (nom, emblème, cartes, validation live collection), brouillons enregistrables, decks maison jouables en duel libre, édition/renommage/suppression en deux temps, copie, récompenses d’étage vers la collection, compte Supabase et fusion d’appareils');
