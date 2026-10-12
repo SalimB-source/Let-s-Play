@@ -65,7 +65,8 @@ test('Contresort des abîmes contre la carte annoncée, sort ou créature : la c
   assert.equal(duel.annonce, null, 'l’annonce est défaite');
   assert.equal(duel.sorcier.main.includes('trait-de-braise'), false, 'la carte quitte la main du sorcier');
   assert.ok(duel.sorcier.cimetiere.includes('trait-de-braise'), 'elle va au cimetière');
-  assert.equal(duel.sorcier.mana.braise, 5, 'le sorcier n’a rien payé : sa carte n’a pas été résolue');
+  assert.equal(duel.sorcier.mana.braise, 3, 'le sort annoncé paie son coût même s’il est contrecarré');
+  assert.equal(duel.joueur.mana.eau, 0, 'le contresort est lui aussi payé');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false, 'il n’y a plus rien à résoudre');
   assert.equal(duel.joueur.pv, 50, 'aucun dégât');
 });
@@ -79,6 +80,9 @@ test('Contresort des abîmes peut contrer une créature annoncée', () => {
   assert.equal(contre(duel, 'contresort-des-abimes').contre, true);
   assert.equal(duel.sorcier.creatures.length, 0, 'la créature n’entre pas sur la table');
   assert.ok(duel.sorcier.cimetiere.includes('chien-du-guet'));
+  assert.equal(Object.values(duel.sorcier.mana).reduce((total, value) => total + value, 0), 15,
+    'le sorcier dépense les deux manas de la créature contrée');
+  assert.equal(duel.joueur.mana.eau, 0, 'le contresort est aussi payé');
 });
 
 test('un contre ne peut répondre qu’à une annonce : rien à contrer sans carte annoncée', () => {
@@ -164,6 +168,7 @@ test('sans contre, la carte annoncée se résout quand le joueur laisse passer',
   const res = rpgSorcierResoudreAnnonce(duel);
   assert.equal(res.ok, true);
   assert.equal(duel.joueur.pv, 47, 'la magie fait ses 3 dégâts au visage');
+  assert.equal(duel.sorcier.mana.braise, 6, 'le sort qui passe paie son coût une seule fois');
   assert.equal(duel.annonce, null);
   assert.equal(duel.fenetreReponse, false);
 });
@@ -225,7 +230,8 @@ test('l’IA contre une créature du joueur de coût 2 avec Contresort des abîm
   assert.equal(duel.joueur.creatures.length, 0, 'la créature n’entre pas en jeu');
   assert.ok(duel.joueur.cimetiere.includes('porteuse-de-cruches'));
   assert.ok(duel.sorcier.cimetiere.includes('contresort-des-abimes'));
-  assert.equal(duel.sorcier.mana.eau, 0, 'le contre est payé');
+  assert.equal(duel.joueur.mana.eau, 0, 'le coût de la créature contrée est payé');
+  assert.equal(duel.sorcier.mana.eau, 0, 'le contresort adverse est aussi payé');
 });
 
 test('l’IA contre une magie du joueur avec Silence d’écume si c’est un sort de Braise', () => {
@@ -239,6 +245,8 @@ test('l’IA contre une magie du joueur avec Silence d’écume si c’est un so
   assert.equal(res.contre, true);
   assert.equal(res.parIA, true);
   assert.ok(duel.joueur.cimetiere.includes('trait-de-braise'));
+  assert.equal(duel.joueur.mana.braise, 1, 'le coût du sort contré est payé');
+  assert.equal(duel.sorcier.mana.eau, 0, 'le contresort adverse est aussi payé');
 });
 
 test('l’IA ne contre pas une carte de coût 1', () => {
