@@ -9,7 +9,15 @@
  * Les anciennes cartes de pouvoir et de base restent disponibles au classeur
  * et au draft du prototype RPG ; le duel s’appuie sur les catalogues terrains,
  * créatures, héros et magies déclarés plus bas.
+ *
+ * Les cinq decks du jeu sont **composés** en fin de fichier : les recettes
+ * (`rpgDeckRecipes.js`) disent l’identité, les quotas et la signature, et
+ * `composerDeck` (`rpgDeckComposer.js`) y met les meilleures cartes du
+ * catalogue, palier de rareté puis puissance (`rpgCardPower.js`).
  */
+
+import { composerDeck } from './rpgDeckComposer.js';
+import { RPG_RECETTES_DECKS } from './rpgDeckRecipes.js';
 
 export const CARD_RARITIES = {
   commune: { label: 'Commune', color: '#f1f3f5' },
@@ -1071,77 +1079,17 @@ export function duelCardById(id) {
   return creatureById(id) ?? heroById(id);
 }
 
-/**
- * Decks de 40 cartes : les archétypes monocolores et l’hybride Sable/Braise
- * contiennent au moins 40 % de terrains. Les mythiques sont limités à un
- * exemplaire par deck ; les autres cartes non-terrain à trois exemplaires.
+/*
+ * Les cinq decks du jeu ne sont plus écrits carte par carte : ils sont
+ * **composés** en fin de fichier, par `composerDeck` (`rpgDeckComposer.js`) à
+ * partir des recettes (`rpgDeckRecipes.js`) et du catalogue ci-dessous —
+ * « les meilleures cartes d’abord », palier de rareté puis puissance
+ * (`rpgCardPower.js`). Les listes composées (`RPG_DECK_JOUEUR_BASE`,
+ * `RPG_DECK_SORCIER_BASE`, `RPG_DECK_HYBRIDE_BASE`, `RPG_DECK_NEIGE_BASE`,
+ * `RPG_DECK_MAREE_BASE`) et `RPG_DECKS` vivent tout en bas du fichier, une
+ * fois le catalogue complet — elles lisent les couleurs, les limites
+ * d’exemplaires et les terrains.
  */
-export const RPG_DECK_JOUEUR_BASE = [
-  // Deux peintures de terrain Sable, même production de mana : le paquet
-  // alterne le Désert classique et les Dunes du Ténéré.
-  ...Array(9).fill('desert'),
-  ...Array(8).fill('dunes-du-tenere'),
-  ...Array(2).fill('fennec-des-decombres'),
-  'cavalier-amazigh-du-desert',
-  ...Array(3).fill('faiseur-de-passage'),
-  ...Array(3).fill('tislit-des-aures'),
-  ...Array(3).fill('tiziri-du-djurdjura'),
-  ...Array(3).fill('amani-des-ksour'),
-  ...Array(2).fill('amayas-du-hoggar'),
-  'tin-hinan',
-  ...Array(2).fill('rapport-du-greffier'),
-  ...Array(2).fill('rempart-de-dunes'),
-  'tempete-de-sable',
-];
-
-/**
- * Mono-Braise. La Rafale du minaret puis la Fureur du souk ont été retirées du
- * jeu. Le vivier Braise est dès lors au complet — Braisier, Ghul, Trait et
- * Nuage sont déjà à trois exemplaires, les six mythiques à un —, si bien que
- * les quatre cases libérées reviennent aux terrains Braise : vingt-deux cartes
- * réparties entre Montagne et Crêtes de cendre pour une courbe qui grimpe
- * jusqu'à l'Ifrit al-Ahmar.
- */
-export const RPG_DECK_SORCIER_BASE = [
-  // La Braise partage ses terrains entre la Montagne et les Crêtes de cendre.
-  ...Array(11).fill('montagne'),
-  ...Array(11).fill('cretes-de-cendre'),
-  ...Array(3).fill('braisier-du-souk'),
-  'feriel',
-  'anqa-des-braises',
-  'djinn-du-souk',
-  ...Array(3).fill('ghul-des-cendres'),
-  'sahir-des-braises',
-  'ifrit-des-ergs',
-  'ifrit-al-ahmar',
-  ...Array(3).fill('trait-de-braise'),
-  ...Array(3).fill('nuage-de-cendres'),
-];
-
-export const RPG_DECK_HYBRIDE_BASE = [
-  // L’hybride mêle aussi les variantes Sable, Braise et la seconde peinture
-  // rare de Pétra sans changer son équilibre de mana.
-  ...Array(3).fill('desert'),
-  ...Array(3).fill('dunes-du-tenere'),
-  ...Array(3).fill('montagne'),
-  ...Array(3).fill('cretes-de-cendre'),
-  ...Array(3).fill('petra'),
-  ...Array(2).fill('petra-des-deux-sources'),
-  ...Array(3).fill('fennec-des-decombres'),
-  ...Array(2).fill('cavalier-amazigh-du-desert'),
-  ...Array(2).fill('faiseur-de-passage'),
-  ...Array(2).fill('tislit-des-aures'),
-  'braisier-du-souk',
-  'feriel',
-  'anqa-des-braises',
-  'djinn-du-souk',
-  'sahir-des-braises',
-  ...Array(3).fill('djinn-de-foudre'),
-  'ifrit-des-ergs',
-  ...Array(2).fill('trait-de-braise'),
-  'rempart-de-dunes',
-  ...Array(2).fill('vent-rouge'),
-];
 
 /**
  * Illustrations provisoires : une carte dont le plein art n'est pas encore
@@ -1153,135 +1101,6 @@ export const RPG_DECK_HYBRIDE_BASE = [
  * `public/cards/<id>.jpg`.
  */
 export const RPG_ART_PROVISOIRE = [];
-
-/**
- * Serment des Neuf Hivers — le deck mono-Neige : dix-sept terrains Glacier,
- * dont la variante des Arches, des guerriers de clan, des valkyries, un berserk,
- * un drakkar et les figures du Nord (jamais nommées « dieux » : le Père des
- * corbeaux, le Maître du marteau, la Dame des neuf mondes, le Serpent du monde).
- * Les figures sont mythiques, donc en un exemplaire ; les autres cartes rares
- * du set peuvent aller à trois.
- */
-export const RPG_DECK_NEIGE_BASE = [
-  // Le Serment alterne le Glacier et sa variante creusée des Arches.
-  ...Array(9).fill('glacier'),
-  ...Array(8).fill('glacier-des-arches'),
-  ...Array(2).fill('guerrier-au-bouclier-rond'),
-  ...Array(2).fill('loup-des-neiges'),
-  'scalde-des-runes',
-  ...Array(2).fill('valkyrie-au-corbeau'),
-  'berserk-des-trois-hivers',
-  'jarl-au-marteau-de-guerre',
-  ...Array(2).fill('mur-de-boucliers'),
-  ...Array(2).fill('eclair-du-marteau'),
-  'brume-du-fjord',
-  'festin-des-vaillants',
-  'valkyrie-des-glaces',
-  'geant-des-banquises',
-  'drakkar-a-tete-de-dragon',
-  'hurlement-du-blizzard',
-  'pere-des-corbeaux',
-  'maitre-du-marteau',
-  'dame-des-neuf-mondes',
-  'serpent-du-monde',
-  ];
-
-/**
- * Marée des abysses — mono-Eau : des contresorts qui répondent aux annonces du sorcier
- * adverse, des bêtes marines mythiques et le renvoi en main (Ressac, Courant de retour)
- * qui reprend du tempo sans tuer. 16 terrains Eau (Mer et Lagune des salines),
- * 10 créatures (4 mythiques, un seul exemplaire chacune), 14 sorts.
- */
-export const RPG_DECK_MAREE_BASE = [
-  // Seize cartes Eau, réparties entre la côte et la Lagune des salines.
-  ...Array(8).fill('mer'),
-  ...Array(8).fill('lagune-des-salines'),
-  ...Array(2).fill('porteuse-de-cruches'),
-  ...Array(2).fill('veilleuse-des-citernes'),
-  'vipere-de-verre',
-  'sonneur-fele',
-  'bakunawa',
-  'kraken',
-  'leviathan',
-  'jormungandr',
-  ...Array(3).fill('contresort-des-abimes'),
-  ...Array(3).fill('silence-decume'),
-  ...Array(2).fill('maree-contraire'),
-  ...Array(2).fill('parade-du-verre'),
-  'brisure-de-verre',
-  ...Array(2).fill('ressac'),
-  'courant-de-retour',
-];
-
-/** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
- *  sur le boîtier 3D de l'onglet Deck — un identifiant de `public/cards/`.
- *  `role` : le camp que le deck tient par défaut — `joueur` (deck de départ du joueur) ou
- *  `adversaire` (deck du sorcier en duel libre). Il ne limite rien : le joueur peut choisir
- *  n'importe quel deck complet, la Cour des Djinns comprise (voir `rpgDeckChoice.js`).
- *  `affrontement` : la phrase de la carte « ADVERSAIRE » de l'écran Jouer quand le sorcier
- *  joue ce deck (sans elle : « Affrontez <nom du deck>. »). */
-export const RPG_DECKS = [
-  {
-    id: 'veilleurs-du-desert',
-    name: 'Veilleurs du Désert',
-    role: 'joueur',
-    element: 'sable',
-    terrain: 'desert',
-    boxArt: 'cavalier-amazigh-du-desert',
-    archetype: 'Assaut des dunes',
-    affrontement: 'Affrontez les veilleurs du Désert.',
-    description: 'Deck mono-Sable inspiré des peuples amazighs d’Algérie : créatures offensives, renforts et protections ciblées contre une couleur pendant leur tour d’arrivée et le tour adverse suivant.',
-    cardIds: RPG_DECK_JOUEUR_BASE,
-  },
-  {
-    id: 'cour-des-djinns',
-    name: 'Cour des Djinns',
-    role: 'adversaire',
-    element: 'braise',
-    terrain: 'montagne',
-    boxArt: 'ifrit-al-ahmar',
-    archetype: 'Djinns et sorcellerie',
-    affrontement: 'Affrontez les djinns de Braise.',
-    description: 'Deck mono-Braise inspiré du folklore arabo-musulman autour des djinns, ifrits et ghuls, avec des sorcelleries de cendres.',
-    cardIds: RPG_DECK_SORCIER_BASE,
-  },
-  {
-    id: 'sentiers-de-cendre',
-    name: 'Sentiers de cendre',
-    role: 'joueur',
-    element: 'hybride',
-    elements: ['sable', 'braise'],
-    terrain: 'petra',
-    boxArt: 'feriel',
-    archetype: 'Sable + Braise · deux couleurs, une même piste',
-    description: 'Un deck hybride de Sable et de Braise : les terrains Désert et Montagne se mêlent à Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores évoquent avec subtilité des récits désertiques diné, sans divinité nommée ni symbole cérémoniel.',
-    cardIds: RPG_DECK_HYBRIDE_BASE,
-  },
-  {
-    id: 'maree-des-abysses',
-    name: 'Marée des abysses',
-    role: 'joueur',
-    element: 'eau',
-    terrain: 'mer',
-    boxArt: 'leviathan',
-    archetype: 'Contresorts · bêtes marines mythiques',
-    affrontement: 'Affrontez la marée des abysses.',
-    description: 'Deck mono-Eau : des contresorts qui répondent aux cartes annoncées par le sorcier, et les bêtes marines mythiques (Kraken, Léviathan, Bakunawa, Jörmungandr) qui surgissent des profondeurs.',
-    cardIds: RPG_DECK_MAREE_BASE,
-  },
-  {
-    id: 'serment-des-neuf-hivers',
-    name: 'Serment des Neuf Hivers',
-    role: 'joueur',
-    element: 'neige',
-    terrain: 'glacier',
-    boxArt: 'valkyrie-des-glaces',
-    archetype: 'Neige · valkyries, guerriers et drakkars',
-    affrontement: 'Affrontez les serments du Nord.',
-    description: 'Deck mono-Neige inspiré des récits du Nord : guerriers au bouclier rond, loups des neiges, scalde, berserk, valkyries ailées et drakkar à tête de dragon, aux côtés des figures du panthéon scandinave — le Père des corbeaux, le Maître du marteau, la Dame des neuf mondes et le Serpent du monde — jamais nommées « dieux ». Combat physique des clans et combat magique des runes, sous les boucliers de givre.',
-    cardIds: RPG_DECK_NEIGE_BASE,
-  },
-];
 
 /**
  * Raretés d'exception : une seule copie par deck. Les raretés du Sablier sont
@@ -1926,3 +1745,111 @@ export function rpgDraftOffer(rng, collection = []) {
   }
   return offer;
 }
+
+/**
+ * Les decks du jeu — composés, pas écrits.
+ *
+ * Chaque liste est le produit d'une **recette** (`rpgDeckRecipes.js`) passée au
+ * **composeur** (`rpgDeckComposer.js`) avec le catalogue complet : identité
+ * chromatique, quotas de terrains, de créatures et de sorts, signature — puis
+ * **les meilleures cartes de l'identité**, palier de rareté d'abord, puissance
+ * ensuite, chaque carte à son maximum légal (une mythique, trois exemplaires
+ * pour les autres). Le catalogue n'a plus de deck « de reste » : chaque boîtier
+ * aligne ce que sa couleur a de mieux.
+ *
+ * Les recettes vivent à part parce qu'elles sont lisibles : une recette dit ce
+ * qui ne se négocie pas, le composeur fait le reste. Ajouter une carte au
+ * catalogue, c'est la donner à tous les decks dont elle mérite la place — ce
+ * sont les contrôles de `tests/rpg-decks-puissance.test.js` qui la suivent.
+ */
+export const CATALOGUE_DU_COMPOSEUR = {
+  cartes: RPG_DUEL_CARDS,
+  couleursDe: cardColors,
+  limiteDe: cardCopyLimit,
+};
+
+/** Les Veilleurs du Désert — mono-Sable, les trois héros du sable en tête. */
+export const RPG_DECK_JOUEUR_BASE = composerDeck(RPG_RECETTES_DECKS['veilleurs-du-desert'], CATALOGUE_DU_COMPOSEUR);
+
+/** La Cour des Djinns — mono-Braise, tout le vivier Braise à son maximum. */
+export const RPG_DECK_SORCIER_BASE = composerDeck(RPG_RECETTES_DECKS['cour-des-djinns'], CATALOGUE_DU_COMPOSEUR);
+
+/** Les Sentiers de cendre — hybride Sable + Braise, les neuf mythiques des deux couleurs. */
+export const RPG_DECK_HYBRIDE_BASE = composerDeck(RPG_RECETTES_DECKS['sentiers-de-cendre'], CATALOGUE_DU_COMPOSEUR);
+
+/** La Marée des abysses — mono-Eau, contresorts et bêtes marines. */
+export const RPG_DECK_MAREE_BASE = composerDeck(RPG_RECETTES_DECKS['maree-des-abysses'], CATALOGUE_DU_COMPOSEUR);
+
+/** Le Serment des Neuf Hivers — mono-Neige, les quatre figures du Nord. */
+export const RPG_DECK_NEIGE_BASE = composerDeck(RPG_RECETTES_DECKS['serment-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR);
+
+/** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
+ *  sur le boîtier 3D de l'onglet Deck — un identifiant de `public/cards/`.
+ *  `role` : le camp que le deck tient par défaut — `joueur` (deck de départ du joueur) ou
+ *  `adversaire` (deck du sorcier en duel libre). Il ne limite rien : le joueur peut choisir
+ *  n'importe quel deck complet, la Cour des Djinns comprise (voir `rpgDeckChoice.js`).
+ *  `affrontement` : la phrase de la carte « ADVERSAIRE » de l'écran Jouer quand le sorcier
+ *  joue ce deck (sans elle : « Affrontez <nom du deck>. »).
+ *  `description` : ce que le deck joue vraiment — elle suit la recette, jamais l'inverse. */
+export const RPG_DECKS = [
+  {
+    id: 'veilleurs-du-desert',
+    name: 'Veilleurs du Désert',
+    role: 'joueur',
+    element: 'sable',
+    terrain: 'desert',
+    boxArt: 'cavalier-amazigh-du-desert',
+    archetype: 'Assaut des dunes',
+    affrontement: 'Affrontez les veilleurs du Désert.',
+    description: 'Deck mono-Sable inspiré des peuples amazighs d’Algérie : le bouclier d’Amani, la protection de Tiziri et la piste d’Amayas ouvrent la voie aux trois héros du sable — Salem, Tarek et Tin Hinan — et au Cavalier amazigh, sabre au clair.',
+    cardIds: RPG_DECK_JOUEUR_BASE,
+  },
+  {
+    id: 'cour-des-djinns',
+    name: 'Cour des Djinns',
+    role: 'adversaire',
+    element: 'braise',
+    terrain: 'montagne',
+    boxArt: 'ifrit-al-ahmar',
+    archetype: 'Djinns et sorcellerie',
+    affrontement: 'Affrontez les djinns de Braise.',
+    description: 'Deck mono-Braise inspiré du folklore arabo-musulman autour des djinns, ifrits et ghuls : tout le vivier de Braise y est aligné à son maximum — les quatre communes à trois exemplaires, les six mythiques à un —, des sorcelleries de cendres qui montent jusqu’à l’Ifrit al-Ahmar.',
+    cardIds: RPG_DECK_SORCIER_BASE,
+  },
+  {
+    id: 'sentiers-de-cendre',
+    name: 'Sentiers de cendre',
+    role: 'joueur',
+    element: 'hybride',
+    elements: ['sable', 'braise'],
+    terrain: 'petra',
+    boxArt: 'feriel',
+    archetype: 'Sable + Braise · deux couleurs, une même piste',
+    description: 'Un deck hybride de Sable et de Braise : le Désert et la Montagne se partagent les places avec Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores — le Djinn de foudre et le Vent rouge — exigent une source de chaque couleur, et sa liste réunit les neuf mythiques des deux couleurs, Fériel comprise.',
+    cardIds: RPG_DECK_HYBRIDE_BASE,
+  },
+  {
+    id: 'maree-des-abysses',
+    name: 'Marée des abysses',
+    role: 'joueur',
+    element: 'eau',
+    terrain: 'mer',
+    boxArt: 'leviathan',
+    archetype: 'Contresorts · bêtes marines mythiques',
+    affrontement: 'Affrontez la marée des abysses.',
+    description: 'Deck mono-Eau : les contresorts répondent aux cartes annoncées par le sorcier, les renvois en main reprennent le tempo, et les bêtes marines mythiques (Kraken, Léviathan, Bakunawa, Jörmungandr) surgissent des profondeurs aux côtés de Yamina l’Horlogère et de Boualem le Puisatier.',
+    cardIds: RPG_DECK_MAREE_BASE,
+  },
+  {
+    id: 'serment-des-neuf-hivers',
+    name: 'Serment des Neuf Hivers',
+    role: 'joueur',
+    element: 'neige',
+    terrain: 'glacier',
+    boxArt: 'valkyrie-des-glaces',
+    archetype: 'Neige · valkyries, guerriers et drakkars',
+    affrontement: 'Affrontez les serments du Nord.',
+    description: 'Deck mono-Neige inspiré des récits du Nord : le loup des neiges, le guerrier au bouclier rond, le Jarl et sa Furie, le Mur de boucliers, la Brume et le Hurlement — et, par-dessus, les quatre figures du Nord (le Père des corbeaux, le Maître du marteau, la Dame des neuf mondes, le Serpent du monde) avec les valkyries et le Berserk à leur maximum. Aucune de ces figures n’est jamais nommée « dieu ».',
+    cardIds: RPG_DECK_NEIGE_BASE,
+  },
+];

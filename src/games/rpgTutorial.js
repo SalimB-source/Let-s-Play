@@ -11,7 +11,7 @@ export const RPG_TUTORIAL_OPENING_HAND = Object.freeze([
   'tislit-des-aures',
   'fennec-des-decombres',
   'rapport-du-greffier',
-  'rempart-de-dunes',
+  'tempete-de-sable',
 ]);
 
 /**

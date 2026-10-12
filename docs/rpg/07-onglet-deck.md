@@ -131,6 +131,7 @@ l'unicité). Sans `boxArt`, le boîtier retombe sur la première carte non-terra
 | Veilleurs du Désert | `cavalier-amazigh-du-desert` |
 | Cour des Djinns | `ifrit-al-ahmar` |
 | Sentiers de cendre | `feriel` (cheval de feu dans les dunes : Sable + Braise) |
+| Marée des abysses | `leviathan` |
 | Serment des Neuf Hivers | `valkyrie-des-glaces` (Valkyrie et monture pâle dans la tempête) |
 
 Les raretés sont **celles de Magic** — commune, inhabituelle, rare, mythique
@@ -154,12 +155,17 @@ rares ou moins, avec le cadre de leur couleur.
   d'un duel en cours ; plus des garde-fous sur la 3D (perspective, `preserve-3d`,
   faces cachées, animations réduites) et sur le bouton (au-dessus de la zone
   cliquable, pleine largeur en disposition ouverte, 44 px au doigt).
+- `npm run check:rpg-decks` — **les dix paquets valent la composition de leur
+  recette** : chaque deck est recalculé par `composerDeck`, aucune carte laissée
+  de côté n'est mieux classée qu'une carte retenue de sa famille, les mythiques
+  de l'identité sont toutes présentes et les plafonds de la campagne tiennent
+  (voir la section « Le deck composé » plus bas) ;
 - `npm run check:rpg` — `boxArt` existe, est unique et vient d'une carte du deck ;
   les cartes Neige sont mono-Neige, les mythiques en un exemplaire, les textes du
-  Nord ne nomment jamais de divinité, et **les dix-neuf cartes du Serment ont
-  leur peinture plein art dédiée** (la liste `RPG_ART_PROVISOIRE` est vide et le
-  test l'exige : le jour où une carte y entre, elle doit en sortir dès que sa
-  peinture est livrée) ;
+  Nord ne nomment jamais de divinité, et **les vingt cartes du set Neige du
+  catalogue ont leur peinture plein art dédiée** (la liste `RPG_ART_PROVISOIRE`
+  est vide et le test l'exige : le jour où une carte y entre, elle doit en sortir
+  dès que sa peinture est livrée) ;
   `tests/rpg-deck-choice.test.js` couvre la règle de sélection, le choix de
   l'adversaire (jamais le même deck), la mémorisation (aller-retour, valeurs
   invalides, stockage absent ou en panne) et le filtre de couleur.
@@ -167,3 +173,45 @@ rares ou moins, avec le cadre de leur couleur.
   scène du menu reste sombre en thème clair (voir `06-mode-histoire.md`). Les
   couleurs du bouton, des puces et de la ligne d'état sont littérales (aucun jeton
   de thème) ; le garde-fou `check:rpg-story-ui` couvre ce fichier CSS.
+
+## Le deck composé — les meilleures cartes d'abord
+
+Les boîtiers de l'étagère ne sont plus écrits carte par carte : ils sont
+**composés** à partir d'une **recette**. Une recette dit ce qui ne se négocie
+pas — l'identité chromatique, le nombre de terrains, de créatures et de sorts,
+la **signature** du deck — et le composeur y met les **meilleures cartes de
+cette identité** : palier de rareté d'abord (mythique > rare > inhabituelle >
+commune), puis la carte qui rend le plus pour son mana, chacune prise à son
+maximum légal (un exemplaire pour une mythique, trois pour le reste).
+
+Concrètement, pour le joueur :
+
+- **la couleur du boîtier ne bouge pas** : un deck mono-Sable reste cent pour
+  cent sable, l'hybride reste Sable + Braise. Seule la qualité des cartes
+  change ;
+- **les mythiques montent toutes** : les Veilleurs du Désert alignent leurs
+  trois figures Sable, la Cour ses six de Braise, l'Hybride les neuf de ses deux
+  couleurs, la Marée ses six, le Serment ses quatre — chaque boîtier part avec
+  ses meilleures cartes sur la table au lieu de les réserver au hasard de la
+  pioche ;
+- **les héros entrent dans les paquets de départ** — Salem et Tarek chez les
+  Veilleurs, Yamina et Boualem dans la Marée. Le dossier de conception les
+  réservait à l'exploration ; la règle « les meilleures cartes d'abord » les
+  fait entrer, à un exemplaire, et ils continuent de se gagner aux étages pour
+  l'atelier ;
+- **les cartes écartées restent jouables** : Chien du guet, Porteuse de
+  cruches, Veilleuse des citernes, Sonneur fêlé, Géant des banquises et leurs
+  semblables ne sont dans aucun boîtier parce qu'elles sont les moins bien
+  classées de leur couleur, mais la collection et l'atelier de decks les
+  proposent toujours ;
+- **la fiche suit** : le compteur « × N » d'une ligne de la fiche de boîtier est
+  calculé sur le deck réel, jamais écrit en dur ; un deck qui change de
+  composition change sa fiche.
+
+Les **cinq paquets de la campagne** suivent la même règle, avec deux garde-fous
+qui préservent la montée des Tours : `mythiquesMax` et `raresMax`, comptés **par
+famille** — un sorcier ne renonce pas à ses sorts rares parce qu'il a déjà
+quatre créatures rares. La Tour du Fjord garde ainsi sa rampe : la Garde aligne
+une seule figure mythique, la Meute aucune, le Maître deux, et le Grand Horloger
+trois. Voir [`09-atelier-de-decks.md`](09-atelier-de-decks.md) pour les recettes
+complètes.

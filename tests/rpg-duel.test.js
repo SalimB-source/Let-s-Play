@@ -131,8 +131,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
   assert.deepEqual(cavalier.arrivee, { type: 'combat', cible: 'creature' });
   assert.match(cavalier.text, /se bat contre une créature adverse ciblée/i);
   assert.equal(RPG_DUEL_CARDS.some((carte) => carte.id === cavalier.id && carte.kind === 'creature'), true);
-  assert.equal(RPG_DECK_JOUEUR_BASE.filter((id) => id === cavalier.id).length, 1,
-    'le deck Veilleurs du Désert reçoit une copie du Cavalier à la place d’un Fennec');
+  assert.equal(RPG_DECK_JOUEUR_BASE.filter((id) => id === cavalier.id).length, 3,
+    'le deck Veilleurs du Désert aligne le Cavalier à son maximum légal');
   assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE).ok, true, 'le deck conserve ses 40 cartes et sa limite d’exemplaires');
   assert.equal(new Set(RPG_DUEL_CARDS.map((carte) => carte.id)).size, RPG_DUEL_CARDS.length,
     'le catalogue réunit les cartes sans doublon');
@@ -436,7 +436,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
   // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 20, 'le deck Neige réunit vingt cartes distinctes');
+  assert.equal(illustrationsNeige.length, 15,
+    'le deck Neige réunit les quinze cartes que la recette du Serment retient');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -2145,8 +2146,8 @@ test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de t
   assert.equal(rpgValiderDeck(tropDeCopies).ok, false, '4 exemplaires d’une créature sont refusés');
 
   const mythiqueEnDouble = [...RPG_DECK_HYBRIDE_BASE];
-  const emplacementFennec = mythiqueEnDouble.indexOf('fennec-des-decombres');
-  mythiqueEnDouble[emplacementFennec] = 'sahir-des-braises';
+  const emplacementDjinn = mythiqueEnDouble.indexOf('djinn-de-foudre');
+  mythiqueEnDouble[emplacementDjinn] = 'sahir-des-braises';
   const resultatMythique = rpgValiderDeck(mythiqueEnDouble);
   assert.equal(resultatMythique.ok, false, 'deux exemplaires du même mythique sont refusés');
   assert.match(resultatMythique.raison, /sahir-des-braises mythique en 2 exemplaires \(1 max\)/);
