@@ -739,6 +739,22 @@ function contreCorrespond(effet, carte) {
   return true;
 }
 
+/**
+ * Un contre n'a de sens que face à une annonce adverse qu'il peut viser.
+ * L'interface s'en sert pour ne pas allumer une carte injouable : sans ça, le
+ * joueur tape sa carte, confirme, et rien ne se passe — indéfiniment.
+ *
+ * @returns {boolean} vrai si la carte n'est pas un contre, ou si elle a une
+ *   annonce adverse légale à contrer maintenant.
+ */
+export function rpgContreJouable(duel, cote, carte) {
+  if (carte?.effet?.type !== 'contresort') return true;
+  const annonce = duel.annonce;
+  if (!annonce || annonce.cote === cote) return false;
+  const visee = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
+  return Boolean(visee && contreCorrespond(carte.effet, visee));
+}
+
 /** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
  *  La carte visée est défaussée sans effet, et le contre paie son coût (Marée
  *  contraire fait aussi piocher une carte). `annonce` : { cote, carteId } ;

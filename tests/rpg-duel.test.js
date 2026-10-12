@@ -28,6 +28,7 @@ import {
   rpgTourSorcierIA,
   rpgVainqueur,
   rpgActionsEtat,
+  rpgContreJouable,
 } from '../src/games/rpgDuel.js';
 import {
   CARD_RARITIES,
@@ -1938,4 +1939,22 @@ test('actions d’état : le balayage passe après chaque geste public du duel',
   assert.deepEqual(duel.joueur.creatures.map((entite) => entite.carteId), ['fennec-des-decombres'],
     'poser une carte nettoie les créatures mortes des deux camps');
   assert.deepEqual(duel.sorcier.creatures, []);
+});
+
+test('un contre n’est jouable que face à une annonce adverse qu’il peut viser', () => {
+  const duel = duelDeBase();
+  const silence = cardById('silence-decume');
+  const chien = cardById('chien-du-guet');
+  assert.equal(rpgContreJouable(duel, 'joueur', chien), true, 'une carte qui n’est pas un contre reste jouable');
+  assert.equal(rpgContreJouable(duel, 'joueur', silence), false, 'sans annonce, le contre n’est pas jouable');
+
+  // Annonce du sorcier d’un sort de Braise : le Silence d’écume peut répondre.
+  duel.annonce = { cote: 'sorcier', carteId: 'trait-de-braise' };
+  assert.equal(rpgContreJouable(duel, 'joueur', silence), true);
+  // Une annonce d’Eau sort de ses couleurs : rien à contrer.
+  duel.annonce = { cote: 'sorcier', carteId: 'eau-de-la-source' };
+  assert.equal(rpgContreJouable(duel, 'joueur', silence), false);
+  // Sa propre annonce ne se contre pas.
+  duel.annonce = { cote: 'joueur', carteId: 'trait-de-braise' };
+  assert.equal(rpgContreJouable(duel, 'joueur', silence), false);
 });

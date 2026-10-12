@@ -87,9 +87,9 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
   const avertissements = [];
   let auDoigt = mobile;
   let fantomeTeste = !surFantome;
-  window.matchMedia = (query) => ({
-    matches: query.includes('prefers-reduced-motion') || (auDoigt && query.includes('pointer: coarse')),
-  });
+  // Animations actives (le jeu par défaut) : c'est là que vivent les images
+  // d'adieu des cartes détruites et le vol des cartes jouées.
+  window.matchMedia = (query) => ({ matches: auDoigt && query.includes('pointer: coarse') });
   console.error = (...args) => {
     if (String(args[0]).includes('same key')) avertissements.push(String(args[0]));
     else originalConsoleError(...args);
@@ -110,6 +110,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     if (!element || element.disabled) return false;
     actions.push(etiquette || element.className?.split?.(' ')?.[1] || element.tagName);
     await act(async () => element.click());
+    verifier(`juste-apres:${actions[actions.length - 1]}`, { anime: true });
     if (!fantomeTeste && q('.rpg-card-destruction-fx')) {
       fantomeTeste = true;
       await surFantome({ q, qa, horloge, assert, graine });
@@ -118,7 +119,9 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
   };
   const boutonTexte = (motif) => qa('button').find((bouton) => motif.test(texte(bouton)) && !bouton.disabled);
 
-  const verifier = (etape) => {
+  const verifier = (etape, { anime = false } = {}) => {
+    // Hors de la table (menu, deck, catalogue), il n'y a rien à comparer.
+    if (!q('.card-table')) return;
     const contexte = `graine ${graine}${mobile ? ' (doigt)' : ''} — ${etape}`;
     // Vérité du moteur : aucune créature morte ne reste en jeu, et chaque carte
     // affichée correspond à une créature vivante.
@@ -157,8 +160,12 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     assert.equal(avertissements.length, 0, `${contexte} : clés React uniques (${avertissements[0] ?? ''})`);
     const ids = qa('.card-row .rpg-card').map((carte) => carte.dataset.entityId);
     assert.equal(new Set(ids).size, ids.length, `${contexte} : aucune carte dupliquée sur la table`);
-    assert.equal(qa('.rpg-card-destruction-fx').length, 0,
-      `${contexte} : aucun effet de destruction figé sur la table`);
+    // Une image de destruction est légitime pendant son animation : on ne la
+    // compte que lorsque l'horloge a fini de tourner.
+    if (!anime) {
+      assert.equal(qa('.rpg-card-destruction-fx').length, 0,
+        `${contexte} : aucun effet de destruction figé sur la table`);
+    }
     // Pendant une annonce du sorcier, ses créatures viennent d'être dégagées :
     // une carte encore inclinée est une carte morte restée sur le terrain.
     if (q('.rpg-annonce-sort')) {
@@ -170,7 +177,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     // par le bouton « Attaquer avec tous » (le mal d'invocation excepté).
     const attaqueTous = q('.rpg-btn--attaque-tous');
     const finTour = q('.rpg-btn--endturn');
-    if (!auDoigt && attaqueTous && finTour && !finTour.disabled && !q('.rpg-annonce-sort') && !q('.rpg-btn--resolve-combat')) {
+    if (!anime && !auDoigt && attaqueTous && finTour && !finTour.disabled && !q('.rpg-annonce-sort') && !q('.rpg-btn--resolve-combat')) {
       const mesCartes = qa('.card-row--equipe .rpg-card');
       const compte = Number(/\((\d+)\)/.exec(texte(attaqueTous))?.[1] ?? -1);
       if (etape === 'debut-de-tour') {
@@ -197,9 +204,12 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     let attaqueFaite = false;
     let aJoue = true; // la première main est déjà posée par l'ouverture
     for (let pas = 0; pas < pasMax; pas += 1) {
-      await horloge.avancer(2000);
+      // Un joueur n'attend pas toujours la fin des animations : une fois sur
+      // trois, on rejoue au milieu de la chaîne de minuteries du sorcier.
+      const impatient = rng() < 0.35;
+      await horloge.avancer(impatient ? 60 + Math.floor(rng() * 420) : 2000);
       if (q('.rpg-overlay')) { fin = 'duel terminé'; break; }
-      verifier(aJoue ? 'tour' : 'debut-de-tour');
+      verifier(aJoue ? 'tour' : 'debut-de-tour', { anime: impatient });
 
       // 1. Annonce du sorcier : répondre avec un éphémère, ou laisser passer.
       const annonce = q('.rpg-annonce-sort__pass');
@@ -300,6 +310,13 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
         await click(finTour, 'fin-tour');
         continue;
       }
+      // Rien à faire : si on a joué sans attendre, c'est que les animations du
+      // sorcier tournent encore. On les laisse finir avant de crier au blocage.
+      if (impatient) {
+        await horloge.avancer(3000);
+        verifier('apres-attente');
+        continue;
+      }
       fin = `bloqué : ${texte(q('.rpg-actions__message, .rpg-message, .rpg-bottombar'))?.slice(0, 160)}`;
       break;
     }
@@ -323,7 +340,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
  */
 export async function verifierRelance(assert) {
   const originalMatchMedia = window.matchMedia;
-  window.matchMedia = (query) => ({ matches: query.includes('prefers-reduced-motion') });
+  window.matchMedia = () => ({ matches: false });
   const horloge = horlogeDuJeu();
   const container = document.createElement('div');
   document.body.append(container);

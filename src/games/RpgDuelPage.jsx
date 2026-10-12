@@ -53,6 +53,7 @@ import {
 import {
   rpgCibleAuto,
   rpgChoisirAttaquants,
+  rpgContreJouable,
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
   rpgEngagerTerrain,
@@ -626,10 +627,11 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      {entite.attaquee && <span className="rpg-card__engagee" aria-hidden="true">engagée</span>}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
       <header className="rpg-card__title">
@@ -1425,7 +1427,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
  * donc plus laisser une carte morte posée sur le champ de bataille.
  */
 function nettoyerFantomes(effets, maintenant = Date.now()) {
-  return effets.filter((effet) => !effet.expireA || effet.expireA > maintenant);
+  const restants = effets.filter((effet) => !effet.expireA || effet.expireA > maintenant);
+  return restants.length === effets.length ? effets : restants;
+}
+
+/** Le joueur a demandé moins d'animations : on les lui épargne. */
+function animationsReduites() {
+  return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 }
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
@@ -1575,6 +1583,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
   }, []);
+
+  // Chien de garde des images d'adieu : réarmé par React à chaque changement de
+  // la liste, il retire les fantômes périmés même si la minuterie d'animation
+  // qui devait s'en charger a été perdue en route.
+  useEffect(() => {
+    if (!cartesEnDestruction.length) return undefined;
+    const derniere = Math.max(...cartesEnDestruction.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setCartesEnDestruction((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [cartesEnDestruction]);
 
   // Retour d'arrière-plan : un téléphone qui met l'onglet en veille peut avaler
   // les minuteries d'animation. On rattrape alors à la main tout ce qui serait
@@ -2073,7 +2092,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
-    const disparues = avant.filter((entite) => !vivants.has(entite.entityId));
+    const disparues = animationsReduites() ? [] : avant.filter((entite) => !vivants.has(entite.entityId));
     if (disparues.length) {
       const entitesBrulees = new Set((Number.isInteger(debutJournalDestructions)
         ? rpgDestructionsDepuis(duel, debutJournalDestructions)
@@ -2151,6 +2170,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const peutJouerCarte = (carte) => {
     if (!carte || !duel.joueur.main.includes(carte.id)) return false;
+    // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
+    // le joueur dans une confirmation qui ne menait à rien.
+    if (!rpgContreJouable(duel, 'joueur', carte)) return false;
     if (reponseApresBlocage && !carte.instant) return false;
     if (carte.kind === 'terrain') return monTour && !reponseApresBlocage && !duel.joueur.terrainPose;
     return (reponseApresBlocage ? carte.instant : monTour || (reponseActive && carte.instant))
@@ -3651,11 +3673,10 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
               const estTerrain = carte.kind === 'terrain';
               const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
               const peutRepondre = reponseActive && carte.instant;
-              const jouable = reponseApresBlocage
-                ? carte.instant && rpgPeutPayer(duel.joueur, carte)
-                : estTerrain
-                  ? monTour && !duel.joueur.terrainPose
-                  : (monTour || peutRepondre) && rpgPeutPayer(duel.joueur, carte);
+              // Une seule règle pour le halo doré, le glisser-déposer et le
+              // clic : deux copies de la règle finissaient par diverger, et
+              // une carte allumée mais injouable enferme le joueur.
+              const jouable = peutJouerCarte(carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
