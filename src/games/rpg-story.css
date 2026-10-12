@@ -45,6 +45,106 @@
   align-items: start;
 }
 
+/* La galerie des tours : une miniature par tour. Les étages restent masqués
+   jusqu'au clic — la vignette ouvre la page de la tour. */
+.rpg-story-tower {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 1px solid rgba(229, 191, 105, .22);
+  border-radius: 14px;
+  background: rgba(10, 10, 18, .78);
+  overflow: hidden;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.rpg-story-tower:hover,
+.rpg-story-tower:focus-visible {
+  border-color: rgba(229, 191, 105, .55);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .38);
+  outline: none;
+}
+
+.rpg-story-tower__art {
+  display: block;
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid rgba(229, 191, 105, .16);
+}
+
+.rpg-story-tower__body {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px 14px;
+}
+
+.rpg-story-tower__name {
+  font-family: var(--font-gaming);
+  font-size: 18px;
+  color: var(--yellow);
+}
+
+/* Le résumé se lit en entier : il passe à la ligne, jamais d'ellipse. */
+.rpg-story-tower__resume {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.rpg-story-tower__progress {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(229, 191, 105, .16);
+  overflow: hidden;
+}
+
+.rpg-story-tower__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b9863c, var(--yellow));
+}
+
+.rpg-story-tower__cta {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+
+/* La page d'une tour : la liste des étages, centrée et bornée pour se lire. */
+.rpg-story__detail {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.rpg-story__back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(229, 191, 105, .35);
+  background: rgba(10, 10, 18, .55);
+  color: var(--yellow);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rpg-story__back:hover,
+.rpg-story__back:focus-visible { border-color: rgba(229, 191, 105, .7); color: #ffdf9b; outline: none; }
+
 .rpg-story-tour {
   border: 1px solid rgba(229, 191, 105, .22);
   border-radius: 14px;
@@ -55,8 +155,22 @@
 }
 
 .rpg-story-tour__header {
-  padding: 14px 16px 12px;
   border-bottom: 1px solid rgba(229, 191, 105, .16);
+  background: rgba(10, 10, 18, .4);
+}
+
+/* La miniature de la tour, en bannière de sa page : cadrage `cover`, la
+   peinture reste lisible du téléphone au grand écran. */
+.rpg-story-tour__banner {
+  display: block;
+  height: clamp(128px, 24vw, 210px);
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid rgba(229, 191, 105, .16);
+}
+
+.rpg-story-tour__heading {
+  padding: 14px 16px 12px;
   background: linear-gradient(120deg, rgba(92, 59, 28, .32), rgba(10, 10, 18, .2));
 }
 

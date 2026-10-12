@@ -116,6 +116,18 @@ test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss co
   }
 });
 
+test('chaque tour porte une miniature livrée pour la galerie du mode Histoire', () => {
+  const vus = new Set();
+  for (const tour of RPG_STORY_TOURS) {
+    assert.ok(tour.miniature, `${tour.id} : miniature absente`);
+    assert.ok(!vus.has(tour.miniature), `miniature dupliquée : ${tour.miniature}`);
+    vus.add(tour.miniature);
+    assert.ok(existsSync(fileURLToPath(new URL(`../public/sablier-tours/${tour.miniature}`, import.meta.url))),
+      `${tour.id} : la miniature ${tour.miniature} est livrée dans public/sablier-tours/`);
+  }
+  assert.equal(vus.size, RPG_STORY_TOURS.length, 'chaque tour a la sienne');
+});
+
 test('les tours s’enchaînent étage par étage', () => {
   for (const tour of RPG_STORY_TOURS) {
     assert.ok(tour.etages.length >= 3, `tour ${tour.id} : au moins trois étages`);
