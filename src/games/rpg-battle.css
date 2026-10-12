@@ -3768,6 +3768,19 @@
   outline: none;
 }
 
+/* La musique d'ambiance de la tour se coupe depuis la barre du duel. */
+.rpg-duel-nav__sound {
+  min-width: 32px;
+  padding: 6px 8px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.rpg-duel-nav__sound.is-on {
+  border-color: rgba(246, 207, 103, .45);
+  background: rgba(244, 192, 79, .14);
+  color: #ffe5a0;
+}
+
 /* Menu principal, catalogues des decks et des cartes de Sablier du temps. */
 .rpg-battle--menu { background: #09080d; }
 .rpg-mode-menu {
