@@ -6152,6 +6152,7 @@ L'APK n'a pas besoin d'être reconstruite : le duel vit dans la page servie par 
 site, donc les deux correctifs — le voile et la main — arrivent dans l'application
 dès que le site est déployé, au prochain lancement du jeu.
 
+
 ## Le Sablier : les decks recréés — les meilleures cartes d'abord
 
 Les **dix paquets du jeu** — les cinq boîtiers de l'onglet Deck et les cinq
@@ -6278,14 +6279,16 @@ d'office.
   l'identité sont toutes là, les plafonds tiennent, l'identité chromatique est
   stricte et le boîtier montre une carte du deck.
 
+
 ### Vérifications
 
 ```bash
 npm run check:rpg-decks  # la règle « les meilleures d'abord », deck par deck
-npm run check:rpg        # 286 tests : règles du duel, IA, Histoire, collection, decks
+npm run check:rpg        # 311 tests : règles du duel, IA, Histoire, collection, decks
 npm run check:rpg-ui     # la page montée dans jsdom : fiche, boîtiers, tutoriel, mulligan
 npm run build
 ```
+
 
 `npm run check:rpg-decks` recalcule chaque liste à partir de sa recette : une
 carte retirée à la main d'un deck, une meilleure carte oubliée ou un plafond
@@ -6298,3 +6301,75 @@ cartes de la main préparée qui existent vraiment dans le deck composé
 Le contrôle tactile Playwright (`npm run check:rpg-mobile`) n'a pas pu être
 rejoué ici : ses navigateurs ne sont pas téléchargeables depuis cet
 environnement.
+
+## Le Sablier : les chiens de sable de Tarek
+
+Le Porteur ne vient plus seul. **Tarek garde son aura** — tant qu'il est en jeu,
+les créatures Sable de son camp gagnent +1/+1 — et il gagne une **capacité
+d'arrivée** : quand il arrive en jeu, il crée **deux chiens de sable 1/1 sans
+coût**. La carte imprimée le dit d'une ligne, dans l'ordre où les effets se
+produisent :
+
+> Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Tant
+> que Tarek est en jeu, vos créatures Sable gagnent +1/+1.
+
+Aucun sable n'est payé pour eux : le coût de Tarek (5) est le seul paiement de
+l'arrivée. Ce sont des **créatures-jetons** (`RPG_JETON_CARDS`), un nouveau
+genre de fiche du catalogue :
+
+- **elles se battent comme les autres** — elles attaquent, bloquent, encaissent
+  et meurent exactement comme une créature posée depuis la main, avec le mal
+  d'invocation habituel ;
+- **elles ne viennent d'aucune main et n'y retournent pas** — un effet de renvoi
+  (`retour-main`, Ressac ou Courant de retour) les fait **cesser d'exister** au
+  lieu de les rendre à leur propriétaire : sans cette règle, un chien de sable
+  deviendrait une carte gratuite et rejouable ;
+- **elles n'appartiennent à aucune collection** — hors de `RPG_DUEL_CARDS`,
+  donc ni dans les decks, ni dans l'atelier, ni dans le draft : seuls les effets
+  du catalogue les font entrer en jeu ;
+- **elles subissent les auras du camp** — Tarek étant lui-même une source Sable,
+  ses deux chiens arrivent sur la table à **2/2**, comme n'importe quelle
+  créature Sable du camp, et retombent à 1/1 s'il quitte la table.
+
+L'aura ne change pas de règle : Tarek ne renforce que **son** camp, et les
+chiens créés par le Tarek du sorcier appartiennent au sorcier.
+
+### Où vit le code
+
+- `src/games/rpgCards.js` — `RPG_JETON_CARDS` (la fiche `chien-de-sable`, 1/1,
+  coût 0, `jeton: true`), `jetonById`, `creatureById` qui résout aussi les
+  jetons, le catalogue indexé par `cardById` qui les peint sans les rendre
+  jouables, et le champ `arrivee` de Tarek (`{ type: 'jetons', jeton:
+  'chien-de-sable', nombre: 2 }`).
+- `src/games/rpgDuel.js` — le cas `jetons` d'`appliquer` (création des
+  entités, journal du duel « TAREK crée 2 chiens de sable 1/1 sans coût »),
+  `creerEntiteCreature` qui marque `jeton: true`, `renvoyerEnMain` qui fait
+  disparaître un jeton, et la garde de `rpgJouerCreature` : seuls les effets
+  d'arrivée **qui désignent une cible** reçoivent un `cibleId`, si bien que la
+  création de jetons ne peut pas être interceptée par le contresort de Boualem
+  ni par une cible transmise par défaut.
+- `src/games/rpgAI.js` — la valeur des jetons dans l'évaluation des cartes
+  (`arrivee.type === 'jetons'` : deux corps de plus sur la table).
+- `public/cards/chien-de-sable.jpg` — la peinture des deux chiens, livrée au
+  format de la face (1024×1280, plein art 4:5), dans la palette et la matière
+  de l'illustration de Tarek ; c'est aussi la vignette que la table affiche
+  pour chaque jeton.
+- `src/games/rpgCardLessons.js` — la fiche « Une arrivée peut créer des
+  créatures-jetons » du guide des cartes, illustrée par Tarek et son chien.
+
+### Vérifications
+
+```bash
+npm run check:rpg         # tests moteur : l'arrivée de Tarek, les jetons, le renvoi, Boualem
+npm run check:rpg-ui      # scénario jsdom : cinq Déserts, Tarek posé, deux chiens sur la table
+npm run build
+```
+
+`tests/rpg-duel.test.js` vérifie que Tarek arrive avec **deux** chiens de sable
+marqués `jeton`, qu'ils sont 2/2 sous son aura, qu'ils frappent le sorcier au
+tour suivant, qu'un renvoi en main les fait disparaître (ni main, ni cimetière),
+qu'aucun deck ni le catalogue jouable ne les contient, et que Boualem ne contre
+pas leur création. Le scénario ajouté à `scripts/rpg-battle-smoke.jsx` rejoue le
+geste dans la vraie interface — cinq Déserts, Tarek posé — et exige les deux
+cartes de chiens de sable sur la table, leur peinture, leurs 2/2 et la ligne du
+journal.

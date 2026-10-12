@@ -84,6 +84,9 @@ const PLEIN_ART_45 = [
   'cretes-de-cendre', 'lagune-des-salines', 'petra-des-deux-sources',
   'glacier-des-arches',
   'djinn-de-foudre', 'sonneur-fele', 'silence-decume',
+  // Les créatures-jetons de Tarek : deux chiens de sable peints dans la
+  // palette de son illustration, livrés eux aussi au format de la face.
+  'chien-de-sable',
 ];
 
 const VARIANTES_TERRAIN = [
@@ -1600,6 +1603,78 @@ test('Tarek donne +1/+1 aux créatures Sable tant qu’il est en jeu', () => {
   assert.deepEqual({ atk: chien.atk, pv: chien.pv, def: chien.def }, { atk: 3, pv: 3, def: 3 });
   assert.deepEqual({ atk: eau.atk, pv: eau.pv, def: eau.def }, { atk: 1, pv: 3, def: 3 });
   assert.deepEqual({ atk: tarek.atk, pv: tarek.pv, def: tarek.def }, { atk: 5, pv: 6, def: 6 });
+});
+
+test('Tarek crée deux chiens de sable 1/1 sans coût à son arrivée', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donner(duel, 'joueur', 'tarek');
+  const tarek = rpgJouerCreature(duel, 'joueur', 'tarek');
+  assert.equal(tarek.ok, true);
+  const jetons = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
+  assert.equal(jetons.length, 2, 'Tarek arrive avec ses deux chiens de sable');
+  assert.ok(jetons.every((entite) => entite.jeton), 'les deux chiens sont des créatures-jetons');
+  // La fiche imprimée est 1/1 ; sur la table, l’aura Sable de Tarek les porte à
+  // 2/2 dès qu’ils arrivent, exactement comme les autres créatures Sable.
+  const chienDeSable = cardById('chien-de-sable');
+  assert.deepEqual({ cost: chienDeSable.cost, atk: chienDeSable.atk, def: chienDeSable.def, jeton: chienDeSable.jeton }, {
+    cost: 0, atk: 1, def: 1, jeton: true,
+  });
+  assert.ok(jetons.every((entite) => entite.atk === 2 && entite.pv === 2 && entite.def === 2),
+    'les chiens arrivent à 2/2 sous l’aura de Tarek');
+  assert.equal(duel.joueur.main.includes('chien-de-sable'), false, 'aucun chien de sable n’entre en main');
+
+  // Ce sont de vraies créatures : au tour suivant, elles attaquent le sorcier.
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  const attaque = rpgLancerAttaque(duel, 'joueur', jetons.map((entite) => entite.id));
+  assert.equal(attaque.ok, true, 'les chiens de sable attaquent comme les autres créatures');
+  assert.equal(attaque.resume.frappeSorcier, 4, 'deux chiens à 2 ATQ frappent le sorcier');
+});
+
+test('un chien de sable renvoyé en main cesse d’exister : jamais de carte gratuite', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'tarek');
+  rpgJouerCreature(duel, 'sorcier', 'tarek');
+  const jeton = duel.sorcier.creatures.find((entite) => entite.carteId === 'chien-de-sable');
+  assert.ok(jeton, 'le sorcier a lui aussi ses chiens de sable');
+  const mainAvant = duel.sorcier.main.length;
+
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'ressac');
+  const renvoi = rpgLancerMagie(duel, 'joueur', 'ressac', jeton.id);
+  assert.equal(renvoi.ok, true);
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === jeton.id), false,
+    'le jeton quitte la table');
+  assert.equal(duel.sorcier.main.length, mainAvant, 'un jeton ne rejoint jamais la main de son propriétaire');
+  assert.equal(duel.sorcier.cimetiere.includes('chien-de-sable'), false, 'il ne va pas non plus au cimetière');
+
+  // Et la créature-jeton n’est pas une carte de collection : elle n’est pas dans
+  // le catalogue jouable, donc ni dans les decks ni dans l’atelier de decks.
+  assert.equal(cardById('chien-de-sable').jeton, true);
+  assert.equal(RPG_DUEL_CARDS.some((carte) => carte.id === 'chien-de-sable'), false,
+    'le chien de sable reste hors du catalogue jouable');
+  assert.equal(RPG_DECKS.some((deck) => deck.cardIds.includes('chien-de-sable')), false,
+    'aucun deck ne contient de créature-jeton');
+});
+
+test('la création de jetons n’est pas un effet ciblé : Boualem ne la contre pas', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'boualem');
+  const boualem = rpgJouerCreature(duel, 'sorcier', 'boualem').entite;
+  assert.equal(boualem.boualemContresortDisponible, true);
+
+  donnerMana(duel, 'joueur', 30);
+  donner(duel, 'joueur', 'tarek');
+  // L’interface et l’IA transmettent parfois la première créature adverse comme
+  // cible par défaut : elle ne doit pas transformer l’arrivée en effet ciblé.
+  const pose = rpgJouerCreature(duel, 'joueur', 'tarek', boualem.id);
+  assert.equal(pose.ok, true);
+  assert.equal(boualem.boualemContresortDisponible, true, 'le contresort de Boualem reste disponible');
+  assert.equal(duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable').length, 2,
+    'les deux chiens de sable entrent quand même en jeu');
 });
 
 test('Boualem est une 3/4 et contre une seule fois l’effet adverse qui le cible', () => {

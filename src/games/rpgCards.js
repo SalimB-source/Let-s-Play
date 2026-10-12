@@ -886,8 +886,44 @@ export const RPG_CREATURE_CARDS = [
   },
 ];
 
+/**
+ * Les créatures-jetons : des créatures **créées par l'effet d'une carte**,
+ * jamais piochées, jamais payées, jamais dans un deck ni dans la collection.
+ * Tarek dresse ainsi deux chiens de sable à son arrivée (`arrivee.type ===
+ * 'jetons'`, moteur). Une fois en jeu, un jeton se comporte comme n'importe
+ * quelle créature — il attaque, bloque et meurt comme elle — mais il n'a pas
+ * de coût : son illustration suit la direction artistique commune
+ * (`RPG-CARD-ART.md`) et il n'entre jamais dans une main (voir
+ * `renvoyerEnMain`, qui le fait disparaître au lieu de le renvoyer).
+ */
+export const RPG_JETON_CARDS = [
+  {
+    id: 'chien-de-sable',
+    name: 'Chien de sable',
+    // Le pluriel du journal (« TAREK crée 2 chiens de sable »).
+    pluriel: 'chiens de sable',
+    element: 'sable',
+    cost: 0,
+    atk: 1,
+    def: 1,
+    rarity: 'commune',
+    kind: 'creature',
+    jeton: true,
+    typeLine: 'Créature-jeton — Chien de sable',
+    text: 'Un chien de sable créé par Tarek à son arrivée : 1/1, sans coût.',
+    flavor: 'Il se lève du sable comme la dune se lève du vent.',
+  },
+];
+
+/** Retrouve une créature-jeton par son identifiant. */
+export function jetonById(id) {
+  return RPG_JETON_CARDS.find((card) => card.id === id) ?? null;
+}
+
 export function creatureById(id) {
-  return RPG_CREATURE_CARDS.find((card) => card.id === id) ?? null;
+  return RPG_CREATURE_CARDS.find((card) => card.id === id)
+    ?? RPG_JETON_CARDS.find((card) => card.id === id)
+    ?? null;
 }
 
 /**
@@ -968,7 +1004,8 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     aura: { type: 'buff-element', element: 'sable', atk: 1, def: 1 },
-    text: 'Tant que Tarek est en jeu, vos créatures Sable gagnent +1/+1.',
+    arrivee: { type: 'jetons', jeton: 'chien-de-sable', nombre: 2 },
+    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Tant que Tarek est en jeu, vos créatures Sable gagnent +1/+1.',
     flavor: 'Il frappe avec ce qu’il porte.',
   },
   {
@@ -1665,8 +1702,16 @@ export const RPG_BASIC_ATTACKS = {
   },
 };
 
+/**
+ * Le catalogue indexé par identifiant : les cartes jouables, les cartes de
+ * pouvoir et de base du prototype, et les **créatures-jetons** — que
+ * `cardById` doit savoir peindre (elles apparaissent sur la table) sans
+ * qu'elles entrent pour autant dans `RPG_DUEL_CARDS`, donc ni dans la
+ * collection ni dans l'atelier de decks.
+ */
 const CATALOG = new Map(
-  [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS), ...RPG_DUEL_CARDS]
+  [...RPG_POWER_CARDS, ...RPG_BASIC_CARDS, ...Object.values(RPG_BASIC_ATTACKS),
+    ...RPG_DUEL_CARDS, ...RPG_JETON_CARDS]
     .map((card) => [card.id, card]),
 );
 

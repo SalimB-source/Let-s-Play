@@ -23,6 +23,24 @@ Cette direction s’applique à toute la collection sans exception — Sable, Ea
 
 Les terrains gardent une illustration plein cadre, mais ne reçoivent ni coût ni badge élémentaire.
 
+## Les créatures-jetons
+
+Un effet peut faire entrer en jeu des créatures **créées sur-le-champ**, sans
+carte en main ni sable payé : les **créatures-jetons**. Elles sont déclarées
+dans `RPG_JETON_CARDS` (`rpgCards.js`), hors de `RPG_DUEL_CARDS` — le catalogue
+sait donc les peindre (`cardById`) sans les rendre collectionnables ni
+jouables dans un deck.
+
+- **Chien de sable** (`chien-de-sable.jpg`) — le jeton de Tarek : quand il
+  arrive en jeu, il crée deux chiens de sable 1/1 sans coût. La peinture est
+  livrée en plein art 4:5 (1024×1280), dans la palette, la lumière de fin de
+  jour et la matière de sable sculpté de l'illustration de Tarek
+  (`public/cards/tarek.jpg`), sans texte ni interface : deux chiens de sable
+  debout sur une crête rocheuse, les ruines de la côte dans le lointain.
+
+Une créature-jeton suit les règles communes de l'illustration : sujet unique et
+lisible même en vignette, cadre et statistiques superposés par l'interface.
+
 ## Variantes illustrées des terrains
 
 Chaque variante est une carte autonome à peinture dédiée, mais reprend strictement
