@@ -53,8 +53,43 @@ try {
       `${width}: les phases sont dans la colonne de droite`);
     assert.ok(Math.abs(result.attackAll.top - result.endTurn.top) <= 1 && result.attackAll.right <= result.endTurn.left,
       `${width}: attaque générale et fin du tour sont côte à côte`);
-    assert.equal(await page.locator('.rpg-hand').evaluate(el => getComputedStyle(el).overflow), 'visible',
-      `${width}: aucun masque de débordement sur la main`);
+    // La main : une carte = une cible. Les cartes ne se recouvrent jamais — le
+    // doigt qui touche une carte joue celle-là — et toute carte visible dans la
+    // rangée répond en son centre. Si la main déborde (plancher tactile atteint :
+    // beaucoup de cartes hétéronymes sur un écran étroit), la rangée défile
+    // horizontalement et chaque carte reste atteignable en la faisant glisser.
+    const main = await page.evaluate(() => {
+      const hand = document.querySelector('.rpg-hand');
+      const box = hand.getBoundingClientRect();
+      const cards = [...document.querySelectorAll('.rpg-hand__card')];
+      const boxes = cards.map((card) => card.getBoundingClientRect());
+      const overlaps = boxes.slice(1).filter((r, index) => boxes[index].right > r.left + .5).length;
+      const visibles = cards
+        .map((card, index) => ({ card, box: boxes[index] }))
+        .filter(({ box: r }) => r.left >= box.left - 1 && r.right <= box.right + 1);
+      // Le volet de mulligan couvre la table au début d'un duel : le doigt n'y
+      // atteint pas encore la main, on mesure alors la seule géométrie.
+      const mulliganOuvert = Boolean(document.querySelector('.rpg-mulligan'));
+      const muettes = mulliganOuvert ? 0 : visibles.filter(({ card, box: r }) => {
+        const dessous = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return dessous?.closest('.rpg-hand__card') !== card;
+      }).length;
+      return {
+        overlaps,
+        muettes,
+        visibles: visibles.length,
+        total: cards.length,
+        largeurs: boxes.map((r) => Math.round(r.width)),
+        tient: boxes.every((r) => r.width >= 34),
+        premiereVisible: !boxes.length || boxes[0].left >= box.left - 1,
+        scrollable: hand.scrollWidth > hand.clientWidth + 1,
+        scrollLeft: hand.scrollLeft,
+      };
+    });
+    assert.equal(main.overlaps, 0, `${width}: aucune carte de la main n'en recouvre une autre`);
+    assert.equal(main.muettes, 0, `${width}: chaque carte visible de la main répond au doigt, en son centre`);
+    assert.ok(main.tient, `${width}: chaque carte de la main garde une largeur touchable (${main.largeurs.join(' × ')})`);
+    assert.ok(main.premiereVisible, `${width}: la première carte de la main reste atteignable`);
     assert.ok(result.rail.top >= result.table.top - 1 && result.rail.bottom <= result.hand.top + 1,
       `${width}: le rail du tour tient dans la bande de jeu, au-dessus de la main`);
     assert.ok(result.phases.height > 0 && result.phases.bottom <= result.endTurn.y && result.endTurn.y - result.phases.bottom <= 10,
@@ -282,14 +317,75 @@ try {
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 1,
     'the second terrain of the turn is refused without being played');
   console.log('✓ Tap plays a terrain at once and silently refuses the second one');
+  // La main au doigt : une carte = une cible, même quand elle se remplit. On
+  // remplace la rangée par huit cartes factices — la plus longue main d'un duel
+  // — puis on touche chacune en son centre, après l'avoir amenée dans le champ.
+  const mainPleine = await page.evaluate(async () => {
+    const hand = document.querySelector('.rpg-hand');
+    const original = [...hand.childNodes];
+    const compte = hand.style.getPropertyValue('--hand-count');
+    try {
+      const carte = document.querySelector('.rpg-hand__card');
+      const emballage = carte.closest('.rpg-hand__pile');
+      const cartes = Array.from({ length: 8 }, (_, index) => {
+        const clone = (emballage ?? carte).cloneNode(true);
+        const face = clone.classList.contains('rpg-hand__card') ? clone : clone.querySelector('.rpg-hand__card');
+        face.dataset.cardId = `sonde-${index}`;
+        face.classList.add('is-playable');
+        face.classList.remove('is-flying', 'is-dragging');
+        for (const propriete of ['left', 'top', 'width', 'height']) face.style.removeProperty(propriete);
+        return clone;
+      });
+      hand.replaceChildren(...cartes);
+      hand.style.setProperty('--hand-count', '8');
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const boxes = cartes.map((element) => element.getBoundingClientRect());
+      const largeurs = boxes.map((box) => Math.round(box.width));
+      const chevauchements = boxes.slice(1).filter((box, index) => boxes[index].right > box.left + .5).length;
+      const atteintes = [];
+      for (let index = 0; index < cartes.length; index += 1) {
+        cartes[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const box = cartes[index].getBoundingClientRect();
+        const dessous = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        const face = dessous?.closest('.rpg-hand__card');
+        atteintes.push(face?.dataset.cardId === `sonde-${index}`);
+      }
+      return {
+        largeurs,
+        chevauchements,
+        defile: hand.scrollWidth > hand.clientWidth + 1,
+        atteintes: atteintes.filter(Boolean).length,
+        total: cartes.length,
+      };
+    } finally {
+      hand.replaceChildren(...original);
+      if (compte) hand.style.setProperty('--hand-count', compte);
+      else hand.style.removeProperty('--hand-count');
+    }
+  });
+  assert.equal(mainPleine.chevauchements, 0,
+    `une main de ${mainPleine.total} cartes ne se recouvre pas (largeurs ${mainPleine.largeurs.join(' × ')})`);
+  assert.ok(mainPleine.largeurs.every((largeur) => largeur >= 34),
+    `chaque carte d'une main pleine garde sa largeur touchable (${mainPleine.largeurs.join(' × ')})`);
+  assert.equal(mainPleine.atteintes, mainPleine.total,
+    'chaque carte d’une main pleine répond au doigt, en son centre, une fois amenée dans le champ');
+  console.log(`✓ Hand of ${mainPleine.total}: no overlap, touchable cards${mainPleine.defile ? ', scrollable row' : ''}`);
   if (process.env.RPG_SCREENSHOT) await page.screenshot({ path: process.env.RPG_SCREENSHOT });
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     const undo = await page.locator('.rpg-actions__turn .rpg-btn--undo').boundingBox();
     const end = await page.locator('.rpg-actions__turn .rpg-btn--endturn').boundingBox();
+    const attackAll = await page.locator('.rpg-actions__turn .rpg-btn--attaque-tous').boundingBox();
     assert.ok(undo && end && undo.width >= 44 && undo.height >= 44, `${width}: undo is visible on the table`);
-    assert.ok(Math.abs((undo.x + undo.width / 2) - (end.x + end.width / 2)) <= 2 && undo.y + undo.height <= end.y + 1,
-      `${width}: undo is stacked above end-turn, in the same rail column`);
+    // Depuis que l'attaque générale a rejoint le rail, les deux commandes du bas
+    // partagent la dernière rangée ; l'annulation occupe la rangée du dessus, sur
+    // toute la largeur du rail — elle reste donc au-dessus d'elles.
+    assert.ok(attackAll && Math.abs(attackAll.y - end.y) <= 1 && attackAll.x + attackAll.width <= end.x,
+      `${width}: attaque générale et fin du tour partagent la rangée du bas`);
+    assert.ok(undo.y + undo.height <= Math.min(end.y, attackAll.y) + 1
+      && undo.x <= Math.min(end.x, attackAll.x) + 1 && undo.x + undo.width >= Math.max(end.x + end.width, attackAll.x + attackAll.width) - 1,
+      `${width}: annuler la dernière action occupe la rangée au-dessus, sur toute la largeur du rail`);
     assert.ok(end.x + end.width <= width && end.y + end.height <= height, `${width}: turn buttons fit the screen`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
