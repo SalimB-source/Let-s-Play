@@ -142,6 +142,19 @@ const cardArt = (id) => {
     ?? (cardById(artId)?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
   return `${import.meta.env.BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
+/**
+ * Le dos commun à toutes les cartes du duel : la rune du Sablier gravée à l'or
+ * sur le rouge sombre de la table. Il habille le paquet, le dessus de la pioche
+ * et la main cachée du sorcier. Le chemin dépend de `BASE_URL` (le site vit
+ * sous `/Let-s-Play/` hors Vercel) et la feuille de style ne peut pas le
+ * calculer : il descend donc en variable CSS depuis la racine du duel, et
+ * `rpg-battle.css` le lit avec `var(--rpg-dos-de-carte)`. Objet figé : React
+ * garde la même référence d'un rendu à l'autre.
+ */
+const DOS_DE_CARTE_STYLE = Object.freeze({
+  '--rpg-dos-de-carte': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")`,
+});
+
 const couleurLabel = (couleur) => ELEMENT_LABELS[couleur] ?? couleur;
 
 function cardColorLabel(carte) {
@@ -3435,6 +3448,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     <div
       className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`}
       data-scene="duel"
+      style={DOS_DE_CARTE_STYLE}
       onPointerDown={demarrerAppuiLongCarte}
     >
       <SfxReactifsDuel

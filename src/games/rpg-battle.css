@@ -2172,23 +2172,11 @@
   transform: translateY(var(--card-rise, 0)) rotate(var(--card-angle, 0deg));
   border: 3px solid #090a10;
   border-radius: 7px;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(225, 191, 118, .22) 0 2px, transparent 3px 100%),
-    repeating-linear-gradient(135deg, rgba(232, 195, 115, .13) 0 2px, transparent 2px 7px),
+  background: var(--rpg-dos-de-carte) center / cover no-repeat,
     linear-gradient(145deg, #6e281d, #1a1320 55%, #9b6325);
   box-shadow: 0 5px 11px rgba(0, 0, 0, .58), inset 0 0 0 2px rgba(236, 199, 117, .62);
 }
 .rpg-hidden-hand__card:first-child { margin-left: 0; }
-.rpg-hidden-hand__card::after {
-  content: "◈";
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: rgba(255, 224, 163, .82);
-  font: 700 23px/1 Georgia, serif;
-  text-shadow: 0 2px 7px #0b0907;
-}
 .rpg-hidden-hand__count {
   color: rgba(245, 224, 183, .8);
   font: 700 8px/1.2 var(--display);
@@ -2225,9 +2213,10 @@
   border-radius: 5px;
   box-shadow: 0 3px 7px rgba(0, 0, 0, .65);
 }
+/* Le dos gravé sert de fond ; le dégradé reste dessous, le temps que l'image
+   arrive et pour les contextes qui ne définissent pas la variable. */
 .rpg-card-pile__card--back {
-  background:
-    repeating-linear-gradient(135deg, rgba(232, 195, 115, .18) 0 2px, transparent 2px 6px),
+  background: var(--rpg-dos-de-carte) center / cover no-repeat,
     linear-gradient(145deg, #6e281d, #1a1320 55%, #9b6325);
 }
 .rpg-card-pile__card--back:first-child { transform: translate(-3px, -3px) rotate(-5deg); }
@@ -2413,7 +2402,6 @@
 @media (max-width: 620px) {
   .rpg-hidden-hand { top: 1%; }
   .rpg-hidden-hand__card { width: 38px; height: 50px; margin-left: -14px; border-width: 2px; }
-  .rpg-hidden-hand__card::after { font-size: 17px; }
   .rpg-hidden-hand__count { font-size: 6px; }
   .rpg-turn-ribbon { min-width: 140px; padding: 5px 10px; }
   .rpg-turn-ribbon span { font-size: 6px; }
@@ -4218,9 +4206,7 @@
   border-radius: 8px;
 }
 .rpg-card-pile--deck .rpg-card-pile__card--back {
-  background:
-    repeating-linear-gradient(135deg, rgba(235, 204, 135, .24) 0 2px, transparent 2px 8px),
-    radial-gradient(ellipse at center, rgba(210, 164, 91, .36), transparent 48%),
+  background: var(--rpg-dos-de-carte) center / cover no-repeat,
     linear-gradient(145deg, #792c20, #17131e 54%, #9c652b);
 }
 .rpg-card-pile--deck .rpg-card-pile__card--back:first-child { transform: translate(-6px, -5px) rotate(-6deg); }

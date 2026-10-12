@@ -185,6 +185,20 @@ assert.match(battleCss, /\.rpg-terrain\s*\{[^}]*overflow:\s*visible;/s,
   'les cartes de terrain ne sont plus masquées sur leurs bords');
 assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*padding:\s*10px 12px 12px;/s,
   'la marge du rail de terrains laisse dépasser sans couper les cartes engagées');
+// ── Le dos de carte gravé ────────────────────────────────────────────────────
+assert.match(battlePage, /const DOS_DE_CARTE_STYLE = Object\.freeze\(\{\s*'--rpg-dos-de-carte': `url\("\$\{import\.meta\.env\.BASE_URL\}dos-de-carte\.jpg"\)`/,
+  'le chemin du dos de carte suit BASE_URL et descend en variable CSS depuis la racine du duel');
+assert.match(battlePage, /data-scene="duel"\s*\n\s*style=\{DOS_DE_CARTE_STYLE\}/,
+  'la racine du duel porte la variable du dos de carte');
+assert.match(battleCss, /\.rpg-hidden-hand__card\s*\{[^}]*background:\s*var\(--rpg-dos-de-carte\) center \/ cover no-repeat,\s*linear-gradient/s,
+  'la main cachée du sorcier montre le dos gravé, le dégradé restant dessous en repli');
+assert.match(battleCss, /\.rpg-card-pile__card--back\s*\{\s*background:\s*var\(--rpg-dos-de-carte\) center \/ cover no-repeat,\s*linear-gradient/s,
+  'les cartes empilées montrent le dos gravé, le dégradé restant dessous en repli');
+assert.match(battleCss, /\.rpg-card-pile--deck \.rpg-card-pile__card--back\s*\{\s*background:\s*var\(--rpg-dos-de-carte\) center \/ cover no-repeat,\s*linear-gradient/s,
+  'le paquet agrandi montre le dos gravé, le dégradé restant dessous en repli');
+assert.doesNotMatch(battleCss, /\.rpg-hidden-hand__card::after/,
+  'le losange ◈ dessiné en CSS disparaît : la rune du dos le remplace');
+
 assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*44%;\s*right:\s*auto;\s*left:\s*14px;/,
   'le deck et le cimetière du joueur sont à gauche sur grand écran, centrés dans la bande libre au lieu de coller à la plaque du joueur');
 assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*68%;\s*right:\s*auto;\s*left:\s*4px;/,
@@ -510,7 +524,7 @@ assert.match(battlePage, /const hote = event\.target\?\.closest\?\.\('\[data-car
   'toute carte affichée porte son identifiant : main, table, terrains, cimetière, catalogue, deck');
 assert.match(battlePage, /data-scene="menu" onPointerDown=\{demarrerAppuiLongCarte\}/,
   'le menu (catalogue et decks) répond à l’appui long');
-assert.match(battlePage, /data-scene="duel"\s*onPointerDown=\{demarrerAppuiLongCarte\}/,
+assert.match(battlePage, /data-scene="duel"\s*(?:style=\{DOS_DE_CARTE_STYLE\}\s*)?onPointerDown=\{demarrerAppuiLongCarte\}/,
   'le plateau répond au même appui long');
 assert.match(battlePage, /touchDragRef\.current\?\.\(\);[\s\S]*?setApercuAppui\(carte\.id\)/,
   'consulter une carte désarme le glisser-déposer lancé par le même doigt');

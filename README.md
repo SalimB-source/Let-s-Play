@@ -5316,6 +5316,40 @@ retour du bandeau : ni `rpg-actions__wait`, ni `rpg-card-peek__hint`, ni
 `rpg-empty-lane` ne doivent réapparaître dans la page ou la feuille de style,
 et aucune phrase ne doit recommenter une rangée vide.
 
+## Le Sablier : le dos des cartes
+
+Les cartes face cachée — le paquet des deux camps, le dessus de la pioche, la
+main du sorcier — étaient dessinées **en CSS** : un dégradé rouge-noir, une
+trame diagonale, et un losange `◈` posé en `::after` au milieu de chaque carte
+de la main adverse. Correct, mais générique : rien n'y disait Bab El.
+
+Elles portent désormais un **vrai dos gravé** (`public/dos-de-carte.jpg`) : la
+rune du Sablier — deux traits croisés en X qui descendent se refermer en
+losange, comme un sablier étiré — tracée à l'or sur l'oxblood de la table, dans
+un double filet doré à pointes de diamant. Le motif est dessiné pour tenir à
+**43 × 58 pixels**, la taille réelle d'une carte de la pile : un seul symbole
+centré, très contrasté, aucun détail fin.
+
+**Le chemin passe par une variable CSS.** Le site vit sous `/Let-s-Play/` hors
+Vercel, et une feuille de style ne sait pas calculer `BASE_URL`. La racine du
+duel pose donc `--rpg-dos-de-carte` (objet gelé `DOS_DE_CARTE_STYLE`, pour que
+React garde la même référence d'un rendu à l'autre) et les trois surfaces qui
+montrent un dos la lisent : la main cachée du sorcier, les cartes empilées, le
+paquet agrandi. **Les dégradés d'origine restent déclarés dessous** : si
+l'image tarde ou manque, la carte reste une carte, jamais un rectangle vide.
+
+### Vérifications
+
+```bash
+npm run check:rpg-ui   # la variable, les trois surfaces, et le losange ◈ retiré
+```
+
+`check:rpg-ui` vérifie que le chemin suit bien `BASE_URL`, que la racine du duel
+porte la variable, que chacune des trois surfaces appelle
+`var(--rpg-dos-de-carte)` **avec son dégradé de repli derrière**, et que le
+`::after` du losange a disparu des deux endroits où il était déclaré — le socle
+et le palier étroit.
+
 ## Le Sablier : le vocabulaire des magies, et les créatures sans ligne de type
 
 Deux retouches de la face des cartes, pour que la table se lise d'un coup d'œil.
