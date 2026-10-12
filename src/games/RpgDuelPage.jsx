@@ -48,6 +48,7 @@ import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
+import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
 import { useDecksSablier } from './useDecksSablier.js';
 import {
   preparerDuelTutoriel,
@@ -1264,8 +1265,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const [deckCouleur, setDeckCouleur] = useState('toutes');
   const [confirmation, setConfirmation] = useState(null);
   // Mode Histoire : la galerie des tours d'abord (`null`), la page d'une tour
-  // — ses étages dévoilés — ensuite. Le clic sur une miniature ouvre la tour.
+  // — ses étages dévoilés — ensuite. Le clic sur une maquette ouvre la tour.
   const [tourOuverteId, setTourOuverteId] = useState(null);
+  const storyRef = useRef(null);
+  const derniereTourRef = useRef(null);
   // La suppression d'un deck maison se confirme en deux temps (jamais de `window.confirm`).
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
   // L'atelier : `null` (fermé), `{ mode: 'nouveau' }`, `{ mode: 'edition', id }`
@@ -1301,8 +1304,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
     const cardId = deck?.cardIds.find((id) => cardById(id)?.kind !== 'terrain') ?? deck?.cardIds[0];
     return cardId ? cardArt(cardId) : '';
   };
-  // La miniature d'une tour : sa peinture livrée dans `public/sablier-tours/`.
-  const tourMiniatureUrl = (tour) => `${import.meta.env.BASE_URL}sablier-tours/${tour.miniature}`;
   // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
   const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
   const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
@@ -1310,8 +1311,24 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
   useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
   // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
-  // l'onglet retrouve la galerie des miniatures, jamais les étages d'emblée.
+  // l'onglet retrouve la galerie des maquettes, jamais les étages d'emblée.
   useEffect(() => { if (screen !== 'histoire') setTourOuverteId(null); }, [screen]);
+  // Une tour choisie en bas de la galerie doit s'ouvrir depuis son sommet,
+  // pas conserver le défilement de la cinquième carte et couper sa maquette.
+  // Au retour, clavier et défilement retrouvent la carte que l'on consultait.
+  useLayoutEffect(() => {
+    if (screen !== 'histoire') { derniereTourRef.current = null; return; }
+    if (tourOuverteId) {
+      derniereTourRef.current = tourOuverteId;
+      const detail = storyRef.current?.querySelector('.rpg-story__detail');
+      detail?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
+      detail?.querySelector('.rpg-story__back')?.focus?.({ preventScroll: true });
+    } else if (derniereTourRef.current) {
+      const carte = storyRef.current?.querySelector(`[data-tour="${derniereTourRef.current}"]`);
+      carte?.focus?.({ preventScroll: true });
+      carte?.scrollIntoView?.({ behavior: 'auto', block: 'nearest' });
+    }
+  }, [screen, tourOuverteId]);
   // Sur écran étroit, la fiche s'ouvre sous l'étagère : on l'amène à l'écran.
   useEffect(() => {
     const fiche = detailRef.current;
@@ -1649,14 +1666,14 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             )}
           </main>
         )) : screen === 'histoire' ? (
-          <main className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
+          <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
             <div className="rpg-story__intro">
               <div>
                 <span className="rpg-mode-menu__eyebrow">MODE HISTOIRE · CONTINUITÉ SIMPLE</span>
                 <h2>Les Tours de Bab El</h2>
                 <p>
                   Chaque étage est un duel autonome : deck complet, PV pleins, aucune ressource
-                  reportée. Choisissez une tour pour dévoiler ses étages, puis gravissez-les un à
+                  reportée. Choisissez une tour en 3D pour dévoiler ses étages, puis gravissez-les un à
                   un — la progression est gardée sur cet appareil.
                 </p>
               </div>
@@ -1671,7 +1688,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 </button>
                 <section key={tourOuverte.id} className="rpg-story-tour">
                   <header className="rpg-story-tour__header">
-                    <span className="rpg-story-tour__banner" style={{ backgroundImage: `url("${tourMiniatureUrl(tourOuverte)}")` }} aria-hidden="true" />
+                    <RpgStoryTowerPreview tour={tourOuverte} className="rpg-story-tour__banner" detail />
                     <div className="rpg-story-tour__heading">
                       <span className="rpg-mode-menu__eyebrow">{resumeTourOuverte.vaincus} / {resumeTourOuverte.total} ÉTAGES DÉBLAYÉS</span>
                       <h3>{tourOuverte.nom}</h3>
@@ -1721,7 +1738,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       data-tour={tour.id}
                       onClick={() => { play('select'); setTourOuverteId(tour.id); }}
                     >
-                      <span className="rpg-story-tower__art" style={{ backgroundImage: `url("${tourMiniatureUrl(tour)}")` }} aria-hidden="true" />
+                      <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" />
                       <span className="rpg-story-tower__body">
                         <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
                         <strong className="rpg-story-tower__name">{tour.nom}</strong>

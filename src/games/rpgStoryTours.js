@@ -9,9 +9,10 @@
  * Chaque étage porte un sorcier : son deck, sa puissance (PV supplémentaires,
  * affichés) et son profil d'IA (`rpgAI.js`) — la personnalité de gameplay.
  *
- * Chaque tour porte une **miniature** (`miniature`, livrée dans
- * `public/sablier-tours/`) : la galerie du mode Histoire montre d'abord les
- * tours en vignettes ; les étages ne se dévoilent qu'à l'ouverture d'une tour.
+ * La galerie et la page de chaque tour montrent sa **maquette 3D**
+ * (`rpgStoryTowerModels.js`). La peinture `miniature`, livrée dans
+ * `public/sablier-tours/`, sert uniquement de repli sans WebGL. Les étages
+ * ne se dévoilent qu'à l'ouverture d'une tour.
  */
 
 import {
