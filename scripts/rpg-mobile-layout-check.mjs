@@ -310,9 +310,15 @@ try {
   // Tap plays the card immediately.
   await terrain.tap();
   await page.waitForFunction(() => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === 1);
-  const terrainBox = await page.locator('.rpg-terrains--joueur .rpg-terrain').boundingBox();
+  const terrainPoseSeul = page.locator('.rpg-terrains--joueur .rpg-terrain');
+  const terrainBox = await terrainPoseSeul.boundingBox();
   assert.ok(terrainBox && terrainBox.x >= 0 && terrainBox.x + terrainBox.width <= 844,
     'the played terrain stays inside the landscape viewport');
+  assert.equal(await terrainPoseSeul.getAttribute('data-terrain-count'), '1');
+  assert.equal(await terrainPoseSeul.evaluate((element) => element.classList.contains('is-stacked')), false,
+    'a single terrain is shown as one card, without a fake stack underneath');
+  assert.equal(await terrainPoseSeul.locator('.rpg-terrain-stack__count').count(), 0,
+    'a single terrain has no ×1 stack counter');
   await page.locator('.rpg-hand__card--terrain').first().tap();
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 1,
     'the second terrain of the turn is refused without being played');
@@ -403,15 +409,27 @@ try {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await page.waitForFunction((count) => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === count + 1, before);
   assert.equal(await page.locator('.rpg-touch-drag-ghost').count(), 0);
-  console.log('✓ Touch drag plays a terrain after orientation changes');
+  const terrainSeul = page.locator('.rpg-terrains--joueur .rpg-terrain');
+  await terrainSeul.click();
+  await page.waitForFunction(() => document.querySelector('.rpg-terrains--joueur .rpg-terrain')?.classList.contains('is-tapped'));
+  assert.equal(await terrainSeul.getAttribute('data-tapped-count'), '1', 'using a single land taps it');
+  const angleTerrainEngage = await terrainSeul.evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+  });
+  assert.ok(Math.abs(angleTerrainEngage - 12) < .5, 'a tapped terrain stays visibly tilted on touch screens');
+  console.log('✓ Touch drag plays a terrain and using it visibly taps the single card');
   await page.locator('.rpg-btn--endturn').click();
   await page.locator('.rpg-turn-indicator.is-player').waitFor();
   await page.locator('.rpg-hand__card--terrain.is-playable').first().click();
   await page.waitForFunction(() => document.querySelector('.rpg-terrains--joueur .rpg-terrain[data-terrain-count="2"]'));
   const stack = page.locator('.rpg-terrains--joueur .rpg-terrain');
   assert.equal(await stack.count(), 1, 'identical terrains share one pile');
+  assert.equal(await stack.evaluate((element) => element.classList.contains('is-stacked')), true,
+    'a second identical terrain adds the stacked-card visual');
   assert.equal(await stack.locator('.rpg-terrain-stack__available').count(), 0);
-  assert.equal((await stack.textContent()).trim(), '×2', 'only the total count is printed over the terrain');
+  assert.equal((await stack.locator('.rpg-terrain-stack__count').textContent()).trim(), '×2',
+    'the stacked terrain shows its total count');
   assert.equal(await stack.getAttribute('data-available-count'), '2');
   for (const remaining of [1, 0]) {
     await stack.click();
@@ -421,7 +439,20 @@ try {
     }, remaining);
     assert.equal(await stack.getAttribute('data-terrain-count'), '2');
     assert.equal(await stack.getAttribute('data-tapped-count'), String(2 - remaining), 'a mana click taps only one terrain');
+    if (remaining === 1) {
+      assert.equal(await stack.evaluate((element) => element.classList.contains('is-partially-tapped')), true,
+        'a partly used terrain pile shows its tapped state');
+      assert.equal((await stack.locator('.rpg-terrain-stack__engagement').textContent()).trim(), '↻1');
+    }
   }
+  assert.equal(await stack.evaluate((element) => element.classList.contains('is-tapped')), true,
+    'a fully used terrain pile is visibly tapped');
+  assert.equal((await stack.locator('.rpg-terrain-stack__engagement').textContent()).trim(), '↻2');
+  const angleStackEngage = await stack.evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+  });
+  assert.ok(Math.abs(angleStackEngage - 12) < .5, 'an exhausted terrain pile stays visibly tilted on touch screens');
   const counts = {
     available: await stack.getAttribute('data-available-count'),
     tapped: await stack.getAttribute('data-tapped-count'),
@@ -448,7 +479,7 @@ try {
     const angle = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
     return Math.abs(angle - expected) < .5;
   }, { selector, expected });
-  await waitForTilt('.rpg-card--equipe.is-declared-attacker', 90);
+  await waitForTilt('.rpg-card--equipe.is-declared-attacker', 15);
   assert.equal(await page.locator('.card-row .rpg-card__type').count(), 0, 'table cards do not print their type');
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
@@ -473,7 +504,7 @@ try {
   await waitForTilt('.rpg-card--equipe', 0);
   await page.locator('.rpg-btn--attaque-tous').click();
   await page.locator('.rpg-btn--confirmer-attaque').click();
-  await waitForTilt('.rpg-card--equipe.is-attacked', 90);
+  await waitForTilt('.rpg-card--equipe.is-attacked', 15);
   const angles = await page.locator('.rpg-card--equipe.is-attacked').evaluate(async card => {
     const values = [];
     // Sample the lunge/impact animation and its cleanup, not just the resting state.
@@ -484,8 +515,8 @@ try {
     }
     return values;
   });
-  assert.ok(angles.every(angle => Math.abs(angle - 90) < .5), 'combat animations never straighten the attacker');
-  console.log('✓ Attackers tilt on declaration, straighten on cancellation and stay tilted after attacking');
+  assert.ok(angles.every(angle => Math.abs(angle - 15) < .5), 'combat animations preserve the 15-degree clockwise attacker tilt');
+  console.log('✓ Attackers tilt 15° to the right on declaration, straighten on cancellation and keep the tilt after attacking');
   console.log('✓ Attack-all, cancellation and confirmation share the controls column; the turn rail keeps the phases, undo and end-turn above the hand');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.rpg-rotate-prompt').waitFor();

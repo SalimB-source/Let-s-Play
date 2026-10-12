@@ -33,6 +33,7 @@ try {
 }
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
 const { RPG_PLATEAUX } = await import('../src/games/rpgPlateaux.js');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
@@ -63,6 +64,22 @@ assert.match(battlePage, /RPG_DUEL_CARDS\.filter\(\(carte\) => \{[\s\S]*?catalog
   'le catalogue filtre les hybrides seuls ou via chacune de leurs couleurs');
 assert.match(battleCss, /\.rpg-terrain-mana-choice\s*\{[^}]*position:\s*absolute;[^}]*z-index:/s,
   'le sélecteur de couleur de Pétra reste lisible au-dessus du rail des terrains');
+assert.match(battleCss, /\.rpg-card\[data-combat-tilted="true"\]\s*\{\s*transform:\s*rotate\(15deg\) !important;/,
+  'les créatures engagées gardent une inclinaison de 15° vers la droite');
+assert.doesNotMatch(tableCardSource, /rpg-card__(?:engagee|action-fx)|(?:BLOCAGE|RETIRÉ|IMPACT|ATTAQUE|RENFORCÉ)/,
+  'aucun texte d’état ou d’action n’est superposé sur les cartes');
+assert.doesNotMatch(battleCss, /\.rpg-card__(?:engagee|action-fx)\b/,
+  'les anciens styles des étiquettes posées sur les cartes sont supprimés');
+assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-tapped\s*\{[^}]*transform:\s*rotate\(12deg\)/s,
+  'un terrain engagé reste incliné sur écran tactile');
+assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-stacked\s*\{[^}]*box-shadow:/s,
+  'seules les vraies piles de terrains montrent une épaisseur décalée');
+assert.match(battlePage, /groupe\.count > 1 && <span className="rpg-terrain-stack__count"/,
+  'un terrain seul n’affiche pas de compteur de pile');
+assert.match(battlePage, /groupe\.count > 1 && groupe\.tapped > 0[\s\S]*?rpg-terrain-stack__engagement/,
+  'une pile renseigne le nombre de terrains déjà engagés');
+assert.match(battlePage, /groupe\.available === 0 && groupe\.tapped > 0 \? ' is-tapped' : ''/,
+  'une pile entièrement utilisée prend l’état visuel engagé');
 assert.match(battlePage, /rpgDestructionsDepuis\(duel, debutJournalDestructions\)[\s\S]*?evenement\.sourceElements\.includes\('braise'\)/,
   'la combustion dépend des sources réelles de chaque destruction');
 assert.match(battlePage, /effet\.bruleeParBraise \? ' is-burning' : ''/,
@@ -478,15 +495,23 @@ assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*backgro
 assert.match(plateauxSource, /id: 'terre-de-damnation'[\s\S]*?fichier: 'plateau-terre-de-damnation\.jpg'/,
   'la terre de damnation est un plateau déclaré, avec son fond dans public/');
 
-// ── Le plateau est peint, pas voilé : chaque texte porte son propre fond ─────
-// Le voile noir dégradé posé sur le haut et le bas de la table (et les vignettes
-// de plateau qui le composaient) est retiré : il noircissait un tiers de chaque
-// tableau, et l'Erg du Sahara (142/255 en haut du cadre) comme les Ruines de
-// Tipaza (118 en bas) y perdaient leur peinture. La lisibilité tient désormais au
-// **chrome** : chaque texte de la table porte une capsule translucide — deux
-// tiers d'ombre, un tiers de peinture — qui ramène le fond sous 0,16 de
-// luminance, soit environ 4,5:1 pour l'encre crème, contre ~2,9:1 à même la dune.
-const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+// ── Aperçu de la carte annoncée, puis plateau sans voile ───────────────────
+assert.match(battlePage, /<HoverCardPreview carte=\{carteAnnoncee\} cible=\{cibleAnnoncee\} variante="annonce" \/>/,
+  'la fenêtre de réponse affiche l’aperçu de la carte annoncée et lui transmet sa cible');
+assert.match(hoverPreviewSource, /cibleAnnoncee && \([\s\S]*?rpg-hover-card-preview__target[\s\S]*?cibleAnnoncee\.nom/,
+  'l’aperçu d’une magie rend le nom et l’illustration de sa cible');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce\s*\{[^}]*position:\s*relative;[^}]*display:\s*grid;[^}]*width:\s*100%;/s,
+  'l’aperçu annoncé reste dans son panneau de réponse au lieu de flotter comme un tooltip');
+assert.match(battleCss, /\.rpg-annonce-sort__pass\s*\{[^}]*display:\s*inline-flex;[^}]*flex-direction:\s*row;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*min-height:\s*36px;/s,
+  'Laisser passer est un bouton compact dont le texte est centré verticalement');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hover-card-preview--annonce\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*42px minmax\(0, 1fr\);/s,
+  'l’aperçu annoncé reste visible et lisible dans le rail tactile, alors que les tooltips au survol sont masqués');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/s,
+  'sur tactile, l’aperçu et sa commande s’empilent dans le rail étroit');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass\s*\{[^}]*justify-self:\s*center;[^}]*width:\s*auto;[^}]*min-width:\s*108px;[^}]*min-height:\s*44px;/s,
+  'Laisser passer reste compact tout en gardant une zone de toucher de 44 px');
+
+// Le plateau est peint, pas voilé : les capsules tiennent la lisibilité.
 assert.doesNotMatch(battleCss, /--rpg-plateau-voile/,
   'aucun voile noir n’habille plus les plateaux : la peinture reste entière');
 assert.doesNotMatch(battleCss, /card-table--plateau-[a-z-]+::before/,

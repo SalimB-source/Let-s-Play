@@ -689,7 +689,6 @@ function TableCard({
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-      {entite.attaquee && <span className="rpg-card__engagee" aria-hidden="true">engagée</span>}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
       <header className="rpg-card__title">
@@ -699,14 +698,6 @@ function TableCard({
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{entite.atk}</span></span>
           <span className={`rpg-card__pt${blessee ? ' is-wounded' : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span></span>
         </footer>
-        {actionFx && (
-          <span key={actionFx.token} className={`rpg-card__action-fx rpg-card__action-fx--${actionFx.type}`} aria-hidden="true">
-            {actionFx.type === 'block' ? 'BLOCAGE'
-              : actionFx.type === 'unblock' ? 'RETIRÉ'
-                : actionFx.type === 'hit' ? 'IMPACT'
-                  : actionFx.type === 'attack' ? 'ATTAQUE' : 'RENFORCÉ'}
-          </span>
-        )}
       </button>
   );
 }
@@ -3950,8 +3941,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <button
                 type="button"
                 key={groupe.carteId}
-                aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrains, ${groupe.available} disponibles, ${groupe.tapped} engagés`}
-                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}`}
+                aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrain${groupe.count > 1 ? 's' : ''}, ${groupe.available} disponible${groupe.available > 1 ? 's' : ''}, ${groupe.tapped} engagé${groupe.tapped > 1 ? 's' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -3962,7 +3953,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onMouseLeave={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
-                <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
+                {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
+                {groupe.count > 1 && groupe.tapped > 0 && (
+                  <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
+                )}
               </button>
             );
           })}
@@ -4148,14 +4142,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             const terrain = groupe.terrain;
             const carte = cardById(terrain.carteId);
             const couleursProduites = terrainManaColors(terrain.carteId);
-            const terrainInactif = (!monTour && !reponseActive) || terrain.tapped;
+            const terrainInactif = (!monTour && !reponseActive) || groupe.available === 0;
             const choixOuvert = terrainManaChoix?.terrainId === terrain.id;
             const production = couleursProduites.map(couleurLabel).join(' ou ');
             return (
               <button
                 key={groupe.carteId}
                 type="button"
-                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -4168,7 +4162,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 aria-haspopup={couleursProduites.length > 1 ? 'dialog' : undefined}
                 aria-expanded={couleursProduites.length > 1 ? choixOuvert : undefined}
                 aria-controls={couleursProduites.length > 1 ? 'rpg-terrain-mana-choice' : undefined}
-                aria-label={`${carte?.name ?? 'Terrain'}, ${groupe.count} terrains, ${groupe.available} disponibles, ${groupe.tapped} engagés${terrain.tapped ? ', engagé' : terrainInactif ? ', indisponible' : couleursProduites.length > 1 ? `, cliquer pour choisir un mana ${production}` : `, disponible pour produire un mana ${production}`}`}
+                aria-label={`${carte?.name ?? 'Terrain'}, ${groupe.count} terrain${groupe.count > 1 ? 's' : ''}, ${groupe.available} disponible${groupe.available > 1 ? 's' : ''}, ${groupe.tapped} engagé${groupe.tapped > 1 ? 's' : ''}${terrainInactif ? ', indisponible' : couleursProduites.length > 1 ? `, cliquer pour choisir un mana ${production}` : `, disponible pour produire un mana ${production}`}`}
                 onClick={(event) => {
                   if (!terrainInactif) demanderCouleurMana(event, terrain);
                 }}
@@ -4178,7 +4172,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onBlur={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
-                <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
+                {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
+                {groupe.count > 1 && groupe.tapped > 0 && (
+                  <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
+                )}
               </button>
             );
           })}
