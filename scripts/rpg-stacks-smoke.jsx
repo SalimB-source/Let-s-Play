@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
+import { passerMulligan } from './rpg-duel-start.js';
 
 /**
  * Scénarios tactiles des piles de cartes homonymes : la main et les deux champs
@@ -98,6 +99,7 @@ async function scenarioMainEtChampJoueur(assert) {
       rng={() => .999}
     />));
     await click(container.querySelector('.rpg-menu-button--primary'), 'le duel démarre');
+    await passerMulligan(container, (element) => click(element, 'le mulligan se valide'));
     assert.ok(container.querySelector('.rpg-battle--touch'), 'le duel s’affiche en mode tactile');
 
     // ── Main : deux exemplaires identiques, un seul emplacement ────────────
@@ -219,6 +221,7 @@ async function scenarioChampAdverse(assert) {
       rng={rng}
     />));
     await click(container.querySelector('.rpg-menu-button--primary'), 'le duel démarre');
+    await passerMulligan(container, (element) => click(element, 'le mulligan se valide'));
     assert.ok(container.querySelector('.rpg-battle--touch'), 'le duel s’affiche en mode tactile');
 
     // ── Tours 1 et 2 : un terrain par tour, premier Chien des deux côtés ───

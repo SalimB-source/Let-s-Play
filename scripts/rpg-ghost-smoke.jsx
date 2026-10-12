@@ -11,6 +11,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
+import { passerMulligan } from './rpg-duel-start.js';
 import { RPG_DECKS } from '../src/games/rpgCards.js';
 
 /** Horloge virtuelle : les minuteries du jeu avancent à la demande. */
@@ -198,6 +199,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       <RpgDuelPage joueurDeck={deckJoueur.cardIds} sorcierDeck={deckSorcier.cardIds} sorcierPuissance={0} rng={rng} />,
     ));
     await click(q('.rpg-mode-menu__play .rpg-menu-button--primary'));
+    await passerMulligan(container, (element) => click(element, 'mulligan'));
     await horloge.avancer(2000);
     verifier('ouverture');
 
@@ -364,6 +366,7 @@ export async function verifierRelance(assert) {
       />,
     ));
     await click(q('.rpg-mode-menu__play .rpg-menu-button--primary'));
+    await passerMulligan(container, (element) => click(element));
     await horloge.avancer(2000);
 
     // Quelques tours pour que le sorcier déploie des créatures prêtes à attaquer.
@@ -401,6 +404,7 @@ export async function verifierRelance(assert) {
     assert.ok(!q('.card-table'), 'la table est quittée');
 
     await click(q('.rpg-mode-menu__play .rpg-menu-button--primary'));
+    await passerMulligan(container, (element) => click(element));
     await horloge.avancer(4000);
 
     const etat = window.__RPG_DUEL__;

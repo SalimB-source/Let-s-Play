@@ -23,6 +23,7 @@ import {
   choisirCarteIA,
   choisirCibleAutoIA,
   choisirCiblesRapidesIA,
+  choisirMulliganIA,
   choisirTerrainIA,
   couleurEngagement,
 } from './rpgAI.js';
@@ -63,6 +64,16 @@ const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[
 export const rpgSorcierPv = (puissance = 0) =>
   RPG_PV_SORCIER_BASE + RPG_PV_SORCIER_PAR_PUISSANCE * Math.max(0, puissance);
 
+/** Mélange de Fisher-Yates ; le même tirage sert à l'ouverture et au mulligan. */
+function melangerDeck(deck, rng = Math.random) {
+  const d = [...deck];
+  for (let i = d.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
 /**
  * Nouveau duel : tables vides, 0 sable, puis chaque camp pioche 5 cartes.
  * `decks` : listes d'identifiants de cartes (créatures pour l'instant).
@@ -70,17 +81,9 @@ export const rpgSorcierPv = (puissance = 0) =>
  * sorcier du mode Histoire peut porter le sien.
  */
 export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random } = {}) {
-  const melanger = (deck) => {
-    const d = [...deck];
-    for (let i = d.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(rng() * (i + 1));
-      [d[i], d[j]] = [d[j], d[i]];
-    }
-    return d;
-  };
   const duel = {
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
@@ -89,7 +92,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       mana: manaVide(),
       bouclier: 0,
       terrainPose: false,
-      deck: melanger(sorcierDeck),
+      deck: melangerDeck(sorcierDeck, rng),
       main: [],
       creatures: [],
       terrains: [],
@@ -101,12 +104,17 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     fenetreReponse: false,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
     annonce: null,
+    // Mulligan : chaque camp a droit à UN échange, avant le premier tour.
+    mulliganFait: { joueur: false, sorcier: false },
     log: [],
   };
   for (let i = 0; i < RPG_MAIN_DEPART; i += 1) {
     rpgPiocher(duel, 'joueur');
     rpgPiocher(duel, 'sorcier');
   }
+  // Témoin de la main de départ : le mulligan n'est légal que tant qu'elle est
+  // intacte (et il la conserve, puisque l'on pioche autant qu'on écarte).
+  duel.mainDepart = { joueur: duel.joueur.main.length, sorcier: duel.sorcier.main.length };
   return duel;
 }
 
@@ -117,6 +125,67 @@ export function rpgPiocher(duel, cote) {
   const carte = camp.deck.pop();
   camp.main.push(carte);
   return carte;
+}
+
+/** Le mulligan est ouvert tant que la partie n'a pas commencé : table vide et
+ *  main encore égale à celle du départ. Un seul échange par camp. */
+export function rpgPeutMulligan(duel, cote = 'joueur') {
+  if (!duel || duel.mulliganFait?.[cote]) return false;
+  if (duel.tour !== 'joueur' || duel.annonce) return false;
+  if (!duel[cote].main.length) return false;
+  if (duel[cote].main.length !== (duel.mainDepart?.[cote] ?? 0)) return false;
+  return ['joueur', 'sorcier'].every((camp) => !duel[camp].creatures.length
+    && !duel[camp].terrains.length
+    && !duel[camp].terrainPose
+    && !duel[camp].cimetiere.length);
+}
+
+/**
+ * Échange de la main de départ : les cartes désignées (indices dans `main`)
+ * repartent dans le paquet, qui est battu, puis le camp pioche autant de
+ * cartes qu'il en a écartées — jamais plus qu'il n'en reste.
+ * Aucun camp n'est pénalisé en nombre de cartes : c'est un choix, pas un prix.
+ */
+export function rpgMulligan(duel, cote, index = [], rng = Math.random) {
+  const camp = duel[cote];
+  if (!camp || !rpgPeutMulligan(duel, cote)) return { ok: false, ecartees: [], piochees: [] };
+  // Un index, jamais un nom : dans une main de cinq exemplaires identiques,
+  // « changer un Désert » ne veut rien dire — « changer celui de la case 2 » oui.
+  const versIndex = (valeur) => (typeof valeur === 'number' || typeof valeur === 'string' ? Number(valeur) : Number.NaN);
+  const valides = [...new Set(index.map(versIndex)
+    .filter((valeur) => Number.isInteger(valeur) && valeur >= 0 && valeur < camp.main.length))]
+    .sort((a, b) => a - b);
+  // Rien de choisi, rien de désigné : « je garde » ne déplace ni main ni paquet,
+  // et ne perturbe aucun tirage — le droit est simplement consommé.
+  if (!valides.length) {
+    duel.mulliganFait[cote] = true;
+    duel.log.push(cote === 'joueur' ? 'Vous gardez votre main de départ.' : 'Le sorcier garde sa main de départ.');
+    return { ok: true, ecartees: [], piochees: [] };
+  }
+  const ecartees = valides.map((valeur) => camp.main[valeur]);
+  // Retirer du plus grand vers le plus petit : les indices restants restent justes.
+  for (let i = valides.length - 1; i >= 0; i -= 1) camp.main.splice(valides[i], 1);
+  camp.deck = melangerDeck([...camp.deck, ...ecartees], rng);
+  const piochees = [];
+  for (let i = 0; i < ecartees.length; i += 1) {
+    const carte = rpgPiocher(duel, cote);
+    if (!carte) break;
+    piochees.push(carte);
+  }
+  duel.mulliganFait[cote] = true;
+  const nom = (carteId) => cardById(carteId)?.name ?? carteId;
+  const fois = `${piochees.length} carte${piochees.length > 1 ? 's' : ''}`;
+  duel.log.push(ecartees.length
+    ? (cote === 'joueur'
+      ? `Vous écartez ${ecartees.map(nom).join(', ')} et piochez ${fois}.`
+      : `Le sorcier écarte ${ecartees.map(nom).join(', ')} et pioche ${fois}.`)
+    : (cote === 'joueur' ? 'Vous gardez votre main de départ.' : 'Le sorcier garde sa main de départ.'));
+  return { ok: true, ecartees, piochees };
+}
+
+/** Le sorcier mulligane au même moment, avec sa propre lecture de la main. */
+export function rpgMulliganSorcier(duel, rng = Math.random) {
+  return rpgMulligan(duel, 'sorcier', choisirMulliganIA(duel, 'sorcier'), rng);
 }
 
 /** Sources présentes en réserve et sur les terrains dégagés. Une source
@@ -810,12 +879,14 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     }
   }
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
-  payer(duel, cote, carte);
-  camp.main.splice(camp.main.indexOf(carteId), 1);
+  // L'IA peut répondre à la créature avant son entrée en jeu. Dans ce cas,
+  // `contrerAnnonce` paie la créature lancée ainsi que le contresort adverse.
   if (cote === 'joueur' && !duel.annonce) {
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
+  payer(duel, cote, carte);
+  camp.main.splice(camp.main.indexOf(carteId), 1);
   const entite = creerEntiteCreature(carte);
   camp.creatures.push(entite);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
@@ -912,21 +983,28 @@ export function rpgContreJouable(duel, cote, carte) {
 }
 
 /** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
- *  La carte visée est défaussée sans effet, et le contre paie son coût (Déflection
- *  fait aussi piocher une carte). `annonce` : { cote, carteId } ;
- *  par défaut l'annonce en cours du sorcier. */
+ * La carte visée et le contre paient tous deux leur coût, puis vont au cimetière
+ * sans résoudre l'effet de la carte visée (Déflection fait aussi piocher).
+ * `annonce` : { cote, carteId } ; par défaut l'annonce en cours du sorcier. */
 function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   const camp = duel[cote];
   if (!annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
   const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
   if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  const campAnnonce = duel[annonce.cote];
+  if (!rpgPeutPayer(campAnnonce, cible)) return { ok: false, raison: 'mana' };
+
+  // Payer la carte lancée, même si elle est immédiatement contrecarrée, puis
+  // payer le contresort. Les cartes du joueur restent en main jusque-là ; les
+  // annonces du sorcier ne paient normalement qu'à leur résolution.
+  payer(duel, annonce.cote, cible);
   payer(duel, cote, carte);
-  camp.main.splice(camp.main.indexOf(carte.id), 1);
-  camp.cimetiere.push(carte.id);
-  const main = duel[annonce.cote].main;
+  const main = campAnnonce.main;
   if (main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
   duel[annonce.cote].cimetiere.push(annonce.carteId);
+  camp.main.splice(camp.main.indexOf(carte.id), 1);
+  camp.cimetiere.push(carte.id);
   if (annonce === duel.annonce) {
     duel.annonce = null;
     duel.fenetreReponse = false;
@@ -965,11 +1043,6 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
 
-  if (cote === 'joueur' && !duel.annonce) {
-    const contreIA = choisirContreIA(duel, carte);
-    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
-  }
-
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (cibleId === 'sorcier') {
       if (!carte.cibles?.includes('sorcier')) return { ok: false, raison: 'cible' };
@@ -992,6 +1065,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     const cible = campCible.creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
+
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
 
   payer(duel, cote, carte);
@@ -1393,7 +1471,8 @@ export function rpgSorcierPrepareTerrain(duel) {
   }
 }
 
-/** Le sorcier choisit sa prochaine carte et l'ANNONCE sans la payer ni la résoudre.
+/** Le sorcier annonce sa prochaine carte sans la résoudre. La carte paie son
+ *  coût à la résolution, ou au moment où le joueur la contre.
  *  Ouvre la fenêtre de réponse : le joueur peut répondre avec une magie rapide, ou laisser passer.
  *  Retourne null quand le sorcier n'a plus rien à jouer. */
 export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {

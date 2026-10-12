@@ -11,6 +11,9 @@ import './rpg-mobile.css';
 import './rpg-story.css';
 import './rpg-deckbox.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
+import FullscreenIcon from './FullscreenIcon.jsx';
+import { isFullscreenShortcut, nativeFullscreenElement } from './gameFullscreen.js';
+import useGameFullscreen from './useGameFullscreen.js';
 import {
   plateauDeRepli,
   plateauParId,
@@ -74,12 +77,15 @@ import {
   rpgJouerCreature,
   rpgLancerAttaque,
   rpgLancerMagie,
+  rpgMulligan,
+  rpgMulliganSorcier,
   rpgNouveauDuel,
   rpgNombreDestructions,
   rpgDestructionsDepuis,
   rpgOuvrirFenetreReponse,
   rpgEstProtegee,
   rpgPeutBloquerAttaquant,
+  rpgPeutMulligan,
   rpgPeutPayer,
   rpgPoserTerrain,
   rpgSorcierAnnonceSuivante,
@@ -903,6 +909,144 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
   );
 }
 
+/* ── Le mulligan : la main de départ, nue — l'aperçu dit le reste ─────────────
+   Avant le premier tour, chaque camp voit ses cartes piochées : des **faces
+   4:5** comme sur la table, sans un mot d'interface — l'illustration, la couleur
+   en haut à gauche, le coût en haut à droite, et en bas les plaques d'attaque et
+   de défense du jeu — plus la ligne de type pour les terrains et les sorts, la
+   face d'une créature n'ayant pas besoin de l'annoncer. Le reste du texte (nom, effets) se
+   lit dans l'**aperçu rapide** : au survol d'une carte à la souris, à l'appui
+   long d'une seconde au doigt. Toucher une carte la met de côté (liseré doré),
+   la retoucher la reprend : elles repartent dans le paquet, qui est battu, et
+   le camp pioche autant de cartes qu'il en a écartées. Un seul échange, et la
+   main ne diminue jamais : c'est une décision, pas une punition. */
+function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBasculer, onSurvol, onQuitterSurvol }) {
+  if (!carte) return null;
+  const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
+  return (
+    <button
+      type="button"
+      onClick={() => onBasculer(index)}
+      // Le survol ouvre l'aperçu rapide ; le doigt garde l'appui long d'une
+      // seconde, que la page arme depuis la table (`demarrerAppuiLongCarte`) :
+      // la carte porte un `data-card-id`, comme toutes celles du jeu.
+      onMouseEnter={survol ? (event) => onSurvol(carte, event) : undefined}
+      onMouseLeave={survol ? onQuitterSurvol : undefined}
+      onFocus={survol ? (event) => onSurvol(carte, event) : undefined}
+      onBlur={survol ? onQuitterSurvol : undefined}
+      className={[
+        'rpg-mulligan__card',
+        `rpg-mulligan__card--type-${cardFrameType(carte)}`,
+        `rpg-mulligan__card--elem-${carte.element}`,
+        cardFrameClass(carte),
+        selectionnee ? 'is-selected' : '',
+        nouvelle ? 'is-new' : '',
+      ].filter(Boolean).join(' ')}
+      style={cardFrameStyle(carte)}
+      data-card-id={carte.id}
+      data-mulligan-index={index}
+      aria-pressed={selectionnee}
+      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${carte.text}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
+    >
+      <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      <CardElementBadge carte={carte} />
+      <ManaCost carte={carte} showElement={false} />
+      {/* Le bas de la carte : la ligne de type pour les terrains et les sorts —
+          pour une créature, elle n'apprendrait rien, la face du jeu s'en passe —
+          puis les deux plaques du jeu : l'épée d'or à gauche, le bouclier
+          d'acier à droite, chacune sur son bord. */}
+      <span className="rpg-mulligan__bas">
+        {!estCreature && (
+          <span className="rpg-mulligan__type" aria-hidden="true">{cardFaceTypeLine(carte)}</span>
+        )}
+        {estCreature && (
+          <span className="rpg-mulligan__stats" aria-hidden="true">
+            <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
+            <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
+          </span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+function VoletMulligan({
+  main, etape, choix, nouveau, bilan, apercu, survol,
+  onBasculer, onValider, onAnnulerSelection, onContinuer, onSurvol, onQuitterSurvol,
+}) {
+  const nombre = choix.size;
+  const enChoix = etape === 'choix';
+  const pluriel = (n) => (n > 1 ? 's' : '');
+  return (
+    <div
+      className={`rpg-mulligan rpg-mulligan--${etape}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Mulligan — ${enChoix ? 'choisissez les cartes à changer' : 'votre main après l’échange'}`}
+    >
+      <div className="rpg-mulligan__backdrop" aria-hidden="true" />
+      <div className="rpg-mulligan__panel">
+        <header className="rpg-mulligan__head">
+          <span className="rpg-mulligan__eyebrow">Mulligan · main de départ</span>
+          <h2>{enChoix ? 'Gardez votre main, ou changez des cartes' : (nouveau.length ? 'Voici votre nouvelle main' : 'Main de départ gardée')}</h2>
+          <p>{enChoix
+            ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main. ${survol ? 'Survolez une carte pour la lire en entier.' : 'Appui long d’une seconde sur une carte pour la lire en entier.'}`
+            : bilan}</p>
+        </header>
+        {/* La scène donne à la rangée une place mesurable, et c'est elle que
+            les cartes interrogent : les cinq tiennent dans le volet. */}
+        <div className="rpg-mulligan__stage">
+          <div className="rpg-mulligan__cards">
+            {main.map((carteId, index) => (
+              <CarteMulligan
+                key={`${carteId}-${index}`}
+                carte={cardById(carteId)}
+                index={index}
+                selectionnee={choix.has(index)}
+                nouvelle={nouveau.includes(index)}
+                survol={survol}
+                onBasculer={onBasculer}
+                onSurvol={onSurvol}
+                onQuitterSurvol={onQuitterSurvol}
+              />
+            ))}
+          </div>
+        </div>
+        <footer className="rpg-mulligan__actions">
+          {enChoix ? (
+            <>
+              <button type="button" autoFocus className="rpg-btn rpg-btn--primary rpg-mulligan__valider" onClick={onValider}>
+                {nombre ? `Changer ${nombre} carte${pluriel(nombre)}` : 'Garder cette main'}
+              </button>
+              {nombre > 0 && (
+                <button type="button" className="rpg-btn rpg-btn--ghost rpg-mulligan__tout" onClick={onAnnulerSelection}>
+                  Annuler la sélection
+                </button>
+              )}
+              <span className="rpg-mulligan__compteur" aria-live="polite">
+                {nombre ? `${nombre} carte${pluriel(nombre)} à changer` : 'Aucune carte choisie'}
+              </span>
+            </>
+          ) : (
+            <button type="button" autoFocus className="rpg-btn rpg-btn--primary rpg-mulligan__commencer" onClick={onContinuer}>
+              Commencer le duel
+            </button>
+          )}
+        </footer>
+      </div>
+      {/* L'aperçu rapide vit dans le volet : il passe au-dessus de lui, et il
+          est le seul à s'afficher tant que la main de départ est ouverte. */}
+      {apercu && (
+        <HoverCardPreview
+          carte={cardById(apercu.carteId)}
+          style={apercu.style}
+          variante="mulligan"
+        />
+      )}
+    </div>
+  );
+}
+
 function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
   if (!carte) return null;
   const effets = cardEffectLines(carte.text);
@@ -1054,7 +1198,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1154,6 +1298,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <h1>Le <span>Sablier</span></h1>
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
+          <button
+            type="button"
+            className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
+            onClick={() => { play('menu'); onToggleFullscreen?.(); }}
+            aria-pressed={Boolean(fullscreen)}
+            title={fullscreen ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+            aria-label={fullscreen ? 'Quitter le plein écran' : 'Jouer en plein écran'}
+          >
+            <FullscreenIcon exit={Boolean(fullscreen)} className="rpg-fullscreen-icon" />
+          </button>
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
@@ -1628,6 +1782,14 @@ function animationsReduites() {
   return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 }
 
+/** Vrai quand le geste part d'un champ de saisie : le nom d'un deck maison, un
+ * filtre du catalogue. Ni la touche F ni la demande de plein écran ne doivent
+ * voler ce que le joueur est en train d'écrire. */
+function vientDunChampDeSaisie(cible) {
+  const balise = cible?.tagName;
+  return balise === 'INPUT' || balise === 'TEXTAREA' || balise === 'SELECT' || Boolean(cible?.isContentEditable);
+}
+
 // ── SFX réactifs du duel : pioche, destruction, impact, victoire/défaite, phases ──
 // Monté seulement pendant la partie : ses hooks ne doivent pas passer après les
 // retours anticipés de RpgDuelPage (menu, duel absent), sinon l'ordre des hooks
@@ -1669,12 +1831,26 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
   const [ecran, setEcran] = useState('jouer');
   const landscapeRef = useRef(null);
-  const [viewport, setViewport] = useState({ mobile: false, portrait: false });
+  // La coque du jeu (`.rpg-battle`) : menu, catalogues et duel partagent le même
+  // élément — React garde le nœud d'un écran à l'autre —, donc le plein écran
+  // survit au lancement d'une partie comme au retour au menu.
+  const shellRef = useRef(null);
+  const {
+    active: pleinEcran,
+    enter: entrerPleinEcran,
+    toggle: basculerPleinEcran,
+  } = useGameFullscreen(shellRef);
+  // `survol` : le volet du mulligan y lit si la souris sait survoler.
+  const [viewport, setViewport] = useState({ mobile: false, portrait: false, survol: true });
   useEffect(() => {
     landscapeRef.current = createRpgLandscapeSession();
     const update = () => {
       const mobile = Boolean(window.LetsPlayAndroid) || Boolean(window.matchMedia?.('(pointer: coarse), (max-width: 1100px)').matches);
-      setViewport({ mobile, portrait: mobile && window.innerHeight > window.innerWidth });
+      // Le survol n'existe pas au doigt : là, l'aperçu rapide passe par l'appui
+      // long d'une seconde. `matchMedia` absent (WebView ancienne) : on suppose
+      // la souris, et l'appui long reste armé de toute façon.
+      const survol = typeof window.matchMedia === 'function' ? window.matchMedia('(hover: hover)').matches : true;
+      setViewport({ mobile, portrait: mobile && window.innerHeight > window.innerWidth, survol });
     };
     update();
     window.addEventListener('resize', update);
@@ -1683,6 +1859,70 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     if (ecran !== 'partie') landscapeRef.current?.leave();
   }, [ecran]);
+
+  // ── Plein écran ──────────────────────────────────────────────────────────
+  // Le Sablier SE LANCE EN PLEIN ÉCRAN, sur ordinateur comme sur téléphone, et
+  // son interface d'avant-partie en fait partie : le menu Jouer, le mode
+  // Histoire, les decks et le catalogue s'affichent déjà plein écran, le duel
+  // n'a plus qu'à continuer dans le même espace. Le mécanisme (Fullscreen API,
+  // couche fixe en repli, verrou de défilement) est celui des jeux d'arcade —
+  // `gameFullscreen.js` / `useGameFullscreen.js` ; ici, les règles du jeu :
+  //   - la coque est une couche fixe qui couvre tout le viewport : elle est
+  //     posée dès le montage de la page, sans geste, et le choix est
+  //     « épinglé » — il traverse les écrans jusqu'à ce que le joueur le quitte
+  //     (bouton du menu ou de la barre du duel, touche F, Échap, geste
+  //     « retour » d'Android) ;
+  //   - le navigateur exige un geste pour le plein écran natif : le premier
+  //     clic ou la première touche du joueur le demande (effet suivant) ;
+  //   - lancer une partie (duel libre, étage de l'Histoire, « Reprendre »,
+  //     « Activer le paysage ») le redemande dans le geste du bouton, ce qui
+  //     rouvre un plein écran quitté depuis le menu ;
+  //   - la session de paysage ne possède plus le plein écran
+  //     (`enter({ fullscreen: false })`) : un seul propriétaire, sinon le
+  //     retour au menu refermait l'écran demandé.
+  useEffect(() => {
+    // Plein écran « de base » : la couche fixe se pose sans geste. `native` est
+    // faux car le navigateur refuserait une demande hors geste — le natif part
+    // au premier geste du joueur.
+    entrerPleinEcran({ pinned: true, native: false });
+  }, [entrerPleinEcran]);
+
+  // Le navigateur exige un geste pour le vrai plein écran : le premier clic ou
+  // la première touche (hors champ de saisie) le demande, au menu comme en duel.
+  // Le natif posé — ou le plein écran quitté — l'écoute s'arrête d'elle-même.
+  useEffect(() => {
+    if (!pleinEcran) return undefined;
+    const upgrade = (event) => {
+      if (nativeFullscreenElement()) return;
+      if (vientDunChampDeSaisie(event.target)) return;
+      // Échap (ou le geste « retour ») referme le plein écran dans le
+      // navigateur : si la touche nous parvient quand même, elle ne doit pas le
+      // rouvrir aussitôt — la sortie appartient au joueur.
+      if (String(event.key || '').toLowerCase() === 'escape') return;
+      entrerPleinEcran({ pinned: true });
+    };
+    window.addEventListener('pointerdown', upgrade, true);
+    window.addEventListener('keydown', upgrade, true);
+    return () => {
+      window.removeEventListener('pointerdown', upgrade, true);
+      window.removeEventListener('keydown', upgrade, true);
+    };
+  }, [pleinEcran, entrerPleinEcran]);
+
+  // « F » bascule le plein écran, sur tous les écrans du jeu. Ni Ctrl/Cmd+F (la
+  // recherche du navigateur), ni Alt+F, ni une touche maintenue, ni un « f »
+  // tapé dans un champ de saisie.
+  useEffect(() => {
+    const surTouche = (event) => {
+      if (!isFullscreenShortcut(event)) return;
+      if (vientDunChampDeSaisie(event.target)) return;
+      event.preventDefault();
+      basculerPleinEcran();
+    };
+    window.addEventListener('keydown', surTouche);
+    return () => window.removeEventListener('keydown', surTouche);
+  }, [basculerPleinEcran]);
+
   // Mode Histoire : la première fois qu'un étage est remporté, il est marqué
   // déblayé et sauvegardé sur l'appareil (une seule fois par duel). Sa
   // récompense — les cartes rendues par l'étage — rejoint la collection ; le
@@ -1698,8 +1938,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setProgressionHistoire(maj);
     noterVictoireEtage(histoireEtageId, maj);
   });
+  // Lancer (ou reprendre) une partie : le plein écran natif est demandé ici,
+  // dans le geste du bouton — le navigateur le refuse ailleurs. La session de
+  // paysage garde l'orientation et le pont Android, pas le plein écran.
+  const demanderPleinEcranEtPaysage = () => {
+    entrerPleinEcran({ pinned: true });
+    landscapeRef.current?.enter({ fullscreen: false });
+  };
   const reprendrePartie = () => {
-    landscapeRef.current?.enter();
+    demanderPleinEcranEtPaysage();
     setEcran('partie');
   };
   // Decks maison et collection : l'atelier écrit dans le casier local, le compte
@@ -1822,6 +2069,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [impactEcran, setImpactEcran] = useState(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
   const instantanePiocheRef = useRef(null);
+  // Le message qui ouvre le duel, gardé sous le coude pour le mulligan.
   const sequencePiocheRef = useRef(0);
   const carteOrigineVolRef = useRef(null);
   const actionVolRef = useRef(null);
@@ -1841,6 +2089,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [cibleEnCours, setCibleEnCours] = useState(null);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
+  // Mulligan : à l'ouverture du duel, la main de départ se découvre en grand
+  // et le joueur choisit les cartes qu'il renvoie dans le paquet. `null` dès
+  // que l'échange est validé (ou impossible) : la partie est à lui.
+  const [mulligan, setMulligan] = useState(null);
   const [apercuSurvol, setApercuSurvol] = useState(null);
   const [carteGlissee, setCarteGlissee] = useState(null);
   const [surZoneDepot, setSurZoneDepot] = useState(false);
@@ -2020,6 +2272,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       joueur: { deck: duelRef.current.joueur.deck.length + duelRef.current.joueur.main.length, main: 0 },
       sorcier: { deck: duelRef.current.sorcier.deck.length + duelRef.current.sorcier.main.length, main: 0 },
     };
+    // Le volet du mulligan s'ouvre sur la main qui vient d'être piochée — tant
+    // qu'il y a une main à montrer, et tant que le moteur autorise l'échange.
+    setMulligan(rpgPeutMulligan(duelRef.current, 'joueur') && duelRef.current.joueur.main.length
+      ? { etape: 'choix', choix: new Set(), nouveau: [], bilan: '' }
+      : null);
     setAnimationsPioche([]);
     setPhase(false);
     setAttaquants([]);
@@ -2061,6 +2318,58 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     clicApresGlisserRef.current = false;
     jouerSfx('apparition');
     jouerSfx('tour', 0.35);
+    force();
+  };
+
+  /* ── Mulligan : la main de départ se lit en grand, puis s'échange une fois ─ */
+  const basculerCarteMulligan = (index) => {
+    unlockSfx();
+    setMulligan((current) => {
+      if (!current || current.etape !== 'choix') return current;
+      const choix = new Set(current.choix);
+      if (choix.has(index)) choix.delete(index);
+      else choix.add(index);
+      return { ...current, choix };
+    });
+    jouerSfx('hover');
+  };
+  const viderSelectionMulligan = () => {
+    jouerSfx('annuler');
+    setMulligan((current) => (current ? { ...current, choix: new Set() } : current));
+  };
+  const validerMulligan = () => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant || !mulligan || mulligan.etape !== 'choix') return;
+    const mainAvant = duelCourant.joueur.main.length;
+    masquerApercuSurvol();
+    const { ecartees, piochees } = rpgMulligan(duelCourant, 'joueur', [...mulligan.choix], rng);
+    // Le sorcier profite du même droit, avec sa propre lecture de sa main.
+    const adverse = rpgMulliganSorcier(duelCourant, rng);
+    const pluriel = (n) => (n > 1 ? 's' : '');
+    force();
+    if (!ecartees.length) {
+      // Rien n'a bougé : pas de nouvelle main à relire, le volet se referme sur
+      // la table. Ce que le sorcier a fait de sa main se lit à son compteur.
+      setMulligan(null);
+      return;
+    }
+    jouerSfx('pioche', 0.05);
+    // Une étape de résultat : la main neuve se relit en grand, ce qui entre est
+    // signalé, et le geste qui referme le volet est celui qui ouvre le duel.
+    setMulligan({
+      etape: 'resultat',
+      choix: new Set(),
+      // Les cartes qui viennent d'entrer en main : le volet les signale.
+      nouveau: piochees.map((carte, offset) => mainAvant - ecartees.length + offset),
+      bilan: `Vous écartez ${ecartees.length} carte${pluriel(ecartees.length)} et piochez ${piochees.length} carte${pluriel(piochees.length)} · le sorcier ${adverse.ecartees.length ? `en change ${adverse.ecartees.length}` : 'garde sa main'}.`,
+    });
+  };
+  const terminerMulligan = () => {
+    masquerApercuSurvol();
+    // Le message d'ouverture (plateau, deck qui l'impose, geste attendu) reste
+    // celui du duel : le volet n'a fait que le précéder.
+    setMulligan(null);
+    jouerSfx('tour', 0.25);
     force();
   };
 
@@ -2219,7 +2528,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran !== 'partie') {
     return (
-      <div className="rpg-battle rpg-battle--menu" data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -2242,6 +2551,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onHoverCard={afficherApercuSurvol}
           onLeaveHoverCard={masquerApercuSurvol}
           onPlaySfx={jouerSfx}
+          fullscreen={pleinEcran}
+          onToggleFullscreen={basculerPleinEcran}
         />
         {apercuSurvol && (
           <HoverCardPreview
@@ -2258,6 +2569,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const monTour = duel.tour === 'joueur' && !vainqueur;
+  // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
+  // joue, rien ne s'engage, et le tour ne peut pas être rendu.
+  const mulliganOuvert = Boolean(mulligan);
   const deckJoueurAffiche = decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
@@ -2529,6 +2843,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const peutJouerCarte = (carte) => {
     if (!carte || !duel.joueur.main.includes(carte.id)) return false;
+    // Le mulligan d'abord : tant que la main de départ n'est pas validée, rien
+    // ne quitte la main — ni clic, ni glisser, ni sort en réponse.
+    if (mulliganOuvert) return false;
     // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
     // le joueur dans une confirmation qui ne menait à rien.
     if (!rpgContreJouable(duel, 'joueur', carte)) return false;
@@ -2577,7 +2894,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const poserTerrain = (carteId) => {
-    if (!monTour || reponseApresBlocage) { jouerSfx('erreur'); return; }
+    if (!monTour || reponseApresBlocage || mulliganOuvert) { jouerSfx('erreur'); return; }
     const etatAvantAction = JSON.stringify(duel);
     const res = rpgPoserTerrain(duel, 'joueur', carteId);
     if (res.ok) { conserverAnnulation(etatAvantAction); jouerSfx('terrain_pose'); }
@@ -2586,7 +2903,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const engager = (terrainId, couleurChoisie = null) => {
-    if (!monTour && !reponseActive) { jouerSfx('erreur'); return; }
+    if ((!monTour && !reponseActive) || mulliganOuvert) { jouerSfx('erreur'); return; }
     const etatAvantAction = monTour ? JSON.stringify(duel) : null;
     const res = rpgEngagerTerrain(duel, 'joueur', terrainId, couleurChoisie);
     if (res.ok) { if (etatAvantAction) conserverAnnulation(etatAvantAction); jouerSfx('terrain_tap'); }
@@ -3248,7 +3565,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const finDuTour = () => {
-    if (!monTour || combatEntrant) { jouerSfx('erreur'); return; }
+    if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
     jouerSfx('tour');
     invaliderAnnulation();
     setPhase(false);
@@ -3446,7 +3763,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   return (
     <div
-      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`}
+      ref={shellRef}
+      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}${pleinEcran ? ' is-immersive' : ''}`}
       data-scene="duel"
       style={DOS_DE_CARTE_STYLE}
       onPointerDown={demarrerAppuiLongCarte}
@@ -3462,14 +3780,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <span className="rpg-rotate-prompt__icon" aria-hidden="true">↻</span>
         <h2>Le duel se joue en paysage</h2>
         <p>Tournez votre téléphone pour retrouver toute la largeur du plateau.</p>
-        <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => landscapeRef.current?.enter()}>Activer le paysage</button>
+        <button type="button" className="rpg-btn rpg-btn--primary" onClick={demanderPleinEcranEtPaysage}>Activer le paysage</button>
         <small>Si votre navigateur refuse la rotation automatique, tournez l’appareil et désactivez son verrouillage d’orientation.</small>
         <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setEcran('jouer')}>Retour au menu</button>
       </div>}
 
       <div
         ref={tableRef}
-        inert={viewport.portrait ? true : undefined}
+        inert={viewport.portrait || mulliganOuvert ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -3501,6 +3819,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
           >
             <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+          </button>
+          <button
+            type="button"
+            className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
+            onClick={basculerPleinEcran}
+            aria-pressed={pleinEcran}
+            title={pleinEcran ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+            aria-label={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'}
+          >
+            <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
           </button>
         </nav>
 
@@ -3908,7 +4236,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   </button>
                 )}
                 <button type="button" className="rpg-btn rpg-btn--endturn" onClick={finDuTour}
-                  disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant)}>
+                  disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || mulliganOuvert}>
                   ⧗ Fin du tour
                 </button>
               </div>
@@ -4023,7 +4351,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
-        {apercuSurvol && !apercuMagie && (
+        {apercuSurvol && !apercuMagie && !mulligan && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
@@ -4087,6 +4415,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
       </div>
       {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+      {mulligan && (
+        <VoletMulligan
+          main={duel.joueur.main}
+          etape={mulligan.etape}
+          choix={mulligan.choix}
+          nouveau={mulligan.nouveau}
+          bilan={mulligan.bilan}
+          apercu={apercuSurvol}
+          survol={viewport.survol}
+          onBasculer={basculerCarteMulligan}
+          onValider={validerMulligan}
+          onAnnulerSelection={viderSelectionMulligan}
+          onContinuer={terminerMulligan}
+          onSurvol={afficherApercuSurvol}
+          onQuitterSurvol={masquerApercuSurvol}
+        />
+      )}
     </div>
   );
 }

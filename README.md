@@ -5720,3 +5720,211 @@ doit se nettoyer d'elle-même.
 
 C'est ce pilote qui a trouvé le contresort injouable : la graine 4 tournait en
 rond à taper *Silence d'écume* sans jamais pouvoir finir son tour.
+
+## Le Sablier : le mulligan de la main de départ
+
+Le duel s'ouvrait sur une main déjà jouable : cinq cartes tombaient dans la
+main, la barre du bas annonçait le plateau, et le premier tour commençait — avec
+ou sans terrain. Or une main sans source de mana n'est pas une main : c'est un
+tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
+**main de départ en entier**, et il choisit ce qu'il en garde.
+
+### La règle
+
+- **Un volet, avant le premier tour.** `rpgNouveauDuel()` distribue les cinq
+  cartes comme avant, mais la table est rendue `inert` : rien ne se pose, rien
+  ne s'engage, « Fin du tour » est désactivé. Le halo doré de la main
+  s'éteint — une carte allumée mais injouable enferme le joueur.
+- **Des cartes 4:5, nues.** Chaque carte de la main de départ est la **face
+  4:5** du jeu : l'illustration plein cadre, ses repères aux places du jeu —
+  **la couleur en haut à gauche, le coût en haut à droite**, et dans le bas
+  **les plaques d'attaque et de défense du jeu** : l'épée sur fond d'or **contre
+  le bord gauche**, le bouclier sur fond d'acier **contre le bord droit**, icône
+  et chiffre côte à côte, **composées plus grandes qu'en main comme sur la
+  table**. Une créature n'écrit rien d'autre — sa face n'annonce pas ce qu'elle
+  est ; un **terrain** ou un **sort** porte en plus **sa ligne de type, centrée
+  au-dessus des plaques**. **Rien d'autre n'est imprimé dessus** — ni nom, ni
+  effet, ni drapeau : la carte est son image, et c'est le liseré doré qui dit ce
+  qu'on met de côté.
+- **Tout le texte passe par l'aperçu rapide.** Survoler une carte ouvre son
+  aperçu complet (nom, type, coût, effets, statistiques) ; le volet le pose
+  **au-dessus de lui** (`z-index: 1200`, sous l'aperçu au doigt de 1250), et
+  c'est le seul aperçu vivant tant que la main est ouverte. Au doigt, où le
+  survol n'existe pas, l'**appui long d'une seconde** — le geste du jeu, armé
+  par la table — fait le même travail : la capacité de survol est **constatée**
+  (`(hover: hover)`), jamais supposée.
+- **Les cinq cartes, d'un seul coup.** La main se lit en entier : cinq cartes
+  dans **une seule rangée**, jamais coupée par une barre de défilement. La
+  taille d'une carte se mesure dans le volet, pas dans la fenêtre : la largeur
+  d'une face vaut les 4/5 de la hauteur utile (ce que la carte garde autour
+  d'elle est réservé), ou le cinquième de la largeur utile (cinq colonnes,
+  quatre gouttières) si celle-ci est plus contraignante — plus large sur un
+  moniteur, plus serrée sur un téléphone en paysage, mais toujours entièrement
+  visible.
+- **Toucher une carte la met de côté.** Un second toucher la reprend ; le
+  compteur sous le volet dit « 2 cartes à changer » et le bouton principal
+  nomme le geste (« Changer 2 cartes », « Garder cette main » quand rien n'est
+  choisi).
+- **L'échange ne coûte rien.** Les cartes choisies repartent dans le paquet,
+  **le paquet est rebattu**, et le camp pioche autant de cartes qu'il en a
+  écartées : la main reste à cinq. Écarter une carte pour en revoir une autre
+  au hasard était une punition ; ici c'est un choix.
+- **Un seul droit, des deux côtés.** Le sorcier profite du même échange, avec
+  sa propre lecture : une main sans terrain part au tapis, une main qui a de
+  quoi payer et de quoi jouer se garde, un paquet sans une seule source ne
+  tente personne, et le niveau **Récit** ne renvoie jamais rien.
+- **On relit ce qui entre.** Après un échange, le volet reste ouvert sur la
+  main neuve, signale les cartes qui viennent d'entrer et résume le tour des
+  deux camps ; « Commencer le duel » rend la table. Sans échange, le volet se
+  referme d'un seul geste et le message d'ouverture garde la parole.
+
+### Où vit le code
+
+- `src/games/rpgDuel.js` — `rpgPeutMulligan(duel, cote)` et
+  `rpgMulligan(duel, cote, index, rng)`. Le droit est consigné sur le duel
+  (`mulliganFait`, `mainDepart`) : l'échange n'est légal que tant que la table
+  est vide, qu'aucune carte n'est encore jouée et que la main est **exactement**
+  la main de départ. Un échange refusé ne touche ni main, ni paquet, ni journal
+  ; « je garde » ne bat même pas le paquet.
+- `src/games/rpgAI.js` — `choisirMulliganIA(duel, cote)` : la lecture de la
+  main par le sorcier, sur les mêmes critères de couleur et de coût que le
+  reste du cerveau.
+- `src/games/RpgDuelPage.jsx` — l'état `mulligan` (`choix` puis `resultat`),
+  les composants `VoletMulligan` et `CarteMulligan` (l'aperçu rapide y est
+  rendu, `variante="mulligan"`), la capacité `viewport.survol`
+  (`(hover: hover)`) qui décide entre survol et appui long, et le verrou
+  `mulliganOuvert` consulté par `peutJouerCarte`, `poserTerrain`, `engager` et
+  `finDuTour` — une seule règle, la même que celle du halo doré.
+- `src/games/rpg-battle.css` — `.rpg-mulligan` (volet posé sur la table, sous
+  l'écran de rotation et l'aperçu au doigt), sa **scène mesurée** par requêtes
+  de conteneur (`.rpg-mulligan__stage` : une hauteur tenue par le volet, sur
+  laquelle les cinq colonnes se règlent, `cqw`/`cqh`), la **carte 4:5**
+  (`.rpg-mulligan__card`, conteneur de taille en largeur : la couleur en haut à
+  gauche, le coût en haut à droite, et la pile `.rpg-mulligan__bas` en bas — le
+  type centré pour les terrains et les sorts, puis les plaques
+  `.rpg-card__stat--atk` / `.rpg-card__pt` du jeu, reprises telles quelles,
+  simplement composées en `cqw` plus grand et posées chacune sur son bord
+  (`justify-content: space-between`)), la réservation
+  `--rpg-mulligan-text` de ce que la carte garde autour d'elle, et
+  `.rpg-hover-card-preview--mulligan` qui pose l'aperçu au-dessus du volet ;
+  `src/games/rpg-mobile.css` neutralise le survol au doigt sans toucher au
+  liseré doré d'une carte mise de côté.
+
+### Vérifications
+
+```bash
+npm run check:rpg           # moteur et IA : 9 tests du mulligan
+npm run check:rpg-mulligan  # le volet monté dans jsdom, geste complet
+npm run check:rpg-ui        # inclut le mulligan et les duels au pilote automatique
+```
+
+`tests/rpg-duel.test.js` vérifie les règles dans le moteur : les cartes
+désignées partent et sont remplacées en nombre, la main et le paquet ensemble
+ne perdent ni ne créent rien, un seul échange par camp, les indices d'une main
+de cinq exemplaires identiques sont respectés un par un, les valeurs vides ou
+hors main sont ignorées, et le volet se ferme dès qu'une carte est posée ou
+qu'un tour a été joué.
+
+`scripts/rpg-mulligan-check.mjs` joue le geste dans la vraie page : le volet
+s'ouvre sur les cinq cartes de la main, dans le même ordre qu'en main — chacune
+avec sa **face 4:5**, son illustration, ses repères (coût, badge, **plaques
+d'attaque et de défense du jeu, icônes dessinées et valeurs**) et **pas un mot
+d'interface dessus** ; le survol ouvre l'**aperçu rapide** de la
+carte (nom, type, effets), qui quitte la carte quand la souris la quitte ; la
+table est `inert`, aucune carte n'est jouable et aucun terrain ne se pose ; le
+toucher marque, démarque, annule ; la validation échange, montre la nouvelle
+main avec ses cartes signalées, et rend la table sur « Commencer le duel » ;
+une partie neuve rouvre le droit. Il tient aussi la feuille : une seule rangée,
+jamais de défilement, la face 4:5 plafonnée par la hauteur utile **et** par la
+largeur du volet, et aucun bloc de texte sur la carte.
+
+`scripts/rpg-mobile-layout-check.mjs` mesure la main de départ au navigateur, à
+trois tailles (téléphone en paysage, tablette, moniteur) : les cinq cartes sont
+dans le cadre, entières, touchables, chacune garde le **4:5** du jeu (au pixel
+près), **couleur en haut à gauche, coût en haut à droite, plaques d'attaque et de
+défense pour les créatures** — l'attaque contre le bord gauche, la défense contre
+le droit, et toutes deux **qui grandissent avec la carte** (≥ 18 px de haut sur
+téléphone en paysage, ≥ 30 px sur moniteur) — **la ligne de type centrée pour un
+terrain ou un sort**, rien d'autre d'écrit, et la rangée ne défile jamais. Il survole ensuite
+une carte dans un contexte de bureau : l'aperçu rapide s'ouvre, décrit la carte
+survolée, et se pose au-dessus du volet (`z-index: 1200`). Les duels au
+pilote automatique de `scripts/rpg-ghost-check.mjs` valident le mulligan à
+chaque graine, grand écran et doigt confondus.
+
+## Le Sablier : le plein écran, du menu au duel
+
+Le jeu (`/jeu/sablier-de-bab-el`) **se lance en plein écran**, sur ordinateur
+comme sur téléphone, avec le même moteur que Mirage Rush et Vice City Rush
+(`gameFullscreen.js` / `useGameFullscreen.js`). Son **interface d'avant-partie
+en fait partie** : le menu Jouer, le mode Histoire, l'onglet Deck (catalogue et
+atelier) et le Catalogue s'affichent déjà plein écran — le joueur ne parcourt
+plus le menu dans une fenêtre pour découvrir le duel en plein écran ensuite.
+
+| Geste | Effet |
+|---|---|
+| Ouverture de la page | la coque du jeu (`.rpg-battle`, couche fixe) occupe tout de suite tout l'écran (`is-immersive`, posée au montage, sans geste) ; le plein écran natif, que le navigateur exige dans un geste, part au **premier clic ou à la première touche** du joueur |
+| Bouton **plein écran** du menu (à gauche de la barre des modes) | ouvre ou ferme, sur les quatre écrans du menu |
+| Bouton **plein écran** de la barre du duel (à côté du son) | ouvre ou ferme en pleine partie |
+| Touche **F** | ouvre ou ferme (Ctrl/Cmd/Alt + F et touche maintenue restent au navigateur ; un « f » tapé dans un champ — le nom d'un deck maison — ne fait rien) |
+| **Lancer le duel**, un **étage de l'Histoire**, **Reprendre le duel**, **Activer le paysage** | le plein écran natif est redemandé dans le geste du bouton : une partie repart toujours plein écran, ordinateur compris |
+| **Échap**, ou le geste « retour » d'Android | le navigateur referme le plein écran : la page suit, le jeu reste jouable dans la couche fixe, et rien ne le rouvre tout seul — la touche qui referme ne relance pas une demande |
+| Retour au menu depuis le duel | le plein écran **reste ouvert** : la coque est le même nœud d'un écran à l'autre, et la session de paysage ne le possède plus |
+| Quitter la page | le verrou de défilement est rendu et le plein écran refermé |
+
+- **Plein écran de base, épinglé.** La couche fixe est posée au montage de la
+  page et le choix est « épinglé » : il traverse les écrans (menu, duel, decks,
+  catalogue, fin d'étage) jusqu'à ce que le joueur le quitte.
+- **Deux couches.** Le plein écran natif (Fullscreen API, préfixe WebKit compris ;
+  dans l'APK, la WebView le prend en charge via `onShowCustomView`, qui pose le
+  plein écran immersif du système) et la couche fixe `is-immersive`, qui couvre
+  tout le viewport. Quand l'API manque ou refuse (iPhone, `iframe` sans
+  `allowfullscreen`), la couche fixe seule suffit pour jouer : le Sablier occupe
+  tout l'écran, marges d'encoche comprises. Le verrou de défilement est le même
+  que celui des jeux d'arcade (`game-immersive-lock`), déclaré cette fois par
+  `rpg-battle.css` pour ne pas dépendre du chargement d'un autre jeu.
+- **La cible est la coque, pas la page.** Le plein écran natif porte sur
+  `.rpg-battle` : l'en-tête et la barre du site restent dehors, seul le Sablier
+  part en plein écran.
+- **Un seul propriétaire.** `rpgLandscape.js` ne demande plus le plein écran :
+  la page l'appelle avec `enter({ fullscreen: false })`, la session **attend** le
+  plein écran de la page (`screen.orientation.lock` est refusé tant que le
+  document n'y est pas) puis verrouille le paysage, sans délai quand il n'y a
+  rien à attendre. Avant ce partage, le retour au menu refermait l'écran que le
+  duel avait ouvert, et le menu ne pouvait pas être plein écran du tout.
+
+### Où vit le code
+
+- `src/games/gameFullscreen.js` et `src/games/useGameFullscreen.js` — le moteur
+  partagé (voir « Mirage Rush : le plein écran ») ;
+- `src/games/RpgDuelPage.jsx` — la coque `.rpg-battle` comme cible (`shellRef`),
+  le plein écran de base au montage, la demande au premier geste (Échap exclu),
+  la touche F, la demande dans le geste de lancement
+  (`demanderPleinEcranEtPaysage`) et les deux boutons ;
+- `src/games/rpgLandscape.js` — l'attente du plein écran de la page avant le
+  verrou d'orientation (`attendrePleinEcran`) ;
+- `src/games/rpg-battle.css` — `body.game-immersive-lock`,
+  `.rpg-battle.is-immersive`, les boutons `.rpg-mode-menu__fullscreen` et
+  `.rpg-duel-nav__fullscreen` (même gabarit que le bouton son : la barre du duel
+  tient dans une colonne de 200 px en paysage), l'icône `.rpg-fullscreen-icon`,
+  et l'en-tête du menu en grille sur téléphone — le bouton monte à côté du
+  titre, la barre des modes garde toute la largeur ;
+- `src/games/FullscreenIcon.jsx` — l'icône SVG partagée (quatre coins qui
+  s'écartent ou se rapprochent), jamais le glyphe ⛶.
+
+### Vérifications
+
+```bash
+npm run check:rpg-fullscreen   # la page dans jsdom : plein écran de base, natif au premier geste et au lancement, menu ↔ duel, F, sortie du navigateur, repli sans API
+npm run check:rpg              # cycle de vie de l'orientation et du plein écran (tests/rpg-landscape.test.js)
+```
+
+`scripts/rpg-fullscreen-check.mjs` monte la **vraie page** dans jsdom avec une
+Fullscreen API de remplacement qui répond comme un navigateur (elle sait aussi
+refuser, ou fermer « de l'extérieur » comme Échap). Elle vérifie que le menu se
+lance en plein écran de base sans geste, que le premier clic demande le natif
+sur la coque — pas sur `<html>` —, que le lancement d'un duel ou d'un étage
+garde **le même nœud** en plein écran, que le retour au menu ne referme rien,
+que F ouvre et ferme (et que ses combinaisons, la touche maintenue, la saisie de
+texte et Échap ne font rien), et que le repli sans API tient. Elle ne dit rien
+du rendu réel : pour cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`)
+et le passer en plein écran sur un grand écran, puis sur un téléphone.

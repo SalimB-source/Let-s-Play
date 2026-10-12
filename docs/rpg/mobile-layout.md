@@ -59,11 +59,13 @@ Le reste vient des **piles de cartes homonymes**, au doigt seulement (`empilerCa
 
 Le regroupement est une présentation : chaque exemplaire reste une instance distincte dans le moteur, avec son index réel en main (le vol de carte, la pioche et le paiement visent l'exemplaire concerné). `src/games/rpgCardStacks.js` porte les deux fonctions pures (`groupCartesMain`, `groupEntitesParCarte`), `src/games/rpg-mobile.css` la présentation (`.rpg-hand__pile`, `.rpg-card-stack`, `.rpg-card-stack__count`, `.rpg-card-stack__toggle`).
 
-## Orientation
+## Plein écran et orientation
 
-`rpgLandscape.js` demande le plein écran depuis le geste de lancement, puis `screen.orientation.lock('landscape')` quand le navigateur l’autorise. Si l’appareil reste en portrait, un écran de rotation empêche d’interagir avec le duel derrière lui. Aucun artifice CSS ne tourne les coordonnées du plateau.
+Le plein écran appartient à la **page**, pas au duel : `RpgDuelPage.jsx` branche le moteur partagé des jeux d’arcade (`gameFullscreen.js` / `useGameFullscreen.js`) sur la coque `.rpg-battle`, qui est déjà une couche fixe couvrant tout le viewport. Il est posé dès l’ouverture — menu Jouer, mode Histoire, decks et catalogue compris — et le plein écran natif part au premier geste du joueur, puis à chaque lancement de partie. Bouton du menu, bouton de la barre du duel et touche F le basculent. Voir « Le Sablier : le plein écran » dans le `README.md`.
 
-Safari, certaines WebViews et les aperçus embarqués peuvent refuser les API de plein écran/rotation. Dans ce cas, l’utilisateur tourne physiquement son appareil. Le bouton « Activer le paysage » permet de réessayer ; « Retour au menu » reste accessible.
+`rpgLandscape.js` ne demande donc plus le plein écran (`enter({ fullscreen: false })`) : il **attend** celui de la page — `screen.orientation.lock('landscape')` est refusé tant que le document n’est pas en plein écran — puis verrouille le paysage quand le navigateur l’autorise. Un seul propriétaire du plein écran : le retour au menu ne referme plus l’écran demandé. Si l’appareil reste en portrait, un écran de rotation empêche d’interagir avec le duel derrière lui. Aucun artifice CSS ne tourne les coordonnées du plateau.
+
+Safari, certaines WebViews et les aperçus embarqués peuvent refuser les API de plein écran/rotation. La couche fixe couvre quand même tout le viewport, et l’utilisateur tourne physiquement son appareil. Le bouton « Activer le paysage » permet de réessayer (il redemande aussi le plein écran) ; « Retour au menu » reste accessible.
 
 Dans l’APK, `LetsPlayAndroid.setDuelLandscape` demande `SCREEN_ORIENTATION_SENSOR_LANDSCAPE`, uniquement sur l’URL de confiance du duel. L’orientation précédente est restaurée au retour au menu ou en quittant le jeu. Le manifeste gère déjà les changements d’orientation sans recréer l’activité. **Cette nouvelle méthode native nécessite de reconstruire et installer l’APK** ; une ancienne APK utilise le repli navigateur.
 
@@ -76,12 +78,13 @@ npm run dev
 # Dans un autre terminal :
 npm run check:rpg-mobile
 npm run check:rpg
+npm run check:rpg-fullscreen
 npm run check:rpg-ui
 npm run build
 ```
 
-- Tests purs : moteur, audio, gestes (glisser-déposer **et appui long** : `tests/rpg-long-press.test.js`), piles de terrains (paiement, production individuelle, dégagement, restauration), piles de cartes homonymes (`tests/rpg-card-stacks.test.js` : ordre, index réels, carte de tête, camps séparés) et cycle de vie de l’orientation, y compris les refus et promesses tardives.
-- Tests React/jsdom : clic-jeu direct, confirmation des magies, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois, terrain engagé, aperçu par appui long (catalogue, main, créature en jeu, et le créateur de deck : bibliothèque, bouton « + », ligne du deck en cours, bouton « − ») qui ne joue rien et n’ajoute ni ne retire aucune carte, et — dans `scripts/rpg-stacks-smoke.jsx` — les piles homonymes des deux camps : compteur ×N, tête de pile, dépliage au toucher et automatique, blocage assigné depuis une pile repliée, pioche qui remplit la pile sans l’élargir.
+- Tests purs : moteur, audio, gestes (glisser-déposer **et appui long** : `tests/rpg-long-press.test.js`), piles de terrains (paiement, production individuelle, dégagement, restauration), piles de cartes homonymes (`tests/rpg-card-stacks.test.js` : ordre, index réels, carte de tête, camps séparés) et cycle de vie de l’orientation — y compris les refus, les promesses tardives et l’attente du plein écran de la page avant le verrou de paysage.
+- Tests React/jsdom : clic-jeu direct, confirmation des magies, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois, terrain engagé, aperçu par appui long (catalogue, main, créature en jeu, et le créateur de deck : bibliothèque, bouton « + », ligne du deck en cours, bouton « − ») qui ne joue rien et n’ajoute ni ne retire aucune carte, et — dans `scripts/rpg-stacks-smoke.jsx` — les piles homonymes des deux camps : compteur ×N, tête de pile, dépliage au toucher et automatique, blocage assigné depuis une pile repliée, pioche qui remplit la pile sans l’élargir. `scripts/rpg-fullscreen-smoke.jsx` joue de son côté le plein écran de la page réelle : couche fixe au montage (menu compris), natif au premier geste et au lancement d’un duel ou d’un étage, même nœud d’un écran à l’autre, touche F et ses combinaisons ignorées, sortie du navigateur, repli sans Fullscreen API.
 - Tests Chromium : repli portrait, plateaux 568×320, 667×375, 844×390 et 1024×768 sans recouvrement des zones (rails de terrains, centrage ou défilement complet des groupes de cartes, commandes côte à côte) ; actions directes au toucher ; jeu d’un terrain par glisser-déposer après rotations ; retour au menu.
 
 Variables facultatives : `RPG_URL`, `CHROMIUM_EXECUTABLE_PATH` et `RPG_SCREENSHOT` (capture du plateau).

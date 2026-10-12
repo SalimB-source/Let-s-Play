@@ -714,13 +714,23 @@
 /* ── Les terrains posés : mini-cartes 4:5, engagées = couchées/grisées ── */
 .rpg-terrains {
   position: absolute;
-  z-index: 4;
+  /* Au-dessus du dégradé noir du dock de la main (z-index 40) : le rail joueur
+     vit à 72 % de la table, pile dans la bande d'ombre de la main, et s'y
+     noyait à z-index 4. Reste sous le choix de mana (48), les overlays (49) et
+     la navigation (50 / 900). */
+  z-index: 41;
   display: flex;
   gap: 6px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .rpg-terrains::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* À la souris, le rail flotte au-dessus de la main sans jamais la bloquer :
+   seul le petit bouton de terrain attrape le pointeur, le contenant reste
+   transparent aux clics (le doigt, lui, garde le rail entier défilable). */
+.rpg-battle:not(.rpg-battle--touch) .rpg-terrains { pointer-events: none; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-terrain { pointer-events: auto; }
 
 .rpg-terrains--ennemi { top: 64px; right: 12px; }
 .rpg-terrains--joueur { bottom: 118px; left: 12px; }
@@ -1214,6 +1224,22 @@
   overflow: hidden;
   background: #07070f;
 }
+
+/* ── Plein écran : le menu comme le duel ─────────────────────────────────────
+   Le Sablier se lance en plein écran, sur ordinateur comme sur téléphone, et
+   son interface d'avant-partie (menu Jouer, mode Histoire, decks, catalogue) en
+   fait partie. Deux couches, comme les jeux d'arcade :
+     - la couche fixe ci-dessus, qui couvre tout le viewport dès l'ouverture de
+       la page — `is-immersive` est posée par `useGameFullscreen` au montage,
+       sans geste, et reste quand le navigateur refuse le plein écran natif
+       (iPhone, `iframe` sans `allowfullscreen`) ;
+     - le plein écran natif, demandé au premier geste du joueur, au lancement
+       d'une partie, par le bouton du menu ou de la barre du duel, ou par la
+       touche F (`gameFullscreen.js`).
+   Les marges d'encoche (`env(safe-area-inset-*)`, plus bas) sont conservées :
+   c'est sur iPhone, sans natif, que la couche fixe seule tient le jeu. */
+body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
+.rpg-battle.is-immersive { overscroll-behavior: none; }
 
 .rpg-stage { position: absolute; inset: 0; }
 
@@ -2300,7 +2326,7 @@
   padding: 6px 18px 7px;
 }
 
-.rpg-terrains { z-index: 4; gap: 5px; max-width: calc(100% - 430px); overflow-x: auto; overflow-y: visible; padding: 10px 12px 12px; scroll-padding-inline: 12px; }
+.rpg-terrains { z-index: 41; gap: 5px; max-width: calc(100% - 430px); overflow-x: auto; overflow-y: visible; padding: 10px 12px 12px; scroll-padding-inline: 12px; }
 .rpg-terrains--ennemi { top: 8%; right: auto; left: clamp(220px, 20%, 280px); }
 .rpg-terrains--joueur { top: 72%; bottom: auto; left: clamp(220px, 20%, 280px); }
 .rpg-terrain { width: clamp(74px, 6.6vw, 96px); border-color: rgba(7, 8, 11, .92); }
@@ -3289,6 +3315,272 @@
   .rpg-card-peek__close { min-height: 44px; padding: 8px 20px; }
 }
 
+/* ── Le mulligan : la main de départ, en cartes 4:5 nues ─────────────────────
+   À l'ouverture du duel, le volet isole la table et montre la main de départ :
+   les cinq cartes, entières, toutes à l'écran — la rangée ne défile jamais, ni
+   en largeur ni en hauteur. Chaque carte est la **face 4:5** du jeu et rien
+   d'autre : l'illustration plein cadre, le coût, le badge d'élément et, pour
+   les créatures, l'attaque et la défense. Aucun mot d'interface n'est imprimé
+   dessus — nom, type et effets se lisent dans l'**aperçu rapide** : au survol à
+   la souris (`.rpg-hover-card-preview--mulligan`, posé au-dessus du volet), à
+   l'appui long d'une seconde au doigt (l'aperçu au doigt, déjà plus haut). Ce
+   qui reste sur la carte, c'est la décision : le liseré doré d'une carte mise
+   de côté. Pour que les cinq tiennent, la largeur d'une carte se plafonne deux
+   fois : par la hauteur de la scène moins ce que la carte garde autour d'elle,
+   rapportée au 4:5 de la face, et par le cinquième de la largeur utile. Le
+   volet se mesure lui-même — `.rpg-mulligan__stage` est le conteneur des
+   requêtes de taille — donc ni la fenêtre ni des constantes en vh n'entrent
+   dans le calcul. On touche ce que l'on renvoie dans le paquet, on valide, et
+   l'on repioche autant. Derrière, la table est `inert` : rien ne se joue avant
+   la validation. Le volet reste sous l'écran de rotation (1200) et sous
+   l'aperçu au doigt (1250). */
+.rpg-mulligan {
+  position: fixed;
+  z-index: 1150;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(6px, 1.4vh, 18px);
+  /* Ce qu'une carte garde autour de sa face : son rembourrage, sa bordure et
+     les gouttières de la rangée. Réservé dans le calcul de la taille d'une
+     carte, il ne peut donc jamais la faire déborder. */
+  --rpg-mulligan-text: 18px;
+  --rpg-mulligan-gap: clamp(4px, 1vh, 11px);
+}
+.rpg-mulligan__backdrop {
+  position: absolute;
+  inset: 0;
+  /* Un voile simple, sans flou : la table derrière est animée, et le volet doit
+     rester léger sur téléphone comme dans la WebView de l'APK. */
+  background: radial-gradient(circle at 50% 40%, rgba(28, 20, 10, .9), rgba(3, 5, 8, .97) 66%);
+}
+.rpg-mulligan__panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(6px, 1.2vh, 14px);
+  /* Le volet prend la place qu'il faut aux faces 4:5 : large sur un moniteur,
+     entier sur un téléphone — mais jamais plus que l'écran. */
+  width: min(1440px, 100%);
+  height: min(100%, 720px);
+  max-height: 100%;
+  padding: clamp(8px, 1.4vh, 16px) clamp(10px, 1.6vw, 20px);
+  border: 1px solid rgba(236, 214, 172, .28);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(17, 13, 8, .96), rgba(7, 8, 11, .98));
+  box-shadow: 0 22px 58px rgba(0, 0, 0, .74);
+  animation: rpg-mulligan-in .2s ease-out both;
+}
+@keyframes rpg-mulligan-in {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+.rpg-mulligan__head {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  text-align: center;
+}
+.rpg-mulligan__eyebrow {
+  color: #e8c877;
+  font: 700 clamp(8px, 1.5vh, 11px)/1 var(--mono, monospace);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.rpg-mulligan__head h2 {
+  margin: 0;
+  color: #fff3d6;
+  font: 900 clamp(15px, 3vh, 26px)/1.15 Georgia, serif;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .8);
+}
+.rpg-mulligan__head p {
+  margin: 0;
+  max-width: 74ch;
+  color: #d8c7a5;
+  font: 500 clamp(10px, 1.7vh, 14px)/1.4 Georgia, serif;
+}
+/* La scène : la place mesurable de la main. Les cartes l'interrogent
+   (`cqw`/`cqh`), plutôt que la fenêtre — c'est ce qui fait tenir les cinq faces
+   4:5 dans le volet, quelle que soit la taille de l'écran. */
+.rpg-mulligan__stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  container-type: size;
+}
+.rpg-mulligan__cards {
+  display: grid;
+  grid-auto-flow: column;
+  /* Une carte : la face 4:5 d'abord — sa largeur vaut les 4/5 de la hauteur de
+     la scène moins ce que la carte garde autour d'elle —, ou le cinquième de
+     la largeur de la scène si celle-ci est plus contraignante. Le plancher de
+     0px garde le calcul valide sur un écran minuscule ; le premier jeu de
+     règles sert de repli aux WebView sans requêtes de conteneur. */
+  grid-auto-columns: min(max(0px, calc((100dvh - var(--rpg-mulligan-text)) * .42)), calc((100vw - 90px) / 5));
+  grid-auto-columns: min(max(0px, calc((100cqh - var(--rpg-mulligan-text)) * .8)), calc((100cqw - 4 * var(--rpg-mulligan-gap)) / 5));
+  gap: var(--rpg-mulligan-gap);
+}
+/* La carte : la face 4:5 du jeu, et son cadre. */
+.rpg-mulligan__card {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid var(--rpg-frame-color, #efe0bd);
+  border-radius: 11px;
+  background: #0b0c10;
+  color: #fff0cf;
+  cursor: pointer;
+  /* Le conteneur de taille des repères de la carte : coût, badge, statistiques
+     et liseré de sélection se règlent sur la largeur de la face. */
+  container-type: inline-size;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, opacity .16s ease;
+}
+.rpg-mulligan__card:hover { transform: translateY(-5px); box-shadow: 0 0 0 2px rgba(255, 214, 25, .35), 0 12px 26px rgba(0, 0, 0, .6); }
+.rpg-mulligan__card:focus-visible { outline: 3px solid #72e6d0; outline-offset: 2px; }
+/* Choisie : elle porte le liseré doré du « à changer » — c'est le seul signe
+   écrit dessus... et il n'y a rien d'écrit dessus. */
+.rpg-mulligan__card.is-selected {
+  border-color: #ffd619;
+  box-shadow: 0 0 0 2px rgba(255, 214, 25, .42), 0 0 24px rgba(255, 200, 80, .3);
+  transform: translateY(5px);
+  opacity: .92;
+}
+.rpg-mulligan__card.is-new { animation: rpg-mulligan-new .5s cubic-bezier(.18, .76, .28, 1.1) both; }
+@keyframes rpg-mulligan-new {
+  0% { opacity: 0; transform: translateY(-18px) scale(.94); }
+  70% { opacity: 1; transform: translateY(2px) scale(1.01); }
+  100% { opacity: 1; transform: none; }
+}
+.rpg-mulligan__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Les repères des cartes du jeu, et rien d'autre : la couleur en haut à gauche,
+   le coût en haut à droite, et en bas à droite la ligne de type — la seule
+   ligne écrite de la face — au-dessus des plaques d'attaque et de défense. */
+.rpg-mulligan__card .rpg-card-element-badge {
+  --rpg-card-element-marker-size: clamp(15px, 15cqw, 30px);
+  --rpg-card-element-marker-top: 5%;
+  --rpg-card-element-marker-left: 6%;
+}
+/* La pile du bas, sur toute la largeur de la carte : la ligne de type centrée,
+   puis les deux plaques du jeu, chacune sur son bord — l'attaque à gauche, la
+   défense à droite, comme la main du jeu. Le bloc est ancré par son bas : il
+   grandit vers le haut, et la ligne de type ne descend jamais sur les plaques. */
+.rpg-mulligan__bas {
+  position: absolute;
+  z-index: 3;
+  right: 6%;
+  bottom: 5%;
+  left: 6%;
+  display: grid;
+  gap: clamp(2px, 1.6cqw, 6px);
+  justify-items: center;
+  pointer-events: none;
+}
+.rpg-mulligan__type {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-width: 0;
+  padding: 1px 6px;
+  border: 1px solid rgba(20, 13, 7, .85);
+  border-radius: 4px;
+  background: rgba(31, 22, 13, .86);
+  color: #fff1cf;
+  font: 700 clamp(6.5px, 4.2cqw, 12px)/1.25 var(--mono, monospace);
+  letter-spacing: .03em;
+  max-width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px #000;
+}
+/* L'attaque et la défense comme sur les cartes en jeu : les deux plaques du jeu
+   — l'épée sur fond d'or à gauche, le bouclier sur fond d'acier à droite,
+   chacune sur son bord de la carte — icône et chiffre côte à côte. Elles se
+   règlent sur la largeur de la carte : à l'échelle du volet, elles sont plus
+   grandes qu'en main comme sur la table. */
+.rpg-mulligan__stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(3px, 2.4cqw, 9px);
+  width: 100%;
+  pointer-events: none;
+}
+.rpg-mulligan__stats .rpg-card__stat--atk,
+.rpg-mulligan__stats .rpg-card__pt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, 1.8cqw, 6px);
+  min-width: clamp(34px, 26cqw, 82px);
+  padding: clamp(2px, 1.6cqw, 6px) clamp(4px, 3cqw, 11px);
+  border-radius: clamp(5px, 4.4cqw, 13px);
+  font: 900 clamp(11px, 7.6cqw, 26px)/1.1 Georgia, serif;
+}
+.rpg-mulligan__card .rpg-mana-cost {
+  position: absolute;
+  z-index: 3;
+  top: 5%;
+  right: 6%;
+  height: clamp(16px, 12.5cqw, 30px);
+  min-width: clamp(20px, 16cqw, 40px);
+  font-size: clamp(8px, 6cqw, 15px);
+  pointer-events: none;
+}
+.rpg-mulligan__card .rpg-mana-cost i {
+  width: clamp(9px, 7cqw, 16px);
+  height: clamp(9px, 7cqw, 16px);
+  font-size: clamp(6px, 4.4cqw, 10px);
+}
+.rpg-mulligan__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.rpg-mulligan__compteur {
+  color: #cbb894;
+  font: 600 clamp(9px, 1.5vh, 12px)/1.3 var(--mono, monospace);
+  letter-spacing: .06em;
+}
+.rpg-mulligan__valider,
+.rpg-mulligan__commencer { min-height: 44px; }
+/* L'aperçu rapide du mulligan passe au-dessus du volet : c'est lui qui porte le
+   nom, le type, le coût et les effets que les cartes n'impriment plus. */
+.rpg-hover-card-preview--mulligan { z-index: 1200; }
+/* Téléphones en paysage : la hauteur est la contrainte — la phrase
+   d'explication se replie, la main garde toute la place. */
+@media (max-height: 480px) {
+  .rpg-mulligan__head p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .rpg-mulligan__panel { gap: 5px; padding: 6px 8px; }
+}
+/* Écrans étroits : la même rangée de cinq, plus serrée — la main reste
+   entière sous les yeux, jamais coupée en deux colonnes qui défilent. */
+@media (max-width: 620px) {
+  .rpg-mulligan__head p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .rpg-mulligan__panel { padding: 8px 6px; }
+}
+
 /* Les cartes entrent, frappent et encaissent un coup avec des signaux courts. */
 .rpg-card.fx-enter { animation: rpg-card-arrive .5s cubic-bezier(.18, .76, .28, 1.12) both; }
 @keyframes rpg-card-arrive {
@@ -3752,6 +4044,23 @@
   color: #ffe5a0;
 }
 
+/* Le plein écran se pilote aussi depuis la barre du duel (bouton, touche F) :
+   exactement le gabarit du bouton son — la barre tient déjà serrée sur un
+   téléphone en paysage (sa colonne fait 200 px au minimum), un bouton plus
+   large la ferait déborder sur le plateau du sorcier. */
+.rpg-duel-nav__fullscreen {
+  min-width: 32px;
+  padding: 6px 8px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.rpg-duel-nav__fullscreen.is-on {
+  border-color: rgba(246, 207, 103, .45);
+  background: rgba(244, 192, 79, .14);
+  color: #ffe5a0;
+}
+.rpg-fullscreen-icon { display: block; width: 14px; height: 14px; }
+
 /* Menu principal, catalogues des decks et des cartes de Sablier. */
 .rpg-battle--menu { background: #09080d; }
 .rpg-mode-menu {
@@ -3784,9 +4093,9 @@
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 12px;
 }
-.rpg-mode-menu__brand { min-width: 0; }
+.rpg-mode-menu__brand { min-width: 0; margin-right: auto; }
 .rpg-mode-menu__eyebrow {
   display: block;
   color: #e8c77f;
@@ -3840,6 +4149,35 @@
   color: #ffe7af;
   outline: none;
 }
+/* Plein écran du menu : le bouton se tient à gauche de la barre des modes, dans
+   le même laiton. Il ouvre le plein écran natif — déjà posé en couche fixe dès
+   l'ouverture de la page — et le referme une fois allumé (`is-on`). */
+.rpg-mode-menu__fullscreen {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  min-height: 45px; /* la hauteur de la barre des modes : les deux sont alignés */
+  padding: 10px 13px;
+  border: 1px solid rgba(240, 221, 183, .22);
+  border-radius: 13px;
+  background: rgba(12, 10, 13, .7);
+  color: rgba(247, 237, 220, .74);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.rpg-mode-menu__fullscreen:hover,
+.rpg-mode-menu__fullscreen:focus-visible,
+.rpg-mode-menu__fullscreen.is-on {
+  border-color: rgba(231, 191, 101, .48);
+  background: linear-gradient(135deg, rgba(201, 150, 57, .26), rgba(111, 69, 34, .22));
+  color: #ffe7af;
+  outline: none;
+}
+.rpg-mode-menu__fullscreen .rpg-fullscreen-icon { width: 16px; height: 16px; }
 .rpg-mode-menu__play {
   display: grid;
   grid-template-columns: minmax(0, 1.52fr) minmax(260px, .82fr);
@@ -4131,7 +4469,19 @@
 @media (max-width: 560px) {
   .rpg-mode-menu { background-position: 58% center; }
   .rpg-mode-menu__content { gap: 18px; padding: 19px 14px 14px; }
-  .rpg-mode-menu__header { align-items: start; flex-direction: column; gap: 14px; }
+  /* Le plein écran reste à portée du pouce sans voler de la place à la barre
+     des modes : le bouton monte à côté du titre, les quatre modes gardent toute
+     la largeur (leurs libellés tiennent dans un écran de 320 px). */
+  .rpg-mode-menu__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand fullscreen" "modes modes";
+    align-items: start;
+    gap: 12px;
+  }
+  .rpg-mode-menu__brand { grid-area: brand; margin-right: 0; }
+  .rpg-mode-menu__fullscreen { grid-area: fullscreen; min-width: 44px; min-height: 44px; padding: 10px; }
+  .rpg-mode-menu__switch { grid-area: modes; }
   /* Quatre boutons à parts égales, icône au-dessus du libellé : « CATALOGUE »
      tient dans un écran de 320 px au lieu de déborder à droite. */
   .rpg-mode-menu__switch { width: 100%; gap: 4px; padding: 4px; }

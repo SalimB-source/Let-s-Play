@@ -150,6 +150,100 @@ try {
   }
   await page.setViewportSize({ width: 844, height: 390 });
   await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
+  // Le duel s'ouvre sur son volet de mulligan : la mise en page se mesure
+  // dessus, le jeu commence une fois la main de départ validée.
+  // La main de départ se lit d'un seul coup : cinq cartes 4:5, entières,
+  // touchables, sans un mot dessus — du téléphone en paysage au grand moniteur.
+  for (const [width, height, plaqueMin] of [[844, 390, 18], [1024, 768, 22], [1440, 900, 30]]) {
+    await page.setViewportSize({ width, height });
+    const hand = await page.evaluate(() => {
+      const row = document.querySelector('.rpg-mulligan__cards');
+      const panel = document.querySelector('.rpg-mulligan__panel').getBoundingClientRect();
+      const cards = [...document.querySelectorAll('.rpg-mulligan__card')];
+      const boxes = cards.map((card) => card.getBoundingClientRect().toJSON());
+      return {
+        count: boxes.length,
+        scrolls: row.scrollWidth > row.clientWidth + 1 || row.scrollHeight > row.clientHeight + 1,
+        inside: boxes.every((box) => box.left >= panel.left - 1 && box.right <= panel.right + 1
+          && box.top >= panel.top - 1 && box.bottom <= panel.bottom + 1),
+        touchable: boxes.every((box) => box.width >= 44 && box.height >= 44),
+        // Chaque carte garde le 4:5 du jeu, au pixel près sur les arrondis.
+        faces45: boxes.every((box) => Math.abs(box.width / box.height - 0.8) < 0.02),
+        // Rien à lire sur la carte, hors la ligne de type : ni nom, ni effet, ni drapeau.
+        muettes: cards.every((card) => !card.querySelector('.rpg-mulligan__name, .rpg-mulligan__rules, .rpg-mulligan__flag')
+          && [...card.childNodes].every((node) => node.nodeType !== 3 || !node.textContent.trim())),
+        // L'attaque et la défense sont les plaques du jeu : deux icônes
+        // dessinées (épée, bouclier), aux valeurs de la carte.
+        plaquesDuJeu: cards.every((card) => {
+          const creature = Boolean(card.querySelector('.rpg-mulligan__stats'));
+          if (!creature) return card.querySelectorAll('.rpg-mulligan__stats .rpg-stat-icon').length === 0;
+          return card.querySelectorAll('.rpg-mulligan__stats .rpg-stat-icon').length === 2
+            && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__stat--atk .rpg-stat-value')?.textContent.trim())
+            && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__pt .rpg-stat-value')?.textContent.trim());
+        }),
+        // Le bas de la carte : les plaques pour une créature (jamais de ligne de
+        // type), la ligne de type seule et centrée pour un terrain ou un sort.
+        basDeCarte: cards.every((card) => {
+          const box = card.getBoundingClientRect();
+          const type = card.querySelector('.rpg-mulligan__bas .rpg-mulligan__type')?.getBoundingClientRect();
+          const stats = card.querySelector('.rpg-mulligan__stats')?.getBoundingClientRect();
+          const centree = (r) => Math.abs((r.left + r.right) / 2 - (box.left + box.right) / 2) < 2;
+          const enBas = (r) => box.bottom - r.bottom < box.height * .35;
+          if (type && stats) return centree(type) && type.bottom <= stats.top + 1;
+          if (stats) return enBas(stats) && stats.bottom <= box.bottom + 1;
+          if (type) return centree(type) && enBas(type);
+          return false;
+        }),
+        // Les plaques d'attaque et de défense : grandes, sur la largeur de la
+        // carte, l'attaque contre le bord gauche et la défense contre le droit.
+        plaques: [...document.querySelectorAll('.rpg-mulligan__stats')].map((stats) => {
+          const card = stats.closest('.rpg-mulligan__card').getBoundingClientRect();
+          const box = stats.getBoundingClientRect();
+          const [attaque, defense] = [...stats.children].map((plaque) => plaque.getBoundingClientRect().toJSON());
+          return {
+            hauteur: Math.min(attaque.height, defense.height),
+            largeur: Math.min(attaque.width, defense.width),
+            dansLaCarte: box.right <= card.right + 1 && box.bottom <= card.bottom + 1 && box.top >= card.top - 1,
+            attaqueAGauche: Math.abs(attaque.left - box.left) < 2 && attaque.left - card.left < card.width * .15,
+            defensedADroite: Math.abs(defense.right - box.right) < 2 && card.right - defense.right < card.width * .15,
+            enBas: card.bottom - box.bottom < card.height * .3,
+          };
+        }),
+        illustrees: cards.every((card) => card.querySelector('img.rpg-mulligan__img')?.complete === true),
+        // Les repères des cartes du jeu : la couleur en haut à gauche, le coût
+        // en haut à droite, l'attaque et la défense en bas à droite.
+        reperes: cards.every((card) => {
+          const box = card.getBoundingClientRect();
+          const coin = (noeud) => noeud?.getBoundingClientRect();
+          const enHautAGauche = (r) => !r || (r.left - box.left < box.width * .35 && r.top - box.top < box.height * .25);
+          const enHautADroite = (r) => !r || (box.right - r.right < box.width * .35 && r.top - box.top < box.height * .25);
+          const enBasADroite = (r) => !r || (box.right - r.right < box.width * .35 && box.bottom - r.bottom < box.height * .25);
+          return enHautAGauche(coin(card.querySelector('.rpg-card-element-badge')))
+            && enHautADroite(coin(card.querySelector('.rpg-mana-cost')))
+            && enBasADroite(coin(card.querySelector('.rpg-mulligan__stats')));
+        }),
+      };
+    });
+    assert.equal(hand.count, 5, `${width}×${height}: les cinq cartes de la main de départ sont présentées`);
+    assert.equal(hand.scrolls, false, `${width}×${height}: la rangée du mulligan ne défile pas`);
+    assert.ok(hand.inside, `${width}×${height}: les cinq cartes tiennent entières dans le volet`);
+    assert.ok(hand.touchable, `${width}×${height}: chaque carte de la main reste touchable`);
+    assert.ok(hand.faces45, `${width}×${height}: chaque carte garde le format 4:5 du jeu`);
+    assert.ok(hand.muettes && hand.illustrees, `${width}×${height}: la carte est son illustration, sans texte par-dessus`);
+    assert.ok(hand.reperes, `${width}×${height}: couleur en haut à gauche, coût en haut à droite, statistiques en bas à droite`);
+    assert.ok(hand.basDeCarte, `${width}×${height}: les plaques pour les créatures, la ligne de type centrée pour les terrains et les sorts`);
+    assert.ok(hand.plaquesDuJeu, `${width}×${height}: l’attaque et la défense portent les plaques et les icônes du jeu`);
+    assert.equal(hand.plaques.every((p) => p.dansLaCarte && p.enBas), true,
+      `${width}×${height}: les plaques tiennent dans la carte, en bas`);
+    assert.equal(hand.plaques.every((p) => p.attaqueAGauche && p.defensedADroite), true,
+      `${width}×${height}: l’attaque est à gauche, la défense à droite`);
+    assert.equal(hand.plaques.every((p) => p.hauteur >= plaqueMin && p.largeur >= 34), true,
+      `${width}×${height}: les plaques sont grandes (≥ ${plaqueMin}px de haut, ≥ 34px de large)`);
+    console.log(`✓ Mulligan complet ${width} × ${height}`);
+  }
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.getByRole('button', { name: /Garder cette main/i }).click();
+  await page.locator('.rpg-mulligan').waitFor({ state: 'detached' });
   // Tap a creature without mana: nothing is played, and no hint banner explains it.
   const creature = page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first();
   await creature.tap();
@@ -278,6 +372,38 @@ try {
   await page.getByRole('button', { name: 'Retour au menu', exact: true }).click();
   await page.locator('.rpg-mode-menu').waitFor();
   console.log('✓ Returning to portrait keeps the duel and allows leaving for the menu');
+
+// L'aperçu rapide : c'est lui qui porte le nom, le type, le coût et les effets
+// que les cartes du mulligan n'impriment plus. Il se vérifie à la souris, dans
+// un contexte de bureau — le doigt, lui, garde l'appui long.
+{
+  const bureau = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  try {
+    const pageBureau = await bureau.newPage();
+    await pageBureau.goto(process.env.RPG_URL || 'http://localhost:5173/Let-s-Play/jeu/sablier-de-bab-el');
+    await pageBureau.getByRole('button', { name: /Lancer le duel/i }).click();
+    const carte = pageBureau.locator('.rpg-mulligan__card').first();
+    await carte.waitFor();
+    const nom = (await carte.getAttribute('aria-label')).split(' — ')[0];
+    assert.equal(await pageBureau.locator('.rpg-hover-card-preview').count(), 0,
+      'aucun aperçu tant que rien n’est survolé');
+    await carte.hover();
+    const apercu = pageBureau.locator('.rpg-hover-card-preview--mulligan');
+    await apercu.waitFor();
+    assert.ok((await apercu.getAttribute('aria-label'))?.startsWith(`Aperçu de ${nom}`),
+      'l’aperçu décrit la carte survolée');
+    assert.equal(await pageBureau.evaluate(() => getComputedStyle(document.querySelector('.rpg-hover-card-preview--mulligan')).zIndex), '1200',
+      'l’aperçu passe au-dessus du volet du mulligan (1150)');
+    await pageBureau.mouse.move(4, 4);
+    await pageBureau.locator('.rpg-hover-card-preview').waitFor({ state: 'detached' });
+    await pageBureau.getByRole('button', { name: /Garder cette main/i }).click();
+    await pageBureau.locator('.rpg-mulligan').waitFor({ state: 'detached' });
+    console.log('✓ Mulligan : survoler une carte ouvre son aperçu rapide, au-dessus du volet');
+  } finally {
+    await bureau.close();
+  }
+}
+
 } finally {
   await browser.close();
 }

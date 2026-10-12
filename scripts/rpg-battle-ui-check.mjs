@@ -268,8 +268,8 @@ assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant
   'la résolution accepte aussi le combat fraîchement déclaré sans attendre un rendu');
 assert.match(battlePage, /rpg-actions__combat[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
   'les actions de combat sont séparées des actions de tour dans la barre');
-assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\)\}/,
-  'Fin du tour est indisponible pendant une sélection de combat ou de cible');
+assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| mulliganOuvert\}/,
+  'Fin du tour est indisponible pendant une sélection de combat ou de cible, et tant que le mulligan n’est pas validé');
 assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'principal'[\s\S]*?id: 'combat'[\s\S]*?id: 'reponse'[\s\S]*?id: 'adverse'[\s\S]*?id: 'termine'/,
   'le rail représente les grandes phases de la partie');
 assert.match(battlePage, /const phaseDuelActive = vainqueur[\s\S]*?reponseActive[\s\S]*?combatEntrant \|\| phase[\s\S]*?monTour/,
