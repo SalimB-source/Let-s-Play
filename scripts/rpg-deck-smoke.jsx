@@ -9,6 +9,7 @@ import { RPG_DECKS } from '../src/games/rpgCards.js';
 import { RPG_DECK_STORAGE_KEY } from '../src/games/rpgDeckChoice.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const setterNomGlobal = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
 const texte = (element) => (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
 const DECK_DE_TEST = ['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'veilleur-du-couchant', 'fennec-des-decombres', 'desert'];
@@ -44,10 +45,10 @@ async function monter(assert, { vraisDecks = false } = {}) {
     click,
     tab: (label) => [...container.querySelectorAll('.rpg-mode-menu__switch button')].find((button) => button.textContent.includes(label)),
     boxButtons: () => [...container.querySelectorAll('.rpg-deck-choice__button')],
-    carte: (nom) => [...container.querySelectorAll('.rpg-deck-choice')].find((choix) => choix.querySelector('strong')?.textContent === nom),
+    carte: (nom) => [...container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)')].find((choix) => choix.querySelector('strong')?.textContent === nom),
     selection: (nom) => api.carte(nom)?.querySelector('.rpg-deck-choice__select'),
     puce: (label) => [...container.querySelectorAll('.rpg-deck-filter__chip')].find((puce) => texte(puce) === label),
-    decksVisibles: () => [...container.querySelectorAll('.rpg-deck-choice')].map((choix) => choix.querySelector('strong').textContent),
+    decksVisibles: () => [...container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)')].map((choix) => choix.querySelector('strong').textContent),
     deckDeJeu: () => texte(container.querySelector('.rpg-menu-deck-summary--player')),
     adversaire: () => texte(container.querySelector('.rpg-menu-deck-summary--opponent')),
     plaque: (camp) => texte(container.querySelector(`.rpg-wizard-plate--${camp} .rpg-wizard-plate__identity`)),
@@ -79,7 +80,8 @@ export async function checkRpgDecks(assert) {
   // --- Onglet Deck, avant tout clic : une étagère de boîtiers, aucune liste -----------------
   await click(tab('Deck'), 'onglet Deck');
   assert.ok(container.querySelector('.rpg-deck-catalog--closed'), 'l’onglet Deck s’ouvre sur l’étagère fermée');
-  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, RPG_DECKS.length, 'un boîtier par deck');
+  assert.equal(container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)').length, RPG_DECKS.length, 'un boîtier par deck');
+  assert.ok(container.querySelector('.rpg-deck-choice--neuf'), 'la crate « Nouveau deck » attend au début de l’étagère');
   assert.ok(!container.querySelector('.rpg-deck-list'), 'aucune liste de cartes tant qu’aucun deck n’est cliqué');
   assert.ok(!container.querySelector('.rpg-deck-detail'), 'aucune fiche de deck tant qu’aucun deck n’est cliqué');
   assert.ok(!container.textContent.includes('Liste des cartes'), 'le titre « Liste des cartes » n’est pas affiché');
@@ -152,7 +154,7 @@ export async function checkRpgDecks(assert) {
   assert.ok(!container.querySelector('.rpg-deck-list'), 'revenir sur l’onglet Deck ne rouvre aucune liste');
 
   // --- « Sélectionner » : un bouton sous chaque boîtier --------------------------------------
-  const cartes = [...container.querySelectorAll('.rpg-deck-choice')];
+  const cartes = [...container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)')];
   cartes.forEach((choix) => {
     const nom = choix.querySelector('strong').textContent;
     const boutons = [...choix.children].filter((enfant) => enfant.tagName === 'BUTTON');
@@ -387,5 +389,140 @@ export async function checkRpgDecks(assert) {
   assert.match(lancementCour.plaque('joueur'), new RegExp(COUR), '« Lancer le duel » joue la Cour des Djinns mémorisée');
   assert.match(lancementCour.plaque('ennemi'), /Veilleurs du Désert · Sable/, 'et le sorcier joue les Veilleurs du Désert');
   await lancementCour.demonter();
+  window.localStorage.clear();
+
+
+  // --- L'atelier : brouillon d'abord, deck complet ensuite ------------------------------------
+  window.localStorage.clear();
+  const atelier = await monter(assert);
+  await atelier.click(atelier.tab('Deck'), 'onglet Deck (atelier)');
+  assert.match(texte(atelier.container.querySelector('.rpg-deck-catalog__sync')), /Decks gardés sur cet appareil/, 'hors compte, la ligne de sync le dit');
+  await atelier.click(atelier.container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir l’atelier');
+  assert.ok(atelier.container.querySelector('.rpg-atelier'), 'l’atelier remplace l’étagère');
+  assert.ok(!atelier.container.querySelector('.rpg-deck-catalog__choices'), 'l’étagère n’est pas rendue en même temps que l’atelier');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /0 \/ 40 cartes/, 'les compteurs démarrent à zéro');
+  assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, 75, 'la bibliothèque montre tout le catalogue');
+  assert.ok(atelier.container.querySelectorAll('.rpg-atelier__carte.is-locked').length > 0, 'les cartes hors collection sont verrouillées');
+  const rangeeKraken = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="kraken"]');
+  assert.ok(rangeeKraken.classList.contains('is-locked'), 'le Kraken est verrouillé au départ');
+  assert.match(texte(rangeeKraken), /Vainquez « Le Pêcheur de perles » — La Tour des Abysses/, 'et il annonce où il se débloque');
+  assert.equal(rangeeKraken.querySelector('.rpg-atelier__carte-ajout').disabled, true, 'impossible d’ajouter une carte verrouillée');
+  const rangeeChien = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
+  assert.ok(!rangeeChien.classList.contains('is-locked'), 'une commune de la dotation est libre');
+  await atelier.click(rangeeChien.querySelector('.rpg-atelier__carte-ajout'), 'ajouter Chien du guet');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /1 \/ 40 cartes/, 'le compteur suit l’ajout');
+  const ligneChien = atelier.container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]');
+  assert.ok(ligneChien, 'la carte apparaît dans le deck en cours');
+  await atelier.click(ligneChien.querySelector('.rpg-atelier__ligne-compte button'), 'retirer Chien du guet');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /0 \/ 40 cartes/, 'le compteur suit le retrait');
+  // Un deck nommé s’enregistre même inachevé : il rejoint l’étagère « indisponible ».
+  const champNom = atelier.container.querySelector('.rpg-atelier__champ input[type="text"]');
+  const setterNom = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  await act(async () => {
+    setterNom.call(champNom, 'Bab El m’écoute');
+    champNom.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+  await atelier.settle();
+  for (let i = 0; i < 5; i += 1) {
+    await atelier.click(atelier.container.querySelector('.rpg-atelier__carte[data-card-id="desert"] .rpg-atelier__carte-ajout'), `ajouter Désert (${i + 1})`);
+  }
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /5 terrains/, 'les terrains sont comptés');
+  await atelier.click(atelier.container.querySelector('.rpg-atelier__actions .rpg-menu-button--primary'), 'Enregistrer le brouillon');
+  assert.ok(!atelier.container.querySelector('.rpg-atelier'), 'l’enregistrement referme l’atelier');
+  const maisonBox = atelier.carte('Bab El m’écoute');
+  assert.ok(maisonBox, 'le deck maison rejoint l’étagère');
+  assert.match(texte(maisonBox), /DECK MAISON/, 'il porte l’étiquette maison');
+  assert.match(texte(maisonBox), /5 cartes/, 'avec son nombre de cartes');
+  assert.equal(maisonBox.querySelector('.rpg-deck-choice__select').disabled, true, 'brouillon : « Sélectionner » est indisponible');
+  assert.match(texte(maisonBox.querySelector('.rpg-deck-choice__select')), /Indisponible/, 'et l’affiche comme pour un deck du catalogue');
+  assert.match(texte(atelier.container.querySelector('.rpg-deck-catalog__status')), /Mémorisé/, 'l’enregistrement est confirmé sur la ligne d’état');
+  // Le casier local porte l’enregistrement, couleur dérivée, identifiant maison.
+  const casierLu = JSON.parse(window.localStorage.getItem('letsplay_sablier_decks_maison_v1'));
+  assert.equal(casierLu.decks.length, 1);
+  assert.ok(casierLu.decks[0].id.startsWith('maison-'), 'identifiant maison');
+  assert.equal(casierLu.decks[0].element, 'sable', 'couleur dérivée des cartes');
+  // L'enregistrement ouvre déjà la fiche du deck neuf : édition et suppression s'y trouvent.
+  const detailMaison = atelier.container.querySelector('.rpg-deck-detail');
+  assert.ok(detailMaison, 'la fiche du deck neuf est ouverte après l’enregistrement');
+  assert.match(texte(detailMaison.querySelector('.rpg-mode-menu__eyebrow')), /DECK MAISON/, 'la fiche annonce un deck maison');
+  const boutonModifier = [...detailMaison.querySelectorAll('.rpg-deck-detail__actions button')].find((b) => b.textContent.includes('Modifier'));
+  assert.ok(boutonModifier, 'la fiche maison propose de modifier');
+  const boutonSupprimer = [...detailMaison.querySelectorAll('.rpg-deck-detail__actions button')].find((b) => b.textContent.includes('Supprimer'));
+  await atelier.click(boutonSupprimer, 'Supprimer (premier clic)');
+  assert.ok(atelier.container.querySelector('.rpg-deck-detail'), 'le premier clic ne supprime pas');
+  await atelier.click([...atelier.container.querySelectorAll('.rpg-deck-detail__actions button')].find((b) => b.textContent.includes('Confirmer')), 'Confirmer la suppression');
+  assert.ok(!atelier.carte('Bab El m’écoute'), 'le deck quitte l’étagère');
+  const casierApresSuppression = JSON.parse(window.localStorage.getItem('letsplay_sablier_decks_maison_v1'));
+  assert.equal(casierApresSuppression.decks.length, 0, 'le casier est vide');
+  assert.equal(casierApresSuppression.supprimes.length, 1, 'une pierre tombale est posée pour la synchronisation');
+  await atelier.demonter();
+
+  // --- Un deck maison complet : sélectionnable, jouable, éditable ------------------------------
+  window.localStorage.removeItem('letsplay_sablier_decks_maison_v1');
+  const cartesMaison = [
+    ...Array(17).fill('desert'),
+    ...Array(3).fill('chien-du-guet'),
+    ...Array(3).fill('guetteur-du-beffroi'),
+    ...Array(3).fill('dune-marchante'),
+    ...Array(3).fill('faiseur-de-passage'),
+    ...Array(3).fill('tislit-des-aures'),
+    ...Array(3).fill('tiziri-du-djurdjura'),
+    ...Array(3).fill('amayas-du-hoggar'),
+    'veilleur-du-couchant',
+    'rapport-du-greffier',
+  ];
+  window.localStorage.setItem('letsplay_sablier_decks_maison_v1', JSON.stringify({
+    decks: [{ id: 'maison-smoke', nom: 'Dunes de fumée', cardIds: cartesMaison, creeLe: '2026-01-01T00:00:00.000Z', majLe: '2026-01-01T00:00:00.000Z' }],
+    supprimes: [],
+  }));
+  const maison = await monter(assert, { vraisDecks: true });
+  await maison.click(maison.tab('Deck'), 'onglet Deck (maison complet)');
+  const boiteMaison = maison.carte('Dunes de fumée');
+  assert.ok(boiteMaison, 'le deck maison complet est sur l’étagère');
+  assert.match(texte(boiteMaison), /40 cartes/, 'avec ses 40 cartes');
+  const selectionMaison = boiteMaison.querySelector('.rpg-deck-choice__select');
+  assert.equal(selectionMaison.disabled, false, 'complet et dans la collection : il se sélectionne');
+  await maison.click(selectionMaison, 'Sélectionner le deck maison');
+  assert.equal(stocke(), JSON.stringify({ deckId: 'maison-smoke' }), 'le choix maison est mémorisé comme les autres');
+  await maison.click(boiteMaison.querySelector('.rpg-deck-choice__button'), 'ouvrir la fiche du deck maison');
+  const detailComplet = maison.container.querySelector('.rpg-deck-detail');
+  assert.match(texte(detailComplet.querySelector('.rpg-deck-detail__stats')), /validé/, 'la validation maison ne dit que du vert');
+  await maison.click(detailComplet.querySelector('.rpg-deck-detail__play'), 'Jouer avec ce deck maison');
+  assert.ok(maison.container.querySelector('.card-table'), 'le duel démarre avec le deck maison');
+  assert.match(maison.plaque('joueur'), /Dunes de fumée/, 'la plaque « VOUS » porte le nom du deck maison');
+  assert.match(maison.plaque('ennemi'), /Cour des Djinns/, 'face à un deck maison, le sorcier joue la Cour des Djinns');
+  // Édition : l’atelier reprend le deck, renommé puis réenregistré.
+  const navDeckMaison = [...maison.container.querySelectorAll('.rpg-duel-nav button')].find((button) => button.textContent.includes('Deck'));
+  await maison.click(navDeckMaison, 'retour au menu depuis le duel');
+  await maison.click(maison.carte('Dunes de fumée').querySelector('.rpg-deck-choice__button'), 'rouvrir la fiche maison');
+  await maison.click([...maison.container.querySelectorAll('.rpg-deck-detail__actions button')].find((b) => b.textContent.includes('Modifier')), 'Modifier dans l’atelier');
+  const atelierEdition = maison.container.querySelector('.rpg-atelier');
+  assert.ok(atelierEdition, 'l’atelier s’ouvre en édition');
+  const champNomEdition = atelierEdition.querySelector('.rpg-atelier__champ input[type="text"]');
+  assert.equal(champNomEdition.value, 'Dunes de fumée', 'le deck en cours est chargé');
+  assert.match(texte(atelierEdition.querySelector('.rpg-atelier__state')), /40 \/ 40 cartes/, 'avec ses 40 cartes');
+  const champEmbleme = atelierEdition.querySelector('select[aria-label="Carte emblématique du boîtier"]');
+  assert.ok(champEmbleme, 'la carte emblématique est choisissable');
+  await act(async () => {
+    setterNomGlobal.call(champNomEdition, 'Dunes de braise');
+    champNomEdition.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+  await maison.settle();
+  await maison.click(atelierEdition.querySelector('.rpg-atelier__actions .rpg-menu-button--primary'), 'réenregistrer le deck édité');
+  assert.ok(maison.carte('Dunes de braise'), 'l’étagère montre le deck renommé');
+  assert.ok(!maison.carte('Dunes de fumée'), 'l’ancien nom a disparu');
+  const casierEdite = JSON.parse(window.localStorage.getItem('letsplay_sablier_decks_maison_v1'));
+  assert.equal(casierEdite.decks.length, 1, 'l’édition remplace, ne duplique pas');
+  assert.equal(casierEdite.decks[0].nom, 'Dunes de braise');
+  // Copier un deck du catalogue : les cartes hors collection sont retirées d’office.
+  await maison.click(maison.carte(SERMENT).querySelector('.rpg-deck-choice__button'), 'ouvrir le Serment des Neuf Hivers');
+  await maison.click([...maison.container.querySelectorAll('.rpg-deck-detail__actions button')].find((b) => b.textContent.includes('Copier')), 'Copier pour l’adapter');
+  const atelierCopie = maison.container.querySelector('.rpg-atelier');
+  assert.ok(atelierCopie, 'l’atelier s’ouvre en copie');
+  assert.equal(atelierCopie.querySelector('.rpg-atelier__champ input[type="text"]').value, 'Serment des Neuf Hivers (copie)', 'nommé d’après sa source');
+  // Le Serment regorge de rares verrouillées : la copie n’en garde que la dotation.
+  const cartesCopiees = [...atelierCopie.querySelectorAll('.rpg-atelier__ligne')].reduce((total, ligne) => total + Number(ligne.querySelector('.rpg-atelier__ligne-compte b').textContent.slice(1)), 0);
+  assert.ok(cartesCopiees < 40, `la copie n’embarque pas les cartes verrouillées (${cartesCopiees} cartes gardées)`);
+  await maison.demonter();
   window.localStorage.clear();
 }
