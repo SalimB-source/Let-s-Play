@@ -911,13 +911,13 @@ export async function checkRpgBattle(assert) {
   await act(async () => { impactRoot.unmount(); });
   impactContainer.remove();
 
-  // ── Régression : Rafale élimine l'unique attaquant pendant la réponse ──
+  // ── Régression : le Trait de braise élimine l'unique attaquant pendant la réponse ──
   const killContainer = document.createElement('div');
   document.body.appendChild(killContainer);
   const killRoot = createRoot(killContainer);
   await act(async () => {
     killRoot.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'rafale-du-minaret', 'mer', 'montagne']}
+      joueurDeck={['desert', 'desert', 'trait-de-braise', 'mer', 'montagne']}
       sorcierDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'fennec-des-decombres']}
       rng={() => 0.999}
     />);
@@ -927,9 +927,9 @@ export async function checkRpgBattle(assert) {
   const jouerCarteParGlisser = async (name) => {
     const card = killHand().find((button) => button.getAttribute('aria-label')?.includes(name));
     assert.ok(card && estJouable(card), `${name} doit être jouable`);
-    if (name.includes('Rafale')) {
+    if (name.includes('Trait de braise')) {
       assert.equal(card.querySelector('.rpg-card-element-badge')?.textContent.trim(), '🔥',
-        'les cartes Braise utilisent la flamme');
+        'l’éphémère Braise utilise la flamme');
     }
     await glisserSurTable(killContainer, card);
   };
@@ -959,21 +959,21 @@ export async function checkRpgBattle(assert) {
   for (const terrain of killContainer.querySelectorAll('.rpg-terrain--joueur:not(.is-tapped)')) {
     await act(async () => { terrain.click(); });
   }
-  await jouerCarteParGlisser('Rafale du minaret');
+  await jouerCarteParGlisser('Trait de braise');
   await act(async () => { killContainer.querySelector('.rpg-card--ennemi').click(); });
   assert.match(killContainer.querySelector('.rpg-spell-played__target')?.textContent ?? '', /Fennec des décombres/,
-    'la carte visée reste identifiable même si Rafale la détruit');
-  const destructionRafale = killContainer.querySelector('.rpg-card-destruction-fx[data-rpg-destroyed-id]');
-  assert.ok(destructionRafale,
+    'la carte visée reste identifiable même si le Trait la détruit');
+  const destructionTrait = killContainer.querySelector('.rpg-card-destruction-fx[data-rpg-destroyed-id]');
+  assert.ok(destructionTrait,
     'une créature détruite reste brièvement visible dans une animation avant de disparaître');
-  assert.ok(destructionRafale.classList.contains('is-burning')
-    && destructionRafale.dataset.destructionSource === 'braise',
-  'une carte éliminée par Rafale reçoit la variante de combustion Braise');
-  assert.ok(!killContainer.querySelector('.rpg-btn--undo'), 'Rafale jouée reste définitive');
+  assert.ok(destructionTrait.classList.contains('is-burning')
+    && destructionTrait.dataset.destructionSource === 'braise',
+  'une carte éliminée par le Trait de braise reçoit la variante de combustion Braise');
+  assert.ok(!killContainer.querySelector('.rpg-btn--undo'), 'le Trait joué reste définitif');
   assert.ok(!killContainer.querySelector('.rpg-btn--resolve-combat'),
-    'la commande de résolution disparaît quand Rafale élimine le dernier attaquant');
+    'la commande de résolution disparaît quand le Trait élimine le dernier attaquant');
   assert.match(killContainer.textContent, /Toutes les attaques sont stoppées ; votre tour commence/,
-    'le tour du joueur reprend après la résolution de Rafale');
+    'le tour du joueur reprend après la résolution du Trait');
   await act(async () => { killRoot.unmount(); });
   killContainer.remove();
 
