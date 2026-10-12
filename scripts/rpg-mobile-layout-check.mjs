@@ -150,10 +150,10 @@ try {
   }
   await page.setViewportSize({ width: 844, height: 390 });
   await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
-  // Tap a creature without mana: the refusal is explained and nothing is played.
+  // Tap a creature without mana: nothing is played, and no hint banner explains it.
   const creature = page.locator('.rpg-hand__card:has(.rpg-hand__stats)').first();
   await creature.tap();
-  await page.locator('.rpg-actions__wait').getByText(/Mana insuffisant/).waitFor();
+  assert.equal(await page.locator('.rpg-actions__wait').count(), 0, 'the duel carries no hint banner');
   assert.equal(await page.locator('.rpg-card--equipe').count(), 0, 'the refused creature stays in hand');
   assert.equal(await page.locator('.rpg-spell-confirm, .rpg-card-preview').count(), 0, 'a tap opens no dialog for a creature');
   if (process.env.RPG_CREATURE_SCREENSHOT) await page.screenshot({ path: process.env.RPG_CREATURE_SCREENSHOT });
@@ -166,10 +166,9 @@ try {
   assert.ok(terrainBox && terrainBox.x >= 0 && terrainBox.x + terrainBox.width <= 844,
     'the played terrain stays inside the landscape viewport');
   await page.locator('.rpg-hand__card--terrain').first().tap();
-  await page.locator('.rpg-actions__wait').getByText(/déjà posé votre terrain/).waitFor();
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 1,
     'the second terrain of the turn is refused without being played');
-  console.log('✓ Tap plays a terrain at once and explains the second-terrain refusal');
+  console.log('✓ Tap plays a terrain at once and silently refuses the second one');
   if (process.env.RPG_SCREENSHOT) await page.screenshot({ path: process.env.RPG_SCREENSHOT });
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });

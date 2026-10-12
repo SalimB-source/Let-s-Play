@@ -115,10 +115,10 @@ export async function checkRpgPreviewActions(assert) {
     assert.ok(hand('desert').getAttribute('aria-label').includes('pile de 2 exemplaires identiques'),
       'le libellé accessible dit combien d’exemplaires la pile contient');
 
-    // ── Cliquer une carte non jouable explique le refus, sans rien lancer ──
+    // ── Cliquer une carte non jouable ne lance rien, et ne dit rien ───────
     await click(hand('fennec-des-decombres'));
-    assert.ok(container.textContent.includes('Mana insuffisant pour Fennec des décombres'),
-      'cliquer une créature non payable affiche l’explication du refus');
+    assert.equal(hand('fennec-des-decombres').dataset.jouable, 'false',
+      'une créature non payable reste éteinte : le refus se lit au halo, sans phrase');
     assert.ok(hand('fennec-des-decombres'), 'la créature non payable reste en main');
     assert.equal(terrainsJoueurs().length, 0, 'aucune carte n’est posée');
     assert.equal(confirmDialog(), null, 'aucune boîte de confirmation pour une créature');
@@ -131,8 +131,8 @@ export async function checkRpgPreviewActions(assert) {
     assert.equal(pileDe('desert').querySelector('.rpg-hand__pile-count'), null,
       'la pile redevenue seule perd son compteur');
     await click(hand('desert'));
-    assert.ok(container.textContent.includes('déjà posé votre terrain ce tour'),
-      'le second terrain du tour est refusé avec une explication');
+    assert.equal(hand('desert').dataset.jouable, 'false',
+      'le second terrain du tour s’éteint en main : le refus se lit au halo, sans phrase');
     assert.equal(terrainsJoueurs().length, 1, 'le terrain refusé reste en main');
     assert.equal(confirmDialog(), null, 'la limite de terrain ne demande pas de confirmation');
 
@@ -214,8 +214,8 @@ export async function checkRpgPreviewActions(assert) {
     await click(fennec());
     assert.equal(fennec().classList.contains('is-selected'), false,
       'une créature engagée ne peut pas attaquer deux fois');
-    assert.ok(container.textContent.includes('a déjà attaqué ce tour'),
-      'le clic sur la créature engagée explique qu’elle a déjà attaqué');
+    assert.equal(fennec().classList.contains('is-pret'), false,
+      'la créature engagée perd son halo de disponibilité : le refus se voit sur la carte');
     // Les terrains que le paiement du Fennec a laissés dégagés produisent bien
     // leur mana au toucher, un exemplaire par clic ; une pile entièrement
     // engagée, elle, ne donne plus rien.

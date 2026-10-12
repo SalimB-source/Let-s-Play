@@ -333,9 +333,8 @@ export async function checkRpgBattle(assert) {
     'le fond de la table est l’image du plateau imposé par le deck');
   assert.match(tableDuDuel.getAttribute('aria-label') ?? '', /L’Erg du Sahara/,
     'la table annonce le plateau sur lequel elle se joue');
-  assert.match(container.querySelector('.rpg-actions__wait')?.textContent ?? '',
-    /Plateau : L’Erg du Sahara — [^.]*imposé par le deck adverse/,
-    'le message d’ouverture rappelle le terrain de la partie et le deck qui l’impose');
+  assert.equal(container.querySelector('.rpg-actions__wait'), null,
+    'aucun bandeau d’indications ne double la table : le plateau se lit sur le décor');
   assert.ok(container.querySelector('.rpg-actions__combat .rpg-btn--attaque')
     && container.querySelector('.rpg-actions__turn .rpg-btn--endturn'),
   'les commandes de combat et de tour sont rangées dans deux groupes distincts');
@@ -445,10 +444,10 @@ export async function checkRpgBattle(assert) {
   assert.equal(container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)'), null,
     'l’aperçu disparaît lorsque la souris quitte la carte');
 
-  // ── Cliquer une carte la joue ; les refus sont expliqués sans lancer ────
+  // ── Cliquer une carte la joue ; un refus laisse simplement la carte en main ─
   await act(async () => { fennecMain.click(); });
-  assert.ok(container.textContent.includes('Mana insuffisant pour Fennec des décombres'),
-    'cliquer une créature non payable explique le refus');
+  assert.equal(fennecMain.dataset.jouable, 'false',
+    'une créature non payable reste éteinte : le refus se lit au halo, sans phrase');
   assert.equal(handCards().length, 5, 'la carte refusée reste en main');
   assert.equal(container.querySelector('.rpg-card-preview, .rpg-spell-confirm'), null,
     'le clic n’ouvre ni aperçu ni confirmation');
@@ -645,8 +644,8 @@ export async function checkRpgBattle(assert) {
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · DÉFENSE/,
     'l’indicateur identifie la phase de défense du joueur');
   assert.equal(container.querySelector('.rpg-combat-window'), null, 'aucune fenêtre de choix des bloqueurs ne recouvre la table');
-  assert.match(container.querySelector('.rpg-actions__wait')?.textContent ?? '', /glissez vos bloqueurs/i,
-    'le message de tour explique le glisser-déposer sans ouvrir de fenêtre');
+  assert.ok(container.querySelector('.rpg-card--equipe.is-blocker-draggable'),
+    'les bloqueurs se saisissent directement sur la table, sans fenêtre ni consigne écrite');
   const terrainsLibres = [...container.querySelectorAll('.rpg-terrain--joueur:not(.is-tapped)')];
   const mer = terrainsLibres.find((terrain) => terrain.dataset.cardId === 'mer');
   assert.ok(mer, 'le terrain eau est resté dégagé pour payer un éphémère');
@@ -665,7 +664,8 @@ export async function checkRpgBattle(assert) {
   assert.ok(cibleParade, 'le Chien fournit une cible distincte du Fennec esquiveur');
   const nomCibleParade = cibleParade.getAttribute('aria-label').split(',')[0];
   await act(async () => { cibleParade.click(); });
-  assert.match(container.textContent, /Réponse résolue : Parade de verre/, 'la carte ciblée se résout en réponse');
+  assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Vous lancez Parade de verre/,
+    'la carte ciblée se résout en réponse, et le journal en garde la trace');
   assert.ok(container.querySelector('.rpg-spell-played'), 'la magie résolue s’affiche sur la table');
   const apercuMagieJouee = container.querySelector('.rpg-hover-card-preview.is-spell-preview');
   assert.ok(apercuMagieJouee
@@ -728,7 +728,8 @@ export async function checkRpgBattle(assert) {
 
   // ── Les attaques passent par une déclaration et le défenseur choisit ses blocs ─
   await act(async () => { container.querySelector('.rpg-wizard-plate--ennemi').click(); });
-  assert.match(container.textContent, /bloquer|déclarez vos attaquants|frappent ses PV/i, 'le sorcier laisse passer les attaques non bloquées');
+  assert.ok(container.querySelector('.rpg-btn--attaque-tous'),
+    'toucher le sorcier n’affiche aucune consigne : la déclaration reste dans les commandes');
 
   // ── Au tour suivant, notre créature reste disponible ──────────────────
   await act(async () => { findButton('Fin du tour').click(); });
@@ -771,7 +772,8 @@ export async function checkRpgBattle(assert) {
   assert.ok(container.querySelectorAll('.rpg-card--equipe.is-declared-attacker').length > 0,
     'les attaquants restent inclinés pendant la réponse, avant les dégâts');
   await resoudreCombat();
-  assert.match(container.textContent, /Combat résolu/, 'accepter les blocages résout ensuite le combat');
+  assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Combat :|frappent le sorcier/,
+    'accepter les blocages résout ensuite le combat');
   assert.ok(!container.querySelector('.rpg-card--equipe.is-pret'),
     'les attaquants ont frappé : plus personne n’est prêt');
   assert.ok(container.querySelector('.rpg-card--equipe.is-attacked'),
@@ -805,7 +807,7 @@ export async function checkRpgBattle(assert) {
     assert.ok(!container.querySelector('.rpg-btn--resolve-combat'),
       'aucune commande d’acceptation n’est affichée quand Attaquer avec tous ne rencontre aucun bloqueur');
   }
-  assert.match(container.querySelector('.rpg-actions__wait')?.textContent ?? '', /Combat résolu/,
+  assert.match(container.querySelector('.rpg-log')?.textContent ?? '', /Combat :|frappent le sorcier/,
     'l’attaque globale est résolue après acceptation ou automatiquement sans bloqueur');
 
   await act(async () => { root.unmount(); });
@@ -876,7 +878,8 @@ export async function checkRpgBattle(assert) {
   const responseTable = responseContainer.querySelector('.card-table');
   assert.equal(responseTable.dataset.screenImpact, undefined, 'l’attaque ne touche pas directement le sorcier avant acceptation');
   await act(async () => { responseButton('Accepter les blocages').click(); });
-  assert.match(responseContainer.textContent, /Combat résolu/, 'l’acceptation résout le combat après l’éphémère');
+  assert.match(responseContainer.querySelector('.rpg-log')?.textContent ?? '', /Combat :|frappent le sorcier/,
+    'l’acceptation résout le combat après l’éphémère');
   assert.equal(responseTable.dataset.screenImpact, undefined,
     'un attaquant reste bloqué même si son bloqueur a été détruit en réponse');
   await act(async () => { responseRoot.unmount(); });
@@ -937,7 +940,7 @@ export async function checkRpgBattle(assert) {
     'sans bloqueur adverse, aucune confirmation des blocages n’est demandée');
   assert.equal(tableImpact.dataset.screenImpact, 'dealt',
     'une attaque sans bloqueur se résout automatiquement et déclenche son impact visuel');
-  assert.match(impactContainer.querySelector('.rpg-actions__wait')?.textContent ?? '', /Combat résolu/,
+  assert.match(impactContainer.querySelector('.rpg-log')?.textContent ?? '', /Combat :|frappent le sorcier/,
     'la résolution automatique confirme immédiatement le résultat du combat');
   assert.match(tableImpact.className, /rpg-screen-shake--[ab]/, 'une attaque directe fait trembler l’écran');
   assert.doesNotMatch(tableImpact.className, /rpg-screen-hit--[ab]/, 'l’attaque donnée ne colore pas l’écran en rouge');
@@ -1014,7 +1017,7 @@ export async function checkRpgBattle(assert) {
   assert.ok(!killContainer.querySelector('.rpg-btn--undo'), 'le Trait joué reste définitif');
   assert.ok(!killContainer.querySelector('.rpg-btn--resolve-combat'),
     'la commande de résolution disparaît quand le Trait élimine le dernier attaquant');
-  assert.match(killContainer.textContent, /Toutes les attaques sont stoppées ; votre tour commence/,
+  assert.match(killContainer.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOTRE TOUR/,
     'le tour du joueur reprend après la résolution du Trait');
   await act(async () => { killRoot.unmount(); });
   killContainer.remove();
@@ -1208,8 +1211,9 @@ export async function checkRpgBattle(assert) {
   await glisserSurTable(cavalryContainer, cavalryInHand, false);
   assert.ok(cavalryInHand.isConnected && !cavalryInHand.classList.contains('rpg-card-flight'),
     'la carte attend le choix de cible avant de quitter la main');
-  assert.match(cavalryContainer.textContent, /Choisissez une créature adverse/,
-    'l’interface annonce la sélection de la cible de l’effet d’arrivée');
+  assert.ok(cavalryInHand.classList.contains('is-targeting')
+    && cavalryContainer.querySelector('.rpg-card--ennemi.is-ciblable'),
+  'la carte en attente et les cibles légales s’allument : l’effet d’arrivée se choisit sans consigne écrite');
   const cibleCavalier = [...cavalryContainer.querySelectorAll('.rpg-card--ennemi')]
     .find((card) => card.getAttribute('aria-label')?.includes('Chien du guet'));
   assert.ok(cibleCavalier?.classList.contains('is-ciblable'), 'la créature adverse devient une cible cliquable');
@@ -1221,8 +1225,9 @@ export async function checkRpgBattle(assert) {
     'le Cavalier arrive sur son champ de bataille après l’animation');
   assert.equal(cavalryContainer.querySelector('.rpg-card--ennemi[data-card-id="chien-du-guet"]'), null,
     'les 4 dégâts d’arrivée détruisent bien le Chien 2/2 ciblé');
-  assert.match(cavalryContainer.textContent, /se sont infligé 4 et 2 dégâts/,
-    'le résultat de l’affrontement mutuel est annoncé');
+  assert.match(cavalryContainer.querySelector('.rpg-log')?.textContent ?? '',
+    /Cavalier amazigh du Désert se bat contre Chien du guet \(4 \/ 2\)/,
+    'le journal du duel garde le résultat de l’affrontement mutuel');
   await act(async () => { cavalryRoot.unmount(); });
   cavalryContainer.remove();
 
@@ -1317,8 +1322,8 @@ export async function checkRpgBattle(assert) {
   await act(async () => { ferielEnJeu.click(); });
   const confirmerFeriel = ferielContainer.querySelector('.rpg-btn--confirmer-attaque');
   assert.equal(confirmerFeriel.disabled, true, 'la confirmation attend que la cible du Coup rapide soit choisie');
-  assert.match(ferielContainer.textContent, /Coup rapide.*choisissez une créature adverse/i,
-    'l’interface annonce la sélection de la cible de Fériel');
+  assert.ok(ferielContainer.querySelector('.rpg-card--ennemi.is-ciblable'),
+    'les cibles légales du Coup rapide s’allument sur la table, sans consigne écrite');
   const chienCibleFeriel = [...ferielContainer.querySelectorAll('.rpg-card--ennemi')]
     .find((card) => card.dataset.cardId === 'chien-du-guet');
   assert.ok(chienCibleFeriel?.classList.contains('is-ciblable'), 'le Chien adverse est présenté comme cible légale');
@@ -1330,8 +1335,9 @@ export async function checkRpgBattle(assert) {
     'Fériel reste en jeu car la créature ciblée ne riposte pas');
   assert.equal(ferielContainer.querySelector('.rpg-card--ennemi[data-card-id="chien-du-guet"]'), null,
     'le Coup rapide inflige les 3 dégâts d’attaque et détruit le Chien 2/2');
-  assert.match(ferielContainer.textContent, /Coup rapide.*3 dégâts.*Chien du guet/i,
-    'le résultat de l’attaque ciblée est annoncé avec le montant et la cible');
+  assert.match(ferielContainer.querySelector('.rpg-log')?.textContent ?? '',
+    /FÉRIEL inflige 3 dégâts à Chien du guet avec Coup rapide/i,
+    'le journal du duel annonce le montant et la cible de l’attaque ciblée');
   await act(async () => { ferielRoot.unmount(); });
   ferielContainer.remove();
 
@@ -1374,8 +1380,9 @@ export async function checkRpgBattle(assert) {
   const ressac = bounceHand().find((card) => card.getAttribute('aria-label')?.includes('Ressac'));
   assert.ok(ressac && estJouable(ressac), 'le Ressac est payable avec une Mer engagée');
   await glisserSurTable(bounceContainer, ressac);
-  assert.match(bounceContainer.textContent, /Choisissez une créature adverse pour Ressac/,
-    'le renvoi ouvre le choix d’une cible adverse sans proposer le sorcier');
+  assert.ok(bounceContainer.querySelector('.rpg-card--ennemi.is-ciblable')
+    && !bounceContainer.querySelector('.rpg-wizard-plate--ennemi.is-ciblable'),
+  'le renvoi allume les créatures adverses comme cibles, sans proposer le sorcier');
   const fennecCible = [...bounceContainer.querySelectorAll('.rpg-card--ennemi')]
     .find((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres'));
   assert.ok(fennecCible?.classList.contains('is-ciblable'), 'la créature adverse devient une cible cliquable');

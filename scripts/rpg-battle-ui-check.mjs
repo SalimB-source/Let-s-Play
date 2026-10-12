@@ -155,10 +155,10 @@ assert.match(aiBrain, /peutBloquerAttaquant\(bloqueur, attaquant\)\s*&&\s*!estPr
   'l’IA écarte les bloqueurs sans Envol face à un attaquant volant');
 assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) return \{ ok: false, raison: 'envol' \}/,
   'le moteur refuse un blocage terrestre contre un attaquant avec Envol');
-assert.match(battlePage, /a Envol : seules les créatures avec Envol peuvent le bloquer\./,
-  'l’interface explique pourquoi un bloqueur sans Envol est refusé');
-assert.match(battlePage, /Aucune de vos créatures n’a Envol : leurs créatures volantes ne peuvent pas être bloquées\./,
-  'l’annonce de l’attaque adverse signale les volants impossibles à bloquer');
+assert.match(battlePage, /if \(!retireDeCetteAttaque && !rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*setBloqueurSelectionne\(null\);\s*jouerSfx\('erreur'\);/,
+  'un bloqueur sans Envol est refusé par le bruitage d’erreur, sans phrase d’explication');
+assert.match(battlePage, /canDragBlocker=\{Boolean\(reponseActive && !reponseApresBlocage && bloqueursDisponibles\.some/,
+  'seuls les bloqueurs légaux restent saisissables : l’attaque adverse n’a pas besoin d’annonce écrite');
 assert.match(duelEngine, /export function rpgLancerAttaque\([\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, degatsAvantCombat\)[\s\S]*?const coupsNormaux = degatsCombat[\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, coupsNormaux\)/,
   'les capacités de combat du Sahir se résolvent avant les blessures normales');
 assert.match(duelEngine, /appliquerDegatsDeCombatSimultanes\(apresCapacites, degatsAvantCombat\)[\s\S]*?const repartitionFinale/,
@@ -278,8 +278,8 @@ assert.match(battleCss, /\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*border-
   'Fin du tour garde un repère doré compact et bien visible');
 assert.match(battleCss, /\/\* Commandes de duel compactes[\s\S]*?\.rpg-bottombar\s*\{[^}]*width: min\(500px, calc\(100vw - 230px\)\);/s,
   'la barre inférieure agrandie est visible à toutes les tailles d’écran');
-assert.match(battleCss, /\.rpg-bottombar__status \.rpg-actions__wait\s*\{[^}]*max-width:\s*320px;[^}]*font-size:\s*11px;/s,
-  'le message du tour est agrandi et plus lisible');
+assert.doesNotMatch(battleCss, /rpg-actions__wait/,
+  'les styles du bandeau d’indications ont été retirés de la feuille de combat');
 assert.match(battleCss, /\.rpg-phase-step__icon\s*\{\s*display:\s*grid;\s*width:\s*24px;\s*height:\s*24px;/,
   'les icônes de phase sont agrandies partout');
 assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-bottombar \{[\s\S]*?\.rpg-actions__row \.rpg-btn \{ min-height: 39px; padding: 6px 9px; font-size: 11px; \}/,
@@ -308,8 +308,8 @@ assert.match(battlePage, /className="rpg-card-catalogue"[\s\S]*?Filtrer par coul
   'l’onglet Catalogue propose les filtres de couleur et de type');
 assert.match(battlePage, /onChangeScreen\('catalogue'\)[\s\S]*?Catalogue/,
   'Catalogue est accessible depuis le menu des modes');
-assert.match(battlePage, /carte\.arrivee\?\.type === 'combat'[\s\S]*?Choisissez une créature adverse/,
-  'l’arrivée du Cavalier demande le choix d’une créature adverse');
+assert.match(battlePage, /if \(carte\.arrivee\?\.type === 'combat'\) \{[\s\S]*?if \(ciblesLegales\.length\) \{\s*setCibleEnCours\(carteId\);/,
+  'l’arrivée du Cavalier ouvre le choix d’une créature adverse, signalé par les cibles allumées');
 assert.match(battlePage, /demarrerVolCarte\(carteSource, handIndex, \(\) => finaliserPoseCreature\(carteId, entite\.id\)\)/,
   'la carte réelle vole depuis la main après la sélection de la cible');
 assert.match(battleCss, /\.rpg-card-catalogue__art\s*\{[\s\S]*?aspect-ratio:\s*4\s*\/\s*5;[\s\S]*?border:\s*3px solid var\(--rpg-frame-color/s,
@@ -421,8 +421,8 @@ assert.match(plateauxSource, /couleurDominanteDeck/,
   'un deck sans identité connue (paquet brut) parle par sa couleur dominante');
 assert.match(battlePage, /className=\{`card-table card-table--plateau-\$\{plateau\.id\}/,
   'la table porte le plateau tiré pour la partie en cours');
-assert.match(battlePage, /Plateau : \$\{plateau\.nom\} — \$\{plateau\.lieu\}, imposé par \$\{originePlateau\}/,
-  'le message d’ouverture annonce le terrain de la partie et le deck qui l’impose');
+assert.doesNotMatch(battlePage, /rpg-actions__wait|rpg-card-peek__hint/,
+  'le duel ne porte plus de texte d’indications : la table, les flèches et le journal suffisent');
 assert.match(plateauxSource, /id: 'caravane-de-gourara'[\s\S]*?fichier: 'plateau-caravane-de-gourara\.jpg'/,
   'la piste de caravane du Gourara est un second plateau saharien');
 for (const plateauSombre of ['table-des-heures', 'terre-de-damnation']) {
@@ -524,8 +524,8 @@ assert.match(battleCss, /@media \(max-height: 520px\) \{[\s\S]*?\.rpg-card-peek 
   'en paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible — au menu comme en duel');
 assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-battle \[data-card-id\]\s*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;/s,
   'une carte tenue une seconde n’appelle ni le menu natif ni la sélection de texte');
-assert.match(battlePage, /viewport\.mobile \? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer\.' : ''/,
-  'l’ouverture du duel annonce le geste au doigt');
+assert.match(battlePage, /function ApercuCarteAppuiLong\(\{ carte, onFermer \}\)[\s\S]*?<HoverCardPreview carte=\{carte\} variante="appui-long" \/>/,
+  'l’appui long ouvre l’aperçu de la carte, sans légender le geste');
 
 // ── Zone de jeu tactile élargie et piles de cartes homonymes ───────────────
 const cardStacks = readFileSync(new URL('../src/games/rpgCardStacks.js', import.meta.url), 'utf8');

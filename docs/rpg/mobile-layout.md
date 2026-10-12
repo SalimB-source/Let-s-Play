@@ -28,10 +28,10 @@ Le survol n’existe pas sur écran tactile, et le clic **agit** (poser la carte
 - un **appui court reste un clic** et garde son action de jeu ; un doigt qui glisse au-delà de 10 px annule l’appui (c’est un défilement de la main ou un glisser-déposer) ;
 - le volet se referme d’un toucher, du bouton Fermer, d’Échap, en changeant d’écran, ou quand l’appareil repasse en portrait ;
 - le menu contextuel natif (callout iOS, « enregistrer l’image » Android), la sélection de texte **et le drag natif de l’illustration** sont étouffés sur les cartes — celles du créateur de deck comprises, pas seulement celles du duel ;
-- l’ouverture du duel annonce le geste dans la barre du bas sur appareil tactile, et le créateur de deck le rappelle en tête de sa bibliothèque (`rpg-atelier__astuce`, montrée au seul pointeur grossier) ;
+- le duel n’annonce pas le geste : la table est muette, et le volet d’aperçu ne porte plus de légende. Seul le créateur de deck le rappelle en tête de sa bibliothèque (`rpg-atelier__astuce`, montrée au seul pointeur grossier) ;
 - dans le créateur de deck, tenir une carte — ou son bouton « + » ou « − » — n’ajoute ni ne retire rien : l’aperçu est une consultation, et le clic simple garde son action d’atelier.
 
-En paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible (`42dvh`) pour que le volet, son indice et son bouton tiennent sans recouvrir la main.
+En paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible (`42dvh`) pour que le volet et son bouton tiennent sans recouvrir la main.
 
 Les piles de terrains sont uniquement une présentation : chaque terrain reste une instance distincte dans le moteur. Une production manuelle engage le prochain terrain disponible de la pile ; le paiement automatique, le choix de couleur de Pétra, le dégagement et l’annulation conservent leur fonctionnement. Les types de terrains différents se placent côte à côte sur une seule rangée horizontale, dans les deux camps. Au moins deux piles sont visibles sur les formats paysage testés ; les suivantes sont accessibles par défilement horizontal, sans retour à la ligne. Les rangées sont décalées vers l’intérieur du bois et alignées en bas du champ de chaque camp, hors des bordures et ornements du décor. Les piles restent droites et leurs compteurs demeurent dans leur cadre. Une carte terrain jouée rejoint sa pile existante lors de l’animation.
 
@@ -39,7 +39,7 @@ Les attaquants sont couchés à 90° dès leur déclaration et restent couchés 
 
 Le glisser-déposer reste disponible. Les flèches de blocage suivent le défilement. L’aperçu instantané n’a ni fond principal ni cadre ; seul l’encadré des infos garde son fond sombre, et le plateau n’a plus de grands fonds opaques. L’aperçu d’une magie lancée (centré, 1,8 s, aucune carte n’étant survolée) est ce même aperçu : ni liseré, ni halo, ni ombre, ni animation à lui. Seul son `z-index` (`.is-spell-preview`) le distingue, pour rester devant l’annonce « MAGIE JOUÉE ».
 
-Le plateau garde en revanche son **voile noir dégradé en haut et en bas** (`--rpg-plateau-voile`, `rpg-battle.css`) : les textes de la table vivent dans ces deux bandes — navigation et identité du sorcier en haut, identité du joueur, terrains, message du tour, phases, commandes et main en bas — et les plateaux clairs (l’Erg du Sahara monte à 142/255 en haut du cadre, les Ruines de Tipaza à 118 en bas) noyaient l’encre crème. Seule la vignette centrale disparaît au doigt, pour laisser le champ de bataille dégagé ; les bandes sont recalées sur les rangées de la grille tactile.
+Le plateau garde en revanche son **voile noir dégradé en haut et en bas** (`--rpg-plateau-voile`, `rpg-battle.css`) : les textes de la table vivent dans ces deux bandes — navigation et identité du sorcier en haut, identité du joueur, terrains, indicateur de tour, journal, phases, commandes et main en bas — et les plateaux clairs (l’Erg du Sahara monte à 142/255 en haut du cadre, les Ruines de Tipaza à 118 en bas) noyaient l’encre crème. Seule la vignette centrale disparaît au doigt, pour laisser le champ de bataille dégagé ; les bandes sont recalées sur les rangées de la grille tactile.
 
 ## La zone de jeu élargie et les piles de cartes homonymes
 

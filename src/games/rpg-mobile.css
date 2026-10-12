@@ -213,7 +213,6 @@
 .rpg-battle--touch .rpg-bottombar__status { flex-direction: column; align-items: flex-end; gap: 3px; }
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
-.rpg-battle--touch .rpg-bottombar__status .rpg-actions__wait { flex: none; max-width: 100%; max-height: 48px; padding: 0; border: 0; background: none; color: #ffedc7; font-size: 11px; line-height: 1.35; white-space: normal; overflow-y: auto; text-shadow: 0 2px 3px #000; }
 .rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
 .rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 7px; }
 .rpg-battle--touch .rpg-phase-track {

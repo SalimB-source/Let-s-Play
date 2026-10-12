@@ -1533,16 +1533,6 @@
 }
 
 .rpg-actions__who strong { color: var(--cyan); }
-.rpg-actions__wait {
-  margin: 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(6, 6, 14, .7);
-  color: #f2eddc;
-  font-size: 13px;
-}
-
 .rpg-skills {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -2019,7 +2009,6 @@
   .rpg-combat-window__foot { justify-content: flex-end; }
   .rpg-combat-window__foot p { flex-basis: 100%; }
   .rpg-bottombar .rpg-log { max-height: 42px; padding: 4px 7px; font-size: 9px; }
-  .rpg-actions__wait { max-width: calc(100vw - 20px); padding: 5px 9px; font-size: 11px; }
 }
 
 @media (max-width: 540px) {
@@ -2356,7 +2345,6 @@
 .rpg-bottombar .rpg-log { max-height: 40px; padding: 4px 8px; font-size: 9px; }
 .rpg-bottombar .rpg-actions { max-height: none; overflow: visible; }
 .rpg-actions__row { justify-content: flex-end; gap: 7px; }
-.rpg-actions__wait { margin: 0; padding: 5px 9px; border-radius: 8px; background: rgba(10, 9, 10, .72); color: #f4e3bf; font-size: 10px; text-align: right; }
 
 .rpg-hand-dock {
   z-index: 40;
@@ -2462,7 +2450,6 @@
   .rpg-card-pile small { font-size: 5px; }
   .rpg-bottombar { right: 6px; bottom: 130px; width: calc(100vw - 12px); }
   .rpg-bottombar .rpg-log { display: none; }
-  .rpg-actions__wait { max-width: 100%; font-size: 8px; }
   .rpg-actions__row { gap: 4px; }
   .rpg-actions__row .rpg-btn { padding: 6px 8px; font-size: 9px; }
   .rpg-hand-dock { padding: 5px 3px 2px; }
@@ -3289,14 +3276,6 @@
   max-width: 100%;
   max-height: 100%;
 }
-.rpg-card-peek__hint {
-  margin: 0;
-  color: #ffe6b0;
-  font: 700 9px/1.3 var(--display);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  text-shadow: 0 2px 5px #000;
-}
 .rpg-card-peek__close {
   position: relative;
   z-index: 1;
@@ -3327,7 +3306,6 @@
     gap: 10px;
     padding: 6px;
   }
-  .rpg-card-peek__hint { font-size: 8px; letter-spacing: .1em; }
   .rpg-card-peek__close { min-height: 44px; padding: 8px 20px; }
 }
 
@@ -3492,8 +3470,6 @@
 .rpg-blocker-arrow__shaft { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 .rpg-blocker-arrow__glow { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 @keyframes rpg-arrow-draw { to { stroke-dashoffset: 0; } }
-.rpg-actions__wait { animation: rpg-message-arrive .24s ease-out; }
-@keyframes rpg-message-arrive { from { opacity: .35; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-hover-card-preview,
@@ -3509,8 +3485,7 @@
   .rpg-card-destruction-fx::before,
   .rpg-card-destruction-fx::after,
   .rpg-blocker-arrow__shaft,
-  .rpg-blocker-arrow__glow,
-  .rpg-actions__wait { animation: none !important; transition: none !important; }
+  .rpg-blocker-arrow__glow { animation: none !important; transition: none !important; }
 }
 
 /* Couleur à gauche, coût à droite : le symbole élémentaire quitte la pastille
@@ -4337,21 +4312,6 @@
   gap: 6px;
 }
 .rpg-bottombar__status .rpg-turn-indicator { flex: none; }
-.rpg-bottombar__status .rpg-actions__wait {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 320px;
-  overflow: hidden;
-  padding: 6px 10px;
-  border: 1px solid rgba(223, 196, 143, .22);
-  border-radius: 7px;
-  background: rgba(8, 7, 7, .68);
-  color: rgba(245, 232, 207, .9);
-  font-size: 11px;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .rpg-bottombar .rpg-log {
   max-height: 30px;
   padding: 2px 6px;
@@ -4490,7 +4450,6 @@
     gap: 6px;
   }
   .rpg-bottombar__status { gap: 6px; }
-  .rpg-bottombar__status .rpg-actions__wait { flex-basis: 200px; max-width: 62vw; padding: 6px 9px; font-size: 11px; }
   .rpg-bottombar .rpg-log { display: none; }
   .rpg-bottombar .rpg-actions__row { justify-content: center; gap: 6px; }
   .rpg-actions__combat,

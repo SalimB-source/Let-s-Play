@@ -5181,14 +5181,16 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   aucun DOM, aucun `localStorage` : testable comme le moteur.
 - `src/games/RpgDuelPage.jsx` — le tirage dans `nouvellePartie`, sur les deux
   paquets réellement joués (prop brute, deck du catalogue ou clé de deck
-  d'étage), l'annonce nommée (`nommerOriginePlateau`), et la classe
-  `card-table--plateau-<id>` + le `background-image` posés sur la table.
+  d'étage), et la classe `card-table--plateau-<id>` + le `background-image`
+  posés sur la table. Le terrain ne s'annonce plus par une phrase : il se
+  **voit**, sous les cartes.
 - `src/games/rpg-battle.css` — la couleur de repli de chaque
   plateau, et les **voiles de lisibilité**. Le voile principal est un
   **dégradé noir posé en haut et en bas du plateau**
   (`--rpg-plateau-voile`) : c'est là que vivent les textes de la table —
   navigation, main adverse et identité du sorcier en haut ; identité du joueur,
-  rails de terrains, message du tour, phases, commandes et main en bas. Le
+  rails de terrains, indicateur de tour, journal, phases, commandes et main en
+  bas. Le
   centre reste dégagé, c'est la zone où les cartes se posent. Chaque plateau
   règle sa densité par deux variables, mesurée sur le fond livré (luminance du
   haut du cadre, sur 255) : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
@@ -5234,6 +5236,80 @@ plateau du catalogue règle sa propre densité**, les fonds clairs (sables, pier
 de Tipaza) sont plus voilés que le bois, et la présentation tactile conserve le
 voile au lieu de le supprimer.
 
+## Le Sablier : le duel se joue sans consignes
+
+Le duel parlait beaucoup. Sous l'indicateur de tour, un **bandeau
+d'indications** (`.rpg-actions__wait`) commentait chaque geste en toutes
+lettres : « Les cartes au halo doré sont jouables ; glissez-les sur la table… »
+à l'ouverture, « Mana insuffisant pour Fennec des décombres », « Choisissez une
+créature adverse », « Le sorcier a choisi ses bloqueurs. Les flèches jaunes
+montrent chaque blocage… ». Soixante-neuf phrases au total, réécrites à chaque
+action, qui doublaient une table déjà bavarde — et qui, au doigt, mangeaient la
+bande du bas.
+
+**La table dit déjà tout.** Les consignes sont retirées : l'état du duel se lit
+là où il se passe.
+
+- **Ce qui est jouable s'allume.** Le halo doré de la main (`is-playable`,
+  `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? ». Une
+  carte refusée reste éteinte, en main, avec son bruitage d'erreur — plus
+  personne n'écrit « mana insuffisant » ni « vous avez déjà posé votre terrain
+  ce tour ».
+- **Les cibles s'allument aussi.** Une magie ou un effet d'arrivée qui attend sa
+  victime allume la carte en main (`is-targeting`) et chaque cible légale sur la
+  table (`is-ciblable`) — le sorcier adverse compris, mais seulement quand il
+  est réellement visable. Le bouton « Annuler la cible » reste la sortie.
+- **Le combat se montre.** Attaquants couchés, jeton « engagée », flèches jaunes
+  de blocage, bloqueurs saisissables (`is-blocker-draggable`), victime du Coup
+  rapide cerclée d'orange : la phase de défense n'a plus besoin qu'on écrive
+  « glissez vos bloqueurs sur les attaquants ».
+- **Ce qui reste est du HUD, pas une consigne.** L'indicateur de tour
+  (`À VOTRE TOUR`, `À VOUS · DÉFENSE`…), les PV, le mana, les compteurs de
+  zones, la piste des phases et le **journal du duel** (`.rpg-log`, écrit par le
+  moteur : « Combat : 2 attaquant(s), 1 bloqué(s), 2 dégâts directs. ») disent
+  ce qui s'est passé, jamais ce qu'il faut faire.
+- **L'aperçu au doigt ne se légende plus.** Le volet d'appui long montre la
+  carte, sans la ligne « Appui long d'une seconde · aperçu de la carte » : qui
+  l'a sous les yeux vient de faire le geste. Les deux infobulles explicatives
+  des boutons (« Attaquer avec tous », « Annuler la dernière action ») partent
+  avec, leurs libellés se suffisant. Les libellés accessibles (`aria-label`),
+  eux, sont intacts : le lecteur d'écran garde sa description complète de chaque
+  carte et de chaque bouton.
+
+L'écran de rotation (« Le duel se joue en paysage ») reste : ce n'est pas une
+consigne de jeu mais une condition d'affichage, avec son bouton.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — l'état `message` et ses **69 appels**
+  `setMessage(...)` ont disparu, avec le `<p className="rpg-actions__wait">` de
+  la barre du bas, la ligne `.rpg-card-peek__hint` du volet d'aperçu, les deux
+  `title` explicatifs et le helper `nommerOriginePlateau()` qui ne servait qu'à
+  l'annonce d'ouverture. Les branches devenues vides ont été repliées (un
+  `if (!res.ok)` qui ne faisait qu'écrire n'existe plus), et les variables qui
+  ne nourrissaient que des phrases (`resume`, `noteEnvol`, `coupsRapides`…) avec
+  elles — le moteur, lui, n'a pas bougé d'une ligne.
+- `src/games/rpg-battle.css`, `src/games/rpg-mobile.css` — toutes les règles du
+  bandeau (socle, variantes d'écran étroit, présentation tactile) et son
+  animation d'arrivée (`rpg-message-arrive`), plus celles de la légende du
+  volet d'aperçu.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # le moteur : inchangé, 69 phrases en moins ne changent aucune règle
+npm run check:rpg-ui     # la page montée dans jsdom : plus de bandeau, l'état se lit sur la table
+npm run check:rpg-mobile # au doigt (Playwright) : le refus ne s'écrit plus, rien n'est joué
+```
+
+Les épreuves qui lisaient le bandeau lisent désormais la table : le halo
+(`data-jouable`) pour un refus, `is-ciblable` / `is-targeting` pour un choix de
+cible, `is-pret` pour une créature déjà engagée, l'indicateur de tour pour la
+reprise de la main, les PV du joueur pour une attaque encaissée, et le journal
+du moteur pour le résultat d'un combat. `check:rpg-ui` interdit en plus le
+retour du bandeau : ni `rpg-actions__wait` ni `rpg-card-peek__hint` ne doivent
+réapparaître dans la page ou la feuille de style.
+
 ## Le Sablier : l'aperçu d'une carte au doigt
 
 À la souris, survoler une carte ouvre son **aperçu instantané** : le type, le
@@ -5262,11 +5338,11 @@ produire un mana. Consulter une carte sans la jouer était impossible.
 - **Le volet se referme** d'un toucher n'importe où dessus, du bouton « Fermer
   l'aperçu » ou de la touche Échap. Il se referme aussi en changeant d'écran et
   quand l'appareil repasse en portrait (l'écran de rotation reprend la main).
-- **Le geste est annoncé.** L'ouverture du duel l'explique dans la barre du bas
-  sur appareil tactile : « Appui long d'une seconde sur une carte : son aperçu,
-  sans la jouer. » Le créateur de deck le rappelle de la même façon, en tête de
-  sa bibliothèque (« … sans rien ajouter ni retirer »), et seulement au doigt :
-  au pointeur fin, le survol ouvre déjà l'aperçu.
+- **Le geste ne s'écrit pas en duel.** La table est muette (voir « le duel se
+  joue sans consignes ») : ni la barre du bas ni le volet d'aperçu ne légendent
+  l'appui long. Seul le créateur de deck le rappelle en tête de sa bibliothèque
+  (« … sans rien ajouter ni retirer »), et seulement au doigt : au pointeur
+  fin, le survol ouvre déjà l'aperçu.
 
 ### Où vit le code
 
