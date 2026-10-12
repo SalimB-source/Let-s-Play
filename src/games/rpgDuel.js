@@ -13,6 +13,7 @@ import {
   cardColorCost,
   cardColors,
   duelCardById,
+  jetonById,
   magieById,
   terrainById,
   terrainManaColors,
@@ -397,6 +398,9 @@ function creerEntiteCreature(carte) {
     id: nextId(),
     carteId: carte.id,
     kind: carte.kind ?? 'creature',
+    // Créature-jeton : créée par un effet, sans carte en main ni coût payé.
+    // Elle se bat comme les autres, mais ne retourne jamais dans une main.
+    jeton: Boolean(carte.jeton),
     name: carte.name,
     atk: carte.atk,
     def: carte.def,
@@ -666,7 +670,11 @@ function annulerBonusTemporaires(duel, tourFerme) {
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
   const adv = autre(cote);
-  if (cibleId) {
+  // Boualem ne contre que l'effet qui le **cible vraiment** : un effet de zone,
+  // un renfort de camp ou une arrivée qui crée des jetons n'a pas de cible et
+  // ne doit donc jamais déclencher son contresort (le moteur ne transmet un
+  // `cibleId` qu'aux effets qui en désignent une).
+  if (cibleId && effet.cible) {
     const cibleBoualem = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (cibleBoualem?.carteId === 'boualem' && cibleBoualem.boualemContresortDisponible) {
       cibleBoualem.boualemContresortDisponible = false;
@@ -765,6 +773,24 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       }
       return;
     }
+    case 'jetons': {
+      // Créatures-jetons : l'effet fait naître une ou plusieurs créatures de
+      // modèle (`jetonById`), sans carte en main ni sable payé. Elles entrent
+      // en jeu comme n'importe quelle créature — le mal d'invocation et les
+      // auras du camp s'appliquent à leur tour, `rpgJouerCreature` finissant
+      // par `appliquerAuraSable` et `majResonance`.
+      const modele = jetonById(effet.jeton);
+      if (!modele) return;
+      const nombre = Math.max(0, Math.floor(Number(effet.nombre) || 1));
+      if (!nombre) return;
+      const source = duel[cote].creatures.find((entite) => entite.id === sauf);
+      for (let i = 0; i < nombre; i += 1) {
+        duel[cote].creatures.push(creerEntiteCreature(modele));
+      }
+      const nom = nombre > 1 ? (modele.pluriel ?? modele.name) : modele.name;
+      duel.log.push(`${source?.name ?? 'L’effet'} crée ${nombre} ${nom.toLowerCase()} ${modele.atk}/${modele.def} sans coût.`);
+      return;
+    }
     case 'buff': {
       // Un bonus déclaré avec `tours` est un bonus « jusqu’à la fin du tour » :
       // il est accordé comme les autres, puis noté dans le carnet du camp avec
@@ -859,6 +885,14 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
     return false;
   }
   camp.creatures = camp.creatures.filter((e) => e.id !== presente.id);
+  // Une créature-jeton n'a pas de carte à renvoyer : elle **cesse d'exister**,
+  // comme un jeton de table qui quitte le champ de bataille. Sans cette règle,
+  // un chien de sable de Tarek deviendrait une carte gratuite et rejouable.
+  if (presente.jeton) {
+    duel.log.push(`${presente.name} quitte la table : un jeton cesse d’exister.`);
+    majResonance(duel);
+    return true;
+  }
   camp.main.push(presente.carteId);
   duel.log.push(`${presente.name} retourne dans la main de son propriétaire.`);
   majResonance(duel);
@@ -980,7 +1014,13 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     duel.log.push(`${entite.name} reçoit une protection contre ${couleur} pour ce tour et le prochain tour adverse.`);
   }
   if (carte.arrivee) {
-    const cibleArrivee = carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId;
+    // Seuls les effets d'arrivée qui **désignent** une cible reçoivent un
+    // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
+    // n'en portent pas, ce qui évite qu'une cible quelconque — un Boualem
+    // adverse par exemple — n'intercepte un effet qui ne la visait pas.
+    const cibleArrivee = carte.arrivee.cible
+      ? (carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId)
+      : null;
     appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
   }
   majResonance(duel);

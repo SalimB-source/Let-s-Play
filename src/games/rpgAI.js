@@ -780,6 +780,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       }
     }
     if (arrivee.type === 'buff') score += camp.creatures.length * 1.5;
+    if (arrivee.type === 'jetons') {
+      // Chaque créature-jeton est un corps de plus sur la table, pour l'attaque
+      // suivante comme pour le blocage : deux chiens de sable valent deux tours
+      // de pression en plus du sorcier lui-même.
+      score += (Math.max(0, Math.floor(Number(arrivee.nombre) || 1))) * 2;
+    }
     if (arrivee.type === 'bouclier') score += 1.5;
     if (arrivee.type === 'retour-apres-tours') score += 2;
     if (arrivee.type === 'detruire-terrain-aleatoire') score += duel[adv].terrains.length ? 3 : 0;

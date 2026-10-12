@@ -1519,6 +1519,50 @@ export async function checkRpgBattle(assert) {
   await act(async () => { ferielRoot.unmount(); });
   ferielContainer.remove();
 
+  // ── Tarek : son arrivée crée deux chiens de sable sur la table ──
+  const tarekContainer = document.createElement('div');
+  document.body.appendChild(tarekContainer);
+  const tarekRoot = createRoot(tarekContainer);
+  await act(async () => {
+    tarekRoot.render(<RpgDuelPage
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'tarek']}
+      sorcierDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(tarekContainer);
+  const tarekHand = () => [...tarekContainer.querySelectorAll('button.rpg-hand__card')];
+  const finirTourTarek = async () => {
+    await act(async () => { tarekContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(1800); });
+    await passerAnnoncesSorcier(tarekContainer);
+    const resolve = tarekContainer.querySelector('.rpg-btn--resolve-combat');
+    if (resolve) await act(async () => { resolve.click(); });
+  };
+  for (let tour = 1; tour <= 5; tour += 1) {
+    const desert = tarekHand().find((card) => card.dataset.cardId === 'desert' && estJouable(card));
+    assert.ok(desert, 'un Désert est disponible pour financer Tarek');
+    await glisserSurTable(tarekContainer, desert);
+    await finirTourTarek();
+  }
+  const tarekEnMain = tarekHand().find((card) => card.dataset.cardId === 'tarek');
+  assert.ok(tarekEnMain && estJouable(tarekEnMain), 'Tarek devient payable après cinq Déserts');
+  await glisserSurTable(tarekContainer, tarekEnMain);
+  const chiensDeSable = [...tarekContainer.querySelectorAll('.rpg-card--equipe[data-card-id="chien-de-sable"]')];
+  assert.equal(chiensDeSable.length, 2, 'Tarek arrive en jeu avec ses deux chiens de sable, sans les payer');
+  assert.ok(chiensDeSable.every((chien) => chien.querySelector('.rpg-card__img')?.getAttribute('src')
+    ?.includes('/cards/chien-de-sable.jpg')),
+  'chaque chien de sable affiche la peinture du jeton');
+  assert.ok(chiensDeSable.every((chien) => chien.getAttribute('aria-label')?.includes('attaque 2, défense 2')),
+    'les chiens de sable arrivent à 2/2 sous l’aura Sable de Tarek');
+  assert.ok(!tarekHand().some((card) => card.dataset.cardId === 'chien-de-sable'),
+    'des créatures-jetons ne rejoignent jamais la main');
+  assert.match(tarekContainer.querySelector('.rpg-log')?.textContent ?? '',
+    /TAREK crée 2 chiens de sable 1\/1 sans coût/i,
+    'le journal du duel annonce la création des deux jetons');
+  await act(async () => { tarekRoot.unmount(); });
+  tarekContainer.remove();
+
   // ── Ressac : la créature adverse ciblée repart dans la main du sorcier ──
   const bounceContainer = document.createElement('div');
   document.body.appendChild(bounceContainer);

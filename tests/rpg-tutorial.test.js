@@ -90,7 +90,7 @@ test('le guide avancé couvre les familles de cartes et référence des exemples
     && lesson.cardIds.every((cardId) => cardById(cardId))), 'chaque fiche s’appuie sur une carte existante');
   for (const id of [
     'familles-de-cartes', 'terrain-hybride', 'rituel-ephemere', 'cible-ou-zone',
-    'contresorts', 'arrivee-en-jeu', 'capacite-de-destruction', 'rapidite-et-esquive',
+    'contresorts', 'arrivee-en-jeu', 'creatures-jetons', 'capacite-de-destruction', 'rapidite-et-esquive',
     'envol', 'protection', 'capacite-de-boualem', 'furie', 'auras-et-resonance',
     'coup-rapide', 'capacite-de-combat',
   ]) {

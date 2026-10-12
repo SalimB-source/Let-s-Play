@@ -109,7 +109,8 @@ limitée à 7.
 - Les **magies** peuvent cibler les créatures, et **parfois les joueurs**
   (selon la carte).
 - Les créatures peuvent avoir une capacité **à l'arrivée** ou **quand
-  elles sont détruites** (pioche, dégâts, soin, buff…).
+  elles sont détruites** (pioche, dégâts, soin, buff…), et une arrivée peut
+  aussi **créer des créatures-jetons** (voir « Les créatures-jetons » ci-dessous).
 - Le combat entre créatures est à dégâts mutuels, façon Magic.
 - **Phase d'attaque** : on déclare TOUS les attaquants d'un coup, puis
   l'attaque se résout en dégâts simultanés — sans mur, tout le monde
@@ -147,6 +148,41 @@ valkyries, arrivées du Guerrier et du Jarl).
 
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
+
+### Les créatures-jetons (les chiens de sable de Tarek)
+
+Tarek, **Le Porteur**, porte deux capacités qui se lisent sur la même ligne :
+
+> Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Tant
+> que Tarek est en jeu, vos créatures Sable gagnent +1/+1.
+
+- **l'aura** ne change pas : un Tarek en jeu renforce les créatures Sable de
+  **son** camp (les chiens du Tarek du sorcier appartiennent au sorcier) ;
+- **l'arrivée** est le nouvel effet `jetons` du moteur : elle fait naître deux
+  **créatures-jetons** (`RPG_JETON_CARDS`, fiche `chien-de-sable`, 1/1, coût 0,
+  `jeton: true`). Aucun sable n'est payé en plus : le coût de Tarek est le seul
+  paiement.
+
+Un jeton **se comporte comme une créature posée depuis la main** — mal
+d'invocation compris, il attaque et bloque dès le tour suivant — et il subit les
+auras du camp : sous son propre Tarek, le chien 1/1 arrive à 2/2 et retombe à
+1/1 si Tarek quitte la table.
+
+Ce qu'un jeton **n'est pas** :
+
+- il n'est pas une carte de collection : hors de `RPG_DUEL_CARDS`, donc absent
+  des decks, du draft et de l'atelier ; seuls les effets le font entrer en jeu ;
+- il ne retourne jamais dans une main : un renvoi (`retour-main`, Ressac ou
+  Courant de retour) le fait **cesser d'exister** au lieu de le rendre à son
+  propriétaire — sinon un chien de sable deviendrait une carte gratuite et
+  rejouable.
+
+Enfin, seuls les effets d'arrivée **qui désignent une cible** reçoivent un
+`cibleId` (`rpgJouerCreature`) : la création de jetons n'a pas de cible, donc
+elle ne peut pas être interceptée par le contresort de Boualem.
+
+Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la
+palette et la matière de celle de Tarek (direction artistique `RPG-CARD-ART.md`).
 
 ## 4. La boucle de tour
 

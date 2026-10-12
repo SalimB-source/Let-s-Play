@@ -81,6 +81,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Quand une créature arrive, son effet d’arrivée se résout automatiquement. Tislit fait piocher une carte ; la Porteuse de cruches soigne le joueur. D’autres arrivées renforcent le groupe, donnent un bouclier ou infligent des dégâts.',
   },
   {
+    id: 'creatures-jetons',
+    section: 'Capacités des créatures',
+    cardIds: ['tarek', 'chien-de-sable'],
+    title: 'Une arrivée peut créer des créatures-jetons',
+    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Ces créatures-jetons n’existent que sur la table : elles attaquent, bloquent et meurent comme les autres créatures — l’aura de Tarek les renforce même dès leur arrivée, puisqu’ils sont Sable — mais elles ne viennent d’aucune main et ne peuvent pas y retourner : un renvoi en main les fait disparaître.',
+  },
+  {
     id: 'arrivee-ciblee',
     section: 'Capacités des créatures',
     cardIds: ['vipere-de-verre', 'cavalier-amazigh-du-desert'],
