@@ -1011,6 +1011,80 @@ export async function checkRpgBattle(assert) {
   await act(async () => { impactRoot.unmount(); });
   impactContainer.remove();
 
+  // ── Les dégâts de sorts et de capacités d’arrivée reçus secouent aussi l’écran ──
+  const spellImpactContainer = document.createElement('div');
+  document.body.appendChild(spellImpactContainer);
+  const spellImpactRoot = createRoot(spellImpactContainer);
+  await act(async () => {
+    spellImpactRoot.render(<RpgDuelPage
+      joueurDeck={Array(10).fill('desert')}
+      sorcierDeck={[...Array(9).fill('montagne'), 'trait-de-braise']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(spellImpactContainer);
+  const spellImpactTable = spellImpactContainer.querySelector('.card-table');
+  const finirTourAvantSort = async () => {
+    await act(async () => { spellImpactContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(900); });
+  };
+  await finirTourAvantSort();
+  await finirTourAvantSort();
+  const annonceDegats = spellImpactContainer.querySelector('.rpg-annonce-sort');
+  assert.match(annonceDegats?.textContent ?? '', /Trait de braise/,
+    'le sorcier annonce son sort de dégâts dès qu’il a deux montagnes');
+  const laisserSortToucher = [...spellImpactContainer.querySelectorAll('.rpg-annonce-sort button')]
+    .find((button) => button.textContent.includes('Laisser passer'));
+  assert.ok(laisserSortToucher, 'le joueur peut laisser passer le sort adverse');
+  await act(async () => { laisserSortToucher.click(); });
+  assert.equal(spellImpactTable.dataset.screenImpact, 'received',
+    'un sort adverse qui touche le sorcier déclenche l’impact reçu');
+  assert.match(spellImpactTable.className, /rpg-screen-shake--[ab]/,
+    'le sort reçu fait trembler la table');
+  assert.match(spellImpactTable.className, /rpg-screen-hit--[ab]/,
+    'le sort reçu affiche la vignette rouge');
+  assert.equal(spellImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '47',
+    'le Trait de braise a réellement retiré trois points de vie');
+  await act(async () => { spellImpactRoot.unmount(); });
+  spellImpactContainer.remove();
+
+  const creatureImpactContainer = document.createElement('div');
+  document.body.appendChild(creatureImpactContainer);
+  const creatureImpactRoot = createRoot(creatureImpactContainer);
+  await act(async () => {
+    creatureImpactRoot.render(<RpgDuelPage
+      joueurDeck={Array(10).fill('desert')}
+      sorcierDeck={[...Array(9).fill('montagne'), 'ifrit-des-ergs']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(creatureImpactContainer);
+  const creatureImpactTable = creatureImpactContainer.querySelector('.card-table');
+  for (let tour = 1; tour <= 5; tour += 1) {
+    await act(async () => { creatureImpactContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(900); });
+    if (tour < 5) {
+      assert.equal(creatureImpactContainer.querySelector('.rpg-annonce-sort'), null,
+        `l’Ifrit attend d’avoir cinq montagnes avant d’être annoncé (tour ${tour})`);
+    }
+  }
+  const annonceIfrit = creatureImpactContainer.querySelector('.rpg-annonce-sort');
+  assert.match(annonceIfrit?.textContent ?? '', /Ifrit des ergs/,
+    'le sorcier annonce l’Ifrit après avoir réuni cinq manas Braise');
+  const laisserIfritToucher = [...creatureImpactContainer.querySelectorAll('.rpg-annonce-sort button')]
+    .find((button) => button.textContent.includes('Laisser passer'));
+  await act(async () => { laisserIfritToucher.click(); });
+  assert.equal(creatureImpactTable.dataset.screenImpact, 'received',
+    'une créature adverse qui blesse le sorcier à son arrivée déclenche l’impact reçu');
+  assert.match(creatureImpactTable.className, /rpg-screen-shake--[ab]/,
+    'la capacité d’arrivée de l’Ifrit fait trembler la table');
+  assert.match(creatureImpactTable.className, /rpg-screen-hit--[ab]/,
+    'la capacité d’arrivée de l’Ifrit affiche la vignette rouge');
+  assert.equal(creatureImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '48',
+    'l’Ifrit a réellement retiré deux points de vie');
+  await act(async () => { creatureImpactRoot.unmount(); });
+  creatureImpactContainer.remove();
+
   // ── Régression : le Trait de braise élimine l'unique attaquant pendant la réponse ──
   const killContainer = document.createElement('div');
   document.body.appendChild(killContainer);

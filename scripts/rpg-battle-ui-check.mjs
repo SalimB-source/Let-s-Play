@@ -255,10 +255,16 @@ assert.match(battleCss, /\.rpg-card\.is-wounded \.rpg-card__pt,[^{]+\{[^}]*color
   'la défense blessée est affichée en rouge');
 assert.match(battleCss, /font:\s*900 11px\/1\.15 Georgia/,
   'les statistiques du champ ont une taille supérieure');
+assert.match(battlePage, /const resoudreAttaqueEnnemie = \(\) => \{[\s\S]*?if \(res\.resume\.paires\.length > 0\) jouerSfx\('choc_lames', 0\.015\);/,
+  'un blocage résolu contre le joueur fait retentir le choc des épées');
+assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant\) => \{[\s\S]*?if \(res\.resume\.paires\.length > 0\) jouerSfx\('choc_lames', 0\.015\);/,
+  'un blocage résolu par le sorcier fait retentir le même choc des épées');
 assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('dealt'\)/,
   'une attaque directe sur le sorcier déclenche la secousse après acceptation des blocages');
-assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('received'\)/,
-  'une attaque directe reçue déclenche l’effet de dégâts du joueur');
+assert.match(battlePage, /const frappeDirecte = res\.resume\.frappeSorcier > 0;[\s\S]*?if \(frappeDirecte \|\| touchePendantLaFinDuTour\) declencherImpactEcran\('received'\)/,
+  'une attaque directe reçue ou un écho qui tombe en fin de combat déclenche l’effet de dégâts du joueur');
+assert.match(battlePage, /const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur\(\);[\s\S]*?const res = rpgSorcierResoudreAnnonce\(duel\);[\s\S]*?if \(res\.ok && joueurToucheDepuis\(degatsJoueurAvantResolution\)\) \{\s*declencherImpactEcran\('received'\);/,
+  'un sort ou une capacité d’arrivée adverse qui touche les PV ou le bouclier déclenche le même impact rouge');
 assert.match(battleCss, /\.card-table\.rpg-screen-shake--a\s*\{\s*animation:\s*rpg-screen-shake-a/,
   'la table possède une animation de tremblement dédiée');
 assert.match(battleCss, /\.card-table\.rpg-screen-hit--a::after[\s\S]*?radial-gradient\(ellipse at center/,
