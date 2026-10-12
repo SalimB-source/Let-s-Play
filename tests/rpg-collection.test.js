@@ -48,15 +48,18 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 29, '29 références possédées d\'entrée');
+  assert.equal(COLLECTION_DEPART.length, 33, 'les 29 cartes initiales plus 4 variantes communes de terrain sont possédées d\'entrée');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);
     assert.ok(['commune', 'inhabituelle'].includes(carte.rarity), `${id} est ${carte.rarity}`);
   }
-  // Pétra (terrain rare) reste une carte à ravir ; les quatre terrains communs appartiennent à tous.
+  // Pétra et sa variante rare se débloquent ; les terrains de base et leurs
+  // variantes communes appartiennent à tous.
   assert.equal(possedeCarte(COLLECTION_DEPART, 'petra'), false, 'Pétra se débloque');
-  for (const terrain of ['desert', 'mer', 'montagne', 'glacier']) {
+  assert.equal(possedeCarte(COLLECTION_DEPART, 'petra-des-deux-sources'), false, 'la variante rare de Pétra se débloque aussi');
+  for (const terrain of ['desert', 'dunes-du-tenere', 'mer', 'lagune-des-salines',
+    'montagne', 'cretes-de-cendre', 'glacier', 'glacier-des-arches']) {
     assert.equal(possedeCarte(COLLECTION_DEPART, terrain), true, `${terrain} appartient à tous`);
   }
 });
@@ -166,6 +169,7 @@ test('exemplairesPossedables suit les quotas de rareté et la possession', () =>
 
 test('recompenseEtage rend les cartes d\'un étage, rien pour un étage inconnu', () => {
   assert.deepEqual(recompenseEtage('listes-1'), ['cavalier-amazigh-du-desert', 'scribe-de-la-liste']);
+  assert.deepEqual(recompenseEtage('listes-4'), ['petra', 'petra-des-deux-sources']);
   assert.deepEqual(recompenseEtage('etage-fantome'), []);
 });
 

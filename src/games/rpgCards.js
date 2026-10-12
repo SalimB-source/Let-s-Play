@@ -1075,7 +1075,10 @@ export function duelCardById(id) {
  * exemplaire par deck ; les autres cartes non-terrain à trois exemplaires.
  */
 export const RPG_DECK_JOUEUR_BASE = [
-  ...Array(17).fill('desert'),
+  // Deux peintures de terrain Sable, même production de mana : le paquet
+  // alterne le Désert classique et les Dunes du Ténéré.
+  ...Array(9).fill('desert'),
+  ...Array(8).fill('dunes-du-tenere'),
   ...Array(2).fill('fennec-des-decombres'),
   'cavalier-amazigh-du-desert',
   ...Array(3).fill('faiseur-de-passage'),
@@ -1093,11 +1096,14 @@ export const RPG_DECK_JOUEUR_BASE = [
  * Mono-Braise. La Rafale du minaret puis la Fureur du souk ont été retirées du
  * jeu. Le vivier Braise est dès lors au complet — Braisier, Ghul, Trait et
  * Nuage sont déjà à trois exemplaires, les six mythiques à un —, si bien que
- * les quatre cases libérées reviennent aux Montagnes : vingt-deux terrains
- * pour une courbe qui grimpe jusqu'à l'Ifrit al-Ahmar.
+ * les quatre cases libérées reviennent aux terrains Braise : vingt-deux cartes
+ * réparties entre Montagne et Crêtes de cendre pour une courbe qui grimpe
+ * jusqu'à l'Ifrit al-Ahmar.
  */
 export const RPG_DECK_SORCIER_BASE = [
-  ...Array(22).fill('montagne'),
+  // La Braise partage ses terrains entre la Montagne et les Crêtes de cendre.
+  ...Array(11).fill('montagne'),
+  ...Array(11).fill('cretes-de-cendre'),
   ...Array(3).fill('braisier-du-souk'),
   'feriel',
   'anqa-des-braises',
@@ -1111,9 +1117,14 @@ export const RPG_DECK_SORCIER_BASE = [
 ];
 
 export const RPG_DECK_HYBRIDE_BASE = [
-  ...Array(6).fill('desert'),
-  ...Array(6).fill('montagne'),
-  ...Array(5).fill('petra'),
+  // L’hybride mêle aussi les variantes Sable, Braise et la seconde peinture
+  // rare de Pétra sans changer son équilibre de mana.
+  ...Array(3).fill('desert'),
+  ...Array(3).fill('dunes-du-tenere'),
+  ...Array(3).fill('montagne'),
+  ...Array(3).fill('cretes-de-cendre'),
+  ...Array(3).fill('petra'),
+  ...Array(2).fill('petra-des-deux-sources'),
   ...Array(3).fill('fennec-des-decombres'),
   ...Array(2).fill('cavalier-amazigh-du-desert'),
   ...Array(2).fill('faiseur-de-passage'),
@@ -1134,21 +1145,25 @@ export const RPG_DECK_HYBRIDE_BASE = [
  * Illustrations provisoires : une carte dont le plein art n'est pas encore
  * peint peut être déclarée ici — elle affiche alors un recadrage étalonné d'une
  * illustration existante (direction artistique : `RPG-CARD-ART.md`). La liste
- * est vide : les dix-huit cartes du Serment des Neuf Hivers ont leur peinture
- * dédiée. Chaque entrée doit disparaître le jour où la peinture originale
- * remplace le fichier `public/cards/<id>.jpg`.
+ * est vide : les dix-huit cartes hors terrain du Serment des Neuf Hivers, le
+ * Glacier et sa variante ont leur peinture dédiée. Chaque entrée doit
+ * disparaître le jour où la peinture originale remplace le fichier
+ * `public/cards/<id>.jpg`.
  */
 export const RPG_ART_PROVISOIRE = [];
 
 /**
- * Serment des Neuf Hivers — le deck mono-Neige : dix-sept glaciers, des
- * guerriers de clan, des valkyries, un berserk, un drakkar et les figures du
- * Nord (jamais nommées « dieux » : le Père des corbeaux, le Maître du marteau,
- * la Dame des neuf mondes, le Serpent du monde). Les figures sont mythiques,
- * donc en un exemplaire ; les autres cartes rares du set peuvent aller à trois.
+ * Serment des Neuf Hivers — le deck mono-Neige : dix-sept terrains Glacier,
+ * dont la variante des Arches, des guerriers de clan, des valkyries, un berserk,
+ * un drakkar et les figures du Nord (jamais nommées « dieux » : le Père des
+ * corbeaux, le Maître du marteau, la Dame des neuf mondes, le Serpent du monde).
+ * Les figures sont mythiques, donc en un exemplaire ; les autres cartes rares
+ * du set peuvent aller à trois.
  */
 export const RPG_DECK_NEIGE_BASE = [
-  ...Array(17).fill('glacier'),
+  // Le Serment alterne le Glacier et sa variante creusée des Arches.
+  ...Array(9).fill('glacier'),
+  ...Array(8).fill('glacier-des-arches'),
   ...Array(2).fill('guerrier-au-bouclier-rond'),
   ...Array(2).fill('loup-des-neiges'),
   'scalde-des-runes',
@@ -1172,11 +1187,13 @@ export const RPG_DECK_NEIGE_BASE = [
 /**
  * Marée des abysses — mono-Eau : des contresorts qui répondent aux annonces du sorcier
  * adverse, des bêtes marines mythiques et le renvoi en main (Ressac, Courant de retour)
- * qui reprend du tempo sans tuer. 16 Mer, 10 créatures (4 mythiques, un seul
- * exemplaire chacune), 14 sorts.
+ * qui reprend du tempo sans tuer. 16 terrains Eau (Mer et Lagune des salines),
+ * 10 créatures (4 mythiques, un seul exemplaire chacune), 14 sorts.
  */
 export const RPG_DECK_MAREE_BASE = [
-  ...Array(16).fill('mer'),
+  // Seize cartes Eau, réparties entre la côte et la Lagune des salines.
+  ...Array(8).fill('mer'),
+  ...Array(8).fill('lagune-des-salines'),
   ...Array(2).fill('porteuse-de-cruches'),
   ...Array(2).fill('veilleuse-des-citernes'),
   'vipere-de-verre',
@@ -1369,6 +1386,76 @@ export const RPG_TERRAIN_CARDS = [
     cost: 0,
     text: 'Engagez : ajoutez un mana Neige.',
     flavor: 'Sous la glace, le temps dort debout.',
+  },
+  // Variantes illustrées : elles reprennent exactement le type, le coût et la
+  // production de mana de leur terrain d’origine. `varianteDe` sert de lien
+  // éditorial et ne change aucune règle du duel.
+  {
+    id: 'dunes-du-tenere',
+    name: 'Dunes du Ténéré',
+    element: 'sable',
+    kind: 'terrain',
+    art: 'dunes-du-tenere',
+    varianteDe: 'desert',
+    typeLine: 'Terrain — Désert',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana sable.',
+    flavor: 'Les pistes s’effacent ; le voyage, jamais.',
+  },
+  {
+    id: 'cretes-de-cendre',
+    name: 'Crêtes de cendre',
+    element: 'braise',
+    kind: 'terrain',
+    art: 'cretes-de-cendre',
+    varianteDe: 'montagne',
+    typeLine: 'Terrain — Montagne',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana braise.',
+    flavor: 'Le volcan se tait ; la pierre garde sa chaleur.',
+  },
+  {
+    id: 'lagune-des-salines',
+    name: 'Lagune des salines',
+    element: 'eau',
+    kind: 'terrain',
+    art: 'lagune-des-salines',
+    varianteDe: 'mer',
+    typeLine: 'Terrain — Mer',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana eau.',
+    flavor: 'La lagune garde le ciel après le départ du soleil.',
+  },
+  {
+    id: 'petra-des-deux-sources',
+    name: 'Pétra des deux sources',
+    element: 'hybride',
+    colors: ['sable', 'braise'],
+    manaColors: ['braise', 'sable'],
+    kind: 'terrain',
+    art: 'petra-des-deux-sources',
+    varianteDe: 'petra',
+    typeLine: 'Terrain — Cité',
+    rarity: 'rare',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana Braise ou Sable.',
+    flavor: 'Deux reflets, une seule piste dans la roche rose.',
+  },
+  {
+    id: 'glacier-des-arches',
+    name: 'Glacier des arches',
+    element: 'neige',
+    kind: 'terrain',
+    art: 'glacier-des-arches',
+    varianteDe: 'glacier',
+    typeLine: 'Terrain — Glacier',
+    rarity: 'commune',
+    cost: 0,
+    text: 'Engagez : ajoutez un mana Neige.',
+    flavor: 'La glace ouvre une porte sur les hivers enfouis.',
   },
 ];
 

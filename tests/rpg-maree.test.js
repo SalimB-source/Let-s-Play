@@ -37,7 +37,9 @@ const contre = (duel, id) => rpgLancerMagie(duel, 'joueur', id);
 test('la Marée des abysses est un deck d’Eau valide de 40 cartes, avec les quatre bêtes mythiques', () => {
   assert.equal(RPG_DECK_MAREE_BASE.length, 40);
   assert.equal(rpgValiderDeck(RPG_DECK_MAREE_BASE).ok, true);
-  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'mer').length, 16, '16 Mer');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => cardById(id).kind === 'terrain').length, 16, '16 terrains Eau');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'mer').length, 8, '8 Mer classiques');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'lagune-des-salines').length, 8, '8 Lagunes des salines');
   for (const id of ['kraken', 'leviathan', 'bakunawa', 'jormungandr']) {
     assert.equal(cardById(id).rarity, 'mythique', `${id} est mythique`);
     assert.equal(RPG_DECK_MAREE_BASE.filter((x) => x === id).length, 1, `${id} en un seul exemplaire`);

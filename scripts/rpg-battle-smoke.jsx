@@ -307,7 +307,7 @@ export async function checkRpgBattle(assert) {
   assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*7[\s\S]*validé/,
     'le Serment est validé à 40 cartes : 17 terrains, 16 créatures et héros, 7 magies');
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
-  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes avec leurs quantités, Cavalier inclus');
+  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 13, 'la fiche détaille les références distinctes avec leurs quantités, le Cavalier et les Dunes du Ténéré inclus');
   assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
     'la fiche indique la taille et la répartition terrain / créature / magie du deck validé');
   await act(async () => { boutonDeck('Cour des Djinns').click(); });
