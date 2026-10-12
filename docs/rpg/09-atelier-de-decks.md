@@ -122,6 +122,126 @@ habille son boîtier. Le normalisateur (`normaliserDeckMaison`) expose le nom
 sous `nom` **et** `name`, pour que l'étagère, la fiche et la plaque du duel
 lisent tous la même chose.
 
+## Les recettes : d'où viennent les decks du catalogue
+
+Le joueur qui ouvre l'atelier veut comprendre ce que l'étagère lui propose. Les
+dix boîtiers du jeu — les cinq du catalogue et les cinq variantes de la
+campagne — ne sont plus écrits à la main : ils sont **composés** par la règle
+« **les meilleures cartes d'abord** ».
+
+Trois fichiers la portent, sans dépendance circulaire :
+
+| Fichier | Ce qu'il contient |
+|---|---|
+| `src/games/rpgCardPower.js` | l'échelle de puissance d'une carte |
+| `src/games/rpgDeckRecipes.js` | les dix recettes (données pures) |
+| `src/games/rpgDeckComposer.js` | `composerDeck(recette, catalogue)` |
+
+### La puissance d'une carte
+
+`puissanceCarte(carte)` classe d'abord par **palier de rareté** — commune 1,
+inhabituelle 2, rare 3, mythique 4, multiplié par dix — puis par la **valeur de
+la carte rapportée à son mana** (`valeurCarte` : ⚔ 1,3 le point, 🛡 1, la
+vol 2,5, un contresort 3,5 sur une carte, un sort de dégâts 1,25 le point sur
+une cible, le soin 0,5, la pioche 1,5…). Aucune commune ne peut donc dépasser
+une rare, quel que soit son texte ; à palier égal, la carte la plus rentable
+passe devant. Le classement ne lit jamais le catalogue : il ne lit que la fiche
+de la carte, ce qui permet de le rejouer sur une carte toute neuve.
+
+### Une recette, cinq lignes
+
+Une recette dit ce qui ne se négocie pas, et rien d'autre :
+
+- `identite` — la ou les couleurs du deck. **La composition ne peut jamais
+  sortir de l'identité** : un deck mono-Sable reste cent pour cent sable ;
+- `terrains` — le nombre de terrains, jusqu'à la peinture de chaque variante ;
+- `creatures` et `magies` — les places de chaque famille ;
+- `signature` — les cartes d'archétype, posées **avant** tout le reste et
+  conservées même si une carte mieux classée frappe à la porte : c'est l'âme
+  du deck (le Djinn de foudre et le Vent rouge dans l'Hybride, les valkyries
+  dans le Serment, le Fennec chez les Veilleurs) ;
+- `mythiquesMax` et `raresMax` — les **plafonds de la campagne** seulement,
+  comptés **par famille** : les cinq boîtiers du catalogue n'en ont pas, les
+  cinq paquets de l'Histoire si.
+
+### Comment le composeur remplit
+
+1. il pose la **signature** ;
+2. il remplit au fil du classement, plafonds d'abord ;
+3. puis les rares sans plafond, puis tout le reste — de sorte qu'une place ne
+   reste jamais vide ;
+4. si une carte de la recette n'existe pas (ou plus) au catalogue, sa place
+   revient à la meilleure carte restante de la même famille.
+
+Chaque carte est prise à son **maximum légal** : une mythique à un exemplaire,
+les autres à trois, les terrains en quantité libre. Les plafonds ne se
+contournent jamais : quand le plafond tombe, la famille passe à la carte
+suivante du classement, même moins puissante.
+
+### Les dix recettes
+
+| Deck | Identité | Terrains / Créatures / Sorts | Plafonds | Signature |
+|---|---|---|---|---|
+| Veilleurs du Désert | Sable | 17 / 18 / 5 | — | Amani ×3 · Cavalier · Tiziri · Amayas · Tislit · Tempête de sable |
+| Cour des Djinns | Braise | 22 / 12 / 6 | — | Braisier ×3 · Trait de braise ×3 · Nuage de cendres ×3 |
+| Sentiers de cendre | Sable + Braise | 17 / 18 / 5 | — | Djinn de foudre ×3 · Vent rouge ×2 · Rempart de dunes |
+| Marée des abysses | Eau | 16 / 10 / 14 | — | Contresort ×3 · Silence d'écume ×3 · Ressac ×2 · Courant de retour |
+| Serment des Neuf Hivers | Neige | 17 / 16 / 7 | — | Jarl · Loup · Guerrier · Mur ×2 · Hurlement · Brume |
+| `souffleuse-de-verre` | Braise + Sable | 17 / 17 / 6 | 4 mythiques · 3 rares | Fériel · Trait de braise ×3 · Fennec ×3 · Vent rouge ×2 · Djinn de foudre |
+| `gardes-du-fjord` | Neige | 21 / 12 / 7 | 1 mythique · 2 rares | Dame des neuf mondes · Mur ×3 · Brume ×2 · Festin ×2 · Scalde · Guerrier |
+| `meute-des-neiges` | Neige | 21 / 13 / 6 | 0 mythique · 3 rares | Loup ×3 · Berserk ×2 · Guerrier · Hurlement |
+| `maitre-des-neuf-hivers` | Neige | 18 / 15 / 7 | 2 mythiques · 4 rares | Père des corbeaux · Maître du marteau |
+| `grand-horloger` | Braise + Sable | 17 / 17 / 6 | 3 mythiques · 4 rares | Tin Hinan · Sahir · Anqa |
+
+Les paliers de la Tour du Fjord sont lisibles d'un coup d'œil : **une** figure
+mythique pour la Garde, **aucune** pour la Meute, **deux** pour le Maître,
+**trois** pour le Grand Horloger. La montée des Tours est préservée par la
+recette, pas par un cas particulier dans le code.
+
+### Ce que la composition a changé
+
+- **Les mythiques montent toutes** dans les boîtiers : les trois figures Sable
+  chez les Veilleurs, les six de la Cour (Braise), les neuf de l'Hybride, les six
+  de la Marée, les quatre du Nord — et les héros (Salem, Tarek, Yamina, Boualem)
+  entrent dans les paquets de départ, à un exemplaire ;
+- **les listes resserrent leurs cartes distinctes** autour des meilleures :
+  les Veilleurs passent de treize à douze, la Cour de douze à dix, l'Hybride de
+  vingt à quinze, la Marée de dix-sept à treize, le Serment de vingt à quinze.
+  Les cartes écartées (Scalde des runes, Géant des banquises, Drakkar de
+  l'ancien Serment, Éclairs du marteau, Festin des vaillants…) restent au
+  catalogue et dans la collection ;
+- **La Cour des Djinns ne bouge pas** : son vivier Braise était déjà aligné au
+  complet — un boîtier que la règle confirme au lieu de le réécrire ;
+- **Le Grand Horloger gagne une réparation** : ses deux mythiques de Braise
+  étaient injouables, le paquet n'avait aucune source de Braise. Sa recette lui
+  donne Pétra ×2, trois Montagnes et deux Crêtes de cendre, à côté des dix
+  terrains de son identité sable.
+
+### Les cartes hors deck
+
+Douze cartes du catalogue ne figurent dans aucun boîtier, parce qu'elles sont
+les moins bien classées de leur couleur : quatre **Sable** (Chien du guet,
+Guetteur du beffroi, Dune marchante, Faiseur de passage), sept **Eau** (Porteuse
+de cruches, Veilleuse des citernes, Sonneur fêlé, Eau de la source, Lame de mer,
+Parade de verre, Brisure de verre) et le **Géant des banquises**, seul Neige
+laissé de côté. Elles restent dans la collection et l'atelier : le joueur peut
+les mettre dans un deck maison, aucun boîtier ne les aligne d'office.
+
+### Le contrôle
+
+`npm run check:rpg-decks` (`tests/rpg-decks-puissance.test.js`) recalcule chaque
+liste à partir de sa recette et exige que :
+
+- chaque deck soit **exactement** `composerDeck(recette)` ;
+- **aucune carte laissée de côté ne soit mieux classée qu'une carte retenue de
+  sa famille** (la signature, les terrains et les plafonds expliquent les seules
+  exceptions admises, et seule la dernière carte d'une famille peut être
+  partielle quand le quota est coupé) ;
+- les mythiques de l'identité soient toutes là, à un exemplaire ;
+- les plafonds de la campagne tiennent, boîtier et étage compris ;
+- l'identité chromatique soit stricte, et le boîtier (`boxArt`) tiré d'une carte
+  du deck.
+
 ## L'étagère maison
 
 - **Le plafond** : six decks maison (`RPG_DECKS_MAISON_LIMITE`). La crate

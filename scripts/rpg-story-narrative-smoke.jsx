@@ -7,6 +7,7 @@ import { RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY } from '../src/game
 import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 import { RPG_STORY_CAMPAIGN_FLOORS } from '../src/games/rpgStoryScenes.js';
 import { collectionJoueur, chargerCollectionDistante } from '../src/games/rpgCollection.js';
+import { RPG_PV_JOUEUR } from '../src/games/rpgDuel.js';
 import { passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -189,7 +190,9 @@ export async function checkRpgStoryNarrative(assert) {
     assert.deepEqual(lire().etagesVaincus, []);
     assert.deepEqual(lire().recit.curseur, { type: 'duel', etageId: 'listes-1' });
     await click(bouton('Recommencer l’étage'));
-    assert.equal(query('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value').textContent.trim(), '50');
+    // Les PV se lisent sur la règle du moteur, pas sur un nombre écrit ici :
+    // tout le monde part à 25 depuis que les sorciers ne gonflent plus leurs PV.
+    assert.equal(query('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value').textContent.trim(), String(RPG_PV_JOUEUR));
     assert.equal(query('.rpg-narrative'), null, 'réessayer ne réimpose pas la scène');
   } finally {
     await unmount();

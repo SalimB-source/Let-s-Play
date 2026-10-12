@@ -339,9 +339,10 @@ const creatureAdverse = (duel, carteId) => {
   return pose.entite;
 };
 
-test('la Marée des abysses embarque le renvoi en main : deux Ressac et un Courant de retour', () => {
+test('la Marée des abysses embarque le renvoi en main : deux Ressac et le Courant de retour à son maximum', () => {
   assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'ressac').length, 2, 'deux Ressac');
-  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'courant-de-retour').length, 1, 'un Courant de retour');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'courant-de-retour').length, 3,
+    'le Courant de retour à son maximum, comme toute rare du deck');
   for (const id of ['ressac', 'courant-de-retour']) {
     const carte = cardById(id);
     assert.equal(carte.kind, 'magie', `${id} est un sort`);

@@ -17,7 +17,10 @@
  * ne se dévoilent qu'à l'ouverture d'une tour.
  */
 
+import { composerDeck } from './rpgDeckComposer.js';
+import { RPG_RECETTES_HISTOIRE } from './rpgDeckRecipes.js';
 import {
+  CATALOGUE_DU_COMPOSEUR,
   RPG_DECK_HYBRIDE_BASE,
   RPG_DECK_JOUEUR_BASE,
   RPG_DECK_MAREE_BASE,
@@ -25,102 +28,40 @@ import {
   RPG_DECK_SORCIER_BASE,
 } from './rpgCards.js';
 
-/** Variantes de decks propres à la campagne (40 cartes, mêmes quotas que le catalogue). */
+/**
+ * Les paquets de la campagne — les cinq decks du catalogue, joués tels quels
+ * par les sorciers qui les portent, et les cinq **variantes** que seuls les
+ * étages alignent.
+ *
+ * Les variantes ne sont pas écrites carte par carte : elles passent par les
+ * mêmes recettes que le catalogue (`RPG_RECETTES_HISTOIRE`, `rpgDeckRecipes.js`)
+ * et le même composeur (`rpgDeckComposer.js`) — « les meilleures cartes
+ * d’abord ». Ce qui les distingue, c’est leur signature (la manière du sorcier)
+ * et leurs plafonds (`mythiquesMax`, `raresMax`) : la rampe des Tours, où la
+ * Garde du fjord n’ouvre pas avec les figures du Nord et où le Maître des Neuf
+ * Hivers les aligne. Les listes restent valides comme celles du catalogue :
+ * 40 cartes, au moins 40 % de terrains, mythiques à un exemplaire.
+ */
 export const RPG_STORY_DECKS = {
   'cour-des-djinns': RPG_DECK_SORCIER_BASE,
   'veilleurs-du-desert': RPG_DECK_JOUEUR_BASE,
   // Deck bleu (Eau) : contres et bêtes marines. Seule la Tour des Abysses le joue.
   'maree-des-abysses': RPG_DECK_MAREE_BASE,
   'sentiers-de-cendre': RPG_DECK_HYBRIDE_BASE,
-  // Hybride agressive : le retrait passe devant le rempart, la Souffleuse
-  // frappe avec le verre (Fériel) plutôt qu'elle ne se barricade. La Rafale du
-  // minaret et la Fureur du souk ont été retirées du jeu : le Trait de braise
-  // — déjà trois fois — reste son retrait instantané, et les deux cases
-  // libérées passent au Vent rouge, la carte bicolore de la maison, et à un
-  // second Braisier du souk, qui presse l'adversaire.
-  'souffleuse-de-verre': [
-    ...RPG_DECK_HYBRIDE_BASE.filter((id) => id !== 'rempart-de-dunes' && id !== 'djinn-de-foudre'),
-    'djinn-de-foudre',
-    'trait-de-braise',
-    'vent-rouge',
-    'braisier-du-souk',
-  ],
-  // La Neige du Serment, telle qu'elle se joue en duel libre.
+  // La Souffleuse de verre : l’Hybride agressive — Fériel frappe avec le verre,
+  // le Trait de braise est son retrait instantané, le Fennec ouvre la piste.
+  'souffleuse-de-verre': composerDeck(RPG_RECETTES_HISTOIRE['souffleuse-de-verre'], CATALOGUE_DU_COMPOSEUR),
+  // La Neige du Serment, telle qu’elle se joue en duel libre.
   'serment-des-neuf-hivers': RPG_DECK_NEIGE_BASE,
-  // Garde du fjord : la muraille d'abord — boucliers, brumes et soins, et l'on
-  // ne rend coup qu'une fois l'adversaire essoufflé. Les deux arts du Glacier
-  // se partagent les vingt-et-une sources de Neige.
-  'gardes-du-fjord': [
-    ...Array(11).fill('glacier'),
-    ...Array(10).fill('glacier-des-arches'),
-    ...Array(3).fill('guerrier-au-bouclier-rond'),
-    ...Array(2).fill('loup-des-neiges'),
-    ...Array(3).fill('scalde-des-runes'),
-    ...Array(2).fill('valkyrie-au-corbeau'),
-    ...Array(3).fill('mur-de-boucliers'),
-    ...Array(2).fill('brume-du-fjord'),
-    'festin-des-vaillants',
-    'eclair-du-marteau',
-    'dame-des-neuf-mondes',
-    'drakkar-a-tete-de-dragon',
-  ],
-  // Meute des neiges : la course — loups, berserks et éclairs, sans réserve.
-  'meute-des-neiges': [
-    ...Array(11).fill('glacier'),
-    ...Array(10).fill('glacier-des-arches'),
-    ...Array(3).fill('loup-des-neiges'),
-    ...Array(2).fill('berserk-des-trois-hivers'),
-    ...Array(3).fill('guerrier-au-bouclier-rond'),
-    ...Array(2).fill('valkyrie-au-corbeau'),
-    'scalde-des-runes',
-    ...Array(2).fill('eclair-du-marteau'),
-    'hurlement-du-blizzard',
-    'valkyrie-des-glaces',
-    'geant-des-banquises',
-    'festin-des-vaillants',
-    ...Array(2).fill('mur-de-boucliers'),
-  ],
-  // Deck du boss du fjord : le Serment essuyé, avec les figures du Nord — le
-  // Père des corbeaux et le Maître du marteau — à leur maximum d'exemplaires.
-  'maitre-des-neuf-hivers': [
-    ...Array(9).fill('glacier'),
-    ...Array(9).fill('glacier-des-arches'),
-    ...Array(3).fill('guerrier-au-bouclier-rond'),
-    ...Array(2).fill('loup-des-neiges'),
-    'scalde-des-runes',
-    ...Array(2).fill('valkyrie-au-corbeau'),
-    'berserk-des-trois-hivers',
-    'jarl-au-marteau-de-guerre',
-    'valkyrie-des-glaces',
-    'geant-des-banquises',
-    'drakkar-a-tete-de-dragon',
-    'hurlement-du-blizzard',
-    ...Array(2).fill('eclair-du-marteau'),
-    ...Array(2).fill('brume-du-fjord'),
-    ...Array(2).fill('festin-des-vaillants'),
-    'pere-des-corbeaux',
-    'maitre-du-marteau',
-  ],
-  // Deck de contrôle du boss : les Veilleurs, soigneusement essuyés, avec
-  // deux mythiques de Braise glissées dans le paquet du Grand Horloger. Les
-  // Dunes du Ténéré voisinent avec le Désert classique.
-  'grand-horloger': [
-    ...Array(9).fill('desert'),
-    ...Array(8).fill('dunes-du-tenere'),
-    ...Array(2).fill('fennec-des-decombres'),
-    ...Array(2).fill('faiseur-de-passage'),
-    ...Array(3).fill('tislit-des-aures'),
-    ...Array(2).fill('tiziri-du-djurdjura'),
-    ...Array(3).fill('amani-des-ksour'),
-    ...Array(2).fill('amayas-du-hoggar'),
-    'tin-hinan',
-    'sahir-des-braises',
-    'anqa-des-braises',
-    ...Array(2).fill('rapport-du-greffier'),
-    ...Array(2).fill('rempart-de-dunes'),
-    'tempete-de-sable',
-    'nuage-de-cendres',
-  ],
+  // Garde du fjord : la muraille d’abord — boucliers, brumes et soins.
+  'gardes-du-fjord': composerDeck(RPG_RECETTES_HISTOIRE['gardes-du-fjord'], CATALOGUE_DU_COMPOSEUR),
+  // Meute des neiges : la course — loups, berserks et valkyries, sans réserve.
+  'meute-des-neiges': composerDeck(RPG_RECETTES_HISTOIRE['meute-des-neiges'], CATALOGUE_DU_COMPOSEUR),
+  // Le boss du fjord : le Serment essuyé, les figures du Nord à leur maximum.
+  'maitre-des-neuf-hivers': composerDeck(RPG_RECETTES_HISTOIRE['maitre-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR),
+  // Le boss de la Chambre des Heures : un vrai hybride Sable + Braise, Pétra
+  // comprise — ses mythiques de Braise sont enfin payables.
+  'grand-horloger': composerDeck(RPG_RECETTES_HISTOIRE['grand-horloger'], CATALOGUE_DU_COMPOSEUR),
 };
 
 /** Les tours, de la plus basse à la plus haute. */
