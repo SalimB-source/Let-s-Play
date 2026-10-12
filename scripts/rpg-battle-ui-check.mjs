@@ -421,8 +421,16 @@ for (const { fichier } of RPG_PLATEAUX) {
 }
 assert.match(plateauxSource, /id: 'erg-du-sahara'[\s\S]*?fichier: 'plateau-erg-du-sahara\.jpg'/,
   'le désert du Sahara est un plateau déclaré, avec son fond dans public/');
-assert.match(battlePage, /tirerPlateauDuDuel\(\{\s*deckJoueur: joueurDeck \?\? deckJoueurSelectionne,\s*deckAdverse: etageCourant \? etageCourant\.deck : sorcierDeck \?\? deckAdverse,\s*rng,\s*\}\)/,
-  'chaque nouvelle partie prend le plateau du deck de l’un des deux duellistes, celui que le rng du duel désigne');
+const choixPlateauPartie = battlePage.slice(
+  battlePage.indexOf('const tiragePlateau = tirerPlateauDuDuel'),
+  battlePage.indexOf('const plateau = tiragePlateau.plateau'),
+);
+assert.match(choixPlateauPartie, /deckJoueur: modeTutoriel \? deckJoueurSelectionne : joueurDeck \?\? deckJoueurSelectionne/,
+  'le tutoriel tire son plateau du deck Veilleurs du Désert et les autres parties du deck choisi');
+assert.match(choixPlateauPartie, /deckAdverse: modeTutoriel[\s\S]*?RPG_TUTORIAL_OPPONENT_DECK[\s\S]*?etageCourant \? etageCourant\.deck : sorcierDeck \?\? deckAdverse/,
+  'le plateau du tutoriel tient compte du deck d’entraînement, les autres duels du deck adverse');
+assert.match(choixPlateauPartie, /rng,/,
+  'le plateau reste tiré par le générateur aléatoire du duel');
 assert.doesNotMatch(battlePage, /choixPlateau|onSelectPlateau|[cs]hargerChoixPlateau|sauverChoixPlateau|RPG_PLATEAU_ALEATOIRE|plateauPrecedent/,
   'le joueur ne choisit plus son plateau : ni verrou, ni pastille aléatoire, ni sauvegarde sur l’appareil');
 assert.doesNotMatch(battlePage, /rpg-mode-menu__boards|rpg-board-choice|rpg-board-grid/,
