@@ -40,7 +40,7 @@ export const RPG_SFX_NAMES = Object.freeze([
   'apparition', 'victoire', 'defaite', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip', 'explore', 'souffle',
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
   'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'bouclier',
-  'attaque_declaree', 'attaque_confirmee', 'blocage', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
+  'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
   'contresort', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
 
@@ -216,6 +216,14 @@ export function rpgSfx(name) {
         thud(0, 0.17, 0.53, { from: 180, to: 78, filter: 650, send: 0.08 }),
         noise(0.004, 0.11, 0.1, { filterType: 'bandpass', filter: 2100, filterTo: 950, q: 1.5, attack: 0.003, send: 0.12 }),
         bell('E5', 0.035, 0.38, 0.11, { send: 0.27, pan: 0.08 }),
+      ];
+    case 'choc_lames':
+      return [
+        thud(0, 0.14, 0.31, { from: 220, to: 96, filter: 920, send: 0.05 }),
+        noise(0, 0.12, 0.22, { filterType: 'bandpass', filter: 5200, filterTo: 1450, q: 1.25, attack: 0.001, send: 0.16, pan: -0.12 }),
+        tone('sawtooth', 'D5', 0.002, 0.16, 0.1, { filter: 3100, filterTo: 1250, attack: 0.002, send: 0.12, pan: -0.12 }),
+        bell('A5', 0.006, 0.42, 0.16, { send: 0.31, pan: 0.11 }),
+        bell('D6', 0.024, 0.34, 0.09, { send: 0.26, pan: -0.08 }),
       ];
     case 'combat':
       return [

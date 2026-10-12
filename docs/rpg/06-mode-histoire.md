@@ -85,10 +85,10 @@ autonome » (deck complet, PV pleins, rien de reporté).
 ## Ce qui est en place (octobre 2026)
 
 1. **Le conteneur mode Histoire** — `src/games/rpgStory.js` + l'écran « Histoire »
-   de `RpgDuelPage` : **galerie des tours en miniatures** d'abord (une peinture
-   par tour, livrée dans `public/sablier-tours/` — les étages restent masqués
-   tant que la tour n'est pas ouverte), puis **page de la tour** au clic sur sa
-   miniature (étages dévoilés, retour à la galerie) → lancement du duel avec
+   de `RpgDuelPage` : **galerie des tours en 3D** d'abord (une maquette
+   distincte par tour — les étages restent masqués tant que la tour n'est pas
+   ouverte), puis **page de la tour** au clic sur sa carte (même maquette en
+   grand format, étages dévoilés, retour à la galerie) → lancement du duel avec
    les bons props ; écran de victoire d'étage (étage suivant / rejouer / retour
    aux tours) et de défaite (recommencer / retour), dont les boutons ont tous la même hauteur
    et leur texte centré verticalement (la flèche de « Étage suivant » reste sur la
@@ -142,3 +142,26 @@ restent accessibles en duels libres, sans scènes de campagne pour l’instant.
   d'étage porte son propre `z-index` pour rester au-dessus de la table. Le
   balayage d'encre (`scripts/theme-ink-sweep.mjs`) exclut le motif `.rpg-`.
   `npm run check:rpg-story-ui` vérifie ces points dans les sources CSS.
+
+## Vues 3D des tours
+
+- `RpgStoryTowerPreview.jsx` remplace les vignettes et les bannières par un
+  canvas Three.js. Les noms, résumés, compteurs, étages et règles ne changent pas.
+- `rpgStoryTowerModels.js` construit cinq maquettes procédurales : sablier et
+  astrolabe (Listes), étals et auvents (Souk), portail ouvert et ruines (Sables),
+  galeries bleues et algues (Abysses), corniches gelées et drakkar (Fjord). Les
+  pièces sont fusionnées par matériau (7 à 10 meshes par tour) ; les textures
+  de pierre/zellige sont générées localement, sans modèle ou CDN externe.
+- `rpgStoryTowerScene.js` charge la 3D à l'arrivée dans l'écran, ajuste le cadrage
+  au conteneur, borne la résolution et tourne à 24 images/s au maximum. La
+  boucle s'arrête hors champ et en onglet caché. `prefers-reduced-motion` garde
+  une vraie vue 3D mais fixe, sans boucle de rendu. Les gestes tactiles restent
+  disponibles pour le défilement et la carte reste un bouton clavier.
+- Sans WebGL2, en cas d'échec du chargement ou de perte du contexte, la peinture
+  `miniature` de `public/sablier-tours/` prend le relais, sans bloquer les étages.
+  Le démontage libère les textures, géométries, matériaux, observateurs,
+  écouteurs, RAF et le contexte WebGL (y compris lors des allers-retours).
+- Vérifications : `npm run check:rpg-story-3d` (modèles/cadrage/ressources),
+  `npm run check:rpg-story-ui` (navigation/progression et repli sans WebGL),
+  puis, avec le serveur Vite et Chromium, `npm run check:rpg-story-3d-ui`
+  (vrai rendu, animations, téléphone, perte du contexte et nettoyage).

@@ -35,7 +35,7 @@ export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
 
 /**
  * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté —
- * sauf pour les mythiques, dont le cadre doré prime (voir MYTHIC_FRAME_COLOR).
+ * sauf pour les mythiques, dont le cadre violet prime (voir MYTHIC_FRAME_COLOR).
  *
  * Chaque combinaison a son identité, y compris celles qui n'existent pas
  * encore dans le catalogue : le jour où une carte Neige + Sable ou Neige +
@@ -44,7 +44,7 @@ export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
   eau: { label: 'Eau', color: '#3f9fe8' },
-  sable: { label: 'Sable', color: '#f7f3e6' },
+  sable: { label: 'Sable', color: '#d8bc86' },
   neige: { label: 'Neige', color: '#a9e0f5' },
   'hybride-braise-eau': { label: 'Braise + Eau', color: '#a86ad6' },
   'hybride-braise-sable': { label: 'Braise + Sable', color: '#e2521f' },
@@ -65,8 +65,8 @@ const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige';
 /** Ordre canonique des couleurs : la clé d'une hybride ne dépend pas de l'ordre déclaré. */
 const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
-/** Cadre doré des cartes mythiques, quelle que soit leur couleur. */
-export const MYTHIC_FRAME_COLOR = '#e8b745';
+/** Cadre violet des cartes mythiques, quelle que soit leur couleur. */
+export const MYTHIC_FRAME_COLOR = '#b06cf5';
 
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison bicolore. */
 export function cardFrameInfo(carte) {
@@ -80,7 +80,7 @@ export function cardFrameInfo(carte) {
   return { key: known, ...CARD_FRAME_COLORS[known] };
 }
 
-/** Toute carte mythique porte le cadre doré. */
+/** Toute carte mythique porte le cadre violet. */
 export function cardHasMythicFrame(carte) {
   return cardRarityInfo(carte).key === 'mythique';
 }
@@ -90,7 +90,7 @@ export function cardHasShinyFrame(carte) {
   return cardFrameInfo(carte).key.startsWith('hybride-') || cardHasMythicFrame(carte);
 }
 
-/** Couleur de cadre réellement peinte : l'or mythique prime sur l'élément. */
+/** Couleur de cadre réellement peinte : le violet mythique prime sur l'élément. */
 export function cardFrameColor(carte) {
   return cardHasMythicFrame(carte) ? MYTHIC_FRAME_COLOR : cardFrameInfo(carte).color;
 }
@@ -465,9 +465,10 @@ export const RPG_CREATURE_CARDS = [
     def: 3,
     rarity: 'rare',
     typeLine: 'Créature — Sonneur',
-    destruction: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: 'Quand le Sonneur meurt : son dernier tocsin blesse toutes les créatures adverses (2).',
-    flavor: 'Fêlé, il sonne encore. Surtout en tombant.',
+    art: 'sonneur-fele',
+    arrivee: { type: 'retour-main', cible: 'creature' },
+    text: 'Rebond — Quand le Sonneur arrive : il renvoie la créature ciblée dans la main de son propriétaire.',
+    flavor: 'Un seul coup de bâton sur le bronze fêlé, et l’écho chasse l’intrus.',
   },
   {
     id: 'colosse-de-sel',
@@ -671,19 +672,20 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
   },
   {
-    id: 'veilleur-du-couchant',
-    name: 'Veilleur du couchant',
+    id: 'djinn-de-foudre',
+    name: 'Djinn de foudre',
     element: 'sable',
     colors: ['sable', 'braise'],
     colorCost: { sable: 1, braise: 1 },
-    cost: 3,
+    cost: 2,
     atk: 2,
-    def: 4,
+    def: 1,
     rarity: 'inhabituelle',
-    typeLine: 'Créature — Sentinelle des mesas',
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'À son arrivée, le Veilleur reçoit un bouclier de 1.',
-    flavor: 'Il garde le passage jusqu’à la première lumière.',
+    typeLine: 'Créature — Djinn',
+    art: 'djinn-de-foudre',
+    coupRapide: true,
+    text: 'Coup rapide — Quand le Djinn de foudre est sélectionné pour attaquer, choisissez une créature adverse : il lui inflige ses dégâts d’attaque.',
+    flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
   // Récits du Nord : les figures du panthéon nordique n'y sont jamais nommées
@@ -865,13 +867,13 @@ export const RPG_CREATURE_CARDS = [
     id: 'jormungandr',
     name: 'Jörmungandr',
     element: 'eau',
-    cost: 7,
-    atk: 6,
-    def: 7,
+    cost: 8,
+    atk: 7,
+    def: 6,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Serpent du monde',
-    arrivee: { type: 'degats', amount: 3, cible: 'sorcier' },
-    text: 'Quand Jörmungandr arrive : 3 dégâts au sorcier adverse.',
+    arrivee: { type: 'pioche-defausse', pioche: 3, defausse: 1 },
+    text: 'Quand Jörmungandr arrive : piochez 3 cartes et défaussez une carte.',
     flavor: 'Il tient le monde dans sa queue. Il lâche prise pour frapper.',
   },
 ];
@@ -1134,7 +1136,7 @@ export const RPG_DECK_HYBRIDE_BASE = [
   'anqa-des-braises',
   'djinn-du-souk',
   'sahir-des-braises',
-  ...Array(3).fill('veilleur-du-couchant'),
+  ...Array(3).fill('djinn-de-foudre'),
   'ifrit-des-ergs',
   ...Array(2).fill('trait-de-braise'),
   'rempart-de-dunes',
@@ -1580,7 +1582,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Eau',
     art: 'brisure-de-verre',
     instant: true,
-    cost: 3,
+    cost: 2,
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
@@ -1702,7 +1704,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Eau',
     art: 'contresort-des-abimes',
     instant: true,
-    cost: 2,
+    cost: 4,
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'contresort', cible: 'carte' },
@@ -1717,12 +1719,12 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Eau',
     art: 'silence-decume',
     instant: true,
-    cost: 1,
+    cost: 2,
     rarity: 'commune',
     cibles: ['soi'],
-    effet: { type: 'contresort', cible: 'sort', contre: ['braise', 'sable'] },
-    text: 'Magie Rapide — Contre un sort annoncé par le sorcier, de Braise ou de Sable.',
-    flavor: 'Une écume basse suffit à étouffer la braise.',
+    effet: { type: 'contresort', cible: 'sort' },
+    text: 'Magie Rapide — Contre la magie rapide ou la sorcellerie annoncée par l’adversaire.',
+    flavor: 'Sous le dôme d’écume, la foudre elle-même se brise en silence.',
   },
   {
     id: 'maree-contraire',

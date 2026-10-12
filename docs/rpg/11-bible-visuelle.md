@@ -111,13 +111,16 @@ Le moteur `rpgDuel.js`, l'IA et les récompenses d'étage ne sont pas modifiés.
 
 ## Vérifications
 
-- `npm run check:rpg` : 293 tests, dont 17 nouveaux sur le récit et les portraits.
+- `npm run check:rpg` : 300 tests, dont 17 nouveaux sur le récit et les portraits.
 - `npm run check:rpg-story-ui` : tours libres et lecteur réellement montés ;
   victoire/défaite du moteur sur fixtures accélérées, reprise, décisions,
   journal, réinitialisation, stockage refusé, contrôle de l'interruption d'un duel.
 - `npm run check:rpg-story-browser` : les deux branches dans Chromium, en tactile
   et sur ordinateur ; migration, clavier, rechargement, images décodées,
   portraits identiques, journal sans effet, 320 à 1440 px, thèmes clair/sombre.
+- `npm run check:rpg-story-3d-ui` : les cinq maquettes de la version courante
+  coexistent avec la campagne ; rotation, chargement à vue, navigation au clavier,
+  défilement mobile, perte de contexte et repli sans WebGL vérifiés.
 - `npm run check:rpg-ui`, `check:rpg-fullscreen`, `check:rpg-ambient-ui`,
   `check:rpg-deck-ui`, `check:rpg-tutorial-ui` et `npm run build` réussis.
 

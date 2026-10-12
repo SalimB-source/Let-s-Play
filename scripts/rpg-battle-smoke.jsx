@@ -29,7 +29,7 @@ export async function checkRpgBattle(assert) {
   // Decks déterministes : 5 cartes chacun, tout part dans la main de départ.
   await act(async () => {
     root.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'veilleur-du-couchant', 'fennec-des-decombres', 'desert']}
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'djinn-de-foudre', 'fennec-des-decombres', 'desert']}
       sorcierDeck={['chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert']}
       rng={() => 0.999}
     />);
@@ -158,6 +158,35 @@ export async function checkRpgBattle(assert) {
     'le catalogue présente toutes les créatures, tous les héros, terrains et magies');
   assert.equal(new Set([...container.querySelectorAll('.rpg-card-catalogue__card')].map((card) => card.dataset.cardId)).size,
     RPG_DUEL_CARDS.length, 'chaque carte apparaît une seule fois dans le catalogue');
+  // Les textes de tous les terrains utilisent les mêmes icônes au catalogue
+  // et dans l'aperçu, sans perdre le nom des couleurs pour les lecteurs d'écran.
+  for (const [id, texte, labels] of [
+    ['montagne', 'Engagez : ajoutez un mana 🔥.', ['Braise']],
+    ['mer', 'Engagez : ajoutez un mana 💧.', ['Eau']],
+    ['desert', 'Engagez : ajoutez un mana ⏳.', ['Sable']],
+    ['glacier', 'Engagez : ajoutez un mana ❄️.', ['Neige']],
+    ['petra', 'Engagez : ajoutez un mana 🔥 ou ⏳.', ['Braise', 'Sable']],
+  ]) {
+    const carte = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${id}"]`);
+    const verifierRegles = (regles, contexte) => {
+      assert.equal(regles?.textContent, texte, `${contexte} remplace les couleurs par leurs icônes`);
+      assert.deepEqual([...regles.querySelectorAll('.rpg-card-rules__mana[role="img"]')]
+        .map((icone) => icone.getAttribute('aria-label')), labels,
+      `${contexte} nomme chaque couleur, y compris les deux choix de Pétra`);
+    };
+    verifierRegles(carte.querySelector('.rpg-card-catalogue__rules'), `Catalogue : ${id}`);
+    await act(async () => { envoyerSouris(carte, 'mouseover'); });
+    const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
+    verifierRegles(apercu?.querySelector('.rpg-hover-card-preview__rules'), `Aperçu : ${id}`);
+    assert.ok(apercu.getAttribute('aria-label').includes(cardById(id).text),
+      `le libellé accessible de ${id} conserve le texte original`);
+    await act(async () => { envoyerSouris(carte, 'mouseout'); });
+  }
+  for (const carte of RPG_DUEL_CARDS.filter((carte) => carte.kind !== 'terrain')) {
+    const regles = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${carte.id}"] .rpg-card-catalogue__rules`);
+    assert.equal(regles.textContent, carte.text && carte.text !== '—' ? carte.text : 'Aucune capacité.',
+      `le texte de ${carte.name}, qui n'est pas un terrain, reste inchangé`);
+  }
   const djinnCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="djinn-du-souk"]');
   assert.match(djinnCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/djinn-du-souk\.jpg\?v=munch-impressionniste-v3$/,
@@ -212,7 +241,7 @@ export async function checkRpgBattle(assert) {
   // navigateur resservirait l’ancien cadrage ; une peinture nouvelle n’a rien à
   // tromper et pointe simplement sur son propre fichier.
   const peinturesReprises = [
-    ['brisure-de-verre', 'plein-art-verre-v1'],
+    ['brisure-de-verre', 'plein-art-verre-v2'],
     ['parade-du-verre', 'plein-art-verre-v1'],
     ['maree-contraire', 'deflection-ultrason-v1'],
     ['ressac', 'djinn-tourbillon-v1'],
@@ -269,9 +298,9 @@ export async function checkRpgBattle(assert) {
   assert.ok(cartesHybridesCatalogue.length >= 3
     && cartesHybridesCatalogue.every((card) => ['sable', 'braise'].every((color) => card.dataset.colors.split(' ').includes(color))),
   'le filtre hybride isole les cartes qui exigent Braise et Sable, terrain de Pétra inclus');
-  const veilleurCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="veilleur-du-couchant"]');
+  const veilleurCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="djinn-de-foudre"]');
   assert.ok(veilleurCatalogue?.querySelector('.rpg-card-catalogue__cost')?.getAttribute('aria-label')?.includes('1 Sable et 1 Braise'),
-    'le coût du Veilleur annonce clairement ses deux pips obligatoires');
+    'le coût du Djinn de foudre annonce clairement ses deux pips obligatoires');
   await filtrerCatalogue(filtresCatalogue[0], 'toutes');
   await filtrerCatalogue(filtresCatalogue[1], 'creature');
   const cavalierCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="cavalier-amazigh-du-desert"]');
@@ -317,7 +346,7 @@ export async function checkRpgBattle(assert) {
   const ficheHybride = container.querySelector('.rpg-deck-detail');
   assert.match(ficheHybride?.textContent ?? '', /Sable \+ Braise[\s\S]*HYBRIDE/i,
     'la fiche précise l’identité bicolore du deck');
-  assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Veilleur du couchant[\s\S]*Vent rouge/,
+  assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Djinn de foudre[\s\S]*Vent rouge/,
     'la liste hybride présente son terrain flexible et ses cartes bicolores');
   assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5[\s\S]*validé/,
     'le deck hybride est validé à 40 cartes, avec 17 terrains, 18 créatures et 5 magies');
@@ -393,9 +422,9 @@ export async function checkRpgBattle(assert) {
   assert.match(fennecMain?.getAttribute('aria-label') ?? '', /Rapidité.*attaquer le tour où elle arrive.*Esquive 1/,
     'les deux capacités du Fennec restent annoncées de façon accessible');
   assert.equal(fennecMain?.hasAttribute('title'), false, 'la carte en main n’affiche plus d’aide au survol');
-  const veilleurMain = visagesMain.find((carte) => carte.dataset.cardId === 'veilleur-du-couchant');
+  const veilleurMain = visagesMain.find((carte) => carte.dataset.cardId === 'djinn-de-foudre');
   assert.ok(veilleurMain, 'la main de test contient une créature hybride');
-  assert.equal(veilleurMain.querySelector('.rpg-mana-cost b')?.textContent, '3',
+  assert.equal(veilleurMain.querySelector('.rpg-mana-cost b')?.textContent, '2',
     'le coût hybride conserve son nombre de manas');
   assert.equal(veilleurMain.querySelector('.rpg-mana-cost__hybrid-pips, .rpg-mana-cost__pip'), null,
     'les icônes de couleur sont retirées du coût de la créature hybride');
@@ -449,8 +478,10 @@ export async function checkRpgBattle(assert) {
     'l’aperçu concis affiche le type de la carte');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__cost'), null,
     'un terrain conserve la règle de ne pas afficher de coût');
-  assert.match(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /mana sable/,
-    'l’aperçu montre l’effet de production de mana du terrain');
+  assert.match(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /mana ⏳/,
+    'l’aperçu montre l’effet de production de mana avec l’icône Sable');
+  assert.match(apercuTerrainSurvol.getAttribute('aria-label'), /mana sable/,
+    'le texte accessible conserve le nom de la couleur de mana');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__stats'), null,
     'un terrain n’affiche pas de statistiques de créature');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__flavor, .rpg-hover-card-preview__rarity, h2'), null,
@@ -980,6 +1011,80 @@ export async function checkRpgBattle(assert) {
   await act(async () => { impactRoot.unmount(); });
   impactContainer.remove();
 
+  // ── Les dégâts de sorts et de capacités d’arrivée reçus secouent aussi l’écran ──
+  const spellImpactContainer = document.createElement('div');
+  document.body.appendChild(spellImpactContainer);
+  const spellImpactRoot = createRoot(spellImpactContainer);
+  await act(async () => {
+    spellImpactRoot.render(<RpgDuelPage
+      joueurDeck={Array(10).fill('desert')}
+      sorcierDeck={[...Array(9).fill('montagne'), 'trait-de-braise']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(spellImpactContainer);
+  const spellImpactTable = spellImpactContainer.querySelector('.card-table');
+  const finirTourAvantSort = async () => {
+    await act(async () => { spellImpactContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(900); });
+  };
+  await finirTourAvantSort();
+  await finirTourAvantSort();
+  const annonceDegats = spellImpactContainer.querySelector('.rpg-annonce-sort');
+  assert.match(annonceDegats?.textContent ?? '', /Trait de braise/,
+    'le sorcier annonce son sort de dégâts dès qu’il a deux montagnes');
+  const laisserSortToucher = [...spellImpactContainer.querySelectorAll('.rpg-annonce-sort button')]
+    .find((button) => button.textContent.includes('Laisser passer'));
+  assert.ok(laisserSortToucher, 'le joueur peut laisser passer le sort adverse');
+  await act(async () => { laisserSortToucher.click(); });
+  assert.equal(spellImpactTable.dataset.screenImpact, 'received',
+    'un sort adverse qui touche le sorcier déclenche l’impact reçu');
+  assert.match(spellImpactTable.className, /rpg-screen-shake--[ab]/,
+    'le sort reçu fait trembler la table');
+  assert.match(spellImpactTable.className, /rpg-screen-hit--[ab]/,
+    'le sort reçu affiche la vignette rouge');
+  assert.equal(spellImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '47',
+    'le Trait de braise a réellement retiré trois points de vie');
+  await act(async () => { spellImpactRoot.unmount(); });
+  spellImpactContainer.remove();
+
+  const creatureImpactContainer = document.createElement('div');
+  document.body.appendChild(creatureImpactContainer);
+  const creatureImpactRoot = createRoot(creatureImpactContainer);
+  await act(async () => {
+    creatureImpactRoot.render(<RpgDuelPage
+      joueurDeck={Array(10).fill('desert')}
+      sorcierDeck={[...Array(9).fill('montagne'), 'ifrit-des-ergs']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(creatureImpactContainer);
+  const creatureImpactTable = creatureImpactContainer.querySelector('.card-table');
+  for (let tour = 1; tour <= 5; tour += 1) {
+    await act(async () => { creatureImpactContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(900); });
+    if (tour < 5) {
+      assert.equal(creatureImpactContainer.querySelector('.rpg-annonce-sort'), null,
+        `l’Ifrit attend d’avoir cinq montagnes avant d’être annoncé (tour ${tour})`);
+    }
+  }
+  const annonceIfrit = creatureImpactContainer.querySelector('.rpg-annonce-sort');
+  assert.match(annonceIfrit?.textContent ?? '', /Ifrit des ergs/,
+    'le sorcier annonce l’Ifrit après avoir réuni cinq manas Braise');
+  const laisserIfritToucher = [...creatureImpactContainer.querySelectorAll('.rpg-annonce-sort button')]
+    .find((button) => button.textContent.includes('Laisser passer'));
+  await act(async () => { laisserIfritToucher.click(); });
+  assert.equal(creatureImpactTable.dataset.screenImpact, 'received',
+    'une créature adverse qui blesse le sorcier à son arrivée déclenche l’impact reçu');
+  assert.match(creatureImpactTable.className, /rpg-screen-shake--[ab]/,
+    'la capacité d’arrivée de l’Ifrit fait trembler la table');
+  assert.match(creatureImpactTable.className, /rpg-screen-hit--[ab]/,
+    'la capacité d’arrivée de l’Ifrit affiche la vignette rouge');
+  assert.equal(creatureImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '48',
+    'l’Ifrit a réellement retiré deux points de vie');
+  await act(async () => { creatureImpactRoot.unmount(); });
+  creatureImpactContainer.remove();
+
   // ── Régression : le Trait de braise élimine l'unique attaquant pendant la réponse ──
   const killContainer = document.createElement('div');
   document.body.appendChild(killContainer);
@@ -1065,12 +1170,12 @@ export async function checkRpgBattle(assert) {
     await glisserSurTable(aiFireContainer, card);
   };
   await jouerCarteAiFire('Désert');
+  await jouerCarteAiFire('Tislit, éclaireuse des Aurès');
+  assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'Tislit est présente avant l’action de l’IA');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
   await passerAnnoncesSorcier(aiFireContainer);
   await jouerCarteAiFire('Mer');
-  await jouerCarteAiFire('Tislit, éclaireuse des Aurès');
-  assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'Tislit est présente avant l’action de l’IA');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(900); });
   // Le sort Braise est annoncé : le joueur a la main pour répondre, ou laisser passer.
@@ -1322,7 +1427,7 @@ export async function checkRpgBattle(assert) {
     assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable'),
       'une carte Braise + Sable reçoit le cadre rouge-orange de sa combinaison');
     assert.ok(!terrain.classList.contains('rpg-card--mythique'),
-      'Pétra est rare, pas mythique : elle ne prend pas le cadre doré');
+      'Pétra est rare, pas mythique : elle ne prend pas le cadre violet');
     const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
@@ -1383,12 +1488,12 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
   assert.ok(ferielEnMain.classList.contains('rpg-card--mythique')
     && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
-    'Fériel porte son cadre doré brillant dès la main');
+    'Fériel porte son cadre violet brillant dès la main');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
-    'Fériel, mythique, garde son cadre doré sur la table');
+    'Fériel, mythique, garde son cadre violet sur la table');
   assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });

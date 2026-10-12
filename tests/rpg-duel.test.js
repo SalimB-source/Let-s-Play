@@ -80,6 +80,7 @@ const PLEIN_ART_45 = [
   'maree-contraire', 'ressac', 'courant-de-retour', 'dunes-du-tenere',
   'cretes-de-cendre', 'lagune-des-salines', 'petra-des-deux-sources',
   'glacier-des-arches',
+  'djinn-de-foudre', 'sonneur-fele', 'silence-decume',
 ];
 
 const VARIANTES_TERRAIN = [
@@ -419,7 +420,7 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     ['trait-de-braise', 'trait-de-braise'],
     ['nuage-de-cendres', 'nuage-de-cendres'],
     ['cavalier-amazigh-du-desert', 'cavalier-amazigh-du-desert'],
-    ['veilleur-du-couchant', 'veilleur-du-couchant'], ['vent-rouge', 'vent-rouge'],
+    ['djinn-de-foudre', 'djinn-de-foudre'], ['vent-rouge', 'vent-rouge'],
     ['petra', 'petra'], ['feriel', 'feriel'],
     // Refonte « plein art 4:5 » : ces sept magies portaient une illustration
     // prêtée (la Mer) ou un cadrage qui n’était pas celui de la carte. Chacune
@@ -552,26 +553,25 @@ test('le Cavalier doit choisir une créature adverse et combat mutuellement à s
 
 test('les deux combattants meurent bien simultanément avant les effets de destruction', () => {
   const duel = duelDeBase();
+  duel.sorcier.deck.push('mer', 'mer');
   donnerMana(duel, 'joueur', 30);
   donnerMana(duel, 'sorcier', 30);
-  donner(duel, 'joueur', 'chien-du-guet');
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   donner(duel, 'joueur', 'cavalier-amazigh-du-desert');
-  donner(duel, 'sorcier', 'sonneur-fele');
-  const sonneur = rpgJouerCreature(duel, 'sorcier', 'sonneur-fele').entite;
-  Object.assign(sonneur, { atk: 4, def: 4, pv: 4, pvMax: 4 });
+  donner(duel, 'sorcier', 'kraken');
+  const kraken = rpgJouerCreature(duel, 'sorcier', 'kraken').entite;
+  Object.assign(kraken, { atk: 4, def: 4, pv: 4, pvMax: 4 });
+  const mainAvant = duel.sorcier.main.length;
 
   const debut = rpgNombreDestructions(duel);
-  const pose = rpgJouerCreature(duel, 'joueur', 'cavalier-amazigh-du-desert', sonneur.id);
+  const pose = rpgJouerCreature(duel, 'joueur', 'cavalier-amazigh-du-desert', kraken.id);
   assert.equal(pose.ok, true);
-  assert.ok(!duel.joueur.creatures.includes(pose.entite), 'les 4 dégâts du Sonneur détruisent le Cavalier');
-  assert.ok(!duel.sorcier.creatures.includes(sonneur), 'les 4 dégâts du Cavalier détruisent le Sonneur');
-  assert.ok(!duel.joueur.creatures.includes(chien),
-    'le dernier tocsin du Sonneur se résout ensuite sur le Chien resté en jeu');
+  assert.ok(!duel.joueur.creatures.includes(pose.entite), 'les 4 dégâts du Kraken détruisent le Cavalier');
+  assert.ok(!duel.sorcier.creatures.includes(kraken), 'les 4 dégâts du Cavalier détruisent le Kraken');
+  assert.equal(duel.sorcier.main.length, mainAvant + 2,
+    'la capacité de destruction du Kraken se résout ensuite et fait piocher 2 cartes');
   assert.deepEqual(rpgDestructionsDepuis(duel, debut), [
-    { entityId: sonneur.id, sourceElements: ['sable'] },
+    { entityId: kraken.id, sourceElements: ['sable'] },
     { entityId: pose.entite.id, sourceElements: ['eau'] },
-    { entityId: chien.id, sourceElements: ['eau'] },
   ], 'les deux blessures mutuelles précèdent bien les capacités de destruction');
 });
 
@@ -1097,37 +1097,40 @@ test('Pétra permet de choisir manuellement Braise ou Sable en s’engageant', (
 });
 
 test('un coût hybride exige une source Braise et une source Sable', () => {
-  const veilleur = cardById('veilleur-du-couchant');
+  const djinn = cardById('djinn-de-foudre');
   const sort = cardById('vent-rouge');
-  assert.deepEqual(cardColors(veilleur), ['sable', 'braise']);
-  assert.deepEqual(cardColorCost(veilleur), { sable: 1, braise: 1 });
+  assert.deepEqual(cardColors(djinn), ['sable', 'braise']);
+  assert.deepEqual(cardColorCost(djinn), { sable: 1, braise: 1 });
+  assert.equal(djinn.cost, 2);
+  assert.equal(djinn.atk, 2);
+  assert.equal(djinn.def, 1);
+  assert.equal(djinn.coupRapide, true);
   assert.deepEqual(cardColorCost(sort), { braise: 1, sable: 1 });
-  assert.equal(rpgEstProtegee({ protection: { contre: 'sable', toursRestants: 1 } }, cardColors(veilleur)), true,
+  assert.equal(rpgEstProtegee({ protection: { contre: 'sable', toursRestants: 1 } }, cardColors(djinn)), true,
     'un attaquant bicolore est arrêté par une protection contre le Sable');
-  assert.equal(rpgEstProtegee({ protection: { contre: 'eau', toursRestants: 1 } }, cardColors(veilleur)), false,
+  assert.equal(rpgEstProtegee({ protection: { contre: 'eau', toursRestants: 1 } }, cardColors(djinn)), false,
     'une protection contre une troisième couleur ne s’applique pas');
 
   const camp = duelDeBase().joueur;
-  camp.mana = { braise: 3, eau: 0, sable: 0, neige: 0 };
-  assert.equal(rpgPeutPayer(camp, veilleur), false, 'trois Braises ne remplacent pas le pip Sable');
-  camp.mana = { braise: 0, eau: 0, sable: 3, neige: 0 };
-  assert.equal(rpgPeutPayer(camp, veilleur), false, 'trois Sables ne remplacent pas le pip Braise');
-  camp.mana = { braise: 2, eau: 0, sable: 1, neige: 0 };
-  assert.equal(rpgPeutPayer(camp, veilleur), true, 'une source de chaque couleur et un mana générique suffisent');
+  camp.mana = { braise: 2, eau: 0, sable: 0, neige: 0 };
+  assert.equal(rpgPeutPayer(camp, djinn), false, 'deux Braises ne remplacent pas le pip Sable');
+  camp.mana = { braise: 0, eau: 0, sable: 2, neige: 0 };
+  assert.equal(rpgPeutPayer(camp, djinn), false, 'deux Sables ne remplacent pas le pip Braise');
+  camp.mana = { braise: 1, eau: 0, sable: 1, neige: 0 };
+  assert.equal(rpgPeutPayer(camp, djinn), true, 'une source de chaque couleur suffit pour le Djinn de foudre');
 });
 
-test('Pétra et deux Déserts peuvent couvrir les deux pips hybrides et le coût générique', () => {
+test('Pétra et un Désert peuvent couvrir les deux pips hybrides du Djinn de foudre', () => {
   const duel = duelDeBase();
-  donner(duel, 'joueur', 'veilleur-du-couchant');
+  donner(duel, 'joueur', 'djinn-de-foudre');
   const petra = { id: 'hybride-petra', carteId: 'petra', tapped: false };
   const desertA = { id: 'hybride-sable-a', carteId: 'desert', tapped: false };
-  const desertB = { id: 'hybride-sable-b', carteId: 'desert', tapped: false };
-  duel.joueur.terrains.push(petra, desertA, desertB);
-  assert.equal(rpgPeutPayer(duel.joueur, cardById('veilleur-du-couchant')), true,
-    'Pétra peut réserver Braise, les Déserts couvrent Sable et le mana générique');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'veilleur-du-couchant').ok, true);
-  assert.ok(petra.tapped && desertA.tapped && desertB.tapped, 'les trois sources sont engagées automatiquement');
-  assert.equal(rpgMana(duel.joueur).total, 0, 'les trois manas sont dépensés');
+  duel.joueur.terrains.push(petra, desertA);
+  assert.equal(rpgPeutPayer(duel.joueur, cardById('djinn-de-foudre')), true,
+    'Pétra peut réserver Braise et le Désert couvre Sable');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'djinn-de-foudre').ok, true);
+  assert.ok(petra.tapped && desertA.tapped, 'les deux sources sont engagées automatiquement');
+  assert.equal(rpgMana(duel.joueur).total, 0, 'les deux manas sont dépensés');
 });
 
 test('une magie se paie elle aussi en engageant automatiquement ses terrains', () => {
@@ -1450,20 +1453,19 @@ test('Esquive 1 se calcule séparément pour chacun des dégâts d’un combat',
   assert.ok(duel.joueur.creatures.includes(fennec), 'le Fennec ne prend aucun dégât cumulé du combat');
 });
 
-test('capacité à la destruction : le Sonneur tocsine toutes les créatures adverses', () => {
+test('Rebond : à son arrivée, le Sonneur fêlé renvoie la créature ciblée dans la main de son propriétaire', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
   donnerMana(duel, 'sorcier', 30);
   donner(duel, 'joueur', 'sonneur-fele');
-  donner(duel, 'sorcier', 'chien-du-guet');
   donner(duel, 'sorcier', 'dune-marchante');
-  const sonneur = rpgJouerCreature(duel, 'joueur', 'sonneur-fele').entite;
-  rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
-  rpgJouerCreature(duel, 'sorcier', 'dune-marchante');
-  rpgBlesserCreature(duel, 'joueur', sonneur.id, 3);
-  assert.equal(duel.joueur.creatures.length, 0);
-  assert.equal(duel.sorcier.creatures.length, 1, 'le chien 2/2 meurt, la dune survit');
-  assert.equal(duel.sorcier.creatures[0].pv, 3, 'la dune 2/5 a pris le tocsin (2)');
+  const dune = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+  const pose = rpgJouerCreature(duel, 'joueur', 'sonneur-fele', dune.id);
+  assert.equal(pose.ok, true);
+  assert.equal(duel.joueur.creatures.length, 1, 'le Sonneur fêlé arrive en jeu');
+  assert.equal(duel.sorcier.creatures.length, 0, 'la Dune marchante quitte la table');
+  assert.ok(duel.sorcier.main.includes('dune-marchante'), 'elle est renvoyée dans la main du sorcier');
+  assert.equal(duel.sorcier.cimetiere.includes('dune-marchante'), false, 'elle ne va pas au cimetière');
 });
 
 test('chaque attaquant peut viser le sorcier : les bloqueurs sont choisis séparément', () => {
@@ -2128,7 +2130,7 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     const cout = cardColorCost(cardById(id));
     return cout.braise > 0 && cout.sable > 0;
   }));
-  assert.ok(cartesHybrides.has('veilleur-du-couchant') && cartesHybrides.has('vent-rouge'),
+  assert.ok(cartesHybrides.has('djinn-de-foudre') && cartesHybrides.has('vent-rouge'),
     'le deck contient plusieurs cartes exigeant une source Braise et une source Sable');
 });
 
@@ -2239,11 +2241,13 @@ test('un contre n’est jouable que face à une annonce adverse qu’il peut vis
   assert.equal(rpgContreJouable(duel, 'joueur', chien), true, 'une carte qui n’est pas un contre reste jouable');
   assert.equal(rpgContreJouable(duel, 'joueur', silence), false, 'sans annonce, le contre n’est pas jouable');
 
-  // Annonce du sorcier d’un sort de Braise : le Silence d’écume peut répondre.
+  // Annonce du sorcier d’un sort : le Silence d’écume peut répondre, quelle que soit sa couleur.
   duel.annonce = { cote: 'sorcier', carteId: 'trait-de-braise' };
   assert.equal(rpgContreJouable(duel, 'joueur', silence), true);
-  // Une annonce d’Eau sort de ses couleurs : rien à contrer.
   duel.annonce = { cote: 'sorcier', carteId: 'eau-de-la-source' };
+  assert.equal(rpgContreJouable(duel, 'joueur', silence), true);
+  // Une créature annoncée ne peut pas être contrée par Silence d’écume.
+  duel.annonce = { cote: 'sorcier', carteId: 'chien-du-guet' };
   assert.equal(rpgContreJouable(duel, 'joueur', silence), false);
   // Sa propre annonce ne se contre pas.
   duel.annonce = { cote: 'joueur', carteId: 'trait-de-braise' };

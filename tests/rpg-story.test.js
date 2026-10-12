@@ -129,7 +129,7 @@ test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss co
   }
 });
 
-test('chaque tour porte une miniature livrée pour la galerie du mode Histoire', () => {
+test('chaque tour garde une peinture de repli livrée pour les appareils sans WebGL', () => {
   const vus = new Set();
   for (const tour of RPG_STORY_TOURS) {
     assert.ok(tour.miniature, `${tour.id} : miniature absente`);
