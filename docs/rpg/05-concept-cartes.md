@@ -100,8 +100,10 @@ limitée à 7.
   échange par camp**, et le sorcier adverse y a droit aussi (il renvoie une
   main sans terrain, jamais une main déjà jouable, et jamais au niveau Récit).
   Rien ne peut être joué avant la validation : la table reste close.
-- Chaque joueur a **50 points de vie** ; les **sorciers ennemis peuvent en
-  avoir davantage selon leur puissance** (50 + 5 × puissance).
+- Chaque joueur a **25 points de vie**, et **chaque sorcier ennemi aussi** :
+  `RPG_PV_JOUEUR` = `RPG_PV_SORCIER_BASE` = 25 et
+  `RPG_PV_SORCIER_PAR_PUISSANCE` = 0 — la puissance d'un étage ne gonfle plus
+  les PV, elle reste l'indice de difficulté affiché sur la fiche d'étage.
 - **Tant qu'il y a des créatures en face, on ne peut pas attaquer le
   sorcier directement** : il faut tuer les créatures d'abord.
 - Les **magies** peuvent cibler les créatures, et **parfois les joueurs**

@@ -69,7 +69,9 @@ autonome » (deck complet, PV pleins, rien de reporté).
   - Chaque sorcier d'étage porte le sien — c'est **la** personnalité de
     gameplay des boss, sans toucher aux règles.
 - **Decks et puissance** : `RPG_DECKS` (déjà 3 archétypes validés par
-  `rpgValiderDeck`), `sorcierPuissance` ajuste les PV du sorcier.
+  `rpgValiderDeck`). `sorcierPuissance` ne modifie plus les PV du sorcier —
+  tous les duels se jouent à 25 PV de chaque côté (`RPG_PV_SORCIER_PAR_PUISSANCE`
+  = 0) ; la puissance reste l'indice de difficulté affiché sur la fiche d'étage.
 - **Le duel complet** : `RpgDuelPage` rejoue tel quel, avec `joueurDeck`,
   `sorcierDeck`, `sorcierPuissance`, `rng` en props.
 - **IA tactique** (`rpgAI.js`) : ciblage (kill, menace, visage létal),
@@ -110,8 +112,10 @@ autonome » (deck complet, PV pleins, rien de reporté).
 - **Aucun coup surprise** : le mode Histoire change les adversaires, jamais
   les règles du duel (les intentions et la lecture restent le contrat).
 - **La difficulté est de l'information**, pas des réflexes ni des buffs
-  cachés : étage 1 en `recit`, boss en `veilleur`, les PV supplémentaires
-  (`sorcierPuissance`) sont **affichés** sur la fiche d'étage.
+  cachés : étage 1 en `recit`, boss en `veilleur`, et la puissance de l'étage
+  (`sorcierPuissance`) est **affichée** sur la fiche d'étage. Elle ne donne
+  plus de PV supplémentaires — le sorcier et le joueur partent tous les deux
+  à 25 PV, la difficulté passe par le deck et le profil d'IA.
 - **Pas d'obligation de grind** : les trois decks de base gagnent la première
   tour tels quels ; les récompenses ouvrent des cartes du classeur, pas la
   suite de l'histoire.
