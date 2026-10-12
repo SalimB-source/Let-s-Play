@@ -181,15 +181,18 @@ try {
             && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__stat--atk .rpg-stat-value')?.textContent.trim())
             && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__pt .rpg-stat-value')?.textContent.trim());
         }),
-        // Le type est écrit au-dessus de l'attaque et de la défense.
-        typeAuDessus: cards.every((card) => {
+        // Le bas de la carte : les plaques pour une créature (jamais de ligne de
+        // type), la ligne de type seule et centrée pour un terrain ou un sort.
+        basDeCarte: cards.every((card) => {
           const box = card.getBoundingClientRect();
           const type = card.querySelector('.rpg-mulligan__bas .rpg-mulligan__type')?.getBoundingClientRect();
-          if (!type) return false;
           const stats = card.querySelector('.rpg-mulligan__stats')?.getBoundingClientRect();
-          const centree = Math.abs((type.left + type.right) / 2 - (box.left + box.right) / 2) < 2;
-          const enBas = box.bottom - type.bottom < box.height * .35;
-          return centree && enBas && (!stats || type.bottom <= stats.top + 1);
+          const centree = (r) => Math.abs((r.left + r.right) / 2 - (box.left + box.right) / 2) < 2;
+          const enBas = (r) => box.bottom - r.bottom < box.height * .35;
+          if (type && stats) return centree(type) && type.bottom <= stats.top + 1;
+          if (stats) return enBas(stats) && stats.bottom <= box.bottom + 1;
+          if (type) return centree(type) && enBas(type);
+          return false;
         }),
         // Les plaques d'attaque et de défense : grandes, sur la largeur de la
         // carte, l'attaque contre le bord gauche et la défense contre le droit.
@@ -228,7 +231,7 @@ try {
     assert.ok(hand.faces45, `${width}×${height}: chaque carte garde le format 4:5 du jeu`);
     assert.ok(hand.muettes && hand.illustrees, `${width}×${height}: la carte est son illustration, sans texte par-dessus`);
     assert.ok(hand.reperes, `${width}×${height}: couleur en haut à gauche, coût en haut à droite, statistiques en bas à droite`);
-    assert.ok(hand.typeAuDessus, `${width}×${height}: la ligne de type est centrée, au-dessus de l’attaque et de la défense`);
+    assert.ok(hand.basDeCarte, `${width}×${height}: les plaques pour les créatures, la ligne de type centrée pour les terrains et les sorts`);
     assert.ok(hand.plaquesDuJeu, `${width}×${height}: l’attaque et la défense portent les plaques et les icônes du jeu`);
     assert.equal(hand.plaques.every((p) => p.dansLaCarte && p.enBas), true,
       `${width}×${height}: les plaques tiennent dans la carte, en bas`);

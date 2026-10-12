@@ -1,7 +1,8 @@
 // Le mulligan du Sablier, rendu dans jsdom : la main de départ s'affiche en
-// entier — des faces 4:5 sans un mot dessus, tout le texte passant par l'aperçu
-// rapide du survol — le joueur choisit ce qu'il change, valide, relit sa
-// nouvelle main, et la table ne s'ouvre qu'ensuite.
+// entier — des faces 4:5, leurs plaques d'attaque et de défense (et la ligne de
+// type des terrains et des sorts), tout le reste passant par l'aperçu rapide du
+// survol — le joueur choisit ce qu'il change, valide, relit sa nouvelle main, et
+// la table ne s'ouvre qu'ensuite.
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
@@ -93,21 +94,25 @@ export async function checkRpgMulligan(assert) {
       assert.equal(rangee.lastElementChild?.classList.contains('rpg-card__pt'), true,
         `la défense de ${id} est la dernière plaque — à droite`);
     }
-    // La ligne de type est la seule ligne écrite de la face, et elle est au-dessus.
+    // La ligne de type n'est écrite que hors créature — un terrain, un sort.
     const ligneType = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__type');
-    const motAttendu = attendue.kind === 'terrain' ? /^Terrain/
-      : attendue.kind === 'magie' ? /^(Rituel|Éphémère)/
-        : /^(Type|Créature)/; // la face du jeu nomme les créatures « Type »
-    assert.match(ligneType?.textContent ?? '', motAttendu,
-      `la carte ${id} affiche son type — le mot de sa famille, imprimé sur la face`);
-    assert.equal(ligneType.previousElementSibling === null, true,
-      `le type de ${id} ouvre la pile du bas`);
+    assert.equal(Boolean(ligneType), !creature,
+      creature
+        ? `la créature ${id} n’écrit pas de ligne de type : ses plaques suffisent`
+        : `le terrain ou le sort ${id} écrit sa ligne de type`);
+    if (!creature) {
+      const motAttendu = attendue.kind === 'terrain' ? /^Terrain/ : /^(Rituel|Éphémère)/;
+      assert.match(ligneType?.textContent ?? '', motAttendu,
+        `la carte ${id} affiche son type — le mot de sa famille, imprimé sur la face`);
+    }
     const stats = carte.querySelector('.rpg-mulligan__stats');
     if (stats) {
       assert.equal(stats.previousElementSibling === ligneType, true,
-        `le type de ${id} précède immédiatement l’attaque et la défense`);
-      assert.equal(stats.parentElement === ligneType.parentElement, true,
-        `type et statistiques de ${id} partagent le même coin de la carte`);
+        ligneType
+          ? `le type de ${id} précède immédiatement l’attaque et la défense`
+          : `pour la créature ${id}, les plaques ouvrent la pile du bas`);
+      assert.equal(stats.parentElement?.classList.contains('rpg-mulligan__bas'), true,
+        `les plaques de ${id} vivent dans la pile du bas de la carte`);
     }
     assert.equal(carte.getAttribute('aria-pressed'), 'false', 'aucune carte n’est choisie à l’ouverture');
   }

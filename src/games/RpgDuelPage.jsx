@@ -889,8 +889,9 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
 /* ── Le mulligan : la main de départ, nue — l'aperçu dit le reste ─────────────
    Avant le premier tour, chaque camp voit ses cartes piochées : des **faces
    4:5** comme sur la table, sans un mot d'interface — l'illustration, la couleur
-   en haut à gauche, le coût en haut à droite, la ligne de type en bas à droite
-   au-dessus des plaques d'attaque et de défense du jeu. Le reste du texte (nom, effets) se
+   en haut à gauche, le coût en haut à droite, et en bas les plaques d'attaque et
+   de défense du jeu — plus la ligne de type pour les terrains et les sorts, la
+   face d'une créature n'ayant pas besoin de l'annoncer. Le reste du texte (nom, effets) se
    lit dans l'**aperçu rapide** : au survol d'une carte à la souris, à l'appui
    long d'une seconde au doigt. Toucher une carte la met de côté (liseré doré),
    la retoucher la reprend : elles repartent dans le paquet, qui est battu, et
@@ -927,11 +928,14 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
-      {/* Le bas de la carte : la ligne de type, centrée, puis les deux plaques
-          du jeu — l'épée d'or à gauche, le bouclier d'acier à droite, chacune
-          sur son bord. */}
+      {/* Le bas de la carte : la ligne de type pour les terrains et les sorts —
+          pour une créature, elle n'apprendrait rien, la face du jeu s'en passe —
+          puis les deux plaques du jeu : l'épée d'or à gauche, le bouclier
+          d'acier à droite, chacune sur son bord. */}
       <span className="rpg-mulligan__bas">
-        <span className="rpg-mulligan__type" aria-hidden="true">{cardFaceTypeLine(carte)}</span>
+        {!estCreature && (
+          <span className="rpg-mulligan__type" aria-hidden="true">{cardFaceTypeLine(carte)}</span>
+        )}
         {estCreature && (
           <span className="rpg-mulligan__stats" aria-hidden="true">
             <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>

@@ -162,8 +162,8 @@ assert.match(battleCss, /\.rpg-mulligan__bas\s*\{[^}]*position:\s*absolute;[^}]*
   'le bas de la carte occupe toute sa largeur, ancré par son bas : la ligne de type est centrée');
 assert.match(battleCss, /\.rpg-mulligan__type\s*\{[^}]*background:\s*rgba\(31,\s*22,\s*13[^}]*text-align:\s*center;/s,
   'la ligne de type porte le bandeau sombre des cartes du jeu et se centre');
-assert.match(battlePage, /rpg-mulligan__bas"[\s\S]{0,240}?rpg-mulligan__type"[\s\S]{0,120}?rpg-mulligan__stats"/,
-  'le type est écrit AU-DESSUS de l’attaque et de la défense, dans cet ordre');
+assert.match(battlePage, /rpg-mulligan__bas"[\s\S]{0,200}?\{!estCreature && \([\s\S]{0,160}?rpg-mulligan__type[\s\S]{0,200}?rpg-mulligan__stats"/,
+  'la ligne de type n’est écrite que hors créature, au-dessus des plaques quand elle l’est');
 
 // ── L'aperçu rapide : c'est lui qui porte le texte, au survol ──────────────
 assert.match(mulliganPanel, /onMouseEnter=\{survol \? \(event\) => onSurvol\(carte, event\) : undefined\}/,
@@ -203,4 +203,4 @@ assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*m
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, type centré au-dessus des plaques du jeu, attaque à gauche et défense à droite — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, plaques du jeu — attaque à gauche, défense à droite — et la ligne de type pour les terrains et les sorts seulement — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
