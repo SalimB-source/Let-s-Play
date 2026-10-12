@@ -12,7 +12,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const setterNomGlobal = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
 const texte = (element) => (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
-const DECK_DE_TEST = ['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'veilleur-du-couchant', 'fennec-des-decombres', 'desert'];
+const DECK_DE_TEST = ['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'djinn-de-foudre', 'fennec-des-decombres', 'desert'];
 const SORCIER_DE_TEST = ['chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert'];
 
 /**
@@ -538,7 +538,7 @@ export async function checkRpgDecks(assert) {
     ...Array(3).fill('tislit-des-aures'),
     ...Array(3).fill('tiziri-du-djurdjura'),
     ...Array(3).fill('amayas-du-hoggar'),
-    'veilleur-du-couchant',
+    'djinn-de-foudre',
     'rapport-du-greffier',
   ];
   window.localStorage.setItem('letsplay_sablier_decks_maison_v1', JSON.stringify({

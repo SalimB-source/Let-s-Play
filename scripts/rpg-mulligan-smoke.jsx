@@ -12,7 +12,7 @@ import { cardById } from '../src/games/rpgCards.js';
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Les decks du scénario : 5 premiers cartes en main, le reste au paquet. */
-const DECK_JOUER = ['desert', 'chien-du-guet', 'fennec-des-decombres', 'mer', 'montagne', 'ressac', 'parade-du-verre', 'veilleur-du-couchant', 'desert', 'desert'];
+const DECK_JOUER = ['desert', 'chien-du-guet', 'fennec-des-decombres', 'mer', 'montagne', 'ressac', 'parade-du-verre', 'djinn-de-foudre', 'desert', 'desert'];
 const DECK_SORCIER = ['montagne', 'desert', 'chien-du-guet', 'fennec-des-decombres', 'dune-marchante', 'montagne', 'chien-du-guet', 'desert', 'djinn-du-souk', 'vipere-de-verre'];
 
 export async function checkRpgMulligan(assert) {

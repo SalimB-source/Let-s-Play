@@ -17,7 +17,7 @@ export async function checkRpgStory(assert) {
 
   await act(async () => {
     root.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'veilleur-du-couchant', 'fennec-des-decombres', 'desert']}
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'djinn-de-foudre', 'fennec-des-decombres', 'desert']}
       sorcierDeck={['chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert']}
       rng={() => 0.999}
     />);
@@ -116,7 +116,7 @@ export async function checkRpgStory(assert) {
   await act(async () => {
     window.localStorage.setItem(progressKey, JSON.stringify({ version: 1, etagesVaincus: ['listes-1', 'listes-2', 'listes-3'] }));
     root2.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'veilleur-du-couchant', 'fennec-des-decombres', 'desert']}
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'djinn-de-foudre', 'fennec-des-decombres', 'desert']}
       sorcierDeck={['chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert']}
       rng={() => 0.999}
     />);

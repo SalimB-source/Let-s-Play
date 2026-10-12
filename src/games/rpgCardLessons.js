@@ -57,7 +57,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['contresort-des-abimes', 'silence-decume', 'maree-contraire'],
     title: 'Annuler une annonce adverse',
-    text: 'Un contresort se joue en réponse à la carte annoncée par le sorcier, avant qu’elle ne se résolve. Vérifiez ses restrictions : Silence d’écume ne contre que les sorts de Braise ou de Sable ; Déflection contre un sort et fait aussi piocher une carte.',
+    text: 'Un contresort se joue en réponse à la carte annoncée par le sorcier, avant qu’elle ne se résolve. Vérifiez sa cible : Silence d’écume contre la magie rapide ou la sorcellerie annoncée ; Déflection contre un sort et fait aussi piocher une carte.',
   },
   {
     id: 'renvoi-en-main',

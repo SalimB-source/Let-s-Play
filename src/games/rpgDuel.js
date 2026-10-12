@@ -23,6 +23,7 @@ import {
   choisirCarteIA,
   choisirCibleAutoIA,
   choisirCiblesRapidesIA,
+  choisirDefausseIA,
   choisirMulliganIA,
   choisirTerrainIA,
   couleurEngagement,
@@ -104,6 +105,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     fenetreReponse: false,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
     annonce: null,
+    // Défausse en attente (ex. Jörmungandr côté joueur) : { cote, restant, sourceCarteId }
+    defausseEnAttente: null,
     // Mulligan : chaque camp a droit à UN échange, avant le premier tour.
     mulliganFait: { joueur: false, sorcier: false },
     log: [],
@@ -125,6 +128,41 @@ export function rpgPiocher(duel, cote) {
   const carte = camp.deck.pop();
   camp.main.push(carte);
   return carte;
+}
+
+/**
+ * Défausse une carte de la main vers le cimetière (suite à un effet
+ * `pioche-defausse` comme Jörmungandr). Accepte un indice dans `main` ou un
+ * identifiant de carte ; à défaut, choisit la carte la moins utile.
+ */
+export function rpgDefausserCarte(duel, cote = 'joueur', indexOuCarteId = null) {
+  const camp = duel?.[cote];
+  if (!camp || !camp.main.length) {
+    if (duel?.defausseEnAttente?.cote === cote) duel.defausseEnAttente = null;
+    return { ok: false, raison: 'main-vide' };
+  }
+  let index = -1;
+  if (typeof indexOuCarteId === 'number' && Number.isInteger(indexOuCarteId)) {
+    if (indexOuCarteId >= 0 && indexOuCarteId < camp.main.length) index = indexOuCarteId;
+    else return { ok: false, raison: 'hors-main' };
+  } else if (typeof indexOuCarteId === 'string') {
+    index = camp.main.indexOf(indexOuCarteId);
+    if (index < 0) return { ok: false, raison: 'pas-en-main' };
+  } else {
+    index = choisirDefausseIA(duel, cote);
+  }
+  if (index < 0 || index >= camp.main.length) return { ok: false, raison: 'hors-main' };
+  const [carteId] = camp.main.splice(index, 1);
+  camp.cimetiere.push(carteId);
+  const nom = cardById(carteId)?.name ?? carteId;
+  duel.log.push(`${cote === 'joueur' ? 'Vous défaussez' : 'Le sorcier défausse'} ${nom}.`);
+  if (duel.defausseEnAttente?.cote === cote) {
+    duel.defausseEnAttente.restant = Math.max(0, (duel.defausseEnAttente.restant ?? 1) - 1);
+    if (duel.defausseEnAttente.restant <= 0 || !camp.main.length) {
+      duel.defausseEnAttente = null;
+    }
+  }
+  return { ok: true, carteId };
 }
 
 /** Le mulligan est ouvert tant que la partie n'a pas commencé : table vide et
@@ -636,14 +674,51 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     case 'pioche':
       for (let i = 0; i < (effet.amount ?? 1); i += 1) rpgPiocher(duel, cote);
       return;
+    case 'pioche-defausse': {
+      const pioche = Math.max(0, Number(effet.pioche ?? effet.amount) || 0);
+      const aDefausser = Math.max(0, Number(effet.defausse) || 0);
+      for (let i = 0; i < pioche; i += 1) rpgPiocher(duel, cote);
+      if (aDefausser <= 0 || !duel[cote].main.length) return;
+      if (cote === 'sorcier') {
+        for (let i = 0; i < aDefausser && duel[cote].main.length; i += 1) {
+          rpgDefausserCarte(duel, cote);
+        }
+        return;
+      }
+      if (cibleId !== null && cibleId !== undefined
+        && (typeof cibleId === 'number' || duel[cote].main.includes(cibleId))) {
+        rpgDefausserCarte(duel, cote, cibleId);
+        const restant = Math.min(aDefausser - 1, duel[cote].main.length);
+        if (restant > 0) {
+          duel.defausseEnAttente = { cote, restant, sourceCarteId };
+        }
+        return;
+      }
+      duel.defausseEnAttente = {
+        cote,
+        restant: Math.min(aDefausser, duel[cote].main.length),
+        sourceCarteId,
+      };
+      return;
+    }
     case 'retour-main': {
-      // Renvoi en main (« bounce ») : la cible quitte la table pour la main de
-      // son propriétaire. `creature` vise le camp adverse, `creature-amie` le
+      // Renvoi en main (« bounce » / Rebond) : la cible quitte la table pour la
+      // main de son propriétaire. `creature` vise le camp adverse (ou une
+      // créature alliée explicitement désignée hors `sauf`), `creature-amie` le
       // camp du lanceur. `pioche` fait piocher le lanceur après le renvoi.
-      const coteCible = effet.cible === 'creature-amie' ? cote : adv;
-      const cibles = duel[coteCible].creatures.filter((entite) => entite.id === cibleId);
-      for (const cible of cibles) {
-        renvoyerEnMain(duel, coteCible, cible, sourceElement);
+      if (effet.cible === 'creature-amie') {
+        const cibles = duel[cote].creatures.filter((entite) => entite.id === cibleId);
+        for (const cible of cibles) {
+          renvoyerEnMain(duel, cote, cible, sourceElement);
+        }
+      } else {
+        const enFace = duel[adv].creatures.find((entite) => entite.id === cibleId);
+        const chezSoi = duel[cote].creatures.find((entite) => entite.id === cibleId && entite.id !== sauf);
+        if (enFace) {
+          renvoyerEnMain(duel, adv, enFace, sourceElement);
+        } else if (chezSoi) {
+          renvoyerEnMain(duel, cote, chezSoi, sourceElement);
+        }
       }
       for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
       return;
@@ -878,6 +953,12 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
       return { ok: false, raison: 'cible' };
     }
   }
+  if (carte.arrivee?.type === 'retour-main' && cibleId) {
+    const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId)
+      ?? duel[cote].creatures.find((entite) => entite.id === cibleId);
+    if (!cible) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   // L'IA peut répondre à la créature avant son entrée en jeu. Dans ce cas,
   // `contrerAnnonce` paie la créature lancée ainsi que le contresort adverse.
@@ -896,7 +977,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   }
   if (carte.arrivee) {
     const cibleArrivee = carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId;
-    appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte));
+    appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte), 'capacite', carte.id);
   }
   majResonance(duel);
   appliquerAuraSable(duel, cote);
@@ -1427,6 +1508,10 @@ function resoudreRetoursProgrammes(duel) {
  *  créatures deviennent prêtes (le mal d'invocation tombe) et les échos différés
  *  (Nuage de cendres) retombent sur sa table. */
 export function rpgFinDeTour(duel) {
+  while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {
+    rpgDefausserCarte(duel, duel.defausseEnAttente.cote);
+  }
+  duel.defausseEnAttente = null;
   duel.fenetreReponse = false;
   duel.annonce = null;
   for (const cote of ['joueur', 'sorcier']) {
