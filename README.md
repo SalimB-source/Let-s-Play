@@ -4622,32 +4622,38 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
 - `npm run check:light-news` : le thème clair des pages Actus, galeries
   comprises.
 
-## Édition du 08.10.2026 : articles, miniatures et vidéos
+## Édition du 11.10.2026 : articles, miniatures et vidéos
 
 Les trois actualités de cette édition partagent une seule source de données,
-`src/news/daily/2026-10-08.js`, utilisée par les articles, les cartes des hubs,
+`src/news/daily/2026-10-11.js`, utilisée par les articles, les cartes des hubs,
 la une gaming de l’accueil, la recherche et les métadonnées SEO :
 
-- `/news/hellraiser-revival-sortie` — gaming, avec les coulisses officielles
-  publiées par PlayStation ; la vidéo de juillet est explicitement signalée
-  comme illustration, et non comme une nouvelle bande-annonce du jour.
-- `/news/cinema/below-netflix-sortie` — cinéma & séries, avec la bande-annonce
-  de la chaîne principale Netflix.
-- `/news/tech/nuri-cinquieme-vol-satellites` — tech & espace, avec les images
-  embarquées KARI et le replay du lancement. La date du vol (7 octobre) reste
-  distincte de celle du bilan publié le 8 ; le satellite non séparé est signalé.
+- `/news/ghost-tsushima-legends-anime-2028` — gaming, avec le teaser officiel
+  de l’anime, en version anglaise (Crunchyroll) et japonaise (Aniplex). La
+  vidéo de juillet est explicitement signalée comme illustration, et non comme
+  l’annonce du report à 2028.
+- `/news/cinema/exorciste-martyrs-trailer` — cinéma & séries, avec la
+  bande-annonce de la chaîne principale Universal Pictures, dévoilée au
+  BlumFest de la New York Comic Con le 9 octobre.
+- `/news/tech/anthropic-claude-faux-indice-philadelphie` — tech & IA : un
+  modèle d’Anthropic a déposé un faux indice sur un homicide non élucidé via
+  le formulaire public de la police de Philadelphie. Aucune vidéo officielle
+  n’existe : l’entrée du lecteur porte donc une mention d’absence, affichée
+  telle quelle dans l’article (le gabarit la prévoit, comme `pending`).
 
 Les trois miniatures sont livrées en JPEG compressé dans
-`public/news/2026-10-08/`, avec leurs crédits et URLs d’origine dans
+`public/news/2026-10-11/`, avec leurs crédits et URLs d’origine dans
 `credits.md`. Elles s’affichent aussi avant le démarrage des vidéos à la une ;
-les miniatures YouTube restent le repli. Les genres « COULISSES » et « REPLAY »
-complètent les libellés du lecteur sans présenter toutes les vidéos comme des
-bandes-annonces. Aucun sujet Mistral AI n’est inclus dans cette édition.
+les miniatures YouTube restent le repli. La pastille des cartes reprend la
+nature de la première vidéo (`TEASER` pour l’anime, `BANDE-ANNONCE` pour
+L’Exorciste : Martyrs) et disparaît sur l’actu tech, qui n’a pas de vidéo.
 
 `npm run check:daily-news` vérifie les fichiers image, les routes réelles,
-les trois cartes du jour, les mises en avant, la recherche, le SEO et le
-changement de vidéo Nuri. `npm run check:trailers` couvre désormais aussi
-les articles et les pastilles du hub tech, en plus du gaming et du cinéma.
+les trois cartes du jour, les mises en avant, la recherche, le SEO, la
+sélection des deux teasers et la mention d’absence de l’actu tech. L’édition
+précédente (08.10.2026 : Hellraiser, Below, Nuri) a été remplacée, comme le
+veut le principe d’une seule édition du jour : ses routes quittent le sitemap
+avec elle.
 
 ## Actus cinéma du jour
 
@@ -4656,7 +4662,19 @@ tech ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
-« À RETENIR », source d’origine citée et liée. Fournée du 06.10.2026 :
+« À RETENIR », source d’origine citée et liée.
+
+Fournée du 11.10.2026 :
+
+- `/news/cinema/exorciste-martyrs-trailer` — Universal Pictures dévoile au
+  BlumFest de la New York Comic Con le premier trailer de *L’Exorciste :
+  Martyrs*, écrit et réalisé par Mike Flanagan avec Scarlett Johansson en
+  inspectrice du NYPD ; sortie en salles le 12 mars 2027 (Superpouvoir,
+  FirstShowing). La miniature vient du trailer officiel relayé par Phantasmag
+  et la vidéo intégrée est celle d’Universal Pictures — vérifiée via oEmbed le
+  11.10.2026, comme la chaîne Crunchyroll de l’actu gaming du jour.
+
+Fournée du 06.10.2026 :
 
 - `/news/cinema/the-batman-part-ii-tournage-suspendu` — DC Studios et Warner
   Bros. suspendent temporairement le tournage de The Batman Part II : Matt
@@ -4984,7 +5002,7 @@ complètes du vrai moteur avec rendu GPU factice, tirs tactiles puis touche Z.
 Aucun dégât ni trafic n’est désactivé. Pour varier la simulation :
 `CITY_RUSH_MISSION_SEED=42 node scripts/city-rush-mission-run-check.mjs`.
 
-## Le Sablier de Bab El : prototype de RPG tour par tour
+## Le Sablier : prototype de RPG tour par tour
 
 Troisième jeu de la page (`/jeu/sablier-de-bab-el`) : un **prototype de combat
 tour par tour** dans la lignée de *Final Fantasy* et *Dragon Quest* — et
@@ -5104,3 +5122,420 @@ tracé au journal, les cinq réponses proposées, la première vague gagnée en
 jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
 réserve.
 
+## Le Sablier : les plateaux du duel
+
+Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
+Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
+désormais plusieurs, et **le joueur n'en choisit aucune** : le plateau d'une
+partie est imposé par **le deck de l'un des deux duellistes**.
+
+### La règle
+
+- **Chaque deck a son terrain.** Les Veilleurs du Désert se battent dans l'Erg
+  du Sahara, la Cour des Djinns sur la Terre de Damnation, les Sentiers de
+  cendre sur la piste de la Caravane de Gourara, la Marée des abysses dans les
+  Ruines de Tipaza, le Serment des Neuf Hivers sur la glace du Fjord. Les decks
+  de campagne ont leur entrée aussi — la Souffleuse de verre tient la piste de
+  caravane, le Grand Horloger reçoit dans la salle haute de la Chambre sur la
+  Table des Heures, et les quatre étages de la Tour du Fjord (la Garde, la
+  Meute, la Valkyrie, le Maître des Neuf Hivers) restent sur la glace
+  (`RPG_PLATEAUX_PAR_DECK`).
+- **Un paquet inconnu parle par sa couleur.** Un deck sans identité — paquet
+  brut passé en prop à la page, deck maison — prend le terrain de sa **couleur
+  dominante** : Sable → l'Erg, Braise → la Terre de Damnation, Eau → Tipaza,
+  Neige → le Fjord, deux couleurs à égalité → la Caravane de Gourara, le
+  carrefour des pistes. Rien de lisible : la Table des Heures, la table
+  d'origine.
+- **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
+  choisit l'un des deux camps ; c'est le deck de ce duelliste qui donne son
+  plateau à la partie. Le tirage passe par le `rng` du duel (injectable) et ne
+  consomme qu'une valeur : une partie se rejoue à l'identique, valeurs hors
+  bornes comprises, et la suite du moteur (le mélange des paquets) ne bouge pas.
+- **Plus aucun choix de plateau.** Le bloc « Le terrain d'affrontement » du menu
+  *Jouer* a été retiré, avec la pastille **Aléatoire**, le verrou de plateau et
+  sa sauvegarde sur l'appareil (la clé `letsplay_sablier_plateau_v1` n'est plus
+  ni lue ni écrite). Rien à régler : le terrain se découvre à l'ouverture du
+  duel.
+- **Le plateau est annoncé.** Le duel ouvre sur « Plateau : … — …, imposé par
+  votre deck / le deck adverse / le deck de <sorcier de l'étage> » dans la barre
+  du bas, et la table porte son terrain dans son libellé accessible.
+
+### Les plateaux
+
+| Fichier | Plateau | Ce qu'on y voit |
+| --- | --- | --- |
+| `public/card-table.jpg` | **La Table des Heures** (Bab El) | le bois des Veilleurs, l'astrolabe doré gravé au centre, quatre bougies. |
+| `public/plateau-erg-du-sahara.jpg` | **L'Erg du Sahara** | la rose des sables tracée à la main dans la dune, la lanterne de laiton et son feu, l'outre, la corde, les pierres noires. |
+| `public/plateau-caravane-de-gourara.jpg` | **La Caravane de Gourara** | le lit sec de l'oued et sa piste : les deux empreintes du campement, l'outre, la corde et le compas abandonné. |
+| `public/plateau-terre-de-damnation.jpg` | **La Terre de Damnation** (Les Brûlés) | l'étage repris par le feu : la croûte craquelée et ses braises encore vives, l'encensoir de fer renversé et sa coulée de cendres, les troncs noircis, les éclats d'obsidienne. |
+| `public/plateau-fjord-des-neuf-hivers.jpg` | **Le Fjord des Neuf Hivers** (la glace du Nord) | la glace polie du fjord et sa rose des vents gravée au ciseau, la lanterne de fer, le cor à boire, la corde lovée, la hache et le bâton de runes. |
+| `public/plateau-ruines-de-tipaza.jpg` | **Les Ruines de Tipaza** (Tipasa) | la mosaïque romaine ouverte par le vent, les dalles disjointes, les fûts de colonne tombés, le chapiteau corinthien et le débris d’architrave, coquillages et cristaux de sel. |
+
+### Où vit le code
+
+- `src/games/rpgPlateaux.js` — le catalogue des plateaux (identifiant, nom,
+  lieu, fichier, résumé), la correspondance deck → terrain
+  (`RPG_PLATEAUX_PAR_DECK`, `RPG_PLATEAUX_PAR_COULEUR`), la lecture d'un paquet
+  (`plateauDeDeck`, `couleurDominanteDeck`) et le tirage du duel
+  (`tirerPlateauDuDuel`, qui rend `{ plateau, camp, motif }`). Aucun rendu,
+  aucun DOM, aucun `localStorage` : testable comme le moteur.
+- `src/games/RpgDuelPage.jsx` — le tirage dans `nouvellePartie`, sur les deux
+  paquets réellement joués (prop brute, deck du catalogue ou clé de deck
+  d'étage), l'annonce nommée (`nommerOriginePlateau`), et la classe
+  `card-table--plateau-<id>` + le `background-image` posés sur la table.
+- `src/games/rpg-battle.css` — la couleur de repli de chaque
+  plateau, et les **voiles de lisibilité**. Le voile principal est un
+  **dégradé noir posé en haut et en bas du plateau**
+  (`--rpg-plateau-voile`) : c'est là que vivent les textes de la table —
+  navigation, main adverse et identité du sorcier en haut ; identité du joueur,
+  rails de terrains, message du tour, phases, commandes et main en bas. Le
+  centre reste dégagé, c'est la zone où les cartes se posent. Chaque plateau
+  règle sa densité par deux variables, mesurée sur le fond livré (luminance du
+  haut du cadre, sur 255) : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
+  Caravane de Gourara 102, Terre de Damnation 61, Table des Heures 54. L'encre
+  crème de la table (`#fff0cf`) tombe sous 3:1 sur les deux premiers sans une
+  ombre d'au moins 80 % ; la terre brûlée, sombre mais très contrastée, garde
+  une vignette appuyée pour laisser les braises lisibles sans que les éclats de
+  lave mangent les cartes. Seule la teinte distingue les fonds clairs : ombre
+  chaude pour les sables, ombre neutre et froide pour la pierre au bord de la
+  mer. À ce voile s'ajoute, à la souris seulement, la vignette centrale propre à
+  chaque famille de terrain.
+- `src/games/rpg-mobile.css` — **le voile haut/bas reste au doigt** : il y était
+  supprimé, et c'est justement en paysage de téléphone (et dans l'APK) que les
+  libellés se noyaient dans le sable. Seule la vignette centrale disparaît, pour
+  garder le champ de bataille dégagé, et les bandes du dégradé sont recalées sur
+  la grille tactile — la rangée de navigation en haut, la main et les commandes
+  en bas.
+- `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
+  `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
+  — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
+  ni interface dessinée — l'interface du jeu se superpose (règle de
+  `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
+  calme et peu contrasté : c'est la zone où les cartes se posent.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # règles + les 17 tests des plateaux
+npm run check:rpg-ui     # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, voile compris
+```
+
+`tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
+livrés dans `public/`, chaque atmosphère — Bab El, les deux déserts, la
+terre brûlée, les ruines de Tipaza — avec son propre fond), le tirage (jamais deux fois de suite le même terrain,
+déterminisme par `rng`, valeurs hors bornes sans plantage), le verrou (toujours
+respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
+retour, valeur inconnue normalisée, stockage illisible ou absent).
+`check:rpg-ui` monte la page : le menu présente chaque plateau plus le tirage
+aléatoire, le verrou est exclusif, et le duel qui suit se joue bien sur le
+plateau verrouillé — classe, fond et libellé de la table compris. Il vérifie
+aussi le voile : le dégradé noir haut/bas est posé sous l'interface, **chaque
+plateau du catalogue règle sa propre densité**, les fonds clairs (sables, pierre
+de Tipaza) sont plus voilés que le bois, et la présentation tactile conserve le
+voile au lieu de le supprimer.
+
+## Le Sablier : l'aperçu d'une carte au doigt
+
+À la souris, survoler une carte ouvre son **aperçu instantané** : le type, le
+coût, les effets ligne à ligne, l'attaque et la défense. Sur écran tactile, le
+survol n'existe pas — et dans l'application comme en version mobile, il ne
+restait que le clic, qui **agit** : poser la carte, déclarer une attaque,
+produire un mana. Consulter une carte sans la jouer était impossible.
+
+### Le geste
+
+- **Une seconde d'appui sur une carte ouvre son aperçu.** Le doigt reste posé
+  une seconde (`RPG_LONG_PRESS_MS = 1000`), l'aperçu s'ouvre dans un volet
+  sombre centré, et **rien n'est joué** : le clic synthétique qui suit le lever
+  du doigt est avalé, comme le fait déjà le glisser-déposer tactile.
+- **Partout où une carte est affichée.** Le geste est délégué à la page : toute
+  carte qui porte un `data-card-id` y répond — la main, les créatures des deux
+  camps, les rails de terrains, le dessus d'un cimetière, le catalogue et la
+  liste d'un deck, au menu comme en duel.
+- **Un appui court reste un clic.** Lever le doigt avant la seconde ne change
+  rien au jeu : la carte se pose, la créature se déclare, le terrain produit son
+  mana. Un doigt qui glisse au-delà de 10 px non plus — c'est un défilement de
+  la main ou un glisser-déposer, et l'appui est annulé.
+- **Le volet se referme** d'un toucher n'importe où dessus, du bouton « Fermer
+  l'aperçu » ou de la touche Échap. Il se referme aussi en changeant d'écran et
+  quand l'appareil repasse en portrait (l'écran de rotation reprend la main).
+- **Le geste est annoncé.** L'ouverture du duel l'explique dans la barre du bas
+  sur appareil tactile : « Appui long d'une seconde sur une carte : son aperçu,
+  sans la jouer. »
+
+### Où vit le code
+
+- `src/games/rpgLongPress.js` — le geste seul, sans React ni DOM créé : même
+  contrat que `rpgTouchDrag.js` (un `cleanup` idempotent). Il ne répond qu'au
+  doigt et au stylet, annule sur déplacement, lever précoce, second pointeur,
+  `pointercancel`, perte de focus, défilement ou page cachée, étouffe le menu
+  contextuel natif (callout iOS, « enregistrer l'image » Android) et avale le
+  clic qui suit l'aperçu ouvert.
+- `src/games/RpgDuelPage.jsx` — un `pointerdown` délégué sur les deux écrans
+  (`data-scene="menu"` et `data-scene="duel"`), l'état `apercuAppui`, le volet
+  `ApercuCarteAppuiLong` qui réutilise `HoverCardPreview` dans sa variante
+  `appui-long`, et la désactivation du glisser-déposé armé par le même doigt.
+- `src/games/rpg-battle.css` — le volet `.rpg-card-peek` (fond sombre, panneau
+  centré, bouton Fermer en encre crème quel que soit le thème du site),
+  l'exception au `display: none` qui masque l'aperçu au survol sur pointeur
+  tactile (dans le volet, il s'affiche), le cadrage en paysage de téléphone
+  (`@media (max-height: 520px)` : l'illustration se règle sur la hauteur
+  disponible, `42dvh`, au menu comme en duel) et l'annulation du callout natif
+  et de la sélection de texte sur toute carte affichée.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # les 11 tests du geste (tests/rpg-long-press.test.js)
+npm run check:rpg-ui     # la page montée dans jsdom, appui long compris
+```
+
+`tests/rpg-long-press.test.js` vérifie le geste pur : une seconde de contact
+immobile ouvre l'aperçu une seule fois, le clic qui suit est avalé, un appui
+court laisse passer le clic de jeu, le menu contextuel est étouffé puis rendu,
+un déplacement au-delà du seuil annule (un tremblement en dessous, non),
+l'aperçu ouvert ne dépend plus du doigt, et `pointercancel`, perte de focus,
+défilement, page cachée, second doigt, souris et démontage n'ouvrent rien.
+
+`check:rpg-ui` monte la page en mode tactile : une seconde d'appui sur une carte
+du **catalogue** puis sur une carte de la **main** ouvre le volet nommé, avec le
+type, les effets ligne à ligne et les statistiques ; la carte n'est pas jouée,
+aucun terrain n'est posé, aucune confirmation demandée ; le clic suivant est
+avalé ; le volet se referme au toucher et à Échap ; une créature en jeu
+s'aperçoit sans être déclarée attaquante ; un appui qui glisse n'ouvre rien ; un
+appui court laisse passer le clic qui joue la carte.
+
+## Le Sablier : la zone de jeu au doigt, élargie et empilée
+
+Sur un téléphone en paysage, la zone de jeu est la **colonne centrale** de la
+grille tactile, prise entre deux rails : identité et terrains à gauche, phases
+et commandes à droite. Elle mesurait **343 px** sur un 844 × 390 — de quoi
+montrer 3,8 cartes — et **246 px** sur un 667 × 375 (≈ 2,8). Avec cinq cartes
+en main et deux créatures de chaque côté, il fallait défiler sans arrêt pour
+voir son propre champ de bataille.
+
+### Ce qui change
+
+- **La colonne centrale est élargie** : `clamp(116px, 16vw, 190px)` à gauche au
+  lieu de `clamp(116px, 18vw, 210px)`, `clamp(200px, 27vw, 320px)` à droite au
+  lieu de `clamp(220px, 30vw, 340px)`, et des gouttières resserrées
+  (`gap: max(8px, carte × .22)` au lieu de `.36`, marges intérieures
+  `max(8px, carte × .12)`, main à 6 px). Résultat : **386 px et ≈ 4,7 cartes**
+  sur 844 × 390 (+25 %), **270 px et ≈ 3,4** sur 667 × 375 (+21 %).
+- **Rien d'autre ne bouge.** `--duel-card` (la taille des cartes) reste à
+  `clamp(48px, 17dvh, 100px)` — agrandir les cartes en réduirait le nombre — et
+  `--terrain-inset` reste à `clamp(44px, 8vw, 160px)` : c'est la marge qui
+  tient les rails de terrains hors du cadre illustré, mesurée par
+  `check:rpg-mobile`. Les commandes gardent 200 px, assez pour trois boutons
+  tactiles de 44 px côte à côte.
+- **Les cartes homonymes s'empilent**, comme les terrains le font déjà : au
+  doigt seulement, N exemplaires identiques n'occupent plus qu'**un
+  emplacement**, avec un compteur **×N** flottant sur le coin et des ombres
+  décalées — dans la main et sur les **deux** champs de bataille. À la souris
+  et sur grand écran rien ne change : une carte = un emplacement, et le DOM de
+  la main reste exactement celui d'origine.
+- **Une pile agit sur l'exemplaire pertinent.** Poser un terrain, déclarer une
+  attaque, bloquer, cibler : la tête de pile est le premier exemplaire **prêt**
+  (ni engagé, ni déjà attaquant, ni mal d'invocation) côté joueur, la cible
+  légale ou l'attaquant non bloqué côté adverse. Chaque clic suivant avance
+  dans le groupe ; après une attaque, la tête passe à l'exemplaire qui n'a pas
+  encore attaqué.
+- **On peut déplier.** Toucher le compteur ×N déplie le groupe, et une puce ×N
+  placée dans la rangée permet de le replier. Surtout, tout groupe dont un
+  exemplaire participe à l'**action en cours** — attaquants déclarés, combat
+  entrant, blocages assignés, cible de sort, coup rapide, bloqueur sélectionné,
+  effet visuel — **se déplie seul**, pour que les flèches de blocage, les halos
+  de cible et les effets de destruction trouvent leur carte.
+- **Un exemplaire masqué emprunte la place de sa pile** dans l'instantané du
+  champ : son effet de destruction part du bon endroit au lieu du coin de la
+  table.
+- **L'appui long reste disponible** sur une pile : une seconde de contact ouvre
+  l'aperçu de la carte, sans rien jouer ni déplier.
+
+### Où vit le code
+
+- `src/games/rpgCardStacks.js` — le regroupement pur, même contrat que
+  `rpgTerrainStacks.js` : `groupCartesMain` (les exemplaires d'une main, dans
+  l'ordre d'arrivée, avec leurs **index réels**) et `groupEntitesParCarte` (les
+  créatures d'un camp qui partagent une carte). Aucune mutation de l'état du
+  moteur.
+- `src/games/RpgDuelPage.jsx` — `empilerCartes = viewport.mobile` ; la main
+  rendue pile par pile (`data-pile-count`, index représentant pour le clic, le
+  glisser-déposer, le vol de carte et l'animation de pioche, qui suivent le
+  groupe contenant l'exemplaire concerné) ; les deux lignes de jeu rendues pile
+  par pile (`champEnPiles`, `teteDePile`, `pileDeployee`, `idsActionEnCours`,
+  l'état `pilesDeployees` et `basculerPile`) ; et `prendreInstantaneChamp` qui
+  prête la place de la pile visible à un exemplaire masqué.
+- `src/games/rpg-mobile.css` — la grille tactile élargie, les gouttières
+  resserrées, le centrage des groupes (les piles et leur puce participent aux
+  marges automatiques), et la présentation des piles : `.rpg-hand__pile`,
+  `.rpg-card-stack`, compteurs `.rpg-hand__pile-count` (inerte, il laisse
+  passer le geste de jeu) et `.rpg-card-stack__count` (bouton qui déplie),
+  puce `.rpg-card-stack__toggle`.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # les 3 tests de regroupement (tests/rpg-card-stacks.test.js)
+npm run check:rpg-ui     # la grille élargie + les deux scénarios de piles en jsdom
+npm run check:rpg-mobile # la géométrie réelle (Playwright) : rails, terrains, centrage
+npm run build
+```
+
+`tests/rpg-card-stacks.test.js` vérifie le regroupement pur : l'ordre de
+première apparition, les index réels de chaque exemplaire (le total reste égal
+à la taille de la main), la carte de tête, l'absence de mutation de l'état, une
+pile par carte sans doublon, et le fait que deux camps ne partagent jamais une
+pile.
+
+`scripts/rpg-stacks-smoke.jsx` monte deux duels tactiles dans jsdom. **Côté
+joueur** : deux Chiens du guet en main ne forment qu'un emplacement avec son
+×2, le second exemplaire posé rejoint le premier en une pile ×2 dont la tête
+reste le premier venu, un appui long ouvre l'aperçu sans déplier ni déclarer,
+toucher la pile déclare **l'exemplaire prêt** et déplie le groupe, annuler
+l'attaque le replie, le compteur déplie et la puce replie, l'attaque confirmée
+laisse la tête passer à l'exemplaire qui n'a pas attaqué, et une pioche
+identique remplit la pile sans ajouter d'emplacement. **Côté sorcier** : les
+créatures adverses identiques s'empilent, leur groupe se déplie pendant
+l'attaque (chaque attaquant reste visible et recevable), un bloqueur s'assigne
+depuis la pile repliée du joueur (la tête devient le bloqueur sélectionné, le
+groupe se déplie), puis les deux camps se replient une fois le combat résolu.
+
+`check:rpg-ui` ajoute les garde-fous statiques : la nouvelle grille tactile
+(colonnes, gouttières, main), `--duel-card` et `--terrain-inset` inchangés, la
+présentation des piles (bloc relatif, compteur flottant, puce tactile, ombres
+décalées), l'empilement réservé au doigt (`empilerCartes = viewport.mobile`),
+le DOM de la main inchangé à la souris, et les groupes dépliés par toute action
+en cours.
+
+## Le Sablier : le renvoi en main (Ressac, Courant de retour)
+
+La Marée des abysses gagne deux sorts d'Eau qui **renvoient une créature dans
+la main de son propriétaire** — l'effet `retour-main` du moteur. La créature
+quitte la table **sans mourir** : ni cimetière, ni capacité de destruction, et
+tout ce qu'elle avait gagné (blessures, boucliers, Furie, Résonance) est perdu ;
+la rejouer coûtera de nouveau son mana. La protection contre l'Eau arrête le
+renvoi, et sans créature légale le sort refuse de partir sans rien payer.
+
+- **Ressac** (Éphémère — Eau, 1 mana, commune ×2) : renvoyez une créature
+  adverse ciblée dans la main de son propriétaire.
+- **Courant de retour** (Rituel — Eau, 3 mana, rare ×1) : renvoyez une créature
+  adverse ciblée dans la main de son propriétaire, puis piochez une carte.
+
+C'est un coup de tempo, pas une destruction : la menace reviendra, mais elle
+aura coûté un tour et un paiement de plus. L'IA du sorcier cible la créature la
+plus lourde et ne lance le renvoi que si la menace le justifie ; le profil
+« contrôle » l'apprécie davantage. Côté joueur, le sort ouvre le choix d'une
+cible adverse (jamais le sorcier), et l'aperçu d'une annonce nomme la créature
+visée. Le deck reste à 40 cartes : un exemplaire de trois créatures communes
+(Porteuse de cruches, Veilleuse des citernes, Vipère de verre) cède sa place.
+
+Chaque carte a sa peinture dédiée dans le style huile sur toile de la
+collection (`public/cards/ressac.jpg`, `public/cards/courant-de-retour.jpg`) —
+le garde-fou du catalogue interdit tout partage d'illustration dans un même
+deck.
+
+### Où vit le code
+
+- `src/games/rpgCards.js` — les deux magies (`effet: { type: 'retour-main', … }`,
+  `pioche: 1` pour le Courant de retour) et le deck Marée des abysses à 40 cartes.
+- `src/games/rpgDuel.js` — `renvoyerEnMain` (départ de la table vers la main,
+  protection respectée, `majResonance` recalculé), le cas `retour-main` dans
+  `appliquer`, et la validation de cible dans `rpgLancerMagie` (raisons
+  `cible` / `protection` sans paiement).
+- `src/games/rpgAI.js` — `meilleureCibleRenvoiIA` (la menace la plus lourde,
+  hors créatures protégées) branchée sur `rpgCibleAuto`, et le score du renvoi
+  dans `scoreCarte` (tempo + pioche éventuelle − coût).
+- `src/games/RpgDuelPage.jsx` — `targetMode` rend le sort ciblable « ennemi »
+  (ou « allié » si une carte renvoyait une créature amie), et le message de
+  ciblage ne propose le sorcier que si la carte peut réellement le viser.
+
+### Vérifications
+
+```bash
+npm run check:rpg     # tests moteur + IA, dont le renvoi en main (tests/rpg-maree.test.js)
+npm run check:rpg-ui  # scénario jsdom « Ressac » : cible cliquée, créature rendue à la main adverse
+npm run build
+```
+
+`tests/rpg-maree.test.js` vérifie que la créature renvoyée rejoint la main de
+son propriétaire (jamais le cimetière), que le Courant de retour fait piocher,
+que le Kraken renvoyé ne déclenche pas sa pioche de destruction, que la
+protection et l'absence de cible bloquent le sort sans paiement, et que l'IA
+annonce puis résout un Ressac sur la plus grosse menace. Le scénario de
+`scripts/rpg-battle-smoke.jsx` rejoue le geste complet dans la vraie interface.
+
+## Le Sablier : plus de carte morte sur le terrain
+
+Une carte détruite pouvait rester posée sur la table, figée et comme engagée,
+jusqu'à bloquer le duel. Les règles n'y étaient pour rien — le moteur enterrait
+bien la créature : c'est **le temps qui passe autour de la table** qui laissait
+des restes.
+
+**1. L'image d'adieu survivait à son animation.** Quand une créature meurt, une
+copie de sa carte reste une fraction de seconde à sa place, avec son inclinaison,
+le temps de se dissiper : c'est elle, et non la créature, que le joueur voyait
+« rester engagée sur le terrain ». Elle ne partait que sur une minuterie. Elle
+se retire désormais par quatre voies : la fin de son animation
+(`onAnimationEnd`), sa minuterie, un chien de garde réarmé à chaque changement
+de la liste, et un ménage au retour d'arrière-plan (`visibilitychange`). Et
+quand le joueur a demandé **moins d'animations** (réglage système), l'adieu
+n'est plus affiché du tout : sans animation, ce n'était plus un adieu mais une
+carte morte posée sur la table.
+
+**2. La partie précédente parlait encore.** Le tour du sorcier s'anime par une
+chaîne de minuteries. Quitter la table par « Menu » pendant ce tour, puis
+lancer un nouveau duel, ne les annulait pas : elles atterrissaient sur la
+partie neuve et y rouvraient un combat fantôme — plus moyen de finir son tour,
+les cartes restaient figées dans leur dernier état. Chaque partie porte
+désormais un numéro (`sessionDuelRef`) : une minuterie vérifie qu'elle
+appartient toujours à la partie en cours avant d'agir, et `nouvellePartie()`
+coupe tout ce qui était en vol.
+
+**3. Une carte engagée n'est pas une carte morte.** Une créature qui a attaqué
+reste couchée jusqu'au début du tour de son camp — c'est la règle. Mais elle
+était affichée en gris complet et à 76 % d'opacité : exactement le langage
+visuel d'une carte détruite. Le gris est maintenant léger, et un jeton
+**« engagée »**, redressé à l'horizontale sur la carte couchée, dit ce qu'il en
+est ; les lecteurs d'écran annoncent « engagée, elle se dégagera au début du
+prochain tour ».
+
+**4. Un contre allumé sans rien à contrer.** Le halo doré de la main était
+calculé deux fois, à deux endroits. Un contresort (*Silence d'écume*, *Parade
+du verre*…) apparaissait jouable hors d'une annonce adverse : le joueur le
+tapait, confirmait, et rien ne se passait — indéfiniment. La main interroge
+désormais la même règle que le clic (`peutJouerCarte`), et cette règle
+consulte `rpgContreJouable()` : un contre ne s'allume que face à une annonce
+adverse qu'il peut réellement viser.
+
+**5. Filet de sécurité dans les règles.** `rpgActionsEtat()` retire toute
+créature sans défense **à la fin de chaque geste public** du duel (pose, magie,
+attaque, combat, fin de tour, annonce du sorcier), en rejouant les capacités de
+destruction en cascade. Aucun chemin de dégâts n'oublie aujourd'hui d'enterrer
+sa victime : le balayage ne change donc rien à une partie saine, mais un futur
+malus de défense ne pourra plus laisser une carte morte sur le terrain.
+
+### Vérifications
+
+```bash
+npm run check:rpg         # moteur : actions d'état, contre jouable ou non
+npm run check:rpg-ghosts  # la chasse aux fantômes dans la vraie page
+npm run check:rpg-ui      # inclut la chasse aux fantômes
+```
+
+`scripts/rpg-ghost-check.mjs` monte la page dans jsdom avec une horloge
+virtuelle et joue **des duels entiers au pilote automatique**, sur grand écran
+et au doigt : il joue des cartes, bloque, attaque, annule, répond aux annonces,
+déplie les piles, fait pivoter l'écran en plein combat, quitte la table pour y
+revenir — et, une fois sur trois, **rejoue sans attendre la fin des
+animations**, comme un joueur impatient. Après chaque geste, y compris au
+milieu d'une animation, il compare la table affichée à la vérité du moteur :
+aucune créature à zéro défense en jeu, aucune carte affichée qui ait quitté le
+terrain, aucune carte engagée que le moteur dit dégagée, aucune image de
+destruction oubliée une fois l'horloge à jour. Deux épreuves ciblées complètent
+les duels : la relance d'une partie pendant le tour du sorcier, et un retour
+d'arrière-plan où **toutes les minuteries en attente sont perdues** — la table
+doit se nettoyer d'elle-même.
+
+C'est ce pilote qui a trouvé le contresort injouable : la graine 4 tournait en
+rond à taper *Silence d'écume* sans jamais pouvoir finir son tour.

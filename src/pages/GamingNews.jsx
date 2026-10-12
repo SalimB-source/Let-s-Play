@@ -11,7 +11,7 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-08';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-11';
 
 // Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
 // telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
@@ -55,7 +55,7 @@ const FEATURED_COPY = {
 // src/articleTrailers.js). Pour changer la une, il suffit d'insérer la nouvelle
 // actu ici, en tête de liste.
 //
-// L’édition du 08.10.2026 précède les archives ci-dessous.
+// L’édition du 11.10.2026 précède les archives ci-dessous.
 // Actus du mercredi 07.10.2026 : le démenti de Xbox sur le streaming PC
 // de GTA VI ouvre la page ; suivent l'actu du mardi 06.10.2026 (satire
 // Rockstar dans GTA VI), celles du lundi 05.10.2026 (lancement free-to-play

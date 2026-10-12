@@ -1,0 +1,227 @@
+/* ── Mode Histoire : les Tours de Bab El ─────────────────────────────────── */
+
+.rpg-story {
+  display: grid;
+  gap: 18px;
+  padding: 18px clamp(12px, 3vw, 32px) 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.rpg-story__intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rpg-story__intro h2 {
+  margin: 4px 0 6px;
+  font-family: var(--font-gaming);
+  font-size: clamp(20px, 3vw, 28px);
+  color: var(--yellow);
+}
+
+.rpg-story__intro p { margin: 0; max-width: 62ch; color: var(--muted); }
+
+.rpg-story__reset {
+  border: 1px solid rgba(229, 191, 105, .35);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.rpg-story__reset:hover,
+.rpg-story__reset:focus-visible { color: #fca5a5; border-color: #fca5a5; outline: none; }
+
+.rpg-story__tours {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.rpg-story-tour {
+  border: 1px solid rgba(229, 191, 105, .22);
+  border-radius: 14px;
+  background: rgba(10, 10, 18, .78);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rpg-story-tour__header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(229, 191, 105, .16);
+  background: linear-gradient(120deg, rgba(92, 59, 28, .32), rgba(10, 10, 18, .2));
+}
+
+.rpg-story-tour__header h3 {
+  margin: 2px 0 6px;
+  font-family: var(--font-gaming);
+  font-size: 18px;
+  color: var(--yellow);
+}
+
+.rpg-story-tour__header p { margin: 0; font-size: 13px; color: var(--muted); }
+
+.rpg-story-tour__progress {
+  margin: 10px 16px 0;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(229, 191, 105, .16);
+  overflow: hidden;
+}
+
+.rpg-story-tour__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b9863c, var(--yellow));
+}
+
+.rpg-story-tour__floors {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.rpg-story-floor {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  /* Le nom et le badge partagent la première ligne ; la description occupe toute
+     la largeur de la carte juste dessous, pour se lire en entier. */
+  grid-template-areas: "step name badge" "step note note";
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 3px;
+  text-align: left;
+  border: 1px solid rgba(229, 191, 105, .16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .03);
+  color: inherit;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.rpg-story-floor:hover:not(:disabled),
+.rpg-story-floor:focus-visible:not(:disabled) {
+  border-color: rgba(229, 191, 105, .55);
+  background: rgba(92, 59, 28, .28);
+  outline: none;
+}
+
+/* Étage verrouillé : estompé par la couleur, jamais par `opacity`. À 55 %, le
+   texte tombait à ~2,7:1 de contraste — illisible pour qui veut savoir ce qui
+   l'attend plus haut. Ici la description reste à plus de 4,5:1. */
+.rpg-story-floor:disabled {
+  cursor: not-allowed;
+  border-color: rgba(229, 191, 105, .1);
+  background: rgba(255, 255, 255, .015);
+}
+.rpg-story-floor:disabled .rpg-story-floor__copy strong { color: rgba(244, 234, 213, .72); }
+.rpg-story-floor:disabled .rpg-story-floor__copy small { color: rgba(214, 220, 255, .62); }
+.rpg-story-floor:disabled .rpg-story-floor__step { color: rgba(255, 214, 25, .6); border-color: rgba(229, 191, 105, .22); }
+.rpg-story-floor:disabled .rpg-story-floor__badge { color: rgba(214, 220, 255, .62); border-color: rgba(229, 191, 105, .16); }
+
+.rpg-story-floor__step {
+  grid-area: step;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(229, 191, 105, .35);
+  font-family: var(--font-gaming);
+  color: var(--yellow);
+}
+
+.rpg-story-floor.is-cleared .rpg-story-floor__step {
+  background: rgba(122, 168, 92, .28);
+  border-color: rgba(122, 168, 92, .7);
+}
+
+.rpg-story-floor.is-next .rpg-story-floor__step {
+  background: rgba(229, 191, 105, .22);
+  box-shadow: 0 0 12px rgba(229, 191, 105, .35);
+}
+
+/* Le conteneur s'efface : son nom et sa description se placent directement sur
+   la grille de l'étage. */
+.rpg-story-floor__copy { display: contents; }
+
+.rpg-story-floor__copy strong { grid-area: name; min-width: 0; font-size: 14px; }
+
+/* La description se lit en entier : elle passe à la ligne au lieu d'être
+   coupée par une ellipse (on n'en voyait guère plus du quart). */
+.rpg-story-floor__copy small {
+  grid-area: note;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.rpg-story-floor__badge {
+  grid-area: badge;
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid rgba(229, 191, 105, .25);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.rpg-story-floor.is-cleared .rpg-story-floor__badge { color: #9fd07a; border-color: rgba(122, 168, 92, .5); }
+.rpg-story-floor.is-next .rpg-story-floor__badge { color: var(--yellow); border-color: rgba(229, 191, 105, .6); }
+
+/* Bandeau du duel en cours (étage affiché dans la nav de la table).
+   Encre dorée littérale : il se pose sur le voile sombre de la barre (ou sur la
+   table en tactile), jamais sur une surface du thème — avec `--muted` il
+   passait au bleu nuit sur noir en thème clair. */
+.rpg-duel-nav__story {
+  padding: 0 8px;
+  color: #e8c77f;
+  font-size: 12px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+/* Sur téléphone, la barre ne laisse que ~100 px au libellé : il se repliait sur
+   quatre lignes, rognées par le haut de l'écran. On n'y garde que « HISTOIRE »
+   (le nom de l'étage figure déjà sur la plaque du sorcier). */
+.rpg-battle--touch .rpg-duel-nav__story { padding: 0 6px; color: #f5dc9f; font-size: 9px; letter-spacing: .08em; text-shadow: 0 1px 3px #000, 0 0 6px rgba(0, 0, 0, .7); }
+.rpg-battle--touch .rpg-duel-nav__story-mode,
+.rpg-battle--touch .rpg-duel-nav__story-floor { display: none; }
+
+/* Actions de fin de duel en mode Histoire */
+.rpg-overlay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+/* La rangée étire les boutons à la hauteur du plus grand. Le bouton « Étage suivant : … → » empilait la flèche
+   sous le nom (colonne de .rpg-btn), devenait deux fois plus haut que les autres et leur texte restait collé en
+   haut. Libellé et flèche sur une même ligne, et chaque texte centré dans son bouton, quelle que soit sa ligne. */
+.rpg-overlay__actions .rpg-btn {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: .45em;
+  min-height: 44px;
+  text-align: center;
+}

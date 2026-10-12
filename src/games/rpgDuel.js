@@ -8,6 +8,8 @@
  */
 
 import {
+  RPG_ELEMENTS,
+  cardById,
   cardColorCost,
   cardColors,
   duelCardById,
@@ -15,12 +17,21 @@ import {
   terrainById,
   terrainManaColors,
 } from './rpgCards.js';
+import {
+  choisirAttaquantsIA,
+  choisirBloqueursIA,
+  choisirCarteIA,
+  choisirCibleAutoIA,
+  choisirCiblesRapidesIA,
+  choisirTerrainIA,
+  couleurEngagement,
+} from './rpgAI.js';
 
 export const RPG_PV_JOUEUR = 50;
 export const RPG_PV_SORCIER_BASE = 50;
 export const RPG_PV_SORCIER_PAR_PUISSANCE = 5;
 export const RPG_MAIN_DEPART = 5;
-export const RPG_COULEURS = ['braise', 'eau', 'sable'];
+export const RPG_COULEURS = RPG_ELEMENTS;
 
 const destructionsParDuel = new WeakMap();
 
@@ -43,9 +54,9 @@ function journaliserDestruction(duel, entite, sourceElements = []) {
   destructionsParDuel.set(duel, journal);
 }
 
-const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable' };
+const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige' };
 const normaliserCouleurs = (couleurs) => [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
-const manaVide = () => ({ braise: 0, eau: 0, sable: 0 });
+const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0 });
 const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[c], 0);
 
 /** PV d'un sorcier adverse selon sa puissance. */
@@ -55,8 +66,10 @@ export const rpgSorcierPv = (puissance = 0) =>
 /**
  * Nouveau duel : tables vides, 0 sable, puis chaque camp pioche 5 cartes.
  * `decks` : listes d'identifiants de cartes (créatures pour l'instant).
+ * `sorcierIA` : profil de l'IA ({ niveau, style }) — voir rpgAI.js. Chaque
+ * sorcier du mode Histoire peut porter le sien.
  */
-export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, rng = Math.random } = {}) {
+export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random } = {}) {
   const melanger = (deck) => {
     const d = [...deck];
     for (let i = d.length - 1; i > 0; i -= 1) {
@@ -72,6 +85,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
       puissance: sorcierPuissance,
+      ia: sorcierIA,
       mana: manaVide(),
       bouclier: 0,
       terrainPose: false,
@@ -83,6 +97,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       retoursProgrammes: [],
     },
     fenetreReponse: false,
+    // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
+    annonce: null,
     log: [],
   };
   for (let i = 0; i < RPG_MAIN_DEPART; i += 1) {
@@ -230,8 +246,7 @@ function appliquerAuraSable(duel, cote) {
   const tarekEnJeu = camp.creatures.some((entite) => entite.carteId === 'tarek');
   for (const entite of camp.creatures) {
     const carte = duelCardById(entite.carteId);
-    const eligible = tarekEnJeu && cardColors(carte).includes('sable');
-    const prochainBonus = eligible ? 1 : 0;
+    const prochainBonus = tarekEnJeu && cardColors(carte).includes('sable') ? 1 : 0;
     const delta = prochainBonus - (entite.auraSableBonus ?? 0);
     if (!delta) continue;
     entite.auraSableBonus = prochainBonus;
@@ -287,7 +302,66 @@ function creerEntiteCreature(carte) {
     } : null,
     ready: Boolean(carte.rapidite),
     attaquee: false,
+    resonance: 0,
   };
+}
+
+/**
+ * Furie — capacité des vikings : une créature **blessée qui survit** gagne
+ * +X/+X (X = la furie imprimée sur la carte). Les blessures d'un même échange
+ * comptent une seule fois, et une attaque entièrement absorbée par un bouclier
+ * n'est pas une blessure : la furie attend le premier sang.
+ */
+function appliquerFurie(duel, entite, degatsRecus) {
+  const furie = Math.max(0, Number(duelCardById(entite.carteId)?.furie) || 0);
+  if (!furie || degatsRecus <= 0) return;
+  entite.atk += furie;
+  entite.pvMax = (entite.pvMax ?? entite.def) + furie;
+  entite.def += furie;
+  entite.pv += furie;
+  duel.log.push(`${entite.name} entre en furie : +${furie}/+${furie}.`);
+}
+
+/** Résonance — la valeur totale des sources présentes sur la table : chaque
+ *  valkyrie en jeu ajoute la sienne (1 par défaut) au renfort de la Neige. */
+export function rpgResonanceEnJeu(duel) {
+  let total = 0;
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      total += Math.max(0, Number(duelCardById(entite.carteId)?.resonance) || 0);
+    }
+  }
+  return total;
+}
+
+/**
+ * Résonance — aura de table : tant qu'une valkyrie est en jeu, **toutes** les
+ * créatures Neige de la table (les deux camps) gagnent +1/+1 par source. On ne
+ * pose que l'écart pour chaque entité (`entite.resonance`), pour qu'une source
+ * qui entre ou qui meurt ne fasse pas dériver les statistiques déjà cumulées
+ * par la Furie. Perdre la Résonance ne tue jamais : au pire, 1 PV.
+ */
+function majResonance(duel) {
+  const total = rpgResonanceEnJeu(duel);
+  let renforcees = 0;
+  let affaiblies = 0;
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      const carte = duelCardById(entite.carteId);
+      const voulu = cardColors(carte).includes('neige') ? total : 0;
+      const actuel = Math.max(0, Number(entite.resonance) || 0);
+      if (voulu === actuel) continue;
+      const delta = voulu - actuel;
+      entite.resonance = voulu;
+      entite.atk = Math.max(0, entite.atk + delta);
+      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + delta);
+      entite.def = Math.max(1, entite.def + delta);
+      entite.pv = Math.max(1, entite.pv + delta);
+      if (delta > 0) renforcees += 1; else affaiblies += 1;
+    }
+  }
+  if (renforcees) duel.log.push(`La Résonance renforce la Neige : +${total}/+${total} aux créatures Neige.`);
+  else if (affaiblies) duel.log.push('La Résonance se tait : les créatures Neige perdent leur bonus.');
 }
 
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
@@ -320,11 +394,13 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   }
 
   const mortes = [];
+  const furieuses = [];
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
     const absorbes = Math.min(entite.bouclier ?? 0, montant);
     entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
-    entite.pv -= montant - absorbes;
+    const recus = montant - absorbes;
+    entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
     if (entite.pv <= 0) {
       mortes.push({
@@ -332,8 +408,13 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
         entite,
         sourceElements: blessure.sourceElements,
       });
+    } else {
+      furieuses.push({ entite, recus });
     }
   }
+  // La furie monte après les blessures : les blessures d'un même échange ne
+  // comptent qu'une fois, et une créature morte ne s'énerve pas.
+  for (const { entite, recus } of furieuses) appliquerFurie(duel, entite, recus);
 
   // Retire d’abord toutes les victimes : une capacité de destruction ne peut
   // donc empêcher l’autre combattant d’infliger les dégâts déjà calculés.
@@ -352,6 +433,8 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   }
   appliquerAuraSable(duel, 'joueur');
   appliquerAuraSable(duel, 'sorcier');
+  majResonance(duel);
+  rpgActionsEtat(duel);
 }
 
 /** Dégâts de capacité infligés à la créature que la carte combat, s’il y a lieu. */
@@ -382,6 +465,18 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     case 'pioche':
       for (let i = 0; i < (effet.amount ?? 1); i += 1) rpgPiocher(duel, cote);
       return;
+    case 'retour-main': {
+      // Renvoi en main (« bounce ») : la cible quitte la table pour la main de
+      // son propriétaire. `creature` vise le camp adverse, `creature-amie` le
+      // camp du lanceur. `pioche` fait piocher le lanceur après le renvoi.
+      const coteCible = effet.cible === 'creature-amie' ? cote : adv;
+      const cibles = duel[coteCible].creatures.filter((entite) => entite.id === cibleId);
+      for (const cible of cibles) {
+        renvoyerEnMain(duel, coteCible, cible, sourceElement);
+      }
+      for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+      return;
+    }
     case 'retour-apres-tours': {
       const carteSource = duelCardById(sourceCarteId);
       if (!carteSource) return;
@@ -485,6 +580,29 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
   }
 }
 
+/**
+ * Renvoi en main (« bounce ») : la créature quitte la table **sans mourir** —
+ * elle retourne dans la main de son propriétaire. Elle n'entre donc pas au
+ * cimetière, ne déclenche aucune capacité de destruction, et perd tout ce
+ * qu'elle avait gagné sur la table (blessures soignées, boucliers, Furie,
+ * compteurs) : la rejouer coûtera de nouveau son mana. La protection contre la
+ * couleur du sort arrête le renvoi, comme elle arrête les dégâts.
+ */
+function renvoyerEnMain(duel, cote, entite, sourceElement = null) {
+  const camp = duel[cote];
+  const presente = camp.creatures.find((e) => e.id === entite.id);
+  if (!presente) return false;
+  if (rpgEstProtegee(presente, sourceElement)) {
+    duel.log.push(`${presente.name} échappe au renvoi : protégée.`);
+    return false;
+  }
+  camp.creatures = camp.creatures.filter((e) => e.id !== presente.id);
+  camp.main.push(presente.carteId);
+  duel.log.push(`${presente.name} retourne dans la main de son propriétaire.`);
+  majResonance(duel);
+  return true;
+}
+
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
 function enterrer(duel, cote, entite, sourceElements = []) {
   journaliserDestruction(duel, entite, sourceElements);
@@ -497,6 +615,37 @@ function enterrer(duel, cote, entite, sourceElements = []) {
     appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
   }
   appliquerAuraSable(duel, cote);
+  majResonance(duel);
+}
+
+/**
+ * Actions d'état — le filet de sécurité de la table.
+ *
+ * Une créature sans défense ne tient pas debout : elle quitte le champ de
+ * bataille **immédiatement**, quelle que soit la cause de sa chute (blessures
+ * de combat, magie, capacité, malus d'aura, effet ajouté plus tard). Les
+ * fonctions de dégâts enterrent déjà leurs victimes ; ce passage se contente
+ * de garantir qu'aucun chemin ne puisse laisser une carte morte — et donc
+ * engagée à jamais — sur le terrain. Il est rejoué tant qu'une capacité de
+ * destruction en fait tomber une autre.
+ *
+ * @param {object} duel partie en cours, modifiée sur place
+ * @returns {number} nombre de créatures retirées (0 = la table était saine)
+ */
+export function rpgActionsEtat(duel) {
+  let retirees = 0;
+  for (let garde = 0; garde < 32; garde += 1) {
+    let uneMorte = false;
+    for (const cote of ['joueur', 'sorcier']) {
+      const morte = duel[cote].creatures.find((entite) => !(entite.pv > 0));
+      if (!morte) continue;
+      uneMorte = true;
+      retirees += 1;
+      enterrer(duel, cote, morte);
+    }
+    if (!uneMorte) break;
+  }
+  return retirees;
 }
 
 /** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise). */
@@ -517,13 +666,18 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   const apresEsquive = degats - esquive;
   const absorbes = Math.min(entite.bouclier ?? 0, apresEsquive);
   entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
-  entite.pv -= apresEsquive - absorbes;
+  const recus = apresEsquive - absorbes;
+  entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
   if (entite.pv <= 0) {
     const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
     enterrer(duel, cote, entite, elements);
+  } else {
+    appliquerFurie(duel, entite, recus);
   }
-  return { ok: true, recus: apresEsquive - absorbes, absorbes, esquives: esquive };
+  appliquerAuraSable(duel, cote);
+  rpgActionsEtat(duel);
+  return { ok: true, recus, absorbes, esquives: esquive };
 }
 
 /** Pose une créature : paie le sable, arrive en jeu, capacité d'arrivée. */
@@ -544,6 +698,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
   const entite = creerEntiteCreature(carte);
   camp.creatures.push(entite);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
@@ -555,7 +713,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     const cibleArrivee = carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId;
     appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte));
   }
+  majResonance(duel);
   appliquerAuraSable(duel, cote);
+  rpgActionsEtat(duel);
   return { ok: true, entite };
 }
 
@@ -601,23 +761,80 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
     });
   }
   appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  rpgActionsEtat(duel);
   return { ok: true };
 }
 
 /** Cible automatique pour l'IA et les effets globaux ; l'interface laisse
- *  le joueur choisir la cible des sorts qui la demandent. */
+ *  le joueur choisir la cible des sorts qui la demandent. Le choix est
+ *  tactique : un kill sur la meilleure valeur, la menace principale, ou le
+ *  sorcier quand c'est le meilleur coup (surtout quand il est létal). */
 export function rpgCibleAuto(duel, cote, carte) {
-  if (carte?.arrivee?.type === 'combat') {
-    return duel[autre(cote)].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)))?.id ?? null;
+  return choisirCibleAutoIA(duel, cote, carte);
+}
+
+/** Un contre ne vise que la carte que le sorcier vient d'annoncer. `cible` : 'carte'
+ *  (n'importe quelle carte) ou 'sort' (magies seulement) ; `contre` : couleurs visées. */
+function contreCorrespond(effet, carte) {
+  if (effet.cible === 'sort' && !magieById(carte.id)) return false;
+  if (effet.contre && !cardColors(carte).some((couleur) => effet.contre.includes(couleur))) return false;
+  return true;
+}
+
+/**
+ * Un contre n'a de sens que face à une annonce adverse qu'il peut viser.
+ * L'interface s'en sert pour ne pas allumer une carte injouable : sans ça, le
+ * joueur tape sa carte, confirme, et rien ne se passe — indéfiniment.
+ *
+ * @returns {boolean} vrai si la carte n'est pas un contre, ou si elle a une
+ *   annonce adverse légale à contrer maintenant.
+ */
+export function rpgContreJouable(duel, cote, carte) {
+  if (carte?.effet?.type !== 'contresort') return true;
+  const annonce = duel.annonce;
+  if (!annonce || annonce.cote === cote) return false;
+  const visee = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
+  return Boolean(visee && contreCorrespond(carte.effet, visee));
+}
+
+/** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
+ *  La carte visée est défaussée sans effet, et le contre paie son coût (Marée
+ *  contraire fait aussi piocher une carte). `annonce` : { cote, carteId } ;
+ *  par défaut l'annonce en cours du sorcier. */
+function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
+  const camp = duel[cote];
+  if (!annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
+  const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
+  if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
+  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  payer(duel, cote, carte);
+  camp.main.splice(camp.main.indexOf(carte.id), 1);
+  camp.cimetiere.push(carte.id);
+  const main = duel[annonce.cote].main;
+  if (main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
+  duel[annonce.cote].cimetiere.push(annonce.carteId);
+  if (annonce === duel.annonce) {
+    duel.annonce = null;
+    duel.fenetreReponse = false;
   }
-  const cible = carte.effet?.cible;
-  if (cible === 'creature-amie') {
-    return duel[cote].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)))?.id ?? null;
-  }
-  if (carte.effet?.type !== 'degats' || cible !== 'creature') return null;
-  const adversaire = autre(cote);
-  return duel[adversaire].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)))?.id
-    ?? (carte.cibles?.includes('sorcier') ? 'sorcier' : null);
+  for (let i = 0; i < (carte.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+  duel.log.push(cote === 'joueur'
+    ? `Vous contrez ${cible.name} avec ${carte.name}.`
+    : `Le sorcier contre ${cible.name} avec ${carte.name}.`);
+  return { ok: true, contre: true, parIA: cote === 'sorcier', carteContree: annonce.carteId, carteContre: carte.id };
+}
+
+/** Contre de l'IA à une carte du joueur : seulement si la carte coûte au moins 2,
+ *  et avec le contre le moins cher qui vise cette carte et que le sorcier peut payer. */
+function choisirContreIA(duel, carte) {
+  if (!carte || (carte.cost ?? 0) < 2) return null;
+  const candidats = duel.sorcier.main
+    .map((id) => cardById(id))
+    .filter((c) => c?.effet?.type === 'contresort'
+      && contreCorrespond(c.effet, carte)
+      && rpgPeutPayer(duel.sorcier, c))
+    .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0));
+  return candidats[0] ?? null;
 }
 
 /** Lancer une magie : rituel pendant son tour, éphémère aussi en réponse. */
@@ -632,6 +849,12 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     && carte.instant;
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
+
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+  }
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (cibleId === 'sorcier') {
@@ -647,6 +870,15 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
+  if (carte.effet.type === 'retour-main') {
+    // Le renvoi exige une créature sur la table : `creature` vise le camp
+    // adverse, `creature-amie` le camp du lanceur. Sans cible légale, le sort
+    // ne se lance pas et le mana n'est pas payé.
+    const campCible = carte.effet.cible === 'creature-amie' ? camp : duel[adv];
+    const cible = campCible.creatures.find((entite) => entite.id === cibleId);
+    if (!cible) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
 
   payer(duel, cote, carte);
   camp.main.splice(camp.main.indexOf(carteId), 1);
@@ -658,6 +890,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'magie');
   camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
+  rpgActionsEtat(duel);
   return { ok: true };
 }
 
@@ -672,37 +905,21 @@ export function rpgFermerFenetreReponse(duel) {
   duel.fenetreReponse = false;
 }
 
-/** L’IA assigne ses bloqueurs avant que le joueur attaquant ne reçoive la priorité. */
-export function rpgChoisirBloqueurs(duel, cote, attaquantIds, ciblesAttaque = {}) {
-  const adv = autre(cote);
-  const ids = [...new Set(attaquantIds ?? [])].filter((id) => !ciblesAttaque?.[id]);
-  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
-  const bloqueursDisponibles = duel[adv].creatures.filter(peutBloquer);
-  const affectations = {};
-  for (const attaquant of attaquants) {
-    const index = bloqueursDisponibles.findIndex((bloqueur) => (
-      !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))
-      && rpgPeutBloquerAttaquant(bloqueur, attaquant)
-    ));
-    if (index < 0) continue;
-    const [bloqueur] = bloqueursDisponibles.splice(index, 1);
-    affectations[attaquant.id] = [bloqueur.id];
-  }
-  return affectations;
+/** L’IA assigne ses bloqueurs avant que le joueur attaquant ne reçoive la priorité.
+ *  Échanges favorables ou acceptables seulement, interposition forcée pour la survie. */
+export function rpgChoisirBloqueurs(duel, cote, attaquantIds, ciblesAttaque = {}, options = {}) {
+  return choisirBloqueursIA(duel, cote, attaquantIds, ciblesAttaque, options);
 }
 
-/** L’IA choisit une créature légale pour le Coup rapide, si elle en trouve. */
-export function rpgCiblesAttaqueRapide(duel, cote, attaquantIds) {
-  const adv = autre(cote);
-  const cibles = {};
-  for (const id of [...new Set(attaquantIds ?? [])]) {
-    const attaquant = duel[cote].creatures.find((entite) => entite.id === id);
-    const carte = duelCardById(attaquant?.carteId);
-    if (!attaquant || !carte?.coupRapide) continue;
-    const cible = duel[adv].creatures.find((entite) => !rpgEstProtegee(entite, cardColors(carte)));
-    if (cible) cibles[attaquant.id] = cible.id;
-  }
-  return cibles;
+/** L’IA vise avec le Coup rapide la créature la plus intéressante à abattre. */
+export function rpgCiblesAttaqueRapide(duel, cote, attaquantIds, options = {}) {
+  return choisirCiblesRapidesIA(duel, cote, attaquantIds, options);
+}
+
+/** Les créatures que le sorcier engage réellement à l’attaque : pas
+ *  d’assaut suicidaire, conclusion immédiate quand le visage adverse tombe. */
+export function rpgChoisirAttaquants(duel, cote = 'sorcier', options = {}) {
+  return choisirAttaquantsIA(duel, cote, options);
 }
 
 /**
@@ -954,6 +1171,7 @@ export function rpgLancerAttaque(
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
     : `${attaquants.length} créature(s) frappent le sorcier (${resume.frappeSorcier}).`);
+  rpgActionsEtat(duel);
   return { ok: true, resume };
 }
 
@@ -979,6 +1197,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   attaquant.attaquee = true;
   rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
   duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
+  rpgActionsEtat(duel);
   return { ok: true };
 }
 
@@ -1008,12 +1227,14 @@ function resoudreRetoursProgrammes(duel) {
       }
     }
   }
+  majResonance(duel);
 }
 
 /** Fin du tour : l'autre camp commence — revenu de sable, pioche 1,
  *  ses créatures deviennent prêtes (le mal d'invocation tombe). */
 export function rpgFinDeTour(duel) {
   duel.fenetreReponse = false;
+  duel.annonce = null;
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.protection?.toursRestants > 0)) continue;
@@ -1036,50 +1257,60 @@ export function rpgFinDeTour(duel) {
     entite.attaquee = false;
   }
   resoudreRetoursProgrammes(duel);
+  rpgActionsEtat(duel);
   duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
   return duel;
 }
 
-/** L'IA pose son terrain, joue ses cartes payables et prépare ses attaques. */
-export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
-  const joue = [];
-  // Le sorcier pose son terrain du tour puis engage tout ce qui peut l'être.
-  const terrainEnMain = duel.sorcier.main.find((id) => terrainById(id));
+/** L'IA joue sa phase principale : terrain, créatures et sorts dans l'ordre
+ *  le plus utile (kill avant développement, renforts quand le plateau est
+ *  garni, burn pour conclure), puis prépare ses attaques. */
+/** Phase de préparation du sorcier : il pose son terrain et engage ses terrains. */
+export function rpgSorcierPrepareTerrain(duel) {
+  const terrainEnMain = choisirTerrainIA(duel, 'sorcier');
   if (terrainEnMain) rpgPoserTerrain(duel, 'sorcier', terrainEnMain);
   for (const terrain of duel.sorcier.terrains) {
-    if (!terrain.tapped) rpgEngagerTerrain(duel, 'sorcier', terrain.id);
+    if (terrain.tapped) continue;
+    rpgEngagerTerrain(duel, 'sorcier', terrain.id, couleurEngagement(terrain, duel.sorcier.main));
   }
-  let garde = 8;
+}
+
+/** Le sorcier choisit sa prochaine carte et l'ANNONCE sans la payer ni la résoudre.
+ *  Ouvre la fenêtre de réponse : le joueur peut répondre avec un éphémère, ou laisser passer.
+ *  Retourne null quand le sorcier n'a plus rien à jouer. */
+export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
+  if (duel.annonce) return duel.annonce;
+  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
+  if (!coup) return null;
+  duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: coup.cibleId ?? null };
+  duel.fenetreReponse = true;
+  duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? coup.carteId}.`);
+  return duel.annonce;
+}
+
+/** Laisser passer : résout la carte annoncée (paiement et effet). */
+export function rpgSorcierResoudreAnnonce(duel) {
+  const annonce = duel.annonce;
+  if (!annonce) return { ok: false, raison: 'aucune-annonce' };
+  duel.annonce = null;
+  duel.fenetreReponse = false;
+  const res = duelCardById(annonce.carteId)
+    ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
+    : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
+  rpgActionsEtat(duel);
+  return { ...res, carteId: annonce.carteId };
+}
+
+export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
+  const joue = [];
+  rpgSorcierPrepareTerrain(duel);
+  // Sans interface, chaque carte annoncée est résolue aussitôt (pas de réponse du joueur).
+  let garde = 12;
   while (garde-- > 0) {
-    const jouables = duel.sorcier.main
-      .map((id) => duelCardById(id))
-      .filter((carte) => carte && carte.kind !== 'terrain' && rpgPeutPayer(duel.sorcier, carte))
-      .sort((a, b) => b.cost - a.cost);
-    if (!jouables.length) break;
-    const res = rpgJouerCreature(
-      duel,
-      'sorcier',
-      jouables[0].id,
-      rpgCibleAuto(duel, 'sorcier', jouables[0]),
-    );
+    if (!rpgSorcierAnnonceSuivante(duel, rng)) break;
+    const res = rpgSorcierResoudreAnnonce(duel);
     if (!res.ok) break;
-    joue.push(res.entite);
-  }
-  // Le sorcier résout ses sorts pendant sa phase principale ; l'interface
-  // ouvre ensuite la fenêtre de réponse avant de résoudre ses attaques.
-  let gardeMagie = 6;
-  while (gardeMagie-- > 0) {
-    const magie = duel.sorcier.main
-      .map((id) => magieById(id))
-      .find((carte) => carte && rpgPeutPayer(duel.sorcier, carte)
-        && (carte.effet.cible !== 'creature'
-          || duel.joueur.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))
-          || carte.cibles?.includes('sorcier'))
-        && (carte.effet.cible !== 'creature-amie'
-          || duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))));
-    if (!magie) break;
-    const res = rpgLancerMagie(duel, 'sorcier', magie.id, rpgCibleAuto(duel, 'sorcier', magie));
-    if (!res.ok) break;
+    if (res.entite) joue.push(res.entite);
   }
   return joue;
 }
@@ -1087,10 +1318,10 @@ export function rpgTourSorcierPreparationIA(duel, rng = Math.random) {
 /** Tour complet de l'IA, conservé pour les scénarios sans interface. */
 export function rpgTourSorcierIA(duel, rng = Math.random) {
   const joue = rpgTourSorcierPreparationIA(duel, rng);
-  const pretsIds = duel.sorcier.creatures.filter((e) => pret(e)).map((e) => e.id);
-  if (pretsIds.length) {
-    const ciblesAttaque = rpgCiblesAttaqueRapide(duel, 'sorcier', pretsIds);
-    rpgLancerAttaque(duel, 'sorcier', pretsIds, null, null, null, ciblesAttaque);
+  const attaquants = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
+  if (attaquants.length) {
+    const ciblesAttaque = rpgCiblesAttaqueRapide(duel, 'sorcier', attaquants, { ia: duel.sorcier.ia, rng });
+    rpgLancerAttaque(duel, 'sorcier', attaquants, null, null, null, ciblesAttaque);
   }
   return joue;
 }

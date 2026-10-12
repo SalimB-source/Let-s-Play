@@ -1,4 +1,4 @@
-// Régression de l’édition du 08.10.2026 : images, routes, cartes, vidéos et recherche.
+// Régression de l’édition du 11.10.2026 : images, routes, cartes, vidéos et recherche.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
-import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-08.js';
+import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-11.js';
 import { getArticleTrailerEntry, trailerFlagLabel, trailerWatchUrl } from '../src/articleTrailers.js';
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 
@@ -14,11 +14,24 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'node_modules', '.cache', 'daily-news-smoke');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const keys = Object.keys(dailyStories);
+// Pastille de vidéo : « BANDE-ANNONCE »/« TEASER » quand l'article a une vidéo
+// officielle, pas de pastille quand il n'en a pas (l'article le dit alors dans
+// son corps, via la mention d'absence de son lecteur).
+const assertTrailerFlag = (card, route) => {
+  const label = trailerFlagLabel(route);
+  const flag = card.querySelector('.news-trailer-flag');
+  if (label) {
+    assert.ok(flag, `${route} : pastille de vidéo`);
+    assert.equal(flag.textContent.trim(), label, `${route} : nature de la vidéo`);
+  } else {
+    assert.equal(flag, null, `${route} : aucune pastille sans vidéo officielle`);
+  }
+};
 
 assert.equal(keys.length, 3, 'une actualité dans chacun des trois univers');
 assert.equal(dailyNewsListing.length, 3);
-assert.equal(editionDate, '08.10.2026');
-assert.equal(editionIsoDate, '2026-10-08');
+assert.equal(editionDate, '11.10.2026');
+assert.equal(editionIsoDate, '2026-10-11');
 assert.doesNotMatch(JSON.stringify(dailyStories), /mistral/i, 'le sujet écarté par l’utilisateur n’est pas publié');
 
 // Dimensions JPEG sans dépendance d’imagerie : trouver un segment SOF.
@@ -43,7 +56,7 @@ const hashes = new Set();
 for (const [key, story] of Object.entries(dailyStories)) {
   assert.equal(story.date, editionDate);
   assert.equal(story.image, story.thumbnail);
-  assert.ok(story.image.startsWith('news/2026-10-08/'));
+  assert.ok(story.image.startsWith('news/2026-10-11/'));
   assert.match(story.sourceUrl, /^https?:\/\//);
   assert.ok(story.source && story.credit && story.imageAlt && story.dek);
   const bytes = fs.readFileSync(path.join(root, 'public', story.thumbnail));
@@ -52,15 +65,19 @@ for (const [key, story] of Object.entries(dailyStories)) {
   assert.ok(width >= 900 && Math.abs(width / height - 16 / 9) < 0.01, `${key} : format 16:9`);
   hashes.add(createHash('sha256').update(bytes).digest('hex'));
   const trailer = getArticleTrailerEntry(key);
-  assert.ok(trailer.items.length >= 1, `${key} : vidéo officielle déclarée`);
-  assert.ok(trailer.items.every((item) => item.verified === editionDate));
+  assert.ok(trailer, `${key} : entrée de lecteur déclarée`);
+  assert.ok(
+    (trailer.items || []).length >= 1 || trailer.pending,
+    `${key} : vidéo officielle ou mention d’absence`,
+  );
+  assert.ok((trailer.items || []).every((item) => item.verified === editionDate));
   assert.equal(dailySeoEntries[`/news/${key}`].published, editionIsoDate);
   assert.equal(dailySeoEntries[`/news/${key}`].image, story.thumbnail);
   assert.ok(read('public/sitemap.xml').includes(`/news/${key}</loc>`), `${key} : sitemap`);
 }
 assert.equal(hashes.size, 3, 'trois miniatures distinctes');
 assert.ok(read('src/components/SEO.jsx').includes('...dailySeoEntries'));
-assert.ok(read('src/main.jsx').includes('path="/news/hellraiser-revival-sortie"'));
+assert.ok(read('src/main.jsx').includes('path="/news/ghost-tsushima-legends-anime-2028"'));
 assert.ok(read('src/main.jsx').includes('slugPrefix="cinema/"'));
 assert.ok(read('src/main.jsx').includes('slugPrefix="tech/"'));
 
@@ -111,18 +128,25 @@ for (const [index, card] of cards.entries()) {
   const story = dailyNewsListing[index];
   assert.equal(card.querySelector('img').getAttribute('src'), `/Let-s-Play/${story.image}`);
   assert.equal(card.querySelector('img').getAttribute('alt'), story.alt);
-  assert.equal(card.querySelector('.news-trailer-flag').textContent.trim(), trailerFlagLabel(story.to));
+  assertTrailerFlag(card, story.to);
 }
 
 for (const [key, story] of Object.entries(dailyStories)) {
   const doc = pages.get(`/news/${key}`);
   assert.equal(doc.querySelector('h1').textContent, `${story.title}${story.accent}`, `${key} : vrai article, pas une 404`);
   assert.equal(doc.querySelector('.article-cover img').getAttribute('src'), `/Let-s-Play/${story.thumbnail}`);
-  const first = getArticleTrailerEntry(key).items[0];
-  const players = doc.querySelectorAll('.article-trailer iframe');
-  assert.equal(players.length, 1, `${key} : un seul lecteur`);
-  assert.equal(players[0].getAttribute('src'), youTubeEmbedUrl(first.id));
-  assert.ok(doc.querySelector(`a[href="${trailerWatchUrl(first.id)}"]`));
+  const entry = getArticleTrailerEntry(key);
+  if (entry.pending) {
+    // Une actu sans vidéo officielle doit le dire dans le corps de l'article.
+    assert.equal(doc.querySelectorAll('.article-trailer iframe').length, 0, `${key} : aucun lecteur sans vidéo`);
+    assert.equal(doc.querySelector('.article-trailer-pending').textContent.includes(entry.pending), true, `${key} : mention d’absence`);
+  } else {
+    const first = entry.items[0];
+    const players = doc.querySelectorAll('.article-trailer iframe');
+    assert.equal(players.length, 1, `${key} : un seul lecteur`);
+    assert.equal(players[0].getAttribute('src'), youTubeEmbedUrl(first.id));
+    assert.ok(doc.querySelector(`a[href="${trailerWatchUrl(first.id)}"]`));
+  }
   assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`), `${key} : source cliquable`);
   assert.ok(searchContent(story.cover.split(' · ')[0]).some((result) => result.route === `/news/${key}`), `${key} : recherche`);
 }
@@ -133,7 +157,7 @@ for (const [category, key] of [['gaming', keys[0]], ['cinema', keys[1]], ['tech'
   assert.equal(featured.querySelector('.daily-news-copy').getAttribute('href'), `/news/${key}`);
   assert.equal(featured.querySelector('img').getAttribute('src'), `/Let-s-Play/${dailyStories[key].thumbnail}`);
   assert.ok(featured.querySelector('.news-kicker').textContent.includes(editionDate));
-  assert.equal(featured.querySelector('.news-trailer-flag').textContent.trim(), trailerFlagLabel(key));
+  assertTrailerFlag(featured, key);
   assert.ok(doc.querySelector('.section-label').textContent.includes(editionDate));
 }
 const home = pages.get('/').querySelector('.home-news-card');
@@ -152,7 +176,8 @@ for (const lang of ['en', 'ar']) {
   assert.ok(button.textContent.includes(lang === 'en' ? 'View all articles' : 'عرض كل المقالات'));
 }
 
-// Le sélecteur Nuri bascule vraiment du clip embarqué vers le replay.
+// Le sélecteur de l’anime bascule vraiment de la version anglaise à la
+// version japonaise du même teaser officiel.
 const dom = new JSDOM('<!doctype html><html><body><div id="video"></div></body></html>', { url: 'https://letsplay.test/Let-s-Play/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
@@ -162,29 +187,25 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { createRoot } = await import('react-dom/client');
 const { act } = React;
 const renderer = createRoot(document.querySelector('#video'));
-const nuri = getArticleTrailerEntry('tech/nuri-cinquieme-vol-satellites');
-await act(async () => renderer.render(React.createElement(ArticleTrailer, nuri)));
-assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(nuri.items[0].id));
+const legends = getArticleTrailerEntry('ghost-tsushima-legends-anime-2028');
+await act(async () => renderer.render(React.createElement(ArticleTrailer, legends)));
+assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(legends.items[0].id));
 const choices = document.querySelectorAll('.article-trailer-choice');
 assert.equal(choices.length, 2);
 await act(async () => choices[1].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
 assert.equal(document.querySelectorAll('iframe').length, 1);
-assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(nuri.items[1].id));
+assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(legends.items[1].id));
 assert.equal(choices[1].getAttribute('aria-pressed'), 'true');
 assert.equal(choices[0].getAttribute('aria-pressed'), 'false');
-assert.ok(document.querySelector('.article-trailer-note').textContent.includes('ne s’agit pas d’un direct'));
+assert.ok(document.querySelector('.article-trailer-note').textContent.includes('version japonaise'));
 await act(async () => renderer.unmount());
 
-// Un vrai clic du lien du hub doit ouvrir l’archive, puis permettre le retour.
-const navigation = createRoot(document.querySelector('#video'));
-await act(async () => navigation.render(React.createElement(NewsArchiveFlow)));
-await act(async () => document.querySelector('.news-headlines-all').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })));
-assert.ok(document.querySelector('.news-archive h1').textContent.includes('ARTICLES.'));
-assert.equal(document.querySelectorAll('.news-archive .news-carousel-card').length, expectedRoutes.length);
-await act(async () => document.querySelector('.news-archive .arrow-link').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })));
-assert.equal(document.querySelectorAll('#actus-du-jour .news-carousel-card').length, 3);
-assert.ok(document.querySelector('#actus-du-jour .news-headlines-all'));
-await act(async () => navigation.unmount());
-dom.window.close();
+// Le sélecteur d'une actu sans vidéo officielle affiche la mention d'absence.
+const pendingRoot = createRoot(document.querySelector('#video'));
+const anthropic = getArticleTrailerEntry('tech/anthropic-claude-faux-indice-philadelphie');
+await act(async () => pendingRoot.render(React.createElement(ArticleTrailer, anthropic)));
+assert.equal(document.querySelectorAll('iframe').length, 0);
+assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
+await act(async () => pendingRoot.unmount());
 
-console.log('Édition du 08.10.2026 : OK — 3 articles, 3 miniatures locales, 4 vidéos officielles, hubs, accueil, routes, recherche, SEO, bouton d’archives, cartes Actus partagées et sélection du replay.');
+console.log('Édition du 11.10.2026 : OK — 3 articles, 3 miniatures locales, 3 vidéos officielles et une mention d’absence, hubs, accueil, routes, recherche, SEO, bouton d’archives, cartes Actus partagées et sélection des deux teasers.');

@@ -1,6 +1,6 @@
 # 04 — Progression, économie, direction artistique, son
 
-Concept B — « Le Sablier de Bab El », combat sans réflexes (`03-combat.md`).
+Concept B — « Le Sablier », combat sans réflexes (`03-combat.md`).
 
 ## 1. Progression des personnages
 
@@ -146,20 +146,23 @@ quelque chose que l'interface ne dit pas est un effet de trop.
   mixé différemment. Après dix heures de jeu, le joueur doit le reconnaître
   avant de le voir.
 
-### 5.1 Ce que le prototype sait déjà faire (WebAudio procédural)
+### 5.1 Signature sonore procédurale
 
-En attendant oud et qanoun, `src/games/rpgAudio.js` synthétise tout, sans un
-seul asset : carrés nets pour les jingles, sinus pour les soins, thud sinusoïdal
-pour les impacts, bruit filtré pour le sable, et une **cloche à partiels**
-(fondamental + deux harmoniques légèrement désaccordés) pour l'Astrolabe —
-toujours la même, comme exigé ci-dessus.
+`src/games/rpgAudio.js` garde cette promesse sans asset ni chargement réseau,
+avec une palette modernisée : transitoires filtrés, glissés de hauteur, couches
+sinusoïdales/triangulaires et bruit filtré plutôt que des bips carrés. Les
+événements ont des timbres et des espaces stéréo distincts ; une courte
+réverbération procédurale relie les cartes au plateau, et un limiteur évite les
+pics lorsque les impacts se superposent. La **cloche à partiels** (fondamental
++ deux harmoniques) garde exactement sa signature pour l'Astrolabe.
 
 Chaque événement du jeu a sa séquence : apparition d'une vague (arpège
 montant), victoire (fanfare), défaite (descente), frappe, soin, zone, souffle,
 heure dépensée en exploration. La couche « qui joue quoi » est pure et testée
 (`tests/rpg-audio.test.js`) ; le lecteur WebAudio ne s'éveille qu'au premier
-geste joueur (politique autoplay des navigateurs), reste muet si l'audio
-manque, et un bouton 🔊/🔇 dans l'en-tête mémorise le choix.
+geste joueur (politique autoplay des navigateurs), se libère à la fermeture de
+la page, reste muet si l'audio manque, et le bouton du son dans l'en-tête
+mémorise le choix pour la musique comme pour les bruitages.
 
 ## 6. Accessibilité
 

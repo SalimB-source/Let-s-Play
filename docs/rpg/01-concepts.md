@@ -2,7 +2,7 @@
 
 > ## Décision prise
 >
-> **Concept B — « Le Sablier de Bab El »** est retenu, avec une contrainte de
+> **Concept B — « Le Sablier »** est retenu, avec une contrainte de
 > conception fixée par le créateur : **pas de système réactif à la Clair
 > Obscur**. Ni parade, ni esquive, aucun minutage : le tour par tour reste du
 > tour par tour. Le système qui en résulte est décrit dans
@@ -80,7 +80,7 @@ algérien, nos deux premiers jeux se passent chez nous.
 
 ---
 
-## Concept B — « LE SABLIER DE BAB EL »
+## Concept B — « LE SABLIER »
 
 **Pitch en une ligne.** Une cité-portail suspendue au-dessus du désert, une
 horloge céleste qui égrène les cycles, et à chaque cycle un étage de la ville
@@ -166,7 +166,7 @@ faire un RPG sans risquer le projet.
 
 ## Comparatif
 
-| Critère | A — Veilleurs d'Ahaggar | B — Sablier de Bab El | C — Caravane des Lanternes |
+| Critère | A — Veilleurs d'Ahaggar | B — Sablier | C — Caravane des Lanternes |
 | --- | --- | --- | --- |
 | Identité / originalité | ★★★★★ | ★★★★ | ★★★ |
 | Force émotionnelle | ★★★★★ | ★★★★★ | ★★★ |

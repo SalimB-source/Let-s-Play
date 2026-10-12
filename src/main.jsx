@@ -92,7 +92,7 @@ const MessagesPage = lazy(() => import('./messages/MessagesPage'));
 const CommunityPage = lazy(() => import('./community/CommunityPage'));
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 const ViceCityRushPage = lazy(() => import('./games/ViceCityRushPage'));
-// Prototype de RPG tour par tour « Le Sablier de Bab El » (dossier : docs/rpg/).
+// Prototype de RPG tour par tour « Le Sablier » (dossier : docs/rpg/).
 const RpgDuelPage = lazy(() => import('./games/RpgDuelPage'));
 
 /** Écran d'attente d'une page à la demande — mêmes marges que les replis des jeux. */
@@ -178,6 +178,10 @@ function App() {
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
             <Route path="/news/hellraiser-revival-sortie" element={<CurrentNews slug="hellraiser-revival-sortie" />} />
+            {/* Actu gaming du 11.10.2026 : les clés sans préfixe (hors
+                cinéma et tech) reçoivent leur route explicite, comme les
+                articles de la rédaction. */}
+            <Route path="/news/ghost-tsushima-legends-anime-2028" element={<CurrentNews slug="ghost-tsushima-legends-anime-2028" />} />
             <Route path="/news/gta-6-cloud-pc-dementi-xbox" element={<CurrentNews slug="gta-6-cloud-pc-dementi-xbox" />} />
             <Route path="/news/gta-6-satire-monde-invente" element={<CurrentNews slug="gta-6-satire-monde-invente" />} />
             <Route path="/news/physint-budget-400-millions-xbox" element={<CurrentNews slug="physint-budget-400-millions-xbox" />} />

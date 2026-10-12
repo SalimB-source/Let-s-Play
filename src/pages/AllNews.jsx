@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { searchIndex } from '../search/searchIndex';
 import { autoSearchEntries, autoNewsListing } from '../lib/autoNews';
-import { dailyNewsListing } from '../news/daily/2026-10-08';
+import { dailyNewsListing } from '../news/daily/2026-10-11';
 import { Arrow } from '../components/Arrow';
 import NewsCard from '../components/NewsCard';
 

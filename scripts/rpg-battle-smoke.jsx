@@ -4,9 +4,21 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
+import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Le sorcier annonce chaque carte : le joueur laisse passer (sans réponse dans ces scénarios). */
+async function passerAnnoncesSorcier(racine) {
+  for (let annonce = 0; annonce < 8; annonce += 1) {
+    const passer = [...racine.querySelectorAll('.rpg-annonce-sort button')]
+      .find((bouton) => bouton.textContent.includes('Laisser passer'));
+    if (!passer) break;
+    await act(async () => { passer.click(); });
+    await act(async () => { await wait(1100); });
+  }
+}
 
 export async function checkRpgBattle(assert) {
   const container = document.createElement('div');
@@ -119,6 +131,22 @@ export async function checkRpgBattle(assert) {
     && modeButtons.some((button) => button.textContent.includes('Deck'))
     && modeButtons.some((button) => button.textContent.includes('Catalogue')),
   'le menu expose Jouer, Deck et Catalogue');
+
+  // ── Le plateau n'est plus un choix : le menu ne propose rien ────────────
+  assert.equal(container.querySelector('.rpg-mode-menu__boards'), null,
+    'le menu Jouer ne présente plus le bloc « Le terrain d’affrontement »');
+  assert.equal(container.querySelectorAll('.rpg-mode-menu [data-plateau]').length, 0,
+    'aucun bouton de plateau : ni verrou, ni pastille aléatoire');
+  assert.equal(container.querySelectorAll('.rpg-board-choice, .rpg-board-grid').length, 0,
+    'le sélecteur de plateau a disparu du rendu');
+  assert.doesNotMatch(container.querySelector('.rpg-mode-menu__play').textContent, /terrain d’affrontement/i,
+    'le menu Jouer ne parle plus de choisir son terrain');
+  // Chaque deck du catalogue garde son terrain : c'est lui, pas le joueur, qui décide.
+  assert.equal(plateauDeDeck('veilleurs-du-desert').plateau.id, 'erg-du-sahara',
+    'les Veilleurs du Désert imposent l’Erg du Sahara');
+  assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'terre-de-damnation',
+    'la Cour des Djinns impose la Terre de Damnation');
+
   await act(async () => { modeButtons.find((button) => button.textContent.includes('Catalogue')).click(); });
   assert.ok(container.querySelector('.rpg-card-catalogue'), 'le mode Catalogue ouvre le catalogue complet des cartes');
   assert.equal(container.querySelectorAll('.rpg-card-catalogue__card').length, RPG_DUEL_CARDS.length,
@@ -215,21 +243,30 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, 3, 'les deux decks monocolores et le deck hybride sont sélectionnables');
+  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, RPG_DECKS.length,
+    'chaque deck du catalogue (Sable, Braise, hybride, Eau de la Marée, Neige du Serment) est sélectionnable');
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
   assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');
   assert.match(container.textContent, /Sentiers de cendre/, 'le deck joueur hybride Sable + Braise est présenté');
+  assert.match(container.textContent, /Serment des Neuf Hivers/, 'le deck joueur mono-Neige est présenté');
+  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 0, 'la liste des cartes reste masquée tant qu’aucun deck n’est cliqué');
+  // Chaque deck est un boîtier 3D : le clic est porté par le bouton voisin du décor.
+  const boutonDeck = (nom) => [...container.querySelectorAll('.rpg-deck-choice__button')]
+    .find((button) => button.textContent.includes(nom));
+  await act(async () => { boutonDeck('Serment des Neuf Hivers').click(); });
+  const ficheNeige = container.querySelector('.rpg-deck-detail');
+  assert.match(ficheNeige?.textContent ?? '', /Neige[\s\S]*GLACIER/i,
+    'la fiche du Serment annonce son identité Neige et son terrain Glacier');
+  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*7[\s\S]*validé/,
+    'le Serment est validé à 40 cartes : 17 terrains, 16 créatures et héros, 7 magies');
+  await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes avec leurs quantités, Cavalier inclus');
   assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
     'la fiche indique la taille et la répartition terrain / créature / magie du deck validé');
-  const choixDeckAdverse = [...container.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Cour des Djinns'));
-  await act(async () => { choixDeckAdverse.click(); });
+  await act(async () => { boutonDeck('Cour des Djinns').click(); });
   assert.match(container.querySelector('.rpg-deck-detail')?.textContent ?? '', /Braise/,
     'la sélection affiche les détails du deck de Braise');
-  const choixDeckHybride = [...container.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Sentiers de cendre'));
-  await act(async () => { choixDeckHybride.click(); });
+  await act(async () => { boutonDeck('Sentiers de cendre').click(); });
   const ficheHybride = container.querySelector('.rpg-deck-detail');
   assert.match(ficheHybride?.textContent ?? '', /Sable \+ Braise[\s\S]*HYBRIDE/i,
     'la fiche précise l’identité bicolore du deck');
@@ -237,14 +274,26 @@ export async function checkRpgBattle(assert) {
     'la liste hybride présente son terrain flexible et ses cartes bicolores');
   assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5[\s\S]*validé/,
     'le deck hybride est validé à 40 cartes, avec 17 terrains, 18 créatures et 5 magies');
-  const choixDeckJoueur = [...container.querySelectorAll('.rpg-deck-choice')]
-    .find((button) => button.textContent.includes('Veilleurs du Désert'));
-  await act(async () => { choixDeckJoueur.click(); });
+  await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
   assert.ok(findButton('Jouer avec ce deck'), 'la fiche du deck joueur permet de le lancer');
   await act(async () => { findButton('Jouer avec ce deck').click(); });
 
   // ── Nouvelle partie : table vide, 5 cartes, 50 PV face à un sorcier à 60 ─
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée après le choix de Jouer');
+  const tableDuDuel = container.querySelector('.card-table');
+  // Les deux paquets de ce scénario sont mono-Sable : quel que soit le camp
+  // désigné par le rng (0.999 → l'adversaire), le terrain est l'Erg du Sahara.
+  const plateauxMontes = RPG_PLATEAUX.filter(({ id }) => tableDuDuel.classList.contains(`card-table--plateau-${id}`));
+  assert.equal(plateauxMontes.length, 1, 'la table porte exactement un plateau du catalogue');
+  assert.equal(plateauxMontes[0].id, 'erg-du-sahara',
+    'le duel se joue sur le terrain imposé par le deck désigné au lancement');
+  assert.match(tableDuDuel.style.backgroundImage, /plateau-erg-du-sahara\.jpg/,
+    'le fond de la table est l’image du plateau imposé par le deck');
+  assert.match(tableDuDuel.getAttribute('aria-label') ?? '', /L’Erg du Sahara/,
+    'la table annonce le plateau sur lequel elle se joue');
+  assert.match(container.querySelector('.rpg-actions__wait')?.textContent ?? '',
+    /Plateau : L’Erg du Sahara — [^.]*imposé par le deck adverse/,
+    'le message d’ouverture rappelle le terrain de la partie et le deck qui l’impose');
   assert.ok(container.querySelector('.rpg-actions__combat .rpg-btn--attaque')
     && container.querySelector('.rpg-actions__turn .rpg-btn--endturn'),
   'les commandes de combat et de tour sont rangées dans deux groupes distincts');
@@ -354,34 +403,26 @@ export async function checkRpgBattle(assert) {
   assert.equal(container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)'), null,
     'l’aperçu disparaît lorsque la souris quitte la carte');
 
-  // ── Cliquer consulte toujours le grand aperçu sans jouer la carte ──────
-  await act(async () => { carteSurvolee.click(); });
-  assert.ok(container.querySelector('.rpg-card-preview[role="dialog"]'), 'un clic ouvre l’aperçu agrandi');
-  assertElementFrame(container.querySelector('.rpg-card-preview__art'), carteSurvolee.dataset.cardId,
-    'la face de l’aperçu au clic');
-  assert.equal(container.querySelector('.rpg-card-preview__rarity')?.textContent,
-    cardRarityInfo(cardById(carteSurvolee.dataset.cardId)).label,
-    'l’aperçu au clic est le seul endroit qui annonce la rareté');
-  assert.ok(container.querySelector('.rpg-card-preview--terrain'), 'l’aperçu cliqué conserve l’identité de terrain sans changer sa bordure d’élément');
-  assert.equal(container.querySelector('.rpg-card-preview__art .rpg-card-element-badge'), null,
-    'l’aperçu au clic d’un terrain ne montre pas d’icône de couleur');
-  assert.equal(handCards().length, 5, 'la carte reste en main tant qu’elle n’est pas glissée sur la table');
-  assert.equal(container.querySelectorAll('.rpg-card').length, 0, 'l’aperçu ne joue pas la carte');
-  await act(async () => { container.querySelector('.rpg-card-preview__close').click(); });
-
+  // ── Cliquer une carte la joue ; les refus sont expliqués sans lancer ────
   await act(async () => { fennecMain.click(); });
-  const apercuFennecClique = container.querySelector('.rpg-card-preview[role="dialog"]');
-  assert.ok(apercuFennecClique, 'le clic ouvre aussi l’aperçu détaillé du Fennec');
-  assert.equal(apercuFennecClique.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
-    'l’aperçu détaillé ne montre aucune icône d’effet');
-  assert.equal(apercuFennecClique.querySelectorAll('.rpg-card-preview__rules > span').length, 2,
-    'l’aperçu détaillé met Rapidité et Esquive chacune sur leur ligne');
-  await act(async () => { apercuFennecClique.querySelector('.rpg-card-preview__close').click(); });
+  assert.ok(container.textContent.includes('Mana insuffisant pour Fennec des décombres'),
+    'cliquer une créature non payable explique le refus');
+  assert.equal(handCards().length, 5, 'la carte refusée reste en main');
+  assert.equal(container.querySelector('.rpg-card-preview, .rpg-spell-confirm'), null,
+    'le clic n’ouvre ni aperçu ni confirmation');
+  await act(async () => { envoyerSouris(fennecMain, 'mouseover'); });
+  const apercuFennecMain = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
+  assert.ok(apercuFennecMain, 'le survol garde l’aperçu instantané, qui reste le seul moyen de lire la carte');
+  assert.equal(apercuFennecMain.querySelector('.rpg-card-rapidity, .rpg-card-evasion, .rpg-card-protection, .rpg-card-stat-boost'), null,
+    'l’aperçu au survol ne montre aucune icône d’effet');
+  assert.equal(apercuFennecMain.querySelectorAll('.rpg-hover-card-preview__rules > span').length, 2,
+    'l’aperçu met Rapidité et Esquive chacune sur leur ligne');
+  await act(async () => { envoyerSouris(fennecMain, 'mouseout'); });
 
-  // ── Une seule étape d'annulation restaure le dernier terrain posé ──────
-  const terrainAAnnuler = handCards().find((b) => b.className.includes('rpg-hand__card--terrain') && estJouable(b));
+  // ── Cliquer le terrain le pose ; une seule étape d'annulation le restaure ─
+  const terrainAAnnuler = carteSurvolee;
   const nomTerrainAAnnuler = terrainAAnnuler.getAttribute('aria-label').split(' — ')[0];
-  await glisserSurTable(container, terrainAAnnuler, false);
+  await act(async () => { terrainAAnnuler.click(); });
   const terrainEnVol = carteEnVol();
   assert.ok(terrainEnVol?.matches('.rpg-card-flight[data-rpg-card-flight="terrain"]'),
     'le terrain quitte visiblement la main et vole vers son emplacement sur la table');
@@ -525,6 +566,17 @@ export async function checkRpgBattle(assert) {
   assert.ok(annulerSelectionAttaque, 'la sélection du Fennec peut encore être annulée avant confirmation');
   await act(async () => { annulerSelectionAttaque.click(); });
 
+  // Chaque carte annoncée par le sorcier attend la réponse du joueur : ici, on laisse passer.
+  const laisserPasserLesAnnonces = async (racine = container) => {
+    for (let annonce = 0; annonce < 8; annonce += 1) {
+      const passer = [...racine.querySelectorAll('.rpg-annonce-sort button')]
+        .find((bouton) => bouton.textContent.includes('Laisser passer'));
+      if (!passer) break;
+      await act(async () => { passer.click(); });
+      await act(async () => { await wait(1100); });
+    }
+  };
+
   // ── Le sorcier annonce ses attaquants et ouvre la phase de réponse ────
   let ennemiJoue = 0;
   for (let tour = 0; tour < 6 && !container.querySelector('.rpg-btn--resolve-combat'); tour += 1) {
@@ -541,6 +593,7 @@ export async function checkRpgBattle(assert) {
         'la créature reprend ses couleurs dès que commence le tour adverse');
     }
     await act(async () => { await wait(1800); });
+    await laisserPasserLesAnnonces();
     ennemiJoue = container.querySelectorAll('.rpg-card--ennemi').length
       + container.querySelectorAll('.rpg-terrains--ennemi .rpg-terrain').length;
     if (!container.querySelector('.rpg-btn--resolve-combat')) await resoudreCombat();
@@ -638,6 +691,7 @@ export async function checkRpgBattle(assert) {
   // ── Au tour suivant, notre créature reste disponible ──────────────────
   await act(async () => { findButton('Fin du tour').click(); });
   await act(async () => { await wait(1800); });
+  await laisserPasserLesAnnonces();
   await resoudreCombat();
   assert.ok(container.querySelector('.rpg-card--equipe.is-pret'),
     'notre créature doit être prête à attaquer à notre tour');
@@ -686,6 +740,7 @@ export async function checkRpgBattle(assert) {
   // ── Attaque express avec toutes les créatures prêtes ──────────────────
   await act(async () => { findButton('Fin du tour').click(); });
   await act(async () => { await wait(1800); });
+  await laisserPasserLesAnnonces();
   await resoudreCombat();
   const boutonAttaquerTous = container.querySelector('.rpg-btn--attaque-tous');
   assert.ok(boutonAttaquerTous && !boutonAttaquerTous.disabled,
@@ -739,6 +794,13 @@ export async function checkRpgBattle(assert) {
   const terminerTourReponse = async () => {
     await act(async () => { responseButton('Fin du tour').click(); });
     await act(async () => { await wait(1800); });
+    for (let annonce = 0; annonce < 8; annonce += 1) {
+      const passer = [...responseContainer.querySelectorAll('.rpg-annonce-sort button')]
+        .find((bouton) => bouton.textContent.includes('Laisser passer'));
+      if (!passer) break;
+      await act(async () => { passer.click(); });
+      await act(async () => { await wait(1100); });
+    }
     const combat = responseContainer.querySelector('.rpg-btn--resolve-combat');
     if (combat) await act(async () => { combat.click(); });
   };
@@ -801,6 +863,13 @@ export async function checkRpgBattle(assert) {
   const terminerTourImpact = async () => {
     await act(async () => { impactButton('Fin du tour').click(); });
     await act(async () => { await wait(1800); });
+    for (let annonce = 0; annonce < 8; annonce += 1) {
+      const passer = [...impactContainer.querySelectorAll('.rpg-annonce-sort button')]
+        .find((bouton) => bouton.textContent.includes('Laisser passer'));
+      if (!passer) break;
+      await act(async () => { passer.click(); });
+      await act(async () => { await wait(1100); });
+    }
   };
   await jouerTerrainImpact();
   await terminerTourImpact();
@@ -868,11 +937,13 @@ export async function checkRpgBattle(assert) {
   await act(async () => { [...killContainer.querySelectorAll('.rpg-terrain--joueur:not(.is-tapped)')][0].click(); });
   await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(killContainer);
   assert.ok(!killContainer.querySelector('.rpg-btn--resolve-combat'), 'le Fennec qui vient d’arriver ne peut pas attaquer');
 
   await jouerCarteParGlisser('Mer');
   await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(killContainer);
   assert.ok(killContainer.querySelector('.rpg-btn--resolve-combat'),
     'le Fennec adverse attaque dès son arrivée grâce à Rapidité');
   assert.ok([...killContainer.querySelectorAll('.rpg-card--ennemi')]
@@ -881,6 +952,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { killContainer.querySelector('.rpg-btn--resolve-combat').click(); });
   await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(killContainer);
   assert.ok(killContainer.querySelector('.rpg-btn--resolve-combat'), 'le Fennec peut aussi attaquer lors du tour adverse suivant');
   assert.ok([...killContainer.querySelectorAll('.rpg-card--ennemi')]
     .some((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')), 'le Fennec est l’attaquant à éliminer');
@@ -926,11 +998,35 @@ export async function checkRpgBattle(assert) {
   await jouerCarteAiFire('Désert');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(aiFireContainer);
   await jouerCarteAiFire('Désert');
   await jouerCarteAiFire('Fennec des décombres');
   assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'le Fennec est présent avant l’action de l’IA');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(900); });
+  // Le sort Braise est annoncé : le joueur a la main pour répondre, ou laisser passer.
+  assert.match(aiFireContainer.querySelector('.rpg-annonce-sort')?.textContent ?? '', /Trait de braise/,
+    'la bannière annonce le sort du sorcier avant sa résolution');
+  const previewSortAnnonce = aiFireContainer.querySelector('.rpg-annonce-sort .rpg-hover-card-preview--annonce');
+  assert.ok(previewSortAnnonce, 'la carte annoncée reste visible dans son aperçu pendant la fenêtre de réponse');
+  assert.match(previewSortAnnonce.querySelector('.rpg-hover-card-preview__face img')?.getAttribute('src') ?? '',
+    /\/cards\/trait-de-braise\.jpg(?:\?|$)/,
+    'l’aperçu affiche l’illustration de la carte annoncée');
+  assert.equal(previewSortAnnonce.querySelector('.rpg-hover-card-preview__name')?.textContent, 'Trait de braise',
+    'l’aperçu nomme clairement le sort annoncé');
+  const cibleSortAnnonce = previewSortAnnonce.querySelector('.rpg-hover-card-preview__target');
+  assert.match(cibleSortAnnonce?.textContent ?? '', /Fennec des décombres/,
+    'l’aperçu d’une magie montre la créature choisie comme cible');
+  assert.match(cibleSortAnnonce?.querySelector('img')?.getAttribute('src') ?? '',
+    /\/cards\/fennec-des-decombres\.jpg(?:\?|$)/,
+    'l’aperçu identifie aussi la cible par son illustration');
+  const boutonLaisserPasser = aiFireContainer.querySelector('.rpg-annonce-sort__pass');
+  assert.ok(boutonLaisserPasser && !boutonLaisserPasser.classList.contains('rpg-btn--endturn'),
+    'Laisser passer utilise son propre style compact, pas le gros bouton de fin de tour');
+  assert.ok(boutonLaisserPasser.getAttribute('aria-label')?.includes('Trait de braise'),
+    'le bouton précise quelle carte laisser passer');
+  await act(async () => { boutonLaisserPasser.click(); });
+  await act(async () => { await wait(200); });
   const destructionAi = aiFireContainer.querySelector('.rpg-card-destruction-fx[data-rpg-destroyed-id]');
   assert.ok(destructionAi?.classList.contains('is-burning')
     && destructionAi.dataset.destructionSource === 'braise',
@@ -960,9 +1056,11 @@ export async function checkRpgBattle(assert) {
   await act(async () => { waterContainer.querySelector('.rpg-terrain--joueur:not(.is-tapped)').click(); });
   await act(async () => { waterContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(waterContainer);
   await jouerCarteEau('Mer');
   await act(async () => { waterContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(waterContainer);
   const combatRapiditeEau = waterContainer.querySelector('.rpg-btn--resolve-combat');
   if (combatRapiditeEau) await act(async () => { combatRapiditeEau.click(); });
   assert.ok([...waterContainer.querySelectorAll('.rpg-card--ennemi')]
@@ -1006,6 +1104,7 @@ export async function checkRpgBattle(assert) {
   const terminerTourProtection = async () => {
     await act(async () => { protectionButton('Fin du tour').click(); });
     await act(async () => { await wait(1800); });
+    await laisserPasserLesAnnonces(protectionContainer);
   };
   await poserDesertProtection();
   await terminerTourProtection();
@@ -1054,6 +1153,7 @@ export async function checkRpgBattle(assert) {
     if (tour < 5) {
       await act(async () => { cavalryContainer.querySelector('.rpg-btn--endturn').click(); });
       await act(async () => { await wait(1800); });
+      await passerAnnoncesSorcier(cavalryContainer);
       const combatSorcier = cavalryContainer.querySelector('.rpg-btn--resolve-combat');
       if (combatSorcier) await act(async () => { combatSorcier.click(); });
     }
@@ -1125,6 +1225,7 @@ export async function checkRpgBattle(assert) {
   await engagerPetraEn('sable');
   await act(async () => { petraContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
+  await passerAnnoncesSorcier(petraContainer);
   await engagerPetraEn('braise');
   await act(async () => { petraRoot.unmount(); });
   petraContainer.remove();
@@ -1150,6 +1251,7 @@ export async function checkRpgBattle(assert) {
   const finirTourFeriel = async () => {
     await act(async () => { ferielContainer.querySelector('.rpg-btn--endturn').click(); });
     await act(async () => { await wait(1800); });
+    await passerAnnoncesSorcier(ferielContainer);
     const resolve = ferielContainer.querySelector('.rpg-btn--resolve-combat');
     if (resolve) await act(async () => { resolve.click(); });
   };
@@ -1190,4 +1292,61 @@ export async function checkRpgBattle(assert) {
     'le résultat de l’attaque ciblée est annoncé avec le montant et la cible');
   await act(async () => { ferielRoot.unmount(); });
   ferielContainer.remove();
+
+  // ── Ressac : la créature adverse ciblée repart dans la main du sorcier ──
+  const bounceContainer = document.createElement('div');
+  document.body.appendChild(bounceContainer);
+  const bounceRoot = createRoot(bounceContainer);
+  await act(async () => {
+    bounceRoot.render(<RpgDuelPage
+      joueurDeck={['mer', 'mer', 'ressac', 'desert', 'desert']}
+      sorcierDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'fennec-des-decombres']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(bounceContainer);
+  const bounceHand = () => [...bounceContainer.querySelectorAll('button.rpg-hand__card')];
+  const mainAdverseCount = () => Number(bounceContainer.querySelector('.rpg-hidden-hand__count')
+    ?.textContent.replace(/\D+/g, '') ?? NaN);
+  const jouerTerrainBounce = async (name) => {
+    const terrain = bounceHand().find((card) => card.getAttribute('aria-label')?.includes(name) && estJouable(card));
+    assert.ok(terrain, `${name} doit être jouable`);
+    await glisserSurTable(bounceContainer, terrain);
+  };
+  const finirTourBounce = async () => {
+    await act(async () => { bounceContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(1800); });
+    await passerAnnoncesSorcier(bounceContainer);
+    const resoudre = bounceContainer.querySelector('.rpg-btn--resolve-combat');
+    if (resoudre) await act(async () => { resoudre.click(); });
+  };
+  await jouerTerrainBounce('Mer');
+  await finirTourBounce();
+  await jouerTerrainBounce('Mer');
+  await finirTourBounce();
+  assert.ok([...bounceContainer.querySelectorAll('.rpg-card--ennemi')]
+    .some((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')),
+  'le Fennec adverse est en jeu pour devenir la cible du renvoi');
+  const mainAdverseAvant = mainAdverseCount();
+  await act(async () => { bounceContainer.querySelector('.rpg-terrain--joueur:not(.is-tapped)').click(); });
+  const ressac = bounceHand().find((card) => card.getAttribute('aria-label')?.includes('Ressac'));
+  assert.ok(ressac && estJouable(ressac), 'le Ressac est payable avec une Mer engagée');
+  await glisserSurTable(bounceContainer, ressac);
+  assert.match(bounceContainer.textContent, /Choisissez une créature adverse pour Ressac/,
+    'le renvoi ouvre le choix d’une cible adverse sans proposer le sorcier');
+  const fennecCible = [...bounceContainer.querySelectorAll('.rpg-card--ennemi')]
+    .find((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres'));
+  assert.ok(fennecCible?.classList.contains('is-ciblable'), 'la créature adverse devient une cible cliquable');
+  await act(async () => { fennecCible.click(); });
+  assert.equal([...bounceContainer.querySelectorAll('.rpg-card--ennemi')]
+    .find((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')), undefined,
+  'le Fennec quitte la table adverse');
+  assert.match(bounceContainer.querySelector('.rpg-spell-played__target')?.textContent ?? '', /Fennec des décombres/,
+    'l’annonce du sort nomme la créature renvoyée');
+  assert.equal(mainAdverseCount(), mainAdverseAvant + 1,
+    'la créature renvoyée rejoint la main cachée du sorcier au lieu du cimetière');
+  assert.ok(!bounceHand().some((card) => card.getAttribute('aria-label')?.includes('Ressac')),
+    'le Ressac a quitté la main du joueur');
+  await act(async () => { bounceRoot.unmount(); });
+  bounceContainer.remove();
 }
