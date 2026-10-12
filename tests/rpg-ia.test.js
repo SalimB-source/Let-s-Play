@@ -247,15 +247,19 @@ test('le niveau Récit se trompe, la Normale joue le bon blocage', () => {
 });
 
 test('le niveau Veilleur garde son burn pour conclure, la Normale le pousse', () => {
+  // La Fureur du souk a quitté le jeu : le burn de Braise, c'est désormais le
+  // Trait. On protège la Dune contre la Braise — la mécanique du Désert — pour
+  // qu'il ne reste au Trait que le visage comme cible légale.
   const duel = duelNu();
   duel.tour = 'sorcier';
   donnerMana(duel, 'joueur', 10);
   donnerMana(duel, 'sorcier', 10);
   donner(duel, 'joueur', 'dune-marchante');
-  rpgJouerCreature(duel, 'joueur', 'dune-marchante');
-  duel.joueur.pv = 50; // aucun enjeu : 4 dégâts au visage ne changent rien
-  donner(duel, 'sorcier', 'fureur-du-souk');
-  assert.equal(choisirCarteIA(duel, 'sorcier')?.carteId, 'fureur-du-souk',
+  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  dune.protection = { contre: 'braise', toursRestants: 2 };
+  duel.joueur.pv = 50; // aucun enjeu : 3 dégâts au visage ne changent rien
+  donner(duel, 'sorcier', 'trait-de-braise');
+  assert.equal(choisirCarteIA(duel, 'sorcier')?.carteId, 'trait-de-braise',
     'la Normale pousse son burn');
 
   const duelVeilleur = duelNu({ sorcierIA: { niveau: 'veilleur' } });
@@ -263,9 +267,10 @@ test('le niveau Veilleur garde son burn pour conclure, la Normale le pousse', ()
   donnerMana(duelVeilleur, 'joueur', 10);
   donnerMana(duelVeilleur, 'sorcier', 10);
   donner(duelVeilleur, 'joueur', 'dune-marchante');
-  rpgJouerCreature(duelVeilleur, 'joueur', 'dune-marchante');
+  const duneVeilleur = rpgJouerCreature(duelVeilleur, 'joueur', 'dune-marchante').entite;
+  duneVeilleur.protection = { contre: 'braise', toursRestants: 2 };
   duelVeilleur.joueur.pv = 50;
-  donner(duelVeilleur, 'sorcier', 'fureur-du-souk');
+  donner(duelVeilleur, 'sorcier', 'trait-de-braise');
   assert.equal(choisirCarteIA(duelVeilleur, 'sorcier'), null,
     'le Veilleur ménage son burn tant qu’il n’est pas décisif');
 });

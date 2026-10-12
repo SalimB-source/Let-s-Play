@@ -1090,9 +1090,16 @@ export const RPG_DECK_JOUEUR_BASE = [
   'tempete-de-sable',
 ];
 
+/**
+ * Mono-Braise. La Rafale du minaret puis la Fureur du souk ont été retirées du
+ * jeu. Le vivier Braise est dès lors au complet — Braisier, Ghul, Trait et
+ * Nuage sont déjà à trois exemplaires, les six mythiques à un —, si bien que
+ * les quatre cases libérées reviennent aux Montagnes : vingt-deux terrains
+ * pour une courbe qui grimpe jusqu'à l'Ifrit al-Ahmar.
+ */
 export const RPG_DECK_SORCIER_BASE = [
-  ...Array(18).fill('montagne'),
-  'braisier-du-souk',
+  ...Array(22).fill('montagne'),
+  ...Array(3).fill('braisier-du-souk'),
   'feriel',
   'anqa-des-braises',
   'djinn-du-souk',
@@ -1101,8 +1108,6 @@ export const RPG_DECK_SORCIER_BASE = [
   'ifrit-des-ergs',
   'ifrit-al-ahmar',
   ...Array(3).fill('trait-de-braise'),
-  ...Array(3).fill('fureur-du-souk'),
-  ...Array(3).fill('rafale-du-minaret'),
   ...Array(3).fill('nuage-de-cendres'),
 ];
 
@@ -1446,34 +1451,6 @@ export const RPG_MAGIE_CARDS = [
     flavor: 'Le vent bâtit plus vite que les maçons.',
   },
   {
-    id: 'sentence-de-la-liste',
-    name: 'Sentence de la Liste',
-    element: 'sable',
-    kind: 'magie',
-    typeLine: 'Rituel — Sable',
-    art: 'sentence-de-la-liste',
-    cost: 3,
-    rarity: 'rare',
-    cibles: ['creature'],
-    effet: { type: 'degats', amount: 4, cible: 'creature' },
-    text: '4 dégâts à une créature ciblée.',
-    flavor: 'Votre nom était barré avant l’aube.',
-  },
-  {
-    id: 'fureur-du-souk',
-    name: 'Fureur du souk',
-    element: 'braise',
-    kind: 'magie',
-    typeLine: 'Rituel — Braise',
-    art: 'fureur-du-souk',
-    cost: 3,
-    rarity: 'rare',
-    cibles: ['sorcier'],
-    effet: { type: 'degats', amount: 4, cible: 'sorcier' },
-    text: '4 dégâts au sorcier adverse.',
-    flavor: 'On ne négocie pas avec un étal en feu.',
-  },
-  {
     id: 'tempete-de-sable',
     name: 'Tempête de sable',
     element: 'sable',
@@ -1501,21 +1478,6 @@ export const RPG_MAGIE_CARDS = [
     effet: { type: 'bouclier', amount: 3, cible: 'creature-amie' },
     text: 'Éphémère — Une créature alliée prévient les 3 prochains dégâts qu’elle devrait subir.',
     flavor: 'Une seconde de verre suffit à dévier le coup.',
-  },
-  {
-    id: 'rafale-du-minaret',
-    name: 'Rafale du minaret',
-    element: 'braise',
-    kind: 'magie',
-    typeLine: 'Éphémère — Braise',
-    art: 'rafale-du-minaret',
-    instant: true,
-    cost: 2,
-    rarity: 'rare',
-    cibles: ['creature', 'sorcier'],
-    effet: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Éphémère — 2 dégâts à une créature ou un sorcier ciblés.',
-    flavor: 'Du haut du minaret, une étincelle trouve toujours sa cible.',
   },
   {
     id: 'brisure-de-verre',
