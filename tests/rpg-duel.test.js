@@ -1340,6 +1340,46 @@ test('les héros sont des cartes du paquet, pas de la main de départ', () => {
   assert.ok(true);
 });
 
+test('Salem reçoit un bouclier de lumière qui absorbe le premier impact ennemi', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'salem');
+  const salem = rpgJouerCreature(duel, 'joueur', 'salem').entite;
+  assert.equal(salem.bouclierLumiere, true);
+  const premier = rpgBlesserCreature(duel, 'joueur', salem.id, 3, ['braise'], null, 'magie');
+  assert.equal(premier.bouclierLumiere, true);
+  assert.equal(salem.pv, 3);
+  assert.equal(salem.bouclierLumiere, false);
+  assert.equal(rpgBlesserCreature(duel, 'joueur', salem.id, 1, ['braise'], null, 'magie').recus, 1);
+  assert.equal(salem.pv, 2);
+});
+
+test('Yamina soigne toutes les créatures alliées de 2 à son arrivée', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  rpgBlesserCreature(duel, 'joueur', chien.id, 1);
+  donner(duel, 'joueur', 'yamina');
+  const yamina = rpgJouerCreature(duel, 'joueur', 'yamina').entite;
+  assert.equal(chien.pv, 2);
+  assert.equal(yamina.pv, 4);
+});
+
+test('Tarek donne +1/+1 aux créatures Sable tant qu’il est en jeu', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'porteuse-de-cruches');
+  const eau = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
+  donner(duel, 'joueur', 'tarek');
+  const tarek = rpgJouerCreature(duel, 'joueur', 'tarek').entite;
+  assert.deepEqual({ atk: chien.atk, pv: chien.pv, def: chien.def }, { atk: 3, pv: 3, def: 3 });
+  assert.deepEqual({ atk: eau.atk, pv: eau.pv, def: eau.def }, { atk: 1, pv: 3, def: 3 });
+  assert.deepEqual({ atk: tarek.atk, pv: tarek.pv, def: tarek.def }, { atk: 5, pv: 6, def: 6 });
+});
+
 test('phase d’attaque sans bloqueur : tous les attaquants frappent le sorcier', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);

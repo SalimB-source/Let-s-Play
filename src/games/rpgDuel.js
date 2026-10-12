@@ -241,6 +241,22 @@ export const rpgMana = (camp) => ({ ...camp.mana, total: totalMana(camp) });
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
 
+function appliquerAuraSable(duel, cote) {
+  const camp = duel[cote];
+  const tarekEnJeu = camp.creatures.some((entite) => entite.carteId === 'tarek');
+  for (const entite of camp.creatures) {
+    const carte = duelCardById(entite.carteId);
+    const prochainBonus = tarekEnJeu && cardColors(carte).includes('sable') ? 1 : 0;
+    const delta = prochainBonus - (entite.auraSableBonus ?? 0);
+    if (!delta) continue;
+    entite.auraSableBonus = prochainBonus;
+    entite.atk += delta;
+    entite.def += delta;
+    entite.pvMax += delta;
+    entite.pv += delta;
+  }
+}
+
 /** Protection temporaire contre les effets et les créatures d'une couleur donnée. */
 export function rpgEstProtegee(entite, element) {
   const couleursSources = normaliserCouleurs(element);
@@ -274,6 +290,8 @@ function creerEntiteCreature(carte) {
     pv: carte.def,
     pvMax: carte.def,
     bouclier: 0,
+    bouclierLumiere: false,
+    auraSableBonus: 0,
     esquive: Math.max(0, carte.esquive ?? 0),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
@@ -353,6 +371,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const coup of coups) {
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
+    if (entite.bouclierLumiere && (coup.sourceType === 'attaque' || coup.sourceType === 'magie')) {
+      entite.bouclierLumiere = false;
+      continue;
+    }
     const degats = Math.max(0, Number(coup.amount) || 0);
     const esquive = coup.sourceType === 'attaque' || coup.sourceType === 'magie'
       ? Math.min(degats, Math.max(0, entite.esquive ?? 0))
@@ -409,6 +431,8 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       appliquer(duel, mort.cote, carte.destruction, null, null, cardColors(carte), null, mort.entite.carteId);
     }
   }
+  appliquerAuraSable(duel, 'joueur');
+  appliquerAuraSable(duel, 'sorcier');
   majResonance(duel);
   rpgActionsEtat(duel);
 }
@@ -469,6 +493,17 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     case 'soin':
       duel[cote].pv = Math.min(duel[cote].pvMax, duel[cote].pv + (effet.amount ?? 0));
       return;
+    case 'soin-creatures':
+      for (const entite of duel[cote].creatures) {
+        entite.pv = Math.min(entite.pvMax, entite.pv + (effet.amount ?? 0));
+        entite.def = Math.min(entite.pvMax, Math.max(entite.def, entite.pv));
+      }
+      return;
+    case 'bouclier-lumiere': {
+      const entite = duel[cote].creatures.find((candidate) => candidate.id === sauf);
+      if (entite) entite.bouclierLumiere = true;
+      return;
+    }
     case 'bouclier': {
       if (effet.cible === 'creature-amie') {
         const entite = duel[cote].creatures.find((e) => e.id === cibleId);
@@ -579,6 +614,7 @@ function enterrer(duel, cote, entite, sourceElements = []) {
   if (carte?.destruction) {
     appliquer(duel, cote, carte.destruction, null, null, cardColors(carte), null, entite.carteId);
   }
+  appliquerAuraSable(duel, cote);
   majResonance(duel);
 }
 
@@ -619,6 +655,10 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   if (rpgEstProtegee(entite, sourceElement)) {
     return { ok: true, recus: 0, absorbes: 0, protegee: true };
   }
+  if (entite.bouclierLumiere && (sourceType === 'attaque' || sourceType === 'magie')) {
+    entite.bouclierLumiere = false;
+    return { ok: true, recus: 0, absorbes: 0, bouclierLumiere: true };
+  }
   const degats = Math.max(0, amount);
   const esquive = sourceType === 'attaque' || sourceType === 'magie'
     ? Math.min(degats, Math.max(0, entite.esquive ?? 0))
@@ -635,6 +675,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   } else {
     appliquerFurie(duel, entite, recus);
   }
+  appliquerAuraSable(duel, cote);
   rpgActionsEtat(duel);
   return { ok: true, recus, absorbes, esquives: esquive };
 }
@@ -673,6 +714,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte));
   }
   majResonance(duel);
+  appliquerAuraSable(duel, cote);
   rpgActionsEtat(duel);
   return { ok: true, entite };
 }

@@ -898,8 +898,8 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Quand Salem arrive : son crochet fauche une créature adverse (2 dégâts).',
+    arrivee: { type: 'bouclier-lumiere' },
+    text: 'Quand Salem arrive : il reçoit un bouclier de lumière. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, Salem ne peut pas subir de dégâts.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -913,8 +913,8 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    arrivee: { type: 'pioche', amount: 1 },
-    text: 'Quand Yamina arrive : piochez une carte.',
+    arrivee: { type: 'soin-creatures', amount: 2 },
+    text: 'Quand Yamina arrive : soignez chacune de vos créatures de 2.',
     flavor: 'Je compte avant de signer.',
   },
   {
@@ -959,8 +959,8 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    arrivee: { type: 'buff', atk: 1, def: 1 },
-    text: 'Quand Tarek arrive : vos autres créatures gagnent +1/+1.',
+    aura: { type: 'buff-element', element: 'sable', atk: 1, def: 1 },
+    text: 'Tant que Tarek est en jeu, vos créatures Sable gagnent +1/+1.',
     flavor: 'Il frappe avec ce qu’il porte.',
   },
   {
