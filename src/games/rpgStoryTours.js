@@ -45,9 +45,11 @@ export const RPG_STORY_DECKS = {
   // La Neige du Serment, telle qu'elle se joue en duel libre.
   'serment-des-neuf-hivers': RPG_DECK_NEIGE_BASE,
   // Garde du fjord : la muraille d'abord — boucliers, brumes et soins, et l'on
-  // ne rend coup qu'une fois l'adversaire essoufflé.
+  // ne rend coup qu'une fois l'adversaire essoufflé. Les deux arts du Glacier
+  // se partagent les vingt-et-une sources de Neige.
   'gardes-du-fjord': [
-    ...Array(21).fill('glacier'),
+    ...Array(11).fill('glacier'),
+    ...Array(10).fill('glacier-des-arches'),
     ...Array(3).fill('guerrier-au-bouclier-rond'),
     ...Array(2).fill('loup-des-neiges'),
     ...Array(3).fill('scalde-des-runes'),
@@ -61,7 +63,8 @@ export const RPG_STORY_DECKS = {
   ],
   // Meute des neiges : la course — loups, berserks et éclairs, sans réserve.
   'meute-des-neiges': [
-    ...Array(21).fill('glacier'),
+    ...Array(11).fill('glacier'),
+    ...Array(10).fill('glacier-des-arches'),
     ...Array(3).fill('loup-des-neiges'),
     ...Array(2).fill('berserk-des-trois-hivers'),
     ...Array(3).fill('guerrier-au-bouclier-rond'),
@@ -77,7 +80,8 @@ export const RPG_STORY_DECKS = {
   // Deck du boss du fjord : le Serment essuyé, avec les figures du Nord — le
   // Père des corbeaux et le Maître du marteau — à leur maximum d'exemplaires.
   'maitre-des-neuf-hivers': [
-    ...Array(18).fill('glacier'),
+    ...Array(9).fill('glacier'),
+    ...Array(9).fill('glacier-des-arches'),
     ...Array(3).fill('guerrier-au-bouclier-rond'),
     ...Array(2).fill('loup-des-neiges'),
     'scalde-des-runes',
@@ -95,9 +99,11 @@ export const RPG_STORY_DECKS = {
     'maitre-du-marteau',
   ],
   // Deck de contrôle du boss : les Veilleurs, soigneusement essuyés, avec
-  // deux mythiques de Braise glissées dans le paquet du Grand Horloger.
+  // deux mythiques de Braise glissées dans le paquet du Grand Horloger. Les
+  // Dunes du Ténéré voisinent avec le Désert classique.
   'grand-horloger': [
-    ...Array(17).fill('desert'),
+    ...Array(9).fill('desert'),
+    ...Array(8).fill('dunes-du-tenere'),
     ...Array(2).fill('fennec-des-decombres'),
     ...Array(2).fill('faiseur-de-passage'),
     ...Array(3).fill('tislit-des-aures'),

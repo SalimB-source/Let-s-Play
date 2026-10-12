@@ -77,7 +77,17 @@ const donnerMana = (duel, cote, n) => { duel[cote].mana = Object.fromEntries(RPG
 /** Les peintures livrées au ratio de la face (4:5) : direction artistique `RPG-CARD-ART.md`. */
 const PLEIN_ART_45 = [
   'eau-de-la-source', 'lame-de-mer', 'brisure-de-verre', 'parade-du-verre',
-  'maree-contraire', 'ressac', 'courant-de-retour',
+  'maree-contraire', 'ressac', 'courant-de-retour', 'dunes-du-tenere',
+  'cretes-de-cendre', 'lagune-des-salines', 'petra-des-deux-sources',
+  'glacier-des-arches',
+];
+
+const VARIANTES_TERRAIN = [
+  ['dunes-du-tenere', 'desert'],
+  ['cretes-de-cendre', 'montagne'],
+  ['lagune-des-salines', 'mer'],
+  ['petra-des-deux-sources', 'petra'],
+  ['glacier-des-arches', 'glacier'],
 ];
 
 /** Largeur et hauteur d'un JPEG, lues dans son en-tête SOF (aucune dépendance). */
@@ -423,9 +433,9 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     ['courant-de-retour', 'courant-de-retour'],
   ];
   // Le Serment des Neuf Hivers : chaque carte du deck Neige a son illustration
-  // dédiée (aucune ne réutilise le fichier d'une autre carte du duel).
+  // dédiée, variante du Glacier comprise (aucune ne partage le fichier d’une autre).
   const illustrationsNeige = RPG_DECK_NEIGE_BASE.filter((id, index, deck) => deck.indexOf(id) === index);
-  assert.equal(illustrationsNeige.length, 19, 'le deck Neige réunit dix-neuf cartes distinctes');
+  assert.equal(illustrationsNeige.length, 20, 'le deck Neige réunit vingt cartes distinctes');
   for (const carteId of illustrationsNeige) {
     assert.equal(cardArtId(carteId), carteId,
       `${carteId} affiche sa propre illustration Neige`);
@@ -912,9 +922,12 @@ test('Sahir : les destructions en chaîne précèdent aussi le partage', () => {
   assert.equal(duel.sorcier.pv, pvSorcier);
 });
 
-test('les terrains mono produisent leur couleur, Pétra Braise ou Sable et le Glacier la Neige', () => {
-  assert.equal(RPG_TERRAIN_CARDS.length, 5);
-  assert.deepEqual(RPG_TERRAIN_CARDS.map((t) => t.id).sort(), ['desert', 'glacier', 'mer', 'montagne', 'petra']);
+test('les terrains et leurs variantes gardent les mêmes couleurs, types et productions de mana', () => {
+  assert.equal(RPG_TERRAIN_CARDS.length, 10);
+  assert.deepEqual(RPG_TERRAIN_CARDS.map((t) => t.id).sort(), [
+    'cretes-de-cendre', 'desert', 'dunes-du-tenere', 'glacier', 'glacier-des-arches',
+    'lagune-des-salines', 'mer', 'montagne', 'petra', 'petra-des-deux-sources',
+  ]);
   assert.equal(RPG_TERRAIN_CARDS.find((t) => t.id === 'glacier').element, 'neige');
   assert.deepEqual(terrainManaColors('glacier'), ['neige']);
   assert.equal(RPG_TERRAIN_CARDS.find((t) => t.id === 'montagne').element, 'braise');
@@ -923,6 +936,20 @@ test('les terrains mono produisent leur couleur, Pétra Braise ou Sable et le Gl
   assert.equal(cardById('petra').element, 'hybride');
   assert.deepEqual(cardColors('petra'), ['sable', 'braise']);
   assert.deepEqual(terrainManaColors('petra'), ['braise', 'sable']);
+
+  for (const [varianteId, baseId] of VARIANTES_TERRAIN) {
+    const variante = cardById(varianteId);
+    const base = cardById(baseId);
+    assert.equal(variante.varianteDe, baseId, `${varianteId} référence son terrain d’origine`);
+    assert.equal(cardArtId(variante), varianteId, `${varianteId} possède son art dédié`);
+    assert.equal(variante.kind, 'terrain');
+    assert.equal(variante.typeLine, base.typeLine, `${varianteId} garde la même ligne de type`);
+    assert.equal(variante.cost, base.cost, `${varianteId} garde le coût nul`);
+    assert.deepEqual(terrainManaColors(variante), terrainManaColors(base),
+      `${varianteId} produit exactement le même mana que ${baseId}`);
+    assert.ok(RPG_DECKS.some((deck) => deck.cardIds.includes(varianteId)),
+      `${varianteId} est introduit dans un deck du catalogue`);
+  }
 });
 
 test('les créatures du Désert attaquent et leur protection colorée dure le tour posé et le suivant adverse', () => {
@@ -1790,12 +1817,13 @@ test('Parade de verre ne se lance pas si sa créature cible est absente', () => 
   assert.ok(duel.joueur.main.includes('parade-du-verre'), 'la carte et le mana restent intacts');
 });
 
-test('le plein art du Serment est livré : dix-neuf peintures dédiées, aucune provisoire', () => {
-  // La liste des illustrations provisoires est vide : le deck Neige est peint.
+test('le plein art du Serment est livré : les vingt cartes Neige sont dédiées, aucune provisoire', () => {
+  // La liste des illustrations provisoires est vide : le deck Neige et sa
+  // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'terrain'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 19, 'dix-neuf cartes Neige au catalogue');
+  assert.equal(cartesNeige.length, 20, 'vingt cartes Neige au catalogue');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['creature', 'hero', 'magie', 'terrain'], 'le set Neige couvre les quatre types de cartes');
   for (const carte of cartesNeige) {
@@ -1846,10 +1874,10 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 19, 'les dix-neuf peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 20, 'les vingt peintures Neige sont toutes différentes');
 });
 
-test('le Serment des Neuf Hivers est un deck mono-Neige : dix-neuf cartes dédiées, mythiques en un exemplaire', () => {
+test('le Serment des Neuf Hivers est un deck mono-Neige : 17 terrains en deux arts, mythiques en un exemplaire', () => {
   const deck = RPG_DECKS.find(({ id }) => id === 'serment-des-neuf-hivers');
   assert.ok(deck, 'le deck Neige apparaît dans la sélection');
   assert.equal(deck.role, 'joueur');
@@ -1858,8 +1886,9 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : dix-neuf cartes dédi�
   assert.equal(deck.cardIds, RPG_DECK_NEIGE_BASE, 'la sélection joue la liste de 40 cartes du deck');
   const valide = rpgValiderDeck(deck.cardIds);
   assert.equal(valide.ok, true, valide.raison);
-  assert.equal(valide.terrains, 17, 'dix-sept Glaciers, comme les autres decks mono');
-  assert.equal(deck.cardIds.filter((id) => id === 'glacier').length, 17);
+  assert.equal(valide.terrains, 17, 'dix-sept terrains Neige, comme les autres decks mono');
+  assert.equal(deck.cardIds.filter((id) => id === 'glacier').length, 9);
+  assert.equal(deck.cardIds.filter((id) => id === 'glacier-des-arches').length, 8);
   for (const id of new Set(deck.cardIds)) {
     const carte = cardById(id);
     assert.deepEqual(cardColors(carte), ['neige'], `${id} reste dans l’identité Neige du deck`);
@@ -2056,15 +2085,17 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     assert.equal(magies.length, magiesAttendues);
   }
 
-  for (const [deck, element, terrain] of [
-    [RPG_DECK_JOUEUR_BASE, 'sable', 'desert'],
-    [RPG_DECK_SORCIER_BASE, 'braise', 'montagne'],
-    [RPG_DECK_NEIGE_BASE, 'neige', 'glacier'],
+  for (const [deck, element] of [
+    [RPG_DECK_JOUEUR_BASE, 'sable'],
+    [RPG_DECK_SORCIER_BASE, 'braise'],
+    [RPG_DECK_NEIGE_BASE, 'neige'],
   ]) {
     for (const id of deck) {
       const carte = cardById(id);
       assert.equal(carte.element, element, `${id} appartient à l’élément ${element}`);
-      if (carte.kind === 'terrain') assert.equal(id, terrain, 'le terrain de base correspond à la couleur du deck');
+      if (carte.kind === 'terrain') {
+        assert.deepEqual(terrainManaColors(carte), [element], `${id} produit l’élément ${element}`);
+      }
     }
   }
 
@@ -2076,9 +2107,12 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   const valide = rpgValiderDeck(deckHybride.cardIds);
   assert.equal(valide.ok, true, valide.raison);
   assert.equal(valide.terrains, 17);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'petra').length, 5);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'desert').length, 6);
-  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 6);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'petra').length, 3);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'petra-des-deux-sources').length, 2);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'desert').length, 3);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'dunes-du-tenere').length, 3);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'montagne').length, 3);
+  assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'cretes-de-cendre').length, 3);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 18);
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 5);
   for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'mythique')) {
