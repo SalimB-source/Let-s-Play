@@ -410,6 +410,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     }
   }
   majResonance(duel);
+  rpgActionsEtat(duel);
 }
 
 /** Dégâts de capacité infligés à la créature que la carte combat, s’il y a lieu. */
@@ -581,6 +582,36 @@ function enterrer(duel, cote, entite, sourceElements = []) {
   majResonance(duel);
 }
 
+/**
+ * Actions d'état — le filet de sécurité de la table.
+ *
+ * Une créature sans défense ne tient pas debout : elle quitte le champ de
+ * bataille **immédiatement**, quelle que soit la cause de sa chute (blessures
+ * de combat, magie, capacité, malus d'aura, effet ajouté plus tard). Les
+ * fonctions de dégâts enterrent déjà leurs victimes ; ce passage se contente
+ * de garantir qu'aucun chemin ne puisse laisser une carte morte — et donc
+ * engagée à jamais — sur le terrain. Il est rejoué tant qu'une capacité de
+ * destruction en fait tomber une autre.
+ *
+ * @param {object} duel partie en cours, modifiée sur place
+ * @returns {number} nombre de créatures retirées (0 = la table était saine)
+ */
+export function rpgActionsEtat(duel) {
+  let retirees = 0;
+  for (let garde = 0; garde < 32; garde += 1) {
+    let uneMorte = false;
+    for (const cote of ['joueur', 'sorcier']) {
+      const morte = duel[cote].creatures.find((entite) => !(entite.pv > 0));
+      if (!morte) continue;
+      uneMorte = true;
+      retirees += 1;
+      enterrer(duel, cote, morte);
+    }
+    if (!uneMorte) break;
+  }
+  return retirees;
+}
+
 /** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise). */
 export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null) {
   const entite = duel[cote].creatures.find((e) => e.id === entiteId);
@@ -604,6 +635,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   } else {
     appliquerFurie(duel, entite, recus);
   }
+  rpgActionsEtat(duel);
   return { ok: true, recus, absorbes, esquives: esquive };
 }
 
@@ -641,6 +673,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     appliquer(duel, cote, carte.arrivee, cibleArrivee, entite.id, cardColors(carte));
   }
   majResonance(duel);
+  rpgActionsEtat(duel);
   return { ok: true, entite };
 }
 
@@ -686,6 +719,7 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
     });
   }
   appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  rpgActionsEtat(duel);
   return { ok: true };
 }
 
@@ -798,6 +832,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'magie');
   camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
+  rpgActionsEtat(duel);
   return { ok: true };
 }
 
@@ -1078,6 +1113,7 @@ export function rpgLancerAttaque(
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
     : `${attaquants.length} créature(s) frappent le sorcier (${resume.frappeSorcier}).`);
+  rpgActionsEtat(duel);
   return { ok: true, resume };
 }
 
@@ -1103,6 +1139,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   attaquant.attaquee = true;
   rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
   duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
+  rpgActionsEtat(duel);
   return { ok: true };
 }
 
@@ -1162,6 +1199,7 @@ export function rpgFinDeTour(duel) {
     entite.attaquee = false;
   }
   resoudreRetoursProgrammes(duel);
+  rpgActionsEtat(duel);
   duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
   return duel;
 }
@@ -1201,6 +1239,7 @@ export function rpgSorcierResoudreAnnonce(duel) {
   const res = duelCardById(annonce.carteId)
     ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId);
+  rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };
 }
 

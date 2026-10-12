@@ -5464,3 +5464,54 @@ que le Kraken renvoyé ne déclenche pas sa pioche de destruction, que la
 protection et l'absence de cible bloquent le sort sans paiement, et que l'IA
 annonce puis résout un Ressac sur la plus grosse menace. Le scénario de
 `scripts/rpg-battle-smoke.jsx` rejoue le geste complet dans la vraie interface.
+
+## Le Sablier du temps : plus de carte morte sur le terrain
+
+Une carte détruite devait parfois rester posée sur la table, figée et comme
+engagée, jusqu'à bloquer le duel. Le défaut n'était pas dans les règles — le
+moteur enterrait bien la créature — mais dans **le temps qui passe autour de
+la table** : trois chemins pouvaient laisser l'affichage en arrière.
+
+**1. La partie précédente parlait encore.** Le tour du sorcier s'anime par une
+chaîne de minuteries (annonce, attaque, résolution). Quitter la table par
+« Menu » pendant ce tour, puis lancer un nouveau duel, ne les annulait pas :
+elles atterrissaient sur la partie neuve et y rouvraient un combat fantôme —
+plus moyen de finir son tour, les cartes restaient dans leur dernier état.
+Chaque partie porte désormais un numéro (`sessionDuelRef`) : une minuterie
+vérifie qu'elle appartient encore à la partie en cours avant d'agir, et
+`nouvellePartie()` coupe tout ce qui était en vol.
+
+**2. Le téléphone gelait l'onglet.** L'image d'adieu d'une carte détruite
+disparaît sur une minuterie. Passer dans une autre application au mauvais
+moment — ou verrouiller l'écran — pouvait l'avaler : au retour, le fantôme
+était toujours là. L'effet se retire maintenant de trois façons : à la fin de
+son animation (`onAnimationEnd`), par sa minuterie, et par un **ménage au
+retour d'arrière-plan** (`visibilitychange`) qui balaie aussi les halos de
+combat et termine une carte restée en vol.
+
+**3. Filet de sécurité dans les règles.** `rpgActionsEtat()` retire toute
+créature sans défense **à la fin de chaque geste public** du duel (pose, magie,
+attaque, combat, fin de tour, annonce du sorcier), en rejouant les capacités de
+destruction en cascade. Aujourd'hui aucun chemin de dégâts n'oublie d'enterrer
+sa victime : le balayage ne change donc rien à une partie saine, mais un futur
+malus de défense ne pourra plus laisser une carte morte sur le terrain.
+
+### Vérifications
+
+```bash
+npm run check:rpg         # moteur, dont les deux tests d'actions d'état
+npm run check:rpg-ghosts  # la chasse aux fantômes dans la vraie page
+npm run check:rpg-ui      # inclut la chasse aux fantômes
+```
+
+`scripts/rpg-ghost-check.mjs` monte la page dans jsdom avec une horloge
+virtuelle et joue **des duels entiers au pilote automatique**, sur grand écran
+et au doigt : il joue des cartes, bloque, attaque, annule, répond aux annonces,
+déplie les piles, fait pivoter l'écran en plein combat et quitte la table pour
+y revenir. Après chaque geste il compare la table affichée à la vérité du
+moteur — aucune créature à zéro défense en jeu, aucune carte affichée qui ait
+quitté le terrain, aucune carte engagée que le moteur dit dégagée, aucune
+image de destruction oubliée. Deux épreuves ciblées complètent les duels : la
+relance d'une partie pendant le tour du sorcier, et un retour d'arrière-plan
+où **toutes les minuteries en attente sont perdues** — la table doit se
+nettoyer d'elle-même.
