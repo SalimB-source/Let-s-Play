@@ -62,6 +62,43 @@ export async function checkRpgPreviewActions(assert) {
     await attendre(460);
     await click(peek());
     assert.ok(peek() === null, 'le volet se referme au toucher');
+
+    // ── Le créateur de deck répond au même geste ────────────────────────────
+    await changerEcran('Deck');
+    await click(container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir l’atelier');
+    assert.ok(container.querySelector('.rpg-atelier'), 'l’atelier de deck est ouvert');
+    assert.match(container.querySelector('.rpg-atelier__astuce').textContent, /Appui long d’une seconde/,
+      'l’atelier annonce le geste, comme la barre du duel');
+    const carteAtelier = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
+    const lignesAtelier = () => container.querySelectorAll('.rpg-atelier__ligne').length;
+    await appuiLong(carteAtelier);
+    assert.ok(peek(), 'une carte de la bibliothèque de l’atelier s’aperçoit par appui long');
+    assert.ok(peek().getAttribute('aria-label').includes('Chien du guet'),
+      'le volet nomme la carte tenue dans la bibliothèque');
+    assert.equal(lignesAtelier(), 0, 'consulter une carte de la bibliothèque ne l’ajoute pas au deck');
+    await attendre(460);
+    await click(peek());
+    assert.ok(peek() === null, 'le volet se referme au toucher, dans l’atelier aussi');
+    // Un appui long sur le bouton « + » consulte la carte sans l’ajouter ; le
+    // clic simple, lui, garde son action d’atelier.
+    await appuiLong(carteAtelier.querySelector('.rpg-atelier__carte-ajout'));
+    assert.ok(peek(), 'le bouton « + » tenu une seconde ouvre l’aperçu de sa carte');
+    assert.equal(lignesAtelier(), 0, 'l’appui long sur « + » n’ajoute pas la carte au deck');
+    await attendre(460);
+    await click(peek());
+    await click(carteAtelier.querySelector('.rpg-atelier__carte-ajout'), 'ajouter Chien du guet');
+    assert.equal(lignesAtelier(), 1, 'le clic simple ajoute bien la carte au deck en cours');
+    const ligneAtelier = container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]');
+    await appuiLong(ligneAtelier);
+    assert.ok(peek(), 'la ligne du deck en cours s’aperçoit aussi par appui long');
+    assert.ok(peek().getAttribute('aria-label').includes('Chien du guet'), 'le volet nomme la carte du deck en cours');
+    assert.equal(lignesAtelier(), 1, 'consulter une ligne du deck ne la retire pas');
+    await appuiLong(ligneAtelier.querySelector('.rpg-atelier__ligne-compte button'));
+    assert.ok(peek(), 'le bouton « − » tenu une seconde ouvre l’aperçu de sa carte');
+    assert.equal(lignesAtelier(), 1, 'l’appui long sur « − » ne retire pas la carte');
+    await attendre(460);
+    await click(peek());
+    assert.ok(peek() === null, 'le volet se referme, et le deck en cours est intact');
     await changerEcran('Jouer');
 
     await click(container.querySelector('.rpg-menu-button--primary'));

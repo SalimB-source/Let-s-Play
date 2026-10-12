@@ -163,4 +163,22 @@ assert.match(schemaSource, /on public\.rpg_sablier_progress for select to authen
 assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /rpgValiderDeckMaison/, 'l’atelier valide structure ET collection en direct');
 assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /carteDebloqueePar/, 'les cartes verrouillées annoncent où se débloquer');
 
+// ── L'aperçu au doigt vaut aussi dans le créateur de deck ───────────────────────────────────
+// Le geste est délégué par la page au menu entier (l’atelier y vit) : il suffit que les
+// cartes de l’atelier portent leur `data-card-id` et que l’astuce annonce le geste au doigt.
+const atelierSource = readSource('../src/games/RpgDeckAtelier.jsx');
+const atelierCss = stripComments(readSource('../src/games/rpg-deck-atelier.css'));
+const battleCss = stripComments(readSource('../src/games/rpg-battle.css'));
+assert.equal((atelierSource.match(/data-card-id=/g) ?? []).length, 2,
+  'les deux listes de l’atelier — bibliothèque et deck en cours — portent `data-card-id`');
+assert.match(pageSource, /data-scene="menu" onPointerDown=\{demarrerAppuiLongCarte\}/,
+  'l’écran de menu — atelier compris — arme l’appui long d’aperçu');
+assert.match(atelierSource, /rpg-atelier__astuce/, 'l’atelier annonce le geste d’aperçu');
+assert.match(atelierCss, /\.rpg-atelier__astuce\s*\{[^}]*display:\s*none/,
+  'l’astuce reste masquée au pointeur fin : le survol ouvre déjà l’aperçu');
+assert.match(atelierCss, /@media \(pointer: coarse\)\s*\{[^{}]*\.rpg-atelier__astuce\s*\{\s*display:\s*block/,
+  'au doigt, l’astuce s’affiche');
+assert.match(battleCss, /\.rpg-battle \[data-card-id\] img,[\s\S]{0,120}\.rpg-battle img\[data-card-id\]\s*\{\s*-webkit-user-drag:\s*none/,
+  'toute carte affichée — créateur de deck compris — refuse le drag natif de son illustration');
+
 console.log('✓ Atelier de decks : crate « Nouveau deck », éditeur (nom, emblème, cartes, validation live collection), brouillons enregistrables, decks maison jouables en duel libre, édition/renommage/suppression en deux temps, copie, récompenses d’étage vers la collection, compte Supabase et fusion d’appareils');
