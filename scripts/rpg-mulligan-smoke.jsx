@@ -101,7 +101,7 @@ export async function checkRpgMulligan(assert) {
         ? `la créature ${id} n’écrit pas de ligne de type : ses plaques suffisent`
         : `le terrain ou le sort ${id} écrit sa ligne de type`);
     if (!creature) {
-      const motAttendu = attendue.kind === 'terrain' ? /^Terrain/ : /^(Rituel|Éphémère)/;
+      const motAttendu = attendue.kind === 'terrain' ? /^Terrain/ : /^(Sorcellerie|Magie Rapide)/;
       assert.match(ligneType?.textContent ?? '', motAttendu,
         `la carte ${id} affiche son type — le mot de sa famille, imprimé sur la face`);
     }
@@ -219,8 +219,9 @@ export async function checkRpgMulligan(assert) {
   await act(async () => { await wait(120); });
   assert.equal(volet(), null, 'le volet est fermé');
   assert.equal(q('.card-table').hasAttribute('inert'), false, 'la table n’est plus close');
-  assert.match(q('.rpg-actions__wait').textContent, /Plateau :/,
-    'le message d’ouverture du plateau survit au mulligan');
+  assert.equal(q('.rpg-actions__wait'), null, 'le duel ne porte pas de bandeau d’indications');
+  assert.match(q('.card-table').className, /card-table--plateau-/,
+    'le plateau tiré est posé sous les cartes : il se voit, il ne s’annonce pas');
   assert.equal(q('.rpg-btn--endturn')?.disabled, false, 'le tour est maintenant au joueur');
   const terrainId = duel.joueur.main.find((id) => cardById(id)?.kind === 'terrain');
   assert.ok(terrainId, 'la main de départ gardée contient bien un terrain');
@@ -248,12 +249,14 @@ export async function checkRpgMulligan(assert) {
   assert.ok(deuxieme.querySelector('.rpg-mulligan'), 'une partie neuve rouvre son mulligan');
   assert.equal(rpgPeutMulligan(window.__RPG_DUEL__, 'joueur'), true, 'le droit est rendu avec la table neuve');
   // Le joueur qui n'a rien à changer n'a pas de nouvelle main à relire : un
-  // seul geste suffit, et le message du plateau reste celui du duel.
+  // seul geste suffit, et la table rendue est celle du duel.
   await act(async () => { deuxieme.querySelector('.rpg-mulligan__valider').click(); });
   assert.equal(deuxieme.querySelector('.rpg-mulligan'), null, 'un volet sans choix se referme d’un geste');
   assert.equal(deuxieme.querySelector('.card-table').hasAttribute('inert'), false, 'la table est rendue');
-  assert.match(deuxieme.querySelector('.rpg-actions__wait').textContent, /Plateau :/,
-    'garder sa main n’écrit pas un nouveau message par-dessus l’ouverture');
+  assert.equal(deuxieme.querySelector('.rpg-actions__wait'), null,
+    'garder sa main n’écrit aucun bandeau : la table se rend telle quelle');
+  assert.match(deuxieme.querySelector('.card-table').className, /card-table--plateau-/,
+    'la partie neuve a bien tiré son plateau');
   await act(async () => { secondRoot.unmount(); });
   deuxieme.remove();
 }

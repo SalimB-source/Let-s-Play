@@ -27,7 +27,9 @@ function creerDuel(assert, props) {
     camp: (cote, id) => [...container.querySelectorAll(`.card-row--${cote} .rpg-card[data-card-id="${id}"]`)],
     // La puce « ×N » est un frère des cartes du groupe, dans la même rangée.
     puces: (cote) => [...container.querySelectorAll(`.card-row--${cote} .rpg-card-stack__toggle`)],
-    statut: () => container.querySelector('.rpg-actions__wait')?.textContent ?? '',
+    pv: (cote) => Number(
+      container.querySelector(`.rpg-wizard-plate--${cote} .rpg-wizard-plate__pv`)?.textContent.match(/\d+/)?.[0] ?? 0,
+    ),
     finDuTour: async () => {
       await outils.click(container.querySelector('.rpg-btn--endturn:not([disabled])'), 'Fin du tour est disponible');
       await outils.attendre(900);
@@ -87,7 +89,7 @@ export async function checkRpgCardStacks(assert) {
 async function scenarioMainEtChampJoueur(assert) {
   const duel = creerDuel(assert, {});
   const {
-    container, root, click, attendre, mainSlots, hand, camp, pileDe, compteur, puces, statut, finDuTour,
+    container, root, click, attendre, mainSlots, hand, camp, pileDe, compteur, puces, pv, finDuTour,
     appuiLong, fermerApercu,
   } = duel;
   try {
@@ -182,7 +184,8 @@ async function scenarioMainEtChampJoueur(assert) {
     assert.equal(mainSlots('desert').length, slotsAvant, 'une pioche identique n’ajoute pas d’emplacement');
     assert.equal(Number(hand('desert').dataset.pileCount), desertAvant + 1,
       '… elle rejoint la pile de Désert et son compteur');
-    assert.ok(statut().length >= 0, 'le statut du tour reste affiché');
+    assert.ok(container.querySelector('.rpg-turn-indicator')?.textContent.trim(),
+      'l’indicateur de tour reste le seul repère de statut');
   } finally {
     await duel.fermer();
   }
@@ -192,7 +195,7 @@ async function scenarioMainEtChampJoueur(assert) {
 // blocage assigné depuis une pile repliée (la tête de pile est le bloqueur).
 async function scenarioChampAdverse(assert) {
   const duel = creerDuel(assert, {});
-  const { container, root, click, attendre, hand, camp, compteur, puces, statut } = duel;
+  const { container, root, click, attendre, hand, camp, compteur, puces, pv } = duel;
   // Générateur déterministe mais varié : une constante figerait l'IA en défense.
   let graine = 7;
   const rng = () => { graine = (graine * 1103515245 + 12345) % 2147483648; return graine / 2147483648; };
@@ -253,10 +256,8 @@ async function scenarioChampAdverse(assert) {
     assert.equal(classe('equipe', 'chien-du-guet', 'is-blocker-selected'), 1,
       'toucher la pile sélectionne l’exemplaire disponible comme bloqueur');
     assert.equal(camp('equipe', 'chien-du-guet').length, 2, 'le groupe se déplie : on voit le bloqueur choisi');
-    assert.ok(statut().includes('sélectionné'), 'le statut explique la sélection du bloqueur');
     await click(attaquantAdverse(), 'assigner le blocage');
     assert.equal(classe('equipe', 'chien-du-guet', 'is-blocking'), 1, 'le bloqueur assigné porte son état');
-    assert.ok(statut().includes('bloque'), 'le statut confirme le blocage');
     await click(resoudre(), 'résoudre le combat adverse');
     await attendre(1800);
     assert.equal(container.querySelector('.rpg-btn--resolve-combat'), null, 'la fenêtre de combat est refermée');
@@ -269,12 +270,13 @@ async function scenarioChampAdverse(assert) {
     await finirLeTour();
     assert.equal(camp('ennemi', 'chien-du-guet').length, 2, 'le sorcier attaque encore : son groupe est déplié');
     assert.equal(classe('ennemi', 'chien-du-guet', 'is-declared-attacker'), 1, 'un exemplaire attaque');
+    const pvAvantAttaque = pv('joueur');
     await click(resoudre(), 'laisser passer l’attaque');
     await attendre(1800);
     assert.equal(camp('ennemi', 'chien-du-guet').length, 1,
       'sans combat en cours, les Chiens adverses ne forment plus qu’une carte');
     assert.equal(compteur('ennemi', 'chien-du-guet').textContent, '×2', 'la pile adverse affiche son compteur ×2');
-    assert.ok(statut().includes('dégâts au joueur'), 'l’attaque non bloquée a touché le joueur');
+    assert.ok(pv('joueur') < pvAvantAttaque, 'l’attaque non bloquée a touché le joueur : ses PV baissent');
   } finally {
     await duel.fermer();
   }

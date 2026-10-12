@@ -1559,16 +1559,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 .rpg-actions__who strong { color: var(--cyan); }
-.rpg-actions__wait {
-  margin: 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(6, 6, 14, .7);
-  color: #f2eddc;
-  font-size: 13px;
-}
-
 .rpg-skills {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1949,7 +1939,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-combat-window__foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .rpg-combat-window__foot p { flex: 1 1 220px; }
 
-/* Les terrains dégagés restent jouables pour payer un éphémère en réponse. */
+/* Les terrains dégagés restent jouables pour payer une magie rapide en réponse. */
 .rpg-hand-dock.is-open { transform: translateY(0); }
 .rpg-hand { max-width: calc(100vw - 16px); overflow-x: auto; overflow-y: visible; padding: 46px 14px 50px; scrollbar-width: thin; scrollbar-color: rgba(223, 187, 119, .58) transparent; }
 .rpg-hand__card--img .rpg-hand__title {
@@ -2045,7 +2035,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-combat-window__foot { justify-content: flex-end; }
   .rpg-combat-window__foot p { flex-basis: 100%; }
   .rpg-bottombar .rpg-log { max-height: 42px; padding: 4px 7px; font-size: 9px; }
-  .rpg-actions__wait { max-width: calc(100vw - 20px); padding: 5px 9px; font-size: 11px; }
 }
 
 @media (max-width: 540px) {
@@ -2209,23 +2198,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: translateY(var(--card-rise, 0)) rotate(var(--card-angle, 0deg));
   border: 3px solid #090a10;
   border-radius: 7px;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(225, 191, 118, .22) 0 2px, transparent 3px 100%),
-    repeating-linear-gradient(135deg, rgba(232, 195, 115, .13) 0 2px, transparent 2px 7px),
+  background: var(--rpg-dos-de-carte) center / cover no-repeat,
     linear-gradient(145deg, #6e281d, #1a1320 55%, #9b6325);
   box-shadow: 0 5px 11px rgba(0, 0, 0, .58), inset 0 0 0 2px rgba(236, 199, 117, .62);
 }
 .rpg-hidden-hand__card:first-child { margin-left: 0; }
-.rpg-hidden-hand__card::after {
-  content: "◈";
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: rgba(255, 224, 163, .82);
-  font: 700 23px/1 Georgia, serif;
-  text-shadow: 0 2px 7px #0b0907;
-}
 .rpg-hidden-hand__count {
   color: rgba(245, 224, 183, .8);
   font: 700 8px/1.2 var(--display);
@@ -2262,9 +2239,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 5px;
   box-shadow: 0 3px 7px rgba(0, 0, 0, .65);
 }
+/* Le dos gravé sert de fond ; le dégradé reste dessous, le temps que l'image
+   arrive et pour les contextes qui ne définissent pas la variable. */
 .rpg-card-pile__card--back {
-  background:
-    repeating-linear-gradient(135deg, rgba(232, 195, 115, .18) 0 2px, transparent 2px 6px),
+  background: var(--rpg-dos-de-carte) center / cover no-repeat,
     linear-gradient(145deg, #6e281d, #1a1320 55%, #9b6325);
 }
 .rpg-card-pile__card--back:first-child { transform: translate(-3px, -3px) rotate(-5deg); }
@@ -2338,18 +2316,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-row--ennemi { top: 21%; bottom: auto; }
 .card-row--equipe { top: 49%; bottom: auto; }
 .rpg-card { width: clamp(104px, 10vw, 142px); }
-.rpg-empty-lane {
-  display: grid;
-  place-items: center;
-  min-width: min(320px, 70%);
-  min-height: 44px;
-  border: 1px dashed rgba(232, 204, 150, .2);
-  border-radius: 999px;
-  background: rgba(16, 12, 9, .2);
-  color: rgba(245, 225, 188, .48);
-  font: italic 12px/1.2 Georgia, serif;
-  letter-spacing: .02em;
-}
 
 .rpg-turn-ribbon {
   top: 50%;
@@ -2367,7 +2333,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-terrain.is-tapped { transform: rotate(12deg) translateY(1px); }
 
 .rpg-card-piles--opponent { top: 11%; right: 14px; }
-.rpg-card-piles--player { top: 52%; right: auto; left: 14px; }
+/* La colonne de gauche va de la plaque du sorcier (fin ~30 %) à celle du joueur
+   (début 67 %). À 52 %, le paquet et le cimetière se collaient sous la seconde
+   — 10 à 36 px seulement — en laissant 114 à 169 px de vide au-dessus. À 44 %
+   ils se centrent dans la bande libre, à toutes les tailles d'écran. */
+.rpg-card-piles--player { top: 44%; right: auto; left: 14px; }
 
 .rpg-bottombar {
   position: absolute;
@@ -2382,7 +2352,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-bottombar .rpg-log { max-height: 40px; padding: 4px 8px; font-size: 9px; }
 .rpg-bottombar .rpg-actions { max-height: none; overflow: visible; }
 .rpg-actions__row { justify-content: flex-end; gap: 7px; }
-.rpg-actions__wait { margin: 0; padding: 5px 9px; border-radius: 8px; background: rgba(10, 9, 10, .72); color: #f4e3bf; font-size: 10px; text-align: right; }
 
 .rpg-hand-dock {
   z-index: 40;
@@ -2459,7 +2428,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 620px) {
   .rpg-hidden-hand { top: 1%; }
   .rpg-hidden-hand__card { width: 38px; height: 50px; margin-left: -14px; border-width: 2px; }
-  .rpg-hidden-hand__card::after { font-size: 17px; }
   .rpg-hidden-hand__count { font-size: 6px; }
   .rpg-turn-ribbon { min-width: 140px; padding: 5px 10px; }
   .rpg-turn-ribbon span { font-size: 6px; }
@@ -2488,7 +2456,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-pile small { font-size: 5px; }
   .rpg-bottombar { right: 6px; bottom: 130px; width: calc(100vw - 12px); }
   .rpg-bottombar .rpg-log { display: none; }
-  .rpg-actions__wait { max-width: 100%; font-size: 8px; }
   .rpg-actions__row { gap: 4px; }
   .rpg-actions__row .rpg-btn { padding: 6px 8px; font-size: 9px; }
   .rpg-hand-dock { padding: 5px 3px 2px; }
@@ -3315,14 +3282,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   max-width: 100%;
   max-height: 100%;
 }
-.rpg-card-peek__hint {
-  margin: 0;
-  color: #ffe6b0;
-  font: 700 9px/1.3 var(--display);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  text-shadow: 0 2px 5px #000;
-}
 .rpg-card-peek__close {
   position: relative;
   z-index: 1;
@@ -3353,7 +3312,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     gap: 10px;
     padding: 6px;
   }
-  .rpg-card-peek__hint { font-size: 8px; letter-spacing: .1em; }
   .rpg-card-peek__close { min-height: 44px; padding: 8px 20px; }
 }
 
@@ -3784,8 +3742,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-blocker-arrow__shaft { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 .rpg-blocker-arrow__glow { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: rpg-arrow-draw .42s ease-out forwards; }
 @keyframes rpg-arrow-draw { to { stroke-dashoffset: 0; } }
-.rpg-actions__wait { animation: rpg-message-arrive .24s ease-out; }
-@keyframes rpg-message-arrive { from { opacity: .35; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-hover-card-preview,
@@ -3801,8 +3757,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-destruction-fx::before,
   .rpg-card-destruction-fx::after,
   .rpg-blocker-arrow__shaft,
-  .rpg-blocker-arrow__glow,
-  .rpg-actions__wait { animation: none !important; transition: none !important; }
+  .rpg-blocker-arrow__glow { animation: none !important; transition: none !important; }
 }
 
 /* Couleur à gauche, coût à droite : le symbole élémentaire quitte la pastille
@@ -4601,9 +4556,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 8px;
 }
 .rpg-card-pile--deck .rpg-card-pile__card--back {
-  background:
-    repeating-linear-gradient(135deg, rgba(235, 204, 135, .24) 0 2px, transparent 2px 8px),
-    radial-gradient(ellipse at center, rgba(210, 164, 91, .36), transparent 48%),
+  background: var(--rpg-dos-de-carte) center / cover no-repeat,
     linear-gradient(145deg, #792c20, #17131e 54%, #9c652b);
 }
 .rpg-card-pile--deck .rpg-card-pile__card--back:first-child { transform: translate(-6px, -5px) rotate(-6deg); }
@@ -4687,21 +4640,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   gap: 6px;
 }
 .rpg-bottombar__status .rpg-turn-indicator { flex: none; }
-.rpg-bottombar__status .rpg-actions__wait {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 320px;
-  overflow: hidden;
-  padding: 6px 10px;
-  border: 1px solid rgba(223, 196, 143, .22);
-  border-radius: 7px;
-  background: rgba(8, 7, 7, .68);
-  color: rgba(245, 232, 207, .9);
-  font-size: 11px;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .rpg-bottombar .rpg-log {
   max-height: 30px;
   padding: 2px 6px;
@@ -4840,7 +4778,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     gap: 6px;
   }
   .rpg-bottombar__status { gap: 6px; }
-  .rpg-bottombar__status .rpg-actions__wait { flex-basis: 200px; max-width: 62vw; padding: 6px 9px; font-size: 11px; }
   .rpg-bottombar .rpg-log { display: none; }
   .rpg-bottombar .rpg-actions__row { justify-content: center; gap: 6px; }
   .rpg-actions__combat,

@@ -53,7 +53,7 @@ limitée à 7.
 
 - Les sorts : dégâts, soins, barrages, altérations. Payées en mana,
   résolus, puis au cimetière.
-- Les **éphémères** se jouent pendant le tour de l'adversaire, en réponse
+- Les **magies rapides** se jouent pendant le tour de l'adversaire, en réponse
   à la carte annoncée : de l'information, jamais des réflexes.
 - Le chiffre d'attaque est sa puissance ; la défense, sa résistance à
   l'interruption.
@@ -164,10 +164,10 @@ note sur le camp concerné et les liquide au tour suivant (`rpgFinDeTour`) :
   donne `+0/+3` à toutes les créatures du joueur **jusqu'à la fin du tour** :
   le gain est inscrit dans `camp.bonusTemporaires` **avec le tour qui le voit
   naître**, puis retiré quand *ce* tour-là se termine, avant que l'autre camp ne
-  commence. Un rituel meurt donc avec son propre tour — il renforce vos
-  attaques et vos échanges, il ne vous protège pas pendant le tour adverse ; et
-  le jour où un éphémère portera le même `tours`, il s'évapora avec l'échange en
-  cours plutôt qu'avec le tour du camp renforcé. Contrairement
+  commence. Une sorcellerie meurt donc avec son propre tour — elle renforce vos
+  attaques et vos échanges, elle ne vous protège pas pendant le tour adverse ;
+  et le jour où une magie rapide portera le même `tours`, elle s'évaporera avec
+  l'échange en cours plutôt qu'avec le tour du camp renforcé. Contrairement
   à la Résonance, ce retrait **peut** faire tomber une créature déjà entamée
   (le plancher de 1 ne s'applique qu'aux auras de table) : on ne renforce pas
   trois tours pour rien.
@@ -260,7 +260,7 @@ quitte la table **sans mourir** et retourne dans la main de son propriétaire.
 | Carte | Type | Effet |
 |---|---|---|
 | *Ressac* (×2) | Éphémère — Eau, 1 mana | Renvoyez une créature adverse ciblée dans la main de son propriétaire. |
-| *Courant de retour* (×1) | Rituel — Eau, 3 mana | Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. |
+| *Courant de retour* (×1) | Sorcellerie — Eau, 3 mana | Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. |
 
 Résolution (`renvoyerEnMain`, moteur) :
 - la créature n'entre **pas** au cimetière et ne déclenche **aucune** capacité de

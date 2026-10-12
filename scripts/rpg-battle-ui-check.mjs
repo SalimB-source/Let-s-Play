@@ -155,10 +155,10 @@ assert.match(aiBrain, /peutBloquerAttaquant\(bloqueur, attaquant\)\s*&&\s*!estPr
   'l’IA écarte les bloqueurs sans Envol face à un attaquant volant');
 assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) return \{ ok: false, raison: 'envol' \}/,
   'le moteur refuse un blocage terrestre contre un attaquant avec Envol');
-assert.match(battlePage, /a Envol : seules les créatures avec Envol peuvent le bloquer\./,
-  'l’interface explique pourquoi un bloqueur sans Envol est refusé');
-assert.match(battlePage, /Aucune de vos créatures n’a Envol : leurs créatures volantes ne peuvent pas être bloquées\./,
-  'l’annonce de l’attaque adverse signale les volants impossibles à bloquer');
+assert.match(battlePage, /if \(!retireDeCetteAttaque && !rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*setBloqueurSelectionne\(null\);\s*jouerSfx\('erreur'\);/,
+  'un bloqueur sans Envol est refusé par le bruitage d’erreur, sans phrase d’explication');
+assert.match(battlePage, /canDragBlocker=\{Boolean\(reponseActive && !reponseApresBlocage && bloqueursDisponibles\.some/,
+  'seuls les bloqueurs légaux restent saisissables : l’attaque adverse n’a pas besoin d’annonce écrite');
 assert.match(duelEngine, /export function rpgLancerAttaque\([\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, degatsAvantCombat\)[\s\S]*?const coupsNormaux = degatsCombat[\s\S]*?appliquerDegatsDeCombatSimultanes\(duel, coupsNormaux\)/,
   'les capacités de combat du Sahir se résolvent avant les blessures normales');
 assert.match(duelEngine, /appliquerDegatsDeCombatSimultanes\(apresCapacites, degatsAvantCombat\)[\s\S]*?const repartitionFinale/,
@@ -185,8 +185,22 @@ assert.match(battleCss, /\.rpg-terrain\s*\{[^}]*overflow:\s*visible;/s,
   'les cartes de terrain ne sont plus masquées sur leurs bords');
 assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*padding:\s*10px 12px 12px;/s,
   'la marge du rail de terrains laisse dépasser sans couper les cartes engagées');
-assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*52%;\s*right:\s*auto;\s*left:\s*14px;/,
-  'le deck et le cimetière du joueur sont à gauche sur grand écran');
+// ── Le dos de carte gravé ────────────────────────────────────────────────────
+assert.match(battlePage, /const DOS_DE_CARTE_STYLE = Object\.freeze\(\{\s*'--rpg-dos-de-carte': `url\("\$\{import\.meta\.env\.BASE_URL\}dos-de-carte\.jpg"\)`/,
+  'le chemin du dos de carte suit BASE_URL et descend en variable CSS depuis la racine du duel');
+assert.match(battlePage, /data-scene="duel"\s*\n\s*style=\{DOS_DE_CARTE_STYLE\}/,
+  'la racine du duel porte la variable du dos de carte');
+assert.match(battleCss, /\.rpg-hidden-hand__card\s*\{[^}]*background:\s*var\(--rpg-dos-de-carte\) center \/ cover no-repeat,\s*linear-gradient/s,
+  'la main cachée du sorcier montre le dos gravé, le dégradé restant dessous en repli');
+assert.match(battleCss, /\.rpg-card-pile__card--back\s*\{\s*background:\s*var\(--rpg-dos-de-carte\) center \/ cover no-repeat,\s*linear-gradient/s,
+  'les cartes empilées montrent le dos gravé, le dégradé restant dessous en repli');
+assert.match(battleCss, /\.rpg-card-pile--deck \.rpg-card-pile__card--back\s*\{\s*background:\s*var\(--rpg-dos-de-carte\) center \/ cover no-repeat,\s*linear-gradient/s,
+  'le paquet agrandi montre le dos gravé, le dégradé restant dessous en repli');
+assert.doesNotMatch(battleCss, /\.rpg-hidden-hand__card::after/,
+  'le losange ◈ dessiné en CSS disparaît : la rune du dos le remplace');
+
+assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*44%;\s*right:\s*auto;\s*left:\s*14px;/,
+  'le deck et le cimetière du joueur sont à gauche sur grand écran, centrés dans la bande libre au lieu de coller à la plaque du joueur');
 assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*68%;\s*right:\s*auto;\s*left:\s*4px;/,
   'le deck et le cimetière restent à gauche sur mobile');
 assert.match(battlePage, /carte\.kind === 'terrain'\) return null;/,
@@ -278,8 +292,8 @@ assert.match(battleCss, /\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*border-
   'Fin du tour garde un repère doré compact et bien visible');
 assert.match(battleCss, /\/\* Commandes de duel compactes[\s\S]*?\.rpg-bottombar\s*\{[^}]*width: min\(500px, calc\(100vw - 230px\)\);/s,
   'la barre inférieure agrandie est visible à toutes les tailles d’écran');
-assert.match(battleCss, /\.rpg-bottombar__status \.rpg-actions__wait\s*\{[^}]*max-width:\s*320px;[^}]*font-size:\s*11px;/s,
-  'le message du tour est agrandi et plus lisible');
+assert.doesNotMatch(battleCss, /rpg-actions__wait|rpg-empty-lane/,
+  'les styles du bandeau d’indications et des rangées vides ont été retirés de la feuille de combat');
 assert.match(battleCss, /\.rpg-phase-step__icon\s*\{\s*display:\s*grid;\s*width:\s*24px;\s*height:\s*24px;/,
   'les icônes de phase sont agrandies partout');
 assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-bottombar \{[\s\S]*?\.rpg-actions__row \.rpg-btn \{ min-height: 39px; padding: 6px 9px; font-size: 11px; \}/,
@@ -289,9 +303,9 @@ assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-phase-track \{[^
 assert.match(battlePage, /reponseApresBlocage \? 'À VOUS · RÉPONSE'/,
   'la priorité revient au joueur après le choix des bloqueurs adverses');
 assert.match(battlePage, /Accepter les blocages/,
-  'le joueur peut accepter les bloqueurs adverses sans lancer d’éphémère');
+  'le joueur peut accepter les bloqueurs adverses sans lancer de magie rapide');
 assert.match(battlePage, /reponseApresBlocage \? carte\.instant/,
-  'seuls les éphémères jouables restent actifs pendant cette fenêtre de réponse');
+  'seuls les magies rapides jouables restent actifs pendant cette fenêtre de réponse');
 assert.match(battleCss, /\.rpg-blocker-arrow__shaft\s*\{[^}]*stroke:\s*rgba\(255, 219, 54, \.72\)/s,
   'chaque bloqueur assigné garde une flèche jaune visible');
 assert.match(battlePage, /setBloqueurSelectionne\(entite\.id\)/,
@@ -308,8 +322,8 @@ assert.match(battlePage, /className="rpg-card-catalogue"[\s\S]*?Filtrer par coul
   'l’onglet Catalogue propose les filtres de couleur et de type');
 assert.match(battlePage, /onChangeScreen\('catalogue'\)[\s\S]*?Catalogue/,
   'Catalogue est accessible depuis le menu des modes');
-assert.match(battlePage, /carte\.arrivee\?\.type === 'combat'[\s\S]*?Choisissez une créature adverse/,
-  'l’arrivée du Cavalier demande le choix d’une créature adverse');
+assert.match(battlePage, /if \(carte\.arrivee\?\.type === 'combat'\) \{[\s\S]*?if \(ciblesLegales\.length\) \{\s*setCibleEnCours\(carteId\);/,
+  'l’arrivée du Cavalier ouvre le choix d’une créature adverse, signalé par les cibles allumées');
 assert.match(battlePage, /demarrerVolCarte\(carteSource, handIndex, \(\) => finaliserPoseCreature\(carteId, entite\.id\)\)/,
   'la carte réelle vole depuis la main après la sélection de la cible');
 assert.match(battleCss, /\.rpg-card-catalogue__art\s*\{[\s\S]*?aspect-ratio:\s*4\s*\/\s*5;[\s\S]*?border:\s*3px solid var\(--rpg-frame-color/s,
@@ -421,8 +435,10 @@ assert.match(plateauxSource, /couleurDominanteDeck/,
   'un deck sans identité connue (paquet brut) parle par sa couleur dominante');
 assert.match(battlePage, /className=\{`card-table card-table--plateau-\$\{plateau\.id\}/,
   'la table porte le plateau tiré pour la partie en cours');
-assert.match(battlePage, /Plateau : \$\{plateau\.nom\} — \$\{plateau\.lieu\}, imposé par \$\{originePlateau\}/,
-  'le message d’ouverture annonce le terrain de la partie et le deck qui l’impose');
+assert.doesNotMatch(battlePage, /rpg-actions__wait|rpg-card-peek__hint|rpg-empty-lane/,
+  'le duel ne porte plus de texte d’indications — bandeau, légende d’aperçu, rangées vides : la table, les flèches et le journal suffisent');
+assert.doesNotMatch(battlePage, /prendront place ici|gardiens du sorcier attendent/,
+  'une rangée de créatures vide reste vide : aucune phrase ne la commente');
 assert.match(plateauxSource, /id: 'caravane-de-gourara'[\s\S]*?fichier: 'plateau-caravane-de-gourara\.jpg'/,
   'la piste de caravane du Gourara est un second plateau saharien');
 for (const plateauSombre of ['table-des-heures', 'terre-de-damnation']) {
@@ -508,7 +524,7 @@ assert.match(battlePage, /const hote = event\.target\?\.closest\?\.\('\[data-car
   'toute carte affichée porte son identifiant : main, table, terrains, cimetière, catalogue, deck');
 assert.match(battlePage, /data-scene="menu" onPointerDown=\{demarrerAppuiLongCarte\}/,
   'le menu (catalogue et decks) répond à l’appui long');
-assert.match(battlePage, /data-scene="duel"\s*onPointerDown=\{demarrerAppuiLongCarte\}/,
+assert.match(battlePage, /data-scene="duel"\s*(?:style=\{DOS_DE_CARTE_STYLE\}\s*)?onPointerDown=\{demarrerAppuiLongCarte\}/,
   'le plateau répond au même appui long');
 assert.match(battlePage, /touchDragRef\.current\?\.\(\);[\s\S]*?setApercuAppui\(carte\.id\)/,
   'consulter une carte désarme le glisser-déposer lancé par le même doigt');
@@ -524,8 +540,8 @@ assert.match(battleCss, /@media \(max-height: 520px\) \{[\s\S]*?\.rpg-card-peek 
   'en paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible — au menu comme en duel');
 assert.match(battleCss, /@media \(pointer: coarse\) \{[\s\S]*?\.rpg-battle \[data-card-id\]\s*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;/s,
   'une carte tenue une seconde n’appelle ni le menu natif ni la sélection de texte');
-assert.match(battlePage, /viewport\.mobile \? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer\.' : ''/,
-  'l’ouverture du duel annonce le geste au doigt');
+assert.match(battlePage, /function ApercuCarteAppuiLong\(\{ carte, onFermer \}\)[\s\S]*?<HoverCardPreview carte=\{carte\} variante="appui-long" \/>/,
+  'l’appui long ouvre l’aperçu de la carte, sans légender le geste');
 
 // ── Zone de jeu tactile élargie et piles de cartes homonymes ───────────────
 const cardStacks = readFileSync(new URL('../src/games/rpgCardStacks.js', import.meta.url), 'utf8');
@@ -656,7 +672,7 @@ assert.match(duelEngine, /differerEcho\(duel, cote, adv, effet, sourceElement, s
 assert.match(duelEngine, /resoudreEchos\(duel\);/,
   'l’écho retombe au début du tour suivant, avant que son destinataire n’agisse');
 assert.match(aiBrain, /const durable = Number\(effet\.tours\) > 0 \? 0\.5 : 1;/,
-  'l’IA ne paie pas un renfort éphémère au prix d’un renfort durable');
+  'l’IA ne paie pas un renfort de magie rapide au prix d’un renfort durable');
 assert.match(aiBrain, /const echoMontant = Math\.max\(0, Number\(effet\.echo\?\.amount\) \|\| 0\);/,
   'l’IA compte la seconde vague d’un sort à écho sans la surpayer');
 assert.equal(RPG_DUEL_CARDS.find((carte) => carte.id === 'rapport-du-greffier').cost, 3,
@@ -686,6 +702,6 @@ console.log(
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres qui promet sa seconde vague au début du tour suivant, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
-  + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de l’éphémère qui élimine le dernier attaquant pendant la réponse.'
+  + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
 );
 process.exit(0);
