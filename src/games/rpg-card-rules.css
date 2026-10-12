@@ -1,0 +1,10 @@
+/* Les symboles de mana restent alignés et lisibles dans tous les textes de carte. */
+.rpg-card-rules__mana {
+  display: inline-block;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1.15em;
+  font-style: normal;
+  line-height: 1;
+  vertical-align: -.08em;
+  white-space: nowrap;
+}

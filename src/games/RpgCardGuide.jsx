@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
+import RpgCardRules from './RpgCardRules.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
 import { cardById, cardColors, cardFrameColor, cardTypeLine } from './rpgCards.js';
 import './rpg-card-guide.css';
@@ -32,7 +33,7 @@ function GuideCard({ carte, cardArt }) {
         <h3>{carte.name}</h3>
         <p className="rpg-card-guide__type">{cardTypeLine(carte)}</p>
         {estCreature && <p className="rpg-card-guide__stats">⚔ {carte.atk} · 🛡 {carte.def}</p>}
-        <p className="rpg-card-guide__rules">{carte.text && carte.text !== '—' ? carte.text : 'Aucune capacité.'}</p>
+        <p className="rpg-card-guide__rules"><RpgCardRules carte={carte} /></p>
       </div>
     </article>
   );

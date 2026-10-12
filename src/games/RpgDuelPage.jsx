@@ -46,6 +46,7 @@ import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
+import RpgCardRules from './RpgCardRules.jsx';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import { useDecksSablier } from './useDecksSablier.js';
 import {
@@ -901,7 +902,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
       {effet && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
-          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}>{ligne}</span>)}
+          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)}
         </div>
       )}
       {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
@@ -1823,7 +1824,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                           </span>
                           {estCreature && <b>⚔ {carte.atk} · 🛡 {carte.def}</b>}
                         </div>
-                        <p className="rpg-card-catalogue__rules">{carte.text && carte.text !== '—' ? carte.text : 'Aucune capacité.'}</p>
+                        <p className="rpg-card-catalogue__rules"><RpgCardRules carte={carte} /></p>
                       </div>
                     </article>
                   );
