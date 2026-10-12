@@ -1714,26 +1714,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* ── Duel de cartes : face lisible, ressources et vraie défense ─────────── */
 .rpg-mana-cost {
-  display: inline-flex;
-  flex-flow: row nowrap;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
+  display: grid;
+  place-items: center;
   white-space: nowrap;
   flex: none;
-  min-width: 29px;
-  height: 22px;
-  padding: 1px 3px;
-  border: 1px solid rgba(25, 17, 8, .9);
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 22%, #fff7d8, #c8a365 72%);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .55), inset 0 1px rgba(255, 255, 255, .7);
-  color: #22170c;
-  font: 800 11px/1 Georgia, serif;
-  text-shadow: 0 1px rgba(255, 255, 255, .55);
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid rgba(250, 233, 198, .96);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 25%, #fff1c5, #b28539 72%);
+  box-shadow: 0 2px 8px #000;
+  color: #21170d;
+  font: 900 12px/1 var(--mono, monospace);
+  text-shadow: 0 1px rgba(255, 255, 255, .5);
 }
 
-.rpg-mana-cost b { min-width: 11px; text-align: center; }
+.rpg-mana-cost b { min-width: 0; text-align: center; line-height: 1; }
 .rpg-mana-cost i {
   display: grid;
   place-items: center;
@@ -1755,7 +1754,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-shadow: 0 1px 1px rgba(255, 255, 255, .55);
 }
 
-.rpg-mana-cost.is-compact { min-width: 24px; height: 18px; font-size: 9px; }
+.rpg-mana-cost.is-compact { width: 22px; height: 22px; min-width: 22px; font-size: 11px; }
 .rpg-mana-cost.is-compact i { width: 11px; height: 11px; font-size: 7px; }
 
 /* Le bandeau de nom épouse le parchemin vide déjà illustré sur nos cartes. */
@@ -2735,10 +2734,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: 2px 4px;
 }
 .rpg-card--img .rpg-mana-cost.is-compact {
-  height: 16px;
+  width: 22px;
+  height: 22px;
   min-width: 22px;
-  padding: 1px 2px;
-  font-size: 8px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 10px;
 }
 .rpg-card--img .rpg-mana-cost.is-compact i { width: 11px; height: 11px; font-size: 7px; }
 .rpg-card--img .rpg-card__title strong {
@@ -2792,11 +2794,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   -webkit-line-clamp: 2;
 }
 .rpg-hand__card--img .rpg-mana-cost {
-  height: 18px;
-  min-width: 25px;
-  padding: 1px 2px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
   transform: none;
-  font-size: 10px;
+  font-size: 11px;
 }
 .rpg-hand__card--img .rpg-mana-cost i { width: 12px; height: 12px; font-size: 8px; }
 .rpg-hand__type {
@@ -2859,7 +2864,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hand__card { width: clamp(74px, 21vw, 94px); }
   .rpg-card--img .rpg-card__title { height: 24%; min-height: 24%; }
   .rpg-card--img .rpg-card__title strong { font-size: 6.4px; }
-  .rpg-card--img .rpg-mana-cost.is-compact { height: 14px; min-width: 20px; font-size: 7.5px; }
+  .rpg-card--img .rpg-mana-cost.is-compact { width: 18px; height: 18px; min-width: 18px; aspect-ratio: 1; padding: 0; font-size: 9px; }
   .rpg-card--img .rpg-mana-cost.is-compact i { width: 10px; height: 10px; font-size: 6.5px; }
   .rpg-card--img .rpg-card__type { top: 30%; font-size: 5px; }
   .rpg-card--img .rpg-card__type > span { -webkit-line-clamp: 3; }
@@ -2872,7 +2877,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-hand__card--img .rpg-hand__title { height: 24%; min-height: 24%; }
   .rpg-hand__card--img .rpg-hand__title strong { font-size: 6.2px; }
-  .rpg-hand__card--img .rpg-mana-cost { height: 15px; min-width: 22px; font-size: 9px; }
+  .rpg-hand__card--img .rpg-mana-cost { width: 20px; height: 20px; min-width: 20px; aspect-ratio: 1; padding: 0; font-size: 10px; }
   .rpg-hand__card--img .rpg-mana-cost i { width: 10px; height: 10px; font-size: 7px; }
   .rpg-hand__type { top: 29%; font-size: 5px; }
   .rpg-hand__stats { bottom: 42%; padding: 1px 3px; font-size: 6px; }
@@ -2888,7 +2893,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* En main et sur le champ, les cartes restent full art avec repères, type et statistiques. */
 .rpg-card--img .rpg-card__title {
-  top: 6%;
+  top: 5%;
   right: 6%;
   left: auto;
   width: auto;
@@ -3599,9 +3604,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 3;
   top: 5%;
   right: 6%;
-  height: clamp(16px, 12.5cqw, 30px);
-  min-width: clamp(20px, 16cqw, 40px);
-  font-size: clamp(8px, 6cqw, 15px);
+  width: clamp(16px, 15cqw, 30px);
+  height: clamp(16px, 15cqw, 30px);
+  min-width: clamp(16px, 15cqw, 30px);
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  font-size: clamp(9px, 7cqw, 15px);
   pointer-events: none;
 }
 .rpg-mulligan__card .rpg-mana-cost i {
@@ -5209,16 +5218,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Coût, attaque et défense doivent rester immédiatement lisibles sur les faces. */
 .rpg-card--img .rpg-mana-cost.is-compact {
-  min-width: 30px;
-  height: 21px;
-  padding: 2px 4px;
-  font-size: 11px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 12px;
 }
 .rpg-hand__card--img .rpg-mana-cost {
-  min-width: 31px;
-  height: 23px;
-  padding: 2px 4px;
-  font-size: 12.5px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 13px;
 }
 .rpg-card--img .rpg-card__stat--atk,
 .rpg-card--img .rpg-card__pt,
@@ -5235,15 +5250,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (max-width: 620px) {
   .rpg-card--img .rpg-mana-cost.is-compact {
-    min-width: 24px;
-    height: 17px;
-    padding: 1px 3px;
-    font-size: 9px;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    aspect-ratio: 1;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 10px;
   }
   .rpg-hand__card--img .rpg-mana-cost {
-    min-width: 26px;
-    height: 19px;
-    padding: 2px 3px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    aspect-ratio: 1;
+    padding: 0;
+    border-radius: 50%;
     font-size: 11px;
   }
   .rpg-card--img .rpg-card__foot,

@@ -561,10 +561,14 @@ assert.match(battlePage, /instantanePiocheRef\.current = instantaneActuel/,
 assert.match(battlePage, /piocheEnCours \? 'rpg-hand-card--drawing' : ''/,
   'l’animation s’applique à la vraie carte directement dans la main du joueur');
 const cardMetricsCss = battleCss.slice(battleCss.lastIndexOf('/* Coût, attaque et défense'));
-assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*min-width:\s*30px;[^}]*height:\s*21px;[^}]*font-size:\s*11px;/s,
-  'le badge de coût est agrandi sur les cartes posées');
-assert.match(cardMetricsCss, /\.rpg-hand__card--img \.rpg-mana-cost\s*\{[^}]*min-width:\s*31px;[^}]*height:\s*23px;[^}]*font-size:\s*12\.5px;/s,
-  'le badge de coût est agrandi dans la main');
+assert.match(battleCss, /\.rpg-mana-cost\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;[^}]*width:\s*24px;[^}]*height:\s*24px;[^}]*min-width:\s*24px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border:\s*2px solid rgba\(250, 233, 198, \.96\);[^}]*border-radius:\s*50%;[^}]*background:\s*radial-gradient\(circle at 34% 25%, #fff1c5, #b28539 72%\);/s,
+  'le coût des cartes en jeu reprend le bloc rond doré des cartes du catalogue');
+assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*26px;[^}]*height:\s*26px;[^}]*min-width:\s*26px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*12px;/s,
+  'le badge de coût sur les cartes posées reste un bloc bien rond et lisible');
+assert.match(cardMetricsCss, /\.rpg-hand__card--img \.rpg-mana-cost\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;[^}]*min-width:\s*28px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;[^}]*font-size:\s*13px;/s,
+  'le badge de coût dans la main reste un bloc bien rond et lisible');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-mana-cost,\s*\.rpg-battle--touch \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;[^}]*min-width:\s*22px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
+  'le badge de coût tactile reste un bloc bien rond sur les cartes en main et en jeu');
 assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*38px;[^}]*font-size:\s*13px;/s,
   'les indicateurs d’attaque et de défense sont agrandis sur les cartes');
 assert.match(cardMetricsCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*29px;[^}]*font-size:\s*9\.5px;/s,
