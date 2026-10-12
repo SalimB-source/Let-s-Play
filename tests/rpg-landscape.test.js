@@ -25,11 +25,11 @@ test('mobile requests fullscreen and landscape; leaving releases only owned reso
   s.leave();
   assert.deepEqual(e.calls, ['fullscreen', 'landscape', 'unlock', 'exit']);
 });
-test('desktop does not request fullscreen or orientation', async () => {
+test('desktop requests native fullscreen but never locks orientation', async () => {
   const e = environment({ mobile: false });
   const s = createRpgLandscapeSession(e.win, e.doc);
   await s.enter(); s.leave();
-  assert.deepEqual(e.calls, []);
+  assert.deepEqual(e.calls, ['fullscreen', 'exit']);
 });
 test('unsupported orientation/fullscreen does not reject (rotate prompt fallback)', async () => {
   const e = environment({ supported: false });
