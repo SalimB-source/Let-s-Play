@@ -50,6 +50,8 @@ import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
+import RpgTableScene3D from './RpgTableScene3D.jsx';
+import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.js';
 import { useDecksSablier } from './useDecksSablier.js';
 import {
   preparerDuelTutoriel,
@@ -2127,6 +2129,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const musiqueRef = useRef(null);
   const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
+  // Le décor 3D de la table (relief, lumière, particules) : mémorisé sur l'appareil.
+  const [decor3dActif, setDecor3dActif] = useState(readRpgTable3dPref);
+  const basculerDecor3d = () => setDecor3dActif((actif) => { writeRpgTable3dPref(!actif); return !actif; });
   useEffect(() => { writeRpgSoundPref(sonActif); }, [sonActif]);
   useEffect(() => {
     musiqueRef.current = new RpgAmbientMusic();
@@ -4147,6 +4152,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         onDragLeave={quitterZoneDepot}
         onDrop={deposerCarteSurTable}
       >
+        <RpgTableScene3D plateau={plateau} enabled={decor3dActif} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse)} />
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
           {tutorielActif && <span className="rpg-duel-nav__tutorial">PARTIE D’ENTRAÎNEMENT</span>}
@@ -4167,6 +4173,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
           >
             <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+          </button>
+          <button
+            type="button"
+            className={`rpg-duel-nav__decor3d${decor3dActif ? ' is-on' : ''}`}
+            onClick={basculerDecor3d}
+            aria-pressed={decor3dActif}
+            title={decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+            aria-label={decor3dActif ? 'Désactiver le décor 3D de la table' : 'Activer le décor 3D de la table'}
+          >
+            <span aria-hidden="true">3D</span>
           </button>
           <button
             type="button"
