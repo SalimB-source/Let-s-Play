@@ -1449,6 +1449,44 @@ function animationsReduites() {
   return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 }
 
+// ── SFX réactifs du duel : pioche, destruction, impact, victoire/défaite, phases ──
+// Monté seulement pendant la partie : ses hooks ne doivent pas passer après les
+// retours anticipés de RpgDuelPage (menu, duel absent), sinon l'ordre des hooks
+// change d'un rendu à l'autre et la page plante au lancement.
+function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impactEcran, jouerSfx }) {
+  const prevVainqueurRef = useRef(null);
+  const prevPhaseRef = useRef(null);
+  const prevDestructionCountRef = useRef(0);
+  useEffect(() => {
+    if (vainqueur && prevVainqueurRef.current !== vainqueur) {
+      jouerSfx(vainqueur === 'joueur' ? 'victoire' : 'defaite');
+    }
+    prevVainqueurRef.current = vainqueur;
+  }, [vainqueur]);
+  useEffect(() => {
+    if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
+      if (phaseDuelActive === 'combat') jouerSfx('phase');
+      else if (phaseDuelActive === 'reponse') jouerSfx('annonce');
+      else if (phaseDuelActive === 'principal' || phaseDuelActive === 'adverse') jouerSfx('tour');
+    }
+    prevPhaseRef.current = phaseDuelActive;
+  }, [phaseDuelActive]);
+  useEffect(() => {
+    if (cartesEnDestruction.length > prevDestructionCountRef.current) {
+      const last = cartesEnDestruction[cartesEnDestruction.length - 1];
+      jouerSfx(last?.bruleeParBraise ? 'burn' : 'destruction');
+    }
+    prevDestructionCountRef.current = cartesEnDestruction.length;
+  }, [cartesEnDestruction]);
+  useEffect(() => {
+    if (impactEcran) {
+      jouerSfx(impactEcran.mode === 'received' ? 'degats' : 'degats_sorcier');
+      jouerSfx('impact', 0.08);
+    }
+  }, [impactEcran?.token]);
+  return null;
+}
+
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
   const [ecran, setEcran] = useState('jouer');
   const landscapeRef = useRef(null);
@@ -2091,37 +2129,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return somme === attaquant.atk;
   });
 
-  // ── SFX réactifs : pioche, destruction, impact, victoire/défaite, phases ──
-  const prevVainqueurRef = useRef(null);
-  const prevPhaseRef = useRef(null);
-  const prevDestructionCountRef = useRef(0);
-  useEffect(() => {
-    if (vainqueur && prevVainqueurRef.current !== vainqueur) {
-      jouerSfx(vainqueur === 'joueur' ? 'victoire' : 'defaite');
-    }
-    prevVainqueurRef.current = vainqueur;
-  }, [vainqueur]);
-  useEffect(() => {
-    if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
-      if (phaseDuelActive === 'combat') jouerSfx('phase');
-      else if (phaseDuelActive === 'reponse') jouerSfx('annonce');
-      else if (phaseDuelActive === 'principal' || phaseDuelActive === 'adverse') jouerSfx('tour');
-    }
-    prevPhaseRef.current = phaseDuelActive;
-  }, [phaseDuelActive]);
-  useEffect(() => {
-    if (cartesEnDestruction.length > prevDestructionCountRef.current) {
-      const last = cartesEnDestruction[cartesEnDestruction.length - 1];
-      jouerSfx(last?.bruleeParBraise ? 'burn' : 'destruction');
-    }
-    prevDestructionCountRef.current = cartesEnDestruction.length;
-  }, [cartesEnDestruction]);
-  useEffect(() => {
-    if (impactEcran) {
-      jouerSfx(impactEcran.mode === 'received' ? 'degats' : 'degats_sorcier');
-      jouerSfx('impact', 0.08);
-    }
-  }, [impactEcran?.token]);
 
 
 
@@ -3420,6 +3427,13 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
       data-scene="duel"
       onPointerDown={demarrerAppuiLongCarte}
     >
+      <SfxReactifsDuel
+        vainqueur={vainqueur}
+        phaseDuelActive={phaseDuelActive}
+        cartesEnDestruction={cartesEnDestruction}
+        impactEcran={impactEcran}
+        jouerSfx={jouerSfx}
+      />
       {viewport.portrait && <div className="rpg-rotate-prompt" role="dialog" aria-modal="true" aria-label="Jouer en paysage">
         <span className="rpg-rotate-prompt__icon" aria-hidden="true">↻</span>
         <h2>Le duel se joue en paysage</h2>
