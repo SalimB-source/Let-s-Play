@@ -4128,7 +4128,7 @@
   isolation: isolate;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: var(--rpg-card-border, 3px) solid var(--rpg-frame-color, #f1f3f5);
+  border: 3px solid var(--rpg-frame-color, #f1f3f5);
   border-radius: 12px 12px 7px 7px;
   background: #171218;
 }
@@ -4604,7 +4604,7 @@
 .rpg-card-destruction-fx,
 .rpg-card-pile__card--top,
 .rpg-card-pile--deck .rpg-card-pile__card--top {
-  border: var(--rpg-card-border, 3px) solid var(--rpg-frame-color, #f1f3f5);
+  border: 3px solid var(--rpg-frame-color, #f1f3f5);
 }
 
 /* ── Cadres brillants : hybrides (une teinte par combinaison) et mythiques ──
