@@ -16,12 +16,25 @@
  */
 
 import { RPG_DECKS, rpgValiderDeck } from './rpgCards.js';
+import { deckMaisonEstSelectionnable, deckMaisonParId } from './rpgDeckBuilder.js';
 
 export const RPG_DECK_STORAGE_KEY = 'letsplay_sablier_deck_v1';
 
 /** Un deck se joue s'il est complet : 40 cartes qui respectent les quotas (`rpgValiderDeck`). */
 export function deckEstSelectionnable(deck) {
   return Array.isArray(deck?.cardIds) && rpgValiderDeck(deck.cardIds).ok;
+}
+
+/** Un deck maison se joue de plus entièrement dans la collection du joueur (`rpgDeckBuilder.js`). */
+export function deckMaisonJouable(deckId, decksMaison = [], collection = null) {
+  const deck = deckMaisonParId(decksMaison, deckId);
+  return deck ? deckMaisonEstSelectionnable(deck, collection) : false;
+}
+
+/** Un deck — du catalogue ou maison — se joue-t-il ? Les decks du catalogue ne consultent jamais la collection. */
+export function deckSeJoue(deck, collection = null) {
+  if (!deck) return false;
+  return deck.maison ? deckMaisonEstSelectionnable(deck, collection) : deckEstSelectionnable(deck);
 }
 
 /** Deck de jeu tant que le joueur n'a rien choisi : le premier deck de départ du joueur. */
@@ -48,14 +61,15 @@ export function deckAdversePour(deckJoueur) {
     .find((deck) => deck && deck.id !== joueurId && deckEstSelectionnable(deck)) ?? null;
 }
 
-function estDeckJouable(deckId) {
-  return typeof deckId === 'string'
-    && RPG_DECKS.some((deck) => deck.id === deckId && deckEstSelectionnable(deck));
+function estDeckJouable(deckId, decksMaison = [], collection = null) {
+  if (typeof deckId !== 'string') return false;
+  if (deckId.startsWith('maison-')) return deckMaisonJouable(deckId, decksMaison, collection);
+  return RPG_DECKS.some((deck) => deck.id === deckId && deckEstSelectionnable(deck));
 }
 
 /** Identifiant du deck jouable décrit par une sauvegarde (`{ deckId }`), sinon `null`. */
-export function normaliserDeckChoisi(value) {
-  return estDeckJouable(value?.deckId) ? value.deckId : null;
+export function normaliserDeckChoisi(value, decksMaison = [], collection = null) {
+  return estDeckJouable(value?.deckId, decksMaison, collection) ? value.deckId : null;
 }
 
 function browserStorage() {
@@ -67,11 +81,11 @@ function browserStorage() {
 }
 
 /** Charge le deck choisi sur cet appareil ; `null` s'il n'y en a pas (ou plus de valide). */
-export function chargerDeckChoisi() {
+export function chargerDeckChoisi(decksMaison = [], collection = null) {
   const stockage = browserStorage();
   if (!stockage) return null;
   try {
-    return normaliserDeckChoisi(JSON.parse(stockage.getItem(RPG_DECK_STORAGE_KEY) ?? 'null'));
+    return normaliserDeckChoisi(JSON.parse(stockage.getItem(RPG_DECK_STORAGE_KEY) ?? 'null'), decksMaison, collection);
   } catch {
     return null;
   }
@@ -82,8 +96,8 @@ export function chargerDeckChoisi() {
  * pas un deck jouable ou si le stockage est indisponible (le choix reste alors valable
  * pour la session, mais ne survivra pas au rechargement).
  */
-export function sauverDeckChoisi(deckId) {
-  if (!estDeckJouable(deckId)) return false;
+export function sauverDeckChoisi(deckId, decksMaison = [], collection = null) {
+  if (!estDeckJouable(deckId, decksMaison, collection)) return false;
   const stockage = browserStorage();
   if (!stockage) return false;
   try {

@@ -403,8 +403,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     ['djinn-du-souk', 'djinn-du-souk'], ['ghul-des-cendres', 'ghul-des-cendres'],
     ['sahir-des-braises', 'sahir-des-braises'], ['ifrit-des-ergs', 'ifrit-des-ergs'],
     ['ifrit-al-ahmar', 'ifrit-al-ahmar'],
-    ['trait-de-braise', 'trait-de-braise'], ['fureur-du-souk', 'fureur-du-souk'],
-    ['rafale-du-minaret', 'rafale-du-minaret'], ['nuage-de-cendres', 'nuage-de-cendres'],
+    ['trait-de-braise', 'trait-de-braise'],
+    ['nuage-de-cendres', 'nuage-de-cendres'],
     ['cavalier-amazigh-du-desert', 'cavalier-amazigh-du-desert'],
     ['veilleur-du-couchant', 'veilleur-du-couchant'], ['vent-rouge', 'vent-rouge'],
     ['petra', 'petra'], ['feriel', 'feriel'],
@@ -1609,12 +1609,12 @@ test('après le choix des bloqueurs, un éphémère répond avant les dégâts e
   attaquant.ready = true;
   donner(duel, 'sorcier', 'chien-du-guet');
   const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  donner(duel, 'joueur', 'rafale-du-minaret');
+  donner(duel, 'joueur', 'trait-de-braise');
 
   const blocages = rpgChoisirBloqueurs(duel, 'joueur', [attaquant.id]);
   assert.deepEqual(blocages[attaquant.id], [bloqueur.id], 'le sorcier assigne son bloqueur avant de rendre la priorité');
   assert.equal(rpgOuvrirFenetreReponse(duel, 'joueur'), true, 'la fenêtre de réponse s’ouvre pendant le tour du joueur');
-  const reponse = rpgLancerMagie(duel, 'joueur', 'rafale-du-minaret', bloqueur.id);
+  const reponse = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', bloqueur.id);
   assert.equal(reponse.ok, true, 'le joueur peut lancer un éphémère après le choix du bloqueur');
   assert.equal(duel.sorcier.creatures.includes(bloqueur), false, 'l’éphémère retire le bloqueur avant les dégâts');
 
@@ -1651,7 +1651,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et éphémères de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 23);
+  assert.equal(RPG_MAGIE_CARDS.length, 20);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les quatre couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -1659,8 +1659,15 @@ test('les magies : types, coûts, cibles et éphémères de combat', () => {
   }
   assert.ok(RPG_MAGIE_CARDS.some((c) => c.cibles.includes('sorcier')), 'certaines magies ciblent les joueurs');
   assert.ok(RPG_MAGIE_CARDS.some((c) => c.cibles.includes('creature')), 'certaines magies ciblent les créatures');
-  assert.ok(RPG_MAGIE_CARDS.find((c) => c.id === 'rafale-du-minaret')?.instant);
+  assert.ok(RPG_MAGIE_CARDS.find((c) => c.id === 'trait-de-braise')?.instant);
   assert.ok(RPG_MAGIE_CARDS.find((c) => c.id === 'brisure-de-verre')?.instant);
+  // Rafale du minaret, Sentence de la Liste et Fureur du souk ont été retirées
+  // du jeu : elles ne figurent plus ni au catalogue ni dans aucun deck.
+  for (const idRetire of ['rafale-du-minaret', 'sentence-de-la-liste', 'fureur-du-souk']) {
+    assert.equal(RPG_MAGIE_CARDS.some((c) => c.id === idRetire), false, `${idRetire} a quitté le jeu`);
+    assert.equal(RPG_DECKS.some((deck) => deck.cardIds.includes(idRetire)), false,
+      `${idRetire} ne reste dans aucun deck de départ`);
+  }
 });
 
 test('un bloqueur ne peut arrêter qu’un seul attaquant ; les autres frappent les PV', () => {
@@ -2020,7 +2027,7 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     'les Sentiers de cendre contiennent une Anqa mythique');
   for (const [deck, terrainsAttendus, creaturesAttendues, magiesAttendues] of [
     [RPG_DECK_JOUEUR_BASE, 17, 18, 5],
-    [RPG_DECK_SORCIER_BASE, 18, 10, 12],
+    [RPG_DECK_SORCIER_BASE, 22, 12, 6],
     [RPG_DECK_NEIGE_BASE, 17, 16, 7],
   ]) {
     const valide = rpgValiderDeck(deck);
@@ -2133,10 +2140,12 @@ test('Trait de braise coûte 2, est un éphémère et inflige 3 dégâts à une 
   donner(duel, 'joueur', 'rapport-du-greffier');
   rpgLancerMagie(duel, 'joueur', 'rapport-du-greffier');
   assert.equal(duel.joueur.main.length, mainAvant + 2, 'donner +1, lancée −1, piochées +2');
-  donner(duel, 'joueur', 'fureur-du-souk');
+  // Sans creature adverse : la seule cible légale du Trait est le sorcier.
   const pvAvant = duel.sorcier.pv;
-  rpgLancerMagie(duel, 'joueur', 'fureur-du-souk');
-  assert.equal(duel.sorcier.pv, pvAvant - 4, 'Fureur du souk touche le sorcier');
+  donner(duel, 'joueur', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier').ok, true,
+    'la Fureur du souk retirée, le Trait reste le sort qui frappe le sorcier');
+  assert.equal(duel.sorcier.pv, pvAvant - 3, 'le Trait touche le sorcier de 3 dégâts');
 });
 
 test('vainqueur : nul tant que les deux sorciers sont debout', () => {

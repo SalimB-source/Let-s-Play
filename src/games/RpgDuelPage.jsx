@@ -38,14 +38,23 @@ import {
 } from './rpgStoryTours.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
+import RpgDeckAtelier from './RpgDeckAtelier.jsx';
+import { useDecksSablier } from './useDecksSablier.js';
 import {
   chargerDeckChoisi,
   deckAdverseParDefaut,
   deckAdversePour,
   deckEstSelectionnable,
   deckParDefaut,
+  deckSeJoue,
   sauverDeckChoisi,
 } from './rpgDeckChoice.js';
+import {
+  RPG_DECK_NOM_MAX,
+  RPG_DECKS_MAISON_LIMITE,
+  nomDeckMaisonParDefaut,
+  rpgValiderDeckMaison,
+} from './rpgDeckBuilder.js';
 import {
   deckColors,
   deckCorrespondCouleur,
@@ -1035,27 +1044,37 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onHoverCard, onLeaveHoverCard, onPlaySfx }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
   const [deckCouleur, setDeckCouleur] = useState('toutes');
   const [confirmation, setConfirmation] = useState(null);
+  // La suppression d'un deck maison se confirme en deux temps (jamais de `window.confirm`).
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false);
+  // L'atelier : `null` (fermé), `{ mode: 'nouveau' }`, `{ mode: 'edition', id }`
+  // ou `{ mode: 'copie', deck }` — partir d'un deck du catalogue pour l'adapter.
+  const [atelier, setAtelier] = useState(null);
   const detailRef = useRef(null);
   const play = (n) => { try { onPlaySfx?.(n); } catch {} };
-  const selectedDeck = RPG_DECKS.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
-  const playerDeck = deckEstSelectionnable(selectedDeck) ? selectedDeck : deckParDefaut();
+  // L'étagère : les cinq decks du catalogue, puis les boîtiers maison.
+  const decksTous = [...RPG_DECKS, ...decksMaison];
+  const selectedDeck = decksTous.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
+  const playerDeck = deckSeJoue(selectedDeck, collection) ? selectedDeck : deckParDefaut();
   // Le sorcier joue la Cour des Djinns — sauf si c'est le deck du joueur : il prend alors un autre deck.
   const opponentDeck = deckAdversePour(playerDeck);
   // Filtre par couleur de l'étagère : un deck écarté n'est pas dessiné et ne peut pas rester ouvert.
-  const filtresCouleur = filtresCouleurDecks(RPG_DECKS);
-  const decksVisibles = filtrerDecksParCouleur(RPG_DECKS, deckCouleur);
+  const filtresCouleur = filtresCouleurDecks(decksTous);
+  const decksVisibles = filtrerDecksParCouleur(decksTous, deckCouleur);
   // La liste des cartes n'existe qu'une fois un deck cliqué : `openDeck` reste nul
   // (et la liste n'est même pas calculée) tant que le joueur n'a rien ouvert.
   const openDeck = decksVisibles.find((deck) => deck.id === openDeckId) ?? null;
+  const openJouable = openDeck ? deckSeJoue(openDeck, collection) : false;
   const openStats = openDeck ? deckStats(openDeck) : { terrains: 0, creatures: 0, magies: 0 };
   const openCards = openDeck ? deckCardList(openDeck) : [];
-  const openValidation = openDeck ? rpgValiderDeck(openDeck.cardIds) : { ok: false, raison: 'Aucun deck ouvert.' };
+  const openValidation = openDeck
+    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
+    : { ok: false, raisons: ['Aucun deck ouvert.'] };
   const cartesCatalogue = RPG_DUEL_CARDS.filter((carte) => {
     const colors = cardColors(carte);
     const couleurCorrespond = catalogueCouleur === 'toutes'
@@ -1067,31 +1086,42 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
     return cardId ? cardArt(cardId) : '';
   };
   const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .96) 0%, rgba(8, 7, 13, .82) 48%, rgba(8, 7, 13, .72) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
-  // Quitter l'onglet Deck referme l'étagère : le prochain passage repart sans liste.
-  useEffect(() => { if (screen !== 'decks') setOpenDeckId(null); }, [screen]);
+  // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
+  useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
   // Sur écran étroit, la fiche s'ouvre sous l'étagère : on l'amène à l'écran.
   useEffect(() => {
     const fiche = detailRef.current;
-    if (!openDeckId || !fiche?.scrollIntoView) return;
+    if (!openDeckId || atelier || !fiche?.scrollIntoView) return;
     if (fiche.getBoundingClientRect().top <= window.innerHeight * 0.55) return;
     const calme = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     fiche.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' });
-  }, [openDeckId]);
+  }, [openDeckId, atelier]);
   // « Sélectionner » : le deck devient le deck de jeu (le parent le mémorise sur l'appareil).
   // Ouvrir un boîtier, lui, ne fait que montrer la liste de ses cartes.
   const choisirDeck = (deck) => {
-    if (!deckEstSelectionnable(deck) || deck.id === playerDeck?.id) return;
+    if (!deckSeJoue(deck, collection) || deck.id === playerDeck?.id) return;
     setConfirmation({ deckId: deck.id, enregistre: onSelectDeck(deck.id) === true });
   };
   // Jouer avec un deck en fait le deck de jeu ; le duel démarre avec lui sans attendre le rendu.
   const jouerAvec = (deck) => {
-    if (!deckEstSelectionnable(deck)) return;
+    if (!deckSeJoue(deck, collection)) return;
     onSelectDeck(deck.id);
     onStartGame(deck.id);
   };
   const changerCouleur = (couleur) => {
     setDeckCouleur(couleur);
     if (openDeck && !deckCorrespondCouleur(openDeck, couleur)) setOpenDeckId(null);
+  };
+  // L'enregistrement de l'atelier passe par le parent (casier + synchronisation) ;
+  // succès : l'atelier se referme et l'étagère confirme sur le boîtier neuf.
+  const enregistrerAtelier = (enregistrement) => {
+    const resultat = onEnregistrerDeckMaison(enregistrement);
+    if (resultat?.ok) {
+      setAtelier(null);
+      setConfirmation({ deckId: resultat.deck.id, enregistre: resultat.enregistre === true });
+      setOpenDeckId(resultat.deck.id);
+    }
+    return resultat;
   };
 
   return (
@@ -1153,7 +1183,29 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel en cours</button>}
             </aside>
           </main>
-        ) : screen === 'decks' ? (
+        ) : screen === 'decks' ? (atelier ? (
+          <main className="rpg-deck-catalog rpg-deck-catalog--atelier" aria-label="Atelier de deck">
+            <RpgDeckAtelier
+              deckInitial={atelier.mode === 'edition'
+                ? decksMaison.find((deck) => deck.id === atelier.id) ?? null
+                : null}
+              nomInitial={atelier.mode === 'copie'
+                ? `${atelier.deck.nom ?? atelier.deck.name} (copie)`.slice(0, RPG_DECK_NOM_MAX)
+                : nomDeckMaisonParDefaut(decksMaison)}
+              cardIdsInitiaux={atelier.mode === 'copie'
+                // Les cartes non possédées d'un deck copié sont retirées d'office :
+                // l'atelier ne compose qu'avec ce que la collection autorise.
+                ? atelier.deck.cardIds.filter((id) => collection.includes(id))
+                : []}
+              collection={collection}
+              artUrl={cardArt}
+              onEnregistrer={enregistrerAtelier}
+              onAnnuler={() => setAtelier(null)}
+              onSupprimer={(id) => { onSupprimerDeckMaison(id); setAtelier(null); setConfirmation({ supprime: true }); }}
+              surSfx={play}
+            />
+          </main>
+        ) : (
           <main className={`rpg-deck-catalog ${openDeck ? 'rpg-deck-catalog--open' : 'rpg-deck-catalog--closed'}`}>
             <aside className="rpg-deck-catalog__rail">
               <div className="rpg-deck-catalog__intro">
@@ -1161,7 +1213,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Vos decks</h2>
                 <p>{openDeck
                   ? 'Cliquez sur un autre boîtier pour changer de deck, ou fermez celui-ci pour masquer sa liste.'
-                  : 'Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties.'}</p>
+                  : 'Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.'}</p>
+                <p className="rpg-deck-catalog__sync" role="status">
+                  {statutSync === 'synchronise'
+                    ? '☁ Synchronisé avec votre compte'
+                    : statutSync === 'attente'
+                      ? '☁ Synchronisation du compte…'
+                      : statutSync === 'horsligne'
+                        ? '☁ Compte non rejoint : decks gardés sur cet appareil'
+                        : 'Decks gardés sur cet appareil'}
+                </p>
               </div>
               <div className="rpg-deck-filter" role="group" aria-label="Filtrer les decks par couleur">
                 <span className="rpg-deck-filter__label" aria-hidden="true">Couleur</span>
@@ -1189,11 +1250,30 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <p className="rpg-deck-filter__count" aria-live="polite">{decksVisibles.length} / {RPG_DECKS.length} deck{RPG_DECKS.length === 1 ? '' : 's'}</p>
               </div>
               <div className="rpg-deck-catalog__choices">
-                {RPG_DECKS.map((deck) => {
+                <button
+                  type="button"
+                  className="rpg-deck-choice rpg-deck-choice--neuf"
+                  disabled={decksMaison.length >= RPG_DECKS_MAISON_LIMITE}
+                  aria-label={decksMaison.length >= RPG_DECKS_MAISON_LIMITE
+                    ? `Étagère maison pleine (${RPG_DECKS_MAISON_LIMITE} decks) : supprimez un deck pour en créer un autre`
+                    : 'Créer un nouveau deck dans l’atelier'}
+                  onClick={() => { play('select'); setAtelier({ mode: 'nouveau' }); }}
+                >
+                  <span className="rpg-deck-choice__neuf-crate" aria-hidden="true"><b>+</b></span>
+                  <span className="rpg-deck-choice__text">
+                    <small>ATELIER</small>
+                    <strong>Nouveau deck</strong>
+                    <span className="rpg-deck-choice__meta">
+                      <b>{decksMaison.length} / {RPG_DECKS_MAISON_LIMITE} maison{decksMaison.length > 1 ? 's' : ''}</b>
+                      <span className="rpg-deck-choice__cta">Composer →</span>
+                    </span>
+                  </span>
+                </button>
+                {decksVisibles.map((deck) => {
                   if (!deckCorrespondCouleur(deck, deckCouleur)) return null; // écarté par le filtre de couleur
                   const ouvert = openDeck?.id === deck.id;
                   const actif = playerDeck?.id === deck.id;
-                  const jouable = deckEstSelectionnable(deck);
+                  const jouable = deckSeJoue(deck, collection);
                   return (
                     <div
                       key={deck.id}
@@ -1201,16 +1281,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       onPointerMove={inclinerBoitier}
                       onPointerLeave={redresserBoitier}
                     >
-                      <DeckBox deck={deck} index={RPG_DECKS.indexOf(deck)} size={openDeck ? 'mini' : 'shelf'} />
+                      <DeckBox deck={deck} index={decksTous.indexOf(deck)} size={openDeck ? 'mini' : 'shelf'} />
                       <button
                         type="button"
                         className="rpg-deck-choice__button"
                         aria-pressed={ouvert}
                         aria-controls={openDeck ? 'rpg-deck-detail' : undefined}
-                        onClick={() => { play(ouvert ? 'annuler' : 'select'); setOpenDeckId(ouvert ? null : deck.id); }}
+                        onClick={() => { play(ouvert ? 'annuler' : 'select'); setSuppressionEnCours(false); setOpenDeckId(ouvert ? null : deck.id); }}
                       >
                         <span className="rpg-deck-choice__text">
-                          <small>{jouable ? 'DECK JOUEUR' : 'DECK INCOMPLET'}</small>
+                          <small>{deck.maison ? 'DECK MAISON' : jouable ? 'DECK JOUEUR' : 'DECK INCOMPLET'}</small>
                           <strong>{deck.name}</strong>
                           <em>{deckColorGlyph(deck)} {deckColorLabel(deck)}{deckColors(deck).length > 1 ? ' · Hybride' : ' · Mono'}</em>
                           <span className="rpg-deck-choice__meta">
@@ -1232,8 +1312,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </div>
                   );
                 })}
-                {RPG_DECKS.length === 0 && <p className="rpg-deck-catalog__empty">Aucun deck n’est encore disponible.</p>}
-                {RPG_DECKS.length > 0 && decksVisibles.length === 0 && <p className="rpg-deck-catalog__empty">Aucun deck de cette couleur.</p>}
+                {decksTous.length === 0 && <p className="rpg-deck-catalog__empty">Aucun deck n’est encore disponible.</p>}
+                {decksTous.length > 0 && decksVisibles.length === 0 && <p className="rpg-deck-catalog__empty">Aucun deck de cette couleur.</p>}
               </div>
               {playerDeck && (
                 <p className="rpg-deck-catalog__status" role="status">
@@ -1246,6 +1326,14 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </span>
                   )}
                   {hasGame && confirmation?.deckId === playerDeck.id && <span>Le duel en cours garde son deck : ce choix vaudra pour le prochain.</span>}
+                  {confirmation?.deckId && confirmation.deckId !== playerDeck?.id && (
+                    <span className={confirmation.enregistre ? 'is-saved' : 'is-unsaved'}>
+                      {confirmation.enregistre
+                        ? '✓ Mémorisé sur cet appareil.'
+                        : 'Deck enregistré pour la session : le stockage du navigateur est indisponible.'}
+                    </span>
+                  )}
+                  {confirmation?.supprime && <span className="is-unsaved">Deck supprimé de l'étagère.</span>}
                 </p>
               )}
               {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
@@ -1256,7 +1344,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <button type="button" className="rpg-menu-link rpg-deck-detail__close" onClick={() => { play('annuler'); setOpenDeckId(null); }}>✕ Fermer le deck</button>
                 <header className="rpg-deck-detail__header">
                   <DeckBox deck={openDeck} size="showcase" />
-                  <div><span className="rpg-mode-menu__eyebrow">{deckEstSelectionnable(openDeck) ? 'VOTRE DECK' : 'DECK INCOMPLET'} · {deckColorGlyph(openDeck)} {deckColorLabel(openDeck).toUpperCase()} · {deckColors(openDeck).length > 1 ? 'HYBRIDE' : 'MONO'}</span><h2>{openDeck.name}</h2><p>{openDeck.archetype}</p></div>
+                  <div><span className="rpg-mode-menu__eyebrow">{openDeck.maison ? 'DECK MAISON' : openJouable ? 'VOTRE DECK' : 'DECK INCOMPLET'} · {deckColorGlyph(openDeck)} {deckColorLabel(openDeck).toUpperCase()} · {deckColors(openDeck).length > 1 ? 'HYBRIDE' : 'MONO'}</span><h2>{openDeck.name}</h2><p>{openDeck.archetype ?? (openDeck.maison ? 'Composé dans votre atelier.' : null)}</p></div>
                 </header>
                 <p className="rpg-deck-detail__description">{openDeck.description}</p>
                 <div className="rpg-deck-detail__stats" aria-label="Répartition du deck">
@@ -1264,7 +1352,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <span><b>{openStats.terrains}</b><small>terrains</small></span>
                   <span><b>{openStats.creatures}</b><small>créatures</small></span>
                   <span><b>{openStats.magies}</b><small>magies</small></span>
-                  <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : openValidation.raison}</small></span>
+                  <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : (openValidation.raisons ?? [openValidation.raison]).filter(Boolean).join(' · ')}</small></span>
                 </div>
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
                 <ul className="rpg-deck-list">
@@ -1276,17 +1364,47 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </li>
                   ))}
                 </ul>
-                {deckEstSelectionnable(openDeck) ? (
+                <div className="rpg-deck-detail__actions">
+                  {openDeck.maison ? (
+                    <>
+                      <button type="button" className="rpg-menu-button" onClick={() => { play('menu'); setAtelier({ mode: 'edition', id: openDeck.id }); }}>
+                        ✎ Modifier dans l'atelier
+                      </button>
+                      <button type="button" className="rpg-menu-button" onClick={() => { play('menu'); setAtelier({ mode: 'copie', deck: openDeck }); }}>
+                        ⧉ Dupliquer
+                      </button>
+                      <button
+                        type="button"
+                        className="rpg-menu-button rpg-deck-detail__delete"
+                        onClick={() => {
+                          if (!suppressionEnCours) { setSuppressionEnCours(true); return; }
+                          play('erreur');
+                          onSupprimerDeckMaison(openDeck.id);
+                          setSuppressionEnCours(false);
+                          setOpenDeckId(null);
+                          setConfirmation({ supprime: true });
+                        }}
+                      >
+                        {suppressionEnCours ? 'Confirmer la suppression' : 'Supprimer'}
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="rpg-menu-button" onClick={() => { play('menu'); setAtelier({ mode: 'copie', deck: openDeck }); }}>
+                      ⧉ Copier pour l'adapter dans l'atelier
+                    </button>
+                  )}
+                </div>
+                {openJouable ? (
                   <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-deck-detail__play" onClick={() => { play('select'); jouerAvec(openDeck); }}>
                     ⚔ Jouer avec ce deck <span aria-hidden="true">→</span>
                   </button>
                 ) : (
-                  <p className="rpg-deck-detail__note">Ce deck n’est pas valide ({openValidation.raison}) : il ne peut pas être joué.</p>
+                  <p className="rpg-deck-detail__note">Ce deck n’est pas jouable ({(openValidation.raisons ?? [openValidation.raison]).filter(Boolean).join(' · ')}) : il ne peut pas être sélectionné ni joué.</p>
                 )}
               </section>
             )}
           </main>
-        ) : screen === 'histoire' ? (
+        )) : screen === 'histoire' ? (
           <main className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
             <div className="rpg-story__intro">
               <div>
@@ -1514,35 +1632,47 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (ecran !== 'partie') landscapeRef.current?.leave();
   }, [ecran]);
   // Mode Histoire : la première fois qu'un étage est remporté, il est marqué
-  // déblayé et sauvegardé sur l'appareil (une seule fois par duel).
+  // déblayé et sauvegardé sur l'appareil (une seule fois par duel). Sa
+  // récompense — les cartes rendues par l'étage — rejoint la collection ; le
+  // compte connecté reçoit l'union, pour les autres appareils.
   useEffect(() => {
     const duelCourant = duelRef.current;
     if (!duelCourant || !histoireEtageId) return;
     if (rpgVainqueur(duelCourant) !== 'joueur') return;
     if (histoireVictoireMarqueeRef.current === histoireEtageId) return;
     histoireVictoireMarqueeRef.current = histoireEtageId;
-    setProgressionHistoire((progression) => {
-      const maj = marquerEtageVaincu(progression, histoireEtageId);
-      sauverProgressionHistoire(maj);
-      return maj;
-    });
+    const maj = marquerEtageVaincu(progressionHistoire, histoireEtageId);
+    sauverProgressionHistoire(maj);
+    setProgressionHistoire(maj);
+    noterVictoireEtage(histoireEtageId, maj);
   });
   const reprendrePartie = () => {
     landscapeRef.current?.enter();
     setEcran('partie');
   };
+  // Decks maison et collection : l'atelier écrit dans le casier local, le compte
+  // connecté synchronise le tout en tâche de fond (`useDecksSablier.js`).
+  const {
+    decksMaison,
+    collection,
+    statutSync,
+    enregistrerDeckMaison,
+    supprimerDeckMaison,
+    noterVictoireEtage,
+  } = useDecksSablier();
+  const decksTous = [...RPG_DECKS, ...decksMaison];
   // Le deck de jeu : celui que le joueur a sélectionné lors d'un lancement précédent
   // (mémorisé sur l'appareil), sinon le deck par défaut.
-  const [deckSelectionneId, setDeckSelectionneId] = useState(() => chargerDeckChoisi() ?? deckParDefaut()?.id ?? '');
+  const [deckSelectionneId, setDeckSelectionneId] = useState(() => chargerDeckChoisi(decksMaison, collection) ?? deckParDefaut()?.id ?? '');
   // Le deck du duel en cours : changer de sélection dans le menu ne change pas un duel déjà lancé.
   const [deckDuelId, setDeckDuelId] = useState(null);
   // Le deck du sorcier en duel libre (null : celui par défaut, ou un étage du mode Histoire).
   const [deckAdverseId, setDeckAdverseId] = useState(null);
   const choisirDeck = (deckId) => {
-    const deck = RPG_DECKS.find((candidat) => candidat.id === deckId);
-    if (!deckEstSelectionnable(deck)) return false;
+    const deck = decksTous.find((candidat) => candidat.id === deckId);
+    if (!deckSeJoue(deck, collection)) return false;
     setDeckSelectionneId(deck.id);
-    return sauverDeckChoisi(deck.id);
+    return sauverDeckChoisi(deck.id, decksMaison, collection);
   };
   // Plateau du duel : le joueur n'en choisit aucun. C'est le deck de l'un des
   // deux duellistes qui impose son terrain, et le tirage du lancement
@@ -2064,6 +2194,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             reinitialiserProgressionHistoire();
             setProgressionHistoire(progressionHistoireVide());
           }}
+          decksMaison={decksMaison}
+          collection={collection}
+          statutSync={statutSync}
+          onEnregistrerDeckMaison={enregistrerDeckMaison}
+          onSupprimerDeckMaison={supprimerDeckMaison}
           onHoverCard={afficherApercuSurvol}
           onLeaveHoverCard={masquerApercuSurvol}
           onPlaySfx={jouerSfx}
@@ -2083,7 +2218,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const monTour = duel.tour === 'joueur' && !vainqueur;
-  const deckJoueurAffiche = RPG_DECKS.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckEstSelectionnable(deck)) ?? RPG_DECKS[0];
+  const deckJoueurAffiche = decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);

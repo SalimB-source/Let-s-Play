@@ -26,13 +26,17 @@ export const RPG_STORY_DECKS = {
   'maree-des-abysses': RPG_DECK_MAREE_BASE,
   'sentiers-de-cendre': RPG_DECK_HYBRIDE_BASE,
   // Hybride agressive : le retrait passe devant le rempart, la Souffleuse
-  // frappe avec le verre (Fériel) plutôt qu'elle ne se barricade.
+  // frappe avec le verre (Fériel) plutôt qu'elle ne se barricade. La Rafale du
+  // minaret et la Fureur du souk ont été retirées du jeu : le Trait de braise
+  // — déjà trois fois — reste son retrait instantané, et les deux cases
+  // libérées passent au Vent rouge, la carte bicolore de la maison, et à un
+  // second Braisier du souk, qui presse l'adversaire.
   'souffleuse-de-verre': [
     ...RPG_DECK_HYBRIDE_BASE.filter((id) => id !== 'rempart-de-dunes' && id !== 'veilleur-du-couchant'),
     'veilleur-du-couchant',
     'trait-de-braise',
-    'rafale-du-minaret',
-    'rafale-du-minaret',
+    'vent-rouge',
+    'braisier-du-souk',
   ],
   // La Neige du Serment, telle qu'elle se joue en duel libre.
   'serment-des-neuf-hivers': RPG_DECK_NEIGE_BASE,

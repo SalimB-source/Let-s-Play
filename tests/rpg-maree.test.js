@@ -55,16 +55,16 @@ test('la Marée des abysses est un deck d’Eau valide de 40 cartes, avec les qu
 
 test('Contresort des abîmes contre la carte annoncée, sort ou créature : la carte est défaussée sans effet', () => {
   const duel = duelVide();
-  annoncer(duel, 'fureur-du-souk');
+  annoncer(duel, 'trait-de-braise');
   donner(duel, 'joueur', 'contresort-des-abimes');
   mana(duel, 'joueur', 'eau', 2);
   const res = contre(duel, 'contresort-des-abimes');
   assert.equal(res.ok, true);
   assert.equal(res.contre, true);
-  assert.equal(res.carteContree, 'fureur-du-souk');
+  assert.equal(res.carteContree, 'trait-de-braise');
   assert.equal(duel.annonce, null, 'l’annonce est défaite');
-  assert.equal(duel.sorcier.main.includes('fureur-du-souk'), false, 'la carte quitte la main du sorcier');
-  assert.ok(duel.sorcier.cimetiere.includes('fureur-du-souk'), 'elle va au cimetière');
+  assert.equal(duel.sorcier.main.includes('trait-de-braise'), false, 'la carte quitte la main du sorcier');
+  assert.ok(duel.sorcier.cimetiere.includes('trait-de-braise'), 'elle va au cimetière');
   assert.equal(duel.sorcier.mana.braise, 5, 'le sorcier n’a rien payé : sa carte n’a pas été résolue');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false, 'il n’y a plus rien à résoudre');
   assert.equal(duel.joueur.pv, 50, 'aucun dégât');
@@ -96,7 +96,7 @@ test('un contre ne peut répondre qu’à une annonce : rien à contrer sans car
 
 test('laisser passer après un contre : aucune carte ne se résout', () => {
   const duel = duelVide();
-  annoncer(duel, 'fureur-du-souk');
+  annoncer(duel, 'trait-de-braise');
   mana(duel, 'sorcier', 'braise', 3);
   donner(duel, 'joueur', 'contresort-des-abimes');
   mana(duel, 'joueur', 'eau', 2);
@@ -129,7 +129,7 @@ test('Silence d’écume contre un sort de Braise, mais pas une créature', () =
 
 test('Silence d’écume contre un sort de Braise annoncé', () => {
   const duel = duelVide();
-  annoncer(duel, 'fureur-du-souk');
+  annoncer(duel, 'trait-de-braise');
   mana(duel, 'sorcier', 'braise', 3);
   donner(duel, 'joueur', 'silence-decume');
   mana(duel, 'joueur', 'eau', 1);
@@ -139,7 +139,7 @@ test('Silence d’écume contre un sort de Braise annoncé', () => {
 test('Déflection contre un sort annoncé et fait piocher une carte', () => {
   const duel = duelVide();
   duel.joueur.deck = ['desert', 'mer'];
-  annoncer(duel, 'fureur-du-souk');
+  annoncer(duel, 'trait-de-braise');
   mana(duel, 'sorcier', 'braise', 3);
   donner(duel, 'joueur', 'maree-contraire');
   mana(duel, 'joueur', 'eau', 3);
@@ -159,11 +159,11 @@ test('Déflection ne contre pas une créature', () => {
 
 test('sans contre, la carte annoncée se résout quand le joueur laisse passer', () => {
   const duel = duelVide();
-  annoncer(duel, 'fureur-du-souk');
+  annoncer(duel, 'trait-de-braise');
   mana(duel, 'sorcier', 'braise', 3);
   const res = rpgSorcierResoudreAnnonce(duel);
   assert.equal(res.ok, true);
-  assert.equal(duel.joueur.pv, 46, 'la magie fait ses dégâts');
+  assert.equal(duel.joueur.pv, 47, 'la magie fait ses 3 dégâts au visage');
   assert.equal(duel.annonce, null);
   assert.equal(duel.fenetreReponse, false);
 });
@@ -171,7 +171,7 @@ test('sans contre, la carte annoncée se résout quand le joueur laisse passer',
 test('le sorcier enchaîne les annonces, une par une', () => {
   const duel = duelVide();
   duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'fureur-du-souk');
+  donner(duel, 'sorcier', 'trait-de-braise');
   donner(duel, 'sorcier', 'chien-du-guet');
   mana(duel, 'sorcier', 'braise', 3);
   mana(duel, 'sorcier', 'sable', 2);
@@ -232,13 +232,13 @@ test('l’IA contre une magie du joueur avec Silence d’écume si c’est un so
   const duel = duelVide();
   jouerJoueur(duel);
   mana(duel, 'joueur', 'braise', 3);
-  donner(duel, 'joueur', 'fureur-du-souk');
+  donner(duel, 'joueur', 'trait-de-braise');
   mana(duel, 'sorcier', 'eau', 1);
   donner(duel, 'sorcier', 'silence-decume');
-  const res = rpgLancerMagie(duel, 'joueur', 'fureur-du-souk');
+  const res = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier');
   assert.equal(res.contre, true);
   assert.equal(res.parIA, true);
-  assert.ok(duel.joueur.cimetiere.includes('fureur-du-souk'));
+  assert.ok(duel.joueur.cimetiere.includes('trait-de-braise'));
 });
 
 test('l’IA ne contre pas une carte de coût 1', () => {

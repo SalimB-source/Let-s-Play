@@ -44,6 +44,17 @@ test('chaque deck de campagne est un deck valide de 40 cartes', () => {
   assert.equal(deckHistoire('deck-inconnu'), null);
 });
 
+test('les cartes retirées du jeu ne subsistent dans aucun deck de campagne', () => {
+  // Rafale du minaret, Sentence de la Liste et Fureur du souk ont quitté le
+  // catalogue : la campagne, qui compose ses propres listes, ne doit plus les
+  // jouer.
+  for (const [deckId, cartes] of Object.entries(RPG_STORY_DECKS)) {
+    for (const idRetire of ['rafale-du-minaret', 'sentence-de-la-liste', 'fureur-du-souk']) {
+      assert.equal(cartes.includes(idRetire), false, `${idRetire} a quitté le deck ${deckId}`);
+    }
+  }
+});
+
 test('les étages ont identifiants uniques, profils IA et puissances lisibles', () => {
   const vus = new Set();
   for (const { tour, etage } of tousLesEtages()) {
