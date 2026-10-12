@@ -26,14 +26,9 @@ import { groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
 import { startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
-  chargerProgressionHistoire,
   etageEstDebloque,
   etageEstVaincu,
-  marquerEtageVaincu,
-  progressionHistoireVide,
-  reinitialiserProgressionHistoire,
   resumeTourHistoire,
-  sauverProgressionHistoire,
 } from './rpgStory.js';
 import {
   deckHistoire,
@@ -42,6 +37,12 @@ import {
   RPG_STORY_TOURS,
   tourHistoireParId,
 } from './rpgStoryTours.js';
+import { useRpgStory } from './useRpgStory.js';
+import RpgStoryCampaign from './RpgStoryCampaign.jsx';
+import RpgStoryScene from './RpgStoryScene.jsx';
+import RpgStoryJournal from './RpgStoryJournal.jsx';
+import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
+import { sauverCollectionDistante } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
@@ -194,7 +195,7 @@ function cardCostLabel(carte) {
   return `${carte?.cost ?? 0} mana${exigences ? `, dont ${exigences}` : ''}`;
 }
 
-function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId) {
+function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId, sorcierPortraitUrl) {
   if (!carte || carte.kind !== 'magie') return null;
   const effet = carte.effet ?? {};
 
@@ -211,9 +212,9 @@ function describeAnnouncedMagicTarget(carte, cibleId, duel, sorcierArtId) {
   if (effet.cible === 'toutes-creatures') return { nom: 'Toutes vos créatures' };
   if (effet.type === 'buff') return { nom: 'Toutes les créatures du sorcier' };
   if (effet.type === 'contresort') return { nom: 'La carte annoncée' };
-  if (effet.cible === 'creature-amie') return { nom: 'Une créature du sorcier', illustrationId: sorcierArtId };
+  if (effet.cible === 'creature-amie') return { nom: 'Une créature du sorcier', illustrationId: sorcierArtId, illustrationUrl: sorcierPortraitUrl };
   if (effet.type === 'soin' || effet.type === 'pioche' || carte.cibles?.includes('soi')) {
-    return { nom: 'Le sorcier', illustrationId: sorcierArtId };
+    return { nom: 'Le sorcier', illustrationId: sorcierArtId, illustrationUrl: sorcierPortraitUrl };
   }
   if (effet.cible === 'creature') return { nom: 'Une créature ciblée' };
   return { nom: 'Champ de bataille' };
@@ -895,8 +896,8 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {!estCreature && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
       {cibleAnnoncee && (
         <div className="rpg-spell-played__target rpg-hover-card-preview__target">
-          {cibleAnnoncee.illustrationId
-            ? <img src={cardArt(cibleAnnoncee.illustrationId)} alt="" />
+          {(cibleAnnoncee.illustrationUrl || cibleAnnoncee.illustrationId)
+            ? <img src={cibleAnnoncee.illustrationUrl ?? cardArt(cibleAnnoncee.illustrationId)} alt="" />
             : <span className="rpg-spell-played__target-mark" aria-hidden="true">⌖</span>}
           <span><small>CIBLE</small><b>{cibleAnnoncee.nom}</b></span>
         </div>
@@ -1159,8 +1160,8 @@ function SpellAnnouncement({ annonce }) {
         <strong>{carte.name}</strong>
         <p>{carte.text}</p>
         <div className="rpg-spell-played__target">
-          {annonce.cible.illustrationId
-            ? <img src={cardArt(annonce.cible.illustrationId)} alt="" />
+          {(annonce.cible.illustrationUrl || annonce.cible.illustrationId)
+            ? <img src={annonce.cible.illustrationUrl ?? cardArt(annonce.cible.illustrationId)} alt="" />
             : <span className="rpg-spell-played__target-mark" aria-hidden="true">⌖</span>}
           <span><small>CIBLE</small><b>{annonce.cible.nom}</b></span>
         </div>
@@ -1259,7 +1260,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1268,6 +1269,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // Mode Histoire : la galerie des tours d'abord (`null`), la page d'une tour
   // — ses étages dévoilés — ensuite. Le clic sur une maquette ouvre la tour.
   const [tourOuverteId, setTourOuverteId] = useState(null);
+  const [confirmerResetHistoire, setConfirmerResetHistoire] = useState(false);
+  const [erreurResetHistoire, setErreurResetHistoire] = useState(false);
   const storyRef = useRef(null);
   const derniereTourRef = useRef(null);
   // La suppression d'un deck maison se confirme en deux temps (jamais de `window.confirm`).
@@ -1668,20 +1671,28 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           </main>
         )) : screen === 'histoire' ? (
           <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
-            <div className="rpg-story__intro">
+            <RpgStoryCampaign
+              recit={progressionHistoire.recit}
+              cardArt={cardArt}
+              onContinue={onContinueRecit}
+              onJournal={onJournalRecit}
+              onRestart={onRestartRecit}
+              sauvegardeOk={sauvegardeHistoireOk}
+              duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
+            />
+            <div className="rpg-story__free-heading">
               <div>
-                <span className="rpg-mode-menu__eyebrow">MODE HISTOIRE · CONTINUITÉ SIMPLE</span>
-                <h2>Les Tours de Bab El</h2>
-                <p>
-                  Chaque étage est un duel autonome : deck complet, PV pleins, aucune ressource
-                  reportée. Choisissez une tour en 3D pour dévoiler ses étages, puis gravissez-les un à
-                  un — la progression est gardée sur cet appareil.
-                </p>
+                <h2>Tours libres</h2>
+                <p>Choisissez une tour en 3D pour dévoiler ses étages, à votre rythme. Deck complet et PV pleins à chaque duel. Vos victoires restent acquises pour la campagne.</p>
               </div>
-              <button type="button" className="rpg-story__reset" onClick={() => { play('annuler'); onResetHistoire(); }}>
-                Effacer la progression
-              </button>
+              <button type="button" className="rpg-story__reset" onClick={() => setConfirmerResetHistoire(true)}>Effacer la progression</button>
             </div>
+            {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
+              {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
+              <p>Effacer les victoires et le récit sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
+              <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
+              <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
+            </div>}
             {tourOuverte ? (
               <div className="rpg-story__detail">
                 <button type="button" className="rpg-story__back" onClick={() => { play('menu'); setTourOuverteId(null); }}>
@@ -2036,20 +2047,29 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.removeEventListener('keydown', surTouche);
   }, [basculerPleinEcran]);
 
-  // Mode Histoire : la première fois qu'un étage est remporté, il est marqué
-  // déblayé et sauvegardé sur l'appareil (une seule fois par duel). Sa
-  // récompense — les cartes rendues par l'étage — rejoint la collection ; le
-  // compte connecté reçoit l'union, pour les autres appareils.
+  // Un résultat est traité UNE fois par session. Le récit et la victoire sont
+  // sauvegardés atomiquement avant d'afficher l'après-duel ; la collection garde
+  // son chemin habituel. Un duel libre n'avance jamais le récit par accident.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (!duelCourant || !histoireEtageId) return;
-    if (rpgVainqueur(duelCourant) !== 'joueur') return;
-    if (histoireVictoireMarqueeRef.current === histoireEtageId) return;
-    histoireVictoireMarqueeRef.current = histoireEtageId;
-    const maj = marquerEtageVaincu(progressionHistoire, histoireEtageId);
-    sauverProgressionHistoire(maj);
-    setProgressionHistoire(maj);
+    if (!duelCourant || !histoireEtageId || rpgVainqueur(duelCourant) !== 'joueur') return;
+    const session = sessionDuelRef.current;
+    if (histoireVictoireMarqueeRef.current === session) return;
+    histoireVictoireMarqueeRef.current = session;
+    const contexte = campagneDuelRef.current;
+    const campagne = contexte?.session === session && contexte.etageId === histoireEtageId;
+    const maj = enregistrerVictoire(histoireEtageId, campagne ? contexte.curseur : null);
     noterVictoireEtage(histoireEtageId, maj);
+    if (campagne) {
+      annulerMinuteriesDuTour();
+      sessionDuelRef.current += 1;
+      campagneDuelRef.current = null;
+      duelRef.current = null;
+      setHistoireEtageId(null);
+      // Au menu, une victoire arrivée juste après le clic reste sauvegardée
+      // sans arracher au joueur l'écran qu'il est en train de consulter.
+      setEcran((courant) => courant === 'partie' ? 'recit' : courant);
+    }
   });
   // Lancer (ou reprendre) une partie : le plein écran natif est demandé ici,
   // dans le geste du bouton — le navigateur le refuse ailleurs. La session de
@@ -2093,8 +2113,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [plateauId, setPlateauId] = useState(PLATEAU_PAR_DEFAUT.id);
   // Mode Histoire : l'étage en cours (null = duel libre).
   const [histoireEtageId, setHistoireEtageId] = useState(null);
-  const [progressionHistoire, setProgressionHistoire] = useState(() => chargerProgressionHistoire());
+  const {
+    progression: progressionHistoire, progressionRef: progressionHistoireRef,
+    sauvegardeOk: sauvegardeHistoireOk, ouvrirRecit, agirRecit,
+    enregistrerVictoire, recommencerRecit, effacerProgression,
+  } = useRpgStory();
   const histoireVictoireMarqueeRef = useRef(null);
+  const campagneDuelRef = useRef(null);
   // Son du jeu en deux couches : le mode Histoire porte une boucle par tour
   // (`rpgAmbientMusic.js`), tandis que les bruitages tactiles (`rpgAudio.js`)
   // restent disponibles dans tous les duels. Les deux lecteurs partagent le
@@ -2119,16 +2144,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     musiqueRef.current?.setMuted(!sonActif);
   }, [sonActif]);
   // La tour de l'étage en cours commande la boucle (null : duel libre).
-  const tourHistoireId = histoireEtageId
+  const lectureHistoire = ecran === 'recit' || ecran === 'journal';
+  const tourHistoireId = lectureHistoire ? 'tour-des-listes' : histoireEtageId
     ? etageHistoireParId(histoireEtageId)?.tour?.id ?? null
     : null;
   useEffect(() => { musiqueRef.current?.setTour(tourHistoireId); }, [tourHistoireId]);
   useEffect(() => {
     const musique = musiqueRef.current;
     if (!musique) return;
-    if (ecran === 'partie' && tourHistoireId && sonActif) musique.start();
+    if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.start();
     else musique.stop();
-  }, [ecran, tourHistoireId, sonActif]);
+  }, [ecran, lectureHistoire, tourHistoireId, sonActif]);
   // Un onglet mis de côté ne laisse pas la boucle tourner dans le vide ;
   // au retour, elle reprend où le duel en est.
   useEffect(() => {
@@ -2136,11 +2162,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const musique = musiqueRef.current;
       if (!musique) return;
       if (document.hidden) musique.pause();
-      else if (ecran === 'partie' && tourHistoireId && sonActif) musique.resume();
+      else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.resume();
     };
     document.addEventListener('visibilitychange', surVisibilite);
     return () => document.removeEventListener('visibilitychange', surVisibilite);
-  }, [ecran, tourHistoireId, sonActif]);
+  }, [ecran, lectureHistoire, tourHistoireId, sonActif]);
   const basculerSon = () => setSonActif((actif) => !actif);
   const jouerSfx = (nom, delai = 0) => {
     try {
@@ -2369,7 +2395,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etageId = options.etageId !== undefined ? options.etageId : histoireEtageId;
     const etageCourant = etageId ? etageHistoireParId(etageId)?.etage ?? null : null;
     const deckChoisiId = modeTutoriel ? 'veilleurs-du-desert' : options.deckId ?? deckSelectionneId;
-    const deckJoueurSelectionne = RPG_DECKS.find((deck) => deck.id === deckChoisiId && deckEstSelectionnable(deck));
+    const deckJoueurSelectionne = decksTous.find((deck) => deck.id === deckChoisiId && deckSeJoue(deck, collection));
     // Duel libre : le sorcier joue la Cour des Djinns, ou un autre deck si le joueur joue déjà la Cour.
     // Dans le tutoriel, son paquet de Montagnes est volontairement passif.
     const deckAdverse = modeTutoriel || etageCourant || sorcierDeck ? null : deckAdversePour(deckJoueurSelectionne);
@@ -2407,6 +2433,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
     if (modeTutoriel) preparerDuelTutoriel(duelRef.current);
     histoireVictoireMarqueeRef.current = null;
+    campagneDuelRef.current = options.campagne ? {
+      session: sessionDuelRef.current, etageId,
+      curseur: progressionHistoireRef.current.recit?.curseur,
+    } : null;
     instantanePiocheRef.current = {
       joueur: { deck: duelRef.current.joueur.deck.length + duelRef.current.joueur.main.length, main: 0 },
       sorcier: { deck: duelRef.current.sorcier.deck.length + duelRef.current.sorcier.main.length, main: 0 },
@@ -2645,11 +2675,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.removeEventListener('keydown', surTouche);
   }, [ecran]);
 
-  const demarrerEtage = (etageId) => {
+  const demarrerEtage = (etageId, { campagne = false } = {}) => {
+    if (!etageEstDebloque(progressionHistoireRef.current, etageId)) return;
+    if (campagne) {
+      const curseur = progressionHistoireRef.current.recit?.curseur;
+      if (curseur?.type !== 'duel' || curseur.etageId !== etageId) return;
+    }
     unlockSfx();
     jouerSfx('select');
     setHistoireEtageId(etageId);
-    nouvellePartie({ etageId });
+    nouvellePartie({ etageId, campagne });
     reprendrePartie();
     // Le contexte audio naît dans le geste qui lance l'étage : les navigateurs
     // n'accordent le son qu'à un tel geste, l'effet ci-dessus ne sert qu'aux
@@ -2677,6 +2712,70 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sfxRef.current?.unlock();
   };
 
+  // Le lecteur ne laisse ni ancien tour adverse, ni sort en vol s'exécuter
+  // derrière une scène. Le plateau n'est pas une sauvegarde du récit.
+  const libererDuelPourLecture = () => {
+    sessionDuelRef.current += 1;
+    annulerMinuteriesDuTour();
+    campagneDuelRef.current = null;
+    duelRef.current = null;
+    actionVolRef.current = null;
+    if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
+    if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
+    if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
+    setMulligan(null);
+    setTutorielActif(false);
+    setHistoireEtageId(null);
+    setApercuSurvol(null);
+    setApercuAppui(null);
+  };
+  const sonLecture = () => {
+    unlockSfx();
+    musiqueRef.current?.setTour('tour-des-listes');
+    if (sonActif) musiqueRef.current?.start();
+  };
+  const continuerCampagne = () => {
+    // Un duel encore en mémoire se reprend normalement depuis le menu.
+    if (campagneDuelRef.current?.session === sessionDuelRef.current
+      && duelRef.current && !rpgVainqueur(duelRef.current)) {
+      reprendrePartie();
+      return;
+    }
+    libererDuelPourLecture();
+    ouvrirRecit();
+    sonLecture();
+    setEcran('recit');
+  };
+  const ouvrirJournal = () => {
+    libererDuelPourLecture();
+    sonLecture();
+    setEcran('journal');
+  };
+  const nouveauRecit = () => {
+    libererDuelPourLecture();
+    recommencerRecit();
+    sonLecture();
+    setEcran('recit');
+  };
+
+  if (lectureHistoire) {
+    return (
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran}>
+        {ecran === 'journal' ? (
+          <RpgStoryJournal recit={progressionHistoire.recit} cardArt={cardArt}
+            onExit={() => setEcran('histoire')} onContinue={continuerCampagne}
+            sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
+        ) : (
+          <RpgStoryScene recit={progressionHistoire.recit} etagesVaincus={progressionHistoire.etagesVaincus}
+            deckNom={decksTous.find((deck) => deck.id === deckSelectionneId)?.name ?? 'Veilleurs du Désert'}
+            cardArt={cardArt} onEvent={agirRecit} onStartDuel={(id) => demarrerEtage(id, { campagne: true })}
+            onExit={() => setEcran('histoire')} onJournal={ouvrirJournal}
+            sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
+        )}
+      </div>
+    );
+  }
+
   if (ecran !== 'partie') {
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
@@ -2693,9 +2792,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           progressionHistoire={progressionHistoire}
           onStartEtage={demarrerEtage}
           onResetHistoire={() => {
-            reinitialiserProgressionHistoire();
-            setProgressionHistoire(progressionHistoireVide());
+            // Les cartes déjà acquises ne disparaissent pas en réinitialisant
+            // les verrous des tours (la collection locale est sinon dérivée).
+            if (!sauverCollectionDistante(collection)) return false;
+            libererDuelPourLecture();
+            effacerProgression();
+            return true;
           }}
+          onContinueRecit={continuerCampagne}
+          onJournalRecit={ouvrirJournal}
+          onRestartRecit={nouveauRecit}
+          sauvegardeHistoireOk={sauvegardeHistoireOk}
+          duelEnCours={Boolean(duel && !rpgVainqueur(duel))}
+          campagneEnCours={Boolean(campagneDuelRef.current)}
           decksMaison={decksMaison}
           collection={collection}
           statutSync={statutSync}
@@ -2741,8 +2850,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ?? deckAdverseAffiche.cardIds.find((id) => cardById(id)?.kind !== 'terrain')
       ?? 'djinn-du-souk'
     );
+  const personnageSorcier = personnageEtage(histoireEtageId);
+  const portraitSorcierAdverse = (personnageSorcier && portraitHistoire(personnageSorcier, import.meta.env.BASE_URL, cardArt))
+    || cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche));
   const cibleAnnoncee = carteAnnoncee?.kind === 'magie'
-    ? describeAnnouncedMagicTarget(carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId)
+    ? describeAnnouncedMagicTarget(carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId, portraitSorcierAdverse)
     : null;
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
@@ -3116,7 +3228,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const decrireCibleMagie = (carte, cibleId) => {
     if (cibleId === 'sorcier' || carte.effet?.cible === 'sorcier') {
-      return { nom: 'Le sorcier adverse', illustrationId: 'djinn-du-souk', targetPlate: 'sorcier', targetIds: [] };
+      return { nom: nomSorcierAdverse, illustrationUrl: portraitSorcierAdverse, targetPlate: 'sorcier', targetIds: [] };
     }
     const entiteEnnemie = duel.sorcier.creatures.find((entite) => entite.id === cibleId);
     if (entiteEnnemie) {
@@ -4086,7 +4198,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && carteCiblee?.cibles?.includes('sorcier') ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}`} onClick={cliquerSorcier}
           data-tutorial-target={tutorielActif && ['bienvenue', 'combat'].includes(etapeTutorielId) ? 'opponent-health' : undefined}
           title="Le sorcier adverse">
-          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche))} alt="" /></span>
+          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={portraitSorcierAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
           <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
           <span className="rpg-wizard-plate__identity">
             <strong>{etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
@@ -4713,7 +4825,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             </p>
             {etageHistoire ? (
               <div className="rpg-overlay__actions">
-                {vainqueur === 'joueur' && etageSuivant && (
+                {vainqueur === 'joueur' && etageSuivant && !campagneDuelRef.current && (
                   <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => demarrerEtage(etageSuivant.id)}>
                     Étage suivant : {etageSuivant.nom} <span aria-hidden="true">→</span>
                   </button>
@@ -4721,7 +4833,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 <button
                   type="button"
                   className={`rpg-btn ${vainqueur === 'joueur' && !etageSuivant ? 'rpg-btn--primary' : 'rpg-btn--ghost'}`}
-                  onClick={() => demarrerEtage(etageHistoire.id)}
+                  onClick={() => demarrerEtage(etageHistoire.id, { campagne: Boolean(campagneDuelRef.current) })}
                 >
                   {vainqueur === 'joueur' ? 'Rejouer l’étage' : 'Recommencer l’étage'}
                 </button>

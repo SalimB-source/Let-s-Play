@@ -43,6 +43,9 @@ const enter = async (page) => {
   await page.goto(url);
   await page.getByRole('button', { name: /^Histoire$/i }).click();
   await page.locator('.rpg-story-tower').first().waitFor();
+  // La campagne illustrée précède maintenant les tours : les maquettes ne
+  // chargent qu’à vue. Amener la galerie à l’écran comme le fait le joueur.
+  await page.locator('.rpg-story__tours').evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
 };
 const wait3d = (page, selector) => page.locator(`${selector}[data-renderer="3d"]`).waitFor({ timeout: 20000 });
 const allDetachedLost = (page) => page.waitForFunction(() => window.__towerContexts.filter((entry) => !entry.canvas.isConnected).every((entry) => entry.context.isContextLost()));
