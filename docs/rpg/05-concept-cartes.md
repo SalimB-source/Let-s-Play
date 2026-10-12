@@ -87,6 +87,13 @@ limitée à 7.
 
 - La partie commence avec **0 carte sur la table** ; chaque joueur **pioche
   5 cartes**.
+- **Le mulligan** ouvre la partie : avant le premier tour, la main de départ
+  s'affiche **en grand** et le joueur touche les cartes qu'il ne garde pas.
+  Elles repartent dans le paquet, **le paquet est battu**, et il pioche autant
+  de cartes qu'il en a écartées — la main ne diminue donc jamais. **Un seul
+  échange par camp**, et le sorcier adverse y a droit aussi (il renvoie une
+  main sans terrain, jamais une main déjà jouable, et jamais au niveau Récit).
+  Rien ne peut être joué avant la validation : la table reste close.
 - Chaque joueur a **50 points de vie** ; les **sorciers ennemis peuvent en
   avoir davantage selon leur puissance** (50 + 5 × puissance).
 - **Tant qu'il y a des créatures en face, on ne peut pas attaquer le

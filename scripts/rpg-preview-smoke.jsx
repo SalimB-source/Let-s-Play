@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
+import { passerMulligan } from './rpg-duel-start.js';
 
 export async function checkRpgPreviewActions(assert) {
   const originalMatchMedia = window.matchMedia;
@@ -102,6 +103,7 @@ export async function checkRpgPreviewActions(assert) {
     await changerEcran('Jouer');
 
     await click(container.querySelector('.rpg-menu-button--primary'));
+    await passerMulligan(container, click);
     assert.ok(container.querySelector('.rpg-battle--touch'));
 
     // ── Au doigt, les exemplaires identiques de la main forment une pile ────

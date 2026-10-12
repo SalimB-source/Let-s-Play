@@ -5551,3 +5551,84 @@ doit se nettoyer d'elle-même.
 
 C'est ce pilote qui a trouvé le contresort injouable : la graine 4 tournait en
 rond à taper *Silence d'écume* sans jamais pouvoir finir son tour.
+
+## Le Sablier : le mulligan de la main de départ
+
+Le duel s'ouvrait sur une main déjà jouable : cinq cartes tombaient dans la
+main, la barre du bas annonçait le plateau, et le premier tour commençait — avec
+ou sans terrain. Or une main sans source de mana n'est pas une main : c'est un
+tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
+**main de départ en grand**, et il choisit ce qu'il en garde.
+
+### La règle
+
+- **Un volet, avant le premier tour.** `rpgNouveauDuel()` distribue les cinq
+  cartes comme avant, mais la table est rendue `inert` : rien ne se pose, rien
+  ne s'engage, « Fin du tour » est désactivé. Le halo doré de la main
+  s'éteint — une carte allumée mais injouable enferme le joueur.
+- **Les cartes se lisent, elles ne se devinent pas.** Chaque carte de la main
+  occupe un grand emplacement : illustration pleine largeur, nom, type, coût,
+  attaque/défense et **ses règles entières**, écrites dessous. Aucun survol,
+  aucun appui long à connaître : au doigt comme à la souris, le texte est déjà
+  là.
+- **Toucher une carte la met de côté.** Un second toucher la reprend ; le
+  compteur sous le volet dit « 2 cartes à changer » et le bouton principal
+  nomme le geste (« Changer 2 cartes », « Garder cette main » quand rien n'est
+  choisi).
+- **L'échange ne coûte rien.** Les cartes choisies repartent dans le paquet,
+  **le paquet est rebattu**, et le camp pioche autant de cartes qu'il en a
+  écartées : la main reste à cinq. Écarter une carte pour en revoir une autre
+  au hasard était une punition ; ici c'est un choix.
+- **Un seul droit, des deux côtés.** Le sorcier profite du même échange, avec
+  sa propre lecture : une main sans terrain part au tapis, une main qui a de
+  quoi payer et de quoi jouer se garde, un paquet sans une seule source ne
+  tente personne, et le niveau **Récit** ne renvoie jamais rien.
+- **On relit ce qui entre.** Après un échange, le volet reste ouvert sur la
+  main neuve, signale les cartes qui viennent d'entrer et résume le tour des
+  deux camps ; « Commencer le duel » rend la table. Sans échange, le volet se
+  referme d'un seul geste et le message d'ouverture garde la parole.
+
+### Où vit le code
+
+- `src/games/rpgDuel.js` — `rpgPeutMulligan(duel, cote)` et
+  `rpgMulligan(duel, cote, index, rng)`. Le droit est consigné sur le duel
+  (`mulliganFait`, `mainDepart`) : l'échange n'est légal que tant que la table
+  est vide, qu'aucune carte n'est encore jouée et que la main est **exactement**
+  la main de départ. Un échange refusé ne touche ni main, ni paquet, ni journal
+  ; « je garde » ne bat même pas le paquet.
+- `src/games/rpgAI.js` — `choisirMulliganIA(duel, cote)` : la lecture de la
+  main par le sorcier, sur les mêmes critères de couleur et de coût que le
+  reste du cerveau.
+- `src/games/RpgDuelPage.jsx` — l'état `mulligan` (`choix` puis `resultat`),
+  les composants `VoletMulligan` et `CarteMulligan`, et le verrou
+  `mulliganOuvert` consulté par `peutJouerCarte`, `poserTerrain`, `engager` et
+  `finDuTour` — une seule règle, la même que celle du halo doré.
+- `src/games/rpg-battle.css` — `.rpg-mulligan` (volet posé sur la table, sous
+  l'écran de rotation et l'aperçu au doigt), la rangée en grille
+  « une colonne par carte », l'illustration qui prend toute la hauteur
+  disponible, et le repli du texte en paysage de téléphone ;
+  `src/games/rpg-mobile.css` neutralise le survol au doigt.
+
+### Vérifications
+
+```bash
+npm run check:rpg           # moteur et IA : 9 tests du mulligan
+npm run check:rpg-mulligan  # le volet monté dans jsdom, geste complet
+npm run check:rpg-ui        # inclut le mulligan et les duels au pilote automatique
+```
+
+`tests/rpg-duel.test.js` vérifie les règles dans le moteur : les cartes
+désignées partent et sont remplacées en nombre, la main et le paquet ensemble
+ne perdent ni ne créent rien, un seul échange par camp, les indices d'une main
+de cinq exemplaires identiques sont respectés un par un, les valeurs vides ou
+hors main sont ignorées, et le volet se ferme dès qu'une carte est posée ou
+qu'un tour a été joué.
+
+`scripts/rpg-mulligan-check.mjs` joue le geste dans la vraie page : le volet
+s'ouvre sur les cinq cartes de la main, dans le même ordre qu'en main, avec
+illustration, nom et règles ; la table est `inert`, aucune carte n'est jouable
+et aucun terrain ne se pose ; le toucher marque, démarque, annule ; la
+validation échange, montre la nouvelle main avec ses cartes signalées, et rend
+la table sur « Commencer le duel » ; une partie neuve rouvre le droit. Les
+duels au pilote automatique de `scripts/rpg-ghost-check.mjs` valident le
+mulligan à chaque graine, grand écran et doigt confondus.

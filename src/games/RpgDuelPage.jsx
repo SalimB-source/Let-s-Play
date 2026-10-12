@@ -74,12 +74,15 @@ import {
   rpgJouerCreature,
   rpgLancerAttaque,
   rpgLancerMagie,
+  rpgMulligan,
+  rpgMulliganSorcier,
   rpgNouveauDuel,
   rpgNombreDestructions,
   rpgDestructionsDepuis,
   rpgOuvrirFenetreReponse,
   rpgEstProtegee,
   rpgPeutBloquerAttaquant,
+  rpgPeutMulligan,
   rpgPeutPayer,
   rpgPoserTerrain,
   rpgSorcierAnnonceSuivante,
@@ -879,6 +882,116 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
       <button type="button" autoFocus className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu
       </button>
+    </div>
+  );
+}
+
+/* ── Le mulligan : la main de départ se découvre en grand ─────────────────────
+   Avant le premier tour, chaque camp voit ses cartes piochées, touche celles
+   qu'il ne garde pas (elles repartent dans le paquet, qui est battu) et pioche
+   autant de cartes qu'il en a écartées. Un seul échange, et la main ne diminue
+   jamais : c'est une décision, pas une punition. */
+function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
+  if (!carte) return null;
+  const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
+  const effets = cardEffectLines(carte.text);
+  return (
+    <button
+      type="button"
+      onClick={() => onBasculer(index)}
+      // Le geste est pris en charge ici : l'appui long, qui ouvre l'aperçu d'une
+      // carte ailleurs dans le jeu, n'a rien à ajouter à une carte déjà en grand.
+      onPointerDown={(event) => event.stopPropagation()}
+      className={[
+        'rpg-mulligan__card',
+        `rpg-mulligan__card--type-${cardFrameType(carte)}`,
+        `rpg-mulligan__card--elem-${carte.element}`,
+        cardFrameClass(carte),
+        selectionnee ? 'is-selected' : '',
+        nouvelle ? 'is-new' : '',
+      ].filter(Boolean).join(' ')}
+      style={cardFrameStyle(carte)}
+      data-card-id={carte.id}
+      data-mulligan-index={index}
+      aria-pressed={selectionnee}
+      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${carte.text}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
+    >
+      <span className="rpg-mulligan__face">
+        <img src={cardArt(carte)} alt="" aria-hidden="true" />
+        <CardElementBadge carte={carte} />
+        <ManaCost carte={carte} showElement={false} />
+        {estCreature && (
+          <span className="rpg-mulligan__stats" aria-hidden="true">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</span>
+        )}
+      </span>
+      <span className="rpg-mulligan__name">{carte.name}</span>
+      <span className="rpg-mulligan__type">{cardFaceTypeLine(carte)}</span>
+      <span className="rpg-mulligan__rules" aria-hidden="true">
+        {effets.length
+          ? effets.map((ligne, ligneIndex) => <span key={`${ligneIndex}-${ligne}`}>{ligne}</span>)
+          : <span>{carte.kind === 'terrain' ? 'Engagé, il donne son mana.' : 'Aucune capacité.'}</span>}
+      </span>
+      <span className="rpg-mulligan__flag" aria-hidden="true">
+        {nouvelle ? '↺ carte piochée' : selectionnee ? '✕ à changer' : '✓ gardée'}
+      </span>
+    </button>
+  );
+}
+
+function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValider, onAnnulerSelection, onContinuer }) {
+  const nombre = choix.size;
+  const enChoix = etape === 'choix';
+  const pluriel = (n) => (n > 1 ? 's' : '');
+  return (
+    <div
+      className={`rpg-mulligan rpg-mulligan--${etape}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Mulligan — ${enChoix ? 'choisissez les cartes à changer' : 'votre main après l’échange'}`}
+    >
+      <div className="rpg-mulligan__backdrop" aria-hidden="true" />
+      <div className="rpg-mulligan__panel">
+        <header className="rpg-mulligan__head">
+          <span className="rpg-mulligan__eyebrow">Mulligan · main de départ</span>
+          <h2>{enChoix ? 'Gardez votre main, ou changez des cartes' : (nouveau.length ? 'Voici votre nouvelle main' : 'Main de départ gardée')}</h2>
+          <p>{enChoix
+            ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main.`
+            : bilan}</p>
+        </header>
+        <div className="rpg-mulligan__cards">
+          {main.map((carteId, index) => (
+            <CarteMulligan
+              key={`${carteId}-${index}`}
+              carte={cardById(carteId)}
+              index={index}
+              selectionnee={choix.has(index)}
+              nouvelle={nouveau.includes(index)}
+              onBasculer={onBasculer}
+            />
+          ))}
+        </div>
+        <footer className="rpg-mulligan__actions">
+          {enChoix ? (
+            <>
+              <button type="button" autoFocus className="rpg-btn rpg-btn--primary rpg-mulligan__valider" onClick={onValider}>
+                {nombre ? `Changer ${nombre} carte${pluriel(nombre)}` : 'Garder cette main'}
+              </button>
+              {nombre > 0 && (
+                <button type="button" className="rpg-btn rpg-btn--ghost rpg-mulligan__tout" onClick={onAnnulerSelection}>
+                  Annuler la sélection
+                </button>
+              )}
+              <span className="rpg-mulligan__compteur" aria-live="polite">
+                {nombre ? `${nombre} carte${pluriel(nombre)} à changer` : 'Aucune carte choisie'}
+              </span>
+            </>
+          ) : (
+            <button type="button" autoFocus className="rpg-btn rpg-btn--primary rpg-mulligan__commencer" onClick={onContinuer}>
+              Commencer le duel
+            </button>
+          )}
+        </footer>
+      </div>
     </div>
   );
 }
@@ -1813,6 +1926,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [impactEcran, setImpactEcran] = useState(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
   const instantanePiocheRef = useRef(null);
+  // Le message qui ouvre le duel, gardé sous le coude pour le mulligan.
+  const messageOuvertureRef = useRef('');
   const sequencePiocheRef = useRef(0);
   const carteOrigineVolRef = useRef(null);
   const actionVolRef = useRef(null);
@@ -1832,6 +1947,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [cibleEnCours, setCibleEnCours] = useState(null);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
+  // Mulligan : à l'ouverture du duel, la main de départ se découvre en grand
+  // et le joueur choisit les cartes qu'il renvoie dans le paquet. `null` dès
+  // que l'échange est validé (ou impossible) : la partie est à lui.
+  const [mulligan, setMulligan] = useState(null);
   const [apercuSurvol, setApercuSurvol] = useState(null);
   const [carteGlissee, setCarteGlissee] = useState(null);
   const [surZoneDepot, setSurZoneDepot] = useState(false);
@@ -2020,6 +2139,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       joueur: { deck: duelRef.current.joueur.deck.length + duelRef.current.joueur.main.length, main: 0 },
       sorcier: { deck: duelRef.current.sorcier.deck.length + duelRef.current.sorcier.main.length, main: 0 },
     };
+    // Le volet du mulligan s'ouvre sur la main qui vient d'être piochée — tant
+    // qu'il y a une main à montrer, et tant que le moteur autorise l'échange.
+    setMulligan(rpgPeutMulligan(duelRef.current, 'joueur') && duelRef.current.joueur.main.length
+      ? { etape: 'choix', choix: new Set(), nouveau: [], bilan: '' }
+      : null);
     setAnimationsPioche([]);
     setPhase(false);
     setAttaquants([]);
@@ -2061,9 +2185,66 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     clicApresGlisserRef.current = false;
     // Au doigt, le survol n'existe pas : l'ouverture annonce le geste qui le
     // remplace (appui long d'une seconde = aperçu de la carte, sans la jouer).
-    setMessage(`Plateau : ${plateau.nom} — ${plateau.lieu}, imposé par ${originePlateau}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).${viewport.mobile ? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer.' : ''}`);
+    const messageOuverture = `Plateau : ${plateau.nom} — ${plateau.lieu}, imposé par ${originePlateau}. À vous : posez un terrain, puis jouez les cartes au halo doré ; le paiement engage automatiquement les terrains nécessaires. Cliquez une carte de votre main pour la jouer (les magies demandent confirmation).${viewport.mobile ? ' Appui long d’une seconde sur une carte : son aperçu, sans la jouer.' : ''}`;
+    // Le volet du mulligan se referme sur ce même message, augmenté de ce que le
+    // sorcier a fait de sa main : la table rendue doit tout dire d'un coup d'œil.
+    messageOuvertureRef.current = messageOuverture;
+    setMessage(messageOuverture);
     jouerSfx('apparition');
     jouerSfx('tour', 0.35);
+    force();
+  };
+
+  /* ── Mulligan : la main de départ se lit en grand, puis s'échange une fois ─ */
+  const basculerCarteMulligan = (index) => {
+    unlockSfx();
+    setMulligan((current) => {
+      if (!current || current.etape !== 'choix') return current;
+      const choix = new Set(current.choix);
+      if (choix.has(index)) choix.delete(index);
+      else choix.add(index);
+      return { ...current, choix };
+    });
+    jouerSfx('hover');
+  };
+  const viderSelectionMulligan = () => {
+    jouerSfx('annuler');
+    setMulligan((current) => (current ? { ...current, choix: new Set() } : current));
+  };
+  const validerMulligan = () => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant || !mulligan || mulligan.etape !== 'choix') return;
+    const mainAvant = duelCourant.joueur.main.length;
+    const { ecartees, piochees } = rpgMulligan(duelCourant, 'joueur', [...mulligan.choix], rng);
+    // Le sorcier profite du même droit, avec sa propre lecture de sa main.
+    const adverse = rpgMulliganSorcier(duelCourant, rng);
+    const pluriel = (n) => (n > 1 ? 's' : '');
+    force();
+    if (!ecartees.length) {
+      // Rien n'a bougé : pas de nouvelle main à relire. Le volet se referme sur
+      // le message d'ouverture, simplement augmenté de ce que le sorcier a fait.
+      setMulligan(null);
+      setMessage(adverse.ecartees.length
+        ? `${messageOuvertureRef.current} Le sorcier a changé ${adverse.ecartees.length} carte${adverse.ecartees.length > 1 ? 's' : ''} de son côté.`
+        : messageOuvertureRef.current);
+      return;
+    }
+    jouerSfx('pioche', 0.05);
+    // Une étape de résultat : la main neuve se relit en grand, ce qui entre est
+    // signalé, et le geste qui referme le volet est celui qui ouvre le duel.
+    setMulligan({
+      etape: 'resultat',
+      choix: new Set(),
+      // Les cartes qui viennent d'entrer en main : le volet les signale.
+      nouveau: piochees.map((carte, offset) => mainAvant - ecartees.length + offset),
+      bilan: `Vous écartez ${ecartees.length} carte${pluriel(ecartees.length)} et piochez ${piochees.length} carte${pluriel(piochees.length)} · le sorcier ${adverse.ecartees.length ? `en change ${adverse.ecartees.length}` : 'garde sa main'}.`,
+    });
+  };
+  const terminerMulligan = () => {
+    // Le message d'ouverture (plateau, deck qui l'impose, geste attendu) reste
+    // celui du duel : le volet n'a fait que le précéder.
+    setMulligan(null);
+    jouerSfx('tour', 0.25);
     force();
   };
 
@@ -2261,6 +2442,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const etageHistoire = histoireEtageId ? etageHistoireParId(histoireEtageId)?.etage ?? null : null;
   const etageSuivant = histoireEtageId ? prochainEtage(histoireEtageId) : null;
   const monTour = duel.tour === 'joueur' && !vainqueur;
+  // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
+  // joue, rien ne s'engage, et le tour ne peut pas être rendu.
+  const mulliganOuvert = Boolean(mulligan);
   const deckJoueurAffiche = decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
@@ -2533,6 +2717,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const peutJouerCarte = (carte) => {
     if (!carte || !duel.joueur.main.includes(carte.id)) return false;
+    // Le mulligan d'abord : tant que la main de départ n'est pas validée, rien
+    // ne quitte la main — ni clic, ni glisser, ni sort en réponse.
+    if (mulliganOuvert) return false;
     // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
     // le joueur dans une confirmation qui ne menait à rien.
     if (!rpgContreJouable(duel, 'joueur', carte)) return false;
@@ -2581,7 +2768,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const poserTerrain = (carteId) => {
-    if (!monTour || reponseApresBlocage) { jouerSfx('erreur'); return; }
+    if (!monTour || reponseApresBlocage || mulliganOuvert) { jouerSfx('erreur'); return; }
     const etatAvantAction = JSON.stringify(duel);
     const res = rpgPoserTerrain(duel, 'joueur', carteId);
     if (res.ok) { conserverAnnulation(etatAvantAction); jouerSfx('terrain_pose'); }
@@ -2591,7 +2778,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const engager = (terrainId, couleurChoisie = null) => {
-    if (!monTour && !reponseActive) { jouerSfx('erreur'); return; }
+    if ((!monTour && !reponseActive) || mulliganOuvert) { jouerSfx('erreur'); return; }
     const etatAvantAction = monTour ? JSON.stringify(duel) : null;
     const res = rpgEngagerTerrain(duel, 'joueur', terrainId, couleurChoisie);
     if (res.ok) { if (etatAvantAction) conserverAnnulation(etatAvantAction); jouerSfx('terrain_tap'); }
@@ -3385,7 +3572,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
   };
 
   const finDuTour = () => {
-    if (!monTour || combatEntrant) { jouerSfx('erreur'); return; }
+    if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
     jouerSfx('tour');
     invaliderAnnulation();
     setPhase(false);
@@ -3633,7 +3820,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
       <div
         ref={tableRef}
-        inert={viewport.portrait ? true : undefined}
+        inert={viewport.portrait || mulliganOuvert ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${carteGlissee ? ' is-card-dragging' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -4075,7 +4262,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
                   </button>
                 )}
                 <button type="button" className="rpg-btn rpg-btn--endturn" onClick={finDuTour}
-                  disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant)}>
+                  disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || mulliganOuvert}>
                   ⧗ Fin du tour
                 </button>
               </div>
@@ -4254,6 +4441,19 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         )}
       </div>
       {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+      {mulligan && (
+        <VoletMulligan
+          main={duel.joueur.main}
+          etape={mulligan.etape}
+          choix={mulligan.choix}
+          nouveau={mulligan.nouveau}
+          bilan={mulligan.bilan}
+          onBasculer={basculerCarteMulligan}
+          onValider={validerMulligan}
+          onAnnulerSelection={viderSelectionMulligan}
+          onContinuer={terminerMulligan}
+        />
+      )}
     </div>
   );
 }

@@ -15,7 +15,10 @@ import {
   rpgJouerCreature,
   rpgLancerAttaque,
   rpgMana,
+  rpgMulligan,
+  rpgMulliganSorcier,
   rpgNouveauDuel,
+  rpgPeutMulligan,
   rpgNombreDestructions,
   rpgPeutBloquerAttaquant,
   rpgResonanceEnJeu,
@@ -55,6 +58,7 @@ import {
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { rpgLancerMagie } from '../src/games/rpgDuel.js';
+import { choisirMulliganIA } from '../src/games/rpgAI.js';
 
 /** Main de départ générique, mélangée de façon fixe. */
 const duelDeBase = (opts = {}) => rpgNouveauDuel({
@@ -2210,4 +2214,161 @@ test('un contre n’est jouable que face à une annonce adverse qu’il peut vis
   // Sa propre annonce ne se contre pas.
   duel.annonce = { cote: 'joueur', carteId: 'trait-de-braise' };
   assert.equal(rpgContreJouable(duel, 'joueur', silence), false);
+});
+
+/* ── Le mulligan : la main de départ s'échange une fois, à carte égale ─────── */
+
+const compteurDeCartes = (liste) => [...liste].sort().join('|');
+
+test('mulligan : les cartes choisies repartent et sont remplacées par autant de pioches', () => {
+  const duel = rpgNouveauDuel({
+    joueurDeck: ['desert', 'desert', 'chien-du-guet', 'montagne', 'mer', 'fennec-des-decombres', 'djinn-du-souk', 'ressac'],
+    sorcierDeck: Array(8).fill('desert'),
+    rng: () => 0.5,
+  });
+  assert.equal(rpgPeutMulligan(duel, 'joueur'), true, 'le mulligan est ouvert à l’ouverture du duel');
+  const mainAvant = [...duel.joueur.main];
+  const paquetAvant = [...duel.joueur.deck];
+  const { ok, ecartees, piochees } = rpgMulligan(duel, 'joueur', [0, 2], () => 0.25);
+
+  assert.equal(ok, true, 'l’échange est accepté');
+  assert.deepEqual(ecartees, [mainAvant[0], mainAvant[2]], 'ce sont bien les cartes désignées qui partent');
+  assert.equal(piochees.length, 2, 'on pioche autant de cartes qu’on en écarte');
+  assert.equal(duel.joueur.main.length, mainAvant.length, 'la main ne diminue jamais');
+  assert.equal(compteurDeCartes([...duel.joueur.main, ...duel.joueur.deck]),
+    compteurDeCartes([...mainAvant, ...paquetAvant]),
+    'aucune carte perdue : la main et le paquet ensemble gardent le même contenu');
+  assert.equal(rpgPeutMulligan(duel, 'joueur'), false, 'un seul échange par camp');
+  assert.deepEqual(rpgMulligan(duel, 'joueur', [1]), { ok: false, ecartees: [], piochees: [] },
+    'le second refus est silencieux : rien ne bouge');
+});
+
+test('mulligan : ce sont les cases de la main qui sont écartées, pas les noms', () => {
+  // rng fixe à 0.999 : le mélange laisse le paquet en ordre, la main est donc
+  // exactement le dessus du paquet — cinq Déserts identiques.
+  const duel = rpgNouveauDuel({
+    joueurDeck: ['chien-du-guet', 'fennec-des-decombres', 'ressac', 'desert', 'desert', 'desert', 'desert', 'desert'],
+    sorcierDeck: [],
+    rng: () => 0.999,
+  });
+  assert.deepEqual(duel.joueur.main, [...Array(5).fill('desert')], 'toute la main est en Déserts');
+  const paquetAvant = [...duel.joueur.deck];
+  const { ecartees, piochees } = rpgMulligan(duel, 'joueur', [0, 2, 4], () => 0.999);
+  assert.deepEqual(ecartees, ['desert', 'desert', 'desert'], 'trois exemplaires précis quittent la main');
+  assert.equal(piochees.length, 3, 'trois cartes remontent du paquet');
+  assert.equal(duel.joueur.main.length, 5, 'la main ne fond pas');
+  assert.equal(duel.joueur.main.filter((id) => id === 'desert').length + duel.joueur.deck.filter((id) => id === 'desert').length, 5,
+    'les cinq Déserts de la main sont tous retournés dans le paquet');
+  assert.equal([...duel.joueur.main, ...duel.joueur.deck].sort().join('|'),
+    [...Array(5).fill('desert'), ...paquetAvant].sort().join('|'),
+    'rien ne se perd ni ne se crée');
+});
+
+test('mulligan : doublons, cases hors main et valeurs vides sont ignorés', () => {
+  const duel = duelDeBase();
+  const mainAvant = [...duel.joueur.main];
+  const { ecartees } = rpgMulligan(duel, 'joueur', [1, 1, '1', 9, -3, 2.5, null, undefined, {}]);
+  assert.deepEqual(ecartees, [mainAvant[1]], 'une seule case est désignée, même annoncée cinq fois');
+  assert.equal(duel.joueur.main.length, mainAvant.length, 'et la main garde sa taille');
+});
+
+test('mulligan : la main garde sa taille, même avec un paquet presque vide', () => {
+  // Six cartes au total : cinq en main, une au paquet. Les cartes écartées sont
+  // rebattues avec, si bien que l'échange reste possible sans rien perdre.
+  const duel = rpgNouveauDuel({
+    joueurDeck: ['desert', 'desert', 'desert', 'desert', 'desert', 'chien-du-guet'],
+    sorcierDeck: [],
+    rng: () => 0.999,
+  });
+  assert.equal(duel.joueur.main.length, 5);
+  assert.equal(duel.joueur.deck.length, 1);
+  const totalAvant = duel.joueur.main.length + duel.joueur.deck.length;
+  const { ecartees, piochees } = rpgMulligan(duel, 'joueur', [0, 1, 2, 3, 4], () => 0.999);
+  assert.equal(ecartees.length, 5, 'les cinq cartes partent');
+  assert.equal(piochees.length, 5, 'cinq reviennent, piochées dans le paquet rebattu');
+  assert.equal(duel.joueur.main.length + duel.joueur.deck.length, totalAvant, 'le compte y est');
+});
+
+test('mulligan : fermé dès qu’une carte a été posée ou qu’un tour a été joué', () => {
+  const duel = rpgNouveauDuel({
+    joueurDeck: ['desert', 'chien-du-guet', 'fennec-des-decombres', 'ressac', 'mer', 'montagne', 'dune-marchante'],
+    sorcierDeck: Array(7).fill('desert'),
+    rng: () => 0.5,
+  });
+  assert.equal(rpgPeutMulligan(duel, 'joueur'), true, 'à la table vide, l’échange est ouvert');
+  duel.joueur.terrains.push({ id: 't1', carteId: 'desert', tapped: false });
+  assert.equal(rpgPeutMulligan(duel, 'joueur'), false, 'la table n’est plus vide : le mulligan est passé');
+
+  const neuf = rpgNouveauDuel({ joueurDeck: duelDeBase().joueur.main, sorcierDeck: [], rng: () => 0.5 });
+  rpgFinDeTour(neuf);
+  assert.equal(neuf.tour, 'sorcier');
+  assert.equal(rpgPeutMulligan(neuf, 'joueur'), false, 'le tour du joueur est terminé : plus d’échange');
+});
+
+test('mulligan : sans main de départ, rien n’est proposé', () => {
+  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
+  assert.equal(duel.joueur.main.length, 0);
+  assert.equal(rpgPeutMulligan(duel, 'joueur'), false, 'pas de main, pas de mulligan');
+});
+
+test('mulligan du sorcier : une main sans source part au tapis, une main jouable se garde', () => {
+  const duel = rpgNouveauDuel({
+    joueurDeck: Array(10).fill('desert'),
+    sorcierDeck: Array(5).fill('desert'),
+    rng: () => 0.5,
+  });
+  duel.sorcier.main = ['chien-du-guet', 'fennec-des-decombres', 'djinn-du-souk', 'dune-marchante', 'colosse-de-sel'];
+  duel.sorcier.deck = ['desert', 'desert', 'desert', 'desert'];
+  assert.deepEqual(choisirMulliganIA(duel, 'sorcier'), [0, 1, 2, 3, 4],
+    'aucune source de mana en main : il renvoie tout ce qui ne se paie pas');
+
+  const { ecartees, piochees } = rpgMulliganSorcier(duel, () => 0.5);
+  assert.equal(ecartees.length, 5, 'l’échange a bien lieu');
+  assert.equal(piochees.length, 5, 'autant de cartes reviennent');
+  assert.equal(duel.sorcier.main.length, 5, 'la main du sorcier garde cinq cartes');
+  assert.ok(duel.sorcier.main.includes('desert'), 'et trouve enfin de quoi payer');
+  assert.match(duel.log.at(-1), /^Le sorcier écarte .*, Colosse de sel et pioche 5 cartes\.$/,
+    'le journal nomme ce que le sorcier a renvoyé');
+
+  const solide = rpgNouveauDuel({
+    joueurDeck: Array(10).fill('desert'),
+    sorcierDeck: Array(9).fill('desert'),
+    rng: () => 0.999,
+  });
+  solide.sorcier.main = ['desert', 'chien-du-guet', 'fennec-des-decombres', 'dune-marchante', 'desert'];
+  assert.deepEqual(choisirMulliganIA(solide, 'sorcier'), [], 'une source et une carte à jouer : on garde');
+  assert.deepEqual(rpgMulliganSorcier(solide, () => 0.999).ecartees, [], 'et le moteur ne touche à rien');
+});
+
+test('mulligan du sorcier : il ne renvoie rien quand le paquet ne peut pas mieux faire', () => {
+  const aSec = rpgNouveauDuel({
+    joueurDeck: Array(10).fill('desert'),
+    sorcierDeck: Array(5).fill('desert'),
+    rng: () => 0.999,
+  });
+  aSec.sorcier.main = ['chien-du-guet', 'fennec-des-decombres', 'djinn-du-souk', 'dune-marchante', 'colosse-de-sel'];
+  aSec.sorcier.deck = [];
+  assert.equal(aSec.sorcier.deck.length, 0, 'plus une carte au paquet');
+  assert.deepEqual(choisirMulliganIA(aSec, 'sorcier'), [],
+    'sans terrain à espérer, changer sa main ne serait qu’un coup de théâtre');
+});
+
+test('mulligan : niveau Récit, le sorcier ne renvoie jamais sa main', () => {
+  const duel = rpgNouveauDuel({
+    joueurDeck: Array(10).fill('desert'),
+    sorcierDeck: ['chien-du-guet', 'fennec-des-decombres', 'djinn-du-souk', 'dune-marchante', 'colosse-de-sel'],
+    sorcierIA: { niveau: 'recit' },
+    rng: () => 0.5,
+  });
+  const mainAvant = [...duel.sorcier.main];
+  const { ecartees } = rpgMulliganSorcier(duel, () => 0.5);
+  assert.deepEqual(ecartees, [], 'le profil récit garde la main de départ');
+  assert.deepEqual(duel.sorcier.main, mainAvant);
+});
+
+test('mulligan : la main de départ est le seul témoin, une pioche de tour ferme la porte', () => {
+  const duel = duelDeBase();
+  assert.deepEqual(duel.mainDepart, { joueur: RPG_MAIN_DEPART, sorcier: RPG_MAIN_DEPART });
+  rpgPiocher(duel, 'joueur');
+  assert.equal(rpgPeutMulligan(duel, 'joueur'), false, 'la main n’est plus la main de départ');
 });
