@@ -714,10 +714,10 @@
 /* ── Les terrains posés : mini-cartes 4:5, engagées = couchées/grisées ── */
 .rpg-terrains {
   position: absolute;
-  /* Au-dessus du dégradé noir du dock de la main (z-index 40) : le rail joueur
-     vit à 72 % de la table, pile dans la bande d'ombre de la main, et s'y
-     noyait à z-index 4. Reste sous le choix de mana (48), les overlays (49) et
-     la navigation (50 / 900). */
+  /* Le rail reste sous le dock de la main (z-index 42) quand leurs cartes se
+     chevauchent : la main demeure lisible au premier plan. Les terrains restent
+     cliquables hors des cartes de la main ; choix de mana (48), overlays (49)
+     et navigation (50 / 900) gardent la priorité au-dessus du rail. */
   z-index: 41;
   display: flex;
   gap: 6px;
@@ -726,9 +726,9 @@
 }
 .rpg-terrains::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
-/* À la souris, le rail flotte au-dessus de la main sans jamais la bloquer :
-   seul le petit bouton de terrain attrape le pointeur, le contenant reste
-   transparent aux clics (le doigt, lui, garde le rail entier défilable). */
+/* À la souris, le rail reste sous les cartes de la main dans leurs zones de
+   chevauchement ; ailleurs, seul le bouton de terrain attrape le pointeur et le
+   contenant laisse passer les clics (au doigt, le rail entier reste défilable). */
 .rpg-battle:not(.rpg-battle--touch) .rpg-terrains { pointer-events: none; }
 .rpg-battle:not(.rpg-battle--touch) .rpg-terrain { pointer-events: auto; }
 
@@ -969,7 +969,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 40;
+  z-index: 42;
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -2357,7 +2357,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-actions__row { justify-content: flex-end; gap: 7px; }
 
 .rpg-hand-dock {
-  z-index: 40;
+  z-index: 42;
   transform: none;
   padding: 8px 0 5px;
   background: linear-gradient(0deg, rgba(10, 8, 8, .94), rgba(12, 10, 9, .84) 75%, transparent);
@@ -2544,7 +2544,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    pour valider le sort avant de le lancer. */
 .rpg-spell-confirm-backdrop {
   position: absolute;
-  z-index: 120;
+  z-index: 1000;
   inset: 0;
   display: grid;
   place-items: center;
@@ -5146,157 +5146,377 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
-/* Fenêtre de réponse : l'aperçu de la carte annoncée reste visible, avec sa
-   cible éventuelle, sans transformer « Laisser passer » en second bouton de tour. */
+/* Pendant l’annonce, un voile noir translucide assombrit la table sans la
+   cacher. Il intercepte les gestes sur le plateau ; seuls l’aperçu et ses
+   commandes restent interactifs. */
 .rpg-annonce-sort {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px 12px;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 8px 10px;
-  border: 1px solid rgba(225, 179, 63, .72);
-  border-radius: 8px;
-  background: rgba(28, 22, 10, .92);
-  color: #f7f3e6;
+  position: absolute;
+  z-index: 950;
+  inset: 0;
+  overflow: hidden;
+  background: rgba(0, 0, 0, .46) !important;
+  background-color: rgba(0, 0, 0, .46) !important;
+  backdrop-filter: none !important;
+  pointer-events: auto;
+}
+.rpg-annonce-sort__panel {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  pointer-events: none;
+  animation: rpg-annonce-panel-in .18s cubic-bezier(.2, .75, .25, 1) both;
 }
 .rpg-hover-card-preview--annonce {
-  position: relative;
+  --rpg-annonce-card-width: clamp(140px, min(28vw, 42dvh), 280px);
+  --rpg-annonce-column-gap: clamp(12px, 2vw, 22px);
+  --rpg-annonce-column-width: min(360px, calc(100vw - var(--rpg-annonce-card-width) - var(--rpg-annonce-column-gap) - 24px));
+  position: absolute;
   z-index: 1;
-  display: grid;
-  grid-template-columns: clamp(54px, 8vw, 72px) minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
+  background: transparent !important;
+  background-color: transparent !important;
+  inset: 0;
+  display: block;
   width: 100%;
+  height: 100%;
   max-height: none;
+  overflow: visible;
   padding: 0;
   border-radius: 0;
-  overflow: hidden;
   animation: none;
+  pointer-events: none;
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__layout {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  grid-template-columns: var(--rpg-annonce-card-width) minmax(0, var(--rpg-annonce-column-width));
+  align-items: center;
+  gap: var(--rpg-annonce-column-gap);
+  width: calc(var(--rpg-annonce-card-width) + var(--rpg-annonce-column-gap) + var(--rpg-annonce-column-width));
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 24px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__face {
-  width: 100%;
+  position: relative;
+  z-index: 2;
+  top: auto;
+  left: auto;
+  width: var(--rpg-annonce-card-width);
+  transform: none;
   border-width: 2px;
-  border-radius: 5px;
+  border-radius: 8px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .52), 0 0 22px rgba(239, 210, 139, .16);
+}
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__details-column {
+  position: relative;
+  z-index: 3;
+  top: auto;
+  left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.2vh, 12px);
+  width: var(--rpg-annonce-column-width);
+  max-height: calc(100dvh - 24px);
+  min-width: 0;
+  min-height: 0;
+  transform: none;
+  pointer-events: none;
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
-  gap: 4px;
-  max-height: none;
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  max-height: min(60dvh, 560px);
   min-height: 0;
-  padding: 6px 9px;
-  border-color: rgba(236, 214, 172, .18);
-  border-radius: 6px;
-  background: rgba(5, 8, 11, .56);
+  flex: 0 1 auto;
+  transform: none;
+  gap: clamp(8px, 1.5vh, 14px);
+  padding: clamp(12px, 2vw, 22px);
+  overflow-y: auto;
+  border-color: rgba(236, 214, 172, .24);
+  border-radius: 10px;
+  background: rgba(5, 8, 11, .72);
+  pointer-events: auto;
 }
 .rpg-hover-card-preview__eyebrow {
   color: #e1b33f;
-  font: 800 7px/1 var(--display);
-  letter-spacing: .13em;
+  font: 800 10px/1 var(--display);
+  letter-spacing: .16em;
 }
 .rpg-hover-card-preview__name {
   display: block;
   min-width: 0;
   overflow: hidden;
   color: #ffe9a0;
-  font: 700 14px/1.1 Georgia, serif;
+  font: 700 clamp(20px, 2.5vw, 28px)/1.1 Georgia, serif;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__type {
-  padding: 2px 4px;
-  font-size: 11px;
-  line-height: 1.15;
+  padding: 4px 7px;
+  font-size: 15px;
+  line-height: 1.25;
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost {
-  gap: 6px;
-  font-size: 11px;
+  gap: 8px;
+  font-size: 15px;
 }
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 13px; }
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 9px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 18px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 11px; }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules {
-  gap: 3px;
-  max-height: 2.8em;
-  font-size: 10px;
-  line-height: 1.3;
+  gap: 7px;
+  max-height: min(24dvh, 13em);
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.45;
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target {
-  gap: 5px;
-  min-height: 23px;
-  margin: 1px 0;
+  gap: 8px;
+  min-height: 32px;
+  margin: 2px 0;
 }
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 18px; height: 23px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 26px; height: 34px; }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
-  width: 18px;
-  height: 18px;
-  font-size: 13px;
+  width: 26px;
+  height: 26px;
+  font-size: 18px;
 }
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 9px; }
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 12px; }
+.rpg-annonce-sort__controls {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "respond pass";
+  justify-items: stretch;
+  gap: clamp(6px, 1vh, 10px);
+  width: 100%;
+  pointer-events: auto;
+}
 .rpg-annonce-sort__pass {
+  grid-area: pass;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 108px;
-  min-height: 36px;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
   margin: 0;
-  padding: 6px 11px;
-  border: 1px solid rgba(114, 230, 208, .48);
-  border-radius: 8px;
-  background: rgba(13, 31, 32, .92);
-  color: #c7f4e9;
-  box-shadow: none;
-  font: 700 11px/1.15 var(--display);
-  letter-spacing: .015em;
+  padding: 10px clamp(6px, 1vw, 18px);
+  border: 1px solid rgba(114, 230, 208, .62);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(19, 52, 51, .98), rgba(10, 30, 31, .98));
+  color: #d5fff3;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .3), inset 0 1px rgba(220, 255, 244, .12);
+  font: 800 13px/1.15 var(--display);
+  letter-spacing: .025em;
   text-align: center;
+  text-transform: none;
+  white-space: normal;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.rpg-annonce-sort__pass:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #8af2df;
+  background: linear-gradient(180deg, rgba(24, 66, 62, .99), rgba(13, 42, 40, .99));
+  color: #edfff9;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .38), 0 0 12px rgba(91, 240, 218, .18);
+}
+.rpg-annonce-sort__pass:focus-visible { outline: 2px solid #8af2df; outline-offset: 3px; }
+.rpg-annonce-sort__respond {
+  grid-area: respond;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  margin: 0;
+  padding: 10px clamp(6px, 1vw, 18px);
+  border: 1px solid rgba(224, 239, 246, .72);
+  border-radius: 10px;
+  background: rgba(7, 12, 19, .82);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .08);
+  font: 800 13px/1.15 var(--display);
+  letter-spacing: .025em;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.rpg-annonce-sort__respond:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, .94);
+  background: rgba(22, 31, 42, .96);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .36);
+}
+.rpg-annonce-sort__respond.is-response-available {
+  border-color: rgba(190, 242, 255, .96);
+  background: linear-gradient(180deg, #c9f4ff, #67c4e5);
+  color: #062b3a;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .48);
+}
+.rpg-annonce-sort__respond.is-response-available:hover:not(:disabled) {
+  border-color: #e4fbff;
+  background: linear-gradient(180deg, #e2faff, #8cdef3);
+  color: #052737;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .36);
+}
+.rpg-annonce-sort__respond:focus-visible { outline: 2px solid #b8efff; outline-offset: 3px; }
+.rpg-annonce-sort__compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "label label" "preview pass";
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(236, 214, 172, .28);
+  border-radius: 10px;
+  background: rgba(7, 9, 12, .78);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .32);
+  color: #f2e5cc;
+}
+.rpg-annonce-sort__compact-label {
+  grid-area: label;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  color: rgba(245, 232, 207, .72);
+  font: 600 10px/1.2 var(--display);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.rpg-annonce-sort__compact-label b {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffe9a0;
+  font: 700 13px/1.2 Georgia, serif;
+  letter-spacing: 0;
+  text-align: right;
+  text-overflow: ellipsis;
   text-transform: none;
   white-space: nowrap;
 }
-.rpg-actions .rpg-annonce-sort__pass::before { display: none; }
-.rpg-annonce-sort__pass:hover:not(:disabled) {
-  transform: none;
-  border-color: #8af2df;
-  background: rgba(19, 49, 48, .98);
-  color: #edfff9;
-  box-shadow: 0 0 9px rgba(91, 240, 218, .16);
+.rpg-annonce-sort__compact-preview,
+.rpg-annonce-sort__compact-pass {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 8px;
+  font-size: 11px;
+  white-space: normal;
 }
-.rpg-annonce-sort__pass:focus-visible { outline: 2px solid #8af2df; outline-offset: 2px; }
+.rpg-annonce-sort__compact-preview {
+  grid-area: preview;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 1px solid rgba(236, 214, 172, .4);
+  border-radius: 9px;
+  background: rgba(37, 32, 25, .82);
+  color: #f2e5cc;
+  box-shadow: none;
+  font: 700 11px/1.15 var(--display);
+  text-align: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.rpg-annonce-sort__compact-preview:hover:not(:disabled) {
+  border-color: rgba(255, 226, 163, .8);
+  background: rgba(62, 49, 31, .92);
+  color: #fff1c8;
+}
+.rpg-annonce-sort__compact-preview:focus-visible { outline: 2px solid #ffe9a0; outline-offset: 3px; }
+.rpg-annonce-sort__compact-pass { grid-area: pass; }
+@keyframes rpg-annonce-panel-in {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
 
 @media (max-width: 620px) {
-  .rpg-annonce-sort {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-    padding: 6px;
-  }
   .rpg-hover-card-preview--annonce {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 6px;
+    --rpg-annonce-card-width: clamp(118px, min(34vw, 42dvh), 190px);
+    --rpg-annonce-column-gap: 12px;
+    --rpg-annonce-column-width: min(210px, calc(100vw - var(--rpg-annonce-card-width) - var(--rpg-annonce-column-gap) - 24px));
   }
+  .rpg-hover-card-preview__name { font-size: clamp(16px, 4vw, 22px); }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details-column { gap: 6px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
-    gap: 3px;
-    padding: 5px 6px;
+    max-height: min(60dvh, 420px);
+    gap: 7px;
+    padding: 9px;
   }
-  .rpg-hover-card-preview__eyebrow { font-size: 6px; }
-  .rpg-hover-card-preview__name { font-size: 11px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__type { font-size: 9px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost { gap: 4px; font-size: 9px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 11px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 8px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules { max-height: 2.5em; font-size: 9px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 16px; height: 20px; }
+  .rpg-hover-card-preview__eyebrow { font-size: 8px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__type { font-size: 12px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost { gap: 5px; font-size: 11px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 14px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules {
+    max-height: min(18dvh, 9em);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 20px; height: 26px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
-    width: 16px;
-    height: 16px;
-    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
   }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 8px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target b { font-size: 9px; }
+  .rpg-annonce-sort__controls { gap: 5px; }
   .rpg-annonce-sort__pass {
     width: 100%;
     min-width: 0;
-    min-height: 38px;
-    padding: 6px 9px;
-    font-size: 10px;
+    min-height: 44px;
+    padding: 7px 8px;
+    font-size: clamp(9px, 1.9vw, 12px);
+    white-space: normal;
   }
+  .rpg-annonce-sort__respond {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 8px;
+    font-size: clamp(9px, 1.9vw, 12px);
+    white-space: normal;
+  }
+  .rpg-annonce-sort__compact { gap: 4px; padding: 5px; }
+  .rpg-annonce-sort__compact-label { font-size: 8px; }
+  .rpg-annonce-sort__compact-label b { font-size: 11px; }
+  .rpg-annonce-sort__compact-preview,
+  .rpg-annonce-sort__compact-pass { min-height: 44px; padding: 5px 6px; font-size: clamp(9px, 2.2vw, 11px); }
+}
+
+@media (max-height: 520px) {
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details { gap: 5px; padding: 7px 9px; }
+  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules { max-height: 14dvh; }
+  .rpg-annonce-sort__controls { gap: 6px; }
+  .rpg-annonce-sort__pass,
+  .rpg-annonce-sort__respond,
+  .rpg-annonce-sort__compact-preview,
+  .rpg-annonce-sort__compact-pass { min-height: 42px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-annonce-sort__panel { animation: none; }
 }

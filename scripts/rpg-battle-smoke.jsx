@@ -1041,7 +1041,7 @@ export async function checkRpgBattle(assert) {
   const aiFireRoot = createRoot(aiFireContainer);
   await act(async () => {
     aiFireRoot.render(<RpgDuelPage
-      joueurDeck={['desert', 'fennec-des-decombres', 'desert', 'desert', 'desert']}
+      joueurDeck={['desert', 'tislit-des-aures', 'mer', 'silence-decume', 'desert']}
       sorcierDeck={['trait-de-braise', 'montagne', 'montagne', 'montagne', 'montagne', 'montagne', 'montagne']}
       rng={() => 0.999}
     />);
@@ -1057,33 +1057,76 @@ export async function checkRpgBattle(assert) {
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
   await passerAnnoncesSorcier(aiFireContainer);
-  await jouerCarteAiFire('Désert');
-  await jouerCarteAiFire('Fennec des décombres');
-  assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'le Fennec est présent avant l’action de l’IA');
+  await jouerCarteAiFire('Mer');
+  await jouerCarteAiFire('Tislit, éclaireuse des Aurès');
+  assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'Tislit est présente avant l’action de l’IA');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(900); });
   // Le sort Braise est annoncé : le joueur a la main pour répondre, ou laisser passer.
-  assert.match(aiFireContainer.querySelector('.rpg-annonce-sort')?.textContent ?? '', /Trait de braise/,
-    'la bannière annonce le sort du sorcier avant sa résolution');
+  const annonceSort = aiFireContainer.querySelector('.rpg-annonce-sort');
+  assert.match(annonceSort?.textContent ?? '', /Trait de braise/,
+    'la fenêtre centrale annonce le sort du sorcier avant sa résolution');
+  assert.doesNotMatch(annonceSort?.textContent ?? '', /Répondez avec une magie/i,
+    'le texte explicatif « Répondez avec une magie… » a disparu');
+  assert.equal(annonceSort?.querySelector('.rpg-annonce-sort__hint'), null,
+    'aucun hint visuel ne reste au-dessus des commandes');
+  assert.equal(annonceSort?.parentElement?.classList.contains('card-table'), true,
+    'la fenêtre de réponse est placée au-dessus du plateau, pas dans la barre d’actions');
+  assert.ok(aiFireContainer.querySelector('.rpg-hand-dock')?.hasAttribute('inert'),
+    'la main reste visible derrière le voile mais ses cartes sont inertes pendant l’aperçu');
+  assert.ok(annonceSort?.querySelector('.rpg-annonce-sort__panel'),
+    'l’aperçu et les commandes sont réunis dans un panneau centré');
+  assert.ok(aiFireContainer.querySelector('.rpg-hand-dock.is-open'),
+    'la main du joueur se déploie pendant la fenêtre de réponse');
   const previewSortAnnonce = aiFireContainer.querySelector('.rpg-annonce-sort .rpg-hover-card-preview--annonce');
   assert.ok(previewSortAnnonce, 'la carte annoncée reste visible dans son aperçu pendant la fenêtre de réponse');
+  const colonneApercuAnnonce = previewSortAnnonce.querySelector('.rpg-hover-card-preview__details-column');
+  assert.equal(colonneApercuAnnonce?.firstElementChild?.classList.contains('rpg-hover-card-preview__details'), true,
+    'la fenêtre de texte apparaît en premier dans la colonne de l’aperçu');
+  assert.equal(colonneApercuAnnonce?.lastElementChild?.classList.contains('rpg-annonce-sort__controls'), true,
+    'les boutons de réponse sont placés sous la fenêtre de texte dans la colonne de l’aperçu');
   assert.match(previewSortAnnonce.querySelector('.rpg-hover-card-preview__face img')?.getAttribute('src') ?? '',
     /\/cards\/trait-de-braise\.jpg(?:\?|$)/,
     'l’aperçu affiche l’illustration de la carte annoncée');
   assert.equal(previewSortAnnonce.querySelector('.rpg-hover-card-preview__name')?.textContent, 'Trait de braise',
     'l’aperçu nomme clairement le sort annoncé');
   const cibleSortAnnonce = previewSortAnnonce.querySelector('.rpg-hover-card-preview__target');
-  assert.match(cibleSortAnnonce?.textContent ?? '', /Fennec des décombres/,
+  assert.match(cibleSortAnnonce?.textContent ?? '', /Tislit, éclaireuse des Aurès/,
     'l’aperçu d’une magie montre la créature choisie comme cible');
   assert.match(cibleSortAnnonce?.querySelector('img')?.getAttribute('src') ?? '',
-    /\/cards\/fennec-des-decombres\.jpg(?:\?|$)/,
+    /\/cards\/tislit-des-aures\.jpg(?:\?|$)/,
     'l’aperçu identifie aussi la cible par son illustration');
-  const boutonLaisserPasser = aiFireContainer.querySelector('.rpg-annonce-sort__pass');
-  assert.ok(boutonLaisserPasser && !boutonLaisserPasser.classList.contains('rpg-btn--endturn'),
+  const boutonLaisserPasserModal = annonceSort?.querySelector('.rpg-annonce-sort__pass');
+  assert.ok(boutonLaisserPasserModal && !boutonLaisserPasserModal.classList.contains('rpg-btn--endturn'),
     'Laisser passer utilise son propre style compact, pas le gros bouton de fin de tour');
-  assert.ok(boutonLaisserPasser.getAttribute('aria-label')?.includes('Trait de braise'),
+  assert.ok(boutonLaisserPasserModal.getAttribute('aria-label')?.includes('Trait de braise'),
     'le bouton précise quelle carte laisser passer');
-  await act(async () => { boutonLaisserPasser.click(); });
+  const boutonRepondre = annonceSort?.querySelector('.rpg-annonce-sort__respond');
+  assert.equal(boutonRepondre?.textContent?.trim(), '✦Répondre',
+    'le bouton Répondre ferme l’aperçu sans reprendre l’action distincte Laisser passer');
+  assert.ok(boutonRepondre?.classList.contains('is-response-available'),
+    'Répondre devient bleu quand Silence d’écume est vraiment jouable dans la main');
+  await act(async () => { boutonRepondre.click(); });
+  assert.equal(aiFireContainer.querySelector('.rpg-annonce-sort'), null,
+    'Répondre ferme l’aperçu centré');
+  const annonceEnAttente = aiFireContainer.querySelector('.rpg-annonce-sort__compact');
+  assert.match(annonceEnAttente?.textContent ?? '', /Trait de braise/,
+    'la carte adverse reste annoncée et non résolue après Répondre');
+  assert.ok(annonceEnAttente?.querySelector('.rpg-annonce-sort__compact-preview'),
+    'le joueur peut rouvrir l’aperçu s’il le souhaite');
+  const boutonLaisserPasserCompact = annonceEnAttente?.querySelector('.rpg-annonce-sort__pass');
+  assert.ok(boutonLaisserPasserCompact?.getAttribute('aria-label')?.includes('Trait de braise'),
+    'Laisser passer reste une action séparée après la fermeture de l’aperçu');
+  assert.ok(aiFireContainer.querySelector('.rpg-hand-dock.is-open'),
+    'la main reste ouverte pour jouer une carte de réponse');
+  assert.equal(aiFireContainer.querySelector('.rpg-hand-dock')?.hasAttribute('inert'), false,
+    'Répondre réactive la main et ses cartes');
+  const silenceReponse = aiFireHand().find((button) => button.getAttribute('aria-label')?.includes('Silence d’écume'));
+  assert.ok(silenceReponse && estJouable(silenceReponse),
+    'une véritable magie rapide de contre est jouable après avoir choisi Répondre');
+  assert.match(aiFireContainer.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · RÉPONSE/,
+    'l’indicateur confirme que le joueur a la priorité de réponse');
+  await act(async () => { boutonLaisserPasserCompact.click(); });
   await act(async () => { await wait(200); });
   const destructionAi = aiFireContainer.querySelector('.rpg-card-destruction-fx[data-rpg-destroyed-id]');
   assert.ok(destructionAi?.classList.contains('is-burning')
