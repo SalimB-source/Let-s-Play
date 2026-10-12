@@ -1,5 +1,41 @@
 import { requestNativeFullscreen, exitNativeFullscreen, nativeFullscreenElement } from './gameFullscreen.js';
 
+/** Délai (ms) laissé à la page pour obtenir le plein écran avant de verrouiller
+ * le paysage : `screen.orientation.lock` est refusé tant que le document n'est
+ * pas en plein écran, et la demande de la page est en vol dans le même geste. */
+const FULLSCREEN_WAIT_MS = 1200;
+
+/**
+ * Attend que le document passe en plein écran — celui que la page demande de
+ * son côté (`useGameFullscreen`), pas celui de la session. Rend une promesse
+ * (`true` si le plein écran est là, `false` à la fin du délai) ou `null` quand
+ * il n'y a rien à attendre : le plein écran est déjà posé, ou le document ne
+ * peut pas nous prévenir (doublure de test). Le verrou d'orientation est tenté
+ * dans tous les cas, son échec menant à l'invite de rotation.
+ */
+function attendrePleinEcran(doc, timeoutMs = FULLSCREEN_WAIT_MS) {
+  if (nativeFullscreenElement(doc)) return null;
+  if (typeof doc?.addEventListener !== 'function' || typeof setTimeout !== 'function') return null;
+  // Sans Fullscreen API (iPhone, iframe) il n'y a rien à attendre : le verrou
+  // d'orientation sera refusé de toute façon et l'invite de rotation prend le relais.
+  const element = doc?.documentElement;
+  if (typeof element?.requestFullscreen !== 'function' && typeof element?.webkitRequestFullscreen !== 'function') {
+    return null;
+  }
+  return new Promise((resolve) => {
+    const terminer = () => {
+      clearTimeout(timer);
+      doc.removeEventListener('fullscreenchange', surChangement);
+      doc.removeEventListener('webkitfullscreenchange', surChangement);
+      resolve(Boolean(nativeFullscreenElement(doc)));
+    };
+    const surChangement = () => { if (nativeFullscreenElement(doc)) terminer(); };
+    const timer = setTimeout(terminer, timeoutMs);
+    doc.addEventListener('fullscreenchange', surChangement);
+    doc.addEventListener('webkitfullscreenchange', surChangement);
+  });
+}
+
 /** A duel owns only the orientation/fullscreen it requested. A late browser
  * promise must never lock the screen again after the player leaves the duel. */
 export function createRpgLandscapeSession(win = window, doc = document) {
@@ -31,6 +67,15 @@ export function createRpgLandscapeSession(win = window, doc = document) {
           }
           ownsFullscreen = true;
         }
+      } else if (!fullscreen) {
+        // `fullscreen: false` : le plein écran appartient à la page
+        // (`useGameFullscreen`, qui le pose dès le menu et le garde en duel).
+        // On l'attend avant de verrouiller l'orientation — le navigateur refuse
+        // `screen.orientation.lock` hors plein écran — sans jamais le refermer.
+        // Rien à attendre (plein écran déjà posé, document muet) : on enchaîne
+        // sans passer la main, comme avant.
+        const attente = attendrePleinEcran(doc);
+        if (attente) await attente;
       }
       if (!active || token !== generation || !needsLandscape) return;
       try {

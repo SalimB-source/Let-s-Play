@@ -11,6 +11,9 @@ import './rpg-mobile.css';
 import './rpg-story.css';
 import './rpg-deckbox.css';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
+import FullscreenIcon from './FullscreenIcon.jsx';
+import { isFullscreenShortcut, nativeFullscreenElement } from './gameFullscreen.js';
+import useGameFullscreen from './useGameFullscreen.js';
 import {
   plateauDeRepli,
   plateauParId,
@@ -1158,7 +1161,7 @@ function writeRpgSoundPref(value) {
   try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onPlaySfx, fullscreen, onToggleFullscreen }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [openDeckId, setOpenDeckId] = useState(null);
@@ -1258,6 +1261,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <h1>Le <span>Sablier</span></h1>
             <p>Les portes de la ville attendent leur prochain gardien.</p>
           </div>
+          <button
+            type="button"
+            className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
+            onClick={() => { play('menu'); onToggleFullscreen?.(); }}
+            aria-pressed={Boolean(fullscreen)}
+            title={fullscreen ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+            aria-label={fullscreen ? 'Quitter le plein écran' : 'Jouer en plein écran'}
+          >
+            <FullscreenIcon exit={Boolean(fullscreen)} className="rpg-fullscreen-icon" />
+          </button>
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
@@ -1732,6 +1745,14 @@ function animationsReduites() {
   return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 }
 
+/** Vrai quand le geste part d'un champ de saisie : le nom d'un deck maison, un
+ * filtre du catalogue. Ni la touche F ni la demande de plein écran ne doivent
+ * voler ce que le joueur est en train d'écrire. */
+function vientDunChampDeSaisie(cible) {
+  const balise = cible?.tagName;
+  return balise === 'INPUT' || balise === 'TEXTAREA' || balise === 'SELECT' || Boolean(cible?.isContentEditable);
+}
+
 // ── SFX réactifs du duel : pioche, destruction, impact, victoire/défaite, phases ──
 // Monté seulement pendant la partie : ses hooks ne doivent pas passer après les
 // retours anticipés de RpgDuelPage (menu, duel absent), sinon l'ordre des hooks
@@ -1773,6 +1794,15 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
   const [ecran, setEcran] = useState('jouer');
   const landscapeRef = useRef(null);
+  // La coque du jeu (`.rpg-battle`) : menu, catalogues et duel partagent le même
+  // élément — React garde le nœud d'un écran à l'autre —, donc le plein écran
+  // survit au lancement d'une partie comme au retour au menu.
+  const shellRef = useRef(null);
+  const {
+    active: pleinEcran,
+    enter: entrerPleinEcran,
+    toggle: basculerPleinEcran,
+  } = useGameFullscreen(shellRef);
   const [viewport, setViewport] = useState({ mobile: false, portrait: false });
   useEffect(() => {
     landscapeRef.current = createRpgLandscapeSession();
@@ -1787,6 +1817,70 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     if (ecran !== 'partie') landscapeRef.current?.leave();
   }, [ecran]);
+
+  // ── Plein écran ──────────────────────────────────────────────────────────
+  // Le Sablier SE LANCE EN PLEIN ÉCRAN, sur ordinateur comme sur téléphone, et
+  // son interface d'avant-partie en fait partie : le menu Jouer, le mode
+  // Histoire, les decks et le catalogue s'affichent déjà plein écran, le duel
+  // n'a plus qu'à continuer dans le même espace. Le mécanisme (Fullscreen API,
+  // couche fixe en repli, verrou de défilement) est celui des jeux d'arcade —
+  // `gameFullscreen.js` / `useGameFullscreen.js` ; ici, les règles du jeu :
+  //   - la coque est une couche fixe qui couvre tout le viewport : elle est
+  //     posée dès le montage de la page, sans geste, et le choix est
+  //     « épinglé » — il traverse les écrans jusqu'à ce que le joueur le quitte
+  //     (bouton du menu ou de la barre du duel, touche F, Échap, geste
+  //     « retour » d'Android) ;
+  //   - le navigateur exige un geste pour le plein écran natif : le premier
+  //     clic ou la première touche du joueur le demande (effet suivant) ;
+  //   - lancer une partie (duel libre, étage de l'Histoire, « Reprendre »,
+  //     « Activer le paysage ») le redemande dans le geste du bouton, ce qui
+  //     rouvre un plein écran quitté depuis le menu ;
+  //   - la session de paysage ne possède plus le plein écran
+  //     (`enter({ fullscreen: false })`) : un seul propriétaire, sinon le
+  //     retour au menu refermait l'écran demandé.
+  useEffect(() => {
+    // Plein écran « de base » : la couche fixe se pose sans geste. `native` est
+    // faux car le navigateur refuserait une demande hors geste — le natif part
+    // au premier geste du joueur.
+    entrerPleinEcran({ pinned: true, native: false });
+  }, [entrerPleinEcran]);
+
+  // Le navigateur exige un geste pour le vrai plein écran : le premier clic ou
+  // la première touche (hors champ de saisie) le demande, au menu comme en duel.
+  // Le natif posé — ou le plein écran quitté — l'écoute s'arrête d'elle-même.
+  useEffect(() => {
+    if (!pleinEcran) return undefined;
+    const upgrade = (event) => {
+      if (nativeFullscreenElement()) return;
+      if (vientDunChampDeSaisie(event.target)) return;
+      // Échap (ou le geste « retour ») referme le plein écran dans le
+      // navigateur : si la touche nous parvient quand même, elle ne doit pas le
+      // rouvrir aussitôt — la sortie appartient au joueur.
+      if (String(event.key || '').toLowerCase() === 'escape') return;
+      entrerPleinEcran({ pinned: true });
+    };
+    window.addEventListener('pointerdown', upgrade, true);
+    window.addEventListener('keydown', upgrade, true);
+    return () => {
+      window.removeEventListener('pointerdown', upgrade, true);
+      window.removeEventListener('keydown', upgrade, true);
+    };
+  }, [pleinEcran, entrerPleinEcran]);
+
+  // « F » bascule le plein écran, sur tous les écrans du jeu. Ni Ctrl/Cmd+F (la
+  // recherche du navigateur), ni Alt+F, ni une touche maintenue, ni un « f »
+  // tapé dans un champ de saisie.
+  useEffect(() => {
+    const surTouche = (event) => {
+      if (!isFullscreenShortcut(event)) return;
+      if (vientDunChampDeSaisie(event.target)) return;
+      event.preventDefault();
+      basculerPleinEcran();
+    };
+    window.addEventListener('keydown', surTouche);
+    return () => window.removeEventListener('keydown', surTouche);
+  }, [basculerPleinEcran]);
+
   // Mode Histoire : la première fois qu'un étage est remporté, il est marqué
   // déblayé et sauvegardé sur l'appareil (une seule fois par duel). Sa
   // récompense — les cartes rendues par l'étage — rejoint la collection ; le
@@ -1802,8 +1896,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setProgressionHistoire(maj);
     noterVictoireEtage(histoireEtageId, maj);
   });
+  // Lancer (ou reprendre) une partie : le plein écran natif est demandé ici,
+  // dans le geste du bouton — le navigateur le refuse ailleurs. La session de
+  // paysage garde l'orientation et le pont Android, pas le plein écran.
+  const demanderPleinEcranEtPaysage = () => {
+    entrerPleinEcran({ pinned: true });
+    landscapeRef.current?.enter({ fullscreen: false });
+  };
   const reprendrePartie = () => {
-    landscapeRef.current?.enter();
+    demanderPleinEcranEtPaysage();
     setEcran('partie');
   };
   // Decks maison et collection : l'atelier écrit dans le casier local, le compte
@@ -2403,7 +2504,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran !== 'partie') {
     return (
-      <div className="rpg-battle rpg-battle--menu" data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -2426,6 +2527,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onHoverCard={afficherApercuSurvol}
           onLeaveHoverCard={masquerApercuSurvol}
           onPlaySfx={jouerSfx}
+          fullscreen={pleinEcran}
+          onToggleFullscreen={basculerPleinEcran}
         />
         {apercuSurvol && (
           <HoverCardPreview
@@ -3798,7 +3901,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
 
   return (
     <div
-      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}`}
+      ref={shellRef}
+      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}${pleinEcran ? ' is-immersive' : ''}`}
       data-scene="duel"
       onPointerDown={demarrerAppuiLongCarte}
     >
@@ -3813,7 +3917,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         <span className="rpg-rotate-prompt__icon" aria-hidden="true">↻</span>
         <h2>Le duel se joue en paysage</h2>
         <p>Tournez votre téléphone pour retrouver toute la largeur du plateau.</p>
-        <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => landscapeRef.current?.enter()}>Activer le paysage</button>
+        <button type="button" className="rpg-btn rpg-btn--primary" onClick={demanderPleinEcranEtPaysage}>Activer le paysage</button>
         <small>Si votre navigateur refuse la rotation automatique, tournez l’appareil et désactivez son verrouillage d’orientation.</small>
         <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setEcran('jouer')}>Retour au menu</button>
       </div>}
@@ -3852,6 +3956,16 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
           >
             <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+          </button>
+          <button
+            type="button"
+            className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
+            onClick={basculerPleinEcran}
+            aria-pressed={pleinEcran}
+            title={pleinEcran ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+            aria-label={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'}
+          >
+            <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
           </button>
         </nav>
 

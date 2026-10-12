@@ -5632,3 +5632,81 @@ validation échange, montre la nouvelle main avec ses cartes signalées, et rend
 la table sur « Commencer le duel » ; une partie neuve rouvre le droit. Les
 duels au pilote automatique de `scripts/rpg-ghost-check.mjs` valident le
 mulligan à chaque graine, grand écran et doigt confondus.
+
+## Le Sablier : le plein écran, du menu au duel
+
+Le jeu (`/jeu/sablier-de-bab-el`) **se lance en plein écran**, sur ordinateur
+comme sur téléphone, avec le même moteur que Mirage Rush et Vice City Rush
+(`gameFullscreen.js` / `useGameFullscreen.js`). Son **interface d'avant-partie
+en fait partie** : le menu Jouer, le mode Histoire, l'onglet Deck (catalogue et
+atelier) et le Catalogue s'affichent déjà plein écran — le joueur ne parcourt
+plus le menu dans une fenêtre pour découvrir le duel en plein écran ensuite.
+
+| Geste | Effet |
+|---|---|
+| Ouverture de la page | la coque du jeu (`.rpg-battle`, couche fixe) occupe tout de suite tout l'écran (`is-immersive`, posée au montage, sans geste) ; le plein écran natif, que le navigateur exige dans un geste, part au **premier clic ou à la première touche** du joueur |
+| Bouton **plein écran** du menu (à gauche de la barre des modes) | ouvre ou ferme, sur les quatre écrans du menu |
+| Bouton **plein écran** de la barre du duel (à côté du son) | ouvre ou ferme en pleine partie |
+| Touche **F** | ouvre ou ferme (Ctrl/Cmd/Alt + F et touche maintenue restent au navigateur ; un « f » tapé dans un champ — le nom d'un deck maison — ne fait rien) |
+| **Lancer le duel**, un **étage de l'Histoire**, **Reprendre le duel**, **Activer le paysage** | le plein écran natif est redemandé dans le geste du bouton : une partie repart toujours plein écran, ordinateur compris |
+| **Échap**, ou le geste « retour » d'Android | le navigateur referme le plein écran : la page suit, le jeu reste jouable dans la couche fixe, et rien ne le rouvre tout seul — la touche qui referme ne relance pas une demande |
+| Retour au menu depuis le duel | le plein écran **reste ouvert** : la coque est le même nœud d'un écran à l'autre, et la session de paysage ne le possède plus |
+| Quitter la page | le verrou de défilement est rendu et le plein écran refermé |
+
+- **Plein écran de base, épinglé.** La couche fixe est posée au montage de la
+  page et le choix est « épinglé » : il traverse les écrans (menu, duel, decks,
+  catalogue, fin d'étage) jusqu'à ce que le joueur le quitte.
+- **Deux couches.** Le plein écran natif (Fullscreen API, préfixe WebKit compris ;
+  dans l'APK, la WebView le prend en charge via `onShowCustomView`, qui pose le
+  plein écran immersif du système) et la couche fixe `is-immersive`, qui couvre
+  tout le viewport. Quand l'API manque ou refuse (iPhone, `iframe` sans
+  `allowfullscreen`), la couche fixe seule suffit pour jouer : le Sablier occupe
+  tout l'écran, marges d'encoche comprises. Le verrou de défilement est le même
+  que celui des jeux d'arcade (`game-immersive-lock`), déclaré cette fois par
+  `rpg-battle.css` pour ne pas dépendre du chargement d'un autre jeu.
+- **La cible est la coque, pas la page.** Le plein écran natif porte sur
+  `.rpg-battle` : l'en-tête et la barre du site restent dehors, seul le Sablier
+  part en plein écran.
+- **Un seul propriétaire.** `rpgLandscape.js` ne demande plus le plein écran :
+  la page l'appelle avec `enter({ fullscreen: false })`, la session **attend** le
+  plein écran de la page (`screen.orientation.lock` est refusé tant que le
+  document n'y est pas) puis verrouille le paysage, sans délai quand il n'y a
+  rien à attendre. Avant ce partage, le retour au menu refermait l'écran que le
+  duel avait ouvert, et le menu ne pouvait pas être plein écran du tout.
+
+### Où vit le code
+
+- `src/games/gameFullscreen.js` et `src/games/useGameFullscreen.js` — le moteur
+  partagé (voir « Mirage Rush : le plein écran ») ;
+- `src/games/RpgDuelPage.jsx` — la coque `.rpg-battle` comme cible (`shellRef`),
+  le plein écran de base au montage, la demande au premier geste (Échap exclu),
+  la touche F, la demande dans le geste de lancement
+  (`demanderPleinEcranEtPaysage`) et les deux boutons ;
+- `src/games/rpgLandscape.js` — l'attente du plein écran de la page avant le
+  verrou d'orientation (`attendrePleinEcran`) ;
+- `src/games/rpg-battle.css` — `body.game-immersive-lock`,
+  `.rpg-battle.is-immersive`, les boutons `.rpg-mode-menu__fullscreen` et
+  `.rpg-duel-nav__fullscreen` (même gabarit que le bouton son : la barre du duel
+  tient dans une colonne de 200 px en paysage), l'icône `.rpg-fullscreen-icon`,
+  et l'en-tête du menu en grille sur téléphone — le bouton monte à côté du
+  titre, la barre des modes garde toute la largeur ;
+- `src/games/FullscreenIcon.jsx` — l'icône SVG partagée (quatre coins qui
+  s'écartent ou se rapprochent), jamais le glyphe ⛶.
+
+### Vérifications
+
+```bash
+npm run check:rpg-fullscreen   # la page dans jsdom : plein écran de base, natif au premier geste et au lancement, menu ↔ duel, F, sortie du navigateur, repli sans API
+npm run check:rpg              # cycle de vie de l'orientation et du plein écran (tests/rpg-landscape.test.js)
+```
+
+`scripts/rpg-fullscreen-check.mjs` monte la **vraie page** dans jsdom avec une
+Fullscreen API de remplacement qui répond comme un navigateur (elle sait aussi
+refuser, ou fermer « de l'extérieur » comme Échap). Elle vérifie que le menu se
+lance en plein écran de base sans geste, que le premier clic demande le natif
+sur la coque — pas sur `<html>` —, que le lancement d'un duel ou d'un étage
+garde **le même nœud** en plein écran, que le retour au menu ne referme rien,
+que F ouvre et ferme (et que ses combinaisons, la touche maintenue, la saisie de
+texte et Échap ne font rien), et que le repli sans API tient. Elle ne dit rien
+du rendu réel : pour cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`)
+et le passer en plein écran sur un grand écran, puis sur un téléphone.

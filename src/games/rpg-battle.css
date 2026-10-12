@@ -1215,6 +1215,22 @@
   background: #07070f;
 }
 
+/* ── Plein écran : le menu comme le duel ─────────────────────────────────────
+   Le Sablier se lance en plein écran, sur ordinateur comme sur téléphone, et
+   son interface d'avant-partie (menu Jouer, mode Histoire, decks, catalogue) en
+   fait partie. Deux couches, comme les jeux d'arcade :
+     - la couche fixe ci-dessus, qui couvre tout le viewport dès l'ouverture de
+       la page — `is-immersive` est posée par `useGameFullscreen` au montage,
+       sans geste, et reste quand le navigateur refuse le plein écran natif
+       (iPhone, `iframe` sans `allowfullscreen`) ;
+     - le plein écran natif, demandé au premier geste du joueur, au lancement
+       d'une partie, par le bouton du menu ou de la barre du duel, ou par la
+       touche F (`gameFullscreen.js`).
+   Les marges d'encoche (`env(safe-area-inset-*)`, plus bas) sont conservées :
+   c'est sur iPhone, sans natif, que la couche fixe seule tient le jeu. */
+body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
+.rpg-battle.is-immersive { overscroll-behavior: none; }
+
 .rpg-stage { position: absolute; inset: 0; }
 
 /* La section est une colonne : HUD haut / milieu / barre du bas, la scène
@@ -4011,6 +4027,23 @@
   color: #ffe5a0;
 }
 
+/* Le plein écran se pilote aussi depuis la barre du duel (bouton, touche F) :
+   exactement le gabarit du bouton son — la barre tient déjà serrée sur un
+   téléphone en paysage (sa colonne fait 200 px au minimum), un bouton plus
+   large la ferait déborder sur le plateau du sorcier. */
+.rpg-duel-nav__fullscreen {
+  min-width: 32px;
+  padding: 6px 8px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.rpg-duel-nav__fullscreen.is-on {
+  border-color: rgba(246, 207, 103, .45);
+  background: rgba(244, 192, 79, .14);
+  color: #ffe5a0;
+}
+.rpg-fullscreen-icon { display: block; width: 14px; height: 14px; }
+
 /* Menu principal, catalogues des decks et des cartes de Sablier. */
 .rpg-battle--menu { background: #09080d; }
 .rpg-mode-menu {
@@ -4043,9 +4076,9 @@
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 12px;
 }
-.rpg-mode-menu__brand { min-width: 0; }
+.rpg-mode-menu__brand { min-width: 0; margin-right: auto; }
 .rpg-mode-menu__eyebrow {
   display: block;
   color: #e8c77f;
@@ -4099,6 +4132,35 @@
   color: #ffe7af;
   outline: none;
 }
+/* Plein écran du menu : le bouton se tient à gauche de la barre des modes, dans
+   le même laiton. Il ouvre le plein écran natif — déjà posé en couche fixe dès
+   l'ouverture de la page — et le referme une fois allumé (`is-on`). */
+.rpg-mode-menu__fullscreen {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  min-height: 45px; /* la hauteur de la barre des modes : les deux sont alignés */
+  padding: 10px 13px;
+  border: 1px solid rgba(240, 221, 183, .22);
+  border-radius: 13px;
+  background: rgba(12, 10, 13, .7);
+  color: rgba(247, 237, 220, .74);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.rpg-mode-menu__fullscreen:hover,
+.rpg-mode-menu__fullscreen:focus-visible,
+.rpg-mode-menu__fullscreen.is-on {
+  border-color: rgba(231, 191, 101, .48);
+  background: linear-gradient(135deg, rgba(201, 150, 57, .26), rgba(111, 69, 34, .22));
+  color: #ffe7af;
+  outline: none;
+}
+.rpg-mode-menu__fullscreen .rpg-fullscreen-icon { width: 16px; height: 16px; }
 .rpg-mode-menu__play {
   display: grid;
   grid-template-columns: minmax(0, 1.52fr) minmax(260px, .82fr);
@@ -4390,7 +4452,19 @@
 @media (max-width: 560px) {
   .rpg-mode-menu { background-position: 58% center; }
   .rpg-mode-menu__content { gap: 18px; padding: 19px 14px 14px; }
-  .rpg-mode-menu__header { align-items: start; flex-direction: column; gap: 14px; }
+  /* Le plein écran reste à portée du pouce sans voler de la place à la barre
+     des modes : le bouton monte à côté du titre, les quatre modes gardent toute
+     la largeur (leurs libellés tiennent dans un écran de 320 px). */
+  .rpg-mode-menu__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand fullscreen" "modes modes";
+    align-items: start;
+    gap: 12px;
+  }
+  .rpg-mode-menu__brand { grid-area: brand; margin-right: 0; }
+  .rpg-mode-menu__fullscreen { grid-area: fullscreen; min-width: 44px; min-height: 44px; padding: 10px; }
+  .rpg-mode-menu__switch { grid-area: modes; }
   /* Quatre boutons à parts égales, icône au-dessus du libellé : « CATALOGUE »
      tient dans un écran de 320 px au lieu de déborder à droite. */
   .rpg-mode-menu__switch { width: 100%; gap: 4px; padding: 4px; }
