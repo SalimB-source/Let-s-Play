@@ -247,8 +247,12 @@ export async function checkRpgPreviewActions(assert) {
     const creatureAppui = ['creature', 'hero'].includes(attendue.kind);
     assert.equal(Boolean(typeAppui), !creatureAppui,
       'le volet imprime la ligne de type des magies et des terrains, et la tait pour une créature');
-    const lignesAttendues = attendue.text && attendue.text !== '—'
-      ? attendue.text.split(/\n+|(?<=[.!?])\s+/u).map((ligne) => ligne.trim()).filter(Boolean)
+    const glyphesMana = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️' };
+    const texteAttendu = attendue.kind === 'terrain'
+      ? attendue.text?.replace(/\b(braise|eau|sable|neige)\b/giu, (couleur) => glyphesMana[couleur.toLowerCase()])
+      : attendue.text;
+    const lignesAttendues = texteAttendu && texteAttendu !== '—'
+      ? texteAttendu.split(/\n+|(?<=[.!?])\s+/u).map((ligne) => ligne.trim()).filter(Boolean)
       : [];
     assert.deepEqual(
       [...apercuAppui.querySelectorAll('.rpg-hover-card-preview__rules > span')].map((node) => node.textContent),

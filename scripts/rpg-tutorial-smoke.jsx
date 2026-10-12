@@ -84,10 +84,18 @@ export async function checkRpgCardGuide(assert) {
       .find((button) => button.textContent.includes('Cartes & effets')), 'l’entrée « Cartes & effets »');
     assert.equal(step(), 'card-guide-familles-de-cartes', 'le guide avancé commence par présenter les familles de cartes');
     assert.deepEqual(exampleIds(), ['desert', 'tin-hinan'], 'les fiches affichent des exemples issus du catalogue réel');
+    assert.equal(container.querySelector('[data-card-id="desert"] .rpg-card-guide__rules')?.textContent,
+      'Engagez : ajoutez un mana ⏳.', 'le guide imprime aussi l’icône Sable dans le texte du Désert');
 
     await click(next(), 'la fiche suivante');
     assert.equal(step(), 'card-guide-terrain-hybride', 'le parcours montre ensuite le terrain à deux couleurs');
     assert.deepEqual(exampleIds(), ['petra', 'desert']);
+    const reglesPetra = container.querySelector('[data-card-id="petra"] .rpg-card-guide__rules');
+    assert.equal(reglesPetra?.textContent, 'Engagez : ajoutez un mana 🔥 ou ⏳.',
+      'le terrain hybride affiche les deux icônes en conservant le choix « ou »');
+    assert.deepEqual([...reglesPetra.querySelectorAll('.rpg-card-rules__mana[role="img"]')]
+      .map((icone) => icone.getAttribute('aria-label')), ['Braise', 'Sable'],
+    'les deux icônes du guide gardent un nom accessible');
     await click(next(), 'la fiche des terrains');
     assert.equal(step(), 'card-guide-rituel-ephemere', 'les deux timings de magie sont présentés côte à côte');
     assert.deepEqual(exampleIds(), ['rempart-de-dunes', 'parade-du-verre']);

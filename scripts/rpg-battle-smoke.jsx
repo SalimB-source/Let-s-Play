@@ -158,6 +158,35 @@ export async function checkRpgBattle(assert) {
     'le catalogue présente toutes les créatures, tous les héros, terrains et magies');
   assert.equal(new Set([...container.querySelectorAll('.rpg-card-catalogue__card')].map((card) => card.dataset.cardId)).size,
     RPG_DUEL_CARDS.length, 'chaque carte apparaît une seule fois dans le catalogue');
+  // Les textes de tous les terrains utilisent les mêmes icônes au catalogue
+  // et dans l'aperçu, sans perdre le nom des couleurs pour les lecteurs d'écran.
+  for (const [id, texte, labels] of [
+    ['montagne', 'Engagez : ajoutez un mana 🔥.', ['Braise']],
+    ['mer', 'Engagez : ajoutez un mana 💧.', ['Eau']],
+    ['desert', 'Engagez : ajoutez un mana ⏳.', ['Sable']],
+    ['glacier', 'Engagez : ajoutez un mana ❄️.', ['Neige']],
+    ['petra', 'Engagez : ajoutez un mana 🔥 ou ⏳.', ['Braise', 'Sable']],
+  ]) {
+    const carte = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${id}"]`);
+    const verifierRegles = (regles, contexte) => {
+      assert.equal(regles?.textContent, texte, `${contexte} remplace les couleurs par leurs icônes`);
+      assert.deepEqual([...regles.querySelectorAll('.rpg-card-rules__mana[role="img"]')]
+        .map((icone) => icone.getAttribute('aria-label')), labels,
+      `${contexte} nomme chaque couleur, y compris les deux choix de Pétra`);
+    };
+    verifierRegles(carte.querySelector('.rpg-card-catalogue__rules'), `Catalogue : ${id}`);
+    await act(async () => { envoyerSouris(carte, 'mouseover'); });
+    const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
+    verifierRegles(apercu?.querySelector('.rpg-hover-card-preview__rules'), `Aperçu : ${id}`);
+    assert.ok(apercu.getAttribute('aria-label').includes(cardById(id).text),
+      `le libellé accessible de ${id} conserve le texte original`);
+    await act(async () => { envoyerSouris(carte, 'mouseout'); });
+  }
+  for (const carte of RPG_DUEL_CARDS.filter((carte) => carte.kind !== 'terrain')) {
+    const regles = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${carte.id}"] .rpg-card-catalogue__rules`);
+    assert.equal(regles.textContent, carte.text && carte.text !== '—' ? carte.text : 'Aucune capacité.',
+      `le texte de ${carte.name}, qui n'est pas un terrain, reste inchangé`);
+  }
   const djinnCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="djinn-du-souk"]');
   assert.match(djinnCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/djinn-du-souk\.jpg\?v=munch-impressionniste-v3$/,
@@ -449,8 +478,10 @@ export async function checkRpgBattle(assert) {
     'l’aperçu concis affiche le type de la carte');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__cost'), null,
     'un terrain conserve la règle de ne pas afficher de coût');
-  assert.match(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /mana sable/,
-    'l’aperçu montre l’effet de production de mana du terrain');
+  assert.match(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /mana ⏳/,
+    'l’aperçu montre l’effet de production de mana avec l’icône Sable');
+  assert.match(apercuTerrainSurvol.getAttribute('aria-label'), /mana sable/,
+    'le texte accessible conserve le nom de la couleur de mana');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__stats'), null,
     'un terrain n’affiche pas de statistiques de créature');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__flavor, .rpg-hover-card-preview__rarity, h2'), null,
