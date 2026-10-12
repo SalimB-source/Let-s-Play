@@ -714,13 +714,23 @@
 /* ── Les terrains posés : mini-cartes 4:5, engagées = couchées/grisées ── */
 .rpg-terrains {
   position: absolute;
-  z-index: 4;
+  /* Au-dessus du dégradé noir du dock de la main (z-index 40) : le rail joueur
+     vit à 72 % de la table, pile dans la bande d'ombre de la main, et s'y
+     noyait à z-index 4. Reste sous le choix de mana (48), les overlays (49) et
+     la navigation (50 / 900). */
+  z-index: 41;
   display: flex;
   gap: 6px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .rpg-terrains::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* À la souris, le rail flotte au-dessus de la main sans jamais la bloquer :
+   seul le petit bouton de terrain attrape le pointeur, le contenant reste
+   transparent aux clics (le doigt, lui, garde le rail entier défilable). */
+.rpg-battle:not(.rpg-battle--touch) .rpg-terrains { pointer-events: none; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-terrain { pointer-events: auto; }
 
 .rpg-terrains--ennemi { top: 64px; right: 12px; }
 .rpg-terrains--joueur { bottom: 118px; left: 12px; }
@@ -2350,7 +2360,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: 6px 18px 7px;
 }
 
-.rpg-terrains { z-index: 4; gap: 5px; max-width: calc(100% - 430px); overflow-x: auto; overflow-y: visible; padding: 10px 12px 12px; scroll-padding-inline: 12px; }
+.rpg-terrains { z-index: 41; gap: 5px; max-width: calc(100% - 430px); overflow-x: auto; overflow-y: visible; padding: 10px 12px 12px; scroll-padding-inline: 12px; }
 .rpg-terrains--ennemi { top: 8%; right: auto; left: clamp(220px, 20%, 280px); }
 .rpg-terrains--joueur { top: 72%; bottom: auto; left: clamp(220px, 20%, 280px); }
 .rpg-terrain { width: clamp(74px, 6.6vw, 96px); border-color: rgba(7, 8, 11, .92); }
