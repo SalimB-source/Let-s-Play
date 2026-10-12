@@ -1,5 +1,5 @@
 /**
- * Le Sablier du temps — l'appui long d'une seconde.
+ * Le Sablier — l'appui long d'une seconde.
  *
  * Sur écran tactile, le survol n'existe pas : l'aperçu instantané d'une carte
  * (type, coût, effets, statistiques) était donc inaccessible dans l'application

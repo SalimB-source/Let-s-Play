@@ -1,5 +1,5 @@
 /**
- * Musiques d'ambiance — Le Sablier du Temps (mode Histoire, les Tours de Bab El).
+ * Musiques d'ambiance — Le Sablier (mode Histoire, les Tours de Bab El).
  *
  * Cinq ambiances, une par tour, toutes **synthétisées en WebAudio** : zéro
  * fichier à charger (convention du dépôt, voir `cityRushAudio.js` et `rpgAudio.js`),

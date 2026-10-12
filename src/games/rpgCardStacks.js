@@ -1,5 +1,5 @@
 /**
- * Le Sablier du temps — piles de cartes homonymes (présentation tactile).
+ * Le Sablier — piles de cartes homonymes (présentation tactile).
  *
  * Au doigt, la zone de jeu est étroite : deux exemplaires de la même carte
  * prennent deux emplacements pour une seule information. On regroupe donc les

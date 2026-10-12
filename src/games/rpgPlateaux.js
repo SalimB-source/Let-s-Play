@@ -1,5 +1,5 @@
 /**
- * Le Sablier du temps — les plateaux de duel.
+ * Le Sablier — les plateaux de duel.
  *
  * Le duel se joue sur une **table** : un fond plein cadre, sous les cartes.
  * Le jeu en propose plusieurs, mais **le joueur n'en choisit aucun** : le

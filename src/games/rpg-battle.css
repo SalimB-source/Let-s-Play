@@ -1,4 +1,4 @@
-/* Prototype RPG « Le Sablier du temps » — écran de combat.
+/* Prototype RPG « Le Sablier » — écran de combat.
    Palette du concept B : laiton et cuivre de la ville, indigo de la nuit,
    ocre du sable qui monte. Les variables viennent du site (src/styles.css) ;
    la scène de jeu, elle, reste nocturne dans les deux thèmes (voir ci-dessous). */
@@ -3797,7 +3797,7 @@
   color: #ffe5a0;
 }
 
-/* Menu principal, catalogues des decks et des cartes de Sablier du temps. */
+/* Menu principal, catalogues des decks et des cartes de Sablier. */
 .rpg-battle--menu { background: #09080d; }
 .rpg-mode-menu {
   position: absolute;

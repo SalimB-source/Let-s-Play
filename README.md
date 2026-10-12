@@ -5002,7 +5002,7 @@ complètes du vrai moteur avec rendu GPU factice, tirs tactiles puis touche Z.
 Aucun dégât ni trafic n’est désactivé. Pour varier la simulation :
 `CITY_RUSH_MISSION_SEED=42 node scripts/city-rush-mission-run-check.mjs`.
 
-## Le Sablier du temps : prototype de RPG tour par tour
+## Le Sablier : prototype de RPG tour par tour
 
 Troisième jeu de la page (`/jeu/sablier-de-bab-el`) : un **prototype de combat
 tour par tour** dans la lignée de *Final Fantasy* et *Dragon Quest* — et
@@ -5122,7 +5122,7 @@ tracé au journal, les cinq réponses proposées, la première vague gagnée en
 jouant pour de vrai, le palier suivant enchaîné et la permutation avec la
 réserve.
 
-## Le Sablier du temps : les plateaux du duel
+## Le Sablier : les plateaux du duel
 
 Le duel se joue **sur une table** : un fond plein cadre, sous les cartes.
 Jusqu'ici il n'y en avait qu'une — le bois gravé de Bab El. Le jeu en propose
@@ -5234,7 +5234,7 @@ plateau du catalogue règle sa propre densité**, les fonds clairs (sables, pier
 de Tipaza) sont plus voilés que le bois, et la présentation tactile conserve le
 voile au lieu de le supprimer.
 
-## Le Sablier du temps : l'aperçu d'une carte au doigt
+## Le Sablier : l'aperçu d'une carte au doigt
 
 À la souris, survoler une carte ouvre son **aperçu instantané** : le type, le
 coût, les effets ligne à ligne, l'attaque et la défense. Sur écran tactile, le
@@ -5305,7 +5305,7 @@ avalé ; le volet se referme au toucher et à Échap ; une créature en jeu
 s'aperçoit sans être déclarée attaquante ; un appui qui glisse n'ouvre rien ; un
 appui court laisse passer le clic qui joue la carte.
 
-## Le Sablier du temps : la zone de jeu au doigt, élargie et empilée
+## Le Sablier : la zone de jeu au doigt, élargie et empilée
 
 Sur un téléphone en paysage, la zone de jeu est la **colonne centrale** de la
 grille tactile, prise entre deux rails : identité et terrains à gauche, phases
@@ -5408,7 +5408,7 @@ décalées), l'empilement réservé au doigt (`empilerCartes = viewport.mobile`)
 le DOM de la main inchangé à la souris, et les groupes dépliés par toute action
 en cours.
 
-## Le Sablier du temps : le renvoi en main (Ressac, Courant de retour)
+## Le Sablier : le renvoi en main (Ressac, Courant de retour)
 
 La Marée des abysses gagne deux sorts d'Eau qui **renvoient une créature dans
 la main de son propriétaire** — l'effet `retour-main` du moteur. La créature
@@ -5465,7 +5465,7 @@ protection et l'absence de cible bloquent le sort sans paiement, et que l'IA
 annonce puis résout un Ressac sur la plus grosse menace. Le scénario de
 `scripts/rpg-battle-smoke.jsx` rejoue le geste complet dans la vraie interface.
 
-## Le Sablier du temps : plus de carte morte sur le terrain
+## Le Sablier : plus de carte morte sur le terrain
 
 Une carte détruite pouvait rester posée sur la table, figée et comme engagée,
 jusqu'à bloquer le duel. Les règles n'y étaient pour rien — le moteur enterrait

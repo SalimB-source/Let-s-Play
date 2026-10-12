@@ -1,5 +1,5 @@
 /**
- * Catalogue de cartes de l’univers « Le Sablier du temps ».
+ * Catalogue de cartes de l’univers « Le Sablier ».
  *
  * Le duel utilise un jeu original de type TCG : les terrains génèrent du mana
  * coloré, les créatures et héros combattent, et les rituels/éphémères résolvent

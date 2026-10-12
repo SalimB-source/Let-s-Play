@@ -1,4 +1,4 @@
-// Chasse aux cartes fantômes du Sablier du temps.
+// Chasse aux cartes fantômes du Sablier.
 //
 // Trois épreuves, toutes jouées dans jsdom sur la vraie page de duel :
 //   1. pilote automatique — des duels entiers, geste après geste, avec une

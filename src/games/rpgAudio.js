@@ -1,5 +1,5 @@
 /**
- * Signature sonore — « Le Sablier du temps ».
+ * Signature sonore — « Le Sablier ».
  *
  * Les sons restent synthétisés en WebAudio (aucun asset, aucun téléchargement),
  * mais la palette quitte les bips rétro : transitoires feutrés, glissés de
