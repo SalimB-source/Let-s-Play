@@ -33,6 +33,7 @@ try {
 }
 
 const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
 const { RPG_PLATEAUX } = await import('../src/games/rpgPlateaux.js');
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
@@ -63,6 +64,22 @@ assert.match(battlePage, /RPG_DUEL_CARDS\.filter\(\(carte\) => \{[\s\S]*?catalog
   'le catalogue filtre les hybrides seuls ou via chacune de leurs couleurs');
 assert.match(battleCss, /\.rpg-terrain-mana-choice\s*\{[^}]*position:\s*absolute;[^}]*z-index:/s,
   'le sélecteur de couleur de Pétra reste lisible au-dessus du rail des terrains');
+assert.match(battleCss, /\.rpg-card\[data-combat-tilted="true"\]\s*\{\s*transform:\s*rotate\(15deg\) !important;/,
+  'les créatures engagées gardent une inclinaison de 15° vers la droite');
+assert.doesNotMatch(tableCardSource, /rpg-card__(?:engagee|action-fx)|(?:BLOCAGE|RETIRÉ|IMPACT|ATTAQUE|RENFORCÉ)/,
+  'aucun texte d’état ou d’action n’est superposé sur les cartes');
+assert.doesNotMatch(battleCss, /\.rpg-card__(?:engagee|action-fx)\b/,
+  'les anciens styles des étiquettes posées sur les cartes sont supprimés');
+assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-tapped\s*\{[^}]*transform:\s*rotate\(12deg\)/s,
+  'un terrain engagé reste incliné sur écran tactile');
+assert.match(mobileCss, /\.rpg-terrain\.rpg-terrain-stack\.is-stacked\s*\{[^}]*box-shadow:/s,
+  'seules les vraies piles de terrains montrent une épaisseur décalée');
+assert.match(battlePage, /groupe\.count > 1 && <span className="rpg-terrain-stack__count"/,
+  'un terrain seul n’affiche pas de compteur de pile');
+assert.match(battlePage, /groupe\.count > 1 && groupe\.tapped > 0[\s\S]*?rpg-terrain-stack__engagement/,
+  'une pile renseigne le nombre de terrains déjà engagés');
+assert.match(battlePage, /groupe\.available === 0 && groupe\.tapped > 0 \? ' is-tapped' : ''/,
+  'une pile entièrement utilisée prend l’état visuel engagé');
 assert.match(battlePage, /rpgDestructionsDepuis\(duel, debutJournalDestructions\)[\s\S]*?evenement\.sourceElements\.includes\('braise'\)/,
   'la combustion dépend des sources réelles de chaque destruction');
 assert.match(battlePage, /effet\.bruleeParBraise \? ' is-burning' : ''/,
@@ -466,28 +483,19 @@ for (const plateauSable of ['erg-du-sahara', 'caravane-de-gourara']) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSable}\\s*\\{[^}]*background-color:`),
     `le plateau ${plateauSable} a sa propre couleur de repli`);
 }
-// La glace du fjord : la surface la plus claire du jeu, voile froid obligatoire.
+// La glace du fjord : la surface la plus claire du jeu, sa couleur de repli.
 assert.match(battleCss, /\.card-table--plateau-fjord-des-neuf-hivers\s*\{[^}]*background-color:/s,
   'le Fjord des Neuf Hivers a sa propre couleur de repli');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-fjord-des-neuf-hivers::before\s*\{[^}]*radial-gradient/s,
-  'la glace du fjord reçoit son voile froid, sinon les cartes se noieraient dans le blanc');
 assert.match(plateauxSource, /id: 'fjord-des-neuf-hivers'[\s\S]*?fichier: 'plateau-fjord-des-neuf-hivers\.jpg'/,
   'le fjord des Neuf Hivers est un plateau déclaré, avec son fond dans public/');
 assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza\.jpg'/,
   'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
   'la pierre des ruines a sa propre couleur de repli');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-ruines-de-tipaza::before\s*\{[^}]*radial-gradient/s,
-  'les ruines reçoivent un voile dense et froid : pierre claire au bord de la mer');
 assert.match(plateauxSource, /id: 'terre-de-damnation'[\s\S]*?fichier: 'plateau-terre-de-damnation\.jpg'/,
   'la terre de damnation est un plateau déclaré, avec son fond dans public/');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-terre-de-damnation::before\s*\{[^}]*radial-gradient/s,
-  'la terre brûlée reçoit son propre voile : vignette appuyée, centre laissé aux cartes');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-table--plateau-erg-du-sahara, \.card-table--plateau-caravane-de-gourara\)::before\s*\{[^}]*radial-gradient/s,
-  'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 
-// ── Le voile noir haut/bas du plateau : la lisibilité des textes de la table ─
-const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+// ── Réponse à une annonce : aperçu, commandes et voile translucide ─────────
 assert.match(battlePage, /<HoverCardPreview[\s\S]*?carte=\{carteAnnoncee\}[\s\S]*?cible=\{cibleAnnoncee\}[\s\S]*?variante="annonce"[\s\S]*?controls=\{\s*\(/,
   'la fenêtre de réponse affiche la carte annoncée, sa cible et ses commandes');
 assert.match(hoverPreviewSource, /cibleAnnoncee && \([\s\S]*?rpg-hover-card-preview__target[\s\S]*?cibleAnnoncee\.nom/,
@@ -546,32 +554,30 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hover-card-preview--annonce\s
   'l’aperçu annoncé reste visible sur tactile, alors que les tooltips au survol sont masqués');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__respond,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__compact-preview,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__compact-pass \{ min-height: 44px; \}/,
   'Répondre, Laisser passer et leurs commandes compactes gardent une zone tactile de 44 px sur mobile');
-assert.match(battleCss, /--rpg-plateau-voile:\s*linear-gradient\(180deg,\s*var\(--rpg-plateau-voile-haut\) 0%,[\s\S]*?var\(--rpg-plateau-voile-bas\) 100%\);/,
-  'le plateau porte un dégradé noir en haut et en bas, là où vivent les textes de la table');
-assert.match(battleCss, /\.card-table::before\s*\{[^}]*background:[^}]*var\(--rpg-plateau-voile\),/s,
-  'le voile haut/bas est posé sous l’interface, au-dessus du fond illustré');
+// Le plateau est peint, pas voilé : les capsules tiennent la lisibilité.
+assert.doesNotMatch(battleCss, /--rpg-plateau-voile/,
+  'aucun voile noir n’habille plus les plateaux : la peinture reste entière');
+assert.doesNotMatch(battleCss, /card-table--plateau-[a-z-]+::before/,
+  'les vignettes par plateau qui se composaient avec le voile partent avec lui');
+assert.doesNotMatch(battleCss, /\.card-table::before\s*\{/,
+  'la table n’a plus de calque d’ombre posé au-dessus de son fond');
 for (const { id } of RPG_PLATEAUX) {
-  assert.match(battleCss, new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*background-color:[^}]*--rpg-plateau-voile-haut:[^}]*--rpg-plateau-voile-bas:`, 's'),
-    `le plateau ${id} règle la densité de son voile haut/bas avec sa couleur de repli`);
+  assert.match(battleCss, new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*background-color:`, 's'),
+    `le plateau ${id} garde sa couleur de repli, le temps que la peinture arrive`);
 }
-// Mesure sur les fonds livrés (haut du cadre, 0-255) : Erg 142, Tipaza 118,
-// Gourara 102, Damnation 61, bois des Heures 54. Plus le fond est clair, plus
-// l'ombre doit être dense pour tenir l'encre crème au-dessus de 3:1.
-const densiteVoile = (id) => Number(battleCss.match(
-  new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*--rpg-plateau-voile-haut:\\s*rgba\\([^)]*,\\s*([\\d.]+)\\)`, 's'),
-)[1]);
-for (const plateauClair of ['erg-du-sahara', 'caravane-de-gourara', 'ruines-de-tipaza', 'terre-de-damnation']) {
-  assert.ok(densiteVoile(plateauClair) > densiteVoile('table-des-heures'),
-    `${plateauClair} reçoit une ombre plus dense que le bois, déjà sombre`);
-}
-assert.ok(densiteVoile('erg-du-sahara') >= .8 && densiteVoile('ruines-de-tipaza') >= .8,
-  'les deux fonds les plus clairs (sable et pierre) sont voilés à au moins 80 %');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-table::before\s*\{\s*background:\s*var\(--rpg-plateau-voile\);\s*\}/,
-  'au doigt le voile noir haut/bas reste posé : seule la vignette centrale disparaît');
-assert.doesNotMatch(mobileCss, /\.card-table::before\s*\{\s*background:\s*none/,
-  'le voile de lisibilité du plateau n’est plus supprimé en tactile');
-assert.match(mobileCss, /\.rpg-battle--touch \.card-table\s*\{[^}]*--rpg-plateau-voile-bas-debut:/s,
-  'les bandes du voile suivent les rangées de la grille tactile (navigation, main et commandes)');
+// Le chrome de la table : les capsules qui remplacent le voile.
+assert.match(battleCss, /\.rpg-card-pile\s*\{[^}]*background:\s*linear-gradient\(180deg, rgba\(9, 7, 6, \.66\), rgba\(7, 7, 11, \.58\)\);/s,
+  'les compteurs de paquet et de cimetière portent leur capsule, là où le voile travaillait');
+assert.match(battleCss, /\.rpg-wizard-plate\s*\{[^}]*background:\s*linear-gradient\(135deg,/s,
+  'les plaques des deux sorciers gardent leur fond translucide');
+assert.match(battleCss, /\.rpg-bottombar \.rpg-log\s*\{[^}]*background:\s*rgba\(6, 6, 14, \.56\);/s,
+  'le journal du duel se détache sur les plateaux clairs');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-duel-nav\s*\{[^}]*background:\s*linear-gradient\(180deg, rgba\(9, 7, 6, \.66\), rgba\(7, 7, 11, \.58\)\);/s,
+  'au doigt, la barre de navigation du duel porte sa capsule sur les plateaux clairs');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-wizard-plate\s*\{[^}]*background:\s*linear-gradient\(180deg, rgba\(9, 7, 6, \.66\), rgba\(7, 7, 11, \.58\)\);/s,
+  'au doigt, les plaques des deux sorciers portent leur capsule, elles aussi');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table::before/,
+  'le doigt ne reçoit pas de voile non plus : seul le chrome tient la lisibilité');
 
 // ── L'aperçu au doigt : une seconde d'appui sur une carte ───────────────────
 const longPressSource = readFileSync(new URL('../src/games/rpgLongPress.js', import.meta.url), 'utf8');
@@ -621,8 +627,8 @@ assert.match(mobileCss, /--duel-card:\s*clamp\(48px, 17dvh, 100px\);/,
   'la taille des cartes ne bouge pas : des cartes plus grandes en montreraient moins');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/s,
   'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*padding:\s*4px 0;[^}]*gap:\s*6px;/s,
-  'la main tactile resserre ses propres gouttières et n’a plus de marge latérale');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*--rpg-hand-gap:\s*6px;[^}]*--rpg-hand-min:\s*34px;[^}]*justify-content:\s*safe center;[^}]*gap:\s*var\(--rpg-hand-gap\);[^}]*overflow-x:\s*auto;/s,
+  'la main tactile partage sa largeur entre ses cartes, se centre tant qu’elle tient, et défile au-delà');
 assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*z-index:\s*41;/s,
   'le rail des terrains reste derrière les cartes de la main');
 assert.match(battleCss, /\.rpg-hand-dock\s*\{[^}]*z-index:\s*42;/s,
@@ -771,6 +777,16 @@ for (const illustration of ['brisure-de-verre', 'parade-du-verre', 'maree-contra
     `${illustration} est datée dans l’URL pour qu’aucun cache ne fige l’ancienne peinture`);
 }
 
+// Les commandes de tour, réunies dans le rail : attaque générale puis fin du tour.
+assert.match(battlePage, /aria-label="Actions de tour">[\s\S]*?rpg-btn--attaque-tous[\s\S]*?rpg-btn--endturn/, 'attaque générale et fin du tour partagent le même groupe');
+// La main au doigt : une carte = une cible. Plus de grille qui superpose les
+// cartes (deux cartes sous le même doigt, l'une jouée pour l'autre) : la rangée
+// partage sa largeur entre ses emplacements, avec un plancher tactile.
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__pile \{[^}]*width:\s*clamp\(var\(--rpg-hand-min\), calc\(\(100% - \(var\(--hand-count\) - 1\) \* var\(--rpg-hand-gap\)\) \/ var\(--hand-count\)\), var\(--duel-card\)\);/s,
+  'la largeur d’une carte de la main se partage la rangée, entre le plancher tactile et la taille du champ de bataille');
+assert.doesNotMatch(mobileCss, /grid-template-columns: repeat\(var\(--hand-count\), minmax\(0, var\(--duel-card\)\)\)/,
+  'la main ne superpose plus ses cartes : chacune reste entièrement cliquable');
+
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
   + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, blanc Sable, rouge Braise, or bicolore), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
@@ -779,12 +795,9 @@ console.log(
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'rail du tour remonté au milieu de la table — indicateur, cinq phases empilées et « Fin du tour » doré en colonne à la verticale du centre, souris et doigt compris, sans prendre le geste —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, phases du duel indiquées par des icônes lumineuses agrandies, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, plateaux laissés en pleine peinture — le voile noir du haut et du bas est retiré, souris comme doigt, et la lisibilité des textes de la table tient au chrome : capsules translucides des plaques, de la navigation, du rail du tour, des compteurs de piles et du journal —, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres qui promet sa seconde vague au début du tour suivant, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
 );
 process.exit(0);
-
-assert.match(battlePage, /aria-label="Actions de tour">[\s\S]*?rpg-btn--attaque-tous[\s\S]*?rpg-btn--endturn/, 'attaque générale et fin du tour partagent le même groupe');
-assert.match(mobileCss, /grid-template-columns: repeat\(var\(--hand-count\), minmax\(0, var\(--duel-card\)\)\);[^}]*overflow: visible;/s, 'la main se chevauche sans conteneur de découpe');

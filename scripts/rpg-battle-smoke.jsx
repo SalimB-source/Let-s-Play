@@ -488,6 +488,10 @@ export async function checkRpgBattle(assert) {
   await terminerVol();
   assert.equal(terrainEnVol.isConnected, false, 'le bouton volant quitte la main quand la pose est validée');
   assert.equal(container.querySelectorAll('.rpg-terrain--joueur').length, 1, 'le terrain est posé sur le champ à la fin du vol');
+  const terrainSeulPose = container.querySelector('.rpg-terrain--joueur');
+  assert.equal(terrainSeulPose.dataset.terrainCount, '1', 'le premier terrain forme un groupe de un');
+  assert.equal(terrainSeulPose.classList.contains('is-stacked'), false, 'un terrain seul ne reçoit pas de faux empilement');
+  assert.equal(terrainSeulPose.querySelector('.rpg-terrain-stack__count'), null, 'un terrain seul ne montre pas ×1');
   assert.ok(container.querySelector('.rpg-btn--undo'), 'une action réversible propose Annuler la dernière action');
   await act(async () => { container.querySelector('.rpg-btn--undo').click(); });
   assert.equal(container.querySelectorAll('.rpg-terrain--joueur').length, 0, 'l’annulation retire le terrain posé');
@@ -765,7 +769,7 @@ export async function checkRpgBattle(assert) {
   const lancer = findButton('Confirmer');
   assert.match(lancer.textContent, /\(2\)/, 'deux attaquants déclarés');
   assert.equal(container.querySelectorAll('.rpg-card.is-declared-attacker').length, 2,
-    'les créatures déclarées s’inclinent à 90° avant la confirmation');
+    'les créatures déclarées s’inclinent à 15° avant la confirmation');
   await act(async () => { lancer.click(); });
   assert.ok(!container.querySelector('.rpg-btn--undo'), 'une attaque confirmée ne peut plus être annulée');
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOUS · RÉPONSE/,
@@ -793,6 +797,8 @@ export async function checkRpgBattle(assert) {
     'une créature attaquante survivante porte l’état grisé et incliné après résolution');
   assert.ok(container.querySelector('.rpg-card--equipe.fx-lunge'),
     'la résolution déclenche un bref mouvement d’attaque visible');
+  assert.equal(container.querySelector('.rpg-card__engagee, .rpg-card__action-fx'), null,
+    'les cartes gardent leurs états et animations sans libellé textuel superposé');
 
   // ── Attaque express avec toutes les créatures prêtes ──────────────────
   await act(async () => { findButton('Fin du tour').click(); });
@@ -1323,6 +1329,11 @@ export async function checkRpgBattle(assert) {
       `Pétra ajoute un mana ${couleur}`);
     assert.equal(Number(terrain.dataset.availableCount), disponiblesAvant - 1, 'le choix engage une seule Pétra de la pile');
     assert.ok(Number(terrain.dataset.tappedCount) >= 1, 'la pile indique les Pétra engagées');
+    if (Number(terrain.dataset.terrainCount) > 1 && Number(terrain.dataset.availableCount) > 0) {
+      assert.ok(terrain.classList.contains('is-partially-tapped'), 'une pile partiellement utilisée signale ses terrains engagés');
+      assert.equal(terrain.querySelector('.rpg-terrain-stack__engagement')?.textContent, '↻1',
+        'le compteur distinct montre combien de terrains de la pile sont engagés');
+    }
     assert.equal(petraContainer.querySelector('.rpg-terrain-mana-choice'), null, 'le sélecteur se referme après le choix');
   };
   await engagerPetraEn('sable');

@@ -5184,30 +5184,16 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   d'étage), et la classe `card-table--plateau-<id>` + le `background-image`
   posés sur la table. Le terrain ne s'annonce plus par une phrase : il se
   **voit**, sous les cartes.
-- `src/games/rpg-battle.css` — la couleur de repli de chaque
-  plateau, et les **voiles de lisibilité**. Le voile principal est un
-  **dégradé noir posé en haut et en bas du plateau**
-  (`--rpg-plateau-voile`) : c'est là que vivent les textes de la table —
-  navigation, main adverse et identité du sorcier en haut ; identité du joueur,
-  rails de terrains, indicateur de tour, journal, phases, commandes et main en
-  bas. Le
-  centre reste dégagé, c'est la zone où les cartes se posent. Chaque plateau
-  règle sa densité par deux variables, mesurée sur le fond livré (luminance du
-  haut du cadre, sur 255) : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
-  Caravane de Gourara 102, Terre de Damnation 61, Table des Heures 54. L'encre
-  crème de la table (`#fff0cf`) tombe sous 3:1 sur les deux premiers sans une
-  ombre d'au moins 80 % ; la terre brûlée, sombre mais très contrastée, garde
-  une vignette appuyée pour laisser les braises lisibles sans que les éclats de
-  lave mangent les cartes. Seule la teinte distingue les fonds clairs : ombre
-  chaude pour les sables, ombre neutre et froide pour la pierre au bord de la
-  mer. À ce voile s'ajoute, à la souris seulement, la vignette centrale propre à
-  chaque famille de terrain.
-- `src/games/rpg-mobile.css` — **le voile haut/bas reste au doigt** : il y était
-  supprimé, et c'est justement en paysage de téléphone (et dans l'APK) que les
-  libellés se noyaient dans le sable. Seule la vignette centrale disparaît, pour
-  garder le champ de bataille dégagé, et les bandes du dégradé sont recalées sur
-  la grille tactile — la rangée de navigation en haut, la main et les commandes
-  en bas.
+- `src/games/rpg-battle.css` — la **couleur de repli** de chaque plateau, celle
+  qu'on voit le temps que la peinture arrive (ou si elle manque). Le plateau
+  lui-même n'est plus recouvert : le voile noir du haut et du bas, puis les
+  vignettes par famille de terrain, ont été retirés (voir « Le Sablier : le voile
+  noir retiré »). La lisibilité des textes de la table tient désormais au
+  **chrome** : chaque capsule — plaques des sorciers, barre de navigation du
+  duel, rail du tour, compteurs de paquet et de cimetière, journal — porte son
+  propre fond translucide, calibré sur la mesure des fonds livrés (luminance du
+  haut du cadre, sur 255 : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
+  Caravane de Gourara 102, Terre de Damnation 61, Table des Heures 54).
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
   `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
   — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
@@ -5219,7 +5205,7 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 
 ```bash
 npm run check:rpg        # règles + les 17 tests des plateaux
-npm run check:rpg-ui     # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, voile compris
+npm run check:rpg-ui     # la page montée dans jsdom : aucun sélecteur de plateau au menu, terrain imposé par le deck, lisibilité sans voile comprise
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
@@ -5231,10 +5217,10 @@ retour, valeur inconnue normalisée, stockage illisible ou absent).
 `check:rpg-ui` monte la page : le menu présente chaque plateau plus le tirage
 aléatoire, le verrou est exclusif, et le duel qui suit se joue bien sur le
 plateau verrouillé — classe, fond et libellé de la table compris. Il vérifie
-aussi le voile : le dégradé noir haut/bas est posé sous l'interface, **chaque
-plateau du catalogue règle sa propre densité**, les fonds clairs (sables, pierre
-de Tipaza) sont plus voilés que le bois, et la présentation tactile conserve le
-voile au lieu de le supprimer.
+aussi la **lisibilité sans voile** : plus aucune variable de voile ni calque
+`::before` sur la table, chaque plateau garde sa couleur de repli, et les
+capsules qui remplacent l'ombre (compteurs de piles, plaques, navigation du
+duel au doigt, journal) sont en place.
 
 ## Le Sablier : le duel se joue sans consignes
 
@@ -5968,9 +5954,10 @@ réelle de chaque côté — `padding: 0 10px` sur le dock au doigt, `8px 10px 5
 la souris — et le dock tactile recadrait ce qui dépassait (`overflow: hidden`).
 La main occupe désormais **toute la largeur de la table** : padding latéral nul
 des deux côtés, plus de recadrage, la première et la dernière carte touchent les
-bords. Le voile noir dégradé du bas reste (c'est lui qui tient l'encre crème
-lisible sur les plateaux clairs), et la bande ne s'appelle plus un masque dans
-les commentaires.
+bords. La bande ne s'appelle plus un masque dans les commentaires ; le voile noir
+dégradé du bas, lui, a fini par partir aussi (voir « Le Sablier : le voile noir
+retiré »), et la rangée de cartes a été reprise depuis (voir « Le Sablier : une
+carte de la main, un doigt »).
 
 ### Où vit le code
 
@@ -6003,3 +5990,123 @@ automatique de `scripts/rpg-ghost-check.mjs` rejouent six parties à la souris e
 six au doigt avec le rail en place ; `scripts/rpg-mobile-layout-check.mjs`
 mesure ensuite, à quatre tailles d'écran, que le rail reste centré dans la bande
 de jeu, au-dessus de la main, et que « Fin du tour » y garde ses 44 px.
+
+## Le Sablier : le voile noir retiré, et une carte de la main = un doigt
+
+Deux retours de joueur, une seule page à corriger — le duel sur mobile et dans
+l'application. Le premier : **le voile noir du plateau**. Le second : **le
+sablier des cartes en main**, qui tombait à côté sur téléphone — on croyait
+jouer une carte, c'en était une autre.
+
+### 1. Le plateau est une peinture, rien ne la recouvre
+
+Chaque table portait un **dégradé noir en haut et en bas** (`--rpg-plateau-voile`)
+et, à la souris, une vignette centrale par famille de terrain. L'intention était
+d'asseoir l'encre crème de l'interface sur les fonds clairs — l'Erg du Sahara
+monte à 142/255 en haut du cadre, les Ruines de Tipaza à 118, la glace du fjord à
+170. Mais l'effet, à l'usage, était celui d'une **fenêtre sale** : un tiers de
+chaque tableau noirci, des dunes et une mosaïque qu'on ne voyait plus, et, sur
+les plateaux sombres (Terre de Damnation, Table des Heures), une bande grise qui
+n'avait plus rien à éclaircir. Sur les petits écrans — téléphone, APK en paysage —
+le voile occupait la moitié de la hauteur utile.
+
+Tout est donc retiré : `--rpg-plateau-voile`, ses variables, `.card-table::before`
+et les vignettes par plateau. **La lisibilité ne vient plus d'un filtre posé sur
+l'image, mais de chaque texte**, qui porte son propre fond. Le calcul est le
+même partout : *deux tiers d'ombre, un tiers de peinture* — soit un fond sous
+0,16 de luminance, et un contraste d'environ **4,5:1** pour l'encre crème, contre
+~2,9:1 posée à même la dune.
+
+| Ce qui se lisait sur le voile | Ce qui le porte maintenant |
+|---|---|
+| Les deux plaques des sorciers (`LE SORCIER`, `VOUS`, PV, compteurs de zones) | leur capsule, déjà en place (`rgba(18, 15, 16, .92)`) : inchangée |
+| La barre de navigation du duel (`LE SABLIER`, Menu, Deck, Catalogue, son, plein écran) | sa capsule `rgba(10, 9, 13, .84)`, inchangée |
+| L'indicateur de tour, les cinq phases, « Fin du tour » | leur rail, capsules et or déjà posés |
+| Les compteurs de paquet et de cimetière (`35`, `PAQUET`, `CIMETIÈRE`) | une capsule ajoutée : `padding: 5px 8px 4px`, dégradé `rgba(9, 7, 6, .66)` → `rgba(7, 7, 11, .58)` |
+| Le journal du duel | sa capsule densifiée (`rgba(6, 6, 14, .56)`, opacité 0,9 au lieu de 0,16 × 0,72) |
+| Les libellés de la rangée de la main (« VOTRE MAIN · TOUCHEZ UNE CARTE POUR AGIR ») | retiré avec le voile : c'était une consigne, et le duel se joue sans consignes |
+| Augmenter la largeur du dock et des rangées de cartes sur les plateaux clairs | rien : les cartes sont opaques, leur ombre suffit |
+
+Les cartes, elles, se détachent par leur **ombre** (`box-shadow`), jamais par un
+aplat sur le décor : c'est la règle du duel tactile — aucun panneau opaque sur le
+champ de bataille — qui reste entière. Le doigt reçoit exactement le même
+traitement que la souris ; il ajoute simplement ses propres capsules à
+l'échelle du téléphone (barre de navigation et plaques des sorciers, resserrées
+dans la première rangée de la grille tactile).
+
+### 2. Une carte de la main, un doigt
+
+La rangée de la main, au doigt, était devenue une **grille** :
+`grid-template-columns: repeat(var(--hand-count), minmax(0, var(--duel-card)))`.
+Dès que la place manquait, les colonnes rétrécissaient sous la taille des cartes,
+qui débordaient alors de leur piste — et c'est la carte **suivante** qui passait
+par-dessus ; sur les tout petits écrans, un `margin-left` négatif les faisait
+carrément s'empiler. Mesuré sur un 844 × 390 avec huit cartes : une seule carte
+(sur huit) répondait réellement au doigt en son centre ; les autres étaient
+couvertes par leur voisine de droite. Le joueur touchait la carte qui était
+devant son doigt, pas celle qu'il visait — d'où le « le sablier ne marche pas ».
+
+La rangée est maintenant une **simple ligne qui partage sa largeur** :
+
+```css
+.rpg-battle--touch .rpg-hand .rpg-hand__card,
+.rpg-battle--touch .rpg-hand .rpg-hand__pile {
+  width: clamp(var(--rpg-hand-min), calc((100% - (var(--hand-count) - 1) * var(--rpg-hand-gap)) / var(--hand-count)), var(--duel-card));
+}
+```
+
+- **aucun recouvrement, jamais** : chaque carte est une cible entière, et le doigt
+  qui touche son centre joue **cette** carte ;
+- la **largeur descend** quand la main s'allonge — toutes ensemble, jusqu'au
+  plancher tactile `--rpg-hand-min: 34px` — et la carte ne dépasse jamais la
+  taille du champ de bataille (`--duel-card`, 17dvh) ;
+- `justify-content: safe center` : une main courte reste centrée sous la table,
+  et dès que la rangée déborde, la première carte reste atteignable ;
+- sous le plancher — beaucoup de cartes hétéronymes sur un écran étroit — la
+  rangée **défile horizontalement** (glissement, `scroll-snap` d'une carte par
+  cran, barre masquée), au lieu de tasser huit cartes dans 386 px ;
+- les **piles d'homonymes** (`×N`) comptent pour un emplacement : le compteur est
+  pris avant que la place ne manque, ce qui laisse les grandes cartes plus
+  longtemps.
+
+Le grand écran ne change pas : une carte par emplacement, à sa taille, et la
+souris garde son survol, son glisser-déposer et son défilement.
+
+### Où vit le code
+
+- `src/games/rpg-battle.css` — les couleurs de repli seules pour les six plateaux
+  (plus aucune variable de voile ni `.card-table::before`), la capsule des
+  compteurs de piles (`.rpg-card-pile`) et le journal densifié
+  (`.rpg-bottombar .rpg-log`) ; le dock de la main perd son dégradé de bas de
+  table (`background: none`) ;
+- `src/games/rpg-mobile.css` — les capsules du duel tactile (barre de navigation,
+  plaques des sorciers), le libellé de la main retiré, et la rangée de cartes
+  réécrite : variables `--rpg-hand-gap` / `--rpg-hand-min`, `width: clamp(...)`,
+  `justify-content: safe center`, défilement horizontal et `scroll-snap` ;
+- `src/games/RpgDuelPage.jsx` — rien : `--hand-count` était déjà posé par la page
+  sur la rangée (il compte les **emplacements**, piles comprises).
+
+### Vérifications
+
+```bash
+npm run check:rpg-ui      # plus un pixel de voile, et les capsules qui le remplacent
+npm run check:rpg-mobile  # au doigt (Playwright) : aucune carte recouvrée, huit cartes atteignables
+npm run check:rpg         # les règles du duel, inchangées (270/270)
+npm run build
+```
+
+`scripts/rpg-battle-ui-check.mjs` interdit désormais toute trace du voile
+(`--rpg-plateau-voile`, `.card-table::before`, vignettes par plateau) et exige le
+chrome qui le remplace : capsule des compteurs de piles, journal densifié, et, au
+doigt, capsule de la barre de navigation et des plaques. `scripts/rpg-mobile-layout-check.mjs`
+mesure la main aux quatre tailles d'écran — **zéro recouvrement**, chaque carte
+visible répondant au doigt en son centre, largeur ≥ 34 px, première carte
+atteignable — puis remplit la rangée de huit cartes factices et touche chacune
+après l'avoir amenée dans le champ : **8/8**. Il vérifie aussi que « Annuler la
+dernière action » occupe la rangée au-dessus du couple « Attaquer avec tous /
+Fin du tour » dans le rail de droite (la vérification datait d'avant le
+déplacement des commandes).
+
+L'APK n'a pas besoin d'être reconstruite : le duel vit dans la page servie par le
+site, donc les deux correctifs — le voile et la main — arrivent dans l'application
+dès que le site est déployé, au prochain lancement du jeu.
