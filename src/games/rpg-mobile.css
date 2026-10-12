@@ -220,18 +220,7 @@
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
 .rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
 .rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 7px; }
-/* Le rail du tour, au doigt : mêmes pastilles qu'à la souris (indicateur,
-   phases empilées, fin du tour), au milieu de la table, mais à l'échelle du
-   téléphone — un rail étroit, posé sur le champ de bataille, qui laisse voir
-   le plateau entre ses capsules. Il ne prend jamais le geste : seuls ses
-   boutons le prennent.
-
-   Deux repères verticaux au lieu du seul `top: 50 %` : la rangée de navigation
-   et la rangée de la main, prises dans les variables de la grille tactile
-   (`--rpg-touch-nav`, `--rpg-touch-hand`, plus le rembourrage de la table —
-   le rail est positionné dans la boîte de remplissage). Il se centre entre les
-   deux (`margin-block: auto`) : sur un 568 × 320, la bande de jeu fait ≈ 192 px
-   et le rail ≈ 170 — il tient dedans, sans jamais recouvrir la main. */
+/* Phases à droite, au-dessus des actions, hors des rangées de cartes. */
 .rpg-battle--touch .rpg-turn-rail {
   top: calc(var(--rpg-touch-pad) + var(--rpg-touch-nav));
   bottom: calc(var(--rpg-touch-pad) + var(--rpg-touch-hand));
@@ -239,13 +228,16 @@
   margin-block: auto;
   gap: 2px;
   width: max-content;
-  max-width: clamp(96px, 17vw, 132px);
-  transform: translateX(-50%);
+  left: auto;
+  right: max(6px, env(safe-area-inset-right, 0px));
+  width: clamp(200px, 27vw, 320px);
+  max-width: none;
+  transform: none;
 }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator { min-height: 18px; gap: 4px; padding: 1px 6px; border-radius: 999px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator__lamp { width: 6px; height: 6px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator strong { font-size: 8px; letter-spacing: .02em; }
-.rpg-battle--touch .rpg-turn-rail .rpg-phase-track { display: flex; flex-direction: column; gap: 1px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-track { align-self: flex-end; width: 132px; display: flex; flex-direction: column; gap: 1px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-phase-step { min-width: 0; gap: 4px; padding: 0 6px 0 1px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon { width: 18px; height: 18px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon svg { width: 11px; height: 11px; }
@@ -260,11 +252,7 @@
   text-align: center;
 }
 .rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn { min-height: 44px; padding: 5px 7px; font-size: 10px; white-space: normal; }
-/* Les actions de combat, elles, gardent leur colonne de droite, sous la main :
-   un groupe par ligne, chacun à la largeur du volet. Les phases et « Fin du
-   tour » ne sont plus ici — ils vivent dans le rail du tour, au milieu de la
-   table. Les groupes nommés restent dans le DOM pour le clavier et les
-   lecteurs d'écran. */
+/* Les commandes contextuelles restent en bas de la colonne de droite. */
 .rpg-battle--touch .rpg-bottombar .rpg-actions__row {
   display: grid;
   grid-auto-flow: column;
@@ -468,3 +456,17 @@
   border-width: var(--rpg-card-border, 2.5px);
   border-radius: var(--rpg-card-radius, 10px);
 }
+
+/* Une main ouverte : les cartes se chevauchent plutôt que d'être découpées
+   par un conteneur défilant. Chaque carte reste accessible au toucher. */
+.rpg-battle--touch .rpg-hand-dock .rpg-hand {
+  display: grid;
+  grid-template-columns: repeat(var(--hand-count), minmax(0, var(--duel-card)));
+  gap: 0;
+  padding-right: var(--duel-card);
+  overflow: visible;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+.rpg-battle--touch .rpg-hand .rpg-hand__card { position: relative; }
+.rpg-battle--touch .rpg-hand .rpg-hand__card:focus-visible { z-index: 2; }

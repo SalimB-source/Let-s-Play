@@ -341,9 +341,9 @@ export async function checkRpgBattle(assert) {
     'la table annonce le plateau sur lequel elle se joue');
   assert.equal(container.querySelector('.rpg-actions__wait'), null,
     'aucun bandeau d’indications ne double la table : le plateau se lit sur le décor');
-  assert.ok(container.querySelector('.rpg-actions__combat .rpg-btn--attaque')
+  assert.ok(container.querySelector('.rpg-actions__turn .rpg-btn--attaque-tous')
     && container.querySelector('.rpg-actions__turn .rpg-btn--endturn'),
-  'les commandes de combat et de tour sont rangées dans deux groupes distincts');
+  'attaque générale et fin du tour sont réunies dans le rail');
   assert.equal(container.querySelector('.rpg-btn--declare-attack'), null,
     'la commande Déclarer l’attaque a été retirée');
   assert.ok(container.querySelector('.rpg-btn--attaque-tous .rpg-combat-action-icon--attack-all'),

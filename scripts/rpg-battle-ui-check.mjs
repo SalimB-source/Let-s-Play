@@ -279,8 +279,8 @@ assert.match(battlePage, /<div className="rpg-turn-rail" role="group" aria-label
   'l’indicateur, les phases et « Fin du tour » forment le rail du tour, au milieu de la table');
 assert.doesNotMatch(battlePage, /rpg-bottombar__status/,
   'la barre du bas ne porte plus l’indicateur de tour : elle garde le journal et les actions de combat');
-assert.match(battleCss, /\.rpg-turn-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*42;[^}]*top:\s*50%;[^}]*left:\s*50%;[^}]*flex-direction:\s*column;[^}]*transform:\s*translate\(-50%, -50%\);[^}]*pointer-events:\s*none;/s,
-  'le rail du tour est une colonne posée au centre de la table, qui laisse passer les gestes');
+assert.match(battleCss, /\.rpg-turn-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*42;[^}]*top:\s*50%;[^}]*right:\s*max\(16px, env\(safe-area-inset-right, 0px\)\);[^}]*flex-direction:\s*column;[^}]*transform:\s*translateY\(-50%\);[^}]*pointer-events:\s*none;/s,
+  'le rail du tour est une colonne posée à droite de la table, qui laisse passer les gestes');
 assert.match(battleCss, /\.rpg-turn-rail \.rpg-btn\s*\{[^}]*pointer-events:\s*auto;/s,
   'seuls les boutons du rail attrapent le clic : une carte posée dessous reste jouable');
 assert.match(battleCss, /\.rpg-phase-track\s*\{[^}]*flex-direction:\s*column;/s,
@@ -588,7 +588,7 @@ assert.match(battleCss, /\.rpg-hand-dock \{[^}]*padding:\s*8px 0 5px;/s,
 assert.match(battleCss, /\.rpg-hand \{[^}]*max-width:\s*100vw;[^}]*padding:\s*46px 0 50px;/s,
   'la main occupe toute la largeur de la table, sans marge ni recadrage');
 // Le rail du tour, au doigt : même colonne centrale, à l'échelle du téléphone.
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*top:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-nav\)\);[^}]*bottom:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-hand\)\);[^}]*margin-block:\s*auto;[^}]*max-width:\s*clamp\(96px, 17vw, 132px\);/s,
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*top:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-nav\)\);[^}]*bottom:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-hand\)\);[^}]*margin-block:\s*auto;[^}]*left:\s*auto;[^}]*right:\s*max\(6px, env\(safe-area-inset-right, 0px\)\);/s,
   'au doigt, le rail du tour se centre entre la navigation et la main, à l’échelle du téléphone');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table \{[^}]*--rpg-touch-nav:\s*38px;[^}]*--rpg-touch-hand:\s*clamp\(84px, 28dvh, 146px\);[^}]*grid-template-rows:\s*var\(--rpg-touch-nav\)[\s\S]*?var\(--rpg-touch-hand\);/s,
   'la grille tactile et le rail du tour partagent les mêmes repères de rangée');
@@ -737,3 +737,6 @@ console.log(
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
 );
 process.exit(0);
+
+assert.match(battlePage, /aria-label="Actions de tour">[\s\S]*?rpg-btn--attaque-tous[\s\S]*?rpg-btn--endturn/, 'attaque générale et fin du tour partagent le même groupe');
+assert.match(mobileCss, /grid-template-columns: repeat\(var\(--hand-count\), minmax\(0, var\(--duel-card\)\)\);[^}]*overflow: visible;/s, 'la main se chevauche sans conteneur de découpe');
