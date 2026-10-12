@@ -267,15 +267,24 @@ assert.match(battlePage, /if \(!attaquantsBloques\.length\) \{[\s\S]*?resoudreAt
 assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant\)/,
   'la résolution accepte aussi le combat fraîchement déclaré sans attendre un rendu');
 assert.match(battlePage, /rpg-actions__combat[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
-  'les actions de combat sont séparées des actions de tour dans la barre');
+  'les actions de combat restent dans la barre, les actions de tour vivent dans le rail');
 assert.match(battlePage, /disabled=\{!monTour \|\| phase \|\| Boolean\(cibleEnCours\) \|\| Boolean\(combatEntrant\) \|\| mulliganOuvert\}/,
   'Fin du tour est indisponible pendant une sélection de combat ou de cible, et tant que le mulligan n’est pas validé');
 assert.match(battlePage, /const RPG_PHASE_STEPS = \[[\s\S]*?id: 'principal'[\s\S]*?id: 'combat'[\s\S]*?id: 'reponse'[\s\S]*?id: 'adverse'[\s\S]*?id: 'termine'/,
   'le rail représente les grandes phases de la partie');
 assert.match(battlePage, /const phaseDuelActive = vainqueur[\s\S]*?reponseActive[\s\S]*?combatEntrant \|\| phase[\s\S]*?monTour/,
   'la phase lumineuse suit l’état réel du duel');
-assert.match(battlePage, /<PhaseTrack current=\{phaseDuelActive\} \/>/,
-  'les phases sont intégrées au groupe de commandes du duel');
+// ── Le rail du tour : phases, indicateur et « Fin du tour » au milieu ───────
+assert.match(battlePage, /<div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">[\s\S]*?rpg-turn-indicator[\s\S]*?<PhaseTrack current=\{phaseDuelActive\} \/>[\s\S]*?rpg-actions__turn[\s\S]*?rpg-btn--endturn/,
+  'l’indicateur, les phases et « Fin du tour » forment le rail du tour, au milieu de la table');
+assert.doesNotMatch(battlePage, /rpg-bottombar__status/,
+  'la barre du bas ne porte plus l’indicateur de tour : elle garde le journal et les actions de combat');
+assert.match(battleCss, /\.rpg-turn-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*42;[^}]*top:\s*50%;[^}]*left:\s*50%;[^}]*flex-direction:\s*column;[^}]*transform:\s*translate\(-50%, -50%\);[^}]*pointer-events:\s*none;/s,
+  'le rail du tour est une colonne posée au centre de la table, qui laisse passer les gestes');
+assert.match(battleCss, /\.rpg-turn-rail \.rpg-btn\s*\{[^}]*pointer-events:\s*auto;/s,
+  'seuls les boutons du rail attrapent le clic : une carte posée dessous reste jouable');
+assert.match(battleCss, /\.rpg-phase-track\s*\{[^}]*flex-direction:\s*column;/s,
+  'les cinq phases s’empilent verticalement dans le rail');
 assert.match(battleCss, /\.rpg-phase-step\.is-active \.rpg-phase-step__icon\s*\{[^}]*animation:\s*rpg-phase-icon-light/s,
   'l’icône de la phase actuelle s’allume avec un halo animé');
 assert.match(battleCss, /\.rpg-bottombar \.rpg-actions__row\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*flex-end;/s,
@@ -290,16 +299,16 @@ assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn--attaque,\s*\.rpg-actio
   'les actions restent compactes et sans capitales envahissantes');
 assert.match(battleCss, /\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*border-color:\s*rgba\(235, 194, 98, \.76\);[^}]*background:\s*linear-gradient\(180deg, rgba\(238, 202, 112, \.98\), rgba\(202, 158, 61, \.96\)\);[^}]*font-weight:\s*800;/s,
   'Fin du tour garde un repère doré compact et bien visible');
-assert.match(battleCss, /\/\* Commandes de duel compactes[\s\S]*?\.rpg-bottombar\s*\{[^}]*width: min\(500px, calc\(100vw - 230px\)\);/s,
-  'la barre inférieure agrandie est visible à toutes les tailles d’écran');
+assert.match(battleCss, /\/\* Commandes de duel compactes[\s\S]*?\.rpg-bottombar\s*\{[^}]*width: min\(340px, calc\(100vw - 230px\)\);/s,
+  'la barre inférieure ne garde que les actions de combat, dans une largeur discrète');
 assert.doesNotMatch(battleCss, /rpg-actions__wait|rpg-empty-lane/,
   'les styles du bandeau d’indications et des rangées vides ont été retirés de la feuille de combat');
 assert.match(battleCss, /\.rpg-phase-step__icon\s*\{\s*display:\s*grid;\s*width:\s*24px;\s*height:\s*24px;/,
   'les icônes de phase sont agrandies partout');
 assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-bottombar \{[\s\S]*?\.rpg-actions__row \.rpg-btn \{ min-height: 39px; padding: 6px 9px; font-size: 11px; \}/,
   'la barre de commandes reste nettement lisible sur un écran étroit');
-assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-phase-track \{[^}]*gap: 7px; \}[\s\S]*?\.rpg-phase-step__icon \{ width: 24px; height: 24px; \}/,
-  'les phases restent espacées et lisibles sur un écran étroit');
+assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-turn-rail \{[^}]*max-width: clamp\(118px, 26vw, 148px\); \}[\s\S]*?\.rpg-phase-step__icon \{ width: 22px; height: 22px; \}/,
+  'le rail du tour et ses phases se resserrent sur un écran étroit');
 assert.match(battlePage, /reponseApresBlocage \? 'À VOUS · RÉPONSE'/,
   'la priorité revient au joueur après le choix des bloqueurs adverses');
 assert.match(battlePage, /Accepter les blocages/,
@@ -568,8 +577,23 @@ assert.match(mobileCss, /--duel-card:\s*clamp\(48px, 17dvh, 100px\);/,
   'la taille des cartes ne bouge pas : des cartes plus grandes en montreraient moins');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*padding:\s*4px max\(8px, calc\(var\(--duel-card\) \* \.12\)\); gap:\s*max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/s,
   'les gouttières des lignes de jeu sont resserrées pour montrer plus de cartes');
-assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*padding:\s*4px 6px;[^}]*gap:\s*6px;/s,
-  'la main tactile resserre ses propres gouttières');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand \{[^}]*padding:\s*4px 0;[^}]*gap:\s*6px;/s,
+  'la main tactile resserre ses propres gouttières et n’a plus de marge latérale');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-hand-dock \{[^}]*padding:\s*0 0 env\(safe-area-inset-bottom, 0px\);[^}]*z-index:\s*21;/s,
+  'le dock de la main au doigt ne garde aucune marge sur les côtés');
+assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-hand-dock \{[^}]*overflow:\s*hidden;/s,
+  'le dock de la main ne recadre plus les cartes du bout : plus de masque autour de la main');
+assert.match(battleCss, /\.rpg-hand-dock \{[^}]*padding:\s*8px 0 5px;/s,
+  'à la souris, le dock de la main est nu lui aussi : padding latéral nul');
+assert.match(battleCss, /\.rpg-hand \{[^}]*max-width:\s*100vw;[^}]*padding:\s*46px 0 50px;/s,
+  'la main occupe toute la largeur de la table, sans marge ni recadrage');
+// Le rail du tour, au doigt : même colonne centrale, à l'échelle du téléphone.
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \{[^}]*top:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-nav\)\);[^}]*bottom:\s*calc\(var\(--rpg-touch-pad\) \+ var\(--rpg-touch-hand\)\);[^}]*margin-block:\s*auto;[^}]*max-width:\s*clamp\(96px, 17vw, 132px\);/s,
+  'au doigt, le rail du tour se centre entre la navigation et la main, à l’échelle du téléphone');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table \{[^}]*--rpg-touch-nav:\s*38px;[^}]*--rpg-touch-hand:\s*clamp\(84px, 28dvh, 146px\);[^}]*grid-template-rows:\s*var\(--rpg-touch-nav\)[\s\S]*?var\(--rpg-touch-hand\);/s,
+  'la grille tactile et le rail du tour partagent les mêmes repères de rangée');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-step__icon \{ width: 18px; height: 18px; \}/,
+  'les icônes de phase du rail tactile restent lisibles sans envahir la table');
 assert.match(mobileCss, /\.card-row > \.rpg-card:first-child,\s*\.card-row > \.rpg-card-stack:first-child,\s*\.card-row > \.rpg-card-stack__toggle:first-child \{ margin-inline-start: auto; \}/,
   'les piles et leur puce ×N participent au centrage du groupe de cartes');
 
@@ -705,7 +729,7 @@ console.log(
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
-  + 'commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, Fin du tour doré et compact, phases du duel indiquées par des icônes lumineuses agrandies, annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
+  + 'rail du tour remonté au milieu de la table — indicateur, cinq phases empilées et « Fin du tour » doré en colonne à la verticale du centre, souris et doigt compris, sans prendre le geste —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, phases du duel indiquées par des icônes lumineuses agrandies, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '

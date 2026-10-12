@@ -5,9 +5,13 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
+// `--no-zygote --single-process` n'est plus toléré par les Chromium récents :
+// le navigateur meurt au moment de fermer le dernier contexte, donc le check
+// échouait après avoir tout vérifié. Les deux drapeaux de conteneur suffisent ;
+// CHROMIUM_ARGS permet d'en ajouter pour un environnement particulier.
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--no-zygote', '--single-process'],
+  args: process.env.CHROMIUM_ARGS ? process.env.CHROMIUM_ARGS.split(/ +/) : ['--no-sandbox', '--disable-dev-shm-usage'],
 });
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -35,7 +39,9 @@ try {
       const table = document.querySelector('.card-table');
       return {
         overflow: table.scrollWidth > table.clientWidth,
+        table: table.getBoundingClientRect().toJSON(),
         areas: ['.card-row--ennemi', '.card-row--equipe', '.rpg-bottombar', '.rpg-hand-dock'].map(rect),
+        rail: rect('.rpg-turn-rail'),
         hand: rect('.rpg-hand'),
         card: rect('.rpg-hand__card'),
         endTurn: rect('.rpg-btn--endturn'),
@@ -43,8 +49,19 @@ try {
         phases: rect('.rpg-phase-track'),
       };
     });
-    assert.ok(result.attackAll.width >= 44 && Math.abs(result.attackAll.y - result.endTurn.y) <= 1, `${width}: attack-all is beside end-turn`);
-    assert.ok(result.phases.height > 0 && result.phases.bottom <= result.endTurn.y && result.endTurn.y - result.phases.bottom <= 10, `${width}: phases sit immediately above the buttons`);
+    // Le rail du tour vit au milieu de la table : centré à l'horizontale, calé
+    // entre la navigation et la main — il ne recouvre jamais le dock de la main.
+    assert.ok(Math.abs((result.rail.left + result.rail.right) / 2 - (result.table.left + result.table.right) / 2) <= 2,
+      `${width}: le rail du tour est centré sur la table`);
+    assert.ok(result.rail.top >= result.table.top - 1 && result.rail.bottom <= result.hand.top + 1,
+      `${width}: le rail du tour tient dans la bande de jeu, au-dessus de la main`);
+    assert.ok(result.phases.height > 0 && result.phases.bottom <= result.endTurn.y && result.endTurn.y - result.phases.bottom <= 10,
+      `${width}: phases sit immediately above the end-turn button, inside the rail`);
+    assert.ok(result.endTurn.left >= result.rail.left - 1 && result.endTurn.right <= result.rail.right + 1,
+      `${width}: Fin du tour prend la largeur du rail du tour`);
+    assert.ok(result.attackAll.width >= 44 && result.attackAll.left >= result.areas[2].left - 1
+      && result.attackAll.right <= result.areas[2].right + 1,
+      `${width}: attack-all is in the controls column`);
     assert.equal(result.overflow, false, `${width}: no page-wide horizontal overflow`);
     for (let i = 0; i < result.areas.length; i++) {
       for (let j = i + 1; j < result.areas.length; j++) {
@@ -269,7 +286,8 @@ try {
     const undo = await page.locator('.rpg-actions__turn .rpg-btn--undo').boundingBox();
     const end = await page.locator('.rpg-actions__turn .rpg-btn--endturn').boundingBox();
     assert.ok(undo && end && undo.width >= 44 && undo.height >= 44, `${width}: undo is visible on the table`);
-    assert.ok(undo.x + undo.width <= end.x && Math.abs(undo.y - end.y) <= 1, `${width}: undo is beside end-turn, not stacked`);
+    assert.ok(Math.abs((undo.x + undo.width / 2) - (end.x + end.width / 2)) <= 2 && undo.y + undo.height <= end.y + 1,
+      `${width}: undo is stacked above end-turn, in the same rail column`);
     assert.ok(end.x + end.width <= width && end.y + end.height <= height, `${width}: turn buttons fit the screen`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
@@ -310,14 +328,18 @@ try {
     available: await stack.getAttribute('data-available-count'),
     tapped: await stack.getAttribute('data-tapped-count'),
   };
-  await stack.click();
+  // La pile est épuisée : le bouton porte `aria-disabled`, donc Playwright
+  // refuserait le clic. On force le geste — c'est justement le but du test : un
+  // clic de trop ne produit rien (available/tapped inchangés).
+  await stack.click({ force: true });
   assert.deepEqual({
     available: await stack.getAttribute('data-available-count'),
     tapped: await stack.getAttribute('data-tapped-count'),
   }, counts, 'an exhausted stack produces nothing');
   console.log('✓ Identical terrain stack counts and one-at-a-time mana production');
+  // Clic-action direct : le clic sur la carte la pose, il n'y a plus de bouton
+  // « Jouer la carte » à confirmer pour une créature.
   await page.locator('.rpg-hand__card[data-card-id="fennec-des-decombres"]').click();
-  await page.getByRole('button', { name: 'Jouer la carte', exact: true }).click();
   await page.locator('.rpg-card--equipe[data-card-id="fennec-des-decombres"]').waitFor();
   await page.locator('.rpg-btn--attaque-tous').click();
   assert.equal(await page.locator('.rpg-phase-step.is-active').getAttribute('data-phase'), 'combat');
@@ -340,9 +362,9 @@ try {
     const lane = await page.locator('.card-row--equipe').boundingBox();
     assert.ok(attacker.x >= lane.x && attacker.x + attacker.width <= lane.x + lane.width
       && attacker.y >= lane.y && attacker.y + attacker.height <= lane.y + lane.height, `${width}: tilted attacker corners remain visible`);
-    assert.ok(cancel.width >= 44 && cancel.height >= 44 && Math.abs(cancel.y - end.y) <= 1, `${width}: cancel attack is beside end-turn`);
-    assert.ok(confirm.x + confirm.width <= cancel.x && cancel.x + cancel.width <= end.x, `${width}: combat buttons do not overlap`);
-    assert.ok(phases.y + phases.height <= cancel.y && cancel.y - phases.y - phases.height <= 10, `${width}: phases are directly above combat controls`);
+    assert.ok(cancel.width >= 44 && cancel.height >= 44, `${width}: cancel attack is a touch target`);
+    assert.ok(confirm.x + confirm.width <= cancel.x, `${width}: confirm and cancel attack do not overlap`);
+    assert.ok(cancel.x >= phases.x + phases.width, `${width}: the combat controls keep their right-hand column, clear of the central rail`);
     assert.ok(end.y + end.height <= height && end.x + end.width <= width, `${width}: combat controls fit the screen`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
@@ -366,7 +388,7 @@ try {
   });
   assert.ok(angles.every(angle => Math.abs(angle - 90) < .5), 'combat animations never straighten the attacker');
   console.log('✓ Attackers tilt on declaration, straighten on cancellation and stay tilted after attacking');
-  console.log('✓ Attack-all, cancellation and end-turn share a row; phases follow combat and cancellation');
+  console.log('✓ Attack-all, cancellation and confirmation share the controls column; the turn rail keeps the phases, undo and end-turn above the hand');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.rpg-rotate-prompt').waitFor();
   await page.getByRole('button', { name: 'Retour au menu', exact: true }).click();
@@ -385,6 +407,10 @@ try {
     const carte = pageBureau.locator('.rpg-mulligan__card').first();
     await carte.waitFor();
     const nom = (await carte.getAttribute('aria-label')).split(' — ')[0];
+    // Le curseur est resté sur « Lancer le duel », donc sur une carte du volet
+    // qui vient de s'ouvrir : on l'écarte avant de mesurer l'état de repos.
+    await pageBureau.mouse.move(4, 4);
+    await pageBureau.locator('.rpg-hover-card-preview').waitFor({ state: 'detached' });
     assert.equal(await pageBureau.locator('.rpg-hover-card-preview').count(), 0,
       'aucun aperçu tant que rien n’est survolé');
     await carte.hover();

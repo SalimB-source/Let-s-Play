@@ -993,13 +993,13 @@ export async function checkRpgBattle(assert) {
   };
   await jouerCarteParGlisser('Montagne');
   await act(async () => { [...killContainer.querySelectorAll('.rpg-terrain--joueur:not(.is-tapped)')][0].click(); });
-  await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
+  await act(async () => { killContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
   await passerAnnoncesSorcier(killContainer);
   assert.ok(!killContainer.querySelector('.rpg-btn--resolve-combat'), 'le Fennec qui vient d’arriver ne peut pas attaquer');
 
   await jouerCarteParGlisser('Mer');
-  await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
+  await act(async () => { killContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
   await passerAnnoncesSorcier(killContainer);
   assert.ok(killContainer.querySelector('.rpg-btn--resolve-combat'),
@@ -1008,7 +1008,7 @@ export async function checkRpgBattle(assert) {
     .some((card) => card.getAttribute('aria-label')?.includes('Fennec des décombres')),
   'le Fennec coût 2 est désormais sur le champ');
   await act(async () => { killContainer.querySelector('.rpg-btn--resolve-combat').click(); });
-  await act(async () => { killContainer.querySelector('.rpg-actions__row .rpg-btn--endturn').click(); });
+  await act(async () => { killContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
   await passerAnnoncesSorcier(killContainer);
   assert.ok(killContainer.querySelector('.rpg-btn--resolve-combat'), 'le Fennec peut aussi attaquer lors du tour adverse suivant');

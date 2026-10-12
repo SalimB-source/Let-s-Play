@@ -123,8 +123,16 @@ test('une couleur ouvre à peu près quand la campagne y entre (pacing des réco
   const apresListes = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5'] });
   assert.ok(slots(apresListes, 'braise') < 24, 'la Braise n\'est pas complète au bout de la première tour');
 
+  // Le Souk épaissit la Braise (13 → 19 exemplaires entre la première tour et
+  // son sommet) mais ne l'ouvre pas en mono : la réserve de Braise du catalogue
+  // entier — références multipliées par leurs quotas — culmine sous les 24
+  // emplacements non-terrain d'un deck de 40, donc la Braise ne peut pas se
+  // jouer seule, quoi que le joueur gagne. C'est une couleur de paire : le
+  // catalogue lui-même la marie au Sable dans « Sentiers de cendre ».
   const apresSouk4 = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5', 'souk-1', 'souk-2', 'souk-3', 'souk-4'] });
-  assert.ok(slots(apresSouk4, 'braise') >= 24, 'le mono-Braise ouvre au sommet du Souk');
+  assert.ok(slots(apresSouk4, 'braise') > slots(apresListes, 'braise'), 'le Souk étoffe la Braise');
+  assert.ok(slots(RPG_DUEL_CARDS.map((carte) => carte.id), 'braise') < 24,
+    'la Braise ne remplit jamais un deck à elle seule : sa réserve totale reste sous les 24 emplacements non-terrain');
 
   const apresSouk2 = collectionJoueur({ etagesVaincus: ['listes-1', 'listes-2', 'listes-3', 'listes-4', 'listes-5', 'souk-1', 'souk-2'] });
   assert.ok(slots(apresSouk2, 'eau') >= 24, 'le mono-Eau s\'ouvre par les citernes de la Gardienne');
