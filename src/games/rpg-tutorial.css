@@ -217,7 +217,7 @@
 }
 @media (max-height: 480px) {
   .rpg-tutorial__panel {
-    width: min(370px, calc(100vw - 24px));
+    width: min(300px, calc(100vw - 24px));
     max-height: calc(100dvh - 20px);
     padding: 11px 15px 12px;
     border-radius: 12px;
