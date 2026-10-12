@@ -179,7 +179,7 @@ assert.match(battlePage, /variante="mulligan"/,
 assert.match(battleCss, /\.rpg-hover-card-preview--mulligan\s*\{\s*z-index:\s*1200;\s*\}/,
   'l’aperçu rapide passe au-dessus du volet (1150) et sous l’aperçu au doigt (1250)');
 assert.match(battlePage, /\{apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && \(/,
-  'la table ne double ni l’aperçu du volet ni l’aperçu de l’annonce : un seul aperçu vivant à la fois');
+  'la table ne double pas l’aperçu du volet ni celui de l’annonce : un seul aperçu vivant à la fois');
 assert.match(battlePage, /apercu=\{apercuSurvol\}[\s\S]{0,200}?survol=\{viewport\.survol\}/,
   'le volet reçoit l’aperçu et la capacité de survol de la page');
 assert.doesNotMatch(mulliganPanel, /aria-hidden="true">\s*\{(effets|nouvelle)/,
