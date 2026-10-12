@@ -663,7 +663,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (effet.type === 'buff') {
       // Rien à renforcer sans créature en jeu : le sort reste en main plutôt
       // que d'être brûlé. Un bonus déclaré avec `tours` ne dépasse pas le tour
-      // en cours — il ne développe pas la table et ne vaut que pour l'échange.
+      // en cours — il ne développe pas la table et ne vaut que pour l’échange.
       if (!camp.creatures.length) return { score: 0, cibleId: null };
       const bonus = (effet.atk ?? 0) * 0.8 + (effet.def ?? 0) * 0.4;
       const durable = Number(effet.tours) > 0 ? 0.5 : 1;

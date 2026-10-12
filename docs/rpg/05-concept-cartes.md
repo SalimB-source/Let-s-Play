@@ -149,8 +149,12 @@ note sur le camp concerné et les liquide au tour suivant (`rpgFinDeTour`) :
 
 - **le bonus borné** (`effet.tours`, la carte `buff`) — *Rempart de dunes*
   donne `+0/+3` à toutes les créatures du joueur **jusqu'à la fin du tour** :
-  le gain est inscrit dans `camp.bonusTemporaires`, puis retiré quand le tour
-  qui l'a vu naître se termine, avant que l'autre camp ne commence. Contrairement
+  le gain est inscrit dans `camp.bonusTemporaires` **avec le tour qui le voit
+  naître**, puis retiré quand *ce* tour-là se termine, avant que l'autre camp ne
+  commence. Un rituel meurt donc avec son propre tour — il renforce vos
+  attaques et vos échanges, il ne vous protège pas pendant le tour adverse ; et
+  le jour où un éphémère portera le même `tours`, il s'évapora avec l'échange en
+  cours plutôt qu'avec le tour du camp renforcé. Contrairement
   à la Résonance, ce retrait **peut** faire tomber une créature déjà entamée
   (le plancher de 1 ne s'applique qu'aux auras de table) : on ne renforce pas
   trois tours pour rien.

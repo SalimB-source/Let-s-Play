@@ -1157,9 +1157,17 @@ test('Rempart de dunes : +0/+3 à toutes les créatures, jusqu’à la fin du to
   assert.equal(fennec.def, 4, 'toute la ligne est renforcée, pas seulement la cible');
   assert.equal(fennec.atk, 3, 'l’attaque du Fennec reste la sienne');
 
+  // Le rempart court sur tout le tour qui l’a vu jouer : l’attaque ne le solde
+  // pas avant la fin du tour.
+  chien.ready = true;
+  const pvSorcierAvant = duel.sorcier.pv;
+  rpgLancerAttaque(duel, 'joueur', [chien.id]);
+  assert.equal(duel.sorcier.pv, pvSorcierAvant - 2, 'le Chien frappe derrière son mur de sable');
+  assert.equal(chien.def, 5, 'déclarer l’attaque ne fait pas tomber le bonus');
+
   // Le sable retombe avec le tour : la table retrouve ses défenses d’avant.
   rpgFinDeTour(duel);
-  assert.equal(chien.def, 2, 'le bonus ne survit pas à la fin du tour');
+  assert.equal(chien.def, 2, 'le bonus ne survit pas à la fin du tour où il a été joué');
   assert.equal(chien.pvMax, 2, 'le maximum de PV rendu disparaît avec le bonus');
   assert.equal(chien.atk, 2, 'le Chien n’avait rien gagné en attaque, il ne perd rien');
   assert.equal(fennec.def, 1, 'le Fennec retrouve sa défense de base');
@@ -1233,6 +1241,29 @@ test('les retouches du catalogue : Rapport du greffier à 3 manas, Déflection r
   assert.deepEqual(cardById('rempart-de-dunes').effet, { type: 'buff', atk: 0, def: 3, tours: 1 },
     'le moteur porte la durée du bonus');
   assert.equal(cardById('nuage-de-cendres').effet.echo.amount, 2, 'le Nuage promet sa seconde vague');
+});
+
+test('le carnet des renforts ne solde que le tour qui les a vus jouer', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+
+  // Le cas d’un éphémère de renfort lancé en réponse pendant le tour adverse :
+  // le carnet retient le tour de l’échange, jamais le camp renforcé.
+  chien.def += 3;
+  chien.pv += 3;
+  chien.pvMax += 3;
+  duel.joueur.bonusTemporaires.push({ entiteId: chien.id, atk: 0, def: 3, tour: 'sorcier' });
+
+  rpgFinDeTour(duel);
+  assert.equal(chien.def, 5, 'un bonus né pendant le tour adverse ne tombe pas avec le nôtre');
+  assert.equal(duel.joueur.bonusTemporaires.length, 1, 'il attend le tour qui l’a vu jouer');
+
+  rpgFinDeTour(duel);
+  assert.equal(chien.def, 2, 'il retombe avec le tour pendant lequel il a été joué');
+  assert.equal(chien.pvMax, 2, 'le maximum de PV suit la même échéance');
+  assert.deepEqual(duel.joueur.bonusTemporaires, [], 'le carnet est soldé, et soldé une seule fois');
 });
 
 test('un renfort éphémère qui s’évapore peut laisser une créature à terre', () => {

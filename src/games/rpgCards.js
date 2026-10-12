@@ -1442,8 +1442,8 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'commune',
     cibles: ['soi'],
     // Le mur de sable ne grandit pas les siens : il les tient debout le temps
-    // de l'échange. `tours: 1` = le bonus s'efface à la fin du tour (voir
-    // `bonusTemporaires` dans le moteur).
+    // de l’échange. `tours: 1` = le bonus ne dépasse pas le tour pendant lequel
+    // il a été joué (carnet `bonusTemporaires` du moteur, soldé à `rpgFinDeTour`).
     effet: { type: 'buff', atk: 0, def: 3, tours: 1 },
     text: 'Vos créatures gagnent +0/+3 jusqu’à la fin du tour.',
     flavor: 'Le vent bâtit plus vite que les maçons, et il emporte aussi vite.',

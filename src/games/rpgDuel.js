@@ -518,28 +518,37 @@ function resoudreEchos(duel) {
   }
 }
 
-/** Efface les bonus « jusqu’à la fin du tour » gagnés par le camp dont le tour
- *  se termine. Une créature déjà sortie de table n’a rien à récupérer : son
- *  bonus est né et mort avec elle. Une créature réduite à 0 défense par le
+/** Efface les bonus « jusqu’à la fin du tour » **joués pendant le tour qui se
+ *  termine** — `tourFerme` : le tour de celui qui a lancé le sort, pas celui du
+ *  camp renforcé. Un éphémère lancé en réponse meurt donc avec l’échange qui
+ *  l’a vu partir, et une créature déjà sortie de table n’a rien à récupérer :
+ *  son bonus est né et mort avec elle. Une créature réduite à 0 défense par le
  *  retrait du bonus tombe, comme à Magic quand le renfort s’évanouit. */
-function annulerBonusTemporaires(duel, cote) {
-  const camp = duel[cote];
-  const bonus = camp.bonusTemporaires ?? [];
-  if (!bonus.length) return;
-  camp.bonusTemporaires = [];
-  const effaces = [];
-  for (const entry of bonus) {
-    const entite = camp.creatures.find((candidate) => candidate.id === entry.entiteId);
-    if (!entite) continue;
-    entite.atk = Math.max(0, entite.atk - (entry.atk ?? 0));
-    entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - (entry.def ?? 0));
-    entite.pv = Math.max(0, entite.pv - (entry.def ?? 0));
-    entite.def = Math.min(entite.def, Math.max(0, entite.pv));
-    effaces.push(entite.name);
+function annulerBonusTemporaires(duel, tourFerme) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const camp = duel[cote];
+    const carnet = camp.bonusTemporaires ?? [];
+    if (!carnet.length) continue;
+    const restants = [];
+    const effaces = [];
+    for (const entry of carnet) {
+      if (entry.tour && entry.tour !== tourFerme) {
+        restants.push(entry);
+        continue;
+      }
+      const entite = camp.creatures.find((candidate) => candidate.id === entry.entiteId);
+      if (!entite) continue;
+      entite.atk = Math.max(0, entite.atk - (entry.atk ?? 0));
+      entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - (entry.def ?? 0));
+      entite.pv = Math.max(0, entite.pv - (entry.def ?? 0));
+      entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+      effaces.push(entite.name);
+    }
+    camp.bonusTemporaires = restants;
+    if (!effaces.length) continue;
+    duel.log.push(`Le renfort s’évapore (${effaces.join(', ')}).`);
+    if (camp.creatures.some((entite) => !(entite.pv > 0))) rpgActionsEtat(duel);
   }
-  if (!effaces.length) return;
-  duel.log.push(`Le renfort s’évapore (${effaces.join(', ')}).`);
-  if (camp.creatures.some((entite) => !(entite.pv > 0))) rpgActionsEtat(duel);
 }
 
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
@@ -610,8 +619,10 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     }
     case 'buff': {
       // Un bonus déclaré avec `tours` est un bonus « jusqu’à la fin du tour » :
-      // il est accordé comme les autres, puis noté dans le carnet du camp pour
-      // être effacé à `rpgFinDeTour` (voir `annulerBonusTemporaires`).
+      // il est accordé comme les autres, puis noté dans le carnet du camp avec
+      // le tour qui le voit naître, pour être effacé à `rpgFinDeTour` de CE
+      // tour-là (voir `annulerBonusTemporaires`). Le Rempart de dunes tient donc
+      // pour l’échange en cours, pas au-delà.
       const temporaire = Number(effet.tours) > 0;
       const carnet = (duel[cote].bonusTemporaires ??= []);
       for (const entite of duel[cote].creatures) {
@@ -622,7 +633,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
         entite.pvMax = (entite.pvMax ?? entite.def) + bonusDefense;
         entite.def += bonusDefense;
         entite.pv += bonusDefense;
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense });
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tour: duel.tour });
       }
       return;
     }
@@ -1351,7 +1362,7 @@ export function rpgFinDeTour(duel) {
       }
     }
   }
-  annulerBonusTemporaires(duel, duel.tour); // « jusqu’à la fin du tour » : le tour se termine
+  annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
   duel.tour = autre(duel.tour);
   const camp = duel[duel.tour];
   camp.mana = manaVide();           // le mana non dépensé s'évapore

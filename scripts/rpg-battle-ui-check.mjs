@@ -643,10 +643,12 @@ for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.resonance)) {
 // ── Retouches du catalogue : bonus borné, écho, coût et peintures reprises ─
 // Ces quatre règles vivent dans le moteur, pas dans le texte des cartes : le
 // garde-fou vérifie les deux extrémités (octroi + effacement, promesse + chute).
-assert.match(duelEngine, /const temporaire = Number\(effet\.tours\) > 0;[\s\S]*?carnet\.push\(\{ entiteId: entite\.id, atk: bonusAttaque, def: bonusDefense \}\)/,
-  'un bonus déclaré avec `tours` est accordé puis consigné dans le carnet du camp');
+assert.match(duelEngine, /const temporaire = Number\(effet\.tours\) > 0;[\s\S]*?carnet\.push\(\{ entiteId: entite\.id, atk: bonusAttaque, def: bonusDefense, tour: duel\.tour \}\)/,
+  'un bonus déclaré avec `tours` est accordé puis consigné dans le carnet du camp, daté du tour qui le voit jouer');
 assert.match(duelEngine, /annulerBonusTemporaires\(duel, duel\.tour\);[\s\S]*?duel\.tour = autre\(duel\.tour\)/,
   'les renforts du tour qui se termine s’effacent avant que l’autre camp ne commence');
+assert.match(duelEngine, /if \(entry\.tour && entry\.tour !== tourFerme\) \{\s*restants\.push\(entry\);/,
+  'un bonus né pendant un autre tour que celui qui se ferme reste attendu dans le carnet');
 assert.match(duelEngine, /differerEcho\(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId\)/,
   'la seconde vague d’un sort à écho est promise à la résolution des dégâts');
 assert.match(duelEngine, /resoudreEchos\(duel\);/,
