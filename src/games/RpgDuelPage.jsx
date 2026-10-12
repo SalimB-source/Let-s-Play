@@ -109,6 +109,7 @@ const CARD_ART_CACHE_VERSIONS = {
   salem: 'full-art-huile-realiste-v2',
   yamina: 'full-art-huile-realiste-v2',
   tarek: 'full-art-huile-realiste-v2',
+  boualem: 'full-art-citerne-protectrice-v1',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la

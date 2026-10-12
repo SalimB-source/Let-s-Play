@@ -292,6 +292,7 @@ function creerEntiteCreature(carte) {
     bouclier: 0,
     bouclierLumiere: false,
     auraSableBonus: 0,
+    boualemContresortDisponible: carte.id === 'boualem',
     esquive: Math.max(0, carte.esquive ?? 0),
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
@@ -461,6 +462,14 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible)
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
   const adv = autre(cote);
+  if (cibleId) {
+    const cibleBoualem = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (cibleBoualem?.carteId === 'boualem' && cibleBoualem.boualemContresortDisponible) {
+      cibleBoualem.boualemContresortDisponible = false;
+      duel.log.push(`Boualem contre l’effet adverse qui le ciblait.`);
+      return;
+    }
+  }
   switch (effet.type) {
     case 'pioche':
       for (let i = 0; i < (effet.amount ?? 1); i += 1) rpgPiocher(duel, cote);
