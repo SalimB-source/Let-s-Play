@@ -1,7 +1,7 @@
 /**
  * Progression du mode Histoire (les Tours de Bab El).
  *
- * Continuité simple : la sauvegarde ne retient que les **étages déblayés**.
+ * Les victoires et le récit sont sauvegardés ensemble (v2, migration v1).
  * Un étage est débloqué s'il est le premier de sa tour, ou si l'étage
  * précédent de la même tour est déblayé. Chaque duel repart à zéro (deck
  * complet, PV pleins) — rien n'est reporté d'un étage à l'autre.
@@ -14,11 +14,14 @@
 
 import { etageHistoireParId, etagePrecedent, tourHistoireParId, tousLesEtages } from './rpgStoryTours.js';
 
-export const RPG_STORY_STORAGE_KEY = 'letsplay_sablier_histoire_v1';
+import { normaliserRecitHistoire } from './rpgStoryFlow.js';
+
+export const RPG_STORY_LEGACY_STORAGE_KEY = 'letsplay_sablier_histoire_v1';
+export const RPG_STORY_STORAGE_KEY = 'letsplay_sablier_histoire_v2';
 
 /** État vide : rien n'est encore déblayé. */
 export function progressionHistoireVide() {
-  return { etagesVaincus: [] };
+  return { version: 2, etagesVaincus: [], recit: null };
 }
 
 /** Ne garde que des identifiants d'étages connus, sans doublon. */
@@ -31,7 +34,7 @@ export function normaliserProgressionHistoire(value) {
     vus.add(etageId);
     etagesVaincus.push(etageId);
   }
-  return { etagesVaincus };
+  return { version: 2, etagesVaincus, recit: normaliserRecitHistoire(value?.recit, etagesVaincus) };
 }
 
 /** L'étage est-il déblayé ? */
@@ -56,11 +59,9 @@ export function marquerEtageVaincu(progression, etageId) {
   const normalisee = normaliserProgressionHistoire(progression);
   if (!etageHistoireParId(etageId)) return normalisee;
   if (etageEstVaincu(normalisee, etageId)) {
-    return normalisee.etagesVaincus.length === (progression?.etagesVaincus?.length ?? 0)
-      ? progression
-      : normalisee;
+    return JSON.stringify(normalisee) === JSON.stringify(progression) ? progression : normalisee;
   }
-  return { etagesVaincus: [...normalisee.etagesVaincus, etageId] };
+  return { ...normalisee, etagesVaincus: [...normalisee.etagesVaincus, etageId] };
 }
 
 /** Résumé d'une tour pour l'écran Histoire : { total, vaincus, prochainId }. */
@@ -80,15 +81,23 @@ function browserStorage() {
   }
 }
 
-/** Charge la progression de l'appareil ; état vide si absent ou illisible. */
+/** Charge la v2, puis la v1 si nécessaire. L'original v1 reste un secours.
+ *  Aucun choix n'est déduit des victoires et aucun plateau de duel n'est stocké. */
 export function chargerProgressionHistoire() {
   const stockage = browserStorage();
   if (!stockage) return progressionHistoireVide();
-  try {
-    return normaliserProgressionHistoire(JSON.parse(stockage.getItem(RPG_STORY_STORAGE_KEY) ?? 'null'));
-  } catch {
-    return progressionHistoireVide();
+  for (const cle of [RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY]) {
+    try {
+      const value = JSON.parse(stockage.getItem(cle) ?? 'null');
+      if (!value || typeof value !== 'object' || !Array.isArray(value.etagesVaincus)) continue;
+      if (cle === RPG_STORY_STORAGE_KEY && value.version !== 2) continue;
+      return normaliserProgressionHistoire(cle === RPG_STORY_LEGACY_STORAGE_KEY
+        ? { etagesVaincus: value.etagesVaincus } : value);
+    } catch {
+      // JSON corrompu ou stockage refusé : essayer la copie précédente.
+    }
   }
+  return progressionHistoireVide();
 }
 
 /** Enregistre la progression de l'appareil (silencieux si le stockage manque). */
@@ -106,10 +115,8 @@ export function sauverProgressionHistoire(progression) {
 /** Efface la progression de l'appareil. */
 export function reinitialiserProgressionHistoire() {
   const stockage = browserStorage();
-  try {
-    stockage?.removeItem(RPG_STORY_STORAGE_KEY);
-  } catch {
-    // rien à faire : le stockage n'est pas accessible
+  for (const cle of [RPG_STORY_STORAGE_KEY, RPG_STORY_LEGACY_STORAGE_KEY]) {
+    try { stockage?.removeItem(cle); } catch { /* stockage indisponible */ }
   }
   return progressionHistoireVide();
 }

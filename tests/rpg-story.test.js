@@ -162,7 +162,7 @@ test('les tours s’enchaînent étage par étage', () => {
 
 test('la progression normalise les étages inconnus et les doublons', () => {
   const normalisee = normaliserProgressionHistoire({ etagesVaincus: ['listes-1', 'inconnu', 'listes-1', 42, 'listes-2'] });
-  assert.deepEqual(normalisee, { etagesVaincus: ['listes-1', 'listes-2'] });
+  assert.deepEqual(normalisee, { ...progressionHistoireVide(), etagesVaincus: ['listes-1', 'listes-2'] });
   assert.deepEqual(normaliserProgressionHistoire(null), progressionHistoireVide());
   assert.deepEqual(normaliserProgressionHistoire('n’importe quoi'), progressionHistoireVide());
 });
