@@ -11,7 +11,9 @@ import {
   RPG_PLATEAUX,
   RPG_PLATEAUX_PAR_COULEUR,
   RPG_PLATEAUX_PAR_DECK,
+  RPG_PLATEAUX_VARIANTES_FANTAISISTES,
   tirerPlateauDuDuel,
+  varianteFantaisisteDe,
 } from '../src/games/rpgPlateaux.js';
 import { RPG_DECKS } from '../src/games/rpgCards.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
@@ -156,10 +158,11 @@ test('toutes les correspondances de decks pointent vers un plateau livré', () =
     assert.ok(plateauParId(plateauId), `${couleur} → ${plateauId} : plateau inconnu`);
   }
   // Aucun plateau ne devient inaccessible : chacun est le terrain d’au moins un
-  // deck, ou le repli.
+  // deck, le repli, ou le double merveilleux d’un terrain.
   const atteignables = new Set([
     ...Object.values(RPG_PLATEAUX_PAR_DECK),
     ...Object.values(RPG_PLATEAUX_PAR_COULEUR),
+    ...Object.values(RPG_PLATEAUX_VARIANTES_FANTAISISTES),
     RPG_PLATEAU_DE_REPLI,
   ]);
   for (const { id } of RPG_PLATEAUX) {
@@ -256,5 +259,93 @@ test('deux decks du même terrain se jouent sur ce terrain', () => {
       rng: () => valeur,
     });
     assert.equal(tirage.plateau.id, 'erg-du-sahara', 'les deux paquets de Sable se retrouvent dans l’Erg');
+  }
+});
+
+// ── Les doubles merveilleux : un terrain classique peut s'échanger ──────────
+
+/** Un rng scripté : chaque appel rend la valeur suivante, la dernière en boucle. */
+const rngSequentiel = (valeurs) => {
+  let appel = 0;
+  return () => valeurs[Math.min(appel++, valeurs.length - 1)];
+};
+
+test('chaque terrain classique a son double merveilleux, sauf la piste caravanière', () => {
+  assert.deepEqual(RPG_PLATEAUX_VARIANTES_FANTAISISTES, {
+    'erg-du-sahara': 'desert-de-verre',
+    'table-des-heures': 'cavernes-de-cristal',
+    'ruines-de-tipaza': 'abysses-phosphorescentes',
+    'fjord-des-neuf-hivers': 'iles-celestes',
+  });
+  for (const [classiqueId, varianteId] of Object.entries(RPG_PLATEAUX_VARIANTES_FANTAISISTES)) {
+    const classique = plateauParId(classiqueId);
+    const variante = varianteFantaisisteDe(classiqueId);
+    assert.ok(classique && variante, `${classiqueId} a son double ${varianteId}`);
+    assert.equal(variante.id, varianteId);
+    assert.equal(varianteFantaisisteDe(classique), variante, 'le plateau lui-même répond comme son identifiant');
+    assert.notEqual(variante.fichier, classique.fichier, `${varianteId} a son propre fond 4K`);
+    assert.equal(varianteFantaisisteDe(variante), null, 'une variante n’a pas de double au second degré');
+  }
+  for (const sansDouble of ['caravane-de-gourara', 'plateau-inconnu', null, 42]) {
+    assert.equal(varianteFantaisisteDe(sansDouble), null, `${String(sansDouble)} reste unique`);
+  }
+});
+
+test('sans l’option, le tirage ne rend jamais un double merveilleux', () => {
+  const duel = { deckJoueur: 'veilleurs-du-desert', deckAdverse: 'cour-des-djinns' };
+  const doubles = new Set(Object.values(RPG_PLATEAUX_VARIANTES_FANTAISISTES));
+  for (const valeur of [0, 0.1, 0.4999, 0.5, 0.75, 0.999]) {
+    const tirage = tirerPlateauDuDuel({ ...duel, rng: () => valeur });
+    assert.equal(tirage.variante, false, `rng ${valeur} : pas de variante sans l’option`);
+    assert.ok(!doubles.has(tirage.plateau.id), `rng ${valeur} : terrain classique`);
+  }
+});
+
+test('avec l’option, le second tirage peut donner le double merveilleux', () => {
+  const duel = { deckJoueur: 'veilleurs-du-desert', deckAdverse: 'cour-des-djinns', variantesFantaisistes: true };
+  // Premier tirage : le camp. Second : le double (≥ 0,5).
+  const merveilleux = tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.1, 0.9]) });
+  assert.equal(merveilleux.camp, 'joueur');
+  assert.equal(merveilleux.motif, 'deck');
+  assert.equal(merveilleux.plateau.id, 'desert-de-verre');
+  assert.equal(merveilleux.variante, true);
+  const classique = tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.1, 0.2]) });
+  assert.equal(classique.plateau.id, 'erg-du-sahara');
+  assert.equal(classique.variante, false);
+  // La Cour des Djinns se bat sur la Table des Heures : le second tirage
+  // l'embrase en Cavernes de Cristal.
+  const adverse = tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.9, 0.9]) });
+  assert.equal(adverse.camp, 'adversaire');
+  assert.equal(adverse.plateau.id, 'cavernes-de-cristal');
+  // Le tirage reste déterministe : rejoué à l’identique, même terrain.
+  const rejoue = () => tirerPlateauDuDuel({ ...duel, rng: rngSequentiel([0.9, 0.9]) });
+  assert.deepEqual(rejoue(), rejoue());
+});
+
+test('le second tirage n’est consommé que si le terrain a un double', () => {
+  const avecOption = { variantesFantaisistes: true };
+  let appels = 0;
+  tirerPlateauDuDuel({
+    ...avecOption, deckJoueur: 'veilleurs-du-desert', deckAdverse: 'cour-des-djinns',
+    rng: () => { appels += 1; return 0.1; },
+  });
+  assert.equal(appels, 2, 'terrain à double : le camp puis la variante');
+  // Seule la piste caravanière reste unique : le Grand Horloger reçoit sur la
+  // Table des Heures, qui s'embrase comme les autres terrains.
+  appels = 0;
+  const tirage = tirerPlateauDuDuel({
+    ...avecOption, deckJoueur: 'sentiers-de-cendre', deckAdverse: 'sentiers-de-cendre',
+    rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(tirage.variante, false, 'la piste caravanière garde son terrain unique');
+  assert.equal(appels, 1, 'terrain unique : le second tirage n’est pas consommé');
+});
+
+test('avec l’option, un tirage hors bornes rend toujours un plateau valide', () => {
+  const duel = { deckJoueur: 'maree-des-abysses', deckAdverse: 'sentiers-de-cendre', variantesFantaisistes: true };
+  for (const valeur of [Number.NaN, Number.POSITIVE_INFINITY, -3, 12, 'x']) {
+    const tirage = tirerPlateauDuDuel({ ...duel, rng: () => valeur });
+    assert.ok(RPG_PLATEAUX.includes(tirage.plateau), `valeur ${String(valeur)} : plateau valide`);
+    assert.equal(typeof tirage.variante, 'boolean', `valeur ${String(valeur)} : variante renseignée`);
   }
 });
