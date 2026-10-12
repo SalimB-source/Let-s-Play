@@ -5928,3 +5928,78 @@ que F ouvre et ferme (et que ses combinaisons, la touche maintenue, la saisie de
 texte et Échap ne font rien), et que le repli sans API tient. Elle ne dit rien
 du rendu réel : pour cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`)
 et le passer en plein écran sur un grand écran, puis sur un téléphone.
+
+## Le Sablier : le rail du tour au milieu de la table, et la main sans masque
+
+Deux retouches du duel, l'une pour le regard, l'autre pour la place.
+
+**1. Le tour se lit au milieu de la table.** L'indicateur de tour, les cinq
+phases et « Fin du tour » vivaient au bas de la table, dans la barre de
+commandes, à côté des actions de combat : pour savoir où en était le tour, il
+fallait quitter les cartes des yeux. Ils forment maintenant un **rail**, en
+colonne, posé au **milieu de la table**, à la verticale du centre — l'indicateur
+d'abord, les cinq phases empilées ensuite, le bouton « Fin du tour » en dernier :
+la lecture descend vers la main du joueur, dans le sens du tour lui-même.
+
+| Élément du rail | Où il vivait | Où il vit |
+|---|---|---|
+| Indicateur de tour (`À VOTRE TOUR`, `TOUR DU SORCIER`, `À VOUS · RÉPONSE`…) | `.rpg-bottombar__status`, en bas à droite | `.rpg-turn-rail`, au centre |
+| Les cinq phases (`PhaseTrack`) | dans `.rpg-bottombar .rpg-actions`, au-dessus des boutons | dans le rail, empilées verticalement |
+| `↶ Annuler la dernière action` et `⧗ Fin du tour` | `.rpg-actions__turn`, au bout de la rangée de commandes | `.rpg-actions__turn` du rail, empilés |
+| `Attaquer avec tous`, `Confirmer l'attaque`, `Annuler l'attaque`, `Résoudre le combat` | `.rpg-actions__combat` | inchangés, dans la barre du bas |
+
+- **Ce n'est pas un panneau.** Chaque élément garde sa pastille — la capsule de
+  l'indicateur, le cercle de la phase, l'or du bouton — et la phase active
+  allume la sienne ; le plateau peint reste visible entre elles.
+- **Le rail ne prend pas le geste.** `pointer-events: none` sur la colonne,
+  `auto` sur ses seuls boutons : une carte posée sous le rail reste jouable.
+- **Il reste sous les dialogues.** `z-index: 42` : au-dessus des cartes (4) et
+  de la main (40), sous le choix de mana (48), le voile de fin de duel (49) et
+  la navigation (900). La carte qui vole passe au-dessus (1600).
+- **Au doigt, il se cale entre la navigation et la main.** Le rail tactile
+  reprend les repères de la grille — la rangée de navigation, la rangée de la
+  main, le rembourrage de la table (`--rpg-touch-nav`, `--rpg-touch-hand`,
+  `--rpg-touch-pad`) — et se centre entre les deux (`margin-block: auto`) : sur
+  un 568 × 320, la bande de jeu fait ≈ 190 px et le rail ≈ 170, donc il ne
+  recouvre jamais les cartes de la main.
+
+**2. Plus de masque autour de la main.** La rangée de cartes avait une marge
+réelle de chaque côté — `padding: 0 10px` sur le dock au doigt, `8px 10px 5px` à
+la souris — et le dock tactile recadrait ce qui dépassait (`overflow: hidden`).
+La main occupe désormais **toute la largeur de la table** : padding latéral nul
+des deux côtés, plus de recadrage, la première et la dernière carte touchent les
+bords. Le voile noir dégradé du bas reste (c'est lui qui tient l'encre crème
+lisible sur les plateaux clairs), et la bande ne s'appelle plus un masque dans
+les commentaires.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — le rail `.rpg-turn-rail` (indicateur,
+  `PhaseTrack`, `.rpg-actions__turn`) entre la barre du bas et le dock de la
+  main ; `.rpg-bottombar` ne garde que le journal et `.rpg-actions__combat` ;
+- `src/games/rpg-battle.css` — `.rpg-turn-rail` (colonne absolue au centre de la
+  table, `pointer-events`), `.rpg-phase-track` / `.rpg-phase-step` réécrits en
+  capsules empilées, `.rpg-turn-rail .rpg-actions__turn` en colonne, la barre du
+  bas réduite à `min(340px, calc(100vw - 230px))`, et les paddings latéraux de
+  `.rpg-hand-dock` / `.rpg-hand` ramenés à zéro ;
+- `src/games/rpg-mobile.css` — le rail tactile (repères de la grille, échelle du
+  téléphone), la colonne de commandes qui ne porte plus que les actions de
+  combat, et le dock de la main sans marge ni `overflow: hidden`.
+
+### Vérifications
+
+```bash
+npm run check:rpg-ui      # le rail au centre, la main sans masque, dans la page et les deux feuilles
+npm run check:rpg         # les règles du duel, inchangées
+npm run check:rpg-mobile  # au doigt (Playwright) : rail centré au-dessus de la main, cibles de 44 px
+```
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat : le rail est une colonne
+`position: absolute` centrée (`top`/`left` à 50 %, `translate(-50%, -50%)`,
+`pointer-events: none`), ses boutons sont les seuls à prendre le clic, les cinq
+phases s'empilent, la barre du bas ne porte plus l'indicateur de tour, et les
+paddings latéraux de la main ont disparu des deux feuilles. Les duels au pilote
+automatique de `scripts/rpg-ghost-check.mjs` rejouent six parties à la souris et
+six au doigt avec le rail en place ; `scripts/rpg-mobile-layout-check.mjs`
+mesure ensuite, à quatre tailles d'écran, que le rail reste centré dans la bande
+de jeu, au-dessus de la main, et que « Fin du tour » y garde ses 44 px.

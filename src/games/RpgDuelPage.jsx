@@ -4239,19 +4239,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         <div className="rpg-bottombar">
-          <div className="rpg-bottombar__status">
-            <div className={`rpg-turn-indicator ${classeIndicateurTour}`} role="status" aria-live="polite">
-              <span className="rpg-turn-indicator__lamp" aria-hidden="true" />
-              <strong>{indicateurTour}</strong>
-            </div>
-          </div>
           <ol className="rpg-log" aria-live="polite">
             {duel.log.slice(-6).map((line, index) => (
               <li key={`${duel.log.length}-${index}-${line}`} className="rpg-log__line">{line}</li>
             ))}
           </ol>
           <div className="rpg-actions">
-            <PhaseTrack current={phaseDuelActive} />
             {fenetreSort && (
               <section
                 className="rpg-annonce-sort"
@@ -4311,25 +4304,40 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   </button>
                 )}
               </div>
-              <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
-                {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
-                  <button
-                    type="button"
-                    className="rpg-btn rpg-btn--undo"
-                    aria-label="Annuler la dernière action"
-                    onClick={annulerDerniereAction}
-                  >
-                    ↶ Annuler la dernière action
-                  </button>
-                )}
-                <button type="button" className="rpg-btn rpg-btn--endturn"
-                  data-tutorial-target={tutorielActif && etapeTutorielId === 'fin-tour' ? 'end-turn' : undefined}
-                  onClick={finDuTour}
-                  disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || mulliganOuvert}>
-                  ⧗ Fin du tour
-                </button>
-              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Le rail du tour : l'indicateur, les cinq phases et « Fin du tour »
+            remontent au milieu de la table, en colonne, entre les deux champs
+            de cartes. Le joueur n'a plus à quitter le champ de bataille des
+            yeux pour savoir où en est le tour : le repère vit à la verticale
+            du centre. Le rail lui-même laisse passer les gestes
+            (`pointer-events: none`) — ses seuls boutons les attrapent —, donc
+            la table reste jouable sous lui. */}
+        <div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">
+          <div className={`rpg-turn-indicator ${classeIndicateurTour}`} role="status" aria-live="polite">
+            <span className="rpg-turn-indicator__lamp" aria-hidden="true" />
+            <strong>{indicateurTour}</strong>
+          </div>
+          <PhaseTrack current={phaseDuelActive} />
+          <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
+            {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
+              <button
+                type="button"
+                className="rpg-btn rpg-btn--undo"
+                aria-label="Annuler la dernière action"
+                onClick={annulerDerniereAction}
+              >
+                ↶ Annuler la dernière action
+              </button>
+            )}
+            <button type="button" className="rpg-btn rpg-btn--endturn"
+              data-tutorial-target={tutorielActif && etapeTutorielId === 'fin-tour' ? 'end-turn' : undefined}
+              onClick={finDuTour}
+              disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || mulliganOuvert}>
+              ⧗ Fin du tour
+            </button>
           </div>
         </div>
 

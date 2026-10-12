@@ -12,10 +12,15 @@
  * 2. **Les récompenses d'étage** — chaque étage déblayé du mode Histoire rend
  *    des cartes confisquées par la Chambre des Heures (rares et
  *    mythiques). La correspondance étage → cartes est du contenu, dans
- *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-cinq cartes à
+ *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-trois cartes à
  *    ravir, parées pour que chaque couleur ouvre à peu près au moment où la
- *    campagne y entre — le mono-Braise au sommet du Souk, le mono-Eau au
- *    seuil des Abysses, le mono-Neige en entrant dans le Fjord.
+ *    campagne y entre — le mono-Eau au seuil des Abysses, le mono-Neige en
+ *    entrant dans le Fjord. Chaque étage ne nomme que des cartes du catalogue :
+ *    les trois cartes retirées du jeu (Rafale du minaret, Sentence de la Liste,
+ *    Fureur du souk) ne sont plus promises nulle part. La Braise, elle, ne fait
+ *    pas un deck à elle seule — sa réserve culmine sous les vingt-quatre
+ *    emplacements non-terrain d'un deck de quarante, donc elle se joue par
+ *    paires, comme le deck « Sentiers de cendre » du catalogue.
  *
  * Les **decks du catalogue** (les cinq boîtiers de départ) ne consultent jamais
  * la collection : ce sont des decks préconstruits, jouables d'entrée de jeu.
@@ -54,15 +59,19 @@ export const COLLECTION_DEPART = RPG_DUEL_CARDS
  * l'eau du fond est glacée — ; le Fjord rend les figures du Nord.
  */
 export const RPG_RECOMPENSES_PAR_ETAGE = {
-  // Tour des Listes — Sable et Braise, l'apprentissage.
+  // Tour des Listes — Sable et Braise, l'apprentissage. Chaque étage ne rend
+  // que des cartes encore au catalogue : Sentence de la Liste, Rafale du
+  // minaret et Fureur du souk en sont sorties, donc elles ne sont plus des
+  // récompenses (l'étage les avait promises, la Chambre des Heures les a
+  // reprises).
   'listes-1': ['cavalier-amazigh-du-desert', 'scribe-de-la-liste'],
-  'listes-2': ['sentence-de-la-liste', 'braisier-du-souk'],
+  'listes-2': ['braisier-du-souk'],
   'listes-3': ['amani-des-ksour', 'tempete-de-sable'],
-  'listes-4': ['rafale-du-minaret', 'petra'],
+  'listes-4': ['petra'],
   'listes-5': ['sahir-des-braises', 'nuage-de-cendres', 'tarek'],
   // Tour du Souk — le feu se complète ; les citernes de la Gardienne rendent
   // les premières cartes d'Eau.
-  'souk-1': ['fureur-du-souk', 'vent-rouge'],
+  'souk-1': ['vent-rouge'],
   'souk-2': ['salem', 'vipere-de-verre'],
   'souk-3': ['djinn-du-souk', 'parade-du-verre'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'colosse-de-sel'],

@@ -95,8 +95,8 @@
    tient dans l'écran, rien n'est tronqué. Agrandir les cartes (+35 % un temps)
    faisait déborder la grille : le bas du plateau sortait de l'écran et les
    piles de terrains dépassaient de leur rail. Les cartes de la main partagent
-   `--duel-card` : à 4:5, elles remplissent la hauteur de la main sans jamais
-   toucher le « masque » du dock (voir plus bas). */
+   `--duel-card` : à 4:5, elles remplissent la hauteur de la main — sans marge
+   ni recadrage autour d'elles (voir plus bas). */
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
   --terrain-inset: clamp(44px, 8vw, 160px);
@@ -104,12 +104,18 @@
   --rpg-card-border-strong: clamp(3px, 1vw, 4.5px);
   --rpg-card-radius: clamp(7px, 1.1vw, 12px);
   --rpg-card-radius-sm: clamp(6px, 0.9vw, 10px);
+  /* Les trois repères de la grille, nommés : le rembourrage de la table, la
+     rangée de navigation (en haut) et la rangée de la main (en bas). Le rail du
+     tour s'y accroche pour se centrer dans la bande de jeu (voir plus bas). */
+  --rpg-touch-pad: 6px;
+  --rpg-touch-nav: 38px;
+  --rpg-touch-hand: clamp(84px, 28dvh, 146px);
   display: grid;
   grid-template-columns: calc(clamp(116px, 16vw, 190px) + var(--terrain-inset)) minmax(0, 1fr) clamp(200px, 27vw, 320px);
-  grid-template-rows: 38px minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) clamp(84px, 28dvh, 146px);
+  grid-template-rows: var(--rpg-touch-nav) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) minmax(calc(var(--duel-card) * 1.4 + 8px), 1fr) var(--rpg-touch-hand);
   grid-template-areas: ". opponent nav" "enemy-mana enemy controls" "mana allies controls" "player hand controls";
   gap: 4px 8px;
-  padding: 6px;
+  padding: var(--rpg-touch-pad);
   overflow: auto;
   overscroll-behavior: contain;
   background-blend-mode: normal;
@@ -124,10 +130,11 @@
 .rpg-battle--touch .card-table {
   --rpg-plateau-voile-haut-plein: 8%;
   --rpg-plateau-voile-haut-fin: 24%;
-  /* Le « masque autour de la main » : la bande sombre du bas doit couvrir toute
-     la rangée de la main (elle commence à ≈ 70 % de la hauteur, gouttières
-     comprises), pas seulement ses trois quarts bas. Un plein à 78 % laissait
-     les cartes sortir du masque par le haut sur les plateaux clairs. */
+  /* La bande sombre du bas doit couvrir toute la rangée de la main (elle
+     commence à ≈ 70 % de la hauteur, gouttières comprises), pas seulement ses
+     trois quarts bas : c'est elle qui tient les libellés lisibles sur les
+     plateaux clairs, pas un masque posé sur les cartes. Un plein à 78 %
+     laissait les cartes sortir de la bande par le haut. */
   --rpg-plateau-voile-bas-debut: 52%;
   --rpg-plateau-voile-bas-plein: 70%;
 }
@@ -209,22 +216,55 @@
 .rpg-battle--touch .card-row .rpg-card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
 .rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) 4px; overflow-y: auto; z-index: 20; }
-.rpg-battle--touch .rpg-bottombar__status { flex-direction: column; align-items: flex-end; gap: 3px; }
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
 .rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
 .rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 7px; }
-.rpg-battle--touch .rpg-phase-track {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: 100%;
-  gap: 3px;
-  padding: 0;
+/* Le rail du tour, au doigt : mêmes pastilles qu'à la souris (indicateur,
+   phases empilées, fin du tour), au milieu de la table, mais à l'échelle du
+   téléphone — un rail étroit, posé sur le champ de bataille, qui laisse voir
+   le plateau entre ses capsules. Il ne prend jamais le geste : seuls ses
+   boutons le prennent.
+
+   Deux repères verticaux au lieu du seul `top: 50 %` : la rangée de navigation
+   et la rangée de la main, prises dans les variables de la grille tactile
+   (`--rpg-touch-nav`, `--rpg-touch-hand`, plus le rembourrage de la table —
+   le rail est positionné dans la boîte de remplissage). Il se centre entre les
+   deux (`margin-block: auto`) : sur un 568 × 320, la bande de jeu fait ≈ 192 px
+   et le rail ≈ 170 — il tient dedans, sans jamais recouvrir la main. */
+.rpg-battle--touch .rpg-turn-rail {
+  top: calc(var(--rpg-touch-pad) + var(--rpg-touch-nav));
+  bottom: calc(var(--rpg-touch-pad) + var(--rpg-touch-hand));
+  height: max-content;
+  margin-block: auto;
+  gap: 2px;
+  width: max-content;
+  max-width: clamp(96px, 17vw, 132px);
+  transform: translateX(-50%);
 }
-.rpg-battle--touch .rpg-phase-step { min-width: 0; }
-.rpg-battle--touch .rpg-phase-step__label { font-size: 8px; letter-spacing: 0; text-shadow: 0 1px 3px #000; }
-/* Combat and turn buttons share one row, with phases immediately above.
-   The DOM keeps its labelled groups for keyboard and assistive technology. */
+.rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator { min-height: 18px; gap: 4px; padding: 1px 6px; border-radius: 999px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator__lamp { width: 6px; height: 6px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator strong { font-size: 8px; letter-spacing: .02em; }
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-track { display: flex; flex-direction: column; gap: 1px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step { min-width: 0; gap: 4px; padding: 0 6px 0 1px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon { width: 18px; height: 18px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__icon svg { width: 11px; height: 11px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-phase-step__label { font-size: 6.5px; letter-spacing: 0; }
+.rpg-battle--touch .rpg-turn-rail .rpg-actions__turn { gap: 2px; }
+.rpg-battle--touch .rpg-turn-rail .rpg-btn {
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 6px;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+}
+.rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn { min-height: 44px; padding: 5px 7px; font-size: 10px; white-space: normal; }
+/* Les actions de combat, elles, gardent leur colonne de droite, sous la main :
+   un groupe par ligne, chacun à la largeur du volet. Les phases et « Fin du
+   tour » ne sont plus ici — ils vivent dans le rail du tour, au milieu de la
+   table. Les groupes nommés restent dans le DOM pour le clavier et les
+   lecteurs d'écran. */
 .rpg-battle--touch .rpg-bottombar .rpg-actions__row {
   display: grid;
   grid-auto-flow: column;
@@ -232,8 +272,7 @@
   gap: 4px;
   align-items: stretch;
 }
-.rpg-battle--touch .rpg-actions__combat,
-.rpg-battle--touch .rpg-actions__turn { display: contents; }
+.rpg-battle--touch .rpg-bottombar .rpg-actions__combat { display: contents; }
 .rpg-battle--touch .rpg-actions__row .rpg-btn {
   min-width: 0;
   min-height: 44px;
@@ -250,15 +289,14 @@
   grid-area: hand;
   display: block;
   align-self: stretch;
-  /* Le « masque autour de la main » : une marge réelle de chaque côté des
-     cartes au lieu de les coller aux liserés du dock (qui les rognait dès
-     qu'un peu plus grandes). */
-  padding: 0 10px env(safe-area-inset-bottom, 0px);
-  overflow: hidden;
+  /* Plus de « masque autour de la main » : ni marge latérale, ni recadrage.
+     La rangée prend toute la largeur de la table, du bord gauche au bord
+     droit, et les cartes du bout ne sont jamais rognées. */
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
   z-index: 21;
 }
 .rpg-battle--touch .rpg-hand-dock::before { content: "VOTRE MAIN · TOUCHEZ UNE CARTE POUR AGIR"; display: block; padding: 2px 8px; color: #efdbad; text-shadow: 0 1px 3px #000; font: 600 8px/1.3 var(--display); letter-spacing: .06em; }
-.rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 6px; justify-content: flex-start; align-items: center; gap: 6px; }
+.rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 0; justify-content: flex-start; align-items: center; gap: 6px; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 8px); touch-action: pan-x; -webkit-touch-callout: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
 /* Le mulligan, au doigt : le survol ne soulève rien (l'aperçu rapide y passe

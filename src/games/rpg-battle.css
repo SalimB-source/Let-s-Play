@@ -1941,7 +1941,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Les terrains dégagés restent jouables pour payer une magie rapide en réponse. */
 .rpg-hand-dock.is-open { transform: translateY(0); }
-.rpg-hand { max-width: calc(100vw - 16px); overflow-x: auto; overflow-y: visible; padding: 46px 14px 50px; scrollbar-width: thin; scrollbar-color: rgba(223, 187, 119, .58) transparent; }
+/* Le « masque autour de la main » a disparu : plus de marge latérale, plus de
+   recadrage — la rangée prend toute la largeur de la table, du bord gauche au
+   bord droit, et les cartes du bout ne sont jamais rognées. */
+.rpg-hand { max-width: 100vw; overflow-x: auto; overflow-y: visible; padding: 46px 0 50px; scrollbar-width: thin; scrollbar-color: rgba(223, 187, 119, .58) transparent; }
 .rpg-hand__card--img .rpg-hand__title {
   top: 5%;
   left: 10%;
@@ -2045,7 +2048,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card--img .rpg-card__text { font-size: 5.6px; padding: 2px 3px; }
   .rpg-card--img .rpg-card__stat--atk,
   .rpg-card--img .rpg-card__pt { min-width: 22px; font-size: 7px; }
-  .rpg-hand { gap: 4px; max-width: 100vw; padding: 38px 8px 44px; }
+  .rpg-hand { gap: 4px; max-width: 100vw; padding: 38px 0 44px; }
   .rpg-hand__card { width: 88px; border-width: 3px; }
   .rpg-hand__card--img .rpg-hand__title strong { font-size: 7px; }
   .rpg-hand__type { font-size: 5.5px; }
@@ -2356,12 +2359,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand-dock {
   z-index: 40;
   transform: none;
-  padding: 8px 10px 5px;
+  padding: 8px 0 5px;
   background: linear-gradient(0deg, rgba(10, 8, 8, .94), rgba(12, 10, 9, .84) 75%, transparent);
 }
 .rpg-hand-dock:hover { transform: none; }
 .rpg-hand-dock.is-open { transform: none; }
-.rpg-hand { gap: 8px; max-height: 198px; padding: 8px 12px 10px; }
+.rpg-hand { gap: 8px; max-height: 198px; padding: 8px 0 10px; }
 .rpg-hand__card { width: clamp(94px, 8.8vw, 124px); }
 .rpg-hand__card:hover:not(:disabled) { transform: translateY(-18px) scale(1.05); z-index: 5; }
 
@@ -2458,8 +2461,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-bottombar .rpg-log { display: none; }
   .rpg-actions__row { gap: 4px; }
   .rpg-actions__row .rpg-btn { padding: 6px 8px; font-size: 9px; }
-  .rpg-hand-dock { padding: 5px 3px 2px; }
-  .rpg-hand { width: 100%; justify-content: flex-start; gap: 4px; padding: 5px 5px 7px; }
+  .rpg-hand-dock { padding: 5px 0 2px; }
+  .rpg-hand { width: 100%; justify-content: flex-start; gap: 4px; padding: 5px 0 7px; }
   .rpg-hand__card { width: clamp(65px, 19vw, 84px); }
   .rpg-hand__card--img .rpg-hand__title strong { font-size: 6px; }
   .rpg-hand__type { font-size: 5px; }
@@ -4618,12 +4621,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hand-card--drawing { animation: none !important; }
 }
 
-/* Commandes de duel compactes : elles restent proches de la main sans former
-   un panneau visible ni rivaliser avec les cartes. */
+/* Commandes de duel compactes : les actions de combat restent proches de la
+   main sans former un panneau visible ni rivaliser avec les cartes. L'indicateur
+   de tour, les phases et « Fin du tour » ne vivent plus ici : ils ont leur rail
+   au milieu de la table (voir « Le rail du tour » plus bas). */
 .rpg-bottombar {
   right: 16px;
   bottom: 200px;
-  width: min(500px, calc(100vw - 230px));
+  width: min(340px, calc(100vw - 230px));
   gap: 6px;
   padding: 0;
   border: 0;
@@ -4632,14 +4637,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: none;
   backdrop-filter: none;
 }
-.rpg-bottombar__status {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-}
-.rpg-bottombar__status .rpg-turn-indicator { flex: none; }
 .rpg-bottombar .rpg-log {
   max-height: 30px;
   padding: 2px 6px;
@@ -4649,10 +4646,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   opacity: .72;
 }
 .rpg-bottombar .rpg-actions {
+  display: grid;
+  justify-self: stretch;
   width: 100%;
   max-height: none;
   min-height: 0;
-  gap: 5px;
+  gap: 4px;
   margin: 0;
   overflow: visible;
 }
@@ -4672,10 +4671,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   flex-wrap: wrap;
 }
 .rpg-actions__combat { justify-content: flex-end; }
-.rpg-actions__turn {
-  justify-content: flex-end;
-  padding-left: 7px;
-  border-left: 1px solid rgba(223, 196, 143, .16);
+/* Les boutons de tour (annuler, fin du tour) sont passés dans le rail central :
+   leur groupe s'y empile, sans le filet qui le séparait des actions de combat. */
+.rpg-turn-rail .rpg-actions__turn {
+  width: 100%;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
 }
 .rpg-actions__combat .rpg-btn,
 .rpg-actions__turn .rpg-btn {
@@ -4777,45 +4783,75 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     width: auto;
     gap: 6px;
   }
-  .rpg-bottombar__status { gap: 6px; }
   .rpg-bottombar .rpg-log { display: none; }
   .rpg-bottombar .rpg-actions__row { justify-content: center; gap: 6px; }
-  .rpg-actions__combat,
-  .rpg-actions__turn { gap: 4px; }
-  .rpg-actions__combat { justify-content: center; }
-  .rpg-actions__turn { padding-left: 7px; }
+  .rpg-actions__combat { gap: 4px; justify-content: center; }
   .rpg-actions__row .rpg-btn { min-height: 39px; padding: 6px 9px; font-size: 11px; }
   .rpg-actions__row .rpg-combat-action-icon { width: 18px; height: 18px; }
   .rpg-actions__turn .rpg-btn--endturn { min-height: 39px; padding: 6px 12px; font-size: 11px; }
 }
 
-/* Repère de progression du duel : une seule icône lumineuse suit la phase active. */
-.rpg-bottombar .rpg-actions {
-  display: grid;
-  justify-self: stretch;
-  gap: 4px;
+/* ── Le rail du tour : les phases et « Fin du tour » au MILIEU de la table ────
+   Le déroulé du tour vivait au bas de la table, noyé dans la barre de
+   commandes : il fallait quitter les cartes des yeux pour lire la phase et
+   pour rendre la main. Il remonte maintenant au MILIEU DE LA TABLE, en colonne
+   et à la verticale du centre — l'indicateur de tour d'abord, les cinq phases
+   ensuite, « Fin du tour » en dernier : la lecture descend vers la main du
+   joueur, dans le sens du tour lui-même.
+
+   Ce n'est pas un panneau : chaque élément garde sa pastille (la capsule de
+   l'indicateur, le cercle de la phase, l'or du bouton), donc le plateau peint
+   reste visible entre elles. Le rail laisse passer les gestes —
+   `pointer-events: none` sur la colonne, `auto` sur ses boutons seulement —
+   pour qu'une carte posée dessous reste jouable. Il vit au-dessus des cartes
+   (4) et de la main (40), sous le choix de mana (48), le voile de fin de duel
+   (49) et la navigation (900) : la partie se lit toujours. */
+.rpg-turn-rail {
+  position: absolute;
+  z-index: 42;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  max-width: clamp(140px, 12vw, 184px);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
+.rpg-turn-rail .rpg-btn { width: 100%; white-space: normal; pointer-events: auto; }
+.rpg-turn-rail .rpg-turn-indicator { align-self: stretch; justify-content: center; }
+.rpg-turn-rail .rpg-turn-indicator strong { white-space: normal; }
+
+/* Repère de progression du duel : une seule pastille lumineuse suit la phase
+   active. Les cinq phases s'empilent, chacune dans sa capsule translucide ; le
+   libellé suit son icône, à droite, pour garder le rail étroit. */
 .rpg-phase-track {
   display: flex;
   width: 100%;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
   margin: 0;
-  padding: 0 2px 1px;
+  padding: 0;
   list-style: none;
 }
 .rpg-phase-step {
   --rpg-phase-lit: #d9c99e;
   --rpg-phase-glow: rgba(217, 201, 158, .34);
   display: flex;
-  min-width: 40px;
-  flex-direction: column;
+  min-width: 0;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 1px 8px 1px 3px;
+  border: 1px solid rgba(223, 196, 143, .16);
+  border-radius: 999px;
+  background: rgba(9, 8, 7, .58);
   color: rgba(223, 211, 184, .3);
-  transition: color .16s ease;
+  transition: color .16s ease, border-color .16s ease, background-color .16s ease;
 }
 .rpg-phase-step[data-phase="principal"] { --rpg-phase-lit: #83e7d1; --rpg-phase-glow: rgba(114, 230, 208, .38); }
 .rpg-phase-step[data-phase="combat"] { --rpg-phase-lit: #ffd06b; --rpg-phase-glow: rgba(255, 194, 75, .42); }
@@ -4826,6 +4862,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   display: grid;
   width: 24px;
   height: 24px;
+  flex: none;
   place-items: center;
   border: 1px solid rgba(223, 196, 143, .17);
   border-radius: 50%;
@@ -4848,9 +4885,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   letter-spacing: .07em;
   text-transform: uppercase;
   white-space: nowrap;
+  text-shadow: 0 1px 3px #000;
   transition: color .16s ease, text-shadow .16s ease;
 }
-.rpg-phase-step.is-active { color: var(--rpg-phase-lit); }
+.rpg-phase-step.is-active {
+  border-color: var(--rpg-phase-lit);
+  background: rgba(12, 10, 8, .78);
+  color: var(--rpg-phase-lit);
+}
 .rpg-phase-step.is-active .rpg-phase-step__icon {
   border-color: var(--rpg-phase-lit);
   background: rgba(16, 13, 9, .84);
@@ -4866,11 +4908,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   50% { box-shadow: 0 0 12px var(--rpg-phase-glow), inset 0 0 6px rgba(255, 255, 255, .12); }
 }
 @media (max-width: 620px) {
-  .rpg-phase-track { justify-content: center; gap: 7px; }
-  .rpg-phase-step { min-width: 40px; gap: 3px; }
-  .rpg-phase-step__icon { width: 24px; height: 24px; }
-  .rpg-phase-step__icon svg { width: 15px; height: 15px; }
-  .rpg-phase-step__label { font-size: 6.5px; letter-spacing: .06em; }
+  .rpg-turn-rail { gap: 4px; max-width: clamp(118px, 26vw, 148px); }
+  .rpg-phase-track { gap: 2px; }
+  .rpg-phase-step { gap: 5px; padding: 1px 6px 1px 2px; }
+  .rpg-phase-step__icon { width: 22px; height: 22px; }
+  .rpg-phase-step__icon svg { width: 13px; height: 13px; }
+  .rpg-phase-step__label { font-size: 6px; letter-spacing: .04em; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-phase-step.is-active .rpg-phase-step__icon { animation: none; }
