@@ -9,10 +9,10 @@
  *
  * 1. **Chaque deck a son terrain.** Un deck du catalogue (ou un deck du mode
  *    Histoire) porte une correspondance explicite — les Veilleurs du Désert se
- *    battent dans l'Erg, la Cour des Djinns sur la Terre de Damnation… Un deck
+ *    battent dans l'Erg, la Cour des Djinns sur la Table des Heures… Un deck
  *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
- *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Terre
- *    de Damnation, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
+ *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Table
+ *    des Heures, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
  *    Hivers, deux couleurs à égalité → la Caravane de Gourara, le carrefour des
  *    pistes. Sans rien de lisible, c'est la Table des Heures, la table
  *    d'origine de Bab El.
@@ -25,13 +25,14 @@
  * Il n'y a donc plus ni pastille « Aléatoire », ni verrou de plateau, ni
  * sauvegarde du choix sur l'appareil : rien à mémoriser, rien à reprendre.
  *
- * Les quatre couleurs ont aussi leur **double merveilleux** : quand la partie
+ * Les terrains classiques ont leur **double merveilleux** : quand la partie
  * l'autorise (`variantesFantaisistes`), un second tirage peut échanger le
- * terrain imposé contre sa version fantaisiste — le Sable contre le Désert de
- * Verre, la Braise contre les Cavernes de Cristal, l'Eau contre les Abysses
- * Phosphorescentes, la Neige contre les Îles Célestes. La piste caravanière et
- * la table d'origine n'ont pas de double : elles restent uniques. Le motif et
- * le camp ne bougent pas : ils disent toujours quel deck a imposé le terrain.
+ * terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
+ * Verre, les Ruines contre les Abysses Phosphorescentes, le Fjord contre les
+ * Îles Célestes, et la Table des Heures — le terrain de la Braise depuis le
+ * retrait des Brûlés — contre les Cavernes de Cristal. Seule la piste
+ * caravanière reste unique. Le motif et le camp ne bougent pas : ils disent
+ * toujours quel deck a imposé le terrain.
  *
  * Un plateau = un identifiant, un nom lisible, un lieu, un fichier de
  * `public/` et un résumé pour l'annonce d'ouverture. Le fichier est un fond
@@ -68,13 +69,6 @@ export const RPG_PLATEAUX = [
     resume: 'Le lit sec de l’oued et sa piste de caravane : les deux empreintes du campement, l’outre, la corde et le compas abandonné.',
   },
   {
-    id: 'terre-de-damnation',
-    nom: 'La Terre de Damnation',
-    lieu: 'Les Brûlés, étage perdu de Bab El',
-    fichier: 'plateau-terre-de-damnation.jpg',
-    resume: 'L’étage repris par le feu : la croûte craquelée et ses braises encore vives, l’encensoir de fer renversé, les troncs calcinés, la cendre grise.',
-  },
-  {
     id: 'fjord-des-neuf-hivers',
     nom: 'Le Fjord des Neuf Hivers',
     lieu: 'La glace du Nord, devant le Serment',
@@ -100,7 +94,7 @@ export const RPG_PLATEAUX = [
   {
     id: 'cavernes-de-cristal',
     nom: 'Les Cavernes de Cristal',
-    lieu: 'Les Brûlés, galeries profondes sous la Terre de Damnation',
+    lieu: 'Les Brûlés, galeries profondes sous Bab El',
     fichier: 'plateau-cavernes-de-cristal.jpg',
     resume: 'Le dallage d’obsidienne veiné de braise ; l’anneau de poussière de cristal au centre, les améthystes et les rubis, les fissures de lave aux bords.',
   },
@@ -130,7 +124,8 @@ export const RPG_PLATEAU_DE_REPLI = 'table-des-heures';
 export const RPG_PLATEAUX_PAR_DECK = {
   // Catalogue — chaque deck se bat chez lui.
   'veilleurs-du-desert': 'erg-du-sahara',
-  'cour-des-djinns': 'terre-de-damnation',
+  // Le plateau des Brûlés a été retiré : la Cour rejoint la table d'origine.
+  'cour-des-djinns': 'table-des-heures',
   'sentiers-de-cendre': 'caravane-de-gourara',
   'maree-des-abysses': 'ruines-de-tipaza',
   // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.
@@ -149,7 +144,7 @@ export const RPG_PLATEAUX_PAR_DECK = {
 /** Le terrain d'une couleur de deck sans identité connue. */
 export const RPG_PLATEAUX_PAR_COULEUR = {
   sable: 'erg-du-sahara',
-  braise: 'terre-de-damnation',
+  braise: 'table-des-heures',
   eau: 'ruines-de-tipaza',
   neige: 'fjord-des-neuf-hivers',
   hybride: 'caravane-de-gourara',
@@ -157,12 +152,13 @@ export const RPG_PLATEAUX_PAR_COULEUR = {
 
 /**
  * Le double merveilleux d'un terrain classique, par identifiant de plateau.
- * Quatre couleurs, quatre variantes ; la piste caravanière et la table
- * d'origine n'y figurent pas : elles restent uniques.
+ * La Table des Heures — le terrain de la Braise depuis le retrait des
+ * Brûlés — s'embrase en Cavernes de Cristal ; seule la piste caravanière
+ * reste unique.
  */
 export const RPG_PLATEAUX_VARIANTES_FANTAISISTES = {
   'erg-du-sahara': 'desert-de-verre',
-  'terre-de-damnation': 'cavernes-de-cristal',
+  'table-des-heures': 'cavernes-de-cristal',
   'ruines-de-tipaza': 'abysses-phosphorescentes',
   'fjord-des-neuf-hivers': 'iles-celestes',
 };
@@ -180,8 +176,8 @@ export function plateauDeRepli() {
 
 /**
  * Le double merveilleux d'un plateau — son identifiant ou le plateau lui-même
- * —, ou `null` quand il n'en a pas (piste caravanière, table d'origine,
- * variantes elles-mêmes, inconnu).
+ * —, ou `null` quand il n'en a pas (piste caravanière, variantes
+ * elles-mêmes, inconnu).
  */
 export function varianteFantaisisteDe(plateau) {
   const identifiant = typeof plateau === 'string' ? plateau : plateau?.id;

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 
@@ -463,7 +463,7 @@ assert.doesNotMatch(battlePage, /rpg-mode-menu__boards|rpg-board-choice|rpg-boar
   'le bloc « Le terrain d’affrontement » a disparu du menu Jouer');
 assert.doesNotMatch(battleCss, /\.rpg-board-choice|\.rpg-mode-menu__boards|\.rpg-board-grid/,
   'les styles du sélecteur de plateau ont été retirés de la feuille de combat');
-assert.match(plateauxSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'veilleurs-du-desert': 'erg-du-sahara',[\s\S]*?'cour-des-djinns': 'terre-de-damnation',[\s\S]*?'sentiers-de-cendre': 'caravane-de-gourara',[\s\S]*?'maree-des-abysses': 'ruines-de-tipaza'/,
+assert.match(plateauxSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'veilleurs-du-desert': 'erg-du-sahara',[\s\S]*?'cour-des-djinns': 'table-des-heures',[\s\S]*?'sentiers-de-cendre': 'caravane-de-gourara',[\s\S]*?'maree-des-abysses': 'ruines-de-tipaza'/,
   'chaque deck du catalogue a son terrain attitré');
 assert.match(plateauxSource, /couleurDominanteDeck/,
   'un deck sans identité connue (paquet brut) parle par sa couleur dominante');
@@ -475,7 +475,7 @@ assert.doesNotMatch(battlePage, /prendront place ici|gardiens du sorcier attende
   'une rangée de créatures vide reste vide : aucune phrase ne la commente');
 assert.match(plateauxSource, /id: 'caravane-de-gourara'[\s\S]*?fichier: 'plateau-caravane-de-gourara\.jpg'/,
   'la piste de caravane du Gourara est un second plateau saharien');
-for (const plateauSombre of ['table-des-heures', 'terre-de-damnation']) {
+for (const plateauSombre of ['table-des-heures']) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSombre}\\s*\\{[^}]*background-color:`),
     `le plateau ${plateauSombre} a sa propre couleur de repli`);
 }
@@ -492,8 +492,14 @@ assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ru
   'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
   'la pierre des ruines a sa propre couleur de repli');
-assert.match(plateauxSource, /id: 'terre-de-damnation'[\s\S]*?fichier: 'plateau-terre-de-damnation\.jpg'/,
-  'la terre de damnation est un plateau déclaré, avec son fond dans public/');
+assert.doesNotMatch(plateauxSource, /terre-de-damnation|plateau-terre-de-damnation/i,
+  'le plateau de la Terre de Damnation a été retiré du catalogue et de ses correspondances');
+assert.doesNotMatch(battleCss, /card-table--plateau-terre-de-damnation/,
+  'la couleur de repli du plateau retiré a également disparu');
+assert.equal(existsSync(new URL('../public/plateau-terre-de-damnation.jpg', import.meta.url)), false,
+  'le fond du plateau retiré n’est plus livré dans public/');
+assert.match(plateauxSource, /braise: 'table-des-heures'/,
+  'les decks de Braise utilisent la Table des Heures après le retrait du plateau des Brûlés');
 
 // ── Réponse à une annonce : aperçu, commandes et voile translucide ─────────
 assert.match(battlePage, /<HoverCardPreview[\s\S]*?carte=\{carteAnnoncee\}[\s\S]*?cible=\{cibleAnnoncee\}[\s\S]*?variante="annonce"[\s\S]*?controls=\{\s*\(/,
@@ -795,7 +801,7 @@ console.log(
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
   + 'rail du tour remonté au milieu de la table — indicateur, cinq phases empilées et « Fin du tour » doré en colonne à la verticale du centre, souris et doigt compris, sans prendre le geste —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, phases du duel indiquées par des icônes lumineuses agrandies, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, plateaux laissés en pleine peinture — le voile noir du haut et du bas est retiré, souris comme doigt, et la lisibilité des textes de la table tient au chrome : capsules translucides des plaques, de la navigation, du rail du tour, des compteurs de piles et du journal —, '
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — la Braise rejoint la Table des Heures après le retrait du plateau des Brûlés, le rng du duel désigne le camp, plus aucun choix ni verrou au menu —, plateaux laissés en pleine peinture — le voile noir du haut et du bas est retiré, souris comme doigt, et la lisibilité des textes de la table tient au chrome : capsules translucides des plaques, de la navigation, du rail du tour, des compteurs de piles et du journal —, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres qui promet sa seconde vague au début du tour suivant, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'

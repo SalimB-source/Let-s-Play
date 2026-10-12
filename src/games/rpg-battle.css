@@ -2093,9 +2093,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-caravane-de-gourara {
   background-color: #a8764f;
 }
-.card-table--plateau-terre-de-damnation {
-  background-color: #24120b;
-}
 .card-table--plateau-ruines-de-tipaza {
   background-color: #9d9179;
 }

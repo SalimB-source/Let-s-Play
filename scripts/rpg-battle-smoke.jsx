@@ -149,8 +149,8 @@ export async function checkRpgBattle(assert) {
   // Chaque deck du catalogue garde son terrain : c'est lui, pas le joueur, qui décide.
   assert.equal(plateauDeDeck('veilleurs-du-desert').plateau.id, 'erg-du-sahara',
     'les Veilleurs du Désert imposent l’Erg du Sahara');
-  assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'terre-de-damnation',
-    'la Cour des Djinns impose la Terre de Damnation');
+  assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'table-des-heures',
+    'la Cour des Djinns joue sur la Table des Heures');
 
   await act(async () => { modeButtons.find((button) => button.textContent.includes('Catalogue')).click(); });
   assert.ok(container.querySelector('.rpg-card-catalogue'), 'le mode Catalogue ouvre le catalogue complet des cartes');

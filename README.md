@@ -5132,9 +5132,9 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 ### La règle
 
 - **Chaque deck a son terrain.** Les Veilleurs du Désert se battent dans l'Erg
-  du Sahara, la Cour des Djinns sur la Terre de Damnation, les Sentiers de
-  cendre sur la piste de la Caravane de Gourara, la Marée des abysses dans les
-  Ruines de Tipaza, le Serment des Neuf Hivers sur la glace du Fjord. Les decks
+  du Sahara, la Cour des Djinns sur la Table des Heures, les Sentiers de cendre
+  sur la piste de la Caravane de Gourara, la Marée des abysses dans les Ruines
+  de Tipaza, le Serment des Neuf Hivers sur la glace du Fjord. Les decks
   de campagne ont leur entrée aussi — la Souffleuse de verre tient la piste de
   caravane, le Grand Horloger reçoit dans la salle haute de la Chambre sur la
   Table des Heures, et les quatre étages de la Tour du Fjord (la Garde, la
@@ -5142,15 +5142,23 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   (`RPG_PLATEAUX_PAR_DECK`).
 - **Un paquet inconnu parle par sa couleur.** Un deck sans identité — paquet
   brut passé en prop à la page, deck maison — prend le terrain de sa **couleur
-  dominante** : Sable → l'Erg, Braise → la Terre de Damnation, Eau → Tipaza,
+  dominante** : Sable → l'Erg, Braise → la Table des Heures, Eau → Tipaza,
   Neige → le Fjord, deux couleurs à égalité → la Caravane de Gourara, le
   carrefour des pistes. Rien de lisible : la Table des Heures, la table
   d'origine.
+- **La Terre de Damnation a été retirée.** La Cour des Djinns et les paquets
+  de Braise se jouent désormais sur la Table des Heures.
 - **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
   choisit l'un des deux camps ; c'est le deck de ce duelliste qui donne son
   plateau à la partie. Le tirage passe par le `rng` du duel (injectable) et ne
   consomme qu'une valeur : une partie se rejoue à l'identique, valeurs hors
   bornes comprises, et la suite du moteur (le mélange des paquets) ne bouge pas.
+- **Les terrains ont leur double merveilleux.** En partie réelle, un second
+  tirage peut échanger le terrain imposé contre sa version fantaisiste —
+  l'Erg contre le Désert de Verre, la Table des Heures contre les Cavernes
+  de Cristal, les Ruines contre les Abysses Phosphorescentes, le Fjord
+  contre les Îles Célestes. Seule la piste caravanière reste unique. Tous
+  les fonds sont livrés en 4K (3840×2560).
 - **Plus aucun choix de plateau.** Le bloc « Le terrain d'affrontement » du menu
   *Jouer* a été retiré, avec la pastille **Aléatoire**, le verrou de plateau et
   sa sauvegarde sur l'appareil (la clé `letsplay_sablier_plateau_v1` n'est plus
@@ -5167,9 +5175,12 @@ partie est imposé par **le deck de l'un des deux duellistes**.
 | `public/card-table.jpg` | **La Table des Heures** (Bab El) | le bois des Veilleurs, l'astrolabe doré gravé au centre, quatre bougies. |
 | `public/plateau-erg-du-sahara.jpg` | **L'Erg du Sahara** | la rose des sables tracée à la main dans la dune, la lanterne de laiton et son feu, l'outre, la corde, les pierres noires. |
 | `public/plateau-caravane-de-gourara.jpg` | **La Caravane de Gourara** | le lit sec de l'oued et sa piste : les deux empreintes du campement, l'outre, la corde et le compas abandonné. |
-| `public/plateau-terre-de-damnation.jpg` | **La Terre de Damnation** (Les Brûlés) | l'étage repris par le feu : la croûte craquelée et ses braises encore vives, l'encensoir de fer renversé et sa coulée de cendres, les troncs noircis, les éclats d'obsidienne. |
 | `public/plateau-fjord-des-neuf-hivers.jpg` | **Le Fjord des Neuf Hivers** (la glace du Nord) | la glace polie du fjord et sa rose des vents gravée au ciseau, la lanterne de fer, le cor à boire, la corde lovée, la hache et le bâton de runes. |
 | `public/plateau-ruines-de-tipaza.jpg` | **Les Ruines de Tipaza** (Tipasa) | la mosaïque romaine ouverte par le vent, les dalles disjointes, les fûts de colonne tombés, le chapiteau corinthien et le débris d’architrave, coquillages et cristaux de sel. |
+| `public/plateau-desert-de-verre.jpg` | **Le Désert de Verre** (double de l'Erg) | le sable vitrifié ambré et aigue-marine, l'anneau de cristal pilé, les roses de verre, l'astrolabe, l'outre et la corde. |
+| `public/plateau-cavernes-de-cristal.jpg` | **Les Cavernes de Cristal** (double de la Table des Heures) | le dallage d'obsidienne veiné de braise, l'anneau de poussière de cristal, les améthystes, les rubis et les fissures de lave. |
+| `public/plateau-abysses-phosphorescentes.jpg` | **Les Abysses Phosphorescentes** (double des Ruines) | le sable pâle sous l'eau claire, l'anneau de coquillages, les coraux, les colonnes tombées, les amphores et la raie manta. |
+| `public/plateau-iles-celestes.jpg` | **Les Îles Célestes** (double du Fjord) | le lac de glace polie où danse l'aurore, l'anneau gravé, les sapins, les rochers, la lanterne et la corde. |
 
 ### Où vit le code
 
@@ -5193,9 +5204,9 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   duel, rail du tour, compteurs de paquet et de cimetière, journal — porte son
   propre fond translucide, calibré sur la mesure des fonds livrés (luminance du
   haut du cadre, sur 255 : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
-  Caravane de Gourara 102, Terre de Damnation 61, Table des Heures 54).
+  Caravane de Gourara 102, Table des Heures 54).
 - `public/plateau-erg-du-sahara.jpg`, `public/plateau-caravane-de-gourara.jpg`,
-  `public/plateau-terre-de-damnation.jpg`, `public/plateau-ruines-de-tipaza.jpg`
+  `public/plateau-fjord-des-neuf-hivers.jpg`, `public/plateau-ruines-de-tipaza.jpg`
   — les fonds, 1536×1024 JPEG chacun : des peintures vues de dessus, sans texte
   ni interface dessinée — l'interface du jeu se superpose (règle de
   `src/games/RPG-CARD-ART.md`). Le centre de chaque tableau est volontairement
@@ -5209,18 +5220,15 @@ npm run check:rpg-ui     # la page montée dans jsdom : aucun sélecteur de plat
 ```
 
 `tests/rpg-plateaux.test.js` vérifie le catalogue (identifiants uniques, fonds
-livrés dans `public/`, chaque atmosphère — Bab El, les deux déserts, la
-terre brûlée, les ruines de Tipaza — avec son propre fond), le tirage (jamais deux fois de suite le même terrain,
-déterminisme par `rng`, valeurs hors bornes sans plantage), le verrou (toujours
-respecté, ignoré s'il ne correspond à aucun plateau) et la sauvegarde (aller-
-retour, valeur inconnue normalisée, stockage illisible ou absent).
-`check:rpg-ui` monte la page : le menu présente chaque plateau plus le tirage
-aléatoire, le verrou est exclusif, et le duel qui suit se joue bien sur le
-plateau verrouillé — classe, fond et libellé de la table compris. Il vérifie
-aussi la **lisibilité sans voile** : plus aucune variable de voile ni calque
-`::before` sur la table, chaque plateau garde sa couleur de repli, et les
-capsules qui remplacent l'ombre (compteurs de piles, plaques, navigation du
-duel au doigt, journal) sont en place.
+livrés dans `public/`, retrait de la Terre de Damnation et présence de chaque
+terrain restant), le tirage (déterminisme par `rng`, valeurs hors bornes sans
+plantage), les correspondances deck/couleur et le repli vers la Table des
+Heures. `check:rpg-ui` monte la page : le menu ne propose aucun choix de
+plateau, et le duel utilise bien le terrain du deck désigné. Il vérifie aussi
+la **lisibilité sans voile** : aucune variable de voile ni calque `::before`
+sur la table, chaque plateau restant garde sa couleur de repli, et les capsules
+qui remplacent l'ombre (compteurs de piles, plaques, navigation du duel au
+doigt, journal) sont en place.
 
 ## Le Sablier : le duel se joue sans consignes
 
