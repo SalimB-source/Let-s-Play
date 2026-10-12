@@ -103,30 +103,58 @@ assert.match(aiBrain, /if \(main\.length < 2 \|\| profil\.niveau === 'recit'\) r
 assert.match(aiBrain, /if \(!terrains\.length\) return autres;/,
   'une main sans terrain est renvoyée au paquet');
 
-// ── La feuille : les cartes sont lues en grand, sur tous les formats ────────
+// ── La feuille : la main entière, d'un seul coup, sur tous les formats ──────
 assert.match(battleCss, /\.rpg-mulligan\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1150;/s,
   'le volet est posé sur la table, sous l’écran de rotation et l’aperçu au doigt');
-assert.match(battleCss, /\.rpg-mulligan__panel\s*\{[^}]*max-height:\s*100%;/s,
-  'le volet ne dépasse jamais la hauteur d’écran');
-assert.match(battleCss, /\.rpg-mulligan__cards\s*\{[^}]*grid-auto-flow:\s*column;[^}]*grid-auto-columns:\s*min\(calc\(\(48dvh[^}]*\/ ?\.8\), calc\(\(100vw[^}]*\/ 5\)\);/s,
-  'une carte de mulligan est plafonnée en largeur PAR LA HAUTEUR ET PAR LA LARGEUR : ni débordement, ni vignette');
+assert.match(battleCss, /\.rpg-mulligan__panel\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;[^}]*height:\s*min\(100%,\s*\d+px\);/s,
+  'le volet tient une hauteur définie : la rangée de cartes reçoit une place mesurable');
+assert.match(battlePage, /rpg-mulligan__stage"[\s\S]{0,400}?rpg-mulligan__cards"/,
+  'la rangée de cartes vit dans sa scène — c’est elle que la feuille mesure');
+assert.match(battleCss, /\.rpg-mulligan__stage\s*\{[^}]*container-type:\s*size;/s,
+  'la scène est le conteneur des requêtes de taille : les cartes se règlent sur le volet, pas sur la fenêtre');
+assert.match(battleCss, /\.rpg-mulligan__stage\s*\{[^}]*min-height:\s*0;/s,
+  'la scène suit la hauteur du volet au lieu de la dicter');
+
+const cardsRule = battleCss.slice(battleCss.indexOf('.rpg-mulligan__cards {'), battleCss.indexOf('.rpg-mulligan__card {'));
+assert.match(cardsRule, /grid-auto-flow:\s*column;/,
+  'la main est une seule rangée — jamais une grille de deux colonnes');
+assert.match(cardsRule, /grid-auto-columns:[^;]*100cqh[^;]*\*\s*\.8\)[^;]*;/,
+  'une carte est plafonnée par la hauteur utile du volet moins le texte réservé, rapportée au ratio d’une carte');
+assert.match(cardsRule, /grid-auto-columns:[^;]*100cqw[^;]*\/\s*5\)[^;]*;/,
+  'et une seconde fois par le cinquième de la largeur utile : cinq cartes, quatre gouttières, rien de coupé');
+assert.match(cardsRule, /gap:\s*var\(--rpg-mulligan-gap\);/,
+  'la gouttière entre les cartes vient de la même variable que le calcul de leur taille');
+assert.doesNotMatch(cardsRule, /overflow:\s*(auto|scroll)/,
+  'la rangée ne défile jamais : les cinq cartes sont toutes visibles d’un coup');
+assert.doesNotMatch(cardsRule, /grid-template-columns/,
+  'aucun repli en grille de deux colonnes qui défile');
+
+// ── La feuille : le texte réservé est celui qui est montré ──────────────────
+assert.match(battleCss, /--rpg-mulligan-text:\s*calc\([\s\S]{0,400}?--rpg-mulligan-rules\)\s*\*\s*1\.34\s*\*\s*var\(--rpg-mulligan-rules-lines\)/,
+  'la hauteur du texte réservé est composée des mêmes métriques que le texte affiché');
+assert.match(battleCss, /\.rpg-mulligan__name\s*\{[^}]*font:\s*800 var\(--rpg-mulligan-name\)[^}]*white-space:\s*nowrap;/s,
+  'le nom tient sur une ligne, comme la réservation le prévoit');
+assert.match(battleCss, /\.rpg-mulligan__rules\s*\{[^}]*-webkit-line-clamp:\s*3;[^}]*min-height:\s*calc\(var\(--rpg-mulligan-rules\)\s*\*\s*1\.34\s*\*\s*3\);/s,
+  'les règles réservent exactement les lignes qu’elles montrent : la carte ne dépasse jamais sa place');
+assert.match(battleCss, /\.rpg-mulligan__flag\s*\{[^}]*white-space:\s*nowrap;/s,
+  'le drapeau tient sur une ligne, comme la réservation le prévoit');
 assert.match(battleCss, /\.rpg-mulligan__face\s*\{[^}]*aspect-ratio:\s*4 \/ 5;/s,
   'l’illustration garde le ratio 4/5 d’une carte du jeu, en grand');
 assert.match(battleCss, /\.rpg-mulligan__card\s*\{[^}]*grid-template-rows:\s*minmax\(0, 1fr\)[^}]*\}/s,
   'l’illustration occupe toute la place disponible au-dessus du texte : la carte se lit en grand');
 assert.match(battleCss, /\.rpg-mulligan__face\s*>\s*img\s*\{[^}]*object-fit:\s*cover;/s,
   'l’illustration remplit la carte sans déformer');
-assert.match(battleCss, /\.rpg-mulligan__name\s*\{[^}]*font:\s*800 clamp\(/s,
-  'le nom est composé à une taille lisible, réglée sur la hauteur utile');
-assert.match(battleCss, /\.rpg-mulligan__rules\s*\{[^}]*-webkit-line-clamp:\s*4;/s,
-  'les règles tiennent sous l’illustration, sans jamais déborder de la carte');
+assert.match(battleCss, /\.rpg-mulligan__name\s*\{[^}]*font:\s*800 var\(--rpg-mulligan-name\)/s,
+  'le nom est composé à une taille réglée sur la hauteur utile');
 assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:\s*#ffd619;/s,
   'une carte choisie prend le liseré doré du jeu');
 assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
-assert.match(battleCss, /@media \(max-height: 480px\) \{[\s\S]*?\.rpg-mulligan__rules\s*\{\s*-webkit-line-clamp:\s*2;/,
-  'sur téléphone en paysage, le texte se replie et l’illustration garde la place');
+assert.match(battleCss, /@media \(max-height: 480px\) \{[\s\S]{0,400}?--rpg-mulligan-rules-lines:\s*2;[\s\S]{0,400}?\.rpg-mulligan__rules\s*\{\s*-webkit-line-clamp:\s*2;\s*min-height:\s*calc\(/,
+  'sur téléphone en paysage, le texte se replie — et la hauteur réservée se replie avec lui');
+assert.match(battleCss, /@media \(max-width: 620px\) \{[\s\S]{0,400}?--rpg-mulligan-rules-lines:\s*2;/,
+  'sur écran étroit, la même rangée de cinq, avec un texte plus court');
 assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*min-height:\s*44px;/s,
   'les commandes du volet gardent une taille tactile');
 
-console.log('✓ Mulligan du Sablier : main de départ en grand, choix des cartes, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : les cinq cartes de la main entière à l’écran d’un seul coup, choix des cartes, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');

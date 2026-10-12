@@ -3331,12 +3331,18 @@
   .rpg-card-peek__close { min-height: 44px; padding: 8px 20px; }
 }
 
-/* ── Le mulligan : la main de départ étalée en grand ─────────────────────────
-   À l'ouverture du duel, le volet isole la table et montre les cartes piochées
-   à taille de lecture : illustration, nom, coût, type et règles. On touche ce
-   que l'on renvoie dans le paquet, on valide, et l'on repioche autant. Derrière,
-   la table est `inert` : rien ne se joue avant la validation. Le volet reste
-   sous l'écran de rotation (1200) et sous l'aperçu au doigt (1250). */
+/* ── Le mulligan : la main de départ, en entier, d'un seul regard ─────────────
+   À l'ouverture du duel, le volet isole la table et montre la main de départ :
+   les cinq cartes, entières, toutes à l'écran — la rangée ne défile jamais, ni
+   en largeur ni en hauteur. Pour cela, la taille d'une carte se plafonne DEUX
+   fois : par la largeur utile du volet (cinq colonnes, quatre gouttières) et
+   par la hauteur qui reste une fois le texte de la carte réservé, rapportée au
+   ratio 4/5 de l'illustration. Le volet se mesure lui-même — `.rpg-mulligan__stage`
+   est le conteneur des requêtes de taille — donc ni la fenêtre ni des
+   constantes en vh n'entrent dans le calcul. On touche ce que l'on renvoie dans
+   le paquet, on valide, et l'on repioche autant. Derrière, la table est
+   `inert` : rien ne se joue avant la validation. Le volet reste sous l'écran de
+   rotation (1200) et sous l'aperçu au doigt (1250). */
 .rpg-mulligan {
   position: fixed;
   z-index: 1150;
@@ -3344,6 +3350,23 @@
   display: grid;
   place-items: center;
   padding: clamp(6px, 1.4vh, 18px);
+  /* Les métriques du texte d'une carte. Écrites une fois, elles composent le
+     nom, le type, les règles et le drapeau — et réservent leur hauteur dans le
+     calcul de la taille d'une carte. Ce qui est prévu est donc ce qui
+     s'affiche : une carte ne peut pas déborder de la place qu'on lui a
+     donnée. */
+  --rpg-mulligan-name: clamp(10px, 1.7vh, 14px);
+  --rpg-mulligan-type: clamp(7px, 1.2vh, 9.5px);
+  --rpg-mulligan-rules: clamp(8px, 1.45vh, 11.5px);
+  --rpg-mulligan-flag: clamp(7px, 1.15vh, 9.5px);
+  --rpg-mulligan-rules-lines: 3; /* à garder d'accord avec -webkit-line-clamp */
+  --rpg-mulligan-text: calc(
+    var(--rpg-mulligan-name) * 1.2
+    + var(--rpg-mulligan-type) * 1.3
+    + var(--rpg-mulligan-rules) * 1.34 * var(--rpg-mulligan-rules-lines)
+    + var(--rpg-mulligan-flag) * 1.5 + 2px
+    + 26px); /* + les gouttières et les marges internes d'une carte */
+  --rpg-mulligan-gap: clamp(4px, 1vh, 11px);
 }
 .rpg-mulligan__backdrop {
   position: absolute;
@@ -3357,7 +3380,10 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: clamp(6px, 1.2vh, 14px);
-  width: min(1160px, 100%);
+  width: min(1000px, 100%);
+  /* Une hauteur TENUE, et non plus seulement plafonnée : la rangée de cartes
+     reçoit une place définie, sur laquelle elle se règle. */
+  height: min(100%, 560px);
   max-height: 100%;
   padding: clamp(8px, 1.4vh, 16px) clamp(10px, 1.6vw, 20px);
   border: 1px solid rgba(236, 214, 172, .28);
@@ -3394,23 +3420,33 @@
   color: #d8c7a5;
   font: 500 clamp(10px, 1.7vh, 14px)/1.4 Georgia, serif;
 }
+/* La scène : la place mesurable de la main. Les cartes l'interrogent
+   (`cqw`/`cqh`), plutôt que la fenêtre — c'est ce qui fait tenir les cinq
+   cartes dans le volet, quelle que soit la taille de l'écran. */
+.rpg-mulligan__stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  container-type: size;
+}
 .rpg-mulligan__cards {
   display: grid;
   grid-auto-flow: column;
-  /* Une carte ne se taille pas sur la seule largeur : sa hauteur compte, texte
-     compris. La colonne prend donc le plus petit des deux plafonds — ce qui
-     reste de hauteur utile (48dvh, moins le bloc de texte) rapporté au ratio
-     4/5 de l'illustration, ou le cinquième de la largeur disponible. Rien ne
-     déborde, rien ne se réduit à une vignette. */
-  grid-auto-columns: min(calc((48dvh - 96px) / .8), calc((100vw - 46px) / 5));
-  justify-content: center;
-  align-content: center;
-  gap: clamp(5px, .8vw, 13px);
-  min-height: 0;
-  overflow: auto;
+  /* Une carte : le plus petit des deux plafonds — la hauteur de la scène moins
+     le texte réservé, rapportée au ratio d'une carte (l'illustration est en
+     4/5, et la carte ajoute son texte), ou le cinquième de la largeur de la
+     scène. Le plafond dur garde la main gracieuse sur les écrans très larges ;
+     le premier jeu de règles sert de repli aux WebView sans requêtes de
+     conteneur. */
+  grid-auto-columns: min(calc((100dvh - var(--rpg-mulligan-text) - 230px) * .8), calc((100vw - 90px) / 5), 190px);
+  grid-auto-columns: min(calc((100cqh - var(--rpg-mulligan-text)) * .8), calc((100cqw - 4 * var(--rpg-mulligan-gap)) / 5), 190px);
+  gap: var(--rpg-mulligan-gap);
 }
 .rpg-mulligan__card {
   display: grid;
+  /* Une seule colonne, bornée par la carte elle-même : le texte se replie dans
+     sa largeur au lieu de déborder sur la carte voisine. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto auto minmax(0, auto) auto;
   gap: 2px;
   min-width: 0;
@@ -3474,38 +3510,51 @@
   text-shadow: 0 1px 2px #000;
 }
 .rpg-mulligan__stats span { color: #e1cb9c; }
+/* Le texte tient sur une ligne par étage — nom, type, drapeau — et sur le
+   nombre de lignes de règles réservé plus haut : sa hauteur est donc connue
+   d'avance, et la carte ne prend jamais plus de place que prévu. */
 .rpg-mulligan__name {
   overflow: hidden;
+  min-width: 0;
   color: #fff6de;
-  font: 800 clamp(10px, 1.9vh, 15px)/1.15 Georgia, serif;
+  font: 800 var(--rpg-mulligan-name)/1.15 Georgia, serif;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .rpg-mulligan__type {
+  overflow: hidden;
+  min-width: 0;
   color: #cf9a58;
-  font: 700 clamp(7px, 1.3vh, 10px)/1.25 var(--mono, monospace);
+  font: 700 var(--rpg-mulligan-type)/1.25 var(--mono, monospace);
   letter-spacing: .04em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .rpg-mulligan__rules {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3; /* même compte que --rpg-mulligan-rules-lines */
+  min-height: calc(var(--rpg-mulligan-rules) * 1.34 * 3);
   overflow: hidden;
-  min-height: 0;
+  min-width: 0;
   color: #f2e6cc;
-  font: 500 clamp(9px, 1.6vh, 12px)/1.32 Georgia, serif;
+  font: 500 var(--rpg-mulligan-rules)/1.34 Georgia, serif;
 }
 .rpg-mulligan__rules > span { display: block; }
 .rpg-mulligan__flag {
   align-self: start;
+  overflow: hidden;
+  min-width: 0;
   padding: 1px 7px;
   border-radius: 999px;
   background: rgba(255, 214, 25, .12);
   color: #ffe6a3;
-  font: 700 clamp(8px, 1.3vh, 10px)/1.4 var(--mono, monospace);
+  font: 700 var(--rpg-mulligan-flag)/1.4 var(--mono, monospace);
   letter-spacing: .06em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .rpg-mulligan__card.is-selected .rpg-mulligan__flag { background: rgba(255, 214, 25, .3); color: #1a1206; }
 .rpg-mulligan__actions {
@@ -3522,27 +3571,35 @@
 }
 .rpg-mulligan__valider,
 .rpg-mulligan__commencer { min-height: 44px; }
-/* Téléphones en paysage : la hauteur est la contrainte — l'illustration se
-   replie sur un carré, les règles tiennent sur deux lignes. */
+/* Téléphones en paysage : la hauteur est la contrainte — une ligne de règles en
+   moins et la phrase d'explication repliée, pour que la main garde toute sa
+   place. Le compte de lignes et le contrat de `--rpg-mulligan-text` restent
+   d'accord : deux lignes réservées, deux lignes montrées. */
 @media (max-height: 480px) {
-  .rpg-mulligan__cards { gap: 6px; grid-auto-columns: min(calc((52dvh - 76px) / .8), calc((100vw - 40px) / 5)); }
+  .rpg-mulligan { --rpg-mulligan-rules-lines: 2; }
+  .rpg-mulligan__head p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
   .rpg-mulligan__panel { gap: 5px; padding: 6px 8px; }
-  .rpg-mulligan__card { padding: 4px; gap: 1px; }
-  .rpg-mulligan__rules { -webkit-line-clamp: 2; }
+  .rpg-mulligan__card { gap: 1px; padding: 4px; }
+  .rpg-mulligan__rules { -webkit-line-clamp: 2; min-height: calc(var(--rpg-mulligan-rules) * 1.34 * 2); }
   .rpg-mulligan__flag { font-size: 7px; }
 }
-/* Téléphone à la verticale (et petits écrans) : deux colonnes qui défilent,
-   jamais cinq cartes réduites à une vignette — le volet se lit, il ne se zoome pas. */
-@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
-  /* Pas assez large pour cinq colonnes : deux par rangée, et la rangée défile. */
-  .rpg-mulligan__cards {
-    grid-auto-flow: row;
-    grid-auto-columns: none;
-    grid-template-columns: repeat(2, minmax(38vw, 1fr));
-    grid-auto-rows: auto;
-    overflow: auto;
+/* Écrans étroits : la même rangée de cinq, plus serrée — la main reste
+   entière sous les yeux, jamais coupée en deux colonnes qui défilent. */
+@media (max-width: 620px) {
+  .rpg-mulligan { --rpg-mulligan-rules-lines: 2; }
+  .rpg-mulligan__head p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
-  .rpg-mulligan__rules { -webkit-line-clamp: 3; }
+  .rpg-mulligan__panel { padding: 8px 6px; }
+  .rpg-mulligan__rules { -webkit-line-clamp: 2; min-height: calc(var(--rpg-mulligan-rules) * 1.34 * 2); }
 }
 
 /* Les cartes entrent, frappent et encaissent un coup avec des signaux courts. */

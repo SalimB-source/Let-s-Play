@@ -958,17 +958,21 @@ function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValid
             ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main.`
             : bilan}</p>
         </header>
-        <div className="rpg-mulligan__cards">
-          {main.map((carteId, index) => (
-            <CarteMulligan
-              key={`${carteId}-${index}`}
-              carte={cardById(carteId)}
-              index={index}
-              selectionnee={choix.has(index)}
-              nouvelle={nouveau.includes(index)}
-              onBasculer={onBasculer}
-            />
-          ))}
+        {/* La scène donne à la rangée une place mesurable, et c'est elle que
+            les cartes interrogent : les cinq tiennent dans le volet. */}
+        <div className="rpg-mulligan__stage">
+          <div className="rpg-mulligan__cards">
+            {main.map((carteId, index) => (
+              <CarteMulligan
+                key={`${carteId}-${index}`}
+                carte={cardById(carteId)}
+                index={index}
+                selectionnee={choix.has(index)}
+                nouvelle={nouveau.includes(index)}
+                onBasculer={onBasculer}
+              />
+            ))}
+          </div>
         </div>
         <footer className="rpg-mulligan__actions">
           {enChoix ? (

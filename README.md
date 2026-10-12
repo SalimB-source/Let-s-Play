@@ -5558,7 +5558,7 @@ Le duel s'ouvrait sur une main déjà jouable : cinq cartes tombaient dans la
 main, la barre du bas annonçait le plateau, et le premier tour commençait — avec
 ou sans terrain. Or une main sans source de mana n'est pas une main : c'est un
 tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
-**main de départ en grand**, et il choisit ce qu'il en garde.
+**main de départ en entier**, et il choisit ce qu'il en garde.
 
 ### La règle
 
@@ -5566,11 +5566,15 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   cartes comme avant, mais la table est rendue `inert` : rien ne se pose, rien
   ne s'engage, « Fin du tour » est désactivé. Le halo doré de la main
   s'éteint — une carte allumée mais injouable enferme le joueur.
-- **Les cartes se lisent, elles ne se devinent pas.** Chaque carte de la main
-  occupe un grand emplacement : illustration pleine largeur, nom, type, coût,
-  attaque/défense et **ses règles entières**, écrites dessous. Aucun survol,
-  aucun appui long à connaître : au doigt comme à la souris, le texte est déjà
-  là.
+- **Les cinq cartes, d'un seul coup.** La main de départ se lit en entier :
+  cinq cartes dans **une seule rangée**, jamais coupée par une barre de
+  défilement — illustration, nom, type, coût, attaque/défense et **ses règles**,
+  écrites dessous. La taille d'une carte se mesure dans le volet, pas dans la
+  fenêtre : plafonnée par la largeur utile (cinq colonnes, quatre gouttières) et
+  par la hauteur qui reste une fois le texte réservé — plus large sur un
+  moniteur, plus serrée sur un téléphone en paysage, mais toujours entièrement
+  visible. Aucun survol, aucun appui long à connaître : au doigt comme à la
+  souris, le texte est déjà là.
 - **Toucher une carte la met de côté.** Un second toucher la reprend ; le
   compteur sous le volet dit « 2 cartes à changer » et le bouton principal
   nomme le geste (« Changer 2 cartes », « Garder cette main » quand rien n'est
@@ -5604,10 +5608,12 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   `mulliganOuvert` consulté par `peutJouerCarte`, `poserTerrain`, `engager` et
   `finDuTour` — une seule règle, la même que celle du halo doré.
 - `src/games/rpg-battle.css` — `.rpg-mulligan` (volet posé sur la table, sous
-  l'écran de rotation et l'aperçu au doigt), la rangée en grille
-  « une colonne par carte », l'illustration qui prend toute la hauteur
-  disponible, et le repli du texte en paysage de téléphone ;
-  `src/games/rpg-mobile.css` neutralise le survol au doigt.
+  l'écran de rotation et l'aperçu au doigt), sa **scène mesurée** par requêtes
+  de conteneur (`.rpg-mulligan__stage` : une hauteur tenue par le volet, sur
+  laquelle les cinq colonnes se règlent, `cqw`/`cqh`), et le contrat
+  `--rpg-mulligan-text` qui réserve la hauteur du texte d'une carte — les mêmes
+  variables composent le texte et calculent la place : ce qui est prévu est ce
+  qui s'affiche ; `src/games/rpg-mobile.css` neutralise le survol au doigt.
 
 ### Vérifications
 
@@ -5629,6 +5635,13 @@ s'ouvre sur les cinq cartes de la main, dans le même ordre qu'en main, avec
 illustration, nom et règles ; la table est `inert`, aucune carte n'est jouable
 et aucun terrain ne se pose ; le toucher marque, démarque, annule ; la
 validation échange, montre la nouvelle main avec ses cartes signalées, et rend
-la table sur « Commencer le duel » ; une partie neuve rouvre le droit. Les
-duels au pilote automatique de `scripts/rpg-ghost-check.mjs` valident le
-mulligan à chaque graine, grand écran et doigt confondus.
+la table sur « Commencer le duel » ; une partie neuve rouvre le droit. Il tient
+aussi la feuille : une seule rangée, jamais de défilement, les cinq cartes
+plafonnées par la hauteur utile **et** par la largeur du volet, et le texte
+réservé exactement au nombre de lignes montré.
+
+`scripts/rpg-mobile-layout-check.mjs` mesure la main de départ au navigateur, à
+trois tailles (téléphone en paysage, tablette, moniteur) : les cinq cartes sont
+dans le cadre, entières, touchables, et la rangée ne défile jamais. Les duels au
+pilote automatique de `scripts/rpg-ghost-check.mjs` valident le mulligan à
+chaque graine, grand écran et doigt confondus.

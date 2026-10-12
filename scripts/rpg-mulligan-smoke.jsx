@@ -42,6 +42,8 @@ export async function checkRpgMulligan(assert) {
   assert.equal(cartes().length, 5, 'les cinq cartes piochées sont toutes présentées');
   assert.deepEqual(cartes().map((carte) => carte.dataset.cardId), main(),
     'le volet montre exactement la main de départ, dans le même ordre');
+  assert.equal(q('.rpg-mulligan__stage > .rpg-mulligan__cards')?.children.length, 5,
+    'les cinq cartes forment une seule rangée, dans la scène que la feuille mesure');
   for (const carte of cartes()) {
     const id = carte.dataset.cardId;
     assert.ok(carte.querySelector('.rpg-mulligan__face img')?.getAttribute('src')?.includes(`/cards/${id}.jpg`),

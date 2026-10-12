@@ -152,6 +152,30 @@ try {
   await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
   // Le duel s'ouvre sur son volet de mulligan : la mise en page se mesure
   // dessus, le jeu commence une fois la main de départ validée.
+  // La main de départ se lit d'un seul coup : les cinq cartes, entières et
+  // touchables, dans le volet — jamais une rangée qui défile, jamais une carte
+  // hors de l'écran, du téléphone en paysage au grand moniteur.
+  for (const [width, height] of [[844, 390], [1024, 768], [1440, 900]]) {
+    await page.setViewportSize({ width, height });
+    const hand = await page.evaluate(() => {
+      const row = document.querySelector('.rpg-mulligan__cards');
+      const panel = document.querySelector('.rpg-mulligan__panel').getBoundingClientRect();
+      const boxes = [...document.querySelectorAll('.rpg-mulligan__card')].map((card) => card.getBoundingClientRect().toJSON());
+      return {
+        count: boxes.length,
+        scrolls: row.scrollWidth > row.clientWidth + 1 || row.scrollHeight > row.clientHeight + 1,
+        inside: boxes.every((box) => box.left >= panel.left - 1 && box.right <= panel.right + 1
+          && box.top >= panel.top - 1 && box.bottom <= panel.bottom + 1),
+        touchable: boxes.every((box) => box.width >= 44 && box.height >= 44),
+      };
+    });
+    assert.equal(hand.count, 5, `${width}×${height}: les cinq cartes de la main de départ sont présentées`);
+    assert.equal(hand.scrolls, false, `${width}×${height}: la rangée du mulligan ne défile pas`);
+    assert.ok(hand.inside, `${width}×${height}: les cinq cartes tiennent entières dans le volet`);
+    assert.ok(hand.touchable, `${width}×${height}: chaque carte de la main reste touchable`);
+    console.log(`✓ Mulligan complet ${width} × ${height}`);
+  }
+  await page.setViewportSize({ width: 844, height: 390 });
   await page.getByRole('button', { name: /Garder cette main/i }).click();
   await page.locator('.rpg-mulligan').waitFor({ state: 'detached' });
   // Tap a creature without mana: the refusal is explained and nothing is played.
