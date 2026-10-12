@@ -9,10 +9,10 @@
  *
  * 1. **Chaque deck a son terrain.** Un deck du catalogue (ou un deck du mode
  *    Histoire) porte une correspondance explicite — les Veilleurs du Désert se
- *    battent dans l'Erg, la Cour des Djinns sur la Terre de Damnation… Un deck
+ *    battent dans l'Erg, la Cour des Djinns sur la Table des Heures… Un deck
  *    sans identité connue (paquet brut passé en prop, deck maison) retombe sur
- *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Terre
- *    de Damnation, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
+ *    la **couleur dominante de ses cartes** : Sable → l'Erg, Braise → la Table
+ *    des Heures, Eau → les Ruines de Tipaza, Neige → le Fjord des Neuf
  *    Hivers, deux couleurs à égalité → la Caravane de Gourara, le carrefour des
  *    pistes. Sans rien de lisible, c'est la Table des Heures, la table
  *    d'origine de Bab El.
@@ -58,13 +58,6 @@ export const RPG_PLATEAUX = [
     resume: 'Le lit sec de l’oued et sa piste de caravane : les deux empreintes du campement, l’outre, la corde et le compas abandonné.',
   },
   {
-    id: 'terre-de-damnation',
-    nom: 'La Terre de Damnation',
-    lieu: 'Les Brûlés, étage perdu de Bab El',
-    fichier: 'plateau-terre-de-damnation.jpg',
-    resume: 'L’étage repris par le feu : la croûte craquelée et ses braises encore vives, l’encensoir de fer renversé, les troncs calcinés, la cendre grise.',
-  },
-  {
     id: 'fjord-des-neuf-hivers',
     nom: 'Le Fjord des Neuf Hivers',
     lieu: 'La glace du Nord, devant le Serment',
@@ -90,7 +83,8 @@ export const RPG_PLATEAU_DE_REPLI = 'table-des-heures';
 export const RPG_PLATEAUX_PAR_DECK = {
   // Catalogue — chaque deck se bat chez lui.
   'veilleurs-du-desert': 'erg-du-sahara',
-  'cour-des-djinns': 'terre-de-damnation',
+  // Le plateau des Brûlés a été retiré : la Cour rejoint la table d'origine.
+  'cour-des-djinns': 'table-des-heures',
   'sentiers-de-cendre': 'caravane-de-gourara',
   'maree-des-abysses': 'ruines-de-tipaza',
   // Le Nord : le Serment des Neuf Hivers se bat sur la glace du fjord.
@@ -109,7 +103,7 @@ export const RPG_PLATEAUX_PAR_DECK = {
 /** Le terrain d'une couleur de deck sans identité connue. */
 export const RPG_PLATEAUX_PAR_COULEUR = {
   sable: 'erg-du-sahara',
-  braise: 'terre-de-damnation',
+  braise: 'table-des-heures',
   eau: 'ruines-de-tipaza',
   neige: 'fjord-des-neuf-hivers',
   hybride: 'caravane-de-gourara',
