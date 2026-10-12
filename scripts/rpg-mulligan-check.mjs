@@ -138,8 +138,8 @@ assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}
   'la couleur de la carte est en haut à gauche, comme sur les cartes du jeu');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*bottom:/s,
   'la couleur n’est plus en bas de la carte');
-assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*5%;[^}]*right:\s*6%;[^}]*cqw/s,
-  'le coût est posé en haut à droite de l’illustration, à la taille de la carte');
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*5%;[^}]*right:\s*6%;[^}]*cqw[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
+  'le coût est posé en haut à droite de l’illustration dans un bloc bien rond, à la taille de la carte');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:/s,
   'le coût a quitté le coin gauche');
 assert.match(battlePage, /rpg-mulligan__stats"[\s\S]{0,200}?rpg-card__stat--atk"><CardStatIcon type="attack" \/><span className="rpg-stat-value">\{carte\.atk\}<\/span>/,
