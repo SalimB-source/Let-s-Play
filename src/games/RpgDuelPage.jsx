@@ -932,7 +932,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
   );
 }
 
-function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValider, onToutGarder, onContinuer }) {
+function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValider, onAnnulerSelection, onContinuer }) {
   const nombre = choix.size;
   const enChoix = etape === 'choix';
   const pluriel = (n) => (n > 1 ? 's' : '');
@@ -971,7 +971,7 @@ function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValid
                 {nombre ? `Changer ${nombre} carte${pluriel(nombre)}` : 'Garder cette main'}
               </button>
               {nombre > 0 && (
-                <button type="button" className="rpg-btn rpg-btn--ghost rpg-mulligan__tout" onClick={onToutGarder}>
+                <button type="button" className="rpg-btn rpg-btn--ghost rpg-mulligan__tout" onClick={onAnnulerSelection}>
                   Annuler la sélection
                 </button>
               )}
@@ -4402,7 +4402,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           bilan={mulligan.bilan}
           onBasculer={basculerCarteMulligan}
           onValider={validerMulligan}
-          onToutGarder={viderSelectionMulligan}
+          onAnnulerSelection={viderSelectionMulligan}
           onContinuer={terminerMulligan}
         />
       )}
