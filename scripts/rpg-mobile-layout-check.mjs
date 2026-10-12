@@ -152,27 +152,35 @@ try {
   await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
   // Le duel s'ouvre sur son volet de mulligan : la mise en page se mesure
   // dessus, le jeu commence une fois la main de départ validée.
-  // La main de départ se lit d'un seul coup : les cinq cartes, entières et
-  // touchables, dans le volet — jamais une rangée qui défile, jamais une carte
-  // hors de l'écran, du téléphone en paysage au grand moniteur.
+  // La main de départ se lit d'un seul coup : cinq cartes 4:5, entières,
+  // touchables, sans un mot dessus — du téléphone en paysage au grand moniteur.
   for (const [width, height] of [[844, 390], [1024, 768], [1440, 900]]) {
     await page.setViewportSize({ width, height });
     const hand = await page.evaluate(() => {
       const row = document.querySelector('.rpg-mulligan__cards');
       const panel = document.querySelector('.rpg-mulligan__panel').getBoundingClientRect();
-      const boxes = [...document.querySelectorAll('.rpg-mulligan__card')].map((card) => card.getBoundingClientRect().toJSON());
+      const cards = [...document.querySelectorAll('.rpg-mulligan__card')];
+      const boxes = cards.map((card) => card.getBoundingClientRect().toJSON());
       return {
         count: boxes.length,
         scrolls: row.scrollWidth > row.clientWidth + 1 || row.scrollHeight > row.clientHeight + 1,
         inside: boxes.every((box) => box.left >= panel.left - 1 && box.right <= panel.right + 1
           && box.top >= panel.top - 1 && box.bottom <= panel.bottom + 1),
         touchable: boxes.every((box) => box.width >= 44 && box.height >= 44),
+        // Chaque carte garde le 4:5 du jeu, au pixel près sur les arrondis.
+        faces45: boxes.every((box) => Math.abs(box.width / box.height - 0.8) < 0.02),
+        // Rien à lire sur la carte : ni nom, ni type, ni effet, ni drapeau.
+        muettes: cards.every((card) => !card.querySelector('.rpg-mulligan__name, .rpg-mulligan__type, .rpg-mulligan__rules, .rpg-mulligan__flag')
+          && [...card.childNodes].every((node) => node.nodeType !== 3 || !node.textContent.trim())),
+        illustrees: cards.every((card) => card.querySelector('img.rpg-mulligan__img')?.complete === true),
       };
     });
     assert.equal(hand.count, 5, `${width}×${height}: les cinq cartes de la main de départ sont présentées`);
     assert.equal(hand.scrolls, false, `${width}×${height}: la rangée du mulligan ne défile pas`);
     assert.ok(hand.inside, `${width}×${height}: les cinq cartes tiennent entières dans le volet`);
     assert.ok(hand.touchable, `${width}×${height}: chaque carte de la main reste touchable`);
+    assert.ok(hand.faces45, `${width}×${height}: chaque carte garde le format 4:5 du jeu`);
+    assert.ok(hand.muettes && hand.illustrees, `${width}×${height}: la carte est son illustration, sans texte par-dessus`);
     console.log(`✓ Mulligan complet ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
@@ -307,6 +315,38 @@ try {
   await page.getByRole('button', { name: 'Retour au menu', exact: true }).click();
   await page.locator('.rpg-mode-menu').waitFor();
   console.log('✓ Returning to portrait keeps the duel and allows leaving for the menu');
+
+// L'aperçu rapide : c'est lui qui porte le nom, le type, le coût et les effets
+// que les cartes du mulligan n'impriment plus. Il se vérifie à la souris, dans
+// un contexte de bureau — le doigt, lui, garde l'appui long.
+{
+  const bureau = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  try {
+    const pageBureau = await bureau.newPage();
+    await pageBureau.goto(process.env.RPG_URL || 'http://localhost:5173/Let-s-Play/jeu/sablier-de-bab-el');
+    await pageBureau.getByRole('button', { name: /Lancer le duel/i }).click();
+    const carte = pageBureau.locator('.rpg-mulligan__card').first();
+    await carte.waitFor();
+    const nom = (await carte.getAttribute('aria-label')).split(' — ')[0];
+    assert.equal(await pageBureau.locator('.rpg-hover-card-preview').count(), 0,
+      'aucun aperçu tant que rien n’est survolé');
+    await carte.hover();
+    const apercu = pageBureau.locator('.rpg-hover-card-preview--mulligan');
+    await apercu.waitFor();
+    assert.ok((await apercu.getAttribute('aria-label'))?.startsWith(`Aperçu de ${nom}`),
+      'l’aperçu décrit la carte survolée');
+    assert.equal(await pageBureau.evaluate(() => getComputedStyle(document.querySelector('.rpg-hover-card-preview--mulligan')).zIndex), '1200',
+      'l’aperçu passe au-dessus du volet du mulligan (1150)');
+    await pageBureau.mouse.move(4, 4);
+    await pageBureau.locator('.rpg-hover-card-preview').waitFor({ state: 'detached' });
+    await pageBureau.getByRole('button', { name: /Garder cette main/i }).click();
+    await pageBureau.locator('.rpg-mulligan').waitFor({ state: 'detached' });
+    console.log('✓ Mulligan : survoler une carte ouvre son aperçu rapide, au-dessus du volet');
+  } finally {
+    await bureau.close();
+  }
+}
+
 } finally {
   await browser.close();
 }

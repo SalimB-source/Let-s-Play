@@ -88,9 +88,12 @@ limitée à 7.
 - La partie commence avec **0 carte sur la table** ; chaque joueur **pioche
   5 cartes**.
 - **Le mulligan** ouvre la partie : avant le premier tour, la main de départ
-  s'affiche **en entier** — les cinq cartes d'un seul coup, chacune avec son
-  illustration, son nom et ses règles — et le joueur touche les cartes qu'il ne
-  garde pas.
+  s'affiche **en entier** — les cinq cartes d'un seul coup, chacune réduite à sa
+  **face 4:5** (l'illustration, le coût, le badge d'élément, l'attaque et la
+  défense), **sans aucun texte imprimé dessus** : le nom, le type et les effets
+  se lisent dans l'**aperçu rapide** (survol à la souris, appui long d'une
+  seconde au doigt) — et le joueur touche les cartes qu'il ne garde pas, ce que
+  dit le liseré doré.
   Elles repartent dans le paquet, **le paquet est battu**, et il pioche autant
   de cartes qu'il en a écartées — la main ne diminue donc jamais. **Un seul
   échange par camp**, et le sorcier adverse y a droit aussi (il renvoie une

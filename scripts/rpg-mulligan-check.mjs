@@ -76,13 +76,6 @@ assert.match(battlePage, /const adverse = rpgMulliganSorcier\(duelCourant, rng\)
   'le sorcier use du même droit au même moment');
 assert.match(battlePage, /etape: 'resultat'[\s\S]*?nouveau: piochees\.map/,
   'après l’échange, le volet reste ouvert sur la nouvelle main et signale ce qui entre');
-assert.match(mulliganPanel, /onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}/,
-  'une carte déjà en grand ne réclame pas l’aperçu par appui long');
-assert.match(mulliganPanel, /aria-pressed=\{selectionnee\}/,
-  'le choix d’une carte est rendu accessible (bouton pressé ou non)');
-assert.doesNotMatch(mulliganPanel, /HoverCardPreview|onMouseEnter/,
-  'le mulligan n’attend pas un survol : tout est écrit sur la carte, au doigt comme à la souris');
-
 // ── Le moteur : un échange, pas une perte de cartes ─────────────────────────
 assert.match(duelEngine, /mulliganFait: \{ joueur: false, sorcier: false \}/,
   'le duel naît avec un droit à l’échange pour chaque camp');
@@ -103,7 +96,7 @@ assert.match(aiBrain, /if \(main\.length < 2 \|\| profil\.niveau === 'recit'\) r
 assert.match(aiBrain, /if \(!terrains\.length\) return autres;/,
   'une main sans terrain est renvoyée au paquet');
 
-// ── La feuille : la main entière, d'un seul coup, sur tous les formats ──────
+// ── La feuille : des faces 4:5 nues, l'aperçu rapide pour tout lire ────────
 assert.match(battleCss, /\.rpg-mulligan\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1150;/s,
   'le volet est posé sur la table, sous l’écran de rotation et l’aperçu au doigt');
 assert.match(battleCss, /\.rpg-mulligan__panel\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;[^}]*height:\s*min\(100%,\s*\d+px\);/s,
@@ -119,7 +112,7 @@ const cardsRule = battleCss.slice(battleCss.indexOf('.rpg-mulligan__cards {'), b
 assert.match(cardsRule, /grid-auto-flow:\s*column;/,
   'la main est une seule rangée — jamais une grille de deux colonnes');
 assert.match(cardsRule, /grid-auto-columns:[^;]*100cqh[^;]*\*\s*\.8\)[^;]*;/,
-  'une carte est plafonnée par la hauteur utile du volet moins le texte réservé, rapportée au ratio d’une carte');
+  'une face 4:5 se plafonne par la hauteur utile du volet moins ce que la carte garde autour d’elle');
 assert.match(cardsRule, /grid-auto-columns:[^;]*100cqw[^;]*\/\s*5\)[^;]*;/,
   'et une seconde fois par le cinquième de la largeur utile : cinq cartes, quatre gouttières, rien de coupé');
 assert.match(cardsRule, /gap:\s*var\(--rpg-mulligan-gap\);/,
@@ -129,32 +122,65 @@ assert.doesNotMatch(cardsRule, /overflow:\s*(auto|scroll)/,
 assert.doesNotMatch(cardsRule, /grid-template-columns/,
   'aucun repli en grille de deux colonnes qui défile');
 
-// ── La feuille : le texte réservé est celui qui est montré ──────────────────
-assert.match(battleCss, /--rpg-mulligan-text:\s*calc\([\s\S]{0,400}?--rpg-mulligan-rules\)\s*\*\s*1\.34\s*\*\s*var\(--rpg-mulligan-rules-lines\)/,
-  'la hauteur du texte réservé est composée des mêmes métriques que le texte affiché');
-assert.match(battleCss, /\.rpg-mulligan__name\s*\{[^}]*font:\s*800 var\(--rpg-mulligan-name\)[^}]*white-space:\s*nowrap;/s,
-  'le nom tient sur une ligne, comme la réservation le prévoit');
-assert.match(battleCss, /\.rpg-mulligan__rules\s*\{[^}]*-webkit-line-clamp:\s*3;[^}]*min-height:\s*calc\(var\(--rpg-mulligan-rules\)\s*\*\s*1\.34\s*\*\s*3\);/s,
-  'les règles réservent exactement les lignes qu’elles montrent : la carte ne dépasse jamais sa place');
-assert.match(battleCss, /\.rpg-mulligan__flag\s*\{[^}]*white-space:\s*nowrap;/s,
-  'le drapeau tient sur une ligne, comme la réservation le prévoit');
-assert.match(battleCss, /\.rpg-mulligan__face\s*\{[^}]*aspect-ratio:\s*4 \/ 5;/s,
-  'l’illustration garde le ratio 4/5 d’une carte du jeu, en grand');
-assert.match(battleCss, /\.rpg-mulligan__card\s*\{[^}]*grid-template-rows:\s*minmax\(0, 1fr\)[^}]*\}/s,
-  'l’illustration occupe toute la place disponible au-dessus du texte : la carte se lit en grand');
-assert.match(battleCss, /\.rpg-mulligan__face\s*>\s*img\s*\{[^}]*object-fit:\s*cover;/s,
-  'l’illustration remplit la carte sans déformer');
-assert.match(battleCss, /\.rpg-mulligan__name\s*\{[^}]*font:\s*800 var\(--rpg-mulligan-name\)/s,
-  'le nom est composé à une taille réglée sur la hauteur utile');
+// ── La carte : la face 4:5 du jeu, et pas un mot dessus ────────────────────
+const cardRule = battleCss.slice(battleCss.indexOf('.rpg-mulligan__card {'), battleCss.indexOf('.rpg-mulligan__img {'));
+assert.match(cardRule, /aspect-ratio:\s*4 \/ 5;/,
+  'une carte du mulligan est au format 4:5, celui du jeu');
+assert.match(cardRule, /container-type:\s*inline-size;/,
+  'la carte est son propre conteneur : ses repères se règlent sur sa largeur');
+assert.match(cardRule, /overflow:\s*hidden;/,
+  'l’illustration est tenue dans le cadre de la carte');
+assert.match(battleCss, /\.rpg-mulligan__img\s*\{[^}]*object-fit:\s*cover;/s,
+  'l’illustration remplit la face sans déformer');
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\([^;]*cqw/s,
+  'le badge d’élément se dimensionne sur la largeur de la carte');
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*cqw/s,
+  'le coût est posé sur l’illustration et se règle sur la carte');
+assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*position:\s*absolute;[^}]*cqw/s,
+  'l’attaque et la défense sont posées sur l’illustration, à la taille de la carte');
 assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:\s*#ffd619;/s,
-  'une carte choisie prend le liseré doré du jeu');
+  'une carte mise de côté prend le liseré doré du jeu — son seul signe visible');
 assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
-assert.match(battleCss, /@media \(max-height: 480px\) \{[\s\S]{0,400}?--rpg-mulligan-rules-lines:\s*2;[\s\S]{0,400}?\.rpg-mulligan__rules\s*\{\s*-webkit-line-clamp:\s*2;\s*min-height:\s*calc\(/,
-  'sur téléphone en paysage, le texte se replie — et la hauteur réservée se replie avec lui');
-assert.match(battleCss, /@media \(max-width: 620px\) \{[\s\S]{0,400}?--rpg-mulligan-rules-lines:\s*2;/,
-  'sur écran étroit, la même rangée de cinq, avec un texte plus court');
+assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|type|rules|flag|banner|top)\b/,
+  'plus un seul bloc de texte sur les cartes : nom, type, effets et drapeau ont quitté la feuille');
+
+// ── L'aperçu rapide : c'est lui qui porte le texte, au survol ──────────────
+assert.match(mulliganPanel, /onMouseEnter=\{survol \? \(event\) => onSurvol\(carte, event\) : undefined\}/,
+  'le survol d’une carte du mulligan ouvre l’aperçu rapide — quand la souris sait survoler');
+assert.match(mulliganPanel, /survol \? onQuitterSurvol : undefined/,
+  'quitter la carte referme l’aperçu');
+assert.match(battlePage, /const survol = typeof window\.matchMedia === 'function' \? window\.matchMedia\('\(hover: hover\)'\)\.matches : true;/,
+  'le survol est constaté, jamais supposé : au doigt, c’est l’appui long qui sert');
+assert.match(battlePage, /const \[viewport, setViewport\] = useState\(\{ mobile: false, portrait: false, survol: true \}\)/,
+  'le viewport porte la capacité de survol avec lui');
+assert.match(battlePage, /variante="mulligan"/,
+  'l’aperçu du mulligan se nomme : la feuille peut le poser au-dessus du volet');
+assert.match(battleCss, /\.rpg-hover-card-preview--mulligan\s*\{\s*z-index:\s*1200;\s*\}/,
+  'l’aperçu rapide passe au-dessus du volet (1150) et sous l’aperçu au doigt (1250)');
+assert.match(battlePage, /\{apercuSurvol && !apercuMagie && !mulligan && \(/,
+  'la table ne double pas l’aperçu du volet : un seul aperçu vivant à la fois');
+assert.match(battlePage, /apercu=\{apercuSurvol\}[\s\S]{0,200}?survol=\{viewport\.survol\}/,
+  'le volet reçoit l’aperçu et la capacité de survol de la page');
+assert.doesNotMatch(mulliganPanel, /aria-hidden="true">\s*\{(effets|nouvelle)/,
+  'aucun texte d’effet ni drapeau d’état n’est rendu sur la carte');
+assert.match(mulliganPanel, /aria-pressed=\{selectionnee\}/,
+  'le choix d’une carte est rendu accessible (bouton pressé ou non)');
+assert.match(mulliganPanel, /aria-label=\{`\$\{carte\.name\} — \$\{cardFaceTypeLine\(carte\)\}/,
+  'la carte nue reste décrite pour les lecteurs d’écran : nom, type, coût, effets');
+assert.doesNotMatch(mulliganPanel, /onPointerDown=/,
+  'la carte ne barre plus la route à l’appui long : au doigt, l’aperçu s’ouvre par le geste du jeu');
+
+// ── Le contrat de place : ce qui reste autour de la face est réservé ───────
+assert.match(battleCss, /--rpg-mulligan-text:\s*\d+px;/,
+  'ce que la carte garde autour de sa face est réservé dans le calcul de sa taille');
+assert.match(battleCss, /@media \(max-height: 480px\) \{[\s\S]{0,400}?\.rpg-mulligan__head p\s*\{/,
+  'sur téléphone en paysage, la phrase d’explication se replie — la main garde la place');
+assert.match(battleCss, /@media \(max-width: 620px\) \{[\s\S]{0,400}?\.rpg-mulligan__head p\s*\{/,
+  'sur écran étroit, la même rangée de cinq, avec l’explication repliée');
 assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*min-height:\s*44px;/s,
   'les commandes du volet gardent une taille tactile');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
+  'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : les cinq cartes de la main entière à l’écran d’un seul coup, choix des cartes, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus, l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');

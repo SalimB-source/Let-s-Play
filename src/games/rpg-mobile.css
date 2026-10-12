@@ -263,11 +263,11 @@
 .rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 6px; justify-content: flex-start; align-items: center; gap: 6px; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 8px); touch-action: pan-x; -webkit-touch-callout: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
-/* Le mulligan, au doigt : le survol ne soulève rien, et la rangée tient la
-   largeur utile du volet — les cinq cartes se lisent sans pincer ni faire
-   défiler. La marge autour de la main vient du rembourrage du volet : la scène
-   des cartes doit rester nue, c'est sa taille que les cartes mesurent. */
-.rpg-battle--touch .rpg-mulligan__card:hover { transform: none; }
+/* Le mulligan, au doigt : le survol ne soulève rien (l'aperçu rapide y passe
+   par l'appui long d'une seconde), et la rangée tient la largeur utile du volet
+   — les cinq faces 4:5 se lisent sans pincer ni faire défiler. Le liseré doré
+   d'une carte mise de côté, lui, reste intact. */
+.rpg-battle--touch .rpg-mulligan__card:not(.is-selected):hover { transform: none; box-shadow: none; }
 .rpg-battle--touch .rpg-mulligan__card:active { transform: scale(.97); }
 .rpg-battle--touch .rpg-mulligan__card { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .rpg-battle--touch .rpg-hand__type { font-size: 7px; }

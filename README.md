@@ -5566,15 +5566,26 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   cartes comme avant, mais la table est rendue `inert` : rien ne se pose, rien
   ne s'engage, « Fin du tour » est désactivé. Le halo doré de la main
   s'éteint — une carte allumée mais injouable enferme le joueur.
-- **Les cinq cartes, d'un seul coup.** La main de départ se lit en entier :
-  cinq cartes dans **une seule rangée**, jamais coupée par une barre de
-  défilement — illustration, nom, type, coût, attaque/défense et **ses règles**,
-  écrites dessous. La taille d'une carte se mesure dans le volet, pas dans la
-  fenêtre : plafonnée par la largeur utile (cinq colonnes, quatre gouttières) et
-  par la hauteur qui reste une fois le texte réservé — plus large sur un
+- **Des cartes 4:5, nues.** Chaque carte de la main de départ est la **face
+  4:5** du jeu et rien d'autre : l'illustration plein cadre, le coût, le badge
+  d'élément et, pour les créatures, l'attaque et la défense. **Aucun mot
+  d'interface n'est imprimé dessus** — ni nom, ni type, ni effet, ni drapeau :
+  la carte est son image, et c'est le liseré doré qui dit ce qu'on met de côté.
+- **Tout le texte passe par l'aperçu rapide.** Survoler une carte ouvre son
+  aperçu complet (nom, type, coût, effets, statistiques) ; le volet le pose
+  **au-dessus de lui** (`z-index: 1200`, sous l'aperçu au doigt de 1250), et
+  c'est le seul aperçu vivant tant que la main est ouverte. Au doigt, où le
+  survol n'existe pas, l'**appui long d'une seconde** — le geste du jeu, armé
+  par la table — fait le même travail : la capacité de survol est **constatée**
+  (`(hover: hover)`), jamais supposée.
+- **Les cinq cartes, d'un seul coup.** La main se lit en entier : cinq cartes
+  dans **une seule rangée**, jamais coupée par une barre de défilement. La
+  taille d'une carte se mesure dans le volet, pas dans la fenêtre : la largeur
+  d'une face vaut les 4/5 de la hauteur utile (ce que la carte garde autour
+  d'elle est réservé), ou le cinquième de la largeur utile (cinq colonnes,
+  quatre gouttières) si celle-ci est plus contraignante — plus large sur un
   moniteur, plus serrée sur un téléphone en paysage, mais toujours entièrement
-  visible. Aucun survol, aucun appui long à connaître : au doigt comme à la
-  souris, le texte est déjà là.
+  visible.
 - **Toucher une carte la met de côté.** Un second toucher la reprend ; le
   compteur sous le volet dit « 2 cartes à changer » et le bouton principal
   nomme le geste (« Changer 2 cartes », « Garder cette main » quand rien n'est
@@ -5604,16 +5615,21 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   main par le sorcier, sur les mêmes critères de couleur et de coût que le
   reste du cerveau.
 - `src/games/RpgDuelPage.jsx` — l'état `mulligan` (`choix` puis `resultat`),
-  les composants `VoletMulligan` et `CarteMulligan`, et le verrou
+  les composants `VoletMulligan` et `CarteMulligan` (l'aperçu rapide y est
+  rendu, `variante="mulligan"`), la capacité `viewport.survol`
+  (`(hover: hover)`) qui décide entre survol et appui long, et le verrou
   `mulliganOuvert` consulté par `peutJouerCarte`, `poserTerrain`, `engager` et
   `finDuTour` — une seule règle, la même que celle du halo doré.
 - `src/games/rpg-battle.css` — `.rpg-mulligan` (volet posé sur la table, sous
   l'écran de rotation et l'aperçu au doigt), sa **scène mesurée** par requêtes
   de conteneur (`.rpg-mulligan__stage` : une hauteur tenue par le volet, sur
-  laquelle les cinq colonnes se règlent, `cqw`/`cqh`), et le contrat
-  `--rpg-mulligan-text` qui réserve la hauteur du texte d'une carte — les mêmes
-  variables composent le texte et calculent la place : ce qui est prévu est ce
-  qui s'affiche ; `src/games/rpg-mobile.css` neutralise le survol au doigt.
+  laquelle les cinq colonnes se règlent, `cqw`/`cqh`), la **carte 4:5**
+  (`.rpg-mulligan__card`, conteneur de taille en largeur : coût, badge et
+  statistiques se règlent en `cqw` sur elle), la réservation
+  `--rpg-mulligan-text` de ce que la carte garde autour d'elle, et
+  `.rpg-hover-card-preview--mulligan` qui pose l'aperçu au-dessus du volet ;
+  `src/games/rpg-mobile.css` neutralise le survol au doigt sans toucher au
+  liseré doré d'une carte mise de côté.
 
 ### Vérifications
 
@@ -5631,17 +5647,22 @@ hors main sont ignorées, et le volet se ferme dès qu'une carte est posée ou
 qu'un tour a été joué.
 
 `scripts/rpg-mulligan-check.mjs` joue le geste dans la vraie page : le volet
-s'ouvre sur les cinq cartes de la main, dans le même ordre qu'en main, avec
-illustration, nom et règles ; la table est `inert`, aucune carte n'est jouable
-et aucun terrain ne se pose ; le toucher marque, démarque, annule ; la
-validation échange, montre la nouvelle main avec ses cartes signalées, et rend
-la table sur « Commencer le duel » ; une partie neuve rouvre le droit. Il tient
-aussi la feuille : une seule rangée, jamais de défilement, les cinq cartes
-plafonnées par la hauteur utile **et** par la largeur du volet, et le texte
-réservé exactement au nombre de lignes montré.
+s'ouvre sur les cinq cartes de la main, dans le même ordre qu'en main — chacune
+avec sa **face 4:5**, son illustration, ses repères (coût, badge, attaque et
+défense) et **pas un mot dessus** ; le survol ouvre l'**aperçu rapide** de la
+carte (nom, type, effets), qui quitte la carte quand la souris la quitte ; la
+table est `inert`, aucune carte n'est jouable et aucun terrain ne se pose ; le
+toucher marque, démarque, annule ; la validation échange, montre la nouvelle
+main avec ses cartes signalées, et rend la table sur « Commencer le duel » ;
+une partie neuve rouvre le droit. Il tient aussi la feuille : une seule rangée,
+jamais de défilement, la face 4:5 plafonnée par la hauteur utile **et** par la
+largeur du volet, et aucun bloc de texte sur la carte.
 
 `scripts/rpg-mobile-layout-check.mjs` mesure la main de départ au navigateur, à
 trois tailles (téléphone en paysage, tablette, moniteur) : les cinq cartes sont
-dans le cadre, entières, touchables, et la rangée ne défile jamais. Les duels au
+dans le cadre, entières, touchables, chacune garde le **4:5** du jeu (au pixel
+près), sans texte par-dessus, et la rangée ne défile jamais. Il survole ensuite
+une carte dans un contexte de bureau : l'aperçu rapide s'ouvre, décrit la carte
+survolée, et se pose au-dessus du volet (`z-index: 1200`). Les duels au
 pilote automatique de `scripts/rpg-ghost-check.mjs` valident le mulligan à
 chaque graine, grand écran et doigt confondus.

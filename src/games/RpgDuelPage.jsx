@@ -886,22 +886,30 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
   );
 }
 
-/* ── Le mulligan : la main de départ se découvre en grand ─────────────────────
-   Avant le premier tour, chaque camp voit ses cartes piochées, touche celles
-   qu'il ne garde pas (elles repartent dans le paquet, qui est battu) et pioche
-   autant de cartes qu'il en a écartées. Un seul échange, et la main ne diminue
-   jamais : c'est une décision, pas une punition. */
-function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
+/* ── Le mulligan : la main de départ, nue — l'aperçu dit le reste ─────────────
+   Avant le premier tour, chaque camp voit ses cartes piochées : des **faces
+   4:5** comme sur la table, sans un mot d'interface — l'illustration, le coût,
+   le badge d'élément et, pour les créatures, l'attaque et la défense. Tout le
+   texte (nom, type, effets) se lit dans l'**aperçu rapide** : au survol d'une
+   carte à la souris, à l'appui long d'une seconde au doigt. Toucher une carte
+   la met de côté (liseré doré), la retoucher la reprend : elles repartent dans
+   le paquet, qui est battu, et le camp pioche autant de cartes qu'il en a
+   écartées. Un seul échange, et la main ne diminue jamais : c'est une décision,
+   pas une punition. */
+function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBasculer, onSurvol, onQuitterSurvol }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
-  const effets = cardEffectLines(carte.text);
   return (
     <button
       type="button"
       onClick={() => onBasculer(index)}
-      // Le geste est pris en charge ici : l'appui long, qui ouvre l'aperçu d'une
-      // carte ailleurs dans le jeu, n'a rien à ajouter à une carte déjà en grand.
-      onPointerDown={(event) => event.stopPropagation()}
+      // Le survol ouvre l'aperçu rapide ; le doigt garde l'appui long d'une
+      // seconde, que la page arme depuis la table (`demarrerAppuiLongCarte`) :
+      // la carte porte un `data-card-id`, comme toutes celles du jeu.
+      onMouseEnter={survol ? (event) => onSurvol(carte, event) : undefined}
+      onMouseLeave={survol ? onQuitterSurvol : undefined}
+      onFocus={survol ? (event) => onSurvol(carte, event) : undefined}
+      onBlur={survol ? onQuitterSurvol : undefined}
       className={[
         'rpg-mulligan__card',
         `rpg-mulligan__card--type-${cardFrameType(carte)}`,
@@ -916,29 +924,20 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       aria-pressed={selectionnee}
       aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${carte.text}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
-      <span className="rpg-mulligan__face">
-        <img src={cardArt(carte)} alt="" aria-hidden="true" />
-        <CardElementBadge carte={carte} />
-        <ManaCost carte={carte} showElement={false} />
-        {estCreature && (
-          <span className="rpg-mulligan__stats" aria-hidden="true">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</span>
-        )}
-      </span>
-      <span className="rpg-mulligan__name">{carte.name}</span>
-      <span className="rpg-mulligan__type">{cardFaceTypeLine(carte)}</span>
-      <span className="rpg-mulligan__rules" aria-hidden="true">
-        {effets.length
-          ? effets.map((ligne, ligneIndex) => <span key={`${ligneIndex}-${ligne}`}>{ligne}</span>)
-          : <span>{carte.kind === 'terrain' ? 'Engagé, il donne son mana.' : 'Aucune capacité.'}</span>}
-      </span>
-      <span className="rpg-mulligan__flag" aria-hidden="true">
-        {nouvelle ? '↺ carte piochée' : selectionnee ? '✕ à changer' : '✓ gardée'}
-      </span>
+      <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      <CardElementBadge carte={carte} />
+      <ManaCost carte={carte} showElement={false} />
+      {estCreature && (
+        <span className="rpg-mulligan__stats" aria-hidden="true">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</span>
+      )}
     </button>
   );
 }
 
-function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValider, onAnnulerSelection, onContinuer }) {
+function VoletMulligan({
+  main, etape, choix, nouveau, bilan, apercu, survol,
+  onBasculer, onValider, onAnnulerSelection, onContinuer, onSurvol, onQuitterSurvol,
+}) {
   const nombre = choix.size;
   const enChoix = etape === 'choix';
   const pluriel = (n) => (n > 1 ? 's' : '');
@@ -955,7 +954,7 @@ function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValid
           <span className="rpg-mulligan__eyebrow">Mulligan · main de départ</span>
           <h2>{enChoix ? 'Gardez votre main, ou changez des cartes' : (nouveau.length ? 'Voici votre nouvelle main' : 'Main de départ gardée')}</h2>
           <p>{enChoix
-            ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main.`
+            ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main. ${survol ? 'Survolez une carte pour la lire en entier.' : 'Appui long d’une seconde sur une carte pour la lire en entier.'}`
             : bilan}</p>
         </header>
         {/* La scène donne à la rangée une place mesurable, et c'est elle que
@@ -969,7 +968,10 @@ function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValid
                 index={index}
                 selectionnee={choix.has(index)}
                 nouvelle={nouveau.includes(index)}
+                survol={survol}
                 onBasculer={onBasculer}
+                onSurvol={onSurvol}
+                onQuitterSurvol={onQuitterSurvol}
               />
             ))}
           </div>
@@ -996,6 +998,15 @@ function VoletMulligan({ main, etape, choix, nouveau, bilan, onBasculer, onValid
           )}
         </footer>
       </div>
+      {/* L'aperçu rapide vit dans le volet : il passe au-dessus de lui, et il
+          est le seul à s'afficher tant que la main de départ est ouverte. */}
+      {apercu && (
+        <HoverCardPreview
+          carte={cardById(apercu.carteId)}
+          style={apercu.style}
+          variante="mulligan"
+        />
+      )}
     </div>
   );
 }
@@ -1777,12 +1788,16 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
   const [ecran, setEcran] = useState('jouer');
   const landscapeRef = useRef(null);
-  const [viewport, setViewport] = useState({ mobile: false, portrait: false });
+  const [viewport, setViewport] = useState({ mobile: false, portrait: false, survol: true });
   useEffect(() => {
     landscapeRef.current = createRpgLandscapeSession();
     const update = () => {
       const mobile = Boolean(window.LetsPlayAndroid) || Boolean(window.matchMedia?.('(pointer: coarse), (max-width: 1100px)').matches);
-      setViewport({ mobile, portrait: mobile && window.innerHeight > window.innerWidth });
+      // Le survol n'existe pas au doigt : là, l'aperçu rapide passe par l'appui
+      // long d'une seconde. `matchMedia` absent (WebView ancienne) : on suppose
+      // la souris, et l'appui long reste armé de toute façon.
+      const survol = typeof window.matchMedia === 'function' ? window.matchMedia('(hover: hover)').matches : true;
+      setViewport({ mobile, portrait: mobile && window.innerHeight > window.innerWidth, survol });
     };
     update();
     window.addEventListener('resize', update);
@@ -2219,6 +2234,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const duelCourant = duelRef.current;
     if (!duelCourant || !mulligan || mulligan.etape !== 'choix') return;
     const mainAvant = duelCourant.joueur.main.length;
+    masquerApercuSurvol();
     const { ecartees, piochees } = rpgMulligan(duelCourant, 'joueur', [...mulligan.choix], rng);
     // Le sorcier profite du même droit, avec sa propre lecture de sa main.
     const adverse = rpgMulliganSorcier(duelCourant, rng);
@@ -2245,6 +2261,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
   };
   const terminerMulligan = () => {
+    masquerApercuSurvol();
     // Le message d'ouverture (plateau, deck qui l'impose, geste attendu) reste
     // celui du duel : le volet n'a fait que le précéder.
     setMulligan(null);
@@ -4381,7 +4398,7 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
         </div>
 
         {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
-        {apercuSurvol && !apercuMagie && (
+        {apercuSurvol && !apercuMagie && !mulligan && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
@@ -4452,10 +4469,14 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           choix={mulligan.choix}
           nouveau={mulligan.nouveau}
           bilan={mulligan.bilan}
+          apercu={apercuSurvol}
+          survol={viewport.survol}
           onBasculer={basculerCarteMulligan}
           onValider={validerMulligan}
           onAnnulerSelection={viderSelectionMulligan}
           onContinuer={terminerMulligan}
+          onSurvol={afficherApercuSurvol}
+          onQuitterSurvol={masquerApercuSurvol}
         />
       )}
     </div>
