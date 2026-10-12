@@ -3918,8 +3918,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview.is-spell-preview { z-index: 116; }
 
 /* Coup reçu et impact direct : l'arène entière frémit, avec une vignette rouge
-   uniquement lorsque vos PV sont touchés. Les variantes alternent pour relancer
-   l'animation même lors de deux impacts rapprochés. */
+   quand les PV ou le bouclier du joueur encaissent le choc. Les variantes alternent
+   pour relancer l'animation même lors de deux impacts rapprochés. */
 .card-table.rpg-screen-shake--a { animation: rpg-screen-shake-a .56s cubic-bezier(.36, .07, .19, .97) both; }
 .card-table.rpg-screen-shake--b { animation: rpg-screen-shake-b .56s cubic-bezier(.36, .07, .19, .97) both; }
 @keyframes rpg-screen-shake-a {

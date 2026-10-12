@@ -2835,6 +2835,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timerImpactRef.current = timer;
   };
 
+  // Une blessure qui entame le bouclier reste un coup reçu, même si les PV
+  // sont entièrement protégés. Ce relevé couvre les dégâts directs des sorts
+  // et des capacités d’arrivée des créatures adverses.
+  const prendreInstantaneDegatsJoueur = () => ({
+    pv: duel.joueur.pv,
+    bouclier: duel.joueur.bouclier ?? 0,
+  });
+  const joueurToucheDepuis = (instantane) => (
+    duel.joueur.pv < instantane.pv
+    || (duel.joueur.bouclier ?? 0) < instantane.bouclier
+  );
+  const terminerTourEtDetecterDegatsJoueur = () => {
+    const instantane = prendreInstantaneDegatsJoueur();
+    rpgFinDeTour(duel);
+    return joueurToucheDepuis(instantane);
+  };
+
   const prendreInstantaneChamp = () => {
     const table = tableRef.current;
     const tableRect = table?.getBoundingClientRect() ?? { left: 0, top: 0 };
@@ -3185,7 +3202,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           if (!attaquantsVivants.length) {
             rpgFermerFenetreReponse(duel);
             setCombatEntrant(null);
-            rpgFinDeTour(duel);
+            if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
           } else {
             const vivants = new Set(attaquantsVivants);
             setCombatEntrant((courant) => courant && ({
@@ -3620,7 +3637,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!attaquantsVivants.length) {
       rpgFermerFenetreReponse(duel);
       setCombatEntrant(null);
-      rpgFinDeTour(duel);
+      if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
       force();
       return;
     }
@@ -3643,14 +3660,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
+    const frappeDirecte = res.resume.frappeSorcier > 0;
     jouerSfx('combat');
-    if (res.resume.frappeSorcier > 0) { jouerSfx('degats', 0.18); }
+    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
+    if (frappeDirecte) { jouerSfx('degats', 0.18); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
-    if (res.resume.frappeSorcier > 0) declencherImpactEcran('received');
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
     setCibleEnCours(null);
-    if (!rpgVainqueur(duel)) rpgFinDeTour(duel);
+    const touchePendantLaFinDuTour = !rpgVainqueur(duel) && terminerTourEtDetecterDegatsJoueur();
+    if (frappeDirecte || touchePendantLaFinDuTour) declencherImpactEcran('received');
     force();
   };
 
@@ -3694,8 +3713,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
 
     jouerSfx('combat');
+    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
     if (res.resume.frappeSorcier > 0) { jouerSfx('degats_sorcier', 0.18); }
-    else { jouerSfx('blocage', 0.2); }
+    else if (!res.resume.paires.length) { jouerSfx('blocage', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
     rpgFermerFenetreReponse(duel);
@@ -3719,7 +3739,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCiblesAttaque({});
     setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
-    rpgFinDeTour(duel);
+    if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
     avancerTutoriel('fin-tour', 'tour-adverse');
     force();
     later(() => {
@@ -3771,7 +3791,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     jouerSfx('pass');
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    rpgSorcierResoudreAnnonce(duel);
+    const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
+    const res = rpgSorcierResoudreAnnonce(duel);
+    if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) {
+      declencherImpactEcran('received');
+    }
     animerModificationsChamp(champAvant, [], debutJournalDestructions);
     force();
     later(annoncerSuivantSorcier, 900);
@@ -3781,7 +3805,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const declarerAttaqueSorcier = () => {
       const ids = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
       if (!ids.length) {
-        rpgFinDeTour(duel);
+        if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
         force();
         return;
       }
