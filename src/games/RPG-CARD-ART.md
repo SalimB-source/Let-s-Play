@@ -4,7 +4,11 @@ Toute nouvelle carte du duel doit recevoir une illustration **full art** avant d
 
 ## Format des fichiers
 
-- Fichier local `public/cards/<identifiant>.jpg`, en portrait proche du ratio 4:5.
+- Fichier local `public/cards/<identifiant>.jpg`, au ratio **exact 4:5** de la
+  face (1024×1280 livrés), illustration plein cadre jusqu'aux bords : aucune
+  marge, aucun liseré blanc, aucun fond rapporté. Les peintures livrées dans un
+  autre cadrage sont recadrées **puis** validées par le garde-fou
+  `PLEIN_ART_45` de `tests/rpg-duel.test.js`, qui mesure le ratio dans le JPEG.
 - Le champ `art` d’une carte ne sert qu’à pointer vers une illustration dédiée existante (`cardArtId`). Pour une nouvelle carte, utiliser son propre identifiant et livrer le JPG correspondant.
 - Pas de cadre, bordure, bannière, cartouche vide, nom, texte, coût, symbole d’élément, statistique ou autre interface dessinée dans l’image. L’interface du jeu superpose elle-même les repères lisibles.
 - Illustration peinte, détaillée et cinématographique, avec un cadrage conçu pour rester clair dans une carte portrait et un aperçu réduit.
@@ -43,6 +47,32 @@ attribut, parce que leur sujet ne doit jamais se réduire à un objet :
   sorcier à chapeau pointu, qui n’aurait rien du Nord) ;
 - la **Dame des neuf mondes** — une femme au foyer de bois, le fil à la main ;
 - le **Serpent du monde** — le corps en anneau qui entoure les eaux.
+
+## État des sept magies reprises en plein art 4:5
+
+Sept sorts du catalogue portaient une illustration prêtée, ou un cadrage qui
+n'était pas celui de la face. Ils ont chacun leur peinture 4:5 depuis cette
+passe (`public/cards/<identifiant>.jpg`) :
+
+- **Eau de la source** — la vasque cachée sous la roche, coupe d'argile au bord
+  de l'eau calme ; elle ne regarde plus la peinture du terrain Mer ;
+- **Lame de mer** — la crête d'une vague effilée en lame de fond, un cotre au
+  large pour l'échelle ;
+- **Brisure de verre** — le voile d'eau vitrifiée saisi à l'instant où il se
+  fend, éclats vers le spectateur ;
+- **Parade de verre** — la muraille de sable fondu, lance et flamme prises dans
+  la vitre, gardiens épaule contre épaule ;
+- **Déflection** (fichier `maree-contraire.jpg`) — zoom sur le visage du
+  sorcier en méditation, anneaux bleus d'ultrason qui renvoient le sort ;
+- **Ressac** — le djinn noir aspiré par le tourbillon, saisi de près ;
+- **Courant de retour** — le même geste vu du rivage : le courant remporte le
+  djinn au large, une lanterne échouée revient seule vers le sable.
+
+Le terrain **Mer** n'est plus partagé par aucune autre carte : la liste des
+partages tolérés dans `tests/rpg-duel.test.js` est vide. Toute repeinture d'un
+fichier existant se déclare dans `CARD_ART_CACHE_VERSIONS`
+(`RpgDuelPage.jsx`) — sans ce `?v=`, le cache resservirait l'ancienne peinture
+sous le même nom.
 
 Chaque peinture garde son sujet propre même en vignette de 60 px. Une carte dont la peinture resterait à faire se déclare dans
 `RPG_ART_PROVISOIRE` (`rpgCards.js`) : elle affiche alors le recadrage étalonné

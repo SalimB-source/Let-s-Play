@@ -80,7 +80,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   };
   const duel = {
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, mana: manaVide(), bouclier: 0, terrainPose: false, deck: melanger(joueurDeck), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance),
       pvMax: rpgSorcierPv(sorcierPuissance),
@@ -95,6 +95,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       terrains: [],
       cimetiere: [],
       retoursProgrammes: [],
+      bonusTemporaires: [],
+      degatsEchos: [],
     },
     fenetreReponse: false,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
@@ -458,6 +460,88 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible)
   });
 }
 
+/**
+ * Seconde vague d’un sort déclaré avec `echo` (le Nuage de cendres) : les
+ * dégâts immédiats sont déjà tombés, l’écho est inscrit chez la victime et
+ * retombe au début du tour suivant (`resoudreEchos`). Rien n’est enregistré si
+ * plus rien ne se tient debout chez l’adversaire : un nuage qui ne couvre
+ * personne se dissipe.
+ */
+function differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId) {
+  const echo = effet?.echo;
+  if (!echo) return;
+  const amount = Math.max(0, Number(echo.amount ?? effet.amount) || 0);
+  if (amount <= 0) return;
+  const cible = echo.cible ?? (effet.cible === 'sorcier' ? 'sorcier' : 'toutes-creatures');
+  if (cible !== 'sorcier' && !duel[adv].creatures.length) return;
+  const camps = (duel[adv].degatsEchos ??= []);
+  camps.push({
+    amount,
+    cible,
+    toursRestants: Math.max(1, Math.floor(Number(echo.tours) || 1)),
+    sourceElement,
+    sourceType,
+    carteId: sourceCarteId ?? null,
+  });
+  const nomSource = (duelCardById(sourceCarteId) ?? magieById(sourceCarteId))?.name ?? 'Le sort';
+  duel.log.push(`${nomSource} diffère ${amount} dégâts : ils tomberont au début du tour suivant.`);
+}
+
+/** Fait retomber les échos enregistrés : un tour de moins, et les dégâts dus
+ *  tombent sur le camp qui les a reçus en promesse. Appelé à chaque début de
+ *  tour, avant que le joueur agisse. */
+function resoudreEchos(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const camp = duel[cote];
+    const echos = camp.degatsEchos ?? [];
+    if (!echos.length) continue;
+    camp.degatsEchos = [];
+    for (const echo of echos) {
+      const toursRestants = Math.max(0, Math.floor(Number(echo.toursRestants) || 0) - 1);
+      if (toursRestants > 0) {
+        camp.degatsEchos.push({ ...echo, toursRestants });
+        continue;
+      }
+      const nomSource = (duelCardById(echo.carteId) ?? magieById(echo.carteId))?.name ?? 'Le sort';
+      if (echo.cible === 'sorcier') {
+        rpgInfligerSorcier(duel, cote, echo.amount);
+        duel.log.push(`L’écho de ${nomSource} retombe sur le sorcier (${echo.amount}).`);
+        continue;
+      }
+      const cibles = [...camp.creatures];
+      if (!cibles.length) continue;
+      duel.log.push(`L’écho de ${nomSource} retombe sur la table : ${echo.amount} dégâts.`);
+      for (const cible of cibles) {
+        rpgBlesserCreature(duel, cote, cible.id, echo.amount, echo.sourceElement, null, echo.sourceType);
+      }
+    }
+  }
+}
+
+/** Efface les bonus « jusqu’à la fin du tour » gagnés par le camp dont le tour
+ *  se termine. Une créature déjà sortie de table n’a rien à récupérer : son
+ *  bonus est né et mort avec elle. Une créature réduite à 0 défense par le
+ *  retrait du bonus tombe, comme à Magic quand le renfort s’évanouit. */
+function annulerBonusTemporaires(duel, cote) {
+  const camp = duel[cote];
+  const bonus = camp.bonusTemporaires ?? [];
+  if (!bonus.length) return;
+  camp.bonusTemporaires = [];
+  const effaces = [];
+  for (const entry of bonus) {
+    const entite = camp.creatures.find((candidate) => candidate.id === entry.entiteId);
+    if (!entite) continue;
+    entite.atk = Math.max(0, entite.atk - (entry.atk ?? 0));
+    entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - (entry.def ?? 0));
+    entite.pv = Math.max(0, entite.pv - (entry.def ?? 0));
+    entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+    effaces.push(entite.name);
+  }
+  if (!effaces.length) return;
+  duel.log.push(`Le renfort s’évapore (${effaces.join(', ')}).`);
+  if (camp.creatures.some((entite) => !(entite.pv > 0))) rpgActionsEtat(duel);
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut une
  *  entité du buff (le Colosse ne se buffe pas lui-même). */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
@@ -524,16 +608,24 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       }
       return;
     }
-    case 'buff':
+    case 'buff': {
+      // Un bonus déclaré avec `tours` est un bonus « jusqu’à la fin du tour » :
+      // il est accordé comme les autres, puis noté dans le carnet du camp pour
+      // être effacé à `rpgFinDeTour` (voir `annulerBonusTemporaires`).
+      const temporaire = Number(effet.tours) > 0;
+      const carnet = (duel[cote].bonusTemporaires ??= []);
       for (const entite of duel[cote].creatures) {
         if (sauf === entite.id || rpgEstProtegee(entite, sourceElement)) continue;
+        const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
-        entite.atk += effet.atk ?? 0;
+        entite.atk += bonusAttaque;
         entite.pvMax = (entite.pvMax ?? entite.def) + bonusDefense;
         entite.def += bonusDefense;
         entite.pv += bonusDefense;
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense });
       }
       return;
+    }
     case 'combat': {
       const combattant = duel[cote].creatures.find((entite) => entite.id === sauf);
       const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
@@ -575,6 +667,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
     case 'degats': {
       if (effet.cible === 'sorcier') {
         rpgInfligerSorcier(duel, adv, effet.amount ?? 0);
+        differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
         return;
       }
       const cibles = effet.cible === 'toutes-creatures'
@@ -583,6 +676,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
       for (const cible of cibles) {
         rpgBlesserCreature(duel, adv, cible.id, effet.amount ?? 0, sourceElement, null, sourceType);
       }
+      differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
       return;
     }
     default:
@@ -807,8 +901,8 @@ export function rpgContreJouable(duel, cote, carte) {
 }
 
 /** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
- *  La carte visée est défaussée sans effet, et le contre paie son coût (Marée
- *  contraire fait aussi piocher une carte). `annonce` : { cote, carteId } ;
+ *  La carte visée est défaussée sans effet, et le contre paie son coût (Déflection
+ *  fait aussi piocher une carte). `annonce` : { cote, carteId } ;
  *  par défaut l'annonce en cours du sorcier. */
 function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   const camp = duel[cote];
@@ -896,7 +990,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     && cibleId === 'sorcier'
     ? { ...carte.effet, cible: 'sorcier' }
     : carte.effet;
-  appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'magie');
+  appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'magie', carteId);
   camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
@@ -1239,8 +1333,10 @@ function resoudreRetoursProgrammes(duel) {
   majResonance(duel);
 }
 
-/** Fin du tour : l'autre camp commence — revenu de sable, pioche 1,
- *  ses créatures deviennent prêtes (le mal d'invocation tombe). */
+/** Fin du tour : le tour qui se ferme efface les renforts « jusqu'à la fin du
+ *  tour », puis l'autre camp commence — revenu de sable, pioche 1, ses
+ *  créatures deviennent prêtes (le mal d'invocation tombe) et les échos différés
+ *  (Nuage de cendres) retombent sur sa table. */
 export function rpgFinDeTour(duel) {
   duel.fenetreReponse = false;
   duel.annonce = null;
@@ -1255,6 +1351,7 @@ export function rpgFinDeTour(duel) {
       }
     }
   }
+  annulerBonusTemporaires(duel, duel.tour); // « jusqu’à la fin du tour » : le tour se termine
   duel.tour = autre(duel.tour);
   const camp = duel[duel.tour];
   camp.mana = manaVide();           // le mana non dépensé s'évapore
@@ -1266,6 +1363,7 @@ export function rpgFinDeTour(duel) {
     entite.attaquee = false;
   }
   resoudreRetoursProgrammes(duel);
+  resoudreEchos(duel);              // les sorts à écho frappent au début du tour
   rpgActionsEtat(duel);
   duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
   return duel;

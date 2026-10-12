@@ -136,7 +136,7 @@ test('Silence d’écume contre un sort de Braise annoncé', () => {
   assert.equal(contre(duel, 'silence-decume').contre, true);
 });
 
-test('Marée contraire contre un sort annoncé et fait piocher une carte', () => {
+test('Déflection contre un sort annoncé et fait piocher une carte', () => {
   const duel = duelVide();
   duel.joueur.deck = ['desert', 'mer'];
   annoncer(duel, 'fureur-du-souk');
@@ -148,7 +148,7 @@ test('Marée contraire contre un sort annoncé et fait piocher une carte', () =>
   assert.ok(duel.joueur.main.includes('mer'));
 });
 
-test('Marée contraire ne contre pas une créature', () => {
+test('Déflection ne contre pas une créature', () => {
   const duel = duelVide();
   annoncer(duel, 'chien-du-guet');
   mana(duel, 'sorcier', 'sable', 2);

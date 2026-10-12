@@ -1395,7 +1395,7 @@ export const RPG_MAGIE_CARDS = [
     element: 'eau',
     kind: 'magie',
     typeLine: 'Rituel — Eau',
-    art: 'mer',
+    art: 'eau-de-la-source',
     cost: 1,
     rarity: 'commune',
     cibles: ['soi'],
@@ -1410,7 +1410,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Rituel — Sable',
     art: 'rapport-du-greffier',
-    cost: 1,
+    cost: 3,
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'pioche', amount: 2 },
@@ -1423,7 +1423,7 @@ export const RPG_MAGIE_CARDS = [
     element: 'eau',
     kind: 'magie',
     typeLine: 'Rituel — Eau',
-    art: 'mer',
+    art: 'lame-de-mer',
     cost: 2,
     rarity: 'commune',
     cibles: ['creature'],
@@ -1441,9 +1441,12 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'commune',
     cibles: ['soi'],
-    effet: { type: 'buff', atk: 1, def: 1 },
-    text: 'Vos créatures gagnent +1/+1.',
-    flavor: 'Le vent bâtit plus vite que les maçons.',
+    // Le mur de sable ne grandit pas les siens : il les tient debout le temps
+    // de l'échange. `tours: 1` = le bonus s'efface à la fin du tour (voir
+    // `bonusTemporaires` dans le moteur).
+    effet: { type: 'buff', atk: 0, def: 3, tours: 1 },
+    text: 'Vos créatures gagnent +0/+3 jusqu’à la fin du tour.',
+    flavor: 'Le vent bâtit plus vite que les maçons, et il emporte aussi vite.',
   },
   {
     id: 'sentence-de-la-liste',
@@ -1483,8 +1486,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 4,
     rarity: 'rare',
     cibles: ['toutes'],
-    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: '2 dégâts à toutes les créatures adverses.',
+    effet: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
+    text: '3 dégâts à toutes les créatures adverses.',
     flavor: 'Le ciel se couche. Personne n’est invité.',
   },
   {
@@ -1542,8 +1545,10 @@ export const RPG_MAGIE_CARDS = [
     cost: 4,
     rarity: 'rare',
     cibles: ['toutes'],
-    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: 'Rituel — 2 dégâts à toutes les créatures adverses.',
+    // Le nuage ne se dissipe pas à la première bourrasque : `echo` est la
+    // seconde vague, qui tombe au début du tour suivant (voir `degatsEchos`).
+    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', echo: { amount: 2, tours: 1 } },
+    text: 'Rituel — 2 dégâts à toutes les créatures adverses, puis 2 autres au début du tour suivant.',
     flavor: 'Le vent tourne ; la poussière devient un voile brûlant.',
   },
   {
@@ -1669,7 +1674,7 @@ export const RPG_MAGIE_CARDS = [
   },
   {
     id: 'maree-contraire',
-    name: 'Marée contraire',
+    name: 'Déflection',
     element: 'eau',
     kind: 'magie',
     typeLine: 'Éphémère — Eau',
@@ -1680,7 +1685,7 @@ export const RPG_MAGIE_CARDS = [
     cibles: ['soi'],
     effet: { type: 'contresort', cible: 'sort', pioche: 1 },
     text: 'Éphémère — Contre un sort annoncé par le sorcier, puis piochez une carte.',
-    flavor: 'Le sable remonte le temps et l’eau reprend sa place.',
+    flavor: 'Le sorcier assis n’esquive pas le sort : il l’écoute revenir.',
   },
   // ── Renvoi en main (deck Marée des abysses) ────────────────────────────
   // L'effet « retour-main » du moteur : la créature visée quitte la table
