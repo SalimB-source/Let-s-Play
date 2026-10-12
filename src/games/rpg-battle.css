@@ -2318,7 +2318,11 @@
 .rpg-terrain.is-tapped { transform: rotate(12deg) translateY(1px); }
 
 .rpg-card-piles--opponent { top: 11%; right: 14px; }
-.rpg-card-piles--player { top: 52%; right: auto; left: 14px; }
+/* La colonne de gauche va de la plaque du sorcier (fin ~30 %) à celle du joueur
+   (début 67 %). À 52 %, le paquet et le cimetière se collaient sous la seconde
+   — 10 à 36 px seulement — en laissant 114 à 169 px de vide au-dessus. À 44 %
+   ils se centrent dans la bande libre, à toutes les tailles d'écran. */
+.rpg-card-piles--player { top: 44%; right: auto; left: 14px; }
 
 .rpg-bottombar {
   position: absolute;

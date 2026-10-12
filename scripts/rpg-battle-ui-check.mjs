@@ -185,8 +185,8 @@ assert.match(battleCss, /\.rpg-terrain\s*\{[^}]*overflow:\s*visible;/s,
   'les cartes de terrain ne sont plus masquées sur leurs bords');
 assert.match(battleCss, /\.rpg-terrains\s*\{[^}]*padding:\s*10px 12px 12px;/s,
   'la marge du rail de terrains laisse dépasser sans couper les cartes engagées');
-assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*52%;\s*right:\s*auto;\s*left:\s*14px;/,
-  'le deck et le cimetière du joueur sont à gauche sur grand écran');
+assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*44%;\s*right:\s*auto;\s*left:\s*14px;/,
+  'le deck et le cimetière du joueur sont à gauche sur grand écran, centrés dans la bande libre au lieu de coller à la plaque du joueur');
 assert.match(battleCss, /\.rpg-card-piles--player\s*\{\s*top:\s*68%;\s*right:\s*auto;\s*left:\s*4px;/,
   'le deck et le cimetière restent à gauche sur mobile');
 assert.match(battlePage, /carte\.kind === 'terrain'\) return null;/,
