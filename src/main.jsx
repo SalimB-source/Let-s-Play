@@ -220,7 +220,7 @@ function App() {
             <Route path="/jeux" element={<Games />} />
             <Route path="/jeu/mirage-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Mirage Rush…" />}><MirageRushPage /></Suspense>} />
             <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Vice City Rush…" />}><ViceCityRushPage /></Suspense>} />
-            <Route path="/jeu/sablier-de-bab-el" element={<Suspense fallback={<RouteLoading label="Chargement du duel…" />}><RpgDuelPage /></Suspense>} />
+            <Route path="/jeu/sablier-de-bab-el" element={<Suspense fallback={<RouteLoading label="Chargement du duel…" />}><RpgDuelPage variantesPlateaux /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />

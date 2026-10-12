@@ -2102,6 +2102,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-fjord-des-neuf-hivers {
   background-color: #b9cdd6;
 }
+.card-table--plateau-desert-de-verre {
+  background-color: #9aa48a;
+}
+.card-table--plateau-cavernes-de-cristal {
+  background-color: #302830;
+}
+.card-table--plateau-abysses-phosphorescentes {
+  background-color: #adc1b8;
+}
+.card-table--plateau-iles-celestes {
+  background-color: #50636b;
+}
 
 /* ── Le chrome de la table : chaque texte porte son propre fond ──────────────
    La mesure qui a fait tomber le voile : sur les plateaux clairs, la luminosité

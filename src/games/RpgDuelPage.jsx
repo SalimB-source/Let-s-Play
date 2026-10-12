@@ -1863,7 +1863,7 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   return null;
 }
 
-export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
+export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false } = {}) {
   const [ecran, setEcran] = useState('jouer');
   const [tutorielActif, setTutorielActif] = useState(false);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
@@ -2305,13 +2305,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // deux duellistes**, et c'est le tirage du duel qui désigne lequel. Les
     // paquets joués sont exactement ceux du duel — une prop brute (sans
     // identité de deck) parle par sa couleur dominante, un étage d'Histoire par
-    // la clé de son deck de campagne.
+    // la clé de son deck de campagne. En partie réelle (`variantesPlateaux`),
+    // le tirage peut en outre échanger le terrain contre son double
+    // merveilleux ; sans la prop (tests, scénarios), le classique est gardé.
     const tiragePlateau = tirerPlateauDuDuel({
       deckJoueur: modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne,
       deckAdverse: modeTutoriel
         ? RPG_TUTORIAL_OPPONENT_DECK
         : etageCourant ? etageCourant.deck : sorcierDeck ?? deckAdverse,
       rng,
+      variantesFantaisistes: variantesPlateaux,
     });
     const plateau = tiragePlateau.plateau;
     setPlateauId(plateau.id);
