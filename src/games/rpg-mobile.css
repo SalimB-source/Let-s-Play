@@ -208,12 +208,10 @@
 .rpg-battle--touch .card-table > .card-row { align-items: center; justify-content: flex-start; padding: 4px max(8px, calc(var(--duel-card) * .12)); gap: max(8px, calc(var(--duel-card) * .22)); overflow-x: auto; overflow-y: hidden; scroll-padding-inline: max(8px, calc(var(--duel-card) * .12)); }
 .rpg-battle--touch .card-row .rpg-card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
-.rpg-battle--touch .rpg-empty-lane { width: 100%; padding: 0; background: none; border: 0; text-align: center; font-size: 12px; color: #edd9b3b3; text-shadow: 0 2px 4px #000; }
 .rpg-battle--touch .card-table > .rpg-bottombar { grid-area: controls; display: flex; flex-direction: column; justify-content: flex-end; align-self: stretch; gap: 6px; padding: 4px max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) 4px; overflow-y: auto; z-index: 20; }
 .rpg-battle--touch .rpg-bottombar__status { flex-direction: column; align-items: flex-end; gap: 3px; }
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
 .rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
-.rpg-battle--touch .rpg-bottombar__status .rpg-actions__wait { flex: none; max-width: 100%; max-height: 48px; padding: 0; border: 0; background: none; color: #ffedc7; font-size: 11px; line-height: 1.35; white-space: normal; overflow-y: auto; text-shadow: 0 2px 3px #000; }
 .rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
 .rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 7px; }
 .rpg-battle--touch .rpg-phase-track {
@@ -263,11 +261,12 @@
 .rpg-battle--touch .rpg-hand-dock .rpg-hand { width: 100%; max-width: none; height: calc(100% - 16px); max-height: none; margin: 0; padding: 4px 6px; justify-content: flex-start; align-items: center; gap: 6px; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 8px); touch-action: pan-x; -webkit-touch-callout: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
-/* Le mulligan, au doigt : le survol ne soulève rien, et la rangée tient la
-   largeur utile de l'écran — les cartes se lisent sans pincer ni faire défiler. */
-.rpg-battle--touch .rpg-mulligan__card:hover { transform: none; }
+/* Le mulligan, au doigt : le survol ne soulève rien (l'aperçu rapide y passe
+   par l'appui long d'une seconde), et la rangée tient la largeur utile du volet
+   — les cinq faces 4:5 se lisent sans pincer ni faire défiler. Le liseré doré
+   d'une carte mise de côté, lui, reste intact. */
+.rpg-battle--touch .rpg-mulligan__card:not(.is-selected):hover { transform: none; box-shadow: none; }
 .rpg-battle--touch .rpg-mulligan__card:active { transform: scale(.97); }
-.rpg-battle--touch .rpg-mulligan__cards { padding: 0 2px; }
 .rpg-battle--touch .rpg-mulligan__card { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .rpg-battle--touch .rpg-hand__type { font-size: 7px; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-mana-cost,

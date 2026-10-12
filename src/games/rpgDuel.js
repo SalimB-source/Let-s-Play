@@ -4,7 +4,7 @@
  * Règles : la partie commence avec une main de 5 cartes et une table vide.
  * Les terrains produisent du mana coloré, les créatures ont le mal
  * d'invocation, les attaquants sont déclarés avant le combat et le défenseur
- * choisit ses bloqueurs. Les éphémères ouvrent une fenêtre de réponse.
+ * choisit ses bloqueurs. Les magies rapides ouvrent une fenêtre de réponse.
  */
 
 import {
@@ -589,7 +589,7 @@ function resoudreEchos(duel) {
 
 /** Efface les bonus « jusqu’à la fin du tour » **joués pendant le tour qui se
  *  termine** — `tourFerme` : le tour de celui qui a lancé le sort, pas celui du
- *  camp renforcé. Un éphémère lancé en réponse meurt donc avec l’échange qui
+ *  camp renforcé. Une magie rapide lancée en réponse meurt donc avec l’échange qui
  *  l’a vu partir, et une créature déjà sortie de table n’a rien à récupérer :
  *  son bonus est né et mort avec elle. Une créature réduite à 0 défense par le
  *  retrait du bonus tombe, comme à Magic quand le renfort s’évanouit. */
@@ -1029,7 +1029,7 @@ function choisirContreIA(duel, carte) {
   return candidats[0] ?? null;
 }
 
-/** Lancer une magie : rituel pendant son tour, éphémère aussi en réponse. */
+/** Lancer une magie : sorcellerie pendant son tour, magie rapide aussi en réponse. */
 export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   const camp = duel[cote];
   const adv = autre(cote);
@@ -1473,7 +1473,7 @@ export function rpgSorcierPrepareTerrain(duel) {
 
 /** Le sorcier annonce sa prochaine carte sans la résoudre. La carte paie son
  *  coût à la résolution, ou au moment où le joueur la contre.
- *  Ouvre la fenêtre de réponse : le joueur peut répondre avec un éphémère, ou laisser passer.
+ *  Ouvre la fenêtre de réponse : le joueur peut répondre avec une magie rapide, ou laisser passer.
  *  Retourne null quand le sorcier n'a plus rien à jouer. */
 export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
   if (duel.annonce) return duel.annonce;

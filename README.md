@@ -5075,7 +5075,7 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
   vers sa cible, clignement blanc à l'impact, chiffres flottants, carte
   détruite grisée sur la table, boîte de message à texte tapé lettre à lettre,
   bannière « des ennemis apparaissent ! ». La main se tient en éventail dans
-  la barre du bas ; les éphémères répondent pendant le tour ennemi.
+  la barre du bas ; les magies rapides répondent pendant le tour ennemi.
 - `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
   jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
   souffle de sable. La partie pure est testée ; le lecteur s'éveille au
@@ -5181,14 +5181,16 @@ partie est imposé par **le deck de l'un des deux duellistes**.
   aucun DOM, aucun `localStorage` : testable comme le moteur.
 - `src/games/RpgDuelPage.jsx` — le tirage dans `nouvellePartie`, sur les deux
   paquets réellement joués (prop brute, deck du catalogue ou clé de deck
-  d'étage), l'annonce nommée (`nommerOriginePlateau`), et la classe
-  `card-table--plateau-<id>` + le `background-image` posés sur la table.
+  d'étage), et la classe `card-table--plateau-<id>` + le `background-image`
+  posés sur la table. Le terrain ne s'annonce plus par une phrase : il se
+  **voit**, sous les cartes.
 - `src/games/rpg-battle.css` — la couleur de repli de chaque
   plateau, et les **voiles de lisibilité**. Le voile principal est un
   **dégradé noir posé en haut et en bas du plateau**
   (`--rpg-plateau-voile`) : c'est là que vivent les textes de la table —
   navigation, main adverse et identité du sorcier en haut ; identité du joueur,
-  rails de terrains, message du tour, phases, commandes et main en bas. Le
+  rails de terrains, indicateur de tour, journal, phases, commandes et main en
+  bas. Le
   centre reste dégagé, c'est la zone où les cartes se posent. Chaque plateau
   règle sa densité par deux variables, mesurée sur le fond livré (luminance du
   haut du cadre, sur 255) : **Erg du Sahara 142**, **Ruines de Tipaza 118**,
@@ -5234,6 +5236,173 @@ plateau du catalogue règle sa propre densité**, les fonds clairs (sables, pier
 de Tipaza) sont plus voilés que le bois, et la présentation tactile conserve le
 voile au lieu de le supprimer.
 
+## Le Sablier : le duel se joue sans consignes
+
+Le duel parlait beaucoup. Sous l'indicateur de tour, un **bandeau
+d'indications** (`.rpg-actions__wait`) commentait chaque geste en toutes
+lettres : « Les cartes au halo doré sont jouables ; glissez-les sur la table… »
+à l'ouverture, « Mana insuffisant pour Fennec des décombres », « Choisissez une
+créature adverse », « Le sorcier a choisi ses bloqueurs. Les flèches jaunes
+montrent chaque blocage… ». Soixante-neuf phrases au total, réécrites à chaque
+action, qui doublaient une table déjà bavarde — et qui, au doigt, mangeaient la
+bande du bas.
+
+**La table dit déjà tout.** Les consignes sont retirées : l'état du duel se lit
+là où il se passe.
+
+- **Ce qui est jouable s'allume.** Le halo doré de la main (`is-playable`,
+  `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? ». Une
+  carte refusée reste éteinte, en main, avec son bruitage d'erreur — plus
+  personne n'écrit « mana insuffisant » ni « vous avez déjà posé votre terrain
+  ce tour ».
+- **Les cibles s'allument aussi.** Une magie ou un effet d'arrivée qui attend sa
+  victime allume la carte en main (`is-targeting`) et chaque cible légale sur la
+  table (`is-ciblable`) — le sorcier adverse compris, mais seulement quand il
+  est réellement visable. Le bouton « Annuler la cible » reste la sortie.
+- **Le combat se montre.** Attaquants couchés, jeton « engagée », flèches jaunes
+  de blocage, bloqueurs saisissables (`is-blocker-draggable`), victime du Coup
+  rapide cerclée d'orange : la phase de défense n'a plus besoin qu'on écrive
+  « glissez vos bloqueurs sur les attaquants ».
+- **Ce qui reste est du HUD, pas une consigne.** L'indicateur de tour
+  (`À VOTRE TOUR`, `À VOUS · DÉFENSE`…), les PV, le mana, les compteurs de
+  zones, la piste des phases et le **journal du duel** (`.rpg-log`, écrit par le
+  moteur : « Combat : 2 attaquant(s), 1 bloqué(s), 2 dégâts directs. ») disent
+  ce qui s'est passé, jamais ce qu'il faut faire.
+- **Une rangée vide reste vide.** Les deux champs de bataille affichaient une
+  pastille en pointillés quand ils étaient déserts — « Vos alliés prendront
+  place ici. », « Les gardiens du sorcier attendent. ». Une rangée sans carte se
+  voit : la pastille et ses deux phrases partent (`.rpg-empty-lane`).
+- **L'aperçu au doigt ne se légende plus.** Le volet d'appui long montre la
+  carte, sans la ligne « Appui long d'une seconde · aperçu de la carte » : qui
+  l'a sous les yeux vient de faire le geste. Les deux infobulles explicatives
+  des boutons (« Attaquer avec tous », « Annuler la dernière action ») partent
+  avec, leurs libellés se suffisant. Les libellés accessibles (`aria-label`),
+  eux, sont intacts : le lecteur d'écran garde sa description complète de chaque
+  carte et de chaque bouton.
+
+L'écran de rotation (« Le duel se joue en paysage ») reste : ce n'est pas une
+consigne de jeu mais une condition d'affichage, avec son bouton.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — l'état `message` et ses **69 appels**
+  `setMessage(...)` ont disparu, avec le `<p className="rpg-actions__wait">` de
+  la barre du bas, la ligne `.rpg-card-peek__hint` du volet d'aperçu, les deux
+  `title` explicatifs et le helper `nommerOriginePlateau()` qui ne servait qu'à
+  l'annonce d'ouverture. Les branches devenues vides ont été repliées (un
+  `if (!res.ok)` qui ne faisait qu'écrire n'existe plus), et les variables qui
+  ne nourrissaient que des phrases (`resume`, `noteEnvol`, `coupsRapides`…) avec
+  elles. Les deux `<span className="rpg-empty-lane">` des champs de bataille
+  rendent `null` — le moteur, lui, n'a pas bougé d'une ligne.
+- `src/games/rpg-battle.css`, `src/games/rpg-mobile.css` — toutes les règles du
+  bandeau (socle, variantes d'écran étroit, présentation tactile) et son
+  animation d'arrivée (`rpg-message-arrive`), plus celles de la légende du
+  volet d'aperçu.
+
+### Vérifications
+
+```bash
+npm run check:rpg        # le moteur : inchangé, 69 phrases en moins ne changent aucune règle
+npm run check:rpg-ui     # la page montée dans jsdom : plus de bandeau, l'état se lit sur la table
+npm run check:rpg-mobile # au doigt (Playwright) : le refus ne s'écrit plus, rien n'est joué
+```
+
+Les épreuves qui lisaient le bandeau lisent désormais la table : le halo
+(`data-jouable`) pour un refus, `is-ciblable` / `is-targeting` pour un choix de
+cible, `is-pret` pour une créature déjà engagée, l'indicateur de tour pour la
+reprise de la main, les PV du joueur pour une attaque encaissée, et le journal
+du moteur pour le résultat d'un combat. `check:rpg-ui` interdit en plus le
+retour du bandeau : ni `rpg-actions__wait`, ni `rpg-card-peek__hint`, ni
+`rpg-empty-lane` ne doivent réapparaître dans la page ou la feuille de style,
+et aucune phrase ne doit recommenter une rangée vide.
+
+## Le Sablier : le dos des cartes
+
+Les cartes face cachée — le paquet des deux camps, le dessus de la pioche, la
+main du sorcier — étaient dessinées **en CSS** : un dégradé rouge-noir, une
+trame diagonale, et un losange `◈` posé en `::after` au milieu de chaque carte
+de la main adverse. Correct, mais générique : rien n'y disait Bab El.
+
+Elles portent désormais un **vrai dos gravé** (`public/dos-de-carte.jpg`) : la
+rune du Sablier — deux traits croisés en X qui descendent se refermer en
+losange, comme un sablier étiré — tracée à l'or sur l'oxblood de la table, dans
+un double filet doré à pointes de diamant. Le motif est dessiné pour tenir à
+**43 × 58 pixels**, la taille réelle d'une carte de la pile : un seul symbole
+centré, très contrasté, aucun détail fin.
+
+**Le chemin passe par une variable CSS.** Le site vit sous `/Let-s-Play/` hors
+Vercel, et une feuille de style ne sait pas calculer `BASE_URL`. La racine du
+duel pose donc `--rpg-dos-de-carte` (objet gelé `DOS_DE_CARTE_STYLE`, pour que
+React garde la même référence d'un rendu à l'autre) et les trois surfaces qui
+montrent un dos la lisent : la main cachée du sorcier, les cartes empilées, le
+paquet agrandi. **Les dégradés d'origine restent déclarés dessous** : si
+l'image tarde ou manque, la carte reste une carte, jamais un rectangle vide.
+
+### Vérifications
+
+```bash
+npm run check:rpg-ui   # la variable, les trois surfaces, et le losange ◈ retiré
+```
+
+`check:rpg-ui` vérifie que le chemin suit bien `BASE_URL`, que la racine du duel
+porte la variable, que chacune des trois surfaces appelle
+`var(--rpg-dos-de-carte)` **avec son dégradé de repli derrière**, et que le
+`::after` du losange a disparu des deux endroits où il était déclaré — le socle
+et le palier étroit.
+
+## Le Sablier : le vocabulaire des magies, et les créatures sans ligne de type
+
+Deux retouches de la face des cartes, pour que la table se lise d'un coup d'œil.
+
+**1. Magie Rapide et Sorcellerie.** Les deux familles de sorts s'appelaient
+*Éphémère* et *Rituel*. Elles s'appellent désormais **Magie Rapide** (celle qui
+se lance en réponse, pendant le tour adverse) et **Sorcellerie** (celle qui
+attend son propre tour). Le nom dit maintenant *quand* on joue la carte, au lieu
+de décrire sa durée de vie : un joueur qui découvre le duel n'a plus à deviner
+qu'« éphémère » veut dire « jouable en réponse ». Les deux mots changent partout
+en même temps — ligne de type imprimée sur la carte, texte de règle, catalogue,
+listes de deck, aperçus — parce qu'ils ne sont qu'un seul libellé, calculé par
+`cardTypeLine()`.
+
+**2. Une créature ne dit plus son type.** Chaque carte portait sa ligne de type
+sous l'illustration. Pour une magie ou un terrain, c'est l'information
+principale : *Magie Rapide — Eau*, *Terrain — Désert* — sans elle, rien ne dit
+ce que fait la carte ni quand la jouer. Pour une créature, la ligne affichait
+`Type — Fennec` : le mot « Type » n'apprend rien, et la créature se présente
+déjà par son cadre, son illustration et son couple attaque/défense en bas de
+carte. En main, cette ligne tenait sur 5 à 6 pixels de haut — illisible, mais
+assez grande pour manger l'illustration.
+
+Les créatures et les héros n'impriment donc plus de ligne de type **en main ni
+dans l'aperçu**. Sur la table, la carte posée n'en portait déjà pas. Le type
+reste intégralement disponible là où l'on vient justement lire les fiches : le
+**catalogue** et les **listes de deck** — et, partout, dans le libellé
+accessible (`aria-label`) de la carte, pour les lecteurs d'écran.
+
+### Où vit le code
+
+- `src/games/rpgCards.js` — `cardTypeLine()` et les 20 `typeLine` du catalogue ;
+  les textes de règle qui s'ouvraient par `Rituel —` ou `Éphémère —`.
+- `src/games/RpgDuelPage.jsx` — `cardFaceTypeLine()` et son commentaire de
+  règle ; la ligne de la main (`.rpg-hand__type`) et celle de l'aperçu
+  (`.rpg-hover-card-preview__type`) sont rendues sous condition `!estCreature`.
+  Les `aria-label` ne changent pas : ils annoncent toujours le type.
+- `src/games/rpgDuel.js` — le moteur ne connaît que le drapeau `instant` : il
+  n'a pas bougé, seuls ses commentaires suivent le nouveau vocabulaire.
+
+### Vérifications
+
+```bash
+npm run check:rpg     # le moteur et le catalogue : le drapeau `instant` est inchangé
+npm run check:rpg-ui  # la face des cartes : type en main pour les magies et les terrains, pas pour les créatures
+```
+
+`check:rpg-ui` vérifie l'équivalence dans les deux sens — une carte en main
+porte une ligne de type **si et seulement si** elle n'est pas une créature —
+puis que le type de la créature reste dans son `aria-label`, en main comme dans
+l'aperçu. Le catalogue, lui, doit toujours présenter le Trait de braise comme
+**Magie Rapide**.
+
 ## Le Sablier : l'aperçu d'une carte au doigt
 
 À la souris, survoler une carte ouvre son **aperçu instantané** : le type, le
@@ -5262,11 +5431,11 @@ produire un mana. Consulter une carte sans la jouer était impossible.
 - **Le volet se referme** d'un toucher n'importe où dessus, du bouton « Fermer
   l'aperçu » ou de la touche Échap. Il se referme aussi en changeant d'écran et
   quand l'appareil repasse en portrait (l'écran de rotation reprend la main).
-- **Le geste est annoncé.** L'ouverture du duel l'explique dans la barre du bas
-  sur appareil tactile : « Appui long d'une seconde sur une carte : son aperçu,
-  sans la jouer. » Le créateur de deck le rappelle de la même façon, en tête de
-  sa bibliothèque (« … sans rien ajouter ni retirer »), et seulement au doigt :
-  au pointeur fin, le survol ouvre déjà l'aperçu.
+- **Le geste ne s'écrit pas en duel.** La table est muette (voir « le duel se
+  joue sans consignes ») : ni la barre du bas ni le volet d'aperçu ne légendent
+  l'appui long. Seul le créateur de deck le rappelle en tête de sa bibliothèque
+  (« … sans rien ajouter ni retirer »), et seulement au doigt : au pointeur
+  fin, le survol ouvre déjà l'aperçu.
 
 ### Où vit le code
 
@@ -5429,9 +5598,9 @@ tout ce qu'elle avait gagné (blessures, boucliers, Furie, Résonance) est perdu
 la rejouer coûtera de nouveau son mana. La protection contre l'Eau arrête le
 renvoi, et sans créature légale le sort refuse de partir sans rien payer.
 
-- **Ressac** (Éphémère — Eau, 1 mana, commune ×2) : renvoyez une créature
+- **Ressac** (Magie Rapide — Eau, 1 mana, commune ×2) : renvoyez une créature
   adverse ciblée dans la main de son propriétaire.
-- **Courant de retour** (Rituel — Eau, 3 mana, rare ×1) : renvoyez une créature
+- **Courant de retour** (Sorcellerie — Eau, 3 mana, rare ×1) : renvoyez une créature
   adverse ciblée dans la main de son propriétaire, puis piochez une carte.
 
 C'est un coup de tempo, pas une destruction : la menace reviendra, mais elle
@@ -5558,7 +5727,7 @@ Le duel s'ouvrait sur une main déjà jouable : cinq cartes tombaient dans la
 main, la barre du bas annonçait le plateau, et le premier tour commençait — avec
 ou sans terrain. Or une main sans source de mana n'est pas une main : c'est un
 tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
-**main de départ en grand**, et il choisit ce qu'il en garde.
+**main de départ en entier**, et il choisit ce qu'il en garde.
 
 ### La règle
 
@@ -5566,11 +5735,32 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   cartes comme avant, mais la table est rendue `inert` : rien ne se pose, rien
   ne s'engage, « Fin du tour » est désactivé. Le halo doré de la main
   s'éteint — une carte allumée mais injouable enferme le joueur.
-- **Les cartes se lisent, elles ne se devinent pas.** Chaque carte de la main
-  occupe un grand emplacement : illustration pleine largeur, nom, type, coût,
-  attaque/défense et **ses règles entières**, écrites dessous. Aucun survol,
-  aucun appui long à connaître : au doigt comme à la souris, le texte est déjà
-  là.
+- **Des cartes 4:5, nues.** Chaque carte de la main de départ est la **face
+  4:5** du jeu : l'illustration plein cadre, ses repères aux places du jeu —
+  **la couleur en haut à gauche, le coût en haut à droite**, et dans le bas
+  **les plaques d'attaque et de défense du jeu** : l'épée sur fond d'or **contre
+  le bord gauche**, le bouclier sur fond d'acier **contre le bord droit**, icône
+  et chiffre côte à côte, **composées plus grandes qu'en main comme sur la
+  table**. Une créature n'écrit rien d'autre — sa face n'annonce pas ce qu'elle
+  est ; un **terrain** ou un **sort** porte en plus **sa ligne de type, centrée
+  au-dessus des plaques**. **Rien d'autre n'est imprimé dessus** — ni nom, ni
+  effet, ni drapeau : la carte est son image, et c'est le liseré doré qui dit ce
+  qu'on met de côté.
+- **Tout le texte passe par l'aperçu rapide.** Survoler une carte ouvre son
+  aperçu complet (nom, type, coût, effets, statistiques) ; le volet le pose
+  **au-dessus de lui** (`z-index: 1200`, sous l'aperçu au doigt de 1250), et
+  c'est le seul aperçu vivant tant que la main est ouverte. Au doigt, où le
+  survol n'existe pas, l'**appui long d'une seconde** — le geste du jeu, armé
+  par la table — fait le même travail : la capacité de survol est **constatée**
+  (`(hover: hover)`), jamais supposée.
+- **Les cinq cartes, d'un seul coup.** La main se lit en entier : cinq cartes
+  dans **une seule rangée**, jamais coupée par une barre de défilement. La
+  taille d'une carte se mesure dans le volet, pas dans la fenêtre : la largeur
+  d'une face vaut les 4/5 de la hauteur utile (ce que la carte garde autour
+  d'elle est réservé), ou le cinquième de la largeur utile (cinq colonnes,
+  quatre gouttières) si celle-ci est plus contraignante — plus large sur un
+  moniteur, plus serrée sur un téléphone en paysage, mais toujours entièrement
+  visible.
 - **Toucher une carte la met de côté.** Un second toucher la reprend ; le
   compteur sous le volet dit « 2 cartes à changer » et le bouton principal
   nomme le geste (« Changer 2 cartes », « Garder cette main » quand rien n'est
@@ -5600,14 +5790,25 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   main par le sorcier, sur les mêmes critères de couleur et de coût que le
   reste du cerveau.
 - `src/games/RpgDuelPage.jsx` — l'état `mulligan` (`choix` puis `resultat`),
-  les composants `VoletMulligan` et `CarteMulligan`, et le verrou
+  les composants `VoletMulligan` et `CarteMulligan` (l'aperçu rapide y est
+  rendu, `variante="mulligan"`), la capacité `viewport.survol`
+  (`(hover: hover)`) qui décide entre survol et appui long, et le verrou
   `mulliganOuvert` consulté par `peutJouerCarte`, `poserTerrain`, `engager` et
   `finDuTour` — une seule règle, la même que celle du halo doré.
 - `src/games/rpg-battle.css` — `.rpg-mulligan` (volet posé sur la table, sous
-  l'écran de rotation et l'aperçu au doigt), la rangée en grille
-  « une colonne par carte », l'illustration qui prend toute la hauteur
-  disponible, et le repli du texte en paysage de téléphone ;
-  `src/games/rpg-mobile.css` neutralise le survol au doigt.
+  l'écran de rotation et l'aperçu au doigt), sa **scène mesurée** par requêtes
+  de conteneur (`.rpg-mulligan__stage` : une hauteur tenue par le volet, sur
+  laquelle les cinq colonnes se règlent, `cqw`/`cqh`), la **carte 4:5**
+  (`.rpg-mulligan__card`, conteneur de taille en largeur : la couleur en haut à
+  gauche, le coût en haut à droite, et la pile `.rpg-mulligan__bas` en bas — le
+  type centré pour les terrains et les sorts, puis les plaques
+  `.rpg-card__stat--atk` / `.rpg-card__pt` du jeu, reprises telles quelles,
+  simplement composées en `cqw` plus grand et posées chacune sur son bord
+  (`justify-content: space-between`)), la réservation
+  `--rpg-mulligan-text` de ce que la carte garde autour d'elle, et
+  `.rpg-hover-card-preview--mulligan` qui pose l'aperçu au-dessus du volet ;
+  `src/games/rpg-mobile.css` neutralise le survol au doigt sans toucher au
+  liseré doré d'une carte mise de côté.
 
 ### Vérifications
 
@@ -5625,13 +5826,30 @@ hors main sont ignorées, et le volet se ferme dès qu'une carte est posée ou
 qu'un tour a été joué.
 
 `scripts/rpg-mulligan-check.mjs` joue le geste dans la vraie page : le volet
-s'ouvre sur les cinq cartes de la main, dans le même ordre qu'en main, avec
-illustration, nom et règles ; la table est `inert`, aucune carte n'est jouable
-et aucun terrain ne se pose ; le toucher marque, démarque, annule ; la
-validation échange, montre la nouvelle main avec ses cartes signalées, et rend
-la table sur « Commencer le duel » ; une partie neuve rouvre le droit. Les
-duels au pilote automatique de `scripts/rpg-ghost-check.mjs` valident le
-mulligan à chaque graine, grand écran et doigt confondus.
+s'ouvre sur les cinq cartes de la main, dans le même ordre qu'en main — chacune
+avec sa **face 4:5**, son illustration, ses repères (coût, badge, **plaques
+d'attaque et de défense du jeu, icônes dessinées et valeurs**) et **pas un mot
+d'interface dessus** ; le survol ouvre l'**aperçu rapide** de la
+carte (nom, type, effets), qui quitte la carte quand la souris la quitte ; la
+table est `inert`, aucune carte n'est jouable et aucun terrain ne se pose ; le
+toucher marque, démarque, annule ; la validation échange, montre la nouvelle
+main avec ses cartes signalées, et rend la table sur « Commencer le duel » ;
+une partie neuve rouvre le droit. Il tient aussi la feuille : une seule rangée,
+jamais de défilement, la face 4:5 plafonnée par la hauteur utile **et** par la
+largeur du volet, et aucun bloc de texte sur la carte.
+
+`scripts/rpg-mobile-layout-check.mjs` mesure la main de départ au navigateur, à
+trois tailles (téléphone en paysage, tablette, moniteur) : les cinq cartes sont
+dans le cadre, entières, touchables, chacune garde le **4:5** du jeu (au pixel
+près), **couleur en haut à gauche, coût en haut à droite, plaques d'attaque et de
+défense pour les créatures** — l'attaque contre le bord gauche, la défense contre
+le droit, et toutes deux **qui grandissent avec la carte** (≥ 18 px de haut sur
+téléphone en paysage, ≥ 30 px sur moniteur) — **la ligne de type centrée pour un
+terrain ou un sort**, rien d'autre d'écrit, et la rangée ne défile jamais. Il survole ensuite
+une carte dans un contexte de bureau : l'aperçu rapide s'ouvre, décrit la carte
+survolée, et se pose au-dessus du volet (`z-index: 1200`). Les duels au
+pilote automatique de `scripts/rpg-ghost-check.mjs` valident le mulligan à
+chaque graine, grand écran et doigt confondus.
 
 ## Le Sablier : le plein écran, du menu au duel
 
