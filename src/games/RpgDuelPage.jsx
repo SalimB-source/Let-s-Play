@@ -890,7 +890,7 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
    Avant le premier tour, chaque camp voit ses cartes piochées : des **faces
    4:5** comme sur la table, sans un mot d'interface — l'illustration, la couleur
    en haut à gauche, le coût en haut à droite, la ligne de type en bas à droite
-   au-dessus de l'attaque et de la défense. Le reste du texte (nom, effets) se
+   au-dessus des plaques d'attaque et de défense du jeu. Le reste du texte (nom, effets) se
    lit dans l'**aperçu rapide** : au survol d'une carte à la souris, à l'appui
    long d'une seconde au doigt. Toucher une carte la met de côté (liseré doré),
    la retoucher la reprend : elles repartent dans le paquet, qui est battu, et
@@ -928,11 +928,15 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       {/* Le bas de la carte : la ligne de type, et sous elle l'attaque et la
-          défense — le seul texte que la face imprime. */}
+          défense — les deux plaques du jeu, l'épée d'or et le bouclier d'acier,
+          icône et chiffre côte à côte. */}
       <span className="rpg-mulligan__bas">
         <span className="rpg-mulligan__type" aria-hidden="true">{cardFaceTypeLine(carte)}</span>
         {estCreature && (
-          <span className="rpg-mulligan__stats" aria-hidden="true">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</span>
+          <span className="rpg-mulligan__stats" aria-hidden="true">
+            <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
+            <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
+          </span>
         )}
       </span>
     </button>

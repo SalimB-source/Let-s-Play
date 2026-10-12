@@ -154,7 +154,7 @@ try {
   // dessus, le jeu commence une fois la main de départ validée.
   // La main de départ se lit d'un seul coup : cinq cartes 4:5, entières,
   // touchables, sans un mot dessus — du téléphone en paysage au grand moniteur.
-  for (const [width, height] of [[844, 390], [1024, 768], [1440, 900]]) {
+  for (const [width, height, plaqueMin] of [[844, 390, 18], [1024, 768, 22], [1440, 900, 30]]) {
     await page.setViewportSize({ width, height });
     const hand = await page.evaluate(() => {
       const row = document.querySelector('.rpg-mulligan__cards');
@@ -172,6 +172,15 @@ try {
         // Rien à lire sur la carte, hors la ligne de type : ni nom, ni effet, ni drapeau.
         muettes: cards.every((card) => !card.querySelector('.rpg-mulligan__name, .rpg-mulligan__rules, .rpg-mulligan__flag')
           && [...card.childNodes].every((node) => node.nodeType !== 3 || !node.textContent.trim())),
+        // L'attaque et la défense sont les plaques du jeu : deux icônes
+        // dessinées (épée, bouclier), aux valeurs de la carte.
+        plaquesDuJeu: cards.every((card) => {
+          const creature = Boolean(card.querySelector('.rpg-mulligan__stats'));
+          if (!creature) return card.querySelectorAll('.rpg-mulligan__stats .rpg-stat-icon').length === 0;
+          return card.querySelectorAll('.rpg-mulligan__stats .rpg-stat-icon').length === 2
+            && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__stat--atk .rpg-stat-value')?.textContent.trim())
+            && Boolean(card.querySelector('.rpg-mulligan__stats .rpg-card__pt .rpg-stat-value')?.textContent.trim());
+        }),
         // Le type est écrit au-dessus de l'attaque et de la défense.
         typeAuDessus: cards.every((card) => {
           const box = card.getBoundingClientRect();
@@ -180,6 +189,18 @@ try {
           const stats = card.querySelector('.rpg-mulligan__stats')?.getBoundingClientRect();
           const enBasADroite = box.right - type.right < box.width * .35 && box.bottom - type.bottom < box.height * .35;
           return enBasADroite && (!stats || type.bottom <= stats.top + 1);
+        }),
+        // Les plaques d'attaque et de défense, grandes et groupées en bas à droite.
+        plaques: [...document.querySelectorAll('.rpg-mulligan__stats')].map((stats) => {
+          const card = stats.closest('.rpg-mulligan__card').getBoundingClientRect();
+          const box = stats.getBoundingClientRect();
+          const plaques = [...stats.children].map((plaque) => plaque.getBoundingClientRect().toJSON());
+          return {
+            hauteur: Math.min(...plaques.map((plaque) => plaque.height)),
+            largeur: Math.min(...plaques.map((plaque) => plaque.width)),
+            dansLaCarte: box.right <= card.right + 1 && box.bottom <= card.bottom + 1 && box.top >= card.top - 1,
+            enBasADroite: card.right - box.right < card.width * .3 && card.bottom - box.bottom < card.height * .3,
+          };
         }),
         illustrees: cards.every((card) => card.querySelector('img.rpg-mulligan__img')?.complete === true),
         // Les repères des cartes du jeu : la couleur en haut à gauche, le coût
@@ -204,6 +225,11 @@ try {
     assert.ok(hand.muettes && hand.illustrees, `${width}×${height}: la carte est son illustration, sans texte par-dessus`);
     assert.ok(hand.reperes, `${width}×${height}: couleur en haut à gauche, coût en haut à droite, statistiques en bas à droite`);
     assert.ok(hand.typeAuDessus, `${width}×${height}: la ligne de type est au-dessus de l’attaque et de la défense`);
+    assert.ok(hand.plaquesDuJeu, `${width}×${height}: l’attaque et la défense portent les plaques et les icônes du jeu`);
+    assert.equal(hand.plaques.every((p) => p.dansLaCarte && p.enBasADroite), true,
+      `${width}×${height}: les plaques sont groupées dans le coin bas-droit de la carte`);
+    assert.equal(hand.plaques.every((p) => p.hauteur >= plaqueMin && p.largeur >= 34), true,
+      `${width}×${height}: les plaques sont grandes (≥ ${plaqueMin}px de haut, ≥ 34px de large)`);
     console.log(`✓ Mulligan complet ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });

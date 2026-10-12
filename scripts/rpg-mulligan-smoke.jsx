@@ -76,6 +76,17 @@ export async function checkRpgMulligan(assert) {
     const creature = attendue.kind === 'creature' || attendue.kind === 'hero';
     assert.equal(Boolean(carte.querySelector('.rpg-mulligan__stats')), creature,
       `la carte ${id} montre son attaque et sa défense si c’est une créature`);
+    const plaques = carte.querySelectorAll('.rpg-mulligan__stats .rpg-stat-icon');
+    if (creature) {
+      // Les plaques du jeu : l'épée sur fond d'or, le bouclier sur fond d'acier.
+      assert.equal(plaques.length, 2, `l’attaque et la défense de ${id} portent les icônes du jeu`);
+      assert.equal(carte.querySelector('.rpg-mulligan__stats .rpg-card__stat--atk .rpg-stat-value')?.textContent,
+        String(attendue.atk), `la plaque d’attaque de ${id} affiche sa valeur`);
+      assert.equal(carte.querySelector('.rpg-mulligan__stats .rpg-card__pt .rpg-stat-value')?.textContent,
+        String(attendue.def), `la plaque de défense de ${id} affiche sa valeur`);
+      assert.equal(/⚔|🛡/.test(carte.textContent), false,
+        `la carte ${id} n’écrit plus ⚔/🛡 : elle porte les plaques du jeu`);
+    }
     // La ligne de type est la seule ligne écrite de la face, et elle est au-dessus.
     const ligneType = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__type');
     const motAttendu = attendue.kind === 'terrain' ? /^Terrain/

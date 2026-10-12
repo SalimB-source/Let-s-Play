@@ -142,8 +142,16 @@ assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*positio
   'le coût est posé en haut à droite de l’illustration, à la taille de la carte');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:/s,
   'le coût a quitté le coin gauche');
-assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*font:\s*900 clamp\([^;]*cqw/s,
-  'l’attaque et la défense sont à la taille de la carte, dans la pile du bas');
+assert.match(battlePage, /rpg-mulligan__stats"[\s\S]{0,200}?rpg-card__stat--atk"><CardStatIcon type="attack" \/><span className="rpg-stat-value">\{carte\.atk\}<\/span>/,
+  'l’attaque porte la plaque du jeu : l’épée dessinée et le chiffre');
+assert.match(battlePage, /rpg-card__pt"><CardStatIcon type="defense" \/><span className="rpg-stat-value">\{carte\.def\}<\/span>/,
+  'la défense porte la plaque du jeu : le bouclier dessiné et le chiffre');
+assert.doesNotMatch(mulliganPanel, /⚔|🛡/,
+  'plus d’emoji ⚔/🛡 : l’attaque et la défense se lisent comme sur les cartes en jeu');
+assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*display:\s*flex;[^}]*gap:\s*clamp\([^;]*cqw/s,
+  'les deux plaques sont groupées dans la pile du bas, à l’échelle de la carte');
+assert.match(battleCss, /\.rpg-mulligan__stats\s+\.rpg-card__stat--atk,[\s\S]{0,200}?\.rpg-mulligan__stats\s+\.rpg-card__pt\s*\{[\s\S]{0,400}?font:\s*900 clamp\(11px,\s*7\.6cqw,\s*26px\)/s,
+  'les plaques reprennent le dessin du jeu et se composent plus grand, sur la largeur de la carte');
 assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:\s*#ffd619;/s,
   'une carte mise de côté prend le liseré doré du jeu — son seul signe visible');
 assert.match(battleCss, /@keyframes rpg-mulligan-new/,
@@ -195,4 +203,4 @@ assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*m
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, type au-dessus des statistiques — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, type au-dessus des plaques du jeu — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');

@@ -3479,7 +3479,7 @@
 }
 /* Les repères des cartes du jeu, et rien d'autre : la couleur en haut à gauche,
    le coût en haut à droite, et en bas à droite la ligne de type — la seule
-   ligne écrite de la face — au-dessus de l'attaque et de la défense. */
+   ligne écrite de la face — au-dessus des plaques d'attaque et de défense. */
 .rpg-mulligan__card .rpg-card-element-badge {
   --rpg-card-element-marker-size: clamp(15px, 15cqw, 30px);
   --rpg-card-element-marker-top: 5%;
@@ -3517,15 +3517,28 @@
   text-transform: uppercase;
   text-shadow: 0 1px 2px #000;
 }
+/* L'attaque et la défense comme sur les cartes en jeu : les deux plaques du jeu
+   — l'épée sur fond d'or, le bouclier sur fond d'acier — icône et chiffre côte
+   à côte, groupées dans le coin bas-droit. Elles se règlent sur la largeur de
+   la carte : à l'échelle du volet, elles sont plus grandes qu'en main comme sur
+   la table. */
 .rpg-mulligan__stats {
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(6, 5, 4, .78);
-  color: #ffe9a0;
-  font: 900 clamp(9px, 6.5cqw, 19px)/1.3 var(--mono, monospace);
-  text-shadow: 0 1px 2px #000;
+  display: flex;
+  align-items: center;
+  gap: clamp(3px, 2.4cqw, 9px);
+  pointer-events: none;
 }
-.rpg-mulligan__stats span { color: #e1cb9c; }
+.rpg-mulligan__stats .rpg-card__stat--atk,
+.rpg-mulligan__stats .rpg-card__pt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, 1.8cqw, 6px);
+  min-width: clamp(34px, 26cqw, 82px);
+  padding: clamp(2px, 1.6cqw, 6px) clamp(4px, 3cqw, 11px);
+  border-radius: clamp(5px, 4.4cqw, 13px);
+  font: 900 clamp(11px, 7.6cqw, 26px)/1.1 Georgia, serif;
+}
 .rpg-mulligan__card .rpg-mana-cost {
   position: absolute;
   z-index: 3;
