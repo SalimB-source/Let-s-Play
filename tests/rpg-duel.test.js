@@ -1380,6 +1380,26 @@ test('Tarek donne +1/+1 aux créatures Sable tant qu’il est en jeu', () => {
   assert.deepEqual({ atk: tarek.atk, pv: tarek.pv, def: tarek.def }, { atk: 5, pv: 6, def: 6 });
 });
 
+test('Boualem est une 3/4 et contre une seule fois l’effet adverse qui le cible', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'boualem');
+  const boualem = rpgJouerCreature(duel, 'joueur', 'boualem').entite;
+  assert.deepEqual([boualem.atk, boualem.pv, boualem.def], [3, 4, 4]);
+  assert.equal(boualem.boualemContresortDisponible, true);
+
+  donner(duel, 'sorcier', 'vipere-de-verre');
+  const premier = rpgJouerCreature(duel, 'sorcier', 'vipere-de-verre', boualem.id);
+  assert.equal(premier.ok, true);
+  assert.equal(boualem.pv, 4, 'le premier effet ciblé est contrecarré');
+  assert.equal(boualem.boualemContresortDisponible, false);
+
+  donner(duel, 'sorcier', 'vipere-de-verre');
+  rpgJouerCreature(duel, 'sorcier', 'vipere-de-verre', boualem.id);
+  assert.equal(boualem.pv, 2, 'le deuxième effet ciblé inflige ses 2 dégâts');
+});
+
 test('phase d’attaque sans bloqueur : tous les attaquants frappent le sorcier', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
