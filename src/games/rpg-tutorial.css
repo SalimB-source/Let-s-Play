@@ -1,0 +1,236 @@
+/* Tutoriel du Sablier : voile cinématique et cible dégagée au-dessus du duel. */
+.rpg-tutorial {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  color: #f8efd9;
+  font-family: Georgia, 'Times New Roman', serif;
+  pointer-events: none;
+  isolation: isolate;
+}
+.rpg-tutorial__shade {
+  position: fixed;
+  z-index: 1;
+  background: rgba(4, 5, 12, .82);
+  pointer-events: auto;
+}
+.rpg-tutorial__shade--full { inset: 0; }
+.rpg-tutorial__target-guard {
+  position: fixed;
+  z-index: 2;
+  background: transparent;
+  pointer-events: auto;
+}
+.rpg-tutorial__spotlight {
+  position: fixed;
+  z-index: 3;
+  border: 2px solid #f4d17e;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 232, 177, .55), 0 0 24px 5px rgba(245, 193, 86, .5);
+  pointer-events: none;
+  animation: rpg-tutorial-frame-glow 1.8s ease-in-out infinite alternate;
+}
+@keyframes rpg-tutorial-frame-glow {
+  from { box-shadow: 0 0 0 1px rgba(255, 232, 177, .42), 0 0 18px 2px rgba(245, 193, 86, .34); }
+  to { box-shadow: 0 0 0 1px rgba(255, 232, 177, .72), 0 0 28px 6px rgba(245, 193, 86, .62); }
+}
+.rpg-tutorial__panel {
+  position: fixed;
+  z-index: 4;
+  width: min(390px, calc(100vw - 28px));
+  max-height: min(380px, calc(100dvh - 28px));
+  overflow: auto;
+  padding: 20px 22px 19px;
+  border: 1px solid rgba(248, 218, 150, .76);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 90% 0, rgba(202, 154, 76, .15), transparent 48%),
+    linear-gradient(155deg, rgba(28, 24, 30, .99), rgba(9, 9, 16, .99));
+  box-shadow: 0 18px 56px rgba(0, 0, 0, .68), 0 0 28px rgba(232, 185, 92, .12);
+  color: #f8efd9;
+  pointer-events: auto;
+  scrollbar-color: rgba(229, 189, 105, .5) rgba(5, 5, 9, .7);
+  overscroll-behavior: contain;
+}
+.rpg-tutorial__header,
+.rpg-tutorial__step-label { display: flex; align-items: center; }
+.rpg-tutorial__header { justify-content: space-between; gap: 12px; }
+.rpg-tutorial__step-label {
+  min-width: 0;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  color: #e9ca82;
+  font: 800 9px/1.35 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.rpg-tutorial__counter { flex: none; color: rgba(248, 237, 211, .64); letter-spacing: .08em; }
+.rpg-tutorial__close {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  margin: -6px -8px -6px 0;
+  border: 1px solid rgba(240, 221, 183, .25);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .045);
+  color: #f4dfb3;
+  font: 24px/1 Arial, sans-serif;
+  cursor: pointer;
+}
+.rpg-tutorial__close:hover,
+.rpg-tutorial__close:focus-visible {
+  border-color: #f0ce7a;
+  background: rgba(240, 206, 122, .14);
+  color: #fff1c8;
+  outline: 2px solid rgba(240, 206, 122, .55);
+  outline-offset: 2px;
+}
+.rpg-tutorial__progress {
+  height: 3px;
+  overflow: hidden;
+  margin: 12px 0 17px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .1);
+}
+.rpg-tutorial__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #a96f35, #f5d98c);
+  transition: width .25s ease;
+}
+.rpg-tutorial__eyebrow {
+  margin: 0 0 5px;
+  color: #e9ca82;
+  font: 800 8px/1.4 var(--mono, monospace);
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+.rpg-tutorial__panel h2 {
+  margin: 0;
+  color: #fff2d8;
+  font: 700 clamp(20px, 2.2vw, 25px)/1.08 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+.rpg-tutorial__copy {
+  margin: 10px 0 0;
+  color: rgba(248, 239, 217, .84);
+  font: 13px/1.55 Georgia, 'Times New Roman', serif;
+}
+.rpg-tutorial__footer { margin-top: 15px; }
+.rpg-tutorial__next {
+  min-width: 150px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 15px;
+  border: 1px solid #f4d995;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #e6c779, #b97e37);
+  color: #20170d;
+  font: 800 10px/1.2 var(--mono, monospace);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 5px 18px rgba(194, 141, 57, .17);
+}
+.rpg-tutorial__next:hover,
+.rpg-tutorial__next:focus-visible {
+  background: linear-gradient(135deg, #ffe5a7, #dda34f);
+  outline: 2px solid rgba(255, 232, 177, .58);
+  outline-offset: 3px;
+}
+.rpg-tutorial__instruction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #f1d58e;
+  font: 700 10px/1.45 var(--mono, monospace);
+  letter-spacing: .025em;
+}
+.rpg-tutorial__instruction > span[aria-hidden='true']:not(:empty) {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(241, 213, 142, .55);
+  border-radius: 50%;
+  color: #f1d58e;
+  font-size: 12px;
+}
+.rpg-tutorial__instruction--waiting { color: #d9d0bd; }
+.rpg-tutorial__instruction--waiting > span[aria-hidden='true'] {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(241, 213, 142, .28);
+  border-top-color: #f1d58e;
+  border-radius: 50%;
+  animation: rpg-tutorial-spinner .8s linear infinite;
+}
+@keyframes rpg-tutorial-spinner { to { transform: rotate(360deg); } }
+
+/* Une seconde entrée, clairement distincte du duel libre. */
+.rpg-mode-menu__hero-actions { display: grid; justify-items: start; gap: 10px; }
+.rpg-mode-menu__hero-actions .rpg-menu-button--tutorial { margin-top: 0; }
+.rpg-menu-button--tutorial {
+  min-width: min(270px, 100%);
+  margin-top: 12px;
+  border-color: rgba(242, 212, 142, .58);
+  background: rgba(16, 15, 21, .82);
+  color: #f5d88f;
+  box-shadow: 0 7px 22px rgba(0, 0, 0, .32), inset 0 0 18px rgba(233, 192, 101, .045);
+}
+.rpg-menu-button--tutorial:hover,
+.rpg-menu-button--tutorial:focus-visible {
+  border-color: #f5d88f;
+  background: rgba(70, 49, 29, .93);
+  color: #fff0c3;
+}
+.rpg-duel-nav__tutorial {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 9px;
+  border: 1px solid rgba(238, 199, 111, .5);
+  border-radius: 999px;
+  background: rgba(182, 124, 47, .14);
+  color: #f2d58f;
+  font: 800 8px/1.2 var(--mono, monospace);
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .rpg-tutorial__panel {
+    width: min(370px, calc(100vw - 24px));
+    padding: 17px 18px 16px;
+  }
+  .rpg-tutorial__copy { font-size: 12.5px; line-height: 1.48; }
+}
+@media (max-height: 480px) {
+  .rpg-tutorial__panel {
+    width: min(370px, calc(100vw - 24px));
+    max-height: calc(100dvh - 20px);
+    padding: 11px 15px 12px;
+    border-radius: 12px;
+  }
+  .rpg-tutorial__progress { margin: 8px 0 10px; }
+  .rpg-tutorial__panel h2 { font-size: 19px; }
+  .rpg-tutorial__copy { margin-top: 6px; font-size: 11px; line-height: 1.4; }
+  .rpg-tutorial__footer { margin-top: 9px; }
+  .rpg-tutorial__next { min-height: 38px; padding: 8px 12px; }
+  .rpg-tutorial__instruction { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-tutorial__spotlight,
+  .rpg-tutorial__instruction--waiting > span[aria-hidden='true'] { animation: none; }
+  .rpg-tutorial__progress span { transition: none; }
+}

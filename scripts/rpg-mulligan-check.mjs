@@ -58,8 +58,8 @@ assert.ok(mulliganPanel.length > 400 && mulliganPanel.includes('VoletMulligan'),
   'le volet du mulligan est un composant dédié, entre l’aperçu au doigt et la confirmation de sort');
 
 // ── Le volet est une étape du jeu, pas une couche décorative ────────────────
-assert.match(battlePage, /setMulligan\(rpgPeutMulligan\(duelRef\.current, 'joueur'\)[\s\S]*?\{ etape: 'choix', choix: new Set\(\)[\s\S]*?: null\)/,
-  'nouvelle partie : le volet s’ouvre sur la main de départ, et jamais sur une main vide');
+assert.match(battlePage, /setMulligan\(!modeTutoriel && rpgPeutMulligan\(duelRef\.current, 'joueur'\)[\s\S]*?\{ etape: 'choix', choix: new Set\(\)[\s\S]*?: null\)/,
+  'les duels libres ouvrent le mulligan sur la main de départ, mais le tutoriel garde sa main guidée');
 assert.match(battlePage, /inert=\{viewport\.portrait \|\| mulliganOuvert \? true : undefined\}/,
   'la table est rendue inerte tant que le mulligan n’est pas validé');
 assert.match(battlePage, /const mulliganOuvert = Boolean\(mulligan\);/,
