@@ -150,6 +150,9 @@ class FauxAudioContext {
     this.cumul.sources += 1;
     return { buffer: null, loop: false, connect() {}, start() {}, stop() {} };
   }
+  createConvolver() {
+    return { buffer: null, connect() {} };
+  }
   async resume() {}
   async close() { this.ferme = true; }
 }
@@ -167,6 +170,7 @@ test('chaque tour produit des nœuds audio sur toute sa boucle', async () => {
   await lecteur.start();
   assert.ok(lecteur.ready(), 'le lecteur doit tourner après start()');
   assert.ok(lecteur.context instanceof FauxAudioContext, 'un contexte audio est créé');
+  assert.ok(lecteur.reverb, 'les nappes passent par une réverbération procédurale discrète');
 
   for (const { id } of RPG_STORY_TOURS) {
     lecteur.setTour(id);

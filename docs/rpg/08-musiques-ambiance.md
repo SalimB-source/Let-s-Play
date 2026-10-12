@@ -16,8 +16,10 @@ de *Vice City Rush* (`cityRushAudio.js`) :
   pas une poursuite.
 
 Le niveau de la musique reste en dessous des bruitages du duel
-(`rpg-audio.js`) : le duel reste lisible, la musique ne couvre jamais les
-indications de cartes (soin, zone, cloche de l'astrolabe).
+(`rpgAudio.js`) : le duel reste lisible, la musique ne couvre jamais les
+indications de cartes (soin, zone, cloche de l'Astrolabe). Nappes et cloches
+reçoivent une réverbération stéréo très légère, générée à la volée ; les
+attaques triangulaires filtrées restent douces sur les haut-parleurs mobiles.
 
 ## Comment elle se déclenche
 
@@ -32,7 +34,7 @@ La page du duel (`src/games/RpgDuelPage.jsx`) tient une instance de
 - un onglet mis de côté met la boucle en pause (`pause()`), elle reprend au
   retour (`resume()`) ;
 - le bouton ♫ de la barre du duel — ou la touche `M` — coupe et rend la
-  musique. La préférence est mémorisée sur l'appareil
+  musique et les bruitages. La préférence est mémorisée sur l'appareil
   (`letsplay_sablier_sound_v1`), comme celle de Vice City Rush, et le son
   revient par défaut.
 

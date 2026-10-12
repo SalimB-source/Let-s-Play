@@ -1,9 +1,8 @@
-// Rendu réel de la musique d'ambiance du mode Histoire dans jsdom : un faux
-// `AudioContext` compte les nœuds que la page planifie, comme la carte son du
-// joueur. Le garde-fou rejoue le parcours complet — lancer un étage, couper le
-// son, le rendre, rentrer au menu — et vérifie à chaque étape que la boucle de
-// la tour démarre ou s'arrête. Une musique qu'on n'entend pas est une musique
-// que la page ne joue pas : ce contrôle-là manquait.
+// Rendu réel du son du mode Histoire dans jsdom : de faux `AudioContext`
+// comptent les nœuds des bruitages et de la musique. Le garde-fou rejoue le
+// parcours complet — lancer un étage, couper le son, le rendre, rentrer au
+// menu — et vérifie à chaque étape que les deux lecteurs démarrent/s'arrêtent
+// puis libèrent leurs contextes.
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
@@ -15,6 +14,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function installerFauxAudio(window) {
   const cumul = {
     contextes: 0,
+    contextesCrees: [],
     oscillateurs: 0,
     sources: 0,
     gains: [],
@@ -40,20 +40,29 @@ function installerFauxAudio(window) {
     constructor() {
       cumul.contextes += 1;
       cumul.dernier = this;
+      cumul.contextesCrees.push(this);
       this.depart = Date.now();
       this.sampleRate = 44100;
       this.destination = {};
       this.ferme = false;
+      this.noeuds = { oscillateurs: 0, sources: 0 };
+      this.gains = [];
     }
     get currentTime() { return (Date.now() - this.depart) / 1000; }
-    createGain() { return gain(); }
+    createGain() {
+      const noeud = gain();
+      this.gains.push(noeud);
+      return noeud;
+    }
     createOscillator() {
       cumul.oscillateurs += 1;
+      this.noeuds.oscillateurs += 1;
       return {
         type: 'sine',
-        frequency: { value: 0, setValueAtTime() {} },
+        frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} },
         detune: { value: 0, setValueAtTime() {} },
         connect() {},
+        disconnect() {},
         start() {},
         stop() {},
       };
@@ -64,6 +73,16 @@ function installerFauxAudio(window) {
         frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} },
         Q: { value: 0 },
         connect() {},
+        disconnect() {},
+      };
+    }
+    createStereoPanner() {
+      return { pan: { value: 0 }, connect() {}, disconnect() {} };
+    }
+    createDynamicsCompressor() {
+      return {
+        threshold: { value: 0 }, knee: { value: 0 }, ratio: { value: 0 }, attack: { value: 0 }, release: { value: 0 },
+        connect() {},
       };
     }
     createBuffer(_, longueur) {
@@ -71,8 +90,10 @@ function installerFauxAudio(window) {
     }
     createBufferSource() {
       cumul.sources += 1;
-      return { buffer: null, loop: false, connect() {}, start() {}, stop() {} };
+      this.noeuds.sources += 1;
+      return { buffer: null, loop: false, connect() {}, disconnect() {}, start() {}, stop() {} };
     }
+    createConvolver() { return { buffer: null, connect() {} }; }
     async resume() {}
     async close() { this.ferme = true; }
   }
@@ -118,36 +139,38 @@ export async function checkRpgAmbientMusic(assert) {
 
   // --- L'étage lancé fait jouer la boucle de sa tour ---
   await laisserJouer(900);
-  assert.equal(cumul.contextes, 1, 'l’étage lancé crée le contexte audio de la musique');
-  assert.ok(cumul.noeuds > 0, 'la boucle de la tour produit du son');
-  assert.ok(cumul.oscillateurs > 0, 'les notes de la tour sont planifiées');
-  assert.ok(cumul.sources > 0, 'le souffle de la tour (bruit filtré) est planifié');
+  assert.equal(cumul.contextes, 2, 'le jeu sépare le contexte des bruitages de celui de la musique');
+  const contexteMusique = cumul.contextesCrees[1];
+  const noeudsMusique = () => contexteMusique.noeuds.oscillateurs + contexteMusique.noeuds.sources;
+  assert.ok(noeudsMusique() > 0, 'la boucle de la tour produit du son');
+  assert.ok(contexteMusique.noeuds.oscillateurs > 0, 'les notes de la tour sont planifiées');
+  assert.ok(contexteMusique.noeuds.sources > 0, 'le souffle de la tour (bruit filtré) est planifié');
 
-  // --- Le bouton de la barre du duel coupe la musique ---
+  // --- Le bouton de la barre du duel coupe tous les sons ---
   const boutonSon = () => buttons().find((button) => button.classList.contains('rpg-duel-nav__sound'));
-  assert.ok(boutonSon(), 'la barre du duel porte le bouton de musique');
-  assert.equal(boutonSon().getAttribute('aria-pressed'), 'true', 'la musique est annoncée active');
+  assert.ok(boutonSon(), 'la barre du duel porte le bouton du son');
+  assert.equal(boutonSon().getAttribute('aria-pressed'), 'true', 'le son est annoncé actif');
   await click(boutonSon(), 'coupure du son');
-  assert.equal(boutonSon().getAttribute('aria-pressed'), 'false', 'le bouton annonce la musique coupée');
-  assert.ok(cumul.gains[0].gain.cibles.at(-1) < 0.01, 'le volume général est ramené à zéro');
-  const apresCoupure = cumul.noeuds;
+  assert.equal(boutonSon().getAttribute('aria-pressed'), 'false', 'le bouton annonce le son coupé');
+  assert.ok(contexteMusique.gains[0].gain.cibles.at(-1) < 0.01, 'le volume général est ramené à zéro');
+  const apresCoupure = noeudsMusique();
   await laisserJouer(500);
-  assert.equal(cumul.noeuds, apresCoupure, 'plus aucun son n’est planifié une fois la musique coupée');
+  assert.equal(noeudsMusique(), apresCoupure, 'plus aucun son n’est planifié une fois la musique coupée');
 
   // --- Rendre le son relance la boucle ---
   await click(boutonSon(), 'son rendu');
   await laisserJouer(1400);
-  assert.equal(boutonSon().getAttribute('aria-pressed'), 'true', 'le bouton annonce la musique rendue');
-  assert.ok(cumul.noeuds > apresCoupure, 'la boucle reprend quand le son revient');
-  assert.ok(cumul.gains[0].gain.cibles.at(-1) > 0.5, 'le volume général est rendu');
+  assert.equal(boutonSon().getAttribute('aria-pressed'), 'true', 'le bouton annonce le son rendu');
+  assert.ok(noeudsMusique() > apresCoupure, 'la boucle reprend quand le son revient');
+  assert.ok(contexteMusique.gains[0].gain.cibles.at(-1) > 0.5, 'le volume général est rendu');
 
   // --- Rentrer au menu arrête la musique ---
   await click(buttons().find((button) => button.textContent.trim() === 'Menu'), 'bouton Menu');
-  const auMenu = cumul.noeuds;
+  const auMenu = noeudsMusique();
   await laisserJouer(500);
-  assert.equal(cumul.noeuds, auMenu, 'rentrer au menu arrête la musique');
+  assert.equal(noeudsMusique(), auMenu, 'rentrer au menu arrête la musique');
 
-  // --- Le démontage ferme le contexte audio ---
+  // --- Le démontage ferme les deux contextes audio ---
   await act(async () => { root.unmount(); });
-  assert.equal(cumul.dernier.ferme, true, 'quitter la page ferme le contexte audio');
+  assert.ok(cumul.contextesCrees.every((context) => context.ferme), 'quitter la page ferme les deux lecteurs audio');
 }
