@@ -19,6 +19,28 @@ Le niveau de la musique reste en dessous des bruitages du duel
 (`rpg-audio.js`) : le duel reste lisible, la musique ne couvre jamais les
 indications de cartes (soin, zone, cloche de l'astrolabe).
 
+## Comment elle se déclenche
+
+La page du duel (`src/games/RpgDuelPage.jsx`) tient une instance de
+`RpgAmbientMusic` pour toute sa vie :
+
+- lancer un étage (`demarrerEtage`) choisit la tour de cet étage et démarre
+  sa boucle **dans le geste joueur** — les navigateurs n'accordent un contexte
+  audio qu'à un tel geste ;
+- rentrer au menu, lancer un duel libre ou couper le son arrête la boucle
+  (`stop()`), sans détruire les nœuds ;
+- un onglet mis de côté met la boucle en pause (`pause()`), elle reprend au
+  retour (`resume()`) ;
+- le bouton ♫ de la barre du duel — ou la touche `M` — coupe et rend la
+  musique. La préférence est mémorisée sur l'appareil
+  (`letsplay_sablier_sound_v1`), comme celle de Vice City Rush, et le son
+  revient par défaut.
+
+Le mode Histoire est la seule scène qui fait jouer de la musique : un duel
+libre n'a pas de tour, donc pas de boucle. Le rendu est vérifié par
+`npm run check:rpg-ambient-ui`, qui rend la page et compte les nœuds audio
+réellement planifiés.
+
 ## Les cinq ambiances
 
 ### 1. La Tour des Listes — *Le Grand Horloger compte ses noms*

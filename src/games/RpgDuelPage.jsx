@@ -36,6 +36,7 @@ import {
   prochainEtage,
   RPG_STORY_TOURS,
 } from './rpgStoryTours.js';
+import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import {
   chargerDeckChoisi,
   deckAdverseParDefaut,
@@ -1012,6 +1013,16 @@ function nommerOriginePlateau(camp, nomJoueur = null, nomAdverse = null) {
   return nomAdverse ?? 'le deck adverse';
 }
 
+// La musique d'ambiance du mode Histoire se couvre comme celle de Vice City
+// Rush : la préférence reste sur l'appareil, et le son revient par défaut.
+const RPG_SOUND_KEY = 'letsplay_sablier_sound_v1';
+function readRpgSoundPref() {
+  try { return window.localStorage.getItem(RPG_SOUND_KEY) !== 'off'; } catch { return true; }
+}
+function writeRpgSoundPref(value) {
+  try { window.localStorage.setItem(RPG_SOUND_KEY, value ? 'on' : 'off'); } catch { /* stockage indisponible */ }
+}
+
 function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onHoverCard, onLeaveHoverCard }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
@@ -1475,6 +1486,44 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [histoireEtageId, setHistoireEtageId] = useState(null);
   const [progressionHistoire, setProgressionHistoire] = useState(() => chargerProgressionHistoire());
   const histoireVictoireMarqueeRef = useRef(null);
+  // Musique d'ambiance du mode Histoire : chaque tour de Bab El porte sa
+  // propre boucle WebAudio (`rpgAmbientMusic.js`), muette tant qu'aucun étage
+  // n'est lancé — les duels libres et les menus n'ont pas de tour, donc pas
+  // de boucle. Même contrat de cycle de vie que la bande-son de la course.
+  const musiqueRef = useRef(null);
+  const [sonActif, setSonActif] = useState(readRpgSoundPref);
+  useEffect(() => { writeRpgSoundPref(sonActif); }, [sonActif]);
+  useEffect(() => {
+    musiqueRef.current = new RpgAmbientMusic();
+    return () => {
+      musiqueRef.current?.destroy();
+      musiqueRef.current = null;
+    };
+  }, []);
+  // La tour de l'étage en cours commande la boucle (null : duel libre).
+  const tourHistoireId = histoireEtageId
+    ? etageHistoireParId(histoireEtageId)?.tour?.id ?? null
+    : null;
+  useEffect(() => { musiqueRef.current?.setTour(tourHistoireId); }, [tourHistoireId]);
+  useEffect(() => {
+    const musique = musiqueRef.current;
+    if (!musique) return;
+    if (ecran === 'partie' && tourHistoireId && sonActif) musique.start();
+    else musique.stop();
+  }, [ecran, tourHistoireId, sonActif]);
+  // Un onglet mis de côté ne laisse pas la boucle tourner dans le vide ;
+  // au retour, elle reprend où le duel en est.
+  useEffect(() => {
+    const surVisibilite = () => {
+      const musique = musiqueRef.current;
+      if (!musique) return;
+      if (document.hidden) musique.pause();
+      else if (ecran === 'partie' && tourHistoireId && sonActif) musique.resume();
+    };
+    document.addEventListener('visibilitychange', surVisibilite);
+    return () => document.removeEventListener('visibilitychange', surVisibilite);
+  }, [ecran, tourHistoireId, sonActif]);
+  const basculerSon = () => setSonActif((actif) => !actif);
   const duelRef = useRef(null);
   const tableRef = useRef(null);
   const touchDragRef = useRef(null);
@@ -1779,10 +1828,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (viewport.portrait) fermerApercuAppui();
   }, [viewport.portrait]);
 
+  // « M » coupe ou rend la musique d'ambiance, comme sur la course.
+  useEffect(() => {
+    if (ecran !== 'partie') return undefined;
+    const surTouche = (event) => {
+      const cible = event.target?.tagName;
+      if (cible === 'INPUT' || cible === 'TEXTAREA' || cible === 'SELECT') return;
+      if (event.key?.toLowerCase() !== 'm') return;
+      basculerSon();
+    };
+    window.addEventListener('keydown', surTouche);
+    return () => window.removeEventListener('keydown', surTouche);
+  }, [ecran]);
+
   const demarrerEtage = (etageId) => {
     setHistoireEtageId(etageId);
     nouvellePartie({ etageId });
     reprendrePartie();
+    // Le contexte audio naît dans le geste qui lance l'étage : les navigateurs
+    // n'accordent le son qu'à un tel geste, l'effet ci-dessus ne sert qu'aux
+    // reprises (retour au duel, préférence rendue).
+    musiqueRef.current?.setTour(etageHistoireParId(etageId)?.tour?.id ?? null);
+    musiqueRef.current?.start();
   };
 
   const demarrerPartie = (deckId) => {
@@ -3156,6 +3223,16 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
           <button type="button" onClick={() => setEcran(histoireEtageId ? 'histoire' : 'jouer')}>Menu</button>
           <button type="button" onClick={() => setEcran('decks')}>Deck</button>
           <button type="button" onClick={() => setEcran('catalogue')}>Catalogue</button>
+          <button
+            type="button"
+            className={`rpg-duel-nav__sound${sonActif ? ' is-on' : ''}`}
+            onClick={basculerSon}
+            aria-pressed={sonActif}
+            title={sonActif ? 'Couper la musique (M)' : 'Activer la musique (M)'}
+            aria-label={sonActif ? 'Couper la musique d’ambiance' : 'Activer la musique d’ambiance'}
+          >
+            <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
+          </button>
         </nav>
         {carteGlissee && (
           <div className={`rpg-drop-indicator${surZoneDepot ? ' is-over' : ''}`} aria-hidden="true">
