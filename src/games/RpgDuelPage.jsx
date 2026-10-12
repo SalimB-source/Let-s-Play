@@ -106,6 +106,9 @@ const CARD_ART_CACHE_VERSIONS = {
   feriel: 'lance-de-feu-photoreal-v1',
   'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
   'anqa-des-braises': 'anqa-des-braises-huile-v1',
+  salem: 'full-art-huile-realiste-v2',
+  yamina: 'full-art-huile-realiste-v2',
+  tarek: 'full-art-huile-realiste-v2',
 };
 /**
  * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
