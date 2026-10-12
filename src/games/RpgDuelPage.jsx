@@ -5,7 +5,7 @@
  * pendant la fenêtre de réponse de l'adversaire.
  */
 
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
 import './rpg-story.css';
@@ -14,6 +14,8 @@ import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import { isFullscreenShortcut, nativeFullscreenElement } from './gameFullscreen.js';
 import useGameFullscreen from './useGameFullscreen.js';
+import { AuthContext } from '../auth/AuthContext';
+import { supabase } from '../lib/supabase';
 import {
   plateauDeRepli,
   plateauParId,
@@ -326,6 +328,38 @@ function ManaCost({ carte, compact = false, showElement = true }) {
       {!hybrid && showElement && <i aria-hidden="true">{ELEMENT_GLYPHS[carte.element] ?? '◇'}</i>}
     </span>
   );
+}
+
+function WizardManaCounters({ mana }) {
+  const resources = [
+    ['braise', 'Mana braise'],
+    ['eau', 'Mana eau'],
+    ['sable', 'Mana sable'],
+    ['neige', 'Mana neige'],
+  ];
+  const available = resources.filter(([color]) => Number(mana?.[color]) > 0);
+  if (!available.length) return null;
+  return (
+    <span className="rpg-wizard-plate__sable">
+      {available.map(([color, label]) => (
+        <i key={color} className={`mana mana--${color}`} title={label}>{mana[color]}</i>
+      ))}
+    </span>
+  );
+}
+
+function profileNameFallback(user) {
+  const metadata = user?.user_metadata ?? {};
+  const candidates = [
+    metadata.display_name,
+    user?.display_name,
+    metadata.username,
+    user?.username,
+    metadata.full_name,
+    metadata.gamertag,
+    user?.id ? String(user.id).slice(0, 8) : null,
+  ];
+  return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || 'Vous';
 }
 
 function CardElementBadge({ carte }) {
@@ -1855,6 +1889,24 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
 }
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random } = {}) {
+  const authContext = useContext(AuthContext);
+  const authUser = authContext?.user ?? null;
+  const [nomProfilJoueur, setNomProfilJoueur] = useState(() => profileNameFallback(authUser));
+  useEffect(() => {
+    let vivant = true;
+    setNomProfilJoueur(profileNameFallback(authUser));
+    if (!authUser?.id || authContext?.isDemo || !supabase) return undefined;
+    supabase.from('profiles').select('display_name, username').eq('id', authUser.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (!vivant || error) return;
+        const name = [data?.display_name, data?.username, String(authUser.id).slice(0, 8)]
+          .find((value) => typeof value === 'string' && value.trim())?.trim();
+        if (name) setNomProfilJoueur(name);
+      })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [authUser, authContext?.isDemo]);
+
   const [ecran, setEcran] = useState('jouer');
   const [tutorielActif, setTutorielActif] = useState(false);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
@@ -2640,6 +2692,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const indexEtapeTutoriel = etapeTutoriel ? RPG_TUTORIAL_STEPS.findIndex((step) => step.id === etapeTutoriel.id) : -1;
   const deckJoueurAffiche = decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
+  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : 'Ifrit al-Ahmar');
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const carteAnnoncee = fenetreSort ? cardById(duel.annonce.carteId) : null;
@@ -3928,17 +3981,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           data-tutorial-target={tutorielActif && ['bienvenue', 'combat'].includes(etapeTutorielId) ? 'opponent-health' : undefined}
           title="Le sorcier adverse">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche))} alt="" /></span>
+          <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
           <span className="rpg-wizard-plate__identity">
             <strong>{etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
             <small>{etageHistoire ? etageHistoire.fonction : tutorielActif ? 'Partie guidée · sans pression' : `${deckAdverseAffiche.name} · ${deckColorLabel(deckAdverseAffiche)}`}</small>
           </span>
-          <span className="rpg-wizard-plate__pv">🛡 {duel.sorcier.pv}{duel.sorcier.bouclier > 0 ? ` · ◇ ${duel.sorcier.bouclier}` : ''}</span>
-          <span className="rpg-wizard-plate__sable">
-            <i className="mana mana--braise" title="Mana braise">{duel.sorcier.mana.braise}</i>
-            <i className="mana mana--eau" title="Mana eau">{duel.sorcier.mana.eau}</i>
-            <i className="mana mana--sable" title="Mana sable">{duel.sorcier.mana.sable}</i>
-            <i className="mana mana--neige" title="Mana neige">{duel.sorcier.mana.neige}</i>
+          <span className="rpg-wizard-plate__pv">
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
+            <span className="rpg-wizard-plate__hp-value">{duel.sorcier.pv}</span>
+            {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
           </span>
+          <WizardManaCounters mana={duel.sorcier.mana} />
           <span className="rpg-wizard-plate__zones">Main · {duel.sorcier.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.sorcier.deck.length} · Cimetière {duel.sorcier.cimetiere.length}</span></span>
         </button>
 
@@ -4227,14 +4281,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
         <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' ? ' is-spell-target' : ''}`} title="Vous">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
+          <span className="rpg-wizard-plate__profile-name">{nomProfilJoueur}</span>
           <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
-          <span className="rpg-wizard-plate__pv">🛡 {duel.joueur.pv}{duel.joueur.bouclier > 0 ? ` · ◇ ${duel.joueur.bouclier}` : ''}</span>
-          <span className="rpg-wizard-plate__sable">
-            <i className="mana mana--braise" title="Mana braise">{duel.joueur.mana.braise}</i>
-            <i className="mana mana--eau" title="Mana eau">{duel.joueur.mana.eau}</i>
-            <i className="mana mana--sable" title="Mana sable">{duel.joueur.mana.sable}</i>
-            <i className="mana mana--neige" title="Mana neige">{duel.joueur.mana.neige}</i>
+          <span className="rpg-wizard-plate__pv">
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
+            <span className="rpg-wizard-plate__hp-value">{duel.joueur.pv}</span>
+            {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
           </span>
+          <WizardManaCounters mana={duel.joueur.mana} />
           <span className="rpg-wizard-plate__zones">Main · {duel.joueur.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.joueur.deck.length} · Cimetière {duel.joueur.cimetiere.length}</span></span>
         </div>
 

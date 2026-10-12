@@ -91,7 +91,8 @@ export async function checkRpgStory(assert) {
   const plate = container.querySelector('.rpg-wizard-plate--ennemi');
   assert.match(plate.textContent, /Le Guetteur de palier/, 'la plaque adverse porte le nom du sorcier de l’étage');
   assert.match(plate.textContent, /Vigie de la Chambre/, 'la fonction du sorcier remplace la ligne habituelle');
-  assert.match(plate.textContent, /🛡\s*50/, 'la puissance 0 du guetteur donne bien 50 PV');
+  assert.equal(plate.querySelector('.rpg-wizard-plate__hp-value')?.textContent.trim(), '50',
+    'la puissance 0 du guetteur donne bien 50 PV');
 
   // --- Retour au menu : on retrouve la galerie des tours ---
   await click(buttons().find((button) => button.textContent.trim() === 'Menu'), 'bouton Menu');

@@ -426,8 +426,12 @@ export async function checkRpgBattle(assert) {
   'les terrains n’affichent aucun coût de mana, même dans leur libellé accessible');
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOTRE TOUR/,
     'un indicateur signale que le tour commence chez le joueur');
-  assert.match(container.textContent, /🛡 50/, 'le joueur démarre à 50 PV');
-  assert.match(container.textContent, /🛡 60/, 'le sorcier (puissance 2) démarre à 60 PV');
+  assert.equal(container.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '50',
+    'le joueur démarre à 50 PV');
+  assert.equal(container.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim(), '60',
+    'le sorcier (puissance 2) démarre à 60 PV');
+  assert.ok(container.querySelector('.rpg-wizard-plate__hp-icon--heart'),
+    'chaque plaque prépare le cœur pour le rendu PC');
 
   // ── Toutes les cartes de la main sont les images 4:5 générées ──────────
   const srcs = [...container.querySelectorAll('.rpg-hand__card--img img')].map((i) => i.getAttribute('src'));
@@ -965,7 +969,8 @@ export async function checkRpgBattle(assert) {
   assert.equal(tableImpact.dataset.screenImpact, 'received', 'une attaque directe reçue est distinguée');
   assert.match(tableImpact.className, /rpg-screen-shake--[ab]/, 'l’attaque reçue fait aussi trembler l’écran');
   assert.match(tableImpact.className, /rpg-screen-hit--[ab]/, 'l’attaque reçue ajoute la vignette rouge');
-  assert.match(impactContainer.textContent, /🛡 48/, 'les dégâts reçus accompagnent bien l’effet de vignette');
+  assert.equal(impactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '48',
+    'les dégâts reçus accompagnent bien l’effet de vignette');
   await act(async () => { impactRoot.unmount(); });
   impactContainer.remove();
 

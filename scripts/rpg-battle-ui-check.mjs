@@ -283,8 +283,16 @@ assert.match(battleCss, /\.rpg-turn-rail\s*\{[^}]*position:\s*absolute;[^}]*z-in
   'le rail du tour est une colonne posée à droite de la table, qui laisse passer les gestes');
 assert.match(battleCss, /\.rpg-turn-rail \.rpg-btn\s*\{[^}]*pointer-events:\s*auto;/s,
   'seuls les boutons du rail attrapent le clic : une carte posée dessous reste jouable');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \.rpg-btn:disabled\s*\{\s*pointer-events:\s*none;\s*\}/,
+  'sur PC, un bouton de tour désactivé ne bloque pas les actions de combat sous le rail');
 assert.match(battleCss, /\.rpg-phase-track\s*\{[^}]*flex-direction:\s*column;/s,
-  'les cinq phases s’empilent verticalement dans le rail');
+  'la disposition de base des phases reste verticale pour le tactile');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \.rpg-phase-track\s*\{[^}]*flex-direction:\s*row;[^}]*background:\s*rgba\(8, 7, 9, \.62\);/s,
+  'sur PC, les phases sont en ligne sur un fond sombre transparent');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \.rpg-phase-step\s*\{[^}]*--rpg-phase-lit:\s*#f29a4a;[^}]*color:\s*#f29a4a;/s,
+  'sur PC, toutes les phases utilisent la même couleur orange');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \.rpg-phase-step__label\s*\{[^}]*clip-path:\s*inset\(50%\);/s,
+  'sur PC, les libellés disparaissent visuellement sans perdre leur texte accessible');
 assert.match(battleCss, /\.rpg-phase-step\.is-active \.rpg-phase-step__icon\s*\{[^}]*animation:\s*rpg-phase-icon-light/s,
   'l’icône de la phase actuelle s’allume avec un halo animé');
 assert.match(battleCss, /\.rpg-bottombar \.rpg-actions__row\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*flex-end;/s,
@@ -295,6 +303,8 @@ assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn,\s*\.rpg-actions__turn 
   'les libellés des commandes sont centrés verticalement et horizontalement');
 assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn,\s*\.rpg-actions__turn \.rpg-btn\s*\{[^}]*min-height:\s*35px;[^}]*background:\s*rgba\(10, 9, 9, \.58\);[^}]*box-shadow:\s*none;/s,
   'les actions sont agrandies tout en restant compactes, sans couleurs criardes ni ombres');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__turn \.rpg-btn--undo,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--attaque-tous,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--confirmer-attaque,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat \.rpg-btn--cancel-attack\s*\{\s*background:\s*rgba\(4, 3, 3, \.9\);\s*\}/,
+  'sur PC, Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque partagent le même fond sombre');
 assert.match(battleCss, /\.rpg-actions__combat \.rpg-btn--attaque,\s*\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*font: 600 11px\/1\.1 var\(--display\);[^}]*text-transform:\s*none;/s,
   'les actions restent compactes et sans capitales envahissantes');
 assert.match(battleCss, /\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*border-color:\s*rgba\(235, 194, 98, \.76\);[^}]*background:\s*linear-gradient\(180deg, rgba\(238, 202, 112, \.98\), rgba\(202, 158, 61, \.96\)\);[^}]*font-weight:\s*800;/s,
@@ -466,27 +476,19 @@ for (const plateauSable of ['erg-du-sahara', 'caravane-de-gourara']) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${plateauSable}\\s*\\{[^}]*background-color:`),
     `le plateau ${plateauSable} a sa propre couleur de repli`);
 }
-// La glace du fjord : la surface la plus claire du jeu, voile froid obligatoire.
+// La glace du fjord : une peinture claire avec sa propre couleur de repli.
 assert.match(battleCss, /\.card-table--plateau-fjord-des-neuf-hivers\s*\{[^}]*background-color:/s,
   'le Fjord des Neuf Hivers a sa propre couleur de repli');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-fjord-des-neuf-hivers::before\s*\{[^}]*radial-gradient/s,
-  'la glace du fjord reçoit son voile froid, sinon les cartes se noieraient dans le blanc');
 assert.match(plateauxSource, /id: 'fjord-des-neuf-hivers'[\s\S]*?fichier: 'plateau-fjord-des-neuf-hivers\.jpg'/,
   'le fjord des Neuf Hivers est un plateau déclaré, avec son fond dans public/');
 assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza\.jpg'/,
   'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
 assert.match(battleCss, /\.card-table--plateau-ruines-de-tipaza\s*\{[^}]*background-color:/s,
   'la pierre des ruines a sa propre couleur de repli');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-ruines-de-tipaza::before\s*\{[^}]*radial-gradient/s,
-  'les ruines reçoivent un voile dense et froid : pierre claire au bord de la mer');
 assert.match(plateauxSource, /id: 'terre-de-damnation'[\s\S]*?fichier: 'plateau-terre-de-damnation\.jpg'/,
   'la terre de damnation est un plateau déclaré, avec son fond dans public/');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table--plateau-terre-de-damnation::before\s*\{[^}]*radial-gradient/s,
-  'la terre brûlée reçoit son propre voile : vignette appuyée, centre laissé aux cartes');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) :is\(\.card-table--plateau-erg-du-sahara, \.card-table--plateau-caravane-de-gourara\)::before\s*\{[^}]*radial-gradient/s,
-  'les sables reçoivent un voile chaud pour garder libellés et cartes lisibles');
 
-// ── Le voile noir haut/bas du plateau : la lisibilité des textes de la table ─
+// ── Le voile haut/bas reste tactile, mais disparaît sur PC ───────────────
 const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
 assert.match(battlePage, /<HoverCardPreview carte=\{carteAnnoncee\} cible=\{cibleAnnoncee\} variante="annonce" \/>/,
   'la fenêtre de réponse affiche l’aperçu de la carte annoncée et lui transmet sa cible');
@@ -505,25 +507,116 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass\s*\{[^}]*j
 assert.match(battleCss, /--rpg-plateau-voile:\s*linear-gradient\(180deg,\s*var\(--rpg-plateau-voile-haut\) 0%,[\s\S]*?var\(--rpg-plateau-voile-bas\) 100%\);/,
   'le plateau porte un dégradé noir en haut et en bas, là où vivent les textes de la table');
 assert.match(battleCss, /\.card-table::before\s*\{[^}]*background:[^}]*var\(--rpg-plateau-voile\),/s,
-  'le voile haut/bas est posé sous l’interface, au-dessus du fond illustré');
+  'le calque de base du voile haut/bas est défini sous l’interface');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.card-table::before\s*\{\s*display:\s*none;\s*\}/,
+  'sur PC, le voile haut/bas et la vignette du plateau sont désactivés');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand\s*\{[^}]*width:\s*100%;[^}]*overflow:\s*visible;[^}]*pointer-events:\s*none;[^}]*mask-image:\s*none;[^}]*-webkit-mask-image:\s*none;/s,
+  'sur PC, le conteneur plein écran de la main laisse passer les clics en dehors des cartes');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand__card\s*\{[^}]*min-width:\s*0;[^}]*flex:\s*0 1 clamp\(76px, 9vw, 136px\);[^}]*pointer-events:\s*auto;/s,
+  'les cartes restent cliquables et se resserrent pour être toutes visibles sur PC');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-bottombar \.rpg-log \{ display: none; \}/,
+  'le journal qui commente la partie est masqué sur PC au-dessus des commandes');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-bottombar \.rpg-log \{ display: none; \}/,
+  'le journal reste masqué sur tactile comme avant');
+assert.match(battlePage, /function WizardManaCounters\(\{ mana \}\) \{[\s\S]*?const available = resources\.filter\(\(\[color\]\) => Number\(mana\?\.\[color\]\) > 0\);[\s\S]*?if \(!available\.length\) return null;/,
+  'les pastilles de mana à zéro disparaissent et les réserves positives restent affichées');
+assert.match(battlePage, /<WizardManaCounters mana=\{duel\.sorcier\.mana\} \/>[\s\S]*?<WizardManaCounters mana=\{duel\.joueur\.mana\} \/>/,
+  'le sorcier adverse et le joueur utilisent le même affichage des réserves actives');
+assert.match(battlePage, /supabase\.from\('profiles'\)\.select\('display_name, username'\)\.eq\('id', authUser\.id\)\.maybeSingle\(\)/,
+  'le nom affiché vient du profil public Let’s Play, avec repli sur le nom du compte');
+assert.match(battlePage, /className="rpg-wizard-plate__profile-name">\{nomProfilJoueur\}<\/span>/,
+  'le nom du profil du joueur est rendu sur sa plaque');
+assert.match(battlePage, /const nomSorcierAdverse = etageHistoire\?\.nom \?\? \(tutorielActif \? 'Sorcier d’entraînement' : 'Ifrit al-Ahmar'\);/,
+  'le sorcier adverse porte un nom cohérent avec le mode histoire, le tutoriel ou le duel libre');
+assert.match(battlePage, /className="rpg-wizard-plate__enemy-name">\{nomSorcierAdverse\}<\/span>/,
+  'le nom du sorcier adverse est rendu sur sa plaque');
+
+const playerPlateStart = battlePage.indexOf('className={`rpg-wizard-plate rpg-wizard-plate--joueur');
+const playerPlateEnd = battlePage.indexOf('<div className="rpg-terrains rpg-terrains--joueur"', playerPlateStart);
+const playerPlateMarkup = battlePage.slice(playerPlateStart, playerPlateEnd);
+assert.ok(playerPlateMarkup.indexOf('rpg-wizard-plate__avatar') < playerPlateMarkup.indexOf('rpg-wizard-plate__profile-name')
+  && playerPlateMarkup.indexOf('rpg-wizard-plate__profile-name') < playerPlateMarkup.indexOf('rpg-wizard-plate__pv'),
+'le nom du profil se place entre le portrait et les PV');
+const opponentPlateStart = battlePage.indexOf('className={`rpg-wizard-plate rpg-wizard-plate--ennemi');
+const opponentPlateEnd = battlePage.indexOf('<div className="rpg-terrains rpg-terrains--ennemi"', opponentPlateStart);
+const opponentPlateMarkup = battlePage.slice(opponentPlateStart, opponentPlateEnd);
+assert.ok(opponentPlateMarkup.indexOf('rpg-wizard-plate__avatar') < opponentPlateMarkup.indexOf('rpg-wizard-plate__enemy-name')
+  && opponentPlateMarkup.indexOf('rpg-wizard-plate__enemy-name') < opponentPlateMarkup.indexOf('rpg-wizard-plate__pv'),
+'le nom du sorcier adverse se place entre le portrait et les PV');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*clamp\(44px, 3\.6vw, 52px\) minmax\(0, 1fr\);[^}]*width:\s*clamp\(176px, 15vw, 224px\);[^}]*border:\s*1px solid rgba\(226, 190, 119, \.78\);[^}]*border-radius:\s*999px;[^}]*background:\s*linear-gradient\(135deg, rgba\(18, 15, 15, \.96\), rgba\(7, 9, 14, \.94\)\);[^}]*box-shadow:\s*0 0 0 1px rgba\(15, 11, 10, \.86\), inset 0 0 0 1px rgba\(255, 235, 193, \.3\);/s,
+  'sur PC, les plaques à fond sombre ont un cadre double très arrondi et des dimensions compactes');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate--joueur\s*\{[^}]*border-color:\s*rgba\(246, 211, 132, \.94\);[^}]*box-shadow:[^}]*rgba\(235, 188, 91, \.2\)/s,
+  'la plaque du joueur reçoit un cadre doré');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate--ennemi\s*\{[^}]*border-color:\s*rgba\(226, 145, 111, \.95\);[^}]*box-shadow:[^}]*rgba\(211, 111, 79, \.22\)/s,
+  'la plaque adverse reçoit un cadre cuivré distinct');
+assert.match(battleCss, /\.rpg-wizard-plate__profile-name \{ display: none; \}[\s\S]*?\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__profile-name,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__enemy-name\s*\{[^}]*display:\s*block;/s,
+  'le nom du profil et celui du sorcier adverse sont ajoutés uniquement au rendu PC');
+assert.match(battleCss, /\.rpg-wizard-plate__enemy-name \{ display: none; \}/,
+  'le nom de l’adversaire ne modifie pas le rendu tactile');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate--ennemi \.rpg-wizard-plate__pv\s*\{[^}]*grid-row:\s*2;[^}]*align-self:\s*center;/s,
+  'les PV adverses restent centrés sous le nom sur PC');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__identity,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__sable,\s*\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__zones \{ display: none; \}/,
+  'noms, mana et compteurs de zones sont retirés des fenêtres sur PC');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__shield-value \{ display: none; \}/,
+  'le bouclier chiffré n’encombre pas les fenêtres réduites au portrait et aux PV sur PC');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__avatar\s*\{[^}]*width:\s*clamp\(44px, 3\.6vw, 52px\);[^}]*height:\s*clamp\(44px, 3\.6vw, 52px\);/s,
+  'sur PC, les deux portraits sont agrandis');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__pv\s*\{[^}]*grid-column:\s*2;[^}]*display:\s*flex;[^}]*justify-content:\s*flex-start;[^}]*font-size:\s*clamp\(22px, 1\.9vw, 27px\);/s,
+  'sur PC, les PV agrandis sont lisibles dans la colonne à droite du portrait');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__hp-icon--shield \{ display: none; \}[\s\S]*?\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-wizard-plate__hp-icon--heart\s*\{[^}]*display:\s*inline-block;[^}]*color:\s*#f06468;/s,
+  'sur PC, un cœur rouge remplace le bouclier devant les PV');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-wizard-plate__avatar \{ grid-row: 1 \/ 3; width: 28px; height: 28px;/,
+  'les portraits gardent leur format tactile');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-wizard-plate__pv \{ grid-column: 3; grid-row: 1; font-size: 20px; \}/,
+  'les points de vie gardent leur taille tactile');
+assert.match(battleCss, /\.rpg-wizard-plate__hp-icon--heart \{ display: none; \}/,
+  'le symbole de bouclier existant reste affiché au doigt, sans le cœur PC');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-hand-dock \{ background: transparent; overflow: visible; \}/,
+  'le dock transparent ne concerne que le rendu PC');
+assert.match(battleCss, /\.rpg-hand-dock \{[^}]*background: linear-gradient\(0deg, rgba\(10, 8, 8, \.94\), rgba\(12, 10, 9, \.84\) 75%, transparent\);/s,
+  'le dégradé d’origine du dock reste conservé pour le rendu tactile');
+assert.match(mobileCss, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.rpg-battle--touch \.card-table::before \{ display: none; \}/s,
+  'un petit écran PC avec souris reçoit aussi le plateau dégagé');
+assert.match(mobileCss, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.rpg-battle--touch \.card-table > \.rpg-wizard-plate\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*clamp\(44px, 3\.6vw, 52px\) minmax\(0, 1fr\);[^}]*width:\s*clamp\(176px, 15vw, 224px\);[^}]*border:\s*1px solid rgba\(226, 190, 119, \.78\);[^}]*border-radius:\s*999px;[^}]*background:\s*linear-gradient\(135deg, rgba\(18, 15, 15, \.96\), rgba\(7, 9, 14, \.94\)\);[^}]*box-shadow:\s*0 0 0 1px rgba\(15, 11, 10, \.86\), inset 0 0 0 1px rgba\(255, 235, 193, \.3\);[\s\S]*?\.rpg-battle--touch \.rpg-wizard-plate__profile-name,\s*\.rpg-battle--touch \.rpg-wizard-plate__enemy-name\s*\{[^}]*display:\s*block;/s,
+  'un petit écran PC avec souris reçoit lui aussi le fond sombre, les cadres très arrondis et le layout compact');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-wizard-plate--joueur\s*\{[^}]*border-color:\s*rgba\(246, 211, 132, \.94\);[^}]*box-shadow:[^}]*rgba\(235, 188, 91, \.2\)/s,
+  'le cadre doré du joueur existe aussi sur un petit écran PC');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-wizard-plate--ennemi\s*\{[^}]*border-color:\s*rgba\(226, 145, 111, \.95\);[^}]*box-shadow:[^}]*rgba\(211, 111, 79, \.22\)/s,
+  'le cadre cuivré adverse existe aussi sur un petit écran PC');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-wizard-plate--ennemi \.rpg-wizard-plate__pv\s*\{[^}]*grid-row:\s*2;[^}]*align-self:\s*center;/s,
+  'les PV et le nom adverses sont également empilés sur PC étroit');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand__pile\s*\{[^}]*display:\s*flex;[^}]*min-width:\s*0;[^}]*flex:\s*0 1 clamp\(/s,
+  'les piles de la main peuvent elles aussi se resserrer sur un petit écran PC');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand__pile > \.rpg-hand__card\s*\{[^}]*width:\s*100%;[^}]*flex:\s*1 1 0;/s,
+  'la carte d’une pile suit la largeur resserrée de son emplacement');
 for (const { id } of RPG_PLATEAUX) {
   assert.match(battleCss, new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*background-color:[^}]*--rpg-plateau-voile-haut:[^}]*--rpg-plateau-voile-bas:`, 's'),
     `le plateau ${id} règle la densité de son voile haut/bas avec sa couleur de repli`);
 }
 // Mesure sur les fonds livrés (haut du cadre, 0-255) : Erg 142, Tipaza 118,
-// Gourara 102, Damnation 61, bois des Heures 54. Plus le fond est clair, plus
-// l'ombre doit être dense pour tenir l'encre crème au-dessus de 3:1.
+// Gourara 102, Damnation 61, bois des Heures 54. Sur tactile, plus le fond
+// est clair, plus le voile doit être dense pour garder l'encre crème lisible.
 const densiteVoile = (id) => Number(battleCss.match(
   new RegExp(`\\.card-table--plateau-${id}\\s*\\{[^}]*--rpg-plateau-voile-haut:\\s*rgba\\([^)]*,\\s*([\\d.]+)\\)`, 's'),
 )[1]);
 for (const plateauClair of ['erg-du-sahara', 'caravane-de-gourara', 'ruines-de-tipaza', 'terre-de-damnation']) {
   assert.ok(densiteVoile(plateauClair) > densiteVoile('table-des-heures'),
-    `${plateauClair} reçoit une ombre plus dense que le bois, déjà sombre`);
+    `${plateauClair} reçoit un voile tactile plus dense que le bois, déjà sombre`);
 }
 assert.ok(densiteVoile('erg-du-sahara') >= .8 && densiteVoile('ruines-de-tipaza') >= .8,
   'les deux fonds les plus clairs (sable et pierre) sont voilés à au moins 80 %');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table::before\s*\{\s*background:\s*var\(--rpg-plateau-voile\);\s*\}/,
   'au doigt le voile noir haut/bas reste posé : seule la vignette centrale disparaît');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-track \{[^}]*flex-direction:\s*column;/s,
+  'au doigt les phases gardent leur présentation verticale');
+assert.match(mobileCss, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.rpg-battle--touch \.rpg-turn-rail \.rpg-phase-track\s*\{[^}]*flex-direction:\s*row;[^}]*background:\s*rgba\(8, 7, 9, \.62\);/s,
+  'une fenêtre PC étroite avec souris reçoit les phases horizontales sans changer le tactile');
+assert.match(mobileCss, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand\s*\{[^}]*pointer-events:\s*none;[\s\S]*?\.rpg-battle--touch \.rpg-hand-dock \.rpg-hand__card\s*\{[^}]*pointer-events:\s*auto;/s,
+  'le conteneur de main transparent au clic laisse les cartes de petit PC jouables');
+assert.match(mobileCss, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.rpg-battle--touch \.rpg-actions__turn \.rpg-btn--undo,\s*\.rpg-battle--touch \.rpg-actions__combat \.rpg-btn--attaque-tous,\s*\.rpg-battle--touch \.rpg-actions__combat \.rpg-btn--confirmer-attaque,\s*\.rpg-battle--touch \.rpg-actions__combat \.rpg-btn--cancel-attack\s*\{\s*background:\s*rgba\(4, 3, 3, \.9\);/s,
+  'les petits écrans PC unifient le fond des quatre boutons sans changer les boutons tactiles');
+assert.match(mobileCss, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.rpg-battle--touch \.rpg-turn-rail \.rpg-btn:disabled \{ pointer-events: none; \}/s,
+  'sur petit PC, un bouton de tour désactivé laisse passer le clic vers les actions de combat');
 assert.doesNotMatch(mobileCss, /\.card-table::before\s*\{\s*background:\s*none/,
   'le voile de lisibilité du plateau n’est plus supprimé en tactile');
 assert.match(mobileCss, /\.rpg-battle--touch \.card-table\s*\{[^}]*--rpg-plateau-voile-bas-debut:/s,
@@ -729,9 +822,9 @@ console.log(
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '
-  + 'rail du tour remonté au milieu de la table — indicateur, cinq phases empilées et « Fin du tour » doré en colonne à la verticale du centre, souris et doigt compris, sans prendre le geste —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, phases du duel indiquées par des icônes lumineuses agrandies, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
+  + 'rail du tour remonté au milieu de la table — indicateur et « Fin du tour » doré en colonne à la verticale du centre; sur PC, cinq phases en icônes seules orange à l’horizontale sur fond foncé transparent, disposition verticale tactile préservée —, commandes de combat agrandies à toutes les tailles d’écran tout en restant discrètes, fond foncé commun aux boutons Annuler, Attaquer avec tous, Confirmer et Annuler l’attaque sur PC, icônes de phase orange agrandies sur PC, sur PC, plaques sombres, compactes et arrondies : cadre doré pour le joueur, cuivré pour l’adversaire; portrait à gauche, nom du profil ou du sorcier au-dessus des PV, tactile préservé, main sans masque autour d’elle (ni marge latérale ni recadrage : la rangée occupe toute la largeur), annulation réversible, magie avec cible, table continue, bloqueurs sélectionnables au clic ou glisser-déposer, flèches jaunes et animations, '
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
-  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
+  + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir haut/bas conservé au doigt mais retiré sur PC, plateau sans vignette, main sans masque et cartes toutes visibles, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres qui promet sa seconde vague au début du tour suivant, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'

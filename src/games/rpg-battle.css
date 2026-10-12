@@ -2066,16 +2066,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table {
   isolation: isolate;
   background-position: center;
-  /* Le voile de lisibilité du plateau : un dégradé noir **en haut et en bas** de
-     la table, là où vivent ses textes — navigation, main adverse et identité du
-     sorcier en haut ; identité du joueur, rails de terrains, message du tour,
-     phases, commandes et main en bas. Les plateaux sont des peintures claires :
-     mesuré sur le haut du cadre, l'Erg du Sahara monte à 142/255 et les Ruines
-     de Tipaza à 118, contre 54 pour le bois des Heures. L'encre crème de la
-     table (#fff0cf) y tombe sous 3:1 — d'où l'ombre, dont chaque plateau règle
-     la densité. Le centre reste dégagé : c'est la zone où les cartes se posent.
-     Le dégradé vit dans une variable, donc un seul mécanisme sert la souris
-     (voile + vignette, ci-dessous) et le doigt (voile seul, `rpg-mobile.css`). */
+  /* Le voile haut/bas améliore le contraste sur les écrans tactiles ; ses
+     couleurs et son dégradé sont réglés par plateau. Sur PC, le calque est
+     désactivé plus bas afin de laisser l'illustration entièrement visible. */
   --rpg-plateau-voile-haut: rgba(6, 4, 3, .6);
   --rpg-plateau-voile-bas: rgba(5, 4, 3, .68);
   --rpg-plateau-voile-haut-plein: 9%;
@@ -2102,19 +2095,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     radial-gradient(ellipse at 50% 43%, rgba(12, 12, 16, .06), rgba(8, 7, 8, .48) 82%);
 }
 
-/* Les plateaux du duel (voir `rpgPlateaux.js`) : le fond image est posé par la
-   page, ces classes ne règlent que la couleur de repli, la densité du voile
-   haut/bas et la vignette propre au terrain. Trois familles, parce que les
-   fonds n'ont pas la même lumière : le bois est déjà sombre (moyenne 57 sur
-   255) et se contente d'un voile discret ; la terre brûlée est sombre (66) mais
-   très contrastée — un voile net et une vignette appuyée, pour garder les
-   braises lisibles sans laisser les éclats de lave manger les cartes ; les
-   fonds clairs — le sable (127) et la pierre des ruines (133) — reçoivent une
-   ombre dense en haut comme en bas, sinon les libellés clairs de la table se
-   noient dans le beige. Seule la teinte change : ombre chaude pour les sables,
-   ombre neutre et froide pour la pierre au bord de la mer.
-   Le voile est le même mécanisme pour tous (la variable de la table) et il
-   reste en tactile (`rpg-mobile.css`) : seule la vignette centrale y disparaît. */
+/* Les plateaux du duel (voir `rpgPlateaux.js`) règlent leur couleur de repli et
+   la densité du voile tactile : les peintures claires demandent plus d'ombre
+   pour garder les libellés crème lisibles. */
 .card-table--plateau-table-des-heures {
   background-color: #1c1006;
   --rpg-plateau-voile-haut: rgba(8, 5, 2, .54);
@@ -2145,40 +2128,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   --rpg-plateau-voile-haut: rgba(9, 17, 23, .84);
   --rpg-plateau-voile-bas: rgba(7, 14, 20, .86);
 }
-.rpg-battle:not(.rpg-battle--touch) :is(.card-table--plateau-erg-du-sahara, .card-table--plateau-caravane-de-gourara)::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 44%, rgba(26, 15, 6, .14), rgba(20, 11, 5, .5) 88%);
-}
-.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-terre-de-damnation::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 45%, rgba(30, 12, 6, .04), rgba(11, 5, 3, .52) 90%);
-}
-/* La glace du fjord : la surface la plus claire du jeu (moyenne 170 sur 255 —
-   neige et glace bleutée). L'ombre est franche, froide et dense, comme la pierre
-   des ruines, mais teintée de bleu polaire : sans elle, la rose des vents et le
-   grain de la glace mangeraient les cartes, et le blanc de la Neige se perdrait
-   dans son propre terrain. Sa vignette se compose **avec** le dégradé commun
-   (`--rpg-plateau-voile`), comme celle des autres plateaux : le haut et le bas
-   de la table, où vivent les textes, gardent leur ombre. Les éléments de décor
-   (lanterne, cor, corde, hache, bâton de runes) restent dans les coins, sous le
-   premier tiers du voile. */
-.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-fjord-des-neuf-hivers::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 44%, rgba(13, 24, 34, .2), rgba(9, 18, 28, .52) 90%);
-}
-
-/* La pierre des ruines : plus claire encore que le sable, et c'est le centre qui
-   porte la mosaïque — l'ombre est donc neutre et froide (mer au nord), plus
-   dense au centre que sur les sables, sinon les cartes flottent sur la pierre. */
-.rpg-battle:not(.rpg-battle--touch) .card-table--plateau-ruines-de-tipaza::before {
-  background:
-    var(--rpg-plateau-voile),
-    radial-gradient(ellipse at 50% 44%, rgba(18, 18, 22, .3), rgba(14, 15, 19, .52) 90%);
-}
-
+.rpg-battle:not(.rpg-battle--touch) .card-table::before { display: none; }
 .rpg-hidden-hand {
   position: absolute;
   z-index: 3;
@@ -2295,12 +2245,91 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-wizard-plate__avatar--ennemi { color: #ffad80; border-color: rgba(204, 122, 83, .9); }
 .rpg-wizard-plate__avatar--joueur { color: #ffe5a4; }
 .rpg-wizard-plate__identity { grid-column: 2; grid-row: 1; display: grid; gap: 2px; min-width: 0; }
+.rpg-wizard-plate__profile-name { display: none; }
+.rpg-wizard-plate__enemy-name { display: none; }
 .rpg-wizard-plate__identity strong { color: #fff0cf; font: 800 10px/1.1 var(--display); letter-spacing: .11em; }
 .rpg-wizard-plate__identity small { color: rgba(236, 218, 181, .74); font: 500 8px/1.1 Georgia, serif; letter-spacing: .02em; }
 .rpg-wizard-plate__pv { grid-column: 3; grid-row: 1 / 3; align-self: center; color: #ffe6a2; font: 800 18px/1 Georgia, serif; white-space: nowrap; }
+.rpg-wizard-plate__hp-icon--heart { display: none; }
+.rpg-wizard-plate__hp-value,
+.rpg-wizard-plate__shield-value { margin-inline-start: .25em; }
 .rpg-wizard-plate__sable { grid-column: 2 / 4; grid-row: 2; color: #c9c2ae; font: 600 9px/1.2 var(--mono); }
 .rpg-wizard-plate__zones { grid-column: 2 / 4; grid-row: 3; color: rgba(230, 218, 190, .8); font: 600 8px/1.2 var(--mono); letter-spacing: .03em; }
 .rpg-wizard-plate.is-ciblable { outline: 2px solid #72e6d0; box-shadow: 0 0 18px rgba(91, 240, 218, .55); }
+
+/* Sur PC, l’image reste à gauche ; le nom et les PV forment une colonne lisible à droite. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate {
+  display: grid;
+  grid-template-columns: clamp(44px, 3.6vw, 52px) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-content: start;
+  width: clamp(176px, 15vw, 224px);
+  min-height: clamp(52px, 4vw, 64px);
+  gap: 2px clamp(8px, .75vw, 11px);
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(226, 190, 119, .78);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(18, 15, 15, .96), rgba(7, 9, 14, .94));
+  box-shadow: 0 0 0 1px rgba(15, 11, 10, .86), inset 0 0 0 1px rgba(255, 235, 193, .3);
+  text-align: left;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--joueur {
+  border-color: rgba(246, 211, 132, .94);
+  box-shadow: 0 0 0 1px rgba(16, 12, 8, .9), 0 0 15px rgba(235, 188, 91, .2), inset 0 0 0 1px rgba(255, 242, 200, .42);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--ennemi {
+  border-color: rgba(226, 145, 111, .95);
+  box-shadow: 0 0 0 1px rgba(17, 9, 8, .9), 0 0 15px rgba(211, 111, 79, .22), inset 0 0 0 1px rgba(255, 221, 204, .36);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__identity,
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__sable,
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__zones { display: none; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__profile-name,
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__enemy-name {
+  display: block;
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  color: #fff0cf;
+  font: 700 clamp(10px, .9vw, 13px)/1.15 var(--display);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__avatar {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: clamp(44px, 3.6vw, 52px);
+  height: clamp(44px, 3.6vw, 52px);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__pv {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  font-size: clamp(22px, 1.9vw, 27px);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--joueur .rpg-wizard-plate__pv {
+  grid-row: 2;
+  align-self: start;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--ennemi .rpg-wizard-plate__pv {
+  grid-row: 2;
+  align-self: center;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__hp-icon--shield { display: none; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__hp-icon--heart {
+  display: inline-block;
+  color: #f06468;
+  font-size: .9em;
+  line-height: 1;
+  text-shadow: 0 0 7px rgba(240, 100, 104, .52);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__hp-value { margin-inline-start: 0; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__shield-value { display: none; }
 
 .card-row {
   z-index: 4;
@@ -2361,12 +2390,36 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: none;
   padding: 8px 0 5px;
   background: linear-gradient(0deg, rgba(10, 8, 8, .94), rgba(12, 10, 9, .84) 75%, transparent);
+  overflow: visible;
 }
 .rpg-hand-dock:hover { transform: none; }
 .rpg-hand-dock.is-open { transform: none; }
 .rpg-hand { gap: 8px; max-height: 198px; padding: 8px 0 10px; }
 .rpg-hand__card { width: clamp(94px, 8.8vw, 124px); }
 .rpg-hand__card:hover:not(:disabled) { transform: translateY(-18px) scale(1.05); z-index: 5; }
+
+/* Sur PC, la main reste entière et se resserre au besoin. Son conteneur plein
+   écran laisse passer les clics ; seules les cartes capturent le pointeur. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand-dock { background: transparent; overflow: visible; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  overflow: visible;
+  justify-content: center;
+  gap: clamp(3px, .65vw, 10px);
+  padding-inline: clamp(8px, 1.5vw, 24px);
+  pointer-events: none;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand__card {
+  width: clamp(76px, 9vw, 136px);
+  min-width: 0;
+  min-height: 0;
+  flex: 0 1 clamp(76px, 9vw, 136px);
+  pointer-events: auto;
+}
 
 .rpg-combat-window {
   width: min(760px, calc(100vw - 32px));
@@ -2629,6 +2682,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline: 3px solid #9af4e3;
   box-shadow: 0 0 0 4px rgba(7, 33, 33, .7), 0 0 25px rgba(91, 240, 218, .78);
   filter: brightness(1.18);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate.is-ciblable {
+  box-shadow: 0 0 18px rgba(91, 240, 218, .55);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate.is-spell-target {
+  box-shadow: 0 0 0 4px rgba(7, 33, 33, .7), 0 0 25px rgba(91, 240, 218, .78);
 }
 .rpg-card.is-coup-rapide-cible {
   outline: 4px solid #ffb15e;
@@ -4625,6 +4684,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    main sans former un panneau visible ni rivaliser avec les cartes. L'indicateur
    de tour, les phases et « Fin du tour » ne vivent plus ici : ils ont leur rail
    au milieu de la table (voir « Le rail du tour » plus bas). */
+.rpg-battle:not(.rpg-battle--touch) .rpg-bottombar .rpg-log { display: none; }
 .rpg-bottombar {
   right: 16px;
   bottom: 200px;
@@ -4742,6 +4802,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: #f58a83;
   box-shadow: 0 0 8px rgba(242, 106, 97, .16);
 }
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque-tous,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--confirmer-attaque,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--cancel-attack {
+  background: rgba(4, 3, 3, .9);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo:hover:not(:disabled),
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque-tous:hover:not(:disabled),
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--confirmer-attaque:hover:not(:disabled),
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--cancel-attack:hover:not(:disabled) {
+  background: rgba(14, 10, 8, .94);
+}
 .rpg-actions__combat .rpg-btn--confirmer-attaque { border-color: rgba(155, 220, 255, .58); }
 .rpg-actions__combat .rpg-btn--confirmer-attaque:hover:not(:disabled) {
   border-color: #bbeaff;
@@ -4809,12 +4881,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-turn-rail .rpg-btn--undo { grid-column: 1 / -1; grid-row: 1; }
 .rpg-turn-rail .rpg-btn--endturn { grid-column: 2; }
 .rpg-turn-rail .rpg-btn { width: 100%; white-space: normal; pointer-events: auto; }
+/* En phase d'attaque, « Fin du tour » est désactivé : son rectangle ne doit
+   pas intercepter les clics sur Confirmer ou Annuler l'attaque en dessous. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-btn:disabled { pointer-events: none; }
 .rpg-turn-rail .rpg-turn-indicator { align-self: stretch; justify-content: center; }
 .rpg-turn-rail .rpg-turn-indicator strong { white-space: normal; }
 
-/* Repère de progression du duel : une seule pastille lumineuse suit la phase
-   active. Les cinq phases s'empilent, chacune dans sa capsule translucide ; le
-   libellé suit son icône, à droite, pour garder le rail étroit. */
+/* Repère de progression : la disposition de base empile les phases tactiles
+   avec leur libellé. La variante PC, en icônes orange horizontales, est définie
+   juste après les règles communes. */
 .rpg-phase-track {
   display: flex;
   width: 100%;
@@ -4905,6 +4980,66 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-phase-step.is-active .rpg-phase-step__icon { animation: none; }
+}
+
+/* Sur PC, les phases deviennent une rangée compacte d'icônes orange. Le fond
+   sombre translucide appartient à la rangée ; les noms restent accessibles. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-track {
+  box-sizing: border-box;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 1px solid rgba(242, 154, 74, .24);
+  border-radius: 12px;
+  background: rgba(8, 7, 9, .62);
+  backdrop-filter: blur(6px);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step {
+  --rpg-phase-lit: #f29a4a;
+  --rpg-phase-glow: rgba(242, 154, 74, .38);
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step.is-active {
+  border-color: transparent;
+  background: transparent;
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon {
+  width: 30px;
+  height: 30px;
+  border-color: rgba(242, 154, 74, .28);
+  background: rgba(12, 9, 8, .38);
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step.is-active .rpg-phase-step__icon {
+  border-color: rgba(255, 171, 99, .78);
+  background: rgba(242, 132, 46, .16);
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon svg {
+  width: 18px;
+  height: 18px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
