@@ -64,17 +64,14 @@ test('le fjord des Neuf Hivers est livré comme plateau de plein droit', () => {
     'aucun plateau ne réutilise le fond d’un autre');
 });
 
-test('la terre de damnation est livrée comme plateau de plein droit', () => {
-  const damnation = plateauParId('terre-de-damnation');
-  assert.ok(damnation, 'la Terre de Damnation fait partie des plateaux');
-  assert.match(damnation.fichier, /\.jpg$/);
-  assert.match(damnation.nom, /damnation/i);
-  assert.match(damnation.resume, /feu|braise|cendre|calcin/i,
-    'le résumé annonce bien les flammes et la désolation');
-  // Les quatre atmosphères du jeu : Bab El, les déserts, la terre brûlée,
-  // la cité antique au bord de la mer.
-  assert.equal(new Set(RPG_PLATEAUX.map((plateau) => plateau.fichier)).size, RPG_PLATEAUX.length,
-    'aucun plateau ne réutilise le fond d’un autre');
+test('la Terre de Damnation est retirée du jeu et la Braise rejoint la table d’origine', () => {
+  assert.equal(plateauParId('terre-de-damnation'), null, 'le plateau retiré ne fait plus partie du catalogue');
+  assert.ok(!RPG_PLATEAUX.some(({ fichier }) => fichier === 'plateau-terre-de-damnation.jpg'));
+  assert.equal(existsSync(new URL('../public/plateau-terre-de-damnation.jpg', import.meta.url)), false,
+    'le fond retiré n’est plus livré avec le jeu');
+  assert.equal(RPG_PLATEAUX_PAR_DECK['cour-des-djinns'], 'table-des-heures');
+  assert.equal(RPG_PLATEAUX_PAR_COULEUR.braise, 'table-des-heures');
+  assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'table-des-heures');
 });
 
 test('les ruines de Tipaza sont livrées comme plateau de plein droit', () => {
@@ -129,9 +126,9 @@ test('chaque deck du catalogue impose un plateau connu', () => {
       `${deck.id} : l’identifiant seul rend le même terrain`);
   }
   // Les terrains suivent l’identité du deck : le Sable dans l’Erg, la Braise
-  // sur la terre brûlée, l’Eau au bord de la mer, l’hybride sur la piste.
+  // sur la table d’origine, l’Eau au bord de la mer, l’hybride sur la piste.
   assert.equal(plateauDeDeck('veilleurs-du-desert').plateau.id, 'erg-du-sahara');
-  assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'terre-de-damnation');
+  assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'table-des-heures');
   assert.equal(plateauDeDeck('sentiers-de-cendre').plateau.id, 'caravane-de-gourara');
   assert.equal(plateauDeDeck('maree-des-abysses').plateau.id, 'ruines-de-tipaza');
   assert.equal(plateauDeDeck('serment-des-neuf-hivers').plateau.id, 'fjord-des-neuf-hivers');
@@ -175,7 +172,7 @@ test('toutes les correspondances de decks pointent vers un plateau livré', () =
 test('un paquet brut prend le terrain de sa couleur dominante', () => {
   assert.equal(couleurDominanteDeck(['desert', 'desert', 'chien-du-guet']), 'sable');
   assert.equal(plateauDeDeck(['desert', 'desert', 'chien-du-guet']).plateau.id, 'erg-du-sahara');
-  assert.equal(plateauDeDeck(Array(8).fill('montagne')).plateau.id, 'terre-de-damnation');
+  assert.equal(plateauDeDeck(Array(8).fill('montagne')).plateau.id, 'table-des-heures');
   assert.equal(plateauDeDeck(Array(8).fill('mer')).plateau.id, 'ruines-de-tipaza');
   // La quatrième couleur : la Neige prend la glace du fjord.
   assert.equal(couleurDominanteDeck(['glacier', 'glacier', 'loup-des-neiges']), 'neige');
@@ -212,7 +209,7 @@ test('le tirage désigne un camp, et c’est son deck qui donne le plateau', () 
   for (const valeur of [0.5, 0.75, 0.999]) {
     const tirage = tirerPlateauDuDuel({ ...duel, rng: () => valeur });
     assert.equal(tirage.camp, 'adversaire', `rng ${valeur} : l’adversaire impose son terrain`);
-    assert.equal(tirage.plateau.id, 'terre-de-damnation');
+    assert.equal(tirage.plateau.id, 'table-des-heures');
   }
 });
 

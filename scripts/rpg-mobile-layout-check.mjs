@@ -53,8 +53,43 @@ try {
       `${width}: les phases sont dans la colonne de droite`);
     assert.ok(Math.abs(result.attackAll.top - result.endTurn.top) <= 1 && result.attackAll.right <= result.endTurn.left,
       `${width}: attaque générale et fin du tour sont côte à côte`);
-    assert.equal(await page.locator('.rpg-hand').evaluate(el => getComputedStyle(el).overflow), 'visible',
-      `${width}: aucun masque de débordement sur la main`);
+    // La main : une carte = une cible. Les cartes ne se recouvrent jamais — le
+    // doigt qui touche une carte joue celle-là — et toute carte visible dans la
+    // rangée répond en son centre. Si la main déborde (plancher tactile atteint :
+    // beaucoup de cartes hétéronymes sur un écran étroit), la rangée défile
+    // horizontalement et chaque carte reste atteignable en la faisant glisser.
+    const main = await page.evaluate(() => {
+      const hand = document.querySelector('.rpg-hand');
+      const box = hand.getBoundingClientRect();
+      const cards = [...document.querySelectorAll('.rpg-hand__card')];
+      const boxes = cards.map((card) => card.getBoundingClientRect());
+      const overlaps = boxes.slice(1).filter((r, index) => boxes[index].right > r.left + .5).length;
+      const visibles = cards
+        .map((card, index) => ({ card, box: boxes[index] }))
+        .filter(({ box: r }) => r.left >= box.left - 1 && r.right <= box.right + 1);
+      // Le volet de mulligan couvre la table au début d'un duel : le doigt n'y
+      // atteint pas encore la main, on mesure alors la seule géométrie.
+      const mulliganOuvert = Boolean(document.querySelector('.rpg-mulligan'));
+      const muettes = mulliganOuvert ? 0 : visibles.filter(({ card, box: r }) => {
+        const dessous = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return dessous?.closest('.rpg-hand__card') !== card;
+      }).length;
+      return {
+        overlaps,
+        muettes,
+        visibles: visibles.length,
+        total: cards.length,
+        largeurs: boxes.map((r) => Math.round(r.width)),
+        tient: boxes.every((r) => r.width >= 34),
+        premiereVisible: !boxes.length || boxes[0].left >= box.left - 1,
+        scrollable: hand.scrollWidth > hand.clientWidth + 1,
+        scrollLeft: hand.scrollLeft,
+      };
+    });
+    assert.equal(main.overlaps, 0, `${width}: aucune carte de la main n'en recouvre une autre`);
+    assert.equal(main.muettes, 0, `${width}: chaque carte visible de la main répond au doigt, en son centre`);
+    assert.ok(main.tient, `${width}: chaque carte de la main garde une largeur touchable (${main.largeurs.join(' × ')})`);
+    assert.ok(main.premiereVisible, `${width}: la première carte de la main reste atteignable`);
     assert.ok(result.rail.top >= result.table.top - 1 && result.rail.bottom <= result.hand.top + 1,
       `${width}: le rail du tour tient dans la bande de jeu, au-dessus de la main`);
     assert.ok(result.phases.height > 0 && result.phases.bottom <= result.endTurn.y && result.endTurn.y - result.phases.bottom <= 10,
@@ -275,21 +310,88 @@ try {
   // Tap plays the card immediately.
   await terrain.tap();
   await page.waitForFunction(() => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === 1);
-  const terrainBox = await page.locator('.rpg-terrains--joueur .rpg-terrain').boundingBox();
+  const terrainPoseSeul = page.locator('.rpg-terrains--joueur .rpg-terrain');
+  const terrainBox = await terrainPoseSeul.boundingBox();
   assert.ok(terrainBox && terrainBox.x >= 0 && terrainBox.x + terrainBox.width <= 844,
     'the played terrain stays inside the landscape viewport');
+  assert.equal(await terrainPoseSeul.getAttribute('data-terrain-count'), '1');
+  assert.equal(await terrainPoseSeul.evaluate((element) => element.classList.contains('is-stacked')), false,
+    'a single terrain is shown as one card, without a fake stack underneath');
+  assert.equal(await terrainPoseSeul.locator('.rpg-terrain-stack__count').count(), 0,
+    'a single terrain has no ×1 stack counter');
   await page.locator('.rpg-hand__card--terrain').first().tap();
   assert.equal(await page.locator('.rpg-terrains--joueur .rpg-terrain').count(), 1,
     'the second terrain of the turn is refused without being played');
   console.log('✓ Tap plays a terrain at once and silently refuses the second one');
+  // La main au doigt : une carte = une cible, même quand elle se remplit. On
+  // remplace la rangée par huit cartes factices — la plus longue main d'un duel
+  // — puis on touche chacune en son centre, après l'avoir amenée dans le champ.
+  const mainPleine = await page.evaluate(async () => {
+    const hand = document.querySelector('.rpg-hand');
+    const original = [...hand.childNodes];
+    const compte = hand.style.getPropertyValue('--hand-count');
+    try {
+      const carte = document.querySelector('.rpg-hand__card');
+      const emballage = carte.closest('.rpg-hand__pile');
+      const cartes = Array.from({ length: 8 }, (_, index) => {
+        const clone = (emballage ?? carte).cloneNode(true);
+        const face = clone.classList.contains('rpg-hand__card') ? clone : clone.querySelector('.rpg-hand__card');
+        face.dataset.cardId = `sonde-${index}`;
+        face.classList.add('is-playable');
+        face.classList.remove('is-flying', 'is-dragging');
+        for (const propriete of ['left', 'top', 'width', 'height']) face.style.removeProperty(propriete);
+        return clone;
+      });
+      hand.replaceChildren(...cartes);
+      hand.style.setProperty('--hand-count', '8');
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const boxes = cartes.map((element) => element.getBoundingClientRect());
+      const largeurs = boxes.map((box) => Math.round(box.width));
+      const chevauchements = boxes.slice(1).filter((box, index) => boxes[index].right > box.left + .5).length;
+      const atteintes = [];
+      for (let index = 0; index < cartes.length; index += 1) {
+        cartes[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const box = cartes[index].getBoundingClientRect();
+        const dessous = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        const face = dessous?.closest('.rpg-hand__card');
+        atteintes.push(face?.dataset.cardId === `sonde-${index}`);
+      }
+      return {
+        largeurs,
+        chevauchements,
+        defile: hand.scrollWidth > hand.clientWidth + 1,
+        atteintes: atteintes.filter(Boolean).length,
+        total: cartes.length,
+      };
+    } finally {
+      hand.replaceChildren(...original);
+      if (compte) hand.style.setProperty('--hand-count', compte);
+      else hand.style.removeProperty('--hand-count');
+    }
+  });
+  assert.equal(mainPleine.chevauchements, 0,
+    `une main de ${mainPleine.total} cartes ne se recouvre pas (largeurs ${mainPleine.largeurs.join(' × ')})`);
+  assert.ok(mainPleine.largeurs.every((largeur) => largeur >= 34),
+    `chaque carte d'une main pleine garde sa largeur touchable (${mainPleine.largeurs.join(' × ')})`);
+  assert.equal(mainPleine.atteintes, mainPleine.total,
+    'chaque carte d’une main pleine répond au doigt, en son centre, une fois amenée dans le champ');
+  console.log(`✓ Hand of ${mainPleine.total}: no overlap, touchable cards${mainPleine.defile ? ', scrollable row' : ''}`);
   if (process.env.RPG_SCREENSHOT) await page.screenshot({ path: process.env.RPG_SCREENSHOT });
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     const undo = await page.locator('.rpg-actions__turn .rpg-btn--undo').boundingBox();
     const end = await page.locator('.rpg-actions__turn .rpg-btn--endturn').boundingBox();
+    const attackAll = await page.locator('.rpg-actions__turn .rpg-btn--attaque-tous').boundingBox();
     assert.ok(undo && end && undo.width >= 44 && undo.height >= 44, `${width}: undo is visible on the table`);
-    assert.ok(Math.abs((undo.x + undo.width / 2) - (end.x + end.width / 2)) <= 2 && undo.y + undo.height <= end.y + 1,
-      `${width}: undo is stacked above end-turn, in the same rail column`);
+    // Depuis que l'attaque générale a rejoint le rail, les deux commandes du bas
+    // partagent la dernière rangée ; l'annulation occupe la rangée du dessus, sur
+    // toute la largeur du rail — elle reste donc au-dessus d'elles.
+    assert.ok(attackAll && Math.abs(attackAll.y - end.y) <= 1 && attackAll.x + attackAll.width <= end.x,
+      `${width}: attaque générale et fin du tour partagent la rangée du bas`);
+    assert.ok(undo.y + undo.height <= Math.min(end.y, attackAll.y) + 1
+      && undo.x <= Math.min(end.x, attackAll.x) + 1 && undo.x + undo.width >= Math.max(end.x + end.width, attackAll.x + attackAll.width) - 1,
+      `${width}: annuler la dernière action occupe la rangée au-dessus, sur toute la largeur du rail`);
     assert.ok(end.x + end.width <= width && end.y + end.height <= height, `${width}: turn buttons fit the screen`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
@@ -307,15 +409,27 @@ try {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await page.waitForFunction((count) => document.querySelectorAll('.rpg-terrains--joueur .rpg-terrain').length === count + 1, before);
   assert.equal(await page.locator('.rpg-touch-drag-ghost').count(), 0);
-  console.log('✓ Touch drag plays a terrain after orientation changes');
+  const terrainSeul = page.locator('.rpg-terrains--joueur .rpg-terrain');
+  await terrainSeul.click();
+  await page.waitForFunction(() => document.querySelector('.rpg-terrains--joueur .rpg-terrain')?.classList.contains('is-tapped'));
+  assert.equal(await terrainSeul.getAttribute('data-tapped-count'), '1', 'using a single land taps it');
+  const angleTerrainEngage = await terrainSeul.evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+  });
+  assert.ok(Math.abs(angleTerrainEngage - 12) < .5, 'a tapped terrain stays visibly tilted on touch screens');
+  console.log('✓ Touch drag plays a terrain and using it visibly taps the single card');
   await page.locator('.rpg-btn--endturn').click();
   await page.locator('.rpg-turn-indicator.is-player').waitFor();
   await page.locator('.rpg-hand__card--terrain.is-playable').first().click();
   await page.waitForFunction(() => document.querySelector('.rpg-terrains--joueur .rpg-terrain[data-terrain-count="2"]'));
   const stack = page.locator('.rpg-terrains--joueur .rpg-terrain');
   assert.equal(await stack.count(), 1, 'identical terrains share one pile');
+  assert.equal(await stack.evaluate((element) => element.classList.contains('is-stacked')), true,
+    'a second identical terrain adds the stacked-card visual');
   assert.equal(await stack.locator('.rpg-terrain-stack__available').count(), 0);
-  assert.equal((await stack.textContent()).trim(), '×2', 'only the total count is printed over the terrain');
+  assert.equal((await stack.locator('.rpg-terrain-stack__count').textContent()).trim(), '×2',
+    'the stacked terrain shows its total count');
   assert.equal(await stack.getAttribute('data-available-count'), '2');
   for (const remaining of [1, 0]) {
     await stack.click();
@@ -325,7 +439,20 @@ try {
     }, remaining);
     assert.equal(await stack.getAttribute('data-terrain-count'), '2');
     assert.equal(await stack.getAttribute('data-tapped-count'), String(2 - remaining), 'a mana click taps only one terrain');
+    if (remaining === 1) {
+      assert.equal(await stack.evaluate((element) => element.classList.contains('is-partially-tapped')), true,
+        'a partly used terrain pile shows its tapped state');
+      assert.equal((await stack.locator('.rpg-terrain-stack__engagement').textContent()).trim(), '↻1');
+    }
   }
+  assert.equal(await stack.evaluate((element) => element.classList.contains('is-tapped')), true,
+    'a fully used terrain pile is visibly tapped');
+  assert.equal((await stack.locator('.rpg-terrain-stack__engagement').textContent()).trim(), '↻2');
+  const angleStackEngage = await stack.evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
+  });
+  assert.ok(Math.abs(angleStackEngage - 12) < .5, 'an exhausted terrain pile stays visibly tilted on touch screens');
   const counts = {
     available: await stack.getAttribute('data-available-count'),
     tapped: await stack.getAttribute('data-tapped-count'),
@@ -352,7 +479,7 @@ try {
     const angle = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
     return Math.abs(angle - expected) < .5;
   }, { selector, expected });
-  await waitForTilt('.rpg-card--equipe.is-declared-attacker', 90);
+  await waitForTilt('.rpg-card--equipe.is-declared-attacker', 15);
   assert.equal(await page.locator('.card-row .rpg-card__type').count(), 0, 'table cards do not print their type');
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
@@ -377,7 +504,7 @@ try {
   await waitForTilt('.rpg-card--equipe', 0);
   await page.locator('.rpg-btn--attaque-tous').click();
   await page.locator('.rpg-btn--confirmer-attaque').click();
-  await waitForTilt('.rpg-card--equipe.is-attacked', 90);
+  await waitForTilt('.rpg-card--equipe.is-attacked', 15);
   const angles = await page.locator('.rpg-card--equipe.is-attacked').evaluate(async card => {
     const values = [];
     // Sample the lunge/impact animation and its cleanup, not just the resting state.
@@ -388,8 +515,8 @@ try {
     }
     return values;
   });
-  assert.ok(angles.every(angle => Math.abs(angle - 90) < .5), 'combat animations never straighten the attacker');
-  console.log('✓ Attackers tilt on declaration, straighten on cancellation and stay tilted after attacking');
+  assert.ok(angles.every(angle => Math.abs(angle - 15) < .5), 'combat animations preserve the 15-degree clockwise attacker tilt');
+  console.log('✓ Attackers tilt 15° to the right on declaration, straighten on cancellation and keep the tilt after attacking');
   console.log('✓ Attack-all, cancellation and confirmation share the controls column; the turn rail keeps the phases, undo and end-turn above the hand');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.rpg-rotate-prompt').waitFor();

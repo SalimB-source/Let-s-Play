@@ -723,7 +723,6 @@ function TableCard({
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-      {entite.attaquee && <span className="rpg-card__engagee" aria-hidden="true">engagée</span>}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
       <header className="rpg-card__title">
@@ -733,14 +732,6 @@ function TableCard({
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{entite.atk}</span></span>
           <span className={`rpg-card__pt${blessee ? ' is-wounded' : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span></span>
         </footer>
-        {actionFx && (
-          <span key={actionFx.token} className={`rpg-card__action-fx rpg-card__action-fx--${actionFx.type}`} aria-hidden="true">
-            {actionFx.type === 'block' ? 'BLOCAGE'
-              : actionFx.type === 'unblock' ? 'RETIRÉ'
-                : actionFx.type === 'hit' ? 'IMPACT'
-                  : actionFx.type === 'attack' ? 'ATTAQUE' : 'RENFORCÉ'}
-          </span>
-        )}
       </button>
   );
 }
@@ -881,7 +872,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -889,6 +880,38 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   const effets = cardEffectLines(effet);
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
+  const details = (
+    <>
+      {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
+      {variante === 'annonce' && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
+      {!estCreature && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
+      {cibleAnnoncee && (
+        <div className="rpg-spell-played__target rpg-hover-card-preview__target">
+          {cibleAnnoncee.illustrationId
+            ? <img src={cardArt(cibleAnnoncee.illustrationId)} alt="" />
+            : <span className="rpg-spell-played__target-mark" aria-hidden="true">⌖</span>}
+          <span><small>CIBLE</small><b>{cibleAnnoncee.nom}</b></span>
+        </div>
+      )}
+      {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
+      {effet && (
+        <div className="rpg-hover-card-preview__rules" aria-label="Effets">
+          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}>{ligne}</span>)}
+        </div>
+      )}
+      {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
+    </>
+  );
+  const face = (
+    <div
+      className={`rpg-hover-card-preview__face ${cardFrameClass(carte)}`}
+      style={cardFrameStyle(carte)}
+      aria-hidden="true"
+    >
+      <img src={cardArt(carte)} alt="" />
+      <CardElementBadge carte={carte} />
+    </div>
+  );
   return (
     <aside
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
@@ -896,34 +919,20 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
       style={{ ...style, ...cardFrameStyle(carte) }}
     >
-      <div
-        className={`rpg-hover-card-preview__face ${cardFrameClass(carte)}`}
-        style={cardFrameStyle(carte)}
-        aria-hidden="true"
-      >
-        <img src={cardArt(carte)} alt="" />
-        <CardElementBadge carte={carte} />
-      </div>
-      <div className="rpg-hover-card-preview__details">
-        {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
-        {variante === 'annonce' && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
-        {!estCreature && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
-        {cibleAnnoncee && (
-          <div className="rpg-spell-played__target rpg-hover-card-preview__target">
-            {cibleAnnoncee.illustrationId
-              ? <img src={cardArt(cibleAnnoncee.illustrationId)} alt="" />
-              : <span className="rpg-spell-played__target-mark" aria-hidden="true">⌖</span>}
-            <span><small>CIBLE</small><b>{cibleAnnoncee.nom}</b></span>
+      {variante === 'annonce' ? (
+        <div className="rpg-hover-card-preview__layout">
+          {face}
+          <div className="rpg-hover-card-preview__details-column">
+            <div className="rpg-hover-card-preview__details">{details}</div>
+            {controls}
           </div>
-        )}
-        {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
-        {effet && (
-          <div className="rpg-hover-card-preview__rules" aria-label="Effets">
-            {effets.map((ligne, index) => <span key={`${index}-${ligne}`}>{ligne}</span>)}
-          </div>
-        )}
-        {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
-      </div>
+        </div>
+      ) : (
+        <>
+          {face}
+          <div className="rpg-hover-card-preview__details">{details}</div>
+        </>
+      )}
     </aside>
   );
 }
@@ -2180,6 +2189,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [cibleEnCours, setCibleEnCours] = useState(null);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
+  const [annonceApercueFermeePour, setAnnonceApercueFermeePour] = useState(null);
   // Mulligan : à l'ouverture du duel, la main de départ se découvre en grand
   // et le joueur choisit les cartes qu'il renvoie dans le paquet. `null` dès
   // que l'échange est validé (ou impossible) : la partie est à lui.
@@ -2695,6 +2705,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : 'Ifrit al-Ahmar');
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
+  const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
   const carteAnnoncee = fenetreSort ? cardById(duel.annonce.carteId) : null;
   const sorcierArtId = etageHistoire
     ? 'ifrit-al-ahmar'
@@ -2711,7 +2722,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
     : fenetreSort
-      ? 'SORT ANNONCÉ'
+      ? apercuAnnonceOuvert ? 'SORT ANNONCÉ' : 'À VOUS · RÉPONSE'
     : reponseActive
       ? reponseApresBlocage ? 'À VOUS · RÉPONSE' : 'À VOUS · DÉFENSE'
       : phase ? 'À VOUS · ATTAQUE' : monTour ? 'À VOTRE TOUR' : 'TOUR DU SORCIER';
@@ -2973,6 +2984,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return (reponseApresBlocage ? carte.instant : monTour || (reponseActive && carte.instant))
       && rpgPeutPayer(duel.joueur, carte);
   };
+  const aReponseJouableEnMain = Boolean(apercuAnnonceOuvert && duel.joueur.main.some((carteId) => {
+    const carte = cardById(carteId);
+    return Boolean(carte?.instant && peutJouerCarte(carte));
+  }));
 
   const commencerGlisserCarte = (event, carte) => {
     if (!peutJouerCarte(carte)) {
@@ -3724,12 +3739,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       declarerAttaqueSorcier();
       return;
     }
+    annulerAppuiLong();
+    touchDragRef.current?.();
+    touchDragRef.current = null;
+    setApercuAppui(null);
+    setApercuSurvol(null);
     force();
+  };
+
+  // « Répondre » ferme uniquement l’aperçu : l’annonce reste en attente et
+  // les magies rapides de la main restent jouables.
+  const repondreAAnnonce = () => {
+    if (!duel.annonce) { jouerSfx('erreur'); return; }
+    setApercuSurvol(null);
+    setAnnonceApercueFermeePour(duel.annonce);
+  };
+
+  const rouvrirApercuAnnonce = () => {
+    if (!duel.annonce) return;
+    setApercuSurvol(null);
+    setAnnonceApercueFermeePour(null);
   };
 
   // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
     if (!duel.annonce) { jouerSfx('erreur'); return; }
+    setApercuSurvol(null);
     jouerSfx('pass');
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
@@ -4004,8 +4039,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <button
                 type="button"
                 key={groupe.carteId}
-                aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrains, ${groupe.available} disponibles, ${groupe.tapped} engagés`}
-                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}`}
+                aria-label={`${carte?.name ?? 'Terrain adverse'}, ${groupe.count} terrain${groupe.count > 1 ? 's' : ''}, ${groupe.available} disponible${groupe.available > 1 ? 's' : ''}, ${groupe.tapped} engagé${groupe.tapped > 1 ? 's' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -4016,7 +4051,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onMouseLeave={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
-                <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
+                {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
+                {groupe.count > 1 && groupe.tapped > 0 && (
+                  <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
+                )}
               </button>
             );
           })}
@@ -4202,14 +4240,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             const terrain = groupe.terrain;
             const carte = cardById(terrain.carteId);
             const couleursProduites = terrainManaColors(terrain.carteId);
-            const terrainInactif = (!monTour && !reponseActive) || terrain.tapped;
+            const terrainInactif = (!monTour && !reponseActive) || groupe.available === 0;
             const choixOuvert = terrainManaChoix?.terrainId === terrain.id;
             const production = couleursProduites.map(couleurLabel).join(' ou ');
             return (
               <button
                 key={groupe.carteId}
                 type="button"
-                className={`rpg-terrain rpg-terrain-stack${groupe.tapped && groupe.available ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)} ${terrain.tapped ? 'is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
+                className={`rpg-terrain rpg-terrain-stack${groupe.count > 1 ? ' is-stacked' : ''}${groupe.tapped > 0 && groupe.available > 0 ? ' is-partially-tapped' : ''} rpg-terrain--joueur rpg-terrain--type-terrain rpg-terrain--elem-${carte?.element ?? 'sable'} ${cardFrameClass(carte)}${groupe.available === 0 && groupe.tapped > 0 ? ' is-tapped' : ''}${couleursProduites.length > 1 ? ' is-flexible-mana' : ''}`}
                 style={cardFrameStyle(carte)}
                 data-card-id={terrain.carteId}
                 data-terrain-id={terrain.id}
@@ -4222,7 +4260,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 aria-haspopup={couleursProduites.length > 1 ? 'dialog' : undefined}
                 aria-expanded={couleursProduites.length > 1 ? choixOuvert : undefined}
                 aria-controls={couleursProduites.length > 1 ? 'rpg-terrain-mana-choice' : undefined}
-                aria-label={`${carte?.name ?? 'Terrain'}, ${groupe.count} terrains, ${groupe.available} disponibles, ${groupe.tapped} engagés${terrain.tapped ? ', engagé' : terrainInactif ? ', indisponible' : couleursProduites.length > 1 ? `, cliquer pour choisir un mana ${production}` : `, disponible pour produire un mana ${production}`}`}
+                aria-label={`${carte?.name ?? 'Terrain'}, ${groupe.count} terrain${groupe.count > 1 ? 's' : ''}, ${groupe.available} disponible${groupe.available > 1 ? 's' : ''}, ${groupe.tapped} engagé${groupe.tapped > 1 ? 's' : ''}${terrainInactif ? ', indisponible' : couleursProduites.length > 1 ? `, cliquer pour choisir un mana ${production}` : `, disponible pour produire un mana ${production}`}`}
                 onClick={(event) => {
                   if (!terrainInactif) demanderCouleurMana(event, terrain);
                 }}
@@ -4232,7 +4270,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onBlur={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
-                <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>
+                {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
+                {groupe.count > 1 && groupe.tapped > 0 && (
+                  <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
+                )}
               </button>
             );
           })}
@@ -4300,25 +4341,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             ))}
           </ol>
           <div className="rpg-actions">
-            {fenetreSort && (
-              <section
-                className="rpg-annonce-sort"
-                role="status"
-                aria-live="polite"
-                aria-label={`Le sorcier annonce ${carteAnnoncee?.name ?? 'une carte'}${cibleAnnoncee ? `. Cible : ${cibleAnnoncee.nom}` : ''}. Répondez avec une magie rapide, ou laissez passer.`}
-              >
-                <HoverCardPreview carte={carteAnnoncee} cible={cibleAnnoncee} variante="annonce" />
-                <button
-                  type="button"
-                  className="rpg-btn rpg-annonce-sort__pass"
-                  aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
-                  onClick={laisserPasser}
-                >
-                  <span aria-hidden="true">➜</span>
-                  <span>Laisser passer</span>
-                </button>
-              </section>
-            )}
             <div className="rpg-actions__row">
               <div className="rpg-actions__combat" role="group" aria-label="Actions de combat">
                 {phase && (
@@ -4350,8 +4372,76 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 )}
               </div>
             </div>
+            {fenetreSort && !apercuAnnonceOuvert && (
+              <div
+                className="rpg-annonce-sort__compact"
+                role="group"
+                aria-label={`Réponse à la carte annoncée : ${carteAnnoncee?.name ?? 'carte inconnue'}`}
+              >
+                <span className="rpg-annonce-sort__compact-label">
+                  <span>En attente</span>
+                  <b>{carteAnnoncee?.name ?? 'Carte annoncée'}</b>
+                </span>
+                <button
+                  type="button"
+                  className="rpg-btn rpg-annonce-sort__compact-preview"
+                  aria-label={`Voir l’aperçu de ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
+                  onClick={rouvrirApercuAnnonce}
+                >
+                  Voir l’aperçu
+                </button>
+                <button
+                  type="button"
+                  className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
+                  aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
+                  onClick={laisserPasser}
+                >
+                  <span aria-hidden="true">➜</span>
+                  <span>Laisser passer</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {apercuAnnonceOuvert && (
+          <section
+            className="rpg-annonce-sort"
+            role="status"
+            aria-live="polite"
+            aria-label={`Le sorcier annonce ${carteAnnoncee?.name ?? 'une carte'}${cibleAnnoncee ? `. Cible : ${cibleAnnoncee.nom}` : ''}.`}
+          >
+            <div className="rpg-annonce-sort__panel">
+              <HoverCardPreview
+                carte={carteAnnoncee}
+                cible={cibleAnnoncee}
+                variante="annonce"
+                controls={(
+                  <div className="rpg-annonce-sort__controls">
+                    <button
+                      type="button"
+                      className={`rpg-btn rpg-annonce-sort__respond${aReponseJouableEnMain ? ' is-response-available' : ''}`}
+                      aria-label={`Répondre à ${carteAnnoncee?.name ?? 'la carte annoncée'} avec une magie rapide`}
+                      onClick={repondreAAnnonce}
+                    >
+                      <span aria-hidden="true">✦</span>
+                      <span>Répondre</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="rpg-btn rpg-annonce-sort__pass"
+                      aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
+                      onClick={laisserPasser}
+                    >
+                      <span aria-hidden="true">➜</span>
+                      <span>Laisser passer</span>
+                    </button>
+                  </div>
+                )}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Phases et commandes de tour réunies à droite du plateau. */}
         <div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">
@@ -4391,8 +4481,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
 
-        <div className={`rpg-hand-dock${combatEntrant ? ' is-open' : ''}`} aria-label="Votre main"
-          data-tutorial-target={tutorielActif && ['main', 'magies'].includes(etapeTutorielId) ? 'hand' : undefined}>
+        <div
+          className={`rpg-hand-dock${combatEntrant || fenetreSort ? ' is-open' : ''}`}
+          aria-label="Votre main"
+          inert={apercuAnnonceOuvert ? true : undefined}
+          data-tutorial-target={tutorielActif && ['main', 'magies'].includes(etapeTutorielId) ? 'hand' : undefined}
+        >
           <div className="rpg-hand" style={{ '--hand-count': Math.max(1, groupesMain.length) }}>
             {groupesMain.map((groupe) => {
               const carteId = groupe.carteId;
@@ -4504,7 +4598,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         {sortJoue && <SpellAnnouncement annonce={sortJoue} />}
-        {apercuSurvol && !apercuMagie && !mulligan && (
+        {apercuSurvol && !apercuMagie && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
@@ -4578,7 +4672,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onClose={fermerTutoriel}
         />
       )}
-      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+      {apercuAppui && !apercuAnnonceOuvert && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
       {mulligan && (
         <VoletMulligan
           main={duel.joueur.main}
