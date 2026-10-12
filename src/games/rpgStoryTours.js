@@ -36,8 +36,8 @@ export const RPG_STORY_DECKS = {
   // libérées passent au Vent rouge, la carte bicolore de la maison, et à un
   // second Braisier du souk, qui presse l'adversaire.
   'souffleuse-de-verre': [
-    ...RPG_DECK_HYBRIDE_BASE.filter((id) => id !== 'rempart-de-dunes' && id !== 'veilleur-du-couchant'),
-    'veilleur-du-couchant',
+    ...RPG_DECK_HYBRIDE_BASE.filter((id) => id !== 'rempart-de-dunes' && id !== 'djinn-de-foudre'),
+    'djinn-de-foudre',
     'trait-de-braise',
     'vent-rouge',
     'braisier-du-souk',

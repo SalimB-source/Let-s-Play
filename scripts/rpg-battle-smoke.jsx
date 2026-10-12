@@ -29,7 +29,7 @@ export async function checkRpgBattle(assert) {
   // Decks déterministes : 5 cartes chacun, tout part dans la main de départ.
   await act(async () => {
     root.render(<RpgDuelPage
-      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'veilleur-du-couchant', 'fennec-des-decombres', 'desert']}
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'chien-du-guet', 'parade-du-verre', 'mer', 'djinn-de-foudre', 'fennec-des-decombres', 'desert']}
       sorcierDeck={['chien-du-guet', 'desert', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert', 'desert']}
       rng={() => 0.999}
     />);
@@ -212,7 +212,7 @@ export async function checkRpgBattle(assert) {
   // navigateur resservirait l’ancien cadrage ; une peinture nouvelle n’a rien à
   // tromper et pointe simplement sur son propre fichier.
   const peinturesReprises = [
-    ['brisure-de-verre', 'plein-art-verre-v1'],
+    ['brisure-de-verre', 'plein-art-verre-v2'],
     ['parade-du-verre', 'plein-art-verre-v1'],
     ['maree-contraire', 'deflection-ultrason-v1'],
     ['ressac', 'djinn-tourbillon-v1'],
@@ -269,9 +269,9 @@ export async function checkRpgBattle(assert) {
   assert.ok(cartesHybridesCatalogue.length >= 3
     && cartesHybridesCatalogue.every((card) => ['sable', 'braise'].every((color) => card.dataset.colors.split(' ').includes(color))),
   'le filtre hybride isole les cartes qui exigent Braise et Sable, terrain de Pétra inclus');
-  const veilleurCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="veilleur-du-couchant"]');
+  const veilleurCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="djinn-de-foudre"]');
   assert.ok(veilleurCatalogue?.querySelector('.rpg-card-catalogue__cost')?.getAttribute('aria-label')?.includes('1 Sable et 1 Braise'),
-    'le coût du Veilleur annonce clairement ses deux pips obligatoires');
+    'le coût du Djinn de foudre annonce clairement ses deux pips obligatoires');
   await filtrerCatalogue(filtresCatalogue[0], 'toutes');
   await filtrerCatalogue(filtresCatalogue[1], 'creature');
   const cavalierCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="cavalier-amazigh-du-desert"]');
@@ -317,7 +317,7 @@ export async function checkRpgBattle(assert) {
   const ficheHybride = container.querySelector('.rpg-deck-detail');
   assert.match(ficheHybride?.textContent ?? '', /Sable \+ Braise[\s\S]*HYBRIDE/i,
     'la fiche précise l’identité bicolore du deck');
-  assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Veilleur du couchant[\s\S]*Vent rouge/,
+  assert.match(ficheHybride?.textContent ?? '', /Pétra[\s\S]*Djinn de foudre[\s\S]*Vent rouge/,
     'la liste hybride présente son terrain flexible et ses cartes bicolores');
   assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5[\s\S]*validé/,
     'le deck hybride est validé à 40 cartes, avec 17 terrains, 18 créatures et 5 magies');
@@ -393,9 +393,9 @@ export async function checkRpgBattle(assert) {
   assert.match(fennecMain?.getAttribute('aria-label') ?? '', /Rapidité.*attaquer le tour où elle arrive.*Esquive 1/,
     'les deux capacités du Fennec restent annoncées de façon accessible');
   assert.equal(fennecMain?.hasAttribute('title'), false, 'la carte en main n’affiche plus d’aide au survol');
-  const veilleurMain = visagesMain.find((carte) => carte.dataset.cardId === 'veilleur-du-couchant');
+  const veilleurMain = visagesMain.find((carte) => carte.dataset.cardId === 'djinn-de-foudre');
   assert.ok(veilleurMain, 'la main de test contient une créature hybride');
-  assert.equal(veilleurMain.querySelector('.rpg-mana-cost b')?.textContent, '3',
+  assert.equal(veilleurMain.querySelector('.rpg-mana-cost b')?.textContent, '2',
     'le coût hybride conserve son nombre de manas');
   assert.equal(veilleurMain.querySelector('.rpg-mana-cost__hybrid-pips, .rpg-mana-cost__pip'), null,
     'les icônes de couleur sont retirées du coût de la créature hybride');
@@ -1065,12 +1065,12 @@ export async function checkRpgBattle(assert) {
     await glisserSurTable(aiFireContainer, card);
   };
   await jouerCarteAiFire('Désert');
+  await jouerCarteAiFire('Tislit, éclaireuse des Aurès');
+  assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'Tislit est présente avant l’action de l’IA');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(1800); });
   await passerAnnoncesSorcier(aiFireContainer);
   await jouerCarteAiFire('Mer');
-  await jouerCarteAiFire('Tislit, éclaireuse des Aurès');
-  assert.ok(aiFireContainer.querySelector('.rpg-card--equipe'), 'Tislit est présente avant l’action de l’IA');
   await act(async () => { aiFireContainer.querySelector('.rpg-btn--endturn').click(); });
   await act(async () => { await wait(900); });
   // Le sort Braise est annoncé : le joueur a la main pour répondre, ou laisser passer.

@@ -81,6 +81,7 @@ import {
   rpgContreJouable,
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
+  rpgDefausserCarte,
   rpgEngagerTerrain,
   rpgFermerFenetreReponse,
   rpgFinDeTour,
@@ -136,7 +137,10 @@ const CARD_ART_CACHE_VERSIONS = {
   yamina: 'full-art-huile-realiste-v2',
   tarek: 'full-art-huile-realiste-v2',
   boualem: 'full-art-citerne-protectrice-v1',
-  'brisure-de-verre': 'plein-art-verre-v1',
+  'djinn-de-foudre': 'plein-art-foudre-v1',
+  'sonneur-fele': 'plein-art-cloche-v1',
+  'brisure-de-verre': 'plein-art-verre-v2',
+  'silence-decume': 'plein-art-bulle-v1',
   'parade-du-verre': 'plein-art-verre-v1',
   'maree-contraire': 'deflection-ultrason-v1',
   ressac: 'djinn-tourbillon-v1',
@@ -521,6 +525,7 @@ function deckCardList(deck) {
 
 function targetMode(carte) {
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
+  if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (carte?.effet?.type === 'degats' && carte.effet.cible === 'creature') return 'ennemi';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -2722,8 +2727,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : null;
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
+  const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
+    : defausseOuverte
+      ? 'À VOUS · DÉFAUSSE'
     : fenetreSort
       ? apercuAnnonceOuvert ? 'SORT ANNONCÉ' : 'À VOUS · RÉPONSE'
     : reponseActive
@@ -2979,6 +2987,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Le mulligan d'abord : tant que la main de départ n'est pas validée, rien
     // ne quitte la main — ni clic, ni glisser, ni sort en réponse.
     if (mulliganOuvert) return false;
+    if (defausseOuverte) return false;
     // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
     // le joueur dans une confirmation qui ne menait à rien.
     if (!rpgContreJouable(duel, 'joueur', carte)) return false;
@@ -3207,7 +3216,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const cibleAuto = carte.arrivee?.type === 'combat' ? cibleId : (duel.sorcier.creatures[0]?.id ?? null);
+    const cibleAuto = ['combat', 'retour-main'].includes(carte.arrivee?.type)
+      ? cibleId
+      : (duel.sorcier.creatures[0]?.id ?? null);
     const res = rpgJouerCreature(duel, 'joueur', carteId, cibleAuto);
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre la créature : elle n'entre pas en jeu.
@@ -3247,6 +3258,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
     }
+    if (carte.arrivee?.type === 'retour-main') {
+      const ciblesLegales = duel.sorcier.creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+      if (ciblesLegales.length) {
+        setCibleEnCours(carteId);
+        force();
+        return;
+      }
+    }
     if (!monTour) return;
     finaliserPoseCreature(carteId);
   };
@@ -3267,7 +3286,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       demarrerVolCarte(carte, index, () => poserTerrain(carteId));
     } else if (carte.kind === 'magie') {
       poserCarte(carteId);
-    } else if (carte.arrivee?.type === 'combat'
+    } else if (['combat', 'retour-main'].includes(carte.arrivee?.type)
       && duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
@@ -3302,6 +3321,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(carteId);
     if (!carte) return;
     if (carteEnVol || cibleEnCours || cibleAttaqueEnCours) return;
+    if (defausseOuverte) {
+      const res = rpgDefausserCarte(duel, 'joueur', Number.isInteger(handIndex) ? handIndex : carteId);
+      jouerSfx(res.ok ? 'annuler' : 'erreur');
+      force();
+      return;
+    }
     if (carte.kind === 'magie' && peutJouerCarte(carte)) {
       jouerSfx('menu');
       setConfirmationSort({ carteId, handIndex });
@@ -3337,7 +3362,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return true;
     }
     jouerSfx('select');
-    if (carteSource?.arrivee?.type === 'combat') {
+    if (['combat', 'retour-main'].includes(carteSource?.arrivee?.type)) {
       const carteId = cibleEnCours;
       const handIndex = carteCibleeHandIndexRef.current;
       carteCibleeHandIndexRef.current = null;
@@ -4373,6 +4398,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     Annuler la cible
                   </button>
                 )}
+                {defausseOuverte && (
+                  <span className="rpg-discard-prompt" role="status" aria-live="polite">
+                    Cliquez une carte de votre main pour la défausser ({duel.defausseEnAttente.restant}).
+                  </span>
+                )}
               </div>
             </div>
             {fenetreSort && !apercuAnnonceOuvert && (
@@ -4459,13 +4489,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     type="button"
                     className="rpg-btn rpg-btn--attaque rpg-btn--attaque-tous"
                     data-tutorial-target={tutorielActif && etapeTutorielId === 'attaque' ? 'attack-all' : undefined}
-                    disabled={!monTour || !prets.length || Boolean(combatEntrant)}
+                    disabled={!monTour || !prets.length || Boolean(combatEntrant) || defausseOuverte}
                     onClick={declarerAttaqueAvecTous}
                   >
                     <CombatActionIcon type="attack-all" /> Attaquer avec tous ({prets.length})
                   </button>
             )}
-            {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
+            {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && !defausseOuverte && (
               <button
                 type="button"
                 className="rpg-btn rpg-btn--undo"
@@ -4503,7 +4533,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // Une seule règle pour le halo doré, le glisser-déposer et le
               // clic : deux copies de la règle finissaient par diverger, et
               // une carte allumée mais injouable enferme le joueur.
-              const jouable = peutJouerCarte(carte);
+              const jouable = defausseOuverte || peutJouerCarte(carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
@@ -4524,7 +4554,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 <>
                 <button
                   type="button"
-                  draggable={jouable}
+                  draggable={jouable && !defausseOuverte}
                   onClick={() => cliquerCarteMain(carteId, i)}
                   onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
                   onMouseLeave={masquerApercuSurvol}
@@ -4563,7 +4593,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-card-flight={enVol ? (estTerrain ? 'terrain' : 'creature') : undefined}
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
