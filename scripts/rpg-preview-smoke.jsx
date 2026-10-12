@@ -241,8 +241,10 @@ export async function checkRpgPreviewActions(assert) {
       'le volet nomme la carte tenue');
     const apercuAppui = peek().querySelector('.rpg-hover-card-preview--appui-long');
     assert.ok(apercuAppui, 'l’aperçu au doigt est bien l’aperçu instantané, dans sa variante tactile');
-    assert.match(apercuAppui.querySelector('.rpg-hover-card-preview__type')?.textContent ?? '', /./,
-      'le type de la carte est affiché');
+    const typeAppui = apercuAppui.querySelector('.rpg-hover-card-preview__type');
+    const creatureAppui = ['creature', 'hero'].includes(attendue.kind);
+    assert.equal(Boolean(typeAppui), !creatureAppui,
+      'le volet imprime la ligne de type des magies et des terrains, et la tait pour une créature');
     const lignesAttendues = attendue.text && attendue.text !== '—'
       ? attendue.text.split(/\n+|(?<=[.!?])\s+/u).map((ligne) => ligne.trim()).filter(Boolean)
       : [];

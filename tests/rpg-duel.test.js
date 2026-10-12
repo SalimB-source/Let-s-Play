@@ -369,7 +369,7 @@ test('chaque carte du duel possède une illustration locale et une ligne de type
     assert.ok(existsSync(image), `${carte.id} réutilise une illustration existante (${image})`);
   }
   assert.ok(RPG_MAGIE_CARDS.find((carte) => carte.id === 'parade-du-verre').instant,
-    'la Parade est bien marquée comme éphémère');
+    'la Parade est bien marquée comme magie rapide');
 });
 
 test('les decks ont leurs illustrations et le contrôle catalogue détecte les partages restants', () => {
@@ -1107,7 +1107,7 @@ test('une magie se paie elle aussi en engageant automatiquement ses terrains', (
   duel.joueur.terrains.push(terrain);
 
   assert.equal(rpgPeutPayer(duel.joueur, { cost: 1, element: 'eau' }), true,
-    'une source eau dégagée suffit à rendre le rituel jouable');
+    'une source eau dégagée suffit à rendre la sorcellerie jouable');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
   assert.equal(terrain.tapped, true, 'la mer s’engage quand le sort est lancé');
   assert.equal(duel.joueur.pv, 44, 'le sort se résout après son paiement');
@@ -1248,7 +1248,7 @@ test('le carnet des renforts ne solde que le tour qui les a vus jouer', () => {
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
 
-  // Le cas d’un éphémère de renfort lancé en réponse pendant le tour adverse :
+  // Le cas d’une magie rapide de renfort lancé en réponse pendant le tour adverse :
   // le carnet retient le tour de l’échange, jamais le camp renforcé.
   chien.def += 3;
   chien.pv += 3;
@@ -1265,7 +1265,7 @@ test('le carnet des renforts ne solde que le tour qui les a vus jouer', () => {
   assert.deepEqual(duel.joueur.bonusTemporaires, [], 'le carnet est soldé, et soldé une seule fois');
 });
 
-test('un renfort éphémère qui s’évapore peut laisser une créature à terre', () => {
+test('un renfort de magie rapide qui s’évapore peut laisser une créature à terre', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donner(duel, 'joueur', 'chien-du-guet');
@@ -1599,7 +1599,7 @@ test('phase d’attaque sans bloqueur : tous les attaquants frappent le sorcier'
   assert.equal(rpgLancerAttaque(duel, 'joueur', ids).raison, 'pas-pret', 'une seule attaque par tour');
 });
 
-test('après le choix des bloqueurs, un éphémère répond avant les dégâts et un attaquant reste bloqué', () => {
+test('après le choix des bloqueurs, une magie rapide répond avant les dégâts et un attaquant reste bloqué', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donnerMana(duel, 'sorcier', 10);
@@ -1614,8 +1614,8 @@ test('après le choix des bloqueurs, un éphémère répond avant les dégâts e
   assert.deepEqual(blocages[attaquant.id], [bloqueur.id], 'le sorcier assigne son bloqueur avant de rendre la priorité');
   assert.equal(rpgOuvrirFenetreReponse(duel, 'joueur'), true, 'la fenêtre de réponse s’ouvre pendant le tour du joueur');
   const reponse = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', bloqueur.id);
-  assert.equal(reponse.ok, true, 'le joueur peut lancer un éphémère après le choix du bloqueur');
-  assert.equal(duel.sorcier.creatures.includes(bloqueur), false, 'l’éphémère retire le bloqueur avant les dégâts');
+  assert.equal(reponse.ok, true, 'le joueur peut lancer une magie rapide après le choix du bloqueur');
+  assert.equal(duel.sorcier.creatures.includes(bloqueur), false, 'la magie rapide retire le bloqueur avant les dégâts');
 
   const pvSorcier = duel.sorcier.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: [] }, {}, [attaquant.id]);
@@ -1649,7 +1649,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
   assert.equal(duel.joueur.creatures.length, 0, 'chien 2/2 et vipère 3/1 meurent à la riposte');
 });
 
-test('les magies : types, coûts, cibles et éphémères de combat', () => {
+test('les magies : types, coûts, cibles et magies rapides de combat', () => {
   assert.equal(RPG_MAGIE_CARDS.length, 20);
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les quatre couleurs');
@@ -1740,7 +1740,7 @@ test('la répartition des dégâts doit exactement égaler la force de l’attaq
   assert.equal(colosse.attaquee, false, 'une répartition invalide n’engage pas l’attaquant');
 });
 
-test('Parade et Trait de braise sont des éphémères de réponse; le bouclier absorbe les dégâts', () => {
+test('Parade et Trait de braise sont des magies rapides de réponse; le bouclier absorbe les dégâts', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donnerMana(duel, 'sorcier', 10);
@@ -1760,7 +1760,7 @@ test('Parade et Trait de braise sont des éphémères de réponse; le bouclier a
     'Trait de braise ne peut pas être lancé hors de la fenêtre de réponse adverse');
   duel.fenetreReponse = true;
   const trait = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', cible.id);
-  assert.equal(trait.ok, true, 'le nouvel éphémère Braise peut être lancé en réponse');
+  assert.equal(trait.ok, true, 'la nouvelle Magie Rapide Braise peut être lancée en réponse');
   assert.equal(cible.pv, 2, 'les 3 dégâts du Trait laissent 2 PV à la créature adverse 5/5');
   assert.ok(duel.joueur.cimetiere.includes('trait-de-braise'), 'le Trait résolu va au cimetière');
 
@@ -1938,7 +1938,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(duel.sorcier.creatures.includes(chien), false, 'le Chien tombe sous le Coup rapide');
   assert.equal(berserk.pv, 4, 'le Berserk n’encaisse aucune riposte : sa Furie n’a rien à venger');
 
-  // Magies : rituels et éphémères.
+  // Magies : sorcelleries et magies rapides.
   donner(duel, 'joueur', 'mur-de-boucliers');
   const loupAvant = loup.def;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'mur-de-boucliers').ok, true);
@@ -2115,10 +2115,10 @@ test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de t
   assert.equal(rpgValiderDeck(sansTerrains).ok, false, '0 terrain = refus');
 });
 
-test('Trait de braise coûte 2, est un éphémère et inflige 3 dégâts à une créature ou un sorcier', () => {
+test('Trait de braise coûte 2, est une magie rapide et inflige 3 dégâts à une créature ou un sorcier', () => {
   const trait = cardById('trait-de-braise');
   assert.deepEqual({ cost: trait.cost, instant: trait.instant, typeLine: trait.typeLine, amount: trait.effet.amount, cibles: trait.cibles }, {
-    cost: 2, instant: true, typeLine: 'Éphémère — Braise', amount: 3, cibles: ['creature', 'sorcier'],
+    cost: 2, instant: true, typeLine: 'Magie Rapide — Braise', amount: 3, cibles: ['creature', 'sorcier'],
   });
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);

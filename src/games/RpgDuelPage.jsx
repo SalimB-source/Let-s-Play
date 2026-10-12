@@ -401,6 +401,14 @@ function PhaseTrack({ current }) {
   );
 }
 
+/**
+ * La ligne de type imprimée sur la face d'une carte. Les créatures (héros
+ * compris) n'en portent plus en duel — ni en main, ni posées, ni dans l'aperçu :
+ * leur cadre, leurs statistiques et leur illustration disent déjà ce qu'elles
+ * sont. La ligne reste pour les magies (Magie Rapide, Sorcellerie) et les
+ * terrains, qui n'ont ni attaque ni défense pour se présenter, et au catalogue
+ * comme dans les listes de deck, où l'on vient justement lire les fiches.
+ */
 function cardFaceTypeLine(carte) {
   return cardTypeLine(carte).replace(/^Créature(?: légendaire)?(?=\s|$)/u, 'Type');
 }
@@ -836,7 +844,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       <div className="rpg-hover-card-preview__details">
         {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
         {variante === 'annonce' && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
-        <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>
+        {!estCreature && <p className="rpg-hover-card-preview__type">{cardFaceTypeLine(carte)}</p>}
         {cibleAnnoncee && (
           <div className="rpg-spell-played__target rpg-hover-card-preview__target">
             {cibleAnnoncee.illustrationId
@@ -3246,7 +3254,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, 700);
   };
 
-  // Le sorcier annonce sa carte suivante. Le joueur répond avec un éphémère, ou laisse passer.
+  // Le sorcier annonce sa carte suivante. Le joueur répond avec une magie rapide, ou laisse passer.
   const annoncerSuivantSorcier = () => {
     if (rpgVainqueur(duel)) {
       force();
@@ -3823,7 +3831,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 className="rpg-annonce-sort"
                 role="status"
                 aria-live="polite"
-                aria-label={`Le sorcier annonce ${carteAnnoncee?.name ?? 'une carte'}${cibleAnnoncee ? `. Cible : ${cibleAnnoncee.nom}` : ''}. Répondez avec un éphémère, ou laissez passer.`}
+                aria-label={`Le sorcier annonce ${carteAnnoncee?.name ?? 'une carte'}${cibleAnnoncee ? `. Cible : ${cibleAnnoncee.nom}` : ''}. Répondez avec une magie rapide, ou laissez passer.`}
               >
                 <HoverCardPreview carte={carteAnnoncee} cible={cibleAnnoncee} variante="annonce" />
                 <button
@@ -3970,7 +3978,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>
-                  <span className="rpg-hand__type">{cardFaceTypeLine(carte)}</span>
+                  {!estCreature && <span className="rpg-hand__type">{cardFaceTypeLine(carte)}</span>}
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>

@@ -211,7 +211,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       if (q('.rpg-overlay')) { fin = 'duel terminé'; break; }
       verifier(aJoue ? 'tour' : 'debut-de-tour', { anime: impatient });
 
-      // 1. Annonce du sorcier : répondre avec un éphémère, ou laisser passer.
+      // 1. Annonce du sorcier : répondre avec une magie rapide, ou laisser passer.
       const annonce = q('.rpg-annonce-sort__pass');
       if (annonce) {
         const ephemeres = qa('.rpg-hand__card[data-jouable="true"]');
@@ -223,7 +223,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
         await click(annonce, 'passer');
         continue;
       }
-      // 2. Fenêtre de combat : éphémère, blocage, puis résolution.
+      // 2. Fenêtre de combat : magie rapide, blocage, puis résolution.
       if (q('.rpg-btn--resolve-combat')) {
         const ephemeres = qa('.rpg-hand__card[data-jouable="true"]');
         if (ephemeres.length && rng() < 0.45) {

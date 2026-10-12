@@ -177,8 +177,8 @@ export async function checkRpgBattle(assert) {
     'le catalogue charge le nouveau Trait de braise vers le sorcier avec une URL versionnée');
   assert.equal(traitCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '2',
     'le catalogue affiche le coût de deux du Trait de braise');
-  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__type')?.textContent ?? '', /Éphémère/,
-    'le catalogue identifie le Trait de braise comme éphémère');
+  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__type')?.textContent ?? '', /Magie Rapide/,
+    'le catalogue identifie le Trait de braise comme Magie Rapide');
   assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts.*créature.*sorcier/i,
     'le catalogue décrit ses 3 dégâts sur une créature ou un sorcier');
   const anqaCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="anqa-des-braises"]');
@@ -368,8 +368,11 @@ export async function checkRpgBattle(assert) {
   assert.equal(handCards().length, 5, 'chaque camp pioche 5 cartes');
   const visagesMain = handCards();
   visagesMain.forEach((carte) => assertElementFrame(carte, carte.dataset.cardId, 'chaque carte en main'));
-  assert.ok(visagesMain.every((carte) => carte.querySelector('.rpg-hand__img') && carte.querySelector('.rpg-hand__type')),
-    'chaque carte en main montre son illustration et son type');
+  assert.ok(visagesMain.every((carte) => carte.querySelector('.rpg-hand__img')),
+    'chaque carte en main montre son illustration');
+  assert.ok(visagesMain.every((carte) => Boolean(carte.querySelector('.rpg-hand__type'))
+    === !carte.classList.contains('rpg-hand__card--type-creature')),
+    'seules les magies et les terrains impriment leur ligne de type en main : une créature se lit à son cadre et à ses statistiques');
   const visageCreatureMain = visagesMain.find((carte) => carte.querySelector('.rpg-hand__stats'));
   assert.ok(visageCreatureMain?.classList.contains('rpg-hand__card--type-creature'),
     'les créatures conservent leur type sans que celui-ci détermine la bordure');
@@ -394,8 +397,10 @@ export async function checkRpgBattle(assert) {
     'le libellé accessible du coût hybride conserve ses exigences de couleur');
   assert.equal(veilleurMain.querySelector('.rpg-card-element-badge')?.querySelectorAll('.rpg-card-element-badge__pip').length, 2,
     'les deux pastilles de couleur restent sur le badge élémentaire, séparées du coût');
-  assert.match(visageCreatureMain.querySelector('.rpg-hand__type')?.textContent ?? '', /^Type\s+—/,
-    'la ligne des créatures affiche Type à la place de Créature');
+  assert.equal(visageCreatureMain.querySelector('.rpg-hand__type'), null,
+    'une créature en main ne porte aucune ligne de type sur sa face');
+  assert.match(visageCreatureMain.getAttribute('aria-label') ?? '', /Type\s+—/,
+    'le type de la créature reste annoncé aux lecteurs d’écran');
   assert.equal(visageCreatureMain.querySelector('.rpg-card-element-badge')?.textContent.trim(), '⏳',
     'les cartes Sable affichent le sablier lumineux');
   assert.equal(visageCreatureMain.querySelector('.rpg-mana-cost i'), null,
@@ -572,8 +577,10 @@ export async function checkRpgBattle(assert) {
     'l’aperçu au survol n’affiche aucune icône d’effet');
   assert.equal(apercuFennecSurvol.querySelectorAll('.rpg-hover-card-preview__rules > span').length, 2,
     'l’aperçu au survol place Rapidité et Esquive chacune sur sa propre ligne');
-  assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__type')?.textContent ?? '', /Fennec/,
-    'l’aperçu de créature affiche le type');
+  assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__type'), null,
+    'l’aperçu d’une créature n’imprime pas de ligne de type');
+  assert.match(apercuFennecSurvol.getAttribute('aria-label') ?? '', /Fennec/,
+    'le type de la créature reste dans le libellé accessible de l’aperçu');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '2',
     'l’aperçu affiche le coût');
   assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Rapidité.*Esquive 1/,
@@ -648,14 +655,14 @@ export async function checkRpgBattle(assert) {
     'les bloqueurs se saisissent directement sur la table, sans fenêtre ni consigne écrite');
   const terrainsLibres = [...container.querySelectorAll('.rpg-terrain--joueur:not(.is-tapped)')];
   const mer = terrainsLibres.find((terrain) => terrain.dataset.cardId === 'mer');
-  assert.ok(mer, 'le terrain eau est resté dégagé pour payer un éphémère');
+  assert.ok(mer, 'le terrain eau est resté dégagé pour payer une magie rapide');
   await act(async () => { mer.click(); });
   const autreTerrain = [...container.querySelectorAll('.rpg-terrain--joueur:not(.is-tapped)')][0];
   assert.ok(autreTerrain, 'un second terrain peut fournir le mana générique');
   await act(async () => { autreTerrain.click(); });
   const parade = handCards().find((b) => b.getAttribute('aria-label')?.includes('Parade de verre'));
   assert.ok(parade?.classList.contains('rpg-hand__card--type-magie'), 'les magies conservent leur classification de type');
-  assert.ok(parade && estJouable(parade), 'l’éphémère devient jouable pendant la réponse');
+  assert.ok(parade && estJouable(parade), 'la magie rapide devient jouable pendant la réponse');
   assert.equal(parade.querySelector('.rpg-card-element-badge')?.textContent.trim(), '💧',
     'les cartes Eau utilisent la goutte d’eau');
   await glisserSurTable(container, parade);
@@ -760,7 +767,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(container.querySelector('.rpg-phase-step.is-active')?.dataset.phase, 'reponse',
     'la phase Réponse s’allume après l’assignation des bloqueurs');
   assert.ok(container.querySelector('.rpg-hand-dock.is-open'),
-    'la main revient pour permettre de jouer un éphémère');
+    'la main revient pour permettre de jouer une magie rapide');
   const accepterBlocages = container.querySelector('.rpg-btn--resolve-combat');
   assert.match(accepterBlocages?.textContent ?? '', /Accepter les blocages/,
     'le joueur peut accepter les bloqueurs choisis par le sorcier tels quels');
@@ -813,7 +820,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { root.unmount(); });
   container.remove();
 
-  // ── Réponse après les bloqueurs : l’éphémère retire le défenseur, sans dégâts directs ──
+  // ── Réponse après les bloqueurs : la magie rapide retire le défenseur, sans dégâts directs ──
   const responseContainer = document.createElement('div');
   document.body.appendChild(responseContainer);
   const responseRoot = createRoot(responseContainer);
@@ -866,7 +873,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(responseContainer.querySelector('.rpg-blocker-arrows')?.getAttribute('data-arrow-count'), '1',
     'la flèche jaune matérialise le blocage adverse pendant la fenêtre de réponse');
   const traitReponse = responseHand().find((card) => card.getAttribute('aria-label')?.includes('Trait de braise'));
-  assert.ok(traitReponse && estJouable(traitReponse), 'Trait de braise, éphémère à 2, est payable pendant la réponse');
+  assert.ok(traitReponse && estJouable(traitReponse), 'Trait de braise, Magie Rapide à 2, est payable pendant la réponse');
   await glisserSurTable(responseContainer, traitReponse);
   const bloqueurTrait = responseContainer.querySelector('.rpg-card--ennemi.is-blocking');
   assert.ok(bloqueurTrait?.classList.contains('is-ciblable'), 'le bloqueur choisi est mis en évidence comme cible du Trait');
@@ -879,7 +886,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(responseTable.dataset.screenImpact, undefined, 'l’attaque ne touche pas directement le sorcier avant acceptation');
   await act(async () => { responseButton('Accepter les blocages').click(); });
   assert.match(responseContainer.querySelector('.rpg-log')?.textContent ?? '', /Combat :|frappent le sorcier/,
-    'l’acceptation résout le combat après l’éphémère');
+    'l’acceptation résout le combat après la magie rapide');
   assert.equal(responseTable.dataset.screenImpact, undefined,
     'un attaquant reste bloqué même si son bloqueur a été détruit en réponse');
   await act(async () => { responseRoot.unmount(); });
@@ -974,7 +981,7 @@ export async function checkRpgBattle(assert) {
     assert.ok(card && estJouable(card), `${name} doit être jouable`);
     if (name.includes('Trait de braise')) {
       assert.equal(card.querySelector('.rpg-card-element-badge')?.textContent.trim(), '🔥',
-        'l’éphémère Braise utilise la flamme');
+        'la magie rapide Braise utilise la flamme');
     }
     await glisserSurTable(killContainer, card);
   };

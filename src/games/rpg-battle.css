@@ -1913,7 +1913,7 @@
 .rpg-combat-window__foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .rpg-combat-window__foot p { flex: 1 1 220px; }
 
-/* Les terrains dégagés restent jouables pour payer un éphémère en réponse. */
+/* Les terrains dégagés restent jouables pour payer une magie rapide en réponse. */
 .rpg-hand-dock.is-open { transform: translateY(0); }
 .rpg-hand { max-width: calc(100vw - 16px); overflow-x: auto; overflow-y: visible; padding: 46px 14px 50px; scrollbar-width: thin; scrollbar-color: rgba(223, 187, 119, .58) transparent; }
 .rpg-hand__card--img .rpg-hand__title {

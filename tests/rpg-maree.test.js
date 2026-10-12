@@ -313,7 +313,7 @@ test('la Marée des abysses embarque le renvoi en main : deux Ressac et un Coura
     assert.equal(carte.effet.type, 'retour-main', `${id} renvoie en main`);
     assert.equal(carte.effet.cible, 'creature', `${id} vise une créature`);
   }
-  assert.equal(cardById('ressac').instant, true, 'le Ressac est un éphémère');
+  assert.equal(cardById('ressac').instant, true, 'le Ressac est une magie rapide');
   assert.equal(cardById('ressac').effet.pioche, undefined, 'le Ressac ne fait pas piocher');
   assert.equal(cardById('courant-de-retour').effet.pioche, 1, 'le Courant de retour fait piocher une carte');
 });

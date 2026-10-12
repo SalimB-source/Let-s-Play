@@ -289,9 +289,9 @@ assert.match(battleCss, /@media \(max-width: 620px\) \{\s*\.rpg-phase-track \{[^
 assert.match(battlePage, /reponseApresBlocage \? 'À VOUS · RÉPONSE'/,
   'la priorité revient au joueur après le choix des bloqueurs adverses');
 assert.match(battlePage, /Accepter les blocages/,
-  'le joueur peut accepter les bloqueurs adverses sans lancer d’éphémère');
+  'le joueur peut accepter les bloqueurs adverses sans lancer de magie rapide');
 assert.match(battlePage, /reponseApresBlocage \? carte\.instant/,
-  'seuls les éphémères jouables restent actifs pendant cette fenêtre de réponse');
+  'seuls les magies rapides jouables restent actifs pendant cette fenêtre de réponse');
 assert.match(battleCss, /\.rpg-blocker-arrow__shaft\s*\{[^}]*stroke:\s*rgba\(255, 219, 54, \.72\)/s,
   'chaque bloqueur assigné garde une flèche jaune visible');
 assert.match(battlePage, /setBloqueurSelectionne\(entite\.id\)/,
@@ -658,7 +658,7 @@ assert.match(duelEngine, /differerEcho\(duel, cote, adv, effet, sourceElement, s
 assert.match(duelEngine, /resoudreEchos\(duel\);/,
   'l’écho retombe au début du tour suivant, avant que son destinataire n’agisse');
 assert.match(aiBrain, /const durable = Number\(effet\.tours\) > 0 \? 0\.5 : 1;/,
-  'l’IA ne paie pas un renfort éphémère au prix d’un renfort durable');
+  'l’IA ne paie pas un renfort de magie rapide au prix d’un renfort durable');
 assert.match(aiBrain, /const echoMontant = Math\.max\(0, Number\(effet\.echo\?\.amount\) \|\| 0\);/,
   'l’IA compte la seconde vague d’un sort à écho sans la surpayer');
 assert.equal(RPG_DUEL_CARDS.find((carte) => carte.id === 'rapport-du-greffier').cost, 3,
@@ -688,6 +688,6 @@ console.log(
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, la Terre de Damnation, les Ruines de Tipaza, le Fjord des Neuf Hivers) imposés par le deck de l’un des deux duellistes — celui que le rng du duel désigne, plus aucun choix ni verrou de plateau au menu —, voile noir dégradé en haut et en bas de chaque plateau — souris et doigt compris — pour tenir les textes de la table lisibles sur les fonds clairs, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
   + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres qui promet sa seconde vague au début du tour suivant, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
-  + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de l’éphémère qui élimine le dernier attaquant pendant la réponse.'
+  + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
 );
 process.exit(0);

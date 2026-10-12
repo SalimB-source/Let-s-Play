@@ -5075,7 +5075,7 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
   vers sa cible, clignement blanc à l'impact, chiffres flottants, carte
   détruite grisée sur la table, boîte de message à texte tapé lettre à lettre,
   bannière « des ennemis apparaissent ! ». La main se tient en éventail dans
-  la barre du bas ; les éphémères répondent pendant le tour ennemi.
+  la barre du bas ; les magies rapides répondent pendant le tour ennemi.
 - `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
   jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
   souffle de sable. La partie pure est testée ; le lecteur s'éveille au
@@ -5316,6 +5316,59 @@ retour du bandeau : ni `rpg-actions__wait`, ni `rpg-card-peek__hint`, ni
 `rpg-empty-lane` ne doivent réapparaître dans la page ou la feuille de style,
 et aucune phrase ne doit recommenter une rangée vide.
 
+## Le Sablier : le vocabulaire des magies, et les créatures sans ligne de type
+
+Deux retouches de la face des cartes, pour que la table se lise d'un coup d'œil.
+
+**1. Magie Rapide et Sorcellerie.** Les deux familles de sorts s'appelaient
+*Éphémère* et *Rituel*. Elles s'appellent désormais **Magie Rapide** (celle qui
+se lance en réponse, pendant le tour adverse) et **Sorcellerie** (celle qui
+attend son propre tour). Le nom dit maintenant *quand* on joue la carte, au lieu
+de décrire sa durée de vie : un joueur qui découvre le duel n'a plus à deviner
+qu'« éphémère » veut dire « jouable en réponse ». Les deux mots changent partout
+en même temps — ligne de type imprimée sur la carte, texte de règle, catalogue,
+listes de deck, aperçus — parce qu'ils ne sont qu'un seul libellé, calculé par
+`cardTypeLine()`.
+
+**2. Une créature ne dit plus son type.** Chaque carte portait sa ligne de type
+sous l'illustration. Pour une magie ou un terrain, c'est l'information
+principale : *Magie Rapide — Eau*, *Terrain — Désert* — sans elle, rien ne dit
+ce que fait la carte ni quand la jouer. Pour une créature, la ligne affichait
+`Type — Fennec` : le mot « Type » n'apprend rien, et la créature se présente
+déjà par son cadre, son illustration et son couple attaque/défense en bas de
+carte. En main, cette ligne tenait sur 5 à 6 pixels de haut — illisible, mais
+assez grande pour manger l'illustration.
+
+Les créatures et les héros n'impriment donc plus de ligne de type **en main ni
+dans l'aperçu**. Sur la table, la carte posée n'en portait déjà pas. Le type
+reste intégralement disponible là où l'on vient justement lire les fiches : le
+**catalogue** et les **listes de deck** — et, partout, dans le libellé
+accessible (`aria-label`) de la carte, pour les lecteurs d'écran.
+
+### Où vit le code
+
+- `src/games/rpgCards.js` — `cardTypeLine()` et les 20 `typeLine` du catalogue ;
+  les textes de règle qui s'ouvraient par `Rituel —` ou `Éphémère —`.
+- `src/games/RpgDuelPage.jsx` — `cardFaceTypeLine()` et son commentaire de
+  règle ; la ligne de la main (`.rpg-hand__type`) et celle de l'aperçu
+  (`.rpg-hover-card-preview__type`) sont rendues sous condition `!estCreature`.
+  Les `aria-label` ne changent pas : ils annoncent toujours le type.
+- `src/games/rpgDuel.js` — le moteur ne connaît que le drapeau `instant` : il
+  n'a pas bougé, seuls ses commentaires suivent le nouveau vocabulaire.
+
+### Vérifications
+
+```bash
+npm run check:rpg     # le moteur et le catalogue : le drapeau `instant` est inchangé
+npm run check:rpg-ui  # la face des cartes : type en main pour les magies et les terrains, pas pour les créatures
+```
+
+`check:rpg-ui` vérifie l'équivalence dans les deux sens — une carte en main
+porte une ligne de type **si et seulement si** elle n'est pas une créature —
+puis que le type de la créature reste dans son `aria-label`, en main comme dans
+l'aperçu. Le catalogue, lui, doit toujours présenter le Trait de braise comme
+**Magie Rapide**.
+
 ## Le Sablier : l'aperçu d'une carte au doigt
 
 À la souris, survoler une carte ouvre son **aperçu instantané** : le type, le
@@ -5511,9 +5564,9 @@ tout ce qu'elle avait gagné (blessures, boucliers, Furie, Résonance) est perdu
 la rejouer coûtera de nouveau son mana. La protection contre l'Eau arrête le
 renvoi, et sans créature légale le sort refuse de partir sans rien payer.
 
-- **Ressac** (Éphémère — Eau, 1 mana, commune ×2) : renvoyez une créature
+- **Ressac** (Magie Rapide — Eau, 1 mana, commune ×2) : renvoyez une créature
   adverse ciblée dans la main de son propriétaire.
-- **Courant de retour** (Rituel — Eau, 3 mana, rare ×1) : renvoyez une créature
+- **Courant de retour** (Sorcellerie — Eau, 3 mana, rare ×1) : renvoyez une créature
   adverse ciblée dans la main de son propriétaire, puis piochez une carte.
 
 C'est un coup de tempo, pas une destruction : la menace reviendra, mais elle
