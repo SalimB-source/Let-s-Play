@@ -35,6 +35,7 @@ import {
   etageHistoireParId,
   prochainEtage,
   RPG_STORY_TOURS,
+  tourHistoireParId,
 } from './rpgStoryTours.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
@@ -1050,6 +1051,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   const [openDeckId, setOpenDeckId] = useState(null);
   const [deckCouleur, setDeckCouleur] = useState('toutes');
   const [confirmation, setConfirmation] = useState(null);
+  // Mode Histoire : la galerie des tours d'abord (`null`), la page d'une tour
+  // — ses étages dévoilés — ensuite. Le clic sur une miniature ouvre la tour.
+  const [tourOuverteId, setTourOuverteId] = useState(null);
   // La suppression d'un deck maison se confirme en deux temps (jamais de `window.confirm`).
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
   // L'atelier : `null` (fermé), `{ mode: 'nouveau' }`, `{ mode: 'edition', id }`
@@ -1085,9 +1089,17 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
     const cardId = deck?.cardIds.find((id) => cardById(id)?.kind !== 'terrain') ?? deck?.cardIds[0];
     return cardId ? cardArt(cardId) : '';
   };
+  // La miniature d'une tour : sa peinture livrée dans `public/sablier-tours/`.
+  const tourMiniatureUrl = (tour) => `${import.meta.env.BASE_URL}sablier-tours/${tour.miniature}`;
+  // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
+  const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
+  const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
   const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .96) 0%, rgba(8, 7, 13, .82) 48%, rgba(8, 7, 13, .72) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
   // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
   useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
+  // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
+  // l'onglet retrouve la galerie des miniatures, jamais les étages d'emblée.
+  useEffect(() => { if (screen !== 'histoire') setTourOuverteId(null); }, [screen]);
   // Sur écran étroit, la fiche s'ouvre sous l'étagère : on l'amène à l'écran.
   useEffect(() => {
     const fiche = detailRef.current;
@@ -1414,57 +1426,86 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Les Tours de Bab El</h2>
                 <p>
                   Chaque étage est un duel autonome : deck complet, PV pleins, aucune ressource
-                  reportée. Gravissez les tours, étage après étage — la progression est gardée sur
-                  cet appareil.
+                  reportée. Choisissez une tour pour dévoiler ses étages, puis gravissez-les un à
+                  un — la progression est gardée sur cet appareil.
                 </p>
               </div>
               <button type="button" className="rpg-story__reset" onClick={() => { play('annuler'); onResetHistoire(); }}>
                 Effacer la progression
               </button>
             </div>
-            <div className="rpg-story__tours">
-              {RPG_STORY_TOURS.map((tour) => {
-                const resume = resumeTourHistoire(tour.id, progressionHistoire);
-                return (
-                  <section key={tour.id} className="rpg-story-tour">
-                    <header className="rpg-story-tour__header">
-                      <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
-                      <h3>{tour.nom}</h3>
-                      <p>{tour.resume}</p>
-                    </header>
-                    <div className="rpg-story-tour__progress" aria-hidden="true">
-                      <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
+            {tourOuverte ? (
+              <div className="rpg-story__detail">
+                <button type="button" className="rpg-story__back" onClick={() => { play('menu'); setTourOuverteId(null); }}>
+                  <span aria-hidden="true">←</span> Retour aux tours
+                </button>
+                <section key={tourOuverte.id} className="rpg-story-tour">
+                  <header className="rpg-story-tour__header">
+                    <span className="rpg-story-tour__banner" style={{ backgroundImage: `url("${tourMiniatureUrl(tourOuverte)}")` }} aria-hidden="true" />
+                    <div className="rpg-story-tour__heading">
+                      <span className="rpg-mode-menu__eyebrow">{resumeTourOuverte.vaincus} / {resumeTourOuverte.total} ÉTAGES DÉBLAYÉS</span>
+                      <h3>{tourOuverte.nom}</h3>
+                      <p>{tourOuverte.resume}</p>
                     </div>
-                    <ul className="rpg-story-tour__floors">
-                      {tour.etages.map((etage, index) => {
-                        const vaincu = etageEstVaincu(progressionHistoire, etage.id);
-                        const debloque = etageEstDebloque(progressionHistoire, etage.id);
-                        return (
-                          <li key={etage.id}>
-                            <button
-                              type="button"
-                              className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
-                              disabled={!debloque}
-                              data-etage={etage.id}
-                              onClick={() => { play('select'); onStartEtage(etage.id); }}
-                            >
-                              <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
-                              <span className="rpg-story-floor__copy">
-                                <strong>{etage.nom}</strong>
-                                <small>{etage.note}</small>
-                              </span>
-                              <span className="rpg-story-floor__badge">
-                                {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </section>
-                );
-              })}
-            </div>
+                  </header>
+                  <div className="rpg-story-tour__progress" aria-hidden="true">
+                    <span style={{ width: `${resumeTourOuverte.total ? (resumeTourOuverte.vaincus / resumeTourOuverte.total) * 100 : 0}%` }} />
+                  </div>
+                  <ul className="rpg-story-tour__floors">
+                    {tourOuverte.etages.map((etage, index) => {
+                      const vaincu = etageEstVaincu(progressionHistoire, etage.id);
+                      const debloque = etageEstDebloque(progressionHistoire, etage.id);
+                      return (
+                        <li key={etage.id}>
+                          <button
+                            type="button"
+                            className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
+                            disabled={!debloque}
+                            data-etage={etage.id}
+                            onClick={() => { play('select'); onStartEtage(etage.id); }}
+                          >
+                            <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
+                            <span className="rpg-story-floor__copy">
+                              <strong>{etage.nom}</strong>
+                              <small>{etage.note}</small>
+                            </span>
+                            <span className="rpg-story-floor__badge">
+                              {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              </div>
+            ) : (
+              <div className="rpg-story__tours">
+                {RPG_STORY_TOURS.map((tour) => {
+                  const resume = resumeTourHistoire(tour.id, progressionHistoire);
+                  return (
+                    <button
+                      key={tour.id}
+                      type="button"
+                      className="rpg-story-tower"
+                      data-tour={tour.id}
+                      onClick={() => { play('select'); setTourOuverteId(tour.id); }}
+                    >
+                      <span className="rpg-story-tower__art" style={{ backgroundImage: `url("${tourMiniatureUrl(tour)}")` }} aria-hidden="true" />
+                      <span className="rpg-story-tower__body">
+                        <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
+                        <strong className="rpg-story-tower__name">{tour.nom}</strong>
+                        <small className="rpg-story-tower__resume">{tour.resume}</small>
+                        <span className="rpg-story-tower__progress" aria-hidden="true">
+                          <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
+                        </span>
+                        <span className="rpg-story-tower__cta">Voir les étages <span aria-hidden="true">→</span></span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </main>
         ) : (
           <main className="rpg-card-catalogue" aria-label="Catalogue complet des cartes">

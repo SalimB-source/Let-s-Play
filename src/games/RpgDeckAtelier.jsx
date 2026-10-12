@@ -337,6 +337,9 @@ export function RpgDeckAtelier({
           <p className="rpg-atelier__aide">
             Clic sur une carte : <b>+1</b> au deck · clic droit : <b>−1</b> · survol : aperçu grand format.
           </p>
+          {/* Au doigt, le survol n'existe pas : l'atelier annonce le geste
+              d'aperçu de la maison (`rpgLongPress.js`), comme la barre du duel. */}
+          <p className="rpg-atelier__astuce">Appui long d’une seconde sur une carte : son aperçu, sans rien ajouter ni retirer.</p>
         </div>
         <button type="button" className="rpg-menu-link" onClick={() => { surSfx('annuler'); abandonner(); }}>
           ✕ Fermer l'atelier

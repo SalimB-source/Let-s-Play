@@ -48,6 +48,19 @@
 }
 .rpg-atelier__aide b { color: var(--or); }
 
+/* L'astuce de l'aperçu au doigt : elle n'apparaît qu'au pointeur grossier — au
+   pointeur fin, le survol d'une carte ouvre déjà l'aperçu, et la rappeler
+   serait du bruit. Même annonce que la barre du duel (`rpgLongPress.js`). */
+.rpg-atelier__astuce {
+  display: none;
+  margin: 4px 0 0;
+  color: #d8c48c;
+  font: 500 11px/1.4 var(--mono, monospace);
+}
+@media (pointer: coarse) {
+  .rpg-atelier__astuce { display: block; }
+}
+
 .rpg-atelier__header .rpg-menu-link { flex: none; }
 
 /* ── Les deux panneaux : grille large, deck en colonne fixe ───────────────── */
