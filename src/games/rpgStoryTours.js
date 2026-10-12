@@ -6,8 +6,10 @@
  * étages déblayés ; l'histoire et la continuité narrative viendront plus tard
  * (voir `docs/rpg/06-mode-histoire.md`).
  *
- * Chaque étage porte un sorcier : son deck, sa puissance (PV supplémentaires,
- * affichés) et son profil d'IA (`rpgAI.js`) — la personnalité de gameplay.
+ * Chaque étage porte un sorcier : son deck, sa puissance (indice de difficulté
+ * affiché sur la fiche d'étage — elle ne gonfle plus les PV : tout le monde
+ * démarre à 25 PV, voir `RPG_PV_SORCIER_PAR_PUISSANCE` dans `rpgDuel.js`) et
+ * son profil d'IA (`rpgAI.js`) — la personnalité de gameplay.
  *
  * La galerie et la page de chaque tour montrent sa **maquette 3D**
  * (`rpgStoryTowerModels.js`). La peinture `miniature`, livrée dans

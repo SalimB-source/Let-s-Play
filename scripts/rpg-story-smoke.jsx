@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
+import { rpgSorcierPv } from '../src/games/rpgDuel.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -100,8 +101,8 @@ export async function checkRpgStory(assert) {
   const plate = container.querySelector('.rpg-wizard-plate--ennemi');
   assert.match(plate.textContent, /Le Guetteur de palier/, 'la plaque adverse porte le nom du sorcier de l’étage');
   assert.match(plate.textContent, /Vigie de la Chambre/, 'la fonction du sorcier remplace la ligne habituelle');
-  assert.equal(plate.querySelector('.rpg-wizard-plate__hp-value')?.textContent.trim(), '50',
-    'la puissance 0 du guetteur donne bien 50 PV');
+  assert.equal(plate.querySelector('.rpg-wizard-plate__hp-value')?.textContent.trim(), String(rpgSorcierPv(0)),
+    `la puissance 0 du guetteur donne bien ${rpgSorcierPv(0)} PV`);
 
   // --- Retour au menu : on retrouve la galerie des tours ---
   await click(buttons().find((button) => button.textContent.trim() === 'Menu'), 'bouton Menu');
