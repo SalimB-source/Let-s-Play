@@ -1317,7 +1317,7 @@ export async function checkRpgBattle(assert) {
     assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable'),
       'une carte Braise + Sable reçoit le cadre rouge-orange de sa combinaison');
     assert.ok(!terrain.classList.contains('rpg-card--mythique'),
-      'Pétra est rare, pas mythique : elle ne prend pas le cadre doré');
+      'Pétra est rare, pas mythique : elle ne prend pas le cadre violet');
     const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
@@ -1378,12 +1378,12 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
   assert.ok(ferielEnMain.classList.contains('rpg-card--mythique')
     && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
-    'Fériel porte son cadre doré brillant dès la main');
+    'Fériel porte son cadre violet brillant dès la main');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
-    'Fériel, mythique, garde son cadre doré sur la table');
+    'Fériel, mythique, garde son cadre violet sur la table');
   assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });

@@ -453,9 +453,10 @@ function cardRarityStyle(carte) {
 }
 
 /**
- * Le cadre suit la couleur de la carte : bleu (Eau), blanc (Sable), rouge
- * (Braise). Une carte bicolore ajoute le dégradé de sa combinaison, une carte
- * mythique le dégradé doré — les deux sont des cadres brillants.
+ * Le cadre suit la couleur de la carte : bleu (Eau), beige (Sable), rouge
+ * (Braise), bleu clair (Neige). Une carte bicolore ajoute le dégradé de sa
+ * combinaison, une carte mythique le dégradé violet — les deux sont des cadres
+ * brillants.
  */
 function cardFrameClass(carte) {
   const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
