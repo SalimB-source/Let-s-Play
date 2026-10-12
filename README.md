@@ -5568,12 +5568,13 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   s'éteint — une carte allumée mais injouable enferme le joueur.
 - **Des cartes 4:5, nues.** Chaque carte de la main de départ est la **face
   4:5** du jeu : l'illustration plein cadre, ses repères aux places du jeu —
-  **la couleur en haut à gauche, le coût en haut à droite**, et en bas à droite
-  **la ligne de type juste au-dessus des plaques d'attaque et de défense du
-  jeu** : l'épée sur fond d'or et le bouclier sur fond d'acier, icône et chiffre
-  côte à côte, **composées plus grandes qu'en main comme sur la table**. **Rien
-  d'autre n'est imprimé dessus** — ni nom, ni effet, ni drapeau : la carte est
-  son image, et c'est le liseré doré qui dit ce qu'on met de côté.
+  **la couleur en haut à gauche, le coût en haut à droite**, et dans le bas
+  **la ligne de type centrée, au-dessus des plaques d'attaque et de défense du
+  jeu** : l'épée sur fond d'or **contre le bord gauche**, le bouclier sur fond
+  d'acier **contre le bord droit**, icône et chiffre côte à côte, **composées
+  plus grandes qu'en main comme sur la table**. **Rien d'autre n'est imprimé
+  dessus** — ni nom, ni effet, ni drapeau : la carte est son image, et c'est le
+  liseré doré qui dit ce qu'on met de côté.
 - **Tout le texte passe par l'aperçu rapide.** Survoler une carte ouvre son
   aperçu complet (nom, type, coût, effets, statistiques) ; le volet le pose
   **au-dessus de lui** (`z-index: 1200`, sous l'aperçu au doigt de 1250), et
@@ -5628,10 +5629,10 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   de conteneur (`.rpg-mulligan__stage` : une hauteur tenue par le volet, sur
   laquelle les cinq colonnes se règlent, `cqw`/`cqh`), la **carte 4:5**
   (`.rpg-mulligan__card`, conteneur de taille en largeur : la couleur en haut à
-  gauche, le coût en haut à droite, et la pile `.rpg-mulligan__bas` — le type
-  au-dessus des plaques `.rpg-card__stat--atk` / `.rpg-card__pt` du jeu, reprises
-  telles quelles et simplement composées en `cqw` plus grand — en bas à droite),
-  la réservation
+  gauche, le coût en haut à droite, et la pile `.rpg-mulligan__bas` en bas — le
+  type centré, puis les plaques `.rpg-card__stat--atk` / `.rpg-card__pt` du jeu,
+  reprises telles quelles, simplement composées en `cqw` plus grand et posées
+  chacune sur son bord (`justify-content: space-between`)), la réservation
   `--rpg-mulligan-text` de ce que la carte garde autour d'elle, et
   `.rpg-hover-card-preview--mulligan` qui pose l'aperçu au-dessus du volet ;
   `src/games/rpg-mobile.css` neutralise le survol au doigt sans toucher au
@@ -5668,11 +5669,11 @@ largeur du volet, et aucun bloc de texte sur la carte.
 `scripts/rpg-mobile-layout-check.mjs` mesure la main de départ au navigateur, à
 trois tailles (téléphone en paysage, tablette, moniteur) : les cinq cartes sont
 dans le cadre, entières, touchables, chacune garde le **4:5** du jeu (au pixel
-près), **couleur en haut à gauche, coût en haut à droite, et en bas à droite la
-ligne de type au-dessus des plaques d'attaque et de défense** — groupées dans le
-coin, et qui **grandissent avec la carte** (≥ 18 px de haut sur téléphone en
-paysage, ≥ 30 px sur moniteur) — rien d'autre d'écrit, et la rangée ne défile
-jamais. Il survole ensuite
+près), **couleur en haut à gauche, coût en haut à droite, ligne de type centrée
+au-dessus des plaques d'attaque et de défense** — l'attaque contre le bord
+gauche, la défense contre le droit, et toutes deux **qui grandissent avec la
+carte** (≥ 18 px de haut sur téléphone en paysage, ≥ 30 px sur moniteur) — rien
+d'autre d'écrit, et la rangée ne défile jamais. Il survole ensuite
 une carte dans un contexte de bureau : l'aperçu rapide s'ouvre, décrit la carte
 survolée, et se pose au-dessus du volet (`z-index: 1200`). Les duels au
 pilote automatique de `scripts/rpg-ghost-check.mjs` valident le mulligan à

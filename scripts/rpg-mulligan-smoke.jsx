@@ -86,6 +86,12 @@ export async function checkRpgMulligan(assert) {
         String(attendue.def), `la plaque de défense de ${id} affiche sa valeur`);
       assert.equal(/⚔|🛡/.test(carte.textContent), false,
         `la carte ${id} n’écrit plus ⚔/🛡 : elle porte les plaques du jeu`);
+      // L'attaque ouvre la rangée, la défense la ferme : chacune sur son bord.
+      const rangee = carte.querySelector('.rpg-mulligan__stats');
+      assert.equal(rangee.firstElementChild?.classList.contains('rpg-card__stat--atk'), true,
+        `l’attaque de ${id} est la première plaque — à gauche`);
+      assert.equal(rangee.lastElementChild?.classList.contains('rpg-card__pt'), true,
+        `la défense de ${id} est la dernière plaque — à droite`);
     }
     // La ligne de type est la seule ligne écrite de la face, et elle est au-dessus.
     const ligneType = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__type');

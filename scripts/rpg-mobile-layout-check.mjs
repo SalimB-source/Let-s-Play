@@ -187,19 +187,23 @@ try {
           const type = card.querySelector('.rpg-mulligan__bas .rpg-mulligan__type')?.getBoundingClientRect();
           if (!type) return false;
           const stats = card.querySelector('.rpg-mulligan__stats')?.getBoundingClientRect();
-          const enBasADroite = box.right - type.right < box.width * .35 && box.bottom - type.bottom < box.height * .35;
-          return enBasADroite && (!stats || type.bottom <= stats.top + 1);
+          const centree = Math.abs((type.left + type.right) / 2 - (box.left + box.right) / 2) < 2;
+          const enBas = box.bottom - type.bottom < box.height * .35;
+          return centree && enBas && (!stats || type.bottom <= stats.top + 1);
         }),
-        // Les plaques d'attaque et de défense, grandes et groupées en bas à droite.
+        // Les plaques d'attaque et de défense : grandes, sur la largeur de la
+        // carte, l'attaque contre le bord gauche et la défense contre le droit.
         plaques: [...document.querySelectorAll('.rpg-mulligan__stats')].map((stats) => {
           const card = stats.closest('.rpg-mulligan__card').getBoundingClientRect();
           const box = stats.getBoundingClientRect();
-          const plaques = [...stats.children].map((plaque) => plaque.getBoundingClientRect().toJSON());
+          const [attaque, defense] = [...stats.children].map((plaque) => plaque.getBoundingClientRect().toJSON());
           return {
-            hauteur: Math.min(...plaques.map((plaque) => plaque.height)),
-            largeur: Math.min(...plaques.map((plaque) => plaque.width)),
+            hauteur: Math.min(attaque.height, defense.height),
+            largeur: Math.min(attaque.width, defense.width),
             dansLaCarte: box.right <= card.right + 1 && box.bottom <= card.bottom + 1 && box.top >= card.top - 1,
-            enBasADroite: card.right - box.right < card.width * .3 && card.bottom - box.bottom < card.height * .3,
+            attaqueAGauche: Math.abs(attaque.left - box.left) < 2 && attaque.left - card.left < card.width * .15,
+            defensedADroite: Math.abs(defense.right - box.right) < 2 && card.right - defense.right < card.width * .15,
+            enBas: card.bottom - box.bottom < card.height * .3,
           };
         }),
         illustrees: cards.every((card) => card.querySelector('img.rpg-mulligan__img')?.complete === true),
@@ -224,10 +228,12 @@ try {
     assert.ok(hand.faces45, `${width}×${height}: chaque carte garde le format 4:5 du jeu`);
     assert.ok(hand.muettes && hand.illustrees, `${width}×${height}: la carte est son illustration, sans texte par-dessus`);
     assert.ok(hand.reperes, `${width}×${height}: couleur en haut à gauche, coût en haut à droite, statistiques en bas à droite`);
-    assert.ok(hand.typeAuDessus, `${width}×${height}: la ligne de type est au-dessus de l’attaque et de la défense`);
+    assert.ok(hand.typeAuDessus, `${width}×${height}: la ligne de type est centrée, au-dessus de l’attaque et de la défense`);
     assert.ok(hand.plaquesDuJeu, `${width}×${height}: l’attaque et la défense portent les plaques et les icônes du jeu`);
-    assert.equal(hand.plaques.every((p) => p.dansLaCarte && p.enBasADroite), true,
-      `${width}×${height}: les plaques sont groupées dans le coin bas-droit de la carte`);
+    assert.equal(hand.plaques.every((p) => p.dansLaCarte && p.enBas), true,
+      `${width}×${height}: les plaques tiennent dans la carte, en bas`);
+    assert.equal(hand.plaques.every((p) => p.attaqueAGauche && p.defensedADroite), true,
+      `${width}×${height}: l’attaque est à gauche, la défense à droite`);
     assert.equal(hand.plaques.every((p) => p.hauteur >= plaqueMin && p.largeur >= 34), true,
       `${width}×${height}: les plaques sont grandes (≥ ${plaqueMin}px de haut, ≥ 34px de large)`);
     console.log(`✓ Mulligan complet ${width} × ${height}`);

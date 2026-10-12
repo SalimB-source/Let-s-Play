@@ -3485,19 +3485,19 @@
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
 }
-/* La pile du bas : le type d'abord, les statistiques ensuite. Le bloc est
-   ancré par son bas — il grandit donc vers le haut, et les statistiques ne
-   quittent jamais leur coin. Son bord gauche laisse au badge d'élément le coin
-   qu'il occupe : la ligne de type se replie avant de venir sur lui. */
+/* La pile du bas, sur toute la largeur de la carte : la ligne de type centrée,
+   puis les deux plaques du jeu, chacune sur son bord — l'attaque à gauche, la
+   défense à droite, comme la main du jeu. Le bloc est ancré par son bas : il
+   grandit vers le haut, et la ligne de type ne descend jamais sur les plaques. */
 .rpg-mulligan__bas {
   position: absolute;
   z-index: 3;
   right: 6%;
   bottom: 5%;
-  left: 26%;
+  left: 6%;
   display: grid;
-  gap: 3px;
-  justify-items: end;
+  gap: clamp(2px, 1.6cqw, 6px);
+  justify-items: center;
   pointer-events: none;
 }
 .rpg-mulligan__type {
@@ -3513,19 +3513,22 @@
   color: #fff1cf;
   font: 700 clamp(6.5px, 4.2cqw, 12px)/1.25 var(--mono, monospace);
   letter-spacing: .03em;
-  text-align: right;
+  max-width: 100%;
+  text-align: center;
   text-transform: uppercase;
   text-shadow: 0 1px 2px #000;
 }
 /* L'attaque et la défense comme sur les cartes en jeu : les deux plaques du jeu
-   — l'épée sur fond d'or, le bouclier sur fond d'acier — icône et chiffre côte
-   à côte, groupées dans le coin bas-droit. Elles se règlent sur la largeur de
-   la carte : à l'échelle du volet, elles sont plus grandes qu'en main comme sur
-   la table. */
+   — l'épée sur fond d'or à gauche, le bouclier sur fond d'acier à droite,
+   chacune sur son bord de la carte — icône et chiffre côte à côte. Elles se
+   règlent sur la largeur de la carte : à l'échelle du volet, elles sont plus
+   grandes qu'en main comme sur la table. */
 .rpg-mulligan__stats {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: clamp(3px, 2.4cqw, 9px);
+  width: 100%;
   pointer-events: none;
 }
 .rpg-mulligan__stats .rpg-card__stat--atk,

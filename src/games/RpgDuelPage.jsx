@@ -927,9 +927,9 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
-      {/* Le bas de la carte : la ligne de type, et sous elle l'attaque et la
-          défense — les deux plaques du jeu, l'épée d'or et le bouclier d'acier,
-          icône et chiffre côte à côte. */}
+      {/* Le bas de la carte : la ligne de type, centrée, puis les deux plaques
+          du jeu — l'épée d'or à gauche, le bouclier d'acier à droite, chacune
+          sur son bord. */}
       <span className="rpg-mulligan__bas">
         <span className="rpg-mulligan__type" aria-hidden="true">{cardFaceTypeLine(carte)}</span>
         {estCreature && (

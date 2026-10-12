@@ -90,12 +90,11 @@ limitée à 7.
 - **Le mulligan** ouvre la partie : avant le premier tour, la main de départ
   s'affiche **en entier** — les cinq cartes d'un seul coup, chacune réduite à sa
   **face 4:5** (l'illustration, la couleur en haut à gauche, le coût en haut à
-  droite, et en bas à droite la ligne de type au-dessus des plaques d'attaque et
-  de défense du jeu, l'épée d'or et le bouclier d'acier), **sans aucun autre
-  texte imprimé dessus** : le nom, le type et les effets
-  se lisent dans l'**aperçu rapide** (survol à la souris, appui long d'une
-  seconde au doigt) — et le joueur touche les cartes qu'il ne garde pas, ce que
-  dit le liseré doré.
+  droite, et en bas la ligne de type centrée au-dessus des plaques du jeu —
+  l'épée d'or à gauche, le bouclier d'acier à droite), **sans aucun autre texte
+  imprimé dessus** : le nom et les effets se lisent dans l'**aperçu rapide**
+  (survol à la souris, appui long d'une seconde au doigt) — et le joueur touche
+  les cartes qu'il ne garde pas, ce que dit le liseré doré.
   Elles repartent dans le paquet, **le paquet est battu**, et il pioche autant
   de cartes qu'il en a écartées — la main ne diminue donc jamais. **Un seul
   échange par camp**, et le sorcier adverse y a droit aussi (il renvoie une

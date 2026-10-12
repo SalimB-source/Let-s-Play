@@ -148,8 +148,8 @@ assert.match(battlePage, /rpg-card__pt"><CardStatIcon type="defense" \/><span cl
   'la défense porte la plaque du jeu : le bouclier dessiné et le chiffre');
 assert.doesNotMatch(mulliganPanel, /⚔|🛡/,
   'plus d’emoji ⚔/🛡 : l’attaque et la défense se lisent comme sur les cartes en jeu');
-assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*display:\s*flex;[^}]*gap:\s*clamp\([^;]*cqw/s,
-  'les deux plaques sont groupées dans la pile du bas, à l’échelle de la carte');
+assert.match(battleCss, /\.rpg-mulligan__stats\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*space-between;[^}]*width:\s*100%;/s,
+  'les deux plaques se partagent la largeur de la carte : l’attaque sur un bord, la défense sur l’autre');
 assert.match(battleCss, /\.rpg-mulligan__stats\s+\.rpg-card__stat--atk,[\s\S]{0,200}?\.rpg-mulligan__stats\s+\.rpg-card__pt\s*\{[\s\S]{0,400}?font:\s*900 clamp\(11px,\s*7\.6cqw,\s*26px\)/s,
   'les plaques reprennent le dessin du jeu et se composent plus grand, sur la largeur de la carte');
 assert.match(battleCss, /\.rpg-mulligan__card\.is-selected\s*\{[^}]*border-color:\s*#ffd619;/s,
@@ -158,10 +158,10 @@ assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|rules|flag|banner|top)\b/,
   'plus un bloc de texte encombrant sur les cartes : nom, effets et drapeau ont quitté la feuille');
-assert.match(battleCss, /\.rpg-mulligan__bas\s*\{[^}]*position:\s*absolute;[^}]*right:\s*6%;[^}]*bottom:\s*5%;[^}]*left:\s*26%;[^}]*justify-items:\s*end;/s,
-  'le bas de la carte est ancré dans son coin — il grandit vers le haut, sans jamais venir sur la couleur');
-assert.match(battleCss, /\.rpg-mulligan__type\s*\{[^}]*background:\s*rgba\(31,\s*22,\s*13/s,
-  'la ligne de type porte le bandeau sombre des cartes du jeu');
+assert.match(battleCss, /\.rpg-mulligan__bas\s*\{[^}]*position:\s*absolute;[^}]*right:\s*6%;[^}]*bottom:\s*5%;[^}]*left:\s*6%;[^}]*justify-items:\s*center;/s,
+  'le bas de la carte occupe toute sa largeur, ancré par son bas : la ligne de type est centrée');
+assert.match(battleCss, /\.rpg-mulligan__type\s*\{[^}]*background:\s*rgba\(31,\s*22,\s*13[^}]*text-align:\s*center;/s,
+  'la ligne de type porte le bandeau sombre des cartes du jeu et se centre');
 assert.match(battlePage, /rpg-mulligan__bas"[\s\S]{0,240}?rpg-mulligan__type"[\s\S]{0,120}?rpg-mulligan__stats"/,
   'le type est écrit AU-DESSUS de l’attaque et de la défense, dans cet ordre');
 
@@ -203,4 +203,4 @@ assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*m
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et le liseré doré d’une carte choisie reste intact');
 
-console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, type au-dessus des plaques du jeu — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans un mot dessus — couleur en haut à gauche, coût en haut à droite, type centré au-dessus des plaques du jeu, attaque à gauche et défense à droite — l’aperçu rapide au survol et à l’appui long pour tout lire, toutes visibles d’un seul coup, échange contre le paquet battu, nouvelle main relue, table rendue ensuite');
