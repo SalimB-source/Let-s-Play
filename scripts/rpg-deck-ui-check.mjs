@@ -82,8 +82,8 @@ assert.doesNotMatch(pageSource, /Réservé à l’adversaire|DECK ADVERSAIRE|DEC
 // Le sorcier joue la Cour des Djinns, sauf si le joueur la joue : le deck du duel, la plaque adverse
 // et la carte « ADVERSAIRE » de l'écran Jouer suivent le même choix (jamais deux fois le même deck).
 assert.match(pageSource, /const opponentDeck = deckAdversePour\(playerDeck\);/, 'la carte « ADVERSAIRE » annonce le deck que le sorcier jouera');
-assert.match(pageSource, /const deckAdverse = etageCourant \|\| sorcierDeck \? null : deckAdversePour\(deckJoueurSelectionne\);/,
-  'en duel libre, le sorcier prend le deck choisi par deckAdversePour');
+assert.match(pageSource, /const deckAdverse = modeTutoriel \|\| etageCourant \|\| sorcierDeck \? null : deckAdversePour\(deckJoueurSelectionne\);/,
+  'hors tutoriel et histoire, le sorcier prend le deck choisi par deckAdversePour');
 assert.match(pageSource, /sorcierDeck \?\? deckAdverse\?\.cardIds/, 'le moteur reçoit les cartes de ce deck');
 assert.match(pageSource, /setDeckAdverseId\(deckAdverse\?\.id \?\? null\)/, 'la plaque adverse retient le deck réellement joué');
 assert.match(pageSource, /\$\{deckAdverseAffiche\.name\} · \$\{deckColorLabel\(deckAdverseAffiche\)\}/, 'la plaque adverse nomme ce deck');

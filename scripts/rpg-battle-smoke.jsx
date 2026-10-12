@@ -307,7 +307,7 @@ export async function checkRpgBattle(assert) {
   assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*16[\s\S]*7[\s\S]*validé/,
     'le Serment est validé à 40 cartes : 17 terrains, 16 créatures et héros, 7 magies');
   await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
-  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 12, 'la fiche détaille les références distinctes avec leurs quantités, Cavalier inclus');
+  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 13, 'la fiche détaille les références distinctes avec leurs quantités, le Cavalier et les Dunes du Ténéré inclus');
   assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /40[\s\S]*17[\s\S]*18[\s\S]*5/,
     'la fiche indique la taille et la répartition terrain / créature / magie du deck validé');
   await act(async () => { boutonDeck('Cour des Djinns').click(); });
@@ -426,8 +426,12 @@ export async function checkRpgBattle(assert) {
   'les terrains n’affichent aucun coût de mana, même dans leur libellé accessible');
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOTRE TOUR/,
     'un indicateur signale que le tour commence chez le joueur');
-  assert.match(container.textContent, /🛡 50/, 'le joueur démarre à 50 PV');
-  assert.match(container.textContent, /🛡 60/, 'le sorcier (puissance 2) démarre à 60 PV');
+  assert.equal(container.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '50',
+    'le joueur démarre à 50 PV');
+  assert.equal(container.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim(), '60',
+    'le sorcier (puissance 2) démarre à 60 PV');
+  assert.ok(container.querySelector('.rpg-wizard-plate__hp-icon--heart'),
+    'chaque plaque prépare le cœur pour le rendu PC');
 
   // ── Toutes les cartes de la main sont les images 4:5 générées ──────────
   const srcs = [...container.querySelectorAll('.rpg-hand__card--img img')].map((i) => i.getAttribute('src'));
@@ -971,7 +975,8 @@ export async function checkRpgBattle(assert) {
   assert.equal(tableImpact.dataset.screenImpact, 'received', 'une attaque directe reçue est distinguée');
   assert.match(tableImpact.className, /rpg-screen-shake--[ab]/, 'l’attaque reçue fait aussi trembler l’écran');
   assert.match(tableImpact.className, /rpg-screen-hit--[ab]/, 'l’attaque reçue ajoute la vignette rouge');
-  assert.match(impactContainer.textContent, /🛡 48/, 'les dégâts reçus accompagnent bien l’effet de vignette');
+  assert.equal(impactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '48',
+    'les dégâts reçus accompagnent bien l’effet de vignette');
   await act(async () => { impactRoot.unmount(); });
   impactContainer.remove();
 

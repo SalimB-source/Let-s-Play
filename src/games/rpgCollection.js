@@ -12,7 +12,7 @@
  * 2. **Les récompenses d'étage** — chaque étage déblayé du mode Histoire rend
  *    des cartes confisquées par la Chambre des Heures (rares et
  *    mythiques). La correspondance étage → cartes est du contenu, dans
- *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-trois cartes à
+ *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-quatre cartes à
  *    ravir, parées pour que chaque couleur ouvre à peu près au moment où la
  *    campagne y entre — le mono-Eau au seuil des Abysses, le mono-Neige en
  *    entrant dans le Fjord. Chaque étage ne nomme que des cartes du catalogue :
@@ -43,7 +43,7 @@ export const RPG_COLLECTION_STORAGE_KEY = 'letsplay_sablier_collection_v1';
 /**
  * La dotation de départ : les cartes **communes et inhabituelles** du catalogue
  * appartiennent à tout le monde, pour toujours — terrains compris tant qu'ils
- * sont communs (Pétra, terrain rare, reste une carte à ravir dans les Tours).
+ * sont communs (Pétra et sa variante rare se débloquent dans les Tours).
  * Une future carte commune rejoindrait donc d'elle-même la dotation : c'est la
  * règle qui est codée, pas une liste figée.
  */
@@ -67,7 +67,8 @@ export const RPG_RECOMPENSES_PAR_ETAGE = {
   'listes-1': ['cavalier-amazigh-du-desert', 'scribe-de-la-liste'],
   'listes-2': ['braisier-du-souk'],
   'listes-3': ['amani-des-ksour', 'tempete-de-sable'],
-  'listes-4': ['petra'],
+  // Pétra et sa peinture alternative se débloquent ensemble à l’étage 4.
+  'listes-4': ['petra', 'petra-des-deux-sources'],
   'listes-5': ['sahir-des-braises', 'nuage-de-cendres', 'tarek'],
   // Tour du Souk — le feu se complète ; les citernes de la Gardienne rendent
   // les premières cartes d'Eau.
