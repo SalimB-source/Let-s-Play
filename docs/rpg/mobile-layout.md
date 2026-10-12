@@ -23,12 +23,13 @@ Au survol d’une carte (ordinateur), l’aperçu instantané reste le seul moye
 Le survol n’existe pas sur écran tactile, et le clic **agit** (poser la carte, déclarer une attaque, produire un mana). Consulter une carte sans la jouer passe donc par l’**appui long** :
 
 - garder le doigt **une seconde** sur une carte (`RPG_LONG_PRESS_MS`, `src/games/rpgLongPress.js`) ouvre le même aperçu, dans un volet sombre centré avec son bouton « Fermer l’aperçu » ;
-- le geste répond partout où une carte porte un `data-card-id` : main, créatures des deux camps, rails de terrains, dessus de cimetière, catalogue et liste de deck — au menu comme en duel ;
+- le geste répond partout où une carte porte un `data-card-id` : main, créatures des deux camps, rails de terrains, dessus de cimetière, catalogue, liste de deck et **créateur de deck** (bibliothèque et deck en cours) — au menu comme en duel ;
 - **rien n’est joué** : le clic synthétique qui suit le lever du doigt est avalé, comme après un glisser-déposer ;
 - un **appui court reste un clic** et garde son action de jeu ; un doigt qui glisse au-delà de 10 px annule l’appui (c’est un défilement de la main ou un glisser-déposer) ;
 - le volet se referme d’un toucher, du bouton Fermer, d’Échap, en changeant d’écran, ou quand l’appareil repasse en portrait ;
-- le menu contextuel natif (callout iOS, « enregistrer l’image » Android) et la sélection de texte sont étouffés sur les cartes ;
-- l’ouverture du duel annonce le geste dans la barre du bas sur appareil tactile.
+- le menu contextuel natif (callout iOS, « enregistrer l’image » Android), la sélection de texte **et le drag natif de l’illustration** sont étouffés sur les cartes — celles du créateur de deck comprises, pas seulement celles du duel ;
+- l’ouverture du duel annonce le geste dans la barre du bas sur appareil tactile, et le créateur de deck le rappelle en tête de sa bibliothèque (`rpg-atelier__astuce`, montrée au seul pointeur grossier) ;
+- dans le créateur de deck, tenir une carte — ou son bouton « + » ou « − » — n’ajoute ni ne retire rien : l’aperçu est une consultation, et le clic simple garde son action d’atelier.
 
 En paysage de téléphone, l’illustration de l’aperçu se règle sur la hauteur disponible (`42dvh`) pour que le volet, son indice et son bouton tiennent sans recouvrir la main.
 
@@ -83,7 +84,7 @@ npm run build
 ```
 
 - Tests purs : moteur, audio, gestes (glisser-déposer **et appui long** : `tests/rpg-long-press.test.js`), piles de terrains (paiement, production individuelle, dégagement, restauration), piles de cartes homonymes (`tests/rpg-card-stacks.test.js` : ordre, index réels, carte de tête, camps séparés) et cycle de vie de l’orientation — y compris les refus, les promesses tardives et l’attente du plein écran de la page avant le verrou de paysage.
-- Tests React/jsdom : clic-jeu direct, confirmation des magies, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois, terrain engagé, aperçu par appui long (catalogue, main, créature en jeu) qui ne joue rien, et — dans `scripts/rpg-stacks-smoke.jsx` — les piles homonymes des deux camps : compteur ×N, tête de pile, dépliage au toucher et automatique, blocage assigné depuis une pile repliée, pioche qui remplit la pile sans l’élargir. `scripts/rpg-fullscreen-smoke.jsx` joue de son côté le plein écran de la page réelle : couche fixe au montage (menu compris), natif au premier geste et au lancement d’un duel ou d’un étage, même nœud d’un écran à l’autre, touche F et ses combinaisons ignorées, sortie du navigateur, repli sans Fullscreen API.
+- Tests React/jsdom : clic-jeu direct, confirmation des magies, mana insuffisant, limite de terrain, annulation, sélection d’attaque, annulation, confirmation, interdiction d’attaquer deux fois, terrain engagé, aperçu par appui long (catalogue, main, créature en jeu, et le créateur de deck : bibliothèque, bouton « + », ligne du deck en cours, bouton « − ») qui ne joue rien et n’ajoute ni ne retire aucune carte, et — dans `scripts/rpg-stacks-smoke.jsx` — les piles homonymes des deux camps : compteur ×N, tête de pile, dépliage au toucher et automatique, blocage assigné depuis une pile repliée, pioche qui remplit la pile sans l’élargir. `scripts/rpg-fullscreen-smoke.jsx` joue de son côté le plein écran de la page réelle : couche fixe au montage (menu compris), natif au premier geste et au lancement d’un duel ou d’un étage, même nœud d’un écran à l’autre, touche F et ses combinaisons ignorées, sortie du navigateur, repli sans Fullscreen API.
 - Tests Chromium : repli portrait, plateaux 568×320, 667×375, 844×390 et 1024×768 sans recouvrement des zones (rails de terrains, centrage ou défilement complet des groupes de cartes, commandes côte à côte) ; actions directes au toucher ; jeu d’un terrain par glisser-déposer après rotations ; retour au menu.
 
 Variables facultatives : `RPG_URL`, `CHROMIUM_EXECUTABLE_PATH` et `RPG_SCREENSHOT` (capture du plateau).

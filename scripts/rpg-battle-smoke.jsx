@@ -283,7 +283,9 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  assert.equal(container.querySelectorAll('.rpg-deck-choice').length, RPG_DECKS.length,
+  // La crate « Nouveau deck » est un choix de plus sur l’étagère : elle ne compte
+  // pas parmi les boîtiers du catalogue.
+  assert.equal(container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)').length, RPG_DECKS.length,
     'chaque deck du catalogue (Sable, Braise, hybride, Eau de la Marée, Neige du Serment) est sélectionnable');
   assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
   assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');

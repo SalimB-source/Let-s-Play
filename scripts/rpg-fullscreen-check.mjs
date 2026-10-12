@@ -50,8 +50,8 @@ assert.match(page, /if \(String\(event\.key \|\| ''\)\.toLowerCase\(\) === 'esca
   'Échap — qui referme le plein écran dans le navigateur — ne le rouvre pas dans la foulée');
 assert.match(page, /isFullscreenShortcut\(event\)[\s\S]*?basculerPleinEcran\(\);/,
   'la touche F bascule le plein écran, comme dans les jeux d’arcade');
-assert.match(page, /ref=\{shellRef\}\s*\n\s*className=\{`rpg-battle rpg-battle--menu\$\{pleinEcran \? ' is-immersive' : ''\}`\}/,
-  'le menu (l’interface d’avant-partie) porte la couche plein écran');
+assert.match(page, /<div ref=\{shellRef\} className=\{`rpg-battle rpg-battle--menu\$\{pleinEcran \? ' is-immersive' : ''\}`\} data-scene="menu" onPointerDown=\{demarrerAppuiLongCarte\}>/,
+  'le menu (l’interface d’avant-partie) porte la couche plein écran, sans toucher à son appui long');
 assert.match(page, /ref=\{shellRef\}\s*\n\s*className=\{`rpg-battle\$\{viewport\.mobile \? ' rpg-battle--touch' : ''\}\$\{pleinEcran \? ' is-immersive' : ''\}`\}/,
   'le duel porte la même couche, sur le même nœud');
 assert.match(page, /const demanderPleinEcranEtPaysage = \(\) => \{\s*\n\s*entrerPleinEcran\(\{ pinned: true \}\);\s*\n\s*landscapeRef\.current\?\.enter\(\{ fullscreen: false \}\);/,

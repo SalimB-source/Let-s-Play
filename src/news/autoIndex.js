@@ -1,7 +1,39 @@
 // ⚙️ FICHIER GÉNÉRÉ par scripts/news-bot/fetch-news.mjs — ne pas éditer à la main.
-// Dernière génération : 2026-10-11T10:58:44.133Z — 43 article(s).
+// Dernière génération : 2026-10-12T12:22:17.336Z — 44 article(s).
 // Ce module alimente la page Actus et les routes /news/<slug> du site.
 export const autoStories = {
+  "playstation-a-deja-tente-d-arreter-le-jeu-physique-il-y-a-17": {
+    "slug": "playstation-a-deja-tente-d-arreter-le-jeu-physique-il-y-a-17",
+    "date": "12.10.2026",
+    "category": "PLAYSTATION · JEUXVIDEO.COM",
+    "image": "news-auto/playstation-a-deja-tente-d-arreter-le-jeu-physique-il-y-a-17-official.webp",
+    "imageAlt": "PlayStation a déjà tenté d'arrêter le jeu physique il y a 17 ans et ce fut l'un de leurs échecs les plus retentissants — visuel éditorial Let’s Play",
+    "cover": "PLAYSTATION",
+    "title": "PLAYSTATION A DÉJÀ",
+    "accent": "TENTÉ D'ARRÊTER LE.",
+    "dek": "Alors que Sony prépare activement l'avenir de sa console avec l'horizon 2028, l'industrie semble se diriger vers le tout-numérique. Pourtant, le constructeur avait déjà tenté cette transition en 2009, essuyant l'un de ses plus grands revers stratégiques.",
+    "lead": "L'industrie du jeu vidéo avance à grands pas vers une dématérialisation totale. Entre le succès des consoles sans lecteur de disque et les réflexions sur l'abandon des supports physiques, l'avenir du jeu en boîte paraît compté.",
+    "intro": "Pourtant, cette transition n'a rien d'un concept nouveau pour Sony. Il y a 17 ans, la firme nippone tentait déjà un coup de poker audacieux en lançant une machine entièrement privée de port cartouche ou de lecteur optique : la PSP Go.",
+    "h2": "LES FAITS",
+    "p1": "Conçue pour devancer les usages de son temps, la console s'est finalement heurtée aux réalités d'un marché qui n'était absolument pas prêt pour une telle révolution. à la fin des années 2000, le monde du high-tech traverse une mutation profonde. L'essor rapide de la téléphonie mobile et l'émergence des boutiques d'applications bousculent les habitudes de consommation.",
+    "quote": "Présentée lors de l'E3 2009, la PSP Go bouscule les standards d'ergonomie de la gamme.",
+    "quoteBy": "L’ANALYSE LET’S PLAY",
+    "h2b": "LE CONTEXTE",
+    "p2": "Sous la présidence de Kaz Hirai, Sony souhaite moderniser sa division portable en éliminant les contraintes mécaniques de la PSP originale. L'objectif de ce nouveau modèle, répondant au nom de code PSP-N1000, est clair : tester à grande échelle la distribution exclusivement dématérialisée et faire disparaître définitivement le format UMD (Universal Media Disc).",
+    "p3": "Côté fiche technique, la console intègre 16 Go de mémoire flash interne, qu'il est possible d'étendre grâce à un port pour carte Memory Stick Micro (M2). Cependant, le positionnement commercial pose rapidement problème. Vendue à son lancement au tarif de 249 € en Europe, la PSP Go s'affiche à un prix nettement supérieur à celui de la PSP-3000, alors proposée autour de 169 $. Pour les acheteurs, le calcul est difficile à accepter : la nouvelle venue co&ucirc;te plus cher tout en offrant un écran plus petit (3,8 pouces contre 4,3 pouces) et en retirant le lecteur optique. L'abandon du support physique a immédiatement provoqué de vives tensions avec les canaux de distribution traditionnels. Privées des ventes de jeux en boîte et de la marge générée par le marché de l'occasion, plusieurs enseignes ont ouvertement contesté les choix de Sony.",
+    "p4": "Cet article a été préparé automatiquement par la rédaction Let’s Play à partir de la source citée ci-dessous. La rédaction suivra les prochaines annonces pour compléter le dossier. Et vous, qu’avez-vous envie de voir en premier ? Dites-le dans les commentaires.",
+    "take": "À RETENIR",
+    "takeText": "Plus petite de 43 % et plus légère de 16 % par rapport à la PSP-3000, la machine adopte un design coulissant qui masque ses commandes en position fermée.",
+    "source": "D’après Jeuxvideo.com, article consulté le 12.10.2026.",
+    "sourceUrl": "https://www.jeuxvideo.com/news/2108280/playstation-a-deja-tente-d-arreter-le-jeu-physique-il-y-a-17-ans-et-ce-fut-l-un-de-leurs-echecs-les-plus-retentissants.htm",
+    "sourceDetail": "Lire l’article source",
+    "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
+    "sentiment": "negative",
+    "thumbnail": "news-auto/playstation-a-deja-tente-d-arreter-le-jeu-physique-il-y-a-17-official.webp",
+    "officialThumbnailUrl": "https://image.jeuxvideo.com/medias-crop-1200-675/179147/1791471432-5485-card.jpg",
+    "auto": true,
+    "sourceName": "Jeuxvideo.com"
+  },
   "memoire-cash-project-x-zone-reste-un-tactical-mediocre-au-se": {
     "slug": "memoire-cash-project-x-zone-reste-un-tactical-mediocre-au-se",
     "date": "11.10.2026",

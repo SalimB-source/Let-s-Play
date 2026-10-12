@@ -105,6 +105,7 @@ const toggleOf = (node) => menuToggleOf(node) ?? duelToggleOf(node);
 const launchOf = (node) => node.querySelector('.rpg-mode-menu__play .rpg-menu-button--primary');
 const menuTabOf = (node, label) => [...node.querySelectorAll('.rpg-mode-menu__switch button')]
   .find((button) => squash(button.textContent).includes(label));
+const storyTowerOf = (node) => node.querySelector('.rpg-story-tower');
 const storyFloorOf = (node) => node.querySelector('.rpg-story-floor.is-next:not(:disabled)');
 const duelMenuButtonOf = (node) => [...node.querySelectorAll('.rpg-duel-nav button')]
   .find((button) => squash(button.textContent) === 'Menu');
@@ -238,8 +239,12 @@ export async function checkRpgFullscreen(assert) {
       const { node, unmount } = await mountPage();
       await click(menuTabOf(node, 'Histoire'));
       await settle();
+      const tour = storyTowerOf(node);
+      assert.ok(tour, 'le mode Histoire ouvre sur la galerie des tours');
+      await click(tour);
+      await settle();
       const etage = storyFloorOf(node);
-      assert.ok(etage, 'le premier étage de l’Histoire est jouable');
+      assert.ok(etage, 'le premier étage de la tour ouverte est jouable');
       await click(etage);
       await settle();
       assert.deepEqual(stateOf(node, api), OPEN, 'un étage du mode Histoire se lance en plein écran');

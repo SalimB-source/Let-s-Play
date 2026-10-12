@@ -8,6 +8,10 @@
  *
  * Chaque étage porte un sorcier : son deck, sa puissance (PV supplémentaires,
  * affichés) et son profil d'IA (`rpgAI.js`) — la personnalité de gameplay.
+ *
+ * Chaque tour porte une **miniature** (`miniature`, livrée dans
+ * `public/sablier-tours/`) : la galerie du mode Histoire montre d'abord les
+ * tours en vignettes ; les étages ne se dévoilent qu'à l'ouverture d'une tour.
  */
 
 import {
@@ -115,6 +119,7 @@ export const RPG_STORY_TOURS = [
   {
     id: 'tour-des-listes',
     nom: 'La Tour des Listes',
+    miniature: 'tour-des-listes.jpg',
     resume: 'La Chambre y classe les quartiers évacuables. Chaque étage tient un nom de plus sur sa liste — et vous n’êtes pas le vôtre.',
     etages: [
       {
@@ -167,6 +172,7 @@ export const RPG_STORY_TOURS = [
   {
     id: 'tour-du-souk',
     nom: 'La Tour du Souk',
+    miniature: 'tour-du-souk.jpg',
     resume: 'Trente étals suspendus, une seule règle : rien ne se vend à perte. Les sorciers d’ici ont tous une dette à couvrir.',
     etages: [
       {
@@ -210,6 +216,7 @@ export const RPG_STORY_TOURS = [
   {
     id: 'tour-des-sables',
     nom: 'La Tour des Sables',
+    miniature: 'tour-des-sables.jpg',
     resume: 'La dernière tour encore debout au-dessus du portail. Ce qui s’y joue décide de ce que Bab El devient.',
     etages: [
       {
@@ -244,6 +251,7 @@ export const RPG_STORY_TOURS = [
   {
     id: 'tour-des-abysses',
     nom: 'La Tour des Abysses',
+    miniature: 'tour-des-abysses.jpg',
     resume: 'Une tour d’eau, sans un grain de sable : l’abîme garde ce que la ville a perdu. Ses sorciers répondent à chaque carte, et rien ne passe sans réponse.',
     etages: [
       {
@@ -291,6 +299,7 @@ export const RPG_STORY_TOURS = [
   {
     id: 'tour-du-fjord',
     nom: 'La Tour du Fjord',
+    miniature: 'tour-du-fjord.jpg',
     resume: 'Au-dessus du portail, la Chambre range ce qu’elle ne sait plus classer : neuf hivers de mémoire et de glace, tenus par des serments qu’on ne prononce pas deux fois.',
     etages: [
       {

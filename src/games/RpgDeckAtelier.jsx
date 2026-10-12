@@ -221,6 +221,9 @@ export function RpgDeckAtelier({
           <header>
             <h3>Bibliothèque</h3>
             <p aria-live="polite">{collection.length} cartes possédées sur {RPG_DUEL_CARDS.length} du catalogue.</p>
+            {/* Au doigt, le survol n'existe pas : l'atelier annonce le geste
+                d'aperçu, comme la barre du duel le fait à son ouverture. */}
+            <p className="rpg-atelier__astuce">Appui long d’une seconde sur une carte : son aperçu, sans rien ajouter ni retirer.</p>
           </header>
           <div className="rpg-atelier__filters">
             <label>

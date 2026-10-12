@@ -79,15 +79,18 @@ autonome » (deck complet, PV pleins, rien de reporté).
 ## Ce qui est en place (octobre 2026)
 
 1. **Le conteneur mode Histoire** — `src/games/rpgStory.js` + l'écran « Histoire »
-   de `RpgDuelPage` : sélection de tour → liste d'étages → lancement du duel avec
+   de `RpgDuelPage` : **galerie des tours en miniatures** d'abord (une peinture
+   par tour, livrée dans `public/sablier-tours/` — les étages restent masqués
+   tant que la tour n'est pas ouverte), puis **page de la tour** au clic sur sa
+   miniature (étages dévoilés, retour à la galerie) → lancement du duel avec
    les bons props ; écran de victoire d'étage (étage suivant / rejouer / retour
    aux tours) et de défaite (recommencer / retour), dont les boutons ont tous la même hauteur
    et leur texte centré verticalement (la flèche de « Étage suivant » reste sur la
    ligne du nom d'étage) ; **sauvegarde** de la
    progression en localStorage (`letsplay_sablier_histoire_v1`, d'abord local ;
    Supabase ensuite comme le reste du site — voir `src/auth/`).
-2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, fonction,
-   deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
+2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, miniature,
+   fonction, deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
    l'étage sur la plaque du sorcier) : **cinq tours, vingt étages, dix decks**
    (les archétypes existants et leurs variantes, tous à 40 cartes validées).
 3. **La règle de continuité entre étages** — **décision : piste A (simple) retenue

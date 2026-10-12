@@ -16,5 +16,5 @@ try {
   const { checkRpgPreviewActions } = await import('../node_modules/.cache/rpg-preview/rpg-preview-smoke.js');
   await checkRpgPreviewActions(assert);
   console.log('✓ Touch click-to-play: clicking plays cards, spells confirm before launch, mana checks, terrain limit, undo, direct attack selection, cancellation and spent-card guards');
-  console.log('✓ Touch long-press: one second on a card (hand, board, catalogue) opens the card preview without playing it, the follow-up click is swallowed, a sliding or short press keeps playing, Escape and the backdrop close the preview');
+  console.log('✓ Touch long-press: one second on a card (hand, board, catalogue, deck creator) opens the card preview without playing, adding or removing it, the follow-up click is swallowed, a sliding or short press keeps playing, Escape and the backdrop close the preview');
 } finally { dom.window.close(); }
