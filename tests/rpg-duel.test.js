@@ -43,6 +43,7 @@ import {
   creatureById,
   terrainManaColors,
   RPG_DECK_HYBRIDE_BASE,
+  RPG_DECK_MER_BASE,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { rpgLancerMagie } from '../src/games/rpgDuel.js';
@@ -219,7 +220,8 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
     for (const id of new Set(deck.cardIds)) {
       const illustration = cardArtId(cardById(id));
       assert.ok(illustration, `${id} a une illustration`);
-      assert.equal(imagesDeCeDeck.has(illustration), false,
+      const partageMerDocumente = deck.id === 'marees-de-bab-el' && illustration === 'mer';
+      assert.equal(imagesDeCeDeck.has(illustration) && !partageMerDocumente, false,
         `${id} partage l’illustration ${illustration} avec ${imagesDeCeDeck.get(illustration)} dans ${deck.name}`);
       imagesDeCeDeck.set(illustration, id);
     }
@@ -1173,6 +1175,46 @@ test('les héros sont des cartes du paquet, pas de la main de départ', () => {
   assert.ok(true);
 });
 
+test('Salem reçoit un bouclier de lumière qui absorbe le premier impact ennemi', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'joueur', 'salem');
+  const salem = rpgJouerCreature(duel, 'joueur', 'salem').entite;
+  assert.equal(salem.bouclierLumiere, true);
+  assert.equal(rpgBlesserCreature(duel, 'joueur', salem.id, 3, ['braise'], null, 'magie').bouclierLumiere, true);
+  assert.equal(salem.pv, 3, 'le premier sort ne blesse pas Salem');
+  assert.equal(salem.bouclierLumiere, false);
+  assert.equal(rpgBlesserCreature(duel, 'joueur', salem.id, 1, ['braise'], null, 'magie').recus, 1);
+  assert.equal(salem.pv, 2, 'le sort suivant inflige normalement ses dégâts');
+});
+
+test('Yamina soigne toutes les créatures alliées de 2 à son arrivée', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  rpgBlesserCreature(duel, 'joueur', chien.id, 1);
+  donner(duel, 'joueur', 'yamina');
+  const yamina = rpgJouerCreature(duel, 'joueur', 'yamina').entite;
+  assert.equal(chien.pv, 2, 'le Chien récupère 2 PV');
+  assert.equal(yamina.pv, 4, 'Yamina reste à son maximum');
+});
+
+test('Tarek donne +1/+1 aux créatures Sable tant qu’il est en jeu', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'porteuse-de-cruches');
+  const eau = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
+  donner(duel, 'joueur', 'tarek');
+  const tarek = rpgJouerCreature(duel, 'joueur', 'tarek').entite;
+  assert.deepEqual({ atk: chien.atk, pv: chien.pv, def: chien.def }, { atk: 3, pv: 3, def: 3 });
+  assert.deepEqual({ atk: eau.atk, pv: eau.pv, def: eau.def }, { atk: 1, pv: 3, def: 3 });
+  assert.deepEqual({ atk: tarek.atk, pv: tarek.pv, def: tarek.def }, { atk: 5, pv: 6, def: 6 });
+});
+
 test('phase d’attaque sans bloqueur : tous les attaquants frappent le sorcier', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
@@ -1371,8 +1413,8 @@ test('Parade de verre ne se lance pas si sa créature cible est absente', () => 
   assert.ok(duel.joueur.main.includes('parade-du-verre'), 'la carte et le mana restent intacts');
 });
 
-test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
-  assert.deepEqual(RPG_DECKS.map(({ id }) => id), ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre']);
+test('les decks de départ respectent les limites mythiques et les decks élémentaires restent valides', () => {
+  assert.deepEqual(RPG_DECKS.map(({ id }) => id), ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'marees-de-bab-el']);
   assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'feriel').length, 1,
     'la Cour des Djinns contient une Fériel mythique');
   assert.equal(RPG_DECK_HYBRIDE_BASE.filter((id) => id === 'feriel').length, 1,
@@ -1444,6 +1486,20 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   }));
   assert.ok(cartesHybrides.has('veilleur-du-couchant') && cartesHybrides.has('vent-rouge'),
     'le deck contient plusieurs cartes exigeant une source Braise et une source Sable');
+
+  const deckMer = RPG_DECKS.find(({ id }) => id === 'marees-de-bab-el');
+  assert.ok(deckMer, 'le deck Mer apparaît dans la sélection');
+  assert.equal(deckMer.role, 'joueur');
+  assert.equal(deckMer.cardIds, RPG_DECK_MER_BASE);
+  assert.equal(RPG_DECK_MER_BASE.length, 40);
+  assert.equal(rpgValiderDeck(RPG_DECK_MER_BASE).ok, true);
+  assert.equal(RPG_DECK_MER_BASE.filter((id) => id === 'mer').length, 17);
+  assert.equal(RPG_DECK_MER_BASE.filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length, 15);
+  assert.equal(RPG_DECK_MER_BASE.filter((id) => cardById(id)?.kind === 'magie').length, 8);
+  for (const id of new Set(RPG_DECK_MER_BASE)) {
+    const carte = cardById(id);
+    assert.ok(cardColors(carte).every((couleur) => couleur === 'eau'), `${id} reste dans l’identité Eau du deck`);
+  }
 });
 
 test('le validateur rejette : pas 40 cartes, trop d’exemplaires, trop peu de terrains', () => {

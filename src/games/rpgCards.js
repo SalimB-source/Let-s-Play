@@ -689,8 +689,8 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Quand Salem arrive : son crochet fauche une créature adverse (2 dégâts).',
+    arrivee: { type: 'bouclier-lumiere' },
+    text: 'Quand Salem arrive : il reçoit un bouclier de lumière. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, Salem ne peut pas subir de dégâts.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -704,8 +704,8 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    arrivee: { type: 'pioche', amount: 1 },
-    text: 'Quand Yamina arrive : piochez une carte.',
+    arrivee: { type: 'soin-creatures', amount: 2 },
+    text: 'Quand Yamina arrive : soignez chacune de vos créatures de 2.',
     flavor: 'Je compte avant de signer.',
   },
   {
@@ -750,8 +750,8 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    arrivee: { type: 'buff', atk: 1, def: 1 },
-    text: 'Quand Tarek arrive : vos autres créatures gagnent +1/+1.',
+    aura: { type: 'buff-element', element: 'sable', atk: 1, def: 1 },
+    text: 'Tant que Tarek est en jeu, vos créatures Sable gagnent +1/+1.',
     flavor: 'Il frappe avec ce qu’il porte.',
   },
   {
@@ -853,6 +853,21 @@ export const RPG_DECK_HYBRIDE_BASE = [
   ...Array(2).fill('vent-rouge'),
 ];
 
+export const RPG_DECK_MER_BASE = [
+  ...Array(17).fill('mer'),
+  ...Array(3).fill('porteuse-de-cruches'),
+  ...Array(3).fill('vipere-de-verre'),
+  ...Array(2).fill('sonneur-fele'),
+  ...Array(2).fill('veilleuse-des-citernes'),
+  ...Array(3).fill('colosse-de-sel'),
+  'yamina',
+  'boualem',
+  ...Array(2).fill('eau-de-la-source'),
+  ...Array(2).fill('lame-de-mer'),
+  ...Array(2).fill('parade-du-verre'),
+  ...Array(2).fill('brisure-de-verre'),
+];
+
 export const RPG_DECKS = [
   {
     id: 'veilleurs-du-desert',
@@ -884,6 +899,16 @@ export const RPG_DECKS = [
     archetype: 'Sable + Braise · deux couleurs, une même piste',
     description: 'Un deck hybride de Sable et de Braise : les terrains Désert et Montagne se mêlent à Pétra, qui choisit sa couleur à chaque engagement. Ses cartes bicolores évoquent avec subtilité des récits désertiques diné, sans divinité nommée ni symbole cérémoniel.',
     cardIds: RPG_DECK_HYBRIDE_BASE,
+  },
+  {
+    id: 'marees-de-bab-el',
+    name: 'Marées de Bab El',
+    role: 'joueur',
+    element: 'eau',
+    terrain: 'mer',
+    archetype: 'Soin et contre-courant',
+    description: 'Deck mono-Eau : les gardiennes des citernes, les lames de mer et les soins de Yamina maintiennent vos créatures debout pendant que la marée épuise l’adversaire.',
+    cardIds: RPG_DECK_MER_BASE,
   },
 ];
 
