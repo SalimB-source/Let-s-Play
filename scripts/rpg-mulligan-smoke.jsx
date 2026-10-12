@@ -1,5 +1,7 @@
 // Le mulligan du Sablier, rendu dans jsdom : la main de départ s'affiche en
-// grand, le joueur choisit ce qu'il change, valide, relit sa nouvelle main, et
+// entier — des faces 4:5, leurs plaques d'attaque et de défense (et la ligne de
+// type des terrains et des sorts), tout le reste passant par l'aperçu rapide du
+// survol — le joueur choisit ce qu'il change, valide, relit sa nouvelle main, et
 // la table ne s'ouvre qu'ensuite.
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -28,6 +30,11 @@ export async function checkRpgMulligan(assert) {
   const titre = () => q('.rpg-mulligan__head h2')?.textContent ?? '';
   const main = () => qa('.rpg-hand__card').map((carte) => carte.dataset.cardId);
 
+  // jsdom n'expose pas `matchMedia` : sans lui, la page suppose la souris (le
+  // repli documenté de `viewport.survol`), et le volet arme donc l'aperçu
+  // rapide — c'est le geste qu'on vérifie ici.
+  assert.equal(typeof window.matchMedia, 'undefined', 'jsdom ne connaît pas le survol, la page le suppose');
+
   await act(async () => {
     root.render(<RpgDuelPage joueurDeck={DECK_JOUER} sorcierDeck={DECK_SORCIER} rng={() => 0.5} />);
   });
@@ -42,15 +49,102 @@ export async function checkRpgMulligan(assert) {
   assert.equal(cartes().length, 5, 'les cinq cartes piochées sont toutes présentées');
   assert.deepEqual(cartes().map((carte) => carte.dataset.cardId), main(),
     'le volet montre exactement la main de départ, dans le même ordre');
+  assert.equal(q('.rpg-mulligan__stage > .rpg-mulligan__cards')?.children.length, 5,
+    'les cinq cartes forment une seule rangée, dans la scène que la feuille mesure');
   for (const carte of cartes()) {
     const id = carte.dataset.cardId;
-    assert.ok(carte.querySelector('.rpg-mulligan__face img')?.getAttribute('src')?.includes(`/cards/${id}.jpg`),
-      `la carte ${id} est rendue en grand, avec son illustration`);
-    assert.equal(carte.textContent.includes(cardById(id).name), true, `la carte ${id} affiche son nom`);
-    assert.equal(carte.querySelector('.rpg-mulligan__rules')?.textContent.length > 8, true,
-      `la carte ${id} expose ses règles sans survol ni appui long`);
+    const attendue = cardById(id);
+    assert.equal(carte.querySelector('img')?.getAttribute('src')?.includes(`/cards/${id}.jpg`) ?? false, true,
+      `la carte ${id} montre son illustration`);
+    // Aucun texte imprimé sur la carte : ni nom, ni type, ni effets, ni drapeau.
+    // Il ne reste que l'illustration et les repères du jeu (coût, badge, stats).
+    const reperes = (noeud) => noeud.classList?.contains('rpg-card-element-badge')
+      || noeud.classList?.contains('rpg-mana-cost')
+      || noeud.classList?.contains('rpg-mulligan__bas');
+    for (const noeud of carte.childNodes) {
+      if (noeud.nodeType === 3) {
+        assert.equal(noeud.textContent.trim(), '', `aucun texte n’est posé sur la carte ${id}`);
+      } else if (noeud.nodeType === 1) {
+        assert.ok(noeud.tagName === 'IMG' || reperes(noeud),
+          `la carte ${id} ne porte que son illustration et ses repères (${noeud.className})`);
+      }
+    }
+    assert.equal(Boolean(carte.querySelector('.rpg-mulligan__name, .rpg-mulligan__rules, .rpg-mulligan__flag')), false,
+      `rien du texte d’interface n’est rendu sur la carte ${id}, hors la ligne de type`);
+    // Les repères du jeu, eux, restent : le coût, le badge d’élément, les stats.
+    assert.equal(Boolean(carte.querySelector('.rpg-mana-cost')) || attendue.kind === 'terrain', true,
+      `la carte ${id} montre son coût (ou est un terrain, qui n’en a pas)`);
+    const creature = attendue.kind === 'creature' || attendue.kind === 'hero';
+    assert.equal(Boolean(carte.querySelector('.rpg-mulligan__stats')), creature,
+      `la carte ${id} montre son attaque et sa défense si c’est une créature`);
+    const plaques = carte.querySelectorAll('.rpg-mulligan__stats .rpg-stat-icon');
+    if (creature) {
+      // Les plaques du jeu : l'épée sur fond d'or, le bouclier sur fond d'acier.
+      assert.equal(plaques.length, 2, `l’attaque et la défense de ${id} portent les icônes du jeu`);
+      assert.equal(carte.querySelector('.rpg-mulligan__stats .rpg-card__stat--atk .rpg-stat-value')?.textContent,
+        String(attendue.atk), `la plaque d’attaque de ${id} affiche sa valeur`);
+      assert.equal(carte.querySelector('.rpg-mulligan__stats .rpg-card__pt .rpg-stat-value')?.textContent,
+        String(attendue.def), `la plaque de défense de ${id} affiche sa valeur`);
+      assert.equal(/⚔|🛡/.test(carte.textContent), false,
+        `la carte ${id} n’écrit plus ⚔/🛡 : elle porte les plaques du jeu`);
+      // L'attaque ouvre la rangée, la défense la ferme : chacune sur son bord.
+      const rangee = carte.querySelector('.rpg-mulligan__stats');
+      assert.equal(rangee.firstElementChild?.classList.contains('rpg-card__stat--atk'), true,
+        `l’attaque de ${id} est la première plaque — à gauche`);
+      assert.equal(rangee.lastElementChild?.classList.contains('rpg-card__pt'), true,
+        `la défense de ${id} est la dernière plaque — à droite`);
+    }
+    // La ligne de type n'est écrite que hors créature — un terrain, un sort.
+    const ligneType = carte.querySelector('.rpg-mulligan__bas .rpg-mulligan__type');
+    assert.equal(Boolean(ligneType), !creature,
+      creature
+        ? `la créature ${id} n’écrit pas de ligne de type : ses plaques suffisent`
+        : `le terrain ou le sort ${id} écrit sa ligne de type`);
+    if (!creature) {
+      const motAttendu = attendue.kind === 'terrain' ? /^Terrain/ : /^(Rituel|Éphémère)/;
+      assert.match(ligneType?.textContent ?? '', motAttendu,
+        `la carte ${id} affiche son type — le mot de sa famille, imprimé sur la face`);
+    }
+    const stats = carte.querySelector('.rpg-mulligan__stats');
+    if (stats) {
+      assert.equal(stats.previousElementSibling === ligneType, true,
+        ligneType
+          ? `le type de ${id} précède immédiatement l’attaque et la défense`
+          : `pour la créature ${id}, les plaques ouvrent la pile du bas`);
+      assert.equal(stats.parentElement?.classList.contains('rpg-mulligan__bas'), true,
+        `les plaques de ${id} vivent dans la pile du bas de la carte`);
+    }
     assert.equal(carte.getAttribute('aria-pressed'), 'false', 'aucune carte n’est choisie à l’ouverture');
   }
+  assert.match(q('.rpg-mulligan__head p').textContent, /Survolez une carte pour la lire en entier/,
+    'le volet annonce le geste de lecture quand la souris sait survoler');
+
+  // ── 1 bis. Le survol d'une carte ouvre l'aperçu rapide, et lui seul ───────
+  const survoler = async (element) => {
+    await act(async () => {
+      element.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }));
+    });
+  };
+  assert.equal(q('.rpg-hover-card-preview'), null, 'aucun aperçu tant que rien n’est survolé');
+  await survoler(cartes()[2]);
+  const apercu = q('.rpg-hover-card-preview');
+  assert.ok(apercu, 'survoler une carte du mulligan ouvre l’aperçu rapide');
+  assert.match(apercu.className, /rpg-hover-card-preview--mulligan/,
+    'l’aperçu du mulligan se nomme, pour passer au-dessus du volet');
+  const carteSurvolee = cardById(cartes()[2].dataset.cardId);
+  assert.match(apercu.getAttribute('aria-label'), new RegExp(carteSurvolee.name),
+    'l’aperçu décrit la carte survolée');
+  assert.match(apercu.textContent, new RegExp(carteSurvolee.name),
+    'et il porte le nom que la carte, elle, n’imprime plus');
+  if (carteSurvolee.text && carteSurvolee.text !== '—') {
+    assert.ok(apercu.querySelector('.rpg-hover-card-preview__rules')?.textContent.length > 8,
+      'les effets de la carte se lisent dans l’aperçu');
+  }
+  await act(async () => {
+    cartes()[2].dispatchEvent(new window.MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }));
+  });
+  assert.equal(q('.rpg-hover-card-preview'), null, 'quitter la carte referme l’aperçu');
+
   assert.match(titre(), /Gardez votre main/, 'le titre invite au choix');
   assert.match(q('.rpg-mulligan__head p').textContent, /Un seul échange/, 'le volet dit que le droit est unique');
   assert.match(q('.rpg-mulligan__valider').textContent, /Garder cette main/,
@@ -68,7 +162,8 @@ export async function checkRpgMulligan(assert) {
   await click(cartes()[1], 'toucher une carte la marque');
   assert.equal(cartes()[1].getAttribute('aria-pressed'), 'true', 'la carte choisie est pressée');
   assert.equal(cartes()[1].classList.contains('is-selected'), true, 'la carte choisie prend le liseré doré');
-  assert.match(cartes()[1].querySelector('.rpg-mulligan__flag').textContent, /à changer/, 'le drapeau dit « à changer »');
+  assert.equal(cartes()[1].querySelector('.rpg-mulligan__flag'), null,
+    'aucun mot n’est imprimé : le liseré doré dit « à changer », et le compteur le chiffre');
   await click(cartes()[2], 'toucher une seconde carte la marque aussi');
   assert.match(q('.rpg-mulligan__compteur').textContent, /2 cartes à changer/, 'le compteur suit la sélection');
   assert.match(q('.rpg-mulligan__valider').textContent, /Changer 2 cartes/, 'le bouton primary nomme l’échange');
