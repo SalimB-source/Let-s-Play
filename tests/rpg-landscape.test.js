@@ -71,3 +71,60 @@ test('Android bridge is scoped to the game lifecycle', async () => {
   await s.enter({ fullscreen: false }); s.leave();
   assert.deepEqual(e.calls, ['native:true', 'landscape', 'native:false']);
 });
+
+// Le plein écran du Sablier appartient à la page (menu compris) : la session de
+// paysage ne le demande plus, elle l'attend avant de verrouiller l'orientation —
+// `screen.orientation.lock` est refusé tant que le document n'y est pas.
+function documentAvecEvenements() {
+  const ecouteurs = new Map();
+  const doc = { fullscreenElement: null };
+  doc.documentElement = { requestFullscreen: async () => { doc.fullscreenElement = doc.documentElement; } };
+  doc.exitFullscreen = async () => { doc.fullscreenElement = null; };
+  doc.addEventListener = (type, fn) => ecouteurs.set(type, [...(ecouteurs.get(type) ?? []), fn]);
+  doc.removeEventListener = (type, fn) => ecouteurs.set(type, (ecouteurs.get(type) ?? []).filter((autre) => autre !== fn));
+  doc.fire = (type) => (ecouteurs.get(type) ?? []).forEach((fn) => fn());
+  doc.listenerCount = (type) => (ecouteurs.get(type) ?? []).length;
+  return doc;
+}
+
+test('the duel waits for the page fullscreen before locking orientation', async () => {
+  const e = environment();
+  const doc = documentAvecEvenements();
+  const verrous = [];
+  e.win.screen.orientation.lock = async (mode) => { verrous.push(mode); };
+  const s = createRpgLandscapeSession(e.win, doc);
+  const pending = s.enter({ fullscreen: false });
+  assert.deepEqual(verrous, [], 'nothing is locked while the document is still windowed');
+  assert.deepEqual(e.calls, [], 'the session never requests fullscreen itself');
+  doc.fullscreenElement = doc.documentElement;
+  doc.fire('fullscreenchange');
+  await pending;
+  assert.deepEqual(verrous, ['landscape'], 'orientation is locked once the page fullscreen lands');
+  s.leave();
+  assert.equal(doc.fullscreenElement, doc.documentElement, 'leaving the duel keeps the page fullscreen open');
+  assert.equal(doc.listenerCount('fullscreenchange'), 0, 'the wait releases its listeners');
+});
+test('leaving during the wait never locks orientation', async () => {
+  const e = environment();
+  const doc = documentAvecEvenements();
+  const verrous = [];
+  e.win.screen.orientation.lock = async (mode) => { verrous.push(mode); };
+  const s = createRpgLandscapeSession(e.win, doc);
+  const pending = s.enter({ fullscreen: false });
+  s.leave();
+  doc.fullscreenElement = doc.documentElement;
+  doc.fire('fullscreenchange');
+  await pending;
+  assert.deepEqual(verrous, [], 'a duel left before the fullscreen lands locks nothing');
+});
+test('without a Fullscreen API there is nothing to wait for', async () => {
+  const e = environment();
+  const doc = documentAvecEvenements();
+  delete doc.documentElement.requestFullscreen;
+  const verrous = [];
+  e.win.screen.orientation.lock = async (mode) => { verrous.push(mode); };
+  const s = createRpgLandscapeSession(e.win, doc);
+  await s.enter({ fullscreen: false });
+  assert.deepEqual(verrous, ['landscape'], 'the rotate prompt stays the only fallback');
+  s.leave();
+});
