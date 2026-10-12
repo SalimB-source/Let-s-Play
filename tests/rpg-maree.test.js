@@ -4,6 +4,7 @@ import {
   rpgNouveauDuel,
   rpgLancerMagie,
   rpgJouerCreature,
+  rpgDefausserCarte,
   rpgCibleAuto,
   rpgTourSorcierPreparationIA,
   rpgSorcierAnnonceSuivante,
@@ -37,7 +38,9 @@ const contre = (duel, id) => rpgLancerMagie(duel, 'joueur', id);
 test('la Marée des abysses est un deck d’Eau valide de 40 cartes, avec les quatre bêtes mythiques', () => {
   assert.equal(RPG_DECK_MAREE_BASE.length, 40);
   assert.equal(rpgValiderDeck(RPG_DECK_MAREE_BASE).ok, true);
-  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'mer').length, 16, '16 Mer');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => cardById(id).kind === 'terrain').length, 16, '16 terrains Eau');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'mer').length, 8, '8 Mer classiques');
+  assert.equal(RPG_DECK_MAREE_BASE.filter((id) => id === 'lagune-des-salines').length, 8, '8 Lagunes des salines');
   for (const id of ['kraken', 'leviathan', 'bakunawa', 'jormungandr']) {
     assert.equal(cardById(id).rarity, 'mythique', `${id} est mythique`);
     assert.equal(RPG_DECK_MAREE_BASE.filter((x) => x === id).length, 1, `${id} en un seul exemplaire`);
@@ -57,7 +60,7 @@ test('Contresort des abîmes contre la carte annoncée, sort ou créature : la c
   const duel = duelVide();
   annoncer(duel, 'trait-de-braise');
   donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 2);
+  mana(duel, 'joueur', 'eau', 4);
   const res = contre(duel, 'contresort-des-abimes');
   assert.equal(res.ok, true);
   assert.equal(res.contre, true);
@@ -76,7 +79,7 @@ test('Contresort des abîmes peut contrer une créature annoncée', () => {
   annoncer(duel, 'chien-du-guet');
   mana(duel, 'sorcier', 'sable', 2);
   donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 2);
+  mana(duel, 'joueur', 'eau', 4);
   assert.equal(contre(duel, 'contresort-des-abimes').contre, true);
   assert.equal(duel.sorcier.creatures.length, 0, 'la créature n’entre pas sur la table');
   assert.ok(duel.sorcier.cimetiere.includes('chien-du-guet'));
@@ -90,12 +93,12 @@ test('un contre ne peut répondre qu’à une annonce : rien à contrer sans car
   duel.tour = 'sorcier';
   duel.fenetreReponse = true;
   donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 2);
+  mana(duel, 'joueur', 'eau', 4);
   const res = contre(duel, 'contresort-des-abimes');
   assert.equal(res.ok, false);
   assert.equal(res.raison, 'rien-a-contrer');
   assert.ok(duel.joueur.main.includes('contresort-des-abimes'), 'la carte reste en main');
-  assert.equal(duel.joueur.mana.eau, 2, 'rien n’est payé');
+  assert.equal(duel.joueur.mana.eau, 4, 'rien n’est payé');
 });
 
 test('laisser passer après un contre : aucune carte ne se résout', () => {
@@ -103,23 +106,24 @@ test('laisser passer après un contre : aucune carte ne se résout', () => {
   annoncer(duel, 'trait-de-braise');
   mana(duel, 'sorcier', 'braise', 3);
   donner(duel, 'joueur', 'contresort-des-abimes');
-  mana(duel, 'joueur', 'eau', 2);
+  mana(duel, 'joueur', 'eau', 4);
   contre(duel, 'contresort-des-abimes');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false);
   assert.equal(duel.joueur.pv, 50);
 });
 
-test('Silence d’écume ne contre que les sorts de Braise ou de Sable', () => {
+test('Silence d’écume contre tout sort annoncé (magie rapide ou sorcellerie), quelle que soit sa couleur', () => {
   const duel = duelVide();
-  // Annonce posée directement : l'IA ne soigne pas un sorcier à pleine vie.
   duel.tour = 'sorcier';
+  duel.sorcier.mana = { braise: 5, eau: 5, sable: 5 };
+  donner(duel, 'sorcier', 'eau-de-la-source');
   duel.annonce = { cote: 'sorcier', carteId: 'eau-de-la-source', cibleId: null };
   duel.fenetreReponse = true;
   donner(duel, 'joueur', 'silence-decume');
-  mana(duel, 'joueur', 'eau', 1);
-  assert.equal(contre(duel, 'silence-decume').raison, 'cible', 'un sort d’Eau échappe au Silence');
-  assert.equal(duel.annonce.carteId, 'eau-de-la-source', 'l’annonce tient toujours');
-  assert.equal(duel.joueur.mana.eau, 1, 'le refus ne coûte rien');
+  mana(duel, 'joueur', 'eau', 2);
+  assert.equal(contre(duel, 'silence-decume').contre, true, 'un sort d’Eau est aussi contré par le Silence d’écume');
+  assert.equal(duel.annonce, null, 'l’annonce est défaite');
+  assert.equal(duel.joueur.mana.eau, 0, 'les 2 manas du Silence sont payés');
 });
 
 test('Silence d’écume contre un sort de Braise, mais pas une créature', () => {
@@ -127,7 +131,7 @@ test('Silence d’écume contre un sort de Braise, mais pas une créature', () =
   annoncer(duel, 'chien-du-guet');
   mana(duel, 'sorcier', 'sable', 2);
   donner(duel, 'joueur', 'silence-decume');
-  mana(duel, 'joueur', 'eau', 1);
+  mana(duel, 'joueur', 'eau', 2);
   assert.equal(contre(duel, 'silence-decume').raison, 'cible', 'Silence ne vise que les sorts');
 });
 
@@ -136,7 +140,7 @@ test('Silence d’écume contre un sort de Braise annoncé', () => {
   annoncer(duel, 'trait-de-braise');
   mana(duel, 'sorcier', 'braise', 3);
   donner(duel, 'joueur', 'silence-decume');
-  mana(duel, 'joueur', 'eau', 1);
+  mana(duel, 'joueur', 'eau', 2);
   assert.equal(contre(duel, 'silence-decume').contre, true);
 });
 
@@ -221,7 +225,7 @@ test('l’IA contre une créature du joueur de coût 2 avec Contresort des abîm
   jouerJoueur(duel);
   mana(duel, 'joueur', 'eau', 2);
   donner(duel, 'joueur', 'porteuse-de-cruches');
-  mana(duel, 'sorcier', 'eau', 2);
+  mana(duel, 'sorcier', 'eau', 4);
   donner(duel, 'sorcier', 'contresort-des-abimes');
   const res = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
   assert.equal(res.ok, true);
@@ -234,12 +238,12 @@ test('l’IA contre une créature du joueur de coût 2 avec Contresort des abîm
   assert.equal(duel.sorcier.mana.eau, 0, 'le contresort adverse est aussi payé');
 });
 
-test('l’IA contre une magie du joueur avec Silence d’écume si c’est un sort de Braise', () => {
+test('l’IA contre une magie du joueur avec Silence d’écume', () => {
   const duel = duelVide();
   jouerJoueur(duel);
   mana(duel, 'joueur', 'braise', 3);
   donner(duel, 'joueur', 'trait-de-braise');
-  mana(duel, 'sorcier', 'eau', 1);
+  mana(duel, 'sorcier', 'eau', 2);
   donner(duel, 'sorcier', 'silence-decume');
   const res = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier');
   assert.equal(res.contre, true);
@@ -254,7 +258,7 @@ test('l’IA ne contre pas une carte de coût 1', () => {
   jouerJoueur(duel);
   mana(duel, 'joueur', 'eau', 1);
   donner(duel, 'joueur', 'eau-de-la-source');
-  mana(duel, 'sorcier', 'eau', 2);
+  mana(duel, 'sorcier', 'eau', 4);
   donner(duel, 'sorcier', 'contresort-des-abimes');
   const res = rpgLancerMagie(duel, 'joueur', 'eau-de-la-source');
   assert.equal(res.ok, true);
@@ -262,17 +266,40 @@ test('l’IA ne contre pas une carte de coût 1', () => {
   assert.ok(duel.sorcier.main.includes('contresort-des-abimes'));
 });
 
-test('l’IA ne contre pas un sort d’Eau avec Silence d’écume', () => {
+test('l’IA contre aussi un sort d’Eau de coût 2 avec Silence d’écume', () => {
   const duel = duelVide();
   jouerJoueur(duel);
-  mana(duel, 'joueur', 'eau', 3);
+  mana(duel, 'joueur', 'eau', 2);
   donner(duel, 'joueur', 'brisure-de-verre');
-  mana(duel, 'sorcier', 'eau', 1);
+  mana(duel, 'sorcier', 'eau', 2);
   donner(duel, 'sorcier', 'silence-decume');
   const res = rpgLancerMagie(duel, 'joueur', 'brisure-de-verre');
   assert.equal(res.ok, true);
-  assert.equal(res.contre, undefined);
-  assert.ok(duel.sorcier.main.includes('silence-decume'), 'Silence reste en main');
+  assert.equal(res.contre, true);
+  assert.equal(res.parIA, true);
+  assert.ok(duel.sorcier.cimetiere.includes('silence-decume'), 'Silence est consommé pour contrer le sort');
+});
+
+test('Jörmungandr (8 manas, 7/6) fait piocher 3 cartes puis défausser 1 carte choisie en main', () => {
+  const jorm = cardById('jormungandr');
+  assert.equal(jorm.cost, 8);
+  assert.equal(jorm.atk, 7);
+  assert.equal(jorm.def, 6);
+  const duel = duelVide();
+  jouerJoueur(duel);
+  duel.joueur.deck = ['mer', 'ressac', 'lame-de-mer'];
+  donner(duel, 'joueur', 'desert');
+  donner(duel, 'joueur', 'jormungandr');
+  mana(duel, 'joueur', 'eau', 8);
+  const pose = rpgJouerCreature(duel, 'joueur', 'jormungandr');
+  assert.equal(pose.ok, true);
+  assert.equal(duel.joueur.main.length, 4, 'les 3 cartes sont piochées et ajoutées au Désert en main');
+  assert.deepEqual(duel.defausseEnAttente, { cote: 'joueur', restant: 1, sourceCarteId: 'jormungandr' });
+  const defausse = rpgDefausserCarte(duel, 'joueur', 'desert');
+  assert.equal(defausse.ok, true);
+  assert.equal(duel.defausseEnAttente, null);
+  assert.equal(duel.joueur.main.length, 3);
+  assert.ok(duel.joueur.cimetiere.includes('desert'));
 });
 
 test('sans mana, l’IA ne contre pas : la carte du joueur se résout', () => {

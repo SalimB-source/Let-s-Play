@@ -44,6 +44,19 @@ test('chaque deck de campagne est un deck valide de 40 cartes', () => {
   assert.equal(deckHistoire('deck-inconnu'), null);
 });
 
+test('les decks de campagne mêlent les illustrations alternatives de Sable et de Neige', () => {
+  assert.ok(RPG_STORY_DECKS['grand-horloger'].includes('dunes-du-tenere'),
+    'le deck du Grand Horloger reprend les Dunes du Ténéré');
+  for (const deckId of ['gardes-du-fjord', 'meute-des-neiges', 'maitre-des-neuf-hivers']) {
+    const deck = RPG_STORY_DECKS[deckId];
+    assert.ok(deck.includes('glacier'), `${deckId} garde le Glacier classique`);
+    assert.ok(deck.includes('glacier-des-arches'), `${deckId} reprend aussi le Glacier des arches`);
+    assert.equal(deck.filter((id) => cardById(id)?.kind === 'terrain').length,
+      deck.filter((id) => cardById(id)?.element === 'neige' && cardById(id)?.kind === 'terrain').length,
+      `${deckId} ne mélange pas de couleur hors Neige`);
+  }
+});
+
 test('les cartes retirées du jeu ne subsistent dans aucun deck de campagne', () => {
   // Rafale du minaret, Sentence de la Liste et Fureur du souk ont quitté le
   // catalogue : la campagne, qui compose ses propres listes, ne doit plus les
@@ -81,8 +94,8 @@ test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss co
     const deck = deckHistoire(etage.deck);
     const validation = rpgValiderDeck(deck);
     assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
-    assert.equal(validation.terrains, deck.filter((id) => id === 'glacier').length,
-      `${etage.id} pose ses seuls Glaciers comme terrains`);
+    assert.equal(validation.terrains, deck.filter((id) => cardById(id)?.kind === 'terrain').length,
+      `${etage.id} pose ses terrains Neige, variantes comprises`);
     for (const id of new Set(deck)) {
       assert.deepEqual(cardColors(cardById(id)), ['neige'],
         `${etage.id} reste mono-Neige (${id} fait exception)`);

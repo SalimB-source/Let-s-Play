@@ -25,6 +25,16 @@ test('chaque action de jeu a une séquence, l’inconnu se tait', () => {
   assert.equal(rpgSfx('silence-total'), null);
 });
 
+test('le blocage fait entendre un choc métallique de lames', () => {
+  assert.ok(RPG_SFX_NAMES.includes('choc_lames'), 'le choc de lames est déclaré parmi les bruitages du duel');
+  const clash = rpgSfx('choc_lames');
+  assert.ok(clash.some((event) => event.kind === 'thud'), 'un impact bref ancre le choc');
+  assert.ok(clash.some((event) => event.kind === 'noise' && event.filterType === 'bandpass'),
+    'un bruit métallique filtré donne l’attaque de la lame');
+  assert.ok(clash.filter((event) => event.kind === 'bell').length >= 2,
+    'deux résonances décalées font tinter les épées qui s’entrechoquent');
+});
+
 test('toutes les séquences ont des notes, départs, durées et gains valides', () => {
   for (const name of RPG_SFX_NAMES) {
     for (const event of rpgSfx(name)) {

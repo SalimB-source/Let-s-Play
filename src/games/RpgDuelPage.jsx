@@ -5,7 +5,7 @@
  * pendant la fenêtre de réponse de l'adversaire.
  */
 
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-mobile.css';
 import './rpg-story.css';
@@ -14,6 +14,8 @@ import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import { isFullscreenShortcut, nativeFullscreenElement } from './gameFullscreen.js';
 import useGameFullscreen from './useGameFullscreen.js';
+import { AuthContext } from '../auth/AuthContext';
+import { supabase } from '../lib/supabase';
 import {
   plateauDeRepli,
   plateauParId,
@@ -44,6 +46,7 @@ import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
+import RpgCardRules from './RpgCardRules.jsx';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import { useDecksSablier } from './useDecksSablier.js';
 import {
@@ -79,6 +82,7 @@ import {
   rpgContreJouable,
   rpgChoisirBloqueurs,
   rpgCiblesAttaqueRapide,
+  rpgDefausserCarte,
   rpgEngagerTerrain,
   rpgFermerFenetreReponse,
   rpgFinDeTour,
@@ -134,7 +138,10 @@ const CARD_ART_CACHE_VERSIONS = {
   yamina: 'full-art-huile-realiste-v2',
   tarek: 'full-art-huile-realiste-v2',
   boualem: 'full-art-citerne-protectrice-v1',
-  'brisure-de-verre': 'plein-art-verre-v1',
+  'djinn-de-foudre': 'plein-art-foudre-v1',
+  'sonneur-fele': 'plein-art-cloche-v1',
+  'brisure-de-verre': 'plein-art-verre-v2',
+  'silence-decume': 'plein-art-bulle-v1',
   'parade-du-verre': 'plein-art-verre-v1',
   'maree-contraire': 'deflection-ultrason-v1',
   ressac: 'djinn-tourbillon-v1',
@@ -328,6 +335,38 @@ function ManaCost({ carte, compact = false, showElement = true }) {
   );
 }
 
+function WizardManaCounters({ mana }) {
+  const resources = [
+    ['braise', 'Mana braise'],
+    ['eau', 'Mana eau'],
+    ['sable', 'Mana sable'],
+    ['neige', 'Mana neige'],
+  ];
+  const available = resources.filter(([color]) => Number(mana?.[color]) > 0);
+  if (!available.length) return null;
+  return (
+    <span className="rpg-wizard-plate__sable">
+      {available.map(([color, label]) => (
+        <i key={color} className={`mana mana--${color}`} title={label}>{mana[color]}</i>
+      ))}
+    </span>
+  );
+}
+
+function profileNameFallback(user) {
+  const metadata = user?.user_metadata ?? {};
+  const candidates = [
+    metadata.display_name,
+    user?.display_name,
+    metadata.username,
+    user?.username,
+    metadata.full_name,
+    metadata.gamertag,
+    user?.id ? String(user.id).slice(0, 8) : null,
+  ];
+  return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || 'Vous';
+}
+
 function CardElementBadge({ carte }) {
   if (!carte?.element || carte.kind === 'terrain') return null;
   const colors = cardColors(carte);
@@ -488,6 +527,7 @@ function deckCardList(deck) {
 
 function targetMode(carte) {
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
+  if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (carte?.effet?.type === 'degats' && carte.effet.cible === 'creature') return 'ennemi';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -863,7 +903,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
       {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
       {effet && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effets">
-          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}>{ligne}</span>)}
+          {effets.map((ligne, index) => <span key={`${index}-${ligne}`}><RpgCardRules carte={carte} text={ligne} /></span>)}
         </div>
       )}
       {estCreature && <p className="rpg-hover-card-preview__stats">⚔ {carte.atk} <span>·</span> 🛡 {carte.def}</p>}
@@ -1785,7 +1825,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                           </span>
                           {estCreature && <b>⚔ {carte.atk} · 🛡 {carte.def}</b>}
                         </div>
-                        <p className="rpg-card-catalogue__rules">{carte.text && carte.text !== '—' ? carte.text : 'Aucune capacité.'}</p>
+                        <p className="rpg-card-catalogue__rules"><RpgCardRules carte={carte} /></p>
                       </div>
                     </article>
                   );
@@ -1865,6 +1905,24 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
 }
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false } = {}) {
+  const authContext = useContext(AuthContext);
+  const authUser = authContext?.user ?? null;
+  const [nomProfilJoueur, setNomProfilJoueur] = useState(() => profileNameFallback(authUser));
+  useEffect(() => {
+    let vivant = true;
+    setNomProfilJoueur(profileNameFallback(authUser));
+    if (!authUser?.id || authContext?.isDemo || !supabase) return undefined;
+    supabase.from('profiles').select('display_name, username').eq('id', authUser.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (!vivant || error) return;
+        const name = [data?.display_name, data?.username, String(authUser.id).slice(0, 8)]
+          .find((value) => typeof value === 'string' && value.trim())?.trim();
+        if (name) setNomProfilJoueur(name);
+      })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [authUser, authContext?.isDemo]);
+
   const [ecran, setEcran] = useState('jouer');
   const [tutorielActif, setTutorielActif] = useState(false);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
@@ -2654,6 +2712,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const indexEtapeTutoriel = etapeTutoriel ? RPG_TUTORIAL_STEPS.findIndex((step) => step.id === etapeTutoriel.id) : -1;
   const deckJoueurAffiche = decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
   const deckAdverseAffiche = RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
+  const nomSorcierAdverse = etageHistoire?.nom ?? (tutorielActif ? 'Sorcier d’entraînement' : 'Ifrit al-Ahmar');
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
@@ -2670,8 +2729,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : null;
   const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
+  const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
+    : defausseOuverte
+      ? 'À VOUS · DÉFAUSSE'
     : fenetreSort
       ? apercuAnnonceOuvert ? 'SORT ANNONCÉ' : 'À VOUS · RÉPONSE'
     : reponseActive
@@ -2781,6 +2843,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setImpactEcran((current) => current?.token === token ? null : current);
     }, 900);
     timerImpactRef.current = timer;
+  };
+
+  // Une blessure qui entame le bouclier reste un coup reçu, même si les PV
+  // sont entièrement protégés. Ce relevé couvre les dégâts directs des sorts
+  // et des capacités d’arrivée des créatures adverses.
+  const prendreInstantaneDegatsJoueur = () => ({
+    pv: duel.joueur.pv,
+    bouclier: duel.joueur.bouclier ?? 0,
+  });
+  const joueurToucheDepuis = (instantane) => (
+    duel.joueur.pv < instantane.pv
+    || (duel.joueur.bouclier ?? 0) < instantane.bouclier
+  );
+  const terminerTourEtDetecterDegatsJoueur = () => {
+    const instantane = prendreInstantaneDegatsJoueur();
+    rpgFinDeTour(duel);
+    return joueurToucheDepuis(instantane);
   };
 
   const prendreInstantaneChamp = () => {
@@ -2927,6 +3006,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Le mulligan d'abord : tant que la main de départ n'est pas validée, rien
     // ne quitte la main — ni clic, ni glisser, ni sort en réponse.
     if (mulliganOuvert) return false;
+    if (defausseOuverte) return false;
     // Un contre sans annonce à contrer n'est pas jouable : l'allumer enfermait
     // le joueur dans une confirmation qui ne menait à rien.
     if (!rpgContreJouable(duel, 'joueur', carte)) return false;
@@ -3133,7 +3213,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           if (!attaquantsVivants.length) {
             rpgFermerFenetreReponse(duel);
             setCombatEntrant(null);
-            rpgFinDeTour(duel);
+            if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
           } else {
             const vivants = new Set(attaquantsVivants);
             setCombatEntrant((courant) => courant && ({
@@ -3155,7 +3235,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    const cibleAuto = carte.arrivee?.type === 'combat' ? cibleId : (duel.sorcier.creatures[0]?.id ?? null);
+    const cibleAuto = ['combat', 'retour-main'].includes(carte.arrivee?.type)
+      ? cibleId
+      : (duel.sorcier.creatures[0]?.id ?? null);
     const res = rpgJouerCreature(duel, 'joueur', carteId, cibleAuto);
     if (res.ok && res.contre && res.parIA) {
       // Le sorcier contre la créature : elle n'entre pas en jeu.
@@ -3195,6 +3277,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
     }
+    if (carte.arrivee?.type === 'retour-main') {
+      const ciblesLegales = duel.sorcier.creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+      if (ciblesLegales.length) {
+        setCibleEnCours(carteId);
+        force();
+        return;
+      }
+    }
     if (!monTour) return;
     finaliserPoseCreature(carteId);
   };
@@ -3215,7 +3305,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       demarrerVolCarte(carte, index, () => poserTerrain(carteId));
     } else if (carte.kind === 'magie') {
       poserCarte(carteId);
-    } else if (carte.arrivee?.type === 'combat'
+    } else if (['combat', 'retour-main'].includes(carte.arrivee?.type)
       && duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
@@ -3250,6 +3340,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(carteId);
     if (!carte) return;
     if (carteEnVol || cibleEnCours || cibleAttaqueEnCours) return;
+    if (defausseOuverte) {
+      const res = rpgDefausserCarte(duel, 'joueur', Number.isInteger(handIndex) ? handIndex : carteId);
+      jouerSfx(res.ok ? 'annuler' : 'erreur');
+      force();
+      return;
+    }
     if (carte.kind === 'magie' && peutJouerCarte(carte)) {
       jouerSfx('menu');
       setConfirmationSort({ carteId, handIndex });
@@ -3285,7 +3381,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return true;
     }
     jouerSfx('select');
-    if (carteSource?.arrivee?.type === 'combat') {
+    if (['combat', 'retour-main'].includes(carteSource?.arrivee?.type)) {
       const carteId = cibleEnCours;
       const handIndex = carteCibleeHandIndexRef.current;
       carteCibleeHandIndexRef.current = null;
@@ -3568,7 +3664,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!attaquantsVivants.length) {
       rpgFermerFenetreReponse(duel);
       setCombatEntrant(null);
-      rpgFinDeTour(duel);
+      if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
       force();
       return;
     }
@@ -3591,14 +3687,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
+    const frappeDirecte = res.resume.frappeSorcier > 0;
     jouerSfx('combat');
-    if (res.resume.frappeSorcier > 0) { jouerSfx('degats', 0.18); }
+    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
+    if (frappeDirecte) { jouerSfx('degats', 0.18); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
-    if (res.resume.frappeSorcier > 0) declencherImpactEcran('received');
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
     setCibleEnCours(null);
-    if (!rpgVainqueur(duel)) rpgFinDeTour(duel);
+    const touchePendantLaFinDuTour = !rpgVainqueur(duel) && terminerTourEtDetecterDegatsJoueur();
+    if (frappeDirecte || touchePendantLaFinDuTour) declencherImpactEcran('received');
     force();
   };
 
@@ -3642,8 +3740,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
 
     jouerSfx('combat');
+    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
     if (res.resume.frappeSorcier > 0) { jouerSfx('degats_sorcier', 0.18); }
-    else { jouerSfx('blocage', 0.2); }
+    else if (!res.resume.paires.length) { jouerSfx('blocage', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
     rpgFermerFenetreReponse(duel);
@@ -3667,7 +3766,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCiblesAttaque({});
     setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
-    rpgFinDeTour(duel);
+    if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
     avancerTutoriel('fin-tour', 'tour-adverse');
     force();
     later(() => {
@@ -3719,7 +3818,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     jouerSfx('pass');
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
-    rpgSorcierResoudreAnnonce(duel);
+    const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
+    const res = rpgSorcierResoudreAnnonce(duel);
+    if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) {
+      declencherImpactEcran('received');
+    }
     animerModificationsChamp(champAvant, [], debutJournalDestructions);
     force();
     later(annoncerSuivantSorcier, 900);
@@ -3729,7 +3832,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const declarerAttaqueSorcier = () => {
       const ids = rpgChoisirAttaquants(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
       if (!ids.length) {
-        rpgFinDeTour(duel);
+        if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
         force();
         return;
       }
@@ -3967,17 +4070,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           data-tutorial-target={tutorielActif && ['bienvenue', 'combat'].includes(etapeTutorielId) ? 'opponent-health' : undefined}
           title="Le sorcier adverse">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche))} alt="" /></span>
+          <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
           <span className="rpg-wizard-plate__identity">
             <strong>{etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
             <small>{etageHistoire ? etageHistoire.fonction : tutorielActif ? 'Partie guidée · sans pression' : `${deckAdverseAffiche.name} · ${deckColorLabel(deckAdverseAffiche)}`}</small>
           </span>
-          <span className="rpg-wizard-plate__pv">🛡 {duel.sorcier.pv}{duel.sorcier.bouclier > 0 ? ` · ◇ ${duel.sorcier.bouclier}` : ''}</span>
-          <span className="rpg-wizard-plate__sable">
-            <i className="mana mana--braise" title="Mana braise">{duel.sorcier.mana.braise}</i>
-            <i className="mana mana--eau" title="Mana eau">{duel.sorcier.mana.eau}</i>
-            <i className="mana mana--sable" title="Mana sable">{duel.sorcier.mana.sable}</i>
-            <i className="mana mana--neige" title="Mana neige">{duel.sorcier.mana.neige}</i>
+          <span className="rpg-wizard-plate__pv">
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
+            <span className="rpg-wizard-plate__hp-value">{duel.sorcier.pv}</span>
+            {duel.sorcier.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.sorcier.bouclier}</span>}
           </span>
+          <WizardManaCounters mana={duel.sorcier.mana} />
           <span className="rpg-wizard-plate__zones">Main · {duel.sorcier.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.sorcier.deck.length} · Cimetière {duel.sorcier.cimetiere.length}</span></span>
         </button>
 
@@ -4272,14 +4376,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
         <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' ? ' is-spell-target' : ''}`} title="Vous">
           <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
+          <span className="rpg-wizard-plate__profile-name">{nomProfilJoueur}</span>
           <span className="rpg-wizard-plate__identity"><strong>VOUS</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
-          <span className="rpg-wizard-plate__pv">🛡 {duel.joueur.pv}{duel.joueur.bouclier > 0 ? ` · ◇ ${duel.joueur.bouclier}` : ''}</span>
-          <span className="rpg-wizard-plate__sable">
-            <i className="mana mana--braise" title="Mana braise">{duel.joueur.mana.braise}</i>
-            <i className="mana mana--eau" title="Mana eau">{duel.joueur.mana.eau}</i>
-            <i className="mana mana--sable" title="Mana sable">{duel.joueur.mana.sable}</i>
-            <i className="mana mana--neige" title="Mana neige">{duel.joueur.mana.neige}</i>
+          <span className="rpg-wizard-plate__pv">
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--shield" aria-hidden="true">🛡</span>
+            <span className="rpg-wizard-plate__hp-icon rpg-wizard-plate__hp-icon--heart" aria-hidden="true">♥</span>
+            <span className="rpg-wizard-plate__hp-value">{duel.joueur.pv}</span>
+            {duel.joueur.bouclier > 0 && <span className="rpg-wizard-plate__shield-value">· ◇ {duel.joueur.bouclier}</span>}
           </span>
+          <WizardManaCounters mana={duel.joueur.mana} />
           <span className="rpg-wizard-plate__zones">Main · {duel.joueur.main.length}<span className="rpg-mobile-zones"> · Paquet {duel.joueur.deck.length} · Cimetière {duel.joueur.cimetiere.length}</span></span>
         </div>
 
@@ -4318,6 +4423,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => { setCibleEnCours(null); carteCibleeHandIndexRef.current = null;  }}>
                     Annuler la cible
                   </button>
+                )}
+                {defausseOuverte && (
+                  <span className="rpg-discard-prompt" role="status" aria-live="polite">
+                    Cliquez une carte de votre main pour la défausser ({duel.defausseEnAttente.restant}).
+                  </span>
                 )}
               </div>
             </div>
@@ -4405,13 +4515,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     type="button"
                     className="rpg-btn rpg-btn--attaque rpg-btn--attaque-tous"
                     data-tutorial-target={tutorielActif && etapeTutorielId === 'attaque' ? 'attack-all' : undefined}
-                    disabled={!monTour || !prets.length || Boolean(combatEntrant)}
+                    disabled={!monTour || !prets.length || Boolean(combatEntrant) || defausseOuverte}
                     onClick={declarerAttaqueAvecTous}
                   >
                     <CombatActionIcon type="attack-all" /> Attaquer avec tous ({prets.length})
                   </button>
             )}
-            {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
+            {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && !defausseOuverte && (
               <button
                 type="button"
                 className="rpg-btn rpg-btn--undo"
@@ -4449,7 +4559,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // Une seule règle pour le halo doré, le glisser-déposer et le
               // clic : deux copies de la règle finissaient par diverger, et
               // une carte allumée mais injouable enferme le joueur.
-              const jouable = peutJouerCarte(carte);
+              const jouable = defausseOuverte || peutJouerCarte(carte);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
@@ -4470,7 +4580,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 <>
                 <button
                   type="button"
-                  draggable={jouable}
+                  draggable={jouable && !defausseOuverte}
                   onClick={() => cliquerCarteMain(carteId, i)}
                   onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
                   onMouseLeave={masquerApercuSurvol}
@@ -4509,7 +4619,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-card-flight={enVol ? (estTerrain ? 'terrain' : 'creature') : undefined}
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />

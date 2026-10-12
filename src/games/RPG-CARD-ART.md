@@ -23,16 +23,38 @@ Cette direction s’applique à toute la collection sans exception — Sable, Ea
 
 Les terrains gardent une illustration plein cadre, mais ne reçoivent ni coût ni badge élémentaire.
 
+## Variantes illustrées des terrains
+
+Chaque variante est une carte autonome à peinture dédiée, mais reprend strictement
+le type, le coût nul et la production de mana de son terrain d’origine. Les
+paquets préconstruits mélangent les deux versions pour renouveler les terrains
+visibles en main et sur la table ; la campagne reprend aussi les variantes du
+Sable et de la Neige dans ses decks personnalisés.
+
+- **Dunes du Ténéré** (`dunes-du-tenere.jpg`) — variante Sable du Désert ;
+- **Crêtes de cendre** (`cretes-de-cendre.jpg`) — variante Braise de la Montagne ;
+- **Lagune des salines** (`lagune-des-salines.jpg`) — variante Eau de la Mer ;
+- **Pétra des deux sources** (`petra-des-deux-sources.jpg`) — variante rare
+  hybride de Pétra, déblocable avec Pétra à l’étage `listes-4` ;
+- **Glacier des arches** (`glacier-des-arches.jpg`) — variante Neige du Glacier.
+
+Ces cinq peintures sont des pleins arts verticaux au ratio de face 4:5, sans
+texte ni symbole incrusté. Le champ `varianteDe` de `rpgCards.js` garde la
+correspondance de règles explicite ; chaque variante reste une référence
+cataloguée afin que le deck puisse réellement la jouer.
+
 ## État du set Neige
 
 Le **Serment des Neuf Hivers** (couleur Neige, cadre bleu clair `#a9e0f5`,
-badge ❄️) est entièrement peint : ses dix-neuf cartes — Glacier, Guerrier au
-bouclier rond, Loup des neiges, Scalde des runes, Valkyrie au corbeau, Berserk
-des trois hivers, Jarl au marteau de guerre, Valkyrie des glaces, Géant des
-banquises, Drakkar à tête de dragon, Éclair du marteau, Mur de boucliers,
-Festin des vaillants, Brume du fjord, Hurlement du blizzard, le Père des
-corbeaux, le Maître du marteau, la Dame des neuf mondes et le Serpent du monde
-— ont leur plein art dédié dans `public/cards/`.
+badge ❄️) est entièrement peint : ses dix-neuf cartes originales — Glacier,
+Guerrier au bouclier rond, Loup des neiges, Scalde des runes, Valkyrie au
+corbeau, Berserk des trois hivers, Jarl au marteau de guerre, Valkyrie des
+glaces, Géant des banquises, Drakkar à tête de dragon, Éclair du marteau, Mur
+de boucliers, Festin des vaillants, Brume du fjord, Hurlement du blizzard, le
+Père des corbeaux, le Maître du marteau, la Dame des neuf mondes et le Serpent
+du monde — ont leur plein art dédié dans `public/cards/`. Le Glacier possède
+aussi une seconde peinture jouable, **Glacier des arches**, qui partage sa
+production de Neige.
 
 Les **figures du Nord** sont peintes comme des personnes, chacune avec son
 attribut, parce que leur sujet ne doit jamais se réduire à un objet :

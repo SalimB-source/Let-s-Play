@@ -238,7 +238,7 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       rng,
     })?.cibleId ?? null;
   }
-  if (carte?.effet?.type === 'retour-main') {
+  if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
     return meilleureCibleRenvoiIA(duel, cote, carte);
   }
   if (carte?.effet?.cible === 'creature-amie') {
@@ -273,7 +273,8 @@ function meilleureCibleAmie(duel, cote, carte) {
  * créature intouchable ; sans cible légale, la fonction rend `null`.
  */
 function meilleureCibleRenvoiIA(duel, cote, carte) {
-  const campCible = carte?.effet?.cible === 'creature-amie' ? duel[cote] : duel[autre(cote)];
+  const portee = carte?.effet?.cible ?? carte?.arrivee?.cible;
+  const campCible = portee === 'creature-amie' ? duel[cote] : duel[autre(cote)];
   const couleurs = cardColors(carte);
   return campCible.creatures
     .filter((entite) => !estProtegee(entite, couleurs))
@@ -723,6 +724,18 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   const arrivee = carte.arrivee;
   if (arrivee) {
     if (arrivee.type === 'pioche') score += 2 + (camp.main.length <= 3 ? 2 : 0);
+    if (arrivee.type === 'pioche-defausse') {
+      const net = Math.max(0, (arrivee.pioche ?? 0) - (arrivee.defausse ?? 0));
+      score += 1 + net * 1.5 + (camp.main.length <= 3 ? 2 : 0);
+    }
+    if (arrivee.type === 'retour-main') {
+      const cibleRenvoi = meilleureCibleRenvoiIA(duel, cote, carte);
+      if (cibleRenvoi) {
+        cibleId = cibleRenvoi;
+        const cible = duel[adv].creatures.find((entite) => entite.id === cibleRenvoi);
+        if (cible) score += 1.5 + menace(cible) * 0.4;
+      }
+    }
     if (arrivee.type === 'soin') score += Math.min(arrivee.amount ?? 0, manquePv) * 0.8;
     if (arrivee.type === 'degats') {
       if (arrivee.cible === 'toutes-creatures') {
@@ -804,4 +817,35 @@ export function choisirCarteIA(duel, cote, options = {}) {
     return candidats[Math.floor(rng() * candidats.length)];
   }
   return candidats[0];
+}
+
+/**
+ * Défausse d’une carte de la main (Jörmungandr…) : l’IA écarte la carte la
+ * moins précieuse — un terrain excédentaire si la table est déjà garnie,
+ * sinon la carte au score le plus faible.
+ */
+export function choisirDefausseIA(duel, cote = 'sorcier') {
+  const camp = duel?.[cote];
+  const main = camp?.main ?? [];
+  if (!main.length) return -1;
+  const terrainsEnJeu = (camp.terrains ?? []).length;
+  const terrainsEnMain = main.filter((id) => terrainById(id)).length;
+  const valeurEnMain = (id) => {
+    if (terrainById(id)) {
+      return terrainsEnJeu + terrainsEnMain > 5 ? 0.5 : 3;
+    }
+    const carte = duelCardById(id) ?? magieById(id);
+    if (!carte) return 0;
+    return (carte.cost ?? 1) + (carte.rarity === 'mythique' ? 4 : carte.rarity === 'rare' ? 2 : 1);
+  };
+  let meilleurIndex = 0;
+  let pireValeur = Infinity;
+  for (let i = 0; i < main.length; i += 1) {
+    const v = valeurEnMain(main[i]);
+    if (v < pireValeur) {
+      pireValeur = v;
+      meilleurIndex = i;
+    }
+  }
+  return meilleurIndex;
 }

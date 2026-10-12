@@ -212,7 +212,7 @@ Un contre ne peut être joué que pendant une annonce du sorcier, et il vise
 | Carte | Contre | Effet |
 |---|---|---|
 | *Contresort des abîmes* (×3) | n'importe quelle carte annoncée (créature ou sort) | `cible: 'carte'` |
-| *Silence d'écume* (×3) | un sort annoncé de Braise ou de Sable | `cible: 'sort'`, `contre: ['braise','sable']` |
+| *Silence d'écume* (×3) | la magie rapide ou la sorcellerie annoncée | `cible: 'sort'` |
 | *Déflection* (×2) | un sort annoncé, puis piochez une carte | `cible: 'sort'`, `pioche: 1` |
 
 La carte s'appelle **Déflection** depuis la refonte de son illustration (le
@@ -236,7 +236,7 @@ sans la payer. Une bannière « Le sorcier annonce X » apparaît, et le joueur 
 **Bakunawa** (mythique) n'a plus d'effet de contre : à son arrivée, elle inflige
 2 dégâts à une créature adverse ciblée. Les autres bêtes : **Kraken** (à sa
 destruction, pioche 2), **Léviathan** (3 dégâts à une créature à l'arrivée),
-**Jörmungandr** (3 dégâts au sorcier à l'arrivée).
+**Jörmungandr** (pioche 3 cartes et défausse 1 carte à l'arrivée).
 
 **Contre de l'IA.** Quand le joueur lance une magie ou pose une créature (hors
 annonce en cours), le sorcier peut contrer : il choisit le contre le moins cher

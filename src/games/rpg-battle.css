@@ -2261,12 +2261,91 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-wizard-plate__avatar--ennemi { color: #ffad80; border-color: rgba(204, 122, 83, .9); }
 .rpg-wizard-plate__avatar--joueur { color: #ffe5a4; }
 .rpg-wizard-plate__identity { grid-column: 2; grid-row: 1; display: grid; gap: 2px; min-width: 0; }
+.rpg-wizard-plate__profile-name { display: none; }
+.rpg-wizard-plate__enemy-name { display: none; }
 .rpg-wizard-plate__identity strong { color: #fff0cf; font: 800 10px/1.1 var(--display); letter-spacing: .11em; }
 .rpg-wizard-plate__identity small { color: rgba(236, 218, 181, .74); font: 500 8px/1.1 Georgia, serif; letter-spacing: .02em; }
 .rpg-wizard-plate__pv { grid-column: 3; grid-row: 1 / 3; align-self: center; color: #ffe6a2; font: 800 18px/1 Georgia, serif; white-space: nowrap; }
+.rpg-wizard-plate__hp-icon--heart { display: none; }
+.rpg-wizard-plate__hp-value,
+.rpg-wizard-plate__shield-value { margin-inline-start: .25em; }
 .rpg-wizard-plate__sable { grid-column: 2 / 4; grid-row: 2; color: #c9c2ae; font: 600 9px/1.2 var(--mono); }
 .rpg-wizard-plate__zones { grid-column: 2 / 4; grid-row: 3; color: rgba(230, 218, 190, .8); font: 600 8px/1.2 var(--mono); letter-spacing: .03em; }
 .rpg-wizard-plate.is-ciblable { outline: 2px solid #72e6d0; box-shadow: 0 0 18px rgba(91, 240, 218, .55); }
+
+/* Sur PC, l’image reste à gauche ; le nom et les PV forment une colonne lisible à droite. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate {
+  display: grid;
+  grid-template-columns: clamp(44px, 3.6vw, 52px) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-content: start;
+  width: clamp(176px, 15vw, 224px);
+  min-height: clamp(52px, 4vw, 64px);
+  gap: 2px clamp(8px, .75vw, 11px);
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(226, 190, 119, .78);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(18, 15, 15, .96), rgba(7, 9, 14, .94));
+  box-shadow: 0 0 0 1px rgba(15, 11, 10, .86), inset 0 0 0 1px rgba(255, 235, 193, .3);
+  text-align: left;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--joueur {
+  border-color: rgba(246, 211, 132, .94);
+  box-shadow: 0 0 0 1px rgba(16, 12, 8, .9), 0 0 15px rgba(235, 188, 91, .2), inset 0 0 0 1px rgba(255, 242, 200, .42);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--ennemi {
+  border-color: rgba(226, 145, 111, .95);
+  box-shadow: 0 0 0 1px rgba(17, 9, 8, .9), 0 0 15px rgba(211, 111, 79, .22), inset 0 0 0 1px rgba(255, 221, 204, .36);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__identity,
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__sable,
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__zones { display: none; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__profile-name,
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__enemy-name {
+  display: block;
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  color: #fff0cf;
+  font: 700 clamp(10px, .9vw, 13px)/1.15 var(--display);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__avatar {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: clamp(44px, 3.6vw, 52px);
+  height: clamp(44px, 3.6vw, 52px);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__pv {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  font-size: clamp(22px, 1.9vw, 27px);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--joueur .rpg-wizard-plate__pv {
+  grid-row: 2;
+  align-self: start;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate--ennemi .rpg-wizard-plate__pv {
+  grid-row: 2;
+  align-self: center;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__hp-icon--shield { display: none; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__hp-icon--heart {
+  display: inline-block;
+  color: #f06468;
+  font-size: .9em;
+  line-height: 1;
+  text-shadow: 0 0 7px rgba(240, 100, 104, .52);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__hp-value { margin-inline-start: 0; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate__shield-value { display: none; }
 
 .card-row {
   z-index: 4;
@@ -2336,6 +2415,29 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand { gap: 8px; max-height: 198px; padding: 8px 0 10px; }
 .rpg-hand__card { width: clamp(94px, 8.8vw, 124px); }
 .rpg-hand__card:hover:not(:disabled) { transform: translateY(-18px) scale(1.05); z-index: 5; }
+
+/* Sur PC, la main reste entière et se resserre au besoin. Son conteneur plein
+   écran laisse passer les clics ; seules les cartes capturent le pointeur. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand-dock { background: transparent; overflow: visible; }
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  overflow: visible;
+  justify-content: center;
+  gap: clamp(3px, .65vw, 10px);
+  padding-inline: clamp(8px, 1.5vw, 24px);
+  pointer-events: none;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand__card {
+  width: clamp(76px, 9vw, 136px);
+  min-width: 0;
+  min-height: 0;
+  flex: 0 1 clamp(76px, 9vw, 136px);
+  pointer-events: auto;
+}
 
 .rpg-combat-window {
   width: min(760px, calc(100vw - 32px));
@@ -2453,6 +2555,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card[data-combat-tilted="true"] {
   transform: rotate(15deg) !important;
   transform-origin: center;
+}
+/* Une créature engagée garde sa lueur rouge pendant l'animation d'attaque ;
+   le halo s'éteint dès que cette phase visuelle se termine. */
+.rpg-card.is-attacked.fx-lunge {
+  box-shadow:
+    0 0 0 2px rgba(255, 83, 76, .96),
+    0 0 18px 5px rgba(239, 49, 43, .74),
+    0 0 32px rgba(222, 38, 34, .42),
+    0 12px 28px rgba(0, 0, 0, .65);
 }
 /* Une créature qui a attaqué reste légèrement inclinée et visiblement fatiguée,
    sans texte superposé sur son illustration. */
@@ -2577,6 +2688,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline: 3px solid #9af4e3;
   box-shadow: 0 0 0 4px rgba(7, 33, 33, .7), 0 0 25px rgba(91, 240, 218, .78);
   filter: brightness(1.18);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate.is-ciblable {
+  box-shadow: 0 0 18px rgba(91, 240, 218, .55);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate.is-spell-target {
+  box-shadow: 0 0 0 4px rgba(7, 33, 33, .7), 0 0 25px rgba(91, 240, 218, .78);
 }
 .rpg-card.is-coup-rapide-cible {
   outline: 4px solid #ffb15e;
@@ -3824,8 +3941,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview.is-spell-preview { z-index: 116; }
 
 /* Coup reçu et impact direct : l'arène entière frémit, avec une vignette rouge
-   uniquement lorsque vos PV sont touchés. Les variantes alternent pour relancer
-   l'animation même lors de deux impacts rapprochés. */
+   quand les PV ou le bouclier du joueur encaissent le choc. Les variantes alternent
+   pour relancer l'animation même lors de deux impacts rapprochés. */
 .card-table.rpg-screen-shake--a { animation: rpg-screen-shake-a .56s cubic-bezier(.36, .07, .19, .97) both; }
 .card-table.rpg-screen-shake--b { animation: rpg-screen-shake-b .56s cubic-bezier(.36, .07, .19, .97) both; }
 @keyframes rpg-screen-shake-a {
@@ -4541,6 +4658,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    main sans former un panneau visible ni rivaliser avec les cartes. L'indicateur
    de tour, les phases et « Fin du tour » ne vivent plus ici : ils ont leur rail
    au milieu de la table (voir « Le rail du tour » plus bas). */
+.rpg-battle:not(.rpg-battle--touch) .rpg-bottombar .rpg-log { display: none; }
 .rpg-bottombar {
   right: 16px;
   bottom: 200px;
@@ -4661,6 +4779,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: #f58a83;
   box-shadow: 0 0 8px rgba(242, 106, 97, .16);
 }
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque-tous,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--confirmer-attaque,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--cancel-attack {
+  background: rgba(4, 3, 3, .9);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo:hover:not(:disabled),
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque-tous:hover:not(:disabled),
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--confirmer-attaque:hover:not(:disabled),
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--cancel-attack:hover:not(:disabled) {
+  background: rgba(14, 10, 8, .94);
+}
 .rpg-actions__combat .rpg-btn--confirmer-attaque { border-color: rgba(155, 220, 255, .58); }
 .rpg-actions__combat .rpg-btn--confirmer-attaque:hover:not(:disabled) {
   border-color: #bbeaff;
@@ -4728,12 +4858,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-turn-rail .rpg-btn--undo { grid-column: 1 / -1; grid-row: 1; }
 .rpg-turn-rail .rpg-btn--endturn { grid-column: 2; }
 .rpg-turn-rail .rpg-btn { width: 100%; white-space: normal; pointer-events: auto; }
+/* En phase d'attaque, « Fin du tour » est désactivé : son rectangle ne doit
+   pas intercepter les clics sur Confirmer ou Annuler l'attaque en dessous. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-btn:disabled { pointer-events: none; }
 .rpg-turn-rail .rpg-turn-indicator { align-self: stretch; justify-content: center; }
 .rpg-turn-rail .rpg-turn-indicator strong { white-space: normal; }
 
-/* Repère de progression du duel : une seule pastille lumineuse suit la phase
-   active. Les cinq phases s'empilent, chacune dans sa capsule translucide ; le
-   libellé suit son icône, à droite, pour garder le rail étroit. */
+/* Repère de progression : la disposition de base empile les phases tactiles
+   avec leur libellé. La variante PC, en icônes orange horizontales, est définie
+   juste après les règles communes. */
 .rpg-phase-track {
   display: flex;
   width: 100%;
@@ -4824,6 +4957,66 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-phase-step.is-active .rpg-phase-step__icon { animation: none; }
+}
+
+/* Sur PC, les phases deviennent une rangée compacte d'icônes orange. Le fond
+   sombre translucide appartient à la rangée ; les noms restent accessibles. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-track {
+  box-sizing: border-box;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 1px solid rgba(242, 154, 74, .24);
+  border-radius: 12px;
+  background: rgba(8, 7, 9, .62);
+  backdrop-filter: blur(6px);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step {
+  --rpg-phase-lit: #f29a4a;
+  --rpg-phase-glow: rgba(242, 154, 74, .38);
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step.is-active {
+  border-color: transparent;
+  background: transparent;
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon {
+  width: 30px;
+  height: 30px;
+  border-color: rgba(242, 154, 74, .28);
+  background: rgba(12, 9, 8, .38);
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step.is-active .rpg-phase-step__icon {
+  border-color: rgba(255, 171, 99, .78);
+  background: rgba(242, 132, 46, .16);
+  color: #f29a4a;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon svg {
+  width: 18px;
+  height: 18px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
