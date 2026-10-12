@@ -298,8 +298,10 @@ assert.match(battlePage, /setBloqueurSelectionne\(entite\.id\)/,
   'un bloqueur peut être sélectionné au clic, y compris sur écran tactile');
 assert.match(battlePage, /assignerBloqueur\(entite\.id, bloqueurSelectionne\)/,
   'un second clic sur l’attaquant attribue le bloqueur sans enlever le glisser-déposer');
-assert.match(battlePage, /RPG_DECKS\.map\(\(deck\)/,
-  'le menu Deck présente le catalogue de decks existants');
+// L'étagère fusionne le catalogue et les decks maison, puis n'affiche que les
+// decks retenus par le filtre de couleur (l'atelier les rejoint depuis son onglet).
+assert.match(battlePage, /const decksTous = \[\.\.\.RPG_DECKS, \.\.\.decksMaison\];[\s\S]*?decksVisibles\.map\(\(deck\)/,
+  'le menu Deck présente le catalogue de decks existants, étagère maison comprise');
 assert.match(battlePage, /RPG_DUEL_CARDS\.filter\(\(carte\)/,
   'le catalogue complet filtre dynamiquement toutes les cartes du duel');
 assert.match(battlePage, /className="rpg-card-catalogue"[\s\S]*?Filtrer par couleur[\s\S]*?Filtrer par type/,

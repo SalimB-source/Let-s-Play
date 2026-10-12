@@ -5,7 +5,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 import { RPG_DECK_STORAGE_KEY } from '../src/games/rpgDeckChoice.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -401,7 +401,7 @@ export async function checkRpgDecks(assert) {
   assert.ok(atelier.container.querySelector('.rpg-atelier'), 'l’atelier remplace l’étagère');
   assert.ok(!atelier.container.querySelector('.rpg-deck-catalog__choices'), 'l’étagère n’est pas rendue en même temps que l’atelier');
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /0 \/ 40 cartes/, 'les compteurs démarrent à zéro');
-  assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, 75, 'la bibliothèque montre tout le catalogue');
+  assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, RPG_DUEL_CARDS.length, 'la bibliothèque montre tout le catalogue');
   assert.ok(atelier.container.querySelectorAll('.rpg-atelier__carte.is-locked').length > 0, 'les cartes hors collection sont verrouillées');
   const rangeeKraken = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="kraken"]');
   assert.ok(rangeeKraken.classList.contains('is-locked'), 'le Kraken est verrouillé au départ');
