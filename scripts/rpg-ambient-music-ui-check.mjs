@@ -31,4 +31,4 @@ try {
   dom.window.close();
 }
 
-console.log('✓ Musique d’ambiance : l’étage lancé fait jouer la boucle de sa tour, le bouton de la barre la coupe et la rend, le menu l’arrête');
+console.log('✓ Son du Sablier : bruitages et boucle de tour démarrent au bon moment, le bouton coupe et rend le son, le menu arrête la musique');

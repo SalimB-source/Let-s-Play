@@ -6,10 +6,10 @@
  * donc rien ne se charge en silence et le bundle ne grossit pas.
  *
  * L'esthétique suit la direction artistique du projet (dossier `docs/rpg/`) :
- *  - carrés/impulsions très courtes pour les cliquetis d'horloge et les listes ;
- *  - cloches à partiels (déjà dans `rpgSfx('bell')`) ;
- *  - souffle bruité qui donne le grain du sable, de l'eau, du vent ;
- *  - sinus doux pour les nappes et les soins.
+ *  - triangles filtrés et attaques feutrées pour les matières de la ville ;
+ *  - cloches à partiels pour l'Astrolabe et les appels lointains ;
+ *  - souffle bruité, finement filtré, pour le sable, l'eau et le vent ;
+ *  - une réverbération stéréo générée localement, légère sous les bruitages.
  *
  * Le contrat de la classe est le même que `CityRushAudio` :
  *   - `setTour(tourId)` change la tour en cours (et donc la boucle) ;
@@ -39,8 +39,26 @@ export const RPG_AMBIENT_DEFAULT_BPM = 78;
 const MUSIC_VOLUME = 0.16;
 const DRONE_VOLUME = 0.10;
 const MASTER_VOLUME = 0.95;
+const AMBIENT_REVERB_SECONDS = 0.82;
+const AMBIENT_REVERB_SEND = 0.14;
+const AMBIENT_REVERB_RETURN = 0.2;
 
 const midiToFrequency = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
+
+/** Petite réverbération de salle, calculée une seule fois par lecteur. */
+function makeAmbientImpulse(context) {
+  if (typeof context.createBuffer !== 'function' || !context.sampleRate) return null;
+  const length = Math.max(1, Math.floor(context.sampleRate * AMBIENT_REVERB_SECONDS));
+  const impulse = context.createBuffer(2, length, context.sampleRate);
+  for (let channel = 0; channel < 2; channel += 1) {
+    const samples = impulse.getChannelData(channel);
+    for (let index = 0; index < length; index += 1) {
+      const tail = (1 - index / length) ** 3.8;
+      samples[index] = (Math.random() * 2 - 1) * tail * (channel === 0 ? 0.97 : 1.03);
+    }
+  }
+  return impulse;
+}
 
 // ── Progressions harmoniques ──────────────────────────────────────────
 // Chaque tour a une grille de 4 accords sur 8 mesures (deux mesures par
@@ -139,6 +157,10 @@ export class RpgAmbientMusic {
     this.master = null;
     this.musicBus = null;
     this.droneBus = null;
+    this.reverbInput = null;
+    this.reverb = null;
+    this.reverbFilter = null;
+    this.reverbReturn = null;
     this.ticker = null;
     this.step = 0;
     this.nextTime = 0;
@@ -191,6 +213,31 @@ export class RpgAmbientMusic {
       this.droneBus = ctx.createGain();
       this.droneBus.gain.value = DRONE_VOLUME;
       this.droneBus.connect(this.master);
+
+      // Une queue stéréo discrète donne de l'air aux cloches et aux nappes,
+      // sans masquer les bruitages tactiques. Elle est générée localement.
+      if (typeof ctx.createConvolver === 'function') {
+        const impulse = makeAmbientImpulse(ctx);
+        if (impulse) {
+          this.reverbInput = ctx.createGain();
+          this.reverbInput.gain.value = AMBIENT_REVERB_SEND;
+          this.musicBus.connect(this.reverbInput);
+          this.droneBus.connect(this.reverbInput);
+
+          this.reverb = ctx.createConvolver();
+          this.reverb.buffer = impulse;
+          this.reverbFilter = typeof ctx.createBiquadFilter === 'function' ? ctx.createBiquadFilter() : null;
+          if (this.reverbFilter) {
+            this.reverbFilter.type = 'lowpass';
+            this.reverbFilter.frequency.value = 4800;
+            this.reverb.connect(this.reverbFilter);
+          }
+          this.reverbReturn = ctx.createGain();
+          this.reverbReturn.gain.value = AMBIENT_REVERB_RETURN;
+          (this.reverbFilter || this.reverb).connect(this.reverbReturn);
+          this.reverbReturn.connect(this.master);
+        }
+      }
     }
     this.running = true;
     this.paused = false;
@@ -244,6 +291,10 @@ export class RpgAmbientMusic {
     this.master = null;
     this.musicBus = null;
     this.droneBus = null;
+    this.reverbInput = null;
+    this.reverb = null;
+    this.reverbFilter = null;
+    this.reverbReturn = null;
     if (ctx && typeof ctx.close === 'function') {
       try { ctx.close(); } catch { /* Contexte déjà fermé. */ }
     }
@@ -382,8 +433,8 @@ export class RpgAmbientMusic {
     // Tic-tac du grand horloger : bois sec sur les temps, plus un tintement
     // haut et bref toutes les deux mesures.
     if (beat === 0 || beat === 8) {
-      // Toc : claquement bois très court (triangle sourd + bruit filtré).
-      this.tone(880, time, 0.04, 'square', 0.06, { filter: 2400, attack: 0.002 });
+      // Toc de bois feutré : impulsion triangulaire filtrée, sans bip carré.
+      this.tone(this.tockToggle ? 740 : 660, time, 0.055, 'triangle', 0.045, { filter: 1550, attack: 0.003 });
       this.filteredNoise(time, 0.05, 0.035, {
         type: 'bandpass', frequency: 1800, q: 3, attack: 0.002, destination: this.musicBus,
       });
@@ -427,11 +478,11 @@ export class RpgAmbientMusic {
     const chord = SOUK_CHORDS[Math.floor(bar / 2) % SOUK_CHORDS.length];
     const stepLength = 60 / RPG_AMBIENT_BPM['tour-du-souk'] / 4;
 
-    // Nappe : accords de oud (sawtooth doux) tenus deux mesures.
+    // Nappe : accords d'oud synthétiques, arrondis et légèrement désaccordés.
     if (beat === 0) {
       chord.intervals.forEach((interval, i) => {
         this.tone(midiToFrequency(chord.root + 12 + interval), time, stepLength * STEPS_PER_BAR * 2,
-          'sawtooth', 0.035, { filter: 1800, attack: 0.35, detune: i % 2 ? 7 : -7, destination: this.droneBus });
+          'triangle', 0.035, { filter: 1500, attack: 0.35, detune: i % 2 ? 5 : -5, destination: this.droneBus });
       });
     }
 
@@ -469,7 +520,7 @@ export class RpgAmbientMusic {
     if (beat === 3 || beat === 11) {
       if ((bar + beat) % 3 === 0) {
         this.tone(midiToFrequency(chord.root + 12 + chord.intervals[2] + 2), time, stepLength * 1.3,
-          'sawtooth', 0.05, { filter: 3400, filterTo: 1600, attack: 0.02, detune: 6 });
+          'triangle', 0.05, { filter: 2800, filterTo: 1500, attack: 0.025, detune: 4 });
       }
     }
 
@@ -550,8 +601,8 @@ export class RpgAmbientMusic {
       const notes = SABLES_LEAD[leadBar] || [];
       for (let i = 0; i < notes.length; i += 1) {
         const n = notes[i];
-        if (n) this.tone(midiToFrequency(n), time + i * stepLength * 2, stepLength * 2.5, 'sawtooth', 0.045, {
-          filter: 2200, filterTo: 1100, attack: 0.2,
+        if (n) this.tone(midiToFrequency(n), time + i * stepLength * 2, stepLength * 2.5, 'triangle', 0.045, {
+          filter: 1900, filterTo: 900, attack: 0.24,
         });
       }
     }
@@ -668,8 +719,8 @@ export class RpgAmbientMusic {
     // Cor du Gjallarhorn toutes les 4 mesures : une seule note longue
     // qui traverse la neige, comme la Valkyrie qui choisit.
     if (beat === 0 && bar === 0) {
-      this.tone(midiToFrequency(50), time, stepLength * 5, 'sawtooth', 0.055, {
-        filter: 700, filterTo: 400, attack: 0.3,
+      this.tone(midiToFrequency(50), time, stepLength * 5, 'triangle', 0.055, {
+        filter: 620, filterTo: 360, attack: 0.34,
       });
       this.tone(midiToFrequency(62), time, stepLength * 4, 'triangle', 0.04, {
         filter: 900, filterTo: 500, attack: 0.5,
@@ -695,8 +746,8 @@ export class RpgAmbientMusic {
     if (bar >= 4 && beat % 2 === 0) {
       const note = FJORD_LEAD[(bar - 4) % FJORD_LEAD.length][beat / 2];
       if (note) {
-        this.tone(midiToFrequency(note), time, stepLength * 2, 'sawtooth', 0.055, {
-          filter: 2600, filterTo: 1200, attack: 0.15,
+        this.tone(midiToFrequency(note), time, stepLength * 2, 'triangle', 0.055, {
+          filter: 2100, filterTo: 1050, attack: 0.18,
         });
         this.tone(midiToFrequency(note + 7), time + 0.02, stepLength * 1.6, 'sine', 0.025, {
           filter: 2000, attack: 0.15, destination: this.musicBus,

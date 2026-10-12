@@ -1016,8 +1016,8 @@ function nommerOriginePlateau(camp, nomJoueur = null, nomAdverse = null) {
   return nomAdverse ?? 'le deck adverse';
 }
 
-// La musique d'ambiance du mode Histoire se couvre comme celle de Vice City
-// Rush : la préférence reste sur l'appareil, et le son revient par défaut.
+// Le réglage sonore (musique et bruitages) reste mémorisé sur l'appareil ;
+// au prochain passage, le son revient par défaut.
 const RPG_SOUND_KEY = 'letsplay_sablier_sound_v1';
 function readRpgSoundPref() {
   try { return window.localStorage.getItem(RPG_SOUND_KEY) !== 'off'; } catch { return true; }
@@ -1544,10 +1544,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [histoireEtageId, setHistoireEtageId] = useState(null);
   const [progressionHistoire, setProgressionHistoire] = useState(() => chargerProgressionHistoire());
   const histoireVictoireMarqueeRef = useRef(null);
-  // Musique d'ambiance du mode Histoire : chaque tour de Bab El porte sa
-  // propre boucle WebAudio (`rpgAmbientMusic.js`), muette tant qu'aucun étage
-  // n'est lancé — les duels libres et les menus n'ont pas de tour, donc pas
-  // de boucle. Même contrat de cycle de vie que la bande-son de la course.
+  // Son du jeu en deux couches : le mode Histoire porte une boucle par tour
+  // (`rpgAmbientMusic.js`), tandis que les bruitages tactiles (`rpgAudio.js`)
+  // restent disponibles dans tous les duels. Les deux lecteurs partagent le
+  // même réglage et sont libérés au démontage.
   const musiqueRef = useRef(null);
   const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
@@ -1559,6 +1559,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => {
       musiqueRef.current?.destroy();
       musiqueRef.current = null;
+      sfxRef.current?.destroy();
       sfxRef.current = null;
     };
   }, []);
@@ -3473,8 +3474,8 @@ setMessage(`Mana insuffisant pour ${carte.name} (${cardCostLabel(carte)}).`);
             className={`rpg-duel-nav__sound${sonActif ? ' is-on' : ''}`}
             onClick={basculerSon}
             aria-pressed={sonActif}
-            title={sonActif ? 'Couper la musique (M)' : 'Activer la musique (M)'}
-            aria-label={sonActif ? 'Couper la musique d’ambiance' : 'Activer la musique d’ambiance'}
+            title={sonActif ? 'Couper le son (M)' : 'Activer le son (M)'}
+            aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'}
           >
             <span aria-hidden="true">{sonActif ? '♫' : '♪'}</span>
           </button>

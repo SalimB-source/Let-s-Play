@@ -1,6 +1,6 @@
 import { requestNativeFullscreen, exitNativeFullscreen, nativeFullscreenElement } from './gameFullscreen.js';
 
-/** One duel owns only the orientation/fullscreen it requested. A late browser
+/** A duel owns only the orientation/fullscreen it requested. A late browser
  * promise must never lock the screen again after the player leaves the duel. */
 export function createRpgLandscapeSession(win = window, doc = document) {
   let active = false;
@@ -12,10 +12,15 @@ export function createRpgLandscapeSession(win = window, doc = document) {
     || win.innerWidth <= 620;
   return {
     async enter({ fullscreen = true } = {}) {
-      if (!mobile()) return;
+      const needsLandscape = mobile();
       active = true;
       const token = ++generation;
-      try { win.LetsPlayAndroid?.setDuelLandscape?.(true); } catch { /* older APK */ }
+      if (needsLandscape) {
+        try { win.LetsPlayAndroid?.setDuelLandscape?.(true); } catch { /* older APK */ }
+      }
+      // The native fullscreen request must happen inside the launch/resume
+      // gesture. It applies on desktop too; CSS keeps the table fitted to the
+      // viewport when the browser or an embedded preview rejects the request.
       if (fullscreen && !nativeFullscreenElement(doc)) {
         const opened = await requestNativeFullscreen(doc.documentElement);
         if (opened) {
@@ -27,7 +32,7 @@ export function createRpgLandscapeSession(win = window, doc = document) {
           ownsFullscreen = true;
         }
       }
-      if (!active || token !== generation) return;
+      if (!active || token !== generation || !needsLandscape) return;
       try {
         if (win.screen?.orientation?.lock) {
           await win.screen.orientation.lock('landscape');
