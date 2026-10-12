@@ -4266,17 +4266,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             )}
             <div className="rpg-actions__row">
               <div className="rpg-actions__combat" role="group" aria-label="Actions de combat">
-                {!phase ? (
-                  <button
-                    type="button"
-                    className="rpg-btn rpg-btn--attaque rpg-btn--attaque-tous"
-                    data-tutorial-target={tutorielActif && etapeTutorielId === 'attaque' ? 'attack-all' : undefined}
-                    disabled={!monTour || !prets.length || Boolean(combatEntrant)}
-                    onClick={declarerAttaqueAvecTous}
-                  >
-                    <CombatActionIcon type="attack-all" /> Attaquer avec tous ({prets.length})
-                  </button>
-                ) : (
+                {phase && (
                   <>
                     <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque"
                       data-tutorial-target={tutorielActif && etapeTutorielId === 'confirmer-attaque' ? 'confirm-attack' : undefined}
@@ -4308,13 +4298,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
 
-        {/* Le rail du tour : l'indicateur, les cinq phases et « Fin du tour »
-            remontent au milieu de la table, en colonne, entre les deux champs
-            de cartes. Le joueur n'a plus à quitter le champ de bataille des
-            yeux pour savoir où en est le tour : le repère vit à la verticale
-            du centre. Le rail lui-même laisse passer les gestes
-            (`pointer-events: none`) — ses seuls boutons les attrapent —, donc
-            la table reste jouable sous lui. */}
+        {/* Phases et commandes de tour réunies à droite du plateau. */}
         <div className="rpg-turn-rail" role="group" aria-label="Déroulé du tour">
           <div className={`rpg-turn-indicator ${classeIndicateurTour}`} role="status" aria-live="polite">
             <span className="rpg-turn-indicator__lamp" aria-hidden="true" />
@@ -4322,6 +4306,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
           <PhaseTrack current={phaseDuelActive} />
           <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
+            {!phase && (
+                  <button
+                    type="button"
+                    className="rpg-btn rpg-btn--attaque rpg-btn--attaque-tous"
+                    data-tutorial-target={tutorielActif && etapeTutorielId === 'attaque' ? 'attack-all' : undefined}
+                    disabled={!monTour || !prets.length || Boolean(combatEntrant)}
+                    onClick={declarerAttaqueAvecTous}
+                  >
+                    <CombatActionIcon type="attack-all" /> Attaquer avec tous ({prets.length})
+                  </button>
+            )}
             {annulationDisponible && monTour && !phase && !cibleEnCours && !combatEntrant && (
               <button
                 type="button"
@@ -4343,7 +4338,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
         <div className={`rpg-hand-dock${combatEntrant ? ' is-open' : ''}`} aria-label="Votre main"
           data-tutorial-target={tutorielActif && ['main', 'magies'].includes(etapeTutorielId) ? 'hand' : undefined}>
-          <div className="rpg-hand">
+          <div className="rpg-hand" style={{ '--hand-count': Math.max(1, groupesMain.length) }}>
             {groupesMain.map((groupe) => {
               const carteId = groupe.carteId;
               const i = groupe.indices[0];

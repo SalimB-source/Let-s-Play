@@ -4675,8 +4675,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    leur groupe s'y empile, sans le filet qui le séparait des actions de combat. */
 .rpg-turn-rail .rpg-actions__turn {
   width: 100%;
-  flex-direction: column;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   justify-content: center;
   gap: 4px;
@@ -4791,35 +4791,23 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-actions__turn .rpg-btn--endturn { min-height: 39px; padding: 6px 12px; font-size: 11px; }
 }
 
-/* ── Le rail du tour : les phases et « Fin du tour » au MILIEU de la table ────
-   Le déroulé du tour vivait au bas de la table, noyé dans la barre de
-   commandes : il fallait quitter les cartes des yeux pour lire la phase et
-   pour rendre la main. Il remonte maintenant au MILIEU DE LA TABLE, en colonne
-   et à la verticale du centre — l'indicateur de tour d'abord, les cinq phases
-   ensuite, « Fin du tour » en dernier : la lecture descend vers la main du
-   joueur, dans le sens du tour lui-même.
-
-   Ce n'est pas un panneau : chaque élément garde sa pastille (la capsule de
-   l'indicateur, le cercle de la phase, l'or du bouton), donc le plateau peint
-   reste visible entre elles. Le rail laisse passer les gestes —
-   `pointer-events: none` sur la colonne, `auto` sur ses boutons seulement —
-   pour qu'une carte posée dessous reste jouable. Il vit au-dessus des cartes
-   (4) et de la main (40), sous le choix de mana (48), le voile de fin de duel
-   (49) et la navigation (900) : la partie se lit toujours. */
+/* Phases à droite du plateau ; seuls les boutons interceptent les gestes. */
 .rpg-turn-rail {
   position: absolute;
   z-index: 42;
   top: 50%;
-  left: 50%;
+  right: max(16px, env(safe-area-inset-right, 0px));
   display: flex;
-  width: max-content;
-  max-width: clamp(140px, 12vw, 184px);
+  width: 260px;
+  max-width: 32vw;
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
-  transform: translate(-50%, -50%);
+  transform: translateY(-50%);
   pointer-events: none;
 }
+.rpg-turn-rail .rpg-btn--undo { grid-column: 1 / -1; grid-row: 1; }
+.rpg-turn-rail .rpg-btn--endturn { grid-column: 2; }
 .rpg-turn-rail .rpg-btn { width: 100%; white-space: normal; pointer-events: auto; }
 .rpg-turn-rail .rpg-turn-indicator { align-self: stretch; justify-content: center; }
 .rpg-turn-rail .rpg-turn-indicator strong { white-space: normal; }

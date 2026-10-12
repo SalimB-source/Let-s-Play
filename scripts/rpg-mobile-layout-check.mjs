@@ -49,10 +49,12 @@ try {
         phases: rect('.rpg-phase-track'),
       };
     });
-    // Le rail du tour vit au milieu de la table : centré à l'horizontale, calé
-    // entre la navigation et la main — il ne recouvre jamais le dock de la main.
-    assert.ok(Math.abs((result.rail.left + result.rail.right) / 2 - (result.table.left + result.table.right) / 2) <= 2,
-      `${width}: le rail du tour est centré sur la table`);
+    assert.ok(result.rail.left >= result.areas[2].left - 1 && result.table.right - result.rail.right <= 20,
+      `${width}: les phases sont dans la colonne de droite`);
+    assert.ok(Math.abs(result.attackAll.top - result.endTurn.top) <= 1 && result.attackAll.right <= result.endTurn.left,
+      `${width}: attaque générale et fin du tour sont côte à côte`);
+    assert.equal(await page.locator('.rpg-hand').evaluate(el => getComputedStyle(el).overflow), 'visible',
+      `${width}: aucun masque de débordement sur la main`);
     assert.ok(result.rail.top >= result.table.top - 1 && result.rail.bottom <= result.hand.top + 1,
       `${width}: le rail du tour tient dans la bande de jeu, au-dessus de la main`);
     assert.ok(result.phases.height > 0 && result.phases.bottom <= result.endTurn.y && result.endTurn.y - result.phases.bottom <= 10,
@@ -364,7 +366,7 @@ try {
       && attacker.y >= lane.y && attacker.y + attacker.height <= lane.y + lane.height, `${width}: tilted attacker corners remain visible`);
     assert.ok(cancel.width >= 44 && cancel.height >= 44, `${width}: cancel attack is a touch target`);
     assert.ok(confirm.x + confirm.width <= cancel.x, `${width}: confirm and cancel attack do not overlap`);
-    assert.ok(cancel.x >= phases.x + phases.width, `${width}: the combat controls keep their right-hand column, clear of the central rail`);
+    assert.ok(cancel.y >= phases.y + phases.height, `${width}: the combat controls keep their right-hand column, below the phases`);
     assert.ok(end.y + end.height <= height && end.x + end.width <= width, `${width}: combat controls fit the screen`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
