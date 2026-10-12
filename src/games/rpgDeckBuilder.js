@@ -21,8 +21,21 @@
  * suppressions, et la collection en **union monotone**.
  */
 
-import { RPG_ELEMENTS, cardById, cardColors, cardCopyLimit, rpgValiderDeck } from './rpgCards.js';
+import {
+  RPG_ELEMENTS,
+  RPG_TERRAIN_CARDS,
+  cardById,
+  cardColorCost,
+  cardColors,
+  cardCopyLimit,
+  rpgValiderDeck,
+  terrainManaColors,
+} from './rpgCards.js';
 import { fusionnerCollections, normaliserCollection } from './rpgCollection.js';
+
+/** La taille d'un deck du Sablier, et la part minimale de terrains. */
+export const RPG_DECK_TAILLE = 40;
+export const RPG_DECK_PART_TERRAINS = 0.4;
 
 export const RPG_DECKS_MAISON_STORAGE_KEY = 'letsplay_sablier_decks_maison_v1';
 
@@ -262,6 +275,127 @@ export function peutAjouterCarte(cardId, cardIds, collection = null) {
     };
   }
   return { ok: true, raison: null };
+}
+
+/** Paliers de la courbe de mana, façon Arena : 1 à 6, puis « 7+ ». */
+export const RPG_COURBE_PALIERS = [1, 2, 3, 4, 5, 6, 7];
+
+/**
+ * La courbe de mana d'un deck — les cartes non-terrain réparties par coût,
+ * de 1 à 6 puis « 7+ » (les coûts 0 rejoignent le premier palier). Rend
+ * `{ paliers: [{ cout, label, nombre }], max, moyenne, nonTerrains }` ;
+ * `moyenne` est arrondie au dixième, `0` sans carte.
+ */
+export function courbeDeMana(cardIds) {
+  const nombres = new Map(RPG_COURBE_PALIERS.map((cout) => [cout, 0]));
+  let total = 0;
+  let somme = 0;
+  for (const id of (Array.isArray(cardIds) ? cardIds : [])) {
+    const carte = cardById(id);
+    if (!carte || carte.kind === 'terrain') continue;
+    const cout = Math.max(0, Number(carte.cost) || 0);
+    const palier = Math.min(Math.max(cout, 1), 7);
+    nombres.set(palier, nombres.get(palier) + 1);
+    total += 1;
+    somme += cout;
+  }
+  const paliers = RPG_COURBE_PALIERS.map((cout) => ({
+    cout,
+    label: cout === 7 ? '7+' : String(cout),
+    nombre: nombres.get(cout),
+  }));
+  return {
+    paliers,
+    max: Math.max(0, ...paliers.map((palier) => palier.nombre)),
+    moyenne: total ? Math.round((somme / total) * 10) / 10 : 0,
+    nonTerrains: total,
+  };
+}
+
+/**
+ * La répartition des couleurs d'un deck : pour chaque élément, le nombre de
+ * **cartes** (hors terrains) qui l'emploient, le nombre de **pips** exigés
+ * et le nombre de **terrains** capables de le produire. Ordre : par présence
+ * décroissante, puis l'ordre canonique. Les couleurs absentes sont omises.
+ */
+export function repartitionCouleurs(cardIds) {
+  const parCouleur = new Map(RPG_ELEMENTS.map((couleur) => [couleur, { couleur, cartes: 0, pips: 0, terrains: 0 }]));
+  for (const id of (Array.isArray(cardIds) ? cardIds : [])) {
+    const carte = cardById(id);
+    if (!carte) continue;
+    if (carte.kind === 'terrain') {
+      for (const couleur of terrainManaColors(carte)) parCouleur.get(couleur).terrains += 1;
+      continue;
+    }
+    for (const couleur of cardColors(carte)) parCouleur.get(couleur).cartes += 1;
+    for (const [couleur, quantite] of Object.entries(cardColorCost(carte))) {
+      if (parCouleur.has(couleur)) parCouleur.get(couleur).pips += quantite;
+    }
+  }
+  return [...parCouleur.values()]
+    .filter((entree) => entree.cartes || entree.pips || entree.terrains)
+    .sort((a, b) => b.cartes - a.cartes || b.pips - a.pips
+      || RPG_ELEMENTS.indexOf(a.couleur) - RPG_ELEMENTS.indexOf(b.couleur));
+}
+
+/**
+ * « Compléter en terrains » — le geste d'Arena : remplir les emplacements
+ * libres du deck avec des terrains **possédés**, au prorata des pips de
+ * couleur exigés par les sorts (à défaut, des couleurs des cartes ; à défaut,
+ * du Sable). Les terrains mono sont préférés ; un terrain bicolore possédé
+ * sert de secours pour une couleur sans terrain mono.
+ *
+ * Rend `{ cardIds, ajoutes, raison }` : la liste complétée (une copie — la
+ * liste d'origine n'est jamais mutée), le nombre de terrains ajoutés et, s'il
+ * n'y a rien à ajouter, pourquoi. Ne retire jamais rien : si le deck compte
+ * déjà trop de sorts pour laisser 40 % aux terrains, c'est la validation qui
+ * le dira.
+ */
+export function completerEnTerrains(cardIds, collection = null) {
+  const actuels = Array.isArray(cardIds) ? [...cardIds] : [];
+  const libres = RPG_DECK_TAILLE - actuels.length;
+  if (libres <= 0) return { cardIds: actuels, ajoutes: 0, raison: 'Le deck est déjà plein.' };
+
+  const possedes = Array.isArray(collection) && collection.length ? new Set(collection) : null;
+  const terrainsDisponibles = RPG_TERRAIN_CARDS.filter((terrain) => !possedes || possedes.has(terrain.id));
+  if (!terrainsDisponibles.length) {
+    return { cardIds: actuels, ajoutes: 0, raison: 'Aucun terrain dans votre collection.' };
+  }
+
+  // Les poids : pips exigés, sinon couleurs des cartes, sinon Sable.
+  const repartition = repartitionCouleurs(actuels);
+  let poids = repartition.filter((entree) => entree.pips > 0).map((entree) => [entree.couleur, entree.pips]);
+  if (!poids.length) poids = repartition.filter((entree) => entree.cartes > 0).map((entree) => [entree.couleur, entree.cartes]);
+  // Une couleur sans aucun terrain possédé ne peut pas être servie : on l'écarte.
+  const terrainPour = (couleur) => terrainsDisponibles.find((terrain) => terrainManaColors(terrain).length === 1 && terrainManaColors(terrain)[0] === couleur)
+    ?? terrainsDisponibles.find((terrain) => terrainManaColors(terrain).includes(couleur))
+    ?? null;
+  poids = poids.filter(([couleur]) => terrainPour(couleur));
+  if (!poids.length) {
+    const secours = terrainPour('sable') ?? terrainsDisponibles[0];
+    poids = [[terrainManaColors(secours)[0] ?? 'sable', 1]];
+  }
+
+  // Plus forts restes : la somme des parts vaut exactement `libres`.
+  const totalPoids = poids.reduce((somme, [, valeur]) => somme + valeur, 0);
+  const parts = poids.map(([couleur, valeur]) => {
+    const exact = (valeur / totalPoids) * libres;
+    return { couleur, entier: Math.floor(exact), reste: exact - Math.floor(exact) };
+  });
+  let distribues = parts.reduce((somme, part) => somme + part.entier, 0);
+  const parReste = [...parts].sort((a, b) => b.reste - a.reste
+    || RPG_ELEMENTS.indexOf(a.couleur) - RPG_ELEMENTS.indexOf(b.couleur));
+  for (let i = 0; distribues < libres; i = (i + 1) % parReste.length) {
+    parReste[i].entier += 1;
+    distribues += 1;
+  }
+
+  const ajouts = [];
+  for (const part of parts) {
+    const terrain = terrainPour(part.couleur);
+    for (let i = 0; i < part.entier; i += 1) ajouts.push(terrain.id);
+  }
+  return { cardIds: [...actuels, ...ajouts], ajoutes: ajouts.length, raison: null };
 }
 
 /**

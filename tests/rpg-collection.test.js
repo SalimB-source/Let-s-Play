@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_DUEL_CARDS, cardById } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, cardById, cardCopyLimit } from '../src/games/rpgCards.js';
 import { tousLesEtages } from '../src/games/rpgStoryTours.js';
 import {
   COLLECTION_DEPART,
@@ -112,7 +112,7 @@ test('une couleur ouvre à peu près quand la campagne y entre (pacing des réco
   const slots = (collection, element) => collection
     .map((id) => cardById(id))
     .filter((carte) => carte && carte.kind !== 'terrain' && carte.element === element)
-    .reduce((total, carte) => total + (['epique', 'mythique'].includes(carte.rarity) ? 1 : 3), 0);
+    .reduce((total, carte) => total + cardCopyLimit(carte), 0);
 
   const depart = collectionJoueur({ etagesVaincus: [] });
   assert.ok(slots(depart, 'sable') >= 24, 'le mono-Sable se compose dès le départ');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cardById } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, cardById } from '../src/games/rpgCards.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
 import { fusionnerCollections } from '../src/games/rpgCollection.js';
 import {
@@ -8,6 +8,8 @@ import {
   RPG_DECKS_MAISON_STORAGE_KEY,
   casierMaisonVide,
   chargerCasierMaison,
+  completerEnTerrains,
+  courbeDeMana,
   chargerDecksMaison,
   deckMaisonEstSelectionnable,
   deckMaisonParId,
@@ -19,6 +21,7 @@ import {
   normaliserSupprimesMaison,
   nouvelIdDeckMaison,
   peutAjouterCarte,
+  repartitionCouleurs,
   rpgValiderDeckMaison,
   sauverCasierMaison,
   supprimerDeckDuCasier,
@@ -278,4 +281,71 @@ test('la collection fusionne en union, les pierres se plafonnent, `modifie` dit 
   const neuf = fusionnerEtatsSablier({ local, distant: null });
   assert.equal(neuf.modifie, false, 'distant absent : rien à fusionner');
   assert.ok(neuf.etat.majLe);
+});
+
+// ── Le panneau du deck, façon Arena : courbe, couleurs, « Compléter en terrains » ─────────
+
+test('courbeDeMana répartit les sorts par coût (1 à 6, puis 7+), sans les terrains', () => {
+  const vide = courbeDeMana([]);
+  assert.equal(vide.paliers.length, 7);
+  assert.deepEqual(vide.paliers.map((palier) => palier.label), ['1', '2', '3', '4', '5', '6', '7+']);
+  assert.equal(vide.max, 0);
+  assert.equal(vide.moyenne, 0);
+  const deck = ['chien-du-guet', 'chien-du-guet', 'djinn-du-souk', 'desert', 'desert', 'inconnue-xyz'];
+  const courbe = courbeDeMana(deck);
+  assert.equal(courbe.nonTerrains, 3, 'terrains et cartes inconnues ne comptent pas');
+  assert.equal(courbe.paliers.find((palier) => palier.cout === 2).nombre, 2);
+  assert.equal(courbe.paliers.find((palier) => palier.cout === cardById('djinn-du-souk').cost).nombre, 1);
+  assert.equal(courbe.max, 2);
+  assert.equal(courbe.moyenne, Math.round(((2 + 2 + cardById('djinn-du-souk').cost) / 3) * 10) / 10);
+  // Les coûts de 7 et plus se rejoignent au dernier palier.
+  const grosCout = RPG_DUEL_CARDS.find((carte) => carte.kind !== 'terrain' && carte.cost >= 7);
+  assert.ok(grosCout, 'le catalogue a au moins une carte à 7+');
+  assert.equal(courbeDeMana([grosCout.id]).paliers.at(-1).nombre, 1);
+});
+
+test('repartitionCouleurs compte cartes, pips et terrains par couleur, par présence décroissante', () => {
+  assert.deepEqual(repartitionCouleurs([]), []);
+  const deck = ['chien-du-guet', 'chien-du-guet', 'porteuse-de-cruches', 'desert', 'mer', 'mer'];
+  const repartition = repartitionCouleurs(deck);
+  assert.deepEqual(repartition.map((entree) => entree.couleur), ['sable', 'eau'], 'le Sable d\'abord : deux cartes contre une');
+  const sable = repartition.find((entree) => entree.couleur === 'sable');
+  assert.equal(sable.cartes, 2);
+  assert.equal(sable.pips, 2, 'une carte mono exige un pip de sa couleur');
+  assert.equal(sable.terrains, 1);
+  const eau = repartition.find((entree) => entree.couleur === 'eau');
+  assert.equal(eau.terrains, 2, 'les terrains sont comptés dans la couleur qu\'ils produisent');
+});
+
+test('completerEnTerrains remplit jusqu\'à 40 cartes au prorata des pips, avec des terrains possédés', () => {
+  const sorts = ['chien-du-guet', 'chien-du-guet', 'porteuse-de-cruches', 'porteuse-de-cruches'];
+  const resultat = completerEnTerrains(sorts, COLLECTION);
+  assert.equal(resultat.ajoutes, 36);
+  assert.equal(resultat.cardIds.length, 40);
+  assert.deepEqual(resultat.cardIds.slice(0, 4), sorts, 'les sorts restent, en tête, dans l\'ordre');
+  const comptes = resultat.cardIds.slice(4).reduce((acc, id) => ({ ...acc, [id]: (acc[id] ?? 0) + 1 }), {});
+  assert.deepEqual(comptes, { desert: 18, mer: 18 }, 'moitié Sable, moitié Eau');
+  assert.ok(resultat.cardIds.every((id) => COLLECTION.includes(id)), 'rien hors collection');
+  assert.equal(sorts.length, 4, 'la liste d\'origine n\'est pas mutée');
+  assert.equal(rpgValiderDeckMaison(resultat.cardIds, COLLECTION).ok, true, 'le deck complété est jouable');
+});
+
+test('completerEnTerrains : deck vide → Sable, deck plein → rien, parts entières aux plus forts restes', () => {
+  const vide = completerEnTerrains([], COLLECTION);
+  assert.equal(vide.ajoutes, 40);
+  assert.ok(vide.cardIds.every((id) => id === 'desert'), 'sans couleur, du Désert');
+  const plein = completerEnTerrains(Array(40).fill('desert'), COLLECTION);
+  assert.equal(plein.ajoutes, 0);
+  assert.match(plein.raison, /déjà plein/);
+  // Trois couleurs, 37 places : la somme des parts vaut exactement 37.
+  const trois = completerEnTerrains(['chien-du-guet', 'porteuse-de-cruches', 'djinn-du-souk'], COLLECTION);
+  assert.equal(trois.ajoutes, 37);
+  assert.equal(trois.cardIds.length, 40);
+  // Une couleur sans terrain possédé (Neige, hors dotation) est servie par les autres, sans planter.
+  const sansGlacier = COLLECTION.filter((id) => id !== 'glacier');
+  const neige = completerEnTerrains(['chien-du-guet'], sansGlacier);
+  assert.equal(neige.cardIds.length, 40);
+  assert.ok(!neige.cardIds.includes('glacier'));
+  // Sans collection fournie, tous les terrains du catalogue servent.
+  assert.equal(completerEnTerrains(['chien-du-guet'], null).ajoutes, 39);
 });

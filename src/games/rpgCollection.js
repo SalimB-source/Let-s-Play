@@ -10,7 +10,7 @@
  *    d'elle-même la dotation : c'est la règle qui est codée, pas une liste
  *    figée.
  * 2. **Les récompenses d'étage** — chaque étage déblayé du mode Histoire rend
- *    des cartes confisquées par la Chambre des Heures (rares, épiques et
+ *    des cartes confisquées par la Chambre des Heures (rares et
  *    mythiques). La correspondance étage → cartes est du contenu, dans
  *    `RPG_RECOMPENSES_PAR_ETAGE` : vingt étages, quarante-cinq cartes à
  *    ravir, parées pour que chaque couleur ouvre à peu près au moment où la
@@ -28,7 +28,7 @@
  * fait que grossir (`fusionnerCollections`).
  */
 
-import { RPG_DUEL_CARDS, cardById } from './rpgCards.js';
+import { RPG_DUEL_CARDS, cardById, cardCopyLimit } from './rpgCards.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
 import { etageHistoireParId } from './rpgStoryTours.js';
 
@@ -169,8 +169,7 @@ export function possedeCarte(collection, cardId) {
 export function exemplairesPossedables(collection, cardId) {
   if (!possedeCarte(collection, cardId)) return 0;
   const carte = cardById(cardId);
-  const limite = carte?.kind === 'terrain' ? Infinity : (['epique', 'mythique'].includes(carte?.rarity) ? 1 : 3);
-  return limite;
+  return cardCopyLimit(carte);
 }
 
 function browserStorage() {

@@ -133,11 +133,13 @@ l'unicité). Sans `boxArt`, le boîtier retombe sur la première carte non-terra
 | Sentiers de cendre | `feriel` (cheval de feu dans les dunes : Sable + Braise) |
 | Serment des Neuf Hivers | `valkyrie-des-glaces` (Valkyrie et monture pâle dans la tempête) |
 
-Les raretés d'exception (`CARD_UNIQUE_RARITIES` : épique et mythique) ne se
-jouent qu'en **un exemplaire** ; les autres cartes non-terrain restent limitées à
-trois, les terrains illimités (`cardCopyLimit`). Les cartes **épiques** — la
-rareté du set Neige — portent un cadre de couleur par élément, comme toute carte
-mono ; seules les mythiques gardent le cadre doré.
+Les raretés sont **celles de Magic** — commune, inhabituelle, rare, mythique
+(`CARD_RARITIES`) ; il n'existe pas d'« épique ». Seule la **mythique**
+(`CARD_UNIQUE_RARITIES`) ne se joue qu'en **un exemplaire** ; les autres cartes
+non-terrain restent limitées à trois, les terrains illimités (`cardCopyLimit`).
+Dans le set Neige, les quatre figures du Nord sont mythiques — comme tous les
+héros du jeu — et portent donc le cadre doré ; les autres cartes du set sont
+rares ou moins, avec le cadre de leur couleur.
 
 ## Vérifications
 
@@ -153,7 +155,7 @@ mono ; seules les mythiques gardent le cadre doré.
   faces cachées, animations réduites) et sur le bouton (au-dessus de la zone
   cliquable, pleine largeur en disposition ouverte, 44 px au doigt).
 - `npm run check:rpg` — `boxArt` existe, est unique et vient d'une carte du deck ;
-  les cartes Neige sont mono-Neige, les épiques en un exemplaire, les textes du
+  les cartes Neige sont mono-Neige, les mythiques en un exemplaire, les textes du
   Nord ne nomment jamais de divinité, et **les dix-neuf cartes du Serment ont
   leur peinture plein art dédiée** (la liste `RPG_ART_PROVISOIRE` est vide et le
   test l'exige : le jour où une carte y entre, elle doit en sortir dès que sa
