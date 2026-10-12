@@ -60,7 +60,7 @@ laiton, encres claires — `src/games/rpg-deck-atelier.css`).
 | **Clic gauche +1, clic droit −1** | le bouton `.rpg-atelier__carte-ajout` couvre la vignette ; `contextmenu` sur la vignette ou sur une rangée du deck retire un exemplaire (et ne montre pas le menu du navigateur) ; un petit « − » (`.rpg-atelier__carte-retrait`) apparaît au survol, toujours visible au doigt |
 | Compteur « 2/4 » posé sur la carte | `.rpg-atelier__carte-count` : `×N/limite` (`×N` pour un terrain, illimité) ; une carte au quota s'éteint (`.is-full`), une carte verrouillée porte un cadenas et dit où se gagner (`.is-locked`) |
 | **Aperçu grand format au survol** | le même `HoverCardPreview` que le duel et le catalogue : la page passe `onHoverCard` / `onLeaveHoverCard`, l'atelier les pose sur les vignettes (souris **et** focus clavier) et les rangées du deck |
-| Barre de filtres à **bascules** (symboles de mana, coût, type, rareté, « possédées ») | `.rpg-atelier__toolbar` : quatre **pips de couleur** (`aria-pressed`, cumulables en OU) + « Hybrides » ; coûts **1 à 6 et 7+** (un filtre de coût écarte les terrains) ; types ; raretés (losange coloré) ; « Possédées » ; recherche sur nom, ligne de type **et texte** ; tri (coût — terrains en fin —, nom, couleur, rareté) ; « ↺ Réinitialiser » n'apparaît que si un filtre est actif |
+| Barre de filtres à **bascules** (symboles de mana, coût, type, rareté, « possédées ») | `.rpg-atelier__toolbar` : quatre **pips de couleur** (`aria-pressed`, cumulables en OU) + « Hybrides » ; coûts **1 à 6 et 7+** (un filtre de coût écarte les terrains) ; types ; raretés — **commune, inhabituelle, rare, mythique**, comme Magic (losange coloré) ; « Possédées » ; recherche sur nom, ligne de type **et texte** ; tri (coût — terrains en fin —, nom, couleur, rareté) ; « ↺ Réinitialiser » n'apparaît que si un filtre est actif |
 | Panneau du deck à droite : nom en titre, compteur, **courbe de mana**, couleurs, liste par type | `.rpg-atelier__deck` (collant à l'écran sur PC) : nom en champ-titre, `N / 40` et jauge (verte à 40, rouge au-delà), terrains / créatures / magies / **coût moyen**, verdict de validation ; `courbeDeMana` dessine sept barres (1…6, 7+) ; `repartitionCouleurs` liste par couleur cartes, pips exigés et terrains producteurs ; la liste va **Créatures → Magies → Terrains**, rangées « vignette · médaillon de coût · nom · − × N + » triées par coût |
 | **« Ajouter des terrains »** | **« ⛰ Compléter en terrains »** (`completerEnTerrains`) : remplit les places libres jusqu'à 40 avec des terrains **possédés**, au prorata des **pips** exigés par les sorts (à défaut des couleurs des cartes, à défaut du Sable), parts entières aux plus forts restes ; ne retire jamais rien |
 | Vider le deck | « ⌫ Vider le deck », confirmation en deux temps sur le bouton lui-même |
@@ -88,7 +88,7 @@ vignettes, de la jauge et des barres.
 - **Les récompenses d'étage** (`RPG_RECOMPENSES_PAR_ETAGE`) donnent les
   cartes rares : les 20 étages des sept chapitres débloquent au fil de l'eau
   **46 cartes** — collection complète : **75 cartes** sur les 82 du set. Les
-  épique et mythique se gagnent aux boss ; le Kraken mythique attend la
+  mythiques se gagnent aux boss ; le Kraken mythique attend la
   victoire sur « Le Pêcheur de perles ».
 - **Le suivi** : `carteDebloqueePar(id)` dit quelle étage débloque une carte
   (l'atelier s'en sert pour ses messages), `carteEstDebloquee(id, collection)`
@@ -112,7 +112,7 @@ decks maison par `rpgValiderDeckMaison` dans `src/games/rpgDeckBuilder.js`) :
 |---|---|
 | Taille | exactement **40 cartes** (un brouillon peut être enregistré en dessous, il n'est pas jouable) |
 | Terrains | au moins **40 %** du deck, en quantité libre |
-| Épique / mythique | **× 1** |
+| Mythique | **× 1** |
 | Autres non-terrains | **× 3** |
 
 Un deck maison porte un nom (60 caractères au plus, tronqué sans casser), un

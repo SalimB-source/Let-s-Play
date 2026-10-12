@@ -96,7 +96,6 @@ test('les bordures utilisent les cinq raretés — l’Épique de la Neige compr
     commune: '#f1f3f5',
     inhabituelle: '#4d9aff',
     rare: '#e1b33f',
-    epique: '#8fe3ff',
     mythique: '#a875ed',
   });
   assert.equal(cardRarityInfo({ rarity: 'uncommon' }).key, 'inhabituelle');
@@ -1820,7 +1819,7 @@ test('les quatre figures du Nord portent leur kenning, jamais le mot « dieu »'
   assert.deepEqual(figures.map((carte) => carte.role),
     ['Celui qui sait', 'Le Tonnerre', 'La Gardienne du foyer', 'Celui qui entoure']);
   for (const carte of figures) {
-    assert.equal(carte.rarity, 'epique');
+    assert.equal(carte.rarity, 'mythique', 'les figures du Nord sont mythiques, comme tous les héros');
     assert.match(carte.typeLine, /^Créature légendaire — /);
     assert.doesNotMatch(`${carte.name} ${carte.role} ${carte.text ?? ''} ${carte.flavor ?? ''}`,
       /\bdieu(x)?\b/i, `${carte.id} ne nomme jamais de divinité`);
@@ -1846,7 +1845,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
   assert.equal(empreintes.size, 19, 'les dix-neuf peintures Neige sont toutes différentes');
 });
 
-test('le Serment des Neuf Hivers est un deck mono-Neige : dix-neuf cartes dédiées, épiques en un exemplaire', () => {
+test('le Serment des Neuf Hivers est un deck mono-Neige : dix-neuf cartes dédiées, mythiques en un exemplaire', () => {
   const deck = RPG_DECKS.find(({ id }) => id === 'serment-des-neuf-hivers');
   assert.ok(deck, 'le deck Neige apparaît dans la sélection');
   assert.equal(deck.role, 'joueur');
@@ -1862,18 +1861,21 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : dix-neuf cartes dédi�
     assert.deepEqual(cardColors(carte), ['neige'], `${id} reste dans l’identité Neige du deck`);
   }
 
-  // Une carte épique ne se joue qu'en un exemplaire, comme une mythique.
-  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 1);
+  // Les raretés sont celles de Magic : seule la mythique est unique ; une rare
+  // du Nord (la Valkyrie des glaces) peut aller à trois comme toute rare.
+  assert.deepEqual(Object.keys(CARD_RARITIES), ['commune', 'inhabituelle', 'rare', 'mythique'], 'pas de rareté « épique »');
+  assert.equal(cardCopyLimit(cardById('valkyrie-des-glaces')), 3);
+  assert.equal(cardCopyLimit(cardById('maitre-du-marteau')), 1);
   assert.equal(cardCopyLimit(cardById('glacier')), Infinity, 'les terrains restent illimités');
   assert.equal(cardCopyLimit(cardById('loup-des-neiges')), 3);
-  const epiqueEnDouble = [...RPG_DECK_NEIGE_BASE];
-  const placeDuLoup = epiqueEnDouble.lastIndexOf('loup-des-neiges');
-  epiqueEnDouble[placeDuLoup] = 'valkyrie-des-glaces';
-  assert.equal(rpgValiderDeck(epiqueEnDouble).ok, false, 'deux Valkyries des glaces sont refusées');
-  assert.match(rpgValiderDeck(epiqueEnDouble).raison, /1 max/);
-  for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.rarity === 'epique')) {
+  const mythiqueEnDouble = [...RPG_DECK_NEIGE_BASE];
+  const placeDuLoup = mythiqueEnDouble.lastIndexOf('loup-des-neiges');
+  mythiqueEnDouble[placeDuLoup] = 'maitre-du-marteau';
+  assert.equal(rpgValiderDeck(mythiqueEnDouble).ok, false, 'deux Maîtres du marteau sont refusés');
+  assert.match(rpgValiderDeck(mythiqueEnDouble).raison, /1 max/);
+  for (const carte of RPG_DUEL_CARDS.filter((candidate) => candidate.element === 'neige' && candidate.rarity === 'mythique')) {
     assert.ok(RPG_DECK_NEIGE_BASE.filter((id) => id === carte.id).length <= 1,
-      `${carte.id} épique apparaît au plus une fois dans le deck Neige`);
+      `${carte.id} mythique apparaît au plus une fois dans le deck Neige`);
     assert.ok(cardColors(carte).length >= 1, `${carte.id} porte au moins une couleur`);
   }
 

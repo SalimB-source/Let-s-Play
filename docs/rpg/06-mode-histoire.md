@@ -53,7 +53,7 @@ autonome » (deck complet, PV pleins, rien de reporté).
 
 - Les quatre decks de la tour sont **mono-Neige** (vérifié par test : chaque
   carte porte l'identité Neige, et le seul terrain est le Glacier) et passent
-  `rpgValiderDeck` — les cartes épiques y restent à un exemplaire.
+  `rpgValiderDeck` — les figures mythiques y restent à un exemplaire.
 - Un étage peut porter un **portrait de sorcier** (`avatar`, un identifiant
   d'illustration de `public/cards/`) : la plaque « LE SORCIER » montre alors ce
   visage au lieu de l'Ifrit générique. Le test vérifie que chaque portrait
