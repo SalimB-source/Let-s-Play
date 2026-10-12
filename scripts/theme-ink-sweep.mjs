@@ -35,7 +35,7 @@ const write = process.argv.includes('--write');
      ne doivent PAS basculer en encre sombre en thème clair. (Seule le
      `.calls-notice`, surface d'interface, suit le thème — elle n'y pose que
      des jetons, donc rien à exclure de plus.)
-   - jeu « Le Sablier du temps » (motif `.rpg-`) : menu, mode Histoire et duel
+   - jeu « Le Sablier » (motif `.rpg-`) : menu, mode Histoire et duel
      sont un ÉCRAN de jeu, sombre dans les deux thèmes (key art, table de bois,
      voiles noirs). Ses encres claires sont posées en dur dans src/games/rpg-*.css
      et ses jetons sont réancrés sur `.rpg-battle` (rpg-battle.css) : les basculer
@@ -60,7 +60,7 @@ const KEEP = new RegExp([
   'sentiment', 'article-views-inline',
   // appels vocaux/vidéo : écran, sombre dans les deux thèmes
   'calls-',
-  // jeu de cartes « Le Sablier du temps » : écran, sombre dans les deux thèmes
+  // jeu de cartes « Le Sablier » : écran, sombre dans les deux thèmes
   '\\.rpg-',
   // Community hero cards and the create-group modal are deliberate dark
   // stages in both themes; their white ink must not be swept onto a light page.

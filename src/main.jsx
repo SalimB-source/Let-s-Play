@@ -92,7 +92,7 @@ const MessagesPage = lazy(() => import('./messages/MessagesPage'));
 const CommunityPage = lazy(() => import('./community/CommunityPage'));
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 const ViceCityRushPage = lazy(() => import('./games/ViceCityRushPage'));
-// Prototype de RPG tour par tour « Le Sablier du temps » (dossier : docs/rpg/).
+// Prototype de RPG tour par tour « Le Sablier » (dossier : docs/rpg/).
 const RpgDuelPage = lazy(() => import('./games/RpgDuelPage'));
 
 /** Écran d'attente d'une page à la demande — mêmes marges que les replis des jeux. */

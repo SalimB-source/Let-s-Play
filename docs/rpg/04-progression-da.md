@@ -1,6 +1,6 @@
 # 04 — Progression, économie, direction artistique, son
 
-Concept B — « Le Sablier du temps », combat sans réflexes (`03-combat.md`).
+Concept B — « Le Sablier », combat sans réflexes (`03-combat.md`).
 
 ## 1. Progression des personnages
 
