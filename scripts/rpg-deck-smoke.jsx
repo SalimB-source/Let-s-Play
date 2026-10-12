@@ -5,7 +5,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 import { RPG_DECK_STORAGE_KEY } from '../src/games/rpgDeckChoice.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -401,7 +401,7 @@ export async function checkRpgDecks(assert) {
   assert.ok(atelier.container.querySelector('.rpg-atelier'), 'l’atelier remplace l’étagère');
   assert.ok(!atelier.container.querySelector('.rpg-deck-catalog__choices'), 'l’étagère n’est pas rendue en même temps que l’atelier');
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /0 \/ 40 cartes/, 'les compteurs démarrent à zéro');
-  assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, 75, 'la bibliothèque montre tout le catalogue');
+  assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, RPG_DUEL_CARDS.length, 'la bibliothèque montre tout le catalogue');
   assert.ok(atelier.container.querySelectorAll('.rpg-atelier__carte.is-locked').length > 0, 'les cartes hors collection sont verrouillées');
   const rangeeKraken = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="kraken"]');
   assert.ok(rangeeKraken.classList.contains('is-locked'), 'le Kraken est verrouillé au départ');
@@ -415,6 +415,76 @@ export async function checkRpgDecks(assert) {
   assert.ok(ligneChien, 'la carte apparaît dans le deck en cours');
   await atelier.click(ligneChien.querySelector('.rpg-atelier__ligne-compte button'), 'retirer Chien du guet');
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /0 \/ 40 cartes/, 'le compteur suit le retrait');
+
+  // --- La disposition « Arena » : grille illustrée, bascules, clic droit, courbe, terrains ----
+  assert.ok(rangeeChien.querySelector('.rpg-atelier__carte-art img'), 'la collection est une grille de cartes illustrées');
+  assert.ok(rangeeChien.querySelector('.rpg-atelier__cout'), 'le médaillon de coût est posé sur la carte');
+  assert.ok(rangeeChien.querySelector('.rpg-atelier__carte-pt'), 'une créature affiche attaque / défense');
+  assert.ok(rangeeKraken.querySelector('.rpg-atelier__carte-cadenas'), 'une carte verrouillée porte un cadenas');
+  const toolbar = atelier.container.querySelector('.rpg-atelier__toolbar');
+  assert.ok(toolbar, 'la barre de filtres existe');
+  const pips = [...toolbar.querySelectorAll('.rpg-atelier__toggle--pip')];
+  assert.equal(pips.length, 4, 'quatre pips de couleur à bascule');
+  assert.ok(pips.every((pip) => pip.getAttribute('aria-pressed') === 'false'), 'aucune couleur active au départ');
+  const pipEau = pips.find((pip) => pip.getAttribute('aria-label') === 'Couleur Eau');
+  await atelier.click(pipEau, 'bascule Eau');
+  assert.equal(pipEau.getAttribute('aria-pressed'), 'true', 'la bascule est pressée');
+  const cartesEau = [...atelier.container.querySelectorAll('.rpg-atelier__carte')];
+  assert.ok(cartesEau.length > 0 && cartesEau.length < RPG_DUEL_CARDS.length, 'le filtre Eau réduit la grille');
+  assert.ok(cartesEau.every((carte) => carte.dataset.color === 'eau' || carte.dataset.color === 'hybride'), 'ne restent que des cartes Eau (ou hybrides avec Eau)');
+  const pipSable = pips.find((pip) => pip.getAttribute('aria-label') === 'Couleur Sable');
+  await atelier.click(pipSable, 'bascule Sable en plus');
+  assert.ok(atelier.container.querySelectorAll('.rpg-atelier__carte').length > cartesEau.length, 'deux couleurs cumulent (ou logique)');
+  const cout2 = [...toolbar.querySelectorAll('.rpg-atelier__toggle--cout')].find((bouton) => texte(bouton) === '2');
+  await atelier.click(cout2, 'bascule coût 2');
+  assert.ok([...atelier.container.querySelectorAll('.rpg-atelier__carte')].every((carte) => carte.dataset.type !== 'terrain'), 'un filtre de coût écarte les terrains');
+  assert.ok(atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]'), 'le Chien du guet (Sable, coût 2) reste');
+  const reset = toolbar.querySelector('.rpg-atelier__toggle--reset');
+  assert.ok(reset, 'un bouton de réinitialisation apparaît quand un filtre est actif');
+  await atelier.click(reset, 'réinitialiser les filtres');
+  assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, RPG_DUEL_CARDS.length, 'la grille complète revient');
+  assert.ok(!toolbar.querySelector('.rpg-atelier__toggle--reset'), 'et le bouton disparaît');
+  const possedees = [...toolbar.querySelectorAll('.rpg-atelier__toggle')].find((bouton) => texte(bouton) === 'Possédées');
+  await atelier.click(possedees, 'bascule Possédées');
+  assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte.is-locked').length, 0, '« Possédées » masque les cartes verrouillées');
+  await atelier.click(possedees, 'bascule Possédées (retour)');
+  // Le clic droit retire un exemplaire, comme sur Arena.
+  await atelier.click(atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__carte-ajout'), 'ajouter Chien du guet (clic droit à suivre)');
+  await atelier.click(atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__carte-ajout'), 'second Chien du guet');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__carte-count')), /×2/, 'le compteur « ×2 » est posé sur la carte');
+  await act(async () => {
+    atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]').dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+  });
+  await atelier.settle();
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /1 \/ 40 cartes/, 'le clic droit retire un exemplaire');
+  // La courbe de mana et les couleurs suivent le deck.
+  const barre2 = atelier.container.querySelector('.rpg-atelier__barre[data-cout="2"] b');
+  assert.equal(texte(barre2), '1', 'la courbe de mana compte le Chien du guet au palier 2');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__couleurs')), /Sable/, 'la répartition des couleurs nomme le Sable');
+  // « Compléter en terrains » remplit le deck à 40 avec les terrains de la couleur.
+  await atelier.click([...atelier.container.querySelectorAll('.rpg-atelier__outil')].find((bouton) => texte(bouton).includes('Compléter')), 'Compléter en terrains');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /40 \/ 40 cartes/, 'le deck est complété à 40');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /39 terrains/, 'avec 39 terrains');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__ligne[data-card-id="desert"]')), /×39/, 'tous des Déserts : le deck est mono-Sable');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__statut')), /39 terrains ajoutés/, 'la ligne d’état explique le geste');
+  // Vider demande deux clics, puis le deck repart de zéro.
+  const vider = [...atelier.container.querySelectorAll('.rpg-atelier__outil')].find((bouton) => texte(bouton).includes('Vider'));
+  await atelier.click(vider, 'Vider (premier clic)');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /40 \/ 40 cartes/, 'le premier clic ne vide pas');
+  await atelier.click([...atelier.container.querySelectorAll('.rpg-atelier__outil')].find((bouton) => texte(bouton).includes('confirmer')), 'Vider (confirmer)');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /0 \/ 40 cartes/, 'le deck est vide');
+  // Le survol d’une carte de la grille ouvre l’aperçu grand format de la page.
+  await act(async () => {
+    const cible = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
+    cible.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true }));
+  });
+  await atelier.settle();
+  assert.ok(atelier.container.querySelector('.rpg-hover-card-preview'), 'l’aperçu de carte s’affiche au survol dans l’atelier');
+  await act(async () => {
+    atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]').dispatchEvent(new window.MouseEvent('mouseout', { bubbles: true }));
+  });
+  await atelier.settle();
+  assert.ok(!atelier.container.querySelector('.rpg-hover-card-preview'), 'et disparaît quand la souris s’en va');
   // Un deck nommé s’enregistre même inachevé : il rejoint l’étagère « indisponible ».
   const champNom = atelier.container.querySelector('.rpg-atelier__champ input[type="text"]');
   const setterNom = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
