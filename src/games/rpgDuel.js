@@ -810,12 +810,14 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null) {
     }
   }
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
-  payer(duel, cote, carte);
-  camp.main.splice(camp.main.indexOf(carteId), 1);
+  // L'IA peut répondre à la créature avant son entrée en jeu. Dans ce cas,
+  // `contrerAnnonce` paie la créature lancée ainsi que le contresort adverse.
   if (cote === 'joueur' && !duel.annonce) {
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
+  payer(duel, cote, carte);
+  camp.main.splice(camp.main.indexOf(carteId), 1);
   const entite = creerEntiteCreature(carte);
   camp.creatures.push(entite);
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
@@ -912,21 +914,28 @@ export function rpgContreJouable(duel, cote, carte) {
 }
 
 /** Contrer : répond à une annonce adverse (ou à la carte du joueur que l'IA contre).
- *  La carte visée est défaussée sans effet, et le contre paie son coût (Déflection
- *  fait aussi piocher une carte). `annonce` : { cote, carteId } ;
- *  par défaut l'annonce en cours du sorcier. */
+ * La carte visée et le contre paient tous deux leur coût, puis vont au cimetière
+ * sans résoudre l'effet de la carte visée (Déflection fait aussi piocher).
+ * `annonce` : { cote, carteId } ; par défaut l'annonce en cours du sorcier. */
 function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   const camp = duel[cote];
   if (!annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
   const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId);
   if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  const campAnnonce = duel[annonce.cote];
+  if (!rpgPeutPayer(campAnnonce, cible)) return { ok: false, raison: 'mana' };
+
+  // Payer la carte lancée, même si elle est immédiatement contrecarrée, puis
+  // payer le contresort. Les cartes du joueur restent en main jusque-là ; les
+  // annonces du sorcier ne paient normalement qu'à leur résolution.
+  payer(duel, annonce.cote, cible);
   payer(duel, cote, carte);
-  camp.main.splice(camp.main.indexOf(carte.id), 1);
-  camp.cimetiere.push(carte.id);
-  const main = duel[annonce.cote].main;
+  const main = campAnnonce.main;
   if (main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
   duel[annonce.cote].cimetiere.push(annonce.carteId);
+  camp.main.splice(camp.main.indexOf(carte.id), 1);
+  camp.cimetiere.push(carte.id);
   if (annonce === duel.annonce) {
     duel.annonce = null;
     duel.fenetreReponse = false;
@@ -965,11 +974,6 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
   if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
 
-  if (cote === 'joueur' && !duel.annonce) {
-    const contreIA = choisirContreIA(duel, carte);
-    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
-  }
-
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (cibleId === 'sorcier') {
       if (!carte.cibles?.includes('sorcier')) return { ok: false, raison: 'cible' };
@@ -992,6 +996,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null) {
     const cible = campCible.creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
+
+  if (cote === 'joueur' && !duel.annonce) {
+    const contreIA = choisirContreIA(duel, carte);
+    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
 
   payer(duel, cote, carte);
@@ -1393,7 +1402,8 @@ export function rpgSorcierPrepareTerrain(duel) {
   }
 }
 
-/** Le sorcier choisit sa prochaine carte et l'ANNONCE sans la payer ni la résoudre.
+/** Le sorcier annonce sa prochaine carte sans la résoudre. La carte paie son
+ *  coût à la résolution, ou au moment où le joueur la contre.
  *  Ouvre la fenêtre de réponse : le joueur peut répondre avec un éphémère, ou laisser passer.
  *  Retourne null quand le sorcier n'a plus rien à jouer. */
 export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
