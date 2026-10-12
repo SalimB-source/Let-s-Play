@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  RPG_PV_SORCIER_BASE,
   rpgEngagerTerrain,
   rpgFinDeTour,
   rpgJouerCreature,
@@ -36,7 +37,7 @@ test('le tutoriel prépare une main stable sans réduire les decks ni ouvrir le 
   assert.equal(duel.sorcier.main.length, 5);
   assert.ok(duel.sorcier.main.every((carteId) => carteId === 'montagne'));
   assert.equal(duel.sorcier.deck.length, 35);
-  assert.equal(duel.sorcier.pv, 50);
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE);
   assert.equal(rpgPeutMulligan(duel, 'joueur'), false);
   assert.equal(rpgPeutMulligan(duel, 'sorcier'), false);
 });

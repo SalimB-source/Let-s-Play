@@ -29,9 +29,13 @@ import {
   couleurEngagement,
 } from './rpgAI.js';
 
-export const RPG_PV_JOUEUR = 50;
-export const RPG_PV_SORCIER_BASE = 50;
-export const RPG_PV_SORCIER_PAR_PUISSANCE = 5;
+/* Tout le monde part à 25 PV : le joueur comme chaque sorcier adverse. La
+ * puissance d'un étage du mode Histoire ne gonfle plus les PV (bonus à 0) —
+ * elle reste affichée sur la fiche d'étage comme indice de difficulté, la
+ * vraie difficulté venant du deck et du profil d'IA du sorcier. */
+export const RPG_PV_JOUEUR = 25;
+export const RPG_PV_SORCIER_BASE = 25;
+export const RPG_PV_SORCIER_PAR_PUISSANCE = 0;
 export const RPG_MAIN_DEPART = 5;
 export const RPG_COULEURS = RPG_ELEMENTS;
 
@@ -61,7 +65,7 @@ const normaliserCouleurs = (couleurs) => [...new Set((Array.isArray(couleurs) ? 
 const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0 });
 const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + camp.mana[c], 0);
 
-/** PV d'un sorcier adverse selon sa puissance. */
+/** PV d'un sorcier adverse : 25, quelle que soit sa puissance d'étage. */
 export const rpgSorcierPv = (puissance = 0) =>
   RPG_PV_SORCIER_BASE + RPG_PV_SORCIER_PAR_PUISSANCE * Math.max(0, puissance);
 

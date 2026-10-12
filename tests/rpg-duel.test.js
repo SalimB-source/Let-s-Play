@@ -5,6 +5,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   RPG_MAIN_DEPART,
+  RPG_PV_JOUEUR,
+  RPG_PV_SORCIER_BASE,
+  RPG_PV_SORCIER_PAR_PUISSANCE,
   rpgAttaquerCreature,
   rpgAttaquerSorcier,
   rpgBlesserCreature,
@@ -312,7 +315,7 @@ test('l’Envol d’Anqa ne laisse que les créatures volantes la bloquer', () =
   assert.equal(refus.ok, false);
   assert.equal(refus.raison, 'envol', 'le moteur refuse un bloqueur sans Envol');
   assert.equal(chien.pv, 2, 'le blocage refusé ne blesse personne');
-  assert.equal(duel.joueur.pv, 50, 'aucune attaque n’est résolue');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'aucune attaque n’est résolue');
 
   donner(duel, 'joueur', 'anqa-des-braises');
   const anqaBloqueuse = rpgJouerCreature(duel, 'joueur', 'anqa-des-braises').entite;
@@ -325,7 +328,7 @@ test('l’Envol d’Anqa ne laisse que les créatures volantes la bloquer', () =
   });
   assert.equal(combat.ok, true);
   assert.equal(combat.resume.paires.length, 1, 'les deux Anqa s’affrontent en vol');
-  assert.equal(duel.joueur.pv, 50, 'l’Anqa volante arrête l’attaque avant les PV');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'l’Anqa volante arrête l’attaque avant les PV');
   assert.equal(duel.sorcier.creatures.includes(anqaAttaquante), false, 'les deux 4/4 se détruisent');
   assert.equal(duel.joueur.creatures.includes(anqaBloqueuse), false);
 });
@@ -1006,7 +1009,8 @@ test('la partie démarre table vide et chaque camp pioche 5 cartes', () => {
   assert.equal(duel.joueur.terrains.length, 0, 'aucun terrain au départ');
   assert.equal(duel.joueur.main.length, RPG_MAIN_DEPART);
   assert.equal(duel.sorcier.main.length, RPG_MAIN_DEPART);
-  assert.equal(duel.joueur.pv, 50, 'le joueur démarre à 50 PV');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, `le joueur démarre à ${RPG_PV_JOUEUR} PV`);
+  assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR, 'le plafond de soin suit les PV de départ');
 });
 
 test('les 5 cartes piochées viennent bien du deck', () => {
@@ -1023,11 +1027,14 @@ test('deck vide : piocher rend null sans casser', () => {
   assert.equal(rpgPiocher(duel, 'joueur'), null);
 });
 
-test('le sorcier ennemi a davantage de PV selon sa puissance', () => {
-  assert.equal(rpgSorcierPv(0), 50);
-  assert.equal(rpgSorcierPv(4), 70);
+test('le sorcier ennemi démarre aux mêmes PV que le joueur, quelle que soit sa puissance', () => {
+  assert.equal(RPG_PV_SORCIER_PAR_PUISSANCE, 0, 'la puissance d’un étage ne gonfle plus les PV');
+  assert.equal(rpgSorcierPv(0), RPG_PV_SORCIER_BASE);
+  assert.equal(rpgSorcierPv(4), RPG_PV_SORCIER_BASE);
+  assert.equal(rpgSorcierPv(7), RPG_PV_SORCIER_BASE);
   const duel = duelDeBase({ sorcierPuissance: 6 });
-  assert.equal(duel.sorcier.pv, 80);
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE);
+  assert.equal(duel.sorcier.pvMax, RPG_PV_SORCIER_BASE);
 });
 
 test('on pose un terrain par tour, et l’engager donne son mana', () => {
@@ -1137,7 +1144,7 @@ test('Pétra et un Désert peuvent couvrir les deux pips hybrides du Djinn de fo
 test('une magie se paie elle aussi en engageant automatiquement ses terrains', () => {
   const duel = duelDeBase();
   donner(duel, 'joueur', 'eau-de-la-source');
-  duel.joueur.pv = 40;
+  duel.joueur.pv = RPG_PV_JOUEUR - 10;
   const terrain = { id: 'mer-auto-sort', carteId: 'mer', tapped: false };
   duel.joueur.terrains.push(terrain);
 
@@ -1145,7 +1152,7 @@ test('une magie se paie elle aussi en engageant automatiquement ses terrains', (
     'une source eau dégagée suffit à rendre la sorcellerie jouable');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
   assert.equal(terrain.tapped, true, 'la mer s’engage quand le sort est lancé');
-  assert.equal(duel.joueur.pv, 44, 'le sort se résout après son paiement');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 6, 'le sort se résout après son paiement');
   assert.equal(rpgMana(duel.joueur).total, 0);
 });
 
@@ -1318,14 +1325,14 @@ test('un renfort de magie rapide qui s’évapore peut laisser une créature à 
 test('capacité à l’arrivée : la Porteuse soigne son sorcier (plafonné)', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
-  duel.joueur.pv = 40;
+  duel.joueur.pv = RPG_PV_JOUEUR - 5;
   donner(duel, 'joueur', 'porteuse-de-cruches');
   rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
-  assert.equal(duel.joueur.pv, 43);
-  duel.joueur.pv = 49;
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 2);
+  duel.joueur.pv = RPG_PV_JOUEUR - 1;
   donner(duel, 'joueur', 'porteuse-de-cruches');
   rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
-  assert.equal(duel.joueur.pv, 50, 'le soin ne dépasse pas le maximum');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin ne dépasse pas le maximum');
 });
 
 test('la Veilleuse gagne son bouclier dès son arrivée et absorbe les premiers dégâts', () => {
@@ -1403,7 +1410,7 @@ test('le Djinn coûte 5, est 3/3 et détruit au hasard un terrain adverse à son
   assert.deepEqual(rpgDestructionsDepuis(duel, debutDestruction), [
     { entityId: 'terrain-desert', sourceElements: ['braise'] },
   ], 'la destruction est attribuée au Djinn Braise pour déclencher l’animation de brûlure');
-  assert.equal(duel.sorcier.pv, 50, 'la nouvelle capacité ne blesse plus le sorcier adverse');
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE, 'la nouvelle capacité ne blesse plus le sorcier adverse');
   assert.match(duel.log.at(-1), /Djinn du souk détruit le terrain adverse Désert/);
 });
 
@@ -1485,7 +1492,7 @@ test('chaque attaquant peut viser le sorcier : les bloqueurs sont choisis sépar
   const direct = rpgLancerAttaque(duel, 'joueur', [maDune.id], {});
   assert.equal(direct.ok, true, 'la présence de bloqueurs ne supprime pas les dégâts directs');
   assert.equal(direct.resume.frappeSorcier, 2);
-  assert.equal(duel.sorcier.pv, 48);
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 2);
   assert.equal(duel.sorcier.creatures.length, 1, 'le chien reste en défense tant que le joueur ne l’assigne pas');
   assert.equal(rpgAttaquerSorcier(duel, 'joueur', maDune.id).raison, 'pas-pret', 'une créature ne réattaque pas');
 });
@@ -1628,7 +1635,7 @@ test('phase d’attaque sans bloqueur : tous les attaquants frappent le sorcier'
   const res = rpgLancerAttaque(duel, 'joueur', ids);
   assert.equal(res.ok, true);
   assert.equal(res.resume.frappeSorcier, 2 + 2, 'chien 2 + dune 2');
-  assert.equal(duel.sorcier.pv, 50 - 4);
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 4);
   assert.ok(duel.joueur.creatures.every((e) => e.attaquee), 'tout le monde a frappé');
   assert.equal(rpgLancerAttaque(duel, 'joueur', ids).raison, 'pas-pret', 'une seule attaque par tour');
 });
@@ -1722,7 +1729,7 @@ test('un bloqueur ne peut arrêter qu’un seul attaquant ; les autres frappent 
   assert.equal(res.ok, true);
   assert.equal(res.resume.paires.length, 1, 'un seul échange de combat');
   assert.equal(res.resume.frappeSorcier, 2, 'la Dune non bloquée inflige 2');
-  assert.equal(duel.joueur.pv, 48);
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 2);
   assert.equal(duel.joueur.creatures.length, 0, 'Chien contre Chien : les deux sont détruits');
   assert.equal(duel.joueur.cimetiere.at(-1), 'chien-du-guet');
 });
@@ -1986,9 +1993,9 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(loup.bouclier, 3, 'la Brume du fjord pose un bouclier de 3');
 
   donner(duel, 'joueur', 'festin-des-vaillants');
-  duel.joueur.pv = 40;
+  duel.joueur.pv = RPG_PV_JOUEUR - 10;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'festin-des-vaillants').ok, true);
-  assert.equal(duel.joueur.pv, 45, 'le Festin rend 5 points de vie');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 5, 'le Festin rend 5 points de vie');
 
   donner(duel, 'sorcier', 'dune-marchante');
   const dune2 = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
@@ -1998,7 +2005,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
 
   donner(duel, 'joueur', 'eclair-du-marteau');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier').ok, true);
-  assert.equal(duel.sorcier.pv, 47, 'l’Éclair du marteau peut frapper le sorcier');
+  assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 3, 'l’Éclair du marteau peut frapper le sorcier');
 
   // Les quatre figures du Nord : pioche, balayage, soin et capacité de mort.
   for (const [id, figure] of [['pere-des-corbeaux', 'Le Père des corbeaux'], ['maitre-du-marteau', 'Le Maître du marteau'], ['dame-des-neuf-mondes', 'La Dame des neuf mondes']]) {
@@ -2008,7 +2015,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
     donner(duel, 'joueur', id);
     assert.equal(rpgJouerCreature(duel, 'joueur', id).ok, true, `${figure} se pose`);
   }
-  assert.equal(duel.joueur.pv, 50, 'le soin de la Dame est plafonné aux PV maximum');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'le soin de la Dame est plafonné aux PV maximum');
 
   duel.joueur.deck = ['glacier', 'glacier', 'glacier'];
   donner(duel, 'joueur', 'pere-des-corbeaux');
@@ -2175,10 +2182,10 @@ test('Trait de braise coûte 2, est une magie rapide et inflige 3 dégâts à un
   assert.equal(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier').ok, true,
     'la cible Sorcier applique aussi les 3 dégâts');
   assert.equal(duel.sorcier.pv, pvSorcierAvant - 3);
-  duel.joueur.pv = 40;
+  duel.joueur.pv = RPG_PV_JOUEUR - 10;
   donner(duel, 'joueur', 'eau-de-la-source');
   rpgLancerMagie(duel, 'joueur', 'eau-de-la-source');
-  assert.equal(duel.joueur.pv, 44);
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 6);
   const mainAvant = duel.joueur.main.length;
   donner(duel, 'joueur', 'rapport-du-greffier');
   rpgLancerMagie(duel, 'joueur', 'rapport-du-greffier');

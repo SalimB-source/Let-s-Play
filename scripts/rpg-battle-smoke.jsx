@@ -6,6 +6,7 @@ import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
+import { RPG_PV_JOUEUR, rpgSorcierPv } from '../src/games/rpgDuel.js';
 import { passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -357,7 +358,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { findButton('Jouer avec ce deck').click(); });
   await passerMulligan(container, cliquer);
 
-  // ── Nouvelle partie : table vide, 5 cartes, 50 PV face à un sorcier à 60 ─
+  // ── Nouvelle partie : table vide, 5 cartes, 25 PV face à un sorcier à 25 ─
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée après le choix de Jouer');
   const tableDuDuel = container.querySelector('.card-table');
   // Les deux paquets de ce scénario sont mono-Sable : quel que soit le camp
@@ -457,10 +458,10 @@ export async function checkRpgBattle(assert) {
   'les terrains n’affichent aucun coût de mana, même dans leur libellé accessible');
   assert.match(container.querySelector('.rpg-turn-indicator')?.textContent ?? '', /À VOTRE TOUR/,
     'un indicateur signale que le tour commence chez le joueur');
-  assert.equal(container.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '50',
-    'le joueur démarre à 50 PV');
-  assert.equal(container.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim(), '60',
-    'le sorcier (puissance 2) démarre à 60 PV');
+  assert.equal(container.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), String(RPG_PV_JOUEUR),
+    `le joueur démarre à ${RPG_PV_JOUEUR} PV`);
+  assert.equal(container.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim(), String(rpgSorcierPv(2)),
+    `le sorcier démarre à ${rpgSorcierPv(2)} PV, sa puissance 2 ne gonflant plus ses PV`);
   assert.ok(container.querySelector('.rpg-wizard-plate__hp-icon--heart'),
     'chaque plaque prépare le cœur pour le rendu PC');
 
@@ -1008,7 +1009,7 @@ export async function checkRpgBattle(assert) {
   assert.equal(tableImpact.dataset.screenImpact, 'received', 'une attaque directe reçue est distinguée');
   assert.match(tableImpact.className, /rpg-screen-shake--[ab]/, 'l’attaque reçue fait aussi trembler l’écran');
   assert.match(tableImpact.className, /rpg-screen-hit--[ab]/, 'l’attaque reçue ajoute la vignette rouge');
-  assert.equal(impactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '48',
+  assert.equal(impactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), String(RPG_PV_JOUEUR - 2),
     'les dégâts reçus accompagnent bien l’effet de vignette');
   await act(async () => { impactRoot.unmount(); });
   impactContainer.remove();
@@ -1045,7 +1046,7 @@ export async function checkRpgBattle(assert) {
     'le sort reçu fait trembler la table');
   assert.match(spellImpactTable.className, /rpg-screen-hit--[ab]/,
     'le sort reçu affiche la vignette rouge');
-  assert.equal(spellImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '47',
+  assert.equal(spellImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), String(RPG_PV_JOUEUR - 3),
     'le Trait de braise a réellement retiré trois points de vie');
   await act(async () => { spellImpactRoot.unmount(); });
   spellImpactContainer.remove();
@@ -1082,7 +1083,7 @@ export async function checkRpgBattle(assert) {
     'la capacité d’arrivée de l’Ifrit fait trembler la table');
   assert.match(creatureImpactTable.className, /rpg-screen-hit--[ab]/,
     'la capacité d’arrivée de l’Ifrit affiche la vignette rouge');
-  assert.equal(creatureImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), '48',
+  assert.equal(creatureImpactContainer.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent.trim(), String(RPG_PV_JOUEUR - 2),
     'l’Ifrit a réellement retiré deux points de vie');
   await act(async () => { creatureImpactRoot.unmount(); });
   creatureImpactContainer.remove();
@@ -1429,7 +1430,7 @@ export async function checkRpgBattle(assert) {
     assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable'),
       'une carte Braise + Sable reçoit le cadre rouge-orange de sa combinaison');
     assert.ok(!terrain.classList.contains('rpg-card--mythique'),
-      'Pétra est rare, pas mythique : elle ne prend pas le cadre doré');
+      'Pétra est rare, pas mythique : elle ne prend pas le cadre violet');
     const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
@@ -1490,12 +1491,12 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
   assert.ok(ferielEnMain.classList.contains('rpg-card--mythique')
     && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
-    'Fériel porte son cadre doré brillant dès la main');
+    'Fériel porte son cadre violet brillant dès la main');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
-    'Fériel, mythique, garde son cadre doré sur la table');
+    'Fériel, mythique, garde son cadre violet sur la table');
   assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });

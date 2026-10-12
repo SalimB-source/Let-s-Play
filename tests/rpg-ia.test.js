@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  RPG_PV_JOUEUR,
   rpgChoisirAttaquants,
   rpgChoisirBloqueurs,
   rpgCibleAuto,
@@ -183,7 +184,7 @@ test('le sorcier dégage la voie avec son removal avant de frapper', () => {
 
   rpgTourSorcierIA(duel);
   assert.equal(duel.joueur.creatures.length, 0, 'le Trait de braise abat le Chien');
-  assert.equal(duel.joueur.pv, 47, 'le Fennec, la voie libre, frappe pour 3');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 3, 'le Fennec, la voie libre, frappe pour 3');
   assert.equal(fennec.attaquee, true);
 });
 
@@ -257,7 +258,7 @@ test('le niveau Veilleur garde son burn pour conclure, la Normale le pousse', ()
   donner(duel, 'joueur', 'dune-marchante');
   const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
   dune.protection = { contre: 'braise', toursRestants: 2 };
-  duel.joueur.pv = 50; // aucun enjeu : 3 dégâts au visage ne changent rien
+  duel.joueur.pv = RPG_PV_JOUEUR; // aucun enjeu : 3 dégâts au visage ne changent rien
   donner(duel, 'sorcier', 'trait-de-braise');
   assert.equal(choisirCarteIA(duel, 'sorcier')?.carteId, 'trait-de-braise',
     'la Normale pousse son burn');
@@ -269,7 +270,7 @@ test('le niveau Veilleur garde son burn pour conclure, la Normale le pousse', ()
   donner(duelVeilleur, 'joueur', 'dune-marchante');
   const duneVeilleur = rpgJouerCreature(duelVeilleur, 'joueur', 'dune-marchante').entite;
   duneVeilleur.protection = { contre: 'braise', toursRestants: 2 };
-  duelVeilleur.joueur.pv = 50;
+  duelVeilleur.joueur.pv = RPG_PV_JOUEUR;
   donner(duelVeilleur, 'sorcier', 'trait-de-braise');
   assert.equal(choisirCarteIA(duelVeilleur, 'sorcier'), null,
     'le Veilleur ménage son burn tant qu’il n’est pas décisif');

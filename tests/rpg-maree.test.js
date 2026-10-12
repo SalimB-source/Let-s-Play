@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  RPG_PV_JOUEUR,
   rpgNouveauDuel,
   rpgLancerMagie,
   rpgJouerCreature,
@@ -71,7 +72,7 @@ test('Contresort des abîmes contre la carte annoncée, sort ou créature : la c
   assert.equal(duel.sorcier.mana.braise, 3, 'le sort annoncé paie son coût même s’il est contrecarré');
   assert.equal(duel.joueur.mana.eau, 0, 'le contresort est lui aussi payé');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false, 'il n’y a plus rien à résoudre');
-  assert.equal(duel.joueur.pv, 50, 'aucun dégât');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR, 'aucun dégât');
 });
 
 test('Contresort des abîmes peut contrer une créature annoncée', () => {
@@ -109,7 +110,7 @@ test('laisser passer après un contre : aucune carte ne se résout', () => {
   mana(duel, 'joueur', 'eau', 4);
   contre(duel, 'contresort-des-abimes');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, false);
-  assert.equal(duel.joueur.pv, 50);
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR);
 });
 
 test('Silence d’écume contre tout sort annoncé (magie rapide ou sorcellerie), quelle que soit sa couleur', () => {
@@ -171,7 +172,7 @@ test('sans contre, la carte annoncée se résout quand le joueur laisse passer',
   mana(duel, 'sorcier', 'braise', 3);
   const res = rpgSorcierResoudreAnnonce(duel);
   assert.equal(res.ok, true);
-  assert.equal(duel.joueur.pv, 47, 'la magie fait ses 3 dégâts au visage');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 3, 'la magie fait ses 3 dégâts au visage');
   assert.equal(duel.sorcier.mana.braise, 6, 'le sort qui passe paie son coût une seule fois');
   assert.equal(duel.annonce, null);
   assert.equal(duel.fenetreReponse, false);

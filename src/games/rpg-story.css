@@ -45,8 +45,8 @@
   align-items: start;
 }
 
-/* La galerie des tours : une miniature par tour. Les étages restent masqués
-   jusqu'au clic — la vignette ouvre la page de la tour. */
+/* La galerie des tours : une maquette 3D par tour. Les étages restent masqués
+   jusqu'au clic — la carte entière ouvre la page de la tour. */
 .rpg-story-tower {
   display: flex;
   flex-direction: column;
@@ -71,11 +71,75 @@
 }
 
 .rpg-story-tower__art {
+  aspect-ratio: 4 / 3;
+  border-bottom: 1px solid rgba(229, 191, 105, .16);
+}
+
+/* La 3D reste dans le cadre de la carte : aucun canvas plein écran, aucun
+   geste de glisser intercepté. La peinture n'apparaît qu'en attente/repli. */
+.rpg-story-stage {
+  --tower-glow: rgba(197, 158, 91, .22);
+  position: relative;
   display: block;
-  aspect-ratio: 16 / 9;
+  flex-shrink: 0;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 78%, var(--tower-glow), transparent 67%),
+    radial-gradient(ellipse at 50% 24%, rgba(80, 103, 148, .16), transparent 70%),
+    linear-gradient(155deg, #151a29, #090c16 78%);
+}
+
+.rpg-story-stage[data-tower-model="tour-du-souk"] { --tower-glow: rgba(238, 147, 78, .25); }
+.rpg-story-stage[data-tower-model="tour-des-sables"] { --tower-glow: rgba(222, 161, 82, .28); }
+.rpg-story-stage[data-tower-model="tour-des-abysses"] { --tower-glow: rgba(48, 192, 199, .26); }
+.rpg-story-stage[data-tower-model="tour-du-fjord"] { --tower-glow: rgba(113, 180, 225, .25); }
+
+.rpg-story-stage__canvas,
+.rpg-story-stage__fallback {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.rpg-story-stage__fallback {
   background-size: cover;
   background-position: center;
-  border-bottom: 1px solid rgba(229, 191, 105, .16);
+}
+
+.rpg-story-stage__canvas { opacity: 0; }
+.rpg-story-stage.is-ready .rpg-story-stage__canvas { opacity: 1; }
+.rpg-story-stage.is-ready .rpg-story-stage__fallback { display: none; }
+
+.rpg-story-stage__badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(232, 206, 157, .22);
+  border-radius: 999px;
+  background: rgba(8, 12, 22, .74);
+  color: #e8d3aa;
+  padding: 5px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  pointer-events: none;
+}
+
+.rpg-story-stage.is-ready .rpg-story-stage__badge { display: inline-flex; }
+.rpg-story-stage__badge > span { width: 4px; height: 4px; border-radius: 50%; background: #ebc888; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-story-tower { transition: none; }
+  .rpg-story-tower:hover,
+  .rpg-story-tower:focus-visible { transform: none; }
 }
 
 .rpg-story-tower__body {
@@ -159,13 +223,10 @@
   background: rgba(10, 10, 18, .4);
 }
 
-/* La miniature de la tour, en bannière de sa page : cadrage `cover`, la
-   peinture reste lisible du téléphone au grand écran. */
+/* La même maquette dans la page d'étages, dans un cadre plus généreux.
+   La caméra s'ajuste au format, sans couper le sommet ou le socle. */
 .rpg-story-tour__banner {
-  display: block;
-  height: clamp(128px, 24vw, 210px);
-  background-size: cover;
-  background-position: center;
+  height: clamp(240px, 34vw, 340px);
   border-bottom: 1px solid rgba(229, 191, 105, .16);
 }
 
