@@ -1,7 +1,6 @@
 # 10 — La Dernière Liste : scénario et plan de campagne
 
-> **Épisode I intégré : Tour des Listes, dix scènes, choix et deux épilogues.**
-> La campagne complète ci-dessous reste le plan des actes suivants.
+> **Campagne complète intégrée (Actes I à V) : 5 tours, 20 duels, 40 scènes, 5 choix, les 9 Registres et les 3 fins du Portail (*Ouvrir*, *Tenir*, *Prendre la place*).**
 > État de réalisation et références de personnages :
 > [`11-bible-visuelle.md`](11-bible-visuelle.md).
 > Conception et intégration au 12 octobre 2026. Ce document adapte l'univers de
@@ -372,8 +371,8 @@ pour vérifier que l'histoire fonctionne.
 - Exécuter `npm run check:rpg`, `npm run check:rpg-story-ui`,
   `npm run check:rpg-fullscreen`, `npm run check:rpg-mobile` et `npm run build`.
 
-**Réalisation de la première version :** les lots 1 et 2 sont intégrés.
-Le lecteur, le contrôleur, la migration, le journal et les dix scènes sont en
-place. Trois portraits canoniques manquants et un décor de greffe ont été
-ajoutés. Le lot 3 reste à réaliser. Les vérifications effectuées et le point
-mobile préexistant sont consignés dans la [bible visuelle](11-bible-visuelle.md).
+**Réalisation de la campagne complète :** les lots 1, 2 et 3 sont intégrés.
+Le lecteur, le contrôleur, la migration, le journal, les cinq actes (40 scènes sur
+les 20 duels des cinq tours), les cinq choix, les Neuf Registres et les trois fins
+du Portail (*Ouvrir*, *Tenir*, *Prendre la place*) sont en place. Les vérifications
+effectuées sont consignées dans la [bible visuelle](11-bible-visuelle.md).
