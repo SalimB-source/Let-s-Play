@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   RPG_PV_JOUEUR,
+  rpgActiverCapacite,
   rpgChoisirAttaquants,
   rpgChoisirBloqueurs,
   rpgCibleAuto,
@@ -13,6 +14,7 @@ import {
 } from '../src/games/rpgDuel.js';
 import {
   blessureNette,
+  choisirActivationIA,
   choisirCarteIA,
   furieGagnee,
   rpgProfilIA,
@@ -312,6 +314,9 @@ test('l’IA connaît la Furie : entamer un viking sans le tuer le nourrit', () 
   const cavalier = attaquantTemoin();
   assert.equal(furieGagnee(cavalier, 2), 0);
   assert.equal(furieGagnee(garde, 0), 0);
+  // Une Furie déjà enflammée ne promet plus rien : une seule flambée.
+  assert.equal(furieGagnee({ ...garde, furieDeclenchee: true }, 2), 0,
+    'Furie déjà passée : plus rien à gagner');
 
   // L’échange simulé rapporte le gain : 4/4 des deux côtés, mais un seul
   // grandit — le bloqueur qui survit blessé et le viking qui encaisse.
@@ -359,4 +364,33 @@ test('l’IA connaît la Résonance : une valkyrie vaut plus que ses seules stat
     'l’aura de la Valkyrie compte dans sa valeur');
   assert.equal(rpgCibleAuto(duel, 'sorcier', cardById('trait-de-braise')), 'valkyrie',
     'le Trait de braise tue la source de Résonance plutôt que le 3/3 nu');
+});
+
+test('l’IA sait convertir son mana de glace en foudre activée', () => {
+  const duel = duelNu();
+  duel.tour = 'sorcier';
+  duel.sorcier.mana = { braise: 0, eau: 0, sable: 0, neige: 6 };
+  const pere = {
+    id: 'pere', carteId: 'pere-des-corbeaux', name: 'LE PÈRE DES CORBEAUX',
+    atk: 5, def: 5, pv: 5, pvMax: 5, bouclier: 0, esquive: 0, ready: true, attaquee: false,
+  };
+  const chien = {
+    id: 'chien', carteId: 'chien-du-guet', name: 'Chien du guet',
+    atk: 2, def: 2, pv: 2, pvMax: 2, bouclier: 0, esquive: 0, ready: true, attaquee: false,
+  };
+  duel.sorcier.creatures.push(pere);
+  duel.joueur.creatures.push(chien);
+
+  const coup = choisirActivationIA(duel, 'sorcier');
+  assert.ok(coup, 'une proie à abattre vaut son mana de glace');
+  assert.deepEqual(coup, { entiteId: 'pere', cibleId: 'chien' });
+  assert.equal(rpgActiverCapacite(duel, 'sorcier', coup.entiteId, coup.cibleId).ok, true);
+  assert.equal(duel.joueur.creatures.includes(chien), false,
+    'la foudre abat le Chien 2/2');
+
+  // Sans mana de glace, la capacité reste au fourreau.
+  donnerMana(duel, 'sorcier', 4);
+  duel.sorcier.mana.neige = 0;
+  assert.equal(choisirActivationIA(duel, 'sorcier'), null,
+    'pas de mana de glace, pas de foudre');
 });

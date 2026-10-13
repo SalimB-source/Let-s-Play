@@ -5873,3 +5873,28 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-annonce-sort__panel { animation: none; }
 }
+
+/* ── Capacité activée (le Père des corbeaux) ─────────────────────────────
+   Pastille de mana cliquable superposée à la carte : la carte reste un
+   bouton unique, la pastille intercepte son propre clic. */
+.rpg-card__activation {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(169, 224, 245, 0.7);
+  background: rgba(12, 28, 46, 0.84);
+  cursor: pointer;
+  opacity: 0.6;
+}
+.rpg-card__activation.is-pret {
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(169, 224, 245, 0.65);
+}
+.rpg-card__activation:hover {
+  transform: scale(1.08);
+}

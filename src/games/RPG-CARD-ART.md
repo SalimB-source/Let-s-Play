@@ -84,7 +84,10 @@ attribut, parce que leur sujet ne doit jamais se réduire à un objet :
   ciel ;
 - le **Père des corbeaux** — un vieux marcheur à large chapeau de voyage,
   corbeaux sur les épaules et vol de corbeaux dans la tempête (et non un
-  sorcier à chapeau pointu, qui n’aurait rien du Nord) ;
+  sorcier à chapeau pointu, qui n’aurait rien du Nord). Depuis sa refonte
+  (coût 6, 5/5, foudre activée), sa peinture est une **illustration
+  photoréaliste** — direction demandée explicitement pour cette figure,
+  tranchant sur l’huile du reste de la collection ;
 - la **Dame des neuf mondes** — une femme au foyer de bois, le fil à la main ;
 - le **Serpent du monde** — le corps en anneau qui entoure les eaux.
 
