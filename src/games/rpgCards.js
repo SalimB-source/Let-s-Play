@@ -50,9 +50,9 @@ export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
  * encore dans le catalogue : ses couleurs se partagent le cadre en diagonale,
  * sans reflet animé.
  *
- * Exception : les armes ne portent pas la couleur de leur élément, mais un
- * cadre commun d'**acier gris métallique** (`arme`) — leur élément se lit
- * sur le badge et les pastilles de coût, pas sur le cadre.
+ * Exception : les armes gardent un cadre d'**acier métallique guilloché**
+ * (`arme`), mais teinté dans la couleur de leur élément — acier de Braise,
+ * d'Eau, de Sable ou de Neige.
  */
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
@@ -70,8 +70,13 @@ export const CARD_FRAME_COLORS = {
   'hybride-braise-sable-neige': { label: 'Braise + Sable + Neige', color: '#e8b98a' },
   'hybride-eau-sable-neige': { label: 'Eau + Sable + Neige', color: '#a8e2dc' },
   'hybride-braise-eau-sable-neige': { label: 'Braise + Eau + Sable + Neige', color: '#e6d3a4' },
-  /* Le cadre des armes : un acier gris commun à toutes, quel que soit leur
-     élément (le guilloché d'acier est peint dans `rpg-battle.css`). */
+  /* Les cadres des armes : le même acier guilloché pour toutes, teinté dans
+     la couleur de leur élément (les dégradés métalliques sont peints dans
+     `rpg-battle.css`). La clé générique sert de repli. */
+  'arme-braise': { label: 'Acier de Braise', color: '#e0412a' },
+  'arme-eau': { label: 'Acier d’Eau', color: '#3f9fe8' },
+  'arme-sable': { label: 'Acier de Sable', color: '#d8bc86' },
+  'arme-neige': { label: 'Acier de Neige', color: '#a9e0f5' },
   arme: { label: 'Acier des armes', color: '#9aa6b2' },
 };
 
@@ -83,10 +88,13 @@ const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
 /** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
-  // Les armes gardent leur élément pour le badge et le coût, mais leur cadre
-  // est l'acier commun : un Takouba du Sable et un Bâton de l'Eau se
-  // reconnaissent comme armes avant de se lire comme cartes colorées.
-  if (carte?.kind === 'arme') return { key: 'arme', ...CARD_FRAME_COLORS.arme };
+  // Les armes gardent la matière commune des armes — acier guilloché peint
+  // par la classe `rpg-card--frame-arme` — mais leur teinte suit leur
+  // élément : acier doré du Sable, acier bleu de l'Eau, et ainsi de suite.
+  if (carte?.kind === 'arme') {
+    const couleur = cardColors(carte)[0] ?? 'sable';
+    return { key: 'arme', ...(CARD_FRAME_COLORS[`arme-${couleur}`] ?? CARD_FRAME_COLORS.arme) };
+  }
   const colors = cardColors(carte).slice().sort(
     (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
   );
@@ -115,6 +123,11 @@ export function cardFrameColor(carte) {
 /** Classes communes à toutes les présentations d'une carte du Sablier. */
 export function cardFrameClass(carte) {
   const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
+  // Une arme ajoute la teinte d'acier de son élément à la matière commune.
+  if (carte?.kind === 'arme') {
+    const couleurArme = cardColors(carte)[0];
+    if (couleurArme) classes.push(`rpg-card--frame-arme-${couleurArme}`);
+  }
   if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
   if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
   return classes.join(' ');

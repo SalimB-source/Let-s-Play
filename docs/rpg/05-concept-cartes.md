@@ -379,11 +379,12 @@ Illustrations : `public/cards/<identifiant>.jpg` plein art 4:5 — un porteur
 en pleine action, l'arme entièrement dans le cadre (voir la dérogation
 photoréaliste de `RPG-CARD-ART.md`).
 
-Présentation : les cartes Arme portent un **cadre d'acier gris métallique**
+Présentation : les cartes Arme portent un **cadre d'acier métallique**
 à motif de **guilloché de Damas** — fines ondes gravées façon lames
 damassées (`.rpg-card--frame-arme` dans `rpg-battle.css`, clé `arme` de
-`cardFrameInfo`), commun aux quatre éléments — leur couleur se lit sur
-le badge et les pastilles de coût, pas sur le cadre. Le cadre est
+`cardFrameInfo`), matière commune aux quatre éléments — mais chaque
+élément **teinte son acier** : rouge pour la Braise, bleu pour l'Eau,
+doré pour le Sable et glacé pour la Neige. Le cadre est
 **renforcé** : son anneau vaut ×1,6 le
 gabarit des autres cartes, sans changer leur taille extérieure.
 L'Armure de cendres, mythique, perd le zellige mais

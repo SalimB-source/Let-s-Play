@@ -507,21 +507,30 @@ assert.match(mythicRule, /--rpg-frame-motif-size:\s*12px 12px;/,
   'le motif du cadre mythique se répète tous les 12 px le long de l’anneau');
 assert.match(mythicRule, /--rpg-frame-shine-duration:\s*2\.8s;/,
   'le reflet des mythiques mono-élément garde sa cadence');
-// Le cadre des armes ne suit pas l'élément : toutes les armes portent le même
-// acier poli guilloché, gris métallique, à la place de la résille commune.
+// Toutes les armes partagent la même matière — acier poli guilloché, à la
+// place de la résille commune — mais chaque élément teinte son acier.
 // Le motif est décodé et relu par un analyseur XML, comme ceux des autres
 // cadres : une URI mal échappée ne peindrait simplement rien.
 const armeRule = frameCss.match(/\.rpg-card--frame-arme\s*\{([^}]*)\}/);
 assert.ok(armeRule, 'les armes ont leur propre cadre');
 assert.match(armeRule[1], /--rpg-frame-gradient:\s*linear-gradient\(115deg, #454e56/,
-  'le cadre des armes est un acier brossé de gris froids, pas la couleur d’un élément');
+  'la matière commune des armes reste un acier poli, avant sa teinte d’élément');
 const teintesAcier = armeRule[1].match(/#[0-9a-f]{6}/gi);
 assert.ok(teintesAcier.length >= 6 && teintesAcier.every((teinte) => {
   const [r, g, b] = teinte.slice(1).match(/../g).map((canal) => parseInt(canal, 16));
   return Math.max(r, g, b) - Math.min(r, g, b) <= 24;
-}), 'toutes les teintes du cadre des armes restent des gris presque neutres');
-assert.doesNotMatch(armeRule[1], /#e0412a|#3f9fe8|#d8bc86|#a9e0f5/,
-  'aucune couleur d’élément ne teinte le cadre des armes');
+}), 'la trempe commune du cadre des armes reste un acier presque neutre');
+// Chaque élément teinte ensuite cet acier dans sa propre couleur, sans
+// toucher au guilloché : quatre dégradés métalliques, un par élément.
+for (const [element, teinte] of Object.entries({ braise: '#8f2d22', eau: '#28689b', sable: '#a87f42', neige: '#79b5cf' })) {
+  const rule = frameCss.match(new RegExp(`\\.rpg-card--frame-arme-${element}\\s*\\{([^}]*)\\}`));
+  assert.ok(rule, `l’acier des armes ${element} a sa teinte`);
+  assert.match(rule[1], /--rpg-frame-gradient:\s*linear-gradient\(115deg,/,
+    `l’acier des armes ${element} reste un dégradé métallique`);
+  assert.ok(rule[1].includes(teinte), `l’acier des armes ${element} porte sa couleur (${teinte})`);
+  assert.doesNotMatch(rule[1], /--rpg-frame-motif/,
+    `la teinte ${element} ne remplace pas le guilloché commun des armes`);
+}
 const armeMotif = armeRule[1].match(/--rpg-frame-motif:\s*url\("([^"]+)"\)/);
 assert.ok(armeMotif, 'le cadre des armes porte son propre motif');
 assert.match(armeMotif[1], /^data:image\/svg\+xml,%3Csvg /,
@@ -536,8 +545,10 @@ assert.ok(armeMotifDoc.querySelectorAll('path').length >= 4,
 armeMotifDom.window.close();
 assert.match(armeRule[1], /--rpg-frame-motif-size:\s*18px 12px;/,
   'les ondes du guilloché des armes se répètent tous les 18 × 12 px le long de l’anneau');
-assert.match(cardsSource, /if \(carte\?\.kind === 'arme'\) return \{ key: 'arme'/,
-  'le catalogue attribue le cadre acier aux armes avant leur élément');
+assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?CARD_FRAME_COLORS\[`arme-\$\{couleur\}`\]/,
+  'le catalogue attribue aux armes la teinte d’acier de leur élément');
+assert.match(cardsSource, /carte\?\.kind === 'arme'[\s\S]*?rpg-card--frame-arme-\$\{couleurArme\}/,
+  'les faces des armes ajoutent la classe de teinte de leur élément à la matière commune');
 // Le cadre des armes est renforcé : ×1,6 le gabarit de chaque face, sans
 // toucher aux épaisseurs des autres cartes ni à la taille extérieure.
 assert.match(frameCss, /\.rpg-card\.rpg-card--frame-arme,\s*\.rpg-hand__card\.rpg-card--frame-arme,\s*\.rpg-card-destruction-fx\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border, 4px\) \* 1\.6\);/,

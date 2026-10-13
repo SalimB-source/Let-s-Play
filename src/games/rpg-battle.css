@@ -5708,25 +5708,46 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card--frame-brillant { animation: none !important; background-position: 0 0, 0 0, 42% 0; }
 }
 
-/* ── Le cadre des armes : acier poli guilloché, gris métallique ───────────
-   Les armes délaissent la couleur de leur élément pour un cadre commun
-   d'acier poli (dégradé de gris froids, posé par `cardFrameInfo` via la
-   classe `rpg-card--frame-arme`) : une arme se reconnaît comme arme avant
-   de se lire comme carte du Sable, de l'Eau, de la Neige ou de la Braise —
-   son élément reste porté par le badge et les pastilles de coût.
+/* ── Le cadre des armes : acier guilloché teinté par élément ────────────
+   Toutes les armes partagent la même matière — un acier poli guilloché,
+   posé par `cardFrameInfo` via la classe `rpg-card--frame-arme` — mais
+   chaque élément teinte son acier : rouge de Braise, bleu d'Eau, doré de
+   Sable et glacé de Neige. On reconnaît donc une arme à sa matière, puis
+   sa couleur à sa teinte.
    Le motif change aussi : ni la résille commune ni le zellige mythique,
    mais un **guilloché d'acier de Damas** — de fines ondes gravées, chacune
    une ligne sombre doublée de son reflet, comme la matière ondée des
    lames damassées et le guillochage des boîtiers de montre : un décor
    discret et précieux, qui se lit dans l'anneau élargi comme une gravure
-   continue. La règle vient après celle des mythiques : l'Armure de
-   cendres, mythique, perd le zellige mais garde son reflet animé sur
-   l'acier (classe `rpg-card--frame-brillant`). */
+   continue. Les règles viennent après celle des mythiques : l'Armure de
+   cendres, mythique, perd le zellige mais garde son reflet animé sur son
+   acier rouge (classe `rpg-card--frame-brillant`). */
 .rpg-card--frame-arme {
   --rpg-frame-gradient: linear-gradient(115deg, #454e56 0%, #828d95 15%, #dfe6eb 29%, #6e787f 43%, #c3ccd2 56%, #59636a 72%, #a7b2ba 87%, #454e56 100%);
   --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='12' viewBox='0 0 18 12'%3E%3Cg fill='none' stroke-width='1'%3E%3Cpath d='M-2 3 Q2.5 .8 7 3 T16 3 T25 3' stroke='%23000' stroke-opacity='.38'/%3E%3Cpath d='M-2 4 Q2.5 1.8 7 4 T16 4 T25 4' stroke='%23fff' stroke-opacity='.28'/%3E%3Cpath d='M-2 9 Q2.5 6.8 7 9 T16 9 T25 9' stroke='%23000' stroke-opacity='.38'/%3E%3Cpath d='M-2 10 Q2.5 7.8 7 10 T16 10 T25 10' stroke='%23fff' stroke-opacity='.28'/%3E%3C/g%3E%3C/svg%3E");
   --rpg-frame-motif-size: 18px 12px;
   background-color: #5f6a72;
+}
+
+/* La même trempe d'acier, teintée par élément : chaque dégradé garde les
+   reflets clairs et les ombres profondes du métal poli, dans la famille de
+   couleur de son élément. Le guilloché de la règle commune court par-dessus,
+   inchangé d'une teinte à l'autre. */
+.rpg-card--frame-arme-braise {
+  --rpg-frame-gradient: linear-gradient(115deg, #3d1512 0%, #8f2d22 16%, #ff9a7a 31%, #74251d 46%, #eec0ab 59%, #5d1d17 74%, #c46a58 88%, #3d1512 100%);
+  background-color: #5d1d17;
+}
+.rpg-card--frame-arme-eau {
+  --rpg-frame-gradient: linear-gradient(115deg, #10283d 0%, #28689b 16%, #9bd8ff 31%, #1d4f78 46%, #dcf3ff 59%, #173f5f 74%, #6ba9cf 88%, #10283d 100%);
+  background-color: #173f5f;
+}
+.rpg-card--frame-arme-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #4a3517 0%, #a87f42 16%, #ffe9ad 31%, #8a6534 46%, #fff3cf 59%, #6b4d26 74%, #d3af72 88%, #4a3517 100%);
+  background-color: #6b4d26;
+}
+.rpg-card--frame-arme-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #31566b 0%, #79b5cf 16%, #ffffff 31%, #5d93ad 46%, #eaf9ff 59%, #47758d 74%, #bfe8f7 88%, #31566b 100%);
+  background-color: #47758d;
 }
 
 /* La plaque des armes est aussi plus épaisse : ×1,6 le gabarit de chaque
