@@ -208,9 +208,13 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
 
 test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
   assert.equal(createTableObject('licorne'), null);
-  assert.deepEqual([...RPG_TABLE_OBJECT_KINDS].sort(), ['amethyste', 'bol', 'compas', 'corde', 'galets', 'gourde', 'lanterne', 'rubis', 'tapis']);
-  let triangles = 0;
+  // Le catalogue grandit avec les plateaux : on exige les genres déjà livrés, pas une liste figée.
+  for (const kind of ['amethyste', 'baton', 'bol', 'compas', 'cor', 'corde', 'corde-brune', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'rubis', 'tapis']) {
+    assert.ok(RPG_TABLE_OBJECT_KINDS.includes(kind), `genre livré : ${kind}`);
+  }
+  const byKind = {};
   for (const kind of RPG_TABLE_OBJECT_KINDS) {
+    let triangles = 0;
     const group = createTableObject(kind);
     try {
       const bounds = new THREE.Box3().setFromObject(group);
@@ -231,9 +235,15 @@ test('chaque objet se construit sous Node, posé au sol, borné et sans valeur i
           for (const value of Object.values(material)) if (value?.isTexture) assert.ok(value.isDataTexture, `${kind} : textures locales, sans image à charger`);
         }
       });
+      byKind[kind] = triangles;
+      assert.ok(triangles > 100 && triangles < 20000, `${kind} : ${triangles} triangles`);
     } finally { disposeTableObject(group); }
   }
-  assert.ok(triangles > 3000 && triangles < 40000, `budget de géométrie des cinq objets : ${triangles} triangles`);
+  // Le budget se tient par plateau : c'est lui qui est dessiné en même temps.
+  for (const [id, theme] of Object.entries(RPG_TABLE_SCENE_THEMES)) {
+    const total = theme.objets.reduce((sum, objet) => sum + byKind[objet.kind], 0);
+    assert.ok(total < 60000, `${id} : budget de géométrie des objets : ${total} triangles`);
+  }
 });
 
 test('les objets font de l\'ombre, sauf le verre ; seule la lanterne vit', () => {

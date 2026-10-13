@@ -104,29 +104,29 @@ function buildPebbles(env) {
 }
 
 /** Corde en spirale, torsade visible, queue qui s'échappe vers la gauche. */
-function buildRope(env) {
+function buildRope(env, { kind = 'corde', base = '#b69258', tube = 0.046, turns = 3, tail = true, inner = 0.18 } = {}) {
   const kit = materials(env);
   const group = new THREE.Group();
-  const tube = 0.046;
   const points = [];
   // Le bout libre, légèrement ondulé, qui vient au pied de la spirale.
-  for (const [x, y] of [[-1.15, -0.14], [-0.95, -0.25], [-0.75, -0.3], [-0.55, -0.35], [-0.38, -0.32]]) points.push(new THREE.Vector3(x, y, tube));
+  const freeEnd = tail ? [[-1.15, -0.14], [-0.95, -0.25], [-0.75, -0.3], [-0.55, -0.35], [-0.38, -0.32]] : [[-0.72, -0.2], [-0.55, -0.3], [-0.42, -0.3]];
+  for (const [x, y] of freeEnd) points.push(new THREE.Vector3(x, y, tube));
   // Puis la spirale, du bord vers le centre : trois tours, pas d'un diamètre de corde.
-  const turns = 3, steps = 96;
+  const steps = 96;
   const start = Math.atan2(-0.32, -0.38);
   for (let i = 1; i <= steps; i += 1) {
     const t = i / steps;
-    const radius = 0.48 - 0.3 * t;
+    const radius = 0.48 - (0.48 - inner) * t;
     const angle = start - t * turns * Math.PI * 2;
     // La corde chevauche légèrement la boucle précédente : un peu de relief.
     points.push(new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, tube * (1 + 0.45 * t)));
   }
   const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
   const geometry = new THREE.TubeGeometry(curve, 520, tube, 10, false);
-  const grain = grainTexture({ seed: 4, base: '#b69258', variation: 0.2, size: 64, stripes: 2 });
-  grain.repeat.set(95, 1);
+  const grain = grainTexture({ seed: 4, base, variation: 0.2, size: 64, stripes: 2 });
+  grain.repeat.set(Math.round(95 * (0.046 / tube) ** 0.5), 1);
   group.add(mesh(geometry, kit.standard('corde', { map: grain, roughness: 0.9, metalness: 0 }), 'corde'));
-  group.userData = { kind: 'corde', extent: 1 };
+  group.userData = { kind, extent: 1 };
   return group;
 }
 
@@ -167,11 +167,11 @@ function buildWaterskin(env) {
  * debout n'est qu'un rond) : réservoir, verre, armature, calotte et anse
  * rabattue à plat, flamme qui éclaire vraiment le sable.
  */
-function buildLantern(env) {
+function buildLantern(env, { kind = 'lanterne', color = '#a68a4c', roughness = 0.38, metalness = 0.88 } = {}) {
   const kit = materials(env);
   const group = new THREE.Group();
   const rest = 0.2; // hauteur de l'axe : le rayon du réservoir
-  const brass = kit.metal('laiton', '#a68a4c', 0.38, 0.88);
+  const brass = kit.metal('laiton', color, roughness, metalness);
   const lift = (part) => { part.position.z += rest; return part; };
   // Toutes les révolutions ont l'axe +Y : c'est déjà l'axe long de la lanterne.
   const baseGeometry = lathe([[0.001, 0], [0.19, 0], [0.205, 0.02], [0.185, 0.07], [0.001, 0.07]], 40);
@@ -208,7 +208,7 @@ function buildLantern(env) {
   lamp.name = 'lueur';
   lamp.position.set(0, 0.3, rest + 0.12);
   group.add(lamp);
-  group.userData = { kind: 'lanterne', extent: 0.9, flame, lamp };
+  group.userData = { kind, extent: 0.9, flame, lamp };
   return group;
 }
 
@@ -392,6 +392,140 @@ function buildCompass(env) {
   return group;
 }
 
+
+/**
+ * Un balayage : un tube dont le rayon varie le long d'une courbe (cornes, manches).
+ * `radius(t)` donne le rayon, `color(t)` (facultatif) une couleur par sommet,
+ * `from`/`to` bornent la portion balayée (les bagues de métal du cor).
+ */
+function sweep(curve, radius, { segments = 80, radial = 18, from = 0, to = 1, color = null } = {}) {
+  const frames = curve.computeFrenetFrames(segments, false);
+  const positions = [], colors = [], uvs = [], indices = [];
+  const tint = new THREE.Color();
+  for (let i = 0; i <= segments; i += 1) {
+    const t = from + (to - from) * (i / segments);
+    const point = curve.getPointAt(t);
+    const index = Math.min(segments, Math.round(t * segments));
+    const r = radius(t);
+    for (let j = 0; j < radial; j += 1) {
+      const a = (j / radial) * Math.PI * 2;
+      const n = frames.normals[index], b = frames.binormals[index];
+      positions.push(point.x + (Math.cos(a) * n.x + Math.sin(a) * b.x) * r, point.y + (Math.cos(a) * n.y + Math.sin(a) * b.y) * r, point.z + (Math.cos(a) * n.z + Math.sin(a) * b.z) * r);
+      uvs.push((j / radial) * 3, t * 5);
+      if (color) { color(t, tint); colors.push(tint.r, tint.g, tint.b); }
+    }
+  }
+  for (let i = 0; i < segments; i += 1) for (let j = 0; j < radial; j += 1) {
+    const a = i * radial + j, b = i * radial + ((j + 1) % radial), c = a + radial, d = b + radial;
+    indices.push(a, b, c, b, d, c);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  if (color) geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/**
+ * Le cor à boire : une corne d'ivoire qui s'assombrit vers la pointe, deux
+ * bagues de laiton, le fond de la coupe sombre. La corde du cor : `extent` est
+ * la corde (bouche → pointe), la courbure s'écarte du côté +X.
+ */
+function buildHorn(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const radius = (t) => 0.02 + 0.125 * (1 - t) ** 1.25;
+  const centre = (t) => new THREE.Vector3(0.21 * Math.sin(Math.PI * t) * (0.55 + 0.45 * t), t, radius(t) * 1.08);
+  const curve = new THREE.CatmullRomCurve3(Array.from({ length: 41 }, (_, i) => centre(i / 40)));
+  const ivory = new THREE.Color('#d2c4a2'), dark = new THREE.Color('#24180f');
+  const streaks = grainTexture({ seed: 8, base: '#f1e8d2', variation: 0.3, size: 64 });
+  streaks.repeat.set(1.5, 0.22); // des veines qui courent le long de la corne
+  const horn = new THREE.MeshStandardMaterial({
+    name: 'ivoire', vertexColors: true, map: streaks, roughness: 0.62, metalness: 0, envMap: env, envMapIntensity: 0.3,
+  });
+  group.add(mesh(sweep(curve, radius, { segments: 90, radial: 22, color: (t, out) => out.copy(ivory).lerp(dark, Math.min(1, Math.max(0, (t - 0.38) / 0.5))) }), horn, 'corne'));
+  const brass = kit.metal('laiton', '#8b7133', 0.42, 0.85);
+  group.add(mesh(sweep(curve, (t) => radius(t) * 1.07, { segments: 14, radial: 22, from: 0, to: 0.17 }), brass, 'bague-bouche'));
+  group.add(mesh(sweep(curve, (t) => radius(t) * 1.07, { segments: 10, radial: 22, from: 0.52, to: 0.62 }), brass, 'bague-milieu'));
+  // Le fond de la coupe : un disque sombre, un peu en retrait, tourné vers l'axe de la bouche.
+  const tangent = curve.getTangentAt(0.001);
+  const bowl = mesh(new THREE.CircleGeometry(radius(0) * 0.98, 24), kit.standard('coupe', { color: '#2a2018', roughness: 0.9, metalness: 0 }), 'coupe');
+  bowl.position.copy(curve.getPointAt(0.012));
+  bowl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tangent.clone().multiplyScalar(-1));
+  bowl.castShadow = false;
+  group.add(bowl);
+  group.userData = { kind: 'cor', extent: 1 };
+  return group;
+}
+
+/**
+ * La hache : un manche de bois sombre, une tête de fer à large barbe côté −X.
+ * Le manche part de +Y (le talon à l'origine) ; `extent` est la longueur du manche.
+ */
+function buildAxe(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const grain = grainTexture({ seed: 21, base: '#6b4527', variation: 0.22, size: 64, stripes: 1 });
+  grain.repeat.set(1, 6);
+  const wood = kit.standard('bois', { map: grain, roughness: 0.7, metalness: 0 });
+  const handleCurve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0.03), new THREE.Vector3(0, 1.02, 0.03));
+  group.add(mesh(sweep(handleCurve, (t) => 0.038 + 0.014 * (1 - t) ** 3 - 0.006 * t, { segments: 20, radial: 14 }), wood, 'manche'));
+  const iron = kit.metal('fer', '#34363b', 0.55, 0.85);
+  const blade = new THREE.Shape();
+  // Dos droit contre le manche, pointe haute qui s'avance, tranchant en arc rentrant, talon bas.
+  blade.moveTo(0.04, 1.1);
+  blade.quadraticCurveTo(-0.12, 1.14, -0.3, 1.12);
+  blade.quadraticCurveTo(-0.2, 1.0, -0.22, 0.84);
+  blade.quadraticCurveTo(-0.1, 0.84, 0.04, 0.9);
+  blade.lineTo(0.04, 1.1);
+  const bladeGeometry = new THREE.ExtrudeGeometry(blade, { depth: 0.035, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 2 });
+  const bladePart = mesh(bladeGeometry, iron, 'fer');
+  bladePart.position.z = 0.03;
+  group.add(bladePart);
+  const eye = mesh(new THREE.BoxGeometry(0.1, 0.22, 0.1), iron, 'oeil');
+  eye.position.set(0.0, 0.99, 0.055);
+  group.add(eye);
+  group.userData = { kind: 'hache', extent: 1 };
+  return group;
+}
+
+/**
+ * Le bâton de runes : une planche de chêne sombre, étroite vers le pied, ornée
+ * de deux entrelacs dorés en relief. Le pied est à l'origine, la planche monte vers +Y.
+ */
+function buildRuneStaff(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const grain = grainTexture({ seed: 33, base: '#4a3321', variation: 0.25, size: 64, stripes: 1 });
+  grain.repeat.set(1, 5);
+  const wood = kit.standard('chene', { map: grain, roughness: 0.78, metalness: 0 });
+  const outline = new THREE.Shape();
+  const half = (y) => 0.012 + 0.118 * Math.min(1, y / 0.22);
+  const ys = [0, 0.04, 0.1, 0.22, 0.5, 0.8, 1];
+  outline.moveTo(-half(0), 0);
+  ys.forEach((y) => outline.lineTo(half(y), y));
+  [...ys].reverse().forEach((y) => outline.lineTo(-half(y), y));
+  const board = mesh(new THREE.ExtrudeGeometry(outline, { depth: 0.06, bevelEnabled: true, bevelSize: 0.01, bevelThickness: 0.01, bevelSegments: 2 }), wood, 'planche');
+  board.position.z = 0.01;
+  group.add(board);
+  const gold = kit.metal('or-ancien', '#9a7b3e', 0.55, 0.7);
+  for (const phase of [0, Math.PI]) {
+    const points = Array.from({ length: 60 }, (_, i) => {
+      const y = 0.16 + (i / 59) * 0.8;
+      return new THREE.Vector3(0.07 * Math.sin(y * 18 + phase) * Math.min(1, y * 3), y, 0.08);
+    });
+    group.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 120, 0.007, 6, false), gold, 'entrelacs'));
+  }
+  for (const side of [-1, 1]) {
+    const edge = Array.from({ length: 12 }, (_, i) => { const y = 0.12 + i * 0.075; return new THREE.Vector3(side * (half(y) - 0.022), y, 0.08); });
+    group.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(edge), 24, 0.006, 6, false), gold, 'bordure'));
+  }
+  group.userData = { kind: 'baton', extent: 1 };
+  return group;
+}
+
 const BUILDERS = Object.freeze({
   bol: buildBowl,
   galets: buildPebbles,
@@ -401,6 +535,11 @@ const BUILDERS = Object.freeze({
   amethyste: (env) => buildCrystalCluster(env, { kind: 'amethyste', color: '#7f3fc4', glow: '#3a1470', seed: 417 }),
   tapis: buildCarpet,
   compas: buildCompass,
+  'lanterne-fer': (env) => buildLantern(env, { kind: 'lanterne-fer', color: '#34363b', roughness: 0.55, metalness: 0.8 }),
+  'corde-brune': (env) => buildRope(env, { kind: 'corde-brune', base: '#8a6a3e', tube: 0.07, turns: 3.4, tail: false, inner: 0.07 }),
+  cor: buildHorn,
+  hache: buildAxe,
+  baton: buildRuneStaff,
   rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
 

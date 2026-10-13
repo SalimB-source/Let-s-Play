@@ -50,7 +50,7 @@ def combler(plateau, regions, mode='poisson', grow=14, debug=None):
         ys, xs = np.nonzero(padded)
         if len(xs) == 0:
             continue
-        if mode == 'poisson':
+        if region.get('mode', mode) == 'poisson':
             box = (slice(max(ys.min() - 4, 0), ys.max() + 5), slice(max(xs.min() - 4, 0), xs.max() + 5))
             center = ((box[1].start + box[1].stop - 1) // 2, (box[0].start + box[0].stop - 1) // 2)
             out = cv2.seamlessClone(donor[box], out, padded[box], center, cv2.NORMAL_CLONE)
@@ -65,3 +65,18 @@ def combler(plateau, regions, mode='poisson', grow=14, debug=None):
     small = cv2.resize(result, (2048, 1365), interpolation=cv2.INTER_AREA)
     cv2.imwrite(out_path, small, [cv2.IMWRITE_JPEG_QUALITY, 86])
     print(f'plateau-{plateau}-vide.jpg écrit')
+
+
+def ruban(points, demi_largeur):
+    """Le polygone d'un trait épais le long d'une ligne brisée (cordes, manches), en px 1568."""
+    pts = np.array(points, np.float32)
+    left, right = [], []
+    for i, p in enumerate(pts):
+        a = pts[max(i - 1, 0)]
+        b = pts[min(i + 1, len(pts) - 1)]
+        d = b - a
+        d = d / (np.linalg.norm(d) + 1e-6)
+        n = np.array([-d[1], d[0]])
+        left.append(tuple(p + n * demi_largeur))
+        right.append(tuple(p - n * demi_largeur))
+    return left + right[::-1]

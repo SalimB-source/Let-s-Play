@@ -137,6 +137,15 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   'fjord-des-neuf-hivers': theme({
     key: '#e5f1ff', keyIntensity: 0.52, keyDirection: [-0.5, 0.7, 1], ambient: '#f2f7ff', relief: 1.1, roughness: 0.42,
     particles: motes({ count: 90, color: '#ffffff', size: 0.038, opacity: 0.8, vx: 0.04, vy: -0.16, sway: 0.18, swayHz: 0.3, z: 1.1, zSpread: 0.8 }),
+    // Lanterne de fer, cor à boire, hache, corde et bâton de runes (plaque sans eux).
+    plaque: 'plateau-fjord-des-neuf-hivers-vide.jpg',
+    objets: [
+      { kind: 'lanterne-fer', u: 0.0957, v: 0.435, size: 0.274, angle: 103 },
+      { kind: 'cor', u: 0.061, v: 0.598, size: 0.388, angle: -46 },
+      { kind: 'hache', u: 0.983, v: 0.555, size: 0.3, angle: 134 },
+      { kind: 'corde-brune', u: 0.947, v: 0.277, size: 0.22, angle: 90 },
+      { kind: 'baton', u: 0.7755, v: 0.977, size: 0.307, angle: 51 },
+    ],
     overlay: { kind: 'ombre', color: '#1d2f45', opacity: 0.12, speed: 0.01, scale: 1.7 },
   }),
   // Le sable vitrifié : éclats de verre, deux lumières qui glissent.
