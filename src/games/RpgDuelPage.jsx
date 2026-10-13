@@ -1468,7 +1468,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   };
 
   return (
-    <section className={`rpg-mode-menu rpg-mode-menu--${screen}`} style={{ backgroundImage: menuBackground }}>
+    <section
+      className={`rpg-mode-menu rpg-mode-menu--${screen}`}
+      style={{ backgroundImage: menuBackground }}
+      // L'aperçu au survol est placé d'après la position de la carte au moment
+      // du survol : dès que l'écran défile, il désignerait la mauvaise ligne.
+      onScroll={onLeaveHoverCard}
+    >
       <div className="rpg-mode-menu__content">
         <header className="rpg-mode-menu__header">
           <div className="rpg-mode-menu__brand">
@@ -1856,12 +1862,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   <span className={openValidation.ok ? 'is-valid' : 'is-invalid'}><b>{openValidation.ok ? '✓' : '!'}</b><small>{openValidation.ok ? 'validé' : (openValidation.raisons ?? [openValidation.raison]).filter(Boolean).join(' · ')}</small></span>
                 </div>
                 <div className="rpg-deck-detail__list-heading"><h3>Liste des cartes</h3><span>{openCards.length} références · quantités incluses</span></div>
-                <div
-                  className="rpg-deck-list-panel"
-                  // Le volet défile : un aperçu ouvert sous une souris immobile
-                  // désignerait la mauvaise ligne à mesure que les cartes glissent.
-                  onScroll={onLeaveHoverCard}
-                >
+                <div className="rpg-deck-list-panel">
                   {openFamilles.map((famille) => (
                     <section key={famille.id} className="rpg-deck-list-family" data-famille={famille.id}>
                       <h4 className="rpg-deck-list-family__heading">
