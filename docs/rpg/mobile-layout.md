@@ -24,10 +24,11 @@ Le survol n’existe pas sur écran tactile, et le clic **agit** (poser la carte
 
 - garder le doigt **une seconde** sur une carte (`RPG_LONG_PRESS_MS`, `src/games/rpgLongPress.js`) ouvre le même aperçu, dans un volet sombre centré avec son bouton « Fermer l’aperçu » ;
 - le geste répond partout où une carte porte un `data-card-id` : main, créatures des deux camps, rails de terrains, dessus de cimetière, catalogue, liste de deck et **créateur de deck** (bibliothèque et deck en cours) — au menu comme en duel ;
-- **rien n’est joué** : le clic synthétique qui suit le lever du doigt est avalé, comme après un glisser-déposer ;
+- **rien n’est joué** : le clic synthétique qui suit la fin du geste est avalé, comme après un glisser-déposer — **quelle que soit la fin du geste** (levée du doigt, annulation, défilement, `pointercancel` de WebView). Sans ça, une interruption qui arrivait entre le déclenchement et la levée laissait passer ce clic : il refermait le volet à peine ouvert et le joueur ne voyait « rien ne se passe » ;
 - un **appui court reste un clic** et garde son action de jeu ; un doigt qui glisse au-delà de 10 px annule l’appui (c’est un défilement de la main ou un glisser-déposer) ;
+- l’annonce d’une carte par le sorcier ne désarme jamais un appui long déjà en cours : son volet s’ouvre au-dessus du voile de l’annonce ; un aperçu déjà ouvert, lui, se range pour laisser l’annonce prendre la scène ;
 - le volet se referme d’un toucher, du bouton Fermer, d’Échap, en changeant d’écran, ou quand l’appareil repasse en portrait ;
-- le menu contextuel natif (callout iOS, « enregistrer l’image » Android), la sélection de texte **et le drag natif de l’illustration** sont étouffés sur les cartes — celles du créateur de deck comprises, pas seulement celles du duel ;
+- le menu contextuel natif (callout iOS, « enregistrer l’image » Android), la sélection de texte **et le drag natif de l’illustration** sont étouffés sur toute la coque du jeu — cartes du créateur de deck comprises, pas seulement celles du duel. Dans l’APK, la WebView est en plus `setLongClickable(false)` et le **pull-to-refresh est désarmé pendant le duel** : un tirage vers le bas ne recharge plus la partie en cours, et ne vient plus annuler les appuis longs par `pointercancel` ;
 - le duel n’annonce pas le geste : la table est muette, et le volet d’aperçu ne porte plus de légende. Seul le créateur de deck le rappelle en tête de sa bibliothèque (`rpg-atelier__astuce`, montrée au seul pointeur grossier) ;
 - dans le créateur de deck, tenir une carte — ou son bouton « + » ou « − » — n’ajoute ni ne retire rien : l’aperçu est une consultation, et le clic simple garde son action d’atelier.
 
