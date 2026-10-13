@@ -257,10 +257,14 @@ assert.match(battleCss, /\.rpg-card\.is-wounded \.rpg-card__pt,[^{]+\{[^}]*color
   'la défense blessée est affichée en rouge');
 assert.match(battleCss, /font:\s*900 11px\/1\.15 Georgia/,
   'les statistiques du champ ont une taille supérieure');
-assert.match(battlePage, /const resoudreAttaqueEnnemie = \(\) => \{[\s\S]*?if \(res\.resume\.paires\.length > 0\) jouerSfx\('player_attack_hit', 0\.015\);/,
-  'un blocage résolu contre le joueur fait retentir l’impact d’attaque');
-assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant\) => \{[\s\S]*?if \(res\.resume\.paires\.length > 0\) jouerSfx\('player_attack_hit', 0\.015\);/,
-  'un blocage résolu par le sorcier fait retentir le même impact');
+const attaqueEnnemie = battlePage.slice(battlePage.indexOf('const resoudreAttaqueEnnemie = () => {'),
+  battlePage.indexOf('const resoudreAttaqueJoueur ='));
+const attaqueJoueur = battlePage.slice(battlePage.indexOf('const resoudreAttaqueJoueur = (combat = combatEntrant) => {'),
+  battlePage.indexOf('const resoudreCombat ='));
+for (const [source, camp] of [[attaqueEnnemie, 'ennemi'], [attaqueJoueur, 'joueur']]) {
+  assert.match(source, /const sonAttaqueBraise = rpgCombatFireSound\(duel, attaquantsVivants, blocages\);[\s\S]*?if \(frappeCreature\) jouerSfx\(sonAttaqueBraise \?\? 'player_attack_hit', 0\.015\);/,
+    `un blocage résolu côté ${camp} conserve l’impact d’attaque, ou son équivalent Braise`);
+}
 assert.match(battlePage, /if \(res\.resume\.frappeSorcier > 0\) declencherImpactEcran\('dealt'\)/,
   'une attaque directe sur le sorcier déclenche la secousse après acceptation des blocages');
 assert.match(battlePage, /const frappeDirecte = res\.resume\.frappeSorcier > 0;[\s\S]*?if \(frappeDirecte \|\| touchePendantLaFinDuTour\) declencherImpactEcran\('received'\)/,
