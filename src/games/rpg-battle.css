@@ -4702,6 +4702,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   gap: 16px;
   align-items: start;
 }
+/* Un deck ouvert : le rail « Vos decks » s'efface et la fiche prend toute la
+   largeur. La liste des cartes respire alors en plusieurs colonnes plutôt que
+   de s'étirer en deux rangées démesurées. */
+.rpg-deck-catalog--open { grid-template-columns: minmax(0, 1fr); }
+.rpg-deck-catalog--open .rpg-deck-list {
+  grid-template-columns: repeat(auto-fill, minmax(208px, 1fr));
+  max-height: min(44vh, 430px);
+}
 .rpg-deck-catalog__rail,
 .rpg-deck-detail {
   min-width: 0;
@@ -4896,6 +4904,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-deck-detail__stats b { font-size: 14px; }
   .rpg-deck-detail__stats small { font-size: 7px; }
   .rpg-deck-list { grid-template-columns: minmax(0, 1fr); max-height: 250px; }
+  .rpg-deck-catalog--open .rpg-deck-list { max-height: 250px; }
   .rpg-deck-detail__list-heading h3 { font-size: 13px; }
   .rpg-deck-detail__list-heading span { font-size: 7px; }
   .rpg-duel-nav { top: 7px; right: 7px; gap: 3px; padding: 3px; }

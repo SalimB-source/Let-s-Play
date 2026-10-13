@@ -1399,10 +1399,16 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       carte?.scrollIntoView?.({ behavior: 'auto', block: 'nearest' });
     }
   }, [screen, tourOuverteId]);
-  // Sur écran étroit, la fiche s'ouvre sous l'étagère : on l'amène à l'écran.
+  // Le rail « Vos decks » s'efface dès qu'un deck s'ouvre : le boîtier cliqué
+  // disparaît avec lui et le focus se perdrait. On le repose sur la fiche dont
+  // « ✕ Fermer le deck » est la sortie, puis on l'amène à l'écran.
   useEffect(() => {
     const fiche = detailRef.current;
-    if (!openDeckId || atelier || !fiche?.scrollIntoView) return;
+    if (!openDeckId || atelier || !fiche) return;
+    if (document.activeElement === document.body) {
+      fiche.querySelector('.rpg-deck-detail__close')?.focus?.({ preventScroll: true });
+    }
+    if (!fiche.scrollIntoView) return;
     if (fiche.getBoundingClientRect().top <= window.innerHeight * 0.55) return;
     const calme = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     fiche.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' });
@@ -1673,13 +1679,15 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           </main>
         ) : (
           <main className={`rpg-deck-catalog ${openDeck ? 'rpg-deck-catalog--open' : 'rpg-deck-catalog--closed'}`}>
-            <aside className="rpg-deck-catalog__rail">
+            {/* La liste des cartes d'un deck occupe toute la largeur : le rail
+                « Vos decks » s'efface tant qu'un deck est ouvert. « ✕ Fermer
+                le deck » le ramène, avec ses boîtiers et ses filtres. */}
+            {!openDeck && (
+              <aside className="rpg-deck-catalog__rail">
               <div className="rpg-deck-catalog__intro">
                 <span className="rpg-mode-menu__eyebrow">COLLECTION</span>
                 <h2>Vos decks</h2>
-                <p>{openDeck
-                  ? 'Cliquez sur un autre boîtier pour changer de deck, ou fermez celui-ci pour masquer sa liste.'
-                  : 'Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.'}</p>
+                <p>Cliquez un boîtier pour voir ses cartes ; «\u00a0Sélectionner\u00a0» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.</p>
                 <p className="rpg-deck-catalog__sync" role="status">
                   {statutSync === 'synchronise'
                     ? '☁ Synchronisé avec votre compte'
@@ -1802,8 +1810,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   {confirmation?.supprime && <span className="is-unsaved">Deck supprimé de l'étagère.</span>}
                 </p>
               )}
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
-            </aside>
+                {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
+              </aside>
+            )}
 
             {openDeck && (
               <section id="rpg-deck-detail" ref={detailRef} className={`rpg-deck-detail rpg-deck-detail--${deckColorModifier(openDeck)}`} aria-label={`Détails du deck ${openDeck.name}`}>
