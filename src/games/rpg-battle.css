@@ -5594,9 +5594,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    les rangées. Elle rejoint la **colonne des actions**, à droite — celle de
    l'indicateur de tour, des cinq phases et de « Fin du tour » — juste au-dessus
    de la main du joueur : un seul endroit à regarder, du haut vers le bas, et le
-   bouton qui engage le combat sous le pouce de la souris. Le rail, lui, se
-   centre dans la bande libre entre la barre de navigation et la barre d'action
-   (`top` + `bottom` + `margin-block: auto`), exactement comme au doigt.
+   bouton qui engage le combat sous le pouce de la souris. Le rail, lui, vient
+   s'appuyer **juste au-dessus** de la barre d'action (`bottom` +
+   `height: max-content`) : les cinq phases, « Attaquer avec tous » et « Fin du
+   tour » se lisent d'un seul bloc posé sur les deux commandes du combat, au lieu
+   de flotter au milieu de la table. Vers le haut, il grandit tant que la bande
+   libre le permet.
 
    La largeur de la colonne est la même pour le rail et pour la barre
    (`--rpg-actions-column`) : leurs deux bords gauche s'alignent, la colonne se
@@ -5607,16 +5610,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      survolée (soulevée d'une tête) ne passe jamais dessous, assez basse pour
      rester sous le pouce. */
   --rpg-actions-bottom: 216px;
-  /* Hauteur réservée à la barre sous le rail, dans son pire cas : la commande
-     principale (58), l'annulation (44), et la fenêtre de réponse à une magie
-     annoncée (75) — le rail ne descend jamais jusque-là. */
-  --rpg-actions-reserve: 196px;
+  /* Hauteur de la barre de combat sous le rail, dans son cas courant : la
+     commande principale (58), l'air entre les deux (8) et « Annuler l'attaque »
+     (46), plus 12 px de respiration — le rail s'arrête juste au-dessus des deux
+     boutons. */
+  --rpg-actions-reserve: 124px;
+}
+/* La fenêtre de réponse à une magie annoncée se glisse sous les deux commandes
+   du combat (≈ 80 px) : le rail remonte d'autant, pour ne jamais la couvrir. */
+.rpg-battle:not(.rpg-battle--touch):has(.rpg-annonce-sort__compact) {
+  --rpg-actions-reserve: 204px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
-  top: 76px;
+  top: auto;
   bottom: calc(var(--rpg-actions-bottom) + var(--rpg-actions-reserve));
   height: max-content;
-  margin-block: auto;
+  margin-block: 0;
   transform: none;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-bottombar {

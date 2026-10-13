@@ -351,10 +351,12 @@ assert.match(battleCss, /\.rpg-actions__turn \.rpg-btn--endturn\s*\{[^}]*border-
 assert.match(battleCss, /\/\* Commandes de duel compactes[\s\S]*?\.rpg-bottombar\s*\{[^}]*width: min\(340px, calc\(100vw - 230px\)\);/s,
   'la barre inférieure ne garde que les actions de combat, dans une largeur discrète');
 // ── La colonne des actions : le combat sous le rail, la main dessous ──────
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \{\s*--rpg-actions-column:\s*330px;[\s\S]*?--rpg-actions-bottom:\s*216px;[\s\S]*?--rpg-actions-reserve:\s*196px;\s*\}/,
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \{\s*--rpg-actions-column:\s*330px;[\s\S]*?--rpg-actions-bottom:\s*216px;[\s\S]*?--rpg-actions-reserve:\s*124px;\s*\}/,
   'rail et barre de combat partagent la même colonne de droite, sous les mêmes repères');
-assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \{\s*top:\s*76px;\s*bottom:\s*calc\(var\(--rpg-actions-bottom\) \+ var\(--rpg-actions-reserve\)\);\s*height:\s*max-content;\s*margin-block:\s*auto;\s*transform:\s*none;\s*\}/,
-  'sur PC, le rail se centre dans la bande libre, au-dessus de la barre de combat');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\):has\(\.rpg-annonce-sort__compact\) \{\s*--rpg-actions-reserve:\s*204px;\s*\}/,
+  'la fenêtre de réponse à une magie annoncée relève le rail de sa hauteur');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-turn-rail \{\s*top:\s*auto;\s*bottom:\s*calc\(var\(--rpg-actions-bottom\) \+ var\(--rpg-actions-reserve\)\);\s*height:\s*max-content;\s*margin-block:\s*0;\s*transform:\s*none;\s*\}/,
+  'sur PC, le rail s’arrête juste au-dessus de la barre de combat');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-bottombar \{\s*right:\s*max\(16px, env\(safe-area-inset-right, 0px\)\);\s*bottom:\s*var\(--rpg-actions-bottom\);\s*width:\s*var\(--rpg-actions-column\);\s*gap:\s*8px;\s*\}/,
   'les commandes de combat rejoignent la colonne des actions, juste au-dessus de la main du joueur');
 assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-actions__combat > \.rpg-btn \{\s*width:\s*100%;\s*margin:\s*0;\s*\}/,

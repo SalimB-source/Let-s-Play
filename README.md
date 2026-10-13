@@ -6473,7 +6473,12 @@ des actions**, à droite — celle de l'indicateur de tour, des cinq phases et d
 partagent la même largeur (`--rpg-actions-column`), la colonne se lit d'un seul
 trait, du tour vers le combat puis vers la main. Les deux commandes s'empilent
 sur toute la largeur de la colonne, la principale d'abord (58 px), l'annulation
-ensuite, en retrait.
+ensuite, en retrait. Le rail ne flotte plus au milieu de la bande libre : il
+**s'appuie juste au-dessus des deux commandes** (`bottom` +
+`height: max-content`), les cinq phases, « Attaquer avec tous » et « Fin du
+tour » se lisant d'un seul bloc posé sur le combat — et quand une magie est
+annoncée, la fenêtre de réponse se glisse sous les deux commandes : le rail
+remonte de sa hauteur, pour ne jamais la couvrir.
 
 Et elles s'allument. Le fond sombre discret cède la place à un **aplat clair
 écrit en sombre** : bleu glacé pour « Confirmer l'attaque » (la teinte du cadre
