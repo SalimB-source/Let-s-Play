@@ -224,7 +224,7 @@ export function mountTableScene({ host, canvas, plateauId, imageUrl, pointerHost
     if (!wanted) { clearObjects(); canvas.dataset.objects = '0'; return; }
     if (!objects.length) {
       objects = theme.objets.map((spec, index) => {
-        const group = createTableObject(spec.kind, envTexture);
+        const group = createTableObject(spec.kind, envTexture, spec);
         if (!group) return null;
         scene.add(group);
         return { spec, group, phase: index * 1.9 };

@@ -195,26 +195,26 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
     const size = jpegSize(file);
     assert.ok(size && Math.abs(size.width / size.height - 1.5) < 0.01, `${id} : plaque en 3:2 comme la peinture (${JSON.stringify(size)})`);
     assert.ok(size.width <= 2048, `${id} : plaque bornée à 2048 px (c'est la taille de texture maximale)`);
-    assert.ok(theme.objets.length <= 24, `${id} : au plus vingt-quatre objets`);
+    assert.ok(theme.objets.length <= 8, `${id} : au plus huit objets`);
     for (const objet of theme.objets) {
       assert.ok(RPG_TABLE_OBJECT_KINDS.includes(objet.kind), `${id} : genre ${objet.kind} connu`);
-      assert.ok(objet.u >= -0.05 && objet.u <= 1.05 && objet.v >= -0.05 && objet.v <= 1.05, `${id}/${objet.kind} : dans l'image`);
-      assert.ok(objet.size > 0.015 && objet.size <= 0.4, `${id}/${objet.kind} : taille plausible`);
+      assert.ok(objet.u >= 0 && objet.u <= 1 && objet.v >= 0 && objet.v <= 1, `${id}/${objet.kind} : dans l'image`);
+      assert.ok(objet.size > 0.03 && objet.size <= 0.3, `${id}/${objet.kind} : taille plausible`);
       assert.ok(Number.isFinite(objet.angle));
     }
   }
   assert.ok(RPG_TABLE_SCENE_THEMES['erg-du-sahara'].objets.length >= 5, 'le pilote : lanterne, gourde, galets, bol et corde');
+  assert.equal(RPG_TABLE_SCENE_THEMES['cavernes-de-cristal'].objets.length, 8, 'Cavernes : huit amas de cristaux');
 });
 
 test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
   assert.equal(createTableObject('licorne'), null);
-  // Le catalogue grandit avec les plateaux : on exige les genres déjà livrés, pas une liste figée.
-  for (const kind of ['amethyste', 'astrolabe', 'baton', 'corde-chanvre', 'rose-rouge', 'rose-verte', 'rose-rose', 'rose-mauve', 'sapin', 'rocher', 'bol', 'compas', 'cor', 'corde', 'corde-brune', 'galets', 'gourde', 'hache', 'lanterne', 'lanterne-fer', 'rubis', 'tapis']) {
-    assert.ok(RPG_TABLE_OBJECT_KINDS.includes(kind), `genre livré : ${kind}`);
-  }
-  const byKind = {};
+  for (const kind of ['bol', 'corde', 'galets', 'gourde', 'lanterne', 'amethystes', 'rubis']) assert.ok(RPG_TABLE_OBJECT_KINDS.includes(kind), `genre ${kind}`);
+  // Un genre ne sert à rien s'il n'est posé par aucun plateau.
+  const used = new Set(Object.values(RPG_TABLE_SCENE_THEMES).flatMap((theme) => theme.objets.map((objet) => objet.kind)));
+  for (const kind of RPG_TABLE_OBJECT_KINDS) assert.ok(used.has(kind), `${kind} est posé par un plateau`);
+  let triangles = 0;
   for (const kind of RPG_TABLE_OBJECT_KINDS) {
-    let triangles = 0;
     const group = createTableObject(kind);
     try {
       const bounds = new THREE.Box3().setFromObject(group);
@@ -235,15 +235,30 @@ test('chaque objet se construit sous Node, posé au sol, borné et sans valeur i
           for (const value of Object.values(material)) if (value?.isTexture) assert.ok(value.isDataTexture, `${kind} : textures locales, sans image à charger`);
         }
       });
-      byKind[kind] = triangles;
-      assert.ok(triangles > 100 && triangles < 20000, `${kind} : ${triangles} triangles`);
     } finally { disposeTableObject(group); }
   }
-  // Le budget se tient par plateau : c'est lui qui est dessiné en même temps.
-  for (const [id, theme] of Object.entries(RPG_TABLE_SCENE_THEMES)) {
-    const total = theme.objets.reduce((sum, objet) => sum + byKind[objet.kind], 0);
-    assert.ok(total < 60000, `${id} : budget de géométrie des objets : ${total} triangles`);
-  }
+  assert.ok(triangles > 3000 && triangles < 40000, `budget de géométrie d'un exemplaire de chaque objet : ${triangles} triangles`);
+});
+
+test('les amas de cristaux varient avec la graine et l\'ouverture, et luisent', () => {
+  const a = createTableObject('amethystes', null, { seed: 1, spread: 90 });
+  const b = createTableObject('amethystes', null, { seed: 2, spread: 90 });
+  const narrow = createTableObject('amethystes', null, { seed: 1, spread: 30 });
+  const ruby = createTableObject('rubis', null, { seed: 1, spread: 90 });
+  try {
+    const box = (group) => new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
+    assert.notDeepEqual(box(a).toArray(), box(b).toArray(), 'deux graines, deux amas');
+    assert.ok(box(narrow).x < box(a).x * 0.8, 'un éventail serré est plus étroit');
+    const color = (group) => group.children[0].children[0].material.color.getHex();
+    assert.notEqual(color(a), color(ruby), 'améthyste et rubis n\'ont pas la même couleur');
+    let crystals = 0;
+    a.traverse((part) => {
+      if (part.name !== 'cristal') return;
+      crystals += 1;
+      assert.ok(part.material.emissiveIntensity > 0.2 && part.castShadow, 'le cœur luit et projette une ombre');
+    });
+    assert.ok(crystals >= 6, 'un amas, pas un cristal isolé');
+  } finally { [a, b, narrow, ruby].forEach(disposeTableObject); }
 });
 
 test('les objets font de l\'ombre, sauf le verre ; seule la lanterne vit', () => {

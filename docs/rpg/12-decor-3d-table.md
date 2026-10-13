@@ -28,27 +28,22 @@ inconnu retombe sur celle de la Table des Heures.
 
 Certains objets peints du plateau sont reconstruits en vrais objets 3D
 (`src/games/rpgTableObjects.js`) : ils reçoivent la lumière, projettent une
-ombre portée sur la table et reflètent un environnement doux. Plateaux livrés :
-
-| Plateau | Objets 3D |
-| --- | --- |
-| Erg du Sahara | lanterne (vraie lumière), gourde, galets, bol, corde |
-| Caravane de Gourara | tapis roulé (motif kilim), corde, compas de laiton à couvercle ouvert, outre |
-| Cavernes de Cristal | neuf amas d'améthystes et de rubis dans les coins (éclat qui pulse) |
-
-Les autres plateaux n'ont pas d'objets (`objets: []`) et gardent leur peinture
-inchangée.
+ombre portée sur le sable et reflètent un environnement doux. Pilote livré :
+**Erg du Sahara** (lanterne, gourde, galets, bol, corde), puis **Cavernes de
+Cristal** (huit amas d'améthystes et de rubis, qui luisent par émissif). Les
+plateaux sans objets (`objets: []`) gardent leur peinture inchangée.
 
 - **Plaque vide.** Pour ne pas voir l'objet en double, le thème déclare une
   `plaque` : la peinture sans ces objets (`public/plateau-erg-du-sahara-vide.jpg`,
   2048 px). Elle n'alimente que la 3D ; le fond CSS (et donc le repli sans
   WebGL) garde la peinture d'origine avec ses objets peints. Elle est fabriquée
-  par un script de `scripts/plaque-vide/` : de la matière prélevée ailleurs dans
-  la peinture (ou d'une image donneuse) comble uniquement la zone des objets, le
-  reste de la peinture est inchangé au pixel près. Deux procédés : polygones
-  manuels + clonage de gradient sur le sable (`erg-du-sahara.py`) ; masque par
-  teinte + copie à bord adouci sur l'obsidienne (`cavernes-de-cristal.py` : le
-  clonage de gradient y étalait la teinte des cristaux).
+  par `scripts/plaque-vide/` : pour l'Erg, le sable d'une image donneuse est
+  fusionné (clonage de gradient) uniquement dans des polygones autour des
+  objets, le reste de la peinture est inchangé au pixel près. Pour les
+  Cavernes (`cavernes-de-cristal.py`, ~5 s), les cristaux sont violets ou roses,
+  la lave orange : une segmentation par teinte suffit, et `lib.remplir` clone
+  un morceau de la même peinture, dont le décalage est choisi automatiquement
+  (couronne la plus ressemblante, sans objet). C'est le procédé à réutiliser.
 - **Placement.** Chaque objet est déclaré en coordonnées de l'image
   (`u`, `v` en fraction de largeur/hauteur, `v` vers le bas ; `size` = largeur
   de l'objet en fraction de l'image ; `angle` en degrés). `tableObjectTransform`
@@ -68,7 +63,7 @@ inchangée.
 Ajouter les objets d'un autre plateau : lister ses objets dans le thème
 (`objets`), produire sa plaque vide sur le modèle du script, puis vérifier les
 alignements avec `tableObjectTransform` aux formats 1, 3:2, 16:9 et 2,4:1.
-Objets peints repérés pour la suite : Fjord (lanterne, cor, corde, hache), Tipaza
+Objets peints repérés pour la suite : Gourara (outre, corde, compas), Fjord (lanterne, cor, corde, hache), Tipaza
 (fûts, chapiteau), Désert de Verre (roses de verre, astrolabe, outre, corde),
 Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
 
@@ -78,8 +73,8 @@ Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
 | --- | --- |
 | `src/games/rpgTableSceneThemes.js` | Données pures : ambiances, budgets, particules (testable sous Node) |
 | `src/games/rpgTableScene.js` | La scène Three.js (chargée à la demande) |
-| `src/games/rpgTableObjects.js` | Modèles 3D procéduraux des objets (bol, galets, corde, gourde, lanterne, amas de cristaux) |
-| `scripts/plaque-vide/` | Fabrication des plaques sans objets peints (un script par plateau) |
+| `src/games/rpgTableObjects.js` | Modèles 3D procéduraux des objets (bol, galets, corde, gourde, lanterne) |
+| `scripts/plaque-vide/` | Fabrication de la plaque sans objets peints (script + image donneuse) |
 | `src/games/RpgTableScene3D.jsx` | La vue React, premier enfant de `.card-table` |
 | `tests/rpg-table-3d.test.js` | Catalogue, bornes, particules, budget, cadrage, géométrie, bruits, objets 3D |
 | `scripts/rpg-table-3d-check.mjs` | Vrai rendu WebGL (Chromium) |
@@ -106,7 +101,7 @@ Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
 - `npm run check:rpg-table-3d` : catalogue, bornes, particules, budgets.
 - `npm run check:rpg-table-3d-ui` (serveur Vite + Chromium) : rendu réel, couches,
   pause pendant un glisser, bouton, repli sans WebGL2, `reduced-motion`,
-  téléphone en paysage, chaque plateau à objets (plaque vide chargée, objets posés, repli CSS intact).
+  téléphone en paysage, Erg du Sahara (plaque vide chargée, cinq objets posés).
   Le test attend l'image suivante (au plus 15 s) : le rendu logiciel de CI est lent.
 
 ## Limites connues
@@ -119,5 +114,5 @@ Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
   objets de coin, comme leur peinture : c'est voulu.
 - Les objets sont procéduraux (formes simples) : à distance de jeu ils
   se confondent avec la peinture, de près on les reconnaît comme des maquettes.
-- Pistes : objets des autres plateaux, décor 3D
+- Pistes : objets des autres plateaux (Cavernes de Cristal d'abord), décor 3D
   pour le mode Histoire.

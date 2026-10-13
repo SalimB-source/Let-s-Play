@@ -116,14 +116,6 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   // Le lit d'oued : même vent, poussière plus rouge, moins dense.
   'caravane-de-gourara': theme({
     key: '#ffdcb0', keyIntensity: 0.54, keyDirection: [-0.8, 0.55, 0.9], relief: 1.4, roughness: 0.96,
-    // Outre, corde, compas et tapis roulé : reconstruits en 3D sur la plaque vide.
-    plaque: 'plateau-caravane-de-gourara-vide.jpg',
-    objets: [
-      { kind: 'tapis', u: 0.446, v: 0.033, size: 0.332, angle: -4 },
-      { kind: 'corde', u: 0.805, v: 0.26, size: 0.13, angle: 90 },
-      { kind: 'compas', u: 0.722, v: 0.819, size: 0.148, angle: 50 },
-      { kind: 'gourde', u: 0.402, v: 1, size: 0.243, angle: 143 },
-    ],
     particles: motes({ count: 56, color: '#e8b98a', size: 0.03, opacity: 0.45, vx: 0.24, vy: 0.01, sway: 0.05, swayHz: 0.5, z: 0.5, zSpread: 0.4 }),
     overlay: { kind: 'ombre', color: '#3b1d10', opacity: 0.15, speed: 0.009, scale: 1.4 },
   }),
@@ -137,15 +129,6 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   'fjord-des-neuf-hivers': theme({
     key: '#e5f1ff', keyIntensity: 0.52, keyDirection: [-0.5, 0.7, 1], ambient: '#f2f7ff', relief: 1.1, roughness: 0.42,
     particles: motes({ count: 90, color: '#ffffff', size: 0.038, opacity: 0.8, vx: 0.04, vy: -0.16, sway: 0.18, swayHz: 0.3, z: 1.1, zSpread: 0.8 }),
-    // Lanterne de fer, cor à boire, hache, corde et bâton de runes (plaque sans eux).
-    plaque: 'plateau-fjord-des-neuf-hivers-vide.jpg',
-    objets: [
-      { kind: 'lanterne-fer', u: 0.0957, v: 0.435, size: 0.274, angle: 103 },
-      { kind: 'cor', u: 0.061, v: 0.598, size: 0.388, angle: -46 },
-      { kind: 'hache', u: 0.983, v: 0.555, size: 0.3, angle: 134 },
-      { kind: 'corde-brune', u: 0.947, v: 0.277, size: 0.22, angle: 90 },
-      { kind: 'baton', u: 0.7755, v: 0.977, size: 0.307, angle: 51 },
-    ],
     overlay: { kind: 'ombre', color: '#1d2f45', opacity: 0.12, speed: 0.01, scale: 1.7 },
   }),
   // Le sable vitrifié : éclats de verre, deux lumières qui glissent.
@@ -156,43 +139,30 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
       light({ color: '#ffc874', intensity: 2.4, x: 0.5, y: -0.3, orbit: 0.5, orbitHz: -0.028, pulse: 0.2 }),
     ],
     particles: motes({ count: 64, color: '#c9fff4', size: 0.028, opacity: 0.7, additive: true, vx: 0.05, vy: 0.02, sway: 0.2, swayHz: 0.5, z: 0.7 }),
-    // Cinq roses de verre, l'astrolabe, la corde et l'outre (plaque sans eux).
-    plaque: 'plateau-desert-de-verre-vide.jpg',
-    objets: [
-      { kind: 'rose-rouge', u: 0.022, v: 0.105, size: 0.105, angle: 20 },
-      { kind: 'rose-verte', u: 0.102, v: 0.091, size: 0.109, angle: 70 },
-      { kind: 'rose-verte', u: 0.077, v: 0.239, size: 0.119, angle: 140 },
-      { kind: 'rose-rose', u: 0.013, v: 0.306, size: 0.077, angle: 200 },
-      { kind: 'rose-mauve', u: 0.188, v: 0.091, size: 0.056, angle: 100 },
-      { kind: 'astrolabe', u: 0.941, v: 0.189, size: 0.169, angle: 0 },
-      { kind: 'corde-chanvre', u: 0.013, v: 0.808, size: 0.219, angle: 90 },
-      { kind: 'gourde', u: 0.976, v: 1, size: 0.306, angle: 115 },
-    ],
     overlay: null,
   }),
   // Les galeries sous Bab El : obsidienne, veines de braise qui respirent.
   'cavernes-de-cristal': theme({
     ambient: '#d9c9ff', ambientIntensity: 0.62, key: '#e7d4ff', keyIntensity: 0.34, relief: 1.3, roughness: 0.4,
+    // Huit amas de cristaux, au bord de la table, dont les racines sortent du cadre.
+    // `angle` : où pointent les pointes ; `spread` : l'ouverture de l'éventail.
+    plaque: 'plateau-cavernes-de-cristal-vide.jpg',
+    objets: [
+      { kind: 'amethystes', u: 0, v: 0.096, size: 0.221, angle: -25, spread: 90, seed: 1 },
+      { kind: 'amethystes', u: 0.154, v: 0, size: 0.145, angle: -90, spread: 75, seed: 2 },
+      { kind: 'amethystes', u: 0.877, v: 0, size: 0.153, angle: -90, spread: 70, seed: 3 },
+      { kind: 'rubis', u: 1, v: 0.072, size: 0.102, angle: 180, spread: 85, seed: 4 },
+      { kind: 'amethystes', u: 0, v: 0.875, size: 0.153, angle: 20, spread: 85, seed: 5 },
+      { kind: 'rubis', u: 1, v: 0.861, size: 0.153, angle: 150, spread: 80, seed: 6 },
+      { kind: 'amethystes', u: 0.168, v: 1, size: 0.162, angle: 90, spread: 70, seed: 7 },
+      { kind: 'rubis', u: 0.88, v: 1, size: 0.119, angle: 90, spread: 70, seed: 8 },
+    ],
     lights: [
       light({ color: '#ff6a3d', intensity: 3.4, x: -0.7, y: -0.7, pulse: 0.35, pulseHz: 0.16, flicker: 0.1 }),
       light({ color: '#c05cff', intensity: 3.4, x: 0.7, y: 0.6, pulse: 0.35, pulseHz: 0.13 }),
       light({ color: '#ff8a50', intensity: 2.8, x: 0.75, y: -0.75, pulse: 0.3, pulseHz: 0.19, flicker: 0.1 }),
     ],
     particles: motes({ count: 52, color: '#ff9a62', size: 0.034, opacity: 0.75, additive: true, vx: 0.01, vy: 0.11, sway: 0.1, swayHz: 0.4, z: 0.9 }),
-    // Les huit amas de cristaux des coins (`u`/`v` : leur pied, au bord de la
-    // peinture ; `angle` : où ils pointent ; `size` : portée du plus long).
-    plaque: 'plateau-cavernes-de-cristal-vide.jpg',
-    objets: [
-      { kind: 'amethyste', u: 0, v: 0.0957, size: 0.101, angle: -20 },
-      { kind: 'amethyste', u: 0.1467, v: 0, size: 0.101, angle: -90 },
-      { kind: 'amethyste', u: 0.88, v: 0, size: 0.115, angle: -95 },
-      { kind: 'rubis', u: 1, v: 0.062, size: 0.09, angle: 182 },
-      { kind: 'rubis', u: 1, v: 0.957, size: 0.18, angle: 108 },
-      { kind: 'rubis', u: 1, v: 0.946, size: 0.12, angle: 152 },
-      { kind: 'rubis', u: 0.867, v: 1, size: 0.109, angle: 90 },
-      { kind: 'amethyste', u: 0, v: 0.909, size: 0.135, angle: 35 },
-      { kind: 'amethyste', u: 0.166, v: 1, size: 0.129, angle: 90 },
-    ],
     overlay: null,
   }),
   // Sous la mer : caustiques qui dansent, bulles qui montent.
@@ -212,31 +182,6 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
       light({ color: '#b782ff', intensity: 2.6, x: 0.55, y: -0.45, orbit: 0.45, orbitHz: -0.022, pulse: 0.3, pulseHz: 0.1 }),
     ],
     particles: motes({ count: 70, color: '#f4fbff', size: 0.03, opacity: 0.75, additive: true, vx: 0.02, vy: -0.05, sway: 0.2, swayHz: 0.25, z: 1 }),
-    // Les sapins et les petits rochers des berges, et la corde. Les berges de
-    // roche et la lanterne, coupées par le bord, restent peintes.
-    plaque: 'plateau-iles-celestes-vide.jpg',
-    objets: [
-      { kind: 'sapin', u: 0.1040, v: 0.9675, size: 0.071, angle: 0 },
-      { kind: 'sapin', u: 0.1977, v: 0.9579, size: 0.094, angle: 47 },
-      { kind: 'sapin', u: 0.3023, v: 0.9474, size: 0.115, angle: 94 },
-      { kind: 'sapin', u: 0.4228, v: 0.9684, size: 0.087, angle: 141 },
-      { kind: 'sapin', u: 0.0287, v: 0.0172, size: 0.071, angle: 188 },
-      { kind: 'sapin', u: 0.1142, v: 0.0354, size: 0.097, angle: 235 },
-      { kind: 'sapin', u: 0.1862, v: 0.0153, size: 0.066, angle: 282 },
-      { kind: 'sapin', u: 0.2742, v: 0.0191, size: 0.038, angle: 329 },
-      { kind: 'sapin', u: 0.3559, v: 0.0421, size: 0.105, angle: 16 },
-      { kind: 'sapin', u: 0.4273, v: 0.0249, size: 0.061, angle: 63 },
-      { kind: 'sapin', u: 0.6505, v: 0.0383, size: 0.097, angle: 110 },
-      { kind: 'sapin', u: 0.7781, v: 0.0287, size: 0.066, angle: 157 },
-      { kind: 'rocher', u: 0.9075, v: 0.1646, size: 0.059, angle: 20 },
-      { kind: 'rocher', u: 0.9101, v: 0.1933, size: 0.038, angle: 91 },
-      { kind: 'rocher', u: 0.9298, v: 0.2325, size: 0.031, angle: 162 },
-      { kind: 'rocher', u: 0.1435, v: 0.8660, size: 0.041, angle: 233 },
-      { kind: 'rocher', u: 0.1358, v: 0.8919, size: 0.020, angle: 304 },
-      { kind: 'rocher', u: 0.1505, v: 0.9120, size: 0.023, angle: 15 },
-      { kind: 'rocher', u: 0.0791, v: 0.9234, size: 0.031, angle: 86 },
-      { kind: 'corde', u: -0.005, v: 0.876, size: 0.125, angle: -83 },
-    ],
     overlay: null,
   }),
 });
