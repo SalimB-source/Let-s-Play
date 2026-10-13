@@ -519,14 +519,14 @@
    commande — pastille bordée, texte lisible, cible tactile confortable — et
    non comme le lien discret d'avant, qui se perdait en haut de la fiche. */
 .rpg-menu-link.rpg-deck-detail__close {
-  /* `flex` (et non `inline-flex`) pour que `margin-left: auto` pousse bien la
-     pastille à droite de la fiche ; `fit-content` la garde à la taille du texte. */
+  /* `flex` (et non `inline-flex`) pour que `margin-right: auto` plaque la
+     pastille à gauche de la fiche ; `fit-content` la garde à la taille du texte. */
   display: flex;
   width: fit-content;
   align-items: center;
   gap: 7px;
   min-height: 38px;
-  margin: -4px 0 8px auto;
+  margin: -4px auto 8px 0;
   padding: 9px 16px;
   border: 1px solid rgba(236, 214, 172, .42);
   border-radius: 999px;
