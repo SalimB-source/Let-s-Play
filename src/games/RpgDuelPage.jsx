@@ -3763,7 +3763,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         force();
         return;
       }
-      jouerSfx('coup_rapide');
+      jouerSfx('player_attack_hit');
       const cibles = { ...ciblesAttaque, [attaquant.id]: entite.id };
       setCiblesAttaque(cibles);
       const prochainId = prochainCoupRapideSansCible(attaquants, cibles);
@@ -3980,7 +3980,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const frappeDirecte = res.resume.frappeSorcier > 0;
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
+    if (res.resume.paires.length > 0) jouerSfx('player_attack_hit', 0.015);
     if (frappeDirecte) { jouerSfx('degats', 0.18); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     rpgFermerFenetreReponse(duel);
@@ -4031,7 +4031,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
 
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
+    if (res.resume.paires.length > 0) jouerSfx('player_attack_hit', 0.015);
     if (res.resume.frappeSorcier > 0) { jouerSfx('player_attack_hit', 0.18); }
     else if (!res.resume.paires.length) { jouerSfx('blocage', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
