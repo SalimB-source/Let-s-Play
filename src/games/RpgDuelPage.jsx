@@ -1957,7 +1957,6 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
     if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
       if (phaseDuelActive === 'combat') jouerSfx('phase');
       else if (phaseDuelActive === 'reponse') jouerSfx('page_turn');
-      else if (phaseDuelActive === 'principal' || phaseDuelActive === 'adverse') jouerSfx('page_turn');
     }
     prevPhaseRef.current = phaseDuelActive;
   }, [phaseDuelActive]);
@@ -2580,7 +2579,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
     jouerSfx('apparition');
-    jouerSfx('page_turn', 0.35);
     force();
   };
 
@@ -2631,7 +2629,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     masquerApercuSurvol();
     // Le volet se ferme après le choix ; le duel reprend sur la table.
     setMulligan(null);
-    jouerSfx('page_turn', 0.25);
     force();
   };
 
@@ -3638,7 +3635,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (carte.kind === 'magie' && peutJouerCarte(carte)) {
-      jouerSfx('menu');
       setConfirmationSort({ carteId, handIndex });
       return;
     }
@@ -3649,7 +3645,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const confirmation = confirmationSort;
     setConfirmationSort(null);
     if (!confirmation) return;
-    jouerSfx('select');
     jouerCarteDepuisMain(confirmation.carteId, confirmation.handIndex);
   };
 
@@ -3671,7 +3666,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return true;
     }
-    jouerSfx('select');
     if (['combat', 'retour-main'].includes(carteSource?.arrivee?.type)) {
       const carteId = cibleEnCours;
       const handIndex = carteCibleeHandIndexRef.current;
@@ -4054,7 +4048,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
-    jouerSfx('page_turn');
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
