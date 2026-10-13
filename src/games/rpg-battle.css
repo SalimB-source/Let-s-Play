@@ -5483,16 +5483,28 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
+/* La carte annoncée par l'adversaire est une carte agrandie, comme l'aperçu
+   rapide : elle garde donc le grand gabarit de cadre (`--rpg-card-border-large`,
+   5–6,5 px) au lieu d'un filet fixe de 2 px, plus fin que celui de toutes les
+   autres cartes. Son badge de couleur suit la même échelle que les grandes
+   faces du catalogue (pastille 28–38 px, glyphe 19 px, liseré 2 px) : plafonné
+   à 23 px avec un glyphe de 13 px, il devenait illisible sur une face de
+   140–280 px — or c'est la couleur qu'il faut lire pour décider de répondre. */
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__face {
+  --rpg-card-element-marker-size: clamp(28px, 17%, 38px);
   position: relative;
   z-index: 2;
   top: auto;
   left: auto;
   width: var(--rpg-annonce-card-width);
   transform: none;
-  border-width: 2px;
+  border-width: var(--rpg-card-border-large, 6px);
   border-radius: 8px;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .52), 0 0 22px rgba(239, 210, 139, .16);
+}
+.rpg-hover-card-preview--annonce .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 19px;
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details-column {
   position: relative;

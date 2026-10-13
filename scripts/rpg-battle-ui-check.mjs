@@ -768,6 +768,14 @@ assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-prev
   'la carte et sa colonne forment un seul ensemble centré dans l’écran');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__face\s*\{[^}]*position:\s*relative;[^}]*width:\s*var\(--rpg-annonce-card-width\);[^}]*transform:\s*none;/s,
   'la carte occupe la colonne gauche de l’ensemble centré');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__face\s*\{[^}]*border-width:\s*var\(--rpg-card-border-large, 6px\);/s,
+  'la carte annoncée par l’adversaire garde le grand gabarit de cadre des autres grandes cartes, pas un filet fixe plus fin');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__face\s*\{[^}]*border-width:\s*\d+(?:\.\d+)?px;/s,
+  'aucune épaisseur de cadre fixe en pixels ne rétrécit le cadre de la carte annoncée');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__face\s*\{[^}]*--rpg-card-element-marker-size:\s*clamp\(28px, 17%, 38px\);/s,
+  'le badge de couleur de la carte annoncée est à l’échelle de sa grande face, comme au catalogue');
+assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*19px;/s,
+  'le glyphe de couleur de la carte annoncée reste lisible (19 px, liseré 2 px), comme sur les grandes faces du catalogue');
 assert.match(battleCss, /@media \(max-width: 620px\)[\s\S]*?\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-column-width:\s*min\(210px, calc\(100vw/s,
   'sur mobile, la colonne est dimensionnée pour centrer tout l’aperçu sans couper son contenu');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__details-column\s*\{[^}]*position:\s*relative;[^}]*width:\s*var\(--rpg-annonce-column-width\);/s,
