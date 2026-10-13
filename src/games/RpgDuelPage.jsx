@@ -1849,18 +1849,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           </main>
         )) : screen === 'histoire' ? (
           <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
-            <RpgStoryCampaign
-              recit={progressionHistoire.recit}
-              cardArt={cardArt}
-              onContinue={onContinueRecit}
-              onJournal={onJournalRecit}
-              onRestart={onRestartRecit}
-              sauvegardeOk={sauvegardeHistoireOk}
-              duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
-            />
             {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
               {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
-              <p>Effacer les victoires et le récit sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
+              <p>Effacer les victoires sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
               <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
               <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
             </div>}
@@ -1913,8 +1904,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <>
                 <div className="rpg-story__free-heading">
                   <div>
-                    <h2>Campagne</h2>
-                    <p>Progressez dans l'histoire de Bab El, débloquez les étages dans l'ordre et découvrez le récit des tours.</p>
+                    <h2>Les Tours de Bab El</h2>
+                    <p>Choisissez une tour pour dévoiler ses étages. Progressez dans l'ordre : chaque victoire débloque l'étage suivant.</p>
                   </div>
                   <button type="button" className="rpg-story__reset" onClick={() => setConfirmerResetHistoire(true)}>Effacer la progression</button>
                 </div>
