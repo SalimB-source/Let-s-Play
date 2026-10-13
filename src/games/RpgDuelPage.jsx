@@ -3955,6 +3955,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const vivants = new Set(attaquantsVivants);
     const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages).filter(([id]) => vivants.has(id)));
+    const attaqueBraise = attaquantsVivants.some((id) => {
+      const entite = duel.sorcier.creatures.find((candidate) => candidate.id === id);
+      return cardColors(cardById(entite?.carteId)).includes('braise');
+    });
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -3974,8 +3978,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const frappeDirecte = res.resume.frappeSorcier > 0;
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx('player_attack_hit', 0.015);
-    if (frappeDirecte) { jouerSfx('degats', 0.18); }
+    if (res.resume.paires.length > 0) jouerSfx(attaqueBraise ? 'flame_gust' : 'player_attack_hit', 0.015);
+    if (frappeDirecte) { jouerSfx(attaqueBraise ? 'flame_gust' : 'degats', 0.18); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
@@ -4029,7 +4033,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
 
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx('player_attack_hit', 0.015);
+    if (res.resume.paires.length > 0) jouerSfx(attaqueBraise ? 'flame_gust' : 'player_attack_hit', 0.015);
     if (res.resume.frappeSorcier > 0) { jouerSfx(attaqueBraise ? 'flame_gust' : 'player_attack_hit', 0.18); }
     else if (!res.resume.paires.length) { jouerSfx('block_impact', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
