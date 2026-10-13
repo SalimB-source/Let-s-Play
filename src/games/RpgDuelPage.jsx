@@ -3720,7 +3720,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         jouerSfx('annuler');
         setBloqueurSelectionne(null);
       } else {
-        jouerSfx('blocage');
+        jouerSfx('block_impact');
         setBloqueurSelectionne(entite.id);
       }
       force();
@@ -3917,7 +3917,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    jouerSfx(retireDeCetteAttaque ? 'annuler' : 'blocage');
+    jouerSfx(retireDeCetteAttaque ? 'annuler' : 'block_impact');
     setBloqueurSelectionne(null);
     setCombatEntrant((courant) => {
       if (!courant?.attaquants.includes(attaquantId)) return courant;
@@ -4033,7 +4033,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     jouerSfx('combat');
     if (res.resume.paires.length > 0) jouerSfx('player_attack_hit', 0.015);
     if (res.resume.frappeSorcier > 0) { jouerSfx('player_attack_hit', 0.18); }
-    else if (!res.resume.paires.length) { jouerSfx('blocage', 0.2); }
+    else if (!res.resume.paires.length) { jouerSfx('block_impact', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
     rpgFermerFenetreReponse(duel);
