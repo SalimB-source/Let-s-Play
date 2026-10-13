@@ -1179,6 +1179,35 @@ function SpellAnnouncement({ annonce }) {
   );
 }
 
+/** Bandeau d'ouverture de tour : « Votre tour » / « Tour de l'adversaire ».
+ *
+ *  Purement informatif, il ne capte aucun geste (`pointer-events: none`) et
+ *  s'efface tout seul après `RPG_ANNONCE_TOUR_DUREE` — valeur transmise à la
+ *  feuille par `--rpg-annonce-tour-duree`, pour que le fondu de sortie et le
+ *  retrait de l'élément finissent ensemble. La zone d'état existe même quand
+ *  rien n'est annoncé : les lecteurs d'écran suivent alors chaque annonce
+ *  (`aria-live`), chaque bandeau neuf portant sa propre clé. */
+function AnnonceTour({ annonce }) {
+  const joueur = annonce?.camp === 'joueur';
+  return (
+    <div
+      className="rpg-annonce-tour"
+      style={{ '--rpg-annonce-tour-duree': `${RPG_ANNONCE_TOUR_DUREE}ms` }}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {annonce && (
+        <p key={annonce.token} className={`rpg-annonce-tour__bandeau is-${joueur ? 'joueur' : 'sorcier'}`}>
+          <span className="rpg-annonce-tour__lamp" aria-hidden="true" />
+          <strong>{joueur ? 'Votre tour' : 'Tour de l’adversaire'}</strong>
+          <span className="rpg-annonce-tour__lamp" aria-hidden="true" />
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── Boîtier de deck en 3D (onglet Deck) ──────────────────────────────────────
    Décor pur : le clic est porté par le bouton voisin (voir `GameModeMenu`), et le
    nom du deck y figure en clair — tout ce qui est dessiné ici est `aria-hidden`. */
@@ -1258,6 +1287,13 @@ function redresserBoitier(event) {
 
 /** La table posée avant le premier tirage, et le repli si un identifiant se perd. */
 const PLATEAU_PAR_DEFAUT = plateauDeRepli();
+
+// Durée du bandeau d'ouverture de tour — « Votre tour » / « Tour de
+// l'adversaire » (voir `AnnonceTour`). La feuille de style reçoit cette valeur
+// par `--rpg-annonce-tour-duree` : le fondu de sortie et le retrait du bandeau
+// finissent donc ensemble. Le repli `1.5s` de la feuille ne sert qu'à une page
+// sans React.
+const RPG_ANNONCE_TOUR_DUREE = 1500;
 
 // Le réglage sonore (musique et bruitages) reste mémorisé sur l'appareil ;
 // au prochain passage, le son revient par défaut.
@@ -2280,6 +2316,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [apercuMagie, setApercuMagie] = useState(null);
   // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
   const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
+  // Bandeau d'ouverture de tour : `{ camp, token }` tant qu'il est affiché,
+  // `null` le reste du temps. Il ne dure que `RPG_ANNONCE_TOUR_DUREE`.
+  const [annonceTour, setAnnonceTour] = useState(null);
+  // Le camp déjà annoncé, et pour quelle session de duel : une partie neuve se
+  // signale même si elle s'ouvre sur le camp de la précédente.
+  const annonceTourRef = useRef({ session: 0, camp: null });
+  const sequenceAnnonceTourRef = useRef(0);
   const carteGlisseeRef = useRef(null);
   const clicApresGlisserRef = useRef(false);
   const annulationRef = useRef(null);
@@ -2594,6 +2637,40 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const duel = duelRef.current;
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
+  // Bandeau d'ouverture de tour : chaque bascule de `duel.tour` — le tour du
+  // joueur rendu, celui du sorcier rendu, une partie neuve, une reprise —
+  // annonce 1,5 s en grand le camp qui prend la main, puis s'efface.
+  //
+  // Trois silences possibles : pas de duel, écran autre que la table (menu,
+  // atelier, récit), volet de mulligan ouvert — la table n'est encore à
+  // personne — et duel terminé, où il n'y a plus de tour à annoncer. Le témoin
+  // garde la **session** et le camp déjà annoncés : une partie relancée se
+  // signale même si elle s'ouvre sur le camp de la précédente, tandis qu'un
+  // aller-retour par le menu ne rejoue pas le bandeau du tour en cours.
+  const campDuTour = duel?.tour ?? null;
+  const duelTermine = duel ? Boolean(rpgVainqueur(duel)) : false;
+  // Le volet du mulligan tient la table avant les retours anticipés de la page,
+  // comme `mulliganOuvert` plus bas : deux lectures d'un même état.
+  const voletMulliganOuvert = Boolean(mulligan);
+  useEffect(() => {
+    if (!campDuTour || ecran !== 'partie' || voletMulliganOuvert || duelTermine) {
+      setAnnonceTour(null);
+      return undefined;
+    }
+    const session = sessionDuelRef.current;
+    const dejaAnnonce = annonceTourRef.current;
+    if (dejaAnnonce.session === session && dejaAnnonce.camp === campDuTour) return undefined;
+    annonceTourRef.current = { session, camp: campDuTour };
+    const token = ++sequenceAnnonceTourRef.current;
+    setAnnonceTour({ camp: campDuTour, token });
+    const minuterie = window.setTimeout(() => {
+      // Seul le dernier bandeau se retire : un tour qui bascule pendant les
+      // 1,5 s de l'autre ne laisse pas la minuterie précédente effacer le sien.
+      setAnnonceTour((courant) => (courant?.token === token ? null : courant));
+    }, RPG_ANNONCE_TOUR_DUREE);
+    return () => window.clearTimeout(minuterie);
+  }, [campDuTour, ecran, voletMulliganOuvert, duelTermine]);
+
   useEffect(() => {
     if (!tutorielActif || etapeTutorielId !== 'tour-adverse' || !duel || duel.tour !== 'joueur' || duel.annonce || combatEntrant) return;
     setEtapeTutorielId('attaque');
@@ -4264,6 +4341,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
           </button>
         </nav>
+
+        {/* Bandeau d'ouverture de tour : le camp qui prend la main se nomme au
+            centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
+        <AnnonceTour annonce={annonceTour} />
 
         {combatEntrant && <BlockerArrows tableRef={tableRef} assignments={combatEntrant.blocages} />}
         <FaceDownHand count={duel.sorcier.main.length} drawAnimations={piochesSorcier} />
