@@ -9,6 +9,8 @@
 const RPG_AUDIO_BASE = `${import.meta.env?.BASE_URL ?? '/'}audio/`;
 export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   'table-des-heures': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
+  'erg-du-sahara': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
+  'caravane-de-gourara': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
   'desert-de-verre': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
   'fjord-des-neuf-hivers': `${RPG_AUDIO_BASE}full-track.mp3`,
   'iles-celestes': `${RPG_AUDIO_BASE}full-track.mp3`,
