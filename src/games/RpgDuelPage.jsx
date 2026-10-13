@@ -4012,6 +4012,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attaquantsBloques = (combat.attaquantsBloques
       ?? combat.attaquants.filter((id) => combat.blocages[id]?.length))
       .filter((id) => attaquantsVivants.includes(id));
+    const attaqueBraise = attaquantsVivants.some((id) => {
+      const entite = duel.joueur.creatures.find((candidate) => candidate.id === id);
+      return cardColors(cardById(entite?.carteId)).includes('braise');
+    });
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -4032,7 +4036,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
     jouerSfx('combat');
     if (res.resume.paires.length > 0) jouerSfx('player_attack_hit', 0.015);
-    if (res.resume.frappeSorcier > 0) { jouerSfx('player_attack_hit', 0.18); }
+    if (res.resume.frappeSorcier > 0) { jouerSfx(attaqueBraise ? 'flame_gust' : 'player_attack_hit', 0.18); }
     else if (!res.resume.paires.length) { jouerSfx('block_impact', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
