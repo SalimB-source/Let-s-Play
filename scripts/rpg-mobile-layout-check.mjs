@@ -96,7 +96,7 @@ try {
       `${width}: phases sit immediately above the end-turn button, inside the rail`);
     assert.ok(result.endTurn.left >= result.rail.left - 1 && result.endTurn.right <= result.rail.right + 1,
       `${width}: Fin du tour prend la largeur du rail du tour`);
-    assert.ok(result.attackAll.width >= 44 && result.attackAll.left >= result.areas[2].left - 1
+    assert.ok(result.attackAll.width >= 32 && result.attackAll.left >= result.areas[2].left - 1
       && result.attackAll.right <= result.areas[2].right + 1,
       `${width}: attack-all is in the controls column`);
     assert.equal(result.overflow, false, `${width}: no page-wide horizontal overflow`);
@@ -109,7 +109,15 @@ try {
       }
     }
     assert.ok(result.card.top >= result.hand.top - 1 && result.card.bottom <= result.hand.bottom + 1, `${width}: hand cards are not clipped vertically`);
-    assert.ok(result.endTurn.height >= 44, `${width}: touch-sized end-turn button`);
+    // Boutons de droite compacts (32 px), mais encore au doigt.
+    assert.ok(result.endTurn.height >= 32 && result.endTurn.height <= 40, `${width}: compact, touch-sized end-turn button (${result.endTurn.height})`);
+    // Les phases, comme sur PC : une rangée d'icônes, noms masqués à l'écran.
+    const phases = await page.evaluate(() => {
+      const icons = [...document.querySelectorAll('.rpg-turn-rail .rpg-phase-step__icon')].map((icon) => icon.getBoundingClientRect());
+      const label = document.querySelector('.rpg-turn-rail .rpg-phase-step__label').getBoundingClientRect();
+      return { row: icons.every((r) => Math.abs(r.top - icons[0].top) < 1), ordered: icons.every((r, i) => !i || r.left >= icons[i - 1].right), label: label.width <= 1 };
+    });
+    assert.ok(phases.row && phases.ordered && phases.label, `${width}: phases form a single row of icons, as on desktop`);
     // Layout-only fixtures: test populated lanes without changing game state.
     const groups = await page.evaluate(() => {
       const results = [];
@@ -139,11 +147,12 @@ try {
               const cell = node.parentElement.getBoundingClientRect(), value = node.getBoundingClientRect();
               return value.left >= cell.left && value.right <= cell.right;
             });
-            const overflowing = row.scrollWidth > row.clientWidth;
-            const centred = Math.abs((first.left + last.right) / 2 - (lane.left + lane.right) / 2) < 1;
-            row.scrollLeft = row.scrollWidth;
-            const end = cards.at(-1).getBoundingClientRect();
-            results.push({ count, overflowing, centred, badgesFit, valuesFit, reachable: first.left >= lane.left && end.right <= lane.right + 1 });
+            // Plus de zone de défilement autour des cartes posées : le groupe
+            // tient dans sa rangée, centré, et chaque carte reste dans le champ.
+            const scrollable = row.scrollWidth > row.clientWidth + 1 || /auto|scroll/.test(getComputedStyle(row).overflowX);
+            const centred = Math.abs((first.left + last.right) / 2 - (lane.left + lane.right) / 2) < 1.5;
+            const inside = first.left >= lane.left - 1 && last.right <= lane.right + 1;
+            results.push({ count, scrollable, centred, inside, badgesFit, valuesFit });
           }
         } finally { row.replaceChildren(...original); row.scrollLeft = 0; }
       }
@@ -151,7 +160,7 @@ try {
     });
     for (const group of groups) {
       assert.ok(group.badgesFit && group.valuesFit, `${width}: battlefield ATK/DEF fit inside the card without overlap`);
-      assert.ok(group.overflowing ? group.reachable : group.centred, `${width}: group of ${group.count} cards is centred or fully scrollable`);
+      assert.ok(!group.scrollable && group.centred && group.inside, `${width}: group of ${group.count} cards is centred inside its lane, without a scroll area`);
     }
     const rails = await page.evaluate(() => {
       const results = [];
@@ -383,7 +392,7 @@ try {
     const undo = await page.locator('.rpg-actions__turn .rpg-btn--undo').boundingBox();
     const end = await page.locator('.rpg-actions__turn .rpg-btn--endturn').boundingBox();
     const attackAll = await page.locator('.rpg-actions__turn .rpg-btn--attaque-tous').boundingBox();
-    assert.ok(undo && end && undo.width >= 44 && undo.height >= 44, `${width}: undo is visible on the table`);
+    assert.ok(undo && end && undo.width >= 32 && undo.height >= 32, `${width}: undo is visible on the table`);
     // Depuis que l'attaque générale a rejoint le rail, les deux commandes du bas
     // partagent la dernière rangée ; l'annulation occupe la rangée du dessus, sur
     // toute la largeur du rail — elle reste donc au-dessus d'elles.

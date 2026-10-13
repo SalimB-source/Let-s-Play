@@ -12,7 +12,9 @@ Le plateau conserve les illustrations originales de Bab El, avec une organisatio
 - identités et compteurs flottants ;
 - main en bas : **une carte = une cible**, jamais deux cartes sous le même doigt — la rangée partage sa largeur entre ses emplacements (jusqu’au plancher tactile de 34 px) et ne défile horizontalement qu’au-delà, un cran par carte ;
 - commandes « Attaquer avec tous », confirmation/annulation de l’attaque, annulation de la dernière action et fin du tour regroupées côte à côte sur le plateau, selon la phase ;
-- progression des phases immédiatement au-dessus des commandes, avec la phase actuelle mise en évidence.
+- progression des phases immédiatement au-dessus des commandes, **comme sur PC** : une rangée d'icônes orange dans une capsule sombre translucide, la phase actuelle allumée, les noms gardés pour les lecteurs d'écran ;
+- boutons de droite compacts (32 px de haut) dans une colonne resserrée (`--rpg-touch-controls: clamp(176px, 23vw, 280px)`) ;
+- cartes posées sur la table un peu plus petites que celles de la main (`--rpg-field-card` = 85 % de `--duel-card`), **sans masque ni zone de défilement** autour d'elles : la largeur des cartes se partage entre les emplacements de la rangée (`--row-count`, compté en CSS par `:has(> :nth-child(N))`) jusqu'à un plancher de 40 px, puis elles se chevauchent plutôt que de déborder.
 
 Le clic sur une carte en main la joue immédiatement, sur ordinateur comme sur mobile : la pose réutilise les validations et les animations du glisser-déposer, y compris le paiement automatique et le choix ultérieur d’une cible. Une carte refusée reste en main et le refus est expliqué (mana, limite de terrain, phase). **Les magies demandent une confirmation** avant le lancement ; Annuler laisse le sort en main. Les créatures et terrains déjà posés agissent aussi directement au clic : attaque ou retrait de la sélection, blocage, choix de cible ou production de mana selon l’état de la partie. La confirmation de l’attaque se fait uniquement sur le plateau, à côté de la fin du tour, où reste aussi l’annulation de la dernière action. Les statistiques d’une créature en jeu reflètent ses valeurs actuelles.
 
