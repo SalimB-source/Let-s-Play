@@ -1532,11 +1532,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
             </button>
-            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
-              <span aria-hidden="true">🗼</span> Tours
-            </button>
             <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('histoire'); }}>
               <span aria-hidden="true">⌛</span> Histoire
+            </button>
+            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
+              <span aria-hidden="true">🗼</span> Tours
             </button>
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
               <span aria-hidden="true">▤</span> Deck
@@ -1565,11 +1565,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
                 <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
                 <div className="rpg-mode-menu__hero-actions">
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--glow" onClick={() => { play('select'); onStartGame(); }}>
-                    <span className="rpg-menu-button__icon">⚔</span>
+                  {/* Le bouton principal ouvre le mode Histoire (reprend ou débute
+                      le récit) ; le duel rapide reste dispo via l'onglet Deck. */}
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
+                    <span className="rpg-menu-button__icon">⌛</span>
                     <span className="rpg-menu-button__text">
-                      <strong>Lancer le duel</strong>
-                      <small>Partie rapide contre l'IA</small>
+                      <strong>Mode histoire</strong>
+                      <small>La campagne des Tours de Bab El</small>
                     </span>
                     <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </button>
