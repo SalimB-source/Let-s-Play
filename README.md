@@ -5973,7 +5973,7 @@ la lecture descend vers la main du joueur, dans le sens du tour lui-même.
 | Indicateur de tour (`À VOTRE TOUR`, `TOUR DU SORCIER`, `À VOUS · RÉPONSE`…) | `.rpg-bottombar__status`, en bas à droite | `.rpg-turn-rail`, au centre |
 | Les cinq phases (`PhaseTrack`) | dans `.rpg-bottombar .rpg-actions`, au-dessus des boutons | dans le rail, empilées verticalement |
 | `↶ Annuler la dernière action` et `⧗ Fin du tour` | `.rpg-actions__turn`, au bout de la rangée de commandes | `.rpg-actions__turn` du rail, empilés |
-| `Attaquer avec tous`, `Confirmer l'attaque`, `Annuler l'attaque`, `Résoudre le combat` | `.rpg-actions__combat` | inchangés, dans la barre du bas |
+| `Attaquer avec tous`, `Confirmer l'attaque`, `Annuler l'attaque`, `Résoudre le combat` | `.rpg-actions__combat` | le même bloc DOM, dans la barre du bas au doigt ; à la souris, la **colonne des actions** sous le rail (voir « Le Sablier : la main en éventail, la main du sorcier lisible ») |
 
 - **Ce n'est pas un panneau.** Chaque élément garde sa pastille — la capsule de
   l'indicateur, le cercle de la phase, l'or du bouton — et la phase active
@@ -6428,3 +6428,89 @@ la main (`peutDemarrerAppuiLong`).
   déclenchement » : `scroll`, `pointercancel` et `blur` ne laissent plus passer
   le clic qui suit. `scripts/rpg-preview-smoke.jsx` rejoue la même course dans
   la vraie page, aperçu ouvert à la fin.
+
+## Le Sablier : la main en éventail, la main du sorcier lisible, et les commandes du combat sous le pouce
+
+Trois retouches du duel, un même propos : la table se lit d'elle-même.
+
+**1. La main du joueur s'ouvre en éventail — à la souris.** La page pose sur
+chaque carte sa place dans la rangée (`--hand-fan`, un nombre signé, nul au
+centre) et son carré (`--hand-fan-arc`) ; `rpg-battle.css` en déduit un pas
+d'angle resserré dès que la main s'allonge (`22deg / (N − 1)`, plafonné à 3,6°),
+une ouverture latérale de 2 % de la largeur de la carte et une **descente en
+arc** de 0,35 % de sa hauteur (bornée à 9 px) — nulle au centre, maximale aux extrémités. La carte
+survolée **se soulève dans son axe** (32 px, ×1,06) : elle garde son inclinaison
+et sa place, l'œil ne perd pas celle qu'il vise ; le glisser-déposer ne la
+redresse qu'à peine (26 px, ×0,94). Les images-clés de la pioche citent les mêmes
+trois repères : une carte qui arrive se pose directement dans l'éventail, sans
+rattraper sa place après coup.
+
+Au doigt, les trois repères sont remis à zéro (`rpg-mobile.css`, `@media (hover:
+none), (pointer: coarse)`) : « une carte = une cible » interdit le recouvrement,
+l'éventail reste donc l'affaire de la souris — et il revient dans une **fenêtre
+étroite pilotée à la souris**, que la présentation tactile rhabille (bloc `@media
+(hover: hover) and (pointer: fine)`). Le décollage du vol d'une carte se mesure
+désormais sur sa boîte inclinée (`mesurerBoiteCarteMain`) : une carte de
+l'éventail ne part plus de la place — plus large — de sa boîte droite.
+
+**2. La main du sorcier grossit.** Les cartes face cachée du sorcier étaient des
+vignettes (54 × 70, chevauchées de 18 px) : au-dessus de la ligne ennemie, elles
+se lisaient comme un simple compteur. Elles passent à **78 × 101** — la taille
+d'une carte du champ de bataille —, chevauchées de 26 px, bord de 4 px et rayon
+de 9 px, l'écart et l'inclinaison de chaque carte (`--card-angle`, `--card-rise`)
+restant ceux de la page. Sept cartes tiennent ainsi sur ≈ 390 px, dans la bande
+libre au-dessus de la première rangée ennemie ; sous 620 px de large elles
+retombent à 52 × 67. La rangée reste inerte (`pointer-events: none`) et, au
+doigt, elle reste cachée : le compte vit déjà ailleurs.
+
+**3. « Confirmer l'attaque » et « Résoudre le combat » changent de camp.** Les
+deux commandes vivaient dans une barre flottante posée au milieu de la table
+(`right: 360px`, `bottom: 200px`), à hauteur des créatures alliées : la commande
+la plus importante du tour se lisait au milieu des cartes, et sa place bougeait
+avec les rangées. À la souris, la barre du combat rejoint maintenant la **colonne
+des actions**, à droite — celle de l'indicateur de tour, des cinq phases et de
+« Fin du tour » —, juste au-dessus de la main du joueur : le rail et la barre
+partagent la même largeur (`--rpg-actions-column`), la colonne se lit d'un seul
+trait, du tour vers le combat puis vers la main. Les deux commandes s'empilent
+sur toute la largeur de la colonne, la principale d'abord (58 px), l'annulation
+ensuite, en retrait.
+
+Et elles s'allument. Le fond sombre discret cède la place à un **aplat clair
+écrit en sombre** : bleu glacé pour « Confirmer l'attaque » (la teinte du cadre
+d'Eau qui la bordait déjà), **or** pour « Résoudre le combat » (l'or de « Fin du
+tour », la teinte qui annonce une étape du tour dans ce duel), avec un halo qui
+respire doucement tant que la commande est disponible (2,6 s ; jamais grisée, et
+`prefers-reduced-motion` l'éteint). Le contraste ne dépend plus de la peinture du
+plateau : la commande du combat se voit avant qu'on la cherche. Au doigt, les
+tailles restent celles du téléphone mais l'aplat clair demeure ; sous 620 px de
+large, la colonne rend la place à la disposition compacte du doigt.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — la place de chaque carte dans la rangée
+  (`--hand-fan`, `--hand-fan-arc`, posés en ligne sur les cartes de
+  `.rpg-hand`) et `mesurerBoiteCarteMain()`, la mesure du vol sur la boîte
+  inclinée ;
+- `src/games/rpg-battle.css` — « L'éventail de la main » (les trois repères
+  dérivés sur `.rpg-hand__card`, puis le `transform` de la souris, son survol et
+  son glisser), la main du sorcier agrandie (`.rpg-hidden-hand__card`), « La
+  colonne des actions » et « La commande principale du combat » ;
+- `src/games/rpg-mobile.css` — les repères de l'éventail remis à zéro au doigt,
+  et la liste des fonds sombres, où ne restent que les commandes en retrait
+  (annuler, attaquer avec tous, annuler l'attaque).
+
+### Vérifications
+
+```bash
+npm run check:rpg-ui      # l'éventail, la main du sorcier, la colonne et les deux aplats, dans la page et les deux feuilles
+npm run check:rpg         # les règles du duel, inchangées
+npm run check:rpg-mobile  # au doigt (Playwright) : la main reste mesurée carte par carte, sans recouvrement
+```
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat : les trois repères de
+l'éventail et leur remise à zéro au doigt, la boîte du vol mesurée sur la carte
+inclinée, la taille de la main du sorcier (78 × 101, puis 52 × 67 sous 620 px),
+la colonne des actions (même largeur que le rail, barre empilée sur toute la
+largeur), les deux aplats clairs et leur halo, l'extinction du halo quand la
+commande est grisée ou que `prefers-reduced-motion` est demandé — et l'interdit
+qui va avec : le fond sombre ne doit plus jamais repeindre ces deux commandes.

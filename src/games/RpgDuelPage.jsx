@@ -258,6 +258,27 @@ function mesurerRectangle(element, fallbackWidth = 128, fallbackHeight = 160) {
   };
 }
 
+/* Une carte de la main se tient inclinée dans l'éventail (voir « L'éventail de
+   la main » dans `rpg-battle.css`) : `getBoundingClientRect` rend alors la boîte
+   **tournée**, plus large que la carte. Le vol de carte part donc de la boîte
+   de mise en page (`offsetWidth`/`offsetHeight`), recentrée sur la boîte
+   mesurée — la carte garde exactement sa taille en quittant la main, au lieu de
+   grossir du quart de sa hauteur. Sans mise en page (jsdom), la mesure reste
+   celle d'avant. */
+function mesurerBoiteCarteMain(element, fallbackWidth = 128, fallbackHeight = 160) {
+  const rect = mesurerRectangle(element, fallbackWidth, fallbackHeight);
+  if (!rect) return null;
+  const width = element.offsetWidth || rect.width;
+  const height = element.offsetHeight || rect.height;
+  const recentrage = (mesure, taille) => (mesure > taille + 1 ? (mesure - taille) / 2 : 0);
+  return {
+    left: rect.left + recentrage(rect.width, width),
+    top: rect.top + recentrage(rect.height, height),
+    width,
+    height,
+  };
+}
+
 function mesurerDestinationVol(table, kind, from, carteId) {
   const terrain = kind === 'terrain';
   const zone = table?.querySelector(terrain ? '.rpg-terrains--joueur' : '.card-row--equipe');
@@ -2620,7 +2641,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setCarteEnVol((current) => current?.token === carteEnVol.token ? null : current);
       return;
     }
-    const from = mesurerRectangle(source, 128, 160);
+    const from = mesurerBoiteCarteMain(source, 128, 160);
     const to = mesurerDestinationVol(table, carteEnVol.kind, from, carteEnVol.carteId);
     const slotWidth = source.offsetWidth || from.width;
     const slotHeight = source.offsetHeight || from.height;
@@ -5081,12 +5102,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           data-tutorial-target={tutorielActif && ['main', 'magies'].includes(etapeTutorielId) ? 'hand' : undefined}
         >
           <div className="rpg-hand" style={{ '--hand-count': Math.max(1, groupesMain.length) }}>
-            {groupesMain.map((groupe) => {
+            {groupesMain.map((groupe, position) => {
               const carteId = groupe.carteId;
               const i = groupe.indices[0];
               const exemplaires = groupe.indices.length;
               const carte = cardById(carteId);
               if (!carte) return null;
+              // L'éventail : la carte connaît sa place dans la rangée — un
+              // nombre signé, nul au centre — et son carré, qui donne la
+              // descente en arc des bords. La feuille de style en fait un
+              // angle, une ouverture et une inclinaison (voir « L'éventail de
+              // la main » dans `rpg-battle.css`).
+              const eventail = position - (groupesMain.length - 1) / 2;
               const estTerrain = carte.kind === 'terrain';
               const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
               const peutRepondre = reponseActive && carte.instant;
@@ -5137,6 +5164,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   ].filter(Boolean).join(' ')}
                   style={{
                     '--tilt': `${TILTS[i % TILTS.length]}deg`,
+                    '--hand-fan': eventail,
+                    '--hand-fan-arc': eventail * eventail,
                     ...cardFrameStyle(carte),
                     ...(piocheEnCours ? { '--rpg-draw-delay': `${piocheEnCours.delay}ms` } : {}),
                     ...styleVol,
