@@ -199,7 +199,7 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
     for (const objet of theme.objets) {
       assert.ok(RPG_TABLE_OBJECT_KINDS.includes(objet.kind), `${id} : genre ${objet.kind} connu`);
       assert.ok(objet.u >= 0 && objet.u <= 1 && objet.v >= 0 && objet.v <= 1, `${id}/${objet.kind} : dans l'image`);
-      assert.ok(objet.size > 0.03 && objet.size <= 0.3, `${id}/${objet.kind} : taille plausible`);
+      assert.ok(objet.size > 0.03 && objet.size <= 0.4, `${id}/${objet.kind} : taille plausible`);
       assert.ok(Number.isFinite(objet.angle));
     }
   }
@@ -208,7 +208,7 @@ test('les objets 3D déclarés sont valides, et chacun a sa peinture « vide »'
 
 test('chaque objet se construit sous Node, posé au sol, borné et sans valeur invalide', () => {
   assert.equal(createTableObject('licorne'), null);
-  assert.deepEqual([...RPG_TABLE_OBJECT_KINDS].sort(), ['amethyste', 'bol', 'corde', 'galets', 'gourde', 'lanterne', 'rubis']);
+  assert.deepEqual([...RPG_TABLE_OBJECT_KINDS].sort(), ['amethyste', 'bol', 'compas', 'corde', 'galets', 'gourde', 'lanterne', 'rubis', 'tapis']);
   let triangles = 0;
   for (const kind of RPG_TABLE_OBJECT_KINDS) {
     const group = createTableObject(kind);

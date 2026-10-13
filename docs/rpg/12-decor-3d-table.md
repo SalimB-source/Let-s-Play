@@ -33,6 +33,7 @@ ombre portée sur la table et reflètent un environnement doux. Plateaux livrés
 | Plateau | Objets 3D |
 | --- | --- |
 | Erg du Sahara | lanterne (vraie lumière), gourde, galets, bol, corde |
+| Caravane de Gourara | tapis roulé (motif kilim), corde, compas de laiton à couvercle ouvert, outre |
 | Cavernes de Cristal | neuf amas d'améthystes et de rubis dans les coins (éclat qui pulse) |
 
 Les autres plateaux n'ont pas d'objets (`objets: []`) et gardent leur peinture
@@ -67,7 +68,7 @@ inchangée.
 Ajouter les objets d'un autre plateau : lister ses objets dans le thème
 (`objets`), produire sa plaque vide sur le modèle du script, puis vérifier les
 alignements avec `tableObjectTransform` aux formats 1, 3:2, 16:9 et 2,4:1.
-Objets peints repérés pour la suite : Gourara (outre, corde, compas), Fjord (lanterne, cor, corde, hache), Tipaza
+Objets peints repérés pour la suite : Fjord (lanterne, cor, corde, hache), Tipaza
 (fûts, chapiteau), Désert de Verre (roses de verre, astrolabe, outre, corde),
 Abysses (coraux, colonnes, amphores), Îles (sapins, rochers, lanterne, corde).
 

@@ -151,10 +151,10 @@ function buildWaterskin(env) {
   group.add(collar);
   // La sangle : de l'anneau du goulot, glissée sur le sable, bouclée en bas.
   const strapCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.05, 0.9, 0.13), new THREE.Vector3(0.28, 0.9, 0.05), new THREE.Vector3(0.52, 0.66, 0.04), new THREE.Vector3(0.62, 0.32, 0.04),
-    new THREE.Vector3(0.58, 0.02, 0.04), new THREE.Vector3(0.42, -0.14, 0.04), new THREE.Vector3(0.22, -0.1, 0.04),
+    new THREE.Vector3(0.05, 0.9, 0.13), new THREE.Vector3(0.24, 0.88, 0.05), new THREE.Vector3(0.4, 0.68, 0.04), new THREE.Vector3(0.46, 0.34, 0.04),
+    new THREE.Vector3(0.4, 0.04, 0.04), new THREE.Vector3(0.26, -0.08, 0.04), new THREE.Vector3(0.12, -0.04, 0.04),
   ], false, 'centripetal');
-  const strap = new THREE.TubeGeometry(strapCurve, 90, 0.04, 8, false);
+  const strap = new THREE.TubeGeometry(strapCurve, 90, 0.034, 8, false);
   strap.scale(1, 1, 0.32); // sangle plate
   const strapMesh = mesh(strap, kit.standard('sangle', { color: '#7a4a28', roughness: 0.75, metalness: 0, map: leather.map }), 'sangle');
   group.add(strapMesh);
@@ -254,6 +254,144 @@ function buildCrystalCluster(env, { kind, color, glow, seed }) {
   return group;
 }
 
+/**
+ * Un tapis tissé : bandes noires, rouges et ivoire, avec des losanges. La
+ * texture est dessinée ici, raccordable (le tapis entier n'a qu'un motif répété).
+ * `v` suit la longueur du rouleau, `u` en fait le tour.
+ */
+function kilimTexture() {
+  const width = 64, height = 128;
+  const data = new Uint8Array(width * height * 4);
+  const ivory = [214, 196, 160], red = [150, 52, 36], black = [34, 24, 22], rust = [190, 96, 62];
+  for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+    const v = y / height, u = x / width;
+    let color = ivory;
+    const band = v * 8; // huit bandes sur le motif
+    const inBand = band - Math.floor(band);
+    const index = Math.floor(band);
+    if (index % 4 === 0) color = inBand < 0.22 || inBand > 0.78 ? black : red;
+    else if (index % 4 === 2) color = inBand < 0.14 || inBand > 0.86 ? red : ivory;
+    else {
+      // Les losanges : distance de Manhattan au centre de chaque cellule.
+      const cell = (u * 4) % 1, around = Math.abs(cell - 0.5) + Math.abs(inBand - 0.5);
+      color = around < 0.26 ? rust : around < 0.34 ? black : ivory;
+    }
+    // Un grain de laine.
+    const grain = 0.9 + 0.1 * Math.sin(x * 2.9 + y * 1.7) * Math.sin(y * 3.7);
+    const at = (y * width + x) * 4;
+    data[at] = color[0] * grain; data[at + 1] = color[1] * grain; data[at + 2] = color[2] * grain; data[at + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, width, height);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
+ * Un tapis roulé, couché : un cylindre tissé, et à son extrémité les couches de
+ * l'enroulement en anneaux décalés. L'origine est le centre de l'extrémité
+ * « fermée » (gauche), le rouleau part vers +Y ; `extent` est sa longueur.
+ */
+function buildCarpet(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const radius = 0.175;
+  const texture = kilimTexture();
+  texture.repeat.set(1, 2);
+  const wool = kit.standard('laine', { map: texture, roughness: 0.95, envMapIntensity: 0.1 });
+  const roll = mesh(new THREE.CylinderGeometry(radius, radius, 1, 40, 1, true), wool, 'rouleau');
+  roll.position.set(0, 0.5, radius);
+  group.add(roll);
+  // Les deux extrémités : couches de l'enroulement vues de face, de l'extérieur vers le cœur.
+  const layers = ['#6f4a34', '#c9b48a', '#8a3a28', '#3a2a24', '#b89a6c', '#5e3426', '#d2c19a'];
+  for (const [y, face] of [[0, -1], [1, 1]]) {
+    layers.forEach((color, i) => {
+      const r = radius * (1 - i * 0.135);
+      const disc = mesh(new THREE.CylinderGeometry(r, r, 0.004, 32), kit.standard('couche', { color, roughness: 0.92 }), 'couche');
+      disc.position.set(0, y + face * 0.002 * (i + 1), radius);
+      group.add(disc);
+    });
+  }
+  group.userData = { kind: 'tapis', extent: 1.0 };
+  return group;
+}
+
+/**
+ * Un compas de poche en laiton, boîtier et couvercle ouverts côte à côte : le
+ * boîtier (cadran, aiguille) à l'origine, le couvercle poli vers +Y, l'anneau de
+ * suspension du côté opposé. Unité : 1 = le rayon du boîtier × 2.
+ */
+function buildCompass(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const brass = kit.metal('laiton', '#9a7d3c', 0.34, 0.92);
+  const cup = (radius) => {
+    // Une coupe de révolution, ouverte vers le haut : l'axe Y du lathe devient +Z.
+    const geometry = lathe([[0.001, 0], [radius, 0], [radius, 0.1], [radius * 0.92, 0.1], [radius * 0.92, 0.04], [0.001, 0.04]], 40);
+    geometry.rotateX(Math.PI / 2);
+    return geometry;
+  };
+  const body = mesh(cup(0.5), brass, 'boitier');
+  group.add(body);
+  const dial = mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.01, 40), kit.standard('cadran', { color: '#b9a266', roughness: 0.5, metalness: 0.5, envMapIntensity: 0.5 }), 'cadran');
+  dial.rotation.x = Math.PI / 2; // axe Y -> Z : le disque est à plat
+  dial.position.z = 0.05;
+  group.add(dial);
+  // Les graduations : huit traits fins, comme sur le cadran peint.
+  for (let i = 0; i < 8; i += 1) {
+    const tick = mesh(new THREE.BoxGeometry(0.014, 0.16, 0.004), kit.standard('trait', { color: '#4a3820', roughness: 0.7 }), 'graduation');
+    tick.position.z = 0.058;
+    const angle = (i * Math.PI) / 4;
+    tick.position.x = Math.sin(angle) * 0.33;
+    tick.position.y = Math.cos(angle) * 0.33;
+    tick.rotation.z = -angle;
+    tick.castShadow = false;
+    group.add(tick);
+  }
+  // L'aiguille : un losange, moitié rouge, moitié acier, pivotant sur une goupille.
+  const needle = new THREE.Group();
+  const half = (sign, color) => {
+    const part = mesh(new THREE.CylinderGeometry(0.001, 0.05, 0.36, 4), kit.metal('aiguille', color, 0.3, 0.7), 'aiguille');
+    part.scale.set(1, 1, 0.25);
+    part.position.set(0, sign * 0.18, 0.075);
+    if (sign < 0) part.rotation.z = Math.PI;
+    needle.add(part);
+  };
+  half(1, '#b13a2c');
+  half(-1, '#7e8794');
+  needle.rotation.z = -0.62;
+  group.add(needle);
+  const pin = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 12), brass, 'goupille');
+  pin.rotation.x = Math.PI / 2;
+  pin.position.z = 0.085;
+  group.add(pin);
+  // Le couvercle, ouvert : une coupe plus plate, au fond poli.
+  const lid = new THREE.Group();
+  lid.position.set(0, 1.02, 0);
+  lid.add(mesh(cup(0.47), brass, 'couvercle'));
+  const mirror = mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.01, 40), kit.metal('poli', '#c2a455', 0.18, 0.95), 'poli');
+  mirror.rotation.x = Math.PI / 2;
+  mirror.position.z = 0.047;
+  lid.add(mirror);
+  group.add(lid);
+  const hinge = mesh(new THREE.BoxGeometry(0.2, 0.2, 0.09), brass, 'charniere');
+  hinge.position.set(0.02, 0.52, 0.045);
+  group.add(hinge);
+  // L'anneau de suspension, à plat.
+  const ring = mesh(new THREE.TorusGeometry(0.13, 0.026, 8, 24), brass, 'anneau');
+  ring.position.set(0, -0.66, 0.03);
+  group.add(ring);
+  const stem = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.14, 8), brass, 'tige');
+  stem.position.set(0, -0.54, 0.04);
+  group.add(stem);
+  group.userData = { kind: 'compas', extent: 2.32 };
+  return group;
+}
+
 const BUILDERS = Object.freeze({
   bol: buildBowl,
   galets: buildPebbles,
@@ -261,6 +399,8 @@ const BUILDERS = Object.freeze({
   gourde: buildWaterskin,
   lanterne: buildLantern,
   amethyste: (env) => buildCrystalCluster(env, { kind: 'amethyste', color: '#7f3fc4', glow: '#3a1470', seed: 417 }),
+  tapis: buildCarpet,
+  compas: buildCompass,
   rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
 

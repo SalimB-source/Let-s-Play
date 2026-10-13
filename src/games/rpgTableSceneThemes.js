@@ -116,6 +116,14 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
   // Le lit d'oued : même vent, poussière plus rouge, moins dense.
   'caravane-de-gourara': theme({
     key: '#ffdcb0', keyIntensity: 0.54, keyDirection: [-0.8, 0.55, 0.9], relief: 1.4, roughness: 0.96,
+    // Outre, corde, compas et tapis roulé : reconstruits en 3D sur la plaque vide.
+    plaque: 'plateau-caravane-de-gourara-vide.jpg',
+    objets: [
+      { kind: 'tapis', u: 0.446, v: 0.033, size: 0.332, angle: -4 },
+      { kind: 'corde', u: 0.805, v: 0.26, size: 0.13, angle: 90 },
+      { kind: 'compas', u: 0.722, v: 0.819, size: 0.148, angle: 50 },
+      { kind: 'gourde', u: 0.402, v: 1, size: 0.243, angle: 143 },
+    ],
     particles: motes({ count: 56, color: '#e8b98a', size: 0.03, opacity: 0.45, vx: 0.24, vy: 0.01, sway: 0.05, swayHz: 0.5, z: 0.5, zSpread: 0.4 }),
     overlay: { kind: 'ombre', color: '#3b1d10', opacity: 0.15, speed: 0.009, scale: 1.4 },
   }),
