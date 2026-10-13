@@ -283,6 +283,7 @@
 .rpg-btn small { font-size: 10px; color: var(--dim); font-weight: 500; }
 .rpg-btn--primary { background: var(--yellow); border-color: var(--yellow); color: #161005; font-weight: 800; }
 .rpg-btn--ghost { background: transparent; }
+.rpg-btn--activation { background: linear-gradient(180deg, #0d4a5a, #07242e); border-color: #2e7d8f; color: #c9eef7; }
 
 /* Fin du tour : la grande pastille dorée du Sablier, bien visible sur la table. */
 .rpg-btn--endturn {
@@ -673,6 +674,38 @@
   align-items: center;
   gap: 6px;
   padding: 0 2px;
+}
+
+/* Plaque de l'arme portée : accrochée au bas de la carte de son porteur,
+   au-dessus du pied de statistiques, sans masquer l'illustration. */
+.rpg-card__arme {
+  position: absolute;
+  left: 50%;
+  bottom: 13%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 92%;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1.5px solid #000;
+  background: linear-gradient(180deg, #3d3a33, #211e19);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 1px 3px rgba(0, 0, 0, .6);
+  font: 700 8px/1.5 Georgia, serif;
+  letter-spacing: .02em;
+  color: #f3d98b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.rpg-card__arme .rpg-stat-icon {
+  width: 9px;
+  height: 9px;
+  flex: none;
 }
 
 .rpg-card__col {
@@ -5672,6 +5705,48 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-card--frame-brillant { animation: none !important; background-position: 0 0, 0 0, 42% 0; }
+}
+
+/* ── Le cadre des armes : acier poli guilloché, gris métallique ───────────
+   Les armes délaissent la couleur de leur élément pour un cadre commun
+   d'acier poli (dégradé de gris froids, posé par `cardFrameInfo` via la
+   classe `rpg-card--frame-arme`) : une arme se reconnaît comme arme avant
+   de se lire comme carte du Sable, de l'Eau, de la Neige ou de la Braise —
+   son élément reste porté par le badge et les pastilles de coût.
+   Le motif change aussi : ni la résille commune ni le zellige mythique,
+   mais un **guilloché d'acier de Damas** — de fines ondes gravées, chacune
+   une ligne sombre doublée de son reflet, comme la matière ondée des
+   lames damassées et le guillochage des boîtiers de montre : un décor
+   discret et précieux, qui se lit dans l'anneau élargi comme une gravure
+   continue. La règle vient après celle des mythiques : l'Armure de
+   cendres, mythique, perd le zellige mais garde son reflet animé sur
+   l'acier (classe `rpg-card--frame-brillant`). */
+.rpg-card--frame-arme {
+  --rpg-frame-gradient: linear-gradient(115deg, #454e56 0%, #828d95 15%, #dfe6eb 29%, #6e787f 43%, #c3ccd2 56%, #59636a 72%, #a7b2ba 87%, #454e56 100%);
+  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='12' viewBox='0 0 18 12'%3E%3Cg fill='none' stroke-width='1'%3E%3Cpath d='M-2 3 Q2.5 .8 7 3 T16 3 T25 3' stroke='%23000' stroke-opacity='.38'/%3E%3Cpath d='M-2 4 Q2.5 1.8 7 4 T16 4 T25 4' stroke='%23fff' stroke-opacity='.28'/%3E%3Cpath d='M-2 9 Q2.5 6.8 7 9 T16 9 T25 9' stroke='%23000' stroke-opacity='.38'/%3E%3Cpath d='M-2 10 Q2.5 7.8 7 10 T16 10 T25 10' stroke='%23fff' stroke-opacity='.28'/%3E%3C/g%3E%3C/svg%3E");
+  --rpg-frame-motif-size: 18px 12px;
+  background-color: #5f6a72;
+}
+
+/* La plaque des armes est aussi plus épaisse : ×1,6 le gabarit de chaque
+   face, sans changer la taille extérieure de la carte (le tout est en
+   `box-sizing: border-box` : c'est l'illustration qui cède un peu de sa
+   marge, comme une carte gainée d'acier). Le guilloché, plus lisible
+   dans un anneau large, distingue les armes au premier coup d'œil. Au
+   doigt, `rpg-mobile.css` pose le même renfort sur ses règles tactiles. */
+.rpg-card.rpg-card--frame-arme,
+.rpg-hand__card.rpg-card--frame-arme,
+.rpg-card-destruction-fx.rpg-card--frame-arme {
+  border-width: calc(var(--rpg-card-border, 4px) * 1.6);
+}
+.rpg-hover-card-preview__face.rpg-card--frame-arme,
+.rpg-mulligan__card.rpg-card--frame-arme,
+.rpg-card-catalogue__art.rpg-card--frame-arme {
+  border-width: calc(var(--rpg-card-border-large, 6px) * 1.6);
+}
+.rpg-spell-played__art.rpg-card--frame-arme,
+.rpg-card-pile__card--top.rpg-card--frame-arme {
+  border-width: calc(var(--rpg-card-border-small, 3px) * 1.6);
 }
 
 /* L'aperçu rapide n'a pas de fond : l'illustration y flotte sur la table (voir

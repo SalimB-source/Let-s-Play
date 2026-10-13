@@ -168,12 +168,12 @@ assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
 assert.match(duelEngine, /cibleRapideId[\s\S]*?resume\.coupsRapides\.push[\s\S]*?for \(const coup of resume\.coupsRapides\)[\s\S]*?enregistrerDegatsCombat\(\s*degatsCombat,\s*adv,\s*coup\.cibleId,\s*coup\.degats/s,
   'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
-assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
-  'l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
+assert.match(duelEngine, /export function rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\s*\{[\s\S]*?if \(attaquant\.infiltration\) return false;[\s\S]*?!attaquant\.envol \|\| Boolean\(bloqueur\.envol\)/,
+  'l’Infiltration rend l’attaquant inbloquable, et l’Envol n’autorise que les créatures volantes à bloquer un attaquant volant');
 assert.match(aiBrain, /peutBloquerAttaquant\(bloqueur, attaquant\)\s*&&\s*!estProtegee\(attaquant, cardColors\(duelCardById\(bloqueur\.carteId\)\)\)/,
   'l’IA écarte les bloqueurs sans Envol face à un attaquant volant');
-assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) return \{ ok: false, raison: 'envol' \}/,
-  'le moteur refuse un blocage terrestre contre un attaquant avec Envol');
+assert.match(duelEngine, /if \(!rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*return \{ ok: false, raison: attaquant\.infiltration \? 'infiltration' : 'envol' \};/,
+  'le moteur refuse un blocage contre un attaquant avec Envol ou Infiltration, avec la raison qui convient');
 assert.match(battlePage, /if \(!retireDeCetteAttaque && !rpgPeutBloquerAttaquant\(bloqueur, attaquant\)\) \{\s*setBloqueurSelectionne\(null\);\s*jouerSfx\('erreur'\);/,
   'un bloqueur sans Envol est refusé par le bruitage d’erreur, sans phrase d’explication');
 assert.match(battlePage, /canDragBlocker=\{Boolean\(reponseActive && !reponseApresBlocage && bloqueursDisponibles\.some/,
@@ -505,6 +505,47 @@ assert.match(mythicRule, /--rpg-frame-motif-size:\s*12px 12px;/,
   'le motif du cadre mythique se répète tous les 12 px le long de l’anneau');
 assert.match(mythicRule, /--rpg-frame-shine-duration:\s*2\.8s;/,
   'le reflet des mythiques mono-élément garde sa cadence');
+// Le cadre des armes ne suit pas l'élément : toutes les armes portent le même
+// acier poli guilloché, gris métallique, à la place de la résille commune.
+// Le motif est décodé et relu par un analyseur XML, comme ceux des autres
+// cadres : une URI mal échappée ne peindrait simplement rien.
+const armeRule = frameCss.match(/\.rpg-card--frame-arme\s*\{([^}]*)\}/);
+assert.ok(armeRule, 'les armes ont leur propre cadre');
+assert.match(armeRule[1], /--rpg-frame-gradient:\s*linear-gradient\(115deg, #454e56/,
+  'le cadre des armes est un acier brossé de gris froids, pas la couleur d’un élément');
+const teintesAcier = armeRule[1].match(/#[0-9a-f]{6}/gi);
+assert.ok(teintesAcier.length >= 6 && teintesAcier.every((teinte) => {
+  const [r, g, b] = teinte.slice(1).match(/../g).map((canal) => parseInt(canal, 16));
+  return Math.max(r, g, b) - Math.min(r, g, b) <= 24;
+}), 'toutes les teintes du cadre des armes restent des gris presque neutres');
+assert.doesNotMatch(armeRule[1], /#e0412a|#3f9fe8|#d8bc86|#a9e0f5/,
+  'aucune couleur d’élément ne teinte le cadre des armes');
+const armeMotif = armeRule[1].match(/--rpg-frame-motif:\s*url\("([^"]+)"\)/);
+assert.ok(armeMotif, 'le cadre des armes porte son propre motif');
+assert.match(armeMotif[1], /^data:image\/svg\+xml,%3Csvg /,
+  'le motif du cadre des armes est un SVG en ligne');
+const armeMotifDom = new JSDOM('<!doctype html><body></body>');
+const armeMotifDoc = new armeMotifDom.window.DOMParser().parseFromString(
+  decodeURIComponent(armeMotif[1].replace(/^data:image\/svg\+xml,/, '')), 'image/svg+xml');
+assert.equal(armeMotifDoc.querySelector('parsererror'), null,
+  'le SVG du guilloché des armes est bien formé une fois décodé');
+assert.ok(armeMotifDoc.querySelectorAll('path').length >= 4,
+  'le guilloché de Damas superpose au moins deux ondes gravées et leurs reflets');
+armeMotifDom.window.close();
+assert.match(armeRule[1], /--rpg-frame-motif-size:\s*18px 12px;/,
+  'les ondes du guilloché des armes se répètent tous les 18 × 12 px le long de l’anneau');
+assert.match(cardsSource, /if \(carte\?\.kind === 'arme'\) return \{ key: 'arme'/,
+  'le catalogue attribue le cadre acier aux armes avant leur élément');
+// Le cadre des armes est renforcé : ×1,6 le gabarit de chaque face, sans
+// toucher aux épaisseurs des autres cartes ni à la taille extérieure.
+assert.match(frameCss, /\.rpg-card\.rpg-card--frame-arme,\s*\.rpg-hand__card\.rpg-card--frame-arme,\s*\.rpg-card-destruction-fx\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border, 4px\) \* 1\.6\);/,
+  'cartes en main, sur table et destructions : le cadre des armes vaut 1,6 fois le gabarit normal');
+assert.match(frameCss, /\.rpg-hover-card-preview__face\.rpg-card--frame-arme,\s*\.rpg-mulligan__card\.rpg-card--frame-arme,\s*\.rpg-card-catalogue__art\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border-large, 6px\) \* 1\.6\);/,
+  'aperçu, mulligan et catalogue : le cadre des armes vaut 1,6 fois le grand gabarit');
+assert.match(frameCss, /\.rpg-spell-played__art\.rpg-card--frame-arme,\s*\.rpg-card-pile__card--top\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border-small, 3px\) \* 1\.6\);/,
+  'magie jouée et dessus de pile : le cadre des armes vaut 1,6 fois le petit gabarit');
+assert.match(mobileCss, /\.rpg-battle--touch \.card-row \.rpg-card\.rpg-card--frame-arme,\s*\.rpg-battle--touch \.rpg-hand \.rpg-hand__card\.rpg-card--frame-arme,\s*\.rpg-battle--touch \.rpg-card-stack \.rpg-card\.rpg-card--frame-arme\s*\{\s*border-width: calc\(var\(--rpg-card-border, 2\.5px\) \* 1\.6\);/,
+  'au doigt, la plaque des armes garde son renfort sur la table, en main et dans les piles');
 assert.match(frameCss, /\.rpg-hover-card-preview\[class\*="rpg-card--frame-"\],\s*\.rpg-hover-card-preview__face\[class\*="rpg-card--frame-"\]\s*\{\s*background-color:\s*transparent;\s*\}/,
   'l’aperçu rapide ne garde aucune teinte de repli, ni sur son encadré entier ni derrière l’illustration');
 // Le vernis est réservé à la peinture mythique, indépendamment du cadre. Il
@@ -529,8 +570,8 @@ assert.match(glossCss, /\.rpg-card--mythique:is\(\.is-summoning-sick, \.is-attac
 assert.match(glossCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.rpg-card--mythique::before,[\s\S]*?animation: none !important;[\s\S]*?background-position: 0 0, 50% 0 !important;/,
   'le vernis reste visible sans mouvement quand l’animation est réduite');
 const guideCss = readFileSync(new URL('../src/games/rpg-card-guide.css', import.meta.url), 'utf8');
-assert.match(guideCss, /\.rpg-card-guide__example:is\(\.rpg-card--mythique, \[class\*="rpg-card--frame-hybride-"\]\)\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
-  'le guide peint aussi la diagonale bicolore sur les cartes non mythiques');
+assert.match(guideCss, /\.rpg-card-guide__example:is\(\.rpg-card--mythique, \[class\*="rpg-card--frame-hybride-"\], \.rpg-card--frame-arme\)\s*\{[^}]*background-size:\s*100% 100%, var\(--rpg-frame-motif-size, 8px 8px\), var\(--rpg-frame-material-size, 100% 100%\);/s,
+  'le guide peint aussi la diagonale bicolore et la plaque d’acier des armes sur les cartes non mythiques');
 assert.match(guideCss, /\.rpg-card-guide__example\.rpg-card--frame-brillant\s*\{\s*animation:\s*rpg-frame-shine-sweep/,
   'le guide n’anime que les cadres mythiques mono-élément');
 assert.match(guideCss, /\.rpg-card-guide__cost\s*\{\s*position: absolute;\s*z-index: 2;/,

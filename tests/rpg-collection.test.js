@@ -48,7 +48,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 33, 'les 29 cartes initiales plus 4 variantes communes de terrain sont possédées d\'entrée');
+  assert.equal(COLLECTION_DEPART.length, 34, 'les 30 cartes initiales plus 4 variantes communes de terrain sont possédées d\'entrée');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);

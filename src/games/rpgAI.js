@@ -18,6 +18,7 @@
 
 import {
   RPG_ELEMENTS,
+  armeById,
   cardColorCost,
   cardColors,
   duelCardById,
@@ -64,9 +65,10 @@ function estProtegee(entite, couleurs) {
     && liste.includes(entite.protection.contre));
 }
 
-/** Envol : seul un bloqueur volant peut arrêter un attaquant volant. */
+/** Infiltration : inbloquable. Envol : seul un bloqueur volant arrête un volant. */
 function peutBloquerAttaquant(bloqueur, attaquant) {
   if (!bloqueur || !attaquant) return false;
+  if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
 }
 
@@ -89,9 +91,11 @@ export function blessureNette(entite, montant, sourceType = 'attaque') {
   return Math.max(0, apresEsquive - Math.max(0, entite?.bouclier ?? 0));
 }
 
-/** Furie gagnée par une créature blessée qui survit (0 sans Furie ni blessure). */
+/** Furie gagnée par une créature blessée qui survit (0 sans Furie ni blessure).
+ *  La Furie peut venir de la créature elle-même ou de l'arme qu'elle porte. */
 export function furieGagnee(entite, degatsRecus) {
-  const furie = Math.max(0, Number(duelCardById(entite?.carteId)?.furie) || 0);
+  const furie = Math.max(0, Number(duelCardById(entite?.carteId)?.furie) || 0)
+    + Math.max(0, Number(armeById(entite?.arme?.carteId)?.donne?.furie) || 0);
   return furie > 0 && (degatsRecus ?? 0) > 0 ? furie : 0;
 }
 
@@ -124,6 +128,9 @@ export function valeurEntite(entite) {
   if (carte.arrivee) valeur += 1.5;
   if (carte.destruction) valeur += 1;
   if (carte.combat) valeur += 2;
+  // L'arme portée : bonus et mot-clé sont déjà dans les chiffres et les champs
+  // de l'entité (envol, esquive lus plus haut) ; seul le déclenché s'ajoute.
+  if (entite?.arme && armeById(entite.arme.carteId)?.declenche) valeur += 1.5;
   return valeur;
 }
 
@@ -224,6 +231,9 @@ function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, p
  */
 export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
+  if (carte?.kind === 'arme') {
+    return meilleureCibleArme(duel, cote, carte);
+  }
   if (carte?.arrivee?.type === 'combat') {
     return meilleuresOptionsOffensives(duel, cote, carte, {
       montant: carte.atk ?? 0, sourceType: 'capacite', portee: 'combat', profil, rng,
@@ -254,6 +264,26 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     })?.cibleId ?? null;
   }
   return null;
+}
+
+/**
+ * Meilleur porteur pour une arme : la créature alliée **sans arme** la plus
+ * précieuse — une seconde arme enverrait la première au cimetière, l'IA ne
+ * paie jamais pour remplacer. Un mot-clé déjà porté (Envol sur une valkyrie)
+ * ne se paie pas deux fois ; la protection contre la couleur de l'arme rend
+ * la créature inéligible, comme pour un bouclier ami.
+ */
+function meilleureCibleArme(duel, cote, carte) {
+  const couleurs = cardColors(carte);
+  return duel[cote].creatures
+    .filter((entite) => !entite.arme && !estProtegee(entite, couleurs))
+    .map((entite) => {
+      let score = valeurEntite(entite);
+      if (carte.donne?.envol && entite.envol) score -= 3;
+      if (carte.donne?.esquive && (entite.esquive ?? 0) > 0) score -= 1;
+      return { entite, score };
+    })
+    .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }
 
 /** Meilleure créature amie pour un renfort ciblé (bouclier…) : la plus précieuse. */
@@ -708,6 +738,28 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     return null;
   }
 
+  if (carte.kind === 'arme') {
+    // Une arme sans porteur libre ne se joue pas : elle attend une créature.
+    // Son prix suit ce qu'elle ajoute — chiffres, mot-clé utile au porteur
+    // choisi, déclenché — rapporté à son coût, comme un renfort permanent.
+    const cibleId = meilleureCibleArme(duel, cote, carte);
+    if (!cibleId) return null;
+    const porteur = camp.creatures.find((entite) => entite.id === cibleId);
+    let gain = (carte.bonus?.atk ?? 0) * 1.3 + (carte.bonus?.def ?? 0);
+    if (carte.donne?.esquive) gain += carte.donne.esquive * 1.5;
+    if (carte.donne?.envol && !porteur?.envol) gain += 2.5;
+    if (carte.donne?.infiltration && !porteur?.infiltration) gain += 2.5;
+    if (carte.donne?.furie) gain += 1 + carte.donne.furie * 0.7;
+    if (carte.donne?.rapidite && !porteur?.rapidite) gain += 0.7;
+    if (carte.donne?.immunite && !estProtegee(porteur, carte.donne.immunite)) gain += 2;
+    if (carte.declenche) gain += 2;
+    // Un serpent appelé à l'arrivée, et un autre à la demande contre du mana
+    // (Bâton des citernes) : un corps rapide d'un tour vaut sa frappe.
+    if (carte.arrivee?.type === 'jetons') gain += 2.5;
+    if (carte.activation) gain += 2;
+    return { score: 3 + gain - cout * 0.2, cibleId };
+  }
+
   // Créature ou héros : le corps sur la table, les arrivées modulent.
   let score = 4 + cout * 0.8;
   // Les capacités de clan du Nord : un corps qui grandit sous les coups, ou
@@ -807,7 +859,7 @@ export function choisirCarteIA(duel, cote, options = {}) {
   const camp = duel[cote];
   const candidats = [];
   for (const carteId of camp.main) {
-    const carte = duelCardById(carteId) ?? magieById(carteId);
+    const carte = duelCardById(carteId) ?? magieById(carteId) ?? armeById(carteId);
     if (!carte || carte.kind === 'terrain' || terrainById(carteId)) continue;
     if (!moteur.rpgPeutPayer(camp, carte)) continue;
     const evaluation = scoreCarte(duel, cote, carte, profil, rng);

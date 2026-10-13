@@ -157,7 +157,17 @@ sous les repères de jeu. Il reste fixe si le mouvement est réduit et s'atténu
 sur une créature fatiguée ; une carte verrouillée dans l'atelier reste grisée.
 Ce cadre ne déborde jamais sur l'aperçu rapide : au survol comme à l'appui long,
 l'encadré reste sans fond, l'illustration flotte sur la table (voir
-`mobile-layout.md`).
+`mobile-layout.md`). **Exception des armes** : les quatre cartes Arme ne
+portent pas la couleur de leur élément, mais un cadre commun d'**acier gris
+métallique** à motif de **guilloché de Damas** (dégradé de gris froids,
+fines ondes gravées tous les 18 × 12 px) — clé `arme` de `cardFrameInfo`,
+règle `.rpg-card--frame-arme`, couleur `#9aa6b2`. L'élément d'une arme se
+lit sur son badge et ses pastilles de coût. L'Armure de cendres, mythique,
+perd le zellige de sa rareté mais garde le **reflet animé** sur l'acier
+(`rpg-card--frame-brillant`). Le cadre des armes est en outre **renforcé** :
+son anneau vaut **×1,6 le gabarit** de chaque face (sur PC comme au doigt),
+sans changer la taille extérieure de la carte — l'illustration cède un peu
+de sa marge, et le guilloché y gagne en lisibilité.
 
 ## Vérifications
 

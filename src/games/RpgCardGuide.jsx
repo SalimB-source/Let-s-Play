@@ -33,6 +33,7 @@ function GuideCard({ carte, cardArt }) {
         <h3>{carte.name}</h3>
         <p className="rpg-card-guide__type">{cardTypeLine(carte)}</p>
         {estCreature && <p className="rpg-card-guide__stats">⚔ {carte.atk} · 🛡 {carte.def}</p>}
+        {carte.kind === 'arme' && <p className="rpg-card-guide__stats">Porteur : ⚔ +{carte.bonus?.atk ?? 0} · 🛡 +{carte.bonus?.def ?? 0}</p>}
         <p className="rpg-card-guide__rules"><RpgCardRules carte={carte} /></p>
       </div>
     </article>

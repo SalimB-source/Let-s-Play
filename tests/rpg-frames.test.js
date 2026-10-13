@@ -12,6 +12,7 @@ import {
   cardHasMythicFrame,
   cardHasShinyFrame,
   cardRarityInfo,
+  RPG_ARME_CARDS,
 } from '../src/games/rpgCards.js';
 
 test('une mythique mono garde la couleur de son élément, avec un cadre brillant', () => {
@@ -65,4 +66,26 @@ test('le catalogue applique les mêmes cadres aux vraies mythiques, sans violet 
   assert.equal(cardFrameColor(cardById('kraken')), CARD_FRAME_COLORS.eau.color);
   assert.equal(cardFrameColor(cardById('tin-hinan')), CARD_FRAME_COLORS.sable.color);
   assert.equal(cardFrameColor(cardById('maitre-du-marteau')), CARD_FRAME_COLORS.neige.color);
+});
+
+test('les armes portent un cadre d’acier gris commun, indépendant de leur élément', () => {
+  for (const carte of RPG_ARME_CARDS) {
+    assert.equal(cardFrameInfo(carte).key, 'arme', carte.id);
+    assert.equal(cardFrameInfo(carte).label, 'Acier des armes', carte.id);
+    assert.equal(cardFrameColor(carte), CARD_FRAME_COLORS.arme.color, carte.id);
+    assert.equal(cardFrameClass(carte).split(' ')[0], 'rpg-card--frame-arme', carte.id);
+  }
+  // Le Takouba (Sable) et le Bâton (Eau) partagent le même acier : seule la
+  // plaque change, l'élément reste lu sur le badge et le coût.
+  const takouba = cardById('takouba-des-pistes');
+  const baton = cardById('baton-des-citernes');
+  assert.notEqual(takouba.element, baton.element);
+  assert.equal(cardFrameColor(takouba), cardFrameColor(baton));
+  // L'Armure de cendres, mythique, garde le reflet animé sur son acier.
+  const armure = cardById('armure-de-cendres');
+  assert.equal(cardFrameClass(armure), 'rpg-card--frame-arme rpg-card--frame-brillant rpg-card--mythique');
+  assert.equal(cardHasShinyFrame(armure), true);
+  assert.equal(cardHasShinyFrame(takouba), false);
+  // Une carte ordinaire garde le cadre de son élément.
+  assert.equal(cardFrameInfo(cardById('kraken')).key, 'eau');
 });
