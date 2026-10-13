@@ -4442,7 +4442,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-menu-button--resume.rpg-menu-button--floating {
   position: fixed;
   z-index: 40;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  /* Remonté du bord bas : le bouton respire au-dessus du pied de page. */
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   width: fit-content;
@@ -4455,7 +4456,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-menu-button--resume.rpg-menu-button--floating:hover,
 .rpg-menu-button--resume.rpg-menu-button--floating:focus-visible { background: rgba(49, 90, 57, .5); }
 /* La place laissée au bouton flottant : le pied de page reste lisible dessous. */
-.rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 92px; }
+.rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 108px; }
 /* Le héros de l'onglet « Jouer » n'a plus de fond : ni cadre, ni voile sombre,
    ni illustration de deck. Le titre et les boutons posent directement sur le
    décor de la page ; seuls les grains de sable et le halo restent en place. */
@@ -5017,7 +5018,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__hero-copy h2 { font-size: clamp(28px, 9vw, 39px); }
   .rpg-mode-menu__hero-copy p { font-size: 12px; }
   .rpg-mode-menu__secondary-actions { grid-template-columns: 1fr; }
-  .rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 84px; }
+  .rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 100px; }
   .rpg-mode-menu__loadout { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .rpg-mode-menu__loadout-heading { grid-column: auto; align-items: center; }
   .rpg-menu-deck-summary { min-height: 82px; }
