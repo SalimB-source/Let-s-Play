@@ -77,7 +77,7 @@ test('noms des ambiances reflètent bien chaque tour', () => {
 
 // La musique existe mais ne se fait entendre que si la page la joue : ce
 // garde-fou lit la source de la page du duel, comme les checks d'interface.
-test('la page du duel joue la musique d’ambiance du mode Histoire', () => {
+test('la page du duel joue la musique d’ambiance du mode Histoire sans doubler un plateau musical', () => {
   const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   assert.match(page, /import\s*\{\s*RpgAmbientMusic\s*\}\s*from\s*'\.\/rpgAmbientMusic\.js';/,
     'la page du duel importe le lecteur d’ambiance');
@@ -87,8 +87,10 @@ test('la page du duel joue la musique d’ambiance du mode Histoire', () => {
     'le lecteur est détruit au démontage (contexte audio fermé)');
   assert.match(page, /musiqueRef\.current\?\.setTour\(tourHistoireId\)/,
     'la tour de l’étage en cours commande la boucle');
-  assert.match(page, /\(ecran === 'partie' \|\| lectureHistoire\) && tourHistoireId && sonActif\) musique\.start\(\)/,
-    'la boucle démarre pendant un étage ou une scène du mode Histoire, si le son est actif');
+  assert.match(page, /RPG_PLATEAUX_MUSICAUX\.has\(plateauId\)/,
+    'la page connaît les plateaux qui ont leur propre musique');
+  assert.match(page, /tourHistoireId && sonActif && !plateauMusical\) musique\.start\(\)/,
+    'l’ambiance de la tour démarre seulement si le plateau n’a pas sa propre musique');
   assert.match(page, /musique\.stop\(\)/,
     'la boucle s’arrête hors duel et récit (menus, duels libres, son coupé)');
   assert.match(page, /musique\.pause\(\)/,
