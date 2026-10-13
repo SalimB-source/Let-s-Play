@@ -23,12 +23,14 @@ const ATTACKERS_CONFIRM_SAMPLE_URL = new URL('./assets/attackers-confirm.mp3', i
 const PLAYER_ATTACK_HIT_SAMPLE_URL = new URL('./assets/player-attack-hit.wav', import.meta.url);
 const FLAME_GUST_SAMPLE_URL = new URL('./assets/flame-gust.wav', import.meta.url);
 const BLOCK_IMPACT_SAMPLE_URL = new URL('./assets/block-impact.mp3', import.meta.url);
+const DESTRUCTION_HIT_SAMPLE_URL = new URL('./assets/destruction-hit.mp3', import.meta.url);
 const CARD_PLACE_VOLUME = 0.62;
 const CARD_DRAW_VOLUME = 0.52;
 const ATTACKERS_CONFIRM_VOLUME = 0.58;
 const PLAYER_ATTACK_HIT_VOLUME = 0.64;
 const FLAME_GUST_VOLUME = 0.56;
 const BLOCK_IMPACT_VOLUME = 0.58;
+const DESTRUCTION_HIT_VOLUME = 0.6;
 
 /** « A4 » → 440 Hz ; accepte # et b. */
 export function hz(note) {
@@ -53,7 +55,7 @@ export const RPG_SFX_NAMES = Object.freeze([
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
   'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'bouclier',
   'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
-  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'block_impact', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
+  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'block_impact', 'destruction_hit', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
 
 /**
@@ -293,6 +295,8 @@ export function rpgSfx(name) {
       return [{ kind: 'sample', at: 0, dur: 2.287, g: 1 }];
     case 'block_impact':
       return [{ kind: 'sample', at: 0, dur: 0.967, g: 1 }];
+    case 'destruction_hit':
+      return [{ kind: 'sample', at: 0, dur: 1.698, g: 1 }];
 
     // ── Interface : retours courts, feutrés et distincts ─────────────
     case 'menu':
@@ -369,6 +373,7 @@ export class RpgAudioPlayer {
     this.playerAttackHitAudio = null;
     this.flameGustAudio = null;
     this.blockImpactAudio = null;
+    this.destructionHitAudio = null;
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     if (typeof AudioCtor === 'function') {
       try {
@@ -390,6 +395,9 @@ export class RpgAudioPlayer {
         this.blockImpactAudio = new AudioCtor(BLOCK_IMPACT_SAMPLE_URL.href);
         this.blockImpactAudio.preload = 'auto';
         this.blockImpactAudio.volume = BLOCK_IMPACT_VOLUME;
+        this.destructionHitAudio = new AudioCtor(DESTRUCTION_HIT_SAMPLE_URL.href);
+        this.destructionHitAudio.preload = 'auto';
+        this.destructionHitAudio.volume = DESTRUCTION_HIT_VOLUME;
       } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
     }
   }
@@ -491,6 +499,10 @@ export class RpgAudioPlayer {
       this.blockImpactAudio.volume = this.muted ? 0 : BLOCK_IMPACT_VOLUME;
       if (this.muted) this.blockImpactAudio.pause?.();
     }
+    if (this.destructionHitAudio) {
+      this.destructionHitAudio.volume = this.muted ? 0 : DESTRUCTION_HIT_VOLUME;
+      if (this.muted) this.destructionHitAudio.pause?.();
+    }
     if (!this.master) return;
     const now = this.ctx?.currentTime ?? 0;
     const parameter = this.master.gain;
@@ -504,13 +516,14 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'block_impact') {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'block_impact' || name === 'destruction_hit') {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
           : name === 'attackers_confirm' ? this.attackersConfirmAudio
             : name === 'player_attack_hit' ? this.playerAttackHitAudio
-              : name === 'flame_gust' ? this.flameGustAudio : this.blockImpactAudio;
+              : name === 'flame_gust' ? this.flameGustAudio
+                : name === 'block_impact' ? this.blockImpactAudio : this.destructionHitAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -738,6 +751,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.blockImpactAudio = null;
+    if (this.destructionHitAudio) {
+      try {
+        this.destructionHitAudio.pause?.();
+        this.destructionHitAudio.removeAttribute?.('src');
+        this.destructionHitAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.destructionHitAudio = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }
