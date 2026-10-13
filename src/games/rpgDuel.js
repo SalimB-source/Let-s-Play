@@ -578,9 +578,11 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible)
 /**
  * Seconde vague d’un sort déclaré avec `echo` (le Nuage de cendres) : les
  * dégâts immédiats sont déjà tombés, l’écho est inscrit chez la victime et
- * retombe au début du tour suivant (`resoudreEchos`). Rien n’est enregistré si
- * plus rien ne se tient debout chez l’adversaire : un nuage qui ne couvre
- * personne se dissipe.
+ * retombe **au début du prochain tour de son lanceur** (`resoudreEchos`),
+ * quand l’autre camp a joué le sien. La promesse est écrite même si le nuage
+ * ne couvre personne sur le moment : c’est le tour adverse qui décidera de ce
+ * qu’il y aura à brûler — si la table est restée vide à son heure, l’écho se
+ * dissipe et le journal le dit.
  */
 function differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId) {
   const echo = effet?.echo;
@@ -588,30 +590,41 @@ function differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceC
   const amount = Math.max(0, Number(echo.amount ?? effet.amount) || 0);
   if (amount <= 0) return;
   const cible = echo.cible ?? (effet.cible === 'sorcier' ? 'sorcier' : 'toutes-creatures');
-  if (cible !== 'sorcier' && !duel[adv].creatures.length) return;
-  const camps = (duel[adv].degatsEchos ??= []);
-  camps.push({
+  const promesses = (duel[adv].degatsEchos ??= []);
+  promesses.push({
     amount,
     cible,
+    // Nombre de tours du lanceur à attendre : chaque fois qu’il reprend la
+    // main, la promesse perd un tour (voir `resoudreEchos`).
     toursRestants: Math.max(1, Math.floor(Number(echo.tours) || 1)),
+    coteSource: cote,
     sourceElement,
     sourceType,
     carteId: sourceCarteId ?? null,
   });
   const nomSource = (duelCardById(sourceCarteId) ?? magieById(sourceCarteId))?.name ?? 'Le sort';
-  duel.log.push(`${nomSource} diffère ${amount} dégâts : ils tomberont au début du tour suivant.`);
+  duel.log.push(`${nomSource} diffère ${amount} dégâts : ils tomberont au début de ${cote === 'joueur' ? 'votre' : 'son'} prochain tour.`);
 }
 
-/** Fait retomber les échos enregistrés : un tour de moins, et les dégâts dus
- *  tombent sur le camp qui les a reçus en promesse. Appelé à chaque début de
- *  tour, avant que le joueur agisse. */
+/** Fait retomber les échos dus au camp dont le tour commence : un tour de
+ *  moins pour ses promesses, et les dégâts tombent sur le camp qui les a
+ *  reçues en promesse. Un écho n’attend que son lanceur : il retombe après le
+ *  tour adverse, quand l’autre camp a eu la main (voir `rpgFinDeTour`). */
 function resoudreEchos(duel) {
+  const lanceur = duel.tour;
   for (const cote of ['joueur', 'sorcier']) {
     const camp = duel[cote];
     const echos = camp.degatsEchos ?? [];
     if (!echos.length) continue;
     camp.degatsEchos = [];
     for (const echo of echos) {
+      // L’autre camp vient de jouer son tour : la promesse attend celui de son
+      // lanceur. Une promesse sans lanceur consigné (état ancien) retombe tout
+      // de suite, comme avant.
+      if (echo.coteSource && echo.coteSource !== lanceur) {
+        camp.degatsEchos.push(echo);
+        continue;
+      }
       const toursRestants = Math.max(0, Math.floor(Number(echo.toursRestants) || 0) - 1);
       if (toursRestants > 0) {
         camp.degatsEchos.push({ ...echo, toursRestants });
@@ -624,7 +637,10 @@ function resoudreEchos(duel) {
         continue;
       }
       const cibles = [...camp.creatures];
-      if (!cibles.length) continue;
+      if (!cibles.length) {
+        duel.log.push(`L’écho de ${nomSource} se dissipe : plus rien à brûler sur la table.`);
+        continue;
+      }
       duel.log.push(`L’écho de ${nomSource} retombe sur la table : ${echo.amount} dégâts.`);
       for (const cible of cibles) {
         rpgBlesserCreature(duel, cote, cible.id, echo.amount, echo.sourceElement, null, echo.sourceType);
@@ -1550,7 +1566,7 @@ function resoudreRetoursProgrammes(duel) {
 /** Fin du tour : le tour qui se ferme efface les renforts « jusqu'à la fin du
  *  tour », puis l'autre camp commence — revenu de sable, pioche 1, ses
  *  créatures deviennent prêtes (le mal d'invocation tombe) et les échos différés
- *  (Nuage de cendres) retombent sur sa table. */
+ *  (Nuage de cendres) dont il est le lanceur retombent sur la table d'en face. */
 export function rpgFinDeTour(duel) {
   while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {
     rpgDefausserCarte(duel, duel.defausseEnAttente.cote);
@@ -1581,7 +1597,7 @@ export function rpgFinDeTour(duel) {
     entite.attaquee = false;
   }
   resoudreRetoursProgrammes(duel);
-  resoudreEchos(duel);              // les sorts à écho frappent au début du tour
+  resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
   rpgActionsEtat(duel);
   duel.log.push(`— Au tour du ${duel.tour === 'joueur' ? 'joueur' : 'sorcier'}.`);
   return duel;

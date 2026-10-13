@@ -983,8 +983,14 @@ assert.match(duelEngine, /if \(entry\.tour && entry\.tour !== tourFerme\) \{\s*r
   'un bonus né pendant un autre tour que celui qui se ferme reste attendu dans le carnet');
 assert.match(duelEngine, /differerEcho\(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId\)/,
   'la seconde vague d’un sort à écho est promise à la résolution des dégâts');
+assert.match(duelEngine, /const promesses = \(duel\[adv\]\.degatsEchos \?\?= \[\]\);[\s\S]{0,400}?coteSource: cote,/,
+  'la promesse est écrite même sur une table vide, et datée du camp qui l’a lancée');
 assert.match(duelEngine, /resoudreEchos\(duel\);/,
-  'l’écho retombe au début du tour suivant, avant que son destinataire n’agisse');
+  'l’écho retombe au début d’un tour, quand son tour de lanceur revient');
+assert.match(duelEngine, /if \(echo\.coteSource && echo\.coteSource !== lanceur\) \{\s*camp\.degatsEchos\.push\(echo\);\s*continue;/,
+  'tant que c’est l’autre camp qui commence, la promesse reste en suspens — il a son tour pour jouer');
+assert.match(duelEngine, /const cibles = \[\.\.\.camp\.creatures\];\s*if \(!cibles\.length\) \{\s*duel\.log\.push\(`L’écho de \$\{nomSource\} se dissipe : plus rien à brûler sur la table\.`\);/,
+  'un écho qui ne trouve personne à son heure se dissipe, et le journal le dit');
 assert.match(aiBrain, /const durable = Number\(effet\.tours\) > 0 \? 0\.5 : 1;/,
   'l’IA ne paie pas un renfort de magie rapide au prix d’un renfort durable');
 assert.match(aiBrain, /const echoMontant = Math\.max\(0, Number\(effet\.echo\?\.amount\) \|\| 0\);/,
@@ -1025,7 +1031,7 @@ console.log(
   + 'menu Jouer/Deck/Catalogue, catalogue de toutes les cartes avec filtres couleur/type, Cavalier amazigh rare inclus dans le deck et combat ciblé à l’arrivée, illustrations full art distinctes pour Veilleurs du Désert et 10 cartes de la Cour des Djinns, bordures unifiées par élément, paquets agrandis et vraies cartes qui glissent à taille réelle de gauche à droite dans les mains, '
   + 'plateaux du duel (la Table des Heures, l’Erg du Sahara, la Caravane de Gourara, les Ruines de Tipaza, le Fjord des Neuf Hivers) attribués selon le deck — la Braise rejoint la Table des Heures après le retrait du plateau des Brûlés —; peintures visibles sans voile, capsules sombres pour la lisibilité; plaques PC compactes en capsule, cadre doré joueur et cuivré adversaire, nom du profil et d’Ifrit al-Ahmar affichés, nom d’étage conservé, tactile préservé, '
   + 'quatrième couleur Neige (cristal de glace, cadre bleu clair) avec le Serment des Neuf Hivers au complet : Furie des vikings (+X/+X sur une blessure qui survit, journalière dans le duel et pesée par l’IA) et Résonance des valkyries (+1/+1 à toute la Neige de la table, les deux camps, plancher de 1 PV quand l’aura se tait), les peintures du set datées dans l’URL `?v=` pour qu’un cache ne fige jamais une ancienne image, '
-  + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres qui promet sa seconde vague au début du tour suivant, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
+  + 'retouches du catalogue Eau et Sable : Rapport du greffier à trois manas, Rempart de dunes en +0/+3 borné au tour (le carnet du camp l’efface à la fin du tour, et une créature réduite à zéro par ce retrait tombe), Nuage de cendres dont la seconde vague reste suspendue jusqu’au tour suivant de son lanceur — elle brûle ce que le sorcier a posé entre-temps, même si la première vague avait vidé la table, et se dissipe en le disant si rien ne s’y trouve —, Tempête de sable à trois dégâts, Marée contraire devenue Déflection, et sept magies peintes en plein art 4:5 sur leur propre fichier, '
   + 'aperçu d’une carte par appui long d’une seconde au doigt (volet dédié, clic de jeu conservé sur un appui court), zone de jeu tactile élargie (colonne centrale rendue par les rails latéraux, gouttières resserrées, taille des cartes et marge des terrains inchangées) avec piles de cartes homonymes au doigt — main et deux champs de bataille, compteur ×N, tête de pile qui agit sur l’exemplaire prêt, dépliage au toucher et dépliage automatique pendant toute action en cours — le grand écran gardant une carte par emplacement, régression de la magie rapide qui élimine le dernier attaquant pendant la réponse.'
 );
 process.exit(0);

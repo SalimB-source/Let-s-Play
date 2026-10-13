@@ -2985,9 +2985,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     duel.joueur.pv < instantane.pv
     || (duel.joueur.bouclier ?? 0) < instantane.bouclier
   );
+  // Le tour qui s'ouvre peut porter un écho différé (Nuage de cendres) : les
+  // blessures et les morts qu'il cause s'animent comme les autres, au lieu de
+  // se contenter d'un chiffre qui change sur la carte.
   const terminerTourEtDetecterDegatsJoueur = () => {
     const instantane = prendreInstantaneDegatsJoueur();
+    const champAvantFinDeTour = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
     rpgFinDeTour(duel);
+    animerModificationsChamp(champAvantFinDeTour, [], debutJournalDestructions);
     return joueurToucheDepuis(instantane);
   };
 

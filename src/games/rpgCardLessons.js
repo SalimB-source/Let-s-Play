@@ -71,7 +71,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['nuage-de-cendres'],
     title: 'Un effet peut revenir plus tard',
-    text: 'Nuage de cendres frappe une première fois à sa résolution, puis programme une seconde vague au début du tour suivant. Le rappel de l’effet différé apparaît dans le journal du duel.',
+    text: 'Nuage de cendres frappe une première fois à sa résolution, puis programme une seconde vague au début de votre tour suivant : elle brûle alors ce que le sorcier a posé entre-temps, et le journal du duel en garde la trace.',
   },
   {
     id: 'arrivee-en-jeu',
