@@ -1237,7 +1237,7 @@ test('Tempête de sable : 3 dégâts à toutes les créatures adverses', () => {
   assert.ok(duel.sorcier.cimetiere.includes('sonneur-fele'), 'la victime est bien enterrée');
 });
 
-test('Nuage de cendres : 2 dégâts sur le coup, 2 autres au début du tour suivant', () => {
+test('Nuage de cendres : 2 dégâts sur le coup, 2 autres au début de votre tour suivant', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donnerMana(duel, 'sorcier', 10);
@@ -1250,28 +1250,105 @@ test('Nuage de cendres : 2 dégâts sur le coup, 2 autres au début du tour suiv
   assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
   assert.equal(chien.pv, 0, 'la première vague emporte le Chien 2/2');
   assert.equal(sonneur.pv, 1, 'le Sonneur 2/3 traverse la première vague avec un point de vie');
-  assert.equal(duel.sorcier.degatsEchos.length, 1, 'la seconde vague est promise au tour suivant');
+  assert.equal(duel.sorcier.degatsEchos.length, 1, 'la seconde vague est promise');
+  assert.equal(duel.sorcier.degatsEchos[0].coteSource, 'joueur', 'et elle est datée de son lanceur');
 
-  // Le tour du joueur se ferme, celui du sorcier s’ouvre : le nuage retombe.
+  // Le tour du joueur se ferme : le sorcier commence, la promesse attend son
+  // heure — il a tout son tour pour jouer avant que le nuage ne retombe.
   rpgFinDeTour(duel);
-  assert.ok(sonneur.pv <= 0, 'le nuage retombe au début du tour suivant');
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(sonneur.pv, 1, 'l’écho ne tombe pas avant que le sorcier ait joué son tour');
+  assert.equal(duel.sorcier.degatsEchos.length, 1, 'la promesse est toujours en suspens');
+
+  // Le sorcier pose une créature pendant son tour, puis rend la main : c’est
+  // maintenant que le nuage retombe, sur la table telle qu’elle est alors.
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const renfort = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur');
+  assert.ok(sonneur.pv <= 0, 'le nuage retombe au début de votre tour suivant');
   assert.equal(duel.sorcier.creatures.includes(sonneur), false, 'et il l’emporte avec lui');
+  assert.ok(renfort.pv <= 0, 'la créature posée entre-temps est brûlée elle aussi');
+  assert.equal(duel.sorcier.creatures.length, 0, 'la seconde vague a vidé la table adverse');
   assert.deepEqual(duel.sorcier.degatsEchos, [], 'l’écho est consommé, il ne repasse pas deux fois');
 
   rpgFinDeTour(duel);
   assert.equal(duel.joueur.creatures.length, 0, 'la table du joueur n’a jamais été touchée');
 });
 
-test('un écho qui ne trouve personne sur la table se dissipe sans rien promettre', () => {
+test('un écho lancé sur une table vidée par la première vague brûle ce qui arrive ensuite', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+
+  donner(duel, 'joueur', 'nuage-de-cendres');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
+  assert.equal(chien.pv, 0, 'la première vague emporte le Chien 2/2');
+  assert.equal(duel.sorcier.creatures.length, 0, 'et laisse la table vide');
+  assert.equal(duel.sorcier.degatsEchos.length, 1,
+    'le nuage reste suspendu : c’est le tour adverse qui fera ce qu’il y a à brûler');
+
+  // Le sorcier joue son tour et repose une créature : la seconde vague la trouve.
+  rpgFinDeTour(duel);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'sonneur-fele');
+  const sonneur = rpgJouerCreature(duel, 'sorcier', 'sonneur-fele').entite;
+  assert.equal(sonneur.pv, 3, 'le Sonneur arrive entier');
+  rpgFinDeTour(duel);
+  assert.equal(sonneur.pv, 1, 'la seconde vague brûle la créature posée entre-temps');
+  assert.deepEqual(duel.sorcier.degatsEchos, [], 'la promesse est soldée');
+  assert.equal(duel.joueur.pv, duel.joueur.pvMax, 'le joueur n’est pas touché');
+});
+
+test('un écho qui ne trouve personne à son heure se dissipe, et le journal le dit', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donner(duel, 'joueur', 'nuage-de-cendres');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true,
     'le sort se lance même sans créature en face');
-  assert.deepEqual(duel.sorcier.degatsEchos, [], 'le nuage passe sur une table vide');
+  assert.equal(duel.sorcier.degatsEchos.length, 1, 'le nuage passe sur une table vide et reste suspendu');
   rpgFinDeTour(duel);
-  assert.equal(duel.joueur.pv, duel.joueur.pvMax, 'le tour suivant ne tombe sur personne');
+  assert.equal(duel.sorcier.degatsEchos.length, 1, 'le tour du sorcier ne le fait pas tomber');
+  assert.equal(duel.joueur.pv, duel.joueur.pvMax, 'et ne touche personne au passage');
+  rpgFinDeTour(duel);
+  assert.match(duel.log.join('\\n'), /L’écho de Nuage de cendres se dissipe/u,
+    'au début du tour du lanceur, un nuage sans victime se dissipe et le journal l’annonce');
+  assert.deepEqual(duel.sorcier.degatsEchos, [], 'la promesse est soldée, elle ne traîne pas');
   assert.equal(duel.sorcier.pv, duel.sorcier.pvMax, 'et ne touche pas non plus le sorcier adverse');
+});
+
+test('un écho de l’IA retombe après le tour du joueur, sur la table telle qu’elle est alors', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+
+  // Le sorcier attaque la table du joueur à son tour : première vague.
+  rpgFinDeTour(duel);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'nuage-de-cendres');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'nuage-de-cendres').ok, true);
+  assert.equal(chien.pv, 0, 'la première vague emporte le Chien 2/2 du joueur');
+  assert.equal(duel.joueur.degatsEchos.length, 1, 'la promesse est inscrite chez le joueur');
+
+  rpgFinDeTour(duel);
+  assert.equal(duel.tour, 'joueur', 'le joueur reprend la main');
+  assert.equal(duel.joueur.degatsEchos.length, 1,
+    'la promesse du sorcier attend le tour de son lanceur, pas celui du joueur');
+  assert.equal(duel.joueur.degatsEchos[0].coteSource, 'sorcier', 'elle sait d’où elle vient');
+
+  // Le vrai cas de l’IA : le joueur défend sa table, puis le sorcier reprend la
+  // main — c’est là que la seconde vague tombe sur ce qui a été posé.
+  donnerMana(duel, 'joueur', 10);
+  donner(duel, 'joueur', 'chien-du-guet');
+  const renfort = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  rpgFinDeTour(duel);
+  assert.equal(renfort.pv, 0, 'la seconde vague du sorcier brûle la créature posée entre-temps');
+  assert.deepEqual(duel.joueur.degatsEchos, [], 'la promesse est soldée');
 });
 
 test('les retouches du catalogue : Rapport du greffier à 3 manas, Déflection renommée', () => {

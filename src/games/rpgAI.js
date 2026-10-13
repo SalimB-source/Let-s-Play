@@ -644,8 +644,9 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         const blessees = duel[adv].creatures
           .filter((entite) => !meurtSous(entite, montant, 'magie') && degatsApresEsquive(entite, montant, 'magie') > 0);
         // Une seconde vague (`echo`, le Nuage de cendres) ne tue pas encore :
-        // l'adversaire a un tour pour la jouer. Elle vaut donc moins qu'un
-        // dégât immédiat, mais elle use le bord de table.
+        // elle retombe au début du prochain tour de son lanceur, l'adversaire
+        // a donc son tour entier pour jouer. Elle vaut moins qu'un dégât
+        // immédiat, mais elle use le bord de table.
         const echoMontant = Math.max(0, Number(effet.echo?.amount) || 0);
         const echo = echoMontant > 0
           ? (duel[adv].creatures.length - tues.length) * echoMontant * 0.35

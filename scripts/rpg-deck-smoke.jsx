@@ -5,7 +5,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor } from '../src/games/rpgCards.js';
 import { RPG_DECK_STORAGE_KEY } from '../src/games/rpgDeckChoice.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -405,8 +405,15 @@ export async function checkRpgDecks(assert) {
   assert.ok(atelier.container.querySelectorAll('.rpg-atelier__carte.is-locked').length > 0, 'les cartes hors collection sont verrouillées');
   const rangeeKraken = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="kraken"]');
   assert.ok(rangeeKraken.classList.contains('is-locked'), 'le Kraken est verrouillé au départ');
+  assert.equal(rangeeKraken.style.getPropertyValue('--frame'), cardFrameColor(cardById('kraken')),
+    'le cadre du Kraken mythique suit sa couleur Eau dans la collection');
+  assert.ok(rangeeKraken.querySelector('.rpg-atelier__carte-art.rpg-card--frame-eau.rpg-card--frame-brillant.rpg-card--mythique'),
+    'le Kraken garde ses classes de cadre mythique brillant dans l’atelier');
   assert.match(texte(rangeeKraken), /Vainquez « Le Pêcheur de perles » — La Tour des Abysses/, 'et il annonce où il se débloque');
   assert.equal(rangeeKraken.querySelector('.rpg-atelier__carte-ajout').disabled, true, 'impossible d’ajouter une carte verrouillée');
+  const rangeePetra = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="petra"]');
+  assert.ok(rangeePetra?.querySelector('.rpg-atelier__carte-art.rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
+    'Pétra garde dans l’atelier les deux aplats diagonaux, sans reflet');
   const rangeeChien = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
   assert.ok(!rangeeChien.classList.contains('is-locked'), 'une commune de la dotation est libre');
   await atelier.click(rangeeChien.querySelector('.rpg-atelier__carte-ajout'), 'ajouter Chien du guet');

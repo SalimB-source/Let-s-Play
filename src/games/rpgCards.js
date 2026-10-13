@@ -42,12 +42,13 @@ export function cardRarityInfo(carte) {
 export const RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige'];
 
 /**
- * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté —
- * sauf pour les mythiques, dont le cadre violet prime (voir MYTHIC_FRAME_COLOR).
+ * Couleur du cadre : elle suit l'ÉLÉMENT de la carte, jamais sa rareté.
+ * Les mythiques mono-élément brillent dans cette couleur ; les hybrides,
+ * mythiques comprises, affichent chaque élément sur une portion du cadre.
  *
  * Chaque combinaison a son identité, y compris celles qui n'existent pas
- * encore dans le catalogue : le jour où une carte Neige + Sable ou Neige +
- * Braise est créée, son cadre brillant l'attend.
+ * encore dans le catalogue : ses couleurs se partagent le cadre en diagonale,
+ * sans reflet animé.
  */
 export const CARD_FRAME_COLORS = {
   braise: { label: 'Braise', color: '#e0412a' },
@@ -73,10 +74,7 @@ const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige';
 /** Ordre canonique des couleurs : la clé d'une hybride ne dépend pas de l'ordre déclaré. */
 const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
-/** Cadre violet des cartes mythiques, quelle que soit leur couleur. */
-export const MYTHIC_FRAME_COLOR = '#b06cf5';
-
-/** Clé et couleur de cadre d'une carte : élément seul, ou combinaison bicolore. */
+/** Clé et couleur de cadre d'une carte : élément seul, ou combinaison multicolore. */
 export function cardFrameInfo(carte) {
   const colors = cardColors(carte).slice().sort(
     (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
@@ -88,19 +86,27 @@ export function cardFrameInfo(carte) {
   return { key: known, ...CARD_FRAME_COLORS[known] };
 }
 
-/** Toute carte mythique porte le cadre violet. */
+/** Les mythiques conservent leur couleur de cadre et leur motif propre. */
 export function cardHasMythicFrame(carte) {
   return cardRarityInfo(carte).key === 'mythique';
 }
 
-/** Un cadre brillant est un dégradé balayé d'un reflet : hybrides et mythiques. */
+/** Seuls les cadres mythiques mono-élément brillent : une hybride garde sa diagonale fixe. */
 export function cardHasShinyFrame(carte) {
-  return cardFrameInfo(carte).key.startsWith('hybride-') || cardHasMythicFrame(carte);
+  return cardHasMythicFrame(carte) && !cardFrameInfo(carte).key.startsWith('hybride-');
 }
 
-/** Couleur de cadre réellement peinte : le violet mythique prime sur l'élément. */
+/** Couleur du cadre : l'élément ou la combinaison, quelle que soit la rareté. */
 export function cardFrameColor(carte) {
-  return cardHasMythicFrame(carte) ? MYTHIC_FRAME_COLOR : cardFrameInfo(carte).color;
+  return cardFrameInfo(carte).color;
+}
+
+/** Classes communes à toutes les présentations d'une carte du Sablier. */
+export function cardFrameClass(carte) {
+  const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
+  if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
+  if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
+  return classes.join(' ');
 }
 
 export const CARD_KIND_LABELS = {
@@ -1456,9 +1462,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     // Le nuage ne se dissipe pas à la première bourrasque : `echo` est la
-    // seconde vague, qui tombe au début du tour suivant (voir `degatsEchos`).
+    // seconde vague, qui tombe au début du prochain tour du lanceur — après
+    // le tour adverse, sur ce qu'il y a alors à brûler (voir `degatsEchos`).
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', echo: { amount: 2, tours: 1 } },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 2 autres au début du tour suivant.',
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 2 autres au début de votre tour suivant.',
     flavor: 'Le vent tourne ; la poussière devient un voile brûlant.',
   },
   {

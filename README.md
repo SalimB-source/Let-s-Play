@@ -6373,3 +6373,58 @@ pas leur création. Le scénario ajouté à `scripts/rpg-battle-smoke.jsx` rejou
 geste dans la vraie interface — cinq Déserts, Tarek posé — et exige les deux
 cartes de chiens de sable sur la table, leur peinture, leurs 2/2 et la ligne du
 journal.
+
+## Le Sablier : l'appui long qui tient, et un jeu qui ne devient plus sourd
+
+Sur l'application, l'aperçu par **appui long** tombait parfois à l'eau — « rien
+ne se passe » — et le jeu, derrière, ne répondait plus : ni carte, ni action, ni
+aperçu. Trois mécanismes se croisaient, tous du côté tactile :
+
+- **le clic qui suivait la levée du doigt n'était plus avalé.** L'aperçu s'ouvre
+  à une seconde de contact — le doigt tient encore — et le clic synthétique qui
+  naît de la levée devait être avalé pour ne pas refermer le volet à peine ouvert.
+  Mais l'avalage n'était armé que par le `pointerup` : tout ce qui interrompait
+  le geste **après** le déclenchement (un `scroll` du rail de main, l'`autoFocus`
+  du volet, un `pointercancel` de WebView) retirait l'écouteur de levée, le clic
+  passait, le volet se fermait dans la même foulée — le joueur ne voyait rien ;
+- **l'annonce du sorcier désarmait l'appui long en cours**, et son voile
+  interceptait tous les gestes du plateau : entre deux, la consultation devenait
+  muette. Désormais l'annonce ne touche jamais à un appui déjà armé, et son
+  volet d'aperçu s'ouvre **au-dessus** du voile de l'annonce ;
+- **la coque Android laissait au système le dernier mot.** La WebView restait
+  `longClickable` (menu « enregistrer l'image », sélection de texte — qui cassent
+  sa chaîne tactile jusqu'à la réouverture) et le `SwipeRefreshLayout` prenait
+  le doigt dès qu'il traînait vers le bas : `pointercancel` pour l'appui long, et
+  parfois un **rechargement de la page en pleine partie**. La WebView est
+  désormais `setLongClickable(false)`, et le pull-to-refresh est désarmé pendant
+  le duel — comme l'orientation y est déjà verrouillée.
+
+Deux filets de sécurité ferment les cas « l'écran ne répond plus » : le vol de
+carte (`is-card-flight-active`, qui rend la table `pointer-events: none`) se
+résout de force au bout de 2,5 s si sa minuterie est avalée — le jumeau du
+`purgeGlisser` déjà en place — et la purge de glisser range aussi le fantôme et
+les écouteurs du glisser-déposer tactile. Un second doigt, enfin, ne désarme plus
+l'appui du premier : seul un geste qui armerait vraiment un appui long reprend
+la main (`peutDemarrerAppuiLong`).
+
+### Où vit le code
+
+- `src/games/rpgLongPress.js` — l'avalage du clic s'arme à **la fin du geste**
+  quand l'aperçu s'est ouvert, quel que soit le chemin (levée, annulation,
+  défilement, page cachée) ; `peutDemarrerAppuiLong(event)` partage avec la page
+  le filtre doigt/stylet.
+- `src/games/RpgDuelPage.jsx` — l'appui long ne s'efface plus devant l'annonce,
+  le volet d'aperçu s'affiche au-dessus d'elle, son bouton prend le focus sans
+  faire défiler (`focus({ preventScroll: true })`), le vol de carte a son chien
+  de garde de 2,5 s, `libererDuelPourLecture` ne laisse plus aucun geste en
+  suspens, et toute la coque refuse le menu contextuel natif.
+- `src/games/rpg-battle.css` — sélection de texte et callout natif étouffés sur
+  la coque du jeu (les champs de saisie gardent leur sélection).
+- `android/.../MainActivity.java` — `setLongClickable(false)`, `onLongClickListener`
+  consommateur, retour haptique coupé, et pull-to-refresh désarmé sur le duel
+  (`onPageFinished` et `setDuelLandscape`). **Cette partie native demande de
+  reconstruire l'APK** ; tout le reste est déjà en ligne.
+- `tests/rpg-long-press.test.js` — le scénario « interrompu après le
+  déclenchement » : `scroll`, `pointercancel` et `blur` ne laissent plus passer
+  le clic qui suit. `scripts/rpg-preview-smoke.jsx` rejoue la même course dans
+  la vraie page, aperçu ouvert à la fin.

@@ -481,7 +481,7 @@
 .card-row--ennemi { top: 2.5%; }
 .card-row--equipe { bottom: 27%; }
 
-/* ── La carte : liseré noir, cadre piloté par la rareté, zones imprimées ── */
+/* ── La carte : liseré noir, cadre piloté par l'élément, zones imprimées ── */
 .rpg-card {
   position: relative;
   width: clamp(138px, 11.5vw, 168px);
@@ -499,11 +499,11 @@
   transition: transform .35s ease, box-shadow .35s ease, filter .3s ease, opacity .3s ease;
 }
 
-/* Les héros gardent leur halo, sans modifier le style du cadre de rareté. */
+/* Les héros gardent leur halo, sans modifier la couleur du cadre. */
 .rpg-card--legendaire {
   box-shadow:
     0 12px 28px rgba(0, 0, 0, .65),
-    0 0 14px color-mix(in srgb, var(--rpg-frame-color, #a875ed) 24%, transparent);
+    0 0 14px color-mix(in srgb, var(--rpg-frame-color, #d8bc86) 24%, transparent);
 }
 
 /* Bannière de titre : parchemin doré, nom à gauche, coût en pastilles. */
@@ -570,7 +570,7 @@
   background: linear-gradient(115deg, transparent 42%, rgba(255, 248, 220, .14) 50%, transparent 58%);
 }
 
-.rpg-card--legendaire .rpg-card__art { border-color: var(--rpg-frame-color, #a875ed); }
+.rpg-card--legendaire .rpg-card__art { border-color: var(--rpg-frame-color, #d8bc86); }
 
 .rpg-card__art img {
   width: 100%;
@@ -2349,7 +2349,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-row {
   z-index: 4;
   left: clamp(220px, 20%, 280px);
-  right: clamp(104px, 13%, 184px);
+  right: clamp(150px, 15%, 254px);
   height: 21%;
   justify-content: center;
   align-items: center;
@@ -2722,7 +2722,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* Les dimensions favorisent l’illustration full art et la lisibilité des repères de carte. */
-.rpg-card { width: clamp(108px, 10.2vw, 146px); }
+.rpg-card { width: clamp(132px, min(12.8vw, 17vh), 198px); }
 .rpg-hand__card { width: clamp(104px, 9.6vw, 136px); }
 
 .rpg-card--img .rpg-card__title {
@@ -3165,6 +3165,67 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-turn-indicator.is-response .rpg-turn-indicator__lamp { background: #72e6d0; }
 .rpg-turn-indicator.is-finished { border-color: rgba(236, 234, 218, .45); color: #eee9d7; }
 .rpg-turn-indicator.is-finished .rpg-turn-indicator__lamp { background: #e7e1cb; }
+
+/* ── Bandeau d'ouverture de tour ─────────────────────────────────────────────
+   « Votre tour » / « Tour de l'adversaire » : une plaque posée au centre de la
+   table à chaque bascule de tour, le temps d'un battement
+   (`RPG_ANNONCE_TOUR_DUREE`, transmis par `--rpg-annonce-tour-duree` : le fondu
+   de sortie et le retrait de l'élément finissent ensemble). La couleur dit le
+   camp — or du joueur, braise du sorcier, les deux teintes de la pastille de
+   tour — et le bandeau ne capte aucun geste : la main reste jouable dessous
+   tant qu'il s'efface. Il passe sous le voile de fin de duel (49), sous
+   l'annonce de sort (950) et sous l'éclair d'impact (500) : ce qui prend la
+   scène reste devant lui. */
+.rpg-annonce-tour {
+  position: absolute;
+  z-index: 46;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  pointer-events: none;
+}
+.rpg-annonce-tour__bandeau {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.2vw, 14px);
+  margin: 0;
+  padding: clamp(9px, 1.1vh, 13px) clamp(16px, 2.2vw, 30px);
+  border: 1px solid rgba(224, 190, 123, .5);
+  border-radius: 999px;
+  background: rgba(8, 7, 13, .84);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  color: #f5e9c9;
+  animation: rpg-annonce-tour var(--rpg-annonce-tour-duree, 1.5s) ease-out both;
+}
+.rpg-annonce-tour__bandeau strong {
+  font: 800 clamp(15px, 1.7vw, 24px)/1.1 var(--display);
+  letter-spacing: .12em;
+  white-space: nowrap;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .8);
+}
+.rpg-annonce-tour__lamp {
+  width: clamp(7px, .7vw, 10px);
+  height: clamp(7px, .7vw, 10px);
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 12px currentColor;
+}
+.rpg-annonce-tour__bandeau.is-joueur { border-color: rgba(255, 218, 94, .72); color: #ffe887; }
+.rpg-annonce-tour__bandeau.is-sorcier { border-color: rgba(232, 133, 98, .7); color: #ffc19e; }
+@keyframes rpg-annonce-tour {
+  0% { opacity: 0; transform: translateY(12px) scale(.94); }
+  10%, 74% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-annonce-tour__bandeau { animation-name: rpg-annonce-tour-fondu; }
+  @keyframes rpg-annonce-tour-fondu {
+    0% { opacity: 0; }
+    12%, 78% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}
 
 @media (max-width: 620px) {
   .rpg-card--img .rpg-card__type,
@@ -5022,10 +5083,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   flex-direction: row;
   align-items: center;
   justify-content: space-around;
-  gap: 5px;
-  padding: 4px 7px;
+  gap: 8px;
+  padding: 7px 11px;
   border: 1px solid rgba(242, 154, 74, .24);
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(8, 7, 9, .62);
   backdrop-filter: blur(6px);
 }
@@ -5048,8 +5109,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #f29a4a;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border-color: rgba(242, 154, 74, .28);
   background: rgba(12, 9, 8, .38);
   color: #f29a4a;
@@ -5060,8 +5121,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #f29a4a;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-phase-step__label {
   position: absolute;
@@ -5075,13 +5136,66 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   white-space: nowrap;
 }
 
+/* À la souris, le rail du tour se met à l'échelle du bureau : capsule
+   d'indicateur, rangée de phases et boutons d'action agrandis. Le rail tactile
+   garde ses repères de rpg-mobile.css ; sous 620px de large, la variante
+   compacte du rail reste la règle. La barre du bas recule d'autant (360px)
+   pour ne jamais passer sous le rail élargi. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
+  width: 330px;
+  max-width: 38vw;
+  gap: 10px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator {
+  min-height: 44px;
+  gap: 12px;
+  padding: 11px 20px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator__label {
+  font-size: 12px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator strong {
+  font-size: 15px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-turn-indicator__lamp {
+  width: 12px;
+  height: 12px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail .rpg-actions__turn {
+  gap: 10px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn {
+  min-height: 46px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--endturn {
+  min-height: 48px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-combat-action-icon {
+  width: 22px;
+  height: 22px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-bottombar {
+  right: 360px;
+}
+
 /* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
-   beige de dune pour le Sable, rouge pour la Braise, et un dégradé propre à chaque
-   combinaison bicolore — seules les mythiques imposent leur violet. Le bord
-   reste le même en main, en jeu, sur les terrains, dans l’aperçu au survol et
-   pendant les animations ; seule sa variable change. La rareté, elle, n’est
-   annoncée que par le badge de l’aperçu. Le sélecteur vise toute classe de
-   cadre : une nouvelle combinaison n’a rien à ajouter ici.
+   beige de dune pour le Sable, rouge pour la Braise, bleu glacé pour la Neige.
+   Les hybrides partagent l’anneau en aplats diagonaux, sans reflet ; seules les
+   mythiques mono-élément brillent. Le bord reste le même en main, en jeu, sur les
+   terrains, dans l’aperçu au survol et pendant les animations ; seule sa matière change.
+   La rareté, elle, n’est annoncée que par le badge de l’aperçu. Le sélecteur
+   vise toute classe de cadre : une nouvelle combinaison n’a rien à ajouter ici.
    L’épaisseur, elle, suit la largeur de la carte (voir les variables
    `--rpg-card-border*` en tête de fichier) : un gabarit par format, la couleur
    et la matière restant communes. */
@@ -5104,8 +5218,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Tout cadre est peint dans l'anneau de bordure, en trois couches : la bordure
    est transparente, une couche opaque (`--rpg-frame-fill`, le fond de la carte)
    couvre la padding-box, un motif se répète sur la border-box et, dessous, la
-   matière du cadre remplit la border-box — la couleur unie de l'élément, ou le
-   dégradé d'un cadre brillant (`--rpg-frame-gradient`, posé par la variante).
+   matière du cadre remplit la border-box : couleur unie, deux aplats séparés
+   en diagonale sur les hybrides, ou dégradé animé sur les mythiques mono.
    Comme la face est toujours couverte par l'illustration, le motif ne se lit
    que dans l'anneau.
    Le motif commun est la résille de Bab El : un treillis de losanges gravé en
@@ -5133,7 +5247,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     var(--rpg-frame-gradient, linear-gradient(var(--rpg-frame-color, #f1f3f5), var(--rpg-frame-color, #f1f3f5)));
   background-origin: padding-box, border-box, border-box;
   background-clip: padding-box, border-box, border-box;
-  background-size: 100% 100%, var(--rpg-frame-motif-size, 8px 8px), 240% 100%;
+  background-size: 100% 100%, var(--rpg-frame-motif-size, 8px 8px), var(--rpg-frame-material-size, 100% 100%);
   background-repeat: no-repeat, repeat, no-repeat;
   background-position: 0 0, 0 0, 0% 0;
 }
@@ -5142,10 +5256,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-destruction-fx[class*="rpg-card--frame-"] { --rpg-frame-fill: #100e11; }
 .rpg-card-catalogue__art { --rpg-frame-fill: #171218; }
 
-/* ── Cadres brillants : hybrides (une teinte par combinaison) et mythiques ──
+/* ── Cadres brillants des mythiques mono-élément ────────────────────────────
    Leur matière est un dégradé large de 240 % que le reflet fait aller et venir
-   dans l'anneau. Chaque variante ne fournit que son dégradé ; la mécanique des
-   couches est celle de tous les cadres, ci-dessus. */
+   dans l'anneau. Sans cette classe, la matière couvre toujours 100 % du cadre
+   et la séparation diagonale des hybrides reste immobile. */
+.rpg-card--frame-brillant { --rpg-frame-material-size: 240% 100%; }
 .rpg-card.rpg-card--frame-brillant,
 .rpg-hand__card.rpg-card--frame-brillant,
 .rpg-terrain.rpg-card--frame-brillant,
@@ -5153,95 +5268,86 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-played__art.rpg-card--frame-brillant,
 .rpg-card-destruction-fx.rpg-card--frame-brillant,
 .rpg-card-pile__card--top.rpg-card--frame-brillant,
-.rpg-mulligan__card.rpg-card--frame-brillant {
+.rpg-mulligan__card.rpg-card--frame-brillant,
+.rpg-card-catalogue__art.rpg-card--frame-brillant {
   animation: rpg-frame-shine-sweep var(--rpg-frame-shine-duration, 3.2s) ease-in-out infinite alternate;
 }
 
-/* Braise + Sable : le désert qui prend feu, rouge-orange. */
-.rpg-card--frame-hybride-braise-sable {
-  --rpg-frame-gradient: linear-gradient(115deg, #4d0c05 0%, #ff9a34 20%, #e23a14 38%, #ffd79a 52%, #a81f08 70%, #ff7a26 88%, #4d0c05 100%);
-  background-color: #4a1108;
-}
-
-/* Braise + Eau : la vapeur, indigo violacé traversé de braise. */
+/* Hybrides : deux aplats francs, chacun la moitié de la diagonale.
+   L'angle et les arrêts identiques sur toutes les faces dessinent la même
+   séparation dans l'anneau (pas de teinte mélangée, ni balayage brillant).
+   Les combinaisons de 3 ou 4 éléments, prévues pour de futures cartes,
+   partagent de la même façon la diagonale en 3 ou 4 aplats. */
 .rpg-card--frame-hybride-braise-eau {
-  --rpg-frame-gradient: linear-gradient(115deg, #2a1050 0%, #b06ad8 20%, #ff7a4d 40%, #ffd9e6 54%, #7a2ea8 72%, #e0432a 88%, #2a1050 100%);
-  background-color: #2b1240;
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #3f9fe8 50%);
 }
-
-/* Eau + Sable : l'écume sur la dune, bleu profond et ivoire. */
-.rpg-card--frame-hybride-eau-sable {
-  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #7fd8e8 20%, #f3ead2 40%, #3f9fe8 58%, #12496e 76%, #cfe9d8 90%, #0b2a4a 100%);
-  background-color: #0d2438;
+.rpg-card--frame-hybride-braise-sable {
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #d8bc86 50%);
 }
-
-/* Braise + Neige : la braise et le givre, rouge sombre traversé de blanc bleu. */
 .rpg-card--frame-hybride-braise-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #43110a 0%, #ff8a5c 20%, #7fb6d8 40%, #eaf9ff 54%, #5a2a2a 72%, #a9e0f5 88%, #43110a 100%);
-  background-color: #35202a;
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #a9e0f5 50%);
 }
-
-/* Eau + Neige : l'eau prise, bleu profond et glace pâle. */
+.rpg-card--frame-hybride-eau-sable {
+  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #d8bc86 50%);
+}
 .rpg-card--frame-hybride-eau-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #6fb6e8 20%, #dff3ff 40%, #2f7fae 58%, #12496e 76%, #bfe9ff 90%, #0b2a4a 100%);
-  background-color: #10283c;
+  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #a9e0f5 50%);
 }
-
-/* Sable + Neige : le vent sur la banquise, ivoire et bleu clair. */
 .rpg-card--frame-hybride-sable-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #2a3b45 0%, #f7f3e6 22%, #a9e0f5 42%, #6e8ea3 58%, #dff3ff 76%, #c9a13b 90%, #2a3b45 100%);
-  background-color: #26333c;
+  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 50%, #a9e0f5 50%);
 }
-
-/* Braise + Eau + Sable : le prisme des trois couleurs de Bab El. */
 .rpg-card--frame-hybride-braise-eau-sable {
-  --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 16%, #f3ead2 32%, #ffb44d 48%, #e2401c 64%, #b06ad8 80%, #123a63 100%);
-  background-color: #241a33;
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #d8bc86 66.666%);
 }
-
-/* Braise + Eau + Neige : la vapeur des mers froides. */
 .rpg-card--frame-hybride-braise-eau-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #2a1050 0%, #b06ad8 16%, #ff8a5c 34%, #bfe9ff 52%, #2f7fae 70%, #e0432a 86%, #2a1050 100%);
-  background-color: #2a1a40;
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #a9e0f5 66.666%);
 }
-
-/* Braise + Sable + Neige : le désert sous la première neige. */
 .rpg-card--frame-hybride-braise-sable-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #4d0c05 0%, #ff9a34 18%, #f7f3e6 38%, #a9e0f5 56%, #a81f08 74%, #bfe9ff 90%, #4d0c05 100%);
-  background-color: #3d2020;
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
 }
-
-/* Eau + Sable + Neige : les rivages du Nord. */
 .rpg-card--frame-hybride-eau-sable-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #0b2a4a 0%, #6fb6e8 18%, #f7f3e6 36%, #a9e0f5 56%, #12496e 74%, #cfe9d8 90%, #0b2a4a 100%);
-  background-color: #102c3a;
+  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
 }
-
-/* Braise + Eau + Sable + Neige : les quatre éléments, si un jour une carte les
-   rassemble au catalogue. */
 .rpg-card--frame-hybride-braise-eau-sable-neige {
-  --rpg-frame-gradient: linear-gradient(115deg, #123a63 0%, #7fd8e8 14%, #f3ead2 28%, #a9e0f5 42%, #ffb44d 58%, #e2401c 72%, #b06ad8 86%, #123a63 100%);
-  background-color: #241a33;
+  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #a9e0f5 75%);
 }
 
-/* Mythique : le cadre violet, quelle que soit la couleur de la carte. Il porte
-   en plus un motif — le zellige de Bab El, l'étoile à huit pointes (un carré et
-   un losange superposés) gravée en lilas et piquée d'un point de laiton —
-   répété tout le long de l'anneau. Déclaré en dernier : une carte à la fois
-   mythique et bicolore garde le violet. */
+/* Mythique : le zellige de Bab El (une étoile à huit pointes) distingue la
+   rareté sans remplacer la couleur de l'élément. Seules les mono-élément
+   ajoutent un reflet animé ; une mythique hybride garde sa diagonale fixe. */
 .rpg-card--mythique {
-  --rpg-frame-gradient: linear-gradient(115deg, #2a0a45 0%, #7a2bd0 14%, #c79bff 28%, #5a12a8 42%, #f2e6ff 54%, #8b34e8 68%, #d9b3ff 84%, #2a0a45 100%);
   --rpg-frame-shine-duration: 2.8s;
-  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cg fill='none' stroke='%23f0e2ff' stroke-opacity='.6' stroke-width='.8'%3E%3Cpath d='M3 3h6v6H3z'/%3E%3Cpath d='M6 1.2 10.8 6 6 10.8 1.2 6z'/%3E%3C/g%3E%3Ccircle cx='6' cy='6' r='.9' fill='%23f5d68c' fill-opacity='.65'/%3E%3C/svg%3E");
+  --rpg-frame-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cg fill='none' stroke='%23fff8e6' stroke-opacity='.6' stroke-width='.8'%3E%3Cpath d='M3 3h6v6H3z'/%3E%3Cpath d='M6 1.2 10.8 6 6 10.8 1.2 6z'/%3E%3C/g%3E%3Ccircle cx='6' cy='6' r='.9' fill='%23f5d68c' fill-opacity='.65'/%3E%3C/svg%3E");
   --rpg-frame-motif-size: 12px 12px;
-  background-color: #2a0a45;
 }
 
-/* Filet de sécurité commun : si l'anneau n'était pas couvert par le dégradé,
-   on verrait la teinte sombre de la variante, jamais le fond noir de la carte.
-   Le reflet fait des allers-retours entre 0 % et 100 % et ne sort JAMAIS de
-   cette plage : ces dégradés font 240 % de large sans répétition, donc ils ne
-   recouvrent tout l'anneau que tant que leur position reste entre 0 % et 100 %. */
+/* Les quatre éléments seuls ont chacun leur propre dégradé lumineux. Les
+   sélecteurs ne touchent pas aux hybrides, même lorsqu'ils sont mythiques. */
+.rpg-card--mythique.rpg-card--frame-braise {
+  --rpg-frame-gradient: linear-gradient(115deg, #62180d 0%, #e0412a 16%, #ff9262 30%, #b72d1c 42%, #ffdbb0 54%, #dc3a21 70%, #ff7649 84%, #62180d 100%);
+  background-color: #62180d;
+}
+.rpg-card--mythique.rpg-card--frame-eau {
+  --rpg-frame-gradient: linear-gradient(115deg, #113b64 0%, #3f9fe8 16%, #94dbff 30%, #2376b5 42%, #e2f7ff 54%, #2b91d2 70%, #a9e4ff 84%, #113b64 100%);
+  background-color: #113b64;
+}
+.rpg-card--mythique.rpg-card--frame-sable {
+  --rpg-frame-gradient: linear-gradient(115deg, #765328 0%, #d8bc86 16%, #f2dfa8 30%, #b58b4f 42%, #fff1c8 54%, #cda667 70%, #e8d39b 84%, #765328 100%);
+  background-color: #765328;
+}
+.rpg-card--mythique.rpg-card--frame-neige {
+  --rpg-frame-gradient: linear-gradient(115deg, #35647d 0%, #a9e0f5 16%, #e4f8ff 30%, #83c5df 42%, #ffffff 54%, #b2e8fc 70%, #d5f3ff 84%, #35647d 100%);
+  background-color: #35647d;
+}
+/* Le choix du mulligan repeint le cadre en jaune, même sur une hybride ou
+   une mythique : priorité au repère de sélection sur ses couleurs fixes. */
+.rpg-mulligan__card.is-selected.rpg-card--mythique,
+.rpg-mulligan__card.is-selected[class*="rpg-card--frame-hybride-"] {
+  --rpg-frame-gradient: linear-gradient(#ffd619, #ffd619);
+}
+
+/* Les reflets des mythiques mono font des allers-retours entre 0 % et 100 % :
+   leur dégradé couvre ainsi toujours l'anneau malgré ses 240 % de large. */
 @keyframes rpg-frame-shine-sweep {
   from { background-position: 0 0, 0 0, 0% 0; }
   to { background-position: 0 0, 0 0, 100% 0; }
@@ -5256,12 +5362,73 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    carte deux fois — sur sa racine (l'encadré entier, illustration + infos) et
    sur sa face — et chaque variante brillante peint une teinte de repli
    (`background-color`) pour les cartes en main et sur la table. Sans ce
-   garde-fou, cette teinte — le violet mythique, le rouge sombre d'une Braise +
-   Sable — remplirait tout l'encadré et se verrait aussi derrière l'image le
-   temps qu'elle arrive. On la retire des deux, au survol comme dans le volet
-   d'appui long ; les cartes en main et sur la table la gardent. */
+   garde-fou, cette teinte — le rouge sombre d'une Braise mythique ou d'une
+   Braise + Sable — remplirait tout l'encadré et se verrait aussi derrière
+   l'image le temps qu'elle arrive. On la retire des deux, au survol comme
+   dans le volet d'appui long ; les cartes en main et sur la table la gardent. */
 .rpg-hover-card-preview[class*="rpg-card--frame-"],
 .rpg-hover-card-preview__face[class*="rpg-card--frame-"] { background-color: transparent; }
+
+/* Vernis des illustrations mythiques, distinct du reflet de leur cadre : une
+   lumière douce reste en haut de l'image et un éclat étroit la traverse. Le
+   calque est au-dessus de la peinture, sous les coûts, badges et statistiques.
+   On ne touche pas aux vignettes verrouillées de l'atelier ; aucun enfant DOM
+   supplémentaire n'interfère avec le glisser-déposer ou le mulligan. */
+.rpg-card--img.rpg-card--mythique::before,
+.rpg-hand__card--img.rpg-card--mythique::before,
+.rpg-mulligan__card.rpg-card--mythique::before,
+.rpg-hover-card-preview__face.rpg-card--mythique::before,
+.rpg-card-catalogue__art.rpg-card--mythique::before,
+.rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art::before,
+.rpg-atelier__carte:not(.is-locked) .rpg-atelier__carte-art.rpg-card--mythique::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 55% at 18% 5%, rgba(255, 255, 255, .22), rgba(255, 255, 255, .07) 42%, transparent 75%),
+    linear-gradient(110deg, transparent 32%, rgba(255, 255, 255, .06) 42%, rgba(255, 255, 255, .27) 50%, rgba(255, 255, 255, .08) 56%, transparent 66%);
+  background-size: 100% 100%, 250% 100%;
+  background-repeat: no-repeat;
+  background-position: 0 0, 0% 0;
+  mix-blend-mode: screen;
+  animation: rpg-mythic-art-gloss 5.2s ease-in-out infinite alternate;
+}
+
+/* La peinture gagne un soupçon de relief, sans virer vers une autre couleur.
+   Les filtres d'état (fatigue, blessure, carte verrouillée) restent prioritaires. */
+.rpg-card--mythique:not(.is-summoning-sick, .is-attacked) > .rpg-card__img,
+.rpg-card--mythique > .rpg-hand__img,
+.rpg-card--mythique > .rpg-mulligan__img,
+.rpg-hover-card-preview__face.rpg-card--mythique > img,
+.rpg-card-catalogue__art.rpg-card--mythique > img,
+.rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art > img,
+.rpg-atelier__carte:not(.is-locked, .is-full) .rpg-atelier__carte-art.rpg-card--mythique > img {
+  filter: saturate(1.1) contrast(1.04);
+}
+
+/* Une créature épuisée ne doit pas étinceler comme une carte prête à jouer. */
+.rpg-card--mythique:is(.is-summoning-sick, .is-attacked)::before,
+.rpg-atelier__carte.is-full .rpg-atelier__carte-art.rpg-card--mythique::before {
+  opacity: .2;
+  animation: none;
+}
+
+@keyframes rpg-mythic-art-gloss {
+  from { background-position: 0 0, 0% 0; }
+  to { background-position: 0 0, 100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card--mythique::before,
+  .rpg-card-guide__example.rpg-card--mythique .rpg-card-guide__art::before,
+  .rpg-atelier__carte-art.rpg-card--mythique::before {
+    animation: none !important;
+    background-position: 0 0, 50% 0 !important;
+  }
+}
 
 /* Coût, attaque et défense doivent rester immédiatement lisibles sur les faces. */
 .rpg-card--img .rpg-mana-cost.is-compact {
@@ -5330,6 +5497,26 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-catalogue__meta b { font-size: 9px; }
 }
 
+/* À la souris, la table agrandie agrandit aussi les repères imprimés sur ses
+   cartes — coût, attaque, défense et pastille d'élément. La main garde son
+   échelle : ses cartes n'ont pas changé de taille. Les icônes d'arme et de
+   bouclier suivent la taille de la police (1em). */
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-mana-cost.is-compact {
+  min-width: 36px;
+  height: 25px;
+  padding: 3px 5px;
+  font-size: 13px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__stat--atk,
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__pt {
+  min-width: 46px;
+  padding: 3px 7px;
+  font-size: 15.5px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img {
+  --rpg-card-element-marker-size: clamp(18px, 18%, 30px);
+}
+
 /* Mobile / WebView : le mouvement horizontal parcourt les cartes, le
    mouvement vertical joue une carte. La souris conserve son drag natif. */
 .rpg-hand__card.is-playable,
@@ -5366,6 +5553,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   bottom: env(safe-area-inset-bottom, 0px);
   left: env(safe-area-inset-left, 0px);
 }
+/* Toute la coque du jeu refuse la sélection de texte et le callout natif :
+   une seule sélection qui s'allume (menu Android « copier / partager »,
+   poignées iOS) casse la chaîne tactile de la WebView — le jeu devient sourd,
+   les gestes meurent. Les champs de saisie gardent leur sélection. */
+.rpg-battle {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.rpg-battle input,
+.rpg-battle textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 @media (pointer: coarse) {
   .rpg-duel-nav button, .rpg-btn { min-height: 44px; }
   .rpg-hand, .card-row { overscroll-behavior-x: contain; }
@@ -5442,16 +5644,28 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
+/* La carte annoncée par l'adversaire est une carte agrandie, comme l'aperçu
+   rapide : elle garde donc le grand gabarit de cadre (`--rpg-card-border-large`,
+   5–6,5 px) au lieu d'un filet fixe de 2 px, plus fin que celui de toutes les
+   autres cartes. Son badge de couleur suit la même échelle que les grandes
+   faces du catalogue (pastille 28–38 px, glyphe 19 px, liseré 2 px) : plafonné
+   à 23 px avec un glyphe de 13 px, il devenait illisible sur une face de
+   140–280 px — or c'est la couleur qu'il faut lire pour décider de répondre. */
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__face {
+  --rpg-card-element-marker-size: clamp(28px, 17%, 38px);
   position: relative;
   z-index: 2;
   top: auto;
   left: auto;
   width: var(--rpg-annonce-card-width);
   transform: none;
-  border-width: 2px;
+  border-width: var(--rpg-card-border-large, 6px);
   border-radius: 8px;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .52), 0 0 22px rgba(239, 210, 139, .16);
+}
+.rpg-hover-card-preview--annonce .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 19px;
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details-column {
   position: relative;

@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardRarityInfo } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DUEL_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame } from '../src/games/rpgCards.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 import { RPG_PV_JOUEUR, rpgSorcierPv } from '../src/games/rpgDuel.js';
 import { passerMulligan } from './rpg-duel-start.js';
@@ -55,9 +55,8 @@ export async function checkRpgBattle(assert) {
       `${context} identifie sa couleur ${frame.key}`);
     assert.equal(element.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(carte),
       `${context} utilise la couleur de cadre ${cardFrameColor(carte)}`);
-    assert.equal(element.classList.contains('rpg-card--frame-brillant'),
-      frame.key.startsWith('hybride-') || cardRarityInfo(carte).key === 'mythique',
-      `${context} n'a un cadre brillant que si la carte est bicolore ou mythique`);
+    assert.equal(element.classList.contains('rpg-card--frame-brillant'), cardHasShinyFrame(carte),
+      `${context} ne brille que si le cadre est mythique mono-élément`);
   };
   const envoyerSouris = (target, type) => {
     target.dispatchEvent(new window.MouseEvent(type, { bubbles: true, relatedTarget: document.body }));
@@ -179,6 +178,12 @@ export async function checkRpgBattle(assert) {
     await act(async () => { envoyerSouris(carte, 'mouseover'); });
     const apercu = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
     verifierRegles(apercu?.querySelector('.rpg-hover-card-preview__rules'), `Aperçu : ${id}`);
+    if (id === 'petra') {
+      assert.ok(carte.querySelector('.rpg-card-catalogue__art.rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
+        'le catalogue montre la diagonale fixe de Pétra');
+      assert.ok(apercu?.querySelector('.rpg-hover-card-preview__face.rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
+        'son aperçu conserve les deux couleurs sans animation de cadre');
+    }
     assert.ok(apercu.getAttribute('aria-label').includes(cardById(id).text),
       `le libellé accessible de ${id} conserve le texte original`);
     await act(async () => { envoyerSouris(carte, 'mouseout'); });
@@ -197,6 +202,10 @@ export async function checkRpgBattle(assert) {
     /\/cards\/ifrit-al-ahmar\.jpg\?v=sourire-tempete-huile-v1$/,
     'le catalogue charge la nouvelle illustration de l’Ifrit contre le cache');
   const ferielCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="feriel"]');
+  assert.equal(ferielCatalogue?.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(cardById('feriel')),
+    'le catalogue garde la couleur Braise de Fériel, même si elle est mythique');
+  assert.ok(ferielCatalogue?.querySelector('.rpg-card-catalogue__art.rpg-card--frame-braise.rpg-card--frame-brillant.rpg-card--mythique'),
+    'le catalogue donne à Fériel le même cadre brillant que dans le duel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/feriel\.jpg\?v=lance-de-feu-photoreal-v1$/,
     'le catalogue charge la nouvelle illustration de Fériel avec une URL versionnée contre le cache');
@@ -275,8 +284,8 @@ export async function checkRpgBattle(assert) {
   assert.match(tempeteCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts à toutes les créatures adverses/u,
     'la Tempête de sable annonce ses trois dégâts');
   const nuageCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="nuage-de-cendres"]');
-  assert.match(nuageCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /puis 2 autres au début du tour suivant/u,
-    'le Nuage de cendres annonce sa seconde vague pour le tour suivant');
+  assert.match(nuageCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /puis 2 autres au début de votre tour suivant/u,
+    'le Nuage de cendres annonce sa seconde vague pour le tour suivant du lanceur');
   const filtresCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__filters select')];
   const filtrerCatalogue = async (select, value) => act(async () => {
     select.value = value;
@@ -1427,10 +1436,11 @@ export async function checkRpgBattle(assert) {
     const terrain = petraContainer.querySelector('.rpg-terrains--joueur .rpg-terrain[data-card-id="petra"]:not(.is-tapped)');
     assert.ok(terrain, 'la vraie carte Pétra rejoint le rail des terrains');
     assertElementFrame(terrain, 'petra', 'le terrain bicolore Pétra');
-    assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable'),
-      'une carte Braise + Sable reçoit le cadre rouge-orange de sa combinaison');
+    assert.ok(terrain.classList.contains('rpg-card--frame-hybride-braise-sable')
+      && !terrain.classList.contains('rpg-card--frame-brillant'),
+    'Pétra partage son cadre en diagonale Braise / Sable, sans reflet brillant');
     assert.ok(!terrain.classList.contains('rpg-card--mythique'),
-      'Pétra est rare, pas mythique : elle ne prend pas le cadre violet');
+      'Pétra est rare, pas mythique : elle ne prend pas le zellige mythique');
     const disponiblesAvant = Number(terrain.dataset.availableCount);
     await act(async () => { terrain.click(); });
     const choix = petraContainer.querySelector('[role="dialog"][aria-label^="Choisir le mana produit par Pétra"]');
@@ -1491,12 +1501,14 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
   assert.ok(ferielEnMain.classList.contains('rpg-card--mythique')
     && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
-    'Fériel porte son cadre violet brillant dès la main');
+    'Fériel conserve son cadre Braise brillant dès la main');
+  assertElementFrame(ferielEnMain, 'feriel', 'Fériel en main');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
-    'Fériel, mythique, garde son cadre violet sur la table');
+    'Fériel, mythique, garde son zellige sur la table');
+  assertElementFrame(ferielEnJeu, 'feriel', 'Fériel en jeu');
   assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });
@@ -1622,4 +1634,70 @@ export async function checkRpgBattle(assert) {
     'le Ressac a quitté la main du joueur');
   await act(async () => { bounceRoot.unmount(); });
   bounceContainer.remove();
+
+  // ── Nuage de cendres : la seconde vague attend le tour suivant du lanceur ──
+  // Le cas signalé : la première vague vide la table, et plus aucune vague ne
+  // tombe. La promesse doit rester suspendue et brûler, au début de votre tour
+  // suivant, ce que le sorcier a posé pendant le sien — même s'il ne restait
+  // personne après la première bourrasque.
+  const nuageContainer = document.createElement('div');
+  document.body.appendChild(nuageContainer);
+  const nuageRoot = createRoot(nuageContainer);
+  await act(async () => {
+    nuageRoot.render(<RpgDuelPage
+      joueurDeck={['desert', 'desert', 'desert', 'desert', 'desert', 'nuage-de-cendres', 'montagne', 'montagne', 'montagne', 'montagne']}
+      sorcierDeck={['desert', 'desert', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'desert', 'desert', 'desert', 'desert']}
+      rng={() => 0.999}
+    />);
+  });
+  await lancerDepuisMenu(nuageContainer);
+  const nuageHand = () => [...nuageContainer.querySelectorAll('button.rpg-hand__card')];
+  const ennemisEnJeu = () => [...nuageContainer.querySelectorAll('.rpg-card--ennemi')];
+  const journalNuage = () => nuageContainer.querySelector('.rpg-log')?.textContent ?? '';
+  const poserMontagne = async () => {
+    const montagne = nuageHand().find((card) => card.getAttribute('aria-label')?.includes('Montagne')
+      && estJouable(card));
+    assert.ok(montagne, 'une Montagne doit être jouable pour payer le Nuage');
+    await glisserSurTable(nuageContainer, montagne);
+  };
+  const finirTourNuage = async () => {
+    await act(async () => { nuageContainer.querySelector('.rpg-btn--endturn').click(); });
+    await act(async () => { await wait(1800); });
+    await passerAnnoncesSorcier(nuageContainer);
+    const resoudre = nuageContainer.querySelector('.rpg-btn--resolve-combat');
+    if (resoudre) await act(async () => { resoudre.click(); });
+    await act(async () => { await wait(700); });
+  };
+
+  // Trois tours de mana, puis le nuage : les deux Chiens 2/2 du sorcier en face.
+  for (let tour = 0; tour < 3; tour += 1) {
+    await poserMontagne();
+    await finirTourNuage();
+  }
+  assert.equal(ennemisEnJeu().length, 2, 'deux Chiens du guet attendent le nuage sur la table adverse');
+  await poserMontagne();
+  const nuageEnMain = nuageHand().find((card) => card.getAttribute('aria-label')?.includes('Nuage de cendres'));
+  assert.ok(nuageEnMain && estJouable(nuageEnMain), 'le Nuage se paie avec quatre Montagnes');
+  await act(async () => { nuageEnMain.click(); });
+  const confirmerNuage = nuageContainer.querySelector('.rpg-spell-confirm .rpg-btn--primary');
+  assert.ok(confirmerNuage, 'lancer le Nuage demande confirmation');
+  await act(async () => { confirmerNuage.click(); });
+  await act(async () => { await wait(900); });
+  assert.equal(ennemisEnJeu().length, 0, 'la première vague emporte les deux Chiens 2/2 et vide la table');
+  assert.match(journalNuage(), /Nuage de cendres diffère 2 dégâts : ils tomberont au début de votre prochain tour/u,
+    'le nuage reste suspendu même si la première vague a tout tué');
+
+  await finirTourNuage();
+  const journalApresVague = journalNuage();
+  assert.match(journalApresVague, /L’écho de Nuage de cendres retombe sur la table : 2 dégâts/u,
+    'la seconde vague tombe au début de votre tour suivant, après le tour du sorcier');
+  // Le moteur ne dit « retombe sur la table » que s’il y trouvait quelqu’un :
+  // la ligne prouve donc que le sorcier avait bien posé une créature, et que
+  // l’écho l’a brûlée au lieu de se dissiper.
+  assert.doesNotMatch(journalApresVague, /L’écho de Nuage de cendres se dissipe/u,
+    'la créature posée pendant le tour du sorcier était bien là, à brûler');
+  assert.equal(ennemisEnJeu().length, 0,
+    'elle brûle la créature que le sorcier avait posée pendant son tour');
+  await act(async () => { nuageRoot.unmount(); });
+  nuageContainer.remove();
 }

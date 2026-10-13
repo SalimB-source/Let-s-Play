@@ -23,7 +23,7 @@ import {
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import { groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
-import { startRpgLongPress } from './rpgLongPress.js';
+import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
   etageEstDebloque,
@@ -44,7 +44,9 @@ import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
+import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
+import { rpgCombatFireSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
@@ -111,10 +113,8 @@ import {
 } from './rpgDuel.js';
 import {
   cardRarityInfo,
+  cardFrameClass,
   cardFrameColor,
-  cardFrameInfo,
-  cardHasMythicFrame,
-  cardHasShinyFrame,
   cardColorCost,
   cardColors,
   terrainManaColors,
@@ -495,19 +495,7 @@ function cardRarityStyle(carte) {
   return { '--rarity-color': color };
 }
 
-/**
- * Le cadre suit la couleur de la carte : bleu (Eau), beige (Sable), rouge
- * (Braise), bleu clair (Neige). Une carte bicolore ajoute le dégradé de sa
- * combinaison, une carte mythique le dégradé violet — les deux sont des cadres
- * brillants.
- */
-function cardFrameClass(carte) {
-  const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
-  if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
-  if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
-  return classes.join(' ');
-}
-
+/** La même couleur d'élément habille le duel, le catalogue et l'atelier. */
 function cardFrameStyle(carte) {
   return { '--rpg-frame-color': cardFrameColor(carte) };
 }
@@ -953,6 +941,14 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
  * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
  * joue jamais la carte : c'est une consultation, pas une action. */
 function ApercuCarteAppuiLong({ carte, onFermer }) {
+  const boutonFermerRef = useRef(null);
+  // Le focus arrive sur « Fermer l'aperçu » sans faire défiler la page :
+  // un `scroll` même minuscule interromptrait un appui long encore en cours —
+  // ou aurait laissé passer le clic qui suit la levée du doigt et refermé le
+  // volet à peine ouvert (`rpgLongPress.js`).
+  useEffect(() => {
+    boutonFermerRef.current?.focus({ preventScroll: true });
+  }, []);
   if (!carte) return null;
   return (
     <div
@@ -966,7 +962,7 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
       <div className="rpg-card-peek__panel">
         <HoverCardPreview carte={carte} variante="appui-long" />
       </div>
-      <button type="button" autoFocus className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
+      <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu
       </button>
     </div>
@@ -1172,6 +1168,35 @@ function SpellAnnouncement({ annonce }) {
   );
 }
 
+/** Bandeau d'ouverture de tour : « Votre tour » / « Tour de l'adversaire ».
+ *
+ *  Purement informatif, il ne capte aucun geste (`pointer-events: none`) et
+ *  s'efface tout seul après `RPG_ANNONCE_TOUR_DUREE` — valeur transmise à la
+ *  feuille par `--rpg-annonce-tour-duree`, pour que le fondu de sortie et le
+ *  retrait de l'élément finissent ensemble. La zone d'état existe même quand
+ *  rien n'est annoncé : les lecteurs d'écran suivent alors chaque annonce
+ *  (`aria-live`), chaque bandeau neuf portant sa propre clé. */
+function AnnonceTour({ annonce }) {
+  const joueur = annonce?.camp === 'joueur';
+  return (
+    <div
+      className="rpg-annonce-tour"
+      style={{ '--rpg-annonce-tour-duree': `${RPG_ANNONCE_TOUR_DUREE}ms` }}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {annonce && (
+        <p key={annonce.token} className={`rpg-annonce-tour__bandeau is-${joueur ? 'joueur' : 'sorcier'}`}>
+          <span className="rpg-annonce-tour__lamp" aria-hidden="true" />
+          <strong>{joueur ? 'Votre tour' : 'Tour de l’adversaire'}</strong>
+          <span className="rpg-annonce-tour__lamp" aria-hidden="true" />
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── Boîtier de deck en 3D (onglet Deck) ──────────────────────────────────────
    Décor pur : le clic est porté par le bouton voisin (voir `GameModeMenu`), et le
    nom du deck y figure en clair — tout ce qui est dessiné ici est `aria-hidden`. */
@@ -1251,6 +1276,13 @@ function redresserBoitier(event) {
 
 /** La table posée avant le premier tirage, et le repli si un identifiant se perd. */
 const PLATEAU_PAR_DEFAUT = plateauDeRepli();
+
+// Durée du bandeau d'ouverture de tour — « Votre tour » / « Tour de
+// l'adversaire » (voir `AnnonceTour`). La feuille de style reçoit cette valeur
+// par `--rpg-annonce-tour-duree` : le fondu de sortie et le retrait du bandeau
+// finissent donc ensemble. Le repli `1.5s` de la feuille ne sert qu'à une page
+// sans React.
+const RPG_ANNONCE_TOUR_DUREE = 1500;
 
 // Le réglage sonore (musique et bruitages) reste mémorisé sur l'appareil ;
 // au prochain passage, le son revient par défaut.
@@ -1835,7 +1867,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       onFocus={(event) => onHoverCard?.(carte, event)}
                       onBlur={onLeaveHoverCard}
                     >
-                      <div className="rpg-card-catalogue__art">
+                      <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)}`}>
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}
@@ -1913,15 +1945,16 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   useEffect(() => {
     if (phaseDuelActive && prevPhaseRef.current && prevPhaseRef.current !== phaseDuelActive) {
       if (phaseDuelActive === 'combat') jouerSfx('phase');
-      else if (phaseDuelActive === 'reponse') jouerSfx('annonce');
-      else if (phaseDuelActive === 'principal' || phaseDuelActive === 'adverse') jouerSfx('tour');
+      else if (phaseDuelActive === 'reponse') jouerSfx('page_turn');
     }
     prevPhaseRef.current = phaseDuelActive;
   }, [phaseDuelActive]);
   useEffect(() => {
     if (cartesEnDestruction.length > prevDestructionCountRef.current) {
-      const last = cartesEnDestruction[cartesEnDestruction.length - 1];
-      jouerSfx(last?.bruleeParBraise ? 'burn' : 'destruction');
+      const nouvellesDestructions = cartesEnDestruction.slice(prevDestructionCountRef.current);
+      jouerSfx(nouvellesDestructions.some((effet) => effet.bruleeParBraise)
+        ? 'flame_gust'
+        : 'destruction_hit');
     }
     prevDestructionCountRef.current = cartesEnDestruction.length;
   }, [cartesEnDestruction]);
@@ -2127,6 +2160,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // restent disponibles dans tous les duels. Les deux lecteurs partagent le
   // même réglage et sont libérés au démontage.
   const musiqueRef = useRef(null);
+  const musiquePlateauRef = useRef(null);
   const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
   // Le décor 3D de la table (relief, lumière, particules) : mémorisé sur l'appareil.
@@ -2135,11 +2169,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => { writeRpgSoundPref(sonActif); }, [sonActif]);
   useEffect(() => {
     musiqueRef.current = new RpgAmbientMusic();
+    musiquePlateauRef.current = new RpgPlateauMusic();
     sfxRef.current = new RpgAudioPlayer();
     sfxRef.current.setMuted(!sonActif);
     return () => {
       musiqueRef.current?.destroy();
       musiqueRef.current = null;
+      musiquePlateauRef.current?.destroy();
+      musiquePlateauRef.current = null;
       sfxRef.current?.destroy();
       sfxRef.current = null;
     };
@@ -2147,6 +2184,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     sfxRef.current?.setMuted(!sonActif);
     musiqueRef.current?.setMuted(!sonActif);
+    musiquePlateauRef.current?.setMuted(!sonActif);
   }, [sonActif]);
   // La tour de l'étage en cours commande la boucle (null : duel libre).
   const lectureHistoire = ecran === 'recit' || ecran === 'journal';
@@ -2157,21 +2195,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     const musique = musiqueRef.current;
     if (!musique) return;
-    if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.start();
+    const plateauMusical = RPG_PLATEAUX_MUSICAUX.has(plateauId);
+    if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif && !plateauMusical) musique.start();
     else musique.stop();
-  }, [ecran, lectureHistoire, tourHistoireId, sonActif]);
+  }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
+  useEffect(() => {
+    const musique = musiquePlateauRef.current;
+    if (!musique) return;
+    musique.setPlateau(plateauId);
+    if (ecran === 'partie' && sonActif) musique.start();
+    else musique.stop();
+  }, [plateauId, ecran, sonActif]);
   // Un onglet mis de côté ne laisse pas la boucle tourner dans le vide ;
   // au retour, elle reprend où le duel en est.
   useEffect(() => {
     const surVisibilite = () => {
       const musique = musiqueRef.current;
-      if (!musique) return;
-      if (document.hidden) musique.pause();
-      else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.resume();
+      if (musique) {
+        if (document.hidden) musique.pause();
+        else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif && !RPG_PLATEAUX_MUSICAUX.has(plateauId)) musique.resume();
+      }
+      const musiquePlateau = musiquePlateauRef.current;
+      if (musiquePlateau) {
+        if (document.hidden) musiquePlateau.pause();
+        else if (ecran === 'partie' && sonActif) musiquePlateau.resume();
+      }
     };
     document.addEventListener('visibilitychange', surVisibilite);
     return () => document.removeEventListener('visibilitychange', surVisibilite);
-  }, [ecran, lectureHistoire, tourHistoireId, sonActif]);
+  }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
   const basculerSon = () => setSonActif((actif) => !actif);
   const jouerSfx = (nom, delai = 0) => {
     try {
@@ -2257,6 +2309,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [apercuMagie, setApercuMagie] = useState(null);
   // Piles de cartes homonymes (tactile) : les groupes que le joueur a dépliés.
   const [pilesDeployees, setPilesDeployees] = useState(() => new Set());
+  // Bandeau d'ouverture de tour : `{ camp, token }` tant qu'il est affiché,
+  // `null` le reste du temps. Il ne dure que `RPG_ANNONCE_TOUR_DUREE`.
+  const [annonceTour, setAnnonceTour] = useState(null);
+  // Le camp déjà annoncé, et pour quelle session de duel : une partie neuve se
+  // signale même si elle s'ouvre sur le camp de la précédente.
+  const annonceTourRef = useRef({ session: 0, camp: null });
+  const sequenceAnnonceTourRef = useRef(0);
   const carteGlisseeRef = useRef(null);
   const clicApresGlisserRef = useRef(false);
   const annulationRef = useRef(null);
@@ -2346,6 +2405,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     if (!carteGlissee) return undefined;
     const purgeGlisser = () => {
+      // Le glisser-déposer tactile lui aussi se range de force : son fantôme et
+      // ses écouteurs ne survivent jamais à une purge (nettoyage idempotent).
+      touchDragRef.current?.();
+      touchDragRef.current = null;
       carteGlisseeRef.current = null;
       setCarteGlissee(null);
       setSurZoneDepot(false);
@@ -2369,6 +2432,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       window.clearTimeout(safety);
     };
   }, [carteGlissee]);
+
+  // Chien de garde du vol de carte : sa minuterie de 720 ms résout l'action et
+  // range la carte en vol, mais une minuterie avalée (WebView mise en arrière-
+  // plan, onglet réveillé en route) laisserait la table `is-card-flight-active`
+  // — donc totalement muette (`pointer-events: none`) : plus un geste ne passe,
+  // ni carte, ni commande, ni appui long. Au bout de 2,5 s, le vol se résout
+  // de force, exactement comme `purgeGlisser` purge un glisser figé.
+  useEffect(() => {
+    if (!carteEnVol) return undefined;
+    const secours = window.setTimeout(() => {
+      if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
+      timerVolRef.current = null;
+      const action = actionVolRef.current;
+      actionVolRef.current = null;
+      setCarteEnVol((current) => (current ? null : current));
+      action?.resoudre();
+    }, 2500);
+    return () => window.clearTimeout(secours);
+  }, [carteEnVol?.token]);
 
   useLayoutEffect(() => {
     if (carteEnVol?.phase !== 'pending') return;
@@ -2491,7 +2573,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     carteGlisseeRef.current = null;
     clicApresGlisserRef.current = false;
     jouerSfx('apparition');
-    jouerSfx('tour', 0.35);
     force();
   };
 
@@ -2527,7 +2608,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setMulligan(null);
       return;
     }
-    jouerSfx('pioche', 0.05);
+    jouerSfx('card_draw', 0.05);
     // Une étape de résultat : la main neuve se relit en grand, ce qui entre est
     // signalé, et le geste qui referme le volet est celui qui ouvre le duel.
     setMulligan({
@@ -2542,12 +2623,45 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     masquerApercuSurvol();
     // Le volet se ferme après le choix ; le duel reprend sur la table.
     setMulligan(null);
-    jouerSfx('tour', 0.25);
     force();
   };
 
   const duel = duelRef.current;
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
+  // Bandeau d'ouverture de tour : chaque bascule de `duel.tour` — le tour du
+  // joueur rendu, celui du sorcier rendu, une partie neuve, une reprise —
+  // annonce 1,5 s en grand le camp qui prend la main, puis s'efface.
+  //
+  // Trois silences possibles : pas de duel, écran autre que la table (menu,
+  // atelier, récit), volet de mulligan ouvert — la table n'est encore à
+  // personne — et duel terminé, où il n'y a plus de tour à annoncer. Le témoin
+  // garde la **session** et le camp déjà annoncés : une partie relancée se
+  // signale même si elle s'ouvre sur le camp de la précédente, tandis qu'un
+  // aller-retour par le menu ne rejoue pas le bandeau du tour en cours.
+  const campDuTour = duel?.tour ?? null;
+  const duelTermine = duel ? Boolean(rpgVainqueur(duel)) : false;
+  // Le volet du mulligan tient la table avant les retours anticipés de la page,
+  // comme `mulliganOuvert` plus bas : deux lectures d'un même état.
+  const voletMulliganOuvert = Boolean(mulligan);
+  useEffect(() => {
+    if (!campDuTour || ecran !== 'partie' || voletMulliganOuvert || duelTermine) {
+      setAnnonceTour(null);
+      return undefined;
+    }
+    const session = sessionDuelRef.current;
+    const dejaAnnonce = annonceTourRef.current;
+    if (dejaAnnonce.session === session && dejaAnnonce.camp === campDuTour) return undefined;
+    annonceTourRef.current = { session, camp: campDuTour };
+    const token = ++sequenceAnnonceTourRef.current;
+    setAnnonceTour({ camp: campDuTour, token });
+    const minuterie = window.setTimeout(() => {
+      // Seul le dernier bandeau se retire : un tour qui bascule pendant les
+      // 1,5 s de l'autre ne laisse pas la minuterie précédente effacer le sien.
+      setAnnonceTour((courant) => (courant?.token === token ? null : courant));
+    }, RPG_ANNONCE_TOUR_DUREE);
+    return () => window.clearTimeout(minuterie);
+  }, [campDuTour, ecran, voletMulliganOuvert, duelTermine]);
+
   useEffect(() => {
     if (!tutorielActif || etapeTutorielId !== 'tour-adverse' || !duel || duel.tour !== 'joueur' || duel.annonce || combatEntrant) return;
     setEtapeTutorielId('attaque');
@@ -2578,7 +2692,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
     }
     if (!animations.length) return;
-    animations.forEach((a, idx) => { jouerSfx('pioche', idx * 0.08); });
+    animations.forEach((a, idx) => { jouerSfx('card_draw', idx * 0.08); });
     setAnimationsPioche((current) => [...current, ...animations].slice(-12));
     animations.forEach((animation) => {
       const timer = window.setTimeout(() => {
@@ -2638,6 +2752,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const hote = event.target?.closest?.('[data-card-id]');
     const carte = cardById(hote?.dataset?.cardId);
     if (!hote || !carte) return;
+    // Un second doigt, une souris ou un clic droit ne doit pas désarmer l'appui
+    // déjà en cours du premier doigt : seul un geste qui armerait vraiment un
+    // appui long reprend la main.
+    if (!peutDemarrerAppuiLong(event)) return;
     annulerAppuiLong();
     appuiLongRef.current = startRpgLongPress(event, {
       source: hote,
@@ -2662,10 +2780,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     window.addEventListener('keydown', fermerAvecEchap);
     return () => window.removeEventListener('keydown', fermerAvecEchap);
   }, [apercuAppui]);
+  // Le menu contextuel natif (callout iOS, « enregistrer l'image » / sélection
+  // Android) n'appartient à aucun geste de la table : étouffé sur toute la
+  // coque du jeu, pas seulement pendant un appui long armé. Sans ça, une seule
+  // longue pression qui échappe à `rpgLongPress.js` ouvre le menu système, qui
+  // casse à son tour la chaîne tactile de la WebView — le jeu devient sourd.
+  const neutraliserMenuContextuel = (event) => event.preventDefault();
   // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
   useEffect(() => {
-    if (viewport.portrait) fermerApercuAppui();
-  }, [viewport.portrait]);
+    if (viewport.portrait && apercuAppui) fermerApercuAppui();
+  }, [viewport.portrait, apercuAppui]);
 
   // « M » coupe ou rend la musique d'ambiance, comme sur la course.
   useEffect(() => {
@@ -2728,6 +2852,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
+    // Aucun état de geste ne survit au départ pour la lecture : un vol de carte
+    // ou un glisser laissé en arrière rendrait la table `is-card-flight-active`
+    // — donc muette (`pointer-events: none`) — au retour du duel.
+    timerVolRef.current = null;
+    timerSortRef.current = null;
+    timerApercuMagieRef.current = null;
+    setCarteEnVol(null);
+    carteOrigineVolRef.current = null;
+    setCarteGlissee(null);
+    carteGlisseeRef.current = null;
+    setSurZoneDepot(false);
+    clicApresGlisserRef.current = false;
+    clicApresGlisserBloqueurRef.current = null;
+    setBloqueurGlisse(null);
     setMulligan(null);
     setTutorielActif(false);
     setHistoireEtageId(null);
@@ -2765,7 +2903,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (lectureHistoire) {
     return (
-      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onContextMenu={neutraliserMenuContextuel}>
         {ecran === 'journal' ? (
           <RpgStoryJournal recit={progressionHistoire.recit} cardArt={cardArt}
             onExit={() => setEcran('histoire')} onContinue={continuerCampagne}
@@ -2783,7 +2921,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran !== 'partie') {
     return (
-      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={neutraliserMenuContextuel}>
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -2990,9 +3128,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     duel.joueur.pv < instantane.pv
     || (duel.joueur.bouclier ?? 0) < instantane.bouclier
   );
+  // Le tour qui s'ouvre peut porter un écho différé (Nuage de cendres) : les
+  // blessures et les morts qu'il cause s'animent comme les autres, au lieu de
+  // se contenter d'un chiffre qui change sur la carte.
   const terminerTourEtDetecterDegatsJoueur = () => {
     const instantane = prendreInstantaneDegatsJoueur();
+    const champAvantFinDeTour = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
     rpgFinDeTour(duel);
+    animerModificationsChamp(champAvantFinDeTour, [], debutJournalDestructions);
     return joueurToucheDepuis(instantane);
   };
 
@@ -3059,13 +3203,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
-    const disparues = animationsReduites() ? [] : avant.filter((entite) => !vivants.has(entite.entityId));
+    const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId));
+    const mouvementReduit = animationsReduites();
+    const disparues = mouvementReduit ? [] : cartesDisparues;
+    const evenementsDestruction = Number.isInteger(debutJournalDestructions)
+      ? rpgDestructionsDepuis(duel, debutJournalDestructions)
+      : [];
+    const idsDetruits = new Set(evenementsDestruction.map((evenement) => evenement.entityId));
+    const entitesBrulees = new Set(evenementsDestruction
+      .filter((evenement) => evenement.sourceElements.includes('braise'))
+      .map((evenement) => evenement.entityId));
+    // Une créature Braise garde son bruit de capacité de destruction quand
+    // elle est tuée par une autre couleur : l'effet vient bien de sa capacité.
+    for (const entite of cartesDisparues) {
+      if (idsDetruits.has(entite.entityId)
+        && rpgFireSoundFor(cardById(entite.cardId), 'destruction')) {
+        entitesBrulees.add(entite.entityId);
+      }
+    }
+    // Les animations réduites ne coupent pas les bruitages élémentaires.
+    if (mouvementReduit && entitesBrulees.size) jouerSfx('flame_gust');
     if (disparues.length) {
-      const entitesBrulees = new Set((Number.isInteger(debutJournalDestructions)
-        ? rpgDestructionsDepuis(duel, debutJournalDestructions)
-        : [])
-        .filter((evenement) => evenement.sourceElements.includes('braise'))
-        .map((evenement) => evenement.entityId));
       const token = ++sequenceAnimationRef.current;
       const duree = disparues.some((entite) => entitesBrulees.has(entite.entityId)) ? 1050 : 760;
       const effets = disparues.map((entite) => ({
@@ -3198,7 +3356,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const res = rpgPoserTerrain(duel, 'joueur', carteId);
     if (res.ok) {
       conserverAnnulation(etatAvantAction);
-      jouerSfx('terrain_pose');
+      jouerSfx('card_place');
       avancerTutoriel('terrain', 'mana');
     } else { jouerSfx('erreur'); }
     force();
@@ -3265,7 +3423,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const annoncerMagie = (carte, cible) => {
-    jouerSfx(carte?.effet?.type === 'soin' ? 'soin_long' : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
+    const son = rpgFireSoundFor(carte, 'spell')
+      ?? (carte?.effet?.type === 'soin' ? 'soin_long'
+        : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
+    jouerSfx(son);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     setSortJoue({ carteId: carte.id, cible });
@@ -3306,7 +3467,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (res.ok) {
-      jouerSfx(carte?.effet?.type === 'soin' ? 'soin_long' : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
+      jouerSfx('card_place');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
       annoncerMagie(carte, cibleDecrite);
@@ -3379,7 +3540,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     } else if (res.ok) {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
-      jouerSfx('creature');
+      jouerSfx('card_place');
+      const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
+      if (sonEffetBraise) jouerSfx(sonEffetBraise);
       avancerTutoriel('creature', 'invocation');
     }
     force();
@@ -3481,7 +3644,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (carte.kind === 'magie' && peutJouerCarte(carte)) {
-      jouerSfx('menu');
       setConfirmationSort({ carteId, handIndex });
       return;
     }
@@ -3492,7 +3654,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const confirmation = confirmationSort;
     setConfirmationSort(null);
     if (!confirmation) return;
-    jouerSfx('select');
     jouerCarteDepuisMain(confirmation.carteId, confirmation.handIndex);
   };
 
@@ -3514,7 +3675,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return true;
     }
-    jouerSfx('select');
     if (['combat', 'retour-main'].includes(carteSource?.arrivee?.type)) {
       const carteId = cibleEnCours;
       const handIndex = carteCibleeHandIndexRef.current;
@@ -3563,7 +3723,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         jouerSfx('annuler');
         setBloqueurSelectionne(null);
       } else {
-        jouerSfx('blocage');
+        jouerSfx('block_impact');
         setBloqueurSelectionne(entite.id);
       }
       force();
@@ -3606,7 +3766,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         force();
         return;
       }
-      jouerSfx('coup_rapide');
+      // Le coup rapide ne frappe qu'à la résolution du combat ; ici, on ne fait
+      // entendre que le retour de sélection de la cible.
+      jouerSfx('select');
       const cibles = { ...ciblesAttaque, [attaquant.id]: entite.id };
       setCiblesAttaque(cibles);
       const prochainId = prochainCoupRapideSansCible(attaquants, cibles);
@@ -3652,7 +3814,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    jouerSfx('attaque_confirmee');
+    jouerSfx('attackers_confirm');
     const ciblesFinales = Object.fromEntries(ids.flatMap((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
       const cible = ciblesCoupRapideLegales(attaquant, 'joueur')
@@ -3692,7 +3854,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const declarerAttaqueAvecTous = () => {
     const ids = prets.map((entite) => entite.id);
     if (!ids.length) { jouerSfx('erreur'); return; }
-    jouerSfx('attaque_declaree');
+    jouerSfx('attackers_confirm');
     setPhase(true);
     avancerTutoriel('attaque', 'confirmer-attaque');
     setAttaquants(ids);
@@ -3760,7 +3922,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    jouerSfx(retireDeCetteAttaque ? 'annuler' : 'blocage');
+    jouerSfx(retireDeCetteAttaque ? 'annuler' : 'block_impact');
     setBloqueurSelectionne(null);
     setCombatEntrant((courant) => {
       if (!courant?.attaquants.includes(attaquantId)) return courant;
@@ -3804,6 +3966,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const vivants = new Set(attaquantsVivants);
     const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages).filter(([id]) => vivants.has(id)));
+    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -3822,9 +3986,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const frappeDirecte = res.resume.frappeSorcier > 0;
+    const frappeCreature = res.resume.paires.length > 0
+      || res.resume.coupsRapides.some((coup) => !coup.annule);
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
-    if (frappeDirecte) { jouerSfx('degats', 0.18); }
+    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
+    if (frappeDirecte) jouerSfx(sonFrappeDirecteBraise ?? 'degats', 0.18);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
@@ -3855,6 +4021,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attaquantsBloques = (combat.attaquantsBloques
       ?? combat.attaquants.filter((id) => combat.blocages[id]?.length))
       .filter((id) => attaquantsVivants.includes(id));
+    const sonAttaqueBraise = rpgCombatFireSound(duel, attaquantsVivants, blocages);
+    const sonFrappeDirecteBraise = rpgCombatFireSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgLancerAttaque(
@@ -3873,10 +4041,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
 
+    const frappeCreature = res.resume.paires.length > 0
+      || res.resume.coupsRapides.some((coup) => !coup.annule);
     jouerSfx('combat');
-    if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
-    if (res.resume.frappeSorcier > 0) { jouerSfx('degats_sorcier', 0.18); }
-    else if (!res.resume.paires.length) { jouerSfx('blocage', 0.2); }
+    if (frappeCreature) jouerSfx(sonAttaqueBraise ?? 'player_attack_hit', 0.015);
+    if (res.resume.frappeSorcier > 0) {
+      jouerSfx(sonFrappeDirecteBraise ?? 'player_attack_hit', 0.18);
+    } else if (!frappeCreature) {
+      jouerSfx('block_impact', 0.2);
+    }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
     rpgFermerFenetreReponse(duel);
@@ -3893,7 +4066,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const finDuTour = () => {
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
-    jouerSfx('tour');
     invaliderAnnulation();
     setPhase(false);
     setAttaquants([]);
@@ -3923,7 +4095,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       declarerAttaqueSorcier();
       return;
     }
-    annulerAppuiLong();
+    // L'annonce prend la scène : un aperçu déjà ouvert se range, un glisser en
+    // cours ne lâche pas sa carte. Un appui long encore en cours, lui, garde sa
+    // chance de s'ouvrir — l'annonce ne doit jamais rendre « muet » le geste du
+    // joueur ; son volet s'affichera au-dessus du voile de l'annonce.
     touchDragRef.current?.();
     touchDragRef.current = null;
     setApercuAppui(null);
@@ -3948,12 +4123,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
     if (!duel.annonce) { jouerSfx('erreur'); return; }
+    const carteAnnoncee = cardById(duel.annonce.carteId);
     setApercuSurvol(null);
     jouerSfx('pass');
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
     const res = rpgSorcierResoudreAnnonce(duel);
+    if (res.ok) {
+      const sonEffetBraise = rpgFireSoundFor(carteAnnoncee, 'spell')
+        ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
+      if (sonEffetBraise) jouerSfx(sonEffetBraise);
+    }
     if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) {
       declencherImpactEcran('received');
     }
@@ -4120,6 +4301,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       data-scene="duel"
       style={DOS_DE_CARTE_STYLE}
       onPointerDown={demarrerAppuiLongCarte}
+      onContextMenu={neutraliserMenuContextuel}
     >
       <SfxReactifsDuel
         vainqueur={vainqueur}
@@ -4195,6 +4377,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
           </button>
         </nav>
+
+        {/* Bandeau d'ouverture de tour : le camp qui prend la main se nomme au
+            centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
+        <AnnonceTour annonce={annonceTour} />
 
         {combatEntrant && <BlockerArrows tableRef={tableRef} assignments={combatEntrant.blocages} />}
         <FaceDownHand count={duel.sorcier.main.length} drawAnimations={piochesSorcier} />
@@ -4876,7 +5062,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onClose={fermerTutoriel}
         />
       )}
-      {apercuAppui && !apercuAnnonceOuvert && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
       {mulligan && (
         <VoletMulligan
           main={duel.joueur.main}
