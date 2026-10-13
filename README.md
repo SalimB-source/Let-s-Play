@@ -5973,7 +5973,7 @@ la lecture descend vers la main du joueur, dans le sens du tour lui-même.
 | Indicateur de tour (`À VOTRE TOUR`, `TOUR DU SORCIER`, `À VOUS · RÉPONSE`…) | `.rpg-bottombar__status`, en bas à droite | `.rpg-turn-rail`, au centre |
 | Les cinq phases (`PhaseTrack`) | dans `.rpg-bottombar .rpg-actions`, au-dessus des boutons | dans le rail, empilées verticalement |
 | `↶ Annuler la dernière action` et `⧗ Fin du tour` | `.rpg-actions__turn`, au bout de la rangée de commandes | `.rpg-actions__turn` du rail, empilés |
-| `Attaquer avec tous`, `Confirmer l'attaque`, `Annuler l'attaque`, `Résoudre le combat` | `.rpg-actions__combat` | inchangés, dans la barre du bas |
+| `Attaquer avec tous`, `Confirmer l'attaque`, `Annuler l'attaque`, `Résoudre le combat` | `.rpg-actions__combat` | le même bloc DOM, dans la barre du bas au doigt ; à la souris, la **colonne des actions** sous le rail (voir « Le Sablier : la main en éventail, la main du sorcier lisible ») |
 
 - **Ce n'est pas un panneau.** Chaque élément garde sa pastille — la capsule de
   l'indicateur, le cercle de la phase, l'or du bouton — et la phase active
@@ -6428,3 +6428,186 @@ la main (`peutDemarrerAppuiLong`).
   déclenchement » : `scroll`, `pointercancel` et `blur` ne laissent plus passer
   le clic qui suit. `scripts/rpg-preview-smoke.jsx` rejoue la même course dans
   la vraie page, aperçu ouvert à la fin.
+
+## Le Sablier : la main en éventail, la main du sorcier lisible, et les commandes du combat sous le pouce
+
+Trois retouches du duel, un même propos : la table se lit d'elle-même.
+
+**1. La main du joueur s'ouvre en éventail — à la souris.** La page pose sur
+chaque carte sa place dans la rangée (`--hand-fan`, un nombre signé, nul au
+centre) et son carré (`--hand-fan-arc`) ; `rpg-battle.css` en déduit un pas
+d'angle resserré dès que la main s'allonge (`22deg / (N − 1)`, plafonné à 3,6°),
+une ouverture latérale de 2 % de la largeur de la carte et une **descente en
+arc** de 0,35 % de sa hauteur (bornée à 9 px) — nulle au centre, maximale aux extrémités. La carte
+survolée **se soulève dans son axe** (32 px, ×1,06) : elle garde son inclinaison
+et sa place, l'œil ne perd pas celle qu'il vise ; le glisser-déposer ne la
+redresse qu'à peine (26 px, ×0,94). Les images-clés de la pioche citent les mêmes
+trois repères : une carte qui arrive se pose directement dans l'éventail, sans
+rattraper sa place après coup.
+
+Au doigt, les trois repères sont remis à zéro (`rpg-mobile.css`, `@media (hover:
+none), (pointer: coarse)`) : « une carte = une cible » interdit le recouvrement,
+l'éventail reste donc l'affaire de la souris — et il revient dans une **fenêtre
+étroite pilotée à la souris**, que la présentation tactile rhabille (bloc `@media
+(hover: hover) and (pointer: fine)`). Le décollage du vol d'une carte se mesure
+désormais sur sa boîte inclinée (`mesurerBoiteCarteMain`) : une carte de
+l'éventail ne part plus de la place — plus large — de sa boîte droite.
+
+**2. La main du sorcier grossit.** Les cartes face cachée du sorcier étaient des
+vignettes (54 × 70, chevauchées de 18 px) : au-dessus de la ligne ennemie, elles
+se lisaient comme un simple compteur. Elles passent à **78 × 101** — la taille
+d'une carte du champ de bataille —, chevauchées de 26 px, bord de 4 px et rayon
+de 9 px, l'écart et l'inclinaison de chaque carte (`--card-angle`, `--card-rise`)
+restant ceux de la page. Sept cartes tiennent ainsi sur ≈ 390 px, dans la bande
+libre au-dessus de la première rangée ennemie ; sous 620 px de large elles
+retombent à 52 × 67. La rangée reste inerte (`pointer-events: none`) et, au
+doigt, elle reste cachée : le compte vit déjà ailleurs.
+
+**3. « Confirmer l'attaque » et « Résoudre le combat » changent de camp.** Les
+deux commandes vivaient dans une barre flottante posée au milieu de la table
+(`right: 360px`, `bottom: 200px`), à hauteur des créatures alliées : la commande
+la plus importante du tour se lisait au milieu des cartes, et sa place bougeait
+avec les rangées. À la souris, la barre du combat rejoint maintenant la **colonne
+des actions**, à droite — celle de l'indicateur de tour, des cinq phases et de
+« Fin du tour » —, juste au-dessus de la main du joueur : le rail et la barre
+partagent la même largeur (`--rpg-actions-column`), la colonne se lit d'un seul
+trait, du tour vers le combat puis vers la main. Les deux commandes s'empilent
+sur toute la largeur de la colonne, la principale d'abord (58 px), l'annulation
+ensuite, en retrait. Le rail ne flotte plus au milieu de la bande libre : il
+**s'appuie juste au-dessus des deux commandes** (`bottom` +
+`height: max-content`), les cinq phases, « Attaquer avec tous » et « Fin du
+tour » se lisant d'un seul bloc posé sur le combat — et quand une magie est
+annoncée, la fenêtre de réponse se glisse sous les deux commandes : le rail
+remonte de sa hauteur, pour ne jamais la couvrir.
+
+Et elles s'allument. Le fond sombre discret cède la place à un **aplat clair
+écrit en sombre** : bleu glacé pour « Confirmer l'attaque » (la teinte du cadre
+d'Eau qui la bordait déjà), **or** pour « Résoudre le combat » (l'or de « Fin du
+tour », la teinte qui annonce une étape du tour dans ce duel), avec un halo qui
+respire doucement tant que la commande est disponible (2,6 s ; jamais grisée, et
+`prefers-reduced-motion` l'éteint). Le contraste ne dépend plus de la peinture du
+plateau : la commande du combat se voit avant qu'on la cherche. Au doigt, les
+tailles restent celles du téléphone mais l'aplat clair demeure ; sous 620 px de
+large, la colonne rend la place à la disposition compacte du doigt.
+
+### Où vit le code
+
+- `src/games/RpgDuelPage.jsx` — la place de chaque carte dans la rangée
+  (`--hand-fan`, `--hand-fan-arc`, posés en ligne sur les cartes de
+  `.rpg-hand`) et `mesurerBoiteCarteMain()`, la mesure du vol sur la boîte
+  inclinée ;
+- `src/games/rpg-battle.css` — « L'éventail de la main » (les trois repères
+  dérivés sur `.rpg-hand__card`, puis le `transform` de la souris, son survol et
+  son glisser), la main du sorcier agrandie (`.rpg-hidden-hand__card`), « La
+  colonne des actions » et « La commande principale du combat » ;
+- `src/games/rpg-mobile.css` — les repères de l'éventail remis à zéro au doigt,
+  et la liste des fonds sombres, où ne restent que les commandes en retrait
+  (annuler, attaquer avec tous, annuler l'attaque).
+
+### Vérifications
+
+```bash
+npm run check:rpg-ui      # l'éventail, la main du sorcier, la colonne et les deux aplats, dans la page et les deux feuilles
+npm run check:rpg         # les règles du duel, inchangées
+npm run check:rpg-mobile  # au doigt (Playwright) : la main reste mesurée carte par carte, sans recouvrement
+```
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat : les trois repères de
+l'éventail et leur remise à zéro au doigt, la boîte du vol mesurée sur la carte
+inclinée, la taille de la main du sorcier (78 × 101, puis 52 × 67 sous 620 px),
+la colonne des actions (même largeur que le rail, barre empilée sur toute la
+largeur), les deux aplats clairs et leur halo, l'extinction du halo quand la
+commande est grisée ou que `prefers-reduced-motion` est demandé — et l'interdit
+qui va avec : le fond sombre ne doit plus jamais repeindre ces deux commandes.
+
+## Le Sablier : les repères ronds, et l'aperçu collé à la carte
+
+Quatre retouches de présentation du duel, puis les cadres un peu plus épais,
+aucune règle touchée : les repères imprimés sur les faces gardent la même
+taille d'un support à l'autre, et l'aperçu au survol cesse de flotter loin de
+la carte qu'il décrit.
+
+**1. Le disque de mana des cartes posées reste rond, sur PC.** La table à la
+souris l'écrasait en ellipse (`min-width: 36px`, `height: 25px`, rembourrage
+latéral) : il devient une **boîte carrée de 30 px** (`aspect-ratio: 1`,
+`padding: 0`, `border-radius: 50%`), son chiffre passe à **15 px** — un disque,
+comme partout ailleurs dans le jeu.
+
+**2. La pastille de couleur prend la taille du disque.** En haut à gauche de
+la face, le repère d'élément cesse d'être le parent pauvre du coût : **30 px
+sur la table** — le diamètre du disque —, **`min(28px, 30%)` dans la main** —
+le disque de la main, borné pour les petites faces —, et des deux côtés le
+même **glyphe de 15 px dans un liseré de 2 px** (pastilles hybrides comprises,
+chacune à son liseré). Couleur et coût se lisent enfin à la même échelle.
+
+**3. L'aperçu rapide montre sa couleur à l'échelle de sa face.** Sa face est
+une grande face — celle du catalogue, de la carte annoncée — mais sa pastille
+gardait le petit gabarit des cartes en jeu (23 px au plus, glyphe de 13 px).
+Elle passe à **`clamp(28px, 17%, 38px)`, glyphe de 19 px et liseré de 2 px** :
+la couleur qu'il faut lire pour décider se voit à la taille de la carte qui
+la porte.
+
+**4. L'aperçu au survol se colle à la carte survolée.** Il se posait d'après
+une taille devinée (680 × 400) : trop grand, il rebondissait aux bords de la
+fenêtre et se retrouvait loin de la carte. Désormais `placerApercuSurvol()`
+mesure la **boîte réelle du panneau** rendu, **retire sa marge intérieure**
+(le rembourrage, lu en style calculé) pour que la face elle-même touche
+presque la carte, **choisit le côté qui a la place** — à droite d'abord — et
+**bascule à gauche si le bord déborde** ; en hauteur, le haut de la face
+s'aligne sur celui de la carte et le panneau remonte si son bas sortirait.
+Le panneau est **reposé avant peinture** (`useLayoutEffect`) : le joueur ne
+le voit jamais sauter. Le même `panelRef` sert l'aperçu du duel, celui du
+menu et celui du **mulligan**, qui se colle lui aussi à la carte lue.
+
+**5. Les cadres des cartes, un peu plus épais — puis un cran de plus.**
+L'anneau de couleur qui porte l'élément grandit, sur tous les gabarits à la
+fois — normal **4,5–6 px**, grand **6–8 px**, petit **4–4,25 px**, renforcé
+**5–6,5 px** (planchers et plafonds relevés, pente en `vw` à l'avenant) ; au
+doigt, seuls les plafonds bougent (5 et 5,5 px), les petites cartes gardent
+leur plancher. Le cadre reste dans ses proportions vérifiées (3 à 4,5 % de
+la carte) : il se voit davantage, il ne mange pas l'illustration.
+
+### Où vit le code
+
+- `src/games/rpg-battle.css` — le disque de mana carré de 30 px sur PC
+  (`.rpg-battle:not(.rpg-battle--touch) .rpg-card--img
+  .rpg-mana-cost.is-compact`), la pastille de couleur à sa taille (30 px sur
+  la table, `min(28px, 30%)` dans la main, glyphe 15 px et liseré 2 px),
+  celle de l'aperçu rapide aux grandes faces
+  (`.rpg-hover-card-preview__face`, `clamp(28px, 17%, 38px)`, 19 px / 2 px),
+  et les gabarits de cadre légèrement épaissis (`--rpg-card-border*` en tête
+  de fichier) ;
+- `src/games/rpg-mobile.css` — les plafonds des gabarits de cadre au doigt,
+  relevés dans le même esprit, planchers des petites cartes inchangés ;
+- `src/games/RpgDuelPage.jsx` — `placerApercuSurvol()` (boîte réelle, marge
+  intérieure retirée, côté choisi, bascule au débordement), le
+  `useLayoutEffect` qui repose le panneau avant peinture, et `panelRef`
+  posé par `HoverCardPreview` sur l'aperçu du survol comme sur celui du
+  mulligan (`VoletMulligan` le transmet).
+
+### Vérifications
+
+```bash
+npm run check:rpg              # 342/342 — les règles du duel, inchangées
+npm run build                  # le bundle se construit
+npm run check:rpg-tutorial-ui  # le tutoriel, dans la vraie page
+npm run check:rpg-ui           # voir la réserve ci-dessous
+```
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat des quatre points — et
+des cadres épaissis : le disque carré de 30 px (et l'interdit de l'ellipse
+36 × 25), la pastille à la taille du disque sur la table comme dans la main,
+celle de l'aperçu rapide aux 28–38 px des grandes faces, le placement collé
+à la carte (boîte réelle mesurée, marge intérieure retirée, bascule au
+débordement, reposé avant peinture, `panelRef` sur le survol et le
+mulligan), et les quatre gabarits de cadre dans leurs nouvelles bornes,
+toujours entre 3 et 4,5 % de la carte. Les scénarios
+JSDOM `rpg-card-state`, `rpg-preview`, `rpg-stacks`, `rpg-ghost`,
+`rpg-mulligan` et `rpg-turn-banner` rejouent la page entière autour du
+nouveau placement.
+
+**Réserve connue, hors de ces retouches :** `npm run check:rpg-ui` casse
+déjà à HEAD dans le volet JSDOM de `rpg-battle-ui-check` ; en contournant
+ce volet, huit assertions statiques restent rouges, pré-existantes (Coup
+rapide, Envol, Cavalier, 3 × Furie, maître-du-marteau ×2). Les contrôles
+Playwright demandent un navigateur, absent de cet environnement.

@@ -35,8 +35,7 @@
  */
 export const RPG_RECETTES_DECKS = {
   /**
-   * Mono-Sable. L'identité amazighe garde ses trois gardiennes des ksour (le
-   * bouclier d'Amani, la protection de Tiziri, la guide Amayas) et l'éclaireuse
+   * Mono-Sable. L'identité amazighe garde ses trois gardiennes des ksour (l'égide d'Amani, la protection de Tiziri, la guide Amayas) et l'éclaireuse
    * des Aurès ; le reste des places va aux meilleures cartes Sable du
    * catalogue — les trois héros mythiques (Salem, Tarek, Tin Hinan), le
    * Cavalier et le Scribe, et le Fennec à son maximum. Côté sorts, la Tempête

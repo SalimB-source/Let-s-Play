@@ -65,7 +65,9 @@ function estProtegee(entite, couleurs) {
     && liste.includes(entite.protection.contre));
 }
 
-/** Infiltration : inbloquable. Envol : seul un bloqueur volant arrête un volant. */
+/** Infiltration : inbloquable, par personne — permanente (imprimée ou par
+ *  l'arme portée) ou accordée jusqu'à la fin du tour.
+ *  Envol : seul un bloqueur volant arrête un volant. */
 function peutBloquerAttaquant(bloqueur, attaquant) {
   if (!bloqueur || !attaquant) return false;
   if (attaquant.infiltration) return false;
@@ -91,12 +93,13 @@ export function blessureNette(entite, montant, sourceType = 'attaque') {
   return Math.max(0, apresEsquive - Math.max(0, entite?.bouclier ?? 0));
 }
 
-/** Furie gagnée par une créature blessée qui survit (0 sans Furie ni blessure).
+/** Furie gagnée par une créature blessée qui survit — une seule fois (0 sans
+ *  Furie, sans blessure, ou si la Furie s'est déjà enflammée).
  *  La Furie peut venir de la créature elle-même ou de l'arme qu'elle porte. */
 export function furieGagnee(entite, degatsRecus) {
   const furie = Math.max(0, Number(duelCardById(entite?.carteId)?.furie) || 0)
     + Math.max(0, Number(armeById(entite?.arme?.carteId)?.donne?.furie) || 0);
-  return furie > 0 && (degatsRecus ?? 0) > 0 ? furie : 0;
+  return furie > 0 && (degatsRecus ?? 0) > 0 && !entite?.furieDeclenchee ? furie : 0;
 }
 
 /** L’entité meurt-elle sous un coup de ce type (bouclier compris) ?
@@ -121,8 +124,9 @@ export function valeurEntite(entite) {
   if (entite?.coupRapide) valeur += 2;
   if (entite?.rapidite) valeur += 0.5;
   if (entite?.protection) valeur += 1.5;
-  // Furie : la créature grandit à chaque échange où elle survit blessée.
-  if (carte.furie) valeur += 1 + carte.furie * 0.7;
+  // Furie : une seule flambée de +X/+X au premier sang survécu — une
+  // créature déjà enflammée n'a plus rien à gagner.
+  if (carte.furie && !entite?.furieDeclenchee) valeur += 1 + carte.furie * 0.7;
   // Résonance : une aura qui renforce toute la Neige de la table.
   if (carte.resonance) valeur += 2 + carte.resonance * 2;
   if (carte.arrivee) valeur += 1.5;
@@ -348,7 +352,9 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
 export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], ciblesAttaque = {}, options = {}) {
   const coteDefense = autre(coteAttaquant);
   const { profil, rng } = optionsIA(duel, coteDefense, options);
-  const ids = [...new Set(attaquantIds ?? [])].filter((id) => !ciblesAttaque?.[id]);
+  // La frappe du Coup rapide ne dispense pas du blocage : sa cible peut être
+  // assignée comme bloqueur, et l'attaquant rapide se bloque comme un autre.
+  const ids = [...new Set(attaquantIds ?? [])];
   const attaquants = duel[coteAttaquant].creatures.filter((entite) => ids.includes(entite.id));
   const bloqueurs = duel[coteDefense].creatures.filter((entite) => entite && !entite.attaquee);
   const affectations = {};
@@ -438,22 +444,18 @@ function attaquantsPrets(duel, cote) {
 /**
  * Dégâts au visage garantis quel que soit le blocage adverse : chaque
  * bloqueur ne peut encaisser qu’un attaquant, donc les K plus gros coups
- * peuvent être retenus — le reste passe. Le Coup rapide qui trouve une
- * cible ne touche jamais les PV.
+ * peuvent être retenus — le reste passe. Le Coup rapide frappe sa cible en
+ * préalable, puis l’attaque compte comme les autres.
  */
 function degatsGarantis(duel, cote, prets) {
   const adv = autre(cote);
   const bloqueurs = duel[adv].creatures.filter((entite) => entite && !entite.attaquee);
   const bloquablePar = (attaquant) => bloqueurs.some((bloqueur) => peutBloquerAttaquant(bloqueur, attaquant)
     && !estProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId))));
-  const frappent = prets.filter((attaquant) => {
-    const carte = duelCardById(attaquant.carteId);
-    return !(carte?.coupRapide && ciblesLegales(duel, cote, carte, 'combat').length);
-  });
-  const bloquables = frappent.filter(bloquablePar)
+  const bloquables = prets.filter(bloquablePar)
     .map((attaquant) => attaquant.atk ?? 0)
     .sort((a, b) => b - a);
-  const directs = frappent
+  const directs = prets
     .filter((attaquant) => !bloquablePar(attaquant))
     .reduce((somme, attaquant) => somme + (attaquant.atk ?? 0), 0);
   const retenus = bloquables.slice(0, Math.min(bloqueurs.length, bloquables.length))
@@ -489,19 +491,16 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
   const enCourse = menaceAdverse >= (duel[cote].pv ?? 0) + (duel[cote].bouclier ?? 0);
 
   const evaluation = (ensemble) => {
-    const rapides = ensemble.filter((attaquant) => {
-      const carte = duelCardById(attaquant.carteId);
-      return carte?.coupRapide && ciblesLegales(duel, cote, carte, 'combat').length;
-    });
-    const frappent = ensemble.filter((attaquant) => !rapides.includes(attaquant));
-    const ciblesRapides = choisirCiblesRapidesIA(duel, cote, rapides.map((entite) => entite.id), options);
-    const blocages = choisirBloqueursIA(duel, cote, frappent.map((entite) => entite.id), ciblesRapides, options);
+    // Le Coup rapide frappe sa cible en préalable (valeur comptée à part),
+    // puis l'attaquant combat normalement : blocages et dégâts au visage.
+    const ciblesRapides = choisirCiblesRapidesIA(duel, cote, ensemble.map((entite) => entite.id), options);
+    const blocages = choisirBloqueursIA(duel, cote, ensemble.map((entite) => entite.id), ciblesRapides, options);
     let face = 0;
     let notrePerte = 0;
     let leurPerte = 0;
     let notreFurie = 0;
     let leurFurie = 0;
-    for (const attaquant of frappent) {
+    for (const attaquant of ensemble) {
       const idsBloqueurs = blocages[attaquant.id] ?? [];
       const bloqueur = idsBloqueurs.length
         ? duel[adv].creatures.find((entite) => entite.id === idsBloqueurs[0])
@@ -833,6 +832,11 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       }
     }
     if (arrivee.type === 'buff') score += camp.creatures.length * 1.5;
+    if (arrivee.type === 'infiltration') {
+      // +X/+0 à tout le camp, et le droit de frapper sans être bloqué ce tour :
+      // d'autant plus fort que le camp est peuplé.
+      score += camp.creatures.length * 1.5 + 2;
+    }
     if (arrivee.type === 'jetons') {
       // Chaque créature-jeton est un corps de plus sur la table, pour l'attaque
       // suivante comme pour le blocage : deux chiens de sable valent deux tours
@@ -883,6 +887,37 @@ export function choisirCarteIA(duel, cote, options = {}) {
  * moins précieuse — un terrain excédentaire si la table est déjà garnie,
  * sinon la carte au score le plus faible.
  */
+/**
+ * Capacité activée en jeu (la foudre du Père des corbeaux) : le mana de
+ * glace est cher, on ne le dépense que pour achever une vraie proie ou
+ * estropier une menace assez grosse pour le valoir. Retourne null quand
+ * aucun coup ne mérite son mana.
+ */
+export function choisirActivationIA(duel, cote, options = {}) {
+  const { profil = rpgProfilIA(duel?.[cote]?.ia), rng = Math.random } = options;
+  const adv = autre(cote);
+  for (const entite of duel[cote].creatures) {
+    const carte = duelCardById(entite.carteId);
+    const activation = carte?.activation;
+    if (!activation?.effet) continue;
+    if (!moteur.rpgPeutActiverCapacite(duel, cote, entite.id)) continue;
+    const montant = Math.max(0, Number(activation.effet.amount) || 0);
+    const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
+      montant,
+      sourceType: 'capacite',
+      portee: 'creature',
+      profil,
+      rng,
+    });
+    if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') continue;
+    const cible = duel[adv].creatures.find((candidate) => candidate.id === meilleure.cibleId);
+    if (!cible) continue;
+    const vautLeMana = meilleure.kill ? valeurEntite(cible) >= 3 : menace(cible) >= 7;
+    if (vautLeMana) return { entiteId: entite.id, cibleId: meilleure.cibleId };
+  }
+  return null;
+}
+
 export function choisirDefausseIA(duel, cote = 'sorcier') {
   const camp = duel?.[cote];
   const main = camp?.main ?? [];

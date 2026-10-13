@@ -38,6 +38,7 @@ import {
   tourHistoireParId,
 } from './rpgStoryTours.js';
 import { useRpgStory } from './useRpgStory.js';
+import { resumeRecitHistoire } from './rpgStoryFlow.js';
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
@@ -107,8 +108,11 @@ import {
   rpgPeutPayer,
   rpgPoserTerrain,
   rpgActiverArme,
+  rpgActiverCapacite,
   rpgJouerArme,
+  rpgPeutActiverCapacite,
   rpgSorcierActiverArmes,
+  rpgSorcierActiverCapacitesIA,
   rpgSorcierAnnonceSuivante,
   rpgSorcierPrepareTerrain,
   rpgSorcierResoudreAnnonce,
@@ -137,6 +141,7 @@ const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄�
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', hybride: 'Hybride' };
 const CARD_ART_CACHE_VERSIONS = {
+  'pere-des-corbeaux': 'odin-photoreal-v1',
   'djinn-du-souk': 'munch-impressionniste-v3',
   'ifrit-al-ahmar': 'sourire-tempete-huile-v1',
   feriel: 'lance-de-feu-photoreal-v1',
@@ -258,6 +263,27 @@ function mesurerRectangle(element, fallbackWidth = 128, fallbackHeight = 160) {
   };
 }
 
+/* Une carte de la main se tient inclinée dans l'éventail (voir « L'éventail de
+   la main » dans `rpg-battle.css`) : `getBoundingClientRect` rend alors la boîte
+   **tournée**, plus large que la carte. Le vol de carte part donc de la boîte
+   de mise en page (`offsetWidth`/`offsetHeight`), recentrée sur la boîte
+   mesurée — la carte garde exactement sa taille en quittant la main, au lieu de
+   grossir du quart de sa hauteur. Sans mise en page (jsdom), la mesure reste
+   celle d'avant. */
+function mesurerBoiteCarteMain(element, fallbackWidth = 128, fallbackHeight = 160) {
+  const rect = mesurerRectangle(element, fallbackWidth, fallbackHeight);
+  if (!rect) return null;
+  const width = element.offsetWidth || rect.width;
+  const height = element.offsetHeight || rect.height;
+  const recentrage = (mesure, taille) => (mesure > taille + 1 ? (mesure - taille) / 2 : 0);
+  return {
+    left: rect.left + recentrage(rect.width, width),
+    top: rect.top + recentrage(rect.height, height),
+    width,
+    height,
+  };
+}
+
 function mesurerDestinationVol(table, kind, from, carteId) {
   const terrain = kind === 'terrain';
   const zone = table?.querySelector(terrain ? '.rpg-terrains--joueur' : '.card-row--equipe');
@@ -326,6 +352,42 @@ function mesurerDestinationVol(table, kind, from, carteId) {
     width,
     height,
   };
+}
+
+/* L'aperçu au survol se colle à la carte survolée. Plutôt que d'estimer la
+   taille du panneau (680 × 400, toujours fausse : le vrai panneau varie avec
+   la carte lue), on le laisse se rendre puis on le repose d'après sa **boîte
+   réelle**. La boîte inclut le rembourrage du panneau : on retire cette marge
+   intérieure, pour que ce soit la face — pas le bord du panneau — qui se
+   colle à la carte. Le panneau choisit le côté qui a la place, à droite
+   d'abord ; si son bord déborderait de la fenêtre, il bascule à gauche. En
+   hauteur, le haut de la face s'aligne sur celui de la carte, et le panneau
+   remonte si son bas déborde. */
+function placerApercuSurvol(rectangle, panneau) {
+  const largeurVue = Math.max(1, window.innerWidth || document.documentElement?.clientWidth || 1024);
+  const hauteurVue = Math.max(1, window.innerHeight || document.documentElement?.clientHeight || 768);
+  const marge = 10;
+  const espace = 12;
+  const boite = panneau?.getBoundingClientRect?.();
+  const largeur = boite?.width || panneau?.offsetWidth || Math.min(680, Math.max(180, largeurVue - 20));
+  const hauteur = boite?.height || panneau?.offsetHeight || Math.min(400, Math.max(150, hauteurVue - 20));
+  const stylePanneau = panneau && typeof window.getComputedStyle === 'function' ? window.getComputedStyle(panneau) : null;
+  const lireMargeInterieure = (propriete) => {
+    const valeur = Number.parseFloat(stylePanneau?.[propriete] ?? '');
+    return Number.isFinite(valeur) ? valeur : 0;
+  };
+  const margeGauche = lireMargeInterieure('paddingLeft');
+  const margeDroite = lireMargeInterieure('paddingRight');
+  const margeHaute = lireMargeInterieure('paddingTop');
+  let left = rectangle.right + espace - margeGauche;
+  if (left + largeur > largeurVue - marge) {
+    left = rectangle.left - largeur - espace + margeDroite;
+  }
+  left = Math.max(marge, Math.min(left, Math.max(marge, largeurVue - largeur - marge)));
+  let top = rectangle.top - margeHaute;
+  if (top + hauteur > hauteurVue - marge) top = hauteurVue - marge - hauteur;
+  top = Math.max(marge, Math.min(top, Math.max(marge, hauteurVue - hauteur - marge)));
+  return { left: `${left}px`, top: `${top}px` };
 }
 
 function ManaCost({ carte, compact = false, showElement = true }) {
@@ -545,6 +607,7 @@ function targetMode(carte) {
   if (carte?.kind === 'arme') return 'allie';
   if (carte?.arrivee?.type === 'combat' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.arrivee?.type === 'retour-main') return carte.arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
+  if (carte?.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature') return 'ennemi';
   if (carte?.effet?.type === 'degats' && carte.effet.cible === 'creature') return 'ennemi';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -641,6 +704,8 @@ function TableCard({
   onAssignBlocker,
   actionFx = null,
   playerTurn = false,
+  activationDispo = false,
+  onActiver = null,
   tutorialTarget,
   onHoverCard,
   onLeaveHoverCard,
@@ -653,6 +718,7 @@ function TableCard({
     ? ELEMENT_LABELS[entite.protection.contre] ?? entite.protection.contre
     : null;
   const blessee = entite.pv < (entite.pvMax ?? carte?.def ?? entite.pv);
+  const activation = carte?.activation;
   const malInvocation = cote === 'joueur' && playerTurn && !entite.ready && !entite.attaquee;
   const [blockDropHover, setBlockDropHover] = useState(false);
   const [entreeEnCours, setEntreeEnCours] = useState(true);
@@ -744,7 +810,7 @@ function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${armeCarte ? `, armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})` : ''}${armeCarte?.donne?.immunite ? `, immunité contre ${ELEMENT_LABELS[armeCarte.donne.immunite] ?? armeCarte.donne.immunite}` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}, attaque ${entite.atk}, défense ${entite.pv}${actionFx?.statsUp ? ', attaque ou défense augmentée' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : survivra une fois à une destruction avec 1 de défense' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? `, esquive ${entite.esquive} contre les attaques et magies` : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${armeCarte ? `, armée de ${armeCarte.name} (+${armeCarte.bonus?.atk ?? 0}/+${armeCarte.bonus?.def ?? 0})` : ''}${armeCarte?.donne?.immunite ? `, immunité contre ${ELEMENT_LABELS[armeCarte.donne.immunite] ?? armeCarte.donne.immunite}` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${coupRapideCible ? ', ciblée par Coup rapide' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img className="rpg-card__img" src={cardArt(carte)} alt="" aria-hidden="true" />
@@ -758,6 +824,27 @@ function TableCard({
       <header className="rpg-card__title">
         <ManaCost carte={carte} compact showElement={false} />
       </header>
+      {activation && cote === 'joueur' && onActiver && (
+        <span
+          className={`rpg-card__activation${activationDispo ? ' is-pret' : ''}`}
+          role="button"
+          tabIndex={activationDispo ? 0 : -1}
+          aria-label={`Activé — payer ${activation.cout} mana de glace : inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix${activationDispo ? '' : ' (indisponible pour le moment)'}`}
+          onClick={(event) => { event.stopPropagation(); onActiver(); }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              event.stopPropagation();
+              onActiver();
+            }
+          }}
+        >
+          <span className="rpg-mana-cost rpg-mana-cost--neige is-compact" aria-hidden="true">
+            <b>{activation.cout}</b>
+            <i>{ELEMENT_GLYPHS.neige ?? '◇'}</i>
+          </span>
+        </span>
+      )}
         <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${blessee ? ', blessée' : ''}`}>
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{entite.atk}</span></span>
           <span className={`rpg-card__pt${blessee ? ' is-wounded' : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span></span>
@@ -902,7 +989,7 @@ function BlockerArrows({ tableRef, assignments }) {
   );
 }
 
-function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null }) {
+function HoverCardPreview({ carte, style = null, spellPlayed = false, variante = '', cible = null, controls = null, panelRef = null }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -945,6 +1032,7 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
   );
   return (
     <aside
+      ref={panelRef}
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${spellPlayed ? ' is-spell-preview' : ''}`}
       role={variante === 'annonce' ? 'group' : 'tooltip'}
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${effet ? `, effet ${effet}` : ''}${estCreature ? `, attaque ${carte.atk}, défense ${carte.def}` : ''}${cibleLabel}`}
@@ -1063,7 +1151,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, survol, onBascule
 }
 
 function VoletMulligan({
-  main, etape, choix, nouveau, bilan, apercu, survol,
+  main, etape, choix, nouveau, bilan, apercu, survol, panelRef = null,
   onBasculer, onValider, onAnnulerSelection, onContinuer, onSurvol, onQuitterSurvol,
 }) {
   const nombre = choix.size;
@@ -1132,6 +1220,7 @@ function VoletMulligan({
         <HoverCardPreview
           carte={cardById(apercu.carteId)}
           style={apercu.style}
+          panelRef={panelRef}
           variante="mulligan"
         />
       )}
@@ -1385,14 +1474,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       || (catalogueCouleur === 'hybride' ? colors.length > 1 : colors.includes(catalogueCouleur));
     return couleurCorrespond && (catalogueType === 'tous' || carte.kind === catalogueType);
   });
-  const imageForDeck = (deck) => {
-    const cardId = deck?.cardIds.find((id) => cardById(id)?.kind !== 'terrain') ?? deck?.cardIds[0];
-    return cardId ? cardArt(cardId) : '';
-  };
   // La tour ouverte dans le mode Histoire (page d'étages), ou null (galerie).
   const tourOuverte = tourOuverteId ? tourHistoireParId(tourOuverteId) : null;
   const resumeTourOuverte = tourOuverte ? resumeTourHistoire(tourOuverte.id, progressionHistoire) : null;
-  const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .96) 0%, rgba(8, 7, 13, .82) 48%, rgba(8, 7, 13, .72) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
+  // Voile noir volontairement léger : le keyart de Bab El reste lisible derrière
+  // les menus, le côté gauche garde assez d'ombre pour porter les textes.
+  const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .80) 0%, rgba(8, 7, 13, .58) 48%, rgba(8, 7, 13, .40) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
   // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
   useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
   // Quitter l'onglet Histoire referme la tour ouverte : le prochain passage sur
@@ -1474,7 +1561,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
 
   return (
     <section
-      className={`rpg-mode-menu rpg-mode-menu--${screen}`}
+      className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}`}
       style={{ backgroundImage: menuBackground }}
       // L'aperçu au survol est placé d'après la position de la carte au moment
       // du survol : dès que l'écran défile, il désignerait la mauvaise ligne.
@@ -1501,11 +1588,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
               <span aria-hidden="true">⚔</span> Jouer
             </button>
-            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
-              <span aria-hidden="true">🗼</span> Tours
-            </button>
             <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('histoire'); }}>
               <span aria-hidden="true">⌛</span> Histoire
+            </button>
+            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
+              <span aria-hidden="true">🗼</span> Tours
             </button>
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
               <span aria-hidden="true">▤</span> Deck
@@ -1518,7 +1605,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
 
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
-            <section className="rpg-mode-menu__hero" style={{ '--rpg-menu-card-art': `url("${imageForDeck(playerDeck)}")` }}>
+            {/* Pas de fond : le titre et les boutons posent sur le décor de la page. */}
+            <section className="rpg-mode-menu__hero">
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">
                 {Array.from({ length: 18 }).map((_, i) => (
@@ -1533,11 +1621,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
                 <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
                 <div className="rpg-mode-menu__hero-actions">
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--glow" onClick={() => { play('select'); onStartGame(); }}>
-                    <span className="rpg-menu-button__icon">⚔</span>
+                  {/* Le bouton principal ouvre le mode Histoire (reprend ou débute
+                      le récit) ; le duel rapide reste dispo via l'onglet Deck. */}
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
+                    <span className="rpg-menu-button__icon">⌛</span>
                     <span className="rpg-menu-button__text">
-                      <strong>Lancer le duel</strong>
-                      <small>Partie rapide contre l'IA</small>
+                      <strong>Mode histoire</strong>
+                      <small>La campagne des Tours de Bab El</small>
                     </span>
                     <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </button>
@@ -1558,22 +1648,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </button>
                   </div>
                 </div>
-                {hasGame && (
-                  <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--resume-inline rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
-                    <span className="rpg-menu-button__icon">↩</span>
-                    <span className="rpg-menu-button__text">
-                      <strong>Reprendre le duel en cours</strong>
-                      <small>Une partie n'est pas terminée</small>
-                    </span>
-                    <span className="rpg-resume-badge" aria-hidden="true">!</span>
-                  </button>
-                )}
-                <div className="rpg-quick-tip">
-                  <span className="rpg-quick-tip__icon">💡</span>
-                  <p>Astuce : vous pouvez annuler votre dernière action avec le bouton ↶ pendant votre tour. <kbd>F</kbd> pour le plein écran, <kbd>M</kbd> pour le son. Rendez-vous dans l'onglet <b>Tours</b> pour des parties par étages.</p>
-                </div>
               </div>
-              <div className="rpg-mode-menu__hero-mark" aria-hidden="true">باب</div>
+              {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
           </main>
@@ -1638,11 +1714,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     <h2>Choisissez votre défi</h2>
                     <p>Gravissez les tours étage par étage. Chaque victoire débloque l'étage suivant. Deck complet et PV pleins à chaque duel.</p>
                   </div>
-                  {hasGame && (
-                    <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
-                      ↩ Reprendre le duel en cours
-                    </button>
-                  )}
                 </header>
                 <div className="rpg-story__tours">
                   {RPG_STORY_TOURS.map((tour) => {
@@ -1676,6 +1747,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
           <main ref={storyRef} className="rpg-story" aria-label="Mode Histoire — les Tours de Bab El">
             <RpgStoryCampaign
               recit={progressionHistoire.recit}
+              etagesVaincus={progressionHistoire.etagesVaincus}
               cardArt={cardArt}
               onContinue={onContinueRecit}
               onJournal={onJournalRecit}
@@ -1683,12 +1755,100 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               sauvegardeOk={sauvegardeHistoireOk}
               duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
             />
+            <header className="rpg-story__free-heading">
+              <div>
+                <span className="rpg-mode-menu__eyebrow">LES TOURS DE BAB EL · TOURS LIBRES</span>
+                <h2>Gravissez les tours</h2>
+                <p>Chaque victoire débloque l’étage suivant. Deck complet et PV pleins à chaque duel.</p>
+              </div>
+              {!confirmerResetHistoire && (
+                <button
+                  type="button"
+                  className="rpg-story__reset"
+                  onClick={() => { play('menu'); setErreurResetHistoire(false); setConfirmerResetHistoire(true); }}
+                >
+                  Effacer la progression
+                </button>
+              )}
+            </header>
             {confirmerResetHistoire && <div className="rpg-story__reset-confirm" role="group" aria-label="Confirmer l’effacement de la progression">
               {erreurResetHistoire && <p role="status">La progression n’a pas été effacée : impossible de conserver vos cartes sur cet appareil. Libérez de l’espace avant de réessayer.</p>}
               <p>Effacer le récit et les victoires sur cet appareil ? Les étages seront verrouillés de nouveau. Vos cartes et decks seront conservés.</p>
               <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
               <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
             </div>}
+            {tourOuverte ? (
+              <div className="rpg-story__detail">
+                <button type="button" className="rpg-story__back" onClick={() => { play('menu'); setTourOuverteId(null); }}>
+                  <span aria-hidden="true">←</span> Retour aux tours
+                </button>
+                <section key={tourOuverte.id} className="rpg-story-tour">
+                  <header className="rpg-story-tour__header">
+                    <RpgStoryTowerPreview tour={tourOuverte} className="rpg-story-tour__banner" detail />
+                    <div className="rpg-story-tour__heading">
+                      <span className="rpg-mode-menu__eyebrow">PARTIE LIBRE · {resumeTourOuverte.vaincus} / {resumeTourOuverte.total} ÉTAGES DÉBLAYÉS</span>
+                      <h3>{tourOuverte.nom}</h3>
+                      <p>{tourOuverte.resume}</p>
+                    </div>
+                  </header>
+                  <div className="rpg-story-tour__progress" aria-hidden="true">
+                    <span style={{ width: `${resumeTourOuverte.total ? (resumeTourOuverte.vaincus / resumeTourOuverte.total) * 100 : 0}%` }} />
+                  </div>
+                  <ul className="rpg-story-tour__floors">
+                    {tourOuverte.etages.map((etage, index) => {
+                      const vaincu = etageEstVaincu(progressionHistoire, etage.id);
+                      const debloque = etageEstDebloque(progressionHistoire, etage.id);
+                      return (
+                        <li key={etage.id}>
+                          <button
+                            type="button"
+                            className={`rpg-story-floor${vaincu ? ' is-cleared' : debloque ? ' is-next' : ''}`}
+                            disabled={!debloque}
+                            data-etage={etage.id}
+                            onClick={() => { play('select'); onStartEtage(etage.id); }}
+                          >
+                            <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
+                            <span className="rpg-story-floor__copy">
+                              <strong>{etage.nom}</strong>
+                              <small>{etage.note}</small>
+                            </span>
+                            <span className="rpg-story-floor__badge">
+                              {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              </div>
+            ) : (
+              <div className="rpg-story__tours">
+                {RPG_STORY_TOURS.map((tour) => {
+                  const resume = resumeTourHistoire(tour.id, progressionHistoire);
+                  return (
+                    <button
+                      key={tour.id}
+                      type="button"
+                      className="rpg-story-tower"
+                      data-tour={tour.id}
+                      onClick={() => { play('select'); setTourOuverteId(tour.id); }}
+                    >
+                      <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" />
+                      <span className="rpg-story-tower__body">
+                        <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
+                        <strong className="rpg-story-tower__name">{tour.nom}</strong>
+                        <small className="rpg-story-tower__resume">{tour.resume}</small>
+                        <span className="rpg-story-tower__progress" aria-hidden="true">
+                          <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
+                        </span>
+                        <span className="rpg-story-tower__cta">Voir les étages <span aria-hidden="true">→</span></span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </main>
         ) : screen === 'decks' ? (atelier ? (
           <main className="rpg-deck-catalog rpg-deck-catalog--atelier" aria-label="Atelier de deck">
@@ -1847,7 +2007,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   {confirmation?.supprime && <span className="is-unsaved">Deck supprimé de l'étagère.</span>}
                 </p>
               )}
-                {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
               </aside>
             )}
 
@@ -1950,7 +2109,6 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <h2>Catalogue</h2>
                 <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El.</p>
               </div>
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel</button>}
             </header>
             <div className="rpg-card-catalogue__filters" aria-label="Filtres du catalogue">
               <label>
@@ -2037,6 +2195,18 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
         )}
         <footer className="rpg-mode-menu__footer"><span>LE SABLIER</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
       </div>
+      {/* Partie en cours : le bouton de reprise flotte en bas au centre, visible
+          sans défiler quel que soit l'onglet du menu. */}
+      {hasGame && (
+        <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--floating rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
+          <span className="rpg-menu-button__icon">↩</span>
+          <span className="rpg-menu-button__text">
+            <strong>Reprendre le duel en cours</strong>
+            <small>Une partie n'est pas terminée</small>
+          </span>
+          <span className="rpg-resume-badge" aria-hidden="true">!</span>
+        </button>
+      )}
     </section>
   );
 }
@@ -2325,9 +2495,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [sonActif]);
   // La tour de l'étage en cours commande la boucle (null : duel libre).
   const lectureHistoire = ecran === 'recit' || ecran === 'journal';
-  const tourHistoireId = lectureHistoire ? 'tour-des-listes' : histoireEtageId
-    ? etageHistoireParId(histoireEtageId)?.tour?.id ?? null
-    : null;
+  const tourHistoireId = lectureHistoire
+    ? (resumeRecitHistoire(progressionHistoire.recit)?.acte?.tourId ?? 'tour-des-listes')
+    : histoireEtageId
+      ? etageHistoireParId(histoireEtageId)?.tour?.id ?? null
+      : null;
   useEffect(() => { musiqueRef.current?.setTour(tourHistoireId); }, [tourHistoireId]);
   useEffect(() => {
     const musique = musiqueRef.current;
@@ -2431,6 +2603,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [bloqueurGlisse, setBloqueurGlisse] = useState(null);
   const [bloqueurSelectionne, setBloqueurSelectionne] = useState(null);
   const [cibleEnCours, setCibleEnCours] = useState(null);
+  const [activationEnCours, setActivationEnCours] = useState(null);
+
+  // La foudre activée se désigne avec Échap, comme les autres ciblages.
+  useEffect(() => {
+    if (!activationEnCours) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') setActivationEnCours(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activationEnCours]);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
   const [annonceApercueFermeePour, setAnnonceApercueFermeePour] = useState(null);
@@ -2439,6 +2622,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // que l'échange est validé (ou impossible) : la partie est à lui.
   const [mulligan, setMulligan] = useState(null);
   const [apercuSurvol, setApercuSurvol] = useState(null);
+  // Le panneau de l'aperçu au survol — celui du duel comme celui du
+  // mulligan : sa boîte réelle sert à le coller à la carte survolée, reposé
+  // avant peinture par `placerApercuSurvol`.
+  const panelRef = useRef(null);
   const [carteGlissee, setCarteGlissee] = useState(null);
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
@@ -2601,7 +2788,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setCarteEnVol((current) => current?.token === carteEnVol.token ? null : current);
       return;
     }
-    const from = mesurerRectangle(source, 128, 160);
+    const from = mesurerBoiteCarteMain(source, 128, 160);
     const to = mesurerDestinationVol(table, carteEnVol.kind, from, carteEnVol.carteId);
     const slotWidth = source.offsetWidth || from.width;
     const slotHeight = source.offsetHeight || from.height;
@@ -2851,26 +3038,37 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const afficherApercuSurvol = (carte, event) => {
     if (!carte || !event?.currentTarget) return;
     const rectangle = event.currentTarget.getBoundingClientRect();
-    const largeurVue = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1024);
-    const hauteurVue = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 768);
-    const largeurApercu = Math.min(680, Math.max(180, largeurVue - 20));
-    const hauteurApercu = Math.min(400, Math.max(150, hauteurVue - 20));
-    const marge = 10;
-    const espace = 12;
-    let left = rectangle.right + espace;
-    if (left + largeurApercu > largeurVue - marge) left = rectangle.left - largeurApercu - espace;
-    left = Math.max(marge, Math.min(left, largeurVue - largeurApercu - marge));
-    let top = rectangle.top + rectangle.height > hauteurVue * .56
-      ? rectangle.top - hauteurApercu - espace
-      : rectangle.bottom + espace;
-    top = Math.max(marge, Math.min(top, hauteurVue - hauteurApercu - marge));
+    // Première pose, au bord de la carte : le panneau n'existe pas encore,
+    // sa taille est inconnue. L'effet de mise en page ci-dessous le repose
+    // d'après sa boîte réelle, avant la première peinture.
     setApercuSurvol({
       carteId: carte.id,
-      style: { left: `${left}px`, top: `${top}px` },
+      rectangle: {
+        left: rectangle.left,
+        right: rectangle.right,
+        top: rectangle.top,
+        bottom: rectangle.bottom,
+        width: rectangle.width,
+        height: rectangle.height,
+      },
+      style: { left: `${rectangle.right + 12}px`, top: `${rectangle.top}px` },
     });
     if (!viewport.mobile) jouerSfx('hover');
   };
   const masquerApercuSurvol = () => setApercuSurvol(null);
+
+  // Reposé avant peinture : dès que le panneau de l'aperçu est rendu, sa
+  // boîte réelle remplace la première pose et le colle à la carte survolée —
+  // le joueur ne voit jamais l'aperçu sauter d'une place à l'autre.
+  useLayoutEffect(() => {
+    if (!apercuSurvol?.rectangle || !panelRef.current) return;
+    const style = placerApercuSurvol(apercuSurvol.rectangle, panelRef.current);
+    setApercuSurvol((current) => {
+      if (!current?.rectangle) return current;
+      if (current.style?.left === style.left && current.style?.top === style.top) return current;
+      return { ...current, style };
+    });
+  }, [apercuSurvol]);
 
   // ── L'aperçu au doigt : appui long d'une seconde sur une carte ────────────
   const annulerAppuiLong = () => {
@@ -3039,6 +3237,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   if (lectureHistoire) {
+    const decksJouablesHistoire = decksTous.filter((deck) => deckSeJoue(deck, collection));
+    const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId) ?? decksJouablesHistoire[0] ?? deckParDefaut();
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onContextMenu={neutraliserMenuContextuel}>
         {ecran === 'journal' ? (
@@ -3047,7 +3247,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
         ) : (
           <RpgStoryScene recit={progressionHistoire.recit} etagesVaincus={progressionHistoire.etagesVaincus}
-            deckNom={decksTous.find((deck) => deck.id === deckSelectionneId)?.name ?? 'Veilleurs du Désert'}
+            deckNom={deckActifHistoire?.name ?? deckActifHistoire?.nom ?? 'Veilleurs du Désert'}
+            deckActifId={deckActifHistoire?.id ?? null}
+            decksJouables={decksJouablesHistoire}
+            onSelectDeck={choisirDeck}
             cardArt={cardArt} onEvent={agirRecit} onStartDuel={(id) => demarrerEtage(id, { campagne: true })}
             onExit={() => setEcran('histoire')} onJournal={ouvrirJournal}
             sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
@@ -3100,6 +3303,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
+            panelRef={panelRef}
           />
         )}
         {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
@@ -3756,7 +3960,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       lancerMagie(carteId);
       return;
     }
-    if (carte.arrivee?.type === 'combat') {
+    if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
       const ciblesLegales = duel.sorcier.creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
       if (ciblesLegales.length) {
         setCibleEnCours(carteId);
@@ -3795,7 +3999,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     } else if (carte.kind === 'arme') {
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
-    } else if (['combat', 'retour-main'].includes(carte.arrivee?.type)
+    } else if ((['combat', 'retour-main'].includes(carte.arrivee?.type)
+      || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature'))
       && duel.sorcier.creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
@@ -3868,7 +4073,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return true;
     }
-    if (['combat', 'retour-main'].includes(carteSource?.arrivee?.type)) {
+    if (['combat', 'retour-main', 'degats'].includes(carteSource?.arrivee?.type)) {
       const carteId = cibleEnCours;
       const handIndex = carteCibleeHandIndexRef.current;
       carteCibleeHandIndexRef.current = null;
@@ -3885,6 +4090,38 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     lancerMagie(cibleEnCours, entite.id);
     return true;
+  };
+
+  // Capacité activée (la foudre du Père des corbeaux) : on désigne la
+  // créature porteuse, puis la proie — alliée ou adverse (« au choix »).
+  const activerCapacite = (entite) => {
+    if (!monTour || phase || cibleEnCours || cibleAttaqueEnCours || combatEntrant || reponseActive) {
+      jouerSfx('erreur');
+      force();
+      return;
+    }
+    if (activationEnCours === entite.id) {
+      setActivationEnCours(null);
+      jouerSfx('annuler');
+      force();
+      return;
+    }
+    if (!rpgPeutActiverCapacite(duel, 'joueur', entite.id)) {
+      jouerSfx('erreur');
+      force();
+      return;
+    }
+    setActivationEnCours(entite.id);
+    jouerSfx('select');
+    force();
+  };
+
+  const resoudreActivation = (entite) => {
+    const sourceId = activationEnCours;
+    setActivationEnCours(null);
+    const res = rpgActiverCapacite(duel, 'joueur', sourceId, entite.id);
+    jouerSfx(res.ok ? 'player_attack_hit' : 'erreur');
+    force();
   };
 
   const basculerAttaquant = (entite) => {
@@ -3914,6 +4151,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (cibleEnCours) {
       resoudreCible(entite, 'joueur');
+      return;
+    }
+    if (activationEnCours) {
+      resoudreActivation(entite);
       return;
     }
     if (reponseActive && combatEntrant?.coteAttaquant === 'sorcier') {
@@ -3958,6 +4199,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       resoudreCible(entite, 'ennemi');
       return;
     }
+    if (activationEnCours) {
+      resoudreActivation(entite);
+      return;
+    }
     if (cibleAttaqueEnCours) {
       const attaquant = duel.joueur.creatures.find((candidate) => candidate.id === cibleAttaqueEnCours);
       const ciblesLegales = ciblesCoupRapideLegales(attaquant, 'joueur');
@@ -3977,11 +4222,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (reponseActive && combatEntrant?.coteAttaquant === 'sorcier' && combatEntrant.attaquants.includes(entite.id)) {
-      if (combatEntrant.ciblesAttaque?.[entite.id]) {
-        setBloqueurSelectionne(null);
-        force();
-        return;
-      }
       if (bloqueurSelectionne) {
         assignerBloqueur(entite.id, bloqueurSelectionne);
       } else {
@@ -4102,12 +4342,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attaquant = duel.sorcier.creatures.find((entite) => entite.id === attaquantId);
     const bloqueur = duel.joueur.creatures.find((entite) => entite.id === bloqueurId && !entite.attaquee);
     if (!reponseActive || combatEntrant?.coteAttaquant === 'joueur' || !attaquant || !bloqueur) return;
-    if (combatEntrant.ciblesAttaque?.[attaquantId]) {
-      setBloqueurSelectionne(null);
-      jouerSfx('erreur');
-      force();
-      return;
-    }
     const retireDeCetteAttaque = (combatEntrant?.blocages[attaquantId] ?? []).includes(bloqueurId);
     if (!retireDeCetteAttaque && !rpgPeutBloquerAttaquant(bloqueur, attaquant)) {
       setBloqueurSelectionne(null);
@@ -4272,6 +4506,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCiblesAttaque({});
     setCibleAttaqueEnCours(null);
     setCibleEnCours(null);
+    setActivationEnCours(null);
     if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
     avancerTutoriel('fin-tour', 'tour-adverse');
     force();
@@ -4292,13 +4527,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const annonce = rpgSorcierAnnonceSuivante(duel, rng);
     if (!annonce) {
-      // Cartes épuisées : le sorcier active ses armes activables (le Bâton
-      // des citernes appelle ses serpents) avant de déclarer ses attaques.
+      // Cartes épuisées : le sorcier dépense son mana restant avant de
+      // déclarer ses attaques — d'abord ses armes activables (le Bâton des
+      // citernes appelle ses serpents), puis ses capacités activées (la
+      // foudre du Père des corbeaux).
       const champAvantActivation = prendreInstantaneChamp();
       const debutJournalActivation = rpgNombreDestructions(duel);
-      if (rpgSorcierActiverArmes(duel).length) {
+      const armesActivees = rpgSorcierActiverArmes(duel).length;
+      const capacitesActivees = rpgSorcierActiverCapacitesIA(duel, rng).length;
+      if (armesActivees || capacitesActivees) {
         animerModificationsChamp(champAvantActivation, [], debutJournalActivation);
-        jouerSfx('apparition');
+        if (armesActivees) jouerSfx('apparition');
         force();
         later(declarerAttaqueSorcier, 900);
         return;
@@ -4494,8 +4733,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return liste.find((entite) => legales.some((cible) => cible.id === entite.id)) ?? liste[0];
     }
     if (combatEntrant && combatEntrant.coteAttaquant !== 'joueur') {
-      return liste.find((entite) => combatEntrant.attaquants.includes(entite.id)
-        && !combatEntrant.ciblesAttaque?.[entite.id]) ?? liste[0];
+      return liste.find((entite) => combatEntrant.attaquants.includes(entite.id)) ?? liste[0];
     }
     if (combatEntrant) {
       return liste.find((entite) => combatEntrant.attaquants.includes(entite.id)) ?? liste[0];
@@ -4689,6 +4927,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
                       canTarget={Boolean(
                         (cibleEnCours && modeCible === 'ennemi' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                        || (activationEnCours && !rpgEstProtegee(entite, 'neige'))
                         || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
                           duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
                           'joueur',
@@ -4759,7 +4998,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-                      canTarget={Boolean(cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))}
+                      canTarget={Boolean((cibleEnCours && modeCible === 'allie' && !rpgEstProtegee(entite, cardColors(carteCiblee)))
+                        || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
+                      activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
+                        && !combatEntrant && !reponseActive
+                        && (activationEnCours === entite.id || rpgPeutActiverCapacite(duel, 'joueur', entite.id)))}
+                      onActiver={() => activerCapacite(entite)}
                       canDragBlocker={Boolean(reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
                       draggedBlocker={bloqueurGlisse === entite.id}
                       onStartBlockerDrag={commencerGlisserBloqueur}
@@ -5107,12 +5351,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           data-tutorial-target={tutorielActif && ['main', 'magies'].includes(etapeTutorielId) ? 'hand' : undefined}
         >
           <div className="rpg-hand" style={{ '--hand-count': Math.max(1, groupesMain.length) }}>
-            {groupesMain.map((groupe) => {
+            {groupesMain.map((groupe, position) => {
               const carteId = groupe.carteId;
               const i = groupe.indices[0];
               const exemplaires = groupe.indices.length;
               const carte = cardById(carteId);
               if (!carte) return null;
+              // L'éventail : la carte connaît sa place dans la rangée — un
+              // nombre signé, nul au centre — et son carré, qui donne la
+              // descente en arc des bords. La feuille de style en fait un
+              // angle, une ouverture et une inclinaison (voir « L'éventail de
+              // la main » dans `rpg-battle.css`).
+              const eventail = position - (groupesMain.length - 1) / 2;
               const estTerrain = carte.kind === 'terrain';
               const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
               const peutRepondre = reponseActive && carte.instant;
@@ -5163,6 +5413,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   ].filter(Boolean).join(' ')}
                   style={{
                     '--tilt': `${TILTS[i % TILTS.length]}deg`,
+                    '--hand-fan': eventail,
+                    '--hand-fan-arc': eventail * eventail,
                     ...cardFrameStyle(carte),
                     ...(piocheEnCours ? { '--rpg-draw-delay': `${piocheEnCours.delay}ms` } : {}),
                     ...styleVol,
@@ -5227,6 +5479,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             style={apercuSurvol.style}
+            panelRef={panelRef}
           />
         )}
         {apercuMagie && (
@@ -5307,6 +5560,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           bilan={mulligan.bilan}
           apercu={apercuSurvol}
           survol={viewport.survol}
+          panelRef={panelRef}
           onBasculer={basculerCarteMulligan}
           onValider={validerMulligan}
           onAnnulerSelection={viderSelectionMulligan}

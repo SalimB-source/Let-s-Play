@@ -28,23 +28,24 @@
 
 /* ── Cadres responsive : l'épaisseur suit la carte, dans l'esprit d'une carte
    Magic. Le bord d'une carte Magic fait ≈ 2,8 mm sur 63 mm de large (≈ 4,5 %) ;
-   les cadres du Sablier visent un peu moins, ≈ 3,5 % de la largeur, pour laisser
-   respirer l'illustration — et comme les cartes sont dimensionnées en `vw`, le
-   cadre l'est aussi pour les suivre. Trois gabarits, chacun calé sur la largeur
-   des cartes qu'il habille :
+   les cadres du Sablier visent ce poids, ≈ 4,5 % de la largeur — bien
+   présents pour porter la couleur de l'élément, sans manger l'illustration —
+   et comme les cartes sont dimensionnées en `vw`, le cadre l'est aussi pour
+   les suivre. Trois gabarits, chacun calé sur la largeur des cartes qu'il
+   habille :
    - normal : cartes en main (104–136 px) et sur la table (108–146 px), atelier ;
    - grand : face de l'aperçu rapide (190–232 px), catalogue et mulligan
      (≈ 180–270 px) — l'aperçu est une carte agrandie, son cadre grandit avec ;
    - petit : terrains (74–96 px), dessus des piles et vignette de magie jouée.
-   Au doigt, `rpg-mobile.css` garde son gabarit normal (`clamp(2.5px, 0.9vw,
-   4px)` : des cartes plus petites, au bord déjà proportionnellement plus
+   Au doigt, `rpg-mobile.css` garde son gabarit normal (`clamp(2.5px, 1.1vw,
+   5px)` : des cartes plus petites, au bord déjà proportionnellement plus
    épais) ; les deux autres suivent le `vw` et tombent d'eux-mêmes à leur
    plancher. */
 .rpg-battle {
-  --rpg-card-border: clamp(3.5px, 0.36vw, 5px);
-  --rpg-card-border-large: clamp(5px, 0.55vw, 6.5px);
-  --rpg-card-border-small: clamp(3px, 0.26vw, 3.5px);
-  --rpg-card-border-strong: clamp(4px, 0.45vw, 5.5px);
+  --rpg-card-border: clamp(4.5px, 0.48vw, 6px);
+  --rpg-card-border-large: clamp(6px, 0.68vw, 8px);
+  --rpg-card-border-small: clamp(4px, 0.34vw, 4.25px);
+  --rpg-card-border-strong: clamp(5px, 0.58vw, 6.5px);
   --rpg-card-radius: clamp(6px, 0.9vw, 12px);
   --rpg-card-radius-sm: clamp(5px, 0.7vw, 8px);
 }
@@ -1055,6 +1056,33 @@
 
 .rpg-hand__card:hover:not(:disabled) { transform: translateY(-38px); box-shadow: 0 12px 22px rgba(0, 0, 0, .6); z-index: 2; }
 .rpg-hand__card:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+
+/* ── L'éventail de la main : les trois nombres, calculés une fois ────────────
+   La page pose sur chaque carte sa place dans la rangée (`--hand-fan`, un
+   nombre signé, nul au centre) et son carré (`--hand-fan-arc`). On en déduit
+   ici l'angle, l'ouverture latérale et la descente :
+
+   - `--hand-fan-angle` : un pas d'angle par carte, resserré dès que la main
+     s'allonge (`22deg / (N − 1)`, plafonné à 3,6°) pour que l'éventail entier
+     ne dépasse jamais ≈ 22 degrés — assez pour que la main se lise comme un
+     éventail, trop peu pour que deux cartes voisines se recouvrent ;
+   - `--hand-fan-spread` : quelques pour cent de la largeur de la carte vers
+     l'extérieur — les bords s'écartent, le centre ne bouge pas ;
+   - `--hand-fan-drop` : la descente **en arc** des bords (le carré de la place,
+     donc nulle au centre et maximale aux extrémités), en pour cent de la
+     hauteur de la carte — donc à l'échelle de la carte — mais **bornée à
+     9 px** : passé une grande main, la carte du bout s'arrêterait sous le bord
+     de l'écran.
+
+   Les trois se neutralisent au doigt (`--hand-fan-step: 0deg`, échelles à
+   zéro, voir `rpg-mobile.css`) : la règle « une carte = une cible » interdit
+   tout recouvrement, l'éventail reste donc l'affaire de la souris. */
+.rpg-hand__card {
+  --hand-fan-step: min(3.6deg, calc(22deg / max(1, var(--hand-count, 1) - 1)));
+  --hand-fan-angle: calc(var(--hand-fan, 0) * var(--hand-fan-step));
+  --hand-fan-spread: calc(var(--hand-fan, 0) * var(--hand-fan-spread-scale, 2%));
+  --hand-fan-drop: min(calc(var(--hand-fan-arc, 0) * var(--hand-fan-arc-scale, .35%)), 9px);
+}
 
 
 .rpg-hand__title {
@@ -2181,26 +2209,34 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
 }
 
+/* La main du sorcier, face cachée en haut de la table : des cartes **de la
+   taille d'une carte** (78 × 101, soit un peu plus de la moitié d'une carte du
+   champ) et non plus des vignettes. Sept cartes au maximum s'étalent ainsi sur
+   ≈ 390 px — la bande libre au-dessus de la ligne ennemie (la plaque du sorcier
+   commence à 19 % de la hauteur, la première carte ennemie plus bas encore).
+   La rangée reste inerte : `pointer-events: none` sur le conteneur, elle ne
+   prend aucun clic sur la table. */
 .rpg-hidden-hand__cards { display: flex; justify-content: center; padding: 0 20px; }
 .rpg-hidden-hand__card {
   position: relative;
-  width: 54px;
-  height: 70px;
+  width: 78px;
+  height: 101px;
   flex: none;
-  margin-left: -18px;
+  margin-left: -26px;
   transform: translateY(var(--card-rise, 0)) rotate(var(--card-angle, 0deg));
-  border: 3px solid #090a10;
-  border-radius: 7px;
+  border: 4px solid #090a10;
+  border-radius: 9px;
   background: var(--rpg-dos-de-carte) center / cover no-repeat,
     linear-gradient(145deg, #6e281d, #1a1320 55%, #9b6325);
-  box-shadow: 0 5px 11px rgba(0, 0, 0, .58), inset 0 0 0 2px rgba(236, 199, 117, .62);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .58), inset 0 0 0 2px rgba(236, 199, 117, .62);
 }
 .rpg-hidden-hand__card:first-child { margin-left: 0; }
 .rpg-hidden-hand__count {
-  color: rgba(245, 224, 183, .8);
-  font: 700 8px/1.2 var(--display);
+  color: rgba(245, 224, 183, .86);
+  font: 700 10px/1.2 var(--display);
   letter-spacing: .14em;
   text-transform: uppercase;
+  text-shadow: 0 1px 3px #000;
 }
 
 .rpg-card-piles {
@@ -2471,6 +2507,45 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: auto;
 }
 
+/* À la souris, la main se tient en éventail : chaque carte s'incline vers
+   l'extérieur (`rotate`), s'écarte un peu du centre (`translateX`) et descend
+   en arc vers les bords (`translateY`) — les trois nombres venant de la
+   rangée, cf. « L'éventail de la main » plus haut. Le repos est déjà à 6 px
+   au-dessus de la place : il rend aux cartes du bord, tournées, la hauteur
+   qu'elles prennent sous elles. La carte survolée se soulève **dans son axe**
+   (`--hand-fan-lift`) : elle garde son inclinaison et sa place, l'œil ne perd
+   pas la carte qu'il vise. Le glisser-déposer la redresse à peine (elle monte,
+   se réduit) sans quitter l'éventail. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand__card {
+  --hand-fan-lift: 6px;
+  --hand-fan-scale: 1;
+  transform:
+    translateY(calc(var(--hand-fan-drop) - var(--hand-fan-lift)))
+    translateX(var(--hand-fan-spread))
+    rotate(var(--hand-fan-angle))
+    scale(var(--hand-fan-scale));
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand__card:hover:not(:disabled) {
+  --hand-fan-lift: 32px;
+  --hand-fan-scale: 1.06;
+  box-shadow: 0 14px 26px rgba(0, 0, 0, .62);
+  z-index: 6;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand__card.is-dragging {
+  --hand-fan-lift: 26px;
+  --hand-fan-scale: .94;
+  opacity: .58;
+}
+/* La carte choisie pour une cible monte plus haut que le survol (48 px) : elle
+   garde elle aussi son inclinaison et sa place dans l'éventail — sans cette
+   règle, le `transform` de l'éventail (plus spécifique que `.is-targeting`)
+   l'aurait laissée retombée. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-hand__card.is-targeting {
+  --hand-fan-lift: 48px;
+  --hand-fan-scale: 1.08;
+  box-shadow: 0 0 0 3px #72e6d0, 0 0 26px rgba(91, 240, 218, .58);
+}
+
 .rpg-combat-window {
   width: min(760px, calc(100vw - 32px));
   top: 40%;
@@ -2533,8 +2608,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (max-width: 620px) {
   .rpg-hidden-hand { top: 1%; }
-  .rpg-hidden-hand__card { width: 38px; height: 50px; margin-left: -14px; border-width: 2px; }
-  .rpg-hidden-hand__count { font-size: 6px; }
+  .rpg-hidden-hand__card { width: 52px; height: 67px; margin-left: -18px; border-width: 3px; border-radius: 7px; }
+  .rpg-hidden-hand__count { font-size: 7px; }
   .rpg-turn-ribbon { min-width: 140px; padding: 5px 10px; }
   .rpg-turn-ribbon span { font-size: 6px; }
   .rpg-turn-ribbon strong { font-size: 9px; }
@@ -3334,7 +3409,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  --rpg-card-element-marker-size: clamp(16px, 18%, 23px);
+  /* La face de l'aperçu rapide est une grande face, comme au catalogue : sa
+     pastille de couleur suit la même échelle (28–38 px, glyphe 19 px, liseré
+     2 px) au lieu du petit repère des cartes en jeu. */
+  --rpg-card-element-marker-size: clamp(28px, 17%, 38px);
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -3346,6 +3424,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
 .rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rpg-hover-card-preview__face .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 19px;
+}
+.rpg-hover-card-preview__face .rpg-card-element-badge__pip {
+  border-width: 2px;
+}
 .rpg-hover-card-preview__details {
   display: grid;
   align-content: center;
@@ -4301,6 +4386,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 8px 0 0;
   color: rgba(246, 235, 215, .72);
   font: italic 13px/1.5 Georgia, serif;
+  /* Le voile du décor est plus clair : l'ombre portée garde la devise lisible. */
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
 }
 .rpg-mode-menu__switch {
   display: flex;
@@ -4385,34 +4472,38 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 4px 0 0;
   color: #fff1d5;
   font: 700 clamp(22px, 3vw, 32px)/1 Georgia, serif;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .8);
 }
 .rpg-free-tours__heading p {
   margin: 8px 0 0;
   color: rgba(244, 233, 214, .68);
   font: italic 13px/1.5 Georgia, serif;
   max-width: 60ch;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
 }
-.rpg-menu-button--resume-inline {
-  width: 100%;
-  max-width: 440px;
-  margin-top: 14px;
-  border-color: rgba(163, 203, 164, .44);
-  color: #c8e4c1;
+/* Partie en cours : le bouton de reprise flotte en bas au centre du menu,
+   visible sans défiler quel que soit l'onglet ouvert. */
+.rpg-menu-button--resume.rpg-menu-button--floating {
+  position: fixed;
+  z-index: 40;
+  /* Remonté du bord bas : le bouton respire au-dessus du pied de page. */
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  background: rgba(18, 28, 21, .93);
+  backdrop-filter: blur(8px);
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .5));
 }
-.rpg-menu-button--resume-inline:hover { background: rgba(49, 90, 57, .36); }
-.rpg-quick-tip kbd {
-  display: inline-grid;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 3px;
-  margin: 0 2px;
-  place-items: center;
-  border: 1px solid rgba(235, 208, 151, .25);
-  border-radius: 3px;
-  background: rgba(255,255,255,.05);
-  color: rgba(244, 233, 214, .7);
-  font: 800 9px/1 var(--mono, monospace);
-}
+.rpg-menu-button--resume.rpg-menu-button--floating:hover,
+.rpg-menu-button--resume.rpg-menu-button--floating:focus-visible { background: rgba(49, 90, 57, .5); }
+/* La place laissée au bouton flottant : le pied de page reste lisible dessous. */
+.rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 108px; }
+/* Le héros de l'onglet « Jouer » n'a plus de fond : ni cadre, ni voile sombre,
+   ni illustration de deck. Le titre et les boutons posent directement sur le
+   décor de la page ; seuls les grains de sable et le halo restent en place. */
 .rpg-mode-menu__hero {
   position: relative;
   isolation: isolate;
@@ -4420,27 +4511,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   display: flex;
   align-items: end;
   overflow: hidden;
-  border: 1px solid rgba(235, 208, 151, .3);
+  border: 0;
   border-radius: 22px;
-  background: #171015;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .38), 0 0 38px rgba(183, 130, 57, .1) inset;
+  background: none;
+  box-shadow: none;
 }
-.rpg-mode-menu__hero::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  background-image: linear-gradient(90deg, rgba(10, 8, 11, .96) 0%, rgba(10, 8, 11, .82) 42%, rgba(10, 8, 11, .2) 100%), var(--rpg-menu-card-art);
-  background-position: center, 55% 34%;
-  background-size: cover;
-  transform: scale(1.02);
-}
+.rpg-mode-menu__hero::before,
 .rpg-mode-menu__hero::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 50% 0 0;
-  background: linear-gradient(0deg, rgba(7, 6, 9, .82), transparent);
+  content: none;
 }
 .rpg-mode-menu__hero-copy {
   width: min(620px, 82%);
@@ -4459,16 +4537,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin: 0 0 22px;
   color: rgba(246, 237, 220, .8);
   font: 14px/1.65 Georgia, serif;
+  /* Plus de voile sombre derrière le héros : l'ombre portée garde le texte
+     lisible sur le décor de la page. */
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .85);
 }
-.rpg-mode-menu__hero-mark {
-  position: absolute;
-  top: 6%;
-  right: 5%;
-  color: rgba(242, 213, 151, .18);
-  font: 700 clamp(70px, 12vw, 148px)/1 Georgia, serif;
-  user-select: none;
-  pointer-events: none;
-  text-shadow: 0 6px 30px rgba(0, 0, 0, .35);
+.rpg-mode-menu__hero-copy .rpg-mode-menu__eyebrow {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .8);
 }
 .rpg-mode-menu__loadout {
   min-width: 0;
@@ -4554,6 +4628,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-menu-button--primary { background: linear-gradient(135deg, #e5c06b, #b77d32); border-color: #f0d994; color: #21170d; box-shadow: 0 8px 28px rgba(197, 139, 53, .2); }
 .rpg-menu-button--primary:hover,
 .rpg-menu-button--primary:focus-visible { background: linear-gradient(135deg, #ffdda0, #d99d48); color: #1c130b; }
+/* Le bouton « Mode histoire » se distingue du duel : bleu clair, pas le laiton. */
+.rpg-menu-button--primary.rpg-menu-button--histoire {
+  background: linear-gradient(135deg, #bfe2f7, #6fb3dc);
+  border-color: #dcf1fd;
+  color: #10314a;
+  box-shadow: 0 8px 28px rgba(96, 165, 210, .28);
+}
+.rpg-menu-button--primary.rpg-menu-button--histoire:hover,
+.rpg-menu-button--primary.rpg-menu-button--histoire:focus-visible {
+  background: linear-gradient(135deg, #dbf1ff, #8cc6e9);
+  color: #0b2739;
+}
 .rpg-menu-button--resume { width: 100%; margin-top: auto; border-color: rgba(163, 203, 164, .44); color: #c8e4c1; }
 .rpg-menu-button--resume:hover { background: rgba(49, 90, 57, .36); }
 .rpg-menu-button--resume-pulse { position: relative; animation: resume-pulse 2.2s ease-in-out infinite; }
@@ -4650,20 +4736,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   justify-content: flex-start;
   padding: 12px 14px;
 }
-.rpg-quick-tip {
-  margin-top: 18px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid rgba(235, 195, 110, .2);
-  border-radius: 10px;
-  background: rgba(229, 192, 107, .08);
-  backdrop-filter: blur(4px);
-}
-.rpg-quick-tip__icon { font-size: 16px; flex: none; margin-top: 1px; }
-.rpg-quick-tip p { margin: 0; font-size: 11px; line-height: 1.4; color: rgba(246, 237, 220, .7); }
-
 /* Indicateur VS entre les decks */
 .rpg-vs-indicator {
   display: grid;
@@ -4986,15 +5058,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__switch button { flex: 1 1 0; min-width: 0; padding: 9px 2px; font-size: 10px; letter-spacing: .06em; }
   .rpg-mode-menu__switch button span { display: block; margin: 0 0 5px; }
   .rpg-mode-menu__brand p { font-size: 11px; }
-  .rpg-mode-menu__hero { min-height: 360px; border-radius: 16px; }
-  .rpg-mode-menu__hero::before { background-position: center, 58% center; }
+  .rpg-mode-menu__hero { min-height: 360px; }
   .rpg-mode-menu__hero-copy { width: 100%; padding: 22px 19px; }
   .rpg-mode-menu__hero-copy h2 { font-size: clamp(28px, 9vw, 39px); }
   .rpg-mode-menu__hero-copy p { font-size: 12px; }
-  .rpg-mode-menu__hero-mark { top: 5%; right: 4%; font-size: 78px; }
   .rpg-mode-menu__secondary-actions { grid-template-columns: 1fr; }
-  .rpg-quick-tip { margin-top: 14px; padding: 8px 10px; }
-  .rpg-quick-tip p { font-size: 10px; }
+  .rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 100px; }
   .rpg-mode-menu__loadout { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .rpg-mode-menu__loadout-heading { grid-column: auto; align-items: center; }
   .rpg-menu-deck-summary { min-height: 82px; }
@@ -5095,10 +5164,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hidden-hand__card.rpg-hand-card--drawing {
   animation-name: rpg-hidden-card-draw;
 }
+/* La carte piochée arrive en gardant sa place dans l'éventail : les trois
+   repères de la main sont rappelés dans chaque étape (ils valent zéro au doigt,
+   la carte du téléphone glisse donc sans s'incliner). Sans eux, la carte se
+   redressait pendant la pioche puis retombait dans l'éventail à l'arrivée. */
 @keyframes rpg-player-card-draw {
-  0% { opacity: 0; transform: translate3d(-100%, 0, 0); }
-  16% { opacity: 1; transform: translate3d(-68%, 0, 0); }
-  100% { opacity: 1; transform: translate3d(0, 0, 0); }
+  0% { opacity: 0; transform: translate3d(-100%, 0, 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
+  16% { opacity: 1; transform: translate3d(-68%, 0, 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) translateY(var(--hand-fan-drop)) translateX(var(--hand-fan-spread)) rotate(var(--hand-fan-angle)); }
 }
 @keyframes rpg-hidden-card-draw {
   0% { opacity: 0; transform: translate3d(-100%, var(--card-rise, 0), 0) rotate(var(--card-angle, 0deg)); }
@@ -5247,15 +5320,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: #f58a83;
   box-shadow: 0 0 8px rgba(242, 106, 97, .16);
 }
+/* Le fond sombre des commandes en retrait : « Annuler la dernière action »,
+   « Attaquer avec tous » et « Annuler l'attaque » restent des boutons discrets
+   posés sur la peinture du plateau. Les commandes principales — Confirmer
+   l'attaque et Résoudre le combat — sont sorties de cette liste : elles portent
+   un aplat clair et leur halo (voir « La commande principale du combat » plus
+   bas), qu'un fond sombre plus spécifique éteindrait. */
 .rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo,
 .rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque-tous,
-.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--confirmer-attaque,
 .rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--cancel-attack {
   background: rgba(4, 3, 3, .9);
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--undo:hover:not(:disabled),
 .rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--attaque-tous:hover:not(:disabled),
-.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--confirmer-attaque:hover:not(:disabled),
 .rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--cancel-attack:hover:not(:disabled) {
   background: rgba(14, 10, 8, .94);
 }
@@ -5489,11 +5566,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* À la souris, le rail du tour se met à l'échelle du bureau : capsule
    d'indicateur, rangée de phases et boutons d'action agrandis. Le rail tactile
-   garde ses repères de rpg-mobile.css ; sous 620px de large, la variante
-   compacte du rail reste la règle. La barre du bas recule d'autant (360px)
-   pour ne jamais passer sous le rail élargi. */
+   garde ses repères de rpg-mobile.css ; sur un écran étroit (≤ 1 100 px, qui
+   passe en présentation tactile), c'est la variante compacte du rail qui reste
+   la règle. La largeur vient de `--rpg-actions-column`, le repère partagé avec
+   la barre de combat qui vit juste en dessous (voir « La colonne des actions »). */
 .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
-  width: 330px;
+  width: var(--rpg-actions-column, 330px);
   max-width: 38vw;
   gap: 10px;
 }
@@ -5536,8 +5614,172 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: 22px;
   height: 22px;
 }
+
+/* ── La colonne des actions : le combat sous le rail, au-dessus de la main ───
+   « Confirmer l'attaque » et « Résoudre le combat » vivaient dans une barre
+   flottante posée au milieu de la table (right: 360px, bottom: 200px), à
+   hauteur des créatures alliées et à gauche du rail : la commande la plus
+   importante du tour se lisait au milieu des cartes, et sa place changeait avec
+   les rangées. Elle rejoint la **colonne des actions**, à droite — celle de
+   l'indicateur de tour, des cinq phases et de « Fin du tour » — juste au-dessus
+   de la main du joueur : un seul endroit à regarder, du haut vers le bas, et le
+   bouton qui engage le combat sous le pouce de la souris. Le rail, lui, vient
+   s'appuyer **juste au-dessus** de la barre d'action (`bottom` +
+   `height: max-content`) : les cinq phases, « Attaquer avec tous » et « Fin du
+   tour » se lisent d'un seul bloc posé sur les deux commandes du combat, au lieu
+   de flotter au milieu de la table. Vers le haut, il grandit tant que la bande
+   libre le permet.
+
+   La largeur de la colonne est la même pour le rail et pour la barre
+   (`--rpg-actions-column`) : leurs deux bords gauche s'alignent, la colonne se
+   lit d'un seul trait. */
+.rpg-battle:not(.rpg-battle--touch) {
+  --rpg-actions-column: 330px;
+  /* Distance de la barre d'action à la main : assez haute pour que la carte
+     survolée (soulevée d'une tête) ne passe jamais dessous, assez basse pour
+     rester sous le pouce. */
+  --rpg-actions-bottom: 216px;
+  /* Hauteur de la barre de combat sous le rail, dans son cas courant : la
+     commande principale (58), l'air entre les deux (8) et « Annuler l'attaque »
+     (46), plus 12 px de respiration — le rail s'arrête juste au-dessus des deux
+     boutons. */
+  --rpg-actions-reserve: 124px;
+}
+/* La fenêtre de réponse à une magie annoncée se glisse sous les deux commandes
+   du combat (≈ 80 px) : le rail remonte d'autant, pour ne jamais la couvrir. */
+.rpg-battle:not(.rpg-battle--touch):has(.rpg-annonce-sort__compact) {
+  --rpg-actions-reserve: 204px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
+  top: auto;
+  bottom: calc(var(--rpg-actions-bottom) + var(--rpg-actions-reserve));
+  height: max-content;
+  margin-block: 0;
+  transform: none;
+}
 .rpg-battle:not(.rpg-battle--touch) .rpg-bottombar {
-  right: 360px;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: var(--rpg-actions-bottom);
+  width: var(--rpg-actions-column);
+  gap: 8px;
+}
+/* Les deux commandes du combat s'empilent sur toute la largeur de la colonne :
+   la principale d'abord (« Confirmer l'attaque », « Résoudre le combat »),
+   l'annulation ensuite, en retrait. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat {
+  width: 100%;
+  gap: 8px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat > .rpg-btn {
+  width: 100%;
+  margin: 0;
+}
+/* Sous 620 px, la colonne n'a plus la place : la souris retrouve la disposition
+   compacte du doigt (barre sur toute la largeur, rail resserré et centré), au
+   plus près. Ces deux règles passent après la colonne, à spécificité égale. */
+@media (max-width: 620px) {
+  .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
+    top: 50%;
+    bottom: auto;
+    height: auto;
+    margin-block: 0;
+    width: 260px;
+    max-width: clamp(118px, 26vw, 148px);
+    transform: translateY(-50%);
+  }
+  .rpg-battle:not(.rpg-battle--touch) .rpg-bottombar {
+    right: 6px;
+    bottom: 130px;
+    left: 6px;
+    width: auto;
+  }
+}
+
+/* ── La commande principale du combat : pleine, lumineuse, elle appelle ──────
+   Confirmer l'attaque (bleu glacé, la teinte du cadre d'Eau qui bordait déjà le
+   bouton) et Résoudre le combat (l'or de « Fin du tour », la teinte qui, dans ce
+   duel, annonce une étape du tour) passent du fond sombre discret à un aplat
+   clair, écrit en sombre : le contraste ne dépend plus de la peinture du
+   plateau, et l'œil tombe dessus sans chercher. Le halo respire doucement tant
+   que la commande est disponible — jamais quand elle est grisée (aucun manque
+   de mana, aucune cible en attente). `prefers-reduced-motion` éteint le
+   battement. */
+.rpg-actions__combat .rpg-btn--confirmer-attaque,
+.rpg-actions__combat .rpg-btn--resolve-combat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid var(--rpg-combat-edge, #ffeab2);
+  border-radius: 9px;
+  background: var(--rpg-combat-fill, linear-gradient(180deg, #ffe9ab, #e0b458 60%, #b0852c));
+  color: var(--rpg-combat-ink, #241a05);
+  font: 800 15px/1.1 var(--display);
+  letter-spacing: .03em;
+  text-shadow: 0 1px rgba(255, 255, 255, .42);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .5), 0 0 18px var(--rpg-combat-glow, rgba(233, 191, 95, .42));
+  animation: rpg-combat-appel 2.6s ease-in-out infinite;
+}
+.rpg-actions__combat .rpg-btn--confirmer-attaque {
+  --rpg-combat-edge: #e8f8ff;
+  --rpg-combat-fill: linear-gradient(180deg, #e2f4ff, #86ccf3 60%, #3f90c5);
+  --rpg-combat-ink: #08202e;
+  --rpg-combat-glow: rgba(126, 201, 244, .46);
+}
+.rpg-actions__combat .rpg-btn--resolve-combat {
+  --rpg-combat-edge: #ffeab2;
+  --rpg-combat-fill: linear-gradient(180deg, #ffe9ab, #e0b458 60%, #b0852c);
+  --rpg-combat-ink: #241a05;
+  --rpg-combat-glow: rgba(233, 191, 95, .46);
+}
+/* L'icône du bouton prend l'encre sombre du fond clair : sur le bleu glacé, le
+   tracé bleu pâle d'origine disparaîtrait. */
+.rpg-actions__combat .rpg-btn--confirmer-attaque .rpg-combat-action-icon {
+  color: currentColor;
+  filter: none;
+}
+/* Le survol commun des commandes du combat repeint le fond en sombre (et
+   l'encre en crème) : les deux commandes principales rendent donc leur propre
+   aplat au survol — mêmes propriétés, même spécificité, mais plus bas dans la
+   feuille. */
+.rpg-actions__combat .rpg-btn--confirmer-attaque:hover:not(:disabled),
+.rpg-actions__combat .rpg-btn--resolve-combat:hover:not(:disabled) {
+  border-color: var(--rpg-combat-edge, #ffeab2);
+  background: var(--rpg-combat-fill, linear-gradient(180deg, #ffe9ab, #e0b458 60%, #b0852c));
+  color: var(--rpg-combat-ink, #241a05);
+  filter: brightness(1.07) saturate(1.04);
+}
+.rpg-actions__combat .rpg-btn--confirmer-attaque:disabled,
+.rpg-actions__combat .rpg-btn--resolve-combat:disabled {
+  border-color: rgba(223, 196, 143, .3);
+  background: rgba(46, 40, 30, .78);
+  color: rgba(245, 232, 207, .58);
+  box-shadow: none;
+  text-shadow: none;
+  animation: none;
+  opacity: .8;
+}
+/* Sur PC, la commande principale dépasse les autres boutons d'une tête : elle
+   est la seule à porter l'action du moment. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--confirmer-attaque,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--resolve-combat {
+  min-height: 58px;
+  padding: 12px 18px;
+  font-size: 15px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--cancel-attack,
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__combat .rpg-btn--ghost {
+  min-height: 44px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+}
+@keyframes rpg-combat-appel {
+  0%, 100% { box-shadow: 0 6px 18px rgba(0, 0, 0, .5), 0 0 14px var(--rpg-combat-glow, rgba(233, 191, 95, .34)); }
+  50% { box-shadow: 0 6px 18px rgba(0, 0, 0, .5), 0 0 28px var(--rpg-combat-glow, rgba(233, 191, 95, .66)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-actions__combat .rpg-btn--confirmer-attaque,
+  .rpg-actions__combat .rpg-btn--resolve-combat { animation: none; }
 }
 
 /* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
@@ -5914,12 +6156,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* À la souris, la table agrandie agrandit aussi les repères imprimés sur ses
    cartes — coût, attaque, défense et pastille d'élément. La main garde son
    échelle : ses cartes n'ont pas changé de taille. Les icônes d'arme et de
-   bouclier suivent la taille de la police (1em). */
+   bouclier suivent la taille de la police (1em). Le disque de mana des cartes
+   posées reste un disque : une boîte carrée de 30 px, jamais l'ellipse que
+   dessinaient `min-width: 36px` et `height: 25px`. */
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-mana-cost.is-compact {
-  min-width: 36px;
-  height: 25px;
-  padding: 3px 5px;
-  font-size: 13px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 15px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__stat--atk,
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card__pt {
@@ -5928,7 +6175,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: 15.5px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img {
-  --rpg-card-element-marker-size: clamp(18px, 18%, 30px);
+  --rpg-card-element-marker-size: 30px;
+}
+/* La pastille de couleur prend la taille du disque de mana : 30 px sur la
+   table, comme lui, avec son glyphe de 15 px et un liseré de 2 px — les deux
+   repères ronds de la face se lisent d'un même coup d'œil. Dans la main, le
+   disque fait 28 px : la pastille le suit, bornée à 30 % de la carte pour ne
+   pas couvrir les petites faces. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 15px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card-element-badge__pip {
+  border-width: 2px;
+}
+.rpg-hand__card--img .rpg-card-element-badge {
+  --rpg-card-element-marker-size: min(28px, 30%);
+  border-width: 2px;
+  font-size: 15px;
+}
+.rpg-hand__card--img .rpg-card-element-badge__pip {
+  border-width: 2px;
 }
 
 /* Mobile / WebView : le mouvement horizontal parcourt les cartes, le
@@ -6386,4 +6653,29 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-annonce-sort__panel { animation: none; }
+}
+
+/* ── Capacité activée (le Père des corbeaux) ─────────────────────────────
+   Pastille de mana cliquable superposée à la carte : la carte reste un
+   bouton unique, la pastille intercepte son propre clic. */
+.rpg-card__activation {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(169, 224, 245, 0.7);
+  background: rgba(12, 28, 46, 0.84);
+  cursor: pointer;
+  opacity: 0.6;
+}
+.rpg-card__activation.is-pret {
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(169, 224, 245, 0.65);
+}
+.rpg-card__activation:hover {
+  transform: scale(1.08);
 }

@@ -13,6 +13,13 @@ const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined,
   args: process.env.CHROMIUM_ARGS ? process.env.CHROMIUM_ARGS.split(/ +/) : ['--no-sandbox', '--disable-dev-shm-usage'],
 });
+// Le bouton principal de l'écran Jouer ouvre le mode Histoire : une partie
+// rapide démarre depuis l'onglet Deck (« Jouer avec ce deck »).
+const demarrerDuel = async (page) => {
+  await page.getByRole('button', { name: 'Deck', exact: true }).click();
+  await page.locator('.rpg-deck-choice__button').first().click();
+  await page.locator('.rpg-deck-detail__play').click();
+};
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await context.newPage();
@@ -25,7 +32,7 @@ try {
     Math.random = () => 0.425;
   });
   await page.goto(process.env.RPG_URL || 'http://localhost:5173/Let-s-Play/jeu/sablier-de-bab-el');
-  await page.getByRole('button', { name: /Lancer le duel/i }).click();
+  await demarrerDuel(page);
   await page.locator('.rpg-hand__card').first().waitFor();
   // Let the initial card-draw animation finish before measuring the cards.
   await page.waitForTimeout(1400);
@@ -541,12 +548,12 @@ try {
   try {
     const pageBureau = await bureau.newPage();
     await pageBureau.goto(process.env.RPG_URL || 'http://localhost:5173/Let-s-Play/jeu/sablier-de-bab-el');
-    await pageBureau.getByRole('button', { name: /Lancer le duel/i }).click();
+    await demarrerDuel(pageBureau);
     const carte = pageBureau.locator('.rpg-mulligan__card').first();
     await carte.waitFor();
     const nom = (await carte.getAttribute('aria-label')).split(' — ')[0];
-    // Le curseur est resté sur « Lancer le duel », donc sur une carte du volet
-    // qui vient de s'ouvrir : on l'écarte avant de mesurer l'état de repos.
+    // Le curseur est resté sur « Jouer avec ce deck », donc sur une carte du
+    // volet qui vient de s'ouvrir : on l'écarte avant de mesurer l'état de repos.
     await pageBureau.mouse.move(4, 4);
     await pageBureau.locator('.rpg-hover-card-preview').waitFor({ state: 'detached' });
     assert.equal(await pageBureau.locator('.rpg-hover-card-preview').count(), 0,
