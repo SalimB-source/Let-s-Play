@@ -17,6 +17,16 @@ const MASTER_VOLUME = 0.22;
 const REVERB_SECONDS = 0.68;
 const REVERB_RETURN = 0.16;
 const MIN_GAIN = 0.0001;
+const CARD_PLACE_SAMPLE_URL = new URL('./assets/card-place.wav', import.meta.url);
+const CARD_DRAW_SAMPLE_URL = new URL('./assets/card-draw.wav', import.meta.url);
+const ATTACKERS_CONFIRM_SAMPLE_URL = new URL('./assets/attackers-confirm.mp3', import.meta.url);
+const PLAYER_ATTACK_HIT_SAMPLE_URL = new URL('./assets/player-attack-hit.wav', import.meta.url);
+const FLAME_GUST_SAMPLE_URL = new URL('./assets/flame-gust.wav', import.meta.url);
+const CARD_PLACE_VOLUME = 0.62;
+const CARD_DRAW_VOLUME = 0.52;
+const ATTACKERS_CONFIRM_VOLUME = 0.58;
+const PLAYER_ATTACK_HIT_VOLUME = 0.64;
+const FLAME_GUST_VOLUME = 0.56;
 
 /** « A4 » → 440 Hz ; accepte # et b. */
 export function hz(note) {
@@ -41,7 +51,7 @@ export const RPG_SFX_NAMES = Object.freeze([
   'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap', 'mana',
   'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long', 'bouclier',
   'attaque_declaree', 'attaque_confirmee', 'blocage', 'choc_lames', 'combat', 'degats', 'degats_sorcier', 'coup_rapide', 'impact',
-  'contresort', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
+  'contresort', 'card_place', 'card_draw', 'attackers_confirm', 'player_attack_hit', 'flame_gust', 'menu', 'select', 'erreur', 'pile', 'annuler', 'hover',
 ]);
 
 /**
@@ -267,6 +277,18 @@ export function rpgSfx(name) {
         tone('sine', 'A4', 0.1, 0.19, 0.13, { slideTo: 'E4', attack: 0.018, filter: 1600, send: 0.16 }),
         tone('triangle', 'D4', 0.22, 0.24, 0.12, { slideTo: 'A3', filter: 1050, attack: 0.025, send: 0.18, pan: 0.12 }),
       ];
+    case 'card_place':
+      // L’échantillon réel est lu par RpgAudioPlayer, cette entrée documente
+      // néanmoins l’action dans le catalogue commun des bruitages.
+      return [{ kind: 'sample', at: 0, dur: 0.608, g: 1 }];
+    case 'card_draw':
+      return [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }];
+    case 'attackers_confirm':
+      return [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }];
+    case 'player_attack_hit':
+      return [{ kind: 'sample', at: 0, dur: 0.666, g: 1 }];
+    case 'flame_gust':
+      return [{ kind: 'sample', at: 0, dur: 2.287, g: 1 }];
 
     // ── Interface : retours courts, feutrés et distincts ─────────────
     case 'menu':
@@ -337,6 +359,31 @@ export class RpgAudioPlayer {
     this.reverbReturn = null;
     this.noiseBuffer = null;
     this.muted = false;
+    this.cardPlaceAudio = null;
+    this.cardDrawAudio = null;
+    this.attackersConfirmAudio = null;
+    this.playerAttackHitAudio = null;
+    this.flameGustAudio = null;
+    const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
+    if (typeof AudioCtor === 'function') {
+      try {
+        this.cardPlaceAudio = new AudioCtor(CARD_PLACE_SAMPLE_URL.href);
+        this.cardPlaceAudio.preload = 'auto';
+        this.cardPlaceAudio.volume = CARD_PLACE_VOLUME;
+        this.cardDrawAudio = new AudioCtor(CARD_DRAW_SAMPLE_URL.href);
+        this.cardDrawAudio.preload = 'auto';
+        this.cardDrawAudio.volume = CARD_DRAW_VOLUME;
+        this.attackersConfirmAudio = new AudioCtor(ATTACKERS_CONFIRM_SAMPLE_URL.href);
+        this.attackersConfirmAudio.preload = 'auto';
+        this.attackersConfirmAudio.volume = ATTACKERS_CONFIRM_VOLUME;
+        this.playerAttackHitAudio = new AudioCtor(PLAYER_ATTACK_HIT_SAMPLE_URL.href);
+        this.playerAttackHitAudio.preload = 'auto';
+        this.playerAttackHitAudio.volume = PLAYER_ATTACK_HIT_VOLUME;
+        this.flameGustAudio = new AudioCtor(FLAME_GUST_SAMPLE_URL.href);
+        this.flameGustAudio.preload = 'auto';
+        this.flameGustAudio.volume = FLAME_GUST_VOLUME;
+      } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
+    }
   }
 
   unlock() {
@@ -412,6 +459,26 @@ export class RpgAudioPlayer {
 
   setMuted(muted) {
     this.muted = Boolean(muted);
+    if (this.cardPlaceAudio) {
+      this.cardPlaceAudio.volume = this.muted ? 0 : CARD_PLACE_VOLUME;
+      if (this.muted) this.cardPlaceAudio.pause?.();
+    }
+    if (this.cardDrawAudio) {
+      this.cardDrawAudio.volume = this.muted ? 0 : CARD_DRAW_VOLUME;
+      if (this.muted) this.cardDrawAudio.pause?.();
+    }
+    if (this.attackersConfirmAudio) {
+      this.attackersConfirmAudio.volume = this.muted ? 0 : ATTACKERS_CONFIRM_VOLUME;
+      if (this.muted) this.attackersConfirmAudio.pause?.();
+    }
+    if (this.playerAttackHitAudio) {
+      this.playerAttackHitAudio.volume = this.muted ? 0 : PLAYER_ATTACK_HIT_VOLUME;
+      if (this.muted) this.playerAttackHitAudio.pause?.();
+    }
+    if (this.flameGustAudio) {
+      this.flameGustAudio.volume = this.muted ? 0 : FLAME_GUST_VOLUME;
+      if (this.muted) this.flameGustAudio.pause?.();
+    }
     if (!this.master) return;
     const now = this.ctx?.currentTime ?? 0;
     const parameter = this.master.gain;
@@ -425,6 +492,20 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted) return;
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust') {
+      const sample = name === 'card_place'
+        ? this.cardPlaceAudio
+        : name === 'card_draw' ? this.cardDrawAudio
+          : name === 'attackers_confirm' ? this.attackersConfirmAudio
+            : name === 'player_attack_hit' ? this.playerAttackHitAudio : this.flameGustAudio;
+      if (!sample) return;
+      try {
+        sample.currentTime = 0;
+        const playback = sample.play();
+        playback?.catch?.(() => {});
+      } catch { /* le navigateur peut refuser la lecture sans geste utilisateur */ }
+      return;
+    }
     const sequence = rpgSfx(name);
     if (!sequence) return;
     const safeDelay = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
@@ -596,6 +677,46 @@ export class RpgAudioPlayer {
     this.reverbFilter = null;
     this.reverbReturn = null;
     this.noiseBuffer = null;
+    if (this.cardPlaceAudio) {
+      try {
+        this.cardPlaceAudio.pause?.();
+        this.cardPlaceAudio.removeAttribute?.('src');
+        this.cardPlaceAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.cardPlaceAudio = null;
+    if (this.cardDrawAudio) {
+      try {
+        this.cardDrawAudio.pause?.();
+        this.cardDrawAudio.removeAttribute?.('src');
+        this.cardDrawAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.cardDrawAudio = null;
+    if (this.attackersConfirmAudio) {
+      try {
+        this.attackersConfirmAudio.pause?.();
+        this.attackersConfirmAudio.removeAttribute?.('src');
+        this.attackersConfirmAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.attackersConfirmAudio = null;
+    if (this.playerAttackHitAudio) {
+      try {
+        this.playerAttackHitAudio.pause?.();
+        this.playerAttackHitAudio.removeAttribute?.('src');
+        this.playerAttackHitAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.playerAttackHitAudio = null;
+    if (this.flameGustAudio) {
+      try {
+        this.flameGustAudio.pause?.();
+        this.flameGustAudio.removeAttribute?.('src');
+        this.flameGustAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.flameGustAudio = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }

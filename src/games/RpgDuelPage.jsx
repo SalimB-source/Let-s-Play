@@ -1964,7 +1964,7 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   useEffect(() => {
     if (cartesEnDestruction.length > prevDestructionCountRef.current) {
       const last = cartesEnDestruction[cartesEnDestruction.length - 1];
-      jouerSfx(last?.bruleeParBraise ? 'burn' : 'destruction');
+      jouerSfx(last?.bruleeParBraise ? 'flame_gust' : 'destruction');
     }
     prevDestructionCountRef.current = cartesEnDestruction.length;
   }, [cartesEnDestruction]);
@@ -2616,7 +2616,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setMulligan(null);
       return;
     }
-    jouerSfx('pioche', 0.05);
+    jouerSfx('card_draw', 0.05);
     // Une étape de résultat : la main neuve se relit en grand, ce qui entre est
     // signalé, et le geste qui referme le volet est celui qui ouvre le duel.
     setMulligan({
@@ -2701,7 +2701,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
     }
     if (!animations.length) return;
-    animations.forEach((a, idx) => { jouerSfx('pioche', idx * 0.08); });
+    animations.forEach((a, idx) => { jouerSfx('card_draw', idx * 0.08); });
     setAnimationsPioche((current) => [...current, ...animations].slice(-12));
     animations.forEach((animation) => {
       const timer = window.setTimeout(() => {
@@ -3351,7 +3351,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const res = rpgPoserTerrain(duel, 'joueur', carteId);
     if (res.ok) {
       conserverAnnulation(etatAvantAction);
-      jouerSfx('terrain_pose');
+      jouerSfx('card_place');
       avancerTutoriel('terrain', 'mana');
     } else { jouerSfx('erreur'); }
     force();
@@ -3418,7 +3418,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const annoncerMagie = (carte, cible) => {
-    jouerSfx(carte?.effet?.type === 'soin' ? 'soin_long' : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
+    const son = cardColors(carte).includes('braise') && carte?.effet?.type === 'degats'
+      ? 'flame_gust'
+      : carte?.effet?.type === 'soin' ? 'soin_long'
+        : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie';
+    jouerSfx(son);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
     setSortJoue({ carteId: carte.id, cible });
@@ -3459,7 +3463,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (res.ok) {
-      jouerSfx(carte?.effet?.type === 'soin' ? 'soin_long' : carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
+      jouerSfx('card_place');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       invaliderAnnulation();
       annoncerMagie(carte, cibleDecrite);
@@ -3532,7 +3536,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     } else if (res.ok) {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
-      jouerSfx('creature');
+      jouerSfx('card_place');
       avancerTutoriel('creature', 'invocation');
     }
     force();
@@ -3805,7 +3809,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    jouerSfx('attaque_confirmee');
+    jouerSfx('attackers_confirm');
     const ciblesFinales = Object.fromEntries(ids.flatMap((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
       const cible = ciblesCoupRapideLegales(attaquant, 'joueur')
@@ -4028,7 +4032,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
     jouerSfx('combat');
     if (res.resume.paires.length > 0) jouerSfx('choc_lames', 0.015);
-    if (res.resume.frappeSorcier > 0) { jouerSfx('degats_sorcier', 0.18); }
+    if (res.resume.frappeSorcier > 0) { jouerSfx('player_attack_hit', 0.18); }
     else if (!res.resume.paires.length) { jouerSfx('blocage', 0.2); }
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
