@@ -1964,7 +1964,7 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
   useEffect(() => {
     if (cartesEnDestruction.length > prevDestructionCountRef.current) {
       const last = cartesEnDestruction[cartesEnDestruction.length - 1];
-      jouerSfx(last?.bruleeParBraise ? 'flame_gust' : 'destruction');
+      jouerSfx(last?.bruleeParBraise ? 'flame_gust' : 'destruction_hit');
     }
     prevDestructionCountRef.current = cartesEnDestruction.length;
   }, [cartesEnDestruction]);
