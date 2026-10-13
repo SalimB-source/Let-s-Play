@@ -180,33 +180,33 @@ try {
     await context.close().catch(() => {});
   }
 
-  // 7. Chaque plateau qui porte des objets 3D : la plaque vide est chargée, les
-  // objets sont posés, le repli CSS garde la peinture d'origine. Le plateau est
-  // imposé dans le harnais seul (le jeu, lui, le tire d'après le deck) en
-  // réécrivant la ligne qui le fixe dans le module servi par Vite.
-  for (const [id, theme] of Object.entries(RPG_TABLE_SCENE_THEMES).filter(([, entry]) => entry.objets.length)) {
+  // 7. Les plateaux à objets 3D : la plaque vide est chargée, les objets sont
+  // posés, le fond CSS garde la peinture d'origine, couper le décor libère tout.
+  // `seed` fixe le tirage du plateau (le sable désigne le deck, donc le plateau).
+  const withObjects = [
+    { id: 'erg-du-sahara', seed: () => { let n = 0; Math.random = () => (0.05 + (n++) * 0.137) % 1; } },
+    { id: 'cavernes-de-cristal', seed: () => { Math.random = () => 0.5; } },
+  ];
+  assert.deepEqual(withObjects.map((entry) => entry.id).sort(), Object.keys(RPG_TABLE_SCENE_THEMES).filter((id) => RPG_TABLE_SCENE_THEMES[id].objets.length).sort(), 'chaque plateau à objets a son scénario');
+  for (const entry of withObjects) {
+    const theme = RPG_TABLE_SCENE_THEMES[entry.id];
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const page = await context.newPage();
     const requested = [];
     page.on('request', (request) => requested.push(request.url()));
-    await page.route('**/src/games/RpgDuelPage.jsx*', async (route) => {
-      const response = await route.fetch();
-      const body = (await response.text()).replace(/setPlateauId\(plateau\.id\)/, `setPlateauId(${JSON.stringify(id)})`);
-      await route.fulfill({ response, body });
-    });
     await page.addInitScript(watchContexts);
-    await page.addInitScript(() => { Math.random = () => 0.425; });
+    await page.addInitScript(entry.seed);
     await openDuel(page);
     await wait3d(page);
-    assert.equal(await page.locator('[data-table-3d]').getAttribute('data-table-3d'), id, `${id} : plateau imposé`);
-    assert.equal(await page.locator('.rpg-table-3d__canvas').getAttribute('data-objects'), String(theme.objets.length), `${id} : objets posés`);
-    assert.ok(requested.some((url) => url.endsWith(theme.plaque)), `${id} : la plaque sans objets peints est chargée`);
+    assert.equal(await page.locator('[data-table-3d]').getAttribute('data-table-3d'), entry.id, 'le tirage fixé donne ce plateau');
+    assert.equal(await page.locator('.rpg-table-3d__canvas').getAttribute('data-objects'), String(theme.objets.length));
+    assert.ok(requested.some((url) => url.endsWith(theme.plaque)), `${theme.plaque} : la plaque sans objets peints est chargée`);
     const painted = await page.locator('.card-table').evaluate((el) => el.style.backgroundImage);
-    assert.match(painted, new RegExp(`plateau-${id}\\.jpg`), `${id} : le fond CSS garde la peinture d'origine (repli)`);
+    assert.ok(painted.includes(`plateau-${entry.id}.jpg`), 'le fond CSS garde la peinture d\'origine (repli)');
     await page.locator('.rpg-duel-nav__decor3d').click();
     await page.waitForTimeout(300);
-    assert.equal(await live(page), 0, `${id} : couper le décor libère aussi les objets, l'ombre et le reflet`);
-    console.log(`✓ ${id} : plaque vide chargée, ${theme.objets.length} objets 3D posés, repli CSS intact`);
+    assert.equal(await live(page), 0, 'couper le décor libère aussi les objets, l\'ombre et le reflet');
+    console.log(`✓ ${entry.id} : plaque vide chargée, ${theme.objets.length} objets 3D posés, repli CSS intact`);
     await context.close().catch(() => {});
   }
 

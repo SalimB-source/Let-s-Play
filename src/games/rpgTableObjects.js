@@ -2,7 +2,7 @@
  * Le Sablier — les objets posés sur la table, en vraie 3D.
  *
  * La lanterne, la gourde, la corde, les galets, le bol de cuivre, les amas de
- * cristaux… ne sont plus peints dans le plateau : la peinture « vide » (`plaque`) les a perdus
+ * cristaux ne sont plus peints dans le plateau : la peinture « vide » (`plaque`) les a perdus
  * et ce fichier les reconstruit en géométrie, avec leur ombre et leur reflet.
  * Pas de GLB ni de texture distante : tout est procédural, comme les tours du
  * mode Histoire, et se construit sous Node (aucun `document` ici).
@@ -104,29 +104,29 @@ function buildPebbles(env) {
 }
 
 /** Corde en spirale, torsade visible, queue qui s'échappe vers la gauche. */
-function buildRope(env) {
+function buildRope(env, { kind = 'corde', base = '#b69258', tube = 0.046, turns = 3, tail = true, inner = 0.18 } = {}) {
   const kit = materials(env);
   const group = new THREE.Group();
-  const tube = 0.046;
   const points = [];
   // Le bout libre, légèrement ondulé, qui vient au pied de la spirale.
-  for (const [x, y] of [[-1.15, -0.14], [-0.95, -0.25], [-0.75, -0.3], [-0.55, -0.35], [-0.38, -0.32]]) points.push(new THREE.Vector3(x, y, tube));
+  const freeEnd = tail ? [[-1.15, -0.14], [-0.95, -0.25], [-0.75, -0.3], [-0.55, -0.35], [-0.38, -0.32]] : [[-0.72, -0.2], [-0.55, -0.3], [-0.42, -0.3]];
+  for (const [x, y] of freeEnd) points.push(new THREE.Vector3(x, y, tube));
   // Puis la spirale, du bord vers le centre : trois tours, pas d'un diamètre de corde.
-  const turns = 3, steps = 96;
+  const steps = 96;
   const start = Math.atan2(-0.32, -0.38);
   for (let i = 1; i <= steps; i += 1) {
     const t = i / steps;
-    const radius = 0.48 - 0.3 * t;
+    const radius = 0.48 - (0.48 - inner) * t;
     const angle = start - t * turns * Math.PI * 2;
     // La corde chevauche légèrement la boucle précédente : un peu de relief.
     points.push(new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, tube * (1 + 0.45 * t)));
   }
   const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
   const geometry = new THREE.TubeGeometry(curve, 520, tube, 10, false);
-  const grain = grainTexture({ seed: 4, base: '#b69258', variation: 0.2, size: 64, stripes: 2 });
-  grain.repeat.set(95, 1);
+  const grain = grainTexture({ seed: 4, base, variation: 0.2, size: 64, stripes: 2 });
+  grain.repeat.set(Math.round(95 * (0.046 / tube) ** 0.5), 1);
   group.add(mesh(geometry, kit.standard('corde', { map: grain, roughness: 0.9, metalness: 0 }), 'corde'));
-  group.userData = { kind: 'corde', extent: 1 };
+  group.userData = { kind, extent: 1 };
   return group;
 }
 
@@ -151,10 +151,10 @@ function buildWaterskin(env) {
   group.add(collar);
   // La sangle : de l'anneau du goulot, glissée sur le sable, bouclée en bas.
   const strapCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.05, 0.9, 0.13), new THREE.Vector3(0.28, 0.9, 0.05), new THREE.Vector3(0.52, 0.66, 0.04), new THREE.Vector3(0.62, 0.32, 0.04),
-    new THREE.Vector3(0.58, 0.02, 0.04), new THREE.Vector3(0.42, -0.14, 0.04), new THREE.Vector3(0.22, -0.1, 0.04),
+    new THREE.Vector3(0.05, 0.9, 0.13), new THREE.Vector3(0.24, 0.88, 0.05), new THREE.Vector3(0.4, 0.68, 0.04), new THREE.Vector3(0.46, 0.34, 0.04),
+    new THREE.Vector3(0.4, 0.04, 0.04), new THREE.Vector3(0.26, -0.08, 0.04), new THREE.Vector3(0.12, -0.04, 0.04),
   ], false, 'centripetal');
-  const strap = new THREE.TubeGeometry(strapCurve, 90, 0.04, 8, false);
+  const strap = new THREE.TubeGeometry(strapCurve, 90, 0.034, 8, false);
   strap.scale(1, 1, 0.32); // sangle plate
   const strapMesh = mesh(strap, kit.standard('sangle', { color: '#7a4a28', roughness: 0.75, metalness: 0, map: leather.map }), 'sangle');
   group.add(strapMesh);
@@ -167,11 +167,11 @@ function buildWaterskin(env) {
  * debout n'est qu'un rond) : réservoir, verre, armature, calotte et anse
  * rabattue à plat, flamme qui éclaire vraiment le sable.
  */
-function buildLantern(env) {
+function buildLantern(env, { kind = 'lanterne', color = '#a68a4c', roughness = 0.38, metalness = 0.88 } = {}) {
   const kit = materials(env);
   const group = new THREE.Group();
   const rest = 0.2; // hauteur de l'axe : le rayon du réservoir
-  const brass = kit.metal('laiton', '#a68a4c', 0.38, 0.88);
+  const brass = kit.metal('laiton', color, roughness, metalness);
   const lift = (part) => { part.position.z += rest; return part; };
   // Toutes les révolutions ont l'axe +Y : c'est déjà l'axe long de la lanterne.
   const baseGeometry = lathe([[0.001, 0], [0.19, 0], [0.205, 0.02], [0.185, 0.07], [0.001, 0.07]], 40);
@@ -208,62 +208,529 @@ function buildLantern(env) {
   lamp.name = 'lueur';
   lamp.position.set(0, 0.3, rest + 0.12);
   group.add(lamp);
-  group.userData = { kind: 'lanterne', extent: 0.9, flame, lamp };
+  group.userData = { kind, extent: 0.9, flame, lamp };
   return group;
 }
 
 /**
- * Un amas de cristaux : des prismes hexagonaux à pointe, en éventail autour de
- * l'axe +Y, couchés presque à plat (vue du dessus, un cristal debout n'est
- * qu'un hexagone). Facettes nettes, vernis, et un cœur qui luit : l'émissif
- * tient lieu de lumière propre, sans lampe de plus. `spec.seed` varie l'amas,
- * `spec.spread` ouvre l'éventail (degrés).
+ * Un amas de cristaux (améthyste, rubis) : des prismes hexagonaux à pointe
+ * facettée, rayonnant depuis un même pied et couchés vers l'extérieur comme dans
+ * la peinture. Le pied est à l'origine, le grand axe de l'amas suit +Y ;
+ * `extent` est la portée à plat du plus long cristal. Un léger éclat pulse
+ * (`updateTableObject`) : ces pierres brillent dans l'obscurité des galeries.
  */
-const CRYSTAL_PALETTES = Object.freeze({
-  amethystes: { color: '#6f3bc2', emissive: '#44167f', glow: 0.55 },
-  rubis: { color: '#a8183a', emissive: '#6a0a1e', glow: 0.5 },
-});
-function buildCrystals(palette, kind) {
-  return (env, spec = {}) => {
-    const group = new THREE.Group();
-    const random = seededRandom((spec.seed ?? 1) * 7919 + (kind === 'rubis' ? 13 : 5));
-    const spread = ((spec.spread ?? 75) * Math.PI) / 180;
-    // Trois teintes proches : un amas n'est jamais d'un seul bloc de couleur.
-    const tones = [0.82, 1, 1.18].map((factor, index) => {
-      const color = new THREE.Color(palette.color).multiplyScalar(factor);
-      return new THREE.MeshPhysicalMaterial({
-        name: `${kind}-${index}`, color, roughness: 0.2, metalness: 0.05, clearcoat: 0.7, clearcoatRoughness: 0.1,
-        flatShading: true, emissive: new THREE.Color(palette.emissive), emissiveIntensity: palette.glow,
-        envMap: env, envMapIntensity: 0.55,
-      });
-    });
-    const count = 8;
-    for (let i = 0; i < count; i += 1) {
-      const t = i / (count - 1) - 0.5; // −0,5 … 0,5 : de gauche à droite de l'éventail
-      const azimuth = t * spread * 2 + (random() - 0.5) * 0.28;
-      // Les cristaux du centre sont les plus longs.
-      const length = (1 - 0.55 * Math.abs(t) * 2) * (0.78 + random() * 0.3);
-      const radius = 0.075 * Math.pow(length, 0.75) + 0.012;
-      const lift = (0.1 + random() * 0.22) * Math.PI; // relevé au-dessus de la table
-      const body = length * 0.7, tip = length * 0.3;
-      const crystal = new THREE.Group();
-      const shaft = mesh(new THREE.CylinderGeometry(radius, radius * 0.92, body, 6), tones[i % 3], 'cristal');
-      shaft.position.y = body / 2;
-      const point = mesh(new THREE.ConeGeometry(radius, tip, 6), tones[(i + 1) % 3], 'pointe');
-      point.position.y = body + tip / 2;
-      point.rotation.y = Math.PI / 6;
-      crystal.add(shaft, point);
-      // Axe du cristal : +Y d'abord, relevé de `lift` vers +Z, puis tourné de `azimuth`.
-      const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -azimuth)
-        .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), lift));
-      crystal.quaternion.copy(q);
-      // Il repose sur la table : son flanc le plus bas touche z = 0.
-      crystal.position.set((random() - 0.5) * 0.05, (random() - 0.5) * 0.04, radius * Math.cos(lift) * 0.98);
-      group.add(crystal);
+function buildCrystalCluster(env, { kind, color, glow, seed }) {
+  const random = seededRandom(seed);
+  const group = new THREE.Group();
+  const gems = [];
+  // Azimut (degrés autour de l'axe de l'amas), portée à plat, rayon, élévation.
+  const fan = [
+    [-52, 0.58, 0.075, 18], [-31, 0.78, 0.09, 22], [-12, 0.94, 0.105, 27],
+    [6, 1, 0.115, 31], [24, 0.84, 0.095, 24], [43, 0.64, 0.08, 20], [60, 0.46, 0.065, 17],
+    [-2, 0.62, 0.075, 42],
+  ];
+  const material = new THREE.MeshPhysicalMaterial({
+    name: kind, color, emissive: glow, emissiveIntensity: 0.4, roughness: 0.22, metalness: 0,
+    clearcoat: 0.5, clearcoatRoughness: 0.12, envMap: env, envMapIntensity: 0.55, flatShading: true,
+  });
+  gems.push(material);
+  fan.forEach(([azimuth, reach, radius, elevation], index) => {
+    const rise = (elevation * Math.PI) / 180;
+    const length = reach / Math.cos(rise); // la portée à plat est `reach`
+    const body = length * (0.74 + random() * 0.08);
+    const fat = radius * 1.3; // des cristaux trapus, comme dans la peinture
+    const profile = [[0.001, 0], [fat * 0.82, 0], [fat, length * 0.05], [fat, body], [fat * 0.55, body + (length - body) * 0.45], [0.001, length]];
+    const geometry = lathe(profile, 6);
+    geometry.rotateY(random() * Math.PI); // les facettes ne sont pas toutes alignées
+    const crystal = mesh(geometry, material, 'cristal');
+    const pivot = new THREE.Group();
+    pivot.rotation.z = (-azimuth * Math.PI) / 180; // 0° = vers +Y ; positif = vers la droite
+    crystal.rotation.x = rise; // +Y bascule vers +Z : le cristal se lève
+    crystal.position.z = radius * 1.2 + index * 0.0005;
+    pivot.add(crystal);
+    group.add(pivot);
+  });
+  group.userData = { kind, extent: 1, gems, glowBase: 0.4 };
+  return group;
+}
+
+/**
+ * Un tapis tissé : bandes noires, rouges et ivoire, avec des losanges. La
+ * texture est dessinée ici, raccordable (le tapis entier n'a qu'un motif répété).
+ * `v` suit la longueur du rouleau, `u` en fait le tour.
+ */
+function kilimTexture() {
+  const width = 64, height = 128;
+  const data = new Uint8Array(width * height * 4);
+  const ivory = [214, 196, 160], red = [150, 52, 36], black = [34, 24, 22], rust = [190, 96, 62];
+  for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+    const v = y / height, u = x / width;
+    let color = ivory;
+    const band = v * 8; // huit bandes sur le motif
+    const inBand = band - Math.floor(band);
+    const index = Math.floor(band);
+    if (index % 4 === 0) color = inBand < 0.22 || inBand > 0.78 ? black : red;
+    else if (index % 4 === 2) color = inBand < 0.14 || inBand > 0.86 ? red : ivory;
+    else {
+      // Les losanges : distance de Manhattan au centre de chaque cellule.
+      const cell = (u * 4) % 1, around = Math.abs(cell - 0.5) + Math.abs(inBand - 0.5);
+      color = around < 0.26 ? rust : around < 0.34 ? black : ivory;
     }
-    group.userData = { kind, extent: 1 };
-    return group;
+    // Un grain de laine.
+    const grain = 0.9 + 0.1 * Math.sin(x * 2.9 + y * 1.7) * Math.sin(y * 3.7);
+    const at = (y * width + x) * 4;
+    data[at] = color[0] * grain; data[at + 1] = color[1] * grain; data[at + 2] = color[2] * grain; data[at + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, width, height);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
+ * Un tapis roulé, couché : un cylindre tissé, et à son extrémité les couches de
+ * l'enroulement en anneaux décalés. L'origine est le centre de l'extrémité
+ * « fermée » (gauche), le rouleau part vers +Y ; `extent` est sa longueur.
+ */
+function buildCarpet(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const radius = 0.175;
+  const texture = kilimTexture();
+  texture.repeat.set(1, 2);
+  const wool = kit.standard('laine', { map: texture, roughness: 0.95, envMapIntensity: 0.1 });
+  const roll = mesh(new THREE.CylinderGeometry(radius, radius, 1, 40, 1, true), wool, 'rouleau');
+  roll.position.set(0, 0.5, radius);
+  group.add(roll);
+  // Les deux extrémités : couches de l'enroulement vues de face, de l'extérieur vers le cœur.
+  const layers = ['#6f4a34', '#c9b48a', '#8a3a28', '#3a2a24', '#b89a6c', '#5e3426', '#d2c19a'];
+  for (const [y, face] of [[0, -1], [1, 1]]) {
+    layers.forEach((color, i) => {
+      const r = radius * (1 - i * 0.135);
+      const disc = mesh(new THREE.CylinderGeometry(r, r, 0.004, 32), kit.standard('couche', { color, roughness: 0.92 }), 'couche');
+      disc.position.set(0, y + face * 0.002 * (i + 1), radius);
+      group.add(disc);
+    });
+  }
+  group.userData = { kind: 'tapis', extent: 1.0 };
+  return group;
+}
+
+/**
+ * Un compas de poche en laiton, boîtier et couvercle ouverts côte à côte : le
+ * boîtier (cadran, aiguille) à l'origine, le couvercle poli vers +Y, l'anneau de
+ * suspension du côté opposé. Unité : 1 = le rayon du boîtier × 2.
+ */
+function buildCompass(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const brass = kit.metal('laiton', '#9a7d3c', 0.34, 0.92);
+  const cup = (radius) => {
+    // Une coupe de révolution, ouverte vers le haut : l'axe Y du lathe devient +Z.
+    const geometry = lathe([[0.001, 0], [radius, 0], [radius, 0.1], [radius * 0.92, 0.1], [radius * 0.92, 0.04], [0.001, 0.04]], 40);
+    geometry.rotateX(Math.PI / 2);
+    return geometry;
   };
+  const body = mesh(cup(0.5), brass, 'boitier');
+  group.add(body);
+  const dial = mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.01, 40), kit.standard('cadran', { color: '#b9a266', roughness: 0.5, metalness: 0.5, envMapIntensity: 0.5 }), 'cadran');
+  dial.rotation.x = Math.PI / 2; // axe Y -> Z : le disque est à plat
+  dial.position.z = 0.05;
+  group.add(dial);
+  // Les graduations : huit traits fins, comme sur le cadran peint.
+  for (let i = 0; i < 8; i += 1) {
+    const tick = mesh(new THREE.BoxGeometry(0.014, 0.16, 0.004), kit.standard('trait', { color: '#4a3820', roughness: 0.7 }), 'graduation');
+    tick.position.z = 0.058;
+    const angle = (i * Math.PI) / 4;
+    tick.position.x = Math.sin(angle) * 0.33;
+    tick.position.y = Math.cos(angle) * 0.33;
+    tick.rotation.z = -angle;
+    tick.castShadow = false;
+    group.add(tick);
+  }
+  // L'aiguille : un losange, moitié rouge, moitié acier, pivotant sur une goupille.
+  const needle = new THREE.Group();
+  const half = (sign, color) => {
+    const part = mesh(new THREE.CylinderGeometry(0.001, 0.05, 0.36, 4), kit.metal('aiguille', color, 0.3, 0.7), 'aiguille');
+    part.scale.set(1, 1, 0.25);
+    part.position.set(0, sign * 0.18, 0.075);
+    if (sign < 0) part.rotation.z = Math.PI;
+    needle.add(part);
+  };
+  half(1, '#b13a2c');
+  half(-1, '#7e8794');
+  needle.rotation.z = -0.62;
+  group.add(needle);
+  const pin = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 12), brass, 'goupille');
+  pin.rotation.x = Math.PI / 2;
+  pin.position.z = 0.085;
+  group.add(pin);
+  // Le couvercle, ouvert : une coupe plus plate, au fond poli.
+  const lid = new THREE.Group();
+  lid.position.set(0, 1.02, 0);
+  lid.add(mesh(cup(0.47), brass, 'couvercle'));
+  const mirror = mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.01, 40), kit.metal('poli', '#c2a455', 0.18, 0.95), 'poli');
+  mirror.rotation.x = Math.PI / 2;
+  mirror.position.z = 0.047;
+  lid.add(mirror);
+  group.add(lid);
+  const hinge = mesh(new THREE.BoxGeometry(0.2, 0.2, 0.09), brass, 'charniere');
+  hinge.position.set(0.02, 0.52, 0.045);
+  group.add(hinge);
+  // L'anneau de suspension, à plat.
+  const ring = mesh(new THREE.TorusGeometry(0.13, 0.026, 8, 24), brass, 'anneau');
+  ring.position.set(0, -0.66, 0.03);
+  group.add(ring);
+  const stem = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.14, 8), brass, 'tige');
+  stem.position.set(0, -0.54, 0.04);
+  group.add(stem);
+  group.userData = { kind: 'compas', extent: 2.32 };
+  return group;
+}
+
+
+/**
+ * Un balayage : un tube dont le rayon varie le long d'une courbe (cornes, manches).
+ * `radius(t)` donne le rayon, `color(t)` (facultatif) une couleur par sommet,
+ * `from`/`to` bornent la portion balayée (les bagues de métal du cor).
+ */
+function sweep(curve, radius, { segments = 80, radial = 18, from = 0, to = 1, color = null } = {}) {
+  const frames = curve.computeFrenetFrames(segments, false);
+  const positions = [], colors = [], uvs = [], indices = [];
+  const tint = new THREE.Color();
+  for (let i = 0; i <= segments; i += 1) {
+    const t = from + (to - from) * (i / segments);
+    const point = curve.getPointAt(t);
+    const index = Math.min(segments, Math.round(t * segments));
+    const r = radius(t);
+    for (let j = 0; j < radial; j += 1) {
+      const a = (j / radial) * Math.PI * 2;
+      const n = frames.normals[index], b = frames.binormals[index];
+      positions.push(point.x + (Math.cos(a) * n.x + Math.sin(a) * b.x) * r, point.y + (Math.cos(a) * n.y + Math.sin(a) * b.y) * r, point.z + (Math.cos(a) * n.z + Math.sin(a) * b.z) * r);
+      uvs.push((j / radial) * 3, t * 5);
+      if (color) { color(t, tint); colors.push(tint.r, tint.g, tint.b); }
+    }
+  }
+  for (let i = 0; i < segments; i += 1) for (let j = 0; j < radial; j += 1) {
+    const a = i * radial + j, b = i * radial + ((j + 1) % radial), c = a + radial, d = b + radial;
+    indices.push(a, b, c, b, d, c);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  if (color) geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/**
+ * Le cor à boire : une corne d'ivoire qui s'assombrit vers la pointe, deux
+ * bagues de laiton, le fond de la coupe sombre. La corde du cor : `extent` est
+ * la corde (bouche → pointe), la courbure s'écarte du côté +X.
+ */
+function buildHorn(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const radius = (t) => 0.02 + 0.125 * (1 - t) ** 1.25;
+  const centre = (t) => new THREE.Vector3(0.21 * Math.sin(Math.PI * t) * (0.55 + 0.45 * t), t, radius(t) * 1.08);
+  const curve = new THREE.CatmullRomCurve3(Array.from({ length: 41 }, (_, i) => centre(i / 40)));
+  const ivory = new THREE.Color('#d2c4a2'), dark = new THREE.Color('#24180f');
+  const streaks = grainTexture({ seed: 8, base: '#f1e8d2', variation: 0.3, size: 64 });
+  streaks.repeat.set(1.5, 0.22); // des veines qui courent le long de la corne
+  const horn = new THREE.MeshStandardMaterial({
+    name: 'ivoire', vertexColors: true, map: streaks, roughness: 0.62, metalness: 0, envMap: env, envMapIntensity: 0.3,
+  });
+  group.add(mesh(sweep(curve, radius, { segments: 90, radial: 22, color: (t, out) => out.copy(ivory).lerp(dark, Math.min(1, Math.max(0, (t - 0.38) / 0.5))) }), horn, 'corne'));
+  const brass = kit.metal('laiton', '#8b7133', 0.42, 0.85);
+  group.add(mesh(sweep(curve, (t) => radius(t) * 1.07, { segments: 14, radial: 22, from: 0, to: 0.17 }), brass, 'bague-bouche'));
+  group.add(mesh(sweep(curve, (t) => radius(t) * 1.07, { segments: 10, radial: 22, from: 0.52, to: 0.62 }), brass, 'bague-milieu'));
+  // Le fond de la coupe : un disque sombre, un peu en retrait, tourné vers l'axe de la bouche.
+  const tangent = curve.getTangentAt(0.001);
+  const bowl = mesh(new THREE.CircleGeometry(radius(0) * 0.98, 24), kit.standard('coupe', { color: '#2a2018', roughness: 0.9, metalness: 0 }), 'coupe');
+  bowl.position.copy(curve.getPointAt(0.012));
+  bowl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tangent.clone().multiplyScalar(-1));
+  bowl.castShadow = false;
+  group.add(bowl);
+  group.userData = { kind: 'cor', extent: 1 };
+  return group;
+}
+
+/**
+ * La hache : un manche de bois sombre, une tête de fer à large barbe côté −X.
+ * Le manche part de +Y (le talon à l'origine) ; `extent` est la longueur du manche.
+ */
+function buildAxe(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const grain = grainTexture({ seed: 21, base: '#6b4527', variation: 0.22, size: 64, stripes: 1 });
+  grain.repeat.set(1, 6);
+  const wood = kit.standard('bois', { map: grain, roughness: 0.7, metalness: 0 });
+  const handleCurve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0.03), new THREE.Vector3(0, 1.02, 0.03));
+  group.add(mesh(sweep(handleCurve, (t) => 0.038 + 0.014 * (1 - t) ** 3 - 0.006 * t, { segments: 20, radial: 14 }), wood, 'manche'));
+  const iron = kit.metal('fer', '#34363b', 0.55, 0.85);
+  const blade = new THREE.Shape();
+  // Dos droit contre le manche, pointe haute qui s'avance, tranchant en arc rentrant, talon bas.
+  blade.moveTo(0.04, 1.1);
+  blade.quadraticCurveTo(-0.12, 1.14, -0.3, 1.12);
+  blade.quadraticCurveTo(-0.2, 1.0, -0.22, 0.84);
+  blade.quadraticCurveTo(-0.1, 0.84, 0.04, 0.9);
+  blade.lineTo(0.04, 1.1);
+  const bladeGeometry = new THREE.ExtrudeGeometry(blade, { depth: 0.035, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 2 });
+  const bladePart = mesh(bladeGeometry, iron, 'fer');
+  bladePart.position.z = 0.03;
+  group.add(bladePart);
+  const eye = mesh(new THREE.BoxGeometry(0.1, 0.22, 0.1), iron, 'oeil');
+  eye.position.set(0.0, 0.99, 0.055);
+  group.add(eye);
+  group.userData = { kind: 'hache', extent: 1 };
+  return group;
+}
+
+/**
+ * Le bâton de runes : une planche de chêne sombre, étroite vers le pied, ornée
+ * de deux entrelacs dorés en relief. Le pied est à l'origine, la planche monte vers +Y.
+ */
+function buildRuneStaff(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const grain = grainTexture({ seed: 33, base: '#4a3321', variation: 0.25, size: 64, stripes: 1 });
+  grain.repeat.set(1, 5);
+  const wood = kit.standard('chene', { map: grain, roughness: 0.78, metalness: 0 });
+  const outline = new THREE.Shape();
+  const half = (y) => 0.012 + 0.118 * Math.min(1, y / 0.22);
+  const ys = [0, 0.04, 0.1, 0.22, 0.5, 0.8, 1];
+  outline.moveTo(-half(0), 0);
+  ys.forEach((y) => outline.lineTo(half(y), y));
+  [...ys].reverse().forEach((y) => outline.lineTo(-half(y), y));
+  const board = mesh(new THREE.ExtrudeGeometry(outline, { depth: 0.06, bevelEnabled: true, bevelSize: 0.01, bevelThickness: 0.01, bevelSegments: 2 }), wood, 'planche');
+  board.position.z = 0.01;
+  group.add(board);
+  const gold = kit.metal('or-ancien', '#9a7b3e', 0.55, 0.7);
+  for (const phase of [0, Math.PI]) {
+    const points = Array.from({ length: 60 }, (_, i) => {
+      const y = 0.16 + (i / 59) * 0.8;
+      return new THREE.Vector3(0.07 * Math.sin(y * 18 + phase) * Math.min(1, y * 3), y, 0.08);
+    });
+    group.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 120, 0.007, 6, false), gold, 'entrelacs'));
+  }
+  for (const side of [-1, 1]) {
+    const edge = Array.from({ length: 12 }, (_, i) => { const y = 0.12 + i * 0.075; return new THREE.Vector3(side * (half(y) - 0.022), y, 0.08); });
+    group.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(edge), 24, 0.006, 6, false), gold, 'bordure'));
+  }
+  group.userData = { kind: 'baton', extent: 1 };
+  return group;
+}
+
+/**
+ * L'astrolabe : une mère de laiton à limbe gradué, la plaque, l'araignée (le
+ * réseau des étoiles), l'alidade. `extent` est le diamètre de la mère ; la bélière
+ * (l'anneau d'attache) part vers +Y.
+ */
+function buildAstrolabe(env) {
+  const kit = materials(env);
+  const group = new THREE.Group();
+  const brass = kit.metal('laiton', '#a8883a', 0.36, 0.92);
+  const dark = kit.metal('laiton-sombre', '#7a5f28', 0.5, 0.8);
+  const flat = (geometry) => { geometry.rotateX(Math.PI / 2); return geometry; };
+  // La mère : une coupe peu profonde, bord épais.
+  group.add(mesh(flat(lathe([[0.001, 0], [0.5, 0], [0.5, 0.09], [0.45, 0.09], [0.45, 0.04], [0.001, 0.04]], 56)), brass, 'mere'));
+  // Le limbe : soixante graduations posées sur le bord.
+  const ticks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.008, 0.035, 0.006), dark, 72);
+  ticks.name = 'graduations';
+  const matrix = new THREE.Matrix4(), turn = new THREE.Quaternion();
+  for (let i = 0; i < 72; i += 1) {
+    const angle = (i / 72) * Math.PI * 2;
+    turn.setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+    matrix.compose(new THREE.Vector3(Math.cos(angle) * 0.475, Math.sin(angle) * 0.475, 0.094), turn.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2)), new THREE.Vector3(1, i % 6 === 0 ? 1.7 : 1, 1));
+    ticks.setMatrixAt(i, matrix);
+  }
+  ticks.castShadow = false;
+  group.add(ticks);
+  // La plaque, gravée de cercles : tropiques et horizon.
+  const plate = mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.012, 56), kit.metal('plaque', '#c0a45a', 0.42, 0.85), 'plaque');
+  plate.rotation.x = Math.PI / 2;
+  plate.position.z = 0.05;
+  group.add(plate);
+  for (const [radius, offset] of [[0.36, 0], [0.26, -0.05], [0.16, -0.09]]) {
+    const circle = mesh(new THREE.TorusGeometry(radius, 0.004, 5, 56), dark, 'gravure');
+    circle.position.set(0, offset, 0.058);
+    circle.castShadow = false;
+    group.add(circle);
+  }
+  // L'araignée : un cercle excentré de l'écliptique et des pointes d'étoiles.
+  const rete = mesh(new THREE.TorusGeometry(0.31, 0.014, 6, 56), brass, 'araignee');
+  rete.position.set(0, 0.04, 0.075);
+  group.add(rete);
+  for (let i = 0; i < 7; i += 1) {
+    const angle = 0.5 + (i / 7) * Math.PI * 2;
+    const spike = mesh(new THREE.ConeGeometry(0.022, 0.12, 4), brass, 'etoile');
+    spike.position.set(Math.cos(angle) * 0.36, 0.04 + Math.sin(angle) * 0.36, 0.08);
+    spike.rotation.z = angle - Math.PI / 2;
+    group.add(spike);
+  }
+  // L'alidade : une règle sur un pivot, avec ses pinnules.
+  const rule = mesh(new THREE.BoxGeometry(0.94, 0.05, 0.012), brass, 'alidade');
+  rule.position.z = 0.106;
+  rule.rotation.z = 0.55;
+  group.add(rule);
+  for (const sign of [-1, 1]) {
+    const sight = mesh(new THREE.BoxGeometry(0.03, 0.05, 0.05), brass, 'pinnule');
+    sight.position.set(Math.cos(0.55) * 0.43 * sign, Math.sin(0.55) * 0.43 * sign, 0.12);
+    sight.rotation.z = 0.55;
+    group.add(sight);
+  }
+  const pivot = mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.05, 20), brass, 'pivot');
+  pivot.rotation.x = Math.PI / 2;
+  pivot.position.z = 0.115;
+  group.add(pivot);
+  // La bélière : le trône ajouré et l'anneau.
+  const throne = mesh(new THREE.BoxGeometry(0.2, 0.14, 0.05), brass, 'trone');
+  throne.position.set(0, 0.55, 0.045);
+  group.add(throne);
+  const ring = mesh(new THREE.TorusGeometry(0.1, 0.024, 8, 28), brass, 'beliere');
+  ring.position.set(0, 0.7, 0.03);
+  group.add(ring);
+  group.userData = { kind: 'astrolabe', extent: 1 };
+  return group;
+}
+
+/**
+ * Une rose de verre : quatre coupes de verre teinté, imbriquées et festonnées,
+ * un cœur doré, trois feuilles de verre vert. `extent` est le diamètre de la
+ * corolle ; les feuilles dépassent un peu.
+ */
+function buildGlassRose(env, { kind, color, seed }) {
+  const group = new THREE.Group();
+  const random = seededRandom(seed);
+  const around = 44, rings = 8;
+  const cup = ({ radius, height, flutes, phase }) => {
+    const positions = [], indices = [];
+    for (let i = 0; i <= rings; i += 1) {
+      const s = i / rings;
+      for (let j = 0; j <= around; j += 1) {
+        const a = (j / around) * Math.PI * 2;
+        const wave = Math.sin(flutes * a + phase);
+        const r = radius * s * (1 + 0.1 * wave * s * s);
+        positions.push(Math.cos(a) * r, Math.sin(a) * r, height * s ** 1.9 + 0.025 * wave * s ** 3);
+      }
+    }
+    for (let i = 0; i < rings; i += 1) for (let j = 0; j < around; j += 1) {
+      const a = i * (around + 1) + j, b = a + 1, c = a + around + 1, d = c + 1;
+      indices.push(a, b, c, b, d, c);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+  const glass = new THREE.MeshPhysicalMaterial({
+    name: 'verre-teinte', color, emissive: color, emissiveIntensity: 0.03, transparent: true, opacity: 0.92,
+    roughness: 0.14, metalness: 0, envMap: env, envMapIntensity: 0.8, side: THREE.DoubleSide,
+  });
+  [[0.5, 0.11, 7], [0.4, 0.14, 6], [0.3, 0.16, 5], [0.2, 0.17, 4]].forEach(([radius, height, flutes], index) => {
+    const part = mesh(cup({ radius, height, flutes, phase: random() * 6 }), glass, `petales-${index}`);
+    part.position.z = 0.012 + index * 0.04;
+    part.rotation.z = random() * 6;
+    group.add(part);
+  });
+  const gold = new THREE.MeshStandardMaterial({ name: 'or', color: '#c79a3a', roughness: 0.3, metalness: 0.9, envMap: env, envMapIntensity: 1 });
+  const heart = mesh(new THREE.SphereGeometry(0.06, 14, 10), gold, 'coeur');
+  heart.position.z = 0.19;
+  group.add(heart);
+  const leafGlass = new THREE.MeshPhysicalMaterial({
+    name: 'feuille', color: '#3a6a2c', transparent: true, opacity: 0.95, roughness: 0.25, metalness: 0,
+    envMap: env, envMapIntensity: 0.6, side: THREE.DoubleSide,
+  });
+  const leafShape = new THREE.Shape();
+  leafShape.moveTo(0, 0);
+  leafShape.quadraticCurveTo(0.2, 0.12, 0, 0.42);
+  leafShape.quadraticCurveTo(-0.2, 0.12, 0, 0);
+  for (let i = 0; i < 3; i += 1) {
+    const angle = 0.4 + i * 2.1 + random() * 0.5;
+    const leaf = mesh(new THREE.ShapeGeometry(leafShape, 8), leafGlass, 'feuille');
+    leaf.position.set(Math.cos(angle) * 0.4, Math.sin(angle) * 0.4, 0.015);
+    leaf.rotation.z = angle - Math.PI / 2;
+    group.add(leaf);
+  }
+  group.userData = { kind, extent: 1.1 };
+  return group;
+}
+
+/**
+ * Un sapin vu d'en haut : quatre étages de branches festonnées, du plus large
+ * (en bas) à la pointe, vert sombre, la neige posée vers le cœur. `extent` est le
+ * diamètre de l'étage du bas.
+ */
+function buildPine(env) {
+  const group = new THREE.Group();
+  const random = seededRandom(77);
+  const around = 56, rings = 5;
+  const green = new THREE.Color('#1f4026'), snow = new THREE.Color('#e9f0f5'), tint = new THREE.Color();
+  const tiers = [[0.5, 0.0, 0.2, 11], [0.39, 0.12, 0.34, 9], [0.28, 0.25, 0.46, 8], [0.17, 0.37, 0.58, 6]];
+  tiers.forEach(([radius, base, top, lobes], tier) => {
+    const positions = [], colors = [], indices = [];
+    const phase = random() * 6;
+    for (let i = 0; i <= rings; i += 1) {
+      const s = 1 - i / rings; // 1 au bord, 0 à l'axe
+      for (let j = 0; j <= around; j += 1) {
+        const a = (j / around) * Math.PI * 2;
+        const spike = Math.abs(Math.cos((lobes * a) / 2 + phase)) ** 0.7;
+        const r = radius * s * (0.72 + 0.28 * spike);
+        positions.push(Math.cos(a) * r, Math.sin(a) * r, base + (top - base) * (1 - s) ** 0.8);
+        // La neige s'accroche vers l'axe, par plaques : le seuil change d'une branche à l'autre.
+        const patch = 0.5 + 0.5 * Math.sin(lobes * a + phase * 2) * Math.cos(a * 3 + tier);
+        tint.copy(green).lerp(snow, Math.min(1, Math.max(0, (1 - s) * 1.5 - 0.15 + (patch - 0.5) * 0.6)));
+        colors.push(tint.r, tint.g, tint.b);
+      }
+    }
+    for (let i = 0; i < rings; i += 1) for (let j = 0; j < around; j += 1) {
+      const a = i * (around + 1) + j, b = a + 1, c = a + around + 1, d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    group.add(mesh(geometry, new THREE.MeshStandardMaterial({ name: 'branches', vertexColors: true, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, envMap: env, envMapIntensity: 0.12 }), `etage-${tier}`));
+  });
+  group.userData = { kind: 'sapin', extent: 1 };
+  return group;
+}
+
+/** Un rocher coiffé de neige : une boule bosselée, aplatie ; le dessus blanchit. */
+function buildRock(env) {
+  const random = seededRandom(5);
+  const geometry = new THREE.IcosahedronGeometry(0.5, 3);
+  const position = geometry.attributes.position;
+  const bumps = Array.from({ length: 6 }, () => [random() * 6, random() * 6, 0.35 + random() * 0.7, 1 + Math.floor(random() * 3)]);
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
+    const a = Math.atan2(y, x), b = Math.acos(Math.max(-1, Math.min(1, z / 0.5)));
+    let bump = 1;
+    for (const [pa, pb, amount, k] of bumps) bump += Math.sin(a * k + pa) * Math.sin(b * (k + 1) + pb) * amount * 0.07;
+    position.setXYZ(i, x * bump * 1.08, y * bump * 0.95, z * bump * 0.62);
+  }
+  geometry.computeVertexNormals();
+  const colors = [], stone = new THREE.Color('#756a58'), snow = new THREE.Color('#f1f5f8'), tint = new THREE.Color();
+  for (let i = 0; i < position.count; i += 1) {
+    const up = geometry.attributes.normal.getZ(i) + Math.sin(position.getX(i) * 31) * 0.12 + Math.sin(position.getY(i) * 27) * 0.1;
+    tint.copy(stone).lerp(snow, Math.min(1, Math.max(0, (up - 0.72) * 3.2) * 0.85));
+    colors.push(tint.r, tint.g, tint.b);
+  }
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.computeBoundingBox();
+  geometry.translate(0, 0, -geometry.boundingBox.min.z);
+  const group = new THREE.Group();
+  group.add(mesh(geometry, new THREE.MeshStandardMaterial({ name: 'roche', vertexColors: true, roughness: 0.88, metalness: 0, envMap: env, envMapIntensity: 0.2 }), 'roche'));
+  group.userData = { kind: 'rocher', extent: 1.1 };
+  return group;
 }
 
 const BUILDERS = Object.freeze({
@@ -272,21 +739,42 @@ const BUILDERS = Object.freeze({
   corde: buildRope,
   gourde: buildWaterskin,
   lanterne: buildLantern,
-  amethystes: buildCrystals(CRYSTAL_PALETTES.amethystes, 'amethystes'),
-  rubis: buildCrystals(CRYSTAL_PALETTES.rubis, 'rubis'),
+  amethyste: (env) => buildCrystalCluster(env, { kind: 'amethyste', color: '#7f3fc4', glow: '#3a1470', seed: 417 }),
+  tapis: buildCarpet,
+  compas: buildCompass,
+  'lanterne-fer': (env) => buildLantern(env, { kind: 'lanterne-fer', color: '#34363b', roughness: 0.55, metalness: 0.8 }),
+  'corde-brune': (env) => buildRope(env, { kind: 'corde-brune', base: '#8a6a3e', tube: 0.07, turns: 3.4, tail: false, inner: 0.07 }),
+  cor: buildHorn,
+  hache: buildAxe,
+  baton: buildRuneStaff,
+  astrolabe: buildAstrolabe,
+  'corde-chanvre': (env) => buildRope(env, { kind: 'corde-chanvre', base: '#a8946a', tube: 0.06, turns: 2.6, tail: false, inner: 0.2 }),
+  'rose-rouge': (env) => buildGlassRose(env, { kind: 'rose-rouge', color: '#6e0f2a', seed: 11 }),
+  'rose-verte': (env) => buildGlassRose(env, { kind: 'rose-verte', color: '#0f5a34', seed: 23 }),
+  'rose-rose': (env) => buildGlassRose(env, { kind: 'rose-rose', color: '#b4607c', seed: 37 }),
+  'rose-mauve': (env) => buildGlassRose(env, { kind: 'rose-mauve', color: '#6a3060', seed: 41 }),
+  sapin: buildPine,
+  rocher: buildRock,
+  rubis: (env) => buildCrystalCluster(env, { kind: 'rubis', color: '#a6132c', glow: '#5a0612', seed: 913 }),
 });
 
 export const RPG_TABLE_OBJECT_KINDS = Object.freeze(Object.keys(BUILDERS));
 
 /** Construit un objet, ou `null` pour un genre inconnu. `env` : carte d'environnement facultative. */
-export function createTableObject(kind, env = null, spec = {}) {
+export function createTableObject(kind, env = null) {
   const build = BUILDERS[kind];
-  return build ? build(env, spec) : null;
+  return build ? build(env) : null;
 }
 
-/** L'animation d'un objet à l'instant `t` (secondes) : seule la lanterne vit. */
+/** L'animation d'un objet à l'instant `t` (secondes) : la lanterne vacille, les cristaux scintillent. */
 export function updateTableObject(group, t, phase = 0) {
-  const { flame, lamp } = group.userData;
+  const { flame, lamp, gems, glowBase } = group.userData;
+  // Les cristaux : un éclat lent, déphasé d'un amas à l'autre.
+  if (gems) {
+    const shimmer = 1 + Math.sin(t * 0.9 + phase) * 0.22 + Math.sin(t * 2.3 + phase * 2) * 0.08;
+    for (const material of gems) material.emissiveIntensity = glowBase * shimmer;
+    return;
+  }
   if (!flame || !lamp) return;
   const flicker = Math.sin(t * 8.3 + phase) * 0.5 + Math.sin(t * 13.9 + phase * 2) * 0.3 + Math.sin(t * 3.1 + phase * 3) * 0.2;
   lamp.intensity = 0.9 * (1 + flicker * 0.18);
