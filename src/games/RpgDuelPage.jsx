@@ -110,10 +110,8 @@ import {
 } from './rpgDuel.js';
 import {
   cardRarityInfo,
+  cardFrameClass,
   cardFrameColor,
-  cardFrameInfo,
-  cardHasMythicFrame,
-  cardHasShinyFrame,
   cardColorCost,
   cardColors,
   terrainManaColors,
@@ -494,19 +492,7 @@ function cardRarityStyle(carte) {
   return { '--rarity-color': color };
 }
 
-/**
- * Le cadre suit la couleur de la carte : bleu (Eau), beige (Sable), rouge
- * (Braise), bleu clair (Neige). Une carte bicolore ajoute le dégradé de sa
- * combinaison, une carte mythique le dégradé violet — les deux sont des cadres
- * brillants.
- */
-function cardFrameClass(carte) {
-  const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
-  if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
-  if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
-  return classes.join(' ');
-}
-
+/** La même couleur d'élément habille le duel, le catalogue et l'atelier. */
 function cardFrameStyle(carte) {
   return { '--rpg-frame-color': cardFrameColor(carte) };
 }
@@ -1878,7 +1864,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       onFocus={(event) => onHoverCard?.(carte, event)}
                       onBlur={onLeaveHoverCard}
                     >
-                      <div className="rpg-card-catalogue__art">
+                      <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)}`}>
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span className="rpg-card-catalogue__cost" aria-label={`Coût ${cardCostLabel(carte)}`}>{carte.cost}</span>}

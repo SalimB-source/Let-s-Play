@@ -84,12 +84,16 @@ export async function checkRpgCardGuide(assert) {
       .find((button) => button.textContent.includes('Cartes & effets')), 'l’entrée « Cartes & effets »');
     assert.equal(step(), 'card-guide-familles-de-cartes', 'le guide avancé commence par présenter les familles de cartes');
     assert.deepEqual(exampleIds(), ['desert', 'tin-hinan'], 'les fiches affichent des exemples issus du catalogue réel');
+    assert.ok(container.querySelector('[data-card-id="tin-hinan"].rpg-card--mythique .rpg-card-guide__art img'),
+      'l’exemple de Tin Hinan est une illustration mythique, éligible au vernis sans masquer son coût');
     assert.equal(container.querySelector('[data-card-id="desert"] .rpg-card-guide__rules')?.textContent,
       'Engagez : ajoutez un mana ⏳.', 'le guide imprime aussi l’icône Sable dans le texte du Désert');
 
     await click(next(), 'la fiche suivante');
     assert.equal(step(), 'card-guide-terrain-hybride', 'le parcours montre ensuite le terrain à deux couleurs');
     assert.deepEqual(exampleIds(), ['petra', 'desert']);
+    assert.ok(container.querySelector('[data-card-id="petra"].rpg-card--frame-hybride-braise-sable:not(.rpg-card--frame-brillant)'),
+      'le guide montre le cadre bicolore diagonal de Pétra sans brillance');
     const reglesPetra = container.querySelector('[data-card-id="petra"] .rpg-card-guide__rules');
     assert.equal(reglesPetra?.textContent, 'Engagez : ajoutez un mana 🔥 ou ⏳.',
       'le terrain hybride affiche les deux icônes en conservant le choix « ou »');

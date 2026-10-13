@@ -35,6 +35,7 @@ import {
   cardColors,
   cardCopyLimit,
   cardCost,
+  cardFrameClass,
   cardFrameColor,
   cardTypeLine,
   terrainManaColors,
@@ -492,7 +493,7 @@ export function RpgDeckAtelier({
                     data-card-id={carte.id}
                     data-color={carte.element}
                     data-type={carte.kind}
-                    style={{ '--frame': cardFrameColor(carte), '--rarete': CARD_RARITIES[carte.rarity]?.color ?? '#f1f3f5' }}
+                    style={{ '--frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte), '--rarete': CARD_RARITIES[carte.rarity]?.color ?? '#f1f3f5' }}
                     onMouseEnter={survoler(carte)}
                     onMouseLeave={quitter}
                     onContextMenu={(event) => { event.preventDefault(); retirer(carte.id); }}
@@ -506,7 +507,7 @@ export function RpgDeckAtelier({
                       onFocus={survoler(carte)}
                       onBlur={quitter}
                     >
-                      <span className="rpg-atelier__carte-art">
+                      <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)}`}>
                         <img src={artUrl(carte.id)} alt="" loading="lazy" />
                         {!estTerrain && <Cout carte={carte} />}
                         {estTerrain && (

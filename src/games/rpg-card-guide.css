@@ -77,6 +77,23 @@
   background: linear-gradient(155deg, rgba(30, 28, 28, .98), rgba(13, 13, 19, .98));
   box-shadow: 0 12px 30px rgba(0, 0, 0, .48), inset 0 0 22px color-mix(in srgb, var(--rpg-guide-frame, #d3ab62) 10%, transparent);
 }
+/* Même anneau orné que les autres faces : les hybrides partagent leur bord
+   en diagonale, même sans rareté mythique ; seuls les mythiques mono brillent. */
+.rpg-card-guide__example:is(.rpg-card--mythique, [class*="rpg-card--frame-hybride-"]) {
+  border: 3px solid transparent;
+  background-image:
+    linear-gradient(155deg, #1e1c1c, #0d0d13),
+    var(--rpg-frame-motif),
+    var(--rpg-frame-gradient);
+  background-origin: padding-box, border-box, border-box;
+  background-clip: padding-box, border-box, border-box;
+  background-size: 100% 100%, var(--rpg-frame-motif-size, 8px 8px), var(--rpg-frame-material-size, 100% 100%);
+  background-repeat: no-repeat, repeat, no-repeat;
+  background-position: 0 0, 0 0, 0% 0;
+}
+.rpg-card-guide__example.rpg-card--frame-brillant {
+  animation: rpg-frame-shine-sweep var(--rpg-frame-shine-duration, 2.8s) ease-in-out infinite alternate;
+}
 .rpg-card-guide__art {
   position: relative;
   overflow: hidden;
@@ -89,6 +106,7 @@
 .rpg-card-guide__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .rpg-card-guide__cost {
   position: absolute;
+  z-index: 2;
   top: 8px;
   right: 8px;
   display: grid;
