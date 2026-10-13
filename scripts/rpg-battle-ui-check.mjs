@@ -689,6 +689,12 @@ assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img
   'sur PC, le disque de mana des cartes posées reste rond : boîte carrée de 30 px, bordure ronde, chiffre de 15 px');
 assert.doesNotMatch(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*min-width:\s*36px;[^}]*height:\s*25px;/s,
   'l’ellipse du disque de mana (36 × 25) ne revient pas sur les cartes posées');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img\s*\{[^}]*--rpg-card-element-marker-size:\s*30px;/s,
+  'sur la table PC, la pastille de couleur prend la taille du disque de mana (30 px)');
+assert.match(battleCss, /\.rpg-battle:not\(\.rpg-battle--touch\) \.rpg-card--img \.rpg-card-element-badge\s*\{[^}]*border-width:\s*2px;[^}]*font-size:\s*15px;/s,
+  'sur la table PC, le glyphe de couleur se lit à 15 px dans un liseré de 2 px, comme le chiffre du disque');
+assert.match(battleCss, /\.rpg-hand__card--img \.rpg-card-element-badge\s*\{[^}]*--rpg-card-element-marker-size:\s*min\(28px, 30%\);[^}]*border-width:\s*2px;[^}]*font-size:\s*15px;/s,
+  'dans la main, la pastille de couleur prend la taille du disque (28 px, au plus 30 % de la carte), glyphe 15 px et liseré 2 px');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-mana-cost,\s*\.rpg-battle--touch \.rpg-card--img \.rpg-mana-cost\.is-compact\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;[^}]*min-width:\s*22px;[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
   'le badge de coût tactile reste un bloc bien rond sur les cartes en main et en jeu');
 assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*38px;[^}]*font-size:\s*13px;/s,

@@ -6531,3 +6531,10 @@ souris l'écrasait en ellipse (`min-width: 36px`, `height: 25px`, rembourrage
 latéral) : il devient une **boîte carrée de 30 px** (`aspect-ratio: 1`,
 `padding: 0`, `border-radius: 50%`), son chiffre passe à **15 px** — un disque,
 comme partout ailleurs dans le jeu.
+
+**2. La pastille de couleur prend la taille du disque.** En haut à gauche de
+la face, le repère d'élément cesse d'être le parent pauvre du coût : **30 px
+sur la table** — le diamètre du disque —, **`min(28px, 30%)` dans la main** —
+le disque de la main, borné pour les petites faces —, et des deux côtés le
+même **glyphe de 15 px dans un liseré de 2 px** (pastilles hybrides comprises,
+chacune à son liseré). Couleur et coût se lisent enfin à la même échelle.

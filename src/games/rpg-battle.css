@@ -6083,7 +6083,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: 15.5px;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img {
-  --rpg-card-element-marker-size: clamp(18px, 18%, 30px);
+  --rpg-card-element-marker-size: 30px;
+}
+/* La pastille de couleur prend la taille du disque de mana : 30 px sur la
+   table, comme lui, avec son glyphe de 15 px et un liseré de 2 px — les deux
+   repères ronds de la face se lisent d'un même coup d'œil. Dans la main, le
+   disque fait 28 px : la pastille le suit, bornée à 30 % de la carte pour ne
+   pas couvrir les petites faces. */
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card-element-badge {
+  border-width: 2px;
+  font-size: 15px;
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-card--img .rpg-card-element-badge__pip {
+  border-width: 2px;
+}
+.rpg-hand__card--img .rpg-card-element-badge {
+  --rpg-card-element-marker-size: min(28px, 30%);
+  border-width: 2px;
+  font-size: 15px;
+}
+.rpg-hand__card--img .rpg-card-element-badge__pip {
+  border-width: 2px;
 }
 
 /* Mobile / WebView : le mouvement horizontal parcourt les cartes, le
