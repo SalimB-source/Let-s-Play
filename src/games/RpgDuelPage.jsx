@@ -44,7 +44,7 @@ import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante } from './rpgCollection.js';
 import { RpgAmbientMusic } from './rpgAmbientMusic.js';
-import { RpgPlateauMusic } from './rpgPlateauMusic.js';
+import { RpgPlateauMusic, RPG_PLATEAUX_MUSICAUX } from './rpgPlateauMusic.js';
 import { RpgAudioPlayer } from './rpgAudio.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
@@ -2166,9 +2166,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     const musique = musiqueRef.current;
     if (!musique) return;
-    if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.start();
+    const plateauMusical = RPG_PLATEAUX_MUSICAUX.has(plateauId);
+    if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif && !plateauMusical) musique.start();
     else musique.stop();
-  }, [ecran, lectureHistoire, tourHistoireId, sonActif]);
+  }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
   useEffect(() => {
     const musique = musiquePlateauRef.current;
     if (!musique) return;
@@ -2183,7 +2184,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const musique = musiqueRef.current;
       if (musique) {
         if (document.hidden) musique.pause();
-        else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif) musique.resume();
+        else if ((ecran === 'partie' || lectureHistoire) && tourHistoireId && sonActif && !RPG_PLATEAUX_MUSICAUX.has(plateauId)) musique.resume();
       }
       const musiquePlateau = musiquePlateauRef.current;
       if (musiquePlateau) {
@@ -2193,7 +2194,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     document.addEventListener('visibilitychange', surVisibilite);
     return () => document.removeEventListener('visibilitychange', surVisibilite);
-  }, [ecran, lectureHistoire, tourHistoireId, sonActif]);
+  }, [ecran, lectureHistoire, tourHistoireId, plateauId, sonActif]);
   const basculerSon = () => setSonActif((actif) => !actif);
   const jouerSfx = (nom, delai = 0) => {
     try {
