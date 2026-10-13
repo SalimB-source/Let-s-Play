@@ -136,6 +136,15 @@ public class MainActivity extends Activity {
         // clic « Répondre ». Sans ça, la WebView peut refuser de le jouer.
         settings.setMediaPlaybackRequiresUserGesture(false);
         webView.setBackgroundColor(Color.BLACK);
+        // Pas de menu contextuel natif sur un appui long (callout iOS équivalent,
+        // « enregistrer l'image », sélection de texte Android) : le jeu gère
+        // l'appui long lui-même (aperçu des cartes), et le menu système casse
+        // la chaîne tactile de la WebView — le jeu devient sourd jusqu'à la
+        // prochaine réouverture. Le site étouffe déjà `contextmenu` côté JS ;
+        // ici, le geste est neutralisé à la source, avant même la WebView.
+        webView.setLongClickable(false);
+        webView.setHapticFeedbackEnabled(false);
+        webView.setOnLongClickListener(view -> true);
         // Le site demande le haut-parleur le temps de l'appel (voir
         // preferLoudspeaker dans CallsContext). Inerte hors de l'APK.
         webView.addJavascriptInterface(new CallAudioBridge(), "LetsPlayAndroid");
@@ -160,6 +169,12 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 refreshLayout.setRefreshing(false);
                 if (!isTrustedDuelPage()) restoreDuelOrientation();
+                // Le tirage vers le bas recharge la page : sur le duel, ce
+                // geste détruirait la partie en cours — et tant que le doigt
+                // traîne, la WebView reçoit des `pointercancel` qui annulent
+                // l'appui long des cartes. Le pull-to-refresh se désarme sur
+                // la page du jeu, comme l'orientation y est verrouillée.
+                refreshLayout.setEnabled(!isTrustedDuelPage());
             }
         });
 
@@ -312,10 +327,16 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 if (!active) {
                     restoreDuelOrientation();
+                    refreshLayout.setEnabled(true);
                 } else if (isTrustedDuelPage()) {
                     if (!duelLandscapeActive) orientationBeforeDuel = getRequestedOrientation();
                     duelLandscapeActive = true;
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                    // Même en pleine navigation SPA (aucun `onPageFinished` à la
+                    // main) : sur le duel, le pull-to-refresh est désarmé — il
+                    // rechargerait la partie, et sa prise de doigt annule les
+                    // appuis longs des cartes en cours.
+                    refreshLayout.setEnabled(false);
                 }
             });
         }

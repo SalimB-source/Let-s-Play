@@ -23,7 +23,7 @@ import {
 } from './rpgPlateaux.js';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import { groupCartesMain, groupEntitesParCarte } from './rpgCardStacks.js';
-import { startRpgLongPress } from './rpgLongPress.js';
+import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
   etageEstDebloque,
@@ -951,6 +951,14 @@ function HoverCardPreview({ carte, style = null, spellPlayed = false, variante =
  * N'importe quel toucher — le volet ou le bouton — le referme. L'appui long ne
  * joue jamais la carte : c'est une consultation, pas une action. */
 function ApercuCarteAppuiLong({ carte, onFermer }) {
+  const boutonFermerRef = useRef(null);
+  // Le focus arrive sur « Fermer l'aperçu » sans faire défiler la page :
+  // un `scroll` même minuscule interromptrait un appui long encore en cours —
+  // ou aurait laissé passer le clic qui suit la levée du doigt et refermé le
+  // volet à peine ouvert (`rpgLongPress.js`).
+  useEffect(() => {
+    boutonFermerRef.current?.focus({ preventScroll: true });
+  }, []);
   if (!carte) return null;
   return (
     <div
@@ -964,7 +972,7 @@ function ApercuCarteAppuiLong({ carte, onFermer }) {
       <div className="rpg-card-peek__panel">
         <HoverCardPreview carte={carte} variante="appui-long" />
       </div>
-      <button type="button" autoFocus className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
+      <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu
       </button>
     </div>
@@ -2341,6 +2349,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     if (!carteGlissee) return undefined;
     const purgeGlisser = () => {
+      // Le glisser-déposer tactile lui aussi se range de force : son fantôme et
+      // ses écouteurs ne survivent jamais à une purge (nettoyage idempotent).
+      touchDragRef.current?.();
+      touchDragRef.current = null;
       carteGlisseeRef.current = null;
       setCarteGlissee(null);
       setSurZoneDepot(false);
@@ -2364,6 +2376,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       window.clearTimeout(safety);
     };
   }, [carteGlissee]);
+
+  // Chien de garde du vol de carte : sa minuterie de 720 ms résout l'action et
+  // range la carte en vol, mais une minuterie avalée (WebView mise en arrière-
+  // plan, onglet réveillé en route) laisserait la table `is-card-flight-active`
+  // — donc totalement muette (`pointer-events: none`) : plus un geste ne passe,
+  // ni carte, ni commande, ni appui long. Au bout de 2,5 s, le vol se résout
+  // de force, exactement comme `purgeGlisser` purge un glisser figé.
+  useEffect(() => {
+    if (!carteEnVol) return undefined;
+    const secours = window.setTimeout(() => {
+      if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
+      timerVolRef.current = null;
+      const action = actionVolRef.current;
+      actionVolRef.current = null;
+      setCarteEnVol((current) => (current ? null : current));
+      action?.resoudre();
+    }, 2500);
+    return () => window.clearTimeout(secours);
+  }, [carteEnVol?.token]);
 
   useLayoutEffect(() => {
     if (carteEnVol?.phase !== 'pending') return;
@@ -2633,6 +2664,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const hote = event.target?.closest?.('[data-card-id]');
     const carte = cardById(hote?.dataset?.cardId);
     if (!hote || !carte) return;
+    // Un second doigt, une souris ou un clic droit ne doit pas désarmer l'appui
+    // déjà en cours du premier doigt : seul un geste qui armerait vraiment un
+    // appui long reprend la main.
+    if (!peutDemarrerAppuiLong(event)) return;
     annulerAppuiLong();
     appuiLongRef.current = startRpgLongPress(event, {
       source: hote,
@@ -2657,10 +2692,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     window.addEventListener('keydown', fermerAvecEchap);
     return () => window.removeEventListener('keydown', fermerAvecEchap);
   }, [apercuAppui]);
+  // Le menu contextuel natif (callout iOS, « enregistrer l'image » / sélection
+  // Android) n'appartient à aucun geste de la table : étouffé sur toute la
+  // coque du jeu, pas seulement pendant un appui long armé. Sans ça, une seule
+  // longue pression qui échappe à `rpgLongPress.js` ouvre le menu système, qui
+  // casse à son tour la chaîne tactile de la WebView — le jeu devient sourd.
+  const neutraliserMenuContextuel = (event) => event.preventDefault();
   // En portrait, l'écran de rotation reprend la main : plus rien à consulter.
   useEffect(() => {
-    if (viewport.portrait) fermerApercuAppui();
-  }, [viewport.portrait]);
+    if (viewport.portrait && apercuAppui) fermerApercuAppui();
+  }, [viewport.portrait, apercuAppui]);
 
   // « M » coupe ou rend la musique d'ambiance, comme sur la course.
   useEffect(() => {
@@ -2723,6 +2764,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     if (timerSortRef.current) window.clearTimeout(timerSortRef.current);
     if (timerApercuMagieRef.current) window.clearTimeout(timerApercuMagieRef.current);
+    // Aucun état de geste ne survit au départ pour la lecture : un vol de carte
+    // ou un glisser laissé en arrière rendrait la table `is-card-flight-active`
+    // — donc muette (`pointer-events: none`) — au retour du duel.
+    timerVolRef.current = null;
+    timerSortRef.current = null;
+    timerApercuMagieRef.current = null;
+    setCarteEnVol(null);
+    carteOrigineVolRef.current = null;
+    setCarteGlissee(null);
+    carteGlisseeRef.current = null;
+    setSurZoneDepot(false);
+    clicApresGlisserRef.current = false;
+    clicApresGlisserBloqueurRef.current = null;
+    setBloqueurGlisse(null);
     setMulligan(null);
     setTutorielActif(false);
     setHistoireEtageId(null);
@@ -2760,7 +2815,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (lectureHistoire) {
     return (
-      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onContextMenu={neutraliserMenuContextuel}>
         {ecran === 'journal' ? (
           <RpgStoryJournal recit={progressionHistoire.recit} cardArt={cardArt}
             onExit={() => setEcran('histoire')} onContinue={continuerCampagne}
@@ -2778,7 +2833,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran !== 'partie') {
     return (
-      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte}>
+      <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={neutraliserMenuContextuel}>
         <GameModeMenu
           screen={ecran}
           selectedDeckId={deckSelectionneId}
@@ -3924,7 +3979,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       declarerAttaqueSorcier();
       return;
     }
-    annulerAppuiLong();
+    // L'annonce prend la scène : un aperçu déjà ouvert se range, un glisser en
+    // cours ne lâche pas sa carte. Un appui long encore en cours, lui, garde sa
+    // chance de s'ouvrir — l'annonce ne doit jamais rendre « muet » le geste du
+    // joueur ; son volet s'affichera au-dessus du voile de l'annonce.
     touchDragRef.current?.();
     touchDragRef.current = null;
     setApercuAppui(null);
@@ -4121,6 +4179,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       data-scene="duel"
       style={DOS_DE_CARTE_STYLE}
       onPointerDown={demarrerAppuiLongCarte}
+      onContextMenu={neutraliserMenuContextuel}
     >
       <SfxReactifsDuel
         vainqueur={vainqueur}
@@ -4866,7 +4925,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onClose={fermerTutoriel}
         />
       )}
-      {apercuAppui && !apercuAnnonceOuvert && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} onFermer={fermerApercuAppui} />}
       {mulligan && (
         <VoletMulligan
           main={duel.joueur.main}

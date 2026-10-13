@@ -17,9 +17,13 @@
  * - un déplacement au-delà du seuil annule : c'est un défilement de la main ou
  *   un glisser-déposer, pas une consultation ;
  * - lever le doigt avant la durée annule : c'est un clic, il doit agir ;
- * - une fois l'aperçu ouvert, le clic synthétique qui suit le lever du doigt est
- *   avalé : l'appui long ne joue jamais la carte et ne referme pas l'aperçu dans
- *   la même foulée ;
+ * - une fois l'aperçu ouvert, le clic synthétique qui suit la fin du geste est
+ *   avalé — **quelle que soit la façon dont le geste se termine** (levée,
+ *   annulation, défilement, fenêtre perdue, page cachée) : un `scroll` ou un
+ *   `pointercancel` qui arrive entre le déclenchement et la levée du doigt
+ *   (autoFocus du volet, rail de main qui remue, WebView qui reprend la main)
+ *   ne doit jamais laisser passer ce clic, qui refermerait l'aperçu à peine
+ *   ouvert — le joueur ne verrait « rien ne se passe » ;
  * - le menu contextuel natif (callout iOS, menu Android) est étouffé, et
  *   l'aperçu ouvert ne dépend plus du doigt : il se ferme par son propre volet.
  */
@@ -30,8 +34,23 @@ export const RPG_LONG_PRESS_MS = 1000;
 /** Déplacement toléré pendant l'appui, en pixels — le seuil de `rpgTouchDrag.js`. */
 export const RPG_LONG_PRESS_SEUIL_PX = 10;
 
-/** Fenêtre pendant laquelle le clic qui suit le lever du doigt est avalé. */
+/** Fenêtre pendant laquelle le clic qui suit la fin du geste est avalé. */
 const DELAI_CLIC_AVALE_MS = 400;
+
+/**
+ * Le `pointerdown` peut-il armer un appui long ? Seul le doigt ou le stylet
+ * principal, bouton gauche. La page consulte ce prédicat AVANT d'annuler un
+ * geste en cours : un second doigt (ou un clic droit) ne doit pas désarmer
+ * l'appui du premier.
+ *
+ * @param {PointerEvent} event le `pointerdown` reçu
+ */
+export function peutDemarrerAppuiLong(event) {
+  return Boolean(event)
+    && ['touch', 'pen'].includes(event.pointerType)
+    && event.isPrimary !== false
+    && !(event.button > 0);
+}
 
 /**
  * Arme un appui long sur `source`. Retourne la fonction qui annule tout
@@ -53,7 +72,7 @@ export function startRpgLongPress(event, {
   seuil = RPG_LONG_PRESS_SEUIL_PX,
 } = {}) {
   if (!event || !source || typeof onTrigger !== 'function') return null;
-  if (!['touch', 'pen'].includes(event.pointerType) || event.isPrimary === false || event.button > 0) return null;
+  if (!peutDemarrerAppuiLong(event)) return null;
   const doc = source.ownerDocument;
   const win = doc.defaultView;
   if (!doc || !win) return null;
@@ -64,6 +83,13 @@ export function startRpgLongPress(event, {
   let declenche = false;
   let fini = false;
   const avalerClic = (e) => { e.preventDefault(); e.stopPropagation(); };
+  // Le clic synthétique naît de la levée du doigt, mais aussi de l'événement
+  // qui a interrompu le geste (un `pointercancel` de WebView, par exemple) :
+  // l'avalage s'arme donc dès la fin du geste, et se retire tout seul.
+  const armerAvalageClic = () => {
+    doc.addEventListener('click', avalerClic, true);
+    win.setTimeout(() => doc.removeEventListener('click', avalerClic, true), DELAI_CLIC_AVALE_MS);
+  };
   const nettoyer = () => {
     if (fini) return;
     fini = true;
@@ -76,6 +102,7 @@ export function startRpgLongPress(event, {
     win.removeEventListener('scroll', interrompu, true);
     doc.removeEventListener('visibilitychange', pageCachee);
     source.removeEventListener('contextmenu', avalerClic);
+    if (declenche) armerAvalageClic();
   };
   const declencher = () => {
     timer = null;
@@ -89,12 +116,6 @@ export function startRpgLongPress(event, {
   };
   const leve = (e) => {
     if (e.pointerId !== pointerId) return;
-    if (declenche) {
-      // Android comme iOS envoient un clic après `pointerup` : sans cet écran,
-      // il jouerait la carte tenue ou refermerait l'aperçu à peine ouvert.
-      doc.addEventListener('click', avalerClic, true);
-      win.setTimeout(() => doc.removeEventListener('click', avalerClic, true), DELAI_CLIC_AVALE_MS);
-    }
     nettoyer();
   };
   const interrompu = (e) => {

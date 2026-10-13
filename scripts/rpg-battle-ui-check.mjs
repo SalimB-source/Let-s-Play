@@ -811,8 +811,10 @@ assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table::before/,
 const longPressSource = readFileSync(new URL('../src/games/rpgLongPress.js', import.meta.url), 'utf8');
 assert.match(longPressSource, /export const RPG_LONG_PRESS_MS = 1000;/,
   'l’aperçu au doigt demande une seconde d’appui, comme annoncé au joueur');
-assert.match(longPressSource, /if \(!\['touch', 'pen'\]\.includes\(event\.pointerType\)[\s\S]*?return null;/,
+assert.match(longPressSource, /export function peutDemarrerAppuiLong\(event\) \{[\s\S]*?\['touch', 'pen'\]\.includes\(event\.pointerType\)[\s\S]*?\n\}/,
   'la souris garde le survol : l’appui long ne concerne que le doigt et le stylet');
+assert.match(longPressSource, /if \(declenche\) armerAvalageClic\(\);/,
+  'le clic qui suit l’aperçu est avalé quelle que soit la fin du geste : levée, annulation, défilement ou page cachée');
 assert.match(battlePage, /startRpgLongPress\(event, \{\s*source: hote,\s*onTrigger:/,
   'la page arme l’appui long sur le `pointerdown` d’une carte');
 assert.match(battlePage, /const hote = event\.target\?\.closest\?\.\('\[data-card-id\]'\);/,

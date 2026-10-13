@@ -274,6 +274,31 @@ export async function checkRpgPreviewActions(assert) {
     await click(peek());
     assert.ok(peek() === null, 'toucher le volet referme l’aperçu');
 
+    // ── Interrompu entre le déclenchement et la levée, l'aperçu tient ──────
+    // Un `scroll` (autoFocus du volet, rail de main qui remue) ou un
+    // `pointercancel` de WebView peut arriver pendant que le doigt tient
+    // encore : l'aperçu venait de s'ouvrir, le clic qui suit la levée doit
+    // être avalé quand même — sinon le volet se referme à peine ouvert et le
+    // joueur ne voit « rien ne se passe ».
+    for (const interruption of ['scroll', 'pointercancel']) {
+      await envoyerPointeur(carteMain, 'pointerdown');
+      await attendre(RPG_LONG_PRESS_MS + 120);
+      assert.ok(peek(), `${interruption} : l’aperçu s’ouvre avant l’interruption`);
+      await act(async () => {
+        const evenement = new window.Event(interruption, { bubbles: true, cancelable: true });
+        Object.assign(evenement, { pointerId: 7, clientX: 30, clientY: 30 });
+        window.dispatchEvent(evenement);
+      });
+      await envoyerPointeur(carteMain, 'pointerup');
+      assert.ok(peek(), `${interruption} : l’aperçu reste ouvert après la levée du doigt`);
+      await click(carteMain);
+      assert.ok(peek(), `${interruption} : le clic qui suit ne referme pas l’aperçu`);
+      assert.equal(totalMain(), mainAvantAppui, `${interruption} : … et ne joue pas la carte`);
+      await attendre(460);
+      await click(peek());
+      assert.ok(peek() === null, `${interruption} : le volet répond ensuite normalement`);
+    }
+
     // ── Sur la table : l'aperçu ne déclare ni attaque ni mana ───────────────
     await appuiLong(fennec());
     assert.ok(peek(), 'une créature en jeu s’aperçoit aussi par appui long');

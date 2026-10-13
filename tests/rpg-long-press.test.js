@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 import {
   RPG_LONG_PRESS_MS,
   RPG_LONG_PRESS_SEUIL_PX,
+  peutDemarrerAppuiLong,
   startRpgLongPress,
 } from '../src/games/rpgLongPress.js';
 
@@ -60,6 +61,26 @@ test('le clic qui suit l’aperçu est avalé : la carte n’est pas jouée', as
   assert.equal(s.click().defaultPrevented, true, 'le clic synthétique ne joue pas la carte');
   s.cleanup();
   s.dom.window.close();
+});
+
+test('interrompu après le déclenchement, le clic reste avalé : l’aperçu ne se referme pas', async () => {
+  // Le volet s’ouvre pendant que le doigt tient encore — puis quelque chose
+  // interrompt le geste AVANT la levée : un `scroll` (autoFocus du volet, rail
+  // de main qui remue), un `pointercancel` ou un `blur` de WebView. Le clic
+  // synthétique qui suit doit être avalé quand même : sinon il touche le volet
+  // et le referme à peine ouvert — le joueur ne voit « rien ne se passe ».
+  for (const mode of ['scroll', 'pointercancel', 'blur']) {
+    const s = setup();
+    await s.wait(60);
+    assert.equal(s.declenchements.length, 1, `${mode} : l’aperçu s’est ouvert`);
+    if (mode === 'scroll') s.window.dispatchEvent(new s.window.Event('scroll'));
+    else s.send(mode);
+    s.send('pointerup');
+    assert.equal(s.click().defaultPrevented, true,
+      `${mode} post-déclenchement : le clic qui suit l’aperçu est avalé`);
+    s.cleanup();
+    s.dom.window.close();
+  }
 });
 
 test('un appui court reste un clic : rien ne s’ouvre, le clic passe', async () => {
@@ -155,6 +176,14 @@ test('la souris et les arguments manquants sont ignorés', async () => {
 
   assert.equal(startRpgLongPress(null, { source: null, onTrigger() {} }), null);
   assert.equal(startRpgLongPress({ pointerType: 'touch' }, {}), null, 'sans carte ni rappel, rien à armer');
+
+  // Le prédicat partage les mêmes règles : la page ne désarme un geste en
+  // cours que pour un `pointerdown` qui armerait vraiment un appui long.
+  assert.equal(peutDemarrerAppuiLong({ pointerType: 'touch', isPrimary: true, button: 0 }), true);
+  assert.equal(peutDemarrerAppuiLong({ pointerType: 'mouse', isPrimary: true, button: 0 }), false);
+  assert.equal(peutDemarrerAppuiLong({ pointerType: 'touch', isPrimary: false, button: 0 }), false);
+  assert.equal(peutDemarrerAppuiLong({ pointerType: 'touch', isPrimary: true, button: 2 }), false);
+  assert.equal(peutDemarrerAppuiLong(null), false);
 });
 
 test('la durée par défaut est bien une seconde, comme annoncé au joueur', () => {

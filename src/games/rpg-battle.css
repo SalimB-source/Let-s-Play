@@ -5392,6 +5392,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   bottom: env(safe-area-inset-bottom, 0px);
   left: env(safe-area-inset-left, 0px);
 }
+/* Toute la coque du jeu refuse la sélection de texte et le callout natif :
+   une seule sélection qui s'allume (menu Android « copier / partager »,
+   poignées iOS) casse la chaîne tactile de la WebView — le jeu devient sourd,
+   les gestes meurent. Les champs de saisie gardent leur sélection. */
+.rpg-battle {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.rpg-battle input,
+.rpg-battle textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 @media (pointer: coarse) {
   .rpg-duel-nav button, .rpg-btn { min-height: 44px; }
   .rpg-hand, .card-row { overscroll-behavior-x: contain; }
