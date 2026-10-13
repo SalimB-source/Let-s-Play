@@ -1453,43 +1453,125 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
             <section className="rpg-mode-menu__hero" style={{ '--rpg-menu-card-art': `url("${imageForDeck(playerDeck)}")` }}>
+              {/* Effet visuel thématique : grains de sable qui tombent */}
+              <div className="rpg-sand-fx" aria-hidden="true">
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <span key={i} className="rpg-sand-grain" style={{ '--delay': `${i * 0.21}s`, '--left': `${5 + Math.random() * 90}%`, '--duration': `${4 + Math.random() * 5}s`, '--size': `${1 + Math.random() * 2}px` }} />
+                ))}
+              </div>
               <div className="rpg-mode-menu__hero-copy">
-                <span className="rpg-mode-menu__eyebrow">UN DUEL · DEUX DECKS · 40 CARTES</span>
+                <span className="rpg-mode-menu__eyebrow">
+                  <span className="rpg-eyebrow-dot" />
+                  UN DUEL · DEUX DECKS · 40 CARTES
+                </span>
                 <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
-                <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes.</p>
+                <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
                 <div className="rpg-mode-menu__hero-actions">
-                  <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={() => { play('select'); onStartGame(); }}>
-                    ⚔ Lancer le duel <span aria-hidden="true">→</span>
+                  <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-menu-button--glow" onClick={() => { play('select'); onStartGame(); }}>
+                    <span className="rpg-menu-button__icon">⚔</span>
+                    <span className="rpg-menu-button__text">
+                      <strong>Lancer le duel</strong>
+                      <small>Commencer une partie immédiatement</small>
+                    </span>
+                    <span className="rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </button>
-                  <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onStartTutorial?.(); }}>
-                    ⌛ Apprendre à jouer <span aria-hidden="true">→</span>
-                  </button>
-                  <button type="button" className="rpg-menu-button rpg-menu-button--card-guide" onClick={() => { play('select'); onStartCardGuide?.(); }}>
-                    ◇ Cartes & effets <span aria-hidden="true">→</span>
-                  </button>
+                  <div className="rpg-mode-menu__secondary-actions">
+                    <button type="button" className="rpg-menu-button rpg-menu-button--tutorial" onClick={() => { play('select'); onStartTutorial?.(); }}>
+                      <span className="rpg-menu-button__icon">⌛</span>
+                      <span className="rpg-menu-button__text">
+                        <strong>Apprendre à jouer</strong>
+                        <small>Partie guidée en 5 étapes</small>
+                      </span>
+                    </button>
+                    <button type="button" className="rpg-menu-button rpg-menu-button--card-guide" onClick={() => { play('select'); onStartCardGuide?.(); }}>
+                      <span className="rpg-menu-button__icon">◇</span>
+                      <span className="rpg-menu-button__text">
+                        <strong>Cartes & effets</strong>
+                        <small>Guide complet des règles</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div className="rpg-quick-tip">
+                  <span className="rpg-quick-tip__icon">💡</span>
+                  <p>Astuce : vous pouvez annuler votre dernière action avec le bouton ↶ pendant votre tour.</p>
                 </div>
               </div>
               <div className="rpg-mode-menu__hero-mark" aria-hidden="true">باب</div>
+              <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
 
             <aside className="rpg-mode-menu__loadout">
               <div className="rpg-mode-menu__loadout-heading">
-                <div><span className="rpg-mode-menu__eyebrow">VOTRE AFFRONTEMENT</span><h2>Decks de départ</h2></div>
-                <button type="button" className="rpg-menu-link" onClick={() => { play('menu'); onChangeScreen('decks'); }}>Voir les decks <span aria-hidden="true">→</span></button>
+                <div>
+                  <span className="rpg-mode-menu__eyebrow">VOTRE AFFRONTEMENT</span>
+                  <h2>Prêt au combat</h2>
+                </div>
+                <button type="button" className="rpg-menu-link" onClick={() => { play('menu'); onChangeScreen('decks'); }}>
+                  Changer de deck <span aria-hidden="true">→</span>
+                </button>
               </div>
+
+              {hasGame && (
+                <button type="button" className="rpg-menu-button rpg-menu-button--resume rpg-menu-button--resume-pulse" onClick={() => { play('select'); onResumeGame(); }}>
+                  <span className="rpg-menu-button__icon">↩</span>
+                  <span className="rpg-menu-button__text">
+                    <strong>Reprendre le duel en cours</strong>
+                    <small>Une partie n'est pas terminée</small>
+                  </span>
+                  <span className="rpg-resume-badge" aria-hidden="true">!</span>
+                </button>
+              )}
+
               {playerDeck && (
                 <article className="rpg-menu-deck-summary rpg-menu-deck-summary--player">
+                  <span className="rpg-deck-summary__ribbon" aria-hidden="true">VOUS</span>
                   <img src={deckBoxArtUrl(playerDeck)} alt="" />
-                  <div><small>VOTRE DECK · {deckColorGlyph(playerDeck)} {deckColorLabel(playerDeck).toUpperCase()}</small><strong>{playerDeck.name}</strong><span>{deckStats(playerDeck).creatures} créatures · {deckStats(playerDeck).magies} magies</span></div>
+                  <div className="rpg-deck-summary__content">
+                    <small className="rpg-deck-summary__type">
+                      {deckColorGlyph(playerDeck)} {deckColorLabel(playerDeck).toUpperCase()}
+                    </small>
+                    <strong>{playerDeck.name}</strong>
+                    <div className="rpg-deck-summary__stats">
+                      <span><b>{deckStats(playerDeck).creatures}</b><small>créatures</small></span>
+                      <span><b>{deckStats(playerDeck).magies}</b><small>magies</small></span>
+                      <span><b>{deckStats(playerDeck).terrains}</b><small>terrains</small></span>
+                    </div>
+                  </div>
                 </article>
               )}
+
+              <div className="rpg-vs-indicator" aria-hidden="true">
+                <span>VS</span>
+              </div>
+
               {opponentDeck && (
                 <article className="rpg-menu-deck-summary rpg-menu-deck-summary--opponent">
+                  <span className="rpg-deck-summary__ribbon rpg-deck-summary__ribbon--opponent" aria-hidden="true">ADVERSAIRE</span>
                   <img src={deckBoxArtUrl(opponentDeck)} alt="" />
-                  <div><small>ADVERSAIRE · {deckColorGlyph(opponentDeck)} {deckColorLabel(opponentDeck).toUpperCase()}</small><strong>{opponentDeck.name}</strong><span>{opponentDeck.affrontement ?? `Affrontez ${opponentDeck.name}.`}</span></div>
+                  <div className="rpg-deck-summary__content">
+                    <small className="rpg-deck-summary__type">
+                      {deckColorGlyph(opponentDeck)} {deckColorLabel(opponentDeck).toUpperCase()}
+                    </small>
+                    <strong>{opponentDeck.name}</strong>
+                    <p className="rpg-deck-summary__desc">{opponentDeck.affrontement ?? `Affrontez le sorcier du deck ${opponentDeck.name}.`}</p>
+                    <div className="rpg-difficulty-indicator" aria-label="Difficulté moyenne">
+                      <span className="rpg-difficulty__label">Difficulté</span>
+                      <span className="rpg-difficulty__dots">
+                        <span className="is-filled" />
+                        <span className="is-filled" />
+                        <span />
+                      </span>
+                    </div>
+                  </div>
                 </article>
               )}
-              {hasGame && <button type="button" className="rpg-menu-button rpg-menu-button--resume" onClick={() => { play('select'); onResumeGame(); }}>↩ Reprendre le duel en cours</button>}
+
+              <div className="rpg-menu-controls-hint">
+                <span className="rpg-control-hint"><kbd>F</kbd> Plein écran</span>
+                <span className="rpg-control-hint"><kbd>M</kbd> Son</span>
+                <span className="rpg-control-hint"><kbd>Échap</kbd> Menu</span>
+              </div>
             </aside>
           </main>
         ) : screen === 'decks' ? (atelier ? (
