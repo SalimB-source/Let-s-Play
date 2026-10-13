@@ -6522,9 +6522,10 @@ qui va avec : le fond sombre ne doit plus jamais repeindre ces deux commandes.
 
 ## Le Sablier : les repères ronds, et l'aperçu collé à la carte
 
-Quatre retouches de présentation du duel, aucune règle touchée : les repères
-imprimés sur les faces gardent la même taille d'un support à l'autre, et
-l'aperçu au survol cesse de flotter loin de la carte qu'il décrit.
+Quatre retouches de présentation du duel, puis les cadres un peu plus épais,
+aucune règle touchée : les repères imprimés sur les faces gardent la même
+taille d'un support à l'autre, et l'aperçu au survol cesse de flotter loin de
+la carte qu'il décrit.
 
 **1. Le disque de mana des cartes posées reste rond, sur PC.** La table à la
 souris l'écrasait en ellipse (`min-width: 36px`, `height: 25px`, rembourrage
@@ -6558,14 +6559,26 @@ Le panneau est **reposé avant peinture** (`useLayoutEffect`) : le joueur ne
 le voit jamais sauter. Le même `panelRef` sert l'aperçu du duel, celui du
 menu et celui du **mulligan**, qui se colle lui aussi à la carte lue.
 
+**5. Les cadres des cartes, un peu plus épais.** L'anneau de couleur qui
+porte l'élément grandit légèrement, sur tous les gabarits à la fois — normal
+**4–5,5 px**, grand **5,5–7,5 px**, petit **3,5–4 px**, renforcé **4,5–6 px**
+(planchers et plafonds relevés, pente en `vw` à l'avenant) ; au doigt, seuls
+les plafonds bougent (4,5 et 5 px), les petites cartes gardent leur plancher.
+Le cadre reste dans ses proportions vérifiées (3 à 4,5 % de la carte) : il se
+voit un peu plus, il ne mange pas l'illustration.
+
 ### Où vit le code
 
 - `src/games/rpg-battle.css` — le disque de mana carré de 30 px sur PC
   (`.rpg-battle:not(.rpg-battle--touch) .rpg-card--img
   .rpg-mana-cost.is-compact`), la pastille de couleur à sa taille (30 px sur
-  la table, `min(28px, 30%)` dans la main, glyphe 15 px et liseré 2 px), et
+  la table, `min(28px, 30%)` dans la main, glyphe 15 px et liseré 2 px),
   celle de l'aperçu rapide aux grandes faces
-  (`.rpg-hover-card-preview__face`, `clamp(28px, 17%, 38px)`, 19 px / 2 px) ;
+  (`.rpg-hover-card-preview__face`, `clamp(28px, 17%, 38px)`, 19 px / 2 px),
+  et les gabarits de cadre légèrement épaissis (`--rpg-card-border*` en tête
+  de fichier) ;
+- `src/games/rpg-mobile.css` — les plafonds des gabarits de cadre au doigt,
+  relevés dans le même esprit, planchers des petites cartes inchangés ;
 - `src/games/RpgDuelPage.jsx` — `placerApercuSurvol()` (boîte réelle, marge
   intérieure retirée, côté choisi, bascule au débordement), le
   `useLayoutEffect` qui repose le panneau avant peinture, et `panelRef`
@@ -6581,12 +6594,14 @@ npm run check:rpg-tutorial-ui  # le tutoriel, dans la vraie page
 npm run check:rpg-ui           # voir la réserve ci-dessous
 ```
 
-`scripts/rpg-battle-ui-check.mjs` tient le contrat des quatre points : le
-disque carré de 30 px (et l'interdit de l'ellipse 36 × 25), la pastille à la
-taille du disque sur la table comme dans la main, celle de l'aperçu rapide
-aux 28–38 px des grandes faces, et le placement collé à la carte (boîte
-réelle mesurée, marge intérieure retirée, bascule au débordement, reposé
-avant peinture, `panelRef` sur le survol et le mulligan). Les scénarios
+`scripts/rpg-battle-ui-check.mjs` tient le contrat des quatre points — et
+des cadres épaissis : le disque carré de 30 px (et l'interdit de l'ellipse
+36 × 25), la pastille à la taille du disque sur la table comme dans la main,
+celle de l'aperçu rapide aux 28–38 px des grandes faces, le placement collé
+à la carte (boîte réelle mesurée, marge intérieure retirée, bascule au
+débordement, reposé avant peinture, `panelRef` sur le survol et le
+mulligan), et les quatre gabarits de cadre dans leurs nouvelles bornes,
+toujours entre 3 et 4,5 % de la carte. Les scénarios
 JSDOM `rpg-card-state`, `rpg-preview`, `rpg-stacks`, `rpg-ghost`,
 `rpg-mulligan` et `rpg-turn-banner` rejouent la page entière autour du
 nouveau placement.

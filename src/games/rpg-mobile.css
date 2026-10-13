@@ -100,8 +100,8 @@
 .rpg-battle--touch .card-table {
   --duel-card: clamp(48px, 17dvh, 100px);
   --terrain-inset: clamp(44px, 8vw, 160px);
-  --rpg-card-border: clamp(2.5px, 0.9vw, 4px);
-  --rpg-card-border-strong: clamp(3px, 1vw, 4.5px);
+  --rpg-card-border: clamp(2.5px, 1vw, 4.5px);
+  --rpg-card-border-strong: clamp(3px, 1.1vw, 5px);
   --rpg-card-radius: clamp(7px, 1.1vw, 12px);
   --rpg-card-radius-sm: clamp(6px, 0.9vw, 10px);
   /* Les trois repères de la grille, nommés : le rembourrage de la table, la

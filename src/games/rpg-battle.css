@@ -28,23 +28,24 @@
 
 /* ── Cadres responsive : l'épaisseur suit la carte, dans l'esprit d'une carte
    Magic. Le bord d'une carte Magic fait ≈ 2,8 mm sur 63 mm de large (≈ 4,5 %) ;
-   les cadres du Sablier visent un peu moins, ≈ 3,5 % de la largeur, pour laisser
-   respirer l'illustration — et comme les cartes sont dimensionnées en `vw`, le
-   cadre l'est aussi pour les suivre. Trois gabarits, chacun calé sur la largeur
-   des cartes qu'il habille :
+   les cadres du Sablier visent à peu près ce poids, ≈ 4 % de la largeur — assez
+   présents pour porter la couleur de l'élément, sans manger l'illustration —
+   et comme les cartes sont dimensionnées en `vw`, le cadre l'est aussi pour
+   les suivre. Trois gabarits, chacun calé sur la largeur des cartes qu'il
+   habille :
    - normal : cartes en main (104–136 px) et sur la table (108–146 px), atelier ;
    - grand : face de l'aperçu rapide (190–232 px), catalogue et mulligan
      (≈ 180–270 px) — l'aperçu est une carte agrandie, son cadre grandit avec ;
    - petit : terrains (74–96 px), dessus des piles et vignette de magie jouée.
-   Au doigt, `rpg-mobile.css` garde son gabarit normal (`clamp(2.5px, 0.9vw,
-   4px)` : des cartes plus petites, au bord déjà proportionnellement plus
+   Au doigt, `rpg-mobile.css` garde son gabarit normal (`clamp(2.5px, 1vw,
+   4.5px)` : des cartes plus petites, au bord déjà proportionnellement plus
    épais) ; les deux autres suivent le `vw` et tombent d'eux-mêmes à leur
    plancher. */
 .rpg-battle {
-  --rpg-card-border: clamp(3.5px, 0.36vw, 5px);
-  --rpg-card-border-large: clamp(5px, 0.55vw, 6.5px);
-  --rpg-card-border-small: clamp(3px, 0.26vw, 3.5px);
-  --rpg-card-border-strong: clamp(4px, 0.45vw, 5.5px);
+  --rpg-card-border: clamp(4px, 0.42vw, 5.5px);
+  --rpg-card-border-large: clamp(5.5px, 0.62vw, 7.5px);
+  --rpg-card-border-small: clamp(3.5px, 0.3vw, 4px);
+  --rpg-card-border-strong: clamp(4.5px, 0.52vw, 6px);
   --rpg-card-radius: clamp(6px, 0.9vw, 12px);
   --rpg-card-radius-sm: clamp(5px, 0.7vw, 8px);
 }
